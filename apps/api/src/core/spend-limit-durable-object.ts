@@ -166,6 +166,8 @@ type LeaseRow = {
 
 const ZERO: Usage = { requests: 0, cost: 0 };
 const MAX_SEEN_IDS = 50_000;
+/** Loads per seed when held entries keep going stale while it loads (each retires once). */
+const MAX_SEED_ATTEMPTS = 3;
 
 function nonNegative(value: unknown): number {
 	const parsed = Number(value);
@@ -442,20 +444,23 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 	 * each debit at its own time, so from here the same seed counts their spend instead.
 	 */
 	private retireStaleEntries(now: number): void {
-		const current = windowStarts(now);
 		for (const entry of this.pending.values()) {
-			if (entry.persisted) continue;
-			if (now - entry.recordedAt > SPEND_LEASE.pendingTtlMs) {
-				this.pending.delete(entry.billingRequestId);
-				continue;
-			}
-			if (!entry.stepped) continue;
-			const opened = windowStarts(entry.at);
-			if (opened.daily !== current.daily || opened.weekly !== current.weekly || opened.monthly !== current.monthly) {
-				this.pending.delete(entry.billingRequestId);
-				this.markSeen(entry.billingRequestId);
-			}
+			const stale = this.staleness(entry, now);
+			if (!stale) continue;
+			this.pending.delete(entry.billingRequestId);
+			if (stale === "period_ended") this.markSeen(entry.billingRequestId);
 		}
+	}
+
+	private staleness(entry: Pending, now: number): "expired" | "period_ended" | null {
+		if (entry.persisted) return null;
+		if (now - entry.recordedAt > SPEND_LEASE.pendingTtlMs) return "expired";
+		if (!entry.stepped) return null;
+		const opened = windowStarts(entry.at);
+		const current = windowStarts(now);
+		return opened.daily !== current.daily || opened.weekly !== current.weekly || opened.monthly !== current.monthly
+			? "period_ended"
+			: null;
 	}
 
 	/** Reads seed data. Overridden in tests. */
@@ -526,43 +531,54 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 		const activeSince = Date.now() - SPEND_LEASE.keyIdleMs;
 		for (const [keyId, key] of this.keys) if (key.lastUsedAt < activeSince && keyId !== extraKeyId) this.keys.delete(keyId);
 		const keyIds = [...new Set([...this.keys.keys(), ...(extraKeyId ? [extraKeyId] : [])])];
-		// Exclude recorded spend whose row may not be visible yet; it is counted from memory.
-		// Spend already confirmed persisted is not excluded: the seed counts it, so it is dropped.
-		this.retireStaleEntries(Date.now());
-		const unpersisted = [...this.pending.values()].filter((entry) => !entry.persisted)
-			.sort((left, right) => right.recordedAt - left.recordedAt);
-		// Contract with gateway_spend_limit_seed: it skips gateway_requests rows whose request_id is
-		// listed and gateway_request_charges rows whose request_id (the billing id) is listed; that
-		// spend is counted from memory instead. A stepped entry needs both ids, so the cap counts ids.
-		// Entries past it (newest first; the oldest are most likely persisted already) are dropped,
-		// and the seed counts their rows instead.
-		const exclude: string[] = [];
-		const excludedIds = new Set<string>();
-		let dropped = 0;
-		for (const entry of unpersisted) {
-			const ids = (entry.stepped ? [entry.requestId, entry.billingRequestId] : [entry.requestId]).filter((id) => !excludedIds.has(id));
-			if (exclude.length + ids.length > SPEND_LEASE.maxExcludedRequestIds) {
-				this.pending.delete(entry.billingRequestId);
-				dropped += 1;
-				continue;
-			}
-			for (const id of ids) {
-				excludedIds.add(id);
-				exclude.push(id);
-			}
-		}
-		if (dropped) console.warn("spend_limit_exclusion_overflow", { workspaceId, dropped });
-		const persistedBefore = [...this.pending.values()].filter((entry) => entry.persisted);
 		const chunks: string[][] = [];
 		for (let index = 0; index < Math.max(1, keyIds.length); index += SPEND_LEASE.maxKeysPerSeed) {
 			chunks.push(keyIds.slice(index, index + SPEND_LEASE.maxKeysPerSeed));
 		}
-		for (const chunk of chunks) {
-			const seed = await this.loadSeed(workspaceId, chunk, exclude);
-			this.applySeed(seed, chunk, persistedBefore);
+		for (let attempt = 1; ; attempt += 1) {
+			// Exclude recorded spend whose row may not be visible yet; it is counted from memory.
+			// Spend already confirmed persisted is not excluded: the seed counts it, so it is dropped.
+			this.retireStaleEntries(Date.now());
+			const excluded = this.excludeFromSeed(workspaceId);
+			const exclude = excluded.flatMap((entry) => entry.ids);
+			const persistedBefore = [...this.pending.values()].filter((entry) => entry.persisted);
+			const seeds: SpendLimitSeed[] = [];
+			for (const chunk of chunks) seeds.push(await this.loadSeed(workspaceId, chunk, exclude));
+			// An entry this seed excluded that expired or reached a period end while it loaded would be
+			// counted by neither the seed nor memory once retired. It stays held until a seed that does
+			// not exclude it is published: load again now, or keep it for the next seed to retire.
+			const now = Date.now();
+			if (attempt < MAX_SEED_ATTEMPTS && excluded.some(({ entry }) => this.staleness(entry, now))) continue;
+			chunks.forEach((chunk, index) => this.applySeed(seeds[index], chunk, persistedBefore));
+			return;
 		}
-		// Entries that passed the TTL while the seed loaded: dropped now; the next seed counts them.
-		this.retireStaleEntries(Date.now());
+	}
+
+	/**
+	 * Contract with gateway_spend_limit_seed: it skips gateway_requests rows whose request_id is
+	 * listed and gateway_request_charges rows whose request_id (the billing id) is listed; that
+	 * spend is counted from memory instead. A stepped entry needs both ids, so the cap counts ids.
+	 * Entries past it (newest first; the oldest are most likely persisted already) are dropped, and
+	 * the seed counts their rows instead.
+	 */
+	private excludeFromSeed(workspaceId: string): Array<{ entry: Pending; ids: string[] }> {
+		const unpersisted = [...this.pending.values()].filter((entry) => !entry.persisted)
+			.sort((left, right) => right.recordedAt - left.recordedAt);
+		const excluded: Array<{ entry: Pending; ids: string[] }> = [];
+		const excludedIds = new Set<string>();
+		let dropped = 0;
+		for (const entry of unpersisted) {
+			const ids = (entry.stepped ? [entry.requestId, entry.billingRequestId] : [entry.requestId]).filter((id) => !excludedIds.has(id));
+			if (excludedIds.size + ids.length > SPEND_LEASE.maxExcludedRequestIds) {
+				this.pending.delete(entry.billingRequestId);
+				dropped += 1;
+				continue;
+			}
+			for (const id of ids) excludedIds.add(id);
+			excluded.push({ entry, ids });
+		}
+		if (dropped) console.warn("spend_limit_exclusion_overflow", { workspaceId, dropped });
+		return excluded;
 	}
 
 	private applySeed(seed: SpendLimitSeed, chunk: string[], persistedBefore: Pending[]): void {

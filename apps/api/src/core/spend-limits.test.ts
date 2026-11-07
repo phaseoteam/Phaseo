@@ -118,8 +118,9 @@ class FakeDatabase {
 		});
 		const budgets = this.budgets.map((budget) => {
 			const start = budget.interval === "lifetime" ? null : windows[budget.interval];
-			const completed = this.rows.filter((row) => row.success && row.createdAt <= now && (start === null || row.createdAt >= start))
-				.reduce((sum, row) => sum + row.cost, 0);
+			// Like the key buckets, less the spend the coordinator still counts from memory.
+			const completed = this.rows.filter((row) => row.success && row.createdAt <= now && (start === null || row.createdAt >= start) &&
+				!exclude.includes(row.requestId)).reduce((sum, row) => sum + row.cost, 0) + this.chargeCost(null, start, exclude).cost;
 			const end = budget.interval === "daily" ? start! + DAY : budget.interval === "weekly" ? start! + 7 * DAY : null;
 			return {
 				id: budget.id, interval: budget.interval, limit_nanos: budget.limit, usage_nanos: completed + (budget.holds ?? 0),
@@ -416,6 +417,75 @@ describe("spend-limit coordinator", () => {
 			// Later records for the retired entry are ignored; the database counts them.
 			expect(await coordinator.record(WORKSPACE, { ...entry("b-roll"), costNanos: 200, revision: 3 })).toMatchObject({ duplicates: 1 });
 			expect(await buckets()).toEqual(expected);
+		});
+
+		describe("an entry that goes stale while a seed is loading", () => {
+			// The seed starts while the entry is held (so it excludes the entry's charge row) and is
+			// still loading when the entry passes midnight or its pending TTL.
+			// The seed helper moves the clock a minute on: the entry opens at 23:58:00 and 12:01:00.
+			const scenarios = [
+				{
+					// A checkpoint after midnight debits $50 more while the seed is still loading.
+					label: "a stepped entry held past midnight", laterTotal: 150,
+					start: "2026-10-09T23:57:00Z", seedAt: "2026-10-09T23:59:01Z", loadedAt: "2026-10-10T00:01:00Z",
+					expected: { daily: 50, weekly: 150, monthly: 150 }, lifetime: 150,
+				},
+				{
+					label: "a stepped entry past its pending TTL", laterTotal: null,
+					start: "2026-10-09T12:00:00Z", seedAt: "2026-10-09T12:14:30Z", loadedAt: "2026-10-09T12:16:30Z",
+					expected: { daily: 100, weekly: 100, monthly: 100 }, lifetime: 100,
+				},
+			];
+			const stalledSeed = async (scenario: (typeof scenarios)[number]) => {
+				vi.setSystemTime(new Date(scenario.start));
+				await reseed();
+				await checkpoint("b-stall", 100, 1);
+				// A background reseed starts with the entry held, then stalls in Postgres.
+				let unstall!: () => void;
+				database.stall = new Promise((resolve) => { unstall = resolve; });
+				vi.setSystemTime(new Date(scenario.seedAt));
+				const calls = database.calls.length;
+				void probe();
+				await flush();
+				vi.setSystemTime(new Date(scenario.loadedAt));
+				if (scenario.laterTotal !== null) await checkpoint("b-stall", scenario.laterTotal, 2);
+				database.stall = null;
+				unstall();
+				await flush();
+				expect(database.calls[calls]?.exclude.sort()).toEqual(["b-stall", "req-b-stall"]);
+			};
+
+			it.each(scenarios)("keeps the spend of $label", async (scenario) => {
+				database.keys.set(KEY, { workspaceId: WORKSPACE, daily: [100, 1_000_000], weekly: [0, 1_000_000], monthly: [0, 1_000_000] });
+				await stalledSeed(scenario);
+				expect(await buckets()).toEqual(scenario.expected);
+			});
+
+			it.each(scenarios)("keeps the lifetime budget spend of $label", async (scenario) => {
+				// Reached exactly at the request's total, so the coordinator reports the usage it counts.
+				database.budgets.push({ id: "lifetime", interval: "lifetime", limit: scenario.lifetime });
+				await stalledSeed(scenario);
+				const result = await coordinator.acquire(WORKSPACE, KEY, { requests: 1, units: 0 }, { requests: 1, units: 0 }, [], "lifetime-probe");
+				expect("denial" in result ? result.denial?.gate : null).toMatchObject({
+					reason: "workspace_lifetime_cost_budget_reached", currentValue: scenario.lifetime,
+				});
+			});
+		});
+
+		it("ends at the money moved when a refund commits after the audit read back the old total", async () => {
+			await checkpoint("b-late", 500, 1);
+			// The final refund to 300 fails as far as the gateway can tell; the read-back still sees 500,
+			// so the failure audit settles the entry at max(500 confirmed, 300 expected).
+			await coordinator.record(WORKSPACE, { ...entry("b-late"), costNanos: 500, final: true });
+			expect(await daily()).toBe(500);
+			// The refund commits afterwards, and the pending row lands with its frozen 500.
+			debit("b-late", 300);
+			database.rows.push({ requestId: "req-b-late", keyId: KEY, success: false, cost: 500, createdAt: Date.now() });
+			await reseed();
+			await reseed();
+			// The seed counts a pending request by its money movements, not by the row's cost.
+			expect(database.calls.at(-1)?.exclude).toEqual([]);
+			expect(await daily()).toBe(300);
 		});
 
 		it("ignores a first checkpoint that arrives after the request's final", async () => {
