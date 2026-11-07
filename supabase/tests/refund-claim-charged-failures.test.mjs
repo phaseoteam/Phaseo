@@ -109,7 +109,7 @@ try {
   await db.query('insert into public.wallets (workspace_id) values ($1)', [ws]);
   await db.exec(previous.sql);
   // The request row's charge key and audit details (production has them), the expected cost of a
-  // pending reconciliation (added by #3547's 20261106234000 migration), and the stepped charge columns.
+  // pending reconciliation (added by #3547), and the stepped charge columns.
   await db.exec(`alter table public.gateway_requests add column billing_request_id text, add column request_id text,
     add column detail_metadata jsonb, add column expected_cost_nanos bigint;`);
   await db.exec(chargeColumns.sql);
