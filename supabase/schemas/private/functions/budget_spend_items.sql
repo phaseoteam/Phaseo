@@ -89,6 +89,11 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
           and debit.source_ref_id = split_part(request.request_id, ':', 2)
           and debit.workspace_id = request.workspace_id
           and debit.ref_type = 'async_job_charge')))
+    -- A debited video's audit row (its debit counts, at its time).
+    and not (request.endpoint = 'video.generation' and exists (
+        select 1 from public.credit_ledger debit
+        where debit.ref_type = 'async_job_charge'
+          and debit.ref_id = request.workspace_id::text || ':video_hold:' || request.request_id))
     -- A settled hold's placeholders (batch_hold_usage:<reservation>:<n>).
     and not (starts_with(request.request_id, 'batch_hold_usage:') and exists (
       select 1 from public.gateway_wallet_reservations hold
@@ -105,6 +110,11 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     and request.cost_nanos > 0
     and request.created_at >= coalesce(p_since, '-infinity'::timestamptz)
     and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
+    -- A debited video's audit row.
+    and not (request.endpoint = 'video.generation' and exists (
+        select 1 from public.credit_ledger debit
+        where debit.ref_type = 'async_job_charge'
+          and debit.ref_id = request.workspace_id::text || ':video_hold:' || request.request_id))
     -- Charged in steps, or pending reconciliation with an applied charge.
     and not (request.billing_request_id is not null and (
       exists (
@@ -152,7 +162,12 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     and (reservation.status in ('held', 'reserved')
       or (reservation.status = 'captured'
         and (reservation.reservation_id like 'video_hold:%' or reservation.reservation_id like 'free_model_hold:%')
-        and reservation.created_at >= coalesce(p_since, '-infinity'::timestamptz)))
+        and reservation.created_at >= coalesce(p_since, '-infinity'::timestamptz)
+        -- A video hold whose debit is recorded counts through the debit (private.unbilled_spend).
+        and not exists (
+          select 1 from public.credit_ledger debit
+          where debit.ref_type = 'async_job_charge'
+            and debit.ref_id = reservation.workspace_id::text || ':' || reservation.reservation_id)))
   union all
   select unbilled.key_id, unbilled.at, false, unbilled.nanos
   from private.unbilled_spend(p_workspace_id, p_since, p_key_ids, p_exclude_request_ids, p_exclude_charge_ids) unbilled;

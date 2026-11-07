@@ -55,6 +55,10 @@ CREATE OR REPLACE FUNCTION private.key_spend_items (
             and debit.source_ref_id = split_part(served.request_id, ':', 2)
             and debit.workspace_id = served.workspace_id
             and debit.ref_type = 'async_job_charge')))
+      or (served.endpoint = 'video.generation' and exists (
+        select 1 from public.credit_ledger debit
+        where debit.ref_type = 'async_job_charge'
+          and debit.ref_id = served.workspace_id::text || ':video_hold:' || served.request_id))
       or (starts_with(served.request_id, 'batch_hold_usage:') and exists (
         select 1 from public.gateway_wallet_reservations hold
         where hold.workspace_id = served.workspace_id
@@ -76,6 +80,10 @@ CREATE OR REPLACE FUNCTION private.key_spend_items (
     and charged.cost_nanos > 0
     and charged.created_at >= coalesce(p_since, '-infinity'::timestamptz)
     and not (charged.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
+    and not (charged.endpoint = 'video.generation' and exists (
+        select 1 from public.credit_ledger debit
+        where debit.ref_type = 'async_job_charge'
+          and debit.ref_id = charged.workspace_id::text || ':video_hold:' || charged.request_id))
     and not (charged.billing_request_id is not null and (
       exists (
         select 1 from public.credit_ledger movement

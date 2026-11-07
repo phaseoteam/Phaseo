@@ -46,6 +46,7 @@ const WS_STEP = id('1', 11); // a stepped request across period rollover
 const WS_PEND = id('1', 12); // requests pending reconciliation
 const WS_LEGACY = id('1', 13); // pending by billing_status only, either side of the cutoff
 const WS_OLD = id('1', 14); // charges written by the previous gateway, without a key
+const WS_VIDEO = id('1', 15); // reserved videos settled after midnight
 const ENG = id('4', 1);
 const ROLL = id('4', 2);
 const CAP = id('4', 3);
@@ -53,8 +54,9 @@ const RECON = id('4', 4);
 const STEP = id('4', 5);
 const PEND = id('4', 6);
 const OLD = id('4', 7);
+const VIDEO = id('4', 8);
 const MEMBER = id('2', 1);
-const KEY = { linked: id('3', 1), member: id('3', 2), outside: id('3', 3), batch: id('3', 4), roll: id('3', 5), cap: id('3', 6), limited: id('3', 7), del: id('3', 8), batches: id('3', 9), recon: id('3', 10), step: id('3', 11), pend: id('3', 12), plan: id('3', 13), legacy: id('3', 14), old: id('3', 15) };
+const KEY = { linked: id('3', 1), member: id('3', 2), outside: id('3', 3), batch: id('3', 4), roll: id('3', 5), cap: id('3', 6), limited: id('3', 7), del: id('3', 8), batches: id('3', 9), recon: id('3', 10), step: id('3', 11), pend: id('3', 12), plan: id('3', 13), legacy: id('3', 14), old: id('3', 15), video: id('3', 16) };
 // Before every current period: the earlier of this week's Monday and the 1st, less a day.
 const BEFORE_PERIODS = `(least(date_trunc('week', now() at time zone 'utc'), date_trunc('month', now() at time zone 'utc')) at time zone 'utc' - interval '1 day')`;
 
@@ -506,6 +508,41 @@ try {
     assert.deepEqual(await surfaces(WS_RECON, KEY.recon), everywhere(158 * DOLLAR));
   });
 
+  await check('a reserved video counts its debit when the money moved, not when it was submitted', async () => {
+    await setUp(WS_VIDEO, KEY.video, VIDEO, ['daily']);
+    // Two videos reserved before midnight and settled today (gateway_wallet_settle_once: the hold is
+    // captured and an async_job_charge debit is written). vid-1's audit row was written at
+    // submission and updated with its $8 cost at completion; vid-2's audit row never landed.
+    await db.exec(`
+      insert into public.gateway_wallet_reservations (reservation_id, workspace_id, amount_nanos, status, hold_ref_id, key_id,
+        captured_nanos, settled_amount_nanos, capture_ref_id, created_at) values
+        ('video_hold:vid-1', '${WS_VIDEO}', ${10 * DOLLAR}, 'captured', 'vid-1', '${KEY.video}', ${8 * DOLLAR}, ${8 * DOLLAR}, 'vid-1', ${DAY_START} - interval '1 hour'),
+        ('video_hold:vid-2', '${WS_VIDEO}', ${5 * DOLLAR}, 'captured', 'vid-2', '${KEY.video}', ${3 * DOLLAR}, ${3 * DOLLAR}, 'vid-2', ${DAY_START} - interval '1 hour');
+      insert into public.credit_ledger (workspace_id, kind, amount_nanos, ref_type, ref_id, source_ref_type, source_ref_id, status) values
+        ('${WS_VIDEO}', 'charge', ${-8 * DOLLAR}, 'async_job_charge', '${WS_VIDEO}:video_hold:vid-1', 'async_job', 'vid-1', 'captured'),
+        ('${WS_VIDEO}', 'charge', ${-3 * DOLLAR}, 'async_job_charge', '${WS_VIDEO}:video_hold:vid-2', 'async_job', 'vid-2', 'captured');
+      insert into public.gateway_requests (workspace_id, request_id, key_id, endpoint, success, cost_nanos, created_at) values
+        ('${WS_VIDEO}', 'vid-1', '${KEY.video}', 'video.generation', true, ${8 * DOLLAR}, ${DAY_START} - interval '1 hour');`);
+    // $8 + $3 today on every surface: not on the submission day, not twice.
+    assert.deepEqual(await surfaces(WS_VIDEO, KEY.video), everywhere(11 * DOLLAR));
+    const sinceYesterday = Number((await one(`select sum(nanos) as n from private.budget_spend_items($1, ${DAY_START} - interval '1 day')`, [WS_VIDEO])).n);
+    assert.equal(sinceYesterday, 11 * DOLLAR);
+    // Hold admission's key cap counts it once too: $2 more does not fit under $12 a day.
+    await db.query(`update public.keys set daily_limit_cost_nanos = $2 where id = $1`, [KEY.video, 12 * DOLLAR]);
+    assert.equal((await reserve(WS_VIDEO, 'video_hold:vid-3', 2 * DOLLAR, KEY.video, 1)).reason, 'daily_cost_limit_reached');
+    assert.equal((await reserve(WS_VIDEO, 'video_hold:vid-4', 0.5 * DOLLAR, KEY.video, 1)).ok, true);
+    await db.query(`update public.keys set daily_limit_cost_nanos = $2 where id = $1`, [KEY.video, 10000 * DOLLAR]);
+    await db.query(`delete from public.gateway_wallet_reservations where workspace_id = $1 and reservation_id = 'video_hold:vid-4'`, [WS_VIDEO]);
+    // A batch captured on 2 November (before the charge-row cut-off) counts its capture once: its
+    // per-row usage is replaced by the capture whatever the date.
+    await db.exec(`
+      insert into public.gateway_request_charges (workspace_id, request_id, cost_nanos, status, is_final, key_id, created_at) values
+        ('${WS_VIDEO}', 'batch_capture:b-early', ${4 * DOLLAR}, 'applied', true, '${KEY.video}', '2026-11-02T12:00:00Z');
+      insert into public.gateway_requests (workspace_id, request_id, key_id, endpoint, success, cost_nanos, created_at) values
+        ('${WS_VIDEO}', 'batch_usage:b-early:1', '${KEY.video}', 'batch', true, ${4 * DOLLAR}, '2026-11-02T12:05:00Z');`);
+    const allTime = Number((await one(`select sum(nanos) as n from private.budget_spend_items($1, null)`, [WS_VIDEO])).n);
+    assert.equal(allTime, 15 * DOLLAR);
+  });
   await check('a stepped request counts its movements in their periods after its audit row lands (daily, weekly, monthly, lifetime)', async () => {
     await setUp(WS_STEP, KEY.step, STEP, ['daily', 'weekly', 'monthly', 'lifetime']);
     // $100 debited at a checkpoint before midnight, $50 at the final settlement today.
