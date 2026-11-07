@@ -11,13 +11,18 @@ CREATE OR REPLACE FUNCTION public.workspace_department_budget_status (
 -- Each department budget in the workspace with its spend so far in the current UTC period, as
 -- a JSON array ordered by department and period. A department's spend is the cost of the API
 -- keys private.department_budget_key_departments gives it: keys linked to it, plus, for keys not
--- linked to any department, the keys its members created and their OAuth requests. Spend comes from v2_private_usage_15m, which is rebuilt hourly and so lags, plus
--- async jobs (video, batch, music) from gateway_requests, which the rollup leaves out; realtime sessions are in the rollup.
+-- linked to any department, the keys its members created and their OAuth requests. Spend is
+-- private.budget_spend_items, the calculation department admission enforces (money movements,
+-- uncollected amounts and active holds included), up to p_now; active holds count in every
+-- period. sweep_department_budget_alerts reads this for the 80% and 100% alerts.
 declare
   v_result jsonb;
 begin
   if p_workspace_id is null or p_now is null then
     raise exception 'invalid_department_budget_status_arguments';
+  end if;
+  if not exists (select 1 from public.workspace_department_budgets b where b.workspace_id = p_workspace_id) then
+    return '[]'::jsonb;
   end if;
 
   with budgets as (
@@ -30,40 +35,22 @@ begin
     select kd.key_id, kd.department_id
     from private.department_budget_key_departments(p_workspace_id) kd
   ),
-  spend as (
-    select u.key_id, u.bucket_start as at, u.cost_nanos
-    from public.v2_private_usage_15m u
-    where u.workspace_id = p_workspace_id
-      and u.bucket_start >= (select min(b.period_start) from budgets b)
-      and u.bucket_start <= p_now
-      and u.key_id in (select kd.key_id from key_departments kd)
-    union all
-    select r.key_id, r.created_at, coalesce(r.cost_nanos, 0)
-    from public.gateway_requests r
-    where r.success is true
-      and r.endpoint = any (array['video.generation', 'batch', 'music.generate'])
-      and r.workspace_id = p_workspace_id
-      and r.created_at >= (select min(b.period_start) from budgets b)
-      and r.created_at <= p_now
-      and r.key_id in (select kd.key_id from key_departments kd)
-    union all
-    -- Async requests that did not succeed but were charged.
-    select r.key_id, r.created_at, r.cost_nanos
-    from public.gateway_requests r
-    where r.success is not true
-      and r.cost_nanos > 0
-      and r.endpoint = any (array['video.generation', 'batch', 'music.generate'])
-      and r.workspace_id = p_workspace_id
-      and r.created_at >= (select min(b.period_start) from budgets b)
-      and r.created_at <= p_now
-      and r.key_id in (select kd.key_id from key_departments kd)
+  items as materialized (
+    select item.key_id, item.at, item.active, item.nanos
+    from private.budget_spend_items(
+      p_workspace_id,
+      (select min(b.period_start) from budgets b),
+      array(select distinct kd.key_id from key_departments kd where kd.department_id in (select b.department_id from budgets b))
+    ) item
+    where item.active or item.at <= p_now
   ),
   usage as (
-    select b.id, coalesce(sum(s.cost_nanos), 0)::numeric as used_nanos
+    select b.id, coalesce((
+      select sum(i.nanos) from items i
+      where i.key_id in (select kd.key_id from key_departments kd where kd.department_id = b.department_id)
+        and (i.active or i.at >= b.period_start)
+    ), 0)::numeric as used_nanos
     from budgets b
-    left join key_departments kd on kd.department_id = b.department_id
-    left join spend s on s.key_id = kd.key_id and s.at >= b.period_start
-    group by b.id
   )
   select coalesce(jsonb_agg(jsonb_build_object(
     'id', b.id,

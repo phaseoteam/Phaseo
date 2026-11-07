@@ -40,8 +40,14 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
   -- from 2026-11-03 14:43 UTC, so an older charge's request row cannot be matched and already
   -- counts.
   --
+  -- A charge is attributed to gateway_request_charges.key_id, or, when that is NULL (charges written
+  -- before the column, and by older gateway code during a deploy, which does not pass p_key_id), to
+  -- the key on its request row (by billing request id) or, for a batch capture, to the batch job's
+  -- meta.apiKeyId (gateway_async_operations). A charge with no key anywhere counts toward the
+  -- workspace only. The lookups run only for a charge without a key.
+  --
   -- * 'stepped': every adjustment ledger row of a request charged in steps (rule a), debits and
-  --   refunds, at its time, attributed to the key on the charge row.
+  --   refunds, at its time.
   -- * 'charge': a one-off charge (no adjustment rows) at its time, while its request row has not
   --   landed or one is pending reconciliation (rule b), each found per charge with LIMIT 1 on
   --   #3534's (workspace_id, billing_request_id) index.
@@ -50,20 +56,29 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
   -- * 'unpaid': what a request pending reconciliation with an applied charge (stepped or one-off)
   --   has not collected, greatest(max(expected_cost_nanos) - charge.cost_nanos, 0) per billing
   --   request id, at the time of the row with the largest expected amount.
-  select 'stepped'::text, charge.request_id, charge.key_id, movement.created_at, -movement.amount_nanos
+  select 'stepped'::text, charge.request_id, coalesce(charge.key_id, audited.key_id), movement.created_at, -movement.amount_nanos
   from public.credit_ledger movement
   join public.gateway_request_charges charge
     on charge.workspace_id = movement.workspace_id
     and charge.request_id = movement.source_ref_id
+  left join lateral (
+    select request.key_id
+    from public.gateway_requests request
+    where charge.key_id is null
+      and request.workspace_id = charge.workspace_id
+      and request.billing_request_id = charge.request_id
+      and request.key_id is not null
+    limit 1
+  ) audited on true
   where movement.workspace_id = p_workspace_id
     and movement.ref_type = 'gateway_request_charge'
     and movement.source_ref_type = 'gateway_request'
     and movement.status = 'applied'
     and movement.created_at >= greatest(coalesce(p_since, '-infinity'::timestamptz), '2026-11-04 00:00:00+00'::timestamptz)
-    and (p_key_ids is null or charge.key_id = any (p_key_ids))
+    and (p_key_ids is null or coalesce(charge.key_id, audited.key_id) = any (p_key_ids))
     and not (charge.request_id = any (coalesce(p_exclude_charge_ids, '{}'::text[])))
   union all
-  select 'charge'::text, charge.request_id, charge.key_id, charge.created_at, charge.cost_nanos
+  select 'charge'::text, charge.request_id, coalesce(charge.key_id, pending.key_id), charge.created_at, charge.cost_nanos
   from public.gateway_request_charges charge
   left join lateral (
     select 1 as found
@@ -73,7 +88,7 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
     limit 1
   ) audit on true
   left join lateral (
-    select 1 as found
+    select 1 as found, request.key_id
     from public.gateway_requests request
     where request.workspace_id = charge.workspace_id
       and request.billing_request_id = charge.request_id
@@ -98,17 +113,27 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
     and not starts_with(charge.request_id, 'batch_capture:')
     and (audit.found is null or pending.found is not null)
     and stepped.found is null
-    and (p_key_ids is null or charge.key_id = any (p_key_ids))
+    and (p_key_ids is null or coalesce(charge.key_id, pending.key_id) = any (p_key_ids))
     and not (charge.request_id = any (coalesce(p_exclude_charge_ids, '{}'::text[])))
   union all
-  select 'batch'::text, charge.request_id, charge.key_id, charge.created_at, charge.cost_nanos
+  select 'batch'::text, charge.request_id, coalesce(charge.key_id, job.key_id), charge.created_at, charge.cost_nanos
   from public.gateway_request_charges charge
+  left join lateral (
+    select case when job.meta ->> 'apiKeyId' ~ '^[0-9a-fA-F]{8}-([0-9a-fA-F]{4}-){3}[0-9a-fA-F]{12}$'
+      then (job.meta ->> 'apiKeyId')::uuid end as key_id
+    from public.gateway_async_operations job
+    where charge.key_id is null
+      and job.workspace_id = charge.workspace_id
+      and job.kind = 'batch'
+      and job.internal_id = substr(charge.request_id, 15)
+    limit 1
+  ) job on true
   where charge.workspace_id = p_workspace_id
     and starts_with(charge.request_id, 'batch_capture:')
     and charge.status = 'applied'
     and charge.cost_nanos > 0
     and charge.created_at >= greatest(coalesce(p_since, '-infinity'::timestamptz), '2026-11-04 00:00:00+00'::timestamptz)
-    and (p_key_ids is null or charge.key_id = any (p_key_ids))
+    and (p_key_ids is null or coalesce(charge.key_id, job.key_id) = any (p_key_ids))
     and not (charge.request_id = any (coalesce(p_exclude_charge_ids, '{}'::text[])))
   union all
   select 'batch'::text, debit.ref_id, hold.key_id, debit.created_at, -debit.amount_nanos

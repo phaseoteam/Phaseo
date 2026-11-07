@@ -163,6 +163,8 @@ try {
         primary key (workspace_id, reservation_id));
       create table public.gateway_realtime_sessions (workspace_id uuid not null, session_id text not null, key_id uuid,
         primary key (workspace_id, session_id));
+      create table public.gateway_async_operations (workspace_id uuid not null, kind text not null, internal_id text not null,
+        meta jsonb not null default '{}', unique (workspace_id, kind, internal_id));
       create table public.workspace_budgets (
         id uuid primary key default gen_random_uuid(), workspace_id uuid not null references public.workspaces(id) on delete cascade,
         interval text not null check (interval in ('daily', 'weekly', 'monthly', 'lifetime')), limit_nanos bigint not null check (limit_nanos > 0),

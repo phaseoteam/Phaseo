@@ -8,11 +8,11 @@ CREATE OR REPLACE FUNCTION public.sweep_department_budget_alerts (
   AS $function$
 -- Sends a money push to owners and admins once per department budget, period and limit value
 -- when the department reaches about 80% of the budget (department_budget_warning), and again
--- when it reaches 100% (department_budget_reached). The gateway refuses the department's API-key
--- requests at 100% (batch, realtime and OAuth requests excepted) without sending a push, so the
--- 100% alert comes from this sweep and says those requests are refused until the budget resets.
--- Spend is workspace_department_budget_status's, which lags by up to an hour, so the pushes say
--- "about" and can arrive after blocking has started. No warning is sent once the budget is
+-- when it reaches 100% (department_budget_reached). The gateway refuses the department's requests,
+-- holds and realtime sessions at 100% without sending a push, so the 100% alert comes from this
+-- sweep and says those requests are refused until the budget resets. Spend is
+-- workspace_department_budget_status's, the same calculation admission enforces; the sweep runs
+-- every 15 minutes, so a push can arrive after blocking has started. No warning is sent once the budget is
 -- reached. A limit changed mid-period can alert again. Only workspaces with a department budget
 -- are read.
 declare

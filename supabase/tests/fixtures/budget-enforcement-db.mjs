@@ -107,7 +107,7 @@ const STUBS = `
     key_version integer, always_use boolean, enabled boolean);
   create table public.gateway_realtime_sessions (workspace_id uuid not null, session_id text not null, key_id uuid,
     reserved_nanos bigint not null default 0, primary key (workspace_id, session_id));
-  create table public.gateway_async_operations (workspace_id uuid not null, kind text not null, status text,
+  create table public.gateway_async_operations (workspace_id uuid not null, kind text not null, internal_id text, status text,
     request_id text, meta jsonb not null default '{}'::jsonb, billed_at timestamptz);
   create table public.gateway_request_charges (workspace_id uuid not null, request_id text not null, cost_nanos bigint,
     status text, deducted_status text, error_message text, auto_top_up_required boolean, overdraft_nanos bigint,
