@@ -10920,13 +10920,41 @@ public sealed class WorkspaceMember
 
 }
 
+public sealed class WorkspaceMemberAddFailure
+{
+	[JsonPropertyName("code")]
+	public string Code { get; set; }
+
+	[JsonPropertyName("message")]
+	public string Message { get; set; }
+
+	[JsonPropertyName("user_id")]
+	public string UserId { get; set; }
+
+}
+
 public sealed class WorkspaceMemberAddResponse
 {
 	[JsonPropertyName("added_count")]
 	public long AddedCount { get; set; }
 
+	[JsonPropertyName("approved")]
+	public List<string> Approved { get; set; }
+
 	[JsonPropertyName("data")]
-	public List<Dictionary<string, object>> Data { get; set; }
+	public List<Dictionary<string, object>>? Data { get; set; }
+
+	[JsonPropertyName("error")]
+	public string? Error { get; set; }
+
+	[JsonPropertyName("failed")]
+	public List<Dictionary<string, object>> Failed { get; set; }
+
+	[JsonPropertyName("message")]
+	public string? Message { get; set; }
+
+	[JsonPropertyName("not_attempted")]
+	public List<string> NotAttempted { get; set; }
 
 }
 

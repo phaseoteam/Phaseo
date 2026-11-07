@@ -111,6 +111,9 @@ CREATE INDEX workspace_settings_data_contribution_actor_idx ON public.workspace_
 CREATE INDEX workspace_settings_low_balance_email_idx ON public.workspace_settings USING btree (workspace_id)
   WHERE low_balance_email_enabled;
 
+CREATE UNIQUE INDEX workspace_settings_sso_provider_identifier_key ON public.workspace_settings USING btree (sso_provider_identifier)
+  WHERE (sso_enabled AND (sso_provider_identifier IS NOT NULL));
+
 CREATE TRIGGER gateway_workspace_publication
   AFTER INSERT OR DELETE OR UPDATE ON public.workspace_settings
   FOR EACH ROW

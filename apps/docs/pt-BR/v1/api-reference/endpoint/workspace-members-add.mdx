@@ -7,4 +7,8 @@ description: "Adiciona usuários existentes a um espaço de trabalho."
 ---
 <Note>Este endpoint requer uma chave de API de gerenciamento com `workspaces:write` e uma função de proprietário ou administrador.</Note>
 
-A função pode ser `admin` ou `member`. Não é possível atribuir a propriedade do espaço de trabalho por este endpoint.
+As pessoas entram em um espaço de trabalho por meio de um convite: elas o aceitam, o que cria uma solicitação de entrada, e este endpoint a aprova. Cada usuário em `user_ids` precisa ter uma solicitação de entrada pendente no espaço de trabalho. Outros usuários são recusados; envie um convite a eles primeiro. Quem já é membro mantém a própria função.
+
+A função pode ser `admin` ou `member`. Sem função, cada pessoa recebe a função com que o convite foi criado. Só o proprietário do espaço de trabalho pode adicionar administradores, e a propriedade do espaço de trabalho não pode ser atribuída por este endpoint.
+
+Cada pessoa é aprovada separadamente. Se uma aprovação falhar, as pessoas aprovadas antes continuam no espaço de trabalho e as restantes não são tentadas. A resposta é então um `409` cujas listas `approved`, `failed` e `not_attempted` mostram onde parou, para que você corrija o problema e envie de novo os usuários restantes.

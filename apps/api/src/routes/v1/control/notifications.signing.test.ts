@@ -34,7 +34,13 @@ function table() {
 	return query;
 }
 
-vi.mock("@/runtime/env", () => ({ getBindings: () => state.bindings, getSupabaseAdmin: () => ({ from: () => table() }) }));
+// The management key acts as its creator, an admin of the workspace.
+function membership() {
+	const query: any = { select: () => query, eq: () => query, maybeSingle: async () => ({ data: { role: "admin" }, error: null }) };
+	return query;
+}
+
+vi.mock("@/runtime/env", () => ({ getBindings: () => state.bindings, getSupabaseAdmin: () => ({ from: (name: string) => (name === "workspace_members" ? membership() : table()) }) }));
 vi.mock("@/pipeline/before/guards", () => ({ guardManagementAuth: vi.fn(async () => state.auth) }));
 vi.mock("@/lib/audit/workspaceAudit", () => ({ recordWorkspaceAuditEvent: state.audit }));
 vi.mock("@/pipeline/notifications/notification-delivery", () => ({ deliverNotificationTest: vi.fn() }));

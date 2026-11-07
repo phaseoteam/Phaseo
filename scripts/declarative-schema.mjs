@@ -6,6 +6,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { prepareReplayMigration } from "./declarative-replay-history.mjs";
 import { runRollupLockSmoke } from "./rollup-lock-smoke.mjs";
+import { runWorkspaceDirectoryLockSmoke } from "./workspace-directory-lock-smoke.mjs";
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const source = join(root, "supabase");
@@ -67,6 +68,7 @@ if (mode === "smoke") {
 			query(readFileSync(join(source, "tests", file), "utf8"));
 		}
 		await runRollupLockSmoke(`supabase_db_${projectId}`);
+		await runWorkspaceDirectoryLockSmoke((database) => ({ command: "docker", args: ["exec", "-i", `supabase_db_${projectId}`, "psql", "-U", "postgres", "-d", database] }));
 		query(readFileSync(join(source, "tests", "artificial_analysis_publication.sql"), "utf8"));
 		writeFileSync(join(temporary, "schemas", "public", "tables", "phaseo_declarative_smoke.sql"),
 			"CREATE TABLE public.phaseo_declarative_smoke (id bigint PRIMARY KEY);\nALTER TABLE public.phaseo_declarative_smoke ENABLE ROW LEVEL SECURITY;\n");

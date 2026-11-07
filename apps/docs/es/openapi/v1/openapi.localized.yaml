@@ -3846,7 +3846,7 @@ paths:
         - Gateway
       operationId: updateWorkspaceNotificationSettings
       summary: Actualizar la configuración de notificaciones del espacio de trabajo
-      description: Actualiza una o más secciones persistentes de la política de notificaciones. Habilitar la recarga automática requiere un identificador existente de método de pago guardado y autenticación de dos factores verificada. Una configuración existente de recarga automática puede actualizarse sin repetir la aceptación MFA. Para habilitar la recarga automática sin MFA, los clientes deben establecer explícitamente `mfa_bypass_acknowledged` en true y proporcionar el valor exacto `I ACCEPT THE RISK` en `mfa_bypass_phrase`; la recopilación del pago sigue siendo un proceso interactivo de la cuenta.
+      description: Actualiza una o más secciones persistentes de la política de notificaciones. Activar la recarga automática, o cambiar su importe, umbral o método de pago, requiere `billing:write`, el identificador de un método de pago guardado y la autenticación en dos pasos verificada, y las aplicaciones que usan Iniciar sesión con Phaseo no pueden hacerlo. Desactivarla solo requiere `settings:write`. Una configuración de recarga automática existente puede actualizarse sin repetir la confirmación de MFA. La omisión de la autenticación en dos pasos (`mfa_bypass_acknowledged` y `mfa_bypass_phrase`) solo puede aceptarse en Configuración; la API la rechaza. El cobro sigue siendo un flujo interactivo de la cuenta.
       requestBody:
         required: true
         content:
@@ -7301,7 +7301,7 @@ paths:
         - Gateway
       operationId: deleteWorkspace
       summary: Eliminar un espacio de trabajo
-      description: Elimina un espacio de trabajo por UUID o slug. Se requiere una clave de API de gestión.
+      description: Elimina un espacio de trabajo por su UUID o slug. Solo el propietario del espacio de trabajo puede eliminarlo. Se requiere una clave de API de gestión.
       parameters:
         - name: id
           in: path
@@ -7378,7 +7378,7 @@ paths:
         - Gateway
       operationId: addWorkspaceMembers
       summary: Añadir miembros al espacio de trabajo
-      description: Añade usuarios existentes a un espacio de trabajo con el rol `admin` o `member`. Se requiere una clave de API de gestión.
+      description: 'Añade a las personas que pidieron unirse: cada usuario debe tener una solicitud de acceso pendiente (creada al aceptar una invitación), que esta operación aprueba. Los demás usuarios se rechazan; envíales una invitación. Los miembros existentes conservan su rol. Sin rol, cada persona recibe el rol de su invitación; añadir un administrador requiere al propietario del espacio de trabajo. Se requiere una clave de API de gestión. Cada persona se aprueba por separado. Si una falla, las aprobadas antes siguen añadidas, las demás no se intentan y la respuesta es un 409 que enumera los usuarios en approved, failed y not_attempted.'
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -7412,6 +7412,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: No se pudo añadir a todos los usuarios. El cuerpo indica quién se añadió, quién falló y a quién no se intentó añadir.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceMemberAddResponse'
   /workspaces/{id}/members/remove:
     post:
       x-beta: true
@@ -7419,7 +7425,7 @@ paths:
         - Gateway
       operationId: removeWorkspaceMembers
       summary: Eliminar miembros del espacio de trabajo
-      description: Elimina del espacio de trabajo a los miembros que no sean propietarios. Se requiere una clave de API de gestión.
+      description: Quita del espacio de trabajo a los miembros que no sean propietarios. Solo el propietario del espacio de trabajo puede quitar a otros miembros; cualquiera puede quitarse a sí mismo. Se requiere una clave de API de gestión.
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -19019,15 +19025,55 @@ components:
       type: object
       required:
         - added_count
-        - data
+        - approved
+        - failed
+        - not_attempted
       properties:
+        error:
+          type: string
+        message:
+          type: string
         added_count:
           type: integer
           minimum: 0
         data:
           type: array
+          description: Los datos de los miembros añadidos. Se omiten si no se pudieron leer después de las aprobaciones; approved sigue indicando quién se añadió.
           items:
             $ref: '#/components/schemas/WorkspaceMember'
+        approved:
+          type: array
+          description: Usuarios añadidos por esta solicitud, en el orden en que se aprobaron.
+          items:
+            type: string
+        failed:
+          type: array
+          description: El usuario cuya aprobación falló, con el motivo. Los usuarios posteriores no se intentan.
+          items:
+            $ref: '#/components/schemas/WorkspaceMemberAddFailure'
+        not_attempted:
+          type: array
+          description: Usuarios que no se intentaron porque falló una aprobación anterior. Sus solicitudes de acceso siguen pendientes.
+          items:
+            type: string
+      additionalProperties: false
+    WorkspaceMemberAddFailure:
+      type: object
+      required:
+        - user_id
+        - code
+        - message
+      properties:
+        user_id:
+          type: string
+        code:
+          type: string
+          enum:
+            - forbidden
+            - conflict
+            - internal_error
+        message:
+          type: string
       additionalProperties: false
     WorkspaceMemberRemoveResponse:
       type: object

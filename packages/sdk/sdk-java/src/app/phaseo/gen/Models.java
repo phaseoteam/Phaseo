@@ -4604,9 +4604,20 @@ public final class Models {
 		public String workspace_id;
 	}
 
+	public static class WorkspaceMemberAddFailure {
+		public Object code;
+		public String message;
+		public String user_id;
+	}
+
 	public static class WorkspaceMemberAddResponse {
 		public Integer added_count;
+		public java.util.List<String> approved;
 		public java.util.List<Object> data;
+		public String error;
+		public java.util.List<Object> failed;
+		public String message;
+		public java.util.List<String> not_attempted;
 	}
 
 	public static class WorkspaceMemberBulkRequest {

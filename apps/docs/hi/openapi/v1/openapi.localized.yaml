@@ -3846,7 +3846,7 @@ paths:
         - Gateway
       operationId: updateWorkspaceNotificationSettings
       summary: वर्कस्पेस की सूचना सेटिंग अपडेट करें
-      description: टिकाऊ अधिसूचना नीति के एक या अधिक खंड अपडेट करता है। ऑटो टॉप-अप सक्षम करने के लिए मौजूदा सहेजी गई भुगतान विधि का पहचानकर्ता और सत्यापित दो-कारक प्रमाणीकरण आवश्यक है। मौजूदा कॉन्फ़िगरेशन MFA स्वीकृति दोहराए बिना अपडेट हो सकती है। MFA के बिना सक्षम करने के लिए क्लाइंट को स्पष्ट रूप से `mfa_bypass_acknowledged` को true करना और `mfa_bypass_phrase` में सटीक मान `I ACCEPT THE RISK` देना होगा; भुगतान जानकारी संग्रह खाते का इंटरैक्टिव प्रवाह बना रहता है।
+      description: सूचना नीति के एक या अधिक स्थायी अनुभागों को अपडेट करता है। ऑटो टॉप-अप चालू करने, या उसकी राशि, सीमा या भुगतान विधि बदलने के लिए `billing:write`, सहेजी गई भुगतान विधि का पहचानकर्ता और सत्यापित दो-चरणीय प्रमाणीकरण आवश्यक है, और Phaseo से साइन इन करने वाले ऐप यह नहीं कर सकते। इसे बंद करने के लिए केवल `settings:write` चाहिए। मौजूदा ऑटो टॉप-अप कॉन्फ़िगरेशन को MFA पुष्टि दोहराए बिना अपडेट किया जा सकता है। दो-चरणीय प्रमाणीकरण की छूट (`mfa_bypass_acknowledged` और `mfa_bypass_phrase`) केवल सेटिंग्स में स्वीकार की जा सकती है; API इसे अस्वीकार करता है। भुगतान लेना एक इंटरैक्टिव खाता प्रक्रिया बना रहता है।
       requestBody:
         required: true
         content:
@@ -7301,7 +7301,7 @@ paths:
         - Gateway
       operationId: deleteWorkspace
       summary: वर्कस्पेस हटाएँ
-      description: UUID या slug से वर्कस्पेस हटाता है। प्रबंधन API कुंजी आवश्यक है।
+      description: UUID या slug से वर्कस्पेस हटाता है। केवल वर्कस्पेस का मालिक उसे हटा सकता है। प्रबंधन API कुंजी आवश्यक है।
       parameters:
         - name: id
           in: path
@@ -7378,7 +7378,7 @@ paths:
         - Gateway
       operationId: addWorkspaceMembers
       summary: वर्कस्पेस में सदस्य जोड़ें
-      description: मौजूदा उपयोगकर्ताओं को `admin` या `member` भूमिका के साथ वर्कस्पेस में जोड़ता है। प्रबंधन API कुंजी आवश्यक है।
+      description: 'जुड़ने का अनुरोध करने वाले लोगों को जोड़ता है: हर उपयोगकर्ता का एक लंबित जुड़ने का अनुरोध होना चाहिए (जो आमंत्रण स्वीकार करने पर बनता है), जिसे यह स्वीकृत करता है। दूसरे उपयोगकर्ता अस्वीकार किए जाते हैं; उन्हें आमंत्रण भेजें। मौजूदा सदस्यों की भूमिका नहीं बदलती। भूमिका न देने पर हर व्यक्ति को उसके आमंत्रण की भूमिका मिलती है; एडमिन जोड़ने के लिए वर्कस्पेस का मालिक आवश्यक है। प्रबंधन API कुंजी आवश्यक है। हर व्यक्ति को अलग से स्वीकृत किया जाता है। अगर किसी एक की स्वीकृति विफल होती है, तो उससे पहले स्वीकृत लोग जुड़े रहते हैं, बाकी लोगों के लिए प्रयास नहीं किया जाता, और प्रतिक्रिया 409 होती है जिसमें approved, failed और not_attempted उपयोगकर्ता सूचीबद्ध होते हैं।'
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -7412,6 +7412,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: सभी उपयोगकर्ताओं को नहीं जोड़ा जा सका। बॉडी में बताया जाता है कि किसे जोड़ा गया, किसकी स्वीकृति विफल हुई और किसके लिए प्रयास नहीं किया गया।
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceMemberAddResponse'
   /workspaces/{id}/members/remove:
     post:
       x-beta: true
@@ -7419,7 +7425,7 @@ paths:
         - Gateway
       operationId: removeWorkspaceMembers
       summary: वर्कस्पेस से सदस्य हटाएँ
-      description: वर्कस्पेस से गैर-स्वामी सदस्यों को हटाता है। प्रबंधन API कुंजी आवश्यक है।
+      description: वर्कस्पेस से उन सदस्यों को हटाता है जो मालिक नहीं हैं। केवल वर्कस्पेस का मालिक दूसरे सदस्यों को हटा सकता है; कोई भी व्यक्ति ख़ुद को हटा सकता है। प्रबंधन API कुंजी आवश्यक है।
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -19019,15 +19025,55 @@ components:
       type: object
       required:
         - added_count
-        - data
+        - approved
+        - failed
+        - not_attempted
       properties:
+        error:
+          type: string
+        message:
+          type: string
         added_count:
           type: integer
           minimum: 0
         data:
           type: array
+          description: जोड़े गए सदस्यों का विवरण। स्वीकृतियों के बाद इन्हें पढ़ा न जा सके तो यह छोड़ दिया जाता है; approved में फिर भी बताया जाता है कि किसे जोड़ा गया।
           items:
             $ref: '#/components/schemas/WorkspaceMember'
+        approved:
+          type: array
+          description: इस अनुरोध से जोड़े गए उपयोगकर्ता, उसी क्रम में जिसमें उन्हें स्वीकृत किया गया।
+          items:
+            type: string
+        failed:
+          type: array
+          description: वह उपयोगकर्ता जिसकी स्वीकृति विफल हुई, कारण सहित। उसके बाद के उपयोगकर्ताओं के लिए प्रयास नहीं किया जाता।
+          items:
+            $ref: '#/components/schemas/WorkspaceMemberAddFailure'
+        not_attempted:
+          type: array
+          description: वे उपयोगकर्ता जिनके लिए प्रयास नहीं किया गया क्योंकि पहले की स्वीकृति विफल हुई। उनके जुड़ने के अनुरोध अभी भी लंबित हैं।
+          items:
+            type: string
+      additionalProperties: false
+    WorkspaceMemberAddFailure:
+      type: object
+      required:
+        - user_id
+        - code
+        - message
+      properties:
+        user_id:
+          type: string
+        code:
+          type: string
+          enum:
+            - forbidden
+            - conflict
+            - internal_error
+        message:
+          type: string
       additionalProperties: false
     WorkspaceMemberRemoveResponse:
       type: object

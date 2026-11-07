@@ -4557,9 +4557,20 @@ pub struct WorkspaceMember {
 	pub workspace_id: String,
 }
 
+pub struct WorkspaceMemberAddFailure {
+	pub code: String,
+	pub message: String,
+	pub user_id: String,
+}
+
 pub struct WorkspaceMemberAddResponse {
 	pub added_count: i64,
-	pub data: Vec<HashMap<String, String>>,
+	pub approved: Vec<String>,
+	pub data: Option<Vec<HashMap<String, String>>>,
+	pub error: Option<String>,
+	pub failed: Vec<HashMap<String, String>>,
+	pub message: Option<String>,
+	pub not_attempted: Vec<String>,
 }
 
 pub struct WorkspaceMemberBulkRequest {

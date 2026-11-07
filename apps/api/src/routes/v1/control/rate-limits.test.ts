@@ -13,7 +13,8 @@ const ACCESS = "00000000-0000-4000-8000-00000000000b";
 const ALL_SCOPES = ["rate_limits:read", "rate_limits:write", "rate_limits:delete"];
 
 const state = vi.hoisted(() => ({
-	auth: { ok: true, value: { workspaceId: "00000000-0000-4000-8000-000000000001", authMethod: "api_key", scopes: [] as string[] } } as any,
+	// The management key acts as its creator, an admin of the workspace.
+	auth: { ok: true, value: { workspaceId: "00000000-0000-4000-8000-000000000001", authMethod: "api_key", userId: "admin-user", scopes: [] as string[] } } as any,
 	tables: {} as Record<string, any[]>,
 	audit: vi.fn(),
 	publish: vi.fn(async (_workspaceId: string) => true),
@@ -268,7 +269,8 @@ describe("rate limit policy management", () => {
 			expect((await call("/assignments", "POST", { policy_id: STANDARD, target_type: "key", target_id: KEY })).status).toBe(409);
 			expect((await call("/assignments", "POST", { policy_id: SECOND, target_type: "key", target_id: KEY })).status).toBe(409);
 		} finally {
-			delete state.auth.value.userId;
+			// Keys always act as their creator, an admin here.
+			state.auth.value.userId = "admin-user";
 		}
 	});
 
@@ -446,7 +448,7 @@ describe("rate limit policy management", () => {
 			expect(state.actor).toHaveBeenCalledWith(SESSION);
 			expect(guardManagementAuth).toHaveBeenCalledTimes(1);
 		} finally {
-			state.auth = { ok: true, value: { workspaceId: WORKSPACE, authMethod: "api_key", scopes: [...ALL_SCOPES] } };
+			state.auth = { ok: true, value: { workspaceId: WORKSPACE, authMethod: "api_key", userId: "admin-user", scopes: [...ALL_SCOPES] } };
 		}
 	});
 });

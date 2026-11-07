@@ -8,6 +8,11 @@ const state = vi.hoisted(() => ({
 }));
 
 function query(table: string) {
+	// The management key acts as its creator, an admin of the workspace.
+	if (table === "workspace_members") {
+		const membership: any = { select: () => membership, eq: () => membership, maybeSingle: async () => ({ data: { role: "admin" }, error: null }) };
+		return membership;
+	}
 	let mutation: "insert" | "update" | "delete" | null = null;
 	const q: any = {
 		select: (_columns?: string, options?: { count?: string; head?: boolean }) => {

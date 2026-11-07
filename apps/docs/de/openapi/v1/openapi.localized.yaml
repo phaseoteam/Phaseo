@@ -3846,7 +3846,7 @@ paths:
         - Gateway
       operationId: updateWorkspaceNotificationSettings
       summary: Benachrichtigungseinstellungen des Arbeitsbereichs aktualisieren
-      description: Aktualisiert einen oder mehrere dauerhafte Abschnitte der Benachrichtigungsrichtlinie. Die automatische Aufladung erfordert eine vorhandene Kennung einer gespeicherten Zahlungsmethode und bestätigte Zwei-Faktor-Authentifizierung. Eine bestehende Konfiguration kann ohne erneute MFA-Bestätigung aktualisiert werden. Zur Aktivierung ohne MFA müssen Clients `mfa_bypass_acknowledged` ausdrücklich auf true setzen und den exakten Wert `I ACCEPT THE RISK` für `mfa_bypass_phrase` angeben; die Zahlungserfassung bleibt ein interaktiver Kontovorgang.
+      description: Aktualisiert einen oder mehrere dauerhafte Abschnitte der Benachrichtigungsrichtlinie. Die automatische Aufladung einzuschalten oder ihren Betrag, Schwellenwert oder ihre Zahlungsmethode zu ändern, erfordert `billing:write`, die Kennung einer gespeicherten Zahlungsmethode und bestätigte Zwei-Faktor-Authentifizierung; Apps, die Mit Phaseo anmelden verwenden, können das nicht. Zum Ausschalten genügt `settings:write`. Eine bestehende Konfiguration kann ohne erneute MFA-Bestätigung aktualisiert werden. Die Umgehung der Zwei-Faktor-Authentifizierung (`mfa_bypass_acknowledged` und `mfa_bypass_phrase`) kann nur in den Einstellungen akzeptiert werden; die API lehnt sie ab. Die Zahlungserfassung bleibt ein interaktiver Kontovorgang.
       requestBody:
         required: true
         content:
@@ -7301,7 +7301,7 @@ paths:
         - Gateway
       operationId: deleteWorkspace
       summary: Arbeitsbereich löschen
-      description: Löscht einen Arbeitsbereich anhand von UUID oder Slug. Ein Management-API-Schlüssel ist erforderlich.
+      description: Löscht einen Workspace anhand von UUID oder Slug. Nur der Workspace-Inhaber kann ihn löschen. Management-API-Schlüssel erforderlich.
       parameters:
         - name: id
           in: path
@@ -7378,7 +7378,7 @@ paths:
         - Gateway
       operationId: addWorkspaceMembers
       summary: Mitglieder zum Arbeitsbereich hinzufügen
-      description: Fügt vorhandene Benutzer mit der Rolle `admin` oder `member` zu einem Arbeitsbereich hinzu. Ein Management-API-Schlüssel ist erforderlich.
+      description: 'Fügt Personen hinzu, die den Beitritt angefragt haben: Jeder Benutzer braucht eine ausstehende Beitrittsanfrage (die beim Annehmen einer Einladung entsteht), die hiermit genehmigt wird. Andere Benutzer werden abgelehnt; sende ihnen stattdessen eine Einladung. Bestehende Mitglieder behalten ihre Rolle. Ohne Rolle erhält jede Person die Rolle ihrer Einladung; einen Admin hinzuzufügen erfordert den Workspace-Inhaber. Management-API-Schlüssel erforderlich. Jede Person wird einzeln genehmigt. Schlägt eine fehl, bleiben die zuvor genehmigten hinzugefügt, die übrigen werden nicht versucht, und die Antwort ist ein 409, das die Benutzer in approved, failed und not_attempted auflistet.'
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -7412,6 +7412,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Nicht alle Benutzer konnten hinzugefügt werden. Der Body listet, wer hinzugefügt wurde, wer fehlgeschlagen ist und wer nicht versucht wurde.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceMemberAddResponse'
   /workspaces/{id}/members/remove:
     post:
       x-beta: true
@@ -7419,7 +7425,7 @@ paths:
         - Gateway
       operationId: removeWorkspaceMembers
       summary: Mitglieder aus dem Arbeitsbereich entfernen
-      description: Entfernt Mitglieder, die nicht Inhaber sind, aus einem Arbeitsbereich. Ein Management-API-Schlüssel ist erforderlich.
+      description: Entfernt Mitglieder, die nicht Inhaber sind, aus einem Workspace. Nur der Workspace-Inhaber kann andere Mitglieder entfernen; jede Person kann sich selbst entfernen. Management-API-Schlüssel erforderlich.
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -19019,15 +19025,55 @@ components:
       type: object
       required:
         - added_count
-        - data
+        - approved
+        - failed
+        - not_attempted
       properties:
+        error:
+          type: string
+        message:
+          type: string
         added_count:
           type: integer
           minimum: 0
         data:
           type: array
+          description: Die Details der hinzugefügten Mitglieder. Fehlen, wenn sie nach den Genehmigungen nicht gelesen werden konnten; approved listet trotzdem, wer hinzugefügt wurde.
           items:
             $ref: '#/components/schemas/WorkspaceMember'
+        approved:
+          type: array
+          description: Durch diese Anfrage hinzugefügte Benutzer, in der Reihenfolge ihrer Genehmigung.
+          items:
+            type: string
+        failed:
+          type: array
+          description: Der Benutzer, dessen Genehmigung fehlgeschlagen ist, mit dem Grund. Nachfolgende Benutzer werden nicht versucht.
+          items:
+            $ref: '#/components/schemas/WorkspaceMemberAddFailure'
+        not_attempted:
+          type: array
+          description: Benutzer, die nicht versucht wurden, weil eine frühere Genehmigung fehlgeschlagen ist. Ihre Beitrittsanfragen sind weiterhin ausstehend.
+          items:
+            type: string
+      additionalProperties: false
+    WorkspaceMemberAddFailure:
+      type: object
+      required:
+        - user_id
+        - code
+        - message
+      properties:
+        user_id:
+          type: string
+        code:
+          type: string
+          enum:
+            - forbidden
+            - conflict
+            - internal_error
+        message:
+          type: string
       additionalProperties: false
     WorkspaceMemberRemoveResponse:
       type: object

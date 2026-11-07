@@ -9,6 +9,7 @@ export type ManagementRouteAuth = {
 	scopes?: string[];
 	oauthClientId?: string | null;
 	apiKeyRef?: string;
+	internal?: boolean;
 };
 
 /**
@@ -113,15 +114,31 @@ export function requireCapability(
 	return null;
 }
 
+/**
+ * Checks the caller's current role in the workspace. An OAuth caller acts as the signed-in person. A
+ * management key acts as the person who created it, so the key keeps only the power its creator still
+ * has: once the creator is demoted to member (or removed), the key no longer passes owner or admin checks.
+ * A management key with no recorded creator fails closed. Phaseo's internal callers are not limited here.
+ */
 export async function requireOAuthWorkspaceRole(
 	auth: ManagementRouteAuth,
 	workspaceId: string,
 	allowedRoles: string[],
 ): Promise<Response | null> {
-	if (auth.authMethod !== "oauth") return null;
+	const isOAuth = auth.authMethod === "oauth";
+	if (!isOAuth && auth.internal) return null;
 	const userId = auth.userId?.trim();
 	if (!userId) {
-		return json({ error: "forbidden", message: "OAuth user is required" }, 403, { "Cache-Control": "no-store" });
+		return json(
+			{
+				error: "forbidden",
+				message: isOAuth
+					? "OAuth user is required"
+					: "This management key has no creator, so its workspace role can't be checked. Create a new management key.",
+			},
+			403,
+			{ "Cache-Control": "no-store" },
+		);
 	}
 	const { data, error } = await getSupabaseAdmin()
 		.from("workspace_members")
@@ -141,6 +158,32 @@ export async function requireOAuthWorkspaceRole(
 		);
 	}
 	return null;
+}
+
+/**
+ * Owner-only changes, as in Settings: changing roles, making someone an admin, removing other members,
+ * deleting the workspace, and SSO and SCIM trust. The caller is the signed-in person for OAuth and the
+ * key's creator for a management key. Only workspaces.owner_user_id counts: a membership row can still
+ * say "owner" after the workspace changes hands. Pass owner_user_id when the workspace row is already
+ * loaded; otherwise it is looked up.
+ */
+export async function requireWorkspaceOwner(
+	auth: ManagementRouteAuth,
+	workspace: { id: string; owner_user_id?: string | null },
+	message: string,
+): Promise<Response | null> {
+	if (auth.internal && auth.authMethod !== "oauth") return null;
+	const userId = String(auth.userId ?? "").trim();
+	if (userId) {
+		const supabase = getSupabaseAdmin();
+		let ownerUserId = workspace.owner_user_id;
+		if (ownerUserId === undefined) {
+			const { data, error } = await supabase.from("workspaces").select("owner_user_id").eq("id", workspace.id).maybeSingle();
+			ownerUserId = error ? null : ((data as { owner_user_id?: string | null } | null)?.owner_user_id ?? null);
+		}
+		if (ownerUserId && userId === ownerUserId) return null;
+	}
+	return json({ error: "forbidden", message }, 403, { "Cache-Control": "no-store" });
 }
 
 export async function requireJsonBody(req: Request): Promise<Record<string, unknown> | Response> {

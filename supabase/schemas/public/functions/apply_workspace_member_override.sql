@@ -43,11 +43,7 @@ begin
   end if;
 
   perform public.reconcile_scim_entitlements(p_workspace_id);
-	perform set_config('phaseo.entitlement_reconcile','on',true);
-	update public.workspace_members wm set role=o.access_role::public.workspace_role
-	from public.workspace_member_overrides o
-	where wm.workspace_id=p_workspace_id and wm.workspace_id=o.workspace_id and wm.user_id=o.user_id and o.access_role is not null
-	  and lower(wm.role::text) is distinct from o.access_role;
+  perform public.apply_workspace_role_overrides(p_workspace_id);
   perform public.refresh_workspace_effective_entitlements(p_workspace_id,p_actor_user_id,'manual_override');
   select to_jsonb(o) into after_row from public.workspace_member_overrides o where workspace_id=p_workspace_id and user_id=p_user_id;
   insert into public.workspace_directory_audit_events(workspace_id,actor_user_id,action,target_type,target_id,before_state,after_state,request_id)
