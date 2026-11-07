@@ -13,6 +13,7 @@ import type { PriceCard } from "../pricing";
 import { calculatePricing } from "./pricing";
 import { handleFailureAudit, handleSuccessAudit } from "./audit";
 import { keepChargedTotalAsFinal, recordProvisionalStreamCharge, recordUsageAndChargeOnce } from "./charge";
+import { noteIntendedCharge } from "./intended-charge";
 import { estimateDrainProgressUsage } from "./drain-progress";
 import {
     countRequestMediaInputs,
@@ -949,6 +950,7 @@ export async function handleStreamResponse(
 						discountBps: ctx.teamSettings?.dataContributionDiscountBps,
 					}),
 				};
+                noteIntendedCharge(ctx, pricedWithByok.totalNanos);
                 result.bill.cost_cents = pricedWithByok.totalCents;
                 result.bill.currency = pricedWithByok.currency;
                 result.bill.usage = pricedWithByok.pricedUsage;
@@ -1042,6 +1044,7 @@ export async function handleStreamResponse(
 						discountBps: ctx.teamSettings?.dataContributionDiscountBps,
 					}),
 				};
+                noteIntendedCharge(ctx, pricedWithByok.totalNanos);
                 await maybeWriteStickyForUsage(pricedWithByok.pricedUsage);
 				await recordManagedProviderTokensOnce({ ctx, providerId: result.provider, keySource: result.keySource, usage: pricedWithByok.pricedUsage, reservation: result.providerRateLimitReservation });
 				chargeRateLimitPolicyTokens(ctx, pricedWithByok.pricedUsage);
@@ -1117,6 +1120,7 @@ export async function handleStreamResponse(
 					discountBps: ctx.teamSettings?.dataContributionDiscountBps,
 				}),
 			};
+            noteIntendedCharge(ctx, pricedWithByok.totalNanos);
 
             result.bill.cost_cents = pricedWithByok.totalCents;
             result.bill.currency = pricedWithByok.currency;

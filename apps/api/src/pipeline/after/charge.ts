@@ -5,16 +5,13 @@
 import type { PipelineContext } from "../before/types";
 import { keyIdIsOAuthClientId } from "@core/request-key";
 import { recordCheckpointSpend } from "@core/spend-limits";
+import { chargesSkipped, noteIntendedCharge } from "./intended-charge";
 
 const CHARGE_RETRY_DELAYS_MS = [0, 100, 500] as const;
 
 async function waitBeforeRetry(delayMs: number): Promise<void> {
 	if (delayMs <= 0) return;
 	await new Promise<void>((resolve) => setTimeout(resolve, delayMs));
-}
-
-function chargesSkipped(ctx: PipelineContext): boolean {
-	return Boolean(ctx.testingMode && (!ctx.billableInternalTesting || ctx.internalPricingAvailable !== true));
 }
 
 type ChargeCall =
@@ -195,6 +192,7 @@ export async function recordUsageAndChargeOnce(args: {
 	if (inSteps ? !Number.isFinite(costNanos) || costNanos < 0 : !Number.isFinite(costNanos) || costNanos <= 0) return;
 	// Kept for the finalization error audit if this settlement cannot be recorded.
 	if (inSteps) meta.__steppedFinalTotalNanos = Math.round(costNanos);
+	noteIntendedCharge(ctx, costNanos);
 
 	const lastError = await chargeWithRetries(ctx, inSteps
 		? { kind: "total", totalNanos: Math.round(costNanos), final: true }

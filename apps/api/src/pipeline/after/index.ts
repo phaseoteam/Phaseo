@@ -17,6 +17,7 @@ import { handleSuccessAudit, handleFailureAudit } from "./audit";
 import { makeHeaders, createResponse } from "./http";
 import { withServedModel } from "./served-model";
 import { recordUsageAndChargeOnce } from "./charge";
+import { noteIntendedCharge } from "./intended-charge";
 import { keepStreamServerToolMeters, mergeBillAndPayloadUsage, shapeUsageForClient } from "../usage";
 import { logDebugEvent, previewValue } from "../debug";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
@@ -558,6 +559,7 @@ async function handleNonStreamResponse(
     const pricedUsageFinalRaw = pricedWithByok.pricedUsage;
     const totalCentsFinal = pricedWithByok.totalCents;
     const totalNanosFinal = pricedWithByok.totalNanos;
+    noteIntendedCharge(ctx, totalNanosFinal);
     const currencyFinal = pricedWithByok.currency;
     if (ctx.meta?.debug?.enabled) {
         console.log("[gateway][pricing] non-stream priced usage", {
