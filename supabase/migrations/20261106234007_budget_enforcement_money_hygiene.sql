@@ -1,4 +1,7 @@
--- phaseo:allow-destructive-migration reason: TRUNCATE appears only in a REVOKE that removes it from anon and authenticated on gateway_wallet_reservations; no table or row is removed.
+SET LOCAL lock_timeout = '10s';
+
+-- Functions only: no table is locked here. The table changes that go with them are in the
+-- migrations that follow, one table each (20261106234008 to 20261106234012).
 --
 -- Budget enforcement and money hygiene:
 -- 1. Money movements win: a request's spend is its money movements, each at its own time, and its
@@ -22,11 +25,8 @@
 --    advisory lock (lock_workspace_budget_change takes them in the other order).
 -- 4. deduct_and_check_top_up raises wallet_not_found instead of returning it, so the charge is not
 --    recorded as applied.
--- 5. Drops public.wallet_apply_delta (no callers) and the credit_ledger INSERT policy for
---    authenticated, and revokes client writes on gateway_wallet_reservations and anon DELETE on wallets.
--- 6. I/O log retention is held at 90 days until extended retention is billed: longer settings are
---    set to 90 (with a NOTICE giving the count) before the check is added.
--- 7. The stale-hold reaper also releases video holds whose operation is missing, failed or cancelled,
+-- 5. Drops public.wallet_apply_delta (no callers).
+-- 6. The stale-hold reaper also releases video holds whose operation is missing, failed or cancelled,
 --    or completed and billed, a day after the hold. This migration releases nothing itself.
 
 
@@ -3033,27 +3033,3 @@ GRANT EXECUTE ON FUNCTION "public"."gateway_wallet_release_stale_orphan_batch_re
 REVOKE ALL ON FUNCTION "public"."gateway_wallet_release_stale_orphan_batch_reservations"(integer, integer) FROM PUBLIC, "anon", "authenticated";
 
 DROP FUNCTION IF EXISTS public.wallet_apply_delta(uuid, bigint);
-
-DROP POLICY IF EXISTS "Enable insert for users based on user_id" ON public.credit_ledger;
-
-REVOKE DELETE ON TABLE public.wallets FROM anon;
-
-REVOKE INSERT, UPDATE, DELETE, TRUNCATE ON TABLE public.gateway_wallet_reservations FROM anon, authenticated;
-
-DO $normalize$
-declare
-  v_count integer;
-begin
-  update public.workspace_settings
-  set io_logging_retention_days = 90
-  where io_logging_retention_days is distinct from 90;
-  get diagnostics v_count = row_count;
-  raise notice 'io_logging_retention_days set to 90 on % workspace_settings row(s)', v_count;
-end
-$normalize$;
-
-ALTER TABLE public.workspace_settings
-  DROP CONSTRAINT IF EXISTS workspace_settings_io_logging_retention_days_check,
-  ADD CONSTRAINT workspace_settings_io_logging_retention_days_check CHECK ((io_logging_retention_days = 90));
-
-COMMENT ON TABLE "public"."workspace_department_budgets" IS 'Department spend budgets. A department''s spend is what its linked API keys cost, plus the keys and OAuth requests of its members when the key is not linked to a department. Budgets block the department''s requests, batch and video holds and realtime sessions once its spend reaches 100% (gateway_department_budget_status) and send alerts at about 80% and 100% (sweep_department_budget_alerts).';

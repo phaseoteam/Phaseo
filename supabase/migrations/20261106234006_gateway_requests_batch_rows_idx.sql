@@ -1,3 +1,5 @@
+SET LOCAL lock_timeout = '10s';
+
 -- A batch's per-row request rows (batch_usage:<batch>:<row>, batch_hold_usage:<reservation>:<n>) by
 -- batch identity: budgets reconcile each batch debit against them whenever they were written
 -- (private.unbilled_spend). text_pattern_ops because the database collation is not C, so prefix

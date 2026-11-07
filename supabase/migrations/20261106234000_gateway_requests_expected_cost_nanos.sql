@@ -1,3 +1,5 @@
+SET LOCAL lock_timeout = '10s';
+
 -- The expected cost of a delivered request whose wallet charge did not go through (pending
 -- reconciliation), which budgets count until it is collected; written by the request audit.
 -- Adding a nullable column without a default changes only the catalog; the check is added NOT VALID

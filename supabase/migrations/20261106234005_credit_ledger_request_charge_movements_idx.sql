@@ -1,3 +1,5 @@
+SET LOCAL lock_timeout = '10s';
+
 -- Wallet movements of stepped stream charges (gateway_charge_request_total), by workspace and time:
 -- budgets count those of a charge whose request row has not landed (private.unbilled_spend).
 -- Its own migration, so the SHARE lock it takes on credit_ledger (blocking writes, not reads) lasts
