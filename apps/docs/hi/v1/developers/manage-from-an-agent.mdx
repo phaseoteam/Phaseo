@@ -1,10 +1,10 @@
 ---
 title: "एजेंट से Phaseo प्रबंधित करें"
-description: "Phaseo खाते के हर काम के लिए CLI कमांड, Management API रूट और MCP टूल देखें, ताकि एजेंट को डैशबोर्ड की ज़रूरत न पड़े।"
+description: "Phaseo खाते के हर काम के लिए CLI कमांड, प्रबंधन API रूट और MCP टूल देखें, और जानें कि किन बदलावों के लिए डैशबोर्ड या प्रबंधन कुंजी चाहिए।"
 icon: "bot"
 ---
 
-डैशबोर्ड के बजाय `phaseo` CLI, `/v1` Management API या Phaseo MCP सर्वर से Phaseo खाता चलाएँ। नीचे की तालिकाएँ हर काम के लिए कमांड, रूट और टूल बताती हैं।
+आप Phaseo खाते के रोज़मर्रा के काम `phaseo` CLI, `/v1` प्रबंधन API या Phaseo MCP सर्वर से कर सकते हैं। इस पेज पर हर काम का कमांड, रूट या टूल मिलता है। खर्च, एक्सेस या वर्कस्पेस डेटा कहाँ जाता है, इन पर असर डालने वाले बदलाव डैशबोर्ड में या प्रबंधन कुंजी से किए जाते हैं।
 
 ये चरण अब भी किसी व्यक्ति को ब्राउज़र में करने होते हैं:
 
@@ -19,8 +19,8 @@ icon: "bot"
 <Visibility for="agents">
 Phaseo प्रबंधित करने वाले एजेंट के लिए नियम:
 
-- नीचे की तालिकाओं में दिए किसी काम के लिए उपयोगकर्ता को डैशबोर्ड पर न भेजें। CLI कमांड चलाएँ, रूट कॉल करें, या MCP टूल का उपयोग करें।
-- कभी कोई API कुंजी जनरेट या अनुमानित न करें। `phaseo keys create --name <name> --json` से एक बनाएँ और सीक्रेट को एक बार, सर्वर-साइड, सहेजें।
+- कामों की सूची के किसी काम के लिए उपयोगकर्ता को डैशबोर्ड पर न भेजें। CLI कमांड चलाएँ, रूट कॉल करें या MCP टूल इस्तेमाल करें। “डैशबोर्ड में या प्रबंधन कुंजी से किए जाने वाले बदलाव” में दिए बदलाव के लिए, अगर आपके पास प्रबंधन कुंजी है तो उससे रूट कॉल करें; नहीं तो व्यक्ति से डैशबोर्ड में बदलाव करने को कहें।
+- कभी API कुंजी न बनाएँ और न अनुमान लगाएँ। व्यक्ति से डैशबोर्ड में कुंजी बनाने को कहें, या प्रबंधन कुंजी के साथ `POST /v1/keys` से बनाएँ, और सीक्रेट को एक बार सर्वर पर सहेजें।
 - हर CLI कमांड पर `--json` का उपयोग करें। विनाशकारी कमांड को `--yes` सिर्फ़ तब दें जब उपयोगकर्ता ने ठीक वही बदलाव माँगा हो।
 - सिर्फ़ वही क्रेडिट टॉप-अप शुरू करें जो उपयोगकर्ता ने माँगा हो। चेकआउट लिंक कभी खुद पूरा न करें, और declined, expired या failed पर खत्म हुए टॉप-अप को दोबारा न आज़माएँ।
 </Visibility>
@@ -34,10 +34,9 @@ phaseo login --device-code   # SSH, CI and agent sandboxes: a person enters the 
 phaseo whoami --json
 ```
 
-फिर ऐप्लिकेशन के लिए एक इन्फ़रेंस कुंजी बनाएँ और अगर वर्कस्पेस में क्रेडिट नहीं हैं तो क्रेडिट जोड़ें:
+फिर डैशबोर्ड में, या प्रबंधन कुंजी के साथ `POST /v1/keys` से, ऐप्लिकेशन के लिए इन्फ़रेंस कुंजी बनाएँ, और अगर वर्कस्पेस में क्रेडिट नहीं है तो जोड़ें:
 
 ```bash
-phaseo keys create --name "Production app" --json
 phaseo credits get --json
 phaseo login --scopes billing:write   # opt in once before the first top-up; a person approves the sign-in
 phaseo credits add --amount 20 --json
@@ -66,11 +65,7 @@ phaseo credits add --amount 20 --json
 
 | काम | CLI | API रूट | MCP टूल |
 | --- | --- | --- | --- |
-| API कुंजी बनाना | `phaseo keys create --name <name> --json` | `POST /v1/keys` | `api_key_create` |
-| कुंजियाँ सूचीबद्ध, अपडेट या मिटाना | `phaseo keys list`, `phaseo keys update <id>`, `phaseo keys delete <id>` | `GET /v1/keys`, `PATCH /v1/keys/{id}`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
-| कुंजी रोटेट करना | `phaseo keys rotate <id> --json` | `POST /v1/keys/{id}/rotate` | `api_key_rotate` |
-| कुंजी को IP पतों तक सीमित करना | `phaseo keys update <id> --ip-allowlist <label=address,...>` | `PATCH /v1/keys/{id}` | — |
-| मैनेजमेंट कुंजी बनाना | `phaseo management-keys create --name <name> --template read-only --json` | `POST /v1/management-keys` | — |
+| कुंजियों की सूची देखें, नाम बदलें या हटाएँ | `phaseo keys list`, `phaseo keys update <id> --name <name>`, `phaseo keys delete <id>` | `GET /v1/keys`, `PATCH /v1/keys/{id}`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
 | आपके अधिकृत किए ऐप की समीक्षा करना, उन्हें सीमित या रद्द करना | `phaseo authorized-apps list`, `phaseo authorized-apps update-scopes <id> --scopes <scope,...>`, `phaseo authorized-apps revoke <id> --yes` | `GET /v1/me/authorized-apps`, `PATCH /v1/me/authorized-apps/{id}`, `DELETE /v1/me/authorized-apps/{id}` | — |
 | अपनी प्रोफ़ाइल अपडेट करना | `phaseo profile update` | `PATCH /v1/me/profile` | — |
 
@@ -80,43 +75,21 @@ phaseo credits add --amount 20 --json
 | --- | --- | --- | --- |
 | बैलेंस जाँचना | `phaseo credits get` | `GET /v1/credits` | सिर्फ़-पढ़ने वाले टूल |
 | क्रेडिट जोड़ना (कोई व्यक्ति पुष्टि करता है) | `phaseo login --scopes billing:write`, फिर `phaseo credits add --amount <usd>` | `POST /v1/credits/topups` | — |
-| ऑटो टॉप-अप या कम-बैलेंस ईमेल चालू करना | `phaseo notifications settings update` | `PATCH /v1/notifications/settings` | — |
-| वर्कस्पेस बजट सेट करना | `phaseo budgets create`, `phaseo budgets update <id>` | `POST /v1/budgets`, `PATCH /v1/budgets/{id}` | `budget_create`, `budget_update` |
-| विभाग बजट सेट करना | `phaseo department-budgets create` | `POST /v1/department-budgets` | — |
-| खर्च पर अलर्ट करना या उसे रोकना | `phaseo spend-rules create`, `phaseo spend-blocks lift <id>` | `POST /v1/spend-rules`, `POST /v1/spend-blocks/{id}/lift` | `spend_rule_create`, `spend_rule_update` |
-| रेट लिमिट नीतियाँ | `phaseo rate-limits policies create`, `phaseo rate-limits assignments create` | `POST /v1/rate-limits/policies`, `POST /v1/rate-limits/assignments` | — |
-| वर्कस्पेस का रेट लिमिट टियर जाँचना या बढ़ाना | `phaseo rate-limits tier get`, `phaseo rate-limits tier raise` | `GET /v1/rate-limits/tier`, `POST /v1/rate-limits/tier/raise` | — |
+| वर्कस्पेस का रेट लिमिट टियर देखें | `phaseo rate-limits tier get` | `GET /v1/rate-limits/tier` | — |
 
 ### रूटिंग और प्रदाता
 
 | काम | CLI | API रूट | MCP टूल |
 | --- | --- | --- | --- |
-| रूटिंग मोड, गोपनीयता, ZDR या BYOK फ़ॉलबैक सेट करना | `phaseo settings update` | `PATCH /v1/settings` | `settings_update` |
-| अपनी प्रदाता कुंजियाँ जोड़ना (BYOK) | `phaseo byok create --provider <id> --name <name> --key-stdin` | `POST /v1/byok` | `provider_key_create` |
-| Auto Routing कॉन्फ़िगर करना | `phaseo routing auto update` | `PATCH /v1/routing/auto` | — |
-| डायनैमिक रूट बनाना और डिप्लॉय करना | `phaseo routing dynamic-routes create`, `phaseo routing dynamic-routes deploy <id> <version>` | `POST /v1/routing/dynamic-routes`, `POST /v1/routing/dynamic-routes/{id}/versions/{version}/deploy` | — |
-| रिटायर मॉडलों के विकल्प चुनना | `phaseo routing successors set --model <id> --successor <id>` | `PUT /v1/routing/successor/replacements` | — |
-| निजी मॉडल जोड़ना | `phaseo private-models create --credential-stdin` | `POST /v1/private-models` | — |
-
-### प्रीसेट, गार्डरेल और क्लासिफ़ायर
-
-| काम | CLI | API रूट | MCP टूल |
-| --- | --- | --- | --- |
-| प्रीसेट बनाना या अपडेट करना | `phaseo presets create`, `phaseo presets update <preset>` | `POST /v1/presets`, `PATCH /v1/presets/{id}` | `preset_create`, `preset_update` |
-| प्रीसेट वर्ज़न प्रकाशित करना या लेबल बदलना | `phaseo presets versions create <preset>`, `phaseo presets labels set <preset> <label>` | `POST /v1/presets/{id}/versions`, `PUT /v1/presets/{id}/labels/{label}` | `preset_version_publish` |
-| गार्डरेल बनाना और कुंजियाँ जोड़ना | `phaseo guardrails create`, `phaseo guardrails set-keys <id>` | `POST /v1/guardrails`, `PUT /v1/guardrails/{id}/keys` | `guardrail_create`, `guardrail_keys_set` |
-| अनुरोध क्लासिफ़ायर प्रबंधित करना | `phaseo classifiers create` | `POST /v1/classifiers` | — |
-| किसी सैंपल पर क्लासिफ़ायर टेस्ट करना (`gateway:access` वाला क्रेडेंशियल चाहिए; CLI साइन-इन और मैनेजमेंट कुंजियों को आज `403 gateway_access_required` मिलता है) | `phaseo classifiers test` | `POST /v1/classifiers/test` | — |
+| रूटिंग मोड सेट करें, या प्राइवेसी सख़्त करें (ZDR चालू करें, लॉगिंग या ट्रेनिंग बंद करें) | `phaseo settings update` | `PATCH /v1/settings` | `settings_update` |
+| Auto Routing कॉन्फ़िगर करें, खर्च प्रोफ़ाइल और कीमत सीमाओं को छोड़कर | `phaseo routing auto update` | `PATCH /v1/routing/auto` | — |
 
 ### वर्कस्पेस और पहचान
 
 | काम | CLI | API रूट | MCP टूल |
 | --- | --- | --- | --- |
-| वर्कस्पेस बनाना और सदस्य जोड़ना | `phaseo workspaces create`, `phaseo workspaces add-members <workspace>` | `POST /v1/workspaces`, `POST /v1/workspaces/{id}/members/add` | — |
-| लोगों को आमंत्रित करना | `phaseo workspaces invites create <workspace>` | `POST /v1/workspaces/{id}/invites` | — |
+| वर्कस्पेस बनाएँ | `phaseo workspaces create` | `POST /v1/workspaces` | — |
 | आमंत्रण स्वीकार करना | `phaseo invites accept <code>` | `POST /v1/invites/accept` | — |
-| SSO, SCIM, विभाग और डायरेक्टरी | `phaseo identity sso update`, `phaseo identity scim update`, `phaseo identity departments create`, `phaseo identity directory update <user-id>` | `PUT /v1/identity/sso`, `PUT /v1/identity/scim`, `POST /v1/identity/departments`, `PUT /v1/identity/directory/members/{id}` | — |
-| भरोसेमंद वर्कलोड (OIDC) | `phaseo workload-identity policies create` | `POST /v1/workload-identity/policies` | — |
 | गतिविधि लॉग पढ़ना | `phaseo audit-events list` | `GET /v1/audit-events` | — |
 
 ### उपयोग, लॉग और सूचनाएँ
@@ -125,10 +98,43 @@ phaseo credits add --amount 20 --json
 | --- | --- | --- | --- |
 | अनुरोध लॉग पढ़ना | `phaseo logs list --since 1h` | `GET /v1/logs` | सिर्फ़-पढ़ने वाले टूल |
 | उपयोग को CSV के रूप में निर्यात करना | `phaseo analytics export` | `GET /v1/analytics/export` | — |
-| किसी ऑब्ज़र्वेबिलिटी टूल को ट्रेस भेजना | `phaseo observability destinations create`, `phaseo observability destinations test <id>` | `POST /v1/observability/destinations`, `POST /v1/observability/destinations/{id}/test` | `observability_destination_create` |
-| अलर्ट के लिए ईमेल, Slack या वेबहुक डेस्टिनेशन | `phaseo notifications destinations create`, `phaseo notifications routes set <event-kind> --destination-ids <id>` | `POST /v1/notifications/destinations`, `PUT /v1/notifications/routes/{eventKind}` | — |
-| एसिंक जॉब के लिए वेबहुक | `phaseo webhooks create --url <https-url>` | `POST /v1/webhook-endpoints` | `webhook_create` |
+
+## डैशबोर्ड में या प्रबंधन कुंजी से किए जाने वाले बदलाव
+
+ये बदलाव खर्च, एक्सेस या वर्कस्पेस डेटा कहाँ जाता है, इन पर असर डालते हैं। CLI साइन-इन या MCP कनेक्शन, चाहे उसके स्कोप कुछ भी हों, ये बदलाव नहीं कर सकता: API `403` लौटाता है और डैशबोर्ड या प्रबंधन कुंजी इस्तेमाल करने को कहता है। ये बदलाव Phaseo डैशबोर्ड में करें, या [प्रबंधन कुंजी](./management-api-keys) से रूट कॉल करें।
+
+| काम | API रूट |
+| --- | --- |
+| API कुंजी बनाना | `POST /v1/keys` |
+| किसी कुंजी की सीमाएँ, स्थिति या समाप्ति बदलें | `PATCH /v1/keys/{id}` |
+| कुंजी रोटेट करना | `POST /v1/keys/{id}/rotate` |
+| कुंजी को IP पतों तक सीमित करना | `PATCH /v1/keys/{id}` |
+| मैनेजमेंट कुंजी बनाना | `POST /v1/management-keys` |
+| ऑटो टॉप-अप या कम-बैलेंस ईमेल चालू करना | `PATCH /v1/notifications/settings` |
+| वर्कस्पेस बजट सेट करना | `POST /v1/budgets`, `PATCH /v1/budgets/{id}` |
+| विभाग बजट सेट करना | `POST /v1/department-budgets` |
+| खर्च पर अलर्ट करना या उसे रोकना | `POST /v1/spend-rules`, `POST /v1/spend-blocks/{id}/lift` |
+| रेट लिमिट नीतियाँ | `POST /v1/rate-limits/policies`, `POST /v1/rate-limits/assignments` |
+| वर्कस्पेस का रेट लिमिट टियर बढ़ाएँ | `POST /v1/rate-limits/tier/raise` |
+| प्राइवेसी या ZDR ढीला करें, या प्रोवाइडर प्रतिबंध या BYOK फ़ॉलबैक बदलें | `PATCH /v1/settings` |
+| अपनी प्रदाता कुंजियाँ जोड़ना (BYOK) | `POST /v1/byok` |
+| Auto Routing की खर्च प्रोफ़ाइल या कीमत सीमाएँ सेट करें | `PATCH /v1/routing/auto` |
+| डायनैमिक रूट बनाना और डिप्लॉय करना | `POST /v1/routing/dynamic-routes`, `POST /v1/routing/dynamic-routes/{id}/versions/{version}/deploy` |
+| रिटायर मॉडलों के विकल्प चुनना | `PUT /v1/routing/successor/replacements` |
+| निजी मॉडल जोड़ना | `POST /v1/private-models` |
+| प्रीसेट बनाना या अपडेट करना | `POST /v1/presets`, `PATCH /v1/presets/{id}` |
+| प्रीसेट वर्ज़न प्रकाशित करना या लेबल बदलना | `POST /v1/presets/{id}/versions`, `PUT /v1/presets/{id}/labels/{label}` |
+| गार्डरेल बनाना और कुंजियाँ जोड़ना | `POST /v1/guardrails`, `PUT /v1/guardrails/{id}/keys` |
+| अनुरोध क्लासिफ़ायर प्रबंधित करना | `POST /v1/classifiers` |
+| किसी सैंपल पर क्लासिफ़ायर टेस्ट करना (`gateway:access` वाला क्रेडेंशियल चाहिए; CLI साइन-इन और मैनेजमेंट कुंजियों को आज `403 gateway_access_required` मिलता है) | `POST /v1/classifiers/test` |
+| वर्कस्पेस में सदस्य जोड़ें | `POST /v1/workspaces/{id}/members/add` |
+| लोगों को आमंत्रित करना | `POST /v1/workspaces/{id}/invites` |
+| SSO, SCIM, विभाग और डायरेक्टरी | `PUT /v1/identity/sso`, `PUT /v1/identity/scim`, `POST /v1/identity/departments`, `PUT /v1/identity/directory/members/{id}` |
+| भरोसेमंद वर्कलोड (OIDC) | `POST /v1/workload-identity/policies` |
+| किसी ऑब्ज़र्वेबिलिटी टूल को ट्रेस भेजना | `POST /v1/observability/destinations`, `POST /v1/observability/destinations/{id}/test` |
+| अलर्ट के लिए ईमेल, Slack या वेबहुक डेस्टिनेशन | `POST /v1/notifications/destinations`, `PUT /v1/notifications/routes/{eventKind}` |
+| एसिंक जॉब के लिए वेबहुक | `POST /v1/webhook-endpoints` |
 
 ## 403 ठीक करें
 
-CLI सत्र, मैनेजमेंट कुंजी या MCP कनेक्शन सिर्फ़ वही कर सकता है जिसकी उसके स्कोप और आपकी वर्कस्पेस भूमिका अनुमति देते हैं, और सिर्फ़-मालिक और सिर्फ़-एडमिन बदलावों के लिए फिर भी किसी मालिक या एडमिन की ज़रूरत होती है। अगर कोई कमांड `403` लौटाती है, तो `phaseo whoami --json` से दिए गए स्कोप जाँचें, और कोई स्कोप छूटा हो तो `phaseo login --scopes <scope,...>` से फिर से साइन इन करें। `billing:write` कभी भी डिफ़ॉल्ट रूप से नहीं दिया जाता।
+CLI सत्र, मैनेजमेंट कुंजी या MCP कनेक्शन सिर्फ़ वही कर सकता है जिसकी उसके स्कोप और आपकी वर्कस्पेस भूमिका अनुमति देते हैं, और सिर्फ़-मालिक और सिर्फ़-एडमिन बदलावों के लिए फिर भी किसी मालिक या एडमिन की ज़रूरत होती है। अगर कोई कमांड `403` लौटाती है, तो `phaseo whoami --json` से दिए गए स्कोप जाँचें, और कोई स्कोप छूटा हो तो `phaseo login --scopes <scope,...>` से फिर से साइन इन करें। `billing:write` कभी भी डिफ़ॉल्ट रूप से नहीं दिया जाता। “डैशबोर्ड में या प्रबंधन कुंजी से किए जाने वाले बदलाव” में दिए बदलाव CLI साइन-इन और MCP कनेक्शन के लिए अस्वीकार किए जाते हैं, चाहे उनके स्कोप कुछ भी हों।

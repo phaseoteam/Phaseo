@@ -55,21 +55,19 @@ phaseo whoami
 phaseo whoami --json
 ```
 
-## कुंजियाँ बनाएँ और अपना वर्कस्पेस प्रबंधित करें
+## अपना वर्कस्पेस प्रबंधित करें
 
 ```bash
-phaseo keys create --name "Local CLI Key"
-phaseo keys create --name "Agent Sandbox Key" --json
+phaseo keys list
 phaseo keys current
 
 phaseo workspaces list
 phaseo workspaces members <workspace-id-or-slug>
 
 phaseo guardrails list
-phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true}'
 ```
 
-जब किसी एजेंट या स्क्रिप्ट को नई कुंजी चाहिए, तो `--json` इस्तेमाल करें; कुंजी सिर्फ़ एक बार दिखाई जाती है। CLI डैशबोर्ड के प्रबंधन कार्य कवर करता है, जिनमें बिलिंग, बजट, BYOK, रूटिंग और आइडेंटिटी शामिल हैं। हर कार्य की कमांड के लिए [एजेंट से Phaseo प्रबंधित करें](../../developers/manage-from-an-agent) देखें।
+जब कोई एजेंट या स्क्रिप्ट आउटपुट पढ़े, तो `--json` इस्तेमाल करें। CLI रोज़मर्रा के खाता कामों को कवर करता है; कुंजियों की सीमाएँ, बजट, BYOK, रूटिंग नियम, प्रीसेट और पहचान डैशबोर्ड में या प्रबंधन कुंजी से बदले जाते हैं। CLI कौन-से काम कवर करता है, यह [एजेंट से Phaseo प्रबंधित करें](../../developers/manage-from-an-agent) में देखें।
 
 ## कोडिंग एजेंट जोड़ें
 

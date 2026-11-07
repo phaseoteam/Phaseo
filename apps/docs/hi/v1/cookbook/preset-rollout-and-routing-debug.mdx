@@ -13,10 +13,13 @@ description: "प्रॉम्प्ट और रूटिंग डिफ़
 <Steps>
 <Step title="प्रीसेट बनाएँ">
 
-**सेटिंग्स → प्रीसेट** में, सिस्टम प्रॉम्प्ट, मंज़ूर मॉडल, प्रदाता प्राथमिकताओं, और `temperature` जैसे डिफ़ॉल्ट पैरामीटर के साथ `release-summary` बनाएँ। या CLI से:
+**सेटिंग्स → प्रीसेट** में, सिस्टम प्रॉम्प्ट, मंज़ूर मॉडल, प्रदाता प्राथमिकताओं, और `temperature` जैसे डिफ़ॉल्ट पैरामीटर के साथ `release-summary` बनाएँ। या प्रबंधन कुंजी से:
 
 ```bash
-phaseo presets create --name @release-summary --model anthropic/claude-sonnet-5.5
+curl https://api.phaseo.app/v1/presets \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"@release-summary","config":{"model":"anthropic/claude-sonnet-5.5"}}'
 ```
 
 </Step>

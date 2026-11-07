@@ -75,7 +75,7 @@ curl -s "https://api.phaseo.app/v1/models?format=openai" \
 | ترويسات الجلسة (`x-session-id`) | حقل الجسم `session_id`؛ يتجاهل Phaseo ترويسات الجلسة. |
 | `X-Source` | `HTTP-Referer` أو `X-App-Name`. راجع [إسناد التطبيق](../guides/app-attribution). |
 | تخزين الاستجابات مؤقتًا | لا توجد ذاكرة تخزين مؤقت للاستجابات. |
-| مفاتيح المزوّدين | BYOK (`phaseo byok create` أو `POST /v1/byok`)، أو أرصدة Phaseo. الرجوع إلى الأرصدة هو إعداد مساحة العمل `byok_fallback_enabled`. |
+| مفاتيح المزوّدين | BYOK (**الإعدادات → BYOK** أو `POST /v1/byok`)، أو أرصدة Phaseo. الرجوع إلى الأرصدة هو إعداد مساحة العمل `byok_fallback_enabled`. |
 | سجلات الطلبات | سجلات الطلبات ووجهات المراقبة و`GET /v1/generations?id=<request_id>`. عندما تكون قيمة `replay_supported` هي `true`، أعد تشغيل طلب فاشل من حمولته `replay_request`. |
 
 ## الاختبار والنشر

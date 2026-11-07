@@ -54,12 +54,11 @@ Most integrations start with:
 
 ## Get a key and manage the account
 
-Do not send the user to the dashboard. Use the `phaseo` CLI, the `/v1` Management API or the Phaseo MCP server (`https://mcp.phaseo.app/mcp?access=manage`):
+Use the `phaseo` CLI, the `/v1` Management API or the Phaseo MCP server (`https://mcp.phaseo.app/mcp?access=manage`) for everyday tasks. Creating API keys, and changes to spending, access, presets, routing rules, logging or where workspace data goes, are made in the dashboard or with a management key; a CLI sign-in or MCP connection gets `403`:
 
 ```bash
 npm install -g @phaseo/cli
 phaseo login                          # or --device-code; a person approves the sign-in
-phaseo keys create --name <name> --json
 phaseo login --scopes billing:write   # opt in once before the first top-up
 phaseo credits add --amount 20 --json  # saved card: an owner or admin confirms by email; no card: returns a checkout link
 ```

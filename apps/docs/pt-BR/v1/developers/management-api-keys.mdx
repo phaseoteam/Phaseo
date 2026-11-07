@@ -6,11 +6,7 @@ icon: "key-round"
 
 Crie uma chave de gerenciamento para chamar as APIs de administração do Phaseo a partir dos seus próprios servidores: créditos, atividade, espaços de trabalho, chaves, predefinições, configurações e guardrails. Chaves de gerenciamento não enviam solicitações de inferência.
 
-```bash
-phaseo management-keys create --name <name> --template read-only --json
-```
-
-Ou crie uma no painel em **Configurações → Chaves de gerenciamento**. O segredo é exibido uma única vez, então guarde-o no seu gerenciador de segredos. Envie-o apenas a partir de código do lado do servidor, para a mesma URL base do Gateway (`https://api.phaseo.app/v1`):
+Crie uma no painel em **Configurações → Chaves de gerenciamento**. O segredo é exibido uma única vez, então guarde-o no seu gerenciador de segredos. Envie-o apenas a partir de código do lado do servidor, para a mesma URL base do Gateway (`https://api.phaseo.app/v1`):
 
 ```http
 Authorization: Bearer phaseo_v1_mk_<kid>_<secret>

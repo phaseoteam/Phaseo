@@ -82,6 +82,25 @@ CREATE TRIGGER realtime_billing_review_lifecycle
   FOR EACH ROW
   EXECUTE FUNCTION public.gateway_realtime_review_lifecycle();
 
+CREATE POLICY "gateway_realtime_sessions_no_oauth_client_insert" ON "public"."gateway_realtime_sessions"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "gateway_realtime_sessions_no_oauth_client_update" ON "public"."gateway_realtime_sessions"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "gateway_realtime_sessions_no_oauth_client_delete" ON "public"."gateway_realtime_sessions"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "gateway_realtime_sessions_service_all" ON "public"."gateway_realtime_sessions"
   FOR ALL
   TO "service_role"

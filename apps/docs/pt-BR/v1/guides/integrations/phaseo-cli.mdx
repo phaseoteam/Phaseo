@@ -55,21 +55,19 @@ phaseo whoami
 phaseo whoami --json
 ```
 
-## Crie chaves e gerencie seu espaço de trabalho
+## Gerencie seu espaço de trabalho
 
 ```bash
-phaseo keys create --name "Local CLI Key"
-phaseo keys create --name "Agent Sandbox Key" --json
+phaseo keys list
 phaseo keys current
 
 phaseo workspaces list
 phaseo workspaces members <workspace-id-or-slug>
 
 phaseo guardrails list
-phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true}'
 ```
 
-Use `--json` quando um agente ou script precisar da nova chave; ela só é mostrada uma vez. A CLI cobre as tarefas de gerenciamento do painel, incluindo faturamento, orçamentos, BYOK, roteamento e identidade. Veja [Gerencie o Phaseo a partir de um agente](../../developers/manage-from-an-agent) para o comando de cada tarefa.
+Use `--json` quando um agente ou script ler a saída. A CLI cobre as tarefas do dia a dia da conta; limites de chaves, orçamentos, BYOK, regras de roteamento, predefinições e identidade são alterados no painel ou com uma chave de gerenciamento. Veja [Gerencie o Phaseo a partir de um agente](../../developers/manage-from-an-agent) para saber quais tarefas a CLI cobre.
 
 ## Conecte um agente de programação
 

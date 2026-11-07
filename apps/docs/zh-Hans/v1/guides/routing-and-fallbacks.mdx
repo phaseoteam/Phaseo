@@ -144,7 +144,7 @@ Multipart 端点接受重复的 `models` 字段、`models[]` 字段，或一个 
 
 条件节点有 true 和 false 两个输出；速率和预算节点有未超出和已超出两个输出。百分比拆分按会话或提示词缓存键确定，因此已缓存的对话不会在分支之间移动。
 
-保存会创建一个不可更改的草稿版本。部署会把该版本复制到 Gateway，并清除其密钥的策略缓存；之前的版本仍可用于回滚。提供商健康状况的建议显示在 **Insights** 下。在 CLI 中：`phaseo routing dynamic-routes create`、`set-keys` 和 `deploy`，或使用 `/v1/routing/dynamic-routes` API。
+保存会创建一个不可更改的草稿版本。部署会把该版本复制到 Gateway，并清除其密钥的策略缓存；之前的版本仍可用于回滚。提供商健康状况的建议显示在 **Insights** 下。通过脚本时，请使用管理密钥调用 `/v1/routing/dynamic-routes` API。
 
 在 OpenAI 兼容的文本端点上，自定义元数据放在请求体中：
 
@@ -219,4 +219,4 @@ Multipart 端点接受重复的 `models` 字段、`models[]` 字段，或一个 
 | 提供商规则 | 你的提供商的配额、数据政策、模型访问权限和账户限制仍然适用。 |
 | 存储 | 密钥使用 AES-256-GCM 加密，并绑定到其工作区和提供商。 |
 
-把每个密钥的范围限定在需要它的模型和 API 密钥上。要阻止失败的 BYOK 请求改用 Phaseo 额度重试，请在**控制台 -> 设置 -> BYOK** 中关闭回退，或在 `PATCH /v1/settings` 上设置 `byok_fallback_enabled`（`phaseo settings update --body-json '{"byok_fallback_enabled":false}'`）。使用 `phaseo byok create --provider <id> --name <name> --key-stdin` 添加密钥。
+把每个密钥的范围限定在需要它的模型和 API 密钥上。要阻止失败的 BYOK 请求改用 Phaseo 额度重试，请在**控制台 -> 设置 -> BYOK** 中关闭回退，或在 `PATCH /v1/settings` 上设置 `byok_fallback_enabled`（需使用管理密钥）。在同一位置添加密钥，或使用管理密钥调用 `POST /v1/byok`。

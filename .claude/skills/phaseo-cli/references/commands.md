@@ -11,6 +11,8 @@
 
 Use `--json` for agent workflows. Run `phaseo <group> --help` for the complete installed-version syntax.
 
+A CLI sign-in reads everything below, but the API refuses it (`403`, "make it in the Phaseo dashboard, or call the API with a management key") on changes to spending, access, presets, routing rules, logging and where workspace data goes: creating or rotating keys and changing their limits, budgets, spend rules, rate limits, BYOK, private models, classifiers, guardrails, members and invites, identity, trusted workloads, observability, notification destinations and routes, and webhooks. Renaming and deleting keys still work. See [Manage Phaseo from an agent](https://phaseo.app/docs/v1/developers/manage-from-an-agent) for the split.
+
 ## Authentication
 
 ```bash

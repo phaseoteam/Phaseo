@@ -4,7 +4,7 @@ description: "Utilisez des clés API pour authentifier chaque requête envoyée 
 icon: "key-round"
 ---
 
-Créez une clé avec `phaseo keys create --name <name> --json` dans la [CLI Phaseo](../guides/integrations/phaseo-cli) ou dans le [tableau de bord](https://phaseo.app/settings/keys), stockez-la sur votre serveur et envoyez-la comme jeton Bearer avec chaque requête au Gateway. Les agents doivent utiliser la CLI ; voir [Gérer Phaseo depuis un agent](./manage-from-an-agent).
+Créez une clé dans le [tableau de bord](https://phaseo.app/settings/keys) ou avec `POST /v1/keys` et une clé de gestion, stockez-la sur votre serveur et envoyez-la comme jeton Bearer avec chaque requête au Gateway. Les agents doivent utiliser la CLI ; voir [Gérer Phaseo depuis un agent](./manage-from-an-agent).
 
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>

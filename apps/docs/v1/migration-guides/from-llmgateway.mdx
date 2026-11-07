@@ -76,7 +76,7 @@ curl -s "https://api.phaseo.app/v1/models?format=openai" \
 | Session headers (`x-session-id`) | `session_id` body field; Phaseo ignores session headers. |
 | `X-Source` | `HTTP-Referer` or `X-App-Name`. See [App Attribution](../guides/app-attribution). |
 | Response caching | No response cache. |
-| Provider keys | BYOK (`phaseo byok create` or `POST /v1/byok`), or Phaseo credits. Fallback to credits is the `byok_fallback_enabled` workspace setting. |
+| Provider keys | BYOK (**Settings → BYOK** or `POST /v1/byok`), or Phaseo credits. Fallback to credits is the `byok_fallback_enabled` workspace setting. |
 | Request logs | Request logs, observability destinations, and `GET /v1/generations?id=<request_id>`. When `replay_supported` is `true`, replay a failed request from its `replay_request` payload. |
 
 ## Test and roll out

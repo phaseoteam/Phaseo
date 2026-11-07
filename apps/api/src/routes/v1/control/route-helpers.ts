@@ -24,16 +24,34 @@ export function isThirdPartyOAuthApp(auth: ManagementRouteAuth): boolean {
 }
 
 /**
+ * Whether the caller signed in through Phaseo's CLI or desktop app. Their client IDs are public: anyone can
+ * start a device or loopback sign-in with them, and the token is genuine once the person approves. So such a
+ * token doesn't show that the person is using Phaseo's own app, and it gets no exemption from the refusals
+ * below. Dashboard sessions with no client are the person in Settings.
+ */
+export function isPublicNativeOAuthClient(auth: ManagementRouteAuth): boolean {
+	if (auth.authMethod !== "oauth") return false;
+	const clientId = String(auth.oauthClientId ?? "").trim();
+	return clientId !== "" && isFirstPartyOAuthClient(clientId);
+}
+
+export const PUBLIC_NATIVE_CLIENT_REFUSAL = "This change can't be made with a Phaseo CLI or desktop app sign-in. Make it in the Phaseo dashboard, or call the API with a management key.";
+
+/**
  * An app that signs in with Phaseo may not create, mint, re-enable or change anything that can spend the
  * workspace's money, or change a limit on that spending, whatever scopes and role it holds: API keys,
  * management keys, trusted workloads, members, invites and identity providers, and budgets, guardrails,
  * rate limits and spend rules. Otherwise a credential it made or reshaped would escape the monthly limit
- * the person set on the consent screen. The person makes these changes in Settings. API keys, management
- * keys, dashboard sessions and Phaseo's own apps are unaffected.
+ * the person set on the consent screen. The same goes for changes to where workspace content and events
+ * go. The person makes these changes in Settings.
+ *
+ * A CLI or desktop sign-in is refused too (isPublicNativeOAuthClient), with a message pointing to the
+ * dashboard or a management key. API keys, management keys and dashboard sessions are unaffected.
  */
 export function rejectThirdPartyOAuthSpendingChange(auth: ManagementRouteAuth, message: string): Response | null {
-	if (!isThirdPartyOAuthApp(auth)) return null;
-	return json({ error: "forbidden", message }, 403, { "Cache-Control": "no-store" });
+	if (isThirdPartyOAuthApp(auth)) return json({ error: "forbidden", message }, 403, { "Cache-Control": "no-store" });
+	if (isPublicNativeOAuthClient(auth)) return json({ error: "forbidden", message: PUBLIC_NATIVE_CLIENT_REFUSAL }, 403, { "Cache-Control": "no-store" });
+	return null;
 }
 
 /**

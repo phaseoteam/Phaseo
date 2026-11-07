@@ -929,6 +929,11 @@ accountSettingsRouter.get("/authorized-apps/:authorizationId", async (c) => {
 	return c.json({ authorization: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
+/** A Postgres array literal, so a text[] column can be matched exactly. */
+function textArrayLiteral(values: string[]): string {
+	return `{${values.map((value) => `"${value.replace(/["\\]/g, "\\$&")}"`).join(",")}}`;
+}
+
 accountSettingsRouter.patch("/authorized-apps/:authorizationId/scopes", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
@@ -954,17 +959,25 @@ accountSettingsRouter.patch("/authorized-apps/:authorizationId/scopes", async (c
 		.maybeSingle();
 	if (existing.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if (!existing.data) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
-	const currentScopes = new Set(Array.isArray(existing.data.scopes) ? existing.data.scopes.map(String) : []);
+	const storedScopes: string[] = Array.isArray(existing.data.scopes) ? existing.data.scopes.map(String) : [];
+	const currentScopes = new Set(storedScopes);
 	if (scopes.some((scope) => !currentScopes.has(scope))) {
 		return c.json({ error: "scopes_can_only_be_reduced" }, 400, PRIVATE_NO_STORE_HEADERS);
 	}
+	// Only while the stored scopes are still the ones checked above: otherwise a reduction checked against an
+	// old read could put back a scope that was removed in the meantime.
 	const updated = await client
 		.from("oauth_authorizations")
 		.update({ scopes })
 		.eq("id", existing.data.id)
 		.eq("user_id", user.id)
-		.is("revoked_at", null);
+		.is("revoked_at", null)
+		.eq("scopes", textArrayLiteral(storedScopes))
+		.select("id");
 	if (updated.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	if (!updated.data?.length) {
+		return c.json({ error: "scopes_changed", message: "This app's access changed since it was loaded. Reload and try again." }, 409, PRIVATE_NO_STORE_HEADERS);
+	}
 	return c.json({ success: true, scopes }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 

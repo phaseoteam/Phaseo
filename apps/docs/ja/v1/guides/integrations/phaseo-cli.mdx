@@ -55,21 +55,19 @@ phaseo whoami
 phaseo whoami --json
 ```
 
-## キーを作成してワークスペースを管理する
+## ワークスペースを管理する
 
 ```bash
-phaseo keys create --name "Local CLI Key"
-phaseo keys create --name "Agent Sandbox Key" --json
+phaseo keys list
 phaseo keys current
 
 phaseo workspaces list
 phaseo workspaces members <workspace-id-or-slug>
 
 phaseo guardrails list
-phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true}'
 ```
 
-エージェントやスクリプトが新しいキーを必要とする場合は `--json` を使います。キーは 1 回しか表示されません。CLI は、請求、予算、BYOK、ルーティング、ID など、ダッシュボードの管理作業に対応しています。各作業のコマンドについては、[エージェントから Phaseo を管理する](../../developers/manage-from-an-agent)を参照してください。
+エージェントやスクリプトが出力を読み取る場合は `--json` を使います。CLI は日常的なアカウント作業に対応しています。キーの上限、予算、BYOK、ルーティングルール、プリセット、ID の変更は、ダッシュボードまたは管理キーで行います。CLI が対応する作業は [エージェントから Phaseo を管理する](../../developers/manage-from-an-agent) を参照してください。
 
 ## コーディングエージェントを接続する
 

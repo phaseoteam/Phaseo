@@ -73,7 +73,7 @@ Inventory callbacks, budgets, and retries before removing the proxy: they stop s
 | Team budgets, `metadata.tags` | Department budgets and `X-Phaseo-Metadata` [labels](../guides/request-labels). End-user budgets map only to an end-user rate limit policy; there's no end-user spend cap. |
 | `guardrails` (Presidio, Lakera and similar) | Key guardrails scan requests for prompt injection and PII. Responses aren't scanned. |
 | Callbacks (`success_callback`, Langfuse, Datadog, OpenTelemetry) | [Observability destinations](../guides/integrations/observability) or client-side tracing. Body `metadata` exports as `phaseo.metadata.<key>`. |
-| Provider API keys in config | BYOK (`phaseo byok create --provider <id> --name <name> --key-stdin` or `POST /v1/byok`), or Phaseo credits. Set `byok_fallback_enabled` with `phaseo settings update` to fall back to credits. |
+| Provider API keys in config | BYOK (**Settings → BYOK** or `POST /v1/byok`), or Phaseo credits. Set `byok_fallback_enabled` with **Settings → BYOK** to fall back to credits. |
 
 A proxy sends a whole team's traffic through one key owner, so it shares that user's requests-per-minute allowance, which is 10 for a new workspace. Check [Gateway limits](../api-reference/limits#gateway-limits) and arrange a higher limit before cutover.
 

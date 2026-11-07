@@ -14,10 +14,13 @@ The request shape is production-ready. [Presets](../guides/presets) explains how
 <Steps>
 <Step title="Create the preset">
 
-In **Settings → Presets**, create `release-summary` with a system prompt, the approved models, provider preferences, and default parameters such as `temperature`. Or from the CLI:
+In **Settings → Presets**, create `release-summary` with a system prompt, the approved models, provider preferences, and default parameters such as `temperature`. Or with a management key:
 
 ```bash
-phaseo presets create --name @release-summary --model anthropic/claude-sonnet-5.5
+curl https://api.phaseo.app/v1/presets \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"@release-summary","config":{"model":"anthropic/claude-sonnet-5.5"}}'
 ```
 
 </Step>

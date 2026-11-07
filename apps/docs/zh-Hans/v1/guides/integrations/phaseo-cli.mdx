@@ -55,21 +55,19 @@ phaseo whoami
 phaseo whoami --json
 ```
 
-## 创建密钥并管理工作区
+## 管理工作区
 
 ```bash
-phaseo keys create --name "Local CLI Key"
-phaseo keys create --name "Agent Sandbox Key" --json
+phaseo keys list
 phaseo keys current
 
 phaseo workspaces list
 phaseo workspaces members <workspace-id-or-slug>
 
 phaseo guardrails list
-phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true}'
 ```
 
-当智能体或脚本需要新密钥时，请使用 `--json`；密钥只显示一次。CLI 涵盖控制台中的管理任务，包括账单、预算、BYOK、路由和身份。每项任务对应的命令请参阅[通过智能体管理 Phaseo](../../developers/manage-from-an-agent)。
+当智能体或脚本需要读取输出时，请使用 `--json`。CLI 涵盖日常账户任务；密钥限额、预算、BYOK、路由规则、预设和身份的更改需要在控制台中或使用管理密钥完成。CLI 涵盖哪些任务，请参阅[通过智能体管理 Phaseo](../../developers/manage-from-an-agent)。
 
 ## 连接编程智能体
 

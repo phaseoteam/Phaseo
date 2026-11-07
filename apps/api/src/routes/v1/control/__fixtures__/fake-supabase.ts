@@ -5,6 +5,38 @@
 type Row = Record<string, any>;
 type Filter = (row: Row) => boolean;
 
+/** Parses a Postgres array literal such as {"a","b\\"c"} or {a,b}, as PostgREST does for eq on an array column. */
+function parseArrayLiteral(literal: string): string[] | null {
+	if (!literal.startsWith("{") || !literal.endsWith("}")) return null;
+	const values: string[] = [];
+	let index = 1;
+	while (index < literal.length - 1) {
+		let value = "";
+		if (literal[index] === '"') {
+			index += 1;
+			while (index < literal.length && literal[index] !== '"') {
+				if (literal[index] === "\\") index += 1;
+				value += literal[index];
+				index += 1;
+			}
+			index += 1;
+		} else {
+			while (index < literal.length - 1 && literal[index] !== ",") value += literal[index++];
+		}
+		values.push(value);
+		if (literal[index] === ",") index += 1;
+	}
+	return values;
+}
+
+function equals(stored: unknown, value: unknown): boolean {
+	if (Array.isArray(stored) && typeof value === "string") {
+		const parsed = parseArrayLiteral(value);
+		return parsed !== null && parsed.length === stored.length && parsed.every((item, index) => item === String(stored[index]));
+	}
+	return stored === value;
+}
+
 export type FakeDb = {
 	tables: Record<string, Row[]>;
 	client: { from: (table: string) => any };
@@ -56,7 +88,7 @@ function builder(db: FakeDb, table: string) {
 
 	const query: any = {
 		select: (_columns?: string, options?: { head?: boolean }) => { head = Boolean(options?.head); return query; },
-		eq: (column: string, value: unknown) => { filters.push((row) => row[column] === value); return query; },
+		eq: (column: string, value: unknown) => { filters.push((row) => equals(row[column], value)); return query; },
 		neq: (column: string, value: unknown) => { filters.push((row) => row[column] !== value); return query; },
 		is: (column: string, value: unknown) => { filters.push((row) => (row[column] ?? null) === value); return query; },
 		in: (column: string, values: unknown[]) => { filters.push((row) => values.includes(row[column])); return query; },

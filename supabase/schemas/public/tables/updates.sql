@@ -12,6 +12,25 @@ CREATE TABLE "public"."updates" (
 ALTER TABLE "public"."updates"
   ENABLE ROW LEVEL SECURITY;
 
+CREATE POLICY "updates_no_oauth_client_insert" ON "public"."updates"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "updates_no_oauth_client_update" ON "public"."updates"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "updates_no_oauth_client_delete" ON "public"."updates"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "Enable read access for all users" ON "public"."updates"
   FOR SELECT
   TO PUBLIC

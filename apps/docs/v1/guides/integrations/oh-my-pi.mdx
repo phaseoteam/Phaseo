@@ -27,10 +27,9 @@ The runner creates a dedicated key, writes `models.yml` under a temporary `PI_CO
 
 ## Configure oh-my-pi manually
 
-Create a key, export it in the shell that starts oh-my-pi, and create the config directory:
+Create a key under **Settings → API Keys** in the dashboard, export it in the shell that starts oh-my-pi, and create the config directory:
 
 ```bash
-phaseo keys create --name "oh-my-pi Phaseo key" --json
 export PHASEO_OMP_API_KEY="<your Phaseo API key>"
 mkdir -p ~/.omp/agent
 ```

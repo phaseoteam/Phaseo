@@ -72,7 +72,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | ميزانيات الفرق و`metadata.tags` | ميزانيات الأقسام و[تسميات](../guides/request-labels) `X-Phaseo-Metadata`. تُطابق ميزانيات المستخدم النهائي مع سياسة حد المعدّل للمستخدم النهائي فقط؛ ولا يوجد حد إنفاق للمستخدم النهائي. |
 | `guardrails` (Presidio وLakera وما شابه) | تفحص ضوابط الحماية للمفاتيح الطلبات بحثًا عن حقن المطالبات والمعلومات الشخصية (PII). لا تُفحص الاستجابات. |
 | الاستدعاءات الراجعة (`success_callback` وLangfuse وDatadog وOpenTelemetry) | [وجهات المراقبة](../guides/integrations/observability) أو التتبّع في جهة العميل. تُصدَّر `metadata` في الجسم بوصفها `phaseo.metadata.<key>`. |
-| مفاتيح API للمزوّدين في الإعدادات | BYOK (`phaseo byok create --provider <id> --name <name> --key-stdin` أو `POST /v1/byok`)، أو أرصدة Phaseo. اضبط `byok_fallback_enabled` باستخدام `phaseo settings update` للرجوع إلى الأرصدة. |
+| مفاتيح API للمزوّدين في الإعدادات | BYOK (**الإعدادات → BYOK** أو `POST /v1/byok`)، أو أرصدة Phaseo. اضبط `byok_fallback_enabled` باستخدام **الإعدادات → BYOK** للرجوع إلى الأرصدة. |
 
 يرسل الوكيل حركة فريق كامل عبر مالك مفتاح واحد، لذا يتشارك حصة الطلبات في الدقيقة الخاصة بذلك المستخدم، وهي 10 لمساحة العمل الجديدة. راجع [حدود Gateway](../api-reference/limits#gateway-limits) ورتّب حدًا أعلى قبل التحويل.
 

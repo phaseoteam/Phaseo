@@ -12,7 +12,7 @@ Gateway へのアクセス権がある Phaseo アカウントと、HTTP クラ�
 <Steps>
 <Step title="キーを作成して保存する">
 
-[Phaseo CLI](../guides/integrations/phaseo-cli) で `phaseo keys create --name <app-and-environment> --json` を実行するか、[ダッシュボード](https://phaseo.app/settings/keys)で **設定 → APIキー** を開きます。キーにはアプリと環境に合わせた名前を付け、シークレットマネージャーまたは環境ファイルに保存します。
+[ダッシュボード](https://phaseo.app/settings/keys)で **設定 → APIキー** を開くか、管理キーを使って `POST /v1/keys` を呼び出します。キーにはアプリと環境に合わせた名前を付け、シークレットマネージャーまたは環境ファイルに保存します。
 
 ```bash
 # .env.local

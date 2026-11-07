@@ -144,7 +144,7 @@ Una ruta dinámica es un flujo de reglas vinculado a una o varias claves de API 
 
 Las condiciones tienen salidas verdadera y falsa; los nodos de velocidad y presupuesto tienen salidas de dentro del límite y de límite superado. Los repartos por porcentaje son deterministas por sesión o por clave de caché de prompt, así que una conversación en caché no cambia de rama.
 
-Al guardar se crea una versión de borrador inmutable. Al desplegar se copia esa versión al Gateway y se vacían las cachés de políticas de sus claves; las versiones anteriores siguen disponibles para revertir. Las recomendaciones sobre la salud de los proveedores aparecen en **Insights**. Desde la CLI: `phaseo routing dynamic-routes create`, `set-keys` y `deploy`, o la API `/v1/routing/dynamic-routes`.
+Al guardar se crea una versión de borrador inmutable. Al desplegar se copia esa versión al Gateway y se vacían las cachés de políticas de sus claves; las versiones anteriores siguen disponibles para revertir. Las recomendaciones sobre la salud de los proveedores aparecen en **Insights**. Desde un script, usa la API `/v1/routing/dynamic-routes` con una clave de administración.
 
 Los metadatos personalizados van en el cuerpo de la solicitud en los endpoints de texto compatibles con OpenAI:
 
@@ -219,4 +219,4 @@ Con <Tooltip tip="Trae tu propia clave: Phaseo enruta la solicitud con tu propia
 | Reglas del proveedor | Se siguen aplicando las cuotas, la política de datos, el acceso a modelos y los límites de cuenta de tu proveedor. |
 | Almacenamiento | Las claves se cifran con AES-256-GCM, vinculadas a su espacio de trabajo y su proveedor. |
 
-Limita cada clave a los modelos y claves de API que la necesiten. Para evitar que una solicitud BYOK fallida se reintente con créditos de Phaseo, desactiva la alternativa en **Panel -> Ajustes -> Trae tu propia clave**, o establece `byok_fallback_enabled` en `PATCH /v1/settings` (`phaseo settings update --body-json '{"byok_fallback_enabled":false}'`). Añade claves con `phaseo byok create --provider <id> --name <name> --key-stdin`.
+Limita cada clave a los modelos y claves de API que la necesiten. Para evitar que una solicitud BYOK fallida se reintente con créditos de Phaseo, desactiva la alternativa en **Panel -> Ajustes -> Trae tu propia clave**, o establece `byok_fallback_enabled` en `PATCH /v1/settings` con una clave de administración. Añade claves en el mismo lugar, o con `POST /v1/byok` y una clave de administración.

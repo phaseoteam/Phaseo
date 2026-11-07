@@ -7,11 +7,7 @@ icon: "key-round"
 
 Create a management key to call Phaseo's administration APIs from your own servers: credits, activity, workspaces, keys, presets, settings and guardrails. Management keys can't send inference requests.
 
-```bash
-phaseo management-keys create --name <name> --template read-only --json
-```
-
-Or create one in the dashboard under **Settings → Management Keys**. The secret is shown once, so store it in your secrets manager. Send it from server-side code only, to the same base URL as the Gateway (`https://api.phaseo.app/v1`):
+Create one in the dashboard under **Settings → Management Keys**. The secret is shown once, so store it in your secrets manager. Send it from server-side code only, to the same base URL as the Gateway (`https://api.phaseo.app/v1`):
 
 ```http
 Authorization: Bearer phaseo_v1_mk_<kid>_<secret>

@@ -75,7 +75,7 @@ LLM Gateway 上的 `alibaba/<model>` 不是 Phaseo ID。把每个 ID 映射到 P
 | 会话请求头（`x-session-id`） | 请求体字段 `session_id`；Phaseo 会忽略会话请求头。 |
 | `X-Source` | `HTTP-Referer` 或 `X-App-Name`。参见[应用归因](../guides/app-attribution)。 |
 | 响应缓存 | 没有响应缓存。 |
-| 提供商密钥 | BYOK（`phaseo byok create` 或 `POST /v1/byok`），或 Phaseo 额度。是否回退到额度由工作区设置 `byok_fallback_enabled` 决定。 |
+| 提供商密钥 | BYOK（**设置 → BYOK** 或 `POST /v1/byok`），或 Phaseo 额度。是否回退到额度由工作区设置 `byok_fallback_enabled` 决定。 |
 | 请求日志 | 请求日志、可观测性目标和 `GET /v1/generations?id=<request_id>`。当 `replay_supported` 为 `true` 时，可以用失败请求的 `replay_request` 载荷重放它。 |
 
 ## 测试并上线

@@ -4,7 +4,7 @@ description: "Verwende API-Schlüssel, um jede Anfrage an Phaseo Gateway zu auth
 icon: "key-round"
 ---
 
-Erstelle einen Schlüssel mit `phaseo keys create --name <name> --json` in der [Phaseo-CLI](../guides/integrations/phaseo-cli) oder im [Dashboard](https://phaseo.app/settings/keys), speichere ihn auf deinem Server und sende ihn bei jeder Gateway-Anfrage als Bearer-Token. Agenten sollten die CLI verwenden; siehe [Phaseo mit einem Agenten verwalten](./manage-from-an-agent).
+Erstelle einen Schlüssel im [Dashboard](https://phaseo.app/settings/keys) oder mit `POST /v1/keys` und einem Management-Schlüssel, speichere ihn auf deinem Server und sende ihn bei jeder Gateway-Anfrage als Bearer-Token. Agenten sollten die CLI verwenden; siehe [Phaseo mit einem Agenten verwalten](./manage-from-an-agent).
 
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>

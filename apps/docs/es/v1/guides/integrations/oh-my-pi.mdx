@@ -26,10 +26,9 @@ El ejecutor crea una clave propia, escribe `models.yml` en un `PI_CODING_AGENT_D
 
 ## Configura oh-my-pi manualmente
 
-Crea una clave, expórtala en la shell que inicia oh-my-pi y crea el directorio de configuración:
+Crea una clave en el panel, en **Ajustes → Claves de API**, expórtala en la shell que inicia oh-my-pi y crea el directorio de configuración:
 
 ```bash
-phaseo keys create --name "oh-my-pi Phaseo key" --json
 export PHASEO_OMP_API_KEY="<your Phaseo API key>"
 mkdir -p ~/.omp/agent
 ```

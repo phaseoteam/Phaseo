@@ -55,21 +55,19 @@ phaseo whoami
 phaseo whoami --json
 ```
 
-## Schlüssel erstellen und deinen Workspace verwalten
+## Deinen Workspace verwalten
 
 ```bash
-phaseo keys create --name "Local CLI Key"
-phaseo keys create --name "Agent Sandbox Key" --json
+phaseo keys list
 phaseo keys current
 
 phaseo workspaces list
 phaseo workspaces members <workspace-id-or-slug>
 
 phaseo guardrails list
-phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true}'
 ```
 
-Nutze `--json`, wenn ein Agent oder Skript den neuen Schlüssel braucht. Er wird nur einmal angezeigt. Die CLI deckt die Verwaltungsaufgaben des Dashboards ab, darunter Abrechnung, Budgets, BYOK, Routing und Identität. Den Befehl für jede Aufgabe findest du unter [Phaseo aus einem Agent verwalten](../../developers/manage-from-an-agent).
+Nutze `--json`, wenn ein Agent oder Skript die Ausgabe liest. Die CLI deckt alltägliche Kontoaufgaben ab; Limits von Schlüsseln, Budgets, BYOK, Routing-Regeln, Voreinstellungen und Identität änderst du im Dashboard oder mit einem Management-Schlüssel. Welche Aufgaben die CLI abdeckt, steht unter [Phaseo aus einem Agent verwalten](../../developers/manage-from-an-agent).
 
 ## Einen Coding-Agent verbinden
 

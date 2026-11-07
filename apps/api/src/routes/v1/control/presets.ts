@@ -9,6 +9,7 @@ import { compilePromptTemplate } from "@core/prompt-templates";
 import {
 	type ManagementRouteAuth,
 	internalServerError,
+	rejectThirdPartyOAuthSpendingChange,
 	requireCapability,
 	requireOAuthWorkspaceRole,
 } from "./route-helpers";
@@ -120,6 +121,25 @@ function withoutOthersPrivateDraft(row: PresetRow, userId: string | null | undef
 	return { ...row, draft_name: row.name, draft_slug: row.slug, draft_description: row.description, draft_config: row.config, draft_visibility: row.visibility };
 }
 
+// A preset's config decides what every request that names it runs: model, prompts, plugins, server tools,
+// caching and provider constraints, and its name, slug and publisher decide which preset a reference finds.
+// Preset writes are made in the dashboard (decided by the owner on 2026-11-07), or by automation with a
+// management key: apps that sign in with Phaseo, and CLI or desktop sign-ins (whose client IDs are public),
+// can read presets but not write them, metadata included. Every write handler refuses them before reading the
+// preset, so the answer is the same whether or not the preset exists or is private.
+const PRESET_APP_REFUSAL = "Apps that use Sign in with Phaseo can't create, change, publish or archive presets. Make the change in the Phaseo dashboard, or call the API with a management key.";
+
+/** A 403 for an app or a CLI or desktop sign-in, or null. Dashboard sessions and management keys pass. */
+function presetWriteError(auth: ManagementRouteAuth): Response | null {
+	return rejectThirdPartyOAuthSpendingChange(auth, PRESET_APP_REFUSAL);
+}
+
+/** A 409 when a write hit the case-insensitive slug index, which keeps "@slug" references unambiguous. */
+function slugCollision(error: { message?: string | null } | null | undefined): Response | null {
+	if (!String(error?.message ?? "").includes("presets_workspace_resolution_key")) return null;
+	return json({ error: "conflict", message: "Another preset in this workspace has the same slug, ignoring case" }, 409, { "Cache-Control": "no-store" });
+}
+
 function formatPreset(row: PresetRow) {
 	return {
 		id: row.id,
@@ -229,6 +249,7 @@ async function handleCreatePreset(req: Request) {
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
+	const appError = presetWriteError(auth.value); if (appError) return appError;
 	if (!auth.value.userId) return json({ error: "user_identity_required" }, 403, { "Cache-Control": "no-store" });
 
 	let body: Record<string, unknown>;
@@ -289,6 +310,7 @@ async function handleCreatePreset(req: Request) {
 			})
 			.select("id, workspace_id, name, slug, description, config, visibility, created_by, source_preset_id, source_preset_version_id, upstream_version_id, created_at, updated_at, draft_name, draft_slug, draft_description, draft_config, draft_visibility, active_version_id, versioning_method")
 			.maybeSingle();
+		const collision = slugCollision(error); if (collision) return collision;
 		if (error) throw new Error(error.message || "Failed to create preset");
 		await auditPreset(auth.value, "preset.created", data as PresetRow, { visibility });
 		return json({ data: formatPreset(data as PresetRow), canonical_model: visibility === "public" ? `@${publisher}/${slug}` : `@${slug}` }, 201, { "Cache-Control": "no-store" });
@@ -323,6 +345,7 @@ async function handleUpdatePreset(req: Request) {
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
+	const appError = presetWriteError(auth.value); if (appError) return appError;
 
 	const identifier = parsePathId(new URL(req.url));
 	if (!identifier) return json({ error: "bad_request", message: "Preset id, slug, or name is required" }, 400, { "Cache-Control": "no-store" });
@@ -418,6 +441,8 @@ async function handleDeletePreset(req: Request) {
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
+	// Archiving frees the slug, so another preset can answer the same "@slug" afterwards.
+	const appError = presetWriteError(auth.value); if (appError) return appError;
 
 	const identifier = parsePathId(new URL(req.url));
 	if (!identifier) return json({ error: "bad_request", message: "Preset id, slug, or name is required" }, 400, { "Cache-Control": "no-store" });
@@ -451,6 +476,7 @@ async function handlePublishPresetVersion(req: Request) {
 	if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.PRESETS_WRITE); if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]); if (roleError) return roleError;
+	const appError = presetWriteError(auth.value); if (appError) return appError;
 	if (!auth.value.userId) return json({ error: "user_identity_required" }, 403, { "Cache-Control": "no-store" });
 	const segments = new URL(req.url).pathname.split("/").filter(Boolean); const presetId = segments.at(-2);
 	if (!presetId) return json({ error: "bad_request" }, 400, { "Cache-Control": "no-store" });
@@ -474,6 +500,7 @@ async function handlePublishPresetVersion(req: Request) {
 			if (message.includes("preset_not_found")) return json({ error: "not_found" }, 404, { "Cache-Control": "no-store" });
 			if (message.includes("preset_publish_forbidden")) return json({ error: "forbidden" }, 403, { "Cache-Control": "no-store" });
 			if (message.includes("no_draft_changes")) return json({ error: "conflict", message: "No draft changes to publish" }, 409, { "Cache-Control": "no-store" });
+			const collision = slugCollision(result.error); if (collision) return collision;
 			throw new Error(message || "Failed to publish preset version");
 		}
 		const version = Array.isArray(result.data) ? result.data[0] : result.data;
@@ -599,6 +626,7 @@ async function handleSetPresetLabel(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false }); if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.PRESETS_WRITE); if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]); if (roleError) return roleError;
+	const appError = presetWriteError(auth.value); if (appError) return appError;
 	if (!auth.value.userId) return json({ error: "user_identity_required" }, 403, { "Cache-Control": "no-store" });
 	const parts = labelPathParts(req);
 	if (!parts.presetId) return json({ error: "bad_request", message: "Preset id is required" }, 400, { "Cache-Control": "no-store" });
@@ -650,6 +678,7 @@ async function handleRemovePresetLabel(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false }); if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.PRESETS_WRITE); if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]); if (roleError) return roleError;
+	const appError = presetWriteError(auth.value); if (appError) return appError;
 	if (!auth.value.userId) return json({ error: "user_identity_required" }, 403, { "Cache-Control": "no-store" });
 	const parts = labelPathParts(req);
 	if (!parts.presetId) return json({ error: "bad_request", message: "Preset id is required" }, 400, { "Cache-Control": "no-store" });
@@ -673,6 +702,7 @@ async function handleForkPreset(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false }); if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.PRESETS_WRITE); if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]); if (roleError) return roleError;
+	const appError = presetWriteError(auth.value); if (appError) return appError;
 	if (!auth.value.userId) return json({ error: "user_identity_required" }, 403, { "Cache-Control": "no-store" });
 	const segments = new URL(req.url).pathname.split("/").filter(Boolean); const sourceId = segments.at(-2);
 	const body = await req.json<Record<string, unknown>>().catch(() => ({} as Record<string, unknown>)); const requestedVersion = String(body.source_version_id ?? body.sourceVersionId ?? "").trim() || null;
@@ -703,6 +733,7 @@ async function handleForkPreset(req: Request) {
 		}
 		const config = boundedConfig(snapshot.config); if (!config) return json({ error: "conflict", message: "Source preset configuration is too large" }, 409, { "Cache-Control": "no-store" });
 		const created = await client.from("presets").insert({ workspace_id: auth.value.workspaceId, name, slug: nextSlug, description: snapshot.description ?? null, config, visibility: "private", created_by: auth.value.userId ?? null, source_preset_id: sourceId, source_preset_version_id: snapshot.id, upstream_version_id: snapshot.id }).select("id, workspace_id, name, slug, description, config, visibility, created_by, source_preset_id, source_preset_version_id, upstream_version_id, created_at, updated_at, draft_name, draft_slug, draft_description, draft_config, draft_visibility, active_version_id, versioning_method").maybeSingle();
+		const collision = slugCollision(created.error); if (collision) return collision;
 		if (created.error || !created.data) throw new Error(created.error?.message || "Failed to fork preset");
 		await auditPreset(auth.value, "preset.forked", created.data as PresetRow, { source_preset_id: sourceId, source_version_id: snapshot.id ?? null });
 		return json({ data: formatPreset(created.data as PresetRow) }, 201, { "Cache-Control": "no-store" });
@@ -713,6 +744,7 @@ async function handleApplyUpstream(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false }); if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.PRESETS_WRITE); if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]); if (roleError) return roleError;
+	const appError = presetWriteError(auth.value); if (appError) return appError;
 	if (!auth.value.userId) return json({ error: "user_identity_required" }, 403, { "Cache-Control": "no-store" });
 	const segments = new URL(req.url).pathname.split("/").filter(Boolean); const presetId = segments.at(-2);
 	const body = await req.json<Record<string, unknown>>().catch(() => ({} as Record<string, unknown>)); const versionId = String(body.version_id ?? body.versionId ?? "").trim();
@@ -744,6 +776,8 @@ async function handleUpdatePublisher(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false }); if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.PRESETS_WRITE); if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]); if (roleError) return roleError;
+	// The publisher handle is the namespace public preset references resolve in.
+	const appError = presetWriteError(auth.value); if (appError) return appError;
 	if (!auth.value.userId) return json({ error: "user_identity_required" }, 403, { "Cache-Control": "no-store" });
 	const body = await req.json<Record<string, unknown>>().catch(() => ({} as Record<string, unknown>)); const handle = String(body.handle ?? "").trim().toLowerCase();
 	if (!/^[a-z0-9][a-z0-9_-]{2,39}$/.test(handle)) return json({ error: "bad_request", message: "handle must be 3-40 lowercase letters, numbers, underscores, or hyphens" }, 400, { "Cache-Control": "no-store" });

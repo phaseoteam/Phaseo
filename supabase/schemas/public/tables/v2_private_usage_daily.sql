@@ -67,6 +67,25 @@ CREATE INDEX v2_private_usage_daily_provider_model_id_idx ON public.v2_private_u
 
 CREATE INDEX v2_private_usage_daily_workspace_date_idx ON public.v2_private_usage_daily USING btree (workspace_id, usage_date DESC);
 
+CREATE POLICY "v2_private_usage_daily_no_oauth_client_insert" ON "public"."v2_private_usage_daily"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "v2_private_usage_daily_no_oauth_client_update" ON "public"."v2_private_usage_daily"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "v2_private_usage_daily_no_oauth_client_delete" ON "public"."v2_private_usage_daily"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "mfa_required_when_enrolled" ON "public"."v2_private_usage_daily"
   AS RESTRICTIVE
   FOR ALL

@@ -50,6 +50,25 @@ CREATE TRIGGER zz_workspace_members_refresh_effective
   FOR EACH ROW
   EXECUTE FUNCTION public.refresh_effective_entitlements_after_directory_change();
 
+CREATE POLICY "workspace_members_no_oauth_client_insert" ON "public"."workspace_members"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "workspace_members_no_oauth_client_update" ON "public"."workspace_members"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "workspace_members_no_oauth_client_delete" ON "public"."workspace_members"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspace_members"
   AS RESTRICTIVE
   FOR ALL

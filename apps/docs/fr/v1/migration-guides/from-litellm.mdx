@@ -72,7 +72,7 @@ Inventoriez les callbacks, les budgets et les nouvelles tentatives avant de reti
 | Budgets d’équipe, `metadata.tags` | Budgets de département et [étiquettes](../guides/request-labels) `X-Phaseo-Metadata`. Les budgets par utilisateur final ne correspondent qu’à une règle de limite de débit par utilisateur final ; il n’y a pas de plafond de dépenses par utilisateur final. |
 | `guardrails` (Presidio, Lakera et similaires) | Les garde-fous de clé analysent les requêtes pour détecter l’injection de prompt et les données personnelles. Les réponses ne sont pas analysées. |
 | Callbacks (`success_callback`, Langfuse, Datadog, OpenTelemetry) | [Destinations d’observabilité](../guides/integrations/observability) ou traçage côté client. Le champ de corps `metadata` est exporté sous la forme `phaseo.metadata.<key>`. |
-| Clés API de fournisseur dans la configuration | BYOK (`phaseo byok create --provider <id> --name <name> --key-stdin` ou `POST /v1/byok`), ou crédits Phaseo. Définissez `byok_fallback_enabled` avec `phaseo settings update` pour basculer sur les crédits. |
+| Clés API de fournisseur dans la configuration | BYOK (**Paramètres → BYOK** ou `POST /v1/byok`), ou crédits Phaseo. Définissez `byok_fallback_enabled` avec **Paramètres → BYOK** pour basculer sur les crédits. |
 
 Un proxy fait passer le trafic de toute une équipe par le propriétaire d’une seule clé ; il partage donc le quota de requêtes par minute de cet utilisateur, qui est de 10 pour un nouvel espace de travail. Consultez [Limites de la passerelle](../api-reference/limits#gateway-limits) et obtenez une limite plus élevée avant la bascule.
 

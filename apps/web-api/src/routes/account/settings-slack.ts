@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import { bodyLimit } from "hono/body-limit";
+import { hasOAuthClientToken } from "@/auth/requireUser";
 import { withSessionAuthorization } from "@/auth/sessionCookie";
 import { slackAgentMonthlyCharge, slackAgentPlanNanos } from "@/billing/slackAgentPricing";
 import { hasReviewedChatPrivacy } from "@/chat/privacyReview";
@@ -742,6 +743,9 @@ async function updatePermissions(c: any, state: InstallState, installationId: st
 accountSettingsSlackRouter.get("/slack/oauth/callback", async (c) => {
 	const env = c.env;
 	const fail = (error: string) => redirectToSettings(c, { error });
+	// Slack redirects the browser here, signed in by its cookie. Finishing an install connects a destination for
+	// workspace content, so a token issued to an app can't do it on a GET.
+	if (hasOAuthClientToken(c.req.raw)) return fail("sign_in_required");
 	const slackError = c.req.query("error");
 	if (slackError) return fail(slackError === "access_denied" ? "slack_denied" : "slack_error");
 

@@ -331,9 +331,6 @@ public sealed class ApiKey
 	[JsonPropertyName("expires_at")]
 	public string? ExpiresAt { get; set; }
 
-	[JsonPropertyName("hash")]
-	public string Hash { get; set; }
-
 	[JsonPropertyName("id")]
 	public string Id { get; set; }
 
@@ -616,9 +613,6 @@ public sealed class ApiKeyWithValue
 
 	[JsonPropertyName("expires_at")]
 	public string? ExpiresAt { get; set; }
-
-	[JsonPropertyName("hash")]
-	public string Hash { get; set; }
 
 	[JsonPropertyName("id")]
 	public string Id { get; set; }

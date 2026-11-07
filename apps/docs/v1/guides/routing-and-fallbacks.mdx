@@ -141,7 +141,7 @@ A dynamic route is a flow of rules attached to one or more inference API keys. I
 
 Conditions have true and false outputs; rate and budget nodes have within and exceeded outputs. Percentage splits are deterministic per session or prompt-cache key, so a cached conversation doesn't move between branches.
 
-Saving creates an immutable draft version. Deploying copies that version to the Gateway and clears policy caches for its keys; earlier versions stay available for rollback. Provider-health recommendations appear under **Insights**. From the CLI: `phaseo routing dynamic-routes create`, `set-keys` and `deploy`, or the `/v1/routing/dynamic-routes` API.
+Saving creates an immutable draft version. Deploying copies that version to the Gateway and clears policy caches for its keys; earlier versions stay available for rollback. Provider-health recommendations appear under **Insights**. From a script, use the `/v1/routing/dynamic-routes` API with a management key.
 
 Custom metadata goes in the request body on the OpenAI-compatible text endpoints:
 
@@ -213,4 +213,4 @@ With <Tooltip tip="Bring your own key: Phaseo routes the request with your own p
 | Provider rules | Your provider's quotas, data policy, model access and account limits still apply. |
 | Storage | Keys are encrypted with AES-256-GCM, bound to their workspace and provider. |
 
-Scope each key to the models and API keys that need it. To stop a failed BYOK request from retrying on Phaseo credits, turn off fallback in **Dashboard -> Settings -> BYOK**, or set `byok_fallback_enabled` on `PATCH /v1/settings` (`phaseo settings update --body-json '{"byok_fallback_enabled":false}'`). Add keys with `phaseo byok create --provider <id> --name <name> --key-stdin`.
+Scope each key to the models and API keys that need it. To stop a failed BYOK request from retrying on Phaseo credits, turn off fallback in **Dashboard -> Settings -> BYOK**, or set `byok_fallback_enabled` on `PATCH /v1/settings` with a management key. Add keys in the same place, or with `POST /v1/byok` and a management key.

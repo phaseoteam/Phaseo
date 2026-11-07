@@ -45,6 +45,25 @@ CREATE TRIGGER sync_v2_lab_colour_from_metadata
   FOR EACH ROW
   EXECUTE FUNCTION public.sync_v2_lab_colour();
 
+CREATE POLICY "v2_labs_no_oauth_client_insert" ON "public"."v2_labs"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "v2_labs_no_oauth_client_update" ON "public"."v2_labs"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "v2_labs_no_oauth_client_delete" ON "public"."v2_labs"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "v2_labs_public_select" ON "public"."v2_labs"
   FOR SELECT
   TO "anon", "authenticated"

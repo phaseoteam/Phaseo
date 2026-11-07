@@ -134,7 +134,6 @@ public final class Models {
 		public String department_id;
 		public Boolean disabled;
 		public String expires_at;
-		public String hash;
 		public String id;
 		public Boolean include_byok_in_limit;
 		public java.util.List<Object> ip_allowlist;
@@ -258,7 +257,6 @@ public final class Models {
 		public String department_id;
 		public Boolean disabled;
 		public String expires_at;
-		public String hash;
 		public String id;
 		public Boolean include_byok_in_limit;
 		public java.util.List<Object> ip_allowlist;
