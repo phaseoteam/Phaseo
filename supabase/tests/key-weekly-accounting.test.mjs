@@ -14,9 +14,9 @@ const db = new PGlite();
 try {
   await db.exec(`create role service_role; create role anon; create role authenticated; create schema private;
     create table public.gateway_requests(key_id uuid, workspace_id uuid, success boolean, created_at timestamptz, cost_nanos bigint,
-      request_id text not null default gen_random_uuid()::text, billing_request_id text, expected_cost_nanos bigint, detail_metadata jsonb);
+      request_id text not null default gen_random_uuid()::text, billing_request_id text, expected_cost_nanos bigint, detail_metadata jsonb, endpoint text);
     create table public.gateway_request_charges(workspace_id uuid, request_id text, status text, cost_nanos bigint);
-    create table public.credit_ledger(workspace_id uuid, ref_type text, source_ref_type text, source_ref_id text);
+    create table public.credit_ledger(workspace_id uuid, ref_type text, ref_id text, source_ref_type text, source_ref_id text);
     create table public.gateway_wallet_reservations(workspace_id uuid, reservation_id text, status text);
     insert into public.gateway_requests (key_id, workspace_id, success, created_at, cost_nanos) values
       ('${KEY}','${WS}',true,'2026-09-29',7),('${KEY}','${WS}',true,'2026-10-01',11),
