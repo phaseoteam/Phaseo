@@ -174,7 +174,10 @@ try {
   assert.equal(cappedExcluded.used.monthly.cost_nanos, cappedSeed.used.monthly.cost_nanos - 111);
   assert.deepEqual(excluded.excluded_rows.map((row) => [row.request_id, row.success, row.cost_nanos]),
     [['month-start', true, 11], ['today-1', true, 100]]);
-  assert.deepEqual(excluded.budget_status.budgets, seed.budget_status.budgets);
+  // Workspace budgets leave the held requests out too (the coordinator counts them from memory).
+  const usageOf = (status, interval) => status.budgets.find((entry) => entry.interval === interval).usage_nanos;
+  assert.equal(usageOf(excluded.budget_status, 'daily'), usageOf(seed.budget_status, 'daily') - 100);
+  assert.equal(usageOf(excluded.budget_status, 'lifetime'), usageOf(seed.budget_status, 'lifetime') - 111);
   assert.deepEqual(seed.department_budgets, [], 'no department budgets yet');
 
   // Department budgets: same attribution as workspace_department_budget_status, usage counted
