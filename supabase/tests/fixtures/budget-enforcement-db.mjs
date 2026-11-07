@@ -19,7 +19,6 @@ export const INDEX_MIGRATION_FILES = [
   '20261106234003_gateway_requests_charged_unsuccessful_cost_idx.sql',
   '20261106234004_gateway_request_charges_applied_cost_idx.sql',
   '20261106234005_credit_ledger_request_charge_movements_idx.sql',
-  '20261106234006_gateway_requests_batch_rows_idx.sql',
 ];
 export const readIndexMigrations = () => Promise.all(INDEX_MIGRATION_FILES.map((name) =>
   readFile(new URL(`../../migrations/${name}`, import.meta.url), 'utf8')));

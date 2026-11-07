@@ -24,9 +24,12 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
   -- cost_nanos only when it has none. The request readers (private.budget_spend_items,
   -- private.key_spend_items) leave out the cost of the rows these movements replace:
   --   (a) a request charged in steps (adjustment ledger rows from gateway_charge_request_total);
-  --   (b) a row pending reconciliation (expected_cost_nanos set, or
-  --       detail_metadata.accounting_finalization.billing_status 'pending_reconciliation') whose
-  --       gateway_request_charges row was applied (a pending row with none counts its audit cost);
+  --   (b) a row pending reconciliation whose gateway_request_charges row was applied (a pending
+  --       row with none counts its audit cost). Pending: expected_cost_nanos is set, or, for a row
+  --       written before 2026-11-09 00:00 UTC, detail_metadata.accounting_finalization.billing_status
+  --       is 'pending_reconciliation'. Older gateway code flagged pending rows only in that JSON;
+  --       the gateway now always sets expected_cost_nanos on them, so the JSON is read only for
+  --       rows before the cutoff (checked first, so newer rows never read detail_metadata).
   --   (c) a batch's batch_usage rows once the batch is debited, and its batch_hold_usage
   --       placeholders once its hold has settled.
   --
@@ -75,7 +78,8 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
     where request.workspace_id = charge.workspace_id
       and request.billing_request_id = charge.request_id
       and (request.expected_cost_nanos is not null
-        or coalesce(request.detail_metadata #>> '{accounting_finalization,billing_status}' = 'pending_reconciliation', false))
+        or (request.created_at < '2026-11-09 00:00:00+00'::timestamptz
+            and coalesce(request.detail_metadata -> 'accounting_finalization' ->> 'billing_status' = 'pending_reconciliation', false)))
     limit 1
   ) pending on true
   left join lateral (
