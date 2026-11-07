@@ -188,6 +188,72 @@ async function flushRecords(workspaceId: string): Promise<void> {
 	}
 }
 
+// Units each open admission's drain checkpoints applied to its slice, so the final settlement
+// adds only the difference.
+const checkpointUnits = new WeakMap<SpendAdmission, number>();
+
+function applyCheckpointUnits(admission: SpendAdmission | null, totalUnits: number): void {
+	if (!admission) return;
+	const pool = pools.get(poolKey(admission.workspaceId, admission.keyId));
+	if (!pool || pool.isSettled(admission.admissionId)) return;
+	const applied = checkpointUnits.get(admission) ?? 0;
+	const delta = totalUnits - applied;
+	if (delta <= 0) return;
+	const ticket = { id: admission.admissionId, leaseId: admission.leaseId, requests: 1 };
+	if (pool.settle(ticket, { requests: 0, units: delta }, { final: false })) checkpointUnits.set(admission, totalUnits);
+}
+
+function queueRecord(workspaceId: string, entry: SpendRecordEntry): void {
+	const queue = recordQueues.get(workspaceId) ?? [];
+	queue.push(entry);
+	if (queue.length === 1) {
+		recordQueues.set(workspaceId, queue);
+		background(new Promise((resolve) => setTimeout(resolve, RECORD_BATCH_DELAY_MS)).then(() => flushRecords(workspaceId)));
+	} else if (queue.length >= RECORD_BATCH_MAX) {
+		background(flushRecords(workspaceId));
+	}
+}
+
+/**
+ * Enforce mode, while a stream is charged at drain checkpoints: counts the request's charged
+ * total so far, before the request settles (the runtime may stop the drain before it does). The
+ * admission stays open; the final settlement replaces this amount. Never throws.
+ */
+export function recordCheckpointSpend(args: {
+	admission?: SpendAdmission | null;
+	workspaceId: string;
+	keyId: string | null | undefined;
+	billingRequestId: string;
+	requestId: string;
+	costNanos: number;
+	/** This checkpoint's place in the request's sequence (1, 2, …); see SpendRecordEntry.revision. */
+	revision: number;
+	internal?: boolean;
+}): void {
+	try {
+		if (args.internal || !args.keyId || !KEY_ID.test(args.keyId)) return;
+		if (!args.admission && currentMode() !== "enforce") return;
+		if (args.admission?.unlimited) return;
+		const costNanos = Number.isFinite(args.costNanos) && args.costNanos > 0 ? Math.round(args.costNanos) : 0;
+		// The isolate's cached slice admits from its own count: apply the charge there too, without
+		// settling the admission, so the next request on this slice sees it at once.
+		applyCheckpointUnits(args.admission ?? null, costNanos);
+		if (!stubFor(args.workspaceId)) return;
+		queueRecord(args.workspaceId, {
+			keyId: args.keyId,
+			billingRequestId: args.billingRequestId,
+			requestId: args.requestId,
+			costNanos,
+			requests: 1,
+			leaseId: args.admission && args.admission.keyId === args.keyId ? args.admission.leaseId : null,
+			replace: true,
+			revision: Math.max(1, Math.trunc(args.revision)),
+		});
+	} catch (error) {
+		console.warn("spend_limit_checkpoint_record_failed", { error: error instanceof Error ? error.message : String(error) });
+	}
+}
+
 /**
  * Records the cost of one successful (charged) request, in the background. Idempotent on
  * `billingRequestId`. `requestId` must be the gateway_requests.request_id written for it, so the
@@ -203,14 +269,19 @@ export function recordSpend(args: {
 	costNanos: number;
 	requests?: number;
 	occurredAtMs?: number;
+	/** The cost is the request's final charged total; see SpendRecordEntry.replace and .final. */
+	replace?: boolean;
 }): void {
 	try {
 		const costNanos = Number.isFinite(args.costNanos) && args.costNanos > 0 ? Math.round(args.costNanos) : 0;
 		const admission = args.admission ?? null;
 		const pool = admission ? pools.get(poolKey(admission.workspaceId, admission.keyId)) : undefined;
+		// Drain checkpoints already put part of this cost on the slice: settle only the rest.
+		const checkpointed = admission ? checkpointUnits.get(admission) ?? 0 : 0;
+		if (admission) checkpointUnits.delete(admission);
 		if (admission && pool && !pool.settle(
 			{ id: admission.admissionId, leaseId: admission.leaseId, requests: 1 },
-			{ requests: 0, units: costNanos },
+			{ requests: 0, units: costNanos - checkpointed },
 		)) {
 			pool.markSettled(admission.admissionId);
 			pool.learnUnits(costNanos);
@@ -220,8 +291,7 @@ export function recordSpend(args: {
 		if (pool && admission) pool.flushReturns(transportFor(stub, admission.workspaceId, admission.keyId, admission.admissionId));
 		// Nothing is limited for this key or workspace; a limit added later is seeded from Postgres.
 		if (admission?.unlimited) return;
-		const queue = recordQueues.get(args.workspaceId) ?? [];
-		queue.push({
+		queueRecord(args.workspaceId, {
 			keyId: args.keyId,
 			billingRequestId: args.billingRequestId,
 			requestId: args.requestId,
@@ -229,13 +299,8 @@ export function recordSpend(args: {
 			requests: args.requests ?? 1,
 			occurredAtMs: args.occurredAtMs,
 			leaseId: admission && admission.keyId === args.keyId ? admission.leaseId : null,
+			...(args.replace ? { replace: true, final: true } : {}),
 		});
-		if (queue.length === 1) {
-			recordQueues.set(args.workspaceId, queue);
-			background(new Promise((resolve) => setTimeout(resolve, RECORD_BATCH_DELAY_MS)).then(() => flushRecords(args.workspaceId)));
-		} else if (queue.length >= RECORD_BATCH_MAX) {
-			background(flushRecords(args.workspaceId));
-		}
 	} catch (error) {
 		console.error("[gateway] spend record failed", {
 			workspaceId: args.workspaceId,
@@ -511,9 +576,16 @@ export function settleEnforcedSpend(args: {
 	requestId: string;
 	costNanos: number;
 	internal?: boolean;
+	/**
+	 * The cost is the request's final charged total: a stream charged at drain checkpoints (it
+	 * replaces what they recorded), or a one-off charge pending reconciliation.
+	 */
+	replace?: boolean;
 }): void {
 	try {
-		if (!args.rowWritten) {
+		// A stepped or pending charge exists in the database whether or not the request row was
+		// written: settle it to its final amount rather than release.
+		if (!args.rowWritten && !args.replace) {
 			releaseSpend(args.admission);
 			return;
 		}
@@ -527,6 +599,7 @@ export function settleEnforcedSpend(args: {
 			billingRequestId: args.billingRequestId,
 			requestId: args.requestId,
 			costNanos: args.costNanos,
+			...(args.replace ? { replace: true } : {}),
 		});
 	} catch (error) {
 		console.warn("spend_limit_enforce_record_failed", { error: error instanceof Error ? error.message : String(error) });

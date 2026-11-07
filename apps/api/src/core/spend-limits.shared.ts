@@ -106,6 +106,19 @@ export type SpendRecordEntry = {
 	occurredAtMs?: number;
 	/** Lease the request was admitted from, if any. */
 	leaseId?: string | null;
+	/**
+	 * `costNanos` is the request's charged total so far (a stream charged at drain checkpoints):
+	 * a checkpoint raises the amount recorded for this `billingRequestId` (never lowers it), and
+	 * the final record sets it, lower or 0 included.
+	 */
+	replace?: boolean;
+	/**
+	 * The checkpoint's place in the request's sequence (1, 2, …). Only checkpoint 1 opens an entry:
+	 * any other record for an entry the coordinator does not hold is ignored.
+	 */
+	revision?: number;
+	/** The request's final settled total: sets the amount, and nothing changes it after that. */
+	final?: boolean;
 };
 
 export type SpendRecordResult = { duplicates: number; drainKeyIds: string[] };
