@@ -12,7 +12,7 @@ import type { RequestResult, Bill } from "../execute";
 import type { PriceCard } from "../pricing";
 import { calculatePricing } from "./pricing";
 import { handleFailureAudit, handleSuccessAudit } from "./audit";
-import { recordProvisionalStreamCharge, recordUsageAndChargeOnce } from "./charge";
+import { keepChargedTotalAsFinal, recordProvisionalStreamCharge, recordUsageAndChargeOnce } from "./charge";
 import { estimateDrainProgressUsage } from "./drain-progress";
 import {
     countRequestMediaInputs,
@@ -401,6 +401,16 @@ export async function handleStreamResponse(
         }
     };
 
+    // Prices the final bill. A throw (an unpriced meter in the final usage) is marked, so the
+    // finalization catch keeps a stepped request's charged total as its final.
+    const priceFinal = <T>(price: () => T): T => {
+        try {
+            return price();
+        } catch (error) {
+            (ctx.meta as Record<string, unknown>).__finalPricingFailed = true;
+            throw error;
+        }
+    };
     // Prices a drained stream's progress: provider-reported usage where there is any, output
     // never below the streamed text. Null when there is nothing to charge or no price card.
     const priceDrainProgress = (progress: { usage: any; outputChars: number }) => {
@@ -784,7 +794,7 @@ export async function handleStreamResponse(
 				if (stepMeta.__chargedInSteps === true) {
 					let finalNanos = 0;
 					if (clientCancelled) {
-						const priced = priceDrainProgress({ usage: effectiveUsageRaw, outputChars: streamedOutputChars });
+						const priced = priceFinal(() => priceDrainProgress({ usage: effectiveUsageRaw, outputChars: streamedOutputChars }));
 						const estimatedNanos = Number(stepMeta.__checkpointTotalNanos) || 0;
 						finalNanos = priced?.inputReported ? priced.totalNanos : Math.min(priced?.totalNanos ?? estimatedNanos, estimatedNanos);
 					}
@@ -899,13 +909,13 @@ export async function handleStreamResponse(
                     );
                 if (card && usageHasMeters) {
                     const tier = ctx.teamEnrichment?.tier ?? 'basic';
-                    const repriced = calculatePricing(
+                    const repriced = priceFinal(() => calculatePricing(
                         withInputModalityTokenMeters(shapeStreamUsageForClient(usageWithToolMetrics), usageWithToolMetrics),
                         card,
                         ctx.body,
                         tier,
                         ctx.meta
-                    );
+                    ));
                     usageWithToolMetrics = attachToolUsageMetrics(repriced.pricedUsage, toolUsage);
                     totalCentsOverride = repriced.totalCents;
                     totalNanosOverride = repriced.totalNanos;
@@ -1058,13 +1068,13 @@ export async function handleStreamResponse(
             }
 
             const tier = ctx.teamEnrichment?.tier ?? 'basic';
-            const { pricedUsage, totalCents, totalNanos, currency } = calculatePricing(
+            const { pricedUsage, totalCents, totalNanos, currency } = priceFinal(() => calculatePricing(
                 shapedUsage,
                 card,
                 ctx.body,
                 tier,
                 ctx.meta
-            );
+            ));
             alertUnexpectedZeroCostMedia({ ctx, result, card, totalNanos });
             if (ctx.meta.debug) {
                 console.log("[gateway][pricing] stream final priced usage", {
@@ -1149,6 +1159,20 @@ export async function handleStreamResponse(
                 // the row records it and spend limits count it, never 0 unless the database says so.
                 // recordUsageAndChargeOnce read back the stored charge (ctx.confirmedChargeNanos) and
                 // kept the intended bill (ctx.uncollectedChargeNanos); handleFailureAudit writes both.
+                // Policy when the final bill could not be priced: the charged total is the final (no
+                // refund, nothing more), recorded as both, pending reconciliation.
+                const stepMeta = ctx.meta as Record<string, unknown>;
+                const finalPricingFailed = stepMeta.__chargedInSteps === true && stepMeta.__finalPricingFailed === true;
+                if (finalPricingFailed) {
+                    try {
+                        await keepChargedTotalAsFinal(ctx, ctx.endpoint);
+                    } catch (settleError) {
+                        console.error("[gateway] stepped charge not settled after a pricing failure", {
+                            requestId: ctx.requestId,
+                            error: settleError instanceof Error ? settleError.message : String(settleError),
+                        });
+                    }
+                }
                 const unsettledCharge = typeof ctx.confirmedChargeNanos === "number"
                     ? { costNanos: ctx.confirmedChargeNanos, stored: ctx.confirmedChargeSource === "database" }
                     : null;
@@ -1162,7 +1186,8 @@ export async function handleStreamResponse(
                     {
                         upstream_status: upstreamStatus,
                         response_delivered: true,
-                        billing_status: (ctx.meta as Record<string, unknown>).__usageChargeRecorded === true ? "recorded" : "pending_reconciliation",
+                        billing_status: !finalPricingFailed && stepMeta.__usageChargeRecorded === true ? "recorded" : "pending_reconciliation",
+                        ...(finalPricingFailed ? { reconciliation_reason: "final_pricing_failed" } : {}),
                         // A stream charged at drain checkpoints: the total its final settlement meant to record.
                         ...(typeof (ctx.meta as Record<string, unknown>).__steppedFinalTotalNanos === "number"
                             ? { charged_in_steps: true, intended_final_total_nanos: (ctx.meta as Record<string, unknown>).__steppedFinalTotalNanos }

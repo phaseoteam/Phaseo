@@ -148,6 +148,36 @@ export async function chargedTotalForUnsettledRequest(ctx: PipelineContext): Pro
 	}
 }
 
+/** Waits for a checkpoint in flight (none starts after this); true when any checkpoint was sent. */
+async function closeCheckpoints(ctx: PipelineContext): Promise<boolean> {
+	const state = checkpoints.get(ctx);
+	if (state) {
+		state.closed = true;
+		await state.chain;
+	}
+	return state?.sent === true;
+}
+
+/**
+ * Policy for a stream charged at drain checkpoints whose final bill could not be priced: the total
+ * already charged is its final, so nothing is refunded and nothing more is charged. Settles that
+ * total as the final and leaves it on ctx as both the intended bill and the confirmed charge, for
+ * the failure row (cost_nanos, expected_cost_nanos) and spend limits.
+ */
+export async function keepChargedTotalAsFinal(ctx: PipelineContext, endpoint: string): Promise<void> {
+	const meta = ctx.meta as Record<string, unknown>;
+	if (meta.__usageChargeRecorded === true || typeof meta.__steppedFinalTotalNanos === "number") return;
+	if (!(await closeCheckpoints(ctx))) return;
+	const charged = await chargedTotalForUnsettledRequest(ctx);
+	await recordUsageAndChargeOnce({ ctx, costNanos: charged.costNanos, endpoint });
+	ctx.uncollectedChargeNanos = charged.costNanos;
+	// A failed final read the stored total back again; otherwise the final committed at this total.
+	if (typeof ctx.confirmedChargeNanos !== "number") {
+		ctx.confirmedChargeNanos = charged.costNanos;
+		ctx.confirmedChargeSource = charged.stored ? "database" : "last_checkpoint";
+	}
+}
+
 export async function recordUsageAndChargeOnce(args: {
 	ctx: PipelineContext;
 	costNanos: number;
@@ -160,13 +190,7 @@ export async function recordUsageAndChargeOnce(args: {
 	const meta = ctx.meta as Record<string, unknown>;
 	if (meta.__usageChargeRecorded === true) return;
 
-	// Wait for a checkpoint in flight; none starts after this.
-	const state = checkpoints.get(ctx);
-	if (state) {
-		state.closed = true;
-		await state.chain;
-	}
-	const inSteps = state?.sent === true;
+	const inSteps = await closeCheckpoints(ctx);
 	// A stepped request's final bill is always sent, 0 included: it refunds the estimates.
 	if (inSteps ? !Number.isFinite(costNanos) || costNanos < 0 : !Number.isFinite(costNanos) || costNanos <= 0) return;
 	// Kept for the finalization error audit if this settlement cannot be recorded.

@@ -10,6 +10,8 @@ const failureAuditMock = vi.hoisted(() => vi.fn(async (..._args: any[]) => undef
 // What gateway_request_charges holds for the request (read when a final settlement cannot be recorded).
 const storedChargeTotalMock = vi.hoisted(() => vi.fn(async (_args: any) => 0));
 const checkpointSpendMock = vi.hoisted(() => vi.fn((_args: any) => undefined));
+// Set once a meter the price card does not cover appears in the usage: pricing then throws.
+const unpricedMeter = vi.hoisted(() => ({ present: false }));
 
 vi.mock("../pricing/persist", () => ({
 	recordUsageAndCharge: (args: any) => chargeRpcMock("one_off", args),
@@ -44,6 +46,7 @@ vi.mock("../pricing/byok-fee", () => ({
 // $1 per million input tokens, $10 per million output tokens.
 vi.mock("./pricing", () => ({
 	calculatePricing: (usage: any) => {
+		if (unpricedMeter.present) throw new Error("pricing_meter_unpriced: cache_write_tokens");
 		const input = Number(usage?.input_tokens ?? usage?.prompt_tokens ?? 0);
 		const output = Number(usage?.output_tokens ?? usage?.completion_tokens ?? 0);
 		const totalNanos = input * 1_000 + output * 10_000;
@@ -133,6 +136,7 @@ describe("a stream the client abandons while the upstream keeps draining", () =>
 		failureAuditMock.mockClear();
 		storedChargeTotalMock.mockReset().mockResolvedValue(0);
 		checkpointSpendMock.mockClear();
+		unpricedMeter.present = false;
 		backgroundWork.length = 0;
 	});
 	afterEach(() => { vi.useRealTimers(); });
@@ -317,6 +321,36 @@ describe("a stream the client abandons while the upstream keeps draining", () =>
 		// limits count it: not released at 0.
 		expect(storedChargeTotalMock).toHaveBeenCalledWith({ requestId: "bill_drain", workspaceId: "ws_drain" });
 		expect([failedCtx.confirmedChargeNanos, failedCtx.confirmedChargeSource]).toEqual([1_000_000, "database"]);
+	});
+
+	it("keeps the charged total as the final when the final bill cannot be priced", async () => {
+		const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+		const c = ctx();
+		const { upstream, reader } = await start(c);
+		upstream.text("y".repeat(500));
+		await reader.read();
+		await reader.cancel();
+		await vi.advanceTimersByTimeAsync(15_000);
+		await settle();
+		expect(charges()).toEqual([["checkpoint_total", "bill_drain", 1_000_000]]);
+		// The rest of the drain reports a meter the price card does not cover.
+		unpricedMeter.present = true;
+		storedChargeTotalMock.mockResolvedValue(1_000_000);
+		upstream.text("z".repeat(500));
+		upstream.cut();
+		await settle();
+		error.mockRestore();
+		// Policy: the stored charged total is the final. Nothing is refunded, nothing more charged.
+		expect(charges()).toEqual([["checkpoint_total", "bill_drain", 1_000_000], ["final_total", "bill_drain", 1_000_000]]);
+		expect(failureAuditMock).toHaveBeenCalledTimes(1);
+		const [failedCtx, , status, , code, , details] = failureAuditMock.mock.calls[0];
+		expect([status, code]).toEqual([500, "stream_finalization_failed"]);
+		expect(details).toMatchObject({
+			billing_status: "pending_reconciliation", reconciliation_reason: "final_pricing_failed",
+			charged_in_steps: true, intended_final_total_nanos: 1_000_000, charged_total_nanos: 1_000_000, charged_total_source: "database",
+		});
+		// The row's cost and expected cost (pendingChargeFields) and the spend settlement are that total.
+		expect([failedCtx.uncollectedChargeNanos, failedCtx.confirmedChargeNanos]).toEqual([1_000_000, 1_000_000]);
 	});
 
 	it("falls back to the last checkpoint total, never 0, when the stored charge cannot be read either", async () => {
