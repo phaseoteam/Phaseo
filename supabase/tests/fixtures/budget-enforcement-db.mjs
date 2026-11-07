@@ -7,11 +7,11 @@ const schemasUrl = new URL('../../schemas/', import.meta.url);
 export const MIGRATION_FILE = '20261107020007_budget_enforcement_money_hygiene.sql';
 export const readSchema = (path) => readFile(new URL(path, schemasUrl), 'utf8');
 export const readMigration = () => readFile(new URL(`../../migrations/${MIGRATION_FILE}`, import.meta.url), 'utf8');
-// The migrations that precede MIGRATION_FILE: the expected_cost_nanos column (added, then validated),
+// The migrations that precede MIGRATION_FILE: the expected_cost_nanos column (fix/async-billing-20261104's, added, then validated),
 // then each new index in its own migration.
 export const COLUMN_MIGRATION_FILES = [
-  '20261107020000_gateway_requests_expected_cost_nanos.sql',
-  '20261107020001_validate_gateway_requests_expected_cost_nanos_check.sql',
+  '20261107015209_gateway_requests_expected_cost_nanos.sql',
+  '20261107015210_validate_gateway_requests_expected_cost_nanos_check.sql',
 ];
 export const INDEX_MIGRATION_FILES = [
   '20261107015217_gateway_requests_billing_request_index.sql', // fix/async-billing-20261104's
