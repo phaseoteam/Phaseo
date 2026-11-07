@@ -32,7 +32,8 @@ begin
   -- p_exclude_request_ids is the SpendLimit Durable Object's spend still counted from memory: for
   -- each admission it holds, its request id and its billing request id. gateway_requests rows are
   -- skipped by request_id and charge rows (gateway_request_charges, their adjustment ledger rows)
-  -- by billing request id, in key and department usage; workspace budgets skip only charge rows.
+  -- by billing request id, in key, department and workspace usage alike: the Durable Object counts
+  -- each held admission from memory until a seed that does not exclude it is published.
   if cardinality(v_exclude) > 5000 then
     raise exception using errcode = '22023', message = 'too_many_excluded_request_ids';
   end if;
