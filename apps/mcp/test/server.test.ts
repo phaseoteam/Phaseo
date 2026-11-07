@@ -154,7 +154,8 @@ describe("Phaseo MCP server metadata", () => {
 		expect(tools.models_list?._meta?.ui).toMatchObject({
 			resourceUri: "ui://phaseo/model-explorer.html", visibility: ["model", "app"],
 		});
-		expect(tools.models_list?._meta?.["openai/ui"]).toEqual({ entrypoints: [{ type: "global" }, { type: "thread" }] });
+		// Entry points make ChatGPT open the tool fullscreen, so models_list declares none.
+		expect(tools.models_list?._meta?.["openai/ui"]).toBeUndefined();
 		const icon = tools.models_list?.icons?.[0];
 		expect(icon?.mimeType).toBe("image/svg+xml");
 		const svg = atob(icon!.src.split(",")[1]!);

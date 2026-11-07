@@ -88,7 +88,7 @@ function Explorer({
     if (result && !initialModels.length) setBusy(false);
   }, [result]);
 
-  // Opened from the sidebar or thread panel with no tool call: load a first page.
+  // Opened without a tool call (a host entry point): load a first page.
   // A model-invoked tool sends its arguments just after connecting, so wait briefly
   // and never search over a tool call's own result.
   const toolCallRef = useRef(toolCall);
@@ -661,7 +661,7 @@ function Explorer({
 
 // Tool results render as inline cards. The explorer appears in fullscreen, when the
 // user expands a card on a host without fullscreen, or when it was opened from the
-// sidebar or thread panel rather than by a tool call.
+// host without a tool call.
 function Root() {
   const { status, context, toolCall, result } = useBridge();
   const [graceOver, setGraceOver] = useState(false);
