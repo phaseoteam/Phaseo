@@ -10,6 +10,12 @@ const migrations = [
     '../migrations/20261019175633_mobile_push_workspace_alerts.sql',
 ];
 const v4File = '../migrations/20261019181507_mobile_push_budget_alerts.sql';
+// What the sweep reads: the gateway's own budget and key usage.
+const usageFiles = [
+    '../schemas/private/functions/unbilled_spend.sql',
+    '../schemas/private/functions/key_spend_items.sql',
+    '../schemas/private/functions/budget_spend_items.sql',
+];
 const schemaFiles = [
     '../schemas/private/functions/spend_limit_period.sql',
     '../schemas/private/functions/spend_limit_amount.sql',
@@ -33,10 +39,14 @@ const KEY_OVER = '80000000-0000-4000-8000-000000000003';
 const KEY_STEADY = '80000000-0000-4000-8000-000000000004';
 const KEY_VID = '80000000-0000-4000-8000-000000000005';
 const GAMMA = '70000000-0000-4000-8000-000000000004';
+const DELTA = '70000000-0000-4000-8000-000000000005';
+const KEY_PEND = '80000000-0000-4000-8000-000000000006';
 const DOLLAR = 1_000_000_000;
-const usage = (workspace, key, bucket, { cost = 0, requests = 0 } = {}) => db.query(
-    `insert into public.v2_private_usage_15m (workspace_id, bucket_start, model_id, key_id, requests, successful_requests, cost_nanos) values ($1, $2, 'openai/gpt-6-astra', $3, $4, $4, $5)`,
-    [workspace, bucket, key, requests, cost]);
+// Successful requests at one time: the cost split evenly over them (one request when only cost is given).
+const usage = (workspace, key, at, { cost = 0, requests = 0 } = {}) => db.query(
+    `insert into public.gateway_requests (workspace_id, key_id, endpoint, success, cost_nanos, created_at)
+      select $1, $2, 'chat.completions', true, $3::bigint / $4::int, $5 from generate_series(1, $4::int)`,
+    [workspace, key, cost, Math.max(requests, 1), at]);
 const events = async (where = 'true') => (await rows(`select kind, dedupe_key, payload -> 'push' ->> 'title' as title, payload -> 'push' ->> 'body' as body
   from public.workspace_notification_events where ${where} order by kind, title, dedupe_key`));
 
@@ -141,8 +151,18 @@ try {
       );
       create table public.gateway_requests (
         id uuid primary key default gen_random_uuid(), workspace_id uuid not null, key_id uuid, endpoint text not null,
-        success boolean not null default false, cost_nanos bigint, created_at timestamptz not null default now()
+        success boolean not null default false, cost_nanos bigint, created_at timestamptz not null default now(),
+        request_id text not null default gen_random_uuid()::text, billing_request_id text, expected_cost_nanos bigint, detail_metadata jsonb
       );
+      create table public.gateway_request_charges (workspace_id uuid not null, request_id text not null, cost_nanos bigint not null,
+        status text not null, is_final boolean not null default true, key_id uuid, created_at timestamptz not null default now(),
+        primary key (workspace_id, request_id));
+      create table public.gateway_wallet_reservations (workspace_id uuid not null, reservation_id text not null, key_id uuid,
+        amount_nanos bigint not null default 0, status text not null default 'held', hold_ref_id text, captured_nanos bigint default 0,
+        released_nanos bigint default 0, settled_amount_nanos bigint, created_at timestamptz not null default now(),
+        primary key (workspace_id, reservation_id));
+      create table public.gateway_realtime_sessions (workspace_id uuid not null, session_id text not null, key_id uuid,
+        primary key (workspace_id, session_id));
       create table public.workspace_budgets (
         id uuid primary key default gen_random_uuid(), workspace_id uuid not null references public.workspaces(id) on delete cascade,
         interval text not null check (interval in ('daily', 'weekly', 'monthly', 'lifetime')), limit_nanos bigint not null check (limit_nanos > 0),
@@ -168,8 +188,8 @@ try {
       );
       create table public.credit_ledger (
         id uuid primary key default gen_random_uuid(), workspace_id uuid not null, kind text not null, amount_nanos bigint not null,
-        before_balance_nanos bigint not null, after_balance_nanos bigint not null, ref_type text not null default 'test', ref_id text not null default gen_random_uuid()::text,
-        created_at timestamptz not null default now()
+        before_balance_nanos bigint not null default 0, after_balance_nanos bigint not null default 0, ref_type text not null default 'test', ref_id text not null default gen_random_uuid()::text,
+        source_ref_type text, source_ref_id text, status text, created_at timestamptz not null default now()
       );
     `);
     await db.exec(await read('../schemas/catalogue_private/functions/history_model.sql'));
@@ -177,6 +197,7 @@ try {
     await db.exec(await read('../schemas/public/functions/catalog_model_is_public.sql'));
     for (const file of migrations) await db.exec(await read(file));
     await db.exec(v4);
+    for (const file of usageFiles) await db.exec(await read(file));
     await db.exec(await read('../schemas/public/functions/sweep_spend_limit_warnings.sql'));
 
     // Acme: u1 owns it (and a personal workspace), u2 is an admin, u3 a member who created the ci
@@ -202,7 +223,8 @@ try {
         }
     });
 
-    // October 2026 so far: ci spends $3 a day for fifteen days, and prod $7 a day for five.
+    // October 2026 so far (successful requests, as the gateway records them): ci spends $3 a day
+    // over ten requests for fifteen days, and prod $7 a day for five.
     // ci makes 850 requests on the 16th; batch made 120 against a limit of 100.
     for (let day = 1; day <= 15; day += 1) {
         const bucket = `2026-10-${String(day).padStart(2, '0')}T09:00:00Z`;
@@ -214,7 +236,7 @@ try {
     await usage(BETA, KEY_STEADY, '2026-09-20T06:00:00Z', { cost: 8.5 * DOLLAR });
 
     // 16 Oct, noon UTC: the Acme budget is at 80%, ci at 90% of its month ($45 of $50) and 85% of
-    // its day; prod's week is 9% and batch is over 100% by the rollup, so neither warns.
+    // its day; prod's week is 9% and batch is over 100%, so neither warns.
     const oct16 = '2026-10-16T12:00:00Z';
     assert.deepEqual(await sweep(oct16), { budgets: 2, limitedKeys: 4, warned: 4 });
     assert.deepEqual(await events(), [
@@ -314,11 +336,9 @@ try {
     assert.ok(pushes.every(push => push.href === (push.kind.startsWith('budget') ? '/settings/usage/overview' : '/settings/keys')));
     assert.equal((await one(`select count(*)::int n from public.email_outbox`)).n, 0, 'no email is queued');
 
-    // Async jobs are not in the rollup but count towards limits: in November, Gamma's vid key ran
-    // nine video jobs (and one that failed but was charged: cost only). A $40 realtime session that
-    // failed but was charged ran on the workspace, and a $4 one on the vid key; realtime is in the rollup, so it counts from
-    // there once, not again from gateway_requests. The sync request is in gateway_requests too, but
-    // sync usage comes from the rollup, which has none for it, so it is not counted twice.
+    // Async jobs and realtime sessions count like any request: in November, Gamma's vid key ran nine
+    // video jobs (and one that failed but was charged: cost only). A $40 realtime session that failed
+    // but was charged ran on the workspace, and a $4 one on the vid key: each counts once.
     await db.exec(`
       insert into public.workspaces (id, name, owner_user_id) values ('${GAMMA}', 'Gamma', '${user(2)}');
       insert into public.workspace_members (workspace_id, user_id, role) values ('${GAMMA}', '${user(2)}', 'owner');
@@ -329,11 +349,8 @@ try {
       insert into public.gateway_requests (workspace_id, key_id, endpoint, success, cost_nanos, created_at) values
         ('${GAMMA}', '${KEY_VID}', 'video.generation', false, ${4.5 * DOLLAR}, '2026-11-04T02:00:00Z'),
         ('${GAMMA}', null, 'audio.realtime', false, ${40 * DOLLAR}, '2026-11-03T08:00:00Z'),
-        ('${GAMMA}', '${KEY_VID}', 'audio.realtime', false, ${4 * DOLLAR}, '2026-11-03T09:00:00Z'),
-        ('${GAMMA}', '${KEY_VID}', 'chat.completions', true, ${30 * DOLLAR}, '2026-11-04T03:00:00Z');
+        ('${GAMMA}', '${KEY_VID}', 'audio.realtime', false, ${4 * DOLLAR}, '2026-11-03T09:00:00Z');
     `);
-    await usage(GAMMA, null, '2026-11-03T08:00:00Z', { cost: 40 * DOLLAR, requests: 1 });
-    await usage(GAMMA, KEY_VID, '2026-11-03T09:00:00Z', { cost: 4 * DOLLAR, requests: 1 });
     assert.deepEqual(await sweep('2026-11-04T12:00:00Z'), { budgets: 3, limitedKeys: 5, warned: 3 });
     assert.deepEqual((await events(`occurred_at = '2026-11-04T12:00:00Z'`)).map(event => [event.kind, event.title, event.body]), [
         // $45 of video (the failed job was charged) and $44 of realtime, once: 2.5 days into the week, 2.5 * 100 / 89 = 2.8 days.
@@ -342,6 +359,39 @@ try {
         // $45 of video and $4 of realtime, 3.5 days into November: 3.5 * 50 / 49 = 3.6 days; the failed
         // job is not a request (9 of 10 today).
         ['key_limit_warning', "API key 'vid' is at about 80% of its monthly limit", '$49.00 of $50.00 so far this month. At this pace it runs out around Nov 4.'],
+    ]);
+
+    // Money movements win: Delta's requests pending reconciliation count what was charged and what
+    // was not collected, never their row's cost. On Tuesday 10 November: a $2.50 chat request; a
+    // committed $2 charge whose row could not read its cost back (NULL); a stream whose row holds a
+    // stale $5 but whose charge dropped to $1 ($3 at a checkpoint, $2 refunded); and a failed refund
+    // to 0 that keeps its $3 checkpoint.
+    await db.exec(`
+      insert into public.workspaces (id, name, owner_user_id) values ('${DELTA}', 'Delta', '${user(2)}');
+      insert into public.workspace_members (workspace_id, user_id, role) values ('${DELTA}', '${user(2)}', 'owner');
+      insert into public.keys (id, workspace_id, name, created_by, monthly_limit_cost_nanos) values ('${KEY_PEND}', '${DELTA}', 'pend', '${user(2)}', ${10 * DOLLAR});
+      insert into public.workspace_budgets (workspace_id, interval, limit_nanos) values ('${DELTA}', 'weekly', ${10 * DOLLAR});
+      insert into public.gateway_request_charges (workspace_id, request_id, cost_nanos, status, is_final, key_id, created_at) values
+        ('${DELTA}', 'billing-null', ${2 * DOLLAR}, 'applied', true, '${KEY_PEND}', '2026-11-10T09:00:00Z'),
+        ('${DELTA}', 'billing-stale', ${DOLLAR}, 'applied', true, '${KEY_PEND}', '2026-11-10T09:00:00Z'),
+        ('${DELTA}', 'billing-zero', ${3 * DOLLAR}, 'applied', false, '${KEY_PEND}', '2026-11-10T09:00:00Z');
+      insert into public.credit_ledger (workspace_id, kind, amount_nanos, ref_type, ref_id, source_ref_type, source_ref_id, status, created_at) values
+        ('${DELTA}', 'adjustment', ${-3 * DOLLAR}, 'gateway_request_charge', 'stale:1', 'gateway_request', 'billing-stale', 'applied', '2026-11-10T09:00:00Z'),
+        ('${DELTA}', 'adjustment', ${2 * DOLLAR}, 'gateway_request_charge', 'stale:final', 'gateway_request', 'billing-stale', 'applied', '2026-11-10T09:05:00Z'),
+        ('${DELTA}', 'adjustment', ${-3 * DOLLAR}, 'gateway_request_charge', 'zero:1', 'gateway_request', 'billing-zero', 'applied', '2026-11-10T09:00:00Z');
+      insert into public.gateway_requests (workspace_id, key_id, endpoint, success, cost_nanos, created_at, request_id, billing_request_id, expected_cost_nanos) values
+        ('${DELTA}', '${KEY_PEND}', 'chat.completions', true, ${2.5 * DOLLAR}, '2026-11-10T08:00:00Z', 'delta-chat', null, null),
+        ('${DELTA}', '${KEY_PEND}', 'chat.completions', false, null, '2026-11-10T09:01:00Z', 'pend-null', 'billing-null', ${2 * DOLLAR}),
+        ('${DELTA}', '${KEY_PEND}', 'chat.completions', false, ${5 * DOLLAR}, '2026-11-10T09:01:00Z', 'pend-stale', 'billing-stale', ${DOLLAR}),
+        ('${DELTA}', '${KEY_PEND}', 'chat.completions', false, ${3 * DOLLAR}, '2026-11-10T09:01:00Z', 'pend-zero', 'billing-zero', 0);
+    `);
+    // $2.50 + $2 + $1 + $3 (the rows say $10.50: over the limit, so no warning).
+    assert.deepEqual(await sweep('2026-11-11T12:00:00Z'), { budgets: 4, limitedKeys: 6, warned: 2 });
+    assert.deepEqual((await events(`occurred_at = '2026-11-11T12:00:00Z'`)).map(event => [event.kind, event.title, event.body]), [
+        // 2.5 days into the week, 2.5 * 10 / 8.5 = 2.9 days.
+        ['budget_warning', 'About 80% of the weekly budget used', '$8.50 of $10.00 so far this week. At this pace it runs out around Nov 11.'],
+        // 10.5 days into November, 10.5 * 10 / 8.5 = 12.4 days.
+        ['key_limit_warning', "API key 'pend' is at about 80% of its monthly limit", '$8.50 of $10.00 so far this month. At this pace it runs out around Nov 13.'],
     ]);
 
     // Nothing configured: the sweep returns after two counts.

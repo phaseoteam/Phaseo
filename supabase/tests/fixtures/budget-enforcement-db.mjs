@@ -66,6 +66,13 @@ const STUBS = `
   create table public.gateway_requests_default partition of public.gateway_requests default;
   -- Production's history index (gateway_requests_workspace_cursor_idx).
   create index gateway_requests_workspace_cursor_idx on public.gateway_requests (workspace_id, created_at desc, id desc);
+  -- Production's success-cost indexes, which key and workspace usage read.
+  create index gateway_requests_success_key_workspace_cost_idx on public.gateway_requests (key_id, workspace_id, created_at)
+    include (cost_nanos) where success is true and key_id is not null;
+  create index gateway_requests_success_workspace_cost_idx on public.gateway_requests (workspace_id, created_at)
+    include (cost_nanos) where success is true;
+  -- And its request id lookup (a captured video hold's audit row).
+  create index gateway_requests_workspace_request_created_idx on public.gateway_requests (workspace_id, request_id, created_at desc);
   create table public.workspace_budgets (id uuid primary key default gen_random_uuid(), workspace_id uuid not null,
     interval text not null, limit_nanos bigint not null, created_by uuid, created_at timestamptz default now(),
     updated_at timestamptz default now());

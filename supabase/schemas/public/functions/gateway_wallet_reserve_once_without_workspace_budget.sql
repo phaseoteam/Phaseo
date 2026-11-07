@@ -104,31 +104,18 @@ begin
       return;
     end if;
 
-    -- Successful requests count as requests and cost; charged requests that did not succeed
-    -- count toward cost only.
+    -- The key's usage (private.key_spend_items): successful requests count as requests and cost,
+    -- charged ones that did not succeed and money movements as cost only.
     select
-      count(*) filter (where usage.served and usage.created_at >= v_day_start),
-      count(*) filter (where usage.served and usage.created_at >= v_week_start),
-      count(*) filter (where usage.served and usage.created_at >= v_month_start),
-      coalesce(sum(usage.cost_nanos) filter (where usage.created_at >= v_day_start), 0),
-      coalesce(sum(usage.cost_nanos) filter (where usage.created_at >= v_week_start), 0),
-      coalesce(sum(usage.cost_nanos) filter (where usage.created_at >= v_month_start), 0)
+      count(*) filter (where usage.served and usage.at >= v_day_start),
+      count(*) filter (where usage.served and usage.at >= v_week_start),
+      count(*) filter (where usage.served and usage.at >= v_month_start),
+      coalesce(sum(usage.nanos) filter (where usage.at >= v_day_start), 0),
+      coalesce(sum(usage.nanos) filter (where usage.at >= v_week_start), 0),
+      coalesce(sum(usage.nanos) filter (where usage.at >= v_month_start), 0)
     into v_day_requests, v_week_requests, v_month_requests,
       v_day_cost, v_week_cost, v_month_cost
-    from (
-      select served.created_at, served.cost_nanos, true as served
-      from public.gateway_requests served
-      where served.workspace_id = p_workspace_id and served.key_id = p_key_id and served.success is true
-      union all
-      select charged.created_at, charged.cost_nanos, false
-      from public.gateway_requests charged
-      where charged.workspace_id = p_workspace_id and charged.key_id = p_key_id
-        and charged.success is not true and charged.cost_nanos > 0
-      -- Unbilled spend (private.unbilled_spend), cost only.
-      union all
-      select unbilled.at, unbilled.nanos, false
-      from private.unbilled_spend(p_workspace_id, least(v_day_start, v_week_start, v_month_start), array[p_key_id]) unbilled
-    ) usage;
+    from private.key_spend_items(p_workspace_id, least(v_day_start, v_week_start, v_month_start), array[p_key_id]) usage;
 
     -- Video create audit rows have zero cost until completion. Count the unpaid
     -- portion of each reservation under the same key lock as admission. Captured
