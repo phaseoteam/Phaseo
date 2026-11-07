@@ -1007,7 +1007,6 @@
     "private/functions/mobile_week_releases.sql",
     "private/functions/mobile_week_usage.sql",
     "private/functions/pending_json_cutoff.sql",
-    "private/functions/open_stepped_charges.sql",
     "private/functions/protect_workspace_baseline_guardrail.sql",
     "private/functions/prune_completed_analytics_outbox.sql",
     "private/functions/queue_spend_block_event.sql",
