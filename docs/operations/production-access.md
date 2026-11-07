@@ -63,6 +63,10 @@ To fix it without writing to production:
 
 Do not run `supabase migration repair --status reverted` for a real schema change. It hides drift that the repository does not know about.
 
+### A merged migration that never applied
+
+If a migration fails in the production `db push` and rolls back, every later CI run applies it first and fails again, so all deploys stay blocked. Rewrite that file in place rather than adding a new one. Mark the changed file with `-- phaseo:rewrite-unapplied-migration reason: <specific justification>` and confirm with a read-only query that its version is absent from `supabase_migrations.schema_migrations`. [Production database migrations](../../.github/PRODUCTION_DATABASE_MIGRATIONS.md) has the rule.
+
 ## Live API checks
 
 - Do not create API keys, start device-code logins, or spend credit to test, unless the maintainer asks.

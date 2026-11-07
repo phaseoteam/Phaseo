@@ -51,25 +51,6 @@ CREATE INDEX gateway_observability_events_workspace_created_preset_idx ON public
 
 CREATE INDEX gateway_observability_events_workspace_occurred_idx ON public.gateway_observability_events USING btree (workspace_id, occurred_at DESC);
 
-CREATE POLICY "gateway_observability_events_no_oauth_client_insert" ON "public"."gateway_observability_events"
-  AS RESTRICTIVE
-  FOR INSERT
-  TO "authenticated"
-  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
-CREATE POLICY "gateway_observability_events_no_oauth_client_update" ON "public"."gateway_observability_events"
-  AS RESTRICTIVE
-  FOR UPDATE
-  TO "authenticated"
-  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
-  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
-CREATE POLICY "gateway_observability_events_no_oauth_client_delete" ON "public"."gateway_observability_events"
-  AS RESTRICTIVE
-  FOR DELETE
-  TO "authenticated"
-  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
 CREATE POLICY "gateway_observability_events_all_service" ON "public"."gateway_observability_events"
   FOR ALL
   TO "service_role"

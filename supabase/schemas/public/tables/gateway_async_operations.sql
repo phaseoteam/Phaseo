@@ -75,25 +75,6 @@ CREATE TRIGGER gateway_billing_alert_capture
   FOR EACH ROW
   EXECUTE FUNCTION public.capture_gateway_billing_alert();
 
-CREATE POLICY "gateway_async_operations_no_oauth_client_insert" ON "public"."gateway_async_operations"
-  AS RESTRICTIVE
-  FOR INSERT
-  TO "authenticated"
-  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
-CREATE POLICY "gateway_async_operations_no_oauth_client_update" ON "public"."gateway_async_operations"
-  AS RESTRICTIVE
-  FOR UPDATE
-  TO "authenticated"
-  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
-  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
-CREATE POLICY "gateway_async_operations_no_oauth_client_delete" ON "public"."gateway_async_operations"
-  AS RESTRICTIVE
-  FOR DELETE
-  TO "authenticated"
-  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
 CREATE POLICY "gateway_async_operations_insert_service" ON "public"."gateway_async_operations"
   FOR INSERT
   TO "service_role"

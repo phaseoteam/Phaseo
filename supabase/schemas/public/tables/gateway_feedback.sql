@@ -59,25 +59,6 @@ CREATE INDEX gateway_feedback_workspace_created_preset_idx ON public.gateway_fee
 CREATE INDEX gateway_feedback_workspace_preset_rating_created_idx ON public.gateway_feedback USING btree (workspace_id, preset_id, rating, created_at DESC)
   WHERE (preset_id IS NOT NULL);
 
-CREATE POLICY "gateway_feedback_no_oauth_client_insert" ON "public"."gateway_feedback"
-  AS RESTRICTIVE
-  FOR INSERT
-  TO "authenticated"
-  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
-CREATE POLICY "gateway_feedback_no_oauth_client_update" ON "public"."gateway_feedback"
-  AS RESTRICTIVE
-  FOR UPDATE
-  TO "authenticated"
-  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
-  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
-CREATE POLICY "gateway_feedback_no_oauth_client_delete" ON "public"."gateway_feedback"
-  AS RESTRICTIVE
-  FOR DELETE
-  TO "authenticated"
-  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
 CREATE POLICY "gateway_feedback_all_service" ON "public"."gateway_feedback"
   FOR ALL
   TO "service_role"

@@ -42,25 +42,6 @@ CREATE INDEX v2_request_routing_decisions_excluded_idx ON public.v2_request_rout
 CREATE INDEX v2_request_routing_decisions_route_idx ON public.v2_request_routing_decisions USING btree (provider_model_id, created_at DESC)
   WHERE (provider_model_id IS NOT NULL);
 
-CREATE POLICY "v2_request_routing_decisions_no_oauth_client_insert" ON "public"."v2_request_routing_decisions"
-  AS RESTRICTIVE
-  FOR INSERT
-  TO "authenticated"
-  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
-CREATE POLICY "v2_request_routing_decisions_no_oauth_client_update" ON "public"."v2_request_routing_decisions"
-  AS RESTRICTIVE
-  FOR UPDATE
-  TO "authenticated"
-  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
-  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
-CREATE POLICY "v2_request_routing_decisions_no_oauth_client_delete" ON "public"."v2_request_routing_decisions"
-  AS RESTRICTIVE
-  FOR DELETE
-  TO "authenticated"
-  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
 CREATE POLICY "mfa_required_when_enrolled" ON "public"."v2_request_routing_decisions"
   AS RESTRICTIVE
   FOR ALL
