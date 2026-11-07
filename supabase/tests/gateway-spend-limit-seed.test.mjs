@@ -33,6 +33,8 @@ try {
     create table if not exists public.credit_ledger (id uuid primary key default gen_random_uuid(), workspace_id uuid, kind text,
       amount_nanos bigint, ref_type text, ref_id text, source_ref_type text, source_ref_id text, status text,
       created_at timestamptz not null default now());
+    create table if not exists public.gateway_async_operations (workspace_id uuid not null, kind text not null,
+      internal_id text not null, meta jsonb not null default '{}'::jsonb);
     alter table public.gateway_requests add column if not exists billing_request_id text;
     alter table public.keys add column if not exists department_id uuid;
     -- Department tables, trimmed to what the seed reads.

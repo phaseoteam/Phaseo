@@ -21,8 +21,11 @@ export async function installUnbilledSpend(db) {
     create table if not exists public.gateway_wallet_reservations (workspace_id uuid not null, reservation_id text not null,
       key_id uuid, status text not null default 'held', created_at timestamptz not null default now(),
       primary key (workspace_id, reservation_id));
+    create table if not exists public.gateway_async_operations (workspace_id uuid not null, kind text not null,
+      internal_id text not null, meta jsonb not null default '{}'::jsonb, unique (workspace_id, kind, internal_id));
     -- As in production.
-    grant select on public.gateway_request_charges, public.credit_ledger, public.gateway_wallet_reservations to service_role;
+    grant select on public.gateway_request_charges, public.credit_ledger, public.gateway_wallet_reservations,
+      public.gateway_async_operations to service_role;
   `);
   for (const name of ['20261107020000_gateway_requests_expected_cost_nanos.sql', '20261107020001_validate_gateway_requests_expected_cost_nanos_check.sql']) {
     await db.exec(await migration(name));

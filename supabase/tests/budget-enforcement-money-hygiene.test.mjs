@@ -45,14 +45,16 @@ const WS_RECON = id('1', 10); // batches debited after their placeholders, rows 
 const WS_STEP = id('1', 11); // a stepped request across period rollover
 const WS_PEND = id('1', 12); // requests pending reconciliation
 const WS_LEGACY = id('1', 13); // pending by billing_status only, either side of the cutoff
+const WS_OLD = id('1', 14); // charges written by the previous gateway, without a key
 const ENG = id('4', 1);
 const ROLL = id('4', 2);
 const CAP = id('4', 3);
 const RECON = id('4', 4);
 const STEP = id('4', 5);
 const PEND = id('4', 6);
+const OLD = id('4', 7);
 const MEMBER = id('2', 1);
-const KEY = { linked: id('3', 1), member: id('3', 2), outside: id('3', 3), batch: id('3', 4), roll: id('3', 5), cap: id('3', 6), limited: id('3', 7), del: id('3', 8), batches: id('3', 9), recon: id('3', 10), step: id('3', 11), pend: id('3', 12), plan: id('3', 13), legacy: id('3', 14) };
+const KEY = { linked: id('3', 1), member: id('3', 2), outside: id('3', 3), batch: id('3', 4), roll: id('3', 5), cap: id('3', 6), limited: id('3', 7), del: id('3', 8), batches: id('3', 9), recon: id('3', 10), step: id('3', 11), pend: id('3', 12), plan: id('3', 13), legacy: id('3', 14), old: id('3', 15) };
 // Before every current period: the earlier of this week's Monday and the 1st, less a day.
 const BEFORE_PERIODS = `(least(date_trunc('week', now() at time zone 'utc'), date_trunc('month', now() at time zone 'utc')) at time zone 'utc' - interval '1 day')`;
 
@@ -324,10 +326,11 @@ try {
     assert.equal(fits.ok, true);
   });
   await check('the department alert sweep counts a charged async request that did not succeed', async () => {
+    const before = Number((await asService(async () => (await one(`select public.workspace_department_budget_status($1) as r`, [WS_CAP])).r))[0].usage_nanos);
     await db.query(`insert into public.gateway_requests (workspace_id, request_id, key_id, success, cost_nanos, endpoint) values
       ($1, 'video-charged-failed', $2, false, $3, 'video.generation'), ($1, 'video-free-failed', $2, false, 0, 'video.generation')`, [WS_CAP, KEY.cap, 2 * DOLLAR]);
     const alert = await asService(async () => (await one(`select public.workspace_department_budget_status($1) as r`, [WS_CAP])).r);
-    assert.equal(Number(alert[0].usage_nanos), 2 * DOLLAR);
+    assert.equal(Number(alert[0].usage_nanos), before + 2 * DOLLAR);
     await db.query(`delete from public.gateway_requests where request_id in ('video-charged-failed', 'video-free-failed')`);
   });
   await check('a stepped charge counts by wallet movement, each at its time, also after its row lands', async () => {
@@ -421,9 +424,11 @@ try {
     const seeded = await seed(workspace, [key]);
     const items = await rows(`select coalesce(sum(nanos) filter (where at >= ${DAY_START}), 0)::bigint as day
       from private.key_spend_items($1, ${DAY_START}, array[$2]::uuid[])`, [workspace, key]);
+    const alerts = await asService(async () => (await one(`select public.workspace_department_budget_status($1) as r`, [workspace])).r);
     return {
       workspace: byInterval((await workspaceStatus(workspace)).budgets),
       department: byInterval((await departmentStatus(workspace, key)).department_budgets),
+      departmentAlerts: byInterval(alerts),
       seedDepartment: byInterval(seeded.department_budgets),
       seedKey: Object.fromEntries(['daily', 'weekly', 'monthly'].map((w) => [w, Number(seeded.keys[0].used[w].cost_nanos)])),
       keyItems: Number(items[0].day),
@@ -443,7 +448,7 @@ try {
     const each = Object.fromEntries(intervals.map((i) => [i, nanos[i] ?? nanos]));
     const keyWindows = Object.fromEntries(['daily', 'weekly', 'monthly'].map((i) => [i, nanos[i] ?? nanos]));
     const departmentWindows = Object.fromEntries(intervals.filter((i) => i !== 'lifetime').map((i) => [i, nanos[i] ?? nanos]));
-    return { workspace: each, department: departmentWindows, seedDepartment: departmentWindows, seedKey: keyWindows, keyItems: nanos.daily ?? nanos };
+    return { workspace: each, department: departmentWindows, departmentAlerts: departmentWindows, seedDepartment: departmentWindows, seedKey: keyWindows, keyItems: nanos.daily ?? nanos };
   };
 
   await check('a debited batch counts its debit at its time, not its placeholders or rows, everywhere', async () => {
@@ -474,7 +479,7 @@ try {
     await db.exec(`insert into public.gateway_requests (workspace_id, request_id, key_id, success, cost_nanos, created_at) values
       ('${WS_RECON}', 'batch_usage:b-recon:1', '${KEY.recon}', true, ${50 * DOLLAR}, now() + interval '3 days'),
       ('${WS_RECON}', 'batch_usage:b-late:1', '${KEY.recon}', true, ${6 * DOLLAR}, now() + interval '3 days'),
-      ('${WS_RECON}', 'batch_usage:b-late-res:1', '${KEY.recon}', true, ${2 * DOLLAR}, now() + interval '3 days')`);
+      ('${WS_RECON}', 'batch_usage:b-late-res:1', '${KEY.recon}', true, ${2 * DOLLAR}, now())`);
     // b-late-res has no debit yet: its row counts.
     assert.deepEqual(await surfaces(WS_RECON, KEY.recon), everywhere(128 * DOLLAR));
     // Before capture, a hold's placeholders count toward the key, the hold itself toward budgets.
@@ -586,6 +591,48 @@ try {
     await db.query(`update public.gateway_requests set expected_cost_nanos = $2 where workspace_id = $1 and request_id = 'pend-newer'`, [WS_LEGACY, 6 * DOLLAR]);
     assert.equal(await total('budget_spend_items', `'${WS_LEGACY}', null`), 10 * DOLLAR);
     assert.equal(await total('key_spend_items', `'${WS_LEGACY}', null, array['${KEY.legacy}']::uuid[]`), 10 * DOLLAR);
+  });
+  await check('charges an older gateway wrote without a key count toward the key and department of their request row or batch', async () => {
+    // During a deploy, Workers still running main's code charge through
+    // gateway_charge_with_credit_cache with main's four arguments (pipeline/pricing/persist.ts),
+    // and capture a batch without a reservation as batch_capture:<batch> the same way
+    // (core/batch-finalization.ts): the charge row has no key. Their stream finalization failure
+    // writes main's audit row: key and billing id, no cost, and billing_status only in
+    // detail_metadata.accounting_finalization (pipeline/after/stream.ts, audit.ts). It is dated before
+    // the 2026-11-09 cutoff, as such rows are; the charge counts at its own (today's) time.
+    await db.exec(await readSchema('public/functions/gateway_charge_with_credit_cache.sql'));
+    await setUp(WS_OLD, KEY.old, OLD, ['daily']);
+    const oldCharge = (requestId, nanos) => asService(() => db.query(
+      `select public.gateway_charge_with_credit_cache(p_workspace_id => $1, p_request_id => $2, p_cost_nanos => $3, p_credit_snapshot_balance_nanos => $4) as r`,
+      [WS_OLD, requestId, nanos, null]));
+    await oldCharge('billing-old-stream', 110 * DOLLAR);
+    await db.query(`insert into public.gateway_requests (workspace_id, request_id, billing_request_id, key_id, success, status_code,
+      detail_metadata, created_at) values ($1, 'req-old-stream', 'billing-old-stream', $2, false, 500, $3, '2026-11-08T12:00:00Z')`,
+      [WS_OLD, KEY.old, {
+        stage: 'execute', testing_mode: false, response_timeline: [],
+        accounting_finalization: {
+          upstream_status: 200, response_delivered: true, billing_status: 'pending_reconciliation', cause: 'gateway_charge_not_applied:unknown',
+          billing_request_id: 'billing-old-stream', native_response_id: 'chatcmpl-old', finish_reason: 'stop',
+          raw_usage: { prompt_tokens: 10, completion_tokens: 20 }, pricing_card: null,
+        },
+        labels: [],
+      }]);
+    // A batch captured without a reservation; its job carries the key in meta.apiKeyId.
+    await db.query(`insert into public.gateway_async_operations (workspace_id, kind, internal_id, status, meta) values ($1, 'batch', 'b-old', 'completed', $2)`,
+      [WS_OLD, { resource: 'job', apiKeyId: KEY.old, provider: 'openai', status: 'completed' }]);
+    await oldCharge('batch_capture:b-old', 7 * DOLLAR);
+    assert.equal((await one(`select key_id from public.gateway_request_charges where workspace_id = $1 and request_id = 'billing-old-stream'`, [WS_OLD])).key_id, null, 'the old call leaves the key empty');
+    // $110 + $7 on every surface, not only the workspace.
+    assert.deepEqual(await surfaces(WS_OLD, KEY.old), everywhere(117 * DOLLAR));
+    // Hold admission's key cap counts them too: $4 more does not fit under $120 a day.
+    await db.query(`update public.keys set daily_limit_cost_nanos = $2 where id = $1`, [KEY.old, 120 * DOLLAR]);
+    assert.equal((await reserve(WS_OLD, 'video_hold:old-cap', 4 * DOLLAR, KEY.old, 1)).reason, 'daily_cost_limit_reached');
+    await db.query(`update public.keys set daily_limit_cost_nanos = $2 where id = $1`, [KEY.old, 10000 * DOLLAR]);
+    // A keyless charge with no request row and no job counts toward the workspace only.
+    await oldCharge('billing-old-orphan', 3 * DOLLAR);
+    assert.equal(Number((await workspaceStatus(WS_OLD)).budgets[0].usage_nanos), 120 * DOLLAR);
+    assert.deepEqual((({ workspace, ...rest }) => rest)(await surfaces(WS_OLD, KEY.old)),
+      (({ workspace, ...rest }) => rest)(everywhere(117 * DOLLAR)));
   });
   await check('the seed leaves out request ids the coordinator already counts', async () => {
     const seeded = await asService(async () => (await one(`select public.gateway_spend_limit_seed($1, $2::uuid[], array['stream-cancelled']) as r`, [WS_CAP, [KEY.cap]])).r);

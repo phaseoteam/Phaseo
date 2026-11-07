@@ -35,9 +35,10 @@ const redefinedLast = /department_budget_key_departments/;
 const COMMENT_LINE = /^COMMENT ON TABLE .*$/m;
 const sweep = at => asService(async () => (await one('select public.sweep_department_budget_alerts($1) r', [at])).r);
 const status = (workspace, at = NOW) => asService(async () => (await one('select public.workspace_department_budget_status($1, $2) r', [workspace, at])).r);
-const usage = (workspace, key, bucket, cost) => db.query(
-    `insert into public.v2_private_usage_15m (workspace_id, bucket_start, model_id, key_id, requests, successful_requests, cost_nanos)
-     values ($1, $2, 'openai/gpt-6-astra', $3, 1, 1, $4)`, [workspace, bucket, key, cost * DOLLAR]);
+// A successful request (status reads what admission enforces: private.budget_spend_items).
+const usage = (workspace, key, at, cost) => db.query(
+    `insert into public.gateway_requests (workspace_id, key_id, endpoint, success, cost_nanos, created_at)
+     values ($1, $3, 'chat.completions', true, $4, $2)`, [workspace, at, key, cost * DOLLAR]);
 const events = () => rows(`select kind, dedupe_key, payload -> 'push' ->> 'title' as title, payload -> 'push' ->> 'body' as body,
   payload -> 'push' ->> 'href' as href from public.workspace_notification_events order by created_at, kind, title`);
 
@@ -62,8 +63,11 @@ try {
     // 20261107020012_workspace_department_budgets_comment replaced the table comment again.
     const holdsMigration = await read('../migrations/20261107020012_workspace_department_budgets_comment.sql');
     assert.ok(holdsMigration.includes(tableDefinition.match(COMMENT_LINE)[0]), 'the latest table comment is in its migration');
-    assert.equal(blockMigration.replace(/^SET local check_function_bodies = off;\n\n/, ''), `${sweepDefinition}\n${blockMigration.match(COMMENT_LINE)[0]}\n`,
-        'the blocking migration matches the declarative sweep');
+    // The sweep was last replaced by 20261107020007_budget_enforcement_money_hygiene (spend is what
+    // admission enforces); the blocking migration added its 100% alert.
+    assert.ok((await read('../migrations/20261107020007_budget_enforcement_money_hygiene.sql')).includes(sweepDefinition.trim()),
+        'the latest migration replacing the sweep ships it');
+    assert.ok(blockMigration.includes('department_budget_reached'), 'the blocking migration added the 100% alert');
     const manifest = JSON.parse(await read('../schemas/.pgdelta-export.json'));
     for (const file of schemaFiles) {
         const path = file.replace('../schemas/', '');
@@ -99,8 +103,23 @@ try {
       );
       create table public.gateway_requests (
         id uuid primary key default gen_random_uuid(), workspace_id uuid not null, key_id uuid, endpoint text not null,
-        success boolean not null default false, cost_nanos bigint, created_at timestamptz not null default now()
+        success boolean not null default false, cost_nanos bigint, created_at timestamptz not null default now(),
+        request_id text not null default gen_random_uuid()::text, billing_request_id text, expected_cost_nanos bigint, detail_metadata jsonb
       );
+      -- What private.budget_spend_items reads besides request rows.
+      create table public.gateway_wallet_reservations (workspace_id uuid not null, reservation_id text not null, key_id uuid,
+        amount_nanos bigint not null default 0, status text not null default 'held', hold_ref_id text, captured_nanos bigint default 0,
+        released_nanos bigint default 0, settled_amount_nanos bigint, created_at timestamptz not null default now(),
+        primary key (workspace_id, reservation_id));
+      create table public.gateway_realtime_sessions (workspace_id uuid not null, session_id text not null, key_id uuid,
+        primary key (workspace_id, session_id));
+      create table public.gateway_request_charges (workspace_id uuid not null, request_id text not null, cost_nanos bigint not null,
+        status text not null, is_final boolean not null default true, key_id uuid, created_at timestamptz not null default now(),
+        primary key (workspace_id, request_id));
+      create table public.credit_ledger (id uuid primary key default gen_random_uuid(), workspace_id uuid, kind text, amount_nanos bigint,
+        ref_type text, ref_id text, source_ref_type text, source_ref_id text, status text, created_at timestamptz not null default now());
+      create table public.gateway_async_operations (workspace_id uuid not null, kind text not null, internal_id text not null,
+        meta jsonb not null default '{}', unique (workspace_id, kind, internal_id));
       create table public.v2_private_usage_15m (
         workspace_id uuid not null, bucket_start timestamptz not null, model_id text, provider_model_id text, key_id uuid, app_id uuid,
         byok boolean not null default false, requests bigint not null default 0, successful_requests bigint not null default 0,
@@ -123,7 +142,8 @@ try {
     await db.exec(attributionMigration);
     await db.exec(blockMigration);
     await db.exec(primaryMigration);
-    // The current status function (it also counts charged async requests that did not succeed).
+    // The current status function, over the shared budget calculation.
+    for (const file of ['../schemas/private/functions/unbilled_spend.sql', '../schemas/private/functions/budget_spend_items.sql']) await db.exec(await read(file));
     await db.exec(await read('../schemas/public/functions/workspace_department_budget_status.sql'));
     assert.match((await one(`select obj_description('public.workspace_department_budgets'::regclass, 'pg_class') c`)).c, /Budgets block the department's API-key requests/);
 
@@ -156,8 +176,7 @@ try {
     await db.exec(`
       insert into public.gateway_requests (workspace_id, key_id, endpoint, success, cost_nanos, created_at) values
         ('${ACME}', '${KEY.u3}', 'batch', true, ${4 * DOLLAR}, '2026-10-10T00:00:00Z'),
-        ('${ACME}', '${KEY.u3}', 'batch', false, 0, '2026-10-10T00:00:00Z'),
-        ('${ACME}', '${KEY.u3}', 'chat.completions', true, ${100 * DOLLAR}, '2026-10-10T00:00:00Z');
+        ('${ACME}', '${KEY.u3}', 'batch', false, 0, '2026-10-10T00:00:00Z');
     `);
 
     // Nothing to do without budgets.
@@ -173,9 +192,8 @@ try {
 
     // Engineering this month: u2 $35 (all of u2's unlinked spend), u3 $20 + a $4 batch (moved to
     // Engineering by the override), the OAuth user $25. Not u4 (override with no department), not
-    // the Sales-linked key, not September, not a failed batch that was not charged (a charged one
-    // counts: budget-enforcement-money-hygiene), and not a synchronous request from
-    // gateway_requests (the rollup already has those).
+    // the Sales-linked key, not September, and not a failed batch that was not charged (a charged one
+    // counts: budget-enforcement-money-hygiene).
     const acme = await status(ACME);
     const byName = Object.fromEntries(acme.map(b => [`${b.department_name}:${b.interval}`, b]));
     assert.deepEqual(Object.keys(byName), ['Engineering:monthly', 'Sales:daily', 'Sales:monthly']);
