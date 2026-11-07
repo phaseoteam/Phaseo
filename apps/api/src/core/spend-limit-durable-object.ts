@@ -132,6 +132,12 @@ type Pending = {
 	 * expires, the seed counts the request's charge row (no longer excluded) instead.
 	 */
 	stepped?: { final: boolean };
+	/**
+	 * Opened by a record other than the request's first checkpoint (checkpoint 1 was lost, or a
+	 * one-off charge settled as a final): the seed in use may already count its charge row, so it
+	 * counts from memory only once a seed that excludes its ids has been published.
+	 */
+	awaitingSeed?: boolean;
 };
 
 type Lease = {
@@ -368,19 +374,16 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 		const existing = this.pending.get(entry.billingRequestId);
 		const replace = entry.replace === true;
 		const final = replace && entry.final === true;
+		let awaitingSeed = false;
 		if (replace) {
 			if (!existing) {
-				// Only a request's first checkpoint opens its entry. Any other record for an entry this
-				// coordinator does not hold (expired, or lost on a restart) is ignored: its charge row
-				// is no longer excluded from the seed, which counts it.
-				if (final) {
-					// Delivery can reorder the final ahead of the first checkpoint: remember it, so that
-					// checkpoint is ignored too and the seed counts the charge row's net (often 0).
-					this.markSeen(entry.billingRequestId);
-					return false;
-				}
-				const first = entry.revision === 1 && !this.seen.has(entry.billingRequestId);
-				if (!first) return false;
+				// A record for an entry this coordinator held before (expired, retired at a period end,
+				// or settled) is ignored: its charge row is no longer excluded, and the seed counts it.
+				if (this.seen.has(entry.billingRequestId)) return false;
+				// Any other record opens the entry at its total: the first checkpoint, or a later one or
+				// the final when checkpoint 1 never arrived (or was reordered after the final, which a
+				// held final entry then ignores).
+				awaitingSeed = !(entry.revision === 1 && !final);
 			} else {
 				if (!existing.stepped || existing.keyId !== entry.keyId || existing.stepped.final) return false;
 				// A checkpoint only raises the charged total (delivery can reorder checkpoints); the final
@@ -412,8 +415,10 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			at,
 			recordedAt: now,
 			persisted: false,
-			...(replace ? { stepped: { final: false } } : {}),
+			...(replace ? { stepped: { final } } : {}),
+			...(awaitingSeed ? { awaitingSeed: true } : {}),
 		});
+		if (awaitingSeed) this.reseedInBackground();
 		const lease = entry.leaseId ? this.leases.get(entry.leaseId) : undefined;
 		if (lease && lease.keyId === entry.keyId) {
 			lease.successes += requests;
@@ -523,6 +528,8 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 		} finally {
 			if (this.seeding === run) this.seeding = null;
 		}
+		// An entry opened while this seed loaded is not excluded by it yet.
+		if ([...this.pending.values()].some((entry) => entry.awaitingSeed)) this.reseedInBackground();
 	}
 
 	private async runSeed(extraKeyId: string | null): Promise<void> {
@@ -550,6 +557,7 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			const now = Date.now();
 			if (attempt < MAX_SEED_ATTEMPTS && excluded.some(({ entry }) => this.staleness(entry, now))) continue;
 			chunks.forEach((chunk, index) => this.applySeed(seeds[index], chunk, persistedBefore));
+			for (const { entry } of excluded) delete entry.awaitingSeed;
 			return;
 		}
 	}
@@ -663,7 +671,7 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 		let requests = base.requests;
 		let cost = base.cost;
 		for (const entry of this.pending.values()) {
-			if (entry.keyId === keyId && entry.at >= windows[window]) {
+			if (entry.keyId === keyId && !entry.awaitingSeed && entry.at >= windows[window]) {
 				requests += entry.requests;
 				cost += entry.cost;
 			}
@@ -674,7 +682,7 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 	private budgetUsage(budget: BudgetState): number {
 		let usage = budget.statusUsage;
 		for (const entry of this.pending.values()) {
-			if (!entry.persisted && (budget.windowStart === null || entry.at >= budget.windowStart)) usage += entry.cost;
+			if (!entry.persisted && !entry.awaitingSeed && (budget.windowStart === null || entry.at >= budget.windowStart)) usage += entry.cost;
 		}
 		return usage;
 	}
@@ -720,7 +728,7 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 	private departmentUsage(budget: DepartmentBudgetState): number {
 		let usage = budget.base;
 		for (const entry of this.pending.values()) {
-			if (budget.keyIds.has(entry.keyId) && entry.at >= budget.windowStart) usage += entry.cost;
+			if (budget.keyIds.has(entry.keyId) && !entry.awaitingSeed && entry.at >= budget.windowStart) usage += entry.cost;
 		}
 		return usage;
 	}

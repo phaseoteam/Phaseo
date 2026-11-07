@@ -387,15 +387,21 @@ describe("spend-limit coordinator", () => {
 			expect(await daily()).toBe(300);
 		});
 
-		it("is dropped by a restart, and the seed counts the charge row", async () => {
+		it("is dropped by a restart; the seed counts the charge row until a later record opens it again", async () => {
 			await checkpoint("b-restart", 300, 1);
 			coordinator = createCoordinator();
 			await reseed();
 			expect(database.calls.at(-1)?.exclude).toEqual([]);
 			expect(await daily()).toBe(300);
-			await coordinator.record(WORKSPACE, { ...entry("b-restart"), costNanos: 500, revision: 2 });
+			// Checkpoint 2 reopens it: counted from memory once a seed excludes the charge row, never twice.
+			await checkpoint("b-restart", 500, 2);
+			await flush();
+			expect(await daily()).toBe(500);
+			debit("b-restart", 0);
 			await coordinator.record(WORKSPACE, { ...entry("b-restart"), costNanos: 0, final: true });
-			expect(await daily()).toBe(300);
+			expect(await daily()).toBe(0);
+			await reseed();
+			expect(await daily()).toBe(0);
 		});
 
 		it.each([
@@ -492,17 +498,48 @@ describe("spend-limit coordinator", () => {
 			// The stream was refunded to 0 at its final; delivery put the final first.
 			debit("b-reordered", 300);
 			debit("b-reordered", 0);
-			expect(await coordinator.record(WORKSPACE, { ...entry("b-reordered"), costNanos: 0, final: true })).toMatchObject({ duplicates: 1 });
+			// The final opens the entry, set at 0; the late checkpoint cannot raise a final entry.
+			expect(await coordinator.record(WORKSPACE, { ...entry("b-reordered"), costNanos: 0, final: true })).toMatchObject({ duplicates: 0 });
 			expect(await coordinator.record(WORKSPACE, { ...entry("b-reordered"), costNanos: 300, revision: 1 })).toMatchObject({ duplicates: 1 });
+			await flush();
 			expect(await daily()).toBe(0);
 			await reseed();
 			expect(await daily()).toBe(0);
 		});
 
-		it("ignores records for an entry it never held", async () => {
-			expect(await coordinator.record(WORKSPACE, { ...entry("b-unknown"), costNanos: 400, revision: 2 })).toMatchObject({ duplicates: 1 });
-			expect(await coordinator.record(WORKSPACE, { ...entry("b-unknown"), costNanos: 400, final: true })).toMatchObject({ duplicates: 1 });
-			expect(await daily()).toBe(0);
+		it("counts a request whose first checkpoint never arrived, once", async () => {
+			// Checkpoint 1 debited $100 but its record was lost; the seed already counts the charge row.
+			debit("b-lost", 100);
+			await reseed();
+			expect(await daily()).toBe(100);
+			// Checkpoint 2 opens the entry. It counts from memory only once a seed excluding the charge
+			// row is published, which the coordinator starts at once: never $100 + $250.
+			let unstall!: () => void;
+			database.stall = new Promise((resolve) => { unstall = resolve; });
+			await checkpoint("b-lost", 250, 2);
+			expect(await daily()).toBe(100);
+			database.stall = null;
+			unstall();
+			await flush();
+			expect(database.calls.at(-1)?.exclude.sort()).toEqual(["b-lost", "req-b-lost"]);
+			expect(await daily()).toBe(250);
+			debit("b-lost", 200);
+			await coordinator.record(WORKSPACE, { ...entry("b-lost"), costNanos: 200, final: true });
+			expect(await daily()).toBe(200);
+			await reseed();
+			expect(await daily()).toBe(200);
+		});
+
+		it("counts a final for a request it never held (every checkpoint record lost, or a one-off charge)", async () => {
+			debit("b-final-only", 300);
+			await coordinator.record(WORKSPACE, { ...entry("b-final-only"), costNanos: 300, final: true });
+			await flush();
+			expect(database.calls.at(-1)?.exclude.sort()).toEqual(["b-final-only", "req-b-final-only"]);
+			expect(await daily()).toBe(300);
+			// Later records for it change nothing.
+			expect(await coordinator.record(WORKSPACE, { ...entry("b-final-only"), costNanos: 900, revision: 3 })).toMatchObject({ duplicates: 1 });
+			await reseed();
+			expect(await daily()).toBe(300);
 		});
 	});
 
