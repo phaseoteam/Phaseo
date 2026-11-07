@@ -590,29 +590,44 @@ try {
     assert.deepEqual(await surfaces(WS_PEND, KEY.pend), everywhere(10.5 * DOLLAR));
   });
 
-  await check('billing_status alone marks a row pending only before 2026-11-09', async () => {
-    // Gateway code before this change flagged pending rows only in detail_metadata; the gateway now
-    // always sets expected_cost_nanos. A legacy row (8 Nov) and a newer one (10 Nov), each flagged by
-    // billing_status only, each with an applied charge below its row's cost.
+  await check('billing_status alone marks a row pending only before the deploy marker, read once per statement', async () => {
+    // Gateway code before this release flagged pending rows only in detail_metadata; the gateway
+    // now always sets expected_cost_nanos. private.billing_cutoffs (#3534's first migration) holds
+    // the deploy's marker: the migration time plus the two hours old Workers take to drain. Here it
+    // is moved to an hour ago. A row a minute before it, one exactly at it and one a minute after
+    // it, each flagged by billing_status only, each with an applied charge below its row's cost.
+    const marker = (await one(`select pending_json_cutoff as at from private.billing_cutoffs`)).at;
     await db.exec(`
+      update private.billing_cutoffs set pending_json_cutoff = now() - interval '1 hour';
       insert into public.workspaces (id) values ('${WS_LEGACY}');
       insert into public.keys (id, workspace_id) values ('${KEY.legacy}', '${WS_LEGACY}');
-      insert into public.gateway_request_charges (workspace_id, request_id, cost_nanos, status, is_final, key_id, created_at) values
-        ('${WS_LEGACY}', 'billing-legacy', ${4 * DOLLAR}, 'applied', true, '${KEY.legacy}', '2026-11-08T12:00:00Z'),
-        ('${WS_LEGACY}', 'billing-newer', ${6 * DOLLAR}, 'applied', true, '${KEY.legacy}', '2026-11-10T12:00:00Z');
-      insert into public.gateway_requests (workspace_id, request_id, billing_request_id, key_id, success, cost_nanos, detail_metadata, created_at) values
-        ('${WS_LEGACY}', 'pend-legacy', 'billing-legacy', '${KEY.legacy}', false, ${5 * DOLLAR},
-          '{"accounting_finalization": {"billing_status": "pending_reconciliation"}}', '2026-11-08T12:00:01Z'),
-        ('${WS_LEGACY}', 'pend-newer', 'billing-newer', '${KEY.legacy}', false, ${7 * DOLLAR},
-          '{"accounting_finalization": {"billing_status": "pending_reconciliation"}}', '2026-11-10T12:00:01Z');`);
-    // The legacy row counts its $4 charge; the newer one is not pending, so its row's $7 counts.
+      insert into public.gateway_request_charges (workspace_id, request_id, cost_nanos, status, is_final, key_id, created_at)
+        select '${WS_LEGACY}', billing, cost, 'applied', true, '${KEY.legacy}', now() - interval '2 hours'
+        from (values ('billing-legacy', ${4 * DOLLAR}), ('billing-at', ${2 * DOLLAR}), ('billing-newer', ${6 * DOLLAR})) v(billing, cost);
+      insert into public.gateway_requests (workspace_id, request_id, billing_request_id, key_id, success, cost_nanos, detail_metadata, created_at)
+        select '${WS_LEGACY}', request, billing, '${KEY.legacy}', false, cost,
+          '{"accounting_finalization": {"billing_status": "pending_reconciliation"}}', (select pending_json_cutoff from private.billing_cutoffs) + offset_by
+        from (values ('pend-legacy', 'billing-legacy', ${5 * DOLLAR}, interval '-1 minute'),
+                     ('pend-at', 'billing-at', ${3 * DOLLAR}, interval '0'),
+                     ('pend-newer', 'billing-newer', ${7 * DOLLAR}, interval '1 minute')) v(request, billing, cost, offset_by);`);
+    // The legacy row counts its $4 charge; the rows at and after the marker are not pending, so
+    // their rows' $3 and $7 count.
     const total = async (fn, args) => Number((await one(`select coalesce(sum(nanos), 0)::bigint as n from private.${fn}(${args})`)).n);
-    assert.equal(await total('budget_spend_items', `'${WS_LEGACY}', null`), 11 * DOLLAR);
-    assert.equal(await total('key_spend_items', `'${WS_LEGACY}', null, array['${KEY.legacy}']::uuid[]`), 11 * DOLLAR);
-    // A newer row is read for its pending state through expected_cost_nanos only.
+    assert.equal(await total('budget_spend_items', `'${WS_LEGACY}', null`), 14 * DOLLAR);
+    assert.equal(await total('key_spend_items', `'${WS_LEGACY}', null, array['${KEY.legacy}']::uuid[]`), 14 * DOLLAR);
+    // Through the request-context path, which runs as service_role.
+    assert.equal(await asService(() => total('key_spend_items', `'${WS_LEGACY}', null, array['${KEY.legacy}']::uuid[]`)), 14 * DOLLAR);
+    // A row after the marker is read for its pending state through expected_cost_nanos only.
     await db.query(`update public.gateway_requests set expected_cost_nanos = $2 where workspace_id = $1 and request_id = 'pend-newer'`, [WS_LEGACY, 6 * DOLLAR]);
-    assert.equal(await total('budget_spend_items', `'${WS_LEGACY}', null`), 10 * DOLLAR);
-    assert.equal(await total('key_spend_items', `'${WS_LEGACY}', null, array['${KEY.legacy}']::uuid[]`), 10 * DOLLAR);
+    assert.equal(await total('budget_spend_items', `'${WS_LEGACY}', null`), 13 * DOLLAR);
+    assert.equal(await total('key_spend_items', `'${WS_LEGACY}', null, array['${KEY.legacy}']::uuid[]`), 13 * DOLLAR);
+    // The marker is read once per statement, not once per row: the readers call it as a scalar subquery.
+    for (const file of ['private/functions/budget_spend_items.sql', 'private/functions/key_spend_items.sql', 'private/functions/unbilled_spend.sql']) {
+      const source = (await readSchema(file)).replace(/--.*$/gm, '');
+      assert.doesNotMatch(source.replace(/\(select private\.pending_json_cutoff\(\)\)/g, ''), /pending_json_cutoff/, file);
+      assert.doesNotMatch(source, /2026-11-09/, file);
+    }
+    await db.query(`update private.billing_cutoffs set pending_json_cutoff = $1`, [marker]);
   });
   await check('charges an older gateway wrote without a key count toward the key and department of their request row or batch', async () => {
     // During a deploy, Workers still running main's code charge through
@@ -621,7 +636,7 @@ try {
     // (core/batch-finalization.ts): the charge row has no key. Their stream finalization failure
     // writes main's audit row: key and billing id, no cost, and billing_status only in
     // detail_metadata.accounting_finalization (pipeline/after/stream.ts, audit.ts). It is dated before
-    // the 2026-11-09 cutoff, as such rows are; the charge counts at its own (today's) time.
+    // the deploy's marker, as such rows are; the charge counts at its own (today's) time.
     await db.exec(await readSchema('public/functions/gateway_charge_with_credit_cache.sql'));
     await setUp(WS_OLD, KEY.old, OLD, ['daily']);
     const oldCharge = (requestId, nanos) => asService(() => db.query(
@@ -629,7 +644,7 @@ try {
       [WS_OLD, requestId, nanos, null]));
     await oldCharge('billing-old-stream', 110 * DOLLAR);
     await db.query(`insert into public.gateway_requests (workspace_id, request_id, billing_request_id, key_id, success, status_code,
-      detail_metadata, created_at) values ($1, 'req-old-stream', 'billing-old-stream', $2, false, 500, $3, '2026-11-08T12:00:00Z')`,
+      detail_metadata, created_at) values ($1, 'req-old-stream', 'billing-old-stream', $2, false, 500, $3, (select pending_json_cutoff from private.billing_cutoffs) - interval '1 hour')`,
       [WS_OLD, KEY.old, {
         stage: 'execute', testing_mode: false, response_timeline: [],
         accounting_finalization: {
@@ -699,7 +714,7 @@ try {
         select '${WS_PLAN}', 'plan-pending-' || i, 'plan-open-' || i, '${KEY.plan}', false, 3,
           case when i % 2 = 0 then 7 end,
           case when i % 2 = 1 then '{"accounting_finalization": {"billing_status": "pending_reconciliation"}}'::jsonb end,
-          case when i % 2 = 1 then timestamptz '2026-11-08 12:00:00+00' else now() end
+          case when i % 2 = 1 then (select pending_json_cutoff from private.billing_cutoffs) - interval '1 day' else now() end
         from generate_series(11, 14) i;
       analyze public.gateway_requests; analyze public.gateway_request_charges; analyze public.credit_ledger;`);
     // Each function's own body, prepared with its parameters and planned both ways: custom (the

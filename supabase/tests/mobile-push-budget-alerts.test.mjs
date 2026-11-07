@@ -199,6 +199,7 @@ try {
     await db.exec(await read('../schemas/public/functions/catalog_model_is_public.sql'));
     for (const file of migrations) await db.exec(await read(file));
     await db.exec(v4);
+    await db.exec(await read('../migrations/20261107015208_billing_cutoffs.sql'));
     for (const file of usageFiles) await db.exec(await read(file));
     await db.exec(await read('../schemas/public/functions/sweep_spend_limit_warnings.sql'));
 

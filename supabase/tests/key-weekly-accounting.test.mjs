@@ -12,7 +12,7 @@ const FOREIGN = '90000000-0000-4000-8000-000000000001';
 const schema = (path) => readFile(new URL(`../schemas/${path}`, import.meta.url), 'utf8');
 const db = new PGlite();
 try {
-  await db.exec(`create role service_role; create schema private;
+  await db.exec(`create role service_role; create role anon; create role authenticated; create schema private;
     create table public.gateway_requests(key_id uuid, workspace_id uuid, success boolean, created_at timestamptz, cost_nanos bigint,
       request_id text not null default gen_random_uuid()::text, billing_request_id text, expected_cost_nanos bigint, detail_metadata jsonb);
     create table public.gateway_request_charges(workspace_id uuid, request_id text, status text, cost_nanos bigint);
@@ -29,6 +29,7 @@ try {
       returns table (kind text, billing_request_id text, key_id uuid, at timestamptz, nanos bigint)
       language sql as $$ select 'charge', 'b1', '${KEY}'::uuid, '2026-09-30'::timestamptz, 4::bigint
         where p_workspace_id = '${WS}' and '${KEY}' = any (p_key_ids) and '2026-09-30' >= p_since $$;`);
+  await db.exec(await readFile(new URL('../migrations/20261107015208_billing_cutoffs.sql', import.meta.url), 'utf8'));
   await db.exec(await schema('private/functions/key_spend_items.sql'));
   for (const path of ['private/functions/gateway_context_access.sql', 'public/functions/gateway_fetch_request_context_without_workspace_budget.sql']) {
     const source = await schema(path);
