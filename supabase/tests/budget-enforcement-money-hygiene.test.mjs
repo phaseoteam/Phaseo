@@ -44,6 +44,7 @@ const WS_BATCHES = id('1', 9); // batch debits and their rows
 const WS_RECON = id('1', 10); // batches debited after their placeholders, rows persisted late
 const WS_STEP = id('1', 11); // a stepped request across period rollover
 const WS_PEND = id('1', 12); // requests pending reconciliation
+const WS_LEGACY = id('1', 13); // pending by billing_status only, either side of the cutoff
 const ENG = id('4', 1);
 const ROLL = id('4', 2);
 const CAP = id('4', 3);
@@ -51,7 +52,7 @@ const RECON = id('4', 4);
 const STEP = id('4', 5);
 const PEND = id('4', 6);
 const MEMBER = id('2', 1);
-const KEY = { linked: id('3', 1), member: id('3', 2), outside: id('3', 3), batch: id('3', 4), roll: id('3', 5), cap: id('3', 6), limited: id('3', 7), del: id('3', 8), batches: id('3', 9), recon: id('3', 10), step: id('3', 11), pend: id('3', 12), plan: id('3', 13) };
+const KEY = { linked: id('3', 1), member: id('3', 2), outside: id('3', 3), batch: id('3', 4), roll: id('3', 5), cap: id('3', 6), limited: id('3', 7), del: id('3', 8), batches: id('3', 9), recon: id('3', 10), step: id('3', 11), pend: id('3', 12), plan: id('3', 13), legacy: id('3', 14) };
 // Before every current period: the earlier of this week's Monday and the 1st, less a day.
 const BEFORE_PERIODS = `(least(date_trunc('week', now() at time zone 'utc'), date_trunc('month', now() at time zone 'utc')) at time zone 'utc' - interval '1 day')`;
 
@@ -519,7 +520,6 @@ try {
         ('${WS_PEND}', 'billing-null', ${2 * DOLLAR}, 'applied', true, '${KEY.pend}'),
         ('${WS_PEND}', 'billing-stale', ${DOLLAR}, 'applied', true, '${KEY.pend}'),
         ('${WS_PEND}', 'billing-zero', ${3 * DOLLAR}, 'applied', false, '${KEY.pend}'),
-        ('${WS_PEND}', 'billing-flag', ${4 * DOLLAR}, 'applied', true, '${KEY.pend}'),
         ('${WS_PEND}', 'billing-short', ${DOLLAR}, 'applied', true, '${KEY.pend}');
       insert into public.credit_ledger (workspace_id, kind, amount_nanos, ref_type, ref_id, source_ref_type, source_ref_id, status) values
         -- A stream that charged $3 at a checkpoint and whose final bill of $1 refunded $2 after its row was written.
@@ -534,22 +534,19 @@ try {
         ('${WS_PEND}', 'pend-stale', 'billing-stale', '${KEY.pend}', false, ${3 * DOLLAR}, ${DOLLAR}, null),
         -- The failed refund to 0: the confirmed $3 and an intended bill of 0.
         ('${WS_PEND}', 'pend-zero', 'billing-zero', '${KEY.pend}', false, ${3 * DOLLAR}, 0, null),
-        -- Pending by billing_status only, with its $4 charge applied; the row says $5.
-        ('${WS_PEND}', 'pend-flag', 'billing-flag', '${KEY.pend}', false, ${5 * DOLLAR}, null,
-          '{"accounting_finalization": {"billing_status": "pending_reconciliation"}}'),
         -- Charged $1 of an intended $2.50: the $1.50 it did not collect counts too.
         ('${WS_PEND}', 'pend-short', 'billing-short', '${KEY.pend}', false, ${DOLLAR}, ${2.5 * DOLLAR}, null),
         -- Pending with no charge row: its audit cost (0).
         ('${WS_PEND}', 'pend-none', 'billing-none', '${KEY.pend}', false, 0, ${2 * DOLLAR}, null);`);
-    // $2 + $1 + $3 + $4 + $2.50.
-    assert.deepEqual(await surfaces(WS_PEND, KEY.pend), everywhere(12.5 * DOLLAR));
+    // $2 + $1 + $3 + $2.50.
+    assert.deepEqual(await surfaces(WS_PEND, KEY.pend), everywhere(8.5 * DOLLAR));
     // The failed refund to 0 is reconciled: its +$3 refund lands.
     await db.exec(`insert into public.credit_ledger (workspace_id, kind, amount_nanos, ref_type, ref_id, source_ref_type, source_ref_id, status) values
       ('${WS_PEND}', 'adjustment', ${3 * DOLLAR}, 'gateway_request_charge', 'zero:final', 'gateway_request', 'billing-zero', 'applied');
       update public.gateway_request_charges set cost_nanos = 0, is_final = true where workspace_id = '${WS_PEND}' and request_id = 'billing-zero';`);
-    assert.deepEqual(await surfaces(WS_PEND, KEY.pend), everywhere(9.5 * DOLLAR));
-    // Hold admission's key cap reads the same $9.50: $0.40 more fits under a $10 cap, $0.60 does not.
-    await db.query(`update public.keys set daily_limit_cost_nanos = $2 where id = $1`, [KEY.pend, 10 * DOLLAR]);
+    assert.deepEqual(await surfaces(WS_PEND, KEY.pend), everywhere(5.5 * DOLLAR));
+    // Hold admission's key cap reads the same $5.50: $0.40 more fits under a $6 cap, $0.60 does not.
+    await db.query(`update public.keys set daily_limit_cost_nanos = $2 where id = $1`, [KEY.pend, 6 * DOLLAR]);
     assert.equal((await reserve(WS_PEND, 'video_hold:pend-fits', 0.4 * DOLLAR, KEY.pend, 1)).ok, true);
     assert.equal((await reserve(WS_PEND, 'video_hold:pend-over', 0.2 * DOLLAR, KEY.pend, 1)).reason, 'daily_cost_limit_reached');
     // The coordinator holding a pending request's admission lists both ids: its charge, movements and
@@ -557,7 +554,32 @@ try {
     const held = await asService(async () => (await one(`select public.gateway_spend_limit_seed($1, $2::uuid[], $3::text[]) as r`,
       [WS_PEND, [KEY.pend], ['pend-short', 'billing-short']])).r);
     // (Holds are not key usage: hold admission adds them itself.)
-    assert.equal(Number(held.keys[0].used.daily.cost_nanos), 7 * DOLLAR);
+    assert.equal(Number(held.keys[0].used.daily.cost_nanos), 3 * DOLLAR);
+  });
+
+  await check('billing_status alone marks a row pending only before 2026-11-09', async () => {
+    // Gateway code before this change flagged pending rows only in detail_metadata; the gateway now
+    // always sets expected_cost_nanos. A legacy row (8 Nov) and a newer one (10 Nov), each flagged by
+    // billing_status only, each with an applied charge below its row's cost.
+    await db.exec(`
+      insert into public.workspaces (id) values ('${WS_LEGACY}');
+      insert into public.keys (id, workspace_id) values ('${KEY.legacy}', '${WS_LEGACY}');
+      insert into public.gateway_request_charges (workspace_id, request_id, cost_nanos, status, is_final, key_id, created_at) values
+        ('${WS_LEGACY}', 'billing-legacy', ${4 * DOLLAR}, 'applied', true, '${KEY.legacy}', '2026-11-08T12:00:00Z'),
+        ('${WS_LEGACY}', 'billing-newer', ${6 * DOLLAR}, 'applied', true, '${KEY.legacy}', '2026-11-10T12:00:00Z');
+      insert into public.gateway_requests (workspace_id, request_id, billing_request_id, key_id, success, cost_nanos, detail_metadata, created_at) values
+        ('${WS_LEGACY}', 'pend-legacy', 'billing-legacy', '${KEY.legacy}', false, ${5 * DOLLAR},
+          '{"accounting_finalization": {"billing_status": "pending_reconciliation"}}', '2026-11-08T12:00:01Z'),
+        ('${WS_LEGACY}', 'pend-newer', 'billing-newer', '${KEY.legacy}', false, ${7 * DOLLAR},
+          '{"accounting_finalization": {"billing_status": "pending_reconciliation"}}', '2026-11-10T12:00:01Z');`);
+    // The legacy row counts its $4 charge; the newer one is not pending, so its row's $7 counts.
+    const total = async (fn, args) => Number((await one(`select coalesce(sum(nanos), 0)::bigint as n from private.${fn}(${args})`)).n);
+    assert.equal(await total('budget_spend_items', `'${WS_LEGACY}', null`), 11 * DOLLAR);
+    assert.equal(await total('key_spend_items', `'${WS_LEGACY}', null, array['${KEY.legacy}']::uuid[]`), 11 * DOLLAR);
+    // A newer row is read for its pending state through expected_cost_nanos only.
+    await db.query(`update public.gateway_requests set expected_cost_nanos = $2 where workspace_id = $1 and request_id = 'pend-newer'`, [WS_LEGACY, 6 * DOLLAR]);
+    assert.equal(await total('budget_spend_items', `'${WS_LEGACY}', null`), 10 * DOLLAR);
+    assert.equal(await total('key_spend_items', `'${WS_LEGACY}', null, array['${KEY.legacy}']::uuid[]`), 10 * DOLLAR);
   });
   await check('the seed leaves out request ids the coordinator already counts', async () => {
     const seeded = await asService(async () => (await one(`select public.gateway_spend_limit_seed($1, $2::uuid[], array['stream-cancelled']) as r`, [WS_CAP, [KEY.cap]])).r);
@@ -598,10 +620,11 @@ try {
           case i % 3 when 0 then timestamptz '2025-06-01' when 1 then now() else timestamptz '2027-06-01' end
         from generate_series(1, 300) i;
       -- Rows pending reconciliation, by expected cost and by billing_status, with applied charges.
-      insert into public.gateway_requests (workspace_id, request_id, billing_request_id, key_id, success, cost_nanos, expected_cost_nanos, detail_metadata)
+      insert into public.gateway_requests (workspace_id, request_id, billing_request_id, key_id, success, cost_nanos, expected_cost_nanos, detail_metadata, created_at)
         select '${WS_PLAN}', 'plan-pending-' || i, 'plan-open-' || i, '${KEY.plan}', false, 3,
           case when i % 2 = 0 then 7 end,
-          case when i % 2 = 1 then '{"accounting_finalization": {"billing_status": "pending_reconciliation"}}'::jsonb end
+          case when i % 2 = 1 then '{"accounting_finalization": {"billing_status": "pending_reconciliation"}}'::jsonb end,
+          case when i % 2 = 1 then timestamptz '2026-11-08 12:00:00+00' else now() end
         from generate_series(11, 14) i;
       analyze public.gateway_requests; analyze public.gateway_request_charges; analyze public.credit_ledger;`);
     // Each function's own body, prepared with its parameters and planned both ways: custom (the

@@ -36,7 +36,8 @@ CREATE OR REPLACE FUNCTION private.key_spend_items (
             and movement.workspace_id = served.workspace_id
             and movement.ref_type = 'gateway_request_charge')
         or ((served.expected_cost_nanos is not null
-            or coalesce(served.detail_metadata #>> '{accounting_finalization,billing_status}' = 'pending_reconciliation', false))
+            or (served.created_at < '2026-11-09 00:00:00+00'::timestamptz
+            and coalesce(served.detail_metadata -> 'accounting_finalization' ->> 'billing_status' = 'pending_reconciliation', false)))
           and exists (
             select 1 from public.gateway_request_charges charge
             where charge.workspace_id = served.workspace_id
@@ -83,7 +84,8 @@ CREATE OR REPLACE FUNCTION private.key_spend_items (
           and movement.workspace_id = charged.workspace_id
           and movement.ref_type = 'gateway_request_charge')
       or ((charged.expected_cost_nanos is not null
-          or coalesce(charged.detail_metadata #>> '{accounting_finalization,billing_status}' = 'pending_reconciliation', false))
+          or (charged.created_at < '2026-11-09 00:00:00+00'::timestamptz
+            and coalesce(charged.detail_metadata -> 'accounting_finalization' ->> 'billing_status' = 'pending_reconciliation', false)))
         and exists (
           select 1 from public.gateway_request_charges charge
           where charge.workspace_id = charged.workspace_id
