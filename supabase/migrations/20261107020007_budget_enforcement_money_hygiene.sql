@@ -87,6 +87,11 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
   --   #3534's (workspace_id, billing_request_id) index.
   -- * 'batch': a batch's debit, whole, at its time (rule c): a batch_capture:<batch> charge, or a
   --   reserved batch's async_job_charge ledger row (gateway_wallet_settle_once).
+  -- * 'video': a reserved video's async_job_charge debit, whole, at its time (settled or captured
+  --   from its video_hold reservation): its captured hold and its audit row's cost stop counting,
+  --   so the spend is dated when the money moved, not when the video was submitted.
+  -- Batch and video debits are matched by batch or reservation id, not billing id, so the
+  -- 2026-11-04 cut-off for charge rows does not apply to them.
   -- * 'unpaid': what a delivered request with an expected bill (expected_cost_nanos) has not had
   --   counted yet, per billing request id, at the time of its row with the largest expected
   --   amount: greatest(max(expected_cost_nanos) - counted, 0). Counted is its applied charge (one-off
@@ -170,20 +175,22 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
     and starts_with(charge.request_id, 'batch_capture:')
     and charge.status = 'applied'
     and charge.cost_nanos > 0
-    and charge.created_at >= greatest(coalesce(p_since, '-infinity'::timestamptz), '2026-11-04 00:00:00+00'::timestamptz)
+    and charge.created_at >= coalesce(p_since, '-infinity'::timestamptz)
     and (p_key_ids is null or coalesce(charge.key_id, job.key_id) = any (p_key_ids))
     and not (charge.request_id = any (coalesce(p_exclude_charge_ids, '{}'::text[])))
   union all
-  select 'batch'::text, debit.ref_id, hold.key_id, debit.created_at, -debit.amount_nanos
+  select case when starts_with(debit.ref_id, p_workspace_id::text || ':video_hold:') then 'video' else 'batch' end,
+    debit.ref_id, hold.key_id, debit.created_at, -debit.amount_nanos
   from public.credit_ledger debit
   join public.gateway_wallet_reservations hold
     on hold.workspace_id = debit.workspace_id
     and hold.reservation_id = substr(debit.ref_id, length(debit.workspace_id::text) + 2)
   where debit.workspace_id = p_workspace_id
     and debit.ref_type = 'async_job_charge'
-    and starts_with(debit.ref_id, p_workspace_id::text || ':batch_hold:')
+    and (starts_with(debit.ref_id, p_workspace_id::text || ':batch_hold:')
+      or starts_with(debit.ref_id, p_workspace_id::text || ':video_hold:'))
     and debit.amount_nanos < 0
-    and debit.created_at >= greatest(coalesce(p_since, '-infinity'::timestamptz), '2026-11-04 00:00:00+00'::timestamptz)
+    and debit.created_at >= coalesce(p_since, '-infinity'::timestamptz)
     and (p_key_ids is null or hold.key_id = any (p_key_ids))
   union all
   select 'unpaid'::text, owed.billing_request_id, owed.key_id, owed.at, owed.nanos
@@ -283,6 +290,10 @@ CREATE OR REPLACE FUNCTION private.key_spend_items (
             and debit.source_ref_id = split_part(served.request_id, ':', 2)
             and debit.workspace_id = served.workspace_id
             and debit.ref_type = 'async_job_charge')))
+      or (served.endpoint = 'video.generation' and exists (
+        select 1 from public.credit_ledger debit
+        where debit.ref_type = 'async_job_charge'
+          and debit.ref_id = served.workspace_id::text || ':video_hold:' || served.request_id))
       or (starts_with(served.request_id, 'batch_hold_usage:') and exists (
         select 1 from public.gateway_wallet_reservations hold
         where hold.workspace_id = served.workspace_id
@@ -304,6 +315,10 @@ CREATE OR REPLACE FUNCTION private.key_spend_items (
     and charged.cost_nanos > 0
     and charged.created_at >= coalesce(p_since, '-infinity'::timestamptz)
     and not (charged.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
+    and not (charged.endpoint = 'video.generation' and exists (
+        select 1 from public.credit_ledger debit
+        where debit.ref_type = 'async_job_charge'
+          and debit.ref_id = charged.workspace_id::text || ':video_hold:' || charged.request_id))
     and not (charged.billing_request_id is not null and (
       exists (
         select 1 from public.credit_ledger movement
@@ -427,6 +442,11 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
           and debit.source_ref_id = split_part(request.request_id, ':', 2)
           and debit.workspace_id = request.workspace_id
           and debit.ref_type = 'async_job_charge')))
+    -- A debited video's audit row (its debit counts, at its time).
+    and not (request.endpoint = 'video.generation' and exists (
+        select 1 from public.credit_ledger debit
+        where debit.ref_type = 'async_job_charge'
+          and debit.ref_id = request.workspace_id::text || ':video_hold:' || request.request_id))
     -- A settled hold's placeholders (batch_hold_usage:<reservation>:<n>).
     and not (starts_with(request.request_id, 'batch_hold_usage:') and exists (
       select 1 from public.gateway_wallet_reservations hold
@@ -443,6 +463,11 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     and request.cost_nanos > 0
     and request.created_at >= coalesce(p_since, '-infinity'::timestamptz)
     and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
+    -- A debited video's audit row.
+    and not (request.endpoint = 'video.generation' and exists (
+        select 1 from public.credit_ledger debit
+        where debit.ref_type = 'async_job_charge'
+          and debit.ref_id = request.workspace_id::text || ':video_hold:' || request.request_id))
     -- Charged in steps, or pending reconciliation with an applied charge.
     and not (request.billing_request_id is not null and (
       exists (
@@ -490,7 +515,12 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     and (reservation.status in ('held', 'reserved')
       or (reservation.status = 'captured'
         and (reservation.reservation_id like 'video_hold:%' or reservation.reservation_id like 'free_model_hold:%')
-        and reservation.created_at >= coalesce(p_since, '-infinity'::timestamptz)))
+        and reservation.created_at >= coalesce(p_since, '-infinity'::timestamptz)
+        -- A video hold whose debit is recorded counts through the debit (private.unbilled_spend).
+        and not exists (
+          select 1 from public.credit_ledger debit
+          where debit.ref_type = 'async_job_charge'
+            and debit.ref_id = reservation.workspace_id::text || ':' || reservation.reservation_id)))
   union all
   select unbilled.key_id, unbilled.at, false, unbilled.nanos
   from private.unbilled_spend(p_workspace_id, p_since, p_key_ids, p_exclude_request_ids, p_exclude_charge_ids) unbilled;
@@ -2602,6 +2632,12 @@ begin
         and (r.reservation_id like 'video_hold:%' or r.reservation_id like 'free_model_hold:%')
         and r.status in ('held', 'reserved', 'captured')
         and (r.status in ('held', 'reserved') or r.created_at >= least(v_day_start, v_week_start, v_month_start))
+        -- A captured video whose debit is recorded counts through the debit, at its time
+        -- (private.key_spend_items, above).
+        and not (r.status = 'captured' and exists (
+          select 1 from public.credit_ledger debit
+          where debit.ref_type = 'async_job_charge'
+            and debit.ref_id = r.workspace_id::text || ':' || r.reservation_id))
     )
     select
       coalesce(sum(cost) filter (where active or created_at >= v_day_start), 0) as day_cost,

@@ -141,6 +141,12 @@ begin
         and (r.reservation_id like 'video_hold:%' or r.reservation_id like 'free_model_hold:%')
         and r.status in ('held', 'reserved', 'captured')
         and (r.status in ('held', 'reserved') or r.created_at >= least(v_day_start, v_week_start, v_month_start))
+        -- A captured video whose debit is recorded counts through the debit, at its time
+        -- (private.key_spend_items, above).
+        and not (r.status = 'captured' and exists (
+          select 1 from public.credit_ledger debit
+          where debit.ref_type = 'async_job_charge'
+            and debit.ref_id = r.workspace_id::text || ':' || r.reservation_id))
     )
     select
       coalesce(sum(cost) filter (where active or created_at >= v_day_start), 0) as day_cost,
