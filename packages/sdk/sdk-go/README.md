@@ -4,12 +4,12 @@ Official Go SDK for Phaseo Gateway.
 
 Module path:
 
-`github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3`
+`github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v4`
 
 ## Installation
 
 ```bash
-go get github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3@latest
+go get github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v4@latest
 ```
 
 ## Quick start
@@ -21,7 +21,7 @@ import (
 	"context"
 	"fmt"
 
-	phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+	phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v4"
 )
 
 func main() {
@@ -150,7 +150,7 @@ fmt.Println(batchSocketURL, videoSocketURL, genericSocketURL, resourceSocketURL)
 The `realtime` package creates a realtime session and opens the relay WebSocket with `github.com/coder/websocket`. It is a separate package, so that dependency is only compiled when you import it. Provider events pass through unchanged.
 
 ```go
-import "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3/realtime"
+import "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v4/realtime"
 
 session, err := realtime.Connect(ctx, client, realtime.Options{Model: "openai/gpt-realtime-2", Voice: "marin"})
 if err != nil {
