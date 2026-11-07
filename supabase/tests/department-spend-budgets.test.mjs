@@ -143,6 +143,7 @@ try {
     await db.exec(blockMigration);
     await db.exec(primaryMigration);
     // The current status function, over the shared budget calculation.
+    await db.exec(await read('../migrations/20261107015208_billing_cutoffs.sql'));
     for (const file of ['../schemas/private/functions/unbilled_spend.sql', '../schemas/private/functions/budget_spend_items.sql']) await db.exec(await read(file));
     await db.exec(await read('../schemas/public/functions/workspace_department_budget_status.sql'));
     // And the current sweep (its 100% push names the one exception: OAuth access tokens).

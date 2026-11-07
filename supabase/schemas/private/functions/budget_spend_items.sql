@@ -69,7 +69,7 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
           and movement.workspace_id = request.workspace_id
           and movement.ref_type = 'gateway_request_charge')
       or ((request.expected_cost_nanos is not null
-          or (request.created_at < '2026-11-09 00:00:00+00'::timestamptz
+          or (request.created_at < (select private.pending_json_cutoff())
             and coalesce(request.detail_metadata -> 'accounting_finalization' ->> 'billing_status' = 'pending_reconciliation', false)))
         and exists (
           select 1 from public.gateway_request_charges charge
@@ -114,7 +114,7 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
           and movement.workspace_id = request.workspace_id
           and movement.ref_type = 'gateway_request_charge')
       or ((request.expected_cost_nanos is not null
-          or (request.created_at < '2026-11-09 00:00:00+00'::timestamptz
+          or (request.created_at < (select private.pending_json_cutoff())
             and coalesce(request.detail_metadata -> 'accounting_finalization' ->> 'billing_status' = 'pending_reconciliation', false)))
         and exists (
           select 1 from public.gateway_request_charges charge
