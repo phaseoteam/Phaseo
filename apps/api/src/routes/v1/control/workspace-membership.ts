@@ -9,8 +9,9 @@ import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { json, withRuntime } from "@/routes/utils";
-import { internalServerError, requireCapability, requireOAuthWorkspaceRole, rejectThirdPartyOAuthSpendingChange } from "./route-helpers";
+import { internalServerError, requireCapability, requireOAuthWorkspaceRole, requireWorkspaceOwner, rejectThirdPartyOAuthSpendingChange } from "./route-helpers";
 import { resolveAuthorizedWorkspace } from "./workspaces";
+import { retryTransaction } from "@/lib/retry-transaction";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 const INVITE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
@@ -100,25 +101,6 @@ async function actorUserId(auth: ManagementAuth, ownerUserId: string | null): Pr
 	return actor;
 }
 
-/**
- * Making someone an admin is the owner's call, as in Settings. The OAuth role check only covers
- * signed-in apps, so this also holds for management keys, which act as the person who created them.
- */
-async function requireWorkspaceOwner(
-	access: { auth: ManagementAuth; workspace: { id: string; owner_user_id?: string | null } },
-	message: string,
-): Promise<Response | null> {
-	if (access.auth.internal) return null;
-	const userId = String(access.auth.userId ?? "").trim();
-	if (userId && userId === String(access.workspace.owner_user_id ?? "")) return null;
-	if (userId) {
-		const { data, error } = await getSupabaseAdmin().from("workspace_members").select("role")
-			.eq("workspace_id", access.workspace.id).eq("user_id", userId).maybeSingle();
-		if (!error && String((data as { role?: unknown } | null)?.role ?? "").toLowerCase() === "owner") return null;
-	}
-	return json({ error: "forbidden", message }, 403, NO_STORE);
-}
-
 async function handleUpdateMemberRole(req: Request) {
 	try {
 		const access = await authenticateWorkspace(req, CAPABILITIES.WORKSPACES_WRITE, ["owner"]);
@@ -126,7 +108,7 @@ async function handleUpdateMemberRole(req: Request) {
 		// A member can create keys and spend the workspace's credits, so apps can't hand out roles.
 		const appError = rejectThirdPartyOAuthSpendingChange(access.auth, "Apps that use Sign in with Phaseo can't change members' roles. The person can change them under Settings, Members.");
 		if (appError) return appError;
-		const ownerError = await requireWorkspaceOwner(access, "Only the workspace owner can change members' roles.");
+		const ownerError = await requireWorkspaceOwner(access.auth, access.workspace, "Only the workspace owner can change members' roles.");
 		if (ownerError) return ownerError;
 		const userId = resourceId(new URL(req.url), "members");
 		if (!userId) return json({ error: "bad_request", message: "Member user id is required" }, 400, NO_STORE);
@@ -137,12 +119,12 @@ async function handleUpdateMemberRole(req: Request) {
 		if (userId === String(access.workspace.owner_user_id ?? "")) return json({ error: "conflict", message: "Workspace owner role cannot be changed" }, 409, NO_STORE);
 
 		const supabase = getSupabaseAdmin();
-		const { data, error } = await supabase.from("workspace_members")
+		const { data, error } = await retryTransaction(() => supabase.from("workspace_members")
 			.update({ role })
 			.eq("workspace_id", access.workspace.id)
 			.eq("user_id", userId)
 			.select("workspace_id,user_id,role,joined_at")
-			.maybeSingle();
+			.maybeSingle());
 		if (error) throw new Error(error.message || "Failed to update workspace member");
 		if (!data) return json({ error: "not_found", message: "Workspace member not found" }, 404, NO_STORE);
 		await recordWorkspaceAuditEvent(supabase, {
@@ -190,7 +172,7 @@ async function handleCreateInvite(req: Request) {
 		const role = String(body.role ?? "member").trim().toLowerCase();
 		if (role !== "admin" && role !== "member") return json({ error: "bad_request", message: "role must be admin or member" }, 400, NO_STORE);
 		if (role === "admin") {
-			const ownerError = await requireWorkspaceOwner(access, "Only the workspace owner can invite admins.");
+			const ownerError = await requireWorkspaceOwner(access.auth, access.workspace, "Only the workspace owner can invite admins.");
 			if (ownerError) return ownerError;
 		}
 		const expiresInDays = body.expires_in_days == null ? 7 : Number(body.expires_in_days);
@@ -296,14 +278,16 @@ async function handleDecideJoinRequest(req: Request, decision: "approve" | "reje
 		if (!requestId) return json({ error: "bad_request", message: "Join request id is required" }, 400, NO_STORE);
 		const decidedBy = await actorUserId(access.auth, access.workspace.owner_user_id);
 		const supabase = getSupabaseAdmin();
-		const { data, error } = await supabase.rpc("management_decide_workspace_join_request", {
+		const { data, error } = await retryTransaction(() => supabase.rpc("management_decide_workspace_join_request", {
 			p_workspace_id: access.workspace.id,
 			p_request_id: requestId,
 			p_decision: decision,
 			p_actor_user_id: decidedBy,
-		});
+		}));
 		if (error) {
 			if (error.code === "P0002") return json({ error: "not_found", message: "Join request not found" }, 404, NO_STORE);
+			// The approval function refuses an admin invite unless the owner approves it.
+			if (error.code === "42501") return json({ error: "forbidden", message: "Only the workspace owner can approve someone whose invite makes them an admin." }, 403, NO_STORE);
 			if (error.code === "23514") return json({ error: "conflict", message: error.message }, 409, NO_STORE);
 			throw new Error(error.message || "Failed to decide workspace join request");
 		}

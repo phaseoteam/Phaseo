@@ -51,6 +51,11 @@ vi.mock("@/runtime/env", () => ({
 	getBindings: () => ({ KEY_PEPPER_ACTIVE: "pepper" }),
 	getSupabaseAdmin: () => ({
 		from: (table: string) => {
+			// The management key acts as its creator, an admin of the workspace.
+			if (table === "workspace_members") {
+				const membership: any = { select: () => membership, eq: () => membership, maybeSingle: async () => ({ data: { role: "admin" }, error: null }) };
+				return membership;
+			}
 			if (table !== "management_keys") throw new Error(`Unexpected table: ${table}`);
 			return buildQuery();
 		},
@@ -64,6 +69,7 @@ vi.mock("@/pipeline/before/guards", () => ({
 			workspaceId: "ws_1",
 			apiKeyId: "mgmt_auth",
 			authMethod: "api_key",
+			userId: "user_1",
 		},
 	})),
 }));

@@ -7989,12 +7989,32 @@ class WorkspaceMember
 	public $workspace_id;
 }
 
+class WorkspaceMemberAddFailure
+{
+	/** @var string */
+	public $code;
+	/** @var string */
+	public $message;
+	/** @var string */
+	public $user_id;
+}
+
 class WorkspaceMemberAddResponse
 {
 	/** @var int */
 	public $added_count;
 	/** @var array */
+	public $approved;
+	/** @var array|null */
 	public $data;
+	/** @var string|null */
+	public $error;
+	/** @var array */
+	public $failed;
+	/** @var string|null */
+	public $message;
+	/** @var array */
+	public $not_attempted;
 }
 
 class WorkspaceMemberBulkRequest

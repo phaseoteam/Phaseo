@@ -4037,13 +4037,15 @@ paths:
       operationId: updateWorkspaceNotificationSettings
       summary: Update workspace notification settings
       description: >-
-        Updates one or more durable notification-policy sections. Enabling auto
-        top-up requires an existing saved payment method identifier and verified
-        two-factor authentication. An existing auto top-up configuration may be
-        updated without repeating the MFA acknowledgement. To enable auto top-up
-        without MFA, clients must explicitly set `mfa_bypass_acknowledged` to
-        true and provide the exact `mfa_bypass_phrase` value `I ACCEPT THE
-        RISK`; payment collection remains an interactive account flow.
+        Updates one or more durable notification-policy sections. Turning on auto
+        top-up, or changing its amount, threshold or payment method, needs
+        `billing:write`, an existing saved payment method identifier and verified
+        two-factor authentication, and apps that use Sign in with Phaseo can't
+        do it. Turning it off needs only `settings:write`. An existing auto
+        top-up configuration may be updated without repeating the MFA
+        acknowledgement. The two-factor bypass (`mfa_bypass_acknowledged` and
+        `mfa_bypass_phrase`) can only be accepted in Settings; the API rejects
+        it. Payment collection remains an interactive account flow.
       requestBody:
         required: true
         content:
@@ -7733,7 +7735,9 @@ paths:
         - Gateway
       operationId: deleteWorkspace
       summary: Delete a workspace
-      description: Deletes a workspace by UUID or slug. Management API key required.
+      description: >-
+        Deletes a workspace by UUID or slug. Only the workspace owner can delete
+        it. Management API key required.
       parameters:
         - name: id
           in: path
@@ -7811,8 +7815,14 @@ paths:
       operationId: addWorkspaceMembers
       summary: Add workspace members
       description: >-
-        Adds existing users to a workspace with an admin or member role.
-        Management API key required.
+        Adds people who asked to join: each user must have a pending join
+        request (created when they accept an invite), which this approves.
+        Other users are rejected; send them an invite instead. Existing members
+        keep their role. Without a role, each person gets their invite's role;
+        adding an admin needs the workspace owner. Management API key required.
+        Each person is approved separately. If one fails, everyone approved
+        before them stays added, the rest aren't tried, and the response is a
+        409 that lists approved, failed and not_attempted users.
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -7824,6 +7834,14 @@ paths:
       responses:
         '200':
           description: Members added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceMemberAddResponse'
+        '409':
+          description: >-
+            Not every user could be added. The body lists who was added, who
+            failed and who wasn't tried.
           content:
             application/json:
               schema:
@@ -7853,7 +7871,10 @@ paths:
         - Gateway
       operationId: removeWorkspaceMembers
       summary: Remove workspace members
-      description: Removes non-owner members from a workspace. Management API key required.
+      description: >-
+        Removes non-owner members from a workspace. Only the workspace owner can
+        remove other members; anyone can remove themselves. Management API key
+        required.
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -20071,15 +20092,61 @@ components:
       type: object
       required:
         - added_count
-        - data
+        - approved
+        - failed
+        - not_attempted
       properties:
+        error:
+          type: string
+        message:
+          type: string
         added_count:
           type: integer
           minimum: 0
         data:
           type: array
+          description: >-
+            The added members' details. Left out if they couldn't be read back
+            after the approvals; approved still lists who was added.
           items:
             $ref: '#/components/schemas/WorkspaceMember'
+        approved:
+          type: array
+          description: Users added by this request, in the order they were approved.
+          items:
+            type: string
+        failed:
+          type: array
+          description: >-
+            The user whose approval failed, with the reason. Users after them
+            aren't tried.
+          items:
+            $ref: '#/components/schemas/WorkspaceMemberAddFailure'
+        not_attempted:
+          type: array
+          description: >-
+            Users not tried because an earlier approval failed. Their join
+            requests are still pending.
+          items:
+            type: string
+      additionalProperties: false
+    WorkspaceMemberAddFailure:
+      type: object
+      required:
+        - user_id
+        - code
+        - message
+      properties:
+        user_id:
+          type: string
+        code:
+          type: string
+          enum:
+            - forbidden
+            - conflict
+            - internal_error
+        message:
+          type: string
       additionalProperties: false
     WorkspaceMemberRemoveResponse:
       type: object

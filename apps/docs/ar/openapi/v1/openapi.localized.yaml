@@ -3846,7 +3846,7 @@ paths:
         - Gateway
       operationId: updateWorkspaceNotificationSettings
       summary: تحديث إعدادات إشعارات مساحة العمل
-      description: يحدّث قسماً واحداً أو أكثر من سياسة الإشعارات الدائمة. يتطلب تفعيل التعبئة التلقائية معرّفاً موجوداً لطريقة دفع محفوظة ومصادقة ثنائية موثقة. يمكن تحديث إعداد قائم دون تكرار إقرار MFA. للتفعيل دون MFA يجب على العملاء تعيين `mfa_bypass_acknowledged` صراحةً إلى true وتوفير القيمة الدقيقة `I ACCEPT THE RISK` للحقل `mfa_bypass_phrase`؛ يظل جمع معلومات الدفع إجراءً تفاعلياً في الحساب.
+      description: يحدّث قسمًا واحدًا أو أكثر من أقسام سياسة الإشعارات الدائمة. يتطلب تشغيل الشحن التلقائي، أو تغيير مبلغه أو حدّه أو طريقة الدفع، الإذن `billing:write` ومعرّف طريقة دفع محفوظة ومصادقة ثنائية مُتحقَّقًا منها، ولا يمكن للتطبيقات التي تستخدم تسجيل الدخول عبر Phaseo فعل ذلك. يكفي `settings:write` لإيقافه. يمكن تحديث إعداد الشحن التلقائي الحالي دون تكرار تأكيد MFA. لا يُقبل تجاوز المصادقة الثنائية (`mfa_bypass_acknowledged` و`mfa_bypass_phrase`) إلا في الإعدادات؛ وترفضه API. يظل تحصيل الدفع مسار حساب تفاعليًا.
       requestBody:
         required: true
         content:
@@ -7301,7 +7301,7 @@ paths:
         - Gateway
       operationId: deleteWorkspace
       summary: حذف مساحة عمل
-      description: يحذف مساحة عمل باستخدام UUID أو slug. يلزم مفتاح API للإدارة.
+      description: يحذف مساحة عمل حسب UUID أو slug. وحده مالك مساحة العمل يمكنه حذفها. يلزم مفتاح API للإدارة.
       parameters:
         - name: id
           in: path
@@ -7378,7 +7378,7 @@ paths:
         - Gateway
       operationId: addWorkspaceMembers
       summary: إضافة أعضاء إلى مساحة العمل
-      description: يضيف مستخدمين حاليين إلى مساحة عمل بدور `admin` أو `member`. يلزم مفتاح API للإدارة.
+      description: 'يضيف الأشخاص الذين طلبوا الانضمام: يجب أن يكون لكل مستخدم طلب انضمام معلّق (يُنشأ عند قبول دعوة)، وتوافق هذه العملية عليه. يُرفض المستخدمون الآخرون؛ أرسل إليهم دعوة بدلًا من ذلك. يحتفظ الأعضاء الحاليون بأدوارهم. إذا لم يُحدَّد دور، يحصل كل شخص على دور دعوته؛ وتتطلب إضافة مسؤول مالك مساحة العمل. يلزم مفتاح API للإدارة. تتم الموافقة على كل شخص على حدة. إذا فشلت إحدى الموافقات، يبقى من تمت الموافقة عليهم قبلها مضافين، ولا تتم محاولة الباقين، وتكون الاستجابة 409 تسرد المستخدمين في approved وfailed وnot_attempted.'
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -7412,6 +7412,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: تعذّرت إضافة جميع المستخدمين. يسرد نص الاستجابة من أُضيف ومن فشلت إضافته ومن لم تتم محاولة إضافته.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceMemberAddResponse'
   /workspaces/{id}/members/remove:
     post:
       x-beta: true
@@ -7419,7 +7425,7 @@ paths:
         - Gateway
       operationId: removeWorkspaceMembers
       summary: إزالة أعضاء من مساحة العمل
-      description: يزيل الأعضاء غير المالكين من مساحة العمل. يلزم مفتاح API للإدارة.
+      description: يزيل من مساحة العمل الأعضاء الذين ليسوا مالكين. وحده مالك مساحة العمل يمكنه إزالة الأعضاء الآخرين؛ ويمكن لأي شخص إزالة نفسه. يلزم مفتاح API للإدارة.
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -19019,15 +19025,55 @@ components:
       type: object
       required:
         - added_count
-        - data
+        - approved
+        - failed
+        - not_attempted
       properties:
+        error:
+          type: string
+        message:
+          type: string
         added_count:
           type: integer
           minimum: 0
         data:
           type: array
+          description: تفاصيل الأعضاء المضافين. تُحذف إذا تعذّرت قراءتها بعد الموافقات؛ ويظل approved يسرد من أُضيف.
           items:
             $ref: '#/components/schemas/WorkspaceMember'
+        approved:
+          type: array
+          description: المستخدمون الذين أضافهم هذا الطلب، بترتيب الموافقة عليهم.
+          items:
+            type: string
+        failed:
+          type: array
+          description: المستخدم الذي فشلت الموافقة عليه، مع السبب. لا تتم محاولة المستخدمين الذين يلونه.
+          items:
+            $ref: '#/components/schemas/WorkspaceMemberAddFailure'
+        not_attempted:
+          type: array
+          description: المستخدمون الذين لم تتم محاولتهم لأن موافقة سابقة فشلت. تبقى طلبات انضمامهم معلّقة.
+          items:
+            type: string
+      additionalProperties: false
+    WorkspaceMemberAddFailure:
+      type: object
+      required:
+        - user_id
+        - code
+        - message
+      properties:
+        user_id:
+          type: string
+        code:
+          type: string
+          enum:
+            - forbidden
+            - conflict
+            - internal_error
+        message:
+          type: string
       additionalProperties: false
     WorkspaceMemberRemoveResponse:
       type: object

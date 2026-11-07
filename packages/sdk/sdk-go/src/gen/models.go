@@ -6273,9 +6273,20 @@ type WorkspaceMember struct {
 	WorkspaceId string `json:"workspace_id"`
 }
 
+type WorkspaceMemberAddFailure struct {
+	Code string `json:"code"`
+	Message string `json:"message"`
+	UserId string `json:"user_id"`
+}
+
 type WorkspaceMemberAddResponse struct {
 	AddedCount int `json:"added_count"`
-	Data []map[string]interface{} `json:"data"`
+	Approved []string `json:"approved"`
+	Data *[]map[string]interface{} `json:"data,omitempty"`
+	Error *string `json:"error,omitempty"`
+	Failed []map[string]interface{} `json:"failed"`
+	Message *string `json:"message,omitempty"`
+	NotAttempted []string `json:"not_attempted"`
 }
 
 type WorkspaceMemberBulkRequest struct {

@@ -62,6 +62,14 @@ begin
     end if;
   end if;
 
+  -- Making someone an admin is the owner's call, also when the role comes from the invite.
+  if v_role = 'admin'::public.workspace_role and not exists (
+    select 1 from public.workspaces w where w.id = v_req.workspace_id and w.owner_user_id = v_user_id
+  ) then
+    raise exception using errcode = '42501', message = 'workspace_admin_owner_only',
+      detail = 'Only the workspace owner can approve someone as an admin.';
+  end if;
+
   insert into public.workspace_members (workspace_id, user_id, role)
   values (v_req.workspace_id, v_req.requester_user_id, v_role)
   on conflict on constraint workspace_members_pkey do nothing;

@@ -7,4 +7,8 @@ description: "Añade usuarios existentes a un espacio de trabajo."
 ---
 <Note>Este endpoint requiere una clave de API de gestión con `workspaces:write` y el rol de propietario o administrador.</Note>
 
-El rol puede ser `admin` o `member`. Este endpoint no permite asignar la propiedad del espacio de trabajo.
+Las personas se unen a un espacio de trabajo mediante una invitación: la aceptan, lo que crea una solicitud de acceso, y este endpoint la aprueba. Cada usuario de `user_ids` debe tener una solicitud de acceso pendiente en el espacio de trabajo. Los demás usuarios se rechazan, así que envíales antes una invitación. Quienes ya son miembros conservan su rol.
+
+El rol puede ser `admin` o `member`. Sin rol, cada persona recibe el rol con el que se creó su invitación. Solo el propietario del espacio de trabajo puede añadir administradores, y la propiedad del espacio de trabajo no se puede asignar mediante este endpoint.
+
+Cada persona se aprueba por separado. Si una aprobación falla, las personas aprobadas antes siguen en el espacio de trabajo y las demás no se intentan. La respuesta es entonces un `409` cuyas listas `approved`, `failed` y `not_attempted` muestran dónde se detuvo, para que puedas corregir el problema y volver a enviar los usuarios restantes.

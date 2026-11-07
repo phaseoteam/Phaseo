@@ -150,20 +150,29 @@ export type AddWorkspaceMembersParams = {
 };
 
 /**
- * Adds existing users to a workspace with an admin or member role. Management API key required.
+ * Adds people who asked to join: each user must have a pending join request (created when they accept an invite), which this approves. Other users are rejected; send them an invite instead. Existing members keep their role. Without a role, each person gets their invite's role; adding an admin needs the workspace owner. Management API key required. Each person is approved separately. If one fails, everyone approved before them stays added, the rest aren't tried, and the response is a 409 that lists approved, failed and not_attempted users.
  */
 export async function addWorkspaceMembers(
   client: Client,
   args: AddWorkspaceMembersParams,
 ): Promise<{
   added_count: number;
-  data: {
+  approved: string[];
+  data?: {
     display_name?: string | null;
     joined_at?: string | null;
     role: "owner" | "admin" | "member";
     user_id: string;
     workspace_id: string;
   }[];
+  error?: string;
+  failed: {
+    code: "forbidden" | "conflict" | "internal_error";
+    message: string;
+    user_id: string;
+  }[];
+  message?: string;
+  not_attempted: string[];
 }> {
   const { path, query, headers, body } = args;
   if ([".", ".."].includes(String(path?.["id"])))
@@ -171,13 +180,22 @@ export async function addWorkspaceMembers(
   const resolvedPath = `/workspaces/${encodeURIComponent(String(path["id"]))}/members/add`;
   return client.request<{
     added_count: number;
-    data: {
+    approved: string[];
+    data?: {
       display_name?: string | null;
       joined_at?: string | null;
       role: "owner" | "admin" | "member";
       user_id: string;
       workspace_id: string;
     }[];
+    error?: string;
+    failed: {
+      code: "forbidden" | "conflict" | "internal_error";
+      message: string;
+      user_id: string;
+    }[];
+    message?: string;
+    not_attempted: string[];
   }>({
     method: "POST",
     path: resolvedPath,
@@ -9457,7 +9475,7 @@ export type DeleteWorkspaceParams = {
 };
 
 /**
- * Deletes a workspace by UUID or slug. Management API key required.
+ * Deletes a workspace by UUID or slug. Only the workspace owner can delete it. Management API key required.
  */
 export async function deleteWorkspace(
   client: Client,
@@ -24115,7 +24133,7 @@ export type RemoveWorkspaceMembersParams = {
 };
 
 /**
- * Removes non-owner members from a workspace. Management API key required.
+ * Removes non-owner members from a workspace. Only the workspace owner can remove other members; anyone can remove themselves. Management API key required.
  */
 export async function removeWorkspaceMembers(
   client: Client,
@@ -28947,7 +28965,7 @@ export type UpdateWorkspaceNotificationSettingsParams = {
 };
 
 /**
- * Updates one or more durable notification-policy sections. Enabling auto top-up requires an existing saved payment method identifier and verified two-factor authentication. An existing auto top-up configuration may be updated without repeating the MFA acknowledgement. To enable auto top-up without MFA, clients must explicitly set `mfa_bypass_acknowledged` to true and provide the exact `mfa_bypass_phrase` value `I ACCEPT THE RISK`; payment collection remains an interactive account flow.
+ * Updates one or more durable notification-policy sections. Turning on auto top-up, or changing its amount, threshold or payment method, needs `billing:write`, an existing saved payment method identifier and verified two-factor authentication, and apps that use Sign in with Phaseo can't do it. Turning it off needs only `settings:write`. An existing auto top-up configuration may be updated without repeating the MFA acknowledgement. The two-factor bypass (`mfa_bypass_acknowledged` and `mfa_bypass_phrase`) can only be accepted in Settings; the API rejects it. Payment collection remains an interactive account flow.
  */
 export async function updateWorkspaceNotificationSettings(
   client: Client,

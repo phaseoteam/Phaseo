@@ -42,6 +42,11 @@ function query(operation: "select" | "insert" | "update" | "delete", payload?: R
 vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: () => ({
 		from: (table: string) => {
+			// The management key acts as its creator, an admin of the workspace.
+			if (table === "workspace_members") {
+				const membership: any = { select: () => membership, eq: () => membership, maybeSingle: async () => ({ data: { role: "admin" }, error: null }) };
+				return membership;
+			}
 			if (table !== "workspace_department_budgets") throw new Error(`unexpected table ${table}`);
 			return {
 				select: () => query("select"),
