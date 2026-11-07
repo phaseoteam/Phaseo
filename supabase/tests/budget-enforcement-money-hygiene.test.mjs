@@ -220,7 +220,7 @@ try {
     assert.deepEqual(fn, { prosecdef: true, provolatile: 's' });
     for (const role of ['anon', 'authenticated', 'service_role']) {
       for (const signature of ['private.budget_spend_items(uuid, timestamptz, uuid[], text[], text[])', 'private.department_budget_usage(uuid, uuid, text[])',
-        'private.unbilled_spend(uuid, timestamptz, uuid[], text[], text[])', 'private.workspace_budget_status(uuid, bigint, text[])']) {
+        'private.unbilled_spend(uuid, timestamptz, uuid[], text[], text[])', 'private.workspace_budget_status(uuid, bigint, text[], text[])']) {
         const { allowed } = await one(`select has_function_privilege($1, $2, 'execute') as allowed`, [role, signature]);
         // The request-context key-limit check (private.gateway_context_access) runs as service_role.
         assert.equal(allowed, role === 'service_role' && signature.startsWith('private.unbilled_spend'), `${role} ${signature}`);

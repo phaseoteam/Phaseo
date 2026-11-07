@@ -30,6 +30,11 @@ SET LOCAL lock_timeout = '10s';
 --    or completed and billed, a day after the hold. This migration releases nothing itself.
 
 
+-- gateway_spend_limit_seed gains p_contract_version (DEFAULT 1). The three-argument version on main
+-- is dropped first, so a coordinator still calling it with three named arguments (during the
+-- deploy) resolves to the new function, with contract version 1, instead of an ambiguous overload.
+DROP FUNCTION IF EXISTS public.gateway_spend_limit_seed(uuid, uuid[], text[]);
+
 CREATE OR REPLACE FUNCTION private.unbilled_spend (
   p_workspace_id        uuid,
   p_since               timestamp with time zone,
@@ -602,7 +607,8 @@ GRANT EXECUTE ON FUNCTION "private"."department_budget_usage"(uuid, uuid, text[]
 CREATE OR REPLACE FUNCTION private.workspace_budget_status (
   p_workspace_id           uuid,
   p_requested_amount_nanos bigint DEFAULT 0,
-  p_exclude_ids            text[] DEFAULT '{}'::text[]
+  p_exclude_request_ids    text[] DEFAULT '{}'::text[],
+  p_exclude_charge_ids     text[] DEFAULT '{}'::text[]
 )
   RETURNS jsonb
   LANGUAGE plpgsql
@@ -653,8 +659,8 @@ begin
       p_workspace_id,
       (select case when bool_or(configured.window_start is null) then null else min(configured.window_start) end from configured),
       null::uuid[],
-      p_exclude_ids,
-      p_exclude_ids
+      p_exclude_request_ids,
+      p_exclude_charge_ids
     ) item
     where exists (select 1 from configured)
   ), usage_rows as (
@@ -719,13 +725,13 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) IS 'Workspace budgets with usage this UTC period (private.budget_spend_items), for gateway_workspace_budget_status and gateway_spend_limit_seed. p_exclude_ids are the request ids and billing ids of admissions the SpendLimit Durable Object holds: their request rows and charge rows are left out, as for department and key usage, because the Durable Object counts them from memory until a seed that does not exclude them is published.';
+COMMENT ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[], text[]) IS 'Workspace budgets with usage this UTC period (private.budget_spend_items), for gateway_workspace_budget_status and gateway_spend_limit_seed. p_exclude_request_ids leaves out request rows and p_exclude_charge_ids charge rows of admissions the SpendLimit Durable Object holds (gateway_spend_limit_seed passes both for contract version 2, charge rows only for version 1).';
 
-REVOKE ALL ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) FROM PUBLIC;
+REVOKE ALL ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[], text[]) FROM PUBLIC;
 
-REVOKE ALL ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) FROM "postgres";
+REVOKE ALL ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[], text[]) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) TO "postgres";
+GRANT EXECUTE ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[], text[]) TO "postgres";
 
 CREATE OR REPLACE FUNCTION public.gateway_department_budget_status (
   p_workspace_id           uuid,
@@ -829,7 +835,7 @@ CREATE OR REPLACE FUNCTION public.gateway_workspace_budget_status (
 begin
   -- Workspace budgets with their usage this UTC period and whether one is reached (or, with
   -- p_requested_amount_nanos, would be passed); see private.workspace_budget_status.
-  return private.workspace_budget_status(p_workspace_id, p_requested_amount_nanos, '{}'::text[]);
+  return private.workspace_budget_status(p_workspace_id, p_requested_amount_nanos, '{}'::text[], '{}'::text[]);
 end;
 $function$;
 
@@ -844,7 +850,8 @@ REVOKE ALL ON FUNCTION "public"."gateway_workspace_budget_status"(uuid, bigint) 
 CREATE OR REPLACE FUNCTION public.gateway_spend_limit_seed (
   p_workspace_id        uuid,
   p_key_ids             uuid[],
-  p_exclude_request_ids text[] DEFAULT '{}'::text[]
+  p_exclude_request_ids text[] DEFAULT '{}'::text[],
+  p_contract_version    integer DEFAULT 1
 )
   RETURNS jsonb
   LANGUAGE plpgsql
@@ -874,8 +881,15 @@ begin
   -- p_exclude_request_ids is the SpendLimit Durable Object's spend still counted from memory: for
   -- each admission it holds, its request id and its billing request id. gateway_requests rows are
   -- skipped by request_id and charge rows (gateway_request_charges, their adjustment ledger rows)
-  -- by billing request id, in key, department and workspace usage alike: the Durable Object counts
-  -- each held admission from memory until a seed that does not exclude it is published.
+  -- by billing request id in key and department usage.
+  --
+  -- p_contract_version says how the calling coordinator treats a held admission whose audit row
+  -- this seed reports in excluded_rows:
+  -- * 1 (the coordinator on main, and any caller that does not send it): it stops counting the
+  --   admission in workspace budgets at once, so workspace usage here leaves out only its charge
+  --   rows and counts its request row.
+  -- * 2 (fix/async-billing-20261104's coordinator): it keeps counting the admission until a seed
+  --   that does not exclude it is published, so workspace usage leaves out its request row too.
   if cardinality(v_exclude) > 5000 then
     raise exception using errcode = '22023', message = 'too_many_excluded_request_ids';
   end if;
@@ -970,22 +984,23 @@ begin
     'week_start', to_jsonb(week_start),
     'month_start', to_jsonb(month_start),
     'keys', v_keys,
-    'budget_status', private.workspace_budget_status(p_workspace_id, 0, v_exclude),
+    'budget_status', private.workspace_budget_status(p_workspace_id, 0,
+      case when coalesce(p_contract_version, 1) >= 2 then v_exclude else '{}'::text[] end, v_exclude),
     'excluded_rows', v_excluded,
     'department_budgets', v_departments
   );
 end;
 $function$;
 
-GRANT EXECUTE ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[]) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[], integer) TO "service_role";
 
-COMMENT ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[]) IS 'Seeds the gateway spend-limit coordinator: per-key day/week/month usage with the request-context windows and filters (excluding already-recorded request ids), plus workspace budget status and department budgets with their usage and keys.';
+COMMENT ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[], integer) IS 'Seeds the gateway spend-limit coordinator: per-key day/week/month usage with the request-context windows and filters (excluding already-recorded request ids), plus workspace budget status and department budgets with their usage and keys. p_contract_version (default 1) selects how workspace usage treats held admissions: see the function body.';
 
-REVOKE ALL ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[]) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[], integer) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[]) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[], integer) TO "postgres";
 
-REVOKE ALL ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[]) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[], integer) FROM PUBLIC, "anon", "authenticated";
 
 CREATE OR REPLACE FUNCTION public.workspace_department_budget_status (
   p_workspace_id uuid,
