@@ -881,3 +881,83 @@ describe("irToAnthropicMessages cache control", () => {
 		});
 	});
 });
+
+describe("irToAnthropicMessages eager tool streaming", () => {
+	it.each([
+		{ stream: true, enabled: true, expected: true },
+		{ stream: true, enabled: false, expected: undefined },
+		{ stream: false, enabled: true, expected: undefined },
+		{ stream: true, enabled: undefined, expected: undefined },
+	])("maps user-defined tools with stream=$stream and enabled=$enabled", ({ stream, enabled, expected }) => {
+		const request = createBaseRequest();
+		request.stream = stream;
+		request.tools = ["lookup", "write_file"].map((name) => ({
+			name,
+			parameters: { type: "object", properties: {} },
+		}));
+
+		const payload = irToAnthropicMessages(request, undefined, undefined, {
+			eagerInputStreaming: enabled,
+		});
+		for (const tool of payload.tools) {
+			expect(tool.eager_input_streaming).toBe(expected);
+		}
+	});
+
+	it("does not inject eager streaming into native tools in a mixed request", () => {
+		const request = createBaseRequest();
+		request.stream = true;
+		request.tools = [
+			{ name: "lookup", parameters: { type: "object", properties: {} } },
+			{
+				name: "web_fetch",
+				type: "web_fetch_20260209",
+				parameters: {},
+				raw: { type: "web_fetch_20260209", name: "web_fetch", max_content_tokens: 9000 },
+			},
+		];
+
+		const payload = irToAnthropicMessages(request, undefined, undefined, { eagerInputStreaming: true });
+		expect(payload.tools[0].eager_input_streaming).toBe(true);
+		expect(payload.tools[1]).toEqual(request.tools[1].raw);
+	});
+});
+
+describe("native Anthropic automatic caching", () => {
+	it("preserves top-level control without expanding it into block breakpoints", () => {
+		const request = decodeAnthropicMessagesRequest({
+			model: "claude-sonnet-4-6", max_tokens: 128,
+			cache_control: { type: "ephemeral", ttl: "5m" },
+			messages: [{ role: "user", content: Array.from({ length: 6 }, () => ({ type: "text" as const, text: "Stable context" })) }],
+		});
+		const payload = irToAnthropicMessages(request);
+		expect(payload.cache_control).toEqual({ type: "ephemeral", ttl: "5m" });
+		expect(payload.messages[0].content.every((block: { cache_control?: unknown }) => !block.cache_control)).toBe(true);
+	});
+
+	it("reserves a breakpoint for automatic caching and orders cache TTLs", () => {
+		const request = decodeAnthropicMessagesRequest({
+			model: "claude-sonnet-4-6", max_tokens: 128,
+			cache_control: { type: "ephemeral", ttl: "1h" },
+			messages: [{ role: "user", content: Array.from({ length: 6 }, () => ({
+				type: "text" as const, text: "Stable context", cache_control: { type: "ephemeral", ttl: "5m" },
+			})) }],
+		});
+		const payload = irToAnthropicMessages(request);
+		const marked = payload.messages[0].content.filter((block: { cache_control?: unknown }) => block.cache_control);
+		expect(marked).toHaveLength(3);
+		expect(marked.every((block: { cache_control: { ttl: string } }) => block.cache_control.ttl === "1h")).toBe(true);
+	});
+
+	it("leaves provider_options placement and opt-in caching intact", () => {
+		const request = decodeAnthropicMessagesRequest({
+			model: "claude-sonnet-4-6", max_tokens: 128,
+			provider_options: { anthropic: { cache_control: { type: "ephemeral", scope: "last_user_message" } } },
+			messages: [{ role: "user", content: "Stable context" }],
+		});
+		const payload = irToAnthropicMessages(request);
+		expect(payload.cache_control).toBeUndefined();
+		expect(payload.messages[0].content[0].cache_control).toEqual({ type: "ephemeral" });
+		expect(irToAnthropicMessages(createBaseRequest()).cache_control).toBeUndefined();
+	});
+});

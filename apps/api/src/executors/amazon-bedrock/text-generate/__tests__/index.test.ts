@@ -137,6 +137,22 @@ const CLAUDE_STREAM_EVENTS = [
 ];
 
 describe("amazon-bedrock text executor", () => {
+	it.each([
+		{ model: "anthropic.claude-sonnet-5-v1:0", stream: true, eager: true },
+		{ model: "anthropic.claude-sonnet-4-5-v1:0", stream: true, eager: undefined },
+		{ model: "anthropic.claude-sonnet-5-v1:0", stream: false, eager: undefined },
+	])("gates eager streaming for Bedrock Messages: $model stream=$stream", async ({ model, stream, eager }) => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.bedrock.example/anthropic/v1/messages",
+			response: jsonResponse({ id: "msg_1", type: "message", role: "assistant", content: [{ type: "text", text: "hi" }], stop_reason: "end_turn", usage: { input_tokens: 1, output_tokens: 1 } }),
+		}]);
+		try {
+			await execute(buildArgs({ model, stream, messages: [], tools: [{ name: "lookup", parameters: { type: "object" } }] }, { endpoint: "messages", protocol: "anthropic.messages" }));
+			expect(mock.calls[0].bodyJson.tools[0].eager_input_streaming).toBe(eager);
+		} finally { mock.restore(); }
+	});
+
+
 	beforeAll(() => {
 		setupTestRuntime();
 	});

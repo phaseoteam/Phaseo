@@ -44,6 +44,102 @@ function baseArgs(overrides?: Record<string, any>): any {
 }
 
 describe("google-ai-studio stream transform", () => {
+	it("delivers argument fragments before completion and cancels the upstream reader", async () => {
+		let source!: ReadableStreamDefaultController<Uint8Array>;
+		let cancelled = false;
+		const upstream = new ReadableStream<Uint8Array>({
+			start(controller) { source = controller; },
+			cancel() { cancelled = true; },
+		});
+		const reader = transformStream(upstream, baseArgs()).getReader();
+		for (const functionCall of [
+			{ name: "write_file", willContinue: true },
+			{ partialArgs: [{ jsonPath: "$.body", stringValue: "early fragment", willContinue: true }], willContinue: true },
+		]) source.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ candidates: [{ content: { parts: [{ functionCall }] } }] })}\n\n`));
+		await reader.read();
+		const chunk = await reader.read();
+		expect(new TextDecoder().decode(chunk.value)).toContain("early fragment");
+		await reader.cancel();
+		expect(cancelled).toBe(true);
+	});
+
+	it.each(["openai.chat.completions", "openai.responses"])("preserves typed argument fragments and repeated same-name calls on %s", async (protocol) => {
+		const call = (functionCall: Record<string, unknown>) => ({ candidates: [{ index: 0, content: { parts: [{ functionCall }] } }] });
+		const upstream = makeGoogleSseStream([
+			call({ name: "write_file", willContinue: true }),
+			call({ partialArgs: [{ jsonPath: "$.body", stringValue: "first", willContinue: true }], willContinue: true }),
+			call({ partialArgs: [{ jsonPath: "$.body", stringValue: " file" }], willContinue: true }),
+			call({}),
+			call({ name: "write_file", willContinue: true }),
+			call({ partialArgs: [{ jsonPath: "$.body", stringValue: "second" }], willContinue: true }),
+			call({}),
+			{ candidates: [{ index: 0, finishReason: "STOP", content: { parts: [] } }] },
+		]);
+		const output = await readStreamText(transformStream(upstream, baseArgs({ protocol })));
+		if (protocol === "openai.chat.completions") {
+			const chunks = output.split("\n\n").filter((frame) => frame.startsWith("data: {")).map((frame) => JSON.parse(frame.slice(6)));
+			const tools = new Map<number, { id?: string; name?: string; arguments: string }>();
+			for (const chunk of chunks) for (const tool of chunk.choices?.[0]?.delta?.tool_calls ?? []) {
+				const state = tools.get(tool.index) ?? { arguments: "" };
+				state.id ??= tool.id;
+				state.name ??= tool.function?.name;
+				state.arguments += tool.function?.arguments ?? "";
+				tools.set(tool.index, state);
+			}
+			expect([...tools.values()].map((tool) => JSON.parse(tool.arguments))).toEqual([{ body: "first file" }, { body: "second" }]);
+			expect(new Set([...tools.values()].map((tool) => tool.id)).size).toBe(2);
+			expect(chunks.at(-1).choices[0].finish_reason).toBe("tool_calls");
+		} else {
+			const done = parseSseEvents(output).filter((event) => event.event === "response.function_call_arguments.done");
+			expect(done.map((event) => JSON.parse(event.data.arguments))).toEqual([{ body: "first file" }, { body: "second" }]);
+		}
+	});
+
+	it.each(["openai.chat.completions", "openai.responses", "anthropic.messages"])("fails a truncated typed tool call without successful completion on %s", async (protocol) => {
+		const upstream = makeGoogleSseStream([
+			{ candidates: [{ content: { parts: [{ functionCall: { name: "write_file", willContinue: true, partialArgs: [{ jsonPath: "$.body", stringValue: "unfinished", willContinue: true }] } }] } }] },
+			{ candidates: [{ finishReason: "STOP", content: { parts: [] } }] },
+		]);
+		const output = await readStreamText(transformStream(upstream, baseArgs({ protocol })));
+		expect(output).toContain("Google returned incomplete or invalid tool arguments.");
+		expect(output).not.toContain("event: response.completed");
+		expect(output).not.toContain("event: message_stop");
+		expect(output).not.toContain('"finish_reason":"tool_calls"');
+	});
+
+	it("preserves full arguments when a complete call explicitly sets willContinue=false", async () => {
+		const upstream = makeGoogleSseStream([{
+			candidates: [{ content: { parts: [{ functionCall: { id: "complete-call", name: "lookup", args: { city: "London" }, willContinue: false } }] }, finishReason: "STOP" }],
+		}]);
+		const output = await readStreamText(transformStream(upstream, baseArgs()));
+		const chunks = output.split("\n\n").filter((frame) => frame.startsWith("data: {")).map((frame) => JSON.parse(frame.slice(6)));
+		expect(JSON.parse(chunks[0].choices[0].delta.tool_calls[0].function.arguments)).toEqual({ city: "London" });
+	});
+
+	it.each(["openai.chat.completions", "openai.responses", "anthropic.messages"])("rejects Interactions tool calls that end before completion on %s", async (protocol) => {
+		const upstream = makeGoogleSseStream([
+			{ event_type: "step.start", index: 0, step: { type: "function_call", id: "call_1", name: "lookup" } },
+			{ event_type: "step.delta", index: 0, delta: { type: "arguments", partial_arguments: '{"city":' } },
+		]);
+		const output = await readStreamText(transformStream(upstream, baseArgs({ protocol })));
+		expect(output).toContain("Google returned incomplete or invalid tool arguments.");
+		expect(output).not.toContain("event: response.completed");
+		expect(output).not.toContain("event: message_stop");
+	});
+
+	it("supports the Interactions arguments/partial_arguments event shape", async () => {
+		const upstream = makeGoogleSseStream([
+			{ event_type: "step.start", index: 0, step: { type: "function_call", id: "call_1", name: "lookup" } },
+			{ event_type: "step.delta", index: 0, delta: { type: "arguments", partial_arguments: '{"city":' } },
+			{ event_type: "step.delta", index: 0, delta: { type: "arguments", partial_arguments: '"London"}' } },
+			{ event_type: "interaction.completed", interaction: { status: "requires_action" } },
+		]);
+		const output = await readStreamText(transformStream(upstream, baseArgs({ protocol: "openai.responses" })));
+		const done = parseSseEvents(output).find((event) => event.event === "response.function_call_arguments.done");
+		expect(JSON.parse(done!.data.arguments)).toEqual({ city: "London" });
+	});
+
+
 	it.each([
 		["MAX_TOKENS", "length"],
 		["STOP", "stop"],

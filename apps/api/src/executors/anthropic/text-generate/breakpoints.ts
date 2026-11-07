@@ -67,14 +67,16 @@ export function normaliseAnthropicCacheBreakpoints(request: any): void {
 		for (const message of request.messages) collectMarkedBlocks(message?.content, marked);
 	}
 	let kept = marked;
-	if (marked.length > MAX_BREAKPOINTS) {
-		const keep = new Set([marked[0], ...marked.slice(-(MAX_BREAKPOINTS - 1))]);
+	// Automatic caching adds a moving breakpoint after the explicit marks.
+	const limit = MAX_BREAKPOINTS - (request.cache_control ? 1 : 0);
+	if (marked.length > limit) {
+		const keep = new Set([marked[0], ...marked.slice(-(limit - 1))]);
 		for (const block of marked) {
 			if (!keep.has(block)) delete block.cache_control;
 		}
 		kept = marked.filter((block) => keep.has(block));
 	}
-	promoteMarksBeforeOneHour(kept);
+	promoteMarksBeforeOneHour(request.cache_control ? [...kept, request] : kept);
 }
 
 /**

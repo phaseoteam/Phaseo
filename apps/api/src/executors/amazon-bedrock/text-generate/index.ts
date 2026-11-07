@@ -95,7 +95,11 @@ async function executeBedrockMessages(
 	// Claude on Bedrock reads base64 sources only.
 	const inlined = await inlineClaudeMediaForBase64OnlyPlatform(irRequest, args);
 	if (inlined.ok === false) return inlined.result;
-	const anthropicRequest = irToAnthropicMessages(inlined.ir, args.maxOutputTokens, model, { providerId: args.providerId || "amazon-bedrock" });
+	const anthropicRequest = irToAnthropicMessages(inlined.ir, args.maxOutputTokens, model, {
+		providerId: args.providerId || "amazon-bedrock",
+		// Sonnet 4.5 rejects the per-tool flag.
+		eagerInputStreaming: irRequest.stream === true && !/claude-sonnet[-.]4[-.]5/.test(model),
+	});
 	const stream = Boolean(irRequest.stream);
 	// bedrock-runtime: InvokeModel takes the model in the path and the version in
 	// the body; older Claude models there do not offer the /anthropic Messages route.

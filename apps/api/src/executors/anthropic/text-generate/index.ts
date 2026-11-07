@@ -245,6 +245,7 @@ export async function executeAnthropic(args: ExecutorExecuteArgs): Promise<Execu
 			{
 				inferenceGeo: resolveAnthropicInferenceGeo(args.providerId, args.ir),
 				providerId: args.providerId,
+				eagerInputStreaming: args.ir.stream === true && !azureConfig,
 			},
 		);
 
@@ -632,6 +633,7 @@ export function irToAnthropicMessages(
 	modelHint?: string | null,
 	options?: {
 		inferenceGeo?: "global" | "us" | null;
+		eagerInputStreaming?: boolean;
 		/** Gateway provider the request goes to; decides which signatures are replayed. */
 		providerId?: string | null;
 	},
@@ -778,6 +780,7 @@ export function irToAnthropicMessages(
 				name: t.name,
 				description: t.description,
 				input_schema: t.parameters,
+				...(ir.stream && options?.eagerInputStreaming ? { eager_input_streaming: true } : {}),
 				...(typeof t.strict === "boolean" ? { strict: t.strict } : {}),
 				...(cacheControl ? { cache_control: cacheControl } : {}),
 			};
