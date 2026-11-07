@@ -254,6 +254,28 @@ describe("spend-limit coordinator", () => {
 		expect(getSpendLimitMode({})).toBe("off");
 	});
 
+	it("asks the seed for contract version 2, so the SQL may leave out audit rows it still counts", async () => {
+		// The real loadSeed, with the Supabase client replaced by a recorder.
+		const calls: Array<{ fn: string; args: Record<string, unknown> }> = [];
+		const real = new SpendLimitDurableObject({
+			blockConcurrencyWhile: (fn: () => Promise<unknown>) => fn(),
+			storage: { sql: { exec: (query: string, ...args: Array<string | number | null>) => {
+				const statement = sqlite.prepare(query);
+				const rows = statement.columns().length ? statement.all(...args) : (statement.run(...args), []);
+				return { toArray: () => rows, one: () => rows[0] };
+			} } },
+		} as unknown as DurableObjectState, {} as never);
+		(real as unknown as { supabase: unknown }).supabase = {
+			rpc: async (fn: string, args: Record<string, unknown>) => {
+				calls.push({ fn, args });
+				return { data: database.seed(String(args.p_workspace_id), args.p_key_ids as string[], args.p_exclude_request_ids as string[]), error: null };
+			},
+		};
+		await real.acquire(WORKSPACE, KEY, { requests: 1, units: 0 }, { requests: 1, units: 0 }, [], "contract");
+		expect(calls).toHaveLength(1);
+		expect(calls[0]).toMatchObject({ fn: "gateway_spend_limit_seed", args: { p_workspace_id: WORKSPACE, p_key_ids: [KEY], p_contract_version: 2 } });
+	});
+
 	it("seeds lazily once and reports the same buckets as the database", async () => {
 		database.rows.push(
 			{ requestId: "old-1", keyId: KEY, success: true, cost: 400, createdAt: Date.parse("2026-10-09T01:00:00Z") },

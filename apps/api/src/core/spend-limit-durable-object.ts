@@ -176,6 +176,15 @@ type LeaseRow = {
 
 const ZERO: Usage = { requests: 0, cost: 0 };
 const MAX_SEEN_IDS = 50_000;
+/**
+ * The seed contract this coordinator speaks (gateway_spend_limit_seed p_contract_version, DEFAULT
+ * 1). Version 2: a held request is excluded by both its request and billing ids, and the coordinator
+ * keeps counting it after the seed returns its audit row (until a seed that does not exclude it), so
+ * the seed may leave that audit row out of workspace spend too. The previous coordinator (version 1,
+ * still serving between the migrations and the Worker deploy) stops counting an entry once its audit
+ * row is returned, so the SQL keeps the version-1 behaviour for it.
+ */
+export const SPEND_LIMIT_SEED_CONTRACT_VERSION = 2;
 /** Loads per seed when held entries go stale, or new ones are recorded, while it loads. */
 const MAX_SEED_ATTEMPTS = 3;
 
@@ -481,6 +490,7 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			p_workspace_id: workspaceId,
 			p_key_ids: keyIds,
 			p_exclude_request_ids: excludeRequestIds,
+			p_contract_version: SPEND_LIMIT_SEED_CONTRACT_VERSION,
 		});
 		if (error) throw new Error(`spend_limit_seed_failed:${error.message ?? "unknown"}`);
 		return data as SpendLimitSeed;
