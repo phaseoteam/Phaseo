@@ -1,3 +1,4 @@
+-- phaseo:rewrite-unapplied-migration reason: never applied in any environment; the original deadlocked in production db push on 2026-11-07 (main CI run 42320225444, both attempts) and rolled back, so production history ends at 20261106230929
 -- Tokens the auth provider's OAuth server issues to apps carry the app's client_id. That includes the Phaseo CLI
 -- and desktop app, whose client IDs are public. This migration adds the helper the per-table policies use, and
 -- makes the SECURITY DEFINER functions signed-in users can call that change membership refuse such a token

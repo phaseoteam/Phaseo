@@ -59,8 +59,16 @@ When destructive SQL is genuinely required, add a specific justification near th
 
 That marker makes the operation reviewable; it is not a substitute for a backup, an expand-and-contract rollout, or a tested recovery plan.
 
+The one exception to "never rewrite" is a merged migration that never applied in any environment, for example one that failed and rolled back in production `db push`. CI applies pending migrations in order, so it would apply that file first on every run and fail the same way; a later corrective migration can't get ahead of it. Rewrite it in place, and add a specific justification near the top of the changed file:
+
+```sql
+-- phaseo:rewrite-unapplied-migration reason: never applied in any environment; it deadlocked in production db push on 2026-11-07 and rolled back
+```
+
+Before approving, reviewers must confirm with a read-only query that the version is absent from production's `supabase_migrations.schema_migrations`. A migration that applied anywhere is never rewritten. The validator accepts the marker only on an in-place modification of one migration file, never on a delete, a rename or the replay baseline, and the rewritten file gets the same checks as a new migration.
+
 ## Rollback
 
-Database migrations are forward-only. If a production migration fails, application deployment stays blocked. Fix it with a new corrective migration, re-run CI, and approve the environment again. Restore from a database backup only for an incident where a forward repair is unsafe.
+Database migrations are forward-only. If a production migration fails, application deployment stays blocked. If it failed partway through and committed nothing (each migration file runs in its own transaction), rewrite that file with the `rewrite-unapplied-migration` marker described above. Otherwise fix it with a new corrective migration. Then re-run CI and approve the environment again. Restore from a database backup only for an incident where a forward repair is unsafe.
 
 The migration workflow runs on GitHub Actions and does not consume Cloudflare Workers CPU. Only the existing application deployment jobs affect Workers.
