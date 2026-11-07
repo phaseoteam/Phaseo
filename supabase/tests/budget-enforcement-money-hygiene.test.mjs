@@ -558,21 +558,21 @@ try {
         ('${WS_PEND}', 'pend-zero', 'billing-zero', '${KEY.pend}', false, ${3 * DOLLAR}, 0, null),
         -- Charged $1 of an intended $2.50: the $1.50 it did not collect counts too.
         ('${WS_PEND}', 'pend-short', 'billing-short', '${KEY.pend}', false, ${DOLLAR}, ${2.5 * DOLLAR}, null),
-        -- Pending with no charge row: its audit cost (0).
+        -- Delivered, pending, with no charge row (the charge never applied): its expected $2.
         ('${WS_PEND}', 'pend-none', 'billing-none', '${KEY.pend}', false, 0, ${2 * DOLLAR}, null),
         -- Nothing could be priced or charged (#3534): expected 0 and cost 0, with and without a
         -- charge row. $0, not unknown.
         ('${WS_PEND}', 'pend-nothing', 'billing-nothing', '${KEY.pend}', false, 0, 0, null),
         ('${WS_PEND}', 'pend-nothing-uncharged', 'billing-nothing-uncharged', '${KEY.pend}', false, 0, 0, null);`);
-    // $2 + $1 + $3 + $2.50, and $0 for the rows where nothing was priced or charged.
-    assert.deepEqual(await surfaces(WS_PEND, KEY.pend), everywhere(8.5 * DOLLAR));
+    // $2 + $1 + $3 + $2.50 + $2, and $0 for the rows where nothing was priced or charged.
+    assert.deepEqual(await surfaces(WS_PEND, KEY.pend), everywhere(10.5 * DOLLAR));
     // The failed refund to 0 is reconciled: its +$3 refund lands.
     await db.exec(`insert into public.credit_ledger (workspace_id, kind, amount_nanos, ref_type, ref_id, source_ref_type, source_ref_id, status) values
       ('${WS_PEND}', 'adjustment', ${3 * DOLLAR}, 'gateway_request_charge', 'zero:final', 'gateway_request', 'billing-zero', 'applied');
       update public.gateway_request_charges set cost_nanos = 0, is_final = true where workspace_id = '${WS_PEND}' and request_id = 'billing-zero';`);
-    assert.deepEqual(await surfaces(WS_PEND, KEY.pend), everywhere(5.5 * DOLLAR));
-    // Hold admission's key cap reads the same $5.50: $0.40 more fits under a $6 cap, $0.60 does not.
-    await db.query(`update public.keys set daily_limit_cost_nanos = $2 where id = $1`, [KEY.pend, 6 * DOLLAR]);
+    assert.deepEqual(await surfaces(WS_PEND, KEY.pend), everywhere(7.5 * DOLLAR));
+    // Hold admission's key cap reads the same $7.50: $0.40 more fits under an $8 cap, $0.60 does not.
+    await db.query(`update public.keys set daily_limit_cost_nanos = $2 where id = $1`, [KEY.pend, 8 * DOLLAR]);
     assert.equal((await reserve(WS_PEND, 'video_hold:pend-fits', 0.4 * DOLLAR, KEY.pend, 1)).ok, true);
     assert.equal((await reserve(WS_PEND, 'video_hold:pend-over', 0.2 * DOLLAR, KEY.pend, 1)).reason, 'daily_cost_limit_reached');
     // The coordinator holding a pending request's admission lists both ids: its charge, movements and
@@ -580,7 +580,14 @@ try {
     const held = await asService(async () => (await one(`select public.gateway_spend_limit_seed($1, $2::uuid[], $3::text[]) as r`,
       [WS_PEND, [KEY.pend], ['pend-short', 'billing-short']])).r);
     // (Holds are not key usage: hold admission adds them itself.)
-    assert.equal(Number(held.keys[0].used.daily.cost_nanos), 3 * DOLLAR);
+    assert.equal(Number(held.keys[0].used.daily.cost_nanos), 5 * DOLLAR);
+    // A row with no charge that already carries $1 of its $3 expected bill counts $3: its $1 and the
+    // $2 not yet counted, never the $1 twice.
+    await db.query(`update public.keys set daily_limit_cost_nanos = $2 where id = $1`, [KEY.pend, 10000 * DOLLAR]);
+    await db.query(`delete from public.gateway_wallet_reservations where workspace_id = $1`, [WS_PEND]);
+    await db.query(`insert into public.gateway_requests (workspace_id, request_id, billing_request_id, key_id, success, cost_nanos, expected_cost_nanos)
+      values ($1, 'pend-partial', 'billing-partial', $2, false, $3, $4)`, [WS_PEND, KEY.pend, DOLLAR, 3 * DOLLAR]);
+    assert.deepEqual(await surfaces(WS_PEND, KEY.pend), everywhere(10.5 * DOLLAR));
   });
 
   await check('billing_status alone marks a row pending only before 2026-11-09', async () => {
