@@ -26,9 +26,23 @@ const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pgli
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
 const normalize = (sql) => sql.replace(/\r\n/g, '\n').trim();
 const migrations = await readdir(new URL('../migrations/', import.meta.url));
-const migrationName = migrations.find((name) => name.endsWith('_enforce_workspace_role_rules.sql'));
-assert(migrationName, 'the migration exists');
-const migration = normalize(await read(`../migrations/${migrationName}`));
+// The migration is three files, split by what they lock (see the lock plan below).
+const migrationNames = migrations.filter((name) => /_enforce_workspace_role_rules_\d_[a-z_]+\.sql$/.test(name)).sort();
+assert.deepEqual(migrationNames.map((name) => name.replace(/^\d+_/, '')), ['enforce_workspace_role_rules_1_functions.sql',
+  'enforce_workspace_role_rules_2_member_policies.sql', 'enforce_workspace_role_rules_3_sso_index.sql'], 'the migration is three files, in order');
+const migrationName = migrationNames[0];
+const migrationFiles = await Promise.all(migrationNames.map(async (name) => normalize(await read(`../migrations/${name}`))));
+const migration = migrationFiles.join('\n');
+assert(migrationNames[0] > migrations.filter((name) => !migrationNames.includes(name)).sort().at(-1), 'the migration files are the newest');
+
+// Lock plan: each file starts with a lock timeout and locks at most one table strongly. Functions take
+// no table locks; the policies lock only workspace_members; the index locks only workspace_settings.
+const strongLocks = (sql) => [...sql.matchAll(/^\s*(?:ALTER TABLE|CREATE (?:UNIQUE )?INDEX|DROP INDEX|CREATE TRIGGER|DROP TRIGGER|CREATE POLICY|DROP POLICY|ALTER POLICY|REVOKE [^;]* ON TABLE|GRANT [^;]* ON TABLE|LOCK TABLE|TRUNCATE)[^;]*?\bON (?:TABLE )?"?public"?\."?([a-z_]+)"?/gim)].map(([, table]) => table);
+for (const sql of migrationFiles) assert(sql.startsWith("SET LOCAL lock_timeout = '10s';"), 'each file starts with a lock timeout');
+assert.deepEqual(strongLocks(migrationFiles[0]), [], 'part 1 (functions) locks no table');
+assert.deepEqual([...new Set(strongLocks(migrationFiles[1]))], ['workspace_members'], 'part 2 locks only workspace_members');
+assert.deepEqual([...new Set(strongLocks(migrationFiles[2]))], ['workspace_settings'], 'part 3 locks only workspace_settings');
+assert(!/CREATE (?:OR REPLACE )?FUNCTION/i.test(migrationFiles[1] + migrationFiles[2]), 'function changes are only in part 1');
 const keyMigrationName = migrations.find((name) => name.endsWith('_lock_down_key_tables.sql'));
 assert(keyMigrationName && keyMigrationName < migrationName, 'the key table lockdown is applied before this migration');
 const keyMigration = normalize(await read(`../migrations/${keyMigrationName}`));
@@ -120,8 +134,10 @@ try {
     end $$;
     create schema auth;
     create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
+    create function auth.jwt() returns jsonb language sql stable as $$ select nullif(current_setting('request.jwt.claims', true), '')::jsonb $$;
     grant usage on schema auth to anon, authenticated, service_role;
     grant execute on function auth.uid() to anon, authenticated, service_role;
+    grant execute on function auth.jwt() to anon, authenticated, service_role;
     -- These users have no MFA factors (require_mfa_for_data_api).
     create function public.mfa_satisfied() returns boolean language sql stable as 'select true';
     grant execute on function public.mfa_satisfied() to anon, authenticated, service_role;
@@ -180,7 +196,7 @@ try {
       source_id uuid, position text, is_primary boolean);
   `);
   // Unchanged function files, loaded as they are declared.
-  for (const fn of ['is_workspace_member', 'is_workspace_admin', 'is_active_invite_for_workspace',
+  for (const fn of ['request_is_oauth_client', 'is_workspace_member', 'is_workspace_admin', 'is_active_invite_for_workspace',
     'enforce_workspace_member_role_policy', 'enforce_workspace_invite_role_policy']) {
     await db.exec(await read(`../schemas/public/functions/${fn}.sql`));
   }
@@ -266,19 +282,22 @@ try {
   // Production applies the key table lockdown before this migration.
   await db.exec(keyMigration);
 
-  // 5. Two enabled workspaces already share a provider: the migration fails loudly and rolls back as a
-  //    whole, changing nothing. Once the duplicate is resolved, it applies and creates the index.
+  // 5. Two enabled workspaces already share a provider. Each file is its own transaction: parts 1 and 2
+  //    apply, and part 3 fails loudly without creating the index or changing any settings. Once the
+  //    duplicate is resolved, all three files apply again (they are re-runnable) and create the index.
   await enableSso(ws);
   await enableSso(otherWs);
   const settingsBefore = (await db.query('select * from public.workspace_settings order by workspace_id')).rows;
-  await assert.rejects(db.exec(migration), /could not create unique index "workspace_settings_sso_provider_identifier_key"/);
+  await db.exec(migrationFiles[0]);
+  await db.exec(migrationFiles[1]);
+  await assert.rejects(db.exec(migrationFiles[2]), /could not create unique index "workspace_settings_sso_provider_identifier_key"/);
   assert.deepEqual((await db.query('select * from public.workspace_settings order by workspace_id')).rows, settingsBefore,
-    'the failed migration changes no settings');
+    'the failed part 3 changes no settings');
   assert.equal(await ssoIndexExists(), false);
-  assert.equal((await db.query("select 1 from pg_policies where policyname = 'team_members_insert_admin'")).rows.length, 1,
-    'the failed migration rolled back as a whole');
+  assert.equal((await db.query("select 1 from pg_policies where policyname = 'team_members_insert_admin'")).rows.length, 0,
+    'parts 1 and 2 stay applied');
   await db.exec(`update public.workspace_settings set sso_enabled = false, sso_mode = 'none', sso_provider_identifier = null, sso_domains = '{}';`);
-  await db.exec(migration);
+  for (const sql of migrationFiles) await db.exec(sql);
   assert.equal(await ssoIndexExists(), true, 'the index is created once there are no duplicates');
 
   // ---------- After the fix ----------

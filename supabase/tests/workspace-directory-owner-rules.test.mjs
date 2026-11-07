@@ -19,9 +19,9 @@ const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pgli
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8').then((text) => text.replace(/\r\n/g, '\n').trim());
 const migrations = await readdir(new URL('../migrations/', import.meta.url));
-const migrationName = migrations.find((name) => name.endsWith('_enforce_workspace_role_rules.sql'));
-assert(migrationName, 'the migration exists');
-const migration = await read(`../migrations/${migrationName}`);
+// The migration is three files (functions, member policies, SSO index).
+const migration = (await Promise.all(migrations.filter((name) => /_enforce_workspace_role_rules_\d_[a-z_]+\.sql$/.test(name)).sort().map((name) => read(`../migrations/${name}`)))).join('\n');
+assert(migration.length > 0, 'the migration exists');
 for (const fn of ['management_delete_workspace_department', 'apply_workspace_member_department_override']) {
   const sql = await read(`../schemas/public/functions/${fn}.sql`);
   const body = sql.slice(sql.indexOf('$function$'), sql.lastIndexOf('$function$') + 10);

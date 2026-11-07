@@ -22,7 +22,8 @@ import { readdir, readFile } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8').then((text) => text.replace(/\r\n/g, '\n').trim());
-const migrationNames = await readdir(new URL('../migrations/', import.meta.url));
+// Every migration file, in apply order.
+const migrationNames = (await readdir(new URL('../migrations/', import.meta.url))).filter((name) => name.endsWith('.sql')).sort();
 const migrationName = migrationNames.find((name) => name.endsWith('_refuse_oauth_client_writes.sql'));
 assert(migrationName, 'the migration exists');
 const migration = await read(`../migrations/${migrationName}`);
@@ -33,6 +34,15 @@ for (const name of migrationNames.filter((file) => /_oauth_client_policies_[a-z0
   assert(name > migrationName, `${name} runs after the helper migration`);
   tableMigrations.set(name.replace(/^\d+_oauth_client_policies_|\.sql$/g, ''), await read(`../migrations/${name}`));
 }
+// A later migration may redefine a function this one changed (keeping the OAuth check); the newest
+// definition is the one that must match the declarative file.
+const newestDefinition = async (name) => {
+  for (const file of [...migrationNames].reverse()) {
+    const sql = await read(`../migrations/${file}`);
+    if (sql.includes(`CREATE OR REPLACE FUNCTION public.${name} (`) || sql.includes(`CREATE OR REPLACE FUNCTION public.${name}(`)) return sql;
+  }
+  return '';
+};
 const helperSql = await read('../schemas/public/functions/request_is_oauth_client.sql');
 assert(migration.includes(helperSql), 'the migration ships request_is_oauth_client.sql verbatim');
 assert(/REVOKE ALL ON FUNCTION "public"\."request_is_oauth_client"\(\) FROM PUBLIC, "anon";/.test(helperSql), 'anon cannot call the helper');
@@ -124,7 +134,7 @@ for (const schema of ['public', 'private']) {
     if (refusingRpcs.includes(name)) {
       rpcSql[name] = create;
       assert(create.includes(oauthCheck), `${name} refuses OAuth client tokens`);
-      assert(migration.includes(create), `the migration ships the schema definition of ${name}`);
+      assert((await newestDefinition(name)).includes(create), `the newest migration that defines ${name} ships its schema definition`);
     } else {
       assert(ordinaryRpcs.has(name), `${schema}.${name} is a SECURITY DEFINER function signed-in users can call: make it refuse OAuth client tokens or list it as ordinary`);
     }
@@ -177,6 +187,8 @@ try {
       requester_user_id uuid not null, decided_by uuid, decided_at timestamptz, status public.join_request_status not null default 'pending', note text);
   `);
   for (const table of stubTables) await db.exec(`create table public.${table} (id uuid primary key default gen_random_uuid(), note text);`);
+  // approve_workspace_join_request reads the owner when an invite makes someone an admin (#3544).
+  await db.exec('alter table public.workspaces add column owner_user_id uuid;');
   for (const table of migrationTables) {
     await db.exec(`alter table public.${table} enable row level security;
       create policy ${table}_client_all on public.${table} for all to authenticated using (true) with check (true);

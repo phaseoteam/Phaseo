@@ -1,40 +1,10 @@
--- Workspace role rules, enforced in the database as well as the apps (review 2026-11-04). Settings already
--- applies them; these close the paths around it through the Data API (PostgREST).
--- phaseo:allow-destructive-migration reason: the only DELETE statements are inside the bodies of the functions redefined below, which run only when called; this migration deletes no rows, drops no table and truncates nothing (DROP POLICY IF EXISTS only replaces policy definitions).
+SET LOCAL lock_timeout = '10s';
 
--- 1. workspace_members. Admins could insert any user into their workspace (with a forged joined_at),
--- promote members to admin and remove other admins (which revokes their keys). People join only through
--- an invite and an approved join request (approve_workspace_join_request / the management API, both
--- SECURITY DEFINER or service role) or SCIM/SSO provisioning on the server, so signed-in users lose
--- INSERT. Only the owner changes roles (only the role column is updatable), and members are removed by
--- the owner, or leave themselves; nobody removes the owner. service_role is unaffected.
-DROP POLICY IF EXISTS "team_members_insert_admin" ON "public"."workspace_members";
-DROP POLICY IF EXISTS "team_members_update_admin" ON "public"."workspace_members";
+-- Workspace role rules (review 2026-11-04), part 1 of 3: functions only. CREATE OR REPLACE FUNCTION and
+-- function grants take no lock on any table, so this file can't block or deadlock with live requests.
+-- phaseo:allow-destructive-migration reason: the only DELETE statements are inside the bodies of the functions redefined below, which run only when called; this migration deletes no rows, drops no table and truncates nothing.
 
-REVOKE INSERT, UPDATE, DELETE ON TABLE "public"."workspace_members" FROM "anon";
-REVOKE INSERT, UPDATE ON TABLE "public"."workspace_members" FROM "authenticated";
-GRANT UPDATE ("role") ON TABLE "public"."workspace_members" TO "authenticated";
-
-DROP POLICY IF EXISTS "workspace_members_update_owner" ON "public"."workspace_members";
-CREATE POLICY "workspace_members_update_owner" ON "public"."workspace_members"
-  FOR UPDATE
-  TO "authenticated"
-  USING ((EXISTS ( SELECT 1
-   FROM public.workspaces workspace
-  WHERE ((workspace.id = workspace_members.workspace_id) AND (workspace.owner_user_id = ( SELECT auth.uid() AS uid))))))
-  WITH CHECK ((EXISTS ( SELECT 1
-   FROM public.workspaces workspace
-  WHERE ((workspace.id = workspace_members.workspace_id) AND (workspace.owner_user_id = ( SELECT auth.uid() AS uid))))));
-
-ALTER POLICY "workspace_members_delete_authorized" ON "public"."workspace_members"
-  USING (((NOT (EXISTS ( SELECT 1
-   FROM public.workspaces workspace
-  WHERE ((workspace.id = workspace_members.workspace_id) AND (workspace.owner_user_id = workspace_members.user_id))))) AND
-    ((EXISTS ( SELECT 1
-   FROM public.workspaces workspace
-  WHERE ((workspace.id = workspace_members.workspace_id) AND (workspace.owner_user_id = ( SELECT auth.uid() AS uid))))) OR (user_id = ( SELECT auth.uid() AS uid)))));
-
--- 2. Join requests. The write-rules trigger still read the old team_invites table and team_id column, so
+-- Join requests. The write-rules trigger still read the old team_invites table and team_id column, so
 -- every join request with an invite (all of them) failed, and so did every approval.
 CREATE OR REPLACE FUNCTION public.enforce_workspace_join_request_write_rules()
   RETURNS TRIGGER
@@ -109,7 +79,7 @@ begin
 end;
 $function$;
 
--- 3. Approving a join request adds the requester with the invite's role. When that role is admin, the
+-- Approving a join request adds the requester with the invite's role. When that role is admin, the
 -- approver must be the workspace owner, checked inside the same transaction as the insert.
 -- management_decide_workspace_join_request also failed on every approval: its bare ON CONFLICT
 -- (workspace_id, user_id) was ambiguous with the workspace_id output column; it now names the constraint.
@@ -317,11 +287,10 @@ GRANT EXECUTE ON FUNCTION "public"."management_decide_workspace_join_request"(uu
 
 REVOKE ALL ON FUNCTION "public"."management_decide_workspace_join_request"(uuid, uuid, text, uuid, text) FROM PUBLIC, "anon", "authenticated";
 
--- 4. Single sign-on. Sign-ins through an identity provider are matched to the workspace whose settings
--- name that provider, so a workspace could claim another organization's provider. Signed-in users can no
+-- Single sign-on. Sign-ins through an identity provider are matched to the workspace whose settings name
+-- that provider, so a workspace could claim another organization's provider. Signed-in users can no
 -- longer write the sso_* columns (the API and web-api write them with the service role after checking the
--- role and the identity add-on), and an enabled provider can belong to one workspace only. Disabled
--- configurations don't reserve the provider.
+-- role and the identity add-on). Uniqueness of an enabled provider is part 3.
 CREATE OR REPLACE FUNCTION public.protect_data_contribution_settings()
   RETURNS TRIGGER
   LANGUAGE plpgsql
@@ -395,12 +364,7 @@ $function$;
 
 COMMENT ON FUNCTION "public"."protect_data_contribution_settings"() IS 'Prevents authenticated workspace administrators from forging platform-controlled contribution consent, billing terms, extended-log billing state and single sign-on settings.';
 
--- Production has no SSO provider identifiers set. If enabled duplicates exist at deploy, this fails and
--- the whole migration rolls back, rather than leaving uniqueness unenforced.
-CREATE UNIQUE INDEX IF NOT EXISTS workspace_settings_sso_provider_identifier_key ON public.workspace_settings USING btree (sso_provider_identifier)
-  WHERE (sso_enabled AND (sso_provider_identifier IS NOT NULL));
-
--- 5. Directory. Deleting a department deletes the group mappings that use it, which can remove or demote
+-- Directory. Deleting a department deletes the group mappings that use it, which can remove or demote
 -- the admins they grant, so only the owner deletes a department that mappings use. Admins change a
 -- member's department through a function that never writes the owner-controlled role override.
 CREATE OR REPLACE FUNCTION public.management_delete_workspace_department (
@@ -608,12 +572,11 @@ GRANT EXECUTE ON FUNCTION "public"."apply_workspace_member_department_override"(
 
 REVOKE ALL ON FUNCTION "public"."apply_workspace_member_department_override"(uuid, uuid, boolean, uuid, text, uuid, text) FROM PUBLIC, "anon", "authenticated";
 
--- 6. SCIM groups. A Group create (group then members) and a multi-operation Group PATCH ran as separate
+-- SCIM groups. A Group create (group then members) and a multi-operation Group PATCH ran as separate
 -- calls, so a failure could leave an orphaned group, or "add the new member, remove the old one" half
--- done in a group that mappings make admins. Each is now one function, so one transaction. These functions,
--- and the existing Group replace functions, suppress the per-row directory triggers for the bulk write,
--- so each reapplies owner role overrides after its reconcile; without that, renaming a mapped group
--- gave an owner-demoted member the admin role back.
+-- done in a group that mappings make admins. Each is now one function, so one transaction. These
+-- functions, and the existing Group replace functions, suppress the per-row directory triggers for the
+-- bulk write, so each reapplies owner role overrides after its reconcile.
 CREATE OR REPLACE FUNCTION public.create_scim_group (
   p_workspace_id uuid,
   p_external_id  text,
@@ -770,4 +733,3 @@ begin
   perform public.refresh_workspace_effective_entitlements(p_workspace_id,null,'scim_group_replace');
 end;
 $function$;
-

@@ -14,7 +14,8 @@ const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pgli
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8').then((text) => text.replace(/\r\n/g, '\n').trim());
 const body = (sql) => sql.slice(0, sql.lastIndexOf('$function$;') + 11);
 const migrations = await readdir(new URL('../migrations/', import.meta.url));
-const migration = await read(`../migrations/${migrations.find((name) => name.endsWith('_enforce_workspace_role_rules.sql'))}`);
+// The migration is three files (functions, member policies, SSO index).
+const migration = (await Promise.all(migrations.filter((name) => /_enforce_workspace_role_rules_\d_[a-z_]+\.sql$/.test(name)).sort().map((name) => read(`../migrations/${name}`)))).join('\n');
 const FUNCTIONS = ['reconcile_scim_entitlements', 'reconcile_scim_entitlements_trigger', 'refresh_effective_entitlements_after_directory_change',
   'refresh_workspace_effective_entitlements', 'capture_manual_workspace_grant', 'enforce_workspace_member_role_policy',
   'apply_workspace_role_overrides', 'apply_workspace_member_override', 'apply_workspace_member_department_override',

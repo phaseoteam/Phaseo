@@ -15,7 +15,8 @@ const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pgli
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8').then((text) => text.replace(/\r\n/g, '\n').trim());
 const migrations = await readdir(new URL('../migrations/', import.meta.url));
-const migration = await read(`../migrations/${migrations.find((name) => name.endsWith('_enforce_workspace_role_rules.sql'))}`);
+// The migration is three files (functions, member policies, SSO index).
+const migration = (await Promise.all(migrations.filter((name) => /_enforce_workspace_role_rules_\d_[a-z_]+\.sql$/.test(name)).sort().map((name) => read(`../migrations/${name}`)))).join('\n');
 for (const fn of ['create_scim_group', 'apply_scim_group_patch']) {
   const sql = await read(`../schemas/public/functions/${fn}.sql`);
   assert(migration.includes(sql), `the migration ships ${fn} with its grants`);
