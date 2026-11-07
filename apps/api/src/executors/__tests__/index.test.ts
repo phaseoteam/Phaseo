@@ -21,6 +21,13 @@ describe("resolveProviderExecutor", () => {
 		expect(resolveProviderExecutor("baseten", "systemone")).toBe(EXECUTORS_BY_PROVIDER.baseten["decisions.make"]);
 	});
 
+	it("resolves Parallel only for Decisions", () => {
+		const executor = EXECUTORS_BY_PROVIDER.parallel?.["decisions.make"];
+		expect(executor).toBeTruthy();
+		expect(resolveProviderExecutor("parallel", "decisions.make")).toBe(executor);
+		expect(resolveProviderExecutor("parallel", "text.generate")).toBeNull();
+	});
+
 	it("resolves Respan Span-01 only for Decisions", () => {
 		const executor = EXECUTORS_BY_PROVIDER.respan?.["decisions.make"];
 		expect(executor).toBeTruthy();
