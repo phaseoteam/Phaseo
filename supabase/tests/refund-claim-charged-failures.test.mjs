@@ -106,8 +106,10 @@ try {
   await db.query('insert into public.workspace_members values ($1, $2)', [ws, owner]);
   await db.query('insert into public.wallets (workspace_id) values ($1)', [ws]);
   await db.exec(previous.sql);
-  // The request row's charge key (production has it) and the stepped charge columns.
-  await db.exec('alter table public.gateway_requests add column billing_request_id text, add column request_id text;');
+  // The request row's charge key and audit details (production has them), the expected cost of a
+  // pending reconciliation (added by #3547's 20261106234000 migration), and the stepped charge columns.
+  await db.exec(`alter table public.gateway_requests add column billing_request_id text, add column request_id text,
+    add column detail_metadata jsonb, add column expected_cost_nanos bigint;`);
   await db.exec(chargeTotals.sql);
   await db.exec(settlement.sql);
 
@@ -255,6 +257,76 @@ try {
     values ($1, false, 0, now() - interval '2 hours'), ($1, false, null, now() - interval '2 hours')`, [ws]);
   await setBalance(usd(10));
   assert.equal((await claim('free_first')).ok, true, 'unsuccessful rows without a charge do not use up a purchase');
+
+  // ---------- Money movements win over a pending reconciliation's audit cost ----------
+  // A delivered request whose charge attempts all failed is audited as pending reconciliation with
+  // the cost it read back (NULL when unreadable, or a snapshot taken before a debit or refund
+  // committed) and the bill it meant to charge. Its charge row is what the wallet took.
+  const pendingRow = (billingId, { cost, expected = null, flagged = true }) => db.query(
+    `insert into public.gateway_requests (workspace_id, success, cost_nanos, created_at, billing_request_id, expected_cost_nanos, detail_metadata)
+     values ($1, false, $3, now() - interval '2 hours', $2, $4, $5::jsonb)`,
+    [ws, billingId, cost, expected, JSON.stringify(flagged ? { accounting_finalization: { billing_status: 'pending_reconciliation' } } : {})]);
+  const oneOffCharge = async (billingId, nanos) => {
+    await asService(() => db.query('select public.gateway_charge_with_credit_cache($1, $2, $3, null)', [ws, billingId, nanos]));
+    await db.query(`update public.gateway_request_charges set created_at = now() - interval '2 hours' where request_id = $1`, [billingId]);
+  };
+  // Buy $10, spend $5 through a one-off charge whose debit committed but whose stored total could
+  // not be read (audit cost NULL), top up $10: the first purchase is used.
+  await scenario('uncertain', async (prefix) => {
+    await oneOffCharge(`${prefix}_bill`, usd(5));
+    await pendingRow(`${prefix}_bill`, { cost: null, expected: usd(5) });
+  });
+  assert.equal((await claim('uncertain_first')).reason, 'lot_used', 'a committed one-off charge counts though its audit cost is NULL');
+  assert.equal(await balance(), usd(15), 'nothing is refunded');
+  // Flagged by the audit's billing_status alone (no expected cost written): the same.
+  await scenario('flag_only', async (prefix) => {
+    await oneOffCharge(`${prefix}_bill`, usd(5));
+    await pendingRow(`${prefix}_bill`, { cost: null });
+  });
+  assert.equal((await claim('flag_only_first')).reason, 'lot_used', 'billing_status pending_reconciliation marks the row as well');
+  // Read back as 0 before the debit committed (a delayed commit): the charge row's $5 counts.
+  await scenario('late_commit', async (prefix) => {
+    await oneOffCharge(`${prefix}_bill`, usd(5));
+    await pendingRow(`${prefix}_bill`, { cost: 0, expected: usd(5) });
+  });
+  assert.equal((await claim('late_commit_first')).reason, 'lot_used', 'a debit that committed after the read-back counts');
+  // Read back correctly at $5: counted once, not as the row plus the charge ($5 fits in $7).
+  await reset();
+  await purchase('pending_once_first', usd(10), usd(7), 3);
+  await oneOffCharge('pending_once_bill', usd(5));
+  await pendingRow('pending_once_bill', { cost: usd(5), expected: usd(5) });
+  await setBalance(usd(12));
+  assert.equal((await claim('pending_once_first')).ok, true, 'a pending row and its charge are counted once');
+  // An ordinary successful one-off charge keeps using its audit cost, as before.
+  await reset();
+  await purchase('ordinary_first', usd(10), usd(4), 3);
+  await oneOffCharge('ordinary_bill', usd(5));
+  await db.query(`insert into public.gateway_requests (workspace_id, success, cost_nanos, created_at, billing_request_id)
+    values ($1, true, $2, now() - interval '2 hours', 'ordinary_bill')`, [ws, usd(5)]);
+  await setBalance(usd(14));
+  assert.equal((await claim('ordinary_first')).reason, 'lot_used', 'an ordinary charge counts its audit cost');
+  // A stepped stream's refund from $5 to $3 that committed after the audit read back $5: the debits
+  // count ($3 fits in a $4 prior balance), not the frozen $5.
+  const steppedPending = async (prefix, priorBalance, { finalTotal, frozen, expected }) => {
+    await reset();
+    await setBalance(usd(20));
+    await purchase(`${prefix}_first`, usd(10), usd(priorBalance), 3);
+    const charge = (total, final) => asService(() => db.query('select public.gateway_charge_request_total($1, $2, $3, $4, null, null)',
+      [ws, `${prefix}_bill`, total, final]));
+    await charge(usd(5), false);
+    if (finalTotal !== null) await charge(usd(finalTotal), true);
+    await pendingRow(`${prefix}_bill`, { cost: usd(frozen), expected: usd(expected) });
+    await setBalance(usd(priorBalance + 10));
+    return claim(`${prefix}_first`);
+  };
+  assert.equal((await steppedPending('late_refund', 4, { finalTotal: 3, frozen: 5, expected: 3 })).ok, true,
+    'a refund that committed after the read-back counts at its net $3');
+  // The final ($8) did not go through after $5 of checkpoints: the $3 the wallet did not take is the
+  // unpaid part of a pending request, and counts with the $5 debited ($8 does not fit in $7).
+  assert.equal((await steppedPending('unpaid', 7, { finalTotal: null, frozen: 5, expected: 8 })).reason, 'lot_used',
+    'the unpaid part of a pending request counts');
+  assert.equal((await steppedPending('unpaid_ok', 9, { finalTotal: null, frozen: 5, expected: 8 })).ok, true,
+    'the debits and the unpaid part are counted once ($8 fits in $9)');
 
   console.log(JSON.stringify({ passed: true, migration: migration.name }));
 } finally {
