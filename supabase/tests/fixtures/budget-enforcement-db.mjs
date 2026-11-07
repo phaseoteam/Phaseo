@@ -1,34 +1,34 @@
-// Production shapes, trimmed to what migration 20261106234007_budget_enforcement_money_hygiene and
+// Production shapes, trimmed to what migration 20261107020007_budget_enforcement_money_hygiene and
 // the functions it replaces read. Shared by supabase/tests/budget-enforcement-money-hygiene.test.mjs
 // and the gateway's seed -> SpendLimit Durable Object -> guard test, so both run the real SQL.
 import { readFile } from 'node:fs/promises';
 
 const schemasUrl = new URL('../../schemas/', import.meta.url);
-export const MIGRATION_FILE = '20261106234007_budget_enforcement_money_hygiene.sql';
+export const MIGRATION_FILE = '20261107020007_budget_enforcement_money_hygiene.sql';
 export const readSchema = (path) => readFile(new URL(path, schemasUrl), 'utf8');
 export const readMigration = () => readFile(new URL(`../../migrations/${MIGRATION_FILE}`, import.meta.url), 'utf8');
 // The migrations that precede MIGRATION_FILE: the expected_cost_nanos column (added, then validated),
 // then each new index in its own migration.
 export const COLUMN_MIGRATION_FILES = [
-  '20261106234000_gateway_requests_expected_cost_nanos.sql',
-  '20261106234001_validate_gateway_requests_expected_cost_nanos_check.sql',
+  '20261107020000_gateway_requests_expected_cost_nanos.sql',
+  '20261107020001_validate_gateway_requests_expected_cost_nanos_check.sql',
 ];
 export const INDEX_MIGRATION_FILES = [
-  '20261106233956_gateway_requests_billing_request_index.sql', // fix/async-billing-20261104's
-  '20261106234002_gateway_requests_expected_cost_idx.sql',
-  '20261106234003_gateway_requests_charged_unsuccessful_cost_idx.sql',
-  '20261106234004_gateway_request_charges_applied_cost_idx.sql',
-  '20261106234005_credit_ledger_request_charge_movements_idx.sql',
+  '20261107015217_gateway_requests_billing_request_index.sql', // fix/async-billing-20261104's
+  '20261107020002_gateway_requests_expected_cost_idx.sql',
+  '20261107020003_gateway_requests_charged_unsuccessful_cost_idx.sql',
+  '20261107020004_gateway_request_charges_applied_cost_idx.sql',
+  '20261107020005_credit_ledger_request_charge_movements_idx.sql',
 ];
 export const readIndexMigrations = () => Promise.all(INDEX_MIGRATION_FILES.map((name) =>
   readFile(new URL(`../../migrations/${name}`, import.meta.url), 'utf8')));
 // The table changes that follow MIGRATION_FILE (functions only), one table per migration.
 export const TABLE_MIGRATION_FILES = [
-  '20261106234008_credit_ledger_drop_client_insert_policy.sql',
-  '20261106234009_wallets_revoke_anon_delete.sql',
-  '20261106234010_gateway_wallet_reservations_revoke_client_writes.sql',
-  '20261106234011_workspace_settings_io_retention_90_days.sql',
-  '20261106234012_workspace_department_budgets_comment.sql',
+  '20261107020008_credit_ledger_drop_client_insert_policy.sql',
+  '20261107020009_wallets_revoke_anon_delete.sql',
+  '20261107020010_gateway_wallet_reservations_revoke_client_writes.sql',
+  '20261107020011_workspace_settings_io_retention_90_days.sql',
+  '20261107020012_workspace_department_budgets_comment.sql',
 ];
 export const readTableMigrations = () => Promise.all(TABLE_MIGRATION_FILES.map((name) =>
   readFile(new URL(`../../migrations/${name}`, import.meta.url), 'utf8')));

@@ -59,10 +59,10 @@ try {
   // Then the one teaching the helper the workspace's primary-department setting.
   const attributionMigration = await readFile(new URL('../migrations/20261031174621_department_attribution_primary_for_budgets.sql', import.meta.url), 'utf8');
   await db.exec(attributionMigration);
-  // 20261106234007_budget_enforcement_money_hygiene moves department usage into the shared
+  // 20261107020007_budget_enforcement_money_hygiene moves department usage into the shared
   // private.department_budget_usage (positive-cost requests plus outstanding holds).
-  const usageMigration = await readFile(new URL('../migrations/20261106234007_budget_enforcement_money_hygiene.sql', import.meta.url), 'utf8');
-  for (const name of ['20261106234000_gateway_requests_expected_cost_nanos.sql', '20261106234001_validate_gateway_requests_expected_cost_nanos_check.sql']) {
+  const usageMigration = await readFile(new URL('../migrations/20261107020007_budget_enforcement_money_hygiene.sql', import.meta.url), 'utf8');
+  for (const name of ['20261107020000_gateway_requests_expected_cost_nanos.sql', '20261107020001_validate_gateway_requests_expected_cost_nanos_check.sql']) {
     await db.exec(await readFile(new URL(`../migrations/${name}`, import.meta.url), 'utf8'));
   }
   for (const path of ['private/functions/unbilled_spend.sql', 'private/functions/key_spend_items.sql', 'private/functions/budget_spend_items.sql', 'private/functions/department_budget_usage.sql',
