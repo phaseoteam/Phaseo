@@ -124,7 +124,11 @@ type Pending = {
 	requests: number;
 	at: number;
 	recordedAt: number;
-	/** The gateway_requests row exists: budget status already includes it. */
+	/**
+	 * Its audit row exists (the seed returned it among the excluded rows), so the next seed does not
+	 * exclude it. That says nothing about whether a published seed counts its spend: the entry is
+	 * counted from memory until a seed that did not exclude its ids is published (handoff), then dropped.
+	 */
 	persisted: boolean;
 	/**
 	 * A stream charged at drain checkpoints: `cost` is its charged total so far, raised by each
@@ -172,7 +176,7 @@ type LeaseRow = {
 
 const ZERO: Usage = { requests: 0, cost: 0 };
 const MAX_SEEN_IDS = 50_000;
-/** Loads per seed when held entries keep going stale while it loads (each retires once). */
+/** Loads per seed when held entries go stale, or new ones are recorded, while it loads. */
 const MAX_SEED_ATTEMPTS = 3;
 
 function nonNegative(value: unknown): number {
@@ -548,15 +552,22 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			this.retireStaleEntries(Date.now());
 			const excluded = this.excludeFromSeed(workspaceId);
 			const exclude = excluded.flatMap((entry) => entry.ids);
-			const persistedBefore = [...this.pending.values()].filter((entry) => entry.persisted);
+			// Held entries this seed does not exclude: it counts their spend, so they are handed off.
+			const includedBySeed = [...this.pending.values()].filter((entry) => entry.persisted);
+			const heldAtStart = new Set(this.pending.keys());
 			const seeds: SpendLimitSeed[] = [];
 			for (const chunk of chunks) seeds.push(await this.loadSeed(workspaceId, chunk, exclude));
 			// An entry this seed excluded that expired or reached a period end while it loaded would be
 			// counted by neither the seed nor memory once retired. It stays held until a seed that does
 			// not exclude it is published: load again now, or keep it for the next seed to retire.
+			// An entry recorded while it loaded is not excluded, but the seed may already count its row:
+			// load again with it excluded, rather than count it twice. After the last attempt both are
+			// kept (over-counted, never lost) until the next seed.
 			const now = Date.now();
-			if (attempt < MAX_SEED_ATTEMPTS && excluded.some(({ entry }) => this.staleness(entry, now))) continue;
-			chunks.forEach((chunk, index) => this.applySeed(seeds[index], chunk, persistedBefore));
+			const stale = excluded.some(({ entry }) => this.staleness(entry, now));
+			const addedWhileLoading = [...this.pending.keys()].some((id) => !heldAtStart.has(id));
+			if (attempt < MAX_SEED_ATTEMPTS && (stale || addedWhileLoading)) continue;
+			chunks.forEach((chunk, index) => this.applySeed(seeds[index], chunk, includedBySeed));
 			for (const { entry } of excluded) delete entry.awaitingSeed;
 			return;
 		}
@@ -589,7 +600,7 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 		return excluded;
 	}
 
-	private applySeed(seed: SpendLimitSeed, chunk: string[], persistedBefore: Pending[]): void {
+	private applySeed(seed: SpendLimitSeed, chunk: string[], includedBySeed: Pending[]): void {
 		const parse = (value: string) => {
 			const ms = Date.parse(value);
 			if (!Number.isFinite(ms)) throw new Error("spend_limit_seed_invalid");
@@ -655,8 +666,8 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			if (averages.length) this.workspaceAvgCost = averages.reduce((sum, value) => sum + value, 0) / averages.length;
 		}
 		const chunkKeys = new Set(chunk);
-		for (const entry of persistedBefore) {
-			// Counted by this seed: stop tracking it separately.
+		for (const entry of includedBySeed) {
+			// Not excluded from this seed, which counts its spend: stop tracking it separately.
 			if (chunkKeys.has(entry.keyId) || !this.keys.has(entry.keyId)) this.pending.delete(entry.billingRequestId);
 		}
 		const found = new Set((seed.excluded_rows ?? []).map((row) => row.request_id));
@@ -682,7 +693,8 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 	private budgetUsage(budget: BudgetState): number {
 		let usage = budget.statusUsage;
 		for (const entry of this.pending.values()) {
-			if (!entry.persisted && !entry.awaitingSeed && (budget.windowStart === null || entry.at >= budget.windowStart)) usage += entry.cost;
+			// Every held entry was excluded from the published seed's budget status (persisted or not).
+			if (!entry.awaitingSeed && (budget.windowStart === null || entry.at >= budget.windowStart)) usage += entry.cost;
 		}
 		return usage;
 	}

@@ -494,6 +494,46 @@ describe("spend-limit coordinator", () => {
 			expect(await daily()).toBe(300);
 		});
 
+		it("keeps counting an entry whose audit row landed until a seed counts its money movements", async () => {
+			database.budgets.push({ id: "lifetime", interval: "lifetime", limit: 300 });
+			await checkpoint("b-hand", 300, 1);
+			// The audit lands as a pending failure row: the seed counts the request by its charge
+			// movements, never the row's cost (the money-movements rule), so the row adds nothing.
+			database.rows.push({ requestId: "req-b-hand", keyId: KEY, success: false, cost: 300, createdAt: Date.now() });
+			const denied = async () => {
+				const result = await coordinator.acquire(WORKSPACE, KEY, { requests: 1, units: 0 }, { requests: 1, units: 0 }, [], `p-${Math.random()}`);
+				return "denial" in result ? result.denial?.gate : null;
+			};
+			// This seed excludes both its ids and finds its row: the entry is marked persisted, but the
+			// seed does not count its spend, so memory still must.
+			await reseed();
+			expect(database.calls.at(-1)?.exclude.sort()).toEqual(["b-hand", "req-b-hand"]);
+			expect(await denied()).toMatchObject({ reason: "workspace_lifetime_cost_budget_reached", currentValue: 300 });
+			// The next seed no longer excludes it and counts the charge row: handed off, still 300.
+			await reseed();
+			expect(database.calls.at(-1)?.exclude).toEqual([]);
+			expect(await denied()).toMatchObject({ reason: "workspace_lifetime_cost_budget_reached", currentValue: 300 });
+		});
+
+		it("reloads a seed rather than count twice a request recorded while it loaded", async () => {
+			database.keys.set(KEY, { workspaceId: WORKSPACE, daily: [100, 1_000] });
+			await reseed();
+			let unstall!: () => void;
+			database.stall = new Promise((resolve) => { unstall = resolve; });
+			vi.setSystemTime(Date.now() + SPEND_LEASE.reseedMs + 1);
+			void probe();
+			await flush();
+			// While the seed is loading, a $6 request's audit row lands and then its spend is recorded.
+			database.rows.push({ requestId: "req-loaded", keyId: KEY, success: true, cost: 600, createdAt: Date.now() });
+			await coordinator.record(WORKSPACE, { keyId: KEY, billingRequestId: "bill-loaded", requestId: "req-loaded", costNanos: 600, requests: 1 });
+			database.stall = null;
+			unstall();
+			await flush();
+			// Counted once ($6), not by both the seed's row and memory ($12).
+			expect(database.calls.at(-1)?.exclude).toEqual(["req-loaded"]);
+			expect((await probe())?.daily).toMatchObject({ requestsUsed: 1, costUsedNanos: 600 });
+		});
+
 		it("ignores a first checkpoint that arrives after the request's final", async () => {
 			// The stream was refunded to 0 at its final; delivery put the final first.
 			debit("b-reordered", 300);
