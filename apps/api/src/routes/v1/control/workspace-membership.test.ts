@@ -85,7 +85,9 @@ vi.mock("@/pipeline/before/guards", () => ({
 	})),
 }));
 
-vi.mock("./route-helpers", () => ({
+vi.mock("./route-helpers", async (importOriginal) => ({
+	// The owner check runs for real against the mocked database.
+	requireWorkspaceOwner: (await importOriginal<typeof import("./route-helpers")>()).requireWorkspaceOwner,
 	requireCapability: () => null,
 	requireOAuthWorkspaceRole: async () => null,
 	rejectThirdPartyOAuthSpendingChange: () => null,
@@ -155,8 +157,16 @@ describe("workspace membership management", () => {
 		expect(state.insertedInvite).toBeNull();
 		expect(state.auditEvents).toHaveLength(0);
 
-		// A member that holds the owner role (not the recorded owner) may.
+		// A membership row that says "owner" is not enough (it can outlive a change of owner); only the
+		// recorded owner, workspaces.owner_user_id, may.
 		state.member = { workspace_id: "workspace_1", user_id: "user_actor", role: "owner", joined_at: null };
+		const staleOwnerInvite = await workspaceMembershipRoutes.request("https://example.com/workspace_1/invites", {
+			method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ role: "admin" }),
+		});
+		expect(staleOwnerInvite.status).toBe(403);
+		expect(state.insertedInvite).toBeNull();
+		state.actorUserId = "user_owner";
+		state.member = { workspace_id: "workspace_1", user_id: "user_owner", role: "owner", joined_at: null };
 		state.invite = { id: "invite_2", workspace_id: "workspace_1", role: "admin" };
 		const ownerInvite = await workspaceMembershipRoutes.request("https://example.com/workspace_1/invites", {
 			method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ role: "admin" }),

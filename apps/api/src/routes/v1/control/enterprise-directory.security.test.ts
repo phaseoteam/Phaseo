@@ -14,10 +14,21 @@ function addonQuery() {
 	return chain;
 }
 
+function single(row: Record<string, unknown>) {
+	const chain: any = {};
+	chain.select = () => chain;
+	chain.eq = () => chain;
+	chain.maybeSingle = async () => ({ data: row, error: null });
+	return chain;
+}
+
 const database = {
 	from(table: string) {
 		if (table === "workspace_addon_subscriptions") return addonQuery();
 		if (table === "workspace_audit_events") return { insert: async () => ({ error: null }) };
+		// The management key acts as its creator, the workspace owner.
+		if (table === "workspace_members") return single({ role: "owner" });
+		if (table === "workspaces") return single({ owner_user_id: "user_1" });
 		throw new Error(`Unexpected table: ${table}`);
 	},
 	async rpc(name: string, args: Record<string, unknown>) {

@@ -8,6 +8,10 @@ const patchSchema = z.object({
 }).strict();
 const memberSchema = z.object({ value: z.string().uuid() }).passthrough();
 const filteredMemberPath = /^members\[value\s+eq\s+"([0-9a-f-]{36})"\]$/i;
+// Identity providers often send the resource back as the value of a pathless PATCH. A Group's read-only
+// attributes (RFC 7643 section 3.1: id and meta; section 4.2 adds none) and the schemas list aren't
+// changes, so they are ignored rather than failing the PATCH. Unknown writable attributes are rejected.
+const ECHOED_READ_ONLY = new Set(["id", "meta", "schemas"]);
 
 export type GroupPatchChange =
 	| { kind: "attributes"; values: { display_name?: string; external_id?: string | null } }
@@ -15,31 +19,61 @@ export type GroupPatchChange =
 	| { kind: "members-remove"; userIds: string[] }
 	| { kind: "members-replace"; userIds: string[] };
 
+type Op = "add" | "remove" | "replace";
+
+function memberIds(value: unknown) {
+	const members = z.array(memberSchema).max(10_000).safeParse(value);
+	if (!members.success) throw new ScimProtocolError(400, "members must contain valid User identifiers.", "invalidValue");
+	return members.data.map((member) => member.value);
+}
+
+/** One attribute of a Group. SCIM attribute names are case-insensitive (RFC 7643 section 2.1). */
+function attributeChange(op: Op, attribute: string, value: unknown, label: string): GroupPatchChange {
+	switch (attribute.toLowerCase()) {
+		case "displayname":
+			if (op === "remove") throw new ScimProtocolError(400, "displayName is required.", "mutability");
+			if (typeof value !== "string") throw new ScimProtocolError(400, "displayName must be a string.", "invalidValue");
+			return { kind: "attributes", values: { display_name: value } };
+		case "externalid":
+			if (op === "remove") return { kind: "attributes", values: { external_id: null } };
+			if (typeof value !== "string") throw new ScimProtocolError(400, "externalId must be a string.", "invalidValue");
+			return { kind: "attributes", values: { external_id: value } };
+		case "members":
+			if (op === "add") return { kind: "members-add", userIds: memberIds(value) };
+			if (op === "replace") return { kind: "members-replace", userIds: memberIds(value) };
+			// A remove without a value removes every member (RFC 7644 section 3.5.2.2).
+			if (value === undefined) return { kind: "members-replace", userIds: [] };
+			return { kind: "members-remove", userIds: memberIds(value) };
+		default:
+			throw new ScimProtocolError(400, `PATCH path ${label} is not supported for Groups.`, "invalidPath");
+	}
+}
+
 export function parseGroupPatch(value: unknown): GroupPatchChange[] {
 	const parsed = patchSchema.safeParse(value);
 	if (!parsed.success) throw new ScimProtocolError(400, parsed.error.issues[0]?.message ?? "Invalid Group PATCH request.", "invalidSyntax");
 	const changes: GroupPatchChange[] = [];
 	for (const operation of parsed.data.Operations) {
 		const path = operation.path;
-		if (path === "displayName" || path === "externalId") {
-			if (operation.op === "remove" && path === "displayName") throw new ScimProtocolError(400, "displayName is required.", "mutability");
-			if (operation.op !== "remove" && typeof operation.value !== "string") throw new ScimProtocolError(400, `${path} must be a string.`, "invalidValue");
-			changes.push({ kind: "attributes", values: path === "displayName" ? { display_name: operation.value as string } : { external_id: operation.op === "remove" ? null : operation.value as string } });
+		if (path) {
+			const filtered = filteredMemberPath.exec(path);
+			if (filtered) {
+				if (operation.op !== "remove") throw new ScimProtocolError(400, "Filtered member paths only support remove.", "invalidPath");
+				changes.push({ kind: "members-remove", userIds: [filtered[1]] });
+				continue;
+			}
+			changes.push(attributeChange(operation.op, path, operation.value, path));
 			continue;
 		}
-		const filtered = path ? filteredMemberPath.exec(path) : null;
-		if (filtered) {
-			if (operation.op !== "remove") throw new ScimProtocolError(400, "Filtered member paths only support remove.", "invalidPath");
-			changes.push({ kind: "members-remove", userIds: [filtered[1]] }); continue;
+		// Without a path, the value holds the attributes to set (RFC 7644 section 3.5.2.1/3.5.2.3). Every
+		// attribute it names is applied, in the same request, so a rename can't drop the member change.
+		if (operation.op === "remove" || !operation.value || typeof operation.value !== "object" || Array.isArray(operation.value)) {
+			throw new ScimProtocolError(400, "PATCH path <none> is not supported for Groups.", "invalidPath");
 		}
-		if (path === "members" || (!path && operation.value && typeof operation.value === "object" && "members" in operation.value)) {
-			const rawMembers = path === "members" ? operation.value : (operation.value as { members: unknown }).members;
-			const members = z.array(memberSchema).max(10_000).safeParse(rawMembers);
-			if (!members.success) throw new ScimProtocolError(400, "members must contain valid User identifiers.", "invalidValue");
-			changes.push({ kind: operation.op === "add" ? "members-add" : operation.op === "remove" ? "members-remove" : "members-replace", userIds: members.data.map((member) => member.value) });
-			continue;
+		for (const [attribute, attributeValue] of Object.entries(operation.value)) {
+			if (ECHOED_READ_ONLY.has(attribute.toLowerCase())) continue;
+			changes.push(attributeChange(operation.op, attribute, attributeValue, attribute));
 		}
-		throw new ScimProtocolError(400, `PATCH path ${path ?? "<none>"} is not supported for Groups.`, "invalidPath");
 	}
 	return changes;
 }

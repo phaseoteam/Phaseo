@@ -4556,9 +4556,20 @@ struct WorkspaceMember {
 	std::string workspace_id;
 };
 
+struct WorkspaceMemberAddFailure {
+	std::any code;
+	std::string message;
+	std::string user_id;
+};
+
 struct WorkspaceMemberAddResponse {
 	int added_count;
+	std::vector<std::string> approved;
 	std::vector<std::map<std::string, std::any>> data;
+	std::string error;
+	std::vector<std::map<std::string, std::any>> failed;
+	std::string message;
+	std::vector<std::string> not_attempted;
 };
 
 struct WorkspaceMemberBulkRequest {

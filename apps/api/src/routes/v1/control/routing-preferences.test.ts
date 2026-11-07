@@ -47,7 +47,9 @@ beforeEach(() => {
 			{ model_slug: "acme/preview", status: "coming_soon", hidden: false },
 		],
 	});
-	state.auth = { workspaceId: WS, authMethod: "api_key", requestId: "req_1", scopes: [] };
+	// The management key acts as its creator, an admin of the workspace.
+	state.auth = { workspaceId: WS, authMethod: "api_key", userId: "key_creator", requestId: "req_1", scopes: [] };
+	state.db.tables.workspace_members = [{ workspace_id: WS, user_id: "key_creator", role: "admin" }];
 	state.audits.length = 0;
 	state.invalidated.length = 0;
 });

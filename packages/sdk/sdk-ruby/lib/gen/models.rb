@@ -6417,11 +6417,28 @@ module Phaseo
     # @!attribute [rw] workspace_id
     #   @return [String]
     WorkspaceMember = Struct.new(:display_name, :joined_at, :role, :user_id, :workspace_id, keyword_init: true)
+    # @!attribute [rw] code
+    #   @return [String]
+    # @!attribute [rw] message
+    #   @return [String]
+    # @!attribute [rw] user_id
+    #   @return [String]
+    WorkspaceMemberAddFailure = Struct.new(:code, :message, :user_id, keyword_init: true)
     # @!attribute [rw] added_count
     #   @return [Integer]
+    # @!attribute [rw] approved
+    #   @return [Array<String>]
     # @!attribute [rw] data
+    #   @return [Array<Hash{String => Object}>, nil]
+    # @!attribute [rw] error
+    #   @return [String, nil]
+    # @!attribute [rw] failed
     #   @return [Array<Hash{String => Object}>]
-    WorkspaceMemberAddResponse = Struct.new(:added_count, :data, keyword_init: true)
+    # @!attribute [rw] message
+    #   @return [String, nil]
+    # @!attribute [rw] not_attempted
+    #   @return [Array<String>]
+    WorkspaceMemberAddResponse = Struct.new(:added_count, :approved, :data, :error, :failed, :message, :not_attempted, keyword_init: true)
     # @!attribute [rw] role
     #   @return [String, nil]
     # @!attribute [rw] user_ids

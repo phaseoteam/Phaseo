@@ -19,9 +19,17 @@ assert(migrationName, 'the migration exists');
 const migration = normalize(await read(`../migrations/${migrationName}`));
 
 // The declarative files describe the same end state.
+// A later migration (enforce_workspace_role_rules) also protects the sso_* columns, so the declarative body
+// is the one the latest migration redefining the function ships.
 const fnSql = normalize(await read('../schemas/public/functions/protect_data_contribution_settings.sql'));
 const fnBody = fnSql.slice(fnSql.indexOf('$function$'), fnSql.lastIndexOf('$function$') + 10);
-assert(fnBody.length > 20 && migration.includes(fnBody), 'the migration ships the schema body of protect_data_contribution_settings');
+let latestFnMigration = '';
+for (const name of migrations.filter((file) => file.endsWith('.sql')).sort()) {
+  const sql = normalize(await read(`../migrations/${name}`));
+  if (sql.includes('FUNCTION public.protect_data_contribution_settings()')) latestFnMigration = sql;
+}
+assert(fnBody.length > 20 && latestFnMigration.includes(fnBody), 'the latest migration ships the schema body of protect_data_contribution_settings');
+assert(migration.includes('FUNCTION public.protect_data_contribution_settings()'), 'this migration redefines protect_data_contribution_settings');
 const presetsSql = normalize(await read('../schemas/public/tables/presets.sql'));
 assert(presetsSql.includes('WITH CHECK (((created_by = ( SELECT auth.uid() AS uid)) AND public.is_workspace_member(workspace_id)));'),
   'the presets update policy requires membership of the new workspace');

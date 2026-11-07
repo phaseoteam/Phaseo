@@ -9,3 +9,5 @@ description: "Approve a pending join request atomically."
 <Note>This endpoint requires a management API key with `workspaces:write`.</Note>
 
 Approval validates invite expiry and remaining uses, applies the invite role, and records the decision in one transaction.
+
+If the invite makes the person an admin, only the workspace owner can approve the request.
