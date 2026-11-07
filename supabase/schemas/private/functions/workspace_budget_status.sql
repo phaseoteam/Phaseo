@@ -1,7 +1,8 @@
 CREATE OR REPLACE FUNCTION private.workspace_budget_status (
   p_workspace_id           uuid,
   p_requested_amount_nanos bigint DEFAULT 0,
-  p_exclude_ids            text[] DEFAULT '{}'::text[]
+  p_exclude_request_ids    text[] DEFAULT '{}'::text[],
+  p_exclude_charge_ids     text[] DEFAULT '{}'::text[]
 )
   RETURNS jsonb
   LANGUAGE plpgsql
@@ -52,8 +53,8 @@ begin
       p_workspace_id,
       (select case when bool_or(configured.window_start is null) then null else min(configured.window_start) end from configured),
       null::uuid[],
-      p_exclude_ids,
-      p_exclude_ids
+      p_exclude_request_ids,
+      p_exclude_charge_ids
     ) item
     where exists (select 1 from configured)
   ), usage_rows as (
@@ -118,10 +119,10 @@ begin
 end;
 $function$;
 
-COMMENT ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) IS 'Workspace budgets with usage this UTC period (private.budget_spend_items), for gateway_workspace_budget_status and gateway_spend_limit_seed. p_exclude_ids are the request ids and billing ids of admissions the SpendLimit Durable Object holds: their request rows and charge rows are left out, as for department and key usage, because the Durable Object counts them from memory until a seed that does not exclude them is published.';
+COMMENT ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[], text[]) IS 'Workspace budgets with usage this UTC period (private.budget_spend_items), for gateway_workspace_budget_status and gateway_spend_limit_seed. p_exclude_request_ids leaves out request rows and p_exclude_charge_ids charge rows of admissions the SpendLimit Durable Object holds (gateway_spend_limit_seed passes both for contract version 2, charge rows only for version 1).';
 
-REVOKE ALL ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) FROM PUBLIC;
+REVOKE ALL ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[], text[]) FROM PUBLIC;
 
-REVOKE ALL ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) FROM "postgres";
+REVOKE ALL ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[], text[]) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[]) TO "postgres";
+GRANT EXECUTE ON FUNCTION "private"."workspace_budget_status"(uuid, bigint, text[], text[]) TO "postgres";

@@ -67,6 +67,12 @@ try {
   for (const name of ['20261107015208_billing_cutoffs.sql', '20261107015209_gateway_requests_expected_cost_nanos.sql', '20261107015210_validate_gateway_requests_expected_cost_nanos_check.sql']) {
     await db.exec(await readFile(new URL(`../migrations/${name}`, import.meta.url), 'utf8'));
   }
+  // The usage migration drops main's three-argument seed before creating the one with
+  // p_contract_version, so a three-argument call is never ambiguous.
+  const dropOldSeed = 'DROP FUNCTION IF EXISTS public.gateway_spend_limit_seed(uuid, uuid[], text[]);';
+  assert.ok(usageMigration.indexOf(dropOldSeed) >= 0 && usageMigration.indexOf(dropOldSeed) < usageMigration.indexOf('CREATE OR REPLACE FUNCTION public.gateway_spend_limit_seed'),
+    'the old seed signature is dropped before the new one is created');
+  await db.exec(dropOldSeed);
   for (const path of ['private/functions/unbilled_spend.sql', 'private/functions/key_spend_items.sql', 'private/functions/budget_spend_items.sql', 'private/functions/department_budget_usage.sql',
     'private/functions/workspace_budget_status.sql', 'public/functions/gateway_workspace_budget_status.sql', 'public/functions/gateway_spend_limit_seed.sql',
     'public/functions/workspace_department_budget_status.sql']) {
@@ -174,10 +180,15 @@ try {
   assert.equal(cappedExcluded.used.monthly.cost_nanos, cappedSeed.used.monthly.cost_nanos - 111);
   assert.deepEqual(excluded.excluded_rows.map((row) => [row.request_id, row.success, row.cost_nanos]),
     [['month-start', true, 11], ['today-1', true, 100]]);
-  // Workspace budgets leave the held requests out too (the coordinator counts them from memory).
+  // Workspace budgets: contract version 1 (main's coordinator, and the default) counts the held
+  // requests' rows, since that coordinator stops counting them once excluded_rows reports them;
+  // version 2 (a coordinator that counts them until handoff) leaves them out.
   const usageOf = (status, interval) => status.budgets.find((entry) => entry.interval === interval).usage_nanos;
-  assert.equal(usageOf(excluded.budget_status, 'daily'), usageOf(seed.budget_status, 'daily') - 100);
-  assert.equal(usageOf(excluded.budget_status, 'lifetime'), usageOf(seed.budget_status, 'lifetime') - 111);
+  assert.deepEqual(excluded.budget_status.budgets, seed.budget_status.budgets);
+  const excludedV2 = await one(`select public.gateway_spend_limit_seed('${workspace}', ${keyIds}, array['today-1', 'month-start', 'not-yet-written'], 2) as value`);
+  assert.equal(usageOf(excludedV2.budget_status, 'daily'), usageOf(seed.budget_status, 'daily') - 100);
+  assert.equal(usageOf(excludedV2.budget_status, 'lifetime'), usageOf(seed.budget_status, 'lifetime') - 111);
+  assert.deepEqual(excludedV2.keys, excluded.keys, 'key usage is the same under both versions');
   assert.deepEqual(seed.department_budgets, [], 'no department budgets yet');
 
   // Department budgets: same attribution as workspace_department_budget_status, usage counted

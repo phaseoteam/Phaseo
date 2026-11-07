@@ -46,7 +46,7 @@ class SeededSpendLimitDurableObject extends SpendLimitDurableObject {
 		await db.exec("set role service_role");
 		let seed: any;
 		try {
-			seed = (await db.query("select public.gateway_spend_limit_seed($1, $2::uuid[], $3::text[]) as seed", [workspaceId, keyIds, exclude])).rows[0].seed;
+			seed = (await db.query("select public.gateway_spend_limit_seed($1, $2::uuid[], $3::text[], 2) as seed", [workspaceId, keyIds, exclude])).rows[0].seed;
 			seeds.push({ exclude: [...exclude], seed });
 		} finally {
 			await db.exec("reset role");
