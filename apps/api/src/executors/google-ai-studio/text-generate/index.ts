@@ -42,6 +42,7 @@ import { geminiGroundingToAnnotations, toChatAnnotations } from "@protocols/shar
 import { createSyntheticResponsesStreamFromIR } from "@executors/_shared/text-generate/synthetic-responses-stream";
 import { buildSyntheticServerToolStream } from "@pipeline/surfaces/server-tools.stream";
 import { sanitizeGeminiSchema } from "@executors/google/shared/schema";
+import { GeminiArgumentStream } from "@executors/google/shared/function-call-stream";
 import { supportsTextProviderInteractionsModel } from "@providers/textProfiles";
 import { GOOGLE_REASONING_FORMAT, canReplayReasoning, sealReasoningState } from "@core/reasoning-state";
 
@@ -1710,10 +1711,12 @@ export function transformStream(
 		toolIndex: number;
 	};
 	const toolStates = new Map<string, StreamToolState>();
+	const partialToolStates = new Map<string, { id: string; name: string; index: number; arguments: GeminiArgumentStream }>();
 	const toolCountByCandidate = new Map<number, number>();
 	const interactionStepStates = new Map<number, InteractionStepState>();
 	let interactionToolCallCount = 0;
 	let interactionSawFunctionCall = false;
+	let interactionCompleted = false;
 	let sawUsableOutput = false;
 	let streamedOutputChars = 0;
 	const emittedAnnotationKeys = new Set<string>();
@@ -1898,8 +1901,9 @@ export function transformStream(
 					}),
 					format: GOOGLE_REASONING_FORMAT,
 				}];
-			} else if (delta.type === "arguments_delta") {
-				const argumentsDelta = typeof delta.arguments === "string" ? delta.arguments : "";
+			} else if (delta.type === "arguments_delta" || delta.type === "arguments") {
+				const argumentsDelta = typeof delta.partial_arguments === "string" ? delta.partial_arguments
+					: typeof delta.arguments === "string" ? delta.arguments : "";
 				const toolIndex = state?.toolIndex ?? 0;
 				const toolDelta: {
 					index: number;
@@ -1931,6 +1935,18 @@ export function transformStream(
 		}
 
 		if (eventType === "interaction.completed") {
+			interactionCompleted = true;
+			for (const state of interactionStepStates.values()) {
+				if (state.type !== "function_call") continue;
+				if (state.argumentsSoFar) {
+					try { JSON.parse(state.argumentsSoFar); }
+					catch { throw new Error("google_incomplete_function_arguments"); }
+				} else {
+					const emptyArguments = buildBaseIRChunk();
+					emptyArguments.choices.push({ index: 0, delta: { toolCalls: [{ index: state.toolIndex, arguments: "{}" }] } });
+					enqueueIRChunk(emptyArguments, controller);
+				}
+			}
 			const interaction = payloadEntry.interaction ?? {};
 			const usage = interactionUsageToIRUsage(
 				interaction.usage ??
@@ -2016,6 +2032,32 @@ export function transformStream(
 								content += part.text;
 							}
 						} else if (part.functionCall) {
+							const call = part.functionCall;
+							const slot = `${index}:${partIdx}`;
+							if (Array.isArray(call.partialArgs) || partialToolStates.has(slot) || ("willContinue" in call && !call.args)) {
+								let state = partialToolStates.get(slot);
+								const starting = !state;
+								if (!state) {
+									if (typeof call.name !== "string" || !call.name) throw new Error("google_function_call_name_missing");
+									const toolIndex = toolCountByCandidate.get(index) ?? 0;
+									toolCountByCandidate.set(index, toolIndex + 1);
+									state = {
+										id: typeof call.id === "string" && call.id ? call.id : `call_${args.requestId}_${index}_${toolIndex}`,
+										name: call.name, index: toolIndex, arguments: new GeminiArgumentStream(),
+									};
+									partialToolStates.set(slot, state);
+								}
+								if ((call.name && call.name !== state.name) || (call.id && call.id !== state.id)) {
+									throw new Error("google_function_call_changed_before_completion");
+								}
+								const argumentsDelta = state.arguments.append(call.partialArgs ?? [], call.willContinue !== true);
+								toolCalls.push({ index: state.index, ...(starting ? { id: state.id, name: state.name } : {}), arguments: argumentsDelta });
+								if (typeof partSignature === "string" && partSignature) {
+									signatureDetails.push({ type: "reasoning.encrypted", id: state.id, data: sealGeminiSignature(partSignature, state.id), format: GOOGLE_REASONING_FORMAT });
+								}
+								if (state.arguments.done) partialToolStates.delete(slot);
+								continue;
+							}
 							const upstreamId = typeof part.functionCall.id === "string" && part.functionCall.id
 								? part.functionCall.id
 								: null;
@@ -2120,7 +2162,10 @@ export function transformStream(
 					}
 
 					let finishReason = cand.finishReason ? mapGeminiFinishReason(cand.finishReason) : undefined;
-					if (finishReason === "stop" && toolCalls.length > 0) {
+					if (finishReason && [...partialToolStates.keys()].some((key) => key.startsWith(`${index}:`))) {
+						throw new Error("google_incomplete_function_arguments");
+					}
+					if (finishReason === "stop" && (toolCountByCandidate.get(index) ?? 0) > 0) {
 						finishReason = "tool_calls";
 					}
 
@@ -2223,6 +2268,9 @@ export function transformStream(
 				emittedChunkCount += emitPayloadEntries(toPayloadEntries(payload), controller);
 			}
 		}
+		if (partialToolStates.size > 0 || (interactionSawFunctionCall && !interactionCompleted)) {
+			throw new Error("google_incomplete_function_arguments");
+		}
 		if (!sawUsableOutput) {
 			const errorPayload = {
 				error: {
@@ -2250,13 +2298,14 @@ export function transformStream(
 				// A pull must enqueue or end the stream, or the waiting read never settles.
 				while (emittedChunkCount === emittedBefore) {
 					const { value, done } = await reader.read();
+					if (finished) return;
 					if (done) {
 						finishStream(controller);
 						return;
 					}
 
 					const decoded = decoder.decode(value, { stream: true });
-					rawText += decoded;
+					if (emittedChunkCount === 0) rawText += decoded;
 					buf += decoded;
 					const split = splitSseBlocks(buf);
 					const lines = split.blocks;
@@ -2281,10 +2330,21 @@ export function transformStream(
 						}
 						emittedChunkCount += emitPayloadEntries(toPayloadEntries(payload), controller);
 					}
+					if (emittedChunkCount > 0) rawText = "";
 				}
 			} catch (err) {
 				console.error("Gemini stream transform error:", err);
 				finished = true;
+				await reader.cancel(err).catch(() => {});
+				if (err instanceof Error && /^google_(?:invalid|incomplete|function_)/.test(err.message)) {
+					// Protocol adapters recognise explicit errors; a rejected reader can be
+					// closed by an adapter before it emits a terminal failure event.
+					controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+						error: { code: "google_invalid_function_arguments", type: "server_error", message: "Google returned incomplete or invalid tool arguments." },
+					})}\n\n`));
+					controller.close();
+					return;
+				}
 				controller.error(err);
 			}
 		},

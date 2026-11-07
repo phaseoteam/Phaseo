@@ -6,6 +6,7 @@
 // Handles: OpenAI, Groq, DeepSeek, Together, Fireworks, and other OpenAI-compatible providers
 // Uses OpenAI Responses API format upstream for consistency
 
+import { withScopedPromptCacheKey } from "../prompt-cache";
 import type { ExecutorExecuteArgs, ExecutorResult, Bill } from "@executors/types";
 import { fetchUpstream, UpstreamHeadersTimeoutError } from "@executors/_shared/timing/upstream";
 import type { IRChatResponse } from "@core/ir";
@@ -157,7 +158,7 @@ export async function executeOpenAIWire(
 	// Audio given by URL is downloaded and sent as base64 input_audio.
 	const inlinedAudio = await inlineAudioUrlsForProvider(args.ir, args);
 	if (inlinedAudio.ok === false) return inlinedAudio.result;
-	const encodeIr = inlinedAudio.ir;
+	const encodeIr = await withScopedPromptCacheKey(inlinedAudio.ir, args, keyInfo.source);
 
 	const buildPayloadForRoute = (targetRoute: "responses" | "chat"): Record<string, any> => {
 		const requestPayload = targetRoute === "responses"

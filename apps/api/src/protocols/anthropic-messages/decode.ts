@@ -350,7 +350,12 @@ export function decodeAnthropicMessagesRequest(req: AnthropicMessagesRequest): I
 		// provider_options apply as they do on Chat and Responses.
 		promptCacheRetention: providerCacheOptions.promptCacheRetention,
 		promptCacheOptions: providerOptions?.openai?.prompt_cache_options,
-		anthropicCacheControl: providerCacheOptions.anthropicCacheControl,
+		anthropicCacheControl: providerCacheOptions.anthropicCacheControl &&
+			!(req.provider_options ?? req.providerOptions)?.anthropic?.cache_control &&
+			!(req.provider_options ?? req.providerOptions)?.anthropic?.cacheControl &&
+			!providerCacheOptions.anthropicCacheControl.scope
+			? { ...providerCacheOptions.anthropicCacheControl, scope: "automatic" }
+			: providerCacheOptions.anthropicCacheControl,
 		googleCachedContent: providerCacheOptions.googleCachedContent,
 		xaiConversationId: providerCacheOptions.xaiConversationId,
 		vendor,
