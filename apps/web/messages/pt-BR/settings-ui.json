@@ -7232,7 +7232,7 @@
 			"period": "Período",
 			"createTitle": "Adicionar um orçamento de departamento",
 			"editTitle": "Editar orçamento de departamento",
-			"limitHelp": "Quando o gasto do departamento no período chega a este valor, suas solicitações com chave de API são recusadas até o período ser redefinido. Solicitações feitas com um token de acesso OAuth não são bloqueadas. Se a verificação do orçamento ficar indisponível por um instante, as solicitações são permitidas em vez de recusadas. Proprietários e administradores são avisados em cerca de 80% e 100%.",
+			"limitHelp": "Quando o gasto do departamento no período chega a este valor, suas solicitações com chave de API são recusadas até o período ser redefinido. Se a verificação do orçamento ficar indisponível por um instante, as solicitações são permitidas em vez de recusadas. Proprietários e administradores são avisados em cerca de 80% e 100%.",
 			"saved": "Orçamento de departamento salvo",
 			"deleted": "Orçamento de departamento excluído",
 			"deleteTitle": "Excluir este orçamento de departamento?",

@@ -56,7 +56,6 @@ Owner und Admins verwalten Abteilungsbudgets mit `phaseo department-budgets`, de
 
 Hat eine Abteilung ihr tägliches, wöchentliches oder monatliches Budget aufgebraucht, geben API-Schlüssel-Anfragen, die ihr zugerechnet werden, `429` mit `key_limit_exceeded` und dem Grund `department_daily_cost_budget_reached`, `department_weekly_cost_budget_reached` oder `department_monthly_cost_budget_reached` zurück. `department_id` und `department_name` im Body nennen die Abteilung, und `reset_at` und `Retry-After` geben an, wann ihr Budget zurückgesetzt wird.
 
-- Anfragen mit einem OAuth-Zugriffstoken werden durch Abteilungsbudgets nicht blockiert und keiner Abteilung zugerechnet.
 - Ist die Budgetprüfung kurzzeitig nicht verfügbar, werden Anfragen zugelassen, sodass eine Abteilung ihr Budget für kurze Zeit überschreiten kann.
 - Owner und Admins erhalten eine mobile Push-Benachrichtigung bei etwa 80 % und erneut bei 100 % eines Budgets. Für diese Warnungen werden die Budgets alle 15 Minuten geprüft, daher können Anfragen schon abgelehnt werden, bevor die 100-%-Warnung eintrifft.
 
@@ -128,7 +127,7 @@ Regeln zu Ratenlimits für Agents, als Zusammenfassung dieser Seite:
 
 - Gateway-Kontingente geben `429` mit dem Grund `customer_requests_per_minute` (Code `key_limit_exceeded`) oder `free_requests_per_day` (Code `phaseo_free_model_limit_exceeded`) zurück; warte die Sekunden aus `Retry-After` ab. Ist die Kontingentdurchsetzung nicht verfügbar, gibt das Gateway `503` mit Hinweisen zur Wiederholung zurück.
 - Schlüssellimits und Budgets geben `429` mit `key_limit_exceeded` und einem `reset_at` zurück. Ohne `Retry-After` setzt sich das Limit nicht von selbst zurück: Erhöhe das Limit oder nutze einen anderen Schlüssel, statt es erneut zu versuchen.
-- Ein aufgebrauchtes Abteilungsbudget gibt `429` mit `key_limit_exceeded`, dem Grund `department_<interval>_cost_budget_reached`, `department_id`, `department_name` und `reset_at` zurück; warte die Sekunden aus `Retry-After` ab oder erhöhe das Budget. Anfragen mit einem OAuth-Zugriffstoken werden durch Abteilungsbudgets nicht blockiert. Ist die Budgetprüfung nicht verfügbar, wird die Anfrage zugelassen.
+- Ein aufgebrauchtes Abteilungsbudget gibt `429` mit `key_limit_exceeded`, dem Grund `department_<interval>_cost_budget_reached`, `department_id`, `department_name` und `reset_at` zurück; warte die Sekunden aus `Retry-After` ab oder erhöhe das Budget. Ist die Budgetprüfung nicht verfügbar, wird die Anfrage zugelassen.
 - Sperrende Ausgabenregeln geben `429` mit `spend_rule_blocked` zurück; warte `Retry-After` ab oder bitte einen Owner oder Admin, die Sperre aufzuheben. `x-phaseo-spend-warning` bedeutet, dass eine Sperre folgen kann.
 - Ratenlimit-Richtlinien des Workspace geben `429` mit `rate_limit_exceeded`, `policy_id` und `limit_scope` zurück. `x-ratelimit-remaining-requests` ist ein Näherungswert.
 - `Retry-After` kann Sekunden oder ein HTTP-Datum sein; validiere den Wert, bevor du einen erneuten Versuch planst. Sende einen unklaren Video- oder Batch-Job nie erneut, sondern prüfe seinen Status.
