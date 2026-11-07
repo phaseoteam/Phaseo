@@ -2,8 +2,13 @@
 // Tokens the auth provider's OAuth server issues carry the app's client_id; the CLI and desktop app use public
 // client IDs. Such a token could write logging, guardrails, dynamic routing, broadcast destinations, auto
 // top-up and BYOK metadata through /rest/v1 as the person. The fix refuses writes from a client_id token by default:
-// - every public table where authenticated holds a write grant has restrictive INSERT, UPDATE and DELETE
-//   policies backed by public.request_is_oauth_client(), unless it is listed in ordinaryTables (none are);
+// - every public table a signed-in user can write (an authenticated write grant and a permissive INSERT,
+//   UPDATE, DELETE or ALL policy for authenticated) has restrictive INSERT, UPDATE and DELETE policies backed by
+//   public.request_is_oauth_client(), unless it is listed in ordinaryTables (none are). A table with a grant
+//   but no permissive client write policy is unwritable under RLS already, so it needs none;
+// - each table's policies are added by their own migration (*_oauth_client_policies_<table>.sql) that locks only
+//   that table, with a lock timeout: one migration creating them on every table in one transaction deadlocked
+//   against production readers that lock several of those tables in another order;
 // - every SECURITY DEFINER function signed-in users can call is classified: it refuses such a token, or it is
 //   listed as ordinary with the reason.
 // The table and function lists come from the declarative schema files, so a new writable table or callable
@@ -17,9 +22,17 @@ import { readdir, readFile } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8').then((text) => text.replace(/\r\n/g, '\n').trim());
-const migrationName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_refuse_oauth_client_writes.sql'));
+const migrationNames = await readdir(new URL('../migrations/', import.meta.url));
+const migrationName = migrationNames.find((name) => name.endsWith('_refuse_oauth_client_writes.sql'));
 assert(migrationName, 'the migration exists');
 const migration = await read(`../migrations/${migrationName}`);
+assert(!/CREATE POLICY|ALTER TABLE|LOCK TABLE/i.test(migration), 'the helper migration locks no table');
+// One migration per table: table name -> its SQL.
+const tableMigrations = new Map();
+for (const name of migrationNames.filter((file) => /_oauth_client_policies_[a-z0-9_]+\.sql$/.test(file))) {
+  assert(name > migrationName, `${name} runs after the helper migration`);
+  tableMigrations.set(name.replace(/^\d+_oauth_client_policies_|\.sql$/g, ''), await read(`../migrations/${name}`));
+}
 const helperSql = await read('../schemas/public/functions/request_is_oauth_client.sql');
 assert(migration.includes(helperSql), 'the migration ships request_is_oauth_client.sql verbatim');
 assert(/REVOKE ALL ON FUNCTION "public"\."request_is_oauth_client"\(\) FROM PUBLIC, "anon";/.test(helperSql), 'anon cannot call the helper');
@@ -48,21 +61,32 @@ for (const file of (await readdir(tableDir)).filter((name) => name.endsWith('.sq
   const writable = statements(sql).some((statement) => /^GRANT /.test(statement)
     && /\b(INSERT|UPDATE|DELETE)\b/.test(statement.split(' ON TABLE ')[0])
     && /TO .*("authenticated"|PUBLIC)/.test(statement.split(' ON TABLE ')[1] ?? ''));
+  // A permissive policy that lets signed-in users write (no TO clause means every role).
+  const clientWritePolicy = [...sql.matchAll(/^CREATE POLICY "[^"]+" ON [^\n]*\n((?: {2}[^\n]*\n?)*)/gm)].some(([, body]) =>
+    !/AS RESTRICTIVE/.test(body) && !/^ {2}FOR SELECT\b/m.test(body) && (!/^ {2}TO /m.test(body) || /^ {2}TO [^\n]*("authenticated"|PUBLIC)/m.test(body)));
   const hasPolicies = sql.includes(`"${table}_no_oauth_client_`);
   if (writable) writableTables.push(table);
-  if (writable && ordinaryTables.has(table)) continue;
-  if (!writable && !hasPolicies) continue;
+  assert(/ENABLE ROW LEVEL SECURITY/.test(sql) || !writable, `${table} has RLS enabled`);
+  if (!(writable && clientWritePolicy)) {
+    assert(!hasPolicies, `${table} can't be written by signed-in users, so it doesn't need (or get) the OAuth client policies`);
+    continue;
+  }
+  if (ordinaryTables.has(table)) continue;
   policyTables.push(table);
-  assert(/ENABLE ROW LEVEL SECURITY/.test(sql), `${table} has RLS enabled`);
+  const tableMigration = tableMigrations.get(table);
+  assert(tableMigration, `${table} can be written by signed-in users: it needs the OAuth client policies (in their own migration) or a listed reason`);
+  assert(tableMigration.startsWith('-- ') && /^SET LOCAL lock_timeout = '10s';$/m.test(tableMigration), `${table}'s migration sets a lock timeout`);
+  assert.deepEqual([...new Set([...tableMigration.matchAll(/ON "public"\."([^"]+)"/g)].map(([, name]) => name))], [table], `${table}'s migration touches only ${table}`);
   for (const policy of policiesFor(table)) {
-    assert(sql.includes(policy), `${table} has authenticated write grants: it needs the OAuth client policies or a listed reason\n${policy}`);
-    assert(migration.includes(policy), `the migration adds ${policy.split('"')[1]}`);
+    assert(sql.includes(policy), `${table}.sql declares ${policy.split('"')[1]}`);
+    assert(tableMigration.includes(policy), `${table}'s migration adds ${policy.split('"')[1]}`);
   }
 }
 for (const table of ordinaryTables.keys()) assert(writableTables.includes(table), `${table} is listed as ordinary but isn't writable`);
 assert(writableTables.length >= 60, `found the writable tables (${writableTables.length})`);
-const migrationTables = [...new Set([...migration.matchAll(/CREATE POLICY "[^"]+" ON "public"\."([^"]+)"/g)].map(([, table]) => table))];
-assert.deepEqual(migrationTables.sort(), [...policyTables].sort(), 'the migration covers exactly the tables with the policies');
+const migrationTables = [...tableMigrations.keys()];
+assert.deepEqual([...migrationTables].sort(), [...policyTables].sort(), 'there is one policy migration per table that needs the policies, and no other');
+assert(policyTables.length >= 20, `found the client-writable tables (${policyTables.length})`);
 
 // 2. SECURITY DEFINER functions bypass RLS. The ones signed-in users can call either refuse a client_id token
 // (membership, authority, billing and destinations) or are listed here as ordinary, with the reason.
@@ -183,6 +207,7 @@ try {
   await db.exec('rollback');
 
   await db.exec(migration);
+  for (const sql of tableMigrations.values()) await db.exec(`begin; ${sql} commit;`);
 
   // After: every client_id token is refused on every table, and reads still work.
   for (const token of [cliToken, desktopToken, appToken]) {

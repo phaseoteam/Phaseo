@@ -255,25 +255,6 @@ CREATE TRIGGER v2_request_facts_service_tier
   FOR EACH ROW
   EXECUTE FUNCTION public.set_v2_request_fact_service_tier();
 
-CREATE POLICY "v2_request_facts_no_oauth_client_insert" ON "public"."v2_request_facts"
-  AS RESTRICTIVE
-  FOR INSERT
-  TO "authenticated"
-  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
-CREATE POLICY "v2_request_facts_no_oauth_client_update" ON "public"."v2_request_facts"
-  AS RESTRICTIVE
-  FOR UPDATE
-  TO "authenticated"
-  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
-  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
-CREATE POLICY "v2_request_facts_no_oauth_client_delete" ON "public"."v2_request_facts"
-  AS RESTRICTIVE
-  FOR DELETE
-  TO "authenticated"
-  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
 CREATE POLICY "mfa_required_when_enrolled" ON "public"."v2_request_facts"
   AS RESTRICTIVE
   FOR ALL

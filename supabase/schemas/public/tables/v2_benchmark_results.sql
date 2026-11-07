@@ -41,25 +41,6 @@ CREATE TRIGGER routing_catalogue_changed
   FOR EACH STATEMENT
   EXECUTE FUNCTION private.invalidate_routing_catalogue();
 
-CREATE POLICY "v2_benchmark_results_no_oauth_client_insert" ON "public"."v2_benchmark_results"
-  AS RESTRICTIVE
-  FOR INSERT
-  TO "authenticated"
-  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
-CREATE POLICY "v2_benchmark_results_no_oauth_client_update" ON "public"."v2_benchmark_results"
-  AS RESTRICTIVE
-  FOR UPDATE
-  TO "authenticated"
-  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
-  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
-CREATE POLICY "v2_benchmark_results_no_oauth_client_delete" ON "public"."v2_benchmark_results"
-  AS RESTRICTIVE
-  FOR DELETE
-  TO "authenticated"
-  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
 CREATE POLICY "provider_catalog_public_guard" ON "public"."v2_benchmark_results"
   AS RESTRICTIVE
   FOR SELECT

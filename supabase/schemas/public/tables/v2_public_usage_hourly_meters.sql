@@ -16,25 +16,6 @@ ALTER TABLE "public"."v2_public_usage_hourly_meters"
 
 CREATE INDEX v2_public_usage_hourly_meters_lookup_idx ON public.v2_public_usage_hourly_meters USING btree (meter_key, modality, unit, rollup_id);
 
-CREATE POLICY "v2_public_usage_hourly_meters_no_oauth_client_insert" ON "public"."v2_public_usage_hourly_meters"
-  AS RESTRICTIVE
-  FOR INSERT
-  TO "authenticated"
-  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
-CREATE POLICY "v2_public_usage_hourly_meters_no_oauth_client_update" ON "public"."v2_public_usage_hourly_meters"
-  AS RESTRICTIVE
-  FOR UPDATE
-  TO "authenticated"
-  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
-  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
-CREATE POLICY "v2_public_usage_hourly_meters_no_oauth_client_delete" ON "public"."v2_public_usage_hourly_meters"
-  AS RESTRICTIVE
-  FOR DELETE
-  TO "authenticated"
-  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
-
 CREATE POLICY "v2_public_usage_hourly_meters_public_select" ON "public"."v2_public_usage_hourly_meters"
   FOR SELECT
   TO "anon", "authenticated"
