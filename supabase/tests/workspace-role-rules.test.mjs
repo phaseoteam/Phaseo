@@ -43,6 +43,10 @@ assert.deepEqual(strongLocks(migrationFiles[0]), [], 'part 1 (functions) locks n
 assert.deepEqual([...new Set(strongLocks(migrationFiles[1]))], ['workspace_members'], 'part 2 locks only workspace_members');
 assert.deepEqual([...new Set(strongLocks(migrationFiles[2]))], ['workspace_settings'], 'part 3 locks only workspace_settings');
 assert(!/CREATE (?:OR REPLACE )?FUNCTION/i.test(migrationFiles[1] + migrationFiles[2]), 'function changes are only in part 1');
+// #3587 refuses OAuth client tokens on workspace_members with restrictive policies, one migration per table.
+const oauthMembersName = migrations.find((name) => name.endsWith('_oauth_client_policies_workspace_members.sql'));
+assert(oauthMembersName && oauthMembersName < migrationName, "#3587's workspace_members policies apply before this migration");
+const oauthMembersMigration = normalize(await read(`../migrations/${oauthMembersName}`));
 const keyMigrationName = migrations.find((name) => name.endsWith('_lock_down_key_tables.sql'));
 assert(keyMigrationName && keyMigrationName < migrationName, 'the key table lockdown is applied before this migration');
 const keyMigration = normalize(await read(`../migrations/${keyMigrationName}`));
@@ -93,6 +97,11 @@ const db = new PGlite();
 async function as(user, fn) {
   await db.exec(`set role authenticated; select set_config('request.jwt.claim.sub', '${user}', false);`);
   try { return await fn(); } finally { await db.exec(`reset role; select set_config('request.jwt.claim.sub', '', false);`); }
+}
+// A token an OAuth client (the CLI, the desktop app, a third-party app) was issued: the same person, with a client_id.
+async function asApp(user, fn) {
+  await db.query(`select set_config('request.jwt.claims', $1, false)`, [JSON.stringify({ sub: user, role: 'authenticated', client_id: 'phaseo_cli' })]);
+  try { return await as(user, fn); } finally { await db.exec(`select set_config('request.jwt.claims', '', false);`); }
 }
 async function asService(fn) {
   await db.exec('set role service_role');
@@ -288,6 +297,8 @@ try {
   await enableSso(ws);
   await enableSso(otherWs);
   const settingsBefore = (await db.query('select * from public.workspace_settings order by workspace_id')).rows;
+  // Production order: #3587's restrictive OAuth client policies, then this migration's three files.
+  await db.exec(oauthMembersMigration);
   await db.exec(migrationFiles[0]);
   await db.exec(migrationFiles[1]);
   await assert.rejects(db.exec(migrationFiles[2]), /could not create unique index "workspace_settings_sso_provider_identifier_key"/);
@@ -409,6 +420,49 @@ try {
   await assert.rejects(decideWithRole(owner, asAdmin, 'owner'), /Role must be admin or member/);
   await decideWithRole(owner, asAdmin, 'admin');
   assert.equal(await roleOf(requester5), 'admin', 'the owner can');
+
+  // 7. Combined policies (#3587 + this migration) on workspace_members, for the owner, an admin and a member,
+  //    with their own session and with an OAuth client token. Every policy that grants a write is permissive
+  //    and #3587's are restrictive, so a client_id token writes nothing, and a session writes only what the
+  //    owner rules allow. Reads are unaffected either way.
+  const memberRole = (user) => roleOf(user);
+  assert.deepEqual([await memberRole(owner), await memberRole(admin), await memberRole(requester4), await memberRole(requester5)],
+    ['owner', 'admin', 'member', 'admin']);
+  const setRole = (user, target, role) => db.query('update public.workspace_members set role = $3 where workspace_id = $1 and user_id = $2', [ws, target, role]);
+  const remove = (target) => db.query('delete from public.workspace_members where workspace_id = $1 and user_id = $2', [ws, target]);
+  const insertOutsider = () => db.query(`insert into public.workspace_members (workspace_id, user_id, role) values ($1, $2, 'member')`, [ws, outsider]);
+  const visible = async () => (await db.query('select user_id from public.workspace_members where workspace_id = $1', [ws])).rows.length;
+  const membersBefore = (await db.query('select user_id, role::text from public.workspace_members where workspace_id = $1 order by user_id', [ws])).rows;
+  for (const [label, actor] of [['owner', owner], ['admin', admin], ['member', requester4]]) {
+    for (const [mode, run] of [['session', as], ['client_id token', asApp]]) {
+      await assert.rejects(run(actor, insertOutsider), /permission denied|row-level security/, `${label} (${mode}) can't insert a member`);
+      assert(await run(actor, visible) > 0, `${label} (${mode}) still reads the members`);
+      if (mode === 'client_id token' || label !== 'owner') {
+        assert.equal(affected(await run(actor, () => setRole(actor, requester5, 'member'))), 0, `${label} (${mode}) can't change a role`);
+        assert.equal(affected(await run(actor, () => remove(requester5))), 0, `${label} (${mode}) can't remove someone else`);
+      }
+      if (mode === 'client_id token') {
+        assert.equal(affected(await run(actor, () => remove(actor))), 0, `${label} (${mode}) can't remove themselves either`);
+        await assert.rejects(run(actor, () => db.query('select * from public.approve_workspace_join_request($1)', [crypto.randomUUID()])),
+          /oauth_client_refused/, `${label} (${mode}) can't approve a join request`);
+      }
+    }
+  }
+  assert.deepEqual((await db.query('select user_id, role::text from public.workspace_members where workspace_id = $1 order by user_id', [ws])).rows, membersBefore,
+    'no client_id token, admin or member changed any membership');
+  // The owner's own session still changes roles and removes members; a member's own session still leaves.
+  assert.equal(affected(await as(owner, () => setRole(owner, requester5, 'member'))), 1);
+  assert.equal(await roleOf(requester5), 'member', "the owner's session changes a role");
+  assert.equal(affected(await as(owner, () => remove(requester5))), 1);
+  assert.equal(await roleOf(requester5), null, "the owner's session removes a member");
+  assert.equal(affected(await as(requester4, () => remove(requester4))), 1);
+  assert.equal(await roleOf(requester4), null, "a member's own session leaves");
+  // The owner's own session still approves a join request; the same owner's client_id token can't.
+  const pendingId = await joinAs(outsider, await createInvite());
+  await assert.rejects(asApp(owner, () => db.query('select * from public.approve_workspace_join_request($1)', [pendingId])), /oauth_client_refused/);
+  assert.equal(await statusOf(pendingId), 'pending');
+  await approveAs(owner, pendingId);
+  assert.equal(await roleOf(outsider), 'member', "the owner's session approves");
 
   console.log('workspace role rules: ok');
 } finally {
