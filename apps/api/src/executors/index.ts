@@ -45,6 +45,7 @@ import { executor as ioNetText } from "./io-net/text-generate";
 import { executor as togetherText } from "./together/text-generate";
 import { executor as togetherDecisions } from "./together/decisions";
 import { executor as respanDecisions } from "./respan/decisions";
+import { executor as parallelDecisions } from "./parallel/decisions";
 import { executor as canopyWaveText } from "./canopy-wave/text-generate";
 import { executor as tensorixText } from "./tensorix/text-generate";
 import { executor as basetenText } from "./baseten/text-generate";
@@ -506,6 +507,9 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	},
 	respan: {
 		"decisions.make": respanDecisions,
+	},
+	parallel: {
+		"decisions.make": parallelDecisions,
 	},
 	venice: { "text.generate": veniceText },
 	"venice-e2ee": { "text.generate": veniceText },
