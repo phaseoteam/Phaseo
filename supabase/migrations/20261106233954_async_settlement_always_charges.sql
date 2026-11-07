@@ -1,3 +1,5 @@
+SET LOCAL lock_timeout = '10s';
+
 -- Batch and video settlement always charge the actual cost.
 -- gateway_wallet_settle_once returned 'insufficient_balance' and captured
 -- nothing when the actual cost was above the job's hold plus the unreserved
@@ -6,8 +8,8 @@
 -- into overdraft when needed, like post-response request charges.
 -- gateway_wallet_reservations.overdraft_nanos records the uncovered part.
 
-alter table public.gateway_wallet_reservations
-  add column if not exists overdraft_nanos bigint not null default 0;
+-- Functions only: overdraft_nanos is added by the previous migration,
+-- 20261106233953_gateway_wallet_reservations_overdraft.
 
 CREATE OR REPLACE FUNCTION public.gateway_wallet_settle_once (
   p_workspace_id   uuid,

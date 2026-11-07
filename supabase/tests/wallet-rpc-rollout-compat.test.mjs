@@ -23,6 +23,32 @@ const migration = async (suffix) => {
   return read(`../migrations/${name}`);
 };
 
+// This PR's migrations, in order. Each is its own transaction: it starts with a lock timeout,
+// strongly locks at most one table (ALTER TABLE, CREATE INDEX, CREATE POLICY, triggers, LOCK), and a
+// migration that changes functions changes no table. A deploy that took ACCESS EXCLUSIVE on several
+// hot tables in one transaction deadlocked in production.
+const PR_MIGRATIONS = ['_gateway_request_charges_stepped_columns.sql', '_gateway_charge_request_total.sql',
+  '_validate_gateway_request_charges_cost_check.sql', '_gateway_wallet_reservations_overdraft.sql',
+  '_async_settlement_always_charges.sql', '_refund_claim_counts_charged_failures.sql', '_gateway_requests_billing_request_index.sql'];
+const prNames = PR_MIGRATIONS.map((suffix) => migrations.find((file) => file.endsWith(suffix)));
+assert.deepEqual([...prNames].sort(), prNames, 'the migrations run in this order');
+for (const suffix of PR_MIGRATIONS) {
+  const sql = (await migration(suffix)).replace(/\r\n/g, '\n');
+  assert(sql.startsWith("SET LOCAL lock_timeout = '10s';\n"), `${suffix} starts with the lock timeout`);
+  const ddl = sql.replace(/\$function\$[\s\S]*?\$function\$/g, '').replace(/--.*$/gm, '');
+  const tables = new Set([
+    ...ddl.matchAll(/\balter\s+table\s+(?:only\s+)?(?:if\s+exists\s+)?(?:public\.)?"?(\w+)/gi),
+    ...ddl.matchAll(/\bcreate\s+(?:unique\s+)?index\s+(?:concurrently\s+)?(?:if\s+not\s+exists\s+)?\w+\s+on\s+(?:only\s+)?(?:public\.)?"?(\w+)/gi),
+    ...ddl.matchAll(/\b(?:create|alter|drop)\s+policy\s+(?:if\s+exists\s+)?"?\w+"?\s+on\s+(?:public\.)?"?(\w+)/gi),
+    ...ddl.matchAll(/\b(?:create|drop)\s+(?:or\s+replace\s+)?trigger\s+(?:if\s+exists\s+)?\w+[\s\S]*?\bon\s+(?:public\.)?"?(\w+)/gi),
+    ...ddl.matchAll(/\block\s+table\s+(?:only\s+)?(?:public\.)?"?(\w+)/gi),
+  ].map((match) => match[1].toLowerCase()));
+  assert(tables.size <= 1, `${suffix} strongly locks at most one table: ${[...tables].join(', ')}`);
+  if (/\b(?:create\s+(?:or\s+replace\s+)?|drop\s+)function\b/i.test(ddl)) {
+    assert.equal(tables.size, 0, `${suffix} changes functions only`);
+  }
+}
+
 const usd = (n) => Math.round(n * 1e9);
 const ws = '10000000-0000-4000-8000-000000000001';
 const db = new PGlite();
@@ -38,10 +64,7 @@ try {
   // migrations in order.
   await db.exec('alter table public.gateway_requests add column billing_request_id text, add column request_id text;');
   await db.exec(await migration('_billing_security_fixes.sql'));
-  for (const suffix of ['_gateway_charge_request_total.sql', '_validate_gateway_request_charges_cost_check.sql',
-    '_async_settlement_always_charges.sql', '_refund_claim_counts_charged_failures.sql', '_gateway_requests_billing_request_index.sql']) {
-    await db.exec(await migration(suffix));
-  }
+  for (const suffix of PR_MIGRATIONS) await db.exec(await migration(suffix));
 
   // The signatures: every parameter the previous gateway passes keeps its name and type, and each
   // new parameter has a default, so the previous calls still resolve to exactly one function.

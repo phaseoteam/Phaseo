@@ -1,3 +1,5 @@
+SET LOCAL lock_timeout = '10s';
+
 -- Look up a request row by its wallet charge key (gateway_request_charges.request_id),
 -- for refund claims and budget usage that count charges without a request row.
 -- On the partitioned parent this builds the index on every partition under a brief

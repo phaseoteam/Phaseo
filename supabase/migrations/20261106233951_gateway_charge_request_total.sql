@@ -1,3 +1,5 @@
+SET LOCAL lock_timeout = '10s';
+
 -- One charged total per request for streams charged in steps.
 -- A stream whose client left is charged at checkpoints while its upstream
 -- drains, then from its final bill. gateway_charge_request_total keeps the
@@ -7,25 +9,9 @@
 -- final bill (or a waived bill) is given back. Every adjustment writes a
 -- credit_ledger 'adjustment' row (ref_type gateway_request_charge), which
 -- spend totals do not add to the charge row.
--- is_final: false while the total can still change; existing one-off charges
--- are final. cost_nanos may now be 0, for a final bill that was waived.
 
-alter table public.gateway_request_charges
-  add column if not exists is_final boolean not null default true;
-
--- The key every charge (one-off or stepped) was made under, so key and
--- department budgets can count it before, or without, its gateway_requests
--- row. Null for OAuth access tokens and for rows written before this column.
-alter table public.gateway_request_charges
-  add column if not exists key_id uuid;
-
--- Relax cost_nanos > 0 to >= 0. The new check is added unvalidated so this
--- migration's ACCESS EXCLUSIVE lock is brief; it is validated in the next
--- migration, a separate transaction under SHARE UPDATE EXCLUSIVE (writes continue).
-alter table public.gateway_request_charges
-  drop constraint if exists gateway_request_charges_cost_nanos_check;
-alter table public.gateway_request_charges
-  add constraint gateway_request_charges_cost_nanos_check check ((cost_nanos >= 0)) not valid;
+-- Functions only: the gateway_request_charges columns are added by the previous migration,
+-- 20261106233950_gateway_request_charges_stepped_columns.
 
 -- One-off charges record their key too: both functions gain p_key_id. The old
 -- signatures are dropped first, so a call without p_key_id is not ambiguous.

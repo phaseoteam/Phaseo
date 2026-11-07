@@ -19,7 +19,11 @@ const findMigration = async (suffix) => {
   return normalize(await read(`../migrations/${name}`));
 };
 const previous = await findMigration('_billing_security_fixes.sql');
+const columnMigration = await findMigration('_gateway_wallet_reservations_overdraft.sql');
 const migration = await findMigration('_async_settlement_always_charges.sql');
+// The column and the function are separate migrations (transactions): the function one locks no table.
+assert(/alter table public\.gateway_wallet_reservations\s+add column if not exists overdraft_nanos/.test(columnMigration));
+assert(!/alter\s+table/i.test(migration), 'the settlement function migration changes no table');
 
 // The declarative files describe the same end state.
 const fnSql = normalize(await read('../schemas/public/functions/gateway_wallet_settle_once.sql'));
@@ -60,7 +64,9 @@ try {
   assert.deepEqual(await wallet(), { balance: usd(10), reserved: usd(1) }, 'before the fix nothing is charged');
   assert.equal(await ledgerCount('batch_hold:old'), 0);
 
+  await db.exec(columnMigration);
   await db.exec(migration);
+  await db.exec(columnMigration);
   await db.exec(migration);
 
   // ---------- After the fix ----------

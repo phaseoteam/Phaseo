@@ -1,3 +1,5 @@
+SET LOCAL lock_timeout = '10s';
+
 -- Self-serve refund claims count every charge debited since a purchase as
 -- usage of it, once, by when the debit happened:
 -- 1. Request rows with a cost, successful or not: a stream the client left can
@@ -8,7 +10,12 @@
 --    can debit it at later checkpoints. Their request rows are not counted again.
 -- 3. One-off charges no request row records (billing_request_id, looked up with
 --    gateway_requests_workspace_billing_request_idx): an audit row that never
---    landed.
+--    landed, or one audited as pending reconciliation.
+-- Money movements win: a request audited as pending reconciliation that has an
+-- applied charge row is counted by its charge (3.) or ledger rows (2.) plus the
+-- unpaid part of its expected_cost_nanos (6.), never by its row's cost, which
+-- can be NULL or read before its debit or refund committed. expected_cost_nanos
+-- is added by #3547; plpgsql binds it when the claim runs. Functions only.
 -- 4. Batch captures: the part of the capture its per-row request rows
 --    (batch_usage:<batch>:<row>, written after the charge) do not count, so a
 --    batch whose row persistence failed is counted in full.

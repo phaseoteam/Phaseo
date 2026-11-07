@@ -25,14 +25,19 @@ const findMigration = async (suffix) => {
   return normalize(await read(`../migrations/${name}`));
 };
 const previous = await findMigration('_billing_security_fixes.sql');
+const columnsMigration = await findMigration('_gateway_request_charges_stepped_columns.sql');
 const migration = await findMigration('_gateway_charge_request_total.sql');
 const validateMigration = await findMigration('_validate_gateway_request_charges_cost_check.sql');
-// Validation runs in its own, later migration (transaction): the first holds ACCESS EXCLUSIVE only briefly.
-assert(!/validate\s+constraint/i.test(migration), 'the function migration does not validate the check in the same transaction');
+// The table change, the functions and the validation are separate migrations (transactions): the
+// first holds ACCESS EXCLUSIVE on gateway_request_charges only briefly, the second changes functions only.
+assert(/add constraint gateway_request_charges_cost_nanos_check check \(\(cost_nanos >= 0\)\) not valid/i.test(columnsMigration));
+assert(!/alter\s+table|validate\s+constraint/i.test(migration), 'the function migration changes no table');
 assert(/validate\s+constraint\s+gateway_request_charges_cost_nanos_check/i.test(validateMigration));
-const migrationOrder = migrations.filter((name) => /_(gateway_charge_request_total|validate_gateway_request_charges_cost_check)\.sql$/.test(name)).sort();
+const migrationOrder = migrations.filter((name) =>
+  /_(gateway_request_charges_stepped_columns|gateway_charge_request_total|validate_gateway_request_charges_cost_check)\.sql$/.test(name)).sort();
 assert.deepEqual(migrationOrder.map((name) => name.replace(/^\d+_/, '')),
-  ['gateway_charge_request_total.sql', 'validate_gateway_request_charges_cost_check.sql'], 'validation runs after the check is added');
+  ['gateway_request_charges_stepped_columns.sql', 'gateway_charge_request_total.sql', 'validate_gateway_request_charges_cost_check.sql'],
+  'the columns come first, and validation runs after the check is added');
 
 // The declarative files describe the same end state.
 const fnSql = normalize(await read('../schemas/public/functions/gateway_charge_request_total.sql'));
@@ -84,10 +89,12 @@ try {
   // ---------- Before: no total-based charge ----------
   await assert.rejects(total('missing', 1, true), /function public\.gateway_charge_request_total.* does not exist/);
 
+  await db.exec(columnsMigration);
   await db.exec(migration);
   const pending = await one(`select convalidated from pg_constraint where conname = 'gateway_request_charges_cost_nanos_check'`);
   assert.equal(pending.convalidated, false, 'the relaxed check is added unvalidated');
   await db.exec(validateMigration);
+  await db.exec(columnsMigration);
   await db.exec(migration);
   await db.exec(validateMigration);
   const validated = await one(`select convalidated, pg_get_constraintdef(oid) as def from pg_constraint where conname = 'gateway_request_charges_cost_nanos_check'`);

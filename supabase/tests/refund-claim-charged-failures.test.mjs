@@ -21,16 +21,18 @@ const findMigration = async (suffix) => {
   return { name, sql: normalize(await read(`../migrations/${name}`)) };
 };
 const previous = await findMigration('_billing_security_fixes.sql');
+const chargeColumns = await findMigration('_gateway_request_charges_stepped_columns.sql');
 const chargeTotals = await findMigration('_gateway_charge_request_total.sql');
+const overdraftColumn = await findMigration('_gateway_wallet_reservations_overdraft.sql');
 const settlement = await findMigration('_async_settlement_always_charges.sql');
 const migration = await findMigration('_refund_claim_counts_charged_failures.sql');
 const billingIndex = await findMigration('_gateway_requests_billing_request_index.sql');
 assert(migration.name > chargeTotals.name, 'the refund migration runs after the stepped charge columns exist');
 assert.equal(migrations.at(-1), billingIndex.name, 'the index migration is newer than every other migration');
-// The index migration holds the one index and nothing else.
+// The index migration holds the lock timeout and the one index, and nothing else.
 assert.equal(
   billingIndex.sql.replace(/^--.*\n/gm, '').trim(),
-  'create index if not exists gateway_requests_workspace_billing_request_idx\n  on public.gateway_requests (workspace_id, billing_request_id)\n  where billing_request_id is not null;',
+  'SET LOCAL lock_timeout = \'10s\';\n\ncreate index if not exists gateway_requests_workspace_billing_request_idx\n  on public.gateway_requests (workspace_id, billing_request_id)\n  where billing_request_id is not null;',
 );
 assert(normalize(await read('../schemas/public/tables/gateway_requests.sql')).includes(
   'CREATE INDEX gateway_requests_workspace_billing_request_idx ON ONLY public.gateway_requests USING btree (workspace_id, billing_request_id)\n  WHERE (billing_request_id IS NOT NULL);'),
@@ -110,7 +112,9 @@ try {
   // pending reconciliation (added by #3547's 20261106234000 migration), and the stepped charge columns.
   await db.exec(`alter table public.gateway_requests add column billing_request_id text, add column request_id text,
     add column detail_metadata jsonb, add column expected_cost_nanos bigint;`);
+  await db.exec(chargeColumns.sql);
   await db.exec(chargeTotals.sql);
+  await db.exec(overdraftColumn.sql);
   await db.exec(settlement.sql);
 
   // ---------- Before the fix ----------
