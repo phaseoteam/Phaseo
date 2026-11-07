@@ -20,10 +20,11 @@ SET LOCAL lock_timeout = '10s';
 --    are not counted, so a row persisted late, never updated or written on the
 --    other side of the purchase cannot change the count.
 -- 6. The unpaid part of a pending request: its expected_cost_nanos less what
---    its charge row holds. Rows written from 2026-11-09 00:00 UTC are pending
---    only by expected_cost_nanos (every pending row sets it); older rows also by
---    the audit's billing_status.
--- expected_cost_nanos is added by this PR's first migration; plpgsql binds it
+--    its charge row holds. Rows written from private.pending_json_cutoff() (set
+--    two hours after this PR's first migration, once older Workers have
+--    drained) are pending only by expected_cost_nanos (every pending row sets
+--    it); older rows also by the audit's billing_status.
+-- expected_cost_nanos and the cutoff come from this PR's first migrations; plpgsql binds them
 -- when the claim runs. Functions only.
 -- The body is the one from 20261104193047_billing_security_fixes with only the
 -- usage query changed.
@@ -185,8 +186,9 @@ begin
     --    count: its expected_cost_nanos less its charge row's total, when
     --    positive.
     -- Pending reconciliation: expected_cost_nanos is set or, for rows written
-    -- before 2026-11-09 00:00 UTC (when every pending row carries the column),
-    -- the audit's accounting_finalization.billing_status says so.
+    -- before private.pending_json_cutoff() (the deploy's marker: from then on
+    -- every pending row carries the column), the audit's
+    -- accounting_finalization.billing_status says so.
     select coalesce(sum(gr.cost_nanos), 0)::bigint
     into v_usage_nanos
     from public.gateway_requests gr
@@ -206,7 +208,7 @@ begin
           where pending.workspace_id = gr.workspace_id
             and pending.billing_request_id = gr.billing_request_id
             and (pending.expected_cost_nanos is not null
-              or (pending.created_at < '2026-11-09 00:00:00+00'::timestamptz
+              or (pending.created_at < private.pending_json_cutoff()
                 and pending.detail_metadata #>> '{accounting_finalization,billing_status}' = 'pending_reconciliation'))
         ) and exists (
           select 1 from public.gateway_request_charges charge
@@ -266,7 +268,7 @@ begin
           where pending.workspace_id = charge.workspace_id
             and pending.billing_request_id = charge.request_id
             and (pending.expected_cost_nanos is not null
-              or (pending.created_at < '2026-11-09 00:00:00+00'::timestamptz
+              or (pending.created_at < private.pending_json_cutoff()
                 and pending.detail_metadata #>> '{accounting_finalization,billing_status}' = 'pending_reconciliation'))
         ))
         and not exists (

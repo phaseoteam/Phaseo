@@ -21,6 +21,7 @@ const findMigration = async (suffix) => {
   return { name, sql: normalize(await read(`../migrations/${name}`)) };
 };
 const previous = await findMigration('_billing_security_fixes.sql');
+const cutoffs = await findMigration('_billing_cutoffs.sql');
 const expectedCostColumn = await findMigration('_gateway_requests_expected_cost_nanos.sql');
 const expectedCostCheck = await findMigration('_validate_gateway_requests_expected_cost_nanos_check.sql');
 const chargeColumns = await findMigration('_gateway_request_charges_stepped_columns.sql');
@@ -32,8 +33,15 @@ const billingIndex = await findMigration('_gateway_requests_billing_request_inde
 assert(migration.name > chargeTotals.name, 'the refund migration runs after the stepped charge columns exist');
 // The claim reads gateway_requests.expected_cost_nanos: this PR adds the column, before every other
 // migration of it, so no claim runs between the new body and the column (#3547 reads it too).
-assert(expectedCostColumn.name < expectedCostCheck.name && expectedCostCheck.name < chargeColumns.name,
-  'the expected cost column and its validation are the first migrations');
+assert(cutoffs.name < expectedCostColumn.name && expectedCostColumn.name < expectedCostCheck.name && expectedCostCheck.name < chargeColumns.name,
+  'the JSON-pending cutoff, then the expected cost column and its validation, are the first migrations');
+for (const file of ['private/tables/billing_cutoffs.sql', 'private/functions/pending_json_cutoff.sql']) {
+  const exportJson = JSON.parse(await read('../schemas/.pgdelta-export.json'));
+  assert(exportJson.loadOrder.includes(file) && exportJson.files.includes(file), `${file} is in the declarative export`);
+}
+const helperBody = functionBody => functionBody.slice(functionBody.indexOf('$function$'), functionBody.lastIndexOf('$function$') + 10);
+assert(cutoffs.sql.includes(helperBody(normalize(await read('../schemas/private/functions/pending_json_cutoff.sql')))),
+  'the migration ships the schema body of private.pending_json_cutoff');
 assert(/LANGUAGE plpgsql/.test(normalize(await read('../schemas/public/functions/stripe_claim_self_serve_refund.sql'))));
 assert(normalize(await read('../schemas/public/tables/gateway_requests.sql')).includes('"expected_cost_nanos"               bigint,'),
   'the declarative table has the column');
@@ -117,10 +125,24 @@ try {
   await db.query('insert into public.workspace_members values ($1, $2)', [ws, owner]);
   await db.query('insert into public.wallets (workspace_id) values ($1)', [ws]);
   await db.exec(previous.sql);
-  // The request row's charge key and audit details (production has them), then this PR's migrations
-  // in order.
+  // The request row's charge key and audit details and the private schema (production has them),
+  // then this PR's migrations in order.
   await db.exec(`alter table public.gateway_requests add column billing_request_id text, add column request_id text,
     add column detail_metadata jsonb;`);
+  await db.exec('create schema if not exists private; grant usage on schema private to service_role;');
+  await db.exec(cutoffs.sql);
+  // The marker is set two hours after the migration runs, and a replay does not move it.
+  const marker = async () => (await one('select pending_json_cutoff as at from private.billing_cutoffs')).at;
+  const set = await marker();
+  const ahead = (await one(`select extract(epoch from $1::timestamptz - now()) as s`, [set])).s;
+  assert(ahead > 7_190 && ahead <= 7_200, `the cutoff is two hours after the migration (${ahead} s)`);
+  await db.exec(cutoffs.sql);
+  assert.equal((await marker()).getTime(), set.getTime(), 'a replay keeps the first marker');
+  // Only the service role (and the claim, which runs as its owner) can read it.
+  for (const [role, allowed] of [['service_role', true], ['anon', false], ['authenticated', false]]) {
+    assert.equal((await one(`select has_function_privilege($1, 'private.pending_json_cutoff()', 'execute') as ok`, [role])).ok, allowed, role);
+  }
+  assert.equal((await asService(() => one('select private.pending_json_cutoff() as at'))).at.getTime(), set.getTime());
   await db.exec(expectedCostColumn.sql);
   await db.exec(expectedCostCheck.sql);
   await assert.rejects(db.query('insert into public.gateway_requests (workspace_id, expected_cost_nanos) values ($1, -1)', [ws]),
@@ -332,13 +354,16 @@ try {
   assert.equal((await capturedBatch('batch_rows_80_low', { captureMinutesAgo: 60, rowsMinutesAgo: 60, rows: 8, rowNanos: usd(10), captureNanos: usd(50), priorBalance: 49 })).reason, 'lot_used',
     'and the capture of $50 does count ($50 does not fit in $49)');
 
-  // Rows written from 2026-11-09 00:00 UTC are pending only by expected_cost_nanos: the JSON
-  // billing_status is read strictly before it. The cutoff is moved to an hour ago for this check.
+  // Rows written from the deploy's marker (private.pending_json_cutoff()) are pending only by
+  // expected_cost_nanos: the JSON billing_status is read strictly before it. The marker is moved to
+  // an hour ago for this check.
   const shipped = normalize(migration.sql);
-  assert.equal(shipped.split("pending.created_at < '2026-11-09 00:00:00+00'::timestamptz").length - 1, 2,
+  assert.equal(shipped.split('pending.created_at < private.pending_json_cutoff()').length - 1, 2,
     'both JSON-pending lookups apply the cutoff');
+  assert(!/2026-11-09/.test(shipped), 'no fixed date');
+  const deployed = await marker();
   const cutoff = (await one(`select date_trunc('second', now() - interval '1 hour') as at`)).at;
-  await db.exec(migration.sql.replaceAll("'2026-11-09 00:00:00+00'::timestamptz", `'${cutoff.toISOString()}'::timestamptz`));
+  await db.query('update private.billing_cutoffs set pending_json_cutoff = $1', [cutoff]);
   // A committed $5 one-off charge whose audit row has a NULL cost and only the JSON flag.
   const flaggedAt = async (prefix, offsetMs) => {
     await reset();
@@ -354,7 +379,7 @@ try {
   assert.equal((await flaggedAt('cut_before', -1)).reason, 'lot_used', 'just before the cutoff the flag marks the row pending: the charge counts');
   assert.equal((await flaggedAt('cut_at', 0)).ok, true, 'exactly at the cutoff the flag is not read: the row (NULL cost) counts, not the charge');
   assert.equal((await flaggedAt('cut_after', 1)).ok, true, 'after the cutoff the flag is not read either');
-  await db.exec(migration.sql);
+  await db.query('update private.billing_cutoffs set pending_json_cutoff = $1', [deployed]);
 
   // ---------- Money movements win over a pending reconciliation's audit cost ----------
   // A delivered request whose charge attempts all failed is audited as pending reconciliation with

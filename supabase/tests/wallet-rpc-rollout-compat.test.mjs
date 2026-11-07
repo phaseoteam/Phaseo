@@ -27,7 +27,7 @@ const migration = async (suffix) => {
 // strongly locks at most one table (ALTER TABLE, CREATE INDEX, CREATE POLICY, triggers, LOCK), and a
 // migration that changes functions changes no table. A deploy that took ACCESS EXCLUSIVE on several
 // hot tables in one transaction deadlocked in production.
-const PR_MIGRATIONS = ['_gateway_requests_expected_cost_nanos.sql', '_validate_gateway_requests_expected_cost_nanos_check.sql',
+const PR_MIGRATIONS = ['_billing_cutoffs.sql', '_gateway_requests_expected_cost_nanos.sql', '_validate_gateway_requests_expected_cost_nanos_check.sql',
   '_gateway_request_charges_stepped_columns.sql', '_gateway_charge_request_total.sql',
   '_validate_gateway_request_charges_cost_check.sql', '_gateway_wallet_reservations_overdraft.sql',
   '_async_settlement_always_charges.sql', '_refund_claim_counts_charged_failures.sql', '_gateway_requests_billing_request_index.sql'];
@@ -68,6 +68,7 @@ try {
   // read a column a later migration adds.
   await db.exec('alter table public.gateway_requests add column billing_request_id text, add column request_id text, add column detail_metadata jsonb;');
   await db.exec("create or replace function public.mfa_satisfied() returns boolean language sql stable as 'select true';");
+  await db.exec('create schema if not exists private; grant usage on schema private to service_role;');
   await db.query('insert into public.workspace_members values ($1, $2)', [ws, owner]);
   await db.exec(await migration('_billing_security_fixes.sql'));
   const claimAfter = async (step) => {
