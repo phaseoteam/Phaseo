@@ -690,6 +690,11 @@ try {
       assert.doesNotMatch(source.replace(/\(select private\.pending_json_cutoff\(\)\)/g, ''), /pending_json_cutoff/, file);
       assert.doesNotMatch(source, /2026-11-09/, file);
     }
+    // Until the real cut-off is set after the deploy, the marker is infinite: every row flagged in
+    // the JSON is pending, so the row at the marker and the newer one count their charges too.
+    await db.exec(`update private.billing_cutoffs set pending_json_cutoff = 'infinity'`);
+    assert.equal(await total('budget_spend_items', `'${WS_LEGACY}', null`), 12 * DOLLAR);
+    assert.equal(await total('key_spend_items', `'${WS_LEGACY}', null, array['${KEY.legacy}']::uuid[]`), 12 * DOLLAR);
     await db.query(`update private.billing_cutoffs set pending_json_cutoff = $1`, [marker]);
   });
   await check('charges an older gateway wrote without a key count toward the key and department of their request row or batch', async () => {
@@ -815,14 +820,21 @@ try {
     }
     // Request readers over a recent window (the last rows of the 2027 history), as budgets read it.
     const recent = `'${WS_PLAN}', timestamptz '2027-06-01 08:15:00+00'`;
-    for (const [file, args] of [
-      ['private/functions/key_spend_items.sql', `${recent}, array['${KEY.plan}']::uuid[], '{}', '{}'`],
-      ['private/functions/budget_spend_items.sql', `${recent}, null, '{}', '{}'`],
-    ]) {
-      for (const [mode, { plan }] of Object.entries(await plans(file, args))) {
-        assert.doesNotMatch(plan, /Seq Scan on gateway_requests/, `${file} ${mode}\n${plan}`);
+    // With the marker set and with it infinite (JSON compatibility on, as at deploy).
+    const marker = (await one(`select pending_json_cutoff as at from private.billing_cutoffs`)).at;
+    for (const setting of ['marker', 'infinity']) {
+      if (setting === 'infinity') await db.exec(`update private.billing_cutoffs set pending_json_cutoff = 'infinity'; analyze private.billing_cutoffs;`);
+      for (const [file, args] of [
+        ['private/functions/key_spend_items.sql', `${recent}, array['${KEY.plan}']::uuid[], '{}', '{}'`],
+        ['private/functions/budget_spend_items.sql', `${recent}, null, '{}', '{}'`],
+        ['private/functions/unbilled_spend.sql', `${since}, null, '{}', '{}'`],
+      ]) {
+        for (const [mode, { plan }] of Object.entries(await plans(file, args))) {
+          assert.doesNotMatch(plan, /Seq Scan on gateway_requests/, `${file} ${mode} ${setting}\n${plan}`);
+        }
       }
     }
+    await db.query(`update private.billing_cutoffs set pending_json_cutoff = $1`, [marker]);
   });
   await check('gateway_wallet_reserve_once takes no budget row lock', async () => {
     const { def } = await one(`select pg_get_functiondef('public.gateway_wallet_reserve_once(uuid, text, bigint, text, uuid, integer)'::regprocedure) as def`);
