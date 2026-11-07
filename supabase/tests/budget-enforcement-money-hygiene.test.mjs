@@ -142,7 +142,10 @@ try {
       assert.ok(order.indexOf('private/functions/department_budget_usage.sql') > order.indexOf('private/functions/spend_limit_period.sql'));
     }
     // The lock plan: every migration of this change sets a lock timeout first; the function
-    // migration locks no table; each other migration locks at most one existing table.
+    // migration locks no table; each other migration locks at most one logical table. A partitioned
+    // table and its partitions are one logical table: a statement on the parent locks the parent
+    // first and then its partitions, and readers lock the parent first too, so they cannot form a
+    // cycle with each other. Any other table in the same file counts separately.
     const tableStatement = /\b(alter\s+table|create\s+(unique\s+)?index|drop\s+index|(create|drop)\s+(or\s+replace\s+)?(trigger|policy)|(grant|revoke)\s[^;]*\bon\s+table|comment\s+on\s+(table|column))\b/i;
     const statementsOf = (sql) => sql.replace(/--.*$/gm, '').replace(/\$(\w*)\$[\s\S]*?\$\1\$/g, '$$$$')
       .split(';').map((part) => part.trim()).filter(Boolean);
@@ -150,11 +153,23 @@ try {
     assert.ok(!statementsOf(migration).some((statement) => tableStatement.test(statement)), 'the function migration locks no table');
     const ours = [...await readColumnMigrations(), ...await readIndexMigrations(), ...await readTableMigrations()]
       .filter((sql) => !sql.includes('gateway_requests_workspace_billing_request_idx')); // fix/async-billing-20261104's
+    const partitionOf = new Map([...(await readSchema('public/tables/gateway_requests.sql'))
+      .matchAll(/CREATE TABLE "public"\."(\w+)" PARTITION OF "public"\."(\w+)"/g)].map(([, child, parent]) => [child, parent]));
+    assert.equal(partitionOf.get('gateway_requests_2026_10'), 'gateway_requests');
+    // Monthly partitions after the declarative ones are created at runtime (gateway_requests_2026_11, ...).
+    const parentOf = (table) => partitionOf.get(table) ?? (/^gateway_requests_(\d{4}_\d{2}|default)$/.test(table) ? 'gateway_requests' : table);
+    const lockedTables = (sql) => new Set(statementsOf(sql).filter((statement) => tableStatement.test(statement))
+      .map((statement) => statement.match(/\bpublic\.(\w+)|"public"\."(\w+)"/i)).filter(Boolean)
+      .map((match) => match[1] ?? match[2]).map(parentOf));
+    // The counter itself: a parent and its partition are one table; another table is a second.
+    assert.deepEqual([...lockedTables(`ALTER TABLE public.gateway_requests ADD COLUMN x int;
+      ALTER TABLE public.gateway_requests_2026_10 ALTER COLUMN x SET DEFAULT 0; ALTER TABLE public.gateway_requests_2026_12 ALTER COLUMN x SET DEFAULT 0;`)], ['gateway_requests']);
+    assert.deepEqual([...lockedTables(`CREATE INDEX i ON public.gateway_requests (x);
+      REVOKE DELETE ON TABLE public.wallets FROM anon;`)].sort(), ['gateway_requests', 'wallets']);
     for (const sql of ours) {
       assert.match(sql, /^SET LOCAL lock_timeout = '10s';/);
-      const tables = new Set(statementsOf(sql).filter((statement) => tableStatement.test(statement))
-        .map((statement) => statement.match(/\bpublic\.(\w+)|"public"\."(\w+)"/i)).filter(Boolean).map((match) => match[1] ?? match[2]));
-      assert.ok(tables.size <= 1, `one table per migration: ${[...tables].join(', ')}`);
+      const tables = lockedTables(sql);
+      assert.ok(tables.size <= 1, `one logical table per migration: ${[...tables].join(', ')}`);
     }
     const [addColumn, validate] = await readColumnMigrations();
     assert.match(addColumn, /ADD COLUMN IF NOT EXISTS expected_cost_nanos bigint;/);
