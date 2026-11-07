@@ -113,6 +113,11 @@ try {
   assert.equal((await save('note', OTHER_CHANNEL, 'Deploys freeze on Fridays after 3pm.')).status, 'saved', 'another conversation keeps its own copy');
   const pin = await save('pin', null, 'Our fiscal year starts on 1 April.');
   const channelPin = await save('pin', CHANNEL, 'Release notes go out every Tuesday.');
+  // Saved in the same clock tick, the two pins would share created_at and come back in id order, which is
+  // random. One second apart, the newer one is always first.
+  await db.exec('reset role');
+  await rows(`update public.slack_agent_notes set created_at = created_at + interval '1 second' where id = $1`, [channelPin.note.id]);
+  await db.exec('set role service_role');
   const todo = await save('todo', CHANNEL, 'Send the Q4 budget to finance.');
   await save('todo', OTHER_CHANNEL, 'Book the offsite venue.');
   await assert.rejects(save('reminder', CHANNEL, 'x'), /invalid_kind/);
