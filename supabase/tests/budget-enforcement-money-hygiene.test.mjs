@@ -690,9 +690,9 @@ try {
       assert.doesNotMatch(source.replace(/\(select private\.pending_json_cutoff\(\)\)/g, ''), /pending_json_cutoff/, file);
       assert.doesNotMatch(source, /2026-11-09/, file);
     }
-    // Until the real cut-off is set after the deploy, the marker is infinite: every row flagged in
-    // the JSON is pending, so the row at the marker and the newer one count their charges too.
-    await db.exec(`update private.billing_cutoffs set pending_json_cutoff = 'infinity'`);
+    // Until the real cut-off is set after the deploy, the marker is NULL (infinite): every row
+    // flagged in the JSON is pending, so the row at the marker and the newer one count their charges too.
+    await db.exec(`update private.billing_cutoffs set pending_json_cutoff = null`);
     assert.equal(await total('budget_spend_items', `'${WS_LEGACY}', null`), 12 * DOLLAR);
     assert.equal(await total('key_spend_items', `'${WS_LEGACY}', null, array['${KEY.legacy}']::uuid[]`), 12 * DOLLAR);
     await db.query(`update private.billing_cutoffs set pending_json_cutoff = $1`, [marker]);
@@ -712,7 +712,7 @@ try {
       [WS_OLD, requestId, nanos, null]));
     await oldCharge('billing-old-stream', 110 * DOLLAR);
     await db.query(`insert into public.gateway_requests (workspace_id, request_id, billing_request_id, key_id, success, status_code,
-      detail_metadata, created_at) values ($1, 'req-old-stream', 'billing-old-stream', $2, false, 500, $3, (select pending_json_cutoff from private.billing_cutoffs) - interval '1 hour')`,
+      detail_metadata, created_at) values ($1, 'req-old-stream', 'billing-old-stream', $2, false, 500, $3, least(now(), (select private.pending_json_cutoff())) - interval '1 hour')`,
       [WS_OLD, KEY.old, {
         stage: 'execute', testing_mode: false, response_timeline: [],
         accounting_finalization: {
@@ -782,7 +782,7 @@ try {
         select '${WS_PLAN}', 'plan-pending-' || i, 'plan-open-' || i, '${KEY.plan}', false, 3,
           case when i % 2 = 0 then 7 end,
           case when i % 2 = 1 then '{"accounting_finalization": {"billing_status": "pending_reconciliation"}}'::jsonb end,
-          case when i % 2 = 1 then (select pending_json_cutoff from private.billing_cutoffs) - interval '1 day' else now() end
+          case when i % 2 = 1 then least(now(), (select private.pending_json_cutoff())) - interval '1 day' else now() end
         from generate_series(11, 14) i;
       analyze public.gateway_requests; analyze public.gateway_request_charges; analyze public.credit_ledger;`);
     // Each function's own body, prepared with its parameters and planned both ways: custom (the
@@ -820,10 +820,13 @@ try {
     }
     // Request readers over a recent window (the last rows of the 2027 history), as budgets read it.
     const recent = `'${WS_PLAN}', timestamptz '2027-06-01 08:15:00+00'`;
-    // With the marker set and with it infinite (JSON compatibility on, as at deploy).
+    // With #3534's real initial marker (NULL: pending_json_cutoff() is infinity, JSON compatibility
+    // on until the real cut-off is set after the deploy) and with a cut-off set.
     const marker = (await one(`select pending_json_cutoff as at from private.billing_cutoffs`)).at;
-    for (const setting of ['marker', 'infinity']) {
-      if (setting === 'infinity') await db.exec(`update private.billing_cutoffs set pending_json_cutoff = 'infinity'; analyze private.billing_cutoffs;`);
+    assert.equal(marker, null, 'the migration inserts the marker as NULL');
+    assert.equal((await one(`select private.pending_json_cutoff() = 'infinity'::timestamptz as infinite`)).infinite, true);
+    for (const setting of ['null', 'set']) {
+      if (setting === 'set') await db.exec(`update private.billing_cutoffs set pending_json_cutoff = now() - interval '1 day'; analyze private.billing_cutoffs;`);
       for (const [file, args] of [
         ['private/functions/key_spend_items.sql', `${recent}, array['${KEY.plan}']::uuid[], '{}', '{}'`],
         ['private/functions/budget_spend_items.sql', `${recent}, null, '{}', '{}'`],
