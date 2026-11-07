@@ -924,6 +924,31 @@ describe("irToAnthropicMessages eager tool streaming", () => {
 });
 
 describe("native Anthropic automatic caching", () => {
+	it.each([undefined, "5m"])("keeps an explicit final 1h mark without a conflicting automatic TTL %s", (ttl) => {
+		const request = decodeAnthropicMessagesRequest({
+			model: "claude-sonnet-4-6", max_tokens: 128,
+			cache_control: { type: "ephemeral", ttl },
+			messages: [{ role: "user", content: [{ type: "text", text: "Stable context", cache_control: { type: "ephemeral", ttl: "1h" } }] }],
+		});
+		const payload = irToAnthropicMessages(request);
+		expect(payload.cache_control).toBeUndefined();
+		expect(payload.messages[0].content[0].cache_control).toEqual({ type: "ephemeral", ttl: "1h" });
+	});
+
+	it("keeps automatic 5m caching after an earlier explicit 1h mark", () => {
+		const request = decodeAnthropicMessagesRequest({
+			model: "claude-sonnet-4-6", max_tokens: 128,
+			cache_control: { type: "ephemeral", ttl: "5m" },
+			messages: [{ role: "user", content: [
+				{ type: "text", text: "Stable context", cache_control: { type: "ephemeral", ttl: "1h" } },
+				{ type: "text", text: "New tail" },
+			] }],
+		});
+		const payload = irToAnthropicMessages(request);
+		expect(payload.cache_control).toEqual({ type: "ephemeral", ttl: "5m" });
+		expect(payload.messages[0].content[0].cache_control).toEqual({ type: "ephemeral", ttl: "1h" });
+	});
+
 	it("preserves top-level control without expanding it into block breakpoints", () => {
 		const request = decodeAnthropicMessagesRequest({
 			model: "claude-sonnet-4-6", max_tokens: 128,

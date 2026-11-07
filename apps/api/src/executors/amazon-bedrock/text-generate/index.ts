@@ -95,15 +95,19 @@ async function executeBedrockMessages(
 	// Claude on Bedrock reads base64 sources only.
 	const inlined = await inlineClaudeMediaForBase64OnlyPlatform(irRequest, args);
 	if (inlined.ok === false) return inlined.result;
-	const anthropicRequest = irToAnthropicMessages(inlined.ir, args.maxOutputTokens, model, {
+	const runtime = isBedrockInferenceProfileId(model);
+	// InvokeModel cannot forward top-level cache_control. Keep the historical
+	// explicit placement on this route, before breakpoint/TTL normalisation.
+	const mappedIr = runtime && inlined.ir.anthropicCacheControl?.scope === "automatic"
+		? { ...inlined.ir, anthropicCacheControl: { ...inlined.ir.anthropicCacheControl, scope: "all_text" } }
+		: inlined.ir;
+	const anthropicRequest = irToAnthropicMessages(mappedIr, args.maxOutputTokens, model, {
 		providerId: args.providerId || "amazon-bedrock",
-		// Sonnet 4.5 rejects the per-tool flag.
-		eagerInputStreaming: irRequest.stream === true && !/claude-sonnet[-.]4[-.]5/.test(model),
+		eagerInputStreaming: irRequest.stream === true && supportsBedrockEagerInputStreaming(model),
 	});
 	const stream = Boolean(irRequest.stream);
 	// bedrock-runtime: InvokeModel takes the model in the path and the version in
 	// the body; older Claude models there do not offer the /anthropic Messages route.
-	const runtime = isBedrockInferenceProfileId(model);
 	const geoRejection = bedrockInferenceGeoRejection(irRequest, args, auth, model, runtime);
 	if (geoRejection) return geoRejection;
 	if (runtime && anthropicRequest.speed === "fast") {
@@ -409,6 +413,13 @@ export function isBedrockClaudeModel(model: string | null | undefined): boolean 
 	const normalized = normalizeClaudeModelId(model);
 	if (!normalized) return false;
 	return isClaudeOpus55(normalized) || /(?:^|[./:])(?:anthropic[./])?claude-/.test(normalized);
+}
+
+function supportsBedrockEagerInputStreaming(model: string): boolean {
+	// Only the newer serving stack accepts the per-tool flag; older deployments
+	// return 400. Unknown releases stay buffered until their support is verified.
+	// https://github.com/anthropics/skills/blob/main/skills/claude-api/shared/platform-availability.md
+	return /(?:^|[./:])claude-(?:opus-4[.-][78]|sonnet-4[.-]6|(?:opus|sonnet|fable)-5)(?:$|-v\d|:\d)/.test(normalizeClaudeModelId(model));
 }
 
 /**

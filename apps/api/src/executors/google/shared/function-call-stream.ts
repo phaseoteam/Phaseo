@@ -21,9 +21,13 @@ function parsePath(value: unknown): Path {
 		const match = pattern.exec(value);
 		if (!match || path.length >= 64) throw new Error("google_invalid_function_argument_path");
 		const key = match[1] ?? match[2];
-		path.push(match[1] !== undefined ? key : /^\d+$/.test(key) ? Number(key)
-			: key.startsWith('"') ? JSON.parse(key) : JSON.parse('"' + key.slice(1, -1)
-				.replace(/\\(.)|"/g, (_match, escaped: string | undefined) => escaped === "'" ? "'" : escaped ? `\\${escaped}` : '\\"') + '"'));
+		try {
+			path.push(match[1] !== undefined ? key : /^\d+$/.test(key) ? Number(key)
+				: key.startsWith('"') ? JSON.parse(key) : JSON.parse('"' + key.slice(1, -1)
+					.replace(/\\(.)|"/g, (_match, escaped: string | undefined) => escaped === "'" ? "'" : escaped ? `\\${escaped}` : '\\"') + '"'));
+		} catch {
+			throw new Error("google_invalid_function_argument_path");
+		}
 		offset = pattern.lastIndex;
 	}
 	if (!path.length) throw new Error("google_invalid_function_argument_path");

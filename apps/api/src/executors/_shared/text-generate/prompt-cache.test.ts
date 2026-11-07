@@ -28,6 +28,13 @@ describe("scoped prompt cache keys", () => {
 		expect(await withScopedPromptCacheKey(ir, { workspaceId: "a", providerId: "mistral" }, "byok")).toBe(ir);
 	});
 
+	it("isolates default BYOK routing keys across workspaces", async () => {
+		const first = await withScopedPromptCacheKey(request, { workspaceId: "a", providerId: "mistral" }, "byok");
+		const second = await withScopedPromptCacheKey(request, { workspaceId: "b", providerId: "mistral" }, "byok");
+		expect(first.promptCacheKey).toMatch(/^ph_[a-f0-9]{60}$/);
+		expect(second.promptCacheKey).not.toBe(first.promptCacheKey);
+	});
+
 	it("does not invent cache controls for unrelated providers or missing workspaces", async () => {
 		expect(await withScopedPromptCacheKey(request, { workspaceId: "a", providerId: "anthropic" }, "gateway")).toBe(request);
 		expect(await withScopedPromptCacheKey(request, { workspaceId: "", providerId: "openai" }, "gateway")).toBe(request);

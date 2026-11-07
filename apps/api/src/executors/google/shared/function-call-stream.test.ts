@@ -36,6 +36,10 @@ describe("Gemini typed argument streaming", () => {
 		expect(() => new GeminiArgumentStream().append([{ jsonPath, stringValue: "x" }], true)).toThrow();
 	});
 
+	it.each(['$["a\\x"]', '$["a\nname"]', "$['a\\x']", "$['a\nname']"])("normalizes malformed quoted path errors: %s", (jsonPath) => {
+		expect(() => new GeminiArgumentStream().append([{ jsonPath, stringValue: "x" }], true)).toThrow("google_invalid_function_argument_path");
+	});
+
 	it("rejects duplicate fields and incomplete strings", () => {
 		const stream = new GeminiArgumentStream();
 		stream.append([{ jsonPath: "$.x", numberValue: 1 }], false);

@@ -66,6 +66,12 @@ export function normaliseAnthropicCacheBreakpoints(request: any): void {
 	if (Array.isArray(request.messages)) {
 		for (const message of request.messages) collectMarkedBlocks(message?.content, marked);
 	}
+	const lastBlock = request.messages?.at(-1)?.content?.at(-1);
+	// An explicit 1h mark on the final block already caches the whole prefix.
+	// Automatic 5m caching there conflicts with it, rather than adding a tail.
+	if (request.cache_control && request.cache_control.ttl !== "1h" && lastBlock?.cache_control?.ttl === "1h") {
+		delete request.cache_control;
+	}
 	let kept = marked;
 	// Automatic caching adds a moving breakpoint after the explicit marks.
 	const limit = MAX_BREAKPOINTS - (request.cache_control ? 1 : 0);

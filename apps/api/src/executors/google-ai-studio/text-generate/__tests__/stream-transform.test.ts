@@ -107,6 +107,16 @@ describe("google-ai-studio stream transform", () => {
 		expect(output).not.toContain('"finish_reason":"tool_calls"');
 	});
 
+	it.each(["openai.chat.completions", "openai.responses", "anthropic.messages"])("reports malformed quoted paths as a protocol error on %s", async (protocol) => {
+		for (const jsonPath of ['$["a\\x"]', '$["a\nname"]']) {
+			const upstream = makeGoogleSseStream([{ candidates: [{ content: { parts: [{ functionCall: { name: "lookup", partialArgs: [{ jsonPath, stringValue: "x" }] } }] } }] }]);
+			const output = await readStreamText(transformStream(upstream, baseArgs({ protocol })));
+			expect(output).toContain("Google returned incomplete or invalid tool arguments.");
+			expect(output).not.toContain("event: response.completed");
+			expect(output).not.toContain("event: message_stop");
+		}
+	});
+
 	it("preserves full arguments when a complete call explicitly sets willContinue=false", async () => {
 		const upstream = makeGoogleSseStream([{
 			candidates: [{ content: { parts: [{ functionCall: { id: "complete-call", name: "lookup", args: { city: "London" }, willContinue: false } }] }, finishReason: "STOP" }],
