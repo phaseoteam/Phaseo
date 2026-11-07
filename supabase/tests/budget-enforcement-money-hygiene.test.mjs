@@ -47,6 +47,7 @@ const WS_PEND = id('1', 12); // requests pending reconciliation
 const WS_LEGACY = id('1', 13); // pending by billing_status only, either side of the cutoff
 const WS_OLD = id('1', 14); // charges written by the previous gateway, without a key
 const WS_VIDEO = id('1', 15); // reserved videos settled after midnight
+const WS_NOV3 = id('1', 16); // charges from 3 November, before the cut-off
 const ENG = id('4', 1);
 const ROLL = id('4', 2);
 const CAP = id('4', 3);
@@ -55,8 +56,9 @@ const STEP = id('4', 5);
 const PEND = id('4', 6);
 const OLD = id('4', 7);
 const VIDEO = id('4', 8);
+const NOV3 = id('4', 9);
 const MEMBER = id('2', 1);
-const KEY = { linked: id('3', 1), member: id('3', 2), outside: id('3', 3), batch: id('3', 4), roll: id('3', 5), cap: id('3', 6), limited: id('3', 7), del: id('3', 8), batches: id('3', 9), recon: id('3', 10), step: id('3', 11), pend: id('3', 12), plan: id('3', 13), legacy: id('3', 14), old: id('3', 15), video: id('3', 16) };
+const KEY = { linked: id('3', 1), member: id('3', 2), outside: id('3', 3), batch: id('3', 4), roll: id('3', 5), cap: id('3', 6), limited: id('3', 7), del: id('3', 8), batches: id('3', 9), recon: id('3', 10), step: id('3', 11), pend: id('3', 12), plan: id('3', 13), legacy: id('3', 14), old: id('3', 15), video: id('3', 16), nov3: id('3', 17) };
 // Before every current period: the earlier of this week's Monday and the 1st, less a day.
 const BEFORE_PERIODS = `(least(date_trunc('week', now() at time zone 'utc'), date_trunc('month', now() at time zone 'utc')) at time zone 'utc' - interval '1 day')`;
 
@@ -508,6 +510,30 @@ try {
     assert.deepEqual(await surfaces(WS_RECON, KEY.recon), everywhere(158 * DOLLAR));
   });
 
+  await check('a charge matched to a pending audit row counts before the 4 November cut-off; an unmatched one does not', async () => {
+    // Billing ids reach request rows from 2026-11-03 14:43 UTC. On the 3rd at 16:00 a stream's
+    // finalization failed: its pending audit row (flagged in detail_metadata, as the gateway then
+    // wrote it) carries the billing id of its applied $5 charge. Earlier that day a $7 request's
+    // charge was written with no billing id on its row: its row counts, the charge must not.
+    await db.exec(`
+      insert into public.workspaces (id) values ('${WS_NOV3}');
+      insert into public.workspace_departments (id, workspace_id, name) values ('${NOV3}', '${WS_NOV3}', 'Ops');
+      insert into public.keys (id, workspace_id, department_id) values ('${KEY.nov3}', '${WS_NOV3}', '${NOV3}');
+      insert into public.workspace_budgets (workspace_id, interval, limit_nanos) values ('${WS_NOV3}', 'lifetime', ${1000 * DOLLAR});
+      insert into public.gateway_request_charges (workspace_id, request_id, cost_nanos, status, is_final, key_id, created_at) values
+        ('${WS_NOV3}', 'billing-nov3-pending', ${5 * DOLLAR}, 'applied', true, '${KEY.nov3}', '2026-11-03T16:00:00Z'),
+        ('${WS_NOV3}', 'billing-nov3-unmatched', ${7 * DOLLAR}, 'applied', true, '${KEY.nov3}', '2026-11-03T10:00:00Z');
+      insert into public.gateway_requests (workspace_id, request_id, billing_request_id, key_id, success, cost_nanos, detail_metadata, created_at) values
+        ('${WS_NOV3}', 'req-nov3-pending', 'billing-nov3-pending', '${KEY.nov3}', false, ${5 * DOLLAR},
+          '{"accounting_finalization": {"billing_status": "pending_reconciliation"}}', '2026-11-03T16:00:01Z'),
+        ('${WS_NOV3}', 'req-nov3-unmatched', null, '${KEY.nov3}', true, ${7 * DOLLAR}, null, '2026-11-03T10:00:01Z');`);
+    const total = async (fn, args) => Number((await one(`select coalesce(sum(nanos), 0)::bigint as n from private.${fn}(${args})`)).n);
+    // $5 (the matched charge) + $7 (the unmatched request's row), all time, on each path.
+    assert.equal(await total('budget_spend_items', `'${WS_NOV3}', null`), 12 * DOLLAR, 'workspace');
+    assert.equal(await total('budget_spend_items', `'${WS_NOV3}', null, array['${KEY.nov3}']::uuid[]`), 12 * DOLLAR, 'department (its keys)');
+    assert.equal(await total('key_spend_items', `'${WS_NOV3}', null, array['${KEY.nov3}']::uuid[]`), 12 * DOLLAR, 'key');
+    assert.equal(Number((await workspaceStatus(WS_NOV3)).budgets[0].usage_nanos), 12 * DOLLAR, 'workspace lifetime budget');
+  });
   await check('a reserved video counts its debit when the money moved, not when it was submitted', async () => {
     await setUp(WS_VIDEO, KEY.video, VIDEO, ['daily']);
     // Two videos reserved before midnight and settled today (gateway_wallet_settle_once: the hold is

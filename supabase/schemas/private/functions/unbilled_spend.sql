@@ -38,9 +38,10 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
   -- The SpendLimit Durable Object counts an admission it still holds from memory and lists both
   -- its ids: p_exclude_charge_ids leaves out charge rows by billing request id
   -- (gateway_request_charges.request_id), p_exclude_request_ids request rows by request id.
-  -- Charges before 2026-11-04 00:00 UTC are left out: request rows recorded billing_request_id only
-  -- from 2026-11-03 14:43 UTC, so an older charge's request row cannot be matched and already
-  -- counts.
+  -- Unmatched charges before 2026-11-04 00:00 UTC are left out: request rows recorded
+  -- billing_request_id only from 2026-11-03 14:43 UTC, so an older charge's request row cannot be
+  -- matched and already counts. A charge matched by billing id to a pending audit row counts at any
+  -- date: the request readers leave that row's cost out (rule b), so the charge is its only count.
   --
   -- A charge is attributed to gateway_request_charges.key_id, or, when that is NULL (charges written
   -- before the column, and by older gateway code during a deploy, which does not pass p_key_id), to
@@ -120,7 +121,8 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
   where charge.workspace_id = p_workspace_id
     and charge.status = 'applied'
     and charge.cost_nanos > 0
-    and charge.created_at >= greatest(coalesce(p_since, '-infinity'::timestamptz), '2026-11-04 00:00:00+00'::timestamptz)
+    and charge.created_at >= coalesce(p_since, '-infinity'::timestamptz)
+    and (charge.created_at >= '2026-11-04 00:00:00+00'::timestamptz or pending.found is not null)
     and not starts_with(charge.request_id, 'batch_capture:')
     and (audit.found is null or pending.found is not null)
     and stepped.found is null
