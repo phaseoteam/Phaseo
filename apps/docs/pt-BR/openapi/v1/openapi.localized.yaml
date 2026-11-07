@@ -4850,7 +4850,7 @@ paths:
         - Gateway
       operationId: listDepartmentBudgets
       summary: List department budgets
-      description: Lists department spend budgets with each department's spend so far in the current UTC period. Spend comes from an hourly rollup, so it can lag by up to an hour.
+      description: Lista os orçamentos de gastos dos departamentos com o gasto de cada departamento no período UTC atual. O gasto é contado como a admissão do departamento o conta, então está atualizado.
       parameters:
         - name: department_id
           in: query
@@ -4878,7 +4878,7 @@ paths:
         - Gateway
       operationId: createDepartmentBudget
       summary: Create a department budget
-      description: Cria um orçamento de gastos diário, semanal ou mensal para um departamento. Quando o departamento o esgota, as solicitações com chave de API que contam para ele retornam 429 key_limit_exceeded até o orçamento ser redefinido. Tarefas em lote, sessões em tempo real e solicitações OAuth não são bloqueadas. Se a verificação do orçamento ficar indisponível por um instante, as solicitações são permitidas em vez de recusadas. Proprietários e administradores recebem uma notificação push no celular em cerca de 80% e em 100%.
+      description: Cria um orçamento de gastos diário, semanal ou mensal para um departamento. Quando o departamento o esgota, as solicitações com chave de API que contam para ele retornam 429 key_limit_exceeded até o orçamento ser redefinido. Solicitações feitas com um token de acesso OAuth não são bloqueadas. Se a verificação do orçamento ficar indisponível por um instante, as solicitações são permitidas em vez de recusadas. Proprietários e administradores recebem uma notificação push no celular em cerca de 80% e em 100%.
       requestBody:
         required: true
         content:

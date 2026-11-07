@@ -56,9 +56,9 @@ Proprietários e administradores gerenciam os orçamentos de departamento com `p
 
 Quando um departamento esgota o orçamento diário, semanal ou mensal, as solicitações com chave de API que contam para ele retornam `429` com `key_limit_exceeded` e o motivo `department_daily_cost_budget_reached`, `department_weekly_cost_budget_reached` ou `department_monthly_cost_budget_reached`. Os campos `department_id` e `department_name` do corpo identificam o departamento, e `reset_at` e `Retry-After` indicam quando o orçamento reinicia.
 
-- Tarefas em lote, sessões em tempo real e solicitações OAuth não são bloqueadas por orçamentos de departamento.
+- Solicitações feitas com um token de acesso OAuth não são bloqueadas por orçamentos de departamento e não contam para nenhum departamento.
 - Se a verificação do orçamento estiver indisponível por um breve período, as solicitações são permitidas, então um departamento pode gastar além do orçamento por pouco tempo.
-- Proprietários e administradores recebem uma notificação push no celular em cerca de 80% e novamente em 100% de um orçamento. Esses alertas vêm de dados de uso que podem atrasar até uma hora, então solicitações podem ser recusadas antes de o alerta de 100% chegar.
+- Proprietários e administradores recebem uma notificação push no celular em cerca de 80% e novamente em 100% de um orçamento. Para esses alertas, os orçamentos são verificados a cada 15 minutos, então solicitações podem ser recusadas antes de o alerta de 100% chegar.
 
 <span id="rate-limit-policies"></span>
 ## Políticas de limite de taxa
@@ -128,7 +128,7 @@ Regras de limite de taxa para agentes, resumindo esta página:
 
 - As cotas do gateway retornam `429` com o motivo `customer_requests_per_minute` (código `key_limit_exceeded`) ou `free_requests_per_day` (código `phaseo_free_model_limit_exceeded`); aguarde `Retry-After` segundos. Se a aplicação de cotas estiver indisponível, o gateway retorna `503` com orientação para nova tentativa.
 - Limites de chaves e orçamentos retornam `429` com `key_limit_exceeded` e um `reset_at`. Sem `Retry-After`, o limite não reinicia sozinho: aumente o limite ou use outra chave em vez de tentar de novo.
-- Um orçamento de departamento esgotado retorna `429` com `key_limit_exceeded`, o motivo `department_<interval>_cost_budget_reached`, `department_id`, `department_name` e `reset_at`; aguarde `Retry-After` segundos ou aumente o orçamento. Solicitações em lote, em tempo real e OAuth não são bloqueadas por orçamentos de departamento. Se a verificação do orçamento estiver indisponível, a solicitação é permitida.
+- Um orçamento de departamento esgotado retorna `429` com `key_limit_exceeded`, o motivo `department_<interval>_cost_budget_reached`, `department_id`, `department_name` e `reset_at`; aguarde `Retry-After` segundos ou aumente o orçamento. Solicitações feitas com um token de acesso OAuth não são bloqueadas por orçamentos de departamento. Se a verificação do orçamento estiver indisponível, a solicitação é permitida.
 - Regras de gastos que bloqueiam retornam `429` com `spend_rule_blocked`; aguarde o `Retry-After` ou peça a um proprietário ou administrador que remova o bloqueio. `x-phaseo-spend-warning` indica que um bloqueio pode vir em seguida.
 - As políticas de limite de taxa do espaço de trabalho retornam `429` com `rate_limit_exceeded`, `policy_id` e `limit_scope`. `x-ratelimit-remaining-requests` é aproximado.
 - `Retry-After` pode ser em segundos ou uma data HTTP; valide-o antes de agendar uma nova tentativa. Nunca reenvie uma tarefa de vídeo ou de lote ambígua; verifique o status dela.

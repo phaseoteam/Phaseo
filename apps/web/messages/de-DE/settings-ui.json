@@ -7232,7 +7232,7 @@
 			"period": "Zeitraum",
 			"createTitle": "Abteilungsbudget hinzufügen",
 			"editTitle": "Abteilungsbudget bearbeiten",
-			"limitHelp": "Erreichen die Ausgaben der Abteilung im Zeitraum diesen Betrag, werden ihre API-Schlüssel-Anfragen abgelehnt, bis der Zeitraum zurückgesetzt wird. Batch-, Echtzeit- und OAuth-Anfragen werden nicht blockiert. Ist die Budgetprüfung kurzzeitig nicht verfügbar, werden Anfragen zugelassen statt abgelehnt. Inhaber und Admins werden bei etwa 80 % und 100 % benachrichtigt.",
+			"limitHelp": "Erreichen die Ausgaben der Abteilung im Zeitraum diesen Betrag, werden ihre API-Schlüssel-Anfragen abgelehnt, bis der Zeitraum zurückgesetzt wird. Anfragen mit einem OAuth-Zugriffstoken werden nicht blockiert. Ist die Budgetprüfung kurzzeitig nicht verfügbar, werden Anfragen zugelassen statt abgelehnt. Inhaber und Admins werden bei etwa 80 % und 100 % benachrichtigt.",
 			"saved": "Abteilungsbudget gespeichert",
 			"deleted": "Abteilungsbudget gelöscht",
 			"deleteTitle": "Dieses Abteilungsbudget löschen?",
