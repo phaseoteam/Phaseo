@@ -49,7 +49,7 @@ const WORKSPACE = "workspace-1";
 const KEY = "key-1";
 const DAY = 86_400_000;
 
-type Row = { requestId: string; keyId: string | null; success: boolean; cost: number; createdAt: number };
+type Row = { requestId: string; keyId: string | null; success: boolean; cost: number; createdAt: number; billingId?: string };
 type KeyConfig = { workspaceId: string; softBlocked?: boolean; daily?: [number, number]; weekly?: [number, number]; monthly?: [number, number] };
 type Budget = { id: string; interval: "daily" | "weekly" | "monthly" | "lifetime"; limit: number; holds?: number };
 type DepartmentBudget = { id: string; departmentId: string; name: string; interval: "daily" | "weekly" | "monthly"; limit: number; keyIds: string[] };
@@ -64,15 +64,17 @@ class FakeDatabase {
 	legacyShape = false;
 	calls: Array<{ keyIds: string[]; exclude: string[] }> = [];
 	/**
-	 * Debit movements of charges without a request row (one per checkpoint, final or refund), each at
-	 * its own time: counted unless the charge's billing id is excluded.
+	 * Debit movements of charges (one per checkpoint, final or refund), each at its own time: counted
+	 * unless the charge's billing id is excluded, or an audit row records it (billingId), which then
+	 * counts it once instead.
 	 */
 	charges: Array<{ billingId: string; keyId: string; total: number; at: number }> = [];
 
 	chargeCost(keyIds: string[] | null, start: number | null, exclude: string[]): { cost: number; requests: number } {
 		const now = Date.now();
+		const audited = new Set(this.rows.filter((row) => row.billingId && row.success && row.createdAt <= now).map((row) => row.billingId));
 		const rows = this.charges.filter((row) => (keyIds === null || keyIds.includes(row.keyId)) && !exclude.includes(row.billingId) &&
-			(start === null || row.at >= start) && row.at <= now);
+			!audited.has(row.billingId) && (start === null || row.at >= start) && row.at <= now);
 		return { cost: rows.reduce((sum, row) => sum + row.total, 0), requests: new Set(rows.map((row) => row.billingId)).size };
 	}
 	fail = false;
@@ -102,6 +104,8 @@ class FakeDatabase {
 	seed(workspaceId: string, keyIds: string[], exclude: string[]): SpendLimitSeed {
 		this.calls.push({ keyIds: [...keyIds], exclude: [...exclude] });
 		if (this.fail) throw new Error("database unavailable");
+		// gateway_spend_limit_seed rejects more excluded ids than this.
+		if (exclude.length > SPEND_LEASE.maxExcludedRequestIds) throw new Error("too_many_excluded_request_ids");
 		const now = Date.now();
 		const windows = FakeDatabase.windows(now);
 		const iso = (ms: number) => new Date(ms).toISOString();
@@ -530,8 +534,47 @@ describe("spend-limit coordinator", () => {
 			unstall();
 			await flush();
 			// Counted once ($6), not by both the seed's row and memory ($12).
-			expect(database.calls.at(-1)?.exclude).toEqual(["req-loaded"]);
+			expect(database.calls.at(-1)?.exclude.sort()).toEqual(["bill-loaded", "req-loaded"]);
 			expect((await probe())?.daily).toMatchObject({ requestsUsed: 1, costUsedNanos: 600 });
+		});
+
+		it("counts an ordinary request once while held, when its audit lands and after the seed takes it over", async () => {
+			// The fake-seed version of #3547's real-SQL handoff test: the charge row lands first under
+			// the billing id, then the coordinator records the $4.50 request.
+			const ordinary = { keyId: KEY, billingRequestId: "bill-ordinary", requestId: "req-ordinary", costNanos: 450, requests: 1 };
+			database.charges.push({ billingId: "bill-ordinary", keyId: KEY, total: 450, at: Date.now() });
+			await coordinator.record(WORKSPACE, ordinary);
+			expect(await daily()).toBe(450);
+			// A seed while it is held excludes both ids, so the charge row is not counted as well.
+			await reseed();
+			expect(await daily()).toBe(450);
+			expect(database.calls.at(-1)?.exclude.sort()).toEqual(["bill-ordinary", "req-ordinary"]);
+			// The audit row lands: the next seed still excludes it and finds the row.
+			database.rows.push({ requestId: "req-ordinary", billingId: "bill-ordinary", keyId: KEY, success: true, cost: 450, createdAt: Date.now() });
+			await reseed();
+			expect(await daily()).toBe(450);
+			// The seed after that counts the row (the charge row once, through it); the held copy goes.
+			await reseed();
+			expect(database.calls.at(-1)?.exclude).toEqual([]);
+			expect(await daily()).toBe(450);
+			coordinator = createCoordinator();
+			expect(await daily()).toBe(450);
+		});
+
+		it("reseeds once the held entries' ids, two per request, reach the seed's limit", async () => {
+			const calls = database.calls.length;
+			// 2,600 requests need 5,200 ids, above the 5,000 the seed accepts.
+			for (let batch = 0; batch < 26; batch += 1) {
+				await coordinator.record(WORKSPACE, Array.from({ length: 100 }, (_, index) => {
+					const n = batch * 100 + index;
+					return { keyId: KEY, billingRequestId: `bill-burst-${n}`, requestId: `req-burst-${n}`, costNanos: 1, requests: 1 };
+				}));
+			}
+			await flush();
+			// A reseed started on its own, and no seed was sent more ids than it accepts.
+			expect(database.calls.length).toBeGreaterThan(calls);
+			expect(Math.max(...database.calls.slice(calls).map((call) => call.exclude.length))).toBeLessThanOrEqual(SPEND_LEASE.maxExcludedRequestIds);
+			expect(database.calls.at(-1)?.exclude).toHaveLength(SPEND_LEASE.maxExcludedRequestIds);
 		});
 
 		it("ignores a first checkpoint that arrives after the request's final", async () => {
@@ -704,7 +747,7 @@ describe("spend-limit coordinator", () => {
 		vi.setSystemTime(Date.now() + SPEND_LEASE.reseedMs + 1);
 		await probe();
 		await flush();
-		expect(database.calls.at(-1)?.exclude.sort()).toEqual(["r1", "r2"]);
+		expect(database.calls.at(-1)?.exclude.sort()).toEqual(["b1", "b2", "r1", "r2"]);
 		expect((await probe())?.daily).toMatchObject({ requestsUsed: 3, costUsedNanos: 1_300 });
 
 		// r1 is now known to be persisted: the next seed counts it instead of excluding it.
@@ -712,7 +755,7 @@ describe("spend-limit coordinator", () => {
 		vi.setSystemTime(Date.now() + SPEND_LEASE.reseedMs + 1);
 		await probe();
 		await flush();
-		expect(database.calls.at(-1)?.exclude).toEqual(["r2"]);
+		expect(database.calls.at(-1)?.exclude.sort()).toEqual(["b2", "r2"]);
 		expect((await probe())?.daily).toMatchObject({ requestsUsed: 3, costUsedNanos: 1_300 });
 		vi.setSystemTime(Date.now() + SPEND_LEASE.reseedMs + 1);
 		await probe();

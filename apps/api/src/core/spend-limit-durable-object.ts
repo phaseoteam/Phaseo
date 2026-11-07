@@ -365,7 +365,7 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			if (!this.recordOne(entry, now)) duplicates += 1;
 			if (entry && this.draining(entry.keyId, now)) drainKeyIds.add(entry.keyId);
 		}
-		if (this.seed && this.unpersistedCount() >= SPEND_LEASE.maxExcludedRequestIds) this.reseedInBackground();
+		if (this.seed && this.unpersistedIdCount() >= SPEND_LEASE.maxExcludedRequestIds) this.reseedInBackground();
 		return { duplicates, drainKeyIds: [...drainKeyIds] };
 	}
 
@@ -576,7 +576,9 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 	/**
 	 * Contract with gateway_spend_limit_seed: it skips gateway_requests rows whose request_id is
 	 * listed and gateway_request_charges rows whose request_id (the billing id) is listed; that
-	 * spend is counted from memory instead. A stepped entry needs both ids, so the cap counts ids.
+	 * spend is counted from memory instead. Every entry lists both ids: an ordinary request's charge
+	 * row (under its billing id) lands before its audit row, and a stepped request's charge row is
+	 * updated at each checkpoint. The cap (the SQL rejects more) counts ids, not entries.
 	 * Entries past it (newest first; the oldest are most likely persisted already) are dropped, and
 	 * the seed counts their rows instead.
 	 */
@@ -587,7 +589,7 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 		const excludedIds = new Set<string>();
 		let dropped = 0;
 		for (const entry of unpersisted) {
-			const ids = (entry.stepped ? [entry.requestId, entry.billingRequestId] : [entry.requestId]).filter((id) => !excludedIds.has(id));
+			const ids = [...new Set([entry.requestId, entry.billingRequestId])].filter((id) => !excludedIds.has(id));
 			if (excludedIds.size + ids.length > SPEND_LEASE.maxExcludedRequestIds) {
 				this.pending.delete(entry.billingRequestId);
 				dropped += 1;
@@ -941,9 +943,12 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 		return (this.drainUntil.get(keyId) ?? 0) > now || (this.drainUntil.get("*") ?? 0) > now;
 	}
 
-	private unpersistedCount(): number {
+	/** Ids the next seed must exclude: each held entry needs its request id and its billing id. */
+	private unpersistedIdCount(): number {
 		let count = 0;
-		for (const entry of this.pending.values()) if (!entry.persisted) count += 1;
+		for (const entry of this.pending.values()) {
+			if (!entry.persisted) count += entry.requestId === entry.billingRequestId ? 1 : 2;
+		}
 		return count;
 	}
 }
