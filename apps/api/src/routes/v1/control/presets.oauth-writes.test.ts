@@ -1,9 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-// A preset's config decides what every request that names it runs. Apps that sign in with Phaseo, and CLI or
-// desktop sign-ins (public client IDs), may read presets and edit a draft's name and description, but not
-// create, change, publish, relabel, fork or pull upstream into one, whatever the payload. Dashboard sessions
-// and management keys make the same changes as before.
+// Preset writes are dashboard-only (owner's decision, 2026-11-07). Apps that sign in with Phaseo, and CLI or
+// desktop sign-ins (public client IDs), may read presets but not create, change (name and description
+// included), publish, relabel, fork, pull upstream into, archive or move the publisher of one, whatever the
+// payload, and are refused before the preset is read. Dashboard sessions and management keys make the same
+// changes as before.
 
 const WS = "00000000-0000-4000-8000-000000000010";
 const USER = "00000000-0000-4000-8000-000000000020";
@@ -143,6 +144,12 @@ const CASES: Case[] = [
 		persisted: () => expect(write("presets", "insert")?.payload).toMatchObject({ source_preset_id: SOURCE }) },
 	{ label: "apply an upstream version", method: "POST", path: `/${PRESET}/upstream`, body: { version_id: VERSION },
 		persisted: () => expect(rpc("apply_preset_upstream_version")?.args).toMatchObject({ target_preset_id: PRESET, target_version_id: VERSION }) },
+	{ label: "rename a preset", method: "PATCH", path: `/${PRESET}`, body: { name: "@support-desk" },
+		persisted: () => expect(write("presets", "update")?.payload).toMatchObject({ draft_name: "@support-desk" }) },
+	{ label: "change a preset's description", method: "PATCH", path: `/${PRESET}`, body: { description: "Answers support tickets" },
+		persisted: () => expect(write("presets", "update")?.payload).toMatchObject({ draft_description: "Answers support tickets" }) },
+	{ label: "change the workspace's publisher handle", method: "PUT", path: "/publisher", body: { handle: "acme-two" },
+		persisted: () => expect(rpc("rename_workspace_publisher_handle")?.args).toMatchObject({ requested_handle: "acme-two" }) },
 	{ label: "archive a preset", method: "DELETE", path: `/${PRESET}`,
 		persisted: () => expect((write("presets", "update")?.payload as any)?.archived_at).toEqual(expect.any(String)) },
 ];
@@ -219,50 +226,39 @@ describe("OAuth callers can't change what a preset runs", () => {
 		expect(state.rpcs.map((entry) => entry.name)).toEqual(["remove_preset_version_label", "set_preset_version_label"]);
 	});
 
-	it.each(Object.entries(OAUTH))("%s can still read presets and edit a draft's name and description", async (_caller, auth) => {
+	it.each(Object.entries(OAUTH))("%s can still read presets", async (_caller, auth) => {
 		state.auth = auth;
 		setPreset();
 		expect((await send({ method: "GET", path: "/" })).status).toBe(200);
 		expect((await send({ method: "GET", path: `/${PRESET}` })).status).toBe(200);
-		reset();
-		const renamed = await send({ method: "PATCH", path: `/${PRESET}`, body: { name: "@support-desk", description: "Answers support tickets" } });
-		expect(renamed.status, JSON.stringify(renamed.body)).toBe(200);
-		expect(write("presets", "update")?.payload).toMatchObject({ draft_name: "@support-desk", draft_description: "Answers support tickets" });
-		expect((write("presets", "update")?.payload as any)?.draft_config).toBeUndefined();
+		expect(state.writes).toEqual([]);
 	});
 
-	it.each(Object.entries(OAUTH))("%s is refused a prohibited edit before the preset is read, so its privacy doesn't show", async (_caller, auth) => {
+	it.each(Object.entries(OAUTH))("%s gets the same refusal for a visible, private, private-draft, slug-less or missing preset", async (_caller, auth) => {
 		state.auth = auth;
-		const edit = async (path: string, body: Record<string, unknown>) => {
+		const attempt = async (method: string, path: string, body?: Record<string, unknown>) => {
 			reset();
-			const result = await send({ method: "PATCH", path, body });
+			const result = await send({ method, path, body });
 			expect(state.writes).toEqual([]);
+			expect(state.rpcs).toEqual([]);
 			return result;
 		};
-		const prohibited = { config: { model: "openai/gpt-5-mini" } };
-		const missing = await edit("/00000000-0000-4000-8000-0000000000ff", prohibited);
-		expect(missing.status).toBe(403);
-		expect(String(missing.body?.message)).toMatch(/Phaseo dashboard, or call the API with a management key\.$/);
-		// Another person's private draft, and another person's private preset, answer exactly the same.
-		setPreset(RESTRICTED, { draft_visibility: "private" });
-		expect(await edit(`/${PRESET}`, prohibited)).toEqual(missing);
-		setPreset(RESTRICTED, { visibility: "private", draft_visibility: "private" });
-		expect(await edit(`/${PRESET}`, prohibited)).toEqual(missing);
-		// The metadata edits apps may make still meet the privacy checks.
-		setPreset(RESTRICTED, { draft_visibility: "private" });
-		expect(await edit(`/${PRESET}`, { description: "Answers tickets" })).toMatchObject({ status: 403, body: { message: "Only the preset's creator can change its private draft" } });
-		setPreset(RESTRICTED, { visibility: "private", draft_visibility: "private" });
-		expect((await edit(`/${PRESET}`, { description: "Answers tickets" })).status).toBe(404);
-	});
-
-	it.each(Object.entries(OAUTH))("%s can't rename a preset the gateway finds by name", async (_caller, auth) => {
-		state.auth = auth;
-		setPreset(RESTRICTED, { slug: "", draft_slug: "" });
-		reset();
-		const renamed = await send({ method: "PATCH", path: `/${PRESET}`, body: { name: "@other" } });
-		expect(renamed.status).toBe(403);
-		expect(state.writes).toEqual([]);
-		const described = await send({ method: "PATCH", path: `/${PRESET}`, body: { description: "Still fine" } });
-		expect(described.status).toBe(200);
+		const presets: Array<[string, Record<string, unknown> | null]> = [
+			["visible", {}],
+			["another person's private draft", { draft_visibility: "private" }],
+			["another person's private preset", { visibility: "private", draft_visibility: "private" }],
+			["found by name (no slug)", { slug: "", draft_slug: "" }],
+			["missing", null],
+		];
+		for (const [method, body] of [["PATCH", { name: "@support-desk" }], ["PATCH", { description: "Answers tickets" }], ["PATCH", { config: { model: "openai/gpt-5-mini" } }], ["DELETE", undefined]] as const) {
+			const answers = [];
+			for (const [, overrides] of presets) {
+				setPreset(RESTRICTED, overrides ?? {});
+				answers.push(await attempt(method, overrides ? `/${PRESET}` : "/00000000-0000-4000-8000-0000000000ff", body));
+			}
+			expect(answers[0]!.status, `${method} ${JSON.stringify(body)}`).toBe(403);
+			expect(String(answers[0]!.body?.message)).toMatch(/Phaseo dashboard, or call the API with a management key\.$/);
+			for (const [index, [label]] of presets.entries()) expect(answers[index], `${label}: ${method} ${JSON.stringify(body)}`).toEqual(answers[0]);
+		}
 	});
 });

@@ -122,25 +122,16 @@ function withoutOthersPrivateDraft(row: PresetRow, userId: string | null | undef
 }
 
 // A preset's config decides what every request that names it runs: model, prompts, plugins, server tools,
-// caching and provider constraints. Apps that sign in with Phaseo, and CLI or desktop sign-ins (whose client
-// IDs are public), can read presets but not create, publish, relabel, fork or change one; people do that in
-// the dashboard, and automation with a management key. Spotting only the risky changes proved unreliable.
-const PRESET_APP_REFUSAL = "Apps that use Sign in with Phaseo can't create, publish or change what a preset runs. Make the change in the Phaseo dashboard, or call the API with a management key.";
+// caching and provider constraints, and its name, slug and publisher decide which preset a reference finds.
+// Preset writes are made in the dashboard (decided by the owner on 2026-11-07), or by automation with a
+// management key: apps that sign in with Phaseo, and CLI or desktop sign-ins (whose client IDs are public),
+// can read presets but not write them, metadata included. Every write handler refuses them before reading the
+// preset, so the answer is the same whether or not the preset exists or is private.
+const PRESET_APP_REFUSAL = "Apps that use Sign in with Phaseo can't create, change, publish or archive presets. Make the change in the Phaseo dashboard, or call the API with a management key.";
 
 /** A 403 for an app or a CLI or desktop sign-in, or null. Dashboard sessions and management keys pass. */
 function presetWriteError(auth: ManagementRouteAuth): Response | null {
 	return rejectThirdPartyOAuthSpendingChange(auth, PRESET_APP_REFUSAL);
-}
-
-/** The fields an app may still edit: the draft name and description, which don't change what the preset runs. */
-const PRESET_METADATA_FIELDS = new Set(["name", "description"]);
-function presetMetadataFieldsOnly(body: Record<string, unknown>): boolean {
-	const fields = body && typeof body === "object" && !Array.isArray(body) ? Object.keys(body) : [];
-	return fields.length > 0 && fields.every((field) => PRESET_METADATA_FIELDS.has(field));
-}
-/** A name is how the gateway finds a preset with no slug, so renaming one of those changes what it runs too. */
-function renamesSluglessPreset(body: Record<string, unknown>, existing: PresetRow): boolean {
-	return body.name !== undefined && String(existing.slug ?? "").trim() === "";
 }
 
 /** A 409 when a write hit the case-insensitive slug index, which keeps "@slug" references unambiguous. */
@@ -354,6 +345,7 @@ async function handleUpdatePreset(req: Request) {
 	if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
+	const appError = presetWriteError(auth.value); if (appError) return appError;
 
 	const identifier = parsePathId(new URL(req.url));
 	if (!identifier) return json({ error: "bad_request", message: "Preset id, slug, or name is required" }, 400, { "Cache-Control": "no-store" });
@@ -368,17 +360,12 @@ async function handleUpdatePreset(req: Request) {
 		throw error;
 	}
 
-	// Refused before the preset is read, so the answer doesn't depend on (or reveal) whether it exists or has a
-	// private draft. The metadata edits apps may make still go through the privacy checks below.
-	if (!presetMetadataFieldsOnly(body)) { const appError = presetWriteError(auth.value); if (appError) return appError; }
-
 	try {
 		const existing = await findPreset(auth.value.workspaceId, identifier, auth.value.userId);
 		if (!existing || !canSeePreset(existing, auth.value.userId)) return json({ error: "not_found", message: "Preset not found" }, 404, { "Cache-Control": "no-store" });
 		const creator = isPresetCreator(existing, auth.value.userId);
 		// A private draft can only be changed (or made visible) by its creator.
 		if (!creator && existing.draft_visibility === "private") return json({ error: "forbidden", message: "Only the preset's creator can change its private draft" }, 403, { "Cache-Control": "no-store" });
-		if (renamesSluglessPreset(body, existing)) { const appError = presetWriteError(auth.value); if (appError) return appError; }
 
 		const updatePayload: Record<string, unknown> = { updated_at: new Date().toISOString() };
 		if (typeof body.name === "string") {
@@ -789,6 +776,8 @@ async function handleUpdatePublisher(req: Request) {
 	const auth = await guardManagementAuth(req, { useKvCache: false }); if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.PRESETS_WRITE); if (scopeError) return scopeError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]); if (roleError) return roleError;
+	// The publisher handle is the namespace public preset references resolve in.
+	const appError = presetWriteError(auth.value); if (appError) return appError;
 	if (!auth.value.userId) return json({ error: "user_identity_required" }, 403, { "Cache-Control": "no-store" });
 	const body = await req.json<Record<string, unknown>>().catch(() => ({} as Record<string, unknown>)); const handle = String(body.handle ?? "").trim().toLowerCase();
 	if (!/^[a-z0-9][a-z0-9_-]{2,39}$/.test(handle)) return json({ error: "bad_request", message: "handle must be 3-40 lowercase letters, numbers, underscores, or hyphens" }, 400, { "Cache-Control": "no-store" });
