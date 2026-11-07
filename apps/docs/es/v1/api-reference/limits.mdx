@@ -56,7 +56,6 @@ Los propietarios y administradores gestionan los presupuestos de departamento co
 
 Cuando un departamento ha usado su presupuesto diario, semanal o mensual, las solicitudes con clave de API que cuentan para él devuelven `429` con `key_limit_exceeded` y el motivo `department_daily_cost_budget_reached`, `department_weekly_cost_budget_reached` o `department_monthly_cost_budget_reached`. Los campos `department_id` y `department_name` del cuerpo identifican el departamento, y `reset_at` y `Retry-After` indican cuándo se restablece su presupuesto.
 
-- Los presupuestos de departamento no bloquean las solicitudes hechas con un token de acceso OAuth, que no cuentan para ningún departamento.
 - Si la comprobación del presupuesto no está disponible durante un momento, las solicitudes se permiten, así que un departamento puede gastar por encima de su presupuesto durante poco tiempo.
 - Los propietarios y administradores reciben una notificación push en el móvil hacia el 80% y de nuevo al 100% de un presupuesto. Para estas alertas, los presupuestos se comprueban cada 15 minutos, así que las solicitudes pueden rechazarse antes de que llegue la alerta del 100%.
 
@@ -128,7 +127,7 @@ Reglas de límites de solicitudes para agentes, que resumen esta página:
 
 - Las cuotas del gateway devuelven `429` con el motivo `customer_requests_per_minute` (código `key_limit_exceeded`) o `free_requests_per_day` (código `phaseo_free_model_limit_exceeded`); espera los segundos de `Retry-After`. Si la aplicación de cuotas no está disponible, el gateway devuelve `503` con indicaciones para reintentar.
 - Los límites de claves y los presupuestos devuelven `429` con `key_limit_exceeded` y un `reset_at`. Sin `Retry-After`, el límite no se restablece solo: aumenta el límite o usa otra clave en lugar de reintentar.
-- Un presupuesto de departamento agotado devuelve `429` con `key_limit_exceeded`, el motivo `department_<interval>_cost_budget_reached`, `department_id`, `department_name` y `reset_at`; espera los segundos de `Retry-After` o aumenta el presupuesto. Los presupuestos de departamento no bloquean las solicitudes hechas con un token de acceso OAuth. Si la comprobación del presupuesto no está disponible, la solicitud se permite.
+- Un presupuesto de departamento agotado devuelve `429` con `key_limit_exceeded`, el motivo `department_<interval>_cost_budget_reached`, `department_id`, `department_name` y `reset_at`; espera los segundos de `Retry-After` o aumenta el presupuesto. Si la comprobación del presupuesto no está disponible, la solicitud se permite.
 - Las reglas de gasto que bloquean devuelven `429` con `spend_rule_blocked`; espera a `Retry-After` o pide a un propietario o administrador que levante el bloqueo. `x-phaseo-spend-warning` significa que puede llegar un bloqueo.
 - Las políticas de límite de velocidad del espacio de trabajo devuelven `429` con `rate_limit_exceeded`, `policy_id` y `limit_scope`. `x-ratelimit-remaining-requests` es aproximado.
 - `Retry-After` puede ser un número de segundos o una fecha HTTP; valídalo antes de programar un reintento. Nunca vuelvas a enviar un trabajo de vídeo o de lotes ambiguo; consulta su estado.
