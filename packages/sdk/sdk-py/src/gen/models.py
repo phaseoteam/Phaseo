@@ -122,7 +122,6 @@ class ApiKey(TypedDict):
 	department_id: NotRequired[Optional[str]]
 	disabled: bool
 	expires_at: Optional[str]
-	hash: str
 	id: str
 	include_byok_in_limit: bool
 	ip_allowlist: NotRequired[List[Dict[str, Any]]]
@@ -230,7 +229,6 @@ class ApiKeyWithValue(TypedDict):
 	department_id: NotRequired[Optional[str]]
 	disabled: bool
 	expires_at: Optional[str]
-	hash: str
 	id: str
 	include_byok_in_limit: bool
 	ip_allowlist: NotRequired[List[Dict[str, Any]]]

@@ -2,7 +2,8 @@ import { Hono } from "hono";
 import type { Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import { z } from "zod";
-import { requireUser } from "@/auth/requireUser";
+import { oauthClientWriteRefused } from "@/auth/oauthClientWrites";
+import { hasOAuthClientToken, requireUser } from "@/auth/requireUser";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
@@ -389,6 +390,12 @@ async function loadSettings(env: Env, userId: string, installationId: string | n
 	};
 }
 
+/** Whether a settings change only takes notifications away: the master switch or categories turned off. */
+function onlySwitchesOff(data: z.infer<typeof settingsSchema>): boolean {
+	return data.enabled !== true && data.quietHours === undefined && data.dailyCap === undefined
+		&& Object.values(data.categories ?? {}).every((value) => value !== true);
+}
+
 function queryInstallationId(c: AppContext): string | null {
 	const value = c.req.query("installationId")?.trim();
 	return value && INSTALLATION_ID.test(value) ? value : null;
@@ -426,6 +433,19 @@ async function sendTestPush(env: Env, expoPushToken: string, channelScheme: numb
 
 export const accountSettingsMobileNotificationsRouter = new Hono<{ Bindings: Env }>();
 
+// A device registered here receives private balance, payment and key alerts until it is unregistered, even
+// after the token that registered it is revoked. So a token issued to an app (a client_id, including the CLI
+// and desktop app) may only take notifications away: unregister the caller's own device, or switch
+// notifications off (checked in the settings handler). It can't register a device, change rules or send tests.
+// Scoped to these paths: the router is mounted at the settings root, where "*" would catch every settings route.
+accountSettingsMobileNotificationsRouter.use("/mobile-notifications/*", async (c, next) => {
+	const method = c.req.method;
+	if (method === "GET" || method === "HEAD" || !hasOAuthClientToken(c.req.raw)) return next();
+	if (method === "DELETE" && /\/mobile-notifications\/devices\/[^/]+$/.test(c.req.path)) return next();
+	if (method === "PUT" && /\/mobile-notifications$/.test(c.req.path)) return next();
+	return oauthClientWriteRefused(c);
+});
+
 accountSettingsMobileNotificationsRouter.get("/mobile-notifications", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return unauthorized(c);
@@ -439,6 +459,7 @@ accountSettingsMobileNotificationsRouter.put("/mobile-notifications", bodyLimit(
 	if (!user) return unauthorized(c);
 	const parsed = await parseBody(c, settingsSchema, "invalid_settings");
 	if ("response" in parsed) return parsed.response;
+	if (hasOAuthClientToken(c.req.raw) && !onlySwitchesOff(parsed.data)) return oauthClientWriteRefused(c);
 	const changes: Record<string, unknown> = {};
 	if (parsed.data.enabled !== undefined) changes.enabled = parsed.data.enabled;
 	if (parsed.data.quietHours !== undefined) {

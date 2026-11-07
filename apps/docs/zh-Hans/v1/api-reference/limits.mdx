@@ -45,7 +45,7 @@ API 密钥的每日、每周或每月请求数和支出限制，以及工作区�
 
 当限制不会自动重置时，例如终身预算或被软阻止的密钥，不会有 `Retry-After`。不要重试：请提高工作区预算、提高密钥的限制，或改用其他密钥。
 
-工作区所有者和管理员可以使用 `phaseo budgets create|update|delete` 管理预算，或在[设置 → 预算](https://phaseo.app/settings/budgets)中管理；该页面显示每个预算目前的支出、已用比例、本周期的预测以及重置时间。每日、每周和每月预算按 UTC 边界重置：午夜、周一 00:00 和每月 1 日。
+工作区所有者和管理员可以使用 管理密钥调用 `/v1/budgets` 管理预算，或在[设置 → 预算](https://phaseo.app/settings/budgets)中管理；该页面显示每个预算目前的支出、已用比例、本周期的预测以及重置时间。每日、每周和每月预算按 UTC 边界重置：午夜、周一 00:00 和每月 1 日。
 
 [支出提醒](../guides/spend-alerts.mdx)可以在达到这些限制之前发出警告。设为阻止的支出规则会返回 `429` 和 `spend_rule_blocked`。它是尽力而为的，会在支出超过其限制几分钟后才开始生效，因此需要精确上限时请使用密钥限制和预算。`x-phaseo-spend-warning` 标头表示随后可能会被阻止。
 
@@ -72,7 +72,7 @@ API 密钥的每日、每周或每月请求数和支出限制，以及工作区�
 | 部门（`department`） | 计入该部门的所有内容（见下文）。 |
 | 最终用户默认值（`end_user`） | 每个最终用户各自获得一份配额，通过请求的 `user` 字段或 `X-Phaseo-User-Id` 标头识别。没有最终用户 ID 的请求不受限制。 |
 
-**哪些内容计入部门。** 关联到某个部门的密钥只计入该部门。其他密钥会计入其创建者所属的每个部门，OAuth 请求会计入其用户所属的每个部门。设置了部门覆盖的成员只计入覆盖后的部门。如果要让这些密钥和 OAuth 请求只计入该成员的主部门，请在[设置 → 通知](https://phaseo.app/settings/notifications)中将部门归属设为主部门，或在 `PATCH /v1/notifications/settings` 中设置 `spend.department_attribution`，或使用 `phaseo notifications settings update --department-attribution primary`。部门预算和支出规则使用同一设置。
+**哪些内容计入部门。** 关联到某个部门的密钥只计入该部门。其他密钥会计入其创建者所属的每个部门，OAuth 请求会计入其用户所属的每个部门。设置了部门覆盖的成员只计入覆盖后的部门。如果要让这些密钥和 OAuth 请求只计入该成员的主部门，请在[设置 → 通知](https://phaseo.app/settings/notifications)中将部门归属设为主部门，或使用管理密钥在 `PATCH /v1/notifications/settings` 中设置 `spend.department_attribution`。部门预算和支出规则使用同一设置。
 
 当多个策略同时适用时，每个策略都会计数，最先耗尽的那个会拒绝请求。策略叠加在 [Gateway 限制](#gateway-limits)之上。策略变更约在一分钟内生效；在控制台或通过 SCIM 进行的部门成员变更最多可能需要约五分钟。
 

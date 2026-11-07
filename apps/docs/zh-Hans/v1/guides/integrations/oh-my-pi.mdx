@@ -26,10 +26,9 @@ phaseo omp --model openai/gpt-5.6-terra
 
 ## 手动配置 oh-my-pi
 
-创建一个密钥，在启动 oh-my-pi 的 shell 中导出它，并创建配置目录：
+在控制台的**设置 → API 密钥**中创建一个密钥，在启动 oh-my-pi 的 shell 中导出它，并创建配置目录：
 
 ```bash
-phaseo keys create --name "oh-my-pi Phaseo key" --json
 export PHASEO_OMP_API_KEY="<your Phaseo API key>"
 mkdir -p ~/.omp/agent
 ```

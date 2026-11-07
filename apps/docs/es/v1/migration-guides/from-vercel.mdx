@@ -68,7 +68,7 @@ AI SDK envía de forma predeterminada los modelos indicados como cadenas simples
 | `providerOptions.gateway.sort` (`cost`, `ttft`, `tps`) | `provider.sort` (`price`, `latency`, `throughput`). |
 | `providerOptions.gateway.zeroDataRetention` | `provider.require_zero_data_retention`, que limita el enrutamiento a proveedores con ZDR. |
 | `providerOptions.gateway.user`, `.tags` | `user` y [etiquetas](../guides/request-labels) `X-Phaseo-Metadata`. |
-| Credenciales `byok` por solicitud | Sin equivalente. Añade las claves de proveedor al espacio de trabajo con `phaseo byok create`. |
+| Credenciales `byok` por solicitud | Sin equivalente. Añade las claves de proveedor al espacio de trabajo con **Ajustes → BYOK**. |
 | Texto, streaming, herramientas, salida estructurada, embeddings, imágenes, transcripción, voz | Compatibles con el proveedor; las capacidades siguen dependiendo del modelo. |
 | Reordenación | `phaseo.rerankingModel(id)` en las líneas de AI SDK 6 y 7. |
 | Referencias a archivos gestionados, herramientas ejecutadas por el proveedor | No compatibles. Las partes no compatibles fallan con un error en lugar de descartarse. |

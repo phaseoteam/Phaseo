@@ -26,7 +26,7 @@ import { PresetMergeExplorer } from "/snippets/preset-merge.jsx";
 
 **डैशबोर्ड -> सेटिंग्स -> प्रीसेट** खोलें और `support-triage` जैसे slug के साथ प्रीसेट बनाएँ। सिर्फ़ वे डिफ़ॉल्ट जोड़ें जो हर कॉलर को साझा करने चाहिए।
 
-CLI से: `phaseo presets create --name @support-triage --model <model-id>`।
+स्क्रिप्ट से बनाने के लिए प्रबंधन कुंजी के साथ `POST /v1/presets` कॉल करें।
 
 </Step>
 
@@ -116,7 +116,7 @@ response = client.generate_response({
 
 `production` जैसे नामित लेबल को किसी संस्करण पर इंगित करें, और वापस लौटने के लिए उसे किसी पिछले संस्करण पर ले जाएँ। [संस्करण और लेबल](/hi/v1/guides/prompt-templates#versions-and-labels) देखें।
 
-CLI से: `phaseo presets versions create` और `phaseo presets labels set`, या `/v1/presets` API।
+स्क्रिप्ट से, प्रबंधन कुंजी के साथ `POST /v1/presets/{id}/versions` से प्रकाशित करें और `PUT /v1/presets/{id}/labels/{label}` से लेबल बदलें। CLI साइन-इन या Phaseo से साइन इन इस्तेमाल करने वाला ऐप presets पढ़ सकता है, लेकिन बदल नहीं सकता।
 
 ## मार्केटप्लेस प्रीसेट को फ़ोर्क करें
 

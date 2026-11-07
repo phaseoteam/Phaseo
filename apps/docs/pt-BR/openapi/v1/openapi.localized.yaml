@@ -18447,7 +18447,6 @@ components:
       type: object
       required:
         - id
-        - hash
         - workspace_id
         - name
         - label
@@ -18477,9 +18476,6 @@ components:
           type: string
           format: uuid
           example: 11111111-1111-4111-8111-111111111111
-        hash:
-          type: string
-          example: a3f5b7c9d8e1f23456789abcdeffedcba9876543210fedcba1234567890abcdef
         workspace_id:
           type: string
           format: uuid

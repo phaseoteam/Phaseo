@@ -68,7 +68,7 @@ curl -s "https://api.phaseo.app/v1/chat/completions" \
 | `providerOptions.gateway.sort` (`cost` و`ttft` و`tps`) | `provider.sort` (`price` و`latency` و`throughput`). |
 | `providerOptions.gateway.zeroDataRetention` | `provider.require_zero_data_retention`، الذي يقصر التوجيه على مزوّدي ZDR. |
 | `providerOptions.gateway.user` و`.tags` | `user` و[تسميات](../guides/request-labels) `X-Phaseo-Metadata`. |
-| بيانات اعتماد `byok` على مستوى الطلب | لا يوجد مقابل. أضف مفاتيح المزوّدين إلى مساحة العمل باستخدام `phaseo byok create`. |
+| بيانات اعتماد `byok` على مستوى الطلب | لا يوجد مقابل. أضف مفاتيح المزوّدين إلى مساحة العمل باستخدام **الإعدادات → BYOK**. |
 | النص والبث والأدوات والمخرجات المنظّمة والتضمينات والصور والنسخ الصوتي والكلام | يدعمها المزوّد؛ وتظل الإمكانات معتمدة على النموذج. |
 | إعادة الترتيب | `phaseo.rerankingModel(id)` في إصداري AI SDK 6 و7. |
 | مراجع الملفات المُدارة والأدوات التي ينفذها المزوّد | غير مدعومة. تفشل الأجزاء غير المدعومة بخطأ بدلًا من إسقاطها. |

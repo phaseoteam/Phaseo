@@ -26,7 +26,7 @@ Las reglas son:
 
 Abre **Panel -> Ajustes -> Presets** y crea un preajuste con un slug como `support-triage`. Añade solo los valores predeterminados que deban compartir todos los que hacen llamadas.
 
-Desde la CLI: `phaseo presets create --name @support-triage --model <model-id>`.
+Para crearlo desde un script, llama a `POST /v1/presets` con una clave de administración.
 
 </Step>
 
@@ -116,7 +116,7 @@ Elige el formato de las etiquetas de versión:
 
 Apunta una etiqueta con nombre, como `production`, a una versión, y devuélvela a una versión anterior para revertir. Consulta [Versiones y etiquetas](/es/v1/guides/prompt-templates#versions-and-labels).
 
-Desde la CLI: `phaseo presets versions create` y `phaseo presets labels set`, o la API `/v1/presets`.
+Desde un script, publica con `POST /v1/presets/{id}/versions` y mueve etiquetas con `PUT /v1/presets/{id}/labels/{label}`, usando una clave de administración. Una sesión de la CLI o una app que usa Iniciar sesión con Phaseo puede leer los preajustes, pero no cambiarlos.
 
 ## Bifurca un preajuste del marketplace
 

@@ -144,7 +144,7 @@ Uma rota dinâmica é um fluxo de regras vinculado a uma ou mais chaves de API d
 
 As condições têm saídas verdadeira e falsa; os nós de taxa e de orçamento têm saídas dentro e excedido. As divisões por porcentagem são determinísticas por sessão ou chave de cache de prompt, então uma conversa em cache não muda de ramo.
 
-Salvar cria uma versão de rascunho imutável. Implantar copia essa versão para o Gateway e limpa os caches de política das chaves dela; as versões anteriores continuam disponíveis para reversão. As recomendações sobre a saúde dos provedores aparecem em **Insights**. Pela CLI: `phaseo routing dynamic-routes create`, `set-keys` e `deploy`, ou a API `/v1/routing/dynamic-routes`.
+Salvar cria uma versão de rascunho imutável. Implantar copia essa versão para o Gateway e limpa os caches de política das chaves dela; as versões anteriores continuam disponíveis para reversão. As recomendações sobre a saúde dos provedores aparecem em **Insights**. Por um script, use a API `/v1/routing/dynamic-routes` com uma chave de gerenciamento.
 
 O metadata personalizado vai no corpo da solicitação nos endpoints de texto compatíveis com OpenAI:
 
@@ -219,4 +219,4 @@ Com <Tooltip tip="Traga sua própria chave: o Phaseo roteia a solicitação com 
 | Regras do provedor | As cotas, a política de dados, o acesso aos modelos e os limites de conta do seu provedor continuam valendo. |
 | Armazenamento | As chaves são criptografadas com AES-256-GCM e vinculadas ao espaço de trabalho e ao provedor. |
 
-Restrinja cada chave aos modelos e às chaves de API que precisam dela. Para impedir que uma solicitação BYOK que falhou tente de novo com créditos do Phaseo, desative a alternativa em **Painel -> Configurações -> BYOK** ou defina `byok_fallback_enabled` em `PATCH /v1/settings` (`phaseo settings update --body-json '{"byok_fallback_enabled":false}'`). Adicione chaves com `phaseo byok create --provider <id> --name <name> --key-stdin`.
+Restrinja cada chave aos modelos e às chaves de API que precisam dela. Para impedir que uma solicitação BYOK que falhou tente de novo com créditos do Phaseo, desative a alternativa em **Painel -> Configurações -> BYOK** ou defina `byok_fallback_enabled` em `PATCH /v1/settings` com uma chave de gerenciamento. Adicione chaves no mesmo lugar ou com `POST /v1/byok` e uma chave de gerenciamento.

@@ -30,7 +30,7 @@ icon: "bell-ring"
 </Step>
 </Steps>
 
-CLI से, `phaseo notifications destinations create` चलाएँ, उसे `phaseo notifications destinations test <id>` से जाँचें, फिर `phaseo notifications routes set <event-kind> --destination-ids <id>` से चुनें कि उसे कौन-से अलर्ट मिलें।
+स्क्रिप्ट से, प्रबंधन कुंजी के साथ `POST /v1/notifications/destinations` से गंतव्य बनाएँ, `POST /v1/notifications/destinations/{id}/test` से जाँचें, फिर `PUT /v1/notifications/routes/{eventKind}` से चुनें कि उसे कौन-से अलर्ट मिलें।
 
 मेंशन कम इस्तेमाल करें: बहुत ज़्यादा आने वाले अलर्ट किसी बड़े ग्रुप को पेज करने के बजाय ऐसे चैनल पर भेजें जिस पर नज़र रखी जाती हो।
 

@@ -29,6 +29,25 @@ CREATE INDEX preset_versions_created_by_idx ON public.preset_versions USING btre
 
 CREATE INDEX preset_versions_preset_created_idx ON public.preset_versions USING btree (preset_id, version_number DESC);
 
+CREATE POLICY "preset_versions_no_oauth_client_insert" ON "public"."preset_versions"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "preset_versions_no_oauth_client_update" ON "public"."preset_versions"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "preset_versions_no_oauth_client_delete" ON "public"."preset_versions"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "service_role_full_access" ON "public"."preset_versions"
   FOR ALL
   TO "service_role"

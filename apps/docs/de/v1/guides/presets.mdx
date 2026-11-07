@@ -26,7 +26,7 @@ Es gelten diese Regeln:
 
 Öffne **Dashboard -> Einstellungen -> Voreinstellungen** und erstelle eine Voreinstellung mit einem Slug wie `support-triage`. Füge nur die Standards hinzu, die alle Aufrufer teilen sollen.
 
-Über die CLI: `phaseo presets create --name @support-triage --model <model-id>`.
+Für Skripte rufst du `POST /v1/presets` mit einem Management-Schlüssel auf.
 
 </Step>
 
@@ -116,7 +116,7 @@ Lege fest, wie Versionsbezeichnungen aussehen:
 
 Richte ein benanntes Label wie `production` auf eine Version, und schiebe es auf eine frühere Version zurück, um zurückzurollen. Siehe [Versionen und Labels](/de/v1/guides/prompt-templates#versions-and-labels).
 
-Über die CLI: `phaseo presets versions create` und `phaseo presets labels set`, oder die API `/v1/presets`.
+In Skripten veröffentlichst du mit `POST /v1/presets/{id}/versions` und verschiebst Labels mit `PUT /v1/presets/{id}/labels/{label}`, jeweils mit einem Management-Schlüssel. Eine CLI-Anmeldung oder eine App, die Mit Phaseo anmelden nutzt, kann Voreinstellungen lesen, aber nicht ändern.
 
 ## Eine Marketplace-Voreinstellung forken
 

@@ -26,10 +26,9 @@ Der Runner erstellt einen eigenen Schlüssel, schreibt `models.yml` unter ein te
 
 ## oh-my-pi manuell konfigurieren
 
-Erstelle einen Schlüssel, exportiere ihn in der Shell, die oh-my-pi startet, und lege das Konfigurationsverzeichnis an:
+Erstelle im Dashboard unter **Einstellungen → API-Schlüssel** einen Schlüssel, exportiere ihn in der Shell, die oh-my-pi startet, und lege das Konfigurationsverzeichnis an:
 
 ```bash
-phaseo keys create --name "oh-my-pi Phaseo key" --json
 export PHASEO_OMP_API_KEY="<your Phaseo API key>"
 mkdir -p ~/.omp/agent
 ```

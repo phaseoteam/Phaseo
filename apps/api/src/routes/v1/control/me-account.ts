@@ -9,11 +9,17 @@ import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { authenticateManagement } from "@/pipeline/before/auth";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { json, withRuntime } from "@/routes/utils";
-import { internalServerError, isResponse, requireJsonBody } from "./route-helpers";
+import { internalServerError, isResponse, rejectThirdPartyOAuthSpendingChange, requireJsonBody } from "./route-helpers";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 const PHASEO_CLI_CLIENT_IDS = new Set(["phaseo_cli", "aistats_cli"]);
 const PROFILE_COLUMNS = "display_name,default_workspace_id,obfuscate_info";
+const DEFAULT_WORKSPACE_APP_REFUSAL = "Your default workspace can't be changed with an app's sign-in. Change it in the Phaseo dashboard.";
+
+/** A Postgres array literal, so a text[] column can be matched exactly. */
+function textArrayLiteral(values: string[]): string {
+	return `{${values.map((value) => `"${value.replace(/["\\]/g, "\\$&")}"`).join(",")}}`;
+}
 
 async function oauthUser(req: Request, scope: string) {
 	const auth = await authenticateManagement(req, { useKvCache: false });
@@ -66,6 +72,10 @@ async function handleUpdateProfile(req: Request) {
 		update.obfuscate_info = body.obfuscate_info;
 	}
 	if (body.default_workspace_id !== undefined) {
+		// The default workspace is where browser chat and the dashboard go when no workspace is selected, so a
+		// token issued to an app (the CLI and desktop app too) can't move it. Dashboard sessions can.
+		const appError = rejectThirdPartyOAuthSpendingChange(access.auth, DEFAULT_WORKSPACE_APP_REFUSAL);
+		if (appError) return appError;
 		const workspaceId = body.default_workspace_id === null ? null : typeof body.default_workspace_id === "string" ? body.default_workspace_id.trim() : "";
 		if (workspaceId === "") return json({ error: "bad_request", message: "default_workspace_id must be a workspace id or null" }, 400, NO_STORE);
 		if (workspaceId) {
@@ -154,13 +164,20 @@ async function handleReduceAuthorizedAppScopes(req: Request) {
 			.eq("id", id).eq("user_id", access.auth.userId).is("revoked_at", null).maybeSingle();
 		if (existing.error) throw new Error(existing.error.message || "Failed to read authorization");
 		if (!existing.data) return json({ error: "not_found", message: "Authorized app not found" }, 404, NO_STORE);
-		const current = new Set(Array.isArray(existing.data.scopes) ? existing.data.scopes.map(String) : []);
+		const stored: string[] = Array.isArray(existing.data.scopes) ? existing.data.scopes.map(String) : [];
+		const current = new Set(stored);
 		if (scopes.some((scope) => !current.has(scope))) {
 			return json({ error: "scopes_can_only_be_reduced", message: "Scopes can only be removed here; add scopes by authorizing the app again in the browser" }, 400, NO_STORE);
 		}
+		// Only while the stored scopes are still the ones checked above, so a reduction checked against an old
+		// read can't put back a scope removed in the meantime.
 		const updated = await client.from("oauth_authorizations").update({ scopes })
-			.eq("id", existing.data.id).eq("user_id", access.auth.userId).is("revoked_at", null);
+			.eq("id", existing.data.id).eq("user_id", access.auth.userId).is("revoked_at", null)
+			.eq("scopes", textArrayLiteral(stored)).select("id");
 		if (updated.error) throw new Error(updated.error.message || "Failed to update authorization");
+		if (!updated.data?.length) {
+			return json({ error: "scopes_changed", message: "This app's access changed since it was read. Read it again and retry." }, 409, NO_STORE);
+		}
 		await recordWorkspaceAuditEvent(client, {
 			workspaceId: String(existing.data.workspace_id),
 			actorUserId: access.auth.userId,

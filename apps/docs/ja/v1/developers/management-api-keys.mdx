@@ -6,11 +6,7 @@ icon: "key-round"
 
 管理キーを作成すると、自社サーバーから Phaseo の管理 API（クレジット、アクティビティ、ワークスペース、キー、プリセット、設定、ガードレール）を呼び出せます。管理キーで推論リクエストを送ることはできません。
 
-```bash
-phaseo management-keys create --name <name> --template read-only --json
-```
-
-ダッシュボードの **設定 → 管理用キー** でも作成できます。シークレットは一度しか表示されないため、シークレットマネージャーに保存してください。送信はサーバー側のコードからのみ行い、送信先は Gateway と同じベース URL（`https://api.phaseo.app/v1`）です。
+ダッシュボードの **設定 → 管理用キー** で作成します。シークレットは一度しか表示されないため、シークレットマネージャーに保存してください。送信はサーバー側のコードからのみ行い、送信先は Gateway と同じベース URL（`https://api.phaseo.app/v1`）です。
 
 ```http
 Authorization: Bearer phaseo_v1_mk_<kid>_<secret>

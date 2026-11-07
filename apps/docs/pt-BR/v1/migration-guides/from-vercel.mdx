@@ -68,7 +68,7 @@ Por padrão, o AI SDK envia modelos como string simples (`model: "openai/gpt-4.1
 | `providerOptions.gateway.sort` (`cost`, `ttft`, `tps`) | `provider.sort` (`price`, `latency`, `throughput`). |
 | `providerOptions.gateway.zeroDataRetention` | `provider.require_zero_data_retention`, que limita o roteamento a provedores com ZDR. |
 | `providerOptions.gateway.user`, `.tags` | `user` e [rótulos](../guides/request-labels) `X-Phaseo-Metadata`. |
-| Credenciais `byok` por solicitação | Sem equivalente. Adicione chaves de provedores ao espaço de trabalho com `phaseo byok create`. |
+| Credenciais `byok` por solicitação | Sem equivalente. Adicione chaves de provedores ao espaço de trabalho com **Configurações → BYOK**. |
 | Texto, streaming, ferramentas, saída estruturada, embeddings, imagens, transcrição, fala | Com suporte no provedor; os recursos ainda dependem do modelo. |
 | Reranking | `phaseo.rerankingModel(id)` nas linhas do AI SDK 6 e 7. |
 | Referências a arquivos gerenciados, ferramentas executadas pelo provedor | Sem suporte. Partes sem suporte falham com um erro em vez de serem descartadas. |

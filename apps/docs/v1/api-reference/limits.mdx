@@ -44,7 +44,7 @@ An API key's daily, weekly or monthly request and spend limits, and the workspac
 
 `Retry-After` is missing when the limit doesn't reset by itself, such as a lifetime budget or a soft-blocked key. Don't retry: raise the workspace budget, raise the key's limit, or use a different key.
 
-Workspace owners and admins manage budgets with `phaseo budgets create|update|delete` or under [Settings → Budgets](https://phaseo.app/settings/budgets), which shows each budget's spend so far, the share used, a projection for the period and when it resets. Daily, weekly and monthly budgets reset on UTC boundaries: midnight, Monday 00:00 and the 1st of the month.
+Workspace owners and admins manage budgets with a management key through `/v1/budgets` or under [Settings → Budgets](https://phaseo.app/settings/budgets), which shows each budget's spend so far, the share used, a projection for the period and when it resets. Daily, weekly and monthly budgets reset on UTC boundaries: midnight, Monday 00:00 and the 1st of the month.
 
 [Spend alerts](../guides/spend-alerts.mdx) can warn before these limits are reached. A spend rule set to block returns `429` with `spend_rule_blocked`. It is best effort and starts a few minutes after spend passes its limit, so use key limits and budgets for exact caps. An `x-phaseo-spend-warning` header means a block may follow.
 
@@ -69,7 +69,7 @@ Workspace admins can create named policies that set `requests_per_minute`, `toke
 | Department (`department`) | Everything that counts toward the department (see below). |
 | End-user default (`end_user`) | Each end user gets their own allowance, identified by the request's `user` field or `X-Phaseo-User-Id` header. Requests without an end-user ID aren't limited. |
 
-**What counts toward a department.** A key linked to a department counts toward that department only. Any other key counts toward every department its creator belongs to, and OAuth requests count toward every department of their user. A member with a department override counts toward the override department only. To count those keys and OAuth requests toward the person's primary department only, set department attribution to primary under [Settings → Notifications](https://phaseo.app/settings/notifications), with `spend.department_attribution` in `PATCH /v1/notifications/settings`, or with `phaseo notifications settings update --department-attribution primary`. Department budgets and spend rules use the same setting.
+**What counts toward a department.** A key linked to a department counts toward that department only. Any other key counts toward every department its creator belongs to, and OAuth requests count toward every department of their user. A member with a department override counts toward the override department only. To count those keys and OAuth requests toward the person's primary department only, set department attribution to primary under [Settings → Notifications](https://phaseo.app/settings/notifications), or with `spend.department_attribution` in `PATCH /v1/notifications/settings` and a management key. Department budgets and spend rules use the same setting.
 
 When several policies apply, each is counted and the first one exhausted rejects the request. Policies apply on top of the [gateway limits](#gateway-limits). Policy changes take effect within about a minute; department membership changes made in the dashboard or through SCIM can take up to about five minutes.
 

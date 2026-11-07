@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { PUBLIC_NATIVE_CLIENT_REFUSAL } from "./route-helpers";
 
 // Observability destinations, the I/O logging policy, privacy and retention settings, provider keys (BYOK),
 // private models, request classifiers, data contribution, webhook endpoints and notification destinations
@@ -77,7 +78,7 @@ const ID = "00000000-0000-4000-8000-000000000001";
 const destination = { type: "webhook", name: "Exfil", config: { url: "https://collector.example.com/traces" } };
 const credential = { provider_id: "openai", name: "Mine", value: "sk-attacker-key" };
 
-type Module = "observability" | "provider-credentials" | "webhook-endpoints" | "settings" | "notifications" | "private-models" | "classifiers" | "data-contribution";
+type Module = "observability" | "provider-credentials" | "webhook-endpoints" | "settings" | "notifications" | "private-models" | "classifiers" | "data-contribution" | "routing";
 type Call = { label: string; module: Module; method: string; path: string; body?: unknown };
 const notificationDestination = { type: "custom_webhook", name: "Exfil", target: "https://collector.example.com/events" };
 
@@ -120,21 +121,16 @@ const WRITES: Call[] = [
 	{ label: "delete a request classifier", module: "classifiers", method: "DELETE", path: `/${ID}` },
 	{ label: "turn on data contribution", module: "data-contribution", method: "PATCH", path: "/consent", body: { enabled: true } },
 	{ label: "add a data contribution classifier", module: "data-contribution", method: "POST", path: "/classifiers", body: { name: "Mine" } },
+	{ label: "create a dynamic route", module: "routing", method: "POST", path: "/dynamic-routes", body: { name: "Mine", slug: "mine", config: {"primary":{"model":"openai/gpt-5"}} } },
+	{ label: "change a dynamic route's config", module: "routing", method: "PATCH", path: `/dynamic-routes/${ID}`, body: { config: { primary: { model: "@other-preset" } } } },
+	{ label: "pause or activate a dynamic route", module: "routing", method: "PATCH", path: `/dynamic-routes/${ID}`, body: { status: "active" } },
+	{ label: "deploy a dynamic route version", module: "routing", method: "POST", path: `/dynamic-routes/${ID}/versions/1/deploy` },
+	{ label: "attach keys to a dynamic route", module: "routing", method: "PUT", path: `/dynamic-routes/${ID}/keys`, body: { key_ids: [ID] } },
+	{ label: "detach keys from a dynamic route", module: "routing", method: "PUT", path: `/dynamic-routes/${ID}/keys`, body: { key_ids: [] } },
+	{ label: "delete a dynamic route", module: "routing", method: "DELETE", path: `/dynamic-routes/${ID}` },
 ];
 
-const READS: Call[] = [
-	{ label: "list observability destinations", module: "observability", method: "GET", path: "/destinations" },
-	{ label: "read the I/O logging policy", module: "observability", method: "GET", path: "/logging-policy" },
-	{ label: "list provider keys", module: "provider-credentials", method: "GET", path: "/" },
-	{ label: "list webhook endpoints", module: "webhook-endpoints", method: "GET", path: "/" },
-	{ label: "read settings", module: "settings", method: "GET", path: "/" },
-	{ label: "change only the routing mode", module: "settings", method: "PATCH", path: "/", body: { routing_mode: "price" } },
-	{ label: "tighten privacy (zero data retention on, I/O logging off)", module: "settings", method: "PATCH", path: "/", body: { privacyZdrOnly: true, io_logging_enabled: false, privacy_enable_paid_may_train: false } },
-	{ label: "list notification destinations", module: "notifications", method: "GET", path: "/destinations" },
-	{ label: "list notification routes", module: "notifications", method: "GET", path: "/routes" },
-	{ label: "list private models", module: "private-models", method: "GET", path: "/" },
-	{ label: "list request classifiers", module: "classifiers", method: "GET", path: "/" },
-];
+// Reads, and the same writes by management keys and dashboard sessions, are in third-party-oauth-data-egress.allowed.test.ts.
 
 async function call({ module, method, path, body }: Call) {
 	const loaders: Record<Module, () => Promise<{ request: (url: string, init: RequestInit, env: object) => Response | Promise<Response> }>> = {
@@ -146,6 +142,7 @@ async function call({ module, method, path, body }: Call) {
 		"private-models": async () => (await import("./private-models")).privateModelsRoutes,
 		"classifiers": async () => (await import("./classifiers")).classifiersRoutes,
 		"data-contribution": async () => (await import("./data-contribution")).dataContributionRoutes,
+		"routing": async () => (await import("./routing")).routingRoutes,
 	};
 	const routes = await loaders[module]();
 	const response = await routes.request(`https://example.com${path}`, {
@@ -171,21 +168,12 @@ describe("apps that sign in with Phaseo cannot redirect workspace data", () => {
 		expect(state.writes.filter((write) => !write.startsWith("data_contribution_consent_events."))).toEqual([]);
 	});
 
-	it.each(READS)("a third-party app can still $label", async (request) => {
-		state.auth = oauthCaller("acme_reporting_app");
-		const { text } = await call(request);
-		expect(text).not.toContain("Apps that use Sign in with Phaseo can't");
-	});
-
-	it.each(WRITES)("Phaseo's own CLI is not refused when it tries to $label", async (request) => {
-		state.auth = oauthCaller("phaseo_cli");
-		const { text } = await call(request);
-		expect(text).not.toContain("Apps that use Sign in with Phaseo can't");
-	});
-
-	it.each(WRITES)("a management key is not refused when it tries to $label", async (request) => {
-		state.auth = { ok: true, value: { ...oauthCaller("").value, authMethod: "api_key", oauthClientId: null, apiKeyRef: "kid_mgmt" } };
-		const { text } = await call(request);
-		expect(text).not.toContain("Apps that use Sign in with Phaseo can't");
+	it.each(WRITES.flatMap((request) => ["phaseo_cli", "phaseo_desktop"].map((clientId) => ({ ...request, clientId }))))("a $clientId sign-in cannot $label either", async (request) => {
+		// Their client IDs are public: anyone can start their sign-in, so they get no exemption.
+		state.auth = oauthCaller(request.clientId);
+		const { status, text } = await call(request);
+		expect(status).toBe(403);
+		expect(JSON.parse(text)).toMatchObject({ error: "forbidden", message: PUBLIC_NATIVE_CLIENT_REFUSAL });
+		expect(state.writes.filter((write) => !write.startsWith("data_contribution_consent_events."))).toEqual([]);
 	});
 });

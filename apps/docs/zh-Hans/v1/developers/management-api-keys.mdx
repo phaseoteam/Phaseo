@@ -6,11 +6,7 @@ icon: "key-round"
 
 创建管理密钥后，你就可以从自己的服务器调用 Phaseo 的管理 API：额度、活动、工作区、密钥、预设、设置和护栏。管理密钥不能发送推理请求。
 
-```bash
-phaseo management-keys create --name <name> --template read-only --json
-```
-
-你也可以在控制台的**设置 → 管理密钥**中创建。密钥只显示一次，请将其保存到你的密钥管理器中。只能从服务器端代码发送它，基础 URL 与 Gateway 相同（`https://api.phaseo.app/v1`）：
+请在控制台的**设置 → 管理密钥**中创建。密钥只显示一次，请将其保存到你的密钥管理器中。只能从服务器端代码发送它，基础 URL 与 Gateway 相同（`https://api.phaseo.app/v1`）：
 
 ```http
 Authorization: Bearer phaseo_v1_mk_<kid>_<secret>

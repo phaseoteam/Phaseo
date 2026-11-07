@@ -58,6 +58,25 @@ CREATE TRIGGER workspaces_prevent_reserved_publisher_handle
   FOR EACH ROW
   EXECUTE FUNCTION public.prevent_reserved_workspace_publisher_handle();
 
+CREATE POLICY "workspaces_no_oauth_client_insert" ON "public"."workspaces"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "workspaces_no_oauth_client_update" ON "public"."workspaces"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "workspaces_no_oauth_client_delete" ON "public"."workspaces"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspaces"
   AS RESTRICTIVE
   FOR ALL

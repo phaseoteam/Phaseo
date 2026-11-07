@@ -26,7 +26,7 @@ import { PresetMergeExplorer } from "/snippets/preset-merge.jsx";
 
 **ダッシュボード -> 設定 -> プリセット** を開き、`support-triage` のようなスラッグでプリセットを作成します。すべての呼び出し元で共有する既定値だけを追加してください。
 
-CLI からは `phaseo presets create --name @support-triage --model <model-id>` を実行します。
+スクリプトから作成するには、管理キーを使って `POST /v1/presets` を呼び出します。
 
 </Step>
 
@@ -116,7 +116,7 @@ response = client.generate_response({
 
 `production` のような名前付きラベルをバージョンに割り当て、ロールバックするときは以前のバージョンに戻します。[バージョンとラベル](/ja/v1/guides/prompt-templates#versions-and-labels)を参照してください。
 
-CLI からは `phaseo presets versions create` と `phaseo presets labels set`、または `/v1/presets` API を使います。
+スクリプトからは、管理キーを使って `POST /v1/presets/{id}/versions` で公開し、`PUT /v1/presets/{id}/labels/{label}` でラベルを移動します。CLI のサインインや Phaseo でサインインを使うアプリは、プリセットを読み取れますが変更はできません。
 
 ## マーケットプレイスのプリセットをフォークする
 

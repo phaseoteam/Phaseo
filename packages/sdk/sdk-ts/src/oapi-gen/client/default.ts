@@ -1350,7 +1350,6 @@ export async function createApiKey(
     department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
-    hash: string;
     id: string;
     include_byok_in_limit: boolean;
     ip_allowlist?: {
@@ -1420,7 +1419,6 @@ export async function createApiKey(
       department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
-      hash: string;
       id: string;
       include_byok_in_limit: boolean;
       ip_allowlist?: {
@@ -10429,7 +10427,6 @@ export async function getApiKey(
     department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
-    hash: string;
     id: string;
     include_byok_in_limit: boolean;
     ip_allowlist?: {
@@ -10499,7 +10496,6 @@ export async function getApiKey(
       department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
-      hash: string;
       id: string;
       include_byok_in_limit: boolean;
       ip_allowlist?: {
@@ -10868,7 +10864,6 @@ export async function getCurrentApiKey(
     department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
-    hash: string;
     id: string;
     include_byok_in_limit: boolean;
     ip_allowlist?: {
@@ -10936,7 +10931,6 @@ export async function getCurrentApiKey(
       department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
-      hash: string;
       id: string;
       include_byok_in_limit: boolean;
       ip_allowlist?: {
@@ -14422,7 +14416,6 @@ export async function listApiKeys(
     department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
-    hash: string;
     id: string;
     include_byok_in_limit: boolean;
     ip_allowlist?: {
@@ -14491,7 +14484,6 @@ export async function listApiKeys(
       department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
-      hash: string;
       id: string;
       include_byok_in_limit: boolean;
       ip_allowlist?: {
@@ -25178,7 +25170,6 @@ export async function rotateApiKey(
     department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
-    hash: string;
     id: string;
     include_byok_in_limit: boolean;
     ip_allowlist?: {
@@ -25250,7 +25241,6 @@ export async function rotateApiKey(
       department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
-      hash: string;
       id: string;
       include_byok_in_limit: boolean;
       ip_allowlist?: {
@@ -26119,7 +26109,6 @@ export async function updateApiKey(
     department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
-    hash: string;
     id: string;
     include_byok_in_limit: boolean;
     ip_allowlist?: {
@@ -26189,7 +26178,6 @@ export async function updateApiKey(
       department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
-      hash: string;
       id: string;
       include_byok_in_limit: boolean;
       ip_allowlist?: {

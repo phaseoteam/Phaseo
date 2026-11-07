@@ -1,5 +1,6 @@
 import { Hono } from "hono";
-import { requireUser } from "@/auth/requireUser";
+import { oauthClientWriteRefused } from "@/auth/oauthClientWrites";
+import { hasOAuthClientToken, requireUser } from "@/auth/requireUser";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
@@ -124,7 +125,9 @@ accountAuthRouter.get("/workspace", async (c) => {
 	].filter(Boolean));
 	const defaultWorkspaceId = String(userResult.data?.default_workspace_id ?? "").trim();
 	const workspaceId = (requested && accessible.has(requested) ? requested : null) ?? (defaultWorkspaceId && accessible.has(defaultWorkspaceId) ? defaultWorkspaceId : null) ?? [...accessible].sort()[0] ?? null;
-	if (workspaceId && workspaceId !== defaultWorkspaceId && c.req.query("persist") === "1") {
+	// Persisting moves the default workspace, which browser chat uses with none selected, so a token issued to
+	// an app (the CLI and desktop app too) only resolves. The person's own sessions still persist.
+	if (workspaceId && workspaceId !== defaultWorkspaceId && c.req.query("persist") === "1" && !hasOAuthClientToken(c.req.raw)) {
 		const update = await client.from("users").update({ default_workspace_id: workspaceId }).eq("user_id", user.id);
 		if (update.error) return c.json({ error: "workspace_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
@@ -251,10 +254,17 @@ accountAuthRouter.post("/oauth-consent/validate", async (c) => {
 	return c.json({ valid: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
+const ONBOARDING_SELECTION_FIELDS = ["workspaceId", "selectedKeyId", "createdKeyId"] as const;
+
 accountAuthRouter.put("/onboarding", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const body: Record<string, unknown> = await c.req.json<Record<string, unknown>>().catch(() => ({}));
+	// The saved workspace and key pick where onboarding in the dashboard creates and uses a key, so an app's
+	// token may record progress but not choose them.
+	if (ONBOARDING_SELECTION_FIELDS.some((field) => Object.prototype.hasOwnProperty.call(body, field)) && hasOAuthClientToken(c.req.raw)) {
+		return oauthClientWriteRefused(c);
+	}
 	const client = getDataClient(c.env);
 	let existing = await client.from("users").select("onboarding_state,declared_country_code").eq("user_id", user.id).maybeSingle();
 	let countryStorageAvailable = true;
@@ -287,6 +297,17 @@ accountAuthRouter.put("/onboarding", async (c) => {
 		update.country_declared_at = new Date().toISOString();
 	}
 	if (body.status === "completed" || body.status === "skipped") update.onboarding_completed_at = new Date().toISOString();
+	// The whole saved state is written back. For an app's token, only over the state it read: otherwise its
+	// progress update could put back a workspace or key the person changed in the dashboard meanwhile. (The
+	// dashboard's own overlapping saves of the same page keep last-write-wins.)
+	if (hasOAuthClientToken(c.req.raw)) {
+		const stored = existing.data?.onboarding_state ?? null;
+		const guarded = client.from("users").update(update).eq("user_id", user.id);
+		const result = await (stored === null ? guarded.is("onboarding_state", null) : guarded.eq("onboarding_state", JSON.stringify(stored))).select("user_id");
+		if (result.error) return c.json({ error: "onboarding_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		if (!result.data?.length) return c.json({ error: "onboarding_changed", message: "Onboarding changed since it was read. Read it again and retry." }, 409, PRIVATE_NO_STORE_HEADERS);
+		return c.json({ state: next }, 200, PRIVATE_NO_STORE_HEADERS);
+	}
 	const result = await client.from("users").update(update).eq("user_id", user.id);
 	if (result.error) return c.json({ error: "onboarding_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	return c.json({ state: next }, 200, PRIVATE_NO_STORE_HEADERS);

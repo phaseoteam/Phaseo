@@ -56,21 +56,19 @@ phaseo whoami
 phaseo whoami --json
 ```
 
-## Create keys and manage your workspace
+## Manage your workspace
 
 ```bash
-phaseo keys create --name "Local CLI Key"
-phaseo keys create --name "Agent Sandbox Key" --json
+phaseo keys list
 phaseo keys current
 
 phaseo workspaces list
 phaseo workspaces members <workspace-id-or-slug>
 
 phaseo guardrails list
-phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true}'
 ```
 
-Use `--json` when an agent or script needs the new key; it's shown only once. The CLI covers the dashboard's management tasks, including billing, budgets, BYOK, routing, and identity. See [Manage Phaseo from an agent](../../developers/manage-from-an-agent) for the command for each task.
+Use `--json` when an agent or script reads the output. The CLI covers everyday account tasks; changes to key limits, budgets, BYOK, routing rules, presets and identity are made in the dashboard or with a management key. See [Manage Phaseo from an agent](../../developers/manage-from-an-agent) for which tasks the CLI covers.
 
 ## Connect a coding agent
 

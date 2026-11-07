@@ -470,8 +470,16 @@ async function findVisiblePreset(c: Context<{ Bindings: Env }>, userId: string, 
 	return { client, preset } as const;
 }
 function canWritePreset(context: AccountWorkspaceContext, userId: string, preset: { created_by?: string | null; visibility?: string | null }) { return preset.created_by === userId || (preset.visibility !== "private" && ["owner", "admin"].includes(context.role.toLowerCase())); }
+/** A 409 when a write hit the case-insensitive slug index the gateway's "@slug" lookup relies on. */
+function slugIndexConflict(c: { json: (body: unknown, status: 409, headers: typeof PRIVATE_NO_STORE_HEADERS) => Response }, error: { message?: string | null } | null, slug: string): Response | null {
+	if (!String(error?.message ?? "").includes("presets_workspace_resolution_key")) return null;
+	return c.json({ error: "duplicate_preset_slug", slug }, 409, PRIVATE_NO_STORE_HEADERS);
+}
+
 async function presetSlugConflict(client: ReturnType<typeof getDataClient>, workspaceId: string, slug: string, excludeId?: string) {
-	let scoped = client.from("presets").select("id").eq("workspace_id", workspaceId).eq("slug", slug).is("archived_at", null); if (excludeId) scoped = scoped.neq("id", excludeId);
+	// The gateway matches "@slug" case-insensitively, and a unique index enforces that, so compare the same way.
+	const pattern = slug.replace(/[\\%_]/g, (character) => `\\${character}`);
+	let scoped = client.from("presets").select("id").eq("workspace_id", workspaceId).ilike("slug", pattern).is("archived_at", null).limit(1); if (excludeId) scoped = scoped.neq("id", excludeId);
 	const workspace = await scoped.maybeSingle(); if (workspace.error) throw workspace.error; if (workspace.data) return "workspace";
 	return null;
 }
@@ -585,6 +593,7 @@ accountSettingsPolicyRouter.post("/presets", async (c) => {
 	if (conflict === "error") return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if (conflict) return c.json({ error: conflict === "public" ? "public_slug_conflict" : "duplicate_preset_slug", slug }, 409, PRIVATE_NO_STORE_HEADERS);
 	const result = await context.client.from("presets").insert({ workspace_id: workspaceId, name, slug, created_by: user.id, config: body.config && typeof body.config === "object" ? body.config : {}, visibility, ...(body.description ? { description: String(body.description).trim().slice(0, 500) } : {}) }).select("id,created_at").maybeSingle();
+	const collision = slugIndexConflict(c, result.error, slug); if (collision) return collision;
 	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const cache = await purgePresetCache(c, result.data?.id);
 	return c.json({ id: result.data?.id, name, createdAt: result.data?.created_at, canonicalModel: publisher ? `@${publisher}/${slug}` : `@${slug}`, cache }, 200, PRIVATE_NO_STORE_HEADERS);
@@ -620,6 +629,7 @@ accountSettingsPolicyRouter.post("/presets/:presetId/fork", async (c) => {
 	const baseSlug = normalizePresetSlug(sourceSnapshot.slug ?? name); let slug = baseSlug; let slugAttempts = 0;
 	while (await presetSlugConflict(context.client, workspaceId, slug)) { slugAttempts += 1; if (slugAttempts > 20) return c.json({ error: "slug_unavailable" }, 409, PRIVATE_NO_STORE_HEADERS); slug = `${baseSlug}-copy${slugAttempts > 1 ? `-${slugAttempts}` : ""}`; }
 	const result = await context.client.from("presets").insert({ workspace_id: workspaceId, name, slug, created_by: user.id, config: sourceSnapshot.config ?? {}, visibility: "private", source_preset_id: source.data.id, source_preset_version_id: sourceSnapshot.id, upstream_version_id: sourceSnapshot.id, ...(sourceSnapshot.description ? { description: sourceSnapshot.description } : {}) }).select("id").maybeSingle();
+	const collision = slugIndexConflict(c, result.error, slug); if (collision) return collision;
 	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); const cache = await purgePresetCache(c, source.data.id); if (result.data?.id) await purgePresetCache(c, result.data.id);
 	return c.json({ id: result.data?.id, name, slug, cache }, 200, PRIVATE_NO_STORE_HEADERS);
 });
@@ -766,6 +776,7 @@ accountSettingsPolicyRouter.post("/presets/:presetId/versions", async (c) => {
 	if (published.error) {
 		const message = published.error.message ?? "";
 		if (message.includes("invalid_semver_label")) return c.json({ error: "invalid_semver_label" }, 400, PRIVATE_NO_STORE_HEADERS);
+		const collision = slugIndexConflict(c, published.error, String(preset.data?.draft_slug ?? preset.data?.slug ?? "")); if (collision) return collision;
 		if (published.error.code === "23505") return c.json({ error: "version_label_taken" }, 409, PRIVATE_NO_STORE_HEADERS);
 		if (message.includes("preset_not_found")) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 		if (message.includes("preset_publish_forbidden")) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);

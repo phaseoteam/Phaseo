@@ -13,10 +13,13 @@ Die Anfrageform ist produktionsreif. [Presets](../guides/presets) erklärt, wie 
 <Steps>
 <Step title="Das Preset anlegen">
 
-Lege unter **Einstellungen → Voreinstellungen** `release-summary` mit einem System-Prompt, den freigegebenen Modellen, Anbieterpräferenzen und Standardparametern wie `temperature` an. Oder über die CLI:
+Lege unter **Einstellungen → Voreinstellungen** `release-summary` mit einem System-Prompt, den freigegebenen Modellen, Anbieterpräferenzen und Standardparametern wie `temperature` an. Oder mit einem Management-Schlüssel:
 
 ```bash
-phaseo presets create --name @release-summary --model anthropic/claude-sonnet-5.5
+curl https://api.phaseo.app/v1/presets \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"@release-summary","config":{"model":"anthropic/claude-sonnet-5.5"}}'
 ```
 
 </Step>

@@ -12,7 +12,7 @@ Você precisa de uma conta do Phaseo com acesso ao Gateway e de um cliente HTTP,
 <Steps>
 <Step title="Crie e guarde uma chave">
 
-Execute `phaseo keys create --name <app-and-environment> --json` na [CLI do Phaseo](../guides/integrations/phaseo-cli) ou abra **Configurações → Chaves de API** no [painel](https://phaseo.app/settings/keys). Dê à chave o nome do aplicativo e do ambiente e guarde-a em um gerenciador de segredos ou em um arquivo de ambiente:
+Abra **Configurações → Chaves de API** no [painel](https://phaseo.app/settings/keys) ou chame `POST /v1/keys` com uma chave de gerenciamento. Dê à chave o nome do aplicativo e do ambiente e guarde-a em um gerenciador de segredos ou em um arquivo de ambiente:
 
 ```bash
 # .env.local

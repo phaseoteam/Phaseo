@@ -33,6 +33,25 @@ CREATE INDEX gateway_preset_test_runs_preset_id_idx ON public.gateway_preset_tes
 
 CREATE INDEX gateway_preset_test_runs_workspace_created_idx ON public.gateway_preset_test_runs USING btree (workspace_id, created_at DESC);
 
+CREATE POLICY "gateway_preset_test_runs_no_oauth_client_insert" ON "public"."gateway_preset_test_runs"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "gateway_preset_test_runs_no_oauth_client_update" ON "public"."gateway_preset_test_runs"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "gateway_preset_test_runs_no_oauth_client_delete" ON "public"."gateway_preset_test_runs"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "gateway_preset_test_runs_all_service" ON "public"."gateway_preset_test_runs"
   FOR ALL
   TO "service_role"

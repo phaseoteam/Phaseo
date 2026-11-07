@@ -137,7 +137,6 @@ struct ApiKey {
 	std::optional<std::string> department_id;
 	bool disabled;
 	std::optional<std::string> expires_at;
-	std::string hash;
 	std::string id;
 	bool include_byok_in_limit;
 	std::vector<std::map<std::string, std::any>> ip_allowlist;
@@ -258,7 +257,6 @@ struct ApiKeyWithValue {
 	std::optional<std::string> department_id;
 	bool disabled;
 	std::optional<std::string> expires_at;
-	std::string hash;
 	std::string id;
 	bool include_byok_in_limit;
 	std::vector<std::map<std::string, std::any>> ip_allowlist;

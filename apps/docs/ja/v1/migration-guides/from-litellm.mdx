@@ -72,7 +72,7 @@ curl https://api.phaseo.app/v1/chat/completions \
 | チームの予算、`metadata.tags` | 部門の予算と `X-Phaseo-Metadata` の[ラベル](../guides/request-labels)。エンドユーザーの予算はエンドユーザー向けのレート制限ポリシーにしか対応付けられず、エンドユーザーの支出上限はありません。 |
 | `guardrails`(Presidio、Lakera など) | キーのガードレールが、リクエストのプロンプトインジェクションと個人情報をスキャンします。レスポンスはスキャンされません。 |
 | コールバック(`success_callback`、Langfuse、Datadog、OpenTelemetry) | [オブザーバビリティの送信先](../guides/integrations/observability)またはクライアント側のトレーシング。ボディの `metadata` は `phaseo.metadata.<key>` としてエクスポートされます。 |
-| 設定内のプロバイダー API キー | BYOK(`phaseo byok create --provider <id> --name <name> --key-stdin` または `POST /v1/byok`)、または Phaseo のクレジット。クレジットにフォールバックするには、`phaseo settings update` で `byok_fallback_enabled` を設定します。 |
+| 設定内のプロバイダー API キー | BYOK(**設定 → BYOK** または `POST /v1/byok`)、または Phaseo のクレジット。クレジットにフォールバックするには、**設定 → BYOK** で `byok_fallback_enabled` を設定します。 |
 
 プロキシはチーム全体のトラフィックを 1 人のキー所有者経由で送るため、そのユーザーの 1 分あたりのリクエスト数の上限を共有します。新しいワークスペースではこの上限は 10 です。切り替え前に [Gateway の制限](../api-reference/limits#gateway-limits)を確認し、より高い上限を手配してください。
 

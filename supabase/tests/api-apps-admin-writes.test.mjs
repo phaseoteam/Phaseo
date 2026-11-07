@@ -50,12 +50,16 @@ try {
     grant execute on function public.is_workspace_member(uuid) to authenticated;
     create or replace function public.mfa_satisfied() returns boolean language sql stable as 'select true';
     grant execute on function public.mfa_satisfied() to authenticated;
+    -- The table file also carries the OAuth-client refusal (refuse_oauth_client_writes); these sessions have no client_id.
+    create or replace function public.request_is_oauth_client() returns boolean language sql stable as 'select false';
+    grant execute on function public.request_is_oauth_client() to authenticated;
   `);
   await db.exec(adminSql);
   await db.exec(tableSql);
   // The migration applies cleanly on top of the declared state and leaves it unchanged.
   await db.exec(migration);
-  const policies = (await db.query(`select policyname, cmd, qual, with_check from pg_policies where tablename = 'api_apps' order by policyname`)).rows;
+  // The permissive policies grant writes; restrictive ones (MFA, OAuth clients) only narrow them.
+  const policies = (await db.query(`select policyname, cmd, qual, with_check from pg_policies where tablename = 'api_apps' and permissive = 'PERMISSIVE' order by policyname`)).rows;
   for (const policy of policies.filter((row) => ['DELETE', 'INSERT', 'UPDATE'].includes(row.cmd))) {
     assert.match(`${policy.qual ?? ''} ${policy.with_check ?? ''}`, /is_workspace_admin/, `${policy.policyname} requires an owner or admin`);
     assert.doesNotMatch(`${policy.qual ?? ''} ${policy.with_check ?? ''}`, /is_workspace_member/, `${policy.policyname} no longer accepts any member`);

@@ -68,7 +68,7 @@ AI SDK 默认会通过 Vercel 的网关发送裸字符串模型（`model: "opena
 | `providerOptions.gateway.sort`（`cost`、`ttft`、`tps`） | `provider.sort`（`price`、`latency`、`throughput`）。 |
 | `providerOptions.gateway.zeroDataRetention` | `provider.require_zero_data_retention`，它会把路由限制为 ZDR 提供商。 |
 | `providerOptions.gateway.user`、`.tags` | `user` 和 `X-Phaseo-Metadata` [标签](../guides/request-labels)。 |
-| 请求级 `byok` 凭据 | 没有对应项。用 `phaseo byok create` 把提供商密钥添加到工作区。 |
+| 请求级 `byok` 凭据 | 没有对应项。用 **设置 → BYOK** 把提供商密钥添加到工作区。 |
 | 文本、流式传输、工具、结构化输出、嵌入、图像、转录、语音 | provider 支持；具体能力仍取决于模型。 |
 | 重排序 | AI SDK 6 和 7 版本线上的 `phaseo.rerankingModel(id)`。 |
 | 托管文件引用、由提供商执行的工具 | 不支持。不支持的部分会报错，而不是被丢弃。 |

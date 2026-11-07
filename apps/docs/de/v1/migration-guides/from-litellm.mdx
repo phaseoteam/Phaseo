@@ -72,7 +72,7 @@ Erfasse Callbacks, Budgets und Wiederholungen, bevor du den Proxy entfernst: Die
 | Team-Budgets, `metadata.tags` | Abteilungsbudgets und `X-Phaseo-Metadata`-[Labels](../guides/request-labels). Endbenutzer-Budgets lassen sich nur auf eine Ratenlimit-Richtlinie pro Endbenutzer abbilden; eine Ausgabengrenze pro Endbenutzer gibt es nicht. |
 | `guardrails` (Presidio, Lakera und Ähnliches) | Schlüssel-Guardrails prüfen Anfragen auf Prompt-Injection und personenbezogene Daten. Antworten werden nicht geprüft. |
 | Callbacks (`success_callback`, Langfuse, Datadog, OpenTelemetry) | [Observability-Ziele](../guides/integrations/observability) oder clientseitiges Tracing. Body-`metadata` wird als `phaseo.metadata.<key>` exportiert. |
-| Anbieter-API-Schlüssel in der Konfiguration | BYOK (`phaseo byok create --provider <id> --name <name> --key-stdin` oder `POST /v1/byok`) oder Phaseo-Guthaben. Setze `byok_fallback_enabled` mit `phaseo settings update`, um auf Guthaben auszuweichen. |
+| Anbieter-API-Schlüssel in der Konfiguration | BYOK (**Einstellungen → BYOK** oder `POST /v1/byok`) oder Phaseo-Guthaben. Setze `byok_fallback_enabled` mit **Einstellungen → BYOK**, um auf Guthaben auszuweichen. |
 
 Ein Proxy leitet den Traffic eines ganzen Teams über den Schlüssel einer einzelnen Person und teilt sich daher deren Kontingent an Anfragen pro Minute, das bei einem neuen Workspace 10 beträgt. Prüfe die [Gateway-Limits](../api-reference/limits#gateway-limits) und vereinbare vor der Umstellung ein höheres Limit.
 

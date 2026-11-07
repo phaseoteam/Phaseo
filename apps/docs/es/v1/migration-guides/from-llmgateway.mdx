@@ -75,7 +75,7 @@ curl -s "https://api.phaseo.app/v1/models?format=openai" \
 | Encabezados de sesión (`x-session-id`) | Campo del cuerpo `session_id`; Phaseo ignora los encabezados de sesión. |
 | `X-Source` | `HTTP-Referer` o `X-App-Name`. Consulta [Atribución de aplicaciones](../guides/app-attribution). |
 | Caché de respuestas | No hay caché de respuestas. |
-| Claves de proveedores | BYOK (`phaseo byok create` o `POST /v1/byok`), o créditos de Phaseo. Recurrir a los créditos se controla con el ajuste del espacio de trabajo `byok_fallback_enabled`. |
+| Claves de proveedores | BYOK (**Ajustes → BYOK** o `POST /v1/byok`), o créditos de Phaseo. Recurrir a los créditos se controla con el ajuste del espacio de trabajo `byok_fallback_enabled`. |
 | Registros de solicitudes | Registros de solicitudes, destinos de observabilidad y `GET /v1/generations?id=<request_id>`. Cuando `replay_supported` es `true`, repite una solicitud fallida a partir de su carga útil `replay_request`. |
 
 ## Prueba y despliega
