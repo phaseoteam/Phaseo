@@ -157,7 +157,10 @@ const CALLEES = [
 export const readColumnMigrations = () => Promise.all(COLUMN_MIGRATION_FILES.map((name) =>
   readFile(new URL(`../../migrations/${name}`, import.meta.url), 'utf8')));
 
+// fix/async-billing-20261104's first migration: the deploy-relative marker for legacy pending rows.
+export const CUTOFF_MIGRATION_FILE = '20261107015208_billing_cutoffs.sql';
 export async function applyMigration(db, migration) {
+  await db.exec(await readFile(new URL(`../../migrations/${CUTOFF_MIGRATION_FILE}`, import.meta.url), 'utf8'));
   for (const column of await readColumnMigrations()) await db.exec(column);
   for (const index of await readIndexMigrations()) await db.exec(index);
   await db.exec(migration);
