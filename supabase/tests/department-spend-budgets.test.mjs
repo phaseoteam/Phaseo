@@ -59,8 +59,8 @@ try {
     }
     // The table is created by the first migration; the later one only replaces its comment.
     assert.ok(migration.includes(tableDefinition.replace(COMMENT_LINE, migration.match(COMMENT_LINE)[0]).trim()), 'the table is in the migration');
-    // 20261106234007_budget_enforcement_money_hygiene replaced the table comment again.
-    const holdsMigration = await read('../migrations/20261106234007_budget_enforcement_money_hygiene.sql');
+    // 20261106234012_workspace_department_budgets_comment replaced the table comment again.
+    const holdsMigration = await read('../migrations/20261106234012_workspace_department_budgets_comment.sql');
     assert.ok(holdsMigration.includes(tableDefinition.match(COMMENT_LINE)[0]), 'the latest table comment is in its migration');
     assert.equal(blockMigration.replace(/^SET local check_function_bodies = off;\n\n/, ''), `${sweepDefinition}\n${blockMigration.match(COMMENT_LINE)[0]}\n`,
         'the blocking migration matches the declarative sweep');

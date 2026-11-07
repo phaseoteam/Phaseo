@@ -23,6 +23,16 @@ export const INDEX_MIGRATION_FILES = [
 ];
 export const readIndexMigrations = () => Promise.all(INDEX_MIGRATION_FILES.map((name) =>
   readFile(new URL(`../../migrations/${name}`, import.meta.url), 'utf8')));
+// The table changes that follow MIGRATION_FILE (functions only), one table per migration.
+export const TABLE_MIGRATION_FILES = [
+  '20261106234008_credit_ledger_drop_client_insert_policy.sql',
+  '20261106234009_wallets_revoke_anon_delete.sql',
+  '20261106234010_gateway_wallet_reservations_revoke_client_writes.sql',
+  '20261106234011_workspace_settings_io_retention_90_days.sql',
+  '20261106234012_workspace_department_budgets_comment.sql',
+];
+export const readTableMigrations = () => Promise.all(TABLE_MIGRATION_FILES.map((name) =>
+  readFile(new URL(`../../migrations/${name}`, import.meta.url), 'utf8')));
 
 // The request-context callees, reduced to what the wrappers need (the key-limit accounting in
 // the real ones is tested by gateway-spend-limit-seed and key-weekly-accounting).
@@ -152,6 +162,7 @@ export async function applyMigration(db, migration) {
   for (const column of await readColumnMigrations()) await db.exec(column);
   for (const index of await readIndexMigrations()) await db.exec(index);
   await db.exec(migration);
+  for (const table of await readTableMigrations()) await db.exec(table);
   await db.exec(CONTEXT_STUBS);
 }
 
