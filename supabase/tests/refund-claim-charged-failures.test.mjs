@@ -131,18 +131,24 @@ try {
     add column detail_metadata jsonb;`);
   await db.exec('create schema if not exists private; grant usage on schema private to service_role;');
   await db.exec(cutoffs.sql);
-  // The marker is set two hours after the migration runs, and a replay does not move it.
+  // The marker starts NULL (no cutoff: the JSON flag is always read); a later migration sets it
+  // once the deploy is verified. A replay keeps a marker set since.
   const marker = async () => (await one('select pending_json_cutoff as at from private.billing_cutoffs')).at;
-  const set = await marker();
-  const ahead = (await one(`select extract(epoch from $1::timestamptz - now()) as s`, [set])).s;
-  assert(ahead > 7_190 && ahead <= 7_200, `the cutoff is two hours after the migration (${ahead} s)`);
+  assert.equal(await marker(), null, 'the migration leaves the marker unset');
+  const later = new Date('2030-01-01T00:00:00Z');
+  await db.query('update private.billing_cutoffs set pending_json_cutoff = $1', [later]);
   await db.exec(cutoffs.sql);
-  assert.equal((await marker()).getTime(), set.getTime(), 'a replay keeps the first marker');
+  assert.equal((await marker()).getTime(), later.getTime(), 'a replay keeps a marker set since');
+  await db.query('update private.billing_cutoffs set pending_json_cutoff = null');
   // Only the service role (and the claim, which runs as its owner) can read it.
   for (const [role, allowed] of [['service_role', true], ['anon', false], ['authenticated', false]]) {
     assert.equal((await one(`select has_function_privilege($1, 'private.pending_json_cutoff()', 'execute') as ok`, [role])).ok, allowed, role);
   }
-  assert.equal((await asService(() => one('select private.pending_json_cutoff() as at'))).at.getTime(), set.getTime());
+  // NULL reads as infinity: every row is before it.
+  assert.equal((await asService(() => one(`select private.pending_json_cutoff() = 'infinity'::timestamptz as ok`))).ok, true);
+  await db.query('delete from private.billing_cutoffs');
+  assert.equal((await asService(() => one(`select private.pending_json_cutoff() = 'infinity'::timestamptz as ok`))).ok, true, 'a missing marker too');
+  await db.exec(cutoffs.sql);
   await db.exec(expectedCostColumn.sql);
   await db.exec(expectedCostCheck.sql);
   await assert.rejects(db.query('insert into public.gateway_requests (workspace_id, expected_cost_nanos) values ($1, -1)', [ws]),
@@ -361,9 +367,7 @@ try {
   assert.equal(shipped.split('pending.created_at < (select private.pending_json_cutoff())').length - 1, 2,
     'both JSON-pending lookups apply the cutoff');
   assert(!/2026-11-09/.test(shipped), 'no fixed date');
-  const deployed = await marker();
   const cutoff = (await one(`select date_trunc('second', now() - interval '1 hour') as at`)).at;
-  await db.query('update private.billing_cutoffs set pending_json_cutoff = $1', [cutoff]);
   // A committed $5 one-off charge whose audit row has a NULL cost and only the JSON flag.
   const flaggedAt = async (prefix, offsetMs) => {
     await reset();
@@ -376,10 +380,33 @@ try {
     await setBalance(usd(15));
     return claim(`${prefix}_first`);
   };
+  // Marker unset: the flag is read for every row, whenever it was written (an old Worker still live).
+  assert.equal(await marker(), null);
+  assert.equal((await flaggedAt('unset_at', 0)).reason, 'lot_used', 'with no marker a JSON-only pending row counts its charge');
+  assert.equal((await flaggedAt('unset_after', 3_600_000)).reason, 'lot_used', 'however late it was written');
+  // Marker set (an hour ago here): the flag is read strictly before it.
+  await db.query('update private.billing_cutoffs set pending_json_cutoff = $1', [cutoff]);
   assert.equal((await flaggedAt('cut_before', -1)).reason, 'lot_used', 'just before the cutoff the flag marks the row pending: the charge counts');
   assert.equal((await flaggedAt('cut_at', 0)).ok, true, 'exactly at the cutoff the flag is not read: the row (NULL cost) counts, not the charge');
   assert.equal((await flaggedAt('cut_after', 1)).ok, true, 'after the cutoff the flag is not read either');
-  await db.query('update private.billing_cutoffs set pending_json_cutoff = $1', [deployed]);
+  await db.query('update private.billing_cutoffs set pending_json_cutoff = null');
+
+  // A delivered request pending reconciliation with no charge row at all (its charge was never
+  // applied): its expected $5 counts once, less the cost its row already counts (NULL, 0 or $2).
+  const unchargedPending = async (prefix, rowCost, priorBalance) => {
+    await reset();
+    await purchase(`${prefix}_first`, usd(10), usd(priorBalance), 3);
+    await db.query(`insert into public.gateway_requests (workspace_id, success, cost_nanos, created_at, billing_request_id, request_id, expected_cost_nanos)
+      values ($1, false, $2, now() - interval '2 hours', $3, $4, $5)`, [ws, rowCost, `${prefix}_bill`, `${prefix}_req`, usd(5)]);
+    await setBalance(usd(priorBalance + 10));
+    return claim(`${prefix}_first`);
+  };
+  for (const [label, rowCost] of [['null', null], ['zero', 0], ['two', usd(2)]]) {
+    assert.equal((await unchargedPending(`unpaid_${label}`, rowCost, 4)).reason, 'lot_used',
+      `an uncharged pending request counts its expected bill (row cost ${label}; $5 does not fit in $4)`);
+    assert.equal((await unchargedPending(`unpaid_${label}_ok`, rowCost, 5)).ok, true,
+      `and counts it once (row cost ${label}; $5 fits in $5)`);
+  }
 
   // ---------- Money movements win over a pending reconciliation's audit cost ----------
   // A delivered request whose charge attempts all failed is audited as pending reconciliation with

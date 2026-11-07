@@ -20,10 +20,12 @@ SET LOCAL lock_timeout = '10s';
 --    are not counted, so a row persisted late, never updated or written on the
 --    other side of the purchase cannot change the count.
 -- 6. The unpaid part of a pending request: its expected_cost_nanos less what
---    its charge row holds. Rows written from private.pending_json_cutoff() (set
---    two hours after this PR's first migration, once older Workers have
---    drained) are pending only by expected_cost_nanos (every pending row sets
---    it); older rows also by the audit's billing_status.
+--    is already counted for it (its applied charge, or else its rows' cost).
+-- Pending reconciliation: expected_cost_nanos is set, or the audit's
+-- billing_status says so for a row written before private.pending_json_cutoff().
+-- That marker is NULL (no cutoff: the JSON flag is always read) until a later
+-- migration sets it, once the deploy is verified and older Workers, which
+-- write the flag only, are gone.
 -- expected_cost_nanos and the cutoff come from this PR's first migrations; plpgsql binds them
 -- when the claim runs. Functions only.
 -- The body is the one from 20261104193047_billing_security_fixes with only the
@@ -182,9 +184,12 @@ begin
     -- 5. Reserved batches and videos, settled or captured from their
     --    batch_hold or video_hold reservation into an async_job_charge ledger
     --    row: the debit, whole, at its time.
-    -- 6. The unpaid part of a request pending reconciliation that 2. or 3.
-    --    count: its expected_cost_nanos less its charge row's total, when
-    --    positive.
+    -- 6. The unpaid part of a request pending reconciliation: its
+    --    expected_cost_nanos less what is already counted for it, when positive.
+    --    Counted is its applied charge when it has one (2. or 3. count it, and
+    --    1. leaves its rows out); otherwise its rows' own cost, which 1. counts.
+    --    Per billing request id, or request id without one, as the budget
+    --    readers do (private.unbilled_spend).
     -- Pending reconciliation: expected_cost_nanos is set or, for rows written
     -- before private.pending_json_cutoff() (the deploy's marker: from then on
     -- every pending row carries the column), the audit's
@@ -302,18 +307,21 @@ begin
     ), 0)::bigint;
 
     v_usage_nanos := v_usage_nanos + coalesce((
-      select sum(greatest(0, pending.expected_nanos - charge.cost_nanos))
+      select sum(greatest(0, pending.expected_nanos - coalesce(charge.cost_nanos, pending.row_cost)))
       from (
-        select gr.billing_request_id, max(gr.expected_cost_nanos) as expected_nanos
+        select coalesce(gr.billing_request_id, gr.request_id) as billing_request_id,
+          bool_or(gr.billing_request_id is not null) as has_billing_id,
+          max(gr.expected_cost_nanos) as expected_nanos,
+          sum(greatest(coalesce(gr.cost_nanos, 0), 0)) as row_cost
         from public.gateway_requests gr
         where gr.workspace_id = p_team_id
-          and gr.billing_request_id is not null
           and gr.expected_cost_nanos is not null
           and gr.created_at >= v_purchase.event_time
-        group by gr.billing_request_id
+        group by coalesce(gr.billing_request_id, gr.request_id)
       ) pending
-      join public.gateway_request_charges charge
-        on charge.workspace_id = p_team_id
+      left join public.gateway_request_charges charge
+        on pending.has_billing_id
+       and charge.workspace_id = p_team_id
        and charge.request_id = pending.billing_request_id
        and charge.status = 'applied'
     ), 0)::bigint;
