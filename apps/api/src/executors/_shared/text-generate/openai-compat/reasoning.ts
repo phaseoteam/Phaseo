@@ -171,7 +171,7 @@ export function applyReasoningParams(args: {
 		// this provider for them. Budgets have no upstream field.
 		if (reasoning.enabled === false || reasoning.effort === "none") return;
 		const rawEffort = typeof reasoning.effort === "string" ? reasoning.effort : undefined;
-		const effort = rawEffort === "minimal" || rawEffort === "low"
+		const effort = rawEffort === "instant" || rawEffort === "minimal" || rawEffort === "low"
 			? "low"
 			: rawEffort === "medium" || rawEffort === "high"
 				? "high"

@@ -15,6 +15,7 @@ function ir(extra: Partial<IRChatRequest>): IRChatRequest {
 
 describe("LG EXAONE reasoning effort", () => {
 	it.each([
+		[{ effort: "instant" }, "low"],
 		[{ effort: "minimal" }, "low"],
 		[{ effort: "low" }, "low"],
 		[{ effort: "medium" }, "high"],
