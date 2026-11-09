@@ -132,6 +132,8 @@ export type GatewayBindings = {
     AI21_BASE_URL?: string;
     AKASHML_API_KEY?: string;
     AKASHML_BASE_URL?: string;
+    PRIMALABS_API_KEY?: string;
+    PRIMALABS_BASE_URL?: string;
     ALIBABA_CLOUD_API_KEY?: string;
     MODELSCOPE_API_KEY?: string;
     MODELSCOPE_BASE_URL?: string;

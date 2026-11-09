@@ -261,6 +261,7 @@ describe("resolveProviderExecutor", () => {
 		for (const providerId of [
 			"ai21",
 			"akashml",
+			"primalabs",
 			"arcee",
 			"arcee-ai",
 			"alibaba-cloud",
