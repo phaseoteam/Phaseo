@@ -2,6 +2,7 @@
 import { addDiagnostics, records } from './diagnostics.mjs';
 import { freeTierDashboard } from './free-tier.mjs';
 import { presentDashboards } from './presentation.mjs';
+import { deploymentQuery } from './deployments.mjs';
 const loki = { type: 'loki', uid: '${loki}' };
 const window = '$__auto';
 const env = '$environment';
@@ -60,7 +61,7 @@ function dashboard(uid, title, description, panels) {
       { name: 'environment', label: 'Environment', type: 'custom', query: 'production,staging', current: { text: 'production', value: 'production' }, options: [{ text: 'production', value: 'production', selected: true }, { text: 'staging', value: 'staging', selected: false }] },
       { name: 'request', label: 'Request ID', type: 'textbox', query: '', current: { text: '', value: '' }, hide: 0 },
     ] },
-    annotations: { list: [{ name: 'Annotations & Alerts', type: 'dashboard', datasource: { type: 'grafana', uid: '-- Grafana --' }, enable: true, hide: true, iconColor: 'rgba(0, 211, 255, 1)' }] },
+    annotations: { list: [{ name: 'Annotations & Alerts', type: 'dashboard', datasource: { type: 'grafana', uid: '-- Grafana --' }, enable: true, hide: true, iconColor: 'rgba(0, 211, 255, 1)' }, deploymentQuery(({ 'phaseo-gateway': 'gateway', 'phaseo-web': 'web', 'phaseo-jobs': 'jobs' })[uid])] },
     panels: panels.map((item, index) => ({ id: index + 1, gridPos: { x: index % 2 * 12, y: Math.floor(index / 2) * 9, w: 12, h: 9 }, ...item })),
   };
 }

@@ -140,6 +140,27 @@
         "enable": true,
         "hide": true,
         "iconColor": "rgba(0, 211, 255, 1)"
+      },
+      {
+        "name": "Deployments",
+        "type": "tags",
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": false,
+        "iconColor": "#FFB357",
+        "target": {
+          "type": "tags",
+          "limit": 500,
+          "matchAny": false,
+          "tags": [
+            "phaseo-deployment",
+            "environment:$environment",
+            "service:web"
+          ]
+        }
       }
     ]
   },
