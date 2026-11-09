@@ -32,6 +32,7 @@ const ITEMS = {
   privacy: { href: "/account/privacy", title: "Privacy & data", icon: Shield },
   notifications: { href: "/account/notifications", title: "Notifications", icon: Bell },
   appearance: { href: "/account/appearance", title: "Appearance", icon: Palette },
+  analytics: { href: "/account/analytics", title: "App analytics", icon: ChartNoAxesColumn },
   chats: { href: "/account/chats", title: "Chats on this device", icon: HardDrive },
   status: { href: "/account/status", title: "Status", icon: Activity },
   whatsNew: { href: "/account/whats-new", title: "What's new", icon: Sparkles },
@@ -159,6 +160,7 @@ export function AccountMenu() {
         <Section title="This device">
           {item("notifications")}
           {item("appearance")}
+          {item("analytics")}
           {item("chats", { value: storage ? `${formatNumber(storage.chats)} · ${formatBytes(storage.bytes)}` : null, last: true })}
         </Section>
         <Section title="Help">

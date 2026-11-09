@@ -34,6 +34,7 @@ import { CompareView } from "./chat/CompareView";
 import { GuideRunNotices } from "./views/pullRequests/GuideRunNotices";
 import { useDiffColours } from "./lib/workspacePreferences";
 import { FactoryPage } from "./factory/FactoryPage";
+import { AppAnalytics } from "./lib/AppAnalytics";
 
 /** The app-wide commands behind the keyboard shortcuts (Settings → Keyboard shortcuts). */
 function useShortcuts() {
@@ -113,6 +114,7 @@ function Shell() {
 	useShortcuts();
 	return <div className="flex h-full flex-col">
 		<Titlebar />
+		<AppAnalytics />
 		<div className="relative flex min-h-0 flex-1">
 			{(sidebarOpen || settings) && <Sidebar />}
 			{/* A maximised pane takes the chat column's place. */}

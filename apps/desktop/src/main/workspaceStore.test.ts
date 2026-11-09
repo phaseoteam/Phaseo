@@ -6,8 +6,8 @@ import { WorkspaceStore } from "./workspaceStore";
 import { validateCommand } from "../shared/workspace";
 import { defaultPreferences, defaultWorktreeCleanup } from "../shared/preferences";
 
-// The per-area groups at their defaults (shared/chatPreferences.ts and the rest).
-const preferenceGroups = { chat: defaultPreferences.chat, browser: defaultPreferences.browser, sourceControl: defaultPreferences.sourceControl, threads: defaultPreferences.threads };
+// Defaults shared by the saved-preference fixtures.
+const preferenceGroups = { analyticsEnabled: false, chat: defaultPreferences.chat, browser: defaultPreferences.browser, sourceControl: defaultPreferences.sourceControl, threads: defaultPreferences.threads };
 import { localDay, todayPace } from "../shared/usageLedger";
 import { DatabaseSync } from "node:sqlite";
 

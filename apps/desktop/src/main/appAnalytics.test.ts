@@ -1,0 +1,45 @@
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { desktopScreen } from "../shared/analytics";
+
+const clients = vi.hoisted(() => [] as { options: { fetch: (url: string, options: object) => Promise<unknown>; before_send: (event: object) => unknown }; capture: ReturnType<typeof vi.fn>; optOut: ReturnType<typeof vi.fn> }[]);
+vi.mock("posthog-node", () => ({ PostHog: class {
+  capture = vi.fn(); optOut = vi.fn(); shutdown = vi.fn(async () => {}); on = vi.fn(); captureException = vi.fn();
+  constructor(_key: string, public options: typeof clients[number]["options"]) { clients.push(this); }
+} }));
+import { createDesktopAnalytics } from "./appAnalytics";
+
+const directories: string[] = [];
+const create = (packaged = true) => {
+  const directory = mkdtempSync(join(tmpdir(), "phaseo-analytics-")); directories.push(directory);
+  vi.stubGlobal("__PHASEO_ANALYTICS__", { key: "public-key", host: "https://eu.i.posthog.com" });
+  return createDesktopAnalytics(directory, packaged);
+};
+afterEach(() => { for (const directory of directories.splice(0)) rmSync(directory, { recursive: true, force: true }); clients.length = 0; vi.unstubAllGlobals(); });
+
+describe("desktop app analytics", () => {
+  it("creates no SDK or traffic without consent, or in a development build", () => {
+    const analytics = create(); analytics.configure(false); analytics.screen("chat");
+    create(false).configure(true);
+    expect(clients).toHaveLength(0);
+  });
+  it("keeps old queues revoked after opting back in", async () => {
+    const network = vi.fn(async () => new Response("{}")); vi.stubGlobal("fetch", network);
+    const analytics = create(); analytics.configure(true);
+    const previous = clients[0]!;
+    analytics.configure(false); analytics.configure(true);
+    expect(previous.optOut).toHaveBeenCalledOnce();
+    await previous.options.fetch("https://eu.i.posthog.com/batch", {});
+    expect(previous.options.before_send({ event: "app_opened" })).toBeNull();
+    expect(network).not.toHaveBeenCalled();
+    await clients[1]!.options.fetch("https://eu.i.posthog.com/batch", {});
+    expect(network).toHaveBeenCalledOnce();
+    await analytics.close();
+  });
+  it("accepts only named screens, never IDs, URLs or chat titles", () => {
+    expect(desktopScreen("settings/general")).toBe("settings/general");
+    for (const value of ["chat/private-id", "https://secret", "private chat", null]) expect(desktopScreen(value)).toBeUndefined();
+  });
+});

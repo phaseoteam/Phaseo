@@ -2,6 +2,12 @@ import { describe, expect, it } from "vitest";
 import { defaultPreferences, validatePreferences } from "./preferences";
 
 describe("workspace preferences", () => {
+  it("requires an explicit boolean opt-in for app analytics", () => {
+    expect(defaultPreferences.analyticsEnabled).toBe(false);
+    expect(validatePreferences({ notifications: "off", notificationTitles: false }).analyticsEnabled).toBe(false);
+    expect(validatePreferences({ ...defaultPreferences, analyticsEnabled: true }).analyticsEnabled).toBe(true);
+    expect(() => validatePreferences({ ...defaultPreferences, analyticsEnabled: "yes" })).toThrow("analytics");
+  });
 	it("fills the pull request settings for preferences saved before they existed", () => {
 		expect(validatePreferences({ notifications: "off", notificationTitles: false })).toMatchObject({ openPullRequestsInApp: true, pullRequestMergeMethod: null, diffFilesCollapsed: false });
 		expect(defaultPreferences.openPullRequestsInApp).toBe(true);
