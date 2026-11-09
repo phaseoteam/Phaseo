@@ -27,7 +27,7 @@ app.whenReady().then(async () => { try {
 	const originalPreferences = await run("window.phaseoDesktop.workspace.preferences()");
 	console.log("Composer fixture: preferences ready");
 	let preferences = originalPreferences.preferences;
-	let tasks, revision = 0;
+	let tasks, revision = 0, projects = [];
 	const commands = new EventEmitter();
 	const calls = [];
 	let pullWrites = 0;
@@ -36,7 +36,7 @@ app.whenReady().then(async () => { try {
 	const playbook = { instructions: "", briefs: {}, stageAgents: {}, rules: [], requireProof: true, openPullRequest: true, postReports: false, askReporter: true };
 	let factoryState = { settings: { repos: [], showRepo: "", independentReview: true, playbooks: { issue: playbook, pull: playbook }, pollMinutes: 5, agentEfforts: {} }, github: { version: null, attach: false }, repos: [], items: [], runs: [], agents: [], notes: {}, threads: {}, loadedAt: Date.now(), demo: false };
 	const pullView = { id: "owned-pull", repository: "owned/fixture", number: 12, title: "Owned pull request", url: "https://example.invalid/pull/12", author: "fixture", draft: false, head: "feature", base: "main", updatedAt: now, createdAt: now, fetchedAt: now, review: "approved", checks: "passing", body: "Owned fixture pull request.", state: "OPEN", additions: 1, deletions: 0, changedFiles: 1, headOid: "a".repeat(40), baseOid: "b".repeat(40), mergeable: "MERGEABLE", mergeState: "CLEAN", authorActor: { login: "fixture" }, labels: [], reviewers: [], reviews: [], checkRuns: [], comments: [], commentCount: 0, commentsTruncated: false, commits: [], commitCount: 0, threads: [], mergeMethods: ["squash"], viewer: { canUpdate: true, canMerge: true, canDeleteBranch: false, canEnableAutoMerge: false, canDisableAutoMerge: false }, autoMergeAllowed: false, headRefExists: true, behind: false };
-	const overview = () => ({ version: 1, projects: [], accounts: [], agents: [], mcpConnections: [], tasks: tasks.map(({ messages, queue, ...task }) => ({ ...task, queueCount: queue.length, approvalsCount: 0, answersCount: 0, steeringReviewCount: 0, attentionKey: "fixture" })) });
+	const overview = () => ({ version: 1, projects, accounts: [], agents: [], mcpConnections: [], tasks: tasks.map(({ messages, queue, ...task }) => ({ ...task, queueCount: queue.length, approvalsCount: 0, answersCount: 0, steeringReviewCount: 0, attentionKey: "fixture" })) });
 	const mock = (channel, handler) => { ipcMain.removeHandler(channel); ipcMain.handle(channel, handler); };
 	mock("workspace:preferences", () => ({ ...originalPreferences, preferences }));
 	mock("workspace:overview", overview);
@@ -44,6 +44,7 @@ app.whenReady().then(async () => { try {
 	mock("workspace:conversation-page", (_event, query) => ({ kind: query.kind, entries: query.kind === "messages" ? tasks.find(task => task.id === query.taskId).messages : [], earlier: 0, later: 0, revision }));
 	mock("workspace:models", () => []);
 	mock("workspace:installations", () => []);
+	mock("workspace:editors", () => [{ id: "vscode", name: "Owned editor", available: true }]);
 	mock("workspace:background-commands", () => []);
 	const missions = ["never", "running"].map((lastStatus, index) => ({ id: `owned-schedule-${index}`, title: `Owned schedule ${index}`, prompt: "Owned fixture", templateTaskId: "main", schedule: { type: "interval", minutes: 60 }, enabled: false, createdAt: now, updatedAt: now, lastStatus, runCount: index }));
 	mock("workspace:missions", () => missions);
@@ -314,6 +315,11 @@ app.whenReady().then(async () => { try {
 		for (const pseudo of ["hover", "focus-visible"]) {
 			await force(selector, pseudo);
 			const active = await state();
+			if (pseudo === "focus-visible" && await run(`!!document.querySelector(${JSON.stringify(selector)}).closest('.desktop-command-palette')`)) {
+				assert.equal(active.animations.length, 0, `${name} animates during palette keyboard selection`);
+				await force(selector, null);
+				continue;
+			}
 			assert(active.animations.length > 0, `${name} has no ${pseudo} gesture`);
 			assert(active.animations.every(animation => animation.iterations === 1));
 			await run(`document.querySelector(${JSON.stringify(selector)}).querySelector('[data-icon-gesture]').getAnimations({subtree:true}).forEach(animation=>{animation.pause();animation.currentTime=Number(animation.effect.getTiming().duration)/2;});true`);
@@ -514,6 +520,72 @@ app.whenReady().then(async () => { try {
 	if (baseline) await utilityIcons(baseline, "before-utility", false);
 	await utilityIcons(renderer, "after-utility", true);
 	console.log("UTILITY_ICON_GESTURES", JSON.stringify({ runAndFilterHold: true, disabledRunStill: true, wrapSurfaces: 2, reverseStates: true, motionPreferences: true }));
+	async function paletteIcons(page, prefix, verify) {
+		console.log("Composer fixture: palette icons", prefix);
+		projects = [{ id: "fixture", name: "Owned project", directory: path.join(app.getPath("userData"), "owned-project"), createdAt: now }];
+		await configure({ status: "completed", project: true });
+		tasks[0].operator = { subscriptions: [], held: [], paused: undefined };
+		await run("localStorage.setItem('phaseo.desktop.workspaceMode','\"code\"');localStorage.setItem('phaseo.desktop.codeView','\"threads\"');true");
+		await owner.loadFile(page);
+		await ready("!!document.querySelector('main form')");
+		const open = async () => { await run("Array.from(document.querySelectorAll('header button')).find(button=>button.textContent.includes('Search chats and commands')).click();true"); await ready("!!document.querySelector('[cmdk-list] [role=option]')"); await run("document.querySelector('[role=dialog]').getAnimations().forEach(animation=>animation.finish());true"); };
+		await open(); await ready("!!document.querySelector('[cmdk-list] [role=option] [data-icon-gesture=editor], [cmdk-list] [role=option] .lucide-square-code')"); await capture(`${prefix}-palette`);
+		if (!verify) return;
+		const rows = await run(`Array.from(document.querySelectorAll('.desktop-command-palette [role=option]')).filter(row=>['Actions','This chat','Open project','Comparisons'].includes(row.closest('[cmdk-group]').querySelector('[cmdk-group-heading]')?.textContent)).map((row,index)=>{row.dataset.fixturePalette=String(index);return {index,label:row.textContent,name:row.querySelector('.gesture-icon')?.dataset.iconGesture,disabled:row.getAttribute('data-disabled')==='true'};})`);
+		assert(rows.length >= 30, "Palette fixture is missing default/contextual actions");
+		for (const row of rows) {
+			assert(row.name, `Static palette action icon: ${row.label}`);
+			const selector = `[data-fixture-palette="${row.index}"]`;
+			await run(`document.querySelector(${JSON.stringify(selector)}).scrollIntoView({block:'center'});true`);
+			await cdp("Input.dispatchMouseEvent", { type: "mouseMoved", x: 0, y: 0 });
+			await force(selector, "focus-visible");
+			await run(`document.querySelector(${JSON.stringify(selector)}).setAttribute('data-selected','true');true`);
+			const state = () => run(`(()=>{const row=document.querySelector(${JSON.stringify(selector)}),svg=row.querySelector('.gesture-icon');return {box:row.getBoundingClientRect().toJSON(),transform:getComputedStyle(svg).transform,parts:Array.from(svg.children).map(part=>{const style=getComputedStyle(part);return [style.transform,style.translate,style.strokeDashoffset,style.opacity];}),animations:svg.getAnimations({subtree:true}).map(animation=>({name:animation.animationName??animation.transitionProperty,iterations:animation.effect.getTiming().iterations}))};})()`);
+			const idle = await state();
+			assert.equal(idle.animations.length, 0, `${row.label} animates during keyboard selection`);
+			await force(selector, null);
+			const point = await run(`(()=>{const box=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:box.x+box.width/2,y:box.y+box.height/2};})()`);
+			await cdp("Input.dispatchMouseEvent", { type: "mouseMoved", ...point });
+			if (row.disabled) { assert.equal((await state()).animations.length, 0); continue; }
+			await run(`document.querySelector(${JSON.stringify(selector)}+' .gesture-icon').getAnimations({subtree:true}).forEach(animation=>{animation.pause();animation.currentTime=110;});true`);
+			const active = await state();
+			assert(active.animations.length > 0, `${row.label} has no hover gesture`);
+			assert(active.animations.every(animation => animation.iterations === 1), `${row.label} repeats its gesture`);
+			assert.notDeepEqual(active.parts, idle.parts, `${row.label} does not visibly animate`);
+			assert.deepEqual(active.box, idle.box, `${row.label} moves its row`); assert.equal(active.transform, "none");
+			await cdp("Input.dispatchMouseEvent", { type: "mouseMoved", x: 0, y: 0 });
+		}
+		await run("document.querySelector('.desktop-command-palette [cmdk-input]').focus();true");
+		await cdp("Input.dispatchKeyEvent", { type: "keyDown", key: "ArrowDown", code: "ArrowDown", windowsVirtualKeyCode: 40 });
+		await cdp("Input.dispatchKeyEvent", { type: "keyUp", key: "ArrowDown", code: "ArrowDown", windowsVirtualKeyCode: 40 });
+		assert.equal(await run("Array.from(document.querySelectorAll('.desktop-command-palette .gesture-icon')).flatMap(svg=>svg.getAnimations({subtree:true})).length"), 0, "Arrow-key selection animates palette icons");
+		const selector = '.desktop-command-palette [role=option]:has([data-icon-gesture=bot])';
+		for (const reduced of [false, true]) {
+			await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: reduced ? "reduce" : "no-preference" }] });
+			await run(`document.documentElement.dataset.animations='${reduced ? "on" : "off"}'`);
+			await force(selector, "hover");
+			assert.equal(await run(`document.querySelector(${JSON.stringify(selector)}+' .gesture-icon').getAnimations({subtree:true}).length`), 0);
+			await force(selector, null);
+		}
+		await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
+		await run("document.documentElement.dataset.animations='on'");
+		await cdp("Input.dispatchKeyEvent", { type: "keyDown", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+		await cdp("Input.dispatchKeyEvent", { type: "keyUp", key: "Escape", code: "Escape", windowsVirtualKeyCode: 27 });
+		await ready("!document.querySelector('.desktop-command-palette')");
+		tasks[0].operator.paused = { reason: "manual", summary: "Owned fixture pause" };
+		await owner.loadFile(page); await ready("!!document.querySelector('main form')"); await open();
+		assert(await run("!!document.querySelector('.desktop-command-palette [role=option] [data-icon-gesture=play]')"), "Resume operator is missing its animated glyph");
+		const resume = '.desktop-command-palette [role=option]:has([data-icon-gesture=play])';
+		const point = await run(`(()=>{const row=document.querySelector(${JSON.stringify(resume)});row.scrollIntoView({block:'center'});const box=row.getBoundingClientRect();return {x:box.x+box.width/2,y:box.y+box.height/2};})()`);
+		await cdp("Input.dispatchMouseEvent", { type: "mouseMoved", ...point });
+		const resumeOffset = () => run(`(async()=>{const svg=document.querySelector(${JSON.stringify(resume)}+' svg');await Promise.all(svg.getAnimations({subtree:true}).map(animation=>animation.finished));return parseFloat(getComputedStyle(svg.firstElementChild).translate)||0;})()`);
+		assert.equal(await resumeOffset(), 1);
+		await cdp("Input.dispatchMouseEvent", { type: "mouseMoved", x: 0, y: 0 });
+		assert.equal(await resumeOffset(), 0);
+		console.log("PALETTE_ICON_GESTURES", JSON.stringify({ rows: rows.length, allActionIcons: true, hover: true, keyboardStill: true, disabledStill: true, motionPreferences: true, resumeGlyph: true }));
+	}
+	if (baseline) await paletteIcons(baseline, "before", false);
+	await paletteIcons(renderer, "after", true);
 	owner.webContents.debugger.detach();
 	console.log("COMPOSER_ACTIONS_SMOKE", JSON.stringify({ surfaces: 3, deliveryDefaults: 2, primaryAndAlternate: true, idleSend: true, stopWithEmptyDraft: true, unsupportedSteeringQueues: true, queueEdit: true, questionAnswer: true, keyboardAndIME: true, svgTraces: true, actionGestures: gestures, boundedGestures: true, stationaryControls: true, copyFeedback: true, stationaryWindowControls: true, animationsOff: true, reducedMotion: true, minimumWidth: true, inferenceCalls: 0, packaged: Boolean(entry) }));
 	clearTimeout(deadline); app.exit(0);

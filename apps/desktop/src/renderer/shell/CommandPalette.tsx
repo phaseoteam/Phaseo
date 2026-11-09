@@ -1,5 +1,4 @@
-import { Bot, Pause, Play, Activity, Gauge, Code2, Keyboard, Columns3, Globe, MessageSquare, Moon, Sun, UserRound, Files, FileSearch, TextSearch, GitBranchPlus, Bug, SquarePen, Undo2, CircleCheck, History, Monitor } from "lucide-react";
-import { ActionIcon } from "../components/ActionIcon";
+import { ActionIcon, type ActionIconName } from "../components/ActionIcon";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { errorText, useWorkspace } from "../app/workspace";
 import { ScrollArea } from "../components/ui/scroll-area";
@@ -15,7 +14,7 @@ import { issueToTriage, issueTriagePrompt } from "../../shared/issueTriage";
 import { handNewChatDraft } from "../lib/newChatDraft";
 import { useProjectRepository } from "../views/pullRequests/useProjectRepository";
 import { ModelStack, modelName } from "../chat/ModelPicker";
-import { useEffect, useState, type ComponentType } from "react";
+import { useEffect, useState } from "react";
 import { paletteEntries, type PaletteEntry } from "../../shared/appCommands";
 import { copyChatLink, runAppCommand } from "../lib/appCommands";
 import { MessageSearchResults, useMessageSearch } from "./MessageSearch";
@@ -29,7 +28,7 @@ import { isSettled, settleBlocker } from "../../shared/threadLifecycle";
 import { renameChatEvent } from "../chat/composerActions";
 import type { ThemePreference } from "../types";
 
-const entryIcons: Record<string, ComponentType> = { "New chat": () => <ActionIcon name="plus" />, "Operator": Bot, "Switch to Chat": MessageSquare, "Switch to Code": Code2, "Inbox": () => <ActionIcon name="inbox" />, "Usage": () => <ActionIcon name="usage" />, "Usage limits": Gauge, "Scheduled tasks": () => <ActionIcon name="schedule" />, "Open pull requests": () => <ActionIcon name="pullRequest" />, "Toggle sidebar": () => <ActionIcon name="sidebarLeft" />, "Show files and changes": Files, "Open terminal": () => <ActionIcon name="terminal" />, "Open browser": Globe, "Settings": () => <ActionIcon name="settings" />, "Accounts and sign-in": UserRound, "Phaseo account": UserRound, "Keyboard shortcuts": Keyboard, "Diagnostics": Activity };
+const entryIcons: Record<string, ActionIconName> = { "New chat": "plus", "Operator": "bot", "Switch to Chat": "comment", "Switch to Code": "code", "Inbox": "inbox", "Usage": "usage", "Usage limits": "limits", "Scheduled tasks": "schedule", "Open pull requests": "pullRequest", "Toggle sidebar": "sidebarLeft", "Show files and changes": "files", "Open terminal": "terminal", "Open browser": "browser", "Settings": "settings", "Accounts and sign-in": "account", "Phaseo account": "account", "Keyboard shortcuts": "keyboard", "Diagnostics": "activity" };
 /** The keyboard shortcut that does what a palette entry does, when there is one. */
 function entryShortcut(entry: PaletteEntry) {
 	if (entry.command === "chat.new") return shortcut("chat.new");
@@ -70,42 +69,42 @@ export function CommandPalette() {
 	const projectItem = (project: typeof projects[number]) => <CommandItem key={project.id} value={`${project.name} ${project.directory} ${project.id}`} onSelect={() => startIn(project.id)}>
 		<ProjectIcon project={project} /><span className="min-w-0 truncate">{project.name}</span><span className="min-w-0 flex-1 truncate text-right text-xs text-muted-foreground">{project.directory}</span>
 	</CommandItem>;
-	const themes: { value: ThemePreference; label: string; icon: typeof Sun }[] = [{ value: "light", label: "Use light theme", icon: Sun }, { value: "dark", label: "Use dark theme", icon: Moon }, { value: "system", label: "Use the system theme", icon: Monitor }];
+	const themes: { value: ThemePreference; label: string; icon: ActionIconName }[] = [{ value: "light", label: "Use light theme", icon: "sun" }, { value: "dark", label: "Use dark theme", icon: "moon" }, { value: "system", label: "Use the system theme", icon: "system" }];
 	const copyId = (id: string) => void navigator.clipboard.writeText(id).then(() => showToast("success", "Chat ID copied"), () => showToast("error", "Could not copy the chat ID"));
-	return <><ProjectSearchDialog /><CloneProjectDialog /><ImportSessionsDialog /><CommandDialog open={commandsOpen} onOpenChange={setCommandsOpen} title="Search" description="Search chats and run commands" className="max-w-xl rounded-2xl! sm:max-w-xl">
+	return <><ProjectSearchDialog /><CloneProjectDialog /><ImportSessionsDialog /><CommandDialog open={commandsOpen} onOpenChange={setCommandsOpen} title="Search" description="Search chats and run commands" className="desktop-command-palette max-w-xl rounded-md! sm:max-w-xl">
 		<CommandInput autoFocus value={search} onValueChange={setSearch} placeholder={page === "triage-issue" ? "An issue URL, or its number in this project" : page ? "New chat in…" : "Search chats, messages and commands…"} wrapperClassName="p-2"
 			onKeyDown={event => { if (page && event.key === "Backspace" && !search) { event.preventDefault(); setPage(undefined); } }} />
 		<ScrollArea className="max-h-[420px]" viewportClassName="max-h-[420px]"><CommandList className="max-h-none overflow-visible p-1">
 			{page === "triage-issue" ? <CommandGroup heading={triageProject ? `Triage in ${triageProject.name}` : "Add a project first"}>
-				{triageUrl && triageProject ? <CommandItem value={`${search} triage`} onSelect={() => triageIssue(triageUrl)}><Bug /><span className="min-w-0 truncate">Triage {triageUrl.replace("https://github.com/", "")}</span></CommandItem>
+				{triageUrl && triageProject ? <CommandItem value={`${search} triage`} onSelect={() => triageIssue(triageUrl)}><ActionIcon name="bug" /><span className="min-w-0 truncate">Triage {triageUrl.replace("https://github.com/", "")}</span></CommandItem>
 					: <p className="px-2 py-3 text-center text-xs text-muted-foreground">{triageProject ? "Paste an issue URL, or type its number." : "Triage runs in a project. Add one first."}</p>}
 			</CommandGroup> : page ? <><CommandEmpty>No project matches.</CommandEmpty><CommandGroup heading="New chat in">{activeProjects.map(projectItem)}</CommandGroup></> : <>
 			{!messageSearch.hits.length && !messageSearch.searching && <CommandEmpty>Nothing matches.</CommandEmpty>}
 			<CommandGroup heading="Actions">
-				{paletteEntries.map(entry => { const Icon = entryIcons[entry.title] ?? Bot, keys = entryShortcut(entry); return <CommandItem key={entry.title} value={`${entry.title} ${entry.keywords ?? ""}`} onSelect={() => run(() => void runAppCommand(entry.command, entry.args).catch(reason => showToast("error", `Could not run ${entry.title}`, errorText(reason))))}><Icon />{entry.title}{keys && <CommandShortcut>{keys}</CommandShortcut>}</CommandItem>; })}
-				{activeProjects.length > 0 && <CommandItem value="New chat in project folder start" onSelect={() => { setSearch(""); setPage("new-chat-in"); }}><SquarePen />New chat in…</CommandItem>}
-				{operatorChat && <CommandItem value={operatorChat.operator?.paused ? "Resume the operator" : "Pause the operator stop"} onSelect={() => run(() => void runAppCommand(operatorChat.operator?.paused ? "operator.resume" : "operator.pause").catch(reason => showToast("error", "Could not change the operator", errorText(reason))))}>{operatorChat.operator?.paused ? <Play /> : <Pause />}{operatorChat.operator?.paused ? "Resume the operator" : "Pause the operator"}</CommandItem>}
+				{paletteEntries.map(entry => { const icon = entryIcons[entry.title] ?? "bot", keys = entryShortcut(entry); return <CommandItem key={entry.title} value={`${entry.title} ${entry.keywords ?? ""}`} onSelect={() => run(() => void runAppCommand(entry.command, entry.args).catch(reason => showToast("error", `Could not run ${entry.title}`, errorText(reason))))}><ActionIcon name={icon} />{entry.title}{keys && <CommandShortcut>{keys}</CommandShortcut>}</CommandItem>; })}
+				{activeProjects.length > 0 && <CommandItem value="New chat in project folder start" onSelect={() => { setSearch(""); setPage("new-chat-in"); }}><ActionIcon name="newChat" />New chat in…</CommandItem>}
+				{operatorChat && <CommandItem value={operatorChat.operator?.paused ? "Resume the operator" : "Pause the operator stop"} onSelect={() => run(() => void runAppCommand(operatorChat.operator?.paused ? "operator.resume" : "operator.pause").catch(reason => showToast("error", "Could not change the operator", errorText(reason))))}>{operatorChat.operator?.paused ? <ActionIcon name="play" /> : <ActionIcon name="pause" />}{operatorChat.operator?.paused ? "Resume the operator" : "Pause the operator"}</CommandItem>}
 				<CommandItem onSelect={() => run(() => { if (api) void api.chooseProject().then(state => { setOverview(state); const added = state.projects.find(value => !overview.projects.some(existing => existing.id === value.id)); if (added) { setMode("code"); setNewChatProjectId(added.id); select(undefined); } }, reason => setError(errorText(reason))); })}><ActionIcon name="addFolder" />Open project folder…</CommandItem>
-				<CommandItem value="Clone a repository git url github add project" onSelect={() => run(() => openCloneProject())}><GitBranchPlus />Clone a repository…</CommandItem>
-				<CommandItem value="Import past conversations claude code codex history sessions transcripts continue" onSelect={() => run(() => openImportSessions())}><History />Import past conversations…</CommandItem>
-				{activeProjects.length > 0 && <CommandItem value="Triage a GitHub issue investigate reproduce bug report" onSelect={() => { setSearch(""); setPage("triage-issue"); }}><Bug />Triage a GitHub issue…</CommandItem>}
+				<CommandItem value="Clone a repository git url github add project" onSelect={() => run(() => openCloneProject())}><ActionIcon name="clone" />Clone a repository…</CommandItem>
+				<CommandItem value="Import past conversations claude code codex history sessions transcripts continue" onSelect={() => run(() => openImportSessions())}><ActionIcon name="history" />Import past conversations…</CommandItem>
+				{activeProjects.length > 0 && <CommandItem value="Triage a GitHub issue investigate reproduce bug report" onSelect={() => { setSearch(""); setPage("triage-issue"); }}><ActionIcon name="bug" />Triage a GitHub issue…</CommandItem>}
 				{api && <CommandItem value="Triage a Phaseo bug triage debug problem broken crash report issue fix this app" onSelect={() => run(() => { setMode("code"); select(undefined); startTriage(api); })}>
-					<Bug /><span className="flex min-w-0 flex-col"><span>Triage a Phaseo bug</span><span className="truncate text-xs text-muted-foreground">An agent debugs this app from its own source and helps you file an issue</span></span>
+					<ActionIcon name="bug" /><span className="flex min-w-0 flex-col"><span>Triage a Phaseo bug</span><span className="truncate text-xs text-muted-foreground">An agent debugs this app from its own source and helps you file an issue</span></span>
 				</CommandItem>}
 			<CommandItem value="Archived chats restore unarchive deleted" onSelect={() => run(() => openArchivedChats())}><ActionIcon name="archive" />Archived chats</CommandItem>
 				{current?.projectId && <CommandItem value="Show linked pull requests prs linked stack" disabled={!linked.length} onSelect={() => run(() => setRightPanel("pulls"))}><ActionIcon name="link" />Show linked pull requests</CommandItem>}
-			{current?.projectId && <CommandItem value="Go to file open quick" onSelect={() => run(() => runCommand("filePicker.toggle"))}><FileSearch />Go to file…<CommandShortcut>{shortcut("filePicker.toggle")}</CommandShortcut></CommandItem>}
-			{current?.projectId && <CommandItem value="Search in files contents grep project text" onSelect={() => run(() => runCommand("projectSearch.toggle"))}><TextSearch />Search in files…<CommandShortcut>{shortcut("projectSearch.toggle")}</CommandShortcut></CommandItem>}
+			{current?.projectId && <CommandItem value="Go to file open quick" onSelect={() => run(() => runCommand("filePicker.toggle"))}><ActionIcon name="fileSearch" />Go to file…<CommandShortcut>{shortcut("filePicker.toggle")}</CommandShortcut></CommandItem>}
+			{current?.projectId && <CommandItem value="Search in files contents grep project text" onSelect={() => run(() => runCommand("projectSearch.toggle"))}><ActionIcon name="textSearch" />Search in files…<CommandShortcut>{shortcut("projectSearch.toggle")}</CommandShortcut></CommandItem>}
 			{current && <CommandItem value="Find in chat search this conversation" onSelect={() => run(() => runCommand("chat.find"))}><ActionIcon name="search" />Find in chat<CommandShortcut>{shortcut("chat.find")}</CommandShortcut></CommandItem>}
-				{themes.filter(option => option.value !== theme).map(option => <CommandItem key={option.value} value={`${option.label} appearance colour mode`} onSelect={() => run(() => setTheme(option.value))}><option.icon />{option.label}</CommandItem>)}
+				{themes.filter(option => option.value !== theme).map(option => <CommandItem key={option.value} value={`${option.label} appearance colour mode`} onSelect={() => run(() => setTheme(option.value))}><ActionIcon name={option.icon} />{option.label}</CommandItem>)}
 			</CommandGroup>
 			{current && <CommandGroup heading="This chat">
-				{currentProject && <CommandItem value={`New chat in ${currentProject.name} this project`} onSelect={() => startIn(currentProject.id)}><SquarePen />{currentProject.worktree ? `New chat on ${currentProject.worktree.branch}` : `New chat in ${currentProject.name}`}</CommandItem>}
+				{currentProject && <CommandItem value={`New chat in ${currentProject.name} this project`} onSelect={() => startIn(currentProject.id)}><ActionIcon name="newChat" />{currentProject.worktree ? `New chat on ${currentProject.worktree.branch}` : `New chat in ${currentProject.name}`}</CommandItem>}
 				<CommandItem value="Rename chat title" onSelect={() => run(() => window.dispatchEvent(new Event(renameChatEvent)))}><ActionIcon name="pencil" />Rename chat</CommandItem>
 				<CommandItem value={current.pinned ? "Unpin chat" : "Pin chat"} onSelect={() => run(() => void threadActions.pin(current))}>{current.pinned ? <ActionIcon name="unpin" /> : <ActionIcon name="pin" />}{current.pinned ? "Unpin chat" : "Pin chat"}</CommandItem>
 				{current.projectId && (isSettled(current)
-					? <CommandItem value="Un-settle chat unsettle" onSelect={() => run(() => runCommand("thread.settle"))}><Undo2 />Un-settle chat<CommandShortcut>{shortcut("thread.settle")}</CommandShortcut></CommandItem>
-					: <CommandItem value="Settle chat done" disabled={Boolean(settleBlocker(current))} onSelect={() => run(() => runCommand("thread.settle"))}><CircleCheck />Settle chat<CommandShortcut>{shortcut("thread.settle")}</CommandShortcut></CommandItem>)}
+					? <CommandItem value="Un-settle chat unsettle" onSelect={() => run(() => runCommand("thread.settle"))}><ActionIcon name="undo" />Un-settle chat<CommandShortcut>{shortcut("thread.settle")}</CommandShortcut></CommandItem>
+					: <CommandItem value="Settle chat done" disabled={Boolean(settleBlocker(current))} onSelect={() => run(() => runCommand("thread.settle"))}><ActionIcon name="complete" />Settle chat<CommandShortcut>{shortcut("thread.settle")}</CommandShortcut></CommandItem>)}
 				<CommandItem value="Mark chat unread" disabled={!current.lastCompletedAt} onSelect={() => run(() => void threadActions.markUnread(current))}><ActionIcon name="mail" />Mark unread</CommandItem>
 				{currentProject && <CommandItem value={`Project settings ${currentProject.name}`} onSelect={() => run(() => openProjectSettings(currentProject.id))}><ActionIcon name="settings" />Project settings</CommandItem>}
 				{shelfProject && !shelfProject.archived && <CommandItem value={`${shelfProject.pinned ? "Unpin" : "Pin"} project ${shelfProject.name}`} onSelect={() => organizeProject(shelfProject.id, { pinned: !shelfProject.pinned })}>{shelfProject.pinned ? <ActionIcon name="unpin" /> : <ActionIcon name="pin" />}{shelfProject.pinned ? "Unpin project" : "Pin project"}</CommandItem>}
@@ -125,7 +124,7 @@ export function CommandPalette() {
 				{compareGroups.map(group => {
 					const members = group.taskIds.map(taskById).filter((task): task is NonNullable<typeof task> => !!task);
 					return <CommandItem key={group.id} value={`${group.title} ${members.map(task => modelName(task)).join(" ")} ${group.id}`} onSelect={() => run(() => openCompare(group.id))}>
-						<Columns3 />
+						<ActionIcon name="compare" />
 						<span className="min-w-0 flex-1 truncate">{group.title}</span>
 						<ModelStack models={members} size="sm" ringClassName="bg-popover ring-popover" />
 					</CommandItem>;

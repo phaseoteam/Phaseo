@@ -720,8 +720,33 @@ button:is(:disabled, [aria-disabled="true"]) .gesture-icon:is([data-icon-gesture
 .gesture-icon[data-icon-gesture="approve"] > path { --icon-gesture: icon-thread; stroke-dasharray: 1; }
 .gesture-icon[data-icon-gesture="requestChanges"] > path:nth-child(2) { --icon-gesture: icon-pin-needle; transform-origin: 12px 9px; }
 .gesture-icon[data-icon-gesture="retry"] > path { --icon-gesture: icon-retry-turn; --icon-gesture-duration: 380ms; }
+.gesture-icon:is([data-icon-gesture="activity"], [data-icon-gesture="code"], [data-icon-gesture="moon"], [data-icon-gesture="undo"]) > path,
+.gesture-icon[data-icon-gesture="bot"] > path:first-child,
+.gesture-icon[data-icon-gesture="browser"] > path:first-of-type,
+.gesture-icon[data-icon-gesture="clone"] > path:nth-child(4),
+.gesture-icon[data-icon-gesture="sun"] > path,
+.gesture-icon[data-icon-gesture="system"] > rect,
+.gesture-icon:is([data-icon-gesture="fileSearch"], [data-icon-gesture="textSearch"]) > circle,
+.gesture-icon:is([data-icon-gesture="compare"], [data-icon-gesture="editor"]) > path { --icon-gesture: icon-thread; stroke-dasharray: 1; }
+.gesture-icon[data-icon-gesture="account"] > circle { --icon-gesture: icon-lift; }
+.gesture-icon[data-icon-gesture="bot"] > path:nth-last-child(-n+2) { --icon-gesture: icon-terminal-cursor; }
+.gesture-icon[data-icon-gesture="limits"] > path:first-child { --icon-gesture: icon-clock-hand; transform-origin: 12px 14px; }
+.gesture-icon[data-icon-gesture="history"] > path:last-child { --icon-gesture: icon-clock-hand; }
+.gesture-icon[data-icon-gesture="keyboard"] > path:nth-child(7) { --icon-gesture: icon-seat; }
+.gesture-icon[data-icon-gesture="files"] > path:nth-child(-n+2) { --icon-gesture: icon-seat; }
+.gesture-icon[data-icon-gesture="newChat"] > path:last-child,
+.gesture-icon[data-icon-gesture="bug"] > path:is(:nth-child(3), :nth-child(10)) { --icon-gesture: icon-write; }
+.gesture-icon[data-icon-gesture="pause"] > rect,
+.gesture-icon[data-icon-gesture="clone"] > path:nth-child(5) { --icon-gesture: icon-add-vertical; }
+.gesture-icon[data-icon-gesture="clone"] > path:nth-child(6) { --icon-gesture: icon-add-horizontal; }
 :is(button, [role="menuitem"], [role="option"]):is(:hover, :focus-visible, [data-highlighted], [data-selected="true"]):not(:disabled):not([aria-disabled="true"]) .gesture-icon > * {
 	animation: var(--icon-gesture, none) var(--icon-gesture-duration, 320ms) cubic-bezier(0.2, 0.8, 0.2, 1) var(--icon-gesture-delay, 0ms) both;
+}
+/* The palette stays immediate while typing or using arrow keys; pointer hover opts into one short gesture. */
+.desktop-command-palette :is(button, [role="option"]):is(:hover, :focus-visible, [data-highlighted], [data-selected="true"]):not(:disabled):not([aria-disabled="true"]) .gesture-icon > * { animation: none; }
+@media (hover: hover) and (pointer: fine) {
+	.desktop-command-palette [role="option"]:hover:not([data-disabled="true"]):not([aria-disabled="true"]) .gesture-icon > * { animation: var(--icon-gesture, none) 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+	.desktop-command-palette [role="option"]:hover:not([data-disabled="true"]):not([aria-disabled="true"]) .gesture-icon[data-icon-gesture="play"] > * { translate: 1px 0; }
 }
 @media (prefers-reduced-motion: reduce) {
 	.gesture-icon:is([data-icon-gesture="play"], [data-icon-gesture="filter"]) > * { translate: 0 !important; transition: none; }

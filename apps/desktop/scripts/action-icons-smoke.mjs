@@ -9,8 +9,8 @@ import { build } from "vite";
 const scratch = mkdtempSync(path.join(tmpdir(), "phaseo-action-icons-"));
 app.setPath("userData", path.join(scratch, "profile"));
 const root = path.resolve(import.meta.dirname, "..");
-const names = ["pin", "unpin", "archive", "restore", "edit", "pencil", "link", "unlink", "camera", "up", "down", "publish", "folder", "addFolder", "mail", "signIn", "schedule", "inbox", "thread", "usage", "issue", "complete", "notPlanned", "draftPullRequest", "closePullRequest", "comment", "open", "approve", "requestChanges", "retry", "sidebarLeft", "sidebarRight", "back", "forward", "play", "filter"];
-const fixedParts = { archive: [1], restore: [1], camera: [0], publish: [1], folder: [0], addFolder: [2], mail: [1], signIn: [2], schedule: [1, 2, 3, 4, 5], inbox: [1], thread: [0], usage: [0], issue: [0], complete: [0], notPlanned: [0], draftPullRequest: [0, 1, 4], closePullRequest: [0, 1, 4, 5], requestChanges: [0, 2], sidebarLeft: [0, 1, 2], sidebarRight: [0, 1, 2] };
+const names = ["pin", "unpin", "archive", "restore", "edit", "pencil", "link", "unlink", "camera", "up", "down", "publish", "folder", "addFolder", "mail", "signIn", "schedule", "inbox", "thread", "usage", "issue", "complete", "notPlanned", "draftPullRequest", "closePullRequest", "comment", "open", "approve", "requestChanges", "retry", "sidebarLeft", "sidebarRight", "back", "forward", "play", "filter", "account", "activity", "bot", "browser", "bug", "clone", "code", "compare", "editor", "files", "fileSearch", "history", "keyboard", "limits", "moon", "newChat", "pause", "sun", "system", "textSearch", "undo"];
+const fixedParts = { archive: [1], restore: [1], camera: [0], publish: [1], folder: [0], addFolder: [2], mail: [1], signIn: [2], schedule: [1, 2, 3, 4, 5], inbox: [1], thread: [0], usage: [0], issue: [0], complete: [0], notPlanned: [0], draftPullRequest: [0, 1, 4], closePullRequest: [0, 1, 4, 5], requestChanges: [0, 2], sidebarLeft: [0, 1, 2], sidebarRight: [0, 1, 2], account: [1], bot: [1, 2, 3], browser: [0, 2], bug: [0, 1, 3, 4, 5, 6, 7, 8, 10], clone: [0, 1, 2], compare: [0], editor: [2], files: [2], fileSearch: [0, 1, 3], history: [0, 1], keyboard: [8], limits: [1], newChat: [0], sun: [0], system: [1, 2], textSearch: [0, 1, 2, 4] };
 const importPath = relative => JSON.stringify(path.join(root, relative).replaceAll("\\", "/"));
 writeFileSync(path.join(scratch, "entry.tsx"), `
 import React from ${importPath("node_modules/react/index.js")};
@@ -39,7 +39,7 @@ ${source.slice(start, end)}
 body{font:14px system-ui;background:#161616;color:#eee;margin:24px}.samples{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}button{display:flex;align-items:center;gap:8px;padding:12px;background:transparent;color:inherit;border:1px solid #555;border-radius:6px}svg{width:18px;height:18px}
 </style></head><body><div id="root"></div><script src="bundle/icons.js"></script></body></html>`);
 const output = process.argv.find(value => value.startsWith("--output="))?.slice(9);
-const deadline = setTimeout(() => { console.error("Action icon fixture deadline"); app.exit(1); }, 90_000);
+const deadline = setTimeout(() => { console.error("Action icon fixture deadline"); app.exit(1); }, 150_000);
 deadline.unref();
 app.whenReady().then(async () => { try {
 	const window = new BrowserWindow({ show: false, width: 800, height: 1000, webPreferences: { backgroundThrottling: false } });
