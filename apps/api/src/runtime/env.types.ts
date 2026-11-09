@@ -134,6 +134,8 @@ export type GatewayBindings = {
     AKASHML_BASE_URL?: string;
     PRIMALABS_API_KEY?: string;
     PRIMALABS_BASE_URL?: string;
+    LG_EXAONE_PLATFORM?: string;
+    LG_EXAONE_BASE_URL?: string;
     ALIBABA_CLOUD_API_KEY?: string;
     MODELSCOPE_API_KEY?: string;
     MODELSCOPE_BASE_URL?: string;

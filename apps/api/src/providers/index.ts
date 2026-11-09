@@ -42,6 +42,7 @@ const ADAPTERS: Record<string, ProviderAdapter> = {
     ai21: AI21Adapter,
     akashml: createOpenAICompatibleAdapter("akashml"),
     primalabs: createOpenAICompatibleAdapter("primalabs"),
+    lg: createOpenAICompatibleAdapter("lg"),
     ambient: createOpenAICompatibleAdapter("ambient"),
     empiriolabs: createOpenAICompatibleAdapter("empiriolabs"),
     scaledown: createOpenAICompatibleAdapter("scaledown"),
