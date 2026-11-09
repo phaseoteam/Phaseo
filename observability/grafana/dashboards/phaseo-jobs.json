@@ -100,7 +100,25 @@
           "text": "",
           "value": ""
         },
-        "hide": 0
+        "hide": 2
+      },
+      {
+        "name": "tempo",
+        "label": "Traces",
+        "type": "datasource",
+        "query": "tempo",
+        "refresh": 1,
+        "hide": 2
+      },
+      {
+        "name": "job",
+        "label": "Job contains",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "text": "",
+          "value": ""
+        }
       }
     ]
   },
@@ -124,7 +142,7 @@
       "id": 1,
       "gridPos": {
         "x": 0,
-        "y": 0,
+        "y": 18,
         "w": 12,
         "h": 9
       },
@@ -138,7 +156,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (job) (count_over_time({service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", job=\"job\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"job.run\" | outcome=\"completed\" [$__auto]))",
+          "expr": "sum by (job) (count_over_time({service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", job=\"job\", outcome=\"outcome\" | __error__=\"\" | job=~\".*${job:regex}.*\" | environment=\"$environment\" | event_name=\"job.run\" | outcome=\"completed\" [$__auto]))",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -170,7 +188,7 @@
       "id": 2,
       "gridPos": {
         "x": 12,
-        "y": 0,
+        "y": 18,
         "w": 12,
         "h": 9
       },
@@ -184,7 +202,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (job) (count_over_time({service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", job=\"job\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"job.run\" | outcome=\"error\" [$__auto]))",
+          "expr": "sum by (job) (count_over_time({service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", job=\"job\", outcome=\"outcome\" | __error__=\"\" | job=~\".*${job:regex}.*\" | environment=\"$environment\" | event_name=\"job.run\" | outcome=\"error\" [$__auto]))",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -216,7 +234,7 @@
       "id": 3,
       "gridPos": {
         "x": 0,
-        "y": 9,
+        "y": 27,
         "w": 12,
         "h": 9
       },
@@ -230,7 +248,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "quantile_over_time(0.95, {service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", duration_ms=\"duration_ms\", job=\"job\" | __error__=\"\" | environment=\"$environment\" | event_name=\"job.run\" | unwrap duration_ms | __error__=\"\" [$__auto]) by (job)",
+          "expr": "quantile_over_time(0.95, {service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", duration_ms=\"duration_ms\", job=\"job\" | __error__=\"\" | job=~\".*${job:regex}.*\" | environment=\"$environment\" | event_name=\"job.run\" | unwrap duration_ms | __error__=\"\" [$__auto]) by (job)",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -262,7 +280,7 @@
       "id": 4,
       "gridPos": {
         "x": 12,
-        "y": 9,
+        "y": 27,
         "w": 12,
         "h": 9
       },
@@ -276,7 +294,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (job) (count_over_time({service_name=~\"phaseo-jobs\"} | json environment=\"environment\", event_name=\"event_name\", job=\"job\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"job.run\" | outcome=\"skipped\" [$__auto]))",
+          "expr": "sum by (job) (count_over_time({service_name=~\"phaseo-jobs\"} | json environment=\"environment\", event_name=\"event_name\", job=\"job\", outcome=\"outcome\" | __error__=\"\" | job=~\".*${job:regex}.*\" | environment=\"$environment\" | event_name=\"job.run\" | outcome=\"skipped\" [$__auto]))",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -308,7 +326,7 @@
       "id": 5,
       "gridPos": {
         "x": 0,
-        "y": 18,
+        "y": 36,
         "w": 12,
         "h": 9
       },
@@ -322,7 +340,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "{service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"ops.failure\"",
+          "expr": "{service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", job=\"job\" | __error__=\"\" | job=~\".*${job:regex}.*\" | environment=\"$environment\" | event_name=\"ops.failure\"",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -354,7 +372,7 @@
       "id": 6,
       "gridPos": {
         "x": 12,
-        "y": 18,
+        "y": 36,
         "w": 12,
         "h": 9
       },
@@ -368,7 +386,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "{service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"job.run\"",
+          "expr": "{service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", job=\"job\" | __error__=\"\" | job=~\".*${job:regex}.*\" | environment=\"$environment\" | event_name=\"job.run\"",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -394,6 +412,433 @@
         "wrapLogMessage": true,
         "enableLogDetails": true,
         "sortOrder": "Descending"
+      }
+    },
+    {
+      "title": "Job execution results",
+      "type": "table",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Selected-range invocation counts by outcome. Zero means no observed events for that outcome among jobs with received runs. Completed means the handler returned; disabled/skipped jobs are distinct. This does not measure backlog or data freshness.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "expr": "label_replace(((sum by (service_name, job) (count_over_time({service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", job=\"job\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"job.run\" | job=~\".*${job:regex}.*\" | outcome=\"completed\" | __error__=\"\" [$__range]))) or (0 * (sum by (service_name, job) (count_over_time({service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", job=\"job\" | __error__=\"\" | environment=\"$environment\" | event_name=\"job.run\" | job=~\".*${job:regex}.*\" | __error__=\"\" [$__range]))))), \"measure\", \"completed\", \"\", \"\") or label_replace(((sum by (service_name, job) (count_over_time({service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", job=\"job\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"job.run\" | job=~\".*${job:regex}.*\" | outcome=\"error\" | __error__=\"\" [$__range]))) or (0 * (sum by (service_name, job) (count_over_time({service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", job=\"job\" | __error__=\"\" | environment=\"$environment\" | event_name=\"job.run\" | job=~\".*${job:regex}.*\" | __error__=\"\" [$__range]))))), \"measure\", \"error\", \"\", \"\") or label_replace(((sum by (service_name, job) (count_over_time({service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", job=\"job\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"job.run\" | job=~\".*${job:regex}.*\" | outcome=\"skipped\" | __error__=\"\" [$__range]))) or (0 * (sum by (service_name, job) (count_over_time({service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", job=\"job\" | __error__=\"\" | environment=\"$environment\" | event_name=\"job.run\" | job=~\".*${job:regex}.*\" | __error__=\"\" [$__range]))))), \"measure\", \"skipped\", \"\", \"\")"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns",
+            "valueLabel": "measure"
+          }
+        },
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "service_name": 0,
+              "job": 1,
+              "completed": 2,
+              "error": 3,
+              "skipped": 4
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "error",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "—",
+          "custom": {
+            "filterable": true,
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "service_name"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Service"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "job"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Job"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Failure %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p95 ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "job"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Investigate",
+                    "url": "/d/phaseo-jobs?var-environment=$environment&from=$__from&to=$__to&var-job=${__data.fields[\"job\"]}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 7,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "title": "Failed job records",
+      "type": "table",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Newest 100 failed invocations. Known item failures appear when the job explicitly emits them; arbitrary internally handled errors are not inferred.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "expr": "{service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", job=\"job\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"job.run\" | job=~\".*${job:regex}.*\" | outcome=\"error\"",
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "maxLines": 100,
+          "direction": "backward"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "Line",
+            "format": "json",
+            "replace": true
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "timestamp",
+                "job",
+                "outcome",
+                "duration_ms",
+                "failed_count",
+                "processed_count",
+                "scheduled_at"
+              ]
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "indexByName": {
+              "timestamp": 0,
+              "job": 1,
+              "outcome": 2,
+              "duration_ms": 3,
+              "failed_count": 4,
+              "processed_count": 5,
+              "scheduled_at": 6
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "timestamp",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "—",
+          "custom": {
+            "filterable": true,
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "timestamp"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Time (UTC)"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "job"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Job"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "outcome"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Outcome"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "duration_ms"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Duration"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "failed_count"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Failed items"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "processed_count"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Processed items"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "scheduled_at"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Scheduled at"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "duration_ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "scheduled_at"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_stack"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 480
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Investigate",
+                    "url": "/d/phaseo-gateway?var-environment=$environment&from=$__from&to=$__to&var-request=${__data.fields[\"request_id\"]}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trace_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open sampled trace",
+                    "url": "/explore?schemaVersion=1&panes=%7B%22trace%22%3A%7B%22datasource%22%3A%22${tempo}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22queryType%22%3A%22traceId%22%2C%22query%22%3A%22${__value.raw}%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 8,
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 24,
+        "h": 9
       }
     }
   ]
