@@ -81,7 +81,8 @@ class FakeDatabase {
 		const audited = new Set(this.rows.filter((row) => row.billingId && row.success && row.createdAt <= now).map((row) => row.billingId));
 		const rows = this.charges.filter((row) => (keyIds === null || keyIds.includes(row.keyId)) && !exclude.includes(row.billingId) &&
 			!audited.has(row.billingId) && (start === null || row.at >= start) && row.at <= now);
-		return { cost: rows.reduce((sum, row) => sum + row.total, 0), requests: new Set(rows.map((row) => row.billingId)).size };
+		// Charges are spend, not successful requests: requests come from successful request rows only.
+		return { cost: rows.reduce((sum, row) => sum + row.total, 0), requests: 0 };
 	}
 	fail = false;
 	/** Holds every seed read until resolved (a stalled Postgres call). */
@@ -151,7 +152,8 @@ class FakeDatabase {
 		const guardrail_budgets = this.guardrails.map((counter) => {
 			const start = windows[counter.interval];
 			const usage = this.rows.filter((row) => row.keyId !== null && counter.keyIds.includes(row.keyId) && row.success &&
-				row.createdAt >= start && row.createdAt <= now && !exclude.includes(row.requestId)).reduce((sum, row) => sum + row.cost, 0);
+				row.createdAt >= start && row.createdAt <= now && !exclude.includes(row.requestId)).reduce((sum, row) => sum + row.cost, 0) +
+				this.chargeCost(counter.keyIds, start, exclude).cost;
 			const end = counter.interval === "daily" ? start + DAY : counter.interval === "weekly" ? start + 7 * DAY
 				: Date.UTC(new Date(start).getUTCFullYear(), new Date(start).getUTCMonth() + 1, 1);
 			return {
@@ -653,12 +655,13 @@ describe("spend-limit coordinator", () => {
 			debit("b-lost", 100);
 			await reseed();
 			expect(await daily()).toBe(100);
-			// Checkpoint 2 opens the entry. It counts from memory only once a seed excluding the charge
-			// row is published, which the coordinator starts at once: never $100 + $250.
+			// Checkpoint 2 opens the entry and counts from memory at once. Until the seed that excludes
+			// the charge row is published (started at once) the $100 the seed counts is counted twice:
+			// a brief over-count ($350), never an under-count.
 			let unstall!: () => void;
 			database.stall = new Promise((resolve) => { unstall = resolve; });
 			await checkpoint("b-lost", 250, 2);
-			expect(await daily()).toBe(100);
+			expect(await daily()).toBe(350);
 			database.stall = null;
 			unstall();
 			await flush();
@@ -699,6 +702,36 @@ describe("spend-limit coordinator", () => {
 		await flush();
 		expect((await probe(key))?.daily).toMatchObject({ costUsedNanos: 1_100 });
 		expect((await checkSpendLimit({ workspaceId: WORKSPACE, keyId: key, admissionId: "req-c" })).outcome).toBe("denied");
+	});
+
+	it("counts a charged cancellation's cost but not a successful request, and frees its request slot", async () => {
+		runtime.bindings = { ...runtime.bindings!, GATEWAY_SPEND_LIMIT_DO_MODE: "enforce" };
+		const key = "00000000-0000-4000-8000-000000000004";
+		// One request a day.
+		database.keys.set(key, { workspaceId: WORKSPACE, daily: [1, 1_000] });
+		const first = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: key, admissionId: "req-cancel" });
+		if (first.outcome !== "allowed") throw new Error("expected admission");
+		// The client left; the request kept a $3 charge and its failure row was written.
+		settleEnforcedSpend({ admission: first.admission, rowWritten: true, workspaceId: WORKSPACE, keyId: key,
+			billingRequestId: "bill-cancel", requestId: "req-cancel", costNanos: 300, requests: 0 });
+		await flush();
+		expect((await probe(key))?.daily).toMatchObject({ requestsUsed: 0, costUsedNanos: 300 });
+		expect((await checkSpendLimit({ workspaceId: WORKSPACE, keyId: key, admissionId: "req-next" })).outcome).toBe("allowed");
+	});
+
+	it("gives back a stepped request's slot when its final refunds it to 0 as a failure", async () => {
+		runtime.bindings = { ...runtime.bindings!, GATEWAY_SPEND_LIMIT_DO_MODE: "enforce" };
+		const key = "00000000-0000-4000-8000-000000000005";
+		database.keys.set(key, { workspaceId: WORKSPACE, daily: [1, 1_000] });
+		const first = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: key, admissionId: "req-fail" });
+		if (first.outcome !== "allowed") throw new Error("expected admission");
+		const args = { admission: first.admission, workspaceId: WORKSPACE, keyId: key, billingRequestId: "bill-fail", requestId: "req-fail" };
+		recordCheckpointSpend({ ...args, costNanos: 300, revision: 1 });
+		await flush();
+		settleEnforcedSpend({ ...args, rowWritten: true, costNanos: 0, replace: true, requests: 0 });
+		await flush();
+		expect((await probe(key))?.daily).toMatchObject({ requestsUsed: 0, costUsedNanos: 0 });
+		expect((await checkSpendLimit({ workspaceId: WORKSPACE, keyId: key, admissionId: "req-after" })).outcome).toBe("allowed");
 	});
 
 	it("frees the slice again when a checkpointed request is refunded to 0", async () => {
@@ -1035,6 +1068,128 @@ describe("spend-limit coordinator", () => {
 				keyId: API_KEY, coordinator: expect.objectContaining({ outcome: "denied", reason: "daily_request_limit_reached" }),
 			}));
 		} finally { warn.mockRestore(); }
+	});
+
+	describe("seed transitions never under-count", () => {
+		// A $4 shared guardrail over two keys: A spends, B is refused once A's spend reaches it.
+		const A = "transition-a";
+		const B = "transition-b";
+		let unstall: () => void = () => {};
+		const stall = () => { database.stall = new Promise((resolve) => { unstall = resolve; }); };
+		const release = async () => { database.stall = null; unstall(); await flush(); };
+		/** B's admission: the counter's value when refused, or "allowed". */
+		const admitB = async () => {
+			const id = `b-${Math.random()}`;
+			const result = await coordinator.acquire(WORKSPACE, B, { requests: 1, units: 0 }, { requests: 1, units: 0 }, [], id);
+			if ("denial" in result) return result.denial?.gate.currentValue;
+			if (result.lease.expiresAt) await coordinator.returnLeases(WORKSPACE, [{ id: result.lease.id, usedRequests: 0, usedUnits: 0, inFlightRequests: 0 }]);
+			else await coordinator.release(WORKSPACE, result.lease.id, id);
+			return "allowed";
+		};
+		/** Publishes a fresh seed (the background reseed after a minute). */
+		const reseedNow = async () => {
+			vi.setSystemTime(Date.now() + SPEND_LEASE.reseedMs + 1);
+			await admitB();
+			await flush();
+		};
+		beforeEach(async () => {
+			for (const keyId of [A, B]) database.keys.set(keyId, { workspaceId: WORKSPACE });
+			database.guardrails.push({ guardrailId: "g-t", name: "Team", counting: "shared", counter: "department:d-t", interval: "daily", limit: 400, keyIds: [A, B] });
+			await coordinator.acquire(WORKSPACE, A, { requests: 1, units: 0 }, { requests: 1, units: 0 }, [], "warm-a");
+			expect(await admitB()).toBe("allowed");
+		});
+
+		// A's $4.50 request was charged; its audit row never lands, so only the charge row records it.
+		const chargeA = async () => {
+			database.charges.push({ billingId: "bill-a", keyId: A, total: 450, at: Date.now() });
+			await coordinator.record(WORKSPACE, { keyId: A, billingRequestId: "bill-a", requestId: "req-a", costNanos: 450, requests: 1 });
+			expect(await admitB()).toBe(450);
+		};
+		// Keeps the seed fresh while the entry ages to just under its pending TTL, then past it: the
+		// next reload is the first to hand it to the database.
+		const ageEntryPastTtl = async () => {
+			const recordedAt = Date.now();
+			while (Date.now() + 3 * 60_000 + SPEND_LEASE.reseedMs + 1 < recordedAt + SPEND_LEASE.pendingTtlMs) {
+				vi.setSystemTime(Date.now() + 3 * 60_000);
+				await reseedNow();
+				expect(await admitB()).toBe(450);
+			}
+			vi.setSystemTime(recordedAt + SPEND_LEASE.pendingTtlMs + 30_000);
+		};
+
+		it("keeps an expired entry counted while the seed that takes it over is loading", async () => {
+			await chargeA();
+			await ageEntryPastTtl();
+			stall();
+			// This admission starts the reload that hands the entry to the database, and must not pass.
+			expect(await admitB()).toBe(450);
+			expect(await admitB()).toBe(450);
+			await release();
+			// The new seed counts the charge row; memory no longer holds the entry.
+			expect(database.calls.at(-1)?.exclude).toEqual([]);
+			expect(await admitB()).toBe(450);
+		});
+
+		it("keeps an expired entry counted while the seed that takes it over fails to load", async () => {
+			await chargeA();
+			await ageEntryPastTtl();
+			database.fail = true;
+			expect(await admitB()).toBe(450);
+			await flush();
+			expect(await admitB()).toBe(450);
+			database.fail = false;
+			await reseedNow();
+			expect(database.calls.at(-1)?.exclude).toEqual([]);
+			expect(await admitB()).toBe(450);
+		});
+
+		it("counts entries past the exclusion limit while the seed that takes them over is loading", async () => {
+			// The reload starts when 2,500 requests reach the 5,000-id limit and stalls; 100 more are
+			// recorded while it loads, so it loads again with 2,600 requests (5,200 ids): the newest
+			// 2,500 are excluded and the oldest 100 handed to the seed. That second load stalls too.
+			stall();
+			const first = unstall;
+			for (let batch = 0; batch < 26; batch += 1) {
+				await coordinator.record(WORKSPACE, Array.from({ length: 100 }, (_, index) => {
+					const n = batch * 100 + index;
+					return { keyId: A, billingRequestId: `bill-o-${n}`, requestId: `req-o-${n}`, costNanos: 1, requests: 1 };
+				}));
+			}
+			stall();
+			first();
+			for (let i = 0; i < 5; i += 1) await tick();
+			// The second load has started with the overflow handed over: all 2,600 still count.
+			expect(await admitB()).toBe(2_600);
+			await release();
+			expect(database.calls.at(-1)?.exclude).toHaveLength(SPEND_LEASE.maxExcludedRequestIds);
+		});
+
+		it("counts a checkpoint recorded after a restart at once, before the seed that excludes it loads", async () => {
+			// B already spent $3; A's stream debits $4.50 at checkpoint 2, whose record reaches a
+			// restarted coordinator (checkpoint 1's record went to the previous one).
+			database.rows.push({ requestId: "b-earlier", keyId: B, success: true, cost: 300, createdAt: Date.now() });
+			coordinator = createCoordinator();
+			await coordinator.acquire(WORKSPACE, A, { requests: 1, units: 0 }, { requests: 1, units: 0 }, [], "warm-a2");
+			expect(await admitB()).toBe("allowed");
+			database.charges.push({ billingId: "bill-s", keyId: A, total: 450, at: Date.now() });
+			stall();
+			await coordinator.record(WORKSPACE, { keyId: A, billingRequestId: "bill-s", requestId: "req-s", costNanos: 450, requests: 1, replace: true, revision: 2 });
+			// Counted at once: $3 + $4.50, though the published seed counts nothing of it yet.
+			expect(await admitB()).toBe(750);
+			await release();
+			expect(await admitB()).toBe(750);
+		});
+
+		it("counts a final that arrives first, before the seed that excludes it loads", async () => {
+			database.rows.push({ requestId: "b-earlier", keyId: B, success: true, cost: 300, createdAt: Date.now() });
+			await reseedNow();
+			database.charges.push({ billingId: "bill-f", keyId: A, total: 450, at: Date.now() });
+			stall();
+			await coordinator.record(WORKSPACE, { keyId: A, billingRequestId: "bill-f", requestId: "req-f", costNanos: 450, requests: 1, replace: true, final: true });
+			expect(await admitB()).toBe(750);
+			await release();
+			expect(await admitB()).toBe(750);
+		});
 	});
 
 	describe("spend guardrails", () => {

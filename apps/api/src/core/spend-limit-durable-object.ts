@@ -160,10 +160,18 @@ type Pending = {
 	stepped?: { final: boolean };
 	/**
 	 * Opened by a record other than the request's first checkpoint (checkpoint 1 was lost, or a
-	 * one-off charge settled as a final): the seed in use may already count its charge row, so it
-	 * counts from memory only once a seed that excludes its ids has been published.
+	 * one-off charge settled as a final): the seed in use may already count its charge row. It
+	 * counts from memory at once all the same (a brief over-count, never an under-count), and a
+	 * seed that excludes its ids is loaded at once.
 	 */
 	awaitingSeed?: boolean;
+	/**
+	 * Being handed to the database: it expired, its period ended, or it did not fit in the exclusion
+	 * list. The next seed does not exclude it, and it keeps counting from memory (the published seed
+	 * still excludes it) until that seed is published, which drops it in the same step. A failed load
+	 * leaves it counting. Later records for it are ignored.
+	 */
+	retiring?: "expired" | "period_ended" | "overflow";
 };
 
 type Lease = {
@@ -421,16 +429,21 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 				// held final entry then ignores).
 				awaitingSeed = !(entry.revision === 1 && !final);
 			} else {
-				if (!existing.stepped || existing.keyId !== entry.keyId || existing.stepped.final) return false;
+				if (!existing.stepped || existing.keyId !== entry.keyId || existing.stepped.final || existing.retiring) return false;
 				// A checkpoint only raises the charged total (delivery can reorder checkpoints); the final
 				// record sets it, lower or 0 included, and nothing changes it after that.
 				const cost = final ? nonNegative(entry.costNanos) : Math.max(existing.cost, nonNegative(entry.costNanos));
 				if (!final && cost === existing.cost) return false;
+				// The final also sets how many successful requests it is (0 for a charged cancellation or a
+				// failure): the request slot the checkpoints held is given back, the charged cost is kept.
+				const requests = final ? nonNegative(entry.requests) : existing.requests;
 				const lease = entry.leaseId ? this.leases.get(entry.leaseId) : undefined;
 				if (lease && lease.keyId === entry.keyId) {
 					lease.consumed = Math.max(0, lease.consumed + cost - existing.cost);
+					lease.successes = Math.max(0, lease.successes + requests - existing.requests);
 					this.settleIfDone(lease);
 				}
+				existing.requests = requests;
 				existing.cost = cost;
 				existing.recordedAt = now;
 				existing.stepped = { final };
@@ -479,22 +492,23 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 	}
 
 	/**
-	 * Before a seed's exclusions are built: entries past the pending TTL are dropped, and stepped
-	 * entries whose day, week or month has ended since they opened are retired (later records for
-	 * them are ignored). The entry counts all its spend at the time it opened; the database counts
-	 * each debit at its own time, so from here the same seed counts their spend instead.
+	 * Before a seed's exclusions are built: entries past the pending TTL, and stepped entries whose
+	 * day, week or month has ended since they opened, are marked retiring (later records for them are
+	 * ignored). The seed being built does not exclude them, so it counts their spend (each debit at
+	 * its own time); until it is published they keep counting from memory, in every window.
 	 */
 	private retireStaleEntries(now: number): void {
 		for (const entry of this.pending.values()) {
+			if (entry.retiring) continue;
 			const stale = this.staleness(entry, now);
 			if (!stale) continue;
-			this.pending.delete(entry.billingRequestId);
+			entry.retiring = stale;
 			if (stale === "period_ended") this.markSeen(entry.billingRequestId);
 		}
 	}
 
 	private staleness(entry: Pending, now: number): "expired" | "period_ended" | null {
-		if (entry.persisted) return null;
+		if (entry.persisted || entry.retiring) return null;
 		if (now - entry.recordedAt > SPEND_LEASE.pendingTtlMs) return "expired";
 		if (!entry.stepped) return null;
 		const opened = windowStarts(entry.at);
@@ -585,8 +599,9 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			this.retireStaleEntries(Date.now());
 			const excluded = this.excludeFromSeed(workspaceId);
 			const exclude = excluded.flatMap((entry) => entry.ids);
-			// Held entries this seed does not exclude: it counts their spend, so they are handed off.
-			const includedBySeed = [...this.pending.values()].filter((entry) => entry.persisted);
+			// Held entries this seed does not exclude: it counts their spend, so they are handed off
+			// when it is published (audit row found, or retiring).
+			const includedBySeed = [...this.pending.values()].filter((entry) => entry.persisted || entry.retiring);
 			const heldAtStart = new Set(this.pending.keys());
 			const seeds: SpendLimitSeed[] = [];
 			for (const chunk of chunks) seeds.push(await this.loadSeed(workspaceId, chunk, exclude));
@@ -612,11 +627,11 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 	 * spend is counted from memory instead. Every entry lists both ids: an ordinary request's charge
 	 * row (under its billing id) lands before its audit row, and a stepped request's charge row is
 	 * updated at each checkpoint. The cap (the SQL rejects more) counts ids, not entries.
-	 * Entries past it (newest first; the oldest are most likely persisted already) are dropped, and
-	 * the seed counts their rows instead.
+	 * Entries past it (newest first; the oldest are most likely persisted already) are handed to the
+	 * seed instead, which counts their rows.
 	 */
 	private excludeFromSeed(workspaceId: string): Array<{ entry: Pending; ids: string[] }> {
-		const unpersisted = [...this.pending.values()].filter((entry) => !entry.persisted)
+		const unpersisted = [...this.pending.values()].filter((entry) => !entry.persisted && !entry.retiring)
 			.sort((left, right) => right.recordedAt - left.recordedAt);
 		const excluded: Array<{ entry: Pending; ids: string[] }> = [];
 		const excludedIds = new Set<string>();
@@ -624,7 +639,8 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 		for (const entry of unpersisted) {
 			const ids = [...new Set([entry.requestId, entry.billingRequestId])].filter((id) => !excludedIds.has(id));
 			if (excludedIds.size + ids.length > SPEND_LEASE.maxExcludedRequestIds) {
-				this.pending.delete(entry.billingRequestId);
+				// Handed to this seed like an expired entry: it counts from memory until the seed is published.
+				entry.retiring = "overflow";
 				dropped += 1;
 				continue;
 			}
@@ -737,7 +753,7 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 		let requests = base.requests;
 		let cost = base.cost;
 		for (const entry of this.pending.values()) {
-			if (entry.keyId === keyId && !entry.awaitingSeed && entry.at >= windows[window]) {
+			if (entry.keyId === keyId && (entry.retiring || entry.at >= windows[window])) {
 				requests += entry.requests;
 				cost += entry.cost;
 			}
@@ -748,8 +764,9 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 	private budgetUsage(budget: BudgetState): number {
 		let usage = budget.statusUsage;
 		for (const entry of this.pending.values()) {
-			// Every held entry was excluded from the published seed's budget status (persisted or not).
-			if (!entry.awaitingSeed && (budget.windowStart === null || entry.at >= budget.windowStart)) usage += entry.cost;
+			// Every held entry counts until a published seed counts it (a brief over-count is allowed,
+			// an under-count is not).
+			if (budget.windowStart === null || entry.retiring || entry.at >= budget.windowStart) usage += entry.cost;
 		}
 		return usage;
 	}
@@ -795,7 +812,7 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 	private departmentUsage(budget: DepartmentBudgetState): number {
 		let usage = budget.base;
 		for (const entry of this.pending.values()) {
-			if (budget.keyIds.has(entry.keyId) && !entry.awaitingSeed && entry.at >= budget.windowStart) usage += entry.cost;
+			if (budget.keyIds.has(entry.keyId) && (entry.retiring || entry.at >= budget.windowStart)) usage += entry.cost;
 		}
 		return usage;
 	}
@@ -1004,7 +1021,7 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 	private unpersistedIdCount(): number {
 		let count = 0;
 		for (const entry of this.pending.values()) {
-			if (!entry.persisted) count += entry.requestId === entry.billingRequestId ? 1 : 2;
+			if (!entry.persisted && !entry.retiring) count += entry.requestId === entry.billingRequestId ? 1 : 2;
 		}
 		return count;
 	}
