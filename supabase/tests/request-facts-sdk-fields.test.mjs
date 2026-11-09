@@ -11,6 +11,7 @@ const migrationPath = '../migrations/20261027224949_store_sdk_client_fields_on_r
 const latestMigrationPath = '../migrations/20261104152910_pricing_lines_record_charged_sku_meter.sql';
 const attemptHealthMigrationPath = '../migrations/20261104163425_provider_attempt_health_classes.sql';
 const attemptReasonMigrationPath = '../migrations/20261104194200_provider_attempt_health_reasons.sql';
+const attemptDetailMigrationPath = '../migrations/20261109123943_v2_request_attempts_upstream_detail.sql';
 const schemaPath = '../schemas/public/functions/ingest_v2_gateway_request.sql';
 const workspace = '40000000-0000-4000-8000-000000000001';
 const functionBody = (sql) => {
@@ -41,6 +42,7 @@ try {
   await db.exec(latestMigration);
   await db.exec(await read(attemptHealthMigrationPath));
   await db.exec(await read(attemptReasonMigrationPath));
+  await db.exec(await read(attemptDetailMigrationPath));
   const installed = (await db.query(
     "select pg_get_functiondef('public.ingest_v2_gateway_request(jsonb)'::regprocedure) def")).rows[0].def;
   assert.equal(functionBody(installed), functionBody(desired), 'installed ingest body must match the declarative schema');
