@@ -124,3 +124,22 @@ Run the cases against Haiku, Sonnet and Opus (or the Codex default model) before
 - `phaseo-issue-artifacts`: short GitHub issue bodies with a self-contained HTML plan or root-cause page attached via `gh issue artifact create`
 - `realtime-maintenance`: announced maintenance windows for deploying the `phaseo-realtime` voice relay without ending live calls
 - `seo-audit`, `supabase-postgres-best-practices`, `yeet`: general development helpers
+
+## Third-party skills
+
+Skills installed with `npx skills add` are recorded in `skills-lock.json` and kept exactly as upstream wrote them. Don't edit them; reinstall to update, then run `pnpm skills:sync`. `pnpm skills:validate` still checks their frontmatter and links, but only warns when one runs past 500 lines.
+
+UI design and motion skills from [`emilkowalski/skills`](https://github.com/emilkowalski/skills) (MIT, catalogue at [aiforui.dev/skills](https://aiforui.dev/skills)):
+
+- Before you build: `animation-vocabulary`, `pick-ui-library`, `prototype`
+- Building: `emil-design-eng`, `animate`, `choreograph`, `apple-design`, `gestures`, `mobile-native`
+- Reviewing: `animation-performance`, `break-ui`, `review-animations`
+- Whole app: `find-animation-opportunities`, `improve-animations`, `remove-animations`
+- Other: `animate-expo`, `ask-sonner`
+
+Reinstall or update them with:
+
+```bash
+npx skills@latest add emilkowalski/skills -a codex --copy -y -s <skill names>
+pnpm skills:sync
+```
