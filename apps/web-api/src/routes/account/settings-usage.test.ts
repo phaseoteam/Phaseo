@@ -513,6 +513,24 @@ describe("account usage settings routes", () => {
 		for (const filter of legacyFilter) expect(legacyReads[0]).toContain(filter);
 		expect(body.data.upstreamRequests).toMatchObject([{ id: "legacy", error_message: "Old error" }]);
 	});
+	it("fails instead of returning only the legacy part when the v2 read fails for a range past the cut-over", async () => {
+		const legacyReads: string[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(input instanceof Request ? input.url : String(input));
+			if (url.pathname.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
+			if (url.pathname.includes("workspace_members")) return Response.json([{ role: "admin" }]);
+			if (url.pathname.endsWith("/workspaces")) return Response.json([{ owner_user_id: "user-1" }]);
+			if (url.pathname.endsWith("/v2_request_facts")) return Response.json({ code: "57014", message: "canceling statement due to statement timeout" }, { status: 500 });
+			if (url.pathname.endsWith("/gateway_upstream_requests")) {
+				legacyReads.push(url.pathname);
+				return Response.json([{ id: "legacy", request_id: "G-old" }]);
+			}
+			return Response.json([]);
+		}));
+		const response = await app.request("https://phaseo.app/api/account/settings/usage/logs?workspaceId=workspace-1&view=upstream&usage_from=2026-11-09T12:00:00Z&usage_to=2026-11-09T16:00:00Z", { headers: { authorization: "Bearer session-token" } }, env);
+		expect(response.status).toBe(503);
+		expect(legacyReads).toEqual([]);
+	});
 	it("returns the private observability windows and lookup metadata", async () => {
 		vi.useFakeTimers({ toFake: ["Date"] });
 		vi.setSystemTime(new Date("2026-10-15T12:00:00Z"));

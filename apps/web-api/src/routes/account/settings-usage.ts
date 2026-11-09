@@ -451,7 +451,8 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 		// after it, v2_request_attempts carries the same detail.
 		const legacyEndsAtCutover = Date.parse(timeRange.to) >= Date.parse(V2_ATTEMPT_DETAIL_CUTOVER);
 		const rangeHasLegacyPart = Date.parse(timeRange.from) < Date.parse(V2_ATTEMPT_DETAIL_CUTOVER);
-		if (v2Result.error && !rangeHasLegacyPart) return c.json({ error: "usage_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		// Only v2 covers the range from the cut-over on, so a failed v2 read cannot fall back.
+		if (v2Result.error && legacyEndsAtCutover) return c.json({ error: "usage_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 		if (upstreamRequests.length === 0 && rangeHasLegacyPart) {
 			const legacyQuery = context.client
 				.from("gateway_upstream_requests")
