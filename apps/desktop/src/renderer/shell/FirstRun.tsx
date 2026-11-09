@@ -1,5 +1,6 @@
+import { ActionIcon } from "../components/ActionIcon";
 import { useEffect, useState, type ReactNode } from "react";
-import { Check, FolderPlus, KeyRound, MessageSquarePlus } from "lucide-react";
+import { Check, KeyRound, MessageSquarePlus } from "lucide-react";
 import { errorText, usablePhaseoAccounts, useWorkspace } from "../app/workspace";
 import { Button } from "../components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "../components/ui/dialog";
@@ -33,7 +34,7 @@ function Steps({ onClose }: { onClose: () => void }) {
 				<Button size="sm" variant={signedIn ? "ghost" : "default"} onClick={() => { onClose(); openSettings("accounts"); }}><KeyRound />{signedIn ? "Accounts" : "Sign in"}</Button>
 			</Step>
 			<Step number={2} title="Add a project" description="A folder the agents can read and change. Skip it to just chat." complete={hasProject}>
-				<Button size="sm" variant={hasProject ? "ghost" : "outline"} onClick={addProject}><FolderPlus />Add a folder…</Button>
+				<Button size="sm" variant={hasProject ? "ghost" : "outline"} onClick={addProject}><ActionIcon name="addFolder" />Add a folder…</Button>
 			</Step>
 			<Step number={3} title="Start a chat" description={`Ask for anything. In Code, the agent works in your project.${shortcut("commandPalette.toggle") ? ` ${shortcut("commandPalette.toggle")} finds every command.` : ""}`} complete={false}>
 				<Button size="sm" variant="outline" disabled={!signedIn} onClick={() => { onClose(); setMode(hasProject ? "code" : "chat"); select(undefined); }}><MessageSquarePlus />Start</Button>

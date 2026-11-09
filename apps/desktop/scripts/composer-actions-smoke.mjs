@@ -35,6 +35,7 @@ app.whenReady().then(async () => { try {
 	mock("workspace:task", (_event, id) => tasks.find(task => task.id === id));
 	mock("workspace:conversation-page", (_event, query) => ({ kind: query.kind, entries: query.kind === "messages" ? tasks.find(task => task.id === query.taskId).messages : [], earlier: 0, later: 0, revision }));
 	mock("workspace:models", () => []);
+	mock("workspace:installations", () => []);
 	mock("workspace:background-commands", () => []);
 	mock("workspace:account-status", () => ({ checkedAt: new Date().toISOString(), authenticated: false, usage: [] }));
 	mock("workspace:pull-request-view", () => pullView);
@@ -55,7 +56,7 @@ app.whenReady().then(async () => { try {
 	const renderer = entry ? path.resolve(path.dirname(entry), "../renderer/index.html") : path.resolve(import.meta.dirname, "../dist/renderer/index.html");
 	const output = process.argv.find(value => value.startsWith("--output="))?.slice(9);
 	if (output) mkdirSync(output, { recursive: true });
-	const makeTask = (id, status, harness = "phaseo") => ({ id, title: `Owned ${id}`, harness, model: "default", mode: "chat", status, pinned: false, archived: false, revision, queue: [], messages: [{ id: `${id}-assistant`, role: "assistant", text: "Owned fixture conversation.", createdAt: new Date().toISOString() }], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+	const makeTask = (id, status, harness = "phaseo") => ({ id, title: `Owned ${id}`, harness, model: "default", mode: "chat", status, pinned: false, archived: false, revision, queue: [], messages: [{ id: `${id}-assistant`, role: "assistant", text: "Owned fixture conversation.", createdAt: new Date().toISOString() }], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), lastCompletedAt: status === "completed" ? now : undefined, lastVisitedAt: now });
 	async function configure({ surface = "main", status = "running", followUp = "queue", harness = "phaseo", draft = "Consider the smaller option.", queued = false, question = false, sendKey = "enter", project = false } = {}) {
 		revision++;
 		tasks = [makeTask("main", status, harness), makeTask("side", status, harness)];
@@ -93,6 +94,12 @@ app.whenReady().then(async () => { try {
 		await configure(); await owner.loadFile(baseline);
 		await ready("!!document.querySelector('main button[aria-label=Stop]')");
 		await capture("before");
+		await run("document.querySelector('aside button[aria-label=\"Actions for Owned main\"]').click()");
+		await ready("!!document.querySelector('[role=menu]')");
+		await run("document.querySelector('[role=menu]').getAnimations().forEach(animation=>animation.finish());true");
+		await capture("before-actions");
+		await run("document.querySelector('[role=menu]').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));true");
+		await ready("!document.querySelector('[role=menu]')");
 		await run("Array.from(document.querySelectorAll('header button')).find(button=>button.textContent.includes('Search chats and commands')).click()");
 		await ready("!!document.querySelector('[role=option]')");
 		await run("Array.from(document.querySelectorAll('[role=option]')).find(option=>option.textContent.includes('Open browser')).click()");
@@ -205,7 +212,7 @@ app.whenReady().then(async () => { try {
 	await configure({ status: "completed" });
 	await ready("!!document.querySelector('main button[aria-label=Copy]')");
 	await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
-	for (const name of ["plus", "paperclip", "copy", "search", "settings", "refresh", "download", "branch", "terminal", "pullRequest", "external", "merge"]) {
+	for (const name of ["plus", "paperclip", "copy", "search", "settings", "refresh", "pin", "archive", "pencil", "mail", "link", "download", "branch", "terminal", "pullRequest", "external", "camera", "merge"]) {
 		console.log("Composer fixture: gesture", name);
 		if (name === "refresh") {
 			await run("document.querySelector('aside button[aria-label=\"Actions for Owned main\"]').click()");
@@ -238,6 +245,8 @@ app.whenReady().then(async () => { try {
 			await run("document.querySelector('[data-pull-request-surface]').parentElement.getAnimations().forEach(animation=>animation.finish());true");
 		}
 		const selector = `:is(button,[role=menuitem],[role=option]):has(> .gesture-icon[data-icon-gesture="${name}"]), button:has(.icon-swap > .gesture-icon[data-icon-gesture="${name}"])`;
+		// The menu highlights Rename on open. Clear that owned-fixture state before testing each trigger separately.
+		await run("document.querySelector('[role=menu]')?.focus();document.querySelectorAll('[role=menuitem][data-highlighted]').forEach(item=>item.removeAttribute('data-highlighted'));true");
 		const state = () => run(`(()=>{const button=document.querySelector(${JSON.stringify(selector)}),svg=button.querySelector('[data-icon-gesture]');return {box:button.getBoundingClientRect().toJSON(),animations:svg.getAnimations({subtree:true}).map(animation=>({name:animation.animationName,iterations:animation.effect.getTiming().iterations})),parts:Array.from(svg.children).map(part=>({transform:getComputedStyle(part).transform,dash:getComputedStyle(part).strokeDashoffset})),lengths:Array.from(svg.children).map(part=>part.getAttribute('pathLength'))};})()`);
 		await force(selector, null);
 		const idle = await state();
@@ -252,7 +261,7 @@ app.whenReady().then(async () => { try {
 			const middle = await state();
 			assert.deepEqual(middle.box, idle.box, `${name} moved its control`);
 			assert.notDeepEqual(middle.parts, idle.parts, `${name} has no visible part movement`);
-			const frame = { download: 1, terminal: 2, external: 2 }[name];
+			const frame = { download: 1, terminal: 2, external: 2, archive: 1, camera: 0 }[name];
 			if (frame !== undefined) assert.deepEqual(middle.parts[frame], idle.parts[frame], `${name} moved its tray or frame`);
 			for (const node of ({ pullRequest: [0, 1, 2], branch: [1, 2], merge: [0, 1] }[name] ?? [])) assert.deepEqual(middle.parts[node], idle.parts[node], `${name} moved its fixed node`);
 			gestures[name] = active.animations.map(animation => animation.name);
@@ -273,6 +282,7 @@ app.whenReady().then(async () => { try {
 		await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
 		await run("document.documentElement.dataset.animations='on'");
 		await force(selector, null);
+		if (name === "pin") await capture("after-actions");
 		if (name === "external") await capture("after-browser");
 		if (name === "merge") await capture("git-actions");
 	}

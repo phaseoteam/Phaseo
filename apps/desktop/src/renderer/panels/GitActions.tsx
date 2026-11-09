@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowDown, ArrowUp, Check, ChevronDown, CloudUpload, FolderPlus, LoaderCircle, Minus, PenLine, Plus, Trash2 } from "lucide-react";
+import { Check, ChevronDown, LoaderCircle, Minus, Plus, Trash2 } from "lucide-react";
 import { ActionIcon } from "../components/ActionIcon";
 import type { GitCommand, GitFile, GitReview } from "../../shared/workspace";
 import type { BranchPullRequest } from "../../shared/pullRequests";
@@ -158,7 +158,7 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="start" className="max-h-80 w-64">
 					<DropdownMenuItem onClick={() => { setBranchKind("branch"); setNewBranch(""); }}><Plus />New branch…</DropdownMenuItem>
-					<DropdownMenuItem onClick={() => { setBranchKind("worktree"); setNewBranch(""); }}><FolderPlus />New worktree…</DropdownMenuItem>
+					<DropdownMenuItem onClick={() => { setBranchKind("worktree"); setNewBranch(""); }}><ActionIcon name="addFolder" />New worktree…</DropdownMenuItem>
 					<DropdownMenuItem onClick={() => setCheckoutOpen(true)}><ActionIcon name="pullRequest" />Check out a pull request…</DropdownMenuItem>
 					{project?.worktree && <DropdownMenuItem variant="destructive" onClick={removeWorktree}><Trash2 />Remove this worktree</DropdownMenuItem>}
 					<DropdownMenuSeparator />
@@ -168,11 +168,11 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 				</DropdownMenuContent>
 			</DropdownMenu>
 			{review?.upstream && review.upstream.behind > 0 && <Tip label={review.upstream.ahead > 0 ? `${review.upstream.name} and this branch have diverged; rebase or merge in a terminal` : `Fast-forward from ${review.upstream.name}, which has ${review.upstream.behind} newer ${review.upstream.behind === 1 ? "commit" : "commits"}`}>
-				<button type="button" disabled={busy || review.upstream.ahead > 0} onClick={() => void git({ type: "pull" })} className="flex h-7 shrink-0 items-center gap-1 rounded-md px-1.5 text-[11px] font-medium text-foreground hover:bg-accent/60 disabled:opacity-50 [&_svg]:size-3.5"><ArrowDown />Pull {review.upstream.behind}</button>
+				<button type="button" disabled={busy || review.upstream.ahead > 0} onClick={() => void git({ type: "pull" })} className="flex h-7 shrink-0 items-center gap-1 rounded-md px-1.5 text-[11px] font-medium text-foreground hover:bg-accent/60 disabled:opacity-50 [&_svg]:size-3.5"><ActionIcon name="down" />Pull {review.upstream.behind}</button>
 			</Tip>}
-			{canPublish && !publishing && <button type="button" disabled={busy} onClick={() => setPublishing(true)} className="ml-auto flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium text-foreground hover:bg-accent/60 disabled:opacity-50 [&_svg]:size-3.5"><CloudUpload />Publish repository</button>}
+			{canPublish && !publishing && <button type="button" disabled={busy} onClick={() => setPublishing(true)} className="ml-auto flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium text-foreground hover:bg-accent/60 disabled:opacity-50 [&_svg]:size-3.5"><ActionIcon name="publish" />Publish repository</button>}
 			{canCreatePull && <Tip label={canPush ? "Push this branch and open a pull request for it" : "Open a pull request for this branch"}><button type="button" disabled={busy} onClick={() => void createPullRequest(canPush)} className={cn("flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium text-foreground hover:bg-accent/60 disabled:opacity-50 [&_svg]:size-3.5", !canPush && "ml-auto")}><ActionIcon name="pullRequest" />{canPush ? "Push & create PR" : "Create PR"}</button></Tip>}
-			{canPush && !canCreatePull && <button type="button" disabled={busy} onClick={push} className="ml-auto flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium text-foreground hover:bg-accent/60 disabled:opacity-50 [&_svg]:size-3.5"><ArrowUp />{pushLabel}</button>}
+			{canPush && !canCreatePull && <button type="button" disabled={busy} onClick={push} className="ml-auto flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium text-foreground hover:bg-accent/60 disabled:opacity-50 [&_svg]:size-3.5"><ActionIcon name="up" />{pushLabel}</button>}
 		</div>
 		{openPull && pullPresentation && <button type="button" onClick={() => openPullRequest({ number: openPull.number })} aria-label={`Open pull request #${openPull.number}`} className="flex h-7 min-w-0 items-center gap-1.5 rounded-md px-1.5 text-left text-xs hover:bg-accent/60">
 			<pullPresentation.Icon aria-hidden className={cn("size-3.5 shrink-0", pullPresentation.toneClassName)} /><span className="shrink-0 font-mono text-muted-foreground">#{openPull.number}</span><span className="min-w-0 truncate">{openPull.title}</span>
@@ -212,7 +212,7 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 				<textarea aria-label="Commit message" rows={2} placeholder={generating ? "Writing a commit message…" : "Commit message, or leave empty to generate one"} value={message} onChange={event => setMessage(event.target.value)} readOnly={generating}
 					onKeyDown={event => { if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) { event.preventDefault(); event.currentTarget.form?.requestSubmit(); } }}
 					className="block w-full resize-none rounded-md border border-input bg-transparent py-1.5 pr-8 pl-2.5 text-xs outline-none placeholder:text-muted-foreground focus:border-ring" />
-				<span className="absolute top-1 right-1"><ToolbarButton size="sm" label="Generate a commit message" disabled={busy || generating} onClick={() => void run(async () => setMessage(await generateMessage()))}><IconSwap show={generating ? "loaderCircle" : "penLine"}>{{ loaderCircle: <LoaderCircle className="animate-spin" />, penLine: <PenLine /> }}</IconSwap></ToolbarButton></span>
+				<span className="absolute top-1 right-1"><ToolbarButton size="sm" label="Generate a commit message" disabled={busy || generating} onClick={() => void run(async () => setMessage(await generateMessage()))}><IconSwap show={generating ? "loaderCircle" : "penLine"}>{{ loaderCircle: <LoaderCircle className="animate-spin" />, penLine: <ActionIcon name="edit" /> }}</IconSwap></ToolbarButton></span>
 			</div>
 			<div className="mt-1.5 flex gap-1.5">
 				<button type="submit" disabled={busy || generating} className="h-7 min-w-0 flex-1 truncate rounded-md bg-primary px-2 text-xs font-semibold text-primary-foreground hover:bg-primary/85 disabled:opacity-50">{commitLabel}</button>

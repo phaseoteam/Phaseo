@@ -1,6 +1,7 @@
+import { ActionIcon } from "../components/ActionIcon";
 import { formatDate } from "@phaseo/app-kit/format";
 import { useMemo, useState, useSyncExternalStore } from "react";
-import { ArchiveRestore, Search, Trash2 } from "lucide-react";
+import { Search, Trash2 } from "lucide-react";
 import { useWorkspace } from "../app/workspace";
 import type { TaskOverview } from "../../shared/workspaceOverview";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "../components/ui/dialog";
@@ -42,7 +43,7 @@ export function ArchivedChatsDialog() {
 					{task.projectId ? <ProjectIcon project={project(task.projectId)} className="size-4" /> : <ModelStack models={[task]} size="sm" ringClassName="ring-transparent" />}
 					<button type="button" title="Restore and open" onClick={() => void restore(task, () => { openArchivedChats(false); select(task.id); })} className="min-w-0 flex-1 truncate text-left hover:underline">{task.title}</button>
 					<span className="shrink-0 text-[11px] text-muted-foreground group-hover/archived:hidden">{task.projectId ? project(task.projectId)?.name : formatDate(task.updatedAt)}</span>
-					<button type="button" aria-label={`Restore ${task.title}`} title="Restore" onClick={() => void restore(task)} className="hidden size-7 place-items-center rounded-md text-muted-foreground group-hover/archived:grid group-focus-within/archived:grid hover:bg-background hover:text-foreground [&_svg]:size-3.5"><ArchiveRestore /></button>
+					<button type="button" aria-label={`Restore ${task.title}`} title="Restore" onClick={() => void restore(task)} className="hidden size-7 place-items-center rounded-md text-muted-foreground group-hover/archived:grid group-focus-within/archived:grid hover:bg-background hover:text-foreground [&_svg]:size-3.5"><ActionIcon name="restore" /></button>
 					<button type="button" aria-label={`Delete ${task.title}`} title="Delete" onClick={() => deleteWithUndo(task.id, () => command({ type: "delete-task", id: task.id }))} className="hidden size-7 place-items-center rounded-md text-muted-foreground group-hover/archived:grid group-focus-within/archived:grid hover:bg-background hover:text-destructive [&_svg]:size-3.5"><Trash2 /></button>
 				</li>)}</ul>
 					: <p className="px-4 py-8 text-center text-xs text-muted-foreground">{query.trim() ? "No archived chats match." : "No archived chats."}</p>}

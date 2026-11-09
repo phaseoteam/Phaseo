@@ -59,7 +59,7 @@ export function BrowserChromeRow({ url, loading, canGoBack, canGoForward, hasPag
 			<Tooltip>
 				<TooltipTrigger render={<Button type="button" variant={recording ? "secondary" : "ghost"} size="icon-xs" aria-label={recording ? "Stop recording" : "Capture screenshot"} disabled={!recording && (!hasPage || capturing)} onClick={event => onCapture(event.shiftKey)}
 					className="relative text-muted-foreground hover:text-foreground [&_svg:not([class*='size-'])]:size-3.5" />}>
-					<Camera className={cn(recording && "text-destructive")} />
+					{recording ? <Camera className="text-destructive" /> : <ActionIcon name="camera" />}
 					{recording && <span aria-hidden className="absolute top-0.5 right-0.5 size-1.5 rounded-full bg-destructive motion-safe:animate-pulse" />}
 				</TooltipTrigger>
 				<TooltipContent>{recording ? "Stop recording" : "Screenshot · Shift-click to record"}</TooltipContent>

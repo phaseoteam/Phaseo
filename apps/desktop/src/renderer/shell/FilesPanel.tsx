@@ -1,3 +1,4 @@
+import { ActionIcon } from "../components/ActionIcon";
 import { lazy, Suspense, useEffect, useState, type ReactNode } from "react";
 import { ChevronDown, FolderOpen } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
@@ -56,14 +57,14 @@ export function FilesPanel({ initialProjectId, taskId }: { initialProjectId?: st
 		<div className="flex h-10 shrink-0 items-center gap-1 border-b border-border/60 px-2">
 			<DropdownMenu>
 				<DropdownMenuTrigger render={<button type="button" className="flex h-7 min-w-0 items-center gap-1.5 rounded-md px-2 text-xs font-semibold hover:bg-accent/60 [&_svg]:size-3.5" />}>
-					{project ? <ProjectIcon project={project} /> : <FolderOpen className="text-muted-foreground" />}<span className="truncate">{project?.name ?? "Choose a project"}</span><ChevronDown className="text-muted-foreground" />
+					{project ? <ProjectIcon project={project} /> : <ActionIcon name="folder" className="text-muted-foreground" />}<span className="truncate">{project?.name ?? "Choose a project"}</span><ChevronDown className="text-muted-foreground" />
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="start" className="w-56">
 					<DropdownMenuRadioGroup value={id} onValueChange={value => switchProject(String(value))}>
 						{projects.map(value => <DropdownMenuRadioItem key={value.id} value={value.id}>{value.name}{value.worktree && <span className="ml-auto font-mono text-[10.5px] text-muted-foreground">{value.worktree.branch}</span>}</DropdownMenuRadioItem>)}
 					</DropdownMenuRadioGroup>
 					<DropdownMenuSeparator />
-					<DropdownMenuItem onClick={chooseFolder}><FolderOpen />Open folder…</DropdownMenuItem>
+					<DropdownMenuItem onClick={chooseFolder}><ActionIcon name="folder" />Open folder…</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
 			<div className="ml-1 flex items-center gap-0.5">

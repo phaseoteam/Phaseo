@@ -1,5 +1,6 @@
+import { ActionIcon } from "../../components/ActionIcon";
 import type { MouseEvent } from "react";
-import { CircleDot, ExternalLink, Eye, Unlink2 } from "lucide-react";
+import { CircleDot, ExternalLink, Eye } from "lucide-react";
 import type { TaskIssueLink } from "../../../shared/issueView";
 import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover";
 import { toastManager } from "../../components/ui/toast";
@@ -47,7 +48,7 @@ export function IssueBadge({ taskId, links, className }: { taskId: string; links
 							{link.watching && <Eye aria-label="Watching" className="size-3 shrink-0 text-muted-foreground" />}
 							<ExternalLink aria-hidden className="ml-auto size-3 shrink-0 text-muted-foreground opacity-0 group-hover:opacity-100" />
 						</a>
-						<button type="button" aria-label={`Unlink issue #${link.number}`} title="Unlink from this chat" onClick={event => unlink(event, link)} className="flex size-5 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-background/70 hover:text-foreground"><Unlink2 className="size-3" /></button>
+						<button type="button" aria-label={`Unlink issue #${link.number}`} title="Unlink from this chat" onClick={event => unlink(event, link)} className="flex size-5 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-background/70 hover:text-foreground"><ActionIcon name="unlink" className="size-3" /></button>
 					</li>;
 				})}
 			</ul>

@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState, type DragEvent, type ReactNode } from "react";
 import { ContextMenu } from "@base-ui/react/context-menu";
-import { ChevronLeft, ChevronRight, FileDiff, FileText, Files, GitBranch, GitPullRequestArrow, Globe, Link2, Maximize2, MessagesSquare, Minimize2, Plus, SquareTerminal, Volume2, VolumeOff, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileDiff, FileText, Files, GitBranch, GitPullRequestArrow, Globe, Maximize2, MessagesSquare, Minimize2, Plus, SquareTerminal, Volume2, VolumeOff, X } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { Kbd } from "../components/ui/kbd";
@@ -42,7 +42,7 @@ const launchers: { kind: "browser" | "terminal" | "files" | "diff" | "pull" | "p
 	{ kind: "files", label: "Files", icon: <Files />, letter: "F", needsProject: true, reason: "Files are only available when a project is open." },
 	{ kind: "diff", label: "Diff", icon: <FileDiff />, letter: "D", needsProject: true, reason: "Diff is only available for chats in a project." },
 	{ kind: "pull", label: "Pull request", icon: <ActionIcon name="pullRequest" />, letter: "P", needsProject: true, reason: "This chat's branch has no pull request yet." },
-	{ kind: "pulls", label: "Linked pull requests", icon: <Link2 />, letter: "L", needsProject: true, reason: "Pull requests are only available for chats in a project." },
+	{ kind: "pulls", label: "Linked pull requests", icon: <ActionIcon name="link" />, letter: "L", needsProject: true, reason: "Pull requests are only available for chats in a project." },
 	{ kind: "agents", label: "Agents", icon: <GitBranch />, letter: "A" },
 ];
 const paneTabType = "application/x-phaseo-pane-tab";

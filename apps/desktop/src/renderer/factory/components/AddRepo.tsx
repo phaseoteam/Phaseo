@@ -1,4 +1,5 @@
-import { FolderGit2, FolderOpen } from "lucide-react";
+import { ActionIcon } from "../../components/ActionIcon";
+import { FolderGit2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { LocalClone } from "../../../shared/factory/types";
 import { errorText, factory } from "../lib/useFactory";
@@ -72,7 +73,7 @@ export function AddRepo({ added = [], className }: { added?: string[]; className
 
 	return <div className={cn("space-y-2", className)}>
 		<div className="flex gap-2">
-			<Button variant="outline" size="sm" onClick={() => void pick()}><FolderOpen className="size-3.5" />Choose a local clone</Button>
+			<Button variant="outline" size="sm" onClick={() => void pick()}><ActionIcon name="folder" className="size-3.5" />Choose a local clone</Button>
 			<input value={repo} onChange={(event) => setRepo(event.target.value)} onKeyDown={(event) => event.key === "Enter" && add()} placeholder="owner/name" aria-label="Repository" className={cn(field, "flex-1")} />
 			<Button size="sm" disabled={!repo.trim() || busy} onClick={() => add()}>{busy ? "Adding…" : "Add and import"}</Button>
 		</div>

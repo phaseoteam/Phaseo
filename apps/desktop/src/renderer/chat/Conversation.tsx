@@ -1,6 +1,6 @@
 import { activitySummary } from "../lib/activitySummary";
 import { createContext, memo, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowDown, Plane, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, FilePen, FileText, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, PenLine, Radio, RotateCcw, Search, SquareTerminal, Wrench, X, Globe, SlidersHorizontal, AppWindow, MessagesSquare, Bot, Blocks, CornerDownRight, Compass, PanelTop, ScanEye } from "lucide-react";
+import { Plane, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, FilePen, FileText, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, Radio, RotateCcw, Search, SquareTerminal, Wrench, X, Globe, SlidersHorizontal, AppWindow, MessagesSquare, Bot, Blocks, CornerDownRight, Compass, PanelTop, ScanEye } from "lucide-react";
 import { ActionIcon } from "../components/ActionIcon";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { MessageNavigationRail, type RailTurn } from "./MessageNavigationRail";
@@ -68,7 +68,7 @@ function UserMessage({ message, taskId, projectId, onAttachment, onBranch, onRew
 	const actions = <div data-find-ignore className={cn("flex items-center opacity-0 transition-opacity group-focus-within/message:opacity-100 group-hover/message:opacity-100", beside && "absolute top-1/2 right-full mr-2 -translate-y-1/2 whitespace-nowrap")}>
 		<time dateTime={message.createdAt} title={fullMessageTime(message.createdAt)} className="mr-1 text-[11px] text-muted-foreground">{messageTime(message.createdAt)}</time>
 		<CopyButton text={mentionPlainText(message.text)} />
-		{onRewind && <ActionButton label="Edit from here" disabled={!canBranch} onClick={() => onRewind(message)}><PenLine /></ActionButton>}
+		{onRewind && <ActionButton label="Edit from here" disabled={!canBranch} onClick={() => onRewind(message)}><ActionIcon name="edit" /></ActionButton>}
 		<ActionButton label="Branch from here" disabled={!canBranch} onClick={() => onBranch(message.id)}><ActionIcon name="branch" /></ActionButton>
 	</div>;
 	return <div data-conversation-id={`message:${message.id}`} className="group/message flex flex-col items-end gap-1">
@@ -420,6 +420,6 @@ export function Conversation({ task, onAttachment, onBranch, onRewind, onRegener
 		<QuoteToolbar root={content} />
 		{/* A window that stops short of the newest entries always offers the way back, even if the reader never scrolled. */}
 		{(showLatest || messages.page.later > 0) && <button type="button" onClick={() => { following.current = true; messages.latest(); if (host.current) host.current.scrollTop = host.current.scrollHeight; setShowLatest(false); }}
-			className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-popover px-3 py-1.5 text-xs font-medium shadow-md hover:bg-muted"><ArrowDown className="size-3.5" />Jump to latest</button>}
+			className="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 rounded-full border border-border bg-popover px-3 py-1.5 text-xs font-medium shadow-md hover:bg-muted"><ActionIcon name="down" className="size-3.5" />Jump to latest</button>}
 	</div>;
 }

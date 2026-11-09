@@ -1,5 +1,6 @@
+import { ActionIcon } from "../components/ActionIcon";
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
-import { Pin, RotateCw } from "lucide-react";
+import { RotateCw } from "lucide-react";
 import { useWorkspace } from "../app/workspace";
 import { HarnessLogo } from "../components/HarnessLogo";
 import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popover";
@@ -82,7 +83,7 @@ function PairLine({ pair, open, pinned, onToggle, onPin }: { pair: ProviderRings
 				<span className="shrink-0 text-right whitespace-nowrap tabular-nums">{rings.map((ring, index) => <Fragment key={ring.label}>{index > 0 && <span className="text-muted-foreground"> · </span>}<span className={ring.remaining <= 25 ? tone(ring.remaining) : "text-muted-foreground"}>{shortLabel(ring.label)} {ring.remaining}%</span></Fragment>)}</span>
 			</button>
 			<button type="button" aria-label={pinned ? `Unpin ${name} from the sidebar` : `Pin ${name} to the sidebar`} aria-pressed={pinned} title={pinned ? "Pinned to the sidebar" : "Pin to the sidebar"} onClick={onPin}
-				className={cn("grid size-6 shrink-0 place-items-center rounded-md hover:bg-muted hover:text-foreground focus-visible:opacity-100", pinned ? "text-foreground" : "text-muted-foreground opacity-0 group-hover:opacity-100")}><Pin className={cn("size-3", pinned && "fill-current")} /></button>
+				className={cn("grid size-6 shrink-0 place-items-center rounded-md hover:bg-muted hover:text-foreground focus-visible:opacity-100", pinned ? "text-foreground" : "text-muted-foreground opacity-0 group-hover:opacity-100")}><ActionIcon name={pinned ? "unpin" : "pin"} className="size-3" /></button>
 		</div>
 		{open && <div className="mt-0.5 mr-7 mb-1.5 ml-7 flex flex-col gap-1.5">
 			<div className="grid grid-cols-[5.5rem_auto_minmax(0,1fr)] gap-x-3 gap-y-1">{rings.map(ring => <RingLine key={ring.label} ring={ring} pooled={pair.accounts.length > 1} />)}</div>

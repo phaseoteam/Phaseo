@@ -1,4 +1,4 @@
-import { Bot, Pause, Play, Activity, CalendarClock, ChartLine, Gauge, Inbox, Code2, Link2, Keyboard, Columns3, FolderPlus, Globe, MessageSquare, Moon, PanelLeft, Sun, UserRound, Files, Archive, FileSearch, TextSearch, GitBranchPlus, Bug, SquarePen, Pencil, Pin, PinOff, Undo2, CircleCheck, Mail, History, Monitor, ArchiveRestore } from "lucide-react";
+import { Bot, Pause, Play, Activity, CalendarClock, ChartLine, Gauge, Inbox, Code2, Keyboard, Columns3, Globe, MessageSquare, Moon, PanelLeft, Sun, UserRound, Files, FileSearch, TextSearch, GitBranchPlus, Bug, SquarePen, Undo2, CircleCheck, History, Monitor } from "lucide-react";
 import { ActionIcon } from "../components/ActionIcon";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { errorText, useWorkspace } from "../app/workspace";
@@ -85,15 +85,15 @@ export function CommandPalette() {
 				{paletteEntries.map(entry => { const Icon = entryIcons[entry.title] ?? Bot, keys = entryShortcut(entry); return <CommandItem key={entry.title} value={`${entry.title} ${entry.keywords ?? ""}`} onSelect={() => run(() => void runAppCommand(entry.command, entry.args).catch(reason => showToast("error", `Could not run ${entry.title}`, errorText(reason))))}><Icon />{entry.title}{keys && <CommandShortcut>{keys}</CommandShortcut>}</CommandItem>; })}
 				{activeProjects.length > 0 && <CommandItem value="New chat in project folder start" onSelect={() => { setSearch(""); setPage("new-chat-in"); }}><SquarePen />New chat in…</CommandItem>}
 				{operatorChat && <CommandItem value={operatorChat.operator?.paused ? "Resume the operator" : "Pause the operator stop"} onSelect={() => run(() => void runAppCommand(operatorChat.operator?.paused ? "operator.resume" : "operator.pause").catch(reason => showToast("error", "Could not change the operator", errorText(reason))))}>{operatorChat.operator?.paused ? <Play /> : <Pause />}{operatorChat.operator?.paused ? "Resume the operator" : "Pause the operator"}</CommandItem>}
-				<CommandItem onSelect={() => run(() => { if (api) void api.chooseProject().then(state => { setOverview(state); const added = state.projects.find(value => !overview.projects.some(existing => existing.id === value.id)); if (added) { setMode("code"); setNewChatProjectId(added.id); select(undefined); } }, reason => setError(errorText(reason))); })}><FolderPlus />Open project folder…</CommandItem>
+				<CommandItem onSelect={() => run(() => { if (api) void api.chooseProject().then(state => { setOverview(state); const added = state.projects.find(value => !overview.projects.some(existing => existing.id === value.id)); if (added) { setMode("code"); setNewChatProjectId(added.id); select(undefined); } }, reason => setError(errorText(reason))); })}><ActionIcon name="addFolder" />Open project folder…</CommandItem>
 				<CommandItem value="Clone a repository git url github add project" onSelect={() => run(() => openCloneProject())}><GitBranchPlus />Clone a repository…</CommandItem>
 				<CommandItem value="Import past conversations claude code codex history sessions transcripts continue" onSelect={() => run(() => openImportSessions())}><History />Import past conversations…</CommandItem>
 				{activeProjects.length > 0 && <CommandItem value="Triage a GitHub issue investigate reproduce bug report" onSelect={() => { setSearch(""); setPage("triage-issue"); }}><Bug />Triage a GitHub issue…</CommandItem>}
 				{api && <CommandItem value="Triage a Phaseo bug triage debug problem broken crash report issue fix this app" onSelect={() => run(() => { setMode("code"); select(undefined); startTriage(api); })}>
 					<Bug /><span className="flex min-w-0 flex-col"><span>Triage a Phaseo bug</span><span className="truncate text-xs text-muted-foreground">An agent debugs this app from its own source and helps you file an issue</span></span>
 				</CommandItem>}
-			<CommandItem value="Archived chats restore unarchive deleted" onSelect={() => run(() => openArchivedChats())}><Archive />Archived chats</CommandItem>
-				{current?.projectId && <CommandItem value="Show linked pull requests prs linked stack" disabled={!linked.length} onSelect={() => run(() => setRightPanel("pulls"))}><Link2 />Show linked pull requests</CommandItem>}
+			<CommandItem value="Archived chats restore unarchive deleted" onSelect={() => run(() => openArchivedChats())}><ActionIcon name="archive" />Archived chats</CommandItem>
+				{current?.projectId && <CommandItem value="Show linked pull requests prs linked stack" disabled={!linked.length} onSelect={() => run(() => setRightPanel("pulls"))}><ActionIcon name="link" />Show linked pull requests</CommandItem>}
 			{current?.projectId && <CommandItem value="Go to file open quick" onSelect={() => run(() => runCommand("filePicker.toggle"))}><FileSearch />Go to file…<CommandShortcut>{shortcut("filePicker.toggle")}</CommandShortcut></CommandItem>}
 			{current?.projectId && <CommandItem value="Search in files contents grep project text" onSelect={() => run(() => runCommand("projectSearch.toggle"))}><TextSearch />Search in files…<CommandShortcut>{shortcut("projectSearch.toggle")}</CommandShortcut></CommandItem>}
 			{current && <CommandItem value="Find in chat search this conversation" onSelect={() => run(() => runCommand("chat.find"))}><ActionIcon name="search" />Find in chat<CommandShortcut>{shortcut("chat.find")}</CommandShortcut></CommandItem>}
@@ -101,25 +101,25 @@ export function CommandPalette() {
 			</CommandGroup>
 			{current && <CommandGroup heading="This chat">
 				{currentProject && <CommandItem value={`New chat in ${currentProject.name} this project`} onSelect={() => startIn(currentProject.id)}><SquarePen />{currentProject.worktree ? `New chat on ${currentProject.worktree.branch}` : `New chat in ${currentProject.name}`}</CommandItem>}
-				<CommandItem value="Rename chat title" onSelect={() => run(() => window.dispatchEvent(new Event(renameChatEvent)))}><Pencil />Rename chat</CommandItem>
-				<CommandItem value={current.pinned ? "Unpin chat" : "Pin chat"} onSelect={() => run(() => void threadActions.pin(current))}>{current.pinned ? <PinOff /> : <Pin />}{current.pinned ? "Unpin chat" : "Pin chat"}</CommandItem>
+				<CommandItem value="Rename chat title" onSelect={() => run(() => window.dispatchEvent(new Event(renameChatEvent)))}><ActionIcon name="pencil" />Rename chat</CommandItem>
+				<CommandItem value={current.pinned ? "Unpin chat" : "Pin chat"} onSelect={() => run(() => void threadActions.pin(current))}>{current.pinned ? <ActionIcon name="unpin" /> : <ActionIcon name="pin" />}{current.pinned ? "Unpin chat" : "Pin chat"}</CommandItem>
 				{current.projectId && (isSettled(current)
 					? <CommandItem value="Un-settle chat unsettle" onSelect={() => run(() => runCommand("thread.settle"))}><Undo2 />Un-settle chat<CommandShortcut>{shortcut("thread.settle")}</CommandShortcut></CommandItem>
 					: <CommandItem value="Settle chat done" disabled={Boolean(settleBlocker(current))} onSelect={() => run(() => runCommand("thread.settle"))}><CircleCheck />Settle chat<CommandShortcut>{shortcut("thread.settle")}</CommandShortcut></CommandItem>)}
-				<CommandItem value="Mark chat unread" disabled={!current.lastCompletedAt} onSelect={() => run(() => void threadActions.markUnread(current))}><Mail />Mark unread</CommandItem>
+				<CommandItem value="Mark chat unread" disabled={!current.lastCompletedAt} onSelect={() => run(() => void threadActions.markUnread(current))}><ActionIcon name="mail" />Mark unread</CommandItem>
 				{currentProject && <CommandItem value={`Project settings ${currentProject.name}`} onSelect={() => run(() => openProjectSettings(currentProject.id))}><ActionIcon name="settings" />Project settings</CommandItem>}
-				{shelfProject && !shelfProject.archived && <CommandItem value={`${shelfProject.pinned ? "Unpin" : "Pin"} project ${shelfProject.name}`} onSelect={() => organizeProject(shelfProject.id, { pinned: !shelfProject.pinned })}>{shelfProject.pinned ? <PinOff /> : <Pin />}{shelfProject.pinned ? "Unpin project" : "Pin project"}</CommandItem>}
-				{shelfProject && !shelfProject.archived && <CommandItem value={`Archive project ${shelfProject.name} hide`} onSelect={() => organizeProject(shelfProject.id, { archived: true })}><Archive />Archive project</CommandItem>}
-				<CommandItem value="Copy chat link open url share" onSelect={() => run(() => copyChatLink(current.id))}><Link2 />Copy chat link</CommandItem>
+				{shelfProject && !shelfProject.archived && <CommandItem value={`${shelfProject.pinned ? "Unpin" : "Pin"} project ${shelfProject.name}`} onSelect={() => organizeProject(shelfProject.id, { pinned: !shelfProject.pinned })}>{shelfProject.pinned ? <ActionIcon name="unpin" /> : <ActionIcon name="pin" />}{shelfProject.pinned ? "Unpin project" : "Pin project"}</CommandItem>}
+				{shelfProject && !shelfProject.archived && <CommandItem value={`Archive project ${shelfProject.name} hide`} onSelect={() => organizeProject(shelfProject.id, { archived: true })}><ActionIcon name="archive" />Archive project</CommandItem>}
+				<CommandItem value="Copy chat link open url share" onSelect={() => run(() => copyChatLink(current.id))}><ActionIcon name="link" />Copy chat link</CommandItem>
 				<CommandItem value="Copy chat ID identifier reference" onSelect={() => run(() => copyId(current.id))}><ActionIcon name="copy" />Copy chat ID</CommandItem>
-				<CommandItem value="Archive chat" disabled={["running", "waiting"].includes(current.status)} onSelect={() => run(() => void threadActions.archive(current))}><Archive />Archive chat</CommandItem>
+				<CommandItem value="Archive chat" disabled={["running", "waiting"].includes(current.status)} onSelect={() => run(() => void threadActions.archive(current))}><ActionIcon name="archive" />Archive chat</CommandItem>
 			</CommandGroup>}
 			{current?.projectId && <OpenProjectItems projectId={current.projectId} open={commandsOpen} run={run} />}
 			{/* Projects come up as you search, so the open palette is not a list of every folder; an archived one offers only Unarchive. */}
 			{searching && projects.length > 0 && <CommandGroup heading="Projects">
 				{activeProjects.map(projectItem)}
 				{activeProjects.map(project => <CommandItem key={`settings:${project.id}`} value={`${project.name} project settings scripts icon`} onSelect={() => run(() => openProjectSettings(project.id))}><ActionIcon name="settings" /><span className="min-w-0 truncate">{project.name} settings</span></CommandItem>)}
-				{projects.filter(project => project.archived).map(project => <CommandItem key={`unarchive:${project.id}`} value={`Unarchive project ${project.name} restore archived`} onSelect={() => organizeProject(project.id, { archived: false })}><ArchiveRestore /><ProjectIcon project={project} /><span className="min-w-0 truncate">Unarchive project {project.name}</span></CommandItem>)}
+				{projects.filter(project => project.archived).map(project => <CommandItem key={`unarchive:${project.id}`} value={`Unarchive project ${project.name} restore archived`} onSelect={() => organizeProject(project.id, { archived: false })}><ActionIcon name="restore" /><ProjectIcon project={project} /><span className="min-w-0 truncate">Unarchive project {project.name}</span></CommandItem>)}
 			</CommandGroup>}
 			{compareGroups.length > 0 && <CommandGroup heading="Comparisons">
 				{compareGroups.map(group => {

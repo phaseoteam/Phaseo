@@ -1,5 +1,6 @@
+import { ActionIcon } from "../components/ActionIcon";
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { Check, Copy, Download, Ellipsis, Monitor, Moon, Pencil, Plus, Sun, Trash2, Upload } from "lucide-react";
+import { Check, Copy, Download, Ellipsis, Monitor, Moon, Plus, Sun, Trash2, Upload } from "lucide-react";
 import { useWorkspace } from "../app/workspace";
 import { cn } from "../lib/utils";
 import { themeCss, useThemes } from "../lib/appTheme";
@@ -129,7 +130,7 @@ export function AppearanceSettings() {
 					<DropdownMenu>
 						<DropdownMenuTrigger render={<button type="button" aria-label={`${theme.name} options`} className="absolute right-2 bottom-1.5 grid size-6 place-items-center rounded-md text-muted-foreground opacity-0 group-hover/theme:opacity-100 hover:bg-muted hover:text-foreground data-popup-open:opacity-100" />}><Ellipsis className="size-4" /></DropdownMenuTrigger>
 						<DropdownMenuContent align="end" className="w-52">
-							<DropdownMenuItem onClick={() => { setEditing(theme.builtIn ? { ...theme, id: freshId(theme.id), builtIn: undefined, name: `${theme.name} copy`, light: theme.light ?? fallback.light, dark: theme.dark ?? fallback.dark } : theme); setImporting(false); }}><Pencil />{theme.builtIn ? "Customise a copy" : "Edit"}</DropdownMenuItem>
+							<DropdownMenuItem onClick={() => { setEditing(theme.builtIn ? { ...theme, id: freshId(theme.id), builtIn: undefined, name: `${theme.name} copy`, light: theme.light ?? fallback.light, dark: theme.dark ?? fallback.dark } : theme); setImporting(false); }}><ActionIcon name="pencil" />{theme.builtIn ? "Customise a copy" : "Edit"}</DropdownMenuItem>
 							<DropdownMenuItem onClick={() => void copy(theme)}><Copy />Copy share code</DropdownMenuItem>
 							<DropdownMenuItem onClick={() => download(theme)}><Download />Export as file</DropdownMenuItem>
 							{!theme.builtIn && <><DropdownMenuSeparator /><DropdownMenuItem variant="destructive" onClick={() => remove(theme.id)}><Trash2 />Delete</DropdownMenuItem></>}

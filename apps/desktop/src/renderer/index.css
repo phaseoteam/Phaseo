@@ -618,6 +618,15 @@ summary:has(> svg:first-child)::before { display: none; }
 @keyframes icon-terminal-cursor { 0%, 45% { opacity: 0.25; } 100% { opacity: 1; } }
 @keyframes icon-branch-route { from { stroke-dashoffset: -1; opacity: 0.45; } to { stroke-dashoffset: 0; opacity: 1; } }
 @keyframes icon-pr-arrow { from { transform: translateX(2px); opacity: 0.4; } to { transform: none; opacity: 1; } }
+@keyframes icon-seat { from { transform: translateY(-2px); } to { transform: none; } }
+@keyframes icon-lift { from { transform: translateY(2px); } to { transform: none; } }
+@keyframes icon-pin-needle { from { transform: scaleY(0.4); } to { transform: none; } }
+@keyframes icon-write { from { transform: translate(-2px, 1px); } to { transform: none; } }
+@keyframes icon-link-left { from { transform: translateX(-2px); } to { transform: none; } }
+@keyframes icon-link-right { from { transform: translateX(2px); } to { transform: none; } }
+@keyframes icon-shutter { 0%, 100% { transform: none; } 45% { transform: scale(0.25); } }
+@keyframes icon-folder-lid { from { transform: skewX(-7deg) scaleY(0.85); } to { transform: none; } }
+@keyframes icon-mail-flap { from { transform: scaleY(0.3); } to { transform: none; } }
 .gesture-icon > * { transform-origin: 12px 12px; }
 .gesture-icon[data-icon-gesture="plus"] > :first-child { --icon-gesture: icon-add-horizontal; }
 .gesture-icon[data-icon-gesture="plus"] > :nth-child(2) { --icon-gesture: icon-add-vertical; --icon-gesture-delay: 45ms; }
@@ -634,6 +643,30 @@ summary:has(> svg:first-child)::before { display: none; }
 .gesture-icon[data-icon-gesture="pullRequest"] > path:nth-child(4) { --icon-gesture: icon-pr-arrow; --icon-gesture-duration: 220ms; --icon-gesture-delay: 160ms; }
 .gesture-icon[data-icon-gesture="branch"] > path { --icon-gesture: icon-branch-route; --icon-gesture-duration: 420ms; stroke-dasharray: 1; }
 .gesture-icon[data-icon-gesture="merge"] > path { --icon-gesture: icon-thread; --icon-gesture-duration: 420ms; stroke-dasharray: 1; }
+.gesture-icon[data-icon-gesture="pin"] > path:first-child { --icon-gesture: icon-pin-needle; transform-origin: 12px 17px; }
+.gesture-icon[data-icon-gesture="pin"] > path:last-child,
+.gesture-icon[data-icon-gesture="archive"] > rect { --icon-gesture: icon-seat; }
+.gesture-icon[data-icon-gesture="unpin"] > :is(:nth-child(2), :nth-child(4)),
+.gesture-icon[data-icon-gesture="restore"] > rect { --icon-gesture: icon-lift; }
+.gesture-icon[data-icon-gesture="unpin"] > path:nth-child(3) { --icon-gesture: icon-thread; stroke-dasharray: 1; }
+.gesture-icon[data-icon-gesture="archive"] > path:last-child { --icon-gesture: icon-download-land; --icon-gesture-delay: 60ms; }
+.gesture-icon[data-icon-gesture="restore"] > :nth-child(n+4) { --icon-gesture: send-flight; --icon-gesture-duration: 360ms; }
+.gesture-icon[data-icon-gesture="pencil"] > path,
+.gesture-icon[data-icon-gesture="edit"] > path:last-child { --icon-gesture: icon-write; }
+.gesture-icon[data-icon-gesture="edit"] > path:first-child { --icon-gesture: icon-thread; --icon-gesture-delay: 80ms; stroke-dasharray: 1; }
+.gesture-icon[data-icon-gesture="link"] > path:first-child,
+.gesture-icon[data-icon-gesture="unlink"] > path:last-child { --icon-gesture: icon-link-left; }
+.gesture-icon[data-icon-gesture="link"] > path:nth-child(2),
+.gesture-icon[data-icon-gesture="unlink"] > path:first-child { --icon-gesture: icon-link-right; }
+.gesture-icon[data-icon-gesture="link"] > line { --icon-gesture: icon-add-horizontal; --icon-gesture-delay: 80ms; }
+.gesture-icon[data-icon-gesture="camera"] > circle { --icon-gesture: icon-shutter; transform-origin: 12px 13px; }
+.gesture-icon[data-icon-gesture="up"] > path,
+.gesture-icon[data-icon-gesture="publish"] > :is(:first-child, :nth-child(3)) { --icon-gesture: icon-lift; }
+.gesture-icon[data-icon-gesture="down"] > path { --icon-gesture: icon-seat; }
+.gesture-icon[data-icon-gesture="folder"] > path:last-child { --icon-gesture: icon-folder-lid; transform-origin: 4px 20px; }
+.gesture-icon[data-icon-gesture="addFolder"] > path:first-child { --icon-gesture: icon-add-vertical; }
+.gesture-icon[data-icon-gesture="addFolder"] > path:nth-child(2) { --icon-gesture: icon-add-horizontal; --icon-gesture-delay: 45ms; }
+.gesture-icon[data-icon-gesture="mail"] > path { --icon-gesture: icon-mail-flap; transform-origin: 12px 7px; }
 :is(button, [role="menuitem"], [role="option"]):is(:hover, :focus-visible, [data-highlighted], [data-selected="true"]):not(:disabled):not([aria-disabled="true"]) .gesture-icon > * {
 	animation: var(--icon-gesture, none) var(--icon-gesture-duration, 320ms) cubic-bezier(0.2, 0.8, 0.2, 1) var(--icon-gesture-delay, 0ms) both;
 }

@@ -1,5 +1,6 @@
+import { ActionIcon } from "../components/ActionIcon";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent, type ReactNode } from "react";
-import { ArrowDown, ClipboardPaste, Copy, Eraser, Globe, MessageSquarePlus, Plus, Square, SquareSplitHorizontal, SquareSplitVertical, SquareTerminal, TextSelect, Trash2, X } from "lucide-react";
+import { ClipboardPaste, Copy, Eraser, Globe, MessageSquarePlus, Plus, Square, SquareSplitHorizontal, SquareSplitVertical, SquareTerminal, TextSelect, Trash2, X } from "lucide-react";
 import { ContextMenu } from "@base-ui/react/context-menu";
 import { DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator } from "../components/ui/dropdown-menu";
 import { useOptionalWorkspace } from "../app/workspace";
@@ -132,7 +133,7 @@ function TerminalView({ session, api, focus, onFocus, onError }: { session: Term
 			</DropdownMenuContent>
 		</ContextMenu.Root>
 		{scrolledUp && <button type="button" onClick={() => { terminalRef.current?.scrollToBottom(); setScrolledUp(false); terminalRef.current?.focus(); }}
-			className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-md border border-border/60 bg-background px-2 py-0.5 text-xs font-medium text-foreground shadow-xs hover:bg-accent/60"><ArrowDown className="size-3.5" />Jump to latest</button>}
+			className="absolute bottom-2 left-1/2 z-10 flex -translate-x-1/2 items-center gap-1 rounded-md border border-border/60 bg-background px-2 py-0.5 text-xs font-medium text-foreground shadow-xs hover:bg-accent/60"><ActionIcon name="down" className="size-3.5" />Jump to latest</button>}
 		{offer && <div role="status" aria-label="Local server" className="absolute right-2 bottom-2 z-10 flex max-w-[calc(100%-1rem)] items-center gap-1.5 rounded-md border border-border/60 bg-background py-0.5 pr-0.5 pl-2 text-xs">
 			<Globe className="size-3.5 shrink-0 text-muted-foreground" />
 			<span className="min-w-0 truncate font-mono text-muted-foreground">{offer.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>

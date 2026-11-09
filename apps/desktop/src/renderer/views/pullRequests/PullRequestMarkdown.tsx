@@ -1,5 +1,6 @@
+import { ActionIcon } from "../../components/ActionIcon";
 import { useEffect, useId, useRef, useState, type ComponentProps } from "react";
-import { Pencil } from "lucide-react";
+
 import { MessageContent } from "../../components/MessageContent";
 import { Button } from "../../components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "../../components/ui/toggle-group";
@@ -39,7 +40,7 @@ export function PullRequestCommentBody(props: ComponentProps<typeof PullRequestM
 /** Edit affordances reveal on hover or focus, and stay visible on touch screens. */
 export function EditButton({ label, onClick, className }: { label: string; onClick: () => void; className?: string }) {
 	return <span className={cn("flex shrink-0 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100 motion-reduce:transition-none", className)}>
-		<Tip label={label}><Button size="icon-xs" variant="ghost" className="text-muted-foreground" aria-label={label} onClick={onClick}><Pencil aria-hidden className="size-3" /></Button></Tip>
+		<Tip label={label}><Button size="icon-xs" variant="ghost" className="text-muted-foreground" aria-label={label} onClick={onClick}><ActionIcon name="pencil" aria-hidden className="size-3" /></Button></Tip>
 	</span>;
 }
 

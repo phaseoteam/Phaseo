@@ -1,5 +1,6 @@
+import { ActionIcon } from "../components/ActionIcon";
 import { useEffect, useRef } from "react";
-import { Archive, X } from "lucide-react";
+import { X } from "lucide-react";
 import type { Task } from "../../shared/workspace";
 import { shortDuration } from "../../shared/threadLifecycle";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
@@ -53,7 +54,7 @@ export function StashMenu({ onRestore }: { onRestore: (id: string) => void }) {
 	if (!items.length) return null;
 	const now = Date.now();
 	return <DropdownMenu>
-		<DropdownMenuTrigger render={<button type="button" aria-label={`Stashed drafts (${items.length})`} title="Stashed drafts" className="flex h-8 items-center gap-1 rounded-md px-2 text-[12.5px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-4" />}><Archive />{items.length}</DropdownMenuTrigger>
+		<DropdownMenuTrigger render={<button type="button" aria-label={`Stashed drafts (${items.length})`} title="Stashed drafts" className="flex h-8 items-center gap-1 rounded-md px-2 text-[12.5px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground [&_svg]:size-4" />}><ActionIcon name="archive" />{items.length}</DropdownMenuTrigger>
 		<DropdownMenuContent align="start" className="w-72">
 			{items.map((item, index) => <DropdownMenuItem key={item.id} onClick={() => onRestore(item.id)}>
 				<span className="min-w-0 flex-1 truncate">{mentionPlainText(item.text).replace(/\s+/g, " ")}</span>

@@ -1,9 +1,10 @@
+import { ActionIcon } from "../components/ActionIcon";
 import { prefetchTask } from "../lib/useSelectedTask";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent, type ReactNode } from "react";
 import { isFactoryWorktree } from "../../shared/factory/projects";
 import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
 import { ContextMenu } from "@base-ui/react/context-menu";
-import { AlarmClock, AlarmClockOff, Archive, ArchiveRestore, Check, ChevronDown, ChevronRight, CircleAlert, CircleCheck, CircleDashed, CircleDotDashed, Clock, FolderPlus, GitBranch, MessageCircleQuestion, Pin, PinOff, Plus, Settings, ShieldQuestion, Trash2, Undo2 } from "lucide-react";
+import { AlarmClock, AlarmClockOff, Check, ChevronDown, ChevronRight, CircleAlert, CircleCheck, CircleDashed, CircleDotDashed, Clock, GitBranch, MessageCircleQuestion, Plus, Settings, ShieldQuestion, Trash2, Undo2 } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { useRemoveProject } from "../settings/removeProject";
 import { hasWoken, isUnread, settleBlocker, shortDuration } from "../../shared/threadLifecycle";
@@ -80,7 +81,7 @@ function CardRow({ task, now, scope, onScope, hint, controls, twoLine }: { task:
 			<div className="flex h-5 items-center gap-1.5 text-xs text-muted-foreground">
 				{twoLine ? renaming ? <RenameInput task={task} onDone={() => setRenaming(false)} /> : <span className={cn("min-w-0 truncate text-[13px]", quiet ? "text-sidebar-foreground/80" : "font-medium text-sidebar-foreground")}>{task.title}</span>
 					: <><ProjectIcon project={project} className="size-3.5" /><span className="min-w-0 truncate">{project?.name}</span></>}
-				{task.pinned && <Tip label="Unpin chat"><button type="button" aria-label="Unpin chat" onClick={event => { event.stopPropagation(); void actions.pin(task); }} className="group/pin grid size-4 shrink-0 place-items-center rounded hover:text-foreground"><Pin className="size-3 group-hover/pin:hidden" /><PinOff className="hidden size-3 group-hover/pin:block" /></button></Tip>}
+				{task.pinned && <Tip label="Unpin chat"><button type="button" aria-label="Unpin chat" onClick={event => { event.stopPropagation(); void actions.pin(task); }} className="group/pin grid size-4 shrink-0 place-items-center rounded hover:text-foreground"><ActionIcon name="pin" className="size-3 group-hover/pin:hidden" /><ActionIcon name="unpin" className="hidden size-3 group-hover/pin:block" /></button></Tip>}
 				<span className="ml-auto flex items-center group-hover/row:hidden group-has-[:focus-visible]/row:hidden">{hint !== undefined ? <JumpHint index={hint} /> : <StatusLabel task={task} now={now} onDismissWake={() => void actions.wake(task)} />}</span>
 				<span className="ml-auto hidden items-center gap-0.5 group-hover/row:flex group-has-[:focus-visible]/row:flex" onClick={event => event.stopPropagation()}>
 					<DropdownMenu>
@@ -269,26 +270,26 @@ export function CodeThreadList() {
 					{projects.map(project => <DropdownMenuCheckboxItem key={project.id} checked={scope.includes(project.id)} onCheckedChange={() => toggleScope(project.id)} className="group/project pr-8">
 						<ProjectIcon project={project} /><span className="min-w-0 flex-1 truncate">{project.name}</span>
 						{!project.worktree && <Tip label={project.pinned ? `Unpin ${project.name}` : `Pin ${project.name} to the top`} side="right"><button type="button" aria-label={project.pinned ? `Unpin ${project.name}` : `Pin ${project.name}`} onPointerDown={event => event.stopPropagation()} onClick={event => { event.preventDefault(); event.stopPropagation(); organize(project, { pinned: !project.pinned }); }}
-							className={cn("grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground", !project.pinned && "opacity-0 group-hover/project:opacity-100 group-focus-visible/project:opacity-100")}><IconSwap show={project.pinned ? "pinOff" : "pin"}>{{ pinOff: <PinOff className="size-3.5" />, pin: <Pin className="size-3.5" /> }}</IconSwap></button></Tip>}
+							className={cn("grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground", !project.pinned && "opacity-0 group-hover/project:opacity-100 group-focus-visible/project:opacity-100")}><IconSwap show={project.pinned ? "pinOff" : "pin"}>{{ pinOff: <ActionIcon name="unpin" className="size-3.5" />, pin: <ActionIcon name="pin" className="size-3.5" /> }}</IconSwap></button></Tip>}
 						<Tip label={`Project settings for ${project.name}`} side="right"><button type="button" aria-label={`Project settings for ${project.name}`} onPointerDown={event => event.stopPropagation()} onClick={event => { event.preventDefault(); event.stopPropagation(); openProjectSettings(project.id); }}
 							className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground opacity-0 group-hover/project:opacity-100 group-focus-visible/project:opacity-100 hover:bg-accent hover:text-foreground"><Settings className="size-3.5" /></button></Tip>
 					</DropdownMenuCheckboxItem>)}
 					<DropdownMenuSeparator />
 					{scoped && <DropdownMenuItem onClick={() => openProjectSettings(scoped.id)}><Settings />Project settings</DropdownMenuItem>}
-					{scoped && !scoped.worktree && <DropdownMenuItem onClick={() => organize(scoped, { archived: true })}><Archive />Archive project</DropdownMenuItem>}
+					{scoped && !scoped.worktree && <DropdownMenuItem onClick={() => organize(scoped, { archived: true })}><ActionIcon name="archive" />Archive project</DropdownMenuItem>}
 					{archived.length > 0 && <DropdownMenuSub>
-						<DropdownMenuSubTrigger><ArchiveRestore />Archived projects</DropdownMenuSubTrigger>
+						<DropdownMenuSubTrigger><ActionIcon name="restore" />Archived projects</DropdownMenuSubTrigger>
 						<DropdownMenuSubContent className="w-56">{archived.map(project => <DropdownMenuItem key={project.id} onClick={() => organize(project, { archived: false })}><ProjectIcon project={project} /><span className="min-w-0 flex-1 truncate">Unarchive {project.name}</span></DropdownMenuItem>)}</DropdownMenuSubContent>
 					</DropdownMenuSub>}
 					{scoped && !scoped.worktree && <DropdownMenuItem variant="destructive" onClick={() => void removeProject(scoped).then(removed => { if (removed) setScope(""); })}><Trash2 />Remove project</DropdownMenuItem>}
-					<DropdownMenuItem onClick={addProject}><FolderPlus />Add project…</DropdownMenuItem>
+					<DropdownMenuItem onClick={addProject}><ActionIcon name="addFolder" />Add project…</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
 			<Tip label="Add project"><button type="button" aria-label="Add project" onClick={addProject} className="ml-auto grid size-6 place-items-center rounded text-muted-foreground hover:bg-sidebar-accent hover:text-foreground"><Plus className="size-3.5" /></button></Tip>
 		</div>
 		{!projects.length && <div className="px-4 pt-1 pb-3">
 			<p className="text-xs text-muted-foreground">No projects yet. Open a folder to start coding with an agent.</p>
-			<button type="button" onClick={addProject} className="mt-3 inline-flex h-7 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/85"><FolderPlus className="size-3.5" />Add project</button>
+			<button type="button" onClick={addProject} className="mt-3 inline-flex h-7 items-center gap-1.5 rounded-md bg-primary px-3 text-xs font-semibold text-primary-foreground hover:bg-primary/85"><ActionIcon name="addFolder" className="size-3.5" />Add project</button>
 		</div>}
 		{projects.length > 0 && !sections.pinned.length && !sections.active.length && !sections.working.length && <p className="px-4 py-3 text-xs text-muted-foreground">{scoped ? `No chats in ${scoped.name} yet` : scope.length ? "No chats in these projects yet" : "No chats yet"}</p>}
 		{/* In folders the list is ordered by time, so their rows are not dragged. */}

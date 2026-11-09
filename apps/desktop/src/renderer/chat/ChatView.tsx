@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { typesUltrathink, useUltrathinkReady } from "./ModelSettings";
 import { TerminalDrawer } from "../views/Terminals";
-import { AlarmClockOff, Archive, Box, FolderInput, CircleCheck, Clock, Undo2, CornerLeftUp, Ellipsis, Gauge, Layers, ListChecks, MessagesSquare, Pencil, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
+import { AlarmClockOff, Box, FolderInput, CircleCheck, Clock, Undo2, CornerLeftUp, Ellipsis, Gauge, Layers, ListChecks, MessagesSquare, Pencil, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
 import { ActionIcon } from "../components/ActionIcon";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { QuestionPanel } from "./QuestionPanel";
@@ -110,7 +110,7 @@ function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () =
 			<DropdownMenu>
 				<DropdownMenuTrigger render={<button type="button" aria-label="Chat actions" className="grid size-8 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" />}><Ellipsis className="size-4" /></DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-52">
-					<DropdownMenuItem onClick={() => void command({ type: "update-task", id: task.id, pinned: !task.pinned })}>{task.pinned ? <PinOff /> : <Pin />}{task.pinned ? "Unpin" : "Pin"}</DropdownMenuItem>
+					<DropdownMenuItem onClick={() => void command({ type: "update-task", id: task.id, pinned: !task.pinned })}>{task.pinned ? <ActionIcon name="unpin" /> : <ActionIcon name="pin" />}{task.pinned ? "Unpin" : "Pin"}</DropdownMenuItem>
 					{snapshot?.projectId && (isSettled(snapshot)
 						? <DropdownMenuItem onClick={() => void threadActions.unsettle(snapshot)}><Undo2 />Un-settle chat</DropdownMenuItem>
 						: <DropdownMenuItem disabled={Boolean(settleBlocker(snapshot))} onClick={() => void threadActions.settle(snapshot)}><CircleCheck />Settle chat<DropdownMenuShortcut>{shortcut("thread.settle")}</DropdownMenuShortcut></DropdownMenuItem>)}
@@ -127,7 +127,7 @@ function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () =
 					<DropdownMenuItem onClick={() => void api?.exportTask(task.id, "markdown").catch(reason => setError(errorText(reason)))}><ActionIcon name="download" />Export as Markdown</DropdownMenuItem>
 					<DropdownMenuItem onClick={() => void api?.exportTask(task.id, "json").catch(reason => setError(errorText(reason)))}><ActionIcon name="download" />Export as JSON</DropdownMenuItem>
 					<DropdownMenuSeparator />
-					<DropdownMenuItem onClick={() => void command({ type: "update-task", id: task.id, archived: !task.archived })}><Archive />{task.archived ? "Unarchive" : "Archive"}</DropdownMenuItem>
+					<DropdownMenuItem onClick={() => void command({ type: "update-task", id: task.id, archived: !task.archived })}><ActionIcon name={task.archived ? "restore" : "archive"} />{task.archived ? "Unarchive" : "Archive"}</DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
 		</div>
@@ -185,7 +185,7 @@ function ChatComposer({ task }: { task: Task }) {
 		return Boolean(state);
 	}
 	const actions: ComposerAction[] = [
-		{ id: "archive", label: "Archive", description: "Archive this chat", icon: <Archive />, run: () => void command({ type: "update-task", id: task.id, archived: true }) },
+		{ id: "archive", label: "Archive", description: "Archive this chat", icon: <ActionIcon name="archive" />, run: () => void command({ type: "update-task", id: task.id, archived: true }) },
 		...canCompact ? [{ id: "compact", label: "Compact", description: "Summarise earlier messages to free up context", icon: <Layers />, run: () => void command({ type: "send", id: task.id, text: "/compact" }) }] : [],
 		...running ? [] : [{ id: "fork", label: "Fork chat", description: "Continue in a copy of this chat", icon: <ActionIcon name="branch" />, run: () => void fork() }],
 		...sideChats ? [
@@ -197,7 +197,7 @@ function ChatComposer({ task }: { task: Task }) {
 		{ id: "mcp", label: "MCP", description: "Manage MCP servers", icon: <Plug />, run: () => openSettings("mcp") },
 		{ id: "model", label: "Model", description: "Switch this chat's model", icon: <Box />, run: () => window.dispatchEvent(new Event(openModelPickerEvent)) },
 		{ id: "new", label: "New chat", description: "Start a new chat", icon: <SquarePen />, run: () => select(undefined) },
-		{ id: "pin", label: task.pinned ? "Unpin chat" : "Pin chat", description: task.pinned ? "Remove this chat from Pinned" : "Keep this chat at the top of the sidebar", icon: task.pinned ? <PinOff /> : <Pin />, run: () => void command({ type: "update-task", id: task.id, pinned: !task.pinned }) },
+		{ id: "pin", label: task.pinned ? "Unpin chat" : "Pin chat", description: task.pinned ? "Remove this chat from Pinned" : "Keep this chat at the top of the sidebar", icon: task.pinned ? <ActionIcon name="unpin" /> : <ActionIcon name="pin" />, run: () => void command({ type: "update-task", id: task.id, pinned: !task.pinned }) },
 		...code && !running ? [
 			{ id: "plan", label: "Plan mode", description: plan ? "Turn plan mode off" : "Turn plan mode on: the agent proposes a plan before changing anything", icon: <ListChecks />, checked: plan, run: () => void command({ type: "update-task", id: task.id, mode: plan ? "code" as const : "plan" as const }) },
 			{ id: "permissions", label: "Permissions", hint: full ? "Full access" : edits ? "Accept edits" : "Ask first", icon: <ShieldCheck />, options: [
@@ -207,7 +207,7 @@ function ChatComposer({ task }: { task: Task }) {
 			] },
 		] : [],
 		{ id: "usage", label: "Usage", description: limitHarness ? "Show this agent's plan limits" : "Open usage and limits", icon: <Gauge />, run: () => void showLimits() },
-		{ id: "rename", label: "Rename", description: "Rename this chat", icon: <PenLine />, run: () => window.dispatchEvent(new Event(renameChatEvent)) },
+		{ id: "rename", label: "Rename", description: "Rename this chat", icon: <ActionIcon name="edit" />, run: () => window.dispatchEvent(new Event(renameChatEvent)) },
 		{ id: "accounts", label: "Accounts", description: "Manage accounts and usage", icon: <UserRound />, run: () => openSettings("accounts") },
 		...settingActions,
 	];

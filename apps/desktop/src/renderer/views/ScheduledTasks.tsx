@@ -1,6 +1,7 @@
+import { ActionIcon } from "../components/ActionIcon";
 import { formatDateParts, formatDateTime } from "@phaseo/app-kit/format";
 import { useState } from "react";
-import { CalendarClock, Ellipsis, MessageSquarePlus, Pencil, Play, Plus, SquareArrowOutUpRight, Trash2 } from "lucide-react";
+import { CalendarClock, Ellipsis, MessageSquarePlus, Play, Plus, SquareArrowOutUpRight, Trash2 } from "lucide-react";
 import type { Mission, MissionCommand, MissionSchedule } from "../../shared/missions";
 import { scheduleLabel } from "../../shared/missions";
 import { errorText, useWorkspace } from "../app/workspace";
@@ -101,7 +102,7 @@ function ScheduledTaskRow({ task, busy, run, onEdit }: { task: Mission; busy: bo
 			<DropdownMenu>
 				<DropdownMenuTrigger render={<button type="button" aria-label={`Actions for ${task.title}`} className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" />}><Ellipsis className="size-4" /></DropdownMenuTrigger>
 				<DropdownMenuContent align="end" className="w-44">
-					<DropdownMenuItem disabled={running} onClick={onEdit}><Pencil />Edit</DropdownMenuItem>
+					<DropdownMenuItem disabled={running} onClick={onEdit}><ActionIcon name="pencil" />Edit</DropdownMenuItem>
 					{task.threadTaskId && <DropdownMenuItem disabled={running} onClick={() => run({ type: "save", id: task.id, title: task.title, prompt: task.prompt, templateTaskId: task.templateTaskId, threadTaskId: null, schedule: task.schedule })}><MessageSquarePlus />Start a new chat each run</DropdownMenuItem>}
 					{task.lastTaskId && <DropdownMenuItem onClick={() => select(task.lastTaskId)}><SquareArrowOutUpRight />Open latest run</DropdownMenuItem>}
 					<DropdownMenuSeparator />

@@ -1,6 +1,7 @@
+import { ActionIcon } from "../components/ActionIcon";
 import { formatTime } from "@phaseo/app-kit/format";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ChevronRight, CircleStop, Copy, FolderOpen, Info, RotateCw, TriangleAlert } from "lucide-react";
+import { ChevronRight, CircleStop, Copy, Info, RotateCw, TriangleAlert } from "lucide-react";
 import { RESOURCE_HISTORY_WINDOWS, type DiagnosticsProcess, type DiagnosticsProcesses, type ProcessCpuBucket, type ResourceBucket, type ResourceHistory, type ResourceProcessSummary, type TraceDiagnostics } from "../../shared/diagnostics";
 import { errorText } from "../app/workspace";
 import { Button } from "../components/ui/button";
@@ -315,7 +316,7 @@ export function DiagnosticsSettings() {
 
 		<TraceExportSettings />
 		<SettingsSection title="Trace diagnostics" description={traces ? <>Spans from <span className="font-mono [overflow-wrap:anywhere]">{traces.traceFilePath}</span> and its rotated copies.</> : undefined} action={<div className="flex items-center gap-1.5"><Checked at={traces?.readAt} busy={traceBusy} />
-			<Tip label="Open logs folder"><Button size="icon-xs" variant="ghost" aria-label="Open logs folder" disabled={openingLogs} onClick={openLogs} className="text-muted-foreground"><FolderOpen className="size-3.5" /></Button></Tip>
+			<Tip label="Open logs folder"><Button size="icon-xs" variant="ghost" aria-label="Open logs folder" disabled={openingLogs} onClick={openLogs} className="text-muted-foreground"><ActionIcon name="folder" className="size-3.5" /></Button></Tip>
 			<RefreshButton busy={traceBusy} label="Refresh trace diagnostics" onClick={() => void loadTraces()} /></div>}>
 			<StatsGrid>
 				<StatBlock label="Spans" value={traces ? formatCount(traces.recordCount) : "…"} />

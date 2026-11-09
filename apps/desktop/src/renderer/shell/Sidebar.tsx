@@ -4,7 +4,7 @@ import { prefetchTask } from "../lib/useSelectedTask";
 import { lazy, Suspense, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
-import { Archive, ArchiveRestore, CalendarClock, Link2, Mail, Trash2, ChartLine, Inbox, Columns3, Ellipsis, ExternalLink, LogIn, Pencil, Pin, PinOff, Gauge, UserRound } from "lucide-react";
+import { CalendarClock, Trash2, ChartLine, Inbox, Columns3, Ellipsis, ExternalLink, LogIn, Gauge, UserRound } from "lucide-react";
 import { ActionIcon } from "../components/ActionIcon";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { chatDragType } from "../../shared/mentions";
@@ -71,16 +71,16 @@ function RowMenu({ task, onRename }: { task: TaskOverview; onRename: () => void 
 	return <DropdownMenu>
 		<DropdownMenuTrigger render={<button type="button" aria-label={`Actions for ${task.title}`} onClick={event => event.stopPropagation()} className="hidden size-5 shrink-0 place-items-center rounded text-muted-foreground group-hover/row:grid group-has-[:focus-visible]/row:grid hover:bg-background/70 hover:text-foreground data-popup-open:grid [&_svg]:size-3.5" />}><Ellipsis /></DropdownMenuTrigger>
 		<DropdownMenuContent align="start" className="w-44">
-			<DropdownMenuItem onClick={onRename}><Pencil />Rename</DropdownMenuItem>
+			<DropdownMenuItem onClick={onRename}><ActionIcon name="pencil" />Rename</DropdownMenuItem>
 			<DropdownMenuItem onClick={() => void command({ type: "regenerate-title", id: task.id })}><ActionIcon name="refresh" />Regenerate title</DropdownMenuItem>
-			<DropdownMenuItem onClick={() => void pin()}>{task.pinned ? <PinOff /> : <Pin />}{task.pinned ? "Unpin" : "Pin"}</DropdownMenuItem>
+			<DropdownMenuItem onClick={() => void pin()}>{task.pinned ? <ActionIcon name="unpin" /> : <ActionIcon name="pin" />}{task.pinned ? "Unpin" : "Pin"}</DropdownMenuItem>
 			<TagMenu task={task} />
-			<DropdownMenuItem disabled={!task.lastCompletedAt || isUnread(task)} onClick={() => { leave(); void command({ type: "mark-unread", id: task.id }); }}><Mail />Mark unread</DropdownMenuItem>
-			<DropdownMenuItem onClick={() => copyChatLink(task.id)}><Link2 />Copy chat link</DropdownMenuItem>
+			<DropdownMenuItem disabled={!task.lastCompletedAt || isUnread(task)} onClick={() => { leave(); void command({ type: "mark-unread", id: task.id }); }}><ActionIcon name="mail" />Mark unread</DropdownMenuItem>
+			<DropdownMenuItem onClick={() => copyChatLink(task.id)}><ActionIcon name="link" />Copy chat link</DropdownMenuItem>
 			<DropdownMenuItem onClick={() => void navigator.clipboard.writeText(task.id)}><ActionIcon name="copy" />Copy chat ID</DropdownMenuItem>
 			<DropdownMenuSeparator />
-			{task.archived ? <DropdownMenuItem onClick={() => void command({ type: "update-task", id: task.id, archived: false })}><ArchiveRestore />Restore</DropdownMenuItem>
-				: <DropdownMenuItem disabled={working} onClick={() => void archive()}><Archive />Archive</DropdownMenuItem>}
+			{task.archived ? <DropdownMenuItem onClick={() => void command({ type: "update-task", id: task.id, archived: false })}><ActionIcon name="restore" />Restore</DropdownMenuItem>
+				: <DropdownMenuItem disabled={working} onClick={() => void archive()}><ActionIcon name="archive" />Archive</DropdownMenuItem>}
 			<DropdownMenuItem variant="destructive" disabled={working} onClick={() => { leave(); deleteWithUndo(task.id, () => command({ type: "delete-task", id: task.id })); }}><Trash2 />Delete</DropdownMenuItem>
 		</DropdownMenuContent>
 	</DropdownMenu>;
@@ -122,7 +122,7 @@ function CompareRow({ group }: { group: CompareGroup }) {
 		<span><ModelStack models={tasks.slice(0, 3)} size="sm" ringClassName="bg-sidebar ring-sidebar" /></span>
 		<DropdownMenu>
 			<DropdownMenuTrigger render={<button type="button" aria-label={`Actions for ${group.title}`} onClick={event => event.stopPropagation()} className="hidden size-5 shrink-0 place-items-center rounded text-muted-foreground group-hover/row:grid group-has-[:focus-visible]/row:grid hover:bg-background/70 data-popup-open:grid [&_svg]:size-3.5" />}><Ellipsis /></DropdownMenuTrigger>
-			<DropdownMenuContent align="start" className="w-44"><DropdownMenuItem onClick={() => removeCompareGroup(group.id)}><Archive />Ungroup</DropdownMenuItem></DropdownMenuContent>
+			<DropdownMenuContent align="start" className="w-44"><DropdownMenuItem onClick={() => removeCompareGroup(group.id)}><ActionIcon name="archive" />Ungroup</DropdownMenuItem></DropdownMenuContent>
 		</DropdownMenu>
 	</div>;
 }
@@ -163,7 +163,7 @@ function ChatList({ viewport }: { viewport: HTMLDivElement | null }) {
 		entries.push({ key: `label:${label}`, size: 32, node: <SectionLabel>{label}</SectionLabel> });
 		for (const item of values) entries.push(item.kind === "task" ? { key: item.task.id, size: 32, node: <ChatRow task={item.task} showModel showTime={false} hint={hint(item.task.id)} /> } : { key: item.group.id, size: 32, node: <CompareRow group={item.group} /> });
 	}
-	if (archived > 0) entries.push({ key: "archived", size: 40, node: <button type="button" onClick={() => openArchivedChats()} className="mx-2 mt-2 flex h-8 w-[calc(100%-1rem)] items-center gap-2 rounded-md px-2 text-[12.5px] text-muted-foreground hover:bg-sidebar-accent/70 hover:text-foreground"><Archive className="size-3.5" />Archived chats<span className="ml-auto text-[11px] tabular-nums">{archived}</span></button> });
+	if (archived > 0) entries.push({ key: "archived", size: 40, node: <button type="button" onClick={() => openArchivedChats()} className="mx-2 mt-2 flex h-8 w-[calc(100%-1rem)] items-center gap-2 rounded-md px-2 text-[12.5px] text-muted-foreground hover:bg-sidebar-accent/70 hover:text-foreground"><ActionIcon name="archive" className="size-3.5" />Archived chats<span className="ml-auto text-[11px] tabular-nums">{archived}</span></button> });
 	const virtualizer = useVirtualizer({ count: entries.length, getScrollElement: () => viewport, estimateSize: index => entries[index].size, getItemKey: index => entries[index].key, overscan: 16 });
 	if (!all.length && !compareGroups.length && !archived) return <p className="px-4 py-6 text-center text-xs text-muted-foreground">Your chats will appear here.</p>;
 	// The row count is published because only the rows in view exist in the page.

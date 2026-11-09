@@ -1,4 +1,5 @@
-import { ArrowRightLeft, Check, Pencil, Pin, PinOff, Plus, TriangleAlert, Trash2, X } from "lucide-react";
+import { ActionIcon } from "../../components/ActionIcon";
+import { ArrowRightLeft, Check, Pin, Plus, TriangleAlert, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { COMPUTER } from "../../../shared/factory/notes";
 import { stageLabel } from "../../../shared/factory/stages";
@@ -92,9 +93,9 @@ function NoteRow({ note, place, home, agent, now }: { note: RepoNote; place: str
 			<div className="flex shrink-0 items-center gap-0.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100">
 				{editing
 					? <Button variant="ghost" size="icon-xs" aria-label="Cancel" onMouseDown={(event) => event.preventDefault()} onClick={() => { setDraft(note.text); setEditing(false); }}><X className="size-3.5" /></Button>
-					: <Tip label="Edit"><Button variant="ghost" size="icon-xs" aria-label="Edit note" className="text-muted-foreground" onClick={() => { setDraft(note.text); setEditing(true); }}><Pencil className="size-3.5" /></Button></Tip>}
+					: <Tip label="Edit"><Button variant="ghost" size="icon-xs" aria-label="Edit note" className="text-muted-foreground" onClick={() => { setDraft(note.text); setEditing(true); }}><ActionIcon name="pencil" className="size-3.5" /></Button></Tip>}
 				{moveTo && <Tip label={moveTo === COMPUTER ? "Move to this computer: every repository's runs get it" : `Move to ${moveTo}`}><Button variant="ghost" size="icon-xs" aria-label="Move note" className="text-muted-foreground" onClick={() => update({ moveTo })}><ArrowRightLeft className="size-3.5" /></Button></Tip>}
-				<Tip label={note.pinned ? "Unpin" : "Pin: every run gets it"}><Button variant="ghost" size="icon-xs" aria-label={note.pinned ? "Unpin note" : "Pin note"} className="text-muted-foreground" onClick={() => update({ pinned: !note.pinned })}><IconSwap show={note.pinned ? "pinOff" : "pin"}>{{ pinOff: <PinOff className="size-3.5" />, pin: <Pin className="size-3.5" /> }}</IconSwap></Button></Tip>
+				<Tip label={note.pinned ? "Unpin" : "Pin: every run gets it"}><Button variant="ghost" size="icon-xs" aria-label={note.pinned ? "Unpin note" : "Pin note"} className="text-muted-foreground" onClick={() => update({ pinned: !note.pinned })}><IconSwap show={note.pinned ? "pinOff" : "pin"}>{{ pinOff: <ActionIcon name="unpin" className="size-3.5" />, pin: <ActionIcon name="pin" className="size-3.5" /> }}</IconSwap></Button></Tip>
 				<Tip label="Remove"><Button variant="ghost" size="icon-xs" aria-label="Remove note" className="text-muted-foreground" onClick={() => void factory().removeNote(place, note.id)}><Trash2 className="size-3.5" /></Button></Tip>
 			</div>
 		</div>

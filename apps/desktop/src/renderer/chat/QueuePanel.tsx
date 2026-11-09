@@ -1,5 +1,6 @@
+import { ActionIcon } from "../components/ActionIcon";
 import type { ReactNode } from "react";
-import { ArrowDown, ArrowUp, CornerDownRight, LoaderCircle, Pencil, X } from "lucide-react";
+import { CornerDownRight, LoaderCircle, X } from "lucide-react";
 import type { Harness, QueuedMessage, Task } from "../../shared/workspace";
 import { useWorkspace } from "../app/workspace";
 import { shortcut } from "../lib/keybindings";
@@ -60,9 +61,9 @@ export function QueuePanel({ task, editingId, onEdit, onSteer }: { task: Task; e
 				<span className={cn("min-w-0 flex-1 truncate", editing ? "text-foreground" : "text-foreground/85")} title={text}>{text || `${message.attachments?.length ?? 0} attachments`}</span>
 				{editing ? <span className="shrink-0 text-xs text-muted-foreground">Editing in the composer</span> : <span className="flex shrink-0 items-center opacity-70 group-focus-within/queued:opacity-100 group-hover/queued:opacity-100">
 					{own && <button type="button" disabled={Boolean(blocker)} title={blocker ?? `Send into the current turn${message === firstOwn && steerKey ? ` (${steerKey})` : ""}`} onClick={() => onSteer(message.id)} className="composer-action mr-1 flex h-6 items-center gap-1 rounded-md px-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent [&_svg]:size-3"><ComposerActionIcon action="steer" />Steer</button>}
-					{own && <RowButton label="Edit queued message" onClick={() => onEdit(message.id)}><Pencil /></RowButton>}
-					{queue.length > 1 && <RowButton label="Move up" disabled={index === 0} onClick={() => void command({ type: "queue-move", id: task.id, messageId: message.id, direction: "up" })}><ArrowUp /></RowButton>}
-					{queue.length > 1 && <RowButton label="Move down" disabled={index === queue.length - 1} onClick={() => void command({ type: "queue-move", id: task.id, messageId: message.id, direction: "down" })}><ArrowDown /></RowButton>}
+					{own && <RowButton label="Edit queued message" onClick={() => onEdit(message.id)}><ActionIcon name="pencil" /></RowButton>}
+					{queue.length > 1 && <RowButton label="Move up" disabled={index === 0} onClick={() => void command({ type: "queue-move", id: task.id, messageId: message.id, direction: "up" })}><ActionIcon name="up" /></RowButton>}
+					{queue.length > 1 && <RowButton label="Move down" disabled={index === queue.length - 1} onClick={() => void command({ type: "queue-move", id: task.id, messageId: message.id, direction: "down" })}><ActionIcon name="down" /></RowButton>}
 					<RowButton label="Remove queued message" onClick={() => void command({ type: "queue-remove", id: task.id, messageId: message.id })}><X /></RowButton>
 				</span>}
 			</li>;

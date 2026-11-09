@@ -1,4 +1,5 @@
-import { ArrowDown, ArrowUp, ChevronRight, CircleDot, Eye, GitPullRequest, PencilLine, Plus, SquareTerminal, Trash2 } from "lucide-react";
+import { ActionIcon } from "../../components/ActionIcon";
+import { ChevronRight, CircleDot, Eye, GitPullRequest, PencilLine, Plus, SquareTerminal, Trash2 } from "lucide-react";
 import { useState, type ReactNode } from "react";
 import { emptyRule, ruleMatches } from "../../../shared/factory/intake";
 import { ASK_ROUNDS } from "../../../shared/factory/report";
@@ -223,8 +224,8 @@ function RuleRow({ rule, index, count, kind, snapshot, open, onToggle, onChange,
 				</Line>)}
 				<Line label="Instructions"><TextBox value={rule.instructions} rows={3} placeholder="Added after the playbook's instructions" onSave={(instructions) => onChange({ ...rule, instructions })} /></Line>
 			<div className="col-span-2 mt-1 flex items-center gap-1">
-				<Button variant="ghost" size="xs" disabled={index === 0} onClick={() => onMove(-1)}><ArrowUp className="size-3" />Up</Button>
-				<Button variant="ghost" size="xs" disabled={index === count - 1} onClick={() => onMove(1)}><ArrowDown className="size-3" />Down</Button>
+				<Button variant="ghost" size="xs" disabled={index === 0} onClick={() => onMove(-1)}><ActionIcon name="up" className="size-3" />Up</Button>
+				<Button variant="ghost" size="xs" disabled={index === count - 1} onClick={() => onMove(1)}><ActionIcon name="down" className="size-3" />Down</Button>
 				<span className="flex-1" />
 				<Button variant="ghost" size="xs" className="text-destructive" onClick={onDelete}><Trash2 className="size-3" />Delete rule</Button>
 			</div>

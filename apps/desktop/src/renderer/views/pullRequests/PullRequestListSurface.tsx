@@ -1,3 +1,4 @@
+import { ActionIcon } from "../../components/ActionIcon";
 import { formatRelativeTime, formatAgoShort } from "@phaseo/app-kit/format";
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { ContextMenu } from "@base-ui/react/context-menu";
@@ -66,10 +67,10 @@ function LinkRow({ projectId, line, openable, onOpen, onExternal, onCopy, onUnli
 	const { link, depth, stack } = line;
 	const snapshot = link.snapshot, open = !snapshot || snapshot.state === "open", rollup = snapshot ? summaryChecksRollup(snapshot.checks) : null;
 	const items = <>
-		<DropdownMenuItem onClick={onCopy}><LinkIcon className="size-3.5" />Copy link</DropdownMenuItem>
+		<DropdownMenuItem onClick={onCopy}><ActionIcon name="link" className="size-3.5" />Copy link</DropdownMenuItem>
 		<DropdownMenuItem onClick={openable ? onOpen : onExternal}><ArrowUpRight className="size-3.5" />Open</DropdownMenuItem>
 		{open && <DropdownMenuItem onClick={() => onWatch(!link.watching)}>{link.watching ? <EyeOff className="size-3.5" /> : <Eye className="size-3.5" />}{link.watching ? "Stop watching" : "Watch for changes"}</DropdownMenuItem>}
-		<DropdownMenuItem onClick={onUnlink}><PullRequestGlyph.unlink className="size-3.5" />{link.source === "stack" ? "Dismiss from chat" : "Unlink from chat"}</DropdownMenuItem>
+		<DropdownMenuItem onClick={onUnlink}><ActionIcon name="unlink" className="size-3.5" />{link.source === "stack" ? "Dismiss from chat" : "Unlink from chat"}</DropdownMenuItem>
 	</>;
 	// Each layer steps in under the one it targets, capped so a tall stack does not stair-step off the edge.
 	return <ContextRow className={cn(PULL_REQUEST_ROW_CLASS, "relative hover:bg-accent/60")} style={{ paddingLeft: `${0.5 + Math.min(depth, 3) * 1.25}rem` }} data={{ "data-pull-request-row": `${link.repository}#${link.number}`, "data-stack-depth": depth || undefined }} menu={items}>
@@ -97,9 +98,9 @@ function LinkRow({ projectId, line, openable, onOpen, onExternal, onCopy, onUnli
 function ProjectRow({ projectId, request, linked, onOpen, onExternal, onCopy, onLink, onNotice }: { projectId: string; request: PullRequest; linked: boolean; onOpen: () => void; onExternal: () => void; onCopy: () => void; onLink?: () => void, onNotice: (message: string, failed?: boolean) => void }) {
 	const rollup = summaryChecksRollup(request.checks);
 	const items = <>
-		<DropdownMenuItem onClick={onCopy}><LinkIcon className="size-3.5" />Copy link</DropdownMenuItem>
+		<DropdownMenuItem onClick={onCopy}><ActionIcon name="link" className="size-3.5" />Copy link</DropdownMenuItem>
 		<DropdownMenuItem onClick={onExternal}><ArrowUpRight className="size-3.5" />Open on GitHub</DropdownMenuItem>
-		{onLink && !linked && <DropdownMenuItem onClick={onLink}><PullRequestGlyph.link className="size-3.5" />Link to this chat</DropdownMenuItem>}
+		{onLink && !linked && <DropdownMenuItem onClick={onLink}><ActionIcon name="link" className="size-3.5" />Link to this chat</DropdownMenuItem>}
 	</>;
 	return <ContextRow className={cn(PULL_REQUEST_ROW_CLASS, "relative pl-2 hover:bg-accent/60")} data={{ "data-pull-request-row": request.number }} menu={items}>
 		<PullRequestRowGlyph state="OPEN" draft={request.draft} />

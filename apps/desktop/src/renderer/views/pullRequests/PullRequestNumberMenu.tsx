@@ -1,6 +1,7 @@
+import { ActionIcon } from "../../components/ActionIcon";
 import type { ReactNode } from "react";
 import { ContextMenu } from "@base-ui/react/context-menu";
-import { ArrowUpRight, Link as LinkIcon } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { errorMessage } from "./presentation";
 import { openWebLink } from "../../lib/openLink";
@@ -25,7 +26,7 @@ export function PullRequestNumberMenu({ url, children, className, onNotice, onCo
 		<ContextMenu.Portal>
 			<ContextMenu.Positioner className="isolate z-50 outline-none">
 				<ContextMenu.Popup className={popupClass} aria-label="Pull request link">
-					<ContextMenu.Item className={itemClass} onClick={() => { if (onCopy) onCopy(url); else void copyPullRequestText(url, "Link", onNotice); }}><LinkIcon />Copy link</ContextMenu.Item>
+					<ContextMenu.Item className={itemClass} onClick={() => { if (onCopy) onCopy(url); else void copyPullRequestText(url, "Link", onNotice); }}><ActionIcon name="link" />Copy link</ContextMenu.Item>
 					<ContextMenu.Item className={itemClass} onClick={open}><ArrowUpRight />Open on GitHub</ContextMenu.Item>
 				</ContextMenu.Popup>
 			</ContextMenu.Positioner>

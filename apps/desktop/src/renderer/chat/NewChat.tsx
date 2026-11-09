@@ -1,7 +1,8 @@
+import { ActionIcon } from "../components/ActionIcon";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { typesUltrathink, useUltrathinkReady } from "./ModelSettings";
 import { pickerProjects } from "../../shared/projectShelf";
-import { BookOpen, Box, Bug, Check, ChevronDown, Code2, FilePen, LoaderCircle, FolderOpen, FolderPlus, Gauge, Lightbulb, ListChecks, PenLine, Plug, Search, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
+import { BookOpen, Box, Bug, Check, ChevronDown, Code2, FilePen, LoaderCircle, Gauge, Lightbulb, ListChecks, Plug, Search, ShieldAlert, ShieldCheck, UserRound } from "lucide-react";
 import { isFactoryWorktree } from "../../shared/factory/projects";
 import { settingsProject } from "../../shared/projectSettings";
 import { ProjectIcon } from "../components/ProjectIcon";
@@ -40,7 +41,7 @@ import { showToast } from "../components/ui/toast";
 import { IconSwap } from "../components/IconSwap";
 
 const suggestions = [
-	{ icon: PenLine, label: "Write", prompt: "Help me write " },
+	{ icon: ({ className }: { className?: string }) => <ActionIcon name="edit" className={className} />, label: "Write", prompt: "Help me write " },
 	{ icon: Search, label: "Research a topic", prompt: "Research and summarise what's known about " },
 	{ icon: BookOpen, label: "Explain", prompt: "Explain in simple terms how " },
 	{ icon: Lightbulb, label: "Brainstorm", prompt: "Brainstorm ten ideas for " },
@@ -236,12 +237,12 @@ export function NewChat() {
 
 	const projectMenu = <DropdownMenu>
 		<DropdownMenuTrigger render={<button type="button" className={cn("flex h-8 items-center gap-1.5 rounded-lg border border-border bg-card px-2.5 text-[13px] font-semibold shadow-xs hover:bg-muted", !project && "text-muted-foreground")} />}>
-			{project ? <ProjectIcon project={project} className="size-4" /> : <FolderOpen className="size-4" />}{project?.name ?? "Choose a project"}<ChevronDown className="size-3.5 text-muted-foreground" />
+			{project ? <ProjectIcon project={project} className="size-4" /> : <ActionIcon name="folder" className="size-4" />}{project?.name ?? "Choose a project"}<ChevronDown className="size-3.5 text-muted-foreground" />
 		</DropdownMenuTrigger>
 		<DropdownMenuContent align="center" className="w-60">
 			{projects.map(value => <DropdownMenuItem key={value.id} onClick={() => setNewChatProjectId(value.id)}><ProjectIcon project={value} />{value.name}{value.id === project?.id && <Check className="ml-auto" />}</DropdownMenuItem>)}
 			{projects.length > 0 && <DropdownMenuSeparator />}
-			<DropdownMenuItem onClick={addProject}><FolderPlus />Open folder…</DropdownMenuItem>
+			<DropdownMenuItem onClick={addProject}><ActionIcon name="addFolder" />Open folder…</DropdownMenuItem>
 		</DropdownMenuContent>
 	</DropdownMenu>;
 

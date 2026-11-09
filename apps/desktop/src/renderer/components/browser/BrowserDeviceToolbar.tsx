@@ -1,5 +1,6 @@
+import { ActionIcon } from "../ActionIcon";
 import { Select as SelectPrimitive } from "@base-ui/react/select";
-import { Check, ChevronDown, Link2, Unlink2, X } from "lucide-react";
+import { Check, ChevronDown, X } from "lucide-react";
 import { useState } from "react";
 import { browserDeviceToolbarHeight, browserViewportLimits, browserViewportPresets, validBrowserDimension, type BrowserViewport } from "../../../shared/browser";
 import { cn } from "../../lib/utils";
@@ -84,7 +85,7 @@ export function BrowserDeviceToolbar({ viewport, width, aspectLocked, onAspectLo
 			<input type="number" inputMode="numeric" min={browserViewportLimits.min} max={browserViewportLimits.max} value={shown.height} aria-label="Viewport height" aria-invalid={!custom} className={numberClass} onChange={event => edit("height", event.target.value)} />
 			<button type="submit" hidden />
 		</form>
-		<BrowserIconButton label={aspectLocked ? "Unlock viewport aspect ratio" : "Lock viewport aspect ratio"} tooltip={aspectLocked ? "Unlock aspect ratio" : "Lock aspect ratio"} aria-pressed={aspectLocked} variant={aspectLocked ? "secondary" : "ghost"} icon={<IconSwap show={aspectLocked ? "link2" : "unlink2"}>{{ link2: <Link2 />, unlink2: <Unlink2 /> }}</IconSwap>} disabled={!custom} onPointerDown={event => event.preventDefault()} onClick={() => onAspectLock(!aspectLocked)} />
+		<BrowserIconButton label={aspectLocked ? "Unlock viewport aspect ratio" : "Lock viewport aspect ratio"} tooltip={aspectLocked ? "Unlock aspect ratio" : "Lock aspect ratio"} aria-pressed={aspectLocked} variant={aspectLocked ? "secondary" : "ghost"} icon={<IconSwap show={aspectLocked ? "link2" : "unlink2"}>{{ link2: <ActionIcon name="link" />, unlink2: <ActionIcon name="unlink" /> }}</IconSwap>} disabled={!custom} onPointerDown={event => event.preventDefault()} onClick={() => onAspectLock(!aspectLocked)} />
 		<BrowserIconButton label="Rotate viewport" icon={<ScreenRotationIcon />} onClick={rotate} />
 		<span className="ml-auto flex">
 			<BrowserIconButton label="Close device toolbar" icon={<X />} onClick={() => onChange({ mode: "fill" })} />

@@ -1,5 +1,6 @@
+import { ActionIcon } from "../components/ActionIcon";
 import { useEffect, useState, useSyncExternalStore } from "react";
-import { FolderOpen, GitBranchPlus, LoaderCircle, SquareCode } from "lucide-react";
+import { GitBranchPlus, LoaderCircle, SquareCode } from "lucide-react";
 import { errorText, useWorkspace } from "../app/workspace";
 import type { EditorInstallation } from "../../shared/editors";
 import { CommandGroup, CommandItem } from "../components/ui/command";
@@ -43,7 +44,7 @@ export function OpenProjectItems({ projectId, open, run }: { projectId: string; 
 	const preferred = preferredEditor();
 	return <CommandGroup heading="Open project">
 		{editorChoices(editors, preferred).map(editor => <CommandItem key={editor.id} value={`Open project in ${editor.name} editor`} onSelect={() => launch(editor.id, editor.name)}><SquareCode />Open in {editor.name}{editor.id === preferred && <span className="ml-auto text-xs text-muted-foreground">Favourite</span>}</CommandItem>)}
-		<CommandItem value="Open project folder file manager explorer finder reveal" onSelect={() => launch("file-manager", "the file manager")}><FolderOpen />Open project folder</CommandItem>
+		<CommandItem value="Open project folder file manager explorer finder reveal" onSelect={() => launch("file-manager", "the file manager")}><ActionIcon name="folder" />Open project folder</CommandItem>
 	</CommandGroup>;
 }
 

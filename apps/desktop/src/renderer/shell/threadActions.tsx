@@ -1,6 +1,7 @@
+import { ActionIcon } from "../components/ActionIcon";
 import { formatDateParts } from "@phaseo/app-kit/format";
 import { useState } from "react";
-import { AlarmClock, AlarmClockOff, Archive, CircleCheck, Clock, Copy, Filter, Mail, Pencil, Pin, PinOff, RefreshCw, Settings, SquarePen, Timer, Trash2, Undo2 } from "lucide-react";
+import { AlarmClock, AlarmClockOff, CircleCheck, Clock, Copy, Filter, RefreshCw, Settings, SquarePen, Timer, Trash2, Undo2 } from "lucide-react";
 import { hasWoken, isSettled, isSnoozed, settleBlocker, snoozeBlocker, snoozePresets } from "../../shared/threadLifecycle";
 import type { TaskOverview } from "../../shared/workspaceOverview";
 import { useWorkspace } from "../app/workspace";
@@ -105,7 +106,7 @@ export function ThreadMenuItems({ task, scope, onScope, onRename, onDelete, onCu
 	const copy = (text: string) => void navigator.clipboard.writeText(text);
 	return <>
 		{project && <DropdownMenuItem onClick={() => { setNewChatProjectId(project.id); select(undefined); }}><SquarePen />{project.worktree ? `New chat on ${project.worktree.branch}` : `New chat in ${project.name}`}</DropdownMenuItem>}
-		<DropdownMenuItem onClick={() => void actions.pin(task)}>{task.pinned ? <PinOff /> : <Pin />}{task.pinned ? "Unpin chat" : "Pin chat"}</DropdownMenuItem>
+		<DropdownMenuItem onClick={() => void actions.pin(task)}>{task.pinned ? <ActionIcon name="unpin" /> : <ActionIcon name="pin" />}{task.pinned ? "Unpin chat" : "Pin chat"}</DropdownMenuItem>
 		{settled
 			? <DropdownMenuItem onClick={() => void actions.unsettle(task)}><Undo2 />Un-settle chat</DropdownMenuItem>
 			: <DropdownMenuItem disabled={Boolean(settleBlocker(task))} onClick={() => void actions.settle(task, scope)}><CircleCheck />Settle chat</DropdownMenuItem>}
@@ -116,10 +117,10 @@ export function ThreadMenuItems({ task, scope, onScope, onRename, onDelete, onCu
 				<DropdownMenuSubContent className="w-56"><SnoozeItems onSnooze={until => void actions.snooze(task, until, scope)} onCustom={onCustomSnooze} /></DropdownMenuSubContent>
 			</DropdownMenuSub>}
 		<DropdownMenuSeparator />
-		{onRename && <DropdownMenuItem onClick={onRename}><Pencil />Rename chat</DropdownMenuItem>}
+		{onRename && <DropdownMenuItem onClick={onRename}><ActionIcon name="pencil" />Rename chat</DropdownMenuItem>}
 		<DropdownMenuItem onClick={() => void actions.regenerateTitle(task)}><RefreshCw />Regenerate title</DropdownMenuItem>
 		<TagMenu task={task} />
-		<DropdownMenuItem disabled={!task.lastCompletedAt} onClick={() => void actions.markUnread(task)}><Mail />Mark unread</DropdownMenuItem>
+		<DropdownMenuItem disabled={!task.lastCompletedAt} onClick={() => void actions.markUnread(task)}><ActionIcon name="mail" />Mark unread</DropdownMenuItem>
 		{onScope && project && <DropdownMenuItem onClick={() => onScope(scope?.length ? "" : project.id)}><Filter />{scope?.length ? "Show all projects" : `Filter by ${project.name}`}</DropdownMenuItem>}
 		{project && <DropdownMenuItem onClick={() => openProjectSettings(project.id)}><Settings />Project settings</DropdownMenuItem>}
 		<DropdownMenuSub>
@@ -139,7 +140,7 @@ export function ThreadMenuItems({ task, scope, onScope, onRename, onDelete, onCu
 			</DropdownMenuSubContent>
 		</DropdownMenuSub>
 		<DropdownMenuSeparator />
-		<DropdownMenuItem disabled={["running", "waiting"].includes(task.status)} onClick={() => void actions.archive(task, scope)}><Archive />Archive chat</DropdownMenuItem>
+		<DropdownMenuItem disabled={["running", "waiting"].includes(task.status)} onClick={() => void actions.archive(task, scope)}><ActionIcon name="archive" />Archive chat</DropdownMenuItem>
 		{onDelete && <DropdownMenuItem variant="destructive" disabled={["running", "waiting"].includes(task.status)} onClick={onDelete}><Trash2 />Delete chat</DropdownMenuItem>}
 	</>;
 }
@@ -175,15 +176,15 @@ export function BulkMenuItems({ tasks, scope, onDone }: { tasks: TaskOverview[];
 	const finished = tasks.filter(task => task.lastCompletedAt), stopped = tasks.filter(task => !["running", "waiting"].includes(task.status));
 	const each = (list: TaskOverview[], run: (task: TaskOverview) => Promise<unknown>) => { onDone(); void (async () => { for (const task of list) await run(task); })(); };
 	return <>
-		{pinned.length > 0 && <DropdownMenuItem onClick={() => each(pinned, task => actions.pin(task))}><PinOff />Unpin ({pinned.length})</DropdownMenuItem>}
+		{pinned.length > 0 && <DropdownMenuItem onClick={() => each(pinned, task => actions.pin(task))}><ActionIcon name="unpin" />Unpin ({pinned.length})</DropdownMenuItem>}
 		<DropdownMenuItem disabled={!settleable.length} onClick={() => each(settleable, task => actions.settle(task, scope))}><CircleCheck />Settle ({settleable.length})</DropdownMenuItem>
 		<DropdownMenuSub>
 			<DropdownMenuSubTrigger disabled={!snoozable}><Clock />Snooze ({tasks.length})</DropdownMenuSubTrigger>
 			<DropdownMenuSubContent className="w-56">{snoozePresets(new Date(), presets).map(preset => <DropdownMenuItem key={preset.id} onClick={() => each(tasks, task => actions.snooze(task, preset.until, scope))}>{preset.label}<span className="ml-auto pl-4 text-xs text-muted-foreground">{snoozeTime(preset.until)}</span></DropdownMenuItem>)}</DropdownMenuSubContent>
 		</DropdownMenuSub>
-		<DropdownMenuItem disabled={!finished.length} onClick={() => each(finished, task => actions.markUnread(task))}><Mail />Mark unread ({finished.length})</DropdownMenuItem>
+		<DropdownMenuItem disabled={!finished.length} onClick={() => each(finished, task => actions.markUnread(task))}><ActionIcon name="mail" />Mark unread ({finished.length})</DropdownMenuItem>
 		<DropdownMenuSeparator />
-		<DropdownMenuItem disabled={!stopped.length} onClick={() => each(stopped, task => actions.archive(task, scope))}><Archive />Archive ({stopped.length})</DropdownMenuItem>
+		<DropdownMenuItem disabled={!stopped.length} onClick={() => each(stopped, task => actions.archive(task, scope))}><ActionIcon name="archive" />Archive ({stopped.length})</DropdownMenuItem>
 		<DropdownMenuItem variant="destructive" disabled={!stopped.length} closeOnClick={false} onClick={() => setDeleting(true)}><Trash2 />Delete ({stopped.length})</DropdownMenuItem>
 		<Dialog open={deleting} onOpenChange={setDeleting}>
 			<DialogContent className="sm:max-w-sm">

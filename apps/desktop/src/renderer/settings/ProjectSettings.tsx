@@ -1,5 +1,6 @@
+import { ActionIcon } from "../components/ActionIcon";
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowDown, ArrowUp, ChevronDown, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, Plus, Trash2 } from "lucide-react";
 import { defaultPreferences, type WorkspacePreferences } from "../../shared/preferences";
 import { importableScripts, settingsProject, type ProjectSettings as Settings } from "../../shared/projectSettings";
 import { errorText, useWorkspace } from "../app/workspace";
@@ -152,9 +153,9 @@ export function ProjectSettingsPage() {
 				description={<span className="block truncate font-mono">{script.command}</span>}
 				control={<>
 					{(() => { const row = keybindings.rows.find(value => value.command === scriptCommand(project.id, script.id) && value.key); return row ? <span className="mr-1 text-xs text-muted-foreground">{keyLabel(row.key, isMac())}</span> : null; })()}
-					<IconButton label="Move up" disabled={busy || index === 0} onClick={() => void move(script.id, -1).catch(reason => setError(errorText(reason)))}><ArrowUp /></IconButton>
-					<IconButton label="Move down" disabled={busy || index === scripts.length - 1} onClick={() => void move(script.id, 1).catch(reason => setError(errorText(reason)))}><ArrowDown /></IconButton>
-					<IconButton label={`Edit ${script.name}`} disabled={busy} onClick={() => setEditor({ script })}><Pencil /></IconButton>
+					<IconButton label="Move up" disabled={busy || index === 0} onClick={() => void move(script.id, -1).catch(reason => setError(errorText(reason)))}><ActionIcon name="up" /></IconButton>
+					<IconButton label="Move down" disabled={busy || index === scripts.length - 1} onClick={() => void move(script.id, 1).catch(reason => setError(errorText(reason)))}><ActionIcon name="down" /></IconButton>
+					<IconButton label={`Edit ${script.name}`} disabled={busy} onClick={() => setEditor({ script })}><ActionIcon name="pencil" /></IconButton>
 				</>} />)}
 			{file.status === "invalid" && <SettingsRow title={<span className="text-warning">t3.json is invalid</span>} description="A t3.json exists in this checkout but fails to parse, so every action it declares is ignored. Check the JSON syntax and icon values." />}
 		</SettingsSection>

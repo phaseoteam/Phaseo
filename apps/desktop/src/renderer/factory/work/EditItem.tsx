@@ -1,4 +1,5 @@
-import { Check, Pencil, Settings2 } from "lucide-react";
+import { ActionIcon } from "../../components/ActionIcon";
+import { Check, Settings2 } from "lucide-react";
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import type { GithubChange, Mentionable, RepoLabel, WorkItem } from "../../../shared/factory/types";
 import { errorText } from "../components/AddRepo";
@@ -38,7 +39,7 @@ export function TitleEditor({ item, children }: { item: WorkItem; children: Reac
 	const { busy, error, save } = useSave(item);
 	if (draft === null) return <div className="group mt-5 flex items-start gap-2">
 		{children}
-		<button type="button" aria-label="Edit the title" title="Edit the title" onClick={() => setDraft(item.title)} className="mt-1.5 grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-accent/60 hover:text-foreground focus-visible:opacity-100"><Pencil className="size-4" /></button>
+		<button type="button" aria-label="Edit the title" title="Edit the title" onClick={() => setDraft(item.title)} className="mt-1.5 grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground opacity-0 group-hover:opacity-100 hover:bg-accent/60 hover:text-foreground focus-visible:opacity-100"><ActionIcon name="pencil" className="size-4" /></button>
 	</div>;
 	const submit = async () => {
 		if (draft.trim() === item.title) return setDraft(null);
@@ -77,7 +78,7 @@ export function DescriptionEditor({ item, body, children }: { item: WorkItem; bo
 	return <>
 		<div className="mb-3 flex items-center gap-2">
 			<h2 className="text-sm font-semibold">Description</h2>
-			{draft === null && body !== null && <button type="button" onClick={() => setDraft(body)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><Pencil className="size-3" />Edit</button>}
+			{draft === null && body !== null && <button type="button" onClick={() => setDraft(body)} className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"><ActionIcon name="pencil" className="size-3" />Edit</button>}
 		</div>
 		{draft === null ? children : <div className="rounded-md border focus-within:border-ring">
 			<MarkdownField autoFocus value={draft} onChange={setDraft} repo={item.repo} rows={10} placeholder="Describe it. Markdown works." onKeyDown={(event) => {

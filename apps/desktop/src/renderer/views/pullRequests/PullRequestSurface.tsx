@@ -1,6 +1,6 @@
 import { formatRelativeTime } from "@phaseo/app-kit/format";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowDownUp, ArrowLeft, ArrowUpRight, BookOpen, Check, ChevronDown, CircleDot, Copy, ExternalLink, FileDiff, FolderGit2, GitCommitHorizontal, Hammer, Link as LinkIcon, MessageCircleQuestion, MessageSquare, MoreHorizontal, Pencil, PlayCircle, RefreshCw, Trash2, TriangleAlert, Undo2, Unlink, X } from "lucide-react";
+import { ArrowDownUp, ArrowLeft, ArrowUpRight, BookOpen, Check, ChevronDown, CircleDot, Copy, ExternalLink, FileDiff, FolderGit2, GitCommitHorizontal, Hammer, MessageCircleQuestion, MessageSquare, MoreHorizontal, PlayCircle, RefreshCw, Trash2, TriangleAlert, Undo2, X } from "lucide-react";
 import { samePullRequest, type PullRequestMergeMethod, type PullRequestReactionContent, type PullRequestUpdateMethod, type PullRequestView } from "../../../shared/pullRequestView";
 import { useWorkspace } from "../../app/workspace";
 import { Badge } from "../../components/ui/badge";
@@ -176,9 +176,9 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 			</DropdownMenuRadioGroup></>}
 			<DropdownMenuSeparator />
 			<DropdownMenuItem onClick={() => open(view.url)}><ArrowUpRight className="size-3.5" />Open on {hostName}</DropdownMenuItem>
-			<DropdownMenuItem onClick={() => copyWithToast(view.url, "Link")}><LinkIcon className="size-3.5" />Copy link{shortcut("pullRequest.copyLink") && <DropdownMenuShortcut>{shortcut("pullRequest.copyLink")}</DropdownMenuShortcut>}</DropdownMenuItem>
+			<DropdownMenuItem onClick={() => copyWithToast(view.url, "Link")}><ActionIcon name="link" className="size-3.5" />Copy link{shortcut("pullRequest.copyLink") && <DropdownMenuShortcut>{shortcut("pullRequest.copyLink")}</DropdownMenuShortcut>}</DropdownMenuItem>
 			<DropdownMenuItem onClick={() => copyWithToast(`#${view.number}`, "Pull request number")}><Copy className="size-3.5" />Copy PR number{shortcut("pullRequest.copyNumber") && <DropdownMenuShortcut>{shortcut("pullRequest.copyNumber")}</DropdownMenuShortcut>}</DropdownMenuItem>
-				{chat && <><DropdownMenuSeparator /><DropdownMenuItem onClick={() => void linkCommand(linked, view)}>{linked ? <Unlink className="size-3.5" /> : <LinkIcon className="size-3.5" />}{linked ? "Unlink from this chat" : "Link to this chat"}</DropdownMenuItem></>}
+				{chat && <><DropdownMenuSeparator /><DropdownMenuItem onClick={() => void linkCommand(linked, view)}>{linked ? <ActionIcon name="unlink" className="size-3.5" /> : <ActionIcon name="link" className="size-3.5" />}{linked ? "Unlink from this chat" : "Link to this chat"}</DropdownMenuItem></>}
 			{view.state === "OPEN" && view.viewer.canUpdate && <><DropdownMenuSeparator /><DropdownMenuItem variant="destructive" closeOnClick={confirm.isArmed("close")} disabled={busy} aria-label={confirm.isArmed("close") ? "Confirm close?" : "Close pull request"} {...confirm.props("close", () => void pull.perform({ type: "close" }))}><PullRequestGlyph.closed className="size-3.5" />{confirm.isArmed("close") ? "Confirm close?" : "Close pull request"}</DropdownMenuItem></>}
 			{view.state === "CLOSED" && view.viewer.canUpdate && <><DropdownMenuSeparator /><DropdownMenuItem disabled={busy} onClick={() => void pull.perform({ type: "reopen" })}><ActionIcon name="pullRequest" className="size-3.5" />Reopen pull request</DropdownMenuItem></>}
 			{canRevert && <><DropdownMenuSeparator /><DropdownMenuItem closeOnClick={confirm.isArmed("revert")} disabled={busy} aria-label={confirm.isArmed("revert") ? "Confirm revert?" : "Revert changes"} {...confirm.props("revert", () => void pull.perform({ type: "revert" }))}>
@@ -225,7 +225,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 					<div className="col-span-2 mt-1 min-w-0 px-4 pb-4">
 						{titleDraft === null ? <div className="group flex min-h-6 min-w-0 items-center gap-1">
 							<Tip label={view.title}><h1 className="min-w-0 flex-1 truncate text-base leading-snug font-semibold">{view.title}</h1></Tip>
-							{view.viewer.canUpdate && <Tip label="Edit title"><Button size="icon-xs" variant="ghost" aria-label="Edit title" className="text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100" onClick={() => setTitleDraft(view.title)}><Pencil className="size-3" /></Button></Tip>}
+							{view.viewer.canUpdate && <Tip label="Edit title"><Button size="icon-xs" variant="ghost" aria-label="Edit title" className="text-muted-foreground opacity-0 group-hover:opacity-100 focus-visible:opacity-100" onClick={() => setTitleDraft(view.title)}><ActionIcon name="pencil" className="size-3" /></Button></Tip>}
 						</div> : <div className="space-y-2">
 							<Input autoFocus disabled={pending === "title"} value={titleDraft} aria-label="Pull request title" className="h-7 text-sm" onChange={event => setTitleDraft(event.target.value)} onKeyDown={event => { if (event.key === "Enter") { event.preventDefault(); void saveTitle(); } else if (event.key === "Escape") { event.preventDefault(); event.stopPropagation(); setTitleDraft(null); } }} />
 							<div className="flex justify-end gap-2"><Button size="xs" variant="ghost" disabled={pending === "title"} onClick={() => setTitleDraft(null)}>Cancel</Button><Button size="xs" variant="outline" disabled={busy || !titleDraft.trim()} onClick={() => void saveTitle()}>{pending === "title" ? "Saving…" : "Save"}</Button></div>
