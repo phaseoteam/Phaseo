@@ -46,8 +46,11 @@ type SurfaceProps = {
  * the chart highlights the point, and each new point gives a light haptic tick. Screen readers get the chart as
  * an adjustable element: swiping up or down steps through the points and reads each one.
  */
-function ChartSurface({ height, width, onLayout, anchors, active, onActive, label, describe, tooltip, className, children }: SurfaceProps) {
+function ChartSurface({ height, width, onLayout, anchors, active: chosen, onActive, label, describe, tooltip, className, children }: SurfaceProps) {
   const count = anchors.length;
+  // A reading past the end of a series that just got shorter is never described or drawn, even for the one render
+  // before the effect below clears it (a caller's formatter may not handle a missing point).
+  const active = chosen != null && chosen < count ? chosen : null;
   // The drag runs on the UI thread and moves the bubble there, so it keeps up with the finger while JS is busy
   // (an answer streaming in). JS only hears about a new point, to redraw the bubble's content and tick.
   const latest = useRef({ onActive, count });
@@ -69,8 +72,8 @@ function ChartSurface({ height, width, onLayout, anchors, active, onActive, labe
   }, [points, selected, anchors]);
   // A shorter series can leave the reading past its end; drop it rather than read a point that's gone.
   useEffect(() => {
-    if (active != null && active >= count) latest.current.onActive(null);
-  }, [active, count]);
+    if (chosen != null && chosen >= count) latest.current.onActive(null);
+  }, [chosen, count]);
   useEffect(() => () => clearTimeout(a11yTimer.current), []);
 
   const pick = useCallback((index: number) => {
