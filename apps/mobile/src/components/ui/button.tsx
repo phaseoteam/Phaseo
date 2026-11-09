@@ -1,7 +1,7 @@
 import type { LucideIcon } from "lucide-react-native";
 import { useState, type ReactNode } from "react";
 import { ActivityIndicator, type GestureResponderEvent, Pressable, type PressableProps, View } from "react-native";
-import Animated, { useReducedMotion } from "react-native-reanimated";
+import Animated, { cubicBezier, useReducedMotion } from "react-native-reanimated";
 import { cn } from "@/lib/cn";
 import { Icon, useToneColor, type IconTone } from "./icon";
 import { Text } from "./text";
@@ -26,7 +26,8 @@ const sizes = {
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 /** Pressed buttons shrink by 3% over 120 ms with a strong ease-out: felt more than seen, and gone on release. */
-const PRESS_TRANSITION = { transitionProperty: "transform", transitionDuration: 120, transitionTimingFunction: "cubic-bezier(0.23, 1, 0.32, 1)" } as const;
+// Reanimated's CSS easing takes `cubicBezier()`, not a "cubic-bezier(…)" string: the string throws on first render.
+const PRESS_TRANSITION = { transitionProperty: "transform", transitionDuration: 120, transitionTimingFunction: cubicBezier(0.23, 1, 0.32, 1) } as const;
 const PRESSED_SCALE = 0.97;
 
 /**
