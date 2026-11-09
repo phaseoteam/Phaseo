@@ -2,6 +2,7 @@
 // Validate the agent skills in `.agents/skills` and the Phaseo plugin and marketplaces.
 //
 // Every skill: Agent Skills frontmatter (https://agentskills.io/specification) and working relative links.
+// Third-party skills listed in skills-lock.json only get a warning past 500 lines, since their text is upstream's.
 // Public skills also need a third-person description with "Use when" and "Not for", agents/openai.yaml, at least
 // three evals (one negative), reference files with a table of contents past 100 lines, and examples that use
 // catalogue model IDs, the right request body for each endpoint, and no key-like strings.
@@ -17,6 +18,9 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const skillsRoot = join(repoRoot, ".agents/skills");
 const openapiPath = join(repoRoot, "apps/docs/openapi/v1/openapi.yaml");
 const pluginRoot = join(repoRoot, "apps/mcp/plugin/phaseo");
+// Third-party skills installed with `npx skills add` are recorded in skills-lock.json and kept as upstream wrote them.
+const lockPath = join(repoRoot, "skills-lock.json");
+const VENDORED_SKILLS = new Set(existsSync(lockPath) ? Object.keys(JSON.parse(readFileSync(lockPath, "utf8")).skills ?? {}) : []);
 
 const errors = [];
 const warnings = [];
@@ -169,7 +173,10 @@ function checkSkill(skillDir, catalogue) {
 	if (description.length > 1024) error(skillFile, `description is ${description.length} characters (limit 1,024)`);
 	if (/<[a-z/][^>]*>/i.test(description)) error(skillFile, "description must not contain XML tags");
 	const body = readFileSync(skillFile, "utf8");
-	if (body.split("\n").length > 500) error(skillFile, "SKILL.md must stay under 500 lines; move detail to references/");
+	if (body.split("\n").length > 500) {
+		const report = VENDORED_SKILLS.has(name) ? warn : error;
+		report(skillFile, "SKILL.md must stay under 500 lines; move detail to references/");
+	}
 	const isPublic = PUBLIC_SKILLS.includes(name);
 	for (const file of listFiles(skillDir).filter((path) => path.endsWith(".md"))) {
 		const markdown = readFileSync(file, "utf8");
