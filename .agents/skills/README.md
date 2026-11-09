@@ -140,6 +140,6 @@ UI design and motion skills from [`emilkowalski/skills`](https://github.com/emil
 Reinstall or update them with:
 
 ```bash
-npx skills@latest add emilkowalski/skills -a codex --copy -y -s <skill names>
+npx skills@latest add emilkowalski/skills -a codex --copy -y -s animation-vocabulary pick-ui-library prototype emil-design-eng animate choreograph apple-design gestures mobile-native animation-performance break-ui review-animations find-animation-opportunities improve-animations remove-animations animate-expo ask-sonner
 pnpm skills:sync
 ```
