@@ -38,7 +38,7 @@ export default function OAuthAppsPage() {
 
 	if (!thirdPartyOAuthEnabled) {
 		return (
-			<div className="space-y-6">
+			<div className="w-full max-w-4xl space-y-8">
 				<SettingsPageHeader
 					title={t("title")}
 					meta={
@@ -64,7 +64,7 @@ export default function OAuthAppsPage() {
 	}
 
 	return (
-		<div className="space-y-6">
+		<div className="min-w-0 space-y-8">
 			<div className="rounded-lg border border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950 p-4">
 				<div className="flex items-start gap-3">
 					<div className="flex-shrink-0">

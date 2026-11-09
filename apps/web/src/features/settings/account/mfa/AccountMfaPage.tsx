@@ -14,7 +14,7 @@ export async function getAccountMfaMetadata() {
 
 export default function AccountMFAPage() {
 	return (
-		<div className="space-y-6">
+		<div className="w-full max-w-4xl space-y-8">
 			<SettingsPageHeader
 				title="MFA"
 				titleKey="headers.mfa"

@@ -11,7 +11,7 @@ export async function getRouteAccessMetadata() {
 
 export function RouteAccessPage() {
 	const t = useTranslations("SettingsUI");
-	return <div className="space-y-6">
+	return <div className="w-full max-w-4xl space-y-8">
 		<SettingsPageHeader title={t("strings.Route Access")} />
 		<SettingsResourceQuery resource="privacy">{(data) => data.workspaceId ? <AccountPrivacySettingsClient
 			key={data.workspaceId}

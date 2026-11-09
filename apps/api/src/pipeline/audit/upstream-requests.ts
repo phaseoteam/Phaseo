@@ -3,6 +3,7 @@
 
 import type { Endpoint } from "@core/types";
 import { getSupabaseAdmin } from "@/runtime/env";
+import { upstreamAttemptErrorFields } from "./upstream-attempt-errors";
 
 let tableAvailable: boolean | null = null;
 let warnedMissingTable = false;
@@ -117,6 +118,7 @@ function buildRows(args: PersistGatewayUpstreamRequestsArgs) {
         const error = attempt.error && typeof attempt.error === "object"
             ? attempt.error as Record<string, unknown>
             : {};
+        const errorText = upstreamAttemptErrorFields(attempt);
         const durationMs = finiteInteger(attempt.duration_ms);
         const totalMs = isFinal
             ? finiteInteger(args.totalMs) ?? finiteInteger(args.latencyMs) ?? durationMs
@@ -173,18 +175,12 @@ function buildRows(args: PersistGatewayUpstreamRequestsArgs) {
             usage: isFinal ? normalizeJsonValue(args.usage) ?? {} : {},
             cost_nanos: isFinal && success ? totalNanos : 0,
             currency: args.currency ?? null,
-            error_code: typeof attempt.upstream_error_code === "string"
-                ? attempt.upstream_error_code
-                : typeof error.code === "string" ? error.code : null,
+            error_code: errorText.upstream_error_code,
             error_type: typeof attempt.upstream_error_type === "string"
                 ? attempt.upstream_error_type
                 : typeof error.type === "string" ? error.type : null,
-            error_message: typeof attempt.upstream_error_message === "string"
-                ? attempt.upstream_error_message
-                : typeof error.message === "string" ? error.message : null,
-            error_description: typeof attempt.upstream_error_description === "string"
-                ? attempt.upstream_error_description
-                : typeof error.description === "string" ? error.description : null,
+            error_message: errorText.upstream_error_message,
+            error_description: errorText.upstream_error_description,
             error_param: typeof attempt.upstream_error_param === "string"
                 ? attempt.upstream_error_param
                 : typeof error.param === "string" ? error.param : null,

@@ -41,8 +41,8 @@ export default function SettingsLayout() {
 					<SettingsSidebar {...data} />
 				</Sidebar>
 				<SidebarInset className="flex w-0 min-w-0 flex-1 flex-col overflow-visible bg-white dark:bg-zinc-950">
-					<div className="container mx-auto flex min-h-full w-full flex-col px-4 sm:px-5 lg:px-6 xl:px-8">
-						<div className="w-full flex-1 pb-4 pt-5">
+					<div className="container mx-auto flex min-h-full min-w-0 w-full flex-col px-4 sm:px-5 lg:px-6 xl:px-8">
+						<div className="min-w-0 w-full flex-1 pb-8 pt-5 [&>*]:mx-auto">
 							<Suspense fallback={<SettingsPageSkeleton />}>
 								<PrivateSettingsProvider key={`${data.userId}:${data.workspaceId}`} scope={{ userId: data.userId ?? null, workspaceId: data.workspaceId }}>
 									<Outlet />

@@ -14,7 +14,7 @@ export async function getAccountDangerMetadata() {
 
 export default function AccountDangerPage() {
 	return (
-		<div className="space-y-6">
+		<div className="w-full max-w-4xl space-y-8">
 			<SettingsPageHeader
 				title="Danger Zone"
 				titleKey="headers.dangerZone"

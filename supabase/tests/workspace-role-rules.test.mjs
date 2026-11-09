@@ -33,11 +33,11 @@ assert.deepEqual(migrationNames.map((name) => name.replace(/^\d+_/, '')), ['enfo
 const migrationName = migrationNames[0];
 const migrationFiles = await Promise.all(migrationNames.map(async (name) => normalize(await read(`../migrations/${name}`))));
 const migration = migrationFiles.join('\n');
-// Its files run together, after every migration that was on main before it (the OAuth client
-// policies hotfix, 20261107010450, was the latest); later migrations may follow them.
-const others = migrations.filter((name) => !migrationNames.includes(name)).sort();
-assert(migrationNames[0] > '20261107010450', 'the migration files run after the OAuth client policies hotfix');
-assert(!others.some((name) => name > migrationNames[0] && name < migrationNames.at(-1)), 'no other migration runs between its files');
+// Nothing applied after this migration may change what it sets up; unrelated later migrations are fine.
+const coveredObjects = /(workspace_members|workspace_settings|enforce_workspace_join_request_write_rules|protect_data_contribution_settings|approve_workspace_join_request|management_decide_workspace_join_request)/;
+for (const name of migrations.filter((name) => name > migrationNames.at(-1)).sort()) {
+  assert(!coveredObjects.test(await read(`../migrations/${name}`)), `${name} runs later and must not change the role rules`);
+}
 
 // Lock plan: each file starts with a lock timeout and locks at most one table strongly. Functions take
 // no table locks; the policies lock only workspace_members; the index locks only workspace_settings.

@@ -27,6 +27,7 @@ import {
 	updateWorkspacePublisherHandleAction,
 } from "@/features/settings/teams/actions";
 import WorkspaceIdentitySettings from "./WorkspaceIdentitySettings";
+import { WorkspacePolicyForm } from "../WorkspacePolicyForm";
 import type { TeamSsoSettingsRow } from "@/lib/auth/teamSsoSettings";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
@@ -102,6 +103,9 @@ export default function TeamSettingsPanel({
 	const initialLogoUrl = teams.find((entry) => entry.id === fallbackTeamId)?.logoUrl ?? null;
 
 	const [saving, setSaving] = React.useState(false);
+	const savingRef = React.useRef(false);
+	const [saveError, setSaveError] = React.useState<string | null>(null);
+	const [saveNotice, setSaveNotice] = React.useState<string | null>(null);
 	const invalidateSettings = useInvalidatePrivateSettings();
 	const [deleting, setDeleting] = React.useState(false);
 	const [logoUploading, setLogoUploading] = React.useState(false);
@@ -126,52 +130,52 @@ export default function TeamSettingsPanel({
 	}
 
 	async function handleSave() {
-		if (!workspaceId) return;
+		if (!workspaceId || !hasTeamControl || !hasChanges || savingRef.current) return;
 		const parsed = createSettingsSchema(t("workspace.teamNameRequired"), t("workspace.teamNameMaxLength"), t("workspace.publisherHandleFormat")).safeParse({
 			teamName: settings.teamName,
 			publisherHandle: settings.publisherHandle,
 		});
 
 		if (!parsed.success) {
-			toast.error(
-				parsed.error.issues[0]?.message ?? t("workspace.inputValidationFallback"),
-			);
+			setSaveError(parsed.error.issues[0]?.message ?? t("workspace.inputValidationFallback"));
 			return;
 		}
 
+		savingRef.current = true;
 		setSaving(true);
+		setSaveError(null);
+		setSaveNotice(null);
 		try {
-			await toast.promise(
-				(async () => {
-					const normalizedName = settings.teamName.trim();
-					const initialName = initial.teamName.trim();
+			const normalizedName = settings.teamName.trim();
+			const initialName = initial.teamName.trim();
 
-					if (!isPersonalTeam && normalizedName !== initialName) {
-						await updateTeamAction({ data: { workspaceId, name: normalizedName } });
-						void invalidateSettings();
-					}
-					const normalizedPublisherHandle = settings.publisherHandle.trim().toLowerCase();
-					if (normalizedPublisherHandle !== initial.publisherHandle.trim()) {
-						await updateWorkspacePublisherHandleAction({ data: { workspaceId, handle: normalizedPublisherHandle } });
-						void invalidateSettings();
-					}
-					const normalized = { teamName: normalizedName, publisherHandle: normalizedPublisherHandle };
-					setSettings(normalized);
-					setInitial(normalized);
-				})(),
-				{
-					loading: t("workspace.savingSettings"),
-					success: t("workspace.savedSettings"),
-					error: () => t("strings.Could not save settings" as never),
-				},
-			);
+			if (!isPersonalTeam && normalizedName !== initialName) {
+				await updateTeamAction({ data: { workspaceId, name: normalizedName } });
+				setInitial((current) => ({ ...current, teamName: normalizedName }));
+				void invalidateSettings();
+			}
+			const normalizedPublisherHandle = settings.publisherHandle.trim().toLowerCase();
+			if (normalizedPublisherHandle !== initial.publisherHandle.trim()) {
+				await updateWorkspacePublisherHandleAction({ data: { workspaceId, handle: normalizedPublisherHandle } });
+				setInitial((current) => ({ ...current, publisherHandle: normalizedPublisherHandle }));
+				void invalidateSettings();
+			}
+			const normalized = { teamName: normalizedName, publisherHandle: normalizedPublisherHandle };
+			setSettings(normalized);
+			setInitial(normalized);
+			setSaveNotice(t("workspace.savedSettings"));
+		} catch {
+			setSaveError(t("strings.Could not save settings"));
 		} finally {
+			savingRef.current = false;
 			setSaving(false);
 		}
 	}
 
 	function handleReset() {
 		setSettings(initial);
+		setSaveError(null);
+		setSaveNotice(null);
 	}
 
 	async function uploadLogo(file: File) {
@@ -225,19 +229,14 @@ export default function TeamSettingsPanel({
 
 	return (
 		<section className="space-y-8">
-			<form
-				onSubmit={(event) => {
-					event.preventDefault();
-					void handleSave();
-				}}
-			className="overflow-hidden rounded-xl border bg-background/40"
-			>
-				<div className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+			<WorkspacePolicyForm canManage={hasTeamControl} dirty={hasChanges} saving={saving} error={saveError} notice={saveNotice ?? t(isPersonalTeam ? "workspace.personalWorkspacePermanent" : "workspace.workspaceNameChangeHelp")} onSave={handleSave} onCancel={handleReset}>
+			<div className="divide-y">
+				<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-center sm:gap-8">
 					<div className="min-w-0">
 						<Label className="text-sm font-medium">{t("newMainSettingsCopy.workspaceLogo")}</Label>
 						<p className="mt-0.5 text-sm text-muted-foreground">{t("newMainSettingsCopy.logoHelp")}</p>
 					</div>
-					<div className="flex w-full shrink-0 items-center gap-3 sm:w-[min(32rem,55%)]">
+					<div className="flex min-w-0 flex-wrap items-center gap-3">
 						<Avatar className="size-12 rounded-md border bg-muted/30 after:rounded-md">
 							{logoUrl ? <AvatarImage src={logoUrl} alt={t("newMainSettingsCopy.logoAlt", {workspace: initialTeamName})} className="rounded-md object-cover" /> : null}
 							<AvatarFallback className="rounded-md text-sm font-semibold">{initialTeamName.split(/\s+/).map((word) => word[0]).join("").slice(0, 2).toUpperCase()}</AvatarFallback>
@@ -249,7 +248,7 @@ export default function TeamSettingsPanel({
 						{logoUrl ? <Button type="button" variant="ghost" size="sm" disabled={!hasTeamControl || logoUploading} onClick={() => void removeLogo()}>{t("newMainSettingsCopy.remove")}</Button> : null}
 					</div>
 				</div>
-				<div className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+				<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-center sm:gap-8">
 					<div className="min-w-0">
 						<Label htmlFor="teamName" className="text-sm font-medium">
 							{t("workspace.name")}
@@ -258,7 +257,7 @@ export default function TeamSettingsPanel({
 							{t("workspace.teamNameHelp")}
 						</p>
 					</div>
-					<div className="w-full shrink-0 sm:w-[min(32rem,55%)]">
+					<div className="min-w-0">
 						<Input
 							id="teamName"
 							value={settings.teamName}
@@ -269,49 +268,18 @@ export default function TeamSettingsPanel({
 						/>
 					</div>
 				</div>
-				<div className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+				<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-center sm:gap-8">
 					<div className="min-w-0">
 						<Label htmlFor="publisherHandle" className="text-sm font-medium">{t("workspace.publisherHandle")}</Label>
 						<p className="mt-0.5 text-sm text-muted-foreground">{t("workspace.publisherHandleHelp", { example: "@" + (settings.publisherHandle || "workspace") + "/preset" })}</p>
 					</div>
-					<div className="w-full shrink-0 sm:w-[min(32rem,55%)]">
+					<div className="min-w-0">
 						<Input id="publisherHandle" value={settings.publisherHandle} onChange={(event) => update("publisherHandle", event.target.value.toLowerCase())} disabled={!hasTeamControl} placeholder={t("workspace.handlePlaceholder")} maxLength={40} />
 					</div>
 				</div>
 
-				<div className="flex flex-col gap-3 border-t bg-muted/10 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-					<p className="text-xs text-muted-foreground">
-						{isPersonalTeam
-							? t("workspace.personalWorkspacePermanent")
-							: canEdit
-								? t("workspace.workspaceNameChangeHelp")
-								: t("workspace.workspaceChangePermissionHelp")}
-					</p>
-					<div className="flex items-center justify-end gap-2">
-						<Button
-							type="button"
-							variant="outline"
-							onClick={handleReset}
-							disabled={!hasChanges || saving}
-						>
-							{t("strings.Reset" as never)}
-						</Button>
-						<Button
-							type="submit"
-							disabled={!hasChanges || saving || !hasTeamControl}
-						>
-							{saving ? (
-								<>
-									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-									{t("strings.phraseSaving" as never)}
-								</>
-							) : (
-								t("strings.Save" as never)
-							)}
-						</Button>
-					</div>
-				</div>
-			</form>
+			</div>
+			</WorkspacePolicyForm>
 
 			{!isPersonalTeam ? (
 				<WorkspaceIdentitySettings
@@ -334,8 +302,8 @@ export default function TeamSettingsPanel({
 				>
 					{t("strings.Danger Zone" as never)}
 				</h3>
-				<div className="overflow-hidden rounded-xl border border-destructive/30 bg-background/40">
-					<div className="flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
+				<div>
+					<div className="flex flex-col gap-3 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
 						<div className="min-w-0">
 							<p className="text-sm font-medium">{t("workspace.deleteWorkspace")}</p>
 							<p className="mt-0.5 text-sm text-muted-foreground">

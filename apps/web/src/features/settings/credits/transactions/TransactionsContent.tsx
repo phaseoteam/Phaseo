@@ -10,7 +10,7 @@ export default withSettingsResource("transactions", function TransactionsContent
 	const t = useTranslations("SettingsUI.headers");
 	if (initialData.isEnterpriseInvoiceMode) {
 		return (
-			<div className="space-y-6">
+			<div className="w-full max-w-4xl space-y-8">
 				<SettingsPageHeader
 					title={t("invoices")}
 					description={t("invoicesDescription")}
@@ -21,7 +21,7 @@ export default withSettingsResource("transactions", function TransactionsContent
 	}
 
 	return (
-		<div className="space-y-6">
+		<div className="min-w-0 space-y-8">
 			<SettingsPageHeader title={t("transactions")} />
 			<RecentTransactions
 				transactions={initialData.transactions}

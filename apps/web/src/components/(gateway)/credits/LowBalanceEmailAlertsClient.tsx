@@ -88,16 +88,16 @@ export default function LowBalanceEmailAlertsClient(props: {
 			<h2 id="notifications-title" className="font-heading text-base font-medium">
 			{t("notifications")}
 			</h2>
-			<div className="overflow-hidden rounded-xl border bg-background/40">
-				<div className="px-4 py-4">
-					<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+			<div className="divide-y divide-border/60">
+				<div className="py-5">
+					<div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
 						<div className="min-w-0">
 							<h3 className="text-sm font-medium">{t("lowBalanceAlerts")}</h3>
 							<p className="mt-0.5 text-sm text-muted-foreground">
 								{t("lowBalanceDescription")}
 							</p>
 						</div>
-						<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
+						<div className="flex flex-wrap items-center gap-2 sm:justify-end">
 							<NotificationRouteSelector destinations={props.destinations} eventKind="low_balance" initialDestinationIds={props.notificationRoutes.low_balance ?? []} />
 							<Switch
 								checked={enabled}
@@ -123,7 +123,7 @@ export default function LowBalanceEmailAlertsClient(props: {
 						aria-hidden={!enabled}
 					>
 						<div className="min-h-0 overflow-hidden">
-							<div className="flex flex-col gap-2.5 pt-3 pl-3 sm:flex-row sm:items-center sm:justify-between sm:pl-4">
+							<div className="ms-4 mt-5 grid gap-3 border-s-2 ps-4 pt-1 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
 								<div className="min-w-0">
 									<Label htmlFor="low-balance-threshold" className="text-xs font-medium">
 										{t("creditThreshold")}
@@ -132,7 +132,7 @@ export default function LowBalanceEmailAlertsClient(props: {
 										{t("thresholdDescription")}
 									</p>
 								</div>
-								<div className="w-full shrink-0 sm:w-32">
+								<div className="min-w-0 w-full">
 									<div className="relative">
 										<span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-xs text-muted-foreground">$</span>
 										<Input
@@ -166,12 +166,12 @@ export default function LowBalanceEmailAlertsClient(props: {
 						</div>
 					</div>
 				</div>
-				<div className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+				<div className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
 					<div className="min-w-0">
 						<h3 className="text-sm font-medium">{t("autoTopUpFailed")}</h3>
 						<p className="mt-0.5 text-sm text-muted-foreground">{t("autoTopUpDescription")}</p>
 					</div>
-					<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
+					<div className="flex flex-wrap items-center gap-2 sm:justify-end">
 						<NotificationRouteSelector destinations={props.destinations} eventKind="auto_top_up_failed" initialDestinationIds={props.notificationRoutes.auto_top_up_failed ?? []} />
 						<Switch
 							checked={autoTopUpFailureEnabled}
@@ -184,12 +184,12 @@ export default function LowBalanceEmailAlertsClient(props: {
 						/>
 					</div>
 				</div>
-				<div className="flex flex-col gap-3 border-t px-4 py-3.5 sm:flex-row sm:items-center sm:justify-between">
+				<div className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
 					<div className="min-w-0">
 						<h3 className="text-sm font-medium">{t("paymentMethodExpiring")}</h3>
 						<p className="mt-0.5 text-sm text-muted-foreground">{t("paymentMethodExpiringDescription")}</p>
 					</div>
-					<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto">
+					<div className="flex flex-wrap items-center gap-2 sm:justify-end">
 						<NotificationRouteSelector destinations={props.destinations} eventKind="payment_method_expiring" initialDestinationIds={props.notificationRoutes.payment_method_expiring ?? []} />
 						<Switch
 							checked={paymentMethodExpiringEnabled}

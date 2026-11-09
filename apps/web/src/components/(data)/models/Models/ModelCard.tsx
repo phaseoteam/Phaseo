@@ -1,5 +1,3 @@
-import { useModelsLayoutTracking } from "./useModelsLayoutExperiment";
-
 import Link from "@/components/link";
 import { useTranslations } from "@/i18n/react";
 import { decisionModelCapabilities } from "@/lib/models/modelCapabilities";
@@ -18,6 +16,8 @@ import {
 	Copy,
 	BadgeAlert,
 	CalendarClock,
+	EyeOff,
+	LockKeyhole,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -29,6 +29,7 @@ import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDispl
 import { hasPassedLifecycleDate } from "@/lib/models/modelLifecycle";
 import { resolveProviderLogoId } from "@/lib/providers/providerOffers";
 import { getModalityIcon } from "./modalityIcons";
+import { resolveModelVisibility } from "./modelVisibility";
 
 type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
 	gateway_status?:
@@ -39,6 +40,8 @@ type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
 		| null;
 	router_requests_30d?: number | null;
 	router_spend_nanos_30d?: number | null;
+	// Set on workspace private-endpoint models, which only their workspace sees.
+	is_private?: boolean;
 };
 import { Logo } from "@/components/Logo";
 import { getModalityTone } from "@/lib/models/modalityStyles";
@@ -524,10 +527,22 @@ function ModelCardImpl({
 		(lifecycleStatus === "deprecated" ||
 			hasPassedLifecycleDate(model.deprecation_date));
 	const LifecycleIcon = isRetired || isDeprecated ? BadgeAlert : null;
-	const lifecycleLabel = isRetired ? "End of life" : isDeprecated ? "Deprecated" : null;
-	const modelDescription = String(model.description ?? "").trim();
+	const lifecycleLabel = isRetired
+		? t("lifecycleEndOfLife")
+		: isDeprecated
+			? t("lifecycleDeprecated")
+			: null;
 	const isComingSoon =
 		!isRetired && !isDeprecated && model.gateway_status === "coming_soon";
+	const visibility = resolveModelVisibility(model);
+	const isInternal = visibility === "internal";
+	const isPrivate = visibility === "private";
+	const visibilityLabel = isInternal
+		? tDetail("sections.internalOnly")
+		: isPrivate
+			? t("filtersUi.tierPrivate")
+			: null;
+	const VisibilityIcon = isInternal ? EyeOff : isPrivate ? LockKeyhole : null;
 	const [copied, setCopied] = useState(false);
 	const routerRequests30d =
 		Number.isFinite(Number(model.router_requests_30d)) &&
@@ -957,11 +972,9 @@ function ModelCardImpl({
 		? format.number(weeklyUsage.quantity, { maximumFractionDigits: 2, notation: "standard" })
 		: format.count(weeklyUsage.quantity)}${weeklyUsage.unitSuffix}`;
 
-	const trackLayout = useModelsLayoutTracking();
 	const copyModelId = async () => {
 		try {
 			await navigator.clipboard.writeText(displayModelId);
-			trackLayout("models_layout_model_id_copied", { model_id: model.model_id });
 			setCopied(true);
 			setTimeout(() => setCopied(false), 1400);
 		} catch {
@@ -979,7 +992,6 @@ function ModelCardImpl({
 		) {
 			return;
 		}
-		trackLayout("models_layout_model_opened", { model_id: model.model_id });
 		router.push(modelHref, { scroll: true });
 	};
 
@@ -1024,13 +1036,25 @@ function ModelCardImpl({
 						<div className="flex items-center gap-1 min-w-0">
 							<Link
 								href={modelHref}
-							onClick={() => trackLayout("models_layout_model_opened", { model_id: model.model_id })}
 								prefetch={false}
 								scroll
 								className="font-semibold text-sm leading-[1.1] text-foreground hover:underline underline-offset-4 transition-colors duration-200 line-clamp-1"
 							>
 								{safeModelDisplayName}
 							</Link>
+							{VisibilityIcon && visibilityLabel ? (
+								<span
+									className={cn(
+										"inline-flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-px text-[11px] font-medium leading-4",
+										isInternal
+											? "border-[#00b8db]/30 bg-[#00b8db]/10 text-cyan-700 dark:text-cyan-300"
+											: "border-border bg-muted text-muted-foreground",
+									)}
+								>
+									<VisibilityIcon className="size-3" aria-hidden="true" />
+									{visibilityLabel}
+								</span>
+							) : null}
 							{displayModelId ? (
 								<Tooltip>
 									<TooltipTrigger asChild>
@@ -1076,7 +1100,6 @@ function ModelCardImpl({
 					<Button asChild size="icon" variant="ghost" className="h-8 w-8 shrink-0">
 						<Link
 							href={modelHref}
-							onClick={() => trackLayout("models_layout_model_opened", { model_id: model.model_id })}
 							prefetch={false}
 							scroll
 							aria-label={t("viewDetails")}
@@ -1093,12 +1116,6 @@ function ModelCardImpl({
 						</Link>
 					</Button>
 				</div>
-
-				{modelDescription ? (
-					<p className="-mt-2 line-clamp-2 text-xs leading-snug text-muted-foreground">
-						{modelDescription}
-					</p>
-				) : null}
 
 				<div className="grid gap-2 text-xs md:grid-cols-3">
 					<ModelCardScrollRail ariaLabel={t("modelSummary")} className="md:col-span-3">

@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { PUBLIC_NATIVE_CLIENT_REFUSAL } from "./route-helpers";
 
 vi.mock("@/lib/audit/workspaceAudit", () => ({ recordWorkspaceAuditEvent: vi.fn(async () => true) }));
 
@@ -560,23 +559,24 @@ describe("management key routes", () => {
 			expect(state.updatePayloads).toEqual([{ name: "Renamed" }]);
 		});
 
-		it("refuses CLI and desktop sign-ins too, because their client IDs are public", async () => {
+		it("lets CLI and desktop sign-ins create keys and change limits like the dashboard, since the person signed in themselves", async () => {
 			for (const clientId of ["phaseo_cli", "aistats_cli", "phaseo_desktop"]) {
+				state.insertPayloads.length = 0;
+				state.updatePayloads.length = 0;
 				state.guardManagementAuthResult = oauthAuth(clientId);
 				state.membershipRows.push({ role: "owner" });
+				state.keyRows.push({ ...personKey, id: "key_new", hash: "hash_new", name: "From the CLI" });
 				const created = await request("https://example.com/", "POST", { name: "From the CLI" });
-				expect(created.status, clientId).toBe(403);
-				expect(await created.json(), clientId).toMatchObject({ error: "forbidden", message: PUBLIC_NATIVE_CLIENT_REFUSAL });
+				expect(created.status, clientId).toBe(201);
+				expect(state.insertPayloads, clientId).toHaveLength(1);
 
 				state.guardManagementAuthResult = oauthAuth(clientId);
 				state.membershipRows.push({ role: "owner" });
-				state.keyRows.push({ ...personKey });
+				state.keyRows.push({ ...personKey }, { ...personKey, monthly_limit_cost_nanos: 0 });
 				const changed = await request("https://example.com/hash_person", "PATCH", { limit: null });
-				expect(changed.status, clientId).toBe(403);
-				expect(await changed.json(), clientId).toMatchObject({ message: PUBLIC_NATIVE_CLIENT_REFUSAL });
+				expect(changed.status, clientId).toBe(200);
+				expect(state.updatePayloads, clientId).toHaveLength(1);
 			}
-			expect(state.insertPayloads).toEqual([]);
-			expect(state.updatePayloads).toEqual([]);
 		});
 
 		it("leaves the person's dashboard session able to create keys and change limits", async () => {
@@ -627,12 +627,13 @@ describe("management key routes", () => {
 				method: call.method, headers: { "content-type": "application/json" }, ...(call.body ? { body: JSON.stringify(call.body) } : {}),
 			});
 		};
-		// Listing, reading, renaming and deleting don't raise what a key can spend, so the CLI may do them in another
-		// workspace too. Creating, rotating and changing a key's limits are made in the dashboard or with a management key.
+		// The CLI is the person's own sign-in, so it may do on a key what the dashboard can, in another workspace too,
+		// where the person is an owner or admin. Apps that use Sign in with Phaseo still can't create, rotate or
+		// re-limit keys (see "apps that use Sign in with Phaseo").
 		const reads = calls.filter((call) => ["list", "get", "update", "delete"].includes(call.name));
 		const writes: Call[] = [
 			...calls.filter((call) => !reads.includes(call)),
-			{ name: "limit", url: "https://example.com/hash_2?workspace_id=ws_2", method: "PATCH", body: { limit: 5 }, status: 403 },
+			{ name: "limit", url: "https://example.com/hash_2?workspace_id=ws_2", method: "PATCH", body: { limit: 5 }, status: 200 },
 		];
 		const expectNothingTouched = () => {
 			expect(state.keyWorkspaceFilters).toEqual([]);
@@ -665,23 +666,38 @@ describe("management key routes", () => {
 			expect(state.updateFilters.flat().filter((filter) => filter.column === "workspace_id").map((filter) => filter.value).every((value) => value === "ws_2")).toBe(true);
 		});
 
-		it("refuses the CLI's key changes in any workspace: they're made in the dashboard or with a management key", async () => {
+		it("lets Phaseo's CLI create, rotate and change the limits of keys in any workspace where the person is an owner or admin", async () => {
 			for (const call of writes) {
 				for (const workspace of ["ws_1", "ws_2"]) {
 					state.guardManagementAuthResult = cliAuth();
 					state.membershipRows.length = 0;
 					state.membershipRows.push({ role: "owner" });
 					state.keyRows.length = 0;
-					state.keyRows.push({ ...key, workspace_id: workspace });
+					state.keyRows.push({ ...key, workspace_id: workspace }, { ...key, workspace_id: workspace, monthly_limit_cost_nanos: 0 });
 
 					const response = await send({ ...call, url: call.url.replace("ws_2", workspace), ...(call.body ? { body: { ...call.body, workspace_id: workspace } } : {}) });
 
-					expect(response.status, `${call.name} ${workspace}`).toBe(403);
-					expect(await response.json(), `${call.name} ${workspace}`).toMatchObject({ error: "forbidden", message: PUBLIC_NATIVE_CLIENT_REFUSAL });
+					expect(response.status, `${call.name} ${workspace} ${JSON.stringify(await response.clone().json())}`).toBe(call.status);
 				}
 			}
-			expect(state.insertPayloads).toEqual([]);
-			expect(state.updatePayloads).toEqual([]);
+			expect(state.insertPayloads.length).toBeGreaterThan(0);
+			expect(state.insertPayloads.every((payload) => ["ws_1", "ws_2"].includes(String(payload.workspace_id)))).toBe(true);
+		});
+
+		it("still refuses a member of the workspace who isn't an owner or admin from creating, rotating or re-limiting keys", async () => {
+			for (const call of writes) {
+				state.guardManagementAuthResult = cliAuth();
+				state.membershipRows.length = 0;
+				state.membershipRows.push({ role: "member" });
+				state.keyRows.length = 0;
+				state.keyRows.push({ ...key });
+
+				const response = await send(call);
+
+				expect(response.status, call.name).toBe(403);
+				expect(await response.json(), call.name).toEqual({ error: "forbidden", message: "Workspace owner or admin role is required" });
+			}
+			expectNothingTouched();
 		});
 
 		it("refuses a person who isn't a member of the named workspace", async () => {
@@ -725,11 +741,7 @@ describe("management key routes", () => {
 					const response = await send(call);
 
 					expect(response.status, `${caller} ${call.name}`).toBe(403);
-					// A CLI token is refused key changes before the workspace is looked at.
-					const refusedAsCli = caller === "OAuth token without a person" && writes.includes(call);
-					expect(await response.json(), `${caller} ${call.name}`).toMatchObject(refusedAsCli
-						? { error: "forbidden", message: PUBLIC_NATIVE_CLIENT_REFUSAL }
-						: { ok: false, error: "forbidden", message: "workspace_id must match authenticated workspace" });
+					expect(await response.json(), `${caller} ${call.name}`).toMatchObject({ ok: false, error: "forbidden", message: "workspace_id must match authenticated workspace" });
 					state.membershipRows.length = 0;
 				}
 			}

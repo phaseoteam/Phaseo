@@ -106,3 +106,17 @@ export async function runDepartmentBudgetAlertSweep(): Promise<DepartmentBudgetS
 	const count = (value: unknown) => (Number.isFinite(Number(value)) ? Number(value) : 0);
 	return { budgets: count(result.budgets), alerted: count(result.alerted) };
 }
+
+export type SpendGuardrailSweepSummary = { workspaces: number; alerted: number };
+
+/**
+ * sweep_spend_guardrail_alerts sends each spend guardrail counter's 80% warning and 100% alert:
+ * the gateway's spend guardrail rejections send no push themselves.
+ */
+export async function runSpendGuardrailAlertSweep(): Promise<SpendGuardrailSweepSummary> {
+	const { data, error } = await getSupabaseAdmin().rpc("sweep_spend_guardrail_alerts", {});
+	if (error) throw new Error(`spend_guardrail_sweep_failed:${error.message}`);
+	const result = (data && typeof data === "object" ? data : {}) as Record<string, unknown>;
+	const count = (value: unknown) => (Number.isFinite(Number(value)) ? Number(value) : 0);
+	return { workspaces: count(result.workspaces), alerted: count(result.alerted) };
+}

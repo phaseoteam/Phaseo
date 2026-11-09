@@ -125,6 +125,8 @@ export const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "AI21_BASE_URL",
     "AKASHML_API_KEY",
     "AKASHML_BASE_URL",
+    "PRIMALABS_API_KEY",
+    "PRIMALABS_BASE_URL",
     "ALIBABA_CLOUD_API_KEY",
     "MODELSCOPE_API_KEY",
     "MODELSCOPE_BASE_URL",

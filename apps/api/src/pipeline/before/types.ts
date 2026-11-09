@@ -33,6 +33,11 @@ export type GateCheck = {
     /** The department whose budget was reached (`department_*` reasons only). */
     departmentId?: string | null;
     departmentName?: string | null;
+    /** The spend guardrail whose limit was reached (`guardrail_*` reasons only). */
+    guardrailId?: string | null;
+    guardrailName?: string | null;
+    /** shared: one counter for everything the assignment covers; each_key: this key's own counter. */
+    guardrailCounting?: "shared" | "each_key" | null;
     buckets?: {
         daily?: {
             windowStart: string | null;

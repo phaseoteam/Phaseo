@@ -23,7 +23,7 @@ export default withSettingsResource("keys", function KeysContent({ initialData }
 	} = initialData;
 
 	return (
-		<div className="space-y-6">
+		<div className="min-w-0 space-y-8">
 			<SettingsPageHeader
 				title={t("headers.apiKeys")}
 				actions={

@@ -91,7 +91,7 @@ export default function BetaSettingsClient({
 	);
 
 	return (
-		<div className="overflow-hidden rounded-2xl border border-border/60 bg-background">
+		<div className="border-y border-border/60">
 			{features.map((feature, index) => {
 				const enabled = betaFeatures[feature.key] === true;
 				const isSaving = savingKey === feature.key;
@@ -101,7 +101,7 @@ export default function BetaSettingsClient({
 					<div
 						key={feature.key}
 						className={[
-							"flex items-start justify-between gap-4 px-4 py-4 sm:px-5",
+							"flex items-start justify-between gap-4 py-5",
 							showBorder ? "border-b border-border/60" : "",
 						].join(" ")}
 					>

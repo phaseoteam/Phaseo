@@ -110,7 +110,7 @@ export default function DynamicRoutingDemoPage() {
 		})),
 	};
 	return (
-		<div className="flex flex-col gap-3 lg:h-[calc(100dvh-var(--site-header-height,3.75rem)-var(--site-notice-height,0px)-2.5rem)] lg:min-h-[420px]">
+		<div className="flex min-w-0 flex-col gap-8 lg:h-[calc(100dvh-var(--site-header-height,3.75rem)-var(--site-notice-height,0px)-3.5rem)] lg:min-h-[420px]">
 			<SettingsPageHeader title={t("headers.dynamicRouting")} />
 			<Callout>{t("headers.dynamicRoutingPreview")}</Callout>
 			<DynamicRoutesStudio initialData={localizedPreviewData} demoMode />

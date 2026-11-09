@@ -3,7 +3,6 @@ import { PrivateUsageQuery, usePrivateUsageQuery } from "@/components/(gateway)/
 import { fetchPrivateUsage } from "@/lib/query/fetchPrivateUsage";
 import type { AccountQueryScope } from "@/lib/query/queryKeys";
 import type { SettingsUsageAlertsInitialData } from "@/lib/fetchers/internal/settingsTypes";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import DeprecationWarnings from "@/components/(gateway)/usage/DeprecationWarnings/DeprecationWarnings";
 import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
@@ -20,37 +19,31 @@ function UsageAlertsContent({ initialData }: { initialData: SettingsUsageAlertsI
 
 	if (!initialData.workspaceId) {
 		return (
-			<Card>
-				<CardHeader>
-					<CardTitle>{t("strings.Alerts" as never)}</CardTitle>
-				</CardHeader>
-				<CardContent>
+			<div className="min-w-0 w-full max-w-4xl space-y-8">
+				<SettingsPageHeader title={t("strings.Alerts" as never)} />
+				<section className="border-y py-5">
 					<p className="text-sm text-muted-foreground">
 						{t("strings.phraseYouNeedToBeSignedInAndHaveATeamSelectedToViewAlerts" as never)}
 					</p>
-				</CardContent>
-			</Card>
+				</section>
+			</div>
 		);
 	}
 
 	return (
-		<div className="space-y-6">
+		<div className="min-w-0 w-full max-w-4xl space-y-8">
 			<SettingsPageHeader
 				title={t("headers.lifecycleAlerts")}
 				description={t("headers.lifecycleAlertsDescription")}
 			/>
 
 			{initialData.warnings.length === 0 ? (
-				<Card>
-					<CardHeader>
-						<CardTitle>{t("strings.No lifecycle alerts" as never)}</CardTitle>
-					</CardHeader>
-					<CardContent>
+				<section className="space-y-2 border-y py-5">
+						<h2 className="text-base font-semibold">{t("strings.No lifecycle alerts" as never)}</h2>
 						<p className="text-sm text-muted-foreground">
 							{t("strings.phraseYouHaveNoUpcomingDeprecationsOrRecentRetirementsForModelsUsedByThisWorkspace" as never)}
 						</p>
-					</CardContent>
-				</Card>
+				</section>
 			) : (
 				<DeprecationWarnings warnings={initialData.warnings} showHeader={false} />
 			)}

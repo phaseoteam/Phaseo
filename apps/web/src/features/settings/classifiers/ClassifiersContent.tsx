@@ -13,7 +13,7 @@ export default withSettingsResource("classifiers", function ClassifiersContent({
 	const t = useTranslations("SettingsUI");
 	const atLimit = initialData.classifiers.length >= initialData.limit;
 	return (
-		<div className="space-y-6">
+		<div className="min-w-0 space-y-8">
 			<SettingsPageHeader
 				title={t("classifiers.title")}
 				description={t("classifiers.description")}

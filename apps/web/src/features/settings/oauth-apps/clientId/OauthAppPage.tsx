@@ -6,6 +6,7 @@ import { AppWindow, ChevronLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import OAuthAppDetailContent from "./OAuthAppDetailContent";
 import SettingsSectionFallback from "@/components/(gateway)/settings/SettingsSectionFallback";
+import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import {
 	Empty,
 	EmptyDescription,
@@ -28,19 +29,14 @@ export default function OAuthAppDetailPage() {
 	const t = useTranslations("SettingsUI");
 
 	return (
-		<div className="space-y-6">
+		<div className="w-full max-w-4xl space-y-8">
 			<div className="flex items-center gap-4">
 				<Button variant="ghost" size="icon" asChild>
 					<Link href="/settings/oauth-apps">
 						<ChevronLeft className="h-5 w-5" />
 					</Link>
 				</Button>
-				<div className="flex-1">
-					<h1 className="text-2xl font-bold">{t("headers.oauthApplication")}</h1>
-					<p className="text-sm text-muted-foreground mt-1">
-						{t("headers.oauthApplicationDetails")}
-					</p>
-				</div>
+				<SettingsPageHeader title={t("headers.oauthApplication")} description={t("headers.oauthApplicationDetails")} />
 			</div>
 			{thirdPartyOAuthEnabled ? (
 				<Suspense fallback={<SettingsSectionFallback />}>

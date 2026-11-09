@@ -20,7 +20,7 @@ export default function BillingOnboardingPage() {
 
 	if (!initialData.signedIn) {
 		return (
-			<div className="space-y-6">
+			<div className="w-full max-w-4xl space-y-8">
 				<SettingsPageHeader
 					title="Billing onboarding"
 					titleKey="headers.billingOnboarding"
@@ -33,7 +33,7 @@ export default function BillingOnboardingPage() {
 
 	if (!initialData.workspaceId) {
 		return (
-			<div className="space-y-6">
+			<div className="w-full max-w-4xl space-y-8">
 				<SettingsPageHeader
 					title="Billing onboarding"
 					titleKey="headers.billingOnboarding"
@@ -46,7 +46,7 @@ export default function BillingOnboardingPage() {
 
 	if (!initialData.team) {
 		return (
-			<div className="space-y-6">
+			<div className="w-full max-w-4xl space-y-8">
 				<SettingsPageHeader
 					title="Billing onboarding"
 					titleKey="headers.billingOnboarding"
@@ -62,7 +62,7 @@ export default function BillingOnboardingPage() {
 	}
 
 	return (
-		<div className="space-y-6">
+		<div className="w-full max-w-4xl space-y-8">
 			{initialData.canManageBilling ? (
 				<EnterpriseBillingOnboardingClient
 					teamName={initialData.team.name}

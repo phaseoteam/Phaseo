@@ -122,6 +122,8 @@ function describeKeyLimitExceeded(args: {
 	currentValue?: number | null;
 	limitValue?: number | null;
 	departmentName?: string | null;
+	guardrailName?: string | null;
+	guardrailCounting?: "shared" | "each_key" | null;
 }): string {
 	if (args.limitMetric === "soft_blocked") {
 		return "This API key is currently soft-blocked and cannot send requests.";
@@ -139,6 +141,18 @@ function describeKeyLimitExceeded(args: {
 					: "configured";
 	const department = args.reason?.startsWith("department_");
 	const departmentName = args.departmentName?.trim();
+	if (args.reason?.startsWith("guardrail_")) {
+		// "The Contractors guardrail's daily spend limit has been reached ($11.00 of $10.00)."
+		const name = args.guardrailName?.trim();
+		const owner = name ? `the ${name} guardrail` : "a spend guardrail";
+		const usage = typeof args.currentValue === "number" && Number.isFinite(args.currentValue) &&
+			typeof args.limitValue === "number" && Number.isFinite(args.limitValue) && args.limitValue > 0
+			? ` (${formatUsdFromNanos(args.currentValue)} of ${formatUsdFromNanos(args.limitValue)})`
+			: "";
+		return args.guardrailCounting === "each_key"
+			? `This API key has reached its ${windowLabel} spend limit from ${owner}${usage}.`
+			: `${owner.charAt(0).toUpperCase()}${owner.slice(1)}'s ${windowLabel} spend limit has been reached${usage}.`;
+	}
 	// "The Engineering department has reached its daily budget ($11.00 of $10.00)."
 	const subject = department
 		? departmentName ? `The ${departmentName} department` : "This API key's department"
@@ -183,6 +197,7 @@ function keyLimitExceededResponse(gate: GateCheck, args: { workspaceId: string; 
 		current_value: gate.currentValue ?? null,
 		limit_value: gate.limitValue ?? null,
 		...(gate.departmentId ? { department_id: gate.departmentId, department_name: gate.departmentName ?? null } : {}),
+		...(gate.guardrailId ? { guardrail_id: gate.guardrailId, guardrail_name: gate.guardrailName ?? null } : {}),
 		buckets: gate.buckets ?? null,
 		budgets: gate.budgets ?? null,
 		description: describeKeyLimitExceeded({
@@ -192,6 +207,8 @@ function keyLimitExceededResponse(gate: GateCheck, args: { workspaceId: string; 
 			currentValue: gate.currentValue ?? null,
 			limitValue: gate.limitValue ?? null,
 			departmentName: gate.departmentName ?? null,
+			guardrailName: gate.guardrailName ?? null,
+			guardrailCounting: gate.guardrailCounting ?? null,
 		}),
 		request_id: args.requestId,
 		workspace_id: args.workspaceId,

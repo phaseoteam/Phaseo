@@ -21,6 +21,7 @@ const runMobilePushDigestJobMock = vi.fn();
 const runSpendLimitWarningSweepMock = vi.fn();
 const runSpendRulesSweepMock = vi.fn();
 const runDepartmentBudgetAlertSweepMock = vi.fn();
+const runSpendGuardrailAlertSweepMock = vi.fn();
 const runSpendReportsQueueMock = vi.fn();
 const runLowBalanceEmailSweepMock = vi.fn();
 const publishSweepSpendBlockEntriesMock = vi.fn();
@@ -103,6 +104,7 @@ vi.mock("@/pipeline/notifications/mobile-push-digest", () => ({
 vi.mock("@/pipeline/notifications/spend-limit-alerts", () => ({
 	runSpendLimitWarningSweep: (...args: unknown[]) => runSpendLimitWarningSweepMock(...args),
 	runDepartmentBudgetAlertSweep: (...args: unknown[]) => runDepartmentBudgetAlertSweepMock(...args),
+	runSpendGuardrailAlertSweep: (...args: unknown[]) => runSpendGuardrailAlertSweepMock(...args),
 }));
 
 vi.mock("@/pipeline/notifications/spend-rules", () => ({
@@ -191,6 +193,7 @@ describe("handleScheduledEvent", () => {
 		runMobilePushDigestJobMock.mockReset().mockResolvedValue({ built: 0, sent: 0 });
 		runSpendLimitWarningSweepMock.mockReset().mockResolvedValue({ budgets: 0, limitedKeys: 0, warned: 0 });
 		runDepartmentBudgetAlertSweepMock.mockReset().mockResolvedValue({ budgets: 0, alerted: 0 });
+		runSpendGuardrailAlertSweepMock.mockReset().mockResolvedValue({ workspaces: 0, alerted: 0 });
 		runNotificationDeliveryJobMock.mockReset().mockResolvedValue({ queued: 0, sent: 0, failed: 0 });
 		runSpendRulesSweepMock.mockReset().mockResolvedValue({ dirty: 0, rollover: 0, periodic: 0, evaluated: 0, rules: 0, fired: 0, stateRows: 0, skippedLocked: false, events: [], blocks: [], publish: [] });
 		runSpendReportsQueueMock.mockReset().mockResolvedValue({ skippedLocked: false, due: 0, quiet: 0, zeroSpend: 0, queued: 0, emails: 0, reports: [] });
@@ -472,6 +475,8 @@ describe("handleScheduledEvent", () => {
 			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:15:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
 			expect(runSpendLimitWarningSweepMock).toHaveBeenCalledTimes(1);
 			expect(runDepartmentBudgetAlertSweepMock).toHaveBeenCalledTimes(1);
+			expect(runSpendGuardrailAlertSweepMock).toHaveBeenCalledTimes(1);
+			expect(runSpendGuardrailAlertSweepMock.mock.invocationCallOrder[0]).toBeLessThan(runMobilePushJobMock.mock.invocationCallOrder[0]);
 			expect(runSpendLimitWarningSweepMock.mock.invocationCallOrder[0]).toBeLessThan(runMobilePushJobMock.mock.invocationCallOrder[0]);
 			expect(runDepartmentBudgetAlertSweepMock.mock.invocationCallOrder[0]).toBeLessThan(runMobilePushJobMock.mock.invocationCallOrder[0]);
 			expect(log).not.toHaveBeenCalledWith("spend_limit_warnings_swept", expect.anything());
