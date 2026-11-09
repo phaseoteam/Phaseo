@@ -12,7 +12,7 @@ The Phaseo app for Android (iOS later), built with Expo SDK 58, React Native 0.8
 
 ## App analytics
 
-PostHog supports this Expo app on Android and iOS. Release builds can share anonymous app opens, screen categories and sanitized JavaScript errors. Enable **Account → This device → App analytics → Share app usage and errors**; it is off by default. Development and perf builds never collect. Diagnostics stay local.
+PostHog supports this Expo app on Android and iOS. Release builds share anonymous app opens, screen categories and sanitized JavaScript errors by default. Turn off **Account → This device → App analytics → Share app usage and errors** to opt out on this device; saved opt-outs are preserved across updates. Development and perf builds never collect. Diagnostics stay local.
 
 Build with `EXPO_PUBLIC_POSTHOG_KEY`, or reuse the website's public project key from `PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_KEY` or its local `.env.local`. `EXPO_PUBLIC_POSTHOG_HOST` defaults to `https://eu.i.posthog.com`; `https://us.i.posthog.com` is also supported. Use the ingestion origin, not the website's `/ingest` proxy, and never a personal API key.
 

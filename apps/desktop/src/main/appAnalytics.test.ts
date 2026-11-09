@@ -1,7 +1,7 @@
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { desktopScreen } from "../shared/analytics";
 
 const clients = vi.hoisted(() => [] as { options: { fetch: (url: string, options: object) => Promise<unknown>; before_send: (event: object) => unknown }; capture: ReturnType<typeof vi.fn>; optOut: ReturnType<typeof vi.fn> }[]);
@@ -17,9 +17,15 @@ const create = (packaged = true) => {
   vi.stubGlobal("__PHASEO_ANALYTICS__", { key: "public-key", host: "https://eu.i.posthog.com" });
   return createDesktopAnalytics(directory, packaged);
 };
-afterEach(() => { for (const directory of directories.splice(0)) rmSync(directory, { recursive: true, force: true }); clients.length = 0; vi.unstubAllGlobals(); });
+beforeEach(() => { vi.stubEnv("CI", ""); });
+afterEach(() => { for (const directory of directories.splice(0)) rmSync(directory, { recursive: true, force: true }); clients.length = 0; vi.unstubAllGlobals(); vi.unstubAllEnvs(); });
 
 describe("desktop app analytics", () => {
+  it.each(["true", "1"])("never collects in packaged CI smoke tests with CI=%s", ci => {
+    vi.stubEnv("CI", ci);
+    create().configure(true);
+    expect(clients).toHaveLength(0);
+  });
   it("creates no SDK or traffic without consent, or in a development build", () => {
     const analytics = create(); analytics.configure(false); analytics.screen("chat");
     create(false).configure(true);

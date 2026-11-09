@@ -2,6 +2,7 @@ const mockData = new Map<string, string>();
 const mockClients: { sending: boolean; capture: jest.Mock; options: { before_send: (event: object) => unknown }; fetch: (...args: unknown[]) => Promise<unknown> }[] = [];
 const mockNetwork = jest.fn(async () => ({ status: 200 }));
 const mockWrite = jest.fn((key: string, value: string) => mockData.set(key, value));
+const mockRead = jest.fn((key: string) => mockData.get(key) ?? null);
 jest.mock("posthog-react-native", () => ({ PostHog: class {
   capture = jest.fn(); captureException = jest.fn(); on = jest.fn();
   optOut = jest.fn(async () => {}); shutdown = jest.fn(async () => {});
@@ -11,7 +12,7 @@ jest.mock("posthog-react-native", () => ({ PostHog: class {
 } }));
 jest.mock("expo-constants", () => ({ __esModule: true, default: { expoConfig: { version: "1.2.3", extra: { posthogKey: "public-key", buildCommit: "abc123" } } } }));
 jest.mock("expo-crypto", () => ({ randomUUID: () => "anonymous-installation" }));
-jest.mock("./storage", () => ({ kv: { getItemSync: (key: string) => mockData.get(key) ?? null, setItemSync: (...args: [string, string]) => mockWrite(...args) } }));
+jest.mock("./storage", () => ({ kv: { getItemSync: (key: string) => mockRead(key), setItemSync: (...args: [string, string]) => mockWrite(...args) } }));
 jest.mock("./store", () => ({ createStore: (initial: boolean) => { let value = initial; return { get: () => value, set: (next: boolean) => { value = next; } }; } }));
 
 // Jest runs in development by default; exercise the release-build consent path.
@@ -20,7 +21,31 @@ const analytics = jest.requireActual<typeof import("./appAnalytics")>("./appAnal
 
 afterEach(() => { analytics.setAppAnalyticsEnabled(false); mockClients.length = 0; mockData.clear(); mockNetwork.mockClear(); });
 
-test("no SDK is constructed before the user opts in", () => {
+test("new installations start analytics without changing a saved preference", () => {
+  expect(analytics.analyticsStore.get()).toBe(true);
+  analytics.startAppAnalytics();
+  expect(mockClients).toHaveLength(1);
+  expect(mockData.has("phaseo.analytics.enabled")).toBe(false);
+});
+
+test.each<[string, boolean]>([ ["true", true], ["false", false], ["invalid", false] ])("a saved %s preference is respected after restart", (saved, expected) => {
+  mockData.set("phaseo.analytics.enabled", saved);
+  jest.isolateModules(() => {
+    const restarted = jest.requireActual<typeof import("./appAnalytics")>("./appAnalytics");
+    expect(restarted.analyticsStore.get()).toBe(expected);
+  });
+});
+
+test("unreadable preferences keep analytics off", () => {
+  mockRead.mockImplementationOnce(() => { throw new Error("storage unavailable"); });
+  jest.isolateModules(() => {
+    const restarted = jest.requireActual<typeof import("./appAnalytics")>("./appAnalytics");
+    expect(restarted.analyticsStore.get()).toBe(false);
+  });
+});
+
+test("no SDK is constructed while opted out", () => {
+  analytics.setAppAnalyticsEnabled(false);
   analytics.startAppAnalytics(); analytics.trackAppScreen(["(app)", "chat", "[id]"]);
   expect(mockClients).toHaveLength(0);
   analytics.setAppAnalyticsEnabled(true);

@@ -24,7 +24,7 @@ export function createDesktopAnalytics(directory: string, packaged: boolean) {
   const capture = (event: "app_opened" | "screen_viewed", properties = {}) => { if (enabled) client?.capture({ distinctId, event, properties: { ...meta, ...properties } }); };
   return {
     configure(allowed: boolean) {
-      enabled = allowed && packaged && Boolean(config?.key) && /^https:\/\/(?:eu|us)\.i\.posthog\.com$/.test(config?.host ?? "");
+      enabled = allowed && packaged && !["true", "1"].includes(process.env.CI ?? "") && Boolean(config?.key) && /^https:\/\/(?:eu|us)\.i\.posthog\.com$/.test(config?.host ?? "");
       if (!enabled) {
         revoke?.(); revoke = undefined;
         const previous = client; client = undefined;

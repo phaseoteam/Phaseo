@@ -38,7 +38,7 @@ The app shows the same credit in Settings → General → About.
 
 ## App analytics
 
-Packaged builds can share anonymous app opens, screen categories and sanitized JavaScript errors with the existing PostHog project. Enable **Settings → General → Privacy → Share app usage and errors** on each installation; it is off by default. Development builds never collect. Local Diagnostics remain on the device.
+Packaged builds share anonymous app opens, screen categories and sanitized JavaScript errors with the existing PostHog project by default. Turn off **Settings → General → Privacy → Share app usage and errors** on each installation to opt out; saved opt-outs are preserved across updates. Development builds and CI runs never collect. Local Diagnostics remain on the device.
 
 Set the public project key as `PUBLIC_POSTHOG_KEY` (or `NEXT_PUBLIC_POSTHOG_KEY`) when building. GitHub desktop builds use the existing repository key. `PUBLIC_POSTHOG_HOST` defaults to `https://eu.i.posthog.com`; use `https://us.i.posthog.com` for a US project. Website proxy paths such as `/ingest` cannot be used by a native app. Never bundle a personal API key.
 

@@ -37,6 +37,9 @@ jobs:
     windows:
         runs-on: windows-latest
         timeout-minutes: 30
+        env:
+            PUBLIC_POSTHOG_KEY: ${{ secrets.NEXT_PUBLIC_POSTHOG_KEY || vars.NEXT_PUBLIC_POSTHOG_KEY }}
+            PUBLIC_POSTHOG_HOST: ${{ vars.PUBLIC_POSTHOG_HOST }}
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
               with:
@@ -56,9 +59,6 @@ jobs:
               run: npm install --global @openai/codex@0.160.0
             - name: Build desktop and agent SDK
               run: pnpm --filter @phaseo/desktop build
-              env:
-                  PUBLIC_POSTHOG_KEY: ${{ secrets.NEXT_PUBLIC_POSTHOG_KEY || vars.NEXT_PUBLIC_POSTHOG_KEY }}
-                  PUBLIC_POSTHOG_HOST: ${{ vars.PUBLIC_POSTHOG_HOST }}
             - name: Lint
               run: pnpm --filter @phaseo/desktop lint
             - name: Typecheck
