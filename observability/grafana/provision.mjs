@@ -16,10 +16,11 @@ function stackOrigin(value) {
   return url.origin;
 }
 export async function provision({ args = process.argv.slice(2), env = process.env, fetcher = fetch, log = console.log } = {}) {
-  const allowed = new Set(['--apply', '--check', '--enable-alerts', '--frontend']);
-  if (args.some(arg => !allowed.has(arg)) || (args.includes('--apply') && args.includes('--check')) || ((args.includes('--enable-alerts') || args.includes('--frontend')) && !args.includes('--apply'))) throw new Error('Use no flags for dry-run, --check for live query validation, or --apply [--enable-alerts] [--frontend]');
+  const allowed = new Set(['--apply', '--check', '--enable-alerts', '--frontend', '--dashboards-only']);
+  if (args.some(arg => !allowed.has(arg)) || (args.includes('--apply') && args.includes('--check')) || ((args.includes('--enable-alerts') || args.includes('--frontend') || args.includes('--dashboards-only')) && !args.includes('--apply')) || (args.includes('--dashboards-only') && (args.includes('--enable-alerts') || args.includes('--frontend')))) throw new Error('Use no flags for dry-run, --check for live query validation, or --apply [--dashboards-only | --enable-alerts] [--frontend]');
   const apply = args.includes('--apply');
   const check = args.includes('--check');
+  const dashboardsOnly = args.includes('--dashboards-only');
   const environment = env.GRAFANA_ENVIRONMENT ?? 'production';
   const origins = (env.GRAFANA_FRONTEND_ORIGINS ?? '').split(',').map(value => value.trim()).filter(Boolean);
   if (args.includes('--frontend') && (!origins.length || origins.some(value => {
@@ -59,13 +60,17 @@ export async function provision({ args = process.argv.slice(2), env = process.en
   };
   const datasource = await api(`/api/datasources/uid/${encodeURIComponent(env.GRAFANA_LOKI_UID)}`);
   if (datasource.type !== 'loki') throw new Error('GRAFANA_LOKI_UID must identify a Loki datasource');
+  const usageDatasource = await api(`/api/datasources/uid/${encodeURIComponent(env.GRAFANA_USAGE_UID ?? 'grafanacloud-usage')}`);
+  if (usageDatasource.type !== 'prometheus') throw new Error('GRAFANA_USAGE_UID must identify the grafanacloud-usage Prometheus datasource');
   if (check) {
-    // Read-only: syntax checks all dashboard and alert expressions against Loki.
+    // Read-only: evaluate dashboard expressions against their own backend.
     // Empty results prove syntax/access, not that collection is working.
     for (const dashboard of definitions) for (const panel of dashboard.panels) for (const target of panel.targets ?? []) {
       const query = target.expr.replaceAll('$__auto', '5m').replaceAll('$__range', '1h').replaceAll('$environment', environment).replace(/\$\{(?:request|route|provider|model|job):regex\}/g, '');
+      const usage = panel.datasource.type === 'prometheus';
       const endpoint = panel.type === 'logs' || target.maxLines ? 'query_range' : 'query';
-      const result = await api(`/api/datasources/proxy/uid/${encodeURIComponent(env.GRAFANA_LOKI_UID)}/loki/api/v1/${endpoint}?${new URLSearchParams({ query, limit: '1' })}`);
+      const path = usage ? `/api/datasources/proxy/uid/${encodeURIComponent(usageDatasource.uid)}/api/v1/query` : `/api/datasources/proxy/uid/${encodeURIComponent(env.GRAFANA_LOKI_UID)}/loki/api/v1/${endpoint}`;
+      const result = await api(`${path}?${new URLSearchParams({ query, ...(usage ? {} : { limit: '1' }) })}`);
       if (result.status !== 'success') throw new Error(`Query validation failed: ${panel.title}`);
       log(`${dashboard.title} / ${panel.title} / ${target.refId}: valid (${result.data?.result?.length ?? 0} series)`);
     }
@@ -87,24 +92,26 @@ export async function provision({ args = process.argv.slice(2), env = process.en
     const existing = await api(`/api/dashboards/uid/${dashboard.uid}`, 'GET', undefined, true);
     if (existing && (!existing.dashboard?.tags?.includes('phaseo') || existing.meta?.folderUid !== folderUid)) throw new Error(`Dashboard UID collision: ${dashboard.uid}`);
   }
-  for (const rule of rules) {
+  for (const rule of dashboardsOnly ? [] : rules) {
     const existing = await api(`/api/v1/provisioning/alert-rules/${rule.uid}`, 'GET', undefined, true);
     if (existing && (existing.labels?.application !== 'phaseo' || existing.folderUID !== folderUid)) throw new Error(`Alert UID collision: ${rule.uid}`);
   }
   // Use the rule API available to Grafana Editors. The provisioning write API
   // requires a separate privileged role in current Grafana Cloud stacks.
-  const namespace = await api(`/api/ruler/grafana/api/v1/rules/${folderUid}`, 'GET', undefined, true);
+  const namespace = dashboardsOnly ? null : await api(`/api/ruler/grafana/api/v1/rules/${folderUid}`, 'GET', undefined, true);
   const existingGroup = Object.values(namespace ?? {}).flat().find(group => group?.name === rules[0].ruleGroup);
   if (existingGroup && existingGroup.rules?.some(rule => rule.labels?.application !== 'phaseo')) throw new Error('Alert group contains rules owned by another application');
   if (!folder) await api('/api/folders', 'POST', { uid: folderUid, title: 'Phaseo observability' });
   for (const dashboard of definitions) {
     const configured = structuredClone(dashboard);
-    configured.templating.list[0].current = { text: datasource.name, value: datasource.uid };
+    const selectedDatasource = configured.uid === 'phaseo-free-tier' ? usageDatasource : datasource;
+    configured.templating.list[0].current = { text: selectedDatasource.name, value: selectedDatasource.uid };
+    if (configured.uid === 'phaseo-free-tier') configured.templating.list[0].regex = `/^${usageDatasource.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$/`;
     await api('/api/dashboards/db', 'POST', { dashboard: configured, folderUid, overwrite: true, message: 'Phaseo observability definitions' });
     log(`Dashboard: ${origin}/d/${dashboard.uid}`);
   }
-  await api(`/api/ruler/grafana/api/v1/rules/${folderUid}`, 'POST', rulerGroup(rules));
-  for (const rule of rules) {
+  if (!dashboardsOnly) await api(`/api/ruler/grafana/api/v1/rules/${folderUid}`, 'POST', rulerGroup(rules));
+  for (const rule of dashboardsOnly ? [] : rules) {
     log(`Alert ${rule.uid}: ${rule.isPaused ? 'paused' : 'enabled'}`);
   }
   if (args.includes('--frontend')) {

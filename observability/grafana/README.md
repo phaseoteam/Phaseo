@@ -1,14 +1,14 @@
 # Phaseo observability
 
-Grafana Cloud hosts compact logs, sampled traces, browser monitoring and five operational dashboards. Applications export directly over HTTPS; no collector server or Prometheus installation is required. The website runs on TanStack Start and Cloudflare, alongside the gateway and web API Workers.
+Grafana Cloud hosts compact logs, traces, browser monitoring and six operational dashboards. Applications export directly over HTTPS; no collector server or Prometheus installation is required. The website runs on TanStack Start and Cloudflare, alongside the gateway and web API Workers.
 
 The configured stack is <https://honestcushion71.grafana.net>. See [VALIDATION.md](VALIDATION.md) for verified state and remaining rollout checks.
 
 ## Configuration
 
-Backend delivery requires `PLATFORM_TELEMETRY_ENABLED=true`, `GRAFANA_OTLP_ENDPOINT`, `GRAFANA_OTLP_AUTHORIZATION` and `PLATFORM_TRACE_SAMPLE_RATE=0.05`. Gateway and web API use `ENV`; the website uses `PHASEO_ENV`. Only staging/production environments send data. The OTLP Basic authorization is server-only.
+Backend delivery requires `PLATFORM_TELEMETRY_ENABLED=true`, `GRAFANA_OTLP_ENDPOINT`, `GRAFANA_OTLP_AUTHORIZATION` and `PLATFORM_TRACE_SAMPLE_RATE`. Gateway and web API use `ENV`; the website uses `PHASEO_ENV`. Only staging/production environments send data. The OTLP Basic authorization is server-only. The code defaults to 5% trace sampling; production can collect 100% (`1`) while ingestion remains comfortably below Free allowances.
 
-The website server function returns only the public Faro URL, enabled flag, environment and session sample rate. Configure `PUBLIC_FARO_ENABLED=true`, `PUBLIC_FARO_URL` and `PUBLIC_FARO_SESSION_SAMPLE_RATE=0.1` on the Worker. Browser collection starts after analytics consent; withdrawal stops transport and removes instrumentation. Sampling covers whole sessions, including their errors. CI supplies `PUBLIC_RELEASE` for each build.
+The website server function returns only the public Faro URL, enabled flag, environment and session sample rate. Configure `PUBLIC_FARO_ENABLED=true`, `PUBLIC_FARO_URL` and `PUBLIC_FARO_SESSION_SAMPLE_RATE` on the Worker. The code defaults to 10%; `1` collects every consenting session. Browser collection starts after analytics consent; withdrawal stops transport and removes instrumentation. Sampling covers whole sessions, including their errors. CI supplies `PUBLIC_RELEASE` for each build.
 
 Production settings live in the Phaseo Infisical project:
 
@@ -33,7 +33,7 @@ node --env-file=observability/grafana/.env.local observability/grafana/provision
 node --env-file=observability/grafana/.env.local observability/grafana/provision.mjs --apply
 ```
 
-The first command regenerates JSON; the second prints a local plan without network calls. `--check` evaluates all dashboard and alert queries against Loki. Empty results establish syntax/access, not collection. `--apply` checks ownership and updates five dashboards and five paused alert rules. Reapplying replaces edits to owned resources; writes are sequential, so rerun after an interruption. `GRAFANA_ENVIRONMENT` chooses separate staging or production rule UIDs.
+The first command regenerates JSON; the second prints a local plan without network calls. `--check` evaluates log queries against Loki and usage queries against the `grafanacloud-usage` Prometheus datasource (`GRAFANA_USAGE_UID` can override its UID). Empty results establish syntax/access, not collection. `--apply` checks ownership and updates six dashboards and five paused alert rules. Use `--apply --dashboards-only` to preserve all existing alert rules and notification settings. Reapplying replaces edits to owned resources; writes are sequential, so rerun after an interruption. `GRAFANA_ENVIRONMENT` chooses separate staging or production rule UIDs.
 
 `--apply --frontend` creates the browser application if missing, using `GRAFANA_FRONTEND_ORIGINS` (comma-separated exact HTTPS origins). Existing application settings are preserved. The current app allows `https://phaseo.app` and `https://www.phaseo.app`; add the real staging origin before testing there.
 
@@ -52,6 +52,7 @@ This sends a harmless log and matching trace without model calls. Query Loki for
 | [Web experience](https://honestcushion71.grafana.net/d/phaseo-web) | Web API failures, captured server errors and a link to browser monitoring |
 | [Jobs and settlement](https://honestcushion71.grafana.net/d/phaseo-jobs) | Handler outcomes and operational failure hooks |
 | [Telemetry health](https://honestcushion71.grafana.net/d/phaseo-telemetry) | Heartbeats, persistence failures and truncated attempt detail |
+| [Free tier](https://honestcushion71.grafana.net/d/phaseo-free-tier) | Permanent Free allowances, reported billable usage, ingestion pace and missing measurements |
 
 Start with **Overview**, **production**, and **Last 1 hour**. Star this dashboard so it is easy to find again.
 
@@ -60,7 +61,9 @@ Start with **Overview**, **production**, and **Last 1 hour**. Star this dashboar
 - Read the top cards first: scheduler telemetry arriving, gateway requests/failures, web API requests/5xx, and failed jobs. The heartbeat uses the five minutes before the selected range ends; other cards count received events across the whole selected range. Click a card to investigate its service with the same environment and incident time.
 - Compare the traffic and failure charts. Each point counts the preceding query interval, with a five-minute minimum. The interval grows on longer time ranges so short spikes between points remain counted. Compare points within the same range; a larger interval naturally contains more events. Gateway and web API traffic are separate populations. The latency charts show p95: 95% of received timings were at or below that duration. Small samples make percentiles unstable.
 - Use the breakdowns to find affected outcomes, HTTP statuses, route templates and providers. A 4xx is a client rejection, and a failed provider attempt can be recovered by fallback. Neither automatically means an outage.
-- Open **Recent actionable events**, expand a line and inspect its service, route, job, outcome and request/trace IDs. The gateway dashboard accepts a request ID. For a retained trace, select **Explore**, choose the Tempo datasource and search its `trace_id`. Five-percent sampling means most logs have no stored trace. Browser diagnostics also depend on session sampling and consent.
+- Open **Recent actionable events**, expand a line and inspect its service, route, job, outcome and request/trace IDs. The gateway dashboard accepts a request ID. For a retained trace, select **Explore**, choose the Tempo datasource and search its `trace_id`. Sampling, privacy settings and delivery failures can leave a log without a retained trace. Browser diagnostics also depend on session sampling and consent.
+
+The Free tier view uses organization-wide billing metrics across environments and stacks. Its fixed budgets deliberately ignore larger trial allowances. The 31-day pace is an estimate from available rate samples in the preceding 24 hours, not month-to-date ingestion or a guarantee about future traffic. Missing measurements stay unavailable. Yellow at 80% and red at 100% are dashboard thresholds only; they neither cap exporters nor send notifications. Check this view before and after raising sampling and keep the account on Free. Private source maps and external uptime checks require separate setup.
 
 Zero failures describes received events; it does not establish uptime. Missing heartbeat telemetry can mean cron or export trouble. Empty latency or provider charts mean no matching events in that range. Use an external check or test the affected page/endpoint directly to establish availability. Compare incident timing with [recent deployments](https://github.com/phaseoteam/Phaseo/actions/workflows/ci.yml); after a fix or rollback, verify the affected behavior and the error trend.
 

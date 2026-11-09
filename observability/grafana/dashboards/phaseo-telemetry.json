@@ -45,6 +45,11 @@
       "includeVars": true
     },
     {
+      "title": "Free tier",
+      "type": "link",
+      "url": "/d/phaseo-free-tier"
+    },
+    {
       "title": "Explore",
       "type": "link",
       "url": "/explore"

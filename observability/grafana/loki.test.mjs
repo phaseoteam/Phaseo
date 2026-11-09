@@ -35,6 +35,7 @@ test('dashboard queries run against OTLP fixtures and alerts distinguish failure
   const percentiles = { 'Gateway p95 duration': 190.5, 'Web API p95 headers': 39, 'Streaming p95 time to first token': 38.1, 'Provider p95 first token': 19.05 };
   const counts = { 'Scheduler telemetry · last 5m': 1, 'Gateway requests': 20, 'Gateway failures': 2, 'Web API requests': 4, 'Web API 5xx': 1, 'Job failures': 1 };
   for (const dashboard of dashboards()) for (const panel of dashboard.panels) for (const target of panel.targets ?? []) {
+    if (panel.datasource.type !== 'loki') continue;
     const expression = target.expr.replaceAll('$__auto', '5m').replaceAll('$__range', '1h').replaceAll('$environment', 'staging').replace(/\$\{(?:request|route|provider|model|job):regex\}/g, '');
     const result = await query(expression, panel.type === 'logs' || target.maxLines);
     if (panel.title in counts) {

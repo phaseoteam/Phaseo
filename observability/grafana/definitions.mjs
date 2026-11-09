@@ -1,5 +1,6 @@
 // Canonical dashboard/query definitions. Run build.mjs to refresh importable JSON.
 import { addDiagnostics } from './diagnostics.mjs';
+import { freeTierDashboard } from './free-tier.mjs';
 const loki = { type: 'loki', uid: '${loki}' };
 const window = '$__auto';
 const env = '$environment';
@@ -48,6 +49,7 @@ function dashboard(uid, title, description, panels) {
     tags: ['phaseo', 'observability'], timezone: 'browser', refresh: '1m', time: { from: 'now-6h', to: 'now' },
     links: [
       ...['overview', 'gateway', 'web', 'jobs', 'telemetry'].filter(name => `phaseo-${name}` !== uid).map(name => ({ title: name[0].toUpperCase() + name.slice(1), type: 'link', url: `/d/phaseo-${name}?var-environment=$environment`, keepTime: true, includeVars: true })),
+      { title: 'Free tier', type: 'link', url: '/d/phaseo-free-tier' },
       { title: 'Explore', type: 'link', url: '/explore' },
       { title: 'Frontend Observability', type: 'link', url: '/a/grafana-kowalski-app' },
       { title: 'Alerts', type: 'link', url: '/alerting/list' },
@@ -131,7 +133,7 @@ export function dashboards() {
       panel('Recent heartbeats', logs('phaseo-jobs', 'job.heartbeat'), { type: 'logs' }),
       panel('Persistence errors', logs(gateway, 'telemetry.delivery'), { type: 'logs' }),
     ]),
-  ], logs);
+  ], logs).concat(freeTierDashboard());
 }
 
 export function alertRules({ lokiUid, environment = 'production', folderUid = 'phaseo-observability', enabled = false }) {
