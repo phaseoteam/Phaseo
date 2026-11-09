@@ -1,4 +1,5 @@
-import { ArrowUpRight, ChevronDown, FastForward, FolderGit2, GitBranch, MessageSquare, MessagesSquare, Square } from "lucide-react";
+import { ActionIcon } from "../../components/ActionIcon";
+import { ChevronDown, FastForward, FolderGit2, GitBranch, MessageSquare, Square } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
 import { autopilot, autopilotFits, lastRun, linkedItem, nextActions, stageAgent } from "../../../shared/factory/actions";
 import { matchingRule } from "../../../shared/factory/intake";
@@ -264,7 +265,7 @@ export function WorkItemView({ item, snapshot, route }: { item: WorkItem; snapsh
 			<AgentPicker snapshot={snapshot} value={item.assigneeId} allowNone effort={{ value: item.effort, onChange: (effort) => void factory().setEffort(item.id, effort).catch((cause: unknown) => setError(errorText(cause))) }} onChange={(agentId) => void factory().assign(item.id, agentId)} />
 		</span>
 		<Tip label={snapshot.threads[item.id] ? "Open this item's thread in Code" : "Start this item's thread in Code, in its worktree"}>
-			<Button variant="outline" size={size} disabled={thread.busy} onClick={() => void thread.open(item.id)}><MessagesSquare className="size-3.5" />{thread.busy ? "Opening…" : "Open thread"}</Button>
+			<Button variant="outline" size={size} disabled={thread.busy} onClick={() => void thread.open(item.id)}><ActionIcon name="thread" className="size-3.5" />{thread.busy ? "Opening…" : "Open thread"}</Button>
 		</Tip>
 		<GithubMenu item={item} />
 		<div className="flex">
@@ -365,7 +366,7 @@ export function WorkItemView({ item, snapshot, route }: { item: WorkItem; snapsh
 				</FactoryLink>}
 				{risk && <Tip label={risk.why ?? "Review's rating"}><span className={cn("rounded-[4px] border px-1.5 py-px text-2xs font-medium", risk.level === "high" ? "border-destructive/40 text-destructive" : risk.level === "medium" ? "border-warning/40 text-warning" : "text-success")}>{RISK_LABEL[risk.level]}</span></Tip>}
 				{item.labels.map((label) => <LabelChip key={label} name={label} color={item.labelColors?.[label]} />)}
-				<button type="button" onClick={() => openExternal(item.url)} className="ml-auto flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-sm hover:bg-accent/60 hover:text-foreground">Open on GitHub<ArrowUpRight className="size-3.5" /></button>
+				<button type="button" onClick={() => openExternal(item.url)} className="ml-auto flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-sm hover:bg-accent/60 hover:text-foreground">Open on GitHub<ActionIcon name="open" className="size-3.5" /></button>
 			</div>
 
 			{error && <p className="mt-4 border-l-2 border-destructive pl-3 text-sm text-destructive">{error}</p>}
@@ -394,7 +395,7 @@ export function WorkItemView({ item, snapshot, route }: { item: WorkItem; snapsh
 							<h2 className="text-sm font-semibold">{stageLabel(liveRun.stage)} is running</h2>
 							<span className="text-xs text-muted-foreground">{liveAgent ? agentName(liveAgent) : liveRun.agentId}</span>
 							<span className="flex-1" />
-							{liveRun.threadId && <Button variant="ghost" size="xs" onClick={() => nav.openThread(liveRun.threadId!)}>Open thread</Button>}
+							{liveRun.threadId && <Button variant="ghost" size="xs" onClick={() => nav.openThread(liveRun.threadId!)}><ActionIcon name="thread" className="size-3" />Open thread</Button>}
 							<Button variant="ghost" size="xs" onClick={() => showRun(liveRun)}>Full log</Button>
 						</div>
 						<div className="border-l-2 border-info/50 py-1">
@@ -460,7 +461,7 @@ export function WorkItemView({ item, snapshot, route }: { item: WorkItem; snapsh
 						<h2 className="text-sm font-semibold">{stageLabel(openRun.stage)} log</h2>
 						{openRun.branch && <span className="font-mono text-2xs text-muted-foreground">{openRun.branch}</span>}
 						<span className="flex-1" />
-						{openRun.threadId && <Button variant="ghost" size="xs" onClick={() => nav.openThread(openRun.threadId!)}><MessagesSquare className="size-3" />Open thread</Button>}
+						{openRun.threadId && <Button variant="ghost" size="xs" onClick={() => nav.openThread(openRun.threadId!)}><ActionIcon name="thread" className="size-3" />Open thread</Button>}
 						{openRun.status === "running" && <Button variant="outline" size="xs" onClick={() => void factory().cancelRun(openRun.id)}>Stop run</Button>}
 					</div>
 					<div className="rounded-md border bg-muted/30 py-2">

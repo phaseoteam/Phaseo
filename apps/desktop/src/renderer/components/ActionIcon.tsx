@@ -1,4 +1,4 @@
-import { Archive, ArchiveRestore, ArrowDown, ArrowUp, Camera, CloudUpload, Copy, createLucideIcon, Download, ExternalLink, FolderPlus, GitBranch, GitMerge, GitPullRequestArrow, Link2, Mail, Paperclip, Pencil, PenLine, Pin, PinOff, Plus, RefreshCw, Search, Settings, SquareTerminal, type LucideProps } from "lucide-react";
+import { Archive, ArchiveRestore, ArrowDown, ArrowUp, ArrowUpRight, CalendarClock, Camera, ChartLine, Check, CircleCheck, CircleDot, CircleSlash, CloudUpload, Copy, createLucideIcon, Download, ExternalLink, FolderPlus, GitBranch, GitMerge, GitPullRequestArrow, GitPullRequestClosed, GitPullRequestDraft, Inbox, Link2, LogIn, Mail, MessageSquare, MessagesSquare, Paperclip, Pencil, PenLine, Pin, PinOff, Plus, RefreshCw, RotateCcw, Search, Settings, SquareTerminal, TriangleAlert, type LucideProps } from "lucide-react";
 import { cn } from "../lib/utils";
 
 // These installed-library shapes join moving and stationary parts in one path. Split at those joins.
@@ -10,12 +10,12 @@ const Unlink = createLucideIcon("unlink-2", [
 	["path", { d: "M9 17H7A5 5 0 0 1 7 7h2", key: "left" }],
 	["path", { d: "M15 7h2a5 5 0 0 1 0 10h-2", key: "right" }],
 ]);
-const icons = { archive: Archive, restore: ArchiveRestore, branch: GitBranch, camera: Camera, copy: Copy, down: ArrowDown, download: Download, edit: PenLine, external: ExternalLink, folder: OpenFolder, addFolder: FolderPlus, link: Link2, mail: Mail, merge: GitMerge, paperclip: Paperclip, pencil: Pencil, pin: Pin, unpin: PinOff, plus: Plus, publish: CloudUpload, pullRequest: GitPullRequestArrow, refresh: RefreshCw, search: Search, settings: Settings, terminal: SquareTerminal, unlink: Unlink, up: ArrowUp };
+const icons = { approve: Check, archive: Archive, restore: ArchiveRestore, branch: GitBranch, camera: Camera, comment: MessageSquare, complete: CircleCheck, copy: Copy, closePullRequest: GitPullRequestClosed, down: ArrowDown, download: Download, draftPullRequest: GitPullRequestDraft, edit: PenLine, external: ExternalLink, folder: OpenFolder, addFolder: FolderPlus, inbox: Inbox, issue: CircleDot, link: Link2, mail: Mail, merge: GitMerge, notPlanned: CircleSlash, open: ArrowUpRight, paperclip: Paperclip, pencil: Pencil, pin: Pin, unpin: PinOff, plus: Plus, publish: CloudUpload, pullRequest: GitPullRequestArrow, refresh: RefreshCw, requestChanges: TriangleAlert, retry: RotateCcw, schedule: CalendarClock, search: Search, settings: Settings, signIn: LogIn, terminal: SquareTerminal, thread: MessagesSquare, unlink: Unlink, up: ArrowUp, usage: ChartLine };
 export type ActionIconName = keyof typeof icons;
 
 // Normalised lengths let a stroke trace independently of the icon's rendered size.
 function normaliseStrokes(svg: SVGSVGElement | null) {
-	svg?.querySelectorAll("path, circle, rect, line").forEach(part => part.setAttribute("pathLength", "1"));
+	svg?.querySelectorAll("path, circle, rect, line, polyline").forEach(part => part.setAttribute("pathLength", "1"));
 }
 
 /** Opt-in gestures for familiar actions; labels, status glyphs and window controls stay still. */

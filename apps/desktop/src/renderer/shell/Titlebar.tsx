@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ChatDetails } from "./ChatDetails";
-import { ArrowLeft, ArrowRight, Check, ChevronDown, CircleArrowUp, Code2, Ellipsis, Factory, MessageSquare, MessagesSquare, Minus, PanelLeft, PanelRight, Square, X, Copy as Restore } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronDown, CircleArrowUp, Code2, Ellipsis, Factory, MessageSquare, Minus, PanelLeft, PanelRight, Square, X, Copy as Restore } from "lucide-react";
 import { ActionIcon } from "../components/ActionIcon";
 import type { DesktopAppAction, DesktopWindowState } from "../../shared/desktop";
 import { checkForUpdates, useUpdateState } from "../lib/updateState";
@@ -34,7 +34,7 @@ function ModeSwitch() {
 			<DropdownMenu>
 				<DropdownMenuTrigger render={<button type="button" aria-label="Code views" title="Threads or Factory" className={cn("grid h-6 w-5 place-items-center rounded-[5px] text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring/40 data-popup-open:text-foreground", mode === "code" && "text-foreground/70")} />}><ChevronDown className="size-3" /></DropdownMenuTrigger>
 				<DropdownMenuContent align="start" className="w-64">
-					{view("threads", "Threads", <MessagesSquare />, "Code chats in your projects")}
+					{view("threads", "Threads", <ActionIcon name="thread" />, "Code chats in your projects")}
 					{view("factory", "Factory", <Factory />, "Issues and pull requests, stage by stage")}
 				</DropdownMenuContent>
 			</DropdownMenu>

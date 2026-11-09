@@ -1,4 +1,5 @@
-import { ArrowUpRight, Check, CircleCheck, CircleDot, CircleSlash, Eye, FileCode2, GitCommitHorizontal, GitMerge, GitPullRequestDraft, Link2, MessageSquare, Pencil, Tag, TriangleAlert, Upload, UserRound, type LucideIcon } from "lucide-react";
+import { ActionIcon } from "../../components/ActionIcon";
+import { Check, CircleCheck, CircleDot, CircleSlash, Eye, FileCode2, GitCommitHorizontal, GitMerge, GitPullRequestDraft, Link2, MessageSquare, Pencil, Tag, TriangleAlert, Upload, UserRound, type LucideIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { FactorySnapshot, IssueComment, TimelineComment, TimelineEntry, TimelineEventIcon, WorkItem } from "../../../shared/factory/types";
 import { errorText } from "../components/AddRepo";
@@ -82,7 +83,7 @@ export function CommentEntry({ comment, item, inline, compact }: { comment: Time
 			<span className="flex-1" />
 			{id && comment.canEdit && editing === null && <button type="button" onClick={() => setEditing(comment.body)} className="text-muted-foreground hover:text-foreground">Edit</button>}
 			{id && comment.canDelete && editing === null && <button type="button" disabled={busy} onClick={() => (asking ? void run({ kind: "delete-comment", commentId: id, inline }) : setAsking(true))} className={cn("hover:text-foreground", asking ? "font-medium text-destructive" : "text-muted-foreground")}>{busy ? "Deleting…" : asking ? "Delete it? Click again" : "Delete"}</button>}
-			{comment.url && <button type="button" onClick={() => openExternal(comment.url!)} className="flex items-center gap-1 text-muted-foreground hover:text-foreground">On GitHub<ArrowUpRight className="size-3" /></button>}
+			{comment.url && <button type="button" onClick={() => openExternal(comment.url!)} className="flex items-center gap-1 text-muted-foreground hover:text-foreground">On GitHub<ActionIcon name="open" className="size-3" /></button>}
 		</div>
 		{editing === null
 			? <Markdown source={comment.body.trim() || "_Empty comment._"} repo={item.repo} />
@@ -114,7 +115,7 @@ function ReviewEntry({ review, item }: { review: Extract<TimelineEntry, { kind: 
 			<span><span className="font-medium">{review.author}</span> <span className="text-muted-foreground">{look.text}</span></span>
 			<span className="text-muted-foreground">{since(review.at)}</span>
 			<span className="flex-1" />
-			{review.url && <button type="button" onClick={() => openExternal(review.url!)} className="flex items-center gap-1 text-muted-foreground hover:text-foreground">On GitHub<ArrowUpRight className="size-3" /></button>}
+			{review.url && <button type="button" onClick={() => openExternal(review.url!)} className="flex items-center gap-1 text-muted-foreground hover:text-foreground">On GitHub<ActionIcon name="open" className="size-3" /></button>}
 		</div>
 		{review.body.trim() && <div className="pl-7"><Markdown source={review.body} repo={item.repo} /></div>}
 		{review.comments.length > 0 && <div className="mt-3 ml-7 divide-y rounded-md border">

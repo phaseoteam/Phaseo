@@ -1,4 +1,5 @@
-import { ArrowUpRight, Check, CircleDot, ImagePlus, ListChecks, Search, X } from "lucide-react";
+import { ActionIcon } from "../../components/ActionIcon";
+import { Check, CircleDot, ImagePlus, ListChecks, Search, X } from "lucide-react";
 import { useRef, useState, type ClipboardEvent, type DragEvent, type KeyboardEvent } from "react";
 import { IMAGE_TYPES, imageProblem } from "../../../shared/factory/attachments";
 import { agentForStage } from "../../../shared/factory/intake";
@@ -106,7 +107,7 @@ export function NewIssueView({ snapshot }: { snapshot: FactorySnapshot }) {
 
 			<div className="mt-6 flex items-center gap-3">
 				<Button disabled={!title.trim() || busy || !repo} onClick={submit}>
-					{busy ? "Opening the issue…" : mode === "triage" ? "Open issue and triage it" : "Open issue"}<ArrowUpRight className="size-3.5 opacity-70" />
+					{busy ? "Opening the issue…" : mode === "triage" ? "Open issue and triage it" : "Open issue"}<ActionIcon name="open" className="size-3.5 opacity-70" />
 				</Button>
 				<span className="flex items-center gap-1.5 text-xs text-muted-foreground"><Kbd>Ctrl Enter</Kbd>Opens it on GitHub as you, through gh</span>
 				<span className="flex-1" />

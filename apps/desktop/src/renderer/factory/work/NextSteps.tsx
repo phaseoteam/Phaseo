@@ -1,5 +1,5 @@
 import { ActionIcon } from "../../components/ActionIcon";
-import { ArrowUpRight } from "lucide-react";
+
 import { useEffect, useState, type KeyboardEvent } from "react";
 import { lastRun, linkedItem, nextActions } from "../../../shared/factory/actions";
 import { currentStage, stageLabel } from "../../../shared/factory/stages";
@@ -38,7 +38,7 @@ export function ActionButton({ item, action, onError, size = "sm" }: { item: Wor
 		setBusy(true);
 		void runAction(item, action, (target) => go({ item: target })).catch((cause: unknown) => onError(errorText(cause))).finally(() => setBusy(false));
 	}}>
-		{asking ? `${action.confirm} Click again` : action.label}{!asking && (action.external || action.id === "open-on-github") && <ArrowUpRight className="size-3.5 opacity-70" />}
+		{asking ? `${action.confirm} Click again` : action.label}{!asking && (action.external || action.id === "open-on-github") && <ActionIcon name="open" className="size-3.5 opacity-70" />}
 	</Button>;
 	return action.detail ? <Tip label={action.external ? `${action.detail}. Changes GitHub.` : action.detail}>{button}</Tip> : button;
 }

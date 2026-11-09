@@ -1,4 +1,5 @@
-import { ArrowRight, ChevronRight, MessagesSquare, Paperclip, Play, RotateCcw, Square } from "lucide-react";
+import { ActionIcon } from "../../components/ActionIcon";
+import { ArrowRight, ChevronRight, Paperclip, Play, Square } from "lucide-react";
 import type { CSSProperties } from "react";
 import { lastRun, linkedItem } from "../../../shared/factory/actions";
 import { agentForStage } from "../../../shared/factory/intake";
@@ -87,16 +88,16 @@ export function Pipeline({ item, snapshot, onRun, onCancel, onOpenRun }: { item:
 				<div className="flex items-center gap-2">
 					<AgentMark agent={agent} className="size-4" />
 					<span className="min-w-0 flex-1 truncate text-xs text-muted-foreground">{agent?.label ?? "Unassigned"}</span>
-					{run?.threadId && <Tip label="Open this stage's thread in Code"><Button variant="ghost" size="icon-xs" aria-label={`Open ${stage.label} thread`} onClick={() => openThread(run.threadId!)}><MessagesSquare /></Button></Tip>}
+					{run?.threadId && <Tip label="Open this stage's thread in Code"><Button variant="ghost" size="icon-xs" aria-label={`Open ${stage.label} thread`} onClick={() => openThread(run.threadId!)}><ActionIcon name="thread" /></Button></Tip>}
 					{state.status === "running" && run
 						? <Button variant="outline" size="xs" onClick={() => onCancel(run)}><Square className="size-3" />Stop</Button>
 						: run && state.status !== "idle" && state.status !== "queued"
 							? <>
 								<Button variant="ghost" size="xs" onClick={() => onOpenRun(run)}>Log</Button>
-								<Button variant="ghost" size="icon-xs" aria-label={`Run ${stage.label} again`} onClick={() => onRun(stage.id)}><RotateCcw /></Button>
+								<Button variant="ghost" size="icon-xs" aria-label={`Run ${stage.label} again`} onClick={() => onRun(stage.id)}><ActionIcon name="retry" /></Button>
 							</>
 							: state.status === "skipped" ? null
-								: state.status !== "idle" && state.status !== "queued" ? <Button variant="ghost" size="icon-xs" aria-label={`Run ${stage.label} again`} onClick={() => onRun(stage.id)}><RotateCcw /></Button>
+								: state.status !== "idle" && state.status !== "queued" ? <Button variant="ghost" size="icon-xs" aria-label={`Run ${stage.label} again`} onClick={() => onRun(stage.id)}><ActionIcon name="retry" /></Button>
 								: <Button variant={blocked ? "ghost" : "outline"} size="xs" disabled={!agent} onClick={() => onRun(stage.id)}><Play className="size-3" />Run</Button>}
 				</div>
 			</div>;

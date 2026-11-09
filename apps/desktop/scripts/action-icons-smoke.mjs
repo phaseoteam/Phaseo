@@ -9,8 +9,8 @@ import { build } from "vite";
 const scratch = mkdtempSync(path.join(tmpdir(), "phaseo-action-icons-"));
 app.setPath("userData", path.join(scratch, "profile"));
 const root = path.resolve(import.meta.dirname, "..");
-const names = ["pin", "unpin", "archive", "restore", "edit", "pencil", "link", "unlink", "camera", "up", "down", "publish", "folder", "addFolder", "mail"];
-const fixedParts = { archive: [1], restore: [1], camera: [0], publish: [1], folder: [0], addFolder: [2], mail: [1] };
+const names = ["pin", "unpin", "archive", "restore", "edit", "pencil", "link", "unlink", "camera", "up", "down", "publish", "folder", "addFolder", "mail", "signIn", "schedule", "inbox", "thread", "usage", "issue", "complete", "notPlanned", "draftPullRequest", "closePullRequest", "comment", "open", "approve", "requestChanges", "retry"];
+const fixedParts = { archive: [1], restore: [1], camera: [0], publish: [1], folder: [0], addFolder: [2], mail: [1], signIn: [2], schedule: [1, 2, 3, 4, 5], inbox: [1], thread: [0], usage: [0], issue: [0], complete: [0], notPlanned: [0], draftPullRequest: [0, 1, 4], closePullRequest: [0, 1, 4, 5], requestChanges: [0, 2] };
 const importPath = relative => JSON.stringify(path.join(root, relative).replaceAll("\\", "/"));
 writeFileSync(path.join(scratch, "entry.tsx"), `
 import React from ${importPath("node_modules/react/index.js")};

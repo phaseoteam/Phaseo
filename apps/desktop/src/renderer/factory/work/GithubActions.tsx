@@ -1,4 +1,4 @@
-import { ArrowUpRight, Check, ChevronDown, ChevronRight, CircleCheck, CircleDot, CircleSlash, CircleX, GitMerge, GitPullRequestClosed, GitPullRequestDraft, LoaderCircle, MessageSquare, RotateCcw, TriangleAlert, X } from "lucide-react";
+import { Check, ChevronDown, ChevronRight, CircleCheck, CircleSlash, CircleX, GitMerge, LoaderCircle, TriangleAlert, X } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent, type ReactNode } from "react";
 import { mentionAt } from "../../../shared/factory/mentions";
 import type { CheckRun, GithubChange, Mentionable, MergeMethod, MergeState, ReviewVerdict, WorkItem } from "../../../shared/factory/types";
@@ -46,19 +46,19 @@ export function GithubMenu({ item }: { item: WorkItem }) {
 	const { busy, error, change } = useChange(item);
 	const pull = item.kind === "pull";
 	const entries: { key: string; icon: ReactNode; label: string; detail: string; change: GithubChange }[] = [];
-	if (pull && item.state === "draft") entries.push({ key: "ready", icon: <CircleDot className="size-3.5" />, label: "Mark ready for review", detail: "Takes it out of draft", change: { kind: "draft", draft: false } });
-	if (pull && item.state === "open") entries.push({ key: "draft", icon: <GitPullRequestDraft className="size-3.5" />, label: "Convert to draft", detail: "Stops asking for reviews", change: { kind: "draft", draft: true } });
+	if (pull && item.state === "draft") entries.push({ key: "ready", icon: <ActionIcon name="issue" className="size-3.5" />, label: "Mark ready for review", detail: "Takes it out of draft", change: { kind: "draft", draft: false } });
+	if (pull && item.state === "open") entries.push({ key: "draft", icon: <ActionIcon name="draftPullRequest" className="size-3.5" />, label: "Convert to draft", detail: "Stops asking for reviews", change: { kind: "draft", draft: true } });
 	if (pull && isOpen(item)) entries.push({ key: "update", icon: <ActionIcon name="merge" className="size-3.5" />, label: "Update branch", detail: "Merges the latest base branch in, on GitHub", change: { kind: "update-branch" } });
-	if (pull && isOpen(item)) entries.push({ key: "close", icon: <GitPullRequestClosed className="size-3.5" />, label: "Close pull request", detail: "Without merging; it can be reopened", change: { kind: "close" } });
+	if (pull && isOpen(item)) entries.push({ key: "close", icon: <ActionIcon name="closePullRequest" className="size-3.5" />, label: "Close pull request", detail: "Without merging; it can be reopened", change: { kind: "close" } });
 	if (!pull && item.state === "open") {
-		entries.push({ key: "completed", icon: <CircleCheck className="size-3.5" />, label: "Close as completed", detail: "Done, fixed or answered", change: { kind: "close", reason: "completed" } });
-		entries.push({ key: "not-planned", icon: <CircleSlash className="size-3.5" />, label: "Close as not planned", detail: "Won't fix, can't reproduce or stale", change: { kind: "close", reason: "not planned" } });
+		entries.push({ key: "completed", icon: <ActionIcon name="complete" className="size-3.5" />, label: "Close as completed", detail: "Done, fixed or answered", change: { kind: "close", reason: "completed" } });
+		entries.push({ key: "not-planned", icon: <ActionIcon name="notPlanned" className="size-3.5" />, label: "Close as not planned", detail: "Won't fix, can't reproduce or stale", change: { kind: "close", reason: "not planned" } });
 	}
-	if (item.state === "closed") entries.push({ key: "reopen", icon: <CircleDot className="size-3.5" />, label: pull ? "Reopen pull request" : "Reopen issue", detail: "Puts it back in the list", change: { kind: "reopen" } });
+	if (item.state === "closed") entries.push({ key: "reopen", icon: <ActionIcon name="issue" className="size-3.5" />, label: pull ? "Reopen pull request" : "Reopen issue", detail: "Puts it back in the list", change: { kind: "reopen" } });
 	if (!entries.length) return null;
 	return <div className="flex flex-col items-end">
 		<DropdownMenu>
-			<DropdownMenuTrigger render={<Button variant="outline" disabled={!!busy}>{busy ? "Changing…" : "GitHub"}<ChevronDown className="size-3.5" /></Button>} />
+			<DropdownMenuTrigger render={<Button variant="outline" disabled={!!busy}><ActionIcon name={pull ? "pullRequest" : "issue"} className="size-3.5" />{busy ? "Changing…" : "GitHub"}<ChevronDown className="size-3.5" /></Button>} />
 			<DropdownMenuContent align="end" className="w-64">
 				<DropdownMenuGroup>
 					<DropdownMenuLabel>On GitHub, as you</DropdownMenuLabel>
@@ -242,7 +242,7 @@ function CheckRow({ check, item }: { check: CheckRun; item: WorkItem }) {
 			<span className="flex-1" />
 			{check.seconds !== undefined && <span className="shrink-0 text-xs text-muted-foreground tabular-nums">{check.seconds < 60 ? `${check.seconds}s` : `${Math.floor(check.seconds / 60)}m ${check.seconds % 60}s`}</span>}
 			{check.state === "fail" && actions && <button type="button" onClick={() => void why()} className="shrink-0 text-xs text-muted-foreground hover:text-foreground">{log.open ? "Hide log" : "Why it failed"}</button>}
-			{check.link && <button type="button" onClick={() => openExternal(check.link!)} className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground">Details<ArrowUpRight className="size-3" /></button>}
+			{check.link && <button type="button" onClick={() => openExternal(check.link!)} className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground hover:text-foreground">Details<ActionIcon name="open" className="size-3" /></button>}
 		</div>
 		{log.open && <pre ref={(node) => {
 			// The error is at the end of a log: open there.
@@ -296,7 +296,7 @@ export function ChecksBox({ item }: { item: WorkItem }) {
 				<IconSwap show={shown ? "chevronDown" : "chevronRight"}>{{ chevronDown: <ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />, chevronRight: <ChevronRight className="size-3.5 shrink-0 text-muted-foreground" /> }}</IconSwap>
 			</button>
 			{rerunnable.length > 0 && <Button variant="outline" size="sm" disabled={!!busy} onClick={() => void change("rerun", { kind: "rerun-checks", links: rerunnable }).then((ok) => ok && setTick((count) => count + 1))}>
-				<RotateCcw className="size-3.5" />{busy === "rerun" ? "Starting…" : failed.length === 1 ? "Re-run the failed check" : "Re-run failed checks"}
+				<ActionIcon name="retry" className="size-3.5" />{busy === "rerun" ? "Starting…" : failed.length === 1 ? "Re-run the failed check" : "Re-run failed checks"}
 			</Button>}
 		</div>
 		{error && <p className="border-t px-4 py-2 text-xs text-destructive">{error}</p>}
@@ -438,16 +438,16 @@ export function CommentBox({ item, login, people = [] }: { item: WorkItem; login
 					<DropdownMenuGroup>
 						<DropdownMenuLabel>Review, with the comment above</DropdownMenuLabel>
 						<DropdownMenuItem disabled={own} onClick={() => review("approve")}>
-							<Check className="size-3.5 text-success" />
+							<ActionIcon name="approve" className="size-3.5 text-success" />
 							<span className="min-w-0 flex-1"><span className="block">Approve</span><span className="block text-2xs text-muted-foreground">{own ? "GitHub doesn't let you approve your own" : "The comment is optional"}</span></span>
 						</DropdownMenuItem>
 						<DropdownMenuItem disabled={!body || own} onClick={() => review("request-changes")}>
-							<TriangleAlert className="size-3.5 text-warning" />
+							<ActionIcon name="requestChanges" className="size-3.5 text-warning" />
 							<span className="min-w-0 flex-1"><span className="block">Request changes</span><span className="block text-2xs text-muted-foreground">{own ? "Not on your own pull request" : "Say what needs to change above"}</span></span>
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem disabled={!body} onClick={() => review("comment")}>
-							<MessageSquare className="size-3.5" />
+							<ActionIcon name="comment" className="size-3.5" />
 							<span className="min-w-0 flex-1"><span className="block">Comment as a review</span><span className="block text-2xs text-muted-foreground">Neither approves nor blocks</span></span>
 						</DropdownMenuItem>
 					</DropdownMenuGroup>
@@ -455,24 +455,24 @@ export function CommentBox({ item, login, people = [] }: { item: WorkItem; login
 			</DropdownMenu>}
 			{isOpen(item) && (pull
 				? <Button variant="outline" size="sm" disabled={!!busy} onClick={() => void send("close", { kind: "close", body })}>
-					<GitPullRequestClosed className="size-3.5" />{busy === "close" ? "Closing…" : body ? "Close with comment" : "Close pull request"}
+					<ActionIcon name="closePullRequest" className="size-3.5" />{busy === "close" ? "Closing…" : body ? "Close with comment" : "Close pull request"}
 				</Button>
 				: <div className="flex">
 					<Button variant="outline" size="sm" disabled={!!busy} className="rounded-r-none" onClick={() => void send("close", { kind: "close", reason: "completed", body })}>
-						<CircleCheck className="size-3.5" />{busy === "close" ? "Closing…" : body ? "Close with comment" : "Close issue"}
+						<ActionIcon name="complete" className="size-3.5" />{busy === "close" ? "Closing…" : body ? "Close with comment" : "Close issue"}
 					</Button>
 					<DropdownMenu>
 						<DropdownMenuTrigger render={<Button variant="outline" size="sm" disabled={!!busy} aria-label="Close another way" className="rounded-l-none border-l-0 px-1.5"><ChevronDown className="size-3.5" /></Button>} />
 						<DropdownMenuContent align="end" className="w-60">
 							<DropdownMenuGroup>
-								<DropdownMenuItem onClick={() => void send("close", { kind: "close", reason: "completed", body })}><CircleCheck className="size-3.5" />Close as completed</DropdownMenuItem>
-								<DropdownMenuItem onClick={() => void send("close", { kind: "close", reason: "not planned", body })}><CircleSlash className="size-3.5" />Close as not planned</DropdownMenuItem>
+								<DropdownMenuItem onClick={() => void send("close", { kind: "close", reason: "completed", body })}><ActionIcon name="complete" className="size-3.5" />Close as completed</DropdownMenuItem>
+								<DropdownMenuItem onClick={() => void send("close", { kind: "close", reason: "not planned", body })}><ActionIcon name="notPlanned" className="size-3.5" />Close as not planned</DropdownMenuItem>
 							</DropdownMenuGroup>
 						</DropdownMenuContent>
 					</DropdownMenu>
 				</div>)}
 			{item.state === "closed" && <Button variant="outline" size="sm" disabled={!!busy} onClick={() => void send("reopen", { kind: "reopen", body })}>
-				<CircleDot className="size-3.5" />{busy === "reopen" ? "Reopening…" : body ? "Reopen with comment" : pull ? "Reopen pull request" : "Reopen issue"}
+				<ActionIcon name="issue" className="size-3.5" />{busy === "reopen" ? "Reopening…" : body ? "Reopen with comment" : pull ? "Reopen pull request" : "Reopen issue"}
 			</Button>}
 			<Button size="sm" disabled={!sendable || !!busy} onClick={() => void send("comment", { kind: "comment", body })}>{busy === "comment" ? "Posting…" : "Comment"}</Button>
 		</div>

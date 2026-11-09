@@ -26,7 +26,10 @@ app.whenReady().then(async () => { try {
 	const commands = new EventEmitter();
 	const calls = [];
 	let pullWrites = 0;
+	let factoryWrites = 0, openedItemThreads = 0;
 	const now = new Date().toISOString();
+	const playbook = { instructions: "", briefs: {}, stageAgents: {}, rules: [], requireProof: true, openPullRequest: true, postReports: false, askReporter: true };
+	let factoryState = { settings: { repos: [], showRepo: "", independentReview: true, playbooks: { issue: playbook, pull: playbook }, pollMinutes: 5, agentEfforts: {} }, github: { version: null, attach: false }, repos: [], items: [], runs: [], agents: [], notes: {}, threads: {}, loadedAt: Date.now(), demo: false };
 	const pullView = { id: "owned-pull", repository: "owned/fixture", number: 12, title: "Owned pull request", url: "https://example.invalid/pull/12", author: "fixture", draft: false, head: "feature", base: "main", updatedAt: now, createdAt: now, fetchedAt: now, review: "approved", checks: "passing", body: "Owned fixture pull request.", state: "OPEN", additions: 1, deletions: 0, changedFiles: 1, headOid: "a".repeat(40), baseOid: "b".repeat(40), mergeable: "MERGEABLE", mergeState: "CLEAN", authorActor: { login: "fixture" }, labels: [], reviewers: [], reviews: [], checkRuns: [], comments: [], commentCount: 0, commentsTruncated: false, commits: [], commitCount: 0, threads: [], mergeMethods: ["squash"], viewer: { canUpdate: true, canMerge: true, canDeleteBranch: false, canEnableAutoMerge: false, canDisableAutoMerge: false }, autoMergeAllowed: false, headRefExists: true, behind: false };
 	const overview = () => ({ version: 1, projects: [], accounts: [], agents: [], mcpConnections: [], tasks: tasks.map(({ messages, queue, ...task }) => ({ ...task, queueCount: queue.length, approvalsCount: 0, answersCount: 0, steeringReviewCount: 0, attentionKey: "fixture" })) });
 	const mock = (channel, handler) => { ipcMain.removeHandler(channel); ipcMain.handle(channel, handler); };
@@ -43,6 +46,13 @@ app.whenReady().then(async () => { try {
 	mock("workspace:pull-request-stack", () => ({ stack: null, defaultBranch: "main" }));
 	mock("workspace:branch-pull-request", () => ({ branch: "feature", pullRequest: null }));
 	mock("workspace:pull-request-action", () => { pullWrites++; throw Error("Pull request writes are forbidden in this fixture"); });
+	mock("factory:snapshot", () => factoryState);
+	for (const channel of ["item-timeline", "item-comments", "similar-items", "repo-labels", "assignable", "mentions", "local-clones"]) mock(`factory:${channel}`, () => []);
+	mock("factory:item-body", () => "Owned Factory fixture description.");
+	mock("factory:item-checks", () => [{ name: "Owned failed check", state: "fail", link: "https://example.invalid/actions/runs/1" }]);
+	mock("factory:merge-state", () => ({ checking: false, methods: [], blocker: "Owned fixture: no live merge" }));
+	mock("factory:open-thread", () => { openedItemThreads++; return "main"; });
+	for (const channel of ["change-on-github", "start-run", "act", "create-issue", "send-message"]) mock(`factory:${channel}`, () => { factoryWrites++; throw Error("Factory writes are forbidden in this fixture"); });
 	// Browser chrome is exercised without creating a native page or opening a site.
 	mock("desktop:browser", (_event, command) => ({ id: command.id, url: "https://example.invalid", title: "Owned page", loading: false, canGoBack: false, canGoForward: false, devToolsOpen: false, viewport: { mode: "fill" }, zoom: 1, colorScheme: "system", audible: false, muted: false, configured: true }));
 	mock("desktop:browser-download", () => [{ id: "fixture", sourceId: "main", filename: "owned.txt", url: "https://example.invalid/owned.txt", path: "", received: 1, total: 1, status: "completed", resumable: false, finished: true }]);
@@ -89,6 +99,15 @@ app.whenReady().then(async () => { try {
 		assert.equal(calls.length - first, count);
 		for (const call of calls.slice(first)) assert.equal(call.type, type);
 	}
+	async function configureFactory(kind = "issue", state = "open", page = renderer) {
+		const stages = Object.fromEntries(["triage", "reproduce", "fix", "review", "verify"].map(id => [id, { status: "idle" }]));
+		const item = { id: "owned/fixture#1", source: "github", repo: "owned/fixture", number: 1, kind, state, title: `Owned Factory ${kind}`, body: "", author: { login: "fixture" }, labels: [], url: "https://example.invalid/fixture/1", createdAt: Date.now(), updatedAt: Date.now(), comments: 0, priority: "normal", stages };
+		factoryState = { ...factoryState, items: [item], loadedAt: Date.now() };
+		await run(`localStorage.setItem('phaseo.desktop.workspaceMode','"code"');localStorage.setItem('phaseo.desktop.codeView','"factory"');localStorage.setItem('phaseo.desktop.factoryRoute',${JSON.stringify(JSON.stringify({ item: item.id }))});localStorage.removeItem('phaseo.desktop.selectedTask');localStorage.removeItem('phaseo.desktop.rightPanel');true`);
+		await owner.loadFile(page);
+		await ready(`Array.from(document.querySelectorAll('main button')).some(button=>button.textContent.includes('Open thread'))`);
+		await ready(`Array.from(document.querySelectorAll('main button')).some(button=>button.textContent.includes('GitHub'))`);
+	}
 	const baseline = process.argv.find(value => value.startsWith("--baseline-renderer="))?.slice(20);
 	if (baseline) {
 		await configure(); await owner.loadFile(baseline);
@@ -110,6 +129,12 @@ app.whenReady().then(async () => { try {
 		await run("window.dispatchEvent(new CustomEvent('phaseo:open-pull-request',{detail:{number:12}}));true");
 		await ready("!!document.querySelector('[data-pull-request-surface] [data-merge-button]')");
 		await capture("before-git-actions");
+		await configureFactory("issue", "open", baseline);
+		await capture("before-factory");
+		await run("Array.from(document.querySelectorAll('main button')).find(button=>button.textContent.includes('GitHub')).click();true");
+		await ready("!!document.querySelector('[role=menu]')");
+		await run("document.querySelector('[role=menu]').getAnimations().forEach(animation=>animation.finish());true");
+		await capture("before-factory-menu");
 	}
 	// The same visible actions submit the intended command in every composer surface, under either default.
 	for (const surface of ["main", "side", "compare"]) for (const followUp of ["queue", "steer"]) {
@@ -212,7 +237,7 @@ app.whenReady().then(async () => { try {
 	await configure({ status: "completed" });
 	await ready("!!document.querySelector('main button[aria-label=Copy]')");
 	await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
-	for (const name of ["plus", "paperclip", "copy", "search", "settings", "refresh", "pin", "archive", "pencil", "mail", "link", "download", "branch", "terminal", "pullRequest", "external", "camera", "merge"]) {
+	for (const name of ["signIn", "schedule", "inbox", "usage", "plus", "paperclip", "copy", "search", "settings", "refresh", "pin", "archive", "pencil", "mail", "link", "download", "branch", "terminal", "pullRequest", "external", "camera", "merge"]) {
 		console.log("Composer fixture: gesture", name);
 		if (name === "refresh") {
 			await run("document.querySelector('aside button[aria-label=\"Actions for Owned main\"]').click()");
@@ -264,6 +289,7 @@ app.whenReady().then(async () => { try {
 			const frame = { download: 1, terminal: 2, external: 2, archive: 1, camera: 0 }[name];
 			if (frame !== undefined) assert.deepEqual(middle.parts[frame], idle.parts[frame], `${name} moved its tray or frame`);
 			for (const node of ({ pullRequest: [0, 1, 2], branch: [1, 2], merge: [0, 1] }[name] ?? [])) assert.deepEqual(middle.parts[node], idle.parts[node], `${name} moved its fixed node`);
+			for (const node of ({ signIn: [2], schedule: [1, 2, 3, 4, 5], inbox: [1], usage: [0] }[name] ?? [])) assert.deepEqual(middle.parts[node], idle.parts[node], `${name} moved its navigation frame`);
 			gestures[name] = active.animations.map(animation => animation.name);
 			await force(selector, null);
 		}
@@ -299,6 +325,60 @@ app.whenReady().then(async () => { try {
 	await run("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))");
 	assert(await run("(()=>{const form=document.querySelector('main form').getBoundingClientRect();return form.left>=0&&form.right<=innerWidth&&form.bottom<=innerHeight;})()"));
 	await capture("minimum-width");
+	// Factory's real menus and open-thread controls use the shared gestures; no GitHub action is submitted.
+	owner.setSize(1280, 900);
+	for (const [kind, status, names] of [["issue", "open", ["complete", "notPlanned"]], ["issue", "closed", ["issue"]], ["pull", "open", ["draftPullRequest", "closePullRequest", "merge"]], ["pull", "draft", ["issue", "closePullRequest"]]]) {
+		console.log("Composer fixture: Factory actions", kind, status);
+		await configureFactory(kind, status);
+		await run("document.documentElement.dataset.animations='on'");
+		for (const name of ["thread", "open"]) {
+			const selector = `main button:has(> [data-icon-gesture="${name}"])`;
+			for (const pseudo of ["hover", "focus-visible"]) {
+				await force(selector, pseudo);
+				assert(await run(`document.querySelector(${JSON.stringify(selector)}).querySelector('svg').getAnimations({subtree:true}).length>0`), `Factory ${name} lacks ${pseudo}`);
+			}
+			await force(selector, null);
+		}
+		if (kind === "issue" && status === "open") await capture("after-factory");
+		await run("Array.from(document.querySelectorAll('main button')).find(button=>button.textContent.includes('GitHub')).click();true");
+		await ready("!!document.querySelector('[role=menu]')");
+		await run("document.querySelector('[role=menu]').getAnimations().forEach(animation=>animation.finish());document.querySelector('[role=menu]').focus();document.querySelectorAll('[role=menuitem][data-highlighted]').forEach(item=>item.removeAttribute('data-highlighted'));true");
+		for (const name of names) {
+			const selector = `[role=menuitem]:has(> [data-icon-gesture="${name}"])`;
+			for (const pseudo of ["hover", "focus-visible"]) {
+				await force(selector, pseudo);
+				assert(await run(`document.querySelector(${JSON.stringify(selector)}).querySelector('svg').getAnimations({subtree:true}).length>0`), `Factory ${name} lacks ${pseudo}`);
+			}
+			await force(selector, null);
+		}
+		if (kind === "issue" && status === "open") await capture("after-factory-menu");
+		if (kind === "pull") {
+			await run("document.querySelector('[role=menu]').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));true");
+			await ready("!document.querySelector('[role=menu]')");
+			await run("Array.from(document.querySelectorAll('main button,main a')).find(element=>element.textContent==='Activity').click();true");
+			await ready("!!document.querySelector('main textarea[placeholder^=\"Leave a comment\"]')");
+			await ready("!!document.querySelector('main button [data-icon-gesture=retry]')");
+			const retry = 'main button:has(> [data-icon-gesture="retry"])';
+			await force(retry, "hover");
+			assert(await run(`document.querySelector(${JSON.stringify(retry)}).querySelector('svg').getAnimations({subtree:true}).length>0`), "Factory retry lacks a gesture");
+			await force(retry, null);
+			await run("(()=>{const area=document.querySelector('main textarea[placeholder^=\"Leave a comment\"]');Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype,'value').set.call(area,'Owned review draft.');area.dispatchEvent(new Event('input',{bubbles:true}));Array.from(document.querySelectorAll('main button')).find(button=>button.textContent==='Review').click();})()");
+			await ready("!!document.querySelector('[role=menuitem] [data-icon-gesture=approve]')");
+			await run("document.querySelector('[role=menu]').getAnimations().forEach(animation=>animation.finish());document.querySelector('[role=menu]').focus();true");
+			for (const name of ["approve", "requestChanges", "comment"]) {
+				const selector = `[role=menuitem]:has(> [data-icon-gesture="${name}"])`;
+				await force(selector, "hover");
+				assert(await run(`document.querySelector(${JSON.stringify(selector)}).querySelector('svg').getAnimations({subtree:true}).length>0`), `Factory review ${name} lacks a gesture`);
+				await force(selector, null);
+			}
+		}
+	}
+	await run("document.querySelector('[role=menu]').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));true");
+	await ready("!document.querySelector('[role=menu]')");
+	await run("Array.from(document.querySelectorAll('main button')).find(button=>button.textContent.includes('Open thread')).click();true");
+	await ready("!!document.querySelector('main form [data-composer-icon]')");
+	assert.equal(openedItemThreads, 1); assert.equal(factoryWrites, 0);
+	console.log("FACTORY_ACTION_GESTURES", JSON.stringify({ states: 4, openedItemThreads, factoryWrites }));
 	owner.webContents.debugger.detach();
 	console.log("COMPOSER_ACTIONS_SMOKE", JSON.stringify({ surfaces: 3, deliveryDefaults: 2, primaryAndAlternate: true, idleSend: true, stopWithEmptyDraft: true, unsupportedSteeringQueues: true, queueEdit: true, questionAnswer: true, keyboardAndIME: true, svgTraces: true, actionGestures: gestures, boundedGestures: true, stationaryControls: true, copyFeedback: true, stationaryWindowControls: true, animationsOff: true, reducedMotion: true, minimumWidth: true, inferenceCalls: 0, packaged: Boolean(entry) }));
 	clearTimeout(deadline); app.exit(0);

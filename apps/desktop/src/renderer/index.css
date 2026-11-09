@@ -627,6 +627,10 @@ summary:has(> svg:first-child)::before { display: none; }
 @keyframes icon-shutter { 0%, 100% { transform: none; } 45% { transform: scale(0.25); } }
 @keyframes icon-folder-lid { from { transform: skewX(-7deg) scaleY(0.85); } to { transform: none; } }
 @keyframes icon-mail-flap { from { transform: scaleY(0.3); } to { transform: none; } }
+@keyframes icon-sign-in { from { transform: translateX(-2px); opacity: 0.5; } to { transform: none; opacity: 1; } }
+@keyframes icon-clock-hand { from { transform: rotate(-35deg); } to { transform: none; } }
+@keyframes icon-issue-dot { from { transform: scale(0.4); opacity: 0.4; } to { transform: none; opacity: 1; } }
+@keyframes icon-retry-turn { from { transform: rotate(60deg); } to { transform: none; } }
 .gesture-icon > * { transform-origin: 12px 12px; }
 .gesture-icon[data-icon-gesture="plus"] > :first-child { --icon-gesture: icon-add-horizontal; }
 .gesture-icon[data-icon-gesture="plus"] > :nth-child(2) { --icon-gesture: icon-add-vertical; --icon-gesture-delay: 45ms; }
@@ -667,6 +671,23 @@ summary:has(> svg:first-child)::before { display: none; }
 .gesture-icon[data-icon-gesture="addFolder"] > path:first-child { --icon-gesture: icon-add-vertical; }
 .gesture-icon[data-icon-gesture="addFolder"] > path:nth-child(2) { --icon-gesture: icon-add-horizontal; --icon-gesture-delay: 45ms; }
 .gesture-icon[data-icon-gesture="mail"] > path { --icon-gesture: icon-mail-flap; transform-origin: 12px 7px; }
+.gesture-icon[data-icon-gesture="signIn"] > :nth-child(-n+2) { --icon-gesture: icon-sign-in; }
+.gesture-icon[data-icon-gesture="schedule"] > path:first-child { --icon-gesture: icon-clock-hand; transform-origin: 16px 16px; --icon-gesture-duration: 380ms; }
+.gesture-icon[data-icon-gesture="inbox"] > polyline,
+.gesture-icon[data-icon-gesture="thread"] > path:last-child,
+.gesture-icon[data-icon-gesture="usage"] > path:last-child,
+.gesture-icon[data-icon-gesture="comment"] > path { --icon-gesture: icon-thread; --icon-gesture-duration: 380ms; stroke-dasharray: 1; }
+.gesture-icon[data-icon-gesture="issue"] > circle:last-child { --icon-gesture: icon-issue-dot; }
+.gesture-icon[data-icon-gesture="complete"] > path,
+.gesture-icon[data-icon-gesture="notPlanned"] > line,
+.gesture-icon[data-icon-gesture="draftPullRequest"] > path,
+.gesture-icon[data-icon-gesture="closePullRequest"] > :is(:nth-child(3), :nth-child(4)) { --icon-gesture: icon-thread; stroke-dasharray: 1; }
+.gesture-icon[data-icon-gesture="draftPullRequest"] > path:nth-child(4),
+.gesture-icon[data-icon-gesture="closePullRequest"] > path:nth-child(4) { --icon-gesture-delay: 65ms; }
+.gesture-icon[data-icon-gesture="open"] > path { --icon-gesture: icon-open-out; }
+.gesture-icon[data-icon-gesture="approve"] > path { --icon-gesture: icon-thread; stroke-dasharray: 1; }
+.gesture-icon[data-icon-gesture="requestChanges"] > path:nth-child(2) { --icon-gesture: icon-pin-needle; transform-origin: 12px 9px; }
+.gesture-icon[data-icon-gesture="retry"] > path { --icon-gesture: icon-retry-turn; --icon-gesture-duration: 380ms; }
 :is(button, [role="menuitem"], [role="option"]):is(:hover, :focus-visible, [data-highlighted], [data-selected="true"]):not(:disabled):not([aria-disabled="true"]) .gesture-icon > * {
 	animation: var(--icon-gesture, none) var(--icon-gesture-duration, 320ms) cubic-bezier(0.2, 0.8, 0.2, 1) var(--icon-gesture-delay, 0ms) both;
 }

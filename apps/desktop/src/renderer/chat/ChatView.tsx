@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { typesUltrathink, useUltrathinkReady } from "./ModelSettings";
 import { TerminalDrawer } from "../views/Terminals";
-import { AlarmClockOff, Box, FolderInput, CircleCheck, Clock, Undo2, CornerLeftUp, Ellipsis, Gauge, Layers, ListChecks, MessagesSquare, Pencil, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
+import { AlarmClockOff, Box, FolderInput, CircleCheck, Clock, Undo2, CornerLeftUp, Ellipsis, Gauge, Layers, ListChecks, Pencil, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
 import { ActionIcon } from "../components/ActionIcon";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { QuestionPanel } from "./QuestionPanel";
@@ -189,8 +189,8 @@ function ChatComposer({ task }: { task: Task }) {
 		...canCompact ? [{ id: "compact", label: "Compact", description: "Summarise earlier messages to free up context", icon: <Layers />, run: () => void command({ type: "send", id: task.id, text: "/compact" }) }] : [],
 		...running ? [] : [{ id: "fork", label: "Fork chat", description: "Continue in a copy of this chat", icon: <ActionIcon name="branch" />, run: () => void fork() }],
 		...sideChats ? [
-			{ id: "side", label: "Side chat", hint: "/side", description: "Ask something beside this chat without interrupting it", icon: <MessagesSquare />, insert: "/side " },
-			{ id: "btw", label: "Btw", hint: "/btw", description: "Same as Side chat", icon: <MessagesSquare />, insert: "/btw " },
+			{ id: "side", label: "Side chat", hint: "/side", description: "Ask something beside this chat without interrupting it", icon: <ActionIcon name="thread" />, insert: "/side " },
+			{ id: "btw", label: "Btw", hint: "/btw", description: "Same as Side chat", icon: <ActionIcon name="thread" />, insert: "/btw " },
 		] : [],
 		{ id: "export", label: "Export", description: "Save this chat as a file", icon: <ActionIcon name="download" />, options: (["markdown", "json"] as const).map(format => ({ id: `export:${format}`, label: format === "markdown" ? "Markdown" : "JSON", icon: null, run: () => void api?.exportTask(task.id, format).catch(reason => setError(errorText(reason))) })) },
 		{ id: "attach", label: "Attach files", description: "Add files or images to this message", icon: <ActionIcon name="paperclip" />, run: () => void attach() },

@@ -1,4 +1,5 @@
-import { ArrowUpRight, Check, ChevronDown, ChevronRight, FileCode2, MessageSquarePlus, Plus } from "lucide-react";
+import { ActionIcon } from "../../components/ActionIcon";
+import { Check, ChevronDown, ChevronRight, FileCode2, MessageSquarePlus, Plus } from "lucide-react";
 import { Fragment, useEffect, useMemo, useState } from "react";
 import { commentSide, parsePatch, type PatchRow } from "../../../shared/factory/patch";
 import type { GithubChange, PullFile, PullFiles, ReviewThread, WorkItem } from "../../../shared/factory/types";
@@ -146,7 +147,7 @@ function FileDiff({ file, threads, item, head, onChanged }: { file: PullFile; th
 			{loose.length > 0 && <div className="border-b px-3">{loose.map((thread) => <ThreadView key={thread.id} thread={thread} item={item} onChanged={onChanged} />)}</div>}
 			{!file.patch && <p className="flex items-center gap-2 px-3 py-3 font-sans text-sm text-muted-foreground">
 				{file.status === "removed" ? "This file was deleted." : "GitHub doesn't show this diff here, usually because it's too big or not text."}
-				<button type="button" onClick={() => openExternal(`${item.url}/files`)} className="flex items-center gap-1 text-foreground hover:underline">See it on GitHub<ArrowUpRight className="size-3" /></button>
+				<button type="button" onClick={() => openExternal(`${item.url}/files`)} className="flex items-center gap-1 text-foreground hover:underline">See it on GitHub<ActionIcon name="open" className="size-3" /></button>
 			</p>}
 			<table className="w-full border-collapse">
 				<tbody>

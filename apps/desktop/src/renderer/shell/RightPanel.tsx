@@ -1,6 +1,6 @@
 import { lazy, Suspense, useEffect, useRef, useState, type DragEvent, type ReactNode } from "react";
 import { ContextMenu } from "@base-ui/react/context-menu";
-import { ChevronLeft, ChevronRight, FileDiff, FileText, Files, GitBranch, GitPullRequestArrow, Globe, Maximize2, MessagesSquare, Minimize2, Plus, SquareTerminal, Volume2, VolumeOff, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, FileDiff, FileText, Files, GitBranch, GitPullRequestArrow, Globe, Maximize2, Minimize2, Plus, SquareTerminal, Volume2, VolumeOff, X } from "lucide-react";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { Kbd } from "../components/ui/kbd";
@@ -53,7 +53,7 @@ function TabFace({ paneKey, context, projectId, dirty }: { paneKey: PaneKey; con
 	const kind = paneKind(paneKey), value = paneValue(paneKey);
 	if (kind === "browser") return <BrowserFace context={context} id={value} />;
 	if (kind === "terminal") return <SquareTerminal />;
-	if (kind === "side") return <MessagesSquare />;
+	if (kind === "side") return <ActionIcon name="thread" />;
 	if (kind === "pull") return <PullFace projectId={projectId} number={Number(value)} />;
 	if (kind === "file") return <><FileText />{dirty && <span aria-hidden className="absolute -right-0.5 -bottom-0.5 size-1.5 rounded-full bg-current" />}<span className="hidden">{basename(value)}</span></>;
 	const launcher = launchers.find(item => item.kind === kind);

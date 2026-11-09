@@ -4,7 +4,7 @@ import { prefetchTask } from "../lib/useSelectedTask";
 import { lazy, Suspense, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
-import { CalendarClock, Trash2, ChartLine, Inbox, Columns3, Ellipsis, ExternalLink, LogIn, Gauge, UserRound } from "lucide-react";
+import { Trash2, Columns3, Ellipsis, Gauge, UserRound } from "lucide-react";
 import { ActionIcon } from "../components/ActionIcon";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { chatDragType } from "../../shared/mentions";
@@ -210,17 +210,17 @@ function AccountFooter() {
 						<span className="min-w-0"><span className="block truncate text-[12.5px] font-semibold">{firstName}</span><span className="block truncate text-[11px] text-muted-foreground">{account.profile?.email ?? "Signed in to Phaseo"}</span></span>
 					</div>
 					<DropdownMenuSeparator />
-					<DropdownMenuItem onClick={() => void window.phaseoDesktop?.openExternal("https://phaseo.app/settings/account")}><ExternalLink />Manage account</DropdownMenuItem>
+					<DropdownMenuItem onClick={() => void window.phaseoDesktop?.openExternal("https://phaseo.app/settings/account")}><ActionIcon name="external" />Manage account</DropdownMenuItem>
 					<DropdownMenuItem onClick={() => openSettings("accounts")}><UserRound />Accounts</DropdownMenuItem>
 					<DropdownMenuItem onClick={() => openUsage("limits")}><Gauge />Usage limits</DropdownMenuItem>
 					<DropdownMenuItem onClick={() => openSettings()}><ActionIcon name="settings" />Settings<DropdownMenuShortcut>{shortcut("settings.open")}</DropdownMenuShortcut></DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
-			: <button type="button" onClick={() => openSettings("accounts")} className="flex h-7 items-center gap-1.5 rounded-md px-1.5 text-[12.5px] font-semibold text-primary hover:bg-sidebar-accent/70"><LogIn className="size-4" />Sign in</button>}
+			: <button type="button" onClick={() => openSettings("accounts")} className="flex h-7 items-center gap-1.5 rounded-md px-1.5 text-[12.5px] font-semibold text-primary hover:bg-sidebar-accent/70"><ActionIcon name="signIn" className="size-4" />Sign in</button>}
 		<span className="flex-1" />
-		<FooterButton name="Usage" tip="Usage: cost, tokens and limits" active={usagePage} onClick={() => openUsage()}><ChartLine /></FooterButton>
+		<FooterButton name="Usage" tip="Usage: cost, tokens and limits" active={usagePage} onClick={() => openUsage()}><ActionIcon name="usage" /></FooterButton>
 		<FooterButton name="Scheduled tasks" tip={on ? `Scheduled tasks · ${on} on` : "Scheduled tasks"} active={scheduled} onClick={openScheduled}>
-			<CalendarClock />{on > 0 && <span aria-hidden className="absolute top-1 right-1 size-1.5 rounded-[2px] bg-primary" />}
+			<ActionIcon name="schedule" />{on > 0 && <span aria-hidden className="absolute top-1 right-1 size-1.5 rounded-[2px] bg-primary" />}
 		</FooterButton>
 		<FooterButton name="Settings" tip={`Settings (${shortcut("settings.open")})`} active={Boolean(settings)} onClick={() => openSettings()}><ActionIcon name="settings" /></FooterButton>
 	</div></div>;
@@ -245,7 +245,7 @@ function InboxLink() {
 	const count = useMemo(() => inboxLists(overview.tasks, now).needsYou.length, [overview.tasks, now]);
 	return <button type="button" aria-current={inboxPage ? "page" : undefined} onClick={openInbox}
 		className={cn("mt-1 flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-[13px] text-sidebar-foreground/85 hover:bg-sidebar-accent/70", inboxPage && "bg-sidebar-accent text-sidebar-foreground")}>
-		<Inbox className="size-4 text-muted-foreground" />Inbox
+		<ActionIcon name="inbox" className="size-4 text-muted-foreground" />Inbox
 		{count > 0 && <span className="ml-auto text-[11px] font-semibold text-warning" title={`${count} waiting on you`}>{count}</span>}
 	</button>;
 }
