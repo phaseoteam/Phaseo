@@ -19,6 +19,13 @@ app.whenReady().then(async () => { try {
 	if (owner.webContents.isLoading()) await once(owner.webContents, "did-finish-load");
 	const run = code => owner.webContents.executeJavaScript(code);
 	const ready = predicate => run(`new Promise((resolve,reject)=>{const check=()=>{if((${predicate})){observer.disconnect();clearTimeout(timer);resolve(true);}};const observer=new MutationObserver(check);observer.observe(document,{subtree:true,childList:true,characterData:true,attributes:true});const timer=setTimeout(()=>{observer.disconnect();reject(Error('Missing UI milestone: '+${JSON.stringify(predicate)}));},10000);check();})`);
+	async function closeMenu() {
+		await run("document.querySelector('[role=menu]')?.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));true");
+		await ready("!document.querySelector('[role=menu]') || !!document.querySelector('[role=menu][data-closed]')");
+		// Hidden windows do not reliably advance the popup's exit animation.
+		await run("document.querySelector('[role=menu][data-closed]')?.getAnimations().forEach(animation=>animation.finish());true");
+		await ready("!document.querySelector('[role=menu]')");
+	}
 	const originalPreferences = await run("window.phaseoDesktop.workspace.preferences()");
 	console.log("Composer fixture: preferences ready");
 	let preferences = originalPreferences.preferences;
@@ -117,8 +124,7 @@ app.whenReady().then(async () => { try {
 		await ready("!!document.querySelector('[role=menu]')");
 		await run("document.querySelector('[role=menu]').getAnimations().forEach(animation=>animation.finish());true");
 		await capture("before-actions");
-		await run("document.querySelector('[role=menu]').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));true");
-		await ready("!document.querySelector('[role=menu]')");
+		await closeMenu();
 		await run("Array.from(document.querySelectorAll('header button')).find(button=>button.textContent.includes('Search chats and commands')).click()");
 		await ready("!!document.querySelector('[role=option]')");
 		await run("Array.from(document.querySelectorAll('[role=option]')).find(option=>option.textContent.includes('Open browser')).click()");
@@ -246,8 +252,7 @@ app.whenReady().then(async () => { try {
 			await run("document.querySelector('[role=menu]').getAnimations().forEach(animation=>animation.finish());true");
 		}
 		if (name === "download" || name === "terminal") {
-			await run("document.querySelector('[role=menu]')?.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));true");
-			await ready("!document.querySelector('[role=menu]')");
+			await closeMenu();
 			if (name === "download") {
 				await run("document.querySelector('button[aria-label=\"Chat actions\"]').click()");
 				await ready("!!document.querySelector('[role=menuitem] [data-icon-gesture=download]')");
@@ -315,8 +320,7 @@ app.whenReady().then(async () => { try {
 	assert.equal(pullWrites, 0);
 	console.log("GIT_ACTION_GESTURES", JSON.stringify({ fixedNodes: true, pullRequestWrites: pullWrites }));
 	if (output) writeFileSync(path.join(output, "icon-gestures.json"), JSON.stringify({ samples, gestures }, null, 2));
-	await run("document.querySelector('[role=menu]')?.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));true");
-	await ready("!document.querySelector('[role=menu]')");
+	await closeMenu();
 	// Copy feedback still changes to a check. The fixture never touches the person's clipboard.
 	await run("Object.defineProperty(navigator.clipboard,'writeText',{configurable:true,value:async text=>{window.__fixtureCopied=text;}});document.querySelector('main button[aria-label=Copy]').click();true");
 	await ready("!!document.querySelector('main button[aria-label=Copied]')");
@@ -353,8 +357,7 @@ app.whenReady().then(async () => { try {
 		}
 		if (kind === "issue" && status === "open") await capture("after-factory-menu");
 		if (kind === "pull") {
-			await run("document.querySelector('[role=menu]').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));true");
-			await ready("!document.querySelector('[role=menu]')");
+			await closeMenu();
 			await run("Array.from(document.querySelectorAll('main button,main a')).find(element=>element.textContent==='Activity').click();true");
 			await ready("!!document.querySelector('main textarea[placeholder^=\"Leave a comment\"]')");
 			await ready("!!document.querySelector('main button [data-icon-gesture=retry]')");
@@ -373,8 +376,7 @@ app.whenReady().then(async () => { try {
 			}
 		}
 	}
-	await run("document.querySelector('[role=menu]').dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));true");
-	await ready("!document.querySelector('[role=menu]')");
+	await closeMenu();
 	await run("Array.from(document.querySelectorAll('main button')).find(button=>button.textContent.includes('Open thread')).click();true");
 	await ready("!!document.querySelector('main form [data-composer-icon]')");
 	assert.equal(openedItemThreads, 1); assert.equal(factoryWrites, 0);
