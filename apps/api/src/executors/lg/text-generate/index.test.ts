@@ -15,8 +15,6 @@ function ir(extra: Partial<IRChatRequest>): IRChatRequest {
 
 describe("LG EXAONE reasoning effort", () => {
 	it.each([
-		[{ effort: "none" }, "low"],
-		[{ enabled: false }, "low"],
 		[{ effort: "minimal" }, "low"],
 		[{ effort: "low" }, "low"],
 		[{ effort: "medium" }, "high"],
@@ -28,6 +26,12 @@ describe("LG EXAONE reasoning effort", () => {
 		applyReasoningParams({ ir: ir({ reasoning } as Partial<IRChatRequest>), request, providerId: "lg", providerModelSlug: "k-exaone_v2.5" });
 		expect(request.reasoning_effort).toBe(expected);
 		expect(request.enable_thinking).toBeUndefined();
+	});
+
+	it.each([{ effort: "none" }, { enabled: false }])("never sends an effort for disable request %j (rejected before execution)", (reasoning) => {
+		const request: Record<string, unknown> = {};
+		applyReasoningParams({ ir: ir({ reasoning } as Partial<IRChatRequest>), request, providerId: "lg" });
+		expect(request).toEqual({});
 	});
 
 	it("leaves the upstream default when no effort is requested", () => {
