@@ -6,6 +6,9 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 // arguments (contract version 1, the default) and, unlike the new coordinator, stops counting a
 // held request in workspace budgets as soon as excluded_rows reports its audit row. Version 1 must
 // then count that row, or the request disappears from workspace budgets ($6 instead of $10.50).
+// main's coordinator also enforces blocking spend guardrail counters (phase D) like department
+// budgets: a $4 daily guardrail shared by the request's key and GUARD_KEY is probed through
+// GUARD_KEY, which no department budget covers, so its refusal reports the counter.
 // main's coordinator is a copy taken with `git show origin/main:<file>` (__fixtures__).
 const runtime = vi.hoisted(() => ({ bindings: null as Record<string, unknown> | null }));
 
@@ -26,6 +29,8 @@ const WORKSPACE = "10000000-0000-4000-8000-000000000031";
 const KEY = "30000000-0000-4000-8000-000000000031";
 const OTHER_KEY = "30000000-0000-4000-8000-000000000032";
 const OUTSIDE_KEY = "30000000-0000-4000-8000-000000000033";
+const GUARD_KEY = "30000000-0000-4000-8000-000000000034";
+const GUARDRAIL = "50000000-0000-4000-8000-000000000031";
 const DEPARTMENT = "40000000-0000-4000-8000-000000000031";
 const BILLING_ID = "bill-old-coordinator-1";
 const REQUEST_ID = "req-old-coordinator-1";
@@ -74,7 +79,7 @@ async function spendSeenBy(keyId: string): Promise<number> {
 	else await coordinator.release(WORKSPACE, result.lease.id, admissionId);
 	return Number.NaN;
 }
-const both = async () => ({ department: await spendSeenBy(OTHER_KEY), workspace: await spendSeenBy(OUTSIDE_KEY) });
+const both = async () => ({ department: await spendSeenBy(OTHER_KEY), workspace: await spendSeenBy(OUTSIDE_KEY), guardrail: await spendSeenBy(GUARD_KEY) });
 
 beforeAll(async () => {
 	const { PGlite } = await import("@electric-sql/pglite");
@@ -85,7 +90,14 @@ beforeAll(async () => {
 		insert into public.workspaces (id) values ('${WORKSPACE}');
 		insert into public.wallets (workspace_id, balance_nanos) values ('${WORKSPACE}', ${100 * DOLLAR});
 		insert into public.keys (id, workspace_id, department_id) values ('${KEY}', '${WORKSPACE}', '${DEPARTMENT}'),
-			('${OTHER_KEY}', '${WORKSPACE}', '${DEPARTMENT}'), ('${OUTSIDE_KEY}', '${WORKSPACE}', null);
+			('${OTHER_KEY}', '${WORKSPACE}', '${DEPARTMENT}'), ('${OUTSIDE_KEY}', '${WORKSPACE}', null), ('${GUARD_KEY}', '${WORKSPACE}', null);
+		-- A blocking $4 daily spend guardrail shared by KEY and GUARD_KEY. The resolver is a test double
+		-- (resolution itself is tested in spend-guardrails.test.mjs).
+		insert into public.workspace_guardrails (id, workspace_id, enabled, name, kind, spend_limit_nanos, spend_period, spend_action, spend_counting)
+			values ('${GUARDRAIL}', '${WORKSPACE}', true, 'Pair daily', 'spend', ${4 * DOLLAR}, 'daily', 'block', 'shared');
+		create or replace function public.resolve_key_guardrails(p_workspace_id uuid, p_key_id uuid)
+			returns table (guardrail_id uuid, source_type text, source_id uuid) language sql stable as $$
+			select '${GUARDRAIL}'::uuid, 'workspace', null::uuid where p_key_id in ('${KEY}', '${GUARD_KEY}') $$;
 		insert into public.workspace_departments (id, workspace_id, name) values ('${DEPARTMENT}', '${WORKSPACE}', 'Engineering');
 		insert into public.workspace_department_budgets (workspace_id, department_id, interval, limit_nanos) values ('${WORKSPACE}', '${DEPARTMENT}', 'daily', ${10 * DOLLAR});
 		insert into public.workspace_budgets (workspace_id, interval, limit_nanos) values ('${WORKSPACE}', 'daily', ${10 * DOLLAR});
@@ -98,31 +110,31 @@ afterAll(async () => { await db?.close(); });
 describe("main's spend-limit coordinator on this release's seed SQL (contract version 1)", () => {
 	it("never loses a held request through the handoff", async () => {
 		startCoordinator();
-		expect(await both()).toEqual({ department: Number.NaN, workspace: Number.NaN }); // $6 of $10
+		expect(await both()).toEqual({ department: Number.NaN, workspace: Number.NaN, guardrail: Number.NaN }); // $6 of $10
 
 		// A $4.50 request: its charge row lands, and the coordinator records it.
 		await db.query(`insert into public.gateway_request_charges (workspace_id, request_id, cost_nanos, status, is_final, key_id)
 			values ($1, $2, $3, 'applied', true, $4)`, [WORKSPACE, BILLING_ID, 4.5 * DOLLAR, KEY]);
 		await coordinator.record(WORKSPACE, { keyId: KEY, billingRequestId: BILLING_ID, requestId: REQUEST_ID, costNanos: 4.5 * DOLLAR, requests: 1 });
-		expect(await both()).toEqual({ department: 10.5 * DOLLAR, workspace: 10.5 * DOLLAR });
+		expect(await both()).toEqual({ department: 10.5 * DOLLAR, workspace: 10.5 * DOLLAR, guardrail: 4.5 * DOLLAR });
 
 		// A seed while the request is held and its audit row has not landed. main's coordinator lists
 		// the request id only, so the seed also counts the charge row: an over-count (never a loss)
 		// for the seconds between the charge and the audit row, while old coordinators still run.
 		await coordinator.reseedNow();
-		expect(await both()).toEqual({ department: 15 * DOLLAR, workspace: 15 * DOLLAR });
+		expect(await both()).toEqual({ department: 15 * DOLLAR, workspace: 15 * DOLLAR, guardrail: 9 * DOLLAR });
 
 		// The audit row lands. The seed reports it in excluded_rows, so main's coordinator stops
 		// counting the request in workspace budgets: version 1 counts its row there instead.
 		await db.query(`insert into public.gateway_requests (workspace_id, request_id, billing_request_id, key_id, success, cost_nanos)
 			values ($1, $2, $3, $4, true, $5)`, [WORKSPACE, REQUEST_ID, BILLING_ID, KEY, 4.5 * DOLLAR]);
 		await coordinator.reseedNow();
-		expect(await both()).toEqual({ department: 10.5 * DOLLAR, workspace: 10.5 * DOLLAR });
+		expect(await both()).toEqual({ department: 10.5 * DOLLAR, workspace: 10.5 * DOLLAR, guardrail: 4.5 * DOLLAR });
 
 		// Handoff, then a restart: once, from the database.
 		await coordinator.reseedNow();
-		expect(await both()).toEqual({ department: 10.5 * DOLLAR, workspace: 10.5 * DOLLAR });
+		expect(await both()).toEqual({ department: 10.5 * DOLLAR, workspace: 10.5 * DOLLAR, guardrail: 4.5 * DOLLAR });
 		startCoordinator();
-		expect(await both()).toEqual({ department: 10.5 * DOLLAR, workspace: 10.5 * DOLLAR });
+		expect(await both()).toEqual({ department: 10.5 * DOLLAR, workspace: 10.5 * DOLLAR, guardrail: 4.5 * DOLLAR });
 	});
 });

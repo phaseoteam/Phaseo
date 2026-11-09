@@ -1,4 +1,4 @@
-// Copied from origin/main (dfb6b5e6df) apps/api/src/core/spend-limits.shared.ts for the old-coordinator rollout test: do not edit.
+// Copied from origin/main (a3e7c20735) apps/api/src/core/spend-limits.shared.ts for the old-coordinator rollout test: do not edit.
 // Purpose: Types, lease parameters and UTC window arithmetic shared by the spend-limit
 //          coordinator (Durable Object) and its isolate-side client.
 // Why: Both sides must agree exactly on windows and on the decision shape (`GateCheck`).

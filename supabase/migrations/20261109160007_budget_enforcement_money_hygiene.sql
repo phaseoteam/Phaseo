@@ -1,7 +1,7 @@
 SET LOCAL lock_timeout = '10s';
 
 -- Functions only: no table is locked here. The table changes that go with them are in the
--- migrations that follow, one table each (20261107020008 to 20261107020012).
+-- migrations that follow, one table each (20261109160008 to 20261109160012).
 --
 -- Budget enforcement and money hygiene:
 -- 1. Money movements win: a request's spend is its money movements, each at its own time, and its
@@ -13,7 +13,8 @@ SET LOCAL lock_timeout = '10s';
 --    serves workspace and department budgets and the spend-limit seed; one key calculation,
 --    private.key_spend_items, serves both request-context key checks, hold admission
 --    (gateway_wallet_reserve_once_without_workspace_budget), the seed's key usage and the 80%
---    warnings (sweep_spend_limit_warnings), which now read what the gateway enforces rather than
+--    warnings (sweep_spend_limit_warnings) and blocking spend guardrail counters
+--    (private.spend_guardrail_usage, phase D), which now read what the gateway enforces rather than
 --    the hourly rollup. Charged requests that did not succeed count toward cost; request counts
 --    stay successful requests only. The indexes these reads use are built by the migrations just
 --    before this one.
@@ -357,6 +358,101 @@ GRANT EXECUTE ON FUNCTION "private"."key_spend_items"(uuid, timestamp with time 
 -- private.gateway_context_access runs as its caller (service_role, through
 -- gateway_fetch_request_context_bundle) and reads this.
 GRANT EXECUTE ON FUNCTION "private"."key_spend_items"(uuid, timestamp with time zone, uuid[], text[], text[]) TO "service_role";
+
+CREATE OR REPLACE FUNCTION private.spend_guardrail_usage (
+  p_workspace_id        uuid,
+  p_now                 timestamp with time zone,
+  p_exclude_request_ids text[] DEFAULT '{}'::text[],
+  p_action              text DEFAULT NULL::text
+)
+  RETURNS TABLE (
+    guardrail_id   uuid,
+    guardrail_name text,
+    spend_period   text,
+    spend_action   text,
+    spend_counting text,
+    limit_nanos    bigint,
+    counter        text,
+    key_ids        uuid[],
+    usage_nanos    bigint,
+    period_start   timestamp with time zone,
+    reset_at       timestamp with time zone
+  )
+  LANGUAGE sql
+  STABLE
+  SECURITY DEFINER
+  SET search_path TO ''
+  AS $function$
+  -- Every spend counter of the workspace's enabled spend guardrails (only those whose action is
+  -- p_action, when given), with the keys that count toward it and their spend this UTC period.
+  -- A key is covered where public.resolve_key_guardrails says the guardrail applies to it.
+  -- A shared guardrail has one counter per assignment (counter 'workspace:', 'department:<id>',
+  -- 'member:<id>' or 'key:<id>'), over every key that assignment covers; an each_key guardrail has
+  -- one counter per covered key ('key:<id>'). Spend is counted exactly like key cost limits, by
+  -- private.key_spend_items over those keys since the period start: request cost (charged
+  -- failures included) unless money movements replace it, plus the movements themselves at their
+  -- time (stepped charges and refunds, one-off charges without a request row, batch and video
+  -- debits, uncollected expected bills). p_exclude_request_ids are the ids of admissions the
+  -- SpendLimit Durable Object holds (request ids and billing ids), left out of rows and charges
+  -- alike, as for department budgets.
+  with spend_guardrails as (
+    select g.id, g.name, g.spend_period, g.spend_action, g.spend_counting, g.spend_limit_nanos
+    from public.workspace_guardrails g
+    where g.workspace_id = p_workspace_id
+      and g.kind = 'spend'
+      and g.enabled
+      and (p_action is null or g.spend_action = p_action)
+  ),
+  covered as (
+    select distinct
+      sg.id as guardrail_id,
+      case when sg.spend_counting = 'each_key' then 'key:' || k.id::text
+        else r.source_type || ':' || coalesce(r.source_id::text, '') end as counter,
+      k.id as key_id
+    from public.keys k
+    cross join lateral public.resolve_key_guardrails(p_workspace_id, k.id) r
+    join spend_guardrails sg on sg.id = r.guardrail_id
+    where k.workspace_id = p_workspace_id
+      and exists (select 1 from spend_guardrails)
+  ),
+  counters as (
+    select covered.guardrail_id, covered.counter, array_agg(covered.key_id order by covered.key_id) as key_ids
+    from covered
+    group by covered.guardrail_id, covered.counter
+  )
+  select
+    sg.id,
+    sg.name,
+    sg.spend_period,
+    sg.spend_action,
+    sg.spend_counting,
+    sg.spend_limit_nanos,
+    c.counter,
+    c.key_ids,
+    coalesce((
+      select sum(item.nanos)
+      from private.key_spend_items(p_workspace_id, p.period_start, c.key_ids,
+        coalesce(p_exclude_request_ids, '{}'::text[]), coalesce(p_exclude_request_ids, '{}'::text[])) item
+      where item.at >= coalesce(p.period_start, '-infinity'::timestamptz)
+        and item.at <= p_now
+    ), 0)::bigint,
+    p.period_start,
+    p.reset_at
+  from counters c
+  join spend_guardrails sg on sg.id = c.guardrail_id
+  cross join lateral private.spend_limit_period(sg.spend_period, p_now) p
+  order by sg.name, sg.id, c.counter;
+$function$;
+
+COMMENT ON FUNCTION "private"."spend_guardrail_usage"(uuid, timestamp with time zone, text[], text) IS 'Spend counters of a workspace''s enabled spend guardrails: one per assignment when shared, one per covered key when each_key, with their keys and their spend this UTC period, counted exactly like key cost limits (private.key_spend_items).';
+
+REVOKE ALL ON FUNCTION "private"."spend_guardrail_usage"(uuid, timestamp with time zone, text[], text) FROM PUBLIC;
+
+REVOKE ALL ON FUNCTION "private"."spend_guardrail_usage"(uuid, timestamp with time zone, text[], text) FROM "postgres";
+
+GRANT EXECUTE ON FUNCTION "private"."spend_guardrail_usage"(uuid, timestamp with time zone, text[], text) TO "postgres";
+
+GRANT EXECUTE ON FUNCTION "private"."spend_guardrail_usage"(uuid, timestamp with time zone, text[], text) TO "service_role";
 
 CREATE OR REPLACE FUNCTION private.budget_spend_items (
   p_workspace_id        uuid,
@@ -873,6 +969,7 @@ declare
   v_keys      jsonb;
   v_excluded  jsonb := '[]'::jsonb;
   v_departments jsonb := '[]'::jsonb;
+  v_guardrails jsonb := '[]'::jsonb;
 begin
   if p_workspace_id is null then
     raise exception using errcode = '22023', message = 'workspace_id_required';
@@ -963,6 +1060,28 @@ begin
     from private.department_budget_usage(p_workspace_id, null, v_exclude) usage;
   end if;
 
+  -- Blocking spend guardrails: one entry per counter (private.spend_guardrail_usage), counted
+  -- like a department budget over its keys, with the same exclusions.
+  if exists (
+    select 1 from public.workspace_guardrails g
+    where g.workspace_id = p_workspace_id and g.kind = 'spend' and g.enabled and g.spend_action = 'block'
+  ) then
+    select coalesce(jsonb_agg(jsonb_build_object(
+      'guardrail_id', u.guardrail_id,
+      'guardrail_name', u.guardrail_name,
+      'counting', u.spend_counting,
+      'counter', u.counter,
+      'interval', u.spend_period,
+      'limit_nanos', u.limit_nanos,
+      'usage_nanos', u.usage_nanos,
+      'window_start', u.period_start,
+      'reset_at', u.reset_at,
+      'key_ids', to_jsonb(u.key_ids)
+    ) order by u.guardrail_name, u.guardrail_id, u.counter), '[]'::jsonb)
+    into v_guardrails
+    from private.spend_guardrail_usage(p_workspace_id, now(), v_exclude, 'block') u;
+  end if;
+
   -- Excluded requests that are already persisted, so the caller can stop
   -- tracking them separately and count the stored row instead.
   if cardinality(v_exclude) > 0 then
@@ -989,14 +1108,15 @@ begin
     'budget_status', private.workspace_budget_status(p_workspace_id, 0,
       case when coalesce(p_contract_version, 1) >= 2 then v_exclude else '{}'::text[] end, v_exclude),
     'excluded_rows', v_excluded,
-    'department_budgets', v_departments
+    'department_budgets', v_departments,
+    'guardrail_budgets', v_guardrails
   );
 end;
 $function$;
 
 GRANT EXECUTE ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[], integer) TO "service_role";
 
-COMMENT ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[], integer) IS 'Seeds the gateway spend-limit coordinator: per-key day/week/month usage with the request-context windows and filters (excluding already-recorded request ids), plus workspace budget status and department budgets with their usage and keys. p_contract_version (default 1) selects how workspace usage treats held admissions: see the function body.';
+COMMENT ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[], integer) IS 'Seeds the gateway spend-limit coordinator: per-key day/week/month usage with the request-context windows and filters (excluding already-recorded request ids), plus workspace budget status, department budgets and blocking spend guardrail counters with their usage and keys. p_contract_version (default 1) selects how workspace usage treats held admissions: see the function body.';
 
 REVOKE ALL ON FUNCTION "public"."gateway_spend_limit_seed"(uuid, uuid[], text[], integer) FROM "postgres";
 

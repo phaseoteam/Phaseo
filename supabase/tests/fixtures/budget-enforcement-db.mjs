@@ -1,34 +1,34 @@
-// Production shapes, trimmed to what migration 20261107020007_budget_enforcement_money_hygiene and
+// Production shapes, trimmed to what migration 20261109160007_budget_enforcement_money_hygiene and
 // the functions it replaces read. Shared by supabase/tests/budget-enforcement-money-hygiene.test.mjs
 // and the gateway's seed -> SpendLimit Durable Object -> guard test, so both run the real SQL.
 import { readFile } from 'node:fs/promises';
 
 const schemasUrl = new URL('../../schemas/', import.meta.url);
-export const MIGRATION_FILE = '20261107020007_budget_enforcement_money_hygiene.sql';
+export const MIGRATION_FILE = '20261109160007_budget_enforcement_money_hygiene.sql';
 export const readSchema = (path) => readFile(new URL(path, schemasUrl), 'utf8');
 export const readMigration = () => readFile(new URL(`../../migrations/${MIGRATION_FILE}`, import.meta.url), 'utf8');
 // The migrations that precede MIGRATION_FILE: the expected_cost_nanos column (fix/async-billing-20261104's, added, then validated),
 // then each new index in its own migration.
 export const COLUMN_MIGRATION_FILES = [
-  '20261107015209_gateway_requests_expected_cost_nanos.sql',
-  '20261107015210_validate_gateway_requests_expected_cost_nanos_check.sql',
+  '20261109145505_gateway_requests_expected_cost_nanos.sql',
+  '20261109145506_validate_gateway_requests_expected_cost_nanos_check.sql',
 ];
 export const INDEX_MIGRATION_FILES = [
-  '20261107015217_gateway_requests_billing_request_index.sql', // fix/async-billing-20261104's
-  '20261107020002_gateway_requests_expected_cost_idx.sql',
-  '20261107020003_gateway_requests_charged_unsuccessful_cost_idx.sql',
-  '20261107020004_gateway_request_charges_applied_cost_idx.sql',
-  '20261107020005_credit_ledger_request_charge_movements_idx.sql',
+  '20261109145513_gateway_requests_billing_request_index.sql', // fix/async-billing-20261104's
+  '20261109160002_gateway_requests_expected_cost_idx.sql',
+  '20261109160003_gateway_requests_charged_unsuccessful_cost_idx.sql',
+  '20261109160004_gateway_request_charges_applied_cost_idx.sql',
+  '20261109160005_credit_ledger_request_charge_movements_idx.sql',
 ];
 export const readIndexMigrations = () => Promise.all(INDEX_MIGRATION_FILES.map((name) =>
   readFile(new URL(`../../migrations/${name}`, import.meta.url), 'utf8')));
 // The table changes that follow MIGRATION_FILE (functions only), one table per migration.
 export const TABLE_MIGRATION_FILES = [
-  '20261107020008_credit_ledger_drop_client_insert_policy.sql',
-  '20261107020009_wallets_revoke_anon_delete.sql',
-  '20261107020010_gateway_wallet_reservations_revoke_client_writes.sql',
-  '20261107020011_workspace_settings_io_retention_90_days.sql',
-  '20261107020012_workspace_department_budgets_comment.sql',
+  '20261109160008_credit_ledger_drop_client_insert_policy.sql',
+  '20261109160009_wallets_revoke_anon_delete.sql',
+  '20261109160010_gateway_wallet_reservations_revoke_client_writes.sql',
+  '20261109160011_workspace_settings_io_retention_90_days.sql',
+  '20261109160012_workspace_department_budgets_comment.sql',
 ];
 export const readTableMigrations = () => Promise.all(TABLE_MIGRATION_FILES.map((name) =>
   readFile(new URL(`../../migrations/${name}`, import.meta.url), 'utf8')));
@@ -93,6 +93,12 @@ const STUBS = `
   create table public.workspace_department_budgets (id uuid primary key default gen_random_uuid(), workspace_id uuid not null,
     department_id uuid not null, interval text not null, limit_nanos bigint not null, created_by uuid,
     created_at timestamptz not null default now(), updated_at timestamptz not null default now());
+  -- Spend guardrails (phase D), trimmed to what private.spend_guardrail_usage reads: no guardrails here.
+  create table if not exists public.workspace_guardrails (id uuid primary key default gen_random_uuid(), workspace_id uuid not null,
+    enabled boolean not null default true, name text not null default '', kind text not null default 'access',
+    spend_limit_nanos bigint, spend_period text, spend_action text, spend_counting text);
+  create or replace function public.resolve_key_guardrails(p_workspace_id uuid, p_key_id uuid)
+    returns table (guardrail_id uuid, source_type text, source_id uuid) language sql stable as $$ select null::uuid, null::text, null::uuid where false $$;
   create table public.workspace_settings (workspace_id uuid primary key, department_spend_attribution text not null default 'all',
     io_logging_retention_days integer not null default 90,
     routing_mode text, byok_fallback_enabled boolean, beta_channel_enabled boolean, alpha_channel_enabled boolean,
@@ -158,7 +164,7 @@ export const readColumnMigrations = () => Promise.all(COLUMN_MIGRATION_FILES.map
   readFile(new URL(`../../migrations/${name}`, import.meta.url), 'utf8')));
 
 // fix/async-billing-20261104's first migration: the deploy-relative marker for legacy pending rows.
-export const CUTOFF_MIGRATION_FILE = '20261107015208_billing_cutoffs.sql';
+export const CUTOFF_MIGRATION_FILE = '20261109145504_billing_cutoffs.sql';
 export async function applyMigration(db, migration) {
   await db.exec(await readFile(new URL(`../../migrations/${CUTOFF_MIGRATION_FILE}`, import.meta.url), 'utf8'));
   for (const column of await readColumnMigrations()) await db.exec(column);

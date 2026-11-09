@@ -37,6 +37,12 @@ try {
       internal_id text not null, meta jsonb not null default '{}'::jsonb);
     alter table public.gateway_requests add column if not exists billing_request_id text;
     alter table public.keys add column if not exists department_id uuid;
+    -- Spend guardrails (phase D), trimmed to what private.spend_guardrail_usage reads: no guardrails here.
+    create table if not exists public.workspace_guardrails (id uuid primary key default gen_random_uuid(), workspace_id uuid not null,
+      enabled boolean not null default true, name text not null default '', kind text not null default 'access',
+      spend_limit_nanos bigint, spend_period text, spend_action text, spend_counting text);
+    create or replace function public.resolve_key_guardrails(p_workspace_id uuid, p_key_id uuid)
+      returns table (guardrail_id uuid, source_type text, source_id uuid) language sql stable as $$ select null::uuid, null::text, null::uuid where false $$;
     -- Department tables, trimmed to what the seed reads.
     create table public.workspace_departments (id uuid primary key, workspace_id uuid not null, name text not null);
     create table public.workspace_department_grants (workspace_id uuid not null, user_id uuid not null, department_id uuid not null,
@@ -61,10 +67,10 @@ try {
   // Then the one teaching the helper the workspace's primary-department setting.
   const attributionMigration = await readFile(new URL('../migrations/20261031174621_department_attribution_primary_for_budgets.sql', import.meta.url), 'utf8');
   await db.exec(attributionMigration);
-  // 20261107020007_budget_enforcement_money_hygiene moves department usage into the shared
+  // 20261109160007_budget_enforcement_money_hygiene moves department usage into the shared
   // private.department_budget_usage (positive-cost requests plus outstanding holds).
-  const usageMigration = await readFile(new URL('../migrations/20261107020007_budget_enforcement_money_hygiene.sql', import.meta.url), 'utf8');
-  for (const name of ['20261107015208_billing_cutoffs.sql', '20261107015209_gateway_requests_expected_cost_nanos.sql', '20261107015210_validate_gateway_requests_expected_cost_nanos_check.sql']) {
+  const usageMigration = await readFile(new URL('../migrations/20261109160007_budget_enforcement_money_hygiene.sql', import.meta.url), 'utf8');
+  for (const name of ['20261109145504_billing_cutoffs.sql', '20261109145505_gateway_requests_expected_cost_nanos.sql', '20261109145506_validate_gateway_requests_expected_cost_nanos_check.sql']) {
     await db.exec(await readFile(new URL(`../migrations/${name}`, import.meta.url), 'utf8'));
   }
   // The usage migration drops main's three-argument seed before creating the one with

@@ -54,18 +54,18 @@ try {
     // The MFA policy (require_mfa_for_data_api) was added to the table file by a later migration.
     const tableDefinition = (await read(tableFile)).replace(/\r\n/g, '\n').replace(/\n*CREATE POLICY "mfa_required_when_enrolled" ON [^;]*;/g, '');
     for (const file of schemaFiles.filter(file => file !== sweepFile && file !== tableFile)) {
-        // workspace_department_budget_status was last replaced by 20261107020007_budget_enforcement_money_hygiene.
-        const holds = await read('../migrations/20261107020007_budget_enforcement_money_hygiene.sql');
+        // workspace_department_budget_status was last replaced by 20261109160007_budget_enforcement_money_hygiene.
+        const holds = await read('../migrations/20261109160007_budget_enforcement_money_hygiene.sql');
         assert.ok((redefinedLast.test(file) ? primaryMigration : redefinedLater.test(file) ? holds : migration).includes((await read(file)).replace(/\r\n/g, '\n').trim()), `${file} is in the migration`);
     }
     // The table is created by the first migration; the later one only replaces its comment.
     assert.ok(migration.includes(tableDefinition.replace(COMMENT_LINE, migration.match(COMMENT_LINE)[0]).trim()), 'the table is in the migration');
-    // 20261107020012_workspace_department_budgets_comment replaced the table comment again.
-    const holdsMigration = await read('../migrations/20261107020012_workspace_department_budgets_comment.sql');
+    // 20261109160012_workspace_department_budgets_comment replaced the table comment again.
+    const holdsMigration = await read('../migrations/20261109160012_workspace_department_budgets_comment.sql');
     assert.ok(holdsMigration.includes(tableDefinition.match(COMMENT_LINE)[0]), 'the latest table comment is in its migration');
-    // The sweep was last replaced by 20261107020007_budget_enforcement_money_hygiene (spend is what
+    // The sweep was last replaced by 20261109160007_budget_enforcement_money_hygiene (spend is what
     // admission enforces); the blocking migration added its 100% alert.
-    assert.ok((await read('../migrations/20261107020007_budget_enforcement_money_hygiene.sql')).includes(sweepDefinition.trim()),
+    assert.ok((await read('../migrations/20261109160007_budget_enforcement_money_hygiene.sql')).includes(sweepDefinition.trim()),
         'the latest migration replacing the sweep ships it');
     assert.ok(blockMigration.includes('department_budget_reached'), 'the blocking migration added the 100% alert');
     const manifest = JSON.parse(await read('../schemas/.pgdelta-export.json'));
@@ -143,7 +143,7 @@ try {
     await db.exec(blockMigration);
     await db.exec(primaryMigration);
     // The current status function, over the shared budget calculation.
-    await db.exec(await read('../migrations/20261107015208_billing_cutoffs.sql'));
+    await db.exec(await read('../migrations/20261109145504_billing_cutoffs.sql'));
     for (const file of ['../schemas/private/functions/unbilled_spend.sql', '../schemas/private/functions/budget_spend_items.sql']) await db.exec(await read(file));
     await db.exec(await read('../schemas/public/functions/workspace_department_budget_status.sql'));
     // And the current sweep (its 100% push says the department's requests are refused).
