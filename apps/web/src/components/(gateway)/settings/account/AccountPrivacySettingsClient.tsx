@@ -229,7 +229,7 @@ export default function AccountPrivacySettingsClient({
 				<div className="min-w-0">
 					<SettingRow title={s("Store request and response payloads")} description={policy.privacyZdrOnly ? s("phraseIoLogsStayOffWhileZdrEndpointsOnlyIsOn") : s("phraseKeepPrivatePayloadCopiesForRequestDetailsAndReplay")} checked={logStorage.enabled && !policy.privacyZdrOnly} disabled={editingDisabled || policy.privacyZdrOnly} onCheckedChange={(enabled) => setLogStorage((current) => current ? { ...current, enabled } : current)} />
 					{logStorage.enabled && !policy.privacyZdrOnly ? <>
-						<div className="grid gap-3 border-b border-border/60 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
+						<div className="grid gap-3 border-b border-border/60 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-center sm:gap-8">
 							<div><div className="text-sm font-medium">{s("Retention")}</div><p className="mt-0.5 text-sm text-muted-foreground">{s("phraseChooseHowLongPrivatePayloadCopiesRemainAvailable")}</p></div>
 							<Select disabled={editingDisabled} value={String(logStorage.retentionDays)} onValueChange={(value) => setLogStorage((current) => current ? { ...current, retentionDays: Number(value) } : current)}>
 								<SelectTrigger className="w-full rounded-md" aria-label={s("Retention")}><SelectValue>{logStorage.retentionDays === 90 ? tUi("privacy.retention90Days") : logStorage.retentionDays === 180 ? tUi("privacy.retention180Days") : logStorage.retentionDays === 365 ? tUi("privacy.retention365Days") : String(logStorage.retentionDays)}</SelectValue></SelectTrigger>
@@ -238,7 +238,7 @@ export default function AccountPrivacySettingsClient({
 						</div>
 						<SettingRow disabled={editingDisabled} title={s("Include provider payloads")} description={s("phraseAlsoRetainTheTransformedUpstreamRequestAndProviderResponse")} checked={logStorage.includeProviderPayloads} onCheckedChange={(includeProviderPayloads) => setLogStorage((current) => current ? { ...current, includeProviderPayloads } : current)} />
 					</> : null}
-					<div className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
+					<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-center sm:gap-8">
 						<div><div className="text-sm font-medium">{tUi("privacy.contentsAccessTitle")}</div><p className="mt-0.5 text-sm text-muted-foreground">{tUi("privacy.contentsAccessDescription")}</p></div>
 						<Select value={logStorage.contentsAccess ?? undefined} disabled={editingDisabled || logStorage.contentsAccess === null} onValueChange={(value) => setLogStorage((current) => current ? { ...current, contentsAccess: value === "admins" ? "admins" : "members" } : current)}>
 							<SelectTrigger className="w-full rounded-md" aria-label={tUi("privacy.contentsAccessTitle")}><SelectValue>{logStorage.contentsAccess === "admins" ? tUi("privacy.contentsAccessAdmins") : logStorage.contentsAccess === "members" ? tUi("privacy.contentsAccessMembers") : null}</SelectValue></SelectTrigger>

@@ -108,7 +108,7 @@ function LimitInput({
 }) {
 	const t = useTranslations("SettingsUI");
 	return (
-		<div className="grid min-w-0 gap-3 border-t border-border/60 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
+		<div className="grid min-w-0 gap-3 border-t border-border/60 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-center sm:gap-8">
 			<Label htmlFor={id}>{label}</Label>
 			<InputGroup>
 				{kind === "spend" ? (

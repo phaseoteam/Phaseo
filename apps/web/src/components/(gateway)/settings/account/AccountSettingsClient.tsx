@@ -441,7 +441,7 @@ export default function AccountSettingsClient({
 					onSubmit={handleSave}
 					className="divide-y divide-border/60"
 				>
-					<div className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
+					<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-center sm:gap-8">
 						<div className="min-w-0">
 							<Label htmlFor="displayName" className="text-sm font-medium">
 								{s("Display Name")}
@@ -464,7 +464,7 @@ export default function AccountSettingsClient({
 					</div>
 
 					{user.email ? (
-						<div className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
+						<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-center sm:gap-8">
 							<div className="min-w-0">
 								<Label className="text-sm font-medium">{s("Email")}</Label>
 								<p className="mt-0.5 text-sm text-muted-foreground">
@@ -478,7 +478,7 @@ export default function AccountSettingsClient({
 						) : null}
 
 					{user.countryStorageAvailable !== false ? (
-						<div className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
+						<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-center sm:gap-8">
 							<div className="min-w-0">
 								<Label htmlFor="account-country" className="text-sm font-medium">
 									{s("Country")}
@@ -498,7 +498,7 @@ export default function AccountSettingsClient({
 						</div>
 						) : null}
 
-					<div className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
+					<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-center sm:gap-8">
 						<div className="min-w-0">
 							<Label htmlFor="defaultTeam" className="text-sm font-medium">
 								{s("Default Workspace")}
@@ -618,7 +618,7 @@ export default function AccountSettingsClient({
 
 					<form onSubmit={handleChangePassword} className="mt-3">
 						<div className="divide-y divide-border/60">
-							<div className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-start sm:gap-8">
+							<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-start sm:gap-8">
 								<Label htmlFor="currentPassword" className="sm:pt-2">
 									{s("Current password")}
 								</Label>
@@ -633,7 +633,7 @@ export default function AccountSettingsClient({
 								</div>
 							</div>
 
-							<div className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-start sm:gap-8">
+							<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-start sm:gap-8">
 								<Label htmlFor="newPassword" className="sm:pt-2">
 									{s("New password")}
 								</Label>
@@ -651,7 +651,7 @@ export default function AccountSettingsClient({
 								</div>
 							</div>
 
-							<div className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-start sm:gap-8">
+							<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-start sm:gap-8">
 								<Label htmlFor="confirmPassword" className="sm:pt-2">
 									{s("Confirm password")}
 								</Label>
@@ -717,14 +717,14 @@ export default function AccountSettingsClient({
 
 					<form onSubmit={handleChangeEmail} className="mt-3">
 						<div className="divide-y divide-border/60">
-							<div className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-start sm:gap-8">
+							<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-start sm:gap-8">
 								<Label className="sm:pt-2">{s("Current email")}</Label>
 								<SensitiveValue className="min-w-0" label={s("Current email")}>
 									<Input value={user.email ?? ""} readOnly />
 								</SensitiveValue>
 							</div>
 
-							<div className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-start sm:gap-8">
+							<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-start sm:gap-8">
 								<Label htmlFor="newEmail" className="sm:pt-2">
 									{s("New email")}
 								</Label>
@@ -739,7 +739,7 @@ export default function AccountSettingsClient({
 								</SensitiveValue>
 							</div>
 
-							<div className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-start sm:gap-8">
+							<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-start sm:gap-8">
 								<Label htmlFor="emailPassword" className="sm:pt-2">
 									{s("Confirm with password")}
 								</Label>

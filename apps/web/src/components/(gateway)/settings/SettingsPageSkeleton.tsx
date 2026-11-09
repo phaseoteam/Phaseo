@@ -8,7 +8,7 @@ export default function SettingsPageSkeleton() {
 				<Skeleton className="h-4 w-72 max-w-full" />
 			</div>
 			<div className="divide-y border-y">
-				{[0, 1, 2].map((row) => <div key={row} className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:gap-8">
+				{[0, 1, 2].map((row) => <div key={row} className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:gap-8">
 					<Skeleton className="h-5 w-40 max-w-full" />
 					<Skeleton className="h-9 w-full" />
 				</div>)}
