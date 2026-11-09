@@ -10,7 +10,8 @@ const scratch = mkdtempSync(path.join(tmpdir(), "phaseo-action-icons-"));
 app.setPath("userData", path.join(scratch, "profile"));
 const root = path.resolve(import.meta.dirname, "..");
 const names = ["pin", "unpin", "archive", "restore", "edit", "pencil", "link", "unlink", "camera", "up", "down", "publish", "folder", "addFolder", "mail", "signIn", "schedule", "inbox", "thread", "usage", "issue", "complete", "notPlanned", "draftPullRequest", "closePullRequest", "comment", "open", "approve", "requestChanges", "retry", "sidebarLeft", "sidebarRight", "back", "forward", "play", "filter", "account", "activity", "bot", "browser", "bug", "clone", "code", "compare", "editor", "files", "fileSearch", "history", "keyboard", "limits", "moon", "newChat", "pause", "sun", "system", "textSearch", "undo"];
-const fixedParts = { archive: [1], restore: [1], camera: [0], publish: [1], folder: [0], addFolder: [2], mail: [1], signIn: [2], schedule: [1, 2, 3, 4, 5], inbox: [1], thread: [0], usage: [0], issue: [0], complete: [0], notPlanned: [0], draftPullRequest: [0, 1, 4], closePullRequest: [0, 1, 4, 5], requestChanges: [0, 2], sidebarLeft: [0, 1, 2], sidebarRight: [0, 1, 2], account: [1], bot: [1, 2, 3], browser: [0, 2], bug: [0, 1, 3, 4, 5, 6, 7, 8, 10], clone: [0, 1, 2], compare: [0], editor: [2], files: [2], fileSearch: [0, 1, 3], history: [0, 1], keyboard: [8], limits: [1], newChat: [0], sun: [0], system: [1, 2], textSearch: [0, 1, 2, 4] };
+const fixedParts = { archive: [1], restore: [1], camera: [0], publish: [1], folder: [0], addFolder: [2], mail: [1], signIn: [2], schedule: [1, 2, 3, 4, 5], inbox: [1], thread: [0], usage: [0], issue: [0], complete: [0], notPlanned: [0], draftPullRequest: [0, 1, 4], closePullRequest: [0, 1, 4, 5], requestChanges: [0, 2], sidebarLeft: [0, 1, 2], sidebarRight: [0, 1, 2], bot: [0, 1, 2, 3], browser: [0, 2], bug: [0, 1, 3, 4, 5, 6, 7, 8, 10], clone: [0, 1, 2], code: [2], compare: [0], editor: [2], files: [2], fileSearch: [0, 1], history: [0, 1], keyboard: [8], limits: [1], newChat: [0], sun: [0], system: [1, 2], textSearch: [0, 1, 2] };
+const hoverPoses = { code: [1, -1, 0], editor: [-0.75, 0.75, 0], compare: [0, -0.75, 0.75], fileSearch: [0, 0, -1, -1], textSearch: [0, 0, 0, -1, -1], pause: [-0.5, 0.5] };
 const importPath = relative => JSON.stringify(path.join(root, relative).replaceAll("\\", "/"));
 writeFileSync(path.join(scratch, "entry.tsx"), `
 import React from ${importPath("node_modules/react/index.js")};
@@ -52,14 +53,14 @@ app.whenReady().then(async () => { try {
 	const cdp = (method, params = {}) => window.webContents.debugger.sendCommand(method, params);
 	await cdp("DOM.enable"); await cdp("CSS.enable");
 	const force = async (name, pseudo) => {
-		if (["back", "forward", "play", "filter"].includes(name)) {
+		if (["back", "forward", "play", "filter"].includes(name) || name in hoverPoses) {
 			if (pseudo === "hover") {
-				const point = await run(`(()=>{const box=document.getElementById('${name}').getBoundingClientRect();return {x:box.x+box.width/2,y:box.y+box.height/2};})()`);
+				const point = await run(`(()=>{const button=document.getElementById('${name}');button.scrollIntoView({block:'center'});const box=button.getBoundingClientRect();return {x:box.x+box.width/2,y:box.y+box.height/2};})()`);
 				await cdp("Input.dispatchMouseEvent", { type: "mouseMoved", ...point });
 			} else if (pseudo === "focus-visible") {
 				await cdp("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
 				await cdp("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
-				await run(`document.getElementById('${name}').focus({preventScroll:true});true`);
+				await run(`(()=>{const button=document.getElementById('${name}');button.focus({preventScroll:true});button.scrollIntoView({block:'center'});return true;})()`);
 			} else {
 				await cdp("Input.dispatchMouseEvent", { type: "mouseMoved", x: 0, y: 0 });
 				await run(`document.getElementById('${name}').blur();true`);
@@ -72,12 +73,13 @@ app.whenReady().then(async () => { try {
 	const samples = {}, gestures = {};
 	for (const name of names) {
 		const navigation = name === "back" || name === "forward";
-		const hoverOnly = name === "play" || name === "filter";
+		const hoverOnly = name === "play" || name === "filter" || name in hoverPoses;
 		const held = navigation || hoverOnly;
 		if (hoverOnly) console.log("Action icon fixture: held hover", name);
-		const offsets = name === "filter" ? [0, 1, -1] : name === "play" ? [1] : name === "back" ? [-1.5, -1.5] : [1.5, 1.5];
+		const offsets = hoverPoses[name] ?? (name === "filter" ? [0, 1, -1] : name === "play" ? [1] : name === "back" ? [-1.5, -1.5] : [1.5, 1.5]);
 		const state = () => run(`(()=>{const button=document.getElementById('${name}'),svg=button.querySelector('svg');return {box:button.getBoundingClientRect().toJSON(),svgTransform:getComputedStyle(svg).transform,animations:svg.getAnimations({subtree:true}).map(a=>({name:a.animationName??a.transitionProperty,iterations:a.effect.getTiming().iterations})),parts:Array.from(svg.children).map(p=>{const style=getComputedStyle(p);return {transform:style.transform,translate:style.translate,x:new DOMMatrixReadOnly(style.transform).m41+(parseFloat(style.translate)||0),scale:style.scale,dash:style.strokeDashoffset,opacity:style.opacity};}),lengths:Array.from(svg.children).map(p=>p.getAttribute('pathLength'))};})()`);
 		await media(false);
+		if (held) await run(`document.getElementById('${name}').scrollIntoView({block:'center'});true`);
 		const idle = await state();
 		assert.equal(idle.animations.length, 0, `${name} moves at rest`);
 		assert(idle.lengths.every(value => value === "1"), `${name} has an unnormalised stroke`);
@@ -97,6 +99,9 @@ app.whenReady().then(async () => { try {
 			if (held) {
 				assert((await state()).parts.every((part, index) => Math.abs(part.x - offsets[index]) < 0.001), `${name} does not hold its ${trigger} position`);
 			}
+			if (name in hoverPoses) assert(middle.parts.every(part => part.transform === "none" && part.opacity === "1" && part.dash === "0px"), `${name} distorts or hides its symbol`);
+			if (name === "bot") assert.equal(middle.parts[4].transform, middle.parts[5].transform, "Operator eyes do not blink together");
+			if (name === "account") { assert(middle.parts.every(part => part.transform === "none")); assert.equal(middle.parts[0].opacity, middle.parts[1].opacity, "Account head separates from its silhouette"); }
 			for (const index of fixedParts[name] ?? []) assert.deepEqual(middle.parts[index], idle.parts[index], `${name} moves its frame`);
 			gestures[name] = active.animations.map(value => value.name);
 			await force(name, null);
@@ -109,8 +114,10 @@ app.whenReady().then(async () => { try {
 		}
 		await force(name, "hover");
 		for (const attribute of ["disabled", "aria-disabled"]) {
+			if (held) await run(`Promise.all(document.getElementById('${name}').querySelector('svg').getAnimations({subtree:true}).map(animation=>animation.finished)).then(()=>true)`);
 			await run(`document.getElementById('${name}').setAttribute('${attribute}','true')`);
 			assert.equal((await state()).animations.length, 0, `${name} animates while ${attribute}`);
+			if (held) assert.deepEqual((await state()).parts, idle.parts, `${name} keeps its hover pose while ${attribute}`);
 			await run(`document.getElementById('${name}').removeAttribute('${attribute}')`);
 		}
 		for (const reduced of [false, true]) {

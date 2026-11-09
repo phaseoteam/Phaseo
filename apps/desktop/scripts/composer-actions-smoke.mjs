@@ -554,6 +554,8 @@ app.whenReady().then(async () => { try {
 			assert.notDeepEqual(active.parts, idle.parts, `${row.label} does not visibly animate`);
 			assert.deepEqual(active.box, idle.box, `${row.label} moves its row`); assert.equal(active.transform, "none");
 			await cdp("Input.dispatchMouseEvent", { type: "mouseMoved", x: 0, y: 0 });
+			await run(`Promise.all(document.querySelector(${JSON.stringify(selector)}+' .gesture-icon').getAnimations({subtree:true}).map(animation=>animation.finished)).then(()=>true)`);
+			assert.deepEqual((await state()).parts, idle.parts, `${row.label} does not return after hover`);
 		}
 		await run("document.querySelector('.desktop-command-palette [cmdk-input]').focus();true");
 		await cdp("Input.dispatchKeyEvent", { type: "keyDown", key: "ArrowDown", code: "ArrowDown", windowsVirtualKeyCode: 40 });
