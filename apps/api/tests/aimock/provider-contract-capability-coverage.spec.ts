@@ -31,6 +31,7 @@ const inheritedContractByProvider: Record<string, string> = {
 const providersWithDedicatedNativeContractTests = new Set([
     "elevenlabs",
     "fal",
+    "parallel",
     "private-model",
     "respan",
     "typesafe",

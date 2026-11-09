@@ -483,6 +483,10 @@ export const logoManifest = {
 		light: "/logos/llmgateway-light.svg",
 		dark: "/logos/llmgateway-dark.svg",
 	},
+	parallel: {
+		light: "/logos/parallel_light.svg",
+		dark: "/logos/parallel_dark.svg",
+	},
 	parasail: {
 		light: "/logos/parasail_light.svg",
 		dark: "/logos/parasail_dark.svg",
