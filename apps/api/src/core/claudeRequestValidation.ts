@@ -6,7 +6,7 @@ export type ClaudeRequestIssue = { field: string; message: string };
 // These constraints are model contracts, independent of the incoming wire format.
 export function claudeRequestIssues(ir: IRChatRequest, model: string, providerId?: string): ClaudeRequestIssue[] {
 	if (!isClaudeOpus55(model)) {
-		// Sonnet 5.5, Fable 5.1 and Mythos 5.1 share only the forced tool choice rule.
+		// Sonnet 5.5 and Fable and Mythos 5.1 and 5.2 share only the forced tool choice rule.
 		const label = claudeModelWithoutForcedToolChoice(model);
 		return label && forcesToolChoice(ir)
 			? [{ field: "tool_choice", message: `${label}: forced tool choice is not supported; use auto or none.` }]
