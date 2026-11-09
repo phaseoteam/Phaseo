@@ -7,7 +7,7 @@ import type { SettingsKeySecurityInitialData } from "@/lib/fetchers/internal/set
 export default withSettingsResource("key-security", function SecurityContent({ initialData }: { initialData: SettingsKeySecurityInitialData }) {
 	const t = useTranslations("SettingsUI");
 	return (
-		<div className="space-y-6">
+		<div className="min-w-0 space-y-8">
 			<SettingsPageHeader title={t("keySecurity.title")} description={t("keySecurity.description")} />
 			<KeySecurityClient data={initialData} />
 		</div>

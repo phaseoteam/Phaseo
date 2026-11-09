@@ -9,6 +9,7 @@ import {
 	type KeyLimitPayload,
 } from "@/features/settings/keys/actions";
 import { Button } from "@/components/ui/button";
+import { SettingsFormActions } from "../SettingsFormActions";
 
 import {
 	InputGroup,
@@ -107,7 +108,7 @@ function LimitInput({
 }) {
 	const t = useTranslations("SettingsUI");
 	return (
-		<div className="min-w-0 space-y-2">
+		<div className="grid min-w-0 gap-3 border-t border-border/60 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
 			<Label htmlFor={id}>{label}</Label>
 			<InputGroup>
 				{kind === "spend" ? (
@@ -180,8 +181,8 @@ export default function KeySettingsForm({ k }: { k: any }) {
 	}
 
 	return (
-		<form id="settings" onSubmit={onSave} className="space-y-6 rounded-xl border bg-card p-6">
-			<fieldset disabled={saving} className="space-y-6">
+		<form id="settings" onSubmit={onSave} className="min-w-0 w-full max-w-4xl space-y-8">
+			<fieldset disabled={saving} className="space-y-8">
 			<section className="space-y-4">
 				<div className="text-sm font-medium">{t("strings.General")}</div>
 				<div className="flex items-center justify-between gap-4">
@@ -200,12 +201,12 @@ export default function KeySettingsForm({ k }: { k: any }) {
 					<div className="text-sm font-medium">{t("strings.Limits")}</div>
 					<div className="text-xs text-muted-foreground">{t("strings.phraseLeaveAFieldBlankForUnlimited")}</div>
 				</div>
-				<div className="grid gap-4 md:grid-cols-3">
+				<div>
 					<LimitInput id="edit-key-daily-requests" label={t("keys.dailyRequests")} value={limits.dailyRequests} onChange={(value) => updateLimit("dailyRequests", value)} kind="requests" />
 					<LimitInput id="edit-key-weekly-requests" label={t("keys.weeklyRequests")} value={limits.weeklyRequests} onChange={(value) => updateLimit("weeklyRequests", value)} kind="requests" />
 					<LimitInput id="edit-key-monthly-requests" label={t("keys.monthlyRequests")} value={limits.monthlyRequests} onChange={(value) => updateLimit("monthlyRequests", value)} kind="requests" />
 				</div>
-				<div className="grid gap-4 md:grid-cols-3">
+				<div>
 					<LimitInput id="edit-key-daily-spend" label={t("keys.dailySpend")} value={limits.dailyCostUsd} onChange={(value) => updateLimit("dailyCostUsd", value)} kind="spend" />
 					<LimitInput id="edit-key-weekly-spend" label={t("keys.weeklySpend")} value={limits.weeklyCostUsd} onChange={(value) => updateLimit("weeklyCostUsd", value)} kind="spend" />
 					<LimitInput id="edit-key-monthly-spend" label={t("keys.monthlySpend")} value={limits.monthlyCostUsd} onChange={(value) => updateLimit("monthlyCostUsd", value)} kind="spend" />
@@ -221,12 +222,18 @@ export default function KeySettingsForm({ k }: { k: any }) {
 					<label htmlFor="edit-key-storage" className="text-sm font-medium">{t("keyStorage.title")}</label>
 					<p className="text-xs text-muted-foreground">{t("keyStorage.help")}</p>
 				</div>
-				<KeyStorageLocationPicker id="edit-key-storage" value={storageLocations} onChange={setStorageLocations} disabled={saving} />
+				<div className="max-w-sm"><KeyStorageLocationPicker id="edit-key-storage" value={storageLocations} onChange={setStorageLocations} disabled={saving} /></div>
 			</section>
 
-			<div className="flex justify-end">
+			<SettingsFormActions active={dirty || saving}>
+				<Button type="button" variant="outline" disabled={saving || !dirty} onClick={() => {
+					setEnabled(isKeyEnabled(k));
+					setLimits(initialLimits(k));
+					setIpAllowlist(k.ip_allowlist ?? []);
+					setStorageLocations(k.storage_locations ?? []);
+				}}>{t("strings.Cancel")}</Button>
 				<Button type="submit" disabled={saving || !dirty}>{saving ? t("strings.phraseSaving") : t("strings.Save Changes")}</Button>
-			</div>
+			</SettingsFormActions>
 			</fieldset>
 		</form>
 	);

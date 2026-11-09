@@ -15,5 +15,5 @@ export async function getProviderReviewMetadata() {
 export default function ProviderReviewPage() {
 	const t = useTranslations("SettingsUI.providerReviewCopy");
 	const { data: { applications, requests } } = useSuspenseQuery(providerReviewQuery());
-	return <div className="space-y-6"><SettingsPageHeader title={t("title")} description={t("description")} /><ProviderReviewClient initialApplications={applications} /><ProviderModelRequests initialRequests={requests}/></div>;
+	return <div className="min-w-0 space-y-8"><SettingsPageHeader title={t("title")} description={t("description")} /><ProviderReviewClient initialApplications={applications} /><ProviderModelRequests initialRequests={requests}/></div>;
 }

@@ -98,7 +98,7 @@ export default function BYOKPage({ providerCatalogData }: { providerCatalogData:
 	const locale = useLocale();
 	const t = useTranslations("SettingsUI");
 	return (
-		<div className="mx-auto space-y-6">
+		<div className="min-w-0 space-y-8">
 			<SettingsPageHeader
 				title={t("headers.byok")}
 				description={t("headers.byokDescription")}

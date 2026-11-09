@@ -12,7 +12,7 @@ export default withSettingsResource("management-api-keys", function ManagementAp
 
 	if (!initialData.workspace) {
 		return (
-			<div className="space-y-6">
+			<div className="w-full max-w-4xl space-y-8">
 				<SettingsPageHeader
 					title={t("headers.managementApiKeys")}
 					meta={<Badge variant="outline">{t("settingsPageCopy.beta")}</Badge>}
@@ -29,7 +29,7 @@ export default withSettingsResource("management-api-keys", function ManagementAp
 	}
 
 	return (
-		<div className="space-y-6">
+		<div className="min-w-0 space-y-8">
 			<SettingsPageHeader
 				title={t("headers.managementApiKeys")}
 				meta={<Badge variant="outline">{t("settingsPageCopy.beta")}</Badge>}

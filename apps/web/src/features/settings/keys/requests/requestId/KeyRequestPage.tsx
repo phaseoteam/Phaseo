@@ -38,7 +38,7 @@ export default function KeyRequestPage() {
 
 	if (result.kind !== "ok") {
 		return (
-			<div className="space-y-4">
+			<div className="w-full max-w-4xl space-y-8">
 				{header}
 				<Callout tone="warning" title={t("notFoundTitle")}>{t("notFoundBody")}</Callout>
 			</div>
@@ -59,7 +59,7 @@ export default function KeyRequestPage() {
 	];
 
 	return (
-		<div className="space-y-4">
+		<div className="w-full max-w-4xl space-y-8">
 			{header}
 			<Card className="rounded-md">
 				<CardContent className="p-0">

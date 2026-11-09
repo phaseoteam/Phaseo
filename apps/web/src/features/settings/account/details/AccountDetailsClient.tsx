@@ -12,7 +12,7 @@ import type { SettingsAccountDetailsInitialData } from "@/lib/fetchers/internal/
 export default function AccountDetailsPage() {
 	const messages = getSettingsMessages(useLocale() as PublicLocale);
 	return (
-		<div className="space-y-6">
+		<div className="w-full max-w-4xl space-y-8">
 			<SettingsPageHeader
 				title={messages.pages.account}
 				description={messages.pages.accountDescription}

@@ -9,7 +9,7 @@ import ClassifierEditor from "./ClassifierEditor";
 export default function ClassifierEditorPage({ mode, classifierId }: { mode: "create" | "edit"; classifierId?: string }) {
 	const t = useTranslations("SettingsUI");
 	return (
-		<div className="space-y-6">
+		<div className="w-full max-w-4xl space-y-8">
 			<Link href="/settings/classifiers" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
 				<ArrowLeft className="size-4" />{t("classifiers.backToList")}
 			</Link>

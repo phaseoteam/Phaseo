@@ -13,7 +13,7 @@ export async function getGuardrailMetadata() {
 export default function GuardrailDetailPage() {
 	const params = useParams({ from: "/{-$locale}/_dashboard/settings/guardrails/$guardrailId/" });
 	return (
-		<div className="space-y-6">
+		<div className="w-full max-w-4xl space-y-8">
 			<SettingsPageHeader
 				title="Guardrail"
 				titleKey="headers.guardrail"

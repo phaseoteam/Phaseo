@@ -2347,7 +2347,7 @@ export default function GuardrailEditorPageClient(props: {
 
 	if (isWizard) {
 		return (
-			<div className="[&_[data-slot=select-trigger]]:!rounded-md">
+			<div className="w-full max-w-4xl [&_[data-slot=select-trigger]]:!rounded-md">
 				<GuardrailCreateWizard
 					form={form}
 					defaults={initial}
@@ -2365,7 +2365,7 @@ export default function GuardrailEditorPageClient(props: {
 	}
 
 	return (
-		<div className="space-y-6 [&_[data-slot=button]]:!rounded-md [&_[data-slot=select-trigger]]:!rounded-md">
+		<div className="w-full max-w-4xl space-y-8 [&_[data-slot=button]]:!rounded-md [&_[data-slot=select-trigger]]:!rounded-md">
 			<div className="w-full space-y-6">
 				{activeSection ? (
 					<div className="space-y-4 border-b pb-5">
@@ -2491,7 +2491,7 @@ export default function GuardrailEditorPageClient(props: {
 				</> : null}
 				{sectionsAccordion}
 
-				{activeSection ? <div className="flex justify-end gap-2 border-t pt-4">
+				{activeSection ? <div className="flex flex-wrap justify-end gap-2 border-t pt-4">
 					<Button asChild type="button" variant="outline" disabled={saving || deleting} className="rounded-md">
 						<Link href={props.backHref}>{t("strings.Cancel" as never)}</Link>
 					</Button>

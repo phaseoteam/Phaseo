@@ -14,7 +14,7 @@ export default function AuthorizedAppsPage() {
 	const t = useTranslations("SettingsUI");
 	const locale = useLocale();
 	return (
-		<div className="space-y-6">
+		<div className="w-full max-w-4xl space-y-8">
 			<SettingsPageHeader
 				title="OAuth Integrations"
 				titleKey="headers.oauthIntegrations"

@@ -6,5 +6,5 @@ import ProviderOnboardingClient from "@/components/(gateway)/settings/account/Pr
 export default withPrivateSettings("/api/account/settings/provider-onboarding", function ProviderOnboardingContent({ initialData }: { initialData: SettingsProviderOnboardingInitialData }) {
 	const t = useTranslations("SettingsUI.providerCatalog");
 	const hasCatalog = (initialData.catalogProviders ?? initialData.linkedProviders).length > 0;
-	return <div className="space-y-6"><SettingsPageHeader title={hasCatalog ? t("title") : t("becomeProvider")} description={hasCatalog ? t("description") : t("onboardingDescription")} /><ProviderOnboardingClient initialData={initialData} /></div>;
+	return <div className={hasCatalog ? "space-y-8" : "w-full max-w-4xl space-y-8"}><SettingsPageHeader title={hasCatalog ? t("title") : t("becomeProvider")} description={hasCatalog ? t("description") : t("onboardingDescription")} /><ProviderOnboardingClient initialData={initialData} /></div>;
 }, false);

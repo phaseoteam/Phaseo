@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { updateTeamSsoSettingsAction } from "@/features/settings/teams/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SettingsFormActions } from "../SettingsFormActions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -90,7 +91,7 @@ export default function WorkspaceSamlSettingsCard({
 
 	return (
 		<section className="space-y-6">
-			<div className="grid max-w-2xl gap-6">
+			<div className="grid gap-6">
 				<div className="grid gap-2">
 					<div className="flex items-center justify-between gap-3"><Label htmlFor="samlMetadataUrl">{t("saml.metadataUrl")}</Label><Badge variant={enabled ? "default" : configured ? "secondary" : "outline"}>{enabled ? t("saml.enabled") : configured ? t("saml.ready") : t("saml.notConfigured")}</Badge></div>
 					<div className="flex gap-2">
@@ -145,7 +146,7 @@ export default function WorkspaceSamlSettingsCard({
 					</p>
 				</div>
 
-				<div className="flex items-center justify-between gap-4 rounded-md border border-border/70 px-4 py-3">
+				<div className="flex items-center justify-between gap-4 border-t border-border/60 py-5">
 					<div>
 						<p className="text-sm font-medium">{t("saml.enableSignIn")}</p>
 						<p className="text-xs text-muted-foreground">
@@ -160,11 +161,15 @@ export default function WorkspaceSamlSettingsCard({
 					/>
 				</div>
 			</div>
-			<div className="flex items-center justify-between gap-4 border-t border-border/60 pt-5">
-				<p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+			<SettingsFormActions active={hasChanges && canEdit} status={<p className="flex items-center gap-1.5 text-xs text-muted-foreground">
 					<CheckCircle2 className="h-3.5 w-3.5" />
 					{t("saml.availableRollout")}
-				</p>
+				</p>}>
+				<Button type="button" variant="outline" disabled={!canEdit || !hasChanges || saving} onClick={() => {
+					setEnabled(initialEnabled);
+					setProviderId(initialProviderId);
+					setDomains(initialDomains);
+				}}>{t("strings.Cancel")}</Button>
 				<Button
 					type="button"
 					onClick={save}
@@ -173,7 +178,7 @@ export default function WorkspaceSamlSettingsCard({
 					{saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
 					{t("saml.save")}
 				</Button>
-			</div>
+			</SettingsFormActions>
 		</section>
 	);
 }

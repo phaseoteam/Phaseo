@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 export default function SlackContent() {
 	const t = useTranslations("SettingsUI");
 	return (
-		<div className="space-y-6">
+		<div className="w-full max-w-4xl space-y-8">
 			<SettingsPageHeader
 				title={t("slack.title")}
 				description={t("slack.description")}

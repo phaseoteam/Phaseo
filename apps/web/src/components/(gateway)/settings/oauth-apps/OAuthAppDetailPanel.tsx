@@ -2,6 +2,7 @@ import { formatLatency } from "@phaseo/app-kit/format";
 import React, { useMemo, useState } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { SettingsFormActions } from "../SettingsFormActions";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Separator } from "@/components/ui/separator";
@@ -215,7 +216,7 @@ export default function OAuthAppDetailPanel({
 	const statusText = t(`oauthDetail.${oauthApp.status as string}` as never) || t("oauthDetail.unknown");
 
 	return (
-		<div className="space-y-6">
+		<div className="min-w-0 space-y-8">
 			{/* App Overview Card */}
 			<Card>
 				<CardHeader>
@@ -300,8 +301,8 @@ export default function OAuthAppDetailPanel({
 			</Card>
 
 			{/* Credentials Card */}
-			<Card>
-				<CardHeader>
+			<Card className="gap-5 rounded-none border-0 border-t py-8 shadow-none">
+				<CardHeader className="px-0">
 					<CardTitle className="text-lg flex items-center gap-2">
 						<Settings className="size-5" />
 						{t("oauthDetail.credentials")}
@@ -310,7 +311,7 @@ export default function OAuthAppDetailPanel({
 						{t("oauthDetail.credentialsDescription")}
 					</CardDescription>
 				</CardHeader>
-				<CardContent className="space-y-4">
+				<CardContent className="space-y-5 px-0">
 					<Alert>
 						<AlertCircle className="h-4 w-4" />
 						<AlertDescription>
@@ -355,14 +356,14 @@ export default function OAuthAppDetailPanel({
 			</Card>
 
 			{/* Redirect URIs Card */}
-			<Card>
-				<CardHeader>
+			<Card className="gap-5 rounded-none border-0 border-t py-8 shadow-none">
+				<CardHeader className="px-0">
 					<CardTitle className="text-lg">{t("oauth.redirectUri")}</CardTitle>
 					<CardDescription>
 						{t("oauthDetail.authorizedCallbacks")}
 					</CardDescription>
 				</CardHeader>
-				<CardContent>
+				<CardContent className="px-0">
 					<RedirectUriManager
 						clientId={oauthApp.client_id}
 						initialRedirectUris={appRedirectUris}
@@ -371,14 +372,14 @@ export default function OAuthAppDetailPanel({
 			</Card>
 
 			{/* Allowed OAuth scopes */}
-			<Card>
-				<CardHeader>
+			<Card className="gap-5 rounded-none border-0 border-t py-8 shadow-none">
+				<CardHeader className="px-0">
 					<CardTitle className="text-lg">{t("strings.Scopes this app may request" as never)}</CardTitle>
 					<CardDescription>
 						{t("oauthDetail.scopesDescription")}
 					</CardDescription>
 				</CardHeader>
-				<CardContent className="space-y-4">
+				<CardContent className="space-y-5 px-0">
 					<Alert>
 						<AlertCircle className="h-4 w-4" />
 						<AlertDescription>
@@ -386,11 +387,11 @@ export default function OAuthAppDetailPanel({
 						</AlertDescription>
 					</Alert>
 					<OAuthScopeSelector selectedScopes={allowedScopes} onChange={setAllowedScopes} disabled={savingScopes} />
-					<div className="flex justify-end">
+					<SettingsFormActions>
 						<Button onClick={saveScopes} disabled={savingScopes || allowedScopes.length === 0}>
 							{savingScopes ? t("oauthDetail.saving") : t("oauthDetail.saveScopes")}
 						</Button>
-					</div>
+					</SettingsFormActions>
 				</CardContent>
 			</Card>
 
@@ -650,8 +651,8 @@ export default function OAuthAppDetailPanel({
 			)}
 
 			{/* Danger Zone */}
-			<Card className="border-red-200 dark:border-red-900">
-				<CardHeader>
+			<Card className="gap-5 rounded-none border-0 border-t py-8 shadow-none">
+				<CardHeader className="px-0">
 					<CardTitle className="text-lg text-red-600 dark:text-red-400 flex items-center gap-2">
 						<Trash2 className="size-5" />
 						{translate("strings.Danger Zone" as never)}
@@ -660,8 +661,8 @@ export default function OAuthAppDetailPanel({
 						{translate("oauthCopy.irreversibleActionsDescription")}
 					</CardDescription>
 				</CardHeader>
-				<CardContent>
-					<div className="flex items-center justify-between">
+				<CardContent className="px-0">
+					<div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center">
 						<div>
 							<div className="font-medium text-sm">{translate("oauthDetail.deleteApp")}</div>
 							<div className="text-xs text-muted-foreground">

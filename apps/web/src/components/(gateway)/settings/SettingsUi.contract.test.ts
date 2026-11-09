@@ -77,7 +77,7 @@ describe("settings UI contracts", () => {
 		expect(pageHeaderSource).toContain("sm:justify-between");
 		expect(pageHeaderSource).toContain("sm:justify-end");
 		expect(pageHeaderSource.indexOf("{actions ?")).toBeGreaterThan(
-			pageHeaderSource.indexOf("{description ?"),
+			pageHeaderSource.indexOf("{translatedDescription ?"),
 		);
 		expect(keysPageSource).toContain("flex flex-wrap items-center gap-2");
 	});
@@ -100,9 +100,6 @@ describe("settings UI contracts", () => {
 		expect(containerSource).toContain('className="min-w-0 flex-1"');
 		expect(accountWorkspacesSource).toContain("<CreateTeamDialog");
 		expect(panelSource).toContain('aria-labelledby="workspace-danger-zone-title"');
-		expect(panelSource).toContain(
-			'className="overflow-hidden rounded-xl border bg-background/40"',
-		);
 		const createInviteSource = readSource(
 			"src/components/(gateway)/settings/CreateTeamInviteDialog.tsx",
 		);
