@@ -137,19 +137,25 @@ export default function KeySettingsForm({ k }: { k: any }) {
 	const t = useTranslations("SettingsUI");
 	const router = useRouter();
 	const invalidateSettings = useInvalidatePrivateSettings();
-	const [enabled, setEnabled] = useState(() => isKeyEnabled(k));
-	const [limits, setLimits] = useState<LimitsForm>(() => initialLimits(k));
-	const [ipAllowlist, setIpAllowlist] = useState<KeyIpEntry[]>(() => k.ip_allowlist ?? []);
-	const [storageLocations, setStorageLocations] = useState<string[]>(() => k.storage_locations ?? []);
+	const [saved, setSaved] = useState(() => ({
+		enabled: isKeyEnabled(k),
+		limits: initialLimits(k),
+		ipAllowlist: (k.ip_allowlist ?? []) as KeyIpEntry[],
+		storageLocations: (k.storage_locations ?? []) as string[],
+	}));
+	const [enabled, setEnabled] = useState(saved.enabled);
+	const [limits, setLimits] = useState(saved.limits);
+	const [ipAllowlist, setIpAllowlist] = useState(saved.ipAllowlist);
+	const [storageLocations, setStorageLocations] = useState(saved.storageLocations);
 	const [saving, setSaving] = useState(false);
 	const revoked = ["revoked", "compromised"].includes(String(k?.status ?? "").toLowerCase());
 	const dirty = useMemo(
 		() =>
-			enabled !== isKeyEnabled(k) ||
-			JSON.stringify(limits) !== JSON.stringify(initialLimits(k)) ||
-			JSON.stringify(ipAllowlist) !== JSON.stringify(k.ip_allowlist ?? []) ||
-			JSON.stringify(storageLocations) !== JSON.stringify(k.storage_locations ?? []),
-		[k, enabled, limits, ipAllowlist, storageLocations],
+			enabled !== saved.enabled ||
+			JSON.stringify(limits) !== JSON.stringify(saved.limits) ||
+			JSON.stringify(ipAllowlist) !== JSON.stringify(saved.ipAllowlist) ||
+			JSON.stringify(storageLocations) !== JSON.stringify(saved.storageLocations),
+		[saved, enabled, limits, ipAllowlist, storageLocations],
 	);
 
 	const updateLimit = (field: keyof LimitsForm, value: string) => {
@@ -163,7 +169,7 @@ export default function KeySettingsForm({ k }: { k: any }) {
 
 		setSaving(true);
 		try {
-			const promise = updateApiKeyAction({ data: { id: k.id, updates: { ...(enabled !== isKeyEnabled(k) ? { paused: !enabled } : {}), ...(JSON.stringify(ipAllowlist) !== JSON.stringify(k.ip_allowlist ?? []) ? { ipAllowlist } : {}), ...(JSON.stringify(storageLocations) !== JSON.stringify(k.storage_locations ?? []) ? { storageLocations } : {}), limits: limitPayload } } });
+			const promise = updateApiKeyAction({ data: { id: k.id, updates: { ...(enabled !== saved.enabled ? { paused: !enabled } : {}), ...(JSON.stringify(ipAllowlist) !== JSON.stringify(saved.ipAllowlist) ? { ipAllowlist } : {}), ...(JSON.stringify(storageLocations) !== JSON.stringify(saved.storageLocations) ? { storageLocations } : {}), limits: limitPayload } } });
 			toast.promise(promise, {
 					loading: t("strings.phraseSavingKey"),
 					success: t("strings.Key updated"),
@@ -171,6 +177,7 @@ export default function KeySettingsForm({ k }: { k: any }) {
 				},
 			);
 			await promise;
+			setSaved({ enabled, limits, ipAllowlist, storageLocations });
 			void invalidateSettings();
 			router.refresh();
 		} catch {
@@ -227,10 +234,10 @@ export default function KeySettingsForm({ k }: { k: any }) {
 
 			<SettingsFormActions active={dirty || saving}>
 				<Button type="button" variant="outline" disabled={saving || !dirty} onClick={() => {
-					setEnabled(isKeyEnabled(k));
-					setLimits(initialLimits(k));
-					setIpAllowlist(k.ip_allowlist ?? []);
-					setStorageLocations(k.storage_locations ?? []);
+					setEnabled(saved.enabled);
+					setLimits(saved.limits);
+					setIpAllowlist(saved.ipAllowlist);
+					setStorageLocations(saved.storageLocations);
 				}}>{t("strings.Cancel")}</Button>
 				<Button type="submit" disabled={saving || !dirty}>{saving ? t("strings.phraseSaving") : t("strings.Save Changes")}</Button>
 			</SettingsFormActions>

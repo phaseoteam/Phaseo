@@ -28,6 +28,14 @@ function domainsToInput(domains: string[] | null | undefined): string {
 	return Array.isArray(domains) ? domains.join(", ") : "";
 }
 
+function samlFormValues(settings?: TeamSsoSettingsRow, preview = false) {
+	return {
+		enabled: Boolean(settings?.sso_enabled),
+		providerId: String(settings?.sso_provider_identifier ?? (preview ? "sp_example_provider" : "")),
+		domains: domainsToInput(settings?.sso_domains) || (preview ? "acme.example" : ""),
+	};
+}
+
 export default function WorkspaceSamlSettingsCard({
 	workspaceId,
 	initialSettings,
@@ -36,13 +44,13 @@ export default function WorkspaceSamlSettingsCard({
 }: Props) {
 	const t = useTranslations("SettingsUI");
 	const invalidateSettings = useInvalidatePrivateSettings();
-	const [enabled, setEnabled] = React.useState(Boolean(initialSettings?.sso_enabled));
-	const [providerId, setProviderId] = React.useState(
-		String(initialSettings?.sso_provider_identifier ?? (preview ? "sp_example_provider" : "")),
-	);
-	const [domains, setDomains] = React.useState(
-		domainsToInput(initialSettings?.sso_domains) || (preview ? "acme.example" : ""),
-	);
+	const incomingValues = samlFormValues(initialSettings, preview);
+	const incomingSignature = JSON.stringify(incomingValues);
+	const [previousInput, setPreviousInput] = React.useState({ workspaceId, signature: incomingSignature });
+	const [saved, setSaved] = React.useState(incomingValues);
+	const [enabled, setEnabled] = React.useState(saved.enabled);
+	const [providerId, setProviderId] = React.useState(saved.providerId);
+	const [domains, setDomains] = React.useState(saved.domains);
 	const [saving, setSaving] = React.useState(false);
 
 	const domainList = React.useMemo(
@@ -50,13 +58,21 @@ export default function WorkspaceSamlSettingsCard({
 		[domains],
 	);
 	const configured = providerId.trim().length > 0 && domainList.length > 0;
-	const initialEnabled = Boolean(initialSettings?.sso_enabled);
-	const initialProviderId = String(initialSettings?.sso_provider_identifier ?? "");
-	const initialDomains = domainsToInput(initialSettings?.sso_domains);
 	const hasChanges =
-		enabled !== initialEnabled ||
-		providerId.trim() !== initialProviderId.trim() ||
-		domains.trim() !== initialDomains.trim();
+		enabled !== saved.enabled ||
+		providerId.trim() !== saved.providerId.trim() ||
+		domains.trim() !== saved.domains.trim();
+
+	if (previousInput.workspaceId !== workspaceId || previousInput.signature !== incomingSignature) {
+		setPreviousInput({ workspaceId, signature: incomingSignature });
+		setSaved(incomingValues);
+		// Query refreshes update Cancel without discarding an in-progress edit.
+		if (!hasChanges || previousInput.workspaceId !== workspaceId) {
+			setEnabled(incomingValues.enabled);
+			setProviderId(incomingValues.providerId);
+			setDomains(incomingValues.domains);
+		}
+	}
 
 	const supabaseUrl = process.env.PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
 	const metadataUrl = supabaseUrl
@@ -79,7 +95,12 @@ export default function WorkspaceSamlSettingsCard({
 				ssoProviderIdentifier: providerId,
 				ssoDomains: domainList,
 			});
-			await updateTeamSsoSettingsAction({ data: { workspaceId, input: normalized } });
+			const response = await updateTeamSsoSettingsAction({ data: { workspaceId, input: normalized } });
+			const acknowledged = samlFormValues(response.settings);
+			setSaved(acknowledged);
+			setEnabled(acknowledged.enabled);
+			setProviderId(acknowledged.providerId);
+			setDomains(acknowledged.domains);
 			void invalidateSettings();
 			toast.success(t("saml.saved"));
 		} catch (error) {
@@ -166,9 +187,9 @@ export default function WorkspaceSamlSettingsCard({
 					{t("saml.availableRollout")}
 				</p>}>
 				<Button type="button" variant="outline" disabled={!canEdit || !hasChanges || saving} onClick={() => {
-					setEnabled(initialEnabled);
-					setProviderId(initialProviderId);
-					setDomains(initialDomains);
+					setEnabled(saved.enabled);
+					setProviderId(saved.providerId);
+					setDomains(saved.domains);
 				}}>{t("strings.Cancel")}</Button>
 				<Button
 					type="button"
