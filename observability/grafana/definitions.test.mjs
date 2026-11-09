@@ -63,6 +63,29 @@ test('dashboards keep summary cards and investigations visible without overlappi
     assert.ok(panel.fieldConfig.defaults.links[0].url.includes('var-environment=$environment&from=$__from&to=$__to'), 'investigations preserve environment and incident time');
   }
 });
+
+test('record investigation links preserve filters and incident time without showing raw log panels', () => {
+  const definitions = dashboards();
+  assert.ok(!definitions.some(dashboard => dashboard.panels.some(panel => panel.type === 'logs')));
+  const gateway = definitions.find(dashboard => dashboard.uid === 'phaseo-gateway');
+  const panel = gateway.panels.find(panel => panel.title === 'Provider attempt lookup');
+  const fill = value => value.replaceAll('${loki}', 'logs').replaceAll('${tempo}', 'traces').replaceAll('$environment', 'production')
+    .replaceAll('${request:regex}', 'request-123').replaceAll('${provider:regex}', 'provider-a').replaceAll('${model:regex}', 'model-a')
+    .replaceAll('${__from}', '1000').replaceAll('${__to}', '2000').replaceAll('${__value.raw}', '0123456789abcdef0123456789abcdef');
+  const pane = url => Object.values(JSON.parse(new URL(fill(url), 'https://phaseo.grafana.net').searchParams.get('panes')))[0];
+  const logs = pane(panel.links[0].url);
+  assert.deepEqual(logs.range, { from: '1000', to: '2000' });
+  assert.equal(logs.datasource, 'logs');
+  assert.equal(logs.queries[0].expr, fill(panel.targets[0].expr));
+  assert.ok(logs.queries[0].expr.includes('request-123'));
+  assert.ok(logs.queries[0].expr.includes('provider-a'));
+  assert.equal(logs.queries[0].maxLines, 100);
+  const traceOverride = panel.fieldConfig.overrides.find(override => override.matcher.options === 'trace_id' && override.properties.some(property => property.id === 'links'));
+  const trace = pane(traceOverride.properties.find(property => property.id === 'links').value[0].url);
+  assert.equal(trace.datasource, 'traces');
+  assert.equal(trace.queries[0].query, '0123456789abcdef0123456789abcdef');
+  assert.deepEqual(trace.range, logs.range);
+});
 test('provisioning defaults to no network and rejects credential-unsafe stack URLs', async () => {
   let calls = 0;
   const fetcher = async () => { calls++; throw new Error('unexpected network'); };
