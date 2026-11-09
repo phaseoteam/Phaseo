@@ -2,7 +2,7 @@ import { CircleAlert, CircleCheck, Info, X } from "lucide-react-native";
 import { useEffect, type ReactNode } from "react";
 import { Pressable, View } from "react-native";
 import { GestureDetector, usePanGesture } from "react-native-gesture-handler";
-import Animated, { FadeInUp, FadeOutUp, LinearTransition, useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
+import Animated, { cancelAnimation, FadeInUp, FadeOutUp, LinearTransition, useAnimatedStyle, useSharedValue, withSpring } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { scheduleOnRN } from "react-native-worklets";
 import { useLayout } from "@/hooks/useLayout";
@@ -117,12 +117,19 @@ function ToastStack({ toasts }: { toasts: Toast[] }) {
 function SwipeAway({ onDismiss, children }: { onDismiss: () => void; children: ReactNode }) {
   const offset = useSharedValue(0);
   const height = useSharedValue(0);
+  const dragFrom = useSharedValue(0);
   const pan = usePanGesture({
     activeOffsetY: [-8, 8],
     failOffsetX: [-16, 16],
+    onActivate: () => {
+      "worklet";
+      // From where it is now, even springing back or flying off, so catching it never makes it jump.
+      cancelAnimation(offset);
+      dragFrom.set(offset.get());
+    },
     onUpdate: (event) => {
       "worklet";
-      const y = event.translationY;
+      const y = dragFrom.get() + event.translationY;
       offset.set(y <= 0 ? y : rubberband(y, height.get()));
     },
     onDeactivate: (event) => {

@@ -50,8 +50,8 @@ function ChartSurface({ height, width, onLayout, anchors, active, onActive, labe
   const count = anchors.length;
   // The drag runs on the UI thread and moves the bubble there, so it keeps up with the finger while JS is busy
   // (an answer streaming in). JS only hears about a new point, to redraw the bubble's content and tick.
-  const latest = useRef({ onActive });
-  useLayoutEffect(() => { latest.current = { onActive }; });
+  const latest = useRef({ onActive, count });
+  useLayoutEffect(() => { latest.current = { onActive, count }; });
   const a11yTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const points = useSharedValue<readonly number[]>(anchors);
   const selected = useSharedValue(-1);
@@ -62,14 +62,38 @@ function ChartSurface({ height, width, onLayout, anchors, active, onActive, labe
   const interactive = Boolean(tooltip) && count > 0;
 
   useEffect(() => { chartWidth.set(width); }, [chartWidth, width]);
-  useEffect(() => { points.set(anchors); }, [points, anchors]);
+  useEffect(() => {
+    points.set(anchors);
+    // New data mid-drag: the finger's next move picks again from the new points.
+    selected.set(-1);
+  }, [points, selected, anchors]);
+  // A shorter series can leave the reading past its end; drop it rather than read a point that's gone.
+  useEffect(() => {
+    if (active != null && active >= count) latest.current.onActive(null);
+  }, [active, count]);
   useEffect(() => () => clearTimeout(a11yTimer.current), []);
 
   const pick = useCallback((index: number) => {
+    // A pick queued from the UI thread just before the data shrank may point past the new end.
+    if (index >= latest.current.count) return;
     latest.current.onActive(index);
     haptic("tick");
   }, []);
   const release = useCallback(() => latest.current.onActive(null), []);
+
+  // Declared before the gesture's worklets capture it: the worklets plugin turns a function declaration into a
+  // variable, so a later declaration would be captured as undefined.
+  const moveTo = (x: number, y: number) => {
+    "worklet";
+    const at = points.get();
+    const index = nearestIndex(at, x);
+    if (index < 0) return;
+    fingerY.set(y);
+    anchorX.set(at[index] ?? 0);
+    if (index === selected.get()) return;
+    selected.set(index);
+    scheduleOnRN(pick, index);
+  };
 
   const gesture = usePanGesture({
     activateAfterLongPress: INSPECT_HOLD_MS,
@@ -88,18 +112,6 @@ function ChartSurface({ height, width, onLayout, anchors, active, onActive, labe
       scheduleOnRN(release);
     },
   });
-
-  function moveTo(x: number, y: number) {
-    "worklet";
-    const at = points.get();
-    const index = nearestIndex(at, x);
-    if (index < 0) return;
-    fingerY.set(y);
-    anchorX.set(at[index] ?? 0);
-    if (index === selected.get()) return;
-    selected.set(index);
-    scheduleOnRN(pick, index);
-  }
 
   const bubbleStyle = useAnimatedStyle(() => {
     const size = bubbleSize.get();
