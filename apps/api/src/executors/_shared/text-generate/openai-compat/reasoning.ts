@@ -164,6 +164,21 @@ export function applyReasoningParams(args: {
 		if (effort !== undefined) args.request.reasoning_effort = effort;
 		return;
 	}
+	if (args.providerId === "lg") {
+		// K-EXAONE always thinks (enable_thinking is forced on) and takes reasoning_effort
+		// low, high or max, defaulting to max (https://docs.exaone.ai/en/docs/k-exaone-2.5).
+		// Requests to turn thinking off run at low; budgets have no upstream field.
+		const rawEffort = typeof reasoning.effort === "string" ? reasoning.effort : undefined;
+		const effort = reasoning.enabled === false || rawEffort === "none" || rawEffort === "minimal" || rawEffort === "low"
+			? "low"
+			: rawEffort === "medium" || rawEffort === "high"
+				? "high"
+				: rawEffort === "xhigh" || rawEffort === "max"
+					? "max"
+					: undefined;
+		if (effort !== undefined) args.request.reasoning_effort = effort;
+		return;
+	}
 	if (args.providerId === "upstage") {
 		const effort = typeof reasoning.effort === "string" ? reasoning.effort : undefined;
 		if (effort && effort !== "none") args.request.reasoning_effort = effort;

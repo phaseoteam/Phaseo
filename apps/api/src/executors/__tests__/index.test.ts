@@ -262,6 +262,7 @@ describe("resolveProviderExecutor", () => {
 			"ai21",
 			"akashml",
 			"primalabs",
+			"lg",
 			"arcee",
 			"arcee-ai",
 			"alibaba-cloud",
