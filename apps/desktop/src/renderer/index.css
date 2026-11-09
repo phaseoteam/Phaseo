@@ -633,6 +633,19 @@ summary:has(> svg:first-child)::before { display: none; }
 @keyframes icon-retry-turn { from { transform: rotate(60deg); } to { transform: none; } }
 @keyframes icon-panel-nudge { 0%, 100% { translate: 0; } 45% { translate: var(--panel-nudge) 0; } }
 .gesture-icon > * { transform-origin: 12px 12px; }
+.gesture-icon:is([data-icon-gesture="play"], [data-icon-gesture="filter"]) > * { translate: 0; transition: translate 120ms ease; }
+@media (hover: hover) and (pointer: fine) {
+	button:hover:not(:disabled):not([aria-disabled="true"]) .gesture-icon[data-icon-gesture="play"] > *,
+	button:hover:not(:disabled):not([aria-disabled="true"]) .gesture-icon[data-icon-gesture="filter"] > :nth-child(2) { translate: 1px 0; }
+	button:hover:not(:disabled):not([aria-disabled="true"]) .gesture-icon[data-icon-gesture="filter"] > :nth-child(3) { translate: -1px 0; }
+}
+button:is(:disabled, [aria-disabled="true"]) .gesture-icon:is([data-icon-gesture="play"], [data-icon-gesture="filter"]) > * { transition: none; }
+.gesture-icon[data-icon-gesture="wrap"] > :nth-child(2),
+.gesture-icon[data-icon-gesture="wrap"] > :nth-child(3) { transform-origin: 3px 12px; scale: 1 1; transition: scale 180ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.gesture-icon[data-icon-gesture="wrap"] > :last-child { opacity: 0; translate: 2px 0; transition: opacity 120ms ease-out, translate 180ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.gesture-icon[data-icon-gesture="wrap"][data-wrapped="true"] > :nth-child(2) { scale: 0.5 1; }
+.gesture-icon[data-icon-gesture="wrap"][data-wrapped="true"] > :nth-child(3) { scale: 0.333333 1; }
+.gesture-icon[data-icon-gesture="wrap"][data-wrapped="true"] > :last-child { opacity: 1; translate: 0; }
 .gesture-icon[data-icon-gesture="back"] > * { --navigation-offset: -1.5px; }
 .gesture-icon[data-icon-gesture="forward"] > * { --navigation-offset: 1.5px; }
 .gesture-icon:is([data-icon-gesture="back"], [data-icon-gesture="forward"]) > * { translate: 0; transition: translate 120ms ease; }
@@ -711,6 +724,8 @@ summary:has(> svg:first-child)::before { display: none; }
 	animation: var(--icon-gesture, none) var(--icon-gesture-duration, 320ms) cubic-bezier(0.2, 0.8, 0.2, 1) var(--icon-gesture-delay, 0ms) both;
 }
 @media (prefers-reduced-motion: reduce) {
+	.gesture-icon:is([data-icon-gesture="play"], [data-icon-gesture="filter"]) > * { translate: 0 !important; transition: none; }
+	.gesture-icon[data-icon-gesture="wrap"] > * { transition: none; }
 	.gesture-icon:is([data-icon-gesture="back"], [data-icon-gesture="forward"]) > * { translate: 0 !important; transition: none; }
 	.icon-pop, .icon-draw path, .icon-shake, .step-in, .composer-action :is([data-trace], [data-flight], [data-stack], [data-turn]), .gesture-icon > * { animation: none !important; }
 	.press-squish:active:not(:disabled) { transform: none; }
@@ -720,7 +735,7 @@ summary:has(> svg:first-child)::before { display: none; }
 :root[data-animations="off"] :is(.icon-pop, .icon-draw path, .icon-shake, .step-in, .composer-action [data-trace], .composer-action [data-flight], .composer-action [data-stack], .composer-action [data-turn], .gesture-icon > *) { animation: none !important; }
 :root[data-animations="off"] .press-squish:active { transform: none; }
 :root[data-animations="off"] .gesture-icon > * { transition: none; }
-:root[data-animations="off"] .gesture-icon:is([data-icon-gesture="back"], [data-icon-gesture="forward"]) > * { translate: 0 !important; }
+:root[data-animations="off"] .gesture-icon:is([data-icon-gesture="back"], [data-icon-gesture="forward"], [data-icon-gesture="play"], [data-icon-gesture="filter"]) > * { translate: 0 !important; }
 
 /* Settings → Appearance → Animations off: panels, menus and dialogs appear at once. Spinners and progress keep moving. */
 :root[data-animations="off"] *, :root[data-animations="off"] *::before, :root[data-animations="off"] *::after { transition-duration: 0s !important; transition-delay: 0s !important; }

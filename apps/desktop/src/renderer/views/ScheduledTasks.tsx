@@ -1,7 +1,7 @@
 import { ActionIcon } from "../components/ActionIcon";
 import { formatDateParts, formatDateTime } from "@phaseo/app-kit/format";
 import { useState } from "react";
-import { CalendarClock, Ellipsis, MessageSquarePlus, Play, Plus, Trash2 } from "lucide-react";
+import { CalendarClock, Ellipsis, MessageSquarePlus, Plus, Trash2 } from "lucide-react";
 import type { Mission, MissionCommand, MissionSchedule } from "../../shared/missions";
 import { scheduleLabel } from "../../shared/missions";
 import { errorText, useWorkspace } from "../app/workspace";
@@ -97,7 +97,7 @@ function ScheduledTaskRow({ task, busy, run, onEdit }: { task: Mission; busy: bo
 				<p className="mt-0.5 text-xs text-muted-foreground">{[scheduleLabel(task.schedule), next, statusText[task.lastStatus]].filter(Boolean).join(" · ")}</p>
 				{task.threadTaskId && <p className="mt-0.5 truncate text-xs text-muted-foreground">Posts in {thread ? <button type="button" className="hover:text-foreground hover:underline" onClick={() => select(thread.id)}>{thread.title}</button> : "a chat that no longer exists"}</p>}
 			</div>
-			<SettingsButton variant="ghost" disabled={busy || running} onClick={() => run({ type: "run", id: task.id })}><Play className="size-3.5" />Run now</SettingsButton>
+			<SettingsButton variant="ghost" disabled={busy || running} onClick={() => run({ type: "run", id: task.id })}><ActionIcon name="play" className="size-3.5" />Run now</SettingsButton>
 			<Switch aria-label={task.enabled ? `Pause ${task.title}` : `Turn on ${task.title}`} checked={task.enabled} disabled={busy || (spent && !task.enabled)} onCheckedChange={enabled => run({ type: "enable", id: task.id, enabled })} />
 			<DropdownMenu>
 				<DropdownMenuTrigger render={<button type="button" aria-label={`Actions for ${task.title}`} className="grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground" />}><Ellipsis className="size-4" /></DropdownMenuTrigger>

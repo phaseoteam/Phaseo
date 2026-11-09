@@ -9,7 +9,7 @@ import { app, BrowserWindow, ipcMain } from "electron";
 app.setPath("userData", mkdtempSync(path.join(tmpdir(), "phaseo-composer-actions-")));
 const entry = process.argv.find(value => value.startsWith("--app-entry="))?.slice(12);
 await import(entry ? pathToFileURL(path.resolve(entry)).href : "../dist/main/index.mjs");
-const deadline = setTimeout(() => { console.error("Composer fixture deadline"); app.exit(1); }, 90_000);
+const deadline = setTimeout(() => { console.error("Composer fixture deadline"); app.exit(1); }, 120_000);
 deadline.unref();
 
 app.whenReady().then(async () => { try {
@@ -45,6 +45,13 @@ app.whenReady().then(async () => { try {
 	mock("workspace:models", () => []);
 	mock("workspace:installations", () => []);
 	mock("workspace:background-commands", () => []);
+	const missions = ["never", "running"].map((lastStatus, index) => ({ id: `owned-schedule-${index}`, title: `Owned schedule ${index}`, prompt: "Owned fixture", templateTaskId: "main", schedule: { type: "interval", minutes: 60 }, enabled: false, createdAt: now, updatedAt: now, lastStatus, runCount: index }));
+	mock("workspace:missions", () => missions);
+	mock("workspace:mission", () => { throw Error("Schedule writes are forbidden in this fixture"); });
+	mock("workspace:usage-report", (_event, period, filter = {}) => ({ generatedAt: now, period, from: now, total: { tokens: 0, costNanos: 0, chargedNanos: 0, estimateNanos: 0, unpricedTokens: 0, cacheSavingsNanos: 0, chats: 0, types: { input: 0, cached: 0, cacheWrite: 0, output: 0, reasoning: 0 } }, harnesses: [], buckets: [], models: [], chats: [], projects: [], autopilot: { tokens: 0, costNanos: 0, chargedNanos: 0, estimateNanos: 0, unpricedTokens: 0, chats: 0 }, activity: { chatsStarted: 0, chatsFinished: 0, chatsSettled: 0, autopilotChats: 0 }, filter, filterOptions: [{ harness: "phaseo", model: "owned" }] }));
+	mock("workspace:file-preview", () => ({ kind: "text", text: "Owned fixture text ".repeat(24), size: 456, truncated: false }));
+	mock("workspace:list-files", () => []);
+	mock("workspace:git-diff", () => ({ repository: true, patch: "", branch: "feature", baseRef: "main" }));
 	mock("workspace:account-status", () => ({ checkedAt: new Date().toISOString(), authenticated: false, usage: [] }));
 	mock("workspace:pull-request-view", () => pullView);
 	mock("workspace:project-repository", () => "owned/fixture");
@@ -94,7 +101,7 @@ app.whenReady().then(async () => { try {
 		await ready(`!!document.querySelector(${JSON.stringify(`${root} button[type=submit] [data-composer-icon="${action}"][data-on]`)})`);
 		return root;
 	}
-	const capture = async name => { if (output) { await run("document.fonts.ready"); writeFileSync(path.join(output, name + ".png"), (await owner.webContents.capturePage()).toPNG()); } };
+	const capture = async name => { if (output) { await run("document.fonts.ready.then(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))))"); writeFileSync(path.join(output, name + ".png"), (await owner.webContents.capturePage()).toPNG()); } };
 	async function clickDelivery(root, label, type, count = 1) {
 		const first = calls.length;
 		const delivery = once(commands, "delivery");
@@ -443,6 +450,70 @@ app.whenReady().then(async () => { try {
 	await run("document.querySelector('header button[aria-label=Forward]').click();true");
 	await ready("!document.querySelector('aside [aria-current=page]') && document.querySelector('header button[aria-label=Forward]')?.disabled");
 	console.log("NAVIGATION_ACTION_GESTURES", JSON.stringify({ surfaces: 2, directions: 2, hoverAndFocus: true, disabledStill: true, historyRoundTrip: true }));
+	async function utilityIcons(page, prefix, verify) {
+		console.log("Composer fixture: utility icons", prefix);
+		await configure({ status: "completed", project: true });
+		await run("localStorage.setItem('phaseo.desktop.usageView','\"cost\"');localStorage.setItem('phaseo.desktop.fileWrap','false');localStorage.setItem('phaseo.desktop.diffWrap','false');localStorage.setItem('phaseo.desktop.fileExplorerOpen','false');localStorage.removeItem('phaseo.desktop.rightPanelState');true");
+		await owner.loadFile(page);
+		await ready("!!document.querySelector('aside button[aria-label=\"Scheduled tasks\"]')");
+		const pose = selector => run(`(async()=>{const svg=document.querySelector(${JSON.stringify(selector)}+' svg');await Promise.all(svg.getAnimations({subtree:true}).map(animation=>animation.finished));return Array.from(svg.children).map(part=>({x:parseFloat(getComputedStyle(part).translate)||0,scale:parseFloat(getComputedStyle(part).scale)||1,opacity:Number(getComputedStyle(part).opacity)}));})()`);
+		async function hover(selector, expected) {
+			const point = await run(`(()=>{const box=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:box.x+box.width/2,y:box.y+box.height/2};})()`);
+			await cdp("Input.dispatchMouseEvent", { type: "mouseMoved", ...point });
+			assert.deepEqual((await pose(selector)).map(part => part.x), expected);
+			assert.deepEqual((await pose(selector)).map(part => part.x), expected, "Hover pose does not hold");
+			await cdp("Input.dispatchMouseEvent", { type: "mouseMoved", x: 0, y: 0 });
+			assert((await pose(selector)).every(part => part.x === 0), "Hover pose does not return");
+		}
+		await run("document.querySelector('aside button[aria-label=\"Scheduled tasks\"]').click();true");
+		await ready("!!document.querySelector('[data-scheduled-task]')");
+		await capture(`${prefix}-run`);
+		if (verify) {
+			await hover('[data-scheduled-task="owned-schedule-0"] button:has([data-icon-gesture="play"])', [1]);
+			await hover('[data-scheduled-task="owned-schedule-1"] button:has([data-icon-gesture="play"])', [0]);
+		}
+		await run("document.querySelector('aside button[aria-label=Usage]').click();true");
+		await ready("!!document.querySelector('[data-usage-page] button[aria-label^=\"Filter:\"]')");
+		await capture(`${prefix}-filter`);
+		if (verify) {
+			const selector = '[data-usage-page] button[aria-label^="Filter:"]';
+			await hover(selector, [0, 1, -1]);
+			for (const reduced of [false, true]) {
+				await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: reduced ? "reduce" : "no-preference" }] });
+				await run(`document.documentElement.dataset.animations='${reduced ? "on" : "off"}'`);
+				await hover(selector, [0, 0, 0]);
+			}
+			await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
+			await run("document.documentElement.dataset.animations='on'");
+		}
+		for (const surface of ["file", "diff"]) {
+			await run(`localStorage.setItem('phaseo.desktop.selectedTask','"main"');localStorage.setItem('phaseo.desktop.workspaceMode','"code"');localStorage.setItem('phaseo.desktop.codeView','"threads"');localStorage.setItem('phaseo.desktop.rightPanelState',${JSON.stringify(JSON.stringify({ main: { tabs: [surface === "file" ? "file:owned.txt" : "diff"], active: surface === "file" ? "file:owned.txt" : "diff" } }))});localStorage.setItem('phaseo.desktop.rightPanel','"restore"');true`);
+			await owner.loadFile(page);
+			const selector = `button[aria-label="Enable ${surface === "file" ? "word wrap" : "line wrapping"}"]`;
+			await ready(`!!document.querySelector(${JSON.stringify(selector)})`);
+			await capture(`${prefix}-${surface}-straight`);
+			const control = surface === "file" ? 'button[aria-label$="word wrap"]' : 'button[aria-label$="line wrapping"]';
+			for (const preference of verify ? ["normal", "reduced", "off"] : ["normal"]) {
+				await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: preference === "reduced" ? "reduce" : "no-preference" }] });
+				await run(`document.documentElement.dataset.animations='${preference === "off" ? "off" : "on"}';document.querySelector(${JSON.stringify(control)}).click();true`);
+				await ready(`document.querySelector(${JSON.stringify(control)})?.getAttribute('aria-pressed')==='true'`);
+				if (verify) {
+					const wrapped = await pose(control);
+					assert(Math.abs(wrapped[1].scale - 0.5) < 0.001 && Math.abs(wrapped[2].scale - 1 / 3) < 0.001 && wrapped[3].opacity === 1);
+					assert.equal(await run(`localStorage.getItem('phaseo.desktop.${surface}Wrap')`), "true");
+				}
+				if (preference === "normal") await capture(`${prefix}-${surface}-wrapped`);
+				await run(`document.querySelector(${JSON.stringify(control)}).click();true`);
+				await ready(`document.querySelector(${JSON.stringify(control)})?.getAttribute('aria-pressed')==='false'`);
+				if (verify) { const straight = await pose(control); assert(straight[1].scale === 1 && straight[2].scale === 1 && straight[3].opacity === 0); }
+			}
+		}
+		await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
+		await run("document.documentElement.dataset.animations='on'");
+	}
+	if (baseline) await utilityIcons(baseline, "before-utility", false);
+	await utilityIcons(renderer, "after-utility", true);
+	console.log("UTILITY_ICON_GESTURES", JSON.stringify({ runAndFilterHold: true, disabledRunStill: true, wrapSurfaces: 2, reverseStates: true, motionPreferences: true }));
 	owner.webContents.debugger.detach();
 	console.log("COMPOSER_ACTIONS_SMOKE", JSON.stringify({ surfaces: 3, deliveryDefaults: 2, primaryAndAlternate: true, idleSend: true, stopWithEmptyDraft: true, unsupportedSteeringQueues: true, queueEdit: true, questionAnswer: true, keyboardAndIME: true, svgTraces: true, actionGestures: gestures, boundedGestures: true, stationaryControls: true, copyFeedback: true, stationaryWindowControls: true, animationsOff: true, reducedMotion: true, minimumWidth: true, inferenceCalls: 0, packaged: Boolean(entry) }));
 	clearTimeout(deadline); app.exit(0);

@@ -9,7 +9,7 @@ import { build } from "vite";
 const scratch = mkdtempSync(path.join(tmpdir(), "phaseo-action-icons-"));
 app.setPath("userData", path.join(scratch, "profile"));
 const root = path.resolve(import.meta.dirname, "..");
-const names = ["pin", "unpin", "archive", "restore", "edit", "pencil", "link", "unlink", "camera", "up", "down", "publish", "folder", "addFolder", "mail", "signIn", "schedule", "inbox", "thread", "usage", "issue", "complete", "notPlanned", "draftPullRequest", "closePullRequest", "comment", "open", "approve", "requestChanges", "retry", "sidebarLeft", "sidebarRight", "back", "forward"];
+const names = ["pin", "unpin", "archive", "restore", "edit", "pencil", "link", "unlink", "camera", "up", "down", "publish", "folder", "addFolder", "mail", "signIn", "schedule", "inbox", "thread", "usage", "issue", "complete", "notPlanned", "draftPullRequest", "closePullRequest", "comment", "open", "approve", "requestChanges", "retry", "sidebarLeft", "sidebarRight", "back", "forward", "play", "filter"];
 const fixedParts = { archive: [1], restore: [1], camera: [0], publish: [1], folder: [0], addFolder: [2], mail: [1], signIn: [2], schedule: [1, 2, 3, 4, 5], inbox: [1], thread: [0], usage: [0], issue: [0], complete: [0], notPlanned: [0], draftPullRequest: [0, 1, 4], closePullRequest: [0, 1, 4, 5], requestChanges: [0, 2], sidebarLeft: [0, 1, 2], sidebarRight: [0, 1, 2] };
 const importPath = relative => JSON.stringify(path.join(root, relative).replaceAll("\\", "/"));
 writeFileSync(path.join(scratch, "entry.tsx"), `
@@ -19,7 +19,9 @@ import { ActionIcon } from ${importPath("src/renderer/components/ActionIcon.tsx"
 import { IconSwap } from ${importPath("src/renderer/components/IconSwap.tsx")};
 function Samples() {
  const [linked, setLinked] = React.useState(false);
+ const [wrapped, setWrapped] = React.useState(false);
  return <><div className="samples">{${JSON.stringify(names)}.map(name => <button id={name} key={name}><ActionIcon name={name}/>{name}</button>)}</div>
+ <button id="wrap" aria-pressed={wrapped} onClick={()=>setWrapped(value=>!value)}><ActionIcon name="wrap" data-wrapped={wrapped}/>Word wrap</button>
  <button id="swap" onClick={()=>setLinked(value=>!value)}><IconSwap show={linked?'link':'unlink'}>{{link:<ActionIcon name="link"/>,unlink:<ActionIcon name="unlink"/>}}</IconSwap>Aspect lock</button></>;
 }
 createRoot(document.getElementById('root')).render(<Samples/>);
@@ -37,7 +39,7 @@ ${source.slice(start, end)}
 body{font:14px system-ui;background:#161616;color:#eee;margin:24px}.samples{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}button{display:flex;align-items:center;gap:8px;padding:12px;background:transparent;color:inherit;border:1px solid #555;border-radius:6px}svg{width:18px;height:18px}
 </style></head><body><div id="root"></div><script src="bundle/icons.js"></script></body></html>`);
 const output = process.argv.find(value => value.startsWith("--output="))?.slice(9);
-const deadline = setTimeout(() => { console.error("Action icon fixture deadline"); app.exit(1); }, 60_000);
+const deadline = setTimeout(() => { console.error("Action icon fixture deadline"); app.exit(1); }, 90_000);
 deadline.unref();
 app.whenReady().then(async () => { try {
 	const window = new BrowserWindow({ show: false, width: 800, height: 1000, webPreferences: { backgroundThrottling: false } });
@@ -50,7 +52,7 @@ app.whenReady().then(async () => { try {
 	const cdp = (method, params = {}) => window.webContents.debugger.sendCommand(method, params);
 	await cdp("DOM.enable"); await cdp("CSS.enable");
 	const force = async (name, pseudo) => {
-		if (name === "back" || name === "forward") {
+		if (["back", "forward", "play", "filter"].includes(name)) {
 			if (pseudo === "hover") {
 				const point = await run(`(()=>{const box=document.getElementById('${name}').getBoundingClientRect();return {x:box.x+box.width/2,y:box.y+box.height/2};})()`);
 				await cdp("Input.dispatchMouseEvent", { type: "mouseMoved", ...point });
@@ -70,33 +72,36 @@ app.whenReady().then(async () => { try {
 	const samples = {}, gestures = {};
 	for (const name of names) {
 		const navigation = name === "back" || name === "forward";
+		const hoverOnly = name === "play" || name === "filter";
+		const held = navigation || hoverOnly;
+		if (hoverOnly) console.log("Action icon fixture: held hover", name);
+		const offsets = name === "filter" ? [0, 1, -1] : name === "play" ? [1] : name === "back" ? [-1.5, -1.5] : [1.5, 1.5];
 		const state = () => run(`(()=>{const button=document.getElementById('${name}'),svg=button.querySelector('svg');return {box:button.getBoundingClientRect().toJSON(),svgTransform:getComputedStyle(svg).transform,animations:svg.getAnimations({subtree:true}).map(a=>({name:a.animationName??a.transitionProperty,iterations:a.effect.getTiming().iterations})),parts:Array.from(svg.children).map(p=>{const style=getComputedStyle(p);return {transform:style.transform,translate:style.translate,x:new DOMMatrixReadOnly(style.transform).m41+(parseFloat(style.translate)||0),scale:style.scale,dash:style.strokeDashoffset,opacity:style.opacity};}),lengths:Array.from(svg.children).map(p=>p.getAttribute('pathLength'))};})()`);
 		await media(false);
 		const idle = await state();
 		assert.equal(idle.animations.length, 0, `${name} moves at rest`);
 		assert(idle.lengths.every(value => value === "1"), `${name} has an unnormalised stroke`);
-		for (const trigger of ["hover", "focus-visible", "highlight", "selected"]) {
+		for (const trigger of hoverOnly ? ["hover"] : ["hover", "focus-visible", "highlight", "selected"]) {
 			await force(name, trigger.includes("-") || trigger === "hover" ? trigger : null);
 			if (trigger === "highlight") await run(`document.getElementById('${name}').setAttribute('data-highlighted','')`);
 			if (trigger === "selected") await run(`document.getElementById('${name}').setAttribute('data-selected','true')`);
 			const active = await state();
-			if (!navigation) assert(active.animations.length > 0, `${name} has no ${trigger} gesture`);
+			if (!held) assert(active.animations.length > 0, `${name} has no ${trigger} gesture`);
 			assert(active.animations.every(value => value.iterations === 1));
-			if (navigation) await run(`Promise.all(document.getElementById('${name}').querySelector('svg').getAnimations({subtree:true}).map(animation=>animation.finished)).then(()=>true)`);
+			if (held) await run(`Promise.all(document.getElementById('${name}').querySelector('svg').getAnimations({subtree:true}).map(animation=>animation.finished)).then(()=>true)`);
 			else await run(`document.getElementById('${name}').querySelector('svg').getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=Number(a.effect.getTiming().duration)/2+Number(a.effect.getTiming().delay);});true`);
 			const middle = await state();
 			assert.deepEqual(middle.box, idle.box, `${name} moves its control`);
 			assert.equal(middle.svgTransform, "none", `${name} moves its whole glyph`);
 			assert.notDeepEqual(middle.parts, idle.parts, `${name} has no visible gesture`);
-			if (navigation) {
-				assert(middle.parts.every(part => name === "back" ? part.x < 0 : part.x > 0), `${name} moves in the wrong direction`);
-				assert((await state()).parts.every(part => Math.abs(part.x - (name === "back" ? -1.5 : 1.5)) < 0.001), `${name} does not hold its ${trigger} position`);
+			if (held) {
+				assert((await state()).parts.every((part, index) => Math.abs(part.x - offsets[index]) < 0.001), `${name} does not hold its ${trigger} position`);
 			}
 			for (const index of fixedParts[name] ?? []) assert.deepEqual(middle.parts[index], idle.parts[index], `${name} moves its frame`);
 			gestures[name] = active.animations.map(value => value.name);
 			await force(name, null);
 			await run(`document.getElementById('${name}').removeAttribute('data-highlighted');document.getElementById('${name}').removeAttribute('data-selected');true`);
-			if (navigation) {
+			if (held) {
 				await run(`Promise.all(document.getElementById('${name}').querySelector('svg').getAnimations({subtree:true}).map(animation=>animation.finished)).then(()=>true)`);
 				const rested = await state();
 				assert(rested.parts.every(part => Math.abs(part.x) < 0.001), `${name} does not return to rest after ${trigger}: ${JSON.stringify(rested.parts)}`);
@@ -118,6 +123,22 @@ app.whenReady().then(async () => { try {
 		await media(false); await run("document.documentElement.dataset.animations='on'"); await force(name, null);
 		samples[name] = await run(`document.getElementById('${name}').querySelector('svg').outerHTML`);
 	}
+	console.log("Action icon fixture: word-wrap states");
+	const wrapPose = () => run(`(async()=>{const svg=document.querySelector('#wrap svg');await Promise.all(svg.getAnimations({subtree:true}).map(animation=>animation.finished));return {wrapped:svg.dataset.wrapped,parts:Array.from(svg.children).map(part=>{const style=getComputedStyle(part);return {scale:style.scale,opacity:style.opacity,translate:style.translate};})};})()`);
+	const straight = await wrapPose();
+	assert.equal(straight.wrapped, "false"); assert.equal(straight.parts[3].opacity, "0");
+	for (const preference of ["normal", "reduced", "off"]) {
+		await media(preference === "reduced");
+		await run(`document.documentElement.dataset.animations='${preference === "off" ? "off" : "on"}';document.getElementById('wrap').click();true`);
+		const wrapped = await wrapPose();
+		assert.equal(wrapped.wrapped, "true"); assert.equal(wrapped.parts[3].opacity, "1");
+		assert(Math.abs(parseFloat(wrapped.parts[1].scale) - 0.5) < 0.001);
+		assert(Math.abs(parseFloat(wrapped.parts[2].scale) - 1 / 3) < 0.001);
+		await run("document.getElementById('wrap').click();true");
+		assert.deepEqual(await wrapPose(), straight, `Word wrap does not reverse with ${preference} motion`);
+	}
+	await media(false); await run("document.documentElement.dataset.animations='on'");
+	samples.wrap = await run("document.querySelector('#wrap svg').outerHTML");
 	const sidebarCentres = [];
 	for (const name of ["sidebarLeft", "sidebarRight"]) {
 		for (const open of [true, false]) {

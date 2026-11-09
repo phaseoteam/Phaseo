@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Boxes, CalendarDays, ChartLine, ChevronDown, CircleCheck, FolderOpen, Hourglass, Info, ListFilter, MessageSquare, Plane, RotateCw } from "lucide-react";
+import { Boxes, CalendarDays, ChartLine, ChevronDown, CircleCheck, FolderOpen, Hourglass, Info, MessageSquare, Plane, RotateCw } from "lucide-react";
+import { ActionIcon } from "../components/ActionIcon";
 import { inboxLists } from "../../shared/inbox";
 import { formatAgoShort, formatRoundedCount } from "@phaseo/app-kit/format";
 import { formatSpend } from "../../shared/usageAmounts";
@@ -73,7 +74,7 @@ function UsageFilterMenu({ value, options, onChange }: { value: UsageFilter; opt
 	const choose = (encoded: string) => { try { onChange(validateUsageFilter(JSON.parse(encoded))); } catch { onChange({}); } };
 	return <DropdownMenu>
 		<DropdownMenuTrigger aria-label={`Filter: ${label}`} render={<button type="button" className={cn("flex h-6 min-w-0 max-w-48 items-center gap-1 rounded-md px-1.5 text-2xs font-medium outline-none hover:bg-accent focus-visible:ring-1 focus-visible:ring-ring", value.harness ? "text-foreground" : "text-muted-foreground")} />}>
-			<ListFilter aria-hidden className="size-3.5 shrink-0" /><span className="truncate">{label}</span><ChevronDown aria-hidden className="size-3 shrink-0 opacity-70" />
+			<ActionIcon name="filter" className="size-3.5 shrink-0" /><span className="truncate">{label}</span><ChevronDown aria-hidden className="size-3 shrink-0 opacity-70" />
 		</DropdownMenuTrigger>
 		<DropdownMenuContent align="end" className="max-h-96 w-64 overflow-y-auto">
 			<DropdownMenuRadioGroup value={encode(value)} onValueChange={next => choose(String(next))}>

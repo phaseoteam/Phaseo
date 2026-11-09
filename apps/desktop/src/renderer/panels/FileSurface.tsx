@@ -2,7 +2,8 @@ import { Component, useCallback, useEffect, useMemo, useRef, useState, type Reac
 import { EditProvider, File as PierreFile, Virtualizer } from "@pierre/diffs/react";
 import { Editor, type EditorFactory } from "@pierre/diffs/edit";
 import type { FileContents } from "@pierre/diffs";
-import { ChevronRight, Code2, ExternalLink, Eye, File as FileIcon, Folder, FolderTree, Globe2, Table2, WrapText } from "lucide-react";
+import { ChevronRight, Code2, ExternalLink, Eye, File as FileIcon, Folder, FolderTree, Globe2, Table2 } from "lucide-react";
+import { ActionIcon } from "../components/ActionIcon";
 import type { FilePreview } from "../../shared/filePreview";
 import type { EditorId, EditorInstallation } from "../../shared/editors";
 import type { ProjectFile } from "../../shared/workspace";
@@ -199,7 +200,7 @@ export function FileSurface({ projectId, path, onDirtyChange, onOpenFile }: { pr
 		<div className="flex shrink-0 items-center gap-0.5">
 			<OpenInEditor projectId={projectId} path={path} />
 			{mode && <ToolbarButton label={renderedToggleLabel(mode, showRendered)} pressed={showRendered} onClick={() => setRendered({ ...rendered, [mode]: !showRendered })}><IconSwap show={showRendered ? "code" : mode === "table" || mode === "html" ? mode : "preview"}>{{ code: <Code2 />, table: <Table2 />, html: <Globe2 />, preview: <Eye /> }}</IconSwap></ToolbarButton>}
-			{showsSource && <ToolbarButton label={wrap ? "Disable word wrap" : "Enable word wrap"} pressed={wrap} onClick={() => setWrap(!wrap)}><WrapText /></ToolbarButton>}
+			{showsSource && <ToolbarButton label={wrap ? "Disable word wrap" : "Enable word wrap"} pressed={wrap} onClick={() => setWrap(!wrap)}><ActionIcon name="wrap" data-wrapped={wrap} /></ToolbarButton>}
 			<ToolbarButton label={explorerOpen ? "Hide file explorer" : "Show file explorer"} pressed={explorerOpen} onClick={() => setExplorerOpen(!explorerOpen)}><FolderTree /></ToolbarButton>
 		</div>
 	</div>;

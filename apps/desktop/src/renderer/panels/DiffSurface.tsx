@@ -1,7 +1,8 @@
 import { formatDateParts, formatTime } from "@phaseo/app-kit/format";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { parsePatchFiles, type FileDiffContentsLoader, type FileDiffMetadata } from "@pierre/diffs";
-import { ArrowRight, Check, ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Columns2, Copy, FolderTree, Pilcrow, Rows3, TextWrap } from "lucide-react";
+import { ArrowRight, Check, ChevronDown, ChevronRight, ChevronsDownUp, ChevronsUpDown, Columns2, Copy, FolderTree, Pilcrow, Rows3 } from "lucide-react";
+import { ActionIcon } from "../components/ActionIcon";
 import type { GitCommitSummary, GitDiffRequest, GitDiffResult, GitRefs } from "../../shared/gitDiff";
 import type { Task } from "../../shared/workspace";
 import { useWorkspace } from "../app/workspace";
@@ -261,7 +262,7 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 					<button key={value} type="button" role="radio" aria-checked={layout === value} aria-label={name} title={name} onClick={() => setLayout(value)}
 						className={cn("grid h-5 w-6 place-items-center rounded-[5px] text-muted-foreground transition-colors [&_svg]:size-3.5", layout === value ? "bg-background text-foreground shadow-xs" : "hover:text-foreground")}>{icon}</button>)}
 			</div>
-			<ToolbarButton label={wrap ? "Disable line wrapping" : "Enable line wrapping"} pressed={wrap} onClick={() => setWrap(!wrap)}><TextWrap /></ToolbarButton>
+			<ToolbarButton label={wrap ? "Disable line wrapping" : "Enable line wrapping"} pressed={wrap} onClick={() => setWrap(!wrap)}><ActionIcon name="wrap" data-wrapped={wrap} /></ToolbarButton>
 			<ToolbarButton label={ignoreWhitespace ? "Show whitespace changes" : "Hide whitespace changes"} pressed={ignoreWhitespace} onClick={() => setIgnoreWhitespace(!ignoreWhitespace)}><Pilcrow /></ToolbarButton>
 			{files.length > 0 && <ToolbarButton label={treeOpen ? "Hide file tree" : "Show file tree"} pressed={treeOpen} onClick={() => setTreeOpen(!treeOpen)}><FolderTree /></ToolbarButton>}
 		</div>
