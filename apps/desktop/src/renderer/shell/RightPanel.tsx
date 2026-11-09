@@ -41,7 +41,7 @@ const launchers: { kind: "browser" | "terminal" | "files" | "diff" | "pull" | "p
 	{ kind: "terminal", label: "Terminal", icon: <ActionIcon name="terminal" />, letter: "T" },
 	{ kind: "files", label: "Files", icon: <Files />, letter: "F", needsProject: true, reason: "Files are only available when a project is open." },
 	{ kind: "diff", label: "Diff", icon: <FileDiff />, letter: "D", needsProject: true, reason: "Diff is only available for chats in a project." },
-	{ kind: "pull", label: "Pull request", icon: <GitPullRequestArrow />, letter: "P", needsProject: true, reason: "This chat's branch has no pull request yet." },
+	{ kind: "pull", label: "Pull request", icon: <ActionIcon name="pullRequest" />, letter: "P", needsProject: true, reason: "This chat's branch has no pull request yet." },
 	{ kind: "pulls", label: "Linked pull requests", icon: <Link2 />, letter: "L", needsProject: true, reason: "Pull requests are only available for chats in a project." },
 	{ kind: "agents", label: "Agents", icon: <GitBranch />, letter: "A" },
 ];

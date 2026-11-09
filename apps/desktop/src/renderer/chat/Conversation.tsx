@@ -1,6 +1,6 @@
 import { activitySummary } from "../lib/activitySummary";
 import { createContext, memo, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowDown, Plane, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, FilePen, FileText, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, PenLine, Radio, RotateCcw, Search, SquareTerminal, Wrench, X, Globe, SlidersHorizontal, AppWindow, MessagesSquare, Bot, Blocks, CornerDownRight, Compass, PanelTop, ScanEye } from "lucide-react";
+import { ArrowDown, Plane, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, FilePen, FileText, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, PenLine, Radio, RotateCcw, Search, SquareTerminal, Wrench, X, Globe, SlidersHorizontal, AppWindow, MessagesSquare, Bot, Blocks, CornerDownRight, Compass, PanelTop, ScanEye } from "lucide-react";
 import { ActionIcon } from "../components/ActionIcon";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { MessageNavigationRail, type RailTurn } from "./MessageNavigationRail";
@@ -69,7 +69,7 @@ function UserMessage({ message, taskId, projectId, onAttachment, onBranch, onRew
 		<time dateTime={message.createdAt} title={fullMessageTime(message.createdAt)} className="mr-1 text-[11px] text-muted-foreground">{messageTime(message.createdAt)}</time>
 		<CopyButton text={mentionPlainText(message.text)} />
 		{onRewind && <ActionButton label="Edit from here" disabled={!canBranch} onClick={() => onRewind(message)}><PenLine /></ActionButton>}
-		<ActionButton label="Branch from here" disabled={!canBranch} onClick={() => onBranch(message.id)}><GitBranch /></ActionButton>
+		<ActionButton label="Branch from here" disabled={!canBranch} onClick={() => onBranch(message.id)}><ActionIcon name="branch" /></ActionButton>
 	</div>;
 	return <div data-conversation-id={`message:${message.id}`} className="group/message flex flex-col items-end gap-1">
 		<h3 className="sr-only">You said</h3>
@@ -265,7 +265,7 @@ const Turn = memo(function Turn({ user, entries, usageActivities, live, complete
 			{final?.kind === "message" && !live && <div className="-ml-1.5 flex items-center gap-0.5 opacity-60 transition-opacity group-hover/turn:opacity-100">
 				<CopyButton text={final.value.text} />
 				{onRegenerate && user && <ActionButton label="Regenerate" disabled={!canBranch} onClick={() => onRegenerate(user)}><RotateCcw /></ActionButton>}
-				<ActionButton label="Branch from this answer" disabled={!canBranch} onClick={() => onBranch(final.value.id)}><GitBranch /></ActionButton>
+				<ActionButton label="Branch from this answer" disabled={!canBranch} onClick={() => onBranch(final.value.id)}><ActionIcon name="branch" /></ActionButton>
 				<time dateTime={user?.completedAt ?? final.value.createdAt} title={fullMessageTime(user?.completedAt ?? final.value.createdAt)} className="ml-1 text-[11px] text-muted-foreground">{messageTime(user?.completedAt ?? final.value.createdAt)}</time>
 				{usage.Total !== undefined && <span className="ml-2 font-mono text-[11px] text-muted-foreground">{formatRoundedCount(usage.Total, "en-US")} tokens</span>}
 				{usage.Cost !== undefined && usage.Cost > 0 && <span title="What this answer cost, as the Phaseo gateway priced it." className="font-mono text-[11px] text-muted-foreground">· {formatCost(usage.Cost)}</span>}

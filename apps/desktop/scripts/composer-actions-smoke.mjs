@@ -25,6 +25,9 @@ app.whenReady().then(async () => { try {
 	let tasks, revision = 0;
 	const commands = new EventEmitter();
 	const calls = [];
+	let pullWrites = 0;
+	const now = new Date().toISOString();
+	const pullView = { id: "owned-pull", repository: "owned/fixture", number: 12, title: "Owned pull request", url: "https://example.invalid/pull/12", author: "fixture", draft: false, head: "feature", base: "main", updatedAt: now, createdAt: now, fetchedAt: now, review: "approved", checks: "passing", body: "Owned fixture pull request.", state: "OPEN", additions: 1, deletions: 0, changedFiles: 1, headOid: "a".repeat(40), baseOid: "b".repeat(40), mergeable: "MERGEABLE", mergeState: "CLEAN", authorActor: { login: "fixture" }, labels: [], reviewers: [], reviews: [], checkRuns: [], comments: [], commentCount: 0, commentsTruncated: false, commits: [], commitCount: 0, threads: [], mergeMethods: ["squash"], viewer: { canUpdate: true, canMerge: true, canDeleteBranch: false, canEnableAutoMerge: false, canDisableAutoMerge: false }, autoMergeAllowed: false, headRefExists: true, behind: false };
 	const overview = () => ({ version: 1, projects: [], accounts: [], agents: [], mcpConnections: [], tasks: tasks.map(({ messages, queue, ...task }) => ({ ...task, queueCount: queue.length, approvalsCount: 0, answersCount: 0, steeringReviewCount: 0, attentionKey: "fixture" })) });
 	const mock = (channel, handler) => { ipcMain.removeHandler(channel); ipcMain.handle(channel, handler); };
 	mock("workspace:preferences", () => ({ ...originalPreferences, preferences }));
@@ -34,6 +37,11 @@ app.whenReady().then(async () => { try {
 	mock("workspace:models", () => []);
 	mock("workspace:background-commands", () => []);
 	mock("workspace:account-status", () => ({ checkedAt: new Date().toISOString(), authenticated: false, usage: [] }));
+	mock("workspace:pull-request-view", () => pullView);
+	mock("workspace:project-repository", () => "owned/fixture");
+	mock("workspace:pull-request-stack", () => ({ stack: null, defaultBranch: "main" }));
+	mock("workspace:branch-pull-request", () => ({ branch: "feature", pullRequest: null }));
+	mock("workspace:pull-request-action", () => { pullWrites++; throw Error("Pull request writes are forbidden in this fixture"); });
 	// Browser chrome is exercised without creating a native page or opening a site.
 	mock("desktop:browser", (_event, command) => ({ id: command.id, url: "https://example.invalid", title: "Owned page", loading: false, canGoBack: false, canGoForward: false, devToolsOpen: false, viewport: { mode: "fill" }, zoom: 1, colorScheme: "system", audible: false, muted: false, configured: true }));
 	mock("desktop:browser-download", () => [{ id: "fixture", sourceId: "main", filename: "owned.txt", url: "https://example.invalid/owned.txt", path: "", received: 1, total: 1, status: "completed", resumable: false, finished: true }]);
@@ -48,9 +56,10 @@ app.whenReady().then(async () => { try {
 	const output = process.argv.find(value => value.startsWith("--output="))?.slice(9);
 	if (output) mkdirSync(output, { recursive: true });
 	const makeTask = (id, status, harness = "phaseo") => ({ id, title: `Owned ${id}`, harness, model: "default", mode: "chat", status, pinned: false, archived: false, revision, queue: [], messages: [{ id: `${id}-assistant`, role: "assistant", text: "Owned fixture conversation.", createdAt: new Date().toISOString() }], createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
-	async function configure({ surface = "main", status = "running", followUp = "queue", harness = "phaseo", draft = "Consider the smaller option.", queued = false, question = false, sendKey = "enter" } = {}) {
+	async function configure({ surface = "main", status = "running", followUp = "queue", harness = "phaseo", draft = "Consider the smaller option.", queued = false, question = false, sendKey = "enter", project = false } = {}) {
 		revision++;
 		tasks = [makeTask("main", status, harness), makeTask("side", status, harness)];
+		if (project) tasks[0].projectId = "fixture";
 		tasks[1].delegation = { parentTaskId: "main", kind: "side" };
 		if (queued) tasks[0].queue = [{ id: "queued", text: "An earlier follow-up.", createdAt: new Date().toISOString() }];
 		if (question) tasks[0].questions = [{ id: "request", questions: [{ id: "direction", header: "Direction", question: "Which option should I use?", options: [] }] }];
@@ -89,6 +98,11 @@ app.whenReady().then(async () => { try {
 		await run("Array.from(document.querySelectorAll('[role=option]')).find(option=>option.textContent.includes('Open browser')).click()");
 		await ready("!!document.querySelector('button[aria-label=\"Open in system browser\"]')");
 		await capture("before-browser");
+		await configure({ status: "completed", project: true }); await owner.loadFile(baseline);
+		await ready("!!document.querySelector('main form [data-composer-icon]')");
+		await run("window.dispatchEvent(new CustomEvent('phaseo:open-pull-request',{detail:{number:12}}));true");
+		await ready("!!document.querySelector('[data-pull-request-surface] [data-merge-button]')");
+		await capture("before-git-actions");
 	}
 	// The same visible actions submit the intended command in every composer surface, under either default.
 	for (const surface of ["main", "side", "compare"]) for (const followUp of ["queue", "steer"]) {
@@ -188,7 +202,7 @@ app.whenReady().then(async () => { try {
 	await configure({ status: "completed" });
 	await ready("!!document.querySelector('main button[aria-label=Copy]')");
 	await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
-	for (const name of ["plus", "paperclip", "copy", "search", "settings", "refresh", "download", "terminal", "external"]) {
+	for (const name of ["plus", "paperclip", "copy", "search", "settings", "refresh", "download", "branch", "terminal", "pullRequest", "external", "merge"]) {
 		if (name === "refresh") {
 			await run("document.querySelector('aside button[aria-label=\"Actions for Owned main\"]').click()");
 			await ready("!!document.querySelector('[role=menuitem] [data-icon-gesture=refresh]')");
@@ -212,6 +226,12 @@ app.whenReady().then(async () => { try {
 			await ready("!!document.querySelector('button[aria-label=\"Open in system browser\"]')");
 			await run("Promise.all(document.querySelector('[data-browser-surface]').parentElement.getAnimations().map(animation=>animation.finished.catch(()=>{})))");
 		}
+		if (name === "merge") {
+			await configure({ status: "completed", project: true });
+			await run("window.dispatchEvent(new CustomEvent('phaseo:open-pull-request',{detail:{number:12}}));true");
+			await ready("!!document.querySelector('[data-pull-request-surface] button [data-icon-gesture=merge]')");
+			await run("Promise.all(document.querySelector('[data-pull-request-surface]').parentElement.getAnimations().map(animation=>animation.finished.catch(()=>{})))");
+		}
 		const selector = `:is(button,[role=menuitem],[role=option]):has(> .gesture-icon[data-icon-gesture="${name}"]), button:has(.icon-swap > .gesture-icon[data-icon-gesture="${name}"])`;
 		const state = () => run(`(()=>{const button=document.querySelector(${JSON.stringify(selector)}),svg=button.querySelector('[data-icon-gesture]');return {box:button.getBoundingClientRect().toJSON(),animations:svg.getAnimations({subtree:true}).map(animation=>({name:animation.animationName,iterations:animation.effect.getTiming().iterations})),parts:Array.from(svg.children).map(part=>({transform:getComputedStyle(part).transform,dash:getComputedStyle(part).strokeDashoffset})),lengths:Array.from(svg.children).map(part=>part.getAttribute('pathLength'))};})()`);
 		await force(selector, null);
@@ -229,6 +249,7 @@ app.whenReady().then(async () => { try {
 			assert.notDeepEqual(middle.parts, idle.parts, `${name} has no visible part movement`);
 			const frame = { download: 1, terminal: 2, external: 2 }[name];
 			if (frame !== undefined) assert.deepEqual(middle.parts[frame], idle.parts[frame], `${name} moved its tray or frame`);
+			for (const node of ({ pullRequest: [0, 1, 2], branch: [1, 2], merge: [0, 1] }[name] ?? [])) assert.deepEqual(middle.parts[node], idle.parts[node], `${name} moved its fixed node`);
 			gestures[name] = active.animations.map(animation => animation.name);
 			await force(selector, null);
 		}
@@ -248,7 +269,10 @@ app.whenReady().then(async () => { try {
 		await run("document.documentElement.dataset.animations='on'");
 		await force(selector, null);
 		if (name === "external") await capture("after-browser");
+		if (name === "merge") await capture("git-actions");
 	}
+	assert.equal(pullWrites, 0);
+	console.log("GIT_ACTION_GESTURES", JSON.stringify({ fixedNodes: true, pullRequestWrites: pullWrites }));
 	if (output) writeFileSync(path.join(output, "icon-gestures.json"), JSON.stringify({ samples, gestures }, null, 2));
 	await run("document.querySelector('[role=menu]')?.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));true");
 	await ready("!document.querySelector('[role=menu]')");

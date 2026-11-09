@@ -1,7 +1,7 @@
-import { Copy, Download, ExternalLink, Paperclip, Plus, RefreshCw, Search, Settings, SquareTerminal, type LucideProps } from "lucide-react";
+import { Copy, Download, ExternalLink, GitBranch, GitMerge, GitPullRequestArrow, Paperclip, Plus, RefreshCw, Search, Settings, SquareTerminal, type LucideProps } from "lucide-react";
 import { cn } from "../lib/utils";
 
-const icons = { copy: Copy, download: Download, external: ExternalLink, paperclip: Paperclip, plus: Plus, refresh: RefreshCw, search: Search, settings: Settings, terminal: SquareTerminal };
+const icons = { branch: GitBranch, copy: Copy, download: Download, external: ExternalLink, merge: GitMerge, paperclip: Paperclip, plus: Plus, pullRequest: GitPullRequestArrow, refresh: RefreshCw, search: Search, settings: Settings, terminal: SquareTerminal };
 export type ActionIconName = keyof typeof icons;
 
 // Normalised lengths let a stroke trace independently of the icon's rendered size.

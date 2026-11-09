@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { ArrowDown, ArrowUp, Check, ChevronDown, CloudUpload, FolderPlus, GitBranch, GitPullRequestArrow, LoaderCircle, Minus, PenLine, Plus, Trash2 } from "lucide-react";
+import { ArrowDown, ArrowUp, Check, ChevronDown, CloudUpload, FolderPlus, LoaderCircle, Minus, PenLine, Plus, Trash2 } from "lucide-react";
+import { ActionIcon } from "../components/ActionIcon";
 import type { GitCommand, GitFile, GitReview } from "../../shared/workspace";
 import type { BranchPullRequest } from "../../shared/pullRequests";
 import { toastManager } from "../components/ui/toast";
@@ -153,12 +154,12 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 		<div className="flex items-center gap-1">
 			<DropdownMenu>
 				<DropdownMenuTrigger disabled={busy || !review} render={<button type="button" className="flex h-7 min-w-0 items-center gap-1.5 rounded-md px-1.5 font-mono text-xs hover:bg-accent/60 [&_svg]:size-3.5" />}>
-					<GitBranch className="text-muted-foreground" /><span className="truncate">{review?.branch || "Detached HEAD"}</span><ChevronDown className="text-muted-foreground" />
+					<ActionIcon name="branch" className="text-muted-foreground" /><span className="truncate">{review?.branch || "Detached HEAD"}</span><ChevronDown className="text-muted-foreground" />
 				</DropdownMenuTrigger>
 				<DropdownMenuContent align="start" className="max-h-80 w-64">
 					<DropdownMenuItem onClick={() => { setBranchKind("branch"); setNewBranch(""); }}><Plus />New branch…</DropdownMenuItem>
 					<DropdownMenuItem onClick={() => { setBranchKind("worktree"); setNewBranch(""); }}><FolderPlus />New worktree…</DropdownMenuItem>
-					<DropdownMenuItem onClick={() => setCheckoutOpen(true)}><GitPullRequestArrow />Check out a pull request…</DropdownMenuItem>
+					<DropdownMenuItem onClick={() => setCheckoutOpen(true)}><ActionIcon name="pullRequest" />Check out a pull request…</DropdownMenuItem>
 					{project?.worktree && <DropdownMenuItem variant="destructive" onClick={removeWorktree}><Trash2 />Remove this worktree</DropdownMenuItem>}
 					<DropdownMenuSeparator />
 					{[...new Set([review?.branch ?? "", ...branches])].filter(Boolean).map(name => <DropdownMenuItem key={name} onClick={() => { if (name !== review?.branch) void git({ type: "switch-branch", name }); }} className="font-mono text-xs">
@@ -170,7 +171,7 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 				<button type="button" disabled={busy || review.upstream.ahead > 0} onClick={() => void git({ type: "pull" })} className="flex h-7 shrink-0 items-center gap-1 rounded-md px-1.5 text-[11px] font-medium text-foreground hover:bg-accent/60 disabled:opacity-50 [&_svg]:size-3.5"><ArrowDown />Pull {review.upstream.behind}</button>
 			</Tip>}
 			{canPublish && !publishing && <button type="button" disabled={busy} onClick={() => setPublishing(true)} className="ml-auto flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium text-foreground hover:bg-accent/60 disabled:opacity-50 [&_svg]:size-3.5"><CloudUpload />Publish repository</button>}
-			{canCreatePull && <Tip label={canPush ? "Push this branch and open a pull request for it" : "Open a pull request for this branch"}><button type="button" disabled={busy} onClick={() => void createPullRequest(canPush)} className={cn("flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium text-foreground hover:bg-accent/60 disabled:opacity-50 [&_svg]:size-3.5", !canPush && "ml-auto")}><GitPullRequestArrow />{canPush ? "Push & create PR" : "Create PR"}</button></Tip>}
+			{canCreatePull && <Tip label={canPush ? "Push this branch and open a pull request for it" : "Open a pull request for this branch"}><button type="button" disabled={busy} onClick={() => void createPullRequest(canPush)} className={cn("flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium text-foreground hover:bg-accent/60 disabled:opacity-50 [&_svg]:size-3.5", !canPush && "ml-auto")}><ActionIcon name="pullRequest" />{canPush ? "Push & create PR" : "Create PR"}</button></Tip>}
 			{canPush && !canCreatePull && <button type="button" disabled={busy} onClick={push} className="ml-auto flex h-7 shrink-0 items-center gap-1 rounded-md px-2 text-xs font-medium text-foreground hover:bg-accent/60 disabled:opacity-50 [&_svg]:size-3.5"><ArrowUp />{pushLabel}</button>}
 		</div>
 		{openPull && pullPresentation && <button type="button" onClick={() => openPullRequest({ number: openPull.number })} aria-label={`Open pull request #${openPull.number}`} className="flex h-7 min-w-0 items-center gap-1.5 rounded-md px-1.5 text-left text-xs hover:bg-accent/60">

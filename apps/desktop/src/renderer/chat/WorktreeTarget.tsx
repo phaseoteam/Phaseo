@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Check, ChevronDown, FolderGit2, GitBranch, Laptop, SearchIcon } from "lucide-react";
+import { Check, ChevronDown, FolderGit2, Laptop, SearchIcon } from "lucide-react";
+import { ActionIcon } from "../components/ActionIcon";
 import type { WorkspaceApi, WorkspaceCommand } from "../../shared/workspace";
 import type { WorkspaceOverview } from "../../shared/workspaceOverview";
 import type { GitRefs } from "../../shared/gitDiff";
@@ -82,7 +83,7 @@ export function BranchPicker({ refs, value, onChange, disabled, label, ariaLabel
 	const choose = (name: string) => { onChange(name); setOpen(false); setQuery(""); };
 	return <Popover open={open} onOpenChange={setOpen}>
 		<PopoverTrigger disabled={disabled} render={<button type="button" aria-label={ariaLabel} title={title} data-composer-shortcut="composer.branch" className="flex h-8 max-w-48 items-center gap-1.5 rounded-md px-2 text-[12.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 data-popup-open:bg-muted [&_svg]:size-4" />}>
-			<GitBranch /><span className="truncate font-mono text-xs">{label}</span><ChevronDown className="size-3! shrink-0" />
+			<ActionIcon name="branch" /><span className="truncate font-mono text-xs">{label}</span><ChevronDown className="size-3! shrink-0" />
 		</PopoverTrigger>
 		<PopoverContent align="start" side="top" sideOffset={8} className="w-72 gap-0 overflow-hidden rounded-md p-0">
 			<div className="p-2 pb-1"><div className="flex h-8 items-center gap-2 rounded-md border border-input bg-input/50 px-2.5">

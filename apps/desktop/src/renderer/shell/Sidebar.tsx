@@ -4,7 +4,7 @@ import { prefetchTask } from "../lib/useSelectedTask";
 import { lazy, Suspense, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
-import { Archive, ArchiveRestore, CalendarClock, Link2, Mail, Trash2, ChartLine, Inbox, Columns3, GitPullRequestArrow, Ellipsis, ExternalLink, LogIn, Pencil, Pin, PinOff, Gauge, UserRound } from "lucide-react";
+import { Archive, ArchiveRestore, CalendarClock, Link2, Mail, Trash2, ChartLine, Inbox, Columns3, Ellipsis, ExternalLink, LogIn, Pencil, Pin, PinOff, Gauge, UserRound } from "lucide-react";
 import { ActionIcon } from "../components/ActionIcon";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { chatDragType } from "../../shared/mentions";
@@ -255,7 +255,7 @@ function PullRequestsLink() {
 	const { pullRequestsPage, openPullRequests } = useWorkspace();
 	return <button type="button" aria-current={pullRequestsPage ? "page" : undefined} onClick={openPullRequests}
 		className={cn("flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-[13px] text-sidebar-foreground/85 hover:bg-sidebar-accent/70", pullRequestsPage && "bg-sidebar-accent text-sidebar-foreground")}>
-		<GitPullRequestArrow className="size-4 text-muted-foreground" />Pull requests
+		<ActionIcon name="pullRequest" className="size-4 text-muted-foreground" />Pull requests
 	</button>;
 }
 

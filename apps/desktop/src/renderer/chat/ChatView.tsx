@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { typesUltrathink, useUltrathinkReady } from "./ModelSettings";
 import { TerminalDrawer } from "../views/Terminals";
-import { AlarmClockOff, Archive, Box, FolderInput, CircleCheck, Clock, Undo2, CornerLeftUp, Ellipsis, Gauge, GitBranch, Layers, ListChecks, MessagesSquare, Pencil, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
+import { AlarmClockOff, Archive, Box, FolderInput, CircleCheck, Clock, Undo2, CornerLeftUp, Ellipsis, Gauge, Layers, ListChecks, MessagesSquare, Pencil, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
 import { ActionIcon } from "../components/ActionIcon";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { QuestionPanel } from "./QuestionPanel";
@@ -117,7 +117,7 @@ function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () =
 					{snapshot?.projectId && !isSettled(snapshot) && (isSnoozed(snapshot)
 						? <DropdownMenuItem onClick={() => void threadActions.wake(snapshot)}><AlarmClockOff />Wake chat</DropdownMenuItem>
 						: <DropdownMenuSub><DropdownMenuSubTrigger><Clock />Snooze</DropdownMenuSubTrigger><DropdownMenuSubContent className="w-56"><SnoozeItems onSnooze={until => void threadActions.snooze(snapshot, until)} onCustom={() => setCustomSnooze(true)} /></DropdownMenuSubContent></DropdownMenuSub>)}
-					<DropdownMenuItem disabled={["running", "waiting"].includes(task.status)} onClick={() => void fork()}><GitBranch />Branch chat</DropdownMenuItem>
+					<DropdownMenuItem disabled={["running", "waiting"].includes(task.status)} onClick={() => void fork()}><ActionIcon name="branch" />Branch chat</DropdownMenuItem>
 					{destinations.length > 0 && !task.archived && <DropdownMenuSub><DropdownMenuSubTrigger disabled={["running", "waiting"].includes(task.status)}><FolderInput />Continue in a project</DropdownMenuSubTrigger>
 						<DropdownMenuSubContent className="max-h-80 w-60 overflow-y-auto">{destinations.map(value => <DropdownMenuItem key={value.id} onClick={() => void continueIn(value.id)}><ProjectIcon project={value} className="size-3.5" /><span className="truncate">{value.name}</span></DropdownMenuItem>)}</DropdownMenuSubContent>
 					</DropdownMenuSub>}
@@ -187,7 +187,7 @@ function ChatComposer({ task }: { task: Task }) {
 	const actions: ComposerAction[] = [
 		{ id: "archive", label: "Archive", description: "Archive this chat", icon: <Archive />, run: () => void command({ type: "update-task", id: task.id, archived: true }) },
 		...canCompact ? [{ id: "compact", label: "Compact", description: "Summarise earlier messages to free up context", icon: <Layers />, run: () => void command({ type: "send", id: task.id, text: "/compact" }) }] : [],
-		...running ? [] : [{ id: "fork", label: "Fork chat", description: "Continue in a copy of this chat", icon: <GitBranch />, run: () => void fork() }],
+		...running ? [] : [{ id: "fork", label: "Fork chat", description: "Continue in a copy of this chat", icon: <ActionIcon name="branch" />, run: () => void fork() }],
 		...sideChats ? [
 			{ id: "side", label: "Side chat", hint: "/side", description: "Ask something beside this chat without interrupting it", icon: <MessagesSquare />, insert: "/side " },
 			{ id: "btw", label: "Btw", hint: "/btw", description: "Same as Side chat", icon: <MessagesSquare />, insert: "/btw " },

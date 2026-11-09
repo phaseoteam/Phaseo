@@ -10,6 +10,7 @@ import { Button } from "../../components/ui/button";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "../../components/ui/dropdown-menu";
 import { factory, openExternal } from "../lib/useFactory";
 import { cn } from "../../lib/utils";
+import { ActionIcon } from "../../components/ActionIcon";
 import { MarkdownTextarea } from "../../components/MarkdownTextarea";
 import { IconSwap } from "../../components/IconSwap";
 
@@ -47,7 +48,7 @@ export function GithubMenu({ item }: { item: WorkItem }) {
 	const entries: { key: string; icon: ReactNode; label: string; detail: string; change: GithubChange }[] = [];
 	if (pull && item.state === "draft") entries.push({ key: "ready", icon: <CircleDot className="size-3.5" />, label: "Mark ready for review", detail: "Takes it out of draft", change: { kind: "draft", draft: false } });
 	if (pull && item.state === "open") entries.push({ key: "draft", icon: <GitPullRequestDraft className="size-3.5" />, label: "Convert to draft", detail: "Stops asking for reviews", change: { kind: "draft", draft: true } });
-	if (pull && isOpen(item)) entries.push({ key: "update", icon: <GitMerge className="size-3.5" />, label: "Update branch", detail: "Merges the latest base branch in, on GitHub", change: { kind: "update-branch" } });
+	if (pull && isOpen(item)) entries.push({ key: "update", icon: <ActionIcon name="merge" className="size-3.5" />, label: "Update branch", detail: "Merges the latest base branch in, on GitHub", change: { kind: "update-branch" } });
 	if (pull && isOpen(item)) entries.push({ key: "close", icon: <GitPullRequestClosed className="size-3.5" />, label: "Close pull request", detail: "Without merging; it can be reopened", change: { kind: "close" } });
 	if (!pull && item.state === "open") {
 		entries.push({ key: "completed", icon: <CircleCheck className="size-3.5" />, label: "Close as completed", detail: "Done, fixed or answered", change: { kind: "close", reason: "completed" } });
@@ -158,7 +159,7 @@ export function MergeBox({ item }: { item: WorkItem }) {
 			{merge && !merge.conflicts && merge.behind && <Button variant="outline" size="sm" disabled={!!busy} onClick={() => void change("update", { kind: "update-branch" })}>{busy === "update" ? "Updating…" : `Update branch from ${merge.base}`}</Button>}
 			{merge && merge.methods.length > 0 && <div className="flex shrink-0">
 				<Button size="sm" variant={canMerge ? "default" : "outline"} disabled={!canMerge || !!busy} onClick={() => void doMerge()} className={cn(merge.methods.length > 1 && "rounded-r-none")}>
-					<GitMerge className="size-3.5" />
+					<ActionIcon name="merge" className="size-3.5" />
 					{busy === "merge" ? "Merging…" : confirming ? `Click again to ${METHOD_LABEL[chosen!].toLowerCase()}` : METHOD_LABEL[chosen!]}
 				</Button>
 				{merge.methods.length > 1 && <DropdownMenu>

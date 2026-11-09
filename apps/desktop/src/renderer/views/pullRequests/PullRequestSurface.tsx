@@ -1,6 +1,6 @@
 import { formatRelativeTime } from "@phaseo/app-kit/format";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
-import { ArrowDownUp, ArrowLeft, ArrowUpRight, BookOpen, Check, ChevronDown, CircleDot, Copy, ExternalLink, FileDiff, FolderGit2, GitBranch, GitCommitHorizontal, Hammer, Link as LinkIcon, MessageCircleQuestion, MessageSquare, MoreHorizontal, Pencil, PlayCircle, RefreshCw, Trash2, TriangleAlert, Undo2, Unlink, X } from "lucide-react";
+import { ArrowDownUp, ArrowLeft, ArrowUpRight, BookOpen, Check, ChevronDown, CircleDot, Copy, ExternalLink, FileDiff, FolderGit2, GitCommitHorizontal, Hammer, Link as LinkIcon, MessageCircleQuestion, MessageSquare, MoreHorizontal, Pencil, PlayCircle, RefreshCw, Trash2, TriangleAlert, Undo2, Unlink, X } from "lucide-react";
 import { samePullRequest, type PullRequestMergeMethod, type PullRequestReactionContent, type PullRequestUpdateMethod, type PullRequestView } from "../../../shared/pullRequestView";
 import { useWorkspace } from "../../app/workspace";
 import { Badge } from "../../components/ui/badge";
@@ -33,6 +33,7 @@ import { PullRequestNumberMenu } from "./PullRequestNumberMenu";
 import { lastMergeMethodKey, resolvePullRequestMergeMethod, useDefaultMergeMethod } from "./mergeMethod";
 import { openWebLink } from "../../lib/openLink";
 import { IconSwap } from "../../components/IconSwap";
+import { ActionIcon } from "../../components/ActionIcon";
 
 type Tab = "summary" | "guide" | "timeline" | "code";
 const tabs: { value: Tab; label: string }[] = [{ value: "summary", label: "Summary" }, { value: "guide", label: "Guide" }, { value: "timeline", label: "Timeline" }, { value: "code", label: "Code" }];
@@ -140,19 +141,19 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 	let primaryControl: ReactNode = null;
 	if (primary === "merged" || primary === "closed") primaryControl = <Badge variant="outline" className="h-6 px-2"><span className={cn("flex items-center gap-1", presentation.toneClassName)}><presentation.Icon className="size-3.5" />{presentation.label}</span></Badge>;
 	else if (primary === "resolve") primaryControl = <Tip label="Resolve the conflicts in a chat on this branch"><Button size="xs" variant="destructive" disabled={handoff.pending !== undefined} onClick={() => void handoff.run("resolve-conflicts", view)} aria-label="Resolve conflicts"><TriangleAlert aria-hidden className="size-3.5" /><span className="@max-[30rem]/pr-header:hidden">{handoff.pending === "resolve-conflicts" ? "Preparing…" : "Resolve conflicts"}</span></Button></Tip>;
-	else if (primary === "ready") primaryControl = <Tip label="Ready for review"><Button size="xs" disabled={busy} onClick={() => void pull.perform({ type: "ready" })} aria-label="Ready for review"><PullRequestGlyph.pullRequest aria-hidden className="size-3.5" /><span className="@max-[30rem]/pr-header:hidden">{pending === "ready" ? "Marking…" : "Ready for review"}</span></Button></Tip>;
+	else if (primary === "ready") primaryControl = <Tip label="Ready for review"><Button size="xs" disabled={busy} onClick={() => void pull.perform({ type: "ready" })} aria-label="Ready for review"><ActionIcon name="pullRequest" className="size-3.5" /><span className="@max-[30rem]/pr-header:hidden">{pending === "ready" ? "Marking…" : "Ready for review"}</span></Button></Tip>;
 	else if (primary === "auto-merge-armed") primaryControl = armedBadge;
 	else if (primary === "enable-auto-merge") {
 		const label = pending === "enable-auto-merge" ? "Turning on…" : confirm.isArmed("enable-auto-merge") ? "Confirm auto-merge?" : pendingAutoMergeLabel;
 		primaryControl = <Tip label={label}><Button size="xs" disabled={busy} {...confirm.props("enable-auto-merge", () => void pull.perform({ type: "enable-auto-merge", method }))} aria-label={label} data-auto-merge-button="">
-			{confirm.isArmed("enable-auto-merge") ? <Check aria-hidden className="size-3.5" /> : <PullRequestGlyph.merged aria-hidden className="size-3.5" />}
+			{confirm.isArmed("enable-auto-merge") ? <Check aria-hidden className="size-3.5" /> : <ActionIcon name="merge" className="size-3.5" />}
 			<span className="grid @max-[30rem]/pr-header:hidden"><span aria-hidden className="invisible col-start-1 row-start-1">{pendingAutoMergeLabel}</span><span className="col-start-1 row-start-1">{label}</span></span>
 		</Button></Tip>;
 	}
 	else if (primary === "merge") {
 		const label = pending === "merge" ? "Merging…" : confirm.isArmed("merge") ? "Confirm merge?" : mergeMethodLabels[method];
 		primaryControl = <Tip label={label}><Button size="xs" disabled={busy} {...confirm.props("merge", () => void pull.perform({ type: "merge", method }))} aria-label={label} data-merge-button="">
-			{confirm.isArmed("merge") ? <Check aria-hidden className="size-3.5" /> : <PullRequestGlyph.merged aria-hidden className="size-3.5" />}
+			{confirm.isArmed("merge") ? <Check aria-hidden className="size-3.5" /> : <ActionIcon name="merge" className="size-3.5" />}
 			<span className="grid @max-[30rem]/pr-header:hidden"><span aria-hidden className="invisible col-start-1 row-start-1">{mergeMethodLabels[method]}</span><span className="col-start-1 row-start-1">{label}</span></span>
 		</Button></Tip>;
 	}
@@ -166,12 +167,12 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 			<DropdownMenuItem disabled={handoff.pending !== undefined || view.state !== "OPEN"} onClick={() => void handoff.run("fix", view)}><Hammer className="size-3.5" />{handoff.pending === "fix" ? "Preparing…" : "Fix findings in a chat"}</DropdownMenuItem>
 				<DropdownMenuItem onClick={() => { setGuideRequest(value => value + 1); selectTab("guide"); }}><BookOpen className="size-3.5" />{guideWritten ? "Rewrite guide" : "Write guide"}</DropdownMenuItem>
 				{conflicting && !view.codeHost && <DropdownMenuItem onClick={() => open(`${view.url}/conflicts`)}><TriangleAlert className="size-3.5" />Resolve conflicts on GitHub</DropdownMenuItem>}
-			{view.state === "OPEN" && view.viewer.canUpdate && primary !== "ready" && <DropdownMenuItem disabled={busy} onClick={() => void pull.perform({ type: view.draft ? "ready" : "draft" })}>{view.draft ? <PullRequestGlyph.pullRequest className="size-3.5" /> : <PullRequestGlyph.draft className="size-3.5" />}{view.draft ? "Ready for review" : "Convert to draft"}</DropdownMenuItem>}
+			{view.state === "OPEN" && view.viewer.canUpdate && primary !== "ready" && <DropdownMenuItem disabled={busy} onClick={() => void pull.perform({ type: view.draft ? "ready" : "draft" })}>{view.draft ? <ActionIcon name="pullRequest" className="size-3.5" /> : <PullRequestGlyph.draft className="size-3.5" />}{view.draft ? "Ready for review" : "Convert to draft"}</DropdownMenuItem>}
 			{canDisableAutoMerge && <DropdownMenuItem disabled={busy} onClick={() => void pull.perform({ type: "disable-auto-merge" })}><X className="size-3.5" />Disable auto-merge</DropdownMenuItem>}
-			{canEnableAutoMerge && <DropdownMenuItem closeOnClick={confirm.isArmed("enable-auto-merge-menu")} disabled={busy} aria-label={confirm.isArmed("enable-auto-merge-menu") ? "Confirm auto-merge?" : "Enable auto-merge"} {...confirm.props("enable-auto-merge-menu", () => void pull.perform({ type: "enable-auto-merge", method }))}><PullRequestGlyph.merged className="size-3.5" />{confirm.isArmed("enable-auto-merge-menu") ? "Confirm auto-merge?" : "Enable auto-merge"}</DropdownMenuItem>}
-			{canMergeNow && <DropdownMenuItem closeOnClick={confirm.isArmed("merge-now")} disabled={busy} aria-label={confirm.isArmed("merge-now") ? "Confirm merge?" : "Merge now"} {...confirm.props("merge-now", () => void pull.perform({ type: "merge", method }))}><PullRequestGlyph.merged className="size-3.5" />{confirm.isArmed("merge-now") ? "Confirm merge?" : "Merge now"}</DropdownMenuItem>}
+			{canEnableAutoMerge && <DropdownMenuItem closeOnClick={confirm.isArmed("enable-auto-merge-menu")} disabled={busy} aria-label={confirm.isArmed("enable-auto-merge-menu") ? "Confirm auto-merge?" : "Enable auto-merge"} {...confirm.props("enable-auto-merge-menu", () => void pull.perform({ type: "enable-auto-merge", method }))}><ActionIcon name="merge" className="size-3.5" />{confirm.isArmed("enable-auto-merge-menu") ? "Confirm auto-merge?" : "Enable auto-merge"}</DropdownMenuItem>}
+			{canMergeNow && <DropdownMenuItem closeOnClick={confirm.isArmed("merge-now")} disabled={busy} aria-label={confirm.isArmed("merge-now") ? "Confirm merge?" : "Merge now"} {...confirm.props("merge-now", () => void pull.perform({ type: "merge", method }))}><ActionIcon name="merge" className="size-3.5" />{confirm.isArmed("merge-now") ? "Confirm merge?" : "Merge now"}</DropdownMenuItem>}
 			{view.state === "OPEN" && !conflicting && !autoMergeArmed && view.viewer.canMerge && view.mergeMethods.length > 0 && <><DropdownMenuSeparator /><DropdownMenuRadioGroup value={method} onValueChange={value => { setChosenMethod(value as PullRequestMergeMethod); setStoredMethod(value as PullRequestMergeMethod); }}>
-				{view.mergeMethods.map(value => <DropdownMenuRadioItem key={value} value={value} disabled={busy} closeOnClick><PullRequestGlyph.merged className="size-3.5" />{mergeMethodLabels[value]}</DropdownMenuRadioItem>)}
+				{view.mergeMethods.map(value => <DropdownMenuRadioItem key={value} value={value} disabled={busy} closeOnClick><ActionIcon name="merge" className="size-3.5" />{mergeMethodLabels[value]}</DropdownMenuRadioItem>)}
 			</DropdownMenuRadioGroup></>}
 			<DropdownMenuSeparator />
 			<DropdownMenuItem onClick={() => open(view.url)}><ArrowUpRight className="size-3.5" />Open on {hostName}</DropdownMenuItem>
@@ -179,7 +180,7 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 			<DropdownMenuItem onClick={() => copyWithToast(`#${view.number}`, "Pull request number")}><Copy className="size-3.5" />Copy PR number{shortcut("pullRequest.copyNumber") && <DropdownMenuShortcut>{shortcut("pullRequest.copyNumber")}</DropdownMenuShortcut>}</DropdownMenuItem>
 				{chat && <><DropdownMenuSeparator /><DropdownMenuItem onClick={() => void linkCommand(linked, view)}>{linked ? <Unlink className="size-3.5" /> : <LinkIcon className="size-3.5" />}{linked ? "Unlink from this chat" : "Link to this chat"}</DropdownMenuItem></>}
 			{view.state === "OPEN" && view.viewer.canUpdate && <><DropdownMenuSeparator /><DropdownMenuItem variant="destructive" closeOnClick={confirm.isArmed("close")} disabled={busy} aria-label={confirm.isArmed("close") ? "Confirm close?" : "Close pull request"} {...confirm.props("close", () => void pull.perform({ type: "close" }))}><PullRequestGlyph.closed className="size-3.5" />{confirm.isArmed("close") ? "Confirm close?" : "Close pull request"}</DropdownMenuItem></>}
-			{view.state === "CLOSED" && view.viewer.canUpdate && <><DropdownMenuSeparator /><DropdownMenuItem disabled={busy} onClick={() => void pull.perform({ type: "reopen" })}><PullRequestGlyph.reopen className="size-3.5" />Reopen pull request</DropdownMenuItem></>}
+			{view.state === "CLOSED" && view.viewer.canUpdate && <><DropdownMenuSeparator /><DropdownMenuItem disabled={busy} onClick={() => void pull.perform({ type: "reopen" })}><ActionIcon name="pullRequest" className="size-3.5" />Reopen pull request</DropdownMenuItem></>}
 			{canRevert && <><DropdownMenuSeparator /><DropdownMenuItem closeOnClick={confirm.isArmed("revert")} disabled={busy} aria-label={confirm.isArmed("revert") ? "Confirm revert?" : "Revert changes"} {...confirm.props("revert", () => void pull.perform({ type: "revert" }))}>
 				<Undo2 className="mt-1 size-3.5 shrink-0 self-start" /><span className="flex min-w-0 flex-col"><span>{pending === "revert" ? "Opening a revert…" : confirm.isArmed("revert") ? "Confirm revert?" : "Revert changes"}</span><span className="text-xs text-muted-foreground">Opens a pull request that undoes this one.</span></span>
 			</DropdownMenuItem></>}
@@ -234,10 +235,10 @@ export function PullRequestSurface({ projectId, number, onBack }: { projectId: s
 							{view.state === "OPEN" && <span className="ml-auto flex min-w-0 items-center gap-2"><CopyableCode value={`gh pr checkout ${view.number}`} label="Copy checkout command" />
 									<DropdownMenu>
 										<Tip label="Check out this pull request"><DropdownMenuTrigger disabled={handoff.pending !== undefined} render={<Button size="xs" variant="outline" aria-label={handoff.pending?.startsWith("checkout") ? "Checking out…" : "Check out"} data-pull-request-checkout="" />}>
-											<GitBranch aria-hidden className="size-3.5" /><span className="@max-[35rem]/pr-header:hidden">{handoff.pending?.startsWith("checkout") ? "Checking out…" : "Check out"}</span><ChevronDown aria-hidden className="size-3.5 text-muted-foreground" />
+											<ActionIcon name="branch" className="size-3.5" /><span className="@max-[35rem]/pr-header:hidden">{handoff.pending?.startsWith("checkout") ? "Checking out…" : "Check out"}</span><ChevronDown aria-hidden className="size-3.5 text-muted-foreground" />
 										</DropdownMenuTrigger></Tip>
 										<DropdownMenuContent align="end" className="w-72">
-											<DropdownMenuItem onClick={() => void handoff.run("checkout", view)} className="items-start"><GitBranch className="mt-0.5 size-3.5 shrink-0" /><span className="flex min-w-0 flex-col"><span>In a separate worktree</span><span className="text-xs text-muted-foreground">Its own folder and chat. Nothing you have open moves.</span></span></DropdownMenuItem>
+											<DropdownMenuItem onClick={() => void handoff.run("checkout", view)} className="items-start"><ActionIcon name="branch" className="mt-0.5 size-3.5 shrink-0" /><span className="flex min-w-0 flex-col"><span>In a separate worktree</span><span className="text-xs text-muted-foreground">Its own folder and chat. Nothing you have open moves.</span></span></DropdownMenuItem>
 											<DropdownMenuItem onClick={() => void handoff.run("checkout-here", view)} className="items-start"><FolderGit2 className="mt-0.5 size-3.5 shrink-0" /><span className="flex min-w-0 flex-col"><span>In this repository</span><span className="text-xs text-muted-foreground">Switches the branch you are working in, like <code className="font-mono">gh pr checkout</code>.</span></span></DropdownMenuItem>
 										</DropdownMenuContent>
 									</DropdownMenu></span>}
@@ -303,7 +304,7 @@ function BaseFreshnessWarning({ view, projectId, small, freshness, pending, upda
 		<PopoverContent align="start" side="bottom" className="w-auto max-w-80 gap-0 p-3">
 			<p className="text-xs text-foreground">{summary}</p>
 			{freshness.clean && <p className="mt-0.5 text-xs text-muted-foreground">Changes can be cleanly merged.</p>}
-			{freshness.methods.length > 0 && <span className="mt-2 flex flex-wrap items-center gap-1.5">{freshness.methods.map(method => <Button key={method} size="xs" variant="outline" disabled={pending} onClick={() => onUpdate(method)}><PullRequestGlyph.merged aria-hidden className="size-3" />{updating ? "Updating…" : method === "rebase" ? "Update with rebase" : "Update branch"}</Button>)}</span>}
+			{freshness.methods.length > 0 && <span className="mt-2 flex flex-wrap items-center gap-1.5">{freshness.methods.map(method => <Button key={method} size="xs" variant="outline" disabled={pending} onClick={() => onUpdate(method)}><ActionIcon name="merge" className="size-3" />{updating ? "Updating…" : method === "rebase" ? "Update with rebase" : "Update branch"}</Button>)}</span>}
 		</PopoverContent>
 	</Popover>;
 }

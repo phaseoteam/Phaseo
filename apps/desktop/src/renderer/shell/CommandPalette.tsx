@@ -1,4 +1,4 @@
-import { Bot, Pause, Play, Activity, CalendarClock, ChartLine, Gauge, Inbox, Code2, GitPullRequestArrow, Link2, Keyboard, Columns3, FolderPlus, Globe, MessageSquare, Moon, PanelLeft, Sun, UserRound, Files, Archive, FileSearch, TextSearch, GitBranchPlus, Bug, SquarePen, Pencil, Pin, PinOff, Undo2, CircleCheck, Mail, History, Monitor, ArchiveRestore } from "lucide-react";
+import { Bot, Pause, Play, Activity, CalendarClock, ChartLine, Gauge, Inbox, Code2, Link2, Keyboard, Columns3, FolderPlus, Globe, MessageSquare, Moon, PanelLeft, Sun, UserRound, Files, Archive, FileSearch, TextSearch, GitBranchPlus, Bug, SquarePen, Pencil, Pin, PinOff, Undo2, CircleCheck, Mail, History, Monitor, ArchiveRestore } from "lucide-react";
 import { ActionIcon } from "../components/ActionIcon";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { errorText, useWorkspace } from "../app/workspace";
@@ -29,7 +29,7 @@ import { isSettled, settleBlocker } from "../../shared/threadLifecycle";
 import { renameChatEvent } from "../chat/composerActions";
 import type { ThemePreference } from "../types";
 
-const entryIcons: Record<string, ComponentType> = { "New chat": () => <ActionIcon name="plus" />, "Operator": Bot, "Switch to Chat": MessageSquare, "Switch to Code": Code2, "Inbox": Inbox, "Usage": ChartLine, "Usage limits": Gauge, "Scheduled tasks": CalendarClock, "Open pull requests": GitPullRequestArrow, "Toggle sidebar": PanelLeft, "Show files and changes": Files, "Open terminal": () => <ActionIcon name="terminal" />, "Open browser": Globe, "Settings": () => <ActionIcon name="settings" />, "Accounts and sign-in": UserRound, "Phaseo account": UserRound, "Keyboard shortcuts": Keyboard, "Diagnostics": Activity };
+const entryIcons: Record<string, ComponentType> = { "New chat": () => <ActionIcon name="plus" />, "Operator": Bot, "Switch to Chat": MessageSquare, "Switch to Code": Code2, "Inbox": Inbox, "Usage": ChartLine, "Usage limits": Gauge, "Scheduled tasks": CalendarClock, "Open pull requests": () => <ActionIcon name="pullRequest" />, "Toggle sidebar": PanelLeft, "Show files and changes": Files, "Open terminal": () => <ActionIcon name="terminal" />, "Open browser": Globe, "Settings": () => <ActionIcon name="settings" />, "Accounts and sign-in": UserRound, "Phaseo account": UserRound, "Keyboard shortcuts": Keyboard, "Diagnostics": Activity };
 /** The keyboard shortcut that does what a palette entry does, when there is one. */
 function entryShortcut(entry: PaletteEntry) {
 	if (entry.command === "chat.new") return shortcut("chat.new");
