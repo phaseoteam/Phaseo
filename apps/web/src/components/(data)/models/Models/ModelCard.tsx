@@ -16,6 +16,8 @@ import {
 	Copy,
 	BadgeAlert,
 	CalendarClock,
+	EyeOff,
+	LockKeyhole,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -27,6 +29,7 @@ import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDispl
 import { hasPassedLifecycleDate } from "@/lib/models/modelLifecycle";
 import { resolveProviderLogoId } from "@/lib/providers/providerOffers";
 import { getModalityIcon } from "./modalityIcons";
+import { resolveModelVisibility } from "./modelVisibility";
 
 type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
 	gateway_status?:
@@ -37,6 +40,8 @@ type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
 		| null;
 	router_requests_30d?: number | null;
 	router_spend_nanos_30d?: number | null;
+	// Set on workspace private-endpoint models, which only their workspace sees.
+	is_private?: boolean;
 };
 import { Logo } from "@/components/Logo";
 import { getModalityTone } from "@/lib/models/modalityStyles";
@@ -529,6 +534,15 @@ function ModelCardImpl({
 			: null;
 	const isComingSoon =
 		!isRetired && !isDeprecated && model.gateway_status === "coming_soon";
+	const visibility = resolveModelVisibility(model);
+	const isInternal = visibility === "internal";
+	const isPrivate = visibility === "private";
+	const visibilityLabel = isInternal
+		? tDetail("sections.internalOnly")
+		: isPrivate
+			? t("filtersUi.tierPrivate")
+			: null;
+	const VisibilityIcon = isInternal ? EyeOff : isPrivate ? LockKeyhole : null;
 	const [copied, setCopied] = useState(false);
 	const routerRequests30d =
 		Number.isFinite(Number(model.router_requests_30d)) &&
@@ -1028,6 +1042,19 @@ function ModelCardImpl({
 							>
 								{safeModelDisplayName}
 							</Link>
+							{VisibilityIcon && visibilityLabel ? (
+								<span
+									className={cn(
+										"inline-flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-px text-[11px] font-medium leading-4",
+										isInternal
+											? "border-[#00b8db]/30 bg-[#00b8db]/10 text-cyan-700 dark:text-cyan-300"
+											: "border-border bg-muted text-muted-foreground",
+									)}
+								>
+									<VisibilityIcon className="size-3" aria-hidden="true" />
+									{visibilityLabel}
+								</span>
+							) : null}
 							{displayModelId ? (
 								<Tooltip>
 									<TooltipTrigger asChild>
