@@ -1,5 +1,3 @@
-"use client"
-
 import * as React from "react"
 import { ScrollArea as SharedScrollArea, ScrollBar } from "@phaseo/ui/scroll-area"
 

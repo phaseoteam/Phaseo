@@ -83,6 +83,11 @@ function buildSupabaseMock() {
 				};
 			}
 
+			// The management key acts as its creator, an admin of the workspace.
+			if (table === "workspace_members") {
+				const membership: any = { select: () => membership, eq: () => membership, maybeSingle: async () => ({ data: { role: "admin" }, error: null }) };
+				return membership;
+			}
 			throw new Error(`Unexpected table: ${table}`);
 		},
 	};
@@ -99,6 +104,7 @@ vi.mock("@/pipeline/before/guards", () => ({
 			workspaceId: "ws_attacker",
 			apiKeyId: "mgmt_1",
 			authMethod: "api_key",
+			userId: "user_1",
 			scopes: ["guardrails:delete"],
 		},
 	})),
@@ -164,7 +170,7 @@ describe("guardrail management security", () => {
 		const { guardManagementAuth } = await import("@/pipeline/before/guards");
 		vi.mocked(guardManagementAuth).mockResolvedValueOnce({
 			ok: true,
-			value: { workspaceId: "ws_attacker", apiKeyId: "mgmt_1", authMethod: "api_key", scopes: ["guardrails:write"] },
+			value: { workspaceId: "ws_attacker", apiKeyId: "mgmt_1", authMethod: "api_key", userId: "user_1", scopes: ["guardrails:write"] },
 		} as any);
 
 		const { guardrailsRoutes } = await import("./guardrails");

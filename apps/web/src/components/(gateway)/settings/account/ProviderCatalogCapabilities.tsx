@@ -1,10 +1,8 @@
-"use client";
-
 import { useId } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { endpointToCapability } from "@/lib/config/capabilityToEndpoints";
-import type { ProviderManagedCatalogModel } from "@/app/(dashboard)/settings/account/providers/actions";
+import type { ProviderManagedCatalogModel } from "@/features/settings/account/providers/actions";
 
 type Capabilities = ProviderManagedCatalogModel["capabilities"];
 

@@ -1,40 +1,85 @@
 ---
 icon: "sliders-horizontal"
 title: "Inference Parameters"
-description: "How core request parameters affect quality, determinism, latency, and cost."
-"og:image": "https://phaseo.app/og/dynamic?title=Inference%20Parameters&description=How%20core%20request%20parameters%20affect%20quality%2C%20determinism%2C%20latency%2C%20and%20cost.&pathname=/docs/v1/guides/inference-parameters"
+description: "How sampling, penalties, and output limits affect quality, determinism, latency, and cost."
+"og:image": "https://phaseo.app/og/dynamic?title=Inference%20Parameters&description=How%20sampling%2C%20penalties%2C%20and%20output%20limits%20affect%20quality%2C%20determinism%2C%20latency%2C%20and%20cost.&pathname=/docs/v1/guides/inference-parameters"
 ---
 
-Quantization is one half of model behavior.  
-Inference parameters are the other half.
+Set `temperature`, `top_p` and an output limit on each request to trade variety against repeatability, and length against cost. The model's [quantization](./quantization.mdx) sets the quality ceiling; these parameters decide how the model picks each next token within it.
 
-## Core parameters
+```json
+{
+  "model": "openai/gpt-6-astra",
+  "messages": [{ "role": "user", "content": "Extract the invoice total as JSON." }],
+  "temperature": 0.1,
+  "top_p": 1,
+  "max_tokens": 200
+}
+```
 
-| Parameter | What it controls | Typical effect |
+This page explains what each control does and where to start. For every field's type, accepted values and default on each endpoint, see the [parameter reference](../api-reference/parameters.mdx).
+
+## Control randomness
+
+| Parameter | What it does | Notes |
 | --- | --- | --- |
-| `temperature` | Randomness in token selection | Higher = more creative/variable, lower = more deterministic |
-| `top_p` | Nucleus sampling cutoff | Lower = safer/more focused outputs |
-| `top_k` | Candidate token pool size (where supported) | Lower = tighter and more predictable outputs |
-| `max_tokens` / `max_output_tokens` | Max generated output length | Caps cost and latency, may truncate responses |
-| `stop` | Explicit stopping sequences | Improves output framing and parser reliability |
-| `seed` | Random seed (when supported) | Improves reproducibility for debugging/testing |
+| `temperature` | Scales overall randomness. Higher is more varied, lower is more deterministic. | Usually the first one to tune. |
+| `top_p` | Samples only from the most likely tokens whose probabilities add up to `top_p`. Lower gives safer, more focused output. | Often paired with a moderate temperature. |
+| `top_k` | Samples only from the `k` most likely tokens. Lower gives tighter, more predictable output. | Not available on every provider. |
+| `seed` | Fixes the random seed, so runs are more repeatable for debugging and tests. | Only where the provider supports it. |
 
-## Interactions to watch
+`temperature` and `top_p` both change randomness, so tune one at a time. A low-bit quantized model with high randomness can make output noticeably less stable.
 
-- `temperature` and `top_p` both affect randomness. Change one at a time while tuning.
-- Aggressive low-bit quantization + high randomness can amplify output instability.
-- Low `max_tokens` can look like model failure when it is just truncation.
+## Reduce repetition
 
-## Recommended defaults (starting point)
+| Parameter | What it does | Notes |
+| --- | --- | --- |
+| `frequency_penalty` | Discourages repeated tokens and phrases. | Reduces repetitive loops. |
+| `presence_penalty` | Encourages new tokens and topics. | Useful for broader exploration. |
+| `repetition_penalty` | Penalizes repeated text. | Same goal as the penalties above; its exact effect depends on the provider and model. |
 
-- `temperature`: `0.2` to `0.7` depending on creativity needs
-- `top_p`: `0.9` to `1.0`
-- `max_tokens`: sized to your expected output class, not a huge blanket value
+## Limit and stop the output
 
-## Tuning workflow
+The output limit is `max_tokens` on Chat Completions and Anthropic Messages, and `max_output_tokens` on Responses. It caps cost and latency; set it too low and the answer is truncated. A response that stops early with `finish_reason: "length"` hit the output limit; it isn't a model failure.
 
-1. Fix quantization first.
-2. Lock an eval set.
-3. Sweep one parameter at a time.
-4. Compare quality + latency + token usage.
-5. Keep separate presets per endpoint/use case.
+`stop` takes sequences that end the output, which makes output easier to frame and parse. See [Output length and stopping](../api-reference/parameters.mdx#output-length-and-stopping) for each endpoint's fields.
+
+## When a provider doesn't support a parameter
+
+Not every provider supports `top_k`, `seed`, `stop` or the penalties. If the provider serving the request doesn't, Phaseo drops that parameter instead of rejecting the request, and lists it in the `X-Phaseo-Dropped-Params` response header. Output limits are never dropped. See [Unsupported parameters](../api-reference/parameters.mdx#unsupported-parameters) for the full list.
+
+## Start from these values
+
+| Task | Start with |
+| --- | --- |
+| Extraction, classification, JSON | `temperature` `0.0` to `0.2`, narrow sampling |
+| General assistant replies | `temperature` `0.3` to `0.7`, `top_p` `0.9` to `1.0` |
+| Creative writing | Higher `temperature` and broader sampling, with closer evaluation |
+
+Size `max_tokens` to the output you expect for each task, not one large value for everything. Tune each task separately rather than one profile for everything. For creative tasks, raise randomness gradually and review the output by hand.
+
+## Recognize a bad setting
+
+| Symptom | Likely cause |
+| --- | --- |
+| Inconsistent facts, unstable structured output | Too random |
+| Repetitive or bland replies | Too deterministic |
+| Awkward wording, topic drift | Penalties too high |
+| Answer cut off, `finish_reason: "length"` | Output limit too low |
+
+## Tune parameters
+
+<Steps>
+<Step title="Choose the model and quantization first">
+See [Quantization](./quantization.mdx#pick-a-precision).
+</Step>
+<Step title="Fix an evaluation set">
+Use the same prompts for every run so results are comparable.
+</Step>
+<Step title="Change one parameter at a time">
+Compare quality, latency and token usage for each value.
+</Step>
+<Step title="Save the result per task">
+Keep separate [presets](./presets.mdx) for each endpoint or use case, so callers inherit the tuned defaults.
+</Step>
+</Steps>

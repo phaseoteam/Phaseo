@@ -4,15 +4,15 @@ icon: "layers"
 description: "Use o Phaseo com o adaptador compatível com OpenAI do TanStack AI."
 ---
 
-Use o TanStack AI quando quiser fluxos de chat com segurança de tipos em React, Solid, Preact, Vue, Svelte ou TypeScript no servidor.
+Crie o adaptador `openaiCompatible` do TanStack AI com sua chave do Phaseo, `baseURL: "https://api.phaseo.app/v1"` e os IDs de modelo do Phaseo que você usa. Ele serve para chat com tipagem segura em React, Solid, Preact, Vue, Svelte ou TypeScript no servidor.
 
-## Instalar
+## Instale
 
 ```bash
 npm install @tanstack/ai @tanstack/ai-openai
 ```
 
-## Configure o adaptador
+## Aponte o adaptador para o Phaseo
 
 ```ts
 import { chat } from "@tanstack/ai";
@@ -22,23 +22,18 @@ const phaseo = openaiCompatible({
 	name: "phaseo",
 	baseURL: "https://api.phaseo.app/v1",
 	apiKey: process.env.PHASEO_API_KEY!,
-	models: ["openai/gpt-5-nano", "anthropic/claude-sonnet-4.5"],
+	models: ["openai/gpt-6-astra", "anthropic/claude-sonnet-5.5"],
 });
 
 const stream = chat({
-	adapter: phaseo("openai/gpt-5-nano"),
+	adapter: phaseo("openai/gpt-6-astra"),
 	messages: [{ role: "user", content: "Reply with only: ok" }],
 });
 ```
 
-## Observações
+Declare em `models` todos os IDs de modelo do Phaseo que você pretende usar. Confira os IDs em [Modelos](../../api-reference/endpoint/models.mdx).
 
-- Declare no array `models` os IDs de modelo do Phaseo que pretende usar.
-- O adaptador compatível com OpenAI usa Chat Completions por padrão. Use chamadas diretas à API para recursos exclusivos do Responses.
-- Se um modelo não oferecer suporte a ferramentas ou imagens no seu fluxo, declare capacidades mais limitadas no TanStack AI para que o TypeScript detecte chamadas incompatíveis mais cedo.
+## Limitações conhecidas
 
-## Relacionados
-
-- [SDK da OpenAI](./openai-sdk.mdx)
-- [Chamadas de ferramentas](../tool-calling.mdx)
-- [Modelos](../../api-reference/endpoint/models.mdx)
+- O adaptador usa Chat Completions. Para recursos exclusivos do Responses, chame o Phaseo diretamente ou use o [SDK da OpenAI](./openai-sdk.mdx).
+- Se um modelo não aceitar [ferramentas](../tool-calling.mdx) ou imagens, declare recursos mais restritos no TanStack AI para que o TypeScript detecte chamadas não suportadas.

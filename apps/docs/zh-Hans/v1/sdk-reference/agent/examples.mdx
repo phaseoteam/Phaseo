@@ -1,0 +1,456 @@
+---
+icon: "square-terminal"
+title: "示例"
+description: "复制针对审批、流式传输和有边界运行的 Agent SDK 模式，或者从完整的示例方案开始。"
+---
+
+从一个智能体、一两个确定性的工具，以及围绕副作用的审批开始。下面的代码片段假定 `client` 中有一个网关智能体客户端（Go 中还有一个 `ctx`）。它们只是示意：`deployments`、`store`、`search` 和 `fetchPage` 代表你自己的代码。
+
+## 需要审批的部署
+
+部署工具会让运行暂停，直到有人批准这个确切的调用。保存已暂停的结果，把待处理调用展示给审核人，然后带着决定继续运行。
+
+<CodeGroup>
+
+```typescript TypeScript
+const deploy = defineTool({
+  id: "deploy",
+  requireApproval: ({ environment }) => environment === "production",
+  async execute(input: { environment: string }) {
+    return deployments.deploy(input.environment);
+  },
+});
+
+const agent = createAgent({ id: "release-agent", model: "openai/gpt-6-astra", tools: [deploy] });
+
+let result = await agent.run({ input: "Ship release 42 to production", client });
+if (result.run.status === "waiting_for_human") {
+  await store.save(result); // 把 result.run.pause.pendingToolCalls 展示给审核人
+
+  // 之后，在审核人批准后：
+  const callId = result.run.pause!.pendingToolCalls[0].call.id;
+  result = await agent.continueRun({ run: result, client, approvals: [{ toolCallId: callId }] });
+}
+```
+
+```python Python
+from phaseo_agent import AgentTool, AgentToolDecision, create_agent, define_tool
+
+deploy = define_tool(AgentTool(
+    id="deploy",
+    description="Deploy the selected release",
+    parameters={"type": "object", "properties": {"environment": {"type": "string"}}},
+    require_approval=True,
+    execute=lambda tool_input, runtime: deployments.deploy(tool_input["environment"]),
+))
+
+agent = create_agent({"id": "release-agent", "model": "openai/gpt-6-astra", "tools": [deploy]})
+
+result = agent.run(input="Ship release 42", client=client)
+if result.run.status == "waiting_for_human":
+    store.save(result)  # 把 result.run.pause.pending_tool_calls 展示给审核人
+
+    # 之后，在审核人批准后：
+    call_id = result.run.pause.pending_tool_calls[0].call.id
+    result = agent.continue_run(run=result, client=client, approvals=[AgentToolDecision(call_id)])
+```
+
+```go Go
+deploy := phaseoagent.DefineTool(phaseoagent.Tool{
+  ID:              "deploy",
+  Description:     "Deploy the selected release",
+  RequireApproval: true,
+  Execute: func(input any, runtime phaseoagent.RuntimeContext) (any, error) {
+    return deploymentService.Deploy(input)
+  },
+})
+
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID: "release-agent", Model: "openai/gpt-6-astra", Tools: []phaseoagent.Tool{deploy},
+})
+
+result, err := agent.Run(ctx, phaseoagent.RunOptions{Input: "Ship release 42", Client: client})
+if err == nil && result.Run.Status == "waiting_for_human" {
+  store.Save(result) // 把 result.Run.Pause.PendingToolCalls 展示给审核人
+
+  // 之后，在审核人批准后：
+  callID := result.Run.Pause.PendingToolCalls[0].Call.ID
+  result, err = agent.Continue(ctx, phaseoagent.ContinueOptions{
+    Run: result, Client: client,
+    Approvals: []phaseoagent.ToolDecision{{ToolCallID: callID}},
+  })
+}
+```
+
+```csharp C#
+var deploy = AgentSdk.DefineTool(new Tool(
+    "deploy",
+    async (input, runtime) => await deployments.DeployAsync(input, runtime.CancellationToken),
+    "Deploy the selected release")
+{
+    RequireApproval = true,
+});
+
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "release-agent", Model = "openai/gpt-6-astra", Tools = new[] { deploy },
+});
+
+var result = await agent.Run(new RunOptions { Input = "Ship release 42", Client = client });
+if (result.Run.Status == "waiting_for_human")
+{
+    await store.SaveAsync(result); // 把 result.Run.Pause.PendingToolCalls 展示给审核人
+
+    // 之后，在审核人批准后：
+    var callId = result.Run.Pause!.PendingToolCalls![0].Call.Id;
+    result = await agent.ContinueRun(new ContinueOptions
+    {
+        Run = result, Client = client, Approvals = new[] { new ToolDecision(callId) },
+    });
+}
+```
+
+```php PHP
+use Phaseo\AgentSdk\{AgentDefinition, AgentSdk, Tool, ToolDecision};
+
+$deploy = AgentSdk::defineTool(new Tool(
+    id: "deploy",
+    execute: fn (array $input, $runtime) => $deployments->deploy($input),
+    description: "Deploy the selected release",
+    requireApproval: true,
+));
+
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "release-agent", model: "openai/gpt-6-astra", tools: [$deploy],
+));
+
+$result = $agent->run(input: "Ship release 42", client: $client);
+if ($result->run->status === "waiting_for_human") {
+    $store->save($result); // 把 $result->run->pause->pendingToolCalls 展示给审核人
+
+    // 之后，在审核人批准后：
+    $callId = $result->run->pause->pendingToolCalls[0]->call->id;
+    $result = $agent->continueRun(run: $result, client: $client, approvals: [new ToolDecision($callId)]);
+}
+```
+
+```ruby Ruby
+deploy = PhaseoAgentSdk.define_tool(
+  PhaseoAgentSdk::Tool.new(
+    id: "deploy",
+    description: "Deploy the selected release",
+    require_approval: true,
+    execute: ->(input, runtime) { deployments.deploy(input) }
+  )
+)
+
+agent = PhaseoAgentSdk.create_agent(id: "release-agent", model: "openai/gpt-6-astra", tools: [deploy])
+
+result = agent.run(input: "Ship release 42", client: client)
+if result.run.status == "waiting_for_human"
+  store.save(result) # 把 result.run.pause.pending_tool_calls 展示给审核人
+
+  # 之后，在审核人批准后：
+  call_id = result.run.pause.pending_tool_calls.first.call.id
+  result = agent.continue_run(
+    run: result,
+    client: client,
+    approvals: [PhaseoAgentSdk::ToolDecision.new(tool_call_id: call_id)]
+  )
+end
+```
+
+```java Java
+var deploy = AgentSdk.defineTool(new AgentSdk.Tool(
+    "deploy", (input, context) -> deployments.deploy(input), "Deploy the selected release",
+    Map.of("type", "object"), null,
+    null, null, null,
+    true, null,             // requireApproval
+    null, null, "fail-run"));
+
+var agent = AgentSdk.createAgent(new AgentSdk.AgentDefinition(
+    "release-agent", "openai/gpt-6-astra", null, null, List.of(deploy), 12, null, null, null, null));
+
+var result = agent.run(new AgentSdk.RunOptions(
+    "Ship release 42", client, null, null, null, null, null, null, null, null));
+
+if (result.run().status().equals("waiting_for_human")) {
+    store.save(result); // 把 result.run().pause().pendingToolCalls() 展示给审核人
+
+    // 之后，在审核人批准后：
+    var callId = result.run().pause().pendingToolCalls().get(0).call().id();
+    result = agent.continueRun(new AgentSdk.ContinueOptions(
+        result, client, null, null, null, null, null, null, null, null, null,
+        List.of(new AgentSdk.ToolDecision(callId)), List.of(), List.of()));
+}
+```
+
+```rust Rust
+use phaseo_agent::{
+    create_agent, AgentDefinition, ContinueOptions, RunOptions, Tool, ToolDecision,
+};
+use serde_json::json;
+
+let deploy = Tool::new(
+    "deploy",
+    "Deploy the selected release",
+    json!({ "type": "object", "properties": { "environment": { "type": "string" } } }),
+    |input, _context| Ok(json!({ "environment": input["environment"], "deployed": true })),
+)
+.require_approval();
+
+let agent = create_agent(AgentDefinition::new("release-agent", "openai/gpt-6-astra").tool(deploy));
+
+let mut result = agent.run(&mut client, RunOptions::new("Ship release 42"))?;
+if result.run.status == "waiting_for_human" {
+    store.save(&result)?; // 把待处理的工具调用展示给审核人
+
+    // 之后，在审核人批准后：
+    let call_id = result.run.pause.as_ref().unwrap().pending_tool_calls[0].call.id.clone();
+    let mut options = ContinueOptions::new(result);
+    options.approvals = vec![ToolDecision { tool_call_id: call_id, reason: None }];
+    result = agent.continue_run(&mut client, options)?;
+}
+```
+
+</CodeGroup>
+
+[状态与审批](./state-and-approval)介绍了拒绝、手动工具输出和保存运行。
+
+## 流式输出到终端
+
+<CodeGroup>
+
+```typescript TypeScript
+const stream = agent.stream({ input, client });
+
+for await (const delta of stream.getTextStream()) {
+  process.stdout.write(delta);
+}
+
+const completed = await stream.getResult();
+```
+
+```python Python
+stream = agent.stream(input="Research this topic", client=client)
+
+for delta in stream.text_stream():
+    print(delta, end="", flush=True)
+
+completed = stream.result()
+```
+
+```go Go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+for delta := range stream.Text() {
+  fmt.Print(delta)
+}
+result, err := stream.Result()
+```
+
+```csharp C#
+var stream = agent.Stream(new RunOptions { Input = prompt, Client = client });
+await foreach (var delta in stream.TextStream()) Console.Write(delta);
+var completed = await stream.GetResult();
+```
+
+```php PHP
+$stream = $agent->stream(input: $prompt, client: $client);
+foreach ($stream->textStream() as $delta) { echo $delta; }
+$result = $stream->getResult();
+```
+
+```ruby Ruby
+stream = agent.stream(input: prompt, client: client)
+stream.text_stream.each { |delta| print delta }
+result = stream.result
+```
+
+```java Java
+// Java 的 textStream() 只在运行结束后才会填充，所以从 onEvent 中打印增量
+var options = new AgentSdk.RunOptions(prompt, client, null, null, null, null, null, null,
+    event -> { if (event.type().equals("response.output_text.delta")) System.out.print(event.details().get("delta")); },
+    null);
+var completed = agent.stream(options).getResult();
+```
+
+</CodeGroup>
+
+Rust `0.2` 没有流式传输；`run` 在运行结束后才返回。参见[流式传输](./streaming)。
+
+## 限制自主研究
+
+组合多个上限；最先触发的那个会以 `stopped` 状态和类似 `max_cost:1` 的停止原因结束运行。
+
+<CodeGroup>
+
+```typescript TypeScript
+import { maxCost, maxDuration, maxTokensUsed, stepCountIs } from "@phaseo/agent-sdk";
+
+const agent = createAgent({
+  id: "researcher",
+  model: "openai/gpt-6-astra",
+  tools: [search, fetchPage],
+  maxSteps: 25,
+  stopWhen: [
+    stepCountIs(20),
+    maxTokensUsed(100_000),
+    maxCost(1),
+    maxDuration(300_000),
+  ],
+});
+```
+
+```python Python
+from phaseo_agent import create_agent, max_cost, max_duration, max_tokens_used, step_count_is
+
+agent = create_agent({
+    "id": "researcher",
+    "model": "openai/gpt-6-astra",
+    "tools": [search, fetch_page],
+    "max_steps": 25,
+    "stop_when": [
+        step_count_is(20),
+        max_tokens_used(100_000),
+        max_cost(1),
+        max_duration(300_000),
+    ],
+})
+```
+
+```go Go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID:    "researcher",
+  Model: "openai/gpt-6-astra",
+  Tools: []phaseoagent.Tool{search, fetchPage},
+  StopWhen: []phaseoagent.StopCondition{
+    phaseoagent.StepCountIs(20),
+    phaseoagent.MaxTokensUsed(100_000),
+    phaseoagent.MaxCost(1.00),
+    phaseoagent.MaxDuration(5 * time.Minute),
+  },
+  MaxSteps: 25,
+})
+```
+
+```csharp C#
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "researcher",
+    Model = "openai/gpt-6-astra",
+    Tools = new[] { search, fetchPage },
+    StopWhen = new[]
+    {
+        AgentSdk.StepCountIs(20),
+        AgentSdk.MaxTokensUsed(100_000),
+        AgentSdk.MaxCost(1.00),
+        AgentSdk.MaxDuration(TimeSpan.FromMinutes(5)),
+    },
+    MaxSteps = 25,
+});
+```
+
+```php PHP
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "researcher",
+    model: "openai/gpt-6-astra",
+    tools: [$search, $fetchPage],
+    maxSteps: 25,
+    stopWhen: [
+        AgentSdk::stepCountIs(20),
+        AgentSdk::maxTokensUsed(100000),
+        AgentSdk::maxCost(1.00),
+        AgentSdk::maxDuration(300000),
+    ],
+));
+```
+
+```ruby Ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "researcher",
+  model: "openai/gpt-6-astra",
+  tools: [search, fetch_page],
+  max_steps: 25,
+  stop_when: [
+    PhaseoAgentSdk.step_count_is(20),
+    PhaseoAgentSdk.max_tokens_used(100_000),
+    PhaseoAgentSdk.max_cost(1.00),
+    PhaseoAgentSdk.max_duration(300_000)
+  ]
+)
+```
+
+```java Java
+var agent = AgentSdk.createAgent(new AgentSdk.AgentDefinition(
+    "researcher", "openai/gpt-6-astra", null, null, List.of(search, fetchPage), 25,
+    null, null, null, null,
+    List.of(
+        AgentSdk.stepCountIs(20),
+        AgentSdk.maxTokensUsed(100_000),
+        AgentSdk.maxCost(1.00),
+        AgentSdk.maxDuration(Duration.ofMinutes(5))),
+    null, null));
+```
+
+```rust Rust
+// Rust 0.2 没有停止条件；改为限制模型轮次。
+let agent = create_agent(
+    AgentDefinition::new("researcher", "openai/gpt-6-astra")
+        .tool(search)
+        .tool(fetch_page)
+        .max_steps(20),
+);
+```
+
+</CodeGroup>
+
+停止原因中数字的格式取决于语言：Go、C# 和 PHP 中为 `max_cost:1`，Ruby 和 Java 中为 `max_cost:1.0`。在 Rust 中，达到步数上限会以 `stopped` 结束运行，原因为 `max_steps:20`。参见[停止条件](./stop-conditions)。
+
+## 为常见产品组合功能
+
+| 产品 | 组合 |
+| --- | --- |
+| 结构化提取 | [输出校验](./run-controls#validate-the-final-output)、网关客户端上的严格响应格式、有上限的重试 |
+| 支持分诊 | 用于路由的 `preset`、查询类[工具](./tools)、用于最终分类的结构化输出 |
+| 研究简报 | 通过网关客户端的网关工具进行托管搜索、[流式](./streaming)文本、[停止条件](./stop-conditions) |
+| 代码审查或编程助手 | 文件工具、进度事件、修改前的[审批](./state-and-approval) |
+| 运维手册 | 状态工具、手动升级处理、之后继续的已保存运行 |
+
+TypeScript 包在它的 `examples/` 文件夹中提供了其中四种的完整版本：`research-brief-agent.ts`、`support-triage-agent.ts`、`coding-review-agent.ts` 和 `parallel-tool-agent.ts`（独立的本地工具并发运行）。
+
+## 跟着示例方案走一遍
+
+<CardGroup cols={2}>
+  <Card title="持久智能体循环" icon="database" href="../../cookbook/agent-sdk-durable-loop">
+    持久化返回的运行，并在之后的请求中继续它。
+  </Card>
+  <Card title="研究简报" icon="search-check" href="../../cookbook/agent-sdk-research-brief">
+    把智能体与有依据的网页研究结合起来。
+  </Card>
+  <Card title="支持分诊" icon="life-buoy" href="../../cookbook/agent-sdk-support-triage">
+    把路由和提示词默认值放在托管预设中。
+  </Card>
+  <Card title="代码审查" icon="code-2" href="../../cookbook/agent-sdk-coding-review">
+    把专注的本地工具接入编程工作流。
+  </Card>
+  <Card title="并行工具" icon="waypoints" href="../../cookbook/agent-sdk-parallel-tools">
+    展开相互独立的工具调用，而不改变结果顺序。
+  </Card>
+  <Card title="结构化提取（Python）" icon="file-json" href="../../cookbook/agent-sdk-python-structured-extraction">
+    用 Python Agent SDK 提取结构化 JSON。
+  </Card>
+  <Card title="运维手册（Go）" icon="server" href="../../cookbook/agent-sdk-go-ops-runbook">
+    用 Go 构建运维手册智能体。
+  </Card>
+  <Card title="工单分诊（C#）" icon="ticket" href="../../cookbook/agent-sdk-csharp-ticket-triage">
+    用 C# Agent SDK 分诊工单。
+  </Card>
+  <Card title="内容审核（PHP）" icon="file-check" href="../../cookbook/agent-sdk-php-content-review">
+    用 PHP Agent SDK 审核 CMS 内容。
+  </Card>
+  <Card title="笔记总结（Ruby）" icon="notebook-text" href="../../cookbook/agent-sdk-ruby-rag-notes">
+    用 Ruby Agent SDK 总结内部笔记。
+  </Card>
+</CardGroup>
+
+前五个示例方案使用 TypeScript。

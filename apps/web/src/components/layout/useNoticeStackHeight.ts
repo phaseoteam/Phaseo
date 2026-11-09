@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { setNoticeStackHeight, type NoticeStackSource } from "@/lib/noticeStack";
 

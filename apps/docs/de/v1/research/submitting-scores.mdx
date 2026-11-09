@@ -1,29 +1,29 @@
 ---
 icon: "upload"
 title: "Benchmark-Ergebnisse einreichen"
-description: "Melde neue oder korrigierte Benchmark-Ergebnisse mit den erforderlichen Belegen zur Prüfung."
+description: "Melde neue oder korrigierte Benchmark-Ergebnisse mit den Belegen, die für die Prüfung nötig sind."
 ---
 
-Reiche Benchmark-Ergebnisse über ein GitHub-Issue ein. Die Verantwortlichen prüfen die Belege und veröffentlichen bestätigte Ergebnisse im Datenbankeditor.
+Reiche Benchmark-Ergebnisse über ein GitHub-Issue ein. Die Maintainer prüfen die Belege und veröffentlichen bestätigte Scores über den Datenbankeditor.
 
 ## Belege vorbereiten
 
-Füge Folgendes hinzu:
+Gib Folgendes an:
 
 - Modell-ID, Anbieter und die Phaseo-Seite, sofern vorhanden.
-- Benchmark-Name, Version, Datensatzaufteilung, Ergebnis und Einheiten.
-- Bewertungsdatum, Promptformat, Testumgebung und relevante Hardware- oder Sampling-Einstellungen.
-- Eine öffentliche Publikation, Ergebnisseite, ein Datensatz oder ein reproduzierbares Bewertungsprotokoll.
-- Ob das Ergebnis vom Anbieter stammt oder unabhängig gemessen wurde.
+- Benchmark-Name, Version, Split, Score und Einheiten.
+- Bewertungsdatum, Promptformat, Harness und relevante Hardware- oder Sampling-Einstellungen.
+- Ein öffentliches Paper, eine Ergebnisseite, einen Datensatz oder ein reproduzierbares Bewertungsprotokoll.
+- Ob das Ergebnis vom Anbieter gemeldet oder unabhängig gemessen wurde.
 
 ## Issue einreichen
 
-[Fordere neue Benchmark-Daten an](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml), um neue Ergebnisse oder Benchmarks einzureichen. [Melde falsche Informationen](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml), um ein bestehendes Ergebnis mit aktuellem und vorgeschlagenem Wert zu korrigieren.
+[Fordere neue Benchmark-Daten an](https://github.com/phaseoteam/Phaseo/issues/new?template=data-request.yml) für ein neues Ergebnis oder einen neuen Benchmark. [Melde falsche Informationen](https://github.com/phaseoteam/Phaseo/issues/new?template=incorrect-info.yml), um einen bestehenden Score zu korrigieren, mit seinem aktuellen und dem vorgeschlagenen Wert.
 
-Veröffentliche keine Zugangsdaten, privaten Prompts oder Kundendaten in öffentlichen Berichten.
+Gib in öffentlichen Meldungen keine Zugangsdaten, privaten Prompts oder Kundendaten an.
 
 ## Veröffentlichung verfolgen
 
-Vor der Datenbankaktualisierung können die Verantwortlichen im Issue Rückfragen stellen. Tägliche JSON-Snapshots spiegeln veröffentlichte Daten wider; Änderungen an archiviertem Benchmark-JSON veröffentlichen kein Ergebnis.
+Die Maintainer stellen im Issue eventuell Rückfragen, bevor sie die Datenbank aktualisieren. Scores werden nur über die Datenbank veröffentlicht; das Repository enthält kein Benchmark-JSON zum Bearbeiten.
 
-Hilfe zur Vorbereitung erhältst du im [Community-Discord](https://discord.gg/aQyywCvgZ5).
+Hilfe bei der Vorbereitung einer Einreichung bekommst du im [Community-Discord](https://discord.gg/aQyywCvgZ5).

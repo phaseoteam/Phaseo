@@ -1,8 +1,6 @@
-"use client";
-
 import React, { useMemo, useState } from "react";
 import { useSettingsRouter as useRouter } from "./PrivateSettingsQuery";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	Dialog,
 	DialogTrigger,
@@ -16,7 +14,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Link } from "lucide-react";
-import { createTeamInviteAction } from "@/app/(dashboard)/settings/teams/actions";
+import { createTeamInviteAction } from "@/features/settings/teams/actions";
 import { toast } from "sonner";
 import {
 	DropdownMenu,
@@ -73,11 +71,7 @@ export default function CreateTeamInviteDialog({
 		try {
 			// The server generates the code and keeps only its encrypted form and fingerprint.
 			const invite = await createTeamInviteAction(
-				selectedTeam,
-				currentUserId,
-				role,
-				expiresIn,
-				maxUses ?? null
+				{ data: { workspaceId: selectedTeam, creatorUserId: currentUserId, role, expiresInDays: expiresIn, maxUses: maxUses ?? null } }
 			);
 			setGeneratedCode(invite.token);
 			router.refresh();

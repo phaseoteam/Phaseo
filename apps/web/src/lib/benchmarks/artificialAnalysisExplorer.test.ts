@@ -1,3 +1,4 @@
+import { it, expect } from "vitest";
 import { buildArtificialAnalysisExplorer } from "./artificialAnalysisExplorer";
 import { buildArtificialAnalysisRanking } from "./artificialAnalysis";
 import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/types";

@@ -116,14 +116,17 @@ export type AttemptHealth = { reachabilityPct: number | null; capacityPct: numbe
 export type RuntimeStats = {
   latencyMs: number | null;
   throughput: number | null;
-  /** Per attempt when attempt health is published (failovers count against the provider that failed), else per request. */
+  /**
+   * Per attempt (failovers count against the provider that failed). 100% for a provider with traffic but no rated
+   * attempts; null for one with no traffic in the window.
+   */
   uptimePct: number | null;
   requestSuccessPct: number | null;
   requests3d: number;
   requests30m: number;
   lastRequestAt: string | null;
   attemptHealth: AttemptHealth | null;
-  /** Attempt uptime for each of the last three UTC days, oldest first; null when the server sent no daily rates. */
+  /** Attempt uptime for each of the last three UTC days, oldest first (a day without a rate reads 100%); null without traffic. */
   uptimeDays: { offset: number; uptimePct: number | null }[] | null;
 };
 
@@ -137,19 +140,23 @@ export const statsKey = (providerId: string, tier = "standard") => `${providerId
 
 const firstFinite = (...values: (number | null | undefined)[]) => values.find((value): value is number => value != null && Number.isFinite(value)) ?? null;
 
-/** The last three UTC days' attempt uptime, oldest first (getModelProviderRuntimeStats' uptimeDaily3d). */
-function attemptUptimeDays(row: ProviderAttemptHealthRow, now: Date) {
+/**
+ * The last three UTC days' attempt uptime, oldest first (getModelProviderRuntimeStats' uptimeDaily3d). A day without
+ * a rate (no eligible attempts, or no daily rates sent) reads 100%.
+ */
+function attemptUptimeDays(row: ProviderAttemptHealthRow | undefined, now: Date) {
   const byOffset = new Map<number, number | null>();
-  for (const day of row.days ?? []) {
+  for (const day of row?.days ?? []) {
     const offset = utcDayOffset(day.start, now);
     if (offset != null && offset >= 0 && offset <= 2) byOffset.set(offset, firstFinite(day.uptime_pct));
   }
-  return [2, 1, 0].map((offset) => ({ offset, uptimePct: byOffset.get(offset) ?? null }));
+  return [2, 1, 0].map((offset) => ({ offset, uptimePct: byOffset.get(offset) ?? 100 }));
 }
 
 /**
- * Routing numbers per provider and tier. With `attempt_health` (newer web-api), uptime is per attempt, as on the
- * website's provider table and card; without it, the request-level uptime stays.
+ * Routing numbers per provider and tier. Uptime is per attempt only, as on the website's provider table and card: a
+ * provider with traffic but no rated attempts (or no `attempt_health` at all) reads 100%, never the request-level
+ * rate; a provider with no traffic has no uptime.
  */
 export function runtimeStatsFromHealth(rows: ProviderHealthRow[], attemptRows: ProviderAttemptHealthRow[] = [], now = new Date()): Map<string, RuntimeStats> {
   const attempts = new Map(attemptRows.map((row) => [statsKey(row.provider_id, row.service_tier ?? "standard"), row]));
@@ -159,19 +166,17 @@ export function runtimeStatsFromHealth(rows: ProviderHealthRow[], attemptRows: P
     const attemptHealth: AttemptHealth | null = attemptRow
       ? { reachabilityPct: firstFinite(attemptRow.reachability_pct), capacityPct: firstFinite(attemptRow.capacity_pct), callErrorPct: firstFinite(attemptRow.call_error_pct), uptimePct: firstFinite(attemptRow.uptime_pct) }
       : null;
-    const usesAttemptUptime = attemptHealth?.uptimePct != null;
+    const hasTraffic = attemptHealth?.uptimePct != null || (row != null && (row.health_requests > 0 || row.requests > 0));
     return {
       latencyMs: row ? firstFinite(row.percentile_latency_ms_30m, row.p50_latency_ms_30m, row.median_latency_ms_30m, row.avg_latency_ms_30m, row.percentile_latency_ms, row.avg_latency_ms) : null,
       throughput: row ? firstFinite(row.percentile_throughput_30m, row.p50_throughput_30m, row.median_throughput_30m, row.avg_throughput_30m, row.percentile_throughput, row.avg_throughput) : null,
-      // Request-level uptime only counts once health requests were observed (the website hides it otherwise).
-      uptimePct: usesAttemptUptime ? attemptHealth!.uptimePct : row && row.health_requests > 0 ? row.uptime_pct ?? null : null,
+      uptimePct: hasTraffic ? attemptHealth?.uptimePct ?? 100 : null,
       requestSuccessPct: row?.request_success_pct ?? null,
       requests3d: row?.requests ?? 0,
       requests30m: row?.requests_30m ?? 0,
       lastRequestAt: row?.last_request_at ?? null,
       attemptHealth,
-      // A response cached before web-api published daily rates has no days: no daily bars then.
-      uptimeDays: usesAttemptUptime && attemptRow?.days ? attemptUptimeDays(attemptRow, now) : null,
+      uptimeDays: hasTraffic ? attemptUptimeDays(attemptRow, now) : null,
     };
   };
   for (const row of rows) {

@@ -1,7 +1,5 @@
-"use client";
-
 import React, { useMemo, useState, useEffect } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import {
 	Dialog,
@@ -31,7 +29,7 @@ import { SensitiveValue } from "@/components/display/SensitiveValue";
 import {
 	SetUpAutoTopUp,
 	DisableAutoTopUpServer,
-} from "@/app/(dashboard)/settings/credits/actions";
+} from "@/features/settings/credits/actions";
 import { toast } from "sonner";
 import { CreditCard, Info, Loader2, ShieldCheck } from "lucide-react";
 import { MONEY_LOCALE } from "@/lib/displayPreferences";
@@ -250,13 +248,13 @@ export default function AutoTopUpClient({
 			};
 
 			await toast.promise(
-				SetUpAutoTopUp({
+				SetUpAutoTopUp({ data: {
 					balanceThreshold: payload.min_balance_nanos ?? 0,
 					topUpAmount: payload.top_up_amount_nanos ?? 0,
 					paymentMethodId: payload.auto_top_up_account_id ?? null,
 					mfaBypassAcknowledged: !mfaEnabled && mfaBypassAcknowledged,
 					mfaBypassPhrase: !mfaEnabled && mfaBypassPhrase === riskConfirmationPhrase ? MFA_BYPASS_CONFIRMATION : undefined,
-				}),
+				} }),
 				{
 					loading: text("saving"),
 					success: text("enabledToast"),

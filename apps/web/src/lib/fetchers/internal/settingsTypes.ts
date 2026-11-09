@@ -1,5 +1,5 @@
 import type { StatsigProfile } from "@/lib/statsig/shared";
-import type { SensitiveInfoRulePayload } from "@/app/(dashboard)/settings/guardrails/actions";
+import type { SensitiveInfoRulePayload } from "@/features/settings/guardrails/actions";
 import type { DeprecationWarning } from "@/lib/fetchers/usage/types";
 import type { BroadcastDestinationHealth } from "@/components/(gateway)/settings/observability/broadcastHealth";
 import type { DisplayPreferences } from "@/lib/displayPreferences";
@@ -50,6 +50,7 @@ export type PrivacyGlobalSettings = {
 };
 
 export type SettingsPrivacyInitialData = {
+	canManage: boolean;
 	accountPolicy: AccountPrivacyPolicy | null;
 	activeProviderModels: Array<{
 		apiModelId: string;
@@ -489,6 +490,7 @@ export type SettingsObservabilityDestinationNewInitialData = {
 };
 
 export type SettingsRoutingInitialData = {
+	canManage: boolean;
 	responseHealingEnabled: boolean;
 	responseHealingLocked: boolean;
 	responseHealingMode: "safe" | "strict";

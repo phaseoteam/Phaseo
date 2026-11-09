@@ -1,11 +1,9 @@
-"use client";
-
 import React, { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePathname, useRouter } from "@/i18n/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useTheme } from "next-themes";
+import { useTheme } from "@/components/theme/ThemeProvider";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -62,7 +60,7 @@ import {
 import { getTypoMatchScore } from "./Search.matching";
 import type { PaletteItem } from "./Search.types";
 import { fetchWorkspaceSearchItems } from "./Search.workspaces";
-import { SwapTeam } from "@/app/(dashboard)/actions";
+import { SwapTeam } from "@/lib/workspace/actions";
 import type {
 	CompactSearchData,
 	SearchData,
@@ -930,7 +928,7 @@ export default function Search({
 
 		if (item.workspaceId) {
 			setOpen(false);
-			void SwapTeam(item.workspaceId)
+			void SwapTeam({ data: item.workspaceId })
 				.then((result) => {
 					if (!result?.ok) {
 						throw new Error(result?.error ?? "Failed to switch workspace");

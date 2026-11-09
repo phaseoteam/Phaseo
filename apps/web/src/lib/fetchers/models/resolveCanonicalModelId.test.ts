@@ -1,11 +1,7 @@
-const mockFetchPublicWebApi = jest.fn();
+import { describe, it, expect, beforeEach, vi } from "vitest";
+const mockFetchPublicWebApi = vi.fn();
 
-jest.mock("next/cache", () => ({
-	cacheLife: jest.fn(),
-	cacheTag: jest.fn(),
-}));
-
-jest.mock("@/lib/web-api/client", () => ({
+vi.mock("@/lib/web-api/client", () => ({
 	fetchPublicWebApi: (...args: unknown[]) => mockFetchPublicWebApi(...args),
 }));
 
@@ -13,7 +9,7 @@ import { resolveCanonicalModelId } from "@/lib/fetchers/models/resolveCanonicalM
 
 describe("resolveCanonicalModelId", () => {
 	beforeEach(() => {
-		jest.clearAllMocks();
+		vi.clearAllMocks();
 	});
 
 	it("does not resolve a public API-model route mapped only to a hidden internal model", async () => {

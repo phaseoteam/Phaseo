@@ -4,56 +4,59 @@ icon: "radio"
 description: "Use modelos do Phaseo no LiveKit Agents."
 ---
 
-O LiveKit Agents pode chamar qualquer endpoint de chat compatível com OpenAI pelo plugin OpenAI. Aponte esse plugin para o Phaseo para usar os IDs de modelo e o roteamento do Phaseo.
+Aponte o LLM do plugin OpenAI do LiveKit Agents para `https://api.phaseo.app/v1` com sua chave do Phaseo, e seus agentes de voz usam os IDs de modelo e o roteamento do Phaseo. O plugin chama o endpoint Chat Completions do Phaseo.
 
-## Python
+## Instale
 
-```bash
+<CodeGroup>
+
+```bash Python
 uv add "livekit-agents[openai]"
 ```
 
-```python
+```bash Node.js
+pnpm add @livekit/agents @livekit/agents-plugin-openai
+```
+
+</CodeGroup>
+
+## Aponte o LLM do agente para o Phaseo
+
+<CodeGroup>
+
+```python Python
 import os
 from livekit.agents import AgentSession
 from livekit.plugins import openai
 
 session = AgentSession(
     llm=openai.LLM(
-        model="openai/gpt-5-nano",
+        model="openai/gpt-6-astra",
         api_key=os.environ["PHASEO_API_KEY"],
         base_url="https://api.phaseo.app/v1",
     ),
 )
 ```
 
-## Node.js
-
-```bash
-pnpm add @livekit/agents @livekit/agents-plugin-openai
-```
-
-```ts
+```ts Node.js
 import { voice } from "@livekit/agents";
 import * as openai from "@livekit/agents-plugin-openai";
 
 const session = new voice.AgentSession({
 	llm: new openai.LLM({
-		model: "openai/gpt-5-nano",
+		model: "openai/gpt-6-astra",
 		apiKey: process.env.PHASEO_API_KEY,
 		baseURL: "https://api.phaseo.app/v1",
 	}),
 });
 ```
 
-## Observações
+</CodeGroup>
 
-- Use o modo Chat Completions compatível com OpenAI para endpoints personalizados.
-- As ferramentas OpenAI específicas de Responses do LiveKit não se tornam automaticamente ferramentas de servidor do Phaseo.
-- Configure a conversão de fala em texto e de texto em fala separadamente, a menos que a interface LiveKit escolhida ofereça suporte a uma URL personalizada compatível com OpenAI para essa modalidade.
-- Teste o tratamento de interrupções, as chamadas de ferramentas e a latência do streaming antes de colocar tráfego de voz em produção.
+Inicie uma sessão, diga alguma coisa e confirme que a solicitação aparece em **Configurações → Uso → Registros**.
 
-## Relacionados
+## Limitações conhecidas
 
-- [SDK da OpenAI](./openai-sdk.mdx)
-- [Transmissão contínua](../streaming.mdx)
-- [Chamadas de ferramentas](../tool-calling.mdx)
+- Use o modo Chat Completions do plugin para endpoints personalizados. As ferramentas OpenAI específicas do Responses no LiveKit não viram ferramentas de servidor do Phaseo.
+- Isso só roteia o LLM. Configure a conversão de fala em texto e de texto em fala separadamente, a menos que a interface do LiveKit que você usa aceite uma URL personalizada compatível com OpenAI para essa modalidade.
+- Teste o tratamento de interrupções, as [chamadas de ferramentas](../tool-calling.mdx) e a latência do [streaming](../streaming.mdx) antes de colocar tráfego de voz em produção.

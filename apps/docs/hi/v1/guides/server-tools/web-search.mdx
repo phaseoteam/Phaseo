@@ -4,30 +4,14 @@ title: "वेब खोज सर्वर टूल"
 description: "अनुरोध के दौरान मॉडल को वेब खोजने दें।"
 ---
 
-जब मॉडल को नवीनतम या स्रोत-आधारित जानकारी चाहिए, तब `phaseo:web_search` उपयोग करें। मॉडल तय करता है कि कब खोजना है, query लिखता है और एक अनुरोध में कई बार खोज सकता है।
-
-Phaseo मॉडल को URLs, titles, snippets, highlights और वैकल्पिक page text देता है, ताकि वह स्रोत-आधारित उत्तर लिख सके।
-
-<Note>
-TinyFish Search वैकल्पिक प्रबंधित इंजन के रूप में उपलब्ध है। समर्थित रूट पर `engine: "native"` से प्रदाता की मूल खोज भी उपलब्ध रहती है।
-</Note>
-
-## यह कैसे काम करता है
-
-1. `{ "type": "phaseo:web_search" }` को `tools` में जोड़ें।
-2. मॉडल तय करता है कि खोज करनी है या नहीं और query भेजता है।
-3. Phaseo configured engine से खोज करता है।
-4. परिणाम tool context के रूप में मॉडल को लौटाए जाते हैं।
-5. मॉडल अंतिम उत्तर लिखता है और ज़रूरत पड़ने पर फिर खोज सकता है।
-
-## त्वरित शुरुआत
+`phaseo:web_search` जोड़ें, ताकि मॉडल को नवीनतम या स्रोत-आधारित जानकारी चाहिए तो वह वेब खोज सके। मॉडल query लिखता है और एक अनुरोध में कई बार खोज सकता है; Phaseo URL, शीर्षक, स्निपेट, हाइलाइट और वैकल्पिक रूप से पेज टेक्स्ट लौटाता है, और मॉडल स्रोत-आधारित उत्तर लिखता है।
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "What were the major AI announcements this week?" }
     ],
@@ -37,7 +21,10 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-## कॉन्फ़िगरेशन
+यही टूल एंट्री `/v1/responses` और `/v1/messages` पर `tools` में भी काम करती है।
+
+<span id="parameters"></span>
+## पैरामीटर
 
 ```json
 {
@@ -49,7 +36,6 @@ curl https://api.phaseo.app/v1/chat/completions \
     "search_context_size": "medium",
     "max_characters": 2048,
     "allowed_domains": ["arxiv.org", "nature.com"],
-    "excluded_domains": ["reddit.com"],
     "include_highlights": true,
     "include_text": false
   }
@@ -58,90 +44,71 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | पैरामीटर | प्रकार | डिफ़ॉल्ट | विवरण |
 | --- | --- | --- | --- |
-| `engine` | string | `exa` | खोज इंजन: `auto`, `native`, `exa`, `parallel`, `firecrawl`, `perplexity` या `tinyfish`। |
-| `max_results` | integer | `5` | हर खोज कॉल में लौटाए जाने वाले परिणामों की अधिकतम संख्या। |
-| `max_total_results` | integer | `10` | पूरे सर्वर-टूल लूप में परिणामों की कुल अधिकतम संख्या। |
-| `max_uses` | integer | `10` | पूरे सर्वर-टूल लूप में खोज कॉल की अधिकतम संख्या। |
-| `search_context_size` | string | `medium` | जिन इंजनों में highlights का आकार तय किया जा सकता है, उनके लिए संदर्भ आकार: `low`, `medium` या `high`। |
-| `max_characters` | integer | engine default | टेक्स्ट शामिल होने पर हर परिणाम में अधिकतम टेक्स्ट वर्ण। |
-| `allowed_domains` | string[] | none | केवल इन डोमेन से परिणाम लौटाएँ। इसका alias `include_domains` है। |
-| `excluded_domains` | string[] | none | इन domains के results हटाएँ। Alias: `exclude_domains`। |
-| `include_highlights` | boolean | `true` | उपलब्ध होने पर engine द्वारा दिए गए highlights/snippets शामिल करें। |
-| `include_text` | boolean | `false` | Engine support करे तो result का अधिक विस्तृत text शामिल करें। |
-| `user_location` | object | none | Localized search support करने वाले engines के लिए वैकल्पिक location hint। |
-| `language` | स्ट्रिंग | कोई नहीं | TinyFish भाषा संकेत, जैसे `en`। |
-| `page` | पूर्णांक | `0` | TinyFish परिणाम पेज, `0` से `10` तक। |
+| `engine` | string | `exa` | `auto`, `native`, `exa`, `parallel`, `firecrawl`, `perplexity` या `tinyfish`। देखें [इंजन चुनें](#choose-an-engine)। |
+| `max_results` | integer | `5` | प्रति खोज कॉल परिणाम, अधिकतम `25`। |
+| `max_total_results` | integer | `25` | अनुरोध की सभी खोजों में कुल परिणाम, अधिकतम `100`। कभी `max_results` से कम नहीं। |
+| `max_uses` | integer | `10` | प्रति अनुरोध खोज कॉल, अधिकतम `100`। |
+| `search_context_size` | string | `medium` | `low`, `medium` या `high`, उन इंजनों के लिए जो हाइलाइट का आकार तय करते हैं। |
+| `max_characters` | integer | इंजन का डिफ़ॉल्ट | टेक्स्ट शामिल होने पर प्रति परिणाम टेक्स्ट के अक्षर। |
+| `allowed_domains` | string[] | कोई नहीं | सिर्फ़ इन डोमेन में खोजें। उपनाम: `include_domains`। |
+| `excluded_domains` | string[] | कोई नहीं | इन डोमेन को बाहर रखें। उपनाम: `exclude_domains`। |
+| `include_highlights` | boolean | `true` | इंजन के हाइलाइट या स्निपेट शामिल करें। |
+| `include_text` | boolean | `false` | जहां इंजन सपोर्ट करे, वहां पेज का ज़्यादा पूरा टेक्स्ट शामिल करें। |
+| `user_location` | object | कोई नहीं | `engine` के `native` होने पर प्रदाता की अपनी खोज को भेजा जाने वाला स्थान संकेत। |
 
-## सर्च इंजन चुनें
+## मॉडल क्या भेजता है
 
-| Engine | व्यवहार |
+हर कॉल में एक `query` होती है। मॉडल `max_results`, `engine`, `search_context_size`, डोमेन सूचियां, `include_text`, `include_highlights`, `max_characters` और ये स्थानीयकरण संकेत भी भेज सकता है:
+
+| आर्गुमेंट | विवरण |
 | --- | --- |
-| `exa` | Managed Exa search। Gateway runtime के लिए Phaseo में Exa configure होना चाहिए। |
-| `auto` | Configured managed default, अभी Exa, उपयोग करता है। |
-| `parallel` | Configure होने पर Parallel search उपयोग करता है। |
-| `firecrawl` | Configure होने पर Firecrawl search उपयोग करता है। |
-| `perplexity` | Configure होने पर first-party Perplexity Search API उपयोग करता है। Ranked results, `search_context_size`, `user_location.country` से regional search और allowed या excluded domains समर्थित हैं। |
-| `tinyfish` | `TINYFISH_API_KEY` सेट होने पर TinyFish Search इस्तेमाल करता है। स्थानीयकृत, पृष्ठों में विभाजित और क्रमबद्ध नतीजे देता है तथा `allowed_domains` / `excluded_domains` को खोज ऑपरेटर में बदलता है। TinyFish Search पूरा पेज टेक्स्ट नहीं देता; अधिक सामग्री के लिए `phaseo:web_fetch` इस्तेमाल करें। |
-| `native` | Request surface support करने पर upstream model call से पहले declaration को provider-native web-search tool में बदलता है। Chat Completions और Responses पर request सिर्फ़ उन providers को जाती है जो web search खुद चलाते हैं; अगर इनमें से कोई भी model serve नहीं करता, तो Phaseo इसकी जगह अपना default search engine चलाता है और इन searches को managed search के रूप में bill करता है। |
+| `user_location` | अनुमानित स्थान। Perplexity क्षेत्रीय खोज के लिए `user_location.country` उपयोग करता है; TinyFish देश और भाषा उपयोग करता है। |
+| `language` | परिणाम की भाषा का कोड, जैसे `en`, उन इंजनों के लिए जो स्थानीयकरण करते हैं। |
+| `page` | परिणाम पेज `0` से `10`, TinyFish के लिए। |
 
-`engine: "native"` केवल tool declaration में उपयोग करें। पहले से जारी gateway search call में मॉडल `engine: "native"` भेजे, तो Phaseo tool error देता है, क्योंकि upstream request भेजने से पहले native tools चुनने होते हैं।
+मॉडल जो मान भेजता है, वे उस कॉल के लिए टूल के डिफ़ॉल्ट की जगह लेते हैं। `max_results` फिर भी `max_total_results` में बचे हिस्से तक सीमित रहता है; वह खत्म होने पर आगे की कॉल `max_total_results_reached` लौटाती हैं।
 
-## TinyFish Search
+<span id="choose-an-engine"></span>
+## इंजन चुनें
 
-Phaseo गेटवे रनटाइम सीक्रेट में `TINYFISH_API_KEY` सेट करके इंजन सक्षम करें, फिर टूल पैरामीटर में उसे चुनें:
+| इंजन | क्या चलता है |
+| --- | --- |
+| `exa` | प्रबंधित Exa खोज। डिफ़ॉल्ट। |
+| `auto` | प्रबंधित डिफ़ॉल्ट, अभी Exa। |
+| `parallel` | प्रबंधित Parallel खोज। |
+| `firecrawl` | प्रबंधित Firecrawl खोज। |
+| `perplexity` | Perplexity Search API: रैंक किए गए परिणाम, `search_context_size`, और `user_location.country` से क्षेत्रीय खोज। |
+| `tinyfish` | TinyFish Search: स्थानीयकृत, पेज-वार रैंक किए गए परिणाम। यह स्निपेट लौटाता है, पूरा पेज टेक्स्ट नहीं; मॉडल को ज़्यादा चाहिए तो [`phaseo:web_fetch`](./web-fetch) उपयोग करें। |
+| `native` | प्रदाता का अपना वेब खोज टूल, जैसे OpenAI का `web_search_preview` या Anthropic का `web_search_20250305`। |
 
-```json
-{
-  "type": "phaseo:web_search",
-  "parameters": {
-    "engine": "tinyfish",
-    "language": "en",
-    "page": 0,
-    "max_results": 5,
-    "allowed_domains": ["phaseo.app", "github.com"],
-    "excluded_domains": ["reddit.com"]
-  }
-}
-```
+अगर कोई प्रबंधित इंजन सक्षम नहीं है, तो कॉल मॉडल को `search_not_configured` लौटाती है।
 
-`language` भाषा संकेत देता है और `page` `0` से `10` तक का परिणाम पेज चुनता है। TinyFish दोनों डोमेन फ़िल्टर सूचियाँ स्वीकार करता है; Phaseo उन्हें खोज ऑपरेटर में बदलता है। नतीजों में URL, शीर्षक और अंश/हाइलाइट होते हैं। मॉडल को अधिक पूरा टेक्स्ट चाहिए तो `phaseo:web_fetch` इस्तेमाल करें।
+`/v1/chat/completions` या `/v1/responses` पर `engine: "native"` के साथ अनुरोध सिर्फ़ उन प्रदाताओं को जाता है जो खुद वेब खोज चलाते हैं। अगर कोई भी प्रदाता मॉडल को सर्व नहीं करता, तो Phaseo अपना डिफ़ॉल्ट इंजन चलाता है और उसका बिल प्रबंधित खोज के रूप में बनाता है। `native` सिर्फ़ टूल परिभाषा में सेट करें: अगर मॉडल किसी कॉल में `native` मांगता है, तो कॉल `unsupported_search_engine` लौटाती है, क्योंकि प्रदाता का टूल अनुरोध भेजने से पहले चुनना होता है।
 
-## डोमेन फ़िल्टरिंग
+## डोमेन से फ़िल्टर करें
 
-उत्तर को नियंत्रित स्रोतों से ही लेना हो, तो `allowed_domains` उपयोग करें:
+जब उत्तर स्रोतों के एक तय सेट से ही आना चाहिए, तब `allowed_domains` उपयोग करें, और खुली खोज से कुछ खास साइटें हटाने के लिए `excluded_domains`।
 
 ```json
 {
   "type": "phaseo:web_search",
-  "parameters": {
-    "allowed_domains": ["phaseo.app", "github.com"]
-  }
+  "parameters": { "allowed_domains": ["phaseo.app", "github.com"] }
 }
 ```
 
-Broad web search allowed हो, लेकिन कुछ domains को results से हटाना हो, तो `excluded_domains` उपयोग करें।
+इंजन सूचियों को अलग-अलग तरह से संभालते हैं:
 
-Perplexity और Firecrawl एक खोज कॉल में `allowed_domains` या `excluded_domains` में से एक स्वीकार करते हैं, दोनों नहीं। Perplexity प्रति अनुरोध अधिकतम 20 डोमेन फ़िल्टर लेता है और बाहर रखे डोमेन अपनी निषेध सूची के प्रारूप में बदलता है। TinyFish दोनों ऐरे को क्वेरी में `site:` और `-site:` ऑपरेटर में बदलता है।
+- **Perplexity** दोनों में से एक ही सूची लेता है, दोनों नहीं, और अधिकतम 20 डोमेन। बाहर रखे गए डोमेन उसके deny-list फ़ॉर्मेट में भेजे जाते हैं।
+- **Firecrawl** दोनों में से एक ही सूची लेता है, दोनों नहीं।
+- **TinyFish** दोनों लेता है और उन्हें query में `site:` और `-site:` ऑपरेटर में बदल देता है।
 
-TinyFish Search प्रकाशित योजनाओं में मुफ़्त है, इसलिए Phaseo `engine: "tinyfish"` पर प्रदाता उपयोग शुल्क नहीं जोड़ता; सामान्य Phaseo अनुरोध और टोकन मूल्य लागू रहते हैं।
+## टूल क्या लौटाता है
 
-## Responses API
+एक JSON परिणाम, जिसमें इंजन, query और एक `results` ऐरे होता है। हर परिणाम में `title`, `url`, `snippet` या `highlights` होते हैं, और `text` तब, जब पेज टेक्स्ट मांगा गया हो और इंजन उसे देता हो।
 
-यही tool shape `/v1/responses` के साथ भी काम करता है:
+## उपयोग और मूल्य
 
-```json
-{
-  "model": "openai/gpt-5-nano",
-  "input": "Find the latest release notes for Phaseo.",
-  "tools": [
-    { "type": "phaseo:web_search", "parameters": { "max_results": 4 } }
-  ]
-}
-```
-
-## उपयोग और मूल्य निर्धारण
-
-Web search calls इनकी गिनती बढ़ाते हैं:
+हर खोज `usage.server_tool_use` में जुड़ती है:
 
 ```json
 {
@@ -155,10 +122,4 @@ Web search calls इनकी गिनती बढ़ाते हैं:
 }
 ```
 
-Managed search pricing में `server_tool_web_search_requests` और `server_tool_web_search_extra_results` meters उपयोग हो सकते हैं। Model price card में meter तय होने पर provider-native search में `native_web_search_requests` उपयोग हो सकता है।
-
-## संबंधित
-
-- [Web Fetch](./web-fetch.mdx)
-- [सर्वर टूल](./index.mdx)
-- [Web fetch के साथ उत्तरों को स्रोत-आधारित बनाना](../../cookbook/tool-grounding-with-web-fetch.mdx)
+प्रबंधित खोज का बिल `server_tool_web_search_requests` और `server_tool_web_search_extra_results` से बनता है। मूल खोज का बिल `native_web_search_requests` से बनता है, जहां मॉडल का मूल्य कार्ड इसे परिभाषित करता है। TinyFish Search अपने प्रकाशित प्लान पर मुफ़्त है, इसलिए `engine: "tinyfish"` के लिए Phaseo कोई खोज शुल्क नहीं जोड़ता; अनुरोध का सामान्य टोकन मूल्य फिर भी लागू होता है।

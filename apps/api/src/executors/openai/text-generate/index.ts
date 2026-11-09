@@ -4,6 +4,7 @@
 
 import type { IRChatRequest, IRReasoning } from "@core/ir";
 import { isOpenAIHostedToolType } from "@core/nativeTools";
+import { withScopedPromptCacheKey } from "@executors/_shared/text-generate/prompt-cache";
 import type { ExecutorExecuteArgs, ExecutorResult, Bill, ProviderExecutor } from "@executors/types";
 import { fetchUpstream } from "@executors/_shared/timing/upstream";
 import { normalizeTextUsageForPricing } from "@executors/_shared/usage/text";
@@ -853,7 +854,7 @@ async function executeOpenAIProvider(args: ExecutorExecuteArgs): Promise<Executo
 		!requestsTwelveHourCache &&
 		!historyCarriesReplayableReasoning(args.ir as IRChatRequest, args.providerId, modelForRouting);
 	const irWithRequestMetadata = withOpenAIRequestMetadata(
-		args.ir as IRChatRequest,
+		await withScopedPromptCacheKey(args.ir as IRChatRequest, args, keyInfo.source),
 		args.providerId,
 		args.requestId,
 		args.workspaceId,

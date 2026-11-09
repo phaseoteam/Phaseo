@@ -555,6 +555,7 @@ export type { WorkspaceListResponse } from "./WorkspaceListResponse.js";
 export type { WorkspaceLowBalanceEmailSettings } from "./WorkspaceLowBalanceEmailSettings.js";
 export type { WorkspaceLowBalanceEmailUpdate } from "./WorkspaceLowBalanceEmailUpdate.js";
 export type { WorkspaceMember } from "./WorkspaceMember.js";
+export type { WorkspaceMemberAddFailure } from "./WorkspaceMemberAddFailure.js";
 export type { WorkspaceMemberAddResponse } from "./WorkspaceMemberAddResponse.js";
 export type { WorkspaceMemberBulkRequest } from "./WorkspaceMemberBulkRequest.js";
 export type { WorkspaceMemberListResponse } from "./WorkspaceMemberListResponse.js";

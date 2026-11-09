@@ -707,6 +707,17 @@ export async function guardContext(args: {
                 }),
             };
         }
+        if (presetReference && message.includes("preset_ambiguous")) {
+            return {
+                ok: false,
+                response: err("validation_error", {
+                    reason: "preset_ambiguous",
+                    description: `Preset "${args.model}" matches more than one preset whose slugs differ only in case. Rename one of them in the dashboard so their slugs differ.`,
+                    request_id: args.requestId,
+                    workspace_id: args.workspaceId,
+                }),
+            };
+        }
         if (presetReference && (message.includes("preset_not_found") || message.includes("preset_no_model"))) {
             const missing = message.includes("preset_not_found");
             return {

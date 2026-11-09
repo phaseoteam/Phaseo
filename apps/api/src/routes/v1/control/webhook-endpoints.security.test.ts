@@ -24,10 +24,17 @@ const state = vi.hoisted(() => ({
 vi.mock("@/runtime/env", () => ({
 	configureRuntime: vi.fn(),
 	clearRuntime: vi.fn(),
-	getSupabaseAdmin: () => {
-		state.dbCalls += 1;
-		throw new Error("database_should_not_be_reached");
-	},
+	// Only the role check may read: the management key acts as its creator, an admin of the workspace.
+	getSupabaseAdmin: () => ({
+		from: (table: string) => {
+			if (table === "workspace_members") {
+				const membership: any = { select: () => membership, eq: () => membership, maybeSingle: async () => ({ data: { role: "admin" }, error: null }) };
+				return membership;
+			}
+			state.dbCalls += 1;
+			throw new Error("database_should_not_be_reached");
+		},
+	}),
 }));
 
 vi.mock("@/pipeline/before/guards", () => ({
@@ -58,7 +65,7 @@ describe("webhook endpoint management authorization", () => {
 	beforeEach(() => {
 		state.dbCalls = 0;
 		state.auth.value.internal = false;
-		state.auth.value.userId = null;
+		state.auth.value.userId = "user_key_creator";
 		state.auth.value.authMethod = "api_key";
 		state.auth.value.scopes = ["settings:read"];
 		state.auth.value.oauthScopes = [];

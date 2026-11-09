@@ -1,5 +1,4 @@
-"use client";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { SettingsResourceQuery } from "../PrivateSettingsQuery";
 import SettingsPageHeader from "../SettingsPageHeader";
 import PrivateModelEditor from "./PrivateModelEditor";
@@ -18,6 +17,6 @@ export default function CachedPrivateModelEditor({ privateModelId, catalogModels
 		const model = data.models.find((item) => item.id === privateModelId);
 		if (privateModelId && !model) return <p>{t("privateModelsCopy.notFound")}</p>;
 		const mode = privateModelId ? "edit" : "create";
-		return <div className="space-y-6"><SettingsPageHeader title={model?.name ?? t("privateModelsCopy.newModel")} description={model ? t("privateModelsCopy.updateEndpoint") : t("privateModelsCopy.connectEndpoint")} meta={<Badge variant="outline">{t("settingsPageCopy.beta")}</Badge>} actions={<ProductFeedbackButton surface="settings_private_model_editor" prompt={t("privateModelsCopy.editorFeedback")} context={{ mode }} />} /><PrivateModelEditor mode={mode} initialModel={model} workspaceNamespace={data.workspaceNamespace} catalogModels={catalogModels} providers={providers} /></div>;
+		return <div className="min-w-0 w-full max-w-4xl space-y-8"><SettingsPageHeader title={model?.name ?? t("privateModelsCopy.newModel")} description={model ? t("privateModelsCopy.updateEndpoint") : t("privateModelsCopy.connectEndpoint")} meta={<Badge variant="outline">{t("settingsPageCopy.beta")}</Badge>} actions={<ProductFeedbackButton surface="settings_private_model_editor" prompt={t("privateModelsCopy.editorFeedback")} context={{ mode }} />} /><PrivateModelEditor mode={mode} initialModel={model} workspaceNamespace={data.workspaceNamespace} catalogModels={catalogModels} providers={providers} /></div>;
 	}}</SettingsResourceQuery>;
 }

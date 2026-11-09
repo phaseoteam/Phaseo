@@ -1,643 +1,455 @@
 ---
 title: "पैरामीटर"
-description: "Phaseo के टेक्स्ट, रूटिंग और डिबग नियंत्रणों के अनुरोध पैरामीटर का फ़ील्ड-दर-फ़ील्ड संदर्भ।"
+description: "Phaseo के टेक्स्ट, रूटिंग और डीबग नियंत्रणों के अनुरोध पैरामीटर का फ़ील्ड-दर-फ़ील्ड संदर्भ।"
 icon: "sliders-horizontal"
 ---
 
-यह पेज Phaseo द्वारा उपलब्ध कराए गए अनुरोध पैरामीटर का फ़ील्ड-दर-फ़ील्ड संदर्भ है।
+Chat Completions (`/v1/chat/completions`), Responses (`/v1/responses`) और Anthropic Messages (`/v1/messages`) पर किसी अनुरोध फ़ील्ड का प्रकार, स्वीकार्य मान और डिफ़ॉल्ट देखें। समर्थन फिर भी मॉडल और प्रदाता के अनुसार बदलता है: हर मॉडल पेज की क्विकस्टार्ट तालिका दिखाती है कि उसके सक्रिय प्रदाता हर एंडपॉइंट के लिए कौन-से पैरामीटर समर्थित करते हैं। ट्यूनिंग की सलाह के लिए [इन्फ़रेंस पैरामीटर](/hi/v1/guides/inference-parameters) देखें।
 
-इसका उपयोग तब करें जब आप जानना चाहें:
+| पैरामीटर | प्रकार | मान | इसका उपयोग |
+| --- | --- | --- | --- |
+| [`model`](#parameter-model) | `string` | मॉडल ID, उपनाम या प्रीसेट | चलाया जाने वाला मॉडल। आवश्यक। |
+| [`models`](#parameter-models) | `string[]` | 1 से 25 मॉडल ID | `model` के बाद आज़माए जाने वाले फ़ॉलबैक मॉडल। |
+| [`stream`](#parameter-stream) | `boolean` | डिफ़ॉल्ट `false` | एक प्रतिक्रिया बॉडी के बजाय Server-Sent Events। |
+| [`temperature`](#parameter-temperature) | `number` | `0`–`2` (Messages पर `0`–`1`) | यादृच्छिकता। |
+| [`top_p`](#parameter-top_p) | `number` | `0`–`1` | Nucleus sampling। |
+| [`top_k`](#parameter-top_k) | `integer` | `-1` या अधिक | शीर्ष k टोकन में से सैंपलिंग। |
+| [`min_p`](#parameter-min_p) | `number` | `0`–`1` | कम संभावना वाले टोकन हटाना। |
+| [`max_tokens`](#parameter-max_tokens) | `integer` | `1` या अधिक | Chat Completions और Messages पर आउटपुट की लंबाई। |
+| [`max_output_tokens`](#parameter-max_output_tokens) | `integer` | `1` या अधिक | Responses पर आउटपुट की लंबाई। |
+| [`max_completion_tokens`](#parameter-max_completion_tokens) | `integer` | `1` या अधिक | Chat Completions पर आउटपुट की लंबाई। |
+| [`frequency_penalty`](#parameter-frequency_penalty) | `number` | `-2`–`2` | टोकन कितनी बार आए, इसके आधार पर दंड। |
+| [`presence_penalty`](#parameter-presence_penalty) | `number` | `-2`–`2` | पहले आ चुके किसी भी टोकन पर दंड। |
+| [`repetition_penalty`](#parameter-repetition_penalty) | `number` | `0` से अधिक | प्रदाता-विशिष्ट दोहराव-रोधी नियंत्रण। |
+| [`logit_bias`](#parameter-logit_bias) | `object` | टोकन ID से bias | खास टोकन की संभावना बढ़ाना या घटाना। |
+| [`seed`](#parameter-seed) | `integer` | कोई भी पूर्णांक | दोहराई जा सकने वाली सैंपलिंग। |
+| [`stop`](#parameter-stop) | `string` या `string[]` | | Stop sequences। |
+| [`logprobs`](#parameter-logprobs) / [`top_logprobs`](#parameter-top_logprobs) | `boolean` / `integer` | `top_logprobs`: `0`–`20` | टोकन संभावनाएं। |
+| [`tools`](#parameter-tools), [`tool_choice`](#parameter-tool_choice) | `array`, `string` या `object` | `none`, `auto`, `required` | टूल कॉलिंग। |
+| [`parallel_tool_calls`](#parameter-parallel_tool_calls) | `boolean` | | एक टर्न में कई टूल कॉल की अनुमति। |
+| [`max_tool_calls`](#parameter-max_tool_calls) | `integer` | `1` या अधिक | टूल कॉल की सीमा। |
+| [`response_format`](#parameter-response_format) | `string` या `object` | | टेक्स्ट, JSON या स्कीमा से बंधा आउटपुट। |
+| [`json_schema`](#parameter-json_schema) | `object` | | संरचित आउटपुट की स्कीमा। |
+| [`structured_outputs`](#parameter-structured_outputs) | `boolean` | | मॉडल पेज पर क्षमता फ़्लैग, अनुरोध फ़ील्ड नहीं। |
+| [`reasoning`](#parameter-reasoning) | `object` | | रीज़निंग प्रयास, बजट और सारांश। |
+| [`reasoning_effort`](#parameter-reasoning_effort) | `string` | `none` से `max` | Chat Completions पर रीज़निंग प्रयास। |
+| [`reasoning_tokens`](#parameter-reasoning_tokens) | `integer` | | मॉडल पेज पर क्षमता फ़्लैग, अनुरोध फ़ील्ड नहीं। |
+| [`include_reasoning`](#parameter-include_reasoning) | `boolean` | | संगतता के लिए स्वीकार्य; कोई असर नहीं। |
+| [`service_tier`](#parameter-service_tier) | `string` | `standard`, `fast`, `ultrafast`, `priority`, `flex` | गति और कीमत का टियर। |
+| [`prompt_cache_key`](#parameter-prompt_cache_key) | `string` | | संबंधित अनुरोधों को उसी प्रदाता पर रखना जिसके पास उनका कैश है। |
+| [`prompt_cache_options`](#parameter-prompt_cache_options) | `object` | `mode`, `ttl` | OpenAI GPT-5.6 और बाद के मॉडलों पर प्रॉम्प्ट-कैश मोड और अवधि। |
+| [`cache_control`](#parameter-cache_control) | `object` | `type`, `ttl`, `scope` | Claude कैश नीति और कैश ब्रेकपॉइंट। |
+| [`prompt_cache_retention`](#parameter-prompt_cache_retention) | `string` | `in_memory`, `24h` | GPT-5.6 से पहले के OpenAI मॉडलों पर प्रॉम्प्ट-कैश प्रतिधारण। |
+| [`provider`](#parameter-provider) | `object` | | रूटिंग नियम और प्रदाता चयन। |
+| [`provider_options`](#parameter-provider_options) | `object` | | प्रदाता की अपनी सेटिंग। |
+| [`meta`](#parameter-meta) / [`usage`](#parameter-usage) | `boolean` | | प्रतिक्रिया में अतिरिक्त मेटाडेटा या उपयोग का हिसाब। |
+| [`debug`](#parameter-debug) | `object` | | रूटिंग ट्रेस और अपस्ट्रीम पेलोड। |
 
-- कोई पैरामीटर क्या करता है
-- उसे किस प्रकार का मान चाहिए
-- सामान्य सीमा या स्वीकार्य मान
-- क्या यह गुणवत्ता, लागत, विलंबता या रूटिंग व्यवहार बदलता है
-
-फ़ील्ड परिभाषाओं के बजाय ट्यूनिंग सलाह चाहिए, तो [इन्फ़रेंस पैरामीटर](../guides/inference-parameters.mdx) और [सैंपलिंग और डिकोडिंग](../guides/sampling-and-decoding.mdx) देखें।
-
-पैरामीटर का समर्थन अब भी endpoint, model और provider के अनुसार अलग होता है। मॉडल की क्विकस्टार्ट तालिका किसी खास रूट के लिए सक्रिय प्रदाताओं के समर्थन को एक साथ दिखाती है।
-
+<span id="unsupported-parameters"></span>
 ## असमर्थित पैरामीटर
 
-अगर अनुरोध को सर्व करने वाला प्रदाता उसके किसी सैंपलिंग पैरामीटर का समर्थन नहीं करता, तो Phaseo उस पैरामीटर को हटा देता है। वह प्रदाता को नहीं भेजा जाता और अनुरोध अस्वीकार नहीं होता, इसलिए हमेशा OpenAI डिफ़ॉल्ट भेजने वाले क्लाइंट काम करते रहते हैं। समर्थन हर प्रदाता के लिए Phaseo के प्रदाता प्रोफ़ाइल और रूट के कैटलॉग पैरामीटर से तय होता है। अगर कोई रूट कोई पैरामीटर घोषित नहीं करता, तो केवल कैटलॉग जाँच छोड़ी जाती है: प्रदाता प्रोफ़ाइल जिन पैरामीटर को असमर्थित बताती है, वे फिर भी हटाए जाते हैं, उदाहरण के लिए Cohere पर `top_k` या Reflection पर `stop`।
+अगर अनुरोध देने वाला प्रदाता उसके किसी वैकल्पिक सैंपलिंग पैरामीटर का समर्थन नहीं करता, तो Phaseo वह पैरामीटर हटा देता है: वह अपस्ट्रीम नहीं भेजा जाता और अनुरोध अस्वीकार नहीं होता, इसलिए हमेशा OpenAI डिफ़ॉल्ट भेजने वाले क्लाइंट काम करते रहते हैं।
 
-केवल ये पैरामीटर हटाए जा सकते हैं: `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop` (`/v1/messages` पर `stop_sequences`), `parallel_tool_calls`, `max_tool_calls` और `image_config`। संदेश, टूल, `tool_choice`, `response_format`, रीज़निंग सेटिंग और आउटपुट सीमाएँ कभी नहीं हटाई जातीं।
+Phaseo हर प्रदाता के लिए तय करता है, पहले उसकी प्रदाता प्रोफ़ाइल से और फिर रूट के कैटलॉग पैरामीटर से। अगर कोई रूट कोई पैरामीटर घोषित नहीं करता, तो सिर्फ़ कैटलॉग जांच छोड़ी जाती है; प्रदाता प्रोफ़ाइल जिन पैरामीटर को असमर्थित बताती है, वे फिर भी हटाए जाते हैं, जैसे Cohere पर `top_k` या Reflection पर `stop`।
 
-इसके अलावा, जो रूट OpenAI का 12 घंटे का कैश स्वीकार नहीं करते, उन पर प्रॉम्प्ट कैश के `ttl` का `12h` मान हटा दिया जाता है, और उन्हीं जगहों पर `prompt_cache_options.ttl` या `prompt_cache_breakpoint.ttl` के रूप में बताया जाता है; देखें [प्रॉम्प्ट कैशिंग](../guides/prompt-caching.mdx)।
+| हटाए जा सकते हैं | कभी नहीं हटाए जाते |
+| --- | --- |
+| `temperature`, `top_p`, `top_k`, `min_p`, `repetition_penalty`, `frequency_penalty`, `presence_penalty`, `logit_bias`, `logprobs`, `top_logprobs`, `seed`, `stop` (`/v1/messages` पर `stop_sequences`), `parallel_tool_calls`, `max_tool_calls`, `image_config`, और गैर-Anthropic प्रदाताओं पर `/v1/messages` से `context_management` | संदेश, `tools`, `tool_choice`, `response_format`, रीज़निंग सेटिंग, आउटपुट सीमाएं |
 
-सफल रिस्पॉन्स में, Phaseo उन हटाए गए पैरामीटर की सूचना देता है जिन्हें अनुरोध ने ख़ुद भेजा था:
+`12h` का प्रॉम्प्ट-कैश `ttl` भी उन रूट पर हटा दिया जाता है जो OpenAI का 12-घंटे का कैश नहीं ले सकते, और उसे `prompt_cache_options.ttl` या `prompt_cache_breakpoint.ttl` के रूप में बताया जाता है; [प्रॉम्प्ट कैशिंग](../guides/prompt-caching.mdx#12-hour-cache-on-openai) देखें।
 
-- `X-Phaseo-Dropped-Params` रिस्पॉन्स हेडर में, उदाहरण के लिए `X-Phaseo-Dropped-Params: top_k, min_p`
-- `meta.routing.dropped_params` में, जब अनुरोध `meta: true` सेट करता है, उदाहरण के लिए `[{"param": "top_k", "reason": "unsupported_by_provider"}]`
+सफल प्रतिक्रियाएं उन हटाए गए पैरामीटर की सूची देती हैं जो अनुरोध बॉडी ने भेजे थे:
 
-जो पैरामीटर अनुरोध बॉडी से नहीं, बल्कि किसी प्रीसेट या डिफ़ॉल्ट मान से आता है, वह इन दोनों में से किसी भी जगह दिखे बिना हटाया जा सकता है। फिर भी वह उन रूटिंग डायग्नॉस्टिक्स में दर्ज होता है जिन्हें Phaseo अनुरोध के साथ सहेजता है।
+- `X-Phaseo-Dropped-Params` हेडर में, जैसे `X-Phaseo-Dropped-Params: top_k, min_p`;
+- जब अनुरोध `meta: true` सेट करता है, तो `meta.routing.dropped_params` में, जैसे `[{"param": "top_k", "reason": "unsupported_by_provider"}]`।
 
-## त्वरित संदर्भ
+जो पैरामीटर अनुरोध बॉडी के बजाय किसी प्रीसेट या डिफ़ॉल्ट से आया, वह इन दोनों में से किसी जगह दिखे बिना हटाया जा सकता है। फिर भी वह अनुरोध के साथ संग्रहीत रूटिंग डायग्नोस्टिक्स में दर्ज होता है।
 
-| पैरामीटर | प्रकार | उपयोग |
-| --- | --- | --- |
-| [`model`](#model) | `string` | चलाने के लिए gateway model ID चुनना। |
-| [`models`](#models) | `string[]` | retry योग्य विफलताओं पर `model` के बाद क्रम से आज़माए जाने वाले fallback models की सूची देना। |
-| [`stream`](#stream) | `boolean` | एक अंतिम payload के बजाय SSE आउटपुट क्रमशः लौटाना। |
-| [`temperature`](#temperature) | `number` | यादृच्छिकता बढ़ाना या घटाना। |
-| [`top_p`](#top_p) | `number` | nucleus sampling candidate pool को संकरा या चौड़ा करना। |
-| [`top_k`](#top_k) | `integer` | sampling को शीर्ष k candidate tokens तक सीमित करना। |
-| [`max_tokens`](#max_tokens) | `integer` |उन routes पर आउटपुट लंबाई सीमित करना जो अब भी यह field name उपयोग करते हैं। |
-| [`max_output_tokens`](#max_output_tokens) | `integer` | नए field name का उपयोग करने वाले routes पर आउटपुट लंबाई सीमित करना। |
-| [`max_completion_tokens`](#max_completion_tokens) | `integer` | नई OpenAI-style टेक्स्ट API पर आउटपुट लंबाई सीमित करना। |
-| [`frequency_penalty`](#frequency_penalty) | `number` | tokens और phrases की पुनरावृत्ति कम करना। |
-| [`presence_penalty`](#presence_penalty) | `number` | विषय या शब्दावली में बदलाव को प्रोत्साहित करना। |
-| [`repetition_penalty`](#repetition_penalty) | `number` | provider-विशिष्ट repetition नियंत्रण। |
-| [`seed`](#seed) | `integer` | upstream provider समर्थन करे तो पुनरुत्पादन क्षमता बेहतर करना। |
-| [`stop`](#stop) | `string` या `string[]` | स्पष्ट stop sequences तय करना। |
-| [`logprobs`](#logprobs) / [`top_logprobs`](#top_logprobs) | `boolean` / `integer` | token probability डेटा माँगना। |
-| [`tools`](#tools), [`tool_choice`](#tool_choice) | `array`, `string`, `object` | tool calling और function execution नियंत्रण। |
-| [`parallel_tool_calls`](#parallel_tool_calls) | `boolean` | tools के sequential execution व्यवहार की अनुमति देना या उसे बाध्य करना। |
-| [`response_format`](#response_format) | `string` या `object` | सादा टेक्स्ट, JSON या schema-सीमित आउटपुट। |
-| [`json_schema`](#json_schema) | `object` | structured output workflows के लिए schema तय करना। |
-| [`structured_outputs`](#structured_outputs) | `boolean` | विश्वसनीय schema-सीमित आउटपुट की क्षमता का संकेत। |
-| [`reasoning`](#reasoning) | `object` | provider-विशिष्ट reasoning कॉन्फ़िगरेशन। |
-| [`reasoning_effort`](#reasoning_effort) | `string` | reasoning budget घटाना या बढ़ाना। |
-| [`reasoning_tokens`](#reasoning_tokens) | `integer` | reasoning-विशिष्ट token सीमा या लेखांकन फ़ील्ड। |
-| [`include_reasoning`](#include_reasoning) | `boolean` | समर्थन होने पर reasoning content या summaries लौटाना। |
-| [`service_tier`](#service_tier) | `string` | समर्थित अनुरोध स्तर चुनना, जैसे `fast`, `ultrafast` या `flex`। |
-| [`prompt_cache_key`](#prompt_cache_key) | `string` | संबंधित requests को उस provider पर रखना जिसके पास उनका prompt cache है। |
-| [`prompt_cache_options`](#prompt_cache_options) | `object` | OpenAI GPT-5.6 और बाद के मॉडलों पर प्रॉम्प्ट कैश मोड और TTL सेट करना। |
-| [`cache_control`](#cache_control) | `object` | Claude के लिए डिफ़ॉल्ट cache नीति सेट करना, या content blocks पर cache breakpoints लगाना। |
-| [`prompt_cache_retention`](#prompt_cache_retention) | `string` | GPT-5.6 से पहले के OpenAI मॉडलों पर prompt cache retention सेट करना। |
-| [`provider`](#provider) | `object` | रूटिंग और provider चयन को प्रभावित करना। |
-| [`provider_options`](#provider_options) | `object` | gateway के माध्यम से provider-native settings भेजना। |
-| [`meta`](#meta) / [`usage`](#usage) | `boolean` | response में अतिरिक्त metadata या usage accounting लौटाना। |
-| [`debug`](#debug) | `object` | routing traces और diagnostic payloads माँगना। |
-
-## एंडपॉइंट संबंधी नोट
-
-`service_tier` मुख्य टेक्स्ट अनुरोध इंटरफ़ेस पर समर्थित है:
-
-- [Anthropic Messages](./endpoint/anthropic-messages.mdx)
-- [Chat Completions](./endpoint/chat-completions.mdx)
-- [Responses](./endpoint/responses.mdx)
-
-`ultrafast`, `fast` (समर्थन हो तो `priority`) और `flex` तभी इस्तेमाल करें जब चुना मॉडल-प्रदाता संयोजन स्वीकार करे। `Ultrafast` सबसे तेज़ समर्थित स्तर चुनता है; `fast` और `priority` की Fast रूटिंग और कीमत समान हैं। `service_tier` न दें तो `standard` डिफ़ॉल्ट है।
-
-`Batch`, `service_tier` का मान नहीं है। Batch अनुरोध अलग Batch API का उपयोग करते हैं।
-
-Anthropic-संगत Messages अनुरोधों के लिए Anthropic के मूल upstream मान `auto` और `standard_only` हैं। Phaseo प्रदाताओं के बीच इन मानों को सामान्यीकृत या मैप कर सकता है, साथ ही `/v1/messages` पर Anthropic-संगत व्यवहार बनाए रखता है।
-
-यदि Phaseo पर इंगित कस्टम base URL के साथ आधिकारिक Anthropic SDK का उपयोग कर रहे हैं, तो `/v1/messages` पर Anthropic के मूल मान चुनें। `ultrafast`, `priority` और `flex` जैसे प्रदाता-पार सामान्यीकृत टियर नियंत्रण या OpenAI alias `fast` के लिए raw HTTP अनुरोध या gateway-native/OpenAI-style टेक्स्ट API चुनें।
-
-## पैरामीटर संदर्भ
+## मॉडल चुनें
 
 <span id="model"></span>
 <h3 id="parameter-model"><code>model</code></h3>
 
-अनुरोध के लिए gateway model ID चुनता है।
-
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `string` |
-| आवश्यक | हाँ |
-| उदाहरण | `openai/gpt-5-nano` |
-
-स्वीकार किए गए alias का उपयोग जानबूझकर करना हो तभी ऐसा करें; अन्यथा हर मॉडल पेज के quickstart में दिखाया गया canonical model ID उपयोग करें। उदाहरणों, ऑटोमेशन और लंबे समय तक चलने वाले इंटीग्रेशन के लिए canonical ID सबसे सुरक्षित विकल्प हैं।
+चलाने के लिए Phaseo मॉडल ID, जैसे `openai/gpt-6-astra`। आवश्यक। मॉडल पेज के क्विकस्टार्ट में दिखाया गया ID इस्तेमाल करें; ऑटोमेशन और लंबे समय तक चलने वाले इंटीग्रेशन के लिए यह सबसे सुरक्षित विकल्प है। `@support-triage` जैसा [प्रीसेट](../guides/presets.mdx) नाम भी यहां काम करता है।
 
 <span id="models"></span>
 <h3 id="parameter-models"><code>models</code></h3>
 
-वैकल्पिक fallback models की सूची देता है, जिन्हें `model` के बाद क्रम से आज़माया जाता है। `model` आवश्यक है और हमेशा प्राथमिक मॉडल होता है। अगली entry तभी आज़माई जाती है जब कोई प्रयास `429`, `500`, `502`, `503` या `504` के साथ विफल हो।
+फ़ॉलबैक मॉडल, जिन्हें `model` के बाद क्रम से आज़माया जाता है। `model` फिर भी आवश्यक है और हमेशा पहले चलता है। अगली प्रविष्टि सिर्फ़ तब आज़माई जाती है जब कोई प्रयास `429`, `500`, `502`, `503` या `504` के साथ विफल होता है।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `string[]` |
-| आवश्यक | नहीं। `models` वाले अनुरोध में `model` भी सेट होना चाहिए। |
-| सीमाएँ | 1 से 25 entries। Duplicate entries और `model` के बराबर entries अनदेखी की जाती हैं। |
-| उदाहरण | `["anthropic/claude-sonnet-5-5", "google/gemini-2.5-flash"]` |
+**प्रकार** `string[]` · **प्रविष्टियां** 1 से 25; दोहराई गई और `model` के बराबर प्रविष्टियां अनदेखी की जाती हैं · **उदाहरण** `["anthropic/claude-sonnet-5.5", "google/gemini-4-argon"]`
 
-हर प्रयास को अलग अनुरोध की तरह सत्यापित, लॉग और बिल किया जाता है। प्रतिक्रिया का `model` फ़ील्ड और routing trace वह मॉडल दिखाते हैं जिसने अनुरोध पूरा किया। Streaming अनुरोध केवल पहले byte से पहले fallback करते हैं, और वीडियो व संगीत jobs केवल submission के समय। जुड़े हुए dynamic route के fallbacks को प्राथमिकता मिलती है, प्रीसेट entries के रूप में स्वीकार किए जाते हैं, और `phaseo/auto` को `models` के साथ नहीं जोड़ा जा सकता। Batch, realtime और council अनुरोध `models` को `400` के साथ अस्वीकार करते हैं। Multipart endpoints दोहराए गए `models` fields, `models[]` fields या एक JSON array स्वीकार करते हैं। प्राथमिकता, सत्यापन, streaming और billing व्यवहार के लिए [अनुरोध-स्तर के मॉडल फ़ॉलबैक](../guides/routing-and-fallbacks.mdx#request-level-model-fallbacks) पढ़ें।
+- हर प्रयास का सत्यापन, लॉगिंग और बिलिंग एक अलग अनुरोध के रूप में होता है। प्रतिक्रिया का `model` फ़ील्ड और रूटिंग ट्रेस उत्तर देने वाला मॉडल दिखाते हैं।
+- स्ट्रीमिंग अनुरोध सिर्फ़ पहले बाइट से पहले फ़ॉलबैक करते हैं; वीडियो और संगीत जॉब सिर्फ़ सबमिशन के समय।
+- जुड़े हुए डायनामिक रूट के फ़ॉलबैक को प्राथमिकता मिलती है। प्रीसेट प्रविष्टियों के रूप में स्वीकार्य हैं। `phaseo/auto` को `models` के साथ नहीं मिलाया जा सकता।
+- बैच, रियलटाइम और council अनुरोध `models` को `400` के साथ अस्वीकार करते हैं।
+- मल्टीपार्ट एंडपॉइंट दोहराए गए `models` फ़ील्ड, `models[]` फ़ील्ड या एक JSON array स्वीकार करते हैं।
+
+[अनुरोध-स्तर के मॉडल फ़ॉलबैक](../guides/routing-and-fallbacks#request-level-model-fallbacks) देखें।
 
 <span id="stream"></span>
 <h3 id="parameter-stream"><code>stream</code></h3>
 
-एक अंतिम response body की प्रतीक्षा करने के बजाय Server-Sent Events के ज़रिए आउटपुट क्रमशः लौटाता है।
+आउटपुट को एक प्रतिक्रिया बॉडी के बजाय, बनते ही Server-Sent Events से लौटाता है।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `boolean` |
-| डिफ़ॉल्ट | `false` |
-| सामान्य मान | `true`, `false` |
+**प्रकार** `boolean` · **डिफ़ॉल्ट** `false`
 
-इसे chat UI, token-by-token rendering या ऐसे लंबे उत्तरों के लिए चालू करें जिनमें जल्दी आउटपुट मिलने से UX बेहतर होता है। एक पूरा JSON response, आसान retries या सरल structured parsing चाहिए तो इसे बंद रखें।
+चैट UI और लंबी प्रतिक्रियाओं के लिए इसका उपयोग करें। जब आप एक JSON प्रतिक्रिया चाहते हैं जिसे दोबारा आज़माना और पार्स करना आसान हो, तो इसे बंद रखें। टूल कॉल और संरचित आउटपुट प्रदाता के अनुसार अलग तरह से स्ट्रीम हो सकते हैं। [स्ट्रीमिंग](../guides/streaming.mdx) देखें।
 
-नोट:
-
-- Streaming का समर्थन endpoint के अनुसार बदलता है।
-- Streaming आमतौर पर transport का विकल्प है, quality control नहीं।
-- Tool-calling या structured-output flows में भी provider के अनुसार streaming का व्यवहार अलग हो सकता है।
+## सैंपलिंग
 
 <span id="temperature"></span>
 <h3 id="parameter-temperature"><code>temperature</code></h3>
 
-यह नियंत्रित करता है कि token चयन कितना यादृच्छिक हो।
+टोकन चयन कितना यादृच्छिक है। कम मान ज़्यादा संयमित, दोहराने योग्य आउटपुट देते हैं; ऊंचे मान ज़्यादा विविधता देते हैं लेकिन स्थिरता और स्कीमा पालन कम होता है।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `number` |
-| सामान्य सीमा | समर्थन होने पर `0.0` से `2.0` तक |
-| डिफ़ॉल्ट | provider और model के अनुसार अलग |
-| अच्छी शुरुआती सीमा | `0.2` to `0.7` |
+**प्रकार** `number` · **सीमा** Chat Completions और Responses पर `0`–`2`, Messages पर `0`–`1` · **डिफ़ॉल्ट** प्रदाता का (सेट न होने पर Phaseo कुछ नहीं भेजता)
 
-कम मान आउटपुट को अधिक संयमित और दोहराने योग्य बनाते हैं। अधिक मान विविधता बढ़ाते हैं, जो brainstorming या creative writing में सहायक हो सकती है, लेकिन consistency और schema adherence घटा सकती है।
-
-उपयुक्त उपयोग:
-
-- डेटा निकालना
-- वर्गीकरण
-- JSON या schema आउटपुट
-- रचनात्मक निर्माण
-
-व्यावहारिक सुझाव:
-
-- Structured tasks के लिए कम मान से शुरू करें।
-- पहले `temperature` या `top_p` में से किसी एक को बदलें, दोनों को नहीं।
-- High temperature और aggressive quantization से अस्थिरता बढ़ सकती है।
+`0.2`–`0.7` से शुरू करें, और एक्सट्रैक्शन, वर्गीकरण और JSON के लिए कम रखें। `temperature` या `top_p` में से एक ट्यून करें, दोनों एक साथ नहीं। भारी रूप से quantized मॉडल पर ऊंचा temperature आउटपुट को अस्थिर बना सकता है।
 
 <span id="top_p"></span>
 <h3 id="parameter-top_p"><code>top_p</code></h3>
 
-यह न्यूक्लियस सैंपलिंग लागू करता है और उम्मीदवारों को ऐसे सबसे छोटे टोकन समूह तक सीमित करता है जिसकी संचयी प्रायिकता `top_p` तक पहुँचती है।
+Nucleus sampling: मॉडल टोकन के उस सबसे छोटे समूह में से चुनता है जिसकी कुल संभावना `top_p` तक पहुंचती है। कम मान ज़्यादा सीमित, केंद्रित आउटपुट देते हैं।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `number` |
-| सामान्य सीमा | समर्थन होने पर `0.0` से `1.0` तक |
-| डिफ़ॉल्ट | provider और model के अनुसार अलग |
-| अच्छी शुरुआती सीमा | `0.9` to `1.0` |
+**प्रकार** `number` · **सीमा** `0`–`1` · **डिफ़ॉल्ट** प्रदाता का
 
-कम मान मॉडल के चयन को संकीर्ण संभाव्यता दायरे तक सीमित करते हैं, जिससे आमतौर पर अधिक सुरक्षित और केंद्रित आउटपुट मिलता है。 अधिक मान व्यापक token समूह पर विचार करने देते हैं。
-
-नोट:
-
-- temperature को सीधे बदले बिना खोज क्षेत्र संकरा या चौड़ा करना हो तो `top_p` समायोजित करें।
-- अधिकांश अनुप्रयोगों के लिए मध्यम `temperature` और 1.0 के करीब `top_p` उचित शुरुआती आधार हैं।
+मध्यम `temperature` के साथ `0.9`–`1.0` एक उचित आधार है।
 
 <span id="top_k"></span>
 <h3 id="parameter-top_k"><code>top_k</code></h3>
 
-इसे उपलब्ध कराने वाले provider पर हर चरण में sampling को शीर्ष k candidate tokens तक सीमित करता है।
+हर चरण पर सैंपलिंग को k सबसे संभावित टोकन तक सीमित करता है। कम मान आउटपुट को ज़्यादा अनुमान योग्य बनाते हैं। हर प्रदाता इसका समर्थन नहीं करता।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `integer` |
-| सामान्य सीमा | `>= 1` जहाँ समर्थित हो |
-| डिफ़ॉल्ट | provider और model के अनुसार अलग |
+**प्रकार** `integer` · **सीमा** Chat Completions पर `-1` या अधिक, Messages पर `0` या अधिक · **डिफ़ॉल्ट** प्रदाता का
 
-`top_k` के कम मान मॉडल के विकल्प घटाकर आउटपुट को अधिक अनुमानित बना सकते हैं। अधिक मान candidate pool बढ़ाते हैं।
+<span id="min_p"></span>
+<h3 id="parameter-min_p"><code>min_p</code></h3>
 
-नोट:
+न्यूनतम संभावना सीमा से नीचे के टोकन हटाकर सैंपलिंग को सीमित करता है।
 
-- `top_k` हर provider पर उपलब्ध नहीं है।
-- इसे `top_p` से अधिक स्पष्ट token-pool सीमा मानें।
-
-<span id="max_tokens"></span>
-<h3 id="parameter-max_tokens"><code>max_tokens</code></h3>
-
-उन endpoints और providers पर आउटपुट लंबाई सीमित करता है जो अब भी `max_tokens` फ़ील्ड नाम उपयोग करते हैं।
-
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `integer` |
-| सामान्य सीमा | `>= 1` |
-| डिफ़ॉल्ट | provider और model के अनुसार अलग |
-
-लागत, विलंबता और आउटपुट कटने के जोखिम को नियंत्रित करने के लिए इसका उपयोग करें। मान बहुत कम होने पर मॉडल सही काम करने के बावजूद आउटपुट अधूरा दिख सकता है।
-
-<span id="max_output_tokens"></span>
-<h3 id="parameter-max_output_tokens"><code>max_output_tokens</code></h3>
-
-उन routes पर आउटपुट लंबाई सीमित करता है जो `max_tokens` के बजाय `max_output_tokens` का उपयोग करते हैं।
-
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `integer` |
-| सामान्य सीमा | `>= 1` |
-| डिफ़ॉल्ट | provider और model के अनुसार अलग |
-
-यह अर्थ की दृष्टि से `max_tokens` जैसा ही नियंत्रण है, लेकिन चुने गए endpoint या SDK surface के लिए अपेक्षित फ़ील्ड नाम भेजें।
-
-<span id="max_completion_tokens"></span>
-<h3 id="parameter-max_completion_tokens"><code>max_completion_tokens</code></h3>
-
-नई OpenAI-style टेक्स्ट API पर आउटपुट लंबाई सीमित करता है जो `max_completion_tokens` उपयोग करती हैं।
-
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `integer` |
-| सामान्य सीमा | `>= 1` |
-| डिफ़ॉल्ट | provider और model के अनुसार अलग |
-
-यह आउटपुट token budget का एक और फ़ील्ड है। एक ही request shape में आउटपुट लंबाई के alias मिलाने के बजाय endpoint का अपेक्षित नाम उपयोग करें।
+**प्रकार** `number` · **सीमा** `0`–`1` · **डिफ़ॉल्ट** प्रदाता का
 
 <span id="frequency_penalty"></span>
 <h3 id="parameter-frequency_penalty"><code>frequency_penalty</code></h3>
 
-token पहले कितनी बार आया है, उसी अनुपात में उसका दोहराव घटाता है।
+टोकन को इस अनुपात में दंडित करता है कि वे पहले कितनी बार आ चुके हैं। जब मॉडल लूप करे या वाक्यांश दोहराए, तो इसे बढ़ाएं।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `number` |
-| सामान्य सीमा | समर्थन होने पर सामान्यतः `-2.0` से `2.0` तक |
-| डिफ़ॉल्ट | आमतौर पर `0` |
-
-मॉडल loop करे, वाक्यांश दोहराए या वही शब्द बहुत इस्तेमाल करे तो इसे बढ़ाएँ।
+**प्रकार** `number` · **सीमा** `-2`–`2` · **डिफ़ॉल्ट** प्रदाता का, आमतौर पर `0`
 
 <span id="presence_penalty"></span>
 <h3 id="parameter-presence_penalty"><code>presence_penalty</code></h3>
 
-किसी token के एक बार आते ही उसके पुनः उपयोग को घटाता है, जिससे मॉडल नए विषय या शब्दावली खोज सकता है।
+पहले आ चुके किसी भी टोकन को दंडित करता है, जिससे मॉडल नए विषयों और शब्दों की ओर जाता है।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `number` |
-| सामान्य सीमा | समर्थन होने पर सामान्यतः `-2.0` से `2.0` तक |
-| डिफ़ॉल्ट | आमतौर पर `0` |
-
-`frequency_penalty` की तुलना में यह आमतौर पर दोहराव गिनने के बजाय नवीनता पर व्यापक नियंत्रण देता है।
+**प्रकार** `number` · **सीमा** `-2`–`2` · **डिफ़ॉल्ट** प्रदाता का, आमतौर पर `0`
 
 <span id="repetition_penalty"></span>
 <h3 id="parameter-repetition_penalty"><code>repetition_penalty</code></h3>
 
-यह OpenAI-style के पारंपरिक penalty fields से अलग provider-specific repetition नियंत्रण लागू करता है।
+प्रदाता-विशिष्ट दोहराव-रोधी नियंत्रण, ऊपर के दोनों दंडों से अलग। इसका सटीक असर प्रदाता के अनुसार ज़्यादा बदलता है।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `number` |
-| सामान्य सीमा | प्रदाता और मॉडल के अनुसार अलग; आम तौर पर `0.0` से `2.0` के बीच |
-| डिफ़ॉल्ट | provider और model के अनुसार अलग |
+**प्रकार** `number` · **सीमा** `0` से अधिक; प्रदाता अक्सर `2` तक लेते हैं · **डिफ़ॉल्ट** प्रदाता का
 
-इसका उद्देश्य `frequency_penalty` और `presence_penalty` जैसा है, लेकिन इसका अर्थ provider के अनुसार अधिक बदलता है। इसे हर जगह समान नियंत्रण के बजाय provider-native व्यवहार मानें।
+<span id="logit_bias"></span>
+<h3 id="parameter-logit_bias"><code>logit_bias</code></h3>
+
+खास टोकन की संभावना बढ़ाता या घटाता है। कुंजियां मॉडल के टोकनाइज़र के टोकन ID हैं; मान जोड़ा जाने वाला bias है।
+
+**प्रकार** `object` (टोकन ID से संख्या) · **डिफ़ॉल्ट** सेट नहीं
 
 <span id="seed"></span>
 <h3 id="parameter-seed"><code>seed</code></h3>
 
-upstream provider seed-आधारित generation का समर्थन करे तो deterministic sampling माँगता है।
+डीबगिंग और रिग्रेशन टेस्ट के लिए seeded सैंपलिंग मांगता है। प्रदाताओं के बीच या प्रदाता के इन्फ़्रास्ट्रक्चर में बदलाव के बाद एक जैसे आउटपुट की गारंटी नहीं है।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `integer` |
-| डिफ़ॉल्ट | सेट नहीं है |
+**प्रकार** `integer` · **डिफ़ॉल्ट** सेट नहीं
 
-इसे debugging, regression testing और upstream platform की अनुमति के अनुसार व्यवहार को दोहराने के लिए उपयोग करें। Seeded generation reproducibility बढ़ाती है, लेकिन सभी providers या infrastructure बदलावों में सटीक determinism की गारंटी नहीं है।
+<span id="output-length-and-stopping"></span>
+## आउटपुट की लंबाई और रोकना
+
+<span id="max_tokens"></span>
+<h3 id="parameter-max_tokens"><code>max_tokens</code></h3>
+
+Chat Completions पर आउटपुट टोकन की सीमा तय करता है, और Messages पर आवश्यक है। लागत और लेटेंसी नियंत्रित करने के लिए इसका उपयोग करें; बहुत छोटा मान आउटपुट को काट देता है।
+
+**प्रकार** `integer` · **सीमा** `1` या अधिक (Messages पर `0` या अधिक) · **डिफ़ॉल्ट** Chat Completions पर प्रदाता का
+
+<span id="max_output_tokens"></span>
+<h3 id="parameter-max_output_tokens"><code>max_output_tokens</code></h3>
+
+Responses पर आउटपुट टोकन की सीमा तय करता है। उद्देश्य `max_tokens` जैसा ही है; वह नाम भेजें जो आपका एंडपॉइंट इस्तेमाल करता है।
+
+**प्रकार** `integer` · **सीमा** `1` या अधिक · **डिफ़ॉल्ट** प्रदाता का
+
+<span id="max_completion_tokens"></span>
+<h3 id="parameter-max_completion_tokens"><code>max_completion_tokens</code></h3>
+
+Chat Completions पर आउटपुट टोकन की सीमा तय करता है; यह `max_tokens` का नया OpenAI नाम है। दोनों को एक अनुरोध में न मिलाएं।
+
+**प्रकार** `integer` · **सीमा** `1` या अधिक · **डिफ़ॉल्ट** प्रदाता का
 
 <span id="stop"></span>
 <h3 id="parameter-stop"><code>stop</code></h3>
 
-एक या अधिक sequences तय करता है जो generation को जल्दी समाप्त करती हैं।
+एक या अधिक sequences जो जनरेशन खत्म करती हैं, जैसे किसी टेम्पलेट का अंत या प्रोटोकॉल मार्कर। Messages पर फ़ील्ड `stop_sequences` है और array लेता है।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `string` या `string[]` |
-| डिफ़ॉल्ट | सेट नहीं है |
-| सामान्य उपयोग | पार्सर की सीमाएँ, टेम्पलेट के अंत और प्रोटोकॉल मार्कर |
+**प्रकार** `string` या `string[]` · **डिफ़ॉल्ट** सेट नहीं
 
-जब footer, tool delimiter या अगले generated section से पहले रुकने जैसी सख्त output boundaries चाहिए हों तो यह उपयोगी है।
+## टोकन संभावनाएं
 
 <span id="logprobs"></span>
 <h3 id="parameter-logprobs"><code>logprobs</code></h3>
 
-उपलब्ध होने पर token-स्तरीय probability metadata माँगता है।
+मूल्यांकन, रैंकिंग और confidence स्कोरिंग के लिए हर आउटपुट टोकन की log probability लौटाता है।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `boolean` |
-| डिफ़ॉल्ट | `false` |
-
-यह मुख्यतः analysis, evaluation, ranking, debugging और confidence-संबंधी workflows में उपयोगी है। सामान्य product responses के लिए आमतौर पर इसकी ज़रूरत नहीं होती।
+**प्रकार** `boolean` · **डिफ़ॉल्ट** `false`
 
 <span id="top_logprobs"></span>
 <h3 id="parameter-top_logprobs"><code>top_logprobs</code></h3>
 
-हर output position के लिए शीर्ष वैकल्पिक candidate tokens और उनकी log probabilities माँगता है।
+हर स्थिति पर सबसे संभावित वैकल्पिक टोकन, उनकी log probabilities के साथ लौटाता है। इसके लिए `logprobs: true` चाहिए।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `integer` |
-| सामान्य सीमा | provider-विशिष्ट, अक्सर `0` से `20` |
-| आवश्यक | `logprobs: true` |
+**प्रकार** `integer` · **सीमा** `0`–`20`
 
-चुने गए output token के बजाय वैकल्पिक token branches की जाँच करनी हो तो इसका उपयोग करें।
+## टूल
 
 <span id="tools"></span>
 <h3 id="parameter-tools"><code>tools</code></h3>
 
-tool-using model workflows के लिए callable tools या functions घोषित करता है।
+वे टूल जिन्हें मॉडल कॉल कर सकता है। जब तक एंडपॉइंट का संदर्भ कुछ और न कहे, OpenAI टूल स्कीमा इस्तेमाल करें; Messages Anthropic की स्कीमा लेता है। टूल घोषित करने से मॉडल उसे कॉल करने के लिए बाध्य नहीं होता।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `array` |
-| डिफ़ॉल्ट | सेट नहीं है |
-
-endpoint docs में कुछ और न कहा हो तो OpenAI-style tool schema उपयोग करें। Tool declarations बताती हैं कि मॉडल क्या call कर सकता है, यह नहीं कि उसे call करना ही होगा।
+**प्रकार** `array` · **डिफ़ॉल्ट** सेट नहीं
 
 <span id="tool_choice"></span>
 <h3 id="parameter-tool_choice"><code>tool_choice</code></h3>
 
-यह तय करता है कि मॉडल tools अपने-आप call कर सकता है, tools call नहीं करना चाहिए, या किसी खास tool का उपयोग करना चाहिए।
+मॉडल टूल कॉल कर सकता है या नहीं: सिर्फ़ टेक्स्ट के लिए `none`, मॉडल को तय करने देने के लिए `auto`, कॉल को बाध्य करने के लिए `required`, या एक टूल का नाम बताने वाला ऑब्जेक्ट।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `string` या `object` |
-| सामान्य मान | `none`, `auto`, `required` |
-
-केवल content चाहिए तो `none`, मॉडल को निर्णय लेने देना हो तो `auto`, और downstream orchestration को tool call चाहिए तो अधिक सख्त मान उपयोग करें।
+**प्रकार** `string` या `object`
 
 <span id="parallel_tool_calls"></span>
 <h3 id="parameter-parallel_tool_calls"><code>parallel_tool_calls</code></h3>
 
-compatible tool-calling APIs पर concurrent tool calls की अनुमति देता है या रोकता है।
+एक टर्न में कई टूल कॉल की अनुमति देता है। जब आपके टूल एक-एक करके चलने चाहिए, जैसे जब उनके साइड इफ़ेक्ट क्रम से होते हों, तो इसे `false` पर सेट करें।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `boolean` |
-| डिफ़ॉल्ट | endpoint और provider के अनुसार अलग |
+**प्रकार** `boolean` · **डिफ़ॉल्ट** प्रदाता का (सेट न होने पर Phaseo कुछ नहीं भेजता)
 
-downstream systems को सख्त sequential execution, ordered side effects या सरल agent traces चाहिए हों तो इसे बंद करें।
+<span id="max_tool_calls"></span>
+<h3 id="parameter-max_tool_calls"><code>max_tool_calls</code></h3>
+
+तय करता है कि मॉडल अनुरोध के लिए अधिकतम कितनी टूल कॉल करे।
+
+**प्रकार** `integer` · **सीमा** `1` या अधिक · **डिफ़ॉल्ट** सेट नहीं
+
+## संरचित आउटपुट
 
 <span id="response_format"></span>
 <h3 id="parameter-response_format"><code>response_format</code></h3>
 
-सादा टेक्स्ट, JSON या schema-सीमित response जैसे खास आउटपुट फ़ॉर्मैट का अनुरोध करता है।
+सादा टेक्स्ट, JSON, या किसी JSON स्कीमा से मेल खाने वाला आउटपुट मांगता है। स्वीकार्य रूप एंडपॉइंट और प्रदाता पर निर्भर करते हैं।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `string` या `object` |
-| डिफ़ॉल्ट | endpoint और provider के अनुसार अलग |
-
-स्वीकृत सटीक संरचनाएँ endpoint और provider adapter पर निर्भर करती हैं। Free-form text से अधिक चाहिए हो, खासकर JSON responses और structured extraction workflows के लिए, तो इसका उपयोग करें।
-
-<span id="structured_outputs"></span>
-<h3 id="parameter-structured_outputs"><code>structured_outputs</code></h3>
-
-चुने गए route और provider set पर विश्वसनीय structured या schema-सीमित responses का समर्थन दर्शाता है।
-
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `boolean` |
-| अर्थ | सीधे tuning knob के बजाय क्षमता का संकेत |
-
-Quickstart tables में यह बताता है कि चुना गया endpoint और सक्रिय providers structured-output workflows को विश्वसनीय रूप से support कर सकते हैं या नहीं। इसे support metadata के रूप में समझना बेहतर है।
+**प्रकार** `string` या `object` · **डिफ़ॉल्ट** एंडपॉइंट और प्रदाता का
 
 <span id="json_schema"></span>
 <h3 id="parameter-json_schema"><code>json_schema</code></h3>
 
-compatible models और endpoints पर structured output लागू करने के लिए उपयोग किया जाने वाला JSON schema देता है।
+वह JSON स्कीमा जिससे आउटपुट का मेल खाना ज़रूरी है, जिसे `response_format` के अंदर सेट किया जाता है (`{"type": "json_schema", "json_schema": {...}}`)। बेहतर पालन के लिए स्कीमा सीमित और काम-विशिष्ट रखें।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `object` |
-| इसके साथ उपयोग | structured output या schema-सीमित response flows |
+**प्रकार** `object`
 
-जब आपके application को guaranteed fields, typed extraction या सख्त response contract चाहिए तो इसका उपयोग करें। बेहतर adherence के लिए schema संक्षिप्त और task-specific रखें।
+<span id="structured_outputs"></span>
+<h3 id="parameter-structured_outputs"><code>structured_outputs</code></h3>
+
+यह अनुरोध फ़ील्ड नहीं है। मॉडल पेज पर यह उन एंडपॉइंट को चिह्नित करता है जिनके सक्रिय प्रदाता स्कीमा से बंधे आउटपुट का समर्थन करते हैं। इसे [`response_format`](#parameter-response_format) से मांगें।
+
+## रीज़निंग
 
 <span id="reasoning"></span>
 <h3 id="parameter-reasoning"><code>reasoning</code></h3>
 
-reasoning-सक्षम APIs के लिए provider-specific reasoning कॉन्फ़िगरेशन रखता है।
+समर्थन करने वाले मॉडलों पर रीज़निंग कॉन्फ़िगर करता है।
 
 | फ़ील्ड | मान |
 | --- | --- |
-| प्रकार | `object` |
-| डिफ़ॉल्ट | सेट नहीं है |
+| `effort` | `none`, `instant`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max` (Messages पर `instant` नहीं) |
+| `enabled` | `true` या `false` |
+| `max_tokens` | रीज़निंग टोकन बजट, `0` या अधिक |
+| `summary` | `auto`, `concise`, `detailed` |
+| `mode` | `standard`, `pro` (Chat Completions और Responses) |
+| `context` | `auto`, `current_turn`, `all_turns` (Responses) |
 
-route के अनुसार इसमें enablement, effort, token budget, verbosity या reasoning content लौटाना शामिल हो सकता है।
+सेट न किए गए फ़ील्ड मॉडल का डिफ़ॉल्ट बनाए रखते हैं। ज़्यादा प्रयास कठिन समस्याओं में मदद करता है, लेकिन लेटेंसी और टोकन ज़्यादा लगते हैं।
 
 <span id="reasoning_effort"></span>
 <h3 id="parameter-reasoning_effort"><code>reasoning_effort</code></h3>
 
-जब endpoint और model यह नियंत्रण देते हैं, तो कम या अधिक reasoning budget माँगता है।
+`reasoning.effort` का Chat Completions वाला छोटा रूप।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `string` |
-| सामान्य मान | provider-विशिष्ट; सामान्य मान `minimal`, `low`, `medium`, `high` और `none` जैसे हैं |
-| डिफ़ॉल्ट | provider और model के अनुसार अलग |
-
-अधिक effort कठिन reasoning tasks को बेहतर कर सकता है, लेकिन latency और token usage बढ़ते हैं। कम effort अक्सर तेज़ और सस्ते requests के लिए बेहतर होता है।
+**प्रकार** `string` · **मान** `none`, `instant`, `minimal`, `low`, `medium`, `high`, `xhigh`, `max` · **डिफ़ॉल्ट** मॉडल का
 
 <span id="reasoning_tokens"></span>
 <h3 id="parameter-reasoning_tokens"><code>reasoning_tokens</code></h3>
 
-समर्थित होने पर यह reasoning-विशिष्ट token field दर्शाता है।
-
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `integer` |
-| डिफ़ॉल्ट | provider और model के अनुसार अलग |
-
-route के अनुसार यह request control, सीमा या response accounting field हो सकता है; यह हर जगह समर्थित request parameter नहीं है।
+यह अनुरोध फ़ील्ड नहीं है। मॉडल पेज पर यह उन रूट को चिह्नित करता है जो रीज़निंग टोकन बताते हैं या रीज़निंग बजट स्वीकार करते हैं। बजट `reasoning.max_tokens` से सेट करें।
 
 <span id="include_reasoning"></span>
 <h3 id="parameter-include_reasoning"><code>include_reasoning</code></h3>
 
-Chat Completions पर संगतता के लिए स्वीकार किया जाता है। Model जब भी reasoning content और summaries देता है, वे लौटाए जाते हैं, चाहे इसका मान कुछ भी हो।
+Chat Completions पर संगतता के लिए स्वीकार्य है, और इसका कोई असर नहीं होता: जब भी मॉडल रीज़निंग सामग्री और सारांश बनाता है, वे लौटाए जाते हैं। रीज़निंग आउटपुट बड़ा हो सकता है और हर मॉडल इसे नहीं लौटाता। इसे कम करने के लिए `reasoning.effort` घटाएं या `reasoning.enabled` को `false` पर सेट करें।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `boolean` |
-| डिफ़ॉल्ट | `true` |
+**प्रकार** `boolean`
 
-Reasoning payload बड़े हो सकते हैं और हर model पर उपलब्ध नहीं होते। Reasoning कम करने के लिए `reasoning.effort` घटाएँ या `reasoning.enabled` को `false` पर सेट करें।
+## सर्विस टियर और प्रॉम्प्ट कैशिंग
 
 <span id="service_tier"></span>
 <h3 id="parameter-service_tier"><code>service_tier</code></h3>
 
-compatible टेक्स्ट APIs पर समर्थित routing या pricing tier चुनता है।
+जब मॉडल और प्रदाता समर्थन करते हैं, तो Chat Completions, Responses और Messages पर गति और कीमत का टियर चुनता है। Phaseo हर मान को प्रदाता के अपने नियंत्रण से मैप करता है।
 
-| फ़ील्ड | मान |
+**प्रकार** `string` · **डिफ़ॉल्ट** `standard`
+
+| मान | टियर |
 | --- | --- |
-| प्रकार | `string` |
-| समर्थित मान | `standard`, `fast`, `ultrafast`, `priority`, `flex` |
-| डिफ़ॉल्ट | `standard` |
+| `standard` (या छोड़ा गया) | Standard। |
+| `fast`, `priority` | Fast रूटिंग और कीमत; दोनों एक ही हैं। |
+| `ultrafast` | सबसे तेज़ समर्थित टियर। |
+| `flex` | Flex। |
+| `auto` या `null` | कोई खास टियर नहीं; छोड़े गए की तरह माना जाता है। |
+| `default`, `scale` | OpenAI के मान, `standard` माने जाते हैं। |
+| `standard_only` | `/v1/messages` पर Anthropic का मान, `standard` माना जाता है। |
 
-`ultrafast`, `fast` (समर्थन हो तो `priority`) और `flex` तभी इस्तेमाल करें जब चुना मॉडल-प्रदाता संयोजन स्वीकार करे। `Ultrafast` सबसे तेज़ समर्थित स्तर चुनता है; `fast` और `priority` की Fast रूटिंग और कीमत समान हैं। डिफ़ॉल्ट मानक स्तर के लिए फ़ील्ड छोड़ दें।
-
-Phaseo इन gateway-normalized tier मानों को आंतरिक रूप से provider-native controls में map करता है, ताकि callers सभी समर्थित टेक्स्ट surfaces पर समान `service_tier` मान उपयोग कर सकें।
-
-नोट:
-
-- `Batch` एक अलग API flow है, service-tier मान नहीं।
-- समर्थन endpoint और provider के अनुसार बदलता है।
-- OpenAI के मान भी स्वीकार किए जाते हैं: `auto` (या `null`) कोई खास स्तर नहीं माँगता और उसे फ़ील्ड छोड़ने जैसा माना जाता है, और `scale` को `default`, यानी मानक स्तर, माना जाता है।
+`batch` कोई टियर नहीं है और अस्वीकार किया जाता है; [Batch API](./endpoint/batches-create.mdx) इस्तेमाल करें। Phaseo की ओर इंगित आधिकारिक Anthropic SDK के साथ, `/v1/messages` पर Anthropic के `auto` और `standard_only` को प्राथमिकता दें; `ultrafast`, `priority`, `flex` या `fast` के लिए raw HTTP या Chat Completions और Responses इस्तेमाल करें। [सर्विस टियर](../guides/service-tiers.mdx) देखें।
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>
 
-prompt-cache-aware routing के लिए स्थिर cache affinity key देता है।
+एक जैसे प्रॉम्प्ट प्रीफ़िक्स वाले अनुरोधों, जैसे किसी एजेंट लूप के चरणों, को उसी प्रदाता पर रखता है जिसके पास उनका कैश है।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `string` |
-| उपयोग | संबंधित cached prompts के लिए sticky routing |
+**प्रकार** `string` · **डिफ़ॉल्ट** सेट नहीं · **एंडपॉइंट** Chat Completions, Responses, Messages
 
-जब कई requests स्थिर prompt prefixes साझा करते हों, जैसे किसी agent loop के चरण, तब इसका उपयोग करें। Phaseo key को उस provider और route (deployment या region) पर pin करता है जिसने पहला सफल request पूरा किया था, और उसी key वाले बाद के requests को वहीं रखता है, जब तक वह provider विफल न हो, उस पर Phaseo का managed quota खत्म न हो जाए, या आपकी routing नीति उसे अनुमति देना बंद न कर दे। Pins हर workspace के लिए अलग रखे जाते हैं, और उनकी अवधि provider के cache retention के अनुसार तय होती है। [प्रदाता से जुड़ाव](../guides/prompt-caching.mdx#provider-affinity) देखें।
+Phaseo कुंजी को उस प्रदाता और रूट (डिप्लॉयमेंट या क्षेत्र) से पिन करता है जिसने पहला सफल अनुरोध दिया, और उसी कुंजी वाले बाद के अनुरोधों को वहीं रखता है, जब तक वह प्रदाता विफल न हो, उस पर Phaseo का प्रबंधित कोटा खत्म न हो, या आपकी रूटिंग नीति उसकी अनुमति देना बंद न कर दे। पिन हर वर्कस्पेस के लिए अलग होते हैं और प्रदाता के कैश प्रतिधारण जितने समय तक रहते हैं। [प्रदाता एफ़िनिटी](../guides/prompt-caching.mdx#provider-affinity) देखें।
 
-Chat Completions, Responses और Anthropic Messages तीनों इसे स्वीकार करते हैं। Phaseo upstream को आपके workspace ID और key का hash भेजता है, कच्ची key कभी नहीं, इसलिए एक ही key चुनने वाले workspaces provider cache साझा नहीं करते। Responses में वही key लौटती है जो आपने भेजी थी। जिन providers का API इस field को अस्वीकार करता है, उन्हें यह नहीं भेजा जाता, और इसे भेजने से कोई provider routing से कभी बाहर नहीं होता। Phaseo request context से भी affinity निकाल सकता है, लेकिन लंबी बातचीत, agent sessions और बार-बार चलने वाले workflows के लिए explicit key बेहतर है।
+Phaseo अपस्ट्रीम में आपके वर्कस्पेस ID और कुंजी का हैश भेजता है, कभी असली कुंजी नहीं, इसलिए एक ही कुंजी चुनने वाले दो वर्कस्पेस प्रदाता कैश साझा नहीं करते। प्रतिक्रियाएं आपकी भेजी कुंजी लौटाती हैं। जिन प्रदाताओं का API इस फ़ील्ड को अस्वीकार करता है, उन्हें यह नहीं भेजा जाता, और इसे भेजने से कोई प्रदाता रूटिंग से कभी बाहर नहीं होता। कुंजी के बिना Phaseo अनुरोध से एफ़िनिटी निकालता है, लेकिन लंबी बातचीत और एजेंट सत्रों के लिए स्पष्ट कुंजी बेहतर काम करती है।
 
 <span id="prompt_cache_options"></span>
 <h3 id="parameter-prompt_cache_options"><code>prompt_cache_options</code></h3>
 
-GPT-5.6 और बाद के OpenAI और Azure OpenAI मॉडलों (GPT-6 Astra सहित), DeepInfra और Moonshot AI को prompt-cache नियंत्रण भेजता है।
+OpenAI और Azure OpenAI GPT-5.6 और बाद के मॉडलों (GPT-6 Astra सहित), DeepInfra और Moonshot AI के लिए प्रॉम्प्ट-कैश मोड और अवधि।
 
-| फ़ील्ड | मान |
+**प्रकार** `object` · **फ़ील्ड** `mode` (`implicit` या `explicit`), `ttl`
+
+| प्रदाता | `ttl` |
 | --- | --- |
-| प्रकार | `object` |
-| सामान्य फ़ील्ड | `mode` (`implicit` या `explicit`), `ttl` |
-| OpenAI TTL | `30m`, या OpenAI के Responses API पर `12h` |
+| OpenAI | `30m` (डिफ़ॉल्ट), या Responses API पर `12h`। [OpenAI पर 12-घंटे का कैश](../guides/prompt-caching.mdx#12-hour-cache-on-openai) देखें। |
+| Azure OpenAI | `30m` |
+| DeepInfra | `5m` या `1h`। सत्र के हर अनुरोध पर `prompt_cache_key` चाहिए। |
+| Moonshot AI | `5m`, या Kimi K3 पर `1h`। `mode: "implicit"` लेता है। |
 
-जब आप चाहते हों कि OpenAI केवल आपके लगाए breakpoints को cache करे, तब `{"mode":"explicit","ttl":"30m"}` उपयोग करें। OpenAI `30m` (डिफ़ॉल्ट) या `12h` वाला `ttl` स्वीकार करता है, और Azure OpenAI केवल `30m`; [OpenAI पर 12 घंटे का cache](../guides/prompt-caching.mdx#12-hour-cache-on-openai) देखें। DeepInfra `5m` या `1h` स्वीकार करता है, और session के हर request में `prompt_cache_key` चाहिए। Moonshot AI `mode: "implicit"` और `5m` वाला `ttl` स्वीकार करता है, और Kimi K3 पर `1h` भी।
-
-Phaseo यह object इन routes को भेजता है। जो अवधि कोई route नहीं ले सकता, जैसे Azure OpenAI पर `12h` या बिना 1 घंटे की कीमत वाले Moonshot AI मॉडल पर `1h`, उसे हटा दिया जाता है और `X-Phaseo-Dropped-Params` header में रिपोर्ट किया जाता है। बाकी सभी providers के लिए, और GPT-5.6 से पहले के OpenAI मॉडलों के लिए, जो इसकी जगह [`prompt_cache_retention`](#prompt_cache_retention) उपयोग करते हैं, Phaseo इसे हटा देता है। `provider_options.openai.prompt_cache_options` भी स्वीकार किया जाता है; top-level मान लागू होता है।
+OpenAI से सिर्फ़ आपके रखे ब्रेकपॉइंट कैश करवाने के लिए `{"mode": "explicit", "ttl": "30m"}` इस्तेमाल करें। जो अवधि रूट नहीं ले सकता, जैसे Azure OpenAI पर `12h` या 1-घंटे की कीमत के बिना Moonshot AI मॉडल पर `1h`, उसे हटा दिया जाता है और `X-Phaseo-Dropped-Params` में सूचीबद्ध किया जाता है। हर दूसरे प्रदाता को, और GPT-5.6 से पहले के OpenAI मॉडलों को, कोई `prompt_cache_options` नहीं मिलता; वे OpenAI मॉडल [`prompt_cache_retention`](#parameter-prompt_cache_retention) इस्तेमाल करते हैं। `provider_options.openai.prompt_cache_options` भी स्वीकार्य है; शीर्ष-स्तर का मान प्रभावी होता है।
 
 <span id="cache_control"></span>
 <h3 id="parameter-cache_control"><code>cache_control</code></h3>
 
-Claude के लिए डिफ़ॉल्ट prompt cache नीति सेट करता है, या किसी content block पर cache breakpoint लगाता है।
+शीर्ष स्तर पर, यह Claude प्रॉम्प्ट-कैश नीति सेट करता है। किसी content block, टूल परिभाषा या टूल परिणाम पर, यह कैश ब्रेकपॉइंट चिह्नित करता है।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `object` |
-| सामान्य फ़ील्ड | `type`, `ttl`, `scope` |
-| उपयोग | Claude cache नीतियाँ और स्पष्ट cache breakpoints |
+**प्रकार** `object` · **फ़ील्ड** `type`, `ttl`, `scope`
 
-Top-level `cache_control` को Chat Completions, Responses और Anthropic Messages requests पर स्वीकार किया जाता है। यह Anthropic, Claude on AWS, Amazon Bedrock और Google Vertex AI पर Claude के लिए लागू होता है: Phaseo `scope` (`all_text`, `last_user_message`, `agent` या `none`) के अनुसार अधिकतम चार breakpoints लगाता है। दूसरे providers इसे अनदेखा करते हैं। `provider_options.anthropic.cache_control` वही सेटिंग है, और दोनों भेजे जाने पर वही लागू होती है।
+**शीर्ष स्तर।** Chat Completions, Responses और Messages पर स्वीकार्य। यह Anthropic पर Claude, AWS पर Claude, Amazon Bedrock और Google Vertex AI पर लागू होता है: Phaseo `scope` (`all_text`, `last_user_message`, `agent` या `none`) के अनुसार अधिकतम चार ब्रेकपॉइंट रखता है। दूसरे प्रदाता इसे अनदेखा करते हैं। `provider_options.anthropic.cache_control` यही सेटिंग है और दोनों भेजे जाने पर वही प्रभावी होती है।
 
-किसी content block, tool definition या tool result पर `cache_control` एक cache breakpoint लगाता है। Phaseo इसे Claude routes, Alibaba Model Studio और Venice को भेजता है, GPT-5.6 और बाद के OpenAI और Azure OpenAI मॉडलों के लिए इसे `prompt_cache_breakpoint` में बदलता है, और दूसरे providers के लिए हटा देता है। OpenAI का अपना `prompt_cache_breakpoint: {"mode": "explicit"}` भी उन्हीं blocks पर स्वीकार किया जाता है, और जब किसी block पर दोनों हों, तो वही लागू होता है।
+**किसी block पर।** Phaseo ब्रेकपॉइंट को Claude रूट, Alibaba Model Studio और Venice को भेजता है, OpenAI और Azure OpenAI GPT-5.6 और बाद के मॉडलों के लिए उसे `prompt_cache_breakpoint` में बदलता है, और दूसरे प्रदाताओं के लिए हटा देता है। OpenAI का अपना `prompt_cache_breakpoint: {"mode": "explicit"}` भी उन्हीं blocks पर स्वीकार्य है और जब किसी block में दोनों हों, तो वही प्रभावी होता है।
 
-`type: "ephemeral"` के साथ `5m` (डिफ़ॉल्ट) या `1h` वाला `ttl` उपयोग करें। Anthropic हर request में अधिकतम चार breakpoints स्वीकार करता है; आपके marks इससे ज़्यादा हों, तो Phaseo पहला और सबसे नए तीन रखता है। Scopes और हर provider को क्या मिलता है, इसके लिए [Prompt Caching](../guides/prompt-caching.mdx#cache-controls) देखें।
+`5m` (डिफ़ॉल्ट) या `1h` के `ttl` के साथ `type: "ephemeral"` इस्तेमाल करें। Anthropic प्रति अनुरोध अधिकतम चार ब्रेकपॉइंट स्वीकार करता है; जब आप ज़्यादा चिह्नित करते हैं, तो Phaseo पहला और आखिरी तीन रखता है। [प्रॉम्प्ट कैशिंग](../guides/prompt-caching.mdx#cache-controls) देखें।
 
 <span id="prompt_cache_retention"></span>
 <h3 id="parameter-prompt_cache_retention"><code>prompt_cache_retention</code></h3>
 
-GPT-5.6 से पहले के OpenAI और Azure OpenAI मॉडलों पर prompt cache retention नीति सेट करता है।
+GPT-5.6 से पहले के OpenAI और Azure OpenAI मॉडलों पर प्रॉम्प्ट-कैश प्रतिधारण।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `string` |
-| समर्थित मान | `in_memory`, `24h` |
-| उपयोग | OpenAI prompt cache retention |
+**प्रकार** `string` · **मान** `in_memory`, `24h`
 
-Phaseo यह field केवल GPT-5.6 से पहले के OpenAI और Azure OpenAI मॉडलों को भेजता है, और `24h` केवल वही मॉडल स्वीकार करते हैं जिन्हें OpenAI सूचीबद्ध करता है। GPT-5.6 और बाद के मॉडल इसकी जगह [`prompt_cache_options.ttl`](#prompt_cache_options) उपयोग करते हैं, और दूसरे providers को यह field नहीं मिलता। Provider-specific alias `provider_options.openai.prompt_cache_retention` अब भी स्वीकार किया जाता है। दोनों मौजूद हों, तो top-level `prompt_cache_retention` का मान प्राथमिकता पाता है।
+Phaseo इसे सिर्फ़ उन्हीं मॉडलों को भेजता है, और सिर्फ़ OpenAI द्वारा सूचीबद्ध मॉडल `24h` स्वीकार करते हैं। GPT-5.6 और बाद के मॉडल [`prompt_cache_options.ttl`](#parameter-prompt_cache_options) इस्तेमाल करते हैं, और दूसरे प्रदाताओं को यह फ़ील्ड नहीं मिलता। `provider_options.openai.prompt_cache_retention` भी स्वीकार्य है; शीर्ष-स्तर का मान प्रभावी होता है।
+
+## रूटिंग और प्रदाता सेटिंग
 
 <span id="provider"></span>
 <h3 id="parameter-provider"><code>provider</code></h3>
 
-routing constraints और provider preferences रखता है।
+सीमित करता है कि कौन-से प्रदाता अनुरोध दे सकते हैं और उन्हें कैसे रैंक किया जाता है। `routing` उपनाम के रूप में स्वीकार्य है। [रूटिंग और फ़ॉलबैक](../guides/routing-and-fallbacks.mdx) देखें।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `object` |
-| उपयोग | रूटिंग नियम, provider चयन और compliance constraints |
-
-यह तय करने के लिए उपयोग करें कि कौन से upstream providers request चला सकते हैं, उन्हें कैसे rank करना है और कौन सी compliance requirements पूरी होनी चाहिए।
-
-सामान्य fields में शामिल हैं:
-
-| फ़ील्ड | प्रकार | उद्देश्य |
+| फ़ील्ड | प्रकार | असर |
 | --- | --- | --- |
-| `order` | `string[]` | पसंदीदा provider क्रम। |
-| `only` | `string[]` | रूटिंग को विशिष्ट providers तक सीमित करता है। |
-| `ignore` | `string[]` | विशिष्ट providers को बाहर करता है। |
-| `include_alpha` | `boolean` | routing निर्णयों में alpha providers की अनुमति देता है। |
-| `sort` | `string` या `object` | अक्सर `price`, `latency` या `throughput` के आधार पर providers को rank करता है। |
-| `required_execution_region` | `string` | execution को आवश्यक region तक सीमित करता है। |
-| `required_data_region` | `string` | data handling को आवश्यक region तक सीमित करता है। |
-| `require_zero_data_retention` | `boolean` | zero-data-retention शर्तें पूरी करने वाले providers आवश्यक करता है। |
-| `max_price` | `object` | prompt, completion, image, audio या request लागत की सीमा तय करता है। |
-| `quantizations` | `string[]` | ऐसी योग्य offer आवश्यक करता है जिसकी catalogue quantization इनमें से किसी मान से मेल खाए। |
+| `order` | `string[]` | पसंदीदा प्रदाता क्रम। |
+| `only` | `string[]` | सिर्फ़ ये प्रदाता। |
+| `ignore` | `string[]` | ये प्रदाता कभी नहीं। |
+| `include_alpha` | `boolean` | alpha प्रदाताओं की अनुमति। |
+| `sort` | `string` या `object` | प्रदाताओं को रैंक करें, जैसे `price`, `latency` या `throughput` के अनुसार। |
+| `required_execution_region` | `string` | सिर्फ़ इसी क्षेत्र में चलाएं। |
+| `required_data_region` | `string` | डेटा सिर्फ़ इसी क्षेत्र में संभालें। |
+| `require_zero_data_retention` | `boolean` | सिर्फ़ शून्य डेटा प्रतिधारण पूरा करने वाले प्रदाता। |
+| `max_price` | `object` | `prompt`, `completion`, `image`, `audio` या `request` लागत की ऊपरी सीमाएं। |
+| `quantizations` | `string[]` | सिर्फ़ वे ऑफ़र जिनका कैटलॉग quantization इनमें से किसी से मेल खाता है। |
 
-`quantizations` OpenRouter-संगत provider-routing शब्दावली का पालन करता है और `provider` या `routing` के अंतर्गत स्वीकार किया जाता है। मिलान case-insensitive है और spaces, hyphens तथा underscores को अनदेखा करता है; `float8`/`FP8` और `bfloat16`/`BF16` जैसे स्पष्ट नाम aliases हैं। यह filter मौजूद होने पर quantization metadata के बिना offers हटाए जाते हैं। कोई योग्य offer मेल न खाए तो Gateway चुपचाप किसी दूसरे variant पर routing करने के बजाय अनुरोधित और उपलब्ध quantizations वाला error लौटाता है।
+`quantizations` का मिलान केस, स्पेस, हाइफ़न और अंडरस्कोर को अनदेखा करता है, और स्पष्ट नामों को उपनाम मानता है, जैसे `float8` और `FP8`, या `bfloat16` और `BF16`। फ़िल्टर सेट होने पर quantization डेटा के बिना वाले ऑफ़र बाहर रखे जाते हैं। अगर कोई ऑफ़र मेल नहीं खाता, तो अनुरोध किसी दूसरे वेरिएंट पर रूट होने के बजाय ऐसी त्रुटि के साथ विफल होता है जिसमें मांगे गए और उपलब्ध quantization सूचीबद्ध होते हैं।
 
 <span id="provider_options"></span>
 <h3 id="parameter-provider_options"><code>provider_options</code></h3>
 
-provider-specific passthrough settings रखता है जिन्हें gateway की साझा request shape में normalize नहीं करना चाहिए।
+प्रदाता की अपनी सेटिंग, जिन्हें Phaseo प्रदाता के अनुसार कुंजीबद्ध करके आगे भेजता है, जबकि अनुरोध का बाकी हिस्सा साझा स्कीमा पर रहता है।
 
-| फ़ील्ड | मान |
+**प्रकार** `object`
+
+| कुंजी | असर |
 | --- | --- |
-| प्रकार | `object` |
-| उपयोग | provider-native controls |
+| `openai.context_management` | OpenAI compaction (`type: "compaction"`, वैकल्पिक `compact_threshold`)। |
+| `openai.prompt_cache_retention`, `openai.prompt_cache_options` | शीर्ष-स्तर के फ़ील्ड जैसे ही; शीर्ष-स्तर का मान प्रभावी होता है। |
+| `anthropic.cache_control` | शीर्ष-स्तर के `cache_control` जैसा ही; यह वाला प्रभावी होता है। |
+| `google.cached_content` | एक स्पष्ट Gemini कैश (नीचे देखें)। |
+| `xai.conversation_id` | xAI बातचीत ID। |
 
-उदाहरण:
+`google.cached_content` एक स्पष्ट Gemini कैश का नाम बताता है और सिर्फ़ आपके अपने क्रेडेंशियल से काम करता है: Google AI Studio पर Google API कुंजी, या Vertex AI पर Vertex AI क्रेडेंशियल। Vertex AI पर, Phaseo अनुरोध को कैश के पूरे नाम (`projects/{project}/locations/{location}/cachedContents/{id}`) में दिए प्रोजेक्ट और स्थान पर भेजता है; छोटा नाम आपके service-account JSON के `project_id` और `region` का उपयोग करता है। Phaseo के क्रेडेंशियल के साथ अनुरोध `400` लौटाता है। `google.cache_control` और `google.cache_ttl` स्वीकार्य हैं लेकिन Google को नहीं भेजे जाते।
 
-- `openai.context_management`
-- `openai.prompt_cache_retention`
-- `anthropic.cache_control`
-- `google.cached_content`
-- `xai.conversation_id`
+Claude के लिए शीर्ष-स्तर का `cache_control`, OpenAI GPT-5.6 और बाद के मॉडलों के लिए `prompt_cache_options`, और पहले के OpenAI मॉडलों के लिए `prompt_cache_retention` को प्राथमिकता दें। [प्रॉम्प्ट कैशिंग](../guides/prompt-caching.mdx) देखें।
 
-जब provider-native feature चाहिए, लेकिन request का बाकी हिस्सा gateway के common schema में रखना हो, तब इसका उपयोग करें। Claude cache नीतियों के लिए top-level `cache_control` चुनें। OpenAI retention के लिए GPT-5.6 और बाद के मॉडलों पर top-level `prompt_cache_options`, और पुराने मॉडलों पर top-level `prompt_cache_retention` उपयोग करें।
-
-`google.cached_content` किसी स्पष्ट Gemini cache का नाम देता है। यह केवल आपकी अपनी credential के साथ काम करता है: Google AI Studio पर Google API key, या Vertex AI पर Vertex AI credential। Vertex AI पर Phaseo request को cache के पूरे नाम (`projects/{project}/locations/{location}/cachedContents/{id}`) में दिए project और location पर भेजता है; छोटा नाम आपके service account JSON के `project_id` और `region` का उपयोग करता है। Phaseo की credentials के साथ request 400 लौटाता है। `google.cache_control` और `google.cache_ttl` स्वीकार किए जाते हैं, लेकिन Google को नहीं भेजे जाते।
-
-Chat Completions, Responses और Anthropic Messages में प्रदाता की प्रॉम्प्ट-कैशिंग के उदाहरणों के लिए [Prompt Caching](../guides/prompt-caching.mdx) देखें।
+## प्रतिक्रिया की अतिरिक्त जानकारी और डीबगिंग
 
 <span id="meta"></span>
 <h3 id="parameter-meta"><code>meta</code></h3>
 
-समर्थन होने पर response में अतिरिक्त metadata माँगता है।
+प्रतिक्रिया में रूटिंग विवरण वाला एक `meta` ऑब्जेक्ट जोड़ता है, जैसे `meta.routing.dropped_params`।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `boolean` |
-| डिफ़ॉल्ट | endpoint के अनुसार अलग |
-
-debugging, analytics या downstream inspection के लिए अतिरिक्त गैर-मुख्य response metadata चाहिए तो इसका उपयोग करें。
+**प्रकार** `boolean` · **डिफ़ॉल्ट** `false`
 
 <span id="usage"></span>
 <h3 id="parameter-usage"><code>usage</code></h3>
 
-समर्थन होने पर usage accounting विवरण माँगता है।
+हेडर या डैशबोर्ड पर निर्भर रहने के बजाय, प्रतिक्रिया बॉडी में उपयोग का हिसाब मांगता है।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `boolean` |
-| डिफ़ॉल्ट | endpoint के अनुसार अलग |
-
-headers या dashboards पर निर्भर रहने के बजाय response body में token या usage accounting स्पष्ट रूप से चाहिए तो यह उपयोगी है।
+**प्रकार** `boolean` · **डिफ़ॉल्ट** सेट नहीं
 
 <span id="debug"></span>
 <h3 id="parameter-debug"><code>debug</code></h3>
 
-नियंत्रित request और routing diagnostics सक्षम करता है।
+रूटिंग ट्रेस और अपस्ट्रीम पेलोड लौटाता है। डीबग आउटपुट में आपके अनुरोध की सामग्री हो सकती है, इसलिए इसे सिर्फ़ डेवलपमेंट या कड़े नियंत्रण वाले वातावरण में इस्तेमाल करें। [किसी अनुरोध को डीबग करें](./errors.mdx#debug-a-request) देखें।
 
-| फ़ील्ड | मान |
-| --- | --- |
-| प्रकार | `object` |
-| उपयोग | केवल development और troubleshooting के लिए |
-
-समर्थित debug fields में शामिल हैं:
-
-| फ़ील्ड | प्रकार | उद्देश्य |
+| फ़ील्ड | प्रकार | असर |
 | --- | --- | --- |
-| `enabled` | `boolean` | request के लिए debug mode सक्षम करता है। |
-| `return_upstream_request` | `boolean` | transformed upstream request payload शामिल करता है। |
-| `return_upstream_response` | `boolean` | उपलब्ध होने पर upstream response payload शामिल करता है। |
-| `trace` | `boolean` | routing या debug traces लौटाता है। |
-| `trace_level` | `summary` या `full` | trace की verbosity नियंत्रित करता है। |
+| `enabled` | `boolean` | डीबग मोड चालू करता है। |
+| `return_upstream_request` | `boolean` | Phaseo द्वारा अपस्ट्रीम भेजा गया अनुरोध शामिल करता है। |
+| `return_upstream_response` | `boolean` | उपलब्ध हो तो अपस्ट्रीम प्रतिक्रिया शामिल करता है। |
+| `trace` | `boolean` | रूटिंग ट्रेस लौटाता है। |
+| `trace_level` | `summary` या `full` | ट्रेस का विवरण। |
 
-Debug payloads में संवेदनशील request context हो सकता है। इनका उपयोग केवल development या कड़े नियंत्रण वाले environments में करें।
-
-## अनुरोध का उदाहरण
+## उदाहरण अनुरोध
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-5.6-luna",
   "input": "Summarize this changelog.",
   "stream": false,
-  "temperature": 0.3,
   "max_output_tokens": 300,
   "provider": {
-    "order": ["openai", "anthropic"],
-    "ignore": ["some-provider"],
+    "order": ["openai", "azure"],
     "sort": "latency",
     "required_execution_region": "eu",
     "require_zero_data_retention": true
@@ -650,26 +462,11 @@ Debug payloads में संवेदनशील request context हो स�
 }
 ```
 
-## विस्तृत व्याख्या
-
-फ़ील्ड संदर्भ के बजाय गहराई से tuning सलाह चाहिए तो आगे ये देखें:
-
-- [इन्फ़रेंस पैरामीटर](../guides/inference-parameters.mdx) में temperature, top_p, top_k, max token limits, stop sequences और tuning workflow पर व्यावहारिक सलाह
-- [सैंपलिंग और डिकोडिंग](../guides/sampling-and-decoding.mdx) में यादृच्छिकता, पेनल्टी और डिकोडिंग नियंत्रणों का मॉडल के व्यवहार पर प्रभाव
-
-## संबंधित पृष्ठ
-
-- [इन्फ़रेंस पैरामीटर](../guides/inference-parameters.mdx)
-- [सैंपलिंग और डिकोडिंग](../guides/sampling-and-decoding.mdx)
-- [स्ट्रीमिंग](../guides/streaming.mdx)
-- [Limits](./limits.mdx)
-- [त्रुटियाँ और डिबगिंग](./errors.mdx)
-
 <Visibility for="agents">
-एजेंट के लिए पैरामीटर-प्रबंधन नियम:
+एजेंट के लिए पैरामीटर संभालने के नियम:
 
-- फ़ील्ड के नाम का अनुमान लगाने के बजाय https://phaseo.app/docs/openapi/v1/openapi.yaml पर दिए API अनुबंध से अनुरोध बॉडी की जाँच करें।
-- टूल, स्ट्रीमिंग और डीबग विकल्प जैसे उन्नत फ़ील्ड साथ में इस्तेमाल करने से पहले एंडपॉइंट का API संदर्भ पेज देखें।
-- जब एंडपॉइंट अनुमति दे, तो पास-थ्रू फ़्लो में प्रदाता-विशिष्ट अज्ञात कुंजियाँ बनाए रखें।
-- परखे हुए अनुरोध-संरचना पैटर्न के लिए `phaseo-gateway` स्किल इंस्टॉल करें: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`।
+- फ़ील्ड नामों का अनुमान लगाने के बजाय अनुरोध बॉडी को https://phaseo.app/docs/openapi/v1/openapi.yaml पर API कॉन्ट्रैक्ट के सामने सत्यापित करें।
+- टूल, स्ट्रीमिंग और डीबग विकल्प जैसे उन्नत फ़ील्ड मिलाने से पहले एंडपॉइंट का API संदर्भ पेज जांचें।
+- जब एंडपॉइंट अनुमति दे, तो pass-through फ़्लो में अज्ञात प्रदाता-विशिष्ट कुंजियां बनाए रखें।
+- परखे हुए request-shape पैटर्न के लिए `phaseo-gateway` skill इंस्टॉल करें: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`।
 </Visibility>

@@ -1,13 +1,11 @@
-"use client";
-
 import * as React from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { useFormStatus } from "react-dom";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { handlePasswordSignIn, forgotPasswordAction } from "@/app/(auth)/sign-in/actions";
+import { handlePasswordSignIn, forgotPasswordAction } from "@/features/sign-in/actions";
 import { ForgotPasswordDialog } from "./ForgotPasswordDialog";
 import { Eye, EyeOff } from "lucide-react";
 import { defaultLocale, type PublicLocale } from "@/i18n/routing";
@@ -80,7 +78,7 @@ export default function EmailPassword({
 			</div>
 
 			<form
-				action={handlePasswordSignIn}
+				action={(formData) => handlePasswordSignIn({ data: formData })}
 				className="grid gap-3"
 				onSubmit={handleSubmit}
 			>
@@ -164,7 +162,7 @@ export default function EmailPassword({
 			<ForgotPasswordDialog
 				open={forgotPasswordOpen}
 				onOpenChange={setForgotPasswordOpen}
-				onSubmit={(email) => forgotPasswordAction(email, locale)}
+				onSubmit={(email) => forgotPasswordAction({ data: { email, localeInput: locale } })}
 			/>
 		</div>
 	);

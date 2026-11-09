@@ -295,6 +295,7 @@ function likePattern(pattern: string): RegExp {
 
 function matches(value: unknown, filter: string): boolean {
 	if (filter === "is.null") return value === null || value === undefined;
+	if (filter === "not.is.null") return value !== null && value !== undefined;
 	if (filter === "is.false") return value === false;
 	if (filter === "is.true") return value === true;
 	if (filter.startsWith("eq.")) return value !== null && value !== undefined && String(value) === filter.slice(3);

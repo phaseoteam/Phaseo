@@ -300,4 +300,69 @@ describe("google-vertex video executor", () => {
 		expect(state.releaseCalls).toEqual([]);
 		expect(mock.calls).toEqual([]);
 	});
+
+	it("sends compression_quality as Veo's string value", async () => {
+		let capturedBody: any = null;
+		const mock = installFetchMock([{
+			match: (url) => url.includes(":predictLongRunning"),
+			response: jsonResponse({
+				name: "projects/test-project/locations/us-east5/publishers/google/models/veo-3.1-generate-001/operations/vertex-lossless",
+				done: false,
+			}),
+			onRequest: (call) => { capturedBody = call.bodyJson; },
+		}]);
+		const result = await execute(buildArgs({
+			model: "google/veo-3.1-generate-001",
+			prompt: "A lossless sunrise",
+			durationSeconds: 8,
+			compressionQuality: "lossless",
+		}));
+		mock.restore();
+
+		expect(result.upstream?.status).toBe(200);
+		expect(capturedBody.parameters.compressionQuality).toBe("lossless");
+	});
+
+	it("maps the snake_case provider_params alias to compressionQuality", async () => {
+		let capturedBody: any = null;
+		const mock = installFetchMock([{
+			match: (url) => url.includes(":predictLongRunning"),
+			response: jsonResponse({
+				name: "projects/test-project/locations/us-east5/publishers/google/models/veo-3.1-generate-001/operations/vertex-optimized",
+				done: false,
+			}),
+			onRequest: (call) => { capturedBody = call.bodyJson; },
+		}]);
+		await execute(buildArgs({
+			model: "google/veo-3.1-generate-001",
+			prompt: "An optimized sunrise",
+			durationSeconds: 8,
+			providerParams: { compression_quality: "Optimized" },
+		}));
+		mock.restore();
+
+		expect(capturedBody.parameters.compressionQuality).toBe("optimized");
+		expect(capturedBody.parameters).not.toHaveProperty("compression_quality");
+	});
+
+	it("refuses a numeric compression_quality before reserving credits", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url.includes(":predictLongRunning"),
+			response: jsonResponse({ name: "should-not-submit", done: false }),
+		}]);
+		const result = await execute(buildArgs({
+			model: "google/veo-3.1-generate-001",
+			prompt: "A legacy numeric quality",
+			durationSeconds: 8,
+			compressionQuality: 70,
+		}));
+		mock.restore();
+
+		expect(result.upstream?.status).toBe(400);
+		expect(await result.upstream?.clone().json()).toMatchObject({
+			error: { type: "invalid_request", message: expect.stringContaining('"optimized" or "lossless"') },
+		});
+		expect(state.reservationCalls).toEqual([]);
+		expect(mock.calls).toEqual([]);
+	});
 });

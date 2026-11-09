@@ -1,119 +1,162 @@
 ---
-title: "إصلاح استجابات JSON المنظّمة"
+title: "استخدم إصلاح الردود لـ JSON المنظَّم"
+sidebarTitle: "إصلاح الردود لـ JSON"
 icon: "file-check"
-description: "استعد مخرجات JSON المنظّمة شبه الصالحة من دون توسيع المخططات أو إعادة محاولات الاستجابات غير السليمة يدويًا."
+description: "استرجع مخرجات JSON المنظَّمة شبه الصالحة دون توسيع المخططات أو إعادة محاولة الردود المشوّهة يدويًا."
 ---
 
-استخدم هذه الوصفة عندما يحتاج تطبيقك إلى JSON صارم، لكن النماذج تُرجع أحيانًا مخرجات تكاد تكون صالحة، ومع ذلك تتسبب في فشل المحلّل.
+أضف الإضافة `response-healing` إلى طلب مخرجات منظَّمة، وسيصلح Phaseo الـ JSON شبه الصالح، مثل JSON داخل كتلة Markdown أو مع فاصلة زائدة في النهاية، قبل أن يصل إلى المحلّل لديك. في النهاية يصبح لديك طلب واحد يطلب JSON Schema، ويصلح الإجابة عند الحاجة، ويخبرك في الرد ما إذا فعل ذلك.
 
-## 1. ابدأ بعقد للاستجابة المنظّمة
+الطلب جاهز للإنتاج. يصلح الإصلاحُ البنيةَ فقط، لذا تظل شيفرتك تتحقق من النتيجة، كما في [تحقّق من النتيجة](../guides/structured-outputs#validate-the-result).
 
-لا يكون إصلاح الاستجابة مفيدًا إلا إذا كان الطلب يطلب مخرجات منظّمة بالفعل.
+```mermaid
+flowchart TD
+  ans["إجابة مخزّنة مؤقتًا لطلب json_object أو json_schema"] --> valid{{"JSON صالح أصلًا؟"}}
+  valid -->|"نعم"| schema{{"يطابق المخطط؟"}}
+  valid -->|"لا"| fix["طبّق تحويلات الوضع بالترتيب"]
+  fix --> parsed{{"هل يُحلَّل الآن؟"}}
+  parsed -->|"نعم"| schema
+  parsed -->|"لا"| unfixed["skipped: غير قابل للإصلاح أو مقطوع"]
+  schema -->|"نعم"| out["استخدم JSON القياسي: applied إذا تغيّر"]
+  schema -->|"لا"| mismatch["skipped: schema_mismatch"]
+```
 
-حالات مناسبة:
+## أرسل طلبًا مع الإصلاح
 
-- `response_format.type = "json_object"`
-- مخرجات بأسلوب JSON Schema
-- بنية كائن ثابتة يستخدمها أكثر من مستدعٍ
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-6-astra",
+    "input": "Summarize this release in one sentence: dark mode and faster search.",
+    "text": {
+      "format": {
+        "type": "json_schema",
+        "name": "answer",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": { "summary": { "type": "string" } },
+          "required": ["summary"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "plugins": [{ "id": "response-healing", "mode": "safe" }],
+    "meta": true
+  }'
+```
 
-لا تفعّل الإصلاح لطلبات النثر المفتوح.
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
 
-## 2. فعّل الإضافة في المستوى المناسب
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
-يمكنك تفعيل `response-healing` في ثلاثة مواضع:
+const response = await client.generateResponse({
+  model: "openai/gpt-6-astra",
+  input: "Summarize this release in one sentence: dark mode and faster search.",
+  text: {
+    format: {
+      type: "json_schema",
+      name: "answer",
+      strict: true,
+      schema: {
+        type: "object",
+        properties: { summary: { type: "string" } },
+        required: ["summary"],
+        additionalProperties: false,
+      },
+    },
+  },
+  plugins: [{ id: "response-healing", mode: "safe" }],
+  meta: true,
+});
 
-1. سياسة الإضافات الافتراضية لمساحة العمل
-2. إعداد الإضافات المسبقة في إعداد مُسبق
-3. `plugins` لكل طلب
+console.log(response.meta?.plugin_executions);
+```
 
-ترتيب الأولوية:
+```python Python
+import os
 
-1. مساحة العمل
-2. الإعداد المسبق
-3. الطلب
+from phaseo import Phaseo
 
-استخدم القيم الافتراضية للإعداد المسبق عندما يتوقع سير العمل JSON منظّمًا باستمرار.
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
-## 3. حدّد شكل مخرجات النموذج
+response = client.generate_response(
+    {
+        "model": "openai/gpt-6-astra",
+        "input": "Summarize this release in one sentence: dark mode and faster search.",
+        "text": {
+            "format": {
+                "type": "json_schema",
+                "name": "answer",
+                "strict": True,
+                "schema": {
+                    "type": "object",
+                    "properties": {"summary": {"type": "string"}},
+                    "required": ["summary"],
+                    "additionalProperties": False,
+                },
+            }
+        },
+        "plugins": [{"id": "response-healing", "mode": "safe"}],
+        "meta": True,
+    }
+)
 
-يعمل الإصلاح على نحو أفضل عندما يكون شكل المخرجات المطلوبة محددًا مسبقًا.
+print(response["meta"].get("plugin_executions"))
+```
+</CodeGroup>
 
-توصيات:
+في Chat Completions، أرسل المخطط نفسه في `response_format` بدلًا من `text.format`. لا يعمل الإصلاح إلا عندما يطلب الطلب `json_object` أو `json_schema`، ولا يعمل أبدًا مع البث: الطلب المبثوث يتخطاه مع `streaming_unsupported`.
 
-- كائن واحد بدلًا من كتل متعددة غير مترابطة
-- تحديد المفاتيح المطلوبة بوضوح
-- استخدام درجة حرارة حتمية متى أمكن
-- عدم طلب نص تفسيري إضافي خارج حمولة JSON
+## تحقّق من أنه عمل
 
-## 4. تعرّف على ما يستطيع إصلاح الاستجابة فعله وما لا يستطيع
+مع `meta: true`، يسرد `meta.plugin_executions` الإضافة عندما تعمل:
 
-مسار الإصلاح الحالي حتمي ولا يعمل إلا من دون البث. وتتجاوز طلبات البث الإصلاح بالكامل.
+```json
+{
+  "id": "response-healing",
+  "stage": "response.post_provider",
+  "status": "applied",
+  "changed": true,
+  "metadata": {
+    "attempted": true,
+    "healed": true,
+    "mode": "safe",
+    "transforms_applied": ["strip_markdown_fence"]
+  }
+}
+```
 
-يمكنه إصلاح:
+| `status` | المعنى |
+| --- | --- |
+| `applied` | أُعيدت كتابة الإجابة إلى JSON صالح. |
+| `skipped` | تُركت الإجابة كما هي. مع `attempted: false` لم يكن الطلب مؤهلًا؛ وإلا فإن الـ JSON كان صالحًا أصلًا أو تعذّر إصلاحه. يذكر `metadata.failure_reason` السبب: `streaming_unsupported`، أو `not_json` (لم تُطلب مخرجات منظَّمة، أو لا يوجد نص)، أو `unrepairable`، أو `truncated` (توقفت الإجابة عند حد الـ tokens)، أو `schema_mismatch` مع `validation_errors`. |
+| `failed` | أخطأت الإضافة نفسها (`reason: plugin_error`)؛ والإجابة لم تتغير. |
 
-- أسوار تعليمات Markdown البرمجية المحيطة بـ JSON
-- الفواصل الزائدة في نهاية القوائم
-- أقواس الإغلاق الآمنة المفقودة
-- مفاتيح الكائنات غير المحاطة بعلامات اقتباس في الكائنات التي يمكن استعادتها بطرق أخرى
+يظهر السجل نفسه في الطلب ضمن **الإعدادات → الاستخدام → السجلات**. إذا لم تظهر الإضافة أبدًا، فتحقّق من أن الطلب أو إعداده المسبق أو مساحة العمل قد فعّلها فعلًا؛ تُظهر صفحة [عيّن الإعدادات الافتراضية للإضافات](./plugin-defaults-and-response-healing) أين يتم ذلك.
 
-إذا كنت تحتاج إلى سياسة أضيق، فاستخدم وضع `strict`. يستخرج هذا الوضع JSON الصالح مسبقًا فقط من الأسوار أو النص المحيط، ويتجاوز تحويلات الإصلاح النحوي الأوسع.
+## اختر وضعًا
 
-عندما يستخدم الطلب مخرجات بأسلوب JSON Schema، يتحقق الإصلاح أيضًا من الحمولة المستعادة قبل إعادة كتابتها. ويتحقق المدقّق الحالي من القيود الشائعة، مثل:
+| الوضع | التحويلات، بالترتيب |
+| --- | --- |
+| `safe` (الافتراضي) | إزالة كتلة Markdown، والقص إلى أبعد `{…}` أو `[…]`، وإزالة الفواصل الزائدة في النهاية، ووضع علامات اقتباس حول المفاتيح المجردة، وإضافة أقواس الإغلاق الناقصة (ليس عندما تكون الإجابة قد بلغت حد الـ tokens) |
+| `strict` | إزالة كتلة Markdown والقص إلى أبعد `{…}` أو `[…]` فقط، فلا يقبل إلا JSON كان صالحًا أصلًا داخل غلافه |
 
-- المفاتيح المطلوبة
-- الأنواع الأساسية للقيم المفردة والحاويات
-- التعدادات وقيم const
-- حدود المصفوفات و`uniqueItems`
-- أطوال السلاسل والتعابير النمطية والتنسيقات الشائعة مثل `email` و`uri` و`uuid` و`date-time`
-- حدود الأرقام و`multipleOf`
-- حدود خصائص الكائن و`additionalProperties: false`
+مع JSON Schema، تُفحص النتيجة المُصلَحة قبل أن تحل محل الإجابة: المفاتيح المطلوبة، والأنواع، و`enum` و`const`، وحدود المصفوفات و`uniqueItems`، وطول السلسلة النصية، و`pattern` والتنسيقات `email` و`uri` و`uuid` و`date-time`، وحدود الأرقام و`multipleOf`، وأعداد الخصائص و`additionalProperties: false`.
 
-ولا يستطيع:
+## اعرف متى لن يساعد
 
-- اختراع حقول دلالية مفقودة
-- تخمين قيم الأعمال
-- تحويل نثر عشوائي إلى بيانات صالحة
+لا يخترع الإصلاح حقولًا ناقصة أبدًا، ولا يخمّن القيم، ولا يحوّل النثر إلى بيانات. ميّز بين حالات الفشل هذه قبل أن تلجأ إليه:
 
-## 5. تحقّق من تشغيل الإضافة فعليًا
+| الفشل | الحل |
+| --- | --- |
+| JSON قريب من الصحة بنيويًا | إصلاح الردود |
+| JSON صالح بحقول خاطئة | شدّد المخطط والمطالبة |
+| نثر بدلًا من JSON | اطلب `json_schema`، لا مجرد تعليمات في المطالبة |
+| مقطوع عند حد الـ tokens | ارفع `max_output_tokens` |
 
-عند تشغيل الإصلاح، ينبغي أن تعرض تفاصيل الطلب معلومات عن تنفيذ الإضافة.
-
-تحقق من:
-
-- معرّف الإضافة
-- ما إذا كانت قد حاولت إجراء تحويل
-- ما إذا كانت الحمولة قد تغيّرت
-- سبب الفشل عندما تعذرت استعادة الاستجابة
-- ما إذا كان الطلب بلا بث عندما توقعت تشغيل الإصلاح
-
-إذا لم تظهر الإضافة، فتحقق من تفعيلها في الطلب أو الإعداد المسبق أو سياسة مساحة العمل.
-
-## 6. ميّز بين مشكلات المحلّل ومشكلات المحتوى
-
-إذا لم يساعد الإصلاح، فحدّد نوع الإخفاق:
-
-1. JSON غير سليم لكنه قريب بنيويًا من الشكل المتوقع
-2. JSON صالح وفق المخطط لكن حقوله غير صحيحة
-3. نثر بدلًا من JSON
-4. مخرجات مبتورة بسبب انخفاض حد الرموز
-
-الحالة الأولى وحدها مناسبة لإصلاح الاستجابة.
-
-## 7. أطلق الميزة تدريجيًا
-
-1. فعّل الإصلاح في إعداد مُسبق واحد ذي مخرجات منظّمة مستقرة
-2. راقب بيانات تنفيذ الإضافة الوصفية في السجلات
-3. تأكد من مطابقة الحمولات المستعادة للمخطط المتوقع
-4. وسّع الإعداد إلى إعدادات مسبقة مشابهة فقط بعد التأكد من سلامة السجلات
-
-## 8. اختر الوضع المناسب
-
-- استخدم `safe` عندما يستفيد سير العمل من تنظيف نحوي محدود، مثل إزالة الفواصل النهائية أو وضع علامات اقتباس حول المفاتيح غير المحاطة بها.
-- استخدم `strict` عندما ينبغي ألا يقبل سير العمل إلا JSON صالحًا مسبقًا بعد إزالة الأغلفة.
-- راجع تفاصيل الطلب لتأكيد الوضع الذي تم تشغيله.
-
-## أدلة ذات صلة
-
-- [استخدام تخزين الاستجابات المؤقت مع الإعدادات المسبقة](./response-caching-with-presets.mdx)
-- [إطلاق الإعدادات المسبقة وتصحيح أخطاء التوجيه](./preset-rollout-and-routing-debug.mdx)
-- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+يعمل الإصلاح بأفضل شكل مع كائن واحد بمفاتيح مطلوبة صريحة، و`temperature` منخفضة، ودون طلب نص خارج الـ JSON. فعّله لإعداد مسبق واحد أولًا، وراقب `plugin_executions` في السجلات، ثم وسّع نطاقه بمجرد أن تطابق الحمولات المُصلَحة مخططك.

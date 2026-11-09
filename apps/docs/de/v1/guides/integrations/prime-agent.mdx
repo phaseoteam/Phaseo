@@ -4,40 +4,41 @@ icon: "/icons/brands/prime-agent.svg"
 description: "Verbinde einen installierten Prime-Agent-Modellkatalog mit Phaseo."
 ---
 
-## Mit der Phaseo-CLI einrichten
+Führe `phaseo prime-agent` aus, um Prime Agent einen Phaseo-Anbieter mit jedem kompatiblen Phaseo-Modell hinzuzufügen. Prime Agent läuft unter macOS und Linux. Unter Windows installierst du es in WSL und führst die Einrichtung dort aus.
 
-Diese produktionsbereiten Befehle setzen ein Phaseo-Konto voraus. Die CLI erstellt beim Anmelden und Einrichten die eigene Gateway-Zugangsdaten.
+## Mit der Phaseo CLI einrichten
 
 ```bash
 phaseo login
 phaseo prime-agent
 ```
 
-Installiere Prime Agent zuerst aus der offiziellen Version. Beim Einrichten wird ein verwalteter `phaseo`-Provider in `~/.prime/agent/models.json` angelegt. Er stellt alle aktiven Phaseo-Textmodelle bereit, die mit Chat Completions kompatibel sind, und ruft bei jeder Anfrage den eigenen API-Schlüssel über die Phaseo-CLI ab.
+Fehlt Prime Agent, zeigt die CLI den offiziellen Installer-Befehl an und fragt nach, bevor sie ihn ausführt. Danach erstellt die Einrichtung einen `Phaseo CLI: Prime Agent API Key` (Ablauf nach 90 Tagen, monatliches Ausgabenlimit von $100) und schreibt einen `phaseo`-Anbieter nach `~/.prime/agent/models.json`. Der Anbieter listet jedes aktive Phaseo-Textmodell auf, das mit Chat Completions funktioniert.
 
-Prime Agent unterstützt derzeit macOS und Linux. Führe die Einrichtung unter Windows in WSL aus, nachdem du die ausführbare Datei dort installiert hast.
+| Flag | Wirkung |
+| --- | --- |
+| `--model <id>` | Legt das Anfangsmodell fest. Standard ist `anthropic/claude-sonnet-4.6`. |
+| `--catalog default` | Fügt nur das ausgewählte Modell hinzu. |
+| `--dry-run` | Zeigt die Dateiänderungen an, ohne sie vorzunehmen. |
 
-Wähle einen ersten Katalogeintrag oder richte bei Bedarf nur ein Modell ein:
-
-```bash
-phaseo prime-agent --model anthropic/claude-sonnet-4.6
-phaseo prime-agent --catalog default
-```
-
-## Starten und überprüfen
-
-```bash
-prime-agent
-```
-
-Öffne `/model`, wähle den Provider `phaseo` und sende eine einfache Anfrage. Der erstellte Provider verwendet das von Prime Agent unterstützte befehlsbasierte Schlüsselformat:
+Der Anbieter holt seinen Schlüssel zum Zeitpunkt der Anfrage mit dem befehlsgestützten Schlüsselformat von Prime Agent, sodass kein Klartextschlüssel in die Datei geschrieben wird:
 
 ```text
 !phaseo integrations credential prime-agent
 ```
 
-Entferne nur den von Phaseo verwalteten Provider und widerrufe seinen eigenen Schlüssel mit:
+## Prüfen, ob es funktioniert
+
+```bash
+prime-agent
+```
+
+Öffne `/model`, wähle den Anbieter `phaseo` und sende einen kurzen Prompt. Prüfe, ob die Anfrage unter **Einstellungen → Nutzung → Protokolle** erscheint.
+
+## Phaseo entfernen
 
 ```bash
 phaseo integrations remove prime-agent
 ```
+
+Damit wird nur der Phaseo-Anbieter entfernt und der Schlüssel widerrufen.

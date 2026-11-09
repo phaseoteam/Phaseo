@@ -6,297 +6,14 @@ icon: "git-branch"
 ---
 
 import { RoutingCostExplainer } from "/snippets/routing-cost.jsx";
+import { FallbackChainExplorer } from "/snippets/fallback-chain.jsx";
 
-The Phaseo Gateway routes each request to a provider that can serve your chosen model. When a provider is slow, rate-limited, or returning errors, the Gateway can attempt fallbacks so your requests still complete.
-
-## Choose a routing mode
-
-Start with `balanced` unless one production requirement clearly matters more than the others.
-
-| Mode | Use it when |
-| --- | --- |
-| `balanced` | You want a practical mix of price, latency, throughput, and availability. |
-| `price` | Reducing provider cost matters more than minimizing response time. |
-| `latency` | Fast response start is the primary requirement. |
-| `throughput` | Sustained token generation speed matters most. |
-
-Configure the workspace default in **Dashboard -> Settings -> Routing**, with `phaseo settings update --routing-mode <mode>`, or by sending `routing_mode` to `PATCH /v1/settings`. Use presets when one workflow needs a narrower provider or model policy than the workspace default.
-
-### Model routing suffixes
-
-Append a routing suffix when the model ID itself should make the optimization mode authoritative for that request:
-
-| Suffix | Routing mode |
-| --- | --- |
-| `:nitro` | `throughput` |
-| `:cheap` | `price` |
-| `:fast` | `latency` |
-
-For example, `openai/gpt-5-mini:nitro` uses throughput-first routing. A recognized routing suffix takes precedence over request-level `routing.mode` or `provider.sort`, preset and workspace routing modes. Other constraints such as provider allow lists, regional requirements, guardrails, and price ceilings still apply.
-
-## How routing works at a high level
-
-- You send a request with a model id.
-- The Gateway evaluates provider health, latency, and capability coverage.
-- A provider is selected and the request is executed.
-
-Inspect request outcomes through your activity logs and response metadata when debugging routing behavior.
-
-## Select a model with the auto-router
-
-Auto Routing is currently an Alpha available to selected workspaces.
-
-Use `phaseo/auto` when the model should change with the workload. Phaseo starts
-from every eligible production text model, then applies workspace constraints
-and builds a workload-specific shortlist:
-
-1. Open **Dashboard -> Settings -> Routing -> Auto Routing**.
-2. Choose whether to optimize for balanced performance, quality, cost, or
-   latency.
-3. Select an Economy, Standard, Premium, or unrestricted spend profile. These
-   profiles apply fixed input and output price ceilings before scoring.
-4. Optionally narrow eligible models with patterns such as `anthropic/*`,
-   `openai/gpt-5.*`, or an exact model ID.
-5. Choose whether Phaseo may try the remaining ranked models after a retryable
-   failure.
-6. Save the configuration.
-
-To set the same options without the dashboard, run `phaseo routing auto update` with `--objective`, `--spend-profile`, `--allowed-patterns` and `--allow-fallbacks`, or call `PATCH /v1/routing/auto`. `phaseo routing auto get` shows the current configuration.
-
-Applications then opt in without copying workspace routing policy into every
-request:
-
-```json
-{
-  "model": "phaseo/auto",
-  "input": "Review this TypeScript function for correctness."
-}
-```
-
-The request cannot change the workspace objective, spend profile, or model
-patterns. Fixed model requests continue to bypass the auto-router.
-
-The objective changes the relative weight of model quality, provider
-reliability, latency, and price:
-
-| Objective | Use it when |
-| --- | --- |
-| `balanced` | You want a practical default across all four signals. |
-| `quality` | Relevant benchmark performance matters most. |
-| `cost` | Lower estimated input and output token price matters most. |
-| `latency` | Lower recent provider latency matters most. |
-
-Spend profiles are hard standard-tier price ceilings in USD per million text
-tokens:
-
-| Spend profile | Maximum input price | Maximum output price |
-| --- | ---: | ---: |
-| Economy | $0.10 | $0.50 |
-| Standard | $0.30 | $1.50 |
-| Premium | $1 | $5 |
-| Any price | No ceiling | No ceiling |
-
-Custom limits set the input and output ceilings directly. Models without known
-standard text pricing are not included in the managed candidate universe.
-
-For each `phaseo/auto` request, Phaseo creates a normal child gateway request
-to a pinned low-cost classifier model. The child request uses the same
-workspace and billing identity, appears separately in request logs, and is
-labelled with `purpose=auto_routing_classifier` and the parent request ID.
-The classifier returns a structured workload mix, complexity score, and
-confidence value; it never selects a model directly.
-
-Hard request facts such as tools and structured output are included as trusted
-metadata. If the classifier request fails, times out, or returns invalid data,
-Phaseo falls back to the local deterministic code, reasoning, tool use,
-structured output, translation, summarization, or general classifier rather
-than failing the generation request.
-
-Classifier complexity represents the minimum model capability likely to
-produce a reliably acceptable answer. Phaseo applies a capability margin, then
-combines benchmark fit with the workspace objective, price, latency, provider
-health, and reliability. The classifier request and selected generation
-request are metered independently through the normal gateway pipeline.
-
-Before scoring, every allow-listed model must pass the normal endpoint,
-workspace model, provider, privacy, guardrail, and circuit-breaker checks. The
-router then combines relevant non-self-reported Phaseo catalogue benchmarks
-with current Phaseo provider health, latency, and pricing. Missing benchmark or
-operational data is neutral; it does not widen the allow-list.
-
-The request's limits on where its data may go apply to Auto too. When a
-request sets `provider.require_zero_data_retention: true`, or the workspace or the
-key's guardrail allows only providers with zero data retention, the router
-shortlists only models with a provider that offers it. Required regions are
-checked against each candidate's providers in the same way. The classifier
-request carries the same limits, along with the `only` and `ignore` providers;
-if the classifier model can't meet them, Phaseo uses the local classifier
-instead. When the request's residency requirements are what leaves Auto no
-model (every model it considered failed them), the request fails with
-`403 model_region_unavailable` and `unmet_requirements`, the same error a fixed
-model gets; if models were also ruled out for other reasons, it fails with
-`400 unsupported_model_or_endpoint`.
-
-The response `model` field identifies the selected model. Request details show
-the workload, objective, selected model, fallback order, candidate scores,
-factor scores, benchmark IDs, exclusions, and algorithm version. Routing traces
-contain no prompt or response content.
-
-If model fallbacks are enabled in the workspace, Phaseo retries the remaining ranked models on
-`429`, `500`, `502`, `503`, or `504`. Each fallback passes the complete policy
-and provider-selection pipeline again. Client errors do not switch models.
-
-A fixed model selected by an attached dynamic route takes precedence. In that
-case, request details record the override and auto-router model fallbacks are
-disabled for the request.
-
-<Warning>
-  Spend profiles and model patterns are eligibility controls, not quality
-  guarantees. Validate the resulting model mix against your own workloads.
-</Warning>
-
-## Explain a routing decision
-
-Open **Dashboard -> Settings -> Usage -> Request logs**, select a request, then expand **Routing observability** under **Provider Responses**.
-
-The request log shows:
-
-- every ranked provider and its final score
-- the provider Phaseo selected and any providers it attempted
-- providers excluded before ranking, with the recorded reason
-- providers that were deranked by their rollout or routing status
-- the score inputs, weights, contributions, and multipliers used for each ranked provider
-
-Score factors are separated from recorded context. A score factor changes the final score for the active routing mode. Recorded context helps explain the decision but does not necessarily affect the score.
-
-For `balanced` text requests (Chat Completions, Responses and Messages), Phaseo ranks eligible providers by their expected cost per successful answer. That cost adds what a typical request for the model costs on the provider, using the model's measured prompt and output sizes and the provider's measured cache-hit rate, to the time spent waiting for the first token and the full response. It is then divided by the provider's recent success rate. Provider errors add a further penalty, and rate limits a smaller one. Providers close to the lowest cost share most of the traffic, and every provider keeps a small share so a recovery is noticed. To rank by price alone, send `provider.sort: "price"`. Other endpoints are scored on reliability, latency, tail latency, throughput, price, and token fit. The displayed calculation shows how each factor contributed to the final score instead of presenting every recorded metric as equally important.
-
-Pick a scenario to see how the cost per successful answer splits into tokens, waiting and failures, and how that sets each provider's share of traffic. The providers are examples.
-
-<RoutingCostExplainer />
-
-### Reliability and provider uptime
-
-The reliability sample is the value used by the score. It is calculated from provider outcomes; the success rate is shown as supporting context.
-
-These outcomes reduce provider uptime:
-
-- authentication failures (`401`)
-- payment failures (`402`)
-- model-not-found responses (`404`)
-- server errors (`500` and above)
-- errors after a response stream starts
-- successful HTTP responses that finish with an error reason
-
-These outcomes do not reduce provider uptime:
-
-- bad requests (`400`)
-- geographic restrictions (`403`)
-- oversized payloads (`413`)
-- rate limits (`429`)
-
-Geographic restrictions and rate limits are tracked separately because they do not show that the provider itself is unavailable.
-
-### Trace availability and privacy
-
-Complete routing traces are available for requests made after routing observability was enabled. Older requests may show a partial trace or no routing details.
-
-Routing traces are bounded and content-free. They contain the numbers and statuses needed to explain provider selection, but do not copy prompts, messages, or generated content into the trace.
-
-## Choose an exact provider in the model id
-
-Use `<provider-id>:<canonical-model-id>` when a request must use one specific provider-model pair:
-
-```json
-{
-  "model": "baseten:thinking-machines/inkling-small",
-  "input": "Hello"
-}
-```
-
-The qualifier disables cross-provider fallback for that request. Model suffixes remain part of the canonical model ID, including in identifiers such as `baseten:google/gemma-4-26b-a4b:free`.
-
-Read [Provider-qualified model IDs](./provider-qualified-models) for complete syntax, free-route validation, routing precedence, aliases, error codes, and request examples.
-
-## Control routing and fallbacks
-
-The current public fallback and routing controls are intentionally explicit:
-
-### Presets constrain the fallback pool
-
-In **Dashboard -> Settings -> Presets**, you can define:
-
-- allowed models
-- provider allow lists
-- provider ignore lists
-- default prompt and parameter behavior
-
-Those constraints are applied before provider selection, so a preset can intentionally narrow which providers are eligible for retries and failover.
-
-### Routing mode changes provider ranking
-
-In **Dashboard -> Settings -> Routing**, workspaces can tune how the Gateway ranks compatible providers:
-
-- `balanced`
-- `price`
-- `latency`
-- `throughput`
-
-From the CLI, run `phaseo settings update --routing-mode <mode>`.
-
-The same page also exposes beta and alpha channel toggles so preview traffic can be introduced intentionally instead of appearing as an untracked routing side effect.
-
-### BYOK fallback is explicit
-
-In **Dashboard -> Settings -> BYOK**, teams can choose whether a failed <Tooltip tip="Bring your own key: Phaseo routes the request with your own provider API key, and your provider bills the model usage directly.">BYOK</Tooltip> request is allowed to fall back to Phaseo credits. This is the current public control for the common "my own key failed, should the request still complete?" decision. Agents can set it with `byok_fallback_enabled` on `PATCH /v1/settings`, for example `phaseo settings update --body-json '{"byok_fallback_enabled":true}'`, and add provider keys with `phaseo byok create --provider <id> --name <name> --key-stdin`.
-
-### Dynamic routes attach policy to API keys
-
-In **Dashboard -> Settings -> Routing**, create a dynamic route when different
-API keys or request classes need different provider behavior. From the CLI, use
-`phaseo routing dynamic-routes create`, `set-keys` and `deploy`, or the
-`/v1/routing/dynamic-routes` API. A route can:
-
-- branch on nested request-body fields, request headers, custom metadata,
-  endpoint, model, or session ID
-- split traffic by percentage for A/B tests and gradual rollouts
-- enforce daily, weekly, or monthly request and cost limits using the
-  authenticated key's usage buckets
-- call a different model and choose its routing mode, provider preference, and
-  fallback policy
-- enable cache-aware and session-aware provider affinity
-- attach to one or more inference API keys
-
-Conditions expose true and false outputs. Rate and budget nodes expose within
-and exceeded outputs. Percentage selection is deterministic for a session or
-prompt-cache key, so a rollout does not randomly move the same cached
-conversation between branches.
-
-Saving creates an immutable draft version. Deploying a selected version copies
-that snapshot to the Gateway and invalidates policy caches for attached keys.
-Earlier versions remain available for rollback. Operational provider-health
-recommendations appear under **Insights**, separately from the flow editor.
-
-Custom metadata is available on the OpenAI-compatible text inference surfaces:
-
-```json
-{
-  "model": "openai/gpt-5-mini",
-  "metadata": {
-	    "customer_plan": "pro",
-	    "workspace": "acme"
-  }
-}
-```
-
-## Fallback behavior
-
-If a provider returns errors or rate limits, the Gateway can retry or route to another provider that supports the same model. You should still handle 429 and 5xx responses with exponential backoff.
+Most models are served by several providers. For each request the Gateway keeps the providers your rules allow, ranks them, and calls the best one. If that provider fails, it tries the next; if every provider fails with a retryable error, it can move on to a fallback model.
 
 ```mermaid
 flowchart TD
-  req["Request"] --> pol["Apply presets, guardrails and provider policy"]
-  pol --> rnk["Rank eligible providers by routing mode"]
+  req["Request"] --> pol["Apply presets, guardrails and provider rules"]
+  pol --> rnk["Rank eligible providers"]
   rnk --> prov["Call the top-ranked provider"]
   prov -->|"Success"| resp["Return the response"]
   prov -->|"Provider error or rate limit"| nextProv{{"Another eligible provider?"}}
@@ -306,168 +23,194 @@ flowchart TD
   fallbackCheck -->|"No"| err["Return the error"]
 ```
 
-Model nodes in a dynamic route can also define an ordered list of fallback
-models. Phaseo first exhausts the eligible provider attempts for the selected
-model. If the resulting response is retryable (`429`, `500`, `502`, `503`, or
-`504`), the Gateway reruns the complete policy and provider-selection pipeline
-for each fallback model in order. Client errors are returned immediately and do
-not switch models.
+Your client should still retry `429` and `5xx` responses with exponential backoff.
 
-Each fallback is independently checked against workspace model restrictions,
-guardrails, provider policy, pricing, and capability support. A route can store
-up to eight fallback models.
+## Choose how providers are ranked
 
-### Request-level model fallbacks
+| Mode | Ranks by | Use it when |
+| --- | --- | --- |
+| `balanced` (default) | Cost per successful answer | You want the best mix of price, speed and reliability. |
+| `price` | Price | Cost matters more than response time. |
+| `latency` | Time to first token | Responses must start fast. |
+| `throughput` | Output speed | Long outputs must finish fast. |
 
-`model` is required and is always the primary model. Add the optional
-`models` array to list fallback models for one request. Phaseo tries `model`
-first, then each `models` entry in order:
+Set the workspace default in **Dashboard -> Settings -> Routing**, with `phaseo settings update --routing-mode <mode>`, or with `routing_mode` on `PATCH /v1/settings`. For one request, send `provider.sort` or `routing.mode`, or add a suffix to the model ID:
+
+| Suffix | Mode | Example |
+| --- | --- | --- |
+| `:nitro` | `throughput` | `openai/gpt-6-astra:nitro` |
+| `:cheap` | `price` | `openai/gpt-6-astra:cheap` |
+| `:fast` | `latency` | `openai/gpt-6-astra:fast` |
+
+A suffix overrides `routing.mode`, `provider.sort`, and preset and workspace modes. Allow lists, regions, guardrails and price ceilings still apply.
+
+The Routing settings page also has beta and alpha channel toggles, so preview providers only get traffic when you opt in.
+
+## How balanced mode ranks providers
+
+For text requests (Chat Completions, Responses and Messages), `balanced` estimates each provider's **cost per successful answer**:
+
+- **Tokens:** what a typical request for this model costs on the provider, using the model's measured prompt and output sizes and the provider's measured cache-hit rate.
+- **Waiting:** the time to first token and to the full response, converted to dollars at the model's typical price per second.
+- **Failures:** the total divided by the provider's recent success rate, plus a penalty for provider errors and a smaller one for rate limits.
+
+Providers close to the lowest cost share most of the traffic. Every provider keeps a small share, so a recovery is noticed. Pick a scenario to see how it plays out (the providers are examples):
+
+<RoutingCostExplainer />
+
+Other endpoints are scored on reliability, latency, tail latency, throughput, price and token fit. If you're a provider, [How Providers Earn Traffic](./how-providers-earn-traffic) shows how to win a larger share.
+
+## Request-level model fallbacks
+
+List fallback models in `models`. Phaseo tries `model` first, then each entry in order:
 
 ```json
 {
-  "model": "openai/gpt-5-mini",
-  "models": ["anthropic/claude-sonnet-5-5", "google/gemini-2.5-flash"],
+  "model": "openai/gpt-6-astra",
+  "models": ["anthropic/claude-sonnet-5.5", "google/gemini-4-argon"],
   "input": "Summarize this incident report."
 }
 ```
 
-A request that sends `models` without `model` is rejected with `400`.
-Request-level fallbacks use the same machinery as dynamic-route fallbacks:
+Choose what each model returns to see when Phaseo moves on:
 
-- **Triggers.** The next model is tried only when the previous attempt, after
-  its own provider retries, ends with `429`, `500`, `502`, `503`, or `504`.
-  Client errors such as `400`, `401`, `402`, `403`, `404`, `408`, `413`, and
-  `422` are returned without switching models. A `429` from a Phaseo budget or
-  free-model quota reached while executing the request also moves to the next
-  model, because a different model may fit within the remaining limit.
-  When no provider serves the primary model at all, for example because it is
-  [retired](#retired-models), Phaseo also moves to the next model.
-  Authentication, API key rate limits, and other checks that fail before the
-  primary model runs return immediately.
-- **Limits.** `models` accepts 1 to 25 entries. Duplicates and entries equal to
-  `model` are ignored. Dynamic routes keep their own limit of eight fallbacks.
-- **Validation.** Each entry can be a model ID, a provider-qualified model ID,
-  or a preset such as `@support`. Each attempt is validated as its own request:
-  endpoint and modality support, requested parameters, workspace model
-  restrictions, guardrails, presets, pricing, and BYOK credentials. A fallback
-  that cannot serve the request is skipped and recorded in request logs; it
-  never replaces the failure you would otherwise receive. A fallback that
-  resolves to an attempt already made, with the same model and eligible
-  providers, is skipped.
-- **Logging and billing.** Every attempt is a separate request in your logs,
-  with its own usage and billing record, so each attempt is billed exactly as
-  it would be without fallbacks.
-- **Which model served the request.** The response `model` field shows the
-  model that served the request. Its routing trace lists the primary request
-  ID, the fallback order, and each earlier attempt with its status.
-- **Streaming.** Fallbacks happen only before the first byte is sent. An error
-  after a stream has started is returned in that stream.
-- **Video and music.** These requests fall back only while submitting the job.
-  Once a provider accepts a job, a later failure does not start a new job with
-  another model.
+<FallbackChainExplorer />
 
-`models` interacts with other routing controls as follows:
+**What moves to the next model.** A model is tried only after the previous one, with all its provider retries, ends in `429`, `500`, `502`, `503` or `504`. A `429` from a Phaseo budget or free-model quota also moves on, since another model may fit the remaining limit. So does a model that no provider serves any more, for example a [retired](#retired-models) one.
 
-- **Dynamic routes.** Fallbacks configured on an attached dynamic route take
-  precedence over `models`. A fixed model selected by a dynamic route still
-  applies to each attempt.
-- **Presets.** A preset can be the primary `model` or a `models` entry. Each
-  attempt applies its own preset constraints, so a preset can narrow the
-  providers a fallback may use.
-- **Auto Routing.** `phaseo/auto` already manages ranked fallbacks, so it
-  cannot be combined with `models` and cannot appear inside `models`.
+**What doesn't.** Client errors such as `400`, `401`, `402`, `403`, `404`, `408`, `413` and `422` return immediately. So do failures before the first model runs, such as authentication or API key rate limits.
 
-| Endpoint | `models` support |
+**Rules for the list:**
+
+- `model` is required; sending `models` alone returns `400`.
+- `models` takes 1 to 25 entries. Duplicates and copies of `model` are ignored.
+- Entries can be model IDs, [provider-qualified IDs](./provider-qualified-models) or presets such as `@support`.
+- Each attempt is validated as its own request (endpoint, parameters, workspace models, guardrails, presets, pricing, BYOK). A fallback that can't serve the request is skipped and logged; it never replaces the error you'd otherwise get. An attempt identical to one already made is skipped too.
+
+**Logs and billing.** Each attempt is a separate request with its own usage record, billed as if fallbacks didn't exist. The response `model` field names the model that answered, and its routing trace lists the primary request ID, the fallback order and each earlier attempt.
+
+**Streaming, video and music.** A stream falls back only before its first byte; after that, errors arrive in the stream. Video and music fall back only while the job is being submitted.
+
+**With other routing controls.** Fallbacks on an attached dynamic route take precedence over `models`, and a fixed model chosen by the route still applies to each attempt. A preset applies its own constraints to each attempt it's used in. [`phaseo/auto`](./auto-routing) manages its own fallbacks and can't be combined with `models`.
+
+| Endpoint | `models` |
 | --- | --- |
-| Chat Completions, Responses, Messages | Supported, including streaming before the first byte |
+| Chat Completions, Responses, Messages | Supported, including streams before the first byte |
 | Embeddings, Moderations, Rerank | Supported |
-| Image generations and edits | Supported, including multipart uploads |
-| Speech, transcriptions, and translations | Supported, including multipart uploads |
+| Image generation and edits | Supported, including multipart uploads |
+| Speech, transcription and translation | Supported, including multipart uploads |
 | OCR, Parse, Decisions | Supported |
 | Video and music generation | Supported at job submission |
-| Batches | Rejected with `400`; each batch row targets one model |
-| Realtime and live sessions | Rejected with `400`; a session binds one model |
-| Council runs | Rejected with `400`; models come from the run configuration |
+| Batches | `400`: each batch row targets one model |
+| Realtime and live sessions | `400`: a session binds one model |
+| Council runs | `400`: models come from the run configuration |
 
-Multipart endpoints accept repeated `models` fields, `models[]` fields, or one
-JSON array string.
+Multipart endpoints accept repeated `models` fields, `models[]` fields, or one JSON array string. See also [Rate limits](../api-reference/limits.mdx) and [Errors](../api-reference/errors.mdx).
 
-Read more in:
+## Pin one provider
 
-- [Rate limits](../api-reference/limits.mdx)
-- [Error handling](../api-reference/errors.mdx)
+Put the provider in front of the model ID to use exactly that provider:
+
+```json
+{
+  "model": "baseten:thinking-machines/inkling-small",
+  "input": "Hello"
+}
+```
+
+This turns off cross-provider fallback for the request. Suffixes stay part of the model ID, as in `baseten:google/gemma-4-26b-a4b:free`. [Provider-qualified model IDs](./provider-qualified-models) covers the full syntax and errors.
+
+## Limit which providers are used
+
+| Control | Where | What it does |
+| --- | --- | --- |
+| [Presets](./presets) | **Settings -> Presets** | Allowed models and provider allow or ignore lists, applied before ranking, so they also limit fallbacks. |
+| [Regional routing](./regional-routing) | Request or workspace | Keeps execution or data in a region. |
+| Dynamic routes | **Settings -> Routing** | Per-key rules: see below. |
+| BYOK fallback | **Settings -> BYOK** | Whether a failed BYOK request may retry on Phaseo credits. |
+
+### Attach routing rules to API keys
+
+A dynamic route is a flow of rules attached to one or more inference API keys. It can:
+
+- branch on request-body fields, headers, custom `metadata`, endpoint, model or session ID
+- split traffic by percentage for A/B tests and rollouts
+- cap daily, weekly or monthly requests or cost per key
+- switch model, routing mode, provider preference and fallback models (up to eight)
+- turn on cache-aware and session-aware provider affinity
+
+Conditions have true and false outputs; rate and budget nodes have within and exceeded outputs. Percentage splits are deterministic per session or prompt-cache key, so a cached conversation doesn't move between branches.
+
+Saving creates an immutable draft version. Deploying copies that version to the Gateway and clears policy caches for its keys; earlier versions stay available for rollback. Provider-health recommendations appear under **Insights**. From a script, use the `/v1/routing/dynamic-routes` API with a management key.
+
+Custom metadata goes in the request body on the OpenAI-compatible text endpoints:
+
+```json
+{
+  "model": "openai/gpt-6-astra",
+  "metadata": { "customer_plan": "pro", "workspace": "acme" }
+}
+```
+
+## Keep a conversation on one provider
+
+Cache-aware routing is on by default for text generation. A request that sends `prompt_cache_key` or `session_id`, or opts into caching with `cache_control` (top-level, in `provider_options.anthropic`, or as a `cache_control` or `prompt_cache_breakpoint` mark on a message block or tool), is pinned to the provider and route that served its first successful request. Other requests are pinned for 15 minutes once a provider reports a cache read or write for the same opening context, if that provider's cached input is cheaper than its standard input.
+
+| | |
+| --- | --- |
+| Pin lifetime | 15 minutes to 24 hours, following the provider's cache retention. With `session_id`, up to 24 hours of session activity. |
+| Scope | Per workspace. With `session_id`, keyed to the session instead of the opening context. |
+| A pin moves when | The provider's circuit breaker opens, its error rate is high, Phaseo's managed quota on it runs out, or your rules no longer allow it. |
+
+Turn it off for one request with `provider.cache_aware_routing: false`, or keep cache affinity but ignore the session with `routing.session_affinity: false`:
+
+```json
+{
+  "model": "openai/gpt-6-astra",
+  "session_id": "support-session-42",
+  "routing": { "session_affinity": false }
+}
+```
+
+[Provider affinity](./prompt-caching.mdx#provider-affinity) lists the hints Phaseo sends to each provider.
+
+## Explain a routing decision
+
+Open **Dashboard -> Settings -> Usage -> Request logs**, select a request, and expand **Routing observability** under **Provider Responses**. It shows:
+
+- every ranked provider with its final score, and which were selected and attempted
+- providers excluded before ranking, with the reason
+- providers deranked by their rollout or routing status
+- each score's inputs, weights, contributions and multipliers
+
+Score factors change the score; recorded context explains the decision without necessarily affecting it. Traces hold numbers and statuses only, never prompts or output. Requests made before routing observability was enabled may show a partial trace or none.
+
+### What counts against a provider's uptime
+
+| Lowers uptime | Doesn't |
+| --- | --- |
+| `401` authentication failures | `400` bad requests |
+| `402` payment failures | `403` geographic restrictions |
+| `404` model not found | `413` oversized payloads |
+| `500` and above | `429` rate limits |
+| Errors after a stream starts | |
+| A `200` that finishes with an error reason | |
+
+Geographic restrictions and rate limits are tracked separately, because they don't mean the provider is down. For production, log request IDs, status codes and model IDs so you can match failures to these traces.
 
 ## Retired models
 
-A retired model is still served while any provider serves it. Once none does,
-requests fail with `410 model_retired`, unless the workspace has turned on
-retired model routing to send them to a replacement. Your own `models` list is
-always tried before a replacement. See
-[Model Deprecation and Retirement](./model-retirement.mdx).
-
-## Cache-aware and session-aware affinity
-
-Cache-aware routing is enabled by default on text generation endpoints. Requests
-that send `prompt_cache_key` or `session_id`, or opt into caching with
-`cache_control` (top-level, `provider_options.anthropic.cache_control`, or a
-`cache_control` or `prompt_cache_breakpoint` mark on a message block or tool),
-are pinned to the provider and route that served their first successful request.
-Other requests are pinned for 15 minutes once a provider reports a prompt-cache
-read or write for the same opening context, as long as that provider's cached
-input is cheaper than its standard input.
-
-Pins are kept per workspace and last from 15 minutes to 24 hours, following the
-provider's cache retention. A pin moves only when its provider's circuit breaker
-opens, its recent error rate is high, Phaseo's managed quota on it runs out, or
-the active route, preset, guardrail, or request policy no longer allows it.
-
-When `session_id` is present, the cache affinity is keyed to the session instead
-of only the opening context, and is retained for up to 24 hours of session
-activity. See [Provider affinity](./prompt-caching.mdx#provider-affinity) for pin
-lifetimes and the affinity hints Phaseo sends to each provider.
-
-Opt out for one request without changing workspace or dynamic-route defaults:
-
-```json
-{
-  "model": "openai/gpt-5",
-  "session_id": "support-session-42",
-  "provider": {
-    "cache_aware_routing": false
-  }
-}
-```
-
-To retain context cache affinity but ignore the session identifier for one
-request, use:
-
-```json
-{
-  "model": "openai/gpt-5",
-  "session_id": "support-session-42",
-  "routing": {
-    "session_affinity": false
-  }
-}
-```
+A retired model keeps working while any provider still serves it. After that, requests fail with `410 model_retired`, unless the workspace sends them to a replacement with retired model routing. Your own `models` list is always tried first. See [Model Deprecation and Retirement](./model-retirement.mdx).
 
 ## BYOK considerations
 
-Use BYOK when you want Phaseo routing and observability while the selected provider bills model usage to your own account.
+With <Tooltip tip="Bring your own key: Phaseo routes the request with your own provider API key, and your provider bills the model usage directly.">BYOK</Tooltip>, Phaseo routes and logs the request while your provider bills the model usage.
 
-- The first 250,000 completed BYOK requests in each UTC calendar month have no Phaseo service fee.
-- After that allowance, Phaseo charges 2.5% of provider-equivalent cost.
-- Keep at least $1 of Phaseo credit available. This protects managed fallback and post-allowance fee collection; provider charges still go directly to your provider account.
-- Your provider's quotas, data policy, model access, and account restrictions still apply.
+| | |
+| --- | --- |
+| Service fee | None for the first 250,000 completed BYOK requests each UTC month, then 2.5% of provider-equivalent cost. |
+| Phaseo credit | Keep at least $1 available, for managed fallback and fees after the allowance. |
+| Provider rules | Your provider's quotas, data policy, model access and account limits still apply. |
+| Storage | Keys are encrypted with AES-256-GCM, bound to their workspace and provider. |
 
-Provider credentials are encrypted with AES-256-GCM and bound to their workspace and provider before storage. Scope each key to the models and Phaseo API keys that need it, and disable managed fallback if a request must never use Phaseo credits.
-
-## What to log
-
-For production workloads, log request ids, response status codes, and model ids so you can correlate failures and confirm routing behavior when debugging.
-
-## Related guides
-
-- [Presets](./presets)
-- [Model Deprecation and Retirement](./model-retirement)
-- [Feature Parity Matrix](../migration-guides/feature-parity-matrix)
+Scope each key to the models and API keys that need it. To stop a failed BYOK request from retrying on Phaseo credits, turn off fallback in **Dashboard -> Settings -> BYOK**, or set `byok_fallback_enabled` on `PATCH /v1/settings` with a management key. Add keys in the same place, or with `POST /v1/byok` and a management key.

@@ -1,8 +1,6 @@
-"use client";
-
 import { useState, useTransition, type ReactNode } from "react";
 import { FingerprintPattern, Plus } from "lucide-react";
-import { useFormatter, useTranslations } from "next-intl";
+import { useFormatter, useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import {
 	createTrustedWorkload,
@@ -10,7 +8,7 @@ import {
 	setTrustedWorkloadStatus,
 	updateTrustedWorkload,
 	type TrustedWorkloadActionError,
-} from "@/app/(dashboard)/settings/trusted-workloads/actions";
+} from "@/features/settings/trusted-workloads/actions";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -255,7 +253,7 @@ function PolicyRow({ policy, onEdit }: { policy: SettingsWorkloadIdentityPolicy;
 
 	function toggle(next: boolean) {
 		startPending(async () => {
-			const result = await write(setTrustedWorkloadStatus(policy.id, next ? "active" : "disabled"));
+			const result = await write(setTrustedWorkloadStatus({ data: { id: policy.id, status: next ? "active" : "disabled" } }));
 			if (!result.ok) {
 				toast.error(actionError(result, t("errors.saveFailed")));
 				return;
@@ -266,7 +264,7 @@ function PolicyRow({ policy, onEdit }: { policy: SettingsWorkloadIdentityPolicy;
 
 	function remove() {
 		startPending(async () => {
-			const result = await write(deleteTrustedWorkload(policy.id));
+			const result = await write(deleteTrustedWorkload({ data: policy.id }));
 			if (!result.ok) {
 				toast.error(actionError(result, t("errors.deleteFailed")));
 				return;
@@ -345,8 +343,8 @@ function PolicyDialog({ state, onClose }: { state: Exclude<EditorState, null>; o
 		}
 		startSaving(async () => {
 			const result = existing
-				? await write(updateTrustedWorkload(existing.id, toUpdatePayload(built.payload)))
-				: await write(createTrustedWorkload(built.payload));
+				? await write(updateTrustedWorkload({ data: { id: existing.id, payload: toUpdatePayload(built.payload) } }))
+				: await write(createTrustedWorkload({ data: built.payload }));
 			if (!result.ok) {
 				toast.error(actionError(result, t("errors.saveFailed")));
 				return;

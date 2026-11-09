@@ -1,10 +1,10 @@
 import { ReactNode } from "react";
-import Image from "next/image";
+import Image from "@/components/image";
 
 import type { CountrySummary } from "@/lib/fetchers/countries/types";
 import ModelPageToc, { type ModelPageTocItem } from "@/components/(data)/model/ModelPageToc";
 import EntityStickyHeader from "@/components/(data)/EntityStickyHeader";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 interface CountryDetailShellProps {
 	country?: CountrySummary;

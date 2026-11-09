@@ -1,0 +1,166 @@
+---
+icon: "radio-tower"
+title: "خطافات دورة الحياة"
+description: "استقبل حدثًا في كل مرحلة من تشغيل الوكيل لتحديث واجهة، أو كتابة سجلات تدقيق، أو تغذية القياس عن بُعد."
+---
+
+مرّر معالج أحداث إلى تشغيل أو متابعة لاستقبال حدث عند بدء التشغيل، وعند بدء كل دور للنموذج وانتهائه، وعند تنفيذ كل أداة، وعند توقف التشغيل مؤقتًا، وعند انتهائه. استخدمه لتحديث واجهتك، أو كتابة سجلات التدقيق، أو تغذية نظام القياس عن بُعد الذي لديك.
+
+<CodeGroup>
+
+```typescript TypeScript
+const result = await agent.run({
+  input,
+  client,
+  onEvent(event) {
+    console.log(event.type, event.runId);
+  },
+});
+```
+
+```python Python
+def on_event(event):
+    logger.info("%s %s", event["type"], event["run_id"])
+
+result = agent.run(input="Summarise this ticket", client=client, on_event=on_event)
+```
+
+```go Go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{
+  Input:  prompt,
+  Client: client,
+  OnEvent: func(event phaseoagent.AgentEvent) {
+    logger.Info("agent event",
+      "type", event.Type,
+      "run_id", event.RunID,
+      "details", event.Details,
+    )
+  },
+})
+```
+
+```csharp C#
+var result = await agent.Run(new RunOptions
+{
+    Input = prompt,
+    Client = client,
+    OnEvent = value => logger.LogInformation(
+        "{EventType} {RunId} {Details}", value.Type, value.RunId, value.Details),
+});
+```
+
+```php PHP
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    onEvent: function (array $event) use ($logger): void {
+        $logger->info("agent event", $event);
+    }
+);
+```
+
+```ruby Ruby
+result = agent.run(
+  input: prompt,
+  client: client,
+  on_event: ->(event) { logger.info("agent event #{event.inspect}") }
+)
+```
+
+```java Java
+var result = agent.run(new AgentSdk.RunOptions(
+    prompt, client, null, null, null, null, null, null,
+    event -> logger.info("{} {} {}", event.type(), event.runId(), event.details()),
+    null));
+```
+
+```rust Rust
+use phaseo_agent::{AgentEvent, RunOptions};
+
+let mut on_event = |event: &AgentEvent| {
+    println!("{} run={} details={}", event.event_type, event.run_id, event.details);
+};
+
+let result = agent.run_with_events(
+    &mut client,
+    RunOptions::new("Check project health"),
+    Some(&mut on_event),
+)?;
+```
+
+</CodeGroup>
+
+## أين يوضع المعالج وماذا يستقبل
+
+| اللغة | المعالج | شكل الحدث |
+| --- | --- | --- |
+| TypeScript | `onEvent` في خيارات التشغيل والمتابعة | كائن يتضمن `type` و`runId` و`agentId` و`timestamp`، إضافة إلى حقول الحدث بصيغة camelCase (`stepIndex`، `toolCallId`) |
+| Python | `on_event` في `run()` أو `stream()` أو متابعة | قاموس يتضمن `type` و`run_id` و`agent_id` و`timestamp` و`status`، إضافة إلى مفاتيح الحدث |
+| Go | `OnEvent` في `RunOptions` أو `ContinueOptions` | `AgentEvent` يتضمن `Type` و`RunID` و`AgentID` و`Timestamp` و`Status` و`Details` |
+| C# | `OnEvent` في `RunOptions` أو `ContinueOptions` | `AgentEvent` يتضمن `Type` و`RunId` و`AgentId` و`Timestamp` و`Status` و`Details` |
+| PHP | دالة `onEvent` قابلة للاستدعاء في `run()` أو `continueRun()` | مصفوفة تتضمن `type` و`run_id` و`agent_id` و`timestamp` و`status`، مع دمج مفاتيح الحدث في المستوى الأعلى |
+| Ruby | `on_event:` في `run` أو `continue_run` | Hash يتضمن `:type` و`:run_id` و`:agent_id` و`:timestamp` و`:status`، مع دمج مفاتيح الحدث بوصفها رموزًا |
+| Java | `Consumer<AgentEvent>` بوصفه الوسيط `onEvent` في `RunOptions` أو `ContinueOptions` | `AgentEvent` يتضمن `type()` و`runId()` و`agentId()` و`timestamp()` و`status()` و`details()` |
+| Rust | دالة رد نداء تُمرَّر إلى `run_with_events` أو `continue_with_events` | `&AgentEvent` يتضمن `event_type` و`run_id` و`agent_id` و`timestamp_ms` و`details` (JSON) |
+
+## الأحداث التي يطلقها وقت التشغيل
+
+تُسرد مفاتيح التفاصيل أدناه بصيغة snake_case؛ وتستخدم TypeScript صيغة camelCase.
+
+| الحدث | متى | التفاصيل | اللغات |
+| --- | --- | --- | --- |
+| `run.started` | يبدأ تشغيل | لا شيء | الكل |
+| `run.resumed` | تبدأ متابعة | `previous_status` | الكل |
+| `step.started` | يبدأ دور للنموذج | `step_index` | الكل عدا Rust |
+| `model.requested` | كل محاولة للنموذج، بما فيها إعادة المحاولات | `step_index`، `attempt`، `model` | الكل عدا Rust |
+| `model.retrying` | قبل إعادة المحاولة | | TypeScript |
+| `model.completed` | استجاب النموذج | `step_index`، `attempt`، `request_id`، `model` | الكل عدا Rust |
+| `model.failed` | فشل طلب إلى النموذج | | TypeScript |
+| `tool.started` | تبدأ أداة | `tool_call_id`، `tool_name` | الكل |
+| `tool.preliminary_result` | أبلغت الأداة عن تقدّم | `tool_call_id`، `tool_name`، `result` | الكل عدا Rust |
+| `tool.completed` | عادت أداة | `tool_call_id`، `tool_name`، `output` | الكل |
+| `tool.failed` | فشلت أداة (يختلف المُطلِق؛ راجع [الأحداث والأخطاء](./events-and-errors#which-events-fire-when-something-fails)) | `tool_call_id`، `tool_name`، `error` | الكل عدا Rust |
+| `step.completed`، `step.failed`، `step.cancelled` | تنتهي خطوة | `step_index` | TypeScript |
+| `checkpoint.saved` | انتهت خطوة | `step_index` | الكل عدا Rust |
+| `history.repaired` | أجابت متابعة عن استدعاءات أدوات بقيت دون نتيجة | | TypeScript |
+| `run.waiting_for_human` | توقف التشغيل مؤقتًا | `step_index`، `pause` | الكل عدا Rust |
+| `run.completed` | قدّم النموذج إجابة نهائية | `output` | الكل |
+| `run.stopped` | أنهى شرط إيقاف التشغيل (TypeScript) أو بُلغ حد الخطوات (Rust) | `stop_reason` (TypeScript)، `reason` (Rust) | TypeScript، Rust |
+| `run.cancelled` | أُلغي التشغيل | | TypeScript |
+| `run.failed` | فشل التشغيل (يختلف المُطلِق؛ راجع [الأحداث والأخطاء](./events-and-errors#which-events-fire-when-something-fails)) | `error` | الكل عدا Rust |
+| `response.output_text.delta` و`response.reasoning.delta` و`response.item` وأحداث `response.*` الأخرى | في عمليات التشغيل المبثوثة فقط | | الكل عدا Rust |
+
+تستخدم Rust `0.2` أسماءها الخاصة لبعض الأحداث:
+
+| حدث Rust | المكافئ | التفاصيل |
+| --- | --- | --- |
+| `model.request.started` | `step.started` و`model.requested`، ويُرسل مرة واحدة لكل خطوة لا لكل محاولة | `step_index` |
+| `model.response.completed` | `model.completed` | `step_index`، `attempts` |
+| `tool.started`، `tool.completed` | الأحداث نفسها | `tool_call_id`، `name`؛ ويضيف `tool.completed` الحقل `is_error` |
+| `run.paused` | `run.waiting_for_human` | لا شيء |
+| `run.stopped` | يُرسل عند بلوغ حد الخطوات | `reason` |
+
+يرسل التشغيل الذي ينتهي بسبب [شرط إيقاف](./stop-conditions) الحدث `run.stopped` في TypeScript، ولا يرسل أي حدث نهائي في Python وGo وC# وPHP وRuby وJava؛ اقرأ حالة التشغيل بدلًا من ذلك. في TypeScript، يُرسل `step.completed` بعد حفظ الخطوة كنقطة حفظ، لذا يمكن لمستهلكي الحفظ والقياس عن بُعد التعامل معه كحد ثابت.
+
+## أحداث البث
+
+مع البث، تصل أحداث دورة الحياة نفسها إلى جانب أحداث `response.*` الخاصة بالنموذج. في TypeScript وPython وGo وC# وJava يستقبلها المعالج؛ وفي PHP وRuby تظهر أيضًا في `fullStream()` / `full_stream`. لا يتوفر البث في Rust. تتناول صفحة [البث](./streaming) مستهلكي البث.
+
+## أبقِ المعالجات سريعة
+
+ينتظر وقت التشغيل المعالج قبل أن يتابع، لذا عُد بسرعة وانقل أعمال التخزين أو الشبكة البطيئة إلى طابور. احجب مدخلات الأدوات ومخرجاتها الحساسة قبل أن تغادر الأحداث عمليتك.
+
+| اللغة | كيف يعمل المعالج |
+| --- | --- |
+| TypeScript | يُنتظر (await) قبل أن يتابع التشغيل |
+| Python | يُستدعى بشكل متزامن |
+| Go | ضمن التدفق؛ تستدعيه الأدوات المتزامنة من عدة goroutines، لذا اجعله آمنًا للاستخدام المتزامن |
+| C# | ضمن التدفق؛ تستدعيه الأدوات المتزامنة من عدة مهام، لذا اجعله آمنًا للخيوط |
+| PHP | ضمن التدفق |
+| Ruby | ضمن التدفق؛ تستدعيه الأدوات المتزامنة من خيوطها، لذا اجعله آمنًا للخيوط |
+| Java | ضمن التدفق؛ تستدعيه الأدوات المتزامنة من خيوط المجمّع، لذا اجعله آمنًا للخيوط |
+| Rust | على خيط التشغيل |
+
+## اختر الأحداث لواجهة منتج
+
+استخدم `response.output_text.delta` لنص الإجابة المباشر، وأحداث الأدوات لبطاقات استدعاء الأدوات ومؤشرات التقدم، و`run.waiting_for_human` (في Rust: `run.paused`) لعرض عناصر الموافقة أو الإدخال، وأحداث التشغيل النهائية لإغلاق حالات التحميل. للحصول على سجل محلي لعمليات تشغيل كاملة أثناء التطوير، استخدم [DevTools](./devtools).

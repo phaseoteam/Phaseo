@@ -1263,7 +1263,7 @@ const PROVIDER_PROFILES: ProviderProfile[] = [
 	},
 	{
 		id: "wafer",
-		aliases: ["wafer-zdr"],
+		aliases: ["wafer-zdr", "wafer-us"],
 		textOnly: true,
 		text: {
 			paramPolicy: {

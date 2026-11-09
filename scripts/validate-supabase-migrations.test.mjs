@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { orderBaseMigrationFiles, validateMigrationOrder } from "./validate-supabase-migrations.mjs";
+import { existingMigrationChangeErrors, orderBaseMigrationFiles, validateMigrationOrder } from "./validate-supabase-migrations.mjs";
 
 test("checks order against the target branch tip as well as a stale pull request base", () => {
 	const trees = {
@@ -71,4 +71,33 @@ test("accepts the first migration in a repository", () => {
 		),
 		[],
 	);
+});
+
+const rewrite = { status: "M", paths: ["supabase/migrations/20261106230930_refuse_oauth_client_writes.sql"] };
+const marked = (reason) => `-- phaseo:rewrite-unapplied-migration reason: ${reason}\nselect 1;`;
+
+test("accepts an in-place rewrite of a never-applied migration with a specific reason", () => {
+	assert.deepEqual(
+		existingMigrationChangeErrors(rewrite, () => marked("never applied in any environment; the original deadlocked in production db push and rolled back")),
+		[],
+	);
+});
+
+test("rejects an in-place change without the unapplied-rewrite marker", () => {
+	assert.match(existingMigrationChangeErrors(rewrite, () => "select 1;").join("\n"), /immutable.*rewrite-unapplied-migration/);
+});
+
+test("rejects the unapplied-rewrite marker with an empty or vague reason", () => {
+	for (const reason of ["", "   ", "rewrite", "never ran"]) {
+		assert.match(existingMigrationChangeErrors(rewrite, () => marked(reason)).join("\n"), /immutable/, JSON.stringify(reason));
+	}
+});
+
+test("never lets the marker excuse deleting or renaming a migration, or changing the replay baseline", () => {
+	const read = () => marked("never applied in any environment; it rolled back in production");
+	for (const change of [
+		{ status: "D", paths: ["supabase/migrations/20261106230930_refuse_oauth_client_writes.sql"] },
+		{ status: "R100", paths: ["supabase/migrations/20261106230930_a.sql", "supabase/migrations/20261106230930_b.sql"] },
+		{ status: "M", paths: ["supabase/baseline/schema.sql"] },
+	]) assert.match(existingMigrationChangeErrors(change, read).join("\n"), /immutable/, change.status);
 });

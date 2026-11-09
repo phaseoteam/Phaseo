@@ -1,29 +1,27 @@
 ---
 icon: "audio-lines"
-title: "TTS / STT (texto a voz / voz a texto, AI SDK)"
-sidebarTitle: "TTS / STT (AI SDK)"
-description: "Reconocimiento de voz (STT) y síntesis de voz (TTS) con modelos del proveedor Phaseo."
+title: "TTS / STT (AI SDK)"
+sidebarTitle: "TTS / STT"
+description: "Voz a texto (STT) y texto a voz (TTS) con modelos del proveedor de Phaseo."
 ---
 
-Usa `experimental_transcribe` con `transcriptionModel` y `experimental_generateSpeech` con `speechModel`.
+Pasa `phaseo.transcriptionModel(modelId)` a `transcribe` para convertir voz en texto, y `phaseo.speechModel(modelId)` a `generateSpeech` para convertir texto en voz. El proveedor sube el audio a `/v1/audio/transcriptions` como formulario multipart y envía las solicitudes de voz a `/v1/audio/speech`.
 
 ```ts
 import { readFileSync, writeFileSync } from "node:fs";
 import { phaseo } from "@phaseo/ai-sdk-provider";
-import { experimental_generateSpeech, experimental_transcribe } from "ai";
+import { generateSpeech, transcribe } from "ai";
 
-const audioInput = readFileSync("./audio.mp3");
-
-const transcription = await experimental_transcribe({
+const transcription = await transcribe({
   model: phaseo.transcriptionModel("openai/whisper-1"),
-  audioData: new Blob([audioInput], { type: "audio/mpeg" }),
+  audio: readFileSync("./audio.mp3"),
 });
 
 console.log(transcription.text);
 console.log(transcription.providerMetadata);
 
-const speech = await experimental_generateSpeech({
-  model: phaseo.speechModel("openai/tts-1"),
+const speech = await generateSpeech({
+  model: phaseo.speechModel("openai/gpt-4o-mini-tts"),
   text: "Hello from Phaseo audio.",
   voice: "alloy",
   outputFormat: "mp3",
@@ -33,9 +31,10 @@ writeFileSync("./speech.mp3", Buffer.from(speech.audio.uint8Array));
 console.log(speech.providerMetadata);
 ```
 
-## Notas
+`audio` acepta un `Buffer`, `Uint8Array`, `ArrayBuffer`, una cadena base64 o una `URL`. AI SDK 7 sigue exportando los nombres anteriores `experimental_transcribe` y `experimental_generateSpeech` como alias.
 
-- Las funciones de audio actuales de AI SDK siguen siendo experimentales; es posible que sus nombres cambien cuando se publiquen las API estables de upstream.
-- Los formatos de entrada y salida de audio dependen del modelo.
-- Ajusta el tamaño de los datos y los tiempos de espera a la duración de los archivos largos.
-- Reintenta las respuestas transitorias `429` y `5xx`.
+## Gestionar audio largo o que falla
+
+- Los formatos de entrada y salida compatibles dependen del modelo.
+- Aumenta los tiempos de espera para archivos largos y mantén las subidas dentro del límite de tamaño del modelo (25 MB en la mayoría de los modelos).
+- Reintenta con espera progresiva las respuestas transitorias `429` y `5xx`.

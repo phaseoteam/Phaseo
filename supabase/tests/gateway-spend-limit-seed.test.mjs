@@ -55,7 +55,7 @@ try {
   assert.ok(migration.includes((await schema('public/functions/workspace_department_budget_status.sql')).trim()),
     'public/functions/workspace_department_budget_status.sql matches its migration');
   // Spend guardrails (phase D) redefine the seed last; that migration is checked in spend-guardrails.test.mjs.
-  const spendGuardrailsMigration = await readFile(new URL('../migrations/20261105120000_spend_guardrails.sql', import.meta.url), 'utf8');
+  const spendGuardrailsMigration = await readFile(new URL('../migrations/20261109120000_spend_guardrails.sql', import.meta.url), 'utf8');
   assert.ok(spendGuardrailsMigration.includes((await schema('public/functions/gateway_spend_limit_seed.sql')).trim()),
     'public/functions/gateway_spend_limit_seed.sql matches its latest migration');
   assert.ok(attributionMigration.includes((await schema('private/functions/department_budget_key_departments.sql')).trim()),

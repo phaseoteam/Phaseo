@@ -1,0 +1,174 @@
+---
+icon: "music"
+title: "TTS（テキスト読み上げ）"
+description: "どの Phaseo SDK からでも POST /v1/audio/speech でテキストを音声に変換します。"
+---
+
+テキストを `POST /v1/audio/speech` に送ると、指定した形式の読み上げ音声が返ってきます。例では、[インストール](./installation)のとおりに作成した `client` を使います。
+
+<CodeGroup>
+
+```typescript TypeScript
+import { writeFile } from "node:fs/promises";
+
+const audio = await client.generateSpeech({
+  model: "openai/gpt-4o-mini-tts",
+  input: "Hello world",
+  voice: "alloy",
+  format: "mp3",
+});
+
+await writeFile("hello.mp3", Buffer.from(await audio.arrayBuffer()));
+```
+
+```python Python
+audio = client.generate_speech({
+    "model": "openai/gpt-4o-mini-tts",
+    "input": "Hello world",
+    "voice": "alloy",
+    "format": "mp3",
+})
+
+with open("hello.mp3", "wb") as file:
+    file.write(audio)
+```
+
+```go Go
+audio, err := client.CreateSpeech(context.Background(), map[string]interface{}{
+  "model":  "openai/gpt-4o-mini-tts",
+  "input":  "Hello world",
+  "voice":  "alloy",
+  "format": "mp3",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Printf("%T\n", audio) // check the concrete type before writing it to a file
+```
+
+```csharp C#
+var audio = await client.CreateSpeech(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-4o-mini-tts",
+    ["input"] = "Hello world",
+    ["voice"] = "alloy",
+    ["format"] = "mp3",
+});
+```
+
+```php PHP
+$audio = $client->createSpeech([
+    'model' => 'openai/gpt-4o-mini-tts',
+    'input' => 'Hello world',
+    'voice' => 'alloy',
+    'format' => 'mp3',
+]);
+```
+
+```ruby Ruby
+audio = client.generate_speech(
+  model: 'openai/gpt-4o-mini-tts',
+  input: 'Hello world',
+  voice: 'alloy',
+  format: 'mp3'
+)
+```
+
+```java Java
+String body = """
+{
+  "model": "openai/gpt-4o-mini-tts",
+  "input": "Hello world",
+  "voice": "alloy",
+  "format": "mp3"
+}
+""";
+
+byte[] audio = client.rawClient().requestBytes("POST", "/audio/speech", null, null, body);
+java.nio.file.Files.write(java.nio.file.Path.of("hello.mp3"), audio);
+```
+
+</CodeGroup>
+
+## 言語ごとのメソッド
+
+| 言語 | メソッド | 戻り値 |
+| --- | --- | --- |
+| TypeScript | `client.generateSpeech(request)` | `Blob` |
+| Python | `client.generate_speech(request)` または `client.audio.speech.create(request)` | `bytes` |
+| Go | `client.CreateSpeech(ctx, req)` | `interface{}`。ファイルに書き込む前に具体的な型を確認してください |
+| C# | `client.CreateSpeech(request)` | `object?`。ファイルに書き込む前に具体的な型を確認してください |
+| PHP | `$client->createSpeech($request)` | 音声。ファイルに書き込む前に値の型を確認してください |
+| Ruby | `client.generate_speech(...)`、別名 `create_speech` | 音声。ファイルに書き込む前に値のクラスを確認してください |
+| Java | 音声合成のメソッドはありません。`client.rawClient().requestBytes("POST", "/audio/speech", ...)` で JSON 本文を送信します | `byte[]` |
+
+Rust には音声合成のメソッドがなく、`post()` ヘルパーはレスポンスを JSON として解析するため、音声を返せません。
+
+## パラメーター
+
+どの SDK でも、フィールド名は JSON 本文のフィールドです。`format` を使ってください。API は `response_format` も受け付けますが、TypeScript のリクエスト型はこれを拒否します。
+
+| フィールド | 注記 |
+| --- | --- |
+| `model` | 必須。音声合成モデルの ID。 |
+| `input` | 必須。読み上げるテキスト。多くのプロバイダーは最大 4,096 文字まで受け付けます。ElevenLabs のモデルは、モデルによって 5,000〜40,000 文字まで使えます。 |
+| `voice` | プロバイダー間で正規化された音声の別名（推奨）、プロバイダー独自の音声の値、または `id` か `name` を持つオブジェクト。ルーティング先のプロバイダーで有効な音声でない場合、API は `param: "voice"` 付きの `400` を返します。 |
+| `format` | `mp3`、`wav`、`ogg`、`aac`、`flac`、`opus`、`pcm` のいずれか。 |
+| `speed` | 再生速度。`0.25`〜`4`。 |
+| `instructions` | スタイルの指示（モデルが対応している場合）。 |
+| `config` | プロバイダー固有の設定。下記を参照してください。 |
+| `provider` | プロバイダーのルーティング設定。 |
+
+完全なスキーマは [Speech API リファレンス](/ja/v1/api-reference/endpoint/audio-speech)にあります。
+
+## プロバイダー独自の音声を設定する
+
+プロバイダーの正確な音声を `config` の下に渡します。同じ入れ子のオブジェクトは、どの SDK のリクエストマップでも使えます。
+
+<CodeGroup>
+
+```typescript TypeScript
+// ElevenLabs: pick an exact voice ID
+await client.generateSpeech({
+  model: "eleven-labs/eleven-v3",
+  input: "Hello from ElevenLabs",
+  voice: "rachel",
+  config: {
+    elevenlabs: {
+      voice_id: "21m00Tcm4TlvDq8ikWAM",
+    },
+  },
+});
+
+// Google: pick an exact voice name
+await client.generateSpeech({
+  model: "google/gemini-3.1-flash-tts-preview",
+  input: "Hello from Gemini",
+  voice: "kore",
+  config: {
+    google: {
+      voice_name: "Kore",
+    },
+  },
+});
+```
+
+```python Python
+# ElevenLabs: pick an exact voice ID
+client.generate_speech({
+    "model": "eleven-labs/eleven-v3",
+    "input": "Hello from ElevenLabs",
+    "voice": "rachel",
+    "config": {"elevenlabs": {"voice_id": "21m00Tcm4TlvDq8ikWAM"}},
+})
+
+# Google: pick an exact voice name
+client.generate_speech({
+    "model": "google/gemini-3.1-flash-tts-preview",
+    "input": "Hello from Gemini",
+    "voice": "kore",
+    "config": {"google": {"voice_name": "Kore"}},
+})
+```
+
+</CodeGroup>

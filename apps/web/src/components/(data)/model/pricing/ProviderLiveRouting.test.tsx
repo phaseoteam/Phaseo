@@ -1,12 +1,13 @@
+import { expect, test, vi } from "vitest";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { load } from "cheerio";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import catalogue from "../../../../../messages/en-GB/catalogue.json";
 import type { ProviderRoutingStatus } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
 import { ProviderLiveRoutingIndicator, liveRoutingState, useLiveRouting } from "./ProviderLiveRouting";
 
-jest.mock("@/i18n/navigation", () => ({
+vi.mock("@/i18n/navigation", () => ({
 	Link: ({ href, children, ...props }: { href: string; children: ReactNode }) => <a href={href} {...props}>{children}</a>,
 }));
 
@@ -18,7 +19,7 @@ const halfOpen: ProviderRoutingStatus = { ...healthy, recovering: true, halfOpen
 
 function render(node: ReactNode) {
 	return load(renderToStaticMarkup(
-		<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ Catalogue: catalogue }}>{node}</NextIntlClientProvider>,
+		<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ Catalogue: catalogue }}>{node}</AppIntlProvider>,
 	));
 }
 

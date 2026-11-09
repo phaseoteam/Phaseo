@@ -4,63 +4,55 @@ description: "Trouvez le guide Phaseo adapté à votre première configuration, 
 icon: "book-open"
 ---
 
-Si vous savez quel type de travail vous allez effectuer et souhaitez trouver rapidement le bon guide, commencez ici.
+Choisissez le guide qui correspond au travail en cours. Pour une première intégration de Phaseo, suivez cet ordre :
 
-## Première intégration
-
-S’il s’agit de votre première intégration avec Phaseo, suivez ces étapes dans l’ordre :
-
-1. [Démarrage rapide](../quickstart.mdx) : effectuez une requête réussie.
-2. [Authentification](../developers/authentication.mdx) : stockez et envoyez les clés en toute sécurité.
-3. [Exemples](./examples.mdx) : copiez des exemples de requêtes dans votre application.
+1. [Démarrage rapide](../quickstart) : réussissez une première requête.
+2. [Authentification](../developers/authentication) : stockez et envoyez vos clés en toute sécurité.
+3. [Exemples](./examples) : copiez des modèles de requêtes dans votre application.
 
 <Note>
-Vous pouvez appeler les modèles `:free` sans déposer de crédits. Les modèles payants nécessitent un solde disponible dans le portefeuille.
+Vous pouvez appeler les modèles `:free` sans déposer de crédits. Les modèles payants nécessitent toujours un solde disponible dans le portefeuille.
 </Note>
 
-## Développer des fonctionnalités
-
-Utilisez ces guides lorsque votre requête de base fonctionne déjà et que vous souhaitez ajouter des fonctionnalités à votre produit.
+## Ajouter des fonctionnalités à une intégration qui fonctionne
 
 <Columns cols={2}>
-	<Card title="Recettes" icon="chef-hat" href="../cookbook/index.mdx">
-		Recettes guidées par scénario pour le routage gratuit, les préréglages, les tâches asynchrones et la configuration d’agents de programmation.
+	<Card title="Recettes" icon="chef-hat" href="../cookbook/index">
+		Des recettes par scénario pour le routage gratuit, les préréglages, les tâches asynchrones et la configuration des agents de code.
 	</Card>
-	<Card title="Routage et solutions de secours" icon="git-branch" href="./routing-and-fallbacks.mdx">
-		Contrôlez l’ordre des fournisseurs, le comportement de basculement et les compromis liés à la fiabilité.
+	<Card title="Routage et solutions de repli" icon="git-branch" href="./routing-and-fallbacks">
+		Contrôlez l’ordre des fournisseurs, le comportement de basculement et les compromis de fiabilité.
 	</Card>
-	<Card title="Appels d’outils" icon="wrench" href="./tool-calling.mdx">
-		Mettez en œuvre des outils fonctionnels, des contrôles de sécurité et des boucles d’outils stables.
+	<Card title="Appels d’outils" icon="wrench" href="./tool-calling">
+		Implémentez des outils de fonction, des contrôles de sécurité et des boucles d’outils stables.
 	</Card>
-	<Card title="Outils serveur" icon="sparkles" href="./server-tools/index.mdx">
-		Utilisez les outils de date et d’heure, de recherche Web, de récupération Web et Advisor opérés par Phaseo.
+	<Card title="Outils serveur" icon="wrench" href="./server-tools">
+		Utilisez les outils de date et d’heure, de recherche web, de récupération web et Advisor exploités par Phaseo.
 	</Card>
-	<Card title="Sorties structurées" icon="braces" href="./structured-outputs.mdx">
-		Utilisez des schémas pour obtenir des réponses prévisibles et lisibles par machine.
+	<Card title="Sorties structurées" icon="braces" href="./structured-outputs">
+		Utilisez des schémas pour obtenir des réponses prévisibles et lisibles par une machine.
 	</Card>
-	<Card title="Streaming" icon="radio" href="./streaming.mdx">
-		Diffusez des réponses à faible latence avec SSE et des garde-fous adaptés à la production.
+	<Card title="Streaming" icon="radio" href="./streaming">
+		Renvoyez la sortie au fur et à mesure de sa génération, et reprenez les flux interrompus.
 	</Card>
-	<Card title="Mise en cache des prompts" icon="database-zap" href="./prompt-caching.mdx">
-		Réutilisez un contexte de prompt stable avec Chat Completions, Responses et Anthropic Messages.
+	<Card title="Mise en cache des prompts" icon="database-zap" href="./prompt-caching">
+		Réutilisez un contexte de prompt stable entre Chat Completions, Responses et Anthropic Messages.
 	</Card>
 </Columns>
 
-## Exploiter en production
-
-Utilisez ces guides lorsque le trafic, la fiabilité, la sécurité et le cycle de vie des clés deviennent des enjeux importants.
+## Passer en production
 
 <Columns cols={2}>
 	<Card title="Gestion des erreurs" icon="triangle-alert" href="../api-reference/errors.mdx">
-		Déboguez à partir du code d’état, du format de l’erreur et de la stratégie de nouvelle tentative.
+		Déboguez selon le code d’état, la forme de l’erreur et la stratégie de nouvelle tentative.
 	</Card>
 	<Card title="Limites de débit" icon="gauge" href="../api-reference/limits.mdx">
-		Anticipez le débit et le délai d’attente progressif sous charge.
+		Planifiez le débit et le backoff sous charge.
 	</Card>
-	<Card title="Bonnes pratiques" icon="shield-check" href="../developers/best-practices.mdx">
-		Liste de contrôle pour renforcer la fiabilité et la sécurité.
+	<Card title="Bonnes pratiques" icon="shield-check" href="../developers/best-practices">
+		Liste de contrôle de durcissement pour la fiabilité et la sécurité.
 	</Card>
-	<Card title="Clés API de gestion" icon="key-round" href="../developers/management-api-keys.mdx">
+	<Card title="Clés API de gestion" icon="key-round" href="../developers/management-api-keys">
 		Automatisez le cycle de vie des clés et l’isolation des environnements.
 	</Card>
 </Columns>

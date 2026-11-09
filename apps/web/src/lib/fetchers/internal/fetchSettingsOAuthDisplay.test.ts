@@ -1,13 +1,14 @@
+import { it, expect, beforeEach, vi } from "vitest";
 import { fetchSettingsOAuthAppsInitialData } from "./fetchSettingsOAuthAppsInitialData";
 import { fetchSettingsOAuthAppDetailInitialData } from "./fetchSettingsOAuthAppDetailInitialData";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 
-jest.mock("./serverAccountContext", () => ({ getServerAccountContext: async () => ({ accessToken: "test-token", workspaceId: "workspace-a" }) }));
-jest.mock("@/lib/web-api/client", () => ({ fetchAccountWebApi: jest.fn() }));
-const fetchData = jest.mocked(fetchAccountWebApi);
+vi.mock("./serverAccountContext", () => ({ getServerAccountContext: async () => ({ accessToken: "test-token", workspaceId: "workspace-a" }) }));
+vi.mock("@/lib/web-api/client", () => ({ fetchAccountWebApi: vi.fn() }));
+const fetchData = vi.mocked(fetchAccountWebApi);
 const app = { id: "app-a", client_id: "client-a", name: "Example", workspace_id: "workspace-a", redirect_uris: ["https://example.test/callback"], allowed_scopes: ["models:read"], active_authorizations: 2, client_secret: "secret", client_secret_hash: "hash", future_credential: "unknown" };
 
-beforeEach(() => jest.clearAllMocks());
+beforeEach(() => vi.clearAllMocks());
 
 it("caches only OAuth app display fields, never credentials or unknown columns", async () => {
 	fetchData.mockResolvedValue({ signedIn: true, initialTeamId: "workspace-a", oauthApps: [app], access_token: "secret" });
@@ -19,7 +20,7 @@ it("caches only OAuth app display fields, never credentials or unknown columns",
 it("excludes authorization tokens and nested private fields from cached details", async () => {
 	fetchData.mockResolvedValue({ signedIn: true, currentUserId: "alice", oauthApp: app, authorizations: [{ id: "auth-a", last_used_at: null, access_token: "secret", refresh_token: "secret", users: { full_name: "Alice", email: "alice@example.test", private: "secret" }, teams: { name: "Team", secret: "secret" } }], recentRequests: [], usageStats: [], userDirectory: [] });
 	const data = await fetchSettingsOAuthAppDetailInitialData("client/a");
-	expect(data.authorizations).toEqual([{ id: "auth-a", last_used_at: null, users: { full_name: "Alice", email: "alice@example.test" }, teams: { name: "Team" } }]);
+	expect(data.authorizations).toEqual([{ id: "auth-a", last_used_at: null, users: { full_name: "Alice", email: "alice@example.test" } }]);
 	expect(JSON.stringify(data)).not.toMatch(/secret|hash|unknown/);
 	expect(fetchData).toHaveBeenCalledWith("/api/account/settings/oauth-apps/client%2Fa", "test-token");
 });

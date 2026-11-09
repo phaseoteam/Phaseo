@@ -1,63 +1,50 @@
 ---
-title: "عرض قدرات مسارات النموذج"
-badge: "Beta"
+title: "عرض قدرات نقاط نهاية النموذج"
+badge: "تجريبي"
 openapi: "/ar/openapi/v1/openapi.localized.yaml GET /models/{author}/{slug}/endpoints"
-description: "استعراض مسارات المزوّدين والوسائط والمعلمات والتوفر والأسعار المتاحة لنموذج واحد."
+description: "افحص مسارات المزوّدين والوسائط والمعاملات والتوفر والأسعار المتاحة لنموذج واحد."
 ---
 
-استخدم هذا المسار قبل إرسال الطلب إذا كان تطبيقك بحاجة إلى التأكد من توفر مجموعة النموذج والمزوّد والمسار والمعلمات.
-
-بالنسبة إلى `openai/gpt-5.4-mini`، استخدم:
+استدعِ نقطة النهاية هذه قبل إرسال طلب للتأكد من توفر تركيبة النموذج والمزوّد ونقطة النهاية والمعاملات. بالنسبة إلى `openai/gpt-6-astra`:
 
 ```bash
-curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints" \
+curl "https://api.phaseo.app/v1/models/openai/gpt-6-astra/endpoints" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-يمثل كل صف قدرة لمزوّد ومسار، ويتضمن:
+كل إدخال في `endpoints` هو مسار مزوّد واحد لنقطة نهاية واحدة:
 
-- معرّف القدرة الأساسي ومسار API العام
-- معرّف المزوّد واسمه ورابطه المختصر للنموذج
-- وسائط الإدخال والإخراج
-- أسماء المعلمات المدعومة وتفاصيلها المنظمة
-- حالات المزوّد والنموذج والقدرة والتوجيه والتوفر
-- تواريخ السريان عندما يكون المسار مجدولًا أو محدودًا زمنيًا
-- ملخص أسعار المسار
+| الحقل | يحتوي على |
+| --- | --- |
+| `endpoint` و`capability_id` و`public_path` و`collection` | معرّفات نقطة النهاية والقدرة القياسية ومسار الواجهة البرمجية العام |
+| `provider` و`model` | معرّف المزوّد واسمه، ومعرّف النموذج المختصر لدى المزوّد |
+| `routable` و`status` و`status_reason` | ما إذا كان المسار يستقبل حركة الآن، وتوفره، وسبب كونه للمعاينة فقط أو غير نشط |
+| `modalities` | وسائط الإدخال والإخراج |
+| `capabilities` | أسماء المعاملات المدعومة وتفاصيل المعاملات المنظّمة |
+| `routing` | حالات التوجيه للمزوّد والنموذج والقدرة |
+| `effective` | تاريخا `from` و`to` عندما يكون المسار مجدولًا أو محدودًا زمنيًا |
+| `pricing` | ملخص تسعير نقطة النهاية |
 
-## تضمين المسارات المجدولة وغير النشطة
+لمقارنة النماذج أولًا، استخدم [عرض النماذج](./models.mdx)؛ ولرؤية كل نقاط النهاية التي تتيحها الواجهة البرمجية، استخدم [عرض نقاط النهاية](./endpoints.mdx).
 
-لا يعيد الإعداد الافتراضي `availability=active` إلا الصفوف ذات المسارات المتاحة للعامة. استخدم `availability=all` لفحص المسارات القادمة وغير النشطة:
+## ضمّن المسارات المخطط لها وغير النشطة
+
+لا تُرجع القيمة الافتراضية `availability=active` إلا الصفوف القابلة للتوجيه علنًا. استخدم `availability=all` لفحص المسارات القادمة قريبًا وغير النشطة:
 
 ```bash
-curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?availability=all" \
+curl "https://api.phaseo.app/v1/models/openai/gpt-6-astra/endpoints?availability=all" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-لا توجّه حركة الإنتاج إلى صف إلا إذا كانت `availability_status` تساوي `active` وكانت `is_active_gateway` تساوي `true`.
+لا توجّه حركة الإنتاج إلا إلى صف تكون فيه قيمة `routable` هي `true` وقيمة `status` هي `active`.
 
-## تصفية المسارات
+## صفِّ المسارات
 
-استخدم عوامل تصفية قابلة للتكرار أو مفصولة بفواصل لـ:
+تقبل هذه المرشحات معاملات مكررة أو قائمة مفصولة بفواصل: `provider` و`provider_status` و`provider_routing_status` و`model_routing_status` و`capability_status` و`provider_availability_status` و`provider_availability_reason` و`status` و`supported_parameters` (الاسم المستعار `params`). يصف [عرض النماذج](./models.mdx#filter-the-list) قيمها.
 
-- `provider`
-- `provider_status`
-- `provider_routing_status`
-- `model_routing_status`
-- `capability_status`
-- `provider_availability_status`
-- `provider_availability_reason`
-- `status`
-- `supported_parameters`
-
-على سبيل المثال، يعيد هذا مسارات OpenAI التي تدعم `temperature`:
+يُرجع هذا مسارات OpenAI التي تدعم `reasoning_effort`:
 
 ```bash
-curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?provider=openai&supported_parameters=temperature" \
+curl "https://api.phaseo.app/v1/models/openai/gpt-6-astra/endpoints?provider=openai&supported_parameters=reasoning_effort" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
-
-## مسارات ذات صلة
-
-- [عرض النماذج](./models.mdx)
-- [عرض المسارات](./endpoints.mdx)
-

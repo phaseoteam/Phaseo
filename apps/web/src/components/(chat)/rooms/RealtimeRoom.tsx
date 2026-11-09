@@ -1,10 +1,8 @@
-"use client";
-
 import { chatLocalStorage } from "@/lib/chat/userStorage";
 import NumberFlow from "@number-flow/react";
-import dynamic from "next/dynamic";
+import dynamic from "@/lib/dynamic";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { ReactNode } from "react";
@@ -1145,8 +1143,14 @@ function RealtimeVoiceSelector({
 	const tCopy = useTranslations("SettingsUI.chatGaps");
 	const t = useTranslations("Product.chatRooms");
 	const localizeVoiceProfile = (description: string) => {
-		const parts: Record<string, string> = { "English": tCopy("english"), "Portuguese": tCopy("portuguese"), "Filipino-influenced": tCopy("filipino"), "Brazilian-influenced": tCopy("brazilian"), "Southern U.S.-influenced": tCopy("southernUs"), "North American-influenced": tCopy("northAmerican"), "Australian-influenced": tCopy("australian"), "Irish-influenced": tCopy("irish"), "British-influenced": tCopy("british"), "Masculine": tCopy("masculine"), "Feminine": tCopy("feminine"), };
-		const [language, style, gender] = description.split(" · ");
+		const parts: Record<string, string> = { "English": tCopy("english"), "Portuguese": tCopy("portuguese"), "French": tCopy("french"), "German": tCopy("german"), "Hindi": tCopy("hindi"), "Japanese": tCopy("japanese"), "Korean": tCopy("korean"), "Filipino-influenced": tCopy("filipino"), "Brazilian-influenced": tCopy("brazilian"), "Southern U.S.-influenced": tCopy("southernUs"), "North American-influenced": tCopy("northAmerican"), "Australian-influenced": tCopy("australian"), "Irish-influenced": tCopy("irish"), "British-influenced": tCopy("british"), "Masculine": tCopy("masculine"), "Feminine": tCopy("feminine"), };
+		const segments = description.split(" · ");
+		// Non-English Live voices are described as "Language · Gender".
+		if (segments.length === 2) {
+			const [shortLanguage, shortGender] = segments;
+			return parts[shortLanguage] && parts[shortGender] ? tCopy("voiceProfileShort", { language: parts[shortLanguage], gender: parts[shortGender] }) : description;
+		}
+		const [language, style, gender] = segments;
 		return parts[language] && parts[style] && parts[gender] ? tCopy("voiceProfile", { language: parts[language], style: parts[style], gender: parts[gender] }) : description;
 	};
 	const selectedVoice =

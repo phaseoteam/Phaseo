@@ -1,0 +1,124 @@
+---
+icon: "activity"
+title: "可观测性"
+description: "读取智能体运行的状态、用量和费用，并把每个步骤追溯到它的网关请求。"
+---
+
+读取运行结果，即可了解运行如何结束、花费了多少，以及每个模型轮次由哪个网关请求处理。每个结果都包含最终输出、带有状态的运行记录、累计用量，以及每个步骤一条带有请求 ID、提供商和模型的记录。
+
+<CodeGroup>
+
+```typescript TypeScript
+const result = await agent.run({ input, client });
+
+console.log(result.output);            // 最终值
+console.log(result.run.status);        // completed、stopped、waiting_for_human 或 cancelled
+console.log(result.usage.totalTokens); // 所有步骤的合计
+console.log(result.usage.cost);        // 网关报告的值
+```
+
+```python Python
+result = agent.run(input=prompt, client=client)
+
+print(result.output)              # 最终值
+print(result.run.status)          # completed、stopped 或 waiting_for_human
+print(result.usage.total_tokens)  # 所有步骤的合计
+print(result.usage.cost)          # 网关报告的值
+```
+
+```go Go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+if err != nil {
+  return err
+}
+
+fmt.Println(result.Output)            // 最终值
+fmt.Println(result.Run.Status)        // completed、stopped 或 waiting_for_human
+fmt.Println(result.Usage.TotalTokens) // 所有步骤的合计
+fmt.Println(result.Usage.Cost)        // 网关报告的值
+```
+
+```csharp C#
+var result = await agent.Run(new RunOptions { Input = prompt, Client = client });
+
+Console.WriteLine(result.Output);            // 最终值
+Console.WriteLine(result.Run.Status);        // completed、stopped 或 waiting_for_human
+Console.WriteLine(result.Usage.TotalTokens); // 所有步骤的合计
+Console.WriteLine(result.Usage.Cost);        // 网关报告的值
+```
+
+```php PHP
+$result = $agent->run(input: $prompt, client: $client);
+
+echo $result->output;                 // 最终值
+echo $result->run->status;            // completed、stopped 或 waiting_for_human
+echo $result->usage["total_tokens"];  // 所有步骤的合计
+echo $result->usage["cost"];          // 网关报告的值
+```
+
+```ruby Ruby
+result = agent.run(input: prompt, client: client)
+
+puts result.output               # 最终值
+puts result.run.status           # completed、stopped 或 waiting_for_human
+puts result.usage[:total_tokens] # 所有步骤的合计
+puts result.usage[:cost]         # 网关报告的值
+```
+
+```java Java
+var result = agent.run(options);
+
+System.out.println(result.output());              // 最终值
+System.out.println(result.run().status());        // completed、stopped 或 waiting_for_human
+System.out.println(result.usage().totalTokens()); // 所有步骤的合计
+System.out.println(result.usage().cost());        // 网关报告的值
+```
+
+```rust Rust
+let result = agent.run(&mut client, RunOptions::new("Explain when to use routing presets."))?;
+
+println!("{}", result.output);              // 最终值
+println!("{}", result.run.status);          // completed、stopped 或 waiting_for_human
+println!("{}", result.usage.total_tokens);  // 所有步骤的合计
+println!("{:?}", result.usage.cost);        // 由模型客户端提供
+```
+
+</CodeGroup>
+
+## 读取用量和费用
+
+用量包含输入、输出、缓存和总 token 数，以及费用：TypeScript 和 Java 中为 `inputTokens`、`outputTokens`、`cachedTokens`、`totalTokens`、`cost`；Python、PHP、Ruby 和 Rust 中为 `input_tokens` 等；Go 和 C# 中为 `InputTokens` 等。每个步骤也有自己的用量。
+
+| 语言 | 用量所在位置 | 注意事项 |
+| --- | --- | --- |
+| TypeScript、Python、Go、C#、Java | 结果上的 `usage` | |
+| PHP | `$result->usage`，一个数组 | 已暂停的结果中它为空；请读取 `$result->run->usage` |
+| Ruby | `result.usage`，一个以符号为键的 Hash | 已暂停的结果中它未设置；请读取 `result.run.usage` |
+| Rust | `result.usage`（`UsageSummary`） | 内置的 `0.2` 网关适配器只从数值型的 `meta.cost` 或 `cost` 字段填充 `cost`，不会映射 `cost_nanos` 或 `cost_cents`。统计花费时请使用网关响应或生成记录。 |
+
+## 检查运行如何结束
+
+运行状态有 `queued`、`running`、`waiting_for_tools`、`waiting_for_human`、`completed`、`stopped` 和 `failed`；TypeScript 还增加了 `cancelled`。你拿到的结果是 `completed`、`stopped`（满足了某个[停止条件](./stop-conditions)，原因记录在运行的停止原因中）、`waiting_for_human`（参见[状态与审批](./state-and-approval)），或者在 TypeScript 中为 `cancelled`。失败的运行会改为抛出或返回错误；参见[事件与错误](./events-and-errors)。
+
+## 把步骤追溯到它的网关请求
+
+每条步骤记录都把一个模型轮次与处理它的网关请求关联起来。在 Phaseo 日志中搜索请求 ID，或者在上游提供商处搜索原生响应 ID。
+
+| 步骤字段 | camelCase（TypeScript、PHP、Java） | snake_case（Python、Ruby、Rust） | PascalCase（Go、C#） |
+| --- | --- | --- | --- |
+| 网关请求 ID | `requestId` | `request_id` | `RequestID`（Go）、`RequestId`（C#） |
+| 上游响应 ID | `nativeResponseId` | `native_response_id`（Rust 没有） | `NativeResponseID`（Go）、`NativeResponseId`（C#） |
+| 提供商和模型 | `provider`、`model` | `provider`、`model` | `Provider`、`Model` |
+| 结束原因 | `finishReason` | `finish_reason` | `FinishReason` |
+| 尝试次数（包括重试） | `modelAttempts` | `model_attempts` | `ModelAttempts` |
+| 工具调用 | `toolCalls` | `tool_calls` | `ToolCalls` |
+| 错误 | `error`（TypeScript 还增加了 `errorDetails`） | `error` | `Error` |
+| 网关 meta 块和警告 | `responseMeta`、`warnings` | `response_meta`、`warnings`（Rust 没有） | `ResponseMeta`、`Warnings` |
+
+步骤位于结果的 `steps` 中（Go 和 C# 中为 `Steps`，Java 中为 `steps()`）。Python 的步骤记录是 `AgentStepRecord`；其他语言称为 `RunStep`。
+
+## 在生产环境中记录运行
+
+记录运行 ID、步骤索引、请求 ID、原生响应 ID、提供商、模型、结束原因、工具调用 ID 和停止原因。[生命周期钩子](./lifecycle-hooks)会在运行过程中提供所有这些信息；在会发送 `run.failed` 事件的语言中，该事件还带有错误文本。不要记录原始提示词、工具输入或凭据；在事件离开你的进程之前对它们进行脱敏。
+
+如果要在开发期间在本地记录完整的运行，请改用 [DevTools](./devtools)。

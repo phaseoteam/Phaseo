@@ -1,6 +1,4 @@
-"use client";
-
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,6 +68,8 @@ export function AudioModelSettingsDialog({
 	const speechVoice = isListedVoice || (schema.customVoice && settings.params.speechVoice.trim())
 		? settings.params.speechVoice
 		: (schema.voiceOptions[0] ?? "");
+	// Some providers take a narrower speed range (xAI 0.7 to 1.5, for example).
+	const speedRange = schema.speedRange ?? { min: 0.25, max: 4 };
 	const transcriptionResponseFormat = settings.params.transcriptionResponseFormat || "json";
 	const translationResponseFormat = settings.params.translationResponseFormat || "json";
 
@@ -135,15 +135,15 @@ export function AudioModelSettingsDialog({
 									<Input
 										id="speech-speed"
 										type="number"
-										min={0.25}
-										max={4}
+										min={speedRange.min}
+										max={speedRange.max}
 										step={0.05}
 										value={settings.params.speechSpeed}
 										onChange={(event) =>
 											onUpdateParams({
 												speechSpeed: Math.max(
-													0.25,
-													Math.min(4, Number(event.target.value) || 1),
+													speedRange.min,
+													Math.min(speedRange.max, Number(event.target.value) || 1),
 												),
 											})
 										}

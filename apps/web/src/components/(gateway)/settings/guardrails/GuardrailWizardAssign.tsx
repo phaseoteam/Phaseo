@@ -1,8 +1,6 @@
-"use client";
-
 import { useMemo, useState } from "react";
 import { ArrowRight, Search } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";

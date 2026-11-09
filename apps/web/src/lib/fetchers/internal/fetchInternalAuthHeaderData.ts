@@ -1,9 +1,8 @@
 import type { InternalAuthHeaderData } from "@/lib/fetchers/internal/authTypes";
 import { createClient } from "@/utils/supabase/server";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
-import { cookies } from "next/headers";
+import { currentRequestCookie } from "@/lib/server/currentRequest";
 import { withServerDeadline } from "@/lib/query/serverDeadline";
-import { io } from "next/cache";
 
 type FetchInternalAuthHeaderDataOptions = {
 	query?: string;
@@ -14,13 +13,12 @@ type FetchInternalAuthHeaderDataOptions = {
 export async function fetchInternalAuthHeaderData(
 	options: FetchInternalAuthHeaderDataOptions = {},
 ): Promise<InternalAuthHeaderData> {
-	await io();
 	return withServerDeadline(async (signal) => {
-		const [supabase, cookieStore] = await Promise.all([createClient({ signal }), cookies()]);
+		const supabase = await createClient({ signal });
 		const { data } = await supabase.auth.getSession();
 		signal.throwIfAborted();
 		if (!data.session?.access_token) return { isLoggedIn: false, teams: [] };
-		const activeWorkspaceId = String(cookieStore.get("activeWorkspaceId")?.value ?? "").trim();
+		const activeWorkspaceId = String(currentRequestCookie("activeWorkspaceId") ?? "").trim();
 		const searchParams = new URLSearchParams();
 		if (options.query?.trim()) searchParams.set("q", options.query.trim());
 		if (typeof options.limit === "number") searchParams.set("limit", String(options.limit));

@@ -1,0 +1,233 @@
+---
+icon: "files"
+title: "Files"
+description: "Upload batch input files and read them back by ID from any Phaseo SDK."
+"og:image": "https://phaseo.app/og/dynamic?title=Files&description=Upload%20batch%20input%20files%20and%20read%20them%20back%20by%20ID%20from%20any%20Phaseo%20SDK.&pathname=/docs/v1/sdk-reference/client/files"
+---
+
+Upload a batch input file as a multipart form, keep the `id` it returns, and read the file's metadata and bytes back by that ID. The examples use a `client` created as in [Installation](./installation).
+
+## Upload a file
+
+TypeScript and Python upload with an SDK method, which sends `POST /v1/batches/files`. The other SDKs can't send multipart, so they post the form to `POST /v1/files` with the standard HTTP client.
+
+<CodeGroup>
+
+```typescript TypeScript
+const uploaded = await client.uploadFile({
+  purpose: "batch",
+  file: new Blob(["{}"], { type: "application/json" }),
+  filename: "batch.jsonl",
+});
+```
+
+```python Python
+from pathlib import Path
+
+uploaded = client.upload_file(
+    purpose="batch",
+    file=Path("batch.jsonl"),
+    content_type="application/json",
+)
+```
+
+```go Go
+// The Go wrapper has no upload method, so post the form with net/http and mime/multipart.
+var body bytes.Buffer
+form := multipart.NewWriter(&body)
+_ = form.WriteField("purpose", "batch")
+part, _ := form.CreateFormFile("file", "batch.jsonl")
+data, _ := os.ReadFile("batch.jsonl")
+_, _ = part.Write(data)
+_ = form.Close()
+
+req, _ := http.NewRequest("POST", "https://api.phaseo.app/v1/files", &body)
+req.Header.Set("Authorization", "Bearer "+os.Getenv("PHASEO_API_KEY"))
+req.Header.Set("Content-Type", form.FormDataContentType())
+
+resp, err := http.DefaultClient.Do(req) // keep the returned id
+```
+
+```csharp C#
+// UploadFile() sends JSON, so post the form with HttpClient.
+using var http = new HttpClient();
+http.DefaultRequestHeaders.Authorization =
+    new("Bearer", Environment.GetEnvironmentVariable("PHASEO_API_KEY"));
+
+using var form = new MultipartFormDataContent
+{
+    { new StringContent("batch"), "purpose" },
+    { new ByteArrayContent(await File.ReadAllBytesAsync("batch.jsonl")), "file", "batch.jsonl" },
+};
+
+var uploaded = await http.PostAsync("https://api.phaseo.app/v1/files", form);
+Console.WriteLine(await uploaded.Content.ReadAsStringAsync()); // keep the returned id
+```
+
+```php PHP
+// uploadFile() sends JSON, so post the form with Guzzle.
+$http = new GuzzleHttp\Client();
+
+$uploaded = $http->post('https://api.phaseo.app/v1/files', [
+    'headers' => ['Authorization' => 'Bearer ' . getenv('PHASEO_API_KEY')],
+    'multipart' => [
+        ['name' => 'purpose', 'contents' => 'batch'],
+        ['name' => 'file', 'contents' => fopen('batch.jsonl', 'r'), 'filename' => 'batch.jsonl'],
+    ],
+]);
+
+$fileId = json_decode((string) $uploaded->getBody(), true)['id'];
+```
+
+```ruby Ruby
+# upload_file sends JSON, so post the form with Net::HTTP.
+require 'net/http'
+require 'json'
+
+uri = URI('https://api.phaseo.app/v1/files')
+request = Net::HTTP::Post.new(uri)
+request['Authorization'] = "Bearer #{ENV.fetch('PHASEO_API_KEY')}"
+request.set_form([['purpose', 'batch'], ['file', File.open('batch.jsonl')]], 'multipart/form-data')
+
+response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |http| http.request(request) }
+file_id = JSON.parse(response.body)['id']
+```
+
+```java Java
+// The SDK's JSON helpers don't encode multipart, so post the form with java.net.http.
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.UUID;
+
+String baseUrl = System.getenv().getOrDefault("PHASEO_BASE_URL", "https://api.phaseo.app/v1")
+    .replaceAll("/+$", "");
+String apiKey = System.getenv("PHASEO_API_KEY");
+String boundary = "phaseo-" + UUID.randomUUID();
+var body = BodyPublishers.concat(
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"purpose\"\r\n\r\nbatch\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"batch.jsonl\"\r\nContent-Type: application/jsonl\r\n\r\n"),
+    BodyPublishers.ofFile(Path.of("batch.jsonl")),
+    BodyPublishers.ofString("\r\n--" + boundary + "--\r\n")
+);
+var request = HttpRequest.newBuilder(URI.create(baseUrl + "/files"))
+    .header("Authorization", "Bearer " + apiKey)
+    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+    .timeout(Duration.ofSeconds(60))
+    .POST(body)
+    .build();
+var response = HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+if (response.statusCode() < 200 || response.statusCode() >= 300) {
+    throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
+}
+System.out.println(response.body()); // keep the returned id
+```
+
+</CodeGroup>
+
+### Upload options
+
+These apply to the TypeScript and Python upload methods. In the raw multipart requests, send `purpose` and `file` as form fields.
+
+| TypeScript | Python | Notes |
+| --- | --- | --- |
+| `file` | `file` | Required. TypeScript: a `Blob`, `File`, `BufferSource` or string. Python: `bytes`, a `Path`, a file object, or an HTTPX file tuple; a plain string raises `TypeError`. |
+| `purpose` | `purpose` | For example `batch`. |
+| `filename`, `contentType` | `filename`, `content_type` | Name and media type for the upload. In Python, a `Path` uses its own file name. |
+| `model`, `provider` | none | TypeScript only. Choose the batch provider that stores the file. With neither, the file goes to OpenAI. Python uploads always go to the default OpenAI batch provider. |
+
+## Read a file back
+
+<CodeGroup>
+
+```typescript TypeScript
+const file = await client.getFile(uploaded.id);
+const content = await client.getFileContent(uploaded.id); // Uint8Array
+```
+
+```python Python
+file_obj = client.get_file(uploaded["id"])
+file_bytes = client.get_file_content(uploaded["id"])  # bytes
+```
+
+```go Go
+file, err := client.RetrieveFile(context.Background(), "file_123")
+if err != nil {
+  panic(err)
+}
+
+content, err := client.RetrieveFileContent(context.Background(), "file_123") // []byte
+if err != nil {
+  panic(err)
+}
+
+fmt.Println(file)
+fmt.Println(string(content))
+```
+
+```csharp C#
+var file = await client.RetrieveFile("file_123");
+byte[] content = await client.RetrieveFileContent("file_123");
+```
+
+```php PHP
+$file = $client->retrieveFile('file_123');
+$content = $client->retrieveFileContent('file_123');
+```
+
+```ruby Ruby
+file = client.retrieve_file('file_123')
+content = client.retrieve_file_content('file_123')
+```
+
+```java Java
+import java.nio.charset.StandardCharsets;
+
+var file = client.retrieveFile("file_123");
+byte[] content = client.retrieveFileContent("file_123");
+System.out.println(file);
+System.out.println(new String(content, StandardCharsets.UTF_8));
+```
+
+</CodeGroup>
+
+Replace `file_123` with the ID the upload returned.
+
+| Language | Metadata | Content | Upload method | List |
+| --- | --- | --- | --- | --- |
+| TypeScript | `getFile(id)` | `getFileContent(id)`, a `Uint8Array` | `uploadFile(...)`, multipart | `listFiles()` |
+| Python | `get_file(id)` | `get_file_content(id)`, `bytes` | `upload_file(...)`, multipart | `list_files()` |
+| Go | `RetrieveFile(ctx, id)` | `RetrieveFileContent(ctx, id)`, `[]byte` | None | `ListFiles(ctx, query)` |
+| C# | `RetrieveFile(id)` | `RetrieveFileContent(id)`, `byte[]` | `UploadFile(request)` sends JSON, so it can't upload | `ListFiles(query)` |
+| PHP | `retrieveFile($id)` | `retrieveFileContent($id)` | `uploadFile($payload)` sends JSON, so it can't upload | `listFiles($params)` |
+| Ruby | `retrieve_file(id)` | `retrieve_file_content(id)` | `upload_file(payload)` sends JSON, so it can't upload | `list_files(...)` |
+| Java | `retrieveFile(id)` | `retrieveFileContent(id)`, `byte[]` | `uploadFile(request)` sends JSON, so it can't upload | `listFiles(query)` |
+
+In Python you can also reach these through `client.files`: `create(params)` uploads like `upload_file`, `list()` lists, `retrieve(id)` reads the metadata and `content(id)` reads the bytes. Rust has no file methods.
+
+<Note>The file endpoints are in beta and need an enabled batch provider.</Note>
+
+## Keep the file ID: you can't list files
+
+Save each uploaded file's `id`. The list methods call `GET /v1/files`, which returns `400` with code `not_supported` and reason `file_list_not_supported_with_shared_gateway_key`. The full contract is in the [Files API reference](/v1/api-reference/endpoint/files).
+
+## Response
+
+`FileObject`, from the upload and the metadata methods:
+
+```json
+{
+  "id": "file-123",
+  "object": "file",
+  "filename": "data.json",
+  "purpose": "batch",
+  "status": "processed",
+  "created_at": 1677610602,
+  "bytes": 123
+}
+```

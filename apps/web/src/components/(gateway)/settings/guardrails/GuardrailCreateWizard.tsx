@@ -1,8 +1,6 @@
-"use client";
-
 import { useMemo, useState, type ReactNode } from "react";
-import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Boxes, Check, EyeOff, Gauge, Plus, ScanText, Server, ShieldAlert, ShieldCheck, Wallet, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";

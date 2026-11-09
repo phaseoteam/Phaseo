@@ -1,5 +1,3 @@
-'use client'
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from 'react'
@@ -21,12 +19,12 @@ import {
 import {
     enrollMFAAction,
     verifyMFAEnrollmentAction,
-} from '@/app/(dashboard)/settings/account/actions'
+} from '@/features/settings/account/actions'
 import { toast } from 'sonner'
-import { useTranslations } from 'next-intl'
+import { useTranslations } from '@/i18n/react'
 import { localizedSettingsError } from '@/i18n/error-messages'
 import { Loader2, QrCode, Key, CheckCircle2, Copy } from 'lucide-react'
-import Image from 'next/image'
+import Image from '@/components/image'
 
 type EnrollmentStep = 'authenticate' | 'qr-code' | 'verify' | 'success'
 
@@ -70,7 +68,7 @@ export function MFAEnrollmentFlow({
     const startEnrollment = React.useCallback(async () => {
         setLoading(true)
         try {
-            const result = await enrollMFAAction(currentPassword || undefined)
+            const result = await enrollMFAAction({ data: currentPassword || undefined })
             setQrCode(result.qrCode)
             setSecret(result.secret)
             setFactorId(result.factorId)
@@ -103,9 +101,7 @@ export function MFAEnrollmentFlow({
         setLoading(true)
         try {
             await verifyMFAEnrollmentAction(
-                factorId,
-				verificationCode,
-				currentPassword || undefined
+                { data: { factorId, code: verificationCode, currentPassword: currentPassword || undefined } }
             )
             setStep('success')
         } catch (error: unknown) {

@@ -1,16 +1,17 @@
-﻿/** @jest-environment jsdom */
+﻿/** @vitest-environment jsdom */
+import { it, expect, vi } from "vitest";
 import { act, cloneElement, type ReactElement } from "react";
 import { createRoot } from "react-dom/client";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import common from "../../../../messages/en-GB/common.json";
 import catalogue from "../../../../messages/en-GB/catalogue.json";
 import { ArtificialAnalysisDashboardChart } from "./ArtificialAnalysisDashboardChart";
 import type { DashboardRow } from "@/lib/benchmarks/artificialAnalysisDashboard";
 
-jest.mock("@/components/Logo", () => ({ Logo: () => null }));
-jest.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
-jest.mock("@/components/ui/scroll-area", () => ({ ScrollArea: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
-jest.mock("recharts", () => ({ ...jest.requireActual("recharts"), ResponsiveContainer: ({ children }: { children: ReactElement }) => cloneElement(children as ReactElement<{ width: number; height: number }>, { width: 900, height: 500 }) }));
+vi.mock("@/components/Logo", () => ({ Logo: () => null }));
+vi.mock("@/hooks/use-mobile", () => ({ useIsMobile: () => false }));
+vi.mock("@/components/ui/scroll-area", () => ({ ScrollArea: ({ children }: { children: React.ReactNode }) => <div>{children}</div> }));
+vi.mock("recharts", async () => ({ ...(await vi.importActual("recharts")), ResponsiveContainer: ({ children }: { children: ReactElement }) => cloneElement(children as ReactElement<{ width: number; height: number }>, { width: 900, height: 500 }) }));
 
 it.each(["bars", "scatter", "cost"] as const)("retains SVG focus through inspection, pinning and dismissal (%s)", async (mode) => {
  const scatter = mode === "scatter", cost = mode === "cost";
@@ -18,7 +19,7 @@ it.each(["bars", "scatter", "cost"] as const)("retains SVG focus through inspect
  const node = document.createElement("div"); document.body.appendChild(node); const root = createRoot(node);
  const row: DashboardRow = { id: "low", modelId: "lab/model", modelName: "Model", sourceName: "Model low", creatorId: "lab", colour: null, effort: "low", intelligence: 40, tokensPerTask: 200, totalTokens: null, costPerTask: cost ? 0.0000123 : 1, totalCost: null, timePerTask: null, benchmarks: {}, capabilities: {} };
  try {
- await act(async () => root.render(<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ Common: common, Catalogue: catalogue }}><ArtificialAnalysisDashboardChart title={cost ? "Cost per task" : "Output tokens per task"} rows={[row]} value={(item) => cost ? item.costPerTask : scatter ? item.intelligence : item.tokensPerTask} xValue={scatter ? (item) => item.costPerTask : undefined} xLabel="Cost per task" xUnit="usd" unit={cost ? "usd" : scatter ? "score" : "tokens"} highlight={null} /></NextIntlClientProvider>));
+ await act(async () => root.render(<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ Common: common, Catalogue: catalogue }}><ArtificialAnalysisDashboardChart title={cost ? "Cost per task" : "Output tokens per task"} rows={[row]} value={(item) => cost ? item.costPerTask : scatter ? item.intelligence : item.tokensPerTask} xValue={scatter ? (item) => item.costPerTask : undefined} xLabel="Cost per task" xUnit="usd" unit={cost ? "usd" : scatter ? "score" : "tokens"} highlight={null} /></AppIntlProvider>));
  const point = node.querySelector<SVGElement>('[role="button"][aria-label^="Model low:"]');
  expect(point).not.toBeNull();
  await act(async () => point!.focus());
@@ -45,7 +46,7 @@ it("inspects and pins the nearest configuration when scatter hit areas overlap",
  const row: DashboardRow = { id: "low", modelId: "lab/model", modelName: "Model", sourceName: "Model low", creatorId: "lab", colour: null, effort: "low", intelligence: 40, tokensPerTask: 200, totalTokens: null, costPerTask: 1, totalCost: null, timePerTask: null, benchmarks: {}, capabilities: {} };
  const neighbour = { ...row, id: "neighbour", modelId: "lab/neighbour", modelName: "Neighbour", sourceName: "Neighbour high", intelligence: 40.01, costPerTask: 1.001 };
  try {
- await act(async () => root.render(<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ Common: common, Catalogue: catalogue }}><ArtificialAnalysisDashboardChart title="Cost vs intelligence" rows={[row, neighbour]} value={(item) => item.intelligence} xValue={(item) => item.costPerTask} xUnit="usd" highlight={null} /></NextIntlClientProvider>));
+ await act(async () => root.render(<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ Common: common, Catalogue: catalogue }}><ArtificialAnalysisDashboardChart title="Cost vs intelligence" rows={[row, neighbour]} value={(item) => item.intelligence} xValue={(item) => item.costPerTask} xUnit="usd" highlight={null} /></AppIntlProvider>));
  const point = node.querySelector<SVGElement>('[role="button"][aria-label^="Model low:"]')!;
  const neighbourPoint = node.querySelector<SVGElement>('[role="button"][aria-label^="Neighbour high:"]')!;
  const svg = point.ownerSVGElement!;

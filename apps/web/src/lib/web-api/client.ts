@@ -1,4 +1,3 @@
-import { cache } from "react";
 import { sdkExportStore, sdkRequestFromChat } from "@/lib/chat/sdkExport";
 import { isPublicLocale } from "@/i18n/locales";
 import { anySignal, timeoutSignal } from "@/lib/abortSignals";
@@ -55,22 +54,19 @@ async function readJsonPayload<T>(
 /**
  * Fetch public website data from the Cloudflare Worker.
  *
- * Next's data cache is deliberately disabled here. Public freshness, stale
- * serving, cache tags, and revalidation are owned by Cloudflare so there is a
- * single cache contract for every web deployment.
+ * Public freshness, stale serving, cache tags, and revalidation are owned by
+ * the web API Worker's Cloudflare cache. Server renders add a short layer on
+ * top (renderCache below) so a page doesn't wait on that round trip each time.
  */
 async function fetchPublicWebApiUncached<T>(
 	path: `/api/_web/${string}`,
 	options: { signal?: AbortSignal; credentials?: RequestCredentials } = {},
 ): Promise<T> {
-	// Bound both fetching and reading the body so cached prerenders can reach
-	// their fallback instead of hanging until Next's cache-fill deadline.
+	// Bound both fetching and reading the body so a slow upstream lets the page
+	// reach its fallback instead of hanging.
 	const deadline = timeoutSignal(PUBLIC_WEB_API_TIMEOUT_MS);
 	const response = await fetch(`${getWebApiOrigin()}${path}`, {
 		headers: { Accept: "application/json" },
-		// Disable Next's data cache without native fetch's no-cache request
-		// headers, which ask upstream shared caches to revalidate.
-		next: { revalidate: 0 },
 		signal: options.signal
 			? anySignal([options.signal, deadline])
 			: deadline,
@@ -84,27 +80,81 @@ async function fetchPublicWebApiUncached<T>(
 	return (await response.json()) as T;
 }
 
-// The timeout signal above opts out of Next's automatic fetch deduplication.
-// Share the parsed public response across metadata and Server Components in
-// one render only; Cloudflare still owns freshness between incoming requests.
-const fetchPublicWebApiForRender = cache((path: `/api/_web/${string}`) =>
-	fetchPublicWebApiUncached<unknown>(path),
-);
-
 export function fetchPublicWebApi<T>(
 	path: `/api/_web/${string}`,
 	options: { signal?: AbortSignal; credentials?: RequestCredentials } = {},
 ): Promise<T> {
-	if (
-		typeof window === "undefined" &&
-		!options.signal &&
-		(options.credentials === undefined || options.credentials === "omit")
-	) {
-		return fetchPublicWebApiForRender(path) as Promise<T>;
+	// Repeated reads within a request are shared by the react-query client, which
+	// also owns browser revalidation.
+	if (typeof window === "undefined" && (options.credentials ?? "omit") === "omit") {
+		return fetchPublicWebApiForRender<T>(path, options);
 	}
-	// Explicit cancellation and credentialed requests keep their own lifetime.
-	// Browser revalidation is owned by the existing query client.
 	return fetchPublicWebApiUncached<T>(path, options);
+}
+
+// Server renders keep public responses (no cookies, so the same for everyone)
+// in the Workers Cache API of the data centre: fresh for a minute, then served
+// once while a background request refreshes them, for up to a day. Keys carry
+// the build, so a deploy starts clean.
+declare const __PHASEO_BUILD_ID__: string;
+const RENDER_CACHE_FRESH_MS = 60_000;
+const RENDER_CACHE_STALE_MS = 86_400_000;
+const FETCHED_AT_HEADER = "x-phaseo-fetched-at";
+
+function renderCache(): Cache | null {
+	const storage = (globalThis as { caches?: CacheStorage & { default?: Cache } }).caches;
+	return storage?.default ?? null;
+}
+
+function renderCacheKey(path: string): Request {
+	const buildId = typeof __PHASEO_BUILD_ID__ === "string" ? __PHASEO_BUILD_ID__ : "dev";
+	return new Request(`${getWebApiOrigin()}${path}${path.includes("?") ? "&" : "?"}__render=${encodeURIComponent(buildId)}`);
+}
+
+async function storeRendered(cache: Cache, key: Request, body: unknown): Promise<void> {
+	await cache.put(key, new Response(JSON.stringify(body), {
+		headers: {
+			"content-type": "application/json",
+			"cache-control": `public, max-age=${RENDER_CACHE_STALE_MS / 1000}`,
+			[FETCHED_AT_HEADER]: String(Date.now()),
+		},
+	}));
+}
+
+async function refreshRendered(cache: Cache, key: Request, path: `/api/_web/${string}`): Promise<void> {
+	try {
+		await storeRendered(cache, key, await fetchPublicWebApiUncached(path));
+	} catch (error) {
+		// A resource that is gone must not keep being served from the cache.
+		if (error instanceof WebApiError && error.status === 404) await cache.delete(key);
+	}
+}
+
+async function fetchPublicWebApiForRender<T>(
+	path: `/api/_web/${string}`,
+	options: { signal?: AbortSignal; credentials?: RequestCredentials },
+): Promise<T> {
+	const cache = renderCache();
+	if (!cache) return fetchPublicWebApiUncached<T>(path, options);
+	const key = renderCacheKey(path);
+	const hit = await cache.match(key).catch(() => undefined);
+	if (hit) {
+		const age = Date.now() - Number(hit.headers.get(FETCHED_AT_HEADER) ?? 0);
+		if (age >= 0 && age < RENDER_CACHE_STALE_MS) {
+			const body = (await hit.json().catch(() => undefined)) as T | undefined;
+			if (body !== undefined) {
+				if (age >= RENDER_CACHE_FRESH_MS) {
+					const { waitUntil } = await import("@/lib/start/wait-until");
+					void waitUntil(refreshRendered(cache, key, path));
+				}
+				return body;
+			}
+		}
+	}
+	const body = await fetchPublicWebApiUncached<T>(path, options);
+	const { waitUntil } = await import("@/lib/start/wait-until");
+	void waitUntil(storeRendered(cache, key, body));
+	return body;
 }
 
 export async function fetchOptionalPublicWebApi<T>(

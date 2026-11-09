@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { DisplayDate } from "@/components/display/DisplayValue";
 import { ArrowRight, ChevronDown } from "lucide-react";
 import { Badge } from "@/components/ui/badge";

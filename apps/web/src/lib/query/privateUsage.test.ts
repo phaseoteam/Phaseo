@@ -1,3 +1,4 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { QueryObserver } from "@tanstack/react-query";
 import { createWebQueryClient } from "./queryClient";
 import { privateUsageOptions, readUsageSearchParams, usageSearchParams } from "./privateUsage";
@@ -9,17 +10,17 @@ const fiveMinutes = 300_000;
 
 describe("private usage cache", () => {
 	let client: ReturnType<typeof createWebQueryClient>;
-	beforeEach(() => { jest.useFakeTimers(); client = createWebQueryClient(); });
-	afterEach(() => { client.clear(); jest.useRealTimers(); });
+	beforeEach(() => { vi.useFakeTimers(); client = createWebQueryClient(); });
+	afterEach(() => { client.clear(); vi.useRealTimers(); });
 
 	it.each(["logs", "observability", "geography", "realtime", "request-page", "request-detail"])("reuses %s on return, then refetches after five minutes", async (resource) => {
-		const queryFn = jest.fn(async () => ({ rows: ["private"], fetchedAt: Date.now() }));
+		const queryFn = vi.fn(async () => ({ rows: ["private"], fetchedAt: Date.now() }));
 		const options = { ...privateUsageOptions(scope, resource, params), queryFn };
 		const first = await client.fetchQuery(options);
-		jest.advanceTimersByTime(fiveMinutes - 1);
+		vi.advanceTimersByTime(fiveMinutes - 1);
 		expect(await client.fetchQuery(options)).toEqual(first);
 		expect(queryFn).toHaveBeenCalledTimes(1);
-		jest.advanceTimersByTime(1);
+		vi.advanceTimersByTime(1);
 		await client.fetchQuery(options);
 		expect(queryFn).toHaveBeenCalledTimes(2);
 	});
@@ -37,7 +38,7 @@ describe("private usage cache", () => {
 	});
 
 	it("Live never treats a prior result as fresh and discards inactive data", async () => {
-		const queryFn = jest.fn(async () => ["live"]);
+		const queryFn = vi.fn(async () => ["live"]);
 		const options = { ...privateUsageOptions(scope, "logs", params, true), queryFn };
 		expect(options.staleTime).toBe(0);
 		expect(options.refetchOnMount).toBe("always");
@@ -45,12 +46,12 @@ describe("private usage cache", () => {
 		await client.fetchQuery(options);
 		await client.fetchQuery(options);
 		expect(queryFn).toHaveBeenCalledTimes(2);
-		jest.advanceTimersByTime(1);
+		vi.advanceTimersByTime(1);
 		expect(client.getQueryData(options.queryKey)).toBeUndefined();
 	});
 
 	it("manual refresh and mutation invalidation bypass five-minute freshness", async () => {
-		const queryFn = jest.fn(async () => ["private"]);
+		const queryFn = vi.fn(async () => ["private"]);
 		const options = { ...privateUsageOptions(scope, "logs", params), queryFn };
 		await client.fetchQuery(options);
 		const observer = new QueryObserver(client, options);
@@ -93,32 +94,32 @@ describe("private usage cache", () => {
 		let visibility = "visible";
 		Object.defineProperty(globalThis, "window", { configurable: true, value: new EventTarget() });
 		Object.defineProperty(globalThis, "document", { configurable: true, value: { get visibilityState() { return visibility; } } });
-		const queryFn = jest.fn(async () => ["fresh"]);
+		const queryFn = vi.fn(async () => ["fresh"]);
 		let stopLive = () => {};
 		let dispose = () => {};
 		try {
-			jest.isolateModules(() => {
-				// eslint-disable-next-line @typescript-eslint/no-require-imports
-				const { QueryClient, QueryObserver: BrowserObserver } = require("@tanstack/react-query") as typeof import("@tanstack/react-query");
+			vi.resetModules();
+			{
+				const { QueryClient, QueryObserver: BrowserObserver } = await import("@tanstack/react-query");
 				const browserClient = new QueryClient();
 				const observer = new BrowserObserver(browserClient, { ...privateUsageOptions(scope, "logs", params, true), queryFn });
 				stopLive = observer.subscribe(() => undefined);
 				dispose = () => { observer.destroy(); browserClient.clear(); };
-			});
-			await jest.advanceTimersByTimeAsync(0);
+			}
+			await vi.advanceTimersByTimeAsync(0);
 			expect(queryFn).toHaveBeenCalledTimes(1);
-			await jest.advanceTimersByTimeAsync(14_999);
+			await vi.advanceTimersByTimeAsync(14_999);
 			expect(queryFn).toHaveBeenCalledTimes(1);
-			await jest.advanceTimersByTimeAsync(1);
+			await vi.advanceTimersByTimeAsync(1);
 			expect(queryFn).toHaveBeenCalledTimes(2);
 			visibility = "hidden";
-			await jest.advanceTimersByTimeAsync(15_000);
+			await vi.advanceTimersByTimeAsync(15_000);
 			expect(queryFn).toHaveBeenCalledTimes(2);
 			visibility = "visible";
-			await jest.advanceTimersByTimeAsync(15_000);
+			await vi.advanceTimersByTimeAsync(15_000);
 			expect(queryFn).toHaveBeenCalledTimes(3);
 			stopLive();
-			await jest.advanceTimersByTimeAsync(30_000);
+			await vi.advanceTimersByTimeAsync(30_000);
 			expect(queryFn).toHaveBeenCalledTimes(3);
 		} finally {
 			stopLive(); dispose();

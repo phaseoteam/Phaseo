@@ -1,4 +1,6 @@
 import { Hono } from "hono";
+import { platformObservability } from "@/observability";
+import { refuseOAuthClientWrites } from "@/auth/oauthClientWrites";
 import type { Env } from "@/env";
 import { accountRouter } from "@/routes/account";
 import { internalRouter } from "@/routes/internal";
@@ -12,6 +14,10 @@ import { handleProviderCatalogScheduledEvent } from "@/scheduled/provider-catalo
 import { handleSlackAgentChargesScheduledEvent } from "@/scheduled/slack-agent-charges";
 
 const app = new Hono<{ Bindings: Env }>();
+
+app.use("*", platformObservability);
+// Before every route: an OAuth client's token may write only what oauthClientWrites allows.
+app.use("/api/*", refuseOAuthClientWrites);
 
 app.route("/api/_web", publicRouter);
 app.route("/api/account", accountRouter);

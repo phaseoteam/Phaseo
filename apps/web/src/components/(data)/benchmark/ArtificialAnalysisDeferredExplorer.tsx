@@ -1,6 +1,4 @@
-"use client";
-
-import dynamic from "next/dynamic";
+import dynamic from "@/lib/dynamic";
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import type { ExplorerPoint } from "@/lib/benchmarks/artificialAnalysisExplorer";

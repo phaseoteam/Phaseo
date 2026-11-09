@@ -1,0 +1,124 @@
+---
+icon: "binary"
+title: "Embeddings"
+description: "Turn text and other inputs into vectors with POST /v1/embeddings from any Phaseo SDK."
+"og:image": "https://phaseo.app/og/dynamic?title=Embeddings&description=Turn%20text%20and%20other%20inputs%20into%20vectors%20with%20POST%20/v1/embeddings%20from%20any%20Phaseo%20SDK.&pathname=/docs/v1/sdk-reference/client/embeddings"
+---
+
+Send text to `POST /v1/embeddings` to get one vector per input back. The examples use a `client` created as in [Installation](./installation).
+
+<CodeGroup>
+
+```typescript TypeScript
+const embedding = await client.generateEmbedding({
+  model: "openai/text-embedding-3-large",
+  input: "Sample text",
+});
+```
+
+```python Python
+embedding = client.generate_embedding({
+    "model": "openai/text-embedding-3-large",
+    "input": "Sample text",
+})
+```
+
+```go Go
+resp, err := client.GenerateEmbedding(context.Background(), map[string]interface{}{
+  "model": "openai/text-embedding-3-large",
+  "input": "Sample text",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp["data"])
+```
+
+```csharp C#
+var response = await client.CreateEmbedding(new Dictionary<string, object>
+{
+    ["model"] = "openai/text-embedding-3-large",
+    ["input"] = "Sample text",
+});
+```
+
+```php PHP
+$response = $client->generateEmbedding([
+    'model' => 'openai/text-embedding-3-large',
+    'input' => 'Sample text',
+]);
+```
+
+```ruby Ruby
+response = client.generate_embedding(
+  model: 'openai/text-embedding-3-large',
+  input: 'Sample text'
+)
+```
+
+```java Java
+String body = """
+{
+  "model": "openai/text-embedding-3-large",
+  "input": "Sample text"
+}
+""";
+
+Object response = client.createEmbedding(new com.fasterxml.jackson.databind.ObjectMapper().readTree(body));
+System.out.println(String.valueOf(response));
+```
+
+```rust Rust
+// No embeddings method yet: post() sends JSON to any Phaseo path.
+let response = client.post("/embeddings", &json!({
+    "model": "openai/text-embedding-3-large",
+    "input": "Sample text"
+}))?;
+```
+
+</CodeGroup>
+
+| Language | Method | Returns |
+| --- | --- | --- |
+| TypeScript | `client.generateEmbedding(request)` | The typed response |
+| Python | `client.generate_embedding(request)` or `client.embeddings.create(request)` | A dict |
+| Go | `client.GenerateEmbedding(ctx, req)`, alias `CreateEmbedding` | `map[string]interface{}` |
+| C# | `client.CreateEmbedding(request)` | `Dictionary<string, object>?` |
+| PHP | `$client->generateEmbedding($request)`, alias `createEmbedding()` | An array |
+| Ruby | `client.generate_embedding(...)`, alias `create_embedding` | A Hash |
+| Java | `client.createEmbedding(jsonNode)` | `Object` |
+| Rust | `client.post("/embeddings", &request)` | `PhaseoResponse`, with the JSON in `body` |
+
+## Parameters
+
+Field names are the JSON body fields in every SDK.
+
+| Field | Notes |
+| --- | --- |
+| `model` | Required. An embedding model ID. |
+| `input` | Required. A string, an array of strings, or multimodal content parts (text, image, audio, video) for models that accept them. |
+| `encoding_format` | `float` (default), `base64`, `base64_int8` or `base64_binary`. |
+| `dimensions` | A positive integer that shortens each vector, on models that support it. |
+| `provider_options` | Provider settings, such as Google's `task_type` and `title` or Mistral's `output_dtype`. |
+| `user` | End-user tag. |
+
+The full schema is in the [Embeddings API reference](/v1/api-reference/endpoint/embeddings).
+
+## Response
+
+```json
+{
+  "data": [
+    {
+      "embedding": [0.1, 0.2, 0.3],
+      "index": 0
+    }
+  ],
+  "usage": {
+    "input_tokens": 5,
+    "output_tokens": 0,
+    "total_tokens": 5,
+    "embedding_tokens": 5
+  }
+}
+```

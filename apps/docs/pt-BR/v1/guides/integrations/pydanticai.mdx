@@ -4,15 +4,15 @@ icon: "braces"
 description: "Crie agentes Python tipados com PydanticAI e Phaseo."
 ---
 
-Use PydanticAI quando quiser agentes Python com saídas tipadas, validação e uma configuração compacta de modelo compatível com OpenAI.
+Crie um `OpenAIChatModel` com um `OpenAIProvider` apontado para `https://api.phaseo.app/v1`, e os agentes do PydanticAI rodam com modelos do Phaseo.
 
-## Instalar
+## Instale
 
 ```bash
 pip install "pydantic-ai-slim[openai]"
 ```
 
-## Configure o modelo
+## Aponte o PydanticAI para o Phaseo
 
 ```python
 import os
@@ -21,7 +21,7 @@ from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 model = OpenAIChatModel(
-    "openai/gpt-5-nano",
+    "openai/gpt-6-astra",
     provider=OpenAIProvider(
         api_key=os.environ["PHASEO_API_KEY"],
         base_url="https://api.phaseo.app/v1",
@@ -33,14 +33,9 @@ result = agent.run_sync("Reply with only: ok")
 print(result.output)
 ```
 
-## Observações
+Se `ok` for impresso, a configuração funciona.
 
-- O caminho compatível com OpenAI do PydanticAI usa comportamento de chat no estilo OpenAI.
-- Use chamadas diretas do Phaseo Responses para recursos exclusivos do Responses, como `phaseo:apply_patch`.
-- Mantenha os esquemas de saída estruturada pequenos o suficiente para a janela de contexto do modelo selecionado.
+## Limitações conhecidas
 
-## Relacionados
-
-- [Saídas estruturadas](../structured-outputs.mdx)
-- [SDK da OpenAI](./openai-sdk.mdx)
-- [Modelos](../../api-reference/endpoint/models.mdx)
+- Este caminho usa Chat Completions no estilo OpenAI. Para recursos exclusivos do Responses, como `phaseo:apply_patch`, chame diretamente o endpoint Responses do Phaseo.
+- Mantenha os schemas de [saída estruturada](../structured-outputs.mdx) pequenos o suficiente para a janela de contexto do modelo. Confira os limites em [Modelos](../../api-reference/endpoint/models.mdx).

@@ -1,39 +1,84 @@
 ---
 icon: "sliders-horizontal"
 title: "Parâmetros de inferência"
-description: "Como os principais parâmetros da solicitação afetam a qualidade, o determinismo, a latência e o custo."
+description: "Como a amostragem, as penalidades e os limites de saída afetam a qualidade, o determinismo, a latência e o custo."
 ---
 
-A quantização é uma metade do comportamento do modelo.  
-Os parâmetros de inferência são a outra metade.
+Defina `temperature`, `top_p` e um limite de saída em cada solicitação para equilibrar variedade e repetibilidade, e tamanho e custo. A [quantização](./quantization.mdx) do modelo define o teto de qualidade; esses parâmetros decidem como o modelo escolhe cada próximo token dentro desse teto.
 
-## Parâmetros principais
+```json
+{
+  "model": "openai/gpt-6-astra",
+  "messages": [{ "role": "user", "content": "Extract the invoice total as JSON." }],
+  "temperature": 0.1,
+  "top_p": 1,
+  "max_tokens": 200
+}
+```
 
-| Parâmetro | O que controla | Efeito típico |
+Esta página explica o que cada controle faz e por onde começar. Para o tipo, os valores aceitos e o padrão de cada campo em cada endpoint, consulte a [referência de parâmetros](../api-reference/parameters.mdx).
+
+## Controle a aleatoriedade
+
+| Parâmetro | O que faz | Observações |
 | --- | --- | --- |
-| `temperature` | Aleatoriedade na seleção de tokens | Um valor mais alto gera respostas mais criativas e variáveis; um valor menor, respostas mais determinísticas |
-| `top_p` | Limite da amostragem de núcleo | Um valor menor tende a gerar respostas mais seguras e focadas |
-| `top_k` | Tamanho do conjunto de tokens candidatos (quando compatível) | Um valor menor gera respostas mais restritas e previsíveis |
-| `max_tokens` / `max_output_tokens` | Comprimento máximo da resposta gerada | Limita custo e latência, mas pode truncar respostas |
-| `stop` | Sequências explícitas de parada | Melhora o enquadramento da saída e a confiabilidade da análise |
-| `seed` | Semente aleatória (quando compatível) | Melhora a reprodutibilidade em depurações e testes |
+| `temperature` | Ajusta a aleatoriedade geral. Mais alto gera mais variedade; mais baixo, mais determinismo. | Geralmente é o primeiro a ajustar. |
+| `top_p` | Amostra apenas entre os tokens mais prováveis cujas probabilidades somam `top_p`. Valores mais baixos geram saídas mais seguras e focadas. | Costuma ser combinado com uma temperatura moderada. |
+| `top_k` | Amostra apenas entre os `k` tokens mais prováveis. Valores mais baixos geram saídas mais restritas e previsíveis. | Não está disponível em todos os provedores. |
+| `seed` | Fixa a semente aleatória, para que as execuções sejam mais repetíveis em depuração e testes. | Somente onde o provedor oferece suporte. |
 
-## Interações a observar
+`temperature` e `top_p` alteram a aleatoriedade, então ajuste um de cada vez. Um modelo quantizado com poucos bits e com alta aleatoriedade pode deixar a saída visivelmente menos estável.
 
-- `temperature` e `top_p` afetam a aleatoriedade. Altere um parâmetro por vez durante o ajuste.
-- A quantização agressiva com poucos bits, combinada com alta aleatoriedade, pode aumentar a instabilidade da saída.
-- Um valor baixo de `max_tokens` pode parecer uma falha do modelo quando a resposta foi apenas truncada.
+## Reduza a repetição
 
-## Valores iniciais recomendados
+| Parâmetro | O que faz | Observações |
+| --- | --- | --- |
+| `frequency_penalty` | Desestimula tokens e frases repetidos. | Reduz loops repetitivos. |
+| `presence_penalty` | Estimula novos tokens e assuntos. | Útil para uma exploração mais ampla. |
+| `repetition_penalty` | Penaliza texto repetido. | Mesmo objetivo das penalidades acima; o efeito exato depende do provedor e do modelo. |
 
-- `temperature`: de `0.2` a `0.7`, conforme a criatividade necessária
-- `top_p`: de `0.9` a `1.0`
-- `max_tokens`: dimensione conforme o tamanho esperado da resposta, em vez de usar um valor enorme para tudo
+## Limite e interrompa a saída
 
-## Fluxo de ajuste
+O limite de saída é `max_tokens` em Chat Completions e Anthropic Messages, e `max_output_tokens` em Responses. Ele limita o custo e a latência; se ficar baixo demais, a resposta é truncada. Uma resposta que para antes com `finish_reason: "length"` atingiu o limite de saída; não é uma falha do modelo.
 
-1. Ajuste primeiro a quantização.
-2. Fixe um conjunto de avaliação.
-3. Varie um parâmetro por vez.
-4. Compare qualidade, latência e uso de tokens.
-5. Mantenha predefinições separadas por endpoint e caso de uso.
+`stop` recebe sequências que encerram a saída, o que facilita delimitar e interpretar a saída. Consulte [Tamanho da saída e interrupção](../api-reference/parameters.mdx#output-length-and-stopping) para ver os campos de cada endpoint.
+
+## Quando um provedor não aceita um parâmetro
+
+Nem todos os provedores aceitam `top_k`, `seed`, `stop` ou as penalidades. Se o provedor que atende a solicitação não aceitar, o Phaseo descarta esse parâmetro em vez de rejeitar a solicitação e o lista no cabeçalho de resposta `X-Phaseo-Dropped-Params`. Os limites de saída nunca são descartados. Consulte [Parâmetros não compatíveis](../api-reference/parameters.mdx#unsupported-parameters) para ver a lista completa.
+
+## Comece por estes valores
+
+| Tarefa | Comece com |
+| --- | --- |
+| Extração, classificação, JSON | `temperature` de `0.0` a `0.2`, amostragem restrita |
+| Respostas gerais de assistente | `temperature` de `0.3` a `0.7`, `top_p` de `0.9` a `1.0` |
+| Escrita criativa | `temperature` mais alta e amostragem mais ampla, com avaliação mais atenta |
+
+Dimensione `max_tokens` para a saída que você espera de cada tarefa, e não use um único valor alto para tudo. Ajuste cada tarefa separadamente em vez de usar um único perfil para tudo. Em tarefas criativas, aumente a aleatoriedade aos poucos e revise a saída manualmente.
+
+## Reconheça uma configuração ruim
+
+| Sintoma | Causa provável |
+| --- | --- |
+| Fatos inconsistentes, saída estruturada instável | Aleatoriedade alta demais |
+| Respostas repetitivas ou sem graça | Determinismo excessivo |
+| Redação estranha, desvio de assunto | Penalidades altas demais |
+| Resposta cortada, `finish_reason: "length"` | Limite de saída baixo demais |
+
+## Ajuste os parâmetros
+
+<Steps>
+<Step title="Escolha primeiro o modelo e a quantização">
+Consulte [Quantização](./quantization.mdx#pick-a-precision).
+</Step>
+<Step title="Fixe um conjunto de avaliação">
+Use os mesmos prompts em todas as execuções para que os resultados sejam comparáveis.
+</Step>
+<Step title="Altere um parâmetro de cada vez">
+Compare a qualidade, a latência e o uso de tokens para cada valor.
+</Step>
+<Step title="Salve o resultado por tarefa">
+Mantenha [predefinições](./presets.mdx) separadas para cada endpoint ou caso de uso, para que quem faz as chamadas herde os padrões ajustados.
+</Step>
+</Steps>

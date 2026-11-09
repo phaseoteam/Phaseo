@@ -1,10 +1,11 @@
 ---
 icon: "binary"
 title: "埋め込み（AI SDK）"
-description: "Vercel AI SDKでPhaseoプロバイダーモデルを使って埋め込みを作成します。"
+sidebarTitle: "埋め込み"
+description: "Vercel AI SDK で Phaseo プロバイダーのモデルを使って埋め込みを作成します。"
 ---
 
-`embed`と`embedMany`で`phaseo.textEmbeddingModel(...)`（または`embeddingModel`）を使います。
+`phaseo.embeddingModel(modelId)`（または別名の `textEmbeddingModel`）を、値が1つなら `embed` に、リストなら `embedMany` に渡します。リクエストは Gateway の `/v1/embeddings` エンドポイントに送られます。
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
@@ -25,8 +26,8 @@ const batch = await embedMany({
 console.log(batch.embeddings.length);
 ```
 
-## 注意事項
+## ベクトルを比較可能に保つ
 
-- クエリとコーパスの埋め込みには、同じモデルバージョンを使います。
+- クエリとコーパスは、同じバージョンのモデルで埋め込みます。
 - 類似度を計算する前に、ベクトルを一貫した方法で正規化します。
-- 繰り返し使用するコンテンツの安定した埋め込みをキャッシュします。
+- 繰り返し使うコンテンツについては、変わらない埋め込みをキャッシュします。

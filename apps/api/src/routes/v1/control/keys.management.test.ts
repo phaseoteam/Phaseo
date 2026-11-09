@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { PUBLIC_NATIVE_CLIENT_REFUSAL } from "./route-helpers";
 
 vi.mock("@/lib/audit/workspaceAudit", () => ({ recordWorkspaceAuditEvent: vi.fn(async () => true) }));
 
@@ -22,6 +23,8 @@ const state = vi.hoisted(() => ({
 	updatePayloads: [] as Array<Record<string, unknown>>,
 	insertPayloads: [] as Array<Record<string, unknown>>,
 	membershipRows: [] as Array<Record<string, unknown> | null>,
+	membershipLookups: [] as Array<Array<{ column: string; value: unknown }>>,
+	keyWorkspaceFilters: [] as unknown[],
 	departmentRows: [] as Array<Record<string, unknown> | null>,
 	departmentLookups: [] as Array<Array<{ column: string; value: unknown }>>,
 	updateFilters: [] as Array<Array<{ column: string; value: unknown }>>,
@@ -96,25 +99,24 @@ function buildKeysSupabaseMock() {
 			}
 
 			if (table === "workspace_members") {
-				return {
-					select: () => ({
-						eq: () => ({
-							eq: () => ({
-								maybeSingle: async () => ({
-									data: state.membershipRows.shift() ?? null,
-									error: null,
-								}),
-							}),
-						}),
-					}),
+				const filters: Array<{ column: string; value: unknown }> = [];
+				state.membershipLookups.push(filters);
+				const lookup: any = {
+					select: () => lookup,
+					eq: (column: string, value: unknown) => { filters.push({ column, value }); return lookup; },
+					maybeSingle: async () => ({ data: state.membershipRows.shift() ?? null, error: null }),
 				};
+				return lookup;
 			}
 
 			let updatePayload: Record<string, unknown> | null = null;
 			const query: any = {
 				delete: () => ({ eq: async (_column: string, value: unknown) => { state.deletedKeyIds.push(value); return { error: null }; } }),
 				select: () => query,
-				eq: () => query,
+				eq: (column: string, value: unknown) => {
+					if (column === "workspace_id") state.keyWorkspaceFilters.push(value);
+					return query;
+				},
 				neq: () => query,
 				not: (...args: unknown[]) => { state.nameFilters.push(args); return query; },
 				or: () => query,
@@ -220,6 +222,8 @@ describe("management key routes", () => {
 		state.keyUsageRows.length = 0;
 		state.workspaceRows.length = 0;
 		state.membershipRows.length = 0;
+		state.membershipLookups.length = 0;
+		state.keyWorkspaceFilters.length = 0;
 		state.departmentRows.length = 0;
 		state.departmentLookups.length = 0;
 		state.updatePayloads.length = 0;
@@ -237,7 +241,7 @@ describe("management key routes", () => {
 		vi.resetModules();
 	});
 
-	it("returns current key metadata with hash and computed limit window", async () => {
+	it("returns current key metadata, without the hash, with the computed limit window", async () => {
 		state.keyRows.push({
 			id: "key_1",
 			hash: "hash_1",
@@ -275,7 +279,6 @@ describe("management key routes", () => {
 		expect(response.status).toBe(200);
 		expect(body.data).toMatchObject({
 			id: "key_1",
-			hash: "hash_1",
 			label: "Primary Key",
 			limit: 25,
 			limit_reset: "monthly",
@@ -285,6 +288,8 @@ describe("management key routes", () => {
 			limit_remaining: 17,
 			usage_details: { monthly: { requests: 90, cost: 8 } },
 		});
+		expect(body.data).not.toHaveProperty("hash");
+		expect(body.data).not.toHaveProperty("kid");
 	});
 
 	it("creates a key and applies compatibility limit fields", async () => {
@@ -334,11 +339,12 @@ describe("management key routes", () => {
 			daily_limit_requests: 100,
 		});
 		expect(body.data).toMatchObject({
-			hash: "hash_new",
 			limit: 5,
 			limit_reset: "weekly",
 			key: "phaseo_v1_sk_kid_123_secret_123",
 		});
+		expect(body.data).not.toHaveProperty("hash");
+		expect(body.data).not.toHaveProperty("kid");
 	});
 
 	it("credits a key minted with a management key to that key's creator, falling back to the owner", async () => {
@@ -396,7 +402,8 @@ describe("management key routes", () => {
 				apiKeyId: "oauth_1",
 				internal: false,
 				authMethod: "oauth",
-				oauthClientId: "phaseo_cli",
+				oauthClientId: null,
+				apiKeyRef: "dashboard",
 				userId: "user_member",
 				scopes: ["keys:write"],
 			} as any,
@@ -474,9 +481,10 @@ describe("management key routes", () => {
 		expect(response.status).toBe(200);
 		expect(body.data).toMatchObject({
 			id: "key_1",
-			hash: "hash_1",
 			name: "Primary Key",
 		});
+		expect(body.data).not.toHaveProperty("hash");
+		expect(body.data).not.toHaveProperty("kid");
 	});
 
 	describe("apps that use Sign in with Phaseo", () => {
@@ -552,28 +560,202 @@ describe("management key routes", () => {
 			expect(state.updatePayloads).toEqual([{ name: "Renamed" }]);
 		});
 
-		it("leaves Phaseo's own CLI and desktop app able to create keys and change limits", async () => {
-			state.guardManagementAuthResult = oauthAuth("phaseo_cli");
+		it("refuses CLI and desktop sign-ins too, because their client IDs are public", async () => {
+			for (const clientId of ["phaseo_cli", "aistats_cli", "phaseo_desktop"]) {
+				state.guardManagementAuthResult = oauthAuth(clientId);
+				state.membershipRows.push({ role: "owner" });
+				const created = await request("https://example.com/", "POST", { name: "From the CLI" });
+				expect(created.status, clientId).toBe(403);
+				expect(await created.json(), clientId).toMatchObject({ error: "forbidden", message: PUBLIC_NATIVE_CLIENT_REFUSAL });
+
+				state.guardManagementAuthResult = oauthAuth(clientId);
+				state.membershipRows.push({ role: "owner" });
+				state.keyRows.push({ ...personKey });
+				const changed = await request("https://example.com/hash_person", "PATCH", { limit: null });
+				expect(changed.status, clientId).toBe(403);
+				expect(await changed.json(), clientId).toMatchObject({ message: PUBLIC_NATIVE_CLIENT_REFUSAL });
+			}
+			expect(state.insertPayloads).toEqual([]);
+			expect(state.updatePayloads).toEqual([]);
+		});
+
+		it("leaves the person's dashboard session able to create keys and change limits", async () => {
+			const dashboard = { ok: true, value: { ...oauthAuth("").value, oauthClientId: null, apiKeyRef: "dashboard" } } as GuardOk;
+			state.guardManagementAuthResult = dashboard;
 			state.membershipRows.push({ role: "owner" });
-			state.keyRows.push({ ...personKey, id: "key_new", hash: "hash_new", name: "From the CLI" });
-			expect((await request("https://example.com/", "POST", { name: "From the CLI" })).status).toBe(201);
+			state.keyRows.push({ ...personKey, id: "key_new", hash: "hash_new", name: "From the dashboard" });
+			expect((await request("https://example.com/", "POST", { name: "From the dashboard" })).status).toBe(201);
 			expect(state.insertPayloads).toHaveLength(1);
 
-			for (const clientId of ["phaseo_cli", "phaseo_desktop"]) {
-				state.guardManagementAuthResult = oauthAuth(clientId);
-				state.membershipRows.push({ role: "admin" });
-				state.keyRows.push({ ...personKey }, { ...personKey, monthly_limit_cost_nanos: 0 });
-				expect((await request("https://example.com/hash_person", "PATCH", { limit: null })).status, clientId).toBe(200);
-			}
-			expect(state.updatePayloads).toEqual([
-				{ daily_limit_cost_nanos: 0, weekly_limit_cost_nanos: 0, monthly_limit_cost_nanos: 0 },
-				{ daily_limit_cost_nanos: 0, weekly_limit_cost_nanos: 0, monthly_limit_cost_nanos: 0 },
-			]);
+			state.guardManagementAuthResult = dashboard;
+			state.membershipRows.push({ role: "admin" });
+			state.keyRows.push({ ...personKey }, { ...personKey, monthly_limit_cost_nanos: 0 });
+			expect((await request("https://example.com/hash_person", "PATCH", { limit: null })).status).toBe(200);
+			expect(state.updatePayloads).toEqual([{ daily_limit_cost_nanos: 0, weekly_limit_cost_nanos: 0, monthly_limit_cost_nanos: 0 }]);
 		});
 
 		it("leaves API keys and other management tokens as they were", async () => {
 			state.keyRows.push({ ...personKey }, { ...personKey, monthly_limit_cost_nanos: 0 });
 			expect((await request("https://example.com/hash_person", "PATCH", { limit: null })).status).toBe(200);
+		});
+	});
+
+	describe("another workspace of the signed-in person", () => {
+		const cliAuth = (overrides: Record<string, unknown> = {}) => ({
+			ok: true,
+			value: {
+				workspaceId: "ws_1", apiKeyId: "phaseo_cli", internal: false, authMethod: "oauth", oauthClientId: "phaseo_cli", userId: "user_1",
+				scopes: ["keys:read", "keys:write", "keys:delete"], oauthScopes: ["keys:read", "keys:write", "keys:delete"], ...overrides,
+			} as any,
+		} as GuardOk);
+		const key = {
+			id: "key_2", hash: "hash_2", workspace_id: "ws_2", kid: "kid_2", name: "Cache test", prefix: "phaseo_v1_sk_kid_2",
+			status: "active", scopes: "[]", soft_blocked: false, expires_at: null, key_kind: "standard",
+		};
+		type Call = { name: string; url: string; method: string; body?: Record<string, unknown>; status: number };
+		const calls: Call[] = [
+			{ name: "list", url: "https://example.com/?workspace_id=ws_2", method: "GET", status: 200 },
+			{ name: "create", url: "https://example.com/", method: "POST", body: { name: "Cache test", workspace_id: "ws_2" }, status: 201 },
+			{ name: "get", url: "https://example.com/hash_2?workspace_id=ws_2", method: "GET", status: 200 },
+			{ name: "update", url: "https://example.com/hash_2?workspace_id=ws_2", method: "PATCH", body: { name: "Renamed" }, status: 200 },
+			{ name: "delete", url: "https://example.com/hash_2?workspace_id=ws_2", method: "DELETE", status: 200 },
+			{ name: "rotate", url: "https://example.com/hash_2/rotate?workspace_id=ws_2", method: "POST", status: 200 },
+		];
+		const send = async (call: Call) => {
+			const { keysRoutes } = await import("./keys");
+			return keysRoutes.request(call.url, {
+				method: call.method, headers: { "content-type": "application/json" }, ...(call.body ? { body: JSON.stringify(call.body) } : {}),
+			});
+		};
+		// Listing, reading, renaming and deleting don't raise what a key can spend, so the CLI may do them in another
+		// workspace too. Creating, rotating and changing a key's limits are made in the dashboard or with a management key.
+		const reads = calls.filter((call) => ["list", "get", "update", "delete"].includes(call.name));
+		const writes: Call[] = [
+			...calls.filter((call) => !reads.includes(call)),
+			{ name: "limit", url: "https://example.com/hash_2?workspace_id=ws_2", method: "PATCH", body: { limit: 5 }, status: 403 },
+		];
+		const expectNothingTouched = () => {
+			expect(state.keyWorkspaceFilters).toEqual([]);
+			expect(state.insertPayloads).toEqual([]);
+			expect(state.updatePayloads).toEqual([]);
+		};
+
+		it("lets Phaseo's CLI list, read, rename and delete keys where the person is an owner or admin", async () => {
+			const { recordWorkspaceAuditEvent } = await import("@/lib/audit/workspaceAudit");
+			const audit = vi.mocked(recordWorkspaceAuditEvent);
+			for (const call of reads) {
+				state.guardManagementAuthResult = cliAuth();
+				state.membershipRows.push({ role: call.name === "get" ? "admin" : "owner" });
+				state.keyRows.length = 0;
+				state.keyRows.push({ ...key }, { ...key, id: "key_3", hash: "hash_3" });
+				state.keyWorkspaceFilters.length = 0;
+				state.membershipLookups.length = 0;
+				audit.mockClear();
+
+				const response = await send(call);
+
+				expect(response.status, call.name).toBe(call.status);
+				// The role is checked in the named workspace, for the signed-in person.
+				expect(state.membershipLookups, call.name).toEqual([[{ column: "workspace_id", value: "ws_2" }, { column: "user_id", value: "user_1" }]]);
+				expect(state.keyWorkspaceFilters.every((value) => value === "ws_2"), `${call.name} ${JSON.stringify(state.keyWorkspaceFilters)}`).toBe(true);
+				for (const [, event] of audit.mock.calls) expect(event, call.name).toMatchObject({ workspaceId: "ws_2" });
+				if (call.name === "update" || call.name === "delete") expect(audit, call.name).toHaveBeenCalled();
+			}
+			expect(state.insertPayloads).toEqual([]);
+			expect(state.updateFilters.flat().filter((filter) => filter.column === "workspace_id").map((filter) => filter.value).every((value) => value === "ws_2")).toBe(true);
+		});
+
+		it("refuses the CLI's key changes in any workspace: they're made in the dashboard or with a management key", async () => {
+			for (const call of writes) {
+				for (const workspace of ["ws_1", "ws_2"]) {
+					state.guardManagementAuthResult = cliAuth();
+					state.membershipRows.length = 0;
+					state.membershipRows.push({ role: "owner" });
+					state.keyRows.length = 0;
+					state.keyRows.push({ ...key, workspace_id: workspace });
+
+					const response = await send({ ...call, url: call.url.replace("ws_2", workspace), ...(call.body ? { body: { ...call.body, workspace_id: workspace } } : {}) });
+
+					expect(response.status, `${call.name} ${workspace}`).toBe(403);
+					expect(await response.json(), `${call.name} ${workspace}`).toMatchObject({ error: "forbidden", message: PUBLIC_NATIVE_CLIENT_REFUSAL });
+				}
+			}
+			expect(state.insertPayloads).toEqual([]);
+			expect(state.updatePayloads).toEqual([]);
+		});
+
+		it("refuses a person who isn't a member of the named workspace", async () => {
+			for (const call of reads) {
+				state.guardManagementAuthResult = cliAuth();
+				state.membershipRows.push(null);
+
+				const response = await send(call);
+
+				expect(response.status, call.name).toBe(403);
+				expect(await response.json(), call.name).toEqual({ error: "forbidden", message: "Workspace membership is required" });
+			}
+			expectNothingTouched();
+		});
+
+		it("refuses a member of the named workspace who isn't an owner or admin", async () => {
+			for (const call of reads) {
+				state.guardManagementAuthResult = cliAuth();
+				state.membershipRows.push({ role: "member" });
+
+				const response = await send(call);
+
+				expect(response.status, call.name).toBe(403);
+				expect(await response.json(), call.name).toEqual({ error: "forbidden", message: "Workspace owner or admin role is required" });
+			}
+			expectNothingTouched();
+		});
+
+		it("keeps API keys, management keys and dashboard sessions in their own workspace", async () => {
+			const callers = {
+				"API key": { workspaceId: "ws_1", apiKeyId: "key_1", internal: false },
+				"management key": { workspaceId: "ws_1", apiKeyId: "mgmt_1", internal: false, authMethod: "api_key", userId: "user_1", scopes: ["keys:read", "keys:write", "keys:delete"] },
+				"dashboard session": { workspaceId: "ws_1", apiKeyId: "dashboard", apiKeyRef: "dashboard", internal: false, authMethod: "oauth", oauthClientId: null, userId: "user_1", scopes: ["keys:read", "keys:write", "keys:delete"] },
+				"OAuth token without a person": { ...cliAuth({ userId: null }).value },
+			};
+			for (const [caller, value] of Object.entries(callers)) {
+				for (const call of calls) {
+					state.guardManagementAuthResult = { ok: true, value: value as any };
+					state.membershipRows.push({ role: "owner" });
+
+					const response = await send(call);
+
+					expect(response.status, `${caller} ${call.name}`).toBe(403);
+					// A CLI token is refused key changes before the workspace is looked at.
+					const refusedAsCli = caller === "OAuth token without a person" && writes.includes(call);
+					expect(await response.json(), `${caller} ${call.name}`).toMatchObject(refusedAsCli
+						? { error: "forbidden", message: PUBLIC_NATIVE_CLIENT_REFUSAL }
+						: { ok: false, error: "forbidden", message: "workspace_id must match authenticated workspace" });
+					state.membershipRows.length = 0;
+				}
+			}
+			expect(state.membershipLookups).toEqual([]);
+			expectNothingTouched();
+
+			// Naming its own workspace is still fine.
+			state.guardManagementAuthResult = { ok: true, value: callers["API key"] as any };
+			state.keyRows.push({ ...key, workspace_id: "ws_1" });
+			expect((await send({ name: "get", url: "https://example.com/hash_2?workspace_id=ws_1", method: "GET", status: 200 })).status).toBe(200);
+			expect(state.keyWorkspaceFilters).toEqual(["ws_1"]);
+		});
+
+		it("keeps apps that use Sign in with Phaseo in the workspace the person chose for them", async () => {
+			for (const call of calls) {
+				state.guardManagementAuthResult = cliAuth({ oauthClientId: "partner_app" });
+				state.membershipRows.push({ role: "owner" });
+
+				const response = await send(call);
+
+				expect(response.status, call.name).toBe(403);
+				expect((await response.json()).error, call.name).toBe("forbidden");
+				state.membershipRows.length = 0;
+			}
+			expect(state.membershipLookups).toEqual([]);
+			expectNothingTouched();
 		});
 	});
 
@@ -691,10 +873,11 @@ describe("management key routes", () => {
 			{ column: "workspace_id", value: "ws_1" },
 		]);
 		expect(body.data).toMatchObject({
-			hash: "hash_1",
 			limit: 10,
 			limit_reset: "daily",
 		});
+		expect(body.data).not.toHaveProperty("hash");
+		expect(body.data).not.toHaveProperty("kid");
 	});
 
 	describe("department link", () => {

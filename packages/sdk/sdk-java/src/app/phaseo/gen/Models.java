@@ -134,7 +134,6 @@ public final class Models {
 		public String department_id;
 		public Boolean disabled;
 		public String expires_at;
-		public String hash;
 		public String id;
 		public Boolean include_byok_in_limit;
 		public java.util.List<Object> ip_allowlist;
@@ -258,7 +257,6 @@ public final class Models {
 		public String department_id;
 		public Boolean disabled;
 		public String expires_at;
-		public String hash;
 		public String id;
 		public Boolean include_byok_in_limit;
 		public java.util.List<Object> ip_allowlist;
@@ -1995,8 +1993,10 @@ public final class Models {
 
 	public static class ImagesEditRequest {
 		public Object background;
+		public Object complexity;
 		public Object image;
 		public Object input_fidelity;
+		public String markup;
 		public String mask;
 		public Boolean meta;
 		public String model;
@@ -2023,6 +2023,9 @@ public final class Models {
 
 	public static class ImagesGenerationRequest {
 		public Object background;
+		public Object complexity;
+		public Integer frame_count;
+		public Integer frame_duration_ms;
 		public String model;
 		public java.util.List<String> models;
 		public Object moderation;
@@ -2038,12 +2041,14 @@ public final class Models {
 		public String size;
 		public Boolean stream;
 		public String style;
+		public Object svg;
 		public String user;
 	}
 
 	public static class ImagesGenerationResponse {
 		public Integer created;
 		public java.util.List<Object> data;
+		public Object svg_usage;
 	}
 
 	public static class InputTokensDetails {
@@ -3955,7 +3960,7 @@ public final class Models {
 
 	public static class VideoGenerationRequest {
 		public String aspect_ratio;
-		public Integer compression_quality;
+		public Object compression_quality;
 		public Integer duration;
 		public Boolean enhance_prompt;
 		public java.util.List<Object> frame_images;
@@ -4599,9 +4604,20 @@ public final class Models {
 		public String workspace_id;
 	}
 
+	public static class WorkspaceMemberAddFailure {
+		public Object code;
+		public String message;
+		public String user_id;
+	}
+
 	public static class WorkspaceMemberAddResponse {
 		public Integer added_count;
+		public java.util.List<String> approved;
 		public java.util.List<Object> data;
+		public String error;
+		public java.util.List<Object> failed;
+		public String message;
+		public java.util.List<String> not_attempted;
 	}
 
 	public static class WorkspaceMemberBulkRequest {

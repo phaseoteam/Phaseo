@@ -111,6 +111,9 @@ CREATE INDEX workspace_settings_data_contribution_actor_idx ON public.workspace_
 CREATE INDEX workspace_settings_low_balance_email_idx ON public.workspace_settings USING btree (workspace_id)
   WHERE low_balance_email_enabled;
 
+CREATE UNIQUE INDEX workspace_settings_sso_provider_identifier_key ON public.workspace_settings USING btree (sso_provider_identifier)
+  WHERE (sso_enabled AND (sso_provider_identifier IS NOT NULL));
+
 CREATE TRIGGER gateway_workspace_publication
   AFTER INSERT OR DELETE OR UPDATE ON public.workspace_settings
   FOR EACH ROW
@@ -130,6 +133,25 @@ CREATE TRIGGER validate_billing_time_zone
   BEFORE INSERT OR UPDATE OF billing_time_zone ON public.workspace_settings
   FOR EACH ROW
   EXECUTE FUNCTION public.validate_workspace_billing_time_zone();
+
+CREATE POLICY "workspace_settings_no_oauth_client_insert" ON "public"."workspace_settings"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "workspace_settings_no_oauth_client_update" ON "public"."workspace_settings"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "workspace_settings_no_oauth_client_delete" ON "public"."workspace_settings"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
 
 CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspace_settings"
   AS RESTRICTIVE

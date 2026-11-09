@@ -1,8 +1,9 @@
 import * as z from "zod";
 import { lazySchema } from "./lazy-schema";
 
+// The 31 built-in voices in audio.output.voice (checked 2026-11-05):
 // https://developers.openai.com/api/reference/resources/live
-export const LIVE_VOICES = ["alloy", "ash", "ballad", "beacon", "bossa", "cedar", "cinder", "coral", "delta", "echo", "gleam", "marin", "meridian", "quartz", "ripple", "sage", "shimmer", "stone", "tempo", "verse", "vesper", "willow"] as const;
+export const LIVE_VOICES = ["alloy", "ash", "ballad", "beacon", "bossa", "brise", "cedar", "cinder", "coral", "delta", "echo", "flitz", "gleam", "harema", "juni", "marin", "meridian", "nira", "noeul", "nuri", "quartz", "ripple", "sage", "shida", "shimmer", "sillage", "stone", "tempo", "verse", "vesper", "willow"] as const;
 export const LIVE_MAX_OUTPUT_TOKENS = 4096;
 export const LIVE_BACKEND_INSTRUCTIONS = "Answer the user's request accurately and concisely for a spoken conversation. Return verified facts and task status. Do not claim to have performed actions without a tool result.";
 

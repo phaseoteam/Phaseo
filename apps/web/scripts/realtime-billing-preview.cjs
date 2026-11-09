@@ -15,7 +15,7 @@ async function main() {
   const bundle = await esbuild.build({ absWorkingDir: appRoot, bundle: true, write: false, platform: "browser", format: "iife", jsx: "automatic",
     define: { "process.env.NODE_ENV": '"development"' },
     stdin: { resolveDir: appRoot, loader: "tsx", contents: `import {createRoot} from 'react-dom/client';
-      import {BillingReviews} from './src/app/(dashboard)/internal/realtime-billing/BillingReviews';
+      import {BillingReviews} from './src/features/internal/realtime-billing/BillingReviews';
       window.fixtureDecisions=[];const reviews=Array.from({length:30},(_,i)=>({session_id:'rt_fixture_'+i,workspace_id:'fixture-workspace',status:'open',
         access_blocked:true,version:1,opened_at:'2026-09-11T12:00:00Z',review_due_at:'2026-09-12T12:00:00Z',attempts:1,
         last_attempt_at:null,recovery_error:null,confirmed_cost_nanos:i===1?null:7500000,evidence_complete:false,
@@ -23,12 +23,12 @@ async function main() {
           reserved_nanos:5000000000,captured_nanos:0,released_nanos:0,disconnect_reason:'missing_final_usage'}}));
       createRoot(document.getElementById('root')).render(<main style={{padding:24}}><h1>Realtime billing review</h1><BillingReviews reviews={reviews}/></main>);` },
     plugins: [{ name: "offline", setup(build) {
-      build.onResolve({ filter: /^next\/navigation$/ }, () => ({ path: "navigation", namespace: "offline" }));
+      build.onResolve({ filter: /^@\/i18n\/navigation$/ }, () => ({ path: "navigation", namespace: "offline" }));
       build.onResolve({ filter: /^\.\/actions$/ }, args => args.importer.includes("realtime-billing") ? { path: "actions", namespace: "offline" } : undefined);
       build.onLoad({ filter: /.*/, namespace: "offline" }, args => ({ contents: args.path === "actions" ? stub : "export const useRouter=()=>({refresh(){}});", loader: "js" }));
     } }],
   });
-  const cssPath = path.join(appRoot, "src/app/globals.css");
+  const cssPath = path.join(appRoot, "src/styles/globals.css");
   const { css } = await require("postcss")([require("@tailwindcss/postcss")()]).process(await fs.readFile(cssPath, "utf8"), { from: cssPath });
   const server = http.createServer((request, response) => {
     if (request.url === "/bundle.js") { response.setHeader("content-type", "text/javascript"); response.end(bundle.outputFiles[0].text); }

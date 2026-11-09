@@ -1,9 +1,5 @@
-"use client";
-
-import { useModelsLayoutTracking } from "./useModelsLayoutExperiment";
-
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { decisionModelCapabilities } from "@/lib/models/modelCapabilities";
 import {
 	memo,
@@ -44,7 +40,7 @@ type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
 };
 import { Logo } from "@/components/Logo";
 import { getModalityTone } from "@/lib/models/modalityStyles";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import {
 	Tooltip,
 	TooltipContent,
@@ -526,8 +522,11 @@ function ModelCardImpl({
 		(lifecycleStatus === "deprecated" ||
 			hasPassedLifecycleDate(model.deprecation_date));
 	const LifecycleIcon = isRetired || isDeprecated ? BadgeAlert : null;
-	const lifecycleLabel = isRetired ? "End of life" : isDeprecated ? "Deprecated" : null;
-	const modelDescription = String(model.description ?? "").trim();
+	const lifecycleLabel = isRetired
+		? t("lifecycleEndOfLife")
+		: isDeprecated
+			? t("lifecycleDeprecated")
+			: null;
 	const isComingSoon =
 		!isRetired && !isDeprecated && model.gateway_status === "coming_soon";
 	const [copied, setCopied] = useState(false);
@@ -959,11 +958,9 @@ function ModelCardImpl({
 		? format.number(weeklyUsage.quantity, { maximumFractionDigits: 2, notation: "standard" })
 		: format.count(weeklyUsage.quantity)}${weeklyUsage.unitSuffix}`;
 
-	const trackLayout = useModelsLayoutTracking();
 	const copyModelId = async () => {
 		try {
 			await navigator.clipboard.writeText(displayModelId);
-			trackLayout("models_layout_model_id_copied", { model_id: model.model_id });
 			setCopied(true);
 			setTimeout(() => setCopied(false), 1400);
 		} catch {
@@ -981,7 +978,6 @@ function ModelCardImpl({
 		) {
 			return;
 		}
-		trackLayout("models_layout_model_opened", { model_id: model.model_id });
 		router.push(modelHref, { scroll: true });
 	};
 
@@ -1026,7 +1022,6 @@ function ModelCardImpl({
 						<div className="flex items-center gap-1 min-w-0">
 							<Link
 								href={modelHref}
-							onClick={() => trackLayout("models_layout_model_opened", { model_id: model.model_id })}
 								prefetch={false}
 								scroll
 								className="font-semibold text-sm leading-[1.1] text-foreground hover:underline underline-offset-4 transition-colors duration-200 line-clamp-1"
@@ -1078,7 +1073,6 @@ function ModelCardImpl({
 					<Button asChild size="icon" variant="ghost" className="h-8 w-8 shrink-0">
 						<Link
 							href={modelHref}
-							onClick={() => trackLayout("models_layout_model_opened", { model_id: model.model_id })}
 							prefetch={false}
 							scroll
 							aria-label={t("viewDetails")}
@@ -1095,12 +1089,6 @@ function ModelCardImpl({
 						</Link>
 					</Button>
 				</div>
-
-				{modelDescription ? (
-					<p className="-mt-2 line-clamp-2 text-xs leading-snug text-muted-foreground">
-						{modelDescription}
-					</p>
-				) : null}
 
 				<div className="grid gap-2 text-xs md:grid-cols-3">
 					<ModelCardScrollRail ariaLabel={t("modelSummary")} className="md:col-span-3">

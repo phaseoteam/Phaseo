@@ -1,120 +1,61 @@
 ---
 title: "Modelle kennenlernen"
-description: "Erfahre, wie du die auf Phaseo aufgeführten KI-Modelle durchsuchen, vergleichen und verstehen kannst."
+description: "Erfahre, wie du die auf Phaseo aufgeführten KI-Modelle durchsuchst, vergleichst und verstehst."
 sidebarTitle: "Modelle"
 icon: "brain"
 ---
 
-Phaseo pflegt einen umfangreichen offenen Katalog für Text-, Bild-, Audio-, Video-, Embedding- und weitere KI-Modelle.
+Öffne die Liste [Modelle](https://phaseo.app/models), um Text-, Bild-, Audio-, Video-, Embedding- und andere Modelle zu finden, und öffne dann ein Modell, um seine Anbieter, Preise, Leistung und Benchmark-Punktzahlen zu sehen.
 
-Jede Modellseite enthält detaillierte technische und kommerzielle Informationen, damit du Modelle bewerten, vergleichen und das passende Modell auswählen kannst.
+![Eine Modellseite auf Phaseo](/images/gemini-3-page.png)
 
-<Info>
-Der Katalog ist umfangreicher als Gateway. Standardmäßig zeigt die Seite „Modelle“ nur Modelle mit einer aktiven Gateway-Route. Wähle einen anderen Gateway-Status nur aus, wenn du gezielt kommende oder inaktive Katalogeinträge ansehen möchtest.
-</Info>
+## Katalogmodelle und aufrufbare Modelle
 
----
-
-## Inhalte einer Modellseite
-
-Jede Modellseite bei Phaseo enthält folgende wichtige Bereiche:
-
-| Bereich | Beschreibung |
-| --- | --- |
-| **Übersicht** | Anbieter, Veröffentlichungsdatum, Modelltyp (Chat, Code, Embedding, Bild usw.) und Kurzbeschreibung. |
-| **Familie** | Verwandte Modelle und ihre Beziehungen. |
-| **Zeitachse** | Veröffentlichungshistorie und wichtige Aktualisierungen im Zeitverlauf. |
-| **Benchmarks** | Leistungsergebnisse aus verschiedenen Benchmarks zum Vergleich ähnlicher Modelle. |
-| **Verfügbarkeit** | Unterscheidet aktive Gateway-Routen von kommenden, inaktiven und externen Anbieterangeboten. |
-| **Preise** | Detaillierte Preise in USD, vereinheitlicht für einfache Vergleiche und Kostenschätzungen. |
-| **Gateway** | Direkte Links und Schnellstarts, wenn eine öffentliche Gateway-Route verfügbar ist. |
-| **Leistung** | Beobachtete Latenz, Durchsatz und Erfolgsdaten gerouteter Gateway-Anfragen, sofern genügend Daten vorliegen. |
-
-## Katalogmodelle und routbare Modelle
-
-Verwende diese Begriffe einheitlich:
+Der Katalog ist umfangreicher als das Gateway. Die Modellliste zeigt standardmäßig nur Modelle, die **Auf Gateway aktiv** sind. Stelle den Filter **Gateway-Status** auf **Demnächst verfügbar** oder **Inaktiv**, um den Rest zu sehen.
 
 | Begriff | Bedeutung |
 | --- | --- |
-| Katalogmodell | Phaseo erfasst Metadaten zum Modell. Eine öffentliche Route muss nicht vorhanden sein. |
-| Routbares Modell | Mindestens eine Anbieterroute ist aktuell auf Phaseo Gateway aktiv. |
-| Externes Angebot | Phaseo erfasst ein Anbieterangebot, das nicht über Gateway ausgeführt wird. |
+| Katalogmodell | Phaseo erfasst Metadaten zum Modell. Es hat möglicherweise keine Route, die du aufrufen kannst. |
+| Routbares Modell | Mindestens eine Anbieterroute ist jetzt auf dem Phaseo-Gateway aktiv. |
+| Externe Zuordnung | Phaseo listet ein Anbieterangebot auf, das das Gateway nicht ausführt. |
 
-Für die programmatische Suche gibt `GET /v1/models` standardmäßig nur routbare Modelle zurück. Setze `availability=all`, um den vollständigen Katalog anzuzeigen.
+`GET /v1/models` gibt nur routbare Modelle zurück. Füge `availability=all` hinzu, um den Rest einzuschließen.
 
----
+## Liste filtern und sortieren
 
-## Beispiel einer Modellseite
+| Steuerelement | Optionen |
+| --- | --- |
+| Gateway-Status | Auf Gateway aktiv (Standard), Demnächst verfügbar, Inaktiv |
+| Endpunkte | Die API-Endpunkte, die ein Modell unterstützt, etwa Textgenerierung oder Embeddings |
+| Eingabe- und Ausgabemodalitäten | Text, Bild, Audio, Video und weitere |
+| Funktionen | Fähigkeiten wie Tool-Aufrufe oder Reasoning |
+| Jahr | Veröffentlichungsjahr |
+| Sortierung | Neueste, am beliebtesten (Tokens der letzten 7 Tage), Preis, Kontextlänge, Durchsatz, Latenz |
 
-So könnten die Daten eines Modells in Phaseo aussehen:
+Um jedes Modell eines Labors zu sehen, öffne seine [Organisationsseite](./organisations.mdx).
 
-![GPT-5-Modellseite](../../../images/gemini-3-page.png)
+## Was eine Modellseite zeigt
 
----
+| Bereich | Was er dir zeigt |
+| --- | --- |
+| **Anbieter** | Jede Anbieterroute mit Status, Kontextlänge, Preis, Verfügbarkeit und Datenrichtlinie. [Anbieterstatus](../guides/provider-statuses) erklärt die Symbole. |
+| **Leistung** | Latenz und Durchsatz, gemessen im Gateway-Traffic, sofern genügend Daten vorliegen. |
+| **Preise** | Jede Abrechnungseinheit in USD: Eingabe, Ausgabe, zwischengespeicherte Eingabe und Medieneinheiten. |
+| **Vergleichstests** | Punktzahlen in jedem Benchmark, mit Quellen. |
+| **Aktivität** | Gateway-Token-Nutzung im Zeitverlauf. |
+| **Apps** | Öffentliche Apps, die das Modell nutzen. |
+| **Verfügbarkeit** | Verfügbarkeit der Routen in den letzten Tagen. |
+| **Verifizierung** | Prüfungen der Inhaltsherkunft, für Bild- und Videomodelle. |
+| **Über dieses Modell** | Veröffentlichungsdaten, Lizenz, Links und Familie. |
+| **Abonnements** | Abonnementpläne von Anbietern, die das Modell enthalten. |
+| **FAQ** | Häufige Fragen zum Modell. |
+
+Ein Bereich erscheint nur, wenn es Daten dafür gibt. Modelle mit einer aktiven Route zeigen außerdem einen Schnellstart mit der Modell-ID, die du senden musst.
 
 ## Modelle vergleichen
 
-Vergleiche Modelle anhand von Leistung, Preisen und Funktionen nebeneinander.
-Phaseo hebt Unterschiede automatisch hervor und sortiert Modelle nach verschiedenen Benchmark-Durchschnittswerten.
+[Vergleichen](https://phaseo.app/compare) stellt Modelle nach Preis, Benchmark-Punktzahlen, Kontext und Funktionen nebeneinander. [Preise und Leistung](./pricing-performance.mdx) erklärt, wie du die Kosten- und Geschwindigkeitswerte liest.
 
-<Columns cols={2}>
-	<Card
-		title="Modelle vergleichen"
-		icon="scale"
-		href="./pricing-performance.mdx"
-	>
-		Analysiere den Zielkonflikt zwischen Kosten und Leistung, um das passende Modell für deinen Workload zu wählen.
-	</Card>
-	<Card
-		title="Benchmarks ansehen"
-		icon="chart-column-increasing"
-		href="./benchmarks.mdx"
-	>
-		Erfahre, wie Benchmark-Ergebnisse ermittelt und vereinheitlicht werden.
-	</Card>
-</Columns>
+## Korrektur melden
 
----
-
-## Modelle nach Kriterien finden
-
-Nutze Filter und Tags in der Phaseo-Oberfläche, um passende Modelle zu finden:
-
-- **Nach Anbieter:** „Alle Anthropic-Modelle anzeigen.“
-- **Nach Funktion:** „Modelle mit Unterstützung für strukturierte JSON-Antworten auflisten.“
-- **Nach Benchmark:** „Die 10 besten Modelle auf GPQA.“
-- **Nach Preis:** „Modelle unter 0,01 USD pro 1.000 Tokens.“
-- **Nach Veröffentlichungsdatum:** „Kürzlich veröffentlichte Modelle.“
-
-Kombiniere Filter, um genau das zu finden, was du brauchst.
-
----
-
-## Modellaktualisierungen beitragen
-
-KI entwickelt sich schnell. Phaseo ist deshalb auf Beiträge angewiesen, damit Modelldaten aktuell bleiben.
-Erstelle ein GitHub-Issue, um eine Korrektur zu melden, fehlende Benchmarks einzureichen oder neue Metadaten anzufordern. Füge die Modellseite und offizielle Quellen hinzu; bestätigte Änderungen werden im Datenbankeditor übernommen.
-
-<Card
-	title="Modelldaten beitragen"
-	icon="github"
-	href="../contributing/editing-a-model.mdx"
-	horizontal
->
-	Erfahre, wie du eine Modellkorrektur meldest oder einen fehlenden Eintrag anforderst.
-</Card>
-
----
-
-## Nächste Schritte
-
-Jetzt, da du weißt, wie Modelle aufgebaut sind, kannst du die **Organisationen** kennenlernen, die sie entwickeln.
-
-<Card
-	title="Organisationen kennenlernen"
-	icon="building"
-	href="./organisations.mdx"
-	horizontal
->
-	Entdecke die Unternehmen und Forschungsteams hinter den einzelnen Modellen.
-</Card>
+Erstelle ein GitHub-Issue mit der Modellseite und einer offiziellen Quelle. Die Maintainer übernehmen genehmigte Aktualisierungen in die Datenbank. Siehe [Modellaktualisierung melden](../contributing/editing-a-model.mdx).

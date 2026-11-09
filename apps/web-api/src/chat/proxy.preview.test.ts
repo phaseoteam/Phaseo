@@ -131,4 +131,14 @@ describe("chat proxy preview testing", () => {
 		expect(response.status).toBe(200);
 		expect(fetchMock).toHaveBeenCalledTimes(1);
 	});
+
+	it.each([`00-${"a".repeat(32)}-${"b".repeat(16)}-01`, "malformed-context"])("forwards only validated trace context (%s)", async traceparent => {
+		state.memberRole = "admin";
+		const response = await proxyGateway(new Request("https://web-api.example/api/chat/completions", { method: "POST", headers: { traceparent } }), env, () => undefined, {
+			path: "/chat/completions", requestBody: previewBody, appHeaders: { traceparent: "spoofed-context" },
+		});
+		expect(response.status).toBe(200);
+		const [, init] = fetchMock.mock.calls[0] as unknown as [string, RequestInit];
+		expect(new Headers(init.headers).get("traceparent")).toBe(traceparent.startsWith("00-") ? traceparent : null);
+	});
 });

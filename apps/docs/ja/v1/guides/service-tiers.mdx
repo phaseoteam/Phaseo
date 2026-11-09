@@ -1,62 +1,10 @@
 ---
-title: "サービス階層"
-description: "Phaseo GatewayのStandard、Fast、Ultrafast、Flex、Batch料金モードの仕組み。"
+title: "サービスティア"
+description: "Phaseo Gateway の Standard、Fast、Ultrafast、Flex、Batch の料金モードの仕組みを説明します。"
 icon: "gauge"
 ---
 
-サービス階層に対応するプロバイダーでは、料金や処理方法を選択できます。
-
-利用可否はプロバイダーとモデルによって異なります。リクエストしたモデルが階層に対応していない場合、Gatewayはその階層へルーティングしません。
-
-<Note type="warning">
-サービス階層は現在、対応プロバイダーの対応テキストモデルでのみ利用できます。
-</Note>
-
-`service_tier`は、3種類すべてのテキストリクエストAPIで利用できます。
-
-- Anthropic互換のMessages（`/v1/messages`）
-- OpenAI互換のChat Completions（`/v1/chat/completions`）
-- OpenAI互換のResponses（`/v1/responses`）
-
-## 階層の概要
-
-| 等級 | 指定方法 | 主な用途 |
-| --- | --- | --- |
-| `Standard` | デフォルトの動作です。追加のフィールドは必要ありません。 | 通常の本番トラフィック。 |
-| `Fast` | リクエストに`service_tier: "fast"`を設定します。 | 対応している場合に高速またはプレミアムなルーティングを使います。OpenAIでは`priority`も指定できます。 |
-| `Ultrafast` | リクエストに`service_tier: "ultrafast"`を設定します。 | 対応している場合に最高速のルーティングを使います。 |
-| `Flex` | リクエストに`service_tier: "flex"`を設定します。 | 対応している場合に低コストのルーティングを使います。 |
-| `Batch` | `service_tier`ではなくBatch APIを使います。 | レイテンシがそれほど重要でない、大規模な遅延処理向けです。 |
-
-## API互換性
-
-対応する同期テキストAPIを呼び出すときは、同じ`service_tier`フィールドを使います。
-
-- [Anthropic Messages APIリファレンス](../api-reference/endpoint/anthropic-messages.mdx)
-- [Chat Completions APIリファレンス](../api-reference/endpoint/chat-completions.mdx)
-- [Responses APIリファレンス](../api-reference/endpoint/responses.mdx)
-- [共通パラメーターリファレンス](../api-reference/parameters.mdx)
-
-`service_tier`で指定できる値は`standard`、`fast`、`ultrafast`、`priority`、`flex`、`batch`です。`service_tier`を省略した場合は`Standard`がデフォルトです。Phaseoではプレミアム階層の正式名称に`Fast`を使います。OpenAIルートでは、プロバイダー互換エイリアスの`priority`も受け付け、同じルーティングと料金が適用されます。`Batch`は同期テキストリクエストではなくBatch APIで処理します。
-
-<Note>
-Phaseoは正規化されたGatewayの値を、内部でプロバイダー固有の設定にマッピングします。たとえばAnthropicルートでは上流にAnthropic固有の階層フィールドを送る場合がありますが、クライアント側のリクエストではここに記載したGatewayの値を使います。
-</Note>
-
-## Standard
-
-`Standard`はデフォルトのルーティングモードです。使用するために`service_tier`を設定する必要はありません。
-
-```json
-{
-  "model": "openai/gpt-5.5",
-  "input": "Summarise this incident report."
-}
-```
-
-## Fast
-
-プロバイダーのプレミアムまたは優先度の高いオプションを使う場合は`Fast`を選びます。Phaseoではプロバイダーに依存しない名称として`fast`を使います。OpenAIではFastモードと呼ばれ、対応モデルで`fast`と`priority`の両方を指定できます。
+テキストリクエストに `service_tier` を設定すると、より速い配信（`fast`、`ultrafast`）に料金を払うか、安価で優先度の低いモード（`flex`）を選べます。Phaseo は、そのモデルでそのティアを提供しているプロバイダーにだけルーティングします。このフィールドは `/v1/chat/completions`、`/v1/responses`、`/v1/messages` で同じように機能します。
 
 ```json
 {
@@ -66,11 +14,53 @@ Phaseoは正規化されたGatewayの値を、内部でプロバイダー固有�
 }
 ```
 
-### Anthropic Messagesの例
+| ティア | 指定方法 | 用途 |
+| --- | --- | --- |
+| Standard | 指定なし、または `"standard"` / `"default"` | 一般的な本番トラフィック |
+| Fast | `"fast"`、またはそのエイリアス `"priority"` | プロバイダーのプレミアムまたは優先度の高いオファー |
+| Ultrafast | `"ultrafast"` | 最も高速なオファー |
+| Flex | `"flex"` | プロバイダーにある場合の低コストのオファー |
+| Batch | `service_tier` ではなく [Batch API](../api-reference/endpoint/batches-create.mdx) | 大規模な後回しのワークロード |
 
-```json
+ティアを使えるのはテキストモデルだけで、モデルとプロバイダーが対応している場合に限られます。Phaseo がティア別の料金を把握している場合は、モデルページに表示されます。
+
+## ティアが提供されていない場合
+
+Phaseo は、要求されたティアを提供しているプロバイダールートだけを残し、別のティアにフォールバックすることはありません。提供しているルートがない場合、リクエストは `400 unsupported_model_or_endpoint`（理由 `service_tier_not_supported`）で失敗します。
+
+次の値は `400 validation_error` で失敗します。
+
+- 同期リクエストでの `service_tier: "batch"`（キーワード `batch_service_tier_not_supported`）。代わりに Batch API を使ってください。
+- `standard`、`default`、`fast`、`ultrafast`、`priority`、`flex`、`batch` 以外の値（キーワード `unsupported_service_tier`）。
+
+送るのは常にこれらの Gateway の値です。Phaseo はそれを各プロバイダー独自の設定に変換するため、たとえば Anthropic のルートは Anthropic のティアのフィールドを受け取ります。
+
+## 各エンドポイントでティアを指定する
+
+<CodeGroup>
+```json Responses
 {
-  "model": "anthropic/claude-sonnet-4",
+  "model": "openai/gpt-5.5",
+  "input": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "flex"
+}
+```
+
+```json Chat Completions
+{
+  "model": "openai/gpt-5.5",
+  "messages": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "flex"
+}
+```
+
+```json Messages
+{
+  "model": "anthropic/claude-opus-5.5",
   "max_tokens": 512,
   "messages": [
     { "role": "user", "content": "Summarise this incident report." }
@@ -78,17 +68,17 @@ Phaseoは正規化されたGatewayの値を、内部でプロバイダー固有�
   "service_tier": "fast"
 }
 ```
+</CodeGroup>
 
-Anthropicへルーティングする際、Phaseoは適切なプロバイダー固有の設定にマッピングします。
+`ultrafast` には、モデルページに Ultrafast の料金が表示されているモデルを使ってください。
 
-### Mistral PriorityとEUルーティング
+## Mistral Priority と EU ルーティング
 
-Mistral Priority Tierの利用には、対象となるMistralエンタープライズアカウントが必要です。Phaseoは
-`priority`をMistralの自動優先モードに割り当て、Mistralが報告した階層で課金します。
-MistralがStandardに戻った場合はStandardの料金が適用されます。
+Mistral Priority Tier には、対象となる Mistral のエンタープライズアカウントが必要です。Phaseo は `priority` を Mistral の自動優先モードに対応付け、Mistral が報告したティアで課金します。Mistral が Standard にフォールバックした場合は、Standard の料金を支払います。
 
-GLM 5.2は、`mistral-eu`プロバイダーオファーを使ってMistralのEUリージョナルエンドポイントに固定できます。
-プロバイダーオファー:
+カタログに料金があっても、そのティアにルーティングできるとは限りません。特定の Mistral ルートが Priority への対応を公表していない限り Priority は無効のままで、利用資格は Mistral のアカウントとモデルにも左右されます。
+
+GLM 5.2 は、`mistral-eu` プロバイダーオファーで Mistral の EU リージョンのエンドポイントに固定できます。
 
 ```json
 {
@@ -104,81 +94,6 @@ GLM 5.2は、`mistral-eu`プロバイダーオファーを使ってMistralのEU�
 }
 ```
 
-Mistralのリージョナル推論には10%の価格上乗せが適用されます。グローバルなMistralオファーではBatch料金が利用できますが、
-MistralのリージョナルエンドポイントはBatchに対応していません。
+Mistral のリージョン推論は 10% 高くなります。Batch の料金は、Batch API 経由のグローバルな Mistral のオファーでのみ利用できます。Mistral はリージョンのエンドポイントで Batch に対応していません。
 
-Phaseoは、Mistralが公開しているBatchとPriorityの基準料金を、実行時の利用可否とは別に記録します。
-カタログに価格が表示されても、その階層へルーティングできるとは限りません。
-該当するMistralルートがPriority対応を明示しない限りPriorityは無効のままで、
-BatchにはグローバルMistral Batch APIを使う必要があります。Priorityを利用できるかどうかは、
-引き続きMistralアカウントとモデルによって決まります。
-
-## Ultrafast
-
-モデルとプロバイダーが対応している場合、最高速のサービス階層には`Ultrafast`を使います。PhaseoはUltrafast料金またはUltrafast専用のルートだけを使い、この階層が利用できなくてもFastやStandardにフォールバックしません。
-
-```json
-{
-  "model": "<model-id-with-ultrafast-pricing>",
-  "input": "Summarise this incident report.",
-  "service_tier": "ultrafast"
-}
-```
-## Flex
-
-プロバイダーが低コストのサービス階層を提供しており、その料金モードに伴うトレードオフを許容できる場合は`Flex`を使います。
-
-```json
-{
-  "model": "openai/gpt-5.5",
-  "input": "Summarise this incident report.",
-  "service_tier": "flex"
-}
-```
-
-### Chat Completionsの例
-
-```json
-{
-  "model": "openai/gpt-5.5",
-  "messages": [
-    { "role": "user", "content": "Summarise this incident report." }
-  ],
-  "service_tier": "flex"
-}
-```
-
-### Responsesの例
-
-```json
-{
-  "model": "openai/gpt-5.5",
-  "input": [
-    { "role": "user", "content": "Summarise this incident report." }
-  ],
-  "service_tier": "flex"
-}
-```
-
-## Batch
-
-`batch`はバッチ実行用の有効な階層値ですが、同期テキストAPIでは`service_tier: "batch"`を指定すると、Batch APIを案内する検証エラーになります。
-
-Batch料金は通常の同期リクエストではなく遅延バッチ実行に適用されるため、Batch APIまたはバッチジョブのワークフローを使ってください。
-
-## 注意事項
-
-- 階層の対応状況はプロバイダーとモデルによって異なります。
-- 料金データがある場合、モデルページの料金カードに階層ごとの料金が表示されます。
-- 一部のプロバイダーは専用の上流オファーを提供しており、Phaseoはそれらをカタログ内で統一された階層として扱います。
-- クライアント向けの`service_tier`値は対応するテキストAPI間で統一され、プロバイダー固有の名称はGateway内で処理されます。
-
-## 関連ページ
-
-- [Anthropic Messages APIリファレンス](../api-reference/endpoint/anthropic-messages.mdx)
-- [Chat Completions APIリファレンス](../api-reference/endpoint/chat-completions.mdx)
-- [Responses APIリファレンス](../api-reference/endpoint/responses.mdx)
-- [パラメーター](../api-reference/parameters.mdx)
-- [ルーティングとフォールバック](./routing-and-fallbacks.mdx)
-- [Chat completions（TypeScript SDK）](../sdk-reference/typescript/chat-completions.mdx)
-- [Responses（TypeScript SDK）](../sdk-reference/typescript/responses.mdx)
+フィールドの完全なリファレンスは[パラメーター](../api-reference/parameters.mdx)にあります。ティアとプロバイダーの順序やフォールバックの組み合わせについては、[ルーティングとフォールバック](./routing-and-fallbacks.mdx)を参照してください。

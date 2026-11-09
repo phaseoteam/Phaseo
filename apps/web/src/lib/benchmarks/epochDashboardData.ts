@@ -1,5 +1,3 @@
-import "server-only";
-import { cacheLife } from "next/cache";
 import { buildEpochDashboard, epochNumber, type EpochDashboardData } from "./epochDashboard";
 import type { BenchmarkPage } from "@/lib/fetchers/benchmarks/types";
 
@@ -10,8 +8,6 @@ async function sourceFile(file: string) {
 }
 
 async function fetchEpochSource() {
-	"use cache";
-	cacheLife("hours");
 	const [scores, domain] = await Promise.all([
 		sourceFile("eci_scores.csv"),
 		Promise.all([sourceFile("processed_data_for_eci.csv"), sourceFile("edi_scores.csv"), sourceFile("benchmarks.json")]).catch(() => null),

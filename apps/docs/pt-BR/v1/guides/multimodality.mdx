@@ -1,27 +1,24 @@
 ---
 title: "Multimodalidade"
-description: "Use texto, imagens, áudio, vídeo e outras modalidades pelo gateway."
+description: "Use texto, imagem, áudio, vídeo e outras modalidades pelo Gateway."
 icon: "shapes"
 ---
 
-O gateway oferece várias modalidades por meio de uma API unificada. Cada endpoint corresponde a um recurso diferente, e o suporte dos modelos varia conforme o provedor.
+Escolha o endpoint da saída que você quer e, depois, um modelo compatível com esse endpoint. O mesmo nome de modelo pode aparecer em vários endpoints, e o suporte dos provedores muda em cada um.
 
-## Modalidades e endpoints
-
-| Modalidade | Endpoints principais | Observações |
+| Modalidade | Endpoints | O que fazem |
 | --- | --- | --- |
-| Texto | `/v1/responses`, `/v1/chat/completions`, `/v1/messages` | Saídas estruturadas e conversacionais. |
-| Imagens | `/v1/images/generations`, `/v1/images/edits` | Geração de imagens a partir de texto e edição de imagens. |
-| Áudio (TTS/STT/traduções) | `/v1/audio/speech`, `/v1/audio/transcriptions`, `/v1/audio/translations` | Texto para fala, fala para texto e tradução de áudio falado. |
-| Vídeo | `/v1/videos`, `/v1/videos/{video_id}`, `/v1/videos/{video_id}/content`, `/v1/videos/{video_id}` (DELETE) | Crie tarefas de vídeo assíncronas, consulte o status, busque o conteúdo e exclua as tarefas. |
-| Música | `/v1/music/generate` | Geração de música por meio de provedores compatíveis. |
-| OCR | `/v1/ocr` | Extrai texto de imagens quando houver suporte. |
+| Texto | `/v1/responses`, `/v1/chat/completions`, `/v1/messages` | Saída de texto conversacional e estruturada. |
+| Imagens | [`/v1/images/generations`](../api-reference/endpoint/images-generations.mdx), [`/v1/images/edits`](../api-reference/endpoint/images-edits.mdx) | Geração de imagens a partir de texto e edição de imagens. |
+| Áudio | [`/v1/audio/speech`](../api-reference/endpoint/audio-speech.mdx), [`/v1/audio/transcriptions`](../api-reference/endpoint/audio-transcriptions.mdx), [`/v1/audio/translations`](../api-reference/endpoint/audio-translations.mdx) | Texto para fala, fala para texto e tradução de áudio falado. |
+| Voz em tempo real | `/v1/audio/realtime/sessions` | Chamadas de voz ao vivo. Veja [Voz em tempo real](./realtime-voice.mdx). |
+| Vídeo | [`POST /v1/videos`](../api-reference/endpoint/video-create.mdx), `GET /v1/videos/{video_id}`, `GET /v1/videos/{video_id}/content`, `DELETE /v1/videos/{video_id}` | Crie uma tarefa de vídeo assíncrona, consulte o status, busque o conteúdo e exclua a tarefa. Veja [Tarefas de vídeo e em lote](./async-video-and-batch.mdx). |
+| Música | [`/v1/music/generate`](../api-reference/endpoint/music-generate.mdx) | Geração de música em provedores compatíveis. |
+| OCR | [`/v1/ocr`](../api-reference/endpoint/ocr.mdx) | Extração de texto de imagens. |
+| Análise de documentos | [`/v1/parse`](../api-reference/endpoint/parse.mdx) | Texto ordenado, tabelas e layout a partir de imagens de documentos. Veja [Analisar imagens de documentos](./document-parsing.mdx). |
 
-## Verificar o suporte dos modelos
+## Verificar quais modelos aceitam um endpoint
 
-Use o [endpoint de modelos](../api-reference/endpoint/models.mdx) para ver quais modelos estão disponíveis e quais endpoints eles aceitam. A cobertura dos provedores está disponível no [endpoint de provedores](../api-reference/endpoint/providers.mdx).
+Chame o [endpoint de modelos](../api-reference/endpoint/models.mdx): cada modelo lista os `endpoints` que aceita, e `GET /v1/models/{author}/{slug}/endpoints` mostra cada rota de provedor de um modelo, com suas modalidades e parâmetros aceitos. O [endpoint de provedores](../api-reference/endpoint/providers.mdx) lista a cobertura dos provedores.
 
-## Boas práticas
-
-- Escolha o endpoint conforme a modalidade necessária, mesmo que o nome do modelo seja compartilhado entre modalidades.
-- Antes de lançar, valide os payloads com a [referência da API](../api-reference/introduction.mdx).
+Confira os corpos das solicitações na [referência da API](../api-reference/introduction) do endpoint antes de publicar.

@@ -73,9 +73,11 @@ for (const schema of ['public', 'private']) {
   }
 }
 assert.deepEqual(Object.keys(rpcSql).sort(), protectedRpcs, 'every protected RPC was found');
-// The definitions before this migration: the same bodies without the check.
+// A later migration (refuse_oauth_client_writes) refuses OAuth client tokens right after the MFA check.
+const oauthCheck = /  -- A token issued to an OAuth client[^\n]*\n  if public\.request_is_oauth_client\(\) then\n[^\n]*\n  end if;\n\n/;
+// The definitions before this migration: the same bodies without the check (or the later OAuth check).
 const withoutCheck = (name) => {
-  const before = rpcSql[name].replace(`begin\n${mfaCheck}`, 'begin\n').replace(mfaFilter, '');
+  const before = rpcSql[name].replace(`begin\n${mfaCheck}`, 'begin\n').replace(mfaFilter, '').replace(oauthCheck, '');
   assert.notEqual(before, rpcSql[name]);
   return before;
 };

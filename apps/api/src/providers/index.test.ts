@@ -10,5 +10,7 @@ describe("provider adapter registry", () => {
 	it("resolves Wafer ZDR without collapsing its routing identity", () => {
 		expect(adapterFor("wafer-zdr", "chat.completions")).toBeTruthy();
 		expect(adapterById("wafer-zdr")).toBeTruthy();
+		expect(adapterFor("wafer-us", "chat.completions")).toBeTruthy();
+		expect(adapterById("wafer-us")).toBeTruthy();
 	});
 });

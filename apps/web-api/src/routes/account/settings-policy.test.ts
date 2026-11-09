@@ -14,7 +14,49 @@ const env = {
 
 afterEach(() => vi.unstubAllGlobals());
 
+/**
+ * A stand-in for find_member_visible_preset: the row when the caller belongs to its workspace and may see it
+ * (not someone else's private preset), otherwise nothing, as the database function answers.
+ */
+function visiblePresetRpc(url: string, row: Record<string, unknown> | null, { userId = "user-1", member = true }: { userId?: string; member?: boolean } = {}) {
+	if (!url.includes("/rpc/find_member_visible_preset")) return null;
+	const visible = Boolean(row) && member && (row!.visibility !== "private" || row!.created_by === userId);
+	return Response.json(visible ? [row] : []);
+}
+
 describe("account policy settings routes", () => {
+	it.each(["owner", "admin", "member"])("reports routing edit access for a %s and enforces it on writes", async (role) => {
+		let writes = 0;
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const request = input instanceof Request ? input : new Request(input, init);
+			if (request.url.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
+			if (request.url.includes("workspace_members")) return Response.json([{ role }]);
+			if (request.url.includes("/workspaces")) return Response.json([{ id: "workspace-1", name: "Fixture workspace", owner_user_id: role === "owner" ? "user-1" : "other-user" }]);
+			if (request.url.includes("workspace_settings")) {
+				if (request.method !== "GET") writes++;
+				return Response.json([]);
+			}
+			return Response.json([]);
+		}));
+		const canManage = role !== "member";
+		const response = await app.request("https://phaseo.app/api/account/settings/routing?workspaceId=workspace-1", { headers: { authorization: "Bearer fixture" } }, env);
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toMatchObject({ canManage, workspaceId: "workspace-1" });
+		const privacy = await app.request("https://phaseo.app/api/account/settings/privacy?workspaceId=workspace-1", { headers: { authorization: "Bearer fixture" } }, env);
+		expect(privacy.status).toBe(200);
+		await expect(privacy.json()).resolves.toMatchObject({ canManage, workspaceId: "workspace-1" });
+		const write = await app.request("https://phaseo.app/api/account/settings/routing", {
+			method: "PUT", headers: { authorization: "Bearer fixture", "content-type": "application/json" },
+			body: JSON.stringify({ workspaceId: "workspace-1", mode: "price" }),
+		}, env);
+		expect(write.status).toBe(canManage ? 200 : 403);
+		expect(writes).toBe(canManage ? 1 : 0);
+	});
+
+	it("does not grant routing edit access without a selected workspace", async () => {
+		const response = await app.request("https://phaseo.app/api/account/settings/routing", {}, env);
+		await expect(response.json()).resolves.toMatchObject({ canManage: false, workspaceId: null });
+	});
 	it("returns the private effective Chat policy with the guardrails the Chat key inherits and its own", async () => {
 		const rpcBodies: unknown[] = [];
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -249,7 +291,7 @@ describe("account policy settings routes", () => {
 			const url = input instanceof Request ? input.url : String(input);
 			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
 			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "member" }]), { status: 200 });
-			if (url.includes("/presets?")) return new Response(JSON.stringify([{
+			if (url.includes("/presets?") || url.includes("/rpc/find_member_visible_preset")) return new Response(JSON.stringify([{
 				workspace_id: "workspace-1", created_by: "user-1", name: "Stable", slug: "stable", description: null,
 				config: { models: ["openai/gpt-test"] }, visibility: "team", draft_name: "Stable", draft_slug: "stable",
 				draft_description: null, draft_config: { models: ["openai/gpt-test"] }, draft_visibility: "team",
@@ -276,7 +318,7 @@ describe("account policy settings routes", () => {
 			const url = request.url;
 			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
 			if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role: "member" }]), { status: 200 });
-			if (url.includes("/presets?")) return new Response(JSON.stringify([{
+			if (url.includes("/presets?") || url.includes("/rpc/find_member_visible_preset")) return new Response(JSON.stringify([{
 				workspace_id: "workspace-1", created_by: "user-1", name: "Stable", slug: "stable", description: null,
 				config: { models: ["openai/gpt-test"] }, visibility: "team", draft_name: "Stable", draft_slug: "stable",
 				draft_description: null, draft_config: { models: ["openai/gpt-other"] }, draft_visibility: "team", versioning_method: "semver",
@@ -301,14 +343,19 @@ describe("account policy settings routes", () => {
 
 	describe("preset version labels", () => {
 		const VERSION_ID = "7d0b6f0e-3c1a-4f0b-9a55-2f3c4d5e6f70";
-		function stubLabels({ role = "admin", createdBy = "owner-2", visibility = "team", rpc }: { role?: string; createdBy?: string; visibility?: string; rpc?: (name: string, body: any) => Response }) {
+		function stubLabels({ role = "admin", createdBy = "owner-2", visibility = "team", draftVisibility = visibility, rpc }: { role?: string; createdBy?: string; visibility?: string; draftVisibility?: string; rpc?: (name: string, body: any) => Response }) {
 			const calls: Array<{ name: string; body: any }> = [];
 			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 				const request = input instanceof Request ? input : new Request(input, init);
 				const url = request.url;
 				if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" }), { status: 200 });
 				if (url.includes("workspace_members")) return new Response(JSON.stringify([{ role }]), { status: 200 });
-				if (url.includes("/presets?")) return new Response(JSON.stringify([{ id: "preset-1", workspace_id: "workspace-1", created_by: createdBy, visibility, draft_visibility: visibility, active_version_id: "version-3" }]), { status: 200 });
+				const presetRow = { id: "preset-1", workspace_id: "workspace-1", created_by: createdBy, visibility, draft_visibility: draftVisibility, active_version_id: "version-3" };
+				const lookup = visiblePresetRpc(url, presetRow, { member: role !== null });
+				if (lookup) return lookup;
+				if (url.includes("/presets?")) return new Response(JSON.stringify([presetRow]), { status: 200 });
+				// The target version check before moving a label: a shared version.
+				if (url.includes("/preset_versions?") && new URL(url).searchParams.has("id")) return new Response(JSON.stringify([{ id: VERSION_ID }]), { status: 200 });
 				if (url.includes("/preset_versions?")) return new Response(JSON.stringify([
 					{ id: "version-3", version_number: 3, version_label: "v3", config: { models: ["openai/gpt-test"], prompt: { messages: [{ role: "user", content: "Hi {{name}}" }] }, parameters: { temperature: 0.2 } } },
 					{ id: "version-2", version_number: 2, version_label: "v2", config: null },
@@ -352,6 +399,129 @@ describe("account policy settings routes", () => {
 		it("does not show a private preset's versions to other members", async () => {
 			stubLabels({ role: "member", visibility: "private" });
 			expect((await request("/versions")).status).toBe(404);
+		});
+
+		it("keeps a version published while the preset was private from other members after a shared version follows it", async () => {
+			const urls: URL[] = [];
+			const stub = (userId: string) => vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+				const url = new URL(input instanceof Request ? input.url : String(input));
+				urls.push(url);
+				if (url.pathname === "/auth/v1/user") return Response.json({ id: userId, email: "user@example.com", created_at: "2025-01-01" });
+				if (url.pathname.endsWith("workspace_members")) return Response.json([{ role: "admin" }]);
+				if (url.pathname.endsWith("/presets") || url.pathname.endsWith("/rpc/find_member_visible_preset")) return Response.json([{ id: "preset-1", workspace_id: "workspace-1", created_by: "owner-2", visibility: "team", draft_visibility: "team", active_version_id: "version-2" }]);
+				if (url.pathname.endsWith("/preset_versions")) {
+					const versions = [
+						{ id: "version-2", version_number: 2, version_label: "v2", visibility: "team", config: { models: ["openai/shared"] } },
+						{ id: "version-1", version_number: 1, version_label: "v1", visibility: "private", config: { models: ["openai/private"], prompt: { messages: [{ role: "system", content: "Private prompt" }] } } },
+					];
+					return Response.json(url.searchParams.get("visibility") === "neq.private" ? versions.filter((version) => version.visibility !== "private") : versions);
+				}
+				if (url.pathname.endsWith("/preset_version_labels")) return Response.json([{ label: "production", version_id: "version-1", updated_at: "x" }, { label: "staging", version_id: "version-2", updated_at: "x" }]);
+				return Response.json([]);
+			}));
+			stub("user-1");
+			const response = await request("/versions");
+			expect(response.status).toBe(200);
+			const text = await response.text();
+			expect(text).not.toMatch(/version-1|Private prompt|openai\/private|production/);
+			expect(JSON.parse(text)).toMatchObject({ versions: [{ id: "version-2", labels: ["staging"] }], labels: [{ label: "staging", version_id: "version-2" }] });
+			expect(urls.find((url) => url.pathname.endsWith("/preset_versions"))!.searchParams.get("visibility")).toBe("neq.private");
+
+			stub("owner-2");
+			const own = await (await request("/versions")).json() as { versions: Array<{ id: string }>; labels: unknown[] };
+			expect(own.versions.map((version) => version.id)).toEqual(["version-2", "version-1"]);
+			expect(own.labels).toHaveLength(2);
+		});
+
+		it("doesn't let another admin point a label at a private version", async () => {
+			const rpcs: string[] = [];
+			const versionLookups: URL[] = [];
+			const stub = (userId: string) => vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				const req = input instanceof Request ? input : new Request(String(input), init);
+				const url = new URL(req.url);
+				if (url.pathname === "/auth/v1/user") return Response.json({ id: userId, email: "user@example.com", created_at: "2025-01-01" });
+				if (url.pathname.endsWith("workspace_members")) return Response.json([{ role: "admin" }]);
+				if (url.pathname.endsWith("/presets") || url.pathname.endsWith("/rpc/find_member_visible_preset")) return Response.json([{ id: "preset-1", workspace_id: "workspace-1", created_by: "owner-2", visibility: "team", draft_visibility: "team" }]);
+				if (url.pathname.endsWith("/preset_versions")) {
+					versionLookups.push(url);
+					// VERSION_ID is v1, published while the preset was private.
+					return Response.json(url.searchParams.get("visibility") === "neq.private" ? [] : [{ id: VERSION_ID }]);
+				}
+				if (url.pathname.includes("/rpc/")) { rpcs.push(url.pathname); return Response.json({ label: "probe", version_id: VERSION_ID }); }
+				return Response.json([]);
+			}));
+			stub("user-1");
+			const response = await request("/labels/probe", { method: "PUT", body: JSON.stringify({ versionId: VERSION_ID }) });
+			expect(response.status).toBe(404);
+			await expect(response.json()).resolves.toEqual({ error: "preset_version_not_found" });
+			expect(rpcs).toEqual([]);
+			expect(versionLookups[0].searchParams.get("id")).toBe(`eq.${VERSION_ID}`);
+			stub("owner-2");
+			expect((await request("/labels/probe", { method: "PUT", body: JSON.stringify({ versionId: VERSION_ID }) })).status).toBe(200);
+			expect(rpcs).toHaveLength(1);
+		});
+
+		it("refuses to archive a preset made private since the read, unless you created it", async () => {
+			const archives: URL[] = [];
+			const stub = (userId: string, archived: unknown[]) => vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				const request = input instanceof Request ? input : new Request(String(input), init);
+				const url = new URL(request.url);
+				if (url.pathname === "/auth/v1/user") return Response.json({ id: userId, email: "user@example.com", created_at: "2025-01-01" });
+				if (url.pathname.endsWith("workspace_members")) return Response.json([{ role: "admin" }]);
+				if (url.pathname.endsWith("/presets") && request.method === "PATCH") { archives.push(url); return Response.json(archived); }
+				// Read as shared; the creator makes it private before the archive lands.
+				if (url.pathname.endsWith("/presets") || url.pathname.endsWith("/rpc/find_member_visible_preset")) return Response.json([{ name: "@shared", workspace_id: "workspace-1", created_by: "owner-2", visibility: "team" }]);
+				return Response.json([]);
+			}));
+			stub("user-1", []);
+			expect((await request("", { method: "DELETE" })).status).toBe(409);
+			expect(archives[0].searchParams.get("visibility")).toBe("neq.private");
+			stub("user-1", [{ id: "preset-1" }]);
+			expect((await request("", { method: "DELETE" })).status).toBe(200);
+			archives.length = 0;
+			stub("owner-2", [{ id: "preset-1" }]);
+			expect((await request("", { method: "DELETE" })).status).toBe(200);
+			expect(archives[0].searchParams.has("visibility")).toBe(false);
+		});
+
+		it("does not show a teammate's private preset by id, but shows it to its creator and shows team presets", async () => {
+			stubLabels({ role: "admin", visibility: "private", createdBy: "owner-2" });
+			expect((await request("")).status).toBe(404);
+			stubLabels({ role: "member", visibility: "private", createdBy: "user-1" });
+			expect((await request("")).status).toBe(200);
+			stubLabels({ role: "member", visibility: "team" });
+			const inner = globalThis.fetch; const urls: string[] = [];
+			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => { urls.push(input instanceof Request ? input.url : String(input)); return inner(input, init); }));
+			const response = await request("");
+			expect(response.status).toBe(200);
+			await expect(response.json()).resolves.toMatchObject({ preset: { id: "preset-1", visibility: "team" } });
+			// One lookup call, which checks membership, visibility and archived presets in the database, and selects named columns.
+			const lookups = urls.filter((url) => url.includes("/rpc/find_member_visible_preset"));
+			expect(lookups).toHaveLength(1);
+			expect(new URL(lookups[0]).searchParams.get("select")).not.toContain("*");
+		});
+
+		it("lets the creator publish their own private draft", async () => {
+			const calls = stubLabels({ role: "member", createdBy: "user-1", visibility: "team", draftVisibility: "private" });
+			const response = await request("/versions", { method: "POST", body: JSON.stringify({}) });
+			expect(response.status).toBe(201);
+			expect(calls.map((call) => call.name)).toEqual(["publish_preset_version"]);
+		});
+
+		it("says there's nothing to publish for a shared preset whose draft is unchanged", async () => {
+			const calls = stubLabels({ role: "admin", visibility: "team", draftVisibility: "team" });
+			const response = await request("/versions", { method: "POST", body: JSON.stringify({}) });
+			expect(response.status).toBe(409);
+			await expect(response.json()).resolves.toEqual({ error: "no_draft_changes" });
+			expect(calls).toEqual([]);
+		});
+
+		it("refuses to publish a teammate's private draft before looking at it", async () => {
+			const calls = stubLabels({ role: "admin", visibility: "team", draftVisibility: "private" });
+			const response = await request("/versions", { method: "POST", body: JSON.stringify({}) });
+			expect(response.status).toBe(403);
+			await expect(response.json()).resolves.toMatchObject({ error: "forbidden" });
+			expect(calls).toEqual([]);
 		});
 
 		it("tells members who did not create the preset that they cannot move labels", async () => {
@@ -424,6 +594,97 @@ describe("account policy settings routes", () => {
 		expect(requestedUrls.some((url) => url.includes("/preset_versions"))).toBe(false);
 	});
 
+	describe("a teammate's private draft of a team preset", () => {
+		const row = {
+			id: "preset-1", workspace_id: "workspace-1", created_by: "owner-2", source_preset_id: "source-1",
+			name: "Published", slug: "published", description: "Published description", config: { models: ["openai/published"] }, visibility: "team",
+			draft_name: "Secret draft", draft_slug: "secret-draft", draft_description: "Secret description", draft_config: { models: ["openai/secret"] }, draft_visibility: "private",
+		};
+		function stubList({ userId = "user-1", lifecycleFails = false } = {}) {
+			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+				const url = input instanceof Request ? input.url : String(input);
+				if (url.includes("/auth/v1/user")) return Response.json({ id: userId, email: "user@example.com", created_at: "2025-01-01" });
+				if (url.includes("workspace_members") && url.includes("teams")) return Response.json([{ workspace_id: "workspace-1", teams: { id: "workspace-1", name: "Team" } }]);
+				if (url.includes("workspace_members")) return Response.json([{ role: "admin" }]);
+				if (url.includes("/presets") && url.includes("workspace_id=eq.workspace-1")) return Response.json([row]);
+				// The detail read, by id.
+				const lookup = visiblePresetRpc(url, row, { userId });
+				if (lookup) return lookup;
+				// The upstream lookup: failing it exercises the fallback serialisation.
+				if (url.includes("/presets") && url.includes("id=in.")) return lifecycleFails ? Response.json({ message: "boom" }, { status: 500 }) : Response.json([]);
+				return Response.json([]);
+			}));
+		}
+		const list = () => app.request("https://phaseo.app/api/account/settings/presets/list?workspaceId=workspace-1", { headers: { authorization: "Bearer session-token" } }, env);
+		const page = () => app.request("https://phaseo.app/api/account/settings/presets?workspaceId=workspace-1", { headers: { authorization: "Bearer session-token" } }, env);
+
+		it.each([false, true])("shows other members only the published preset in both lists (lifecycle lookup fails: %s)", async (lifecycleFails) => {
+			for (const read of [list, page]) {
+				stubList({ lifecycleFails });
+				const response = await read();
+				expect(response.status).toBe(200);
+				const text = await response.text();
+				expect(text).not.toMatch(/secret/i);
+				const body = JSON.parse(text);
+				const preset = body.presets?.[0] ?? body.teamsWithPresets?.[0]?.presets?.[0];
+				expect(preset).toMatchObject({ id: "preset-1", name: "Published", config: { models: ["openai/published"] }, visibility: "team", hasDraftChanges: false });
+			}
+		});
+
+		it("doesn't let another admin change or re-share the private draft, and checks again in the write", async () => {
+			const patches: URL[] = [];
+			const stubWrite = (draftVisibility: string, written: unknown[]) => vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				const request = input instanceof Request ? input : new Request(String(input), init);
+				const url = new URL(request.url);
+				if (url.pathname === "/auth/v1/user") return Response.json({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" });
+				if (url.pathname.endsWith("workspace_members")) return Response.json([{ role: "admin" }]);
+				if (url.pathname.endsWith("/presets") && request.method === "PATCH") { patches.push(url); return Response.json(written); }
+				if (url.pathname.endsWith("/presets") || url.pathname.endsWith("/rpc/find_member_visible_preset")) return Response.json(url.searchParams.has("slug") ? [] : [{ ...row, draft_visibility: draftVisibility }]);
+				return Response.json([]);
+			}));
+			const put = (body: Record<string, unknown>) => app.request("https://phaseo.app/api/account/settings/presets/preset-1", { method: "PUT", headers: { authorization: "Bearer session-token", "content-type": "application/json" }, body: JSON.stringify(body) }, env, { waitUntil() {}, passThroughOnException() {}, props: {} } as never);
+
+			stubWrite("private", []);
+			expect((await put({ visibility: "team" })).status).toBe(403);
+			expect(patches).toHaveLength(0);
+
+			// Read as shared, but made private before the write lands: the conditional write matches nothing.
+			stubWrite("team", []);
+			const raced = await put({ description: "Edited" });
+			expect(raced.status).toBe(409);
+			expect(patches[0].searchParams.get("visibility")).toBe("neq.private");
+			expect(patches[0].searchParams.get("or")).toBe("(draft_visibility.is.null,draft_visibility.neq.private)");
+
+			stubWrite("team", [{ id: "preset-1" }]);
+			expect((await put({ description: "Edited" })).status).toBe(200);
+		});
+
+		it("shows other members the published preset by id too, not a 404", async () => {
+			stubList();
+			const response = await app.request("https://phaseo.app/api/account/settings/presets/preset-1", { headers: { authorization: "Bearer session-token" } }, env);
+			expect(response.status).toBe(200);
+			const text = await response.text();
+			expect(text).not.toMatch(/secret/i);
+			expect(JSON.parse(text).preset).toMatchObject({ id: "preset-1", name: "Published", draft_name: "Published", draft_visibility: "team", visibility: "team" });
+		});
+
+		it("doesn't offer to publish a teammate's private draft, even to an admin", async () => {
+			for (const read of [list, page]) {
+				stubList();
+				const body = await (await read()).json() as { presets?: Array<{ canPublish: boolean }>; teamsWithPresets?: Array<{ presets: Array<{ canPublish: boolean }> }> };
+				expect((body.presets ?? body.teamsWithPresets![0].presets)[0].canPublish).toBe(false);
+			}
+			// The creator can publish it.
+			stubList({ userId: "owner-2" });
+			await expect((await list()).json()).resolves.toMatchObject({ presets: [{ canPublish: true }] });
+		});
+
+		it("still shows the creator their draft", async () => {
+			stubList({ userId: "owner-2" });
+			await expect((await list()).json()).resolves.toMatchObject({ presets: [{ id: "preset-1", name: "Secret draft", config: { models: ["openai/secret"] }, visibility: "private", hasDraftChanges: true }] });
+		});
+	});
+
 	it("continues to advertise public versions from a public source preset", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = input instanceof Request ? input.url : String(input);
@@ -445,6 +706,157 @@ describe("account policy settings routes", () => {
 		await expect(response.json()).resolves.toMatchObject({
 			presets: [{ id: "fork-1", latestUpstreamVersion: { id: "version-2", version_number: 2 }, hasUpstreamUpdate: true }],
 		});
+	});
+
+	describe("writes on a hidden preset and a missing one look the same", () => {
+		const VERSION = "7d0b6f0e-3c1a-4f0b-9a55-2f3c4d5e6f70";
+		/** A PostgREST stand-in for the write lookup: it applies the id, archived, workspace and visibility filters. */
+		function stubWorld({ userId, memberOf, preset }: { userId: string; memberOf: string[]; preset: Record<string, unknown> | null }) {
+			const requests: string[] = [];
+			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+				const req = input instanceof Request ? input : new Request(String(input), init);
+				const url = new URL(req.url);
+				const body = ["GET", "HEAD"].includes(req.method) ? "" : await req.clone().text();
+				requests.push(`${req.method} ${url.pathname}?${[...url.searchParams.entries()].map(([key, value]) => `${key}=${value}`).sort().join("&")} ${body}`);
+				if (url.pathname === "/auth/v1/user") return Response.json({ id: userId, email: "user@example.com", created_at: "2025-01-01" });
+				// find_member_visible_preset, answered as the database would: membership checked in full.
+				if (url.pathname.endsWith("/rpc/find_member_visible_preset")) {
+					const args = JSON.parse(body || "{}") as { p_preset_id?: string; p_user_id?: string };
+					const visible = Boolean(preset) && preset!.id === args.p_preset_id && !preset!.archived_at && memberOf.includes(String(preset!.workspace_id))
+						&& (preset!.visibility !== "private" || preset!.created_by === args.p_user_id);
+					return Response.json(visible ? [preset] : []);
+				}
+				// A listed membership page is capped at 1,000 rows, as PostgREST's max-rows is.
+				if (url.pathname.endsWith("/workspace_members") && url.searchParams.get("select") === "workspace_id") return Response.json(memberOf.slice(0, 1000).map((workspace_id) => ({ workspace_id })));
+				if (url.pathname.endsWith("/workspace_members")) return Response.json(memberOf.includes(String(url.searchParams.get("workspace_id")).replace(/^eq\./, "")) ? [{ role: "admin" }] : []);
+				if (url.pathname.endsWith("/workspaces")) return Response.json([]);
+				if (url.pathname.endsWith("/presets") && req.method === "GET") {
+					if (!preset) return Response.json([]);
+					// Applies whichever filters the request sends, as PostgREST does; absent filters don't narrow.
+					const row = { archived_at: null, ...preset } as Record<string, unknown>;
+					const condition = (column: string, filter: string) => {
+						const value = row[column];
+						if (filter === "is.null") return value === null || value === undefined;
+						if (value === null || value === undefined) return false;
+						if (filter.startsWith("eq.")) return String(value) === filter.slice(3);
+						if (filter.startsWith("neq.")) return String(value) !== filter.slice(4);
+						if (filter.startsWith("in.(")) return filter.slice(4, -1).split(",").map((item) => item.replace(/^"|"$/g, "")).includes(String(value));
+						throw new Error(`unsupported filter ${column}=${filter}`);
+					};
+					const matches = [...url.searchParams.entries()].every(([key, filter]) => {
+						if (["select", "limit", "order"].includes(key)) return true;
+						if (key === "or") return filter.slice(1, -1).split(",").some((part) => { const [column, ...rest] = part.split("."); return condition(column, rest.join(".")); });
+						return condition(key, filter);
+					});
+					return Response.json(matches ? [preset] : []);
+				}
+				return Response.json([]);
+			}));
+			return requests;
+		}
+		const routes: Array<[string, string, RequestInit]> = [
+			["update", "", { method: "PUT", body: JSON.stringify({ description: "Mine" }) }],
+			["archive", "", { method: "DELETE" }],
+			["publish", "/versions", { method: "POST", body: JSON.stringify({}) }],
+			["set a label", "/labels/probe", { method: "PUT", body: JSON.stringify({ versionId: VERSION }) }],
+			["remove a label", "/labels/probe", { method: "DELETE" }],
+			["apply upstream", "/upstream", { method: "POST", body: JSON.stringify({ versionId: VERSION }) }],
+			["read", "", { method: "GET" }],
+			["list versions", "/versions", { method: "GET" }],
+		];
+		const send = (path: string, init: RequestInit) => app.request(`https://phaseo.app/api/account/settings/presets/preset-1${path}`, { ...init, headers: { authorization: "Bearer session-token", "content-type": "application/json" } }, env, { waitUntil() {}, passThroughOnException() {}, props: {} } as never);
+		async function observe(path: string, init: RequestInit, world: Parameters<typeof stubWorld>[0]) {
+			const requests = stubWorld(world);
+			const response = await send(path, init);
+			return { status: response.status, body: await response.text(), headers: Object.fromEntries(response.headers.entries()), requests };
+		}
+		const teammatesPrivate = { id: "preset-1", workspace_id: "workspace-1", created_by: "owner-2", visibility: "private", draft_visibility: "private" };
+		const otherWorkspaceTeam = { id: "preset-1", workspace_id: "workspace-1", created_by: "owner-2", visibility: "team", draft_visibility: "team" };
+
+		it.each(routes)("%s: a teammate's private preset matches a missing one (status, body, headers, requests)", async (_label, path, init) => {
+			const hidden = await observe(path, init, { userId: "user-1", memberOf: ["workspace-1"], preset: teammatesPrivate });
+			const missing = await observe(path, init, { userId: "user-1", memberOf: ["workspace-1"], preset: null });
+			expect(hidden.status).toBe(404);
+			expect(JSON.parse(hidden.body)).toEqual({ error: "not_found" });
+			expect(hidden).toEqual(missing);
+		});
+
+		it.each(routes)("%s: someone outside the workspace can't tell a preset there from a missing one", async (_label, path, init) => {
+			const existing = await observe(path, init, { userId: "user-1", memberOf: ["workspace-2"], preset: otherWorkspaceTeam });
+			const missing = await observe(path, init, { userId: "user-1", memberOf: ["workspace-2"], preset: null });
+			expect(existing.status).toBe(404);
+			expect(existing).toEqual(missing);
+		});
+
+		it.each(["user-1", "owner-2"])("asks the lookup about the signed-in user (%s) on every route", async (userId) => {
+			const preset = { id: "preset-1", workspace_id: "workspace-1", created_by: "owner-2", visibility: "team", draft_visibility: "team", name: "Shared" };
+			for (const [label, path, init] of routes) {
+				const requests = stubWorld({ userId, memberOf: ["workspace-1"], preset });
+				await send(path, init);
+				const lookups = requests.filter((line) => line.includes("/rpc/find_member_visible_preset"));
+				expect(lookups, label).toHaveLength(1);
+				expect(JSON.parse(lookups[0].slice(lookups[0].indexOf(" {") + 1)), label).toEqual({ p_preset_id: "preset-1", p_user_id: userId });
+			}
+		});
+
+		it("shows the creator their own private draft on the detail read, asking the lookup about them", async () => {
+			const preset = { id: "preset-1", workspace_id: "workspace-1", created_by: "owner-2", visibility: "team", name: "Published", draft_name: "My draft", draft_visibility: "private" };
+			const requests = stubWorld({ userId: "owner-2", memberOf: ["workspace-1"], preset });
+			const response = await send("", { method: "GET" });
+			expect(response.status).toBe(200);
+			await expect(response.json()).resolves.toMatchObject({ preset: { draft_name: "My draft", draft_visibility: "private" } });
+			const lookup = requests.find((line) => line.includes("/rpc/find_member_visible_preset"))!;
+			expect(JSON.parse(lookup.slice(lookup.indexOf(" {") + 1))).toEqual({ p_preset_id: "preset-1", p_user_id: "owner-2" });
+			// Another member gets the published preset, with the draft replaced.
+			stubWorld({ userId: "user-1", memberOf: ["workspace-1"], preset });
+			const other = await (await send("", { method: "GET" })).json() as { preset: Record<string, unknown> };
+			expect(other.preset).toMatchObject({ draft_name: "Published", draft_visibility: "team" });
+		});
+
+		it("finds a preset in a member's 1,001st workspace (membership isn't listed into a capped page)", async () => {
+			const memberOf = Array.from({ length: 1001 }, (_, index) => `workspace-${index + 1}`);
+			const preset = { id: "preset-1", workspace_id: "workspace-1001", created_by: "owner-2", visibility: "team", draft_visibility: "team", name: "Far" };
+			// A write: its creator applies an upstream version to a preset in the 1,001st workspace.
+			const writeRequests = stubWorld({ userId: "user-1", memberOf, preset: { ...preset, created_by: "user-1" } });
+			const applied = await send("/upstream", { method: "POST", body: JSON.stringify({ versionId: VERSION }) });
+			expect(applied.status).toBe(200);
+			expect(writeRequests.some((line) => line.includes("/workspace_members?select=workspace_id&"))).toBe(false);
+			for (const [path, init] of [["", { method: "GET" }], ["/versions", { method: "GET" }]] as const) {
+				const requests = stubWorld({ userId: "user-1", memberOf, preset });
+				const response = await send(path, init);
+				expect(response.status, path || "read").toBe(200);
+				expect(requests.filter((line) => line.includes("/rpc/find_member_visible_preset"))).toHaveLength(1);
+				expect(requests.some((line) => line.includes("/workspace_members?select=workspace_id&"))).toBe(false);
+			}
+	
+		});
+
+		it("checks the upstream body's shape before looking the preset up", async () => {
+			const requests = stubWorld({ userId: "user-1", memberOf: ["workspace-1"], preset: null });
+			const response = await send("/upstream", { method: "POST", body: JSON.stringify({}) });
+			expect(response.status).toBe(400);
+			await expect(response.json()).resolves.toEqual({ error: "invalid_upstream_version" });
+			expect(requests.some((line) => line.includes("/presets?") || line.includes("/rpc/find_member_visible_preset"))).toBe(false);
+		});
+	});
+
+	it("only forks public presets", async () => {
+		for (const visibility of ["private", "team"]) {
+			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+				const url = input instanceof Request ? input.url : String(input);
+				if (url.includes("/auth/v1/user")) return Response.json({ id: "user-1", email: "user@example.com", created_at: "2025-01-01" });
+				if (url.includes("workspace_members")) return Response.json([{ role: "admin" }]);
+				if (url.includes("/presets") && url.includes("id=eq.source-1")) return Response.json([{ id: "source-1", name: "Source", slug: "source", description: null, config: { secret: true }, visibility, active_version_id: null }]);
+				return Response.json([]);
+			}));
+			const response = await app.request("https://phaseo.app/api/account/settings/presets/source-1/fork", {
+				method: "POST",
+				headers: { authorization: "Bearer session-token", "content-type": "application/json" },
+				body: JSON.stringify({ workspaceId: "workspace-1" }),
+			}, env, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as any);
+			expect(response.status, visibility).toBe(404);
+			await expect(response.json()).resolves.toEqual({ error: "not_public" });
+		}
 	});
 
 	it("rejects a non-public source version when creating a fork", async () => {

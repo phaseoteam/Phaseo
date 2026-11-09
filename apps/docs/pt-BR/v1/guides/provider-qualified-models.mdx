@@ -1,45 +1,29 @@
 ---
 title: "IDs de modelo qualificados por provedor"
-sidebarTitle: "IDs qualificados por provedor"
-description: "Roteie uma solicitação para um provedor e modelo exatos usando um único identificador de modelo."
+description: "Roteie uma solicitação para um provedor e um modelo exatos usando um único identificador de modelo."
 icon: "route"
 ---
 
-Os IDs de modelo qualificados por provedor permitem selecionar um provedor específico e um modelo canônico no campo `model`. Use-os quando a escolha do provedor fizer parte do contrato da solicitação, e não for apenas uma preferência de roteamento.
+Coloque um ID de provedor e dois-pontos antes do ID do modelo, como `baseten:thinking-machines/inkling-small`, para executar a solicitação apenas nesse provedor, sem alternativa em outro provedor.
 
-## Sintaxe
+| Você quer | Envie como `model` |
+| --- | --- |
+| Que o Phaseo escolha um provedor e alterne entre provedores em caso de falha | `thinking-machines/inkling-small` |
+| Apenas o Baseten, sem alternativa entre provedores | `baseten:thinking-machines/inkling-small` |
+| Uma rota gratuita verificada em um único provedor | `google-ai-studio:google/gemma-4-26b-a4b:free` |
 
-```text
-<provider-id>:<canonical-model-id>
-```
+O formato é `<provider-id>:<canonical-model-id>`. Os primeiros dois-pontos separam o provedor; os dois-pontos depois do namespace do modelo continuam fazendo parte do ID do modelo. Em `google-ai-studio:google/gemma-4-26b-a4b:free`, o provedor é `google-ai-studio` e o modelo é `google/gemma-4-26b-a4b:free`.
 
-Por exemplo:
+Se você só prefere um provedor e quer uma alternativa quando ele falhar, use o ID de modelo simples com os [controles de roteamento e alternativas](./routing-and-fallbacks.mdx).
 
-```text
-baseten:thinking-machines/inkling-small
-deepinfra:deepseek/deepseek-v3
-```
+## Enviar uma solicitação
 
-Os dois-pontos iniciais separam o provedor do ID canônico do modelo. Os dois-pontos depois do namespace do modelo continuam sendo sufixos do modelo, então não há ambiguidade:
-
-```text
-baseten:google/gemma-4-26b-a4b:free
-```
-
-Nesse exemplo:
-
-- `baseten` é o provedor solicitado
-- `google/gemma-4-26b-a4b:free` é o ID canônico do modelo na Phaseo
-
-## Envie uma solicitação
-
-Use o identificador qualificado em qualquer endpoint que aceite um ID de modelo.
+Use o ID qualificado em qualquer lugar onde o endpoint aceite um ID de modelo.
 
 <CodeGroup>
-
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "model": "baseten:thinking-machines/inkling-small",
@@ -51,7 +35,7 @@ curl https://api.phaseo.app/v1/responses \
 const response = await fetch("https://api.phaseo.app/v1/responses", {
   method: "POST",
   headers: {
-    Authorization: "Bearer YOUR_API_KEY",
+    Authorization: `Bearer ${process.env.PHASEO_API_KEY}`,
     "Content-Type": "application/json",
   },
   body: JSON.stringify({
@@ -81,96 +65,68 @@ response = requests.post(
 
 result = response.json()
 ```
-
 </CodeGroup>
 
-## Comportamento do roteamento exato
+## O que o provedor ainda precisa atender
 
-A qualificação do provedor é uma restrição exata. A Phaseo limita o conjunto de provedores elegíveis ao provedor solicitado e não usa outro provedor como alternativa naquela solicitação.
+O qualificador restringe o roteamento a um provedor; ele não pula nenhuma outra verificação. O provedor ainda precisa:
 
-A qualificação não ignora os demais controles. O provedor também precisa:
+- servir o modelo canônico no endpoint solicitado, com essa capacidade ativada
+- atender às restrições do espaço de trabalho, da chave de API, da predefinição e de privacidade
+- aceitar o nível de serviço e os parâmetros solicitados
+- ter preços configurados
 
-- expor o modelo canônico no endpoint solicitado
-- estar habilitado para o recurso do endpoint
-- atender às políticas do espaço de trabalho e da chave de API
-- atender às restrições de predefinição e privacidade
-- oferecer suporte ao nível de serviço e aos parâmetros solicitados
-- ter preços válidos configurados
+Se alguma verificação falhar, a solicitação é rejeitada. O Phaseo nunca escolhe outro provedor sem avisar.
 
-Se qualquer uma dessas verificações falhar, a Phaseo rejeita a solicitação em vez de selecionar outro provedor silenciosamente.
+## Combinar com os campos `provider` ou `routing`
 
-## Interação com campos de roteamento
-
-O provedor qualificado e os campos de roteamento explícitos precisam estar de acordo.
+O qualificador e os campos de roteamento explícitos precisam concordar. Um `provider.only` ou `routing.only` correspondente é aceito:
 
 ```json
 {
   "model": "baseten:thinking-machines/inkling-small",
-  "provider": {
-    "only": ["baseten"]
-  }
+  "provider": { "only": ["baseten"] }
 }
 ```
 
-Um valor correspondente em `provider.only` ou `routing.only` é aceito. Uma lista de permissão conflitante ou uma lista de ignorados que contenha o provedor qualificado resulta em erro de validação.
-
-Por exemplo, esta solicitação é contraditória e será rejeitada:
+Uma lista de permitidos que indica outros provedores, ou uma lista de ignorados que contém o provedor qualificado, é rejeitada com `provider_qualified_model_conflict`:
 
 ```json
 {
   "model": "baseten:thinking-machines/inkling-small",
-  "provider": {
-    "only": ["deepinfra"]
-  }
+  "provider": { "only": ["deepinfra"] }
 }
 ```
 
-Se o provedor for apenas uma preferência e você quiser permitir alternativas entre provedores, continue usando um ID canônico sem qualificação com os [controles normais de roteamento e alternativas](./routing-and-fallbacks.mdx).
+## Solicitar uma rota gratuita em um provedor
 
-## Modelos gratuitos qualificados por provedor
-
-Uma solicitação qualificada com `:free` só é aceita quando esse provedor específico tem uma rota gratuita elegível para o modelo canônico e o endpoint.
+Um modelo `:free` qualificado só é aceito quando esse provedor tem uma rota gratuita elegível para o modelo e o endpoint. Um modelo `:free` canônico não significa que todos os provedores do modelo subjacente o ofereçam de graça.
 
 ```json
 {
-  "model": "baseten:google/gemma-4-26b-a4b:free",
+  "model": "google-ai-studio:google/gemma-4-26b-a4b:free",
   "input": "Hello"
 }
 ```
 
-A Phaseo falha de forma segura, a menos que a rota selecionada tenha uma tabela de preços não vazia e cada regra de preço atual:
+A tabela de preços da rota não pode estar vazia, e todas as regras de preço atuais dela precisam ter o rótulo `free` e preço exatamente zero. Preços ausentes, pagos, mistos ou negativos, ou uma regra com preço zero sem o rótulo `free`, rejeitam a solicitação antes de ela chegar ao provedor.
 
-- esteja explicitamente marcada como `free`
-- tenha preço exatamente igual a zero
+## IDs e aliases de provedores
 
-A falta de preços, preços pagos, preços mistos, preços negativos ou uma regra de preço zero que não esteja explicitamente marcada como `free` faz com que a solicitação seja rejeitada antes da execução no provedor.
-
-<Note>
-A existência de um modelo canônico `:free` não significa que todos os provedores do modelo subjacente ofereçam uma rota gratuita.
-</Note>
-
-## Slugs e aliases de provedores
-
-Use um slug de provedor exposto pelo catálogo da Phaseo. Os slugs são normalizados para letras minúsculas, e aliases legados ou de marca compatíveis são mapeados para o ID canônico do provedor.
-
-Por exemplo, `NovitaAI` e `novita-ai` atualmente são normalizados para `novita`.
-
-Slugs malformados ou desconhecidos são rejeitados antes da seleção do provedor. A Phaseo não os envia ao upstream como parte do nome do modelo.
+Use um ID de provedor do catálogo de provedores do Phaseo (veja [Provedores de API](../exploring/api-providers)). Os IDs são convertidos para minúsculas, e aliases conhecidos de nomes antigos ou de marca são mapeados para o ID canônico: `NovitaAI` e `novita-ai` viram `novita`. IDs malformados e desconhecidos são rejeitados antes da seleção do provedor; eles nunca são enviados upstream como parte do nome do modelo.
 
 ## Erros de validação
 
-Falhas em IDs qualificados por provedor usam HTTP `400` e o código de erro principal `validation_error`. Consulte `reason` ou `details[].keyword` para ver a causa exata.
+Um ID qualificado inválido retorna HTTP `400` com o código de erro `validation_error`. `reason` e `details[].keyword` indicam a causa:
 
 | Motivo | Significado |
 | --- | --- |
-| `invalid_provider_slug` | A parte do provedor está vazia ou contém caracteres não compatíveis. |
-| `unknown_provider_slug` | O slug está bem formado, mas não corresponde a um provedor Phaseo reconhecido. |
-| `invalid_provider_qualified_model` | O identificador combinado não corresponde a `<provider>:<publisher>/<model>`. |
-| `provider_qualified_model_conflict` | `provider.only`, `provider.ignore`, `routing.only` ou `routing.ignore` contradiz a qualificação. |
-| `qualified_provider_unavailable` | O provedor é reconhecido, mas não oferece esse modelo no endpoint solicitado. |
-| `qualified_free_provider_unavailable` | A rota exata do provedor não foi verificada como gratuita com preços zerados em todas as regras. |
-
-Exemplo de erro:
+| `invalid_provider_slug` | A parte do provedor está vazia ou contém caracteres não aceitos. |
+| `unknown_provider_slug` | O ID do provedor está bem formado, mas não é um provedor do Phaseo. |
+| `invalid_provider_qualified_model` | O ID não corresponde a `<provider>:<publisher>/<model>`. |
+| `provider_qualified_model_conflict` | `provider.only`, `provider.ignore`, `routing.only` ou `routing.ignore` contradiz o qualificador. |
+| `qualified_provider_unavailable` | O provedor existe, mas não serve esse modelo no endpoint solicitado. |
+| `qualified_free_provider_unavailable` | A rota do provedor não está verificada como gratuita com todos os preços zerados. |
 
 ```json
 {
@@ -189,19 +145,4 @@ Exemplo de erro:
 }
 ```
 
-## Escolha entre os dois formatos
-
-| Requisito | Valor de modelo recomendado |
-| --- | --- |
-| Deixar a Phaseo escolher e alternar entre provedores | `thinking-machines/inkling-small` |
-| Exigir Baseten sem alternativa entre provedores | `baseten:thinking-machines/inkling-small` |
-| Exigir uma rota gratuita verificada do provedor | `baseten:google/gemma-4-26b-a4b:free` |
-
-## Guias relacionados
-
-- [Roteamento e alternativas](./routing-and-fallbacks.mdx)
-- [Provedores de API](../exploring/api-providers.mdx)
-- [Modelos](../exploring/models.mdx)
-- [Tratamento de erros](../api-reference/errors.mdx)
-- [Predefinições](./presets.mdx)
-
+Para outros formatos de erro, veja [Erros e depuração](../api-reference/errors.mdx).

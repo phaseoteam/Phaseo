@@ -1,7 +1,5 @@
-"use client";
-
 import { RefreshCw, ZapOff } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { Link } from "@/i18n/navigation";
 import type { ProviderRoutingStatus } from "@/lib/fetchers/models/getModelProviderRoutingHealth";

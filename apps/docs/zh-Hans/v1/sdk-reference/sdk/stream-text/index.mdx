@@ -1,17 +1,18 @@
 ---
 icon: "radio"
-title: "文本流式传输（AI SDK）"
-description: "使用 Vercel AI SDK 和 Phaseo 流式生成文本。"
+title: "流式输出文本 (AI SDK)"
+sidebarTitle: "流式输出文本"
+description: "使用 Vercel AI SDK 和 Phaseo 进行流式文本生成。"
 ---
 
-需要在 token 到达时逐步接收，可使用 `streamText`。
+使用 `phaseo(modelId)` 调用 `streamText`，并读取 `textStream`，即可在文本到达时拿到它。`streamText` 会立即返回；请在流结束后读取 `providerMetadata`。
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { streamText } from "ai";
 
 const result = streamText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   prompt: "Explain SSE streaming in plain language.",
 });
 
@@ -22,14 +23,14 @@ for await (const chunk of result.textStream) {
 console.log(await result.providerMetadata);
 ```
 
-## 使用消息进行流式传输
+## 基于聊天历史流式输出
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { streamText } from "ai";
 
 const result = streamText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   messages: [
     { role: "user", content: "Write a five-step rollout plan for a gateway migration." },
   ],
@@ -44,8 +45,19 @@ console.log(text);
 console.log(await result.providerMetadata);
 ```
 
-## 生产环境建议
+## 停止被放弃的流
 
-- 长响应和交互式界面建议使用流式传输。
-- 对于已放弃的流，请在运行时处理取消和超时。
-- 通过 `/v1/models` 获取最新模型 ID，避免使用过期别名。
+把 `abortSignal` 传给 `streamText`，并在用户离开或超时后中止它，这样请求就不会继续运行：
+
+```ts
+const controller = new AbortController();
+setTimeout(() => controller.abort(), 60_000);
+
+const result = streamText({
+  model: phaseo("openai/gpt-6-astra"),
+  prompt: "Write a long report.",
+  abortSignal: controller.signal,
+});
+```
+
+请从 `/v1/models` 读取模型 ID，而不是硬编码；参见[模型发现](/zh-Hans/v1/sdk-reference/sdk/get-models)。

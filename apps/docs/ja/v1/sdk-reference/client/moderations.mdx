@@ -1,0 +1,149 @@
+---
+icon: "shield-check"
+title: "モデレーション"
+description: "どの Phaseo SDK からでも POST /v1/moderations でテキストや画像の安全性を分類します。"
+---
+
+テキストや画像を `POST /v1/moderations` に送ると、フラグが付いたかどうかと、どのカテゴリに該当したかがわかります。例では、[インストール](./installation)のとおりに作成した `client` を使います。
+
+<CodeGroup>
+
+```typescript TypeScript
+const moderation = await client.generateModeration({
+  model: "openai/omni-moderation",
+  input: "Text to classify",
+});
+
+console.log(moderation.results[0].flagged);
+```
+
+```python Python
+moderation = client.generate_moderation({
+    "model": "openai/omni-moderation",
+    "input": "Text to classify",
+})
+
+print(moderation["results"][0]["flagged"])
+```
+
+```go Go
+resp, err := client.GenerateModeration(context.Background(), map[string]interface{}{
+  "model": "openai/omni-moderation",
+  "input": "Text to classify",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp["results"])
+```
+
+```csharp C#
+var response = await client.GenerateModeration(new Dictionary<string, object>
+{
+    ["model"] = "openai/omni-moderation",
+    ["input"] = "Text to classify",
+});
+```
+
+```php PHP
+$response = $client->generateModeration([
+    'model' => 'openai/omni-moderation',
+    'input' => 'Text to classify',
+]);
+```
+
+```ruby Ruby
+response = client.generate_moderation(
+  model: 'openai/omni-moderation',
+  input: 'Text to classify'
+)
+```
+
+```java Java
+String body = """
+{
+  "model": "openai/omni-moderation",
+  "input": "Text to classify"
+}
+""";
+
+Object response = client.createModeration(new com.fasterxml.jackson.databind.ObjectMapper().readTree(body));
+System.out.println(String.valueOf(response));
+```
+
+```rust Rust
+// No moderations method yet: post() sends JSON to any Phaseo path.
+let response = client.post("/moderations", &json!({
+    "model": "openai/omni-moderation",
+    "input": "Text to classify"
+}))?;
+
+println!("{}", response.body["results"][0]["flagged"]);
+```
+
+</CodeGroup>
+
+| 言語 | メソッド | 戻り値 |
+| --- | --- | --- |
+| TypeScript | `client.generateModeration(request)` | `ModerationsResponse` |
+| Python | `client.generate_moderation(request)` または `client.moderations.create(request)` | dict |
+| Go | `client.GenerateModeration(ctx, req)`、別名 `CreateModeration` | `map[string]interface{}` |
+| C# | `client.GenerateModeration(request)`、別名 `CreateModeration` | `Dictionary<string, object>?` |
+| PHP | `$client->generateModeration($request)`、別名 `createModeration()` | 配列 |
+| Ruby | `client.generate_moderation(...)`、別名 `create_moderation` | Hash |
+| Java | `client.createModeration(jsonNode)` | `Object` |
+| Rust | `client.post("/moderations", &request)` | `PhaseoResponse`。JSON は `body` にあります |
+
+## パラメーター
+
+どの SDK でも、フィールド名は JSON 本文のフィールドです。
+
+| フィールド | 注記 |
+| --- | --- |
+| `input` | 必須。文字列、文字列の配列、または `text` と `image_url` のパーツの配列。 |
+| `model` | モデレーションモデルの ID。デフォルトは `openai/omni-moderation` です。 |
+| `metadata` | 独自のキーと値のデータ。 |
+| `provider` | プロバイダーのルーティング設定。 |
+| `meta` | `true` に設定すると、Gateway の `meta` ブロックを含めます。 |
+
+完全なスキーマは [Moderations API リファレンス](/ja/v1/api-reference/endpoint/moderations)にあります。
+
+## レスポンス
+
+`ModerationsResponse`。各結果には、`flagged`、真偽値の `categories` マップ、スコアの `category_scores` マップがあります。
+
+```json
+{
+  "results": [
+    {
+      "flagged": false,
+      "categories": {
+        "hate": false,
+        "hate/threatening": false,
+        "harassment": false,
+        "harassment/threatening": false,
+        "self-harm": false,
+        "self-harm/intent": false,
+        "self-harm/instructions": false,
+        "sexual": false,
+        "sexual/minors": false,
+        "violence": false,
+        "violence/graphic": false
+      },
+      "category_scores": {
+        "hate": 0.01,
+        "hate/threatening": 0.0,
+        "harassment": 0.02,
+        "harassment/threatening": 0.0,
+        "self-harm": 0.0,
+        "self-harm/intent": 0.0,
+        "self-harm/instructions": 0.0,
+        "sexual": 0.05,
+        "sexual/minors": 0.0,
+        "violence": 0.01,
+        "violence/graphic": 0.0
+      }
+    }
+  ]
+}
+```

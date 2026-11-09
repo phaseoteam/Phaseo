@@ -21,6 +21,25 @@ CREATE INDEX credit_grant_redemptions_user_created_idx ON public.credit_grant_re
 
 CREATE INDEX credit_grant_redemptions_workspace_created_idx ON public.credit_grant_redemptions USING btree (workspace_id, created_at DESC);
 
+CREATE POLICY "credit_grant_redemptions_no_oauth_client_insert" ON "public"."credit_grant_redemptions"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "credit_grant_redemptions_no_oauth_client_update" ON "public"."credit_grant_redemptions"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "credit_grant_redemptions_no_oauth_client_delete" ON "public"."credit_grant_redemptions"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "credit_grant_redemptions_admin_all" ON "public"."credit_grant_redemptions"
   FOR ALL
   TO "authenticated"

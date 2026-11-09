@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
-	auth: { ok: true, value: { workspaceId: "00000000-0000-4000-8000-000000000001", authMethod: "api_key", scopes: ["budgets:read", "budgets:write", "budgets:delete"] } } as any,
+	auth: { ok: true, value: { workspaceId: "00000000-0000-4000-8000-000000000001", authMethod: "api_key", userId: "00000000-0000-4000-8000-000000000077", scopes: ["budgets:read", "budgets:write", "budgets:delete"] } } as any,
 	rows: [] as any[],
 	audit: vi.fn(),
 }));
@@ -29,9 +29,12 @@ function budgetQuery(operation: "select" | "insert" | "update" | "delete", paylo
 	return query;
 }
 
+// The management key acts as its creator, an admin of the workspace.
+function membership() { const membership: any = { select: () => membership, eq: () => membership, maybeSingle: async () => ({ data: { role: "admin" }, error: null }) }; return membership; }
+
 vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: () => ({
-		from: () => ({
+		from: (table: string) => table === "workspace_members" ? membership() : ({
 			select: () => budgetQuery("select"),
 			insert: (payload: Record<string, unknown>) => budgetQuery("insert", payload),
 			update: (payload: Record<string, unknown>) => budgetQuery("update", payload),

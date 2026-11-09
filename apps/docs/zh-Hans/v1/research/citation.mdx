@@ -1,66 +1,46 @@
 ---
 icon: "book-open"
 title: "引用说明"
-description: "如何在工作中注明使用了 Phaseo 的数据、基准测试和网关工具。"
+description: "如何在你的工作中注明使用了 Phaseo 的数据、基准测试和网关工具。"
 ---
 
-Phaseo 汇总模型提供商和评估项目公开的信息及基准测试结果。
-如果你使用 Phaseo 查询、比较或监控模型，简单注明来源有助于其他人了解这个平台。
-
----
-
-## 简短写法
-
-如果 Phaseo 对你有帮助，请在合适的位置（方法、脚注或致谢）添加链接：
+将原始基准测试作为主要来源引用，并在你查询、比较或监控模型的地方链接到 Phaseo。在方法部分、脚注或致谢中放一个链接即可：
 
 > 本文使用了 [Phaseo](https://phaseo.app) 的模型元数据和汇总基准测试结果。
 
----
+## 正式引用
 
-## 建议引用格式（可选）
+请使用你访问数据的年份。
 
-如需更正式的引用，可以使用：
-
-```text
-Phaseo. (2025). Phaseo: Aggregated benchmarks and gateway for AI models. https://phaseo.app
+<CodeGroup>
+```text APA
+Phaseo. (2026). Phaseo: Aggregated benchmarks and gateway for AI models. https://phaseo.app
 ```
 
-BibTeX（可选）：
-
-```bibtex
-@misc{phaseo-2025,
+```bibtex BibTeX
+@misc{phaseo-2026,
     title  = {Phaseo: Aggregated benchmarks and gateway for AI models},
     author = {{Phaseo Team}},
-    year   = {2025},
+    year   = {2026},
     url    = {https://phaseo.app}
 }
 ```
+</CodeGroup>
 
----
+## 引用基准测试分数
 
-## 基准测试数据
+Phaseo 不运行基准测试。它发布由基准测试作者、模型开发者和指数发布方报告的分数，并为每个分数附上来源链接（参见[基准测试方法](./benchmark-methodology.mdx)）。
 
-Phaseo **本身不运行基准测试**。我们展示并规范化由基准测试作者和模型提供商报告的分数。
-
-使用通过 Phaseo 获取的基准测试结果时：
+使用你在 Phaseo 上找到的分数时：
 
 1. 将原始基准测试和论文作为主要来源引用。
-2. 也可以注明 Phaseo 是你获取或比较分数的平台。
-3. 请包含：
+2. 也可以注明 Phaseo 是你获取或比较该分数的地方。
+3. 写明基准测试名称和数据划分（例如 `MMLU test`）、Phaseo 模型 ID 和提供商、Phaseo 页面或 API 调用的 URL，以及你的访问日期。
 
-- 基准测试名称和数据拆分（例如 `MMLU test`）。
-- 模型标识符和提供商。
-- 相关 Phaseo 页面或 API 的 URL。
-- 访问日期。
+> 基准测试分数通过 Phaseo 获取（MMLU test 数据划分），访问日期为 2026 年 3 月 3 日。模型：`openai/gpt-6-astra`，提供商：OpenAI。
 
-示例文本：
+## 提及 Gateway
 
-> 这些基准测试分数通过 Phaseo 获取（MMLU test 数据拆分），访问日期为 2025 年 3 月 3 日。模型：`openai-gpt-4o`；提供商：OpenAI。
+如果 Phaseo 是你的集成层而不是数据来源，请将它描述为网关，并链接到 [API 参考](../api-reference/introduction.mdx)：
 
-## Gateway 与工具
-
-描述集成时，可以将 Phaseo 介绍为网关层，而不是研究基准测试来源：
-
-> 我们使用 Phaseo Gateway，通过单个 API 统一访问 OpenAI、Anthropic 和 Google 模型。
-
-直接链接到 [API 参考](../api-reference/introduction.mdx)，方便读者了解详情。
+> 我们使用 Phaseo Gateway，通过单个 API 调用 OpenAI、Anthropic 和 Google 的模型。

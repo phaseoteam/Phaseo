@@ -1,14 +1,12 @@
-"use client";
-
 import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import React from "react";
-import dynamic from "next/dynamic";
-import { useLocale, useTranslations } from "next-intl";
+import dynamic from "@/lib/dynamic";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import Link from "@/components/link";
+import { useSearchParams } from "@/lib/navigation";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { AppWindow, Bot, Braces, Copy, Database, GraduationCap, Info, ListFilter, LoaderCircle, MessageSquare, Package, ShieldCheck, ShieldQuestion, Terminal, Wrench, XCircle } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
@@ -44,7 +42,7 @@ import {
 	RequestRow,
 	type GatewayIoLog,
 	type ProviderMetadataEntry,
-} from "@/app/(dashboard)/gateway/usage/server-actions";
+} from "@/features/gateway/usage/server-actions";
 import { cn } from "@/lib/utils";
 import {
 	buildUsageFromNormalizedRequestFields,
@@ -92,9 +90,10 @@ interface RequestDetailDialogProps {
 
 type ProviderAttemptRow = RequestRow["provider_attempts"][number];
 
-function formatRequestPricingLine(
+export function formatRequestPricingLine(
 	line: RequestRow["pricing_lines"][number],
 	formatNumber: (value: number) => string,
+	labels: { svgAuthor: string; imageTool: string } = { svgAuthor: "SVG author", imageTool: "Image tool" },
 ): string {
 	if (line == null) return "null";
 	if (
@@ -116,28 +115,53 @@ function formatRequestPricingLine(
 		typeof line.dimension === "string" && line.dimension.trim().length > 0
 			? line.dimension.trim()
 			: null;
+	// Gateway request lines store quantity, line_cost_usd and line_nanos; older
+	// line shapes use units, cost_usd and cost_nanos.
+	const rawUnits = line.units ?? line.quantity;
 	const units =
-		typeof line.units === "number"
-			? line.units
-			: typeof line.units === "string" && line.units.trim().length > 0
-				? line.units.trim()
+		typeof rawUnits === "number"
+			? formatNumber(rawUnits)
+			: typeof rawUnits === "string" && rawUnits.trim().length > 0
+				? rawUnits.trim()
 				: null;
+	const rawCostUsd = line.cost_usd ?? line.line_cost_usd;
 	const costUsd =
-		typeof line.cost_usd === "number"
-			? line.cost_usd.toFixed(6)
-			: typeof line.cost_usd === "string" && line.cost_usd.trim().length > 0
-				? line.cost_usd.trim()
+		typeof rawCostUsd === "number"
+			? rawCostUsd.toFixed(6)
+			: typeof rawCostUsd === "string" && rawCostUsd.trim().length > 0
+				? rawCostUsd.trim()
 				: null;
+	const rawCostNanos = line.cost_nanos ?? line.line_nanos;
 	const costNanos =
-		typeof line.cost_nanos === "number"
-			? formatNumber(line.cost_nanos)
-			: typeof line.cost_nanos === "string" && line.cost_nanos.trim().length > 0
-				? line.cost_nanos.trim()
+		typeof rawCostNanos === "number"
+			? formatNumber(rawCostNanos)
+			: typeof rawCostNanos === "string" && rawCostNanos.trim().length > 0
+				? rawCostNanos.trim()
 				: null;
+	// Lines priced for another model in the same request, such as the model that
+	// writes GPT Image SVG output, name that model.
+	const lineModel =
+		typeof line.model === "string" && line.model.trim().length > 0
+			? line.model.trim()
+			: null;
+	// Components name the model a line was priced for: "svg_author", "image_generation"
+	// (Chat's image tool) or a tool component and its own part, such as "image_generation.svg_author".
+	const componentLabels: Record<string, string> = {
+		svg_author: labels.svgAuthor,
+		image_generation: labels.imageTool,
+	};
+	const rawComponent = typeof line.component === "string" ? line.component.trim() : "";
+	const componentLabel = rawComponent
+		? rawComponent.split(".").map((part) => componentLabels[part] ?? part).join(" · ")
+		: "";
+	const component = componentLabel
+		? `${componentLabel}${lineModel ? ` (${lineModel})` : ""}`
+		: null;
 
 	const parts = [
 		provider,
 		endpoint,
+		component,
 		dimension ? `${dimension}${units != null ? `=${units}` : ""}` : null,
 		costUsd ? `$${costUsd}` : null,
 		costNanos ? `${costNanos} nanos` : null,
@@ -2802,7 +2826,7 @@ export default function RequestDetailDialog({
 											className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2"
 										>
 											<code className="whitespace-pre-wrap break-words font-mono text-xs">
-												{formatRequestPricingLine(line, (value) => format.number(value, { notation: "standard" }))}
+												{formatRequestPricingLine(line, (value) => format.number(value, { notation: "standard" }), { svgAuthor: s("SVG author"), imageTool: s("Image tool") })}
 											</code>
 										</div>
 									))}

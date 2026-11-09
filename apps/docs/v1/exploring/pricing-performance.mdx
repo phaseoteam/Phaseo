@@ -5,11 +5,9 @@ description: "Compare provider prices and operational Gateway performance withou
 icon: "chart-spline"
 ---
 
-Use this guide to compare cost and speed across routes, understand the metrics Phaseo displays, and design a workload study before you move production traffic.
+Compare what a model costs on each provider with how fast it has served Gateway traffic, then confirm the finalists with your own prompts before moving production traffic.
 
-## Start with the decision
-
-Choose the metric that matches the user experience you are protecting.
+## Pick the metric that matters for your workload
 
 | Workload | Start with | Why |
 | --- | --- | --- |
@@ -22,12 +20,12 @@ No single score proves that a model is the best choice for every workload.
 
 ## Compare pricing
 
-Provider price sheets use different units: per token, per million tokens, per image, per second, per minute, or per request. Phaseo keeps the underlying unit and normalizes comparable prices for catalog views and the pricing calculator.
+Provider price sheets use different units: per token, per million tokens, per image, per second, per minute, or per request. Phaseo keeps each price in its own unit and converts comparable text prices to per 1 million tokens for catalog views and the pricing calculator.
 
-For text models, compare input, cached input, cache write, reasoning, and output meters separately when they are present. For media models, keep the native billing unit visible; a per-second video price should not be presented as though it were a token price.
+For text models, compare input, cached input, cache write, reasoning, and output meters separately when they are present. Media models keep their own billing unit; compare a per-second video price only with other per-second prices.
 
 <Note>
-Catalog pricing is evidence for estimating a request, not a quote for every possible payload. Provider tiers, regional offers, batch pricing, cache behavior, and request-specific meters can change the final amount.
+Catalog pricing estimates a request; it isn't a quote for every payload. Provider tiers, regional offers, batch pricing, cache behavior, and request-specific meters change the final amount.
 </Note>
 
 Use the [pricing calculator](https://phaseo.app/tools/pricing-calculator) for a representative payload, then confirm the charged amount in Gateway usage after a test request.
@@ -49,13 +47,13 @@ Phaseo records operational timing for requests routed through the Gateway.
 
 TTFT, output speed, TPOT, and ITL require a streaming response with a content-bearing first output. Metadata-only stream frames do not count. Non-streaming responses can still contribute provider duration, Gateway E2E, and effective throughput without an invented TTFT.
 
-Phaseo overhead isolates time outside the selected provider call. It can include Gateway processing, routing work, retries, and network effects. It is not a fixed platform constant and should be read as a distribution over a defined window.
+Phaseo overhead is the time outside the selected provider call: Gateway processing, routing work, retries, and network effects. It varies by request, so read it as a distribution over a defined window, not a fixed number.
 
 ## Read operational data correctly
 
-Performance pages summarize live Gateway traffic. They are observational measurements, not controlled benchmark runs and not intrinsic properties of a model.
+Performance pages summarize live Gateway traffic. They are observations, not controlled benchmark runs, and they describe a route over a window rather than the model itself. Past latency and uptime don't guarantee future results.
 
-Results can move because of:
+Results move because of:
 
 - provider and route selection
 - Cloudflare execution location and network path
@@ -102,27 +100,4 @@ Example result schema:
 
 The zero values are placeholders. Publish measured values only with the workload definition, sample count, time window, and permission to disclose the data.
 
-## What Phaseo does not claim
-
-- Catalog presence does not mean a model is routable. Use the default active availability filter.
-- Public operational telemetry does not guarantee future latency or uptime.
-- A benchmark score does not establish production quality for your prompt mix.
-- An illustrative UI profile is not a live model measurement.
-- A customer quote, logo, or workload result should not be published without permission and supporting evidence.
-
-## Next steps
-
-<Columns cols={2}>
-  <Card title="Check reliability and status" icon="shield-check" href="../developers/reliability-and-status">
-    Check incidents, current model routability, metric definitions, and failure triage.
-  </Card>
-  <Card title="Compare models" icon="scale" href="https://phaseo.app/compare">
-    Compare pricing, metadata, and available performance signals side by side.
-  </Card>
-  <Card title="Inspect model routes" icon="route" href="../api-reference/endpoint/model-endpoints">
-    Inspect provider routes, capabilities, availability state, and pricing for one model.
-  </Card>
-  <Card title="Review benchmark methodology" icon="microscope" href="../research/benchmark-methodology">
-    Understand how benchmark sources and scores are normalized separately from Gateway telemetry.
-  </Card>
-</Columns>
+A catalog entry doesn't mean a model is routable, so start from the default `GET /v1/models` response. A benchmark score doesn't establish quality on your prompt mix; see [Benchmark methodology](../research/benchmark-methodology) for how scores are sourced, separately from Gateway telemetry. To inspect every provider route, capability and price for one model, use the [model endpoints API](../api-reference/endpoint/model-endpoints) or [Compare](https://phaseo.app/compare). For incidents and failure triage, see [Reliability and status](../developers/reliability-and-status).

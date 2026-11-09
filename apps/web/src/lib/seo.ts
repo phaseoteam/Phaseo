@@ -1,4 +1,4 @@
-import type { Metadata, ResolvingMetadata } from "next";
+import type { PageMetadata, ResolvingMetadata } from "@/lib/seo/metadataTypes";
 
 const CANONICAL_SITE_URL = "https://phaseo.app";
 const LOCAL_SITE_URL = "http://localhost:3000";
@@ -11,11 +11,11 @@ const LEGACY_SITE_HOSTS = new Set([
 ]);
 
 const configuredSiteUrl =
-	process.env.NEXT_PUBLIC_WEBSITE_URL ?? process.env.WEBSITE_URL;
+	process.env.PUBLIC_WEBSITE_URL ?? process.env.WEBSITE_URL;
 
 if (process.env.NODE_ENV === "production" && !configuredSiteUrl) {
 	console.warn(
-		"[seo] NEXT_PUBLIC_WEBSITE_URL (or WEBSITE_URL) is not set; falling back to http://localhost:3000 during this build.",
+		"[seo] PUBLIC_WEBSITE_URL (or WEBSITE_URL) is not set; falling back to http://localhost:3000 during this build.",
 	);
 }
 
@@ -59,10 +59,10 @@ export interface BuildMetadataOptions {
 	imageAlt?: string;
 	// Defaults to 1200x630; null leaves the size out when it isn't known.
 	imageSize?: { width: number; height: number } | null;
-	type?:"website" | "article" | "profile" | "video.other";
-	openGraph?: Metadata["openGraph"];
-	twitter?: Metadata["twitter"];
-	robots?: Metadata["robots"];
+	type?: "website" | "article" | "profile" | "video.other";
+	openGraph?: PageMetadata["openGraph"];
+	twitter?: PageMetadata["twitter"];
+	robots?: PageMetadata["robots"];
 }
 
 export function absoluteUrl(path: string): string {
@@ -84,7 +84,7 @@ export function buildMetadata({
 	openGraph: openGraphOverrides,
 	twitter: twitterOverrides,
 	robots,
-}: BuildMetadataOptions): Metadata {
+}: BuildMetadataOptions): PageMetadata {
 	const canonical = absoluteUrl(path);
 	const imageUrl = imagePath
 		? absoluteUrl(imagePath)
@@ -132,7 +132,7 @@ export async function resolveMetadata(
 		| BuildMetadataOptions
 		| ((parent: Awaited<ResolvingMetadata> | null) => Promise<BuildMetadataOptions>),
 	parent?: ResolvingMetadata
-): Promise<Metadata> {
+): Promise<PageMetadata> {
 	if (typeof resolver === "function") {
 		const parentMetadata = parent ? await parent : null;
 		const options = await resolver(parentMetadata);

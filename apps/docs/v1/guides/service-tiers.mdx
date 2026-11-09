@@ -5,59 +5,7 @@ description: "How Standard, Fast, Ultrafast, Flex, and Batch pricing modes work 
 icon: "gauge"
 ---
 
-Service tiers let you choose between different pricing and delivery modes when a provider supports them.
-
-Availability varies by provider and model. If a tier is not supported for the model you requested, the Gateway will not route to it.
-
-<Note type="warning">
-Service tiers are currently available only for supported text models on supported providers.
-</Note>
-
-`service_tier` is supported across all three text request surfaces:
-
-- Anthropic-compatible Messages at `/v1/messages`
-- OpenAI-compatible Chat Completions at `/v1/chat/completions`
-- OpenAI-compatible Responses at `/v1/responses`
-
-## Tier overview
-
-| Tier | How to request it | Typical use |
-| --- | --- | --- |
-| `Standard` | Default behavior. No extra field required. | General production traffic. |
-| `Fast` | Set `service_tier: "fast"` on the request. | Faster or premium routing where supported. OpenAI also accepts `priority`. |
-| `Ultrafast` | Set `service_tier: "ultrafast"` on the request. | Highest-speed routing where supported. |
-| `Flex` | Set `service_tier: "flex"` on the request. | Lower-cost routing where supported. |
-| `Batch` | Use the Batch API rather than `service_tier`. | Large deferred workloads where latency is less important. |
-
-## API compatibility
-
-Use the same `service_tier` field when you call any supported synchronous text API:
-
-- [Anthropic Messages API reference](../api-reference/endpoint/anthropic-messages.mdx)
-- [Chat Completions API reference](../api-reference/endpoint/chat-completions.mdx)
-- [Responses API reference](../api-reference/endpoint/responses.mdx)
-- [Shared parameter reference](../api-reference/parameters.mdx)
-
-The accepted `service_tier` values are `standard`, `fast`, `ultrafast`, `priority`, `flex`, and `batch`. `Standard` is the default behavior when `service_tier` is omitted. Phaseo uses `Fast` as the canonical premium tier name. For OpenAI routes, `priority` is accepted as a provider-compatible alias and uses the same routing and pricing. `Batch` is handled by the Batch API rather than synchronous text requests.
-
-<Note>
-Phaseo maps the normalized gateway values to provider-native controls internally. For example, an Anthropic route may receive Anthropic-native tier fields upstream, but the client-facing request still uses the gateway values listed here.
-</Note>
-
-## Standard
-
-`Standard` is the default routing mode. You do not need to set `service_tier` to use it.
-
-```json
-{
-  "model": "openai/gpt-5.5",
-  "input": "Summarise this incident report."
-}
-```
-
-## Fast
-
-Use `Fast` when you want the provider's premium or higher-priority offer. Phaseo uses `fast` as its provider-neutral name. OpenAI calls this Fast mode and accepts both `fast` and `priority` on supported models.
+Set `service_tier` on a text request to pay for faster delivery (`fast`, `ultrafast`) or accept a cheaper, lower-priority mode (`flex`). Phaseo then routes only to providers that offer that tier for the model. The field works the same on `/v1/chat/completions`, `/v1/responses`, and `/v1/messages`.
 
 ```json
 {
@@ -67,11 +15,53 @@ Use `Fast` when you want the provider's premium or higher-priority offer. Phaseo
 }
 ```
 
-### Anthropic Messages example
+| Tier | Request it with | Use it for |
+| --- | --- | --- |
+| Standard | Nothing, or `"standard"` / `"default"` | General production traffic |
+| Fast | `"fast"`, or its alias `"priority"` | The provider's premium or higher-priority offer |
+| Ultrafast | `"ultrafast"` | The highest-speed offer |
+| Flex | `"flex"` | A lower-cost offer, where the provider has one |
+| Batch | The [Batch API](../api-reference/endpoint/batches-create.mdx), not `service_tier` | Large deferred workloads |
 
-```json
+Tiers are available only for text models, and only where the model and provider support them. Model pages show tier-specific prices where Phaseo has them.
+
+## What happens when a tier isn't offered
+
+Phaseo keeps only the provider routes that offer the requested tier; it never falls back to another tier. If no route offers it, the request fails with `400 unsupported_model_or_endpoint`, reason `service_tier_not_supported`.
+
+Other values fail with `400 validation_error`:
+
+- `service_tier: "batch"` on a synchronous request (keyword `batch_service_tier_not_supported`). Use the Batch API instead.
+- Any value other than `standard`, `default`, `fast`, `ultrafast`, `priority`, `flex`, or `batch` (keyword `unsupported_service_tier`).
+
+You always send these gateway values. Phaseo translates them into each provider's own controls, so an Anthropic route, for example, receives Anthropic's tier fields.
+
+## Request a tier on each endpoint
+
+<CodeGroup>
+```json Responses
 {
-  "model": "anthropic/claude-sonnet-4",
+  "model": "openai/gpt-5.5",
+  "input": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "flex"
+}
+```
+
+```json Chat Completions
+{
+  "model": "openai/gpt-5.5",
+  "messages": [
+    { "role": "user", "content": "Summarise this incident report." }
+  ],
+  "service_tier": "flex"
+}
+```
+
+```json Messages
+{
+  "model": "anthropic/claude-opus-5.5",
   "max_tokens": 512,
   "messages": [
     { "role": "user", "content": "Summarise this incident report." }
@@ -79,17 +69,17 @@ Use `Fast` when you want the provider's premium or higher-priority offer. Phaseo
   "service_tier": "fast"
 }
 ```
+</CodeGroup>
 
-Phaseo maps this to the appropriate provider-native control when routing to Anthropic.
+For `ultrafast`, use a model whose page lists Ultrafast pricing.
 
-### Mistral Priority and EU routing
+## Mistral Priority and EU routing
 
-Mistral Priority Tier requires an eligible Mistral enterprise account. Phaseo maps
-`priority` to Mistral's automatic priority mode and bills the tier reported by Mistral;
-if Mistral falls back to Standard, Standard pricing is used.
+Mistral Priority Tier needs an eligible Mistral enterprise account. Phaseo maps `priority` to Mistral's automatic priority mode and bills the tier Mistral reports: if Mistral falls back to Standard, you pay Standard prices.
 
-GLM 5.2 can be pinned to Mistral's EU regional endpoint with the `mistral-eu`
-provider offer:
+A price in the catalogue doesn't make a tier routable. Priority stays off unless the specific Mistral route advertises Priority support, and eligibility still depends on the Mistral account and model.
+
+GLM 5.2 can be pinned to Mistral's EU regional endpoint with the `mistral-eu` provider offer:
 
 ```json
 {
@@ -105,82 +95,6 @@ provider offer:
 }
 ```
 
-Mistral regional inference applies a 10% price uplift. Batch pricing is available
-on the global Mistral offer, but Mistral does not support Batch on regional endpoints.
+Mistral regional inference costs 10% more. Batch pricing is available only on the global Mistral offer through the Batch API; Mistral doesn't support Batch on regional endpoints.
 
-Phaseo records Mistral's published Batch and Priority reference rates separately
-from runtime availability. A price shown in the catalog does not make that tier
-routable: Priority remains disabled unless the specific Mistral route advertises
-Priority support, and Batch must use the global Mistral Batch API. Priority eligibility
-still depends on the Mistral account and model.
-
-## Ultrafast
-
-Use `Ultrafast` for the highest-speed service tier when the model and provider offer it. Phaseo routes only to an Ultrafast-priced or Ultrafast-specific route; it does not fall back to Fast or Standard when that tier is unavailable.
-
-```json
-{
-  "model": "<model-id-with-ultrafast-pricing>",
-  "input": "Summarise this incident report.",
-  "service_tier": "ultrafast"
-}
-```
-
-## Flex
-
-Use `Flex` when the provider exposes a lower-cost service tier and you are willing to trade for that pricing mode.
-
-```json
-{
-  "model": "openai/gpt-5.5",
-  "input": "Summarise this incident report.",
-  "service_tier": "flex"
-}
-```
-
-### Chat Completions example
-
-```json
-{
-  "model": "openai/gpt-5.5",
-  "messages": [
-    { "role": "user", "content": "Summarise this incident report." }
-  ],
-  "service_tier": "flex"
-}
-```
-
-### Responses example
-
-```json
-{
-  "model": "openai/gpt-5.5",
-  "input": [
-    { "role": "user", "content": "Summarise this incident report." }
-  ],
-  "service_tier": "flex"
-}
-```
-
-## Batch
-
-`batch` is a recognized tier value for batch execution, but synchronous text APIs reject `service_tier: "batch"` with a validation error that points to the Batch API.
-
-Use the Batch API or batch job workflow because batch pricing applies to deferred batch execution rather than normal synchronous requests.
-
-## Notes
-
-- Tier support is provider-specific and model-specific.
-- Pricing cards on model pages show the tier-specific rates when we have data for them.
-- Some providers expose specialized upstream offers that Phaseo maps into a unified tiered experience in the catalog.
-- Client-facing `service_tier` values are normalized across supported text surfaces; provider-native names are handled inside the gateway.
-
-## Related pages
-
-- [Anthropic Messages API reference](../api-reference/endpoint/anthropic-messages.mdx)
-- [Chat Completions API reference](../api-reference/endpoint/chat-completions.mdx)
-- [Responses API reference](../api-reference/endpoint/responses.mdx)
-- [Parameters](../api-reference/parameters.mdx)
-- [Routing and Fallbacks](./routing-and-fallbacks.mdx)
-- [Chat completions (TypeScript SDK)](../sdk-reference/typescript/chat-completions.mdx)
-- [Responses (TypeScript SDK)](../sdk-reference/typescript/responses.mdx)
+The full field reference is in [Parameters](../api-reference/parameters.mdx); for how tiers combine with provider order and fallbacks, see [Routing and Fallbacks](./routing-and-fallbacks.mdx).

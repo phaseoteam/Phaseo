@@ -1,0 +1,307 @@
+---
+icon: "braces"
+title: "API リファレンス"
+description: "Agent SDK のすべての関数、メソッド、オプション、結果の型を、各言語での名前とあわせて調べます。"
+---
+
+Agent SDK の関数や型を役割から探し、使用する言語での名前を確認します。各部品の組み合わせ方は[使い方](./usage)にあります。TypeScript がリファレンス設計です。言語に欠けているものがある場合は、その欄に記載しています。
+
+| 言語 | パッケージ | インポート元 | ソース |
+| --- | --- | --- | --- |
+| TypeScript | `@phaseo/agent-sdk` | `@phaseo/agent-sdk` | `packages/sdk/agent-sdk-ts` |
+| Python | `phaseo-agent-sdk` | `phaseo_agent` | `packages/sdk/agent-sdk-py` |
+| Go | `github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go` | パッケージ `phaseoagent` | `packages/sdk/agent-sdk-go/agent.go` |
+| C# | `Phaseo.AgentSdk`（NuGet） | 名前空間 `PhaseoAgentSdk`、静的クラス `AgentSdk` | `packages/sdk/agent-sdk-csharp/AgentSdk.cs` |
+| PHP | `phaseo/agent-sdk`（Composer） | 名前空間 `Phaseo\AgentSdk`、クラス `AgentSdk` | `packages/sdk/agent-sdk-php/src/AgentSdk.php` |
+| Ruby | `phaseo_agent_sdk`（gem） | モジュール `PhaseoAgentSdk` | `packages/sdk/agent-sdk-ruby/lib/phaseo_agent_sdk.rb` |
+| Java | `app.phaseo:phaseo-agent-sdk`（Maven） | `app.phaseo.agent.AgentSdk` 内のネストされたレコード | `packages/sdk/agent-sdk-java/src/main/java/app/phaseo/agent/AgentSdk.java` |
+| Rust | `phaseo-agent` `0.2`（crates.io、[docs.rs](https://docs.rs/phaseo-agent/0.2.0/phaseo_agent/)） | `phaseo_agent` | `packages/sdk/agent-sdk-rust` |
+
+## エージェントを作成する
+
+定義からエージェントを作成します。定義のステップ上限は、各 run または continue の呼び出しに適用されます。
+
+| 言語 | 名前 | デフォルトのステップ上限 |
+| --- | --- | --- |
+| TypeScript | `createAgent(definition)` | 12 |
+| Python | `create_agent(definition)`。dict または `AgentDefinition` から | 12 |
+| Go | `CreateAgent(AgentDefinition) *Agent` | 8 |
+| C# | `AgentSdk.CreateAgent(AgentDefinition)` | 12 |
+| PHP | `AgentSdk::createAgent(AgentDefinition)` | 12 |
+| Ruby | `PhaseoAgentSdk.create_agent(definition)`。`AgentDefinition` またはキーワードのフィールドから | 12 |
+| Java | `AgentSdk.createAgent(AgentDefinition)` | 12（1未満の `maxSteps` は12になります） |
+| Rust | `create_agent(AgentDefinition::new(id, model))` | 8（値は最低1に切り上げられます） |
+
+### 定義のフィールド
+
+Rust は、フィールドではなくメソッドで定義を組み立てます。`AgentDefinition::new(id, model)` の後に、`.instructions(text)`、`.tool(tool)`（ツールごとに1回）、`.max_steps(limit)`、`.model_retries(count, backoff)`、`.human_review(callback)` を続けます。Java の `AgentDefinition` は、10引数、13引数、19引数のコンストラクターを持つレコードです。
+
+| フィールド | camelCase（TypeScript、PHP、Java） | snake_case（Python、Ruby） | PascalCase（Go、C#） | ない言語 |
+| --- | --- | --- | --- | --- |
+| エージェント ID（必須） | `id` | `id` | `ID`（Go）、`Id`（C#） | |
+| モデルまたはプリセット | `model`、`preset` | `model`、`preset` | `Model`、`Preset` | Rust には `preset` がない |
+| モデルのリスト（`model` が未設定の場合に先頭だけを使用。フォールバックなし） | `models` | | | TypeScript 以外すべて |
+| 指示 | `instructions` | `instructions` | `Instructions` | |
+| ツール | `tools` | `tools` | `Tools` | |
+| ステップで提供するツール | `activeTools` | | | TypeScript 以外すべて |
+| 各モデルリクエストの前に履歴を書き換える | `prepareMessages` | | | TypeScript 以外すべて |
+| ステップ上限と停止条件 | `maxSteps`、`stopWhen` | `max_steps`、`stop_when` | `MaxSteps`、`StopWhen` | Rust には `stop_when` がない |
+| モデルの再試行とツールの同時実行数 | `modelRetry`、`toolExecution` | `model_retry`、`tool_execution` | `ModelRetry`、`ToolExecution` | Rust にはツールの同時実行数がない |
+| サンプリングと長さ | `temperature`、`maxOutputTokens`、`topP` | `temperature`、`max_output_tokens`、`top_p` | | Go、C#、Java、Rust |
+| 最終出力のパースと検証 | `parseOutput`、`outputSchema` | `parse_output`、`output_schema` | `ParseOutput`、`OutputSchema` | Rust |
+| すべてのツール呼び出しの承認 | `requireApproval` | `require_approval` | `RequireApproval` | Rust（承認はツールごと） |
+| 各モデルレスポンス後のレビュー | `humanReview` | `human_review` | `HumanReview` | |
+| ターンの間にツールや設定を変える | `dynamicTools`（PHP）と[動的ターン](./dynamic-turns)のコールバック | `dynamic_tools`（Ruby） | 動的ターンのコールバック | Rust |
+
+TypeScript では、`model`、`instructions`、サンプリングの値を固定にも動的にもできます。
+
+## ツールを定義する
+
+| 言語 | 名前 | 補足 |
+| --- | --- | --- |
+| TypeScript | `defineTool(definition)`、別名 `tool(definition)` | ローカル、手動（`execute: false`）、承認が必要、または進捗を出力するツール |
+| Python | `define_tool(AgentTool)`、別名 `tool(AgentTool)` | 手動ツールでは `execute` を省きます |
+| Go | `DefineTool(Tool) Tool` | 同じ `Tool` を返します |
+| C# | `AgentSdk.DefineTool(Tool)` | 同じ `Tool` を返します |
+| PHP | `AgentSdk::defineTool(Tool)` | 同じ `Tool` を返します |
+| Ruby | `PhaseoAgentSdk.define_tool(Tool)` | 同じ `Tool` を返します |
+| Java | `AgentSdk.defineTool(Tool)` | 同じ `Tool` を返します |
+| Rust | `Tool::new(id, description, parameters, executor)`、`Tool::external(id, description, parameters)`、`.require_approval()`。`define_tool(tool)` はツールを返します | 実行関数は `Fn(serde_json::Value, &RuntimeContext) -> Result<serde_json::Value, AgentError> + Send + Sync + 'static` です |
+
+ツールのすべてのフィールドは[ツール](./tools)にあります。
+
+## Phaseo Gateway に接続する
+
+| 言語 | 名前 | 戻り値 |
+| --- | --- | --- |
+| TypeScript | `createGatewayAgentClient(options)` | Gateway エージェントクライアント |
+| Python | `create_gateway_agent_client(**options)` | Gateway エージェントクライアント |
+| Go | `CreateGatewayAgentClient(GatewayAgentClientOptions)` | `(*GatewayAgentClient, error)` |
+| C# | `AgentSdk.CreateGatewayAgentClient(GatewayAgentClientOptions? options = null)` | `GatewayAgentClient`。API キーがないとスロー |
+| PHP | `AgentSdk::createGatewayAgentClient(?GatewayAgentClientOptions)` | `GatewayAgentClient`。API キーがないとスロー |
+| Ruby | `PhaseoAgentSdk.create_gateway_agent_client(**options)` | `GatewayAgentClient`。API キーがないと例外を送出 |
+| Java | `AgentSdk.createGatewayAgentClient()`、`createGatewayAgentClient(GatewayOptions)` | `ModelClient` / `StreamingModelClient`。API キーがないとスロー |
+| Rust | `create_gateway_agent_client(model)`（`GatewayAgentClient::from_env(model)` と同じ）、`GatewayAgentClient::new(phaseo_client, model)` | `GatewayAgentClient`。`POST /responses` を送り、出力テキスト、関数呼び出し、リクエストのメタデータ、使用量を正規化します |
+
+各言語のクライアントオプションは[出力と再試行](./run-controls#set-gateway-defaults-on-the-client)にあります。
+
+## 実行をローカルに記録する
+
+| 言語 | 名前 | 戻り値 |
+| --- | --- | --- |
+| TypeScript | `createAgentDevtools(options)` | DevTools の設定 |
+| Python | `create_agent_devtools(**options)` | DevTools の設定 |
+| Go | `CreateAgentDevtools(directory)` | `*DevtoolsConfig` |
+| C# | `AgentSdk.CreateAgentDevtools(string directory = ".phaseo-devtools")` | `AgentDevtoolsConfig` |
+| PHP | `AgentSdk::createAgentDevtools(string $directory = ".phaseo-devtools")` | `DevtoolsConfig` |
+| Ruby | `PhaseoAgentSdk.create_agent_devtools(directory: ".phaseo-devtools", enabled: true)` | `DevtoolsConfig` |
+| Java | `AgentSdk.createAgentDevtools(String directory)` | `DevtoolsConfig` |
+| Rust | なし | |
+
+[DevTools](./devtools) を参照してください。
+
+## 停止条件
+
+| 条件 | camelCase（TypeScript、PHP、Java） | snake_case（Python、Ruby） | PascalCase（Go、C#） |
+| --- | --- | --- | --- |
+| ステップ数 | `stepCountIs` | `step_count_is` | `StepCountIs` |
+| 使用トークン数 | `maxTokensUsed` | `max_tokens_used` | `MaxTokensUsed` |
+| コスト | `maxCost` | `max_cost` | `MaxCost` |
+| 経過時間 | `maxDuration`（TypeScript と PHP ではミリ秒、Java では `Duration`） | `max_duration`（ミリ秒） | `MaxDuration`（Go では `time.Duration`、C# では `TimeSpan`） |
+| ツールが呼び出された | `hasToolCall` | `has_tool_call` | `HasToolCall` |
+| 終了理由 | `finishReasonIs` | `finish_reason_is` | `FinishReasonIs` |
+
+Go と Java は `StopCondition` を、C# は `Func<StopState, (bool Stop, string Reason)>` を、PHP は `callable` を、Ruby は lambda を返します。Rust には停止条件がなく、ステップ上限だけがあります。[停止条件](./stop-conditions)を参照してください。
+
+## 実行と続行
+
+| 目的 | TypeScript | Python | Go | C# | PHP | Ruby | Java | Rust |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 実行 | `run(options)` | `run(...)` | `Run(ctx, RunOptions)` | `Run(RunOptions)` | `run(...)` | `run(...)` | `run(RunOptions)` | `run(&mut client, options)`、`run_with_events(&mut client, options, callback)` |
+| 実行してストリーミング | `stream(options)` | `stream(...)` | `Stream(ctx, RunOptions)` | `Stream(RunOptions)` | `stream(...)` | `stream(...)` | `stream(RunOptions)` | なし |
+| 続行 | `continueRun(options)` | `continue_run(...)` | `Continue(ctx, ContinueOptions)` | `ContinueRun(ContinueOptions)` | `continueRun(...)`、`continueRunById(...)` | `continue_run(...)` | `continueRun(ContinueOptions)` | `continue_run(&mut client, options)`、`continue_with_events(...)` |
+| 続行してストリーミング | `continueStream(options)` | `continue_stream(...)` | `ContinueStream(ctx, ContinueOptions)` | `ContinueStream(ContinueOptions)` | `continueStream(...)` | `continue_stream(...)` | `continueStream(ContinueOptions)` | なし |
+
+実行と続行は実行結果を返します。TypeScript では `Promise<AgentRunResult>`、Go では `(RunResult, error)`、C# では `Task<RunResult>`、Rust では `Result<RunResult, AgentError>`、その他の言語では実行結果を直接返します。ストリームのメソッドは、すぐにストリーム結果を返します。
+
+### 実行オプション
+
+PHP と Ruby は、これらを名前付き引数またはキーワード引数として受け取ります。Java の `RunOptions` は位置引数のレコードで、順序は `input, client, context, model, preset, maxSteps, modelRetry, toolExecution, onEvent, devtools`、その後に省略可能な `state` が続きます。
+
+| オプション | camelCase（TypeScript、PHP、Java） | snake_case（Python、Ruby、Rust） | PascalCase（Go、C#） | ない言語 |
+| --- | --- | --- | --- | --- |
+| 入力 | `input` | `input` | `Input` | |
+| 入力の代わりに会話全体を渡す | `messages` | | | TypeScript 以外すべて |
+| モデルクライアント | `client` | `client` | `Client` | Rust は別の引数として渡す |
+| アプリケーションのコンテキスト | `context` | `context` | `Context` | |
+| モデル、プリセット、ステップ上限の上書き | `model`、`preset`、`maxSteps` | `model`、`preset`、`max_steps` | `Model`、`Preset`、`MaxSteps` | Rust には `model` と `max_steps` のみ |
+| 再試行とツールの同時実行数の上書き | `modelRetry`、`toolExecution` | `model_retry`、`tool_execution` | `ModelRetry`、`ToolExecution` | Rust |
+| サンプリングの上書き | `temperature`、`maxOutputTokens`、`topP`（TypeScript） | | | TypeScript 以外すべて |
+| キャンセル | `signal`（TypeScript） | | `CancellationToken`（C#） | Go は `ctx` を使い、その他はストリームでキャンセル |
+| イベントハンドラー | `onEvent` | `on_event` | `OnEvent` | Rust は `run_with_events` を使う |
+| ローカルへの記録 | `devtools` | `devtools` | `Devtools` | Rust |
+| 状態アクセサー | `state` | `state` | `State` | Rust |
+| 次のモデルリクエストの前にメッセージを追加する | `takeMessages`（TypeScript） | | | TypeScript 以外すべて |
+
+Python の `run()` は `stop_when` も受け付けますが無視します。停止条件は定義に設定してください。PHP の `stream()` と Ruby の `stream` が受け取るのは `input`、`client`、`context`、`state` だけです。Rust は `RunOptions::new(input)` でデフォルトを作成します。
+
+### 続行オプション
+
+続行オプションは、上記の実行の上書きに加えて、次のものを受け取ります。
+
+| オプション | camelCase（TypeScript、PHP、Java） | snake_case（Python、Ruby、Rust） | PascalCase（Go、C#） | ない言語 |
+| --- | --- | --- | --- | --- |
+| 保存した実行 | `run` | `run`（Rust：`result`） | `Run` | |
+| `state` を通じて ID で実行を読み込む | `runId` | `run_id` | `RunID`（Go）、`RunId`（C#） | Rust。PHP は `continueRunById($runId, $state, $client, ...)` を使う |
+| 人の入力 | `humanInput` | `human_input` | `HumanInput` | |
+| 構造化された人のメッセージ | `humanMessages`（TypeScript） | | | TypeScript 以外すべて |
+| 承認 | `approvals`（TypeScript の別名 `approveToolCalls`） | `approvals` | `Approvals` | |
+| 拒否 | `rejections`（TypeScript の別名 `rejectToolCalls`） | `rejections` | `Rejections` | Rust |
+| ツール出力 | `toolOutputs` | `tool_outputs` | `ToolOutputs` | |
+
+Java の `ContinueOptions` の順序は `run, client, context, model, preset, maxSteps, humanInput, modelRetry, toolExecution, onEvent, devtools`、次に `approvals, rejections, toolOutputs`、最後に `runId, state` です。この 16 引数の形式のほかに、最初の 11 引数だけ、または最初の 14 引数だけを受け取るコンストラクターもあり、残りは空のリストまたは `null` になります。Rust は `ContinueOptions::new(result)` でデフォルトを作成します。
+
+## ストリーム結果
+
+| 目的 | TypeScript | Python | Go | C# | PHP | Ruby | Java |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 完了した結果 | `getResult()`、またはストリームを `await` | `result()` | `Result()` | `GetResult()` | `getResult()` | `result` | `getResult()` |
+| 最終テキスト全体 | `getText()` | | | | | | |
+| テキストの差分 | `getTextStream()` | `text_stream()` | `Text()` | `TextStream()` | `textStream()` | `text_stream` | `textStream()` |
+| 推論の差分 | `getReasoningStream()` | `reasoning_stream()` | | | `reasoningStream()` | `reasoning_stream` | |
+| アイテム | `getItemsStream()` | `item_stream()` | | | `itemStream()` | `item_stream` | |
+| ツールのイベント | `getToolStream()` | `tool_stream()` | | | | | |
+| すべてのイベント | `getFullStream()` | `full_stream()` | `Events()` | `FullStream()` | `fullStream()` | `full_stream` | `fullStream()` |
+| キャンセル | `cancel(reason?)` | `cancel()` | `Cancel()` | `Cancel()` | `cancel()` | `cancel` | `cancel()` |
+
+コンシューマーは最初から再生するため、複数のコンシューマーが同じ実行を読み取れます。動作は言語によって異なります。
+
+| 言語 | ストリーム結果の型 | 動作 |
+| --- | --- | --- |
+| TypeScript | `AgentStreamResult` | `getFullStream()` は `result` イベントで終わります |
+| Python | `AgentStreamResult` | バックグラウンドスレッドで実行します。`result()` は完了までブロックします |
+| Go | `*StreamResult` | `Text()` と `Events()` はチャネルです。`Cancel()` は実行の context をキャンセルします |
+| C# | `AgentStreamResult` | `IAsyncEnumerable` のコンシューマーです。`Cancel()` は実行のリンクされたトークンをキャンセルします |
+| PHP | `AgentStreamResult` | Fiber で実行します。ストリームを消費し終えると `$result` に `RunResult` が入り、それまでは `null` です |
+| Ruby | `StreamResult` | ワーカースレッドで実行します。`result` はその終了を待ち、`cancel` はそれを終了させます |
+| Java | `StreamResult` | `textStream()` と `fullStream()` は実行が終わった後に `List` を返します。`cancel()` はワーカースレッドを中断します |
+| Rust | なし | `0.2` にはストリーミングがありません |
+
+## 実行結果
+
+| フィールド | camelCase（TypeScript、PHP、Java） | snake_case（Python、Ruby、Rust） | PascalCase（Go、C#） |
+| --- | --- | --- | --- |
+| 実行レコード | `run` | `run` | `Run` |
+| ステップのレコード | `steps` | `steps` | `Steps` |
+| 最終出力 | `output` | `output` | `Output` |
+| 会話全体 | `messages` | `messages` | `Messages` |
+| 累計の使用量 | `usage` | `usage` | `Usage` |
+
+型は、TypeScript と Python では `AgentRunResult`、その他では `RunResult` です。TypeScript には、`stepResults`（正規化されたステップ結果）と `items`（順序付きのメッセージ、推論、ツールの動き、エラー、最終出力。[アイテム](./items)を参照）も加わります。Rust では、`output` は `serde_json::Value` で、`RunResult`、`RunRecord`、`RunStep`、`Message`、`ToolCall`、`HumanPause`、`PendingToolCall`、`ToolDecision`、`ToolOutput`、`UsageSummary` は Serde でシリアライズできます。
+
+### 実行レコード
+
+| フィールド | camelCase（TypeScript、PHP、Java） | snake_case（Python、Ruby、Rust） | PascalCase（Go、C#） |
+| --- | --- | --- | --- |
+| ID | `id`、`agentId` | `id`、`agent_id` | `ID`/`Id`、`AgentID`/`AgentId` |
+| ステータス | `status` | `status` | `Status` |
+| 入力、コンテキスト、メッセージ | `input`、`context`、`messages` | `input`、`context`、`messages` | `Input`、`Context`、`Messages` |
+| 実行したステップ数 | `stepCount` | `step_count` | `StepCount` |
+| 結果とエラー | `result`、`error` | `result`、`error` | `Result`、`Error` |
+| 一時停止 | `pause` | `pause` | `Pause` |
+| 停止理由 | `stopReason` | `stop_reason` | `StopReason` |
+| 使用量 | `usage` | `usage` | `Usage` |
+| 次のターンの上書き | `nextTurn`（Java）、`nextTurnParams`（PHP） | `next_turn_params`（Ruby） | `NextTurn` |
+| タイムスタンプ | `createdAt`、`updatedAt` | `created_at`、`updated_at` | `CreatedAt`、`UpdatedAt` |
+
+Rust の `RunRecord` には、実際に使われたモデルとステップ上限も保存されます。TypeScript には、Gateway のエラーの詳細を含む `errorDetails` が加わります。
+
+実行のステータスは `queued`、`running`、`waiting_for_tools`、`waiting_for_human`、`completed`、`stopped`、`failed` です。TypeScript には `cancelled` も加わります。
+
+### ステップのレコード
+
+| フィールド | camelCase（TypeScript、PHP、Java） | snake_case（Python、Ruby、Rust） | PascalCase（Go、C#） |
+| --- | --- | --- | --- |
+| 番号とステータス | `index`、`status` | `index`、`status` | `Index`、`Status` |
+| ツール呼び出し | `toolCalls` | `tool_calls` | `ToolCalls` |
+| Gateway のリクエスト ID | `requestId` | `request_id` | `RequestID`/`RequestId` |
+| アップストリームのレスポンス ID | `nativeResponseId` | `native_response_id`（Rust にはなし） | `NativeResponseID`/`NativeResponseId` |
+| プロバイダーとモデル | `provider`、`model` | `provider`、`model` | `Provider`、`Model` |
+| モデルの試行回数 | `modelAttempts` | `model_attempts` | `ModelAttempts` |
+| 使用量 | `usage` | `usage` | `Usage` |
+| Gateway の meta ブロック | `responseMeta` | `response_meta`（Rust にはなし） | `ResponseMeta` |
+| エラー | `error` | `error` | `Error` |
+| 終了理由 | `finishReason` | `finish_reason` | `FinishReason` |
+| 警告 | `warnings` | `warnings`（Rust にはなし） | `Warnings` |
+
+型は、TypeScript と Python（`AgentStepRecord`）を除き、すべて `RunStep` です。
+
+### 使用量のまとめ
+
+`inputTokens`、`outputTokens`、`cachedTokens`、`totalTokens`、`cost`（TypeScript、Java）、`input_tokens`、`output_tokens`、`cached_tokens`、`total_tokens`、`cost`（Python、PHP と Ruby のキー、Rust）、`InputTokens`、`OutputTokens`、`CachedTokens`、`TotalTokens`、`Cost`（Go、C#）です。型は、TypeScript と Python では `AgentUsageSummary`、Go、C#、Java、Rust では `UsageSummary` です。PHP と Ruby は配列またはハッシュを使います。`cost` の注意点は[オブザーバビリティ](./observability)を参照してください。
+
+## 一時停止と判断
+
+| 型 | TypeScript | Python | Go、C#、PHP、Ruby、Java、Rust | フィールド |
+| --- | --- | --- | --- | --- |
+| 呼び出しを承認または拒否する | `{ toolCallId, reason? }` | `AgentToolDecision` | `ToolDecision` | ツール呼び出し ID と、任意の理由 |
+| ツールの結果を渡す | `{ toolCallId, output }` | `AgentToolOutput` | `ToolOutput` | ツール呼び出し ID と出力 |
+| レビューを求める | `{ reason, payload }` | `AgentHumanReviewRequest` | `HumanReviewRequest` | `reason`、任意の `payload` |
+| レビューのコールバックの入力 | | `AgentHumanReviewContext` | `HumanReviewContext` | 実行 ID とエージェント ID、ステップ番号、メッセージ、モデルのレスポンス、パース済みの出力（Rust：パース済みの出力の代わりにアプリケーションのコンテキスト） |
+| 一時停止 | `run.pause` | `AgentHumanPause` | `HumanPause` | `reason`、`payload`、`kind`、保留中のツール呼び出し |
+| 保留中の呼び出し | | | `PendingToolCall` | `call` と `kind`（`approval`、`manual`、`hitl` のいずれか）。Rust には人が読める `reason` が加わります |
+
+フィールド名は各言語の命名規則に従います。`toolCallId`（TypeScript、PHP、Java）、`tool_call_id`（Python、Ruby、Rust）、`ToolCallID`（Go）、`ToolCallId`（C#）です。Rust の `ToolDecision` は承認専用です。[状態と承認](./state-and-approval)を参照してください。
+
+## ツールに渡されるランタイムコンテキスト
+
+| フィールド | camelCase（TypeScript、PHP、Java） | snake_case（Python、Ruby、Rust） | PascalCase（Go、C#） | ない言語 |
+| --- | --- | --- | --- | --- |
+| ID とステップ | `runId`、`agentId`、`stepIndex` | `run_id`、`agent_id`、`step_index` | `RunID`/`RunId`、`AgentID`/`AgentId`、`StepIndex` | |
+| アプリケーションのコンテキスト | `context` | `context` | `Context` | |
+| 実行中の呼び出し | `toolCall` | `tool_call` | `ToolCall` | |
+| 進捗を報告する | `emitProgress` | `emit_progress` | `EmitProgress` | Rust |
+| アプリケーションのコンテキストを更新する | `setContext` | `set_context` | `SetContext` | Rust |
+| キャンセル | `signal`（TypeScript） | | `CancellationToken`（C#） | その他すべて |
+
+## 状態アクセサー
+
+| 言語 | 名前 | メソッド |
+| --- | --- | --- |
+| TypeScript | `AgentStateAccessor` | `load(runId)` と `save(result)`。どちらも非同期 |
+| Python | `AgentStateAccessor`（プロトコル） | `load(run_id)` と `save(result)` |
+| Go | `StateAccessor`（インターフェース） | `Load(ctx, runID)` と `Save(ctx, result)` |
+| C# | `IStateAccessor` | `Load(runId, ct)` と `Save(result, ct)` |
+| PHP | `StateAccessor`（インターフェース） | `load(string $runId): ?RunResult` と `save(RunResult $result): void` |
+| Ruby | 任意のオブジェクト | `load(run_id)` と `save(result)` |
+| Java | `StateAccessor` | `load(runId)` と `save(result)` |
+| Rust | なし | `RunResult` を自分でシリアライズする |
+
+## モデルクライアント
+
+モデルターンを別の通信手段で送る場合や、Gateway クライアントをラップする場合は、モデルクライアントを実装します。
+
+| 言語 | インターフェース | メソッド |
+| --- | --- | --- |
+| Go | `ModelClient`、`StreamingModelClient` | `Generate(ctx, ModelRequest)`、`Stream(ctx, ModelRequest)` |
+| C# | `IModelClient`、`IStreamingModelClient` | `Generate(ModelRequest)`、`Stream(ModelRequest)` |
+| PHP | `ModelClient`、`StreamingModelClient`（インターフェース） | `generate(ModelRequest)`、`stream(ModelRequest)` |
+| Java | `ModelClient`、`StreamingModelClient` | `generate(ModelRequest)`、`stream(ModelRequest)` |
+| Rust | `ModelClient`（トレイト） | `fn generate(&mut self, request: &ModelRequest) -> Result<ModelResponse, AgentError>` |
+
+Rust では、`ModelRequest` はエージェント ID、実際に使われるモデル、指示、現在のメッセージ、ツールの仕様（`ToolSpec`：`id`、`description`、JSON Schema の `parameters`）、アプリケーションのコンテキストを保持します。`ModelResponse` は `message`、`usage`、`request_id`、`provider`、`model`、`finish_reason` を保持します。`Message` は `role`、`content`、`tool_calls`、`tool_call_id`、`name`、`is_error` を持ち、コンストラクター `Message::user(content)` と `Message::assistant(content)` があります。`ToolCall` は `id`、`name`、JSON の `input` を持ちます。
+
+## イベントとエラー
+
+| 言語 | イベントの型 | エラーの型 |
+| --- | --- | --- |
+| TypeScript | `type` を持つイベントオブジェクト | `AgentGatewayError`（`isAgentGatewayError()`）、`AgentStreamError`、`AgentSchemaValidationError` |
+| Python | `"type"` を持つ dict | 組み込みの例外と `phaseo.PhaseoHTTPError` |
+| Go | `AgentEvent` | `error` の値 |
+| C# | `AgentEvent` | 例外 |
+| PHP | `"type"` を持つ配列 | `RuntimeException` |
+| Ruby | `:type` を持つハッシュ | 例外 |
+| Java | `AgentEvent` | 例外 |
+| Rust | `AgentEvent`（`event_type`、`run_id`、`agent_id`、`timestamp_ms`、`details`） | `AgentError`（`AgentError::new(...)`、`message()`。`std::error::Error` と `Display` を実装） |
+
+TypeScript は、エラーを分類する `agentErrorIsRetryable()`、`agentRetryAfterMs()`、`agentErrorIsContextOverflow()`、結果のないまま残ったツール呼び出しに応答し、どの呼び出しにも対応しない結果を取り除く `repairToolHistory(messages)`、長いテキストの先頭と末尾を残して切り詰めた内容の通知を入れる `truncateToolOutput(text, limit)` もエクスポートします。[ライフサイクルフック](./lifecycle-hooks)と[イベントとエラー](./events-and-errors)を参照してください。

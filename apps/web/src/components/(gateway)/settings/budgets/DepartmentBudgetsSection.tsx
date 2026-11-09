@@ -1,8 +1,6 @@
-"use client";
-
 import { useState, type FormEvent } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -31,7 +29,7 @@ import {
 	deleteDepartmentBudget,
 	updateDepartmentBudget,
 	type DepartmentBudgetActionResult,
-} from "@/app/(dashboard)/settings/budgets/actions";
+} from "@/features/settings/budgets/actions";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { useLimitClock } from "../keys/useLimitClock";
 import { BUDGET_WINDOWS, budgetPercentFraction, budgetTone } from "./budgetForecast";
@@ -248,8 +246,8 @@ function DepartmentBudgetForm({
 		setSaving(true);
 		setError(null);
 		const result = await write(existing
-			? updateDepartmentBudget(existing.id, limit)
-			: createDepartmentBudget(departmentId, interval, limit));
+			? updateDepartmentBudget({ data: { id: existing.id, limitUsd: limit } })
+			: createDepartmentBudget({ data: { departmentId, interval, limitUsd: limit } }));
 		setSaving(false);
 		const key = errorKey(result);
 		if (key) {
@@ -331,7 +329,7 @@ function DeleteDepartmentBudgetDialog({ budget, onClose }: { budget: SettingsDep
 	async function confirm() {
 		if (!budget) return;
 		setDeleting(true);
-		const result = await write(deleteDepartmentBudget(budget.id));
+		const result = await write(deleteDepartmentBudget({ data: budget.id }));
 		setDeleting(false);
 		const key = errorKey(result);
 		if (key) {

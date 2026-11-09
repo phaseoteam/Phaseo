@@ -5,29 +5,34 @@ description: "Understand models, providers, routing, and billing before integrat
 icon: "terminal"
 ---
 
-Phaseo routes your application's model requests to providers through one API. Your application chooses a model and endpoint; workspace settings and request controls determine which providers can serve it.
+Send a model ID to one Phaseo endpoint, and Phaseo routes the request to a provider that hosts that model. Your application chooses the model and endpoint; your workspace settings and the request's routing controls decide which providers may serve it.
+
+```mermaid
+flowchart LR
+  app["Your app"] -->|"model + endpoint"| gw["Phaseo Gateway"]
+  gw --> rules{{"Workspace settings and request routing controls"}}
+  rules --> p1["Provider A"]
+  rules -.->|"fallback"| p2["Provider B"]
+```
 
 ## Models and providers
 
-A model is the system generating the output. A provider hosts that model and determines availability, supported parameters, pricing, and performance. The same model can have several provider offers.
+A model is the system that generates the output. A provider hosts the model and sets its availability, supported parameters, pricing and performance. One model can have several provider offers.
 
-The public catalog also includes models that are not currently available through the Gateway. Check [model availability](../exploring/models.mdx) before using an ID in a request.
+The public catalog also lists models that aren't available through the Gateway yet. Check [model availability](../exploring/models.mdx) before using an ID in a request.
 
 ## Requests and routing
 
-Use [Responses, Chat Completions, or Messages](../api-reference/introduction.mdx) according to your application's protocol. Provider-specific capabilities still vary; a common endpoint does not mean every model supports every parameter.
+Use [Responses, Chat Completions or Messages](../api-reference/introduction.mdx), whichever matches your application's protocol. A shared endpoint doesn't mean every model supports every parameter; provider capabilities still vary.
 
-[Routing controls](../guides/routing-and-fallbacks.mdx) let you restrict providers and choose how they are ranked. Fallbacks remain subject to your restrictions and available capacity; they do not guarantee success.
+[Routing controls](../guides/routing-and-fallbacks.mdx) restrict which providers can serve a request and how they are ranked. Fallbacks stay within those restrictions and depend on available capacity, so they don't guarantee success.
 
 ## Billing and access
 
-Managed requests use your Phaseo workspace balance. `:free` models can run without deposited credits. With provider credentials (BYOK), provider billing and account limits apply; review [pricing and billing](../pricing/tiers.mdx) before rollout.
+Managed requests use your Phaseo workspace balance, and `:free` models run without deposited credits. With your own provider credentials (BYOK), the provider's billing and account limits apply. Review [pricing and billing](../pricing/tiers.mdx) before rollout.
 
-[Video and batch jobs](../guides/async-video-and-batch.mdx) return a job before processing finishes. Their preview access is managed per workspace. Poll for status or receive webhook updates, then download the result.
+[Video and batch jobs](../guides/async-video-and-batch.mdx) return a job before processing finishes; preview access to them is managed per workspace. Poll for status or receive a webhook, then download the result.
 
-## Build your integration
+## Next steps
 
-- [Quickstart](../quickstart.mdx): make your first request.
-- [Integrate the Gateway](./integrating-with-the-gateway.mdx): keep credentials on your backend and configure your application.
-- [Reliability and status](./reliability-and-status.mdx): investigate availability and failed requests.
-- [Request logs and observability](../guides/integrations/observability.mdx): inspect usage, latency, cost, and errors.
+Make your first request with the [Quickstart](../quickstart.mdx), then [integrate the Gateway](./integrating-with-the-gateway.mdx) into your application with the key kept on your backend. When something fails, [Reliability and status](./reliability-and-status.mdx) shows how to investigate, and [request logs](../guides/integrations/observability.mdx) show usage, latency, cost and errors for each request.

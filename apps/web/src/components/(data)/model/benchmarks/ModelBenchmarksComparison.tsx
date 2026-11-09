@@ -1,5 +1,5 @@
 import { Card } from "@/components/ui/card";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import type { BenchmarkComparisonChart } from "@/lib/fetchers/models/getModelBenchmarkData";
 import { ModelBenchmarksComparisonGrid } from "./ModelBenchmarksComparisonGrid";
 

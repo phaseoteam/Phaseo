@@ -1,9 +1,10 @@
-import { fetchFrontendAPIProviderMetrics } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { apiProviderMetricsQuery } from "../apiProvider.queries";
 import PerformanceCardsClient, {
 	type MetricCardSummary,
 	type Trend,
 } from "./PerformanceCardsClient";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "@/i18n/react";
 
 function calculateDelta(
 	data: Array<{
@@ -28,16 +29,10 @@ function calculateDelta(
 	};
 }
 
-export default async function PerformanceCards({
-	params,
-}: {
-	params?: Promise<{ apiProvider: string }> | { apiProvider: string };
-}) {
-	const t = await getTranslations("Catalogue.providers");
-	const resolvedParams = params ? await params : undefined;
-	const apiProvider = resolvedParams?.apiProvider ?? "";
+export default function PerformanceCards({ apiProvider }: { apiProvider: string }) {
+	const t = useTranslations("Catalogue.providers");
 
-	const metrics = await fetchFrontendAPIProviderMetrics(apiProvider, 24 * 7);
+	const { data: metrics } = useSuspenseQuery(apiProviderMetricsQuery(apiProvider, 24 * 7));
 
 	const throughputData = metrics.timeseries.throughput;
 	const latencyData = metrics.timeseries.latency;

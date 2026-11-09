@@ -85,6 +85,25 @@ CREATE TRIGGER sync_workspace_baseline_guardrail
   WHEN (new.is_workspace_baseline)
   EXECUTE FUNCTION private.sync_workspace_baseline_guardrail();
 
+CREATE POLICY "workspace_guardrails_no_oauth_client_insert" ON "public"."workspace_guardrails"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "workspace_guardrails_no_oauth_client_update" ON "public"."workspace_guardrails"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "workspace_guardrails_no_oauth_client_delete" ON "public"."workspace_guardrails"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspace_guardrails"
   AS RESTRICTIVE
   FOR ALL

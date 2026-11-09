@@ -1,16 +1,10 @@
 ---
 title: "Etiquetas de solicitud"
-description: "Asigna solicitudes del gateway a equipos, funciones o entornos definidos en el código y desglosa el gasto por etiqueta."
+description: "Atribuye solicitudes del Gateway a equipos, funciones o entornos definidos en el código y desglosa el gasto por etiqueta."
 icon: "tags"
 ---
 
-Usa etiquetas de solicitud cuando el código de la aplicación necesite una dimensión de coste estable y más específica que una clave API o una aplicación. Las etiquetas se registran con la auditoría de la solicitud y pueden filtrarse en analíticas sin cambiar la solicitud al modelo.
-
-Para etiquetar solicitudes automáticamente según su contenido, usa [clasificadores de solicitudes](./request-classifiers.mdx). Sus respuestas se guardan como etiquetas de solicitud y se filtran de la misma forma.
-
-## Enviar etiquetas
-
-Configura `X-Phaseo-Metadata` como un objeto JSON que contenga hasta 32 pares únicos de clave y valor:
+Envía un encabezado `X-Phaseo-Metadata` para marcar una solicitud con etiquetas clave/valor, como `team=support`, y después filtra el gasto y los registros por esas etiquetas. Usa etiquetas cuando necesites una dimensión de coste más específica que una clave de API o una aplicación. No cambian la solicitud al modelo y no se reenvían a los proveedores.
 
 ```bash
 curl https://api.phaseo.app/v1/responses \
@@ -18,27 +12,35 @@ curl https://api.phaseo.app/v1/responses \
   -H "Content-Type: application/json" \
   -H 'X-Phaseo-Metadata: {"labels":[{"key":"team","value":"support"},{"key":"environment","value":"production"}]}' \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "input": "Summarize this ticket."
   }'
 ```
 
-Los SDK de TypeScript y Python aceptan encabezados personalizados, por lo que puedes configurar el mismo encabezado en el cliente. Las etiquetas no se reenvían a los proveedores.
+Los SDK de TypeScript y Python aceptan encabezados personalizados, así que puedes configurar el mismo encabezado una sola vez en el cliente.
 
-## Desglosar el gasto
+Para etiquetar solicitudes automáticamente según su contenido, usa [clasificadores de solicitudes](/es/v1/guides/request-classifiers). Sus respuestas se guardan como etiquetas de solicitud y se filtran de la misma forma.
 
-Usa el endpoint de analíticas con `label_key` y `label_value`:
+## Reglas de las etiquetas
+
+| Regla | Límite |
+| --- | --- |
+| Etiquetas por solicitud | Hasta 32, cada una con una clave única |
+| Clave | De 1 a 64 caracteres: letras, números, `_`, `.`, `:`, `-` |
+| Valor | Cadena de 1 a 256 caracteres, sin caracteres de control |
+| Tamaño del encabezado | Hasta 8 KiB |
+| Clave reservada | `phaseo.classifier` solo la establecen las llamadas de clasificadores de Phaseo |
+
+Se eliminan los espacios al principio y al final de claves y valores. Un encabezado mal formado, una clave duplicada o una etiqueta que incumpla estas reglas hace que la solicitud falle con `400 validation_error`, motivo `invalid_request_metadata`, antes de llamar a ningún modelo.
+
+No pongas prompts, secretos, direcciones de correo electrónico ni otros datos personales en las etiquetas.
+
+## Filtra el gasto por etiqueta
+
+Pasa `label_key` y `label_value` al endpoint de analíticas:
 
 ```text
 GET /v1/analytics?label_key=team&label_value=support
 ```
 
-La respuesta usa el mismo formato de gasto agrupado que las analíticas sin filtrar, pero solo incluye solicitudes con ese par exacto de etiquetas.
-
-## Reglas
-
-- Las claves solo pueden contener letras, números, `_`, `.`, `:` o `-`, y no pueden superar los 64 caracteres.
-- Los valores son cadenas de un máximo de 256 caracteres.
-- Una solicitud puede incluir hasta 32 etiquetas y el encabezado admite un máximo de 8 KiB.
-- Las claves duplicadas o los metadatos mal formados se rechazan con `400 invalid_request`.
-- No incluyas prompts, secretos, direcciones de correo electrónico ni otros datos personales en las etiquetas.
+La respuesta tiene el mismo formato de gasto agrupado que las analíticas sin filtrar, pero solo cuenta las solicitudes que llevan exactamente ese par de etiqueta. Si envías solo uno de los dos parámetros, se devuelve `400 invalid_request`.

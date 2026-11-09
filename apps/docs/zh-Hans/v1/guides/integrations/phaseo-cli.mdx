@@ -1,208 +1,172 @@
 ---
 title: "Phaseo CLI"
 icon: "terminal"
-description: "安装官方 Phaseo CLI，配置编程环境，并通过终端管理 Phaseo。"
+description: "安装官方 Phaseo CLI，配置编程工具，并在终端中管理 Phaseo。"
 ---
 
-Phaseo CLI 以 `@phaseo/cli` 的形式发布。它将编程环境连接到 Phaseo，并提供官方终端工作流来管理 Phaseo 控制平面。
-
-在以下场景中使用：
-
-- 从本地或远程 shell、代理运行环境以真实 Phaseo 用户身份登录
-- 创建并轮换 API 密钥或管理密钥
-- 管理工作区、预设、设置和护栏
-- 在用户创建的 OAuth 应用仍处于私有测试期间使用官方 CLI OAuth
-- 查看模型、提供商、价格、额度、活动、分析和生成记录
+安装 `@phaseo/cli` 并运行 `phaseo login`，即可把编程智能体连接到 Phaseo，并在终端中管理密钥、工作区、预设、设置和护栏。CLI 还可以读取模型、提供商、价格、额度、活动、分析数据和生成记录。
 
 ## 安装
 
 <CodeGroup>
 
-```bash title="npm"
+```bash npm
 npm install -g @phaseo/cli
 ```
 
-```bash title="pnpm"
+```bash pnpm
 pnpm add -g @phaseo/cli
 ```
 
-```bash title="yarn"
+```bash yarn
 yarn global add @phaseo/cli
 ```
 
-```bash title="bun"
+```bash bun
 bun add -g @phaseo/cli
 ```
 
 </CodeGroup>
 
-## 检查已安装的版本
+检查版本：
 
-```bash
-phaseo --version
-phaseo version
-phaseo version --json
-```
+| 命令 | 输出 |
+| --- | --- |
+| `phaseo --version` | 已安装的版本。 |
+| `phaseo version` | 版本号以及适用于你的包管理器的更新命令。加上 `--json` 可获得结构化输出。 |
 
-- `phaseo --version` 会显示已安装的版本。
-- `phaseo version` 会显示版本以及当前包管理器推荐的更新命令。
-- 有更新版本发布时，交互式运行也会显示更新提示。
-
-旧版 `phaseo` 命令仍作为兼容别名提供。
+有新版本发布时，交互式运行也会显示提示。
 
 ## 登录
-
-首先运行：
 
 ```bash
 phaseo login
 ```
 
-CLI 支持两种官方登录流程：
+| 流程 | 参数 | 适用场景 |
+| --- | --- | --- |
+| 使用 Phaseo 登录 | `--browser` | 使用授权码和 PKCE 的浏览器 OAuth。 |
+| 使用设备码登录 | `--device-code` | SSH、CI、无界面 shell 和智能体环境。 |
 
-- **使用 Phaseo 登录**：通过浏览器 OAuth 使用授权码和 PKCE
-- **使用设备代码登录**：适用于 SSH、CI、无头 shell 和代理环境
-
-你可以强制选择其中一种方式：
-
-```bash
-phaseo login --browser
-phaseo login --device-code
-```
-
-远程和非交互式环境会自动优先使用设备代码。
-
-## 终端输出
-
-交互式终端会使用 Phaseo 的配色和视觉层级，并在设置期间显示临时旋转指示器。指示器写入 `stderr`，任务完成后会清除该行。非 TTY 的 `stderr` 和 `TERM=dumb` 会禁用动画；`NO_COLOR` 会禁用颜色。使用 `--json` 的命令始终返回无装饰的结构化输出，供代理和自动化使用。只有当终端包装器支持颜色但未报告为 TTY 时，才使用 `FORCE_COLOR=1`。
-
-## 确认身份
+远程和非交互式环境会自动使用设备码。查看你当前登录的身份，以及你的权限范围、当前工作区和其他工作区：
 
 ```bash
 phaseo whoami
 phaseo whoami --json
 ```
 
-此命令会返回当前 Phaseo 用户、作用域、活动工作区和可用工作区。
-
-## 创建密钥
+## 管理工作区
 
 ```bash
-phaseo keys create --name "Local CLI Key"
-phaseo keys create --name "Agent Sandbox Key" --json
+phaseo keys list
 phaseo keys current
-```
 
-代理或自动化需要一次性获取新创建的原始密钥时，请使用 `--json`。
-
-## 管理工作区和护栏
-
-```bash
 phaseo workspaces list
 phaseo workspaces members <workspace-id-or-slug>
 
 phaseo guardrails list
-phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true}'
 ```
 
-CLI 可在终端中完成 Phaseo 控制台的管理任务，包括账单、预算、BYOK、路由和身份管理。每项任务对应的命令请参阅[通过代理管理 Phaseo](../../developers/manage-from-an-agent)。
+当智能体或脚本需要读取输出时，请使用 `--json`。CLI 涵盖日常账户任务；密钥限额、预算、BYOK、路由规则、预设和身份的更改需要在控制台中或使用管理密钥完成。CLI 涵盖哪些任务，请参阅[通过智能体管理 Phaseo](../../developers/manage-from-an-agent)。
 
-## 启动受支持的编程环境
+## 连接编程智能体
 
-持久集成直接使用产品名称：
+用智能体的名称作为命令。CLI 会请求一个专用密钥，由你在浏览器中批准，然后写入该智能体的配置：
 
 ```bash
 phaseo codex
 phaseo claude-code
-phaseo deepseek-harness
 phaseo opencode
+phaseo fx
+phaseo deepseek-harness
 phaseo pi
 phaseo prime-agent
 phaseo openclaw
+phaseo hermes
 phaseo aider
+phaseo continue
+phaseo zed
 phaseo roo-code
 phaseo kilo-code
-phaseo continue
 phaseo cursor
-phaseo zed
 ```
 
-根据需要使用 `--model`、`--catalog all|default` 或 `--dry-run`。旧的 `phaseo integrations setup <integration>` 形式仍保留以兼容，但并非必需。
+按需使用 `--model`、`--catalog all|default` 或 `--dry-run`。`phaseo setup <agent>` 和 `phaseo integrations setup <agent>` 也可以使用。
 
-CLI 可使用临时提供商配置和专用 Phaseo 密钥启动 Cline、Kilo Code、oh-my-pi、Muse Code 和 MiniMax Code。每个环境都有介绍设置和故障排除的集成指南：[Cline](./cline)、[Kilo Code](./kilo-code)、[oh-my-pi](./oh-my-pi)、[Muse Code](./muse-code) 和 [MiniMax Code](./minimax-code)。
+### 在浏览器中批准密钥
+
+首次设置某个智能体时，CLI 会打开一个 Phaseo 控制台页面并输出其链接。该页面显示工作区、密钥名称、每月 $100 的支出上限和 90 天的有效期，以及请求来自 Phaseo CLI。选择 **批准并创建密钥** 后，CLI 会取回一次密钥并完成设置。选择 **拒绝**，或请求在 10 分钟后过期，则不会创建任何内容。
+
+批准时，请使用你在 CLI 中使用的账户登录控制台，以工作区所有者或管理员身份操作；如果设置了第二验证因素，也需要完成验证。仅凭 CLI 登录无法创建密钥。通过 SSH 或在 CI 中时，在任何已登录的设备上打开输出的链接即可。
+
+如果要改用你在控制台中创建的密钥，请通过 `--key <key>` 传入，或使用 `--key-stdin`，避免密钥留在 shell 历史中。CLI 会检查并保存该密钥，移除智能体时不会吊销它。
+
+要用临时设置运行 Cline、Kilo Code、oh-my-pi、Muse Code 或 MiniMax Code（这些设置会在退出时删除），请使用会话运行器。Phaseo 参数放在 `--` 之前，智能体自己的参数放在之后：
 
 ```bash
 phaseo cline --model openai/gpt-5.6-terra -- --tui
-phaseo kilo --model openai/gpt-5.6-terra --
-phaseo omp --model openai/gpt-5.6-terra --
-phaseo muse --model meta/muse-spark-1.3 --
-phaseo minimax --model openai/gpt-5.6-terra --
+phaseo kilo --model openai/gpt-5.6-terra
+phaseo omp --model openai/gpt-5.6-terra
+phaseo muse --model meta/muse-spark-1.3
+phaseo minimax --model openai/gpt-5.6-terra
 ```
 
-显式形式为 `phaseo run <cline|kilo|omp|muse|minimax>`。Phaseo 选项放在 `--` 之前，编程环境选项放在之后。使用 `--catalog all` 同步所有活跃的 Phaseo 文本/聊天模型；或通过以下命令预览而不创建凭据：
+`phaseo run <cline|kilo|omp|muse|minimax>` 是完整形式。加上 `--catalog all` 可以列出所有活跃的 Phaseo 文本模型，加上 `--dry-run --json` 可以在不创建密钥的情况下预览。在交互式终端中，运行器会提示你安装缺失的智能体（在 Windows 上，MiniMax Code 使用其官方 PowerShell 安装程序；Muse Code 必须手动安装）。如果你自己管理智能体，请使用 `--skip-install`。
 
-```bash
-phaseo cline --model openai/gpt-5.6-terra --dry-run --json
-```
+[编程智能体](./coding-assistants.mdx)列出了每个智能体、其命令的作用及其指南。
 
-缺少 Cline、Kilo Code 或 oh-my-pi 时，会交互式提供安装选项。Muse Code 和 MiniMax Code 在命令缺失时使用官方安装程序。Windows 上的 MiniMax Code 使用官方 PowerShell 安装程序；如单独管理这些环境，请使用 `--skip-install`。启动器不会覆盖现有 Cline、Kilo、oh-my-pi、Muse Code 或 MiniMax Code 配置。
+## 用 CLI 编写脚本
+
+带 `--json` 的命令会输出纯结构化内容，没有颜色或加载动画。其他情况下，加载动画输出到 `stderr`，完成后会清除所在行。
+
+| 变量 | 作用 |
+| --- | --- |
+| `NO_COLOR` | 关闭颜色。 |
+| `TERM=dumb` | 关闭动画。非 TTY 的 `stderr` 也有同样效果。 |
+| `FORCE_COLOR=1` | 当终端包装器支持颜色但不报告 TTY 时，强制启用颜色。 |
+
+## CLI 如何保护凭据安全
+
+- 会话保存在操作系统凭据存储中。只有在没有可用的凭据存储时才设置 `PHASEO_SESSION_BACKEND=file`；它会把刷新令牌保存在一个权限受限的明文文件中。
+- `phaseo logout` 会先吊销已存储的刷新令牌，再清除本地状态。
+- 管理密钥需要显式授予能力。推理密钥受护栏、路由策略和工作区设置限制，而不是由权限范围限制。
+
 ## OAuth 应用
 
-Phaseo 为官方 CLI、用户创建的应用和动态注册的 MCP 客户端使用同一个 OAuth 授权服务器。CLI 使用浏览器或设备代码登录，并轮换刷新令牌。第三方客户端使用带 PKCE 的授权码流程、显式作用域和工作区同意，并可选择绑定受保护资源。它们会获得一个有效期 7 天、可撤销的委托访问令牌，以及一个自上次使用起 90 天有效的轮换刷新令牌；刷新的工作方式请参阅[构建 OAuth Next.js 工作台](../../cookbook/build-an-oauth-nextjs-workbench)。用户再次批准同一个应用时，会续期该密钥，而不是新增第二个密钥。
+Phaseo 为 CLI、用户创建的应用和动态注册的 MCP 客户端使用同一个 OAuth 授权服务器。CLI 使用浏览器或设备登录，并采用轮换的刷新令牌。第三方客户端使用带 PKCE 的授权码流程、显式权限范围和工作区授权同意，以及可选的受保护资源绑定。它们会获得一个有效期为 7 天、可吊销的访问令牌，以及一个自上次使用起 90 天内有效的轮换刷新令牌；刷新的工作方式请参阅[构建 OAuth Next.js 工作台](../../cookbook/build-an-oauth-nextjs-workbench)。再次批准同一个应用会续期其密钥，而不是再添加一个。
 
-托管的 Phaseo API 会启用第三方 OAuth。自托管或预览版 API 部署默认禁用此功能，除非将 `PHASEO_THIRD_PARTY_OAUTH_ENABLED` 设置为真值。接受 `1`、`true`、`yes` 和 `on`，会先去除空格并忽略大小写。启用后，用户创建的 OAuth 应用管理和动态客户端注册将开放，因此应配套审查重定向 URI、同意、客户端密钥、速率限制和工作区授权配置。
+托管的 Phaseo API 已开启第三方 OAuth。自托管和预览 API 部署默认关闭它，除非 `PHASEO_THIRD_PARTY_OAUTH_ENABLED` 为真值：`1`、`true`、`yes` 或 `on`，不区分大小写，并忽略首尾空格。
 
-```bash title=".env"
+```bash .env
 PHASEO_THIRD_PARTY_OAUTH_ENABLED=true
 ```
 
-```bash title="Docker"
-docker run -e PHASEO_THIRD_PARTY_OAUTH_ENABLED=true phaseo
-```
-
-```yaml title="Kubernetes"
-env:
-  - name: PHASEO_THIRD_PARTY_OAUTH_ENABLED
-    value: "true"
-```
-
-## 安全模型
-
-- CLI 会话默认要求使用操作系统提供的安全存储。只有在系统凭据库不可用时才显式设置 `PHASEO_SESSION_BACKEND=file`；刷新令牌会存储在权限受限的明文文件中。
-- `phaseo logout` 会先撤销已存储的刷新令牌，再清除本地状态。
-- 管理密钥需要显式指定能力。
-- 普通推理密钥依赖护栏、路由策略和工作区设置，而非单独的作用域模型。
+开启后会公开用户创建的 OAuth 应用管理和动态客户端注册，所以请先检查你的重定向 URI、授权同意、客户端密钥、速率限制和工作区授权设置。
 
 ## 更新
 
+```bash
+phaseo update
+```
+
+此命令会用你安装 CLI 时使用的包管理器执行更新。要手动更新：
+
 <CodeGroup>
 
-```bash title="npm"
+```bash npm
 npm install -g @phaseo/cli@latest
 ```
 
-```bash title="pnpm"
+```bash pnpm
 pnpm add -g @phaseo/cli@latest
 ```
 
-```bash title="yarn"
+```bash yarn
 yarn global add @phaseo/cli@latest
 ```
 
-```bash title="bun"
+```bash bun
 bun add -g @phaseo/cli@latest
 ```
 
 </CodeGroup>
-
-## 后续步骤
-
-- [管理 API 密钥](../../developers/management-api-keys.mdx)
-- [身份验证](../../developers/authentication.mdx)
-- [Codex](./codex.mdx)
-- [Claude Code](./claude-code.mdx)
-- [Cline](./cline)
-- [Kilo Code](./kilo-code)
-- [oh-my-pi](./oh-my-pi)
-- [Muse Code](./muse-code)
-- [MiniMax Code](./minimax-code)

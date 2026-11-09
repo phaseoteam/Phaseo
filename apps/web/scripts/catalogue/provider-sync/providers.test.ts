@@ -1,3 +1,4 @@
+import { describe, test, expect, vi } from "vitest";
 import { getProviderSyncProvider, getProviderSyncProviderIds } from "./providers";
 import { parseProviderModelList } from "./provider";
 
@@ -23,7 +24,7 @@ describe("provider sync registry", () => {
 		expect(provider).toBeDefined();
 		const originalKey = process.env.MARA_API_KEY;
 		process.env.MARA_API_KEY = "test-mara-key";
-		const request = jest.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+		const request = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
 			expect(init?.headers).toEqual({
 				accept: "application/json",
 				authorization: "Bearer test-mara-key",
@@ -94,7 +95,7 @@ describe("provider sync registry", () => {
 		const provider = getProviderSyncProvider("deepinfra");
 		const originalKey = process.env.DEEPINFRA_API_KEY;
 		process.env.DEEPINFRA_API_KEY = "test-deepinfra-key";
-		const request = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+		const request = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 			if (String(input).includes("v1/openai/models")) {
 				expect(init?.headers).toEqual({
 					accept: "application/json",
@@ -155,7 +156,7 @@ describe("provider sync registry", () => {
 		expect(provider).toBeDefined();
 		const originalKey = process.env.OPENROUTER_API_KEY;
 		process.env.OPENROUTER_API_KEY = "test-openrouter-key";
-		const request = jest.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+		const request = vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
 			expect(init?.headers).toEqual({
 				accept: "application/json",
 				authorization: "Bearer test-openrouter-key",

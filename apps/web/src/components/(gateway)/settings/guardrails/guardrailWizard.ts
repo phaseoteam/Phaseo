@@ -17,7 +17,7 @@ import type {
 	SpendCounting,
 	SpendPeriod,
 	SensitiveInfoRulePayload,
-} from "@/app/(dashboard)/settings/guardrails/actions";
+} from "@/features/settings/guardrails/actions";
 import { validateSensitiveInfoRulePayload } from "./sensitiveInfoPreview";
 
 /** Nanodollars as US dollars: $12.50. */

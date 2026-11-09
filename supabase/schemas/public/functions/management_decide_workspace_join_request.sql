@@ -2,7 +2,8 @@ CREATE OR REPLACE FUNCTION public.management_decide_workspace_join_request (
   p_workspace_id  uuid,
   p_request_id    uuid,
   p_decision      text,
-  p_actor_user_id uuid
+  p_actor_user_id uuid,
+  p_role          text DEFAULT NULL::text
 )
   RETURNS TABLE (
     id                uuid,
@@ -27,6 +28,9 @@ begin
   end if;
   if p_decision not in ('approve', 'reject') then
     raise exception using errcode = '23514', message = 'Decision must be approve or reject';
+  end if;
+  if p_role is not null and p_role not in ('admin', 'member') then
+    raise exception using errcode = '23514', message = 'Role must be admin or member';
   end if;
 
   select * into v_request
@@ -56,9 +60,24 @@ begin
       end if;
     end if;
 
+    -- A role given with the approval replaces the invite's, in this same transaction, so a request is
+    -- never left approved with the invite's role and a separate role change still to make.
+    if p_role is not null then
+      v_role := p_role::public.workspace_role;
+    end if;
+
+    -- Making someone an admin is the owner's call, also when the role comes from the invite.
+    if v_role = 'admin'::public.workspace_role and not exists (
+      select 1 from public.workspaces w where w.id = p_workspace_id and w.owner_user_id = p_actor_user_id
+    ) then
+      raise exception using errcode = '42501', message = 'workspace_admin_owner_only',
+        detail = 'Only the workspace owner can approve someone as an admin.';
+    end if;
+
     insert into public.workspace_members (workspace_id, user_id, role)
     values (p_workspace_id, v_request.requester_user_id, v_role)
-    on conflict (workspace_id, user_id) do nothing;
+    -- Name the constraint: a bare (workspace_id, user_id) clashes with the workspace_id output column.
+    on conflict on constraint workspace_members_pkey do nothing;
     v_status := 'approved'::public.join_request_status;
   else
     v_status := 'denied'::public.join_request_status;
@@ -76,12 +95,12 @@ begin
 end;
 $function$;
 
-GRANT EXECUTE ON FUNCTION "public"."management_decide_workspace_join_request"(uuid, uuid, text, uuid) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."management_decide_workspace_join_request"(uuid, uuid, text, uuid, text) TO "service_role";
 
-COMMENT ON FUNCTION "public"."management_decide_workspace_join_request"(uuid, uuid, text, uuid) IS 'Atomically approves or rejects a workspace join request for the management API service role.';
+COMMENT ON FUNCTION "public"."management_decide_workspace_join_request"(uuid, uuid, text, uuid, text) IS 'Atomically approves or rejects a workspace join request for the management API service role, optionally with the role to give instead of the invite''s.';
 
-REVOKE ALL ON FUNCTION "public"."management_decide_workspace_join_request"(uuid, uuid, text, uuid) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."management_decide_workspace_join_request"(uuid, uuid, text, uuid, text) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."management_decide_workspace_join_request"(uuid, uuid, text, uuid) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."management_decide_workspace_join_request"(uuid, uuid, text, uuid, text) TO "postgres";
 
-REVOKE ALL ON FUNCTION "public"."management_decide_workspace_join_request"(uuid, uuid, text, uuid) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."management_decide_workspace_join_request"(uuid, uuid, text, uuid, text) FROM PUBLIC, "anon", "authenticated";

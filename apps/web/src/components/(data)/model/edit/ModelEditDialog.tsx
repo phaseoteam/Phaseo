@@ -1,7 +1,5 @@
-"use client"
-
 import { useState, useEffect, useCallback } from "react"
-import { useTranslations } from "next-intl"
+import { useTranslations } from "@/i18n/react"
 import { Pencil, Loader2, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
@@ -19,7 +17,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { toast } from "sonner"
-import { updateModel } from "@/app/(dashboard)/models/actions"
+import { updateModel } from "@/features/models/actions"
 import { fetchAdminModelEditorSource, fetchAdminModelFormOptions } from "@/lib/fetchers/internal/adminModelEditorClient"
 import BasicTab from "./tabs/BasicTab"
 import DetailsTab from "./tabs/DetailsTab"
@@ -103,7 +101,7 @@ export default function ModelEditDialog({ modelId, tab, open: controlledOpen, on
     setSaving(true)
     setError(null)
 
-    const savePromise = updateModel({
+    const savePromise = updateModel({ data: {
         modelId,
           name: model.name ?? undefined,
           organisation_id: model.organisation_id,
@@ -133,7 +131,7 @@ export default function ModelEditDialog({ modelId, tab, open: controlledOpen, on
                 url: row.url,
               }))
             : undefined,
-      })
+      } })
 
     toast.promise(savePromise, {
       loading: tEditor("savingModel"),

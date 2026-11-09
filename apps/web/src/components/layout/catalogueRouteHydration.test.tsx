@@ -1,23 +1,26 @@
+import { it, expect, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import type { ComponentProps } from "react";
-import { NextIntlClientProvider } from "next-intl";
-import { usePathname } from "next/navigation";
+import { AppIntlProvider } from "@/i18n/react";
+import { useLocation } from "@tanstack/react-router";
 import CatalogueScrollToTop from "./CatalogueScrollToTop";
 import DashboardFooterGate from "./DashboardFooterGate";
 
-jest.mock("next/navigation", () => ({
-	...jest.requireActual("next/navigation"),
-	usePathname: jest.fn(),
+// The router location carries the locale prefix on the server and not in the browser.
+vi.mock("@tanstack/react-router", async () => ({
+	...(await vi.importActual("@tanstack/react-router")),
+	useLocation: vi.fn(),
 }));
 
-function renderRoute(pathname: string, locale: NonNullable<ComponentProps<typeof NextIntlClientProvider>["locale"]>, children: React.ReactNode) {
-	jest.mocked(usePathname).mockReturnValue(pathname);
+function renderRoute(pathname: string, locale: NonNullable<ComponentProps<typeof AppIntlProvider>["locale"]>, children: React.ReactNode) {
+	vi.mocked(useLocation).mockImplementation(((options?: { select?: (location: { pathname: string }) => unknown }) =>
+		options?.select ? options.select({ pathname }) : { pathname }) as never);
 	return renderToStaticMarkup(
-		<NextIntlClientProvider locale={locale} timeZone="UTC" messages={{
+		<AppIntlProvider locale={locale} timeZone="UTC" messages={{
 			Common: { ui: { accessibility: { scrollToTop: "Scroll to top" } } },
 		}}>
 			{children}
-		</NextIntlClientProvider>,
+		</AppIntlProvider>,
 	);
 }
 

@@ -9,6 +9,7 @@ describe("providerProfiles", () => {
 		expect(openai?.id).toBe("openai");
 		expect(azure?.id).toBe("openai");
 		expect(getProviderProfile("wafer-zdr")?.id).toBe("wafer");
+		expect(getProviderProfile("wafer-us")?.id).toBe("wafer");
 	});
 
 	it("contains text-only policy for known providers", () => {

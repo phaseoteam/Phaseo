@@ -1,10 +1,13 @@
-"use client";
-
 import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerformance";
-import ModelSuccessChart from "./ModelSuccessChart";
+import ModelProviderHealthChart from "./ModelProviderHealthChart";
 import { DEFAULT_MODEL_PERCENTILE } from "./ModelPercentileSelect";
 import { useModelPerformanceMetrics } from "./useModelPerformanceMetrics";
 
+/**
+ * Model uptime: Reachable, Accepted and Completed per provider attempt over the
+ * last 24 hours. Hours without data show as 100%, so a model with no recent
+ * traffic (or a response without attempt rates) shows three flat 100% lines.
+ */
 export default function ModelUptimeDashboard({
 	modelId,
 	initialMetrics,
@@ -20,18 +23,11 @@ export default function ModelUptimeDashboard({
 		fallbackData: initialMetrics ?? undefined,
 	});
 	const metrics = data ?? initialMetrics;
-	const showLeastStableProvider =
-		metrics?.successSeries.some(
-			(point) =>
-				(point.providerCount ?? 0) > 1 &&
-				point.worstProviderSuccessPct != null,
-		) ?? false;
 
 	return (
-		<ModelSuccessChart
+		<ModelProviderHealthChart
 			successSeries={metrics?.successSeries ?? []}
-			attemptHealth24h={metrics?.attemptHealth24h ?? null}
-			showLeastStableProvider={showLeastStableProvider}
+			totals={metrics?.attemptHealth24h ?? null}
 			showTitle={false}
 		/>
 	);

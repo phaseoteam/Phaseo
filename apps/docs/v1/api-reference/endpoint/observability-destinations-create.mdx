@@ -10,7 +10,7 @@ description: "Create a Broadcast destination: an OpenTelemetry tool, webhook, st
 
 The `config` object is write-only and encrypted before storage. Endpoints must use public HTTPS addresses. See [Broadcast](/v1/guides/broadcast) for what each destination does and what it receives.
 
-## Config keys by type
+## Set `config` for each destination type
 
 All values are strings. A request missing a required key, or with a value the destination cannot use, returns `400` with a message naming the key.
 

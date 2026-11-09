@@ -221,7 +221,7 @@ function decodeUsage(usage: IRUsage | undefined, endpoint: NonTextEndpoint): Rec
 	return output;
 }
 
-function decodeNonTextRequest(endpoint: NonTextEndpoint, body: any): NonTextIRRequest {
+export function decodeNonTextRequest(endpoint: NonTextEndpoint, body: any): NonTextIRRequest {
 	switch (endpoint) {
 		case "images.generations":
 		case "images.edits":
@@ -374,6 +374,7 @@ export function encodeNonTextResponse(
 					}))
 					: [],
 				...(usage ? { usage } : {}),
+				...(image.svgUsage ? { svg_usage: image.svgUsage } : {}),
 			};
 		}
 

@@ -1,22 +1,19 @@
 ---
 icon: "workflow"
-title: "Fusion – Serverwerkzeug"
+title: "Server-Tool Fusion"
 description: "Führe mehrere Analysemodelle aus und fasse ihre Ergebnisse zusammen."
 ---
 
-Verwende `phaseo:fusion`, wenn eine Antwort von mehreren unabhängigen Modellperspektiven profitieren kann. Phaseo führt die Analysemodelle parallel aus und bittet anschließend das ausgewählte Analysemodell, ihre Ergebnisse für das aufrufende Modell zusammenzufassen.
+Füge `phaseo:fusion` hinzu, wenn eine Antwort von mehreren unabhängigen Meinungen profitiert, etwa bei einer Planungsentscheidung, einer Forschungssynthese oder einem Design-Review. Ruft das Hauptmodell das Tool auf, sendet Phaseo die Frage parallel an jedes Analysemodell, lässt ein Analystenmodell die Ergebnisse zusammenführen und gibt diese Synthese zurück. Das erhöht die Latenz. Nutze also einen einzelnen [Advisor](./advisor), wenn ein Prüfdurchgang reicht.
 
-## Einrichtung im Playground
-
-Im Server-Tools-Menü des Playgrounds kannst du Folgendes auswählen:
-
-- Analysemodelle, die die Anfrage unabhängig voneinander prüfen
-- ein optionales Bewertungsmodell, das die Analyseergebnisse vergleicht
-- eine maximale Anzahl an Tool-Aufrufen für die Fusion-Beratungstools
-
-Das Hauptmodell sieht diese benannten Berater im selben Tool-Durchlauf und kann ihre Ergebnisse vor der endgültigen Antwort nutzen.
-
-## API-Aufbau
+```mermaid
+flowchart LR
+  main["Hauptmodell ruft phaseo:fusion auf"] --> a1["Analysemodell 1"]
+  main --> a2["Analysemodell 2"]
+  a1 --> syn["Analystenmodell fasst zusammen"]
+  a2 --> syn
+  syn -->|"Tool-Ergebnis"| main
+```
 
 ```json
 {
@@ -35,35 +32,34 @@ Das Hauptmodell sieht diese benannten Berater im selben Tool-Durchlauf und kann 
 }
 ```
 
-## Wann du Fusion verwenden solltest
+Im Playground legt das Server-Tools-Menü dieselben Dinge fest: die Analysemodelle, ein optionales Richter- bzw. Analystenmodell und ein Aufruflimit.
 
-Verwende Fusion für:
+## Parameter
 
-- Planungsentscheidungen, bei denen ein zweites oder drittes Modell fehlende Annahmen erkennen könnte
-- Forschungssynthesen, bei denen Modelle Belege unterschiedlich gewichten könnten
-- Code- oder Architekturprüfungen mit unabhängiger Kritik
-- besonders wichtige Antworten, bei denen etwas zusätzliche Latenz akzeptabel ist
+| Parameter | Typ | Standard | Beschreibung |
+| --- | --- | --- | --- |
+| `analysis_models` | string[] | Pflicht | Mindestens 2 Modelle. Bei weniger wird die Anfrage abgelehnt. |
+| `model` | string | Das Modell der Anfrage | Das Analystenmodell, das die Synthese schreibt. |
+| `instructions` | string | Keine | Anweisungen für die Analyse- und die Analystenaufrufe. |
+| `max_uses` | integer | `1` | Fusion-Aufrufe pro Anfrage, bis zu `4`. |
+| `max_completion_tokens` | integer | `1400` | Ausgabe-Tokens für jede Analyse und die Synthese, bis zu `32000`. |
 
-Verwende stattdessen einen einzelnen Advisor, wenn du nur eine Prüfung benötigst.
+## Was das Modell sendet
 
-## Nutzung und Preise
+Einen `prompt`: die Frage, die mehrere Perspektiven braucht.
 
-Jeder Fusion-Aufruf erhöht:
+## Was das Tool zurückgibt
 
 ```json
 {
-  "usage": {
-    "server_tool_use": {
-      "fusion_requests": 1
-    }
-  }
+  "status": "ok",
+  "analyses": 2,
+  "analysis": "Both reviewers flag the cutover order..."
 }
 ```
 
-Die Tokens der Beratermodelle zählen zur Gesamtnutzung und können zu den Preisen der jeweiligen Modelle abgerechnet werden. Für Server-Tools kann außerdem der Zähler `server_tool_advisor_requests` verwendet werden.
+`analyses` zählt die Analysemodelle, die geantwortet haben. Fallen einige aus, nutzt die Synthese die übrigen. Fehlerergebnisse sind `fusion_invalid_request` (kein Prompt), `fusion_max_uses_exceeded`, `fusion_panel_failed` (jedes Analysemodell ist fehlgeschlagen) und `fusion_request_failed` (der Analyst ist fehlgeschlagen).
 
-## Verwandte Seiten
+## Nutzung und Preise
 
-- [Advisor](./advisor.mdx)
-- [Subagent](./subagent.mdx)
-- [Server-Tools](./index.mdx)
+Jeder Aufruf erhöht `usage.server_tool_use.fusion_requests` um 1 und kann über `server_tool_fusion_requests` abgerechnet werden. Die Tokens jedes Analyse- und Analystenaufrufs werden zur Nutzung der Anfrage addiert und zu den Preisen des jeweiligen Modells berechnet.

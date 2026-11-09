@@ -1,75 +1,78 @@
 ---
 title: "Cline"
 icon: "/icons/brands/cline.svg"
-description: "Verbinde Cline über seinen OpenAI-kompatiblen Provider mit Phaseo."
+description: "Verbinde Cline über seinen OpenAI-kompatiblen Anbieter mit Phaseo."
 ---
 
-Wähle den Phaseo-CLI-Runner für eine isolierte Sitzung oder erstelle mit der CLI einen eigenen Schlüssel und konfiguriere eine bestehende Cline-Installation manuell. Cline speichert Zugangsdaten im sicheren Geheimnisspeicher von VS Code; die abschließende Eingabe erfolgt in der Erweiterung.
+Führe `phaseo cline` aus, um eine Cline-CLI-Sitzung über Phaseo zu starten, oder erstelle mit `phaseo setup cline` einen Schlüssel und füge in der Cline-Erweiterung einen **OpenAI Compatible**-Anbieter hinzu. Die Erweiterung speichert Schlüssel im Secret Storage von VS Code, deshalb findet dieser letzte Schritt in ihrer Oberfläche statt.
 
-## Cline über die Phaseo CLI ausführen
-
-Für die Cline CLI stellt Phaseo die Anbieterkonfiguration für eine Sitzung bereit:
+## Die Cline CLI über Phaseo ausführen
 
 ```bash
 phaseo login
 phaseo cline --model openai/gpt-5.6-terra -- --tui
 ```
 
-Mit `--catalog all` werden alle aktiven Phaseo-Text-/Chatmodelle verfügbar; `--dry-run --json` zeigt den Installations- und Startplan. Verwende `phaseo run cline ...` für die explizite Befehlsform. Der Runner nutzt temporäre Cline-Einstellungen und Datenverzeichnisse und überschreibt keine bestehende Cline- oder VS-Code-Einrichtung.
+Der Runner schreibt die Cline-Einstellungen in ein temporäres Verzeichnis, startet `cline` und löscht das Verzeichnis, wenn Cline beendet wird. Deine bestehende Cline- oder VS-Code-Einrichtung bleibt also unverändert. Fehlt Cline, bietet ein interaktiver Lauf die Installation an. Setze die eigenen Flags von Cline hinter `--`.
 
-## Zugangsdaten mit der Phaseo CLI erstellen
+| Flag | Wirkung |
+| --- | --- |
+| `--model <id>` | Zu verwendendes Modell. Standard ist `openai/gpt-5.6-terra`. |
+| `--catalog all` | Listet jedes aktive Phaseo-Textmodell in Cline auf, nicht nur das ausgewählte. |
+| `--dry-run --json` | Zeigt den Installations- und Startplan, ohne einen Schlüssel zu erstellen oder Cline zu starten. |
+| `--skip-install` | Überspringt die Installationsprüfung. |
+
+`phaseo run cline ...` ist die Langform desselben Befehls.
+
+## Die Cline-Erweiterung konfigurieren
+
+Erstelle einen Schlüssel für die Erweiterung:
 
 ```bash
 phaseo login
-phaseo setup cline --model anthropic/claude-sonnet-4.6
+phaseo setup cline --model anthropic/claude-sonnet-5.5
 ```
 
-## Cline manuell konfigurieren
+Dann in VS Code:
 
-1. Öffne den Cline-Bereich in VS Code.
-2. Wähle das Einstellungssymbol oder den Provider unter dem Chatfeld aus.
-3. Wähle **OpenAI Compatible** aus.
-4. Gib folgende Werte ein:
+1. Öffne das Cline-Panel und wähle das Einstellungssymbol oder den Anbieter unter dem Chatfeld.
+2. Wähle **OpenAI Compatible** und gib Folgendes ein:
 
 | Cline-Feld | Wert |
 | --- | --- |
 | Base URL | `https://api.phaseo.app/v1` |
 | API Key | Ausgabe von `phaseo integrations credential cline` |
-| Model ID | `anthropic/claude-sonnet-4.6` oder das bei der Einrichtung angegebene Modell |
+| Model ID | `anthropic/claude-sonnet-5.5` oder das Modell, das die Einrichtung ausgibt |
 
-5. Speichere den Provider. Falls deine Version **Verify** anzeigt, wähle es aus.
-6. Wähle für die nächste Aufgabe das konfigurierte Modell aus.
+3. Speichere den Anbieter. Wenn deine Version **Verify** anzeigt, wähle es aus.
+4. Wähle das konfigurierte Modell für die nächste Aufgabe.
 
-## Überprüfen
+Ohne die CLI kannst du jeden beliebigen Phaseo-API-Schlüssel verwenden. Die Cline-Dokumentation zur [OpenAI-kompatiblen Konfiguration](https://docs.cline.bot/enterprise-solutions/configuration/remote-configuration/openai-compatible/member-configuration) behandelt teamverwaltete Einrichtungen.
 
-Bitte Cline um die Antwort `PHASEO_CLINE_OK` und prüfe, ob die Anfrage in den Phaseo-Aktivitäten erscheint.
+## Prüfen, ob es funktioniert
 
-## Entfernen
+Bitte Cline, mit `PHASEO_CLINE_OK` zu antworten, und prüfe dann, ob die Anfrage unter **Einstellungen → Nutzung → Protokolle** erscheint.
 
-Entferne den Phaseo-Provider in Cline oder wechsle zu einem anderen und führe anschließend Folgendes aus:
+## Phaseo entfernen
+
+Lösche den Phaseo-Anbieter in Cline oder wechsle zu einem anderen, und führe dann aus:
 
 ```bash
 phaseo integrations remove cline
 ```
 
-Die CLI kann den privaten Erweiterungsspeicher von VS Code nicht leeren, aber beim Entfernen wird der gespeicherte Schlüssel widerrufen.
+Damit wird der Schlüssel widerrufen. Die CLI kann den Erweiterungsspeicher von VS Code nicht leeren, daher kann der gelöschte Schlüssel weiterhin in Cline angezeigt werden, bis du ihn dort entfernst.
 
-## Fehlerbehebung
+## Häufige Probleme beheben
 
 ### Die Überprüfung schlägt fehl
 
-Belasse die Basis-URL exakt wie angezeigt, einschließlich `/v1`, und füge einen neu abgerufenen Schlüssel ohne Anführungszeichen oder Leerzeichen ein.
+Übernimm die Base URL genau wie angegeben, einschließlich `/v1`, und füge einen frisch abgerufenen Schlüssel ohne Anführungszeichen oder Leerzeichen ein.
 
 ### Die Modellliste ist leer
 
-Gib die Phaseo-Modell-ID manuell ein. Eine Modellerkennung ist nicht erforderlich.
+Gib die Phaseo-Modell-ID selbst ein. Cline braucht keine Modellerkennung.
 
 ### Der Chat funktioniert, aber Tools schlagen fehl
 
-Wähle ein Phaseo-Modell mit Tool-Aufruf-Unterstützung. Verbindung und Tool-Unterstützung des Modells müssen getrennt geprüft werden.
-
-## Weiterführende Themen
-
-- [OpenAI-kompatible Cline-Konfiguration](https://docs.cline.bot/enterprise-solutions/configuration/remote-configuration/openai-compatible/member-configuration)
-- [Programmieragenten](./coding-assistants.mdx)
-- [Modelle](../../api-reference/endpoint/models.mdx)
+Wähle ein Phaseo-Modell mit Unterstützung für Tool-Aufrufe. Eine funktionierende Verbindung bedeutet nicht, dass das Modell Tools unterstützt.

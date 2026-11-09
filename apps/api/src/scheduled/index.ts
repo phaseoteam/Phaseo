@@ -1,3 +1,4 @@
+import { createJobObserver } from "@/observability/jobs";
 // src/scheduled/index.ts
 // Purpose: Scheduled event handlers.
 // Why: Keep cron logic out of the main app routing entrypoint.
@@ -503,6 +504,10 @@ async function handleOAuthCleanupScheduledEvent(env: GatewayBindings): Promise<v
 	try {
 		const { error } = await getSupabaseAdmin().rpc("cleanup_expired_oauth_artifacts");
 		if (error) throw new Error(error.message || "Failed to clean up expired OAuth artifacts");
+		// Approved key requests hold the new key's encrypted secret until the CLI collects it. Runs every
+		// 5 minutes, so an uncollected secret is gone within 15 minutes of approval even if nobody polls.
+		const wiped = await getSupabaseAdmin().rpc("wipe_expired_api_key_request_secrets");
+		if (wiped.error) throw new Error(wiped.error.message || "Failed to wipe expired key request secrets");
 	} finally {
 		clearRuntime();
 	}
@@ -756,209 +761,214 @@ async function handleGatewayIoRetentionExpiryScheduledEvent(
 }
 
 export async function handleScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
-	// Run before maintenance jobs so their duration cannot delay publication.
-	// Cached catalogue snapshots revalidate in the background once this
-	// revision changes; regional Workers consume the same KV key.
-	if (env.GATEWAY_CONTEXT_BUNDLE_ENABLED === "true") {
+	const jobs = createJobObserver(env, event.scheduledTime);
+	try {
+		// Run before maintenance jobs so their duration cannot delay publication.
+		// Cached catalogue snapshots revalidate in the background once this
+		// revision changes; regional Workers consume the same KV key.
+		if (env.GATEWAY_CONTEXT_BUNDLE_ENABLED === "true") {
+			configureRuntime(env);
+			try {
+				const { revision, changed } = await jobs.run("catalogue_revision", () => publishCatalogueRevision());
+				if (changed) console.log("catalogue_revision_published", { revision });
+			} catch (error) {
+				console.error("catalogue_revision_publication_failed", serializeError(error));
+			} finally {
+				clearRuntime();
+			}
+		}
+		// Leased and idempotent: cached contexts of workspaces changed outside the
+		// gateway control routes are invalidated within about a minute.
 		configureRuntime(env);
 		try {
-			const { revision, changed } = await publishCatalogueRevision();
-			if (changed) console.log("catalogue_revision_published", { revision });
+			const summary = await jobs.run("workspace_publications", () => drainWorkspacePublications());
+			if (summary.claimed) console.log("workspace_publications_drained", summary);
 		} catch (error) {
-			console.error("catalogue_revision_publication_failed", serializeError(error));
+			console.error("workspace_publication_drain_failed", serializeError(error));
 		} finally {
 			clearRuntime();
 		}
-	}
-	// Leased and idempotent: cached contexts of workspaces changed outside the
-	// gateway control routes are invalidated within about a minute.
-	configureRuntime(env);
-	try {
-		const summary = await drainWorkspacePublications();
-		if (summary.claimed) console.log("workspace_publications_drained", summary);
-	} catch (error) {
-		console.error("workspace_publication_drain_failed", serializeError(error));
+		// Keep release notices independent from the slower provider discovery sweep.
+		try {
+			await jobs.run("public_model_announcements", () => handlePublicModelAnnouncementsScheduledEvent(env), true);
+		} catch (error) {
+			console.error("public_model_announcement_check_scheduled_failed", serializeError(error));
+		}
+		if (isDailyPaymentMethodExpiryTick(event)) {
+			try {
+				await jobs.run("payment_method_expiry", () => handlePaymentMethodExpiryScheduledEvent(env), Boolean(env.STRIPE_SECRET_KEY?.trim() || env.TEST_STRIPE_SECRET_KEY?.trim()));
+			} catch (error) {
+				console.error("payment_method_expiry_notifications_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("model_deprecation", () => handleModelDeprecationScheduledEvent(event, env), true);
+			} catch (error) {
+				console.error("model_deprecation_notifications_scheduled_failed", serializeError(error));
+			}
+		}
+		if (isDailyFeedbackRequestTick(event)) {
+			try {
+				await jobs.run("feedback_request", () => handleFeedbackRequestScheduledEvent(env), env.FEEDBACK_REQUEST_EMAILS_ENABLED === "true" && Boolean(env.FEEDBACK_REQUEST_FROM_EMAIL?.trim() && env.RESEND_API_KEY?.trim()));
+			} catch (error) {
+				console.error("feedback_request_emails_scheduled_failed", serializeError(error));
+			}
+		}
+		if (isDailyRetentionBillingTick(event)) {
+			try {
+				await jobs.run("gateway_io_retention_billing", () => handleGatewayIoRetentionBillingScheduledEvent(event, env), toBool(env.GATEWAY_IO_RETENTION_BILLING_ENABLED, false));
+			} catch (error) {
+				console.error("gateway_io_retention_billing_scheduled_failed", serializeError(error));
+			}
+		}
+		try {
+			await jobs.run("routing_archive", () => handleRoutingArchiveScheduledEvent(env), Boolean(env.GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF));
+		} catch (error) {
+			console.error("routing_archive_backfill_failed", serializeError(error));
+		}
+		if (isCoreJobsTick(event)) {
+			try {
+				await jobs.run("routing_archive_deletion", () => handleRoutingArchiveDeletionScheduledEvent(env), true);
+			} catch (error) {
+				console.error("routing_archive_deletion_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("gateway_io_retention_expiry", () => handleGatewayIoRetentionExpiryScheduledEvent(event, env), true);
+			} catch (error) {
+				console.error("gateway_io_retention_expiry_scheduled_failed", serializeError(error));
+			}
+			if (env.ENV === "prod" && env.ACCOUNT_DELETION_PURGE_ENABLED === "true") {
+				try {
+					await jobs.run("account_deletion", () => handleAccountDeletionScheduledEvent(env), true);
+				} catch (error) {
+					console.error("account_deletion_scheduled_failed", serializeError(error));
+				}
+			}
+			try {
+				await jobs.run("data_contribution_classifier", () => handleDataContributionClassifierScheduledEvent(env), toBool(env.DATA_CONTRIBUTION_CLASSIFIER_ENABLED, false));
+			} catch (error) {
+				console.error("data_contribution_classifier_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("data_contribution_retention", () => handleDataContributionRetentionScheduledEvent(env), true);
+			} catch (error) {
+				console.error("data_contribution_retention_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("v2_analytics_outbox", () => handleV2AnalyticsOutboxScheduledEvent(env), toBool(env.V2_ANALYTICS_OUTBOX_ENABLED, true));
+			} catch (error) {
+				console.error("v2_analytics_outbox_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("rate_limit_throttle_rollup", () => handleRateLimitThrottleRollupScheduledEvent(env), env.RATE_LIMIT_POLICIES_ENABLED === "true");
+			} catch (error) {
+				console.error("rate_limit_throttle_rollups_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("spend_rules", () => handleSpendRulesScheduledEvent(env), env.SPEND_RULES_ENABLED === "true");
+			} catch (error) {
+				console.error("spend_rules_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("spend_reports", () => handleSpendReportsScheduledEvent(env), env.SPEND_REPORTS_ENABLED === "true");
+			} catch (error) {
+				console.error("spend_reports_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("low_balance_email", () => handleLowBalanceEmailScheduledEvent(env), true);
+			} catch (error) {
+				console.error("low_balance_emails_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("oauth_cleanup", () => handleOAuthCleanupScheduledEvent(env), true);
+			} catch (error) {
+				console.error("oauth_cleanup_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("otel_export_prune", () => handleOtelExportPruneScheduledEvent(env), true);
+			} catch (error) {
+				console.error("otel_export_prune_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("broadcast_destination_alerts", () => handleBroadcastDestinationAlertsScheduledEvent(env), true);
+			} catch (error) {
+				console.error("broadcast_destination_alerts_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("email_outbox", () => handleEmailOutboxScheduledEvent(event, env), toBool(env.EMAIL_OUTBOX_DRAIN_ENABLED, true) && Boolean(env.RESEND_API_KEY?.trim()));
+			} catch (error) {
+				console.error("email_outbox_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("notification_delivery", () => handleNotificationDeliveryScheduledEvent(env), true);
+			} catch (error) {
+				console.error("notification_delivery_scheduled_failed", serializeError(error));
+			}
+			if (isQuarterHourTick(event)) {
+				try {
+					await jobs.run("spend_limit_sweep", () => handleSpendLimitSweepScheduledEvent(env), env.MOBILE_PUSH_ENABLED === "true");
+				} catch (error) {
+					console.error("spend_limit_sweep_scheduled_failed", serializeError(error));
+				}
+				try {
+					await jobs.run("spend_block_reconcile", () => handleSpendBlockReconcileScheduledEvent(env), env.SPEND_RULES_ENABLED === "true" && env.SPEND_RULE_BLOCKS_ENABLED === "true");
+				} catch (error) {
+					console.error("spend_block_reconcile_scheduled_failed", serializeError(error));
+				}
+			}
+			try {
+				await jobs.run("mobile_push", () => handleMobilePushScheduledEvent(env), env.MOBILE_PUSH_ENABLED === "true");
+			} catch (error) {
+				console.error("mobile_push_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("async_webhook_retries", () => handleAsyncWebhookRetriesScheduledEvent(event, env), toBool(env.ASYNC_WEBHOOK_RETRIES_ENABLED, true));
+			} catch (error) {
+				console.error("async_webhook_retries_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("batch_provider_webhook_replay", () => handleBatchProviderWebhookReplayScheduledEvent(event, env), toBool(env.BATCH_PROVIDER_WEBHOOK_REPLAY_ENABLED, true));
+			} catch (error) {
+				console.error("batch_provider_webhook_replay_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("video_reconciliation", () => handleVideoReconciliationScheduledEvent(event, env), toBool(env.VIDEO_RECONCILIATION_ENABLED, true));
+			} catch (error) {
+				console.error("video_reconciliation_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("batch_reconciliation", () => handleBatchReconciliationScheduledEvent(event, env), toBool(env.BATCH_RECONCILIATION_ENABLED, true));
+			} catch (error) {
+				console.error("batch_reconciliation_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("realtime_session_reconciliation", () => handleRealtimeSessionReconciliationScheduledEvent(event, env), toBool(env.REALTIME_SESSION_RECONCILIATION_ENABLED, true));
+			} catch (error) {
+				console.error("realtime_session_reconciliation_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("customer_rate_limit_tier", () => handleCustomerRateLimitTierScheduledEvent(env), env.CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED === "true");
+			} catch (error) {
+				console.error("customer_rate_limit_tiers_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("rate_limit_plan_reconcile", () => handleRateLimitPlanReconcileScheduledEvent(env), env.RATE_LIMIT_POLICIES_ENABLED === "true");
+			} catch (error) {
+				console.error("rate_limit_plans_reconcile_scheduled_failed", serializeError(error));
+			}
+		}
+		if (isModelDiscoveryTick(event)) {
+			try {
+				await jobs.run("model_discovery", () => handleModelDiscoveryScheduledEvent(event, env), toBool(env.MODEL_DISCOVERY_ENABLED, true));
+			} catch (error) {
+				console.error("model_discovery_scheduled_failed", serializeError(error));
+			}
+		}
+		try {
+			await jobs.run("otel_export", () => handleOtelExportScheduledEvent(env), toBool(env.OTEL_EXPORT_ENABLED, true));
+		} catch (error) {
+			console.error("otel_export_scheduled_failed", serializeError(error));
+		}
 	} finally {
-		clearRuntime();
-	}
-	// Keep release notices independent from the slower provider discovery sweep.
-	try {
-		await handlePublicModelAnnouncementsScheduledEvent(env);
-	} catch (error) {
-		console.error("public_model_announcement_check_scheduled_failed", serializeError(error));
-	}
-	if (isDailyPaymentMethodExpiryTick(event)) {
-		try {
-			await handlePaymentMethodExpiryScheduledEvent(env);
-		} catch (error) {
-			console.error("payment_method_expiry_notifications_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleModelDeprecationScheduledEvent(event, env);
-		} catch (error) {
-			console.error("model_deprecation_notifications_scheduled_failed", serializeError(error));
-		}
-	}
-	if (isDailyFeedbackRequestTick(event)) {
-		try {
-			await handleFeedbackRequestScheduledEvent(env);
-		} catch (error) {
-			console.error("feedback_request_emails_scheduled_failed", serializeError(error));
-		}
-	}
-	if (isDailyRetentionBillingTick(event)) {
-		try {
-			await handleGatewayIoRetentionBillingScheduledEvent(event, env);
-		} catch (error) {
-			console.error("gateway_io_retention_billing_scheduled_failed", serializeError(error));
-		}
-	}
-	try {
-		await handleRoutingArchiveScheduledEvent(env);
-	} catch (error) {
-		console.error("routing_archive_backfill_failed", serializeError(error));
-	}
-	if (isCoreJobsTick(event)) {
-		try {
-			await handleRoutingArchiveDeletionScheduledEvent(env);
-		} catch (error) {
-			console.error("routing_archive_deletion_failed", serializeError(error));
-		}
-		try {
-			await handleGatewayIoRetentionExpiryScheduledEvent(event, env);
-		} catch (error) {
-			console.error("gateway_io_retention_expiry_scheduled_failed", serializeError(error));
-		}
-		if (env.ENV === "prod" && env.ACCOUNT_DELETION_PURGE_ENABLED === "true") {
-			try {
-				await handleAccountDeletionScheduledEvent(env);
-			} catch (error) {
-				console.error("account_deletion_scheduled_failed", serializeError(error));
-			}
-		}
-		try {
-			await handleDataContributionClassifierScheduledEvent(env);
-		} catch (error) {
-			console.error("data_contribution_classifier_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleDataContributionRetentionScheduledEvent(env);
-		} catch (error) {
-			console.error("data_contribution_retention_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleV2AnalyticsOutboxScheduledEvent(env);
-		} catch (error) {
-			console.error("v2_analytics_outbox_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleRateLimitThrottleRollupScheduledEvent(env);
-		} catch (error) {
-			console.error("rate_limit_throttle_rollups_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleSpendRulesScheduledEvent(env);
-		} catch (error) {
-			console.error("spend_rules_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleSpendReportsScheduledEvent(env);
-		} catch (error) {
-			console.error("spend_reports_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleLowBalanceEmailScheduledEvent(env);
-		} catch (error) {
-			console.error("low_balance_emails_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleOAuthCleanupScheduledEvent(env);
-		} catch (error) {
-			console.error("oauth_cleanup_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleOtelExportPruneScheduledEvent(env);
-		} catch (error) {
-			console.error("otel_export_prune_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleBroadcastDestinationAlertsScheduledEvent(env);
-		} catch (error) {
-			console.error("broadcast_destination_alerts_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleEmailOutboxScheduledEvent(event, env);
-		} catch (error) {
-			console.error("email_outbox_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleNotificationDeliveryScheduledEvent(env);
-		} catch (error) {
-			console.error("notification_delivery_scheduled_failed", serializeError(error));
-		}
-		if (isQuarterHourTick(event)) {
-			try {
-				await handleSpendLimitSweepScheduledEvent(env);
-			} catch (error) {
-				console.error("spend_limit_sweep_scheduled_failed", serializeError(error));
-			}
-			try {
-				await handleSpendBlockReconcileScheduledEvent(env);
-			} catch (error) {
-				console.error("spend_block_reconcile_scheduled_failed", serializeError(error));
-			}
-		}
-		try {
-			await handleMobilePushScheduledEvent(env);
-		} catch (error) {
-			console.error("mobile_push_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleAsyncWebhookRetriesScheduledEvent(event, env);
-		} catch (error) {
-			console.error("async_webhook_retries_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleBatchProviderWebhookReplayScheduledEvent(event, env);
-		} catch (error) {
-			console.error("batch_provider_webhook_replay_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleVideoReconciliationScheduledEvent(event, env);
-		} catch (error) {
-			console.error("video_reconciliation_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleBatchReconciliationScheduledEvent(event, env);
-		} catch (error) {
-			console.error("batch_reconciliation_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleRealtimeSessionReconciliationScheduledEvent(event, env);
-		} catch (error) {
-			console.error("realtime_session_reconciliation_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleCustomerRateLimitTierScheduledEvent(env);
-		} catch (error) {
-			console.error("customer_rate_limit_tiers_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleRateLimitPlanReconcileScheduledEvent(env);
-		} catch (error) {
-			console.error("rate_limit_plans_reconcile_scheduled_failed", serializeError(error));
-		}
-	}
-	if (isModelDiscoveryTick(event)) {
-		try {
-			await handleModelDiscoveryScheduledEvent(event, env);
-		} catch (error) {
-			console.error("model_discovery_scheduled_failed", serializeError(error));
-		}
-	}
-	try {
-		await handleOtelExportScheduledEvent(env);
-	} catch (error) {
-		console.error("otel_export_scheduled_failed", serializeError(error));
+		await jobs.flush();
 	}
 }

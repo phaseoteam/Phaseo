@@ -1,7 +1,9 @@
 export interface ImagesEditRequest {
   background?: "transparent" | "opaque" | "auto";
+  complexity?: "low" | "medium" | "high";
   image: string | string[];
   input_fidelity?: "high" | "low";
+  markup?: string;
   mask?: string;
   meta?: boolean;
   model: string;

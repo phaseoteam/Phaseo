@@ -20,6 +20,25 @@ CREATE INDEX gateway_dynamic_route_versions_created_by_idx ON public.gateway_dyn
 
 CREATE INDEX gateway_dynamic_route_versions_route_idx ON public.gateway_dynamic_route_versions USING btree (route_id, VERSION DESC);
 
+CREATE POLICY "gateway_dynamic_route_versions_no_oauth_client_insert" ON "public"."gateway_dynamic_route_versions"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "gateway_dynamic_route_versions_no_oauth_client_update" ON "public"."gateway_dynamic_route_versions"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "gateway_dynamic_route_versions_no_oauth_client_delete" ON "public"."gateway_dynamic_route_versions"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "gateway_dynamic_route_versions_workspace_delete" ON "public"."gateway_dynamic_route_versions"
   FOR DELETE
   TO "authenticated"

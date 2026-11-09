@@ -9,7 +9,7 @@ description: "Crée une destination Broadcast : un outil OpenTelemetry, un webho
 
 L’objet `config` est en écriture seule et chiffré avant stockage. Les points de terminaison doivent utiliser des adresses HTTPS publiques. Consultez [Broadcast](../../guides/broadcast.mdx) pour savoir ce que fait chaque destination et ce qu’elle reçoit.
 
-## Clés `config` par type
+## Définir `config` pour chaque type de destination
 
 Toutes les valeurs sont des chaînes. Une requête à laquelle il manque une clé obligatoire, ou dont une valeur est inutilisable par la destination, renvoie `400` avec un message indiquant la clé.
 

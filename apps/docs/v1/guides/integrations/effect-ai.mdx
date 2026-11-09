@@ -5,11 +5,7 @@ description: "Use Phaseo from Effect TypeScript applications."
 "og:image": "https://phaseo.app/og/dynamic?title=Effect%20AI%20SDK&description=Use%20Phaseo%20from%20Effect%20TypeScript%20applications.&pathname=/docs/v1/guides/integrations/effect-ai"
 ---
 
-Use this guide when your application already uses Effect and you want Phaseo behind an Effect service or workflow.
-
-## Status
-
-Phaseo exposes OpenAI-compatible HTTP endpoints. Effect's first-party provider packages are useful when they support the provider you need directly; if your installed Effect OpenAI package does not expose a base URL option, call Phaseo through Effect's HTTP client or wrap the [OpenAI SDK](./openai-sdk.mdx) in your own Effect layer.
+Call Phaseo's OpenAI-compatible endpoints from Effect with its HTTP client, or wrap the [OpenAI SDK](./openai-sdk.mdx) in an Effect layer. Use Effect's own OpenAI provider package only if your installed version accepts a custom base URL.
 
 ## Install
 
@@ -32,7 +28,7 @@ const generate = Effect.gen(function* () {
 	).pipe(
 		HttpClientRequest.bearerToken(Redacted.value(apiKey)),
 		HttpClientRequest.jsonBody({
-			model: "openai/gpt-5-nano",
+			model: "openai/gpt-6-astra",
 			messages: [{ role: "user", content: "Reply with only: ok" }],
 		}),
 	);
@@ -45,9 +41,11 @@ const generate = Effect.gen(function* () {
 const runnable = generate.pipe(Effect.provide(FetchHttpClient.layer));
 ```
 
-## Wrap the OpenAI SDK in an Effect service
+Running it returns a Chat Completions response whose message says `ok`.
 
-If you already use the official OpenAI SDK elsewhere, keep the Phaseo configuration in one layer:
+## Wrap the OpenAI SDK in an Effect layer
+
+If you already use the OpenAI SDK, keep the Phaseo configuration in one place:
 
 ```ts
 import OpenAI from "openai";
@@ -63,15 +61,9 @@ const makeClient = Effect.gen(function* () {
 });
 ```
 
-## Notes
+Build a custom layer on top of this when you want a provider-style abstraction across your app.
 
-- Use `https://api.phaseo.app/v1` for OpenAI-compatible calls.
-- Keep model ids in Phaseo format, for example `openai/gpt-5-nano`.
-- Use a custom Effect layer when you want a provider-style abstraction across the rest of your application.
-- Test streaming and tool calls with your exact Effect package versions before production rollout.
+## Known limits
 
-## Related
-
-- [OpenAI SDK](./openai-sdk.mdx)
-- [AI SDK](./ai-sdk.mdx)
-- [Streaming](../streaming.mdx)
+- Keep model IDs in Phaseo format, such as `openai/gpt-6-astra`.
+- Test [streaming](../streaming.mdx) and tool calls with your exact Effect package versions before production.

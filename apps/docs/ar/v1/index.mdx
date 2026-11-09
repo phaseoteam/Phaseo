@@ -1,10 +1,10 @@
 ---
 title: "ابدأ هنا"
-description: "أرسل طلبك الأول أو صِل تطبيقًا أو ابحث عن المرجع المطلوب."
+description: "أرسل طلبك الأول، أو اربط تطبيقًا، أو اعثر على المرجع الذي تحتاجه."
 icon: "house"
 ---
 
-استخدم Phaseo لاستدعاء نماذج من مزوّدين متعددين عبر API واحدة والتحكم في التوجيه وتتبع الاستخدام والتكاليف.
+استدعِ نماذج من مزوّدين كثيرين عبر API واحدة على `https://api.phaseo.app/v1`، واختر كيفية توجيه كل طلب، وتتبّع الاستخدام والتكلفة لكل طلب. يستخدم هذا الطلب `phaseo/free`، لذا يعمل قبل أن تضيف رصيدًا:
 
 <CodeGroup>
 
@@ -40,52 +40,51 @@ print(response.output_text)
 
 </CodeGroup>
 
-ليس لديك مفتاح API بعد؟ نفّذ `phaseo keys create` باستخدام [Phaseo CLI](./guides/integrations/phaseo-cli) أو [أنشئ مفتاحًا من لوحة التحكم](https://phaseo.app/ar-SA/settings/keys)، ثم اتبع [دليل البدء السريع](./quickstart.mdx).
+ليس لديك مفتاح API بعد؟ [أنشئ مفتاحًا من لوحة التحكم](https://phaseo.app/settings/keys)، ثم اتبع [دليل البدء السريع](./quickstart.mdx).
 
 ## ابدأ من حيث أنت
 
 <div className="ph-paths not-prose">
 
-[**<Icon icon="rocket" /> إرسال طلبك الأول** أنشئ مفتاحًا وأرسل طلبًا واقرأ النتيجة.](./quickstart.mdx)
+[**<Icon icon="rocket" /> أرسل طلبك الأول** أنشئ مفتاحًا وأرسل طلبًا واقرأ النتيجة.](./quickstart.mdx)
 
-[**<Icon icon="arrow-right-left" /> ترحيل تطبيق** حدّث تكاملًا موجودًا لمزوّد أو بوابة.](./migration-guides/index.mdx)
+[**<Icon icon="arrow-right-left" /> رحّل تطبيقًا** حدّث تكاملًا قائمًا مع مزوّد أو Gateway.](./migration-guides/index.mdx)
 
-[**<Icon icon="terminal" /> ربط مساعد برمجة** اضبط Codex أو Claude Code أو Cursor أو مساعدًا آخر.](./guides/integrations/coding-assistants.mdx)
+[**<Icon icon="terminal" /> اربط مساعد برمجة** اضبط Codex أو Claude Code أو Cursor أو مساعدًا آخر.](./guides/integrations/coding-assistants.mdx)
 
-[**<Icon icon="bot" /> إنشاء وكيل** امنح النموذج أدوات وابثّ خطواته ووافق على إجراءاته باستخدام حزمة SDK للوكلاء.](./sdk-reference/agent-sdk/overview.mdx)
+[**<Icon icon="bot" /> ابنِ وكيلًا** امنح النموذج أدوات، وابثّ خطواته، ووافق على إجراءاته باستخدام Agent SDK.](./sdk-reference/agent/overview.mdx)
 
 </div>
 
-## اختيار SDK
+## اختر حزمة SDK
 
 <div className="ph-sdks not-prose">
 
-[<Icon icon="https://phaseo.app/docs/icons/languages/typescript.svg" /> TypeScript](./sdk-reference/typescript/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/python.svg" /> Python](./sdk-reference/python/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/go.svg" /> Go](./sdk-reference/go/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/csharp.svg" /> C#](./sdk-reference/csharp/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/php.svg" /> PHP](./sdk-reference/php/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/ruby.svg" /> Ruby](./sdk-reference/ruby/overview.mdx)
-[<Icon icon="https://phaseo.app/docs/icons/languages/rust.svg" /> Rust](./sdk-reference/rust/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/typescript.svg" /> <Icon icon="https://phaseo.app/docs/icons/languages/python.svg" /> TypeScript وPython](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/go.svg" /> Go](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/csharp.svg" /> C#](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/php.svg" /> PHP](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/ruby.svg" /> Ruby](./sdk-reference/client/overview.mdx)
+[<Icon icon="https://phaseo.app/docs/icons/languages/rust.svg" /> Rust](./sdk-reference/client/overview.mdx)
 
 </div>
 
-## التطوير والتشغيل
+## البناء والتشغيل
 
 | المهمة | التوثيق |
 | --- | --- |
 | البحث عن حقل طلب أو نقطة نهاية | [مرجع API](./api-reference/introduction.mdx) |
-| تشغيل تطبيق بدء | [أمثلة](./guides/examples.mdx) |
+| تشغيل تطبيق مبدئي | [أمثلة](./guides/examples.mdx) |
 | تنفيذ سير عمل محدد | [دليل الوصفات](./cookbook/index.mdx) |
 | اختيار المزوّدين والبدائل | [التوجيه](./guides/routing-and-fallbacks.mdx) |
-| معالجة مهام فيديو أو دفعات | [مهام غير متزامنة وWebhooks](./guides/async-video-and-batch.mdx) |
+| معالجة مهام الفيديو أو الدفعات | [المهام غير المتزامنة وWebhooks](./guides/async-video-and-batch.mdx) |
 | تشخيص طلب فاشل | [الأخطاء وتصحيحها](./api-reference/errors.mdx) |
 
-## اختيار نموذج
+## اختر نموذجًا
 
-[تصفح النماذج](https://phaseo.app/models) أو[قارنها](https://phaseo.app/compare). قد يتضمن الكتالوج نماذج غير قابلة للتوجيه؛ تحقق من توفرها في Gateway قبل التكامل. راجع [كيف يعمل Phaseo](./developers/introduction.mdx) للنماذج والمزوّدين والفوترة.
+[تصفّح النماذج](https://phaseo.app/models) أو [قارنها](https://phaseo.app/compare). يعرض الكتالوج أيضًا نماذج لا يمكنك استدعاؤها بعد، لذا تحقّق من أن النموذج **نشط على Gateway** قبل دمجه، أو اعرض النماذج القابلة للاستدعاء باستخدام `GET /v1/models`. راجع [كيف يعمل Phaseo](./developers/introduction.mdx) لمعرفة المزيد عن النماذج والمزوّدين والفوترة.
 
-## البناء باستخدام وكيل ذكاء اصطناعي
+## ابنِ باستخدام وكيل ذكاء اصطناعي
 
 <Prompt description="زوّد وكيل البرمجة لديك (Cursor وClaude Code وCodex وغيرها) بكل ما يحتاجه لإضافة Phaseo إلى مشروعك." icon="bot" actions={["copy", "cursor"]}>
 {`Add Phaseo Gateway to this project.

@@ -1,5 +1,3 @@
-"use client";
-
 import type { ReactNode, RefObject } from "react";
 
 import ChartShareButton, { type ChartShareRenderSize } from "@/components/share/ChartShareButton";

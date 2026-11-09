@@ -150,6 +150,9 @@ export type IRToolResult = {
 	isError?: boolean; // Optional error flag
 	cacheControl?: IRCacheControl;
 	type?: "function" | "custom";
+	// A server tool's full output for the client when the model gets a shorter `content`
+	// (an image tool's image goes to the client, not back into the model's context).
+	clientOutput?: string;
 };
 
 // ============================================================================
@@ -593,7 +596,7 @@ export type IRImageGenerationRequest = {
 	stream?: boolean;
 	partialImages?: number;
 	responseFormat?: string;
-	outputFormat?: "png" | "jpeg" | "webp";
+	outputFormat?: "png" | "jpeg" | "webp" | "gif" | "svg";
 	outputCompression?: number;
 	background?: "transparent" | "opaque" | "auto";
 	moderation?: "auto" | "low";
@@ -610,7 +613,7 @@ export type IRImageGenerationResponse = {
 	model: string;
 	provider: string;
 	background?: "transparent" | "opaque";
-	outputFormat?: "png" | "jpeg" | "webp";
+	outputFormat?: "png" | "jpeg" | "webp" | "gif" | "svg";
 	size?: string;
 	quality?: string;
 	data: Array<{
@@ -619,6 +622,8 @@ export type IRImageGenerationResponse = {
 		revisedPrompt?: string | null;
 	}>;
 	usage?: IRUsage;
+	/** GPT Image SVG output: token usage of the model that wrote the SVG, as OpenAI reports it. */
+	svgUsage?: Record<string, unknown>;
 	rawResponse?: any;
 };
 
@@ -781,7 +786,8 @@ export type IRVideoGenerationRequest = {
 	durationSeconds?: number;
 	ratio?: string;
 	aspectRatio?: string;
-	compressionQuality?: number;
+	// Veo: "optimized" or "lossless". Numbers are legacy input for compatible providers.
+	compressionQuality?: number | "optimized" | "lossless";
 	negativePrompt?: string;
 	sampleCount?: number;
 	numberOfVideos?: number;

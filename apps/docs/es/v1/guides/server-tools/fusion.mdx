@@ -4,19 +4,16 @@ title: "Herramienta de servidor Fusion"
 description: "Ejecuta varios modelos de análisis y sintetiza sus conclusiones."
 ---
 
-Usa `phaseo:fusion` cuando una respuesta pueda beneficiarse de las perspectivas de varios modelos independientes. Phaseo ejecuta los modelos de análisis en paralelo y, después, pide al modelo analista seleccionado que sintetice sus conclusiones para el modelo que hizo la llamada.
+Añade `phaseo:fusion` cuando una respuesta se beneficie de varias opiniones independientes, como una decisión de planificación, una síntesis de investigación o una revisión de diseño. Cuando el modelo principal la llama, Phaseo envía la pregunta a todos los modelos de análisis en paralelo, pide a un modelo analista que combine sus conclusiones y devuelve esa síntesis. Añade latencia, así que usa un solo [Advisor](./advisor) cuando baste con una revisión.
 
-## Configuración en el Playground
-
-En el menú de herramientas del servidor de Playground, Fusion te permite elegir:
-
-- modelos de análisis que revisan la solicitud de forma independiente
-- un modelo juez opcional que compara los resultados del análisis
-- un límite máximo de llamadas a herramientas para las herramientas asesoras de Fusion
-
-El modelo principal ve esos asesores con nombre durante el mismo ciclo de herramientas y puede usar sus resultados antes de redactar la respuesta final.
-
-## Estructura de la API
+```mermaid
+flowchart LR
+  main["El modelo principal llama a phaseo:fusion"] --> a1["Modelo de análisis 1"]
+  main --> a2["Modelo de análisis 2"]
+  a1 --> syn["El modelo analista sintetiza"]
+  a2 --> syn
+  syn -->|"Resultado de la herramienta"| main
+```
 
 ```json
 {
@@ -35,35 +32,34 @@ El modelo principal ve esos asesores con nombre durante el mismo ciclo de herram
 }
 ```
 
-## Cuándo usar Fusion
+En el Playground, el menú de herramientas de servidor configura lo mismo: los modelos de análisis, un modelo juez (analista) opcional y un límite de llamadas.
 
-Usa Fusion para:
+## Parámetros
 
-- decisiones de planificación en las que un segundo o tercer modelo pueda detectar supuestos que faltan
-- síntesis de investigaciones en las que los modelos puedan valorar las pruebas de forma distinta
-- revisiones de código o arquitectura en las que quieras recibir críticas independientes
-- respuestas de gran valor en las que sea aceptable asumir algo más de latencia
+| Parámetro | Tipo | Predeterminado | Descripción |
+| --- | --- | --- | --- |
+| `analysis_models` | string[] | Obligatorio | Al menos 2 modelos. Con menos, la solicitud se rechaza. |
+| `model` | string | El modelo de la solicitud | El modelo analista que escribe la síntesis. |
+| `instructions` | string | Ninguno | Instrucciones para las llamadas de análisis y para la del analista. |
+| `max_uses` | integer | `1` | Llamadas a Fusion por solicitud, hasta `4`. |
+| `max_completion_tokens` | integer | `1400` | Tokens de salida de cada análisis y de la síntesis, hasta `32000`. |
 
-Usa un único Advisor en su lugar si solo necesitas una ronda de revisión.
+## Qué envía el modelo
 
-## Uso y precios
+Un `prompt`: la pregunta que necesita varias perspectivas.
 
-Cada llamada a Fusion incrementa:
+## Qué devuelve la herramienta
 
 ```json
 {
-  "usage": {
-    "server_tool_use": {
-      "fusion_requests": 1
-    }
-  }
+  "status": "ok",
+  "analyses": 2,
+  "analysis": "Both reviewers flag the cutover order..."
 }
 ```
 
-Los tokens de los modelos asesores se incluyen en el uso total y pueden cobrarse según las tarifas de cada modelo seleccionado. Los precios de las herramientas del servidor también pueden usar el contador `server_tool_advisor_requests`.
+`analyses` cuenta los modelos de análisis que respondieron. Si alguno falla, la síntesis usa los demás. Los resultados de error son `fusion_invalid_request` (sin prompt), `fusion_max_uses_exceeded`, `fusion_panel_failed` (fallaron todos los modelos de análisis) y `fusion_request_failed` (falló el analista).
 
-## Relacionado
+## Uso y precios
 
-- [Advisor](./advisor.mdx)
-- [Subagente](./subagent.mdx)
-- [Herramientas del servidor](./index.mdx)
+Cada llamada suma 1 a `usage.server_tool_use.fusion_requests` y se puede facturar con `server_tool_fusion_requests`. Los tokens de cada llamada de análisis y del analista se suman al uso de la solicitud y se cobran a las tarifas de ese modelo.

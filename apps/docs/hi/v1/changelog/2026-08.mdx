@@ -13,7 +13,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">उत्पाद</p>
 
-- BYOK में अब हर वर्कस्पेस को हर UTC महीने 250,000 अनुरोध बिना Phaseo शुल्क के मिलते हैं, उसके बाद प्रोवाइडर-समतुल्य लागत का 2.5% लिया जाता है; BYOK अनुरोध-स्तर का मेटाडेटा 90 दिन रखा जाता है (नवंबर 2026 से 365 दिन) ([#2056](https://github.com/phaseoteam/Phaseo/pull/2056))।
+- BYOK में अब हर वर्कस्पेस को हर UTC महीने 250,000 अनुरोध बिना Phaseo शुल्क के मिलते हैं, उसके बाद प्रोवाइडर-समतुल्य लागत का 2.5% लिया जाता है ([#2056](https://github.com/phaseoteam/Phaseo/pull/2056))।
+- BYOK अनुरोध-स्तर का मेटाडेटा 90 दिन रखा जाता है, और नवंबर 2026 से 365 दिन ([#2056](https://github.com/phaseoteam/Phaseo/pull/2056))।
 
 </div>
 
@@ -152,7 +153,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - [z.AI: GLM 5.3 Flash](https://phaseo.app/models/z-ai/glm-5.3-flash)
 - [Qwen: Qwen 3.8 Flash](https://phaseo.app/models/qwen/qwen3.8-flash)
-- [Stealth: Ox Alpha](https://phaseo.app/models/stealth/ox-alpha) को यह सामने आने के बाद बंद कर दिया गया कि यह Z.AI GLM-5.3-Flash था।
+- [Stealth: Ox Alpha](https://phaseo.app/models/stealth/ox-alpha) असल में [z.AI: GLM 5.3 Flash](https://phaseo.app/models/z-ai/glm-5.3-flash) निकला।
 
 </div>
 
@@ -205,7 +206,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - अनुरोध अब `X-App-Categories` हेडर से किसी ऐप की श्रेणी बता सकते हैं, जिसे TypeScript SDK भी सपोर्ट करता है; देखें [ऐप एट्रिब्यूशन](../guides/app-attribution.mdx) ([#1799](https://github.com/phaseoteam/Phaseo/pull/1799))।
 - `:nitro`, `:cheap` और `:fast` मॉडल सफ़िक्स अब राउटिंग मोड तय करते हैं, भले ही अनुरोध फ़ील्ड, प्रीसेट या वर्कस्पेस डिफ़ॉल्ट कोई और मोड माँगें; देखें [रूटिंग और फ़ॉलबैक](../guides/routing-and-fallbacks.mdx) ([#1814](https://github.com/phaseoteam/Phaseo/pull/1814))।
-- `provider.quantizations` अब राउटिंग को मेल खाते क्वांटाइज़ेशन वाले ऑफ़र तक सीमित करता है और कोई मेल न होने पर डायग्नोस्टिक्स लौटाता है; देखें [क्वांटाइज़ेशन रणनीति चुनना](../guides/quantization-selection.mdx) ([#1810](https://github.com/phaseoteam/Phaseo/pull/1810))।
+- `provider.quantizations` अब राउटिंग को मेल खाते क्वांटाइज़ेशन वाले ऑफ़र तक सीमित करता है और कोई मेल न होने पर डायग्नोस्टिक्स लौटाता है; देखें [क्वांटाइज़ेशन रणनीति चुनना](../guides/quantization.mdx) ([#1810](https://github.com/phaseoteam/Phaseo/pull/1810))।
 
 </div>
 

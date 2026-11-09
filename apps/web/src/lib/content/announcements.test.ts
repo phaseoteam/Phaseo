@@ -1,5 +1,4 @@
-jest.mock("server-only", () => ({}));
-
+import { describe, expect, it } from "vitest";
 import { getAnnouncementPost, getAnnouncementPosts } from "./announcements";
 
 describe("announcement SEO frontmatter", () => {

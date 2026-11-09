@@ -1,0 +1,200 @@
+---
+icon: "triangle-alert"
+title: "事件与错误"
+description: "了解失败的智能体运行如何表现、会触发哪些事件，以及如何从模型、工具和继续操作的错误中恢复。"
+---
+
+失败的运行会让运行或继续调用抛出或返回错误。暂停（`waiting_for_human`）和停止条件（`stopped`）都不是错误：两者都会返回正常结果。哪些失败还会发送 `run.failed` 事件因语言而异，所以不要只依靠这个事件来检测失败。
+
+## 失败的运行如何表现
+
+| 语言 | 失败时 | 保存的状态 |
+| --- | --- | --- |
+| TypeScript | 抛出异常。网关失败为 `AgentGatewayError`。通过 `signal` 取消不会抛出异常：运行以 `cancelled` 状态返回。 | 在抛出错误之前，失败的运行（状态为 `failed`，带有 `error` 和 `errorDetails`）会通过 `state` 保存 |
+| Python | 从 `run()`、`continue_run()` 或 `stream.result()` 抛出异常 | 没有 `AgentRunResult`，也不会调用 `state` 访问器 |
+| Go | 返回非 nil 的 `error` 和空的 `RunResult` | 无 |
+| C# | 从 `Run` 或 `ContinueRun` 抛出异常；没有 `RunResult` | 无 |
+| PHP | 从 `run()` 或 `continueRun()` 抛出 `RuntimeException`；没有 `RunResult` | 无 |
+| Ruby | 从 `run` 或 `continue_run` 抛出异常；没有 `RunResult` | 无 |
+| Java | 从 `run` 或 `continueRun` 抛出异常；没有 `RunResult` | 无 |
+| Rust | 返回 `Err(AgentError)` | 无 |
+
+<CodeGroup>
+
+```typescript TypeScript
+import { AgentGatewayError, AgentSchemaValidationError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error(error.status, error.requestId, error.reason);
+  } else if (error instanceof AgentSchemaValidationError) {
+    console.error(error.target, error.message);
+  }
+  throw error;
+}
+```
+
+```python Python
+import phaseo
+
+try:
+    result = agent.run(input="Summarise this ticket", client=client)
+except phaseo.PhaseoHTTPError as error:
+    print(error.status, error.code, error.request_id)
+    raise
+```
+
+```go Go
+ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+defer cancel()
+
+result, err := agent.Run(ctx, options)
+if errors.Is(err, context.DeadlineExceeded) {
+  // 保存足够的应用状态，以便重试或报告超时。
+}
+```
+
+```csharp C#
+using Phaseo.Gen;
+
+try
+{
+    var result = await agent.Run(options);
+}
+catch (ApiErrorException error)
+{
+    Console.Error.WriteLine($"{error.StatusCode} {error.Code} {error.RequestId}");
+    throw;
+}
+```
+
+```php PHP
+use Phaseo\Gen\RequestException;
+
+try {
+    $result = $agent->run(input: "Summarise this ticket", client: $client);
+} catch (RequestException $error) {
+    error_log($error->getStatusCode() . " " . $error->getErrorCode() . " " . $error->getRequestId());
+    throw $error;
+}
+```
+
+```ruby Ruby
+begin
+  result = agent.run(input: "Summarise this ticket", client: client)
+rescue Phaseo::Gen::RequestError => error
+  warn [error.status_code, error.code, error.request_id].join(" ")
+  raise
+end
+```
+
+```java Java
+import app.phaseo.gen.Client.ApiException;
+
+try {
+    var result = agent.run(options);
+} catch (ApiException error) {
+    System.err.println(error.getStatusCode() + " " + error.getCode() + " " + error.getRequestId());
+    throw error;
+}
+```
+
+```rust Rust
+match agent.run(&mut client, options) {
+    Ok(result) => println!("{}", result.output),
+    Err(error) => eprintln!("Agent failed: {}", error.message()),
+}
+```
+
+</CodeGroup>
+
+<span id="which-events-fire-when-something-fails"></span>
+## 出错时会触发哪些事件
+
+| 语言 | 发送 `run.failed` 的时机 | 发送 `tool.failed` 的时机 | 达到步数上限 |
+| --- | --- | --- | --- |
+| TypeScript | 除取消外的任何失败，在 `step.failed` 之后发送。取消会改为发送 `step.cancelled` 和 `run.cancelled`。 | 工具失败时 | 抛出 `Max steps exceeded (N)` 并发送 `run.failed` |
+| Python | 只在 `max_steps` 用完时。其他错误（包括取消）会直接抛出，不发送事件。 | 工具失败时 | 抛出 `RuntimeError("Max steps exceeded (N)")` |
+| Go | 模型错误（重试之后）或步数上限结束了运行时 | 工具出错或超时时 | 返回 `Max steps exceeded (N)` 并发送 `run.failed` |
+| C# | 只在运行达到 `MaxSteps` 时。模型错误、工具异常、校验失败和取消都会直接抛出，不发送该事件。 | 工具抛出异常且其 `OnError` 为 `return-to-model` 时 | 抛出 `Max steps exceeded (N)` |
+| PHP | 只在运行达到 `maxSteps` 时。模型错误、工具异常和校验失败都会直接抛出，不发送该事件。 | 工具抛出异常或超时时 | 抛出 `Max steps exceeded (N)` |
+| Ruby | 只在运行达到 `max_steps` 时。模型错误、工具异常和校验失败都会直接抛出，不发送该事件。 | 工具抛出异常且其 `on_error` 为 `return-to-model` 时。由 `continue_run` 运行的已批准调用每次抛出异常都会发送该事件。 | 抛出 `Max steps exceeded (N)` |
+| Java | 只在运行达到 `maxSteps` 时。模型错误、工具异常、校验失败和取消都会直接抛出，不发送该事件。 | 工具抛出异常且其 `onError` 为 `return-to-model` 时 | 抛出 `Max steps exceeded (N)` |
+| Rust | 从不发送；Rust 没有失败事件 | 从不发送；工具错误以带有 `is_error: true` 的 `tool.completed` 发送 | 不是错误：运行以 `stopped` 状态返回，`stop_reason` 为 `max_steps:<limit>`，并发送 `run.stopped` 事件 |
+
+[生命周期钩子](./lifecycle-hooks)列出了所有事件。
+
+## 找出错误的原因
+
+| 原因 | 错误 | 各语言的差异 |
+| --- | --- | --- |
+| 没有 API 密钥 | `PHASEO_API_KEY is required` | Python：`ValueError`。Ruby：`ArgumentError: Missing API key. Pass api_key or set PHASEO_API_KEY.` |
+| 网关拒绝了模型请求 | 网关的错误，在重试策略用完后重新抛出 | TypeScript：`AgentGatewayError`。Python：带有 `status`、`code` 和 `request_id` 的 `phaseo.PhaseoHTTPError`。Rust：转换为 `AgentError`，不包含网关状态码和响应体。 |
+| 模型不停地调用工具 | `Max steps exceeded (N)` | Rust 会改为停止运行（见上文） |
+| 模型调用了智能体没有的工具 | `Unknown tool '<name>'` | Go：`unknown tool "name"`。TypeScript 设置 `return-to-model` 时：改为回复给模型。 |
+| 校验器拒绝了工具输入、工具输出、进度事件或最终输出 | `Invalid tool input: ...`、`Invalid tool output: ...`、`Invalid agent output: ...` | TypeScript：`AgentSchemaValidationError`。Python 和 Ruby：`ValueError` / `ArgumentError`。Go：小写的 `invalid ...`。Rust 没有校验器。 |
+| 工具运行超时 | 超时错误 | Python：`TimeoutError`。Go：`tool <id> timed out: ...`。C# 和 Java：`TimeoutException`。PHP：`Tool <name> timed out after <n>ms`。Ruby：`Timeout::Error`。Rust 没有工具超时。 |
+| 继续操作没有回应所有待处理调用 | `Missing approval decision for tool call <id>`、`Missing output for tool call <id>` | Go：小写的 `missing ...`。Python：`ValueError`。参见[状态与审批](./state-and-approval)。 |
+| 在没有人工输入的情况下继续了审核暂停 | `Run <id> is waiting for human input` | Go：`run <id> ...`。Java：`Run is waiting for human input`。 |
+| 运行属于另一个智能体 ID | `Run <id> belongs to agent <agent>` | Go：`run <id> ...`。Java：`Run belongs to <agent>`。 |
+| 继续操作没有可继续的运行 | `A run or state accessor with runId is required` | C# 和 Java。Ruby：`... with run_id is required`。PHP `continueRunById()`：`Run <id> not found`。 |
+| 流被取消 | 取消错误 | Python：`InterruptedError`。PHP：`Agent stream cancelled`。C#：`OperationCanceledException`。Go：context 的错误。TypeScript：没有错误；状态为 `cancelled`。 |
+
+### TypeScript 错误类型
+
+`AgentGatewayError` 包含 `status`、`statusText`、`headers`、`body`、`requestId`、`generationId`、`reason`、`errorType`、`errorOrigin`、`failedProviders`、`failedStatuses` 以及路由诊断信息。失败的运行和步骤会在 `errorDetails` 中保留相同的详情。流式响应中途发生的失败是 `AgentStreamError`，它是一个带有 `code` 和 `retryable` 的子类。
+
+`AgentSchemaValidationError` 的 `target` 为 `tool_input`、`tool_output`、`tool_event` 或 `agent_output`，`details` 中是校验器的错误。请把它们视为契约失败，而不是暂时性的模型失败。
+
+如果要对任何错误分类（例如在 `modelRetry.retryOn` 中），请使用 `agentErrorIsRetryable(error)`、`agentRetryAfterMs(error)` 和 `agentErrorIsContextOverflow(error)`。
+
+### Rust 错误类型
+
+每个运行时失败都是 `AgentError`；用 `message()` 读取它。网关的 `PhaseoError` 值会被转换为 `AgentError`，所以如果你需要原始的网关状态码和响应体，请直接调用 `phaseo` 客户端，或实现一个保留这些信息的自定义 `ModelClient`。
+
+## 从工具错误中恢复
+
+默认情况下，工具错误会让运行失败。当模型可以合理地尝试别的办法时，把工具的错误策略设为 `return-to-model`：错误会变成工具结果 `{"error": "..."}`，运行继续。对于不安全或无法恢复的失败，请保留默认的 `fail-run`。
+
+| 语言 | 设置 | 设置 `return-to-model` 时的超时 |
+| --- | --- | --- |
+| TypeScript | 工具上的 `onError`，或为所有工具设置 `toolExecution.onError` | 视为工具错误并返回给模型 |
+| Python | `on_error` | 总是让运行失败 |
+| Go | `OnError` | 返回给模型 |
+| C# | `OnError` | 返回给模型（异常消息） |
+| PHP | `onError` | 返回给模型 |
+| Ruby | `on_error` | 返回给模型 |
+| Java | `onError` | 返回给模型（异常消息） |
+| Rust | 无 | Rust 没有超时。本地执行器返回的 `AgentError` 总是以工具错误消息的形式返回给模型。 |
+
+## 处理取消和超时
+
+工具超时或取消并不总能停止工具本身的工作。请为工具内部的 HTTP、数据库和进程调用设置各自的截止时间，并把已取消或已超时的运行视为已结束，除非你的应用重新启动一个运行。
+
+| 语言 | 取消运行 | 正在运行的工具会怎样 |
+| --- | --- | --- |
+| TypeScript | 传入 `signal`，或在流上调用 `cancel()` | 工具超时会中止 `context.signal`；请把它传给你自己的调用 |
+| Python | 在流上调用 `cancel()`；运行抛出 `InterruptedError` | 工具线程不会因超时或取消而停止 |
+| Go | 取消传给 `Run`、`Continue` 或 `Stream` 的 `ctx`，或在流上调用 `Cancel()` | 正在运行的工具会以超时错误失败，但 `Execute` 收不到 context，所以它们的工作会继续运行 |
+| C# | 在 `RunOptions` 或 `ContinueOptions` 中传入 `CancellationToken`，或在流上调用 `Cancel()`；运行抛出 `OperationCanceledException` | 工具会收到 `runtime.CancellationToken`；请把它传给你自己的调用 |
+| PHP | 在流上调用 `cancel()` | 工具同步运行，无法停止：`timeoutMs` 只会在调用返回后让它失败。在 Web 请求中请注意 PHP 的 `max_execution_time`。 |
+| Ruby | 在流上调用 `cancel` 会终止工作线程 | `timeout_ms` 使用 `Timeout.timeout`，它会在任意位置中断工具的线程，可能让文件、套接字或事务处于半完成状态 |
+| Java | 在流上调用 `cancel()` 会中断工作线程 | 工具 `timeout` 会在单独的线程上运行执行器并中断它；只有响应中断的代码才会停止 |
+| Rust | 不支持；运行是同步的 | 如果智能体不能阻塞请求处理函数，就在工作线程上运行它 |
+
+## 从中断的 TypeScript 运行中恢复
+
+如果运行在某个步骤中途崩溃或被取消，它的历史中可能包含没有结果的工具调用，而提供商会拒绝这样的历史。TypeScript 的 `continueRun()` 会把它们回复为未运行，并发送 `history.repaired`。如果你在其他地方复用这些消息，请自己调用 `repairToolHistory(messages)`。
+
+## 先检查这些
+
+- `PHASEO_API_KEY` 能传到进程中，并且已传给网关客户端。
+- 每个工具都有唯一且稳定的 ID。
+- 批准、拒绝和工具输出都使用精确的工具调用 ID，并且人工输入的消息绝不能代替工具输出。
+- 在展示审批界面或把控制权交给另一个请求或 worker 之前，先保存整个运行结果。
+- 校验器是确定性的且没有副作用，这样检查失败后可以安全地重试。
+- 模型重试有上限；校验失败和审批失败不应盲目重试。
+
+要查看是哪一步失败，请用[生命周期钩子](./lifecycle-hooks)记录 `step.started`、`model.requested` 和 `tool.failed`；把步骤与网关日志关联起来的 ID 见[可观测性](./observability)。

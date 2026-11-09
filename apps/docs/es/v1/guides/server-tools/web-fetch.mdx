@@ -1,29 +1,17 @@
 ---
 icon: "cloud-download"
 title: "Herramienta de servidor Web Fetch"
-description: "Permite que los modelos consulten URL específicas durante una solicitud."
+description: "Permite que los modelos obtengan y lean URL concretas durante una solicitud."
 ---
 
-Usa `phaseo:web_fetch` cuando el modelo necesite leer una URL conocida, como una página de documentación, un artículo, un registro de cambios o una fuente de texto similar a un PDF.
-
-El modelo decide cuándo consultar, proporciona la URL y recibe texto de la página con límites como contexto de la herramienta.
-
-## Cómo funciona
-
-1. Añade `{ "type": "phaseo:web_fetch" }` a `tools`.
-2. El modelo decide si necesita consultar una URL.
-3. Phaseo obtiene y extrae el contenido mediante el motor configurado.
-4. El texto extraído, el título, la URL y los metadatos de truncamiento se devuelven al modelo.
-5. El modelo redacta la respuesta final y puede consultar más URL si es necesario.
-
-## Inicio rápido
+Añade `phaseo:web_fetch` para que el modelo pueda leer una URL conocida, como una página de documentación, un artículo o un registro de cambios. El modelo proporciona la `url`; Phaseo obtiene la página y devuelve su texto, recortado a un límite de tamaño, y el modelo puede obtener más páginas antes de responder.
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "Summarize https://phaseo.app/docs/v1/guides/tool-calling" }
     ],
@@ -33,7 +21,8 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-## Configuración
+<span id="parameters"></span>
+## Parámetros
 
 ```json
 {
@@ -49,31 +38,38 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 | Parámetro | Tipo | Predeterminado | Descripción |
 | --- | --- | --- | --- |
-| `engine` | string | depende de la interfaz | Motor de consulta: `auto`, `native`, `direct`, `exa`, `parallel` o `firecrawl`. |
-| `max_chars` | entero | `12000` | Número máximo de caracteres extraídos que se devuelven al modelo. |
-| `max_content_tokens` | entero | ninguno | Alias basado en tokens que se usa si se omite `max_chars`. |
-| `max_uses` | entero | `10` | Número máximo de consultas durante el ciclo de la herramienta de servidor. |
-| `allowed_domains` | string[] | ninguno | Solo permite consultas a estos dominios. |
-| `blocked_domains` | string[] | ninguno | Rechaza consultas a estos dominios. Alias: `excluded_domains`. |
+| `engine` | string | `direct` | `auto`, `native`, `direct`, `exa`, `parallel` o `firecrawl`. Consulta [Elegir un motor](#choose-an-engine). |
+| `max_chars` | integer | `12000` | Caracteres del texto de la página que se devuelven al modelo, hasta `100000`. |
+| `max_content_tokens` | integer | Ninguno | Se usa en lugar de `max_chars` cuando se omite `max_chars`. También es el límite de tamaño para `native`. |
+| `max_uses` | integer | `10` | Llamadas de obtención por solicitud, hasta `100`. |
+| `allowed_domains` | string[] | Ninguno | Solo obtiene páginas de estos dominios. El modelo puede acotar esta lista en una llamada, pero no ampliarla. |
+| `blocked_domains` | string[] | Ninguno | Nunca obtiene páginas de estos dominios. Alias: `excluded_domains`. |
 
-## Selección del motor
+## Qué envía el modelo
 
-| Motor | Comportamiento |
+Cada llamada incluye una `url`. El modelo también puede enviar `engine`, `max_chars`, `max_content_tokens` y las listas de dominios.
+
+<span id="choose-an-engine"></span>
+## Elegir un motor
+
+| Motor | Qué se ejecuta |
 | --- | --- |
-| `auto` | Usa la consulta nativa de Anthropic en `/v1/messages`; si no, usa Exa cuando esté configurado y, de lo contrario, la consulta directa del gateway. |
-| `direct` | Consulta directamente desde el entorno de ejecución del gateway y extrae texto dentro del límite. |
-| `exa` | Usa la extracción de contenido de Exa cuando está configurada. |
-| `parallel` | Usa Parallel Extract cuando está configurado. |
-| `firecrawl` | Usa Firecrawl Scrape cuando está configurado. |
-| `native` | Se convierte a `web_fetch_20260209` nativo de Anthropic en `/v1/messages`. Otras interfaces deben usar `direct` o un motor gestionado. |
+| `auto` | La obtención nativa de Anthropic en `/v1/messages`. En otros endpoints, Exa si está habilitado y, si no, `direct`. |
+| `direct` | Phaseo obtiene la página por sí mismo y reduce el HTML a texto sin formato. |
+| `exa` | Extracción de contenido de Exa. |
+| `parallel` | Parallel Extract. |
+| `firecrawl` | Firecrawl Scrape. |
+| `native` | La herramienta `web_fetch_20260209` de Anthropic, solo en `/v1/messages`. En otros endpoints la solicitud se rechaza; usa `direct` o un motor gestionado. |
 
-Solo se admiten URL HTTP(S). La consulta directa del gateway acepta tipos de contenido textual y convierte el HTML en texto sin formato antes de devolverlo al modelo.
+Si un motor gestionado no está habilitado, la llamada devuelve `fetch_not_configured` al modelo.
 
-## Consulta nativa de Anthropic
+Solo funcionan las URL HTTP(S). `direct` solo acepta tipos de contenido de texto, como HTML, texto sin formato y JSON, y devuelve `unsupported_content_type` para cualquier otro. Sigue hasta 5 redirecciones y comprueba cada una con tus listas de dominios.
+
+### Obtención nativa de Anthropic
 
 ```json
 {
-  "model": "claude-sonnet-4.6",
+  "model": "anthropic/claude-sonnet-4.6",
   "max_tokens": 1024,
   "messages": [
     { "role": "user", "content": "Read the docs page and summarize the limits." }
@@ -92,9 +88,7 @@ Solo se admiten URL HTTP(S). La consulta directa del gateway acepta tipos de con
 }
 ```
 
-## Resultado de la herramienta
-
-La consulta gestionada devuelve un resultado JSON con campos como estos:
+## Qué devuelve la herramienta
 
 ```json
 {
@@ -111,26 +105,8 @@ La consulta gestionada devuelve un resultado JSON con campos como estos:
 }
 ```
 
-Comprueba `truncated` antes de dar por hecho que el modelo recibió la página completa.
+Comprueba `truncated` antes de dar por hecho que el modelo vio la página completa. Para ver un ejemplo completo, consulta [Fundamentar herramientas con Web Fetch](../../cookbook/tool-grounding-with-web-fetch).
 
 ## Uso y precios
 
-Las llamadas a Web Fetch incrementan este contador:
-
-```json
-{
-  "usage": {
-    "server_tool_use": {
-      "web_fetch_requests": 1
-    }
-  }
-}
-```
-
-Los precios de la consulta gestionada pueden usar `server_tool_web_fetch_requests`. El uso de la consulta nativa del proveedor puede usar `native_web_fetch_requests` cuando la tarjeta de precios del modelo define ese medidor.
-
-## Guías relacionadas
-
-- [Búsqueda web](./web-search.mdx)
-- [Herramientas de servidor](./index.mdx)
-- [Fundamentar respuestas con Web Fetch](../../cookbook/tool-grounding-with-web-fetch.mdx)
+Cada obtención suma 1 a `usage.server_tool_use.web_fetch_requests`. La obtención gestionada se factura con `server_tool_web_fetch_requests`. La obtención nativa se factura con `native_web_fetch_requests` cuando la tarjeta de precios del modelo lo define.

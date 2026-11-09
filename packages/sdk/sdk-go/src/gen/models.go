@@ -131,7 +131,6 @@ type ApiKey struct {
 	DepartmentId *string `json:"department_id,omitempty"`
 	Disabled bool `json:"disabled"`
 	ExpiresAt *string `json:"expires_at"`
-	Hash string `json:"hash"`
 	Id string `json:"id"`
 	IncludeByokInLimit bool `json:"include_byok_in_limit"`
 	IpAllowlist *[]map[string]interface{} `json:"ip_allowlist,omitempty"`
@@ -252,7 +251,6 @@ type ApiKeyWithValue struct {
 	DepartmentId *string `json:"department_id,omitempty"`
 	Disabled bool `json:"disabled"`
 	ExpiresAt *string `json:"expires_at"`
-	Hash string `json:"hash"`
 	Id string `json:"id"`
 	IncludeByokInLimit bool `json:"include_byok_in_limit"`
 	IpAllowlist *[]map[string]interface{} `json:"ip_allowlist,omitempty"`
@@ -2718,8 +2716,10 @@ type ImageModerationInput struct {
 
 type ImagesEditRequest struct {
 	Background *string `json:"background,omitempty"`
+	Complexity *string `json:"complexity,omitempty"`
 	Image interface{} `json:"image"`
 	InputFidelity *string `json:"input_fidelity,omitempty"`
+	Markup *string `json:"markup,omitempty"`
 	Mask *string `json:"mask,omitempty"`
 	Meta *bool `json:"meta,omitempty"`
 	Model string `json:"model"`
@@ -2746,6 +2746,9 @@ type ImagesEditResponse struct {
 
 type ImagesGenerationRequest struct {
 	Background *string `json:"background,omitempty"`
+	Complexity *string `json:"complexity,omitempty"`
+	FrameCount *int `json:"frame_count,omitempty"`
+	FrameDurationMs *int `json:"frame_duration_ms,omitempty"`
 	Model string `json:"model"`
 	Models *[]string `json:"models,omitempty"`
 	Moderation *string `json:"moderation,omitempty"`
@@ -2761,12 +2764,14 @@ type ImagesGenerationRequest struct {
 	Size *string `json:"size,omitempty"`
 	Stream *bool `json:"stream,omitempty"`
 	Style *string `json:"style,omitempty"`
+	Svg *map[string]interface{} `json:"svg,omitempty"`
 	User *string `json:"user,omitempty"`
 }
 
 type ImagesGenerationResponse struct {
 	Created *int `json:"created,omitempty"`
 	Data *[]map[string]interface{} `json:"data,omitempty"`
+	SvgUsage *map[string]interface{} `json:"svg_usage,omitempty"`
 }
 
 type InputTokensDetails struct {
@@ -5573,7 +5578,7 @@ type VideoDeleteResponse struct {
 
 type VideoGenerationRequest struct {
 	AspectRatio *string `json:"aspect_ratio,omitempty"`
-	CompressionQuality *int `json:"compression_quality,omitempty"`
+	CompressionQuality interface{} `json:"compression_quality,omitempty"`
 	Duration *int `json:"duration,omitempty"`
 	EnhancePrompt *bool `json:"enhance_prompt,omitempty"`
 	FrameImages *[]map[string]interface{} `json:"frame_images,omitempty"`
@@ -6268,9 +6273,20 @@ type WorkspaceMember struct {
 	WorkspaceId string `json:"workspace_id"`
 }
 
+type WorkspaceMemberAddFailure struct {
+	Code string `json:"code"`
+	Message string `json:"message"`
+	UserId string `json:"user_id"`
+}
+
 type WorkspaceMemberAddResponse struct {
 	AddedCount int `json:"added_count"`
-	Data []map[string]interface{} `json:"data"`
+	Approved []string `json:"approved"`
+	Data *[]map[string]interface{} `json:"data,omitempty"`
+	Error *string `json:"error,omitempty"`
+	Failed []map[string]interface{} `json:"failed"`
+	Message *string `json:"message,omitempty"`
+	NotAttempted []string `json:"not_attempted"`
 }
 
 type WorkspaceMemberBulkRequest struct {

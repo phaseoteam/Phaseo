@@ -1,13 +1,17 @@
 ---
-title: "C++ SDKのインストール（開発中）"
-description: "開発中のC++ヘッダーをソースから使用します。"
+title: "C++ SDK のインストール（開発中）"
+description: "開発中の C++ ヘッダーをソースから使います。"
 ---
 
-<Note type="warning">C++ SDKは開発中で、パッケージレジストリにはまだ公開されていません。</Note>
+<Note type="warning">C++ SDK は開発中で、まだパッケージレジストリには公開されていません。</Note>
 
-## ローカルでの使用
+## ローカルで使う
 
-- 生成されたヘッダーを使用します： `packages/sdk/sdk-cpp/src/gen`.
-- ビルドシステムのインクルードパスにこのフォルダーを追加します。
-- 現在、クライアントはヘッダーのみで構成されています。
+この SDK はヘッダーのみの C++17 です。`packages/sdk/sdk-cpp` を CMake のビルドに追加してインターフェースターゲットをリンクするか、`packages/sdk/sdk-cpp/src` をインクルードパスに追加してください。
 
+```cmake
+add_subdirectory(path/to/Phaseo/packages/sdk/sdk-cpp)
+target_link_libraries(your_app PRIVATE phaseo::sdk)
+```
+
+その後、`phaseo.hpp` をインクルードします。これにより `src/gen` 内の生成されたクライアントが読み込まれます。

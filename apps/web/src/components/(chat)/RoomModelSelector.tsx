@@ -1,8 +1,6 @@
-"use client";
-
 import { chatLocalStorage } from "@/lib/chat/userStorage";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	compareByReleaseDateDesc,
 	groupModelsByReleaseMonth,

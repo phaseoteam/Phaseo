@@ -5,7 +5,11 @@ description: "Receive incremental output, handle endpoint-specific events, and r
 icon: "radio"
 ---
 
-Set `stream: true` to receive output as server-sent events (SSE). Keep your Phaseo API key on your server and forward the output to your UI.
+import { StreamEventsExplorer } from "/snippets/stream-events.jsx";
+
+Set `stream: true` and the Gateway sends output as server-sent events (SSE) while the model writes it. A stream is finished only when its successful end event arrives. Press **Play** to watch one, then switch to **Fails partway** to see how a broken stream ends.
+
+<StreamEventsExplorer />
 
 ## Send a streaming request
 
@@ -14,53 +18,50 @@ curl --no-buffer https://api.phaseo.app/v1/responses \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "input": "Say hello in one sentence.",
     "stream": true
   }'
 ```
 
-Check the HTTP status before reading the stream. A failure before streaming starts returns the normal [JSON error response](../api-reference/errors.mdx).
+Check the HTTP status before you read the body. A request that fails before streaming starts gets the normal [JSON error response](../api-reference/errors.mdx), not a stream. Keep your Phaseo API key on your server and forward the text to your UI from there.
 
-## Read events
+## Read the events
 
-Use the event format for the endpoint you called:
+Each endpoint uses its own event format:
 
-| Endpoint | Incremental output | Completion |
-| --- | --- | --- |
-| [Responses](../api-reference/endpoint/responses.mdx) | Events such as `response.output_text.delta` | Inspect the terminal response event and its status |
-| [Chat Completions](../api-reference/endpoint/chat-completions.mdx) | `choices[].delta` | Inspect `finish_reason`; `[DONE]` ends the stream |
-| [Messages](../api-reference/endpoint/anthropic-messages.mdx) | `message_start`, `content_block_delta`, and related events | `message_stop` |
+| Endpoint | Text arrives in | Successful end | Failure end |
+| --- | --- | --- | --- |
+| [Responses](../api-reference/endpoint/responses.mdx) | `response.output_text.delta` | `response.completed` | `response.failed` or `error` |
+| [Chat Completions](../api-reference/endpoint/chat-completions.mdx) | `choices[].delta` | a `finish_reason`, then `[DONE]` | an `error` frame with no `finish_reason` |
+| [Messages](../api-reference/endpoint/anthropic-messages.mdx) | `content_block_delta` | `message_stop` | an `error` event with no `message_stop` |
 
-SSE events are separated by blank lines. A network chunk can contain part of an event or several events; do not parse each network chunk as standalone JSON. Buffer incomplete frames or use an SDK stream helper. Do not assume every endpoint sends `[DONE]`.
+Events are separated by blank lines, but a network chunk can hold half an event or several. Buffer until each event is complete before you parse it as JSON, or use an SDK helper, which does this for you:
 
-The SDK helpers handle stream transport:
+- TypeScript: `streamResponses()`, `streamChat()`, `streamMessages()`; Python: `stream_responses()`, `stream_chat()`, `stream_message()` ([usage guide](../sdk-reference/client/usage.mdx))
+- Vercel AI SDK: `streamText()` with `@phaseo/ai-sdk-provider`
 
-- TypeScript: `streamResponses()`, `streamChat()`, `streamMessages()`.
-- Python: `stream_responses()`, `stream_chat()`, `stream_message()`.
-- Vercel AI SDK: `streamText()` with `@phaseo/ai-sdk-provider`.
-
-See the [TypeScript usage guide](../sdk-reference/typescript/usage.mdx) or [Python usage guide](../sdk-reference/python/usage.mdx) for client setup.
+Only Chat Completions sends `[DONE]`. Don't wait for it on the other endpoints.
 
 ## Stream tool calls
 
-Streaming with tools is accepted by the Gateway, but support depends on the selected model and provider. Accumulate tool-call argument deltas until the call is complete, then parse, validate, and authorise the arguments before execution. Never execute partial arguments.
+Tool calls arrive as argument deltas, the same way text does. Whether a model streams them depends on the model and provider. Collect the deltas until the call is complete, then parse, validate, and authorise the arguments. Never run a tool on partial arguments.
 
-Follow [tool-calling patterns](./tool-calling-patterns.mdx) for continuation requests and [tool safety](./tool-calling-safety.mdx) for validation and approval controls.
+See [tool-calling patterns](./tool-calling-patterns.mdx) for sending results back and [tool safety](./tool-calling-safety.mdx) for validation and approval.
 
-## Cancel and recover
+## Cancel a stream
 
-Pass an `AbortSignal` to your server-side HTTP client and cancel when the user stops or disconnects. Set a deadline appropriate to the workload. Cancellation does not guarantee that the provider stops immediately or that generated output is free.
+Pass an `AbortSignal` (or your HTTP client's equivalent) and abort when the user stops or disconnects. Set a deadline that fits the workload. Cancelling doesn't guarantee the provider stops at once, or that output it already generated is free.
 
-Render partial text progressively, but mark a response complete only after the endpoint's successful terminal event. A closed connection alone is not proof of completion.
+## Recover from an interrupted stream
 
-If a stream fails after output begins, it ends with the endpoint's failure event rather than its successful terminal event: an `error` frame on Chat Completions (no `finish_reason`), `response.failed` or `error` on Responses, and an `error` event on Messages (no `message_stop`). Phaseo does not charge for the partial output of a stream that fails.
+If a stream fails after text has started, it ends with the failure event from the table above instead of the successful one. A closed connection on its own doesn't mean the answer is complete. Phaseo doesn't charge for the partial output of a stream that fails.
 
-When that happens:
+When it happens:
 
-1. Mark the partial response as interrupted.
-2. Keep the request or generation ID, endpoint, and model in your logs.
-3. Offer an explicit retry. A new request can generate different output and incur another charge.
-4. Do not replay executed tools or append a retried response to the partial output automatically.
+1. Keep the partial text on screen, marked as interrupted.
+2. Log the request or generation ID, endpoint, and model.
+3. Offer a retry. A new request can produce different text and is charged again.
+4. Don't replay tools that already ran, and don't append the retried answer to the partial one.
 
-For failures before output begins, use bounded retries and respect [rate-limit headers](../api-reference/limits.mdx). If your application must validate the entire output before displaying it, use a non-streaming request or buffer the result on your server.
+For failures before any text arrives, retry with backoff and respect the [rate-limit headers](../api-reference/limits.mdx). If you must validate the whole answer before anyone sees it, use a non-streaming request or buffer the stream on your server.

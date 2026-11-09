@@ -30,6 +30,10 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const reservation = await reserveVideoGenerationCredits({ workspaceId: args.workspaceId, videoId: args.requestId,
 		providerId: args.providerId, model, seconds, pricingCard: args.pricingCard, isByok: key.source === "byok",
 		requestOptions: bflVideoPricingOptions(size, mode, draft) });
+	// No matching price row (e.g. a resolution not priced yet): refuse rather than run unbilled.
+	if (reservation.status === "skip_missing_seconds_or_pricing") {
+		return failure(400, `FLUX 3 video at ${size} resolution (${mode}${draft ? ", draft" : ""}) is not available yet. Try hd or fhd.`);
+	}
 	if (!reservation.held && reservation.status !== "skip_zero_cost") {
 		return failure(reservation.status.startsWith("insufficient") ? 402 : 503, "Unable to secure priced video credits before submission.");
 	}

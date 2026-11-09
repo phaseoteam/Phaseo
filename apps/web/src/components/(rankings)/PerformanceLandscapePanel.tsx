@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState } from "react";
 import type { PerformanceData } from "@/lib/fetchers/rankings/getRankingsData";
 import { Button } from "@/components/ui/button";

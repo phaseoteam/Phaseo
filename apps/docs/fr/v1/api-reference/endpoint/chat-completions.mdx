@@ -2,41 +2,30 @@
 title: "Créer une complétion de chat"
 sidebarTitle: "Créer une complétion de chat"
 openapi: "/fr/openapi/v1/openapi.localized.yaml POST /chat/completions"
-description: "Générez des complétions de chat avec l’endpoint de chat compatible avec l’API OpenAI."
+description: "Générez des complétions de chat avec l’endpoint de chat compatible OpenAI."
 ---
-## Outils serveur
 
-`/v1/chat/completions` prend en charge les outils de fonction classiques ainsi que les outils serveur gérés par le Gateway suivants :
+## Utiliser les outils serveur
 
-- `gateway:datetime`
-- `phaseo:web_search`
-- `phaseo:web_fetch`
-- `phaseo:advisor`
-- `phaseo:image_generation`
-
-### Exemple de date et heure
+Ajoutez un outil `phaseo:` dans `tools` à côté de vos propres outils de fonction : Phaseo l’exécute lorsque le modèle l’appelle. `/v1/chat/completions` accepte tous les outils serveur sauf `phaseo:apply_patch` ; le guide [Outils serveur](../../guides/server-tools) les liste.
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
-    "stream": false,
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "What is the current datetime in Europe/London?" }
     ],
     "tools": [
-      {
-        "type": "gateway:datetime",
-        "parameters": { "timezone": "Europe/London" }
-      }
+      { "type": "phaseo:datetime", "parameters": { "timezones": ["Europe/London"] } }
     ],
     "tool_choice": "auto"
   }'
 ```
 
-Lorsqu’un outil serveur est utilisé, les données d’utilisation comprennent :
+Chaque appel d’outil serveur est compté dans `usage.server_tool_use` :
 
 ```json
 {
@@ -51,24 +40,24 @@ Lorsqu’un outil serveur est utilisé, les données d’utilisation comprennent
 }
 ```
 
-`phaseo:web_search` ajoute `server_tool_use.web_search_requests`, `server_tool_use.web_search_results` et `server_tool_use.web_search_extra_results`. `phaseo:web_fetch` ajoute `server_tool_use.web_fetch_requests`.
+`phaseo:web_search` ajoute `web_search_requests`, `web_search_results` et `web_search_extra_results` ; `phaseo:web_fetch` ajoute `web_fetch_requests`. L’ancien type `gateway:datetime` fonctionne toujours.
 
-## À propos du streaming
-
-`stream: true` est également pris en charge. Avec les outils serveur gérés par le Gateway, Phaseo peut matérialiser le tour d’appel d’outil amont, poursuivre la boucle, puis réémettre un flux synthétique.
+Avec `stream: true`, Phaseo exécute lui-même les tours d’outils, puis vous transmet la suite de la réponse en un seul flux.
 
 ## Raisonnement dans les boucles d’outils
 
 Les modèles de raisonnement renvoient leur raisonnement dans deux champs du message de l’assistant :
 
 - `reasoning_content` : le texte du raisonnement, lorsque le fournisseur en renvoie un.
-- `reasoning_details` : un tableau de blocs de raisonnement au format utilisé par OpenRouter. Chaque entrée possède un `type` (`reasoning.text`, `reasoning.summary` ou `reasoning.encrypted`), un `index` et un `format` qui indique la famille du fournisseur, par exemple `anthropic-claude-v1` ou `google-gemini-v1`.
+- `reasoning_details` : un tableau de blocs de raisonnement. Chaque entrée possède un `type` (`reasoning.text`, `reasoning.summary` ou `reasoning.encrypted`), un `index` et un `format` qui indique la famille du fournisseur, par exemple `anthropic-claude-v1` ou `google-gemini-v1`.
 
 Les entrées peuvent contenir un état du fournisseur dont le modèle a besoin à l’étape suivante d’une boucle d’outils :
 
-- Les signatures de thinking de Claude, dans `signature` sur les entrées `reasoning.text`.
-- Le thinking masqué de Claude et le raisonnement chiffré d’OpenAI, dans `data` sur les entrées `reasoning.encrypted`.
-- Les signatures de pensée de Gemini, dans `data` sur les entrées `reasoning.encrypted` dont l’`id` est l’appel d’outil auquel elles appartiennent.
+| État du fournisseur | Emplacement |
+| --- | --- |
+| Signatures de thinking de Claude | `signature` sur les entrées `reasoning.text` |
+| Thinking masqué de Claude, raisonnement chiffré d’OpenAI | `data` sur les entrées `reasoning.encrypted` |
+| Signatures de pensée de Gemini | `data` sur les entrées `reasoning.encrypted` dont l’`id` est l’appel d’outil auquel elles appartiennent |
 
 En streaming, un delta `reasoning_details` arrive dès qu’un bloc de raisonnement est terminé.
 

@@ -20,6 +20,25 @@ CREATE TRIGGER gateway_workspace_publication
   FOR EACH ROW
   EXECUTE FUNCTION private.capture_gateway_workspace_publication();
 
+CREATE POLICY "gateway_dynamic_route_keys_no_oauth_client_insert" ON "public"."gateway_dynamic_route_keys"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "gateway_dynamic_route_keys_no_oauth_client_update" ON "public"."gateway_dynamic_route_keys"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "gateway_dynamic_route_keys_no_oauth_client_delete" ON "public"."gateway_dynamic_route_keys"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "gateway_dynamic_route_keys_workspace_delete" ON "public"."gateway_dynamic_route_keys"
   FOR DELETE
   TO "authenticated"

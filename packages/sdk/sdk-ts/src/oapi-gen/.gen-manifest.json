@@ -561,6 +561,7 @@
     "models/WorkspaceLowBalanceEmailSettings.ts",
     "models/WorkspaceLowBalanceEmailUpdate.ts",
     "models/WorkspaceMember.ts",
+    "models/WorkspaceMemberAddFailure.ts",
     "models/WorkspaceMemberAddResponse.ts",
     "models/WorkspaceMemberBulkRequest.ts",
     "models/WorkspaceMemberListResponse.ts",

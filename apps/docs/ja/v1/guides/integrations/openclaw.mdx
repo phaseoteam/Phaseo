@@ -1,0 +1,67 @@
+---
+title: "OpenClaw"
+icon: "/icons/brands/openclaw.svg"
+description: "Phaseo CLI からキーを読み込む形で、Phaseo を OpenClaw のモデルプロバイダーとして登録します。"
+---
+
+`phaseo openclaw` を実行して、互換性のあるすべての Phaseo モデルとともに `phaseo` モデルプロバイダーを OpenClaw に登録するか、`openclaw config set` でプロバイダーを自分で追加します。
+
+## Phaseo CLI で設定する
+
+```bash
+phaseo login
+phaseo openclaw --model openai/gpt-6-astra
+```
+
+OpenClaw がインストールされていない場合、CLI はインストールコマンド（`npm install -g openclaw@latest`、または pnpm、Yarn、Bun で同じパッケージ）を表示し、実行する前に確認します。その後、セットアップは `openclaw config set` を 2 回実行します。
+
+- **`secrets.providers.phaseo_cli`**: `phaseo integrations credential openclaw` を実行してキーを読み込む exec シークレットプロバイダーです。キーが OpenClaw の設定に書き込まれることはありません。
+- **`models.providers.phaseo`**: Base URL が `https://api.phaseo.app/v1`、API の種類が `openai-completions` で、キーを `phaseo_cli` から取得するプロバイダーです。Chat Completions で動作する Phaseo の有効なテキストモデルがすべて登録され、`--model` の値（指定しない場合は `anthropic/claude-sonnet-4.6`）が先頭になります。
+
+キーは、セットアップ中にブラウザーで承認する `Phaseo CLI: OpenClaw API Key` です。有効期限は 90 日で、月額 $100 の利用上限があります。期限が切れたら、`phaseo openclaw` を再実行して新しいキーを承認してください。
+
+セットアップでは OpenClaw のデフォルトのモデルは変更されません。準備ができたら、`openclaw models set` で Phaseo のモデルを選びます。選択したモデルだけを登録するには `--catalog default` を使います。
+
+## OpenClaw を手動で設定する
+
+キーを出力するシークレットプロバイダーを登録してから、Phaseo のモデルプロバイダーを登録します。
+
+```bash
+openclaw config set secrets.providers.phaseo_cli \
+  '{"source":"exec","command":"phaseo","args":["integrations","credential","openclaw"],"jsonOnly":false}' \
+  --strict-json
+
+openclaw config set models.providers.phaseo '{
+  "baseUrl": "https://api.phaseo.app/v1",
+  "apiKey": { "source": "exec", "provider": "phaseo_cli", "id": "value" },
+  "api": "openai-completions",
+  "models": [
+    { "id": "openai/gpt-6-astra", "name": "openai/gpt-6-astra via Phaseo", "reasoning": false, "input": ["text"] }
+  ]
+}' --strict-json
+```
+
+`models` の各エントリには、`id`（Phaseo のモデル ID）、`name`、`reasoning`、`input`（`text`、`image`）と、任意の `contextWindow` を指定します。OpenClaw に表示したい Phaseo のモデルごとにエントリを追加します。
+
+## 動作を確認する
+
+`openclaw config get models.providers.phaseo --json` を実行して、プロバイダーが登録されていることを確認します。`openclaw models set` で Phaseo のモデルを選び、短いプロンプトを送信します。**設定 → 利用状況 → ログ**にリクエストが表示されることを確認します。
+
+## Phaseo を削除する
+
+```bash
+phaseo integrations remove openclaw
+```
+
+これにより、`models.providers.phaseo` と `secrets.providers.phaseo_cli` の設定が解除され、キーが失効します。その他の OpenClaw の設定はそのまま残ります。OpenClaw のゲートウェイが実行中の場合は再起動してください。
+
+## よくある問題を解決する
+
+| 問題 | 対処 |
+| --- | --- |
+| `OpenClaw already defines models.providers.phaseo` | セットアップは既存の `phaseo` プロバイダーを上書きしません。削除するか名前を変更するか、`phaseo integrations remove openclaw` を実行してから、もう一度設定します。 |
+| Phaseo CLI または Node.js を移動・再インストールした後にリクエストが失敗する | セットアップは Node.js と CLI の正確なパスを `secrets.providers.phaseo_cli` に保存します。`phaseo integrations remove openclaw` を実行してから、`phaseo openclaw` を再実行します。 |
+| `OpenClaw is not installed or is not on PATH` | OpenClaw をインストールするか `PATH` に追加してから、セットアップを再実行します。 |
+| モデルが拒否される | [Models エンドポイント](../../api-reference/endpoint/models.mdx)で正確な ID を確認します。 |
+
+その他のエージェントや、すべてのエージェントに必要なプロバイダーの値については、[コーディングエージェント](./coding-assistants.mdx)を参照してください。

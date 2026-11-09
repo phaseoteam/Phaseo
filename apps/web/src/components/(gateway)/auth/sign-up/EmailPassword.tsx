@@ -1,13 +1,11 @@
-"use client";
-
 import { useEffect, useMemo, useState, type FormEventHandler } from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { useFormStatus } from "react-dom";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { handleEmailSignup } from "@/app/(auth)/sign-up/actions";
+import { handleEmailSignup } from "@/features/sign-up/actions";
 import { Check, Eye, EyeOff, X } from "lucide-react";
 import { captureProductEvent } from "@/lib/productAnalytics";
 import { defaultLocale, type PublicLocale } from "@/i18n/routing";
@@ -121,7 +119,7 @@ export default function EmailPassword({
 			</div>
 
 			<form
-				action={handleEmailSignup}
+				action={(formData) => handleEmailSignup({ data: formData })}
 				onSubmit={handleSubmit}
 				className="grid gap-3"
 			>

@@ -1,10 +1,8 @@
-"use client";
-
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import type { SpendAction, SpendCounting, SpendPeriod } from "@/app/(dashboard)/settings/guardrails/actions";
+import type { SpendAction, SpendCounting, SpendPeriod } from "@/features/settings/guardrails/actions";
 import { parseSpendLimit, type GuardrailWizardForm } from "./guardrailWizard";
 
 type SpendFields = Pick<GuardrailWizardForm, "spendLimit" | "spendPeriod" | "spendAction" | "spendCounting">;

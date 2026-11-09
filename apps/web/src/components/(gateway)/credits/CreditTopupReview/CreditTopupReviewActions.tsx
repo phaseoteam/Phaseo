@@ -1,7 +1,5 @@
-"use client";
-
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import { loadStripe } from "@stripe/stripe-js";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
@@ -75,7 +73,7 @@ export default function CreditTopupReviewActions(props: {
 	const needsCountry = !declaredCountryCode;
 
 	async function finishAuthentication(clientSecret: string) {
-		const stripe = await loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+		const stripe = await loadStripe(process.env.PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 		if (!stripe) throw new Error("stripe_unavailable");
 		const { error, paymentIntent } = await stripe.handleNextAction({ clientSecret });
 		if (error || paymentIntent?.status === "requires_payment_method") return "authentication_failed" as const;

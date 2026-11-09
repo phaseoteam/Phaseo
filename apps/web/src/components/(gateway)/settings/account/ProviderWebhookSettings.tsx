@@ -1,12 +1,11 @@
-"use client";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import * as React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
-import { rotateProviderCatalogWebhookAction } from "@/app/(dashboard)/settings/account/providers/actions";
+import { rotateProviderCatalogWebhookAction } from "@/features/settings/account/providers/actions";
 
 export default function ProviderWebhookSettings({ providerSlug, webhookUrl, configured }: { providerSlug: string; webhookUrl: string; configured: boolean }) {
 	const t = useTranslations("SettingsUI");
@@ -19,7 +18,7 @@ export default function ProviderWebhookSettings({ providerSlug, webhookUrl, conf
 		if (hasSecret && !window.confirm(t("providerWebhookCopy.confirm"))) return;
 		setSaving(true);
 		try {
-			const result = await rotateProviderCatalogWebhookAction(providerSlug);
+			const result = await rotateProviderCatalogWebhookAction({ data: providerSlug });
 			setSecret(result.webhookSecret);
 			void invalidateSettings();
 			setHasSecret(true);

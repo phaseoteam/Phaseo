@@ -15,20 +15,18 @@ export const UPTIME_COPY = {
   providerHealthTitle: "Provider health",
   labels: { reachability: "Reachable", capacity: "Accepted", callErrors: "Completed" } satisfies Record<ProviderHealthMetric, string>,
   help: {
-    reachability: "How often Phaseo got a response from the provider. Connection failures, timeouts before the response started and gateway errors (502, 503, 504) count against it.",
-    capacity: "Of the calls that reached the provider, how often it took them instead of turning them away because it was at capacity. Rate limits on Phaseo's own key and overloaded responses count against it.",
+    reachability: "How often Phaseo got a response from the provider. Connection failures, timeouts before the response started, gateway errors (502, 504, 520–527) and 503s without an overload signal count against it.",
+    capacity: "Of the calls that reached the provider, how often it took them instead of turning them away for load. Rate limits (429) on Phaseo's own key, 529s and responses saying the provider is overloaded count against it.",
     callErrors: "Of the calls the provider accepted, how often they finished without a provider error. Server errors, streams that broke part-way and empty or invalid output count against it.",
   } satisfies Record<ProviderHealthMetric, string>,
   noFailures: "No failures",
   noFailuresThisHour: "No failures this hour",
-  failedShareRequests: (percent: string) => `${percent} of requests failed`,
   reachabilityFailureShare: (percent: string) => `${percent} of attempts couldn't reach the provider`,
-  capacityFailureShare: (percent: string) => `${percent} of attempts that reached the provider were turned away because it was at capacity`,
+  capacityFailureShare: (percent: string) => `${percent} were turned away because the provider was at capacity`,
   capacityUnmeasured: "No attempts reached the provider",
-  callErrorsFailureShare: (percent: string) => `${percent} of accepted attempts failed after the provider accepted them`,
+  callErrorsFailureShare: (percent: string) => `${percent} failed after the provider accepted them`,
   callErrorsUnmeasured: "No attempts were accepted",
-  hourlyAverage: "Last 24 hours · hourly average",
-  attemptHourlyAverage: "Last 24 hours · hourly average, per provider attempt",
+  attemptShare24h: "Last 24 hours · share of all provider attempts. Errors caused by the request or by Phaseo are not counted.",
   attemptBasis: "Last 3 days, per provider attempt. Errors caused by the request or by Phaseo are not counted.",
 } as const;
 
@@ -83,18 +81,6 @@ export function failureShareText(metric: ProviderHealthMetric, share: FailureSha
   return UPTIME_COPY.callErrorsFailureShare(percent);
 }
 
-/** The request-level chart's hour in words: "0.6% of requests failed" or "No failures this hour" (never a count). */
-export function requestFailureText(uptimePct: number | null | undefined) {
-  if (!isRate(uptimePct)) return null;
-  const failedPct = Math.min(100, Math.max(0, 100 - uptimePct));
-  return failedPct > 1e-9 ? UPTIME_COPY.failedShareRequests(formatFailureShare(failedPct)) : UPTIME_COPY.noFailuresThisHour;
-}
-
-/** True when the series carries per-attempt provider health (web-api with the attempt-health RPC deployed). */
-export function hasProviderAttemptHealth(series: SuccessPoint[]) {
-  return series.some((point) => point.reachabilityPct !== undefined);
-}
-
 const toHour = (value: string | Date) => {
   const date = new Date(value);
   date.setUTCMinutes(0, 0, 0);
@@ -110,8 +96,8 @@ export type ProviderHealthHour = {
 } & Record<ProviderHealthMetric, number | null>;
 
 /**
- * The last 24 UTC hours of the three rates. An hour with no eligible attempts (no Reachable rate) shows 100%, like
- * the request-level chart; a later step nothing reached stays empty.
+ * The last 24 UTC hours of the three rates. An hour with no eligible attempts (no Reachable rate) shows 100%, so an
+ * empty series, or one without attempt rates, reads 100% throughout; a later step nothing reached stays empty.
  */
 export function providerHealthHours(series: SuccessPoint[], now = new Date()): ProviderHealthHour[] {
   const byHour = new Map(series.map((point) => [toHour(point.bucket), point]));
@@ -128,28 +114,23 @@ export function providerHealthHours(series: SuccessPoint[], now = new Date()): P
   });
 }
 
-const average = (values: (number | null)[]) => {
-  const valid = values.filter((value): value is number => value != null && Number.isFinite(value));
-  return valid.length ? valid.reduce((sum, value) => sum + value, 0) / valid.length : null;
-};
-
-/** Hourly averages over the 24 hours shown, as the website's headline figures. */
-export function summarizeProviderHealth(hours: ProviderHealthHour[]): Record<ProviderHealthMetric, number | null> {
-  return {
-    reachability: average(hours.map((hour) => hour.reachability)),
-    capacity: average(hours.map((hour) => hour.capacity)),
-    callErrors: average(hours.map((hour) => hour.callErrors)),
-  };
-}
-
 /**
- * The 24-hour failure share of each step: from web-api's `attemptHealth24h` (rated from all the attempts in those
- * hours) when present, since an average of hourly rates understates failures when traffic is uneven. Older
- * responses fall back to the hourly averages.
+ * The headline figures and their failure shares, both from web-api's `attemptHealth24h` (rated from all the attempts
+ * in the 24 hours, not an average of hourly rates), so a figure and its explanation always agree, as on the website
+ * (attemptHeadline). Without it (no attempts in 24 hours) every step reads 100% with no failures; a later step no
+ * attempt reached has no figure.
  */
-export function summaryFailureShares(summary: Record<ProviderHealthMetric, number | null>, totals?: AttemptRates | null) {
-  if (totals) return attemptFailureShares(totals);
-  return attemptFailureShares({ reachabilityPct: summary.reachability, capacityPct: summary.capacity, callErrorPct: summary.callErrors });
+export function attemptHeadline(totals: AttemptRates | null | undefined): {
+  rates: Record<ProviderHealthMetric, number | null>;
+  shares: Record<ProviderHealthMetric, FailureShare>;
+} {
+  const hadAttempts = Boolean(totals) && isRate(totals?.reachabilityPct);
+  const source: FunnelRates = hadAttempts && totals ? totals : { reachabilityPct: null, capacityPct: null, callErrorPct: null };
+  const rate = (value: number | null | undefined) => (isRate(value) ? value : hadAttempts ? null : 100);
+  return {
+    rates: { reachability: rate(source.reachabilityPct), capacity: rate(source.capacityPct), callErrors: rate(source.callErrorPct) },
+    shares: attemptFailureShares(source),
+  };
 }
 
 /** The website's uptime colour bands: above 99% green, 95 to 99% amber, below 95% red. */

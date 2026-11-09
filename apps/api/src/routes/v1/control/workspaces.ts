@@ -9,8 +9,9 @@ import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { json, withRuntime } from "@/routes/utils";
-import { internalServerError, requireCapability, requireOAuthWorkspaceRole, rejectThirdPartyOAuthSpendingChange } from "./route-helpers";
+import { internalServerError, requireCapability, requireOAuthWorkspaceRole, requireWorkspaceOwner, rejectThirdPartyOAuthSpendingChange } from "./route-helpers";
 import { ensureWorkspaceWalletProvisioned, userHasPaidWorkspaceAccess } from "./management-helpers";
+import { retryTransaction } from "@/lib/retry-transaction";
 
 type WorkspaceRow = {
 	id: string;
@@ -131,10 +132,10 @@ async function cleanupProvisioningFailedWorkspace(workspaceId: string, ownerUser
 	const supabase = getSupabaseAdmin();
 	const cleanupResults = [
 		await supabase.from("workspace_settings").delete().eq("workspace_id", workspaceId),
-		await supabase.from("workspace_members").delete().eq("workspace_id", workspaceId),
+		await retryTransaction(() => supabase.from("workspace_members").delete().eq("workspace_id", workspaceId)),
 		await supabase.from("wallets").delete().eq("workspace_id", workspaceId),
 		await supabase.from("management_keys").delete().eq("workspace_id", workspaceId),
-		await supabase.from("workspaces").delete().eq("id", workspaceId).eq("owner_user_id", ownerUserId),
+		await retryTransaction(() => supabase.from("workspaces").delete().eq("id", workspaceId).eq("owner_user_id", ownerUserId)),
 	];
 	const failed = cleanupResults.find((result) => result?.error);
 	if (failed?.error) {
@@ -312,12 +313,12 @@ async function handleCreateWorkspace(req: Request) {
 			throw new Error("Workspace creation returned no id");
 		}
 		try {
-			const memberResult = await supabase
+			const memberResult = await retryTransaction(() => supabase
 				.from("workspace_members")
 				.upsert(
 					{ workspace_id: workspaceId, user_id: ownerUserId, role: "owner" },
 					{ onConflict: "workspace_id,user_id", ignoreDuplicates: true },
-				);
+				));
 			assertSupabaseWrite(memberResult, "Failed to create workspace owner membership");
 			await ensureWorkspaceWalletProvisioned({
 				workspaceId,
@@ -478,6 +479,9 @@ async function handleDeleteWorkspace(req: Request) {
 		if (!ownerUserId) {
 			throw new Error("Workspace owner not found");
 		}
+		// As in Settings, only the owner deletes a workspace (it deletes the wallet and every key).
+		const ownerError = await requireWorkspaceOwner(auth.value, workspace, "Only the workspace owner can delete the workspace.");
+		if (ownerError) return ownerError;
 
 		const supabase = getSupabaseAdmin();
 		const { data: userRow, error: userError } = await supabase
@@ -513,13 +517,13 @@ async function handleDeleteWorkspace(req: Request) {
 			targetName: workspace.name,
 			requestId: auth.value.requestId,
 		});
-		await supabase.from("workspace_members").delete().eq("workspace_id", workspace.id);
+		await retryTransaction(() => supabase.from("workspace_members").delete().eq("workspace_id", workspace.id));
 		await supabase.from("workspace_invites").delete().eq("workspace_id", workspace.id);
 		await supabase.from("workspace_join_requests").delete().eq("workspace_id", workspace.id);
 		await supabase.from("workspace_settings").delete().eq("workspace_id", workspace.id);
 		await supabase.from("wallets").delete().eq("workspace_id", workspace.id);
 		await supabase.from("management_keys").delete().eq("workspace_id", workspace.id);
-		await supabase.from("workspaces").delete().eq("id", workspace.id).eq("owner_user_id", ownerUserId);
+		await retryTransaction(() => supabase.from("workspaces").delete().eq("id", workspace.id).eq("owner_user_id", ownerUserId));
 
 		return json({ deleted: true }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
@@ -596,8 +600,9 @@ async function handleAddWorkspaceMembers(req: Request) {
 		return json({ error: "bad_request", message: "user_ids cannot contain more than 100 users" }, 400, { "Cache-Control": "no-store" });
 	}
 
-	const requestedRole = String(body.role ?? "member").trim().toLowerCase();
-	if (!isValidWorkspaceRole(requestedRole) || requestedRole === "owner") {
+	// Without a role, each person gets the role their invite was created with.
+	const requestedRole = body.role == null ? null : String(body.role).trim().toLowerCase();
+	if (requestedRole !== null && (!isValidWorkspaceRole(requestedRole) || requestedRole === "owner")) {
 		return json({ error: "bad_request", message: "role must be admin or member" }, 400, { "Cache-Control": "no-store" });
 	}
 
@@ -606,7 +611,6 @@ async function handleAddWorkspaceMembers(req: Request) {
 		if (!workspace) {
 			return json({ error: "not_found", message: "Workspace not found" }, 404, { "Cache-Control": "no-store" });
 		}
-
 		const supabase = getSupabaseAdmin();
 		const { data: existingUsers, error: usersError } = await supabase
 			.from("users")
@@ -620,46 +624,122 @@ async function handleAddWorkspaceMembers(req: Request) {
 			return json({ error: "bad_request", message: "One or more users do not exist" }, 400, { "Cache-Control": "no-store" });
 		}
 
-		const payload = Array.from(new Set(userIds)).map((userId) => ({
-			workspace_id: workspace.id,
-			user_id: userId,
-			role: requestedRole,
-		}));
+		const uniqueUserIds = Array.from(new Set(userIds));
 		const { data: existingMemberships, error: existingMembershipsError } = await supabase
 			.from("workspace_members")
 			.select("user_id")
 			.eq("workspace_id", workspace.id)
-			.in("user_id", payload.map((entry) => entry.user_id));
+			.in("user_id", uniqueUserIds);
 		if (existingMembershipsError) {
 			throw new Error(existingMembershipsError.message || "Failed to load existing workspace members");
 		}
+		// Existing members keep their role; change it with PATCH /workspaces/{id}/members/{userId}.
 		const existingMemberIds = new Set((existingMemberships ?? []).map((row) => String(row.user_id)));
-		const { error: upsertError } = await supabase
-			.from("workspace_members")
-			.upsert(payload, { onConflict: "workspace_id,user_id", ignoreDuplicates: false });
-		if (upsertError) {
-			throw new Error(upsertError.message || "Failed to add workspace members");
+		const newUserIds = uniqueUserIds.filter((userId) => !existingMemberIds.has(userId));
+
+		// People join through an invite: they accept it, which creates a join request, and an owner or
+		// admin approves it. This route approves those pending requests; it never adds someone who
+		// hasn't asked to join.
+		const { data: pendingRequests, error: pendingError } = newUserIds.length
+			? await supabase
+				.from("workspace_join_requests")
+				.select("id, requester_user_id, invite_id")
+				.eq("workspace_id", workspace.id)
+				.eq("status", "pending")
+				.in("requester_user_id", newUserIds)
+			: { data: [], error: null };
+		if (pendingError) {
+			throw new Error(pendingError.message || "Failed to load workspace join requests");
+		}
+		const requestByUser = new Map((pendingRequests ?? []).map((row) => [String(row.requester_user_id), String(row.id)]));
+		if (newUserIds.some((userId) => !requestByUser.has(userId))) {
+			return json({
+				error: "bad_request",
+				message: "One or more users haven't asked to join this workspace. Send them an invite (POST /workspaces/{id}/invites); once they accept it, add them here or approve their join request.",
+			}, 400, { "Cache-Control": "no-store" });
 		}
 
-		const { members } = await resolveWorkspaceMembers(workspace.id);
-		const added = members.filter((member) =>
-			payload.some((entry) => entry.user_id === member.user_id) && !existingMemberIds.has(String(member.user_id)),
-		);
-		for (const member of added) {
+		// Making someone an admin is the owner's call, as in Settings, whether the admin role is asked for
+		// here or comes from the invite. The approval function checks the invite's role again atomically.
+		const inviteIds = (pendingRequests ?? []).map((row) => row.invite_id).filter((id): id is string => Boolean(id));
+		const { data: invites, error: invitesError } = inviteIds.length
+			? await supabase.from("workspace_invites").select("id, role").eq("workspace_id", workspace.id).in("id", inviteIds)
+			: { data: [], error: null };
+		if (invitesError) throw new Error(invitesError.message || "Failed to load workspace invites");
+		// The effective role is the one asked for here, otherwise the invite's.
+		const grantsAdmin = requestedRole
+			? requestedRole === "admin"
+			: (invites ?? []).some((invite) => String(invite.role ?? "").toLowerCase() === "admin");
+		if (grantsAdmin) {
+			const ownerError = await requireWorkspaceOwner(auth.value, workspace, "Only the workspace owner can add admins, including people whose invite makes them an admin.");
+			if (ownerError) return ownerError;
+		}
+
+		const decidedBy = String(auth.value.userId ?? workspace.owner_user_id ?? "").trim();
+		if (!decidedBy) throw new Error("Workspace actor could not be resolved");
+		const inviteRoleById = new Map((invites ?? []).map((invite) => [String(invite.id), String(invite.role ?? "").toLowerCase()]));
+		const inviteByUser = new Map((pendingRequests ?? []).map((row) => [String(row.requester_user_id), row.invite_id ? String(row.invite_id) : null]));
+		// Each approval is its own transaction, so a later failure doesn't undo earlier ones. The response
+		// says who was approved, who failed and who wasn't tried, and every committed approval is audited.
+		const approved: string[] = [];
+		// Flat (user_id, code, message): every generated SDK can hold it, including a string map.
+		const failed: Array<{ user_id: string; code: string; message: string }> = [];
+		let notAttempted: string[] = [];
+		for (const [index, userId] of newUserIds.entries()) {
+			const { error: approveError } = await retryTransaction(() => supabase.rpc("management_decide_workspace_join_request", {
+				p_workspace_id: workspace.id,
+				p_request_id: requestByUser.get(userId),
+				p_decision: "approve",
+				p_actor_user_id: decidedBy,
+				// The role is applied inside the approval, in one transaction: approving with the invite's
+				// role and changing it in a second call could leave the invite's role if that call failed.
+				p_role: requestedRole,
+			}));
+			if (approveError) {
+				failed.push({ user_id: userId, ...approvalFailure(approveError) });
+				notAttempted = newUserIds.slice(index + 1);
+				break;
+			}
+			approved.push(userId);
+			// The same role the approval function gives: the one asked for, otherwise the invite's.
+			const inviteId = inviteByUser.get(userId);
+			const role = requestedRole ?? (inviteId ? inviteRoleById.get(inviteId) : undefined) ?? "member";
 			await recordWorkspaceAuditEvent(supabase, {
 				workspaceId: workspace.id,
 				actorUserId: auth.value.userId,
 				action: "workspace.member.added",
 				targetType: "workspace_member",
-				targetId: String(member.user_id),
-				metadata: { role: member.role },
+				targetId: userId,
+				metadata: { role },
 				requestId: auth.value.requestId,
 			});
 		}
-		return json({ added_count: added.length, data: added }, 200, { "Cache-Control": "no-store" });
+
+		// The approvals above are committed and audited, so the outcome is reported even if reading the
+		// added members back fails; only the optional member details (data) are left out then.
+		const added = await resolveWorkspaceMembers(workspace.id)
+			.then(({ members }) => members.filter((member) => approved.includes(String(member.user_id))))
+			.catch((error: unknown) => {
+				console.error("workspaces.members.add.readback_failed", { message: error instanceof Error ? error.message : String(error) });
+				return null;
+			});
+		const results = { added_count: approved.length, ...(added ? { data: added } : {}), approved, failed, not_attempted: notAttempted };
+		if (failed.length) {
+			const notTried = notAttempted.length ? ` Not tried: ${notAttempted.join(", ")}.` : "";
+			const message = `Added ${approved.length} of ${newUserIds.length} users. ${failed[0].user_id} couldn't be added: ${failed[0].message}${notTried}`;
+			return json({ error: "conflict", message, ...results }, 409, { "Cache-Control": "no-store" });
+		}
+		return json(results, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
 		return internalServerError("workspaces.members.add", error);
 	}
+}
+
+function approvalFailure(error: { code?: string; message?: string }) {
+	if (error.code === "42501") return { code: "forbidden", message: "Only the workspace owner can add admins." };
+	if (error.code === "23514") return { code: "conflict", message: error.message || "The join request can't be approved." };
+	console.error("workspaces.members.add.approval_failed", { code: error.code ?? null });
+	return { code: "internal_error", message: "The join request couldn't be approved. Try again." };
 }
 
 async function handleRemoveWorkspaceMembers(req: Request) {
@@ -669,8 +749,6 @@ async function handleRemoveWorkspaceMembers(req: Request) {
 	}
 	const scopeError = requireCapability(auth.value, CAPABILITIES.WORKSPACES_WRITE);
 	if (scopeError) return scopeError;
-	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
-	if (roleError) return roleError;
 
 	const identifier = parseWorkspaceResourceId(new URL(req.url));
 	if (!identifier) {
@@ -696,6 +774,16 @@ async function handleRemoveWorkspaceMembers(req: Request) {
 	if (userIds.length > 100) {
 		return json({ error: "bad_request", message: "user_ids cannot contain more than 100 users" }, 400, { "Cache-Control": "no-store" });
 	}
+	// As in Settings: anyone may leave, but only the owner removes someone else. Removing a member
+	// revokes the keys they created, so an admin must not be able to remove another admin.
+	const callerUserId = String(auth.value.userId ?? "").trim();
+	const leavingOnly = Boolean(callerUserId) && userIds.length === 1 && userIds[0] === callerUserId;
+	const roleError = await requireOAuthWorkspaceRole(
+		auth.value,
+		auth.value.workspaceId,
+		leavingOnly ? ["owner", "admin", "member"] : ["owner", "admin"],
+	);
+	if (roleError) return roleError;
 
 	try {
 		const workspace = await resolveAuthorizedWorkspace(auth.value.workspaceId, identifier);
@@ -708,6 +796,10 @@ async function handleRemoveWorkspaceMembers(req: Request) {
 		}
 		if (userIds.includes(ownerUserId)) {
 			return json({ error: "bad_request", message: "Workspace owner cannot be removed" }, 400, { "Cache-Control": "no-store" });
+		}
+		if (!leavingOnly) {
+			const ownerError = await requireWorkspaceOwner(auth.value, workspace, "Only the workspace owner can remove other members. You can remove yourself.");
+			if (ownerError) return ownerError;
 		}
 
 		const supabase = getSupabaseAdmin();
@@ -723,11 +815,11 @@ async function handleRemoveWorkspaceMembers(req: Request) {
 			return json({ error: "bad_request", message: "Workspace owner cannot be removed" }, 400, { "Cache-Control": "no-store" });
 		}
 
-		const { error: deleteError, count } = await supabase
+		const { error: deleteError, count } = await retryTransaction(() => supabase
 			.from("workspace_members")
 			.delete({ count: "exact" })
 			.eq("workspace_id", workspace.id)
-			.in("user_id", userIds);
+			.in("user_id", userIds));
 		if (deleteError) {
 			throw new Error(deleteError.message || "Failed to remove workspace members");
 		}

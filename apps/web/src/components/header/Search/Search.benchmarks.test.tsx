@@ -1,3 +1,4 @@
+import { it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 import { EpochLogo } from "@/components/EpochLogo";
 import { benchmarkSearchAliases, isEpochSearchResult, isExactBenchmarkAlias } from "./Search.benchmarks";

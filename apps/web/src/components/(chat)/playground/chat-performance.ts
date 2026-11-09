@@ -1,5 +1,3 @@
-"use client";
-
 type ChatPerformanceMarkName =
 	| "composer-submit"
 	| "playground-send-received"
