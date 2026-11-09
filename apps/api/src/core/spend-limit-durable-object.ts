@@ -180,7 +180,12 @@ type Pending = {
 	 * still excludes it) until that seed is published, which drops it in the same step. A failed load
 	 * leaves it counting. Later records for it are ignored.
 	 */
-	retiring?: "expired" | "period_ended" | "overflow";
+	retiring?: "expired" | "period_ended" | "overflow" | "late";
+	/**
+	 * A late checkpoint for an entry already handed off: the total the seed that took it over may
+	 * already count. Only `cost`, the increase over it, counts from memory.
+	 */
+	base?: number;
 };
 
 type Lease = {
@@ -220,6 +225,12 @@ const ZERO: Usage = { requests: 0, cost: 0 };
  */
 const MAX_RETIRING_ENTRIES = 2_500;
 
+/**
+ * Handed-off totals remembered so a late checkpoint counts only its increase. Oldest forgotten past
+ * this; a late checkpoint for a forgotten id counts its full total (an over-count).
+ */
+const MAX_HANDED_OFF = 10_000;
+
 /** Retiring spend of one key folded together; dropped once a seed read after its newest update is published. */
 type HandoffBucket = { cost: number; requests: number; newestSeq: number };
 const MAX_SEEN_IDS = 50_000;
@@ -254,6 +265,8 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 	private workspaceAvgCost = 0;
 	private readonly pending = new Map<string, Pending>();
 	private readonly handoffBuckets = new Map<string, HandoffBucket>();
+	/** billing id → the key and charged total it had when a published seed took it over. */
+	private readonly handedOff = new Map<string, { keyId: string; cost: number }>();
 	/** Increases with every record applied: a seed read started at sequence N may miss updates after N. */
 	private updateSeq = 0;
 	private readonly seen = new Set<string>();
@@ -450,9 +463,30 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 						bucket.newestSeq = ++this.updateSeq;
 						return true;
 					}
-					// Otherwise a record for an entry this coordinator held before (expired, retired at a
-					// period end, or settled) is ignored: its charge row is no longer excluded.
-					return false;
+					// A checkpoint for an entry already handed off: its debit may not be in the seed now in
+					// use, so the increase over the handed-off total counts from memory (the whole total when
+					// that is not known) until a seed whose read started after this record is published.
+					const handed = this.handedOff.get(entry.billingRequestId);
+					if (handed && handed.keyId !== entry.keyId) return false;
+					const base = handed?.cost ?? 0;
+					const total = nonNegative(entry.costNanos);
+					if (total <= base) return false;
+					this.pending.set(entry.billingRequestId, {
+						billingRequestId: entry.billingRequestId,
+						requestId: typeof entry.requestId === "string" && entry.requestId ? entry.requestId : entry.billingRequestId,
+						keyId: entry.keyId,
+						cost: total - base,
+						base,
+						requests: 0,
+						at: now,
+						recordedAt: now,
+						updatedSeq: ++this.updateSeq,
+						increasedAt: now,
+						persisted: false,
+						stepped: { final },
+						retiring: "late",
+					});
+					return true;
 				}
 				// Any other record opens the entry at its total: the first checkpoint, or a later one or
 				// the final when checkpoint 1 never arrived (or was reordered after the final, which a
@@ -463,7 +497,7 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 				if (existing.retiring) {
 					// Being handed to the database: a later debit may not be in the seed that takes it
 					// over, so it still raises the entry (never lowers it), which then stays held.
-					const raised = nonNegative(entry.costNanos);
+					const raised = nonNegative(entry.costNanos) - (existing.base ?? 0);
 					if (raised <= existing.cost) return false;
 					existing.cost = raised;
 					existing.recordedAt = now;
@@ -793,7 +827,10 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			// Not excluded from this seed, which counts its spend: stop tracking it separately, unless it
 			// was raised after the read started (that debit may be missing); it stays for the next seed.
 			if (entry.updatedSeq > readStartedSeq) continue;
-			if (chunkKeys.has(entry.keyId) || !this.keys.has(entry.keyId)) this.pending.delete(entry.billingRequestId);
+			if (chunkKeys.has(entry.keyId) || !this.keys.has(entry.keyId)) {
+				this.pending.delete(entry.billingRequestId);
+				if (entry.stepped) this.rememberHandoff(entry);
+			}
 		}
 		const found = new Set((seed.excluded_rows ?? []).map((row) => row.request_id));
 		for (const entry of this.pending.values()) {
@@ -1105,6 +1142,16 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 			this.handoffBuckets.set(entry.keyId, bucket);
 			this.markSeen(entry.billingRequestId);
 			this.pending.delete(entry.billingRequestId);
+		}
+	}
+
+	/** Remembers a stepped entry's total as the seed took it over (bounded, oldest forgotten). */
+	private rememberHandoff(entry: Pending): void {
+		this.handedOff.delete(entry.billingRequestId);
+		this.handedOff.set(entry.billingRequestId, { keyId: entry.keyId, cost: (entry.base ?? 0) + entry.cost });
+		if (this.handedOff.size > MAX_HANDED_OFF) {
+			const oldest = this.handedOff.keys().next();
+			if (!oldest.done) this.handedOff.delete(oldest.value);
 		}
 	}
 

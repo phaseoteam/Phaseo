@@ -434,9 +434,18 @@ describe("spend-limit coordinator", () => {
 			await reseed();
 			expect(database.calls.at(-1)?.exclude).toEqual([]);
 			expect(await daily()).toBe(300);
-			// A late record for the expired entry is ignored, never recreated: the charge row counts.
-			expect(await coordinator.record(WORKSPACE, { ...entry("b-expire"), costNanos: 400, revision: 2 })).toMatchObject({ duplicates: 1 });
-			expect(await daily()).toBe(300);
+			// A late checkpoint debits $1 more after the handoff. The seed in use predates that debit,
+			// so the increase over the handed-off $3 counts from memory at once ...
+			expect(await checkpoint("b-expire", 400, 2)).toMatchObject({ duplicates: 0 });
+			expect(await daily()).toBe(400);
+			// ... until a seed read after it counts the charge row's $4 itself, exactly.
+			await reseed();
+			expect(await daily()).toBe(400);
+			await reseed();
+			expect(database.calls.at(-1)?.exclude).toEqual([]);
+			expect(await daily()).toBe(400);
+			// A lower late total (a refund, already in the ledger) adds nothing.
+			expect(await coordinator.record(WORKSPACE, { ...entry("b-expire"), costNanos: 350, revision: 3 })).toMatchObject({ duplicates: 1 });
 		});
 
 		it("keeps a never-audited stepped request counted after its entry expires, final refund included", async () => {
@@ -490,9 +499,14 @@ describe("spend-limit coordinator", () => {
 			await reseed();
 			expect(database.calls.at(-1)?.exclude).toEqual([]);
 			expect(await buckets()).toEqual(expected);
-			// Later records for the retired entry are ignored; the database counts them.
-			expect(await coordinator.record(WORKSPACE, { ...entry("b-roll"), costNanos: 200, revision: 3 })).toMatchObject({ duplicates: 1 });
-			expect(await buckets()).toEqual(expected);
+			// A late checkpoint debits $0.50 more in the new period. Its increase counts at once in every
+			// window, then the next seed counts the debit itself: $0.50 more in each window, exactly.
+			const later = { daily: expected.daily + 50, weekly: expected.weekly + 50, monthly: expected.monthly + 50 };
+			expect(await checkpoint("b-roll", 200, 3)).toMatchObject({ duplicates: 0 });
+			expect(await buckets()).toEqual(later);
+			await reseed();
+			await reseed();
+			expect(await buckets()).toEqual(later);
 		});
 
 		describe("an entry that goes stale while a seed is loading", () => {
@@ -641,6 +655,26 @@ describe("spend-limit coordinator", () => {
 			expect(database.calls.length).toBeGreaterThan(calls);
 			expect(Math.max(...database.calls.slice(calls).map((call) => call.exclude.length))).toBeLessThanOrEqual(SPEND_LEASE.maxExcludedRequestIds);
 			expect(database.calls.at(-1)?.exclude).toHaveLength(SPEND_LEASE.maxExcludedRequestIds);
+		});
+
+		it("counts a late checkpoint's whole total when the handed-off amount was forgotten, then exactly", async () => {
+			const internals = coordinator as unknown as { handedOff: Map<string, unknown>; rememberHandoff(entry: unknown): void };
+			await checkpoint("b-forgot", 300, 1);
+			vi.setSystemTime(Date.now() + SPEND_LEASE.pendingTtlMs + 1);
+			await reseed();
+			expect(internals.handedOff.has("b-forgot")).toBe(true);
+			// Forgotten (the record is bounded): the late total counts whole, over the seed's $3 ...
+			internals.handedOff.delete("b-forgot");
+			await checkpoint("b-forgot", 400, 2);
+			expect(await daily()).toBe(700);
+			// ... until seeds read after it count the charge row alone.
+			await reseed();
+			await reseed();
+			expect(await daily()).toBe(400);
+			// The record of handed-off totals stays bounded, oldest forgotten first.
+			for (let n = 0; n < 10_005; n += 1) internals.rememberHandoff({ billingRequestId: `h-${n}`, keyId: KEY, cost: 1 });
+			expect(internals.handedOff.size).toBe(10_000);
+			expect(internals.handedOff.has("h-0")).toBe(false);
 		});
 
 		it("ignores a first checkpoint that arrives after the request's final", async () => {
@@ -1129,6 +1163,23 @@ describe("spend-limit coordinator", () => {
 			if (total !== charged) database.charges.push({ billingId, keyId: A, total: total - charged, at: Date.now() });
 			return coordinator.record(WORKSPACE, { keyId: A, billingRequestId: billingId, requestId: `req-${billingId}`, costNanos: total, requests: 1, replace: true, revision });
 		};
+
+		it("refuses the other key at once when a checkpoint arrives after a successful handoff", async () => {
+			await checkpointA("bill-after", 300, 1);
+			await ageEntryPastTtl("allowed");
+			// This seed takes the $3 entry over and is published: the seed counts the $3 charge row.
+			await reseedNow();
+			expect((coordinator as unknown as { pending: Map<string, unknown> }).pending.has("bill-after")).toBe(false);
+			expect(await admitB()).toBe("allowed");
+			// The stream then debits $1.50 more. The published seed read before that debit: the $1.50
+			// counts from memory at once, so B is refused before the next seed.
+			expect(await checkpointA("bill-after", 450, 2)).toMatchObject({ duplicates: 0 });
+			expect(await admitB()).toBe(450);
+			await reseedNow();
+			expect(await admitB()).toBe(450);
+			await reseedNow();
+			expect(await admitB()).toBe(450);
+		});
 
 		it("counts a checkpoint that raises an expired entry while the seed taking it over is loading", async () => {
 			await checkpointA("bill-live", 300, 1);
