@@ -1,7 +1,7 @@
 SET LOCAL lock_timeout = '10s';
 
 -- Functions only: no table is locked here. The table changes that go with them are in the
--- migrations that follow, one table each (20261109160008 to 20261109160012).
+-- migrations that follow, one table each (20261109153927 to 20261109153931).
 --
 -- Budget enforcement and money hygiene:
 -- 1. Money movements win: a request's spend is its money movements, each at its own time, and its
