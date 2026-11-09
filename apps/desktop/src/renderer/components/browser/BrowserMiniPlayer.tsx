@@ -1,4 +1,4 @@
-import { PanelRight, PictureInPicture2, X } from "lucide-react";
+import { PictureInPicture2, X } from "lucide-react";
 import { useEffect, useLayoutEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import type { BrowserState } from "../../../shared/browser";
 import { useWorkspace } from "../../app/workspace";
@@ -8,6 +8,7 @@ import { recordBrowserState, revealBrowserTab, useBrowserTab, withBrowserProfile
 import { cn } from "../../lib/utils";
 import { overlayOpen } from "../../views/BrowserSurface";
 import { Button } from "../ui/button";
+import { ActionIcon } from "../ActionIcon";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { BrowserPoppedOut } from "./BrowserStates";
 
@@ -146,7 +147,7 @@ export function BrowserMiniPlayer({ context, player, covered }: { context: strin
 				</div>
 				<div className="pointer-events-none absolute right-0 bottom-0 flex h-8 cursor-grab items-center gap-0.5 rounded-lg border border-border/80 bg-popover/90 p-0.5 opacity-0 shadow-lg backdrop-blur-xl transition-opacity group-hover:pointer-events-auto group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:opacity-100 group-data-[pill-open]:pointer-events-auto group-data-[pill-open]:opacity-100 active:cursor-grabbing pointer-coarse:right-2.5 pointer-coarse:bottom-2.5">
 					{recording && <span aria-hidden className="flex size-6 shrink-0 items-center justify-center"><span className="size-2 rounded-full bg-destructive motion-safe:animate-pulse" /></span>}
-					{pillButton("Open preview in right panel", "Open in right panel", <PanelRight />, openInPanel)}
+					{pillButton("Open preview in right panel", "Open in right panel", <ActionIcon name="sidebarRight" data-open={false} />, openInPanel)}
 					{pillButton(poppedOut ? "Close popped-out preview" : "Pop preview into separate window", poppedOut ? "Close separate window" : "Pop into separate window", <PictureInPicture2 />, togglePopOut, { pressed: poppedOut, disabled: !poppedOut && !state?.url })}
 					{pillButton("Close floating preview", "Close floating preview", <X />, () => closeMiniPlayer(context))}
 				</div>

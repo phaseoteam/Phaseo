@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ChatDetails } from "./ChatDetails";
-import { ArrowLeft, ArrowRight, Check, ChevronDown, CircleArrowUp, Code2, Ellipsis, Factory, MessageSquare, Minus, PanelLeft, PanelRight, Square, X, Copy as Restore } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronDown, CircleArrowUp, Code2, Ellipsis, Factory, MessageSquare, Minus, Square, X, Copy as Restore } from "lucide-react";
 import { ActionIcon } from "../components/ActionIcon";
 import type { DesktopAppAction, DesktopWindowState } from "../../shared/desktop";
 import { checkForUpdates, useUpdateState } from "../lib/updateState";
@@ -120,7 +120,7 @@ export function Titlebar() {
 			<ModeSwitch />
 		</div>
 		<div className="ml-2 flex items-center">
-			<IconButton label={sidebarOpen ? "Hide sidebar" : "Show sidebar"} onClick={() => setSidebarOpen(open => !open)}><PanelLeft /></IconButton>
+			<IconButton label={sidebarOpen ? "Hide sidebar" : "Show sidebar"} onClick={() => setSidebarOpen(open => !open)}><ActionIcon name="sidebarLeft" data-open={sidebarOpen} className="size-[18px]!" /></IconButton>
 			<IconButton label="Back" disabled={!history.canBack} onClick={history.back}><ArrowLeft /></IconButton>
 			<IconButton label="Forward" disabled={!history.canForward} onClick={history.forward}><ArrowRight /></IconButton>
 		</div>
@@ -132,7 +132,7 @@ export function Titlebar() {
 		<div className="flex items-center">
 			<ChatDetails />
 			<UpdateReady />
-			{(mode === "code" || rightPanel) && <IconButton label={rightPanel ? "Hide panel" : "Show panel"} active={!!rightPanel} onClick={() => setRightPanel(rightPanel ? undefined : "restore")}><PanelRight /></IconButton>}
+			{(mode === "code" || rightPanel) && <IconButton label={rightPanel ? "Hide panel" : "Show panel"} active={!!rightPanel} onClick={() => setRightPanel(rightPanel ? undefined : "restore")}><ActionIcon name="sidebarRight" data-open={!!rightPanel} className="size-[18px]!" /></IconButton>}
 			<AppMenu />
 		</div>
 		{!mac && <WindowControls />}

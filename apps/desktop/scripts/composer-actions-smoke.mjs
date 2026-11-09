@@ -136,6 +136,12 @@ app.whenReady().then(async () => { try {
 		await ready("!!document.querySelector('[data-pull-request-surface] [data-merge-button]')");
 		await capture("before-git-actions");
 		await configureFactory("issue", "open", baseline);
+		await capture("before-panels");
+		await run("document.querySelector('header button[aria-label=\"Show panel\"]').click();true");
+		await ready("!!document.querySelector('header button[aria-label=\"Hide panel\"]')");
+		await capture("before-panels-open");
+		await run("document.querySelector('header button[aria-label=\"Hide panel\"]').click();true");
+		await ready("!!document.querySelector('header button[aria-label=\"Show panel\"]')");
 		await capture("before-factory");
 		await run("Array.from(document.querySelectorAll('main button')).find(button=>button.textContent.includes('GitHub')).click();true");
 		await ready("!!document.querySelector('[role=menu]')");
@@ -381,6 +387,26 @@ app.whenReady().then(async () => { try {
 	await ready("!!document.querySelector('main form [data-composer-icon]')");
 	assert.equal(openedItemThreads, 1); assert.equal(factoryWrites, 0);
 	console.log("FACTORY_ACTION_GESTURES", JSON.stringify({ states: 4, openedItemThreads, factoryWrites }));
+	await configureFactory();
+	await capture("after-panels");
+	for (const [name, labels] of [["sidebarLeft", ["Hide sidebar", "Show sidebar"]], ["sidebarRight", ["Show panel", "Hide panel"]]]) {
+		const selector = `header button:has([data-icon-gesture="${name}"])`;
+		for (const label of labels) {
+			await ready(`document.querySelector(${JSON.stringify(selector)})?.getAttribute('aria-label')===${JSON.stringify(label)}`);
+			assert.equal(await run(`document.querySelector(${JSON.stringify(selector)}+' svg').dataset.open`), String(label.startsWith("Hide")));
+			for (const pseudo of ["hover", "focus-visible"]) {
+				await force(selector, pseudo);
+				assert(await run(`document.querySelector(${JSON.stringify(selector)}+' svg').getAnimations({subtree:true}).some(animation=>animation.animationName==='icon-panel-nudge')`), `${name} lacks ${pseudo}`);
+			}
+			await force(selector, null);
+			await run(`document.querySelector(${JSON.stringify(selector)}).click();true`);
+		}
+	}
+	await run("document.querySelector('header button[aria-label=\"Show panel\"]').click();true");
+	await ready("document.querySelector('header [data-icon-gesture=sidebarRight]')?.dataset.open==='true'");
+	await run("document.querySelectorAll('header .gesture-icon').forEach(svg=>svg.getAnimations({subtree:true}).forEach(animation=>animation.finish()));true");
+	await capture("after-panels-open");
+	console.log("SIDEBAR_ICON_GESTURES", JSON.stringify({ sides: 2, states: 2, hoverAndFocus: true, toggles: true }));
 	owner.webContents.debugger.detach();
 	console.log("COMPOSER_ACTIONS_SMOKE", JSON.stringify({ surfaces: 3, deliveryDefaults: 2, primaryAndAlternate: true, idleSend: true, stopWithEmptyDraft: true, unsupportedSteeringQueues: true, queueEdit: true, questionAnswer: true, keyboardAndIME: true, svgTraces: true, actionGestures: gestures, boundedGestures: true, stationaryControls: true, copyFeedback: true, stationaryWindowControls: true, animationsOff: true, reducedMotion: true, minimumWidth: true, inferenceCalls: 0, packaged: Boolean(entry) }));
 	clearTimeout(deadline); app.exit(0);

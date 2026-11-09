@@ -631,7 +631,18 @@ summary:has(> svg:first-child)::before { display: none; }
 @keyframes icon-clock-hand { from { transform: rotate(-35deg); } to { transform: none; } }
 @keyframes icon-issue-dot { from { transform: scale(0.4); opacity: 0.4; } to { transform: none; opacity: 1; } }
 @keyframes icon-retry-turn { from { transform: rotate(60deg); } to { transform: none; } }
+@keyframes icon-panel-nudge { 0%, 100% { translate: 0; } 45% { translate: var(--panel-nudge) 0; } }
 .gesture-icon > * { transform-origin: 12px 12px; }
+.gesture-icon[data-icon-gesture="sidebarLeft"] { --panel-nudge: -1.25px; }
+.gesture-icon[data-icon-gesture="sidebarRight"] { --panel-nudge: 1.25px; }
+.gesture-icon[data-icon-gesture="sidebarLeft"][data-open="false"] { --panel-nudge: 1.25px; }
+.gesture-icon[data-icon-gesture="sidebarRight"][data-open="false"] { --panel-nudge: -1.25px; }
+.gesture-icon > [data-panel-fill] { opacity: 0.16; transition: opacity 180ms ease; }
+.gesture-icon[data-open="false"] > [data-panel-fill] { opacity: 0.04; }
+.gesture-icon > [data-panel-chevron] { --icon-gesture: icon-panel-nudge; --icon-gesture-duration: 360ms; scale: 1 1; transition: scale 180ms cubic-bezier(0.2, 0.8, 0.2, 1); }
+.gesture-icon[data-icon-gesture="sidebarLeft"] > [data-panel-chevron] { transform-origin: 13.5px 12px; }
+.gesture-icon[data-icon-gesture="sidebarRight"] > [data-panel-chevron] { transform-origin: 10.5px 12px; }
+.gesture-icon[data-open="false"] > [data-panel-chevron] { scale: -1 1; }
 .gesture-icon[data-icon-gesture="plus"] > :first-child { --icon-gesture: icon-add-horizontal; }
 .gesture-icon[data-icon-gesture="plus"] > :nth-child(2) { --icon-gesture: icon-add-vertical; --icon-gesture-delay: 45ms; }
 .gesture-icon[data-icon-gesture="paperclip"] > path { --icon-gesture: icon-thread; --icon-gesture-duration: 480ms; stroke-dasharray: 1; }
@@ -695,9 +706,11 @@ summary:has(> svg:first-child)::before { display: none; }
 	.icon-pop, .icon-draw path, .icon-shake, .step-in, .composer-action :is([data-trace], [data-flight], [data-stack], [data-turn]), .gesture-icon > * { animation: none !important; }
 	.press-squish:active:not(:disabled) { transform: none; }
 	.icon-swap > * { transition: none; }
+	.gesture-icon > :is([data-panel-chevron], [data-panel-fill]) { transition: none; }
 }
 :root[data-animations="off"] :is(.icon-pop, .icon-draw path, .icon-shake, .step-in, .composer-action [data-trace], .composer-action [data-flight], .composer-action [data-stack], .composer-action [data-turn], .gesture-icon > *) { animation: none !important; }
 :root[data-animations="off"] .press-squish:active { transform: none; }
+:root[data-animations="off"] .gesture-icon > * { transition: none; }
 
 /* Settings → Appearance → Animations off: panels, menus and dialogs appear at once. Spinners and progress keep moving. */
 :root[data-animations="off"] *, :root[data-animations="off"] *::before, :root[data-animations="off"] *::after { transition-duration: 0s !important; transition-delay: 0s !important; }

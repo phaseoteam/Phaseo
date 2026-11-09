@@ -9,8 +9,8 @@ import { build } from "vite";
 const scratch = mkdtempSync(path.join(tmpdir(), "phaseo-action-icons-"));
 app.setPath("userData", path.join(scratch, "profile"));
 const root = path.resolve(import.meta.dirname, "..");
-const names = ["pin", "unpin", "archive", "restore", "edit", "pencil", "link", "unlink", "camera", "up", "down", "publish", "folder", "addFolder", "mail", "signIn", "schedule", "inbox", "thread", "usage", "issue", "complete", "notPlanned", "draftPullRequest", "closePullRequest", "comment", "open", "approve", "requestChanges", "retry"];
-const fixedParts = { archive: [1], restore: [1], camera: [0], publish: [1], folder: [0], addFolder: [2], mail: [1], signIn: [2], schedule: [1, 2, 3, 4, 5], inbox: [1], thread: [0], usage: [0], issue: [0], complete: [0], notPlanned: [0], draftPullRequest: [0, 1, 4], closePullRequest: [0, 1, 4, 5], requestChanges: [0, 2] };
+const names = ["pin", "unpin", "archive", "restore", "edit", "pencil", "link", "unlink", "camera", "up", "down", "publish", "folder", "addFolder", "mail", "signIn", "schedule", "inbox", "thread", "usage", "issue", "complete", "notPlanned", "draftPullRequest", "closePullRequest", "comment", "open", "approve", "requestChanges", "retry", "sidebarLeft", "sidebarRight"];
+const fixedParts = { archive: [1], restore: [1], camera: [0], publish: [1], folder: [0], addFolder: [2], mail: [1], signIn: [2], schedule: [1, 2, 3, 4, 5], inbox: [1], thread: [0], usage: [0], issue: [0], complete: [0], notPlanned: [0], draftPullRequest: [0, 1, 4], closePullRequest: [0, 1, 4, 5], requestChanges: [0, 2], sidebarLeft: [0, 1, 2], sidebarRight: [0, 1, 2] };
 const importPath = relative => JSON.stringify(path.join(root, relative).replaceAll("\\", "/"));
 writeFileSync(path.join(scratch, "entry.tsx"), `
 import React from ${importPath("node_modules/react/index.js")};
@@ -53,7 +53,7 @@ app.whenReady().then(async () => { try {
 	const media = reduce => cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: reduce ? "reduce" : "no-preference" }] });
 	const samples = {}, gestures = {};
 	for (const name of names) {
-		const state = () => run(`(()=>{const button=document.getElementById('${name}'),svg=button.querySelector('svg');return {box:button.getBoundingClientRect().toJSON(),svgTransform:getComputedStyle(svg).transform,animations:svg.getAnimations({subtree:true}).map(a=>({name:a.animationName,iterations:a.effect.getTiming().iterations})),parts:Array.from(svg.children).map(p=>({transform:getComputedStyle(p).transform,dash:getComputedStyle(p).strokeDashoffset,opacity:getComputedStyle(p).opacity})),lengths:Array.from(svg.children).map(p=>p.getAttribute('pathLength'))};})()`);
+		const state = () => run(`(()=>{const button=document.getElementById('${name}'),svg=button.querySelector('svg');return {box:button.getBoundingClientRect().toJSON(),svgTransform:getComputedStyle(svg).transform,animations:svg.getAnimations({subtree:true}).map(a=>({name:a.animationName,iterations:a.effect.getTiming().iterations})),parts:Array.from(svg.children).map(p=>({transform:getComputedStyle(p).transform,translate:getComputedStyle(p).translate,scale:getComputedStyle(p).scale,dash:getComputedStyle(p).strokeDashoffset,opacity:getComputedStyle(p).opacity})),lengths:Array.from(svg.children).map(p=>p.getAttribute('pathLength'))};})()`);
 		await media(false);
 		const idle = await state();
 		assert.equal(idle.animations.length, 0, `${name} moves at rest`);
@@ -90,6 +90,20 @@ app.whenReady().then(async () => { try {
 		}
 		await media(false); await run("document.documentElement.dataset.animations='on'"); await force(name, null);
 		samples[name] = await run(`document.getElementById('${name}').querySelector('svg').outerHTML`);
+	}
+	for (const name of ["sidebarLeft", "sidebarRight"]) {
+		await run(`(()=>{const svg=document.querySelector('#${name} svg');svg.dataset.open='false';svg.getAnimations({subtree:true}).forEach(animation=>animation.finish());})()`);
+		assert.equal(await run(`getComputedStyle(document.querySelector('#${name} [data-panel-chevron]')).scale`), "-1 1");
+		await force(name, "hover");
+		const offset = await run(`(()=>{const svg=document.querySelector('#${name} svg');svg.getAnimations({subtree:true}).forEach(animation=>{animation.pause();animation.currentTime=162;});return parseFloat(getComputedStyle(svg.querySelector('[data-panel-chevron]')).translate);})()`);
+		assert(name === "sidebarLeft" ? offset > 0 : offset < 0, `${name} points away from the panel it opens`);
+		for (const reduced of [false, true]) {
+			await media(reduced);
+			await run(`document.documentElement.dataset.animations='${reduced ? "on" : "off"}'`);
+			assert.equal(await run(`document.querySelector('#${name} svg').getAnimations({subtree:true}).length`), 0);
+			assert.equal(await run(`getComputedStyle(document.querySelector('#${name} [data-panel-chevron]')).transitionDuration`), "0s");
+		}
+		await media(false); await run("document.documentElement.dataset.animations='on'"); await force(name, null);
 	}
 	await run("document.getElementById('swap').click();true");
 	assert.equal(await run("document.querySelector('#swap [data-on]').dataset.iconGesture"), "link");
