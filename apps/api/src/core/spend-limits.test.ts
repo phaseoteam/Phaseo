@@ -87,6 +87,9 @@ class FakeDatabase {
 	fail = false;
 	/** Holds every seed read until resolved (a stalled Postgres call). */
 	stall: Promise<void> | null = null;
+	/** Run just before and just after each seed read (things that happen while a seed loads). */
+	beforeRead: (() => Promise<void>) | null = null;
+	afterRead: (() => Promise<void>) | null = null;
 
 	static windows(now: number) {
 		const date = new Date(now);
@@ -181,7 +184,10 @@ class TestSpendLimitDurableObject extends SpendLimitDurableObject {
 	protected override async loadSeed(workspaceId: string, keyIds: string[], exclude: string[]): Promise<SpendLimitSeed> {
 		await Promise.resolve();
 		if (database.stall) await database.stall;
-		return database.seed(workspaceId, keyIds, exclude);
+		if (database.beforeRead) await database.beforeRead();
+		const seed = database.seed(workspaceId, keyIds, exclude);
+		if (database.afterRead) await database.afterRead();
+		return seed;
 	}
 }
 
@@ -1107,15 +1113,95 @@ describe("spend-limit coordinator", () => {
 		};
 		// Keeps the seed fresh while the entry ages to just under its pending TTL, then past it: the
 		// next reload is the first to hand it to the database.
-		const ageEntryPastTtl = async () => {
+		const ageEntryPastTtl = async (counted: number | "allowed" = 450) => {
 			const recordedAt = Date.now();
 			while (Date.now() + 3 * 60_000 + SPEND_LEASE.reseedMs + 1 < recordedAt + SPEND_LEASE.pendingTtlMs) {
 				vi.setSystemTime(Date.now() + 3 * 60_000);
 				await reseedNow();
-				expect(await admitB()).toBe(450);
+				expect(await admitB()).toBe(counted);
 			}
 			vi.setSystemTime(recordedAt + SPEND_LEASE.pendingTtlMs + 30_000);
 		};
+
+		// A's stream, charged at drain checkpoints: the debit of the increase, then its report.
+		const checkpointA = async (billingId: string, total: number, revision: number) => {
+			const charged = database.charges.filter((charge) => charge.billingId === billingId).reduce((sum, charge) => sum + charge.total, 0);
+			if (total !== charged) database.charges.push({ billingId, keyId: A, total: total - charged, at: Date.now() });
+			return coordinator.record(WORKSPACE, { keyId: A, billingRequestId: billingId, requestId: `req-${billingId}`, costNanos: total, requests: 1, replace: true, revision });
+		};
+
+		it("counts a checkpoint that raises an expired entry while the seed taking it over is loading", async () => {
+			await checkpointA("bill-live", 300, 1);
+			await ageEntryPastTtl("allowed");
+			stall();
+			// This admission starts the reload that hands the $3 entry over ($3 of $4: allowed).
+			expect(await admitB()).toBe("allowed");
+			// The stream debits $1.50 more while the seed loads: the handed-off entry still takes it.
+			expect(await checkpointA("bill-live", 450, 2)).toMatchObject({ duplicates: 0 });
+			expect(await admitB()).toBe(450);
+			await release();
+			// Raised after that seed's read started, so it stays held one more seed (an over-count) ...
+			expect(await admitB()).toBeGreaterThanOrEqual(450);
+			// ... and the next seed, read after the raise, takes it over exactly.
+			await reseedNow();
+			expect(await admitB()).toBe(450);
+		});
+
+		it("counts a checkpoint that raises an expired entry while the seed taking it over fails", async () => {
+			await checkpointA("bill-fail", 300, 1);
+			await ageEntryPastTtl("allowed");
+			database.fail = true;
+			expect(await admitB()).toBe("allowed");
+			await flush();
+			expect(await checkpointA("bill-fail", 450, 2)).toMatchObject({ duplicates: 0 });
+			expect(await admitB()).toBe(450);
+			database.fail = false;
+			await reseedNow();
+			expect(await admitB()).toBe(450);
+		});
+
+		// 2,600 stepped requests of $0.01 under a $100 counter: the reload that starts at 2,500 loads
+		// again with 2,600 (5,200 ids), excluding the newest 2,500 and handing the rest over.
+		const raiseLimit = async () => {
+			database.guardrails[0].limit = 10_000;
+			await reseedNow();
+		};
+		const overflow = async () => {
+			for (let batch = 0; batch < 26; batch += 1) {
+				await coordinator.record(WORKSPACE, Array.from({ length: 100 }, (_, index) => {
+					const n = batch * 100 + index;
+					return { keyId: A, billingRequestId: `bill-ov-${n}`, requestId: `req-ov-${n}`, costNanos: 1, requests: 1, replace: true, revision: 1 };
+				}));
+			}
+		};
+		const overflowed = () => [...(coordinator as unknown as { pending: Map<string, { billingRequestId: string; retiring?: string }> }).pending.values()]
+			.find((entry) => entry.retiring === "overflow")!.billingRequestId;
+
+		it("counts a checkpoint that raises an overflowed entry while the seed taking it over is loading", async () => {
+			await raiseLimit();
+			stall();
+			const first = unstall;
+			await overflow();
+			stall();
+			first();
+			for (let i = 0; i < 5; i += 1) await tick();
+			expect(await admitB()).toBe("allowed");
+			// One handed-over stream debits to $75: 2,599 + 7,500 = 10,099 of 10,000.
+			await coordinator.record(WORKSPACE, { keyId: A, billingRequestId: overflowed(), requestId: "r", costNanos: 7_500, requests: 1, replace: true, revision: 2 });
+			expect(await admitB()).toBe(10_099);
+			await release();
+		});
+
+		it("counts a checkpoint that raises an overflowed entry while the seed taking it over fails", async () => {
+			await raiseLimit();
+			database.fail = true;
+			await overflow();
+			await flush();
+			await (coordinator as unknown as { reseed(key: string | null): Promise<void> }).reseed(null).catch(() => undefined);
+			await coordinator.record(WORKSPACE, { keyId: A, billingRequestId: overflowed(), requestId: "r", costNanos: 7_500, requests: 1, replace: true, revision: 2 });
+			expect(await admitB()).toBe(10_099);
+			database.fail = false;
+		});
 
 		it("keeps an expired entry counted while the seed that takes it over is loading", async () => {
 			await chargeA();
@@ -1190,6 +1276,99 @@ describe("spend-limit coordinator", () => {
 			await release();
 			expect(await admitB()).toBe(750);
 		});
+	});
+
+	describe("the last seed attempt reads across a period boundary", () => {
+		// Two requests recorded while the seed loads use up attempts 1 and 2; attempt 3 starts before
+		// the boundary and reads after it, when a held stream debits $4.50 more. The seed excludes the
+		// stream, which opened in the old period: it must still count in the new one.
+		it.each([
+			["day", "2026-10-09T23:58:00Z", "2026-10-10T00:00:01Z", "daily"],
+			["week", "2026-10-11T23:58:00Z", "2026-10-12T00:00:01Z", "weekly"],
+			["month", "2026-10-31T23:58:00Z", "2026-11-01T00:00:01Z", "monthly"],
+		] as const)("counts an increase made in the new %s", async (_label, before, after, window) => {
+			const key = "boundary-key";
+			database.keys.set(key, { workspaceId: WORKSPACE, daily: [0, 400], weekly: [0, 400], monthly: [0, 400] });
+			vi.setSystemTime(new Date(before));
+			await probe(key);
+			const stream = { keyId: key, billingRequestId: "bill-edge", requestId: "req-edge", requests: 1, replace: true };
+			database.charges.push({ billingId: "bill-edge", keyId: key, total: 100, at: Date.now() });
+			await coordinator.record(WORKSPACE, { ...stream, costNanos: 100, revision: 1 });
+			let attempt = 0;
+			let lastAttemptRead = false;
+			database.afterRead = async () => {
+				attempt += 1;
+				if (attempt < 3) await coordinator.record(WORKSPACE, { keyId: key, billingRequestId: `late-${attempt}`, requestId: `req-late-${attempt}`, costNanos: 0, requests: 0 });
+				if (attempt === 2) {
+					database.beforeRead = async () => {
+						database.beforeRead = null;
+						database.afterRead = null;
+						lastAttemptRead = true;
+						vi.setSystemTime(new Date(after));
+						database.charges.push({ billingId: "bill-edge", keyId: key, total: 450, at: Date.now() });
+						await coordinator.record(WORKSPACE, { ...stream, costNanos: 550, revision: 2 });
+					};
+				}
+			};
+			await (coordinator as unknown as { reseed(key: string | null): Promise<void> }).reseed(null);
+			expect(lastAttemptRead).toBe(true);
+			const result = await coordinator.acquire(WORKSPACE, key, { requests: 1, units: 0 }, { requests: 1, units: 0 }, [], "edge");
+			const buckets = "denial" in result ? result.denial?.gate.buckets : result.lease.meta.buckets;
+			expect(buckets?.[window].costUsedNanos).toBeGreaterThanOrEqual(450);
+			expect("denial" in result && result.denial).toBeTruthy();
+		});
+	});
+
+	it("keeps the pending map bounded while seeds keep failing, and loses no spend until one succeeds", async () => {
+		const internals = coordinator as unknown as {
+			pending: Map<string, unknown>; handoffBuckets: Map<string, unknown>; seed: { windows: Record<"daily", number> };
+			reseed(key: string | null): Promise<void>; keyUsage(key: string, window: "daily", windows: unknown): { cost: number };
+		};
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+		await probe();
+		database.fail = true;
+		for (let round = 1; round <= 2; round += 1) {
+			for (let batch = 0; batch < 30; batch += 1) {
+				const entries = Array.from({ length: 100 }, (_, index) => ({
+					keyId: KEY, billingRequestId: `bill-g-${round}-${batch}-${index}`, requestId: `req-g-${round}-${batch}-${index}`, costNanos: 1, requests: 0,
+				}));
+				for (const entry of entries) database.charges.push({ billingId: entry.billingRequestId, keyId: KEY, total: 1, at: Date.now() });
+				await coordinator.record(WORKSPACE, entries);
+			}
+			await flush();
+			// Every entry expires; each failing seed hands them over again, and none succeeds.
+			vi.setSystemTime(Date.now() + SPEND_LEASE.pendingTtlMs + 60_000);
+			await internals.reseed(null).catch(() => undefined);
+			await internals.reseed(null).catch(() => undefined);
+			expect(internals.pending.size).toBeLessThanOrEqual(2_500);
+			expect(internals.handoffBuckets.size).toBe(1);
+			expect(internals.keyUsage(KEY, "daily", internals.seed.windows).cost).toBe(round * 3_000);
+		}
+		// The database recovers: the seed counts the charges, and memory lets them go.
+		database.fail = false;
+		await internals.reseed(null);
+		expect(internals.pending.size).toBe(0);
+		expect(internals.handoffBuckets.size).toBe(0);
+		expect((await probe())?.daily).toMatchObject({ costUsedNanos: 6_000 });
+		warn.mockRestore();
+	});
+
+	it("refuses an admission that arrives between a charged failure's release and its cost", async () => {
+		runtime.bindings = { ...runtime.bindings!, GATEWAY_SPEND_LIMIT_DO_MODE: "enforce" };
+		const key = "00000000-0000-4000-8000-000000000009";
+		// One request and $4 a day; the request fails but is charged $4.50.
+		database.keys.set(key, { workspaceId: WORKSPACE, daily: [1, 400] });
+		const first = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: key, admissionId: "failure" });
+		if (first.outcome !== "allowed") throw new Error("expected admission");
+		database.charges.push({ billingId: "bill-failure", keyId: key, total: 450, at: Date.now() });
+		settleEnforcedSpend({ admission: first.admission, rowWritten: true, workspaceId: WORKSPACE, keyId: key,
+			billingRequestId: "bill-failure", requestId: "failure", costNanos: 450, requests: 0 });
+		await tick();
+		// Before the batched record reaches the coordinator, the slot is not yet free.
+		const racing = await coordinator.acquire(WORKSPACE, key, { requests: 1, units: 0 }, { requests: 1, units: 0 }, [], "racing");
+		expect("denial" in racing && racing.denial).toBeTruthy();
+		await flush();
+		expect((await probe(key))?.daily).toMatchObject({ requestsUsed: 0, costUsedNanos: 450 });
 	});
 
 	describe("spend guardrails", () => {

@@ -119,6 +119,12 @@ export type SpendRecordEntry = {
 	revision?: number;
 	/** The request's final settled total: sets the amount, and nothing changes it after that. */
 	final?: boolean;
+	/**
+	 * The admission whose request slot this record gives back (a request recorded with 0 successful
+	 * requests): released in the same message that records its cost, so no admission sees the slot
+	 * free before the cost counts.
+	 */
+	releaseAdmissionId?: string | null;
 };
 
 export type SpendRecordResult = { duplicates: number; drainKeyIds: string[] };

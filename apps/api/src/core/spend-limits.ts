@@ -296,11 +296,6 @@ export function recordSpend(args: {
 		const stub = stubFor(args.workspaceId);
 		if (!stub) return;
 		if (pool && admission) pool.flushReturns(transportFor(stub, admission.workspaceId, admission.keyId, admission.admissionId));
-		// The slot of a request recorded without a success is released at the coordinator too, when
-		// the isolate no longer holds its lease.
-		if (admission && requests === 0 && !settledLocally && !admission.unlimited) {
-			background(stub.release(admission.workspaceId, admission.leaseId, admission.admissionId));
-		}
 		// Nothing is limited for this key or workspace; a limit added later is seeded from Postgres.
 		if (admission?.unlimited) return;
 		queueRecord(args.workspaceId, {
@@ -311,6 +306,10 @@ export function recordSpend(args: {
 			requests,
 			occurredAtMs: args.occurredAtMs,
 			leaseId: admission && admission.keyId === args.keyId ? admission.leaseId : null,
+			// The slot of a request recorded without a success is released at the coordinator (when the
+			// isolate no longer holds its lease) by this record itself, together with its cost: a
+			// separate earlier release would let an admission see the slot free and the cost not yet counted.
+			...(admission && requests === 0 && !settledLocally && admission.keyId === args.keyId ? { releaseAdmissionId: admission.admissionId } : {}),
 			...(args.replace ? { replace: true, final: true } : {}),
 		});
 	} catch (error) {
