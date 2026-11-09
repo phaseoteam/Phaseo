@@ -106,6 +106,7 @@ app.whenReady().then(async () => { try {
 	}
 	// The same visible actions submit the intended command in every composer surface, under either default.
 	for (const surface of ["main", "side", "compare"]) for (const followUp of ["queue", "steer"]) {
+		console.log("Composer fixture: delivery", surface, followUp);
 		const root = await configure({ surface, followUp });
 		const action = followUp === "queue" ? "Queue message" : "Steer message";
 		await ready(`document.querySelector(${JSON.stringify(`${root} button[aria-label="${action}"]`)})?.disabled === false`);
@@ -132,6 +133,7 @@ app.whenReady().then(async () => { try {
 		assert.equal(preferences.chat.followUp, followUp);
 	}
 	await configure({ status: "completed" });
+	console.log("Composer fixture: idle send");
 	await capture("send");
 	await clickDelivery("main", "Send", "send");
 	await configure({ draft: "" });
@@ -153,6 +155,7 @@ app.whenReady().then(async () => { try {
 	assert(await run("!document.querySelector('main button[aria-label=\"Message actions\"]')"));
 	await clickDelivery("main", "Send", "answer");
 	// Enter, the alternate shortcut and IME composition keep their existing semantics.
+	console.log("Composer fixture: keyboard");
 	const modifier = process.platform === "darwin" ? { metaKey: true } : { ctrlKey: true };
 	for (const [modifiers, type, sendKey] of [[{}, "send", "enter"], [modifier, "steer", "enter"], [modifier, "send", "mod+enter"]]) {
 		await configure({ sendKey });
@@ -203,10 +206,12 @@ app.whenReady().then(async () => { try {
 	await ready("!!document.querySelector('main button[aria-label=Copy]')");
 	await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
 	for (const name of ["plus", "paperclip", "copy", "search", "settings", "refresh", "download", "branch", "terminal", "pullRequest", "external", "merge"]) {
+		console.log("Composer fixture: gesture", name);
 		if (name === "refresh") {
 			await run("document.querySelector('aside button[aria-label=\"Actions for Owned main\"]').click()");
 			await ready("!!document.querySelector('[role=menuitem] [data-icon-gesture=refresh]')");
-			await run("Promise.all(document.querySelector('[role=menu]').getAnimations().map(animation=>animation.finished.catch(()=>{})))");
+			// A hidden window need not advance its compositor. Settle the entrance before measuring glyphs.
+			await run("document.querySelector('[role=menu]').getAnimations().forEach(animation=>animation.finish());true");
 		}
 		if (name === "download" || name === "terminal") {
 			await run("document.querySelector('[role=menu]')?.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));true");
@@ -214,23 +219,23 @@ app.whenReady().then(async () => { try {
 			if (name === "download") {
 				await run("document.querySelector('button[aria-label=\"Chat actions\"]').click()");
 				await ready("!!document.querySelector('[role=menuitem] [data-icon-gesture=download]')");
-				await run("Promise.all(document.querySelector('[role=menu]').getAnimations().map(animation=>animation.finished.catch(()=>{})))");
+				await run("document.querySelector('[role=menu]').getAnimations().forEach(animation=>animation.finish());true");
 			} else {
 				await run("Array.from(document.querySelectorAll('header button')).find(button=>button.textContent.includes('Search chats and commands')).click()");
 				await ready("!!document.querySelector('[role=option] [data-icon-gesture=terminal]')");
-				await run("Promise.all(document.querySelector('[role=dialog]').getAnimations().map(animation=>animation.finished.catch(()=>{})))");
+				await run("document.querySelector('[role=dialog]').getAnimations().forEach(animation=>animation.finish());true");
 			}
 		}
 		if (name === "external") {
 			await run("Array.from(document.querySelectorAll('[role=option]')).find(option=>option.textContent.includes('Open browser')).click()");
 			await ready("!!document.querySelector('button[aria-label=\"Open in system browser\"]')");
-			await run("Promise.all(document.querySelector('[data-browser-surface]').parentElement.getAnimations().map(animation=>animation.finished.catch(()=>{})))");
+			await run("document.querySelector('[data-browser-surface]').parentElement.getAnimations().forEach(animation=>animation.finish());true");
 		}
 		if (name === "merge") {
 			await configure({ status: "completed", project: true });
 			await run("window.dispatchEvent(new CustomEvent('phaseo:open-pull-request',{detail:{number:12}}));true");
 			await ready("!!document.querySelector('[data-pull-request-surface] button [data-icon-gesture=merge]')");
-			await run("Promise.all(document.querySelector('[data-pull-request-surface]').parentElement.getAnimations().map(animation=>animation.finished.catch(()=>{})))");
+			await run("document.querySelector('[data-pull-request-surface]').parentElement.getAnimations().forEach(animation=>animation.finish());true");
 		}
 		const selector = `:is(button,[role=menuitem],[role=option]):has(> .gesture-icon[data-icon-gesture="${name}"]), button:has(.icon-swap > .gesture-icon[data-icon-gesture="${name}"])`;
 		const state = () => run(`(()=>{const button=document.querySelector(${JSON.stringify(selector)}),svg=button.querySelector('[data-icon-gesture]');return {box:button.getBoundingClientRect().toJSON(),animations:svg.getAnimations({subtree:true}).map(animation=>({name:animation.animationName,iterations:animation.effect.getTiming().iterations})),parts:Array.from(svg.children).map(part=>({transform:getComputedStyle(part).transform,dash:getComputedStyle(part).strokeDashoffset})),lengths:Array.from(svg.children).map(part=>part.getAttribute('pathLength'))};})()`);
