@@ -10,6 +10,7 @@ import { usePersistedState } from "../lib/persistedState";
 import { useCommand } from "../lib/keybindings";
 import { cn } from "../lib/utils";
 import { AgentThreadsPanel } from "../components/AgentThreadsPanel";
+import { ActionIcon } from "../components/ActionIcon";
 import { createBrowserTab, ensureBrowserTab, closeBrowserTab, confirmCloseBrowserTabs, onBrowserTabOpened, setBrowserTabMuted, useBrowserTab, useBrowserTabs } from "../lib/browserTabs";
 import { pullRequestStatePresentation } from "../views/pullRequests/presentation";
 import { closeTerminal, createTerminal, terminalTitle, terminalsFor, useTerminalSessions } from "../lib/terminalSessions";
@@ -37,7 +38,7 @@ const TerminalSurface = lazy(() => import("../views/Terminals").then(module => (
 /** The "+" menu and empty-pane launcher, in order, with the letter that opens each and why it may be unavailable. */
 const launchers: { kind: "browser" | "terminal" | "files" | "diff" | "pull" | "pulls" | "agents"; label: string; icon: ReactNode; letter: string; needsProject?: boolean; reason?: string }[] = [
 	{ kind: "browser", label: "Browser", icon: <Globe />, letter: "B" },
-	{ kind: "terminal", label: "Terminal", icon: <SquareTerminal />, letter: "T" },
+	{ kind: "terminal", label: "Terminal", icon: <ActionIcon name="terminal" />, letter: "T" },
 	{ kind: "files", label: "Files", icon: <Files />, letter: "F", needsProject: true, reason: "Files are only available when a project is open." },
 	{ kind: "diff", label: "Diff", icon: <FileDiff />, letter: "D", needsProject: true, reason: "Diff is only available for chats in a project." },
 	{ kind: "pull", label: "Pull request", icon: <GitPullRequestArrow />, letter: "P", needsProject: true, reason: "This chat's branch has no pull request yet." },

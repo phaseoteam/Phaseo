@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { typesUltrathink, useUltrathinkReady } from "./ModelSettings";
 import { TerminalDrawer } from "../views/Terminals";
-import { AlarmClockOff, Archive, Box, FolderInput, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, Gauge, GitBranch, Layers, ListChecks, MessagesSquare, Pencil, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
+import { AlarmClockOff, Archive, Box, FolderInput, CircleCheck, Clock, Undo2, CornerLeftUp, Ellipsis, Gauge, GitBranch, Layers, ListChecks, MessagesSquare, Pencil, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
 import { ActionIcon } from "../components/ActionIcon";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { QuestionPanel } from "./QuestionPanel";
@@ -124,8 +124,8 @@ function ChatHeader({ task, onOpenTerminal }: { task: Task; onOpenTerminal: () =
 					{canCompact && <DropdownMenuItem onClick={() => void command({ type: "send", id: task.id, text: "/compact" })}><Layers />Compact context</DropdownMenuItem>}
 					<DropdownMenuSeparator />
 					{project && <DropdownMenuItem onClick={() => openProjectSettings(project.id)}><Settings />Project settings</DropdownMenuItem>}
-					<DropdownMenuItem onClick={() => void api?.exportTask(task.id, "markdown").catch(reason => setError(errorText(reason)))}><Download />Export as Markdown</DropdownMenuItem>
-					<DropdownMenuItem onClick={() => void api?.exportTask(task.id, "json").catch(reason => setError(errorText(reason)))}><Download />Export as JSON</DropdownMenuItem>
+					<DropdownMenuItem onClick={() => void api?.exportTask(task.id, "markdown").catch(reason => setError(errorText(reason)))}><ActionIcon name="download" />Export as Markdown</DropdownMenuItem>
+					<DropdownMenuItem onClick={() => void api?.exportTask(task.id, "json").catch(reason => setError(errorText(reason)))}><ActionIcon name="download" />Export as JSON</DropdownMenuItem>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem onClick={() => void command({ type: "update-task", id: task.id, archived: !task.archived })}><Archive />{task.archived ? "Unarchive" : "Archive"}</DropdownMenuItem>
 				</DropdownMenuContent>
@@ -192,7 +192,7 @@ function ChatComposer({ task }: { task: Task }) {
 			{ id: "side", label: "Side chat", hint: "/side", description: "Ask something beside this chat without interrupting it", icon: <MessagesSquare />, insert: "/side " },
 			{ id: "btw", label: "Btw", hint: "/btw", description: "Same as Side chat", icon: <MessagesSquare />, insert: "/btw " },
 		] : [],
-		{ id: "export", label: "Export", description: "Save this chat as a file", icon: <Download />, options: (["markdown", "json"] as const).map(format => ({ id: `export:${format}`, label: format === "markdown" ? "Markdown" : "JSON", icon: null, run: () => void api?.exportTask(task.id, format).catch(reason => setError(errorText(reason))) })) },
+		{ id: "export", label: "Export", description: "Save this chat as a file", icon: <ActionIcon name="download" />, options: (["markdown", "json"] as const).map(format => ({ id: `export:${format}`, label: format === "markdown" ? "Markdown" : "JSON", icon: null, run: () => void api?.exportTask(task.id, format).catch(reason => setError(errorText(reason))) })) },
 		{ id: "attach", label: "Attach files", description: "Add files or images to this message", icon: <ActionIcon name="paperclip" />, run: () => void attach() },
 		{ id: "mcp", label: "MCP", description: "Manage MCP servers", icon: <Plug />, run: () => openSettings("mcp") },
 		{ id: "model", label: "Model", description: "Switch this chat's model", icon: <Box />, run: () => window.dispatchEvent(new Event(openModelPickerEvent)) },

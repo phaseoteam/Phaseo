@@ -34,6 +34,9 @@ app.whenReady().then(async () => { try {
 	mock("workspace:models", () => []);
 	mock("workspace:background-commands", () => []);
 	mock("workspace:account-status", () => ({ checkedAt: new Date().toISOString(), authenticated: false, usage: [] }));
+	// Browser chrome is exercised without creating a native page or opening a site.
+	mock("desktop:browser", (_event, command) => ({ id: command.id, url: "https://example.invalid", title: "Owned page", loading: false, canGoBack: false, canGoForward: false, devToolsOpen: false, viewport: { mode: "fill" }, zoom: 1, colorScheme: "system", audible: false, muted: false, configured: true }));
+	mock("desktop:browser-download", () => [{ id: "fixture", sourceId: "main", filename: "owned.txt", url: "https://example.invalid/owned.txt", path: "", received: 1, total: 1, status: "completed", resumable: false, finished: true }]);
 	mock("workspace:command", (_event, command) => {
 		// Delivery is observed at the IPC boundary; no adapter, account or inference is invoked.
 		if (["send", "steer", "cancel", "queue-edit", "queue-remove", "answer"].includes(command.type)) {
@@ -81,6 +84,11 @@ app.whenReady().then(async () => { try {
 		await configure(); await owner.loadFile(baseline);
 		await ready("!!document.querySelector('main button[aria-label=Stop]')");
 		await capture("before");
+		await run("Array.from(document.querySelectorAll('header button')).find(button=>button.textContent.includes('Search chats and commands')).click()");
+		await ready("!!document.querySelector('[role=option]')");
+		await run("Array.from(document.querySelectorAll('[role=option]')).find(option=>option.textContent.includes('Open browser')).click()");
+		await ready("!!document.querySelector('button[aria-label=\"Open in system browser\"]')");
+		await capture("before-browser");
 	}
 	// The same visible actions submit the intended command in every composer surface, under either default.
 	for (const surface of ["main", "side", "compare"]) for (const followUp of ["queue", "steer"]) {
@@ -180,13 +188,31 @@ app.whenReady().then(async () => { try {
 	await configure({ status: "completed" });
 	await ready("!!document.querySelector('main button[aria-label=Copy]')");
 	await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
-	for (const name of ["plus", "paperclip", "copy", "search", "settings", "refresh"]) {
+	for (const name of ["plus", "paperclip", "copy", "search", "settings", "refresh", "download", "terminal", "external"]) {
 		if (name === "refresh") {
 			await run("document.querySelector('aside button[aria-label=\"Actions for Owned main\"]').click()");
 			await ready("!!document.querySelector('[role=menuitem] [data-icon-gesture=refresh]')");
 			await run("Promise.all(document.querySelector('[role=menu]').getAnimations().map(animation=>animation.finished.catch(()=>{})))");
 		}
-		const selector = `:is(button,[role=menuitem]):has(> .gesture-icon[data-icon-gesture="${name}"]), button:has(.icon-swap > .gesture-icon[data-icon-gesture="${name}"])`;
+		if (name === "download" || name === "terminal") {
+			await run("document.querySelector('[role=menu]')?.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));true");
+			await ready("!document.querySelector('[role=menu]')");
+			if (name === "download") {
+				await run("document.querySelector('button[aria-label=\"Chat actions\"]').click()");
+				await ready("!!document.querySelector('[role=menuitem] [data-icon-gesture=download]')");
+				await run("Promise.all(document.querySelector('[role=menu]').getAnimations().map(animation=>animation.finished.catch(()=>{})))");
+			} else {
+				await run("Array.from(document.querySelectorAll('header button')).find(button=>button.textContent.includes('Search chats and commands')).click()");
+				await ready("!!document.querySelector('[role=option] [data-icon-gesture=terminal]')");
+				await run("Promise.all(document.querySelector('[role=dialog]').getAnimations().map(animation=>animation.finished.catch(()=>{})))");
+			}
+		}
+		if (name === "external") {
+			await run("Array.from(document.querySelectorAll('[role=option]')).find(option=>option.textContent.includes('Open browser')).click()");
+			await ready("!!document.querySelector('button[aria-label=\"Open in system browser\"]')");
+			await run("Promise.all(document.querySelector('[data-browser-surface]').parentElement.getAnimations().map(animation=>animation.finished.catch(()=>{})))");
+		}
+		const selector = `:is(button,[role=menuitem],[role=option]):has(> .gesture-icon[data-icon-gesture="${name}"]), button:has(.icon-swap > .gesture-icon[data-icon-gesture="${name}"])`;
 		const state = () => run(`(()=>{const button=document.querySelector(${JSON.stringify(selector)}),svg=button.querySelector('[data-icon-gesture]');return {box:button.getBoundingClientRect().toJSON(),animations:svg.getAnimations({subtree:true}).map(animation=>({name:animation.animationName,iterations:animation.effect.getTiming().iterations})),parts:Array.from(svg.children).map(part=>({transform:getComputedStyle(part).transform,dash:getComputedStyle(part).strokeDashoffset})),lengths:Array.from(svg.children).map(part=>part.getAttribute('pathLength'))};})()`);
 		await force(selector, null);
 		const idle = await state();
@@ -201,6 +227,8 @@ app.whenReady().then(async () => { try {
 			const middle = await state();
 			assert.deepEqual(middle.box, idle.box, `${name} moved its control`);
 			assert.notDeepEqual(middle.parts, idle.parts, `${name} has no visible part movement`);
+			const frame = { download: 1, terminal: 2, external: 2 }[name];
+			if (frame !== undefined) assert.deepEqual(middle.parts[frame], idle.parts[frame], `${name} moved its tray or frame`);
 			gestures[name] = active.animations.map(animation => animation.name);
 			await force(selector, null);
 		}
@@ -219,6 +247,7 @@ app.whenReady().then(async () => { try {
 		await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
 		await run("document.documentElement.dataset.animations='on'");
 		await force(selector, null);
+		if (name === "external") await capture("after-browser");
 	}
 	if (output) writeFileSync(path.join(output, "icon-gestures.json"), JSON.stringify({ samples, gestures }, null, 2));
 	await run("document.querySelector('[role=menu]')?.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));true");

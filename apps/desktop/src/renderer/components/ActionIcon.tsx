@@ -1,7 +1,7 @@
-import { Copy, Paperclip, Plus, RefreshCw, Search, Settings, type LucideProps } from "lucide-react";
+import { Copy, Download, ExternalLink, Paperclip, Plus, RefreshCw, Search, Settings, SquareTerminal, type LucideProps } from "lucide-react";
 import { cn } from "../lib/utils";
 
-const icons = { copy: Copy, paperclip: Paperclip, plus: Plus, refresh: RefreshCw, search: Search, settings: Settings };
+const icons = { copy: Copy, download: Download, external: ExternalLink, paperclip: Paperclip, plus: Plus, refresh: RefreshCw, search: Search, settings: Settings, terminal: SquareTerminal };
 export type ActionIconName = keyof typeof icons;
 
 // Normalised lengths let a stroke trace independently of the icon's rendered size.

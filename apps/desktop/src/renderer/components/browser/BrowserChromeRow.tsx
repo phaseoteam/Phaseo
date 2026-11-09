@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Camera, Download, ExternalLink, MousePointerClick, PictureInPicture2, RefreshCw } from "lucide-react";
+import { ArrowLeft, ArrowRight, Camera, MousePointerClick, PictureInPicture2, RefreshCw } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "../ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group";
@@ -51,7 +51,7 @@ export function BrowserChromeRow({ url, loading, canGoBack, canGoForward, hasPag
 				{hasPage && !focused && <InputGroupAddon align="inline-end">
 					{/* Revealed on hover so a resting address bar reads as plain text. */}
 					<span className="pointer-events-none flex opacity-0 transition-opacity focus-within:pointer-events-auto focus-within:opacity-100 group-hover/address:pointer-events-auto group-hover/address:opacity-100">
-						<BrowserIconButton label="Open in system browser" icon={<ExternalLink />} onClick={onOpenInBrowser} />
+						<BrowserIconButton label="Open in system browser" icon={<ActionIcon name="external" />} onClick={onOpenInBrowser} />
 					</span>
 				</InputGroupAddon>}
 			</InputGroup>
@@ -66,7 +66,7 @@ export function BrowserChromeRow({ url, loading, canGoBack, canGoForward, hasPag
 			</Tooltip>
 			<BrowserIconButton label={floating ? "Close floating preview" : "Float preview over chat"} icon={<PictureInPicture2 className={cn("size-3.5", floating && "text-primary")} />} aria-pressed={floating} variant={floating ? "secondary" : "ghost"} disabled={!hasPage && !floating} onClick={onFloat} />
 			{downloads > 0 && <Tooltip>
-				<TooltipTrigger render={<Button type="button" variant={downloadsOpen ? "secondary" : "ghost"} size="xs" aria-label="Downloads" aria-pressed={downloadsOpen} onClick={onDownloads} className="h-6 gap-1 px-1.5 text-muted-foreground tabular-nums hover:text-foreground [&_svg]:size-3.5" />}><Download /><span>{downloads}</span></TooltipTrigger>
+				<TooltipTrigger render={<Button type="button" variant={downloadsOpen ? "secondary" : "ghost"} size="xs" aria-label="Downloads" aria-pressed={downloadsOpen} onClick={onDownloads} className="h-6 gap-1 px-1.5 text-muted-foreground tabular-nums hover:text-foreground [&_svg]:size-3.5" />}><ActionIcon name="download" /><span>{downloads}</span></TooltipTrigger>
 				<TooltipContent>Downloads</TooltipContent>
 			</Tooltip>}
 			{menu}

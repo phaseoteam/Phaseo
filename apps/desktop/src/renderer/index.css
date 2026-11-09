@@ -613,6 +613,9 @@ summary:has(> svg:first-child)::before { display: none; }
 @keyframes icon-copy-sheet { from { transform: translate(-4px, -4px); opacity: 0.3; } to { transform: none; opacity: 1; } }
 @keyframes icon-gear-turn { from { transform: rotate(0deg); } to { transform: rotate(60deg); } }
 @keyframes icon-refresh-turn { from { transform: rotate(0deg); } to { transform: rotate(180deg); } }
+@keyframes icon-download-land { from { transform: translateY(-3px); opacity: 0.4; } to { transform: none; opacity: 1; } }
+@keyframes icon-open-out { from { transform: translate(-2px, 2px); opacity: 0.5; } to { transform: none; opacity: 1; } }
+@keyframes icon-terminal-cursor { 0%, 45% { opacity: 0.25; } 100% { opacity: 1; } }
 .gesture-icon > * { transform-origin: 12px 12px; }
 .gesture-icon[data-icon-gesture="plus"] > :first-child { --icon-gesture: icon-add-horizontal; }
 .gesture-icon[data-icon-gesture="plus"] > :nth-child(2) { --icon-gesture: icon-add-vertical; --icon-gesture-delay: 45ms; }
@@ -621,6 +624,10 @@ summary:has(> svg:first-child)::before { display: none; }
 .gesture-icon[data-icon-gesture="settings"] > path { --icon-gesture: icon-gear-turn; --icon-gesture-duration: 420ms; }
 .gesture-icon[data-icon-gesture="search"] > circle { --icon-gesture: icon-thread; --icon-gesture-duration: 380ms; stroke-dasharray: 1; }
 .gesture-icon[data-icon-gesture="refresh"] > path { --icon-gesture: icon-refresh-turn; --icon-gesture-duration: 460ms; }
+.gesture-icon[data-icon-gesture="download"] > :is(:first-child, :nth-child(3)) { --icon-gesture: icon-download-land; --icon-gesture-duration: 380ms; }
+.gesture-icon[data-icon-gesture="external"] > :nth-child(-n+2) { --icon-gesture: icon-open-out; --icon-gesture-duration: 340ms; }
+.gesture-icon[data-icon-gesture="terminal"] > path:first-child { --icon-gesture: icon-thread; --icon-gesture-duration: 320ms; stroke-dasharray: 1; }
+.gesture-icon[data-icon-gesture="terminal"] > path:nth-child(2) { --icon-gesture: icon-terminal-cursor; --icon-gesture-duration: 400ms; }
 :is(button, [role="menuitem"], [role="option"]):is(:hover, :focus-visible, [data-highlighted], [data-selected="true"]):not(:disabled):not([aria-disabled="true"]) .gesture-icon > * {
 	animation: var(--icon-gesture, none) var(--icon-gesture-duration, 320ms) cubic-bezier(0.2, 0.8, 0.2, 1) var(--icon-gesture-delay, 0ms) both;
 }

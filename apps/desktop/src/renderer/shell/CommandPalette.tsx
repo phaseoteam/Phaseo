@@ -1,4 +1,5 @@
-import { Bot, Pause, Play, Activity, CalendarClock, ChartLine, Gauge, Inbox, Code2, GitPullRequestArrow, Link2, Keyboard, Columns3, FolderPlus, Globe, MessageSquare, Moon, PanelLeft, Plus, Settings, SquareTerminal, Sun, UserRound, Files, Archive, FileSearch, TextSearch, Search, Copy, GitBranchPlus, Bug, SquarePen, Pencil, Pin, PinOff, Undo2, CircleCheck, Mail, History, Monitor, ArchiveRestore } from "lucide-react";
+import { Bot, Pause, Play, Activity, CalendarClock, ChartLine, Gauge, Inbox, Code2, GitPullRequestArrow, Link2, Keyboard, Columns3, FolderPlus, Globe, MessageSquare, Moon, PanelLeft, Sun, UserRound, Files, Archive, FileSearch, TextSearch, GitBranchPlus, Bug, SquarePen, Pencil, Pin, PinOff, Undo2, CircleCheck, Mail, History, Monitor, ArchiveRestore } from "lucide-react";
+import { ActionIcon } from "../components/ActionIcon";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { errorText, useWorkspace } from "../app/workspace";
 import { ScrollArea } from "../components/ui/scroll-area";
@@ -28,7 +29,7 @@ import { isSettled, settleBlocker } from "../../shared/threadLifecycle";
 import { renameChatEvent } from "../chat/composerActions";
 import type { ThemePreference } from "../types";
 
-const entryIcons: Record<string, ComponentType> = { "New chat": Plus, "Operator": Bot, "Switch to Chat": MessageSquare, "Switch to Code": Code2, "Inbox": Inbox, "Usage": ChartLine, "Usage limits": Gauge, "Scheduled tasks": CalendarClock, "Open pull requests": GitPullRequestArrow, "Toggle sidebar": PanelLeft, "Show files and changes": Files, "Open terminal": SquareTerminal, "Open browser": Globe, "Settings": Settings, "Accounts and sign-in": UserRound, "Phaseo account": UserRound, "Keyboard shortcuts": Keyboard, "Diagnostics": Activity };
+const entryIcons: Record<string, ComponentType> = { "New chat": () => <ActionIcon name="plus" />, "Operator": Bot, "Switch to Chat": MessageSquare, "Switch to Code": Code2, "Inbox": Inbox, "Usage": ChartLine, "Usage limits": Gauge, "Scheduled tasks": CalendarClock, "Open pull requests": GitPullRequestArrow, "Toggle sidebar": PanelLeft, "Show files and changes": Files, "Open terminal": () => <ActionIcon name="terminal" />, "Open browser": Globe, "Settings": () => <ActionIcon name="settings" />, "Accounts and sign-in": UserRound, "Phaseo account": UserRound, "Keyboard shortcuts": Keyboard, "Diagnostics": Activity };
 /** The keyboard shortcut that does what a palette entry does, when there is one. */
 function entryShortcut(entry: PaletteEntry) {
 	if (entry.command === "chat.new") return shortcut("chat.new");
@@ -95,7 +96,7 @@ export function CommandPalette() {
 				{current?.projectId && <CommandItem value="Show linked pull requests prs linked stack" disabled={!linked.length} onSelect={() => run(() => setRightPanel("pulls"))}><Link2 />Show linked pull requests</CommandItem>}
 			{current?.projectId && <CommandItem value="Go to file open quick" onSelect={() => run(() => runCommand("filePicker.toggle"))}><FileSearch />Go to file…<CommandShortcut>{shortcut("filePicker.toggle")}</CommandShortcut></CommandItem>}
 			{current?.projectId && <CommandItem value="Search in files contents grep project text" onSelect={() => run(() => runCommand("projectSearch.toggle"))}><TextSearch />Search in files…<CommandShortcut>{shortcut("projectSearch.toggle")}</CommandShortcut></CommandItem>}
-			{current && <CommandItem value="Find in chat search this conversation" onSelect={() => run(() => runCommand("chat.find"))}><Search />Find in chat<CommandShortcut>{shortcut("chat.find")}</CommandShortcut></CommandItem>}
+			{current && <CommandItem value="Find in chat search this conversation" onSelect={() => run(() => runCommand("chat.find"))}><ActionIcon name="search" />Find in chat<CommandShortcut>{shortcut("chat.find")}</CommandShortcut></CommandItem>}
 				{themes.filter(option => option.value !== theme).map(option => <CommandItem key={option.value} value={`${option.label} appearance colour mode`} onSelect={() => run(() => setTheme(option.value))}><option.icon />{option.label}</CommandItem>)}
 			</CommandGroup>
 			{current && <CommandGroup heading="This chat">
@@ -106,18 +107,18 @@ export function CommandPalette() {
 					? <CommandItem value="Un-settle chat unsettle" onSelect={() => run(() => runCommand("thread.settle"))}><Undo2 />Un-settle chat<CommandShortcut>{shortcut("thread.settle")}</CommandShortcut></CommandItem>
 					: <CommandItem value="Settle chat done" disabled={Boolean(settleBlocker(current))} onSelect={() => run(() => runCommand("thread.settle"))}><CircleCheck />Settle chat<CommandShortcut>{shortcut("thread.settle")}</CommandShortcut></CommandItem>)}
 				<CommandItem value="Mark chat unread" disabled={!current.lastCompletedAt} onSelect={() => run(() => void threadActions.markUnread(current))}><Mail />Mark unread</CommandItem>
-				{currentProject && <CommandItem value={`Project settings ${currentProject.name}`} onSelect={() => run(() => openProjectSettings(currentProject.id))}><Settings />Project settings</CommandItem>}
+				{currentProject && <CommandItem value={`Project settings ${currentProject.name}`} onSelect={() => run(() => openProjectSettings(currentProject.id))}><ActionIcon name="settings" />Project settings</CommandItem>}
 				{shelfProject && !shelfProject.archived && <CommandItem value={`${shelfProject.pinned ? "Unpin" : "Pin"} project ${shelfProject.name}`} onSelect={() => organizeProject(shelfProject.id, { pinned: !shelfProject.pinned })}>{shelfProject.pinned ? <PinOff /> : <Pin />}{shelfProject.pinned ? "Unpin project" : "Pin project"}</CommandItem>}
 				{shelfProject && !shelfProject.archived && <CommandItem value={`Archive project ${shelfProject.name} hide`} onSelect={() => organizeProject(shelfProject.id, { archived: true })}><Archive />Archive project</CommandItem>}
 				<CommandItem value="Copy chat link open url share" onSelect={() => run(() => copyChatLink(current.id))}><Link2 />Copy chat link</CommandItem>
-				<CommandItem value="Copy chat ID identifier reference" onSelect={() => run(() => copyId(current.id))}><Copy />Copy chat ID</CommandItem>
+				<CommandItem value="Copy chat ID identifier reference" onSelect={() => run(() => copyId(current.id))}><ActionIcon name="copy" />Copy chat ID</CommandItem>
 				<CommandItem value="Archive chat" disabled={["running", "waiting"].includes(current.status)} onSelect={() => run(() => void threadActions.archive(current))}><Archive />Archive chat</CommandItem>
 			</CommandGroup>}
 			{current?.projectId && <OpenProjectItems projectId={current.projectId} open={commandsOpen} run={run} />}
 			{/* Projects come up as you search, so the open palette is not a list of every folder; an archived one offers only Unarchive. */}
 			{searching && projects.length > 0 && <CommandGroup heading="Projects">
 				{activeProjects.map(projectItem)}
-				{activeProjects.map(project => <CommandItem key={`settings:${project.id}`} value={`${project.name} project settings scripts icon`} onSelect={() => run(() => openProjectSettings(project.id))}><Settings /><span className="min-w-0 truncate">{project.name} settings</span></CommandItem>)}
+				{activeProjects.map(project => <CommandItem key={`settings:${project.id}`} value={`${project.name} project settings scripts icon`} onSelect={() => run(() => openProjectSettings(project.id))}><ActionIcon name="settings" /><span className="min-w-0 truncate">{project.name} settings</span></CommandItem>)}
 				{projects.filter(project => project.archived).map(project => <CommandItem key={`unarchive:${project.id}`} value={`Unarchive project ${project.name} restore archived`} onSelect={() => organizeProject(project.id, { archived: false })}><ArchiveRestore /><ProjectIcon project={project} /><span className="min-w-0 truncate">Unarchive project {project.name}</span></CommandItem>)}
 			</CommandGroup>}
 			{compareGroups.length > 0 && <CommandGroup heading="Comparisons">
