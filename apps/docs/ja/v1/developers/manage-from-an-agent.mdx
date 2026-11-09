@@ -66,6 +66,10 @@ phaseo credits add --amount 20 --json
 | 作業 | CLI | API ルート | MCP ツール |
 | --- | --- | --- | --- |
 | キーを一覧表示、名前変更、削除する | `phaseo keys list`, `phaseo keys update <id> --name <name>`, `phaseo keys delete <id>` | `GET /v1/keys`, `PATCH /v1/keys/{id}`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
+| API キーを作成する | `phaseo keys create --name <name>` | `POST /v1/keys` | — |
+| キーの上限、状態、有効期限を変更する | `phaseo keys update <id> --limit <usd>`, `phaseo keys update <id> --disabled true` | `PATCH /v1/keys/{id}` | — |
+| キーをローテーションする | — | `POST /v1/keys/{id}/rotate` | — |
+| キーを IP アドレスに制限する | — | `PATCH /v1/keys/{id}` | — |
 | 承認したアプリを確認、絞り込み、取り消しする | `phaseo authorized-apps list`、`phaseo authorized-apps update-scopes <id> --scopes <scope,...>`、`phaseo authorized-apps revoke <id> --yes` | `GET /v1/me/authorized-apps`、`PATCH /v1/me/authorized-apps/{id}`、`DELETE /v1/me/authorized-apps/{id}` | — |
 | プロフィールを更新する | `phaseo profile update` | `PATCH /v1/me/profile` | — |
 
@@ -105,10 +109,6 @@ phaseo credits add --amount 20 --json
 
 | 作業 | API ルート |
 | --- | --- |
-| API キーを作成する | `POST /v1/keys` |
-| キーの上限、状態、有効期限を変更する | `PATCH /v1/keys/{id}` |
-| キーをローテーションする | `POST /v1/keys/{id}/rotate` |
-| キーを IP アドレスに制限する | `PATCH /v1/keys/{id}` |
 | 管理キーを作成する | `POST /v1/management-keys` |
 | 自動チャージや残高不足のメールを有効にする | `PATCH /v1/notifications/settings` |
 | ワークスペースの予算を設定する | `POST /v1/budgets`、`PATCH /v1/budgets/{id}` |

@@ -14,7 +14,7 @@ import { resolveActiveKeyPepper } from "@/lib/security/keyPepper";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { loadOAuthClient } from "@/lib/oauth/service";
-import { canTargetOtherWorkspace, internalServerError, rejectThirdPartyOAuthSpendingChange, requireCapability, type ManagementRouteAuth } from "./route-helpers";
+import { canTargetOtherWorkspace, internalServerError, rejectThirdPartyOAuthAppChange, requireCapability, type ManagementRouteAuth } from "./route-helpers";
 import { MANAGED_KEY_NAMES_FILTER, enforceWorkspaceKeyLimit, isManagedKeyName, isUsableWorkspaceKey } from "./management-helpers";
 
 const RESERVED_KEY_NAME = { error: "bad_request", message: "This key name is reserved for keys Phaseo manages" } as const;
@@ -593,7 +593,7 @@ async function handleCreateKey(req: Request) {
 	}
 	const scopeError = requireCapability(auth.value, CAPABILITIES.KEYS_WRITE);
 	if (scopeError) return scopeError;
-	const appError = rejectThirdPartyOAuthSpendingChange(
+	const appError = rejectThirdPartyOAuthAppChange(
 		auth.value,
 		"Apps that use Sign in with Phaseo can't create API keys. The person can create one under Settings, API Keys.",
 	);
@@ -884,7 +884,7 @@ async function handleUpdateKey(req: Request) {
 		// On any key, an app may only rename it: limits, pausing and resuming, expiry, department, IP allowlist
 		// and storage locations are the person's, so an app can't lift what holds its own key or another one.
 		if (Object.keys(updatePayload).some((field) => field !== "name")) {
-			const appError = rejectThirdPartyOAuthSpendingChange(
+			const appError = rejectThirdPartyOAuthAppChange(
 				auth.value,
 				"Apps that use Sign in with Phaseo can only rename API keys. The person can change a key's limits, status and expiry under Settings, API Keys.",
 			);
@@ -1024,7 +1024,7 @@ async function handleRotateKey(req: Request) {
 	const keyId = segments.at(-2)?.trim();
 	if (!keyId) return json({ error: "bad_request", message: "Key id is required" }, 400, { "Cache-Control": "no-store" });
 	// A rotation mints a replacement key, which would start its own month with no consent limit behind it.
-	const appError = rejectThirdPartyOAuthSpendingChange(
+	const appError = rejectThirdPartyOAuthAppChange(
 		auth.value,
 		"Apps that use Sign in with Phaseo can't rotate or replace API keys. The person can rotate a key under Settings, API Keys.",
 	);

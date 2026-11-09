@@ -66,6 +66,10 @@ Exécutez `phaseo <group> --help` pour voir les options acceptées par votre CLI
 | Tâche | CLI | Route API | Outil MCP |
 | --- | --- | --- | --- |
 | Lister, renommer ou supprimer des clés | `phaseo keys list`, `phaseo keys update <id> --name <name>`, `phaseo keys delete <id>` | `GET /v1/keys`, `PATCH /v1/keys/{id}`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
+| Créer une clé API | `phaseo keys create --name <name>` | `POST /v1/keys` | — |
+| Modifier les limites, le statut ou l’expiration d’une clé | `phaseo keys update <id> --limit <usd>`, `phaseo keys update <id> --disabled true` | `PATCH /v1/keys/{id}` | — |
+| Faire tourner une clé | — | `POST /v1/keys/{id}/rotate` | — |
+| Restreindre une clé à des adresses IP | — | `PATCH /v1/keys/{id}` | — |
 | Examiner, restreindre ou révoquer les applications que vous avez autorisées | `phaseo authorized-apps list`, `phaseo authorized-apps update-scopes <id> --scopes <scope,...>`, `phaseo authorized-apps revoke <id> --yes` | `GET /v1/me/authorized-apps`, `PATCH /v1/me/authorized-apps/{id}`, `DELETE /v1/me/authorized-apps/{id}` | — |
 | Modifier votre profil | `phaseo profile update` | `PATCH /v1/me/profile` | — |
 
@@ -105,10 +109,6 @@ Ces changements touchent aux dépenses, aux accès ou à la destination des donn
 
 | Tâche | Route API |
 | --- | --- |
-| Créer une clé API | `POST /v1/keys` |
-| Modifier les limites, le statut ou l’expiration d’une clé | `PATCH /v1/keys/{id}` |
-| Faire tourner une clé | `POST /v1/keys/{id}/rotate` |
-| Restreindre une clé à des adresses IP | `PATCH /v1/keys/{id}` |
 | Créer une clé de gestion | `POST /v1/management-keys` |
 | Activer la recharge automatique ou les e-mails de solde faible | `PATCH /v1/notifications/settings` |
 | Définir les budgets de l’espace de travail | `POST /v1/budgets`, `PATCH /v1/budgets/{id}` |

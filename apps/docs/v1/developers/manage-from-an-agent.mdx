@@ -67,6 +67,10 @@ Run `phaseo <group> --help` to see the flags your installed CLI accepts. When a 
 | Task | CLI | API route | MCP tool |
 | --- | --- | --- | --- |
 | List, rename or delete keys | `phaseo keys list`, `phaseo keys update <id> --name <name>`, `phaseo keys delete <id>` | `GET /v1/keys`, `PATCH /v1/keys/{id}`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
+| Create an API key | `phaseo keys create --name <name>` | `POST /v1/keys` | — |
+| Change a key's limits, status or expiry | `phaseo keys update <id> --limit <usd>`, `phaseo keys update <id> --disabled true` | `PATCH /v1/keys/{id}` | — |
+| Rotate a key | — | `POST /v1/keys/{id}/rotate` | — |
+| Restrict a key to IP addresses | — | `PATCH /v1/keys/{id}` | — |
 | Review, narrow or revoke apps you authorized | `phaseo authorized-apps list`, `phaseo authorized-apps update-scopes <id> --scopes <scope,...>`, `phaseo authorized-apps revoke <id> --yes` | `GET /v1/me/authorized-apps`, `PATCH /v1/me/authorized-apps/{id}`, `DELETE /v1/me/authorized-apps/{id}` | — |
 | Update your profile | `phaseo profile update` | `PATCH /v1/me/profile` | — |
 
@@ -106,10 +110,6 @@ These changes affect spending, access or where workspace data goes. A CLI sign-i
 
 | Task | API route |
 | --- | --- |
-| Create an API key | `POST /v1/keys` |
-| Change a key's limits, status or expiry | `PATCH /v1/keys/{id}` |
-| Rotate a key | `POST /v1/keys/{id}/rotate` |
-| Restrict a key to IP addresses | `PATCH /v1/keys/{id}` |
 | Create a management key | `POST /v1/management-keys` |
 | Turn on auto top-up or low-balance emails | `PATCH /v1/notifications/settings` |
 | Set workspace budgets | `POST /v1/budgets`, `PATCH /v1/budgets/{id}` |

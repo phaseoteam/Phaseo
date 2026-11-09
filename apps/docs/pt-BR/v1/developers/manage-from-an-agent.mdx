@@ -66,6 +66,10 @@ Execute `phaseo <group> --help` para ver as flags que a CLI instalada aceita. Qu
 | Tarefa | CLI | Rota da API | Ferramenta MCP |
 | --- | --- | --- | --- |
 | Listar, renomear ou excluir chaves | `phaseo keys list`, `phaseo keys update <id> --name <name>`, `phaseo keys delete <id>` | `GET /v1/keys`, `PATCH /v1/keys/{id}`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
+| Criar uma chave de API | `phaseo keys create --name <name>` | `POST /v1/keys` | — |
+| Alterar os limites, o status ou a expiração de uma chave | `phaseo keys update <id> --limit <usd>`, `phaseo keys update <id> --disabled true` | `PATCH /v1/keys/{id}` | — |
+| Rotacionar uma chave | — | `POST /v1/keys/{id}/rotate` | — |
+| Restringir uma chave a endereços IP | — | `PATCH /v1/keys/{id}` | — |
 | Revisar, restringir ou revogar aplicativos que você autorizou | `phaseo authorized-apps list`, `phaseo authorized-apps update-scopes <id> --scopes <scope,...>`, `phaseo authorized-apps revoke <id> --yes` | `GET /v1/me/authorized-apps`, `PATCH /v1/me/authorized-apps/{id}`, `DELETE /v1/me/authorized-apps/{id}` | — |
 | Atualizar o seu perfil | `phaseo profile update` | `PATCH /v1/me/profile` | — |
 
@@ -105,10 +109,6 @@ Essas mudanças afetam gastos, acesso ou o destino dos dados do workspace. Um lo
 
 | Tarefa | Rota da API |
 | --- | --- |
-| Criar uma chave de API | `POST /v1/keys` |
-| Alterar os limites, o status ou a expiração de uma chave | `PATCH /v1/keys/{id}` |
-| Rotacionar uma chave | `POST /v1/keys/{id}/rotate` |
-| Restringir uma chave a endereços IP | `PATCH /v1/keys/{id}` |
 | Criar uma chave de gerenciamento | `POST /v1/management-keys` |
 | Ativar a recarga automática ou os e-mails de saldo baixo | `PATCH /v1/notifications/settings` |
 | Definir orçamentos do espaço de trabalho | `POST /v1/budgets`, `PATCH /v1/budgets/{id}` |
