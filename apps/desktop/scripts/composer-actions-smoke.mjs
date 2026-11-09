@@ -217,10 +217,20 @@ app.whenReady().then(async () => { try {
 	const force = async (selector, pseudo) => { const { root } = await cdp("DOM.getDocument"); const { nodeId } = await cdp("DOM.querySelector", { nodeId: root.nodeId, selector }); assert(nodeId, selector); await cdp("CSS.forcePseudoState", { nodeId, forcedPseudoClasses: pseudo ? [pseudo] : [] }); };
 	async function navigationGesture(selector) {
 		for (const pseudo of ["hover", "focus-visible"]) {
-			await force(selector, pseudo);
-			assert(await run(`document.querySelector(${JSON.stringify(selector)}+' svg').getAnimations({subtree:true}).some(animation=>animation.animationName==='icon-navigation-nudge')`), `${selector} lacks ${pseudo}`);
+			if (pseudo === "hover") {
+				const point = await run(`(()=>{const box=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:box.x+box.width/2,y:box.y+box.height/2};})()`);
+				await cdp("Input.dispatchMouseEvent", { type: "mouseMoved", ...point });
+			} else {
+				await cdp("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
+				await cdp("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
+				await run(`document.querySelector(${JSON.stringify(selector)}).focus({preventScroll:true});true`);
+			}
+			const held = await run(`(async()=>{const svg=document.querySelector(${JSON.stringify(selector)}+' svg');await Promise.all(svg.getAnimations({subtree:true}).map(animation=>animation.finished));return {direction:svg.dataset.iconGesture,offsets:Array.from(svg.children).map(part=>parseFloat(getComputedStyle(part).translate)||0)};})()`);
+			assert(held.offsets.every(offset => Math.abs(offset - (held.direction === "back" ? -1.5 : 1.5)) < 0.001), `${selector} does not hold its ${pseudo} position`);
+			await cdp("Input.dispatchMouseEvent", { type: "mouseMoved", x: 0, y: 0 });
+			await run(`document.querySelector(${JSON.stringify(selector)}).blur();true`);
+			assert(await run(`(async()=>{const svg=document.querySelector(${JSON.stringify(selector)}+' svg');await Promise.all(svg.getAnimations({subtree:true}).map(animation=>animation.finished));return Array.from(svg.children).every(part=>Math.abs(parseFloat(getComputedStyle(part).translate)||0)<0.001);})()`), `${selector} does not return to rest`);
 		}
-		await force(selector, null);
 	}
 	const samples = {}, gestures = {};
 	for (const action of ["send", "queue", "steer"]) {

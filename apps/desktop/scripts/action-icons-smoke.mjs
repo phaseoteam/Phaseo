@@ -40,7 +40,7 @@ const output = process.argv.find(value => value.startsWith("--output="))?.slice(
 const deadline = setTimeout(() => { console.error("Action icon fixture deadline"); app.exit(1); }, 60_000);
 deadline.unref();
 app.whenReady().then(async () => { try {
-	const window = new BrowserWindow({ show: false, width: 800, height: 650, webPreferences: { backgroundThrottling: false } });
+	const window = new BrowserWindow({ show: false, width: 800, height: 1000, webPreferences: { backgroundThrottling: false } });
 	window.webContents.on("console-message", details => { if (details.level === "error") console.error("Fixture renderer:", details.message); });
 	await window.loadFile(path.join(scratch, "index.html"));
 	console.log("Action icon fixture: page loaded");
@@ -49,11 +49,28 @@ app.whenReady().then(async () => { try {
 	window.webContents.debugger.attach("1.3");
 	const cdp = (method, params = {}) => window.webContents.debugger.sendCommand(method, params);
 	await cdp("DOM.enable"); await cdp("CSS.enable");
-	const force = async (name, pseudo) => { const { root: document } = await cdp("DOM.getDocument"); const { nodeId } = await cdp("DOM.querySelector", { nodeId: document.nodeId, selector: `#${name}` }); await cdp("CSS.forcePseudoState", { nodeId, forcedPseudoClasses: pseudo ? [pseudo] : [] }); };
+	const force = async (name, pseudo) => {
+		if (name === "back" || name === "forward") {
+			if (pseudo === "hover") {
+				const point = await run(`(()=>{const box=document.getElementById('${name}').getBoundingClientRect();return {x:box.x+box.width/2,y:box.y+box.height/2};})()`);
+				await cdp("Input.dispatchMouseEvent", { type: "mouseMoved", ...point });
+			} else if (pseudo === "focus-visible") {
+				await cdp("Input.dispatchKeyEvent", { type: "keyDown", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
+				await cdp("Input.dispatchKeyEvent", { type: "keyUp", key: "Tab", code: "Tab", windowsVirtualKeyCode: 9 });
+				await run(`document.getElementById('${name}').focus({preventScroll:true});true`);
+			} else {
+				await cdp("Input.dispatchMouseEvent", { type: "mouseMoved", x: 0, y: 0 });
+				await run(`document.getElementById('${name}').blur();true`);
+			}
+			return;
+		}
+		const { root: document } = await cdp("DOM.getDocument"); const { nodeId } = await cdp("DOM.querySelector", { nodeId: document.nodeId, selector: `#${name}` }); await cdp("CSS.forcePseudoState", { nodeId, forcedPseudoClasses: pseudo ? [pseudo] : [] });
+	};
 	const media = reduce => cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: reduce ? "reduce" : "no-preference" }] });
 	const samples = {}, gestures = {};
 	for (const name of names) {
-		const state = () => run(`(()=>{const button=document.getElementById('${name}'),svg=button.querySelector('svg');return {box:button.getBoundingClientRect().toJSON(),svgTransform:getComputedStyle(svg).transform,animations:svg.getAnimations({subtree:true}).map(a=>({name:a.animationName,iterations:a.effect.getTiming().iterations})),parts:Array.from(svg.children).map(p=>({transform:getComputedStyle(p).transform,translate:getComputedStyle(p).translate,scale:getComputedStyle(p).scale,dash:getComputedStyle(p).strokeDashoffset,opacity:getComputedStyle(p).opacity})),lengths:Array.from(svg.children).map(p=>p.getAttribute('pathLength'))};})()`);
+		const navigation = name === "back" || name === "forward";
+		const state = () => run(`(()=>{const button=document.getElementById('${name}'),svg=button.querySelector('svg');return {box:button.getBoundingClientRect().toJSON(),svgTransform:getComputedStyle(svg).transform,animations:svg.getAnimations({subtree:true}).map(a=>({name:a.animationName??a.transitionProperty,iterations:a.effect.getTiming().iterations})),parts:Array.from(svg.children).map(p=>{const style=getComputedStyle(p);return {transform:style.transform,translate:style.translate,x:new DOMMatrixReadOnly(style.transform).m41+(parseFloat(style.translate)||0),scale:style.scale,dash:style.strokeDashoffset,opacity:style.opacity};}),lengths:Array.from(svg.children).map(p=>p.getAttribute('pathLength'))};})()`);
 		await media(false);
 		const idle = await state();
 		assert.equal(idle.animations.length, 0, `${name} moves at rest`);
@@ -63,18 +80,27 @@ app.whenReady().then(async () => { try {
 			if (trigger === "highlight") await run(`document.getElementById('${name}').setAttribute('data-highlighted','')`);
 			if (trigger === "selected") await run(`document.getElementById('${name}').setAttribute('data-selected','true')`);
 			const active = await state();
-			assert(active.animations.length > 0, `${name} has no ${trigger} gesture`);
+			if (!navigation) assert(active.animations.length > 0, `${name} has no ${trigger} gesture`);
 			assert(active.animations.every(value => value.iterations === 1));
-			await run(`document.getElementById('${name}').querySelector('svg').getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=Number(a.effect.getTiming().duration)/2+Number(a.effect.getTiming().delay);});true`);
+			if (navigation) await run(`Promise.all(document.getElementById('${name}').querySelector('svg').getAnimations({subtree:true}).map(animation=>animation.finished)).then(()=>true)`);
+			else await run(`document.getElementById('${name}').querySelector('svg').getAnimations({subtree:true}).forEach(a=>{a.pause();a.currentTime=Number(a.effect.getTiming().duration)/2+Number(a.effect.getTiming().delay);});true`);
 			const middle = await state();
 			assert.deepEqual(middle.box, idle.box, `${name} moves its control`);
 			assert.equal(middle.svgTransform, "none", `${name} moves its whole glyph`);
 			assert.notDeepEqual(middle.parts, idle.parts, `${name} has no visible gesture`);
-			if (name === "back" || name === "forward") assert(middle.parts.every(part => name === "back" ? parseFloat(part.translate) < 0 : parseFloat(part.translate) > 0), `${name} moves in the wrong direction`);
+			if (navigation) {
+				assert(middle.parts.every(part => name === "back" ? part.x < 0 : part.x > 0), `${name} moves in the wrong direction`);
+				assert((await state()).parts.every(part => Math.abs(part.x - (name === "back" ? -1.5 : 1.5)) < 0.001), `${name} does not hold its ${trigger} position`);
+			}
 			for (const index of fixedParts[name] ?? []) assert.deepEqual(middle.parts[index], idle.parts[index], `${name} moves its frame`);
 			gestures[name] = active.animations.map(value => value.name);
 			await force(name, null);
 			await run(`document.getElementById('${name}').removeAttribute('data-highlighted');document.getElementById('${name}').removeAttribute('data-selected');true`);
+			if (navigation) {
+				await run(`Promise.all(document.getElementById('${name}').querySelector('svg').getAnimations({subtree:true}).map(animation=>animation.finished)).then(()=>true)`);
+				const rested = await state();
+				assert(rested.parts.every(part => Math.abs(part.x) < 0.001), `${name} does not return to rest after ${trigger}: ${JSON.stringify(rested.parts)}`);
+			}
 		}
 		await force(name, "hover");
 		for (const attribute of ["disabled", "aria-disabled"]) {
