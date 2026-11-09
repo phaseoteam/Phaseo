@@ -66,6 +66,7 @@ import { executor as liquidAiDecisions } from "./liquid-ai/decisions";
 import { executor as perplexityDecisions } from "./perplexity/decisions";
 import { executor as ai21Text } from "./ai21/text-generate";
 import { executor as akashmlText } from "./akashml/text-generate";
+import { executor as primalabsText } from "./primalabs/text-generate";
 import { executor as arceeText } from "./arcee/text-generate";
 import { executor as alibabaCloudText } from "./alibaba-cloud/text-generate";
 import { executor as alibabaImage } from "./alibaba/image-generate";
@@ -265,6 +266,9 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	},
 	ai21: {
 		"text.generate": ai21Text,
+	},
+	primalabs: {
+		"text.generate": primalabsText,
 	},
 	akashml: {
 		"text.generate": akashmlText,

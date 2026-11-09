@@ -41,6 +41,7 @@ $regionalSecretNames = @(
     "TENCENT_CLOUD_TOKENHUB_API_KEY",
     "PHALA_API_KEY",
     "PHALA_BASE_URL",
+    "PRIMALABS_API_KEY",
     "MISTRAL_API_KEY",
     "MISTRAL_AI_API_KEY",
     "ANTHROPIC_API_KEY",
