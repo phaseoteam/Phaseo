@@ -9,7 +9,7 @@ SET LOCAL lock_timeout = '10s';
 -- gateway_wallet_reservations.overdraft_nanos records the uncovered part.
 
 -- Functions only: overdraft_nanos is added by the previous migration,
--- 20261107015214_gateway_wallet_reservations_overdraft.
+-- 20261109145510_gateway_wallet_reservations_overdraft.
 
 CREATE OR REPLACE FUNCTION public.gateway_wallet_settle_once (
   p_workspace_id   uuid,
