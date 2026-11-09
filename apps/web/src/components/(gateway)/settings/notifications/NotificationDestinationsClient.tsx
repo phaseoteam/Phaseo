@@ -144,10 +144,10 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 		<>
 			<section aria-labelledby="event-alerts-title" className="space-y-3">
 				<h2 id="event-alerts-title" className="font-heading text-base font-medium">{s("Product alerts")}</h2>
-				<div className="rounded-xl border bg-background/40 px-4 py-4">
-					<div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+				<div className="border-y border-border/60 py-5">
+					<div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
 						<div><h3 className="text-sm font-medium">{s("Model Deprecation Alerts")}</h3><p className="mt-0.5 text-sm text-muted-foreground">{s("phraseGetNoticeBeforeAModelYourWorkspaceUsesIsRetired")}</p></div>
-						<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto"><NotificationRouteSelector destinations={destinations} eventKind="model_deprecation" initialDestinationIds={initialNotificationRoutes.model_deprecation ?? []} /><Switch checked={modelDeprecationEnabled} aria-label={s("Enable model deprecation alerts")} onCheckedChange={(checked) => {
+						<div className="flex flex-wrap items-center gap-2 sm:justify-end"><NotificationRouteSelector destinations={destinations} eventKind="model_deprecation" initialDestinationIds={initialNotificationRoutes.model_deprecation ?? []} /><Switch checked={modelDeprecationEnabled} aria-label={s("Enable model deprecation alerts")} onCheckedChange={(checked) => {
 							const next = Boolean(checked); setModelDeprecationEnabled(next);
 							toast.promise(write(setBillingNotificationPreference({ data: { preference: "modelDeprecationAlerts", enabled: next } })), { loading: `${s("Saving")}…`, success: s("Saved"), error: s("Could not save alert") });
 						}} /></div>
@@ -156,35 +156,35 @@ export default function NotificationDestinationsClient({ initialDestinations, in
 						const next = Boolean(checked); const previous = modelDeprecationIncludeAdmins; setModelDeprecationIncludeAdmins(next);
 						toast.promise(write(setBillingNotificationPreference({ data: { preference: "modelDeprecationAlertsIncludeAdmins", enabled: next } })).catch((error) => { setModelDeprecationIncludeAdmins(previous); throw error; }), { loading: `${s("Saving")}…`, success: s("Saved"), error: s("Could not save alert") });
 					}} /></div> : null}
-					<div className="mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+					<div className="mt-5 grid gap-3 border-t pt-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
 						<div><h3 className="text-sm font-medium">{t("notificationCopy.replacementNoticesTitle")}</h3><p className="mt-0.5 text-sm text-muted-foreground">{t("notificationCopy.replacementNoticesDescription")}</p></div>
-						<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto"><NotificationRouteSelector destinations={destinations} eventKind="model_substitution" initialDestinationIds={initialNotificationRoutes.model_substitution ?? []} /></div>
+						<div className="flex flex-wrap items-center gap-2 sm:justify-end"><NotificationRouteSelector destinations={destinations} eventKind="model_substitution" initialDestinationIds={initialNotificationRoutes.model_substitution ?? []} /></div>
 					</div>
-					<div className="mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+					<div className="mt-5 grid gap-3 border-t pt-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
 						<div><h3 className="text-sm font-medium">{s("Rate Limit Alerts")}</h3><p className="mt-0.5 text-sm text-muted-foreground">{s("Get an alert when rate limit policies reject requests, at most once an hour.")}</p></div>
-						<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto"><NotificationRouteSelector destinations={destinations} eventKind="rate_limit_throttled" initialDestinationIds={initialNotificationRoutes.rate_limit_throttled ?? []} /></div>
+						<div className="flex flex-wrap items-center gap-2 sm:justify-end"><NotificationRouteSelector destinations={destinations} eventKind="rate_limit_throttled" initialDestinationIds={initialNotificationRoutes.rate_limit_throttled ?? []} /></div>
 					</div>
-					<div className="mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+					<div className="mt-5 grid gap-3 border-t pt-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
 						<div><h3 className="text-sm font-medium">{t("notificationCopy.broadcastAlertsTitle")}</h3><p className="mt-0.5 text-sm text-muted-foreground">{t("notificationCopy.broadcastAlertsDescription")}</p></div>
-						<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto"><NotificationRouteSelector destinations={destinations} eventKind="broadcast_destination_failing" initialDestinationIds={initialNotificationRoutes.broadcast_destination_failing ?? []} /></div>
+						<div className="flex flex-wrap items-center gap-2 sm:justify-end"><NotificationRouteSelector destinations={destinations} eventKind="broadcast_destination_failing" initialDestinationIds={initialNotificationRoutes.broadcast_destination_failing ?? []} /></div>
 					</div>
-					<div className="mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+					<div className="mt-5 grid gap-3 border-t pt-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
 						<div><h3 className="text-sm font-medium">{s("Spend Alerts")}</h3><p className="mt-0.5 text-sm text-muted-foreground">{s("Get an alert when a spend rule crosses one of its thresholds.")}</p></div>
-						<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto"><NotificationRouteSelector destinations={destinations} eventKind="spend_alert" initialDestinationIds={initialNotificationRoutes.spend_alert ?? []} /></div>
+						<div className="flex flex-wrap items-center gap-2 sm:justify-end"><NotificationRouteSelector destinations={destinations} eventKind="spend_alert" initialDestinationIds={initialNotificationRoutes.spend_alert ?? []} /></div>
 					</div>
-					<div className="mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+					<div className="mt-5 grid gap-3 border-t pt-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
 						<div><h3 className="text-sm font-medium">{s("Spend Blocks")}</h3><p className="mt-0.5 text-sm text-muted-foreground">{s("Get an alert when a spend rule starts or lifts a block on requests.")}</p></div>
-						<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto"><NotificationRouteSelector destinations={destinations} eventKind="spend_blocked" initialDestinationIds={initialNotificationRoutes.spend_blocked ?? []} /></div>
+						<div className="flex flex-wrap items-center gap-2 sm:justify-end"><NotificationRouteSelector destinations={destinations} eventKind="spend_blocked" initialDestinationIds={initialNotificationRoutes.spend_blocked ?? []} /></div>
 					</div>
-					<div className="mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
+					<div className="mt-5 grid gap-3 border-t pt-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
 						<div><h3 className="text-sm font-medium">{s("Spend Reports")}</h3><p className="mt-0.5 text-sm text-muted-foreground">{s("Also send the daily, weekly or monthly spend report to these destinations.")}</p></div>
-						<div className="flex shrink-0 items-center gap-2 self-end sm:self-auto"><NotificationRouteSelector destinations={destinations} eventKind="spend_report" initialDestinationIds={initialNotificationRoutes.spend_report ?? []} /></div>
+						<div className="flex flex-wrap items-center gap-2 sm:justify-end"><NotificationRouteSelector destinations={destinations} eventKind="spend_report" initialDestinationIds={initialNotificationRoutes.spend_report ?? []} /></div>
 					</div>
 				</div>
 			</section>
 
 			<section aria-labelledby="destinations-title" className="space-y-3">
-				<div className="flex items-end justify-between gap-4">
+				<div className="flex flex-wrap items-end justify-between gap-4">
 					<div><h2 id="destinations-title" className="font-heading text-base font-medium">{s("Destinations")}</h2><p className="mt-1 text-sm text-muted-foreground">{s("phraseCreateReusableChannelsThenChooseThemOnEachAlertAbove")}</p></div>
 					<Button className="rounded-md" onClick={() => setOpen(true)}><Plus /> {s("Add destination")}</Button>
 				</div>

@@ -31,7 +31,7 @@ function BetaView({ initialData, videoEnabled, batchEnabled }: Availability & { 
 
 	if (!initialData.signedIn) {
 		return (
-			<div className="space-y-6">
+			<div className="w-full max-w-4xl space-y-8">
 				<SettingsPageHeader
 					title={messages.title}
 					description={messages.description}
@@ -45,18 +45,18 @@ function BetaView({ initialData, videoEnabled, batchEnabled }: Availability & { 
 	}
 
 	return (
-		<div className="space-y-6">
+		<div className="w-full max-w-4xl space-y-8">
 			<SettingsPageHeader
 				title={messages.title}
 				description={messages.description}
 				meta={<Badge variant="outline">{messages.badge}</Badge>}
 			/>
-			<div className="divide-y divide-border/60 overflow-hidden rounded-2xl border border-border/60">
+			<div className="divide-y divide-border/60 border-y border-border/60">
 				{[
 					{ title: t("videoTitle"), enabled: videoEnabled, kind: "video", description: t("videoDescription") },
 					{ title: t("batchTitle"), enabled: batchEnabled, kind: "batch", description: t("batchDescription") },
 				].map((feature) => (
-					<div key={feature.kind} className="space-y-2 px-4 py-4 sm:px-5">
+					<div key={feature.kind} className="space-y-2 py-5">
 						<div className="flex flex-wrap items-center gap-2">
 							<h2 className="text-sm font-medium">{feature.title}</h2>
 							<Badge variant="outline">{messages.badge}</Badge>

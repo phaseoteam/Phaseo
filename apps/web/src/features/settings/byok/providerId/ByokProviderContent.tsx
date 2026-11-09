@@ -47,7 +47,7 @@ function ByokProviderPage({ providerId, sampleKeys, catalogProvider, providerMod
 		.sort((left, right) => left.label.localeCompare(right.label));
 
 	return (
-		<div className="mx-auto space-y-8">
+		<div className="min-w-0 space-y-8">
 			<div>
 				<nav className="flex items-center gap-2 text-sm text-muted-foreground" aria-label={t("breadcrumb")}>
 					<Link href="/settings/byok" className="inline-flex items-center gap-1.5 hover:text-foreground">

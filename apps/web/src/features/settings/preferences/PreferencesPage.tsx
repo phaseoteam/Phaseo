@@ -15,7 +15,7 @@ export default function PreferencesPage() {
 	const { data: initialData } = useSuspenseQuery(preferencesInitialDataQuery());
 
 	return (
-		<div className="space-y-6">
+		<div className="w-full max-w-4xl space-y-8">
 			<SettingsPageHeader
 				title={t("preferencesCopy.preferences")}
 				description={t("preferencesCopy.preferencesHelp")}

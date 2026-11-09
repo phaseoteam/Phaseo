@@ -10,7 +10,7 @@ import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButt
 export default withSettingsResource("budgets", function BudgetsContent({ initialData }: { initialData: SettingsBudgetsInitialData }) {
 	const t = useTranslations("SettingsUI");
 	return (
-		<div className="space-y-6">
+		<div className="min-w-0 space-y-8">
 			<SettingsPageHeader
 				title={t("budgets.title")}
 				description={t("budgets.description")}

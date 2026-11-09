@@ -11,7 +11,7 @@ import type { SettingsRoutingInitialData } from "@/lib/fetchers/internal/setting
 export default function RoutingSettingsPage({ showModelSuccessor }: { showModelSuccessor: boolean }) {
 	const t = useTranslations("SettingsUI");
 	return (
-		<div className="space-y-6">
+		<div className="w-full max-w-4xl space-y-8">
 			<SettingsPageHeader
 				title={t("headers.routing")}
 				description={t("headers.routingDescription")}

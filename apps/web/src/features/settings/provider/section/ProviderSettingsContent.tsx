@@ -20,7 +20,7 @@ function ProviderSettingsView({ section, data }: { section: string; data: Settin
 	if (!data.signedIn) redirect({ href: "/sign-in", locale });
 	if (!data.catalogProviders.length) redirect({ href: "/settings/account/providers", locale });
 	const title = section === "models" ? t("internalMainCopy.yourModels") : section === "review" ? td("profile") : t("internalMainCopy.integrations");
-	return <div className="space-y-6">
+	return <div className={section === "models" ? "space-y-8" : "w-full max-w-4xl space-y-8"}>
 		<SettingsPageHeader title={title} />
 		<div className="divide-y border-y border-border/70">
 			{data.catalogProviders.map((provider) => <div key={provider.provider_slug} className="flex flex-wrap items-center justify-between gap-2 py-3 text-sm">
@@ -29,7 +29,7 @@ function ProviderSettingsView({ section, data }: { section: string; data: Settin
 			</div>)}
 		</div>
 		{section === "models" && <ProviderCatalogManager providers={data.catalogProviders} />}
-		{section === "review" && <div className="grid gap-5 lg:grid-cols-2">{data.catalogProviders.map((provider) => {
+		{section === "review" && <div className="space-y-8">{data.catalogProviders.map((provider) => {
 			return <section key={provider.provider_slug} className="space-y-4 rounded-xl border p-5"><h2 className="text-lg font-semibold">{provider.name || provider.provider_slug}</h2><dl className="grid gap-4 text-sm sm:grid-cols-2"><div><dt className="text-muted-foreground">{td("providerId")}</dt><dd className="mt-1 font-mono text-xs">{provider.provider_slug}</dd></div><div><dt className="text-muted-foreground">{td("approval")}</dt><dd className="mt-1">{(provider.provider_approval_status ?? provider.provider_review_status) ? translatedStatus("reviewStatus", (provider.provider_approval_status ?? provider.provider_review_status)!) : td("statusUnavailable")}</dd></div><div><dt className="text-muted-foreground">{td("website")}</dt><dd className="mt-1 break-all">{provider.website_url || td("notSet")}</dd></div><div><dt className="text-muted-foreground">{td("access")}</dt><dd className="mt-1">{provider.role} · {provider.verified_at ? new Date(provider.verified_at).toLocaleDateString(locale) : td("notVerified")}</dd></div></dl></section>;
 		})}</div>}
 		{section === "integrations" && <div className="space-y-5">{data.syncSources.map((source) => <ProviderIntegrationSummary key={source.provider_slug} source={source} canManage={data.isAdmin || data.linkedProviders.some((link) => link.provider_slug === source.provider_slug && ["owner", "admin"].includes(link.role))} />)}</div>}

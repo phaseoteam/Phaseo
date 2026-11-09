@@ -2,10 +2,10 @@ import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import Link from "@/components/link";
-import { startTransition, useEffect, useMemo, useRef, useState } from "react";
+import { startTransition, useEffect, useId, useMemo, useRef, useState } from "react";
 import { WorkspacePolicyForm } from "../WorkspacePolicyForm";
 import { useTranslations } from "@/i18n/react";
-import { Search } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
@@ -38,9 +38,10 @@ const compareModelsByOrganisationAndName = (a: PrivacyModel, b: PrivacyModel) =>
 	a.name.localeCompare(b.name, undefined, { sensitivity: "base", numeric: true });
 
 function SettingRow({ title, description, checked, onCheckedChange, disabled }: { title: string; description: string; checked: boolean; onCheckedChange: (value: boolean) => void; disabled?: boolean }) {
-	return <div className="flex items-center justify-between gap-6 border-b border-border/60 py-4 last:border-b-0">
-		<div><div className="text-sm font-medium">{title}</div><p className="mt-0.5 text-sm text-muted-foreground">{description}</p></div>
-		<Switch checked={checked} onCheckedChange={onCheckedChange} disabled={disabled} />
+	const id = useId();
+	return <div className="flex items-center justify-between gap-6 border-b border-border/60 py-5 last:border-b-0">
+		<div className="min-w-0"><label htmlFor={id} className="text-sm font-medium">{title}</label><p id={`${id}-description`} className="mt-1 text-sm text-muted-foreground">{description}</p></div>
+		<Switch id={id} aria-label={title} aria-describedby={`${id}-description`} checked={checked} onCheckedChange={onCheckedChange} disabled={disabled} />
 	</div>;
 }
 
@@ -212,8 +213,7 @@ export default function AccountPrivacySettingsClient({
 	return <WorkspacePolicyForm canManage={canManage} dirty={isDirty} saving={saving} error={error} notice={notice} onSave={save} onCancel={cancel}>
 		{section === "privacy" ? <section>
 			<h2 className="text-base font-semibold">{s("Data Handling")}</h2>
-			<p className="mt-1 text-sm text-muted-foreground">{s("phraseSetTheMinimumPrivacyStandardForEveryRequestInThisWorkspace")}</p>
-			<div className="mt-3 rounded-lg border px-4">
+			<div className="mt-1">
 				<SettingRow disabled={editingDisabled} title={s("Allow paid routes that may train")} description={s("phrasePermitPaidRoutesWhoseProviderMayUsePromptsOrCompletionsForTraining")} checked={policy.privacyEnablePaidMayTrain} onCheckedChange={(value) => set("privacyEnablePaidMayTrain", value)} />
 				<SettingRow disabled={editingDisabled} title={s("Allow free routes that may train")} description={s("phrasePermitFreeRoutesWhoseProviderMayUsePromptsOrCompletionsForTraining")} checked={policy.privacyEnableFreeMayTrain} onCheckedChange={(value) => set("privacyEnableFreeMayTrain", value)} />
 				<SettingRow disabled={editingDisabled} title={s("Allow prompt logging")} description={s("phrasePermitProvidersThatMayRetainPromptsButDoNotUseThemForTraining")} checked={policy.privacyEnableInputOutputLogging} onCheckedChange={(value) => set("privacyEnableInputOutputLogging", value)} />
@@ -221,27 +221,27 @@ export default function AccountPrivacySettingsClient({
 			</div>
 		</section> : null}
 		{section === "privacy" && logStorage ? <section className="border-t pt-8">
-			<div className="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
+			<div className="space-y-1">
 				<div>
 					<h2 className="text-base font-semibold">{s("Gateway Log Storage")}</h2>
 					<p className="mt-1.5 text-sm leading-6 text-muted-foreground">{s("phraseControlPrivateRequestAndResponsePayloadStorageForThisWorkspace")}</p>
 				</div>
-				<div className="min-w-0 rounded-lg border px-4">
+				<div className="min-w-0">
 					<SettingRow title={s("Store request and response payloads")} description={policy.privacyZdrOnly ? s("phraseIoLogsStayOffWhileZdrEndpointsOnlyIsOn") : s("phraseKeepPrivatePayloadCopiesForRequestDetailsAndReplay")} checked={logStorage.enabled && !policy.privacyZdrOnly} disabled={editingDisabled || policy.privacyZdrOnly} onCheckedChange={(enabled) => setLogStorage((current) => current ? { ...current, enabled } : current)} />
 					{logStorage.enabled && !policy.privacyZdrOnly ? <>
-						<div className="flex flex-col gap-3 border-b border-border/60 py-4 sm:flex-row sm:items-center sm:justify-between">
+						<div className="grid gap-3 border-b border-border/60 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
 							<div><div className="text-sm font-medium">{s("Retention")}</div><p className="mt-0.5 text-sm text-muted-foreground">{s("phraseChooseHowLongPrivatePayloadCopiesRemainAvailable")}</p></div>
 							<Select disabled={editingDisabled} value={String(logStorage.retentionDays)} onValueChange={(value) => setLogStorage((current) => current ? { ...current, retentionDays: Number(value) } : current)}>
-								<SelectTrigger className="w-full rounded-md sm:w-40"><SelectValue /></SelectTrigger>
+								<SelectTrigger className="w-full rounded-md" aria-label={s("Retention")}><SelectValue>{logStorage.retentionDays === 90 ? tUi("privacy.retention90Days") : logStorage.retentionDays === 180 ? tUi("privacy.retention180Days") : logStorage.retentionDays === 365 ? tUi("privacy.retention365Days") : String(logStorage.retentionDays)}</SelectValue></SelectTrigger>
 								<SelectContent><SelectItem value="90">{tUi("privacy.retention90Days")}</SelectItem><SelectItem value="180">{tUi("privacy.retention180Days")}</SelectItem><SelectItem value="365">{tUi("privacy.retention365Days")}</SelectItem></SelectContent>
 							</Select>
 						</div>
 						<SettingRow disabled={editingDisabled} title={s("Include provider payloads")} description={s("phraseAlsoRetainTheTransformedUpstreamRequestAndProviderResponse")} checked={logStorage.includeProviderPayloads} onCheckedChange={(includeProviderPayloads) => setLogStorage((current) => current ? { ...current, includeProviderPayloads } : current)} />
 					</> : null}
-					<div className="flex flex-col gap-3 border-b border-border/60 py-4 last:border-b-0 sm:flex-row sm:items-center sm:justify-between">
+					<div className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
 						<div><div className="text-sm font-medium">{tUi("privacy.contentsAccessTitle")}</div><p className="mt-0.5 text-sm text-muted-foreground">{tUi("privacy.contentsAccessDescription")}</p></div>
 						<Select value={logStorage.contentsAccess ?? undefined} disabled={editingDisabled || logStorage.contentsAccess === null} onValueChange={(value) => setLogStorage((current) => current ? { ...current, contentsAccess: value === "admins" ? "admins" : "members" } : current)}>
-							<SelectTrigger className="w-full rounded-md sm:w-48"><SelectValue /></SelectTrigger>
+							<SelectTrigger className="w-full rounded-md" aria-label={tUi("privacy.contentsAccessTitle")}><SelectValue>{logStorage.contentsAccess === "admins" ? tUi("privacy.contentsAccessAdmins") : logStorage.contentsAccess === "members" ? tUi("privacy.contentsAccessMembers") : null}</SelectValue></SelectTrigger>
 							<SelectContent><SelectItem value="members">{tUi("privacy.contentsAccessMembers")}</SelectItem><SelectItem value="admins">{tUi("privacy.contentsAccessAdmins")}</SelectItem></SelectContent>
 						</Select>
 					</div>
@@ -249,7 +249,7 @@ export default function AccountPrivacySettingsClient({
 			</div>
 		</section> : null}
 		{section === "access" ? <section>
-			<div className="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
+			<div className="space-y-5">
 				<div>
 					<h2 className="text-base font-semibold">{s("Route Access")}</h2>
 					<p className="mt-1.5 text-sm leading-6 text-muted-foreground">{s("phraseControlWhichProvidersAndModelsThisWorkspaceMayUseScopedGuardrailsCanRestrictIndividualMembersAndAPIKeysFurther")}</p>
@@ -272,10 +272,13 @@ export default function AccountPrivacySettingsClient({
 				</div>
 			</div>
 		</section> : null}
-		<section className="border-t pt-8">
-			<div className="grid gap-6 lg:grid-cols-[13rem_minmax(0,1fr)] lg:gap-10">
+		<details open={section === "access" ? true : undefined} className="group border-t pt-6">
+			<summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-semibold [&::-webkit-details-marker]:hidden">
+				{tUi("privacyEligibility.title")}<ChevronDown className="size-4 shrink-0 transition-transform group-open:rotate-180" />
+			</summary>
+		<section className="pt-5">
+			<div className="space-y-5">
 				<div>
-					<h2 className="text-base font-semibold">{tUi("privacyEligibility.title")}</h2>
 					<p className="mt-1.5 text-sm leading-6 text-muted-foreground">{tUi("privacyEligibility.workspaceDescription")}</p>
 				</div>
 				<div className="min-w-0 space-y-4">
@@ -300,5 +303,6 @@ export default function AccountPrivacySettingsClient({
 				</div>
 			</div>
 		</section>
+		</details>
 	</WorkspacePolicyForm>;
 }

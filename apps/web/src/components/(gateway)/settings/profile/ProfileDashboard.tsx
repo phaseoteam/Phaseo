@@ -595,7 +595,7 @@ export default function ProfileDashboard({
 						)}
 					</div>
 					<div className="min-w-0">
-						<h1 className="text-base font-semibold text-foreground">
+						<h1 className="break-words text-2xl font-semibold tracking-tight text-foreground">
 							{profile.displayName}
 						</h1>
 						{publicView ? (

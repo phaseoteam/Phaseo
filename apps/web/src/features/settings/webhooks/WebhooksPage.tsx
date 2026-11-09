@@ -19,7 +19,7 @@ export async function getWebhooksMetadata() {
 
 export default function WebhooksSettingsPage() {
 	return (
-		<div className="space-y-6">
+		<div className="min-w-0 space-y-8">
 			<Suspense fallback={<SettingsSectionFallback />}>
 				<WebhooksSettingsContent />
 			</Suspense>
@@ -47,16 +47,16 @@ function WebhooksSettingsContent() {
 	);
 
 	if (!isEnabled) {
-		return <div className="space-y-6">{header}<Alert><Webhook className="size-4" /><AlertTitle>{t("notEnabled")}</AlertTitle><AlertDescription>{t("enabledWorkspaces")}</AlertDescription></Alert></div>;
+		return <div className="w-full max-w-4xl space-y-8">{header}<Alert><Webhook className="size-4" /><AlertTitle>{t("notEnabled")}</AlertTitle><AlertDescription>{t("enabledWorkspaces")}</AlertDescription></Alert></div>;
 	}
 
 	if (!availability.hasWorkspace) {
-		return <div className="space-y-6">{header}<Alert><Webhook className="size-4" /><AlertTitle>{stringsT("Select a workspace")}</AlertTitle><AlertDescription>{t("chooseWorkspace")}</AlertDescription></Alert></div>;
+		return <div className="w-full max-w-4xl space-y-8">{header}<Alert><Webhook className="size-4" /><AlertTitle>{stringsT("Select a workspace")}</AlertTitle><AlertDescription>{t("chooseWorkspace")}</AlertDescription></Alert></div>;
 	}
 
 
 	return (
-		<div className="space-y-6">
+		<div className="min-w-0 space-y-8">
 			{header}
 			<Alert className="border-border/70 bg-muted/20">
 				<Webhook className="size-4" />

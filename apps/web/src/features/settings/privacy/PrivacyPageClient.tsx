@@ -13,7 +13,7 @@ import type { SettingsPrivacyInitialData } from "@/lib/fetchers/internal/setting
 export default function PrivacySettingsPage() {
 	const t = useTranslations("SettingsUI");
 	return (
-		<div className="space-y-6">
+		<div className="w-full max-w-4xl space-y-8">
 			<SettingsPageHeader
 				title={t("headers.privacy")}
 				description={t("strings.phraseSetTheMinimumPrivacyStandardForEveryRequestInThisWorkspace")}

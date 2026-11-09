@@ -69,7 +69,7 @@ export default function TeamsSettingsContainer({
 		: "/settings/workspaces/access";
 
 	return (
-		<div className="space-y-6">
+		<div className={tab === "settings" ? "w-full max-w-4xl space-y-8" : "min-w-0 space-y-8"}>
 			{hideTitle ? null : (
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 					<SettingsPageHeader

@@ -44,7 +44,7 @@ export default function GeographyClient({ scope }: { scope: AccountQueryScope })
 	}));
 
 	return (
-		<section className="space-y-6">
+		<section className="min-w-0 space-y-8">
 			<div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
 				<SettingsPageHeader
 					title={t("headers.geography")}

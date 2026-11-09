@@ -79,7 +79,7 @@ export default function RoutingSettingsClient({ workspaceId, canManage, initialM
 
 	return (
 		<WorkspacePolicyForm canManage={canManage} dirty={isDirty} saving={saving} error={error} notice={notice} onSave={save} onCancel={cancel}>
-			<section className="space-y-3">
+			<section className="space-y-1">
 				<div className="flex items-start justify-between gap-4">
 					<div>
 						<h2 className="text-base font-semibold">{t("strings.Provider Routing" as never)}</h2>
@@ -90,8 +90,8 @@ export default function RoutingSettingsClient({ workspaceId, canManage, initialM
 					</div>
 				</div>
 
-				<div className="overflow-hidden rounded-md border">
-					<div className="grid gap-3 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(220px,320px)] sm:items-center">
+				<div>
+					<div className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
 						<div>
 							<label htmlFor="routing-mode" className="text-sm font-medium">
 								{t("credits.Routing Preference" as never)}
@@ -122,7 +122,7 @@ export default function RoutingSettingsClient({ workspaceId, canManage, initialM
 					</Select>
 					</div>
 					<Separator />
-					<div className="flex items-center justify-between gap-4 px-4 py-3">
+					<div className="flex items-center justify-between gap-6 py-5">
 						<div>
 						<label htmlFor="beta-channel" className="text-sm font-medium">{t("credits.Beta Channel" as never)}</label>
 						<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseIncludeBetaProvidersInASmallShareOfProductionTraffic" as never)}</p>
@@ -138,7 +138,7 @@ export default function RoutingSettingsClient({ workspaceId, canManage, initialM
 				{betaChannelEnabled ? (
 					<>
 						<Separator />
-						<div className="flex items-center justify-between gap-4 bg-muted/15 py-2.5 pl-8 pr-4">
+						<div className="ms-4 flex items-center justify-between gap-6 border-s-2 ps-4 py-4">
 							<div>
 							<label htmlFor="alpha-channel" className="text-sm font-medium">{t("credits.Alpha Channel" as never)}</label>
 							<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseIncludeAlphaProvidersWithinBetaCanaryTraffic" as never)}</p>
@@ -155,13 +155,13 @@ export default function RoutingSettingsClient({ workspaceId, canManage, initialM
 				</div>
 			</section>
 
-			<section className="space-y-3">
+			<section className="space-y-1 border-t pt-8">
 				<div>
 					<h2 className="text-base font-semibold">{t("strings.Response Healing" as never)}</h2>
 					<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseSetTheWorkspaceDefaultForRepairingStructuredModelOutput" as never)}</p>
 				</div>
-				<div className="overflow-hidden rounded-md border">
-					<div className="flex items-center justify-between gap-4 px-4 py-3">
+				<div>
+					<div className="flex items-center justify-between gap-6 py-5">
 						<div>
 							<label htmlFor="response-healing" className="text-sm font-medium">{t("credits.Enable by Default" as never)}</label>
 							<p className="mt-1 text-sm text-muted-foreground">{t("strings.phraseRepairCompatibleStructuredOutputResponsesForThisWorkspace" as never)}</p>
@@ -174,7 +174,7 @@ export default function RoutingSettingsClient({ workspaceId, canManage, initialM
 						/>
 					</div>
 					<Separator />
-					<div className="grid gap-3 px-4 py-3 sm:grid-cols-[minmax(0,1fr)_minmax(220px,320px)] sm:items-center">
+					<div className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
 						<div>
 							<label htmlFor="response-healing-mode" className="text-sm font-medium">{t("strings.Healing Mode" as never)}</label>
 							<p className="mt-1 text-sm text-muted-foreground">
@@ -207,7 +207,7 @@ export default function RoutingSettingsClient({ workspaceId, canManage, initialM
 						</Select>
 					</div>
 					<Separator />
-					<div className="flex items-center justify-between gap-4 px-4 py-3">
+					<div className="flex items-center justify-between gap-6 py-5">
 						<div>
 							<label htmlFor="response-healing-lock" className="text-sm font-medium">{t("credits.Lock Workspace Policy" as never)}</label>
 							<p className="mt-1 text-sm text-muted-foreground">{t("strings.phrasePreventPresetsAndRequestsFromOverridingThisDefault" as never)}</p>

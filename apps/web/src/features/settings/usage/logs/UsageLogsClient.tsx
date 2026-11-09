@@ -11,6 +11,7 @@ import type { SettingsUsageLogsInitialData } from "@/lib/fetchers/internal/setti
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import { WebApiError } from "@/lib/web-api/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import SettingsPageHeader from "@/components/(gateway)/settings/SettingsPageHeader";
 import AsyncJobsPanel from "@/components/(gateway)/usage/AsyncJobsPanel";
 import SessionsPanel from "@/components/(gateway)/usage/SessionsPanel";
 import UsageLogsToolbar from "@/components/(gateway)/usage/UsageLogsToolbar";
@@ -436,11 +437,8 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 	}
 	return (
 		<NuqsAdapter>
-		<div className="min-w-0 space-y-4">
-			<div>
-				<h1 className="text-2xl font-semibold tracking-tight">{pageTitle}</h1>
-				<p className="mt-1 max-w-3xl text-sm text-muted-foreground">{pageDescription}</p>
-			</div>
+		<div className="min-w-0 space-y-8">
+			<SettingsPageHeader title={pageTitle} description={pageDescription} />
 			<div className="flex min-w-0 flex-wrap items-center justify-between gap-3">
 				<div className="flex min-w-0 flex-wrap items-center gap-2">
 					{filters}

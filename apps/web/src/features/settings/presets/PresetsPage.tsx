@@ -19,7 +19,7 @@ export async function getPresetsMetadata() {
 export default function PresetsPage() {
 	const t = useTranslations("SettingsUI.presetPage");
 	return (
-		<div className="space-y-7">
+		<div className="min-w-0 space-y-8">
 			<Alert className="border-border/80 bg-muted/25">
 				<Info className="h-4 w-4 text-muted-foreground" />
 				<AlertTitle className="text-foreground">

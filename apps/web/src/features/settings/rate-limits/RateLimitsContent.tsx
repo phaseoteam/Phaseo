@@ -9,7 +9,7 @@ import { ProductFeedbackButton } from "@/components/feedback/ProductFeedbackButt
 export default withSettingsResource("rate-limits", function RateLimitsContent({ initialData }: { initialData: SettingsRateLimitsInitialData }) {
 	const t = useTranslations("SettingsUI");
 	return (
-		<div className="space-y-6">
+		<div className="min-w-0 space-y-8">
 			<SettingsPageHeader
 				title={t("rateLimitPolicies.title")}
 				description={t("rateLimitPolicies.description")}

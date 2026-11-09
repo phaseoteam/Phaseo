@@ -8,7 +8,7 @@ import SpendAlertsSection from "@/components/(gateway)/settings/spend-rules/Spen
 export default withSettingsResource("notifications", function NotificationsContent({ initialData: data }) {
 	const t = useTranslations("SettingsUI");
 	return (
-		<div className="space-y-6">
+		<div className="w-full max-w-4xl space-y-8">
 			<SettingsPageHeader title={t("headers.notifications")} description={t("headers.notificationsDescription")} />
 			<LowBalanceEmailAlertsClient
 				autoTopUpFailureEmailEnabled={data.autoTopUpFailureEmailEnabled}
