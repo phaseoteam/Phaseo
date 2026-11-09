@@ -66,6 +66,10 @@ phaseo credits add --amount 20 --json
 | काम | CLI | API रूट | MCP टूल |
 | --- | --- | --- | --- |
 | कुंजियों की सूची देखें, नाम बदलें या हटाएँ | `phaseo keys list`, `phaseo keys update <id> --name <name>`, `phaseo keys delete <id>` | `GET /v1/keys`, `PATCH /v1/keys/{id}`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
+| API कुंजी बनाना | `phaseo keys create --name <name>` | `POST /v1/keys` | — |
+| किसी कुंजी की सीमाएँ, स्थिति या समाप्ति बदलें | `phaseo keys update <id> --limit <usd>`, `phaseo keys update <id> --disabled true` | `PATCH /v1/keys/{id}` | — |
+| कुंजी रोटेट करना | — | `POST /v1/keys/{id}/rotate` | — |
+| कुंजी को IP पतों तक सीमित करना | — | `PATCH /v1/keys/{id}` | — |
 | आपके अधिकृत किए ऐप की समीक्षा करना, उन्हें सीमित या रद्द करना | `phaseo authorized-apps list`, `phaseo authorized-apps update-scopes <id> --scopes <scope,...>`, `phaseo authorized-apps revoke <id> --yes` | `GET /v1/me/authorized-apps`, `PATCH /v1/me/authorized-apps/{id}`, `DELETE /v1/me/authorized-apps/{id}` | — |
 | अपनी प्रोफ़ाइल अपडेट करना | `phaseo profile update` | `PATCH /v1/me/profile` | — |
 
@@ -105,10 +109,6 @@ phaseo credits add --amount 20 --json
 
 | काम | API रूट |
 | --- | --- |
-| API कुंजी बनाना | `POST /v1/keys` |
-| किसी कुंजी की सीमाएँ, स्थिति या समाप्ति बदलें | `PATCH /v1/keys/{id}` |
-| कुंजी रोटेट करना | `POST /v1/keys/{id}/rotate` |
-| कुंजी को IP पतों तक सीमित करना | `PATCH /v1/keys/{id}` |
 | मैनेजमेंट कुंजी बनाना | `POST /v1/management-keys` |
 | ऑटो टॉप-अप या कम-बैलेंस ईमेल चालू करना | `PATCH /v1/notifications/settings` |
 | वर्कस्पेस बजट सेट करना | `POST /v1/budgets`, `PATCH /v1/budgets/{id}` |

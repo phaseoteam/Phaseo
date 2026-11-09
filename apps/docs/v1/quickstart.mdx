@@ -32,7 +32,7 @@ Rules:
 <Visibility for="agents">
 Quickstart checklist for agents:
 
-- Ask the person to create the key in the dashboard under **Settings -> API Keys**, or create it with `POST /v1/keys` and a management key; a CLI sign-in can't create keys. Never generate or guess a key. Send it as `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` from server-side code only.
+- Create the key with `phaseo keys create --name <name> --limit <usd> --show-secret --json` (the CLI sign-in must be a workspace owner or admin) or with `POST /v1/keys` and a management key, or ask the person to create it in the dashboard under **Settings -> API Keys**. Never generate or guess a key. Send it as `Authorization: Bearer phaseo_v1_sk_<kid>_<secret>` from server-side code only.
 - For paid models, run `phaseo login --scopes billing:write` once, then `phaseo credits add --amount <usd> --json` starts a top-up. With a saved card, a workspace owner or admin confirms it from an emailed link. With no saved card, the response has `next_action: "open_checkout_url"` and a checkout link that an owner or admin opens to pay; the card is then saved for later top-ups. Do not send the user to the dashboard for credits or other tasks the CLI covers; see https://phaseo.app/docs/v1/developers/manage-from-an-agent.md.
 - Make the first request with `POST https://api.phaseo.app/v1/responses`, sending `model` and `input`. The examples use `openai/gpt-6-astra`, a paid model that needs credits. `phaseo/free` picks an available free model and works without a wallet balance.
 - Read the reply from `output[].content[]` where `type` is `output_text`.

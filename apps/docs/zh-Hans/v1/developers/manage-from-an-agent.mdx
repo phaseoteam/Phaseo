@@ -66,6 +66,10 @@ phaseo credits add --amount 20 --json
 | 任务 | CLI | API 路由 | MCP 工具 |
 | --- | --- | --- | --- |
 | 列出、重命名或删除密钥 | `phaseo keys list`, `phaseo keys update <id> --name <name>`, `phaseo keys delete <id>` | `GET /v1/keys`, `PATCH /v1/keys/{id}`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
+| 创建 API 密钥 | `phaseo keys create --name <name>` | `POST /v1/keys` | — |
+| 更改密钥的限额、状态或过期时间 | `phaseo keys update <id> --limit <usd>`, `phaseo keys update <id> --disabled true` | `PATCH /v1/keys/{id}` | — |
+| 轮换密钥 | — | `POST /v1/keys/{id}/rotate` | — |
+| 将密钥限制为特定 IP 地址 | — | `PATCH /v1/keys/{id}` | — |
 | 查看、缩小权限或撤销你授权的应用 | `phaseo authorized-apps list`、`phaseo authorized-apps update-scopes <id> --scopes <scope,...>`、`phaseo authorized-apps revoke <id> --yes` | `GET /v1/me/authorized-apps`、`PATCH /v1/me/authorized-apps/{id}`、`DELETE /v1/me/authorized-apps/{id}` | — |
 | 更新个人资料 | `phaseo profile update` | `PATCH /v1/me/profile` | — |
 
@@ -105,10 +109,6 @@ phaseo credits add --amount 20 --json
 
 | 任务 | API 路由 |
 | --- | --- |
-| 创建 API 密钥 | `POST /v1/keys` |
-| 更改密钥的限额、状态或过期时间 | `PATCH /v1/keys/{id}` |
-| 轮换密钥 | `POST /v1/keys/{id}/rotate` |
-| 将密钥限制为特定 IP 地址 | `PATCH /v1/keys/{id}` |
 | 创建管理密钥 | `POST /v1/management-keys` |
 | 开启自动充值或低余额邮件提醒 | `PATCH /v1/notifications/settings` |
 | 设置工作区预算 | `POST /v1/budgets`、`PATCH /v1/budgets/{id}` |
