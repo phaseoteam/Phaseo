@@ -35,7 +35,7 @@ import type { LeaseAcquireResult, LeaseReturn, LeaseVector } from "@core/lease-p
 import { dispatchBackground, getBindingsIfConfigured } from "@/runtime/env";
 import { awaitShared } from "@core/shared-wait";
 import type { GatewayBindings } from "@/runtime/env.types";
-import type { SpendDenial, SpendLeaseMeta, SpendRecordEntry, SpendRecordResult } from "@core/spend-limits.shared";
+import { SPEND_LIMIT_RECORD_PROTOCOL, type SpendDenial, type SpendLeaseMeta, type SpendRecordEntry, type SpendRecordResult } from "@core/spend-limits.shared";
 
 export type SpendLimitMode = "off" | "shadow" | "enforce";
 
@@ -107,10 +107,30 @@ function poolKey(workspaceId: string, keyId: string): string {
 	return `${workspaceId}:${keyId}`;
 }
 
+// The record protocol each workspace's coordinator last advertised (absent: protocol 1, the previous
+// coordinator, which keeps the first record of a billing id and ignores replacements and combined
+// releases). The SpendLimit object is hosted by one Worker and called from several, deployed
+// separately, so an isolate may talk to an older or newer coordinator than its own.
+const coordinatorProtocols = new Map<string, number>();
+const MAX_PROTOCOLS = 1_000;
+
+function noteProtocol(workspaceId: string, protocol: unknown): void {
+	coordinatorProtocols.delete(workspaceId);
+	coordinatorProtocols.set(workspaceId, typeof protocol === "number" && Number.isFinite(protocol) ? protocol : 1);
+	if (coordinatorProtocols.size > MAX_PROTOCOLS) {
+		const oldest = coordinatorProtocols.keys().next();
+		if (!oldest.done) coordinatorProtocols.delete(oldest.value);
+	}
+}
+
 function transportFor(stub: SpendLimitStub, workspaceId: string, keyId: string, admissionId: string): LeaseTransport<SpendLeaseMeta, SpendDenial> {
 	return {
 		acquire: (need, want, returns) => stub.acquire(workspaceId, keyId, need, want, returns,
-			need.requests > 0 ? admissionId : crypto.randomUUID()),
+			need.requests > 0 ? admissionId : crypto.randomUUID()).then((result) => {
+			if ("lease" in result) noteProtocol(workspaceId, result.lease.meta?.protocol);
+			else if (result.denial) noteProtocol(workspaceId, result.denial.protocol);
+			return result;
+		}),
 		returnLeases: (returns) => stub.returnLeases(workspaceId, returns),
 	};
 }
@@ -172,14 +192,59 @@ export async function checkSpendLimit(args: { workspaceId: string; keyId: string
 	}
 }
 
+// Totals already sent for a billing id as additive records to a protocol-1 coordinator.
+const legacySent = new Map<string, number>();
+const MAX_LEGACY_SENT = 10_000;
+
+/**
+ * The same records for a protocol-1 coordinator, which keeps the first record of each billing id:
+ * each checkpoint increase becomes its own record (id derived from its total, so a replay is a
+ * duplicate), the final sends the rest with its request count, and releases are returned to be sent
+ * only after the records are acknowledged. A final lower than what was sent cannot lower it there:
+ * an over-count until the seed counts the request.
+ */
+export function toProtocol1(entries: SpendRecordEntry[]): { entries: SpendRecordEntry[]; releases: Array<{ leaseId: string; admissionId: string }> } {
+	const out: SpendRecordEntry[] = [];
+	const releases: Array<{ leaseId: string; admissionId: string }> = [];
+	for (const entry of entries) {
+		const { releaseAdmissionId, replace, final, revision: _revision, ...plain } = entry;
+		if (releaseAdmissionId && entry.leaseId) releases.push({ leaseId: entry.leaseId, admissionId: releaseAdmissionId });
+		if (!replace) {
+			out.push(plain);
+			continue;
+		}
+		const id = entry.billingRequestId;
+		const sent = legacySent.get(id) ?? 0;
+		const delta = Math.max(0, entry.costNanos - sent);
+		if (final) {
+			legacySent.delete(id);
+			out.push({ ...plain, billingRequestId: `${id}:final`, costNanos: delta, requests: entry.requests });
+		} else if (delta > 0) {
+			legacySent.delete(id);
+			legacySent.set(id, entry.costNanos);
+			if (legacySent.size > MAX_LEGACY_SENT) {
+				const oldest = legacySent.keys().next();
+				if (!oldest.done) legacySent.delete(oldest.value);
+			}
+			out.push({ ...plain, billingRequestId: `${id}:+${entry.costNanos}`, costNanos: delta, requests: 0 });
+		}
+	}
+	return { entries: out, releases };
+}
+
 async function flushRecords(workspaceId: string): Promise<void> {
-	const entries = recordQueues.get(workspaceId);
+	const queued = recordQueues.get(workspaceId);
 	recordQueues.delete(workspaceId);
-	if (!entries?.length) return;
+	if (!queued?.length) return;
 	const stub = stubFor(workspaceId);
 	if (!stub) return;
+	const current = (coordinatorProtocols.get(workspaceId) ?? 1) >= SPEND_LIMIT_RECORD_PROTOCOL;
+	const { entries, releases } = current ? { entries: queued, releases: [] } : toProtocol1(queued);
 	// A lost batch is not lost spend: its gateway_requests rows are counted at the next reseed.
-	const result = await stub.record(workspaceId, entries);
+	const result = entries.length ? await stub.record(workspaceId, entries) : null;
+	if (result) noteProtocol(workspaceId, result.protocol);
+	// Only once the cost is recorded: a slot released first would let an admission through uncounted.
+	for (const release of releases) await stub.release(workspaceId, release.leaseId, release.admissionId);
 	for (const keyId of result?.drainKeyIds ?? []) {
 		// The coordinator saw contention near a cap: hand unused slices back now.
 		const pool = pools.get(poolKey(workspaceId, keyId));
@@ -244,7 +309,8 @@ export function recordCheckpointSpend(args: {
 			billingRequestId: args.billingRequestId,
 			requestId: args.requestId,
 			costNanos,
-			requests: 1,
+			// Checkpoints settle cost only; the final record settles the request.
+			requests: 0,
 			leaseId: args.admission && args.admission.keyId === args.keyId ? args.admission.leaseId : null,
 			replace: true,
 			revision: Math.max(1, Math.trunc(args.revision)),
@@ -625,6 +691,8 @@ export function __resetSpendLimitsForTests(): void {
 	pools.clear();
 	recordQueues.clear();
 	shadowed.clear();
+	coordinatorProtocols.clear();
+	legacySent.clear();
 }
 
 /** Flushes queued spend records now (tests and shutdown paths). */

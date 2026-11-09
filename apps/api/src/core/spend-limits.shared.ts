@@ -78,6 +78,14 @@ export function windowEnd(window: KeyWindow, start: number): number {
 	return Date.UTC(date.getUTCFullYear(), date.getUTCMonth() + 1, 1);
 }
 
+/**
+ * The record protocol of a coordinator that applies replacement checkpoints (SpendRecordEntry.replace),
+ * finals that settle requests separately from cost, and releases carried in a record
+ * (releaseAdmissionId). A coordinator advertises it in every response; an isolate that has not seen
+ * it sends the previous protocol: additive records, and releases only after the cost is acknowledged.
+ */
+export const SPEND_LIMIT_RECORD_PROTOCOL = 2;
+
 /** Isolate-held lease metadata. */
 export type SpendLeaseMeta = {
 	keyId: string;
@@ -85,12 +93,16 @@ export type SpendLeaseMeta = {
 	buckets: GateCheck["buckets"];
 	/** True when neither the key nor the workspace has any limit. */
 	unlimited: boolean;
+	/** The coordinator's record protocol (absent: the previous coordinator, protocol 1). */
+	protocol?: number;
 };
 
 export type SpendDenial = {
 	gate: GateCheck;
 	/** The limit is not yet used, but its remainder is held by other isolates' slices. */
 	contended: boolean;
+	/** The coordinator's record protocol (absent: protocol 1). */
+	protocol?: number;
 };
 
 export type SpendRecordEntry = {
@@ -100,7 +112,10 @@ export type SpendRecordEntry = {
 	/** gateway_requests.request_id of the row this spend produces (used to avoid double counting). */
 	requestId: string;
 	costNanos: number;
-	/** Number of successful gateway_requests rows (normally 1). */
+	/**
+	 * Number of successful gateway_requests rows (normally 1). Checkpoints settle cost only; their
+	 * request count is ignored, and the final record sets it (0 for a charged failure).
+	 */
 	requests: number;
 	/** gateway_requests.created_at of the row, in epoch ms. Defaults to the record time. */
 	occurredAtMs?: number;
@@ -113,8 +128,8 @@ export type SpendRecordEntry = {
 	 */
 	replace?: boolean;
 	/**
-	 * The checkpoint's place in the request's sequence (1, 2, …). Only checkpoint 1 opens an entry:
-	 * any other record for an entry the coordinator does not hold is ignored.
+	 * The checkpoint's place in the request's sequence (1, 2, …). Any other record than checkpoint 1
+	 * opening an entry means the seed in use may already count its charge row (a reseed starts).
 	 */
 	revision?: number;
 	/** The request's final settled total: sets the amount, and nothing changes it after that. */
@@ -127,4 +142,9 @@ export type SpendRecordEntry = {
 	releaseAdmissionId?: string | null;
 };
 
-export type SpendRecordResult = { duplicates: number; drainKeyIds: string[] };
+export type SpendRecordResult = {
+	duplicates: number;
+	drainKeyIds: string[];
+	/** The coordinator's record protocol (absent: protocol 1). */
+	protocol?: number;
+};
