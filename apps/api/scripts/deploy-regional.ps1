@@ -42,6 +42,7 @@ $regionalSecretNames = @(
     "PHALA_API_KEY",
     "PHALA_BASE_URL",
     "PRIMALABS_API_KEY",
+    "PRIMALABS_BASE_URL",
     "MISTRAL_API_KEY",
     "MISTRAL_AI_API_KEY",
     "ANTHROPIC_API_KEY",
