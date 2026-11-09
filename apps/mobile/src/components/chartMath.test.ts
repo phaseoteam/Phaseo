@@ -1,4 +1,4 @@
-import { barLayout, linePath, nearestIndex, niceTicks, placeTooltip, slotIndex, stepIndex } from "./chartMath";
+import { barLayout, linePath, nearestIndex, niceTicks, placeTooltip, stepIndex } from "./chartMath";
 
 describe("nearestIndex", () => {
   const positions = [10, 20, 40, 80];
@@ -13,20 +13,18 @@ describe("nearestIndex", () => {
   });
 });
 
-describe("slotIndex", () => {
-  test("maps x to the bar slot it falls in, clamped to the bars", () => {
-    // 4 bars of 25 px from x = 30.
-    expect([0, 30, 54.9, 55, 99, 129.9, 400].map((x) => slotIndex(x, 30, 25, 4))).toEqual([0, 0, 0, 1, 2, 3, 3]);
+describe("bars read by their centres", () => {
+  test("the nearest centre is the slot under the finger, clamped to the bars", () => {
+    // 4 bars in 25 px slots from x = 30 (a 100 px plot); a finger reads the bar whose centre is nearest.
+    const layout = barLayout(4, 30, 100);
+    const centres = [0, 1, 2, 3].map(layout.centre);
+    expect([0, 30, 54.9, 56, 99, 129.9, 400].map((x) => nearestIndex(centres, x))).toEqual([0, 0, 0, 1, 2, 3, 3]);
   });
 
-  test("returns -1 when there is nothing to pick", () => {
-    expect(slotIndex(10, 0, 25, 0)).toBe(-1);
-    expect(slotIndex(10, 0, 0, 4)).toBe(-1);
-  });
-
-  test("agrees with where barLayout draws the bars", () => {
+  test("each centre reads its own bar", () => {
     const layout = barLayout(30, 40, 300);
-    for (const index of [0, 7, 29]) expect(slotIndex(layout.centre(index), 40, layout.slot, 30)).toBe(index);
+    const centres = Array.from({ length: 30 }, (_, index) => layout.centre(index));
+    for (const index of [0, 7, 29]) expect(nearestIndex(centres, layout.centre(index))).toBe(index);
     expect(layout.barWidth).toBe(6);
   });
 });

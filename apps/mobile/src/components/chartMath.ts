@@ -12,8 +12,12 @@ export function niceTicks(max: number, count = 4) {
   return ticks;
 }
 
-/** The index of the position nearest `x` (positions in ascending order), or -1 when there are none. */
+/**
+ * The index of the position nearest `x` (positions in ascending order), or -1 when there are none. A worklet: a
+ * chart's drag calls it on the UI thread for every move.
+ */
 export function nearestIndex(positions: readonly number[], x: number): number {
+  "worklet";
   if (!positions.length) return -1;
   let low = 0;
   let high = positions.length - 1;
@@ -27,11 +31,6 @@ export function nearestIndex(positions: readonly number[], x: number): number {
   return low;
 }
 
-/** The bar under `x` when `count` bars sit in equal slots from `left`; a finger past either end picks the end bar. */
-export function slotIndex(x: number, left: number, slot: number, count: number): number {
-  if (count <= 0 || !(slot > 0)) return -1;
-  return Math.max(0, Math.min(count - 1, Math.floor((x - left) / slot)));
-}
 
 /** Bars in equal slots: the slot width, each bar's width and its left edge and centre. */
 export function barLayout(count: number, left: number, plotWidth: number, maxBar = 18) {
