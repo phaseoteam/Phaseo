@@ -632,7 +632,11 @@ summary:has(> svg:first-child)::before { display: none; }
 @keyframes icon-issue-dot { from { transform: scale(0.4); opacity: 0.4; } to { transform: none; opacity: 1; } }
 @keyframes icon-retry-turn { from { transform: rotate(60deg); } to { transform: none; } }
 @keyframes icon-panel-nudge { 0%, 100% { translate: 0; } 45% { translate: var(--panel-nudge) 0; } }
+@keyframes icon-navigation-nudge { 0%, 100% { translate: 0; } 45% { translate: var(--navigation-nudge) 0; } }
 .gesture-icon > * { transform-origin: 12px 12px; }
+.gesture-icon[data-icon-gesture="back"] { --navigation-nudge: -1.5px; }
+.gesture-icon[data-icon-gesture="forward"] { --navigation-nudge: 1.5px; }
+.gesture-icon:is([data-icon-gesture="back"], [data-icon-gesture="forward"]) > * { --icon-gesture: icon-navigation-nudge; --icon-gesture-duration: 300ms; }
 .gesture-icon[data-icon-gesture="sidebarLeft"] { --panel-nudge: -1.25px; }
 .gesture-icon[data-icon-gesture="sidebarRight"] { --panel-nudge: 1.25px; }
 .gesture-icon[data-icon-gesture="sidebarLeft"][data-open="false"] { --panel-nudge: 1.25px; }

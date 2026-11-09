@@ -59,7 +59,7 @@ app.whenReady().then(async () => { try {
 	mock("factory:open-thread", () => { openedItemThreads++; return "main"; });
 	for (const channel of ["change-on-github", "start-run", "act", "create-issue", "send-message"]) mock(`factory:${channel}`, () => { factoryWrites++; throw Error("Factory writes are forbidden in this fixture"); });
 	// Browser chrome is exercised without creating a native page or opening a site.
-	mock("desktop:browser", (_event, command) => ({ id: command.id, url: "https://example.invalid", title: "Owned page", loading: false, canGoBack: false, canGoForward: false, devToolsOpen: false, viewport: { mode: "fill" }, zoom: 1, colorScheme: "system", audible: false, muted: false, configured: true }));
+	mock("desktop:browser", (_event, command) => ({ id: command.id, url: "https://example.invalid", title: "Owned page", loading: false, canGoBack: true, canGoForward: true, devToolsOpen: false, viewport: { mode: "fill" }, zoom: 1, colorScheme: "system", audible: false, muted: false, configured: true }));
 	mock("desktop:browser-download", () => [{ id: "fixture", sourceId: "main", filename: "owned.txt", url: "https://example.invalid/owned.txt", path: "", received: 1, total: 1, status: "completed", resumable: false, finished: true }]);
 	mock("workspace:command", (_event, command) => {
 		// Delivery is observed at the IPC boundary; no adapter, account or inference is invoked.
@@ -215,6 +215,13 @@ app.whenReady().then(async () => { try {
 	await cdp("DOM.enable"); await cdp("CSS.enable");
 	await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
 	const force = async (selector, pseudo) => { const { root } = await cdp("DOM.getDocument"); const { nodeId } = await cdp("DOM.querySelector", { nodeId: root.nodeId, selector }); assert(nodeId, selector); await cdp("CSS.forcePseudoState", { nodeId, forcedPseudoClasses: pseudo ? [pseudo] : [] }); };
+	async function navigationGesture(selector) {
+		for (const pseudo of ["hover", "focus-visible"]) {
+			await force(selector, pseudo);
+			assert(await run(`document.querySelector(${JSON.stringify(selector)}+' svg').getAnimations({subtree:true}).some(animation=>animation.animationName==='icon-navigation-nudge')`), `${selector} lacks ${pseudo}`);
+		}
+		await force(selector, null);
+	}
 	const samples = {}, gestures = {};
 	for (const action of ["send", "queue", "steer"]) {
 		await configure({ status: action === "send" ? "completed" : "running", followUp: action === "steer" ? "steer" : "queue" });
@@ -271,6 +278,7 @@ app.whenReady().then(async () => { try {
 			await run("Array.from(document.querySelectorAll('[role=option]')).find(option=>option.textContent.includes('Open browser')).click()");
 			await ready("!!document.querySelector('button[aria-label=\"Open in system browser\"]')");
 			await run("document.querySelector('[data-browser-surface]').parentElement.getAnimations().forEach(animation=>animation.finish());true");
+			for (const direction of ["back", "forward"]) await navigationGesture(`.browser-toolbar button:has([data-icon-gesture="${direction}"])`);
 		}
 		if (name === "merge") {
 			await configure({ status: "completed", project: true });
@@ -405,6 +413,26 @@ app.whenReady().then(async () => { try {
 	await run("document.querySelectorAll('header .gesture-icon').forEach(svg=>svg.getAnimations({subtree:true}).forEach(animation=>animation.finish()));true");
 	await capture("after-panels-open");
 	console.log("SIDEBAR_ICON_GESTURES", JSON.stringify({ sides: 2, states: 2, hoverAndFocus: true, toggles: true }));
+	await configure({ status: "completed" });
+	await ready("document.querySelector('header button[aria-label=Back]')?.disabled && document.querySelector('header button[aria-label=Forward]')?.disabled");
+	await capture("after-navigation-disabled");
+	for (const direction of ["back", "forward"]) {
+		const selector = `header button:has([data-icon-gesture="${direction}"])`;
+		await force(selector, "hover");
+		assert.equal(await run(`document.querySelector(${JSON.stringify(selector)}+' svg').getAnimations({subtree:true}).length`), 0);
+		await force(selector, null);
+	}
+	await run("Array.from(document.querySelectorAll('aside button')).find(button=>button.textContent.includes('New chat')).click();true");
+	await ready("document.querySelector('header button[aria-label=Back]')?.disabled===false");
+	await navigationGesture('header button:has([data-icon-gesture="back"])');
+	await capture("after-navigation-back");
+	await run("document.querySelector('header button[aria-label=Back]').click();true");
+	await ready("document.querySelector('aside [aria-current=page]')?.textContent.includes('Owned main') && document.querySelector('header button[aria-label=Forward]')?.disabled===false");
+	await navigationGesture('header button:has([data-icon-gesture="forward"])');
+	await capture("after-navigation-forward");
+	await run("document.querySelector('header button[aria-label=Forward]').click();true");
+	await ready("!document.querySelector('aside [aria-current=page]') && document.querySelector('header button[aria-label=Forward]')?.disabled");
+	console.log("NAVIGATION_ACTION_GESTURES", JSON.stringify({ surfaces: 2, directions: 2, hoverAndFocus: true, disabledStill: true, historyRoundTrip: true }));
 	owner.webContents.debugger.detach();
 	console.log("COMPOSER_ACTIONS_SMOKE", JSON.stringify({ surfaces: 3, deliveryDefaults: 2, primaryAndAlternate: true, idleSend: true, stopWithEmptyDraft: true, unsupportedSteeringQueues: true, queueEdit: true, questionAnswer: true, keyboardAndIME: true, svgTraces: true, actionGestures: gestures, boundedGestures: true, stationaryControls: true, copyFeedback: true, stationaryWindowControls: true, animationsOff: true, reducedMotion: true, minimumWidth: true, inferenceCalls: 0, packaged: Boolean(entry) }));
 	clearTimeout(deadline); app.exit(0);

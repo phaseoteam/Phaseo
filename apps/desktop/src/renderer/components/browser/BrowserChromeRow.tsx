@@ -1,4 +1,4 @@
-import { ArrowLeft, ArrowRight, Camera, MousePointerClick, PictureInPicture2, RefreshCw } from "lucide-react";
+import { Camera, MousePointerClick, PictureInPicture2, RefreshCw } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Button } from "../ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group";
@@ -38,8 +38,8 @@ export function BrowserChromeRow({ url, loading, canGoBack, canGoForward, hasPag
 	return <div className="relative shrink-0">
 		<form className="browser-toolbar flex h-7 min-h-7 items-center gap-1 px-1.5 my-1" onSubmit={event => { event.preventDefault(); submit(); }}>
 			<div className="flex items-center gap-0.5" role="group" aria-label="Navigation">
-				<BrowserIconButton label="Back" icon={<ArrowLeft />} disabled={!canGoBack} onClick={onBack} />
-				<BrowserIconButton label="Forward" icon={<ArrowRight />} disabled={!canGoForward} onClick={onForward} />
+				<BrowserIconButton label="Back" icon={<ActionIcon name="back" />} disabled={!canGoBack} onClick={onBack} />
+				<BrowserIconButton label="Forward" icon={<ActionIcon name="forward" />} disabled={!canGoForward} onClick={onForward} />
 				<BrowserIconButton label={loading ? "Stop" : "Reload"} tooltip={loading ? "Loading… click to stop" : "Reload"} icon={loading ? <RefreshCw className="size-3.5 motion-safe:animate-spin" /> : <ActionIcon name="refresh" className="size-3.5" />} disabled={!hasPage} onClick={onReload} />
 			</div>
 			<InputGroup className="group/address h-7 flex-1 bg-transparent transition-colors hover:bg-muted/40 has-[[data-slot=input-group-control]:focus-visible]:bg-background">

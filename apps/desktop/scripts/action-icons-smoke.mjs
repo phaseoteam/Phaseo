@@ -9,7 +9,7 @@ import { build } from "vite";
 const scratch = mkdtempSync(path.join(tmpdir(), "phaseo-action-icons-"));
 app.setPath("userData", path.join(scratch, "profile"));
 const root = path.resolve(import.meta.dirname, "..");
-const names = ["pin", "unpin", "archive", "restore", "edit", "pencil", "link", "unlink", "camera", "up", "down", "publish", "folder", "addFolder", "mail", "signIn", "schedule", "inbox", "thread", "usage", "issue", "complete", "notPlanned", "draftPullRequest", "closePullRequest", "comment", "open", "approve", "requestChanges", "retry", "sidebarLeft", "sidebarRight"];
+const names = ["pin", "unpin", "archive", "restore", "edit", "pencil", "link", "unlink", "camera", "up", "down", "publish", "folder", "addFolder", "mail", "signIn", "schedule", "inbox", "thread", "usage", "issue", "complete", "notPlanned", "draftPullRequest", "closePullRequest", "comment", "open", "approve", "requestChanges", "retry", "sidebarLeft", "sidebarRight", "back", "forward"];
 const fixedParts = { archive: [1], restore: [1], camera: [0], publish: [1], folder: [0], addFolder: [2], mail: [1], signIn: [2], schedule: [1, 2, 3, 4, 5], inbox: [1], thread: [0], usage: [0], issue: [0], complete: [0], notPlanned: [0], draftPullRequest: [0, 1, 4], closePullRequest: [0, 1, 4, 5], requestChanges: [0, 2], sidebarLeft: [0, 1, 2], sidebarRight: [0, 1, 2] };
 const importPath = relative => JSON.stringify(path.join(root, relative).replaceAll("\\", "/"));
 writeFileSync(path.join(scratch, "entry.tsx"), `
@@ -70,6 +70,7 @@ app.whenReady().then(async () => { try {
 			assert.deepEqual(middle.box, idle.box, `${name} moves its control`);
 			assert.equal(middle.svgTransform, "none", `${name} moves its whole glyph`);
 			assert.notDeepEqual(middle.parts, idle.parts, `${name} has no visible gesture`);
+			if (name === "back" || name === "forward") assert(middle.parts.every(part => name === "back" ? parseFloat(part.translate) < 0 : parseFloat(part.translate) > 0), `${name} moves in the wrong direction`);
 			for (const index of fixedParts[name] ?? []) assert.deepEqual(middle.parts[index], idle.parts[index], `${name} moves its frame`);
 			gestures[name] = active.animations.map(value => value.name);
 			await force(name, null);

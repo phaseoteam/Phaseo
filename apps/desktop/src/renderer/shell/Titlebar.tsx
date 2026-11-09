@@ -1,6 +1,6 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ChatDetails } from "./ChatDetails";
-import { ArrowLeft, ArrowRight, Check, ChevronDown, CircleArrowUp, Code2, Ellipsis, Factory, MessageSquare, Minus, Square, X, Copy as Restore } from "lucide-react";
+import { Check, ChevronDown, CircleArrowUp, Code2, Ellipsis, Factory, MessageSquare, Minus, Square, X, Copy as Restore } from "lucide-react";
 import { ActionIcon } from "../components/ActionIcon";
 import type { DesktopAppAction, DesktopWindowState } from "../../shared/desktop";
 import { checkForUpdates, useUpdateState } from "../lib/updateState";
@@ -121,8 +121,8 @@ export function Titlebar() {
 		</div>
 		<div className="ml-2 flex items-center">
 			<IconButton label={sidebarOpen ? "Hide sidebar" : "Show sidebar"} onClick={() => setSidebarOpen(open => !open)}><ActionIcon name="sidebarLeft" data-open={sidebarOpen} className="size-[18px]!" /></IconButton>
-			<IconButton label="Back" disabled={!history.canBack} onClick={history.back}><ArrowLeft /></IconButton>
-			<IconButton label="Forward" disabled={!history.canForward} onClick={history.forward}><ArrowRight /></IconButton>
+			<IconButton label="Back" disabled={!history.canBack} onClick={history.back}><ActionIcon name="back" /></IconButton>
+			<IconButton label="Forward" disabled={!history.canForward} onClick={history.forward}><ActionIcon name="forward" /></IconButton>
 		</div>
 		<div className="flex flex-1 justify-center px-3">
 			<button type="button" onClick={() => setCommandsOpen(true)} className="no-drag flex h-7 w-full max-w-md items-center gap-2 rounded-md border border-border bg-background/60 px-2.5 text-xs text-muted-foreground transition-colors hover:bg-background hover:text-foreground">
