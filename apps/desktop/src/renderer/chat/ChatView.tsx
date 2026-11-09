@@ -343,6 +343,8 @@ function ChatComposer({ task }: { task: Task }) {
 		</div>}
 		{lengthProblem && <PromptLengthNotice problem={lengthProblem} />}
 		<ComposerTaskContext value={task.id}><Composer editor={editor} onSubmit={submit} canSend={canSend || Boolean(editing)} disabled={task.archived} ultrathink={ultrathinkReady && typesUltrathink(draft.text)}
+			submitAction={editing ? "save" : running && !answerer ? followUpSteers && !steerBlocker(task) ? "steer" : "queue" : "send"}
+			onAlternateSubmit={running && !editing && !answerer && !steerBlocker(task) ? () => void (followUpSteers ? send() : steer()) : undefined}
 			chips={editing && <span className="flex w-full items-center gap-2 text-xs text-muted-foreground"><Pencil className="size-3.5" />Editing a queued message<button type="button" onClick={() => stopEditing()} className="ml-auto rounded-md px-1.5 py-0.5 font-medium text-foreground hover:bg-muted">Cancel</button></span>}
 			running={running} onStop={() => void command({ type: "cancel", id: task.id })}
 			menu={task.archived ? undefined : menu}

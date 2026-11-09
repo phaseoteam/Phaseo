@@ -2,11 +2,11 @@ import { cloneElement, isValidElement, useEffect, useState, type ReactNode } fro
 import { cn } from "../lib/utils";
 
 /** How long the outgoing icon stays to morph out (index.css, .icon-swap). */
-const morphMs = 340;
+const morphMs = 180;
 
 /**
- * Icons for the states of one control, in one place: when `show` changes, the old icon shrinks, turns and blurs out as
- * the new one springs in (index.css, .icon-swap). Only the shown icon is in the page, and the outgoing one while it
+ * Icons for the states of one control, in one place: when `show` changes, the old icon fades as the next settles in
+ * (index.css, .icon-swap). Only the shown icon is in the page, and the outgoing one while it
  * leaves, so a long chat carries one extra node per icon. Nothing moves when it first appears, only on a change.
  */
 export function IconSwap({ show, children, className }: { show: string; children: Record<string, ReactNode>; className?: string }) {

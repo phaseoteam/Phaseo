@@ -46,6 +46,7 @@ export function CompareView({ group }: { group: CompareGroup }) {
 	const setText = (value: string) => setDrafts(current => ({ ...current, [group.id]: value }));
 	const running = ids.some(id => ["running", "waiting"].includes(overview.tasks.find(task => task.id === id)?.status ?? ""));
 	const followUpSteers = useWorkspacePreferences().chat.followUp === "steer";
+	const canSteer = ids.some(id => { const task = overview.tasks.find(value => value.id === id); return task && !steerBlocker(task); });
 	const editor = useComposerEditor({ value: text, onChange: setText, placeholder: running ? (followUpSteers ? "Steer every model…" : "Queue a follow-up for every model…") : "Ask every model a follow-up…" });
 	// Each column is its own agent, so the menu offers saved prompts and chats rather than one agent's commands.
 	const menu = useComposerMenu({ editor });
@@ -74,6 +75,8 @@ export function CompareView({ group }: { group: CompareGroup }) {
 		<div className="flex min-h-0 flex-1">{ids.map(id => <CompareColumn key={id} id={id} />)}</div>
 		<div className="mx-auto w-full max-w-[760px] px-6 pt-3 pb-4">
 			<Composer editor={editor} menu={menu} onSubmit={() => void send()} canSend={!busy && !!message.text} running={running}
+				submitAction={running ? followUpSteers && canSteer ? "steer" : "queue" : "send"}
+				onAlternateSubmit={running && canSteer ? () => void send(!followUpSteers) : undefined}
 				onStop={() => { for (const id of ids) void command({ type: "cancel", id }); }} />
 		</div>
 	</div>;

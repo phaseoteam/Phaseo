@@ -1,8 +1,10 @@
 import { useEffect, type ReactNode } from "react";
 import { EditorContent } from "@tiptap/react";
 import { ScrollArea } from "../components/ui/scroll-area";
-import { ArrowUp, Square } from "lucide-react";
+import { ChevronDown, Square } from "lucide-react";
 import { IconSwap } from "../components/IconSwap";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
+import { ComposerActionIcon, type ComposerAction } from "./ComposerActionIcon";
 import { cn } from "../lib/utils";
 import { chatDragType } from "../lib/mentions";
 import type { ComposerMenu } from "./ComposerMenu";
@@ -14,13 +16,16 @@ import { isSendKey, useSendKey } from "./sendKey";
 import { insertCodeBlock } from "./composerCodeBlock";
 
 /** The message box: an editor whose files, chats and attachments sit inline as chips. */
-export function Composer({ editor, onSubmit, onStop, disabled, canSend, running, size = "default", chips, tools, model, footer, menu, className, ultrathink, shortcuts = true }: {
+export function Composer({ editor, onSubmit, onStop, disabled, canSend, running, submitAction = "send", onAlternateSubmit, size = "default", chips, tools, model, footer, menu, className, ultrathink, shortcuts = true }: {
 	editor: ComposerEditor;
 	onSubmit: () => void;
 	onStop?: () => void;
 	disabled?: boolean;
 	canSend: boolean;
 	running?: boolean;
+	submitAction?: ComposerAction;
+	/** The other delivery action while a turn runs; the primary action follows Settings → Chat. */
+	onAlternateSubmit?: () => void;
 	size?: "default" | "large";
 	/** Controls above the text that are not part of the message, such as the models being compared. */
 	chips?: ReactNode;
@@ -36,6 +41,9 @@ export function Composer({ editor, onSubmit, onStop, disabled, canSend, running,
 	shortcuts?: boolean;
 }) {
 	const sendKey = useSendKey();
+	const actionLabel = { send: ultrathink ? "Send with Ultrathink" : "Send", queue: "Queue message", steer: "Steer message", save: "Update queued message" }[submitAction];
+	const alternateAction = onAlternateSubmit && (submitAction === "queue" ? "steer" : submitAction === "steer" ? "queue" : undefined);
+	const sendShortcut = sendKey === "enter" ? "Enter" : keyLabel("mod+enter", isMac());
 	// Formatting is by keyboard only: Ctrl+Alt+C for a code block, Ctrl+/ for the Markdown source (App).
 	useCommand("composer.codeBlock", () => { if (disabled) return false; return insertCodeBlock(editor); }, shortcuts);
 	editor.keys.current = event => {
@@ -67,11 +75,21 @@ export function Composer({ editor, onSubmit, onStop, disabled, canSend, running,
 				{tools}
 				<div className="ml-auto flex min-w-0 items-center gap-1">
 					{model}
-					{(() => { const stops = Boolean(running && onStop); return <button type={stops ? "button" : "submit"} onClick={stops ? onStop : undefined} disabled={!stops && !canSend}
-						aria-label={stops ? "Stop" : ultrathink ? "Send with Ultrathink" : "Send"} title={stops ? "Stop" : `${ultrathink ? "Sends with Ultrathink: this turn runs at Extra High" : "Send"} (${sendKey === "enter" ? "Enter" : keyLabel("mod+enter", isMac())})`}
-						className={cn("press-squish relative ml-1 grid size-8 shrink-0 place-items-center overflow-hidden rounded-full bg-foreground text-background transition-opacity hover:opacity-85 disabled:opacity-25", !stops && ultrathink && "ultrathink-send")}>
-						<IconSwap show={stops ? "stop" : "send"} className="relative">{{ send: <ArrowUp className="size-4" strokeWidth={2.5} />, stop: <Square className="size-3 fill-current" /> }}</IconSwap>
-					</button>; })()}
+					{running && onStop && <button type="button" onClick={onStop} aria-label="Stop" title="Stop the current turn"
+						className="ml-1 grid size-8 shrink-0 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"><Square aria-hidden className="size-3 fill-current" /></button>}
+					<div className="ml-1 flex shrink-0 items-center gap-px">
+						<button type="submit" disabled={disabled || !canSend} aria-label={actionLabel}
+							title={`${actionLabel}${submitAction === "queue" ? " after the current turn" : submitAction === "steer" ? " into the current turn" : ""} (${sendShortcut})`}
+							className={cn("composer-action relative grid size-8 place-items-center overflow-hidden rounded-md bg-foreground text-background transition-opacity hover:opacity-85 disabled:opacity-25", ultrathink && submitAction !== "save" && "ultrathink-send")}>
+							<IconSwap show={submitAction} className="relative">{{ send: <ComposerActionIcon action="send" />, queue: <ComposerActionIcon action="queue" />, steer: <ComposerActionIcon action="steer" />, save: <ComposerActionIcon action="save" /> }}</IconSwap>
+						</button>
+						{alternateAction && <DropdownMenu>
+							<DropdownMenuTrigger render={<button type="button" disabled={disabled || !canSend} aria-label="Message actions" title="Choose how to send" className="grid h-8 w-5 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-25" />}><ChevronDown aria-hidden className="size-3" /></DropdownMenuTrigger>
+							<DropdownMenuContent align="end" side="top" className="w-48">
+								{(["queue", "steer"] as const).map(action => <DropdownMenuItem key={action} className="composer-action" onClick={action === submitAction ? onSubmit : onAlternateSubmit}><ComposerActionIcon action={action} />{action === "queue" ? "Queue message" : "Steer message"}</DropdownMenuItem>)}
+							</DropdownMenuContent>
+						</DropdownMenu>}
+					</div>
 				</div>
 			</div>
 		</form>

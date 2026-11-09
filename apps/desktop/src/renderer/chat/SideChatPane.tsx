@@ -40,12 +40,12 @@ export function SideChatPane({ id, onClose }: { id: string; onClose: () => void 
 	if (!snapshot) return <p className="p-4 text-xs text-muted-foreground">This side chat was deleted.</p>;
 	const blocker = task ? bringBackBlocker(task) : "Loading…";
 
-	async function send() {
+	async function send(steer = steers) {
 		if (!canSend) return;
 		setBusy(true);
 		try {
 			const prepared = await menu.prepare(message.text);
-			const sent = running && steers ? await command({ type: "steer", id, text: prepared.text })
+			const sent = running && steer ? await command({ type: "steer", id, text: prepared.text })
 				: await command({ type: "send", id, text: prepared.text, ...(message.threadReferences.length ? { threadReferences: message.threadReferences } : {}), ...(message.githubReferences.length ? { githubReferences: message.githubReferences } : {}) });
 			if (sent) draft.clear();
 		} finally { setBusy(false); }
@@ -84,6 +84,8 @@ export function SideChatPane({ id, onClose }: { id: string; onClose: () => void 
 		<div className="shrink-0 px-3 pt-2 pb-3">
 			{task && <QueuePanel task={task} onEdit={editQueued} onSteer={steerQueued} />}
 			<Composer editor={editor} menu={menu} shortcuts={false} onSubmit={() => void send()} canSend={canSend} running={running} onStop={() => void command({ type: "cancel", id })}
+				submitAction={running ? steers ? "steer" : "queue" : "send"}
+				onAlternateSubmit={running && !steerBlocker(snapshot) ? () => void send(!steers) : undefined}
 				tools={snapshot.mode !== "chat" && <PermissionMenu value={task?.permissionMode ?? "supervised"} onChange={permissionMode => void command({ type: "update-task", id, permissionMode })} />} />
 		</div>
 		{preview && <AttachmentPreview taskId={id} id={preview} onClose={() => setPreview(undefined)} />}

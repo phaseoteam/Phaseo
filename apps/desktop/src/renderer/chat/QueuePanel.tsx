@@ -7,6 +7,7 @@ import { mentionPlainText } from "../lib/mentions";
 import { cn } from "../lib/utils";
 import { harnessNames } from "./ModelPicker";
 import { IconSwap } from "../components/IconSwap";
+import { ComposerActionIcon } from "./ComposerActionIcon";
 
 /** Harnesses whose adapters take a message mid-turn (`steer` in main/*Adapter.ts). The rest wait for the turn to end. */
 const steerable: ReadonlySet<Harness> = new Set(["claude", "codex", "cursor", "opencode", "phaseo", "pi"]);
@@ -58,7 +59,7 @@ export function QueuePanel({ task, editingId, onEdit, onSteer }: { task: Task; e
 				{sender && <span className="max-w-40 shrink-0 truncate text-xs text-muted-foreground" title={sender}>{sender}</span>}
 				<span className={cn("min-w-0 flex-1 truncate", editing ? "text-foreground" : "text-foreground/85")} title={text}>{text || `${message.attachments?.length ?? 0} attachments`}</span>
 				{editing ? <span className="shrink-0 text-xs text-muted-foreground">Editing in the composer</span> : <span className="flex shrink-0 items-center opacity-70 group-focus-within/queued:opacity-100 group-hover/queued:opacity-100">
-					{own && <button type="button" disabled={Boolean(blocker)} title={blocker ?? `Send into the current turn${message === firstOwn && steerKey ? ` (${steerKey})` : ""}`} onClick={() => onSteer(message.id)} className="mr-1 flex h-6 items-center gap-1 rounded-md px-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent"><ArrowUp className="size-3" />Send now</button>}
+					{own && <button type="button" disabled={Boolean(blocker)} title={blocker ?? `Send into the current turn${message === firstOwn && steerKey ? ` (${steerKey})` : ""}`} onClick={() => onSteer(message.id)} className="composer-action mr-1 flex h-6 items-center gap-1 rounded-md px-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent [&_svg]:size-3"><ComposerActionIcon action="steer" />Steer</button>}
 					{own && <RowButton label="Edit queued message" onClick={() => onEdit(message.id)}><Pencil /></RowButton>}
 					{queue.length > 1 && <RowButton label="Move up" disabled={index === 0} onClick={() => void command({ type: "queue-move", id: task.id, messageId: message.id, direction: "up" })}><ArrowUp /></RowButton>}
 					{queue.length > 1 && <RowButton label="Move down" disabled={index === queue.length - 1} onClick={() => void command({ type: "queue-move", id: task.id, messageId: message.id, direction: "down" })}><ArrowDown /></RowButton>}
