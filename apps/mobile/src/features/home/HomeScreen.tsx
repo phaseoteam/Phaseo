@@ -52,7 +52,7 @@ export function HomeScreen() {
       />
       <ScrollView contentContainerClassName="pb-16" keyboardShouldPersistTaps="handled">
         <ReadableWidth>
-          <HomeSearch count={catalogue.data?.models.length} />
+          <HomeSearch count={catalogue.data?.models?.length} />
           {session ? null : <SignedOutIntro />}
 
           <View className="mt-4 flex-row gap-2 px-4">
@@ -65,7 +65,8 @@ export function HomeScreen() {
             {releases.isLoading ? <ReleaseSkeleton /> : onePerModel((releases.data?.past ?? []).filter(isNewRelease)).slice(0, 8).map((release, index, list) => <ReleaseRow key={`${release.model.model_id}-${release.date}`} release={release} last={index === list.length - 1} />)}
           </Section>
 
-          {releases.data?.future.length ? (
+          {/* Cached data from another build may lack `future`, so don't assume it's there. */}
+          {releases.data?.future?.length ? (
             <Section title="Coming up">
               {releases.data.future.slice(0, 5).map((release, index, list) => <ReleaseRow key={`${release.model.model_id}-${release.date}`} release={release} last={index === list.length - 1} upcoming />)}
             </Section>
