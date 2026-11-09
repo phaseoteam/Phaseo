@@ -11,6 +11,9 @@ afterEach(() => {
 
 describe("account usage settings routes", () => {
 	it("hides legacy upstream payloads from members when contents are limited to owners and admins", async () => {
+		// The legacy table is only read for ranges before the attempt-detail cut-over.
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-11-01T12:00:00Z"));
 		const upstreamFor = async (role: string) => {
 			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 				const url = new URL(input instanceof Request ? input.url : String(input));
@@ -434,6 +437,8 @@ describe("account usage settings routes", () => {
 		expect(await response.json()).toMatchObject({ data: { upstreamRequests: [{ request_latency_ms: expected, latency_ms: 60 }] } });
 	});
 	it.each([0, 640, null])("keeps legacy gateway latency distinct from provider latency: %s", async (gatewayLatency) => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-11-01T12:00:00Z"));
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = new URL(input instanceof Request ? input.url : String(input));
 			if (url.pathname.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
@@ -450,6 +455,63 @@ describe("account usage settings routes", () => {
 		const response = await app.request("https://phaseo.app/api/account/settings/usage/logs?workspaceId=workspace-1&view=upstream", { headers: { authorization: "Bearer session-token" } }, env);
 		expect(response.status).toBe(200);
 		expect(await response.json()).toMatchObject({ data: { upstreamRequests: [{ request_latency_ms: gatewayLatency, latency_ms: 60 }] } });
+	});
+	it("maps the provider detail stored on v2 attempts after the cut-over", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(input instanceof Request ? input.url : String(input));
+			if (url.pathname.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
+			if (url.pathname.includes("workspace_members")) return Response.json([{ role: "admin" }]);
+			if (url.pathname.endsWith("/workspaces")) return Response.json([{ owner_user_id: "user-1" }]);
+			if (url.pathname.endsWith("/v2_request_facts")) {
+				expect(url.searchParams.get("select")).toContain("upstream_error_message");
+				return Response.json([{
+					request_event_id: "event-1", request_id: "G-new", occurred_at: "2026-11-09T15:00:00Z", provider_model_id: "openai:openai/gpt-6-luna",
+					stream: true, gateway_ttft_ms: 300, generation_ms: 800, gateway_total_ms: 900, upstream_attempt_count: 2, cost_nanos: 3800, currency: "USD", stop_reason: "stop", native_response_id: "resp_final", error_code: null,
+					v2_request_attempts: [
+						{ attempt_id: "a2", attempt_number: 2, provider_model_id: "openai:openai/gpt-6-luna", started_at: "2026-11-09T15:00:01.500Z", status_code: 200, status_text: "OK", success: true, latency_ms: 268, safe_metadata: { provider: "openai", provider_api_model_id: "gpt-6-luna", fallback_attempted: true } },
+						{ attempt_id: "a1", attempt_number: 1, provider_model_id: "openai:openai/gpt-6-luna", started_at: "2026-11-09T15:00:00.100Z", status_code: 400, status_text: "Bad Request", success: false, error_code: "upstream_non_2xx", failure_class: "upstream_non_2xx", latency_ms: 383, safe_metadata: { provider: "openai", provider_api_model_id: "gpt-6-luna" }, upstream_error_code: "invalid_value", upstream_error_message: "Failed to download file.", upstream_error_description: "url" },
+					],
+				}]);
+			}
+			if (url.pathname.endsWith("/gateway_upstream_requests")) throw new Error("legacy table read for a post-cut-over request");
+			return Response.json([]);
+		}));
+		const response = await app.request("https://phaseo.app/api/account/settings/usage/logs?workspaceId=workspace-1&view=upstream&usage_from=2026-11-09T14:30:00Z&usage_to=2026-11-09T16:00:00Z", { headers: { authorization: "Bearer session-token" } }, env);
+		expect(response.status).toBe(200);
+		const body = await response.json() as { data: { upstreamRequests: Array<Record<string, unknown>> } };
+		expect(body.data.upstreamRequests).toMatchObject([
+			{ id: "a2", created_at: "2026-11-09T15:00:01.500Z", provider: "openai", api_model_id: "openai/gpt-6-luna", provider_model_slug: "gpt-6-luna", status_text: "OK", fallback_attempted: true, finish_reason: "stop", cost_nanos: 3800, generation_ms: 800, total_ms: 900, error_message: null },
+			{ id: "a1", status_code: 400, status_text: "Bad Request", outcome: "upstream_non_2xx", fallback_attempted: false, finish_reason: null, cost_nanos: 0, generation_ms: null, total_ms: 383, error_code: "invalid_value", error_type: "upstream_non_2xx", error_message: "Failed to download file.", error_description: "url" },
+		]);
+	});
+	it.each([
+		{ name: "skips the legacy table for a range after the cut-over", from: "2026-11-09T14:00:00Z", to: "2026-11-09T16:00:00Z", legacyFilter: null },
+		{ name: "stops the legacy read at the cut-over", from: "2026-11-09T12:00:00Z", to: "2026-11-09T16:00:00Z", legacyFilter: ["created_at=gte.2026-11-09T12:00:00.000Z", "created_at=lt.2026-11-09T14:00:00.000Z"] },
+		{ name: "reads the legacy table for a range before the cut-over", from: "2026-11-08T12:00:00Z", to: "2026-11-09T12:00:00Z", legacyFilter: ["created_at=gte.2026-11-08T12:00:00.000Z", "created_at=lte.2026-11-09T12:00:00.000Z"] },
+	])("$name", async ({ from, to, legacyFilter }) => {
+		const legacyReads: string[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(input instanceof Request ? input.url : String(input));
+			if (url.pathname.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
+			if (url.pathname.includes("workspace_members")) return Response.json([{ role: "admin" }]);
+			if (url.pathname.endsWith("/workspaces")) return Response.json([{ owner_user_id: "user-1" }]);
+			if (url.pathname.endsWith("/gateway_upstream_requests")) {
+				legacyReads.push(decodeURIComponent(url.search));
+				return Response.json([{ id: "legacy", request_id: "G-old", created_at: from, error_message: "Old error" }]);
+			}
+			return Response.json([]);
+		}));
+		const response = await app.request(`https://phaseo.app/api/account/settings/usage/logs?workspaceId=workspace-1&view=upstream&usage_from=${from}&usage_to=${to}`, { headers: { authorization: "Bearer session-token" } }, env);
+		expect(response.status).toBe(200);
+		const body = await response.json() as { data: { upstreamRequests: Array<Record<string, unknown>> } };
+		if (!legacyFilter) {
+			expect(legacyReads).toEqual([]);
+			expect(body.data.upstreamRequests).toEqual([]);
+			return;
+		}
+		expect(legacyReads).toHaveLength(1);
+		for (const filter of legacyFilter) expect(legacyReads[0]).toContain(filter);
+		expect(body.data.upstreamRequests).toMatchObject([{ id: "legacy", error_message: "Old error" }]);
 	});
 	it("returns the private observability windows and lookup metadata", async () => {
 		vi.useFakeTimers({ toFake: ["Date"] });

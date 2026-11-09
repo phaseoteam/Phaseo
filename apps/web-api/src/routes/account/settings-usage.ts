@@ -7,6 +7,7 @@ import { SLACK_AGENT_MANAGED_KEY_NAME } from "@/lib/managed-keys";
 import { requireUser } from "@/auth/requireUser";
 import { requireAccountWorkspace } from "./context";
 import { canReadIoLogContents, readIoLogContentsAccess } from "@/usage/ioLogContentsAccess";
+import { V2_ATTEMPT_DETAIL_COLUMNS, V2_ATTEMPT_DETAIL_CUTOVER, finalV2AttemptIndex, hasV2AttemptDetail, sortedV2Attempts, v2AttemptModel } from "@/usage/requestAttempts";
 import { usageKeyScope } from "./usageKeyScope";
 import { workspaceUserProfile } from "./workspaceUserProfile";
 import { monthUsageStartDate, parseMonthUsageDays } from "./monthUsage";
@@ -368,28 +369,28 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 	if (view === "upstream") {
 		const v2Result = await context.client
 			.from("v2_request_facts")
-			.select("request_event_id,occurred_at,request_id,key_id,endpoint,requested_model_input,requested_model_slug,routed_model_slug,provider_model_id,status_code,success,error_code,byok,stream,latency_ms,gateway_ttft_ms,generation_ms,gateway_total_ms,upstream_attempt_count,throughput,cost_nanos,currency,client_source_id,client_source_name,client_source_kind,client_source_version,client_source_detection,v2_request_attempts(attempt_id,attempt_number,provider_model_id,started_at,completed_at,status_code,success,error_code,failure_class,upstream_response_id,latency_ms,safe_metadata)")
+			.select(`request_event_id,occurred_at,request_id,key_id,endpoint,requested_model_input,requested_model_slug,routed_model_slug,provider_model_id,status_code,success,error_code,byok,stream,latency_ms,gateway_ttft_ms,generation_ms,gateway_total_ms,upstream_attempt_count,throughput,cost_nanos,currency,stop_reason,native_response_id,client_source_id,client_source_name,client_source_kind,client_source_version,client_source_detection,v2_request_attempts(${V2_ATTEMPT_DETAIL_COLUMNS})`)
 			.eq("workspace_id", workspaceId)
 			.gte("occurred_at", timeRange.from)
 			.lte("occurred_at", timeRange.to)
 			.order("occurred_at", { ascending: false })
 			.limit(500);
 		const v2UpstreamRequests = sortUpstreamRequestsNewestFirst((v2Result.data ?? []).flatMap((fact: any) => {
-			const attempts = Array.isArray(fact.v2_request_attempts) ? fact.v2_request_attempts : [];
+			const attempts: any[] = sortedV2Attempts(fact.v2_request_attempts);
+			// Request-level values go on the final attempt only, as gateway_upstream_requests stored them.
+			const finalAttempt = attempts[finalV2AttemptIndex(attempts)];
+			const hasDetail = hasV2AttemptDetail(fact.occurred_at);
 			const newestAttemptsFirst = [...attempts].sort((left: any, right: any) => {
 				const startedAtDifference = Date.parse(right.started_at ?? "") - Date.parse(left.started_at ?? "");
 				if (Number.isFinite(startedAtDifference) && startedAtDifference !== 0) return startedAtDifference;
 				return Number(right.attempt_number ?? 0) - Number(left.attempt_number ?? 0);
 			});
 			return newestAttemptsFirst.map((attempt: any) => {
+				const isFinal = attempt === finalAttempt;
 				const safeMetadata = attempt.safe_metadata && typeof attempt.safe_metadata === "object" && !Array.isArray(attempt.safe_metadata)
 					? attempt.safe_metadata as Record<string, unknown>
 					: {};
-				const providerModelId = String(attempt.provider_model_id ?? fact.provider_model_id ?? "").trim();
-				const routeSeparator = providerModelId.indexOf(":");
-				const metadataProvider = typeof safeMetadata.provider === "string" ? safeMetadata.provider.trim() : "";
-				const provider = metadataProvider || (routeSeparator > 0 ? providerModelId.slice(0, routeSeparator) : null);
-				const providerModelSlug = routeSeparator > 0 ? providerModelId.slice(routeSeparator + 1) : null;
+				const model = v2AttemptModel(attempt, fact.provider_model_id);
 				const keySource = safeMetadata.key_source === "byok" || fact.byok === true ? "byok" : "gateway";
 				return {
 					id: attempt.attempt_id,
@@ -406,36 +407,39 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 					stage: "upstream",
 					endpoint: fact.endpoint,
 					model_id: fact.routed_model_slug ?? fact.requested_model_slug ?? fact.requested_model_input,
-					provider,
-					api_model_id: providerModelSlug,
-					provider_model_slug: providerModelSlug,
+					provider: model.provider,
+					api_model_id: model.api_model_id,
+					provider_model_slug: model.provider_model_slug,
 					status_code: attempt.status_code,
-					status_text: null,
+					status_text: attempt.status_text ?? null,
 					success: attempt.success === true,
 					outcome: attempt.success === true ? "success" : attempt.failure_class ?? "error",
 					retryable: typeof safeMetadata.retryable === "boolean" ? safeMetadata.retryable : null,
-					fallback_attempted: Number(attempt.attempt_number ?? 1) > 1,
+					// Rows before the cut-over never recorded the flag, so a later attempt stands in for it.
+					fallback_attempted: hasDetail ? safeMetadata.fallback_attempted === true : Number(attempt.attempt_number ?? 1) > 1,
 					was_probe: safeMetadata.was_probe === true,
 					key_source: keySource,
 					key_id: fact.key_id ?? null,
-					native_response_id: attempt.upstream_response_id,
+					native_response_id: attempt.upstream_response_id ?? (isFinal ? fact.native_response_id ?? null : null),
 					provider_finish_reason: null,
-					finish_reason: null,
+					finish_reason: isFinal ? fact.stop_reason ?? null : null,
 					duration_ms: attempt.latency_ms,
 					latency_ms: attempt.latency_ms,
-					generation_ms: fact.generation_ms,
-					total_ms: fact.gateway_total_ms,
+					generation_ms: isFinal ? fact.generation_ms : null,
+					total_ms: isFinal ? fact.gateway_total_ms : attempt.latency_ms,
 					usage: {},
-					cost_nanos: fact.cost_nanos,
+					cost_nanos: isFinal && attempt.success === true ? fact.cost_nanos : 0,
 					currency: fact.currency,
 					client_source_id: fact.client_source_id ?? null,
 					client_source_name: fact.client_source_name ?? null,
 					client_source_kind: fact.client_source_kind ?? null,
 					client_source_version: fact.client_source_version ?? null,
 					client_source_detection: fact.client_source_detection ?? null,
-					error_code: attempt.error_code ?? fact.error_code,
+					// The provider's own code when it sent one, otherwise the gateway failure type.
+					error_code: attempt.upstream_error_code ?? attempt.error_code ?? fact.error_code,
 					error_type: attempt.failure_class,
-					error_message: null,
+					error_message: attempt.upstream_error_message ?? null,
+					error_description: attempt.upstream_error_description ?? null,
 					request_payload: null,
 					response_payload: null,
 					metadata: { ...safeMetadata, throughput: fact.throughput },
@@ -443,13 +447,20 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 			});
 		}));
 		let upstreamRequests: any[] = v2UpstreamRequests;
-		if (upstreamRequests.length === 0) {
-			const legacyResult = await context.client
+		// gateway_upstream_requests is only read for the part of the range before the cut-over;
+		// after it, v2_request_attempts carries the same detail.
+		const legacyEndsAtCutover = Date.parse(timeRange.to) >= Date.parse(V2_ATTEMPT_DETAIL_CUTOVER);
+		const rangeHasLegacyPart = Date.parse(timeRange.from) < Date.parse(V2_ATTEMPT_DETAIL_CUTOVER);
+		if (v2Result.error && !rangeHasLegacyPart) return c.json({ error: "usage_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+		if (upstreamRequests.length === 0 && rangeHasLegacyPart) {
+			const legacyQuery = context.client
 				.from("gateway_upstream_requests")
 				.select("id,created_at,gateway_request_id,request_id,sequence,round_number,attempt_number,internal_attempt_number,stage,endpoint,model_id,provider,api_model_id,provider_model_slug,status_code,status_text,success,outcome,retryable,fallback_attempted,was_probe,key_source,key_id,native_response_id,provider_finish_reason,finish_reason,duration_ms,latency_ms,generation_ms,total_ms,request_build_ms,upstream_headers_ms,retry_delay_ms,usage,cost_nanos,currency,error_code,error_type,error_message,error_description,error_param,request_payload,response_payload,metadata")
 				.eq("workspace_id", workspaceId)
-				.gte("created_at", timeRange.from)
-				.lte("created_at", timeRange.to)
+				.gte("created_at", timeRange.from);
+			const legacyResult = await (legacyEndsAtCutover
+				? legacyQuery.lt("created_at", V2_ATTEMPT_DETAIL_CUTOVER)
+				: legacyQuery.lte("created_at", timeRange.to))
 				.order("created_at", { ascending: false })
 				.order("sequence", { ascending: true })
 				.limit(500);

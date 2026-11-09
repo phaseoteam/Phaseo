@@ -9,6 +9,7 @@ import { applyRequestLabelFilter, requestLabelFilterFromParams } from "@/usage/r
 import { canReadIoLogContents, readIoLogContentsAccess } from "@/usage/ioLogContentsAccess";
 import { detailMetadataWithoutContent } from "@/usage/requestContentDetails";
 import { validPageCursor } from "@/lib/pageCursor";
+import { V2_ATTEMPT_DETAIL_COLUMNS, hasV2AttemptDetail, v2AttemptsToProviderAttempts } from "@/usage/requestAttempts";
 import {
 	LONG_RUNNING_REQUEST_ENDPOINTS,
 	buildNotInFilter,
@@ -282,6 +283,30 @@ export type GatewayIoLog = {
 	reason?: "zero_data_retention" | null;
 	payload: Record<string, unknown> | null;
 };
+
+/**
+ * Provider attempts for the request detail. Requests created at or after the cut-over read
+ * v2_request_attempts through the request's v2_request_facts row; older ones read
+ * gateway_upstream_requests. An empty result keeps gateway_requests.provider_attempts.
+ */
+export async function fetchRequestProviderAttempts(
+	workspaceId: string,
+	requestId: string,
+	createdAt: string | null | undefined,
+): Promise<RequestRow["provider_attempts"]> {
+	if (!hasV2AttemptDetail(createdAt)) return fetchGatewayUpstreamRequests(workspaceId, requestId);
+	const { data, error } = await createAdminClient()
+		.from("v2_request_facts")
+		.select(`latency_ms,generation_ms,gateway_total_ms,cost_nanos,currency,stop_reason,v2_request_attempts(${V2_ATTEMPT_DETAIL_COLUMNS})`)
+		.eq("workspace_id", workspaceId)
+		.eq("request_id", requestId)
+		.maybeSingle();
+	if (error) {
+		console.error("Error fetching request attempts:", error);
+		return [];
+	}
+	return v2AttemptsToProviderAttempts(data);
+}
 
 async function fetchGatewayUpstreamRequests(
 	workspaceId: string,
@@ -1813,9 +1838,10 @@ export async function investigateGeneration(
 		}
 
 		const request = toRequestRow(fallbackData);
-		const upstreamRequests = await fetchGatewayUpstreamRequests(
+		const upstreamRequests = await fetchRequestProviderAttempts(
 			workspaceId,
 			trimmedRequestId,
+			request.created_at,
 		);
 		if (upstreamRequests.length > 0) request.provider_attempts = upstreamRequests;
 		await attachRoutingObservability(supabase, workspaceId, trimmedRequestId, request);
@@ -1871,9 +1897,10 @@ export async function investigateGeneration(
 	}
 
 	const request = toRequestRow(data);
-	const upstreamRequests = await fetchGatewayUpstreamRequests(
+	const upstreamRequests = await fetchRequestProviderAttempts(
 		workspaceId,
 		trimmedRequestId,
+		request.created_at,
 	);
 	if (upstreamRequests.length > 0) request.provider_attempts = upstreamRequests;
 	await attachRoutingObservability(supabase, workspaceId, trimmedRequestId, request);
