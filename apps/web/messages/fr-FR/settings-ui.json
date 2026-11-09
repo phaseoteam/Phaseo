@@ -1079,7 +1079,15 @@
 		"columnRate": "Débit",
 		"rateRequests": "{count, plural, one {# requête} other {# requêtes}} par minute",
 		"rateTokens": "{count, plural, one {# token} other {# tokens}} par minute",
-		"rateConcurrent": "{count, plural, other {# à la fois}}"
+		"rateConcurrent": "{count, plural, other {# à la fois}}",
+		"columnSpend": "Dépenses",
+		"spend": {
+			"daily": "{amount} par jour",
+			"weekly": "{amount} par semaine",
+			"monthly": "{amount} par mois"
+		},
+		"spendBlocks": "Bloque",
+		"spendNotifies": "Alertes seulement"
 	},
 	"guardrailWizard": {
 		"title": "Nouveau garde-corps",
@@ -1106,7 +1114,12 @@
 			"sensitiveInfoOff": "Activez au moins un motif d'informations sensibles, ou retirez cette vérification.",
 			"rateLimitEmpty": "Définissez au moins une limite pour continuer.",
 			"rateLimitInvalid": "Les limites doivent être des nombres entiers supérieurs à 0.",
-			"rateCountingRequired": "Choisissez un mode de comptage pour continuer."
+			"rateCountingRequired": "Choisissez un mode de comptage pour continuer.",
+			"spendLimitEmpty": "Définissez une limite pour continuer.",
+			"spendLimitInvalid": "Saisissez un montant supérieur à $0.00 avec jusqu’à 2 décimales.",
+			"spendPeriodRequired": "Choisissez une période pour continuer.",
+			"spendActionRequired": "Choisissez ce qui se passe à la limite pour continuer.",
+			"spendCountingRequired": "Choisissez le mode de décompte pour continuer."
 		},
 		"nameLabel": "Nom",
 		"namePlaceholder": "ex. Règle pour les prestataires",
@@ -1208,7 +1221,28 @@
 			"each_key": "Distinct pour chaque clé",
 			"each_end_user": "Distinct pour chaque utilisateur final"
 		},
-		"summaryRateFailClosed": "Refuse les requêtes si les limites ne peuvent pas être vérifiées"
+		"summaryRateFailClosed": "Refuse les requêtes si les limites ne peuvent pas être vérifiées",
+		"templateSpendLimit": {
+			"name": "Limite de dépenses",
+			"body": "Plafonnez les dépenses par jour, semaine ou mois, avec des alertes."
+		},
+		"sectionSpend": {
+			"name": "Limite de dépenses",
+			"body": "Une limite en dollars par jour, semaine ou mois. Un garde-fou de dépenses n’a pas d’autres vérifications."
+		},
+		"summarySpendLimit": {
+			"daily": "Jusqu’à {amount} par jour",
+			"weekly": "Jusqu’à {amount} par semaine",
+			"monthly": "Jusqu’à {amount} par mois"
+		},
+		"summarySpendAction": {
+			"notify": "Alerte à 80 % et 100 %, sans bloquer",
+			"block": "Bloque les requêtes par clé d’API à la limite"
+		},
+		"summarySpendCounting": {
+			"shared": "Partagée par tout ce à quoi elle est affectée",
+			"each_key": "Distincte pour chaque clé"
+		}
 	},
 	"broadcastControls": {
 		"optional": "(facultatif)",
@@ -8155,6 +8189,62 @@
 			"rateLimitEmpty": "Définissez au moins une limite pour continuer.",
 			"rateLimitInvalid": "Les limites doivent être des nombres entiers supérieurs à 0.",
 			"rateCountingRequired": "Choisissez un mode de comptage pour continuer."
+		}
+	},
+	"spendGuardrail": {
+		"title": "Limite de dépenses",
+		"description": "Limitez ce que les clés couvertes dépensent par jour, semaine ou mois.",
+		"limitTitle": "Limite",
+		"limitBody": "Le montant maximal que les clés couvertes peuvent dépenser par période, en dollars américains.",
+		"limitLabel": "Montant",
+		"limitHelp": "Jusqu’à 2 décimales, par exemple 25.00.",
+		"invalidLimit": "Saisissez un montant supérieur à $0.00 avec jusqu’à 2 décimales.",
+		"periodTitle": "Période",
+		"periodBody": "Les périodes sont des jours calendaires UTC, des semaines à partir du lundi et des mois. Il n’y a pas de valeur par défaut.",
+		"period": {
+			"daily": {
+				"name": "Quotidienne",
+				"body": "Réinitialisée chaque jour à 00:00 UTC."
+			},
+			"weekly": {
+				"name": "Hebdomadaire",
+				"body": "Réinitialisée chaque lundi à 00:00 UTC."
+			},
+			"monthly": {
+				"name": "Mensuelle",
+				"body": "Réinitialisée le 1er de chaque mois à 00:00 UTC."
+			}
+		},
+		"actionTitle": "À la limite",
+		"actionBody": "Ce qui se passe quand les dépenses atteignent la limite. Les propriétaires et les admins reçoivent une notification push à 80 % et à 100 % dans tous les cas. Il n’y a pas de valeur par défaut.",
+		"action": {
+			"notify": {
+				"name": "Notifier",
+				"body": "Envoyer uniquement les alertes. Les requêtes continuent de passer."
+			},
+			"block": {
+				"name": "Bloquer",
+				"body": "Refuser les requêtes par clé d’API couvertes jusqu’à la réinitialisation de la période. Les tâches par lots, les sessions en temps réel et les requêtes OAuth ne sont pas bloquées."
+			}
+		},
+		"countingTitle": "Mode de décompte",
+		"countingBody": "Choisissez qui partage la limite. Il n’y a pas de valeur par défaut.",
+		"counting": {
+			"shared": {
+				"name": "Partagée",
+				"body": "Une limite pour tout ce à quoi elle est affectée. Sur un département, toutes les clés du département la partagent."
+			},
+			"each_key": {
+				"name": "Par clé",
+				"body": "Chaque clé d’API couverte a sa propre limite."
+			}
+		},
+		"issue": {
+			"spendLimitEmpty": "Définissez une limite pour continuer.",
+			"spendLimitInvalid": "Saisissez un montant supérieur à $0.00 avec jusqu’à 2 décimales.",
+			"spendPeriodRequired": "Choisissez une période pour continuer.",
+			"spendActionRequired": "Choisissez ce qui se passe à la limite pour continuer.",
+			"spendCountingRequired": "Choisissez le mode de décompte pour continuer."
 		}
 	}
 }

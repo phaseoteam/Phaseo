@@ -6,13 +6,15 @@ const db = vi.hoisted(() => ({
 	key: { data: null, error: null } as Result,
 	workspaceBudgets: { data: [], error: null } as Result,
 	departmentBudgets: { data: [], error: null } as Result,
+	spendGuardrails: { data: [], error: null } as Result,
 	queries: [] as Array<{ table: string; columns: string; filters: Array<[string, unknown]> }>,
 }));
 
 function query(table: string) {
 	const entry = { table, columns: "", filters: [] as Array<[string, unknown]> };
 	db.queries.push(entry);
-	const result = (): Result => table === "keys" ? db.key : table === "workspace_budgets" ? db.workspaceBudgets : db.departmentBudgets;
+	const result = (): Result => table === "keys" ? db.key : table === "workspace_budgets" ? db.workspaceBudgets
+		: table === "workspace_guardrails" ? db.spendGuardrails : db.departmentBudgets;
 	const builder = {
 		select(columns: string) { entry.columns = columns; return builder; },
 		eq(column: string, value: unknown) { entry.filters.push([column, value]); return builder; },
@@ -46,6 +48,7 @@ beforeEach(() => {
 	db.key = { data: { ...unlimitedKey }, error: null };
 	db.workspaceBudgets = { data: [], error: null };
 	db.departmentBudgets = { data: [], error: null };
+	db.spendGuardrails = { data: [], error: null };
 	db.queries = [];
 	__resetTieredCacheForTests();
 });
@@ -55,12 +58,13 @@ afterEach(() => { vi.useRealTimers(); });
 describe("spend-limit footprint", () => {
 	it("is empty for an uncapped key in a workspace without budgets", async () => {
 		const footprint = await loadSpendLimitFootprint(WORKSPACE, KEY);
-		expect(footprint).toEqual({ keyLimited: false, softBlocked: false, workspaceBudgets: false, departmentBudgets: false });
+		expect(footprint).toEqual({ keyLimited: false, softBlocked: false, workspaceBudgets: false, departmentBudgets: false, spendGuardrails: false });
 		expect(footprintIsEmpty(footprint)).toBe(true);
 		expect(db.queries).toEqual([
 			{ table: "keys", columns: expect.stringContaining("monthly_limit_cost_nanos"), filters: [["id", KEY], ["workspace_id", WORKSPACE]] },
 			{ table: "workspace_budgets", columns: "id", filters: [["workspace_id", WORKSPACE]] },
 			{ table: "workspace_department_budgets", columns: "id", filters: [["workspace_id", WORKSPACE]] },
+			{ table: "workspace_guardrails", columns: "id", filters: [["workspace_id", WORKSPACE], ["kind", "spend"], ["enabled", true], ["spend_action", "block"]] },
 		]);
 	});
 
@@ -88,6 +92,11 @@ describe("spend-limit footprint", () => {
 		db.workspaceBudgets = { data: [], error: null };
 		db.departmentBudgets = { data: [{ id: "department-budget" }], error: null };
 		expect(await loadSpendLimitFootprint(WORKSPACE, KEY)).toMatchObject({ workspaceBudgets: false, departmentBudgets: true });
+		db.departmentBudgets = { data: [], error: null };
+		db.spendGuardrails = { data: [{ id: "guardrail" }], error: null };
+		const guarded = await loadSpendLimitFootprint(WORKSPACE, KEY);
+		expect(guarded).toMatchObject({ departmentBudgets: false, spendGuardrails: true });
+		expect(footprintIsEmpty(guarded)).toBe(false);
 	});
 
 	it("is unknown for a key outside the workspace, and fails on a database error", async () => {
@@ -106,7 +115,7 @@ describe("spend-limit footprint", () => {
 	it("serves a cached copy, but never one older than the coordinator's reseed interval", async () => {
 		expect(footprintIsEmpty(await readSpendLimitFootprint(WORKSPACE, KEY))).toBe(true);
 		expect(footprintIsEmpty(await readSpendLimitFootprint(WORKSPACE, KEY))).toBe(true);
-		expect(db.queries).toHaveLength(3);
+		expect(db.queries).toHaveLength(4);
 
 		// A cap is added. Within the reseed interval the cached copy may still be served
 		// (the coordinator itself rereads limits only this often)...
