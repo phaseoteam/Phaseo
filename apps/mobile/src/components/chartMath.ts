@@ -67,6 +67,14 @@ export function placeTooltip(args: { anchorX: number; fingerY: number; bubbleWid
   return { left: clamp(left, 0, args.width - args.bubbleWidth), top };
 }
 
+/**
+ * The reading a chart shows: the chosen index while it's still a point, otherwise none. A series that just got
+ * shorter can leave the choice past its end for a render, and a caller's formatter may not handle a missing point.
+ */
+export function readingIndex(chosen: number | null, count: number): number | null {
+  return chosen != null && chosen >= 0 && chosen < count ? chosen : null;
+}
+
 /** The selected index after an accessibility increment or decrement, starting from the latest point. */
 export function stepIndex(current: number | null, count: number, direction: 1 | -1): number | null {
   if (count <= 0) return null;

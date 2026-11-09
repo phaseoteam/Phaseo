@@ -7,7 +7,7 @@ import { scheduleOnRN } from "react-native-worklets";
 import { Text, useToneColor } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { haptic } from "@/lib/haptics";
-import { barLayout, linePath, nearestIndex, niceTicks, placeTooltip, stepIndex } from "./chartMath";
+import { barLayout, linePath, nearestIndex, niceTicks, placeTooltip, readingIndex, stepIndex } from "./chartMath";
 
 export { niceTicks } from "./chartMath";
 
@@ -48,9 +48,8 @@ type SurfaceProps = {
  */
 function ChartSurface({ height, width, onLayout, anchors, active: chosen, onActive, label, describe, tooltip, className, children }: SurfaceProps) {
   const count = anchors.length;
-  // A reading past the end of a series that just got shorter is never described or drawn, even for the one render
-  // before the effect below clears it (a caller's formatter may not handle a missing point).
-  const active = chosen != null && chosen < count ? chosen : null;
+  // Never described or drawn past the end, even for the one render before the effect below clears the choice.
+  const active = readingIndex(chosen, count);
   // The drag runs on the UI thread and moves the bubble there, so it keeps up with the finger while JS is busy
   // (an answer streaming in). JS only hears about a new point, to redraw the bubble's content and tick.
   const latest = useRef({ onActive, count });

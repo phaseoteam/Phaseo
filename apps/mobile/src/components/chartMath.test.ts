@@ -1,4 +1,4 @@
-import { barLayout, linePath, nearestIndex, niceTicks, placeTooltip, stepIndex } from "./chartMath";
+import { barLayout, linePath, nearestIndex, niceTicks, placeTooltip, readingIndex, stepIndex } from "./chartMath";
 
 describe("nearestIndex", () => {
   const positions = [10, 20, 40, 80];
@@ -45,6 +45,21 @@ describe("placeTooltip", () => {
     expect(placeTooltip({ ...chart, anchorX: 60, fingerY: 40 })).toEqual({ left: 92, top: 15 });
     expect(placeTooltip({ ...chart, anchorX: 250, fingerY: 40 })).toEqual({ left: 118, top: 15 });
     expect(placeTooltip({ ...chart, anchorX: 250, fingerY: 5 }).top).toBe(0);
+  });
+});
+
+describe("readingIndex", () => {
+  test("keeps a choice that is still a point", () => {
+    expect(readingIndex(0, 5)).toBe(0);
+    expect(readingIndex(4, 5)).toBe(4);
+  });
+
+  test("drops a choice past the end of a series that got shorter, or no choice at all", () => {
+    expect(readingIndex(4, 3)).toBeNull();
+    expect(readingIndex(3, 3)).toBeNull();
+    expect(readingIndex(2, 0)).toBeNull();
+    expect(readingIndex(-1, 3)).toBeNull();
+    expect(readingIndex(null, 3)).toBeNull();
   });
 });
 
