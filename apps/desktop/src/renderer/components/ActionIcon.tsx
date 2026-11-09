@@ -14,13 +14,13 @@ const SidebarLeft = createLucideIcon("sidebar-left", [
 	["rect", { x: "3", y: "4", width: "18", height: "16", rx: "2.5", key: "frame" }],
 	["path", { d: "M9 4H5.5A2.5 2.5 0 0 0 3 6.5v11A2.5 2.5 0 0 0 5.5 20H9Z", stroke: "none", fill: "currentColor", "data-panel-fill": "", key: "pane" }],
 	["path", { d: "M9 4v16", key: "divider" }],
-	["path", { d: "m15 9-3 3 3 3", "data-panel-chevron": "", key: "chevron" }],
+	["path", { d: "m16.5 9-3 3 3 3", "data-panel-chevron": "", key: "chevron" }],
 ]);
 const SidebarRight = createLucideIcon("sidebar-right", [
 	["rect", { x: "3", y: "4", width: "18", height: "16", rx: "2.5", key: "frame" }],
 	["path", { d: "M15 4h3.5A2.5 2.5 0 0 1 21 6.5v11a2.5 2.5 0 0 1-2.5 2.5H15Z", stroke: "none", fill: "currentColor", "data-panel-fill": "", key: "pane" }],
 	["path", { d: "M15 4v16", key: "divider" }],
-	["path", { d: "m9 9 3 3-3 3", "data-panel-chevron": "", key: "chevron" }],
+	["path", { d: "m7.5 9 3 3-3 3", "data-panel-chevron": "", key: "chevron" }],
 ]);
 const icons = { approve: Check, archive: Archive, restore: ArchiveRestore, branch: GitBranch, camera: Camera, comment: MessageSquare, complete: CircleCheck, copy: Copy, closePullRequest: GitPullRequestClosed, down: ArrowDown, download: Download, draftPullRequest: GitPullRequestDraft, edit: PenLine, external: ExternalLink, folder: OpenFolder, addFolder: FolderPlus, inbox: Inbox, issue: CircleDot, link: Link2, mail: Mail, merge: GitMerge, notPlanned: CircleSlash, open: ArrowUpRight, paperclip: Paperclip, pencil: Pencil, pin: Pin, unpin: PinOff, plus: Plus, publish: CloudUpload, pullRequest: GitPullRequestArrow, refresh: RefreshCw, requestChanges: TriangleAlert, retry: RotateCcw, schedule: CalendarClock, search: Search, settings: Settings, sidebarLeft: SidebarLeft, sidebarRight: SidebarRight, signIn: LogIn, terminal: SquareTerminal, thread: MessagesSquare, unlink: Unlink, up: ArrowUp, usage: ChartLine };
 export type ActionIconName = keyof typeof icons;

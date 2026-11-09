@@ -640,8 +640,8 @@ summary:has(> svg:first-child)::before { display: none; }
 .gesture-icon > [data-panel-fill] { opacity: 0.16; transition: opacity 180ms ease; }
 .gesture-icon[data-open="false"] > [data-panel-fill] { opacity: 0.04; }
 .gesture-icon > [data-panel-chevron] { --icon-gesture: icon-panel-nudge; --icon-gesture-duration: 360ms; scale: 1 1; transition: scale 180ms cubic-bezier(0.2, 0.8, 0.2, 1); }
-.gesture-icon[data-icon-gesture="sidebarLeft"] > [data-panel-chevron] { transform-origin: 13.5px 12px; }
-.gesture-icon[data-icon-gesture="sidebarRight"] > [data-panel-chevron] { transform-origin: 10.5px 12px; }
+.gesture-icon[data-icon-gesture="sidebarLeft"] > [data-panel-chevron] { transform-origin: 15px 12px; }
+.gesture-icon[data-icon-gesture="sidebarRight"] > [data-panel-chevron] { transform-origin: 9px 12px; }
 .gesture-icon[data-open="false"] > [data-panel-chevron] { scale: -1 1; }
 .gesture-icon[data-icon-gesture="plus"] > :first-child { --icon-gesture: icon-add-horizontal; }
 .gesture-icon[data-icon-gesture="plus"] > :nth-child(2) { --icon-gesture: icon-add-vertical; --icon-gesture-delay: 45ms; }

@@ -91,7 +91,14 @@ app.whenReady().then(async () => { try {
 		await media(false); await run("document.documentElement.dataset.animations='on'"); await force(name, null);
 		samples[name] = await run(`document.getElementById('${name}').querySelector('svg').outerHTML`);
 	}
+	const sidebarCentres = [];
 	for (const name of ["sidebarLeft", "sidebarRight"]) {
+		for (const open of [true, false]) {
+			const centres = await run(`(()=>{const svg=document.querySelector('#${name} svg');svg.dataset.open='${open}';svg.getAnimations({subtree:true}).forEach(animation=>animation.finish());const frame=svg.children[0].getBoundingClientRect(),divider=svg.children[2].getBoundingClientRect(),arrow=svg.querySelector('[data-panel-chevron]').getBoundingClientRect();return {arrowX:arrow.x+arrow.width/2,areaX:('${name}'==='sidebarLeft'?divider.x+frame.right:frame.x+divider.x)/2,arrowY:arrow.y+arrow.height/2,areaY:frame.y+frame.height/2};})()`);
+			assert(Math.abs(centres.arrowX - centres.areaX) < 0.01, `${name} (${open ? "open" : "closed"}) chevron is off centre: ${JSON.stringify(centres)}`);
+			assert(Math.abs(centres.arrowY - centres.areaY) < 0.01, `${name} chevron is not vertically centred`);
+			sidebarCentres.push({ name, open, ...centres });
+		}
 		await run(`(()=>{const svg=document.querySelector('#${name} svg');svg.dataset.open='false';svg.getAnimations({subtree:true}).forEach(animation=>animation.finish());})()`);
 		assert.equal(await run(`getComputedStyle(document.querySelector('#${name} [data-panel-chevron]')).scale`), "-1 1");
 		await force(name, "hover");
@@ -110,6 +117,6 @@ app.whenReady().then(async () => { try {
 	await run("document.getElementById('swap').click();true");
 	assert.equal(await run("document.querySelector('#swap [data-on]').dataset.iconGesture"), "unlink");
 	if (output) writeFileSync(output, JSON.stringify({ samples, gestures }, null, 2));
-	console.log("ACTION_ICONS_SMOKE", JSON.stringify({ variants: names.length, triggers: 4, finite: true, stationaryFrames: true, stationaryControls: true, disabled: true, motionPreferences: true, stateSwap: true }));
+	console.log("ACTION_ICONS_SMOKE", JSON.stringify({ variants: names.length, triggers: 4, finite: true, stationaryFrames: true, stationaryControls: true, disabled: true, motionPreferences: true, stateSwap: true, sidebarCentres }));
 	window.webContents.debugger.detach(); window.destroy(); clearTimeout(deadline); app.exit(0);
 } catch (error) { console.error(error); app.exit(1); } });
