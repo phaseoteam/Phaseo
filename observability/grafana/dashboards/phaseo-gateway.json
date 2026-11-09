@@ -55,7 +55,7 @@
       "url": "/explore"
     },
     {
-      "title": "Frontend Observability",
+      "title": "Browser monitoring",
       "type": "link",
       "url": "/a/grafana-kowalski-app"
     },
@@ -72,7 +72,8 @@
         "label": "Logs",
         "type": "datasource",
         "query": "loki",
-        "refresh": 1
+        "refresh": 1,
+        "hide": 2
       },
       {
         "name": "environment",
@@ -157,9 +158,9 @@
       "id": 1,
       "gridPos": {
         "x": 0,
-        "y": 27,
+        "y": 0,
         "w": 12,
-        "h": 9
+        "h": 8
       },
       "title": "Requests by outcome",
       "type": "timeseries",
@@ -187,15 +188,122 @@
           "unit": "reqps",
           "noValue": "No data",
           "custom": {
-            "spanNulls": false
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "always",
+            "pointSize": 4,
+            "axisBorderShow": false
+          },
+          "min": 0,
+          "color": {
+            "mode": "palette-classic-by-name"
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Gateway|phaseo-gateway)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Web API|phaseo-web-api|phaseo-web)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6ED0E0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Job failures|phaseo-jobs)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(error|.* · error|Gateway actionable|Web API 5xx|Website server errors|Operational failures|Server errors|Delivery failures)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(success|completed|.* · success)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(cancelled|skipped)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8E8E8E"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
           "displayMode": "list",
-          "placement": "bottom"
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
         }
       }
     },
@@ -203,9 +311,9 @@
       "id": 2,
       "gridPos": {
         "x": 12,
-        "y": 27,
+        "y": 0,
         "w": 12,
-        "h": 9
+        "h": 8
       },
       "title": "Provider attempts / second",
       "type": "timeseries",
@@ -233,15 +341,122 @@
           "unit": "reqps",
           "noValue": "No data",
           "custom": {
-            "spanNulls": false
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "always",
+            "pointSize": 4,
+            "axisBorderShow": false
+          },
+          "min": 0,
+          "color": {
+            "mode": "palette-classic-by-name"
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Gateway|phaseo-gateway)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Web API|phaseo-web-api|phaseo-web)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6ED0E0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Job failures|phaseo-jobs)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(error|.* · error|Gateway actionable|Web API 5xx|Website server errors|Operational failures|Server errors|Delivery failures)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(success|completed|.* · success)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(cancelled|skipped)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8E8E8E"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
           "displayMode": "list",
-          "placement": "bottom"
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
         }
       }
     },
@@ -249,9 +464,9 @@
       "id": 3,
       "gridPos": {
         "x": 0,
-        "y": 36,
+        "y": 8,
         "w": 12,
-        "h": 9
+        "h": 7
       },
       "title": "Streaming p95 time to first token",
       "type": "timeseries",
@@ -271,7 +486,7 @@
           "queryType": "range",
           "instant": false,
           "range": true,
-          "legendFormat": ""
+          "legendFormat": "Streaming p95 time to first token"
         }
       ],
       "fieldConfig": {
@@ -279,15 +494,122 @@
           "unit": "ms",
           "noValue": "No data",
           "custom": {
-            "spanNulls": false
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "always",
+            "pointSize": 4,
+            "axisBorderShow": false
+          },
+          "min": 0,
+          "color": {
+            "mode": "palette-classic-by-name"
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Gateway|phaseo-gateway)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Web API|phaseo-web-api|phaseo-web)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6ED0E0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Job failures|phaseo-jobs)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(error|.* · error|Gateway actionable|Web API 5xx|Website server errors|Operational failures|Server errors|Delivery failures)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(success|completed|.* · success)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(cancelled|skipped)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8E8E8E"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
           "displayMode": "list",
-          "placement": "bottom"
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
         }
       }
     },
@@ -295,9 +617,9 @@
       "id": 4,
       "gridPos": {
         "x": 12,
-        "y": 36,
+        "y": 8,
         "w": 12,
-        "h": 9
+        "h": 7
       },
       "title": "Provider p95 first token",
       "type": "timeseries",
@@ -317,7 +639,7 @@
           "queryType": "range",
           "instant": false,
           "range": true,
-          "legendFormat": ""
+          "legendFormat": "Provider p95 first token"
         }
       ],
       "fieldConfig": {
@@ -325,903 +647,137 @@
           "unit": "ms",
           "noValue": "No data",
           "custom": {
-            "spanNulls": false
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        }
-      }
-    },
-    {
-      "id": 5,
-      "gridPos": {
-        "x": 0,
-        "y": 45,
-        "w": 12,
-        "h": 9
-      },
-      "title": "Requests requiring fallback / second",
-      "type": "timeseries",
-      "datasource": {
-        "type": "loki",
-        "uid": "${loki}"
-      },
-      "description": "",
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "sum(rate({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", attempt_count=\"attempt_count\", provider=\"provider\", model=\"model\" | __error__=\"\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | environment=\"$environment\" | event_name=\"gateway.request\" | attempt_count > 1 | __error__=\"\" [$__auto])) or vector(0)",
-          "datasource": {
-            "type": "loki",
-            "uid": "${loki}"
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "always",
+            "pointSize": 4,
+            "axisBorderShow": false
           },
-          "queryType": "range",
-          "instant": false,
-          "range": true,
-          "legendFormat": ""
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "reqps",
-          "noValue": "No data",
-          "custom": {
-            "spanNulls": false
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        }
-      }
-    },
-    {
-      "id": 6,
-      "gridPos": {
-        "x": 12,
-        "y": 45,
-        "w": 12,
-        "h": 9
-      },
-      "title": "Client cancellations / second",
-      "type": "timeseries",
-      "datasource": {
-        "type": "loki",
-        "uid": "${loki}"
-      },
-      "description": "",
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "sum(rate({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", outcome=\"outcome\", provider=\"provider\", model=\"model\" | __error__=\"\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | environment=\"$environment\" | event_name=\"gateway.request\" | outcome=\"cancelled\" | __error__=\"\" [$__auto])) or vector(0)",
-          "datasource": {
-            "type": "loki",
-            "uid": "${loki}"
-          },
-          "queryType": "range",
-          "instant": false,
-          "range": true,
-          "legendFormat": ""
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "reqps",
-          "noValue": "No data",
-          "custom": {
-            "spanNulls": false
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        }
-      }
-    },
-    {
-      "id": 7,
-      "gridPos": {
-        "x": 0,
-        "y": 54,
-        "w": 12,
-        "h": 9
-      },
-      "title": "Request lookup",
-      "type": "table",
-      "datasource": {
-        "type": "loki",
-        "uid": "${loki}"
-      },
-      "description": "Newest 100 matching requests. Enter a request ID above; click its trace ID to investigate. Privacy exclusions, sampling and delivery failures can leave a trace unavailable.",
-      "links": [
-        {
-          "title": "Inspect matching logs",
-          "url": "/explore?schemaVersion=1&panes=%7B%22investigate%22%3A%7B%22datasource%22%3A%22${loki}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bservice_name%3D~%5C%22phaseo-gateway%5C%22%7D%20%7C%20json%20environment%3D%5C%22environment%5C%22%2C%20event_name%3D%5C%22event_name%5C%22%2C%20request_id%3D%5C%22request_id%5C%22%2C%20provider%3D%5C%22provider%5C%22%2C%20model%3D%5C%22model%5C%22%20%7C%20__error__%3D%5C%22%5C%22%20%7C%20provider%3D~%5C%22.*${provider:regex}.*%5C%22%20%7C%20model%3D~%5C%22.*${model:regex}.*%5C%22%20%7C%20environment%3D%5C%22$environment%5C%22%20%7C%20event_name%3D%5C%22gateway.request%5C%22%20%7C%20request_id%3D~%5C%22${request:regex}.*%5C%22%22%2C%22queryType%22%3A%22range%22%2C%22maxLines%22%3A100%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
-        }
-      ],
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "loki",
-            "uid": "${loki}"
-          },
-          "expr": "{service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", request_id=\"request_id\", provider=\"provider\", model=\"model\" | __error__=\"\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | environment=\"$environment\" | event_name=\"gateway.request\" | request_id=~\"${request:regex}.*\"",
-          "queryType": "range",
-          "instant": false,
-          "range": true,
-          "maxLines": 100,
-          "direction": "backward"
-        }
-      ],
-      "transformations": [
-        {
-          "id": "extractFields",
-          "options": {
-            "source": "labels",
-            "format": "json",
-            "replace": false
-          }
-        },
-        {
-          "id": "filterFieldsByName",
-          "options": {
-            "include": {
-              "names": [
-                "Line",
-                "service_name",
-                "service_version"
-              ]
-            }
-          }
-        },
-        {
-          "id": "extractFields",
-          "options": {
-            "source": "Line",
-            "format": "json",
-            "replace": false
-          }
-        },
-        {
-          "id": "filterFieldsByName",
-          "options": {
-            "include": {
-              "names": [
-                "timestamp",
-                "request_id",
-                "route",
-                "provider",
-                "model",
-                "outcome",
-                "status_code",
-                "error_code",
-                "duration_ms",
-                "trace_id"
-              ]
-            }
-          }
-        },
-        {
-          "id": "organize",
-          "options": {
-            "indexByName": {
-              "timestamp": 0,
-              "request_id": 1,
-              "route": 2,
-              "provider": 3,
-              "model": 4,
-              "outcome": 5,
-              "status_code": 6,
-              "error_code": 7,
-              "duration_ms": 8,
-              "trace_id": 9
-            }
-          }
-        },
-        {
-          "id": "sortBy",
-          "options": {
-            "sort": [
-              {
-                "field": "timestamp",
-                "desc": true
-              }
-            ]
-          }
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "noValue": "—",
-          "custom": {
-            "filterable": true,
-            "cellOptions": {
-              "type": "auto"
-            }
+          "min": 0,
+          "color": {
+            "mode": "palette-classic-by-name"
           }
         },
         "overrides": [
           {
             "matcher": {
-              "id": "byName",
-              "options": "timestamp"
+              "id": "byRegexp",
+              "options": "^(Gateway|phaseo-gateway)$"
             },
             "properties": [
               {
-                "id": "displayName",
-                "value": "Time (UTC)"
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
               }
             ]
           },
           {
             "matcher": {
-              "id": "byName",
-              "options": "request_id"
+              "id": "byRegexp",
+              "options": "^(Web API|phaseo-web-api|phaseo-web)$"
             },
             "properties": [
               {
-                "id": "displayName",
-                "value": "Request ID"
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6ED0E0"
+                }
               }
             ]
           },
           {
             "matcher": {
-              "id": "byName",
-              "options": "route"
+              "id": "byRegexp",
+              "options": "^(Job failures|phaseo-jobs)$"
             },
             "properties": [
               {
-                "id": "displayName",
-                "value": "Route"
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
               }
             ]
           },
           {
             "matcher": {
-              "id": "byName",
-              "options": "provider"
+              "id": "byRegexp",
+              "options": "^(error|.* · error|Gateway actionable|Web API 5xx|Website server errors|Operational failures|Server errors|Delivery failures)$"
             },
             "properties": [
               {
-                "id": "displayName",
-                "value": "Provider"
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
               }
             ]
           },
           {
             "matcher": {
-              "id": "byName",
-              "options": "model"
+              "id": "byRegexp",
+              "options": "^(success|completed|.* · success)$"
             },
             "properties": [
               {
-                "id": "displayName",
-                "value": "Model"
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
               }
             ]
           },
           {
             "matcher": {
-              "id": "byName",
-              "options": "outcome"
+              "id": "byRegexp",
+              "options": "^(cancelled|skipped)$"
             },
             "properties": [
               {
-                "id": "displayName",
-                "value": "Outcome"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "status_code"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "HTTP"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "error_code"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Code"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "duration_ms"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Duration"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "trace_id"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Trace ID"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "duration_ms"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "ms"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "ttft_ms"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "ms"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "provider_ttft_ms"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "ms"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "outcome"
-            },
-            "properties": [
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "type": "value",
-                    "options": {
-                      "success": {
-                        "text": "Succeeded"
-                      },
-                      "error": {
-                        "text": "Failed"
-                      },
-                      "completed": {
-                        "text": "Completed"
-                      },
-                      "skipped": {
-                        "text": "Skipped"
-                      },
-                      "cancelled": {
-                        "text": "Cancelled"
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "scheduled_at"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "dateTimeAsIso"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "error_stack"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 480
-              },
-              {
-                "id": "custom.inspect",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "request_id"
-            },
-            "properties": [
-              {
-                "id": "links",
-                "value": [
-                  {
-                    "title": "Investigate",
-                    "url": "/d/phaseo-gateway?var-environment=$environment&from=$__from&to=$__to&var-request=${__data.fields[\"request_id\"]}"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "trace_id"
-            },
-            "properties": [
-              {
-                "id": "links",
-                "value": [
-                  {
-                    "title": "Open trace",
-                    "url": "/explore?schemaVersion=1&panes=%7B%22investigate%22%3A%7B%22datasource%22%3A%22${tempo}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22queryType%22%3A%22traceId%22%2C%22query%22%3A%22${__value.raw}%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
-                  }
-                ]
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8E8E8E"
+                }
               }
             ]
           }
         ]
       },
       "options": {
-        "showHeader": true,
-        "cellHeight": "sm",
-        "footer": {
-          "show": false
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
         }
       }
     },
     {
-      "id": 8,
+      "id": 12,
+      "title": "Provider health",
+      "type": "row",
+      "collapsed": false,
       "gridPos": {
-        "x": 12,
-        "y": 54,
-        "w": 12,
-        "h": 9
+        "x": 0,
+        "y": 15,
+        "w": 24,
+        "h": 1
       },
-      "title": "Provider attempt lookup",
-      "type": "table",
-      "datasource": {
-        "type": "loki",
-        "uid": "${loki}"
-      },
-      "description": "Newest 100 matching provider attempts. A failed attempt can recover through fallback. Attempt detail is capped per request; use Inspect matching logs for the original event.",
-      "links": [
-        {
-          "title": "Inspect matching logs",
-          "url": "/explore?schemaVersion=1&panes=%7B%22investigate%22%3A%7B%22datasource%22%3A%22${loki}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bservice_name%3D~%5C%22phaseo-gateway%5C%22%7D%20%7C%20json%20environment%3D%5C%22environment%5C%22%2C%20event_name%3D%5C%22event_name%5C%22%2C%20request_id%3D%5C%22request_id%5C%22%2C%20provider%3D%5C%22provider%5C%22%2C%20model%3D%5C%22model%5C%22%20%7C%20__error__%3D%5C%22%5C%22%20%7C%20provider%3D~%5C%22.*${provider:regex}.*%5C%22%20%7C%20model%3D~%5C%22.*${model:regex}.*%5C%22%20%7C%20environment%3D%5C%22$environment%5C%22%20%7C%20event_name%3D%5C%22provider.attempt%5C%22%20%7C%20request_id%3D~%5C%22${request:regex}.*%5C%22%22%2C%22queryType%22%3A%22range%22%2C%22maxLines%22%3A100%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
-        }
-      ],
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "loki",
-            "uid": "${loki}"
-          },
-          "expr": "{service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", request_id=\"request_id\", provider=\"provider\", model=\"model\" | __error__=\"\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | environment=\"$environment\" | event_name=\"provider.attempt\" | request_id=~\"${request:regex}.*\"",
-          "queryType": "range",
-          "instant": false,
-          "range": true,
-          "maxLines": 100,
-          "direction": "backward"
-        }
-      ],
-      "transformations": [
-        {
-          "id": "extractFields",
-          "options": {
-            "source": "labels",
-            "format": "json",
-            "replace": false
-          }
-        },
-        {
-          "id": "filterFieldsByName",
-          "options": {
-            "include": {
-              "names": [
-                "Line",
-                "service_name",
-                "service_version"
-              ]
-            }
-          }
-        },
-        {
-          "id": "extractFields",
-          "options": {
-            "source": "Line",
-            "format": "json",
-            "replace": false
-          }
-        },
-        {
-          "id": "filterFieldsByName",
-          "options": {
-            "include": {
-              "names": [
-                "timestamp",
-                "request_id",
-                "attempt_number",
-                "provider",
-                "model",
-                "outcome",
-                "error_code",
-                "duration_ms",
-                "provider_ttft_ms",
-                "trace_id"
-              ]
-            }
-          }
-        },
-        {
-          "id": "organize",
-          "options": {
-            "indexByName": {
-              "timestamp": 0,
-              "request_id": 1,
-              "attempt_number": 2,
-              "provider": 3,
-              "model": 4,
-              "outcome": 5,
-              "error_code": 6,
-              "duration_ms": 7,
-              "provider_ttft_ms": 8,
-              "trace_id": 9
-            }
-          }
-        },
-        {
-          "id": "sortBy",
-          "options": {
-            "sort": [
-              {
-                "field": "timestamp",
-                "desc": true
-              }
-            ]
-          }
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "noValue": "—",
-          "custom": {
-            "filterable": true,
-            "cellOptions": {
-              "type": "auto"
-            }
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "timestamp"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Time (UTC)"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "request_id"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Request ID"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "attempt_number"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Attempt"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "provider"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Provider"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "model"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Model"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "outcome"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Outcome"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "error_code"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Code"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "duration_ms"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Duration"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "provider_ttft_ms"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Provider first token"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "trace_id"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Trace ID"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "duration_ms"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "ms"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "ttft_ms"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "ms"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "provider_ttft_ms"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "ms"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "outcome"
-            },
-            "properties": [
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "type": "value",
-                    "options": {
-                      "success": {
-                        "text": "Succeeded"
-                      },
-                      "error": {
-                        "text": "Failed"
-                      },
-                      "completed": {
-                        "text": "Completed"
-                      },
-                      "skipped": {
-                        "text": "Skipped"
-                      },
-                      "cancelled": {
-                        "text": "Cancelled"
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "scheduled_at"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "dateTimeAsIso"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "error_stack"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 480
-              },
-              {
-                "id": "custom.inspect",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "request_id"
-            },
-            "properties": [
-              {
-                "id": "links",
-                "value": [
-                  {
-                    "title": "Investigate",
-                    "url": "/d/phaseo-gateway?var-environment=$environment&from=$__from&to=$__to&var-request=${__data.fields[\"request_id\"]}"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "trace_id"
-            },
-            "properties": [
-              {
-                "id": "links",
-                "value": [
-                  {
-                    "title": "Open trace",
-                    "url": "/explore?schemaVersion=1&panes=%7B%22investigate%22%3A%7B%22datasource%22%3A%22${tempo}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22queryType%22%3A%22traceId%22%2C%22query%22%3A%22${__value.raw}%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      "options": {
-        "showHeader": true,
-        "cellHeight": "sm",
-        "footer": {
-          "show": false
-        }
-      }
+      "panels": []
     },
     {
       "title": "Provider and model attempts",
@@ -1241,15 +797,55 @@
           "queryType": "instant",
           "instant": true,
           "range": false,
-          "expr": "label_replace(((sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range]))) and on (provider, model) (topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | outcome=\"error\" | __error__=\"\" [$__range]))) or topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range]))))), \"measure\", \"Attempts\", \"\", \"\") or label_replace(((((sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | outcome=\"error\" | __error__=\"\" [$__range]))) or (0 * (sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range])))))) and on (provider, model) (topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | outcome=\"error\" | __error__=\"\" [$__range]))) or topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range]))))), \"measure\", \"Failures\", \"\", \"\") or label_replace(((100 * ((sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | outcome=\"error\" | __error__=\"\" [$__range]))) or (0 * (sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range]))))) / (sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range])))) and on (provider, model) (topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | outcome=\"error\" | __error__=\"\" [$__range]))) or topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range]))))), \"measure\", \"Failure %\", \"\", \"\") or label_replace(((quantile_over_time(0.95, {service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\", duration_ms=\"duration_ms\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | unwrap duration_ms | __error__=\"\" [$__range]) by (provider, model)) and on (provider, model) (topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | outcome=\"error\" | __error__=\"\" [$__range]))) or topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range]))))), \"measure\", \"p95 ms\", \"\", \"\")"
+          "expr": "(sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range]))) and on (provider, model) (topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | outcome=\"error\" | __error__=\"\" [$__range]))) or topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range]))))",
+          "legendFormat": "Attempts"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "expr": "(((sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | outcome=\"error\" | __error__=\"\" [$__range]))) or (0 * (sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range])))))) and on (provider, model) (topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | outcome=\"error\" | __error__=\"\" [$__range]))) or topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range]))))",
+          "legendFormat": "Failures"
+        },
+        {
+          "refId": "C",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "expr": "(100 * ((sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | outcome=\"error\" | __error__=\"\" [$__range]))) or (0 * (sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range]))))) / (sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range])))) and on (provider, model) (topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | outcome=\"error\" | __error__=\"\" [$__range]))) or topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range]))))",
+          "legendFormat": "Failure %"
+        },
+        {
+          "refId": "D",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "expr": "(quantile_over_time(0.95, {service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\", duration_ms=\"duration_ms\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | unwrap duration_ms | __error__=\"\" [$__range]) by (provider, model)) and on (provider, model) (topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | outcome=\"error\" | __error__=\"\" [$__range]))) or topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range]))))",
+          "legendFormat": "p95 ms"
         }
       ],
       "transformations": [
         {
-          "id": "labelsToFields",
+          "id": "filterFieldsByName",
           "options": {
-            "mode": "columns",
-            "valueLabel": "measure"
+            "exclude": {
+              "names": [
+                "Time"
+              ]
+            }
           }
         },
         {
@@ -1259,16 +855,19 @@
         {
           "id": "organize",
           "options": {
-            "excludeByName": {
-              "Time": true
-            },
             "indexByName": {
               "provider": 0,
               "model": 1,
-              "Attempts": 2,
-              "Failures": 3,
-              "Failure %": 4,
-              "p95 ms": 5
+              "Value #A": 2,
+              "Value #B": 3,
+              "Value #C": 4,
+              "Value #D": 5
+            },
+            "renameByName": {
+              "Value #A": "Attempts",
+              "Value #B": "Failures",
+              "Value #C": "Failure %",
+              "Value #D": "p95 ms"
             }
           }
         },
@@ -1293,7 +892,9 @@
             "filterable": true,
             "cellOptions": {
               "type": "auto"
-            }
+            },
+            "minWidth": 90,
+            "align": "auto"
           }
         },
         "overrides": [
@@ -1369,6 +970,380 @@
                 ]
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "service_name"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "phaseo-gateway": {
+                        "text": "Gateway"
+                      },
+                      "phaseo-web-api": {
+                        "text": "Web API"
+                      },
+                      "phaseo-web": {
+                        "text": "Website"
+                      },
+                      "phaseo-jobs": {
+                        "text": "Jobs"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 115
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Failures"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#8E8E8E",
+                      "value": null
+                    },
+                    {
+                      "color": "#F2495C",
+                      "value": 0.000001
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Failure %"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#8E8E8E",
+                      "value": null
+                    },
+                    {
+                      "color": "#F2495C",
+                      "value": 0.000001
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#8E8E8E",
+                      "value": null
+                    },
+                    {
+                      "color": "#F2495C",
+                      "value": 0.000001
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "failed_count"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#8E8E8E",
+                      "value": null
+                    },
+                    {
+                      "color": "#F2495C",
+                      "value": 0.000001
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "completed"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Completed"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Failed"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "skipped"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Skipped"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "route"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 260
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "model"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 220
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "job"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 220
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p95 ms"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "p95 latency"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "timestamp"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 190
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "request_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trace_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "service_version"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "outcome"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 105
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "success": {
+                        "text": "Succeeded",
+                        "color": "green"
+                      },
+                      "completed": {
+                        "text": "Completed",
+                        "color": "green"
+                      },
+                      "error": {
+                        "text": "Failed",
+                        "color": "#F2495C"
+                      },
+                      "cancelled": {
+                        "text": "Cancelled",
+                        "color": "#8E8E8E"
+                      },
+                      "skipped": {
+                        "text": "Skipped",
+                        "color": "#8E8E8E"
+                      },
+                      "started": {
+                        "text": "Started",
+                        "color": "#6ED0E0"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -1382,7 +1357,7 @@
       "id": 9,
       "gridPos": {
         "x": 0,
-        "y": 0,
+        "y": 16,
         "w": 24,
         "h": 9
       }
@@ -1405,15 +1380,19 @@
           "queryType": "instant",
           "instant": true,
           "range": false,
-          "expr": "label_replace((topk(20, sum by (error_origin, error_kind, error_code, provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", error_origin=\"error_origin\", error_kind=\"error_kind\", error_code=\"error_code\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | outcome=\"error\" | __error__=\"\" [$__range])))), \"measure\", \"Events\", \"\", \"\")"
+          "expr": "topk(20, sum by (error_origin, error_kind, error_code, provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", error_origin=\"error_origin\", error_kind=\"error_kind\", error_code=\"error_code\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | outcome=\"error\" | __error__=\"\" [$__range])))",
+          "legendFormat": "Events"
         }
       ],
       "transformations": [
         {
-          "id": "labelsToFields",
+          "id": "filterFieldsByName",
           "options": {
-            "mode": "columns",
-            "valueLabel": "measure"
+            "exclude": {
+              "names": [
+                "Time"
+              ]
+            }
           }
         },
         {
@@ -1423,16 +1402,16 @@
         {
           "id": "organize",
           "options": {
-            "excludeByName": {
-              "Time": true
-            },
             "indexByName": {
               "error_origin": 0,
               "error_kind": 1,
               "error_code": 2,
               "provider": 3,
               "model": 4,
-              "Events": 5
+              "Value #A": 5
+            },
+            "renameByName": {
+              "Value #A": "Events"
             }
           }
         },
@@ -1457,7 +1436,9 @@
             "filterable": true,
             "cellOptions": {
               "type": "auto"
-            }
+            },
+            "minWidth": 90,
+            "align": "auto"
           }
         },
         "overrides": [
@@ -1552,6 +1533,380 @@
                 "value": 1
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "service_name"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "phaseo-gateway": {
+                        "text": "Gateway"
+                      },
+                      "phaseo-web-api": {
+                        "text": "Web API"
+                      },
+                      "phaseo-web": {
+                        "text": "Website"
+                      },
+                      "phaseo-jobs": {
+                        "text": "Jobs"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 115
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Failures"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#8E8E8E",
+                      "value": null
+                    },
+                    {
+                      "color": "#F2495C",
+                      "value": 0.000001
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Failure %"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#8E8E8E",
+                      "value": null
+                    },
+                    {
+                      "color": "#F2495C",
+                      "value": 0.000001
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#8E8E8E",
+                      "value": null
+                    },
+                    {
+                      "color": "#F2495C",
+                      "value": 0.000001
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "failed_count"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#8E8E8E",
+                      "value": null
+                    },
+                    {
+                      "color": "#F2495C",
+                      "value": 0.000001
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "completed"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Completed"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Failed"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "skipped"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Skipped"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "route"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 260
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "model"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 220
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "job"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 220
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p95 ms"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "p95 latency"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "timestamp"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 190
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "request_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trace_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "service_version"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "outcome"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 105
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "success": {
+                        "text": "Succeeded",
+                        "color": "green"
+                      },
+                      "completed": {
+                        "text": "Completed",
+                        "color": "green"
+                      },
+                      "error": {
+                        "text": "Failed",
+                        "color": "#F2495C"
+                      },
+                      "cancelled": {
+                        "text": "Cancelled",
+                        "color": "#8E8E8E"
+                      },
+                      "skipped": {
+                        "text": "Skipped",
+                        "color": "#8E8E8E"
+                      },
+                      "started": {
+                        "text": "Started",
+                        "color": "#6ED0E0"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -1565,435 +1920,1904 @@
       "id": 10,
       "gridPos": {
         "x": 0,
-        "y": 9,
+        "y": 25,
         "w": 24,
-        "h": 9
+        "h": 7
       }
     },
     {
-      "title": "Request records",
-      "type": "table",
+      "id": 5,
+      "gridPos": {
+        "x": 0,
+        "y": 32,
+        "w": 12,
+        "h": 6
+      },
+      "title": "Requests requiring fallback / second",
+      "type": "timeseries",
       "datasource": {
         "type": "loki",
         "uid": "${loki}"
       },
-      "description": "Newest 100 matching terminal requests. Search provider, model or request ID above. Click a trace ID to open it. Privacy exclusions, sampling settings and delivery failures can leave a trace unavailable.",
-      "links": [
-        {
-          "title": "Inspect matching logs",
-          "url": "/explore?schemaVersion=1&panes=%7B%22investigate%22%3A%7B%22datasource%22%3A%22${loki}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bservice_name%3D~%5C%22phaseo-gateway%5C%22%7D%20%7C%20json%20environment%3D%5C%22environment%5C%22%2C%20event_name%3D%5C%22event_name%5C%22%2C%20request_id%3D%5C%22request_id%5C%22%2C%20provider%3D%5C%22provider%5C%22%2C%20model%3D%5C%22model%5C%22%20%7C%20__error__%3D%5C%22%5C%22%20%7C%20environment%3D%5C%22$environment%5C%22%20%7C%20event_name%3D%5C%22gateway.request%5C%22%20%7C%20provider%3D~%5C%22.*${provider:regex}.*%5C%22%20%7C%20model%3D~%5C%22.*${model:regex}.*%5C%22%20%7C%20request_id%3D~%5C%22${request:regex}.*%5C%22%22%2C%22queryType%22%3A%22range%22%2C%22maxLines%22%3A100%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
-        }
-      ],
+      "description": "",
       "targets": [
         {
           "refId": "A",
+          "expr": "sum(rate({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", attempt_count=\"attempt_count\", provider=\"provider\", model=\"model\" | __error__=\"\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | environment=\"$environment\" | event_name=\"gateway.request\" | attempt_count > 1 | __error__=\"\" [$__auto])) or vector(0)",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
           },
-          "expr": "{service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", request_id=\"request_id\", provider=\"provider\", model=\"model\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | request_id=~\"${request:regex}.*\"",
           "queryType": "range",
           "instant": false,
           "range": true,
-          "maxLines": 100,
-          "direction": "backward"
-        }
-      ],
-      "transformations": [
-        {
-          "id": "extractFields",
-          "options": {
-            "source": "labels",
-            "format": "json",
-            "replace": false
-          }
-        },
-        {
-          "id": "filterFieldsByName",
-          "options": {
-            "include": {
-              "names": [
-                "Line",
-                "service_name",
-                "service_version"
-              ]
-            }
-          }
-        },
-        {
-          "id": "extractFields",
-          "options": {
-            "source": "Line",
-            "format": "json",
-            "replace": false
-          }
-        },
-        {
-          "id": "filterFieldsByName",
-          "options": {
-            "include": {
-              "names": [
-                "timestamp",
-                "request_id",
-                "route",
-                "provider",
-                "model",
-                "outcome",
-                "status_code",
-                "error_kind",
-                "error_code",
-                "duration_ms",
-                "attempt_count",
-                "trace_id"
-              ]
-            }
-          }
-        },
-        {
-          "id": "organize",
-          "options": {
-            "indexByName": {
-              "timestamp": 0,
-              "request_id": 1,
-              "route": 2,
-              "provider": 3,
-              "model": 4,
-              "outcome": 5,
-              "status_code": 6,
-              "error_kind": 7,
-              "error_code": 8,
-              "duration_ms": 9,
-              "attempt_count": 10,
-              "trace_id": 11
-            }
-          }
-        },
-        {
-          "id": "sortBy",
-          "options": {
-            "sort": [
-              {
-                "field": "timestamp",
-                "desc": true
-              }
-            ]
-          }
+          "legendFormat": "Fallbacks"
         }
       ],
       "fieldConfig": {
         "defaults": {
-          "noValue": "—",
+          "unit": "reqps",
+          "noValue": "No data",
           "custom": {
-            "filterable": true,
-            "cellOptions": {
-              "type": "auto"
-            }
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "auto",
+            "pointSize": 4,
+            "axisBorderShow": false
+          },
+          "min": 0,
+          "color": {
+            "mode": "palette-classic-by-name"
           }
         },
         "overrides": [
           {
             "matcher": {
-              "id": "byName",
-              "options": "timestamp"
+              "id": "byRegexp",
+              "options": "^(Gateway|phaseo-gateway)$"
             },
             "properties": [
               {
-                "id": "displayName",
-                "value": "Time (UTC)"
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
               }
             ]
           },
           {
             "matcher": {
-              "id": "byName",
-              "options": "request_id"
+              "id": "byRegexp",
+              "options": "^(Web API|phaseo-web-api|phaseo-web)$"
             },
             "properties": [
               {
-                "id": "displayName",
-                "value": "Request ID"
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6ED0E0"
+                }
               }
             ]
           },
           {
             "matcher": {
-              "id": "byName",
-              "options": "route"
+              "id": "byRegexp",
+              "options": "^(Job failures|phaseo-jobs)$"
             },
             "properties": [
               {
-                "id": "displayName",
-                "value": "Route"
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
               }
             ]
           },
           {
             "matcher": {
-              "id": "byName",
-              "options": "provider"
+              "id": "byRegexp",
+              "options": "^(error|.* · error|Gateway actionable|Web API 5xx|Website server errors|Operational failures|Server errors|Delivery failures)$"
             },
             "properties": [
               {
-                "id": "displayName",
-                "value": "Provider"
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
               }
             ]
           },
           {
             "matcher": {
-              "id": "byName",
-              "options": "model"
+              "id": "byRegexp",
+              "options": "^(success|completed|.* · success)$"
             },
             "properties": [
               {
-                "id": "displayName",
-                "value": "Model"
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
               }
             ]
           },
           {
             "matcher": {
-              "id": "byName",
-              "options": "outcome"
+              "id": "byRegexp",
+              "options": "^(cancelled|skipped)$"
             },
             "properties": [
               {
-                "id": "displayName",
-                "value": "Outcome"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "status_code"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "HTTP"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "error_kind"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Category"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "error_code"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Code"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "duration_ms"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Duration"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "attempt_count"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Attempts"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "trace_id"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Trace ID"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "duration_ms"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "ms"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "ttft_ms"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "ms"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "provider_ttft_ms"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "ms"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "outcome"
-            },
-            "properties": [
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "type": "value",
-                    "options": {
-                      "success": {
-                        "text": "Succeeded"
-                      },
-                      "error": {
-                        "text": "Failed"
-                      },
-                      "completed": {
-                        "text": "Completed"
-                      },
-                      "skipped": {
-                        "text": "Skipped"
-                      },
-                      "cancelled": {
-                        "text": "Cancelled"
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "scheduled_at"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "dateTimeAsIso"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "error_stack"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 480
-              },
-              {
-                "id": "custom.inspect",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "request_id"
-            },
-            "properties": [
-              {
-                "id": "links",
-                "value": [
-                  {
-                    "title": "Investigate",
-                    "url": "/d/phaseo-gateway?var-environment=$environment&from=$__from&to=$__to&var-request=${__data.fields[\"request_id\"]}"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "trace_id"
-            },
-            "properties": [
-              {
-                "id": "links",
-                "value": [
-                  {
-                    "title": "Open trace",
-                    "url": "/explore?schemaVersion=1&panes=%7B%22investigate%22%3A%7B%22datasource%22%3A%22${tempo}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22queryType%22%3A%22traceId%22%2C%22query%22%3A%22${__value.raw}%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
-                  }
-                ]
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8E8E8E"
+                }
               }
             ]
           }
         ]
       },
       "options": {
-        "showHeader": true,
-        "cellHeight": "sm",
-        "footer": {
-          "show": false
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
         }
+      }
+    },
+    {
+      "id": 6,
+      "gridPos": {
+        "x": 12,
+        "y": 32,
+        "w": 12,
+        "h": 6
       },
-      "id": 11,
+      "title": "Client cancellations / second",
+      "type": "timeseries",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", outcome=\"outcome\", provider=\"provider\", model=\"model\" | __error__=\"\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | environment=\"$environment\" | event_name=\"gateway.request\" | outcome=\"cancelled\" | __error__=\"\" [$__auto])) or vector(0)",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "legendFormat": "Cancelled"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "noValue": "No data",
+          "custom": {
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "auto",
+            "pointSize": 4,
+            "axisBorderShow": false
+          },
+          "min": 0,
+          "color": {
+            "mode": "palette-classic-by-name"
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Gateway|phaseo-gateway)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Web API|phaseo-web-api|phaseo-web)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6ED0E0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Job failures|phaseo-jobs)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(error|.* · error|Gateway actionable|Web API 5xx|Website server errors|Operational failures|Server errors|Delivery failures)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(success|completed|.* · success)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(cancelled|skipped)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8E8E8E"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      }
+    },
+    {
+      "id": 13,
+      "title": "Request and attempt records",
+      "type": "row",
+      "collapsed": true,
       "gridPos": {
         "x": 0,
-        "y": 18,
+        "y": 38,
         "w": 24,
-        "h": 9
-      }
+        "h": 1
+      },
+      "panels": [
+        {
+          "title": "Request records",
+          "type": "table",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "description": "Newest 100 matching terminal requests. Search provider, model or request ID above. Click a trace ID to open it. Privacy exclusions, sampling settings and delivery failures can leave a trace unavailable.",
+          "links": [
+            {
+              "title": "Inspect matching logs",
+              "url": "/explore?schemaVersion=1&panes=%7B%22investigate%22%3A%7B%22datasource%22%3A%22${loki}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bservice_name%3D~%5C%22phaseo-gateway%5C%22%7D%20%7C%20json%20environment%3D%5C%22environment%5C%22%2C%20event_name%3D%5C%22event_name%5C%22%2C%20request_id%3D%5C%22request_id%5C%22%2C%20provider%3D%5C%22provider%5C%22%2C%20model%3D%5C%22model%5C%22%20%7C%20__error__%3D%5C%22%5C%22%20%7C%20environment%3D%5C%22$environment%5C%22%20%7C%20event_name%3D%5C%22gateway.request%5C%22%20%7C%20provider%3D~%5C%22.*${provider:regex}.*%5C%22%20%7C%20model%3D~%5C%22.*${model:regex}.*%5C%22%20%7C%20request_id%3D~%5C%22${request:regex}.*%5C%22%22%2C%22queryType%22%3A%22range%22%2C%22maxLines%22%3A100%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
+            }
+          ],
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${loki}"
+              },
+              "expr": "{service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", request_id=\"request_id\", provider=\"provider\", model=\"model\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | request_id=~\"${request:regex}.*\"",
+              "queryType": "range",
+              "instant": false,
+              "range": true,
+              "maxLines": 100,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "labels",
+                "format": "json",
+                "replace": false
+              }
+            },
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": [
+                    "Line",
+                    "service_name",
+                    "service_version"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": false
+              }
+            },
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": [
+                    "timestamp",
+                    "request_id",
+                    "route",
+                    "provider",
+                    "model",
+                    "outcome",
+                    "status_code",
+                    "error_kind",
+                    "error_code",
+                    "duration_ms",
+                    "attempt_count",
+                    "trace_id"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "indexByName": {
+                  "timestamp": 0,
+                  "request_id": 1,
+                  "route": 2,
+                  "provider": 3,
+                  "model": 4,
+                  "outcome": 5,
+                  "status_code": 6,
+                  "error_kind": 7,
+                  "error_code": 8,
+                  "duration_ms": 9,
+                  "attempt_count": 10,
+                  "trace_id": 11
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "timestamp",
+                    "desc": true
+                  }
+                ]
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "noValue": "—",
+              "custom": {
+                "filterable": true,
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "minWidth": 90,
+                "align": "auto"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "timestamp"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Time (UTC)"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "request_id"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Request ID"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "route"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Route"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "provider"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Provider"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "model"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Model"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "outcome"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Outcome"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "status_code"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "HTTP"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "error_kind"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Category"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "error_code"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Code"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "duration_ms"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Duration"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "attempt_count"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Attempts"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "trace_id"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Trace ID"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "duration_ms"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "ms"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 1
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "ttft_ms"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "ms"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 1
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "provider_ttft_ms"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "ms"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 1
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "outcome"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "success": {
+                            "text": "Succeeded"
+                          },
+                          "error": {
+                            "text": "Failed"
+                          },
+                          "completed": {
+                            "text": "Completed"
+                          },
+                          "skipped": {
+                            "text": "Skipped"
+                          },
+                          "cancelled": {
+                            "text": "Cancelled"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "scheduled_at"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "dateTimeAsIso"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "error_stack"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 480
+                  },
+                  {
+                    "id": "custom.inspect",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "request_id"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "title": "Investigate",
+                        "url": "/d/phaseo-gateway?var-environment=$environment&from=$__from&to=$__to&var-request=${__data.fields[\"request_id\"]}"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "trace_id"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "title": "Open trace",
+                        "url": "/explore?schemaVersion=1&panes=%7B%22investigate%22%3A%7B%22datasource%22%3A%22${tempo}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22queryType%22%3A%22traceId%22%2C%22query%22%3A%22${__value.raw}%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "service_name"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "phaseo-gateway": {
+                            "text": "Gateway"
+                          },
+                          "phaseo-web-api": {
+                            "text": "Web API"
+                          },
+                          "phaseo-web": {
+                            "text": "Website"
+                          },
+                          "phaseo-jobs": {
+                            "text": "Jobs"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 115
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Failures"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "#8E8E8E",
+                          "value": null
+                        },
+                        {
+                          "color": "#F2495C",
+                          "value": 0.000001
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "thresholds"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Failure %"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "#8E8E8E",
+                          "value": null
+                        },
+                        {
+                          "color": "#F2495C",
+                          "value": 0.000001
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "thresholds"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "error"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "#8E8E8E",
+                          "value": null
+                        },
+                        {
+                          "color": "#F2495C",
+                          "value": 0.000001
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "thresholds"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "failed_count"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "#8E8E8E",
+                          "value": null
+                        },
+                        {
+                          "color": "#F2495C",
+                          "value": 0.000001
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "thresholds"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "completed"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Completed"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "error"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Failed"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "skipped"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Skipped"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "route"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 260
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "model"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 220
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "job"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 220
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "p95 ms"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "p95 latency"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "timestamp"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 190
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "request_id"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 160
+                  },
+                  {
+                    "id": "custom.inspect",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "trace_id"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 160
+                  },
+                  {
+                    "id": "custom.inspect",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "service_version"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 140
+                  },
+                  {
+                    "id": "custom.inspect",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "outcome"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 105
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "success": {
+                            "text": "Succeeded",
+                            "color": "green"
+                          },
+                          "completed": {
+                            "text": "Completed",
+                            "color": "green"
+                          },
+                          "error": {
+                            "text": "Failed",
+                            "color": "#F2495C"
+                          },
+                          "cancelled": {
+                            "text": "Cancelled",
+                            "color": "#8E8E8E"
+                          },
+                          "skipped": {
+                            "text": "Skipped",
+                            "color": "#8E8E8E"
+                          },
+                          "started": {
+                            "text": "Started",
+                            "color": "#6ED0E0"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": false
+            }
+          },
+          "id": 11,
+          "gridPos": {
+            "x": 0,
+            "y": 39,
+            "w": 24,
+            "h": 8
+          }
+        },
+        {
+          "id": 8,
+          "gridPos": {
+            "x": 0,
+            "y": 47,
+            "w": 24,
+            "h": 8
+          },
+          "title": "Provider attempt lookup",
+          "type": "table",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "description": "Newest 100 matching provider attempts. A failed attempt can recover through fallback. Attempt detail is capped per request; use Inspect matching logs for the original event.",
+          "links": [
+            {
+              "title": "Inspect matching logs",
+              "url": "/explore?schemaVersion=1&panes=%7B%22investigate%22%3A%7B%22datasource%22%3A%22${loki}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bservice_name%3D~%5C%22phaseo-gateway%5C%22%7D%20%7C%20json%20environment%3D%5C%22environment%5C%22%2C%20event_name%3D%5C%22event_name%5C%22%2C%20request_id%3D%5C%22request_id%5C%22%2C%20provider%3D%5C%22provider%5C%22%2C%20model%3D%5C%22model%5C%22%20%7C%20__error__%3D%5C%22%5C%22%20%7C%20provider%3D~%5C%22.*${provider:regex}.*%5C%22%20%7C%20model%3D~%5C%22.*${model:regex}.*%5C%22%20%7C%20environment%3D%5C%22$environment%5C%22%20%7C%20event_name%3D%5C%22provider.attempt%5C%22%20%7C%20request_id%3D~%5C%22${request:regex}.*%5C%22%22%2C%22queryType%22%3A%22range%22%2C%22maxLines%22%3A100%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
+            }
+          ],
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${loki}"
+              },
+              "expr": "{service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", request_id=\"request_id\", provider=\"provider\", model=\"model\" | __error__=\"\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | environment=\"$environment\" | event_name=\"provider.attempt\" | request_id=~\"${request:regex}.*\"",
+              "queryType": "range",
+              "instant": false,
+              "range": true,
+              "maxLines": 100,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "labels",
+                "format": "json",
+                "replace": false
+              }
+            },
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": [
+                    "Line",
+                    "service_name",
+                    "service_version"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": false
+              }
+            },
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": [
+                    "timestamp",
+                    "request_id",
+                    "attempt_number",
+                    "provider",
+                    "model",
+                    "outcome",
+                    "error_code",
+                    "duration_ms",
+                    "provider_ttft_ms",
+                    "trace_id"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "indexByName": {
+                  "timestamp": 0,
+                  "request_id": 1,
+                  "attempt_number": 2,
+                  "provider": 3,
+                  "model": 4,
+                  "outcome": 5,
+                  "error_code": 6,
+                  "duration_ms": 7,
+                  "provider_ttft_ms": 8,
+                  "trace_id": 9
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "timestamp",
+                    "desc": true
+                  }
+                ]
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "noValue": "—",
+              "custom": {
+                "filterable": true,
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "minWidth": 90,
+                "align": "auto"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "timestamp"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Time (UTC)"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "request_id"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Request ID"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "attempt_number"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Attempt"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "provider"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Provider"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "model"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Model"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "outcome"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Outcome"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "error_code"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Code"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "duration_ms"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Duration"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "provider_ttft_ms"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Provider first token"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "trace_id"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Trace ID"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "duration_ms"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "ms"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 1
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "ttft_ms"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "ms"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 1
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "provider_ttft_ms"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "ms"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 1
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "outcome"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "success": {
+                            "text": "Succeeded"
+                          },
+                          "error": {
+                            "text": "Failed"
+                          },
+                          "completed": {
+                            "text": "Completed"
+                          },
+                          "skipped": {
+                            "text": "Skipped"
+                          },
+                          "cancelled": {
+                            "text": "Cancelled"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "scheduled_at"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "dateTimeAsIso"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "error_stack"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 480
+                  },
+                  {
+                    "id": "custom.inspect",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "request_id"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "title": "Investigate",
+                        "url": "/d/phaseo-gateway?var-environment=$environment&from=$__from&to=$__to&var-request=${__data.fields[\"request_id\"]}"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "trace_id"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "title": "Open trace",
+                        "url": "/explore?schemaVersion=1&panes=%7B%22investigate%22%3A%7B%22datasource%22%3A%22${tempo}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22queryType%22%3A%22traceId%22%2C%22query%22%3A%22${__value.raw}%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "service_name"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "phaseo-gateway": {
+                            "text": "Gateway"
+                          },
+                          "phaseo-web-api": {
+                            "text": "Web API"
+                          },
+                          "phaseo-web": {
+                            "text": "Website"
+                          },
+                          "phaseo-jobs": {
+                            "text": "Jobs"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 115
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Failures"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "#8E8E8E",
+                          "value": null
+                        },
+                        {
+                          "color": "#F2495C",
+                          "value": 0.000001
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "thresholds"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Failure %"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "#8E8E8E",
+                          "value": null
+                        },
+                        {
+                          "color": "#F2495C",
+                          "value": 0.000001
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "thresholds"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "error"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "#8E8E8E",
+                          "value": null
+                        },
+                        {
+                          "color": "#F2495C",
+                          "value": 0.000001
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "thresholds"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "failed_count"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "#8E8E8E",
+                          "value": null
+                        },
+                        {
+                          "color": "#F2495C",
+                          "value": 0.000001
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "thresholds"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "completed"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Completed"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "error"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Failed"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "skipped"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Skipped"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "route"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 260
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "model"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 220
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "job"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 220
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "p95 ms"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "p95 latency"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "timestamp"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 190
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "request_id"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 160
+                  },
+                  {
+                    "id": "custom.inspect",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "trace_id"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 160
+                  },
+                  {
+                    "id": "custom.inspect",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "service_version"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 140
+                  },
+                  {
+                    "id": "custom.inspect",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "outcome"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 105
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "success": {
+                            "text": "Succeeded",
+                            "color": "green"
+                          },
+                          "completed": {
+                            "text": "Completed",
+                            "color": "green"
+                          },
+                          "error": {
+                            "text": "Failed",
+                            "color": "#F2495C"
+                          },
+                          "cancelled": {
+                            "text": "Cancelled",
+                            "color": "#8E8E8E"
+                          },
+                          "skipped": {
+                            "text": "Skipped",
+                            "color": "#8E8E8E"
+                          },
+                          "started": {
+                            "text": "Started",
+                            "color": "#6ED0E0"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": false
+            }
+          }
+        }
+      ]
     }
   ]
 }

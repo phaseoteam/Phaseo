@@ -55,7 +55,7 @@
       "url": "/explore"
     },
     {
-      "title": "Frontend Observability",
+      "title": "Browser monitoring",
       "type": "link",
       "url": "/a/grafana-kowalski-app"
     },
@@ -72,7 +72,8 @@
         "label": "Logs",
         "type": "datasource",
         "query": "loki",
-        "refresh": 1
+        "refresh": 1,
+        "hide": 2
       },
       {
         "name": "environment",
@@ -105,7 +106,7 @@
           "text": "",
           "value": ""
         },
-        "hide": 0
+        "hide": 2
       },
       {
         "name": "tempo",
@@ -139,7 +140,7 @@
         "x": 0,
         "y": 0,
         "w": 12,
-        "h": 9
+        "h": 8
       },
       "title": "Received events / second",
       "type": "timeseries",
@@ -167,15 +168,122 @@
           "unit": "ops",
           "noValue": "No data",
           "custom": {
-            "spanNulls": false
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "auto",
+            "pointSize": 4,
+            "axisBorderShow": false
+          },
+          "min": 0,
+          "color": {
+            "mode": "palette-classic-by-name"
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Gateway|phaseo-gateway)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Web API|phaseo-web-api|phaseo-web)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6ED0E0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Job failures|phaseo-jobs)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(error|.* · error|Gateway actionable|Web API 5xx|Website server errors|Operational failures|Server errors|Delivery failures)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(success|completed|.* · success)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(cancelled|skipped)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8E8E8E"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
           "displayMode": "list",
-          "placement": "bottom"
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
         }
       }
     },
@@ -185,7 +293,7 @@
         "x": 12,
         "y": 0,
         "w": 12,
-        "h": 9
+        "h": 8
       },
       "title": "Scheduler ticks / 15 minutes",
       "type": "timeseries",
@@ -205,7 +313,7 @@
           "queryType": "range",
           "instant": false,
           "range": true,
-          "legendFormat": ""
+          "legendFormat": "Heartbeats"
         }
       ],
       "fieldConfig": {
@@ -213,15 +321,122 @@
           "unit": "short",
           "noValue": "No data",
           "custom": {
-            "spanNulls": false
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "auto",
+            "pointSize": 4,
+            "axisBorderShow": false
+          },
+          "min": 0,
+          "color": {
+            "mode": "palette-classic-by-name"
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Gateway|phaseo-gateway)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Web API|phaseo-web-api|phaseo-web)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6ED0E0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Job failures|phaseo-jobs)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(error|.* · error|Gateway actionable|Web API 5xx|Website server errors|Operational failures|Server errors|Delivery failures)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(success|completed|.* · success)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(cancelled|skipped)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8E8E8E"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
           "displayMode": "list",
-          "placement": "bottom"
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
         }
       }
     },
@@ -229,9 +444,9 @@
       "id": 3,
       "gridPos": {
         "x": 0,
-        "y": 9,
+        "y": 8,
         "w": 12,
-        "h": 9
+        "h": 7
       },
       "title": "Persistence delivery failures",
       "type": "timeseries",
@@ -251,7 +466,7 @@
           "queryType": "range",
           "instant": false,
           "range": true,
-          "legendFormat": ""
+          "legendFormat": "Delivery failures"
         }
       ],
       "fieldConfig": {
@@ -259,15 +474,122 @@
           "unit": "short",
           "noValue": "No data",
           "custom": {
-            "spanNulls": false
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "auto",
+            "pointSize": 4,
+            "axisBorderShow": false
+          },
+          "min": 0,
+          "color": {
+            "mode": "palette-classic-by-name"
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Gateway|phaseo-gateway)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Web API|phaseo-web-api|phaseo-web)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6ED0E0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Job failures|phaseo-jobs)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(error|.* · error|Gateway actionable|Web API 5xx|Website server errors|Operational failures|Server errors|Delivery failures)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(success|completed|.* · success)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(cancelled|skipped)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8E8E8E"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
           "displayMode": "list",
-          "placement": "bottom"
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
         }
       }
     },
@@ -275,9 +597,9 @@
       "id": 4,
       "gridPos": {
         "x": 12,
-        "y": 9,
+        "y": 8,
         "w": 12,
-        "h": 9
+        "h": 7
       },
       "title": "Attempt batches truncated",
       "type": "timeseries",
@@ -297,7 +619,7 @@
           "queryType": "range",
           "instant": false,
           "range": true,
-          "legendFormat": ""
+          "legendFormat": "Truncated requests"
         }
       ],
       "fieldConfig": {
@@ -305,699 +627,137 @@
           "unit": "short",
           "noValue": "No data",
           "custom": {
-            "spanNulls": false
+            "spanNulls": false,
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "auto",
+            "pointSize": 4,
+            "axisBorderShow": false
+          },
+          "min": 0,
+          "color": {
+            "mode": "palette-classic-by-name"
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Gateway|phaseo-gateway)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Web API|phaseo-web-api|phaseo-web)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6ED0E0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Job failures|phaseo-jobs)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(error|.* · error|Gateway actionable|Web API 5xx|Website server errors|Operational failures|Server errors|Delivery failures)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(success|completed|.* · success)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(cancelled|skipped)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8E8E8E"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
           "displayMode": "list",
-          "placement": "bottom"
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
         }
       }
     },
     {
-      "id": 5,
+      "id": 8,
+      "title": "Collection coverage",
+      "type": "row",
+      "collapsed": false,
       "gridPos": {
         "x": 0,
-        "y": 18,
-        "w": 12,
-        "h": 9
+        "y": 15,
+        "w": 24,
+        "h": 1
       },
-      "title": "Recent heartbeats",
-      "type": "table",
-      "datasource": {
-        "type": "loki",
-        "uid": "${loki}"
-      },
-      "description": "Newest 100 scheduler heartbeats. Their arrival confirms scheduler telemetry, not external availability or successful completion of every job.",
-      "links": [
-        {
-          "title": "Inspect matching logs",
-          "url": "/explore?schemaVersion=1&panes=%7B%22investigate%22%3A%7B%22datasource%22%3A%22${loki}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bservice_name%3D~%5C%22phaseo-jobs%5C%22%7D%20%7C%20json%20environment%3D%5C%22environment%5C%22%2C%20event_name%3D%5C%22event_name%5C%22%20%7C%20__error__%3D%5C%22%5C%22%20%7C%20environment%3D%5C%22$environment%5C%22%20%7C%20event_name%3D%5C%22job.heartbeat%5C%22%22%2C%22queryType%22%3A%22range%22%2C%22maxLines%22%3A100%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
-        }
-      ],
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "loki",
-            "uid": "${loki}"
-          },
-          "expr": "{service_name=~\"phaseo-jobs\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"job.heartbeat\"",
-          "queryType": "range",
-          "instant": false,
-          "range": true,
-          "maxLines": 100,
-          "direction": "backward"
-        }
-      ],
-      "transformations": [
-        {
-          "id": "extractFields",
-          "options": {
-            "source": "labels",
-            "format": "json",
-            "replace": false
-          }
-        },
-        {
-          "id": "filterFieldsByName",
-          "options": {
-            "include": {
-              "names": [
-                "Line",
-                "service_name",
-                "service_version"
-              ]
-            }
-          }
-        },
-        {
-          "id": "extractFields",
-          "options": {
-            "source": "Line",
-            "format": "json",
-            "replace": false
-          }
-        },
-        {
-          "id": "filterFieldsByName",
-          "options": {
-            "include": {
-              "names": [
-                "timestamp",
-                "service_name",
-                "event_name",
-                "service_version"
-              ]
-            }
-          }
-        },
-        {
-          "id": "organize",
-          "options": {
-            "indexByName": {
-              "timestamp": 0,
-              "service_name": 1,
-              "event_name": 2,
-              "service_version": 3
-            }
-          }
-        },
-        {
-          "id": "sortBy",
-          "options": {
-            "sort": [
-              {
-                "field": "timestamp",
-                "desc": true
-              }
-            ]
-          }
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "noValue": "—",
-          "custom": {
-            "filterable": true,
-            "cellOptions": {
-              "type": "auto"
-            }
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "timestamp"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Time (UTC)"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "service_name"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Service"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "event_name"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Event"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "service_version"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Release"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "duration_ms"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "ms"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "ttft_ms"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "ms"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "provider_ttft_ms"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "ms"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "outcome"
-            },
-            "properties": [
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "type": "value",
-                    "options": {
-                      "success": {
-                        "text": "Succeeded"
-                      },
-                      "error": {
-                        "text": "Failed"
-                      },
-                      "completed": {
-                        "text": "Completed"
-                      },
-                      "skipped": {
-                        "text": "Skipped"
-                      },
-                      "cancelled": {
-                        "text": "Cancelled"
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "scheduled_at"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "dateTimeAsIso"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "error_stack"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 480
-              },
-              {
-                "id": "custom.inspect",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "request_id"
-            },
-            "properties": [
-              {
-                "id": "links",
-                "value": [
-                  {
-                    "title": "Investigate",
-                    "url": "/d/phaseo-gateway?var-environment=$environment&from=$__from&to=$__to&var-request=${__data.fields[\"request_id\"]}"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "trace_id"
-            },
-            "properties": [
-              {
-                "id": "links",
-                "value": [
-                  {
-                    "title": "Open trace",
-                    "url": "/explore?schemaVersion=1&panes=%7B%22investigate%22%3A%7B%22datasource%22%3A%22${tempo}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22queryType%22%3A%22traceId%22%2C%22query%22%3A%22${__value.raw}%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      "options": {
-        "showHeader": true,
-        "cellHeight": "sm",
-        "footer": {
-          "show": false
-        }
-      }
-    },
-    {
-      "id": 6,
-      "gridPos": {
-        "x": 12,
-        "y": 18,
-        "w": 12,
-        "h": 9
-      },
-      "title": "Persistence errors",
-      "type": "table",
-      "datasource": {
-        "type": "loki",
-        "uid": "${loki}"
-      },
-      "description": "Newest 100 persistence delivery events. Inspect the source and classification. An OTLP outage cannot reliably report itself through the same OTLP destination.",
-      "links": [
-        {
-          "title": "Inspect matching logs",
-          "url": "/explore?schemaVersion=1&panes=%7B%22investigate%22%3A%7B%22datasource%22%3A%22${loki}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bservice_name%3D~%5C%22phaseo-gateway%5C%22%7D%20%7C%20json%20environment%3D%5C%22environment%5C%22%2C%20event_name%3D%5C%22event_name%5C%22%20%7C%20__error__%3D%5C%22%5C%22%20%7C%20environment%3D%5C%22$environment%5C%22%20%7C%20event_name%3D%5C%22telemetry.delivery%5C%22%22%2C%22queryType%22%3A%22range%22%2C%22maxLines%22%3A100%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
-        }
-      ],
-      "targets": [
-        {
-          "refId": "A",
-          "datasource": {
-            "type": "loki",
-            "uid": "${loki}"
-          },
-          "expr": "{service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"telemetry.delivery\"",
-          "queryType": "range",
-          "instant": false,
-          "range": true,
-          "maxLines": 100,
-          "direction": "backward"
-        }
-      ],
-      "transformations": [
-        {
-          "id": "extractFields",
-          "options": {
-            "source": "labels",
-            "format": "json",
-            "replace": false
-          }
-        },
-        {
-          "id": "filterFieldsByName",
-          "options": {
-            "include": {
-              "names": [
-                "Line",
-                "service_name",
-                "service_version"
-              ]
-            }
-          }
-        },
-        {
-          "id": "extractFields",
-          "options": {
-            "source": "Line",
-            "format": "json",
-            "replace": false
-          }
-        },
-        {
-          "id": "filterFieldsByName",
-          "options": {
-            "include": {
-              "names": [
-                "timestamp",
-                "signal",
-                "outcome",
-                "reason",
-                "error_kind",
-                "error_code",
-                "request_id",
-                "trace_id"
-              ]
-            }
-          }
-        },
-        {
-          "id": "organize",
-          "options": {
-            "indexByName": {
-              "timestamp": 0,
-              "signal": 1,
-              "outcome": 2,
-              "reason": 3,
-              "error_kind": 4,
-              "error_code": 5,
-              "request_id": 6,
-              "trace_id": 7
-            }
-          }
-        },
-        {
-          "id": "sortBy",
-          "options": {
-            "sort": [
-              {
-                "field": "timestamp",
-                "desc": true
-              }
-            ]
-          }
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "noValue": "—",
-          "custom": {
-            "filterable": true,
-            "cellOptions": {
-              "type": "auto"
-            }
-          }
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "timestamp"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Time (UTC)"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "signal"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Source"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "outcome"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Outcome"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "reason"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Reason"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "error_kind"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Category"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "error_code"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Code"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "request_id"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Request ID"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "trace_id"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "Trace ID"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "duration_ms"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "ms"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "ttft_ms"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "ms"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "provider_ttft_ms"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "ms"
-              },
-              {
-                "id": "decimals",
-                "value": 1
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "outcome"
-            },
-            "properties": [
-              {
-                "id": "mappings",
-                "value": [
-                  {
-                    "type": "value",
-                    "options": {
-                      "success": {
-                        "text": "Succeeded"
-                      },
-                      "error": {
-                        "text": "Failed"
-                      },
-                      "completed": {
-                        "text": "Completed"
-                      },
-                      "skipped": {
-                        "text": "Skipped"
-                      },
-                      "cancelled": {
-                        "text": "Cancelled"
-                      }
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "scheduled_at"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "dateTimeAsIso"
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "error_stack"
-            },
-            "properties": [
-              {
-                "id": "custom.width",
-                "value": 480
-              },
-              {
-                "id": "custom.inspect",
-                "value": true
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "request_id"
-            },
-            "properties": [
-              {
-                "id": "links",
-                "value": [
-                  {
-                    "title": "Investigate",
-                    "url": "/d/phaseo-gateway?var-environment=$environment&from=$__from&to=$__to&var-request=${__data.fields[\"request_id\"]}"
-                  }
-                ]
-              }
-            ]
-          },
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "trace_id"
-            },
-            "properties": [
-              {
-                "id": "links",
-                "value": [
-                  {
-                    "title": "Open trace",
-                    "url": "/explore?schemaVersion=1&panes=%7B%22investigate%22%3A%7B%22datasource%22%3A%22${tempo}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22queryType%22%3A%22traceId%22%2C%22query%22%3A%22${__value.raw}%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
-                  }
-                ]
-              }
-            ]
-          }
-        ]
-      },
-      "options": {
-        "showHeader": true,
-        "cellHeight": "sm",
-        "footer": {
-          "show": false
-        }
-      }
+      "panels": []
     },
     {
       "title": "Collected event types",
@@ -1017,15 +777,19 @@
           "queryType": "instant",
           "instant": true,
           "range": false,
-          "expr": "label_replace((topk(20, sum by (service_name, event_name) (count_over_time({service_name=~\"phaseo-.*\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | __error__=\"\" [$__range])))), \"measure\", \"Events\", \"\", \"\")"
+          "expr": "topk(20, sum by (service_name, event_name) (count_over_time({service_name=~\"phaseo-.*\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | __error__=\"\" [$__range])))",
+          "legendFormat": "Events"
         }
       ],
       "transformations": [
         {
-          "id": "labelsToFields",
+          "id": "filterFieldsByName",
           "options": {
-            "mode": "columns",
-            "valueLabel": "measure"
+            "exclude": {
+              "names": [
+                "Time"
+              ]
+            }
           }
         },
         {
@@ -1035,13 +799,13 @@
         {
           "id": "organize",
           "options": {
-            "excludeByName": {
-              "Time": true
-            },
             "indexByName": {
               "service_name": 0,
               "event_name": 1,
-              "Events": 2
+              "Value #A": 2
+            },
+            "renameByName": {
+              "Value #A": "Events"
             }
           }
         },
@@ -1066,7 +830,9 @@
             "filterable": true,
             "cellOptions": {
               "type": "auto"
-            }
+            },
+            "minWidth": 90,
+            "align": "auto"
           }
         },
         "overrides": [
@@ -1125,6 +891,380 @@
                 "value": 1
               }
             ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "service_name"
+            },
+            "properties": [
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "phaseo-gateway": {
+                        "text": "Gateway"
+                      },
+                      "phaseo-web-api": {
+                        "text": "Web API"
+                      },
+                      "phaseo-web": {
+                        "text": "Website"
+                      },
+                      "phaseo-jobs": {
+                        "text": "Jobs"
+                      }
+                    }
+                  }
+                ]
+              },
+              {
+                "id": "custom.width",
+                "value": 115
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Failures"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#8E8E8E",
+                      "value": null
+                    },
+                    {
+                      "color": "#F2495C",
+                      "value": 0.000001
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Failure %"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#8E8E8E",
+                      "value": null
+                    },
+                    {
+                      "color": "#F2495C",
+                      "value": 0.000001
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#8E8E8E",
+                      "value": null
+                    },
+                    {
+                      "color": "#F2495C",
+                      "value": 0.000001
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "failed_count"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {
+                      "color": "#8E8E8E",
+                      "value": null
+                    },
+                    {
+                      "color": "#F2495C",
+                      "value": 0.000001
+                    }
+                  ]
+                }
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "thresholds"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "completed"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Completed"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Failed"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "skipped"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Skipped"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "route"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 260
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "model"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 220
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "job"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 220
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p95 ms"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "p95 latency"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "timestamp"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 190
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "request_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trace_id"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 160
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "service_version"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 140
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "outcome"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 105
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-text"
+                }
+              },
+              {
+                "id": "mappings",
+                "value": [
+                  {
+                    "type": "value",
+                    "options": {
+                      "success": {
+                        "text": "Succeeded",
+                        "color": "green"
+                      },
+                      "completed": {
+                        "text": "Completed",
+                        "color": "green"
+                      },
+                      "error": {
+                        "text": "Failed",
+                        "color": "#F2495C"
+                      },
+                      "cancelled": {
+                        "text": "Cancelled",
+                        "color": "#8E8E8E"
+                      },
+                      "skipped": {
+                        "text": "Skipped",
+                        "color": "#8E8E8E"
+                      },
+                      "started": {
+                        "text": "Started",
+                        "color": "#6ED0E0"
+                      }
+                    }
+                  }
+                ]
+              }
+            ]
           }
         ]
       },
@@ -1138,10 +1278,1458 @@
       "id": 7,
       "gridPos": {
         "x": 0,
-        "y": 27,
+        "y": 16,
         "w": 24,
-        "h": 9
+        "h": 8
       }
+    },
+    {
+      "id": 9,
+      "title": "Delivery records",
+      "type": "row",
+      "collapsed": true,
+      "gridPos": {
+        "x": 0,
+        "y": 24,
+        "w": 24,
+        "h": 1
+      },
+      "panels": [
+        {
+          "id": 5,
+          "gridPos": {
+            "x": 0,
+            "y": 25,
+            "w": 24,
+            "h": 8
+          },
+          "title": "Recent heartbeats",
+          "type": "table",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "description": "Newest 100 scheduler heartbeats. Their arrival confirms scheduler telemetry, not external availability or successful completion of every job.",
+          "links": [
+            {
+              "title": "Inspect matching logs",
+              "url": "/explore?schemaVersion=1&panes=%7B%22investigate%22%3A%7B%22datasource%22%3A%22${loki}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bservice_name%3D~%5C%22phaseo-jobs%5C%22%7D%20%7C%20json%20environment%3D%5C%22environment%5C%22%2C%20event_name%3D%5C%22event_name%5C%22%20%7C%20__error__%3D%5C%22%5C%22%20%7C%20environment%3D%5C%22$environment%5C%22%20%7C%20event_name%3D%5C%22job.heartbeat%5C%22%22%2C%22queryType%22%3A%22range%22%2C%22maxLines%22%3A100%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
+            }
+          ],
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${loki}"
+              },
+              "expr": "{service_name=~\"phaseo-jobs\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"job.heartbeat\"",
+              "queryType": "range",
+              "instant": false,
+              "range": true,
+              "maxLines": 100,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "labels",
+                "format": "json",
+                "replace": false
+              }
+            },
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": [
+                    "Line",
+                    "service_name",
+                    "service_version"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": false
+              }
+            },
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": [
+                    "timestamp",
+                    "service_name",
+                    "event_name",
+                    "service_version"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "indexByName": {
+                  "timestamp": 0,
+                  "service_name": 1,
+                  "event_name": 2,
+                  "service_version": 3
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "timestamp",
+                    "desc": true
+                  }
+                ]
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "noValue": "—",
+              "custom": {
+                "filterable": true,
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "minWidth": 90,
+                "align": "auto"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "timestamp"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Time (UTC)"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "service_name"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Service"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "event_name"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Event"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "service_version"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Release"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "duration_ms"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "ms"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 1
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "ttft_ms"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "ms"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 1
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "provider_ttft_ms"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "ms"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 1
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "outcome"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "success": {
+                            "text": "Succeeded"
+                          },
+                          "error": {
+                            "text": "Failed"
+                          },
+                          "completed": {
+                            "text": "Completed"
+                          },
+                          "skipped": {
+                            "text": "Skipped"
+                          },
+                          "cancelled": {
+                            "text": "Cancelled"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "scheduled_at"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "dateTimeAsIso"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "error_stack"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 480
+                  },
+                  {
+                    "id": "custom.inspect",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "request_id"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "title": "Investigate",
+                        "url": "/d/phaseo-gateway?var-environment=$environment&from=$__from&to=$__to&var-request=${__data.fields[\"request_id\"]}"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "trace_id"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "title": "Open trace",
+                        "url": "/explore?schemaVersion=1&panes=%7B%22investigate%22%3A%7B%22datasource%22%3A%22${tempo}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22queryType%22%3A%22traceId%22%2C%22query%22%3A%22${__value.raw}%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "service_name"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "phaseo-gateway": {
+                            "text": "Gateway"
+                          },
+                          "phaseo-web-api": {
+                            "text": "Web API"
+                          },
+                          "phaseo-web": {
+                            "text": "Website"
+                          },
+                          "phaseo-jobs": {
+                            "text": "Jobs"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 115
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Failures"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "#8E8E8E",
+                          "value": null
+                        },
+                        {
+                          "color": "#F2495C",
+                          "value": 0.000001
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "thresholds"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Failure %"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "#8E8E8E",
+                          "value": null
+                        },
+                        {
+                          "color": "#F2495C",
+                          "value": 0.000001
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "thresholds"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "error"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "#8E8E8E",
+                          "value": null
+                        },
+                        {
+                          "color": "#F2495C",
+                          "value": 0.000001
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "thresholds"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "failed_count"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "#8E8E8E",
+                          "value": null
+                        },
+                        {
+                          "color": "#F2495C",
+                          "value": 0.000001
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "thresholds"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "completed"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Completed"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "error"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Failed"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "skipped"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Skipped"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "route"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 260
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "model"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 220
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "job"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 220
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "p95 ms"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "p95 latency"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "timestamp"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 190
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "request_id"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 160
+                  },
+                  {
+                    "id": "custom.inspect",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "trace_id"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 160
+                  },
+                  {
+                    "id": "custom.inspect",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "service_version"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 140
+                  },
+                  {
+                    "id": "custom.inspect",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "outcome"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 105
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "success": {
+                            "text": "Succeeded",
+                            "color": "green"
+                          },
+                          "completed": {
+                            "text": "Completed",
+                            "color": "green"
+                          },
+                          "error": {
+                            "text": "Failed",
+                            "color": "#F2495C"
+                          },
+                          "cancelled": {
+                            "text": "Cancelled",
+                            "color": "#8E8E8E"
+                          },
+                          "skipped": {
+                            "text": "Skipped",
+                            "color": "#8E8E8E"
+                          },
+                          "started": {
+                            "text": "Started",
+                            "color": "#6ED0E0"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": false
+            }
+          }
+        },
+        {
+          "id": 6,
+          "gridPos": {
+            "x": 0,
+            "y": 33,
+            "w": 24,
+            "h": 8
+          },
+          "title": "Persistence errors",
+          "type": "table",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "description": "Newest 100 persistence delivery events. Inspect the source and classification. An OTLP outage cannot reliably report itself through the same OTLP destination.",
+          "links": [
+            {
+              "title": "Inspect matching logs",
+              "url": "/explore?schemaVersion=1&panes=%7B%22investigate%22%3A%7B%22datasource%22%3A%22${loki}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bservice_name%3D~%5C%22phaseo-gateway%5C%22%7D%20%7C%20json%20environment%3D%5C%22environment%5C%22%2C%20event_name%3D%5C%22event_name%5C%22%20%7C%20__error__%3D%5C%22%5C%22%20%7C%20environment%3D%5C%22$environment%5C%22%20%7C%20event_name%3D%5C%22telemetry.delivery%5C%22%22%2C%22queryType%22%3A%22range%22%2C%22maxLines%22%3A100%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
+            }
+          ],
+          "targets": [
+            {
+              "refId": "A",
+              "datasource": {
+                "type": "loki",
+                "uid": "${loki}"
+              },
+              "expr": "{service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"telemetry.delivery\"",
+              "queryType": "range",
+              "instant": false,
+              "range": true,
+              "maxLines": 100,
+              "direction": "backward"
+            }
+          ],
+          "transformations": [
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "labels",
+                "format": "json",
+                "replace": false
+              }
+            },
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": [
+                    "Line",
+                    "service_name",
+                    "service_version"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "extractFields",
+              "options": {
+                "source": "Line",
+                "format": "json",
+                "replace": false
+              }
+            },
+            {
+              "id": "filterFieldsByName",
+              "options": {
+                "include": {
+                  "names": [
+                    "timestamp",
+                    "signal",
+                    "outcome",
+                    "reason",
+                    "error_kind",
+                    "error_code",
+                    "request_id",
+                    "trace_id"
+                  ]
+                }
+              }
+            },
+            {
+              "id": "organize",
+              "options": {
+                "indexByName": {
+                  "timestamp": 0,
+                  "signal": 1,
+                  "outcome": 2,
+                  "reason": 3,
+                  "error_kind": 4,
+                  "error_code": 5,
+                  "request_id": 6,
+                  "trace_id": 7
+                }
+              }
+            },
+            {
+              "id": "sortBy",
+              "options": {
+                "sort": [
+                  {
+                    "field": "timestamp",
+                    "desc": true
+                  }
+                ]
+              }
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "noValue": "—",
+              "custom": {
+                "filterable": true,
+                "cellOptions": {
+                  "type": "auto"
+                },
+                "minWidth": 90,
+                "align": "auto"
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "timestamp"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Time (UTC)"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "signal"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Source"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "outcome"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Outcome"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "reason"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Reason"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "error_kind"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Category"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "error_code"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Code"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "request_id"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Request ID"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "trace_id"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Trace ID"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "duration_ms"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "ms"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 1
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "ttft_ms"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "ms"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 1
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "provider_ttft_ms"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "ms"
+                  },
+                  {
+                    "id": "decimals",
+                    "value": 1
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "outcome"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "success": {
+                            "text": "Succeeded"
+                          },
+                          "error": {
+                            "text": "Failed"
+                          },
+                          "completed": {
+                            "text": "Completed"
+                          },
+                          "skipped": {
+                            "text": "Skipped"
+                          },
+                          "cancelled": {
+                            "text": "Cancelled"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "scheduled_at"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "dateTimeAsIso"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "error_stack"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 480
+                  },
+                  {
+                    "id": "custom.inspect",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "request_id"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "title": "Investigate",
+                        "url": "/d/phaseo-gateway?var-environment=$environment&from=$__from&to=$__to&var-request=${__data.fields[\"request_id\"]}"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "trace_id"
+                },
+                "properties": [
+                  {
+                    "id": "links",
+                    "value": [
+                      {
+                        "title": "Open trace",
+                        "url": "/explore?schemaVersion=1&panes=%7B%22investigate%22%3A%7B%22datasource%22%3A%22${tempo}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22queryType%22%3A%22traceId%22%2C%22query%22%3A%22${__value.raw}%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "service_name"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "phaseo-gateway": {
+                            "text": "Gateway"
+                          },
+                          "phaseo-web-api": {
+                            "text": "Web API"
+                          },
+                          "phaseo-web": {
+                            "text": "Website"
+                          },
+                          "phaseo-jobs": {
+                            "text": "Jobs"
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "custom.width",
+                    "value": 115
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Failures"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "#8E8E8E",
+                          "value": null
+                        },
+                        {
+                          "color": "#F2495C",
+                          "value": 0.000001
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "thresholds"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Failure %"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "#8E8E8E",
+                          "value": null
+                        },
+                        {
+                          "color": "#F2495C",
+                          "value": 0.000001
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "thresholds"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "error"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "#8E8E8E",
+                          "value": null
+                        },
+                        {
+                          "color": "#F2495C",
+                          "value": 0.000001
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "thresholds"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "failed_count"
+                },
+                "properties": [
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "thresholds",
+                    "value": {
+                      "mode": "absolute",
+                      "steps": [
+                        {
+                          "color": "#8E8E8E",
+                          "value": null
+                        },
+                        {
+                          "color": "#F2495C",
+                          "value": 0.000001
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "thresholds"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "completed"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Completed"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "error"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Failed"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "skipped"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "Skipped"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "route"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 260
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "model"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 220
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "job"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 220
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "p95 ms"
+                },
+                "properties": [
+                  {
+                    "id": "displayName",
+                    "value": "p95 latency"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "timestamp"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 190
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "request_id"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 160
+                  },
+                  {
+                    "id": "custom.inspect",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "trace_id"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 160
+                  },
+                  {
+                    "id": "custom.inspect",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "service_version"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 140
+                  },
+                  {
+                    "id": "custom.inspect",
+                    "value": true
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "outcome"
+                },
+                "properties": [
+                  {
+                    "id": "custom.width",
+                    "value": 105
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  },
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "success": {
+                            "text": "Succeeded",
+                            "color": "green"
+                          },
+                          "completed": {
+                            "text": "Completed",
+                            "color": "green"
+                          },
+                          "error": {
+                            "text": "Failed",
+                            "color": "#F2495C"
+                          },
+                          "cancelled": {
+                            "text": "Cancelled",
+                            "color": "#8E8E8E"
+                          },
+                          "skipped": {
+                            "text": "Skipped",
+                            "color": "#8E8E8E"
+                          },
+                          "started": {
+                            "text": "Started",
+                            "color": "#6ED0E0"
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "footer": {
+              "show": false
+            }
+          }
+        }
+      ]
     }
   ]
 }

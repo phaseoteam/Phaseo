@@ -1,5 +1,6 @@
 import { pathToFileURL } from 'node:url';
 import { dashboards, alertRules } from './definitions.mjs';
+import { allPanels } from './presentation.mjs';
 
 export function rulerGroup(rules) {
   return { name: rules[0].ruleGroup, interval: '1m', rules: rules.map(rule => ({
@@ -65,7 +66,7 @@ export async function provision({ args = process.argv.slice(2), env = process.en
   if (check) {
     // Read-only: evaluate dashboard expressions against their own backend.
     // Empty results prove syntax/access, not that collection is working.
-    for (const dashboard of definitions) for (const panel of dashboard.panels) for (const target of panel.targets ?? []) {
+    for (const dashboard of definitions) for (const panel of allPanels(dashboard.panels)) for (const target of panel.targets ?? []) {
       const query = target.expr.replaceAll('$__auto', '5m').replaceAll('$__range', '1h').replaceAll('$environment', environment).replace(/\$\{(?:request|route|provider|model|job):regex\}/g, '');
       const usage = panel.datasource.type === 'prometheus';
       const endpoint = panel.type === 'logs' || target.maxLines ? 'query_range' : 'query';

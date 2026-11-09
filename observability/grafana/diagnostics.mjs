@@ -6,17 +6,18 @@ const incidentTime = 'var-environment=$environment&from=$__from&to=$__to';
 const drilldown = (dashboard, variable, column) => ({ title: 'Investigate', url: `/d/phaseo-${dashboard}?${incidentTime}&var-${variable}=\${__data.fields["${column}"]}` });
 
 function table(title, metrics, dimensions, description, { sort = Object.keys(metrics)[0], overrides = [] } = {}) {
-  const columns = [...dimensions, ...Object.keys(metrics)];
-  // Each instant vector becomes one named column. Merge aligns rows on the
-  // complete dimension tuple, never on a request's trace/span metadata.
+  const metricColumns = Object.keys(metrics).map((name, index) => [`Value #${String.fromCharCode(65 + index)}`, name]);
+  const columns = [...dimensions, ...metricColumns.map(([source]) => source)];
+  // Loki's browser adapter converts each instant query into a table with a
+  // Value #refId column before panel transformations. Rename those columns and
+  // merge on dimensions; labelsToFields cannot pivot these adapted frames.
   return {
     title, type: 'table', datasource, description,
-    targets: [{ refId: 'A', datasource, queryType: 'instant', instant: true, range: false,
-      expr: Object.entries(metrics).map(([name, expr]) => `label_replace((${expr}), "measure", "${name}", "", "")`).join(' or ') }],
+    targets: Object.entries(metrics).map(([name, expr], index) => ({ refId: String.fromCharCode(65 + index), datasource, queryType: 'instant', instant: true, range: false, expr, legendFormat: name })),
     transformations: [
-      { id: 'labelsToFields', options: { mode: 'columns', valueLabel: 'measure' } },
+      { id: 'filterFieldsByName', options: { exclude: { names: ['Time'] } } },
       { id: 'merge', options: {} },
-      { id: 'organize', options: { excludeByName: { Time: true }, indexByName: Object.fromEntries(columns.map((name, index) => [name, index])) } },
+      { id: 'organize', options: { indexByName: Object.fromEntries(columns.map((name, index) => [name, index])), renameByName: Object.fromEntries(metricColumns) } },
       { id: 'sortBy', options: { sort: [{ field: sort, desc: true }] } },
     ],
     fieldConfig: { defaults: { unit: 'short', decimals: 0, noValue: '—', custom: { filterable: true, cellOptions: { type: 'auto' } } }, overrides: [
@@ -103,14 +104,6 @@ export function addDiagnostics(dashboards, logs) {
     profile('Service request health', 'phaseo-gateway|phaseo-web-api', '', ['service_name'], ' | actionable="true"', ['actionable', 'event_name'], ' | event_name=~"gateway.request|web.request"'),
     issues('phaseo-gateway|phaseo-web-api|phaseo-web|phaseo-jobs'),
   ]);
-  // Put actionable tables ahead of trends; retain stable existing panel IDs.
-  overview.panels[0].options.content = 'Check **Service request health** for failures and slow responses, then **Grouped failures** for the affected route, error or job. Click a failure card to investigate its service. Counts cover received events; scheduler freshness does not establish external uptime.';
-  overview.panels[0].gridPos.h = 2;
-  for (const item of overview.panels.slice(1, 7)) item.gridPos.y = 2;
-  for (const item of overview.panels.slice(7, -2)) item.gridPos.y += 15;
-  overview.panels.at(-2).gridPos = { x: 0, y: 6, w: 24, h: 8 };
-  overview.panels.at(-1).gridPos = { x: 0, y: 14, w: 24, h: 10 };
-
   extend(gateway, [
     profile('Provider and model attempts', 'phaseo-gateway', 'provider.attempt', ['provider', 'model'], ' | outcome="error"', ['outcome'], provider, drilldown('gateway', 'model', 'model')),
     table('Gateway failure reasons', { Events: `topk(20, ${by('phaseo-gateway', 'gateway.request', ['error_origin', 'error_kind', 'error_code', 'provider', 'model'], `${provider} | outcome="error"`, ['outcome'])})` }, ['error_origin', 'error_kind', 'error_code', 'provider', 'model'], 'Logical request failures grouped by classification, including non-actionable client rejections. Cancellations are excluded. Attempt failures can recover through fallback.'),
@@ -132,13 +125,9 @@ export function addDiagnostics(dashboards, logs) {
   extend(telemetry, [
     table('Collected event types', { Events: `topk(20, ${by('phaseo-.*', '', ['service_name', 'event_name'])})` }, ['service_name', 'event_name'], 'Received events in the selected range. Use this to see which services and event types are actually represented. Counts do not estimate billable bytes or prove uptime.'),
   ]);
-  // Specialist diagnostics should be encountered before the existing trend/log
-  // panels. Move their original panels down without replacing their stable IDs.
+  // Apply specialist filters to both original trends and investigative records.
   for (const dashboard of [gateway, web, jobs]) {
     const originalCount = originalCounts.get(dashboard);
-    const added = dashboard.panels.slice(originalCount);
-    for (const [index, item] of added.entries()) item.gridPos.y = index * 9;
-    for (const item of dashboard.panels.slice(0, originalCount)) item.gridPos.y += added.length * 9;
     dashboard.templating.list.find(variable => variable.name === 'request').hide = dashboard === gateway ? 0 : 2;
     // Apply search controls at the existing JSON extraction stage so charts and
     // records use the same population. Grafana regex formatting supports literal

@@ -44,7 +44,8 @@
         "current": {
           "text": "grafanacloud-usage",
           "value": "grafanacloud-usage"
-        }
+        },
+        "hide": 2
       }
     ]
   },
@@ -54,28 +55,28 @@
   "panels": [
     {
       "id": 1,
-      "title": "Stay on Free",
+      "title": "Free allowances",
       "type": "text",
       "gridPos": {
         "x": 0,
         "y": 0,
         "w": 24,
-        "h": 5
+        "h": 3
       },
       "options": {
         "mode": "markdown",
-        "content": "**Permanent Free budgets:** 10,000 metric series, 50 GB logs, 50 GB traces, 50,000 browser sessions, 100,000 API checks and 10,000 browser checks per month. Metrics, logs and traces retain 14 days. Grafana and IRM each allow 3 active users. [Current pricing](https://grafana.com/pricing/).\n\nYellow means 80% of an allowance; red means 100%. These are visibility thresholds, not ingestion caps or notifications. A trial can expose higher limits. Keep the account on Free; check the account plan and trial end in [Cloud Portal](https://grafana.com/profile/org). No data means unavailable, not unused. Usage is organization-wide, without environment filters."
+        "content": "Organization-wide monthly usage against **permanent Free allowances**. Amber: 80%. Red: 100%. Missing data stays **Unavailable**. These bars do not cap collection. Free includes 14-day metrics/logs/traces retention and 3 active Grafana users. [Billing/Usage](/dashboards?query=Billing%2FUsage) · [Account plan](https://grafana.com/profile/org)"
       }
     },
     {
       "id": 2,
       "title": "Metric series / 10,000",
-      "type": "stat",
+      "type": "bargauge",
       "gridPos": {
         "x": 0,
-        "y": 5,
+        "y": 3,
         "w": 8,
-        "h": 4
+        "h": 3
       },
       "datasource": {
         "type": "prometheus",
@@ -120,32 +121,39 @@
                 "value": 10000
               }
             ]
-          }
+          },
+          "max": 10000
         },
         "overrides": []
       },
       "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "sizing": "manual",
+        "minVizHeight": 24,
+        "maxVizHeight": 32,
+        "text": {
+          "valueSize": 20
+        },
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
           ],
           "fields": "",
           "values": false
-        },
-        "colorMode": "value",
-        "graphMode": "none",
-        "textMode": "auto"
+        }
       }
     },
     {
       "id": 3,
       "title": "Logs / 50 GB",
-      "type": "stat",
+      "type": "bargauge",
       "gridPos": {
         "x": 8,
-        "y": 5,
+        "y": 3,
         "w": 8,
-        "h": 4
+        "h": 3
       },
       "datasource": {
         "type": "prometheus",
@@ -190,32 +198,39 @@
                 "value": 50
               }
             ]
-          }
+          },
+          "max": 50
         },
         "overrides": []
       },
       "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "sizing": "manual",
+        "minVizHeight": 24,
+        "maxVizHeight": 32,
+        "text": {
+          "valueSize": 20
+        },
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
           ],
           "fields": "",
           "values": false
-        },
-        "colorMode": "value",
-        "graphMode": "none",
-        "textMode": "auto"
+        }
       }
     },
     {
       "id": 4,
       "title": "Traces / 50 GB",
-      "type": "stat",
+      "type": "bargauge",
       "gridPos": {
         "x": 16,
-        "y": 5,
+        "y": 3,
         "w": 8,
-        "h": 4
+        "h": 3
       },
       "datasource": {
         "type": "prometheus",
@@ -260,32 +275,39 @@
                 "value": 50
               }
             ]
-          }
+          },
+          "max": 50
         },
         "overrides": []
       },
       "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "sizing": "manual",
+        "minVizHeight": 24,
+        "maxVizHeight": 32,
+        "text": {
+          "valueSize": 20
+        },
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
           ],
           "fields": "",
           "values": false
-        },
-        "colorMode": "value",
-        "graphMode": "none",
-        "textMode": "auto"
+        }
       }
     },
     {
       "id": 5,
       "title": "Browser sessions / 50,000",
-      "type": "stat",
+      "type": "bargauge",
       "gridPos": {
         "x": 0,
-        "y": 9,
+        "y": 6,
         "w": 8,
-        "h": 4
+        "h": 3
       },
       "datasource": {
         "type": "prometheus",
@@ -330,32 +352,39 @@
                 "value": 50000
               }
             ]
-          }
+          },
+          "max": 50000
         },
         "overrides": []
       },
       "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "sizing": "manual",
+        "minVizHeight": 24,
+        "maxVizHeight": 32,
+        "text": {
+          "valueSize": 20
+        },
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
           ],
           "fields": "",
           "values": false
-        },
-        "colorMode": "value",
-        "graphMode": "none",
-        "textMode": "auto"
+        }
       }
     },
     {
       "id": 6,
       "title": "API check executions / 100,000",
-      "type": "stat",
+      "type": "bargauge",
       "gridPos": {
         "x": 8,
-        "y": 9,
+        "y": 6,
         "w": 8,
-        "h": 4
+        "h": 3
       },
       "datasource": {
         "type": "prometheus",
@@ -400,32 +429,39 @@
                 "value": 100000
               }
             ]
-          }
+          },
+          "max": 100000
         },
         "overrides": []
       },
       "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "sizing": "manual",
+        "minVizHeight": 24,
+        "maxVizHeight": 32,
+        "text": {
+          "valueSize": 20
+        },
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
           ],
           "fields": "",
           "values": false
-        },
-        "colorMode": "value",
-        "graphMode": "none",
-        "textMode": "auto"
+        }
       }
     },
     {
       "id": 7,
       "title": "Browser checks / 10,000",
-      "type": "stat",
+      "type": "bargauge",
       "gridPos": {
         "x": 16,
-        "y": 9,
+        "y": 6,
         "w": 8,
-        "h": 4
+        "h": 3
       },
       "datasource": {
         "type": "prometheus",
@@ -470,22 +506,42 @@
                 "value": 10000
               }
             ]
-          }
+          },
+          "max": 10000
         },
         "overrides": []
       },
       "options": {
+        "orientation": "horizontal",
+        "displayMode": "basic",
+        "showUnfilled": true,
+        "sizing": "manual",
+        "minVizHeight": 24,
+        "maxVizHeight": 32,
+        "text": {
+          "valueSize": 20
+        },
         "reduceOptions": {
           "calcs": [
             "lastNotNull"
           ],
           "fields": "",
           "values": false
-        },
-        "colorMode": "value",
-        "graphMode": "none",
-        "textMode": "auto"
+        }
       }
+    },
+    {
+      "id": 17,
+      "title": "Ingestion pace",
+      "type": "row",
+      "collapsed": false,
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 24,
+        "h": 1
+      },
+      "panels": []
     },
     {
       "id": 8,
@@ -493,7 +549,7 @@
       "type": "stat",
       "gridPos": {
         "x": 0,
-        "y": 13,
+        "y": 10,
         "w": 12,
         "h": 4
       },
@@ -554,66 +610,13 @@
         },
         "colorMode": "value",
         "graphMode": "none",
-        "textMode": "auto"
-      }
-    },
-    {
-      "id": 9,
-      "title": "Logs · received bytes per second",
-      "type": "timeseries",
-      "gridPos": {
-        "x": 0,
-        "y": 17,
-        "w": 12,
-        "h": 7
-      },
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${usage}"
-      },
-      "description": "Grafana-reported ingestion rate by stack. All environments are included. Missing measurements remain gaps.",
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "sum by (stack_id) (grafanacloud_logs_instance_bytes_received_per_second)",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${usage}"
-          },
-          "instant": false,
-          "range": true,
-          "legendFormat": "Stack {{stack_id}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "Bps",
-          "decimals": 2,
-          "min": 0,
-          "noValue": "Unavailable",
-          "color": {
-            "mode": "palette-classic"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
+        "textMode": "auto",
+        "text": {
+          "titleSize": 14,
+          "valueSize": 32
         },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "multi"
-        }
+        "justifyMode": "center",
+        "wideLayout": true
       }
     },
     {
@@ -622,7 +625,7 @@
       "type": "stat",
       "gridPos": {
         "x": 12,
-        "y": 13,
+        "y": 10,
         "w": 12,
         "h": 4
       },
@@ -683,7 +686,175 @@
         },
         "colorMode": "value",
         "graphMode": "none",
-        "textMode": "auto"
+        "textMode": "auto",
+        "text": {
+          "titleSize": 14,
+          "valueSize": 32
+        },
+        "justifyMode": "center",
+        "wideLayout": true
+      }
+    },
+    {
+      "id": 9,
+      "title": "Logs · received bytes per second",
+      "type": "timeseries",
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 12,
+        "h": 7
+      },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${usage}"
+      },
+      "description": "Grafana-reported ingestion rate by stack. All environments are included. Missing measurements remain gaps.",
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (stack_id) (grafanacloud_logs_instance_bytes_received_per_second)",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${usage}"
+          },
+          "instant": false,
+          "range": true,
+          "legendFormat": "Stack {{stack_id}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "Bps",
+          "decimals": 2,
+          "min": 0,
+          "noValue": "Unavailable",
+          "color": {
+            "mode": "palette-classic-by-name"
+          },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "auto",
+            "pointSize": 4,
+            "spanNulls": false,
+            "axisBorderShow": false
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Gateway|phaseo-gateway)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Web API|phaseo-web-api|phaseo-web)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6ED0E0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Job failures|phaseo-jobs)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(error|.* · error|Gateway actionable|Web API 5xx|Website server errors|Operational failures|Server errors|Delivery failures)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(success|completed|.* · success)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(cancelled|skipped)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8E8E8E"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": []
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
       }
     },
     {
@@ -692,7 +863,7 @@
       "type": "timeseries",
       "gridPos": {
         "x": 12,
-        "y": 17,
+        "y": 14,
         "w": 12,
         "h": 7
       },
@@ -721,7 +892,7 @@
           "min": 0,
           "noValue": "Unavailable",
           "color": {
-            "mode": "palette-classic"
+            "mode": "palette-classic-by-name"
           },
           "thresholds": {
             "mode": "absolute",
@@ -731,270 +902,784 @@
                 "value": null
               }
             ]
+          },
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "linear",
+            "lineWidth": 2,
+            "fillOpacity": 8,
+            "showPoints": "auto",
+            "pointSize": 4,
+            "spanNulls": false,
+            "axisBorderShow": false
           }
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Gateway|phaseo-gateway)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#5794F2"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Web API|phaseo-web-api|phaseo-web)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#6ED0E0"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(Job failures|phaseo-jobs)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#B877D9"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(error|.* · error|Gateway actionable|Web API 5xx|Website server errors|Operational failures|Server errors|Delivery failures)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#F2495C"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(success|completed|.* · success)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": "^(cancelled|skipped)$"
+            },
+            "properties": [
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "#8E8E8E"
+                }
+              }
+            ]
+          }
+        ]
       },
       "options": {
         "legend": {
           "displayMode": "list",
-          "placement": "bottom"
+          "placement": "bottom",
+          "calcs": []
         },
         "tooltip": {
-          "mode": "multi"
+          "mode": "multi",
+          "sort": "desc"
         }
       }
     },
     {
-      "id": 12,
-      "title": "Active series · current",
-      "type": "timeseries",
+      "id": 18,
+      "title": "Collection details",
+      "type": "row",
+      "collapsed": true,
       "gridPos": {
         "x": 0,
-        "y": 24,
-        "w": 12,
-        "h": 7
-      },
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${usage}"
-      },
-      "description": "Current active metric series per stack. Billable series can be higher due to sample frequency; compare the billable budget above.",
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "sum by (stack_id) (grafanacloud_instance_active_series)",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${usage}"
-          },
-          "instant": false,
-          "range": true,
-          "legendFormat": "Stack {{stack_id}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "short",
-          "decimals": 2,
-          "min": 0,
-          "noValue": "Unavailable",
-          "color": {
-            "mode": "palette-classic"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "multi"
-        }
-      }
-    },
-    {
-      "id": 13,
-      "title": "Browser sessions · per second",
-      "type": "timeseries",
-      "gridPos": {
-        "x": 12,
-        "y": 24,
-        "w": 12,
-        "h": 7
-      },
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${usage}"
-      },
-      "description": "Collected sessions per second, grouped by browser app. Consent and whole-session sampling apply. Not total website visits.",
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "sum by (appName) (grafanacloud_frontend_observability_instance_sessions_per_second)",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${usage}"
-          },
-          "instant": false,
-          "range": true,
-          "legendFormat": "{{appName}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops",
-          "decimals": 2,
-          "min": 0,
-          "noValue": "Unavailable",
-          "color": {
-            "mode": "palette-classic"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "multi"
-        }
-      }
-    },
-    {
-      "id": 14,
-      "title": "Metric samples rejected · per second",
-      "type": "timeseries",
-      "gridPos": {
-        "x": 0,
-        "y": 31,
-        "w": 12,
-        "h": 7
-      },
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${usage}"
-      },
-      "description": "Grafana ingestion rejections by reason. A missing series is unavailable; do not interpret it as proof of zero rejections.",
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "sum by (reason) (grafanacloud_instance_samples_discarded_per_second)",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${usage}"
-          },
-          "instant": false,
-          "range": true,
-          "legendFormat": "{{reason}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops",
-          "decimals": 2,
-          "min": 0,
-          "noValue": "Unavailable",
-          "color": {
-            "mode": "palette-classic"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "multi"
-        }
-      }
-    },
-    {
-      "id": 15,
-      "title": "Trace spans received · per second",
-      "type": "timeseries",
-      "gridPos": {
-        "x": 12,
-        "y": 31,
-        "w": 12,
-        "h": 7
-      },
-      "datasource": {
-        "type": "prometheus",
-        "uid": "${usage}"
-      },
-      "description": "Grafana supplied five-minute span ingestion rate; already a rate, do not apply rate() again. This is the sampled span population, not total requests.",
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "sum by (stack_id) (grafanacloud_traces_instance_spans_received_total:rate5m)",
-          "datasource": {
-            "type": "prometheus",
-            "uid": "${usage}"
-          },
-          "instant": false,
-          "range": true,
-          "legendFormat": "Stack {{stack_id}}"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "ops",
-          "decimals": 2,
-          "min": 0,
-          "noValue": "Unavailable",
-          "color": {
-            "mode": "palette-classic"
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              }
-            ]
-          }
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "list",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "multi"
-        }
-      }
-    },
-    {
-      "id": 16,
-      "title": "Increase coverage deliberately",
-      "type": "text",
-      "gridPos": {
-        "x": 0,
-        "y": 38,
+        "y": 21,
         "w": 24,
-        "h": 6
+        "h": 1
       },
-      "options": {
-        "mode": "markdown",
-        "content": "**Current collection policy:** compact backend summaries are unsampled; traces default to 5%; browser sessions default to 10% after analytics consent. This is the repository policy, not a readback of deployment settings. See [Telemetry health](/d/phaseo-telemetry) for actual event arrival.\n\n**Best next coverage:** external HTTP checks for website, gateway and web API health; retained traces for request diagnosis; private source maps for readable browser errors. Two public probes checking three endpoints every five minutes use at most **53,568 API executions in 31 days**, plus logs and metrics. Avoid generation endpoints, customer calls and high-cardinality metric labels such as request IDs.\n\nCheck usage before and after raising collection, leaving about 20% headroom. Budget colors do not stop exporters. Alerts and mobile/Slack delivery must be configured separately."
-      }
+      "panels": [
+        {
+          "id": 12,
+          "title": "Active series · current",
+          "type": "timeseries",
+          "gridPos": {
+            "x": 0,
+            "y": 22,
+            "w": 12,
+            "h": 7
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${usage}"
+          },
+          "description": "Current active metric series per stack. Billable series can be higher due to sample frequency; compare the billable budget above.",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (stack_id) (grafanacloud_instance_active_series)",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${usage}"
+              },
+              "instant": false,
+              "range": true,
+              "legendFormat": "Stack {{stack_id}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "short",
+              "decimals": 2,
+              "min": 0,
+              "noValue": "Unavailable",
+              "color": {
+                "mode": "palette-classic-by-name"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "linear",
+                "lineWidth": 2,
+                "fillOpacity": 8,
+                "showPoints": "auto",
+                "pointSize": 4,
+                "spanNulls": false,
+                "axisBorderShow": false
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(Gateway|phaseo-gateway)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#5794F2"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(Web API|phaseo-web-api|phaseo-web)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#6ED0E0"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(Job failures|phaseo-jobs)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#B877D9"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(error|.* · error|Gateway actionable|Web API 5xx|Website server errors|Operational failures|Server errors|Delivery failures)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#F2495C"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(success|completed|.* · success)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "green"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(cancelled|skipped)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#8E8E8E"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        },
+        {
+          "id": 13,
+          "title": "Browser sessions · per second",
+          "type": "timeseries",
+          "gridPos": {
+            "x": 12,
+            "y": 22,
+            "w": 12,
+            "h": 7
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${usage}"
+          },
+          "description": "Collected sessions per second, grouped by browser app. Consent and whole-session sampling apply. Not total website visits.",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (appName) (grafanacloud_frontend_observability_instance_sessions_per_second)",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${usage}"
+              },
+              "instant": false,
+              "range": true,
+              "legendFormat": "{{appName}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops",
+              "decimals": 2,
+              "min": 0,
+              "noValue": "Unavailable",
+              "color": {
+                "mode": "palette-classic-by-name"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "linear",
+                "lineWidth": 2,
+                "fillOpacity": 8,
+                "showPoints": "auto",
+                "pointSize": 4,
+                "spanNulls": false,
+                "axisBorderShow": false
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(Gateway|phaseo-gateway)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#5794F2"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(Web API|phaseo-web-api|phaseo-web)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#6ED0E0"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(Job failures|phaseo-jobs)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#B877D9"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(error|.* · error|Gateway actionable|Web API 5xx|Website server errors|Operational failures|Server errors|Delivery failures)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#F2495C"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(success|completed|.* · success)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "green"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(cancelled|skipped)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#8E8E8E"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        },
+        {
+          "id": 14,
+          "title": "Metric samples rejected · per second",
+          "type": "timeseries",
+          "gridPos": {
+            "x": 0,
+            "y": 29,
+            "w": 12,
+            "h": 7
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${usage}"
+          },
+          "description": "Grafana ingestion rejections by reason. A missing series is unavailable; do not interpret it as proof of zero rejections.",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (reason) (grafanacloud_instance_samples_discarded_per_second)",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${usage}"
+              },
+              "instant": false,
+              "range": true,
+              "legendFormat": "{{reason}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops",
+              "decimals": 2,
+              "min": 0,
+              "noValue": "Unavailable",
+              "color": {
+                "mode": "palette-classic-by-name"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "linear",
+                "lineWidth": 2,
+                "fillOpacity": 8,
+                "showPoints": "auto",
+                "pointSize": 4,
+                "spanNulls": false,
+                "axisBorderShow": false
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(Gateway|phaseo-gateway)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#5794F2"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(Web API|phaseo-web-api|phaseo-web)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#6ED0E0"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(Job failures|phaseo-jobs)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#B877D9"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(error|.* · error|Gateway actionable|Web API 5xx|Website server errors|Operational failures|Server errors|Delivery failures)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#F2495C"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(success|completed|.* · success)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "green"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(cancelled|skipped)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#8E8E8E"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        },
+        {
+          "id": 15,
+          "title": "Trace spans received · per second",
+          "type": "timeseries",
+          "gridPos": {
+            "x": 12,
+            "y": 29,
+            "w": 12,
+            "h": 7
+          },
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${usage}"
+          },
+          "description": "Grafana supplied five-minute span ingestion rate; already a rate, do not apply rate() again. This is the sampled span population, not total requests.",
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum by (stack_id) (grafanacloud_traces_instance_spans_received_total:rate5m)",
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${usage}"
+              },
+              "instant": false,
+              "range": true,
+              "legendFormat": "Stack {{stack_id}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "unit": "ops",
+              "decimals": 2,
+              "min": 0,
+              "noValue": "Unavailable",
+              "color": {
+                "mode": "palette-classic-by-name"
+              },
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "custom": {
+                "drawStyle": "line",
+                "lineInterpolation": "linear",
+                "lineWidth": 2,
+                "fillOpacity": 8,
+                "showPoints": "auto",
+                "pointSize": 4,
+                "spanNulls": false,
+                "axisBorderShow": false
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(Gateway|phaseo-gateway)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#5794F2"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(Web API|phaseo-web-api|phaseo-web)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#6ED0E0"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(Job failures|phaseo-jobs)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#B877D9"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(error|.* · error|Gateway actionable|Web API 5xx|Website server errors|Operational failures|Server errors|Delivery failures)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#F2495C"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(success|completed|.* · success)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "green"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byRegexp",
+                  "options": "^(cancelled|skipped)$"
+                },
+                "properties": [
+                  {
+                    "id": "color",
+                    "value": {
+                      "mode": "fixed",
+                      "fixedColor": "#8E8E8E"
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": []
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          }
+        }
+      ]
     }
   ]
 }

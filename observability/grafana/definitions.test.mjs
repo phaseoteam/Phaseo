@@ -3,13 +3,14 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { dashboards, alertRules } from './definitions.mjs';
 import { provision } from './provision.mjs';
+import { allPanels } from './presentation.mjs';
 
 test('importable dashboard and alert JSON matches canonical definitions', async () => {
   const definitions = dashboards();
   assert.equal(new Set(definitions.map(item => item.uid)).size, 6);
   for (const dashboard of definitions) {
     assert.deepEqual(JSON.parse(await readFile(new URL(`./dashboards/${dashboard.uid}.json`, import.meta.url), 'utf8')), dashboard);
-    for (const panel of dashboard.panels) for (const target of panel.targets ?? []) {
+    for (const panel of allPanels(dashboard.panels)) for (const target of panel.targets ?? []) {
       if (dashboard.uid === 'phaseo-free-tier') {
         assert.equal(panel.datasource.type, 'prometheus');
         continue;
@@ -43,7 +44,7 @@ test('live validation checks every series and skips instruction panels', async (
     return Response.json({ status: 'success', data: { result: [] } });
   };
   await provision({ args: ['--check'], env: { GRAFANA_URL: 'https://phaseo.grafana.net', GRAFANA_SERVICE_ACCOUNT_TOKEN: 'private', GRAFANA_LOKI_UID: 'logs' }, fetcher, log: () => {} });
-  const dashboardQueries = dashboards().flatMap(dashboard => dashboard.panels.flatMap(panel => panel.targets ?? []));
+  const dashboardQueries = dashboards().flatMap(dashboard => allPanels(dashboard.panels).flatMap(panel => panel.targets ?? []));
   assert.equal(queries.length, dashboardQueries.length + alertRules({ lokiUid: 'logs' }).length);
   assert.ok(queries.some(query => query.includes('web.server_error') && query.includes('[5m]')));
 });
@@ -66,9 +67,9 @@ test('dashboards keep summary cards and investigations visible without overlappi
 
 test('record investigation links preserve filters and incident time without showing raw log panels', () => {
   const definitions = dashboards();
-  assert.ok(!definitions.some(dashboard => dashboard.panels.some(panel => panel.type === 'logs')));
+  assert.ok(!definitions.some(dashboard => allPanels(dashboard.panels).some(panel => panel.type === 'logs')));
   const gateway = definitions.find(dashboard => dashboard.uid === 'phaseo-gateway');
-  const panel = gateway.panels.find(panel => panel.title === 'Provider attempt lookup');
+  const panel = allPanels(gateway.panels).find(panel => panel.title === 'Provider attempt lookup');
   const fill = value => value.replaceAll('${loki}', 'logs').replaceAll('${tempo}', 'traces').replaceAll('$environment', 'production')
     .replaceAll('${request:regex}', 'request-123').replaceAll('${provider:regex}', 'provider-a').replaceAll('${model:regex}', 'model-a')
     .replaceAll('${__from}', '1000').replaceAll('${__to}', '2000').replaceAll('${__value.raw}', '0123456789abcdef0123456789abcdef');

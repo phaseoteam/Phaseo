@@ -1,6 +1,7 @@
 // Canonical dashboard/query definitions. Run build.mjs to refresh importable JSON.
 import { addDiagnostics, records } from './diagnostics.mjs';
 import { freeTierDashboard } from './free-tier.mjs';
+import { presentDashboards } from './presentation.mjs';
 const loki = { type: 'loki', uid: '${loki}' };
 const window = '$__auto';
 const env = '$environment';
@@ -97,7 +98,7 @@ export function dashboards() {
   overview.templating.list[2].hide = 2;
   const destinations = ['telemetry', 'gateway', 'gateway', 'web', 'web', 'jobs'];
   for (const [index, item] of overview.panels.slice(1, 7).entries()) item.fieldConfig.defaults.links = [{ title: 'Investigate', url: `/d/phaseo-${destinations[index]}?var-environment=$environment&from=$__from&to=$__to` }];
-  return addDiagnostics([
+  return presentDashboards(addDiagnostics([
     overview,
     dashboard('phaseo-gateway', 'Gateway and providers', 'Request summaries cover received terminal events. Trace retention is sampled. Delivery is best effort, so counts are operational rather than financial.', [
       panel('Requests by outcome', `sum by (outcome) (rate(${logs(gateway, 'gateway.request', ['outcome'])} [${window}]))`, { unit: 'reqps', legend: '{{outcome}}' }),
@@ -133,7 +134,7 @@ export function dashboards() {
       records('Recent heartbeats', logs('phaseo-jobs', 'job.heartbeat'), ['timestamp', 'service_name', 'event_name', 'service_version'], 'Newest 100 scheduler heartbeats. Their arrival confirms scheduler telemetry, not external availability or successful completion of every job.'),
       records('Persistence errors', logs(gateway, 'telemetry.delivery'), ['timestamp', 'signal', 'outcome', 'reason', 'error_kind', 'error_code', 'request_id', 'trace_id'], 'Newest 100 persistence delivery events. Inspect the source and classification. An OTLP outage cannot reliably report itself through the same OTLP destination.'),
     ]),
-  ], logs).concat(freeTierDashboard());
+  ], logs).concat(freeTierDashboard()));
 }
 
 export function alertRules({ lokiUid, environment = 'production', folderUid = 'phaseo-observability', enabled = false }) {
