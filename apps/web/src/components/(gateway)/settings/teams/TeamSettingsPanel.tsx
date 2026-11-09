@@ -231,7 +231,7 @@ export default function TeamSettingsPanel({
 		<section className="space-y-8">
 			<WorkspacePolicyForm canManage={hasTeamControl} dirty={hasChanges} saving={saving} error={saveError} notice={saveNotice ?? t(isPersonalTeam ? "workspace.personalWorkspacePermanent" : "workspace.workspaceNameChangeHelp")} onSave={handleSave} onCancel={handleReset}>
 			<div className="divide-y">
-				<div className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
+				<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-center sm:gap-8">
 					<div className="min-w-0">
 						<Label className="text-sm font-medium">{t("newMainSettingsCopy.workspaceLogo")}</Label>
 						<p className="mt-0.5 text-sm text-muted-foreground">{t("newMainSettingsCopy.logoHelp")}</p>
@@ -248,7 +248,7 @@ export default function TeamSettingsPanel({
 						{logoUrl ? <Button type="button" variant="ghost" size="sm" disabled={!hasTeamControl || logoUploading} onClick={() => void removeLogo()}>{t("newMainSettingsCopy.remove")}</Button> : null}
 					</div>
 				</div>
-				<div className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
+				<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-center sm:gap-8">
 					<div className="min-w-0">
 						<Label htmlFor="teamName" className="text-sm font-medium">
 							{t("workspace.name")}
@@ -268,7 +268,7 @@ export default function TeamSettingsPanel({
 						/>
 					</div>
 				</div>
-				<div className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
+				<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-center sm:gap-8">
 					<div className="min-w-0">
 						<Label htmlFor="publisherHandle" className="text-sm font-medium">{t("workspace.publisherHandle")}</Label>
 						<p className="mt-0.5 text-sm text-muted-foreground">{t("workspace.publisherHandleHelp", { example: "@" + (settings.publisherHandle || "workspace") + "/preset" })}</p>

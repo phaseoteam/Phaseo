@@ -658,11 +658,11 @@ export default function DynamicRoutesStudio({ initialData, demoMode = false }: {
 			{tab === "settings" ? <div className="min-h-0 min-w-0 w-full max-w-4xl space-y-8 overflow-y-auto py-5">
 				<section className="space-y-5">
 					<div><h2 className="text-base font-semibold">{rs("routeDetails")}</h2><p className="mt-1 text-sm text-muted-foreground">{rs("routeDetailsDescription")}</p></div>
-					<div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
+					<div className="grid gap-3 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-center sm:gap-8">
 						<Label htmlFor="dynamic-route-name">{rs("name")}</Label>
 						<Input id="dynamic-route-name" value={selectedRoute.name} onChange={(event) => replaceSelected((route) => ({ ...route, name: event.target.value }))} />
 					</div>
-					<div className="grid gap-3 border-t border-border/60 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:gap-8">
+					<div className="grid gap-3 border-t border-border/60 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:gap-8">
 						<Label htmlFor="dynamic-route-description">{rs("description")}</Label>
 						<Textarea id="dynamic-route-description" value={selectedRoute.description ?? ""} onChange={(event) => replaceSelected((route) => ({ ...route, description: event.target.value }))} />
 					</div>
@@ -675,7 +675,7 @@ export default function DynamicRoutesStudio({ initialData, demoMode = false }: {
 						<Switch id="dynamic-route-affinity" checked={config.sessionAffinity !== false} onCheckedChange={(sessionAffinity) => updateConfig((current) => ({ ...current, sessionAffinity }))} />
 					</div>
 				</section>
-				<section className="grid gap-3 border-t border-border/60 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:gap-8">
+				<section className="grid gap-3 border-t border-border/60 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:gap-8">
 					<div><h2 className="text-base font-semibold">{rs("attachApiKeys")}</h2><p className="mt-1 text-sm text-muted-foreground">{rs("attachApiKeysDescription")}</p></div>
 					<Popover><PopoverTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="flex items-center gap-2"><KeyRound className="size-4" />{rs("keysAttached", { count: selectedRoute.keyIds.length })}</span><ChevronsUpDown className="size-4" /></Button></PopoverTrigger><PopoverContent align="start" className="w-80 max-w-[calc(100vw-2rem)] p-0"><Command><CommandInput placeholder={rs("searchKeys")} /><CommandList className="max-h-64"><CommandEmpty>{rs("noKeys")}</CommandEmpty><CommandGroup>{initialData.keys.map((key) => { const active = selectedRoute.keyIds.includes(key.id); return <CommandItem key={key.id} value={`${key.id} ${key.name} ${key.prefix}`} onSelect={() => replaceSelected((route) => ({ ...route, keyIds: active ? route.keyIds.filter((id) => id !== key.id) : [...route.keyIds, key.id] }))}><Check className={cn("size-4 shrink-0", !active && "opacity-0")} /><div className="min-w-0 flex-1"><p className="truncate">{key.name}</p><p className="text-xs text-muted-foreground">{key.prefix}</p></div><span className="sr-only">{active ? rs("attached") : rs("notAttached")}</span></CommandItem>; })}</CommandGroup></CommandList></Command></PopoverContent></Popover>
 				</section>

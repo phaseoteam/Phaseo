@@ -83,7 +83,7 @@ export function SpendWorkspaceSettings({ billingTimeZone, departmentSpendAttribu
 
 	return (
 		<div className="divide-y rounded-md border bg-background/40">
-			<div className="grid gap-3 px-4 py-4 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-start">
+			<div className="grid gap-3 px-4 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-start sm:gap-8">
 				<div className="min-w-0">
 					<Label htmlFor="billing-time-zone" className="text-sm font-medium">{t("timeZone")}</Label>
 					<p className="mt-0.5 text-sm text-muted-foreground">{t("timeZoneHelp")}</p>
