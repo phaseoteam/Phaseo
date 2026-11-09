@@ -274,21 +274,33 @@ export function recordSpend(args: {
 }): void {
 	try {
 		const costNanos = Number.isFinite(args.costNanos) && args.costNanos > 0 ? Math.round(args.costNanos) : 0;
+		// Successful gateway_requests rows this spend produces: 0 for a request that failed or was
+		// cancelled but still charged, which keeps its cost and gives its request slot back.
+		const requests = args.requests === undefined ? 1 : Math.max(0, Math.trunc(args.requests));
 		const admission = args.admission ?? null;
 		const pool = admission ? pools.get(poolKey(admission.workspaceId, admission.keyId)) : undefined;
 		// Drain checkpoints already put part of this cost on the slice: settle only the rest.
 		const checkpointed = admission ? checkpointUnits.get(admission) ?? 0 : 0;
 		if (admission) checkpointUnits.delete(admission);
-		if (admission && pool && !pool.settle(
-			{ id: admission.admissionId, leaseId: admission.leaseId, requests: 1 },
-			{ requests: 0, units: costNanos - checkpointed },
-		)) {
-			pool.markSettled(admission.admissionId);
-			pool.learnUnits(costNanos);
+		let settledLocally = false;
+		if (admission && pool) {
+			settledLocally = pool.settle(
+				{ id: admission.admissionId, leaseId: admission.leaseId, requests: 1 },
+				{ requests: requests > 0 ? 0 : -1, units: costNanos - checkpointed },
+			);
+			if (!settledLocally) {
+				pool.markSettled(admission.admissionId);
+				pool.learnUnits(costNanos);
+			}
 		}
 		const stub = stubFor(args.workspaceId);
 		if (!stub) return;
 		if (pool && admission) pool.flushReturns(transportFor(stub, admission.workspaceId, admission.keyId, admission.admissionId));
+		// The slot of a request recorded without a success is released at the coordinator too, when
+		// the isolate no longer holds its lease.
+		if (admission && requests === 0 && !settledLocally && !admission.unlimited) {
+			background(stub.release(admission.workspaceId, admission.leaseId, admission.admissionId));
+		}
 		// Nothing is limited for this key or workspace; a limit added later is seeded from Postgres.
 		if (admission?.unlimited) return;
 		queueRecord(args.workspaceId, {
@@ -296,7 +308,7 @@ export function recordSpend(args: {
 			billingRequestId: args.billingRequestId,
 			requestId: args.requestId,
 			costNanos,
-			requests: args.requests ?? 1,
+			requests,
 			occurredAtMs: args.occurredAtMs,
 			leaseId: admission && admission.keyId === args.keyId ? admission.leaseId : null,
 			...(args.replace ? { replace: true, final: true } : {}),
@@ -581,6 +593,8 @@ export function settleEnforcedSpend(args: {
 	 * replaces what they recorded), or a one-off charge pending reconciliation.
 	 */
 	replace?: boolean;
+	/** Successful requests this settles (default 1): 0 for a failed or cancelled request still charged. */
+	requests?: number;
 }): void {
 	try {
 		// A stepped or pending charge exists in the database whether or not the request row was
@@ -599,6 +613,7 @@ export function settleEnforcedSpend(args: {
 			billingRequestId: args.billingRequestId,
 			requestId: args.requestId,
 			costNanos: args.costNanos,
+			...(args.requests !== undefined ? { requests: args.requests } : {}),
 			...(args.replace ? { replace: true } : {}),
 		});
 	} catch (error) {

@@ -9,7 +9,7 @@ const background = vi.hoisted(() => [] as Promise<unknown>[]);
 // while recorded spend is below the limit; its admission is then released or settled with a cost.
 // Amounts are kept per billing request: a replace (stepped charge) sets the request's amount.
 const budget = vi.hoisted(() => ({
-	limit: 1_000, open: new Set<string>(), recorded: new Map<string, number>(),
+	limit: 1_000, open: new Set<string>(), recorded: new Map<string, number>(), requests: [] as Array<number | undefined>,
 	get used() { return [...this.recorded.values()].reduce((sum, value) => sum + value, 0); },
 }));
 
@@ -23,7 +23,8 @@ vi.mock("@/runtime/env", async (importOriginal) => ({
 vi.mock("@core/spend-limits", () => ({
 	recordShadowSpend: vi.fn(),
 	releaseSpend: (admission: { admissionId: string } | null) => { if (admission) budget.open.delete(admission.admissionId); },
-	settleEnforcedSpend: (args: { admission: { admissionId: string } | null; rowWritten: boolean; billingRequestId: string; costNanos: number; replace?: boolean }) => {
+	settleEnforcedSpend: (args: { admission: { admissionId: string } | null; rowWritten: boolean; billingRequestId: string; costNanos: number; replace?: boolean; requests?: number }) => {
+		budget.requests.push(args.requests);
 		if (args.admission) budget.open.delete(args.admission.admissionId);
 		if (!args.rowWritten && !args.replace) return;
 		if (args.replace || !budget.recorded.has(args.billingRequestId)) budget.recorded.set(args.billingRequestId, args.costNanos);
@@ -67,6 +68,7 @@ describe("failed requests that were still charged", () => {
 		background.length = 0;
 		budget.recorded.clear();
 		budget.open.clear();
+		budget.requests.length = 0;
 	});
 
 	it("use up an enforced budget when cancellations are charged repeatedly", async () => {
@@ -84,6 +86,8 @@ describe("failed requests that were still charged", () => {
 		// The row records the charge, so the database spend queries can count it too.
 		expect(auditFailureMock).toHaveBeenCalledTimes(4);
 		expect(auditFailureMock.mock.calls[0][0]).toMatchObject({ stage: "execute", costNanos: 300, statusCode: 499 });
+		// A failure row is not a successful request: the charge counts, the request slot is given back.
+		expect(budget.requests).toEqual([0, 0, 0, 0]);
 	});
 
 	it("still release the admission when nothing was charged", async () => {

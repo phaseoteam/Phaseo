@@ -518,6 +518,8 @@ export async function handleFailureAudit(
             requestId: ctx.requestId,
             costNanos: spendNanos,
             internal: ctx.internal,
+            // A failure row is not a successful request: its charge counts, its request slot does not.
+            requests: 0,
             ...(settleAsFinal ? { replace: true } : {}),
         });
     }).finally(() => releaseRuntime?.());
