@@ -76,6 +76,11 @@ describe("LG EXAONE text generate", () => {
 				meta: {},
 			} as unknown as ExecutorExecuteArgs);
 			expect(result.kind).toBe("completed");
+			if (result.kind !== "completed") return;
+			// EXAONE reports reasoning_tokens at the top level of usage, not in completion_tokens_details.
+			// completion_tokens already includes them, so output is billed at 36, not 36 + 32.
+			expect((result as any).ir?.usage).toMatchObject({ inputTokens: 24, outputTokens: 36, reasoningTokens: 32 });
+			expect((result as any).bill?.usage).toMatchObject({ input_text_tokens: 24, output_text_tokens: 36, reasoning_tokens: 32 });
 			expect(mock.calls).toHaveLength(1);
 			expect(mock.calls[0].headers).toMatchObject({ Authorization: "Bearer test-exaone-key" });
 			expect(mock.calls[0].bodyJson).toMatchObject({ model: "k-exaone_v2.5", reasoning_effort: "high" });
