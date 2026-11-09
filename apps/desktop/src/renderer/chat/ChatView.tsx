@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { typesUltrathink, useUltrathinkReady } from "./ModelSettings";
 import { TerminalDrawer } from "../views/Terminals";
-import { AlarmClockOff, Archive, Box, FolderInput, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, Gauge, GitBranch, Layers, ListChecks, MessagesSquare, Paperclip, Pencil, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
+import { AlarmClockOff, Archive, Box, FolderInput, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, Gauge, GitBranch, Layers, ListChecks, MessagesSquare, Pencil, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound, X } from "lucide-react";
+import { ActionIcon } from "../components/ActionIcon";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { QuestionPanel } from "./QuestionPanel";
 import { IssueDraftPanel } from "./IssueDraftPanel";
@@ -192,7 +193,7 @@ function ChatComposer({ task }: { task: Task }) {
 			{ id: "btw", label: "Btw", hint: "/btw", description: "Same as Side chat", icon: <MessagesSquare />, insert: "/btw " },
 		] : [],
 		{ id: "export", label: "Export", description: "Save this chat as a file", icon: <Download />, options: (["markdown", "json"] as const).map(format => ({ id: `export:${format}`, label: format === "markdown" ? "Markdown" : "JSON", icon: null, run: () => void api?.exportTask(task.id, format).catch(reason => setError(errorText(reason))) })) },
-		{ id: "attach", label: "Attach files", description: "Add files or images to this message", icon: <Paperclip />, run: () => void attach() },
+		{ id: "attach", label: "Attach files", description: "Add files or images to this message", icon: <ActionIcon name="paperclip" />, run: () => void attach() },
 		{ id: "mcp", label: "MCP", description: "Manage MCP servers", icon: <Plug />, run: () => openSettings("mcp") },
 		{ id: "model", label: "Model", description: "Switch this chat's model", icon: <Box />, run: () => window.dispatchEvent(new Event(openModelPickerEvent)) },
 		{ id: "new", label: "New chat", description: "Start a new chat", icon: <SquarePen />, run: () => select(undefined) },
@@ -357,7 +358,7 @@ function ChatComposer({ task }: { task: Task }) {
 				<ModelPicker footer={code ? <PermissionChoice value={task.permissionMode} onChange={setPermission} /> : undefined} selections={[selection]} onChange={values => void changeModel(values[0])} onSettingsChange={next => void changeSettings(next)} agents={code} disabled={running || task.archived} openEvent={openModelPickerEvent} hidden={settingsProject(overview.projects, task.projectId)?.settings?.disabledHarnesses} />
 			</>}
 			tools={<>
-				<ToolButton label="Attach files" disabled={uploading || task.archived} onClick={() => void attach()}><Paperclip /></ToolButton>
+				<ToolButton label="Attach files" disabled={uploading || task.archived} onClick={() => void attach()}><ActionIcon name="paperclip" /></ToolButton>
 				{!task.archived && <StashMenu onRestore={id => stash.restore(id)} />}
 				{code && task.projectId && <ChatBranchPicker task={task} />}
 				{code && (preferences.autopilot || task.autopilot) && <AutopilotControl value={task.autopilot ? { capNanos: task.autopilot.capNanos } : undefined} disabled={running || task.archived || !preferences.autopilot} disabledReason={preferences.autopilot ? "Stop the chat to turn on Autopilot." : "Allow Autopilot in Settings → Experimental."} onChange={autopilot => void command({ type: "update-task", id: task.id, autopilot })} />}

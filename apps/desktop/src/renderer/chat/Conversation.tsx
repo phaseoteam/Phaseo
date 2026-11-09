@@ -1,6 +1,7 @@
 import { activitySummary } from "../lib/activitySummary";
 import { createContext, memo, useCallback, useContext, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { ArrowDown, Plane, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, Copy, FilePen, FileText, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, PenLine, Radio, RotateCcw, Search, SquareTerminal, Wrench, X, Globe, SlidersHorizontal, AppWindow, MessagesSquare, Bot, Blocks, CornerDownRight, Compass, PanelTop, ScanEye } from "lucide-react";
+import { ArrowDown, Plane, Brain, Check, ChevronRight, Circle, CircleDot, CircleSlash, FilePen, FileText, GitBranch, GitPullRequestArrow, Layers, ListChecks, LoaderCircle, PenLine, Radio, RotateCcw, Search, SquareTerminal, Wrench, X, Globe, SlidersHorizontal, AppWindow, MessagesSquare, Bot, Blocks, CornerDownRight, Compass, PanelTop, ScanEye } from "lucide-react";
+import { ActionIcon } from "../components/ActionIcon";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { MessageNavigationRail, type RailTurn } from "./MessageNavigationRail";
 import type { AgentActivity, Message, Task, TurnSettings } from "../../shared/workspace";
@@ -55,7 +56,7 @@ function ActionButton({ label, onClick, disabled, children }: { label: string; o
 
 function CopyButton({ text }: { text: string }) {
 	const { status, copying, copy } = useTextCopy(text);
-	return <ActionButton label={status === "copied" ? "Copied" : "Copy"} disabled={copying || !text} onClick={() => void copy()}><IconSwap show={status === "copied" ? "check" : "copy"}>{{ copy: <Copy />, check: <Check key={status} className={status === "copied" ? "icon-draw" : undefined} /> }}</IconSwap></ActionButton>;
+	return <ActionButton label={status === "copied" ? "Copied" : "Copy"} disabled={copying || !text} onClick={() => void copy()}><IconSwap show={status === "copied" ? "check" : "copy"}>{{ copy: <ActionIcon name="copy" />, check: <Check key={status} className={status === "copied" ? "icon-draw" : undefined} /> }}</IconSwap></ActionButton>;
 }
 
 function UserMessage({ message, taskId, projectId, onAttachment, onBranch, onRewind, canBranch, burst, compact }: { message: Message; taskId: string; projectId?: string; onAttachment: (id: string) => void; onBranch: (id: string) => void; onRewind?: (message: Message) => void; canBranch: boolean; burst?: Burst; compact?: boolean }) {

@@ -4,7 +4,8 @@ import { prefetchTask } from "../lib/useSelectedTask";
 import { lazy, Suspense, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
-import { Archive, ArchiveRestore, CalendarClock, Copy, Link2, Mail, Trash2, ChartLine, Inbox, Columns3, GitPullRequestArrow, Ellipsis, ExternalLink, LogIn, RefreshCw, Pencil, Pin, PinOff, Plus, Settings, Gauge, UserRound } from "lucide-react";
+import { Archive, ArchiveRestore, CalendarClock, Link2, Mail, Trash2, ChartLine, Inbox, Columns3, GitPullRequestArrow, Ellipsis, ExternalLink, LogIn, Pencil, Pin, PinOff, Gauge, UserRound } from "lucide-react";
+import { ActionIcon } from "../components/ActionIcon";
 import { ScrollArea } from "../components/ui/scroll-area";
 import { chatDragType } from "../../shared/mentions";
 import type { TaskOverview } from "../../shared/workspaceOverview";
@@ -71,12 +72,12 @@ function RowMenu({ task, onRename }: { task: TaskOverview; onRename: () => void 
 		<DropdownMenuTrigger render={<button type="button" aria-label={`Actions for ${task.title}`} onClick={event => event.stopPropagation()} className="hidden size-5 shrink-0 place-items-center rounded text-muted-foreground group-hover/row:grid group-has-[:focus-visible]/row:grid hover:bg-background/70 hover:text-foreground data-popup-open:grid [&_svg]:size-3.5" />}><Ellipsis /></DropdownMenuTrigger>
 		<DropdownMenuContent align="start" className="w-44">
 			<DropdownMenuItem onClick={onRename}><Pencil />Rename</DropdownMenuItem>
-			<DropdownMenuItem onClick={() => void command({ type: "regenerate-title", id: task.id })}><RefreshCw />Regenerate title</DropdownMenuItem>
+			<DropdownMenuItem onClick={() => void command({ type: "regenerate-title", id: task.id })}><ActionIcon name="refresh" />Regenerate title</DropdownMenuItem>
 			<DropdownMenuItem onClick={() => void pin()}>{task.pinned ? <PinOff /> : <Pin />}{task.pinned ? "Unpin" : "Pin"}</DropdownMenuItem>
 			<TagMenu task={task} />
 			<DropdownMenuItem disabled={!task.lastCompletedAt || isUnread(task)} onClick={() => { leave(); void command({ type: "mark-unread", id: task.id }); }}><Mail />Mark unread</DropdownMenuItem>
 			<DropdownMenuItem onClick={() => copyChatLink(task.id)}><Link2 />Copy chat link</DropdownMenuItem>
-			<DropdownMenuItem onClick={() => void navigator.clipboard.writeText(task.id)}><Copy />Copy chat ID</DropdownMenuItem>
+			<DropdownMenuItem onClick={() => void navigator.clipboard.writeText(task.id)}><ActionIcon name="copy" />Copy chat ID</DropdownMenuItem>
 			<DropdownMenuSeparator />
 			{task.archived ? <DropdownMenuItem onClick={() => void command({ type: "update-task", id: task.id, archived: false })}><ArchiveRestore />Restore</DropdownMenuItem>
 				: <DropdownMenuItem disabled={working} onClick={() => void archive()}><Archive />Archive</DropdownMenuItem>}
@@ -212,7 +213,7 @@ function AccountFooter() {
 					<DropdownMenuItem onClick={() => void window.phaseoDesktop?.openExternal("https://phaseo.app/settings/account")}><ExternalLink />Manage account</DropdownMenuItem>
 					<DropdownMenuItem onClick={() => openSettings("accounts")}><UserRound />Accounts</DropdownMenuItem>
 					<DropdownMenuItem onClick={() => openUsage("limits")}><Gauge />Usage limits</DropdownMenuItem>
-					<DropdownMenuItem onClick={() => openSettings()}><Settings />Settings<DropdownMenuShortcut>{shortcut("settings.open")}</DropdownMenuShortcut></DropdownMenuItem>
+					<DropdownMenuItem onClick={() => openSettings()}><ActionIcon name="settings" />Settings<DropdownMenuShortcut>{shortcut("settings.open")}</DropdownMenuShortcut></DropdownMenuItem>
 				</DropdownMenuContent>
 			</DropdownMenu>
 			: <button type="button" onClick={() => openSettings("accounts")} className="flex h-7 items-center gap-1.5 rounded-md px-1.5 text-[12.5px] font-semibold text-primary hover:bg-sidebar-accent/70"><LogIn className="size-4" />Sign in</button>}
@@ -221,7 +222,7 @@ function AccountFooter() {
 		<FooterButton name="Scheduled tasks" tip={on ? `Scheduled tasks · ${on} on` : "Scheduled tasks"} active={scheduled} onClick={openScheduled}>
 			<CalendarClock />{on > 0 && <span aria-hidden className="absolute top-1 right-1 size-1.5 rounded-[2px] bg-primary" />}
 		</FooterButton>
-		<FooterButton name="Settings" tip={`Settings (${shortcut("settings.open")})`} active={Boolean(settings)} onClick={() => openSettings()}><Settings /></FooterButton>
+		<FooterButton name="Settings" tip={`Settings (${shortcut("settings.open")})`} active={Boolean(settings)} onClick={() => openSettings()}><ActionIcon name="settings" /></FooterButton>
 	</div></div>;
 }
 
@@ -302,10 +303,10 @@ export function Sidebar() {
 		<div className="p-2.5">
 			{factory ? <button type="button" onClick={() => openFactory({ page: "new" })}
 				className={cn("flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-[13px] font-semibold transition-colors", writing ? "bg-sidebar-accent text-foreground" : "bg-primary text-primary-foreground hover:bg-primary/85")}>
-				<Plus className="size-4" />New issue
+				<ActionIcon name="plus" className="size-4" />New issue
 			</button> : <button type="button" onClick={() => { if (mode === "chat") setNewChatProjectId(""); select(undefined); }}
 				className={cn("flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-[13px] font-semibold transition-colors", fresh ? "bg-sidebar-accent text-foreground" : "bg-primary text-primary-foreground hover:bg-primary/85")}>
-				<Plus className="size-4" />New chat<span className={cn("ml-auto text-[10.5px] font-medium", fresh ? "text-muted-foreground" : "text-primary-foreground/70")}>{shortcut("chat.new")}</span>
+				<ActionIcon name="plus" className="size-4" />New chat<span className={cn("ml-auto text-[10.5px] font-medium", fresh ? "text-muted-foreground" : "text-primary-foreground/70")}>{shortcut("chat.new")}</span>
 			</button>}
 			<InboxLink />
 			{mode === "code" && !factory && <PullRequestsLink />}

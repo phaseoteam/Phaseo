@@ -54,6 +54,7 @@ app.whenReady().then(async () => { try {
 		preferences = { ...originalPreferences.preferences, chat: { ...originalPreferences.preferences.chat, followUp } };
 		await run(`localStorage.setItem('phaseo.desktop.selectedTask','"main"');localStorage.setItem('phaseo.desktop.workspaceMode','"chat"');localStorage.setItem('phaseo.desktop.theme','"dark"');localStorage.removeItem('phaseo.desktop.rightPanel');localStorage.removeItem('phaseo.desktop.selectedCompare');localStorage.setItem('phaseo.desktop.messageDrafts',${JSON.stringify(JSON.stringify({ main: draft, side: draft }))});localStorage.setItem('phaseo.desktop.compareGroups',${JSON.stringify(JSON.stringify([{ id: "pair", title: "Owned comparison", taskIds: ["main", "side"], createdAt: new Date().toISOString() }]))});localStorage.setItem('phaseo.desktop.compareDrafts',${JSON.stringify(JSON.stringify({ pair: draft }))});${surface === "compare" ? "localStorage.setItem('phaseo.desktop.selectedCompare','\"pair\"');" : ""}true`);
 		await run(`localStorage.setItem('phaseo.desktop.sendKey',${JSON.stringify(sendKey)})`);
+		if (surface !== "compare") await run("localStorage.removeItem('phaseo.desktop.compareGroups')");
 		await owner.loadFile(renderer);
 		await ready("!!document.querySelector('main form [data-composer-icon]')");
 		if (surface === "side") {
@@ -147,10 +148,12 @@ app.whenReady().then(async () => { try {
 	await cdp("DOM.enable"); await cdp("CSS.enable");
 	await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
 	const force = async (selector, pseudo) => { const { root } = await cdp("DOM.getDocument"); const { nodeId } = await cdp("DOM.querySelector", { nodeId: root.nodeId, selector }); assert(nodeId, selector); await cdp("CSS.forcePseudoState", { nodeId, forcedPseudoClasses: pseudo ? [pseudo] : [] }); };
+	const samples = {}, gestures = {};
 	for (const action of ["send", "queue", "steer"]) {
 		await configure({ status: action === "send" ? "completed" : "running", followUp: action === "steer" ? "steer" : "queue" });
 		await run("document.documentElement.dataset.animations='on'");
 		const selector = `main button[type=submit]`;
+		samples[action] = await run(`document.querySelector('${selector} [data-composer-icon][data-on]').outerHTML`);
 		assert.equal(await run(`getComputedStyle(document.querySelector('${selector} [data-trace]')).animationName`), "none");
 		for (const pseudo of ["hover", "focus-visible"]) {
 			await force(selector, pseudo);
@@ -173,11 +176,62 @@ app.whenReady().then(async () => { try {
 	}
 	await force('button[aria-label="Close"]', null);
 	await capture("window-controls");
+	// Everyday actions have distinct, bounded gestures on their parts, without moving the control.
+	await configure({ status: "completed" });
+	await ready("!!document.querySelector('main button[aria-label=Copy]')");
+	await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
+	for (const name of ["plus", "paperclip", "copy", "search", "settings", "refresh"]) {
+		if (name === "refresh") {
+			await run("document.querySelector('aside button[aria-label=\"Actions for Owned main\"]').click()");
+			await ready("!!document.querySelector('[role=menuitem] [data-icon-gesture=refresh]')");
+			await run("Promise.all(document.querySelector('[role=menu]').getAnimations().map(animation=>animation.finished.catch(()=>{})))");
+		}
+		const selector = `:is(button,[role=menuitem]):has(> .gesture-icon[data-icon-gesture="${name}"]), button:has(.icon-swap > .gesture-icon[data-icon-gesture="${name}"])`;
+		const state = () => run(`(()=>{const button=document.querySelector(${JSON.stringify(selector)}),svg=button.querySelector('[data-icon-gesture]');return {box:button.getBoundingClientRect().toJSON(),animations:svg.getAnimations({subtree:true}).map(animation=>({name:animation.animationName,iterations:animation.effect.getTiming().iterations})),parts:Array.from(svg.children).map(part=>({transform:getComputedStyle(part).transform,dash:getComputedStyle(part).strokeDashoffset})),lengths:Array.from(svg.children).map(part=>part.getAttribute('pathLength'))};})()`);
+		await force(selector, null);
+		const idle = await state();
+		assert.equal(idle.animations.length, 0, `${name} moves at rest`);
+		assert(idle.lengths.every(length => length === "1"));
+		for (const pseudo of ["hover", "focus-visible"]) {
+			await force(selector, pseudo);
+			const active = await state();
+			assert(active.animations.length > 0, `${name} has no ${pseudo} gesture`);
+			assert(active.animations.every(animation => animation.iterations === 1));
+			await run(`document.querySelector(${JSON.stringify(selector)}).querySelector('[data-icon-gesture]').getAnimations({subtree:true}).forEach(animation=>{animation.pause();animation.currentTime=Number(animation.effect.getTiming().duration)/2;});true`);
+			const middle = await state();
+			assert.deepEqual(middle.box, idle.box, `${name} moved its control`);
+			assert.notDeepEqual(middle.parts, idle.parts, `${name} has no visible part movement`);
+			gestures[name] = active.animations.map(animation => animation.name);
+			await force(selector, null);
+		}
+		samples[name] = await run(`(()=>{const svg=document.querySelector(${JSON.stringify(selector)}).querySelector('[data-icon-gesture]'),copy=svg.cloneNode(true),box=svg.getBoundingClientRect();copy.setAttribute('style','width:'+box.width+'px;height:'+box.height+'px');return copy.outerHTML;})()`);
+		await force(selector, "hover");
+		await run(`(()=>{const control=document.querySelector(${JSON.stringify(selector)});if(control.tagName==='BUTTON')control.disabled=true;else control.setAttribute('aria-disabled','true');})()`);
+		assert.equal((await state()).animations.length, 0, `${name} animates when disabled`);
+		await run(`document.querySelector(${JSON.stringify(selector)}).removeAttribute('disabled');document.querySelector(${JSON.stringify(selector)}).removeAttribute('aria-disabled');true`);
+		for (const reduced of [false, true]) {
+			await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: reduced ? "reduce" : "no-preference" }] });
+			await run(`document.documentElement.dataset.animations='${reduced ? "on" : "off"}'`);
+			const quiet = await state();
+			assert.equal(quiet.animations.filter(animation => animation.name).length, 0, `${name} ignores ${reduced ? "reduced motion" : "Animations off"}: ${JSON.stringify(quiet)}`);
+			assert.deepEqual(quiet.parts, idle.parts, `${name} retains a gesture pose with motion disabled`);
+		}
+		await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
+		await run("document.documentElement.dataset.animations='on'");
+		await force(selector, null);
+	}
+	if (output) writeFileSync(path.join(output, "icon-gestures.json"), JSON.stringify({ samples, gestures }, null, 2));
+	await run("document.querySelector('[role=menu]')?.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));true");
+	await ready("!document.querySelector('[role=menu]')");
+	// Copy feedback still changes to a check. The fixture never touches the person's clipboard.
+	await run("Object.defineProperty(navigator.clipboard,'writeText',{configurable:true,value:async text=>{window.__fixtureCopied=text;}});document.querySelector('main button[aria-label=Copy]').click();true");
+	await ready("!!document.querySelector('main button[aria-label=Copied]')");
+	assert.equal(await run("window.__fixtureCopied"), "Owned fixture conversation.");
 	owner.setSize(1040, 800);
 	await run("new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve)))");
 	assert(await run("(()=>{const form=document.querySelector('main form').getBoundingClientRect();return form.left>=0&&form.right<=innerWidth&&form.bottom<=innerHeight;})()"));
 	await capture("minimum-width");
 	owner.webContents.debugger.detach();
-	console.log("COMPOSER_ACTIONS_SMOKE", JSON.stringify({ surfaces: 3, deliveryDefaults: 2, primaryAndAlternate: true, idleSend: true, stopWithEmptyDraft: true, unsupportedSteeringQueues: true, queueEdit: true, questionAnswer: true, keyboardAndIME: true, svgTraces: true, stationaryWindowControls: true, animationsOff: true, reducedMotion: true, minimumWidth: true, inferenceCalls: 0, packaged: Boolean(entry) }));
+	console.log("COMPOSER_ACTIONS_SMOKE", JSON.stringify({ surfaces: 3, deliveryDefaults: 2, primaryAndAlternate: true, idleSend: true, stopWithEmptyDraft: true, unsupportedSteeringQueues: true, queueEdit: true, questionAnswer: true, keyboardAndIME: true, svgTraces: true, actionGestures: gestures, boundedGestures: true, stationaryControls: true, copyFeedback: true, stationaryWindowControls: true, animationsOff: true, reducedMotion: true, minimumWidth: true, inferenceCalls: 0, packaged: Boolean(entry) }));
 	clearTimeout(deadline); app.exit(0);
 } catch (error) { console.error(error); app.exit(1); } });

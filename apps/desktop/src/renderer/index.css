@@ -599,12 +599,37 @@ summary:has(> svg:first-child)::before { display: none; }
 .composer-action:is(:hover, :focus-visible, [data-highlighted]):not(:disabled) [data-trace] { animation: action-trace var(--action-trace-duration, 0.22s) ease-out both; }
 .composer-action [data-trace="queue"] { --action-trace-duration: 0.26s; }
 .composer-action [data-trace="steer"] { --action-trace-duration: 0.3s; }
+@keyframes send-flight { from { transform: translateY(2px); opacity: 0.5; } to { transform: none; opacity: 1; } }
+@keyframes queue-stack { from { transform: translateX(-3px); opacity: 0.3; } to { transform: none; opacity: 1; } }
+@keyframes steer-turn { from { transform: rotate(-16deg); } to { transform: none; } }
+.composer-action:is(:hover, :focus-visible, [data-highlighted]):not(:disabled) [data-flight] { animation: send-flight 0.28s ease-out both; }
+.composer-action:is(:hover, :focus-visible, [data-highlighted]):not(:disabled) [data-stack] { animation: queue-stack 0.32s ease-out both; }
+.composer-action [data-turn] { transform-origin: 20px 9px; }
+.composer-action:is(:hover, :focus-visible, [data-highlighted]):not(:disabled) [data-turn] { animation: steer-turn 0.3s ease-out both; }
+/* Opt-in action glyphs move their own parts once. Unmarked icons never inherit a gesture. */
+@keyframes icon-add-horizontal { from { transform: scaleX(0.35); opacity: 0.4; } to { transform: none; opacity: 1; } }
+@keyframes icon-add-vertical { from { transform: scaleY(0.35); opacity: 0.4; } to { transform: none; opacity: 1; } }
+@keyframes icon-thread { from { stroke-dashoffset: 0.85; opacity: 0.45; } to { stroke-dashoffset: 0; opacity: 1; } }
+@keyframes icon-copy-sheet { from { transform: translate(-4px, -4px); opacity: 0.3; } to { transform: none; opacity: 1; } }
+@keyframes icon-gear-turn { from { transform: rotate(0deg); } to { transform: rotate(60deg); } }
+@keyframes icon-refresh-turn { from { transform: rotate(0deg); } to { transform: rotate(180deg); } }
+.gesture-icon > * { transform-origin: 12px 12px; }
+.gesture-icon[data-icon-gesture="plus"] > :first-child { --icon-gesture: icon-add-horizontal; }
+.gesture-icon[data-icon-gesture="plus"] > :nth-child(2) { --icon-gesture: icon-add-vertical; --icon-gesture-delay: 45ms; }
+.gesture-icon[data-icon-gesture="paperclip"] > path { --icon-gesture: icon-thread; --icon-gesture-duration: 480ms; stroke-dasharray: 1; }
+.gesture-icon[data-icon-gesture="copy"] > rect { --icon-gesture: icon-copy-sheet; }
+.gesture-icon[data-icon-gesture="settings"] > path { --icon-gesture: icon-gear-turn; --icon-gesture-duration: 420ms; }
+.gesture-icon[data-icon-gesture="search"] > circle { --icon-gesture: icon-thread; --icon-gesture-duration: 380ms; stroke-dasharray: 1; }
+.gesture-icon[data-icon-gesture="refresh"] > path { --icon-gesture: icon-refresh-turn; --icon-gesture-duration: 460ms; }
+:is(button, [role="menuitem"], [role="option"]):is(:hover, :focus-visible, [data-highlighted], [data-selected="true"]):not(:disabled):not([aria-disabled="true"]) .gesture-icon > * {
+	animation: var(--icon-gesture, none) var(--icon-gesture-duration, 320ms) cubic-bezier(0.2, 0.8, 0.2, 1) var(--icon-gesture-delay, 0ms) both;
+}
 @media (prefers-reduced-motion: reduce) {
-	.icon-pop, .icon-draw path, .icon-shake, .step-in, .composer-action [data-trace] { animation: none !important; }
+	.icon-pop, .icon-draw path, .icon-shake, .step-in, .composer-action :is([data-trace], [data-flight], [data-stack], [data-turn]), .gesture-icon > * { animation: none !important; }
 	.press-squish:active:not(:disabled) { transform: none; }
 	.icon-swap > * { transition: none; }
 }
-:root[data-animations="off"] :is(.icon-pop, .icon-draw path, .icon-shake, .step-in, .composer-action [data-trace]) { animation: none !important; }
+:root[data-animations="off"] :is(.icon-pop, .icon-draw path, .icon-shake, .step-in, .composer-action [data-trace], .composer-action [data-flight], .composer-action [data-stack], .composer-action [data-turn], .gesture-icon > *) { animation: none !important; }
 :root[data-animations="off"] .press-squish:active { transform: none; }
 
 /* Settings → Appearance → Animations off: panels, menus and dialogs appear at once. Spinners and progress keep moving. */

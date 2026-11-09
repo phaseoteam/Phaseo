@@ -4,7 +4,8 @@ import remarkMath from "remark-math";
 import { ScrollArea } from "./ui/scroll-area";
 import { Children, createContext, isValidElement, lazy, memo, Suspense, useContext, useEffect, useRef, useState, useMemo, useSyncExternalStore, type CSSProperties, type ReactNode } from "react";
 import type { CodeToken } from "./codeHighlight";
-import { Check, Code2, Copy, Expand, ImageOff, Info, Lightbulb, MessageSquareWarning, OctagonAlert, Table2, TriangleAlert, WrapText, Workflow } from "lucide-react";
+import { Check, Code2, Expand, ImageOff, Info, Lightbulb, MessageSquareWarning, OctagonAlert, Table2, TriangleAlert, WrapText, Workflow } from "lucide-react";
+import { ActionIcon } from "./ActionIcon";
 import { useTextCopy } from "./useTextCopy";
 import { parseFileReference } from "../../shared/editors";
 import { parseChatLink } from "../../shared/chatLinks";
@@ -137,7 +138,7 @@ export function CodeBlock({ children, text: source, language: sourceLanguage, ac
 			<span className="message-code-buttons">
 				{actions}
 				{!body && <CodeAction label={wrap ? "Scroll long lines" : "Wrap long lines"} pressed={wrap} onClick={() => setWrap(value => !value)}><WrapText size={14} /></CodeAction>}
-				<button type="button" onClick={() => void copy()} disabled={copying} aria-label={status === "copied" ? "Copied" : "Copy code"}><IconSwap show={status === "copied" ? "check" : "copy"}>{{ check: <Check size={14} />, copy: <Copy size={14} /> }}</IconSwap>{status === "copied" ? "Copied" : "Copy code"}</button>
+				<button type="button" onClick={() => void copy()} disabled={copying} aria-label={status === "copied" ? "Copied" : "Copy code"}><IconSwap show={status === "copied" ? "check" : "copy"}>{{ check: <Check size={14} />, copy: <ActionIcon name="copy" size={14} /> }}</IconSwap>{status === "copied" ? "Copied" : "Copy code"}</button>
 			</span>
 		</div>
 		{body ?? <ScrollArea scrollBarOrientation="horizontal"><pre data-wrap={wrap ? "" : undefined}>{tokens ? <code>{tokens.map((line, index) => <span key={index}>{index > 0 ? "\n" : ""}{line.map((token, tokenIndex) => <span className="code-token" key={tokenIndex} style={{ "--code-light": token.light, "--code-dark": token.dark } as CSSProperties}>{token.content}</span>)}</span>)}</code> : children ?? <code>{text}</code>}</pre></ScrollArea>}

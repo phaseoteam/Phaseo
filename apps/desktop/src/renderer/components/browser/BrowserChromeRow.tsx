@@ -4,6 +4,7 @@ import { Button } from "../ui/button";
 import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui/input-group";
 import { Tooltip, TooltipContent, TooltipTrigger } from "../ui/tooltip";
 import { cn } from "../../lib/utils";
+import { ActionIcon } from "../ActionIcon";
 
 /** A ghost icon button with a tooltip, for the browser chrome. */
 export function BrowserIconButton({ label, tooltip, icon, className, ...props }: { label: string; tooltip?: ReactNode; icon: ReactNode } & Omit<React.ComponentProps<typeof Button>, "children">) {
@@ -39,7 +40,7 @@ export function BrowserChromeRow({ url, loading, canGoBack, canGoForward, hasPag
 			<div className="flex items-center gap-0.5" role="group" aria-label="Navigation">
 				<BrowserIconButton label="Back" icon={<ArrowLeft />} disabled={!canGoBack} onClick={onBack} />
 				<BrowserIconButton label="Forward" icon={<ArrowRight />} disabled={!canGoForward} onClick={onForward} />
-				<BrowserIconButton label={loading ? "Stop" : "Reload"} tooltip={loading ? "Loading… click to stop" : "Reload"} icon={<RefreshCw className={cn("size-3.5", loading && "motion-safe:animate-spin")} />} disabled={!hasPage} onClick={onReload} />
+				<BrowserIconButton label={loading ? "Stop" : "Reload"} tooltip={loading ? "Loading… click to stop" : "Reload"} icon={loading ? <RefreshCw className="size-3.5 motion-safe:animate-spin" /> : <ActionIcon name="refresh" className="size-3.5" />} disabled={!hasPage} onClick={onReload} />
 			</div>
 			<InputGroup className="group/address h-7 flex-1 bg-transparent transition-colors hover:bg-muted/40 has-[[data-slot=input-group-control]:focus-visible]:bg-background">
 				<InputGroupInput ref={input} value={focused ? draft : url} onChange={event => setDraft(event.target.value)} aria-label="Browser address" placeholder="Search or enter URL" spellCheck={false} autoComplete="off"

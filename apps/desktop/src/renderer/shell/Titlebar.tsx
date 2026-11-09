@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { ChatDetails } from "./ChatDetails";
-import { ArrowLeft, ArrowRight, Check, ChevronDown, CircleArrowUp, Code2, Ellipsis, Factory, MessageSquare, MessagesSquare, Minus, PanelLeft, PanelRight, Search, Square, X, Copy as Restore } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, ChevronDown, CircleArrowUp, Code2, Ellipsis, Factory, MessageSquare, MessagesSquare, Minus, PanelLeft, PanelRight, Square, X, Copy as Restore } from "lucide-react";
+import { ActionIcon } from "../components/ActionIcon";
 import type { DesktopAppAction, DesktopWindowState } from "../../shared/desktop";
 import { checkForUpdates, useUpdateState } from "../lib/updateState";
 import { useWorkspace, type WorkspaceMode } from "../app/workspace";
@@ -125,7 +126,7 @@ export function Titlebar() {
 		</div>
 		<div className="flex flex-1 justify-center px-3">
 			<button type="button" onClick={() => setCommandsOpen(true)} className="no-drag flex h-7 w-full max-w-md items-center gap-2 rounded-md border border-border bg-background/60 px-2.5 text-xs text-muted-foreground transition-colors hover:bg-background hover:text-foreground">
-				<Search className="size-3.5" /><span>Search chats and commands</span><Kbd className="ml-auto">{shortcut("commandPalette.toggle")}</Kbd>
+				<ActionIcon name="search" className="size-3.5" /><span>Search chats and commands</span><Kbd className="ml-auto">{shortcut("commandPalette.toggle")}</Kbd>
 			</button>
 		</div>
 		<div className="flex items-center">
