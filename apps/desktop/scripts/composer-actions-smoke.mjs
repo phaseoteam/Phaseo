@@ -20,10 +20,8 @@ app.whenReady().then(async () => { try {
 	const run = code => owner.webContents.executeJavaScript(code);
 	const ready = predicate => run(`new Promise((resolve,reject)=>{const check=()=>{if((${predicate})){observer.disconnect();clearTimeout(timer);resolve(true);}};const observer=new MutationObserver(check);observer.observe(document,{subtree:true,childList:true,characterData:true,attributes:true});const timer=setTimeout(()=>{observer.disconnect();reject(Error('Missing UI milestone: '+${JSON.stringify(predicate)}));},10000);check();})`);
 	async function closeMenu() {
-		await run("document.querySelector('[role=menu]')?.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));true");
-		await ready("!document.querySelector('[role=menu]') || !!document.querySelector('[role=menu][data-closed]')");
-		// Hidden windows do not reliably advance the popup's exit animation.
-		await run("document.querySelector('[role=menu][data-closed]')?.getAnimations().forEach(animation=>animation.finish());true");
+		// The menu library's test switch bypasses frame-based completion in hidden windows; SVG gestures remain enabled.
+		await run("globalThis.BASE_UI_ANIMATIONS_DISABLED=true;document.querySelector('[role=menu]')?.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape',bubbles:true}));true");
 		await ready("!document.querySelector('[role=menu]')");
 	}
 	const originalPreferences = await run("window.phaseoDesktop.workspace.preferences()");
