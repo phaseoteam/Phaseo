@@ -50,7 +50,7 @@ function toolRow(activity: AgentActivity) {
 }
 
 function ActionButton({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {
-	return <button type="button" aria-label={label} title={label} disabled={disabled} onClick={onClick} className="hover-wiggle press-squish grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40 [&_svg]:size-3.5">{children}</button>;
+	return <button type="button" aria-label={label} title={label} disabled={disabled} onClick={onClick} className="press-squish grid size-7 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-40 [&_svg]:size-3.5">{children}</button>;
 }
 
 function CopyButton({ text }: { text: string }) {

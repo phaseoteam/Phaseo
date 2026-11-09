@@ -69,7 +69,7 @@ export function Composer({ editor, onSubmit, onStop, disabled, canSend, running,
 					{model}
 					{(() => { const stops = Boolean(running && onStop); return <button type={stops ? "button" : "submit"} onClick={stops ? onStop : undefined} disabled={!stops && !canSend}
 						aria-label={stops ? "Stop" : ultrathink ? "Send with Ultrathink" : "Send"} title={stops ? "Stop" : `${ultrathink ? "Sends with Ultrathink: this turn runs at Extra High" : "Send"} (${sendKey === "enter" ? "Enter" : keyLabel("mod+enter", isMac())})`}
-						className={cn("hover-lift press-squish relative ml-1 grid size-8 shrink-0 place-items-center overflow-hidden rounded-full bg-foreground text-background transition-opacity hover:opacity-85 disabled:opacity-25", !stops && ultrathink && "ultrathink-send")}>
+						className={cn("press-squish relative ml-1 grid size-8 shrink-0 place-items-center overflow-hidden rounded-full bg-foreground text-background transition-opacity hover:opacity-85 disabled:opacity-25", !stops && ultrathink && "ultrathink-send")}>
 						<IconSwap show={stops ? "stop" : "send"} className="relative">{{ send: <ArrowUp className="size-4" strokeWidth={2.5} />, stop: <Square className="size-3 fill-current" /> }}</IconSwap>
 					</button>; })()}
 				</div>

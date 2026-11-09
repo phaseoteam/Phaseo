@@ -574,23 +574,16 @@ summary:has(> svg:first-child)::before { display: none; }
 .sidebar-frame { margin-left: calc((var(--sidebar-open) - 1) * var(--sidebar-width)); transition: --sidebar-open var(--panel-animation-duration, 200ms) ease-out; }
 @media (prefers-reduced-motion: reduce) { .sidebar-frame { transition: none; } }
 
-/*
- * Chat icons move only to mark something that just happened: a step that finished pops in, a tick draws itself, a failure
- * gives a small shake, a new step slides in, and buttons answer the pointer. Nothing moves on its own or when a chat opens.
- */
+/* Status icons animate when an activity changes, rather than on hover or focus. */
 @keyframes icon-pop { 0% { transform: scale(0.4); opacity: 0; } 60% { transform: scale(1.18); opacity: 1; } 100% { transform: scale(1); } }
 @keyframes icon-draw { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
 @keyframes icon-shake { 0%, 100% { transform: translateX(0); } 20%, 60% { transform: translateX(-2px); } 40%, 80% { transform: translateX(2px); } }
-@keyframes icon-wiggle { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(-10deg); } 70% { transform: rotate(8deg); } }
-@keyframes icon-lift { 0%, 100% { transform: translateY(0); } 45% { transform: translateY(-2.5px); } }
 @keyframes step-in { from { opacity: 0; transform: translateY(3px); } to { opacity: 1; transform: none; } }
 .icon-pop { transform-origin: center; animation: icon-pop 0.34s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
 /* Lucide's tick is one path about 23 units long. */
 .icon-draw path { stroke-dasharray: 24; animation: icon-draw 0.36s 0.05s ease-out both; }
 .icon-shake { animation: icon-shake 0.38s ease-in-out; }
 .step-in { animation: step-in 0.22s ease-out both; }
-.hover-wiggle:hover svg, .hover-wiggle:focus-visible svg { transform-origin: center; animation: icon-wiggle 0.42s ease-in-out; }
-.hover-lift:hover svg, .hover-lift:focus-visible svg { animation: icon-lift 0.42s ease-in-out; }
 .press-squish { transition: transform 0.12s ease-out; }
 .press-squish:active:not(:disabled) { transform: scale(0.9); }
 /* Icons that swap morph (components/IconSwap.tsx): the outgoing one shrinks, turns and blurs out as the next springs in. */
@@ -599,20 +592,15 @@ summary:has(> svg:first-child)::before { display: none; }
 .icon-swap > :not([data-on]) { opacity: 0; transform: scale(0.35) rotate(-70deg); filter: blur(2px); pointer-events: none; }
 /* The incoming icon is new to the page, so it starts from the outgoing pose; one there from the start does not move. */
 @starting-style { .icon-swap > [data-enter] { opacity: 0; transform: scale(0.35) rotate(70deg); filter: blur(2px); } }
-/* Every icon-only button across the app: its icon gives when pressed and wiggles under the pointer. */
-button:is(:has(> svg:only-child), :has(> .icon-swap:only-child)) > :is(svg, .icon-swap) { transition: scale 0.12s ease-out; }
-button:is(:has(> svg:only-child), :has(> .icon-swap:only-child)):active:not(:disabled, [aria-disabled="true"]) > :is(svg, .icon-swap) { scale: 0.8; }
-button:is(:has(> svg:only-child), :has(> .icon-swap:only-child)):is(:hover, :focus-visible):not(:disabled, [aria-disabled="true"], .hover-lift, .hover-wiggle) > :is(svg, .icon-swap):not(.animate-spin) { transform-origin: center; animation: icon-wiggle 0.42s ease-in-out; }
 /* The steps' chevron turns with a little overshoot. */
 .chevron-spring { transition: rotate 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.15s; }
 @media (prefers-reduced-motion: reduce) {
-	.icon-pop, .icon-draw path, .icon-shake, .step-in, .hover-wiggle:hover svg, .hover-wiggle:focus-visible svg, .hover-lift:hover svg, .hover-lift:focus-visible svg, button > :is(svg, .icon-swap):not(.animate-spin) { animation: none !important; }
+	.icon-pop, .icon-draw path, .icon-shake, .step-in { animation: none !important; }
 	.press-squish:active:not(:disabled) { transform: none; }
-	button:active > :is(svg, .icon-swap) { scale: none !important; }
 	.icon-swap > * { transition: none; }
 }
-:root[data-animations="off"] :is(.icon-pop, .icon-draw path, .icon-shake, .step-in), :root[data-animations="off"] :is(.hover-wiggle, .hover-lift):is(:hover, :focus-visible) svg, :root[data-animations="off"] button > :is(svg, .icon-swap):not(.animate-spin) { animation: none !important; }
-:root[data-animations="off"] .press-squish:active, :root[data-animations="off"] button:active > :is(svg, .icon-swap) { transform: none; scale: none !important; }
+:root[data-animations="off"] :is(.icon-pop, .icon-draw path, .icon-shake, .step-in) { animation: none !important; }
+:root[data-animations="off"] .press-squish:active { transform: none; }
 
 /* Settings → Appearance → Animations off: panels, menus and dialogs appear at once. Spinners and progress keep moving. */
 :root[data-animations="off"] *, :root[data-animations="off"] *::before, :root[data-animations="off"] *::after { transition-duration: 0s !important; transition-delay: 0s !important; }
