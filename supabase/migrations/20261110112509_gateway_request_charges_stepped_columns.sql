@@ -16,7 +16,7 @@ alter table public.gateway_request_charges
 
 -- Relax cost_nanos > 0 to >= 0. The new check is added unvalidated so this
 -- migration's ACCESS EXCLUSIVE lock is brief; it is validated by
--- 20261110010131_validate_gateway_request_charges_cost_check, a separate
+-- 20261110112511_validate_gateway_request_charges_cost_check, a separate
 -- transaction under SHARE UPDATE EXCLUSIVE (writes continue).
 alter table public.gateway_request_charges
   drop constraint if exists gateway_request_charges_cost_nanos_check;

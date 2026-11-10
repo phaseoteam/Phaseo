@@ -11,7 +11,7 @@ SET LOCAL lock_timeout = '10s';
 -- spend totals do not add to the charge row.
 
 -- Functions only: the gateway_request_charges columns are added by the previous migration,
--- 20261110010129_gateway_request_charges_stepped_columns.
+-- 20261110112509_gateway_request_charges_stepped_columns.
 
 -- One-off charges record their key too: both functions gain p_key_id. The old
 -- signatures are dropped first, so a call without p_key_id is not ambiguous.
