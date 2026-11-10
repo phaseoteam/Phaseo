@@ -294,3 +294,25 @@ def test_tool_timeout_returns_to_the_model_when_asked():
     strict = create_agent({"id": "timeout-strict", "tools": [AgentTool("slow", slow, timeout_ms=20)]})
     with pytest.raises(TimeoutError, match="timed out after 20ms"):
         strict.run(input="go", client=OneCallClient())
+
+
+def test_gateway_client_reads_phaseo_api_key_from_the_environment(monkeypatch):
+    import httpx
+    import pytest
+
+    from phaseo_agent import create_gateway_agent_client
+
+    seen: list[str | None] = []
+
+    def handle(self, request: httpx.Request) -> httpx.Response:
+        seen.append(request.headers.get("authorization"))
+        return httpx.Response(200, json={"data": {"id": "key_123"}}, request=request)
+
+    monkeypatch.setattr(httpx.HTTPTransport, "handle_request", handle)
+    monkeypatch.setenv("PHASEO_API_KEY", "sk-from-env")
+    create_gateway_agent_client(model="openai/gpt-5-mini")._client.get_current_api_key()
+    assert seen == ["Bearer sk-from-env"]
+
+    monkeypatch.delenv("PHASEO_API_KEY")
+    with pytest.raises(ValueError, match="PHASEO_API_KEY is required"):
+        create_gateway_agent_client(model="openai/gpt-5-mini")

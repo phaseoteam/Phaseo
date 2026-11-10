@@ -499,7 +499,7 @@ class GatewayAgentClient:
     ):
         if client is None:
             options = client_options or {}
-            api_key = options.get("api_key")
+            api_key = options.get("api_key") or os.getenv("PHASEO_API_KEY")
             if not api_key:
                 raise ValueError("PHASEO_API_KEY is required")
             base_url = options.get("base_url")
