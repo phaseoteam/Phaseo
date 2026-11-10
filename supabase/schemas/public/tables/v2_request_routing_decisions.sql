@@ -36,6 +36,9 @@ CREATE TABLE "public"."v2_request_routing_decisions" (
 ALTER TABLE "public"."v2_request_routing_decisions"
   ENABLE ROW LEVEL SECURITY;
 
+ALTER TABLE "public"."v2_request_routing_decisions"
+  SET (autovacuum_vacuum_scale_factor = 0, autovacuum_vacuum_threshold = 1000, autovacuum_analyze_scale_factor = 0, autovacuum_analyze_threshold = 1000);
+
 CREATE INDEX v2_request_routing_decisions_excluded_idx ON public.v2_request_routing_decisions USING btree (exclusion_reason, created_at DESC)
   WHERE (decision = 'excluded'::text);
 
