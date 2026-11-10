@@ -36,6 +36,7 @@ describe("normalizeGatewayUpstreamRows", () => {
 			retryable: false,
 			fallback_attempted: true,
 			error_code: null,
+			error_type: null,
 			error_message: null,
 			error_description: null,
 		}])).toEqual([{
@@ -61,6 +62,7 @@ describe("normalizeGatewayUpstreamRows", () => {
 			retryable: false,
 			fallback_attempted: true,
 			upstream_error_code: null,
+			upstream_error_type: null,
 			upstream_error_message: null,
 			upstream_error_description: null,
 		}]);
@@ -71,13 +73,13 @@ describe("fetchRequestProviderAttempts", () => {
 	const legacyRow = {
 		sequence: 1, attempt_number: 1, provider: "openai", api_model_id: "openai/gpt-6-luna", provider_model_slug: "gpt-6-luna",
 		outcome: "upstream_non_2xx", status_code: 400, status_text: "Bad Request", duration_ms: 383,
-		error_code: "invalid_value", error_message: "Failed to download file.", error_description: "url", metadata: {},
+		error_code: "invalid_value", error_type: "invalid_request_error", error_message: "Failed to download file.", error_description: "url", metadata: {},
 	};
 	const fact = {
 		latency_ms: 665, generation_ms: 833, gateway_total_ms: 895, cost_nanos: 3800, currency: "USD", stop_reason: "stop",
 		v2_request_attempts: [
 			{ attempt_number: 2, provider_model_id: "openai:openai/gpt-6-luna", started_at: "2026-11-09T15:00:01.500Z", status_code: 200, status_text: "OK", success: true, latency_ms: 268, safe_metadata: { provider: "openai", provider_api_model_id: "gpt-6-luna", retryable: false, fallback_attempted: true } },
-			{ attempt_number: 1, provider_model_id: null, started_at: "2026-11-09T15:00:00.100Z", status_code: 400, status_text: "Bad Request", success: false, error_code: "upstream_non_2xx", failure_class: "upstream_non_2xx", latency_ms: 383, safe_metadata: { provider: "openai", provider_api_model_id: "gpt-6-luna" }, upstream_error_code: "invalid_value", upstream_error_message: "Failed to download file.", upstream_error_description: "url" },
+			{ attempt_number: 1, provider_model_id: null, started_at: "2026-11-09T15:00:00.100Z", status_code: 400, status_text: "Bad Request", success: false, error_code: "upstream_non_2xx", failure_class: "upstream_non_2xx", latency_ms: 383, safe_metadata: { provider: "openai", provider_api_model_id: "gpt-6-luna" }, upstream_error_code: "invalid_value", upstream_error_type: "invalid_request_error", upstream_error_message: "Failed to download file.", upstream_error_description: "url" },
 		],
 	};
 
@@ -100,7 +102,7 @@ describe("fetchRequestProviderAttempts", () => {
 			return Response.json([legacyRow]);
 		});
 		expect(paths).toEqual(["/rest/v1/gateway_upstream_requests"]);
-		expect(attempts).toMatchObject([{ status: 400, status_text: "Bad Request", upstream_error_code: "invalid_value", upstream_error_message: "Failed to download file." }]);
+		expect(attempts).toMatchObject([{ status: 400, status_text: "Bad Request", upstream_error_code: "invalid_value", upstream_error_type: "invalid_request_error", upstream_error_message: "Failed to download file." }]);
 	});
 
 	it("returns no attempts when the legacy table no longer exists", async () => {
@@ -116,6 +118,7 @@ describe("fetchRequestProviderAttempts", () => {
 			expect(url.searchParams.get("workspace_id")).toBe("eq.ws-1");
 			expect(url.searchParams.get("request_id")).toBe("eq.req-1");
 			expect(url.searchParams.get("select")).toContain("v2_request_attempts(");
+			expect(url.searchParams.get("select")).toContain("upstream_error_type");
 			return Response.json([fact]);
 		});
 		expect(paths).toEqual(["/rest/v1/v2_request_facts"]);
@@ -127,7 +130,7 @@ describe("fetchRequestProviderAttempts", () => {
 				started_at_unix_ms: Date.parse("2026-11-09T15:00:00.100Z"),
 				latency_ms: null, generation_ms: null, total_ms: 383, cost_nanos: 0, currency: "USD",
 				finish_reason: null, provider_finish_reason: null, retryable: null, fallback_attempted: false,
-				upstream_error_code: "invalid_value", upstream_error_message: "Failed to download file.", upstream_error_description: "url",
+				upstream_error_code: "invalid_value", upstream_error_type: "invalid_request_error", upstream_error_message: "Failed to download file.", upstream_error_description: "url",
 			},
 			{
 				sequence: 2, round_number: 1, attempt_number: 2, internal_attempt_number: null,
@@ -136,7 +139,7 @@ describe("fetchRequestProviderAttempts", () => {
 				started_at_unix_ms: Date.parse("2026-11-09T15:00:01.500Z"),
 				latency_ms: 665, generation_ms: 833, total_ms: 895, cost_nanos: 3800, currency: "USD",
 				finish_reason: "stop", provider_finish_reason: null, retryable: false, fallback_attempted: true,
-				upstream_error_code: null, upstream_error_message: null, upstream_error_description: null,
+				upstream_error_code: null, upstream_error_type: null, upstream_error_message: null, upstream_error_description: null,
 			},
 		]);
 	});

@@ -229,6 +229,7 @@ export interface RequestRow extends NormalizedRequestUsageColumns {
 		retryable?: boolean | null;
 		fallback_attempted?: boolean;
 		upstream_error_code: string | null;
+		upstream_error_type?: string | null;
 		upstream_error_message: string | null;
 		upstream_error_description: string | null;
 	}>;
@@ -336,6 +337,7 @@ async function fetchGatewayUpstreamRequests(
 			retryable,
 			fallback_attempted,
 			error_code,
+			error_type,
 			error_message,
 			error_description,
 			metadata
@@ -386,6 +388,7 @@ export function normalizeGatewayUpstreamRows(
 		retryable: typeof row.retryable === "boolean" ? row.retryable : null,
 		fallback_attempted: row.fallback_attempted === true,
 		upstream_error_code: stringOrNull(row.error_code),
+		upstream_error_type: stringOrNull(row.error_type),
 		upstream_error_message: stringOrNull(row.error_message),
 		upstream_error_description: stringOrNull(row.error_description),
 		};

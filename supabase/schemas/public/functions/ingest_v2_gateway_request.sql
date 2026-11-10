@@ -213,7 +213,8 @@ begin
     request_event_id, attempt_number, provider_model_id, status_code, success,
     error_code, failure_class, upstream_response_id, latency_ms, cloudflare_colo, safe_metadata,
     health_class, health_reason, started_at, completed_at, status_text,
-    upstream_error_code, upstream_error_message, upstream_error_description
+    upstream_error_code, upstream_error_message, upstream_error_description,
+    upstream_error_type
   )
   select
     v_request_event_id,
@@ -257,7 +258,8 @@ begin
     left(nullif(trim(item.value->>'status_text'), ''), 120),
     left(nullif(item.value->>'upstream_error_code', ''), 120),
     left(nullif(item.value->>'upstream_error_message', ''), 1024),
-    left(nullif(item.value->>'upstream_error_description', ''), 1024)
+    left(nullif(item.value->>'upstream_error_description', ''), 1024),
+    left(nullif(item.value->>'upstream_error_type', ''), 120)
   from jsonb_array_elements(v_attempts) with ordinality as item(value, ordinality)
   left join lateral (
     select candidate.provider_model_id

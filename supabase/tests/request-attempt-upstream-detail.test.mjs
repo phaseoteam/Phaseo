@@ -9,17 +9,25 @@ const body = (sql) => {
   const start = sql.indexOf('$function$') + '$function$'.length;
   return sql.slice(start, sql.indexOf('$function$', start)).replaceAll('\r\n', '\n');
 };
+const errorTypeMigrationPath = '../migrations/20261109155651_v2_request_attempts_upstream_error_type.sql';
 try {
   const migration = await read(migrationPath);
+  const errorTypeMigration = await read(errorTypeMigrationPath);
   const desiredTable = await read('../schemas/public/tables/v2_request_attempts.sql');
   const desiredIngest = await read('../schemas/public/functions/ingest_v2_gateway_request.sql');
-  assert.ok(migration.includes('\nSET local check_function_bodies = off;\n'));
-  assert.ok(!/\b(drop|truncate)\b|\bdelete\s+from\b/i.test(migration), 'the migration must not be destructive');
-  for (const column of ['status_text', 'upstream_error_code', 'upstream_error_message', 'upstream_error_description']) {
-    assert.ok(new RegExp(`^  "${column}"\\s+text,$`, 'm').test(desiredTable), `declarative table declares ${column}`);
-    assert.ok(migration.includes(`ADD COLUMN "${column}" text`), `migration adds ${column}`);
-    const comment = desiredTable.split(/\r?\n/).find((line) => line.startsWith(`COMMENT ON COLUMN "public"."v2_request_attempts"."${column}"`));
-    assert.ok(comment && migration.includes(comment), `migration comment for ${column} must match the declarative table`);
+  const columnsByMigration = [
+    [migration, ['status_text', 'upstream_error_code', 'upstream_error_message', 'upstream_error_description']],
+    [errorTypeMigration, ['upstream_error_type']],
+  ];
+  for (const [sql, columns] of columnsByMigration) {
+    assert.ok(sql.includes('\nSET local check_function_bodies = off;\n'));
+    assert.ok(!/\b(drop|truncate)\b|\bdelete\s+from\b/i.test(sql), 'the migration must not be destructive');
+    for (const column of columns) {
+      assert.ok(new RegExp(`^  "${column}"\\s+text,$`, 'm').test(desiredTable), `declarative table declares ${column}`);
+      assert.ok(sql.includes(`ADD COLUMN "${column}" text`), `migration adds ${column}`);
+      const comment = desiredTable.split(/\r?\n/).find((line) => line.startsWith(`COMMENT ON COLUMN "public"."v2_request_attempts"."${column}"`));
+      assert.ok(comment && sql.includes(comment), `migration comment for ${column} must match the declarative table`);
+    }
   }
 
   for (const path of ['./fixtures/staged-reporting-before.sql',
@@ -44,9 +52,11 @@ try {
     '../migrations/20261104194200_provider_attempt_health_reasons.sql']) {
     await db.exec(await read(path));
   }
-  // The patch starts from the function as the declarative file had it before this change.
+  // The patches start from the function as the declarative file had it before these changes.
   await db.exec(migration);
   await assert.rejects(db.exec(migration), /already installed|already exists/);
+  await db.exec(errorTypeMigration);
+  await assert.rejects(db.exec(errorTypeMigration), /already installed|already exists/);
   const installed = (await db.query(
     `select pg_get_functiondef('public.ingest_v2_gateway_request(jsonb)'::regprocedure) as definition`)).rows[0].definition;
   assert.equal(body(installed), body(desiredIngest), 'patched ingest body must match the declarative function byte for byte');
@@ -62,13 +72,14 @@ try {
         attempt_number: 1, provider: 'fixture', provider_model_id: 'fixture:model', provider_api_model_id: 'model-2026',
         success: false, status_code: 429, error_code: 'upstream_non_2xx', failure_class: 'upstream_non_2xx',
         latency_ms: 35, started_at_unix_ms: startedAt, status_text: ' Too Many Requests ',
-        upstream_error_code: 'rate_limit_exceeded', upstream_error_message: 'Rate limit reached. '.repeat(80),
+        upstream_error_code: 'rate_limit_exceeded', upstream_error_type: 'rate_limit_error_'.repeat(10),
+        upstream_error_message: 'Rate limit reached. '.repeat(80),
         upstream_error_description: 'requests per minute', retryable: true, fallback_attempted: false,
       },
       {
         attempt_number: 2, provider: 'backup', provider_model_id: 'backup:model', provider_api_model_id: 'model',
         success: true, status_code: 200, latency_ms: 42, started_at_unix_ms: startedAt + 40,
-        status_text: 'OK', upstream_error_code: null, upstream_error_message: null, fallback_attempted: true,
+        status_text: 'OK', upstream_error_code: null, upstream_error_type: '', upstream_error_message: null, fallback_attempted: true,
       },
       // Older callers send none of the new fields, and a bad start time is ignored.
       { attempt_number: 3, provider: 'backup', success: false, status_code: 500, latency_ms: 5, started_at_unix_ms: 'soon', status_text: '' },
@@ -76,7 +87,7 @@ try {
   })]);
   const rows = (await db.query(`
     select attempt.attempt_number, attempt.started_at, attempt.completed_at, attempt.status_text,
-      attempt.upstream_error_code, length(attempt.upstream_error_message) as message_length,
+      attempt.upstream_error_code, attempt.upstream_error_type, length(attempt.upstream_error_message) as message_length,
       attempt.upstream_error_description, attempt.safe_metadata, attempt.error_code
     from v2_request_attempts attempt join v2_request_facts fact using (request_event_id)
     where fact.request_id = 'req-detail' order by attempt.attempt_number`)).rows;
@@ -85,6 +96,7 @@ try {
   assert.equal(rows[0].completed_at.toISOString(), '2026-11-09T10:00:00.035Z');
   assert.equal(rows[0].status_text, 'Too Many Requests');
   assert.equal(rows[0].upstream_error_code, 'rate_limit_exceeded');
+  assert.equal(rows[0].upstream_error_type, 'rate_limit_error_'.repeat(10).slice(0, 120), 'error types are capped at 120 characters');
   assert.equal(rows[0].error_code, 'upstream_non_2xx', 'error_code keeps the gateway failure type');
   assert.equal(rows[0].message_length, 1024, 'error messages are capped');
   assert.equal(rows[0].upstream_error_description, 'requests per minute');
@@ -95,13 +107,14 @@ try {
   assert.equal(rows[1].completed_at.toISOString(), '2026-11-09T10:00:00.082Z');
   assert.equal(rows[1].status_text, 'OK');
   assert.equal(rows[1].upstream_error_code, null);
+  assert.equal(rows[1].upstream_error_type, null, 'an empty error type is not stored');
   assert.equal(rows[1].message_length, null);
   assert.equal(rows[1].safe_metadata.fallback_attempted, true);
   assert.deepEqual(
-    [rows[2].started_at, rows[2].completed_at, rows[2].status_text, rows[2].upstream_error_code, rows[2].message_length],
-    [null, null, null, null, null],
+    [rows[2].started_at, rows[2].completed_at, rows[2].status_text, rows[2].upstream_error_code, rows[2].upstream_error_type, rows[2].message_length],
+    [null, null, null, null, null, null],
     'attempts without the new fields still ingest');
-  console.log('Attempts store their status text, provider error, start and end time for the request-detail views');
+  console.log('Attempts store their status text, provider error and error type, start and end time for the request-detail views');
 } finally {
   await db.close();
 }

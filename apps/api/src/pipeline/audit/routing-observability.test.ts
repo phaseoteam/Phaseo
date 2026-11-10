@@ -20,6 +20,7 @@ describe("buildRoutingObservability attempts", () => {
                     started_at_unix_ms: 1_762_682_400_000,
                     retryable: true,
                     upstream_error_code: "rate_limit_exceeded",
+                    upstream_error_type: "rate_limit",
                     upstream_error_message: "Rate limit reached",
                     upstream_error_description: "requests per minute",
                     upstream_payload_preview: "{\"error\":\"raw body\"}",
@@ -34,7 +35,7 @@ describe("buildRoutingObservability attempts", () => {
                     duration_ms: 42,
                     fallback_attempted: true,
                     // Older attempt shape: the error sits in a nested object.
-                    error: { code: "nested_code", message: "nested message", description: "nested description" },
+                    error: { code: "nested_code", type: "nested_type", message: "nested message", description: "nested description" },
                 },
             ],
         });
@@ -47,6 +48,7 @@ describe("buildRoutingObservability attempts", () => {
             error_code: "upstream_non_2xx",
             status_text: "Too Many Requests",
             upstream_error_code: "rate_limit_exceeded",
+            upstream_error_type: "rate_limit",
             upstream_error_message: "Rate limit reached",
             upstream_error_description: "requests per minute",
             started_at_unix_ms: 1_762_682_400_000,
@@ -57,6 +59,7 @@ describe("buildRoutingObservability attempts", () => {
             attempt_number: 2,
             status_text: null,
             upstream_error_code: "nested_code",
+            upstream_error_type: "nested_type",
             upstream_error_message: "nested message",
             upstream_error_description: "nested description",
             started_at_unix_ms: null,
