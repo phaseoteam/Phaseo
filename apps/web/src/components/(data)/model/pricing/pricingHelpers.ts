@@ -1,4 +1,5 @@
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
+import { audienceLabel, withoutAudienceConditions } from "@/lib/pricing/promotionAudience";
 import {
     formatProviderOfferDisplayName,
     resolveProviderLogoId,
@@ -432,7 +433,12 @@ function classifyMeterWithEndpoint(
 
 export type ConditionLabelPref = { prefer?: string[] }; // e.g. ['cache_ttl','quality','resolution']
 
-export function conciseConditionLabel(conds?: Condition[] | null, pref: ConditionLabelPref = {}) {
+export function conciseConditionLabel(conds?: Condition[] | null, pref: ConditionLabelPref = {}): string {
+    const audience = audienceLabel(conds);
+    if (audience) {
+        const rest = withoutAudienceConditions(conds);
+        return rest.length ? `${conciseConditionLabel(rest, pref)} · In ${audience}` : `In ${audience}`;
+    }
     if (!conds?.length) return "All usage";
     const picks = pref.prefer ?? ["cache_ttl", "quality", "resolution", "size"];
     for (const key of picks) {
@@ -1026,7 +1032,9 @@ export function buildProviderSections(
     }
     for (const r of rules as any[]) {
         const endpoint = endpointForRule(r);
-        const matchKey = JSON.stringify(r.match ?? []);
+        // A price limited to one calling app (`client_id`) is a promotion of the list
+        // price with the same billing conditions, so it is grouped with that price.
+        const matchKey = JSON.stringify(withoutAudienceConditions(r.match));
         const groupKey = `${endpoint ?? "unknown"}|${r.meter}|${r.unit}|${r.unit_size}|${matchKey}`;
         if (!grouped.has(groupKey)) grouped.set(groupKey, []);
         grouped.get(groupKey)!.push(r);
