@@ -409,7 +409,7 @@ describe("account usage settings routes", () => {
 		for (const args of labelFacetArgs) expect(args).toEqual({ p_workspace_id: "workspace-1", p_from: expect.any(String), p_to: expect.any(String) });
 		expect(labelTotalsArgs).toEqual([{ p_workspace_id: "workspace-1", p_from: expect.any(String), p_to: expect.any(String), p_label_key: "team", p_label_value: "support" }]);
 		await expect(labeledLogs.json()).resolves.toMatchObject({ view: "logs", data: { labelSummary: { key: "team", value: "support", requestCount: 1, totalCostNanos: 1000, isSampled: false } } });
-		await expect(upstream.json()).resolves.toMatchObject({ view: "upstream", data: { availableKeys: [{ id: "key-1", name: "Production" }], upstreamRequests: [{ id: "upstream-2", request_id: "G-test", attempt_number: 2, attempt_count: 2, request_latency_ms: 360 }, { id: "upstream-1", request_id: "G-test", attempt_number: 1 }], providerMetadataEntries: [["openai", { name: "OpenAI" }]], providerNameEntries: [["openai", "OpenAI"]] } });
+		await expect(upstream.json()).resolves.toMatchObject({ view: "upstream", data: { availableKeys: [{ id: "key-1", name: "Production" }], upstreamRequests: [{ id: "upstream-2", request_id: "G-test", attempt_number: 2, attempt_count: 2, request_latency_ms: 360 }, { id: "upstream-1", request_id: "G-test", attempt_number: 1, error_type: "provider_error" }], providerMetadataEntries: [["openai", { name: "OpenAI" }]], providerNameEntries: [["openai", "OpenAI"]] } });
 		await expect(jobs.json()).resolves.toMatchObject({ view: "jobs", data: { recentJobs: [{ internal_id: "job-1", request_cost_nanos: 0, request_created_at: "2026-07-17T00:00:00Z", webhook: { configured: true, attempt_count: 0 } }], jobProviders: ["openai"] } });
 		await expect(sessions.json()).resolves.toMatchObject({ view: "sessions", data: { sessions: [{ session_id: "session-1", request_count: 1, total_cost_nanos: 1000, model_counts: [{ model_id: "openai/gpt-test", request_count: 1 }], model_provider_counts: [{ model_id: "openai/gpt-test", provider: "openai", request_count: 1 }] }], sessionAppIds: ["app-1"] } });
 		await expect(detail.json()).resolves.toMatchObject({ data: { request: { request_id: "request-1" }, providerNames: [["openai", "OpenAI"]] } });
@@ -464,12 +464,13 @@ describe("account usage settings routes", () => {
 			if (url.pathname.endsWith("/workspaces")) return Response.json([{ owner_user_id: "user-1" }]);
 			if (url.pathname.endsWith("/v2_request_facts")) {
 				expect(url.searchParams.get("select")).toContain("upstream_error_message");
+				expect(url.searchParams.get("select")).toContain("upstream_error_type");
 				return Response.json([{
 					request_event_id: "event-1", request_id: "G-new", occurred_at: "2026-11-09T15:00:00Z", provider_model_id: "openai:openai/gpt-6-luna",
 					stream: true, gateway_ttft_ms: 300, generation_ms: 800, gateway_total_ms: 900, upstream_attempt_count: 2, cost_nanos: 3800, currency: "USD", stop_reason: "stop", native_response_id: "resp_final", error_code: null,
 					v2_request_attempts: [
 						{ attempt_id: "a2", attempt_number: 2, provider_model_id: "openai:openai/gpt-6-luna", started_at: "2026-11-09T15:00:01.500Z", status_code: 200, status_text: "OK", success: true, latency_ms: 268, safe_metadata: { provider: "openai", provider_api_model_id: "gpt-6-luna", fallback_attempted: true } },
-						{ attempt_id: "a1", attempt_number: 1, provider_model_id: "openai:openai/gpt-6-luna", started_at: "2026-11-09T15:00:00.100Z", status_code: 400, status_text: "Bad Request", success: false, error_code: "upstream_non_2xx", failure_class: "upstream_non_2xx", latency_ms: 383, safe_metadata: { provider: "openai", provider_api_model_id: "gpt-6-luna" }, upstream_error_code: "invalid_value", upstream_error_message: "Failed to download file.", upstream_error_description: "url" },
+						{ attempt_id: "a1", attempt_number: 1, provider_model_id: "openai:openai/gpt-6-luna", started_at: "2026-11-09T15:00:00.100Z", status_code: 400, status_text: "Bad Request", success: false, error_code: "upstream_non_2xx", failure_class: "upstream_non_2xx", latency_ms: 383, safe_metadata: { provider: "openai", provider_api_model_id: "gpt-6-luna" }, upstream_error_code: "invalid_value", upstream_error_type: "invalid_request_error", upstream_error_message: "Failed to download file.", upstream_error_description: "url" },
 					],
 				}]);
 			}
@@ -481,7 +482,7 @@ describe("account usage settings routes", () => {
 		const body = await response.json() as { data: { upstreamRequests: Array<Record<string, unknown>> } };
 		expect(body.data.upstreamRequests).toMatchObject([
 			{ id: "a2", created_at: "2026-11-09T15:00:01.500Z", provider: "openai", api_model_id: "openai/gpt-6-luna", provider_model_slug: "gpt-6-luna", status_text: "OK", fallback_attempted: true, finish_reason: "stop", cost_nanos: 3800, generation_ms: 800, total_ms: 900, error_message: null },
-			{ id: "a1", status_code: 400, status_text: "Bad Request", outcome: "upstream_non_2xx", fallback_attempted: false, finish_reason: null, cost_nanos: 0, generation_ms: null, total_ms: 383, error_code: "invalid_value", error_type: "upstream_non_2xx", error_message: "Failed to download file.", error_description: "url" },
+			{ id: "a1", status_code: 400, status_text: "Bad Request", outcome: "upstream_non_2xx", fallback_attempted: false, finish_reason: null, cost_nanos: 0, generation_ms: null, total_ms: 383, error_code: "invalid_value", error_type: "invalid_request_error", error_message: "Failed to download file.", error_description: "url" },
 		]);
 	});
 	it.each([

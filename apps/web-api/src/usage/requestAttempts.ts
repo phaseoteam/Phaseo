@@ -21,7 +21,7 @@ export function hasV2AttemptDetail(createdAt: string | null | undefined): boolea
 }
 
 /** The v2_request_attempts columns the request detail views read. */
-export const V2_ATTEMPT_DETAIL_COLUMNS = "attempt_id,attempt_number,provider_model_id,started_at,completed_at,status_code,status_text,success,error_code,failure_class,upstream_response_id,latency_ms,safe_metadata,upstream_error_code,upstream_error_message,upstream_error_description";
+export const V2_ATTEMPT_DETAIL_COLUMNS = "attempt_id,attempt_number,provider_model_id,started_at,completed_at,status_code,status_text,success,error_code,failure_class,upstream_response_id,latency_ms,safe_metadata,upstream_error_code,upstream_error_message,upstream_error_description,upstream_error_type";
 
 type Row = Record<string, unknown>;
 
@@ -109,6 +109,7 @@ export function v2AttemptsToProviderAttempts(fact: unknown): RequestRow["provide
 			retryable: typeof metadata.retryable === "boolean" ? metadata.retryable : null,
 			fallback_attempted: metadata.fallback_attempted === true,
 			upstream_error_code: text(attempt.upstream_error_code),
+			upstream_error_type: text(attempt.upstream_error_type),
 			upstream_error_message: text(attempt.upstream_error_message),
 			upstream_error_description: text(attempt.upstream_error_description),
 		};

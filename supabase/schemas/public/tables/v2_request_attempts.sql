@@ -20,6 +20,7 @@ CREATE TABLE "public"."v2_request_attempts" (
   "upstream_error_code"  text,
   "upstream_error_message" text,
   "upstream_error_description" text,
+  "upstream_error_type"  text,
   CONSTRAINT "v2_request_attempts_cloudflare_colo_check" CHECK (((cloudflare_colo IS NULL) OR (cloudflare_colo ~ '^[A-Z0-9]{3}$'::text))),
   CONSTRAINT "v2_request_attempts_health_class_check" CHECK (((health_class IS NULL) OR (health_class = ANY (ARRAY['success'::text, 'reachability'::text, 'capacity'::text, 'call_error'::text, 'customer'::text, 'phaseo'::text])))),
   CONSTRAINT "v2_request_attempts_health_reason_check" CHECK (((health_reason IS NULL) OR (health_reason ~ '^[a-z][a-z0-9_]{0,63}$'::text))),
@@ -83,3 +84,5 @@ COMMENT ON COLUMN "public"."v2_request_attempts"."upstream_error_code" IS 'Error
 COMMENT ON COLUMN "public"."v2_request_attempts"."upstream_error_message" IS 'Provider error message for this attempt as summarised by the gateway (at most 320 characters from the executor, capped at 1024 here). Never the raw provider payload.';
 
 COMMENT ON COLUMN "public"."v2_request_attempts"."upstream_error_description" IS 'Provider error description or offending parameter for this attempt as summarised by the gateway, capped at 1024 characters.';
+
+COMMENT ON COLUMN "public"."v2_request_attempts"."upstream_error_type" IS 'Error type from the provider response body for this attempt, for example invalid_request_error or rate_limit, capped at 120 characters. Null when the provider sent none and on rows recorded before the gateway sent it.';
