@@ -32,10 +32,16 @@ export const TABLE_MIGRATION_FILES = [
 ];
 export const readTableMigrations = () => Promise.all(TABLE_MIGRATION_FILES.map((name) =>
   readFile(new URL(`../../migrations/${name}`, import.meta.url), 'utf8')));
-// Function-only migrations after those, each replacing functions MIGRATION_FILE created, keyed by
-// the schema files they now carry.
+// Function-only migrations after those, in order, each replacing functions MIGRATION_FILE created;
+// FOLLOW_UP_MIGRATIONS maps each replaced schema file to the migration that now carries it.
+export const FOLLOW_UP_MIGRATION_FILES = [
+  '20261110181832_unbilled_spend_counts_under_recorded_charges.sql',
+  '20261110182228_realtime_spend_counts_at_debit_time.sql',
+];
 export const FOLLOW_UP_MIGRATIONS = {
-  'private/functions/unbilled_spend.sql': '20261110181832_unbilled_spend_counts_under_recorded_charges.sql',
+  'private/functions/unbilled_spend.sql': '20261110182228_realtime_spend_counts_at_debit_time.sql',
+  'private/functions/key_spend_items.sql': '20261110182228_realtime_spend_counts_at_debit_time.sql',
+  'private/functions/budget_spend_items.sql': '20261110182228_realtime_spend_counts_at_debit_time.sql',
 };
 export const readFollowUpMigration = (name) => readFile(new URL(`../../migrations/${name}`, import.meta.url), 'utf8');
 
@@ -75,7 +81,7 @@ const STUBS = `
   create table public.gateway_requests (id uuid default gen_random_uuid(), workspace_id uuid, request_id text,
     endpoint text, model_id text, provider text, status_code integer, success boolean, usage jsonb, cost_nanos bigint,
     currency text, key_id uuid references public.keys(id) on delete set null, detail_metadata jsonb, billing_request_id text,
-    created_at timestamptz not null default now()) partition by range (created_at);
+    realtime_session_id text, created_at timestamptz not null default now()) partition by range (created_at);
   create table public.gateway_requests_2025 partition of public.gateway_requests for values from ('2025-01-01') to ('2026-01-01');
   create table public.gateway_requests_2026 partition of public.gateway_requests for values from ('2026-01-01') to ('2027-01-01');
   create table public.gateway_requests_default partition of public.gateway_requests default;
@@ -117,8 +123,9 @@ const STUBS = `
     constraint workspace_settings_io_logging_retention_days_check check (((io_logging_retention_days >= 90) and (io_logging_retention_days <= 365))));
   create table public.byok_keys (id uuid primary key, workspace_id uuid, provider_id text, fingerprint_sha256 text,
     key_version integer, always_use boolean, enabled boolean);
-  create table public.gateway_realtime_sessions (workspace_id uuid not null, session_id text not null, key_id uuid,
-    reserved_nanos bigint not null default 0, primary key (workspace_id, session_id));
+  create table public.gateway_realtime_sessions (workspace_id uuid not null, session_id text not null unique, key_id uuid,
+    reserved_nanos bigint not null default 0, captured_nanos bigint not null default 0, started_at timestamptz, ended_at timestamptz,
+    primary key (workspace_id, session_id));
   create table public.gateway_async_operations (workspace_id uuid not null, kind text not null, internal_id text, status text,
     request_id text, meta jsonb not null default '{}'::jsonb, billed_at timestamptz);
   create table public.gateway_request_charges (workspace_id uuid not null, request_id text not null, cost_nanos bigint,
@@ -177,7 +184,7 @@ export async function applyMigration(db, migration) {
   for (const index of await readIndexMigrations()) await db.exec(index);
   await db.exec(migration);
   for (const table of await readTableMigrations()) await db.exec(table);
-  for (const name of new Set(Object.values(FOLLOW_UP_MIGRATIONS))) await db.exec(await readFollowUpMigration(name));
+  for (const name of FOLLOW_UP_MIGRATION_FILES) await db.exec(await readFollowUpMigration(name));
   await db.exec(CONTEXT_STUBS);
 }
 

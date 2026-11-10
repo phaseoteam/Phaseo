@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { applyMigration, createBudgetDatabase, FOLLOW_UP_MIGRATIONS, readColumnMigrations, readFollowUpMigration, readIndexMigrations, readMigration, readSchema, readTableMigrations } from './fixtures/budget-enforcement-db.mjs';
+import { applyMigration, createBudgetDatabase, FOLLOW_UP_MIGRATION_FILES, FOLLOW_UP_MIGRATIONS, readColumnMigrations, readFollowUpMigration, readIndexMigrations, readMigration, readSchema, readTableMigrations } from './fixtures/budget-enforcement-db.mjs';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
 // Migration 20261110181826_budget_enforcement_money_hygiene against production shapes (see the
@@ -137,7 +137,7 @@ try {
       const followUp = FOLLOW_UP_MIGRATIONS[path];
       const carrier = followUp ? await readFollowUpMigration(followUp) : migration;
       assert.ok(carrier.includes((await readSchema(path)).replace(/\r\n/g, '\n').trim()), `${path} is in ${followUp ?? 'the migration'}`);
-      if (followUp) assert.ok(migration.includes('CREATE OR REPLACE FUNCTION private.unbilled_spend ('), `${path} is first created by the migration`);
+      if (followUp) assert.ok(migration.includes(`CREATE OR REPLACE FUNCTION private.${path.split('/').at(-1).replace('.sql', '')} (`), `${path} is first created by the migration`);
     }
     const manifest = JSON.parse(await readSchema('.pgdelta-export.json'));
     for (const list of ['loadOrder', 'files']) {
@@ -158,7 +158,7 @@ try {
     const tableStatement = /\b(alter\s+table|create\s+(unique\s+)?index|drop\s+index|(create|drop)\s+(or\s+replace\s+)?(trigger|policy)|(grant|revoke)\s[^;]*\bon\s+table|comment\s+on\s+(table|column))\b/i;
     const statementsOf = (sql) => sql.replace(/--.*$/gm, '').replace(/\$(\w*)\$[\s\S]*?\$\1\$/g, '$$$$')
       .split(';').map((part) => part.trim()).filter(Boolean);
-    for (const functions of [migration, ...await Promise.all([...new Set(Object.values(FOLLOW_UP_MIGRATIONS))].map(readFollowUpMigration))]) {
+    for (const functions of [migration, ...await Promise.all(FOLLOW_UP_MIGRATION_FILES.map(readFollowUpMigration))]) {
       assert.match(functions, /^SET LOCAL lock_timeout = '10s';/);
       assert.ok(!statementsOf(functions).some((statement) => tableStatement.test(statement)), 'a function migration locks no table');
     }

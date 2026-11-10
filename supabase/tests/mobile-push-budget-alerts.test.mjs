@@ -200,6 +200,7 @@ try {
     for (const file of migrations) await db.exec(await read(file));
     await db.exec(v4);
     await db.exec(await read('../migrations/20261110140719_billing_cutoffs.sql'));
+    await db.exec((await import('./fixtures/unbilled-spend.mjs')).REALTIME_STANDINS);
     for (const file of usageFiles) await db.exec(await read(file));
     await db.exec(await read('../schemas/public/functions/sweep_spend_limit_warnings.sql'));
 

@@ -4,6 +4,18 @@
 // this change's own migrations (applied here as written).
 import { readFile } from 'node:fs/promises';
 
+// What the readers read of realtime sessions (realtime spend at debit time): the summary row's
+// session id and the session's start, key and captured debits. Idempotent, for any fixture.
+export const REALTIME_STANDINS = `
+  alter table public.gateway_requests add column if not exists realtime_session_id text;
+  create table if not exists public.gateway_realtime_sessions (workspace_id uuid not null, session_id text not null unique,
+    key_id uuid, reserved_nanos bigint not null default 0);
+  alter table public.gateway_realtime_sessions add column if not exists captured_nanos bigint not null default 0;
+  alter table public.gateway_realtime_sessions add column if not exists started_at timestamptz;
+  alter table public.gateway_realtime_sessions add column if not exists ended_at timestamptz;
+  grant select on public.gateway_realtime_sessions to service_role;
+`;
+
 const migration = (name) => readFile(new URL(`../../migrations/${name}`, import.meta.url), 'utf8');
 const schema = (name) => readFile(new URL(`../../schemas/${name}`, import.meta.url), 'utf8');
 
@@ -30,6 +42,7 @@ export async function installUnbilledSpend(db) {
   for (const name of ['20261110140719_billing_cutoffs.sql', '20261110140720_gateway_requests_expected_cost_nanos.sql', '20261110140721_validate_gateway_requests_expected_cost_nanos_check.sql']) {
     await db.exec(await migration(name));
   }
+  await db.exec(REALTIME_STANDINS);
   await db.exec(await schema('private/functions/unbilled_spend.sql'));
   await db.exec(await schema('private/functions/key_spend_items.sql'));
 }

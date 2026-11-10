@@ -34,6 +34,7 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
   --       detail_metadata.
   --   (c) a batch's batch_usage rows once the batch is debited, and its batch_hold_usage
   --       placeholders once its hold has settled.
+  --   (d) a realtime session's summary row (gateway_requests.realtime_session_id), always.
   --
   -- The SpendLimit Durable Object counts an admission it still holds from memory and lists both
   -- its ids: p_exclude_charge_ids leaves out charge rows by billing request id
@@ -66,6 +67,16 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
   --   so the spend is dated when the money moved, not when the video was submitted.
   -- Batch and video debits are matched by batch or reservation id, not billing id, so the
   -- 2026-11-04 cut-off for charge rows does not apply to them.
+  -- * 'realtime': a realtime session's realtime_session ledger debits, each at its time (the
+  --   confirmed part captured at billing review, <session>:confirmed:<n>, and the charge at
+  --   settlement), to the session's key; and, when the session ended (settlement sets ended_at),
+  --   what its summary row's cost (the full priced cost, any uncollected part included) exceeds the
+  --   session's captured_nanos, the sum of those debits. The summary row is dated when the session
+  --   started, so counting it whole put a session that crossed a period boundary in the earlier
+  --   period. The request readers leave its cost out (rule d), so a session counts
+  --   greatest(summary cost, debits), once. While a session runs its holds count instead
+  --   (private.budget_spend_items). The summary row is found by its unique
+  --   (realtime_session_id, created_at) index.
   -- * 'unpaid': what a delivered request with an expected bill (expected_cost_nanos) has not had
   --   counted yet, per billing request id, at the time of its row with the largest expected
   --   amount: greatest(max(expected_cost_nanos) - counted, 0). Counted is its applied charge (one-off
@@ -164,6 +175,29 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
     and debit.created_at >= coalesce(p_since, '-infinity'::timestamptz)
     and (p_key_ids is null or hold.key_id = any (p_key_ids))
   union all
+  select 'realtime'::text, debit.ref_id, session.key_id, debit.created_at, -debit.amount_nanos
+  from public.credit_ledger debit
+  left join public.gateway_realtime_sessions session
+    on session.session_id = case when strpos(debit.ref_id, ':confirmed:') > 0
+      then left(debit.ref_id, strpos(debit.ref_id, ':confirmed:') - 1) else debit.ref_id end
+  where debit.workspace_id = p_workspace_id
+    and debit.ref_type = 'realtime_session'
+    and debit.amount_nanos < 0
+    and debit.created_at >= coalesce(p_since, '-infinity'::timestamptz)
+    and (p_key_ids is null or session.key_id = any (p_key_ids))
+  union all
+  select 'realtime'::text, session.session_id, coalesce(summary.key_id, session.key_id),
+    coalesce(session.ended_at, session.started_at), summary.cost_nanos - coalesce(session.captured_nanos, 0)
+  from public.gateway_realtime_sessions session
+  join public.gateway_requests summary
+    on summary.realtime_session_id = session.session_id
+    and summary.created_at = session.started_at
+  where session.workspace_id = p_workspace_id
+    and coalesce(session.ended_at, session.started_at) >= coalesce(p_since, '-infinity'::timestamptz)
+    and summary.workspace_id = p_workspace_id
+    and summary.cost_nanos > coalesce(session.captured_nanos, 0)
+    and (p_key_ids is null or coalesce(summary.key_id, session.key_id) = any (p_key_ids))
+  union all
   select 'unpaid'::text, owed.billing_request_id, owed.key_id, owed.at, owed.nanos
   from (
     select pending.billing_request_id, pending.key_id, pending.at,
@@ -192,7 +226,7 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
   where owed.nanos > 0;
 $function$;
 
-COMMENT ON FUNCTION "private"."unbilled_spend"(uuid, timestamp with time zone, uuid[], text[], text[]) IS 'Spend counted toward budgets and key caps from money movements, each at its time: adjustment ledger rows of requests charged in steps, one-off charges whose request row has not landed or is pending reconciliation (or what failure rows that under-record a charge fall short of it), batch debits, and what a delivered request with an expected bill has not had counted (its applied charge, or else the cost of its own rows). Charge rows the SpendLimit Durable Object holds are excluded by billing request id, request rows by request id.';
+COMMENT ON FUNCTION "private"."unbilled_spend"(uuid, timestamp with time zone, uuid[], text[], text[]) IS 'Spend counted toward budgets and key caps from money movements, each at its time: adjustment ledger rows of requests charged in steps, one-off charges whose request row has not landed or is pending reconciliation (or what failure rows that under-record a charge fall short of it), batch debits, realtime session debits (and what a session''s summary cost exceeds them by, at the summary row''s time), and what a delivered request with an expected bill has not had counted (its applied charge, or else the cost of its own rows). Charge rows the SpendLimit Durable Object holds are excluded by billing request id, request rows by request id.';
 
 REVOKE ALL ON FUNCTION "private"."unbilled_spend"(uuid, timestamp with time zone, uuid[], text[], text[]) FROM PUBLIC;
 

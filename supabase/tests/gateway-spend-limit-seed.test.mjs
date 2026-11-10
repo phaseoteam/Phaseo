@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { installCatalogPolicyContext } from './fixtures/catalog-policy-context.mjs';
+import { REALTIME_STANDINS } from './fixtures/unbilled-spend.mjs';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
 // The spend-limit seed must count exactly what the request-context key-limit check counts.
@@ -79,13 +80,15 @@ try {
   assert.ok(usageMigration.indexOf(dropOldSeed) >= 0 && usageMigration.indexOf(dropOldSeed) < usageMigration.indexOf('CREATE OR REPLACE FUNCTION public.gateway_spend_limit_seed'),
     'the old seed signature is dropped before the new one is created');
   await db.exec(dropOldSeed);
+  await db.exec(REALTIME_STANDINS);
   for (const path of ['private/functions/unbilled_spend.sql', 'private/functions/key_spend_items.sql', 'private/functions/budget_spend_items.sql', 'private/functions/department_budget_usage.sql',
     'private/functions/workspace_budget_status.sql', 'public/functions/gateway_workspace_budget_status.sql', 'public/functions/gateway_spend_limit_seed.sql',
     'public/functions/workspace_department_budget_status.sql']) {
     const definition = (await schema(path)).trim();
-    // unbilled_spend was replaced again by a function-only migration after the usage migration.
-    const carrier = path === 'private/functions/unbilled_spend.sql'
-      ? await readFile(new URL('../migrations/20261110181832_unbilled_spend_counts_under_recorded_charges.sql', import.meta.url), 'utf8')
+    // These three were replaced again by function-only migrations after the usage migration; the
+    // latest (realtime spend at debit time) carries all three.
+    const carrier = ['private/functions/unbilled_spend.sql', 'private/functions/key_spend_items.sql', 'private/functions/budget_spend_items.sql'].includes(path)
+      ? await readFile(new URL('../migrations/20261110182228_realtime_spend_counts_at_debit_time.sql', import.meta.url), 'utf8')
       : usageMigration;
     assert.ok(carrier.includes(definition), `${path} matches its migration`);
     await db.exec(definition);

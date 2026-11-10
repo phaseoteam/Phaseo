@@ -266,6 +266,41 @@ describe("main's spend-limit coordinator on the v1 seed", () => {
 		expect(await counters(ws)).toEqual(exactly(600, 1));
 	});
 
+	it.each([
+		{ shape: "started before UTC midnight, settled today", startedToday: false, debits: [900], cost: 900, total: 900 },
+		{ shape: "started before UTC midnight, confirmed at billing review, then settled", startedToday: false, debits: [400, 500], cost: 900, total: 900 },
+		{ shape: "started before UTC midnight, 300 of it uncollected", startedToday: false, debits: [600], cost: 900, total: 900 },
+		{ shape: "started and settled today", startedToday: true, debits: [900], cost: 900, total: 900 },
+	])("a realtime session $shape counts today at its debits", async ({ startedToday, debits, cost, total }) => {
+		// gateway_realtime_settle_once dates the summary row when the session started and debits the
+		// wallet (credit_ledger realtime_session) when it settles; billing review captures the
+		// confirmed part first (<session>:confirmed:<n>). Today's limits count what moved today.
+		const ws = await workspace();
+		const session = `rt-${ws.workspace.slice(-4)}`;
+		startCoordinator();
+		expect(await counters(ws)).toEqual(exactly(0));
+		const started = startedToday ? "now() - interval '1 minute'" : "date_trunc('day', now() at time zone 'utc') at time zone 'utc' - interval '10 minutes'";
+		await db.query(`insert into public.gateway_realtime_sessions (workspace_id, session_id, key_id, captured_nanos, started_at, ended_at)
+			values ($1, $2, $3, $4, ${started}, now())`, [ws.workspace, session, ws.key, debits.reduce((sum, nanos) => sum + nanos, 0)]);
+		await db.query(`insert into public.gateway_requests (workspace_id, request_id, key_id, success, cost_nanos, realtime_session_id, created_at)
+			select $1, 'rtreq-' || $2, $3, true, $4, $2, started_at from public.gateway_realtime_sessions where session_id = $2`, [ws.workspace, session, ws.key, cost]);
+		let captured = 0;
+		for (const [index, nanos] of debits.entries()) {
+			captured += nanos;
+			const refId = index < debits.length - 1 ? `${session}:confirmed:${captured}` : session;
+			await db.query(`insert into public.credit_ledger (workspace_id, kind, amount_nanos, ref_type, ref_id, status)
+				values ($1, 'charge', $2, 'realtime_session', $3, 'captured')`, [ws.workspace, -nanos, refId]);
+		}
+		// The session was admitted yesterday unless it started today: its request counts then.
+		const today = exactly(total, startedToday ? 1 : 0);
+		await coordinator.reseedNow();
+		expect(await counters(ws)).toEqual(today);
+		await coordinator.reseedNow();
+		expect(await counters(ws)).toEqual(today);
+		startCoordinator();
+		expect(await counters(ws)).toEqual(today);
+	});
+
 	it("a one-off debit of 600 whose failure audit row keeps cost_nanos 600 counts 600 once, through reseeds and a restart", async () => {
 		const ws = await workspace();
 		startCoordinator();

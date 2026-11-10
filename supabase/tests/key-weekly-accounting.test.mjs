@@ -30,6 +30,7 @@ try {
       language sql as $$ select 'charge', 'b1', '${KEY}'::uuid, '2026-09-30'::timestamptz, 4::bigint
         where p_workspace_id = '${WS}' and '${KEY}' = any (p_key_ids) and '2026-09-30' >= p_since $$;`);
   await db.exec(await readFile(new URL('../migrations/20261110140719_billing_cutoffs.sql', import.meta.url), 'utf8'));
+  await db.exec((await import('./fixtures/unbilled-spend.mjs')).REALTIME_STANDINS);
   await db.exec(await schema('private/functions/key_spend_items.sql'));
   for (const path of ['private/functions/gateway_context_access.sql', 'public/functions/gateway_fetch_request_context_without_workspace_budget.sql']) {
     const source = await schema(path);

@@ -30,8 +30,8 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
   --   its partial index, except excluded request ids, the batch_hold_usage rows of a hold that
   --   is still active, which the hold itself counts, and rows whose money movements replace them
   --   (private.unbilled_spend counts the movements): a request charged in steps, a failure row
-  --   pending reconciliation whose charge was applied, a debited batch's batch_usage rows and a
-  --   settled hold's placeholders. Each is decided per row with index lookups
+  --   pending reconciliation whose charge was applied, a debited batch's batch_usage rows, a
+  --   settled hold's placeholders and a realtime session's summary row. Each is decided per row with index lookups
   --   (credit_ledger_source_ref_idx, the gateway_request_charges and reservation primary keys),
   --   with no assumption about when the row landed.
   -- * Active holds (held or reserved), in every period until they end: video and free-model
@@ -53,6 +53,8 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     and request.cost_nanos > 0
     and request.created_at >= coalesce(p_since, '-infinity'::timestamptz)
     and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
+    -- A realtime session's summary row: its debits count, each at its time (private.unbilled_spend).
+    and request.realtime_session_id is null
     and not (request.request_id like 'batch_hold_usage:%' and exists (
       select 1 from public.gateway_wallet_reservations hold
       where hold.workspace_id = request.workspace_id
@@ -110,6 +112,7 @@ CREATE OR REPLACE FUNCTION private.budget_spend_items (
     and request.cost_nanos > 0
     and request.created_at >= coalesce(p_since, '-infinity'::timestamptz)
     and not (request.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
+    and request.realtime_session_id is null
     -- A debited video's audit row.
     and not (request.endpoint = 'video.generation' and exists (
         select 1 from public.credit_ledger debit

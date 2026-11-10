@@ -23,7 +23,8 @@ CREATE OR REPLACE FUNCTION private.key_spend_items (
   -- * Successful requests: a request each, and their cost unless money movements replace it.
   -- * Charged requests that did not succeed: cost only, unless movements replace it.
   -- Movements replace a row charged in steps, a row pending reconciliation with an applied charge,
-  -- a debited batch's batch_usage rows and a settled hold's placeholders (private.unbilled_spend).
+  -- a debited batch's batch_usage rows, a settled hold's placeholders and a realtime session's
+  -- summary row, which still counts as its request (private.unbilled_spend).
   -- * Money movements (private.unbilled_spend), cost only, each at its time.
   -- The replacement checks are the same as private.budget_spend_items', per row through index
   -- lookups.
@@ -64,6 +65,8 @@ CREATE OR REPLACE FUNCTION private.key_spend_items (
         where hold.workspace_id = served.workspace_id
           and hold.reservation_id = regexp_replace(substr(served.request_id, 18), ':[^:]*$', '')
           and hold.status not in ('held', 'reserved')))
+      -- A realtime session's summary row: its debits count, each at its time.
+      or served.realtime_session_id is not null
     then 0 else coalesce(served.cost_nanos, 0) end
   from public.gateway_requests served
   where served.key_id = any (p_key_ids)
@@ -80,6 +83,7 @@ CREATE OR REPLACE FUNCTION private.key_spend_items (
     and charged.cost_nanos > 0
     and charged.created_at >= coalesce(p_since, '-infinity'::timestamptz)
     and not (charged.request_id = any (coalesce(p_exclude_request_ids, '{}'::text[])))
+    and charged.realtime_session_id is null
     and not (charged.endpoint = 'video.generation' and exists (
         select 1 from public.credit_ledger debit
         where debit.ref_type = 'async_job_charge'
