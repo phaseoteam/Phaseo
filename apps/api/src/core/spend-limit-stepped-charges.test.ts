@@ -3,9 +3,9 @@ import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 // A stream charged at drain checkpoints, on the real seed SQL. The seed counts its wallet movements
 // (the adjustment ledger rows gateway_charge_request_total writes, each at its time) until its
-// request row lands, except while the coordinator holds its admission and lists its billing id. A
-// coordinator that holds nothing, fresh or restarted, therefore counts it exactly once from the
-// database.
+// request row lands, except when a seed call lists its billing id. A coordinator that holds
+// nothing, fresh or restarted, therefore counts it exactly once from the database. The seed is
+// called as main's coordinator calls it (contract version 1).
 const runtime = vi.hoisted(() => ({ bindings: null as Record<string, unknown> | null, background: [] as Promise<unknown>[] }));
 
 vi.mock("cloudflare:workers", () => ({
@@ -41,7 +41,7 @@ class SeededSpendLimitDurableObject extends SpendLimitDurableObject {
 		seedCalls.push([...exclude]);
 		await db.exec("set role service_role");
 		try {
-			const seed = (await db.query("select public.gateway_spend_limit_seed($1, $2::uuid[], $3::text[], 2) as seed", [workspaceId, keyIds, exclude])).rows[0].seed;
+			const seed = (await db.query("select public.gateway_spend_limit_seed($1, $2::uuid[], $3::text[]) as seed", [workspaceId, keyIds, exclude])).rows[0].seed;
 			seeds.push(seed);
 			return seed;
 		} finally {
@@ -124,8 +124,8 @@ describe("stepped stream charges in the spend-limit coordinator", () => {
 		expect(seeds.at(-1).budget_status.budgets[0].usage_nanos).toBe(6 * DOLLAR);
 		expect(seeds.at(-1).department_budgets[0].usage_nanos).toBe(6 * DOLLAR);
 		expect(seeds.at(-1)).not.toHaveProperty("stepped_charges");
-		// While a coordinator holds the admission it lists the request id and the billing id, and
-		// counts it from memory: the seed leaves the charge out. The request id alone does not.
+		// A seed call that lists the billing id leaves the charge out; the request id alone (all that
+		// main's coordinator lists) does not.
 		const seedWith = async (exclude: string[]) => (await db.query("select public.gateway_spend_limit_seed($1, $2::uuid[], $3::text[]) as seed",
 			[WORKSPACE, [KEY], exclude])).rows[0].seed;
 		const held = await seedWith([REQUEST_ID, BILLING_ID]);

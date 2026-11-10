@@ -89,7 +89,7 @@ const { authenticate } = await import("@pipeline/before/auth");
 
 class SeededSpendLimitDurableObject extends SpendLimitDurableObject {
 	protected override async loadSeed(workspaceId: string, keyIds: string[], exclude: string[]): Promise<any> {
-		return (await runtime.db!.query("select public.gateway_spend_limit_seed($1, $2::uuid[], $3::text[], 2) as seed", [workspaceId, keyIds, exclude])).rows[0].seed;
+		return (await runtime.db!.query("select public.gateway_spend_limit_seed($1, $2::uuid[], $3::text[]) as seed", [workspaceId, keyIds, exclude])).rows[0].seed;
 	}
 }
 function startCoordinator() {

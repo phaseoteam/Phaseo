@@ -34,7 +34,7 @@ class SeededSpendLimitDurableObject extends SpendLimitDurableObject {
 	protected override async loadSeed(workspaceId: string, keyIds: string[], exclude: string[]): Promise<any> {
 		await db.exec("set role service_role");
 		try {
-			const seed = (await db.query("select public.gateway_spend_limit_seed($1, $2::uuid[], $3::text[], 2) as seed", [workspaceId, keyIds, exclude])).rows[0].seed;
+			const seed = (await db.query("select public.gateway_spend_limit_seed($1, $2::uuid[], $3::text[]) as seed", [workspaceId, keyIds, exclude])).rows[0].seed;
 			seeds.push(seed);
 			return seed;
 		} finally {
