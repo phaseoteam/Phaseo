@@ -14,6 +14,7 @@ import type {
   ChatMessage,
   DataModel,
   FileResponse as FileObject,
+  GenerationResponse,
   ImagesEditRequest,
   ImagesEditResponse,
   ImagesGenerationRequest,
@@ -1723,10 +1724,10 @@ export class Phaseo {
     );
   }
 
-  async getGeneration(id: string): Promise<unknown> {
+  async getGeneration(id: string): Promise<GenerationResponse> {
     return this.telemetry.wrap(
       "generations.retrieve",
-      () => ops.getGeneration(this.client, { query: { id } as any }),
+      () => ops.getGeneration(this.client, { query: { id } }),
       () => ({ id }),
       extractGatewayMetadata
     );
