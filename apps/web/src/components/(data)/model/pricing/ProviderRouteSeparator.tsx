@@ -12,8 +12,8 @@ export function ProviderRouteSeparator({ colSpan, kind = "additional" }: { colSp
     const isExternal = kind === "external";
 
     return (
-        <TableRow className="bg-muted/40 hover:bg-muted/40">
-            <TableCell colSpan={colSpan} className="px-3 py-2 text-xs font-medium text-muted-foreground">
+        <TableRow className="bg-muted/40 hover:bg-muted/40 max-sm:block">
+            <TableCell colSpan={colSpan} className="px-3 py-2 text-xs font-medium text-muted-foreground max-sm:block">
                 <span className="inline-flex items-center gap-1.5">
                     {isExternal ? t("external") : t("additional")}
                     <HoverCard open={open} onOpenChange={setOpen}>

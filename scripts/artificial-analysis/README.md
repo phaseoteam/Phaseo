@@ -62,8 +62,12 @@ to [Artificial Analysis](https://artificialanalysis.ai/models).
 After deploying the schema migration, add `--write --match-db` to publish a fresh
 full snapshot. Saved HTML/data cannot be published. Each publication retains all
 source configurations, raw source records, provenance, and the source-to-catalogue
-mapping. The service-only `artificial_analysis_public_snapshots` table is append-only;
-the publisher validates identities and ownership, rejects stale methodology/data,
+mapping. The service-only `artificial_analysis_public_snapshots` table cannot be
+updated, and service-role callers cannot delete from it. A weekly pg_cron job
+(`private.prune_artificial_analysis_public_snapshots`) keeps the newest snapshot
+per major and methodology version plus every snapshot fetched in the last 14 days,
+and deletes the rest. The API import table `artificial_analysis_snapshots` is
+not pruned. The publisher validates identities and ownership, rejects stale methodology/data,
 and treats identical content as a no-op. The existing four-metric API import and
 its history remain separate. The existing hourly benchmark workflow runs this
 publisher in an independent job, alongside the core API import. Both jobs also
