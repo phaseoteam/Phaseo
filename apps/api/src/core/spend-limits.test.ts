@@ -187,7 +187,7 @@ describe("spend-limit coordinator", () => {
 		recordSpend(record);
 		await flush();
 		expect(await coordinator.record(WORKSPACE, { keyId: KEY, billingRequestId: "bill-1", requestId: "req-1", costNanos: 250, requests: 1 }))
-			.toEqual({ duplicates: 1, drainKeyIds: [], protocol: 2 });
+			.toEqual({ duplicates: 1, drainKeyIds: [], protocol: 2, applied: 1 });
 		const next = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: "req-2" });
 		expect(next.keyLimit?.buckets?.daily).toMatchObject({ requestsUsed: 1, costUsedNanos: 250 });
 	});

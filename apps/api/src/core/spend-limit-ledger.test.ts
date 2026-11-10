@@ -377,4 +377,56 @@ describe("held-spend ledger", () => {
 		expect((await probe())?.daily.costUsedNanos).toBeGreaterThanOrEqual(300);
 		expect(heldRequests()).toBeGreaterThanOrEqual(grant.lease.requests ?? 0);
 	});
+
+	it("uses remembered totals after the seen ids have forgotten the id", () => {
+		const ledger = new HeldSpend();
+		let now = Date.now();
+		const record = (id: string, cost: number, replace: boolean) => ledger.record({
+			keyId: KEY, billingRequestId: id, requestId: `req-${id}`, costNanos: cost, requests: 0, ...(replace ? { replace: true, revision: 2 } : {}),
+		}, now);
+		record("replay-churn", 300, true);
+		now += SPEND_LEASE.pendingTtlMs + 1;
+		ledger.markStale(now);
+		ledger.publish(ledger.beginRead(), new Set(), new Set());
+		record("replay-churn", 400, true);
+		for (let n = 0; n < MAX_HANDOFF_ENTRIES; n += 1) {
+			ledger.entries.set(`filler-${n}`, {
+				billingRequestId: `filler-${n}`, requestId: `req-fill-${n}`, keyId: KEY, at: now, costAt: now, requestsAt: now, recordedAt: now + 1,
+				cost: { total: 0, base: 0, seq: 1 }, requests: { total: 0, base: 0, seq: 1 }, phase: "handoff",
+			});
+		}
+		ledger.enforceBounds();
+		expect(ledger.cost(null)).toBe(100);
+		expect(ledger.remembered.get("replay-churn")).toMatchObject({ cost: 400 });
+		// 50,001 zero-cost records push the id out of the seen ids.
+		for (let n = 0; n < 50_001; n += 1) {
+			record(`zero-${n}`, 0, false);
+			if (n % 100 === 99) ledger.enforceBounds();
+		}
+		now += 1;
+		record("replay-churn", 400, true);
+		ledger.enforceBounds();
+		expect(ledger.cost(null)).toBe(100);
+	});
+
+	it.each([
+		["day", "daily", "2026-10-09T23:59:50Z", "2026-10-10T00:00:10Z"],
+		["week", "weekly", "2026-10-11T23:59:50Z", "2026-10-12T00:00:10Z"],
+		["month", "monthly", "2026-10-31T23:59:50Z", "2026-11-01T00:00:10Z"],
+	] as const)("counts a same-cost successful final's cost in its new %s until a seed covers it", async (_label, window, before, after) => {
+		vi.setSystemTime(new Date(before));
+		await probe();
+		database.charges.push({ billingId: "boundary-cost", keyId: KEY, total: 300, at: Date.now() });
+		await stepped("boundary-cost", 300, { requests: 0 });
+		vi.setSystemTime(new Date(after));
+		// During the new period's seed read, the success row (carrying the $3) lands and the final arrives.
+		database.afterRead = async () => {
+			database.afterRead = null;
+			database.rows.push({ requestId: "req-boundary-cost", billingId: "boundary-cost", keyId: KEY, success: true, cost: 300, createdAt: Date.now() });
+			await stepped("boundary-cost", 300, { final: true, requests: 1 });
+		};
+		await reseed();
+		// The read that missed the row cannot take the cost over: it counts in the new period.
+		expect((await probe())?.[window].costUsedNanos).toBeGreaterThanOrEqual(300);
+	});
 });

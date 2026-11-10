@@ -38,7 +38,11 @@
 //      their newest addition; additions after a read started go to a new segment.
 //  I10. Folding an entry into the aggregate records the totals it represents (remembered totals), so a
 //      replayed record of the same totals adds nothing; only an increase over them is counted again.
-//      Remembered totals are forgotten least recently used first (a lookup refreshes them).
+//      Remembered totals are forgotten least recently used first (a lookup refreshes them), and are
+//      consulted whether or not the id is still among the seen ids.
+//  I11. A final record changes both parts (fresh sequences, settlement windows at its arrival), even
+//      when their totals are equal: its success row may be missing from a read already started, and
+//      the cost that row carries counts in the final's window until a covering seed takes it over.
 
 import { SPEND_LEASE, windowStarts, type SpendRecordEntry } from "@core/spend-limits.shared";
 
@@ -148,12 +152,21 @@ export class HeldSpend {
 			}
 			if (existing.cost.total > before) existing.costAt = now;
 			if (existing.requests.total > requestsWas) existing.requestsAt = now;
+			if (final) {
+				// I11: a final changes both parts, equal totals included (its success row may be missing
+				// from a read already started, and it settles in its own window).
+				existing.cost.seq = this.next();
+				existing.requests.seq = this.next();
+				existing.costAt = now;
+				existing.requestsAt = now;
+			}
 			if (final) existing.stepped.final = true;
 			existing.recordedAt = now;
 			outcome.changed = final || existing.cost.total !== before;
 			outcome.consumedDelta = existing.cost.total - before;
-		} else if (this.seen.has(id)) {
-			// Already taken over (or folded, or retired): only a replacement record can report more.
+		} else if (this.seen.has(id) || this.remembered.has(id)) {
+			// Already taken over (or folded, or retired; remembered totals outlive the bounded seen ids):
+			// only a replacement record can report more.
 			if (!replace) return outcome;
 			const known = this.remembered.get(id);
 			if (known && known.keyId !== record.keyId) return outcome;

@@ -38,7 +38,8 @@ export class FakeDatabase {
 	chargeCost(keyIds: string[] | null, start: number | null, exclude: string[]): { cost: number; requests: number } {
 		const now = Date.now();
 		const audited = new Set(this.rows.filter((row) => row.billingId && row.success && row.createdAt <= now).map((row) => row.billingId));
-		const rows = this.charges.filter((row) => (keyIds === null || keyIds.includes(row.keyId)) && !exclude.includes(row.billingId) &&
+		const excluded = new Set(exclude);
+		const rows = this.charges.filter((row) => (keyIds === null || keyIds.includes(row.keyId)) && !excluded.has(row.billingId) &&
 			!audited.has(row.billingId) && (start === null || row.at >= start) && row.at <= now);
 		// Charges are spend, not successful requests: requests come from successful request rows only.
 		return { cost: rows.reduce((sum, row) => sum + row.total, 0), requests: 0 };

@@ -147,4 +147,6 @@ export type SpendRecordResult = {
 	drainKeyIds: string[];
 	/** The coordinator's record protocol (absent: protocol 1). */
 	protocol?: number;
+	/** How many of the records sent it applied, in order (absent: all of them, at most 100). */
+	applied?: number;
 };

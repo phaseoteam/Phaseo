@@ -385,7 +385,7 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 		// A seed that excludes new entries is loaded at once when they may already be in the seed in use,
 		// or when the held ids reach the seed's limit.
 		if (this.seed && (awaitingSeed || this.held.heldIdCount() >= SPEND_LEASE.maxExcludedRequestIds)) this.reseedInBackground();
-		return { duplicates, drainKeyIds: [...drainKeyIds], protocol: SPEND_LIMIT_RECORD_PROTOCOL };
+		return { duplicates, drainKeyIds: [...drainKeyIds], protocol: SPEND_LIMIT_RECORD_PROTOCOL, applied: list.length };
 	}
 
 	private recordOne(entry: SpendRecordEntry, now: number) {
