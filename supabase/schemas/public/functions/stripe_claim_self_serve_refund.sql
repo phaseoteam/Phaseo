@@ -161,6 +161,13 @@ begin
     --    1. leaves its rows out); otherwise its rows' own cost, which 1. counts.
     --    Per billing request id, or request id without one, as the budget
     --    readers do (private.unbilled_spend).
+    -- 7. Every other debit taken from credits (a captured 'charge' ledger row):
+    --    Phaseo Connect months, Slack agent months, and any product that later
+    --    charges the wallet directly, at their debit time. Left out are the
+    --    debits counted above: async_job_charge (5.) and realtime_session, whose
+    --    session cost is written to its gateway_requests row (1.). Stepped
+    --    charges are 'adjustment' rows (2.); refunds and chargebacks are not
+    --    usage.
     -- Pending reconciliation: expected_cost_nanos is set or, for rows written
     -- before private.pending_json_cutoff() (the deploy's marker: from then on
     -- every pending row carries the column), the audit's
@@ -275,6 +282,17 @@ begin
         and (starts_with(debit.ref_id, p_team_id::text || ':batch_hold:')
           or starts_with(debit.ref_id, p_team_id::text || ':video_hold:'))
         and debit.amount_nanos < 0
+        and debit.created_at >= v_purchase.event_time
+    ), 0)::bigint;
+
+    v_usage_nanos := v_usage_nanos + coalesce((
+      select -sum(debit.amount_nanos)
+      from public.credit_ledger debit
+      where debit.workspace_id = p_team_id
+        and debit.kind = 'charge'
+        and debit.status = 'captured'
+        and debit.amount_nanos < 0
+        and debit.ref_type not in ('async_job_charge', 'realtime_session')
         and debit.created_at >= v_purchase.event_time
     ), 0)::bigint;
 

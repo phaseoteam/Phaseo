@@ -7,7 +7,8 @@
 // A charge recorded by both a charge row and its request row (billing_request_id) is counted once.
 // A one-off charge whose request rows under-record it (a Worker older than the lost-charge fix wrote
 // a failure after the debit with no cost) counts what they fall short of it
-// (refund_claim_counts_under_recorded_charges).
+// (refund_claim_counts_under_recorded_charges). Debits taken from credits directly, such as Phaseo
+// Connect and Slack agent months, count at their debit time (refund_claim_counts_product_debits).
 // Runs the claim on the body shipped by 20261104193047_billing_security_fixes first, then on the
 // real migration. Install @electric-sql/pglite@0.5.8 in a temporary directory and set PGLITE_MODULE
 // to its dist/index.js file URL. Run: node supabase/tests/refund-claim-charged-failures.test.mjs
@@ -34,6 +35,11 @@ const settlement = await findMigration('_async_settlement_always_charges.sql');
 const migration = await findMigration('_refund_claim_counts_charged_failures.sql');
 const billingIndex = await findMigration('_gateway_requests_billing_request_index.sql');
 const underRecorded = await findMigration('_refund_claim_counts_under_recorded_charges.sql');
+const productDebits = await findMigration('_refund_claim_counts_product_debits.sql');
+assert(productDebits.name > underRecorded.name, 'the product debit migration runs after the shortfall migration');
+assert(productDebits.sql.startsWith("SET LOCAL lock_timeout = '10s';\n"), 'the product debit migration starts with the lock timeout');
+assert(!/\b(alter|lock)\s+table\b|\bcreate\s+(unique\s+)?index\b/i.test(productDebits.sql.replace(/--.*$/gm, '')),
+  'the product debit migration changes functions only');
 assert(underRecorded.name > billingIndex.name, 'the shortfall migration runs after the index it reads through');
 assert(underRecorded.sql.startsWith("SET LOCAL lock_timeout = '10s';\n"), 'the shortfall migration starts with the lock timeout');
 assert(!/\b(alter|lock)\s+table\b|\bcreate\s+(unique\s+)?index\b/i.test(underRecorded.sql.replace(/--.*$/gm, '')),
@@ -69,12 +75,49 @@ const functionBody = (sql) => {
   return sql.slice(start, sql.indexOf('$function$', start + 10) + 10);
 };
 const schemaBody = functionBody(normalize(await read('../schemas/public/functions/stripe_claim_self_serve_refund.sql')));
-assert(schemaBody.length > 20 && underRecorded.sql.includes(schemaBody), 'the latest migration ships the schema body of stripe_claim_self_serve_refund');
+assert(schemaBody.length > 20 && productDebits.sql.includes(schemaBody), 'the latest migration ships the schema body of stripe_claim_self_serve_refund');
+const underRecordedBody = functionBody(underRecorded.sql);
 // The shortfall migration changes only the one-off charge term (step 3) of 20261110140727's body.
 const withoutOneOffTerm = (body) => body.replace(/^[ \t]*--.*\n/gm, '')
   .replace(/    v_usage_nanos := v_usage_nanos \+ coalesce\(\(\n      select sum\((?:charge\.cost_nanos\)|case)[\s\S]*?\n    \), 0\)::bigint;\n\n    v_usage_nanos := v_usage_nanos \+ coalesce\(\(\n      select sum\(charge\.cost_nanos\)\n      from public\.gateway_request_charges charge\n      where charge\.workspace_id = p_team_id\n        and charge\.status = 'applied'\n        and charge\.cost_nanos > 0\n        and charge\.created_at >= v_purchase\.event_time\n        and starts_with/, 'ONE_OFF_TERM starts_with');
-assert(withoutOneOffTerm(schemaBody).includes('ONE_OFF_TERM'), 'the one-off charge term was found');
-assert.equal(withoutOneOffTerm(schemaBody), withoutOneOffTerm(functionBody(migration.sql)), 'only the one-off charge term changed');
+assert(withoutOneOffTerm(underRecordedBody).includes('ONE_OFF_TERM'), 'the one-off charge term was found');
+assert.equal(withoutOneOffTerm(underRecordedBody), withoutOneOffTerm(functionBody(migration.sql)), 'only the one-off charge term changed');
+// The product debit migration adds one term (7.) to the shortfall body and changes nothing else.
+const PRODUCT_DEBIT_TERM = `    v_usage_nanos := v_usage_nanos + coalesce((
+      select -sum(debit.amount_nanos)
+      from public.credit_ledger debit
+      where debit.workspace_id = p_team_id
+        and debit.kind = 'charge'
+        and debit.status = 'captured'
+        and debit.amount_nanos < 0
+        and debit.ref_type not in ('async_job_charge', 'realtime_session')
+        and debit.created_at >= v_purchase.event_time
+    ), 0)::bigint;
+
+`;
+const withoutComments = (body) => body.replace(/^[ \t]*--.*\n/gm, '');
+assert(schemaBody.includes(PRODUCT_DEBIT_TERM), 'the product debit term is in the body');
+assert.equal(withoutComments(schemaBody).replace(PRODUCT_DEBIT_TERM, ''), withoutComments(underRecordedBody), 'only the product debit term was added');
+// Every schema function that debits credits with a 'charge' ledger row uses a ref_type the claim
+// has classified: counted by the product debit term, or counted elsewhere and left out of it. A new
+// product that charges the wallet must be classified here (and in the claim if it is counted
+// elsewhere), so a debit is neither missed nor counted twice.
+const CLASSIFIED_CHARGE_REF_TYPES = {
+  connect_month: 'product debit term (7.)',
+  slack_agent_month: 'product debit term (7.)',
+  async_job_charge: 'reserved batch and video debits (5.)',
+  realtime_session: 'its gateway_requests row (1.)',
+};
+const functionsDir = new URL('../schemas/public/functions/', import.meta.url);
+for (const file of (await readdir(functionsDir)).filter((name) => name.endsWith('.sql'))) {
+  const sql = await readFile(new URL(file, functionsDir), 'utf8');
+  for (const insert of sql.matchAll(/insert\s+into\s+public\.credit_ledger\b[\s\S]*?\bvalues\s*\(([\s\S]*?)\)\s*(?:on\s+conflict|returning|;)/gi)) {
+    if (!/'charge'/.test(insert[1])) continue;
+    const refTypes = [...insert[1].matchAll(/'([a-z_]+)'/g)].map((match) => match[1]).filter((value) => value !== 'charge' && value !== 'captured');
+    assert(refTypes.some((value) => value in CLASSIFIED_CHARGE_REF_TYPES),
+      `${file} debits credits with a 'charge' row whose ref_type (${refTypes.join(', ') || 'none found'}) the refund claim has not classified`);
+  }
+}
 assert(/charge\.cost_nanos - audit\.row_cost/.test(schemaBody) && /not audit\.succeeded and charge\.cost_nanos > audit\.row_cost/.test(schemaBody),
   'a one-off charge its unsuccessful, non-pending rows under-record counts the shortfall');
 assert(!schemaBody.includes('gr.success is true'), 'unsuccessful charged rows count as usage');
@@ -151,6 +194,31 @@ const usageAtSix = async (prefix, shape) => {
     return result.ok ? 'ok' : result.reason;
   };
   return [await run('below', usd(6) - 1), await run('at', usd(6))];
+};
+// A debit taken from credits directly, as charge_connect_month or charge_slack_agent_month writes it.
+const ledgerDebit = (refType, nanos, minutesAgo, refId = `${refType}:${minutesAgo}`) => db.query(
+  `insert into public.credit_ledger (workspace_id, kind, amount_nanos, before_balance_nanos, after_balance_nanos, ref_type, ref_id, source_ref_type, source_ref_id, status, created_at)
+   values ($1, 'charge', $2, 0, 0, $3, $4, 'product', $6, 'captured', now() - make_interval(mins => $5::int))`,
+  [ws, -nanos, refType, refId, minutesAgo, ws]);
+// Usage since a purchase of only what `shape` writes, measured like usageAtSix: ['lot_used', 'ok'] is exactly $6.
+const shapeUsageAtSix = async (prefix, shape) => {
+  const run = async (suffix, prior) => {
+    await reset();
+    await purchase(`${prefix}_${suffix}_first`, usd(10), prior, 3);
+    await shape();
+    await setBalance(prior + usd(10));
+    const result = await claim(`${prefix}_${suffix}_first`);
+    return result.ok ? 'ok' : result.reason;
+  };
+  return [await run('below', usd(6) - 1), await run('at', usd(6))];
+};
+// $0, top up $10, pay $1 for Connect, top up $10 more; the wallet holds $19.
+const connectScenario = async (prefix) => {
+  await reset();
+  await purchase(`${prefix}_first`, usd(10), 0, 3);
+  await ledgerDebit('connect_month', usd(1), 120, `${prefix}:2026-10`);
+  await purchase(`${prefix}_second`, usd(10), usd(9), 1);
+  await setBalance(usd(19));
 };
 const underRecordedShapes = {
   // An old Worker: debited $6, then a failure row with no cost, billing_status 'recorded'.
@@ -229,6 +297,14 @@ try {
     'before the fix a failure row carrying $2 hides the other $4');
   await db.exec(underRecorded.sql);
   await db.exec(underRecorded.sql);
+
+  // ---------- Before the product debit term (20261110140729's body) ----------
+  // Sol's repro: $0, top up $10, pay $1 for Connect, top up $10. The $1 debit was not usage, so the
+  // first top-up was refunded as unused.
+  await connectScenario('pre_connect');
+  assert.equal((await claim('pre_connect_first')).ok, true, 'before the fix a Connect debit is not usage of the purchase');
+  await db.exec(productDebits.sql);
+  await db.exec(productDebits.sql);
 
   // ---------- After the fix ----------
   // $5 spent through charged cancellations uses the first purchase.
@@ -560,7 +636,31 @@ try {
   assert.equal((await claim('old_worker_refund_first')).reason, 'lot_used', 'the spent top-up is not refunded');
   assert.equal(await balance(), usd(10));
 
-  console.log(JSON.stringify({ passed: true, migration: underRecorded.name }));
+  // ---------- Debits taken from credits directly ----------
+  // Sol's repro: the $1 Connect debit uses the first top-up, so it is not refunded ...
+  await connectScenario('connect');
+  assert.equal((await claim('connect_first')).reason, 'lot_used', 'a Connect debit after the purchase is usage of it');
+  assert.equal(await balance(), usd(19), 'nothing is refunded');
+  // ... and the second top-up, with nothing used since, still is.
+  assert.equal((await claim('connect_second')).ok, true, 'the later purchase is still refundable');
+  // A Connect debit before the purchase does not use it.
+  await reset();
+  await ledgerDebit('connect_month', usd(1), 240, 'connect_before:2026-09');
+  await purchase('connect_before_first', usd(10), 0, 3);
+  await setBalance(usd(10));
+  assert.equal((await claim('connect_before_first')).ok, true, 'a Connect debit before the purchase does not use it');
+  // Counted once, by its debit: a $6 Slack agent month is exactly $6 of usage.
+  assert.deepEqual(await shapeUsageAtSix('slack', () => ledgerDebit('slack_agent_month', usd(6), 60)), ['lot_used', 'ok'],
+    'a Slack agent month counts its debit');
+  // A realtime session is counted by its gateway_requests row (its cost is written there), not again
+  // by its realtime_session debit: $6, not $12.
+  assert.deepEqual(await shapeUsageAtSix('realtime', async () => {
+    await ledgerDebit('realtime_session', usd(6), 60);
+    await db.query(`insert into public.gateway_requests (workspace_id, success, cost_nanos, created_at, request_id)
+      values ($1, true, $2, now() - interval '1 hour', 'realtime_req')`, [ws, usd(6)]);
+  }), ['lot_used', 'ok'], 'a realtime session counts once');
+
+  console.log(JSON.stringify({ passed: true, migration: productDebits.name }));
 } finally {
   await db.close();
 }
