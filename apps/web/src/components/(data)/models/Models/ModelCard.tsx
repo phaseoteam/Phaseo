@@ -59,6 +59,9 @@ import {
 import {
 	HoverCard,
 	HoverCardContent,
+	HoverCardHeader,
+	HoverCardRows,
+	HoverCardStat,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -351,48 +354,6 @@ function inferPriceUnitFromModality(modalityKey: string): string | null {
 	return null;
 }
 
-function summarizePricingValues(
-	values: string[],
-	formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string,
-): string | null {
-	const parsed = values
-		.map((value) => {
-			const match = value.match(/^\$([\d.,]+)(?:-\$?([\d.,]+))?\s*\/\s*(.+)$/);
-			if (!match) return null;
-			const min = Number(match[1]?.replace(/,/g, ""));
-			const max = Number((match[2] ?? match[1])?.replace(/,/g, ""));
-			const unit = match[3]?.trim();
-			if (!Number.isFinite(min) || !Number.isFinite(max) || !unit) return null;
-			return { min, max, unit };
-		})
-		.filter((entry): entry is { min: number; max: number; unit: string } => Boolean(entry));
-	if (parsed.length === 0) return null;
-	const unit = parsed[0]?.unit ?? null;
-	if (!unit || parsed.some((entry) => entry.unit !== unit)) return null;
-	const min = Math.min(...parsed.map((entry) => entry.min));
-	const max = Math.max(...parsed.map((entry) => entry.max));
-	const minText = formatPrice(min, formatNumber, { allowZero: true });
-	const maxText = formatPrice(max, formatNumber, { allowZero: true });
-	if (!minText || !maxText) return null;
-	return min === max ? `${minText} / ${unit}` : `${minText}-${maxText} / ${unit}`;
-}
-
-function summarizeDuplicatePricingItems(
-	items: Array<{ value: string }>,
-	formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string,
-): string | null {
-	const uniqueValues = Array.from(
-		new Set(
-			items
-				.map((item) => String(item.value ?? "").trim())
-				.filter(Boolean),
-		),
-	);
-	if (uniqueValues.length === 0) return null;
-	if (uniqueValues.length === 1) return uniqueValues[0] ?? null;
-	return summarizePricingValues(uniqueValues, formatNumber);
-}
-
 function ModelCardScrollRail({
 	ariaLabel,
 	children,
@@ -468,6 +429,7 @@ function ModelCardImpl({
 	const tAuditCopy = useTranslations();
 	const t = useTranslations("Catalogue.models");
 	const tDetail = useTranslations("Catalogue.modelDetail");
+	const tCard = useTranslations("Catalogue.hoverCards");
 	const tProviderStatus = useTranslations(
 		"Catalogue.modelDetail.providerTable.statuses",
 	);
@@ -933,56 +895,6 @@ function ModelCardImpl({
 			},
 		];
 	}
-	const pricingDetailGroups = pricingDetailRows.reduce<
-		Array<{
-			id: string;
-			baseLabel: string;
-			items: Array<{ id: string; label: string; value: string; variant: string | null }>;
-		}>
-	>((groups, row) => {
-		const match = row.label.match(/^(.*?)(?: \((.+)\))?$/);
-		const baseLabel = match?.[1]?.trim() || row.label;
-		const variant = match?.[2]?.trim() || null;
-		const existingGroup = groups.find((group) => group.baseLabel === baseLabel);
-		if (existingGroup) {
-			existingGroup.items.push({
-				id: row.id,
-				label: row.label,
-				value: row.value,
-				variant,
-			});
-			return groups;
-		}
-		groups.push({
-			id: row.id,
-			baseLabel,
-			items: [
-				{
-					id: row.id,
-					label: row.label,
-					value: row.value,
-					variant,
-				},
-			],
-		});
-		return groups;
-	}, []);
-	const getVideoAudioGroup = (variant: string | null) => {
-		if (!variant) return { heading: null, detail: null as string | null };
-		if (variant.endsWith(", with audio")) {
-			return {
-				heading: "With audio",
-				detail: variant.slice(0, -", with audio".length) || null,
-			};
-		}
-		if (variant.endsWith(", no audio")) {
-			return {
-				heading: "No audio",
-				detail: variant.slice(0, -", no audio".length) || null,
-			};
-		}
-		return { heading: null, detail: variant };
-	};
 	const formatModalities = (values: string[]) => {
 		const unique = sortModalitiesForDisplay(Array.from(
 			new Set(values.map((value) => String(value ?? "").trim()).filter(Boolean)),
@@ -1161,10 +1073,11 @@ function ModelCardImpl({
 						)) : <Link href={`${modelHref}/pricing`} className="rounded-md border border-border/60 px-2 py-1 underline underline-offset-2">{t("pricing")}</Link>) : null}
 						{!dualDecisionsModel && pillValue ? (
 							pricingDetailRows.length > 0 ? (
-								<HoverCard openDelay={120} closeDelay={100}>
+								<HoverCard>
 									<HoverCardTrigger asChild>
-										<button
-											type="button"
+										<Link
+											href={`${modelHref}/pricing`}
+											prefetch={false}
 											data-no-row-nav="true"
 											className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1 text-left transition-colors hover:bg-muted/45"
 										>
@@ -1174,198 +1087,35 @@ function ModelCardImpl({
 											<span className="font-medium tabular-nums text-foreground">
 												{pillValue}
 											</span>
-										</button>
+										</Link>
 									</HoverCardTrigger>
-									<HoverCardContent
-										align="start"
-										className="max-h-96 w-fit min-w-[13rem] max-w-[22rem] overflow-y-auto p-3"
-									>
-										{headlineSummary ? (
-											<div className="space-y-2 text-xs">
-												<div className="flex items-center justify-between gap-4">
-													<span className="flex items-center gap-2 font-medium text-foreground">
-														{pricingProviderId && pricingProviderName ? (
-															<span className="relative h-4 w-4 shrink-0 rounded-[4px] border bg-background">
-																<Logo
-																	id={resolveProviderLogoId({ providerId: pricingProviderId })}
-																	alt={pricingProviderName}
-																	className="object-contain p-[1px]"
-																	fill
-																/>
-															</span>
-														) : null}
-														{t("pricing")}
-													</span>
-													{pricingProviderName ? (
-														<span className="truncate text-muted-foreground">{pricingProviderName}</span>
-													) : null}
-												</div>
-												{pricingDetailGroups.map((group) =>
-													group.items.some((item) => item.variant) ? (
-														// One price per variant (resolution, audio, quality)
-														// under the meter it applies to.
-														<div key={group.id} className="space-y-1">
-															<div className="font-medium text-foreground">{group.baseLabel}</div>
-															{group.items.map((item) => (
-																<div key={item.id} className="flex items-baseline justify-between gap-4 pl-2">
-																	<span className="text-muted-foreground">{item.variant ?? item.label}</span>
-																	<span className="shrink-0 tabular-nums text-foreground">{item.value}</span>
-																</div>
-															))}
-														</div>
-													) : (
-														group.items.map((item) => (
-															<div key={item.id} className="flex items-baseline justify-between gap-4">
-																<span className="text-muted-foreground">{item.label}</span>
-																<span className="shrink-0 tabular-nums text-foreground">{item.value}</span>
-															</div>
-														))
-													),
-												)}
-											</div>
-										) : (
-										<div className="space-y-2">
-											{pricingDetailGroups.map((group) => {
-												const shouldGroupVariants =
-													group.items.length > 1 &&
-													group.items.every((item) => Boolean(item.variant));
-												const duplicateSummary =
-													!shouldGroupVariants && group.items.length > 1
-																? summarizeDuplicatePricingItems(group.items, format.number)
-														: null;
-												if (duplicateSummary) {
-													return (
-														<div key={group.id} className="space-y-0.5 text-xs">
-															<div className="font-semibold text-foreground">
-																{group.baseLabel}
-															</div>
-															<div className="text-muted-foreground">
-																{duplicateSummary}
-															</div>
-														</div>
-													);
-												}
-												if (!shouldGroupVariants) {
-													return group.items.map((item) => (
-														<div key={item.id} className="space-y-0.5 text-xs">
-															<div className="font-semibold text-foreground">
-																{item.label}
-															</div>
-															<div className="text-muted-foreground">{item.value}</div>
-														</div>
-													));
-												}
-												if (group.baseLabel === "Image Output" && group.items.length >= 3) {
-															const summarizedValue = summarizePricingValues(
-																group.items.map((item) => item.value),
-																format.number,
-															);
-													if (summarizedValue) {
-														return (
-															<div key={group.id} className="space-y-0.5 text-xs">
-																<div className="font-semibold text-foreground">
-																	{group.baseLabel}
-																</div>
-																<div className="text-muted-foreground">
-																	{summarizedValue}
-																</div>
-															</div>
-														);
-													}
-												}
-												if (group.baseLabel === "Video Output") {
-													const audioGroups = group.items.reduce<
-														Array<{
-															id: string;
-															heading: string | null;
-															items: Array<{ id: string; detail: string | null; value: string }>;
-														}>
-													>((acc, item) => {
-														const parsed = getVideoAudioGroup(item.variant);
-														const key = parsed.heading ?? "__default__";
-														const existing = acc.find(
-															(candidate) => (candidate.heading ?? "__default__") === key,
-														);
-														if (existing) {
-															existing.items.push({
-																id: item.id,
-																detail: parsed.detail,
-																value: item.value,
-															});
-															return acc;
-														}
-														acc.push({
-															id: item.id,
-															heading: parsed.heading,
-															items: [
-																{
-																	id: item.id,
-																	detail: parsed.detail,
-																	value: item.value,
-																},
-															],
-														});
-														return acc;
-													}, []);
-													return (
-														<div key={group.id} className="space-y-1.5 text-xs">
-															<div className="font-semibold text-foreground">
-																{group.baseLabel}
-															</div>
-															<div className="space-y-1.5">
-																{audioGroups.map((audioGroup) => (
-																	<div key={audioGroup.id} className="space-y-1">
-																		{audioGroup.heading ? (
-																			<div className="text-[11px] font-medium text-foreground/80">
-																				{audioGroup.heading}
-																			</div>
-																		) : null}
-																		<div className="space-y-1">
-																			{audioGroup.items.map((item) => (
-																				<div
-																					key={item.id}
-																					className="flex items-baseline justify-between gap-3"
-																				>
-																					<div className="text-muted-foreground">
-																						{item.detail ?? tAuditCopy("Catalogue.models.detail.quickstart.tierStandard")}
-																					</div>
-																					<div className="shrink-0 text-muted-foreground">
-																						{item.value}
-																					</div>
-																				</div>
-																			))}
-																		</div>
-																	</div>
-																))}
-															</div>
-														</div>
-													);
-												}
-												return (
-													<div key={group.id} className="space-y-1 text-xs">
-														<div className="font-semibold text-foreground">
-															{group.baseLabel}
-														</div>
-														<div className="space-y-1">
-															{group.items.map((item) => (
-																<div
-																	key={item.id}
-																	className="flex items-baseline justify-between gap-3"
-																>
-																	<div className="text-muted-foreground">
-																		{item.variant}
-																	</div>
-																	<div className="shrink-0 text-muted-foreground">
-																		{item.value}
-																	</div>
-																</div>
-															))}
-														</div>
-													</div>
-												);
-											})}
-										</div>
-										)}
+									<HoverCardContent align="start" className="max-h-96 w-72 space-y-2.5 overflow-y-auto">
+										<HoverCardHeader
+											icon={pricingProviderId && pricingProviderName ? (
+												<span className="relative block h-4 w-4 shrink-0 rounded-[4px] border bg-background">
+													<Logo
+														id={resolveProviderLogoId({ providerId: pricingProviderId })}
+														alt=""
+														className="object-contain p-[1px]"
+														fill
+													/>
+												</span>
+											) : null}
+											title={pricingProviderName ?? t("pricing")}
+											meta={[
+												pricingProviderName && providerCount > 1
+													? tCard("cheapestOf", { count: providerCount })
+													: null,
+											]}
+										/>
+										{headlineSummary ? <HoverCardStat>{headlineSummary}</HoverCardStat> : null}
+										<HoverCardRows
+											rows={pricingDetailRows.map((row) => ({
+												key: row.id,
+												label: row.label,
+												value: row.value,
+											}))}
+										/>
 									</HoverCardContent>
 								</HoverCard>
 							) : (
@@ -1391,7 +1141,7 @@ function ModelCardImpl({
 								<span>{lifecycleLabel}</span>
 							</span>
 						) : providerStatusItems.length > 0 ? (
-							<HoverCard openDelay={120} closeDelay={100}>
+							<HoverCard>
 								<HoverCardTrigger asChild>
 									<button
 										type="button"
@@ -1404,56 +1154,48 @@ function ModelCardImpl({
 										</span>
 									</button>
 								</HoverCardTrigger>
-								<HoverCardContent align="start" className="w-72 p-3">
-									<div className="space-y-2">
-										<div className="text-xs font-medium text-foreground">
-										{tDetail("providerTable.heading")}
-										</div>
-										<ScrollArea className="pr-1" style={{ height: providerListHeight }}>
-											<div className="space-y-1 pr-2">
-												{providerStatusItems.map((provider) => (
-													<div
-														key={`${provider.id || "provider"}-${provider.name}`}
-														className="flex items-center justify-between gap-3 rounded-sm px-1 py-1 text-xs"
-													>
-														{provider.id ? (
-															<Link
-																href={`/api-providers/${provider.id}`}
-																prefetch={false}
-																className="flex min-w-0 items-center gap-2 text-foreground hover:underline underline-offset-2"
-															>
-																<span className="relative h-4 w-4 shrink-0 rounded-[4px] border bg-background">
-																	<Logo
-																		id={resolveProviderLogoId({ providerId: provider.id })}
-																		alt={provider.name}
-																		className="object-contain p-[1px]"
-																		fill
-																	/>
-																</span>
-																<span className="truncate">
-																	{provider.name}
-																</span>
-															</Link>
-														) : (
-															<span className="flex min-w-0 items-center gap-2">
-																<span className="truncate text-foreground">
-																	{provider.name}
-																</span>
-															</span>
-														)}
-														<span
-															className={cn("inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[11px]", PROVIDER_STATUS_META[provider.status]?.badgeClassName ?? "bg-muted text-muted-foreground")}
+								<HoverCardContent align="start" className="w-72 space-y-2.5">
+									<HoverCardHeader
+										title={tDetail("providerTable.heading")}
+										meta={[tCard("activeListed", { active: format.number(activeProviders), listed: format.number(providerCount) })]}
+									/>
+									<ScrollArea className="pr-1" style={{ height: providerListHeight }}>
+										<ul className="space-y-1 pr-2 text-xs">
+											{providerStatusItems.map((provider) => (
+												<li
+													key={`${provider.id || "provider"}-${provider.name}`}
+													className="flex items-center justify-between gap-3 py-1"
+												>
+													{provider.id ? (
+														<Link
+															href={`/api-providers/${provider.id}`}
+															prefetch={false}
+															className="flex min-w-0 items-center gap-2 text-foreground underline-offset-2 hover:underline"
 														>
-															<span
-																className={cn("h-1.5 w-1.5 rounded-full", PROVIDER_STATUS_META[provider.status]?.dotClassName ?? "bg-muted-foreground/60")}
-															/>
-															{formatProviderStatusLabel(provider.status, providerStatusLabels)}
-														</span>
-													</div>
-												))}
-											</div>
-										</ScrollArea>
-									</div>
+															<span className="relative h-4 w-4 shrink-0 rounded-[4px] border bg-background">
+																<Logo
+																	id={resolveProviderLogoId({ providerId: provider.id })}
+																	alt=""
+																	className="object-contain p-[1px]"
+																	fill
+																/>
+															</span>
+															<span className="truncate">{provider.name}</span>
+														</Link>
+													) : (
+														<span className="min-w-0 truncate text-foreground">{provider.name}</span>
+													)}
+													<span className="inline-flex shrink-0 items-center gap-1.5 text-muted-foreground">
+														<span
+															aria-hidden="true"
+															className={cn("size-1.5 rounded-full", PROVIDER_STATUS_META[provider.status]?.dotClassName ?? "bg-muted-foreground/60")}
+														/>
+														{formatProviderStatusLabel(provider.status, providerStatusLabels)}
+													</span>
+												</li>
+											))}
+										</ul>
+									</ScrollArea>
 								</HoverCardContent>
 							</HoverCard>
 						) : (

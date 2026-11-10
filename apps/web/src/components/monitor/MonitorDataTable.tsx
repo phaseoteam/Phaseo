@@ -14,8 +14,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
 	HoverCard,
 	HoverCardContent,
+	HoverCardHeader,
+	HoverCardNote,
+	HoverCardRows,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { Badge } from "@/components/ui/badge";
 import {
 	AlignCenter,
 	AlertTriangle,
@@ -275,6 +279,16 @@ const featureIcons: Record<string, { icon: LucideIcon; badgeClassName: string; i
 	},
 };
 
+/** A route feature as its key in featureIcons and the feature messages. */
+function normalizeFeatureKey(feature: string): string {
+	const rawKey = feature.trim().toLowerCase().replace(/\s+/g, "_");
+	return rawKey === "native_web_search"
+		? "web_search"
+		: rawKey === "structured_output"
+			? "structured_outputs"
+			: rawKey;
+}
+
 const statusMetaByKey: Record<
 	string,
         { icon: LucideIcon; color: string }
@@ -378,6 +392,7 @@ export function MonitorDataTable({
 	const pricingT = useTranslations("Catalogue.modelDetail.pricing");
 	const sectionsT = useTranslations("Catalogue.modelDetail.sections");
 	const comparisonT = useTranslations("Catalogue.compare");
+	const hoverT = useTranslations("Catalogue.hoverCards");
 	const format = useDisplayFormatters();
 	const localizedModelTableColumns = useMemo(() => {
 		const labels: Record<ModelTableColumnId, string> = {
@@ -857,61 +872,103 @@ export function MonitorDataTable({
 			route.regions.length ? `${modelsUiT("regionRouting")}: ${regionsLabel(route.regions)}` : null,
 			route.routeId,
 		].filter(Boolean).join(" · ");
-		const renderRouteDetails = (route: ProviderRoute) => (
-			<span className="block">
-				<span className="block font-semibold text-foreground">{route.name}</span>
-				{route.regions.length ? (
-					<span className="block text-muted-foreground">
-						{modelsUiT("regionRouting")}: {regionsLabel(route.regions)}
-					</span>
-				) : null}
-				{route.routeId ? <span className="block font-mono text-[10px] text-muted-foreground">{route.routeId}</span> : null}
+		const formatRate = (value: number) => format.number(value, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2, notation: "standard" });
+		// The route's cheapest listed charge, for the overflow list.
+		const cheapestLabel = (route: ProviderRoute) => {
+			if (route.inputPrice !== null && route.outputPrice !== null) return `${formatRate(route.inputPrice)} / ${formatRate(route.outputPrice)}`;
+			if (route.inputPrice !== null) return formatRate(route.inputPrice);
+			if (route.outputPrice !== null) return formatRate(route.outputPrice);
+			if (route.usagePrice !== undefined && route.usageUnit) return `${formatUsagePrice(route.usagePrice)} / ${route.usageUnit}`;
+			return null;
+		};
+		const routeLogo = (route: ProviderRoute, size: "sm" | "md" = "md") => (
+			<span className={cn("relative shrink-0", size === "sm" ? "size-3.5" : "size-4")}>
+				<Logo id={resolveProviderLogoId({ providerId: route.id })} alt="" className="object-contain" fill />
 			</span>
 		);
+		const renderRouteDetails = (route: ProviderRoute) => {
+			const featureLabels = route.features
+				.map((feature) => normalizeFeatureKey(feature))
+				.filter((key, index, keys) => featureIcons[key] && keys.indexOf(key) === index)
+				.map((key) => t(`featureLabels.${key}` as never) as string);
+			return (
+				<>
+					<HoverCardHeader
+						icon={routeLogo(route)}
+						title={route.name}
+						meta={[route.regions.length ? regionsLabel(route.regions) : null, route.routeId]}
+					/>
+					<HoverCardRows
+						rows={[
+							route.inputPrice !== null ? { key: "input", label: hoverT("rowInput"), value: hoverT("perMillion", { price: formatRate(route.inputPrice) }) } : null,
+							route.outputPrice !== null ? { key: "output", label: hoverT("rowOutput"), value: hoverT("perMillion", { price: formatRate(route.outputPrice) }) } : null,
+							route.usagePrice !== undefined && route.usageUnit
+								? { key: "usage", label: sectionsT("from"), value: `${formatUsagePrice(route.usagePrice)} / ${route.usageUnit}` }
+								: null,
+						]}
+					/>
+					{featureLabels.length ? (
+						<div className="flex flex-wrap gap-1">
+							{featureLabels.map((label) => (
+								<Badge key={label} variant="secondary" className="rounded-md font-normal">{label}</Badge>
+							))}
+						</div>
+					) : null}
+				</>
+			);
+		};
 		const visibleProviders = routes.slice(0, 5);
 		const hiddenProviders = routes.slice(visibleProviders.length);
 		return (
 			<div className="flex items-center">
 				<div className="flex items-center gap-1">
 					{visibleProviders.map((provider) => (
-						<HoverCard key={provider.id} openDelay={160} closeDelay={80}>
+						<HoverCard key={provider.id}>
 							<HoverCardTrigger asChild>
 								<Link
 									href={`/api-providers/${provider.id}`}
 									aria-label={routeLabel(provider)}
 									className="relative flex size-6 items-center justify-center rounded-md border bg-background transition-transform hover:z-10 hover:-translate-y-0.5 focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
 								>
-									<span className="relative size-4">
-									<Logo
-										id={resolveProviderLogoId({ providerId: provider.id })}
-										alt=""
-										className="object-contain"
-										fill
-									/>
-									</span>
+									{routeLogo(provider)}
 								</Link>
 							</HoverCardTrigger>
-							<HoverCardContent align="center" side="top" className="w-64 p-3 text-xs">{renderRouteDetails(provider)}</HoverCardContent>
+							<HoverCardContent align="center" className="w-64 space-y-2.5">{renderRouteDetails(provider)}</HoverCardContent>
 						</HoverCard>
 					))}
 				</div>
 				{hiddenProviders.length > 0 ? (
-					<HoverCard openDelay={160} closeDelay={80}>
+					<HoverCard>
 						<HoverCardTrigger asChild>
-							<span
-								tabIndex={0}
-								aria-label={`${hiddenProviders.length} additional providers`}
+							<button
+								type="button"
+								aria-label={hoverT("moreProviders", { count: hiddenProviders.length })}
 								className="ml-2 inline-flex h-6 min-w-6 items-center justify-center rounded-md border px-1 text-[10px] font-medium tabular-nums text-muted-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
 							>
 								+{hiddenProviders.length}
-							</span>
+							</button>
 						</HoverCardTrigger>
-						<HoverCardContent align="center" side="top" className="w-64 p-3 text-xs">
-							<div className="space-y-1.5">
-								{hiddenProviders.map((route) => (
-									<span key={route.id} className="block">{renderRouteDetails(route)}</span>
-								))}
-							</div>
+						<HoverCardContent align="center" className="w-72 space-y-2.5">
+							<HoverCardHeader title={hoverT("moreProviders", { count: hiddenProviders.length })} />
+							<ul className="space-y-1.5 text-xs">
+								{hiddenProviders.map((route) => {
+									const price = cheapestLabel(route);
+									return (
+										<li key={route.id} className="flex items-center justify-between gap-3">
+											<Link
+												href={`/api-providers/${route.id}`}
+												aria-label={routeLabel(route)}
+												className="flex min-w-0 items-center gap-2 text-foreground underline-offset-2 hover:underline"
+											>
+												{routeLogo(route, "sm")}
+												<span className="truncate">{route.name}</span>
+												{route.routeId ? <span className="truncate text-muted-foreground">{route.routeId}</span> : null}
+											</Link>
+											{price ? <span className="shrink-0 tabular-nums text-muted-foreground">{price}</span> : null}
+										</li>
+									);
+								})}
+							</ul>
 						</HoverCardContent>
 					</HoverCard>
 				) : null}
@@ -957,11 +1014,11 @@ export function MonitorDataTable({
 						type === "input" ? iconConfig.input : iconConfig.output;
 
 					return (
-						<HoverCard key={modality} openDelay={160} closeDelay={80}>
+						<HoverCard key={modality}>
 							<HoverCardTrigger asChild>
 								<button
 									type="button"
-					aria-label={tWithModality(`modalityAriaLabels.${type}`, { modality: label })}
+									aria-label={tWithModality(`modalityAriaLabels.${type}`, { modality: label })}
 									className={cn(MODEL_ICON_BADGE_CLASS_NAME, tone.badgeClassName)}
 								>
 									<IconComponent
@@ -970,17 +1027,12 @@ export function MonitorDataTable({
 									/>
 								</button>
 							</HoverCardTrigger>
-							<HoverCardContent
-								align="center"
-								side="top"
-								className="w-72 p-3"
-							>
-								<p className="text-sm font-semibold leading-tight text-foreground">
-									{tWithModality(`modalityHeadings.${type}`, { modality: label })}
-								</p>
-								<p className="mt-2 text-[13px] leading-5 text-muted-foreground">
-									{description}
-								</p>
+							<HoverCardContent align="center" className="w-60 space-y-1.5">
+								<HoverCardHeader
+									icon={<IconComponent aria-hidden className={tone.iconClassName} />}
+									title={tWithModality(`modalityHeadings.${type}`, { modality: label })}
+								/>
+								<HoverCardNote>{description}</HoverCardNote>
 							</HoverCardContent>
 						</HoverCard>
 					);
@@ -993,13 +1045,7 @@ export function MonitorDataTable({
 		return (
 			<div className="flex min-w-max flex-nowrap justify-center gap-1 whitespace-nowrap">
 				{features.map((feature) => {
-					const rawKey = feature.trim().toLowerCase().replace(/\s+/g, "_");
-					const key =
-						rawKey === "native_web_search"
-							? "web_search"
-							: rawKey === "structured_output"
-								? "structured_outputs"
-								: rawKey;
+					const key = normalizeFeatureKey(feature);
 					const iconConfig = featureIcons[key];
 					if (!iconConfig) return null;
 					const IconComponent = iconConfig.icon;
@@ -1007,11 +1053,11 @@ export function MonitorDataTable({
 					const label = t(`featureLabels.${key}` as never) as string;
 					const description = t(`featureDescriptions.${key}` as never) as string;
 					return (
-						<HoverCard key={feature} openDelay={160} closeDelay={80}>
+						<HoverCard key={feature}>
 							<HoverCardTrigger asChild>
 								<button
 									type="button"
-					aria-label={t("featureAriaLabel", { label })}
+									aria-label={t("featureAriaLabel", { label })}
 									className={cn(MODEL_ICON_BADGE_CLASS_NAME, iconConfig.badgeClassName)}
 								>
 									<IconComponent
@@ -1020,13 +1066,12 @@ export function MonitorDataTable({
 									/>
 								</button>
 							</HoverCardTrigger>
-							<HoverCardContent align="center" side="top" className="w-72 p-3">
-								<p className="text-sm font-semibold leading-tight text-foreground">
-									{label}
-								</p>
-								<p className="mt-2 text-[13px] leading-5 text-muted-foreground">
-									{description}
-								</p>
+							<HoverCardContent align="center" className="w-60 space-y-1.5">
+								<HoverCardHeader
+									icon={<IconComponent aria-hidden className={iconConfig.iconClassName} />}
+									title={label}
+								/>
+								<HoverCardNote>{description}</HoverCardNote>
 							</HoverCardContent>
 						</HoverCard>
 					);
@@ -1048,7 +1093,7 @@ export function MonitorDataTable({
 			: "-";
 
 		return (
-			<HoverCard openDelay={140} closeDelay={80}>
+			<HoverCard>
 				<HoverCardTrigger asChild>
 					<button
 						type="button"
@@ -1060,19 +1105,13 @@ export function MonitorDataTable({
 						)}
 					</button>
 				</HoverCardTrigger>
-				<HoverCardContent
-					align="center"
-					side="top"
-					className="w-64 p-3 text-xs"
-				>
-					<p className="font-semibold text-foreground">{label}</p>
-					<div className="mt-1.5 space-y-1 text-muted-foreground">
-						<p>
-							{t("capabilityLabel")}:{" "}
-							<span className="text-foreground">{endpointLabel}</span>
-						</p>
-						<p>{t("capabilityStatusDescription")}</p>
-					</div>
+				<HoverCardContent align="center" className="w-64 space-y-2.5">
+					<HoverCardHeader
+						icon={IconComponent ? <IconComponent className={iconConfig.color} /> : null}
+						title={label}
+					/>
+					<HoverCardRows rows={[{ key: "capability", label: t("capabilityLabel"), value: endpointLabel }]} />
+					<HoverCardNote>{t("capabilityStatusDescription")}</HoverCardNote>
 				</HoverCardContent>
 			</HoverCard>
 		);
@@ -1157,14 +1196,16 @@ export function MonitorDataTable({
 					const label = capabilityLabel(operation.capability);
 					return (
 						<Fragment key={operation.capability}>
-							<HoverCard openDelay={160} closeDelay={80}>
+							<HoverCard>
 								<HoverCardTrigger asChild>
 									<span role="img" tabIndex={0} aria-label={label}
 										className={cn(MODEL_ICON_BADGE_CLASS_NAME, "size-4 rounded-sm", tone.badgeClassName)}>
 										<Icon aria-hidden className={cn("h-2.5 w-2.5", tone.iconClassName)} />
 									</span>
 								</HoverCardTrigger>
-								<HoverCardContent align="center" side="top" className="w-auto p-3 text-xs font-semibold text-foreground">{label}</HoverCardContent>
+								<HoverCardContent align="center" className="w-auto max-w-60">
+									<HoverCardHeader icon={<Icon aria-hidden className={tone.iconClassName} />} title={label} />
+								</HoverCardContent>
 							</HoverCard>
 							<div className="leading-4">{renderPriceCell(operation[column], operation.usagePrices, column)}</div>
 						</Fragment>
@@ -1261,23 +1302,23 @@ export function MonitorDataTable({
 		return (
 			<HoverCard openDelay={1000} closeDelay={120}>
 				<HoverCardTrigger asChild openOnTap={false}>{content}</HoverCardTrigger>
-				<HoverCardContent align="start" className="w-52 p-3">
-					<div className="space-y-2">
-						<p className="text-[11px] font-medium text-muted-foreground">{t("statusKeyLabel")}</p>
-						<div className="space-y-1.5">
+				<HoverCardContent align="start" className="w-56 font-normal">
+					<div className="space-y-2.5">
+						<HoverCardHeader title={t("statusKeyLabel")} />
+						<ul className="space-y-1.5">
 							{statusLegendOrder.map((statusKey) => {
 								const statusMeta = statusMetaByKey[statusKey];
 								if (!statusMeta) return null;
 								const IconComponent = statusMeta.icon;
 								return (
-									<div key={statusKey} className="flex items-center gap-2 text-xs">
+									<li key={statusKey} className="flex items-center gap-2 text-xs">
 										<IconComponent className={`h-3.5 w-3.5 ${statusMeta.color}`} />
 										<span>{t(`providerStatus.${statusKey}` as never)}</span>
-									</div>
+									</li>
 								);
 							})}
-						</div>
-						<p className="text-[11px] text-muted-foreground">{t("statusAppliesToRowCapability")}</p>
+						</ul>
+						<HoverCardNote>{t("statusAppliesToRowCapability")}</HoverCardNote>
 					</div>
 				</HoverCardContent>
 			</HoverCard>

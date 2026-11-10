@@ -162,6 +162,13 @@ export type ProviderRoute = {
 	id: string;
 	name: string;
 	regions: string[];
+	// The route's standard per-1M token rates and cheapest non-token charge,
+	// as listed in the table row; null when the route lists none.
+	inputPrice: number | null;
+	outputPrice: number | null;
+	usagePrice?: number;
+	usageUnit?: string;
+	features: string[];
 	// Only set when name and regions alone do not tell two routes apart.
 	routeId?: string;
 };
@@ -182,6 +189,12 @@ export function describeProviderRoutes(providers: readonly ModelProvider[]): Pro
 		name: resolveProviderDisplayName({ providerId: provider.id, providerName: provider.name }),
 		regions: unique((provider.executionRegions ?? []).map((region) => String(region).trim().toLowerCase()))
 			.sort(compareRegions),
+		inputPrice: isPrice(provider.inputPrice) ? provider.inputPrice : null,
+		outputPrice: isPrice(provider.outputPrice) ? provider.outputPrice : null,
+		...(isPrice(provider.usagePrice) && provider.usageUnit
+			? { usagePrice: provider.usagePrice, usageUnit: provider.usageUnit }
+			: {}),
+		features: unique(provider.features ?? []),
 	}));
 	const signature = ({ name, regions }: ProviderRoute) => `${name}|${regions.join()}`;
 	const routesBySignature = new Map<string, number>();
@@ -234,8 +247,15 @@ export function groupModelRows(rows: readonly ModelData[]): GroupedModelData[] {
 				providerMap.set(providerKey, { ...variant.provider });
 				continue;
 			}
+			// The first row's rates stay; a later row fills in rates the first lacks
+			// (a batch row lists none) and offers a cheaper per-unit charge.
+			const usageCheaper = isPrice(variant.provider.usagePrice)
+				&& (!isPrice(current.usagePrice) || variant.provider.usagePrice < current.usagePrice);
 			providerMap.set(providerKey, {
 				...current,
+				inputPrice: isPrice(current.inputPrice) ? current.inputPrice : variant.provider.inputPrice,
+				outputPrice: isPrice(current.outputPrice) ? current.outputPrice : variant.provider.outputPrice,
+				...(usageCheaper ? { usagePrice: variant.provider.usagePrice, usageUnit: variant.provider.usageUnit } : {}),
 				features: unique([...current.features, ...variant.provider.features]),
 				executionRegions: unique([
 					...(current.executionRegions ?? []),

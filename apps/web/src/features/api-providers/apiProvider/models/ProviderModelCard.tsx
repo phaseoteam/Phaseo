@@ -7,15 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "@/components/ui/copy-button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { prettifyParamName } from "@/components/(data)/model/pricing/ProviderModelParameters";
+import { ParameterHoverChip } from "@/components/(data)/model/pricing/ParameterHoverChip";
 import { getLocalizedDocsHref } from "@/lib/docs";
-import {
-	ALL_PARAMETERS_DOCS_HREF,
-	getParameterDocsHref,
-	getParameterReference,
-	getParameterReferenceTranslationKey,
-} from "@/lib/parameters/reference";
+import { ALL_PARAMETERS_DOCS_HREF } from "@/lib/parameters/reference";
 import {
 	ProviderInspectorSheet,
 	ProviderInspectorSheetContent,
@@ -430,62 +424,6 @@ function GatewayStatus({ model }: { model: APIProviderModelListItem }) {
 	return <><CircleCheck className="size-4 text-emerald-600 dark:text-emerald-400" /><span>{tStatus("statuses.active")}</span></>;
 }
 
-function ParameterButton({ param }: { param: string }) {
-	const locale = useLocale();
-	const tQuickstart = useTranslations("Catalogue.models.detail.quickstart");
-	const reference = getParameterReference(param);
-	const descriptionKey = getParameterReferenceTranslationKey(param);
-	return (
-		<HoverCard openDelay={120} closeDelay={80}>
-			<HoverCardTrigger asChild>
-				<Button
-					type="button"
-					variant="outline"
-					size="sm"
-					className="h-7 min-h-0 justify-start rounded-md px-2 py-1 font-mono text-[11px]"
-				>
-					{prettifyParamName(param)}
-				</Button>
-			</HoverCardTrigger>
-			<HoverCardContent align="start" className="w-80 p-3 text-xs">
-				<div className="space-y-2">
-					<div className="space-y-1">
-						<div className="flex items-center justify-between gap-3">
-							<code className="font-mono text-[11px] text-foreground">{param}</code>
-							<a
-								href={getLocalizedDocsHref(locale, getParameterDocsHref(param))}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="text-[11px] text-muted-foreground underline underline-offset-4 hover:text-foreground"
-							>
-								{tQuickstart("docsLabel")}
-							</a>
-						</div>
-						<p className="leading-relaxed text-muted-foreground">
-							{tQuickstart(`parameterDescriptions.${descriptionKey}` as never)}
-						</p>
-					</div>
-					<div className="flex items-center gap-4 border-t border-zinc-200/70 pt-2 text-[11px] text-muted-foreground dark:border-zinc-800">
-						<span>
-							{tQuickstart("typeLabel")} <span className="text-foreground">{reference.type}</span>
-						</span>
-						<span>
-							{tQuickstart("defaultLabel")}{" "}
-							<span className="text-foreground">
-								{reference.defaultValue === "Provider specific"
-									? tQuickstart("defaultProviderSpecific")
-									: reference.defaultValue === "Unset"
-										? tQuickstart("defaultUnset")
-										: reference.defaultValue}
-							</span>
-						</span>
-					</div>
-				</div>
-			</HoverCardContent>
-		</HoverCard>
-	);
-}
-
 export function ProviderModelDetailsSheet({
 	model,
 	index,
@@ -651,7 +589,7 @@ export function ProviderModelDetailsSheet({
 								>
 									{params.length > 0 ? (
 										<div className="flex flex-wrap items-start gap-1.5 pt-1">
-											{params.map((param) => <ParameterButton key={param} param={param} />)}
+											{params.map((param) => <ParameterHoverChip key={param} param={param} />)}
 										</div>
 									) : (
 										<div className="rounded-md border border-amber-200/80 bg-amber-50/60 px-3 py-3 dark:border-amber-900/70 dark:bg-amber-950/20">

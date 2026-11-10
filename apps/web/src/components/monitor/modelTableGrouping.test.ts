@@ -289,6 +289,16 @@ describe("groupModelRows", () => {
 	});
 });
 
+describe("groupModelRows provider routes", () => {
+	it("fills a provider's missing rates from its other rows", () => {
+		const [group] = groupModelRows([
+			row({ id: "a", endpoint: "batch", tier: "batch", provider: { id: "openai", name: "OpenAI", inputPrice: null, outputPrice: null, features: [] } }),
+			row({ id: "b" }),
+		]);
+		expect(group.providers[0]).toMatchObject({ inputPrice: 1, outputPrice: 2, features: ["tools"] });
+	});
+});
+
 describe("describeProviderRoutes", () => {
 	const provider = (id: string, name: string, executionRegions: string[]): ModelData["provider"] => ({
 		id, name, executionRegions, inputPrice: 1, outputPrice: 2, features: [],
@@ -300,9 +310,19 @@ describe("describeProviderRoutes", () => {
 			provider("mistral-eu", "Mistral", ["eu"]),
 		]);
 		expect(routes).toEqual([
-			{ id: "mistral", name: "Mistral", regions: ["global", "eu"] },
-			{ id: "mistral-eu", name: "Mistral (EU)", regions: ["eu"] },
+			{ id: "mistral", name: "Mistral", regions: ["global", "eu"], inputPrice: 1, outputPrice: 2, features: [] },
+			{ id: "mistral-eu", name: "Mistral (EU)", regions: ["eu"], inputPrice: 1, outputPrice: 2, features: [] },
 		]);
+	});
+
+	it("carries each route's prices and features for its hover card", () => {
+		const [priced, usage] = describeProviderRoutes([
+			{ id: "openai", name: "OpenAI", inputPrice: 1.25, outputPrice: 10, features: ["tools", "tools", "reasoning"] },
+			{ id: "fal", name: "fal", inputPrice: null, outputPrice: null, usagePrice: 0.04, usageUnit: "image", features: [] },
+		]);
+		expect(priced).toMatchObject({ inputPrice: 1.25, outputPrice: 10, features: ["tools", "reasoning"] });
+		expect(priced).not.toHaveProperty("usagePrice");
+		expect(usage).toMatchObject({ inputPrice: null, outputPrice: null, usagePrice: 0.04, usageUnit: "image" });
 	});
 
 	it("names Claude Sonnet 5.5's Anthropic routes from catalogue data", () => {

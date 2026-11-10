@@ -32,7 +32,6 @@ import {
     Globe2,
     GraduationCap,
     ListFilter,
-	KeyRound,
     RotateCcw,
     Shield,
     Server,
@@ -56,8 +55,16 @@ import {
 import {
 	HoverCard,
 	HoverCardContent,
+	HoverCardHeader,
+	HoverCardNote,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import {
+	ProviderByokOnlyHoverCard,
+	ProviderStatusHoverCard,
+	getEarliestEffectiveTo,
+} from "./ProviderRowHoverCards";
 import {
     Table,
     TableBody,
@@ -84,8 +91,8 @@ import type {
 } from "./pricingRuntimeStats";
 import type { ProviderRoutingStatusMap } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
 import ProviderCard, {
+	getPricingPlanTranslationKey,
 	getProviderTableDiscountBadge,
-	PROVIDER_STATUS_META,
 	UptimeKey,
 } from "@/components/(data)/model/pricing/ProviderCard";
 import ProviderInfoHoverIcons from "@/components/(data)/model/ProviderInfoHoverIcons";
@@ -462,11 +469,11 @@ function getProviderOfferingSectionRank({ provider, plan }: ProviderOffering): n
 function UptimeHeaderHoverContent() {
 	const t = useTranslations("Catalogue.modelDetail.providerTable");
 	return (
-		<div className="space-y-2">
-			<p className="text-sm font-medium text-foreground">{t("threeDayUptime")}</p>
-			<p className="text-xs leading-5 text-muted-foreground">{t("uptimeExplanation")}</p>
-			<UptimeKey className="border-t border-zinc-200 pt-2.5 dark:border-zinc-800" />
-		</div>
+		<>
+			<HoverCardHeader title={t("threeDayUptime")} />
+			<HoverCardNote>{t("uptimeExplanation")}</HoverCardNote>
+			<UptimeKey />
+		</>
 	);
 }
 
@@ -587,13 +594,18 @@ function renderTierTablePrice(
 function ProviderServiceTierInfoIcons({
 	provider,
 	plan,
+	pricingTimeMs,
 }: {
 	provider: ProviderPricing;
 	plan: string;
+	pricingTimeMs: number;
 }) {
-	const tx = useTranslations();
-	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
+	const tQuickstart = useTranslations("Catalogue.models.detail.quickstart");
+	const format = useDisplayFormatters();
 	const providerModels = getProviderModelScopeForPlan(provider, plan);
+	const planKey = getPricingPlanTranslationKey(plan);
+	const planLabel = planKey ? tQuickstart(planKey as never) : formatServiceTierLabel(plan);
+	const endsOn = getEarliestEffectiveTo(providerModels, pricingTimeMs);
 	const statusKey = chooseGatewayStatus(
 		providerModels.map((providerModel) =>
 			resolveGatewayStatus({
@@ -610,34 +622,6 @@ function ProviderServiceTierInfoIcons({
 			}),
 		),
 	);
-	const statusMeta = PROVIDER_STATUS_META[statusKey] ?? PROVIDER_STATUS_META.not_listed;
-	const statusLabelKey = statusKey === "active"
-		? "statuses.active"
-		: statusKey === "disabled"
-			? "statuses.disabled"
-			: statusKey === "coming_soon"
-				? "statuses.comingSoon"
-				: statusKey === "external"
-					? "statuses.external"
-				: statusKey === "internal_testing"
-					? "statuses.internalTesting"
-					: statusKey === "deranked"
-						? "statuses.rateLimited"
-						: "statuses.inactive";
-	const statusLabel = tProvider(statusLabelKey as never);
-	const statusDescriptionKey = statusKey === "active"
-		? "statusDescriptions.active"
-		: statusKey === "disabled"
-			? "statusDescriptions.disabled"
-			: statusKey === "coming_soon"
-				? "statusDescriptions.comingSoon"
-				: statusKey === "external"
-					? "statusDescriptions.external"
-				: statusKey === "internal_testing"
-					? "statusDescriptions.internalTesting"
-					: statusKey === "deranked"
-						? "statusDescriptions.rateLimited"
-						: "statusDescriptions.inactive";
 	const tierPolicy = currentCatalogDataPolicy(provider.provider.service_tier_data_policies?.[plan]) ?? null;
 	const capabilityPolicies = providerModels
 		.map((providerModel) => currentCatalogDataPolicy(providerModel.data_policy))
@@ -656,40 +640,13 @@ function ProviderServiceTierInfoIcons({
 
 	return (
 		<div className="flex shrink-0 items-center gap-1">
-			{provider.provider.credential_mode === "byok_only" ? (
-				<HoverCard openDelay={120} closeDelay={80}>
-					<HoverCardTrigger asChild>
-						<button
-							type="button"
-							aria-label={tx("Common.ui.providerCardCopy.bYOKOnlyRequiresYourProviderKey" as never)}
-							className="inline-flex h-6 w-6 items-center justify-center rounded-md text-amber-700 transition-colors hover:bg-muted/60 hover:text-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 dark:text-amber-300 dark:hover:text-amber-200"
-						>
-							<KeyRound className="h-3.5 w-3.5" />
-						</button>
-					</HoverCardTrigger>
-					<HoverCardContent align="start" className="w-auto p-2 text-xs">
-						<p className="font-semibold">{tx("Common.ui.providerCardCopy.bYOKOnly" as never)}</p>
-						<p className="mt-1 text-muted-foreground">{tx("Common.ui.providerCardCopy.requiresYourProviderKey" as never)}</p>
-					</HoverCardContent>
-				</HoverCard>
-			) : null}
-			<HoverCard openDelay={120} closeDelay={80}>
-				<HoverCardTrigger asChild>
-					<button
-						type="button"
-						aria-label={tProvider("providerStatus", { status: statusLabel })}
-						className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-					>
-						{React.createElement(statusMeta.icon, {
-							className: cn("h-3 w-3", statusMeta.iconClass),
-						})}
-					</button>
-				</HoverCardTrigger>
-				<HoverCardContent align="start" className="w-auto p-2 text-xs">
-					<p className="font-semibold">{statusLabel}</p>
-					<p className="mt-1 text-muted-foreground">{tProvider(statusDescriptionKey as never)}</p>
-				</HoverCardContent>
-			</HoverCard>
+			{provider.provider.credential_mode === "byok_only" ? <ProviderByokOnlyHoverCard /> : null}
+			<ProviderStatusHoverCard
+				statusKey={statusKey}
+				providerModels={providerModels}
+				planLabel={planLabel}
+				endsOn={statusKey === "active" && endsOn ? format.calendarDate(endsOn) : null}
+			/>
 			<ProviderInfoHoverIcons
 				providerId={provider.provider.api_provider_id}
 				providerModelSlugs={providerModels.map((providerModel) => providerModel.provider_model_slug)}
@@ -794,7 +751,7 @@ function ProviderServiceTierRow({
 							</span>
 						</span>
 						<ProviderRouteName provider={provider.provider} plan={plan} showTierHelp />
-						<ProviderServiceTierInfoIcons provider={provider} plan={plan} />
+						<ProviderServiceTierInfoIcons provider={provider} plan={plan} pricingTimeMs={pricingTimeMs} />
 						{discountBadge ? (
 							<span className="whitespace-nowrap text-xs font-medium text-emerald-600 dark:text-emerald-400">
 								{discountBadge}
@@ -1702,7 +1659,7 @@ export default function ModelPricingClient({
 			return (
 				<HoverCard openDelay={120} closeDelay={80}>
 					<HoverCardTrigger asChild openOnTap={false}>{button}</HoverCardTrigger>
-					<HoverCardContent align="end" className="w-72 rounded-md text-left">
+					<HoverCardContent align="end" className="w-72 space-y-2.5 text-left font-normal">
 						<UptimeHeaderHoverContent />
 					</HoverCardContent>
 				</HoverCard>
