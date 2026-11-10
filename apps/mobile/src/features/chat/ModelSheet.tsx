@@ -68,7 +68,7 @@ export function ModelSheet<T>({ open, onClose, title = "Model", settings, query,
   }, [describe, selectedId, onPick, onShowMore, onToggleFavourite]);
 
   return (
-    <Sheet open={open} onClose={onClose} size="tall" className="h-[92%] max-h-[92%]">
+    <Sheet open={open} onClose={onClose} size="tall" phoneHeight="92%">
       <View className="flex-1">
         <View className="flex-row items-center pb-1 pl-4 pr-2 pt-3">
           <Text variant="title" className="flex-1">{title}</Text>
