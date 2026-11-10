@@ -33,6 +33,7 @@ import {
 	resolveBeforeLatencyMs,
 	resolveFailoverMs,
 	resolveExecuteTotalLatencyMs,
+	resolveGatewayTtftMs,
 	resolveNonStreamLatencyMs,
 	resolveOutputSpeedWindow,
 } from "./timing";
@@ -499,9 +500,15 @@ export async function handleSuccessAudit(
         usageWithMultimodal?.completion_tokens ??
         0
     );
-    const providerTtftMs = isStream && typeof ctx.meta.provider_ttft_ms === "number"
+    // Text generation always streams from the provider, and buffered clients are
+    // materialized from that stream, so first output is observed for them too.
+    // Buffered responses count only an observed first output, not an executor's
+    // first-frame estimate (embeddings, images and other one-shot calls).
+    const providerTtftMs = typeof ctx.meta.provider_ttft_ms === "number" &&
+        (isStream || typeof ctx.meta.firstProviderOutputAtMs === "number")
         ? ctx.meta.provider_ttft_ms
         : null;
+    const gatewayTtftMs = resolveGatewayTtftMs(ctx, isStream);
     const outputPerformance = calculateOutputPerformanceMetrics({
         outputTokens,
         reasoningTokens: ctx.meta.reasoningStreamed ? null : getUsageReasoningTokens(usageWithMultimodal),
@@ -594,7 +601,7 @@ export async function handleSuccessAudit(
             generationMs,
             latencyMs,
             providerTtftMs,
-            gatewayTtftMs: isStream ? (ctx.meta.gateway_ttft_ms ?? null) : null,
+            gatewayTtftMs,
             outputSpeedTps: ctx.meta.output_speed_tps ?? null,
             tpotMs: ctx.meta.tpot_ms ?? null,
             itlMs: ctx.meta.itl_ms ?? null,

@@ -1666,7 +1666,7 @@
 				"itl": "Average interval between generated tokens.",
 				"cachedInput": "Share of input tokens served from the provider's cache.",
 				"throughputCard": "Output tokens per second: all output tokens divided by the full provider duration, from sending the request to the provider to its final response.",
-				"latencyCard": "Time to first token: from Phaseo receiving the request to the first generated output. Measured on streaming responses only.",
+				"latencyCard": "Time to first token: from Phaseo receiving the request to the first generated output.",
 				"endToEndCard": "Full request time: from Phaseo receiving the request to the complete response."
 			},
 			"axisTokensPerSecond": "Tokens per second",

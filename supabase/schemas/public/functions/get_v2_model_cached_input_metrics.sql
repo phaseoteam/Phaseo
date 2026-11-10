@@ -55,8 +55,10 @@ usage_by_request as (
   select
     usage.request_event_id,
     sum(usage.quantity) filter (where usage.meter_key = 'input_tokens')::numeric input_tokens,
-    sum(usage.quantity) filter (where usage.meter_key = 'cached_input_tokens')::numeric cached_input_tokens,
-    bool_or(usage.meter_key = 'cached_input_tokens') cache_telemetry_observed
+    -- The gateway writes no meter row for a zero quantity, so a request with input
+    -- tokens and no cached row is a cache miss (0 cached tokens), not missing telemetry.
+    coalesce(sum(usage.quantity) filter (where usage.meter_key = 'cached_input_tokens'), 0)::numeric cached_input_tokens,
+    coalesce(sum(usage.quantity) filter (where usage.meter_key = 'input_tokens'), 0) > 0 cache_telemetry_observed
   from scoped_facts fact
   join public.v2_request_usage usage on usage.request_event_id = fact.request_event_id
   where usage.meter_key in ('input_tokens', 'cached_input_tokens')

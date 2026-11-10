@@ -1666,7 +1666,7 @@
 				"itl": "Durchschnittlicher Abstand zwischen generierten Tokens.",
 				"cachedInput": "Anteil der Eingabetokens, die aus dem Anbietercache bereitgestellt wurden.",
 				"throughputCard": "Ausgabetokens pro Sekunde: alle Ausgabetokens geteilt durch die gesamte Anbieterdauer, vom Senden der Anfrage an den Anbieter bis zu seiner letzten Antwort.",
-				"latencyCard": "Zeit bis zum ersten Token: vom Eingang der Anfrage bei Phaseo bis zur ersten generierten Ausgabe. Nur bei Streaming-Antworten gemessen.",
+				"latencyCard": "Zeit bis zum ersten Token: vom Eingang der Anfrage bei Phaseo bis zur ersten generierten Ausgabe.",
 				"endToEndCard": "Gesamte Anfragezeit: vom Eingang der Anfrage bei Phaseo bis zur vollständigen Antwort."
 			},
 			"axisTokensPerSecond": "Tokens pro Sekunde",
