@@ -33,6 +33,7 @@ comment on table public.v2_pricing_promotions is
   'Budget caps for promotional SKUs. budget_nanos and spent_nanos are list-price (undiscounted) value; enforce_pricing_promotion_budgets() ends the SKUs once spent_nanos reaches budget_nanos.';
 
 alter table public.v2_pricing_promotions enable row level security;
+drop policy if exists "service_role_full_access" on public.v2_pricing_promotions;
 create policy "service_role_full_access" on public.v2_pricing_promotions
   for all to service_role using (true) with check (true);
 revoke all on table public.v2_pricing_promotions from anon, authenticated, service_role;
