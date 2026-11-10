@@ -212,7 +212,7 @@ export default function MetricDetailDialog({
 		if (exportFormat === "csv") {
 			exportToCSV(exportRows, filename);
 		} else {
-			exportToPDF(exportRows, filename, title);
+			void exportToPDF(exportRows, filename, title);
 		}
 	};
 
