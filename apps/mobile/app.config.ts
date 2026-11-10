@@ -98,6 +98,8 @@ const base: ExpoConfig = {
     ...expo.extra,
     supabaseUrl,
     supabasePublishableKey,
+    posthogKey: process.env.EXPO_PUBLIC_POSTHOG_KEY || process.env.PUBLIC_POSTHOG_KEY || process.env.NEXT_PUBLIC_POSTHOG_KEY || localWebEnvironment.PUBLIC_POSTHOG_KEY || localWebEnvironment.NEXT_PUBLIC_POSTHOG_KEY,
+    posthogHost: process.env.EXPO_PUBLIC_POSTHOG_HOST || "https://eu.i.posthog.com",
     ...build,
     buildNumber,
   },

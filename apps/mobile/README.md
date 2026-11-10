@@ -10,6 +10,14 @@ The Phaseo app for Android (iOS later), built with Expo SDK 58, React Native 0.8
 - **Account** mirrors the website's settings where the app can: usage, credits and recent top-ups, API keys, members, and the workspace's privacy switches (owners and admins can change them; anything that shares more asks first). Paying, inviting, route lists and deleting the account open phaseo.app in the in-app browser. Under "This device": notifications, appearance and chats (storage used, default models, export to Markdown or JSON through the share sheet, delete all). Under Help: live status, what's new (from the docs changelog), feedback by email. Under About: open source licences and diagnostics.
 - **Charts** read by press and hold: rest a finger on a chart for a quarter of a second, then drag; a bubble with the values follows the finger. A quick swipe that starts on a chart still scrolls the page. With TalkBack, swipe up or down on a chart to step through its points.
 
+## App analytics
+
+PostHog supports this Expo app on Android and iOS. Release builds can share app opens, screen categories and sanitized JavaScript errors after opt-in. Enable **Account → This device → App analytics → Share app usage and errors**; it is off by default and can be turned off anytime. Saved choices are preserved across updates. Development and perf builds never collect. Diagnostics stay local.
+
+Build with `EXPO_PUBLIC_POSTHOG_KEY`, or reuse the website's public project key from `PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_KEY` or its local `.env.local`. `EXPO_PUBLIC_POSTHOG_HOST` defaults to `https://eu.i.posthog.com`; `https://us.i.posthog.com` is also supported. Use the ingestion origin, not the website's `/ingest` proxy, and never a personal API key.
+
+In PostHog, filter events or errors by `app_surface = mobile`, then `app_version`, `app_build`, `app_os` and `screen_name`. A random ID links events across sessions on this installation without using account IDs; this is pseudonymous telemetry, not guaranteed anonymity. Prompts, responses, credentials, device names, full paths and session recordings are excluded. Messages and source context are stripped from errors, keeping only bundled-code locations. Native crashes and source-map uploads are not included; fatal JavaScript errors may be lost when the process exits. Each installation persists a cap of 200 events/day, including at most 20 errors; overall free-tier usage still depends on installation count. Opting out discards queued events.
+
 ## Layout
 
 ```

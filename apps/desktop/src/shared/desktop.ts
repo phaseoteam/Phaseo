@@ -5,6 +5,7 @@ import type { WorkspaceApi } from "./workspace";
 import type { DiagnosticsApi } from "./diagnostics";
 import type { MaintenanceApi } from "./maintenance";
 import type { FactoryApi } from "./factory/types";
+import type { DesktopAnalyticsMessage } from "./analytics";
 
 export type DesktopRuntimeInfo = {
 	platform: NodeJS.Platform;
@@ -40,6 +41,7 @@ export type DesktopUpdateState = {
 };
 
 export type PhaseoDesktopApi = {
+	analytics: (message: DesktopAnalyticsMessage) => Promise<void>;
 	readonly platform: NodeJS.Platform;
 	workspace: WorkspaceApi;
 	/** Code ▸ Factory: work items, their stages and runs (see shared/factory/types.ts). */
