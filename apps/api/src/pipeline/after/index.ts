@@ -271,34 +271,49 @@ function dispatchNonStreamSuccessSideEffects(args: {
                 });
             }
 
-            await recordUsageAndChargeOnce({
-                ctx,
-                costNanos: totalNanos,
-                endpoint: ctx.endpoint,
-            });
-			await recordManagedProviderTokensOnce({
-				ctx,
-				providerId: result.provider,
-				keySource: result.keySource,
-				usage: usageForBilling,
-				reservation: result.providerRateLimitReservation,
-			});
-			chargeRateLimitPolicyTokens(ctx, usageForBilling);
+            try {
+                await recordUsageAndChargeOnce({
+                    ctx,
+                    costNanos: totalNanos,
+                    endpoint: ctx.endpoint,
+                    throwOnFailure: true,
+                });
+                await recordManagedProviderTokensOnce({
+                    ctx,
+                    providerId: result.provider,
+                    keySource: result.keySource,
+                    usage: usageForBilling,
+                    reservation: result.providerRateLimitReservation,
+                });
+                chargeRateLimitPolicyTokens(ctx, usageForBilling);
 
-            await handleSuccessAudit(
-                ctx,
-                result,
-                false,
-                usageForBilling,
-                totalCents,
-                totalNanos,
-                currency,
-                finishReason,
-                result.upstream.status,
-                nativeResponseId,
-                gatewayPayload,
-            );
-
+                await handleSuccessAudit(
+                    ctx,
+                    result,
+                    false,
+                    usageForBilling,
+                    totalCents,
+                    totalNanos,
+                    currency,
+                    finishReason,
+                    result.upstream.status,
+                    nativeResponseId,
+                    gatewayPayload,
+                );
+            } catch (error) {
+                // The response was already sent: the failure row keeps a confirmed charge (or the
+                // bill it meant to charge, pending reconciliation) and spend limits count it.
+                await handleFailureAudit(ctx, result, 500, "gateway", "nonstream_finalization_failed",
+                    "The response was delivered but accounting finalization failed.", {
+                        upstream_status: responseStatus,
+                        response_delivered: true,
+                        billing_status: (ctx.meta as Record<string, unknown>).__usageChargeRecorded === true ? "recorded" : "pending_reconciliation",
+                        cause: error instanceof Error ? error.message : String(error),
+                    }, null, {
+                        gatewayResponse: clientResponseBody,
+                        rawUsage: usageForBilling,
+                    });
+            }
         } finally {
             releaseRuntime();
         }

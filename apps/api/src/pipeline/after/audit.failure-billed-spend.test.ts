@@ -199,7 +199,6 @@ describe("failed requests that were still charged", () => {
 
 		it.each([
 			["a stream, audited as recorded", "stream_finalization_failed", "recorded"],
-			["a buffered response, pending reconciliation", "nonstream_finalization_failed", "pending_reconciliation"],
 			["streamed speech, pending reconciliation", "speech_finalization_failed", "pending_reconciliation"],
 		])("keeps the charge of %s", async (_label, errorCode, billingStatus) => {
 			const id = `charged_${errorCode}`;

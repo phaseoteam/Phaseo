@@ -1,11 +1,11 @@
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-// A stream charged at drain checkpoints, run end to end against the spend-limit coordinator this
-// branch ships (main's, unchanged): the real stream handler, charge helpers, failure/success audit
-// and spend-limit isolate, with only the wallet RPCs, the telemetry sinks and the seed read
-// replaced. Checkpoints debit the wallet; the coordinator gets one record, at the final settlement,
-// with the final total (0 successful requests for a charged failure).
+// Charged requests run end to end against the spend-limit coordinator this branch ships (main's,
+// unchanged): the real stream, buffered and speech handlers, charge helpers, failure/success audit,
+// telemetry runner and spend-limit isolate, with only the wallet RPCs, the audit row writers and the
+// seed read replaced. The coordinator gets one record per request, at its final settlement, with its
+// final total (0 successful requests for a charged failure), whether or not the audit row landed.
 //
 // The fake seed follows main's gateway_spend_limit_seed: it counts successful request rows only
 // (`success is true`) and returns excluded rows with their real success flag. Under main's SQL a
@@ -15,12 +15,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const runtime = vi.hoisted(() => ({ bindings: null as Record<string, unknown> | null, background: [] as Promise<unknown>[] }));
 const chargeRpcMock = vi.hoisted(() => vi.fn(async (_kind: string, _args: any) => ({ applied: true })));
 const auditRows = vi.hoisted(() => [] as Array<Record<string, unknown>>);
-// Writes the audit row through its writer, then reports it delivered.
-const delivered = vi.hoisted(() => async (args: any) => {
-	await args?.writeSupabase?.();
-	return [{ sink: "supabase", delivered: true }];
-});
-const telemetryMock = vi.hoisted(() => vi.fn(delivered));
+// How the gateway_requests row write ends: written, rejected, or the sink reporting failure (false).
+const auditWrite = vi.hoisted(() => ({ mode: "ok" as "ok" | "reject" | "false" }));
+const telemetry = vi.hoisted(() => ({ real: null as null | ((args: any) => Promise<unknown>) }));
+const telemetryMock = vi.hoisted(() => vi.fn((args: any) => telemetry.real!(args)));
+const dataContributionMock = vi.hoisted(() => vi.fn(async (_args: any) => ({ status: "skipped" })));
 
 vi.mock("cloudflare:workers", () => ({
 	DurableObject: class {
@@ -32,21 +31,37 @@ vi.mock("@/runtime/env", async (importOriginal) => ({
 	getBindingsIfConfigured: () => runtime.bindings,
 	ensureRuntimeForBackground: () => () => {},
 	dispatchBackground: (promise: Promise<unknown>) => { runtime.background.push(promise.catch(() => undefined)); },
+	getResponseCache: () => null,
 }));
 vi.mock("../pricing/persist", () => ({
 	recordUsageAndCharge: (args: any) => chargeRpcMock("one_off", args),
 	recordRequestChargeTotal: (args: any) => chargeRpcMock("total", args),
 	readRequestChargeTotal: async () => 0,
 }));
-// The audit row is written (the Supabase sink delivers it); nothing else is exported.
-vi.mock("@observability/gateway-telemetry", () => ({
-	runGatewayTelemetryPipelines: (args: any) => telemetryMock(args),
+// The real telemetry runner, which turns a rejected row write, or a sink returning false, into an
+// undelivered row rather than an error.
+vi.mock("@observability/gateway-telemetry", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("@observability/gateway-telemetry")>();
+	telemetry.real = actual.runGatewayTelemetryPipelines;
+	return { ...actual, runGatewayTelemetryPipelines: (args: any) => telemetryMock(args) };
+});
+vi.mock("@observability/axiom", () => ({
+	emitGatewayTelemetryDeliveryFailure: vi.fn(async () => undefined),
+	emitGatewayOperationalFailure: vi.fn(async () => undefined),
 }));
 // The rows the audit writes (the request row write itself is covered elsewhere).
 vi.mock("../audit", async (importOriginal) => ({
 	...(await importOriginal<typeof import("../audit")>()),
 	auditFailure: async (args: Record<string, unknown>) => { auditRows.push({ kind: "failure", ...args }); },
-	auditSuccess: async (args: Record<string, unknown>) => { auditRows.push({ kind: "success", ...args }); },
+	auditSuccess: async (args: Record<string, unknown>) => {
+		if (auditWrite.mode === "reject") throw new Error("gateway_requests insert failed");
+		if (auditWrite.mode === "false") return false;
+		auditRows.push({ kind: "success", ...args });
+	},
+}));
+vi.mock("../classification/data-contribution", async (importOriginal) => ({
+	...(await importOriginal<typeof import("../classification/data-contribution")>()),
+	persistDataContribution: (args: any) => dataContributionMock(args),
 }));
 vi.mock("@observability/otlp-export", () => ({ enqueueGatewayOtlpExport: vi.fn(async () => undefined) }));
 vi.mock("@observability/events", () => ({ emitGatewayRequestEvent: vi.fn(async () => undefined) }));
@@ -69,6 +84,7 @@ vi.mock("../pricing/byok-fee", () => ({
 }));
 // $1 per million input tokens, $10 per million output tokens.
 vi.mock("./pricing", () => ({
+	loadProviderPricing: async () => ({ rules: [], currency: "USD" }),
 	calculatePricing: (usage: any) => {
 		const input = Number(usage?.input_tokens ?? usage?.prompt_tokens ?? 0);
 		const output = Number(usage?.output_tokens ?? usage?.completion_tokens ?? 0);
@@ -80,6 +96,7 @@ vi.mock("./pricing", () => ({
 const { SpendLimitDurableObject } = await import("@core/spend-limit-durable-object");
 const { __resetSpendLimitsForTests, checkSpendLimit, flushSpendRecordsForTests } = await import("@core/spend-limits");
 const { handleStreamResponse } = await import("./stream");
+const { finalizeRequest } = await import("./index");
 
 const WORKSPACE = "10000000-0000-4000-8000-000000000051";
 const KEY = "30000000-0000-4000-8000-000000000051";
@@ -179,13 +196,15 @@ async function dailyCost(): Promise<number> {
 	return Number(buckets?.daily.costUsedNanos);
 }
 
-describe("a stream charged at drain checkpoints, with main's spend-limit coordinator", () => {
+describe("charged requests, with main's spend-limit coordinator", () => {
 	beforeEach(() => {
 		vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
 		rows.length = 0;
 		chargeRpcMock.mockReset().mockResolvedValue({ applied: true });
-		telemetryMock.mockReset().mockImplementation(delivered);
+		telemetryMock.mockReset().mockImplementation((args: any) => telemetry.real!(args));
 		auditRows.length = 0;
+		auditWrite.mode = "ok";
+		dataContributionMock.mockReset().mockResolvedValue({ status: "skipped" });
 		const sqlite = new DatabaseSync(":memory:");
 		coordinator = new SeededCoordinator({
 			blockConcurrencyWhile: (fn: () => Promise<unknown>) => fn(),
@@ -310,5 +329,124 @@ describe("a stream charged at drain checkpoints, with main's spend-limit coordin
 		const sent = recorded.flat() as Array<{ billingRequestId: string; costNanos: number; requests: number }>;
 		expect(sent.map((entry) => [entry.billingRequestId, entry.costNanos, entry.requests])).toEqual([["bill_after", FINAL_TOTAL, 0]]);
 		expect(await daily()).toMatchObject({ costUsedNanos: FINAL_TOTAL, requestsUsed: 0 });
+	});
+
+	describe("a confirmed debit whose success row is not delivered", () => {
+		function contextFor(id: string, overrides: Record<string, unknown>): any {
+			return {
+				requestId: `req_${id}`, billingRequestId: `bill_${id}`, workspaceId: WORKSPACE, keyId: KEY,
+				endpoint: "chat.completions", protocol: "openai.chat.completions", capability: "text.generate",
+				model: "openai/gpt-5-mini", requestedModel: "openai/gpt-5-mini", stream: false,
+				body: { model: "openai/gpt-5-mini", messages: [{ role: "user", content: "Hello" }] }, rawBody: {},
+				meta: { requestId: `req_${id}`, apiKeyId: KEY, authMethod: "api_key", startedAtMs: Date.now() - 50 }, providers: [], pricing: {},
+				gating: { key: { ok: true }, keyLimit: { ok: true }, credit: { ok: true } },
+				timer: { span: (_name: string, fn: () => unknown) => fn(), mark: () => {}, end: () => {} },
+				...overrides,
+			};
+		}
+
+		// Each runs the real caller to the end of its accounting: $2.62 debited, then the row write fails.
+		const callers: Record<string, (c: any) => Promise<void>> = {
+			async buffered(c) {
+				const payload = {
+					id: "chatcmpl-1", object: "chat.completion", created: 1, model: "gpt-5-mini",
+					choices: [{ index: 0, message: { role: "assistant", content: "Hi" }, finish_reason: "stop" }],
+					usage: { prompt_tokens: 120, completion_tokens: 250, total_tokens: 370 },
+				};
+				const result: any = {
+					kind: "completed", provider: "openai", keySource: "gateway", upstream: new Response(null, { status: 200 }),
+					normalized: payload, rawResponse: payload, mappedRequest: null,
+					bill: { cost_cents: 0, currency: "USD", usage: payload.usage, upstream_id: "chatcmpl-1", finish_reason: "stop" },
+				};
+				const response = await finalizeRequest({ pre: { ok: true, ctx: c }, exec: { ok: true, result }, endpoint: c.endpoint } as any);
+				expect(response.status).toBe(200);
+			},
+			async streamed(c) {
+				const { upstream, reader } = await start({ ...c, stream: true, body: { ...c.body, stream: true } });
+				upstream.text("Hello");
+				upstream.finish({ prompt_tokens: 120, completion_tokens: 250, total_tokens: 370 });
+				while (!(await reader.read()).done) { /* the client reads to the end */ }
+			},
+			async speech(c) {
+				const speech = { ...c, endpoint: "audio.speech", capability: "audio.speech", body: { model: "openai/gpt-4o-mini-tts", input: "Hello", voice: "alloy" } };
+				const bill = { cost_cents: 0, currency: "USD", usage: { input_tokens: 120, output_tokens: 250, total_tokens: 370 }, upstream_id: "speech_1", finish_reason: null };
+				const result: any = {
+					kind: "stream", provider: "openai", keySource: "gateway", generationTimeMs: 1,
+					upstream: new Response(null, { status: 200, headers: { "content-type": "audio/mpeg" } }),
+					stream: new Response(new Uint8Array([1, 2, 3])).body, usageFinalizer: async () => bill, bill,
+				};
+				const response = await finalizeRequest({ pre: { ok: true, ctx: speech }, exec: { ok: true, result }, endpoint: "audio.speech" } as any);
+				const reader = response.body!.getReader();
+				while (!(await reader.read()).done) { /* the client reads to the end */ }
+			},
+		};
+
+		it.each([
+			["buffered", "reject"], ["buffered", "false"],
+			["streamed", "reject"], ["streamed", "false"],
+			["speech", "reject"], ["speech", "false"],
+		] as const)("counts a %s request at once when its row write is %s", async (path, mode) => {
+			const id = `${path}_${mode}`;
+			const decision = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: `req_${id}` });
+			if (decision.outcome !== "allowed") throw new Error("expected admission");
+			auditWrite.mode = mode;
+			const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+			await callers[path](contextFor(id, { spendAdmission: decision.admission }));
+			await settle();
+			await flushSpendRecordsForTests();
+			await settle();
+			error.mockRestore();
+			expect(chargeRpcMock.mock.calls.map(([kind, args]) => [kind, args.cost_nanos])).toEqual([["one_off", FINAL_TOTAL]]);
+			// The row did not land ...
+			expect(auditRows).toEqual([]);
+			// ... and the coordinator counts the debit straight away, once, as the success it was.
+			const sent = recorded.flat() as Array<{ billingRequestId: string; costNanos: number; requests: number }>;
+			expect(sent.map((entry) => [entry.billingRequestId, entry.costNanos, entry.requests])).toEqual([[`bill_${id}`, FINAL_TOTAL, 1]]);
+			expect(await daily()).toMatchObject({ costUsedNanos: FINAL_TOTAL, requestsUsed: 1 });
+		});
+
+		it("routes a buffered finalization error after the debit to the charged-failure record", async () => {
+			const decision = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: "req_buffered_throw" });
+			if (decision.outcome !== "allowed") throw new Error("expected admission");
+			// The success audit throws after the wallet debit.
+			telemetryMock.mockRejectedValueOnce(new Error("telemetry unavailable"));
+			const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+			await callers.buffered(contextFor("buffered_throw", { spendAdmission: decision.admission }));
+			await settle();
+			await flushSpendRecordsForTests();
+			await settle();
+			error.mockRestore();
+			expect(auditRows.map((row) => [row.kind, row.errorCode ?? null, row.costNanos ?? null])).toEqual([
+				["failure", "gateway:nonstream_finalization_failed", FINAL_TOTAL],
+			]);
+			const sent = recorded.flat() as Array<{ billingRequestId: string; costNanos: number; requests: number }>;
+			expect(sent.map((entry) => [entry.billingRequestId, entry.costNanos, entry.requests])).toEqual([["bill_buffered_throw", FINAL_TOTAL, 0]]);
+			expect(await daily()).toMatchObject({ costUsedNanos: FINAL_TOTAL, requestsUsed: 0 });
+		});
+
+		it("sends one record when the success audit throws after it settled", async () => {
+			const decision = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: "req_buffered_late" });
+			if (decision.outcome !== "allowed") throw new Error("expected admission");
+			// The success row lands and spend is settled; data contribution then throws, which sends
+			// the request to the finalization failure audit.
+			dataContributionMock.mockRejectedValueOnce(new Error("contribution store unavailable"));
+			const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+			await callers.buffered(contextFor("buffered_late", {
+				spendAdmission: decision.admission,
+				teamSettings: { dataContributionEnabled: true },
+			}));
+			await settle();
+			await flushSpendRecordsForTests();
+			await settle();
+			error.mockRestore();
+			expect(dataContributionMock).toHaveBeenCalledTimes(1);
+			expect(auditRows.map((row) => row.kind)).toEqual(["success", "failure"]);
+			// Data contribution discounts the bill (1% by default): the record is what was debited.
+			const debited = chargeRpcMock.mock.calls.map(([, args]) => args.cost_nanos);
+			expect(debited).toEqual([Math.round(FINAL_TOTAL * 0.99)]);
+			const sent = recorded.flat() as Array<{ billingRequestId: string; costNanos: number; requests: number }>;
+			expect(sent.map((entry) => [entry.billingRequestId, entry.costNanos, entry.requests])).toEqual([["bill_buffered_late", debited[0], 1]]);
+			expect(await daily()).toMatchObject({ costUsedNanos: debited[0], requestsUsed: 1 });
+		});
 	});
 });

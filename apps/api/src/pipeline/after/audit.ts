@@ -279,6 +279,45 @@ function nanosOrNull(value: unknown): number | null {
 	return typeof value === "number" && Number.isFinite(value) && value >= 0 ? Math.round(value) : null;
 }
 
+/** What the wallet confirmed for this request's charge, once its debit went through. */
+function confirmedChargeNanos(ctx: PipelineContext): number | null {
+	const meta = ctx.meta as Record<string, unknown>;
+	return meta.__usageChargeRecorded === true ? nanosOrNull(meta.__chargedNanos) : null;
+}
+
+/**
+ * The request's one spend-limit settlement. The coordinator keeps the first record of a billing
+ * id, so whether it counts as a success or a charged failure is decided once, here, and later
+ * calls do nothing. A confirmed debit is always recorded, whether or not its audit row was
+ * delivered; an admission is released only when nothing was charged.
+ */
+function settleRequestSpend(
+	ctx: PipelineContext,
+	settlement: { kind: "success" | "charged_failure"; rowWritten: boolean; costNanos: number } | { kind: "release" },
+): void {
+	const meta = ctx.meta as Record<string, unknown>;
+	if (meta.__spendSettled === true) return;
+	meta.__spendSettled = true;
+	const oauthClient = keyIdIsOAuthClientId(ctx.meta.apiKeyRef);
+	const confirmed = confirmedChargeNanos(ctx) ?? 0;
+	if (settlement.kind === "release" && (confirmed === 0 || oauthClient)) {
+		releaseSpend(ctx.spendAdmission);
+		return;
+	}
+	if (oauthClient) return;
+	const settle = settlement.kind === "success" ? settleEnforcedSpend : settleChargedFailureSpend;
+	settle({
+		admission: ctx.spendAdmission,
+		rowWritten: settlement.kind === "release" || settlement.rowWritten || confirmed > 0,
+		workspaceId: ctx.workspaceId,
+		keyId: ctx.meta.apiKeyId ?? ctx.keyId ?? null,
+		billingRequestId: ctx.billingRequestId,
+		requestId: ctx.requestId,
+		costNanos: Math.max(settlement.kind === "release" ? 0 : settlement.costNanos, confirmed),
+		internal: ctx.internal,
+	});
+}
+
 export async function handleFailureAudit(
     ctx: PipelineContext,
     result: RequestResult,
@@ -312,10 +351,7 @@ export async function handleFailureAudit(
 	const pending = pendingChargeFields(ctx, isPendingReconciliation(errorDetails));
 	// A charge the wallet confirmed before this failure (the request failed after its debit): the
 	// row records it and spend limits count it, whatever the billing status says.
-	const meta = ctx.meta as Record<string, unknown>;
-	const confirmedCharge = meta.__usageChargeRecorded === true && typeof meta.__chargedNanos === "number" && meta.__chargedNanos >= 0
-		? meta.__chargedNanos
-		: null;
+	const confirmedCharge = confirmedChargeNanos(ctx);
 	const billedNanos = Math.max(0, Math.round(Number(billing?.costNanos ?? pending.costNanos ?? confirmedCharge) || 0));
 	const writeCost = billing != null || pending.costNanos != null || confirmedCharge != null;
 	// Spend limits count the bill even when the wallet did not take it.
@@ -324,7 +360,7 @@ export async function handleFailureAudit(
 	// amount, 0 included (a refund), instead of releasing.
 	const chargedInSteps = (ctx.meta as Record<string, unknown>).__chargedInSteps === true;
 	const settleBilledSpend = (spendNanos > 0 || (writeCost && chargedInSteps)) && !keyIdIsOAuthClientId(ctx.meta.apiKeyRef);
-	if (!settleBilledSpend) releaseSpend(ctx.spendAdmission);
+	if (!settleBilledSpend) settleRequestSpend(ctx, { kind: "release" });
     const protectedOtlp = protectStealthAuditArgs({
         model: ctx.model,
         requestedModel: ctx.requestedModel ?? ctx.model,
@@ -511,20 +547,15 @@ export async function handleFailureAudit(
         onDeliveryFailure: emitGatewayTelemetryDeliveryFailure,
     }).then((deliveries) => {
         if (!settleBilledSpend) return;
-        // A stream charged at drain checkpoints, or a one-off charge pending reconciliation, holds a
-        // debit whether or not this row was written: record it rather than release the admission
-        // (the coordinator counts it until its pending entry expires if no row ever lands).
-        const settleAsFinal = chargedInSteps || pending.expectedCostNanos != null || (confirmedCharge ?? 0) > 0;
+        // A stream charged at drain checkpoints, or a charge pending reconciliation, holds a debit
+        // whether or not this row was written: record it rather than release the admission (the
+        // coordinator counts it until its pending entry expires if no row ever lands).
+        const settleAsFinal = chargedInSteps || pending.expectedCostNanos != null;
         // One record per billing id, at the final total, with 0 successful requests.
-        settleChargedFailureSpend({
-            admission: ctx.spendAdmission,
+        settleRequestSpend(ctx, {
+            kind: "charged_failure",
             rowWritten: settleAsFinal || deliveries.some((delivery) => delivery.sink === "supabase" && delivery.delivered),
-            workspaceId: ctx.workspaceId,
-            keyId: ctx.meta.apiKeyId ?? ctx.keyId ?? null,
-            billingRequestId: ctx.billingRequestId,
-            requestId: ctx.requestId,
             costNanos: spendNanos,
-            internal: ctx.internal,
         });
     }).finally(() => releaseRuntime?.());
     dispatchBackground(telemetry);
@@ -809,20 +840,10 @@ export async function handleSuccessAudit(
 			internal: ctx.internal,
 		});
 	}
-	// Enforce mode only: count the charge with the coordinator (or release the admission when no
-	// row was written). Independent of the legacy key-limit state.
-	if (!keyIdIsOAuthClientId(ctx.meta.apiKeyRef)) {
-		settleEnforcedSpend({
-			admission: ctx.spendAdmission,
-			rowWritten,
-			workspaceId: ctx.workspaceId,
-			keyId: ctx.meta.apiKeyId ?? ctx.keyId ?? null,
-			billingRequestId: ctx.billingRequestId,
-			requestId: ctx.requestId,
-			costNanos: totalNanos,
-			internal: ctx.internal,
-		});
-	}
+	// Enforce mode only: count the charge with the coordinator, as a success. A confirmed debit is
+	// counted even when its row was not delivered; with no row and no debit the admission is
+	// released. Independent of the legacy key-limit state.
+	settleRequestSpend(ctx, { kind: "success", rowWritten, costNanos: totalNanos });
 
 	// A key that never stores content, or a request under zero data retention, is never
 	// sampled for data contribution either.
