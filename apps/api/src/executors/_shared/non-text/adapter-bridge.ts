@@ -932,6 +932,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		return {
 			kind: "completed",
 			ir: undefined,
+			// Adapters for non-idempotent upstreams mark uncertain outcomes terminal.
+			...(adapterResult.terminal ? { terminal: true } : {}),
 			bill: adapterResult.bill,
 			upstream: adapterResult.upstream,
 			keySource,
