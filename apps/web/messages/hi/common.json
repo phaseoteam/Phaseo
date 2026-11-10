@@ -2488,7 +2488,9 @@
 			"message": "संदेश",
 			"messages": "संदेश",
 			"serviceTierLineStyles": "सेवा स्तर की रेखा शैलियाँ",
-			"inAudience": "{audience} में"
+			"inAudience": "{audience} में",
+			"usOnlyInference": "केवल अमेरिका में इन्फ़रेंस",
+			"regionOnlyInference": "केवल {region} में इन्फ़रेंस"
 		},
 		"publicModelCopy": {
 			"days": "{count} दिन",
@@ -2572,6 +2574,40 @@
 			"highlight": "हाइलाइट करें",
 			"highlightNone": "कोई नहीं",
 			"highlightHint": "बाकी सब ग्रे रंग में दिखाया जाता है।"
+		},
+		"hoverCards": {
+			"utc": "UTC",
+			"unix": "Unix",
+			"start": "शुरुआत",
+			"end": "समाप्ति",
+			"duration": "अवधि",
+			"took": "लगा समय",
+			"requests": "अनुरोध",
+			"cost": "लागत",
+			"retires": "{date} को हटेगा",
+			"deprecatedOn": "{date} से अप्रचलित",
+			"lastUsed": "पिछला उपयोग",
+			"replacement": "विकल्प",
+			"requestedAs": "इस रूप में अनुरोधित",
+			"provider": "प्रदाता",
+			"dataPolicy": "डेटा नीति",
+			"notKnown": "ज्ञात नहीं",
+			"attemptOf": "प्रयास {number} / {total}",
+			"errorCode": "त्रुटि कोड",
+			"errorMessage": "संदेश",
+			"balanceAfter": "बाद का बैलेंस",
+			"paymentReference": "भुगतान संदर्भ",
+			"resetsInUtc": "{time} में रीसेट · UTC",
+			"percentUsed": "{percent} उपयोग हुआ",
+			"moreSelectedModels": "{count, plural, one {# और चुना गया मॉडल दिखाएँ} other {# और चुने गए मॉडल दिखाएँ}}",
+			"sourceDetails": "{model} स्रोत का विवरण",
+			"status": "स्थिति",
+			"sourceCompleted": "पूरा हुआ",
+			"sourceFailed": "विफल",
+			"outputTokens": "आउटपुट टोकन",
+			"latency": "विलंब",
+			"agreements": "सहमतियाँ",
+			"uniqueInsight": "अनोखी जानकारी"
 		}
 	},
 	"deprecationNotice": {

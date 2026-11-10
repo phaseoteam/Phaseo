@@ -1041,6 +1041,8 @@
 			"showHiddenProviders": "إظهار المزوّدين المخفيين",
 			"selectPercentile": "تحديد المئين للمزوّدين",
 			"sortBy": "ترتيب المزوّدين حسب {metric}",
+			"sortButton": "ترتيب",
+			"sortDefault": "الترتيب الافتراضي",
 			"provider": "المزوّد",
 			"inputPerMillion": "الإدخال $/M",
 			"outputPerMillion": "الإخراج $/M",

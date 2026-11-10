@@ -1772,10 +1772,10 @@ export default function PricingInsights({
 											<TooltipTrigger asChild>
 												<button
 													type="button"
-												className="flex items-center justify-start gap-2 rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+												className="flex items-center justify-start gap-2 rounded-sm max-sm:w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
 										aria-label={t("tokenShareFrom", { percent: formatPercent(row.tokenSharePct), count: formatTokenCount(row.totalTokens30d, formatLocalizedTokenCount) })}
 												>
-													<div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted">
+													<div className="h-1.5 w-16 overflow-hidden rounded-full bg-muted max-sm:w-auto max-sm:min-w-0 max-sm:flex-1">
 														<div
 															className="h-full rounded-full bg-primary"
 															style={{
@@ -1783,7 +1783,7 @@ export default function PricingInsights({
 															}}
 														/>
 													</div>
-													<div className="w-12 font-medium text-foreground">
+													<div className="w-12 shrink-0 font-medium text-foreground">
 														{formatPercent(row.tokenSharePct)}
 													</div>
 												</button>

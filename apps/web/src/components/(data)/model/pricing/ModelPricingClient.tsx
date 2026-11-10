@@ -21,6 +21,7 @@ import { useTranslations } from "@/i18n/react";
 import { parseAsString, useQueryStates } from "nuqs";
 import {
     ArrowDown,
+    ArrowDownUp,
     ArrowUp,
     Ban,
     CheckCircle2,
@@ -45,6 +46,8 @@ import {
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
     DropdownMenuPortal,
     DropdownMenuSeparator,
     DropdownMenuSub,
@@ -134,7 +137,10 @@ import {
 	MOBILE_STAT_CELL,
 	MOBILE_TABLE_BLOCK,
 	getPriceColumnMobileLabel,
-	isMobileHiddenPriceColumn,
+	MOBILE_PERF_ORDER,
+	MOBILE_PERF_ROW_START,
+	getMobilePriceCellClass,
+	getMobilePriceColumnKeys,
 } from "@/components/(data)/model/pricing/providerTableMobile";
 import {
 	clearProviderInspector,
@@ -573,7 +579,7 @@ function renderTierTablePrice(
 	summary: ReturnType<typeof buildProviderTablePriceSummary>,
 ) {
 	return summary.primary ? (
-		<div className="text-right">
+		<div className="text-right max-sm:text-left">
 			<div className="font-medium tabular-nums text-foreground">
 				{summary.primary.modality === "multimodal" ? <GroupedInputPrice price={summary.primary.formattedPrice} modalities={summary.primary.label} /> : summary.secondary
 					? `${summary.primary.formattedPrice}–${summary.secondary.formattedPrice}`
@@ -702,6 +708,7 @@ function ProviderServiceTierRow({
 	const logoProviderId = sections.logoProviderId;
 	const tSections = useTranslations("Catalogue.modelDetail.sections");
 	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
+	const mobilePriceKeys = getMobilePriceColumnKeys(priceColumns);
 	const discountBadge = getProviderTableDiscountBadge(sections, {
 		discount: tSections("discount"),
 		off: tSections("off"),
@@ -767,7 +774,7 @@ function ProviderServiceTierRow({
 					className={cn(
 						"py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap",
 						MOBILE_STAT_CELL,
-						isMobileHiddenPriceColumn(column) && "max-sm:hidden",
+						getMobilePriceCellClass(mobilePriceKeys, column.key),
 					)}
 				>
 					{renderTierTablePrice(
@@ -775,13 +782,13 @@ function ProviderServiceTierRow({
 					)}
 				</TableCell>
 			))}
-			<TableCell data-label={tProvider("latency")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL)}>
+			<TableCell data-label={tProvider("latency")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL, MOBILE_PERF_ROW_START, MOBILE_PERF_ORDER)}>
 				{plan === "batch" ? "--" : formatTierLatency(runtimeStats?.latencyMs30m)}
 			</TableCell>
-			<TableCell data-label={tProvider("throughput")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL)}>
+			<TableCell data-label={tProvider("throughput")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL, MOBILE_PERF_ORDER)}>
 				{plan === "batch" ? "--" : formatTierThroughput(runtimeStats?.throughput30m)}
 			</TableCell>
-			<TableCell data-label={tProvider("uptime")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL)}>
+			<TableCell data-label={tProvider("uptime")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL, MOBILE_PERF_ORDER)}>
 				{plan === "batch" ? "--" : formatTierUptime(runtimeStats)}
 			</TableCell>
 		</TableRow>
@@ -827,6 +834,7 @@ export default function ModelPricingClient({
     emptyState?: React.ReactNode;
 }) {
 	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
+	const tSortState = useTranslations("Common.ui.finalSharedCopy");
 	const tPricingEmpty = useTranslations("Catalogue.modelDetail.emptyStates");
     const pricingTimeMs = usePricingClock(initialPricingTimeMs);
 	const pricingPath = `/api/_web/models/${encodeURIComponent(modelId)}/pricing` as const;
@@ -1708,6 +1716,71 @@ export default function ModelPricingClient({
 		);
 	};
 
+	// Phones hide the column headers, so sorting moves to a Sort menu next to Filters.
+	// Picking a metric sorts by it; picking the active metric again flips the direction.
+	// The active metric shows an arrow for the current direction.
+	const mobileSortPriceKeys = getMobilePriceColumnKeys(visiblePriceColumns);
+	const mobileSortOptions: Array<{ option: Exclude<SortOption, "default">; label: string }> = [
+		...mobileSortPriceKeys
+			.map((key) => visiblePriceColumns.find((column) => column.key === key))
+			.filter((column): column is (typeof visiblePriceColumns)[number] => Boolean(column))
+			.map((column) => ({ option: column.sort, label: getPriceColumnMobileLabel(column) })),
+		{ option: "latency", label: tProvider("latency") },
+		{ option: "throughput", label: tProvider("throughput") },
+		{ option: "uptime", label: tProvider("uptime") },
+	];
+	const applySort = (nextSort: SortOption, nextDirection: SortDirection) => {
+		setSort(nextSort);
+		setSortDirection(nextDirection);
+		updateUrlState(
+			nextSort === "default"
+				? { [SORT_QUERY_KEY]: null, [SORT_DIRECTION_QUERY_KEY]: null }
+				: { [SORT_QUERY_KEY]: nextSort, [SORT_DIRECTION_QUERY_KEY]: nextDirection },
+		);
+	};
+	const handleMobileSortSelect = (option: Exclude<SortOption, "default">) => {
+		if (sort === option) {
+			applySort(option, sortDirection === "asc" ? "desc" : "asc");
+			return;
+		}
+		applySort(option, getDefaultSortDirection(option));
+	};
+	const SortDirectionIcon = sortDirection === "asc" ? ArrowUp : ArrowDown;
+	const renderMobileSortMenu = () => (
+		<DropdownMenu>
+			<DropdownMenuTrigger
+				render={
+					<Button type="button" variant="outline" size="sm" className="h-8 min-w-0 flex-1 justify-center gap-2 rounded-md px-3 text-xs sm:hidden" />
+				}
+			>
+				<ArrowDownUp className="size-3.5" />
+				{tProvider("sortButton")}
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align="end" className="w-56 rounded-md">
+				{/* Radio items expose the selected sort; the active metric also announces its direction. */}
+				<DropdownMenuRadioGroup value={sort} onValueChange={() => {}}>
+					<DropdownMenuRadioItem value="default" onClick={() => applySort("default", "desc")}>
+						{tProvider("sortDefault")}
+					</DropdownMenuRadioItem>
+					<DropdownMenuSeparator />
+					{mobileSortOptions.map(({ option, label }) => (
+						<DropdownMenuRadioItem key={option} value={option} onClick={() => handleMobileSortSelect(option)}>
+							<span className="flex-1">{label}</span>
+							{sort === option ? (
+								<>
+									<SortDirectionIcon className="size-4 text-foreground" aria-hidden="true" />
+									<span className="sr-only">
+										{tSortState(sortDirection === "asc" ? "sortedAscending" : "sortedDescending")}
+									</span>
+								</>
+							) : null}
+						</DropdownMenuRadioItem>
+					))}
+				</DropdownMenuRadioGroup>
+			</DropdownMenuContent>
+		</DropdownMenu>
+	);
+
     return (
         <div className="space-y-6">
             <div className={cn(
@@ -1856,6 +1929,7 @@ export default function ModelPricingClient({
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
+                        {renderMobileSortMenu()}
                         <ModelPercentileSelect
                             value={selectedPercentile}
                             onChange={handlePercentileChange}

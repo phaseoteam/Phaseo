@@ -1,0 +1,58 @@
+# Phaseo Connect relay (connect.phaseo.app): routes end-to-end encrypted
+# envelopes between the desktop app and its phones, one ConnectRoom Durable
+# Object per desktop. Deploying a Worker restarts its Durable Objects and ends
+# their WebSockets, so the relay is kept out of phaseo-gateway (deployed on
+# every merge) and deployed by hand (docs/operations/phaseo-connect.md).
+#
+# Vars mirror phaseo-gateway's so the gateway key check behaves the same;
+# src/connect-worker-config.test.ts checks they still match. Secrets (set with
+# wrangler secret put --config wrangler.connect.toml): SUPABASE_SERVICE_ROLE_KEY,
+# KEY_PEPPER_ACTIVE and, during a pepper rotation, KEY_PEPPER_PREVIOUS.
+name = "phaseo-connect"
+main = "src/connect-worker.ts"
+compatibility_date = "2025-10-01"
+compatibility_flags = ["global_fetch_strictly_public", "web_socket_auto_reply_to_close", "nodejs_als"]
+workers_dev = false
+preview_urls = false
+
+[[routes]]
+pattern = "connect.phaseo.app"
+custom_domain = true
+
+[vars]
+ENV = "prod"
+SUPABASE_URL = "https://xansbgjaduxypzsmjwct.supabase.co"
+GATEWAY_PUBLIC_BASE_URL = "https://api.phaseo.app"
+CUSTOMER_RATE_LIMITS_ENABLED = "true"
+RATE_LIMIT_POLICIES_ENABLED = "true"
+SPEND_RULES_ENABLED = "false"
+SPEND_RULE_BLOCKS_ENABLED = "false"
+GATEWAY_CREDIT_WRITEBACK_ENABLED = "true"
+GATEWAY_SPEND_LIMIT_DO_MODE = "enforce"
+GATEWAY_CONTEXT_BUNDLE_ENABLED = "true"
+OTEL_EXPORT_ENABLED = "true"
+BROADCAST_QUEUE_ENABLED = "true"
+STATSIG_ENVIRONMENT_TIER = "production"
+AXIOM_SUCCESS_SAMPLE_RATE = "0.1"
+AXIOM_DETAIL_SAMPLE_RATE = "0.01"
+AXIOM_SLOW_REQUEST_MS = "8000"
+
+[observability]
+[observability.logs]
+enabled = true
+head_sampling_rate = 1
+invocation_logs = true
+
+# The gateway's key cache, read by the key check.
+[[kv_namespaces]]
+binding = "GATEWAY_CACHE"
+id = "f5e23068fcd94125ad9860c817c543d9"
+preview_id = "f5e23068fcd94125ad9860c817c543d9"
+
+[[durable_objects.bindings]]
+name = "CONNECT_ROOM"
+class_name = "ConnectRoom"
+
+[[migrations]]
+tag = "v1-connect-room"
+new_sqlite_classes = ["ConnectRoom"]

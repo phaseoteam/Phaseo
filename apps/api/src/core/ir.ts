@@ -624,6 +624,8 @@ export type IRImageGenerationResponse = {
 	usage?: IRUsage;
 	/** GPT Image SVG output: token usage of the model that wrote the SVG, as OpenAI reports it. */
 	svgUsage?: Record<string, unknown>;
+	/** Images that failed while others in the same request succeeded (MiniMax H3-Image partial results). */
+	errors?: Array<{ index: number; code: string | null; message: string | null }>;
 	rawResponse?: any;
 };
 

@@ -2488,7 +2488,9 @@
 			"message": "mensaje",
 			"messages": "mensajes",
 			"serviceTierLineStyles": "Estilos de línea por nivel de servicio",
-			"inAudience": "En {audience}"
+			"inAudience": "En {audience}",
+			"usOnlyInference": "Inferencia solo en EE. UU.",
+			"regionOnlyInference": "Inferencia solo en {region}"
 		},
 		"publicModelCopy": {
 			"days": "{count, plural, one {# día} other {# días}}",
@@ -2572,6 +2574,40 @@
 			"highlight": "Destacar",
 			"highlightNone": "Ninguna",
 			"highlightHint": "Todo lo demás se muestra en gris."
+		},
+		"hoverCards": {
+			"utc": "UTC",
+			"unix": "Unix",
+			"start": "Inicio",
+			"end": "Fin",
+			"duration": "Duración",
+			"took": "Tardó",
+			"requests": "Solicitudes",
+			"cost": "Coste",
+			"retires": "Se retira el {date}",
+			"deprecatedOn": "obsoleto desde el {date}",
+			"lastUsed": "Último uso",
+			"replacement": "Sustituto",
+			"requestedAs": "Solicitado como",
+			"provider": "Proveedor",
+			"dataPolicy": "Política de datos",
+			"notKnown": "Desconocida",
+			"attemptOf": "Intento {number} de {total}",
+			"errorCode": "Código de error",
+			"errorMessage": "Mensaje",
+			"balanceAfter": "Saldo después",
+			"paymentReference": "Referencia de pago",
+			"resetsInUtc": "Se restablece en {time} · UTC",
+			"percentUsed": "{percent} usado",
+			"moreSelectedModels": "{count, plural, one {Mostrar # modelo seleccionado más} other {Mostrar # modelos seleccionados más}}",
+			"sourceDetails": "Detalles de la fuente {model}",
+			"status": "Estado",
+			"sourceCompleted": "Completada",
+			"sourceFailed": "Fallida",
+			"outputTokens": "Tokens de salida",
+			"latency": "Latencia",
+			"agreements": "Coincidencias",
+			"uniqueInsight": "Aportación única"
 		}
 	},
 	"deprecationNotice": {

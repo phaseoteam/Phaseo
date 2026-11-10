@@ -14,6 +14,7 @@ import { useCSSVariable } from "uniwind";
 import { OverlayHost, routeSheetOptions } from "@/components/ui";
 import { AppAnalytics } from "@/components/AppAnalytics";
 import { ThemeSync } from "@/features/account/ThemeSync";
+import { DesktopConnections } from "@/features/desktops/DesktopConnections";
 import { NotificationObserver } from "@/features/notifications/NotificationObserver";
 import { LogoDataLoader } from "@/lib/logos";
 import { trackAppError } from "@/lib/appAnalytics";
@@ -85,6 +86,7 @@ function RootNavigator() {
       <NavigationBar style={resolved === "dark" ? "dark" : "light"} />
       <ThemeSync />
       <NotificationObserver />
+      <DesktopConnections />
       <LogoDataLoader />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(app)" />

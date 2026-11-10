@@ -55,6 +55,12 @@ import {
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import {
+	HoverCardBody,
+	HoverCardFacts,
+	HoverCardHeadline,
+	HoverCardTitle,
+} from "@/components/ui/hover-card-layout";
+import {
 	Empty,
 	EmptyDescription,
 	EmptyHeader,
@@ -351,6 +357,7 @@ const LimitPillStack = memo(function LimitPillStack({
 	metricLabel: "requests" | "spend";
 }) {
 	const t = useTranslations("SettingsUI");
+	const tCards = useTranslations("Common.ui.hoverCards");
 	const format = useDisplayFormatters();
 	const now = useLimitClock();
 	// Without a server observation time, fall back to projecting from the client clock.
@@ -406,7 +413,10 @@ const LimitPillStack = memo(function LimitPillStack({
 					<HoverCard key={window.label} openDelay={120} closeDelay={100}>
 						<HoverCardTrigger asChild>
 							<div
-								className={`flex h-6 min-w-0 cursor-help items-center gap-1.5 rounded-md border px-1.5 text-[11px] leading-none ${pillClass}`}
+								tabIndex={0}
+								role="group"
+								aria-label={meterLabel}
+								className={`flex h-6 min-w-0 cursor-help items-center gap-1.5 rounded-md border px-1.5 text-[11px] leading-none outline-none focus-visible:ring-2 focus-visible:ring-ring/50 ${pillClass}`}
 							>
 								<span className="w-3 shrink-0 font-medium">{window.label}</span>
 								<LimitRadial pct={clamped} projectedPct={projectedPct} tone={tone} />
@@ -418,21 +428,21 @@ const LimitPillStack = memo(function LimitPillStack({
 								</span>
 							</div>
 						</HoverCardTrigger>
-						<HoverCardContent align="start" className="w-64 p-3">
-							<div className="space-y-3 text-xs">
-								<div>
-									<div className="flex items-center justify-between gap-3">
-										<div className="font-medium text-foreground">{title}</div>
-										<div
-											className={`rounded-md border px-1.5 py-0.5 text-[11px] font-medium leading-none ${pillClass}`}
-										>
-											{value}
-										</div>
-									</div>
-									<div className="mt-1 text-muted-foreground">
-									{t("strings.Resets in {time}" as never, { time: resetText } as never)}
-									</div>
-								</div>
+						<HoverCardContent align="start" className="w-64">
+							<HoverCardBody>
+								<HoverCardTitle
+									title={title}
+									meta={resetText ? tCards("resetsInUtc", { time: resetText }) : null}
+								/>
+								<HoverCardHeadline
+									label={
+										window.limit > 0
+											? `${t("labels.remaining")} · ${tCards("percentUsed", { percent: value })}`
+											: t("labels.used")
+									}
+								>
+									{window.limit > 0 ? formatter(remaining) : formatter(window.used)}
+								</HoverCardHeadline>
 								{showMeter ? (
 									<ForecastMeter
 										used={window.used}
@@ -441,53 +451,49 @@ const LimitPillStack = memo(function LimitPillStack({
 										label={meterLabel}
 									/>
 								) : null}
-								<div className="space-y-1.5">
-									<div className="flex items-center justify-between gap-4">
-											<span className="text-muted-foreground">{t("labels.used")}</span>
-										<span className="font-mono font-medium tabular-nums">
-											{formatter(window.used)}
-										</span>
-									</div>
-									<div className="flex items-center justify-between gap-4">
-											<span className="text-muted-foreground">{t("labels.limit")}</span>
-										<span className="font-mono font-medium tabular-nums">
-											{window.limit > 0 ? formatter(window.limit) : t("strings.No cap" as never)}
-										</span>
-									</div>
-									{window.limit > 0 ? (
-										<div className="flex items-center justify-between gap-4">
-													<span className="text-muted-foreground">{t("labels.remaining")}</span>
-											<span className="font-mono font-semibold tabular-nums text-foreground">
-												{formatter(remaining)}
-											</span>
-										</div>
-									) : null}
-									{forecast && forecast.projected > window.used ? (
-										<div className="flex items-center justify-between gap-4">
-											<span className="text-muted-foreground">{t("strings.On pace for" as never)}</span>
-											<span
-												className={`font-mono font-medium tabular-nums ${reachesLimitAt !== null ? "text-amber-700 dark:text-amber-300" : ""}`}
-											>
-												{formatter(forecast.projected)}
-											</span>
-										</div>
-									) : null}
-									{reachesLimitText ? (
-										<div className="flex items-center justify-between gap-4">
-											<span className="text-muted-foreground">{t("strings.Reaches limit" as never)}</span>
-											<span className="font-mono font-medium tabular-nums text-amber-700 dark:text-amber-300">
-												~{reachesLimitText}
-											</span>
-										</div>
-									) : null}
-									<div className="flex items-center justify-between gap-4 border-t pt-1.5">
-													<span className="text-muted-foreground">{t("labels.reset")}</span>
-										<span className="font-mono font-semibold tabular-nums text-foreground">
-											{resetText}
-										</span>
-									</div>
-								</div>
-							</div>
+								<HoverCardFacts
+									rows={[
+										{
+											key: "used",
+											label: t("labels.used"),
+											value: <span className="tabular-nums">{formatter(window.used)}</span>,
+										},
+										{
+											key: "limit",
+											label: t("labels.limit"),
+											value: (
+												<span className="tabular-nums">
+													{window.limit > 0 ? formatter(window.limit) : t("strings.No cap" as never)}
+												</span>
+											),
+										},
+										forecast && forecast.projected > window.used
+											? {
+													key: "pace",
+													label: t("strings.On pace for" as never),
+													value: (
+														<span
+															className={`tabular-nums ${reachesLimitAt !== null ? "text-amber-700 dark:text-amber-300" : ""}`}
+														>
+															{formatter(forecast.projected)}
+														</span>
+													),
+												}
+											: null,
+										reachesLimitText
+											? {
+													key: "reaches",
+													label: t("strings.Reaches limit" as never),
+													value: (
+														<span className="tabular-nums text-amber-700 dark:text-amber-300">
+															~{reachesLimitText}
+														</span>
+													),
+												}
+											: null,
+									]}
+								/>
+							</HoverCardBody>
 						</HoverCardContent>
 					</HoverCard>
 				);

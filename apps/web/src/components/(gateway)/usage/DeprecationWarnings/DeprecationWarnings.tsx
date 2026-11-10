@@ -91,7 +91,7 @@ function AlertCard({
 		mode === "deprecated" ? (
 			<RetiresBadge
 				label={deprecatedBadgeLabel}
-				retirementDate={row.retirementDate}
+				row={row}
 				className={deprecatedBadgeClassName}
 			/>
 		) : (

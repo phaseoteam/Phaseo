@@ -5,92 +5,100 @@ import {
 	HoverCardContent,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import { Button } from "@/components/ui/button";
+import {
+	HoverCardBadgeRow,
+	HoverCardBody,
+	HoverCardFacts,
+	HoverCardHeadline,
+	HoverCardTitle,
+	type HoverCardFact,
+} from "@/components/ui/hover-card-layout";
+import { useTranslations } from "@/i18n/react";
 import { cn } from "@/lib/utils";
-import { ArrowUpRight } from "lucide-react";
 
-type HoverCardRow = {
-	label: string;
-	value: React.ReactNode;
-};
+export type UsageEntityHoverCardRow = HoverCardFact;
 
+const TRIGGER_CLASS =
+	"inline-flex min-w-0 items-center gap-2 rounded-sm text-foreground underline decoration-transparent decoration-1 underline-offset-4 outline-none transition-[text-decoration-color] duration-200 hover:decoration-foreground focus-visible:ring-2 focus-visible:ring-ring/50";
+
+function stopPropagation(event: React.MouseEvent) {
+	event.stopPropagation();
+}
+
+/**
+ * A model, provider, key or app in the usage pages, with a hover card. The
+ * trigger is the link when there is an href (so the card has no "View" button),
+ * otherwise a focusable span.
+ */
 export default function UsageEntityHoverCard({
 	children,
 	title,
-	subtitle,
+	meta,
+	headline,
+	headlineLabel,
 	href,
-	rows,
+	rows = [],
+	badges,
 	visual,
-	actionLabel,
+	requestedAs,
+	triggerClassName,
 	disabled = false,
 }: {
-	children: React.ReactElement<{ className?: string }>;
+	/** The trigger's content; the card wraps it in the link or focusable span. */
+	children: React.ReactNode;
 	title: string;
-	subtitle?: React.ReactNode;
+	/** Muted line under the title; parts are usually joined with " · ". */
+	meta?: React.ReactNode;
+	headline?: React.ReactNode;
+	headlineLabel?: React.ReactNode;
 	href?: string | null;
-	rows: HoverCardRow[];
+	rows?: ReadonlyArray<UsageEntityHoverCardRow | null | false | undefined>;
+	badges?: React.ReactNode;
 	visual?: React.ReactNode;
-	actionLabel?: string;
+	/** The model id the client asked for; shown only when it differs from the routed one. */
+	requestedAs?: { id: string; routedId: string | null } | null;
+	triggerClassName?: string;
 	disabled?: boolean;
 }) {
-	if (disabled) return children;
-	const resolvedActionLabel = actionLabel
-		?? (href?.startsWith("/models/")
-			? "View model"
-			: href?.startsWith("/api-providers/")
-				? "View provider"
-				: href?.startsWith("/settings/keys")
-					? "View key"
-					: href?.startsWith("/apps/")
-						? "View app"
-						: "View details");
-	const trigger = React.cloneElement(children, {
-		className: cn(
-			children.props.className,
-			"cursor-help text-foreground no-underline decoration-1 decoration-foreground underline-offset-2 hover:underline hover:decoration-foreground",
-		),
-	} as React.HTMLAttributes<HTMLElement>);
+	const t = useTranslations("Common.ui.hoverCards");
+	const trigger = href ? (
+		<Link href={href} className={cn(TRIGGER_CLASS, triggerClassName)} onClick={stopPropagation}>
+			{children}
+		</Link>
+	) : (
+		<span tabIndex={disabled ? undefined : 0} className={cn(TRIGGER_CLASS, !disabled && "cursor-help", triggerClassName)}>
+			{children}
+		</span>
+	);
+	if (disabled) return trigger;
+
+	const showRequestedAs = Boolean(
+		requestedAs?.id && requestedAs.routedId && requestedAs.id !== requestedAs.routedId,
+	);
 
 	return (
-		<HoverCard openDelay={140} closeDelay={100}>
+		<HoverCard>
 			<HoverCardTrigger asChild>{trigger}</HoverCardTrigger>
-			<HoverCardContent align="start" className="w-[min(86vw,288px)] rounded-md p-4">
-				<div className="space-y-3">
-					<div className="flex items-start gap-3">
-						{visual ? <div className="mt-0.5 shrink-0 rounded-md">{visual}</div> : null}
-						<div className="min-w-0">
-							<div className="truncate text-sm font-semibold text-foreground">{title}</div>
-							{subtitle ? (
-								<div className="mt-0.5 text-xs leading-5 text-muted-foreground">
-									{subtitle}
-								</div>
-							) : null}
-						</div>
-					</div>
-
-					{rows.length ? <div className="grid gap-2 border-t border-border/60 pt-3 text-xs">
-						{rows.map((row) => (
-							<div
-								key={row.label}
-								className="grid grid-cols-[88px_minmax(0,1fr)] items-start gap-2"
-							>
-								<div className="text-muted-foreground">{row.label}</div>
-								<div className="min-w-0 break-words text-foreground">
-									{row.value}
-								</div>
-							</div>
-						))}
-					</div> : null}
-
-					{href ? (
-						<Button asChild variant="outline" size="sm" className="h-8 w-full rounded-md">
-							<Link href={href} className="gap-1.5">
-								{resolvedActionLabel}
-								<ArrowUpRight className="size-3.5" />
-							</Link>
-						</Button>
+			<HoverCardContent align="start" className="w-[min(86vw,288px)]">
+				<HoverCardBody>
+					<HoverCardTitle icon={visual} title={title} meta={meta} />
+					{headline != null && headline !== "" ? (
+						<HoverCardHeadline label={headlineLabel}>{headline}</HoverCardHeadline>
 					) : null}
-				</div>
+					<HoverCardFacts
+						rows={[
+							...rows,
+							showRequestedAs && requestedAs
+								? {
+										key: "requested-as",
+										label: t("requestedAs"),
+										value: <code className="font-mono text-[11px]">{requestedAs.id}</code>,
+									}
+								: null,
+						]}
+					/>
+					{badges ? <HoverCardBadgeRow>{badges}</HoverCardBadgeRow> : null}
+				</HoverCardBody>
 			</HoverCardContent>
 		</HoverCard>
 	);

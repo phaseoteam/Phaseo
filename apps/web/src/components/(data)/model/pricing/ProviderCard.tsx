@@ -74,7 +74,10 @@ import {
 	MOBILE_ROW,
 	MOBILE_STAT_CELL,
 	getPriceColumnMobileLabel,
-	isMobileHiddenPriceColumn,
+	MOBILE_PERF_ORDER,
+	MOBILE_PERF_ROW_START,
+	getMobilePriceCellClass,
+	getMobilePriceColumnKeys,
 } from "@/components/(data)/model/pricing/providerTableMobile";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import type { PricingRuntimeStats as ProviderRuntimeStats } from "./pricingRuntimeStats";
@@ -278,6 +281,20 @@ export function getUptimeTrendPoints(
 	});
 }
 
+function formatShortWeekday(dayOffset: number, locale: string): string {
+	// Uptime days are UTC days, so name them in UTC too.
+	const date = new Date(Date.now() - dayOffset * 86_400_000);
+	return new Intl.DateTimeFormat(locale, { weekday: "short", timeZone: "UTC" }).format(date);
+}
+
+function formatUptimeDayLabel(dayOffset: number, locale: string, todayLabel: string): string {
+	if (dayOffset === 0) return todayLabel;
+	return new Intl.RelativeTimeFormat(locale, { numeric: "always", style: "short" }).format(
+		-dayOffset,
+		"day",
+	);
+}
+
 /**
  * Reachable, accepted and completed per provider attempt, with the share that
  * failed each step. Percentages only: the counts behind them reveal the model's
@@ -398,7 +415,8 @@ export function ProviderUptimeCell({
 	const content = (
 		<>
 			<span>{valueLabel}</span>
-			<UptimeSparkline points={points} />
+			{/* Phones show the labelled day strip under the cell instead. */}
+			<UptimeSparkline points={points} className="max-sm:hidden" />
 		</>
 	);
 	if (!points.some((point) => point.value != null)) return <div className={className}>{content}</div>;
@@ -425,6 +443,50 @@ export function ProviderUptimeCell({
  * The bars are a picture; the cell around them carries the card with each
  * day's rate.
  */
+/**
+ * Phones can't hover the sparkline, so cards show the same three days as a labelled
+ * strip: one coloured bar per day with its name underneath, readable without a tap.
+ */
+export function UptimeDayStrip({
+	points,
+	className,
+}: {
+	points: UptimeTrendPoint[];
+	className?: string;
+}) {
+	const t = useTranslations("Catalogue.modelDetail.sections");
+	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
+	const locale = useLocale();
+	if (!points.some((point) => point.value != null)) return null;
+
+	return (
+		<span role="list" aria-label={t("dailyUptime")} className={cn("flex gap-1", className)}>
+			{points.map((point) => {
+				const day = formatUptimeDayLabel(point.dayOffset, locale, t("today"));
+				// Short weekday names fit the narrow strip; the accessible label keeps the full day.
+				const shortDay = point.dayOffset === 0 ? t("today") : formatShortWeekday(point.dayOffset, locale);
+				const description = point.noTraffic
+					? tProvider("uptimeDayNoTraffic", { day })
+					: `${day}: ${formatPercent(point.value, locale)}`;
+				return (
+					<span key={point.dayOffset} role="listitem" aria-label={description} className="flex min-w-0 flex-1 flex-col gap-1">
+						<span
+							aria-hidden="true"
+							className={cn(
+								"block h-[3px] rounded-full bg-current",
+								point.value == null ? "text-muted-foreground opacity-45" : uptimeValueClass(point.value),
+							)}
+						/>
+						<span aria-hidden="true" className="truncate text-center text-[10px] font-normal text-muted-foreground">
+							{shortDay}
+						</span>
+					</span>
+				);
+			})}
+		</span>
+	);
+}
+
 export function UptimeSparkline({
 	points,
 	className,
@@ -1142,14 +1204,14 @@ function renderTablePriceSummary(
 	const variantLabels = [summary.primary.label, summary.secondary?.label]
 		.filter((label): label is string => Boolean(label));
 	return (
-		<div className="text-right">
+		<div className="text-right max-sm:text-left">
 			<div className={cn("font-medium tabular-nums", accentClassName)}>
 				{summary.primary.modality === "multimodal" ? <GroupedInputPrice price={summary.primary.formattedPrice} modalities={summary.primary.label} /> : summary.secondary
 					? `${summary.primary.formattedPrice}–${summary.secondary.formattedPrice}`
 					: summary.primary.formattedPrice}
 			</div>
 			{showVideoVariant ? (
-				<div className="max-w-40 truncate text-[10px] font-normal text-muted-foreground">
+				<div className="max-w-40 truncate text-[10px] font-normal text-muted-foreground max-sm:hidden">
 					{variantLabels.join(" · ")}
 					{summary.extraCount > 0 ? ` · +${summary.extraCount}` : ""}
 				</div>
@@ -2383,6 +2445,7 @@ export default function ProviderCard({
 			: fallback ?? null;
 	const tableUptimePct = getDisplayedUptimePct(runtimeStats);
 	const tableUptimeTrendPoints = getUptimeTrendPoints(runtimeStats);
+	const mobilePriceKeys = getMobilePriceColumnKeys(priceColumns);
 	const tableThroughputValue = formatThroughputValue(runtimeStats?.throughput30m, locale);
 	const activeDiscountEntries = collectDiscountEntriesFromSections(sec);
 	// A promotion can have an open-ended published duration. Show its discount
@@ -2874,20 +2937,24 @@ export default function ProviderCard({
 		<div className="space-y-2.5">
 			{tokenMetricGroups.map((group) => (
 				<div key={group.label} className="space-y-1">
+					{/* Phones stack the tiles: side by side, promo and regional prices don't fit. */}
 					<div
-						className="grid"
-						style={{
-							gridTemplateColumns: `repeat(${group.columns}, minmax(0, 1fr))`,
-						}}
+						className="grid grid-cols-1 sm:grid-cols-[var(--token-tile-columns)]"
+						style={
+							{
+								"--token-tile-columns": `repeat(${group.columns}, minmax(0, 1fr))`,
+							} as React.CSSProperties
+						}
 					>
 						{group.tiles.map((tile, index) => (
 							<div
 								key={tile.key}
 								className={cn(
-									"min-h-[78px] min-w-0 py-2.5",
+									"min-h-[78px] min-w-0 py-2.5 max-sm:min-h-0",
 									index % group.columns === 0
 										? "pr-3"
-										: "border-l border-zinc-200/80 px-3 dark:border-zinc-800",
+										: "border-l border-zinc-200/80 px-3 dark:border-zinc-800 max-sm:border-l-0 max-sm:px-0",
+									index > 0 && "max-sm:border-t max-sm:border-zinc-200/80 max-sm:dark:border-zinc-800",
 								)}
 							>
 								<div className="text-[11px] text-muted-foreground">
@@ -3286,7 +3353,7 @@ export default function ProviderCard({
 								className={cn(
 									"py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap",
 									MOBILE_STAT_CELL,
-									isMobileHiddenPriceColumn(column) && "max-sm:hidden",
+									getMobilePriceCellClass(mobilePriceKeys, column.key),
 								)}
 							>
 								{renderTablePriceSummary(
@@ -3297,13 +3364,13 @@ export default function ProviderCard({
 						))
 					)
 				) : null}
-				<TableCell data-label={tProvider("latency")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL)}>
+				<TableCell data-label={tProvider("latency")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL, MOBILE_PERF_ROW_START, MOBILE_PERF_ORDER)}>
 					<div className="font-medium text-foreground">{tablePerformanceMetrics[0].value}</div>
 				</TableCell>
-				<TableCell data-label={tProvider("throughput")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL)}>
+				<TableCell data-label={tProvider("throughput")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL, MOBILE_PERF_ORDER)}>
 					<div className="font-medium text-foreground">{tablePerformanceMetrics[1].value}</div>
 				</TableCell>
-				<TableCell data-label={tProvider("uptime")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL)}>
+				<TableCell data-label={tProvider("uptime")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL, MOBILE_PERF_ORDER)}>
 					<ProviderUptimeCell
 						valueLabel={tablePerformanceMetrics[2].value}
 						valueClassName={tablePerformanceMetrics[2].valueClassName}
@@ -3311,6 +3378,7 @@ export default function ProviderCard({
 						runtimeStats={runtimeStats}
 						points={tableUptimeTrendPoints}
 					/>
+					<UptimeDayStrip points={tableUptimeTrendPoints} className="mt-1 sm:hidden" />
 				</TableCell>
 			</TableRow>
 			<TableRow className={cn("h-0 border-0 hover:bg-transparent", MOBILE_BLOCK_ROW)}>
