@@ -5,7 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // branch ships (main's, unchanged): the real stream handler, charge helpers, failure/success audit
 // and spend-limit isolate, with only the wallet RPCs, the telemetry sinks and the seed read
 // replaced. Checkpoints debit the wallet; the coordinator gets one record, at the final settlement,
-// with the final total, and counts it once, also after the seed takes it over.
+// with the final total (0 successful requests for a charged failure).
+//
+// The fake seed follows main's gateway_spend_limit_seed: it counts successful request rows only
+// (`success is true`) and returns excluded rows with their real success flag. Under main's SQL a
+// charged failure stops counting once its row is seen; keeping it counted after a reseed is #3547's
+// seed SQL ("money movements win"), which #3633 ships inside, and #3547's real-SQL test covers it.
+// So this file asserts no counts after a reseed for failure rows.
 const runtime = vi.hoisted(() => ({ bindings: null as Record<string, unknown> | null, background: [] as Promise<unknown>[] }));
 const chargeRpcMock = vi.hoisted(() => vi.fn(async (_kind: string, _args: any) => ({ applied: true })));
 
@@ -66,15 +72,16 @@ const WORKSPACE = "10000000-0000-4000-8000-000000000051";
 const KEY = "30000000-0000-4000-8000-000000000051";
 const FINAL_TOTAL = 120 * 1_000 + 250 * 10_000;
 
-/** What the seed reads from Postgres: successful request rows, minus the ids the coordinator excludes. */
-const rows: Array<{ requestId: string; cost: number }> = [];
+/** gateway_requests rows the seed reads; like main's SQL it counts only successful ones, minus excluded ids. */
+const rows: Array<{ requestId: string; cost: number; success: boolean }> = [];
 const day = () => { const date = new Date(); date.setUTCHours(0, 0, 0, 0); return date.getTime(); };
 
 class SeededCoordinator extends SpendLimitDurableObject {
 	protected override async loadSeed(_workspaceId: string, keyIds: string[], exclude: string[]): Promise<any> {
 		const start = day();
-		const used = rows.filter((row) => !exclude.includes(row.requestId)).reduce((sum, row) => sum + row.cost, 0);
-		const count = rows.filter((row) => !exclude.includes(row.requestId)).length;
+		const counted = rows.filter((row) => row.success && !exclude.includes(row.requestId));
+		const used = counted.reduce((sum, row) => sum + row.cost, 0);
+		const count = counted.length;
 		const iso = (ms: number) => new Date(ms).toISOString();
 		const week = start - ((new Date(start).getUTCDay() + 6) % 7) * 86_400_000;
 		const month = Date.UTC(new Date(start).getUTCFullYear(), new Date(start).getUTCMonth(), 1);
@@ -90,7 +97,7 @@ class SeededCoordinator extends SpendLimitDurableObject {
 			budget_status: { ok: true, budgets: [] },
 			department_budgets: [],
 			excluded_rows: rows.filter((row) => exclude.includes(row.requestId)).map((row) => ({
-				request_id: row.requestId, key_id: KEY, success: true, cost_nanos: row.cost, created_at: iso(Date.now()),
+				request_id: row.requestId, key_id: KEY, success: row.success, cost_nanos: row.cost, created_at: iso(Date.now()),
 			})),
 		};
 	}
@@ -219,7 +226,7 @@ describe("a stream charged at drain checkpoints, with main's spend-limit coordin
 		expect(sent.map((entry) => [entry.billingRequestId, entry.costNanos])).toEqual([["bill_settle", FINAL_TOTAL]]);
 		expect(await dailyCost()).toBe(FINAL_TOTAL);
 		// The request row lands and the seed takes it over: still counted once.
-		rows.push({ requestId: "req_settle", cost: FINAL_TOTAL });
+		rows.push({ requestId: "req_settle", cost: FINAL_TOTAL, success: true });
 		await coordinator.reseedNow();
 		await coordinator.reseedNow();
 		expect(await dailyCost()).toBe(FINAL_TOTAL);
@@ -253,5 +260,6 @@ describe("a stream charged at drain checkpoints, with main's spend-limit coordin
 		const sent = recorded.flat() as Array<{ billingRequestId: string; costNanos: number; requests: number }>;
 		expect(sent.map((entry) => [entry.billingRequestId, entry.costNanos, entry.requests])).toEqual([["bill_cancel", 1_000_000, 0]]);
 		expect(await daily()).toMatchObject({ costUsedNanos: 1_000_000, requestsUsed: 0 });
+		// No count after a reseed here: main's seed leaves out unsuccessful rows; #3547 covers it.
 	});
 });
