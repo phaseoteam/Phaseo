@@ -517,7 +517,9 @@ export async function handleSuccessAudit(
         gatewayE2eMs: endToEndMs,
         failoverMs: resolveFailoverMs(ctx),
         outputArrivals: ctx.meta.outputArrivals ?? null,
-        speedWindow: isStream ? resolveOutputSpeedWindow(ctx) : undefined,
+        // A buffered client's speed comes from the materialized provider round, whose
+        // arrival count keeps one read plus a late terminal frame from looking like a stream.
+        speedWindow: isStream ? resolveOutputSpeedWindow(ctx) : (ctx.meta.lastProviderRoundSpeedWindow ?? null),
     });
     // Throughput is API-owned: output tokens divided by the full provider duration in seconds.
     ctx.meta.throughput_tps = outputPerformance.effectiveThroughputTps ?? undefined;
