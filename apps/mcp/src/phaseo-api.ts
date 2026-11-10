@@ -177,6 +177,8 @@ export type ModelSearchOptions = {
 	query?: string;
 	provider?: string;
 	modality?: "text" | "image" | "audio" | "video";
+	outputTypes?: string[];
+	parameters?: string[];
 	minimumContextTokens?: number;
 	maximumInputPricePerMillion?: number;
 	gatewayAvailableOnly?: boolean;
@@ -201,6 +203,9 @@ export async function searchModels(
 			search: options.query,
 			provider_search: options.provider,
 			input_modality: options.modality,
+			output_types: options.outputTypes?.length ? options.outputTypes.join(",") : undefined,
+			// The API keeps offers that support any listed parameter; models_list then requires all of them.
+			supported_parameters: options.parameters?.length ? options.parameters.join(",") : undefined,
 			minimum_context_tokens: options.minimumContextTokens,
 			maximum_input_price_per_million: options.maximumInputPricePerMillion,
 			gateway_available_only: options.gatewayAvailableOnly || undefined,

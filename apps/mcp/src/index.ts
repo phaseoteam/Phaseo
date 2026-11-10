@@ -222,7 +222,9 @@ const modelSummarySchema = {
 	description: z.string().nullable(),
 	provider: z.string().nullable(),
 	releaseDate: z.string().nullable(),
+	lifecycleStatus: z.enum(["active", "deprecated", "retired"]).nullable(),
 	contextTokens: z.number().int().nullable(),
+	maxOutputTokens: z.number().int().nullable(),
 	inputModalities: z.array(z.string()),
 	outputModalities: z.array(z.string()),
 	supportedEndpoints: z.array(z.string()),
@@ -366,7 +368,9 @@ function modelSummary(env: PhaseoEnv, model: Awaited<ReturnType<typeof listModel
 		supportedEndpoints: model.capabilities.endpoints,
 		provider: model.organization?.name ?? null,
 		releaseDate: model.lifecycle.released_at,
+		lifecycleStatus: model.lifecycle.status,
 		contextTokens: model.limits.input_tokens,
+		maxOutputTokens: model.limits.output_tokens,
 		inputModalities: model.modalities.input,
 		outputModalities: model.modalities.output,
 		inputPricePerToken: inputPrice === null ? null : String(inputPrice.rate),
@@ -394,7 +398,59 @@ function modelSummary(env: PhaseoEnv, model: Awaited<ReturnType<typeof listModel
 	};
 }
 
-type ModelSort = "relevance" | "input_price" | "output_price" | "context_length" | "provider_count";
+type ModelSort = "relevance" | "input_price" | "output_price" | "context_length" | "provider_count" | "release_date";
+
+// The catalogue spells some output types more than one way, so each filter value matches every spelling.
+const OUTPUT_TYPE_ALIASES = {
+	text: ["text"],
+	image: ["image", "image/*"],
+	audio: ["audio", "audio_tts", "audio_music", "music"],
+	video: ["video", "video/*"],
+	embeddings: ["embeddings", "embedding"],
+} as const;
+
+export function outputTypeAliases(outputType: keyof typeof OUTPUT_TYPE_ALIASES | undefined): string[] | undefined {
+	return outputType ? [...OUTPUT_TYPE_ALIASES[outputType]] : undefined;
+}
+
+// Same rule as the API's catalogue filter: a parameter is supported when it is listed or described.
+function offerSupportsParameter(offer: GatewayModel["offers"][number], parameter: string): boolean {
+	return offer.capabilities.parameters.includes(parameter)
+		|| Object.hasOwn(offer.capabilities.parameter_details, parameter);
+}
+
+function releaseTime(model: GatewayModel): number | null {
+	const released = model.lifecycle.released_at ? Date.parse(model.lifecycle.released_at) : Number.NaN;
+	return Number.isFinite(released) ? released : null;
+}
+
+export type ModelFilters = {
+	parameters?: string[];
+	releasedAfter?: string;
+	hideDeprecated?: boolean;
+};
+
+// Requested parameters keep only the offers that support all of them, and the model's aggregate prices only
+// from those providers, so every price shown comes from a provider that can serve the request. Models with no
+// such offer, or with an unknown release date when releasedAfter is set, are left out rather than guessed.
+export function filterModels(models: GatewayModel[], filters: ModelFilters): GatewayModel[] {
+	const parameters = filters.parameters ?? [];
+	const releasedAfter = filters.releasedAfter ? Date.parse(filters.releasedAfter) : null;
+	return models.flatMap((model) => {
+		if (filters.hideDeprecated && (model.lifecycle.status === "deprecated" || model.lifecycle.status === "retired")) return [];
+		if (releasedAfter !== null) {
+			const released = releaseTime(model);
+			if (released === null || released < releasedAfter) return [];
+		}
+		if (!parameters.length) return [model];
+		const offers = model.offers.filter((offer) => parameters.every((parameter) => offerSupportsParameter(offer, parameter)));
+		if (!offers.length) return [];
+		const providers = new Set(offers.map((offer) => offer.provider.id));
+		const meters = Object.fromEntries(Object.entries(model.pricing.meters)
+			.map(([name, meter]) => [name, meter && providers.has(meter.provider_id) ? meter : null]));
+		return [{ ...model, offers, pricing: { ...model.pricing, meters } }];
+	});
+}
 
 function modelSortValue(model: GatewayModel, sortBy: Exclude<ModelSort, "relevance">): number | null {
 	switch (sortBy) {
@@ -406,6 +462,8 @@ function modelSortValue(model: GatewayModel, sortBy: Exclude<ModelSort, "relevan
 			return model.limits.input_tokens;
 		case "provider_count":
 			return model.offers.filter((offer) => offer.routable).length;
+		case "release_date":
+			return releaseTime(model);
 	}
 }
 
@@ -736,23 +794,33 @@ export function createServer(
 		query?: string;
 		provider?: string;
 		modality?: "text" | "image" | "audio" | "video";
+		outputModality?: Parameters<typeof outputTypeAliases>[0];
+		requiredParameters?: string[];
+		releasedAfter?: string;
+		hideDeprecated?: boolean;
 		minimumContextTokens?: number;
 		maximumInputPricePerMillion?: number;
 		gatewayAvailableOnly: boolean;
-		sortBy: "relevance" | "input_price" | "output_price" | "context_length" | "provider_count";
+		sortBy: ModelSort;
 		sortOrder?: "asc" | "desc";
 		limit: number;
 	};
-	const listModels = async ({ query, provider, modality, minimumContextTokens, maximumInputPricePerMillion, gatewayAvailableOnly, sortBy, sortOrder, limit }: ModelListArgs) => {
+	const listModels = async ({
+		query, provider, modality, outputModality, requiredParameters, releasedAfter, hideDeprecated,
+		minimumContextTokens, maximumInputPricePerMillion, gatewayAvailableOnly, sortBy, sortOrder, limit,
+	}: ModelListArgs) => {
 		try {
-			const models = await searchModels(env, {
+			const searched = await searchModels(env, {
 				query,
 				provider,
 				modality,
+				outputTypes: outputTypeAliases(outputModality),
+				parameters: requiredParameters,
 				minimumContextTokens,
 				gatewayAvailableOnly,
 				limit: 250,
 			}, { accessToken: authenticatedUser.accessToken });
+			const models = filterModels(searched, { parameters: requiredParameters, releasedAfter, hideDeprecated });
 			const priceFiltered = maximumInputPricePerMillion === undefined
 				? models
 				: models.filter((model) => {
@@ -799,15 +867,19 @@ export function createServer(
 		{
 			title: "Search Phaseo models",
 			icons: [{ src: modelExplorerIcon, mimeType: "image/svg+xml", sizes: ["20x20"] }],
-			description: "Use this when the user wants to find or compare current AI models, including the cheapest paid standard-tier price and provider-by-provider pricing. A free provider is reported explicitly and never presented as if every provider were free. Filters and sorts the live Phaseo catalogue; it does not measure model quality. Read-only.",
+			description: "Use this when the user wants to find or compare current AI models, including the cheapest paid standard-tier price and provider-by-provider pricing. A free provider is reported explicitly and never presented as if every provider were free. Filters and sorts the live Phaseo catalogue by input and output type, required request parameters (for example tools, response_format or reasoning), context window, release date, lifecycle and price; it does not measure model quality. With requiredParameters, prices and providers come only from offers that support every listed parameter. releasedAfter leaves out models whose release date Phaseo does not know. Read-only.",
 			inputSchema: {
 				query: z.string().max(200).optional(),
 				provider: z.string().max(100).optional(),
 				modality: z.enum(["text", "image", "audio", "video"]).optional(),
+				outputModality: z.enum(["text", "image", "audio", "video", "embeddings"]).optional(),
+				requiredParameters: z.array(z.string().min(1).max(64)).max(10).optional(),
+				releasedAfter: z.string().date().optional(),
+				hideDeprecated: z.boolean().default(false),
 				minimumContextTokens: z.number().int().positive().optional(),
 				maximumInputPricePerMillion: z.number().nonnegative().optional(),
 				gatewayAvailableOnly: z.boolean().default(false),
-				sortBy: z.enum(["relevance", "input_price", "output_price", "context_length", "provider_count"]).default("relevance"),
+				sortBy: z.enum(["relevance", "input_price", "output_price", "context_length", "provider_count", "release_date"]).default("relevance"),
 				sortOrder: z.enum(["asc", "desc"]).optional(),
 				limit: z.number().int().min(1).max(MAX_RESULTS).default(10),
 			},
