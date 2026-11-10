@@ -1,7 +1,7 @@
 import { test, expect } from "vitest";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import type { PricingRule, ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
-import { buildModelOgStats } from "@/lib/fetchers/frontend/getOgPayload";
+import { buildModelOgPromotion, buildModelOgStats, promotionDetailLines } from "@/lib/fetchers/frontend/getOgPayload";
 
 function makeRule(
 	providerId: string,
@@ -150,7 +150,7 @@ test("only uses primary token meters and derives the baseline priority", () => {
 	]));
 });
 
-test("treats a price limited to one app as a promotion of the list price", () => {
+test("treats a price limited to one app as a promotion of the list price and headlines it", () => {
 	const clientMatch = [{ path: "client_id", op: "eq", value: "claude-code" }] as unknown as PricingRule["match"];
 	const pricing = [
 		makeProvider("anthropic", [
@@ -176,5 +176,16 @@ test("treats a price limited to one app as a promotion of the list price", () =>
 		{ label: "INPUT", value: "$6.00", originalValue: "$8.00", helper: "per 1M tokens in Claude Code", promotion: "25% off" },
 		{ label: "OUTPUT", value: "$30.00", originalValue: "$40.00", helper: "per 1M tokens in Claude Code", promotion: "25% off" },
 	]));
+	const promotion = buildModelOgPromotion(pricing);
+	expect(promotion).toEqual({ label: "25% off", endsAt: "2099-11-11T23:59:00Z", audience: "Claude Code" });
+	expect(promotionDetailLines(promotion!)).toEqual(["In Claude Code", "Ends Nov 11, 23:59 UTC"]);
 });
 
+test("has no headline promotion when no promotional price is current", () => {
+	expect(buildModelOgPromotion([
+		makeProvider("anthropic", [
+			makeRule("anthropic", { price_per_unit: 8 }),
+			makeRule("anthropic", { price_per_unit: 6, priority: 200, effective_to: "2020-06-01T00:00:00Z" }),
+		]),
+	])).toBeNull();
+});

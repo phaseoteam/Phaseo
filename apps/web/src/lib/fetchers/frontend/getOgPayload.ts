@@ -10,6 +10,15 @@ export type OgStat = {
 	helper?: string;
 	promotion?: string;
 };
+/** The headline promotional price, shown as a banner on the model OG image. */
+export type OgPromotion = {
+	/** For example "20% off". */
+	label: string;
+	/** ISO end of the promotional price, when it has one. */
+	endsAt?: string;
+	/** The app the price is limited to, for example "Claude Code". */
+	audience?: string;
+};
 export type OgPayload = {
 	id: string;
 	name: string;
@@ -17,6 +26,7 @@ export type OgPayload = {
 	subtitle?: string;
 	badge?: string;
 	stats?: OgStat[];
+	promotion?: OgPromotion;
 	flagEmoji?: string;
 };
 
@@ -166,6 +176,47 @@ function cheapestListCandidate(meter: string, listCandidates: PriceCandidate[]):
 				current == null || candidate.pricePerMillion < current.pricePerMillion ? candidate : current,
 			null,
 		);
+}
+
+/**
+ * The promotional price to headline on the model OG image: the largest current
+ * discount on the input or output list price, with its end time and the app it is
+ * limited to. Null when the model has no current promotion.
+ */
+export function buildModelOgPromotion(pricing: ProviderPricing[], nowMs: number = Date.now()): OgPromotion | null {
+	const { standardCandidates, listCandidates } = collectOgPriceCandidates(pricing, nowMs);
+	let best: { percent: number; rule: PricingRule } | null = null;
+	for (const meter of ["input", "output"]) {
+		const cheapest = cheapestListCandidate(meter, listCandidates);
+		if (!cheapest) continue;
+		const promotion = getPromotionCandidate(cheapest, standardCandidates);
+		const percent = getPromotionPercent(cheapest, standardCandidates);
+		if (!promotion || percent == null) continue;
+		if (!best || percent > best.percent) best = { percent, rule: promotion.rule };
+	}
+	if (!best) return null;
+	const endsAt = best.rule.effective_to && Number.isFinite(Date.parse(best.rule.effective_to))
+		? best.rule.effective_to
+		: undefined;
+	const audience = audienceLabel(best.rule.match);
+	return {
+		label: formatPromotionPercent(best.percent),
+		...(endsAt ? { endsAt } : {}),
+		...(audience ? { audience } : {}),
+	};
+}
+
+/** The lines under the discount on the OG banner: the app it is limited to and when it ends. */
+export function promotionDetailLines(promotion: OgPromotion): string[] {
+	const lines: string[] = [];
+	if (promotion.audience) lines.push(`In ${promotion.audience}`);
+	const endsAt = promotion.endsAt ? new Date(promotion.endsAt) : null;
+	if (endsAt && !Number.isNaN(endsAt.getTime())) {
+		const day = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: "UTC" }).format(endsAt);
+		const time = new Intl.DateTimeFormat("en-US", { hour: "2-digit", minute: "2-digit", hour12: false, timeZone: "UTC" }).format(endsAt);
+		lines.push(`Ends ${day}, ${time} UTC`);
+	}
+	return lines;
 }
 
 export function buildModelOgStats(model: ModelOverviewPage | null, pricing: ProviderPricing[]): OgStat[] {

@@ -3,7 +3,7 @@ import { renderImageResponse } from "@/lib/og/imageResponse";
 
 import { montserratBoldPromise, montserratRegularPromise, montserratSemiboldPromise } from "@/lib/og/ogAssets";
 import { fetchFrontendOgPayload } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import type { OgEntity } from "@/lib/fetchers/frontend/getOgPayload";
+import { promotionDetailLines, type OgEntity } from "@/lib/fetchers/frontend/getOgPayload";
 import { resolveLogo } from "@/lib/logos";
 
 const brandLogoPath = "/wordmark_light.svg";
@@ -123,6 +123,8 @@ async function handleGet(
 	const primaryLogoSrc = !isCountry ? getLogoUrl(payload.logoId, assetBaseUrl) : undefined;
 	const brandLogoSrc = absoluteAsset(brandLogoPath, assetBaseUrl);
 	const stats = (payload.stats ?? []).slice(0, 4);
+	const promotion = payload.promotion ?? null;
+	const promotionDetails = promotion ? promotionDetailLines(promotion) : [];
 	const releaseDateFontSize = 35;
 	const titleFontSize = getTitleFontSize(payload.name);
 
@@ -208,6 +210,33 @@ async function handleGet(
 							</div>
 						</div>
 					</div>
+
+					{promotion ? (
+						<div
+							style={{
+								position: "absolute",
+								// Right side, just above the stats rule (top: 369), clear of the title.
+								top: 228,
+								right: 58,
+								display: "flex",
+								flexDirection: "column",
+								alignItems: "flex-start",
+								padding: "16px 24px 18px",
+								borderRadius: 10,
+								background: "#2f7d4e",
+								color: "#ffffff",
+							}}
+						>
+							<div style={{ fontSize: 48, fontWeight: 700, lineHeight: 1, letterSpacing: -1.4 }}>
+								{promotion.label.toUpperCase()}
+							</div>
+							{promotionDetails.map((line) => (
+								<div key={line} style={{ marginTop: 8, fontSize: 18, fontWeight: 600, lineHeight: 1.15, color: "#e3f1e8" }}>
+									{line}
+								</div>
+							))}
+						</div>
+					) : null}
 
 					<div
 						style={{
