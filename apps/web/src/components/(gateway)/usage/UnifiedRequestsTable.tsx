@@ -938,7 +938,7 @@ export default function UnifiedRequestsTable({
 			if (format === "csv") {
 				exportToCSV(exportData, filename);
 			} else {
-				exportToPDF(exportData, filename, tUi("requestsTable.exportTitle"));
+				void exportToPDF(exportData, filename, tUi("requestsTable.exportTitle"));
 			}
 		},
 		[data, appNames, providerNames, resolvedModelMetadata, resolvedProviderMetadata, tUi, t, locale],
