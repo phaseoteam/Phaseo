@@ -297,6 +297,15 @@ describe("groupModelRows provider routes", () => {
 		]);
 		expect(group.providers[0]).toMatchObject({ inputPrice: 1, outputPrice: 2, features: ["tools"] });
 	});
+
+	it("does not show a batch row's 0/0 placeholder as the provider's price", () => {
+		const [group] = groupModelRows([
+			row({ id: "a", endpoint: "batch", provider: { id: "openai", name: "OpenAI", inputPrice: 0, outputPrice: 0, features: [] } }),
+			row({ id: "b", endpoint: "text.generate", provider: { id: "openai", name: "OpenAI", inputPrice: 2, outputPrice: 10, features: [] } }),
+		]);
+		expect(group.providers[0]).toMatchObject({ inputPrice: 2, outputPrice: 10 });
+		expect(describeProviderRoutes(group.providers)[0]).toMatchObject({ inputPrice: 2, outputPrice: 10 });
+	});
 });
 
 describe("describeProviderRoutes", () => {

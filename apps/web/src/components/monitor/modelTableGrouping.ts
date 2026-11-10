@@ -243,23 +243,28 @@ export function groupModelRows(rows: readonly ModelData[]): GroupedModelData[] {
 		for (const variant of variants) {
 			const providerKey = variant.provider.id || variant.provider.name;
 			const current = providerMap.get(providerKey);
+			// A batch placeholder's 0/0 is not a price, so it must not reach the
+			// provider card or block a later row's real rates.
+			const variantProvider = isBatchPlaceholder(variant)
+				? { ...variant.provider, inputPrice: null, outputPrice: null }
+				: variant.provider;
 			if (!current) {
-				providerMap.set(providerKey, { ...variant.provider });
+				providerMap.set(providerKey, { ...variantProvider });
 				continue;
 			}
 			// The first row's rates stay; a later row fills in rates the first lacks
 			// (a batch row lists none) and offers a cheaper per-unit charge.
-			const usageCheaper = isPrice(variant.provider.usagePrice)
-				&& (!isPrice(current.usagePrice) || variant.provider.usagePrice < current.usagePrice);
+			const usageCheaper = isPrice(variantProvider.usagePrice)
+				&& (!isPrice(current.usagePrice) || variantProvider.usagePrice < current.usagePrice);
 			providerMap.set(providerKey, {
 				...current,
-				inputPrice: isPrice(current.inputPrice) ? current.inputPrice : variant.provider.inputPrice,
-				outputPrice: isPrice(current.outputPrice) ? current.outputPrice : variant.provider.outputPrice,
-				...(usageCheaper ? { usagePrice: variant.provider.usagePrice, usageUnit: variant.provider.usageUnit } : {}),
-				features: unique([...current.features, ...variant.provider.features]),
+				inputPrice: isPrice(current.inputPrice) ? current.inputPrice : variantProvider.inputPrice,
+				outputPrice: isPrice(current.outputPrice) ? current.outputPrice : variantProvider.outputPrice,
+				...(usageCheaper ? { usagePrice: variantProvider.usagePrice, usageUnit: variantProvider.usageUnit } : {}),
+				features: unique([...current.features, ...variantProvider.features]),
 				executionRegions: unique([
 					...(current.executionRegions ?? []),
-					...(variant.provider.executionRegions ?? []),
+					...(variantProvider.executionRegions ?? []),
 				]),
 			});
 		}
