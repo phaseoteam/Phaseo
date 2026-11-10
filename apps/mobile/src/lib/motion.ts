@@ -33,11 +33,13 @@ const RELEASE_WINDOW_MS = 100;
  */
 export function useReleaseVelocity() {
   const measured = useSharedValue(0);
+  const hasMeasured = useSharedValue(false);
   const lastPosition = useSharedValue(0);
   const movedAt = useSharedValue(0);
   const start = (position: number) => {
     "worklet";
     measured.set(0);
+    hasMeasured.set(false);
     lastPosition.set(position);
     movedAt.set(Date.now());
   };
@@ -48,17 +50,29 @@ export function useReleaseVelocity() {
     if (elapsed <= 0) return;
     const speed = ((position - lastPosition.get()) / elapsed) * 1000;
     // Mostly the latest step, a little of the ones before, so one uneven event doesn't decide it.
-    measured.set(measured.get() * 0.3 + speed * 0.7);
+    measured.set(hasMeasured.get() ? measured.get() * 0.3 + speed * 0.7 : speed);
+    hasMeasured.set(true);
     lastPosition.set(position);
     movedAt.set(now);
   };
   const release = (reported: number) => {
     "worklet";
-    if (Date.now() - movedAt.get() > RELEASE_WINDOW_MS) return 0;
-    const own = measured.get();
-    return Math.abs(reported) > Math.abs(own) && Math.sign(reported) === Math.sign(own) ? reported : own;
+    return pickReleaseVelocity({ reported, measured: hasMeasured.get() ? measured.get() : null, sinceMoveMs: Date.now() - movedAt.get() });
   };
   return { start, track, release };
+}
+
+/**
+ * The release velocity from the pan's `reported` one and the one `measured` from its updates (null when no update
+ * moved it), `sinceMoveMs` after the last movement. See useReleaseVelocity.
+ */
+export function pickReleaseVelocity({ reported, measured, sinceMoveMs }: { reported: number; measured: number | null; sinceMoveMs: number }) {
+  "worklet";
+  // The finger had stopped before letting go: not a flick.
+  if (sinceMoveMs > RELEASE_WINDOW_MS) return 0;
+  // A flick so short it was let go before a single update moved it: the reported velocity is all there is.
+  if (measured == null) return reported;
+  return Math.abs(reported) > Math.abs(measured) && Math.sign(reported) === Math.sign(measured) ? reported : measured;
 }
 
 /** How far something follows a finger dragged `overshoot` px past an edge: less the further it goes. */
