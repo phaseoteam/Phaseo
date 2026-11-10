@@ -2,13 +2,15 @@
 // Checks: the migration matches the schema files and destroys nothing; the constraints keep spend
 // guardrails to spend settings only, with every setting chosen; private.spend_guardrail_usage
 // counts one counter per assignment for shared guardrails and one per key for each_key ones;
-// gateway_spend_limit_seed lists only blocking counters, less excluded requests; and
-// sweep_spend_guardrail_alerts pushes once at 80% and once at 100%.
+// gateway_spend_limit_seed lists only blocking counters, less excluded requests;
+// sweep_spend_guardrail_alerts pushes once at 80% and once at 100%; and (budget enforcement and
+// money hygiene) a guardrail counter counts exactly what a key cost limit counts.
 // Install @electric-sql/pglite@0.5.8 in a temporary directory and set PGLITE_MODULE to its
 // dist/index.js file URL. Run: node supabase/tests/spend-guardrails.test.mjs
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { createGuardrailLevelsBase } from './fixtures/guardrail-levels-before.mjs';
+import { installUnbilledSpend } from './fixtures/unbilled-spend.mjs';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
 const read = (path) => readFile(new URL(path, import.meta.url), 'utf8');
@@ -18,9 +20,18 @@ const levelsName = migrations.find((name) => name.endsWith('_guardrail_levels.sq
 const migrationName = migrations.find((name) => name.endsWith('_spend_guardrails.sql'));
 assert(levelsName && migrationName && migrationName > levelsName, 'the migration exists and runs after phase A');
 const migration = await read(`../migrations/${migrationName}`);
-for (const file of ['private/functions/spend_guardrail_usage.sql', 'public/functions/gateway_spend_limit_seed.sql',
-  'public/functions/sweep_spend_guardrail_alerts.sql']) {
-  assert(normalize(migration).includes(normalize(await read(`../schemas/${file}`))), `${file} is in the migration`);
+assert(normalize(migration).includes(normalize(await read('../schemas/public/functions/sweep_spend_guardrail_alerts.sql'))),
+  'public/functions/sweep_spend_guardrail_alerts.sql is in the migration');
+// The budget enforcement migration replaces the seed and the usage function after this one; the
+// newest migration that does ships each schema file.
+for (const [name, file] of [['spend_guardrail_usage', 'private/functions/spend_guardrail_usage.sql'],
+  ['gateway_spend_limit_seed', 'public/functions/gateway_spend_limit_seed.sql']]) {
+  let newest = null;
+  for (const candidate of [...migrations].filter((entry) => entry.endsWith('.sql')).sort().reverse()) {
+    const sql = await read(`../migrations/${candidate}`);
+    if (new RegExp(`CREATE OR REPLACE FUNCTION (public|private)\\.${name} \\(`).test(sql)) { newest = sql; break; }
+  }
+  assert(newest && normalize(newest).includes(normalize(await read(`../schemas/${file}`))), `the newest migration replacing ${name} ships ${file}`);
 }
 assert(!/\b(delete\s+from|truncate)\b/i.test(migration) && !/\bdrop\s+(table|column|function|constraint)\b/i.test(migration),
   'the migration deletes and drops nothing');
@@ -56,7 +67,7 @@ try {
       add column weekly_limit_cost_nanos bigint not null default 0, add column monthly_limit_cost_nanos bigint not null default 0;
     create table public.gateway_requests (
       request_id text not null, workspace_id uuid not null, key_id uuid, success boolean, cost_nanos bigint,
-      created_at timestamptz not null default now());
+      created_at timestamptz not null default now(), endpoint text);
     create table public.workspace_department_budgets (id uuid primary key, workspace_id uuid not null, department_id uuid not null,
       interval text not null, limit_nanos bigint not null);
     create table public.workspace_notification_events (
@@ -76,6 +87,9 @@ try {
     await db.exec(await read(`../schemas/${file}`));
   }
   await db.exec(migration);
+  // This release's usage function, over the shared key usage calculation (private.key_spend_items).
+  await installUnbilledSpend(db);
+  await db.exec(await read('../schemas/private/functions/spend_guardrail_usage.sql'));
 
   // The table file declares exactly the columns and constraints the migration adds.
   for (const row of await rows(`
@@ -117,7 +131,7 @@ try {
       ('r1', '${W1}', '${K1}', true, ${usd(0.6)}, now()),
       ('r2', '${W1}', '${K3}', true, ${usd(0.5)}, now()),
       ('r3', '${W1}', '${K2}', true, ${usd(0.45)}, now()),
-      ('r4', '${W1}', '${K1}', false, ${usd(9)}, now()),
+      ('r4', '${W1}', '${K1}', false, 0, now()),
       ('r5', '${W1}', '${K2}', true, ${usd(0.2)}, now() - interval '400 days');
   `);
   const usage = await rows(`select guardrail_id, spend_action, counter, key_ids, usage_nanos::text as usage
@@ -160,6 +174,42 @@ try {
   assert.doesNotMatch(events.find((event) => event.title.startsWith('Batch')).body, /refused/, 'a notify guardrail refuses nothing');
   const [{ result: again }] = await rows(`select public.sweep_spend_guardrail_alerts() as result`);
   assert.equal(again.alerted, 0, 'each alert is sent once a period');
+
+  // 5. A counter counts exactly what a key cost limit counts (private.key_spend_items): charged
+  // failures, stepped charges by their movements, an expected bill with no charge, batch and video
+  // debits once, and a charge recorded without a key through its request row. Phase D's first pass
+  // counted successful request rows only ($14 here).
+  const K4 = id(24);
+  await db.exec(`
+    insert into public.keys (id, workspace_id, created_by, name) values ('${K4}', '${W1}', '${U2}', 'Money');
+    insert into public.gateway_requests (request_id, workspace_id, key_id, success, cost_nanos, created_at, billing_request_id, expected_cost_nanos, endpoint) values
+      ('m-failed', '${W1}', '${K4}', false, ${usd(2)}, now(), null, null, 'chat.completions'),
+      ('m-stepped', '${W1}', '${K4}', true, ${usd(5)}, now(), 'b-stepped', null, 'chat.completions'),
+      ('m-unpaid', '${W1}', '${K4}', false, 0, now(), 'b-unpaid', ${usd(4)}, 'chat.completions'),
+      ('batch_usage:mb:1', '${W1}', '${K4}', true, ${usd(3)}, now(), null, null, 'batch'),
+      ('mv', '${W1}', '${K4}', true, ${usd(6)}, now(), null, null, 'video.generation'),
+      ('m-keyless', '${W1}', '${K4}', false, null, now(), 'b-keyless', ${usd(1)}, 'chat.completions');
+    insert into public.gateway_request_charges (workspace_id, request_id, cost_nanos, status, is_final, key_id) values
+      ('${W1}', 'b-stepped', ${usd(2)}, 'applied', true, '${K4}'),
+      ('${W1}', 'batch_capture:mb', ${usd(3)}, 'applied', true, '${K4}'),
+      ('${W1}', 'b-keyless', ${usd(1)}, 'applied', true, null);
+    insert into public.credit_ledger (workspace_id, kind, amount_nanos, ref_type, ref_id, source_ref_type, source_ref_id, status) values
+      ('${W1}', 'adjustment', ${-usd(3)}, 'gateway_request_charge', 'b-stepped:1', 'gateway_request', 'b-stepped', 'applied'),
+      ('${W1}', 'adjustment', ${usd(1)}, 'gateway_request_charge', 'b-stepped:final', 'gateway_request', 'b-stepped', 'applied'),
+      ('${W1}', 'charge', ${-usd(6)}, 'async_job_charge', '${W1}:video_hold:mv', 'async_job', 'mv', 'captured');
+    insert into public.gateway_wallet_reservations (workspace_id, reservation_id, key_id, status) values ('${W1}', 'video_hold:mv', '${K4}', 'captured');
+  `);
+  const counter = async () => Number((await rows(`select usage_nanos::text as used from private.spend_guardrail_usage($1, now())
+    where guardrail_id = $2 and counter = $3`, [W1, GEACH, `key:${K4}`]))[0].used);
+  const keyLimit = async () => Number((await rows(`select sum(nanos)::text as used from private.key_spend_items($1, date_trunc('month', now() at time zone 'utc') at time zone 'utc', array[$2]::uuid[])`, [W1, K4]))[0].used);
+  // $2 (charged failure) + $2 (stepped: -$3 then +$1, not its row's $5) + $4 (expected, no charge)
+  // + $3 (batch capture, its rows once) + $6 (video debit, its row once) + $1 (keyless charge).
+  assert.equal(await counter(), usd(18), 'the each_key counter counts what key limits count');
+  assert.equal(await counter(), await keyLimit(), 'and equals key_spend_items for the same key');
+  // The seed's blocking counters leave out a held admission by request id and by billing id.
+  await db.exec(`update public.workspace_guardrails set spend_action = 'block' where id = '${GEACH}'`);
+  const [{ seed: held }] = await rows(`select public.gateway_spend_limit_seed($1, $2, $3) as seed`, [W1, [K4], ['m-keyless', 'b-keyless']]);
+  assert.equal(held.guardrail_budgets.find((entry) => entry.counter === `key:${K4}`).usage_nanos, usd(17));
 
   console.log('spend-guardrails: ok');
 } finally {

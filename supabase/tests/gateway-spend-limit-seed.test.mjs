@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { installCatalogPolicyContext } from './fixtures/catalog-policy-context.mjs';
+import { REALTIME_STANDINS } from './fixtures/unbilled-spend.mjs';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
 // The spend-limit seed must count exactly what the request-context key-limit check counts.
@@ -27,7 +28,22 @@ try {
     create table public.gateway_wallet_reservations (workspace_id uuid, reservation_id text, amount_nanos bigint, status text,
       hold_ref_id text, created_at timestamptz default now(), settled_amount_nanos bigint, captured_nanos bigint default 0,
       released_nanos bigint default 0, key_id uuid);
+    create table public.gateway_realtime_sessions (workspace_id uuid, session_id text, key_id uuid);
+    create table if not exists public.gateway_request_charges (workspace_id uuid, request_id text, cost_nanos bigint, status text,
+      is_final boolean not null default true, key_id uuid, created_at timestamptz default now());
+    create table if not exists public.credit_ledger (id uuid primary key default gen_random_uuid(), workspace_id uuid, kind text,
+      amount_nanos bigint, ref_type text, ref_id text, source_ref_type text, source_ref_id text, status text,
+      created_at timestamptz not null default now());
+    create table if not exists public.gateway_async_operations (workspace_id uuid not null, kind text not null,
+      internal_id text not null, meta jsonb not null default '{}'::jsonb);
+    alter table public.gateway_requests add column if not exists billing_request_id text;
     alter table public.keys add column if not exists department_id uuid;
+    -- Spend guardrails (phase D), trimmed to what private.spend_guardrail_usage reads: no guardrails here.
+    create table if not exists public.workspace_guardrails (id uuid primary key default gen_random_uuid(), workspace_id uuid not null,
+      enabled boolean not null default true, name text not null default '', kind text not null default 'access',
+      spend_limit_nanos bigint, spend_period text, spend_action text, spend_counting text);
+    create or replace function public.resolve_key_guardrails(p_workspace_id uuid, p_key_id uuid)
+      returns table (guardrail_id uuid, source_type text, source_id uuid) language sql stable as $$ select null::uuid, null::text, null::uuid where false $$;
     -- Department tables, trimmed to what the seed reads.
     create table public.workspace_departments (id uuid primary key, workspace_id uuid not null, name text not null);
     create table public.workspace_department_grants (workspace_id uuid not null, user_id uuid not null, department_id uuid not null,
@@ -52,12 +68,31 @@ try {
   // Then the one teaching the helper the workspace's primary-department setting.
   const attributionMigration = await readFile(new URL('../migrations/20261031174621_department_attribution_primary_for_budgets.sql', import.meta.url), 'utf8');
   await db.exec(attributionMigration);
-  assert.ok(migration.includes((await schema('public/functions/workspace_department_budget_status.sql')).trim()),
-    'public/functions/workspace_department_budget_status.sql matches its migration');
-  // Spend guardrails (phase D) redefine the seed last; that migration is checked in spend-guardrails.test.mjs.
-  const spendGuardrailsMigration = await readFile(new URL('../migrations/20261109120000_spend_guardrails.sql', import.meta.url), 'utf8');
-  assert.ok(spendGuardrailsMigration.includes((await schema('public/functions/gateway_spend_limit_seed.sql')).trim()),
-    'public/functions/gateway_spend_limit_seed.sql matches its latest migration');
+  // 20261110181826_budget_enforcement_money_hygiene moves department usage into the shared
+  // private.department_budget_usage (positive-cost requests plus outstanding holds).
+  const usageMigration = await readFile(new URL('../migrations/20261110181826_budget_enforcement_money_hygiene.sql', import.meta.url), 'utf8');
+  for (const name of ['20261110140719_billing_cutoffs.sql', '20261110140720_gateway_requests_expected_cost_nanos.sql', '20261110140721_validate_gateway_requests_expected_cost_nanos_check.sql']) {
+    await db.exec(await readFile(new URL(`../migrations/${name}`, import.meta.url), 'utf8'));
+  }
+  // The usage migration drops main's three-argument seed before creating the one with
+  // p_contract_version, so a three-argument call is never ambiguous.
+  const dropOldSeed = 'DROP FUNCTION IF EXISTS public.gateway_spend_limit_seed(uuid, uuid[], text[]);';
+  assert.ok(usageMigration.indexOf(dropOldSeed) >= 0 && usageMigration.indexOf(dropOldSeed) < usageMigration.indexOf('CREATE OR REPLACE FUNCTION public.gateway_spend_limit_seed'),
+    'the old seed signature is dropped before the new one is created');
+  await db.exec(dropOldSeed);
+  await db.exec(REALTIME_STANDINS);
+  for (const path of ['private/functions/unbilled_spend.sql', 'private/functions/key_spend_items.sql', 'private/functions/budget_spend_items.sql', 'private/functions/department_budget_usage.sql',
+    'private/functions/workspace_budget_status.sql', 'public/functions/gateway_workspace_budget_status.sql', 'public/functions/gateway_spend_limit_seed.sql',
+    'public/functions/workspace_department_budget_status.sql']) {
+    const definition = (await schema(path)).trim();
+    // These three were replaced again by function-only migrations after the usage migration; the
+    // latest (realtime spend at debit time) carries all three.
+    const carrier = ['private/functions/unbilled_spend.sql', 'private/functions/key_spend_items.sql', 'private/functions/budget_spend_items.sql'].includes(path)
+      ? await readFile(new URL('../migrations/20261110182228_realtime_spend_counts_at_debit_time.sql', import.meta.url), 'utf8')
+      : usageMigration;
+    assert.ok(carrier.includes(definition), `${path} matches its migration`);
+    await db.exec(definition);
+  }
   assert.ok(attributionMigration.includes((await schema('private/functions/department_budget_key_departments.sql')).trim()),
     'the helper matches its migration');
   const manifest = JSON.parse(await schema('.pgdelta-export.json'));
@@ -88,6 +123,7 @@ try {
     ['today-1', capped, true, 100, at(bounds.day, 60_000)],
     ['today-2', capped, true, null, at(bounds.day, 120_000)],
     ['today-failed', capped, false, 999, at(bounds.day, 1_000)],
+    ['today-failed-free', capped, false, 0, at(bounds.day, 1_500)],
     ['yesterday', capped, true, 30, at(bounds.day, -1_000)],
     ['last-week', capped, true, 50, at(bounds.week, -1_000)],
     ['last-month', capped, true, 70, at(bounds.month, -1_000)],
@@ -135,8 +171,9 @@ try {
     assert.equal(seed.month_start, context.key_limit_ok.buckets.monthly.window_start);
   }
   const cappedSeed = seed.keys.find((key) => key.key_id === capped);
+  // Two successful requests; the failed but charged one (999) counts toward cost only, the free one not at all.
   assert.equal(cappedSeed.used.daily.requests, 2);
-  assert.equal(cappedSeed.used.daily.cost_nanos, 100);
+  assert.equal(cappedSeed.used.daily.cost_nanos, 100 + 999);
   const unlimitedSeed = seed.keys.find((key) => key.key_id === unlimited);
   assert.deepEqual([unlimitedSeed.limited, unlimitedSeed.used], [false, null], 'unlimited keys need no history read');
 
@@ -144,18 +181,27 @@ try {
   const budget = await one(`select public.gateway_workspace_budget_status('${workspace}', 0) as value`);
   const withoutNow = ({ now: _now, ...rest }) => rest;
   assert.deepEqual(withoutNow(seed.budget_status), withoutNow(budget));
-  assert.equal(seed.budget_status.budgets.find((entry) => entry.interval === 'daily').usage_nanos, 100 + 5 + 3 + 40);
+  // Positive-cost requests whether or not they succeeded (today-failed was charged 999), plus the hold.
+  assert.equal(seed.budget_status.budgets.find((entry) => entry.interval === 'daily').usage_nanos, 100 + 5 + 3 + 999 + 40);
 
   // Recorded requests are excluded from the counts and returned when persisted.
   const excluded = await one(`select public.gateway_spend_limit_seed('${workspace}', ${keyIds}, array['today-1', 'month-start', 'not-yet-written']) as value`);
   const cappedExcluded = excluded.keys.find((key) => key.key_id === capped);
   assert.equal(cappedExcluded.used.daily.requests, 1);
-  assert.equal(cappedExcluded.used.daily.cost_nanos, 0);
+  assert.equal(cappedExcluded.used.daily.cost_nanos, 999);
   assert.equal(cappedExcluded.used.monthly.requests, cappedSeed.used.monthly.requests - 2);
   assert.equal(cappedExcluded.used.monthly.cost_nanos, cappedSeed.used.monthly.cost_nanos - 111);
   assert.deepEqual(excluded.excluded_rows.map((row) => [row.request_id, row.success, row.cost_nanos]),
     [['month-start', true, 11], ['today-1', true, 100]]);
+  // Workspace budgets: contract version 1 (main's coordinator, and the default) counts the held
+  // requests' rows, since that coordinator stops counting them once excluded_rows reports them;
+  // version 2 (a coordinator that counts them until handoff) leaves them out.
+  const usageOf = (status, interval) => status.budgets.find((entry) => entry.interval === interval).usage_nanos;
   assert.deepEqual(excluded.budget_status.budgets, seed.budget_status.budgets);
+  const excludedV2 = await one(`select public.gateway_spend_limit_seed('${workspace}', ${keyIds}, array['today-1', 'month-start', 'not-yet-written'], 2) as value`);
+  assert.equal(usageOf(excludedV2.budget_status, 'daily'), usageOf(seed.budget_status, 'daily') - 100);
+  assert.equal(usageOf(excludedV2.budget_status, 'lifetime'), usageOf(seed.budget_status, 'lifetime') - 111);
+  assert.deepEqual(excludedV2.keys, excluded.keys, 'key usage is the same under both versions');
   assert.deepEqual(seed.department_budgets, [], 'no department budgets yet');
 
   // Department budgets: same attribution as workspace_department_budget_status, usage counted
@@ -228,17 +274,18 @@ try {
   assert.deepEqual(byBudget['Engineering:daily'].key_ids, sorted([dk.u1, dk.u2, dk.oauth]), 'grants, override and OAuth user; not u4 or the Sales-linked key');
   assert.deepEqual(byBudget['Engineering:monthly'].key_ids, byBudget['Engineering:daily'].key_ids);
   assert.deepEqual(byBudget['Sales:weekly'].key_ids, [dk.linked], 'u2 moved out of Sales by the override');
-  // Successful rows of the department's keys in this workspace from the window start (inclusive).
+  // Positive-cost rows of the department's keys in this workspace from the window start
+  // (inclusive), whether or not the request succeeded.
   const expectedUsage = (keys, start, exclude = []) => departmentRows
-    .filter(([requestId, workspaceId, key, success, , createdAt]) => workspaceId === workspace && keys.includes(key) && success &&
+    .filter(([requestId, workspaceId, key, , cost, createdAt]) => workspaceId === workspace && keys.includes(key) && (cost ?? 0) > 0 &&
       Date.parse(createdAt) >= start.getTime() && !exclude.includes(requestId))
     .reduce((sum, row) => sum + (row[4] ?? 0), 0);
   const engKeys = [dk.u1, dk.u2, dk.oauth];
-  // Today: u1 10 + 20 (day start counts) + u2 100 + OAuth 200. Not yesterday, failed, other-workspace rows or u4.
+  // Today: u1 10 + 20 (day start counts) + 80 (failed but charged) + u2 100 + OAuth 200. Not yesterday, other-workspace rows or u4.
   assert.equal(Number(byBudget['Engineering:daily'].usage_nanos), expectedUsage(engKeys, bounds.day));
-  if (bounds.day.getTime() !== bounds.month.getTime()) assert.equal(Number(byBudget['Engineering:daily'].usage_nanos), 330);
+  if (bounds.day.getTime() !== bounds.month.getTime()) assert.equal(Number(byBudget['Engineering:daily'].usage_nanos), 410);
   assert.equal(Number(byBudget['Engineering:monthly'].usage_nanos), expectedUsage(engKeys, bounds.month));
-  assert.ok(Number(byBudget['Engineering:monthly'].usage_nanos) >= 330 + 6400);
+  assert.ok(Number(byBudget['Engineering:monthly'].usage_nanos) >= 410 + 6400);
   assert.equal(Number(byBudget['Sales:weekly'].usage_nanos), 800);
   assert.deepEqual([byBudget['Engineering:daily'].department_id, Number(byBudget['Engineering:daily'].limit_nanos)], [ENG, 1000]);
   // Windows are the seed's own UTC day/week/month starts.

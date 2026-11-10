@@ -23,7 +23,14 @@ for (const role of ['anon', 'authenticated']) {
   const pattern = new RegExp(`GRANT SELECT \\(([^)]*)\\) ON TABLE "public"\\."gateway_requests" TO "${role}";`);
   const granted = schema.match(pattern)?.[1].split(', ').map((name) => name.replaceAll('"', ''));
   assert(granted, `the schema grants ${role} column SELECT`);
-  assert.equal(migration.match(pattern)?.[1], schema.match(pattern)[1], `the migration grants ${role} the same columns`);
+  // Plus columns a later migration adds and grants on its own (expected_cost_nanos).
+  const later = [];
+  for (const name of migrations.filter((file) => file > migrationName).sort()) {
+    const sql = normalize(await read(`../migrations/${name}`));
+    for (const match of sql.matchAll(new RegExp(`GRANT SELECT \\("(\\w+)"\\) ON TABLE "public"\\."gateway_requests" TO "${role}";`, 'g'))) later.push(match[1]);
+  }
+  const migrated = [...migration.match(pattern)[1].split(', ').map((name) => name.replaceAll('"', '')), ...later].sort();
+  assert.deepEqual(migrated, [...granted].sort(), `the migrations grant ${role} the same columns`);
   assert.deepEqual([...columns].filter((name) => !granted.includes(name)), ['detail_metadata'], `${role} gets every column except detail_metadata`);
 }
 assert(!/ON TABLE "public"\."gateway_requests" TO "anon", "authenticated"/.test(schema), 'no table-wide client grant remains');

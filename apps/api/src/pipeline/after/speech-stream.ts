@@ -12,6 +12,7 @@ import { loadProviderPricing, calculatePricing } from "./pricing";
 import { handleSuccessAudit, handleFailureAudit } from "./audit";
 import { makeHeaders, createResponse } from "./http";
 import { recordUsageAndChargeOnce } from "./charge";
+import { noteIntendedCharge } from "./intended-charge";
 import { shapeUsageForClient, stripUsagePricing } from "../usage";
 import { applyByokServiceFee } from "../pricing/byok-fee";
 import { applyDataContributionDiscount } from "../pricing/data-contribution-discount";
@@ -123,6 +124,7 @@ async function settleSpeechStream(
 				discountBps: ctx.teamSettings?.dataContributionDiscountBps,
 			}),
 		};
+		noteIntendedCharge(ctx, final.totalNanos);
 		const usageForAudit = shapeUsageForClient(final.pricedUsage, { endpoint: ctx.endpoint, body: ctx.body });
 		if (usageForAudit && typeof usageForAudit === "object") delete (usageForAudit as any)._provider_id;
 		result.bill.cost_cents = final.totalCents;

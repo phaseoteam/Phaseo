@@ -129,13 +129,224 @@ begin
         return;
     end if;
 
+    -- Every charge debited since the purchase is usage, counted once and by
+    -- when the debit happened. Money movements win over audit rows: a
+    -- request's row counts only when it has no movements of its own, which
+    -- matches the budget readers (private.budget_spend_items):
+    -- 1. Request rows with a cost, successful or not (a stream the client left
+    --    can keep its charge on a 499 row), except rows whose movements count
+    --    instead: stepped requests (2.), requests pending reconciliation with
+    --    an applied charge row (3.), a debited batch's batch_usage rows and the
+    --    batch_hold_usage placeholders of a reservation (4., 5.), and a video
+    --    whose video_hold reservation was debited (5.).
+    -- 2. Stepped charges (streams charged at drain checkpoints) through their
+    --    adjustment ledger rows (gateway_charge_request_total writes one per
+    --    debit or refund): a request that started before the purchase can
+    --    still debit it at later checkpoints.
+    -- 3. One-off charges no request row records (billing_request_id, with
+    --    gateway_requests_workspace_billing_request_idx): an audit row that
+    --    never landed, or one pending reconciliation. When none of its rows
+    --    succeeded and none is pending, what their cost (which 1. counts) falls
+    --    short of the charge: a Worker older than the lost-charge fix wrote a
+    --    failure after a confirmed debit with no cost, and that row would
+    --    otherwise hide the debit. As private.unbilled_spend counts it.
+    -- 4. Batch captures (batch_capture:<batch> charge rows), whole, at their
+    --    debit time.
+    -- 5. Reserved batches and videos, settled or captured from their
+    --    batch_hold or video_hold reservation into an async_job_charge ledger
+    --    row: the debit, whole, at its time.
+    -- 6. The unpaid part of a request pending reconciliation: its
+    --    expected_cost_nanos less what is already counted for it, when positive.
+    --    Counted is its applied charge when it has one (2. or 3. count it, and
+    --    1. leaves its rows out); otherwise its rows' own cost, which 1. counts.
+    --    Per billing request id, or request id without one, as the budget
+    --    readers do (private.unbilled_spend).
+    -- 7. Every other debit taken from credits (a captured 'charge' ledger row):
+    --    Phaseo Connect months, Slack agent months, and any product that later
+    --    charges the wallet directly, at their debit time. Left out are the
+    --    debits counted elsewhere: async_job_charge (5.) and realtime_session
+    --    (8.). Stepped charges are 'adjustment' rows (2.); refunds and
+    --    chargebacks are not usage.
+    -- 8. Realtime sessions, per session, at the larger of what was debited for
+    --    it since the purchase (its realtime_session ledger rows, by debit
+    --    time: ref_id is the session id, or <session id>:confirmed:<total> for
+    --    a capture during billing review) and its summary gateway_requests row's
+    --    cost when that row is in the window. The summary row is dated when the
+    --    session started, so a session that started before the purchase and was
+    --    charged after it counts through its debits; a capture can also debit
+    --    without a summary row. 1. leaves summary rows out, so a session counts
+    --    once, and the larger amount when its debits and summary differ.
+    -- Pending reconciliation: expected_cost_nanos is set or, for rows written
+    -- before private.pending_json_cutoff() (the deploy's marker: from then on
+    -- every pending row carries the column), the audit's
+    -- accounting_finalization.billing_status says so.
     select coalesce(sum(gr.cost_nanos), 0)::bigint
     into v_usage_nanos
     from public.gateway_requests gr
     where gr.workspace_id = p_team_id
-      and gr.success is true
       and gr.cost_nanos > 0
-      and gr.created_at >= v_purchase.event_time;
+      and gr.created_at >= v_purchase.event_time
+      and gr.realtime_session_id is null
+      and not (gr.billing_request_id is not null and (
+        exists (
+          select 1 from public.credit_ledger adjustment
+          where adjustment.ref_type = 'gateway_request_charge'
+            and adjustment.source_ref_type = 'gateway_request'
+            and adjustment.source_ref_id = gr.billing_request_id
+            and adjustment.workspace_id = gr.workspace_id
+        )
+        or (exists (
+          select 1 from public.gateway_requests pending
+          where pending.workspace_id = gr.workspace_id
+            and pending.billing_request_id = gr.billing_request_id
+            and (pending.expected_cost_nanos is not null
+              or (pending.created_at < (select private.pending_json_cutoff())
+                and pending.detail_metadata #>> '{accounting_finalization,billing_status}' = 'pending_reconciliation'))
+        ) and exists (
+          select 1 from public.gateway_request_charges charge
+          where charge.workspace_id = gr.workspace_id
+            and charge.request_id = gr.billing_request_id
+            and charge.status = 'applied'
+        ))
+      ))
+      and not (starts_with(gr.request_id, 'batch_usage:') and (
+        exists (
+          select 1 from public.gateway_request_charges capture
+          where capture.workspace_id = gr.workspace_id
+            and capture.request_id = 'batch_capture:' || split_part(gr.request_id, ':', 2)
+            and capture.status = 'applied'
+        )
+        or exists (
+          select 1 from public.credit_ledger debit
+          where debit.source_ref_type = 'async_job'
+            and debit.source_ref_id = split_part(gr.request_id, ':', 2)
+            and debit.workspace_id = gr.workspace_id
+            and debit.ref_type = 'async_job_charge'
+        )
+      ))
+      and not (starts_with(gr.request_id, 'batch_hold_usage:') and exists (
+        select 1 from public.gateway_wallet_reservations hold
+        where hold.workspace_id = gr.workspace_id
+          and hold.reservation_id = regexp_replace(substr(gr.request_id, 18), ':[^:]*$', '')
+      ))
+      and not exists (
+        select 1 from public.credit_ledger debit
+        where debit.ref_type = 'async_job_charge'
+          and debit.ref_id = gr.workspace_id::text || ':video_hold:' || gr.request_id
+      );
+
+    v_usage_nanos := v_usage_nanos + coalesce((
+      select -sum(adjustment.amount_nanos)
+      from public.credit_ledger adjustment
+      where adjustment.workspace_id = p_team_id
+        and adjustment.ref_type = 'gateway_request_charge'
+        and adjustment.created_at >= v_purchase.event_time
+    ), 0)::bigint;
+
+    v_usage_nanos := v_usage_nanos + coalesce((
+      select sum(case when audit.found and not audit.pending
+        then charge.cost_nanos - audit.row_cost else charge.cost_nanos end)
+      from public.gateway_request_charges charge
+      left join lateral (
+        select count(*) > 0 as found,
+          coalesce(bool_or(request.success is true), false) as succeeded,
+          coalesce(bool_or(request.expected_cost_nanos is not null
+            or (request.created_at < (select private.pending_json_cutoff())
+              and coalesce(request.detail_metadata #>> '{accounting_finalization,billing_status}' = 'pending_reconciliation', false))), false) as pending,
+          coalesce(sum(greatest(coalesce(request.cost_nanos, 0), 0)), 0) as row_cost
+        from public.gateway_requests request
+        where request.workspace_id = charge.workspace_id
+          and request.billing_request_id = charge.request_id
+      ) audit on true
+      where charge.workspace_id = p_team_id
+        and charge.status = 'applied'
+        and charge.cost_nanos > 0
+        and charge.created_at >= v_purchase.event_time
+        and not starts_with(charge.request_id, 'batch_capture:')
+        and (not audit.found or audit.pending or (not audit.succeeded and charge.cost_nanos > audit.row_cost))
+        and not exists (
+          select 1 from public.credit_ledger adjustment
+          where adjustment.ref_type = 'gateway_request_charge'
+            and adjustment.source_ref_type = 'gateway_request'
+            and adjustment.source_ref_id = charge.request_id
+            and adjustment.workspace_id = charge.workspace_id
+        )
+    ), 0)::bigint;
+
+    v_usage_nanos := v_usage_nanos + coalesce((
+      select sum(charge.cost_nanos)
+      from public.gateway_request_charges charge
+      where charge.workspace_id = p_team_id
+        and charge.status = 'applied'
+        and charge.cost_nanos > 0
+        and charge.created_at >= v_purchase.event_time
+        and starts_with(charge.request_id, 'batch_capture:')
+    ), 0)::bigint;
+
+    v_usage_nanos := v_usage_nanos + coalesce((
+      select -sum(debit.amount_nanos)
+      from public.credit_ledger debit
+      where debit.workspace_id = p_team_id
+        and debit.ref_type = 'async_job_charge'
+        and (starts_with(debit.ref_id, p_team_id::text || ':batch_hold:')
+          or starts_with(debit.ref_id, p_team_id::text || ':video_hold:'))
+        and debit.amount_nanos < 0
+        and debit.created_at >= v_purchase.event_time
+    ), 0)::bigint;
+
+    v_usage_nanos := v_usage_nanos + coalesce((
+      select -sum(debit.amount_nanos)
+      from public.credit_ledger debit
+      where debit.workspace_id = p_team_id
+        and debit.kind = 'charge'
+        and debit.status = 'captured'
+        and debit.amount_nanos < 0
+        and debit.ref_type not in ('async_job_charge', 'realtime_session')
+        and debit.created_at >= v_purchase.event_time
+    ), 0)::bigint;
+
+    v_usage_nanos := v_usage_nanos + coalesce((
+      select sum(greatest(coalesce(debited.nanos, 0), coalesce(summarized.nanos, 0)))
+      from (
+        select split_part(debit.ref_id, ':confirmed:', 1) as session_id, -sum(debit.amount_nanos) as nanos
+        from public.credit_ledger debit
+        where debit.workspace_id = p_team_id
+          and debit.ref_type = 'realtime_session'
+          and debit.kind = 'charge'
+          and debit.status = 'captured'
+          and debit.amount_nanos < 0
+          and debit.created_at >= v_purchase.event_time
+        group by 1
+      ) debited
+      full join (
+        select gr.realtime_session_id as session_id, sum(greatest(coalesce(gr.cost_nanos, 0), 0)) as nanos
+        from public.gateway_requests gr
+        where gr.workspace_id = p_team_id
+          and gr.realtime_session_id is not null
+          and gr.created_at >= v_purchase.event_time
+        group by 1
+      ) summarized on summarized.session_id = debited.session_id
+    ), 0)::bigint;
+
+    v_usage_nanos := v_usage_nanos + coalesce((
+      select sum(greatest(0, pending.expected_nanos - coalesce(charge.cost_nanos, pending.row_cost)))
+      from (
+        select coalesce(gr.billing_request_id, gr.request_id) as billing_request_id,
+          bool_or(gr.billing_request_id is not null) as has_billing_id,
+          max(gr.expected_cost_nanos) as expected_nanos,
+          sum(greatest(coalesce(gr.cost_nanos, 0), 0)) as row_cost
+        from public.gateway_requests gr
+        where gr.workspace_id = p_team_id
+          and gr.expected_cost_nanos is not null
+          and gr.created_at >= v_purchase.event_time
+        group by coalesce(gr.billing_request_id, gr.request_id)
+      ) pending
+      left join public.gateway_request_charges charge
+        on pending.has_billing_id
+       and charge.workspace_id = p_team_id
+       and charge.request_id = pending.billing_request_id
+       and charge.status = 'applied'
+    ), 0)::bigint;
 
     select *
     into v_wallet

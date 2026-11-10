@@ -7232,7 +7232,7 @@
 			"period": "Period",
 			"createTitle": "Add a department budget",
 			"editTitle": "Edit department budget",
-			"limitHelp": "Once the department's spend in the period reaches this amount, its API-key requests are refused until the period resets. Batch, realtime and OAuth requests are not blocked. If the budget check is briefly unavailable, requests are allowed rather than refused. Owners and admins are notified at about 80% and 100%.",
+			"limitHelp": "Once the department's spend in the period reaches this amount, its API-key requests are refused until the period resets. If the budget check is briefly unavailable, requests are allowed rather than refused. Owners and admins are notified at about 80% and 100%.",
 			"saved": "Department budget saved",
 			"deleted": "Department budget deleted",
 			"deleteTitle": "Delete this department budget?",

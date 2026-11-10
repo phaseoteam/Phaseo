@@ -53,11 +53,9 @@ export function guardrailRow(payload: GuardrailPayload, includeName = true): Rec
 	if (typeof payload.ioLoggingEnabled === "boolean") {
 		row.io_logging_enabled = payload.ioLoggingEnabled;
 	}
+	// Extended retention (over 90 days) is not billed yet, so every workspace keeps 90 days.
 	if (typeof payload.ioLoggingRetentionDays === "number") {
-		row.io_logging_retention_days = Math.max(
-			90,
-			Math.min(365, Math.trunc(payload.ioLoggingRetentionDays)),
-		);
+		row.io_logging_retention_days = 90;
 	}
 	if (typeof payload.ioLoggingIncludeProviderPayloads === "boolean") {
 		row.io_logging_include_provider_payloads =

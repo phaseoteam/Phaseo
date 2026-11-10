@@ -17,6 +17,7 @@ import { handleSuccessAudit, handleFailureAudit } from "./audit";
 import { makeHeaders, createResponse } from "./http";
 import { withServedModel } from "./served-model";
 import { recordUsageAndChargeOnce } from "./charge";
+import { noteIntendedCharge } from "./intended-charge";
 import { keepStreamServerToolMeters, mergeBillAndPayloadUsage, shapeUsageForClient } from "../usage";
 import { logDebugEvent, previewValue } from "../debug";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
@@ -270,34 +271,51 @@ function dispatchNonStreamSuccessSideEffects(args: {
                 });
             }
 
-            await recordUsageAndChargeOnce({
-                ctx,
-                costNanos: totalNanos,
-                endpoint: ctx.endpoint,
-            });
-			await recordManagedProviderTokensOnce({
-				ctx,
-				providerId: result.provider,
-				keySource: result.keySource,
-				usage: usageForBilling,
-				reservation: result.providerRateLimitReservation,
-			});
-			chargeRateLimitPolicyTokens(ctx, usageForBilling);
+            try {
+                // The response was delivered: a charge that does not go through after its retries
+                // leaves the request a success, pending reconciliation (handleSuccessAudit).
+                await recordUsageAndChargeOnce({
+                    ctx,
+                    costNanos: totalNanos,
+                    endpoint: ctx.endpoint,
+                });
+                await recordManagedProviderTokensOnce({
+                    ctx,
+                    providerId: result.provider,
+                    keySource: result.keySource,
+                    usage: usageForBilling,
+                    reservation: result.providerRateLimitReservation,
+                });
+                chargeRateLimitPolicyTokens(ctx, usageForBilling);
 
-            await handleSuccessAudit(
-                ctx,
-                result,
-                false,
-                usageForBilling,
-                totalCents,
-                totalNanos,
-                currency,
-                finishReason,
-                result.upstream.status,
-                nativeResponseId,
-                gatewayPayload,
-            );
-
+                await handleSuccessAudit(
+                    ctx,
+                    result,
+                    false,
+                    usageForBilling,
+                    totalCents,
+                    totalNanos,
+                    currency,
+                    finishReason,
+                    result.upstream.status,
+                    nativeResponseId,
+                    gatewayPayload,
+                );
+            } catch (error) {
+                // The response was already sent. Before the success row is written, the failure row
+                // keeps a confirmed charge (or the bill it meant to charge, pending reconciliation);
+                // after it, handleFailureAudit only reports the error.
+                await handleFailureAudit(ctx, result, 500, "gateway", "nonstream_finalization_failed",
+                    "The response was delivered but accounting finalization failed.", {
+                        upstream_status: responseStatus,
+                        response_delivered: true,
+                        billing_status: (ctx.meta as Record<string, unknown>).__usageChargeRecorded === true ? "recorded" : "pending_reconciliation",
+                        cause: error instanceof Error ? error.message : String(error),
+                    }, null, {
+                        gatewayResponse: clientResponseBody,
+                        rawUsage: usageForBilling,
+                    });
+            }
         } finally {
             releaseRuntime();
         }
@@ -558,6 +576,7 @@ async function handleNonStreamResponse(
     const pricedUsageFinalRaw = pricedWithByok.pricedUsage;
     const totalCentsFinal = pricedWithByok.totalCents;
     const totalNanosFinal = pricedWithByok.totalNanos;
+    noteIntendedCharge(ctx, totalNanosFinal);
     const currencyFinal = pricedWithByok.currency;
     if (ctx.meta?.debug?.enabled) {
         console.log("[gateway][pricing] non-stream priced usage", {

@@ -3263,7 +3263,7 @@ export type CreateDepartmentBudgetParams = {
 };
 
 /**
- * Creates a daily, weekly, or monthly spend budget for one department. Once the department has used it, API-key requests that count toward the department return 429 key_limit_exceeded until the budget resets. Batch jobs, realtime sessions and OAuth requests are not blocked. If the budget check is briefly unavailable, requests are allowed rather than refused. Owners and admins get a mobile push at about 80% and at 100%.
+ * Creates a daily, weekly, or monthly spend budget for one department. Once the department has used it, API-key requests that count toward the department return 429 key_limit_exceeded until the budget resets. If the budget check is briefly unavailable, requests are allowed rather than refused. Owners and admins get a mobile push at about 80% and at 100%.
  */
 export async function createDepartmentBudget(
   client: Client,
@@ -16160,7 +16160,7 @@ export type ListDepartmentBudgetsParams = {
 };
 
 /**
- * Lists department spend budgets with each department's spend so far in the current UTC period. Spend comes from an hourly rollup, so it can lag by up to an hour.
+ * Lists department spend budgets with each department's spend so far in the current UTC period. Spend is counted the way department admission counts it, so it is current.
  */
 export async function listDepartmentBudgets(
   client: Client,
