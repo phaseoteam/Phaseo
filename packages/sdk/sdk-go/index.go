@@ -468,7 +468,7 @@ func (c *Phaseo) GetActivity(_ context.Context, query map[string]string) (map[st
 	})
 }
 
-// GetGeneration calls /generation?id=...
+// GetGeneration calls /generations?id=...
 func (c *Phaseo) GetGeneration(_ context.Context, generationID string) (map[string]interface{}, error) {
 	return withLifecycleAndTelemetry(c, context.Background(), "generations.retrieve", map[string]any{"id": generationID}, false, func() (map[string]interface{}, error) {
 		return gen.GetGeneration(c.raw, nil, map[string]string{"id": generationID}, nil, nil)
