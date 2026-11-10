@@ -8,7 +8,7 @@ import { scheduleOnRN } from "react-native-worklets";
 import { useLayout } from "@/hooks/useLayout";
 import { cn } from "@/lib/cn";
 import { haptic } from "@/lib/haptics";
-import { EASE_IN_OUT, EASE_OUT, project, rubberband, SHEET_SPRING, SNAP_BACK_SPRING } from "@/lib/motion";
+import { EASE_IN_OUT, EASE_OUT, project, rubberband, SHEET_SPRING, SNAP_BACK_SPRING, useReleaseVelocity } from "@/lib/motion";
 import { Button } from "./button";
 import { Sheet } from "./dialog";
 import { Icon } from "./icon";
@@ -118,31 +118,35 @@ function SwipeAway({ onDismiss, children }: { onDismiss: () => void; children: R
   const offset = useSharedValue(0);
   const height = useSharedValue(0);
   const dragFrom = useSharedValue(0);
+  const speed = useReleaseVelocity();
   const pan = usePanGesture({
     activeOffsetY: [-8, 8],
     failOffsetX: [-16, 16],
-    onActivate: () => {
+    onActivate: (event) => {
       "worklet";
       // From where it is now, even springing back or flying off, so catching it never makes it jump.
       cancelAnimation(offset);
       dragFrom.set(offset.get());
+      speed.start(event.translationY);
     },
     onUpdate: (event) => {
       "worklet";
+      speed.track(event.translationY);
       const y = dragFrom.get() + event.translationY;
       offset.set(y <= 0 ? y : rubberband(y, height.get()));
     },
     onDeactivate: (event) => {
       "worklet";
-      const travel = offset.get() + project(event.velocityY);
+      const velocity = speed.release(event.velocityY);
+      const travel = offset.get() + project(velocity);
       if (!event.canceled && (travel < -TOAST_DISMISS_AT || offset.get() < -height.get() / 2)) {
         // Off the top with the flick's speed, then gone (unless it's caught again on the way).
-        offset.set(withSpring(-(height.get() + 80), { ...SHEET_SPRING, velocity: event.velocityY, overshootClamping: true }, (finished) => {
+        offset.set(withSpring(-(height.get() + 80), { ...SHEET_SPRING, velocity, overshootClamping: true }, (finished) => {
           if (finished) scheduleOnRN(onDismiss);
         }));
         return;
       }
-      offset.set(withSpring(0, { ...SNAP_BACK_SPRING, velocity: event.velocityY }));
+      offset.set(withSpring(0, { ...SNAP_BACK_SPRING, velocity }));
     },
   });
   const style = useAnimatedStyle(() => ({

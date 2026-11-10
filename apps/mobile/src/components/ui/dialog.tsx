@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { scheduleOnRN } from "react-native-worklets";
 import { useLayout } from "@/hooks/useLayout";
 import { cn } from "@/lib/cn";
-import { project, rubberband, SHEET_SPRING, SNAP_BACK_SPRING } from "@/lib/motion";
+import { project, rubberband, SHEET_SPRING, SNAP_BACK_SPRING, useReleaseVelocity } from "@/lib/motion";
 import { dialogFrame, type DialogSize } from "./overlay";
 import { Screen } from "./screen";
 
@@ -74,31 +74,36 @@ export function BottomDrawer({ onClose, maxHeight, paddingBottom, className, chi
     offset.set(withSpring(0, { ...SHEET_SPRING, reduceMotion: ReduceMotion.System }));
   };
 
+  const speed = useReleaseVelocity();
   const drag = usePanGesture({
+    // A fail offset counts as a custom activation rule, which turns off the pan's default minimum distance, so the
+    // pan needs its own activation offset or it never starts.
+    activeOffsetY: [-6, 6],
     failOffsetX: [-20, 20],
-    // The grabber's strip is short, so the finger target reaches into the space above and below it (44 pt in all).
-    hitSlop: { top: 12, bottom: 16 },
-    onActivate: () => {
+    onActivate: (event) => {
       "worklet";
       // From where it is now, even mid-animation, so catching it never makes it jump.
       cancelAnimation(offset);
       dragFrom.set(offset.get());
+      speed.start(event.translationY);
     },
     onUpdate: (event) => {
       "worklet";
+      speed.track(event.translationY);
       const next = dragFrom.get() + event.translationY;
       offset.set(next >= 0 ? next : rubberband(next, height.get()));
     },
     onDeactivate: (event) => {
       "worklet";
       const full = height.get();
-      if (!event.canceled && (offset.get() + project(event.velocityY) > full * 0.4 || offset.get() > full / 2)) {
-        offset.set(withSpring(full, { ...SHEET_SPRING, velocity: event.velocityY, overshootClamping: true }, (finished) => {
+      const velocity = speed.release(event.velocityY);
+      if (!event.canceled && (offset.get() + project(velocity) > full * 0.4 || offset.get() > full / 2)) {
+        offset.set(withSpring(full, { ...SHEET_SPRING, velocity, overshootClamping: true }, (finished) => {
           if (finished) scheduleOnRN(onClose);
         }));
         return;
       }
-      offset.set(withSpring(0, { ...SNAP_BACK_SPRING, velocity: event.velocityY }));
+      offset.set(withSpring(0, { ...SNAP_BACK_SPRING, velocity }));
     },
   });
 
@@ -117,8 +122,11 @@ export function BottomDrawer({ onClose, maxHeight, paddingBottom, className, chi
       {/* Reanimated views take styles only; the themed drawer is a core View inside. */}
       <Animated.View accessibilityViewIsModal style={[{ maxHeight }, drawerStyle]} onLayout={onLayout}>
         <View className={cn("shrink rounded-t-md border-t border-border bg-popover", className)} style={{ paddingBottom }}>
+          {/* The detector checks a touch against its one child's bounds, so the strip must be a real native view
+              (collapsable={false}: a layout-only view is flattened away, leaving the 4 dp bar as the target) and
+              tall enough for a finger by itself. */}
           <GestureDetector gesture={drag}>
-            <View accessibilityElementsHidden importantForAccessibility="no-hide-descendants" className="h-4 items-center justify-end">
+            <View collapsable={false} accessibilityElementsHidden importantForAccessibility="no-hide-descendants" className="h-7 items-center justify-center">
               <View className="h-1 w-9 rounded-sm bg-muted-foreground/30" />
             </View>
           </GestureDetector>
