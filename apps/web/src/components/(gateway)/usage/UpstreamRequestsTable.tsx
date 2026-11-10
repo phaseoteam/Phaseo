@@ -39,6 +39,8 @@ import { cn } from "@/lib/utils";
 import { extractUsageMeters } from "./usageMeters";
 import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
 import UsageEntityHoverCard from "./UsageEntityHoverCard";
+import { TimestampHoverCard } from "@/components/display/TimestampHoverCard";
+import { joinMeta } from "@/components/ui/hover-card-layout";
 
 type KeyMetadata = { id: string; name: string | null; prefix: string | null };
 
@@ -178,6 +180,7 @@ export default function UpstreamRequestsTable({
 }) {
 	const t = useTranslations("SettingsUI");
 	const locale = useLocale();
+	const tCards = useTranslations("Common.ui.hoverCards");
 	const translate = (key: string, values?: Record<string, string | number>) => t(key as never, values as never);
 	const [selected, setSelected] = React.useState<UpstreamGeneration | null>(
 		null,
@@ -217,49 +220,44 @@ export default function UpstreamRequestsTable({
 					switch (column) {
 						case "date":
 							return (
-								<>
+								<TimestampHoverCard value={row.created_at}>
 									{formatWordyDateTime(row.created_at, { includeTime: true, locale })}
-								</>
+								</TimestampHoverCard>
 							);
 						case "model":
 							return (
 								<>
 									<UsageEntityHoverCard
 										title={modelLabel}
-										subtitle={model?.organisationName}
+										meta={joinMeta([
+											model?.organisationName,
+											<code key="id" className="font-mono text-[11px]">{row.model_id}</code>,
+										])}
 										href={getModelDetailsHref(row.model_id)}
 										visual={
 											model?.organisationId ? (
 												<Logo
 													id={model.organisationId}
-													width={18}
-													height={18}
+													width={16}
+													height={16}
 												/>
 											) : null
 										}
 										rows={[
-											{
-												label: t("strings.Model ID" as never),
-												value: (
-													<code className="font-mono text-[11px]">
-														{row.model_id}
-													</code>
-												),
-											},
+											row.provider
+												? { key: "provider", label: tCards("provider"), value: providerLabel }
+												: null,
 										]}
+										triggerClassName="max-w-[230px]"
 									>
-										<span className="flex max-w-[230px] items-center gap-2">
-											{model?.organisationId ? (
-												<Logo
-													id={model.organisationId}
-													width={15}
-													height={15}
-												/>
-											) : null}
-											<span className="truncate" title={modelLabel}>
-												{modelLabel}
-											</span>
-										</span>
+										{model?.organisationId ? (
+											<Logo
+												id={model.organisationId}
+												width={15}
+												height={15}
+											/>
+										) : null}
+										<span className="truncate">{modelLabel}</span>
 									</UsageEntityHoverCard>
 								</>
 							);
@@ -269,15 +267,19 @@ export default function UpstreamRequestsTable({
 									{row.provider ? (
 										<UsageEntityHoverCard
 											title={providerLabel}
-											subtitle={providerPolicy}
+											meta={<code className="font-mono text-[11px]">{row.provider}</code>}
 											href={`/api-providers/${encodeURIComponent(row.provider)}`}
-											visual={<Logo id={row.provider} width={18} height={18} />}
-											rows={[]}
+											visual={<Logo id={row.provider} width={16} height={16} />}
+											rows={[
+												{
+													key: "policy",
+													label: tCards("dataPolicy"),
+													value: providerPolicy ?? tCards("notKnown"),
+												},
+											]}
 										>
-											<span className="inline-flex items-center gap-2">
-												<Logo id={row.provider} width={15} height={15} />
-												{providerLabel}
-											</span>
+											<Logo id={row.provider} width={15} height={15} />
+											{providerLabel}
 										</UsageEntityHoverCard>
 									) : (
 										providerLabel

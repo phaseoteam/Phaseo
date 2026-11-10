@@ -40,11 +40,6 @@ import {
 import { CopyButton } from "@/components/ui/copy-button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-	HoverCard,
-	HoverCardContent,
-	HoverCardTrigger,
-} from "@/components/ui/hover-card";
-import {
 	Table,
 	TableBody,
 	TableCell,
@@ -62,13 +57,11 @@ import {
 	Video,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { formatRelativeToNow } from "@/lib/formatRelative";
+import { TimestampHoverCard } from "@/components/display/TimestampHoverCard";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { registerUsageViewRefresher } from "@/lib/gateway/usage/refreshBus";
 import { usePrivateUsageRefresh } from "./PrivateUsageQuery";
-import {
-	formatDateTime,
-	formatWordyDateTime,
-} from "@/lib/gateway/usage/timeFormatting";
+import { formatWordyDateTime } from "@/lib/gateway/usage/timeFormatting";
 import { formatAsyncJobFailureSummary } from "@/lib/gateway/usage/asyncJobFailureSummary";
 import { formatRoomError, type RoomErrorTranslator } from "@/lib/chat/formatRoomError";
 import {
@@ -1759,10 +1752,8 @@ export default function AsyncJobsPanel({
 	const resolvedTitle = title ?? s("Async job webhooks");
 	const resolvedDescription = description ?? s("phraseRecentVideoAndBatchJobsWithWebhookDeliveryHistoryPendingRetriesAndFailures");
 	const resolvedEmptyMessage = emptyMessage ?? s("phraseNoAsyncJobsWithWebhookActivityYet");
-	const userTimeZone =
-		typeof Intl !== "undefined"
-			? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
-			: "UTC";
+	const tCards = useTranslations("Common.ui.hoverCards");
+	const format = useDisplayFormatters();
 	const [jobs, setJobs] = React.useState(initialJobs);
 	const privateQuery = usePrivateUsageRefresh();
 	const [resolvedProviderNames, setResolvedProviderNames] = React.useState(
@@ -1789,7 +1780,6 @@ export default function AsyncJobsPanel({
 	const [isRefreshing, setIsRefreshing] = React.useState(false);
 	const [isLoadingDetail, startLoadingDetail] = React.useTransition();
 	const [isLoadingRequestDetail, startLoadingRequestDetail] = React.useTransition();
-	const [relativeNowMs, setRelativeNowMs] = React.useState<number | null>(null);
 	const detailCacheRef = React.useRef(
 		new Map<string, AsyncJobDetailRow>(),
 	);
@@ -1814,13 +1804,6 @@ export default function AsyncJobsPanel({
 	React.useEffect(() => {
 		setResolvedAppMetadata(new Map(appMetadata ?? []));
 	}, [appMetadata]);
-
-	React.useEffect(() => {
-		const updateNow = () => setRelativeNowMs(Date.now());
-		updateNow();
-		const interval = setInterval(updateNow, 60_000);
-		return () => clearInterval(interval);
-	}, []);
 
 	const refresh = React.useCallback(() => {
 		if (privateQuery) return privateQuery.refresh();
@@ -1987,51 +1970,19 @@ export default function AsyncJobsPanel({
 							return (
 								<>
 									{timestamp ? (
-										<HoverCard>
-											<HoverCardTrigger asChild>
-												<span className="cursor-help underline underline-offset-2 decoration-dotted">
-													{formatTimestamp(timestamp)}
-												</span>
-											</HoverCardTrigger>
-											<HoverCardContent align="start" className="w-auto">
-												{(() => {
-													const date = new Date(timestamp);
-													const unixSeconds = Math.floor(date.getTime() / 1000);
-													return (
-														<div className="grid gap-2 text-xs">
-															<div className="grid grid-cols-[120px_1fr] gap-2">
-																<div className="text-muted-foreground">
-																	{userTimeZone}
-																</div>
-																<div className="font-mono">
-																	{formatDateTime(date, userTimeZone)}
-																</div>
-															</div>
-															<div className="grid grid-cols-[120px_1fr] gap-2">
-																<div className="text-muted-foreground">UTC</div>
-																<div className="font-mono">
-																	{formatDateTime(date, "UTC")}
-																</div>
-															</div>
-															<div className="grid grid-cols-[120px_1fr] gap-2">
-																<div className="text-muted-foreground">
-																	{t("usageGaps.copyRelative")}</div>
-																<div className="font-mono">
-																	{relativeNowMs
-																		? formatRelativeToNow(date, relativeNowMs, locale)
-																		: "-"}
-																</div>
-															</div>
-															<div className="grid grid-cols-[120px_1fr] gap-2">
-																<div className="text-muted-foreground">
-																	{t("usageGaps.copyTimestamp")}</div>
-																<div className="font-mono">{unixSeconds}</div>
-															</div>
-														</div>
-													);
-												})()}
-											</HoverCardContent>
-										</HoverCard>
+										<TimestampHoverCard
+											variant="period"
+											start={timestamp}
+											end={job.updated_at ?? timestamp}
+											durationLabel={tCards("took")}
+											title={
+												job.updated_at && job.updated_at !== timestamp
+													? `${format.dateTime(timestamp, { includeSeconds: true })} → ${format.dateTime(job.updated_at, { includeSeconds: true })}`
+													: undefined
+											}
+										>
+											{formatTimestamp(timestamp)}
+										</TimestampHoverCard>
 									) : (
 										"-"
 									)}
