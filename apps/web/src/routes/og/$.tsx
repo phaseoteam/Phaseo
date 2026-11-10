@@ -186,12 +186,12 @@ async function handleGet(
 							<div style={{ display: "flex", flexDirection: "column", paddingTop: 4 }}>
 								<div
 									style={{
-										maxWidth: promotion ? 560 : 760,
+										maxWidth: 760,
 										fontSize: titleFontSize,
 										fontWeight: 700,
 										lineHeight: 1.04,
 										letterSpacing: -1.2,
-										textWrap: "balance",
+										textWrap: "wrap",
 									}}
 								>
 									{payload.name}
@@ -215,22 +215,23 @@ async function handleGet(
 						<div
 							style={{
 								position: "absolute",
-								top: 64,
+								// Right side, just above the stats rule (top: 369), clear of the title.
+								top: 228,
 								right: 58,
 								display: "flex",
 								flexDirection: "column",
 								alignItems: "flex-start",
-								padding: "22px 30px 24px",
+								padding: "16px 24px 18px",
 								borderRadius: 10,
 								background: "#2f7d4e",
 								color: "#ffffff",
 							}}
 						>
-							<div style={{ fontSize: 66, fontWeight: 700, lineHeight: 1, letterSpacing: -2 }}>
+							<div style={{ fontSize: 48, fontWeight: 700, lineHeight: 1, letterSpacing: -1.4 }}>
 								{promotion.label.toUpperCase()}
 							</div>
 							{promotionDetails.map((line) => (
-								<div key={line} style={{ marginTop: 10, fontSize: 21, fontWeight: 600, lineHeight: 1.15, color: "#e3f1e8" }}>
+								<div key={line} style={{ marginTop: 8, fontSize: 18, fontWeight: 600, lineHeight: 1.15, color: "#e3f1e8" }}>
 									{line}
 								</div>
 							))}
@@ -259,7 +260,7 @@ async function handleGet(
 									const originalPrice = stat.originalValue;
 									const priceContent = originalPrice ? (
 										<div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", marginTop: 8 }}>
-											<div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+											<div style={{ display: "flex", alignItems: "center", gap: 10 }}>
 												<div style={{ fontSize: 35, fontWeight: 700, lineHeight: 1, letterSpacing: -1.1 }}>
 													{stat.value}
 												</div>
@@ -274,7 +275,7 @@ async function handleGet(
 											</div>
 										</div>
 									) : (
-										<div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 8 }}>
+										<div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
 											<div style={{ fontSize: stat.label === "RELEASED" ? releaseDateFontSize : 35, fontWeight: 700, lineHeight: 1, letterSpacing: -1.1 }}>
 												{stat.value}
 											</div>

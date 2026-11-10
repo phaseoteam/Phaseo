@@ -90,6 +90,7 @@
 		"katex": "0.16.47",
 		"mermaid": "11.17.2",
 		"node-pty": "1.2.0-beta.15",
+		"posthog-node": "^5.41.0",
 		"react-markdown": "10.1.0",
 		"remark-gfm": "4.0.1",
 		"remark-math": "6.0.0",

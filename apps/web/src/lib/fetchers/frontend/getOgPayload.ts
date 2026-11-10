@@ -229,18 +229,21 @@ export function buildModelOgStats(model: ModelOverviewPage | null, pricing: Prov
 	const context = contextLengths.length ? Math.max(...contextLengths) : null;
 
 	const { standardCandidates, listCandidates } = collectOgPriceCandidates(pricing, Date.now());
-	const priceFor = (meter: string): { value: number; originalValue?: number; promotion?: string } | null => {
+	const priceFor = (meter: string): { value: number; originalValue?: number; promotion?: string; audience?: string } | null => {
 		const cheapest = cheapestListCandidate(meter, listCandidates);
 		if (!cheapest) return null;
 		const promotionCandidate = getPromotionCandidate(cheapest, standardCandidates);
 		const promotionPercent = getPromotionPercent(cheapest, standardCandidates);
 		const hasPromotion = promotionCandidate != null && promotionPercent != null;
+		const audience = hasPromotion ? audienceLabel(promotionCandidate.rule.match) : undefined;
 		return {
 			value: promotionCandidate && promotionPercent != null
 				? promotionCandidate.pricePerMillion
 				: cheapest.pricePerMillion,
 			...(hasPromotion ? { originalValue: cheapest.pricePerMillion } : {}),
 			...(promotionPercent != null ? { promotion: formatPromotionPercent(promotionPercent) } : {}),
+			// A price limited to one app says which, so other apps do not look eligible.
+			...(audience ? { audience } : {}),
 		};
 	};
 
@@ -252,7 +255,7 @@ export function buildModelOgStats(model: ModelOverviewPage | null, pricing: Prov
 			label: "INPUT",
 			value: formatOgPrice(inputPrice.value),
 			...(inputPrice.originalValue == null ? {} : { originalValue: formatOgPrice(inputPrice.originalValue) }),
-			helper: "per 1M tokens",
+			helper: inputPrice.audience ? `per 1M tokens in ${inputPrice.audience}` : "per 1M tokens",
 			promotion: inputPrice.promotion,
 		});
 	}
@@ -262,7 +265,7 @@ export function buildModelOgStats(model: ModelOverviewPage | null, pricing: Prov
 			label: "OUTPUT",
 			value: formatOgPrice(outputPrice.value),
 			...(outputPrice.originalValue == null ? {} : { originalValue: formatOgPrice(outputPrice.originalValue) }),
-			helper: "per 1M tokens",
+			helper: outputPrice.audience ? `per 1M tokens in ${outputPrice.audience}` : "per 1M tokens",
 			promotion: outputPrice.promotion,
 		});
 	}

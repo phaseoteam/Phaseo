@@ -1,6 +1,6 @@
 // Purpose: Read the provider's error code, type, message and description from one provider attempt.
-// Why: gateway_upstream_requests and v2_request_attempts must store the same text, taken the
-// same way. The executor already trims these to 320 characters (truncateAttemptText in
+// Why: v2_request_attempts stores the same text the retired gateway_upstream_requests table
+// held, taken the same way, so request detail reads alike on both sides of the cut-over. The executor already trims these to 320 characters (truncateAttemptText in
 // pipeline/execute/index.ts), and the audit writers drop the raw payload preview for keys that
 // keep content out of telemetry. Only these four summary fields are read here.
 
