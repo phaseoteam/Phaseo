@@ -130,7 +130,10 @@ import {
 	MOBILE_STAT_CELL,
 	MOBILE_TABLE_BLOCK,
 	getPriceColumnMobileLabel,
-	isMobileHiddenPriceColumn,
+	MOBILE_PERF_ORDER,
+	MOBILE_PERF_ROW_START,
+	getMobilePriceCellClass,
+	getMobilePriceColumnKeys,
 } from "@/components/(data)/model/pricing/providerTableMobile";
 import {
 	clearProviderInspector,
@@ -748,6 +751,7 @@ function ProviderServiceTierRow({
 	const logoProviderId = sections.logoProviderId;
 	const tSections = useTranslations("Catalogue.modelDetail.sections");
 	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
+	const mobilePriceKeys = getMobilePriceColumnKeys(priceColumns);
 	const discountBadge = getProviderTableDiscountBadge(sections, {
 		discount: tSections("discount"),
 		off: tSections("off"),
@@ -813,7 +817,7 @@ function ProviderServiceTierRow({
 					className={cn(
 						"py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap",
 						MOBILE_STAT_CELL,
-						isMobileHiddenPriceColumn(column) && "max-sm:hidden",
+						getMobilePriceCellClass(mobilePriceKeys, column.key),
 					)}
 				>
 					{renderTierTablePrice(
@@ -821,13 +825,13 @@ function ProviderServiceTierRow({
 					)}
 				</TableCell>
 			))}
-			<TableCell data-label={tProvider("latency")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL)}>
+			<TableCell data-label={tProvider("latency")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL, MOBILE_PERF_ROW_START, MOBILE_PERF_ORDER)}>
 				{plan === "batch" ? "--" : formatTierLatency(runtimeStats?.latencyMs30m)}
 			</TableCell>
-			<TableCell data-label={tProvider("throughput")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL)}>
+			<TableCell data-label={tProvider("throughput")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL, MOBILE_PERF_ORDER)}>
 				{plan === "batch" ? "--" : formatTierThroughput(runtimeStats?.throughput30m)}
 			</TableCell>
-			<TableCell data-label={tProvider("uptime")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL)}>
+			<TableCell data-label={tProvider("uptime")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL, MOBILE_PERF_ORDER)}>
 				{plan === "batch" ? "--" : formatTierUptime(runtimeStats)}
 			</TableCell>
 		</TableRow>
@@ -1758,9 +1762,11 @@ export default function ModelPricingClient({
 	// Phones hide the column headers, so sorting moves to a Sort menu next to Filters.
 	// Picking a metric sorts by it; picking the active metric again flips the direction.
 	// The active metric shows an arrow for the current direction.
+	const mobileSortPriceKeys = getMobilePriceColumnKeys(visiblePriceColumns);
 	const mobileSortOptions: Array<{ option: Exclude<SortOption, "default">; label: string }> = [
-		...visiblePriceColumns
-			.filter((column) => !isMobileHiddenPriceColumn(column))
+		...mobileSortPriceKeys
+			.map((key) => visiblePriceColumns.find((column) => column.key === key))
+			.filter((column): column is (typeof visiblePriceColumns)[number] => Boolean(column))
 			.map((column) => ({ option: column.sort, label: getPriceColumnMobileLabel(column) })),
 		{ option: "latency", label: tProvider("latency") },
 		{ option: "throughput", label: tProvider("throughput") },
