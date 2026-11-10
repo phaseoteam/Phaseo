@@ -58,7 +58,6 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { TimestampHoverCard } from "@/components/display/TimestampHoverCard";
-import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { registerUsageViewRefresher } from "@/lib/gateway/usage/refreshBus";
 import { usePrivateUsageRefresh } from "./PrivateUsageQuery";
 import { formatWordyDateTime } from "@/lib/gateway/usage/timeFormatting";
@@ -1752,8 +1751,6 @@ export default function AsyncJobsPanel({
 	const resolvedTitle = title ?? s("Async job webhooks");
 	const resolvedDescription = description ?? s("phraseRecentVideoAndBatchJobsWithWebhookDeliveryHistoryPendingRetriesAndFailures");
 	const resolvedEmptyMessage = emptyMessage ?? s("phraseNoAsyncJobsWithWebhookActivityYet");
-	const tCards = useTranslations("Common.ui.hoverCards");
-	const format = useDisplayFormatters();
 	const [jobs, setJobs] = React.useState(initialJobs);
 	const privateQuery = usePrivateUsageRefresh();
 	const [resolvedProviderNames, setResolvedProviderNames] = React.useState(
@@ -1970,17 +1967,10 @@ export default function AsyncJobsPanel({
 							return (
 								<>
 									{timestamp ? (
-										<TimestampHoverCard
-											variant="period"
-											start={timestamp}
-											end={job.updated_at ?? timestamp}
-											durationLabel={tCards("took")}
-											title={
-												job.updated_at && job.updated_at !== timestamp
-													? `${format.dateTime(timestamp, { includeSeconds: true })} → ${format.dateTime(job.updated_at, { includeSeconds: true })}`
-													: undefined
-											}
-										>
+										// updated_at also moves on webhook retries and other
+										// metadata-only writes, so it is not a completion time; show
+										// the creation time without a duration.
+										<TimestampHoverCard value={timestamp}>
 											{formatTimestamp(timestamp)}
 										</TimestampHoverCard>
 									) : (
