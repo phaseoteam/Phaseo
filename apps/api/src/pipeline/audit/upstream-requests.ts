@@ -176,9 +176,7 @@ function buildRows(args: PersistGatewayUpstreamRequestsArgs) {
             cost_nanos: isFinal && success ? totalNanos : 0,
             currency: args.currency ?? null,
             error_code: errorText.upstream_error_code,
-            error_type: typeof attempt.upstream_error_type === "string"
-                ? attempt.upstream_error_type
-                : typeof error.type === "string" ? error.type : null,
+            error_type: errorText.upstream_error_type,
             error_message: errorText.upstream_error_message,
             error_description: errorText.upstream_error_description,
             error_param: typeof attempt.upstream_error_param === "string"

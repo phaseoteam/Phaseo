@@ -437,7 +437,8 @@ accountSettingsUsageRouter.get("/usage/logs", async (c) => {
 					client_source_detection: fact.client_source_detection ?? null,
 					// The provider's own code when it sent one, otherwise the gateway failure type.
 					error_code: attempt.upstream_error_code ?? attempt.error_code ?? fact.error_code,
-					error_type: attempt.failure_class,
+					// The provider's own error type when it sent one, otherwise the gateway failure class.
+					error_type: attempt.upstream_error_type ?? attempt.failure_class,
 					error_message: attempt.upstream_error_message ?? null,
 					error_description: attempt.upstream_error_description ?? null,
 					request_payload: null,
