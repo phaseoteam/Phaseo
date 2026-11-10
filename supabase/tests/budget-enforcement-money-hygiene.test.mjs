@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { applyMigration, createBudgetDatabase, readColumnMigrations, readIndexMigrations, readMigration, readSchema, readTableMigrations } from './fixtures/budget-enforcement-db.mjs';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
-// Migration 20261109214248_budget_enforcement_money_hygiene against production shapes (see the
+// Migration 20261110105024_budget_enforcement_money_hygiene against production shapes (see the
 // fixture): one budget usage calculation for workspace budgets, department admission and the
 // spend-limit seed; department budgets on holds, realtime and the context fallback; one count per
 // batch hold; active holds across period rollover; captured video holds before their audit row;
@@ -157,7 +157,7 @@ try {
     assert.match(migration, /^SET LOCAL lock_timeout = '10s';/);
     assert.ok(!statementsOf(migration).some((statement) => tableStatement.test(statement)), 'the function migration locks no table');
     const ours = [...await readColumnMigrations(), ...await readIndexMigrations(), ...await readTableMigrations()]
-      .filter((sql) => !sql.includes('gateway_requests_workspace_billing_request_idx')); // fix/async-billing-20261104's
+      .filter((sql) => !sql.includes('gateway_requests_workspace_billing_request_idx')); // fix/async-billing-charges-20261110's
     const partitionOf = new Map([...(await readSchema('public/tables/gateway_requests.sql'))
       .matchAll(/CREATE TABLE "public"\."(\w+)" PARTITION OF "public"\."(\w+)"/g)].map(([, child, parent]) => [child, parent]));
     assert.equal(partitionOf.get('gateway_requests_2026_10'), 'gateway_requests');

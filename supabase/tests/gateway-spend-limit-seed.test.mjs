@@ -67,10 +67,10 @@ try {
   // Then the one teaching the helper the workspace's primary-department setting.
   const attributionMigration = await readFile(new URL('../migrations/20261031174621_department_attribution_primary_for_budgets.sql', import.meta.url), 'utf8');
   await db.exec(attributionMigration);
-  // 20261109214248_budget_enforcement_money_hygiene moves department usage into the shared
+  // 20261110105024_budget_enforcement_money_hygiene moves department usage into the shared
   // private.department_budget_usage (positive-cost requests plus outstanding holds).
-  const usageMigration = await readFile(new URL('../migrations/20261109214248_budget_enforcement_money_hygiene.sql', import.meta.url), 'utf8');
-  for (const name of ['20261109145504_billing_cutoffs.sql', '20261109145505_gateway_requests_expected_cost_nanos.sql', '20261109145506_validate_gateway_requests_expected_cost_nanos_check.sql']) {
+  const usageMigration = await readFile(new URL('../migrations/20261110105024_budget_enforcement_money_hygiene.sql', import.meta.url), 'utf8');
+  for (const name of ['20261110010126_billing_cutoffs.sql', '20261110010127_gateway_requests_expected_cost_nanos.sql', '20261110010128_validate_gateway_requests_expected_cost_nanos_check.sql']) {
     await db.exec(await readFile(new URL(`../migrations/${name}`, import.meta.url), 'utf8'));
   }
   // The usage migration drops main's three-argument seed before creating the one with
