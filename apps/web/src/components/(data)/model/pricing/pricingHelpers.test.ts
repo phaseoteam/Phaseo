@@ -1418,3 +1418,47 @@ describe("buildProviderSections", () => {
 		])).toEqual(["00:00", "01:00", "04:00", "06:00", "10:00"]);
 	});
 });
+
+describe("app-limited promotional prices", () => {
+	test("shows the promotion as a discount on the list price and keeps the app in a ranged label", () => {
+		const provider = makeProviderPricing();
+		provider.provider_models = [{
+			...provider.provider_models[0],
+			id: "anthropic:anthropic/example:text.generate",
+			model_id: "anthropic/example",
+			endpoint: "text.generate",
+		}];
+		const longContext = { op: "gt", path: "input_tokens", value: 200000 };
+		const claudeCode = { op: "eq", path: "client_id", value: "claude-code" };
+		const rule = (id: string, price: number, priority: number, match: unknown[], effectiveTo: string | null = null) => ({
+			...provider.pricing_rules[0],
+			id,
+			model_key: "anthropic:anthropic/example:text.generate",
+			capability_id: "text.generate",
+			modality: "text",
+			meter: "input_text_tokens",
+			price_per_unit: price,
+			priority,
+			match,
+			effective_from: "2026-01-01T00:00:00.000Z",
+			effective_to: effectiveTo,
+		});
+		provider.pricing_rules = [
+			rule("list-long", 0.000008, 100, [longContext]),
+			rule("promo-long", 0.000006, 200, [longContext, claudeCode], "2026-11-12T00:00:00.000Z"),
+		] as any;
+
+		const sections = buildProviderSections(provider, "standard", new Date("2026-11-10T12:00:00.000Z"));
+
+		expect(sections.textTokens?.in).toEqual([
+			expect.objectContaining({
+				ruleId: "promo-long",
+				price: 0.000006,
+				basePrice: 0.000008,
+				comparisonKind: "discount",
+				discountEndsAt: "2026-11-12T00:00:00.000Z",
+				label: expect.stringContaining("In Claude Code"),
+			}),
+		]);
+	});
+});

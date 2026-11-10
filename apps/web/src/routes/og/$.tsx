@@ -3,7 +3,7 @@ import { renderImageResponse } from "@/lib/og/imageResponse";
 
 import { montserratBoldPromise, montserratRegularPromise, montserratSemiboldPromise } from "@/lib/og/ogAssets";
 import { fetchFrontendOgPayload } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import type { OgEntity } from "@/lib/fetchers/frontend/getOgPayload";
+import { promotionDetailLines, type OgEntity } from "@/lib/fetchers/frontend/getOgPayload";
 import { resolveLogo } from "@/lib/logos";
 
 const brandLogoPath = "/wordmark_light.svg";
@@ -123,6 +123,8 @@ async function handleGet(
 	const primaryLogoSrc = !isCountry ? getLogoUrl(payload.logoId, assetBaseUrl) : undefined;
 	const brandLogoSrc = absoluteAsset(brandLogoPath, assetBaseUrl);
 	const stats = (payload.stats ?? []).slice(0, 4);
+	const promotion = payload.promotion ?? null;
+	const promotionDetails = promotion ? promotionDetailLines(promotion) : [];
 	const releaseDateFontSize = 35;
 	const titleFontSize = getTitleFontSize(payload.name);
 
@@ -184,7 +186,7 @@ async function handleGet(
 							<div style={{ display: "flex", flexDirection: "column", paddingTop: 4 }}>
 								<div
 									style={{
-										maxWidth: 760,
+										maxWidth: promotion ? 560 : 760,
 										fontSize: titleFontSize,
 										fontWeight: 700,
 										lineHeight: 1.04,
@@ -208,6 +210,32 @@ async function handleGet(
 							</div>
 						</div>
 					</div>
+
+					{promotion ? (
+						<div
+							style={{
+								position: "absolute",
+								top: 64,
+								right: 58,
+								display: "flex",
+								flexDirection: "column",
+								alignItems: "flex-start",
+								padding: "22px 30px 24px",
+								borderRadius: 10,
+								background: "#2f7d4e",
+								color: "#ffffff",
+							}}
+						>
+							<div style={{ fontSize: 66, fontWeight: 700, lineHeight: 1, letterSpacing: -2 }}>
+								{promotion.label.toUpperCase()}
+							</div>
+							{promotionDetails.map((line) => (
+								<div key={line} style={{ marginTop: 10, fontSize: 21, fontWeight: 600, lineHeight: 1.15, color: "#e3f1e8" }}>
+									{line}
+								</div>
+							))}
+						</div>
+					) : null}
 
 					<div
 						style={{

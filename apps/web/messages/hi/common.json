@@ -2487,7 +2487,8 @@
 			"frames": "फ़्रेम",
 			"message": "संदेश",
 			"messages": "संदेश",
-			"serviceTierLineStyles": "सेवा स्तर की रेखा शैलियाँ"
+			"serviceTierLineStyles": "सेवा स्तर की रेखा शैलियाँ",
+			"inAudience": "{audience} में"
 		},
 		"publicModelCopy": {
 			"days": "{count} दिन",

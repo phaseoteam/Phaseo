@@ -1,5 +1,9 @@
 SELECT cron.schedule_in_database('activate-provider-catalog-releases', '*/5 * * * *', 'select public.activate_due_provider_catalog_releases()', 'postgres', NULL, true);
 
+SELECT
+  cron.schedule_in_database('enforce-pricing-promotion-budgets', '* * * * *',
+  'set statement_timeout = ''30s''; set lock_timeout = ''5s''; select public.enforce_pricing_promotion_budgets();', 'postgres', NULL, true);
+
 SELECT cron.schedule_in_database('ensure-gateway-requests-partitions', '0 3 * * 1', 'select public.ensure_gateway_requests_partitions(1);', 'postgres', NULL, true);
 
 SELECT

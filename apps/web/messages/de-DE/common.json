@@ -2487,7 +2487,8 @@
 			"frames": "Frames",
 			"message": "Nachricht",
 			"messages": "Nachrichten",
-			"serviceTierLineStyles": "Linienstile der Servicestufen"
+			"serviceTierLineStyles": "Linienstile der Servicestufen",
+			"inAudience": "In {audience}"
 		},
 		"publicModelCopy": {
 			"days": "{count, plural, one {# Tag} other {# Tage}}",
