@@ -730,6 +730,8 @@
 					"include_reasoning": "Wird aus Kompatibilitätsgründen akzeptiert und hat keine Wirkung. Reasoning wird immer zurückgegeben, wenn das Modell es erzeugt.",
 					"reasoning_effort": "Fordert, sofern verfügbar, ein niedrigeres oder höheres Reasoning-Budget an.",
 					"reasoning_tokens": "Stellt ein reasoning-spezifisches Token-Budget oder Nutzungsfeld dar.",
+					"prompt_cache_key": "Hält Anfragen mit gemeinsamem Prompt-Präfix auf einer cachefähigen Route.",
+					"prompt_cache_options": "Übergibt den Prompt-Cache-Modus und die TTL von OpenAI auf unterstützten Routen.",
 					"service_tier": "Wählt eine unterstützte Anfragestufe wie priority oder flex aus.",
 					"stream": "Gibt die Ausgabe schrittweise statt in einem einzigen Antworttext zurück.",
 					"other": "Weitere Informationen zu Endpunkten und Anbietern findest du in der vollständigen Parameterreferenz."

@@ -730,6 +730,8 @@
 					"include_reasoning": "Aceito por compatibilidade e não tem efeito. O raciocínio é retornado sempre que o modelo o gera.",
 					"reasoning_effort": "Solicita um orçamento de raciocínio menor ou maior quando disponível.",
 					"reasoning_tokens": "Representa um orçamento ou campo de uso de tokens específico de raciocínio.",
+					"prompt_cache_key": "Mantém solicitações com o mesmo prefixo de prompt em uma rota com cache.",
+					"prompt_cache_options": "Envia o modo e o TTL do cache de prompts da OpenAI nas rotas compatíveis.",
 					"service_tier": "Seleciona um nível de solicitação compatível, como priority ou flex.",
 					"stream": "Retorna a saída gradualmente em vez de um único corpo de resposta final.",
 					"other": "Consulte a referência completa de parâmetros para ver detalhes do endpoint e observações sobre o provedor."

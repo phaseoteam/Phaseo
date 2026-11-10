@@ -730,6 +730,8 @@
 					"include_reasoning": "Accepted for compatibility and has no effect. Reasoning is returned whenever the model produces it.",
 					"reasoning_effort": "Requests a lower or higher reasoning budget where available.",
 					"reasoning_tokens": "Represents a reasoning-specific token budget or usage field.",
+					"prompt_cache_key": "Keeps requests with shared prompt prefixes on a cache-aware route.",
+					"prompt_cache_options": "Passes OpenAI prompt-cache mode and TTL controls on supported routes.",
 					"service_tier": "Selects a supported request tier, such as priority or flex.",
 					"stream": "Returns output incrementally instead of one final response body.",
 					"other": "See the full parameter reference for endpoint-specific details and provider notes."

@@ -730,6 +730,8 @@
 					"include_reasoning": "Accepté pour compatibilité, sans effet. Le raisonnement est renvoyé dès que le modèle en produit.",
 					"reasoning_effort": "Demande un budget de raisonnement plus ou moins élevé si disponible.",
 					"reasoning_tokens": "Représente un budget ou un champ d’utilisation des jetons propre au raisonnement.",
+					"prompt_cache_key": "Garde les requêtes qui partagent un préfixe de prompt sur une route compatible avec le cache.",
+					"prompt_cache_options": "Transmet le mode et la durée de vie du cache de prompts OpenAI sur les routes compatibles.",
 					"service_tier": "Sélectionne un niveau de requête pris en charge, comme priority ou flex.",
 					"stream": "Renvoie la sortie progressivement au lieu d’un corps de réponse final unique.",
 					"other": "Consultez la référence complète des paramètres pour les détails propres au point de terminaison et les remarques du fournisseur."
