@@ -192,6 +192,8 @@ export function getParameterReference(paramId: string): ParameterReference {
 	);
 }
 
+export const PARAMETER_REFERENCE_IDS = Object.keys(PARAMETER_REFERENCE);
+
 export function getParameterReferenceTranslationKey(paramId: string): string {
 	return Object.hasOwn(PARAMETER_REFERENCE, paramId) ? paramId : "other";
 }

@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import englishCatalogue from "../../messages/en-GB/catalogue.json";
 import germanCatalogue from "../../messages/de-DE/catalogue.json";
+import { PARAMETER_REFERENCE_IDS } from "@/lib/parameters/reference";
 
 function flatten(value: unknown, prefix = "", result: Record<string, string> = {}) {
 	if (typeof value === "string") {
@@ -28,5 +29,10 @@ describe("catalogue localisation", () => {
 				expect(value).toMatch(/\{[^}]+\}/);
 			}
 		}
+	});
+
+	it("describes every parameter in the parameter reference", () => {
+		const descriptions = englishCatalogue.models.detail.quickstart.parameterDescriptions;
+		expect(PARAMETER_REFERENCE_IDS.filter((id) => !(id in descriptions))).toEqual([]);
 	});
 });
