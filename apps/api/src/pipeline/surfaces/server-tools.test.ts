@@ -1923,6 +1923,120 @@ describe("buildServerToolContinuation", () => {
 		}
 	});
 
+	it.each([
+		{
+			name: "rejects model allowed_domains outside the tool's allowed domains",
+			modelDomains: { allowed_domains: ["reddit.com"] },
+			expectedError: "domains_blocked_by_domain_policy",
+			expectedSourcePolicy: undefined,
+		},
+		{
+			name: "lets the model narrow the tool's allowed domains but not drop its exclusions",
+			modelDomains: { allowed_domains: ["3.docs.python.org"], excluded_domains: ["other.com"] },
+			expectedError: undefined,
+			expectedSourcePolicy: {
+				include_domains: ["3.docs.python.org"],
+				exclude_domains: ["beta.3.docs.python.org", "example.com", "other.com"],
+			},
+		},
+	])("$name", async ({ modelDomains, expectedError, expectedSourcePolicy }) => {
+		getBindingsMock.mockReturnValue({ PARALLEL_API_KEY: "parallel_test_key" });
+		const fetchMock = vi.fn(async () =>
+			new Response(JSON.stringify({ search_id: "parallel_search_123", results: [] }), {
+				status: 200,
+				headers: { "Content-Type": "application/json" },
+			}),
+		);
+		vi.stubGlobal("fetch", fetchMock);
+
+		try {
+			const continuation = await buildServerToolContinuation(
+				{
+					choices: [{
+						message: {
+							role: "assistant",
+							content: [],
+							toolCalls: [{
+								id: "call_parallel",
+								name: "phaseo_web_search",
+								arguments: JSON.stringify({ query: "asyncio news", engine: "parallel", ...modelDomains }),
+							}],
+						},
+						finishReason: "tool_calls",
+					}],
+				} as any,
+				{
+					enabled: true,
+					datetimeDefaultTimezones: ["UTC"],
+					webSearchEnabled: true,
+					webSearchMaxResults: 5,
+					webSearchIncludeText: false,
+					webSearchIncludeHighlights: true,
+					webSearchAllowedDomains: ["docs.python.org"],
+					webSearchExcludedDomains: ["beta.3.docs.python.org", "example.com"],
+					webFetchEnabled: false,
+					webFetchMaxChars: 12000,
+				},
+			);
+
+			if (expectedError) {
+				expect(fetchMock).not.toHaveBeenCalled();
+				expect(JSON.parse(String(continuation?.toolResults[0]?.content))).toMatchObject({ error: expectedError });
+			} else {
+				expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)).advanced_settings.source_policy).toEqual(expectedSourcePolicy);
+			}
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
+
+	it("searches only the tool's allowed domains and keeps its exclusions when the model sends none of its own", async () => {
+		getBindingsMock.mockReturnValue({ PARALLEL_API_KEY: "parallel_test_key" });
+		const fetchMock = vi.fn(async () =>
+			new Response(JSON.stringify({ search_id: "parallel_search_123", results: [] }), {
+				status: 200,
+				headers: { "Content-Type": "application/json" },
+			}),
+		);
+		vi.stubGlobal("fetch", fetchMock);
+
+		try {
+			await buildServerToolContinuation(
+				{
+					choices: [{
+						message: {
+							role: "assistant",
+							content: [],
+							toolCalls: [{
+								id: "call_parallel",
+								name: "phaseo_web_search",
+								arguments: JSON.stringify({ query: "asyncio news", engine: "parallel", excluded_domains: ["other.com"] }),
+							}],
+						},
+						finishReason: "tool_calls",
+					}],
+				} as any,
+				{
+					enabled: true,
+					datetimeDefaultTimezones: ["UTC"],
+					webSearchEnabled: true,
+					webSearchMaxResults: 5,
+					webSearchIncludeText: false,
+					webSearchIncludeHighlights: true,
+					webSearchExcludedDomains: ["example.com"],
+					webFetchEnabled: false,
+					webFetchMaxChars: 12000,
+				},
+			);
+
+			expect(JSON.parse(String(fetchMock.mock.calls[0]?.[1]?.body)).advanced_settings.source_policy).toEqual({
+				exclude_domains: ["example.com", "other.com"],
+			});
+		} finally {
+			vi.unstubAllGlobals();
+		}
+	});
+
 	it("executes configured Firecrawl web search calls", async () => {
 		getBindingsMock.mockReturnValue({
 			FIRECRAWL_API_KEY: "firecrawl_test_key",
