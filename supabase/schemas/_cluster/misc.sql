@@ -11,6 +11,10 @@ SELECT
   true);
 
 SELECT
+  cron.schedule_in_database('prune-artificial-analysis-public-snapshots', '37 4 * * 0',
+  'set statement_timeout = ''60s''; set lock_timeout = ''5s''; select private.prune_artificial_analysis_public_snapshots(50);', 'postgres', NULL, true);
+
+SELECT
   cron.schedule_in_database('prune-catalogue-row-history', '23 * * * *',
   'set statement_timeout = ''60s''; set lock_timeout = ''5s''; select private.prune_catalogue_row_history(5000);', 'postgres', NULL, true);
 
