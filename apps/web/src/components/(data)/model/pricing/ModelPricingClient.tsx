@@ -1759,7 +1759,7 @@ export default function ModelPricingClient({
 	const mobileSortOptions: Array<{ option: Exclude<SortOption, "default">; label: string }> = [
 		...visiblePriceColumns
 			.filter((column) => !isMobileHiddenPriceColumn(column))
-			.map((column) => ({ option: column.sort, label: column.label })),
+			.map((column) => ({ option: column.sort, label: getPriceColumnMobileLabel(column) })),
 		{ option: "latency", label: tProvider("latency") },
 		{ option: "throughput", label: tProvider("throughput") },
 		{ option: "uptime", label: tProvider("uptime") },
