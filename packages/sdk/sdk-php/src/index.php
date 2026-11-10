@@ -79,7 +79,7 @@ class Phaseo
         bool $verifyTls = true,
         ?array $devtools = null,
         string $clientSource = "phaseo-php",
-        string $clientSourceVersion = "2.1.0"
+        string $clientSourceVersion = "3.0.0"
     ) {
         // A callable apiKey (for example WorkloadTokens::githubActions()) is called before every
         // request and retry; a string is sent as-is.
