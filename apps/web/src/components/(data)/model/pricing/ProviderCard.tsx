@@ -1148,7 +1148,7 @@ function renderTablePriceSummary(
 	const variantLabels = [summary.primary.label, summary.secondary?.label]
 		.filter((label): label is string => Boolean(label));
 	return (
-		<div className="text-right">
+		<div className="text-right max-sm:text-left">
 			<div className={cn("font-medium tabular-nums", accentClassName)}>
 				{summary.primary.modality === "multimodal" ? <GroupedInputPrice price={summary.primary.formattedPrice} modalities={summary.primary.label} /> : summary.secondary
 					? `${summary.primary.formattedPrice}–${summary.secondary.formattedPrice}`
@@ -3004,20 +3004,24 @@ export default function ProviderCard({
 		<div className="space-y-2.5">
 			{tokenMetricGroups.map((group) => (
 				<div key={group.label} className="space-y-1">
+					{/* Phones stack the tiles: side by side, promo and regional prices don't fit. */}
 					<div
-						className="grid"
-						style={{
-							gridTemplateColumns: `repeat(${group.columns}, minmax(0, 1fr))`,
-						}}
+						className="grid grid-cols-1 sm:grid-cols-[var(--token-tile-columns)]"
+						style={
+							{
+								"--token-tile-columns": `repeat(${group.columns}, minmax(0, 1fr))`,
+							} as React.CSSProperties
+						}
 					>
 						{group.tiles.map((tile, index) => (
 							<div
 								key={tile.key}
 								className={cn(
-									"min-h-[78px] min-w-0 py-2.5",
+									"min-h-[78px] min-w-0 py-2.5 max-sm:min-h-0",
 									index % group.columns === 0
 										? "pr-3"
-										: "border-l border-zinc-200/80 px-3 dark:border-zinc-800",
+										: "border-l border-zinc-200/80 px-3 dark:border-zinc-800 max-sm:border-l-0 max-sm:px-0",
+									index > 0 && "max-sm:border-t max-sm:border-zinc-200/80 max-sm:dark:border-zinc-800",
 								)}
 							>
 								<div className="text-[11px] text-muted-foreground">

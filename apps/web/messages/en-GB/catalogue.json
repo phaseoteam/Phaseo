@@ -1041,6 +1041,8 @@
 			"showHiddenProviders": "Show hidden providers",
 			"selectPercentile": "Select provider percentile",
 			"sortBy": "Sort providers by {metric}",
+			"sortButton": "Sort",
+			"sortDefault": "Default order",
 			"provider": "Provider",
 			"inputPerMillion": "Input $/M",
 			"outputPerMillion": "Output $/M",

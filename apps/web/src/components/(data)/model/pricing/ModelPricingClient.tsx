@@ -21,6 +21,8 @@ import { useTranslations } from "@/i18n/react";
 import { parseAsString, useQueryStates } from "nuqs";
 import {
     ArrowDown,
+    ArrowDownUp,
+    Check,
     ArrowUp,
     Ban,
     CheckCircle2,
@@ -566,7 +568,7 @@ function renderTierTablePrice(
 	summary: ReturnType<typeof buildProviderTablePriceSummary>,
 ) {
 	return summary.primary ? (
-		<div className="text-right">
+		<div className="text-right max-sm:text-left">
 			<div className="font-medium tabular-nums text-foreground">
 				{summary.primary.modality === "multimodal" ? <GroupedInputPrice price={summary.primary.formattedPrice} modalities={summary.primary.label} /> : summary.secondary
 					? `${summary.primary.formattedPrice}–${summary.secondary.formattedPrice}`
@@ -1751,6 +1753,64 @@ export default function ModelPricingClient({
 		);
 	};
 
+	// Phones hide the column headers, so sorting moves to a Sort menu next to Filters.
+	// Picking a metric sorts by it; picking the active metric again flips the direction.
+	// The active metric shows an arrow for the current direction.
+	const mobileSortOptions: Array<{ option: Exclude<SortOption, "default">; label: string }> = [
+		...visiblePriceColumns
+			.filter((column) => !isMobileHiddenPriceColumn(column))
+			.map((column) => ({ option: column.sort, label: column.label })),
+		{ option: "latency", label: tProvider("latency") },
+		{ option: "throughput", label: tProvider("throughput") },
+		{ option: "uptime", label: tProvider("uptime") },
+	];
+	const applySort = (nextSort: SortOption, nextDirection: SortDirection) => {
+		setSort(nextSort);
+		setSortDirection(nextDirection);
+		updateUrlState(
+			nextSort === "default"
+				? { [SORT_QUERY_KEY]: null, [SORT_DIRECTION_QUERY_KEY]: null }
+				: { [SORT_QUERY_KEY]: nextSort, [SORT_DIRECTION_QUERY_KEY]: nextDirection },
+		);
+	};
+	const handleMobileSortSelect = (option: Exclude<SortOption, "default">) => {
+		if (sort === option) {
+			applySort(option, sortDirection === "asc" ? "desc" : "asc");
+			return;
+		}
+		applySort(option, getDefaultSortDirection(option));
+	};
+	const SortDirectionIcon = sortDirection === "asc" ? ArrowUp : ArrowDown;
+	const renderMobileSortMenu = () => (
+		<DropdownMenu>
+			<DropdownMenuTrigger
+				render={
+					<Button type="button" variant="outline" size="sm" className="h-8 min-w-0 flex-1 justify-center gap-2 rounded-md px-3 text-xs sm:hidden" />
+				}
+			>
+				<ArrowDownUp className="size-3.5" />
+				{tProvider("sortButton")}
+			</DropdownMenuTrigger>
+			<DropdownMenuContent align="end" className="w-56 rounded-md">
+				<DropdownMenuItem onClick={() => applySort("default", "desc")}>
+					<span className="flex-1">{tProvider("sortDefault")}</span>
+					{sort === "default" ? <Check className="size-4 text-muted-foreground" aria-hidden="true" /> : null}
+				</DropdownMenuItem>
+				<DropdownMenuSeparator />
+				{mobileSortOptions.map(({ option, label }) => (
+					<DropdownMenuItem
+						key={option}
+						onClick={() => handleMobileSortSelect(option)}
+						aria-label={tProvider("sortBy", { metric: label })}
+					>
+						<span className="flex-1">{label}</span>
+						{sort === option ? <SortDirectionIcon className="size-4 text-foreground" aria-hidden="true" /> : null}
+					</DropdownMenuItem>
+				))}
+			</DropdownMenuContent>
+		</DropdownMenu>
+	);
+
     return (
         <div className="space-y-6">
             <div className={cn(
@@ -1899,6 +1959,7 @@ export default function ModelPricingClient({
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
+                        {renderMobileSortMenu()}
                         <ModelPercentileSelect
                             value={selectedPercentile}
                             onChange={handlePercentileChange}

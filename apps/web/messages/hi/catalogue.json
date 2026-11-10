@@ -1041,6 +1041,8 @@
 			"showHiddenProviders": "छिपे हुए प्रदाता दिखाएँ",
 			"selectPercentile": "प्रदाता पर्सेंटाइल चुनें",
 			"sortBy": "{metric} के अनुसार प्रदाताओं को क्रमबद्ध करें",
+			"sortButton": "क्रमबद्ध करें",
+			"sortDefault": "डिफ़ॉल्ट क्रम",
 			"provider": "प्रदाता",
 			"inputPerMillion": "इनपुट $/M",
 			"outputPerMillion": "आउटपुट $/M",

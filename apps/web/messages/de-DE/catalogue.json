@@ -1041,6 +1041,8 @@
 			"showHiddenProviders": "Ausgeblendete Anbieter anzeigen",
 			"selectPercentile": "Anbieterperzentil auswählen",
 			"sortBy": "Anbieter nach {metric} sortieren",
+			"sortButton": "Sortieren",
+			"sortDefault": "Standardreihenfolge",
 			"provider": "Anbieter",
 			"inputPerMillion": "Eingabe $/M",
 			"outputPerMillion": "Ausgabe $/M",
