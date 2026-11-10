@@ -3,6 +3,7 @@ type Translator = { (key: never, values?: never): string; has(key: never): boole
 export const PRICING_DISPLAY_LABEL_KEYS: Record<string, string> = {
 	"all usage": "Catalogue.modelDetail.sections.allUsage",
 	"no cache": "Common.ui.pricingDisplayCopy.noCache",
+	"us-only inference": "Common.ui.pricingDisplayCopy.usOnlyInference",
 	"with audio": "Common.ui.pricingDisplayCopy.withAudio",
 	"no audio": "Common.ui.pricingDisplayCopy.noAudio",
 	"provider-reported cost": "Common.ui.pricingDisplayCopy.providerreportedCost",
