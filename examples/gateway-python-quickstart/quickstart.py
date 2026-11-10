@@ -160,7 +160,7 @@ def build_parser() -> argparse.ArgumentParser:
     embeddings.add_argument("--text", required=True)
 
     moderations = sub.add_parser("moderations", help="POST /moderations")
-    moderations.add_argument("--model", default="openai/omni-moderation-latest")
+    moderations.add_argument("--model", default="openai/omni-moderation")
     moderations.add_argument("--text", required=True)
 
     image = sub.add_parser("image", help="POST /images/generations")
@@ -168,11 +168,11 @@ def build_parser() -> argparse.ArgumentParser:
     image.add_argument("--prompt", required=True)
 
     ocr = sub.add_parser("ocr", help="POST /ocr")
-    ocr.add_argument("--model", default="mistral/mistral-ocr")
+    ocr.add_argument("--model", default="mistral/ocr-4.1")
     ocr.add_argument("--image-url", required=True)
 
     video = sub.add_parser("video-create", help="POST /videos")
-    video.add_argument("--model", default="openai/sora-2")
+    video.add_argument("--model", default="google/veo-3.1-fast")
     video.add_argument("--prompt", required=True)
 
     video_status = sub.add_parser("video-status", help="GET /videos/{video_id}")
@@ -187,7 +187,7 @@ def build_parser() -> argparse.ArgumentParser:
     video_dl.add_argument("--disposition", choices=["attachment", "inline"], default="attachment")
 
     music = sub.add_parser("music-create", help="POST /music/generate")
-    music.add_argument("--model", default="suno/suno-v4")
+    music.add_argument("--model", default="eleven-labs/music")
     music.add_argument("--prompt", required=True)
 
     music_status = sub.add_parser("music-status", help="GET /music/generate/{music_id}")
