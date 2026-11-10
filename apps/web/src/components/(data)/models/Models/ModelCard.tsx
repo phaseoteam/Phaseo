@@ -507,13 +507,23 @@ function ModelCardImpl({
 			model.organisation_id,
 		) ?? "",
 	).trim();
+	const labPrefix = `${organisationLabel}: `;
+	const nameHasLabPrefix =
+		Boolean(organisationLabel) &&
+		model.name.toLowerCase().startsWith(labPrefix.toLowerCase());
 	const modelDisplayName =
 		showOrganisationPrefix && organisationLabel
-			? model.name.toLowerCase().startsWith(`${organisationLabel.toLowerCase()}: `)
+			? nameHasLabPrefix
 				? model.name
-				: `${organisationLabel}: ${model.name}`
+				: `${labPrefix}${model.name}`
 			: model.name;
 	const safeModelDisplayName = String(modelDisplayName ?? "").trim() || displayModelId;
+	// Phones drop the "Lab: " prefix; the lab logo sits right beside the name.
+	const shortModelName =
+		String(nameHasLabPrefix ? model.name.slice(labPrefix.length) : model.name).trim() ||
+		displayModelId;
+	const showLabPrefix =
+		Boolean(organisationLabel) && (showOrganisationPrefix || nameHasLabPrefix);
 	const lifecycleStatus = String(model.status ?? "")
 		.trim()
 		.toLowerCase();
@@ -543,6 +553,23 @@ function ModelCardImpl({
 			? t("filtersUi.tierPrivate")
 			: null;
 	const VisibilityIcon = isInternal ? EyeOff : isPrivate ? LockKeyhole : null;
+	const visibilityBadge = (display: string, iconOnly = false) =>
+		VisibilityIcon && visibilityLabel ? (
+			<span
+				title={iconOnly ? visibilityLabel : undefined}
+				className={cn(
+					display,
+					"shrink-0 items-center gap-1 rounded-md border text-[11px] font-medium leading-4",
+					iconOnly ? "p-0.5" : "px-1.5 py-px",
+					isInternal
+						? "border-[#00b8db]/30 bg-[#00b8db]/10 text-cyan-700 dark:text-cyan-300"
+						: "border-border bg-muted text-muted-foreground",
+				)}
+			>
+				<VisibilityIcon className="size-3" aria-hidden="true" />
+				<span className={iconOnly ? "sr-only" : undefined}>{visibilityLabel}</span>
+			</span>
+		) : null;
 	const [copied, setCopied] = useState(false);
 	const routerRequests30d =
 		Number.isFinite(Number(model.router_requests_30d)) &&
@@ -1009,7 +1036,7 @@ function ModelCardImpl({
 					contentPaddingClassName,
 				)}
 			>
-				<div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
+				<div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
 					<Link
 						href={`/organisations/${model.organisation_id}`}
 						prefetch={false}
@@ -1038,23 +1065,18 @@ function ModelCardImpl({
 								href={modelHref}
 								prefetch={false}
 								scroll
-								className="font-semibold text-sm leading-[1.1] text-foreground hover:underline underline-offset-4 transition-colors duration-200 line-clamp-1"
+								className="font-semibold text-sm leading-[1.15] text-foreground hover:underline underline-offset-4 transition-colors duration-200 line-clamp-2 [overflow-wrap:anywhere] sm:line-clamp-1"
 							>
-								{safeModelDisplayName}
+								{showLabPrefix ? (
+									<>
+										<span className="hidden sm:inline">{labPrefix}</span>
+										{shortModelName}
+									</>
+								) : (
+									safeModelDisplayName
+								)}
 							</Link>
-							{VisibilityIcon && visibilityLabel ? (
-								<span
-									className={cn(
-										"inline-flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-px text-[11px] font-medium leading-4",
-										isInternal
-											? "border-[#00b8db]/30 bg-[#00b8db]/10 text-cyan-700 dark:text-cyan-300"
-											: "border-border bg-muted text-muted-foreground",
-									)}
-								>
-									<VisibilityIcon className="size-3" aria-hidden="true" />
-									{visibilityLabel}
-								</span>
-							) : null}
+							{visibilityBadge("hidden sm:inline-flex")}
 							{displayModelId ? (
 								<Tooltip>
 									<TooltipTrigger asChild>
@@ -1063,7 +1085,7 @@ function ModelCardImpl({
 											size="icon"
 											variant="ghost"
 											onClick={copyModelId}
-											className="h-5 w-5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+											className="hidden h-5 w-5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
 											aria-label={`Copy API model ID for ${safeModelDisplayName}`}
 										>
 											<span className="relative h-3 w-3">
@@ -1092,12 +1114,15 @@ function ModelCardImpl({
 								</Tooltip>
 							) : null}
 						</div>
-						<div className="text-xs leading-[1.15] text-muted-foreground font-mono truncate">
-							{displayModelId}
+						<div className="flex min-w-0 items-center gap-1.5">
+							{visibilityBadge("inline-flex sm:hidden", true)}
+							<div className="min-w-0 truncate text-xs leading-[1.15] text-muted-foreground font-mono">
+								{displayModelId}
+							</div>
 						</div>
 					</div>
 
-					<Button asChild size="icon" variant="ghost" className="h-8 w-8 shrink-0">
+					<Button asChild size="icon" variant="ghost" className="hidden h-8 w-8 shrink-0 sm:inline-flex">
 						<Link
 							href={modelHref}
 							prefetch={false}
