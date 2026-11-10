@@ -191,7 +191,7 @@ async function handleGet(
 										fontWeight: 700,
 										lineHeight: 1.04,
 										letterSpacing: -1.2,
-										textWrap: "balance",
+										textWrap: "wrap",
 									}}
 								>
 									{payload.name}
