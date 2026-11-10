@@ -45,7 +45,7 @@ function OAuthAppsView({ initialData }: { initialData: SettingsOAuthAppsInitialD
 				actions={
 					<>
 						<Link
-							href={getLocalizedDocsHref(locale, "https://phaseo.app/docs/v1/guides/oauth-quickstart")}
+							href={getLocalizedDocsHref(locale, "https://phaseo.app/docs/v1/cookbook/build-an-oauth-nextjs-workbench")}
 							target="_blank"
 							rel="noopener noreferrer"
 						>
