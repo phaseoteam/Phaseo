@@ -64,6 +64,9 @@ export function localizedPricingDisplayLabel(value: string | null | undefined, l
 		return t("Common.ui.providerCardCopy.perQuantityUnit" as never, ({ quantity: quantity.toLocaleString(locale, { notation: "compact", maximumFractionDigits: 1 }), unit: unitName(per[3], quantity, t) }) as never);
 	}
 	if (raw.includes(" · ")) return raw.split(" · ").map((part) => localizedPricingDisplayLabel(part, locale, t)).join(" · ");
+	// The app a promotional price is limited to (pricingHelpers: "In Claude Code").
+	const audience = raw.match(/^In (.+)$/);
+	if (audience) return t("Common.ui.pricingDisplayCopy.inAudience" as never, ({ audience: audience[1] }) as never);
 	const inputRange = raw.match(/^(.+?) input tokens$/i);
 	if (inputRange) return `${inputRange[1]} ${localizedPricingDisplayLabel("input", locale, t)} ${localizedPricingDisplayLabel("tokens", locale, t)}`;
 	const ttl = raw.match(/^(.+?)\s+(?:cache\s+)?ttl$/i);

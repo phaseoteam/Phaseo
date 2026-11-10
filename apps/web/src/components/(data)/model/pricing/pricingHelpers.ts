@@ -1250,11 +1250,16 @@ export function buildProviderSections(
             const range = tokenRangeFromConditions(conds);
 			const embeddingSourceLabel =
 				mod === "embeddings" ? modalityLabel(parsedMeter.mod) : null;
-            const label =
+            const baseLabel =
 				embeddingSourceLabel ??
                 cacheWriteScopeLabel(r.meter, conds) ??
                 range ??
                 conciseConditionLabel(conds);  // <-- FIX: show cache_ttl etc. instead of "All usage"
+            // A price limited to one app must say so, whichever label describes the rest.
+            const audience = audienceLabel(conds);
+            const label = audience && !baseLabel.includes(`In ${audience}`)
+                ? `${baseLabel} · In ${audience}`
+                : baseLabel;
             const tier: TokenTier = {
                 conditions: conds,
                 meter: r.meter,

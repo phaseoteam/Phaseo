@@ -35,5 +35,9 @@ describe("generated pricing presentation copy", () => {
 			`≤ 100K ${localizedPricingDisplayLabel("input", locale, t as never)} ${localizedPricingDisplayLabel("tokens", locale, t as never)}`,
 		].join(" · "));
 		expect(localizedPricingDisplayLabel("custom_meter_id", locale, t as never)).toBe("custom_meter_id");
+		const audience = localizedPricingDisplayLabel("> 200K input tokens · In Claude Code", locale, t as never);
+		expect(audience).toContain("Claude Code");
+		expect(audience).not.toContain("Common.ui.");
+		if (!["en-GB", "de-DE"].includes(locale)) expect(audience).not.toContain("In Claude Code");
 	});
 });

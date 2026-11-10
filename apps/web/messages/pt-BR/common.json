@@ -2487,7 +2487,8 @@
 			"frames": "quadros",
 			"message": "mensagem",
 			"messages": "mensagens",
-			"serviceTierLineStyles": "Estilos de linha por nível de serviço"
+			"serviceTierLineStyles": "Estilos de linha por nível de serviço",
+			"inAudience": "Em {audience}"
 		},
 		"publicModelCopy": {
 			"days": "{count, plural, one {# dia} other {# dias}}",

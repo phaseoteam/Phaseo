@@ -2487,7 +2487,8 @@
 			"frames": "フレーム",
 			"message": "メッセージ",
 			"messages": "メッセージ",
-			"serviceTierLineStyles": "サービス階層の線スタイル"
+			"serviceTierLineStyles": "サービス階層の線スタイル",
+			"inAudience": "{audience} 限定"
 		},
 		"publicModelCopy": {
 			"days": "{count}日",

@@ -2487,7 +2487,8 @@
 			"frames": "frames",
 			"message": "message",
 			"messages": "messages",
-			"serviceTierLineStyles": "Service tier line styles"
+			"serviceTierLineStyles": "Service tier line styles",
+			"inAudience": "In {audience}"
 		},
 		"publicModelCopy": {
 			"days": "{count, plural, one {# day} other {# days}}",

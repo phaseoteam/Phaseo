@@ -2487,7 +2487,8 @@
 			"frames": "إطارات",
 			"message": "رسالة",
 			"messages": "رسائل",
-			"serviceTierLineStyles": "أنماط خطوط مستويات الخدمة"
+			"serviceTierLineStyles": "أنماط خطوط مستويات الخدمة",
+			"inAudience": "في {audience}"
 		},
 		"publicModelCopy": {
 			"days": "{count, plural, zero {# أيام} one {يوم واحد} two {يومان} few {# أيام} many {# يومًا} other {# يوم}}",

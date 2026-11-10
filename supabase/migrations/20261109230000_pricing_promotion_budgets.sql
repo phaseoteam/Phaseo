@@ -33,7 +33,10 @@ comment on table public.v2_pricing_promotions is
   'Budget caps for promotional SKUs. budget_nanos and spent_nanos are list-price (undiscounted) value; enforce_pricing_promotion_budgets() ends the SKUs once spent_nanos reaches budget_nanos.';
 
 alter table public.v2_pricing_promotions enable row level security;
-revoke all on table public.v2_pricing_promotions from anon, authenticated;
+create policy "service_role_full_access" on public.v2_pricing_promotions
+  for all to service_role using (true) with check (true);
+revoke all on table public.v2_pricing_promotions from anon, authenticated, service_role;
+grant delete, insert, select, update on table public.v2_pricing_promotions to service_role;
 
 -- The spend sum uses the existing v2_request_pricing_lines_sku_time_idx (sku_id, created_at desc).
 
@@ -94,6 +97,7 @@ end;
 $$;
 
 revoke all on function public.enforce_pricing_promotion_budgets() from public, anon, authenticated;
+grant execute on function public.enforce_pricing_promotion_budgets() to service_role;
 
 do $$
 begin
