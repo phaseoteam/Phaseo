@@ -23,6 +23,10 @@ SELECT
   'set statement_timeout = ''10s''; set lock_timeout = ''500ms''; select private.prune_completed_analytics_outbox(500);', 'postgres', NULL, true);
 
 SELECT
+  cron.schedule_in_database('prune-provider-catalog-sync-runs', '47 3 * * *',
+  'set statement_timeout = ''60s''; set lock_timeout = ''5s''; select private.prune_provider_catalog_sync_runs(50, 1000);', 'postgres', NULL, true);
+
+SELECT
   cron.schedule_in_database('public-reporting-refresh-queue', '2-59/5 * * * *',
   'set statement_timeout = ''10s''; set lock_timeout = ''500ms''; select private.drain_public_reporting_refresh();', 'postgres', NULL, true);
 
