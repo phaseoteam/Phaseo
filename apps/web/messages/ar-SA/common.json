@@ -2488,7 +2488,9 @@
 			"message": "رسالة",
 			"messages": "رسائل",
 			"serviceTierLineStyles": "أنماط خطوط مستويات الخدمة",
-			"inAudience": "في {audience}"
+			"inAudience": "في {audience}",
+			"usOnlyInference": "استدلال داخل الولايات المتحدة فقط",
+			"regionOnlyInference": "استدلال داخل {region} فقط"
 		},
 		"publicModelCopy": {
 			"days": "{count, plural, zero {# أيام} one {يوم واحد} two {يومان} few {# أيام} many {# يومًا} other {# يوم}}",

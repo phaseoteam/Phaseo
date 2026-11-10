@@ -2488,7 +2488,9 @@
 			"message": "message",
 			"messages": "messages",
 			"serviceTierLineStyles": "Service tier line styles",
-			"inAudience": "In {audience}"
+			"inAudience": "In {audience}",
+			"usOnlyInference": "US-only inference",
+			"regionOnlyInference": "{region}-only inference"
 		},
 		"publicModelCopy": {
 			"days": "{count, plural, one {# day} other {# days}}",
