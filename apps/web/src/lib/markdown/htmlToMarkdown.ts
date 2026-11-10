@@ -59,12 +59,14 @@ function parse(html: string): { root: ElementNode; title: string | null; descrip
 	let inTitle = false;
 	// Only the first <title> counts; SVGs carry their own <title> elements.
 	let titleDone = false;
+	let svgDepth = 0;
 	let description: string | null = null;
 	let canonical: string | null = null;
 	const parser = new Parser(
 		{
 			onopentag(name, attribs) {
-				if (name === "title" && !titleDone) inTitle = true;
+				if (name === "svg") svgDepth += 1;
+				if (name === "title" && !titleDone && svgDepth === 0) inTitle = true;
 				if (name === "meta" && (attribs.name === "description" || (attribs.property === "og:description" && description === null))) description = attribs.content ?? description;
 				if (name === "link" && attribs.rel === "canonical" && attribs.href) canonical = attribs.href;
 				const element: ElementNode = { kind: "element", name, attribs, children: [], parent: current };
@@ -82,6 +84,7 @@ function parse(html: string): { root: ElementNode; title: string | null; descrip
 				current.children.push({ kind: "comment", text, parent: current });
 			},
 			onclosetag(name, isImplied) {
+				if (name === "svg" && svgDepth > 0) svgDepth -= 1;
 				if (name === "title" && inTitle) {
 					inTitle = false;
 					titleDone = true;

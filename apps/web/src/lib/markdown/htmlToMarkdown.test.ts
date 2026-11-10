@@ -105,6 +105,11 @@ describe("htmlToMarkdown", () => {
 		expect(markdown).toContain("![Chart](https://phaseo.app/a%20%281%29.png)");
 	});
 
+	it("ignores SVG titles even before the page title", () => {
+		const { markdown } = htmlToMarkdown(`<html><body><svg><title>Icon</title></svg><title>Real</title><main><p>Hi</p></main></body></html>`, "https://phaseo.app/x");
+		expect(markdown).toContain('title: "Real"\n');
+	});
+
 	it("escapes backslashes once and pipes in table cells", () => {
 		const { markdown } = htmlToMarkdown(page(`<main><table><tr><th>A</th></tr><tr><td>C:\\path a|b <code>x\\|y</code></td></tr></table></main>`), "https://phaseo.app/x");
 		expect(markdown.split("---\n\n")[1]).toBe("| A |\n| --- |\n| C:\\\\path a\\|b `x\\\\|y` |\n");
