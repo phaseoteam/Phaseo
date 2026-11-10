@@ -68,7 +68,7 @@ try {
   // migrations in order. supabase db push applies them one transaction at a time while the gateway
   // serves refund claims, so a claim made after any prefix of them must work: the claim must never
   // read a column a later migration adds.
-  await db.exec('alter table public.gateway_requests add column billing_request_id text, add column request_id text, add column detail_metadata jsonb;');
+  await db.exec('alter table public.gateway_requests add column billing_request_id text, add column request_id text, add column detail_metadata jsonb, add column realtime_session_id text;');
   await db.exec("create or replace function public.mfa_satisfied() returns boolean language sql stable as 'select true';");
   await db.exec('create schema if not exists private; grant usage on schema private to service_role;');
   await db.query('insert into public.workspace_members values ($1, $2)', [ws, owner]);
