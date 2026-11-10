@@ -727,7 +727,7 @@
 					"frequency_penalty": "Desestimula tokens conforme à frequência com que já apareceram.",
 					"presence_penalty": "Incentiva novos termos ou tópicos após a primeira ocorrência.",
 					"repetition_penalty": "Aplica o comportamento antirrepetição específico do provedor.",
-					"include_reasoning": "Solicita conteúdo ou resumos de raciocínio quando compatível.",
+					"include_reasoning": "Aceito por compatibilidade e não tem efeito. O raciocínio é retornado sempre que o modelo o gera.",
 					"reasoning_effort": "Solicita um orçamento de raciocínio menor ou maior quando disponível.",
 					"reasoning_tokens": "Representa um orçamento ou campo de uso de tokens específico de raciocínio.",
 					"service_tier": "Seleciona um nível de solicitação compatível, como priority ou flex.",

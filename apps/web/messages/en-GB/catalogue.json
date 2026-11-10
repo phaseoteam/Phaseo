@@ -727,7 +727,7 @@
 					"frequency_penalty": "Discourages tokens in proportion to how often they already appeared.",
 					"presence_penalty": "Encourages new wording or topics after they first appear.",
 					"repetition_penalty": "Applies provider-specific anti-repetition behavior.",
-					"include_reasoning": "Requests reasoning content or summaries where supported.",
+					"include_reasoning": "Accepted for compatibility and has no effect. Reasoning is returned whenever the model produces it.",
 					"reasoning_effort": "Requests a lower or higher reasoning budget where available.",
 					"reasoning_tokens": "Represents a reasoning-specific token budget or usage field.",
 					"service_tier": "Selects a supported request tier, such as priority or flex.",

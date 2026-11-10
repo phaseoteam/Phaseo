@@ -135,9 +135,9 @@ const PARAMETER_REFERENCE: Record<string, ParameterReference> = {
 	},
 	include_reasoning: {
 		type: "boolean",
-		defaultValue: "false",
+		defaultValue: "-",
 		description:
-			"Requests reasoning content or reasoning summaries in responses where supported.",
+			"Accepted for compatibility and has no effect. Reasoning is returned whenever the model produces it.",
 	},
 	reasoning_effort: {
 		type: "string",

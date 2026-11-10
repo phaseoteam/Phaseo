@@ -727,7 +727,7 @@
 					"frequency_penalty": "Pénalise les jetons en fonction du nombre de fois où ils sont déjà apparus.",
 					"presence_penalty": "Encourage l’emploi de nouveaux termes ou sujets après leur première apparition.",
 					"repetition_penalty": "Applique le mécanisme anti-répétition propre au fournisseur.",
-					"include_reasoning": "Demande le contenu ou un résumé du raisonnement si cette option est prise en charge.",
+					"include_reasoning": "Accepté pour compatibilité, sans effet. Le raisonnement est renvoyé dès que le modèle en produit.",
 					"reasoning_effort": "Demande un budget de raisonnement plus ou moins élevé si disponible.",
 					"reasoning_tokens": "Représente un budget ou un champ d’utilisation des jetons propre au raisonnement.",
 					"service_tier": "Sélectionne un niveau de requête pris en charge, comme priority ou flex.",
