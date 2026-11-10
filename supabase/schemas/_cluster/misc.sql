@@ -23,6 +23,10 @@ SELECT
   'set statement_timeout = ''10s''; set lock_timeout = ''500ms''; select private.drain_public_reporting_refresh();', 'postgres', NULL, true);
 
 SELECT
+  cron.schedule_in_database('redact-expired-byok-request-metadata', '37 * * * *',
+  'set statement_timeout = ''60s''; set lock_timeout = ''500ms''; select private.redact_expired_byok_request_metadata(false, 500, 365);', 'postgres', NULL, true);
+
+SELECT
   cron.schedule_in_database('refresh-public-monitor-weekly-usage', '4-59/15 * * * *',
   'set statement_timeout = ''120s''; set lock_timeout = ''5s''; select public.refresh_public_monitor_weekly_usage();', 'postgres', NULL, true);
 
