@@ -6,6 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 // handleFailureAudit) write their rows into PGlite and settle through the real spend-limit code into
 // main's SpendLimitDurableObject, seeded by #3547's gateway_spend_limit_seed (version 1).
 const runtime = vi.hoisted(() => ({ bindings: null as Record<string, unknown> | null, background: [] as Promise<unknown>[], db: null as any, rows: [] as any[] }));
+const successWrite = vi.hoisted(() => ({ secondaryFails: false }));
 const dataContributionMock = vi.hoisted(() => vi.fn(async (_args: any) => ({ status: "skipped" })));
 
 vi.mock("cloudflare:workers", () => ({
@@ -38,6 +39,10 @@ vi.mock("../audit", () => ({
 		await runtime.db.query(`insert into public.gateway_requests (workspace_id, request_id, billing_request_id, key_id, success, cost_nanos, expected_cost_nanos)
 			values ($1, $2, $3, $4, true, $5, $6)`, [args.workspaceId, args.requestId, args.billingRequestId, args.keyId,
 			args.pendingCharge ? args.pendingCharge.costNanos : args.totalNanos, args.pendingCharge?.expectedCostNanos ?? null]);
+		if (successWrite.secondaryFails) {
+			args.onPrimaryRowWritten?.();
+			throw new Error("v2 request fact persistence failed");
+		}
 	},
 	auditFailure: async (args: any) => {
 		runtime.rows.push({ kind: "failure", ...args });
@@ -166,6 +171,28 @@ describe("#3633 round 3 on #3547's real seed", () => {
 		const spies = quiet();
 		await bufferedAudit(context("late", { __usageChargeRecorded: true, __chargedNanos: 600 }, { teamSettings: { dataContributionEnabled: true } }));
 		spies.forEach((spy) => spy.mockRestore());
+		expect(runtime.rows.map((row) => row.kind)).toEqual(["success"]);
+		expect(await counters()).toEqual({ requests: 1, key: 600, workspace: 600 });
+		await coordinator.reseedNow();
+		await coordinator.reseedNow();
+		expect(await counters()).toEqual({ requests: 1, key: 600, workspace: 600 });
+		startCoordinator();
+		expect(await counters()).toEqual({ requests: 1, key: 600, workspace: 600 });
+	});
+
+	it("a committed success row whose secondary write fails, then a late error: one row, 600, through reseeds and a restart", async () => {
+		startCoordinator();
+		await runtime.db.query(`insert into public.gateway_request_charges (workspace_id, request_id, cost_nanos, status, is_final, key_id)
+			values ($1, 'bill_secondary', 600, 'applied', true, $2)`, [WORKSPACE, KEY]);
+		successWrite.secondaryFails = true;
+		dataContributionMock.mockRejectedValueOnce(new Error("contribution store unavailable"));
+		const spies = quiet();
+		try {
+			await bufferedAudit(context("secondary", { __usageChargeRecorded: true, __chargedNanos: 600 }, { teamSettings: { dataContributionEnabled: true } }));
+		} finally {
+			successWrite.secondaryFails = false;
+			spies.forEach((spy) => spy.mockRestore());
+		}
 		expect(runtime.rows.map((row) => row.kind)).toEqual(["success"]);
 		expect(await counters()).toEqual({ requests: 1, key: 600, workspace: 600 });
 		await coordinator.reseedNow();

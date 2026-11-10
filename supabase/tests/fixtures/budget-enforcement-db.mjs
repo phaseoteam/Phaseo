@@ -1,10 +1,10 @@
-// Production shapes, trimmed to what migration 20261110142221_budget_enforcement_money_hygiene and
+// Production shapes, trimmed to what migration 20261110173622_budget_enforcement_money_hygiene and
 // the functions it replaces read. Shared by supabase/tests/budget-enforcement-money-hygiene.test.mjs
 // and the gateway's seed -> SpendLimit Durable Object -> guard test, so both run the real SQL.
 import { readFile } from 'node:fs/promises';
 
 const schemasUrl = new URL('../../schemas/', import.meta.url);
-export const MIGRATION_FILE = '20261110142221_budget_enforcement_money_hygiene.sql';
+export const MIGRATION_FILE = '20261110173622_budget_enforcement_money_hygiene.sql';
 export const readSchema = (path) => readFile(new URL(path, schemasUrl), 'utf8');
 export const readMigration = () => readFile(new URL(`../../migrations/${MIGRATION_FILE}`, import.meta.url), 'utf8');
 // The migrations that precede MIGRATION_FILE: the expected_cost_nanos column (fix/async-billing-charges-20261110's, added, then validated),
@@ -15,27 +15,27 @@ export const COLUMN_MIGRATION_FILES = [
 ];
 export const INDEX_MIGRATION_FILES = [
   '20261110140728_gateway_requests_billing_request_index.sql', // fix/async-billing-charges-20261110's
-  '20261110142217_gateway_requests_expected_cost_idx.sql',
-  '20261110142218_gateway_requests_charged_unsuccessful_cost_idx.sql',
-  '20261110142219_gateway_request_charges_applied_cost_idx.sql',
-  '20261110142220_credit_ledger_request_charge_movements_idx.sql',
+  '20261110173618_gateway_requests_expected_cost_idx.sql',
+  '20261110173619_gateway_requests_charged_unsuccessful_cost_idx.sql',
+  '20261110173620_gateway_request_charges_applied_cost_idx.sql',
+  '20261110173621_credit_ledger_request_charge_movements_idx.sql',
 ];
 export const readIndexMigrations = () => Promise.all(INDEX_MIGRATION_FILES.map((name) =>
   readFile(new URL(`../../migrations/${name}`, import.meta.url), 'utf8')));
 // The table changes that follow MIGRATION_FILE (functions only), one table per migration.
 export const TABLE_MIGRATION_FILES = [
-  '20261110142222_credit_ledger_drop_client_insert_policy.sql',
-  '20261110142223_wallets_revoke_anon_delete.sql',
-  '20261110142224_gateway_wallet_reservations_revoke_client_writes.sql',
-  '20261110142225_workspace_settings_io_retention_90_days.sql',
-  '20261110142226_workspace_department_budgets_comment.sql',
+  '20261110173623_credit_ledger_drop_client_insert_policy.sql',
+  '20261110173624_wallets_revoke_anon_delete.sql',
+  '20261110173625_gateway_wallet_reservations_revoke_client_writes.sql',
+  '20261110173626_workspace_settings_io_retention_90_days.sql',
+  '20261110173627_workspace_department_budgets_comment.sql',
 ];
 export const readTableMigrations = () => Promise.all(TABLE_MIGRATION_FILES.map((name) =>
   readFile(new URL(`../../migrations/${name}`, import.meta.url), 'utf8')));
 // Function-only migrations after those, each replacing functions MIGRATION_FILE created, keyed by
 // the schema files they now carry.
 export const FOLLOW_UP_MIGRATIONS = {
-  'private/functions/unbilled_spend.sql': '20261110142227_unbilled_spend_counts_under_recorded_charges.sql',
+  'private/functions/unbilled_spend.sql': '20261110173628_unbilled_spend_counts_under_recorded_charges.sql',
 };
 export const readFollowUpMigration = (name) => readFile(new URL(`../../migrations/${name}`, import.meta.url), 'utf8');
 
