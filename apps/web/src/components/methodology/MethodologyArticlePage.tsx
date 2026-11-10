@@ -10,15 +10,16 @@ export function MethodologyArticlePage({ entry }: { entry: MethodologyEntry }) {
 	const t = useTranslations("Site.methodology");
 	const translate = t as unknown as (key: string, values?: Record<string, unknown>) => string;
 	const entryKey = `entries.${entry.slug}` as const;
-	const sectionKeys = ["what", "inputs", "normalised", "dates", "caveats"] as const;
-	const relatedKeys = ["gateway", "calculator", "models"] as const;
+	// Each article names its own sections and related links, in page order.
+	const sectionKeys = Object.keys(t.raw(`${entryKey}.sections` as never) as Record<string, string>);
+	const relatedKeys = Object.keys(t.raw(`${entryKey}.related` as never) as Record<string, string>);
 	const localizedSections = entry.sections.map((section, index) => ({
 		...section,
-		heading: translate(`${entryKey}.sections.${sectionKeys[index] ?? "caveats"}`),
+		heading: sectionKeys[index] ? translate(`${entryKey}.sections.${sectionKeys[index]}`) : section.heading,
 	}));
 	const localizedRelatedLinks = entry.relatedLinks.map((link, index) => ({
 		...link,
-		label: translate(`${entryKey}.related.${relatedKeys[index] ?? "models"}`),
+		label: relatedKeys[index] ? translate(`${entryKey}.related.${relatedKeys[index]}`) : link.label,
 	}));
 	const title = translate(`${entryKey}.title`);
 	const description = translate(`${entryKey}.description`);
