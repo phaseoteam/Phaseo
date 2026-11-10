@@ -870,14 +870,17 @@ class Agent:
                         output = completed.value
                         break
             output = _validate(current_tool.output_schema, output, "tool output")
-        except FutureTimeoutError as error:
-            future.cancel()
-            raise TimeoutError(f"Tool {call.name} timed out after {current_tool.timeout_ms}ms") from error
-        except BaseException as error:
+        except BaseException as caught:
+            error = caught
+            if isinstance(caught, FutureTimeoutError):
+                # Python cannot stop the tool's thread; the run just stops waiting for it.
+                future.cancel()
+                error = TimeoutError(f"Tool {call.name} timed out after {current_tool.timeout_ms}ms")
+                error.__cause__ = caught
             if current_tool.on_error == "return-to-model":
                 _emit(on_event, "tool.failed", run, step_index=step_index, tool_call_id=call.id, tool_name=call.name, error=str(error))
                 return AgentMessage("tool", json.dumps({"error": str(error)}), tool_call_id=call.id, name=call.name, is_error=True)
-            raise
+            raise error
         finally:
             timeout_pool.shutdown(wait=False, cancel_futures=True)
         _emit(on_event, "tool.completed", run, step_index=step_index, tool_call_id=call.id, tool_name=call.name, output=output, preliminary_results=preliminary)
