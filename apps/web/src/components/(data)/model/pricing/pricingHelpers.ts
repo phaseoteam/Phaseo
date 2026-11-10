@@ -958,6 +958,25 @@ export function ruleComparisonMatchSignature(rule: any): string {
 }
 
 /* ---------- section builder (uses fixes) ---------- */
+function hasInferenceGeoCondition(rule: any): boolean {
+    return ruleConditions(rule).some((condition) => condition.path === "inference_geo");
+}
+
+/**
+ * Drops prices that only apply when a request asks to run in one region (Anthropic's
+ * `inference_geo`) when the same meter also has a price without that condition. Those
+ * region prices still bill; they are shown on the region's own provider row (for
+ * example "Anthropic (US)") rather than repeated under the global provider.
+ */
+export function withoutRegionSurchargeRules<T>(rules: T[]): T[] {
+    const metersWithGlobalPrice = new Set(
+        rules.filter((rule) => !hasInferenceGeoCondition(rule)).map((rule: any) => String(rule?.meter ?? "")),
+    );
+    return rules.filter(
+        (rule: any) => !hasInferenceGeoCondition(rule) || !metersWithGlobalPrice.has(String(rule?.meter ?? "")),
+    );
+}
+
 export function buildProviderSections(
     p: ProviderPricing,
     plan: string,
@@ -967,7 +986,7 @@ export function buildProviderSections(
     const nowMs = now.getTime();
     const pricingTimeUtc = formatUtcPricingMinute(now);
     const normalizedPlan = normalizePricingPlan(plan);
-    const rules = getProviderPricingRulesForPlan(p, normalizedPlan);
+    const rules = withoutRegionSurchargeRules(getProviderPricingRulesForPlan(p, normalizedPlan));
     const endpointByKey = new Map<string, string>();
     for (const pm of p.provider_models) {
         if (!pm.endpoint) continue;
