@@ -1236,6 +1236,7 @@
 				"output_video_seconds": "आउटपुट वीडियो सेकंड",
 				"output_video_frames": "आउटपुट वीडियो फ़्रेम",
 				"bfl_credits": "BFL क्रेडिट",
+				"deepinfra_cost_usd": "DeepInfra उपयोग (USD)",
 				"server_tool_web_search_requests": "सर्वर टूल वेब खोज अनुरोध",
 				"server_tool_web_search_extra_results": "सर्वर टूल वेब खोज के अतिरिक्त परिणाम",
 				"server_tool_web_fetch_requests": "सर्वर टूल वेब फ़ेच अनुरोध",

@@ -1236,6 +1236,7 @@
 				"output_video_seconds": "ثواني الفيديو للإخراج",
 				"output_video_frames": "إطارات الفيديو للإخراج",
 				"bfl_credits": "أرصدة BFL",
+				"deepinfra_cost_usd": "استخدام DeepInfra (بالدولار الأمريكي)",
 				"server_tool_web_search_requests": "طلبات بحث الويب لأداة الخادم",
 				"server_tool_web_search_extra_results": "نتائج بحث ويب إضافية لأداة الخادم",
 				"server_tool_web_fetch_requests": "طلبات جلب الويب لأداة الخادم",

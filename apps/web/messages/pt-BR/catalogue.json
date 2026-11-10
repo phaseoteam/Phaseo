@@ -1236,6 +1236,7 @@
 				"output_video_seconds": "Segundos de vídeo de saída",
 				"output_video_frames": "Quadros de vídeo de saída",
 				"bfl_credits": "Créditos BFL",
+				"deepinfra_cost_usd": "Uso da DeepInfra (USD)",
 				"server_tool_web_search_requests": "Solicitações de pesquisa na web da ferramenta do servidor",
 				"server_tool_web_search_extra_results": "Resultados extras de pesquisa na web da ferramenta do servidor",
 				"server_tool_web_fetch_requests": "Solicitações de busca na web da ferramenta do servidor",
