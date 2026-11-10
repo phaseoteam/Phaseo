@@ -1065,7 +1065,7 @@ function ModelCardImpl({
 								href={modelHref}
 								prefetch={false}
 								scroll
-								className="font-semibold text-sm leading-[1.15] text-foreground hover:underline underline-offset-4 transition-colors duration-200 line-clamp-2 [overflow-wrap:anywhere] sm:line-clamp-1"
+								className="font-semibold text-sm leading-[1.1] text-foreground hover:underline underline-offset-4 transition-colors duration-200 line-clamp-1"
 							>
 								{showLabPrefix ? (
 									<>
