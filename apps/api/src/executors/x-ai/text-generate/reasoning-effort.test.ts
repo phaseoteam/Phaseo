@@ -14,4 +14,16 @@ describe("xAI reasoning effort", () => {
 	])("keeps %s effort %s as %s", (model, effort, expected) => {
 		expect(withNormalizedReasoning(ir(model, effort)).reasoning?.effort).toBe(expected);
 	});
+
+	it.each([
+		["grok-4.20-multi-agent-beta", "xhigh", "high"],
+		["grok-4.20-multi-agent-beta", "max", "high"],
+		["grok-4.20-multi-agent-beta", "minimal", "low"],
+		["grok-4.20-multi-agent-beta", "none", "low"],
+		["grok-4.7", "minimal", "low"],
+		["grok-4.7", "max", "xhigh"],
+		["grok-4.3", "minimal", "low"],
+	])("maps %s effort %s to the nearest supported level %s", (model, effort, expected) => {
+		expect(withNormalizedReasoning(ir(model, effort)).reasoning?.effort).toBe(expected);
+	});
 });
