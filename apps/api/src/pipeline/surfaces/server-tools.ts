@@ -1671,18 +1671,14 @@ function readDatetimeTimezones(
 	args: Record<string, unknown>,
 	fallback: string[],
 ): { timezones: string[]; tooMany: boolean } {
-	if (fallback.length > 0) {
-		return {
-			timezones: fallback.slice(0, MAX_DATETIME_TIMEZONES),
-			tooMany: false,
-		};
-	}
 	const timezones: string[] = [];
 	const ok = appendTimezoneList(timezones, args.timezones);
 	if (!ok) return { timezones: [], tooMany: true };
 	const resolved = timezones.length > 0
 		? timezones
-		: [DEFAULT_TIMEZONE];
+		: fallback.length > 0
+			? fallback
+			: [DEFAULT_TIMEZONE];
 	return { timezones: resolved.slice(0, MAX_DATETIME_TIMEZONES), tooMany: false };
 }
 

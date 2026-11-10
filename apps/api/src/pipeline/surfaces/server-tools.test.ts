@@ -862,6 +862,51 @@ describe("buildServerToolContinuation", () => {
 		}
 	});
 
+	it.each([
+		{
+			name: "uses the timezones the model asks for over the tool defaults",
+			args: { timezones: ["Asia/Tokyo"] },
+			expected: { timezones: [{ timezone: "Asia/Tokyo", datetime: "2026-07-03T18:00:00.123+09:00" }] },
+		},
+		{
+			name: "rejects more than five model timezones",
+			args: { timezones: ["UTC", "Asia/Tokyo", "Europe/Paris", "America/New_York", "Australia/Sydney", "Europe/London"] },
+			expected: { error: "too_many_timezones", max_timezones: 5, message: "timezones must contain at most 5 entries" },
+		},
+	])("$name", async ({ args, expected }) => {
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date("2026-07-03T09:00:00.123Z"));
+
+		try {
+			const continuation = await buildServerToolContinuation(
+				{
+					choices: [{
+						message: {
+							role: "assistant",
+							content: [],
+							toolCalls: [{ id: "call_datetime", name: "gateway_datetime", arguments: JSON.stringify(args) }],
+						},
+						finishReason: "tool_calls",
+					}],
+				} as any,
+				{
+					enabled: true,
+					datetimeDefaultTimezones: ["Europe/London", "UTC"],
+					webSearchEnabled: false,
+					webSearchMaxResults: 5,
+					webSearchIncludeText: false,
+					webSearchIncludeHighlights: true,
+					webFetchEnabled: false,
+					webFetchMaxChars: 12000,
+				},
+			);
+
+			expect(JSON.parse(String(continuation?.toolResults[0]?.content))).toEqual(expected);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
 	it("continues after datetime when the model emits an unadvertised extra tool call", async () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(new Date("2026-07-03T09:00:00.123Z"));
@@ -965,7 +1010,7 @@ describe("buildServerToolContinuation", () => {
 		expect(continuation).toBeNull();
 	});
 
-	it("ignores model-provided datetime timezone lists when request defaults are configured", async () => {
+	it("uses model-provided datetime timezone lists over the request defaults", async () => {
 		vi.useFakeTimers();
 		vi.setSystemTime(new Date("2026-07-03T09:00:00.123Z"));
 
@@ -1007,14 +1052,10 @@ describe("buildServerToolContinuation", () => {
 			const parsed = JSON.parse(String(continuation?.toolResults[0]?.content));
 			expect(parsed).toEqual({
 				timezones: [
-					{
-						timezone: "Europe/London",
-						datetime: "2026-07-03T10:00:00.123+01:00",
-					},
-					{
-						timezone: "UTC",
-						datetime: "2026-07-03T09:00:00.123+00:00",
-					},
+					{ timezone: "UTC", datetime: "2026-07-03T09:00:00.123+00:00" },
+					{ timezone: "Europe/London", datetime: "2026-07-03T10:00:00.123+01:00" },
+					{ timezone: "America/New_York", datetime: "2026-07-03T05:00:00.123-04:00" },
+					{ timezone: "Asia/Tokyo", datetime: "2026-07-03T18:00:00.123+09:00" },
 				],
 			});
 		} finally {
