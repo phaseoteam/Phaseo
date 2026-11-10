@@ -1,4 +1,4 @@
-import { Easing } from "react-native-reanimated";
+import { Easing, useSharedValue } from "react-native-reanimated";
 
 /**
  * Shared motion values, so the same kind of movement feels the same everywhere.
@@ -20,6 +20,30 @@ export const SNAP_BACK_SPRING = { duration: 300, dampingRatio: 0.8 } as const;
 export function project(velocity: number, decelerationRate = 0.998) {
   "worklet";
   return ((velocity / 1000) * decelerationRate) / (1 - decelerationRate);
+}
+
+/** A movement this recent still counts as the finger's speed when it lets go (ms). */
+const RELEASE_WINDOW_MS = 100;
+
+/**
+ * The speed a drag is let go at. On Android the pan's release event can report a velocity of 0 even mid-flick, so
+ * `track` remembers each update's velocity and `release` falls back to it, unless the finger had stopped (no update
+ * in the last RELEASE_WINDOW_MS), when 0 is right: a drag that stops before letting go isn't a flick.
+ */
+export function useReleaseVelocity() {
+  const last = useSharedValue(0);
+  const movedAt = useSharedValue(0);
+  const track = (velocity: number) => {
+    "worklet";
+    last.set(velocity);
+    movedAt.set(Date.now());
+  };
+  const release = (velocity: number) => {
+    "worklet";
+    if (velocity !== 0) return velocity;
+    return Date.now() - movedAt.get() <= RELEASE_WINDOW_MS ? last.get() : 0;
+  };
+  return { track, release };
 }
 
 /** How far something follows a finger dragged `overshoot` px past an edge: less the further it goes. */
