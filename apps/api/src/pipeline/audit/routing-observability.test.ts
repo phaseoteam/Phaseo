@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { buildRoutingObservability } from "./routing-observability";
 
 describe("buildRoutingObservability attempts", () => {
-    it("carries the request-detail fields gateway_upstream_requests stores", () => {
+    it("carries the request-detail fields that replace gateway_upstream_requests", () => {
         const { normalizedAttempts } = buildRoutingObservability({
             requestedModel: "openai/gpt-5-nano",
             endpoint: "chat.completions",

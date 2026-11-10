@@ -1,6 +1,6 @@
 // Purpose: Read per-attempt provider detail from v2_request_attempts for request detail views.
-// Why: gateway_upstream_requests is being retired. The gateway writes the same attempts to both
-// tables, but v2_request_attempts only holds the provider's status text, error code, message,
+// Why: gateway_upstream_requests is being retired; the gateway no longer writes to it and it stays
+// read-only for older requests. v2_request_attempts only holds the provider's status text, error code, message,
 // description and the attempt start time for requests created at or after the cut-over below.
 import type { RequestRow } from "./actions";
 

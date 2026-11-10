@@ -79,7 +79,7 @@ export function buildRoutingObservability(args: RoutingInput) {
             response_kind: typeof attempt.response_kind === "string" ? attempt.response_kind : null,
             retryable: attempt.retryable === true,
             was_probe: attempt.was_probe === true,
-            // Request-detail fields, stored the same way as gateway_upstream_requests.
+            // Request-detail fields, stored the way the retired gateway_upstream_requests table held them.
             status_text: typeof attempt.status_text === "string" && attempt.status_text.trim()
                 ? attempt.status_text.trim()
                 : null,
