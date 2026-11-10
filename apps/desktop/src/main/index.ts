@@ -134,6 +134,7 @@ import { registerDiagnosticsIpc, stopTracing, traceIpcHandlers } from "./diagnos
 import type { ProcessOwner } from "./diagnostics/processTable";
 import { span } from "./diagnostics/tracer";
 import { resolveUpdateFeedUrl } from "./updateFeed";
+import { createDesktopAnalytics } from "./appAnalytics";
 
 const currentDirectory = path.dirname(fileURLToPath(import.meta.url));
 const preloadPath = path.join(currentDirectory, "../preload/index.cjs");
@@ -142,6 +143,17 @@ const developmentUrl = app.isPackaged ? undefined : process.env.PHASEO_DESKTOP_D
 const applicationIcon = path.join(app.getAppPath(), "assets", `icon-${developmentUrl ? "development" : "production"}.png`);
 const updateFeedUrl = resolveUpdateFeedUrl(app.isPackaged, process.env);
 let workspaceRuntime: WorkspaceRuntime;
+let appAnalytics: ReturnType<typeof createDesktopAnalytics> | undefined;
+process.on("uncaughtExceptionMonitor", error => appAnalytics?.error(error, "main"));
+ipcMain.handle("desktop:analytics", (event, message: unknown) => {
+	if (!senderWindow(event) || shutdownStarted || !message || typeof message !== "object") return;
+	const input = message as Record<string, unknown>;
+	if (input.type === "screen") appAnalytics?.screen(input.screen);
+	if (input.type === "error" && typeof input.name === "string" && typeof input.stack === "string" && input.stack.length <= 8000) {
+		const error = new Error(); error.name = input.name; error.stack = input.stack;
+		appAnalytics?.error(error, "renderer");
+	}
+});
 let pullRequestGuides: PullRequestGuides;
 /** Code ▸ Factory; PHASEO_FACTORY_DEMO=1 runs it on demo data, for screenshots. */
 let factoryService: FactoryService | undefined;
@@ -230,7 +242,7 @@ ipcMain.handle("workspace:autopilot-log", event => { if (!senderWindow(event)) t
 ipcMain.handle("workspace:global-instructions", event => { if (!senderWindow(event)) throw new Error("Untrusted instruction request."); return globalInstructions.read(); });
 ipcMain.handle("workspace:save-global-instructions", (event, edit: unknown) => { if (!senderWindow(event) || shutdownStarted) throw new Error("Instruction editing is unavailable."); return globalInstructions.save(edit); });
 ipcMain.handle("workspace:preferences", event => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); return { preferences: workspaceRuntime.store.getPreferences(), notificationsSupported: Notification.isSupported() }; });
-ipcMain.handle("workspace:save-preferences", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); if (!value || typeof value !== "object") throw new Error("Invalid workspace preferences."); const preferences = workspaceRuntime.store.savePreferences(validatePreferences({ ...workspaceRuntime.store.getPreferences(), ...value })); taskNotifications.configure(preferences); workspaceRuntime.limitPreferencesChanged(); return preferences; });
+ipcMain.handle("workspace:save-preferences", (event, value: unknown) => { if (!senderWindow(event)) throw new Error("Invalid preferences request."); if (!value || typeof value !== "object") throw new Error("Invalid workspace preferences."); const preferences = workspaceRuntime.store.savePreferences(validatePreferences({ ...workspaceRuntime.store.getPreferences(), ...value })); taskNotifications.configure(preferences); workspaceRuntime.limitPreferencesChanged(); appAnalytics?.configure(preferences.analyticsEnabled); return preferences; });
 ipcMain.handle("workspace:mcp", (event, value: unknown) => {
 	if (!senderWindow(event)) throw new Error("Invalid MCP request.");
 	return workspaceRuntime.mcp(validateMcpCommand(value));
@@ -517,7 +529,7 @@ app.on("before-quit", event => {
 	const deadline = setTimeout(() => { console.error("Shutdown timed out; quitting anyway."); stopTracing(); shutdownComplete = true; app.exit(0); }, 10_000);
 	// Factory saves its running stages as interrupted before the runtime stops their threads.
 	const factoryClosed = (factoryService?.shutdown() ?? Promise.resolve()).catch(() => { console.error("Factory shutdown failed."); });
-	void Promise.allSettled([factoryClosed.then(() => outsideAgents?.stop()).then(() => workspaceRuntime.close()).catch(() => { console.error("Workspace shutdown failed."); }), harnessUpdate?.completed, closeBackgroundCommands(), closePhaseoMcpPool()]).finally(() => { clearTimeout(deadline); stopTracing(); shutdownComplete = true; app.quit(); });
+	void Promise.allSettled([factoryClosed.then(() => outsideAgents?.stop()).then(() => workspaceRuntime.close()).catch(() => { console.error("Workspace shutdown failed."); }), harnessUpdate?.completed, closeBackgroundCommands(), closePhaseoMcpPool(), appAnalytics?.close()]).finally(() => { clearTimeout(deadline); stopTracing(); shutdownComplete = true; app.quit(); });
 });
 
 ipcMain.handle("workspace:sign-in", async (event, id: unknown) => {
@@ -1148,6 +1160,9 @@ function createWindow(): BrowserWindow {
 	}
 
 	appWindows.add(window); window.once("closed", () => appWindows.delete(window));
+	window.webContents.on("render-process-gone", (_event, details) => {
+		if (!shutdownStarted && details.reason !== "clean-exit") appAnalytics?.error(new Error(), "renderer-crash");
+	});
 	window.once("ready-to-show", () => window.show());
 	window.on("blur", () => { quitHold.cancel(); broadcastWindowState(window); });
 	window.webContents.on("before-input-event", (event, input) => { if (quitHoldInput(input, window)) event.preventDefault(); });
@@ -1334,6 +1349,8 @@ app.whenReady().then(() => {
 	modelCatalogCache = new ModelCatalogCache(path.join(app.getPath("userData"), "cache"), ({ accountId }) => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:models-changed", { harness: "phaseo", accountId }); });
 	harnessModelCache = new HarnessModelCache(path.join(app.getPath("userData"), "cache", "harness-models.json"), (harness, accountId) => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:models-changed", { harness, accountId }); });
 	workspaceRuntime = new WorkspaceRuntime(workspaceDirectory, undefined, vault);
+	appAnalytics = createDesktopAnalytics(workspaceDirectory, app.isPackaged);
+	appAnalytics.configure(workspaceRuntime.store.getPreferences().analyticsEnabled);
 	workspaceRuntime.phaseo.background = backgroundCommands();
 	workspaceRuntime.phaseo.background.onChange = taskId => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:background-changed", taskId); };
 	outsideAgents = new OutsideAgentsMcp(workspaceDirectory, { tools: agent => workspaceRuntime.outsideThreadTools(agent), changed: settings => { for (const window of BrowserWindow.getAllWindows()) window.webContents.send("workspace:outside-agents-changed", settings); } });

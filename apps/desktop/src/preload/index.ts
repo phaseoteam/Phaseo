@@ -7,6 +7,7 @@ let pendingTaskOpen: { id?: string } | undefined;
 ipcRenderer.on("workspace:open-task", (_event, id?: string) => { if (taskOpenListeners.size) for (const listener of taskOpenListeners) listener(id); else pendingTaskOpen = { id }; });
 
 const desktopApi: PhaseoDesktopApi = {
+	analytics: message => ipcRenderer.invoke("desktop:analytics", message),
 	platform: process.platform,
 	browserDownload: command => ipcRenderer.invoke("desktop:browser-download", command),
 	onBrowserDownloads: listener => { const subscription = (_event: Electron.IpcRendererEvent, values: Parameters<typeof listener>[0]) => listener(values); ipcRenderer.on("desktop:browser-downloads", subscription); return () => ipcRenderer.removeListener("desktop:browser-downloads", subscription); },

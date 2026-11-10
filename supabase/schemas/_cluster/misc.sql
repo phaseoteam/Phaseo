@@ -11,12 +11,20 @@ SELECT
   true);
 
 SELECT
+  cron.schedule_in_database('prune-catalogue-row-history', '23 * * * *',
+  'set statement_timeout = ''60s''; set lock_timeout = ''5s''; select private.prune_catalogue_row_history(5000);', 'postgres', NULL, true);
+
+SELECT
   cron.schedule_in_database('prune-completed-analytics-outbox', '* * * * *',
   'set statement_timeout = ''10s''; set lock_timeout = ''500ms''; select private.prune_completed_analytics_outbox(500);', 'postgres', NULL, true);
 
 SELECT
   cron.schedule_in_database('public-reporting-refresh-queue', '2-59/5 * * * *',
   'set statement_timeout = ''10s''; set lock_timeout = ''500ms''; select private.drain_public_reporting_refresh();', 'postgres', NULL, true);
+
+SELECT
+  cron.schedule_in_database('redact-expired-byok-request-metadata', '37 * * * *',
+  'set statement_timeout = ''60s''; set lock_timeout = ''500ms''; select private.redact_expired_byok_request_metadata(false, 500, 365);', 'postgres', NULL, true);
 
 SELECT
   cron.schedule_in_database('refresh-public-monitor-weekly-usage', '4-59/15 * * * *',
