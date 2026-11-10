@@ -1666,7 +1666,7 @@
 				"itl": "Intervalo médio entre os tokens gerados.",
 				"cachedInput": "Parcela dos tokens de entrada fornecida pelo cache do provedor.",
 				"throughputCard": "Tokens de saída por segundo: todos os tokens de saída divididos pela duração total no provedor, do envio da solicitação ao provedor até a resposta final dele.",
-				"latencyCard": "Tempo até o primeiro token: do recebimento da solicitação pela Phaseo até a primeira saída gerada. Medido apenas em respostas em streaming.",
+				"latencyCard": "Tempo até o primeiro token: do recebimento da solicitação pela Phaseo até a primeira saída gerada.",
 				"endToEndCard": "Tempo total da solicitação: do recebimento da solicitação pela Phaseo até a resposta completa."
 			},
 			"axisTokensPerSecond": "Tokens por segundo",

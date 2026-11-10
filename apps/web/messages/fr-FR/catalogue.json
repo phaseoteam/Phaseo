@@ -1666,7 +1666,7 @@
 				"itl": "Intervalle moyen entre les jetons générés.",
 				"cachedInput": "Part des jetons d’entrée servis depuis le cache du fournisseur.",
 				"throughputCard": "Jetons de sortie par seconde : tous les jetons de sortie divisés par la durée totale chez le fournisseur, de l’envoi de la requête au fournisseur jusqu’à sa réponse finale.",
-				"latencyCard": "Délai jusqu’au premier jeton : de la réception de la requête par Phaseo jusqu’à la première sortie générée. Mesuré uniquement sur les réponses en streaming.",
+				"latencyCard": "Délai jusqu’au premier jeton : de la réception de la requête par Phaseo jusqu’à la première sortie générée.",
 				"endToEndCard": "Durée totale de la requête : de la réception de la requête par Phaseo jusqu’à la réponse complète."
 			},
 			"axisTokensPerSecond": "Jetons par seconde",

@@ -1666,7 +1666,7 @@
 				"itl": "生成 token 之间的平均间隔。",
 				"cachedInput": "由提供方缓存提供的输入 token 占比。",
 				"throughputCard": "每秒输出 token 数：全部输出 token 除以提供方的完整耗时（从向提供方发送请求到其最终响应）。",
-				"latencyCard": "首个 token 时间：从 Phaseo 收到请求到首个生成输出的时间。仅在流式响应中测量。",
+				"latencyCard": "首个 token 时间：从 Phaseo 收到请求到首个生成输出的时间。",
 				"endToEndCard": "完整请求时间：从 Phaseo 收到请求到响应完成的时间。"
 			},
 			"axisTokensPerSecond": "每秒 token 数",

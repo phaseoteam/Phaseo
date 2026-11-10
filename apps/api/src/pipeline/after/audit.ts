@@ -33,6 +33,7 @@ import {
 	resolveBeforeLatencyMs,
 	resolveFailoverMs,
 	resolveExecuteTotalLatencyMs,
+	resolveGatewayTtftMs,
 	resolveNonStreamLatencyMs,
 	resolveOutputSpeedWindow,
 } from "./timing";
@@ -615,9 +616,15 @@ export async function handleSuccessAudit(
         usageWithMultimodal?.completion_tokens ??
         0
     );
-    const providerTtftMs = isStream && typeof ctx.meta.provider_ttft_ms === "number"
+    // Text generation always streams from the provider, and buffered clients are
+    // materialized from that stream, so first output is observed for them too.
+    // Buffered responses count only an observed first output, not an executor's
+    // first-frame estimate (embeddings, images and other one-shot calls).
+    const providerTtftMs = typeof ctx.meta.provider_ttft_ms === "number" &&
+        (isStream || typeof ctx.meta.firstProviderOutputAtMs === "number")
         ? ctx.meta.provider_ttft_ms
         : null;
+    const gatewayTtftMs = resolveGatewayTtftMs(ctx, isStream);
     const outputPerformance = calculateOutputPerformanceMetrics({
         outputTokens,
         reasoningTokens: ctx.meta.reasoningStreamed ? null : getUsageReasoningTokens(usageWithMultimodal),
@@ -626,7 +633,9 @@ export async function handleSuccessAudit(
         gatewayE2eMs: endToEndMs,
         failoverMs: resolveFailoverMs(ctx),
         outputArrivals: ctx.meta.outputArrivals ?? null,
-        speedWindow: isStream ? resolveOutputSpeedWindow(ctx) : undefined,
+        // A buffered client's speed comes from the materialized provider round, whose
+        // arrival count keeps one read plus a late terminal frame from looking like a stream.
+        speedWindow: isStream ? resolveOutputSpeedWindow(ctx) : (ctx.meta.lastProviderRoundSpeedWindow ?? null),
     });
     // Throughput is API-owned: output tokens divided by the full provider duration in seconds.
     ctx.meta.throughput_tps = outputPerformance.effectiveThroughputTps ?? undefined;
@@ -710,7 +719,7 @@ export async function handleSuccessAudit(
             generationMs,
             latencyMs,
             providerTtftMs,
-            gatewayTtftMs: isStream ? (ctx.meta.gateway_ttft_ms ?? null) : null,
+            gatewayTtftMs,
             outputSpeedTps: ctx.meta.output_speed_tps ?? null,
             tpotMs: ctx.meta.tpot_ms ?? null,
             itlMs: ctx.meta.itl_ms ?? null,
