@@ -8,6 +8,7 @@ import { app, BrowserWindow, ipcMain } from "electron";
 
 app.setPath("userData", mkdtempSync(path.join(tmpdir(), "phaseo-composer-actions-")));
 const entry = process.argv.find(value => value.startsWith("--app-entry="))?.slice(12);
+const paletteOnly = process.argv.includes("--palette-only");
 await import(entry ? pathToFileURL(path.resolve(entry)).href : "../dist/main/index.mjs");
 const deadline = setTimeout(() => { console.error("Composer fixture deadline"); app.exit(1); }, 120_000);
 deadline.unref();
@@ -17,7 +18,7 @@ app.whenReady().then(async () => { try {
 	const owner = BrowserWindow.getAllWindows()[0];
 	owner.hide(); owner.setSize(1280, 900); owner.webContents.setBackgroundThrottling(false);
 	if (owner.webContents.isLoading()) await once(owner.webContents, "did-finish-load");
-	const run = code => owner.webContents.executeJavaScript(code);
+	const run = code => owner.webContents.executeJavaScript(code).catch(error => { throw new Error(`Fixture renderer failed: ${code.slice(0, 240)}`, { cause: error }); });
 	const ready = predicate => run(`new Promise((resolve,reject)=>{const check=()=>{if((${predicate})){observer.disconnect();clearTimeout(timer);resolve(true);}};const observer=new MutationObserver(check);observer.observe(document,{subtree:true,childList:true,characterData:true,attributes:true});const timer=setTimeout(()=>{observer.disconnect();reject(Error('Missing UI milestone: '+${JSON.stringify(predicate)}));},10000);check();})`);
 	async function closeMenu() {
 		// The menu library's test switch bypasses frame-based completion in hidden windows; SVG gestures remain enabled.
@@ -122,6 +123,12 @@ app.whenReady().then(async () => { try {
 		await ready(`Array.from(document.querySelectorAll('main button')).some(button=>button.textContent.includes('GitHub'))`);
 	}
 	const baseline = process.argv.find(value => value.startsWith("--baseline-renderer="))?.slice(20);
+	owner.webContents.debugger.attach("1.3");
+	const cdp = (method, params = {}) => owner.webContents.debugger.sendCommand(method, params);
+	await cdp("DOM.enable"); await cdp("CSS.enable");
+	const force = async (selector, pseudo) => { const { root } = await cdp("DOM.getDocument"); const { nodeId } = await cdp("DOM.querySelector", { nodeId: root.nodeId, selector }); assert(nodeId, selector); await cdp("CSS.forcePseudoState", { nodeId, forcedPseudoClasses: pseudo ? [pseudo] : [] }); };
+	const gestures = {};
+	if (!paletteOnly) {
 	if (baseline) {
 		await configure(); await owner.loadFile(baseline);
 		await ready("!!document.querySelector('main button[aria-label=Stop]')");
@@ -218,11 +225,7 @@ app.whenReady().then(async () => { try {
 	await run("document.querySelector('main [contenteditable]').dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',isComposing:true,bubbles:true,cancelable:true}));true");
 	assert.equal(calls.length, beforeComposition);
 	// Force interaction states in this owned window; window controls and unrelated icons remain still.
-	owner.webContents.debugger.attach("1.3");
-	const cdp = (method, params = {}) => owner.webContents.debugger.sendCommand(method, params);
-	await cdp("DOM.enable"); await cdp("CSS.enable");
 	await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
-	const force = async (selector, pseudo) => { const { root } = await cdp("DOM.getDocument"); const { nodeId } = await cdp("DOM.querySelector", { nodeId: root.nodeId, selector }); assert(nodeId, selector); await cdp("CSS.forcePseudoState", { nodeId, forcedPseudoClasses: pseudo ? [pseudo] : [] }); };
 	async function navigationGesture(selector) {
 		for (const pseudo of ["hover", "focus-visible"]) {
 			if (pseudo === "hover") {
@@ -240,7 +243,7 @@ app.whenReady().then(async () => { try {
 			assert(await run(`(async()=>{const svg=document.querySelector(${JSON.stringify(selector)}+' svg');await Promise.all(svg.getAnimations({subtree:true}).map(animation=>animation.finished));return Array.from(svg.children).every(part=>Math.abs(parseFloat(getComputedStyle(part).translate)||0)<0.001);})()`), `${selector} does not return to rest`);
 		}
 	}
-	const samples = {}, gestures = {};
+	const samples = {};
 	for (const action of ["send", "queue", "steer"]) {
 		await configure({ status: action === "send" ? "completed" : "running", followUp: action === "steer" ? "steer" : "queue" });
 		await run("document.documentElement.dataset.animations='on'");
@@ -315,8 +318,8 @@ app.whenReady().then(async () => { try {
 		for (const pseudo of ["hover", "focus-visible"]) {
 			await force(selector, pseudo);
 			const active = await state();
-			if (pseudo === "focus-visible" && await run(`!!document.querySelector(${JSON.stringify(selector)}).closest('.desktop-command-palette')`)) {
-				assert.equal(active.animations.length, 0, `${name} animates during palette keyboard selection`);
+			if (pseudo === "focus-visible" && (name === "inbox" || await run(`!!document.querySelector(${JSON.stringify(selector)}).closest('.desktop-command-palette')`))) {
+				assert.equal(active.animations.length, 0, `${name} animates during keyboard selection`);
 				await force(selector, null);
 				continue;
 			}
@@ -329,7 +332,7 @@ app.whenReady().then(async () => { try {
 			const frame = { download: 1, terminal: 2, external: 2, archive: 1, camera: 0 }[name];
 			if (frame !== undefined) assert.deepEqual(middle.parts[frame], idle.parts[frame], `${name} moved its tray or frame`);
 			for (const node of ({ pullRequest: [0, 1, 2], branch: [1, 2], merge: [0, 1] }[name] ?? [])) assert.deepEqual(middle.parts[node], idle.parts[node], `${name} moved its fixed node`);
-			for (const node of ({ signIn: [2], schedule: [1, 2, 3, 4, 5], inbox: [1], usage: [0] }[name] ?? [])) assert.deepEqual(middle.parts[node], idle.parts[node], `${name} moved its navigation frame`);
+			for (const node of ({ signIn: [2], schedule: [1, 2, 3, 4, 5], inbox: [1, 2], usage: [0] }[name] ?? [])) assert.deepEqual(middle.parts[node], idle.parts[node], `${name} moved its navigation frame`);
 			gestures[name] = active.animations.map(animation => animation.name);
 			await force(selector, null);
 		}
@@ -520,6 +523,7 @@ app.whenReady().then(async () => { try {
 	if (baseline) await utilityIcons(baseline, "before-utility", false);
 	await utilityIcons(renderer, "after-utility", true);
 	console.log("UTILITY_ICON_GESTURES", JSON.stringify({ runAndFilterHold: true, disabledRunStill: true, wrapSurfaces: 2, reverseStates: true, motionPreferences: true }));
+	}
 	async function paletteIcons(page, prefix, verify) {
 		console.log("Composer fixture: palette icons", prefix);
 		projects = [{ id: "fixture", name: "Owned project", directory: path.join(app.getPath("userData"), "owned-project"), createdAt: now }];
@@ -540,7 +544,7 @@ app.whenReady().then(async () => { try {
 			await cdp("Input.dispatchMouseEvent", { type: "mouseMoved", x: 0, y: 0 });
 			await force(selector, "focus-visible");
 			await run(`document.querySelector(${JSON.stringify(selector)}).setAttribute('data-selected','true');true`);
-			const state = () => run(`(()=>{const row=document.querySelector(${JSON.stringify(selector)}),svg=row.querySelector('.gesture-icon');return {box:row.getBoundingClientRect().toJSON(),transform:getComputedStyle(svg).transform,parts:Array.from(svg.children).map(part=>{const style=getComputedStyle(part);return [style.transform,style.translate,style.strokeDashoffset,style.opacity];}),animations:svg.getAnimations({subtree:true}).map(animation=>({name:animation.animationName??animation.transitionProperty,iterations:animation.effect.getTiming().iterations}))};})()`);
+			const state = () => run(`(()=>{const row=document.querySelector(${JSON.stringify(selector)}),svg=row.querySelector('.gesture-icon');return {box:row.getBoundingClientRect().toJSON(),transform:getComputedStyle(svg).transform,parts:Array.from(svg.children).map(part=>{const style=getComputedStyle(part);return [Array.from(new DOMMatrixReadOnly(style.transform).toFloat64Array()),style.translate,style.strokeDashoffset,style.opacity];}),animations:svg.getAnimations({subtree:true}).map(animation=>({name:animation.animationName??animation.transitionProperty,iterations:animation.effect.getTiming().iterations}))};})()`);
 			const idle = await state();
 			assert.equal(idle.animations.length, 0, `${row.label} animates during keyboard selection`);
 			await force(selector, null);
@@ -554,12 +558,17 @@ app.whenReady().then(async () => { try {
 			assert.notDeepEqual(active.parts, idle.parts, `${row.label} does not visibly animate`);
 			assert.deepEqual(active.box, idle.box, `${row.label} moves its row`); assert.equal(active.transform, "none");
 			if (row.name === "limits") {
-				for (const [fraction, angle, dash] of [[0, 75, 0], [0.5, undefined, undefined], [1, -165, 1]]) {
-					const gauge = await run(`(()=>{const svg=document.querySelector(${JSON.stringify(selector)}+' svg');svg.getAnimations({subtree:true}).forEach(animation=>{if(Number(animation.effect.getTiming().duration)!==640)throw Error('Gauge sequence duration overridden');animation.currentTime=640*${fraction};});const matrix=new DOMMatrixReadOnly(getComputedStyle(svg.querySelector('[data-gauge-needle]')).transform);return {angle:Math.atan2(matrix.b,matrix.a)*180/Math.PI,dash:parseFloat(getComputedStyle(svg.querySelector('[data-gauge-fill]')).strokeDashoffset)};})()`);
+				for (const [fraction, angle, dash] of [[0, 75, 0], [0.36, undefined, undefined], [0.7, -165, 1], [1, 0, 0]]) {
+					const gauge = await run(`(()=>{const svg=document.querySelector(${JSON.stringify(selector)}+' svg');svg.getAnimations({subtree:true}).forEach(animation=>{if(Number(animation.effect.getTiming().duration)!==880)throw Error('Gauge sequence duration overridden');animation.currentTime=880*${fraction};});const matrix=new DOMMatrixReadOnly(getComputedStyle(svg.querySelector('[data-gauge-needle]')).transform),fill=getComputedStyle(svg.querySelector('[data-gauge-fill]'));return {angle:Math.atan2(matrix.b,matrix.a)*180/Math.PI,dash:parseFloat(fill.strokeDashoffset),opacity:Number(fill.opacity)};})()`);
 					if (angle !== undefined) assert(Math.abs(gauge.angle - angle) < 0.01 && Math.abs(gauge.dash - dash) < 0.01, `Palette gauge misses its endpoint: ${JSON.stringify(gauge)}`);
 					else assert(gauge.dash > 0 && gauge.dash < 1, "Palette gauge skips partial fill");
-					assert(Math.abs(gauge.angle - (75 - 240 * gauge.dash)) < 0.01, "Palette needle and arc disagree");
+					if (fraction < 0.76) assert(Math.abs(gauge.angle - (75 - 240 * gauge.dash)) < 0.01, "Palette needle and arc disagree");
+					if (fraction === 1) assert.equal(gauge.opacity, 0, "Palette gauge does not reset while hovered");
 				}
+			}
+			if (["inbox", "keyboard"].includes(row.name)) {
+				await run(`document.querySelector(${JSON.stringify(selector)}+' svg').getAnimations({subtree:true}).forEach(animation=>{const timing=animation.effect.getTiming();if(Number(timing.duration)!==${row.name === "inbox" ? 480 : 140})throw Error('Miniature sequence duration overridden');animation.currentTime=Number(timing.delay)+Number(timing.duration);});true`);
+				assert.deepEqual((await state()).parts, idle.parts, `${row.label} does not return to rest while hovered`);
 			}
 			await cdp("Input.dispatchMouseEvent", { type: "mouseMoved", x: 0, y: 0 });
 			await run(`Promise.all(document.querySelector(${JSON.stringify(selector)}+' .gesture-icon').getAnimations({subtree:true}).map(animation=>animation.finished)).then(()=>true)`);
@@ -601,14 +610,15 @@ app.whenReady().then(async () => { try {
 		for (const [fraction, opacity] of [[0.05, [0, 0, 0, 1]], [0.25, [0, 1, 0, 1]], [0.55, [0, 1, 1, 1]], [1, [1, 1, 1, 0]]]) {
 			const code = await run(`(()=>{const svg=document.querySelector(${JSON.stringify(codeRow)}+' svg');svg.getAnimations({subtree:true}).forEach(animation=>{if(Number(animation.effect.getTiming().duration)!==480)throw Error('Typing sequence duration overridden');animation.pause();animation.currentTime=480*${fraction};});return Array.from(svg.children).map(part=>({opacity:Number(getComputedStyle(part).opacity),stroke:getComputedStyle(part).stroke}));})()`);
 			assert.deepEqual(code.map(part => part.opacity), opacity, "Palette Code does not type in order");
-			assert.notEqual(code[1].stroke, code[2].stroke, "Palette Code loses syntax accents");
+			assert(code.every(part => part.stroke === code[0].stroke), "Palette Code is not monochrome");
 		}
 		await force(codeRow, null);
 		console.log("PALETTE_ICON_GESTURES", JSON.stringify({ rows: rows.length, allActionIcons: true, hover: true, keyboardStill: true, disabledStill: true, motionPreferences: true, resumeGlyph: true, fullToEmpty: true, typedCode: true }));
 	}
 	if (baseline) await paletteIcons(baseline, "before", false);
+	await cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: "no-preference" }] });
 	await paletteIcons(renderer, "after", true);
 	owner.webContents.debugger.detach();
-	console.log("COMPOSER_ACTIONS_SMOKE", JSON.stringify({ surfaces: 3, deliveryDefaults: 2, primaryAndAlternate: true, idleSend: true, stopWithEmptyDraft: true, unsupportedSteeringQueues: true, queueEdit: true, questionAnswer: true, keyboardAndIME: true, svgTraces: true, actionGestures: gestures, boundedGestures: true, stationaryControls: true, copyFeedback: true, stationaryWindowControls: true, animationsOff: true, reducedMotion: true, minimumWidth: true, inferenceCalls: 0, packaged: Boolean(entry) }));
+	if (!paletteOnly) console.log("COMPOSER_ACTIONS_SMOKE", JSON.stringify({ surfaces: 3, deliveryDefaults: 2, primaryAndAlternate: true, idleSend: true, stopWithEmptyDraft: true, unsupportedSteeringQueues: true, queueEdit: true, questionAnswer: true, keyboardAndIME: true, svgTraces: true, actionGestures: gestures, boundedGestures: true, stationaryControls: true, copyFeedback: true, stationaryWindowControls: true, animationsOff: true, reducedMotion: true, minimumWidth: true, inferenceCalls: 0, packaged: Boolean(entry) }));
 	clearTimeout(deadline); app.exit(0);
 } catch (error) { console.error(error); app.exit(1); } });

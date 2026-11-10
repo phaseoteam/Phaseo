@@ -721,7 +721,6 @@ button:is(:disabled, [aria-disabled="true"]) .gesture-icon:is([data-icon-gesture
 .gesture-icon[data-icon-gesture="mail"] > path { --icon-gesture: icon-mail-flap; transform-origin: 12px 7px; }
 .gesture-icon[data-icon-gesture="signIn"] > :nth-child(-n+2) { --icon-gesture: icon-sign-in; }
 .gesture-icon[data-icon-gesture="schedule"] > path:first-child { --icon-gesture: icon-clock-hand; transform-origin: 16px 16px; --icon-gesture-duration: 380ms; }
-.gesture-icon[data-icon-gesture="inbox"] > polyline,
 .gesture-icon[data-icon-gesture="thread"] > path:last-child,
 .gesture-icon[data-icon-gesture="usage"] > path:last-child,
 .gesture-icon[data-icon-gesture="comment"] > path { --icon-gesture: icon-thread; --icon-gesture-duration: 380ms; stroke-dasharray: 1; }
@@ -744,7 +743,6 @@ button:is(:disabled, [aria-disabled="true"]) .gesture-icon:is([data-icon-gesture
 .gesture-icon[data-icon-gesture="account"] > * { --icon-gesture: icon-emphasis; --icon-gesture-duration: 180ms; }
 .gesture-icon[data-icon-gesture="bot"] > path:nth-last-child(-n+2) { --icon-gesture: icon-eye-blink; --icon-gesture-duration: 240ms; transform-origin: 12px 14px; }
 .gesture-icon[data-icon-gesture="history"] > path:last-child { --icon-gesture: icon-clock-hand; }
-.gesture-icon[data-icon-gesture="keyboard"] > path:nth-child(7) { --icon-gesture: icon-seat; }
 .gesture-icon[data-icon-gesture="files"] > path:nth-child(-n+2) { --icon-gesture: icon-seat; }
 .gesture-icon[data-icon-gesture="newChat"] > path:last-child,
 .gesture-icon[data-icon-gesture="bug"] > path:is(:nth-child(3), :nth-child(10)) { --icon-gesture: icon-write; }
@@ -760,12 +758,14 @@ button:is(:disabled, [aria-disabled="true"]) .gesture-icon:is([data-icon-gesture
 	.desktop-command-palette [role="option"]:hover:not([data-disabled="true"]):not([aria-disabled="true"]) .gesture-icon[data-icon-gesture="play"] > * { translate: 1px 0; }
 }
 /* These pointer-only miniatures need separate beats to read as draining and typing, rather than nudges. */
-@keyframes icon-gauge-drain { 0%, 12% { transform: rotate(75deg); } 88%, 100% { transform: rotate(-165deg); } }
-@keyframes icon-gauge-empty { 0%, 12% { stroke-dashoffset: 0; opacity: 1; } 88%, 100% { stroke-dashoffset: 1; opacity: 1; } }
+@keyframes icon-gauge-drain { 0%, 8% { transform: rotate(75deg); } 64%, 76% { transform: rotate(-165deg); } 100% { transform: none; } }
+@keyframes icon-gauge-empty { 0%, 8% { stroke-dashoffset: 0; opacity: 1; } 64%, 76% { stroke-dashoffset: 1; opacity: 1; } 100% { stroke-dashoffset: 0; opacity: 0; } }
 @keyframes icon-code-open { 0% { opacity: 0; } 12%, 100% { opacity: 1; } }
 @keyframes icon-code-slash { 0%, 41% { opacity: 0; } 42%, 100% { opacity: 1; } }
 @keyframes icon-code-close { 0%, 71% { opacity: 0; } 72%, 100% { opacity: 1; } }
 @keyframes icon-code-cursor { 0% { opacity: 1; transform: translateX(0); } 12% { transform: translateX(6px); } 42% { transform: translateX(14px); } 72% { transform: translateX(20px); } 92%, 100% { opacity: 0; transform: translateX(20px); } }
+@keyframes icon-inbox-receive { 0% { opacity: 0; transform: translateY(-1px); } 15% { opacity: 1; transform: translateY(-1px); } 65% { opacity: 1; transform: translateY(1.5px); } 85% { opacity: 0; transform: translateY(3px); } 100% { opacity: 0; transform: none; } }
+@keyframes icon-key-tap { 0%, 100% { transform: none; } 50% { transform: translateY(1.25px); } }
 .gesture-icon > [data-gauge-needle] { --icon-sequence: icon-gauge-drain; transform-origin: 12px 14px; }
 .gesture-icon > [data-gauge-track] { opacity: 0.35; }
 .gesture-icon > [data-gauge-fill] { --icon-sequence: icon-gauge-empty; stroke-dasharray: 1; stroke-linecap: butt; opacity: 0; }
@@ -773,11 +773,14 @@ button:is(:disabled, [aria-disabled="true"]) .gesture-icon:is([data-icon-gesture
 .gesture-icon > [data-code-token="slash"] { --icon-sequence: icon-code-slash; }
 .gesture-icon > [data-code-token="close"] { --icon-sequence: icon-code-close; }
 .gesture-icon > [data-code-cursor] { --icon-sequence: icon-code-cursor; opacity: 0; }
+.gesture-icon > [data-inbox-letter] { opacity: 0; }
+.gesture-icon[data-icon-gesture="keyboard"] > path:nth-child(3) { --icon-tap-delay: 120ms; }
+.gesture-icon[data-icon-gesture="keyboard"] > path:nth-child(7) { --icon-tap-delay: 240ms; }
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
-	:root:not([data-animations="off"]) :is(button, [role="menuitem"], [role="option"]):hover:not(:disabled):not([aria-disabled="true"]):not([data-disabled="true"]) .gesture-icon[data-icon-gesture="limits"] > :is([data-gauge-needle], [data-gauge-fill]) { animation: var(--icon-sequence) 640ms cubic-bezier(0.77, 0, 0.175, 1) both; }
+	:root:not([data-animations="off"]) :is(button, [role="menuitem"], [role="option"]):hover:not(:disabled):not([aria-disabled="true"]):not([data-disabled="true"]) .gesture-icon[data-icon-gesture="limits"] > :is([data-gauge-needle], [data-gauge-fill]) { animation: var(--icon-sequence) 880ms cubic-bezier(0.77, 0, 0.175, 1) both; }
 	:root:not([data-animations="off"]) :is(button, [role="menuitem"], [role="option"]):hover:not(:disabled):not([aria-disabled="true"]):not([data-disabled="true"]) .gesture-icon[data-icon-gesture="code"] > * { animation: var(--icon-sequence) 480ms steps(1, end) both; }
-	:root:not([data-animations="off"]) :is(button, [role="menuitem"], [role="option"]):hover:not(:disabled):not([aria-disabled="true"]):not([data-disabled="true"]) .gesture-icon > [data-code-token] { stroke: var(--info, currentColor); }
-	:root:not([data-animations="off"]) :is(button, [role="menuitem"], [role="option"]):hover:not(:disabled):not([aria-disabled="true"]):not([data-disabled="true"]) .gesture-icon > [data-code-token="slash"] { stroke: var(--success, currentColor); }
+	:root:not([data-animations="off"]) :is(button, [role="menuitem"], [role="option"]):hover:not(:disabled):not([aria-disabled="true"]):not([data-disabled="true"]) .gesture-icon > [data-inbox-letter] { animation: icon-inbox-receive 480ms cubic-bezier(0.77, 0, 0.175, 1) both; }
+	:root:not([data-animations="off"]) :is(button, [role="menuitem"], [role="option"]):hover:not(:disabled):not([aria-disabled="true"]):not([data-disabled="true"]) .gesture-icon[data-icon-gesture="keyboard"] > :is(path:first-child, path:nth-child(3), path:nth-child(7)) { animation: icon-key-tap 140ms cubic-bezier(0.77, 0, 0.175, 1) var(--icon-tap-delay, 0ms) both; }
 }
 @media (prefers-reduced-motion: reduce) {
 	.gesture-icon:is([data-icon-gesture="editor"], [data-icon-gesture="compare"], [data-icon-gesture="fileSearch"], [data-icon-gesture="textSearch"], [data-icon-gesture="pause"]) > * { translate: 0 !important; transition: none; }

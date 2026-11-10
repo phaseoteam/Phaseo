@@ -10,9 +10,9 @@ const scratch = mkdtempSync(path.join(tmpdir(), "phaseo-action-icons-"));
 app.setPath("userData", path.join(scratch, "profile"));
 const root = path.resolve(import.meta.dirname, "..");
 const names = ["pin", "unpin", "archive", "restore", "edit", "pencil", "link", "unlink", "camera", "up", "down", "publish", "folder", "addFolder", "mail", "signIn", "schedule", "inbox", "thread", "usage", "issue", "complete", "notPlanned", "draftPullRequest", "closePullRequest", "comment", "open", "approve", "requestChanges", "retry", "sidebarLeft", "sidebarRight", "back", "forward", "play", "filter", "account", "activity", "bot", "browser", "bug", "clone", "code", "compare", "editor", "files", "fileSearch", "history", "keyboard", "limits", "moon", "newChat", "pause", "sun", "system", "textSearch", "undo"];
-const fixedParts = { archive: [1], restore: [1], camera: [0], publish: [1], folder: [0], addFolder: [2], mail: [1], signIn: [2], schedule: [1, 2, 3, 4, 5], inbox: [1], thread: [0], usage: [0], issue: [0], complete: [0], notPlanned: [0], draftPullRequest: [0, 1, 4], closePullRequest: [0, 1, 4, 5], requestChanges: [0, 2], sidebarLeft: [0, 1, 2], sidebarRight: [0, 1, 2], bot: [0, 1, 2, 3], browser: [0, 2], bug: [0, 1, 3, 4, 5, 6, 7, 8, 10], clone: [0, 1, 2], compare: [0], editor: [2], files: [2], fileSearch: [0, 1], history: [0, 1], keyboard: [8], limits: [1], newChat: [0], sun: [0], system: [1, 2], textSearch: [0, 1, 2] };
+const fixedParts = { archive: [1], restore: [1], camera: [0], publish: [1], folder: [0], addFolder: [2], mail: [1], signIn: [2], schedule: [1, 2, 3, 4, 5], inbox: [1, 2], thread: [0], usage: [0], issue: [0], complete: [0], notPlanned: [0], draftPullRequest: [0, 1, 4], closePullRequest: [0, 1, 4, 5], requestChanges: [0, 2], sidebarLeft: [0, 1, 2], sidebarRight: [0, 1, 2], bot: [0, 1, 2, 3], browser: [0, 2], bug: [0, 1, 3, 4, 5, 6, 7, 8, 10], clone: [0, 1, 2], compare: [0], editor: [2], files: [2], fileSearch: [0, 1], history: [0, 1], keyboard: [8], limits: [1], newChat: [0], sun: [0], system: [1, 2], textSearch: [0, 1, 2] };
 const hoverPoses = { editor: [-0.75, 0.75, 0], compare: [0, -0.75, 0.75], fileSearch: [0, 0, -1, -1], textSearch: [0, 0, 0, -1, -1], pause: [-0.5, 0.5] };
-const sequences = ["code", "limits"];
+const sequences = ["code", "limits", "inbox", "keyboard"];
 const importPath = relative => JSON.stringify(path.join(root, relative).replaceAll("\\", "/"));
 writeFileSync(path.join(scratch, "entry.tsx"), `
 import React from ${importPath("node_modules/react/index.js")};
@@ -135,17 +135,18 @@ app.whenReady().then(async () => { try {
 		samples[name] = await run(`document.getElementById('${name}').querySelector('svg').outerHTML`);
 	}
 	console.log("Action icon fixture: drain and typing milestones");
-	const phase = async (name, fraction) => {
-		await run(`document.getElementById('${name}').querySelector('svg').getAnimations({subtree:true}).forEach(animation=>{animation.pause();animation.currentTime=Number(animation.effect.getTiming().duration)*${fraction};});true`);
-		return run(`(()=>{const svg=document.querySelector('#${name} svg');return Array.from(svg.children).map(part=>{const style=getComputedStyle(part),matrix=new DOMMatrixReadOnly(style.transform);return {opacity:Number(style.opacity),dash:parseFloat(style.strokeDashoffset),angle:Math.atan2(matrix.b,matrix.a)*180/Math.PI,x:matrix.m41,stroke:style.stroke};});})()`);
+	const phase = async (name, fraction, elapsed) => {
+		await run(`document.getElementById('${name}').querySelector('svg').getAnimations({subtree:true}).forEach(animation=>{animation.pause();animation.currentTime=${elapsed ?? `Number(animation.effect.getTiming().duration)*${fraction}`};});true`);
+		return run(`(()=>{const svg=document.querySelector('#${name} svg');return Array.from(svg.children).map(part=>{const style=getComputedStyle(part),matrix=new DOMMatrixReadOnly(style.transform);return {opacity:Number(style.opacity),dash:parseFloat(style.strokeDashoffset),angle:Math.atan2(matrix.b,matrix.a)*180/Math.PI,x:matrix.m41,y:matrix.m42,stroke:style.stroke};});})()`);
 	};
 	await force("limits", "hover");
-	for (const [fraction, angle, dash] of [[0, 75, 0], [0.5, undefined, undefined], [1, -165, 1]]) {
+	for (const [fraction, angle, dash] of [[0, 75, 0], [0.36, undefined, undefined], [0.7, -165, 1], [1, 0, 0]]) {
 		const parts = await phase("limits", fraction);
 		if (angle !== undefined) assert(Math.abs(parts[0].angle - angle) < 0.01, `Limits needle misses its ${fraction} milestone: ${JSON.stringify(parts)}`);
 		if (dash !== undefined) assert(Math.abs(parts[2].dash - dash) < 0.01, `Limits arc misses its ${fraction} milestone`);
 		else assert(parts[2].dash > 0 && parts[2].dash < 1, "Limits does not pass through a partial fill");
-		assert(Math.abs(parts[0].angle - (75 - 240 * parts[2].dash)) < 0.01, "Limits needle and arc disagree");
+		if (fraction < 0.76) assert(Math.abs(parts[0].angle - (75 - 240 * parts[2].dash)) < 0.01, "Limits needle and arc disagree");
+		if (fraction === 1) assert.equal(parts[2].opacity, 0, "Limits does not hide its fill when it resets while hovered");
 	}
 	await force("limits", null); await force("limits", "hover");
 	assert(Math.abs((await phase("limits", 0))[0].angle - 75) < 0.01, "Limits does not replay from full");
@@ -156,9 +157,23 @@ app.whenReady().then(async () => { try {
 		assert.deepEqual(parts.map(part => part.opacity), opacity, `Code does not type in order at ${fraction}`);
 		assert.equal(parts[3].x, cursor, "Code cursor does not follow the typed token");
 		assert.equal(parts[0].stroke, parts[1].stroke);
-		assert.notEqual(parts[1].stroke, parts[2].stroke, "Code has no syntax accents");
+		assert(parts.every(part => part.stroke === parts[0].stroke), "Code is not monochrome");
 	}
 	await force("code", null);
+	await force("inbox", "hover");
+	const letterStart = (await phase("inbox", 0.15))[0];
+	const letterInside = (await phase("inbox", 0.65))[0];
+	assert.equal(letterInside.opacity, 1);
+	assert(letterInside.y > letterStart.y, "Inbox letter does not enter the tray");
+	const letterRest = (await phase("inbox", 1))[0];
+	assert.equal(letterRest.opacity, 0); assert.equal(letterRest.y, 0);
+	await force("inbox", null);
+	await force("keyboard", "hover");
+	for (const [elapsed, pressed] of [[70, 0], [190, 2], [310, 6], [380, -1]]) {
+		const keys = await phase("keyboard", 0, elapsed);
+		keys.forEach((part, index) => assert(Math.abs(part.y - (index === pressed ? 1.25 : 0)) < 0.001, `Keyboard taps the wrong key at ${elapsed}ms`));
+	}
+	await force("keyboard", null);
 	for (const name of sequences) {
 		await force(name, "focus-visible");
 		assert.equal(await run(`document.querySelector('#${name} svg').getAnimations({subtree:true}).length`), 0, `${name} plays on keyboard focus`);
@@ -206,6 +221,6 @@ app.whenReady().then(async () => { try {
 	await run("document.getElementById('swap').click();true");
 	assert.equal(await run("document.querySelector('#swap [data-on]').dataset.iconGesture"), "unlink");
 	if (output) writeFileSync(output, JSON.stringify({ samples, gestures }, null, 2));
-	console.log("ACTION_ICONS_SMOKE", JSON.stringify({ variants: names.length, triggers: 4, finite: true, stationaryFrames: true, stationaryControls: true, disabled: true, motionPreferences: true, stateSwap: true, fullToEmpty: true, typedTokens: true, syntaxAccents: true, sidebarCentres }));
+	console.log("ACTION_ICONS_SMOKE", JSON.stringify({ variants: names.length, triggers: 4, finite: true, stationaryFrames: true, stationaryControls: true, disabled: true, motionPreferences: true, stateSwap: true, fullToEmpty: true, gaugeResets: true, typedTokens: true, monochromeCode: true, inboxReceives: true, keyboardTaps: true, sidebarCentres }));
 	window.webContents.debugger.detach(); window.destroy(); clearTimeout(deadline); app.exit(0);
 } catch (error) { console.error(error); app.exit(1); } });
