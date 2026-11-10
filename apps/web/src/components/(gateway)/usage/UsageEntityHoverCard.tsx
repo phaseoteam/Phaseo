@@ -54,7 +54,7 @@ export default function UsageEntityHoverCard({
 	return (
 		<HoverCard openDelay={140} closeDelay={100}>
 			<HoverCardTrigger asChild>{trigger}</HoverCardTrigger>
-			<HoverCardContent align="start" className="w-[min(86vw,288px)] rounded-lg p-4">
+			<HoverCardContent align="start" className="w-[min(86vw,288px)] rounded-md p-4">
 				<div className="space-y-3">
 					<div className="flex items-start gap-3">
 						{visual ? <div className="mt-0.5 shrink-0 rounded-md">{visual}</div> : null}

@@ -401,9 +401,11 @@ app.whenReady().then(async () => {
 			// The composer's model picker lists only connected harnesses, so pick the fixture model and plan mode through the bridge,
 			// then change reasoning through the composer's model settings menu.
 			await window.phaseoDesktop.workspace.command({type:'update-task',id:task.id,model:'fixture-model',mode:'plan'});
-			await window.__auditUntil(()=>window.__auditModelName()==='Fixture Model'&&window.__auditModelSettings()==='Low','fixture model settings');
+			await window.__auditOpenComposer();
+			await window.__auditUntil(()=>window.__auditModelName()==='Fixture model'&&window.__auditModelSettings()==='Low',()=>'fixture model settings, shown: '+JSON.stringify([window.__auditModelName(),window.__auditModelSettings(),document.querySelector('main form button[aria-label="Choose model"]')?.textContent]));
 			await window.__auditModelSetting('Reasoning','High');
 			for(let attempt=0;attempt<30 && (await window.phaseoDesktop.workspace.task(task.id)).reasoningEffort!=='high';attempt++) await new Promise(resolve=>setTimeout(resolve,100));
+			await window.__auditOpenComposer();
 			await window.__auditUntil(()=>window.__auditModelSettings()==='High','model settings label');
 			const updated=(await window.phaseoDesktop.workspace.get()).tasks.find(value=>value.id===task.id); if(updated.model!=='fixture-model' || updated.mode!=='plan' || updated.reasoningEffort!=='high' || updated.messages[0].text!=='Export conversation fixture' || updated.status!=='idle') throw new Error('Conversation settings changed history or started execution');
 		})()`);
@@ -432,7 +434,7 @@ app.whenReady().then(async () => {
 			const option=Array.from(panel?.querySelectorAll('[role="radio"]')??[]).find(row=>row.textContent.includes('Review before implementation'));if(!option)throw new Error('Native question option missing');
 			option.click(); await new Promise(resolve=>setTimeout(resolve,100)); if(option.getAttribute('aria-checked')!=='true')throw new Error('Native option was not chosen');
 			if(!panel.textContent.includes('Owned proposal preview'))throw new Error('Native question preview missing');
-			const submit=Array.from(panel.querySelectorAll('button')).find(button=>/^Submit answer/.test(button.textContent)); if(!submit||submit.disabled)throw new Error('Native answer remained disabled'); submit.click();
+			const submit=Array.from((panel.closest('form')??panel).querySelectorAll('button')).find(button=>/^Submit answer/.test(button.textContent)); if(!submit||submit.disabled)throw new Error('Native answer remained disabled'); submit.click();
 			let current;for(let attempt=0;attempt<50;attempt++){current=(await api.get()).tasks.find(value=>value.id===task.id);if(current.status==='completed'||current.status==='failed')break;await new Promise(resolve=>setTimeout(resolve,100));}
 			if(current.status!=='completed'||current.questions?.length||current.approvals?.length||!current.activities?.some(value=>value.type==='plan'&&value.text==='Review the proposal and wait for implementation approval.'))throw new Error('Native plan/question workflow failed: '+current.error);
 			if(!current.nativeModels?.find(value=>value.id==='grok-fixture-b')?.default)throw new Error('Session-specific Grok model catalog was lost');

@@ -1041,6 +1041,8 @@
 			"showHiddenProviders": "Show hidden providers",
 			"selectPercentile": "Select provider percentile",
 			"sortBy": "Sort providers by {metric}",
+			"sortButton": "Sort",
+			"sortDefault": "Default order",
 			"provider": "Provider",
 			"inputPerMillion": "Input $/M",
 			"outputPerMillion": "Output $/M",
@@ -1528,6 +1530,7 @@
 			"unknown": "Unknown",
 			"policySource": "Policy source",
 			"pricingSource": "Pricing source",
+			"residencySource": "Residency source",
 			"providerLabel": "Provider label",
 			"providerMappingIntro": "This provider exposes this mapping as:",
 			"viewProviderPage": "View provider page",
@@ -3346,19 +3349,6 @@
 		"noUsageDataForPeriod": "No usage data available for this period.",
 		"rangePeriod": "Usage for the {range} period",
 		"averageTokensPerRequest": "Average tokens per request"
-	},
-	"apiModelCard": {
-		"gatewayActive": "Gateway: Active",
-		"gatewayInactive": "Gateway: Inactive",
-		"copiedModelId": "Copied model ID",
-		"endpointsCount": "{count, plural, one {# endpoint} other {# endpoints}}",
-		"supportedEndpoints": "Supported endpoints",
-		"alias": "Alias",
-		"providerAlias": "Provider alias",
-		"copiedProviderAlias": "Copied provider alias",
-		"providerAliasDescription": "This is the name the provider uses for this model. Use it when calling the provider's native API.",
-		"endpoint": "Endpoint",
-		"modalityTool": "Tool use"
 	},
 	"modelTimeline": {
 		"heading": "Model timeline",

@@ -1041,6 +1041,8 @@
 			"showHiddenProviders": "Ausgeblendete Anbieter anzeigen",
 			"selectPercentile": "Anbieterperzentil auswählen",
 			"sortBy": "Anbieter nach {metric} sortieren",
+			"sortButton": "Sortieren",
+			"sortDefault": "Standardreihenfolge",
 			"provider": "Anbieter",
 			"inputPerMillion": "Eingabe $/M",
 			"outputPerMillion": "Ausgabe $/M",
@@ -1528,6 +1530,7 @@
 			"unknown": "Unbekannt",
 			"policySource": "Richtlinienquelle",
 			"pricingSource": "Preisquelle",
+			"residencySource": "Quelle zur Datenresidenz",
 			"providerLabel": "Anbieterbezeichnung",
 			"providerMappingIntro": "Dieser Anbieter stellt diese Zuordnung bereit als:",
 			"viewProviderPage": "Anbieterseite ansehen",
@@ -3346,19 +3349,6 @@
 		"noUsageDataForPeriod": "Für diesen Zeitraum sind keine Nutzungsdaten verfügbar.",
 		"rangePeriod": "Nutzung im Zeitraum {range}",
 		"averageTokensPerRequest": "Durchschnittliche Tokens pro Anfrage"
-	},
-	"apiModelCard": {
-		"gatewayActive": "Gateway: aktiv",
-		"gatewayInactive": "Gateway: inaktiv",
-		"copiedModelId": "Modell-ID kopiert",
-		"endpointsCount": "{count, plural, one {# Endpunkt} other {# Endpunkte}}",
-		"supportedEndpoints": "Unterstützte Endpunkte",
-		"alias": "Alias",
-		"providerAlias": "Anbieter-Alias",
-		"copiedProviderAlias": "Anbieter-Alias kopiert",
-		"providerAliasDescription": "Das ist der Name, den der Anbieter für dieses Modell verwendet. Verwende ihn beim Aufruf der nativen API des Anbieters.",
-		"endpoint": "Endpunkt",
-		"modalityTool": "Tool-Aufrufe"
 	},
 	"modelTimeline": {
 		"heading": "Modell-Zeitachse",

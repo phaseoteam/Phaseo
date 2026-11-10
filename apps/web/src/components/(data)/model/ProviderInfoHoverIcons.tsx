@@ -289,15 +289,7 @@ function getFirstDefined(values: Array<string | null | undefined>): string | nul
 }
 
 function summarizePricingNote(note: string): string {
-	const normalized = note.replace(/\s+/g, " ").trim();
-	if (
-		/july 1,\s*2026/i.test(normalized) &&
-		/non-global endpoint pricing/i.test(normalized) &&
-		/global endpoint pricing applies to non-global endpoints/i.test(normalized)
-	) {
-		return "Global pricing applies until 1 Jul 2026. Non-global pricing starts after that.";
-	}
-	return normalized;
+	return note.replace(/\s+/g, " ").trim();
 }
 
 function InfoBlock({
@@ -404,11 +396,17 @@ export default function ProviderInfoHoverIcons({
 	const pricingSourceUrls = uniqueDefined([
 		pricingPolicy?.sourceUrl ?? null,
 	]);
-	const allSourceUrls = uniqueDefined([
-		...dataPolicySourceUrls,
-		...residencySourceUrls,
-		...pricingSourceUrls,
-	]);
+	// One link per kind of source, labelled by what it documents; a URL shared
+	// by several kinds is shown once, under the first kind.
+	const sourceLinks: Array<{ url: string; labelKey: "policySource" | "residencySource" | "pricingSource" }> = [];
+	for (const [urls, labelKey] of [
+		[dataPolicySourceUrls, "policySource"],
+		[residencySourceUrls, "residencySource"],
+		[pricingSourceUrls, "pricingSource"],
+	] as const) {
+		const url = urls.find((candidate) => !sourceLinks.some((link) => link.url === candidate));
+		if (url) sourceLinks.push({ url, labelKey });
+	}
 	const regionalPricingHint = getRegionalPricingHint({
 		regionalPricingMode: pricingPolicy?.regionalPricingMode ?? null,
 		regionalPricingUpliftPercent:
@@ -605,16 +603,16 @@ export default function ProviderInfoHoverIcons({
 									tone="pricing"
 								/>
 							) : null}
-							{(residencyNotes.length > 0 || allSourceUrls.length > 0) ? (
+							{(residencyNotes.length > 0 || sourceLinks.length > 0) ? (
 								<div className="rounded-md border border-zinc-200/80 p-2 dark:border-zinc-800">
 									{residencyNotes.length > 0 ? (
 										<p className="leading-relaxed text-muted-foreground">
 											{residencyNotes[0]}
 										</p>
 									) : null}
-									{allSourceUrls.length > 0 ? (
+									{sourceLinks.length > 0 ? (
 										<div className={cn(residencyNotes.length > 0 ? "mt-2" : "", "flex flex-wrap items-center gap-x-3 gap-y-1")}>
-											{allSourceUrls.slice(0, 2).map((url, index) => (
+											{sourceLinks.map(({ url, labelKey }) => (
 												<Link
 													key={url}
 													href={url}
@@ -622,7 +620,7 @@ export default function ProviderInfoHoverIcons({
 													rel="noopener noreferrer"
 													className="text-primary underline decoration-transparent hover:decoration-current"
 												>
-											{index === 0 ? t("policySource") : t("pricingSource")}
+											{t(labelKey)}
 												</Link>
 											))}
 										</div>

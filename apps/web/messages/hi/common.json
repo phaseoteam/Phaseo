@@ -2488,7 +2488,9 @@
 			"message": "संदेश",
 			"messages": "संदेश",
 			"serviceTierLineStyles": "सेवा स्तर की रेखा शैलियाँ",
-			"inAudience": "{audience} में"
+			"inAudience": "{audience} में",
+			"usOnlyInference": "केवल अमेरिका में इन्फ़रेंस",
+			"regionOnlyInference": "केवल {region} में इन्फ़रेंस"
 		},
 		"publicModelCopy": {
 			"days": "{count} दिन",

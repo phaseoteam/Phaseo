@@ -1041,6 +1041,8 @@
 			"showHiddenProviders": "छिपे हुए प्रदाता दिखाएँ",
 			"selectPercentile": "प्रदाता पर्सेंटाइल चुनें",
 			"sortBy": "{metric} के अनुसार प्रदाताओं को क्रमबद्ध करें",
+			"sortButton": "क्रमबद्ध करें",
+			"sortDefault": "डिफ़ॉल्ट क्रम",
 			"provider": "प्रदाता",
 			"inputPerMillion": "इनपुट $/M",
 			"outputPerMillion": "आउटपुट $/M",
@@ -1528,6 +1530,7 @@
 			"unknown": "अज्ञात",
 			"policySource": "नीति का स्रोत",
 			"pricingSource": "मूल्य का स्रोत",
+			"residencySource": "डेटा रेज़िडेंसी का स्रोत",
 			"providerLabel": "प्रदाता लेबल",
 			"providerMappingIntro": "यह प्रदाता इस मैपिंग को इस नाम से उपलब्ध कराता है:",
 			"viewProviderPage": "प्रदाता पृष्ठ देखें",
@@ -3346,19 +3349,6 @@
 		"noUsageDataForPeriod": "इस अवधि के लिए उपयोग का डेटा उपलब्ध नहीं है।",
 		"rangePeriod": "{range} अवधि का उपयोग",
 		"averageTokensPerRequest": "प्रति अनुरोध औसत टोकन"
-	},
-	"apiModelCard": {
-		"gatewayActive": "Gateway: सक्रिय",
-		"gatewayInactive": "Gateway: निष्क्रिय",
-		"copiedModelId": "मॉडल ID कॉपी किया गया",
-		"endpointsCount": "{count, plural, one {# एंडपॉइंट} other {# एंडपॉइंट}}",
-		"supportedEndpoints": "समर्थित एंडपॉइंट",
-		"alias": "उपनाम",
-		"providerAlias": "प्रदाता का उपनाम",
-		"copiedProviderAlias": "प्रदाता का उपनाम कॉपी किया गया",
-		"providerAliasDescription": "प्रदाता इस मॉडल को इसी नाम से पहचानता है। प्रदाता के मूल API को कॉल करते समय इसका उपयोग करें।",
-		"endpoint": "एंडपॉइंट",
-		"modalityTool": "टूल उपयोग"
 	},
 	"modelTimeline": {
 		"heading": "मॉडल की समयरेखा",

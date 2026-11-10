@@ -1041,6 +1041,8 @@
 			"showHiddenProviders": "显示隐藏的提供商",
 			"selectPercentile": "选择提供商百分位",
 			"sortBy": "按{metric}对提供商排序",
+			"sortButton": "排序",
+			"sortDefault": "默认顺序",
 			"provider": "提供商",
 			"inputPerMillion": "输入价格 $/M",
 			"outputPerMillion": "输出价格 $/M",
@@ -1528,6 +1530,7 @@
 			"unknown": "未知",
 			"policySource": "政策来源",
 			"pricingSource": "价格来源",
+			"residencySource": "数据驻留来源",
 			"providerLabel": "提供商标签",
 			"providerMappingIntro": "此提供商将该映射作为以下模型提供：",
 			"viewProviderPage": "查看提供商页面",
@@ -3346,19 +3349,6 @@
 		"noUsageDataForPeriod": "此时间段暂无使用数据。",
 		"rangePeriod": "{range} 时间段的使用情况",
 		"averageTokensPerRequest": "每次请求的平均 token 数"
-	},
-	"apiModelCard": {
-		"gatewayActive": "Gateway：已启用",
-		"gatewayInactive": "Gateway：未启用",
-		"copiedModelId": "已复制模型 ID",
-		"endpointsCount": "{count, plural, other {# 个端点}}",
-		"supportedEndpoints": "支持的端点",
-		"alias": "别名",
-		"providerAlias": "提供商别名",
-		"copiedProviderAlias": "已复制提供商别名",
-		"providerAliasDescription": "这是提供商对此模型的称呼。调用其原生 API 时请使用此名称。",
-		"endpoint": "端点",
-		"modalityTool": "工具调用"
 	},
 	"modelTimeline": {
 		"heading": "模型时间线",

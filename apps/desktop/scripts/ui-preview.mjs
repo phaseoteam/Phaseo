@@ -118,6 +118,15 @@ if (demo) {
 				response.end(JSON.stringify({ choices: [{ index: 0, message: { role: "assistant", content: JSON.stringify(verdict) }, finish_reason: "stop" }], usage }));
 				return;
 			}
+			// The title model's other non-streamed calls (chat titles, Write message): a short canned answer, so no tokens are spent.
+			if (stream === false) {
+				const asks = JSON.stringify(messages).toLowerCase();
+				const content = asks.includes("commit message") ? "Tighten the October draft\n\nDemo message from the local stand-in gateway; no tokens were spent." : "Demo title";
+				await sleep(400);
+				response.writeHead(200, { "Content-Type": "application/json" });
+				response.end(JSON.stringify({ choices: [{ index: 0, message: { role: "assistant", content }, finish_reason: "stop" }], usage: { prompt_tokens: Math.ceil(body.length / 4), completion_tokens: 12, total_tokens: Math.ceil(body.length / 4) + 12 } }));
+				return;
+			}
 			response.writeHead(200, { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" });
 			await sleep(500);
 			const send = packet => response.write(`data: ${JSON.stringify(packet)}\n\n`);
@@ -321,7 +330,7 @@ app.whenReady().then(async () => {
 	nativeTheme.themeSource = theme;
 	if (!demo) { replace("workspace:models", () => models); replace("workspace:refresh-models", () => models); }
 	// Screenshots hide local agents so they look the same on every machine; the demo uses real detection.
-	if (!demo) replace("workspace:installations", () => []);
+	if (!demo) { replace("workspace:installations", () => []); replace("workspace:connected-harnesses", () => []); }
 	// Usage priced at sample catalogue rates and with sample pull request counts, so captures never call the gateway or GitHub.
 	if (!demo) {
 		const rates = { "claude-opus-5-5": { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 6.25 }, "claude-sonnet-5-5": { input: 3, output: 15, cacheRead: 0.3, cacheWrite: 3.75 }, "gpt-6-1": { input: 2, output: 12, cacheRead: 0.2 } };

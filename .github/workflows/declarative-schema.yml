@@ -75,10 +75,12 @@ jobs:
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/provider-declared-rate-limits.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/otel-export-outbox-prune.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/catalogue-row-history-prune.test.mjs
+                  PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/provider-catalog-sync-run-retention.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/rate-limit-policies.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/request-classifiers.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/request-classifier-spend.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/slack-agent-billing.test.mjs
+                  PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/connect-billing.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/slack-agent-month-usage.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/slack-agent-uninstall-from-slack.test.mjs
                   PGLITE_MODULE="file://$RUNNER_TEMP/public-model-timeout-tests/node_modules/@electric-sql/pglite/dist/index.js" node supabase/tests/slack-agent-usage-tools.test.mjs

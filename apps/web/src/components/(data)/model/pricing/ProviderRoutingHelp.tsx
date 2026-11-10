@@ -34,7 +34,7 @@ export function ProviderRoutingHelp() {
             </HoverCardTrigger>
             <HoverCardContent
                 align="end"
-                className="w-[min(18rem,calc(100vw-2rem))] rounded-xl p-3 font-sans"
+                className="w-[min(18rem,calc(100vw-2rem))] rounded-md p-3 font-sans"
                 onKeyDown={event => {
                     if (event.key !== "Escape") return;
                     event.preventDefault();

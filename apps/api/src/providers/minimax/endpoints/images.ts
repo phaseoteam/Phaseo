@@ -1,6 +1,7 @@
 // Purpose: MiniMax native text-to-image and reference-image generation.
 // Why: MiniMax uses one JSON /image_generation route for both capabilities,
 // not OpenAI's /images/generations and multipart /images/edits routes.
+// H3-Image models use those OpenAI-style routes instead; see images-h3.ts.
 
 import { ImagesEditSchema, ImagesGenerationSchema } from "@core/schemas";
 import { buildImagePricingRequestOptions } from "@core/image-request-options";
@@ -9,6 +10,7 @@ import { upstreamTestHeaders } from "@providers/shared/testing";
 import type { AdapterResult, ProviderExecuteArgs } from "../../types";
 import { openAICompatHeaders, openAICompatUrl, resolveOpenAICompatKey } from "../../openai-compatible/config";
 import { sanitizePayload } from "../../utils";
+import { execH3, isMiniMaxH3ImageModel } from "./images-h3";
 
 const ASPECT_RATIOS = new Set(["1:1", "16:9", "4:3", "3:2", "2:3", "3:4", "9:16", "21:9"]);
 
@@ -142,6 +144,7 @@ function normalize(json: any): any {
 }
 
 export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
+	if (isMiniMaxH3ImageModel(args.providerModelSlug || args.model)) return execH3(args);
 	const mapped = await mapRequest(args);
 	if (mapped.kind === "completed" || mapped.kind === "stream") return mapped as AdapterResult;
 	const keyInfo = await resolveOpenAICompatKey(args);

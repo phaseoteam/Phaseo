@@ -13,7 +13,7 @@ import { useComposerEditor } from "./composerEditor";
 import { useComposerMenu } from "./ComposerMenu";
 import { Conversation } from "./Conversation";
 import { Requests } from "./Requests";
-import { PermissionMenu } from "./NewChat";
+import { ComposerOverflowMenu, ModeBlock, PermissionMenu, type PermissionMode } from "./ComposerControls";
 import { useTaskDraft } from "./ChatView";
 
 /**
@@ -56,6 +56,8 @@ export function SideChatPane({ id, onClose }: { id: string; onClose: () => void 
 		const next = state?.tasks.find(value => !known.has(value.id))?.id;
 		if (next) select(next);
 	}
+	const permission = task?.permissionMode ?? "supervised";
+	const setPermission = (permissionMode: PermissionMode) => void command({ type: "update-task", id, permissionMode });
 	const remove = () => { onClose(); deleteWithUndo(id, () => command({ type: "delete-task", id })); };
 
 	return <section aria-label="Side chat" data-side-chat-pane className="flex min-h-0 flex-1 flex-col">
@@ -74,7 +76,7 @@ export function SideChatPane({ id, onClose }: { id: string; onClose: () => void 
 		{task ? <Conversation task={task} compact className="min-h-0 flex-1" onAttachment={setPreview} onBranch={messageId => void branch(messageId)}><Requests task={task} inlineQuestions /></Conversation> : <p className="min-h-0 flex-1 p-4 text-xs text-muted-foreground">Loading…</p>}
 		<div className="shrink-0 px-3 pt-2 pb-3">
 			<Composer editor={editor} menu={menu} shortcuts={false} onSubmit={() => void send()} canSend={canSend} running={running} onStop={() => void command({ type: "cancel", id })}
-				tools={snapshot.mode !== "chat" && <PermissionMenu value={task?.permissionMode ?? "supervised"} onChange={permissionMode => void command({ type: "update-task", id, permissionMode })} />} />
+				controls={snapshot.mode !== "chat" && <ModeBlock menu={<ComposerOverflowMenu permission={permission} onPermission={setPermission} />}><PermissionMenu value={permission} onChange={setPermission} /></ModeBlock>} />
 		</div>
 		{preview && <AttachmentPreview taskId={id} id={preview} onClose={() => setPreview(undefined)} />}
 	</section>;

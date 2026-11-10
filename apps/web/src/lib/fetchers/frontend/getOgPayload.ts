@@ -165,17 +165,30 @@ function collectOgPriceCandidates(pricing: ProviderPricing[], nowMs: number): {
 	return { standardCandidates, listCandidates };
 }
 
-function cheapestListCandidate(meter: string, listCandidates: PriceCandidate[]): PriceCandidate | null {
-	return listCandidates
-		.filter((candidate) =>
-			OG_METER_NAMES[meter as keyof typeof OG_METER_NAMES]?.has(candidate.rule.meter) &&
-			["token", "tokens"].includes(candidate.rule.unit.toLowerCase()),
-		)
-		.reduce<PriceCandidate | null>(
-			(current, candidate) =>
-				current == null || candidate.pricePerMillion < current.pricePerMillion ? candidate : current,
-			null,
-		);
+// The list price with the lowest price a caller pays today. Several providers often
+// share a list price, and only one of them may run a promotion, so compare prices
+// after promotions and prefer the promoted one on a tie.
+function cheapestListCandidate(
+	meter: string,
+	listCandidates: PriceCandidate[],
+	standardCandidates: PriceCandidate[],
+): PriceCandidate | null {
+	let best: { candidate: PriceCandidate; price: number; promoted: boolean } | null = null;
+	for (const candidate of listCandidates) {
+		if (
+			!OG_METER_NAMES[meter as keyof typeof OG_METER_NAMES]?.has(candidate.rule.meter) ||
+			!["token", "tokens"].includes(candidate.rule.unit.toLowerCase())
+		) continue;
+		const promotion = getPromotionPercent(candidate, standardCandidates) == null
+			? null
+			: getPromotionCandidate(candidate, standardCandidates);
+		const price = promotion?.pricePerMillion ?? candidate.pricePerMillion;
+		const promoted = promotion != null;
+		if (best == null || price < best.price || (price === best.price && promoted && !best.promoted)) {
+			best = { candidate, price, promoted };
+		}
+	}
+	return best?.candidate ?? null;
 }
 
 /**
@@ -187,7 +200,7 @@ export function buildModelOgPromotion(pricing: ProviderPricing[], nowMs: number 
 	const { standardCandidates, listCandidates } = collectOgPriceCandidates(pricing, nowMs);
 	let best: { percent: number; rule: PricingRule } | null = null;
 	for (const meter of ["input", "output"]) {
-		const cheapest = cheapestListCandidate(meter, listCandidates);
+		const cheapest = cheapestListCandidate(meter, listCandidates, standardCandidates);
 		if (!cheapest) continue;
 		const promotion = getPromotionCandidate(cheapest, standardCandidates);
 		const percent = getPromotionPercent(cheapest, standardCandidates);
@@ -230,7 +243,7 @@ export function buildModelOgStats(model: ModelOverviewPage | null, pricing: Prov
 
 	const { standardCandidates, listCandidates } = collectOgPriceCandidates(pricing, Date.now());
 	const priceFor = (meter: string): { value: number; originalValue?: number; promotion?: string; audience?: string } | null => {
-		const cheapest = cheapestListCandidate(meter, listCandidates);
+		const cheapest = cheapestListCandidate(meter, listCandidates, standardCandidates);
 		if (!cheapest) return null;
 		const promotionCandidate = getPromotionCandidate(cheapest, standardCandidates);
 		const promotionPercent = getPromotionPercent(cheapest, standardCandidates);

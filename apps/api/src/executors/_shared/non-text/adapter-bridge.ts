@@ -210,6 +210,9 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 				height: raw.height,
 				seed: raw.seed,
 				prompt_optimizer: raw.prompt_optimizer,
+				// MiniMax H3-Image sizing and prompt-enhancement switches.
+				area: raw.area,
+				disable_prompt_enhanced: raw.disable_prompt_enhanced,
 				steps: raw.steps,
 				cfg_scale: raw.cfg_scale,
 				text_mode: raw.text_mode,
@@ -256,6 +259,8 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 				height: raw.height,
 				seed: raw.seed,
 				prompt_optimizer: raw.prompt_optimizer,
+				area: raw.area,
+				disable_prompt_enhanced: raw.disable_prompt_enhanced,
 				subject_reference: raw.subject_reference,
 			};
 		}
@@ -448,6 +453,7 @@ async function adapterResultToIR(
 					: [],
 				usage,
 				...(payload?.svg_usage && typeof payload.svg_usage === "object" ? { svgUsage: payload.svg_usage } : {}),
+				...(Array.isArray(payload?.errors) && payload.errors.length ? { errors: payload.errors } : {}),
 				rawResponse: payload,
 			};
 		}
@@ -932,6 +938,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		return {
 			kind: "completed",
 			ir: undefined,
+			// Adapters for non-idempotent upstreams mark uncertain outcomes terminal.
+			...(adapterResult.terminal ? { terminal: true } : {}),
 			bill: adapterResult.bill,
 			upstream: adapterResult.upstream,
 			keySource,

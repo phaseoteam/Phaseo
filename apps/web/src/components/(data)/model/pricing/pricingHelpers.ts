@@ -440,6 +440,15 @@ export function conciseConditionLabel(conds?: Condition[] | null, pref: Conditio
         return rest.length ? `${conciseConditionLabel(rest, pref)} · In ${audience}` : `In ${audience}`;
     }
     if (!conds?.length) return "All usage";
+    // Requests that ask the provider to keep inference in one region (Anthropic's
+    // inference_geo) can cost more; name the region instead of the raw condition.
+    const geoIndex = conds.findIndex((x) => String(x.path ?? "").toLowerCase() === "inference_geo" && x.op === "eq");
+    if (geoIndex !== -1) {
+        const region = String(conds[geoIndex].value ?? "").trim();
+        const geoLabel = region.toLowerCase() === "us" ? "US-only inference" : `${region.toUpperCase()}-only inference`;
+        const rest = conds.filter((_, index) => index !== geoIndex);
+        return rest.length ? `${conciseConditionLabel(rest, pref)} · ${geoLabel}` : geoLabel;
+    }
     const picks = pref.prefer ?? ["cache_ttl", "quality", "resolution", "size"];
     for (const key of picks) {
         const c = conds.find(x => x.path?.toLowerCase().includes(key));

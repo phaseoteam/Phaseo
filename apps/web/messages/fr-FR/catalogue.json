@@ -1041,6 +1041,8 @@
 			"showHiddenProviders": "Afficher les fournisseurs masqués",
 			"selectPercentile": "Sélectionner le percentile des fournisseurs",
 			"sortBy": "Trier les fournisseurs par {metric}",
+			"sortButton": "Trier",
+			"sortDefault": "Ordre par défaut",
 			"provider": "Fournisseur",
 			"inputPerMillion": "Entrée $/M",
 			"outputPerMillion": "Sortie $/M",
@@ -1528,6 +1530,7 @@
 			"unknown": "Inconnu",
 			"policySource": "Source de la politique",
 			"pricingSource": "Source des tarifs",
+			"residencySource": "Source de la résidence des données",
 			"providerLabel": "Libellé du fournisseur",
 			"providerMappingIntro": "Ce fournisseur expose ce mappage sous le nom :",
 			"viewProviderPage": "Voir la page du fournisseur",
@@ -3346,19 +3349,6 @@
 		"noUsageDataForPeriod": "Aucune donnée d’utilisation pour cette période.",
 		"rangePeriod": "Utilisation sur la période de {range}",
 		"averageTokensPerRequest": "Tokens moyens par requête"
-	},
-	"apiModelCard": {
-		"gatewayActive": "Gateway : actif",
-		"gatewayInactive": "Gateway : inactif",
-		"copiedModelId": "ID du modèle copié",
-		"endpointsCount": "{count, plural, one {# point de terminaison} other {# points de terminaison}}",
-		"supportedEndpoints": "Points de terminaison pris en charge",
-		"alias": "Alias",
-		"providerAlias": "Alias du fournisseur",
-		"copiedProviderAlias": "Alias du fournisseur copié",
-		"providerAliasDescription": "C’est le nom que le fournisseur utilise pour ce modèle. Utilisez-le pour appeler son API native.",
-		"endpoint": "Point de terminaison",
-		"modalityTool": "Utilisation d’outils"
 	},
 	"modelTimeline": {
 		"heading": "Chronologie du modèle",
