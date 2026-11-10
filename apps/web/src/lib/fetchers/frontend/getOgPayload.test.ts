@@ -173,8 +173,8 @@ test("treats a price limited to one app as a promotion of the list price", () =>
 	];
 
 	expect(buildModelOgStats(model, pricing)).toEqual(expect.arrayContaining([
-		{ label: "INPUT", value: "$6.00", originalValue: "$8.00", helper: "per 1M tokens", promotion: "25% off" },
-		{ label: "OUTPUT", value: "$30.00", originalValue: "$40.00", helper: "per 1M tokens", promotion: "25% off" },
+		{ label: "INPUT", value: "$6.00", originalValue: "$8.00", helper: "per 1M tokens in Claude Code", promotion: "25% off" },
+		{ label: "OUTPUT", value: "$30.00", originalValue: "$40.00", helper: "per 1M tokens in Claude Code", promotion: "25% off" },
 	]));
 });
 
