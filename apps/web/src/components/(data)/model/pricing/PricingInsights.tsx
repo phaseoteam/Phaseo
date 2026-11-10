@@ -117,8 +117,6 @@ import ModelChartShareButton from "@/components/(data)/model/share/ModelChartSha
 import type { ChartShareRenderSize } from "@/components/share/ChartShareButton";
 import { fromShareDate, readSharedChartState, toShareDate } from "@/lib/share/chartShare";
 import {
-	MOBILE_HEAD_CELL,
-	MOBILE_HEAD_ROW,
 	MOBILE_NAME_CELL,
 	MOBILE_ROW,
 	MOBILE_STAT_CELL,
@@ -1616,9 +1614,9 @@ export default function PricingInsights({
 					viewportRef={effectivePricingViewportRef}
 				>
 					<Table className={cn("sm:min-w-[1040px]", MOBILE_TABLE_BLOCK)} wrapInContainer={false}>
-						<TableHeader className={MOBILE_TABLE_BLOCK}>
-							<TableRow className={cn("hover:bg-transparent", MOBILE_HEAD_ROW)}>
-								<TableHead className={cn("h-8 w-[28%] px-3", MOBILE_HEAD_CELL)}>
+						<TableHeader className="max-sm:hidden">
+							<TableRow className="hover:bg-transparent">
+								<TableHead className="h-8 w-[28%] px-3">
 									<SortHead
 										label={t("table.provider")}
 										sortKey="provider"
@@ -1628,7 +1626,7 @@ export default function PricingInsights({
 										onToggle={handleSortToggle}
 									/>
 								</TableHead>
-								<TableHead className={cn("h-8 pl-2 pr-3 text-left", MOBILE_HEAD_CELL)}>
+								<TableHead className="h-8 pl-2 pr-3 text-left">
 									<SortHead
 										label={t("table.effectiveIn")}
 										sortKey="input"
@@ -1637,7 +1635,7 @@ export default function PricingInsights({
 										onToggle={handleSortToggle}
 									/>
 								</TableHead>
-								<TableHead className={cn("h-8 pl-2 pr-3 text-left", MOBILE_HEAD_CELL)}>
+								<TableHead className="h-8 pl-2 pr-3 text-left">
 									<SortHead
 										label={t("table.effectiveOut")}
 										sortKey="output"
@@ -1646,13 +1644,13 @@ export default function PricingInsights({
 										onToggle={handleSortToggle}
 									/>
 								</TableHead>
-								<TableHead className={cn("h-8 pl-2 pr-3 text-left", MOBILE_HEAD_CELL)}>
+								<TableHead className="h-8 pl-2 pr-3 text-left">
 									<SortHead label={t("table.listIn")} sortKey="listedInput" activeSortKey={sortKey} direction={sortDirection} onToggle={handleSortToggle} />
 								</TableHead>
-								<TableHead className={cn("h-8 pl-2 pr-3 text-left", MOBILE_HEAD_CELL)}>
+								<TableHead className="h-8 pl-2 pr-3 text-left">
 									<SortHead label={t("table.listOut")} sortKey="listedOutput" activeSortKey={sortKey} direction={sortDirection} onToggle={handleSortToggle} />
 								</TableHead>
-								<TableHead className={cn("h-8 pl-2 pr-3 text-left", MOBILE_HEAD_CELL)}>
+								<TableHead className="h-8 pl-2 pr-3 text-left">
 									<SortHead
 										label={t("table.cacheHitRate")}
 										sortKey="cacheHitRate"
@@ -1661,7 +1659,7 @@ export default function PricingInsights({
 										onToggle={handleSortToggle}
 									/>
 								</TableHead>
-								<TableHead className={cn("h-8 pl-2 pr-3 text-left", MOBILE_HEAD_CELL)}>
+								<TableHead className="h-8 pl-2 pr-3 text-left">
 									<SortHead
 										label={t("table.tokenShare")}
 										sortKey="tokenShare"

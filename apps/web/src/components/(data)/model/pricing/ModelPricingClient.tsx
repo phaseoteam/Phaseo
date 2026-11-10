@@ -122,8 +122,6 @@ import ModelPercentileSelect, {
 } from "@/components/(data)/models/ModelPercentileSelect";
 import { publishProviderView } from "@/components/(data)/model/pricing/providerViewSync";
 import {
-	MOBILE_HEAD_CELL,
-	MOBILE_HEAD_ROW,
 	MOBILE_NAME_CELL,
 	MOBILE_ROW,
 	MOBILE_STAT_CELL,
@@ -1951,30 +1949,26 @@ export default function ModelPricingClient({
 										<col className="w-28" />
 										<col className="w-32" />
 									</colgroup>
-									<TableHeader className={MOBILE_TABLE_BLOCK}>
-										<TableRow className={cn("hover:bg-transparent", MOBILE_HEAD_ROW)}>
-											<TableHead className={cn("h-8 min-w-[280px] px-3 whitespace-nowrap", MOBILE_HEAD_CELL)}>
+									<TableHeader className="max-sm:hidden">
+										<TableRow className="hover:bg-transparent">
+											<TableHead className="h-8 min-w-[280px] px-3 whitespace-nowrap">
 												{renderTableSortHead(tProvider("provider"), "provider", "left")}
 											</TableHead>
 											{visiblePriceColumns.map((column) => (
 												<TableHead
 													key={column.key}
-													className={cn(
-														"h-8 min-w-28 pl-2 pr-4 text-right whitespace-nowrap",
-														MOBILE_HEAD_CELL,
-														isMobileHiddenPriceColumn(column) && "max-sm:hidden",
-													)}
+													className="h-8 min-w-28 pl-2 pr-4 text-right whitespace-nowrap"
 												>
 													{renderTablePriceHead(column)}
 												</TableHead>
 											))}
-											<TableHead className={cn("h-8 w-24 min-w-24 pl-2 pr-4 text-right whitespace-nowrap", MOBILE_HEAD_CELL)}>
+											<TableHead className="h-8 w-24 min-w-24 pl-2 pr-4 text-right whitespace-nowrap">
 												{renderTableSortHead(tProvider("latency"), "latency")}
 											</TableHead>
-											<TableHead className={cn("h-8 w-28 min-w-28 pl-2 pr-4 text-right whitespace-nowrap", MOBILE_HEAD_CELL)}>
+											<TableHead className="h-8 w-28 min-w-28 pl-2 pr-4 text-right whitespace-nowrap">
 												{renderTableSortHead(tProvider("throughput"), "throughput")}
 											</TableHead>
-											<TableHead className={cn("h-8 w-32 min-w-32 pl-2 pr-4 text-right whitespace-nowrap", MOBILE_HEAD_CELL)}>
+											<TableHead className="h-8 w-32 min-w-32 pl-2 pr-4 text-right whitespace-nowrap">
 												{renderTableSortHead(tProvider("uptime"), "uptime")}
 											</TableHead>
                                         </TableRow>
