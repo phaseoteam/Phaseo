@@ -78,6 +78,15 @@ describe("google thinking level support", () => {
 		expect(modelRejectsGoogleThinkingBudget("gemini-3.6-flash")).toBe(false);
 	});
 
+	it("gives Gemini 4 Carbon low, medium and high only, and no thinking budget", () => {
+		for (const model of ["gemini-4-carbon", "google/gemini-4-carbon"]) {
+			expect(getSupportedGoogleThinkingLevels(model)).toEqual(["LOW", "MEDIUM", "HIGH"]);
+			expect(modelRejectsGoogleThinkingBudget(model)).toBe(true);
+		}
+		expect(resolveGoogleThinkingLevelForEffort("gemini-4-carbon", "low")).toBe("LOW");
+		expect(resolveGoogleThinkingLevelForEffort("gemini-4-carbon", "minimal")).toBe("LOW");
+	});
+
 	it("gives Gemini 3.7 Flash no minimal level", () => {
 		expect(getSupportedGoogleThinkingLevels("gemini-3.7-flash")).toEqual(["LOW", "MEDIUM", "HIGH"]);
 		expect(resolveGoogleThinkingLevelForEffort("gemini-3.7-flash", "minimal")).toBe("LOW");

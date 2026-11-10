@@ -444,7 +444,7 @@ export function vertexRequiredLocation(providerId?: string, family?: VertexModel
 		: providerId === "google-vertex" && family === "anthropic" ? "global"
 		// Gemini Transcribe is served on global only
 		// (https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-5-transcribe).
-		: providerId === "google-vertex" && family === "gemini" && /^(?:google\/)?(?:gemini-4-argon|gemini-3\.1-flash-lite|gemini-3\.5-transcribe(?:-preview)?)$/.test(model ?? "") ? "global"
+		: providerId === "google-vertex" && family === "gemini" && /^(?:google\/)?(?:gemini-4-argon|gemini-4-carbon|gemini-3\.1-flash-lite|gemini-3\.5-transcribe(?:-preview)?)$/.test(model ?? "") ? "global"
 		: providerId === "google-vertex" && family === "openapi_chat" && model?.endsWith("-maas")
 			? model === "openai/gpt-oss-20b-maas" ? "us-central1" : "global" : undefined;
 }
