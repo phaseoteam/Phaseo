@@ -127,6 +127,15 @@ try {
     await db.query("update public.catalogue_notification_cursors set last_history_event_id = (select max(event_id) from public.v2_catalogue_row_history)");
     assert.equal(await prune(5000), 1);
     assert.equal(await count("model_slug = 'lab/a' and table_name = 'v2_benchmark_results' and operation = 'UPDATE'"), 1);
+    // lab/d: one real 100-day-old change followed by 100 noise rows. The noise is deleted, so it must not count
+    // toward the 100 newer rows: the real change stays visible in the admin view.
+    await insert('v2_benchmark_results', 'lab/d', 'UPDATE', bench('1', 'a'), bench('2', 'b'), '100 days');
+    for (let i = 0; i < 100; i += 1) await insert('v2_benchmark_results', 'lab/d', 'UPDATE', bench('2', `n${i}`), bench('2', `n${i + 1}`));
+    await db.query("update public.catalogue_notification_cursors set last_history_event_id = (select max(event_id) from public.v2_catalogue_row_history)");
+    assert.equal(await prune(5000), 100);
+    assert.equal(await prune(5000), 0);
+    assert.equal(await count("model_slug = 'lab/d'"), 1);
+    assert.equal((await shown('lab/d')).length, 1);
     console.log('catalogue row history prune: ok');
 } finally {
     await db.close();

@@ -41,6 +41,7 @@ begin
   -- 2. Benchmark-result changes older than 90 days, but only those the admin model history view can no longer
   --    show: it lists each model's newest 100 non-baseline rows, so a row is removed only when its model has at
   --    least 100 newer non-baseline rows. Deleting such rows never moves an older row into that window.
+  --    Rule-1 noise is not counted toward those 100, because it is being deleted and will not be shown.
   if cardinality(v_ids) < p_batch_size then
     select v_ids || coalesce(array_agg(o.event_id), '{}') into v_ids
     from (
@@ -58,6 +59,9 @@ begin
           (select n.event_id
            from public.v2_catalogue_row_history n
            where n.model_slug = m.model_slug and n.operation <> 'BASELINE'
+             and not (n.table_name = 'v2_benchmark_results'
+               and n.operation = 'UPDATE'
+               and (n.before_state - 'updated_at') = (n.after_state - 'updated_at'))
            order by n.event_id desc
            offset 99 limit 1) as floor_event_id
         from (select distinct old.model_slug from old where old.model_slug is not null) m
