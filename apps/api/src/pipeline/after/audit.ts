@@ -791,6 +791,9 @@ export async function handleSuccessAudit(
             serverToolTrace: ctx.serverToolTrace,
 			lifecycleEvents: retainedLifecycle(ctx),
             ...(pendingCharge ? { pendingCharge } : {}),
+            // The row is the request's record as soon as it is committed: a later secondary write
+            // failure fails the sink, but must not send the request to a billed failure row.
+            onPrimaryRowWritten: () => { (ctx.meta as Record<string, unknown>).__successRowWritten = true; },
             detailMetadata: {
                 stage: "execute",
                 testing_mode: ctx.testingMode === true,
@@ -893,7 +896,10 @@ export async function handleSuccessAudit(
     });
 
 	// Shadow mode only: once the success row is written, the spend-limit coordinator can count it.
-	const rowWritten = deliveries.some((delivery) => delivery.sink === "supabase" && delivery.delivered);
+	// Written when the sink delivered, or when its primary insert committed and a secondary write
+	// (V2 request fact, I/O log) failed after it; the runner reports that failure.
+	const rowWritten = deliveries.some((delivery) => delivery.sink === "supabase" && delivery.delivered) ||
+		(ctx.meta as Record<string, unknown>).__successRowWritten === true;
 	if (rowWritten) (ctx.meta as Record<string, unknown>).__successRowWritten = true;
 	if (rowWritten && !keyIdIsOAuthClientId(ctx.meta.apiKeyRef) && hasConfiguredKeyLimits(ctx.gating?.keyLimit)) {
 		recordShadowSpend({

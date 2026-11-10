@@ -16,7 +16,8 @@ const runtime = vi.hoisted(() => ({ bindings: null as Record<string, unknown> | 
 const chargeRpcMock = vi.hoisted(() => vi.fn(async (_kind: string, _args: any) => ({ applied: true })));
 const auditRows = vi.hoisted(() => [] as Array<Record<string, unknown>>);
 // How the gateway_requests row write ends: written, rejected, or the sink reporting failure (false).
-const auditWrite = vi.hoisted(() => ({ mode: "ok" as "ok" | "reject" | "false" }));
+// "secondary": the row commits, then a secondary write (V2 request fact, I/O log) fails the sink.
+const auditWrite = vi.hoisted(() => ({ mode: "ok" as "ok" | "reject" | "false" | "secondary" }));
 const telemetry = vi.hoisted(() => ({ real: null as null | ((args: any) => Promise<unknown>) }));
 const telemetryMock = vi.hoisted(() => vi.fn((args: any) => telemetry.real!(args)));
 const dataContributionMock = vi.hoisted(() => vi.fn(async (_args: any) => ({ status: "skipped" })));
@@ -57,6 +58,10 @@ vi.mock("../audit", async (importOriginal) => ({
 		if (auditWrite.mode === "reject") throw new Error("gateway_requests insert failed");
 		if (auditWrite.mode === "false") return false;
 		auditRows.push({ kind: "success", ...args });
+		if (auditWrite.mode === "secondary") {
+			(args.onPrimaryRowWritten as (() => void) | undefined)?.();
+			throw new Error("v2 request fact persistence failed");
+		}
 	},
 }));
 vi.mock("../classification/data-contribution", async (importOriginal) => ({
@@ -492,5 +497,32 @@ describe("charged requests, with main's spend-limit coordinator", () => {
 			expect(sent.map((entry) => [entry.billingRequestId, entry.costNanos, entry.requests])).toEqual([["bill_charge_failed", FINAL_TOTAL, 1]]);
 			expect(await daily()).toMatchObject({ costUsedNanos: FINAL_TOTAL, requestsUsed: 1 });
 		});
+
+		it.each(["buffered", "streamed", "speech"] as const)(
+			"keeps one success row when a %s request's row commits, a secondary write fails, and a later step throws",
+			async (path) => {
+				const id = `${path}_secondary`;
+				const decision = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: `req_${id}` });
+				if (decision.outcome !== "allowed") throw new Error("expected admission");
+				auditWrite.mode = "secondary";
+				dataContributionMock.mockRejectedValueOnce(new Error("contribution store unavailable"));
+				const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+				await callers[path](contextFor(id, {
+					spendAdmission: decision.admission,
+					teamSettings: { dataContributionEnabled: true },
+				}));
+				await settle();
+				await flushSpendRecordsForTests();
+				await settle();
+				error.mockRestore();
+				// The committed success row is the only row: no billed failure row follows.
+				expect(auditRows.map((row) => [row.kind, row.statusCode])).toEqual([["success", 200]]);
+				const debited = chargeRpcMock.mock.calls.map(([, args]) => args.cost_nanos);
+				expect(debited).toEqual([Math.round(FINAL_TOTAL * 0.99)]);
+				const sent = recorded.flat() as Array<{ billingRequestId: string; costNanos: number; requests: number }>;
+				expect(sent.map((entry) => [entry.billingRequestId, entry.costNanos, entry.requests])).toEqual([[`bill_${id}`, debited[0], 1]]);
+				expect(await daily()).toMatchObject({ costUsedNanos: debited[0], requestsUsed: 1 });
+			},
+		);
 	});
 });

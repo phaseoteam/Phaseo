@@ -768,6 +768,11 @@ export async function auditSuccess(input: {
      * (costNanos, null when unreadable) and the bill it meant to charge (expected_cost_nanos).
      */
     pendingCharge?: { costNanos: number | null; expectedCostNanos: number } | null;
+    /**
+     * Called once the gateway_requests row is committed, before the secondary writes (the V2
+     * request fact, the I/O log) that can still fail: from then on the row is the request's record.
+     */
+    onPrimaryRowWritten?: () => void;
     // Wide event enrichment
     teamEnrichment?: any | null;
     keyEnrichment?: any | null;
@@ -878,6 +883,7 @@ export async function auditSuccess(input: {
                 () => insertGatewayRequest(row),
                 "supabase_audit_success_insert",
             );
+            input.onPrimaryRowWritten?.();
             let v2PersistenceError: Error | null = null;
             try {
                 await retryWithBackoff(() => upsertV2RequestFact({

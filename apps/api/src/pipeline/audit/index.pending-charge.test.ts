@@ -4,14 +4,14 @@
 // bill it meant to charge (expected_cost_nanos), so usage and budgets count the unpaid part.
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const state = vi.hoisted(() => ({ writes: {} as Record<string, Array<Record<string, any>>> }));
+const state = vi.hoisted(() => ({ writes: {} as Record<string, Array<Record<string, any>>>, rpcFails: false }));
 
 vi.mock("@/runtime/env", () => ({
 	getBindings: () => ({}),
 	ensureRuntimeForBackground: () => () => {},
 	isLocalTestingModeEnabled: () => false,
 	getSupabaseAdmin: () => ({
-		rpc: async () => ({ data: "event", error: null }),
+		rpc: async () => (state.rpcFails ? { data: null, error: { message: "v2 request fact unavailable" } } : { data: "event", error: null }),
 		from: (table: string) => {
 			if (table === "workspace_settings") {
 				return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { io_logging_enabled: false }, error: null }) }) }) };
@@ -111,5 +111,44 @@ describe("the success row of a delivered request whose charge did not go through
 		const row = await successRow();
 		expect(row).toMatchObject({ success: true, cost_nanos: 300 });
 		expect(row).not.toHaveProperty("expected_cost_nanos");
+	});
+});
+
+describe("a success row whose secondary writes fail after it committed", () => {
+	beforeEach(() => { state.writes = {}; state.rpcFails = false; });
+
+	it("reports the committed row before the V2 request fact failure rejects the sink", async () => {
+		vi.useFakeTimers();
+		try {
+			state.rpcFails = true;
+			const rowsWhenCalled: number[] = [];
+			const audit = auditSuccess({
+				requestId: "req_secondary",
+				billingRequestId: "bill_secondary",
+				workspaceId: "ws_pending",
+				keyId: "00000000-0000-4000-8000-000000000001",
+				provider: "openai",
+				model: "openai/gpt-5-mini",
+				endpoint: "chat.completions",
+				stream: false,
+				byok: false,
+				usagePriced: { input_tokens: 10, output_tokens: 20 },
+				totalCents: 0.06,
+				totalNanos: 600,
+				currency: "USD",
+				statusCode: 200,
+				onPrimaryRowWritten: () => rowsWhenCalled.push(state.writes.gateway_requests?.length ?? 0),
+			} as Parameters<typeof auditSuccess>[0]).then(() => null, (error: unknown) => error);
+			await vi.runAllTimersAsync();
+			const error = await audit;
+			// The sink still fails (the runner reports it) ...
+			expect(error).toBeInstanceOf(Error);
+			// ... but the committed gateway_requests row was reported first, once.
+			expect(state.writes.gateway_requests).toHaveLength(1);
+			expect(state.writes.gateway_requests![0]).toMatchObject({ success: true, cost_nanos: 600 });
+			expect(rowsWhenCalled).toEqual([1]);
+		} finally {
+			vi.useRealTimers();
+		}
 	});
 });
