@@ -70,7 +70,7 @@ const functionBody = (sql) => {
 };
 const schemaBody = functionBody(normalize(await read('../schemas/public/functions/stripe_claim_self_serve_refund.sql')));
 assert(schemaBody.length > 20 && underRecorded.sql.includes(schemaBody), 'the latest migration ships the schema body of stripe_claim_self_serve_refund');
-// The shortfall migration changes only the one-off charge term (step 3) of 20261110112514's body.
+// The shortfall migration changes only the one-off charge term (step 3) of 20261110140727's body.
 const withoutOneOffTerm = (body) => body.replace(/^[ \t]*--.*\n/gm, '')
   .replace(/    v_usage_nanos := v_usage_nanos \+ coalesce\(\(\n      select sum\((?:charge\.cost_nanos\)|case)[\s\S]*?\n    \), 0\)::bigint;\n\n    v_usage_nanos := v_usage_nanos \+ coalesce\(\(\n      select sum\(charge\.cost_nanos\)\n      from public\.gateway_request_charges charge\n      where charge\.workspace_id = p_team_id\n        and charge\.status = 'applied'\n        and charge\.cost_nanos > 0\n        and charge\.created_at >= v_purchase\.event_time\n        and starts_with/, 'ONE_OFF_TERM starts_with');
 assert(withoutOneOffTerm(schemaBody).includes('ONE_OFF_TERM'), 'the one-off charge term was found');
@@ -220,7 +220,7 @@ try {
   await db.exec(billingIndex.sql);
   assert.equal(Number((await one(`select count(*)::int as n from pg_indexes where indexname = 'gateway_requests_workspace_billing_request_idx'`)).n), 1);
 
-  // ---------- Before the shortfall fix (20261110112514's body) ----------
+  // ---------- Before the shortfall fix (20261110140727's body) ----------
   // A row that is neither successful nor pending hid its one-off charge: the old Worker's $6 debit
   // counted 0 and a row carrying $2 counted $2, so the purchase looked unused.
   assert.deepEqual(await usageAtSix('pre_old_worker', underRecordedShapes.old_worker), ['ok', 'ok'],

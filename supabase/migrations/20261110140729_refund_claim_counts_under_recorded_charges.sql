@@ -9,7 +9,7 @@ SET LOCAL lock_timeout = '10s';
 -- request rows succeeded and none is pending, the claim now counts what their cost falls short of
 -- the charge, as private.unbilled_spend does for budgets and key caps: a NULL-cost row adds the
 -- whole charge, a row carrying part of it adds the rest, a row carrying all of it adds nothing.
--- The body is the one from 20261110112514_refund_claim_counts_charged_failures with only that
+-- The body is the one from 20261110140727_refund_claim_counts_charged_failures with only that
 -- one-off charge term changed.
 
 CREATE OR REPLACE FUNCTION public.stripe_claim_self_serve_refund (
