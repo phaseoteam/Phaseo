@@ -61,4 +61,4 @@ curl https://api.phaseo.app/v1/responses \
 
 ## उपयोग और कीमत
 
-हर इमेज `usage.server_tool_use.image_generation_requests` में 1 जोड़ती है और उसका बिल `server_tool_image_generation_requests` के साथ बन सकता है। जब इमेज मॉडल टोकन उपयोग रिपोर्ट करता है, तो वह अनुरोध के उपयोग में जोड़ा जाता है और उस मॉडल की सामान्य दरों पर बिल किया जाता है।
+हर इमेज `usage.server_tool_use.image_generation_requests` में 1 जोड़ती है और `server_tool_image_generation_requests` से बिल हो सकती है। इमेज मॉडल का शुल्क उसकी अपनी दरों पर, अनुरोध के बिल में अलग पंक्ति के रूप में लगता है। सशुल्क इमेज मॉडल के लिए क्रेडिट चाहिए, भले ही कॉल करने वाला मॉडल मुफ़्त हो।

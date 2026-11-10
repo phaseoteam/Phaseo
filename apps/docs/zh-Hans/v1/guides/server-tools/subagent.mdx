@@ -68,4 +68,4 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 ## 用量和价格
 
-每次调用会使 `usage.server_tool_use.subagent_requests` 加 1，并可按 `server_tool_subagent_requests` 计费。工作模型的 token 会计入请求的用量，并按工作模型的价格计费。如果你想获得评审而不是委派工作，请使用 [Advisor](./advisor)。
+每次调用会使 `usage.server_tool_use.subagent_requests` 加 1，并可通过 `server_tool_subagent_requests` 计费。工作模型的 token 按该模型自身的费率计费，作为请求账单中的单独一项，不会计入调用模型的 token 数。即使调用模型免费，使用付费工作模型也需要账户有余额。如需审阅而非委派工作，请使用 [Advisor](./advisor)。

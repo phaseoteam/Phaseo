@@ -61,4 +61,4 @@ curl https://api.phaseo.app/v1/responses \
 
 ## الاستخدام والتسعير
 
-تضيف كل صورة 1 إلى `usage.server_tool_use.image_generation_requests` ويمكن احتسابها باستخدام `server_tool_image_generation_requests`. عندما يبلّغ نموذج الصور عن استخدام التوكنات، يُضاف إلى استخدام الطلب ويُحتسب بالأسعار العادية لذلك النموذج.
+تضيف كل صورة 1 إلى `usage.server_tool_use.image_generation_requests` ويمكن احتسابها عبر `server_tool_image_generation_requests`. يُحتسب نموذج الصور بأسعاره، كبند مستقل في فاتورة الطلب. ويتطلب نموذج الصور المدفوع رصيدًا حتى عندما يكون النموذج المستدعي مجانيًا.

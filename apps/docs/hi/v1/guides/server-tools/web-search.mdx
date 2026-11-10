@@ -122,4 +122,4 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-प्रबंधित खोज का बिल `server_tool_web_search_requests` और `server_tool_web_search_extra_results` से बनता है। मूल खोज का बिल `native_web_search_requests` से बनता है, जहां मॉडल का मूल्य कार्ड इसे परिभाषित करता है। TinyFish Search अपने प्रकाशित प्लान पर मुफ़्त है, इसलिए `engine: "tinyfish"` के लिए Phaseo कोई खोज शुल्क नहीं जोड़ता; अनुरोध का सामान्य टोकन मूल्य फिर भी लागू होता है।
+Phaseo हर managed search के लिए $0.007 लेता है, और पहले 10 के बाद हर result के लिए $0.001, जब तक मॉडल का price card `server_tool_web_search_requests` और `server_tool_web_search_extra_results` के लिए अपनी कीमतें तय न करे। असफल searches का शुल्क नहीं लगता, और TinyFish Search अपने प्रकाशित प्लान पर मुफ़्त है, इसलिए `engine: "tinyfish"` कोई search शुल्क नहीं जोड़ता। सशुल्क engines पर searches के लिए क्रेडिट चाहिए, भले ही मॉडल मुफ़्त हो। Native search का बिल `native_web_search_requests` से बनता है, जहाँ मॉडल का price card इसे तय करता है।

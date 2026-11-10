@@ -109,4 +109,4 @@ Comprueba `truncated` antes de dar por hecho que el modelo vio la página comple
 
 ## Uso y precios
 
-Cada obtención suma 1 a `usage.server_tool_use.web_fetch_requests`. La obtención gestionada se factura con `server_tool_web_fetch_requests`. La obtención nativa se factura con `native_web_fetch_requests` cuando la tarjeta de precios del modelo lo define.
+Cada consulta suma 1 a `usage.server_tool_use.web_fetch_requests`. Phaseo cobra cada consulta gestionada a través de Exa, Parallel o Firecrawl a $0.001, salvo que la tarjeta de precios del modelo fije su propio precio para `server_tool_web_fetch_requests`; las consultas directas son gratuitas. Las consultas con motores de pago requieren saldo aunque el modelo sea gratuito. La consulta nativa se cobra con `native_web_fetch_requests` donde la tarjeta de precios del modelo lo define.

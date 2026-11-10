@@ -8,6 +8,18 @@ import { chargesSkipped, noteIntendedCharge } from "./intended-charge";
 
 const CHARGE_RETRY_DELAYS_MS = [0, 100, 500] as const;
 
+/**
+ * A definite outcome the wallet reported before debiting, not an uncertain write: retrying cannot
+ * change it. A refusal for lack of funds, or no wallet for the workspace; either raised by the
+ * debit SQL (a PostgREST error) or reported as a not-applied status.
+ */
+function walletRefusalReason(error: unknown): "wallet_refused" | "wallet_not_found" | null {
+	const message = error instanceof Error ? error.message : String((error as { message?: unknown })?.message ?? error);
+	if (/\bwallet_not_found\b/.test(message)) return "wallet_not_found";
+	if (/insufficient_unreserved_balance|gateway_charge_not_applied:insufficient_(balance|funds)/.test(message)) return "wallet_refused";
+	return null;
+}
+
 async function waitBeforeRetry(delayMs: number): Promise<void> {
 	if (delayMs <= 0) return;
 	await new Promise<void>((resolve) => setTimeout(resolve, delayMs));
@@ -49,6 +61,7 @@ async function chargeWithRetries(ctx: PipelineContext, call: ChargeCall): Promis
 			return null;
 		} catch (chargeErr) {
 			lastError = chargeErr;
+			if (walletRefusalReason(chargeErr)) break;
 		}
 	}
 	return lastError ?? new Error("usage_charge_failed");
@@ -188,16 +201,20 @@ export async function recordUsageAndChargeOnce(args: {
 		meta.__chargedNanos = Math.round(costNanos);
 		return;
 	}
+	// A refusal (no balance, no wallet) is a definite outcome; anything else may have committed.
+	const refusal = walletRefusalReason(lastError);
+	const refused = refusal !== null;
 
 	// The response was delivered: its failure row must carry the bill it meant to charge, and what
 	// the database holds (a debit may have committed while every response was lost).
 	ctx.uncollectedChargeNanos = Math.round(costNanos);
+	ctx.uncollectedChargeReason = refusal ?? "persistence_failed";
 	// Unreadable: a stepped request falls back to its last checkpoint total (a known minimum); a
 	// one-off charge's amount is unknown, not 0.
 	const stored = await chargedTotalForUnsettledRequest(ctx);
 	ctx.confirmedChargeNanos = stored.stored || inSteps ? stored.costNanos : null;
 	ctx.confirmedChargeSource = stored.stored ? "database" : "last_checkpoint";
-	console.error("recordUsageAndCharge failed after retries", {
+	console.error(refused ? "recordUsageAndCharge refused by the wallet" : "recordUsageAndCharge failed after retries", {
 		error: lastError,
 		requestId: ctx.requestId,
 		workspaceId: ctx.workspaceId,
@@ -206,8 +223,9 @@ export async function recordUsageAndChargeOnce(args: {
 		attempts: CHARGE_RETRY_DELAYS_MS.length,
 		charged_in_steps: inSteps,
 		confirmed_charge_nanos: stored.costNanos,
+		reason: refusal ?? "persistence_failed",
 	});
 	if (args.throwOnFailure) {
-		throw new Error("usage_charge_persistence_failed", { cause: lastError });
+		throw new Error(refused ? "usage_charge_refused" : "usage_charge_persistence_failed", { cause: lastError });
 	}
 }

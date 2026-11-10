@@ -121,4 +121,4 @@ Each search adds to `usage.server_tool_use`:
 }
 ```
 
-Managed search is billed with `server_tool_web_search_requests` and `server_tool_web_search_extra_results`. Native search is billed with `native_web_search_requests` where the model's price card defines it. TinyFish Search is free on its published plans, so Phaseo adds no search charge for `engine: "tinyfish"`; the request's normal token pricing still applies.
+Phaseo bills each managed search at $0.007, plus $0.001 for each result past the first 10, unless the model's price card sets its own `server_tool_web_search_requests` and `server_tool_web_search_extra_results` prices. Failed searches are not billed, and TinyFish Search is free on its published plans, so `engine: "tinyfish"` adds no search charge. Searches on paid engines need credits even when the model is free. Native search is billed with `native_web_search_requests` where the model's price card defines it.

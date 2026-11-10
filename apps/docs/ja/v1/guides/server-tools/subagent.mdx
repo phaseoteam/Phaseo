@@ -68,4 +68,4 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 ## 利用量と料金
 
-呼び出しごとに `usage.server_tool_use.subagent_requests` に 1 が加算され、`server_tool_subagent_requests` で課金されることがあります。ワーカーのトークンはリクエストの利用量に加算され、ワーカーモデルの料金で計算されます。作業を委任するのではなくレビューを受けたい場合は、[Advisor](./advisor) を使います。
+呼び出しごとに `usage.server_tool_use.subagent_requests` に 1 が加算され、`server_tool_subagent_requests` で課金されることがあります。ワーカーのトークンはワーカーモデル自身の料金で、リクエストの請求の別項目として課金され、呼び出し元モデルのトークン数には加算されません。有料のワーカーモデルを使うには、呼び出し元モデルが無料でもクレジットが必要です。作業を任せるのではなくレビューを受けるには、[Advisor](./advisor) を使います。

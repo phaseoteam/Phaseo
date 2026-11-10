@@ -19,7 +19,7 @@ import { stripGatewayStop } from "@core/finish-reason";
 import { resolveFailoverMs } from "./timing";
 import { createChatStreamTerminal } from "./chat-stream-terminal";
 import { createStreamReencoder, encodeStreamInterruption, type StreamReencoder } from "./stream-reencode";
-import { createResponsesStreamNormaliser } from "./responses-stream-normaliser";
+import { createResponsesStreamNormaliser, responsesRequestBody } from "./responses-stream-normaliser";
 
 /** A bare Chat `{"error": {...}}` frame: how OpenAI-compatible providers fail mid-stream. */
 function isBareErrorFrame(frame: any): boolean {
@@ -64,6 +64,18 @@ type PassthroughWithPricingOpts = {
      * Called for each canonical stream event extracted from protocol frames.
      */
     onStreamEvent?: (event: UnifiedStreamEvent) => void | Promise<void>;
+    /**
+     * Called for each event in a frame actually written to the client, read in the client's
+     * protocol: what the client received after re-encoding (an encoder can drop a part), not what
+     * the provider sent. Billing decides "was there output" from these.
+     */
+    onClientEvent?: (event: UnifiedStreamEvent) => void;
+    /**
+     * Called with the client-protocol events of a frame about to be rewritten and written (its usage
+     * is priced in the rewrite, so the frame's own output must already count), then with null once
+     * that frame is written or dropped. Delivery itself is committed by onClientEvent.
+     */
+    onOutgoingFrame?: (events: UnifiedStreamEvent[] | null) => void;
     /**
      * Called at each DRAIN_CHECKPOINT_DELAYS_MS after the client disconnects while the
      * upstream is still draining, with the usage reported so far and the output streamed so
@@ -110,7 +122,7 @@ export const DRAIN_CHECKPOINT_DELAYS_MS = [15_000, 25_000] as const;
  *  - detecting the final snapshot frame with `usage` to trigger onFinalUsage
  */
 export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): Promise<Response> {
-    const { upstream, rewriteFrame, onFinalUsage, onFinalSnapshot, onStreamEvent, onDrainCheckpoint, timingHeader, ctx, provider } = opts;
+    const { upstream, rewriteFrame, onFinalUsage, onFinalSnapshot, onStreamEvent, onClientEvent, onOutgoingFrame, onDrainCheckpoint, timingHeader, ctx, provider } = opts;
     const cancellationPolicy = getProviderStreamCancellationPolicy(provider);
     const providerMetadata = ctx.providers?.find((candidate) => candidate.providerId === provider);
     ctx.meta.streamCancellationSupport =
@@ -213,6 +225,10 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
     };
 
     // Write one SSE JSON object as "event: X\ndata: {...}\n\n" (event optional)
+    const clientProtocol: StreamProtocol | null =
+        ctx.protocol === "openai.chat.completions" || ctx.protocol === "openai.responses" || ctx.protocol === "anthropic.messages"
+            ? ctx.protocol
+            : null;
     const writeJson = async (obj: unknown, eventName?: string | null) => {
         if (downstreamClosed) return;
         const prefix = eventName ? `event: ${eventName}\n` : "";
@@ -221,6 +237,16 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
             await writer.write(enc.encode(line));
         } catch {
             noteDownstreamClosed();
+            return;
+        }
+        if (onClientEvent && clientProtocol) {
+            try {
+                for (const event of extractUnifiedStreamEvents({ protocol: clientProtocol, eventName: eventName ?? undefined, frame: obj })) {
+                    onClientEvent(event);
+                }
+            } catch {
+                // Never let event consumer errors break stream forwarding.
+            }
         }
     };
 
@@ -293,7 +319,9 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
         const chatTerminal = ctx.protocol === "openai.chat.completions" ? createChatStreamTerminal() : null;
         // Responses clients get one event name per event (SSE line and data.type),
         // sequence numbers and the lifecycle events a source left out.
-        const responsesNormaliser = ctx.protocol === "openai.responses" ? createResponsesStreamNormaliser() : null;
+        const responsesNormaliser = ctx.protocol === "openai.responses"
+            ? createResponsesStreamNormaliser({ request: responsesRequestBody(ctx), model: ctx.requestedModel ?? ctx.model })
+            : null;
         let reencoder: StreamReencoder | null = null;
         let sawStreamError = false;
         const targetProtocol: StreamProtocol | null =
@@ -303,6 +331,20 @@ export async function passthroughWithPricing(opts: PassthroughWithPricingOpts): 
                 ? ctx.protocol
                 : null;
         const writeOutbound = async (outbound: { eventName?: string | null; frame: any }) => {
+            if (onOutgoingFrame && clientProtocol) {
+                try {
+                    onOutgoingFrame(extractUnifiedStreamEvents({ protocol: clientProtocol, eventName: outbound.eventName ?? undefined, frame: outbound.frame }));
+                } catch { }
+            }
+            try {
+                await writeOutboundFrame(outbound);
+            } finally {
+                if (onOutgoingFrame) {
+                    try { onOutgoingFrame(null); } catch { }
+                }
+            }
+        };
+        const writeOutboundFrame = async (outbound: { eventName?: string | null; frame: any }) => {
             let frameOut: any = outbound.frame;
             if (rewriteFrame) {
                 try { frameOut = rewriteFrame(frameOut) ?? frameOut; } catch { }

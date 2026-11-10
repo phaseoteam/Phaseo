@@ -122,4 +122,4 @@ Jede Suche erhöht die Werte in `usage.server_tool_use`:
 }
 ```
 
-Verwaltete Suche wird über `server_tool_web_search_requests` und `server_tool_web_search_extra_results` abgerechnet. Native Suche wird über `native_web_search_requests` abgerechnet, sofern die Preiskarte des Modells diesen Zähler definiert. TinyFish Search ist in den veröffentlichten Tarifen kostenlos, daher berechnet Phaseo für `engine: "tinyfish"` keine Suchgebühr; die normalen Tokenpreise der Anfrage gelten weiterhin.
+Phaseo berechnet jede verwaltete Suche mit $0.007 plus $0.001 für jedes Ergebnis nach den ersten 10, sofern die Preiskarte des Modells keine eigenen Preise für `server_tool_web_search_requests` und `server_tool_web_search_extra_results` festlegt. Fehlgeschlagene Suchen werden nicht berechnet, und TinyFish Search ist in seinen veröffentlichten Tarifen kostenlos, daher fügt `engine: "tinyfish"` keine Suchkosten hinzu. Suchen mit kostenpflichtigen Engines erfordern Guthaben, auch wenn das Modell kostenlos ist. Native Suche wird über `native_web_search_requests` abgerechnet, wenn die Preiskarte des Modells dies festlegt.
