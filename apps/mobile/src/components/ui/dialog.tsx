@@ -80,15 +80,16 @@ export function BottomDrawer({ onClose, maxHeight, paddingBottom, className, chi
     // pan needs its own activation offset or it never starts.
     activeOffsetY: [-6, 6],
     failOffsetX: [-20, 20],
-    onActivate: () => {
+    onActivate: (event) => {
       "worklet";
       // From where it is now, even mid-animation, so catching it never makes it jump.
       cancelAnimation(offset);
       dragFrom.set(offset.get());
+      speed.start(event.translationY);
     },
     onUpdate: (event) => {
       "worklet";
-      speed.track(event.velocityY);
+      speed.track(event.translationY);
       const next = dragFrom.get() + event.translationY;
       offset.set(next >= 0 ? next : rubberband(next, height.get()));
     },

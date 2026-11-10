@@ -122,15 +122,16 @@ function SwipeAway({ onDismiss, children }: { onDismiss: () => void; children: R
   const pan = usePanGesture({
     activeOffsetY: [-8, 8],
     failOffsetX: [-16, 16],
-    onActivate: () => {
+    onActivate: (event) => {
       "worklet";
       // From where it is now, even springing back or flying off, so catching it never makes it jump.
       cancelAnimation(offset);
       dragFrom.set(offset.get());
+      speed.start(event.translationY);
     },
     onUpdate: (event) => {
       "worklet";
-      speed.track(event.velocityY);
+      speed.track(event.translationY);
       const y = dragFrom.get() + event.translationY;
       offset.set(y <= 0 ? y : rubberband(y, height.get()));
     },

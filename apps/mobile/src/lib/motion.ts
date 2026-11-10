@@ -26,24 +26,39 @@ export function project(velocity: number, decelerationRate = 0.998) {
 const RELEASE_WINDOW_MS = 100;
 
 /**
- * The speed a drag is let go at. On Android the pan's release event can report a velocity of 0 even mid-flick, so
- * `track` remembers each update's velocity and `release` falls back to it, unless the finger had stopped (no update
- * in the last RELEASE_WINDOW_MS), when 0 is right: a drag that stops before letting go isn't a flick.
+ * The speed (px/s) a drag is let go at. On Android the pan's release velocity is unreliable (0, or far too low,
+ * mid-flick), so `track` measures the speed itself from each update's position and time, and `release` takes whichever
+ * of the two is faster, as long as the finger was still moving (an update within RELEASE_WINDOW_MS). A finger that
+ * stopped before letting go gives 0: that drag isn't a flick. Call `start` when the drag activates.
  */
 export function useReleaseVelocity() {
-  const last = useSharedValue(0);
+  const measured = useSharedValue(0);
+  const lastPosition = useSharedValue(0);
   const movedAt = useSharedValue(0);
-  const track = (velocity: number) => {
+  const start = (position: number) => {
     "worklet";
-    last.set(velocity);
+    measured.set(0);
+    lastPosition.set(position);
     movedAt.set(Date.now());
   };
-  const release = (velocity: number) => {
+  const track = (position: number) => {
     "worklet";
-    if (velocity !== 0) return velocity;
-    return Date.now() - movedAt.get() <= RELEASE_WINDOW_MS ? last.get() : 0;
+    const now = Date.now();
+    const elapsed = now - movedAt.get();
+    if (elapsed <= 0) return;
+    const speed = ((position - lastPosition.get()) / elapsed) * 1000;
+    // Mostly the latest step, a little of the ones before, so one uneven event doesn't decide it.
+    measured.set(measured.get() * 0.3 + speed * 0.7);
+    lastPosition.set(position);
+    movedAt.set(now);
   };
-  return { track, release };
+  const release = (reported: number) => {
+    "worklet";
+    if (Date.now() - movedAt.get() > RELEASE_WINDOW_MS) return 0;
+    const own = measured.get();
+    return Math.abs(reported) > Math.abs(own) && Math.sign(reported) === Math.sign(own) ? reported : own;
+  };
+  return { start, track, release };
 }
 
 /** How far something follows a finger dragged `overshoot` px past an edge: less the further it goes. */
