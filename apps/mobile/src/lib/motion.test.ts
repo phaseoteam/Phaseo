@@ -1,10 +1,46 @@
-import { pickReleaseVelocity, project, rubberband } from "./motion";
+import { pickReleaseVelocity, project, rubberband, useReleaseVelocity } from "./motion";
 
-// Reanimated's own mock pulls in FlatList, which this preset can't resolve; motion.ts only needs these two.
+// Reanimated's own mock pulls in FlatList, which this preset can't resolve; motion.ts only needs these two. Shared
+// values are plain boxes, so the hook can be called outside a component and driven directly.
 jest.mock("react-native-reanimated", () => ({
   Easing: { bezier: () => (value: number) => value },
-  useSharedValue: (initial: unknown) => ({ value: initial }),
+  useSharedValue: (initial: unknown) => {
+    let value = initial;
+    return { get: () => value, set: (next: unknown) => { value = next; } };
+  },
 }));
+
+describe("useReleaseVelocity", () => {
+  let now = 1_000;
+  beforeEach(() => { now = 1_000; jest.spyOn(Date, "now").mockImplementation(() => now); });
+  afterEach(() => jest.restoreAllMocks());
+
+  test("measures a flick from its updates when the reported velocity is lost", () => {
+    const speed = useReleaseVelocity();
+    speed.start(6);
+    now += 16; speed.track(26);
+    now += 16; speed.track(46);
+    now += 8;
+    expect(speed.release(0)).toBeCloseTo(1250, 0);
+  });
+
+  test("keeps the reported velocity when updates came but none moved", () => {
+    const speed = useReleaseVelocity();
+    speed.start(6);
+    now += 16; speed.track(6);
+    now += 16; speed.track(6);
+    expect(speed.release(900)).toBe(900);
+  });
+
+  test("a finger that rested in place before letting go isn't a flick, even with updates while resting", () => {
+    const speed = useReleaseVelocity();
+    speed.start(6);
+    now += 16; speed.track(40);
+    now += 60; speed.track(40);
+    now += 60; speed.track(40);
+    expect(speed.release(700)).toBe(0);
+  });
+});
 
 describe("pickReleaseVelocity", () => {
   test("a finger that stopped before letting go isn't a flick", () => {

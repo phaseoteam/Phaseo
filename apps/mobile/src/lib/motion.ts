@@ -45,6 +45,8 @@ export function useReleaseVelocity() {
   };
   const track = (position: number) => {
     "worklet";
+    // An update that didn't move is neither a measurement nor movement: a finger resting in place lets the window run out.
+    if (position === lastPosition.get()) return;
     const now = Date.now();
     const elapsed = now - movedAt.get();
     if (elapsed <= 0) return;
