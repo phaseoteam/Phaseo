@@ -222,3 +222,24 @@ def test_gateway_client_passes_an_api_key_function_to_the_core_client(monkeypatc
     client._client.get_current_api_key()
 
     assert seen == ["Bearer workload-token-1", "Bearer workload-token-2"]
+
+
+def test_run_and_continue_run_stop_when_override_the_definition():
+    class AnswerClient:
+        def generate(self, request):
+            return AgentModelResponse(AgentMessage("assistant", "answer"))
+
+    agent = create_agent({
+        "id": "stop-override",
+        "stop_when": lambda _state: None,
+        "human_review": lambda ctx: AgentHumanReviewRequest("Check") if not any(m.content == "ok" for m in ctx.messages) else None,
+    })
+    stop_now = lambda _state: "run_override"
+
+    paused = agent.run(input="go", client=AnswerClient())
+    resumed = agent.continue_run(run=paused, client=AnswerClient(), human_input="ok", stop_when=stop_now)
+    assert resumed.run.status == "stopped" and resumed.run.stop_reason == "run_override"
+
+    review_free = create_agent({"id": "stop-run", "stop_when": lambda _state: None})
+    stopped = review_free.run(input="go", client=AnswerClient(), stop_when=stop_now)
+    assert stopped.run.status == "stopped" and stopped.run.stop_reason == "run_override"
