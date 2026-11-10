@@ -250,7 +250,7 @@ describe("held-spend ledger", () => {
 		// 2,500 newer handoff entries push the $1 late increase into the aggregate.
 		for (let n = 0; n < MAX_HANDOFF_ENTRIES; n += 1) {
 			held().entries.set(`dummy-${n}`, {
-				billingRequestId: `dummy-${n}`, requestId: `req-dummy-${n}`, keyId: KEY, at: Date.now(), increasedAt: Date.now(), recordedAt: Date.now() + 1,
+				billingRequestId: `dummy-${n}`, requestId: `req-dummy-${n}`, keyId: KEY, at: Date.now(), costAt: Date.now(), requestsAt: Date.now(), recordedAt: Date.now() + 1,
 				cost: { total: 0, base: 0, seq: 1 }, requests: { total: 0, base: 0, seq: 1 }, phase: "handoff", reason: "late",
 			});
 		}
@@ -260,5 +260,121 @@ describe("held-spend ledger", () => {
 		database.charges.push({ billingId: "delta", keyId: KEY, total: 50, at: Date.now() });
 		await stepped("delta", 450, { revision: 3 });
 		expect((await probe())?.daily.costUsedNanos).toBeGreaterThanOrEqual(450);
+	});
+
+	it.each([
+		["day", "daily", "2026-10-09T23:59:50Z", "2026-10-10T00:00:10Z"],
+		["week", "weekly", "2026-10-11T23:59:50Z", "2026-10-12T00:00:10Z"],
+		["month", "monthly", "2026-10-31T23:59:50Z", "2026-11-01T00:00:10Z"],
+	] as const)("counts a same-cost successful final in its new %s", async (_label, window, before, after) => {
+		vi.setSystemTime(new Date(before));
+		await probe();
+		database.charges.push({ billingId: "boundary-success", keyId: KEY, total: 300, at: Date.now() });
+		await stepped("boundary-success", 300, { requests: 0 });
+		vi.setSystemTime(new Date(after));
+		// During the new period's seed read, the success row lands and the final reports the same $3.
+		database.afterRead = async () => {
+			database.afterRead = null;
+			database.rows.push({ requestId: "req-boundary-success", billingId: "boundary-success", keyId: KEY, success: true, cost: 300, createdAt: Date.now() });
+			await stepped("boundary-success", 300, { final: true, requests: 1 });
+		};
+		await reseed();
+		expect((await probe())?.[window].requestsUsed).toBeGreaterThanOrEqual(1);
+		await reseed();
+		expect((await probe())?.[window].requestsUsed).toBe(1);
+	});
+
+	it("does not count a replayed total again each time its entry folds", () => {
+		const ledger = new HeldSpend();
+		let now = Date.now();
+		const record = (id: string, cost: number, replace: boolean) => ledger.record({
+			keyId: KEY, billingRequestId: id, requestId: `req-${id}`, costNanos: cost, requests: 0, ...(replace ? { replace: true, revision: 2 } : {}),
+		}, now);
+		record("replayed", 300, true);
+		now += SPEND_LEASE.pendingTtlMs + 1;
+		ledger.markStale(now);
+		ledger.publish(ledger.beginRead(), new Set(), new Set());
+		expect(ledger.remembered.get("replayed")).toMatchObject({ cost: 300 });
+		// The same $4 total arrives again in each of ten rounds, between which its entry folds.
+		for (let round = 0; round < 10; round += 1) {
+			now += 1;
+			record("replayed", 400, true);
+			ledger.enforceBounds();
+			for (let n = 0; n < MAX_HANDOFF_ENTRIES; n += 1) {
+				record(`filler-${round}-${n}`, 0, false);
+				if (n % 100 === 99) ledger.enforceBounds();
+			}
+			now += SPEND_LEASE.pendingTtlMs + 1;
+			ledger.markStale(now);
+			ledger.enforceBounds();
+		}
+		// Only the $1 increase is outstanding.
+		expect(ledger.cost(null)).toBe(100);
+	});
+
+	it("keeps every aggregate segment counted when the list is full, until a covering read publishes", () => {
+		const ledger = new HeldSpend();
+		const fold = (amount: number) => (ledger as unknown as { addAggregate(key: string, cost: number, requests: number): void }).addAggregate(KEY, amount, 1);
+		let total = 0;
+		for (let n = 1; n <= 6; n += 1) {
+			ledger.beginRead();
+			fold(n);
+			total += n;
+		}
+		expect(ledger.aggregate.get(KEY)?.length).toBe(4);
+		expect(ledger.keyUsage(KEY, 0)).toEqual({ cost: total, requests: 6 });
+		ledger.publish(1, new Set(), new Set());
+		expect(ledger.keyUsage(KEY, 0).cost).toBe(total);
+		const fresh = ledger.beginRead();
+		fold(7);
+		ledger.publish(fresh, new Set(), new Set());
+		expect(ledger.keyUsage(KEY, 0)).toEqual({ cost: 7, requests: 1 });
+	});
+
+	it("charges each key at most the workspace-wide overflow, and only until a seed", () => {
+		const ledger = new HeldSpend();
+		const fold = (key: string) => (ledger as unknown as { addAggregate(key: string, cost: number, requests: number): void }).addAggregate(key, 10, 1);
+		for (let n = 0; n < 100; n += 1) fold(`key-${n}`);
+		ledger.enforceBounds();
+		expect(ledger.aggregate.size).toBeLessThanOrEqual(MAX_AGGREGATE_KEYS + 1);
+		expect(ledger.cost(null)).toBe(1_000);
+		expect(ledger.keyUsage("innocent", 0)).toEqual({ cost: 360, requests: 36 });
+		expect(ledger.keyUsage("key-0", 0)).toEqual({ cost: 370, requests: 37 });
+		ledger.publish(ledger.beginRead(), new Set(), new Set());
+		expect(ledger.keyUsage("innocent", 0)).toEqual({ cost: 0, requests: 0 });
+	});
+
+	it("serializes concurrent seeds and keeps a change made while they load until a covering read", async () => {
+		await probe();
+		await stepped("seed-race", 100);
+		database.charges.push({ billingId: "seed-race", keyId: KEY, total: 100, at: Date.now() });
+		let resume!: () => void;
+		database.stall = new Promise<void>((resolve) => { resume = resolve; });
+		const first = reseed();
+		const second = reseed();
+		await tick();
+		await stepped("seed-race", 150, { revision: 2 });
+		database.charges.push({ billingId: "seed-race", keyId: KEY, total: 50, at: Date.now() });
+		database.stall = null;
+		resume();
+		await Promise.all([first, second]);
+		expect((await probe())?.daily.costUsedNanos).toBeGreaterThanOrEqual(150);
+	});
+
+	it("after a restart during a read, seeds committed spend and keeps persisted lease holds", async () => {
+		await probe();
+		const grant = await coordinator.acquire(WORKSPACE, KEY, { requests: 1, units: 0 }, { requests: 10, units: 0 }, [], "restart");
+		if (!("lease" in grant)) throw new Error("expected a slice");
+		let resume!: () => void;
+		database.stall = new Promise<void>((resolve) => { resume = resolve; });
+		const loading = reseed();
+		await tick();
+		database.charges.push({ billingId: "restart-charge", keyId: KEY, total: 300, at: Date.now() });
+		coordinator = createCoordinator();
+		database.stall = null;
+		resume();
+		await loading;
+		expect((await probe())?.daily.costUsedNanos).toBeGreaterThanOrEqual(300);
+		expect(heldRequests()).toBeGreaterThanOrEqual(grant.lease.requests ?? 0);
 	});
 });

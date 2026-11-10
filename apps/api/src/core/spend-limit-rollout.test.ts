@@ -152,6 +152,67 @@ describe("this isolate with main's coordinator", () => {
 	});
 });
 
+describe("a coordinator rolled back, and protocol-1 settlement", () => {
+	it("sends a batch again as additive increases when the coordinator answering it was rolled back", async () => {
+		database.keys.set(CAPPED, { workspaceId: WORKSPACE, daily: [10, 400] });
+		// The isolate learns protocol 2 from this branch's coordinator ...
+		enforce(coordinator);
+		const first = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: CAPPED, admissionId: "rollback" });
+		if (first.outcome !== "allowed") throw new Error("expected admission");
+		// ... then the hosting Worker is rolled back to main.
+		const old = new OldCoordinator(sqliteState(sqlite), database);
+		await old.acquire(WORKSPACE, CAPPED, { requests: 0, units: 0 }, { requests: 0, units: 0 }, [], "seed-old");
+		enforce(old);
+		const args = { admission: first.admission, workspaceId: WORKSPACE, keyId: CAPPED, billingRequestId: "rollback-bill", requestId: "rollback" };
+		recordCheckpointSpend({ ...args, costNanos: 100, revision: 1 });
+		recordCheckpointSpend({ ...args, costNanos: 450, revision: 2 });
+		await flush();
+		// main kept the first record ($1) and ignored the replacement; the resend adds $4.50 (an over-count).
+		const result = await old.acquire(WORKSPACE, CAPPED, { requests: 1, units: 0 }, { requests: 1, units: 0 }, [], "after");
+		expect("denial" in result && result.denial?.gate).toMatchObject({ reason: "daily_cost_limit_reached" });
+		expect(("denial" in result && Number(result.denial?.gate.currentValue)) || 0).toBeGreaterThanOrEqual(450);
+	});
+
+	it("does not release a final's slot before an earlier checkpoint is acknowledged by main's coordinator", async () => {
+		database.keys.set(CAPPED, { workspaceId: WORKSPACE, daily: [1, 80] });
+		const old = new OldCoordinator(sqliteState(sqlite), database);
+		let resume!: () => void;
+		const stalled = new Promise<void>((resolve) => { resume = resolve; });
+		const calls: string[] = [];
+		const record = old.record.bind(old);
+		const release = old.release.bind(old);
+		old.record = async (...args) => {
+			calls.push("record");
+			if (calls.length === 1) await stalled;
+			return record(...args);
+		};
+		old.release = async (...args) => { calls.push("release"); return release(...args); };
+		enforce(old);
+		const first = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: CAPPED, admissionId: "stalled" });
+		if (first.outcome !== "allowed") throw new Error("expected admission");
+		const args = { admission: first.admission, workspaceId: WORKSPACE, keyId: CAPPED, billingRequestId: "stalled-bill", requestId: "stalled" };
+		// The $1 checkpoint's batch stalls before main applies it; the charged failure then settles at $1.
+		recordCheckpointSpend({ ...args, costNanos: 100, revision: 1 });
+		const checkpointFlush = flushSpendRecordsForTests();
+		await tick();
+		settleEnforcedSpend({ ...args, costNanos: 100, rowWritten: true, requests: 0, replace: true });
+		const finalFlush = flushSpendRecordsForTests();
+		await tick();
+		// The slot is still held, so no admission passes with the $1 uncounted.
+		const during = await old.acquire(WORKSPACE, CAPPED, { requests: 1, units: 0 }, { requests: 1, units: 0 }, [], "during");
+		expect("denial" in result(during)).toBe(true);
+		resume();
+		await Promise.all([checkpointFlush, finalFlush]);
+		expect(calls).toEqual(["record", "record", "release"]);
+		const after = await old.acquire(WORKSPACE, CAPPED, { requests: 1, units: 0 }, { requests: 1, units: 0 }, [], "after");
+		expect("denial" in after && after.denial?.gate).toMatchObject({ reason: "daily_cost_limit_reached", currentValue: 100 });
+	});
+});
+
+function result<T>(value: T): T {
+	return value;
+}
+
 describe("main's isolate with this coordinator", () => {
 	beforeEach(() => {
 		mainIsolate.__resetSpendLimitsForTests();

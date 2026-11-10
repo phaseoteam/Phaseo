@@ -19,10 +19,12 @@
 //      with both parts taken over is dropped; its totals are remembered as the base of a later record.
 //  I5. Entering "handoff" stamps fresh sequences (after any read already started), so a read that
 //      excluded an entry can never take it over.
-//  I6. A debit commits before its record arrives. So a record that arrives after a read started may
-//      be missing from that read (I4 keeps it), and a debit made in a window arrives in that window:
-//      an entry counts in the windows containing its occurrence or its last cost increase. The
-//      aggregate keeps no times, so it counts in every window.
+//  I6. A debit commits before its record arrives, and so does a success row before its final. So a
+//      record that arrives after a read started may be missing from that read (I4 keeps it), and what
+//      settles in a window arrives in that window: each part counts in the windows containing the
+//      entry's occurrence or that part's last increase (cost: `costAt`; successful requests:
+//      `requestsAt`). A final that settles a success in a new day, week or month counts there even
+//      when its cost did not change. The aggregate keeps no times, so it counts in every window.
 //  I7. Records only raise a handoff part. A held part may be set lower by its final record (the seed
 //      excludes it, so the ledger is its only count).
 //  I8. Checkpoints settle cost only. Successful requests are settled by a final or an ordinary record
@@ -34,6 +36,9 @@
 //      counted against every key) with ≤ MAX_SEGMENTS segments each, remembered totals ≤
 //      MAX_REMEMBERED, seen ids ≤ MAX_SEEN_IDS. Aggregate segments follow I4 with the sequence of
 //      their newest addition; additions after a read started go to a new segment.
+//  I10. Folding an entry into the aggregate records the totals it represents (remembered totals), so a
+//      replayed record of the same totals adds nothing; only an increase over them is counted again.
+//      Remembered totals are forgotten least recently used first (a lookup refreshes them).
 
 import { SPEND_LEASE, windowStarts, type SpendRecordEntry } from "@core/spend-limits.shared";
 
@@ -59,7 +64,9 @@ export type HeldEntry = {
 	/** When the spend occurred (the request row's time). */
 	at: number;
 	/** When the last record raising its cost arrived (I6). */
-	increasedAt: number;
+	costAt: number;
+	/** When the last record raising its successful requests arrived (I6). */
+	requestsAt: number;
 	/** When the last record changing it arrived (pending TTL). */
 	recordedAt: number;
 	cost: Part;
@@ -131,6 +138,7 @@ export class HeldSpend {
 		if (existing) {
 			if (existing.keyId !== record.keyId || !replace || !existing.stepped || existing.stepped.final) return outcome;
 			const before = existing.cost.total;
+			const requestsWas = existing.requests.total;
 			if (existing.phase === "held") {
 				this.change(existing.cost, final ? cost : Math.max(before, cost));
 				if (final) this.change(existing.requests, requests);
@@ -138,7 +146,8 @@ export class HeldSpend {
 				this.change(existing.cost, Math.max(before, cost));
 				if (final) this.change(existing.requests, Math.max(existing.requests.total, requests));
 			}
-			if (existing.cost.total > before) existing.increasedAt = now;
+			if (existing.cost.total > before) existing.costAt = now;
+			if (existing.requests.total > requestsWas) existing.requestsAt = now;
 			if (final) existing.stepped.final = true;
 			existing.recordedAt = now;
 			outcome.changed = final || existing.cost.total !== before;
@@ -148,12 +157,17 @@ export class HeldSpend {
 			if (!replace) return outcome;
 			const known = this.remembered.get(id);
 			if (known && known.keyId !== record.keyId) return outcome;
+			// Least recently used is forgotten first: an id still being reported stays remembered.
+			if (known) {
+				this.remembered.delete(id);
+				this.remembered.set(id, known);
+			}
 			const costBase = known?.cost ?? 0;
 			const requestsBase = known?.requests ?? 0;
 			const requestsTotal = final ? Math.max(requests, requestsBase) : requestsBase;
 			if (cost > costBase || requestsTotal > requestsBase) {
 				this.entries.set(id, {
-					billingRequestId: id, requestId: requestIdOf(record), keyId: record.keyId, at: now, increasedAt: now, recordedAt: now,
+					billingRequestId: id, requestId: requestIdOf(record), keyId: record.keyId, at: now, costAt: now, requestsAt: now, recordedAt: now,
 					cost: { total: Math.max(cost, costBase), base: costBase, seq: this.next() },
 					requests: { total: requestsTotal, base: requestsBase, seq: this.next() },
 					phase: "handoff", reason: "late", stepped: { final },
@@ -166,7 +180,7 @@ export class HeldSpend {
 			const awaitingSeed = replace && !(record.revision === 1 && !final);
 			const at = Number.isFinite(record.occurredAtMs) ? Number(record.occurredAtMs) : now;
 			this.entries.set(id, {
-				billingRequestId: id, requestId: requestIdOf(record), keyId: record.keyId, at, increasedAt: now, recordedAt: now,
+				billingRequestId: id, requestId: requestIdOf(record), keyId: record.keyId, at, costAt: now, requestsAt: now, recordedAt: now,
 				cost: { total: cost, base: 0, seq: this.next() },
 				requests: { total: settles ? requests : 0, base: 0, seq: this.next() },
 				phase: "held",
@@ -295,6 +309,8 @@ export class HeldSpend {
 
 	private remember(entry: HeldEntry): void {
 		this.remembered.delete(entry.billingRequestId);
+		// A zero total is the same base as an unknown one: nothing to remember.
+		if (entry.cost.total === 0 && entry.requests.total === 0) return;
 		this.remembered.set(entry.billingRequestId, { keyId: entry.keyId, cost: entry.cost.total, requests: entry.requests.total });
 		if (this.remembered.size > MAX_REMEMBERED) {
 			const oldest = this.remembered.keys().next();
@@ -316,6 +332,8 @@ export class HeldSpend {
 			handoff.sort((left, right) => left.recordedAt - right.recordedAt);
 			for (const entry of handoff.slice(0, handoff.length - MAX_HANDOFF_ENTRIES)) {
 				this.addAggregate(entry.keyId, counted(entry.cost), counted(entry.requests));
+				// The aggregate now represents these totals (I10): a replay of them adds nothing.
+				this.remember(entry);
 				this.entries.delete(entry.billingRequestId);
 			}
 		}
@@ -352,8 +370,13 @@ export class HeldSpend {
 		this.aggregate.set(key, segments);
 	}
 
-	private countsIn(entry: HeldEntry, windowStart: number | null): boolean {
-		return windowStart === null || entry.at >= windowStart || entry.increasedAt >= windowStart;
+	/** I6: a part counts where the entry occurred or where that part last increased. */
+	private costIn(entry: HeldEntry, windowStart: number | null): boolean {
+		return windowStart === null || entry.at >= windowStart || entry.costAt >= windowStart;
+	}
+
+	private requestsIn(entry: HeldEntry, windowStart: number | null): boolean {
+		return windowStart === null || entry.at >= windowStart || entry.requestsAt >= windowStart;
 	}
 
 	private aggregateOf(key: string): { cost: number; requests: number } {
@@ -371,9 +394,9 @@ export class HeldSpend {
 		let cost = 0;
 		let requests = 0;
 		for (const entry of this.entries.values()) {
-			if (entry.keyId !== keyId || !this.countsIn(entry, windowStart)) continue;
-			cost += counted(entry.cost);
-			requests += counted(entry.requests);
+			if (entry.keyId !== keyId) continue;
+			if (this.costIn(entry, windowStart)) cost += counted(entry.cost);
+			if (this.requestsIn(entry, windowStart)) requests += counted(entry.requests);
 		}
 		for (const key of [keyId, WORKSPACE_AGGREGATE]) {
 			const folded = this.aggregateOf(key);
@@ -388,7 +411,7 @@ export class HeldSpend {
 		let cost = 0;
 		for (const entry of this.entries.values()) {
 			if (keyIds && !keyIds.has(entry.keyId)) continue;
-			if (this.countsIn(entry, windowStart)) cost += counted(entry.cost);
+			if (this.costIn(entry, windowStart)) cost += counted(entry.cost);
 		}
 		for (const key of this.aggregate.keys()) {
 			if (keyIds && key !== WORKSPACE_AGGREGATE && !keyIds.has(key)) continue;

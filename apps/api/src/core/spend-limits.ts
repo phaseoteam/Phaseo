@@ -192,20 +192,51 @@ export async function checkSpendLimit(args: { workspaceId: string; keyId: string
 	}
 }
 
-// Totals already sent for a billing id as additive records to a protocol-1 coordinator.
-const legacySent = new Map<string, number>();
-const MAX_LEGACY_SENT = 10_000;
+// Charged totals a coordinator has acknowledged, per billing id of a stream charged in steps. They
+// advance only after the coordinator's response, so a send that stalls, fails or overlaps another
+// never makes a later one send too little: protocol-1 increases are computed against them.
+const acknowledged = new Map<string, number>();
+const MAX_ACKNOWLEDGED = 10_000;
+
+function commitTotals(totals: Map<string, number | null>): void {
+	for (const [id, total] of totals) {
+		acknowledged.delete(id);
+		// null: the final settled it; nothing more is sent for it.
+		if (total === null) continue;
+		acknowledged.set(id, total);
+		if (acknowledged.size > MAX_ACKNOWLEDGED) {
+			const oldest = acknowledged.keys().next();
+			if (!oldest.done) acknowledged.delete(oldest.value);
+		}
+	}
+}
+
+/** The totals replacement records set once a protocol-2 coordinator acknowledged them. */
+function replacementTotals(entries: SpendRecordEntry[]): Map<string, number | null> {
+	const totals = new Map<string, number | null>();
+	for (const entry of entries) {
+		if (!entry.replace) continue;
+		const previous = totals.get(entry.billingRequestId);
+		totals.set(entry.billingRequestId, entry.final ? null : previous === null ? null : Math.max(previous ?? 0, entry.costNanos));
+	}
+	return totals;
+}
 
 /**
  * The same records for a protocol-1 coordinator, which keeps the first record of each billing id:
- * each checkpoint increase becomes its own record (id derived from its total, so a replay is a
- * duplicate), the final sends the rest with its request count, and releases are returned to be sent
- * only after the records are acknowledged. A final lower than what was sent cannot lower it there:
- * an over-count until the seed counts the request.
+ * each checkpoint increase over the acknowledged total becomes its own record (id derived from its
+ * total, so a replay is a duplicate), the final sends the rest with its request count, and releases
+ * are returned to be sent only after the records are acknowledged. A final lower than what was sent
+ * cannot lower it there: an over-count until the seed counts the request.
  */
-export function toProtocol1(entries: SpendRecordEntry[]): { entries: SpendRecordEntry[]; releases: Array<{ leaseId: string; admissionId: string }> } {
+export function toProtocol1(entries: SpendRecordEntry[]): {
+	entries: SpendRecordEntry[];
+	releases: Array<{ leaseId: string; admissionId: string }>;
+	totals: Map<string, number | null>;
+} {
 	const out: SpendRecordEntry[] = [];
 	const releases: Array<{ leaseId: string; admissionId: string }> = [];
+	const totals = new Map<string, number | null>();
 	for (const entry of entries) {
 		const { releaseAdmissionId, replace, final, revision: _revision, ...plain } = entry;
 		if (releaseAdmissionId && entry.leaseId) releases.push({ leaseId: entry.leaseId, admissionId: releaseAdmissionId });
@@ -214,37 +245,64 @@ export function toProtocol1(entries: SpendRecordEntry[]): { entries: SpendRecord
 			continue;
 		}
 		const id = entry.billingRequestId;
-		const sent = legacySent.get(id) ?? 0;
-		const delta = Math.max(0, entry.costNanos - sent);
+		const running = totals.get(id);
+		if (running === null) continue;
+		const base = running ?? acknowledged.get(id) ?? 0;
+		const delta = Math.max(0, entry.costNanos - base);
 		if (final) {
-			legacySent.delete(id);
 			out.push({ ...plain, billingRequestId: `${id}:final`, costNanos: delta, requests: entry.requests });
+			totals.set(id, null);
 		} else if (delta > 0) {
-			legacySent.delete(id);
-			legacySent.set(id, entry.costNanos);
-			if (legacySent.size > MAX_LEGACY_SENT) {
-				const oldest = legacySent.keys().next();
-				if (!oldest.done) legacySent.delete(oldest.value);
-			}
 			out.push({ ...plain, billingRequestId: `${id}:+${entry.costNanos}`, costNanos: delta, requests: 0 });
+			totals.set(id, entry.costNanos);
 		}
 	}
-	return { entries: out, releases };
+	return { entries: out, releases, totals };
 }
 
-async function flushRecords(workspaceId: string): Promise<void> {
+async function sendProtocol1(stub: SpendLimitStub, workspaceId: string, queued: SpendRecordEntry[]): Promise<SpendRecordResult | null> {
+	const { entries, releases, totals } = toProtocol1(queued);
+	const result = entries.length ? await stub.record(workspaceId, entries) : null;
+	if (result) noteProtocol(workspaceId, result.protocol);
+	commitTotals(totals);
+	// Only once the cost is recorded: a slot released first would let an admission through uncounted.
+	for (const release of releases) await stub.release(workspaceId, release.leaseId, release.admissionId);
+	return result;
+}
+
+// One flush at a time per workspace: a later batch (a final and its release) never overtakes an
+// earlier one (the checkpoints it settles).
+const flushChains = new Map<string, Promise<void>>();
+
+function flushRecords(workspaceId: string): Promise<void> {
+	const run = (flushChains.get(workspaceId) ?? Promise.resolve()).catch(() => undefined).then(() => flushOnce(workspaceId));
+	flushChains.set(workspaceId, run);
+	run.finally(() => {
+		if (flushChains.get(workspaceId) === run) flushChains.delete(workspaceId);
+	}).catch(() => undefined);
+	return run;
+}
+
+async function flushOnce(workspaceId: string): Promise<void> {
 	const queued = recordQueues.get(workspaceId);
 	recordQueues.delete(workspaceId);
 	if (!queued?.length) return;
 	const stub = stubFor(workspaceId);
 	if (!stub) return;
-	const current = (coordinatorProtocols.get(workspaceId) ?? 1) >= SPEND_LIMIT_RECORD_PROTOCOL;
-	const { entries, releases } = current ? { entries: queued, releases: [] } : toProtocol1(queued);
-	// A lost batch is not lost spend: its gateway_requests rows are counted at the next reseed.
-	const result = entries.length ? await stub.record(workspaceId, entries) : null;
-	if (result) noteProtocol(workspaceId, result.protocol);
-	// Only once the cost is recorded: a slot released first would let an admission through uncounted.
-	for (const release of releases) await stub.release(workspaceId, release.leaseId, release.admissionId);
+	// A lost batch is not lost spend: its gateway_requests rows are counted at the next reseed, and a
+	// later replacement record carries the whole total.
+	let result: SpendRecordResult | null;
+	if ((coordinatorProtocols.get(workspaceId) ?? 1) >= SPEND_LIMIT_RECORD_PROTOCOL) {
+		result = await stub.record(workspaceId, queued);
+		noteProtocol(workspaceId, result?.protocol);
+		if ((result?.protocol ?? 1) >= SPEND_LIMIT_RECORD_PROTOCOL) commitTotals(replacementTotals(queued));
+		// The coordinator was rolled back: it kept at most the first record of each billing id and no
+		// release. Send the batch again as protocol-1 increases over the acknowledged totals (an
+		// over-count of what it kept), and release only once that is acknowledged.
+		else result = await sendProtocol1(stub, workspaceId, queued);
+	} else {
+		result = await sendProtocol1(stub, workspaceId, queued);
+	}
 	for (const keyId of result?.drainKeyIds ?? []) {
 		// The coordinator saw contention near a cap: hand unused slices back now.
 		const pool = pools.get(poolKey(workspaceId, keyId));
@@ -692,10 +750,12 @@ export function __resetSpendLimitsForTests(): void {
 	recordQueues.clear();
 	shadowed.clear();
 	coordinatorProtocols.clear();
-	legacySent.clear();
+	acknowledged.clear();
+	flushChains.clear();
 }
 
 /** Flushes queued spend records now (tests and shutdown paths). */
 export async function flushSpendRecordsForTests(): Promise<void> {
-	await Promise.all([...recordQueues.keys()].map((workspaceId) => flushRecords(workspaceId)));
+	const queued = [...recordQueues.keys()].map((workspaceId) => flushRecords(workspaceId));
+	await Promise.all([...queued, ...flushChains.values()]);
 }
