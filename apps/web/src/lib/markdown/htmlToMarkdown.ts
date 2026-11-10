@@ -166,8 +166,14 @@ function collapse(text: string): string {
 	return text.replace(/[\s ]+/g, " ");
 }
 
-function escapeInline(text: string): string {
-	return text.replace(/([\\`*_[\]<>])/g, "\\$1");
+/** Escapes Markdown characters in text; inside a table, pipes as well. */
+function escapeInline(text: string, inTable = false): string {
+	return text.replace(inTable ? /([\\`*_[\]<>|])/g : /([\\`*_[\]<>])/g, "\\$1");
+}
+
+/** Percent-encodes characters that would end a link URL or a table cell. */
+function encodeUrl(url: string): string {
+	return url.replace(/[()|]/g, encodeURIComponent);
 }
 
 function hasText(markdown: string): boolean {
@@ -241,9 +247,8 @@ function renderTable(element: ElementNode, ctx: Context): string {
 				const cells: string[] = [];
 				for (const cell of child.children) {
 					if (cell.kind !== "element" || (cell.name !== "td" && cell.name !== "th") || isHidden(cell)) continue;
-					// Only pipes are escaped here: text backslashes were already escaped by
-					// escapeInline, and backslashes inside code spans are literal.
-					cells.push(tidy(renderChildren(cell, { ...ctx, inTable: true })).replace(/\n+/g, " ").replace(/\|/g, "\\|"));
+					// Pipes are escaped where each piece of the cell is rendered (text, code, URLs).
+					cells.push(tidy(renderChildren(cell, { ...ctx, inTable: true })).replace(/\n+/g, " "));
 					// A cell spanning several columns keeps the cells after it under the right headers.
 					const span = Math.min(Math.max(Number.parseInt(cell.attribs.colspan ?? "1", 10) || 1, 1), 50);
 					for (let i = 1; i < span; i++) cells.push("");
@@ -268,7 +273,7 @@ function renderTable(element: ElementNode, ctx: Context): string {
 
 function renderNode(node: Node, ctx: Context): string {
 	if (node.kind === "comment") return "";
-	if (node.kind === "text") return escapeInline(collapse(node.text));
+	if (node.kind === "text") return escapeInline(collapse(node.text), ctx.inTable);
 	if (SKIPPED.has(node.name) || isHidden(node)) return "";
 	const { name } = node;
 
@@ -304,8 +309,11 @@ function renderNode(node: Node, ctx: Context): string {
 			return inner ? block(inner.split("\n").map((line) => (line ? `> ${line}` : ">")).join("\n")) : "";
 		}
 		case "code": {
-			const code = collapse(textContent(node));
-			if (!code.trim()) return "";
+			const text = collapse(textContent(node));
+			if (!text.trim()) return "";
+			// Code is literal, so backslashes stay; in a table GFM still needs `\|`
+			// for a pipe, and unescapes it inside the code span.
+			const code = ctx.inTable ? text.split("|").join("\\|") : text;
 			const fence = code.includes("`") ? "``" : "`";
 			return `${fence}${code}${fence}`;
 		}
@@ -323,14 +331,14 @@ function renderNode(node: Node, ctx: Context): string {
 			const inner = tidy(renderChildren(node, ctx)).replace(/\n+/g, " ");
 			const href = resolveHref(node.attribs.href ?? "", ctx.base);
 			if (!inner) return "";
-			return href ? `[${inner}](${href.replace(/[()]/g, encodeURIComponent)})` : inner;
+			return href ? `[${inner}](${encodeUrl(href)})` : inner;
 		}
 		case "img": {
 			const alt = collapse(node.attribs.alt ?? "").trim();
 			const src = resolveHref(node.attribs.src ?? "", ctx.base);
 			// SVGs are logos and icons; images without alt text are decorative.
 			if (!alt || !src || /\.svg(?:$|[?#])/i.test(src)) return "";
-			return `![${escapeInline(alt)}](${src})`;
+			return `![${escapeInline(alt, ctx.inTable)}](${encodeUrl(src)})`;
 		}
 		case "dt":
 			return block(`**${renderChildren(node, ctx).trim()}**`);
