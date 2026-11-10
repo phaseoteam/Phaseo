@@ -231,7 +231,7 @@ async function handleGet(
 									const originalPrice = stat.originalValue;
 									const priceContent = originalPrice ? (
 										<div style={{ display: "flex", flexDirection: "column", alignItems: "flex-start", marginTop: 8 }}>
-											<div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
+											<div style={{ display: "flex", alignItems: "center", gap: 10 }}>
 												<div style={{ fontSize: 35, fontWeight: 700, lineHeight: 1, letterSpacing: -1.1 }}>
 													{stat.value}
 												</div>
@@ -246,7 +246,7 @@ async function handleGet(
 											</div>
 										</div>
 									) : (
-										<div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 8 }}>
+										<div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
 											<div style={{ fontSize: stat.label === "RELEASED" ? releaseDateFontSize : 35, fontWeight: 700, lineHeight: 1, letterSpacing: -1.1 }}>
 												{stat.value}
 											</div>
