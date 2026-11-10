@@ -96,7 +96,11 @@ export function ParameterHoverChip({ param, spec = null }: { param: string; spec
 			<HoverCardContent align="start" className="w-72 space-y-2.5">
 				<HoverCardHeader
 					title={<code className="font-mono text-[13px]">{param}</code>}
-					meta={[reference.type, referenceDefault ? `${tQuickstart("defaultLabel")} ${referenceDefault}` : null]}
+					// Parameters outside the reference come back as "-"; skip those placeholders.
+					meta={[
+						reference.type && reference.type !== "-" ? reference.type : null,
+						referenceDefault && referenceDefault !== "-" ? `${tQuickstart("defaultLabel")} ${referenceDefault}` : null,
+					]}
 				/>
 				<HoverCardNote>{tQuickstart(`parameterDescriptions.${descriptionKey}` as never)}</HoverCardNote>
 				{spec ? (

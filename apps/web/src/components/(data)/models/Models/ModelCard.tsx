@@ -1102,11 +1102,6 @@ function ModelCardImpl({
 												</span>
 											) : null}
 											title={pricingProviderName ?? t("pricing")}
-											meta={[
-												pricingProviderName && providerCount > 1
-													? tCard("cheapestOf", { count: providerCount })
-													: null,
-											]}
 										/>
 										{headlineSummary ? <HoverCardStat>{headlineSummary}</HoverCardStat> : null}
 										<HoverCardRows

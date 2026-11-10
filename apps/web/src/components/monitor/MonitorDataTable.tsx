@@ -19,6 +19,7 @@ import {
 	HoverCardRows,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import {
 	AlignCenter,
@@ -872,7 +873,15 @@ export function MonitorDataTable({
 			route.regions.length ? `${modelsUiT("regionRouting")}: ${regionsLabel(route.regions)}` : null,
 			route.routeId,
 		].filter(Boolean).join(" · ");
-		const formatRate = (value: number) => format.number(value, { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2, notation: "standard" });
+		// Per-million rates can be fractions of a cent; two fixed decimals would show them as $0.00.
+		const formatRate = (value: number) => format.number(value, {
+			style: "currency",
+			currency: "USD",
+			notation: "standard",
+			...(value > 0 && value < 0.01
+				? { maximumSignificantDigits: 3 }
+				: { minimumFractionDigits: 2, maximumFractionDigits: 3 }),
+		});
 		// The route's cheapest listed charge, for the overflow list.
 		const cheapestLabel = (route: ProviderRoute) => {
 			if (route.inputPrice !== null && route.outputPrice !== null) return `${formatRate(route.inputPrice)} / ${formatRate(route.outputPrice)}`;
@@ -938,8 +947,10 @@ export function MonitorDataTable({
 					))}
 				</div>
 				{hiddenProviders.length > 0 ? (
-					<HoverCard>
-						<HoverCardTrigger asChild>
+					// A popover rather than a hover card: it holds links, and a popover
+					// takes keyboard focus so Tab reaches them. It still opens on hover.
+					<Popover>
+						<PopoverTrigger asChild openOnHover delay={150} closeDelay={100}>
 							<button
 								type="button"
 								aria-label={hoverT("moreProviders", { count: hiddenProviders.length })}
@@ -947,8 +958,8 @@ export function MonitorDataTable({
 							>
 								+{hiddenProviders.length}
 							</button>
-						</HoverCardTrigger>
-						<HoverCardContent align="center" className="w-72 space-y-2.5">
+						</PopoverTrigger>
+						<PopoverContent side="top" align="center" className="w-72 gap-2.5 p-3">
 							<HoverCardHeader title={hoverT("moreProviders", { count: hiddenProviders.length })} />
 							<ul className="space-y-1.5 text-xs">
 								{hiddenProviders.map((route) => {
@@ -969,8 +980,8 @@ export function MonitorDataTable({
 									);
 								})}
 							</ul>
-						</HoverCardContent>
-					</HoverCard>
+						</PopoverContent>
+					</Popover>
 				) : null}
 			</div>
 		);
