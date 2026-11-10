@@ -1069,7 +1069,7 @@ function ModelCardImpl({
 							>
 								{showLabPrefix ? (
 									<>
-										<span className="hidden sm:inline">{labPrefix}</span>
+										<span className="sr-only sm:not-sr-only">{labPrefix}</span>
 										{shortModelName}
 									</>
 								) : (
