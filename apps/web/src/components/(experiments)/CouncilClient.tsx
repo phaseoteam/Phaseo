@@ -68,6 +68,13 @@ import {
 } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import {
+	HoverCardBody,
+	HoverCardFacts,
+	HoverCardTitle,
+	joinMeta,
+} from "@/components/ui/hover-card-layout";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	ProviderInspectorSheet,
@@ -770,6 +777,7 @@ export default function CouncilClient({
 	const locale = useLocale();
 	const t = useTranslations("Product.experimentsCouncil");
 	const chatT = useTranslations("Product.chat");
+	const tCards = useTranslations("Common.ui.hoverCards");
 	const localizeCouncilError = (message: string | null | undefined) => {
 		const statusMatch = message?.match(/^Request failed \((\d+)\)\.$/);
 		if (statusMatch?.[1]) {
@@ -1214,6 +1222,25 @@ export default function CouncilClient({
 			blind_spots,
 		};
 	}, [analysisView]);
+	// What one fused source contributed, from data the page already has: its
+	// result row, and the analysis' agreements and unique insights that name it.
+	const summariseFusedSource = (modelId: string) => {
+		const result = runSourceResults.find((row) => row.model_id === modelId) ?? null;
+		const names = new Set([modelId.toLowerCase(), getLabel(modelId).toLowerCase()]);
+		const namesSource = (value: string) => names.has(value.trim().toLowerCase());
+		return {
+			status: result?.status ?? null,
+			failed: result?.status === "failed",
+			error: result?.error ?? null,
+			outputTokens: typeof result?.output_tokens === "number" ? result.output_tokens : null,
+			latencyMs: typeof result?.latency_ms === "number" ? result.latency_ms : null,
+			agreementCount: analysisSections
+				? analysisSections.agreement.filter((item) => item.supporting_models.some(namesSource)).length
+				: null,
+			uniqueInsight:
+				analysisSections?.unique_insights.find((item) => namesSource(item.model) && item.insight)?.insight ?? null,
+		};
+	};
 	const analysisCategoryRows = analysisSections
 		? [
 				{
@@ -2522,43 +2549,98 @@ export default function CouncilClient({
 											</div>
 											<div className="flex shrink-0 items-center gap-2">
 											<div className="flex items-center">
-												{fusedSourceModelIds.map((modelId, index) => (
+												{fusedSourceModelIds.map((modelId, index) => {
+													const source = summariseFusedSource(modelId);
+													const organisationName = modelMetaById.get(modelId)?.organisationName;
+													return (
 													<HoverCard key={`fused-${modelId}-${index}`} openDelay={150} closeDelay={80}>
 														<HoverCardTrigger asChild>
 															<span
-														key={`fused-${modelId}-${index}`}
 														className={cn(
-															"inline-flex h-5 w-5 cursor-default items-center justify-center rounded-md border border-border bg-background transition-transform hover:z-10 hover:-translate-y-0.5 hover:border-foreground/40",
+															"inline-flex h-5 w-5 cursor-help items-center justify-center rounded-md border border-border bg-background outline-none transition-transform hover:z-10 hover:-translate-y-0.5 hover:border-foreground/40 focus-visible:ring-2 focus-visible:ring-ring/50",
 															index > 0 ? "-ml-1.5" : "",
 														)}
 															tabIndex={0}
+															aria-label={tCards("sourceDetails", { model: getLabel(modelId) })}
 														>
 															<Logo
 																id={getLogoId(getOptionLogoId(modelId))}
-																alt={modelId}
+																alt=""
 																width={10}
 																height={10}
 																className="h-2.5 w-2.5 rounded-none object-contain"
 															/>
 															</span>
 														</HoverCardTrigger>
-														<HoverCardContent side="top" align="center" className="w-64 rounded-md p-3">
-															<div className="flex items-center gap-3">
-																<span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md border border-border bg-background">
-																	<Logo id={getLogoId(getOptionLogoId(modelId))} alt="" width={18} height={18} className="h-[18px] w-[18px] rounded-none object-contain" />
-																</span>
-																<div className="min-w-0">
-																	<p className="truncate text-sm font-medium">{getLabel(modelId)}</p>
-																	<p className="truncate text-xs text-muted-foreground">{modelMetaById.get(modelId)?.organisationName ?? modelId}</p>
-																</div>
-															</div>
+														<HoverCardContent side="top" align="end" className="w-72">
+															<HoverCardBody>
+																<HoverCardTitle
+																	icon={<Logo id={getLogoId(getOptionLogoId(modelId))} alt="" width={16} height={16} className="h-4 w-4 rounded-none object-contain" />}
+																	title={getLabel(modelId)}
+																	meta={joinMeta([
+																		organisationName,
+																		<code key="id" className="font-mono text-[11px]">{modelId}</code>,
+																	])}
+																/>
+																{source.failed ? (
+																	<Alert variant="destructive" className="rounded-md px-3 py-2 text-xs">
+																		<AlertCircle />
+																		<AlertTitle>{tCards("sourceFailed")}</AlertTitle>
+																		{source.error ? (
+																			<AlertDescription className="line-clamp-3 text-xs">
+																				{localizeCouncilError(source.error)}
+																			</AlertDescription>
+																		) : null}
+																	</Alert>
+																) : null}
+																<HoverCardFacts
+																	rows={[
+																		source.status
+																			? {
+																					key: "status",
+																					label: tCards("status"),
+																					value: source.failed ? tCards("sourceFailed") : tCards("sourceCompleted"),
+																				}
+																			: null,
+																		source.outputTokens !== null
+																			? {
+																					key: "tokens",
+																					label: tCards("outputTokens"),
+																					value: <span className="tabular-nums">{format.number(source.outputTokens)}</span>,
+																				}
+																			: null,
+																		source.latencyMs !== null
+																			? {
+																					key: "latency",
+																					label: tCards("latency"),
+																					value: <span className="tabular-nums">{format.latency(source.latencyMs) ?? "-"}</span>,
+																				}
+																			: null,
+																		source.agreementCount !== null
+																			? {
+																					key: "agreements",
+																					label: tCards("agreements"),
+																					value: <span className="tabular-nums">{format.number(source.agreementCount)}</span>,
+																				}
+																			: null,
+																		source.uniqueInsight
+																			? {
+																					key: "insight",
+																					label: tCards("uniqueInsight"),
+																					value: <span className="line-clamp-2">{source.uniqueInsight}</span>,
+																				}
+																			: null,
+																	]}
+																/>
+															</HoverCardBody>
 														</HoverCardContent>
 													</HoverCard>
-												))}
+													);
+												})}
 												</div>
 												<span
 													className={cn(
-														"inline-flex shrink-0 items-center rounded-full border px-2 py-0.5 text-[11px] font-medium",
+														"inline-flex shrink-0 items-center rounded-md border px-2 py-0.5 text-[11px] font-medium",
 														synthesisBusy
 															? "border-border bg-muted text-foreground"
 															: "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300",

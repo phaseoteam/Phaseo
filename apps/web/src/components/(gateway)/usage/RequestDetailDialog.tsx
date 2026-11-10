@@ -37,6 +37,13 @@ import {
 	HoverCardContent,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import {
+	HoverCardBody,
+	HoverCardFacts,
+	HoverCardHeadline,
+	HoverCardTitle,
+	joinMeta,
+} from "@/components/ui/hover-card-layout";
 import { Logo } from "@/components/Logo";
 import {
 	RequestRow,
@@ -723,23 +730,6 @@ function getAttemptStatusTone(
 	};
 }
 
-function getAttemptStatusDescription(attempt: ProviderAttemptRow): string | null {
-	const parts = [
-		typeof attempt.status_text === "string" ? attempt.status_text : null,
-		typeof attempt.upstream_error_code === "string"
-			? attempt.upstream_error_code
-			: null,
-		typeof attempt.upstream_error_message === "string"
-			? attempt.upstream_error_message
-			: typeof attempt.upstream_error_description === "string"
-				? attempt.upstream_error_description
-				: null,
-	].filter(Boolean);
-
-	if (parts.length === 0) return null;
-	return parts.join(" · ");
-}
-
 function getModelDetailsHref(modelId: string | null | undefined): string | null {
 	if (!modelId) return null;
 	const [organisationId, ...modelParts] = modelId.split("/");
@@ -851,6 +841,7 @@ export default function RequestDetailDialog({
 	const roomErrorT = useTranslations("Product.chatRooms");
 	const roomErrorTranslator = roomErrorT as unknown as RoomErrorTranslator;
 	const tUi = useTranslations("Common.ui");
+	const tCards = useTranslations("Common.ui.hoverCards");
 	const locale = useLocale();
 	const s = (key: string) => t(settingsStringKey(key) as never);
 	const m = (key: string, values: Record<string, string | number>) =>
@@ -957,7 +948,22 @@ export default function RequestDetailDialog({
 						attemptProviderId ||
 						t("usageGaps.attemptNumber", { number: index + 1 });
 					const statusTone = getAttemptStatusTone(attempt, t("usageGaps.copyOK"));
-					const statusDescription = getAttemptStatusDescription(attempt);
+					const attemptNumber = index + 1;
+					const attemptSucceeded =
+						(typeof attempt.status === "number" && attempt.status >= 200 && attempt.status < 300) ||
+						attempt.outcome === "success";
+					const attemptFailed = !attemptSucceeded;
+					const attemptStatusText =
+						(typeof attempt.status_text === "string" && attempt.status_text.trim()) ||
+						(typeof attempt.outcome === "string" && attempt.outcome !== String(attempt.status ?? "") ? attempt.outcome : null);
+					const attemptErrorCode =
+						typeof attempt.upstream_error_code === "string" && attempt.upstream_error_code.trim()
+							? attempt.upstream_error_code.trim()
+							: null;
+					const attemptErrorMessage =
+						(typeof attempt.upstream_error_message === "string" && attempt.upstream_error_message.trim()) ||
+						(typeof attempt.upstream_error_description === "string" && attempt.upstream_error_description.trim()) ||
+						null;
 					const durationMs = providerAttemptTimelineDuration(attempt, request.detail_metadata?.response_timeline);
 					const attemptFinishReason =
 						attempt.provider_finish_reason ?? attempt.finish_reason ?? null;
@@ -984,66 +990,56 @@ export default function RequestDetailDialog({
 								<HoverCard openDelay={100} closeDelay={100}>
 									<HoverCardTrigger asChild>
 									<span
+										tabIndex={0}
+										aria-label={tCards("attemptOf", { number: attemptNumber, total: attempts.length })}
 										className={cn(
-											"inline-flex shrink-0 cursor-default items-center justify-center rounded-sm border px-1.5 py-0.5 font-mono text-[10px] font-medium",
+											"inline-flex shrink-0 cursor-help items-center justify-center rounded-sm border px-1.5 py-0.5 font-mono text-[10px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
 											statusTone.badgeClass,
 										)}
 									>
 										{statusTone.label}
 									</span>
 									</HoverCardTrigger>
-									<HoverCardContent
-										align="start"
-										sideOffset={8}
-										className="w-72 rounded-md border border-border/70 p-0 shadow-xl"
-									>
-										<div className="border-b border-border/70 px-3 py-2.5">
-											<div className="flex items-center justify-between gap-3">
-										<span className="text-sm font-semibold">{s("Provider response")}</span>
-												<span className={cn("rounded-sm border px-1.5 py-0.5 font-mono text-[10px] font-medium", statusTone.badgeClass)}>
-													{statusTone.label}
-												</span>
-											</div>
-											{statusDescription ? (
-												<p className="mt-1 text-xs text-muted-foreground">{statusDescription}</p>
-											) : null}
-										</div>
-										<dl className="grid grid-cols-[88px_minmax(0,1fr)] gap-x-3 gap-y-2 px-3 py-2.5 text-xs">
-											<dt className="text-muted-foreground">{s("Provider")}</dt>
-											<dd className="min-w-0 truncate text-right font-medium">
-												{attemptProviderId ? (
-													<Link
-														href={`/api-providers/${encodeURIComponent(attemptProviderId)}`}
-														className="text-foreground underline decoration-transparent transition-colors hover:decoration-foreground/70"
-													>
-														{attemptProviderName}
-													</Link>
-												) : attemptProviderName}
-											</dd>
-											{attemptPhaseoModelId ? (
-												<>
-													<dt className="text-muted-foreground">{s("Model")}</dt>
-													<dd
-														className="min-w-0 truncate text-right font-mono text-[11px]"
-														title={attemptPhaseoModelId}
-													>
-														{attemptPhaseoModelId}
-													</dd>
-												</>
-											) : null}
-											{attemptFinishReason ? (
-												<>
-													<dt className="text-muted-foreground">{s("Finish Reason")}</dt>
-													<dd className="text-right font-medium">{attemptFinishReason}</dd>
-												</>
-											) : null}
-											{attemptCostNanos > 0 ? (
-												<>
-													<dt className="text-muted-foreground">{s("Cost")}</dt>
-													<dd className="text-right font-mono">{formatCost(attemptCostNanos)}</dd>
-												</>
-											) : null}
-										</dl>
+									<HoverCardContent align="start" sideOffset={8} className="w-72">
+										<HoverCardBody>
+											<HoverCardTitle
+												icon={attemptProviderId ? <Logo id={attemptProviderId} width={16} height={16} /> : null}
+												title={attemptProviderName}
+												meta={joinMeta([
+													tCards("attemptOf", { number: attemptNumber, total: attempts.length }),
+													s("Provider response"),
+												])}
+											/>
+											<HoverCardHeadline label={attemptStatusText}>
+												{typeof attempt.status === "number" ? attempt.status : statusTone.label}
+											</HoverCardHeadline>
+											<HoverCardFacts
+												rows={[
+													attemptPhaseoModelId
+														? {
+																key: "model",
+																label: s("Model"),
+																value: <code className="break-all font-mono text-[11px]">{attemptPhaseoModelId}</code>,
+															}
+														: null,
+													durationMs !== null && durationMs !== undefined
+														? { key: "duration", label: tCards("duration"), value: <span className="tabular-nums">{format.latency(durationMs) ?? "-"}</span> }
+														: null,
+													attemptFinishReason
+														? { key: "finish", label: s("Finish Reason"), value: attemptFinishReason }
+														: null,
+													attemptCostNanos > 0
+														? { key: "cost", label: s("Cost"), value: <span className="font-mono">{formatCost(attemptCostNanos)}</span> }
+														: null,
+													attemptFailed && attemptErrorCode
+														? { key: "error-code", label: tCards("errorCode"), value: <code className="break-all font-mono text-[11px]">{attemptErrorCode}</code> }
+														: null,
+													attemptFailed && attemptErrorMessage
+														? { key: "error-message", label: tCards("errorMessage"), value: <span className="line-clamp-4">{attemptErrorMessage}</span> }
+														: null,
+												]}
+											/>
+										</HoverCardBody>
 									</HoverCardContent>
 								</HoverCard>
 							</div>
@@ -1213,10 +1209,13 @@ export default function RequestDetailDialog({
 		{
 			label: s("Routed model"),
 			description: s("phraseTheCanonicalPhaseoModelSelectedAfterAliasesPresetsAndRouterExpansionAreResolved"),
-			value: modelHref ? (
+			value: (
 				<UsageEntityHoverCard
 					title={modelName || routedModelId || "-"}
-					subtitle={modelMeta?.organisationName ?? null}
+					meta={joinMeta([
+						modelMeta?.organisationName,
+						routedModelId ? <code key="id" className="font-mono text-[11px]">{routedModelId}</code> : null,
+					])}
 					href={modelHref}
 					visual={
 						modelMeta ? (
@@ -1229,87 +1228,23 @@ export default function RequestDetailDialog({
 						) : null
 					}
 					rows={[
-						{
-							label: s("Model ID"),
-							value: (
-								<code className="font-mono text-[11px]">
-									{routedModelId ?? "-"}
-								</code>
-							),
-						},
-						...(modelMeta?.organisationName
-							? [
-									{
-									label: s("Organisation"),
-										value: modelMeta.organisationName,
-									},
-							  ]
-							: []),
+						providerName || request.provider
+							? { key: "provider", label: tCards("provider"), value: providerName ?? request.provider }
+							: null,
 					]}
+					requestedAs={requestedModelId ? { id: requestedModelId, routedId: routedModelId } : null}
 				>
-					<div className="flex items-center gap-2">
-						{modelMeta ? (
-							<Logo
-								id={modelMeta.organisationId}
-								width={16}
-								height={16}
-								className="flex-shrink-0"
-							/>
-						) : null}
-						<Link
-							href={modelHref}
-							className="min-w-0 break-words text-foreground underline decoration-transparent transition-colors duration-200 hover:text-foreground hover:decoration-foreground/70 sm:truncate"
-						>
-							{modelName || routedModelId || "-"}
-						</Link>
-					</div>
-				</UsageEntityHoverCard>
-			) : (
-				<UsageEntityHoverCard
-					title={modelName || routedModelId || "-"}
-					subtitle={modelMeta?.organisationName ?? null}
-					visual={
-						modelMeta ? (
-							<Logo
-								id={modelMeta.organisationId}
-								width={16}
-								height={16}
-								className="flex-shrink-0"
-							/>
-						) : null
-					}
-					rows={[
-						{
-											label: s("Model ID"),
-							value: (
-								<code className="font-mono text-[11px]">
-									{routedModelId ?? "-"}
-								</code>
-							),
-						},
-						...(modelMeta?.organisationName
-							? [
-									{
-									label: s("Organisation"),
-										value: modelMeta.organisationName,
-									},
-							  ]
-							: []),
-					]}
-				>
-					<div className="flex items-center gap-2">
-						{modelMeta ? (
-							<Logo
-								id={modelMeta.organisationId}
-								width={16}
-								height={16}
-								className="flex-shrink-0"
-							/>
-						) : null}
-						<span className="min-w-0 break-words sm:truncate">
-							{modelName || routedModelId || "-"}
-						</span>
-					</div>
+					{modelMeta ? (
+						<Logo
+							id={modelMeta.organisationId}
+							width={16}
+							height={16}
+							className="flex-shrink-0"
+						/>
+					) : null}
+					<span className="min-w-0 break-words sm:truncate">
+						{modelName || routedModelId || "-"}
+					</span>
 				</UsageEntityHoverCard>
 			),
 		},
@@ -1319,18 +1254,16 @@ export default function RequestDetailDialog({
 			value: requestedModelId ? (
 				<UsageEntityHoverCard
 					title={requestedModelName || requestedModelId}
-					href={requestedModelHref ?? undefined}
+					meta={joinMeta([
+						requestedModelMeta?.organisationName,
+						<code key="id" className="font-mono text-[11px]">{requestedModelId}</code>,
+					])}
+					href={requestedModelHref}
 					visual={requestedModelMeta ? <Logo id={requestedModelMeta.organisationId} width={16} height={16} className="shrink-0" /> : null}
-					rows={[{ label: s("Model ID"), value: <code className="font-mono text-[11px]">{requestedModelId}</code> }]}
+					triggerClassName="sm:justify-end"
 				>
-					{requestedModelHref ? (
-						<Link href={requestedModelHref} className="inline-flex min-w-0 items-center gap-2 text-foreground underline decoration-transparent transition-colors hover:decoration-foreground/70 sm:justify-end">
-							{requestedModelMeta ? <Logo id={requestedModelMeta.organisationId} width={16} height={16} className="shrink-0" /> : null}
-							<span className="min-w-0 break-words sm:truncate">{requestedModelName || requestedModelId}</span>
-						</Link>
-					) : (
-						<span className="min-w-0 break-words sm:truncate">{requestedModelName || requestedModelId}</span>
-					)}
+					{requestedModelMeta ? <Logo id={requestedModelMeta.organisationId} width={16} height={16} className="shrink-0" /> : null}
+					<span className="min-w-0 break-words sm:truncate">{requestedModelName || requestedModelId}</span>
 				</UsageEntityHoverCard>
 			) : (
 				"-"
@@ -1357,7 +1290,8 @@ export default function RequestDetailDialog({
 			value: request.provider ? (
 				<UsageEntityHoverCard
 					title={providerName ?? request.provider}
-				href={request.provider === "private-model" ? "/settings/workspaces/private-models" : `/api-providers/${encodeURIComponent(request.provider)}`}
+					meta={<code className="font-mono text-[11px]">{request.provider}</code>}
+					href={request.provider === "private-model" ? "/settings/workspaces/private-models" : `/api-providers/${encodeURIComponent(request.provider)}`}
 					visual={
 						<Logo
 							id={request.provider}
@@ -1367,36 +1301,18 @@ export default function RequestDetailDialog({
 						/>
 					}
 					rows={[
-						{
-							label: s("Provider ID"),
-							value: (
-								<code className="font-mono text-[11px]">
-									{request.provider}
-								</code>
-							),
-						},
-						...(providerPolicyLabel
-							? [
-									{
-									label: s("Data policy"),
-										value: providerPolicyLabel,
-									},
-							  ]
-							: []),
+						providerPolicyLabel
+							? { key: "policy", label: s("Data policy"), value: providerPolicyLabel }
+							: null,
 					]}
 				>
-					<Link
-					href={request.provider === "private-model" ? "/settings/workspaces/private-models" : `/api-providers/${encodeURIComponent(request.provider)}`}
-					className="inline-flex items-center gap-2 text-foreground underline decoration-transparent transition-colors duration-200 hover:text-foreground hover:decoration-foreground/70"
-					>
-						<Logo
-							id={request.provider}
-							width={16}
-							height={16}
-							className="flex-shrink-0"
-						/>
-						<span>{providerName ?? request.provider}</span>
-					</Link>
+					<Logo
+						id={request.provider}
+						width={16}
+						height={16}
+						className="flex-shrink-0"
+					/>
+					<span>{providerName ?? request.provider}</span>
 				</UsageEntityHoverCard>
 			) : (
 				"-"
@@ -1446,10 +1362,12 @@ export default function RequestDetailDialog({
 				request.app_id && appName ? (
 					<UsageEntityHoverCard
 						title={appName}
+						meta={s("Workspace app")}
 						href={`/apps/${encodeURIComponent(request.app_id)}`}
 						visual={<AppWindow className="h-4 w-4 text-muted-foreground" />}
 						rows={[
 							{
+								key: "app-id",
 								label: s("App ID"),
 								value: (
 									<code className="font-mono text-[11px]">
@@ -1457,18 +1375,9 @@ export default function RequestDetailDialog({
 									</code>
 								),
 							},
-							{
-								label: s("Type"),
-								value: s("Workspace app"),
-							},
 						]}
 					>
-						<Link
-							href={`/apps/${encodeURIComponent(request.app_id)}`}
-							className="text-foreground underline decoration-transparent transition-colors duration-200 hover:text-foreground hover:decoration-foreground/70"
-						>
-							{appName}
-						</Link>
+						{appName}
 					</UsageEntityHoverCard>
 				) : (
 					appName ?? request.app_id ?? "-"
