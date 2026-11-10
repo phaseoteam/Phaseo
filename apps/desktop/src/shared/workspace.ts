@@ -1,8 +1,10 @@
+import type { RememberedModels } from "./rememberedModels";
 import type { HtmlRenderActivity } from "./htmlRender";
 import type { Delegation, Launch } from "./orchestration";
 import type { CodeHostKind, CustomCodeHost } from "./codeHosts";
 import type { CodeHostSettings, CodeHostTokenRequest } from "./codeHostSettings";
 import type { CreatedOutsideAgentToken, OutsideAgentAccess, OutsideAgentSettings } from "./outsideAgents";
+import type { PhoneAccess, PhonePairingView, PhoneSettingsUpdate, PhoneState } from "./phone";
 import type { IssueDraft, TriagePreparation, TriageProject } from "./triage";
 import type { AutopilotDecision } from "./inbox";
 import type { UsageFolder, UsagePeriod, UsageReport } from "./usageLedger";
@@ -178,7 +180,8 @@ export type GitDiffContentsRequest = { filename: string; staged: boolean; hash: 
 export type GitDiffContents = { oldFile: { name: string; contents: string }; newFile: { name: string; contents: string } };
 export type GitHunkReview = { filename: string; staged: boolean; hash: string; hunks: { index: number; heading: string; text: string; patch: string }[] };
 export type GitCommand = { type: "stage" | "unstage"; filename: string } | { type: "stage-hunk" | "unstage-hunk"; filename: string; index: number; hash: string } | { type: "create-branch" | "switch-branch"; name: string } | { type: "commit"; message: string; /** Stages every change first when nothing is staged. */ all?: boolean; /** Pushes after committing (Commit & push). */ push?: boolean } | { type: "push" | "pull" };
-export type TerminalSession = { id: string; projectId?: string; /** The project action it runs, if any. */ scriptId?: string; title: string; cwd: string; output: string; ephemeral?: boolean; taskId?: string; status: "running" | "exited" | "interrupted"; exitCode?: number; createdAt: string; updatedAt: string };
+export type TerminalSession = { id: string; projectId?: string; /** The project action it runs, if any. */ scriptId?: string; title: string; cwd: string; output: string; ephemeral?: boolean; taskId?: string; status: "running" | "exited" | "interrupted"; exitCode?: number; createdAt: string; updatedAt: string;
+	/** The paired phones watching it now, by name; never saved with the transcript. */ phones?: string[] };
 export type TerminalCommand = { type: "open"; projectId?: string; /** The chat the terminal belongs to, for its drawer and tab titles. */ taskId?: string; /** Runs this project script in the new terminal, named after it. */ scriptId?: string } | { type: "write"; id: string; data: string } | { type: "resize"; id: string; columns: number; rows: number } | { type: "close" | "delete"; id: string };
 export type TerminalEvent = { sessionId: string; data?: string; session?: TerminalSession };
 export type WorkspaceCommand =
@@ -322,6 +325,10 @@ export type WorkspaceApi = {
 	/** Saves a copy of an attachment where the person chooses; false when they cancel. */
 	saveAttachment: (taskId: string, id: string) => Promise<boolean>;
 	installations: () => Promise<HarnessInstallation[]>;
+	/** Local agents installed and signed in (or listing models), as main checks them for the window and phones; at most a minute old unless forced. */
+	connectedHarnesses: (force?: boolean) => Promise<Harness[]>;
+	/** Mirrors the model a new chat starts with, and the favourites, from the window's storage to main, for phones. */
+	rememberModels: (value: RememberedModels) => Promise<void>;
 	updateHarness: (harness: "codex" | "claude" | "pi") => Promise<void>;
 	cancelHarnessUpdate: () => Promise<void>;
 	harnessUpdateStatus: () => Promise<"codex" | "claude" | "pi" | undefined>;
@@ -393,6 +400,20 @@ export type WorkspaceApi = {
 	createOutsideAgentToken: (request: { name: string; access: OutsideAgentAccess }) => Promise<CreatedOutsideAgentToken>;
 	revokeOutsideAgentToken: (id: string) => Promise<OutsideAgentSettings>;
 	onOutsideAgentsChanged: (listener: (settings: OutsideAgentSettings) => void) => () => void;
+	/** Settings → Phone: phone access, its addresses, paired phones and Phaseo Connect. */
+	phone: () => Promise<PhoneState>;
+	updatePhone: (update: PhoneSettingsUpdate) => Promise<PhoneState>;
+	pairPhone: () => Promise<PhonePairingView>;
+	removePhone: (id: string) => Promise<PhoneState>;
+	/** Switches what one paired phone may do beyond its threads. */
+	setPhoneAccess: (id: string, access: Partial<PhoneAccess>) => Promise<PhoneState>;
+	setupPhoneHttps: () => Promise<PhoneState>;
+	/** Starts or stops Phaseo Connect's monthly charge, then connects or disconnects. */
+	setPhaseoConnect: (enabled: boolean) => Promise<PhoneState>;
+	refreshPhaseoConnect: () => Promise<PhoneState>;
+	onPhoneChanged: (listener: (state: PhoneState) => void) => () => void;
+	/** A paired phone changed code on this computer (committed, pushed, merged…), so the window says so. */
+	onPhoneNote: (listener: (note: { device: string; summary: string; projectId?: string; project?: string }) => void) => () => void;
 	saveCodeHostToken: (request: CodeHostTokenRequest) => Promise<CodeHostSettings>;
 	removeCodeHostToken: (kind: CodeHostKind, host: string) => Promise<CodeHostSettings>;
 	saveCodeHostServers: (servers: CustomCodeHost[]) => Promise<CodeHostSettings>;

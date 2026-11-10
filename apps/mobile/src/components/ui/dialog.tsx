@@ -9,6 +9,7 @@ import { scheduleOnRN } from "react-native-worklets";
 import { useLayout } from "@/hooks/useLayout";
 import { cn } from "@/lib/cn";
 import { project, rubberband, SHEET_SPRING, SNAP_BACK_SPRING, useReleaseVelocity } from "@/lib/motion";
+import { OutsideDrawer } from "./horizontal-scroll";
 import { dialogFrame, type DialogSize } from "./overlay";
 import { Screen } from "./screen";
 
@@ -36,18 +37,31 @@ export function DialogFrame({ children, onClose, size = "fit" }: { children: Rea
  * Content that isn't a short list of options (filters, forms): a bottom drawer on phones, a centred
  * dialog on tablets, where a full-width drawer would stretch across both panes.
  */
-export function Sheet({ open, onClose, children, size = "fit", className }: { open: boolean; onClose: () => void; children: ReactNode; size?: DialogSize; className?: string }) {
+export function Sheet({ open, onClose, children, size = "fit", phoneHeight, className }: {
+  open: boolean;
+  onClose: () => void;
+  children: ReactNode;
+  size?: DialogSize;
+  /** A fixed height for the phone drawer, of the screen (for content that fills it, like a long list). */
+  phoneHeight?: `${number}%`;
+  className?: string;
+}) {
   const { split } = useLayout();
   const insets = useSafeAreaInsets();
   return (
     <Modal visible={open} transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
-      {split ? (
-        <DialogFrame onClose={onClose} size={size}>{children}</DialogFrame>
-      ) : (
-        <BottomDrawer onClose={onClose} maxHeight="85%" className={className} paddingBottom={insets.bottom + 12}>
-          {children}
-        </BottomDrawer>
-      )}
+      <OutsideDrawer>
+        {split ? (
+          <DialogFrame onClose={onClose} size={size}>{children}</DialogFrame>
+        ) : (
+          // A sheet with a text box rides up with the keyboard, as the tablet dialog does.
+          <KeyboardAvoidingView behavior="padding" style={{ flex: 1 }}>
+            <BottomDrawer onClose={onClose} maxHeight="85%" height={phoneHeight} className={className} paddingBottom={insets.bottom + 12}>
+              {children}
+            </BottomDrawer>
+          </KeyboardAvoidingView>
+        )}
+      </OutsideDrawer>
     </Modal>
   );
 }
@@ -58,7 +72,18 @@ export function Sheet({ open, onClose, children, size = "fit", className }: { op
  * Closing otherwise (the backdrop, Back, an action) is the Modal's fade, so a drawer's Modal is gone as quickly as
  * before and an action can open the next one straight away. The backdrop dims with the drawer's position.
  */
-export function BottomDrawer({ onClose, maxHeight, paddingBottom, className, children }: { onClose: () => void; maxHeight: `${number}%`; paddingBottom: number; className?: string; children: ReactNode }) {
+export function BottomDrawer({ onClose, maxHeight, height: fixedHeight, paddingBottom, className, children }: {
+  onClose: () => void;
+  maxHeight: `${number}%`;
+  /**
+   * A fixed height, of the screen, in place of fitting the content. It goes on the drawer's own frame: a percentage
+   * height in `className` would be taken of that frame rather than the screen.
+   */
+  height?: `${number}%`;
+  paddingBottom: number;
+  className?: string;
+  children: ReactNode;
+}) {
   const window = useWindowDimensions();
   // Below the screen until it has been measured, then up from its own height.
   const offset = useSharedValue(window.height);
@@ -120,8 +145,8 @@ export function BottomDrawer({ onClose, maxHeight, paddingBottom, className, chi
         <Pressable accessibilityLabel="Close" className="flex-1 bg-black/40" onPress={onClose} />
       </Animated.View>
       {/* Reanimated views take styles only; the themed drawer is a core View inside. */}
-      <Animated.View accessibilityViewIsModal style={[{ maxHeight }, drawerStyle]} onLayout={onLayout}>
-        <View className={cn("shrink rounded-t-md border-t border-border bg-popover", className)} style={{ paddingBottom }}>
+      <Animated.View accessibilityViewIsModal style={[fixedHeight ? { height: fixedHeight, maxHeight: fixedHeight } : { maxHeight }, drawerStyle]} onLayout={onLayout}>
+        <View className={cn("shrink rounded-t-md border-t border-border bg-popover", fixedHeight && "flex-1", className)} style={{ paddingBottom }}>
           {/* The detector checks a touch against its one child's bounds, so the strip must be a real native view
               (collapsable={false}: a layout-only view is flattened away, leaving the 4 dp bar as the target) and
               tall enough for a finger by itself. */}
