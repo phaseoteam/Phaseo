@@ -52,18 +52,73 @@ phaseo logs list --since 1h --status error --json
 
 サーバーの URL は `https://mcp.phaseo.app/mcp` です。これに接続した AI クライアントは、モデル、価格、プロバイダー、使用量、ワークスペースの最新データを使って質問に答えられます。
 
-### Codex から接続する
+### クライアントを接続する
 
+ワンクリックでインストール：[Cursor に追加](cursor://anysphere.cursor-deeplink/mcp/install?name=phaseo&config=eyJ1cmwiOiJodHRwczovL21jcC5waGFzZW8uYXBwL21jcCJ9) · [VS Code に追加](vscode:mcp/install?%7B%22name%22%3A%22phaseo%22%2C%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fmcp.phaseo.app%2Fmcp%22%7D)。クライアントからサインインを求められると、ブラウザで Phaseo OAuth が開きます。ワークスペースを選び、要求された読み取りスコープを承認してください。
+
+<Tabs>
+<Tab title="Claude Code">
+```bash
+claude mcp add --transport http phaseo https://mcp.phaseo.app/mcp
+```
+
+続けて `/mcp` を実行し、`phaseo` を選んで **Authenticate** を選択します。すべてのプロジェクトで使うには `--scope user` を付けます。
+</Tab>
+<Tab title="Codex">
 ```bash
 codex mcp add phaseo --url https://mcp.phaseo.app/mcp
 codex mcp login phaseo
-```
-
-ログインコマンドを実行すると Phaseo OAuth が開きます。ワークスペースを選び、要求された読み取りスコープを承認してから、接続を確認します。
-
-```bash
 codex mcp list
 ```
+
+ログインコマンドで Phaseo OAuth が開きます。`codex mcp list` で接続を確認できます。
+</Tab>
+<Tab title="Cursor">
+```json ~/.cursor/mcp.json
+{
+  "mcpServers": {
+    "phaseo": {
+      "url": "https://mcp.phaseo.app/mcp"
+    }
+  }
+}
+```
+
+上の **Cursor に追加** を使うか、`~/.cursor/mcp.json` にサーバーを追加し、Cursor の MCP 設定からサインインします。
+</Tab>
+<Tab title="VS Code">
+```json .vscode/mcp.json
+{
+  "servers": {
+    "phaseo": {
+      "type": "http",
+      "url": "https://mcp.phaseo.app/mcp"
+    }
+  }
+}
+```
+
+上の **VS Code に追加** を使うか、`.vscode/mcp.json` にサーバーを追加します。MCP ビューからサーバーを起動し、VS Code に求められたらサインインします。
+</Tab>
+<Tab title="Claude">
+Claude で **Settings → Connectors** を開き、**Add custom connector** を選んで `Phaseo` とサーバー URL を入力し、**Connect** を選択します。このオプションが表示されない場合は、Claude 組織のオーナーがカスタムコネクタを許可する必要があります。
+</Tab>
+<Tab title="OpenCode">
+```json opencode.json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "phaseo": {
+      "type": "remote",
+      "url": "https://mcp.phaseo.app/mcp"
+    }
+  }
+}
+```
+
+`opencode.json` にサーバーを追加し、`opencode mcp auth phaseo` を実行してサインインします。
+</Tab>
+</Tabs>
 
 他の MCP クライアントでは、同じ URL をリモートの Streamable HTTP サーバーとして追加します。クライアントは、OAuth ディスカバリー、S256 PKCE を使う認可コード、MCP の `resource` パラメーターに対応している必要があります。
 
