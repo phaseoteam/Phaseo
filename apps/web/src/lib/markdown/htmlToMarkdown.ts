@@ -57,12 +57,14 @@ function parse(html: string): { root: ElementNode; title: string | null; descrip
 	const root: ElementNode = { kind: "element", name: "#root", attribs: {}, children: [], parent: null };	let current = root;
 	let title: string | null = null;
 	let inTitle = false;
+	// Only the first <title> counts; SVGs carry their own <title> elements.
+	let titleDone = false;
 	let description: string | null = null;
 	let canonical: string | null = null;
 	const parser = new Parser(
 		{
 			onopentag(name, attribs) {
-				if (name === "title") inTitle = true;
+				if (name === "title" && !titleDone) inTitle = true;
 				if (name === "meta" && (attribs.name === "description" || (attribs.property === "og:description" && description === null))) description = attribs.content ?? description;
 				if (name === "link" && attribs.rel === "canonical" && attribs.href) canonical = attribs.href;
 				const element: ElementNode = { kind: "element", name, attribs, children: [], parent: current };
@@ -80,7 +82,10 @@ function parse(html: string): { root: ElementNode; title: string | null; descrip
 				current.children.push({ kind: "comment", text, parent: current });
 			},
 			onclosetag(name, isImplied) {
-				if (name === "title") inTitle = false;
+				if (name === "title" && inTitle) {
+					inTitle = false;
+					titleDone = true;
+				}
 				if (VOID.has(name)) return;
 				// Walk up to the matching element; stray closing tags are ignored.
 				let node: ElementNode | null = current;
@@ -171,9 +176,11 @@ function escapeInline(text: string, inTable = false): string {
 	return text.replace(inTable ? /([\\`*_[\]<>|])/g : /([\\`*_[\]<>])/g, "\\$1");
 }
 
+const URL_ESCAPES: Record<string, string> = { "(": "%28", ")": "%29", "|": "%7C", " ": "%20" };
+
 /** Percent-encodes characters that would end a link URL or a table cell. */
 function encodeUrl(url: string): string {
-	return url.replace(/[()|]/g, encodeURIComponent);
+	return url.replace(/[()| ]/g, (char) => URL_ESCAPES[char]);
 }
 
 function hasText(markdown: string): boolean {

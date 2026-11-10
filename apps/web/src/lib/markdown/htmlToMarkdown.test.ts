@@ -95,6 +95,16 @@ describe("htmlToMarkdown", () => {
 		expect(markdown.split("---\n\n")[1]).toBe("OpenAI\n\n[Chat](https://phaseo.app/chat) [Compare](https://phaseo.app/compare)\n\n| Provider |\n| --- |\n| OpenAI |\n");
 	});
 
+	it("uses only the first <title> and encodes parentheses in URLs", () => {
+		const { markdown } = htmlToMarkdown(
+			page(`<main><svg><title>Icon</title></svg><p><a href="/models/foo_(preview)">Foo</a></p><img src="/a (1).png" alt="Chart"></main>`),
+			"https://phaseo.app/x",
+		);
+		expect(markdown).toContain('title: "GPT-5.5 | Phaseo"\n');
+		expect(markdown).toContain("[Foo](https://phaseo.app/models/foo_%28preview%29)");
+		expect(markdown).toContain("![Chart](https://phaseo.app/a%20%281%29.png)");
+	});
+
 	it("escapes backslashes once and pipes in table cells", () => {
 		const { markdown } = htmlToMarkdown(page(`<main><table><tr><th>A</th></tr><tr><td>C:\\path a|b <code>x\\|y</code></td></tr></table></main>`), "https://phaseo.app/x");
 		expect(markdown.split("---\n\n")[1]).toBe("| A |\n| --- |\n| C:\\\\path a\\|b `x\\\\|y` |\n");

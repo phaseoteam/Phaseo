@@ -31,8 +31,8 @@ export type MetadataLoaderData = { metadata?: Metadata; deferredMetadata?: Promi
 
 /** Loader result: awaited metadata for crawlers, a streamed promise for everyone else. */
 export async function metadataLoaderData(promise: Promise<Metadata>): Promise<MetadataLoaderData> {
-	if (isCrawlerRequest()) return { metadata: await promise };
 	// A metadata failure must not fail the page; the title just stays generic.
+	if (isCrawlerRequest()) return { metadata: await promise.catch(() => null) };
 	return { deferredMetadata: defer(promise.catch(() => null)) };
 }
 
