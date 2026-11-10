@@ -55,7 +55,7 @@ try {
     const v4 = await read(v4File);
     // sweep_spend_limit_warnings was last replaced by budget_enforcement_money_hygiene (charged async
     // requests that did not succeed count toward cost).
-    const latestFile = '../migrations/20261110122531_budget_enforcement_money_hygiene.sql';
+    const latestFile = '../migrations/20261110142221_budget_enforcement_money_hygiene.sql';
     const latest = await read(latestFile);
     for (const file of schemaFiles) {
         const shipped = file.endsWith('sweep_spend_limit_warnings.sql') ? latest : v4;
@@ -199,7 +199,7 @@ try {
     await db.exec(await read('../schemas/public/functions/catalog_model_is_public.sql'));
     for (const file of migrations) await db.exec(await read(file));
     await db.exec(v4);
-    await db.exec(await read('../migrations/20261110112506_billing_cutoffs.sql'));
+    await db.exec(await read('../migrations/20261110140719_billing_cutoffs.sql'));
     for (const file of usageFiles) await db.exec(await read(file));
     await db.exec(await read('../schemas/public/functions/sweep_spend_limit_warnings.sql'));
 
