@@ -2,6 +2,8 @@
 
 > Phaseo is an open-source AI gateway and model intelligence database for comparing AI models, providers, pricing, benchmarks, latency, throughput, and gateway support.
 
+Every page on phaseo.app is also available as Markdown. Add `.md` to the page URL (for example https://phaseo.app/models/openai/gpt-5.5.md, or https://phaseo.app/index.md for the homepage), or request the page with `Accept: text/markdown`.
+
 ## Core product pages
 
 - [Models](https://phaseo.app/models): Browse AI models by provider, capability, modality, pricing, and gateway status.

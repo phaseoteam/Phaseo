@@ -882,6 +882,9 @@ importers:
       html-to-image:
         specifier: 1.11.13
         version: 1.11.13
+      htmlparser2:
+        specifier: 10.1.0
+        version: 10.1.0
       i18n-iso-countries:
         specifier: ^7.14.0
         version: 7.14.0
