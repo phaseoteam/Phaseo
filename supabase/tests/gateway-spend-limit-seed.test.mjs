@@ -67,9 +67,9 @@ try {
   // Then the one teaching the helper the workspace's primary-department setting.
   const attributionMigration = await readFile(new URL('../migrations/20261031174621_department_attribution_primary_for_budgets.sql', import.meta.url), 'utf8');
   await db.exec(attributionMigration);
-  // 20261110173622_budget_enforcement_money_hygiene moves department usage into the shared
+  // 20261110181826_budget_enforcement_money_hygiene moves department usage into the shared
   // private.department_budget_usage (positive-cost requests plus outstanding holds).
-  const usageMigration = await readFile(new URL('../migrations/20261110173622_budget_enforcement_money_hygiene.sql', import.meta.url), 'utf8');
+  const usageMigration = await readFile(new URL('../migrations/20261110181826_budget_enforcement_money_hygiene.sql', import.meta.url), 'utf8');
   for (const name of ['20261110140719_billing_cutoffs.sql', '20261110140720_gateway_requests_expected_cost_nanos.sql', '20261110140721_validate_gateway_requests_expected_cost_nanos_check.sql']) {
     await db.exec(await readFile(new URL(`../migrations/${name}`, import.meta.url), 'utf8'));
   }
@@ -85,7 +85,7 @@ try {
     const definition = (await schema(path)).trim();
     // unbilled_spend was replaced again by a function-only migration after the usage migration.
     const carrier = path === 'private/functions/unbilled_spend.sql'
-      ? await readFile(new URL('../migrations/20261110173628_unbilled_spend_counts_under_recorded_charges.sql', import.meta.url), 'utf8')
+      ? await readFile(new URL('../migrations/20261110181832_unbilled_spend_counts_under_recorded_charges.sql', import.meta.url), 'utf8')
       : usageMigration;
     assert.ok(carrier.includes(definition), `${path} matches its migration`);
     await db.exec(definition);

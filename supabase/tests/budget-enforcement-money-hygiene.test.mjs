@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { applyMigration, createBudgetDatabase, FOLLOW_UP_MIGRATIONS, readColumnMigrations, readFollowUpMigration, readIndexMigrations, readMigration, readSchema, readTableMigrations } from './fixtures/budget-enforcement-db.mjs';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
-// Migration 20261110173622_budget_enforcement_money_hygiene against production shapes (see the
+// Migration 20261110181826_budget_enforcement_money_hygiene against production shapes (see the
 // fixture): one budget usage calculation for workspace budgets, department admission and the
 // spend-limit seed; department budgets on holds, realtime and the context fallback; one count per
 // batch hold; active holds across period rollover; captured video holds before their audit row;
