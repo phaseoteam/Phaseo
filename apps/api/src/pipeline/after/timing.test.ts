@@ -6,6 +6,7 @@ import {
 	resolveBeforeLatencyMs,
 	resolveExecuteTotalLatencyMs,
 	resolveFailoverMs,
+	resolveGatewayTtftMs,
 	resolveNonStreamLatencyMs,
 	recordProviderRound,
 	resolveOutputSpeedWindow,
@@ -123,6 +124,31 @@ describe("after timing helpers", () => {
 		});
 
 		expect(resolveNonStreamLatencyMs(ctx, 25)).toBeNull();
+	});
+
+	it("gives a buffered client the gateway time to the first provider output", () => {
+		const ctx = buildContext();
+		ctx.meta.startedAtMs = 1_000;
+		ctx.meta.firstProviderOutputAtMs = 3_450;
+		ctx.meta.gateway_ttft_ms = 99;
+
+		expect(resolveGatewayTtftMs(ctx, false)).toBe(2_450);
+		expect(resolveGatewayTtftMs(ctx, true)).toBe(99);
+	});
+
+	it("leaves buffered gateway TTFT absent without both clocks", () => {
+		const noOutput = buildContext();
+		noOutput.meta.startedAtMs = 1_000;
+		expect(resolveGatewayTtftMs(noOutput, false)).toBeNull();
+
+		const noStart = buildContext();
+		noStart.meta.firstProviderOutputAtMs = 3_450;
+		expect(resolveGatewayTtftMs(noStart, false)).toBeNull();
+
+		const backwards = buildContext();
+		backwards.meta.startedAtMs = 5_000;
+		backwards.meta.firstProviderOutputAtMs = 3_450;
+		expect(resolveGatewayTtftMs(backwards, false)).toBeNull();
 	});
 });
 
