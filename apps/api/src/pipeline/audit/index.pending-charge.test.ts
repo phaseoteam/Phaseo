@@ -34,7 +34,6 @@ vi.mock("@/runtime/env", () => ({
 }));
 vi.mock("@/pipeline/before/workspacePolicy", () => ({ fetchWorkspacePolicy: async () => ({ privacyZdrOnly: false, neverStoreContent: false }) }));
 vi.mock("../after/apps", () => ({ ensureAppId: async () => "app_pending" }));
-vi.mock("./upstream-requests", () => ({ persistGatewayUpstreamRequests: async () => undefined }));
 
 import { auditFailure } from "./index";
 

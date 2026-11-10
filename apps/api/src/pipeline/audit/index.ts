@@ -19,7 +19,6 @@ import {
     requestZeroDataRetention,
     resolveGatewayIoLoggingPolicy,
 } from "./io-logging";
-import { persistGatewayUpstreamRequests } from "./upstream-requests";
 import { protectStealthAuditArgs } from "./stealth-identity";
 import { buildRoutingObservability, toProviderModelId } from "./routing-observability";
 import { archiveRoutingMetadata } from "./routing-archive";
@@ -867,36 +866,10 @@ export async function auditSuccess(input: {
 
         let supabaseError: Error | null = null;
         try {
-            const insertedRow = await retryWithBackoff(
+            await retryWithBackoff(
                 () => insertGatewayRequest(row),
                 "supabase_audit_success_insert",
             );
-            await persistGatewayUpstreamRequests({
-                insertedRow,
-                requestId: args.requestId,
-                workspaceId: args.workspaceId,
-                appId,
-                keyId: args.keyId ?? null,
-                endpoint: args.endpoint,
-                modelId: args.model,
-                provider: args.provider,
-                providerApiModelId: args.providerApiModelId ?? null,
-                providerModelSlug: args.providerModelSlug ?? null,
-                providerAttempts: args.providerAttempts ?? null,
-                statusCode: args.statusCode,
-                success: true,
-                nativeResponseId: args.nativeResponseId ?? null,
-                finishReason: args.finishReason ?? null,
-                usage: strippedUsage,
-                totalNanos: args.totalNanos ?? (
-                    Number.isFinite(args.totalCents) ? Math.round(args.totalCents * 1e7) : null
-                ),
-                currency: args.currency,
-                latencyMs: args.latencyMs ?? null,
-                generationMs: args.generationMs ?? null,
-                totalMs: args.endToEndMs ?? args.latencyMs ?? null,
-                context: "audit_success",
-            });
             let v2PersistenceError: Error | null = null;
             try {
                 await retryWithBackoff(() => upsertV2RequestFact({
@@ -1204,29 +1177,10 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
             let supabaseError: Error | null = null;
             if (args.workspaceId) {
                 try {
-                    const insertedRow = await retryWithBackoff(
+                    await retryWithBackoff(
                         () => insertGatewayRequest(row),
                         "supabase_audit_failure_before_insert",
                     );
-                    await persistGatewayUpstreamRequests({
-                        insertedRow,
-                        requestId: args.requestId,
-                        workspaceId: args.workspaceId,
-                        appId: resolvedAppId,
-                        keyId: args.keyId ?? null,
-                        endpoint: args.endpoint,
-                        modelId: args.requestedModel ?? args.model ?? "unknown",
-                        provider: args.provider ?? null,
-                        providerApiModelId: args.providerApiModelId ?? null,
-                        providerModelSlug: args.providerModelSlug ?? null,
-                        providerAttempts: args.providerAttempts ?? null,
-                        statusCode: args.statusCode,
-                        success: false,
-                        totalNanos: 0,
-                        latencyMs: args.latencyMs ?? null,
-                        totalMs: args.latencyMs ?? null,
-                        context: "audit_failure_before",
-                    });
                     let v2PersistenceError: Error | null = null;
                     try {
                         await retryWithBackoff(() => upsertV2RequestFact({
@@ -1375,32 +1329,10 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
         let supabaseError: Error | null = null;
         if (args.workspaceId) {
             try {
-                const insertedRow = await retryWithBackoff(
+                await retryWithBackoff(
                     () => insertGatewayRequest(row),
                     "supabase_audit_failure_execute_insert",
                 );
-                await persistGatewayUpstreamRequests({
-                    insertedRow,
-                    requestId: args.requestId,
-                    workspaceId: args.workspaceId,
-                    appId: resolvedAppId,
-                    keyId: args.keyId ?? null,
-                    endpoint: args.endpoint,
-                    modelId: args.model,
-                    provider: args.provider ?? null,
-                    providerApiModelId: args.providerApiModelId ?? null,
-                    providerModelSlug: args.providerModelSlug ?? null,
-                    providerAttempts: args.providerAttempts ?? null,
-                    statusCode: args.statusCode,
-                    success: false,
-                    usage: args.usage ?? {},
-                    totalNanos: args.costNanos ?? 0,
-                    currency: args.currency ?? null,
-                    latencyMs: args.latencyMs ?? null,
-                    generationMs: args.generationMs ?? null,
-                    totalMs: args.latencyMs ?? null,
-                    context: "audit_failure_execute",
-                });
                 let v2PersistenceError: Error | null = null;
                 try {
                     await retryWithBackoff(() => upsertV2RequestFact({
