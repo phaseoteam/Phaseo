@@ -40,20 +40,25 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
   -- (gateway_request_charges.request_id), p_exclude_request_ids request rows by request id.
   -- Unmatched charges before 2026-11-04 00:00 UTC are left out: request rows recorded
   -- billing_request_id only from 2026-11-03 14:43 UTC, so an older charge's request row cannot be
-  -- matched and already counts. A charge matched by billing id to a pending audit row counts at any
-  -- date: the request readers leave that row's cost out (rule b), so the charge is its only count.
+  -- matched and already counts. A charge matched by billing id counts at any date: for a pending
+  -- audit row the request readers leave that row's cost out (rule b), so the charge is its only
+  -- count; for failure rows that under-record it (below), only the shortfall counts.
   --
   -- A charge is attributed to gateway_request_charges.key_id, or, when that is NULL (charges written
   -- before the column, and by older gateway code during a deploy, which does not pass p_key_id), to
   -- the key on its request row (by billing request id) or, for a batch capture, to the batch job's
   -- meta.apiKeyId (gateway_async_operations). A charge with no key anywhere counts toward the
-  -- workspace only. The lookups run only for a charge without a key.
+  -- workspace only. The stepped and batch lookups run only for a charge without a key.
   --
   -- * 'stepped': every adjustment ledger row of a request charged in steps (rule a), debits and
   --   refunds, at its time.
-  -- * 'charge': a one-off charge (no adjustment rows) at its time, while its request row has not
-  --   landed or one is pending reconciliation (rule b), each found per charge with LIMIT 1 on
-  --   #3534's (workspace_id, billing_request_id) index.
+  -- * 'charge': a one-off charge (no adjustment rows) at its time: whole while its request row has
+  --   not landed or one is pending reconciliation (rule b); otherwise, when none of its rows
+  --   succeeded, what its rows' cost (which the request readers count) falls short of it. A Worker
+  --   older than the lost-charge fix wrote a failure after a confirmed debit with no cost, and
+  --   that stored row would otherwise hide the debit. Its rows are read once per charge, by
+  --   #3633's (workspace_id, billing_request_id) index, including held ones, whose cost the
+  --   coordinator counts from memory.
   -- * 'batch': a batch's debit, whole, at its time (rule c): a batch_capture:<batch> charge, or a
   --   reserved batch's async_job_charge ledger row (gateway_wallet_settle_once).
   -- * 'video': a reserved video's async_job_charge debit, whole, at its time (settled or captured
@@ -90,25 +95,21 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
     and (p_key_ids is null or coalesce(charge.key_id, audited.key_id) = any (p_key_ids))
     and not (charge.request_id = any (coalesce(p_exclude_charge_ids, '{}'::text[])))
   union all
-  select 'charge'::text, charge.request_id, coalesce(charge.key_id, pending.key_id), charge.created_at, charge.cost_nanos
+  select 'charge'::text, charge.request_id, coalesce(charge.key_id, audit.key_id), charge.created_at,
+    case when audit.found and not audit.pending then charge.cost_nanos - audit.row_cost else charge.cost_nanos end
   from public.gateway_request_charges charge
   left join lateral (
-    select 1 as found
-    from public.gateway_requests request
-    where request.workspace_id = charge.workspace_id
-      and request.billing_request_id = charge.request_id
-    limit 1
-  ) audit on true
-  left join lateral (
-    select 1 as found, request.key_id
-    from public.gateway_requests request
-    where request.workspace_id = charge.workspace_id
-      and request.billing_request_id = charge.request_id
-      and (request.expected_cost_nanos is not null
+    select count(*) > 0 as found,
+      coalesce(bool_or(request.success is true), false) as succeeded,
+      coalesce(bool_or(request.expected_cost_nanos is not null
         or (request.created_at < (select private.pending_json_cutoff())
-            and coalesce(request.detail_metadata -> 'accounting_finalization' ->> 'billing_status' = 'pending_reconciliation', false)))
-    limit 1
-  ) pending on true
+            and coalesce(request.detail_metadata -> 'accounting_finalization' ->> 'billing_status' = 'pending_reconciliation', false))), false) as pending,
+      coalesce(sum(greatest(coalesce(request.cost_nanos, 0), 0)), 0) as row_cost,
+      (array_agg(request.key_id) filter (where request.key_id is not null))[1] as key_id
+    from public.gateway_requests request
+    where request.workspace_id = charge.workspace_id
+      and request.billing_request_id = charge.request_id
+  ) audit on true
   left join lateral (
     select 1 as found
     from public.credit_ledger movement
@@ -122,11 +123,11 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
     and charge.status = 'applied'
     and charge.cost_nanos > 0
     and charge.created_at >= coalesce(p_since, '-infinity'::timestamptz)
-    and (charge.created_at >= '2026-11-04 00:00:00+00'::timestamptz or pending.found is not null)
+    and (charge.created_at >= '2026-11-04 00:00:00+00'::timestamptz or audit.found)
     and not starts_with(charge.request_id, 'batch_capture:')
-    and (audit.found is null or pending.found is not null)
+    and (not audit.found or audit.pending or (not audit.succeeded and charge.cost_nanos > audit.row_cost))
     and stepped.found is null
-    and (p_key_ids is null or coalesce(charge.key_id, pending.key_id) = any (p_key_ids))
+    and (p_key_ids is null or coalesce(charge.key_id, audit.key_id) = any (p_key_ids))
     and not (charge.request_id = any (coalesce(p_exclude_charge_ids, '{}'::text[])))
   union all
   select 'batch'::text, charge.request_id, coalesce(charge.key_id, job.key_id), charge.created_at, charge.cost_nanos
@@ -191,7 +192,7 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
   where owed.nanos > 0;
 $function$;
 
-COMMENT ON FUNCTION "private"."unbilled_spend"(uuid, timestamp with time zone, uuid[], text[], text[]) IS 'Spend counted toward budgets and key caps from money movements, each at its time: adjustment ledger rows of requests charged in steps, one-off charges whose request row has not landed or is pending reconciliation, batch debits, and what a delivered request with an expected bill has not had counted (its applied charge, or else the cost of its own rows). Charge rows the SpendLimit Durable Object holds are excluded by billing request id, request rows by request id.';
+COMMENT ON FUNCTION "private"."unbilled_spend"(uuid, timestamp with time zone, uuid[], text[], text[]) IS 'Spend counted toward budgets and key caps from money movements, each at its time: adjustment ledger rows of requests charged in steps, one-off charges whose request row has not landed or is pending reconciliation (or what failure rows that under-record a charge fall short of it), batch debits, and what a delivered request with an expected bill has not had counted (its applied charge, or else the cost of its own rows). Charge rows the SpendLimit Durable Object holds are excluded by billing request id, request rows by request id.';
 
 REVOKE ALL ON FUNCTION "private"."unbilled_spend"(uuid, timestamp with time zone, uuid[], text[], text[]) FROM PUBLIC;
 

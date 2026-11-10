@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { applyMigration, createBudgetDatabase, readColumnMigrations, readIndexMigrations, readMigration, readSchema, readTableMigrations } from './fixtures/budget-enforcement-db.mjs';
+import { applyMigration, createBudgetDatabase, FOLLOW_UP_MIGRATIONS, readColumnMigrations, readFollowUpMigration, readIndexMigrations, readMigration, readSchema, readTableMigrations } from './fixtures/budget-enforcement-db.mjs';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
 // Migration 20261110122531_budget_enforcement_money_hygiene against production shapes (see the
@@ -132,8 +132,12 @@ try {
   // The migration carries the declarative definitions and the manifest lists the new functions.
   const migration = await readMigration();
   await check('the migration carries each declarative function and the manifest lists the new ones', async () => {
+    // A function a later function-only migration replaced is checked against that migration.
     for (const path of functionFiles) {
-      assert.ok(migration.includes((await readSchema(path)).replace(/\r\n/g, '\n').trim()), `${path} is in the migration`);
+      const followUp = FOLLOW_UP_MIGRATIONS[path];
+      const carrier = followUp ? await readFollowUpMigration(followUp) : migration;
+      assert.ok(carrier.includes((await readSchema(path)).replace(/\r\n/g, '\n').trim()), `${path} is in ${followUp ?? 'the migration'}`);
+      if (followUp) assert.ok(migration.includes('CREATE OR REPLACE FUNCTION private.unbilled_spend ('), `${path} is first created by the migration`);
     }
     const manifest = JSON.parse(await readSchema('.pgdelta-export.json'));
     for (const list of ['loadOrder', 'files']) {
@@ -154,8 +158,10 @@ try {
     const tableStatement = /\b(alter\s+table|create\s+(unique\s+)?index|drop\s+index|(create|drop)\s+(or\s+replace\s+)?(trigger|policy)|(grant|revoke)\s[^;]*\bon\s+table|comment\s+on\s+(table|column))\b/i;
     const statementsOf = (sql) => sql.replace(/--.*$/gm, '').replace(/\$(\w*)\$[\s\S]*?\$\1\$/g, '$$$$')
       .split(';').map((part) => part.trim()).filter(Boolean);
-    assert.match(migration, /^SET LOCAL lock_timeout = '10s';/);
-    assert.ok(!statementsOf(migration).some((statement) => tableStatement.test(statement)), 'the function migration locks no table');
+    for (const functions of [migration, ...await Promise.all([...new Set(Object.values(FOLLOW_UP_MIGRATIONS))].map(readFollowUpMigration))]) {
+      assert.match(functions, /^SET LOCAL lock_timeout = '10s';/);
+      assert.ok(!statementsOf(functions).some((statement) => tableStatement.test(statement)), 'a function migration locks no table');
+    }
     const ours = [...await readColumnMigrations(), ...await readIndexMigrations(), ...await readTableMigrations()]
       .filter((sql) => !sql.includes('gateway_requests_workspace_billing_request_idx')); // fix/async-billing-charges-20261110's
     const partitionOf = new Map([...(await readSchema('public/tables/gateway_requests.sql'))

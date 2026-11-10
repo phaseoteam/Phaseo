@@ -146,13 +146,14 @@ async function chargeTotal(ws: Workspace, billingId: string, totalNanos: number,
 	}
 }
 /** gateway_deduct_and_check_top_up_once: a one-off charge row. */
-async function chargeOnce(ws: Workspace, billingId: string, nanos: number) {
+async function chargeOnce(ws: Workspace, billingId: string, nanos: number, keyed = true) {
 	await db.query(`insert into public.gateway_request_charges (workspace_id, request_id, cost_nanos, status, is_final, key_id)
-		values ($1, $2, $3, 'applied', true, $4)`, [ws.workspace, billingId, nanos, ws.key]);
+		values ($1, $2, $3, 'applied', true, $4)`, [ws.workspace, billingId, nanos, keyed ? ws.key : null]);
 }
-async function auditRow(ws: Workspace, row: { requestId: string; billingId: string; success: boolean; costNanos: number | null; expectedCostNanos?: number }) {
-	await db.query(`insert into public.gateway_requests (workspace_id, request_id, billing_request_id, key_id, success, cost_nanos, expected_cost_nanos)
-		values ($1, $2, $3, $4, $5, $6, $7)`, [ws.workspace, row.requestId, row.billingId, ws.key, row.success, row.costNanos, row.expectedCostNanos ?? null]);
+async function auditRow(ws: Workspace, row: { requestId: string; billingId: string; success: boolean; costNanos: number | null; expectedCostNanos?: number; billingStatus?: string }) {
+	await db.query(`insert into public.gateway_requests (workspace_id, request_id, billing_request_id, key_id, success, cost_nanos, expected_cost_nanos, detail_metadata)
+		values ($1, $2, $3, $4, $5, $6, $7, $8)`, [ws.workspace, row.requestId, row.billingId, ws.key, row.success, row.costNanos, row.expectedCostNanos ?? null,
+		row.billingStatus ? JSON.stringify({ accounting_finalization: { billing_status: row.billingStatus } }) : null]);
 }
 /** What #3633's audit records at final settlement (settleEnforcedSpend or settleChargedFailureSpend). */
 const record = (ws: Workspace, entry: { billingId: string; requestId: string; costNanos: number; requests: number }) =>
@@ -196,15 +197,35 @@ describe("main's spend-limit coordinator on the v1 seed", () => {
 		expect(await counters(ws)).toEqual(exactly(600));
 	});
 
-	it("a one-off debit of 600 whose failure audit row keeps cost_nanos 600 stays at 600 after reseeds", async () => {
+	it.each([
+		{ shape: "no cost", costNanos: null },
+		{ shape: "part of the cost", costNanos: 200 },
+	])("an old Worker's failure row with $shape after an applied 600 one-off debit counts 600 with 0 requests through two reseeds and a restart", async ({ costNanos }) => {
+		// A Worker older than the lost-charge fix: its charge row carries no key, its failure row
+		// says billing_status 'recorded' without the confirmed cost, and it records nothing.
+		const ws = await workspace();
+		startCoordinator();
+		expect(await counters(ws)).toEqual(exactly(0));
+		await chargeOnce(ws, `bill-old-${costNanos}`, 600, false);
+		await auditRow(ws, { requestId: `req-old-${costNanos}`, billingId: `bill-old-${costNanos}`, success: false, costNanos, billingStatus: "recorded" });
+		await coordinator.reseedNow();
+		expect(await counters(ws)).toEqual(exactly(600));
+		await coordinator.reseedNow();
+		expect(await counters(ws)).toEqual(exactly(600));
+		startCoordinator();
+		expect(await counters(ws)).toEqual(exactly(600));
+	});
+
+	it("a one-off debit of 600 whose failure audit row keeps cost_nanos 600 counts 600 once, through reseeds and a restart", async () => {
 		const ws = await workspace();
 		startCoordinator();
 		await chargeOnce(ws, "bill-failed", 600);
 		await auditRow(ws, { requestId: "req-failed", billingId: "bill-failed", success: false, costNanos: 600 });
 		await record(ws, { billingId: "bill-failed", requestId: "req-failed", costNanos: 600, requests: 0 });
 		expect(await counters(ws)).toEqual(exactly(600));
+		// The row's cost covers the charge, so the seed does not count the charge as well.
 		await coordinator.reseedNow();
-		atLeast(await counters(ws), 600);
+		expect(await counters(ws)).toEqual(exactly(600));
 		await coordinator.reseedNow();
 		expect(await counters(ws)).toEqual(exactly(600));
 		startCoordinator();

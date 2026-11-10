@@ -83,7 +83,11 @@ try {
     'private/functions/workspace_budget_status.sql', 'public/functions/gateway_workspace_budget_status.sql', 'public/functions/gateway_spend_limit_seed.sql',
     'public/functions/workspace_department_budget_status.sql']) {
     const definition = (await schema(path)).trim();
-    assert.ok(usageMigration.includes(definition), `${path} matches its migration`);
+    // unbilled_spend was replaced again by a function-only migration after the usage migration.
+    const carrier = path === 'private/functions/unbilled_spend.sql'
+      ? await readFile(new URL('../migrations/20261110131302_unbilled_spend_counts_under_recorded_charges.sql', import.meta.url), 'utf8')
+      : usageMigration;
+    assert.ok(carrier.includes(definition), `${path} matches its migration`);
     await db.exec(definition);
   }
   assert.ok(attributionMigration.includes((await schema('private/functions/department_budget_key_departments.sql')).trim()),

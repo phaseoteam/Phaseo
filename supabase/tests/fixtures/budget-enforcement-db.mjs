@@ -32,6 +32,12 @@ export const TABLE_MIGRATION_FILES = [
 ];
 export const readTableMigrations = () => Promise.all(TABLE_MIGRATION_FILES.map((name) =>
   readFile(new URL(`../../migrations/${name}`, import.meta.url), 'utf8')));
+// Function-only migrations after those, each replacing functions MIGRATION_FILE created, keyed by
+// the schema files they now carry.
+export const FOLLOW_UP_MIGRATIONS = {
+  'private/functions/unbilled_spend.sql': '20261110131302_unbilled_spend_counts_under_recorded_charges.sql',
+};
+export const readFollowUpMigration = (name) => readFile(new URL(`../../migrations/${name}`, import.meta.url), 'utf8');
 
 // The request-context callees, reduced to what the wrappers need (the key-limit accounting in
 // the real ones is tested by gateway-spend-limit-seed and key-weekly-accounting).
@@ -171,6 +177,7 @@ export async function applyMigration(db, migration) {
   for (const index of await readIndexMigrations()) await db.exec(index);
   await db.exec(migration);
   for (const table of await readTableMigrations()) await db.exec(table);
+  for (const name of new Set(Object.values(FOLLOW_UP_MIGRATIONS))) await db.exec(await readFollowUpMigration(name));
   await db.exec(CONTEXT_STUBS);
 }
 
