@@ -1,10 +1,10 @@
 ---
 icon: "package"
 title: "AI SDK من Vercel"
-description: "أنشئ النصوص، وابثّ الاستجابات، واستخدم الأدوات مع موفّر Phaseo لـ AI SDK 7."
+description: "أنشئ النصوص، وابثّ الاستجابات، واستخدم الأدوات مع مزوّد Phaseo لـ AI SDK 7."
 ---
 
-استخدم موفّر Phaseo الرسمي لاستدعاء نماذج Phaseo عبر Vercel AI SDK 7. ابدأ من هنا إذا كان تطبيقك يستخدم بالفعل `generateText` أو `streamText` أو دالة أخرى من AI SDK.
+ثبّت `@phaseo/ai-sdk-provider` ومرّر `phaseo(modelId)` بوصفه `model` إلى `generateText` أو `streamText` أو أي دالة أخرى في Vercel AI SDK 7. تذهب الطلبات النصية إلى نقطة النهاية `/v1/chat/completions` في Gateway.
 
 ## التثبيت
 
@@ -28,9 +28,9 @@ bun add @phaseo/ai-sdk-provider
 
 </CodeGroup>
 
-تتبع حزمة Phaseo التي لا يتضمن اسمها رقم إصدار وسم `latest` في npm، وتختار إصدار الموفّر الحالي المتوافق مع AI SDK 7. وتعلن عن AI SDK 7 كاعتمادية نظيرة، لذلك تثبّت مدراء الحزم التي تفعّل التثبيت التلقائي للاعتماديات النظيرة بيئة التشغيل المتوافقة أيضًا.
+تثبيت الحزمة دون تحديد إصدار يجلب الوسم `latest` في npm، وهو خط AI SDK 7. تعلن الحزمة `ai@^7` اعتماديةً نظيرة (peer dependency)، لذا تضيفها مديرات الحزم التي تثبّت الاعتماديات النظيرة تلقائيًا نيابةً عنك.
 
-عيّن `PHASEO_API_KEY` في بيئة الخادم، ثم أرسل طلبك الأول:
+اضبط `PHASEO_API_KEY` في بيئة الخادم، ثم أرسل طلبك الأول. يرمي التصدير الافتراضي `phaseo` خطأً إذا لم يكن `PHASEO_API_KEY` مضبوطًا.
 
 ```typescript
 import { phaseo } from "@phaseo/ai-sdk-provider";
@@ -45,7 +45,7 @@ console.log(result.text);
 console.log(result.providerMetadata);
 ```
 
-استخدم معرّف نموذج حديثًا من [نقطة نهاية النماذج](../../api-reference/endpoint/models.mdx).
+استخدم معرّف نموذج حاليًا من [نقطة النهاية Models](../../api-reference/endpoint/models.mdx).
 
 ## بث النص
 
@@ -65,9 +65,9 @@ for await (const chunk of result.textStream) {
 console.log(await result.providerMetadata);
 ```
 
-## إضافة بيانات تعريف التطبيق
+## ضبط نسخة من المزوّد
 
-أنشئ نسخة من الموفّر إذا أردت أن تتضمن تفاصيل طلب Phaseo معلومات تحدد تطبيقك:
+استدعِ `createPhaseo()` لضبط `apiKey` أو `baseURL` أو `headers` أو `fetch` مخصّص. استخدمها لتعريف تطبيقك في تفاصيل الطلبات في Phaseo:
 
 ```typescript
 import { createPhaseo } from "@phaseo/ai-sdk-provider";
@@ -81,36 +81,44 @@ const phaseo = createPhaseo({
 });
 ```
 
-إن `PHASEO_BASE_URL` اختياري، وقيمته الافتراضية هي `https://api.phaseo.app/v1`.
+`PHASEO_BASE_URL` اختياري، وقيمته الافتراضية `https://api.phaseo.app/v1`.
 
-## الميزات المدعومة في AI SDK 7
+## اختيار نوع النموذج
 
-- إنشاء النصوص وبثّها
+| طريقة المزوّد | دالة AI SDK |
+| --- | --- |
+| `phaseo(modelId)` أو `phaseo.languageModel(modelId)` | `generateText`، `streamText` |
+| `phaseo.embeddingModel(modelId)` (الاسم البديل `textEmbeddingModel`) | `embed`، `embedMany` |
+| `phaseo.imageModel(modelId)` | `generateImage` |
+| `phaseo.transcriptionModel(modelId)` | `transcribe` |
+| `phaseo.speechModel(modelId)` | `generateSpeech` |
+| `phaseo.rerankingModel(modelId)` | `rerank` |
+
+تقبل كل الطرق باستثناء `rerankingModel` إعدادات اختيارية لكل نموذج وسيطًا ثانيًا: `temperature` و`topP` و`topK` و`maxTokens` و`frequencyPenalty` و`presencePenalty` و`seed` و`user` و`headers` و`fetch`.
+
+## ميزات AI SDK 7 المدعومة
+
+- توليد النص وبثه
 - مخرجات الاستدلال وإعداداته
-- أدوات الوظائف ومدخلات الأدوات المبثوثة
+- أدوات الدوال ومدخلات الأدوات المبثوثة
 - مخرجات JSON وJSON Schema
-- مدخلات الملفات النصية والصورية
+- مدخلات الملفات النصية وملفات الصور
 - مصادر الاستشهاد بعناوين URL
-- التضمينات وإنشاء الصور
+- التضمينات وتوليد الصور
 - إعادة الترتيب
 - النسخ الصوتي وتوليد الكلام
-- بيانات الموفّر الوصفية والاستخدام وإشارات الإلغاء ومقاطع البث الخام
+- البيانات الوصفية للمزوّد، والاستخدام، وإشارات الإلغاء، وأجزاء البث الخام
 
-تتوفّر إعادة الترتيب عبر `rerank()` باستخدام `phaseo.rerankingModel(modelId)`. وتظل القدرات مختلفة بين النماذج والمزودين. لا يعلن الموفّر حاليًا دعم مراجع الملفات المُدارة أو المهارات أو تعريفات الأدوات ونتائجها واستجابات الموافقة التي ينفذها الموفّر. ويمكن لأدوات الوظائف التي ينفذها التطبيق استخدام مسار التنفيذ والموافقة المعتاد في AI SDK.
+لا تزال قدرات الاستدعاء تعتمد على النموذج والمزوّد. لا يعلن المزوّد عن مراجع الملفات المُدارة أو المهارات أو الأدوات التي ينفّذها المزوّد (تعريفاتها أو نتائجها أو ردود الموافقة عليها). أما أدوات الدوال التي ينفّذها تطبيقك فتستخدم مسار التنفيذ والموافقة المعتاد في AI SDK.
 
-## إصدارات AI SDK الأقدم
+## استخدام إصدار أقدم من AI SDK
 
-- AI SDK 6: ثبّت `@phaseo/ai-sdk-provider@ai-sdk-v6`.
-- AI SDK 5: ثبّت `@phaseo/ai-sdk-provider@ai-sdk-v5`.
+| AI SDK | التثبيت |
+| --- | --- |
+| 7 | `@phaseo/ai-sdk-provider` (`latest`) |
+| 6 | `@phaseo/ai-sdk-provider@ai-sdk-v6` |
+| 5 | `@phaseo/ai-sdk-provider@ai-sdk-v5` |
 
-إذا كان التثبيت التلقائي للاعتماديات النظيرة معطلًا، فثبّت الإصدار الرئيسي المطابق من `ai` بشكل منفصل (`ai@^7` أو `ai@^6` أو `ai@^5`).
+إذا كان التثبيت التلقائي للاعتماديات النظيرة متوقفًا، فثبّت الإصدار الرئيسي المطابق من `ai` (`ai@^7` أو `ai@^6` أو `ai@^5`) بنفسك.
 
-## أدلة ذات صلة
-
-- [إنشاء النصوص](./generate-text/index.mdx)
-- [بث النصوص](./stream-text/index.mdx)
-- [استدعاء الأدوات](./tool-calling/index.mdx)
-- [المخرجات المنظّمة](./structured-output/index.mdx)
-- [التضمينات](./embeddings/index.mdx)
-- [الصور](./images/index.mdx)
-- [الصوت](./audio/index.mdx)
+تعرض صفحات هذا القسم كل دالة: [توليد النص](/ar/v1/sdk-reference/sdk/generate-text)، و[بث النص](/ar/v1/sdk-reference/sdk/stream-text)، و[استدعاء الأدوات](/ar/v1/sdk-reference/sdk/tool-calling)، و[المخرجات المنظّمة](/ar/v1/sdk-reference/sdk/structured-output)، و[التضمينات](/ar/v1/sdk-reference/sdk/embeddings)، و[الصور](/ar/v1/sdk-reference/sdk/images)، و[الصوت](/ar/v1/sdk-reference/sdk/audio).

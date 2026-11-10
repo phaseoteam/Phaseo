@@ -11,6 +11,8 @@
 
 Use `--json` for agent workflows. Run `phaseo <group> --help` for the complete installed-version syntax.
 
+A CLI sign-in reads everything below, but the API refuses it (`403`, "make it in the Phaseo dashboard, or call the API with a management key") on changes to spending, access, presets, routing rules, logging and where workspace data goes: creating or rotating keys and changing their limits, budgets, spend rules, rate limits, BYOK, private models, classifiers, guardrails, members and invites, identity, trusted workloads, observability, notification destinations and routes, and webhooks. Renaming and deleting keys still work. See [Manage Phaseo from an agent](https://phaseo.app/docs/v1/developers/manage-from-an-agent) for the split.
+
 ## Authentication
 
 ```bash
@@ -24,11 +26,19 @@ phaseo version --json
 
 ```bash
 phaseo keys current --json
-phaseo keys list [--limit <n>] [--offset <n>] [--json]
-phaseo keys create --name <name> [--limit <amount>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--disabled] --json
-phaseo keys get <id-or-hash> --json
-phaseo keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <amount>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--ip-allowlist <label=address,...>|none] --json
-phaseo keys delete <id-or-hash> --json
+phaseo keys list [--workspace <id-or-slug>] [--limit <n>] [--offset <n>] [--json]
+phaseo keys create --name <name> [--workspace <id-or-slug>] [--limit <amount>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--disabled] --json
+phaseo keys get <id-or-hash> [--workspace <id-or-slug>] --json
+phaseo keys update <id-or-hash> [--workspace <id-or-slug>] [--name <name>] [--disabled true|false] [--limit <amount>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--ip-allowlist <label=address,...>|none] --json
+phaseo keys delete <id-or-hash> [--workspace <id-or-slug>] --json
+```
+
+Keys belong to the workspace chosen at `phaseo login`. `--workspace <id-or-slug>` names another workspace where the signed-in person is an owner or admin; `phaseo whoami --json` lists them. It needs a `phaseo login` session: API keys and management keys can only manage keys in their own workspace, and get `403 forbidden` otherwise. For example, a temporary key in a new workspace:
+
+```bash
+WS=$(phaseo workspaces create --name cache-test --json | jq -r .data.id)
+phaseo keys create --workspace "$WS" --name temp --expires-at <iso> --json   # capture .key into a secret store, never print it
+phaseo keys delete <id> --workspace "$WS" --json
 ```
 
 ## Workspaces and policy
@@ -129,8 +139,8 @@ phaseo rate-limits policies create --name <name> [--description <text>] [--reque
 phaseo rate-limits policies get <id> --json
 phaseo rate-limits policies update <id> [--name <name>] [--description <text>] [--requests-per-minute <n>] [--tokens-per-minute <n>] [--concurrent-requests <n>] [--fail-closed true|false] --json
 phaseo rate-limits policies delete <id> [--yes] --json
-phaseo rate-limits assignments list [--policy <id>] [--target-type key|member|department|guardrail|end_user_default] [--limit <n>] [--offset <n>] --json
-phaseo rate-limits assignments create --policy <id> --target-type key|member|department|guardrail|end_user_default [--target <id>] --json
+phaseo rate-limits assignments list [--policy <id>] [--target-type key|member|department|end_user_default] [--limit <n>] [--offset <n>] --json
+phaseo rate-limits assignments create --policy <id> --target-type key|member|department|end_user_default [--target <id>] --json
 phaseo rate-limits assignments get <id> --json
 phaseo rate-limits assignments update <id> --policy <id> --json
 phaseo rate-limits assignments delete <id> [--yes] --json
@@ -268,7 +278,7 @@ phaseo workload-identity policies delete <id> [--yes] --json
 ### keys
 
 ```bash
-phaseo keys rotate <id> [--previous-key-expires-at <iso>] [--show-secret] [--yes] --json
+phaseo keys rotate <id> [--workspace <id-or-slug>] [--previous-key-expires-at <iso>] [--show-secret] [--yes] --json
 phaseo keys invalidate <id> [--yes] --json
 ```
 

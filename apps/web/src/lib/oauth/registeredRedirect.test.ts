@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { isRegisteredOAuthRedirectAllowed } from "./registeredRedirect";
 
 const desktop = { client_id: "phaseo_desktop", is_first_party: true, registration_source: "first_party", redirect_uris: ["http://127.0.0.1/callback"] };

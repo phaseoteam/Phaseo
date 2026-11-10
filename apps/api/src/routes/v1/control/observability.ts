@@ -11,7 +11,11 @@ import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { json, withRuntime } from "@/routes/utils";
-import { internalServerError, requireCapability, requireOAuthWorkspaceRole } from "./route-helpers";
+import { internalServerError, rejectThirdPartyOAuthSpendingChange, requireCapability, requireOAuthWorkspaceRole } from "./route-helpers";
+
+// Destinations and the logging policy decide where request and response content goes, so an app that
+// signs in with Phaseo must not change them, whatever scopes the person consented to.
+const OBSERVABILITY_APP_REFUSAL = "Apps that use Sign in with Phaseo can't change observability destinations or the I/O logging policy, because they control where request content goes. The person can change them under Settings, Observability.";
 import { encryptBroadcastConfig } from "./broadcast-config-crypto";
 import {
 	AVAILABLE_BROADCAST_DESTINATION_IDS,
@@ -156,6 +160,8 @@ async function authorize(req: Request, capability: string) {
 	if (scopeError) return { response: scopeError } as const;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return { response: roleError } as const;
+	const appError = capability === CAPABILITIES.SETTINGS_READ ? null : rejectThirdPartyOAuthSpendingChange(auth.value, OBSERVABILITY_APP_REFUSAL);
+	if (appError) return { response: appError } as const;
 	return { auth: auth.value } as const;
 }
 

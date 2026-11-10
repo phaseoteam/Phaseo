@@ -17,6 +17,7 @@ import { activityRoutes, creditsRoutes } from "./credits";
 import { creditTopupsRoutes } from "./credit-topups";
 import { logsRoutes } from "./logs";
 import { currentKeyRoutes, keysRoutes } from "./keys";
+import { keyRequestsRoutes } from "./key-requests";
 import { securityRoutes } from "./security";
 import { workspacesRoutes } from "./workspaces";
 import { workspaceMembershipRoutes } from "./workspace-membership";
@@ -74,6 +75,8 @@ platformRouter.route("/logs", logsRoutes);
 platformRouter.route("/security", securityRoutes);
 platformRouter.route("/key", currentKeyRoutes);
 platformRouter.route("/keys", keysRoutes);
+// Create-only for OAuth tokens (the CLI included); approval happens in the dashboard, never here.
+platformRouter.route("/key-requests", keyRequestsRoutes);
 platformRouter.route("/workspaces", workspacesRoutes);
 platformRouter.route("/workspaces", workspaceMembershipRoutes);
 platformRouter.route("/invites", invitesRoutes);

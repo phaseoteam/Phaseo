@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -24,7 +22,7 @@ import {
 } from "@/components/(data)/model/pricing/pricingHelpers";
 import { sanitizeRequestMultiplier } from "./calculatorState";
 import { formatSentenceLabel } from "./PricingTableVisuals";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 interface UsageInputsProps {
 	meters: PricingMeter[];

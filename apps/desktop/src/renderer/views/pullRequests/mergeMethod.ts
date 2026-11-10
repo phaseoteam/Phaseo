@@ -17,7 +17,7 @@ export function resolvePullRequestMergeMethod(allowed: readonly PullRequestMerge
 	return allowed[0] ?? "merge";
 }
 
-/** The merge method a project's pull requests start with: Project settings, else Settings → General, else none (last selected). */
+/** The merge method a project's pull requests start with: Project settings, else Settings → Source control, else none (last selected). */
 export function useDefaultMergeMethod() {
 	const projects = useOptionalWorkspace()?.overview.projects;
 	const preferences = useWorkspacePreferences();

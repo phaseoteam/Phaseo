@@ -2,7 +2,7 @@ import type { ModelActivityRow, ModelDetail, ProviderTrendPoint } from "@/lib/ap
 import { formatLongCount, lineage, modalityTags, parseTypes, relativeDateLabel } from "./about";
 import { activityDays, lastUtcDays } from "./activity";
 import { buildFaq, joinList, pricingHighlights } from "./faq";
-import { averageUptime, performanceView, selectProviderTrend, trendSeries, uptimeHours } from "./performance";
+import { performanceView, selectProviderTrend, trendSeries } from "./performance";
 
 const usage = (dayBucket: string, values: Partial<ModelActivityRow>): ModelActivityRow => ({
   dayBucket, providerId: "anthropic", requests: 0, successRequests: 0, totalTokens: 0, inputTokens: 0, outputTokens: 0, reasoningTokens: 0, inputTextTokens: 0, outputTextTokens: 0, cachedReadTokens: 0, cachedReadTextTokens: 0, ...values,
@@ -63,15 +63,6 @@ describe("performance and uptime", () => {
     const view = performanceView(metrics, 3);
     expect(view.usesPercentiles).toBe(true);
     expect([...new Set(view.data.map((entry) => entry.provider))]).toEqual(["percentile-10", "percentile-50", "percentile-90"]);
-  });
-
-  test("hours without requests count as 100%, as on the website", () => {
-    const hours = uptimeHours([{ bucket: "2026-10-18T05:00:00Z", overallSuccessPct: 50, worstProviderSuccessPct: 50, worstProviderRequests: 4, providerCount: 1, requests: 4 }], new Date("2026-10-18T06:30:00Z"));
-    expect(hours).toHaveLength(24);
-    expect(hours.at(-1)!.bucket).toBe("2026-10-18T06:00:00.000Z");
-    expect(hours.at(-2)!.overall).toBe(50);
-    expect(averageUptime(hours.map((hour) => hour.overall))).toBeCloseTo((23 * 100 + 50) / 24);
-    expect(averageUptime(uptimeHours([], new Date()).map((hour) => hour.overall))).toBe(100);
   });
 });
 

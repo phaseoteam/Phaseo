@@ -11,7 +11,7 @@ import { normalizeDynamicRouteConfig } from "@/pipeline/before/dynamic-routes";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { json, withRuntime } from "@/routes/utils";
-import { internalServerError, requireCapability, requireOAuthWorkspaceRole } from "./route-helpers";
+import { internalServerError, rejectThirdPartyOAuthSpendingChange, requireCapability, requireOAuthWorkspaceRole } from "./route-helpers";
 import {
 	handleGetAutoRouting,
 	handleListSuccessorReplacements,
@@ -19,6 +19,10 @@ import {
 	handleSaveSuccessorReplacement,
 	handleUpdateAutoRouting,
 } from "./routing-preferences";
+
+// A dynamic route decides which preset or model a key's requests run, so an app that signs in with Phaseo (or a
+// CLI or desktop sign-in) can read routes but not create, change, deploy, attach keys to or delete one.
+const DYNAMIC_ROUTE_APP_REFUSAL = "Apps that use Sign in with Phaseo can't create, change, deploy or delete dynamic routes, or attach keys to them, because they decide what a key's requests run. The person can change them under Settings, Routing.";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 const ROUTE_COLUMNS = "id,workspace_id,name,slug,description,status,version,deployed_version,config,created_at,updated_at";
@@ -82,6 +86,8 @@ async function authorize(req: Request, write: boolean) {
 	const roles = write ? ["owner", "admin"] : ["owner", "admin", "member"];
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, roles);
 	if (roleError) return { response: roleError } as const;
+	const appError = write ? rejectThirdPartyOAuthSpendingChange(auth.value, DYNAMIC_ROUTE_APP_REFUSAL) : null;
+	if (appError) return { response: appError } as const;
 	return { auth: auth.value } as const;
 }
 

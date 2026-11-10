@@ -131,7 +131,6 @@ type ApiKey struct {
 	DepartmentId *string `json:"department_id,omitempty"`
 	Disabled bool `json:"disabled"`
 	ExpiresAt *string `json:"expires_at"`
-	Hash string `json:"hash"`
 	Id string `json:"id"`
 	IncludeByokInLimit bool `json:"include_byok_in_limit"`
 	IpAllowlist *[]map[string]interface{} `json:"ip_allowlist,omitempty"`
@@ -252,7 +251,6 @@ type ApiKeyWithValue struct {
 	DepartmentId *string `json:"department_id,omitempty"`
 	Disabled bool `json:"disabled"`
 	ExpiresAt *string `json:"expires_at"`
-	Hash string `json:"hash"`
 	Id string `json:"id"`
 	IncludeByokInLimit bool `json:"include_byok_in_limit"`
 	IpAllowlist *[]map[string]interface{} `json:"ip_allowlist,omitempty"`
@@ -2218,6 +2216,7 @@ type FusionToolDefinition struct {
 type GatewayCapabilities struct {
 	Endpoints *[]string `json:"endpoints,omitempty"`
 	ParameterDetails map[string]interface{} `json:"parameter_details"`
+	ParameterSpecs *map[string]interface{} `json:"parameter_specs,omitempty"`
 	Parameters []string `json:"parameters"`
 }
 
@@ -2226,6 +2225,7 @@ type GatewayCapabilityStatus string
 const (
 	GatewayCapabilityStatusActive GatewayCapabilityStatus = "active"
 	GatewayCapabilityStatusComingSoon GatewayCapabilityStatus = "coming_soon"
+	GatewayCapabilityStatusDeranked GatewayCapabilityStatus = "deranked"
 	GatewayCapabilityStatusDerankedLvl1 GatewayCapabilityStatus = "deranked_lvl1"
 	GatewayCapabilityStatusDerankedLvl2 GatewayCapabilityStatus = "deranked_lvl2"
 	GatewayCapabilityStatusDerankedLvl3 GatewayCapabilityStatus = "deranked_lvl3"
@@ -2412,6 +2412,7 @@ const (
 	GatewayProviderAvailabilityReasonProjectLimited GatewayProviderAvailabilityReason = "project_limited"
 	GatewayProviderAvailabilityReasonPaused GatewayProviderAvailabilityReason = "paused"
 	GatewayProviderAvailabilityReasonSoftBlocked GatewayProviderAvailabilityReason = "soft_blocked"
+	GatewayProviderAvailabilityReasonDeranked GatewayProviderAvailabilityReason = "deranked"
 	GatewayProviderAvailabilityReasonDerankedLvl1 GatewayProviderAvailabilityReason = "deranked_lvl1"
 	GatewayProviderAvailabilityReasonDerankedLvl2 GatewayProviderAvailabilityReason = "deranked_lvl2"
 	GatewayProviderAvailabilityReasonDerankedLvl3 GatewayProviderAvailabilityReason = "deranked_lvl3"
@@ -2476,6 +2477,7 @@ type GatewayRoutingStatus string
 
 const (
 	GatewayRoutingStatusActive GatewayRoutingStatus = "active"
+	GatewayRoutingStatusDeranked GatewayRoutingStatus = "deranked"
 	GatewayRoutingStatusDerankedLvl1 GatewayRoutingStatus = "deranked_lvl1"
 	GatewayRoutingStatusDerankedLvl2 GatewayRoutingStatus = "deranked_lvl2"
 	GatewayRoutingStatusDerankedLvl3 GatewayRoutingStatus = "deranked_lvl3"
@@ -2714,8 +2716,10 @@ type ImageModerationInput struct {
 
 type ImagesEditRequest struct {
 	Background *string `json:"background,omitempty"`
+	Complexity *string `json:"complexity,omitempty"`
 	Image interface{} `json:"image"`
 	InputFidelity *string `json:"input_fidelity,omitempty"`
+	Markup *string `json:"markup,omitempty"`
 	Mask *string `json:"mask,omitempty"`
 	Meta *bool `json:"meta,omitempty"`
 	Model string `json:"model"`
@@ -2742,6 +2746,9 @@ type ImagesEditResponse struct {
 
 type ImagesGenerationRequest struct {
 	Background *string `json:"background,omitempty"`
+	Complexity *string `json:"complexity,omitempty"`
+	FrameCount *int `json:"frame_count,omitempty"`
+	FrameDurationMs *int `json:"frame_duration_ms,omitempty"`
 	Model string `json:"model"`
 	Models *[]string `json:"models,omitempty"`
 	Moderation *string `json:"moderation,omitempty"`
@@ -2757,12 +2764,14 @@ type ImagesGenerationRequest struct {
 	Size *string `json:"size,omitempty"`
 	Stream *bool `json:"stream,omitempty"`
 	Style *string `json:"style,omitempty"`
+	Svg *map[string]interface{} `json:"svg,omitempty"`
 	User *string `json:"user,omitempty"`
 }
 
 type ImagesGenerationResponse struct {
 	Created *int `json:"created,omitempty"`
 	Data *[]map[string]interface{} `json:"data,omitempty"`
+	SvgUsage *map[string]interface{} `json:"svg_usage,omitempty"`
 }
 
 type InputTokensDetails struct {
@@ -4285,6 +4294,91 @@ const (
 
 type OrganisationIdList = []string
 
+type ParameterDimensions struct {
+	AspectRatios *[]string `json:"aspect_ratios,omitempty"`
+	Max *float64 `json:"max,omitempty"`
+	MaxAspectRatio *string `json:"max_aspect_ratio,omitempty"`
+	MaxHeight *float64 `json:"max_height,omitempty"`
+	MaxPixels *float64 `json:"max_pixels,omitempty"`
+	MaxWidth *float64 `json:"max_width,omitempty"`
+	Min *float64 `json:"min,omitempty"`
+	MinPixels *float64 `json:"min_pixels,omitempty"`
+	MultipleOf *float64 `json:"multiple_of,omitempty"`
+}
+
+type ParameterOption struct {
+	Description *string `json:"description,omitempty"`
+	Label *string `json:"label,omitempty"`
+	Value interface{} `json:"value"`
+}
+
+type ParameterRule struct {
+	Default interface{} `json:"default,omitempty"`
+	If map[string]interface{} `json:"if"`
+	Max *float64 `json:"max,omitempty"`
+	Message *string `json:"message,omitempty"`
+	Min *float64 `json:"min,omitempty"`
+	Step *float64 `json:"step,omitempty"`
+	Supported *bool `json:"supported,omitempty"`
+	Values *[]interface{} `json:"values,omitempty"`
+}
+
+type ParameterSpec struct {
+	AliasOf *string `json:"alias_of,omitempty"`
+	Aliases *[]string `json:"aliases,omitempty"`
+	AlwaysOn *bool `json:"always_on,omitempty"`
+	Default interface{} `json:"default,omitempty"`
+	Dimensions *map[string]interface{} `json:"dimensions,omitempty"`
+	Extra *map[string]interface{} `json:"extra,omitempty"`
+	Format *string `json:"format,omitempty"`
+	Formats *[]string `json:"formats,omitempty"`
+	ItemTypes *[]string `json:"item_types,omitempty"`
+	Max *float64 `json:"max,omitempty"`
+	MaxFileSizeBytes *float64 `json:"max_file_size_bytes,omitempty"`
+	MaxItems *float64 `json:"max_items,omitempty"`
+	MaxLength *float64 `json:"max_length,omitempty"`
+	MaxTokens *float64 `json:"max_tokens,omitempty"`
+	Media *string `json:"media,omitempty"`
+	Min *float64 `json:"min,omitempty"`
+	MinItems *float64 `json:"min_items,omitempty"`
+	MinLength *float64 `json:"min_length,omitempty"`
+	MultipleOf *float64 `json:"multiple_of,omitempty"`
+	Notes *string `json:"notes,omitempty"`
+	Open *bool `json:"open,omitempty"`
+	Options *[]map[string]interface{} `json:"options,omitempty"`
+	Properties *map[string]interface{} `json:"properties,omitempty"`
+	ProviderDefault interface{} `json:"provider_default,omitempty"`
+	Required *bool `json:"required,omitempty"`
+	Requires *[]string `json:"requires,omitempty"`
+	Source *map[string]interface{} `json:"source,omitempty"`
+	Step *float64 `json:"step,omitempty"`
+	SupportLevel *string `json:"support_level,omitempty"`
+	Supported bool `json:"supported"`
+	Type interface{} `json:"type,omitempty"`
+	UpstreamName *string `json:"upstream_name,omitempty"`
+	UpstreamValues *[]interface{} `json:"upstream_values,omitempty"`
+	Values *[]interface{} `json:"values,omitempty"`
+	When *[]map[string]interface{} `json:"when,omitempty"`
+}
+
+type ParameterSpecs struct {
+}
+
+type ParameterType string
+
+const (
+	ParameterTypeString ParameterType = "string"
+	ParameterTypeInteger ParameterType = "integer"
+	ParameterTypeNumber ParameterType = "number"
+	ParameterTypeBoolean ParameterType = "boolean"
+	ParameterTypeArray ParameterType = "array"
+	ParameterTypeObject ParameterType = "object"
+	ParameterTypeFile ParameterType = "file"
+)
+
+
+type ParameterValue = interface{}
+
 type ParseBlock = interface{}
 
 type ParseBoundingBox struct {
@@ -4868,7 +4962,6 @@ const (
 	RateLimitTargetTypeKey RateLimitTargetType = "key"
 	RateLimitTargetTypeMember RateLimitTargetType = "member"
 	RateLimitTargetTypeDepartment RateLimitTargetType = "department"
-	RateLimitTargetTypeGuardrail RateLimitTargetType = "guardrail"
 	RateLimitTargetTypeEndUserDefault RateLimitTargetType = "end_user_default"
 )
 
@@ -5485,7 +5578,7 @@ type VideoDeleteResponse struct {
 
 type VideoGenerationRequest struct {
 	AspectRatio *string `json:"aspect_ratio,omitempty"`
-	CompressionQuality *int `json:"compression_quality,omitempty"`
+	CompressionQuality interface{} `json:"compression_quality,omitempty"`
 	Duration *int `json:"duration,omitempty"`
 	EnhancePrompt *bool `json:"enhance_prompt,omitempty"`
 	FrameImages *[]map[string]interface{} `json:"frame_images,omitempty"`
@@ -5575,6 +5668,7 @@ type VideoModelCapability struct {
 
 type VideoModelProviderCapability struct {
 	Id *string `json:"id,omitempty"`
+	ParameterSpecs *map[string]interface{} `json:"parameter_specs,omitempty"`
 	SupportedParameters *[]string `json:"supported_parameters,omitempty"`
 	SupportedParametersDetail *map[string]interface{} `json:"supported_parameters_detail,omitempty"`
 	SupportedParams *[]string `json:"supported_params,omitempty"`
@@ -6179,9 +6273,20 @@ type WorkspaceMember struct {
 	WorkspaceId string `json:"workspace_id"`
 }
 
+type WorkspaceMemberAddFailure struct {
+	Code string `json:"code"`
+	Message string `json:"message"`
+	UserId string `json:"user_id"`
+}
+
 type WorkspaceMemberAddResponse struct {
 	AddedCount int `json:"added_count"`
-	Data []map[string]interface{} `json:"data"`
+	Approved []string `json:"approved"`
+	Data *[]map[string]interface{} `json:"data,omitempty"`
+	Error *string `json:"error,omitempty"`
+	Failed []map[string]interface{} `json:"failed"`
+	Message *string `json:"message,omitempty"`
+	NotAttempted []string `json:"not_attempted"`
 }
 
 type WorkspaceMemberBulkRequest struct {

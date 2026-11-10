@@ -75,6 +75,8 @@ export type AgentTurnRequest = {
 	attachments?: Array<Record<string, unknown>>;
 	/** Whether a request must go only to providers that keep no data: asked before each model request (withZeroDataRetention). */
 	zeroDataRetention?: () => Promise<boolean>;
+	/** false: the run never has the gateway's web search and web fetch (an answer with the usage tools; workflow.webToolsFor). */
+	webTools?: boolean;
 };
 
 /**
@@ -412,7 +414,7 @@ export function createSdkAgentRunner(options: { fetchImpl: typeof fetch; baseUrl
 			let spentUsd = 0;
 			const otherCostUsd = () => request.otherCostUsd?.() ?? 0;
 			const fetchImpl = withZeroDataRetention(withAttachments(options.fetchImpl, request.attachments ?? []), request.zeroDataRetention);
-			const client = meteredClient(gatewayClient({ ...options, fetchImpl }, request, true), (usd) => {
+			const client = meteredClient(gatewayClient({ ...options, fetchImpl }, request, request.webTools !== false), (usd) => {
 				spentUsd += usd;
 				hooks.onCost?.(spentUsd);
 			});

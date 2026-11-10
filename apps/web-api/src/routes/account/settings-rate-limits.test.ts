@@ -3,6 +3,7 @@ import app from "@/index";
 
 const WORKSPACE = "00000000-0000-4000-8000-000000000001";
 const POLICY = "00000000-0000-4000-8000-0000000000a1";
+const SHARED = "00000000-0000-4000-8000-0000000000e1";
 const KEY = "00000000-0000-4000-8000-0000000000b1";
 const DEPARTMENT = "00000000-0000-4000-8000-0000000000c1";
 const env = {
@@ -35,22 +36,29 @@ function database(fixture: Fixture = {}) {
 			return Response.json([{ user_id: "user-a", role: "admin", users: { display_name: "Ada" } }, { user_id: "user-b", role: "member", users: null }]);
 		}
 		if (url.pathname.endsWith("/workspaces")) return Response.json([{ owner_user_id: "owner", slug: "workspace-a", name: "Workspace A" }]);
-		if (url.pathname.endsWith("/workspace_rate_limit_policies")) {
+		// Rate limit policies are rate guardrails.
+		if (url.pathname.endsWith("/workspace_guardrails")) {
+			expect(url.searchParams.get("kind")).toBe("eq.rate");
 			return Response.json([{
-				id: POLICY, name: "Standard", description: null, requests_per_minute: 60, tokens_per_minute: "200000",
-				concurrent_requests: null, fail_closed: false, updated_at: "2026-10-22T09:00:00Z",
+				id: POLICY, name: "Standard", description: null, rate_requests_per_minute: 60, rate_tokens_per_minute: "200000",
+				rate_concurrent_requests: null, rate_fail_closed: false, rate_counting: null, updated_at: "2026-10-22T09:00:00Z",
+			}, {
+				id: SHARED, name: "Workspace pool", description: null, rate_requests_per_minute: 1000, rate_tokens_per_minute: null,
+				rate_concurrent_requests: null, rate_fail_closed: false, rate_counting: "shared", updated_at: "2026-10-22T09:00:00Z",
 			}]);
 		}
-		if (url.pathname.endsWith("/workspace_rate_limit_policy_assignments")) {
+		if (url.pathname.endsWith("/workspace_guardrail_assignments")) {
+			expect(url.searchParams.get("guardrail_id")).toBe(`in.(${POLICY},${SHARED})`);
 			return Response.json([
-				{ id: "00000000-0000-4000-8000-0000000000d1", policy_id: POLICY, target_type: "key", key_id: KEY, user_id: null, department_id: null, guardrail_id: null },
-				{ id: "00000000-0000-4000-8000-0000000000d2", policy_id: POLICY, target_type: "department", key_id: null, user_id: null, department_id: DEPARTMENT, guardrail_id: null },
-				{ id: "00000000-0000-4000-8000-0000000000d3", policy_id: POLICY, target_type: "end_user_default", key_id: null, user_id: null, department_id: null, guardrail_id: null },
+				{ id: "00000000-0000-4000-8000-0000000000d1", guardrail_id: POLICY, target_type: "key", target_id: KEY },
+				{ id: "00000000-0000-4000-8000-0000000000d2", guardrail_id: POLICY, target_type: "department", target_id: DEPARTMENT },
+				{ id: "00000000-0000-4000-8000-0000000000d3", guardrail_id: POLICY, target_type: "workspace", target_id: null },
+				// Shared by the whole workspace: no equivalent on this page.
+				{ id: "00000000-0000-4000-8000-0000000000d4", guardrail_id: SHARED, target_type: "workspace", target_id: null },
 			]);
 		}
 		if (url.pathname.endsWith("/keys")) return Response.json([{ id: KEY, name: "Production", prefix: "abc123", status: "active" }]);
 		if (url.pathname.endsWith("/workspace_departments")) return Response.json([{ id: DEPARTMENT, name: "Engineering" }]);
-		if (url.pathname.endsWith("/workspace_guardrails")) return Response.json([]);
 		if (url.pathname.endsWith("/rpc/workspace_rate_limit_throttle_summary")) {
 			if (fixture.throttleError) return Response.json({ message: "boom" }, { status: 500 });
 			return Response.json([{ policy_id: POLICY, throttled_requests: 12, last_throttled_at: "2026-10-22T08:59:00+00:00" }]);
@@ -93,7 +101,10 @@ describe("rate limit settings reads", () => {
 		await expect(response.json()).resolves.toEqual({
 			workspaceId: WORKSPACE,
 			canManageRateLimits: true,
-			policies: [{ id: POLICY, name: "Standard", description: null, requestsPerMinute: 60, tokensPerMinute: 200_000, concurrentRequests: null, failClosed: false, updatedAt: "2026-10-22T09:00:00Z" }],
+			policies: [
+				{ id: POLICY, name: "Standard", description: null, requestsPerMinute: 60, tokensPerMinute: 200_000, concurrentRequests: null, failClosed: false, updatedAt: "2026-10-22T09:00:00Z" },
+				{ id: SHARED, name: "Workspace pool", description: null, requestsPerMinute: 1000, tokensPerMinute: null, concurrentRequests: null, failClosed: false, updatedAt: "2026-10-22T09:00:00Z" },
+			],
 			assignments: [
 				{ id: "00000000-0000-4000-8000-0000000000d1", policyId: POLICY, targetType: "key", targetId: KEY },
 				{ id: "00000000-0000-4000-8000-0000000000d2", policyId: POLICY, targetType: "department", targetId: DEPARTMENT },

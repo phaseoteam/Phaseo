@@ -19,7 +19,7 @@ public class PhaseoApiKeyTest {
 			@Override
 			public void handle(HttpExchange exchange) throws IOException {
 				assertEquals("GET", exchange.getRequestMethod());
-				byte[] bytes = "{\"data\":{\"id\":\"key_123\",\"hash\":\"keyhash_123\",\"status\":\"active\"}}".getBytes(StandardCharsets.UTF_8);
+				byte[] bytes = "{\"data\":{\"id\":\"key_123\",\"status\":\"active\"}}".getBytes(StandardCharsets.UTF_8);
 				exchange.getResponseHeaders().add("Content-Type", "application/json");
 				exchange.sendResponseHeaders(200, bytes.length);
 				try (OutputStream os = exchange.getResponseBody()) {
@@ -34,7 +34,6 @@ public class PhaseoApiKeyTest {
 			Phaseo client = new Phaseo("test", baseUrl, false, false, null);
 			JsonNode response = client.getApiKey("key_123");
 			assertEquals("key_123", response.path("data").path("id").asText());
-			assertEquals("keyhash_123", response.path("data").path("hash").asText());
 			assertEquals("active", response.path("data").path("status").asText());
 		} finally {
 			server.stop(0);

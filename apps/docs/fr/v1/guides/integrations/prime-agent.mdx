@@ -1,43 +1,44 @@
 ---
 title: "Prime Agent"
 icon: "/icons/brands/prime-agent.svg"
-description: "Connectez le catalogue de modèles Prime Agent installé à Phaseo."
+description: "Connectez le catalogue de modèles d’une installation Prime Agent à Phaseo."
 ---
 
-## Configurer avec la CLI Phaseo
+Lancez `phaseo prime-agent` pour ajouter à Prime Agent un fournisseur Phaseo avec tous les modèles Phaseo compatibles. Prime Agent fonctionne sous macOS et Linux ; sous Windows, installez-le et lancez la configuration dans WSL.
 
-Ces commandes prêtes pour la production nécessitent un compte Phaseo ; la CLI crée l’identifiant dédié à la passerelle lors de la connexion et de la configuration.
+## Configurer avec la CLI Phaseo
 
 ```bash
 phaseo login
 phaseo prime-agent
 ```
 
-Installez d’abord Prime Agent depuis sa version officielle. La configuration écrit un fournisseur `phaseo` géré dans `~/.prime/agent/models.json`. Il expose tous les modèles texte Phaseo actifs compatibles avec Chat Completions et récupère leur clé API dédiée auprès de la CLI Phaseo au moment de chaque requête.
+Si Prime Agent n’est pas installé, la CLI affiche la commande de l’installateur officiel et demande confirmation avant de l’exécuter. La configuration crée ensuite une clé `Phaseo CLI: Prime Agent API Key` (expiration au bout de 90 jours, limite de dépenses mensuelle de $100) et écrit un fournisseur `phaseo` dans `~/.prime/agent/models.json`. Le fournisseur liste tous les modèles texte Phaseo actifs compatibles avec Chat Completions.
 
-Prime Agent est actuellement compatible avec macOS et Linux. Sous Windows, exécutez la configuration dans WSL après y avoir installé l’exécutable.
+| Option | Effet |
+| --- | --- |
+| `--model <id>` | Définit le modèle initial. Par défaut : `anthropic/claude-sonnet-4.6`. |
+| `--catalog default` | Ajoute uniquement le modèle sélectionné. |
+| `--dry-run` | Affiche les modifications de fichiers sans les appliquer. |
 
-Choisissez une entrée initiale du catalogue ou configurez un seul modèle si nécessaire :
-
-```bash
-phaseo prime-agent --model anthropic/claude-sonnet-4.6
-phaseo prime-agent --catalog default
-```
-
-## Démarrer et vérifier
-
-```bash
-prime-agent
-```
-
-Ouvrez `/model`, sélectionnez le fournisseur `phaseo` et envoyez une requête simple. Le fournisseur généré utilise le format de clé basé sur une commande pris en charge par Prime Agent :
+Le fournisseur obtient sa clé au moment de la requête grâce au format de clé fournie par commande de Prime Agent : aucune clé en clair n’est écrite dans le fichier.
 
 ```text
 !phaseo integrations credential prime-agent
 ```
 
-Supprimez uniquement le fournisseur géré par Phaseo et révoquez sa clé dédiée avec :
+## Vérifier que tout fonctionne
+
+```bash
+prime-agent
+```
+
+Ouvrez `/model`, sélectionnez le fournisseur `phaseo` et envoyez un court prompt. Vérifiez que la requête apparaît dans **Paramètres → Utilisation → Journaux**.
+
+## Retirer Phaseo
 
 ```bash
 phaseo integrations remove prime-agent
 ```
+
+Cette commande retire uniquement le fournisseur Phaseo et révoque la clé.

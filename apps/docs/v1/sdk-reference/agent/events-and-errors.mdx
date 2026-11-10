@@ -1,0 +1,200 @@
+---
+icon: "triangle-alert"
+title: "Events and errors"
+description: "Find out how a failed agent run surfaces, which events fire, and how to recover from model, tool, and continuation errors."
+"og:image": "https://phaseo.app/og/dynamic?title=Events%20and%20errors&description=Find%20out%20how%20a%20failed%20agent%20run%20surfaces%2C%20which%20events%20fire%2C%20and%20how%20to%20recover%20from%20model%2C%20tool%2C%20and%20continuation%20errors.&pathname=/docs/v1/sdk-reference/agent/events-and-errors"
+---
+
+A failed run throws or returns an error from the run or continue call. A pause (`waiting_for_human`) or a stop condition (`stopped`) is not an error: both return a normal result. Which failures also send a `run.failed` event differs by language, so don't rely on the event alone to detect a failure.
+
+## How a failed run surfaces
+
+| Language | On failure | Saved state |
+| --- | --- | --- |
+| TypeScript | Throws. Gateway failures are `AgentGatewayError`. Cancelling through `signal` doesn't throw: the run returns with status `cancelled`. | The failed run (status `failed`, with `error` and `errorDetails`) is saved through `state` before the error is thrown |
+| Python | Raises from `run()`, `continue_run()` or `stream.result()` | No `AgentRunResult`, and the `state` accessor isn't called |
+| Go | Returns a non-nil `error` and an empty `RunResult` | None |
+| C# | Throws from `Run` or `ContinueRun`; no `RunResult` | None |
+| PHP | Throws a `RuntimeException` from `run()` or `continueRun()`; no `RunResult` | None |
+| Ruby | Raises from `run` or `continue_run`; no `RunResult` | None |
+| Java | Throws from `run` or `continueRun`; no `RunResult` | None |
+| Rust | Returns `Err(AgentError)` | None |
+
+<CodeGroup>
+
+```typescript TypeScript
+import { AgentGatewayError, AgentSchemaValidationError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error(error.status, error.requestId, error.reason);
+  } else if (error instanceof AgentSchemaValidationError) {
+    console.error(error.target, error.message);
+  }
+  throw error;
+}
+```
+
+```python Python
+import phaseo
+
+try:
+    result = agent.run(input="Summarise this ticket", client=client)
+except phaseo.PhaseoHTTPError as error:
+    print(error.status, error.code, error.request_id)
+    raise
+```
+
+```go Go
+ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+defer cancel()
+
+result, err := agent.Run(ctx, options)
+if errors.Is(err, context.DeadlineExceeded) {
+  // Save enough application state to retry or report the timeout.
+}
+```
+
+```csharp C#
+using Phaseo.Gen;
+
+try
+{
+    var result = await agent.Run(options);
+}
+catch (ApiErrorException error)
+{
+    Console.Error.WriteLine($"{error.StatusCode} {error.Code} {error.RequestId}");
+    throw;
+}
+```
+
+```php PHP
+use Phaseo\Gen\RequestException;
+
+try {
+    $result = $agent->run(input: "Summarise this ticket", client: $client);
+} catch (RequestException $error) {
+    error_log($error->getStatusCode() . " " . $error->getErrorCode() . " " . $error->getRequestId());
+    throw $error;
+}
+```
+
+```ruby Ruby
+begin
+  result = agent.run(input: "Summarise this ticket", client: client)
+rescue Phaseo::Gen::RequestError => error
+  warn [error.status_code, error.code, error.request_id].join(" ")
+  raise
+end
+```
+
+```java Java
+import app.phaseo.gen.Client.ApiException;
+
+try {
+    var result = agent.run(options);
+} catch (ApiException error) {
+    System.err.println(error.getStatusCode() + " " + error.getCode() + " " + error.getRequestId());
+    throw error;
+}
+```
+
+```rust Rust
+match agent.run(&mut client, options) {
+    Ok(result) => println!("{}", result.output),
+    Err(error) => eprintln!("Agent failed: {}", error.message()),
+}
+```
+
+</CodeGroup>
+
+## Which events fire when something fails
+
+| Language | `run.failed` is sent when | `tool.failed` is sent when | Step limit reached |
+| --- | --- | --- | --- |
+| TypeScript | Any failure except cancellation, after `step.failed`. Cancellation sends `step.cancelled` and `run.cancelled` instead. | A tool fails | Throws `Max steps exceeded (N)` and sends `run.failed` |
+| Python | Only when `max_steps` runs out. Other errors, including cancellation, raise without an event. | A tool fails | Raises `RuntimeError("Max steps exceeded (N)")` |
+| Go | A model error (after retries) or the step limit ended the run | A tool errored or timed out | Returns `Max steps exceeded (N)` and sends `run.failed` |
+| C# | Only when the run hits `MaxSteps`. Model errors, tool exceptions, validation and cancellation throw without it. | A tool threw and its `OnError` is `return-to-model` | Throws `Max steps exceeded (N)` |
+| PHP | Only when the run hits `maxSteps`. Model errors, tool exceptions and validation throw without it. | A tool threw or timed out | Throws `Max steps exceeded (N)` |
+| Ruby | Only when the run hits `max_steps`. Model errors, tool exceptions and validation raise without it. | A tool raised and its `on_error` is `return-to-model`. An approved call run by `continue_run` sends it whenever it raises. | Raises `Max steps exceeded (N)` |
+| Java | Only when the run hits `maxSteps`. Model errors, tool exceptions, validation and cancellation throw without it. | A tool threw and its `onError` is `return-to-model` | Throws `Max steps exceeded (N)` |
+| Rust | Never; Rust has no failure events | Never; a tool error is sent as `tool.completed` with `is_error: true` | Not an error: the run returns with status `stopped`, `stop_reason` `max_steps:<limit>`, and a `run.stopped` event |
+
+[Lifecycle hooks](./lifecycle-hooks) lists every event.
+
+## Find the cause of an error
+
+| Cause | Error | Language differences |
+| --- | --- | --- |
+| No API key | `PHASEO_API_KEY is required` | Python: `ValueError`. Ruby: `ArgumentError: Missing API key. Pass api_key or set PHASEO_API_KEY.` |
+| The gateway refused a model request | The gateway's error, rethrown after the retry policy is used up | TypeScript: `AgentGatewayError`. Python: `phaseo.PhaseoHTTPError` with `status`, `code` and `request_id`. Rust: converted to `AgentError`, without the gateway status and body. |
+| The model kept calling tools | `Max steps exceeded (N)` | Rust stops the run instead (see above) |
+| The model called a tool the agent doesn't have | `Unknown tool '<name>'` | Go: `unknown tool "name"`. TypeScript with `return-to-model`: answered to the model instead. |
+| A validator rejected tool input, tool output, a progress event or the final output | `Invalid tool input: ...`, `Invalid tool output: ...`, `Invalid agent output: ...` | TypeScript: `AgentSchemaValidationError`. Python and Ruby: `ValueError` / `ArgumentError`. Go: lowercase `invalid ...`. Rust has no validators. |
+| A tool ran past its timeout | A timeout error | Python: `TimeoutError`. Go: `tool <id> timed out: ...`. C# and Java: `TimeoutException`. PHP: `Tool <name> timed out after <n>ms`. Ruby: `Timeout::Error`. Rust has no tool timeouts. |
+| A continuation didn't answer every pending call | `Missing approval decision for tool call <id>`, `Missing output for tool call <id>` | Go: lowercase `missing ...`. Python: `ValueError`. See [State and approval](./state-and-approval). |
+| A review pause was continued without human input | `Run <id> is waiting for human input` | Go: `run <id> ...`. Java: `Run is waiting for human input`. |
+| The run belongs to a different agent ID | `Run <id> belongs to agent <agent>` | Go: `run <id> ...`. Java: `Run belongs to <agent>`. |
+| A continuation had no run to continue | `A run or state accessor with runId is required` | C# and Java. Ruby: `... with run_id is required`. PHP `continueRunById()`: `Run <id> not found`. |
+| The stream was cancelled | A cancellation error | Python: `InterruptedError`. PHP: `Agent stream cancelled`. C#: `OperationCanceledException`. Go: the context's error. TypeScript: no error; status `cancelled`. |
+
+### TypeScript error types
+
+`AgentGatewayError` has `status`, `statusText`, `headers`, `body`, `requestId`, `generationId`, `reason`, `errorType`, `errorOrigin`, `failedProviders`, `failedStatuses` and routing diagnostics. Failed runs and steps keep the same details in `errorDetails`. A failure partway through a streamed response is an `AgentStreamError`, a subclass with `code` and `retryable`.
+
+`AgentSchemaValidationError` has a `target` of `tool_input`, `tool_output`, `tool_event` or `agent_output`, and `details` with the validator's error. Treat these as contract failures, not transient model failures.
+
+To classify any error, for example in `modelRetry.retryOn`, use `agentErrorIsRetryable(error)`, `agentRetryAfterMs(error)` and `agentErrorIsContextOverflow(error)`.
+
+### Rust error type
+
+Every runtime failure is an `AgentError`; read it with `message()`. Gateway `PhaseoError` values are converted into `AgentError`, so if you need the original gateway status and body, call the `phaseo` client directly or implement a custom `ModelClient` that keeps them.
+
+## Recover from tool errors
+
+By default a tool error fails the run. Set the tool's error policy to `return-to-model` when the model can sensibly try something else: the error becomes the tool result `{"error": "..."}` and the run continues. Keep the default, `fail-run`, for unsafe or unrecoverable failures.
+
+| Language | Setting | Timeouts with `return-to-model` |
+| --- | --- | --- |
+| TypeScript | `onError` on the tool, or `toolExecution.onError` for every tool | Treated as a tool error and returned to the model |
+| Python | `on_error` | Always fail the run |
+| Go | `OnError` | Returned to the model |
+| C# | `OnError` | Returned to the model (the exception message) |
+| PHP | `onError` | Returned to the model |
+| Ruby | `on_error` | Returned to the model |
+| Java | `onError` | Returned to the model (the exception message) |
+| Rust | None | Rust has no timeouts. An `AgentError` from a local executor is always returned to the model as a tool error message. |
+
+## Handle cancellation and timeouts
+
+A tool timeout or cancellation doesn't always stop the tool's own work. Give HTTP, database and process calls inside tools their own deadlines, and treat a cancelled or timed-out run as finished unless your application starts a new one.
+
+| Language | Cancel a run | What happens to running tools |
+| --- | --- | --- |
+| TypeScript | Pass `signal`, or call `cancel()` on a stream | A tool timeout aborts `context.signal`; pass it to your own calls |
+| Python | `cancel()` on a stream; the run raises `InterruptedError` | Tool threads aren't stopped by timeouts or cancellation |
+| Go | Cancel the `ctx` passed to `Run`, `Continue` or `Stream`, or call `Cancel()` on a stream | Running tools fail with a timeout error, but `Execute` doesn't receive the context, so their work keeps running |
+| C# | Pass a `CancellationToken` in `RunOptions` or `ContinueOptions`, or call `Cancel()` on a stream; the run throws `OperationCanceledException` | Tools get `runtime.CancellationToken`; pass it to your own calls |
+| PHP | `cancel()` on a stream | Tools run synchronously and can't be stopped: `timeoutMs` only fails the call after it returns. Mind PHP's `max_execution_time` in web requests. |
+| Ruby | `cancel` on a stream kills the worker thread | `timeout_ms` uses `Timeout.timeout`, which interrupts the tool's thread at an arbitrary point and can leave files, sockets or transactions half-done |
+| Java | `cancel()` on a stream interrupts the worker thread | A tool `timeout` runs the executor on its own thread and interrupts it; only code that responds to interruption stops |
+| Rust | Not supported; runs are synchronous | Run the agent on a worker thread if it mustn't block a request handler |
+
+## Recover from an interrupted TypeScript run
+
+If a run crashed or was cancelled mid-step, its history can hold tool calls without results, which providers reject. TypeScript's `continueRun()` answers them as not run and sends `history.repaired`. Call `repairToolHistory(messages)` yourself if you reuse the messages elsewhere.
+
+## Check these first
+
+- `PHASEO_API_KEY` reaches the process and is passed to the gateway client.
+- Every tool has a unique, stable ID.
+- Approvals, rejections and tool outputs use exact tool-call IDs, and a human input message is never a substitute for a tool output.
+- The whole run result is saved before you show an approval UI or hand control to another request or worker.
+- Validators are deterministic and free of side effects, so a failed check can be retried safely.
+- Model retries are bounded; validation and approval failures shouldn't be retried blindly.
+
+To see which step failed, record `step.started`, `model.requested` and `tool.failed` with [lifecycle hooks](./lifecycle-hooks), and see [Observability](./observability) for the IDs that tie a step to gateway logs.

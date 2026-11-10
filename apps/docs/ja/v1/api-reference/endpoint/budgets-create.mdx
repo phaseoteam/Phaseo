@@ -5,4 +5,5 @@ badge: "ベータ"
 openapi: "/ja/openapi/v1/openapi.localized.yaml POST /budgets"
 description: "ワークスペースに日次、週次、月次、または全期間の支出上限を設定します。"
 ---
-`budgets:write` が必要です。金額はUSDです。ワークスペースでは各期間につき1つの予算を設定できます。
+
+`budgets:write` が必要です。金額は USD です。ワークスペースでは期間ごとに 1 つの予算を設定でき、2 つ目を作成すると `409` `conflict` が返されます。

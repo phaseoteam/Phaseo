@@ -1,9 +1,10 @@
-// Type-only: the SDK is loaded on demand so charging does not evaluate it.
+// Type-only: Stripe calls go through the small REST client, not the SDK (bundle size).
 import type Stripe from "stripe";
 // Purpose: Pricing rules, billing, and persistence helpers.
 // Why: Centralizes all cost calculations.
 // How: Persists pricing/usage data into storage.
 
+import { createStripeRestClient, type StripeApiError, type StripeRestClient } from "../../lib/stripe/rest";
 import {
     creditWriteBackEnabled,
     invalidateGatewayCreditCache,
@@ -24,14 +25,13 @@ export type ChargeRpcResult = {
     available_nanos?: number | null;
 };
 
-async function getStripe(): Promise<Stripe> {
+async function getStripe(): Promise<StripeRestClient> {
     const key = process.env.STRIPE_SECRET_KEY ?? process.env.TEST_STRIPE_SECRET_KEY;
     if (!key) throw new Error("Stripe secret key missing");
-    const { default: StripeClient } = await import("stripe");
-    return new StripeClient(key, { apiVersion: "2026-04-22.dahlia" as any });
+    return createStripeRestClient(key);
 }
 
-async function resolveDefaultPaymentMethod(stripe: Stripe, customerId: string): Promise<string | null> {
+async function resolveDefaultPaymentMethod(stripe: StripeRestClient, customerId: string): Promise<string | null> {
     if (!customerId) return null;
     const customer = (await stripe.customers.retrieve(customerId)) as any;
     if (typeof customer === "string") return null;
@@ -145,9 +145,10 @@ export async function recordUsageAndCharge(args: {
             // 2. Use the flat 5% top-up fee
             // 3. Credit wallet with net amount after the fee deduction
             const stripe = await getStripe();
-            const minTopUpNanos = 1 * 1_000_000_000;
+            // The Stripe webhook only credits top-ups of $5 or more.
+            const minTopUpNanos = 5 * 1_000_000_000;
             if (chargeResult.auto_top_up_amount_nanos < minTopUpNanos) {
-                console.error("[auto-recharge] Skipped: auto top-up amount below $1", {
+                console.error("[auto-recharge] Skipped: auto top-up amount below $5", {
                     workspaceId: args.workspaceId,
                     amount_nanos: chargeResult.auto_top_up_amount_nanos,
                 });
@@ -229,7 +230,7 @@ export async function recordUsageAndCharge(args: {
                     }
                 );
             } catch (error) {
-                const stripeError = error as Stripe.errors.StripeError & {
+                const stripeError = error as Partial<StripeApiError> & {
                     payment_intent?: Stripe.PaymentIntent;
                     raw?: { payment_intent?: Stripe.PaymentIntent };
                 };

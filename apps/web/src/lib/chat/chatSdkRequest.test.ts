@@ -1,3 +1,4 @@
+import { test, expect } from "vitest";
 import { sdkRequestFromTextThread } from "@/components/(chat)/chatSdkRequest";
 import type { ChatThread } from "@/lib/indexeddb/chats";
 

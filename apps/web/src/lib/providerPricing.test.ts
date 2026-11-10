@@ -1,3 +1,4 @@
+import { test, expect } from "vitest";
 import { nanosToUsd, usdToNanos } from "./providerPricing";
 
 test("shows and saves USD prices without losing fractional nanos", () => {

@@ -10,6 +10,7 @@ import { cn } from "../lib/utils";
 import { BannerActions, BannerContent, BannerCount, BannerIcon, BannerRoot, BannerRowButton, BannerSeparator, BannerSlot, BannerToggleIcon } from "./ComposerBanner";
 import { draftAnswer, draftError, draftFor, withOwnAnswer, type QuestionDraft } from "./questionDraft";
 import { registerQuestionAnswerer } from "./questionComposer";
+import { MarkdownTextarea } from "../components/MarkdownTextarea";
 
 export { draftAnswer } from "./questionDraft";
 
@@ -19,7 +20,7 @@ const inputTypes = { number: "number", integer: "number", email: "email", uri: "
 function OwnAnswer({ question, value, disabled, placeholder, label, inputRef, onFocus, onChange, onEnter }: { question: AgentQuestion; value: string; disabled: boolean; placeholder: string; label: string; inputRef: RefObject<HTMLInputElement | HTMLTextAreaElement | null>; onFocus: () => void; onChange: (value: string) => void; onEnter: () => void }) {
 	const input = question.input;
 	const className = "min-w-0 flex-1 bg-transparent text-[13px] outline-none placeholder:text-muted-foreground/70";
-	if (input?.kind === "multiline") return <textarea ref={inputRef as RefObject<HTMLTextAreaElement>} aria-label={label} rows={3} disabled={disabled} placeholder={placeholder} value={value} maxLength={input.maxLength ?? 100000}
+	if (input?.kind === "multiline") return <MarkdownTextarea containerClassName="min-w-0 flex-1" ref={inputRef as RefObject<HTMLTextAreaElement>} aria-label={label} rows={3} disabled={disabled} placeholder={placeholder} value={value} maxLength={input.maxLength ?? 100000}
 		onFocus={onFocus} onChange={event => onChange(event.target.value)} className={cn(className, "field-sizing-content max-h-60 min-h-16 resize-none py-1 leading-relaxed")} />;
 	const type = question.isSecret ? "password" : input && input.kind in inputTypes ? inputTypes[input.kind as keyof typeof inputTypes] : "text";
 	return <input ref={inputRef as RefObject<HTMLInputElement>} aria-label={label} type={type} autoComplete="off" disabled={disabled} placeholder={placeholder} value={value}

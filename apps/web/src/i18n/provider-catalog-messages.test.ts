@@ -1,4 +1,5 @@
-import { createTranslator } from "next-intl";
+import { describe, it, expect } from "vitest";
+import { createTranslator } from "@/i18n/react";
 import fs from "node:fs";
 import path from "node:path";
 import { localizedProviderCatalogMessage, localizedProviderEvent } from "./provider-catalog-messages";

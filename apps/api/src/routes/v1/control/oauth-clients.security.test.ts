@@ -44,6 +44,11 @@ vi.mock("@/runtime/env", () => ({
 					}),
 				};
 			}
+			// The management key acts as its creator, an admin of the workspace.
+			if (table === "workspace_members") {
+				const membership: any = { select: () => membership, eq: () => membership, maybeSingle: async () => ({ data: { role: "admin" }, error: null }) };
+				return membership;
+			}
 			if (table !== "oauth_app_metadata") throw new Error(`Unexpected table: ${table}`);
 			return {
 				insert: (payload: Record<string, unknown>) => {

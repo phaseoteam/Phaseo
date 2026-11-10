@@ -280,7 +280,7 @@ export const BYOK_PROVIDER_KEY_SPECS: Record<string, ProviderKeySpec> = {
 		minLength: 16,
 	},
 	scaledown: {
-		hint: "ScaleDown API key from the ScaleDown dashboard.",
+		hint: "ScaleDown API key from provider dashboard.",
 		example: "xxxxxxxxxxxxxxxxxxxxxxxx",
 		docsUrl: "https://docs.scaledown.ai/quickstart",
 		minLength: 16,

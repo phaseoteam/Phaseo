@@ -331,9 +331,6 @@ public sealed class ApiKey
 	[JsonPropertyName("expires_at")]
 	public string? ExpiresAt { get; set; }
 
-	[JsonPropertyName("hash")]
-	public string Hash { get; set; }
-
 	[JsonPropertyName("id")]
 	public string Id { get; set; }
 
@@ -616,9 +613,6 @@ public sealed class ApiKeyWithValue
 
 	[JsonPropertyName("expires_at")]
 	public string? ExpiresAt { get; set; }
-
-	[JsonPropertyName("hash")]
-	public string Hash { get; set; }
 
 	[JsonPropertyName("id")]
 	public string Id { get; set; }
@@ -3649,6 +3643,9 @@ public sealed class GatewayCapabilities
 	[JsonPropertyName("parameter_details")]
 	public Dictionary<string, object> ParameterDetails { get; set; }
 
+	[JsonPropertyName("parameter_specs")]
+	public Dictionary<string, object>? ParameterSpecs { get; set; }
+
 	[JsonPropertyName("parameters")]
 	public List<string> Parameters { get; set; }
 
@@ -4743,11 +4740,17 @@ public sealed class ImagesEditRequest
 	[JsonPropertyName("background")]
 	public string? Background { get; set; }
 
+	[JsonPropertyName("complexity")]
+	public string? Complexity { get; set; }
+
 	[JsonPropertyName("image")]
 	public object Image { get; set; }
 
 	[JsonPropertyName("input_fidelity")]
 	public string? InputFidelity { get; set; }
+
+	[JsonPropertyName("markup")]
+	public string? Markup { get; set; }
 
 	[JsonPropertyName("mask")]
 	public string? Mask { get; set; }
@@ -4817,6 +4820,15 @@ public sealed class ImagesGenerationRequest
 	[JsonPropertyName("background")]
 	public string? Background { get; set; }
 
+	[JsonPropertyName("complexity")]
+	public string? Complexity { get; set; }
+
+	[JsonPropertyName("frame_count")]
+	public long? FrameCount { get; set; }
+
+	[JsonPropertyName("frame_duration_ms")]
+	public long? FrameDurationMs { get; set; }
+
 	[JsonPropertyName("model")]
 	public string Model { get; set; }
 
@@ -4862,6 +4874,9 @@ public sealed class ImagesGenerationRequest
 	[JsonPropertyName("style")]
 	public string? Style { get; set; }
 
+	[JsonPropertyName("svg")]
+	public Dictionary<string, object>? Svg { get; set; }
+
 	[JsonPropertyName("user")]
 	public string? User { get; set; }
 
@@ -4874,6 +4889,9 @@ public sealed class ImagesGenerationResponse
 
 	[JsonPropertyName("data")]
 	public List<Dictionary<string, object>>? Data { get; set; }
+
+	[JsonPropertyName("svg_usage")]
+	public Dictionary<string, object>? SvgUsage { get; set; }
 
 }
 
@@ -6524,6 +6542,195 @@ public sealed class OpenAIWebSearchToolDefinition
 public sealed class OrganisationId { }
 
 public sealed class OrganisationIdList { }
+
+public sealed class ParameterDimensions
+{
+	[JsonPropertyName("aspect_ratios")]
+	public List<string>? AspectRatios { get; set; }
+
+	[JsonPropertyName("max")]
+	public double? Max { get; set; }
+
+	[JsonPropertyName("max_aspect_ratio")]
+	public string? MaxAspectRatio { get; set; }
+
+	[JsonPropertyName("max_height")]
+	public double? MaxHeight { get; set; }
+
+	[JsonPropertyName("max_pixels")]
+	public double? MaxPixels { get; set; }
+
+	[JsonPropertyName("max_width")]
+	public double? MaxWidth { get; set; }
+
+	[JsonPropertyName("min")]
+	public double? Min { get; set; }
+
+	[JsonPropertyName("min_pixels")]
+	public double? MinPixels { get; set; }
+
+	[JsonPropertyName("multiple_of")]
+	public double? MultipleOf { get; set; }
+
+}
+
+public sealed class ParameterOption
+{
+	[JsonPropertyName("description")]
+	public string? Description { get; set; }
+
+	[JsonPropertyName("label")]
+	public string? Label { get; set; }
+
+	[JsonPropertyName("value")]
+	public object Value { get; set; }
+
+}
+
+public sealed class ParameterRule
+{
+	[JsonPropertyName("default")]
+	public object? Default { get; set; }
+
+	[JsonPropertyName("if")]
+	public Dictionary<string, object> If { get; set; }
+
+	[JsonPropertyName("max")]
+	public double? Max { get; set; }
+
+	[JsonPropertyName("message")]
+	public string? Message { get; set; }
+
+	[JsonPropertyName("min")]
+	public double? Min { get; set; }
+
+	[JsonPropertyName("step")]
+	public double? Step { get; set; }
+
+	[JsonPropertyName("supported")]
+	public bool? Supported { get; set; }
+
+	[JsonPropertyName("values")]
+	public List<object>? Values { get; set; }
+
+}
+
+public sealed class ParameterSpec
+{
+	[JsonPropertyName("alias_of")]
+	public string? AliasOf { get; set; }
+
+	[JsonPropertyName("aliases")]
+	public List<string>? Aliases { get; set; }
+
+	[JsonPropertyName("always_on")]
+	public bool? AlwaysOn { get; set; }
+
+	[JsonPropertyName("default")]
+	public object? Default { get; set; }
+
+	[JsonPropertyName("dimensions")]
+	public Dictionary<string, object>? Dimensions { get; set; }
+
+	[JsonPropertyName("extra")]
+	public Dictionary<string, object>? Extra { get; set; }
+
+	[JsonPropertyName("format")]
+	public string? Format { get; set; }
+
+	[JsonPropertyName("formats")]
+	public List<string>? Formats { get; set; }
+
+	[JsonPropertyName("item_types")]
+	public List<string>? ItemTypes { get; set; }
+
+	[JsonPropertyName("max")]
+	public double? Max { get; set; }
+
+	[JsonPropertyName("max_file_size_bytes")]
+	public double? MaxFileSizeBytes { get; set; }
+
+	[JsonPropertyName("max_items")]
+	public double? MaxItems { get; set; }
+
+	[JsonPropertyName("max_length")]
+	public double? MaxLength { get; set; }
+
+	[JsonPropertyName("max_tokens")]
+	public double? MaxTokens { get; set; }
+
+	[JsonPropertyName("media")]
+	public string? Media { get; set; }
+
+	[JsonPropertyName("min")]
+	public double? Min { get; set; }
+
+	[JsonPropertyName("min_items")]
+	public double? MinItems { get; set; }
+
+	[JsonPropertyName("min_length")]
+	public double? MinLength { get; set; }
+
+	[JsonPropertyName("multiple_of")]
+	public double? MultipleOf { get; set; }
+
+	[JsonPropertyName("notes")]
+	public string? Notes { get; set; }
+
+	[JsonPropertyName("open")]
+	public bool? Open { get; set; }
+
+	[JsonPropertyName("options")]
+	public List<Dictionary<string, object>>? Options { get; set; }
+
+	[JsonPropertyName("properties")]
+	public Dictionary<string, object>? Properties { get; set; }
+
+	[JsonPropertyName("provider_default")]
+	public object? ProviderDefault { get; set; }
+
+	[JsonPropertyName("required")]
+	public bool? Required { get; set; }
+
+	[JsonPropertyName("requires")]
+	public List<string>? Requires { get; set; }
+
+	[JsonPropertyName("source")]
+	public Dictionary<string, object>? Source { get; set; }
+
+	[JsonPropertyName("step")]
+	public double? Step { get; set; }
+
+	[JsonPropertyName("support_level")]
+	public string? SupportLevel { get; set; }
+
+	[JsonPropertyName("supported")]
+	public bool Supported { get; set; }
+
+	[JsonPropertyName("type")]
+	public object? Type { get; set; }
+
+	[JsonPropertyName("upstream_name")]
+	public string? UpstreamName { get; set; }
+
+	[JsonPropertyName("upstream_values")]
+	public List<object>? UpstreamValues { get; set; }
+
+	[JsonPropertyName("values")]
+	public List<object>? Values { get; set; }
+
+	[JsonPropertyName("when")]
+	public List<Dictionary<string, object>>? When { get; set; }
+
+}
+
+public sealed class ParameterSpecs
+{
+}
+
+public sealed class ParameterType { }
+
+public sealed class ParameterValue { }
 
 public sealed class ParseBlock { }
 
@@ -9210,7 +9417,7 @@ public sealed class VideoGenerationRequest
 	public string? AspectRatio { get; set; }
 
 	[JsonPropertyName("compression_quality")]
-	public long? CompressionQuality { get; set; }
+	public object? CompressionQuality { get; set; }
 
 	[JsonPropertyName("duration")]
 	public long? Duration { get; set; }
@@ -9454,6 +9661,9 @@ public sealed class VideoModelProviderCapability
 {
 	[JsonPropertyName("id")]
 	public string? Id { get; set; }
+
+	[JsonPropertyName("parameter_specs")]
+	public Dictionary<string, object>? ParameterSpecs { get; set; }
 
 	[JsonPropertyName("supported_parameters")]
 	public List<string>? SupportedParameters { get; set; }
@@ -10710,13 +10920,41 @@ public sealed class WorkspaceMember
 
 }
 
+public sealed class WorkspaceMemberAddFailure
+{
+	[JsonPropertyName("code")]
+	public string Code { get; set; }
+
+	[JsonPropertyName("message")]
+	public string Message { get; set; }
+
+	[JsonPropertyName("user_id")]
+	public string UserId { get; set; }
+
+}
+
 public sealed class WorkspaceMemberAddResponse
 {
 	[JsonPropertyName("added_count")]
 	public long AddedCount { get; set; }
 
+	[JsonPropertyName("approved")]
+	public List<string> Approved { get; set; }
+
 	[JsonPropertyName("data")]
-	public List<Dictionary<string, object>> Data { get; set; }
+	public List<Dictionary<string, object>>? Data { get; set; }
+
+	[JsonPropertyName("error")]
+	public string? Error { get; set; }
+
+	[JsonPropertyName("failed")]
+	public List<Dictionary<string, object>> Failed { get; set; }
+
+	[JsonPropertyName("message")]
+	public string? Message { get; set; }
+
+	[JsonPropertyName("not_attempted")]
+	public List<string> NotAttempted { get; set; }
 
 }
 

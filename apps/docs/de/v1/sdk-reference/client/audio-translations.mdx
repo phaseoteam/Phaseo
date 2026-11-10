@@ -1,0 +1,177 @@
+---
+icon: "arrow-right-left"
+title: "Übersetzungen"
+description: "Übersetze Sprache mit POST /v1/audio/translations aus jedem Phaseo-SDK in englischen Text."
+---
+
+Lade Sprachaufnahmen an `POST /v1/audio/translations` hoch, um englischen Text zurückzubekommen. Der Endpunkt liest das Audio nur aus einem Multipart-Feld `file` und hat keine URL-Option. Deshalb kann nur das TypeScript-SDK ihn direkt aufrufen; alle anderen Sprachen senden das Formular mit ihrem Standard-HTTP-Client.
+
+<CodeGroup>
+
+```typescript TypeScript
+import { readFile } from "node:fs/promises";
+
+const form = new FormData();
+form.append("model", "openai/whisper-1");
+form.append("file", new Blob([await readFile("interview.mp3")], { type: "audio/mpeg" }), "interview.mp3");
+
+const translated = await client.generateTranslation(form as unknown as Record<string, unknown>);
+console.log(translated.text);
+```
+
+```python Python
+# generate_translation() kann noch kein Audio hochladen, daher das Formular mit HTTPX senden.
+import os
+import httpx
+
+with open("interview.mp3", "rb") as audio:
+    response = httpx.post(
+        "https://api.phaseo.app/v1/audio/translations",
+        headers={"Authorization": f"Bearer {os.environ['PHASEO_API_KEY']}"},
+        data={"model": "openai/whisper-1"},
+        files={"file": ("interview.mp3", audio, "audio/mpeg")},
+        timeout=120,
+    )
+response.raise_for_status()
+print(response.json()["text"])
+```
+
+```go Go
+// CreateTranslation() sendet JSON, daher das Formular mit net/http und mime/multipart senden.
+var body bytes.Buffer
+form := multipart.NewWriter(&body)
+_ = form.WriteField("model", "openai/whisper-1")
+part, _ := form.CreateFormFile("file", "interview.mp3")
+audio, _ := os.ReadFile("interview.mp3")
+_, _ = part.Write(audio)
+_ = form.Close()
+
+req, _ := http.NewRequest("POST", "https://api.phaseo.app/v1/audio/translations", &body)
+req.Header.Set("Authorization", "Bearer "+os.Getenv("PHASEO_API_KEY"))
+req.Header.Set("Content-Type", form.FormDataContentType())
+
+resp, err := http.DefaultClient.Do(req)
+```
+
+```csharp C#
+// CreateTranslation() sendet JSON, daher das Formular mit HttpClient senden.
+using var http = new HttpClient();
+http.DefaultRequestHeaders.Authorization =
+    new("Bearer", Environment.GetEnvironmentVariable("PHASEO_API_KEY"));
+
+using var form = new MultipartFormDataContent
+{
+    { new StringContent("openai/whisper-1"), "model" },
+    { new ByteArrayContent(await File.ReadAllBytesAsync("interview.mp3")), "file", "interview.mp3" },
+};
+
+var response = await http.PostAsync("https://api.phaseo.app/v1/audio/translations", form);
+Console.WriteLine(await response.Content.ReadAsStringAsync());
+```
+
+```php PHP
+<?php
+// generateTranslation() sendet JSON, daher das Formular mit Guzzle senden, das Composer mit dem SDK installiert hat.
+require 'vendor/autoload.php';
+
+$http = new GuzzleHttp\Client();
+
+$response = $http->post('https://api.phaseo.app/v1/audio/translations', [
+    'headers' => ['Authorization' => 'Bearer ' . getenv('PHASEO_API_KEY')],
+    'multipart' => [
+        ['name' => 'model', 'contents' => 'openai/whisper-1'],
+        ['name' => 'file', 'contents' => fopen('interview.mp3', 'r'), 'filename' => 'interview.mp3'],
+    ],
+]);
+
+echo $response->getBody();
+```
+
+```ruby Ruby
+# generate_translation sendet JSON, daher das Formular mit Net::HTTP senden.
+require 'net/http'
+
+uri = URI('https://api.phaseo.app/v1/audio/translations')
+request = Net::HTTP::Post.new(uri)
+request['Authorization'] = "Bearer #{ENV.fetch('PHASEO_API_KEY')}"
+request.set_form(
+  [['model', 'openai/whisper-1'], ['file', File.open('interview.mp3')]],
+  'multipart/form-data'
+)
+
+response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |http| http.request(request) }
+puts response.body
+```
+
+```java Java
+// Die JSON-Helfer des SDK kodieren kein Multipart, daher das Formular mit java.net.http senden.
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.UUID;
+
+String baseUrl = System.getenv().getOrDefault("PHASEO_BASE_URL", "https://api.phaseo.app/v1")
+    .replaceAll("/+$", "");
+String apiKey = System.getenv("PHASEO_API_KEY");
+String boundary = "phaseo-" + UUID.randomUUID();
+var body = BodyPublishers.concat(
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\nopenai/whisper-1\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"interview.mp3\"\r\nContent-Type: audio/mpeg\r\n\r\n"),
+    BodyPublishers.ofFile(Path.of("interview.mp3")),
+    BodyPublishers.ofString("\r\n--" + boundary + "--\r\n")
+);
+var request = HttpRequest.newBuilder(URI.create(baseUrl + "/audio/translations"))
+    .header("Authorization", "Bearer " + apiKey)
+    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+    .timeout(Duration.ofSeconds(60))
+    .POST(body)
+    .build();
+var response = HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+if (response.statusCode() < 200 || response.statusCode() >= 300) {
+    throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
+}
+System.out.println(response.body());
+```
+
+</CodeGroup>
+
+| Sprache | SDK-Methode | Kann sie eine Datei hochladen? |
+| --- | --- | --- |
+| TypeScript | `client.generateTranslation(form)` | Ja. Übergib einen `FormData`-Body; das SDK sendet ihn unverändert als Multipart. Der Cast ist nötig, weil der Typ der Methode einen JSON-Body beschreibt. |
+| Python | `client.generate_translation(request)` | Nein. Die Methode sendet JSON, daher sendest du das Formular wie oben mit HTTPX. |
+| Go | `client.CreateTranslation(ctx, req)` | Nein. Die Methode sendet JSON, und das Gateway lehnt die Anfrage mit `file is required` ab. |
+| C# | `client.CreateTranslation(request)` | Nein. Die Methode sendet JSON, und das Gateway lehnt die Anfrage mit `file is required` ab. |
+| PHP | `$client->generateTranslation($request)` | Nein. Die Methode sendet JSON, und das Gateway lehnt die Anfrage mit `file is required` ab. |
+| Ruby | `client.generate_translation(...)` | Nein. Die Methode sendet JSON, und das Gateway lehnt die Anfrage mit `file is required` ab. |
+| Java | Keine | Nein. Verwende `java.net.http.HttpClient` mit einem Multipart-Body. |
+
+Rust hat keine Übersetzungsmethode, und sein Helfer `post()` sendet nur JSON.
+
+## Parameter
+
+Die Feldnamen sind in jeder Sprache die Formularfelder.
+
+| Feld | Hinweise |
+| --- | --- |
+| `model` | Erforderlich. Eine Übersetzungsmodell-ID. |
+| `file` | Erforderlich. Bis zu 25 MB, als `flac`, `mp3`, `mp4`, `mpeg`, `mpga`, `m4a`, `ogg`, `wav` oder `webm`. |
+| `prompt` | Kontext zur Steuerung der Übersetzung. |
+| `temperature` | `0` bis `1`. |
+| `response_format` | `json`, `text`, `srt`, `verbose_json` oder `vtt`. |
+
+Das vollständige Schema steht in der [Translations-API-Referenz](/de/v1/api-reference/endpoint/audio-translations).
+
+## Antwort
+
+`AudioTranslationResponse`:
+
+```json
+{
+  "text": "Hello world"
+}
+```

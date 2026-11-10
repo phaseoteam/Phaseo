@@ -5,22 +5,12 @@ description: "What to know when adopting Claude Opus 5 for long-context reasonin
 icon: "/icons/brands/anthropic.svg"
 ---
 
-# Anthropic Claude Opus 5
-
-Use this guide to adopt `anthropic/claude-opus-5` safely in production.
-
-Claude Opus 5 is the current Opus model for complex reasoning, long-horizon agentic coding, and high-autonomy workflows. It keeps the same price as Opus 4.8 while supporting a 1M-token context window and up to 128K output tokens.
-
-## Migration quickstart
-
-1. Change the model ID to `anthropic/claude-opus-5` without changing the rest of the request.
-2. Re-run your production prompt, tool, and structured-output evaluations.
-3. Rebaseline latency, token use, and task cost for long-context and high-effort workloads.
-4. Canary the model behind a fallback to Claude Opus 4.8 before changing your default route.
+Change the model to `anthropic/claude-opus-5` and keep Claude Opus 4.8 as a fallback while you evaluate it. The price is the same as Opus 4.8, so the cost difference comes from token use.
 
 ```json
 {
   "model": "anthropic/claude-opus-5",
+  "models": ["anthropic/claude-opus-4.8"],
   "messages": [
     {
       "role": "user",
@@ -30,46 +20,38 @@ Claude Opus 5 is the current Opus model for complex reasoning, long-horizon agen
 }
 ```
 
-## What's new
+| | Claude Opus 4.8 | Claude Opus 5 |
+| --- | --- | --- |
+| Phaseo model ID | `anthropic/claude-opus-4.8` | `anthropic/claude-opus-5` |
+| Context window | 1M tokens | 1M tokens |
+| Max output | 128K tokens | 128K tokens |
+| Price per 1M tokens (input / output) | $5.00 / $25.00 | $5.00 / $25.00 |
+| Thinking when the request sets no reasoning | Off | Adaptive |
 
-- the Phaseo model ID is `anthropic/claude-opus-5`
-- the context window is 1M tokens
-- the maximum output is 128K tokens
-- the model is positioned for longer-running reasoning, coding, and autonomous tool workflows
-- pricing remains aligned with Claude Opus 4.8
+Prices are Anthropic's standard tier from the catalogue; check the model page for other tiers and providers.
+
+## How Phaseo sends the request
+
+Opus 5 takes the same request shape as Opus 4.7 and 4.8:
+
+- **Sampling parameters are left out.** `temperature`, `top_p`, and `top_k` aren't sent to the model.
+- **Any reasoning setting turns on adaptive thinking.** Phaseo sends `thinking: {"type": "adaptive", "display": "summarized"}`, and `reasoning.effort` becomes `output_config.effort`. Thinking budgets aren't forwarded.
+- **`reasoning.effort: "none"` or `reasoning.enabled: false` turns thinking off** (`thinking: {"type": "disabled"}`).
+- **With no reasoning setting, Phaseo sends no `thinking` field,** so Opus 5's default, adaptive thinking, applies. Opus 4.8 thinks only when asked, so the same request can use more output tokens on Opus 5.
 
 ## What to test
 
-### Prompts and outputs
+- **Prompts and outputs:** instruction following on your longest system prompts, schema pass rates, response length and stopping, and prompts tuned for Opus 4.8.
+- **Tools and agents:** tool selection and arguments, recovery after tool errors or partial results, long-horizon completion rate, and permission boundaries in high-autonomy workflows.
+- **Operations:** latency and token use at each effort level you expose, context use on long documents and agent traces, cost per successful task, and fallback when the primary route times out or fails.
 
-- instruction following on your longest system prompts
-- structured-output and schema pass rates
-- response length and stopping behavior
-- regressions in prompts tuned specifically for Claude Opus 4.8
+## Roll out
 
-### Tools and agents
-
-- tool selection and argument quality
-- recovery after tool errors or partial results
-- long-horizon completion rate
-- permission and approval boundaries in high-autonomy workflows
-
-### Operations
-
-- latency and token use at each effort level you expose
-- context-window usage on long documents and agent traces
-- cost per successful task
-- fallback behavior when the primary route times out or fails
-
-## Safe rollout
-
-1. Keep Claude Opus 4.8 available as a fallback during evaluation.
-2. Shadow representative production traffic before serving user requests.
-3. Canary by workload rather than moving every Opus route at once.
-4. Promote only after quality, latency, cost, and tool-safety checks meet your targets.
+1. Shadow representative production traffic before serving users.
+2. Canary by workload rather than moving every Opus route at once.
+3. Promote only after quality, latency, cost, and tool-safety checks meet your targets.
 
 ## Sources
 
 - [Claude Opus 5 announcement](https://www.anthropic.com/news/claude-opus-5)
 - [Claude Opus 5 system card](https://www.anthropic.com/claude-opus-5-system-card)
-

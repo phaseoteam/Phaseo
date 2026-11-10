@@ -33,6 +33,11 @@ export type GateCheck = {
     /** The department whose budget was reached (`department_*` reasons only). */
     departmentId?: string | null;
     departmentName?: string | null;
+    /** The spend guardrail whose limit was reached (`guardrail_*` reasons only). */
+    guardrailId?: string | null;
+    guardrailName?: string | null;
+    /** shared: one counter for everything the assignment covers; each_key: this key's own counter. */
+    guardrailCounting?: "shared" | "each_key" | null;
     buckets?: {
         daily?: {
             windowStart: string | null;
@@ -171,11 +176,10 @@ export type ProviderRolloutStatus =
     | "paused"
     | "soft_blocked";
 
+/** `deranked`: routable only as a last resort, after every other healthy provider. */
 export type RoutingStatus =
     | "active"
-    | "deranked_lvl1"
-    | "deranked_lvl2"
-    | "deranked_lvl3"
+    | "deranked"
     | "disabled";
 
 export type CapabilityRoutingStatus = RoutingStatus | "internal_testing" | "coming_soon";
@@ -293,10 +297,6 @@ export type TeamSettings = {
     betaChannelEnabled: boolean | null;
     alphaChannelEnabled?: boolean | null;
     cacheAwareRoutingEnabled?: boolean | null;
-    privacyZdrOnly?: boolean | null;
-    privacyEnablePaidMayTrain?: boolean | null;
-    privacyEnableFreeMayTrain?: boolean | null;
-    privacyEnableInputOutputLogging?: boolean | null;
     /** Explicit consent to persist gateway request/response payloads. */
     ioLoggingEnabled?: boolean;
     ioLoggingIncludeProviderPayloads?: boolean;
@@ -332,7 +332,8 @@ export type ContextFetchTelemetry = {
     presetAccessMs?: number | null;
     privateModelMs?: number | null;
     byokHydrationMs?: number | null;
-    cacheStatus: "hit" | "miss" | "bypass" | "credit_refresh";
+    /** model_miss: workspace and key data came from cache; only the model's routes and prices were loaded. */
+    cacheStatus: "hit" | "miss" | "bypass" | "credit_refresh" | "model_miss";
     totalMs: number;
     keyVersionMs?: number | null;
     cacheReadMs?: number | null;
@@ -340,6 +341,8 @@ export type ContextFetchTelemetry = {
     rpcMs?: number | null;
     enrichMs?: number | null;
     cacheWriteMs?: number | null;
+    /** Wait for the spend-limit coordinator's decision (enforce mode), set by guardContext. */
+    spendLimitMs?: number | null;
     fallbackRemap?: boolean;
 };
 
@@ -452,6 +455,7 @@ export type ParamRoutingDiagnostics = {
         stage:
             | "param_support"
             | "param_preference"
+            | "param_values"
             | "provider_docs"
             | "response_format"
             | "structured_outputs"
@@ -533,6 +537,13 @@ export type ProviderAttemptLog = {
 	upstream_preflight_count?: number | null;
 	upstream_media_count?: number | null;
     retry_delay_ms?: number | null;
+    /**
+     * What this attempt says about the provider (see pipeline/execute/attempt-health.ts).
+     * Updated before audit when the served stream breaks or the output is empty.
+     */
+    health_class?: import("@pipeline/execute/attempt-health").AttemptHealthClass;
+    /** Why the attempt got its class (null for a plain success); see attempt-health.ts. */
+    health_reason?: import("@pipeline/execute/attempt-health").AttemptHealthReason | null;
 };
 
 export type WorkspacePolicy = {

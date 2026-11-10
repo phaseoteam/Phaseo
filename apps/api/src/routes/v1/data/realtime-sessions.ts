@@ -3,7 +3,7 @@
 // How: Authenticates gateway keys, creates/extends/finalizes realtime sessions.
 
 import { Hono } from "hono";
-import { z } from "zod";
+import * as z from "zod";
 import { getBindings } from "@/runtime/env";
 import type { Env } from "@/runtime/types";
 import { guardAuth, guardContext, guardJson } from "@pipeline/before/guards";
@@ -451,7 +451,6 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 			...(requestedProvider ? { provider: requestedProvider } : {}),
 		},
 		workspacePolicy,
-		teamSettings: context.value.context.teamSettings ?? null,
 	});
 	if (policyResult.ok === false) {
 		return err("guardrail_blocked", {
@@ -463,8 +462,7 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 		});
 	}
 	if (live && !applyWorkspacePolicy({ providers: livePolicyCandidates(context.value.providers), resolvedModel: LIVE_MODEL,
-		body: { model: LIVE_MODEL, provider: "openai" }, workspacePolicy,
-		teamSettings: context.value.context.teamSettings ?? null }).ok) {
+		body: { model: LIVE_MODEL, provider: "openai" }, workspacePolicy }).ok) {
 		return err("guardrail_blocked", { reason: "workspace_model_not_allowed" });
 	}
 	const selectedProvider = requestedProvider ?? policyResult.providers[0]?.providerId ?? null;

@@ -1,8 +1,7 @@
-"use client";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { fetchProviderCatalogEditEventAction, type ProviderManagedCatalog } from "@/app/(dashboard)/settings/account/providers/actions";
+import { fetchProviderCatalogEditEventAction, type ProviderManagedCatalog } from "@/features/settings/account/providers/actions";
 import { nanosToUsd } from "@/lib/providerPricing";
 
 function pathParts(field: string) { return field.startsWith("/") ? field.split("/").slice(1).map((part) => part.replace(/~1/g, "/").replace(/~0/g, "~")) : [field]; }
@@ -33,7 +32,7 @@ function ActivityEvent({ providerSlug, event, label }: { providerSlug: string; e
 	async function load() {
 		if (data || loading) return;
 		setLoading(true); setError(false);
-		try { setData(await fetchProviderCatalogEditEventAction(providerSlug, event.id)); }
+		try { setData(await fetchProviderCatalogEditEventAction({ data: { providerSlug, eventId: event.id } })); }
 		catch { setError(true); }
 		finally { setLoading(false); }
 	}

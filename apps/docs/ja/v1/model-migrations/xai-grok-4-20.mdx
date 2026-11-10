@@ -1,78 +1,41 @@
 ---
 title: "SpaceXAI Grok 4.20"
-description: "推論制御やマルチエージェントの effort 設定など、Grok 4.20 の導入時に確認する内容です。"
+description: "推論とマルチエージェントの effort の制御など、Grok 4.20 の導入時に知っておくべきことです。"
 icon: "/icons/brands/grok.svg"
 ---
 
-# SpaceXAI Grok 4.20
+モデル ID を変更し、検証セットを再実行します。リクエストとレスポンスの形式は変わりません。新しい制御は、マルチエージェント版がどこまで深く作業するかだけです。
 
-Phaseo Gateway で Grok 4.20 を安全に導入するには、このガイドを使います。
+| モデル | Phaseo のモデル ID | 推論の制御 |
+| --- | --- | --- |
+| Grok 4.20 | `spacex-ai/grok-4.20` | `reasoning.enabled`: オンまたはオフ |
+| Grok 4.20 Multi-Agent(ベータ版) | `spacex-ai/grok-4.20-multi-agent-beta` | `reasoning.effort`: `low`、`medium`、`high` |
 
-カタログ内の基本ルート：
+## Grok 4.20 で推論を切り替える
 
-- `spacex-ai/grok-4-20-2026-02-17`
-
-プロバイダーのモデル ID で公開される、任意のマルチエージェントルート：
-
-- `spacex-ai/grok-4.20-multi-agent-beta-0309`
-
-## 移行クイックスタート
-
-ほとんどの連携では、モデル ID を更新して通常の検証を再実行するだけで移行できます。
-
-既存のリクエストと応答の形式はそのまま使えます。
-
-## 新機能
-
-基本の Grok 4.20 ルートでは、Phaseo Gateway 側の動作変更は必要ありません。
-
-実質的な変更は、マルチエージェント版の調整方法です。
-
-Phaseo Gateway では次のように設定します。
-
-- 基本 Grok 4.20 の推論は、通常どおり `reasoning.enabled` で切り替えられます。
-- マルチエージェント版は `reasoning.effort` で調整します。
-- `low`、`medium`、`high`、`extra high` を指定します。
-- SpaceXAI の説明では、`low` と `medium` は 4 エージェント、`high` と `extra high` はより大きなマルチエージェント構成に対応します。
-
-Gateway リクエストで `agent_count` を直接使うことはありません。
-
-### 推論制御を使う基本 Grok 4.20
-
-基本モデルを使い、`reasoning.enabled` を直接設定します。
+推論版のモデルを使うには `reasoning.enabled: true` を設定します。設定しない場合や `false` の場合、Phaseo は非推論版を呼び出します。
 
 ```json
 {
-  "model": "spacex-ai/grok-4-20-2026-02-17",
+  "model": "spacex-ai/grok-4.20",
   "input": "Explain this architecture",
-  "reasoning": {
-    "enabled": true
-  }
+  "reasoning": { "enabled": true }
 }
 ```
 
-### effort 制御を使うマルチエージェント Grok 4.20
+## マルチエージェントモデルで深さを設定する
 
-マルチエージェントモデルを選び、`reasoning.effort` で深さを調整します。
+深さは `reasoning.effort` で制御します。Gateway のリクエストでは xAI の `agent_count` は受け付けません。xAI によると、`low` と `medium` では 4 つのエージェントが動作し、`high` ではより大きな構成が動作します。
 
 ```json
 {
-  "model": "spacex-ai/grok-4.20-multi-agent-beta-0309",
+  "model": "spacex-ai/grok-4.20-multi-agent-beta",
   "input": "Evaluate three rollout options with tradeoffs",
-  "reasoning": {
-    "effort": "medium"
-  }
+  "reasoning": { "effort": "medium" }
 }
 ```
 
-推論 effort のレベル：
-
-- `low`
-- `medium`
-- `high`
-- `extra high`
-
-## 参考資料
+## 出典
 
 - [SpaceXAI のマルチエージェント機能](https://docs.x.ai/developers/model-capabilities/text/multi-agent)
-- [SpaceXAI の新モデルへの移行](https://docs.x.ai/docs/guides/migrating-to-new-models)
+- [SpaceXAI の新しいモデルへの移行](https://docs.x.ai/docs/guides/migrating-to-new-models)

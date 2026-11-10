@@ -4,19 +4,42 @@ title: "工作区审计日志"
 description: "查看与安全相关的工作区管理变更。"
 ---
 
-工作区所有者和管理员可在**设置 → 工作区 → 活动**中查看密钥生命周期变更。事件仅属于当前工作区，并按从新到旧排序。
+打开 **设置 → 工作区 → 活动**，即可查看当前工作区中谁在什么时候更改了密钥、成员或其他管理控制项。事件按从新到旧排列。只有工作区所有者和管理员可以读取该日志。
 
-首个版本会记录以下操作：
+请求日志和生成日志显示运行了哪些流量。审计日志显示谁更改了这些流量周围的控制项。
 
-- API 密钥的创建、重命名、暂停、恢复、限额变更、轮换和删除
-- 管理密钥的创建和删除，以及重命名、暂停、恢复、访问模板、限额和有效期的变更
+## 记录哪些内容
 
-每个事件都包含操作者、操作、目标、时间戳和少量安全的变更元数据。审计事件只能追加，不能修改。Phaseo 不会在此日志中存储明文密钥、凭据哈希、授权标头、完整权限范围列表或请求正文。
+| 领域 | 操作示例 |
+| --- | --- |
+| API 密钥 | `api_key.created`、`api_key.updated`、`api_key.paused`、`api_key.resumed`、`api_key.rotated`、`api_key.deleted` |
+| 管理密钥 | `management_key.created`、`management_key.updated`、`management_key.deleted` |
+| 成员和邀请 | `workspace.member.added`、`workspace.member.role_updated`、`workspace.member.removed`、`workspace.invite.created` |
+| 提供商密钥（BYOK） | `provider_credential.created`、`provider_credential.updated`、`provider_credential.reordered`、`provider_credential.deleted` |
+| 路由和预设 | `routing.policy.updated`、`routing.dynamic_route.deployed`、`preset.version.published` |
+| 预算和支出 | `workspace_budget.updated`、`spend_block.lifted`、`rate_limit_raise.requested` |
+| 护栏 | `guardrail.created`、`guardrail.updated`、`guardrail.keys.added` |
+| 身份 | `identity.sso.updated`、`identity.scim_token.created`、`identity.group_mapping.updated` |
+| 集成 | `observability.destination.created`、`notifications.destination.created`、`webhook_endpoint.secret_rotated`、`oauth_authorization.revoked` |
 
-审计日志仅对工作区所有者和管理员开放。普通成员无法读取事件，底层数据表也不会向已认证的数据库客户端公开。
+每个事件都包含操作者、操作、目标类型、目标 ID 和名称、时间戳、请求 ID，以及少量变更元数据。事件只能追加。
 
-如需自动化，请使用具有 `activity:read` 权限的管理密钥调用 `GET /v1/audit-events`。使用返回的 `next_cursor` 获取更早事件，避免时间戳间出现遗漏。
+该日志从不存储明文密钥、凭据哈希、授权标头、完整的权限范围列表或请求正文。名称中提到 secret、token、hash、credential、scope 或 value 的元数据字段会在写入事件之前被移除。
 
-<Note>
-  请求和生成日志记录实际运行的流量。工作区审计日志记录谁在何时更改了管理控制项。
-</Note>
+## 通过 API 读取事件
+
+使用具有 `activity:read` 的[管理密钥](../developers/management-api-keys.mdx)调用 `GET /v1/audit-events`。OAuth 令牌同样需要 `activity:read`，并且其用户必须是工作区所有者或管理员。
+
+```bash
+curl "https://api.phaseo.app/v1/audit-events?limit=50" \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY"
+```
+
+| 查询参数 | 含义 |
+| --- | --- |
+| `limit` | 每页事件数，1 到 100。默认 `50`。 |
+| `cursor` | 上一页返回的 `next_cursor`。按游标分页时，绝不会跳过时间戳相同的事件。 |
+| `action` | 只返回某一种操作，例如 `api_key.rotated`。 |
+| `target_type` | 只返回某一种目标类型，例如 `api_key`。 |
+
+响应包含 `data`、`has_more` 和 `next_cursor`。每个事件都包含一个 `actor` 对象，其中有成员的 `display_name` 和 `email`。

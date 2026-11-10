@@ -1,6 +1,7 @@
 import { BrowserWindow, clipboard, ClipboardItem, screen, session, WebContentsView } from "electron";
 import { browserCommand, browserDeviceFrame, browserUrl, stepBrowserZoom, type BrowserCapture, type BrowserColorScheme, type BrowserController, type BrowserFailure, type BrowserKey, type BrowserPick, type BrowserSlot, type BrowserState, type BrowserViewport } from "../shared/browser";
 import { browserAgentIdleMs, browserHumanInputMs, browserTabOfChat } from "../shared/browserAgent";
+import { browserProfilePartition, defaultBrowserProfileId } from "../shared/browserPreferences";
 import { matchesKey } from "../shared/keybindings";
 
 import { BrowserDownloads } from "./browserDownloads";
@@ -20,6 +21,8 @@ type PageInfo = {
 	agentSeen: boolean;
 	/** The separate window the page was popped into. */
 	popout?: BrowserWindow;
+	/** The browser profile whose session (cookies, storage, logins) the page uses. */
+	profile: string;
 	emit: (error?: string) => void;
 };
 const pickWorld = 1001;
@@ -29,6 +32,8 @@ const mac = process.platform === "darwin";
 const popoutTitle = (title: string) => title.trim() ? `Browser · ${title.trim()}` : "Browser";
 
 export class BrowserHost {
+	/** Set by the app: handles the quit shortcut held in a page (quitHold.ts); true when the key is taken. */
+	quitHoldInput?: (input: Electron.Input, owner: BrowserWindow) => boolean;
 	private permissions = new BrowserPermissions(contents => {
 		for (const [owner, views] of this.owners) for (const view of views.values()) {
 			if (view.webContents !== contents || owner.isDestroyed()) continue;
@@ -41,10 +46,15 @@ export class BrowserHost {
 	readonly downloads = new BrowserDownloads();
 	/** Keys the app's shortcuts use; pressed in a page, they go to the app instead. */
 	shortcutKeys: readonly { key: string; keepPageFocus: boolean }[] = [];
-	private downloadSession?: Electron.Session;
+	/**
+	 * Browser profiles from Settings → Browser: resolve turns a tab's profile into one that still exists (else Default);
+	 * preferred is the profile new tabs open in when no tab says otherwise.
+	 */
+	profiles: { resolve: (profile: string | undefined) => string; preferred: () => string } = { resolve: () => defaultBrowserProfileId, preferred: () => defaultBrowserProfileId };
+	private downloadSessions = new WeakSet<Electron.Session>();
 	private configureDownloads(browserSession: Electron.Session) {
-		if (this.downloadSession === browserSession) return;
-		this.downloadSession = browserSession;
+		if (this.downloadSessions.has(browserSession)) return;
+		this.downloadSessions.add(browserSession);
 		browserSession.on("will-download", (event, item, contents) => {
 			for (const [owner, views] of this.owners) for (const [id, view] of views) if (view.webContents === contents && !owner.isDestroyed()) { this.downloads.accept(owner, id, item); return; }
 			event.preventDefault();
@@ -54,7 +64,16 @@ export class BrowserHost {
 	private frames = new WeakMap<WebContentsView, Electron.Rectangle>();
 	private owners = new Map<BrowserWindow, Map<string, WebContentsView>>();
 	private favicons = new Map<string, string>();
-	private session() { return session.fromPartition("persist:phaseo-browser"); }
+	/** A profile's session: its own persistent partition, so each profile keeps separate cookies, storage and logins. */
+	private session(profile: string) { return session.fromPartition(browserProfilePartition(profile)); }
+	/**
+	 * Deletes a profile's cookies, site storage and cache, for Settings → Browser after the person confirms. Pages open in
+	 * the profile stay open, signed out.
+	 */
+	async clearProfile(profile: string) {
+		const browserSession = this.session(profile);
+		await Promise.all([browserSession.clearStorageData(), browserSession.clearCache(), browserSession.clearAuthCache()]);
+	}
 	command(owner: BrowserWindow, value: unknown): BrowserState | undefined {
 		const command = browserCommand(value);
 		const views = this.viewsFor(owner);
@@ -69,7 +88,11 @@ export class BrowserHost {
 			}
 			return view && !view.webContents.isDestroyed() ? this.state(command.id, view) : undefined;
 		}
-		if (!view) view = this.create(owner, views, command.id);
+		if (!view) view = this.create(owner, views, command.id, command.profile);
+		if (command.type === "profile") {
+			if (this.page(view).profile !== this.profiles.resolve(command.profile)) view = this.moveToProfile(owner, views, command.id, view, command.profile);
+			return this.state(command.id, view);
+		}
 		const contents = view.webContents, page = this.page(view);
 		if (["navigate", "reload", "hardReload", "back", "forward"].includes(command.type)) { page.failure = undefined; page.crashed = undefined; }
 		switch (command.type) {
@@ -102,7 +125,7 @@ export class BrowserHost {
 			case "zoom": { const changed = page.zoom !== command.zoom; page.zoom = command.zoom; contents.setZoomFactor(command.zoom); if (changed) this.showZoom(view); break; }
 			case "colorScheme": page.colorScheme = command.colorScheme; void this.applyColorScheme(contents, command.colorScheme, page.emulated); break;
 			case "mute": contents.setAudioMuted(command.muted); break;
-			case "clearData": { const browserSession = this.session(); void (command.data === "cookies" ? browserSession.clearStorageData({ storages: ["cookies"] }) : browserSession.clearCache()); break; }
+			case "clearData": { const browserSession = contents.session; void (command.data === "cookies" ? browserSession.clearStorageData({ storages: ["cookies"] }) : browserSession.clearCache()); break; }
 			case "popOut": this.popOut(owner, view); break;
 			case "popIn": if (page.popout && !page.popout.isDestroyed()) page.popout.close(); break;
 		}
@@ -157,7 +180,9 @@ export class BrowserHost {
 	chatPage(owner: BrowserWindow, chatId: string, id: string, create: boolean): Electron.WebContents | undefined {
 		if (!browserTabOfChat(id, chatId)) throw new Error("That browser tab belongs to another chat.");
 		const views = this.viewsFor(owner);
-		const view = views.get(id) ?? (create ? this.create(owner, views, id) : undefined);
+		// A page an agent opens joins the profile of the chat's other pages, else the default one.
+		const sibling = [...views].find(([other, candidate]) => other !== id && browserTabOfChat(other, chatId) && !candidate.webContents.isDestroyed())?.[1];
+		const view = views.get(id) ?? (create ? this.create(owner, views, id, sibling ? this.page(sibling).profile : undefined) : undefined);
 		return view && !view.webContents.isDestroyed() ? view.webContents : undefined;
 	}
 	/** The page zoom of a chat's page. */
@@ -183,7 +208,10 @@ export class BrowserHost {
 		if (!owner.isDestroyed()) owner.webContents.send("desktop:browser-agent-tab", { context: chatId, id, url: "", closed: true });
 	}
 	/** Asks the person's window to list a page an agent opened among the chat's tabs. */
-	announce(owner: BrowserWindow, chatId: string, id: string, url: string) { if (!owner.isDestroyed()) owner.webContents.send("desktop:browser-agent-tab", { context: chatId, id, url }); }
+	announce(owner: BrowserWindow, chatId: string, id: string, url: string) {
+		const view = this.owners.get(owner)?.get(id);
+		if (!owner.isDestroyed()) owner.webContents.send("desktop:browser-agent-tab", { context: chatId, id, url, ...(view ? { profile: this.page(view).profile } : {}) });
+	}
 
 	private owned(owner: BrowserWindow, id: string) {
 		const view = this.owners.get(owner)?.get(id);
@@ -219,15 +247,34 @@ export class BrowserHost {
 		});
 		return views;
 	}
-	private create(owner: BrowserWindow, views: Map<string, WebContentsView>, id: string) {
-		const browserSession = this.session();
+	/**
+	 * Moves an open page to another profile: a new page in that profile's session takes its place, address, viewport,
+	 * zoom and colours. The old page and its history close.
+	 */
+	private moveToProfile(owner: BrowserWindow, views: Map<string, WebContentsView>, id: string, view: WebContentsView, profile: string) {
+		const old = this.page(view), url = view.webContents.getURL(), frame = this.frames.get(view);
+		const shown = !owner.isDestroyed() && owner.contentView.children.includes(view);
+		if (old.popout && !old.popout.isDestroyed()) old.popout.destroy();
+		clearTimeout(old.controllerTimer); this.permissions.cancel(view.webContents);
+		if (shown) owner.contentView.removeChildView(view);
+		view.webContents.close({ waitForBeforeUnload: false }); views.delete(id);
+		const next = this.create(owner, views, id, profile), page = this.page(next);
+		Object.assign(page, { viewport: old.viewport, zoom: old.zoom, colorScheme: old.colorScheme, configured: old.configured, slot: shown ? old.slot : undefined, radius: old.radius });
+		if (frame) this.frames.set(next, frame);
+		if (shown) { this.applyViewport(next); next.setBorderRadius(Math.round(page.radius * owner.webContents.getZoomFactor())); owner.contentView.addChildView(next); next.setVisible(Boolean(url)); }
+		if (url) { page.configured = true; next.webContents.setZoomFactor(page.zoom); void next.webContents.loadURL(url).catch(() => undefined); }
+		return next;
+	}
+	private create(owner: BrowserWindow, views: Map<string, WebContentsView>, id: string, requested?: string) {
+		const profile = requested === undefined ? this.profiles.preferred() : this.profiles.resolve(requested);
+		const browserSession = this.session(profile);
 		this.configureDownloads(browserSession);
 		this.permissions.configure(browserSession);
 		const view = new WebContentsView({ webPreferences: { session: browserSession, nodeIntegration: false, contextIsolation: true, sandbox: true, webSecurity: true } });
 		views.set(id, view);
 		const contents = view.webContents;
 		const emit = (error?: string) => { if (!owner.isDestroyed() && !contents.isDestroyed()) owner.webContents.send("desktop:browser-state", { ...this.state(id, view), ...(error ? { error } : {}) }); };
-		const page: PageInfo = { viewport: { mode: "fill" }, zoom: 1, colorScheme: "system", configured: false, emulated: false, radius: 0, controller: "none", acting: 0, agentSeen: false, emit };
+		const page: PageInfo = { viewport: { mode: "fill" }, zoom: 1, colorScheme: "system", configured: false, emulated: false, radius: 0, controller: "none", acting: 0, agentSeen: false, profile, emit };
 		this.pages.set(view, page);
 		contents.setIgnoreMenuShortcuts(true);
 		this.permissions.register(contents);
@@ -245,6 +292,8 @@ export class BrowserHost {
 		// The person's clicks, scrolls and keys make the page theirs for a moment; the agent's own input does not.
 		contents.on("before-mouse-event", (_event, mouse) => { if (!page.acting && (mouse.type === "mouseDown" || mouse.type === "mouseWheel")) this.control(view, "human"); });
 		contents.on("before-input-event", (event, input) => {
+			// The quit shortcut, held in a page as anywhere else in the window.
+			if (this.quitHoldInput?.(input, owner)) { event.preventDefault(); return; }
 			if (input.type !== "keyDown" || input.isComposing) return;
 			if (!page.acting) this.control(view, "human");
 			if (!input.isAutoRepeat && (input.key === "F12" || (input.key.toLowerCase() === "i" && ((input.control && input.shift) || (input.meta && input.alt))))) { event.preventDefault(); this.toggleDevTools(contents); return; }

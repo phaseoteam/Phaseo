@@ -1,23 +1,25 @@
 ---
 title: "LiteLLM"
 icon: "route"
-description: "LiteLLMの背後でPhaseoを使うか、LiteLLMの呼び出しをPhaseo経由でルーティングします。"
+description: "LiteLLM の背後で Phaseo を使うか、LiteLLM の呼び出しを Phaseo 経由でルーティングします。"
 ---
 
-LiteLLMのプロキシ、予算管理、ローカルルーターをすでに利用していて、Phaseoのモデル、分析機能、サーバーツールも使いたい場合は、LiteLLMをPhaseoと組み合わせます。
+LiteLLM にモデル `openai/<Phaseo model ID>`、Phaseo のキー、`api_base="https://api.phaseo.app/v1"` を渡します。これは LiteLLM の直接呼び出しにも、LiteLLM プロキシの背後にあるモデルにも使えます。
 
-## Pythonから直接呼び出す
+## インストール
 
 ```bash
 pip install litellm
 ```
+
+## LiteLLM から Phaseo を呼び出す
 
 ```python
 import os
 from litellm import completion
 
 response = completion(
-    model="openai/openai/gpt-5-nano",
+    model="openai/openai/gpt-6-astra",
     api_key=os.environ["PHASEO_API_KEY"],
     api_base="https://api.phaseo.app/v1",
     messages=[{"role": "user", "content": "Reply with only: ok"}],
@@ -26,31 +28,24 @@ response = completion(
 print(response.choices[0].message.content)
 ```
 
-LiteLLMはOpenAI互換エンドポイントにプロバイダープレフィックス`openai/`をよく使います。PhaseoのモデルIDは`openai/gpt-5-nano`のままなので、LiteLLMのモデル文字列は`openai/openai/gpt-5-nano`のようになります。
+`ok` が出力されれば、設定は正しく動作しています。LiteLLM は OpenAI 互換エンドポイントに `openai/` プレフィックスを使います。Phaseo のモデル ID はそのまま `openai/gpt-6-astra` なので、LiteLLM のモデル文字列は `openai/openai/gpt-6-astra` になります。
 
-## Proxyの設定
+## LiteLLM プロキシに Phaseo のモデルを追加する
 
-アプリケーションコードにLiteLLMのプロバイダープレフィックスを含めたくない場合は、モデルエイリアスを使います。
+アプリケーションのコードで LiteLLM のプレフィックスが不要になるよう、各モデルにエイリアスを付けます。
 
 ```yaml
 model_list:
-  - model_name: phaseo-gpt-5-nano
+  - model_name: phaseo-gpt-6-astra
     litellm_params:
-      model: openai/openai/gpt-5-nano
+      model: openai/openai/gpt-6-astra
       api_key: os.environ/PHASEO_API_KEY
       api_base: https://api.phaseo.app/v1
 ```
 
-その後、`model: "phaseo-gpt-5-nano"`を指定してLiteLLMプロキシを呼び出します。
+次に、`model: "phaseo-gpt-6-astra"` でプロキシを呼び出します。エイリアスを使うと、本番環境でモデル名が読みやすくなります。
 
-## 補足
+## 既知の制限
 
-- 本番環境では、モデル名を読みやすく保てるLiteLLMエイリアスを推奨します。
-- Phaseoのサーバーツールを使う場合は、LiteLLMの経路を実際にテストしてください。プロキシ層によっては不明なツールタイプが正規化されたり破棄されたりします。
-- 価格の記録元をLiteLLM、Phaseo、または両方のどれにするか決めてください。
-
-## 関連項目
-
-- [OpenAI SDK](./openai-sdk.mdx)
-- [サーバーツール](../server-tools/index.mdx)
-- [料金](../../api-reference/endpoint/pricing-calculate.mdx)
+- プロキシ層によっては、認識できないツールの種類を変更したり削除したりします。Phaseo の[サーバーツール](../server-tools/index.mdx)を使う場合は、実際に使う LiteLLM のルートでテストしてください。
+- LiteLLM と Phaseo の両方が利用額を記録します。どちらをコストの正式な記録にするかを決めてください。Phaseo の料金は[料金計算ツール](../../api-reference/endpoint/pricing-calculate.mdx)で確認できます。

@@ -5,11 +5,7 @@ description: "Understand Phaseo error responses and fix common request, provider
 icon: "bug"
 ---
 
-Use this page to understand what A Phaseo error means and what to do next.
-
-Every error response follows the same JSON format, so your app can handle failures consistently across models and providers. The `error` field is an object with `code`, `message` and `type`, the shape OpenAI-compatible SDKs read, so their exceptions carry the gateway's message.
-
-## Example error response
+Branch on `error.code` and the HTTP status, not on the message text. Every Phaseo error has the same JSON body on every endpoint, and its `error` object (`code`, `message`, `type`, `param`) is the shape OpenAI-compatible SDKs read, so their exceptions carry Phaseo's message.
 
 ```json
 {
@@ -69,33 +65,32 @@ Every error response follows the same JSON format, so your app can handle failur
 }
 ```
 
-## Fields you will always get
+## Fields in every error
 
-- `error`: an object describing the failure:
-  - `error.code`: a machine-readable error code, such as `validation_error`.
-  - `error.message`: a plain-language explanation of what happened.
-  - `error.type`: the error type (see [Error types](#error-types)).
-  - `error.param`: the request parameter that caused the error, when the gateway knows it, otherwise `null`.
-  - `error.metadata` (optional): structured detail such as the failing provider, the subreason, the failed statuses or `retry_after_seconds`. The same values are also returned at the top level.
-- `code`: the same code as `error.code`. Earlier responses returned this code string as `error`; read `code` if your client expected a string there.
-- `message`: the same text as `error.message`.
-- `generation_id`: a stable request ID you can share with support.
-- `status_code`: mirrors the HTTP status code.
-- `error_type`: a high-level class, usually `user` or `system`.
-- `error_origin`: whether the problem was mainly caused by the caller, Phaseo, or an upstream provider.
-- `description`: a plain-language explanation of what happened.
-- `details` (optional): structured validation details when the error is a request-validation problem.
+| Field | Contents |
+| --- | --- |
+| `error.code` | Machine-readable code, such as `validation_error`. See [Error codes](#error-codes). |
+| `error.message` | Plain-language explanation. |
+| `error.type` | Error class, set from the HTTP status. See [Error types](#error-types). |
+| `error.param` | The request field that caused the error, when Phaseo knows it; otherwise `null`. |
+| `error.metadata` | Optional. Structured detail such as `reason`, `failed_providers`, `failed_statuses` or `retry_after_seconds`. The same values are also at the top level. |
+| `code` | Same as `error.code`. Older responses returned this string as `error`; read `code` if your client expects a string there. |
+| `message`, `description` | Same text as `error.message`. |
+| `generation_id` | Request ID to log and to share with support. |
+| `status_code` | The HTTP status. |
+| `error_type` | `user` or `system`. |
+| `error_origin` | Where the problem came from: the caller (`user`), Phaseo (`gateway`) or a provider (`upstream`). |
+| `details` | Optional. Validation details when the request body is invalid. |
 
-## Extra fields you may see
+Some errors add more context:
 
-Some errors include more detail to help you fix the issue faster:
-
-- `reason`: a more specific subreason such as `all_candidates_failed` or `pricing_not_configured`.
-- `provider_candidate_diagnostics` and `provider_enablement`: explain why a model could not be used with the requested endpoint.
-- `routing_diagnostics`: extra detail about how routing or availability checks narrowed the request.
-- `provider_failure_diagnostics`: hints for missing credentials, missing access, region restrictions, rate limits, and similar provider-side failures.
-- `upstream_error` and `failure_sample`: best-effort summaries of the first provider failure when the request reached a provider.
-- `failed_providers`, `failed_statuses`, and `attempt_count`: extra retry and failover context.
+| Field | When it appears |
+| --- | --- |
+| `reason` | A specific subreason, such as `all_candidates_failed` or `no_provider_pricing`. |
+| `provider_failure_diagnostics` | A provider was reached and failed. See [When a provider fails](#when-a-provider-fails). |
+| `upstream_error`, `failure_sample` | A best-effort summary of the first provider failure. |
+| `failed_providers`, `failed_statuses`, `attempt_count` | Which providers were tried and what they returned. |
+| `provider_candidate_diagnostics`, `provider_enablement`, `routing_diagnostics` | No provider could serve the model on this endpoint. See [When a model or endpoint is not available](#when-a-model-or-endpoint-is-not-available). |
 
 ## Error types
 
@@ -103,95 +98,91 @@ Some errors include more detail to help you fix the issue faster:
 
 | Status | `error.type` |
 | --- | --- |
-| `400`, `409`, `410`, `413`, `422` and other 4xx | `invalid_request_error` |
 | `401` | `authentication_error` |
 | `402` | `insufficient_quota` |
 | `403` | `permission_error` |
 | `404` | `not_found_error` |
 | `429` | `rate_limit_error` |
+| `408`, `500`, `502` and other 5xx | `server_error` |
 | `503` | `service_unavailable` |
 | `529` | `overloaded` |
-| `500`, `502` and other 5xx | `server_error` |
+| `400`, `409`, `410`, `413`, `422` and other 4xx | `invalid_request_error` |
 
 Errors on `/v1/messages` use the same body, so Anthropic SDKs also find `error.type` and `error.message`.
 
-## Status class guidance
+## Error codes
 
-| Status | Meaning | Recommended action |
-| --- | --- | --- |
-| `400-499` | Request, auth, or permission problem | Fix the request or credentials before retrying. |
-| `429` | Provider or route-level throttling | Retry with backoff and respect `Retry-After`. |
-| `500-599` | Phaseo or upstream provider failure | Retry with jittered backoff and log the request ID. |
-
-## Common error codes
-
-| `error.code` | HTTP Status | `error.type` | Description |
+| `error.code` | Status | Meaning | What to do |
 | --- | --- | --- | --- |
-| `unauthorised` | `401` | `authentication_error` | Missing or invalid API key. |
-| `guardrail_blocked` | `403` | `permission_error` | A workspace guardrail or access policy blocked the request. |
-| `not_found` | `404` | `not_found_error` | The endpoint or resource could not be found. |
-| `model_retired` | `410` | `invalid_request_error` | The model is retired and no provider serves it any more. Switch to `replacement_model`. |
-| `insufficient_funds` | `402` | `insufficient_quota` | The workspace does not have enough credits for the request. |
-| `key_limit_exceeded` | `429` | `rate_limit_error` | The API key reached one of its limits. |
-| `phaseo_free_model_limit_exceeded` | `429` | `rate_limit_error` | Phaseo's shared daily free-model allowance is exhausted (1,500 requests by default). Honor `Retry-After`, wait for the 00:00 UTC reset, or choose a paid model. |
-| `rate_limit_exceeded` | `429` | `rate_limit_error` | A workspace [rate limit policy](./limits.mdx#rate-limit-policies) is exhausted. `policy_id` and `limit_scope` identify it. Honor `Retry-After`, or ask a workspace admin to change the policy. |
-| `validation_error` | `400` | `invalid_request_error` | Invalid parameters or request body. `error.param` names the first invalid field. |
-| `upstream_error` | `429` | `rate_limit_error` | Every provider tried for the request rate limited it. Honor `Retry-After`; BYOK requests also carry `X-Phaseo-Upstream-RateLimit-*` headers. |
-| `upstream_error` | `502` | `server_error` | The upstream model provider failed to respond correctly. |
-| `upstream_stream_failure` | `502` | `server_error` | A non-streaming request whose provider failed after it started generating. No partial output is returned and the request is not charged. |
-| `gateway_error` | `500` | `server_error` | An unexpected issue happened inside Phaseo. |
+| `validation_error` | `400` | A parameter or the request body is invalid. `error.param` names the first invalid field. | Fix the request. |
+| `invalid_json` | `400` | The body is not valid JSON. | Fix the request. |
+| `model_required` | `400` | The request has no `model`. | Add `model`. |
+| `unsupported_model_or_endpoint` | `400` | No provider can serve this model on this endpoint. | See [below](#when-a-model-or-endpoint-is-not-available). |
+| `unsupported_modalities` | `400` | No route accepts the input or output types in the request. | Change the model or the inputs. |
+| `byok_credentials_required` | `400` | The route only runs with your own provider key. | Add an eligible [provider key](./endpoint/provider-credentials-create.mdx). |
+| `upstream_error` | `400`, `413` or `422` | Every provider rejected the request with the same status (reason `upstream_rejected_request`). | Fix the request; retrying won't help. |
+| `unauthorised` | `401` | The key is missing or invalid. `reason` says why. | Check the `Authorization` header. |
+| `insufficient_funds` | `402` | The workspace doesn't have enough credits. | Add credits. |
+| `pricing_not_configured` | `402` | No provider for this model has pricing (reason `no_provider_pricing`). | Choose another model. |
+| `guardrail_blocked` | `403` | A guardrail or access policy blocked the request. | Change the request or the guardrail. |
+| `model_region_unavailable` | `403` | No provider serves the model in the required region, or from the caller's location. | Relax the region requirement or choose another model. |
+| `not_found` | `404` | The endpoint or resource doesn't exist. | Check the path and ID. |
+| `not_ready` | `409` | A job's results aren't ready yet. | Poll the job's status. |
+| `model_retired` | `410` | The model is retired and no provider serves it. | Switch to `replacement_model`. See [below](#when-a-model-is-retired). |
+| `payload_too_large` | `413` | The body is larger than the endpoint accepts. `max_bytes` gives the limit. | Send a smaller body or upload a file. |
+| `key_limit_exceeded` | `429` | A key limit, budget or the per-minute gateway limit was reached. | See [Rate Limits](./limits.mdx#key-limits-and-budgets). |
+| `phaseo_free_model_limit_exceeded` | `429` | The daily free-model allowance (1,500 requests by default) is used up. | Honor `Retry-After`, wait for the 00:00 UTC reset, or use a paid model. |
+| `rate_limit_exceeded` | `429` | A workspace [rate limit policy](./limits.mdx#rate-limit-policies) is exhausted. `policy_id` and `limit_scope` identify it. | Honor `Retry-After`, or ask an admin to change the policy. |
+| `spend_rule_blocked` | `429` | A [spend rule](../guides/spend-alerts.mdx) set to block is active. | Honor `Retry-After`, or ask an owner or admin to lift the block. |
+| `upstream_error` | `429` | Every provider tried rate limited the request. | Honor `Retry-After`. BYOK requests also carry `X-Phaseo-Upstream-RateLimit-*` headers. |
+| `provider_capacity_exhausted` | `429` | Every eligible provider is at capacity (reason `all_candidates_rate_limited`). | Honor `Retry-After` when present, otherwise back off. |
+| `gateway_error` | `500` | Something failed inside Phaseo. | Retry with backoff. |
+| `not_implemented_yet` | `501` | The operation isn't available yet. | Don't retry. |
+| `upstream_error` | `502` | The provider failed to respond correctly. | Retry with backoff. |
+| `upstream_stream_failure` | `502` | A non-streaming request whose provider failed after it started generating. No partial output is returned and the request isn't charged. | Retry. |
+| `provider_payment_required` | `502` | Phaseo's account with the provider needs attention. | Retry later or report it. |
+
+## Retry the right errors
+
+| Status | Retry? |
+| --- | --- |
+| `400`–`499` except `429` | No. Fix the request, key or access first. |
+| `429` | Yes. Wait for `Retry-After` (seconds or an HTTP date), otherwise use exponential backoff with jitter. A `key_limit_exceeded` error without `Retry-After` doesn't reset by itself, so don't retry it. |
+| `500`–`599` | Only when repeating the operation is safe. An ambiguous submission may already have created a job or a charge; look up an accepted job instead of submitting it again. |
+
+Set an attempt limit and an overall deadline. See [Rate Limits](./limits.mdx) for the rate limit headers.
 
 ## When a provider fails
 
-If Phaseo reached a provider but the request still failed, you may see:
+When Phaseo reached a provider and the request still failed, `provider_failure_diagnostics` has a `category`, a `hint` and the `provider`. Categories:
 
-- `provider_failure_diagnostics.category`
-- `provider_failure_diagnostics.hint`
-- `provider_failure_diagnostics.provider`
-
-Current categories include:
-
-- `credentials_not_configured`
-- `credentials_invalid_or_forbidden`
-- `provider_access_missing`
-- `region_or_project_restriction`
-- `model_unavailable_for_endpoint`
-- `rate_limited`
-- `server_error`
-
-These fields are meant to help you fix the problem without turning on full debug mode.
+| `category` | Meaning |
+| --- | --- |
+| `credentials_not_configured` | No credential is set up for this route. |
+| `credentials_invalid_or_forbidden` | The credential was rejected. |
+| `provider_access_missing` | The provider account doesn't have access to the model or feature. |
+| `region_or_project_restriction` | The provider refused because of the region or project. |
+| `model_unavailable_for_endpoint` | The provider doesn't expose the model on this endpoint. |
+| `rate_limited` | The provider rate limited the request. |
+| `server_error` | The provider failed or timed out. |
 
 ## When a model or endpoint is not available
 
-For `unsupported_model_or_endpoint` responses, Phaseo may include:
+`unsupported_model_or_endpoint` errors can include `provider_candidate_diagnostics`, `provider_enablement`, `missing_pricing_providers` and `routing_diagnostics`. Together they tell apart a model that isn't active yet, a model that doesn't support the endpoint, missing pricing, and rollout restrictions.
 
-- `provider_candidate_diagnostics`
-- `provider_enablement`
-- `missing_pricing_providers`
-- `routing_diagnostics`
-
-This helps you distinguish between:
-
-- a known model that is not active yet
-- a model that does not support the endpoint you asked for
-- missing pricing data
-- rollout or internal availability restrictions
-
-Common fields:
-
-- `provider_candidate_diagnostics.totalProviders`: how many providers were known for the model before endpoint filtering.
-- `provider_candidate_diagnostics.supportsEndpointCount`: how many of those providers support the requested endpoint.
-- `provider_candidate_diagnostics.candidateCount`: how many providers remained after adapter checks.
-- `provider_candidate_diagnostics.droppedUnsupportedEndpoint`: providers dropped because they do not support the endpoint.
-- `provider_candidate_diagnostics.droppedMissingAdapter`: provider/endpoint pairs dropped because there is no gateway adapter for that endpoint yet.
-- `provider_enablement.capability`: the capability gate being enforced, such as `video_generation`.
-- `provider_enablement.providersBefore` / `provider_enablement.providersAfter`: providers before and after capability or enablement filtering.
-- `provider_enablement.dropped[].reason`: machine-readable reasons such as `pricing_missing`.
-- `routing_diagnostics.filterStages[].stage`: the routing stage, for example capability, rollout, or routing-status filtering.
-- `routing_diagnostics.filterStages[].beforeCount` / `routing_diagnostics.filterStages[].afterCount`: provider counts before and after each stage.
-- `routing_diagnostics.filterStages[].droppedProviders[].reason`: machine-readable reasons such as rollout or routing restrictions.
-
-### Example
+| Field | Meaning |
+| --- | --- |
+| `provider_candidate_diagnostics.totalProviders` | Providers known for the model before endpoint filtering. |
+| `provider_candidate_diagnostics.supportsEndpointCount` | Providers that support the requested endpoint. |
+| `provider_candidate_diagnostics.candidateCount` | Providers left after adapter checks. |
+| `provider_candidate_diagnostics.droppedUnsupportedEndpoint` | Providers dropped because they don't support the endpoint. |
+| `provider_candidate_diagnostics.droppedMissingAdapter` | Provider and endpoint pairs dropped because Phaseo has no adapter for that endpoint yet. |
+| `provider_enablement.capability` | The capability being enforced, such as `video_generation`. |
+| `provider_enablement.providersBefore`, `providersAfter` | Providers before and after capability filtering. |
+| `provider_enablement.dropped[].reason` | Why a provider was dropped, such as `pricing_missing`. |
+| `routing_diagnostics.filterStages[].stage` | A routing stage, such as capability, rollout or routing-status filtering. |
+| `routing_diagnostics.filterStages[].beforeCount`, `afterCount` | Providers before and after that stage. |
+| `routing_diagnostics.filterStages[].droppedProviders[].reason` | Why a provider was dropped at that stage. |
 
 ```json
 {
@@ -248,8 +239,7 @@ Common fields:
 
 ## When a model is retired
 
-A retired model is still served while any provider serves it. Once none does,
-requests for it fail with `410` and the `model_retired` error:
+A retired model is still served while any provider serves it. Once none does, requests fail with `410` and `model_retired`:
 
 ```json
 {
@@ -274,18 +264,41 @@ requests for it fail with `410` and the `model_retired` error:
 }
 ```
 
-- `model`: the model you requested.
-- `retired_at`: when the model was retired, or `null` if no date is recorded.
-- `replacement_model`: the suggested replacement, or `null` if there is none.
+`model` is the model you asked for, `retired_at` is when it was retired (or `null`), and `replacement_model` is the suggested replacement (or `null`).
 
-Retrying does not help. Update the model ID in your request. To keep serving
-these requests while you migrate, add the replacement to your request's
-`models` list or turn on retired model routing for the workspace. See
-[Model Deprecation and Retirement](../guides/model-retirement.mdx).
+Retrying doesn't help; change the model ID. To keep these requests working while you migrate, add the replacement to the request's `models` list or turn on retired model routing for the workspace. See [Model Deprecation and Retirement](../guides/model-retirement.mdx).
 
-## Optional debug mode
+## Errors during a stream
 
-Most request schemas support a `debug` object for controlled troubleshooting:
+If a request fails before streaming starts, you get the JSON error body above. If it fails mid-stream, the stream ends with the endpoint's failure event instead of a normal finish:
+
+| Endpoint | Failure event |
+| --- | --- |
+| Chat Completions | An `error` frame |
+| Responses | `response.failed` (or `error`) |
+| Messages | An `error` event |
+
+Treat the partial output as incomplete and offer a retry. The Chat Completions `error` frame carries the same error object, with `error.type` set from the code:
+
+```json
+{
+  "object": "error",
+  "message": "The upstream stream ended before the response completed.",
+  "code": "upstream_stream_failure",
+  "error": {
+    "code": "upstream_stream_failure",
+    "message": "The upstream stream ended before the response completed.",
+    "type": "server_error",
+    "param": null
+  }
+}
+```
+
+A non-streaming request whose provider fails part-way returns `502` with `upstream_stream_failure`, not a partial response. See [Streaming](../guides/streaming.mdx).
+
+## Debug a request
+
+Send a `debug` object to get routing traces and the upstream payloads:
 
 ```json
 {
@@ -299,77 +312,9 @@ Most request schemas support a `debug` object for controlled troubleshooting:
 }
 ```
 
-Available fields:
+`trace_level` is `summary` or `full`. Debug payloads can contain your request content, so use them only in development or tightly controlled environments. See [`debug`](./parameters.mdx#parameter-debug).
 
-- `enabled`
-- `return_upstream_request`
-- `return_upstream_response`
-- `trace`
-- `trace_level` (`summary` or `full`)
-
-Use debug mode in development or tightly controlled environments only.
-
-## Retry strategy
-
-- **400-series errors other than 429:** Fix the request, credentials, or access policy before retrying.
-- **429:** Implement exponential backoff and honor the `Retry-After` header.
-- **500-series errors:** Use bounded retries only when repeating the operation is safe. An ambiguous submission may already have created a job or incurred a charge; retrieve an accepted job instead of submitting it again.
-
-Set an attempt limit and an overall deadline, and add jitter to backoff delays. See [rate limits](./limits.mdx) for response headers and retry handling.
-
-## Streaming-specific notes
-
-- If the request fails before streaming begins, you get a standard JSON error payload.
-- If it fails mid-stream, the stream ends with the endpoint's failure event instead of a normal finish: an `error` frame on Chat Completions, `response.failed` (or `error`) on Responses, and an `error` event on Messages. Treat the partial stream as incomplete and show a retry option.
-- The Chat Completions `error` frame carries the same error object, with `error.type` set from the code:
-
-  ```json
-  {
-    "object": "error",
-    "message": "The upstream stream ended before the response completed.",
-    "code": "upstream_stream_failure",
-    "error": {
-      "code": "upstream_stream_failure",
-      "message": "The upstream stream ended before the response completed.",
-      "type": "server_error",
-      "param": null
-    }
-  }
-  ```
-- A non-streaming request whose provider fails part-way returns `502` with `upstream_stream_failure`, not a partial response.
-- Always capture `generation_id` and endpoint/model metadata in logs.
-
-## Troubleshooting tips
-
-- Check the [Gateway status page](https://status.phaseo.app) for ongoing incidents.
-- Review your request payload against the endpoint docs.
-- Share `generation_id` when contacting support.
-
-## Related resources
-
-<Columns cols={2}>
-	<Card
-		title="Authentication"
-		icon="key"
-		href="../developers/authentication.mdx"
-	>
-		Authenticate with bearer API keys.
-	</Card>
-	<Card
-		title="Limits"
-		icon="gauge"
-		href="./limits.mdx"
-	>
-		Handle provider-driven throttling and retries.
-	</Card>
-	<Card
-		title="Streaming"
-		icon="radio"
-		href="../guides/streaming.mdx"
-	>
-		Use SSE safely in production flows.
-	</Card>
-</Columns>
+When a request fails, check the [status page](https://status.phaseo.app) for incidents, compare your payload with the endpoint's reference page, and log `generation_id` with the endpoint and model. Include `generation_id` when you contact [support](https://phaseo.app/help).
 
 <Visibility for="agents">
 Error-handling rules for agents, summarising this page:

@@ -1,23 +1,24 @@
 ---
 icon: "blocks"
 title: "Appel d’outils (AI SDK)"
+sidebarTitle: "Appel d’outils"
 description: "Appel de fonctions et d’outils avec Vercel AI SDK et le fournisseur Phaseo."
 ---
 
-Utilisez `tools` dans `generateText` pour exécuter des fonctions avec des paramètres typés.
+Définissez des outils avec le helper `tool()` d’AI SDK, passez-les à `generateText` et définissez `stopWhen` pour que le modèle puisse répondre après l’exécution de l’outil.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
-import { generateText } from "ai";
+import { generateText, stepCountIs, tool } from "ai";
 import { z } from "zod";
 
 const result = await generateText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   prompt: "What is 17 + 25? Use the calculator tool.",
   tools: {
-    calculator: {
+    calculator: tool({
       description: "Perform basic arithmetic",
-      parameters: z.object({
+      inputSchema: z.object({
         operation: z.enum(["add", "subtract", "multiply", "divide"]),
         a: z.number(),
         b: z.number(),
@@ -28,15 +29,18 @@ const result = await generateText({
         if (operation === "multiply") return a * b;
         return a / b;
       },
-    },
+    }),
   },
+  stopWhen: stepCountIs(2),
 });
 
 console.log(result.text);
 ```
 
-## Remarques
+Par défaut, `generateText` s’arrête après une étape. Si cette étape est un appel d’outil, `result.text` est vide et le résultat de l’outil se trouve dans `result.toolResults`. `stepCountIs(2)` donne au modèle une seconde étape pour répondre à partir du résultat.
 
-- Veillez à ce que les descriptions des outils soient précises et leurs paramètres stricts.
-- Validez les effets secondaires externes dans `execute`.
-- Ajoutez des tentatives avec attente progressive pour les API d’outils en aval si nécessaire.
+## Écrire des outils sûrs
+
+- Rédigez des descriptions précises et des schémas d’entrée stricts : c’est le modèle qui remplit les arguments.
+- Traitez les arguments comme des entrées non fiables. Validez-les dans `execute` avant tout effet de bord.
+- Ajoutez des nouvelles tentatives avec délai progressif dans `execute` pour les API en aval qui échouent de façon transitoire.

@@ -1,4 +1,12 @@
+// Purpose: Map a Phaseo video request to BFL's FLUX 3 video body.
+// Why: BFL's API rejects unknown fields, and price depends on mode, resolution and draft.
+// How: Validate against the documented values (docs.bfl.ml FLUX 3 video reference,
+//      checked 2026-11-05), then build the body and the pricing inputs together.
 import type { IRVideoGenerationRequest } from "@core/ir";
+
+const RESOLUTIONS = ["hd", "fhd", "qhd", "uhd"];
+const ASPECT_RATIOS = ["auto", "21:9", "2:1", "16:9", "4:3", "1:1", "3:4", "9:16", "9:21"];
+
 export function mapBflVideo(ir: IRVideoGenerationRequest) {
 	const options = ir.providerParams ?? {};
 	if (Object.keys(options).some((key) => !["mode", "draft", "safety_tolerance", "version"].includes(key))) throw new Error("Unsupported FLUX 3 provider option.");
@@ -25,14 +33,16 @@ export function mapBflVideo(ir: IRVideoGenerationRequest) {
 	if (options.mode != null && options.mode !== mode) throw new Error("FLUX 3 mode must match the supplied media; draft enhancement requires a separate contract.");
 	const seconds = Number(ir.durationSeconds ?? ir.duration ?? ir.seconds ?? 5);
 	if (!Number.isInteger(seconds) || seconds < 5 || seconds > (mode === "v2v" ? 15 : 20)) throw new Error("FLUX 3 requires 5–20 whole seconds, or 5–15 for continuation.");
+	// fhd, qhd and uhd are the hd generation finished by BFL's upsampler; each is priced separately.
 	const resolution = ir.resolution ?? ir.size ?? "hd";
-	if (!["hd", "fhd"].includes(resolution)) throw new Error("FLUX 3 resolution must be hd or fhd.");
+	if (!RESOLUTIONS.includes(resolution)) throw new Error("FLUX 3 resolution must be hd, fhd, qhd, or uhd.");
 	const draft = options.draft ?? false;
 	if (typeof draft !== "boolean" || (draft && resolution !== "hd")) throw new Error("FLUX 3 drafts require hd resolution and a boolean draft option.");
 	const ratio = ir.aspectRatio ?? ir.ratio ?? "auto";
-	if (!["auto", "21:9", "2:1", "16:9", "4:3", "1:1", "3:4", "9:16"].includes(ratio)) throw new Error("Unsupported FLUX 3 aspect ratio.");
+	if (!ASPECT_RATIOS.includes(ratio)) throw new Error("Unsupported FLUX 3 aspect ratio.");
 	if (options.version != null && options.version !== "latest") throw new Error("FLUX 3 currently supports version latest.");
-	if (options.safety_tolerance != null && (!Number.isInteger(options.safety_tolerance) || options.safety_tolerance < 0 || options.safety_tolerance > 4)) throw new Error("FLUX 3 safety_tolerance must be an integer from 0 to 4.");
+	// BFL documents 0-7; levels above the account's approved maximum come back as a 422.
+	if (options.safety_tolerance != null && (!Number.isInteger(options.safety_tolerance) || options.safety_tolerance < 0 || options.safety_tolerance > 7)) throw new Error("FLUX 3 safety_tolerance must be an integer from 0 to 7.");
 	return { seconds, resolution, mode, draft, body: { ...options, mode, prompt: ir.prompt, duration: seconds, resolution, aspect_ratio: ratio, draft,
 		generate_audio: ir.generateAudio ?? true, ...(images.length ? { keyframes: images.length === 1 ? images[0] : images } : {}), ...(videos.length ? { start_video: videos[0] } : {}) } };
 }

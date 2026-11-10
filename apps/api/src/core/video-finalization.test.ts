@@ -95,6 +95,23 @@ describe("video-finalization", () => {
 			expect.objectContaining({ billingReason: "pricing_error", billingError: "pricing_rule_missing:output_video_seconds" }));
 		expect(emitGatewayOperationalFailureMock).toHaveBeenCalledWith(expect.objectContaining({ reason: "pricing_error" }));
 	});
+	it.each([
+		[12, 12],
+		[45, 30],
+		[undefined, 30],
+	])("bills a smart-duration job by the reported length %s (held 30 s) as %s s", async (reported, billed) => {
+		getVideoJobMetaMock.mockResolvedValue({
+			model: "wan3.0-video", seconds: 30, autoDuration: true, keySource: "gateway",
+			reservationId: "video_hold:wan_auto", reservedNanos: 6_000_000_000,
+		});
+		loadPriceCardMock.mockResolvedValue({ rules: [] });
+		computeBillMock.mockImplementation(() => { throw new Error("pricing_rule_missing:output_video_seconds"); });
+		await finalizeVideoJob({
+			workspaceId: "ws_test", videoId: "wan_auto", providerId: "alibaba",
+			status: "completed", model: "wan3.0-video", ...(reported != null ? { seconds: reported } : {}),
+		});
+		expect(computeBillMock).toHaveBeenCalledWith(expect.objectContaining({ output_video_seconds: billed }), expect.anything(), expect.anything());
+	});
 	it("preserves completion time and duration on repeated terminal reads", async () => {
 		const finalizedAt = "2026-09-06T10:00:30.000Z";
 		getVideoJobRecordMock.mockResolvedValue({ status: "completed", meta: {
@@ -769,5 +786,61 @@ describe("video-finalization", () => {
 				reservationStatus: "released",
 			}),
 		);
+	});
+
+	describe("links the request row to the charge that paid for the video", () => {
+		function gatewayRequestRow(updateError?: { code: string; message: string }) {
+			const patches: Array<Record<string, unknown>> = [];
+			const client = {
+				from: vi.fn(() => ({
+					select: () => ({ eq: () => ({ eq: () => ({ order: () => ({ limit: async () => ({
+						data: [{ id: "row_1", created_at: "2026-11-03T00:00:00.000Z", usage: {}, pricing_lines: [] }], error: null,
+					}) }) }) }) }),
+					update: (patch: Record<string, unknown>) => {
+						patches.push(patch);
+						const error = updateError && "billing_request_id" in patch ? updateError : null;
+						return { eq: () => ({ eq: () => ({ select: async () => ({ data: error ? null : [{ id: "row_1" }], error }) }) }) };
+					},
+				})),
+			};
+			getSupabaseAdminMock.mockReturnValue(client);
+			getVideoJobMetaMock.mockResolvedValue({ model: "openai/sora-2", seconds: 4, keySource: "gateway", requestId: "req_video" });
+			return patches;
+		}
+
+		function priceAt(nanos: number) {
+			loadPriceCardMock.mockResolvedValue({ provider: "openai", model: "openai/sora-2", endpoint: "video.generation",
+				currency: "USD", effective_from: null, version: null, rules: [] });
+			computeBillMock.mockReturnValue({ pricing: { total_nanos: nanos, lines: [{ dimension: "output_video_seconds" }] } });
+			applyByokServiceFeeMock.mockResolvedValue({ totalNanos: nanos, pricedUsage: { pricing: { total_nanos: nanos } } });
+		}
+
+		it("to the direct completion charge's key", async () => {
+			const patches = gatewayRequestRow();
+			captureWalletReservationMock.mockResolvedValue({ applied: false, alreadyApplied: false, status: "not_found", amountNanos: 0 });
+			priceAt(1234);
+			await finalizeVideoJob({ workspaceId: "team_link", videoId: "video_link", providerId: "openai", status: "completed", model: "openai/sora-2", seconds: 4 });
+			expect(recordUsageAndChargeMock).toHaveBeenCalledWith(expect.objectContaining({ requestId: "video_capture:video_link" }));
+			expect(patches).toEqual([expect.objectContaining({ cost_nanos: 1234, billing_request_id: "video_capture:video_link" })]);
+		});
+
+		it("to no charge when the reservation paid, since a capture writes no charge row", async () => {
+			const patches = gatewayRequestRow();
+			captureWalletReservationMock.mockResolvedValue({ applied: true, alreadyApplied: false, status: "captured", amountNanos: 150_000_000 });
+			await finalizeVideoJob({ workspaceId: "team_link", videoId: "video_link", providerId: "openai", status: "completed", model: "openai/sora-2", seconds: 4 });
+			expect(captureWalletReservationMock).toHaveBeenCalled();
+			expect(patches).toEqual([expect.objectContaining({ cost_nanos: 150_000_000, billing_request_id: null })]);
+		});
+
+		// Runs last: the fallback is remembered for the rest of the module's life.
+		it("still settles the row when the column is not there yet", async () => {
+			const patches = gatewayRequestRow({ code: "PGRST204", message: "Could not find the 'billing_request_id' column of 'gateway_requests'" });
+			captureWalletReservationMock.mockResolvedValue({ applied: true, alreadyApplied: false, status: "captured", amountNanos: 150_000_000 });
+			const result = await finalizeVideoJob({ workspaceId: "team_link", videoId: "video_link", providerId: "openai", status: "completed", model: "openai/sora-2", seconds: 4 });
+			expect(result).toMatchObject({ charged: true, reason: "captured" });
+			expect(patches).toHaveLength(2);
+			expect(patches[1]).not.toHaveProperty("billing_request_id");
+			expect(markVideoJobBilledMock).toHaveBeenCalledWith("team_link", "video_link");
+		});
 	});
 });

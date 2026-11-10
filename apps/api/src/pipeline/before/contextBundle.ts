@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import { getBindingsIfConfigured, getSupabaseAdmin } from "@/runtime/env";
 import { knownCatalogueRevision } from "@core/catalogue-revision";
 import { invalidateTieredL1, tieredReadDetailed, writeTiered } from "@core/tiered-cache";
@@ -33,6 +33,27 @@ const catalogSchema = z.object({
 const entrySchema = z.object({ current: catalogSchema, next: catalogSchema.nullable() }).strict();
 export type PublicCatalogSnapshot = z.infer<typeof catalogSchema>;
 type CatalogEntry = z.infer<typeof entrySchema>;
+/**
+ * The workspace-scoped, model-independent part of the bundle RPC: BYOK key metadata (never
+ * secrets), workspace settings and billing mode. Cached per workspace, key and version token
+ * (context.ts) so a request for a model this workspace has not used yet needs no workspace RPC.
+ */
+export type WorkspaceBundle = {
+    workspaceId: string;
+    byok: Record<string, Record<string, unknown>[]>;
+    settings: Record<string, unknown>;
+    billingMode: "wallet" | "invoice";
+    /** Epoch ms when the RPC returned it. */
+    at: number;
+};
+const workspaceBundleSchema = z.object({
+    workspaceId: z.string().min(1), byok: z.record(z.string(), z.array(record)), settings: record,
+    billingMode: z.enum(["wallet", "invoice"]), at: z.number().finite(),
+}).strict();
+export function parseWorkspaceBundle(value: unknown): WorkspaceBundle | null {
+    const parsed = workspaceBundleSchema.safeParse(value);
+    return parsed.success ? parsed.data : null;
+}
 export type ContextBundle = {
     variants: { endpoint: string; payload: Record<string, unknown> }[];
     catalog: PublicCatalogSnapshot;
@@ -41,6 +62,10 @@ export type ContextBundle = {
     cacheStatus: "hit" | "miss" | "bypass";
     catalogReadMs: number;
     rpcMs: number;
+    /** The workspace part used: the caller's cached copy, or the one this load fetched. */
+    workspace: WorkspaceBundle;
+    /** True when `workspace` came from the caller; the variants then carry no account data. */
+    workspaceFromCache: boolean;
 };
 export const publicCatalogEndpoints = (endpoint: string): string[] =>
     endpoint === "text.generate" ? [endpoint] : ["text.generate", endpoint];
@@ -144,7 +169,15 @@ export async function loadTextContextBundle(args: {
     workspaceId: string; apiKeyId: string; model: string; endpoint: string; disableCache?: boolean;
     /** Diagnostics: exercise shared layers without reusing this isolate's snapshot. */
     skipCatalogMemoryCache?: boolean;
+    /**
+     * A cached workspace part. The workspace RPC is skipped and only the model's catalogue data
+     * is loaded. The variants' account fields (key, key limit, credit, enrichment) are then
+     * placeholders: the caller must take them from its own cached copies, never from here.
+     */
+    workspace?: WorkspaceBundle | null;
 }): Promise<ContextBundle> {
+    const cachedWorkspace = args.workspace && args.workspace.workspaceId === args.workspaceId ? args.workspace : null;
+    if (cachedWorkspace) return composeFromCachedWorkspace(args, cachedWorkspace);
     const endpoints = publicCatalogEndpoints(args.endpoint);
     const cacheStarted = performance.now();
     if (args.skipCatalogMemoryCache) invalidateTieredL1(publicCatalogKey(args.model, endpoints));
@@ -186,15 +219,107 @@ export async function loadTextContextBundle(args: {
         }
         if (!args.disableCache) await rememberCatalogEntry(args.model, endpoints, reloaded).catch(() => undefined);
     }
+    const workspace: WorkspaceBundle = {
+        workspaceId: args.workspaceId, byok: bundle.byok, settings: bundle.settings, billingMode: bundle.billingMode, at: Date.now(),
+    };
+    return compose(catalog, bundle.context, workspace, { cacheStatus, catalogReadMs, rpcMs, workspaceFromCache: false });
+}
+
+function compose(
+    catalog: PublicCatalogSnapshot,
+    context: Record<string, unknown>,
+    workspace: WorkspaceBundle,
+    meta: Pick<ContextBundle, "cacheStatus" | "catalogReadMs" | "rpcMs" | "workspaceFromCache">,
+): ContextBundle {
     const selected = { ...catalog, boundaryAt: catalogPolicyBoundary(catalog) };
     return {
-        catalog: selected, settings: bundle.settings, billingMode: bundle.billingMode, cacheStatus, catalogReadMs, rpcMs,
+        ...meta, workspace,
+        catalog: selected, settings: structuredClone(workspace.settings), billingMode: workspace.billingMode,
         variants: selected.variants.map(variant => ({ endpoint: variant.endpoint, payload: {
-            ...bundle.context, pricing: structuredClone(variant.pricing),
+            ...context, pricing: structuredClone(variant.pricing),
             providers: variant.providers.map(provider => ({
                 ...structuredClone(provider),
-                byok_meta: structuredClone(bundle.byok[String(provider.provider_id)] ?? []),
+                byok_meta: structuredClone(workspace.byok[String(provider.provider_id)] ?? []),
             })),
         } })),
     };
+}
+
+type AliasRow = { model_slug: string | null };
+type RouteRow = { model_slug: string | null; provider_model_id: string | null; effective_from: string | null; effective_to: string | null };
+
+/**
+ * Resolves the requested model now, with the same rules and tables as the workspace RPC
+ * (private.gateway_context_access): an enabled alias, else the provider-scoped route slug
+ * (`provider/provider_model_slug`) of a routing-enabled route in its effective window (latest
+ * effective_from first, then provider_model_id), else the name itself. Two small indexed reads,
+ * in parallel. Throws on a database error, as the RPC would.
+ */
+export async function resolveRequestedModel(model: string): Promise<string> {
+    const supabase = getSupabaseAdmin();
+    const slash = model.indexOf("/");
+    const [alias, route] = await Promise.all([
+        supabase.from("v2_model_aliases").select("model_slug").eq("alias_slug", model).eq("enabled", true)
+            .not("model_slug", "is", null).limit(1),
+        slash > 0
+            ? supabase.from("v2_model_provider_routes").select("model_slug,provider_model_id,effective_from,effective_to")
+                .eq("provider_slug", model.slice(0, slash)).eq("provider_model_slug", model.slice(slash + 1)).eq("routing_enabled", true)
+            : Promise.resolve({ data: [] as RouteRow[], error: null }),
+    ]);
+    if (alias.error || route.error) throw new Error("gateway_model_resolution_failed");
+    const aliased = ((alias.data ?? []) as unknown as AliasRow[]).find(row => typeof row.model_slug === "string")?.model_slug;
+    if (aliased) return aliased;
+    const now = Date.now();
+    const at = (value: string | null) => (value ? Date.parse(value) : Number.NaN);
+    const routed = ((route.data ?? []) as unknown as RouteRow[])
+        .filter(row => typeof row.model_slug === "string" && !(at(row.effective_from) > now) && !(at(row.effective_to) <= now))
+        .sort((left, right) => (at(right.effective_from) || 0) - (at(left.effective_from) || 0) ||
+            String(left.provider_model_id ?? "").localeCompare(String(right.provider_model_id ?? "")))[0];
+    return routed?.model_slug ?? model;
+}
+
+/**
+ * Builds the bundle for a new model from the public catalogue and a cached workspace part, with
+ * no workspace RPC. The model is resolved fresh (resolveRequestedModel), as the RPC does, and the
+ * catalogue snapshot is reloaded when it disagrees, exactly as on the RPC path. An alias edit
+ * therefore reaches this path as soon as it reaches a full load.
+ */
+async function composeFromCachedWorkspace(
+    args: { workspaceId: string; model: string; endpoint: string; disableCache?: boolean; skipCatalogMemoryCache?: boolean },
+    workspace: WorkspaceBundle,
+): Promise<ContextBundle> {
+    const endpoints = publicCatalogEndpoints(args.endpoint);
+    const started = performance.now();
+    if (args.skipCatalogMemoryCache) invalidateTieredL1(publicCatalogKey(args.model, endpoints));
+    let catalogReadMs = 0;
+    const catalogPromise = (args.disableCache
+        ? fetchCatalogEntry(args.model, endpoints).then(entry => ({ entry, loaded: true }))
+        : readCatalogEntry(args.model, endpoints)
+    ).then(result => {
+        catalogReadMs = performance.now() - started;
+        return result;
+    });
+    const resolveStarted = performance.now();
+    const resolvedPromise = resolveRequestedModel(args.model).then(value => ({ value, ms: performance.now() - resolveStarted }));
+    const [{ entry, loaded }, resolved] = await Promise.all([catalogPromise, resolvedPromise]);
+    let rpcMs = resolved.ms;
+    let catalog = entry ? selectCatalogSnapshot(entry) : null;
+    let reloaded = loaded;
+    // Same rule as the RPC path: never use another model's routes; reload authoritatively.
+    if (!catalog || catalog.resolvedModel !== resolved.value) {
+        const refreshStarted = performance.now();
+        const fresh = await fetchCatalogEntry(args.model, endpoints);
+        reloaded = true;
+        rpcMs += performance.now() - refreshStarted;
+        catalog = selectCatalogSnapshot(fresh);
+        if (!catalog || catalog.resolvedModel !== resolved.value) throw new Error("gateway_public_catalog_changed_during_request");
+        if (!args.disableCache) await rememberCatalogEntry(args.model, endpoints, fresh).catch(() => undefined);
+    }
+    // Placeholders only: context.ts replaces every account field with its cached copies.
+    const context = {
+        workspace_id: args.workspaceId, resolved_model: resolved.value, preset: null,
+        key_ok: { ok: true, reason: null }, key_limit_ok: { ok: true, reason: null }, credit_ok: { ok: true, reason: null },
+    };
+    const cacheStatus = args.disableCache ? "bypass" : reloaded ? "miss" : "hit";
+    return compose(catalog, context, workspace, { cacheStatus, catalogReadMs, rpcMs, workspaceFromCache: true });
 }

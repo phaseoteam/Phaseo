@@ -6,37 +6,272 @@ openapi: "/de/openapi/v1/openapi.localized.yaml POST /decisions"
 description: "Bewerte typisierte Fragen anhand des Anwendungszustands mit unterstützten Entscheidungsmodellen."
 ---
 
-Verwende für neue Aufrufe das OpenAI-kompatible Format: `input` enthält Text oder Benutzernachrichten mit eingebetteten `input_image`-Teilen; `questions` ist eine geordnete Liste von `predicate`-, `choice`- oder `score`-Fragen. Antworten behalten Reihenfolge und optionale Namen bei. Boolesche Auswahlwerte bleiben boolesch. Externe HTTPS-Bild-URLs funktionieren nur mit Base-Labs-Modellen (Elephant-1, Mammoth-1 und Joey-1) und müssen auf Amazon S3, Google Cloud Storage oder Azure Blob Storage liegen; Luna akzeptiert bis zu 128 eingebettete Bilder, andere Anbieter haben eigene Grenzen. Explizite Bilddetails und `safety_identifier` erfordern eine OpenAI-Route. Das bisherige Format mit `state`, benannten Frage-Maps, `noul` und `criteria` bleibt unterstützt und liefert die ursprüngliche Antwort-Map. Together Tev benötigt dieses bisherige Format, da es Bezeichnungen ohne Wahrscheinlichkeiten liefert. Die bisherigen Beispiele unten bleiben gültig.
+Sende `input` und ein geordnetes Array von `questions` an `POST /v1/decisions` und erhalte pro Frage eine typisierte Antwort mit Wahrscheinlichkeiten, in derselben Reihenfolge.
+
+## Eine Entscheidung treffen
+
+Diese Anfrage stellt je eine Frage jedes Typs. Sie benötigt einen Phaseo-API-Schlüssel und eine verfügbare Route für `openai/gpt-6-luna`.
+
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/decisions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-6-luna",
+    "input": "I was charged twice for my order and I cannot log in to download the invoice.",
+    "questions": [
+      {
+        "type": "choice",
+        "name": "department",
+        "instructions": "Which team should handle this request?",
+        "choices": [
+          { "value": "billing", "description": "Payments, invoices and refunds" },
+          { "value": "support", "description": "Product usage and troubleshooting" }
+        ]
+      },
+      {
+        "type": "predicate",
+        "name": "is_blocked",
+        "instructions": "Is the customer blocked from using the product?"
+      },
+      {
+        "type": "score",
+        "name": "urgency",
+        "instructions": "How urgent is this request?",
+        "levels": [{ "label": "low" }, { "label": "medium" }, { "label": "high" }]
+      }
+    ]
+  }'
+```
+
+```typescript TypeScript SDK
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo(); // liest PHASEO_API_KEY
+
+const decision = await client.decisions.create({
+  model: "openai/gpt-6-luna",
+  input: "I was charged twice for my order and I cannot log in to download the invoice.",
+  questions: [
+    {
+      type: "choice",
+      name: "department",
+      instructions: "Which team should handle this request?",
+      choices: [
+        { value: "billing", description: "Payments, invoices and refunds" },
+        { value: "support", description: "Product usage and troubleshooting" },
+      ],
+    },
+    { type: "predicate", name: "is_blocked", instructions: "Is the customer blocked from using the product?" },
+    {
+      type: "score",
+      name: "urgency",
+      instructions: "How urgent is this request?",
+      levels: [{ label: "low" }, { label: "medium" }, { label: "high" }],
+    },
+  ],
+});
+
+console.log(decision.answers);
+```
+
+```python Python SDK
+from phaseo import Phaseo
+
+client = Phaseo()  # liest PHASEO_API_KEY
+
+decision = client.decisions.create(
+    {
+        "model": "openai/gpt-6-luna",
+        "input": "I was charged twice for my order and I cannot log in to download the invoice.",
+        "questions": [
+            {
+                "type": "choice",
+                "name": "department",
+                "instructions": "Which team should handle this request?",
+                "choices": [
+                    {"value": "billing", "description": "Payments, invoices and refunds"},
+                    {"value": "support", "description": "Product usage and troubleshooting"},
+                ],
+            },
+            {"type": "predicate", "name": "is_blocked", "instructions": "Is the customer blocked from using the product?"},
+            {
+                "type": "score",
+                "name": "urgency",
+                "instructions": "How urgent is this request?",
+                "levels": [{"label": "low"}, {"label": "medium"}, {"label": "high"}],
+            },
+        ],
+    }
+)
+
+print(decision["answers"])
+```
+</CodeGroup>
+
+Die Antwort (Werte zur Veranschaulichung):
 
 ```json
 {
   "model": "openai/gpt-6-luna",
-  "input": "I was charged twice for my order.",
-  "questions": [{
-    "type": "choice",
-    "name": "department",
-    "instructions": "Which department should handle this?",
-    "choices": [
-      { "value": "billing", "description": "Payments and refunds" },
-      { "value": "other", "description": "Everything else" }
-    ]
-  }]
+  "answers": [
+    {
+      "type": "choice",
+      "name": "department",
+      "choice": "billing",
+      "confidence": 0.89,
+      "probabilities": [
+        { "value": "billing", "probability": 0.91 },
+        { "value": "support", "probability": 0.09 }
+      ]
+    },
+    { "type": "predicate", "name": "is_blocked", "probability": 0.84 },
+    {
+      "type": "score",
+      "name": "urgency",
+      "score": 1.6,
+      "confidence": 0.7,
+      "probabilities": [
+        { "value": 0, "label": "low", "probability": 0.05 },
+        { "value": 1, "label": "medium", "probability": 0.3 },
+        { "value": 2, "label": "high", "probability": 0.65 }
+      ]
+    }
+  ],
+  "usage": { "input_tokens": 64, "output_tokens": 0, "total_tokens": 64 }
 }
 ```
 
+## Fragen formulieren
 
+`input` ist ein String oder ein Array von `user`-Nachrichten, deren `content` ein String oder eine Liste von `input_text`-, `input_image`-, `input_audio`- und `input_video`-Teilen ist. `name` ist optional; Antworten behalten die Reihenfolge der Anfrage bei, auch bei unbenannten und wiederholten Namen.
 
-Verwende `POST /v1/decisions`, wenn deine Anwendung strukturierte Antworten benötigt, die der Code direkt verarbeiten kann. Zu den unterstützten Modellen gehören TypeSafe Jev 1.13 (`typesafe/jev-1.13.0`), Together Tev1 4B Experimental (`together/tev1-4b-experimental`) und Respan Span-01 (`respan/span-01:free` und `respan/span-01`).
+| `type` | Zusätzliche Felder | Antwortfelder |
+| --- | --- | --- |
+| `predicate` | keine | `probability` (0–1), dass die Antwort Ja lautet |
+| `choice` | `choices`: `value` (String oder Boolean, eindeutig) und optional `description` | `choice`, `confidence`, `probabilities` pro Wert |
+| `score` | `levels`: `label` und optional `description` | `score` (wahrscheinlichkeitsgewichteter Stufenindex), `confidence`, `probabilities` pro Stufe |
+| `box` | keine; erfordert ein Bild in `input` | `box` (`top`, `bottom`, `left`, `right`), `confidence` |
 
-Die Anfrage enthält:
+Boolesche Auswahlwerte kommen als Booleans zurück. Ein Modell, das eine Frage ablehnt, gibt für sie `type: "refusal"` zurück. Welche Typen ein Modell unterstützt, steht unter [Ein Modell wählen](#choose-a-model).
+
+Bilder gehören als Data-URLs in `input_image`-Teile. Gehostete HTTPS-Bild-URLs funktionieren nur bei den Base-Labs-Modellen (`baselabs/elephant-1`, `baselabs/mammoth-1` und `baselabs/joey-1`) und müssen auf Amazon S3, Google Cloud Storage oder Azure Blob Storage liegen. Eine Anfrage enthält höchstens 128 Bilder, die Luna akzeptiert; andere Anbieter setzen niedrigere Grenzen. Ein explizites Bild-`detail` und `safety_identifier` erfordern eine OpenAI-Route.
+
+## Das ältere state-Format verwenden
+
+Anfragen mit `state` und einer Map benannter Fragen funktionieren weiterhin und geben Antworten zurück, die nach denselben Namen geschlüsselt sind. Together Tev (`together/tev1-4b-experimental`) erfordert dieses Format, weil es eine Bezeichnung ohne Wahrscheinlichkeiten zurückgibt, und beantwortet nur `choice`-Fragen. Auch Respan Span-01 nutzt dieses Format. Mische die Formate nicht: `input` zusammen mit `state` oder `images` gibt `400` zurück.
 
 - `state`: ein String, Objekt oder Array mit den zu bewertenden Informationen.
-- `questions`: eine Map benannter Fragen. Jede Frage setzt `type` auf `noul`, `choice` oder `score` und enthält `instructions`; unterstützte Typen hängen vom ausgewählten Modell ab.
-- `model`: die Phaseo-Modell-ID. Verwende `typesafe/jev-1.13.0` für Jev 1.13 oder `typesafe/jev-latest`, um jeweils die neueste Jev-Version zu nutzen.
+- `questions`: bis zu 128 benannte Fragen. Jede setzt `type` auf `noul` (Ja/Nein), `choice` oder `score`, dazu `instructions`. Auswahlfragen nehmen `criteria` als Map von Option zu Beschreibung; Bewertungsfragen nehmen `criteria` als Array mit mindestens zwei Stufenbeschreibungen.
+- `images`: bis zu vier PNG-, JPEG- oder WebP-Bilder, als `data:`-URLs oder `{ "content_type", "base64" }`-Objekte.
+- `model`: standardmäßig `typesafe/jev-1.13.0`, wenn weggelassen.
 
-Liquid D1 (`liquid-ai/d1:free`, auch als `liquid-ai/d1` verfügbar) und Perplexity Decider 27B (`perplexity/decider-27b`) unterstützen alle drei Fragetypen. D1 ist während des experimentellen Early Access kostenlos. Decider kostet 0,04 USD pro Million Eingabetokens einschließlich Bildtokens; Ausgabetokens sind kostenlos. Hinterlege in Phaseo Anbieter-Zugangsdaten für Perplexity, um Decider zu nutzen. Sein Bildzustand verwendet Base64-Daten-URLs für PNG, JPEG oder WebP; entfernte Bild-URLs werden nicht unterstützt. Jede Auswahlfrage akzeptiert bis zu 255 Optionen und jede Bewertungsfrage bis zu 10 Stufen. Prüfe vor dem Aufruf die Verfügbarkeit des jeweiligen Modells.
+Antworten verwenden dieselben Schlüssel wie `questions`. `choice`-Antworten enthalten die gewählte Option, Wahrscheinlichkeiten und Konfidenz; `noul`-Antworten eine Wahrscheinlichkeit von 0–1; `score`-Antworten einen wahrscheinlichkeitsgewichteten Wert, eine Legende, Wahrscheinlichkeiten und Konfidenz.
 
-Mercury Decide (`inception/mercury-decide`) unterstützt Prädikat-, Auswahl- und Bewertungsfragen mit Text- oder JSON-Belegen. Auswahlfragen akzeptieren bis zu 255 Optionen; Bewertungsfragen akzeptieren bis zu 10 Stufen. Bilder, Streaming und Tool-Aufrufe werden nicht unterstützt. Eingaben kosten derzeit 0,02 USD pro Million Tokens im Rahmen der 50-%-Aktion von Inception; Ausgabetokens werden erfasst, bleiben aber kostenlos. Inception hat kein Enddatum für die Aktion veröffentlicht. Prüfe vor der Nutzung die Modellverfügbarkeit und die [aktuellen Upstream-Preise](https://docs.inceptionlabs.ai/get-started/models).
+<span id="choose-a-model"></span>
+## Ein Modell wählen
+
+Prüfe die Modellverfügbarkeit, bevor du eines dieser Modelle aufrufst.
+
+| Modell | Fragetypen | Eingabe | Eingabepreis pro 1M Tokens |
+| --- | --- | --- | --- |
+| `openai/gpt-6-luna` | predicate, choice, score | Text, bis zu 128 Bilder | Siehe Modellseite |
+| `typesafe/jev-1.13.0`, `typesafe/jev-1.14.0` | alle drei, gemischt in einer Anfrage; `box` bei 1.14 | Text, PNG-/JPEG-Bilder | $0.042 (Jev 1.13) |
+| `cloudflare/clef`, `cloudflare/clef-flash` | alle drei | Text, bis zu 4 Bilder | $0.24 / $0.038 |
+| `cloudflare/clef-omni` | alle drei | Text, Bilder, Audio, Video | $0.15 |
+| `liquid-ai/d1:free`, `liquid-ai/d1` | alle drei | Siehe Modellseite | Kostenlos während des Early Access |
+| `perplexity/decider-27b` | alle drei | Text, Base64-Bilder | $0.04, einschließlich Bild-Tokens |
+| `inception/mercury-decide` | predicate, choice, score | Text oder JSON | $0.02 (Aktion) |
+| `microsoft/microsoft-decision-1` | predicate, choice, score | Text oder JSON | $0.042 |
+| `respan/span-01:free`, `respan/span-01` | nur `noul` (älteres Format) | Gesprächsausschnitt | Kostenlos (Lite) / $0.02 |
+| `together/tev1-4b-experimental` | nur `choice` (älteres Format) | Text | Siehe Modellseite |
+
+Ausgabe-Tokens sind bei jedem Modell mit angegebenem Preis kostenlos.
+
+### TypeSafe Jev
+
+Verwende `typesafe/jev-1.13.0` für Jev 1.13 oder `typesafe/jev-latest`, um der neuesten Jev-Version zu folgen. Die Upstream-Semantik der Fragen findest du in der [API-Referenz](https://docs.typesafe.ai/api) von TypeSafe.
+
+Auf unterstützenden TypeSafe-Routen akzeptieren Jev 1.13 und 1.14 eingebettete PNG- oder JPEG-Bilder über `input_image` oder das ältere Feld `images`. Phaseo erstellt die Bild-Assets für TypeSafe und aktiviert die Bildunterstützung automatisch. Bilder müssen die [Bildgrenzen](https://docs.typesafe.ai/images) von TypeSafe einhalten: höchstens 16 MiB pro Bild, 256 bis 1568 Pixel pro Seite und mindestens 78.400 Pixel insgesamt. TypeSafe prüft Abmessungen und Kodierung und skaliert abgelehnte Bilder nicht. Der zugeordnete Upstream-JSON-Body ist auf 32 MiB begrenzt. Bild-Tokens kosten den normalen Eingabepreis.
+
+`box` (auf unterstützenden Routen wie Jev 1.14) erfordert ein Bild, nimmt keine Kriterien und gibt einen Begrenzungsrahmen samt Konfidenz zurück. Seine Kanten reichen von 0 bis 1, gemessen von der oberen linken Ecke. Box gibt immer ein Rechteck zurück, kombiniere es daher mit einer `predicate`-Frage zur Anwesenheit, wenn das Ziel fehlen kann. Beziehe dich beim älteren Feld `images` auf `images[0]`, bei geordneter Eingabe auf das erste Bild oder `[Image 0]`. Siehe den [Box-Vertrag](https://docs.typesafe.ai/primitives/box).
+
+Setze `provider_options.typesafe.long_context` auf `true`, um die Kontextgrenzen pro Anfrage und pro Frage auf 262k Tokens anzuheben, statt der Standardwerte von 64k pro Anfrage und 32k pro Frage. Langer Kontext kostet pro Token gleich viel. Bilder, Box und langer Kontext sind experimentelle Upstream-Funktionen.
+
+```json
+{
+  "model": "typesafe/jev-1.14.0",
+  "input": [{
+    "role": "user",
+    "content": [{ "type": "input_image", "image_url": "data:image/png;base64,<base64 image bytes>" }]
+  }],
+  "questions": [
+    { "type": "predicate", "name": "visible", "instructions": "Is there a mug in the first image?" },
+    { "type": "box", "name": "mug", "instructions": "The mug in the first image" }
+  ],
+  "provider_options": { "typesafe": { "long_context": true } }
+}
+```
+
+### Cloudflare Clef und Clef Flash
+
+`cloudflare/clef` und `cloudflare/clef-flash` laufen auf Cloudflare Workers AI. Clef hat ein Kontextfenster von 65.536 Tokens, Clef Flash von 24.576 Tokens.
+
+```json
+{
+  "model": "cloudflare/clef-flash",
+  "state": "Inspect the attached product photo.",
+  "images": [{ "content_type": "image/png", "base64": "<base64 image bytes>" }],
+  "questions": {
+    "damaged": { "type": "noul", "instructions": "Is the product visibly damaged?" }
+  }
+}
+```
+
+`images` akzeptiert auch einen String `data:image/png;base64,...`. Clef akzeptiert bis zu vier PNG-, JPEG- oder WebP-Bilder mit jeweils höchstens 4 MiB und 16 Megapixeln, insgesamt höchstens 8 MiB dekodierter Bilddaten und einem Anfrage-Body von 13 MiB. Externe URLs werden nicht unterstützt, und Cloudflare prüft Bildformate und Abmessungen. Modelle ohne Bildunterstützung lehnen Bildanfragen ab.
+
+Clef akzeptiert höchstens 64 Fragen mit IDs aus bis zu 100 Buchstaben, Ziffern, Unterstrichen, Punkten oder Bindestrichen. Auswahlfragen benötigen 2–255 Optionen und Bewertungsfragen 2–10 Stufen. Siehe die [Clef-Dokumentation](https://developers.cloudflare.com/workers-ai/models/clef/) von Cloudflare.
+
+### Cloudflare Clef Omni
+
+`cloudflare/clef-omni` akzeptiert Text, Bilder, Audio und Video. Audio- und Videoteile sind Phaseo-Erweiterungen des Eingabeformats; OpenAI-Routen akzeptieren nur Text und Bilder. Ersetze die Platzhalter-Audiobytes und die Video-URL durch deine eigenen Medien, bevor du dieses Beispiel sendest.
+
+```json
+{
+  "model": "cloudflare/clef-omni",
+  "input": [{
+    "role": "user",
+    "content": [
+      { "type": "input_text", "text": "Review the recording and clip." },
+      { "type": "input_audio", "input_audio": { "data": "<base64 WAV bytes>", "format": "wav" } },
+      { "type": "input_video", "video_url": { "url": "https://media.example.com/clip.mp4" } }
+    ]
+  }],
+  "questions": [{ "type": "predicate", "name": "safe", "instructions": "Is the equipment operating safely?" }]
+}
+```
+
+Sende Audio als `input_audio.data` mit `format: "wav"` oder `"mp3"` oder als `input_audio.url` mit einer öffentlichen HTTPS-URL oder einer eingebetteten Audio-Data-URL. `input_video.video_url` nimmt einen String oder `{ "url": "..." }` mit einer öffentlichen HTTPS-URL oder einer eingebetteten MP4-/WebM-Data-URL. Externe Server müssen den passenden Content-Type zurückgeben. Phaseo ruft URLs mit Größenbegrenzungen sowie Prüfungen auf private Adressen und Weiterleitungen ab und bettet die Medien dann für Cloudflare ein; Anbieterzugangsdaten werden nie an den Medienserver gesendet.
+
+| Limit | Wert |
+| --- | --- |
+| Audioclips | 4, jeweils höchstens 8 MiB und 300 Sekunden |
+| Videos | 2, jeweils höchstens 16 MiB und 60 Sekunden |
+| Audio und Video zusammen | 16 MiB dekodiert |
+| Bilder | Dieselben Grenzen pro Bild und insgesamt wie bei Clef |
+| Anfrage-Body | 37 MiB (ersetzt die 13 MiB von Clef) |
+| Kontext | 64.000 Tokens |
+
+Cloudflare prüft Medienkodierung, Bildabmessungen und Cliplänge und tastet Video mit zwei Bildern pro Sekunde ab. Die Tonspur eines Videos wird verwendet, wenn jedes Video in der Anfrage eine hat. Medien-Tokens zählen zum Kontext und zur Abrechnung; Phaseo rechnet anhand der von Cloudflare gemeldeten Eingabenutzung ab und berechnet Audio oder Video nicht gesondert. Siehe den [Omni-Vertrag von Cloudflare](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json).
+
+### Liquid D1 und Perplexity Decider
+
+Liquid D1 (`liquid-ai/d1:free`, auch `liquid-ai/d1`) ist während des experimentellen Early Access kostenlos. Perplexity Decider 27B (`perplexity/decider-27b`) benötigt Perplexity-Anbieterzugangsdaten in Phaseo. Sein Bildzustand verwendet Base64-Data-URLs im PNG-, JPEG- oder WebP-Format; externe Bild-URLs werden nicht unterstützt. Bei beiden akzeptiert eine Auswahlfrage bis zu 255 Optionen und eine Bewertungsfrage bis zu 10 Stufen.
+
+### Inception Mercury Decide
+
+`inception/mercury-decide` nimmt Text oder JSON als Beleg. Auswahlfragen akzeptieren bis zu 255 Optionen und Bewertungsfragen bis zu 10 Stufen. Bilder, Streaming und Tool-Aufrufe werden nicht unterstützt. Der Eingabepreis von $0.02 ist eine 50-%-Aktion von Inception ohne veröffentlichtes Enddatum; prüfe vor der Nutzung die [aktuellen Upstream-Preise](https://docs.inceptionlabs.ai/get-started/models).
 
 ```json
 {
@@ -50,7 +285,9 @@ Mercury Decide (`inception/mercury-decide`) unterstützt Prädikat-, Auswahl- un
 }
 ```
 
-Microsoft Decision (`microsoft/microsoft-decision-1`) nutzt eine Azure-Foundry-Bereitstellung und unterstützt Prädikat-, Auswahl- und Bewertungsfragen mit Text- oder JSON-Belegen. Das Eingabelimit beträgt 32.768 Tokens. Der veröffentlichte Preis beträgt 0,042 USD pro Million Eingabetokens; Ausgaben sind kostenlos. Medien, Streaming, Tools, `safety_identifier` und `service_tier` werden nicht unterstützt. Prüfe vor dem Aufruf die Modellverfügbarkeit. Siehe die [Anleitung von Microsoft](https://learn.microsoft.com/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision).
+### Microsoft Decision
+
+`microsoft/microsoft-decision-1` läuft auf einem Azure-Foundry-Deployment und nimmt Text oder JSON als Beleg mit bis zu 32.768 Tokens. Medien, Streaming, Tools, `safety_identifier` und `service_tier` werden nicht unterstützt. Siehe den [Leitfaden von Microsoft](https://learn.microsoft.com/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision).
 
 ```json
 {
@@ -68,7 +305,9 @@ Microsoft Decision (`microsoft/microsoft-decision-1`) nutzt eine Azure-Foundry-B
 }
 ```
 
-Für Respan Span-01 muss `state` ein Gesprächsabschnitt mit einem `input`-Array vorheriger Nachrichten und einer `output`-Assistentennachricht sein. Span-01 unterstützt nur `noul`-Fragen. Die `noul`-Antwort ist die Wahrscheinlichkeit, dass das Verhalten vorliegt; `probabilities` enthält außerdem Wahrscheinlichkeiten für fehlendes und nicht beobachtbares Verhalten.
+### Respan Span-01
+
+Span-01 verwendet das ältere Format. `state` muss ein Gesprächsausschnitt sein: ein `input`-Array vorangehender Nachrichten und eine `output`-Assistentennachricht. Es beantwortet nur `noul`-Fragen: Der `noul`-Wert ist die Wahrscheinlichkeit, dass das Verhalten vorliegt, und `probabilities` gibt außerdem die Wahrscheinlichkeiten für „nicht vorhanden“ und „nicht beobachtbar“ an.
 
 ```json
 {
@@ -86,11 +325,7 @@ Für Respan Span-01 muss `state` ein Gesprächsabschnitt mit einem `input`-Array
 }
 ```
 
-`respan/span-01:free` ist das kostenlose Lite-Modell mit einem Tageslimit; Phaseo ordnet es der Respan-API-Modell-ID `span-01-free` zu. `respan/span-01` entspricht der Respan-API-Modell-ID `span-01-pro` und wird von Respan mit 0,02 USD pro Million Eingabetokens abgerechnet; Ausgabetokens sind kostenlos. Span-01 befindet sich im Early Access, daher muss Respan den Zugriff für deine Organisation freischalten. Hinterlege vor dem Aufruf dieser Modelle deinen Respan-API-Schlüssel als Respan-Anbieter-Zugangsdaten in Phaseo.
-
-Antworten verwenden dieselben Schlüssel wie `questions`. `choice`-Antworten enthalten die gewählte Option, Wahrscheinlichkeiten und Konfidenz; `noul`-Antworten enthalten eine Wahrscheinlichkeit von 0 bis 1; `score`-Antworten enthalten einen wahrscheinlichkeitsgewichteten Score, eine Legende, Wahrscheinlichkeiten und Konfidenz.
-
-Für das Respan-Beispiel sieht eine Antwort so aus:
+Eine Antwort sieht so aus:
 
 ```json
 {
@@ -108,76 +343,4 @@ Für das Respan-Beispiel sieht eine Antwort so aus:
 }
 ```
 
-Jev unterstützt alle drei Fragetypen gemeinsam in einer Anfrage; Span-01 unterstützt nur `noul`-Fragen. Im [Schnellstart](../../quickstart) findest du kopierbare Beispiele für cURL, JavaScript, das TypeScript-SDK und das Python-SDK. Jev 1.13 wird mit 0,042 USD pro Million Eingabetokens abgerechnet; Ausgabetokens sind kostenlos.
-
-Die Fragensemantik des Anbieters ist in der [API-Referenz](https://docs.typesafe.ai/api) von TypeSafe beschrieben.
-
-### Bilder, Box und langer Kontext mit Jev
-
-Auf unterstützten TypeSafe-Routen akzeptieren Jev 1.13 und 1.14 eingebettete PNG- oder JPEG-Bilder über `input_image` oder das ältere Feld `images`. Phaseo erstellt die TypeSafe-Bildressourcen und aktiviert Bilder automatisch. Bilder müssen die [Bildgrenzen](https://docs.typesafe.ai/images) von TypeSafe einhalten: höchstens 16 MiB pro Bild, Abmessungen von 256 bis 1568 Pixeln und mindestens 78.400 Pixel insgesamt. TypeSafe prüft Abmessungen und Kodierung; abgelehnte Bilder werden nicht skaliert. Der an den Anbieter gesendete JSON-Body ist auf 32 MiB begrenzt. Bildtokens werden zum normalen Eingabepreis berechnet.
-
-`box` ist ein eigener Fragetyp für unterstützte Routen wie Jev 1.14. Er benötigt ein Bild, akzeptiert keine Kriterien und liefert einen einzelnen Begrenzungsrahmen mit Konfidenz. Die Kanten `top`, `bottom`, `left` und `right` liegen zwischen 0 und 1, gemessen von der oberen linken Ecke. Box liefert immer ein Rechteck; ergänze eine `predicate`-Frage zur Anwesenheit, wenn das Ziel fehlen kann. Bei älteren Bildern verwende `images[0]`; bei geordneter Eingabe nenne das erste Bild oder `[Image 0]`. Siehe den [Box-Vertrag](https://docs.typesafe.ai/primitives/box).
-
-Setze `provider_options.typesafe.long_context` auf `true`, um die Kontextgrenzen pro Anfrage und pro Frage auf jeweils 262k Tokens zu erhöhen. Standardmäßig gelten 64k pro Anfrage und 32k pro Frage. Langer Kontext muss ausdrücklich aktiviert werden und hat denselben Tokenpreis. Bilder, Box und langer Kontext sind experimentelle Anbieterfunktionen; prüfe vor der Nutzung die Modellverfügbarkeit.
-
-```json
-{
-  "model": "typesafe/jev-1.14.0",
-  "input": [{
-    "role": "user",
-    "content": [{ "type": "input_image", "image_url": "data:image/png;base64,<base64 image bytes>" }]
-  }],
-  "questions": [
-    { "type": "predicate", "name": "visible", "instructions": "Is there a mug in the first image?" },
-    { "type": "box", "name": "mug", "instructions": "The mug in the first image" }
-  ],
-  "provider_options": { "typesafe": { "long_context": true } }
-}
-```
-
-
-### Bildentscheidungen mit Clef
-
-`cloudflare/clef` und `cloudflare/clef-flash` unterstützen alle drei Fragetypen und eingebettete Bilder über Cloudflare Workers AI. Clef bietet 65.536 Kontext-Tokens, Clef Flash 24.576. Eingaben kosten 0,24 USD pro Million Tokens für Clef und 0,038 USD für Clef Flash.
-
-```json
-{
-  "model": "cloudflare/clef-flash",
-  "state": "Inspect the attached product photo.",
-  "images": [{ "content_type": "image/png", "base64": "<base64 image bytes>" }],
-  "questions": {
-    "damaged": { "type": "noul", "instructions": "Is the product visibly damaged?" }
-  }
-}
-```
-
-Du kannst auch eine Zeichenfolge `data:image/png;base64,...` in `images` übergeben. Clef akzeptiert bis zu vier PNG-, JPEG- oder WebP-Bilder mit jeweils höchstens 4 MiB und 16 Megapixeln, insgesamt höchstens 8 MiB dekodierten Bilddaten und einem Anfragekörper von 13 MiB. Remote-URLs werden nicht unterstützt. Cloudflare prüft Bildformate und Abmessungen. Modelle ohne Bildunterstützung lehnen Bildanfragen ab.
-
-Clef akzeptiert höchstens 64 Fragen mit IDs aus bis zu 100 Buchstaben, Ziffern, Unterstrichen, Punkten oder Bindestrichen. Auswahlfragen benötigen 2–255 Optionen; Bewertungsfragen benötigen 2–10 Stufen. Siehe die [Clef-Dokumentation](https://developers.cloudflare.com/workers-ai/models/clef/) von Cloudflare.
-
-### Audio- und Videoentscheidungen mit Clef Omni
-
-`cloudflare/clef-omni` akzeptiert Text, Bilder, Audio und Video mit denselben geordneten `questions` und Antworten wie andere Decisions-Modelle. Audio und Video sind Phaseo-Erweiterungen des Eingabevertrags im OpenAI-Stil; OpenAI-Entscheidungsrouten unterstützen derzeit nur Text und Bilder. Prüfe vor der Verwendung die Modellverfügbarkeit.
-
-Dieses Beispiel erfordert eine verfügbare Omni-Route und einen Phaseo-API-Schlüssel. Ersetze die Platzhalter-Audiobytes und die Video-URL vor dem Senden durch deine eigenen Medien.
-
-```json
-{
-  "model": "cloudflare/clef-omni",
-  "input": [{
-    "role": "user",
-    "content": [
-      { "type": "input_text", "text": "Review the recording and clip." },
-      { "type": "input_audio", "input_audio": { "data": "<base64 WAV bytes>", "format": "wav" } },
-      { "type": "input_video", "video_url": { "url": "https://media.example.com/clip.mp4" } }
-    ]
-  }],
-  "questions": [{ "type": "predicate", "name": "safe", "instructions": "Is the equipment operating safely?" }]
-}
-```
-
-Verwende `input_audio.data` mit `format: "wav"` oder `"mp3"` oder `input_audio.url` mit einer öffentlichen HTTPS-URL oder einer eingebetteten Audio-Daten-URL. `input_video.video_url` akzeptiert einen String oder `{ "url": "..." }` mit einer öffentlichen HTTPS-URL oder einer eingebetteten MP4/WebM-Daten-URL. Entfernte Server müssen den passenden Medien-Content-Type zurückgeben. Phaseo ruft URLs mit Größenlimits sowie Prüfungen auf private Adressen und Weiterleitungen ab und bettet die Medien anschließend für Cloudflare ein; Anbieterzugangsdaten werden niemals an den Medienserver gesendet.
-
-Omni akzeptiert bis zu vier Audioclips (je 8 MiB und 300 Sekunden) und zwei Videos (je 16 MiB und 60 Sekunden). Audio und Video zusammen dürfen dekodiert höchstens 16 MiB umfassen. Omni behält die oben genannten Limits je Bild und für alle Bilder zusammen bei; sein Limit für den Anfragekörper ersetzt das Clef/Flash-Limit von 13 MiB. Phaseo begrenzt den gesamten Omni-Anfragekörper auf 37 MiB. Cloudflare prüft Medienkodierung, Bildabmessungen und Clipdauer und tastet Videos mit zwei Bildern pro Sekunde ab. Die Tonspur eines Videos wird verwendet, wenn jedes Video in der Anfrage eine hat.
-
-Omni hat einen dokumentierten Kontext von 64.000 Tokens und kostet 0,15 USD pro Million aggregierter Eingabetokens. Medien-Tokens zählen zu Kontext und Abrechnung; Ausgaben sind kostenlos. Phaseo rechnet auf Basis des von Cloudflare gemeldeten Eingabeverbrauchs ab, ohne separate Audio- oder Videogebühren hinzuzufügen. Siehe den [Omni-Vertrag von Cloudflare](https://github.com/cloudflare/cloudflare-docs/blob/production/src/content/workers-ai-models/clef-omni.json).
+`respan/span-01:free` ist das kostenlose Lite-Modell mit Tageslimit und entspricht dem Respan-Modell `span-01-free`. `respan/span-01` entspricht `span-01-pro` und wird von Respan abgerechnet. Span-01 ist im Early Access: Respan muss es für deine Organisation freischalten, und du hinterlegst deinen Respan-API-Schlüssel als Respan-Anbieterzugangsdaten in Phaseo, bevor du eines der beiden Modelle aufrufst.

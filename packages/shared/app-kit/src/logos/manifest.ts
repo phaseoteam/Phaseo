@@ -17,6 +17,10 @@ export const logoManifest = {
 	dealignai: {
 		color: "/logos/dealignai.svg",
 	},
+	ricursive: {
+		light: "/logos/ricursive_light.svg",
+		dark: "/logos/ricursive_dark.svg",
+	},
 	apodex: {
 		light: "/logos/apodex_light.svg",
 		dark: "/logos/apodex_dark.svg",
@@ -478,6 +482,10 @@ export const logoManifest = {
 	llmgateway: {
 		light: "/logos/llmgateway-light.svg",
 		dark: "/logos/llmgateway-dark.svg",
+	},
+	parallel: {
+		light: "/logos/parallel_light.svg",
+		dark: "/logos/parallel_dark.svg",
 	},
 	parasail: {
 		light: "/logos/parasail_light.svg",

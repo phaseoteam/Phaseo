@@ -1,48 +1,48 @@
 ---
 icon: "server-cog"
-title: "Serverwerkzeuge"
+title: "Server-Tools"
 description: "Lass Modelle während einer Anfrage von Phaseo betriebene Tools aufrufen."
 ---
 
-Server-Tools werden während einer Modellanfrage von Phaseo ausgeführt. Das Modell entscheidet, wann es sie aufruft; Phaseo führt sie serverseitig aus und gibt das Ergebnis an den Modellablauf zurück.
+Füge `tools` ein `phaseo:`-Tool hinzu, dann führt Phaseo es für dich aus, wenn das Modell es aufruft: Das Modell fragt nach der aktuellen Uhrzeit, einer Websuche oder der Meinung eines zweiten Modells, Phaseo führt den Aufruf aus, gibt das Ergebnis zurück, und das Modell beendet seine Antwort. Du schreibst keinen eigenen Tool-Executor.
 
-Nutze Server-Tools, wenn das Modell die aktuelle Uhrzeit, Webkontext, abgerufenen Seitentext oder den Rat eines zweiten Modells benötigt, ohne einen eigenen Tool-Executor hinzuzufügen.
+```mermaid
+flowchart LR
+  req["Deine Anfrage mit phaseo:-Tools"] --> model["Modell"]
+  model -->|"Ruft ein phaseo:-Tool auf"| run["Phaseo führt das Tool aus"]
+  run -->|"Tool-Ergebnis"| model
+  model -->|"Ruft dein Funktions-Tool auf"| you["Zurück an deine App"]
+  model -->|"Endgültige Antwort"| out["Antwort"]
+```
 
 <Note>
-Server-Tools befinden sich in der Beta. Anfrageformate und Ergebnisdaten können sich ändern, wenn sich die Provider-Unterstützung weiterentwickelt.
+Server-Tools befinden sich in der Beta. Anfrageformate und Ergebnis-Payloads können sich ändern, wenn sich die Unterstützung durch die Anbieter ändert.
 </Note>
 
 ## Verfügbare Tools
 
-| Tool | Typ | Verwendung |
-| --- | --- | --- |
-| Datum und Uhrzeit | `phaseo:datetime` | Aktuelles Datum und Uhrzeit in bis zu 5 Zeitzonen |
-| Websuche | `phaseo:web_search` | Modellgesteuerte Websuchen während einer Anfrage |
-| Webabruf | `phaseo:web_fetch` | Abrufen und Extrahieren von Text bestimmter URLs |
-| Advisor | `phaseo:advisor` | Ein weiteres Modell während der Generierung konsultieren |
-| Subagent | `phaseo:subagent` | Gezielte Aufgaben an ein Arbeitsmodell delegieren |
-| Fusion | `phaseo:fusion` | Parallele Analyse mit anschließender Synthese durch das Modell |
-| Modelle suchen | `phaseo:search_models` | Geeignete Modelle im aktuellen Katalog finden |
-| Bildgenerierung | `phaseo:image_generation` | Bilder über den Tool-Ablauf des Modells erstellen |
-| Patch anwenden | `phaseo:apply_patch` | Validierte Datei-Patches über die Responses-API erstellen |
+| Tool | Typ | Wofür | Endpunkte |
+| --- | --- | --- | --- |
+| [Datetime](./datetime) | `phaseo:datetime` | Aktuelles Datum und aktuelle Uhrzeit in bis zu 5 Zeitzonen | Alle drei |
+| [Websuche](./web-search) | `phaseo:web_search` | Im Web nach aktuellen oder belegten Informationen suchen | Alle drei |
+| [Web Fetch](./web-fetch) | `phaseo:web_fetch` | Den Text einer bestimmten URL lesen | Alle drei |
+| [Advisor](./advisor) | `phaseo:advisor` | Ein anderes Modell um eine Prüfung oder einen Plan bitten | Alle drei |
+| [Subagent](./subagent) | `phaseo:subagent` | Eine abgeschlossene Aufgabe an ein Worker-Modell übergeben | Alle drei |
+| [Fusion](./fusion) | `phaseo:fusion` | Analysen mehrerer Modelle einholen, dann eine Synthese | Alle drei |
+| [Modellsuche](./search-models) | `phaseo:search_models` | Ein Modell im Live-Katalog von Phaseo finden | Alle drei |
+| [Bildgenerierung](./image-generation) | `phaseo:image_generation` | Während der Antwort ein Bild erstellen | Alle drei |
+| [Apply Patch](./apply-patch) | `phaseo:apply_patch` | Validierte Datei-Patches zurückgeben | Nur `/v1/responses` |
 
-## Funktionsweise der Server-Tools
+„Alle drei“ bedeutet `/v1/chat/completions`, `/v1/responses` und `/v1/messages`.
 
-1. Füge dem Array `tools` ein oder mehrere Server-Tools hinzu.
-2. Das Modell entscheidet, ob es ein Tool benötigt, und gibt einen Tool-Aufruf aus.
-3. Phaseo fängt den Aufruf des Server-Tools ab, führt es aus und sendet das Ergebnis an das Modell zurück.
-4. Das Modell fährt fort und formuliert die endgültige Antwort.
-
-Server-Tools lassen sich mit eigenen Funktionstools kombinieren. Phaseo führt nur die Server-Tools aus; reguläre `function`-Aufrufe verarbeitet weiterhin deine Anwendung.
-
-## Schnellstart
+## Eine Anfrage senden
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "What are the latest AI policy updates this week?" }
     ],
@@ -53,11 +53,15 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-## Mit Funktionstools kombinieren
+Jedes Tool nimmt ein optionales `parameters`-Objekt, das auf seiner Seite beschrieben ist. `stream: true` funktioniert ebenfalls: Phaseo führt die Tool-Runden selbst aus und streamt dir die endgültige Antwort.
+
+## Server-Tools mit eigenen Funktionen kombinieren
+
+Phaseo führt nur die `phaseo:`-Tools aus. Ein reguläres `function`-Tool in derselben Anfrage wird wie gewohnt an deine App zurückgegeben, und du sendest sein Ergebnis in einer Folgeanfrage zurück, wie unter [Tool-Aufrufe](../tool-calling) beschrieben.
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "messages": [
     { "role": "user", "content": "Find recent funding news and save the best item." }
   ],
@@ -82,21 +86,17 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-Ruft das Modell `phaseo:web_search` auf, führt Phaseo diesen Aufruf automatisch aus. Bei `save_research_item` empfängt deine Anwendung den Funktionsaufruf und muss das Funktionsergebnis in einer Folgeanfrage zurückgeben.
+## Grenzen der Tool-Schleife
 
-## Unterstützte Endpunkte
+| Grenze | Wert | Wenn sie erreicht wird |
+| --- | --- | --- |
+| Server-Tool-Aufrufe pro Anfrage | `max_tool_calls` in der Anfrage, Standard `30`, Maximum `100` | `400 gateway_server_tool_limit` |
+| Folgerunden | `8` | `502 gateway_server_tool_error` |
+| Aufrufe eines Tools | `max_uses` dieses Tools | Das Tool gibt dem Modell ein Fehlerergebnis zurück, und das Modell kann ohne es weitermachen |
 
-Server-Tools werden unterstützt unter:
+## Nutzung und Preise
 
-- `/v1/chat/completions`
-- `/v1/responses`
-- `/v1/messages`
-
-Streaming-Anfragen werden unterstützt. Bei gatewayverwalteten Server-Tools kann Phaseo den vorgelagerten Tool-Aufruf-Zug materialisieren, das Tool ausführen, den Ablauf fortsetzen und einen synthetischen Stream für die endgültige Antwort ausgeben.
-
-## Nutzungsverfolgung
-
-Die Nutzung von Server-Tools wird unter `usage.server_tool_use` gemeldet:
+Jedes Server-Tool fügt `usage.server_tool_use` einen Zähler hinzu, und die Preiskarte eines Modells kann den passenden Preiszähler abrechnen. Tokens, die ein zweites Modell verbraucht (Advisor, Subagent, Fusion, Bildgenerierung), werden zur Nutzung der Anfrage addiert und zu den Preisen dieses Modells berechnet.
 
 ```json
 {
@@ -106,48 +106,22 @@ Die Nutzung von Server-Tools wird unter `usage.server_tool_use` gemeldet:
     "server_tool_use": {
       "datetime_requests": 1,
       "web_search_requests": 2,
-      "web_search_results": 8,
-      "web_fetch_requests": 1,
-      "advisor_requests": 1,
-      "subagent_requests": 1,
-      "fusion_requests": 1,
-      "search_models_requests": 1,
-      "image_generation_requests": 1
+      "web_search_results": 8
     }
   }
 }
 ```
 
-Wenn sie in den Modellpreiskarten konfiguriert sind, können für die Abrechnung auch Server-Tool-Meter wie `server_tool_web_search_requests`, `server_tool_web_search_extra_results`, `server_tool_web_fetch_requests`, `server_tool_advisor_requests`, `server_tool_image_generation_requests`, `native_web_search_requests` und `native_web_fetch_requests` verwendet werden.
+| Tool | Nutzungszähler | Preiszähler |
+| --- | --- | --- |
+| Datetime | `datetime_requests` | Keiner |
+| Websuche | `web_search_requests`, `web_search_results`, `web_search_extra_results` | `server_tool_web_search_requests`, `server_tool_web_search_extra_results` |
+| Web Fetch | `web_fetch_requests` | `server_tool_web_fetch_requests` |
+| Advisor | `advisor_requests` | `server_tool_advisor_requests` |
+| Subagent | `subagent_requests` | `server_tool_subagent_requests` |
+| Fusion | `fusion_requests` | `server_tool_fusion_requests` |
+| Modellsuche | `search_models_requests` | `server_tool_search_models_requests` |
+| Bildgenerierung | `image_generation_requests` | `server_tool_image_generation_requests` |
+| Apply Patch | `apply_patch_requests` | `server_tool_apply_patch_requests` |
 
-## Tool-Seiten
-
-<Columns cols={2}>
-  <Card title="Datum und Uhrzeit" icon="clock" href="./datetime.mdx">
-    Gib dem Modell das aktuelle Datum und die Uhrzeit.
-  </Card>
-  <Card title="Websuche" icon="search" href="./web-search.mdx">
-    Lass das Modell im Web suchen, wenn es aktuelle Informationen benötigt.
-  </Card>
-  <Card title="Webabruf" icon="file-search" href="./web-fetch.mdx">
-    Lass das Modell bestimmte URLs abrufen und lesen.
-  </Card>
-  <Card title="Advisor" icon="message-square" href="./advisor.mdx">
-    Lass ein Modell während der Generierung ein anderes Modell um Rat fragen.
-  </Card>
-  <Card title="Subagent" icon="cpu" href="./subagent.mdx">
-    Lass das Modell gezielte Aufgaben an ein Arbeitsmodell delegieren.
-  </Card>
-  <Card title="Fusion" icon="combine" href="./fusion.mdx">
-	Führe parallele Modellanalysen durch und fasse die Ergebnisse zusammen.
-  </Card>
-	<Card title="Modelle suchen" icon="list-filter" href="./search-models.mdx">
-		Lass das Modell im aktuellen Phaseo-Katalog nach einem passenden Modell suchen.
-	</Card>
-  <Card title="Bildgenerierung" icon="image" href="./image-generation.mdx">
-    Lass das Modell während der Antwort Bilder erstellen.
-  </Card>
-	<Card title="Patch anwenden" icon="file-diff" href="./apply-patch.mdx">
-		Erstelle einen validierten Patch zum Anlegen, Ändern oder Löschen.
-	</Card>
-</Columns>
+Läuft Websuche oder Web Fetch als eigenes Tool des Anbieters (`engine: "native"`), wird stattdessen über `native_web_search_requests` bzw. `native_web_fetch_requests` abgerechnet.

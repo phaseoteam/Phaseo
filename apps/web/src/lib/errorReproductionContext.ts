@@ -98,7 +98,7 @@ export function buildErrorReproductionContext(sessionId?: string): Record<string
 	if (typeof window === "undefined") {
 		return {
 			environment: process.env.NODE_ENV,
-			release: process.env.NEXT_PUBLIC_RELEASE,
+			release: process.env.PUBLIC_RELEASE,
 		};
 	}
 
@@ -110,14 +110,14 @@ export function buildErrorReproductionContext(sessionId?: string): Record<string
 
 	return {
 		api_failures: getRecentApiFailures(),
-		deploy_time: process.env.NEXT_PUBLIC_DEPLOY_TIME,
+		deploy_time: process.env.PUBLIC_DEPLOY_TIME,
 		environment: process.env.NODE_ENV,
 		locale: navigator.language,
 		online: navigator.onLine,
 		path: location.path,
 		query_keys: location.queryKeys,
 		referrer_path: location.referrerPath,
-		release: process.env.NEXT_PUBLIC_RELEASE,
+		release: process.env.PUBLIC_RELEASE,
 		session_id: sessionId,
 		timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
 		viewport: `${window.innerWidth}x${window.innerHeight}`,

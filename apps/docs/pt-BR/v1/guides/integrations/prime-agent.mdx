@@ -1,43 +1,44 @@
 ---
 title: "Prime Agent"
 icon: "/icons/brands/prime-agent.svg"
-description: "Conecte um catálogo de modelos Prime Agent instalado ao Phaseo."
+description: "Conecte o catálogo de modelos de um Prime Agent instalado ao Phaseo."
 ---
 
-## Configurar com a CLI do Phaseo
+Execute `phaseo prime-agent` para adicionar ao Prime Agent um provedor Phaseo com todos os modelos compatíveis do Phaseo. O Prime Agent roda no macOS e no Linux; no Windows, instale-o e execute a configuração dentro do WSL.
 
-Estes comandos prontos para produção exigem uma conta do Phaseo; a CLI cria a credencial exclusiva do gateway durante o login e a configuração.
+## Configure com a CLI do Phaseo
 
 ```bash
 phaseo login
 phaseo prime-agent
 ```
 
-Instale primeiro o Prime Agent pela versão oficial. A configuração grava um provedor `phaseo` gerenciado em `~/.prime/agent/models.json`. Ele disponibiliza todos os modelos de texto ativos do Phaseo compatíveis com Chat Completions e obtém a chave de API exclusiva pela CLI do Phaseo no momento de cada solicitação.
+Se o Prime Agent não estiver instalado, a CLI mostra o comando do instalador oficial e pede confirmação antes de executá-lo. Em seguida, a configuração cria uma `Phaseo CLI: Prime Agent API Key` (expira em 90 dias, limite de gastos mensal de $100) e grava um provedor `phaseo` em `~/.prime/agent/models.json`. O provedor lista todos os modelos de texto ativos do Phaseo que funcionam com Chat Completions.
 
-Atualmente, o Prime Agent oferece suporte a macOS e Linux. No Windows, execute a configuração no WSL depois de instalar o executável nele.
+| Flag | Efeito |
+| --- | --- |
+| `--model <id>` | Define o modelo inicial. O padrão é `anthropic/claude-sonnet-4.6`. |
+| `--catalog default` | Adiciona só o modelo selecionado. |
+| `--dry-run` | Mostra as alterações nos arquivos sem aplicá-las. |
 
-Escolha uma entrada inicial do catálogo ou configure apenas um modelo, se necessário:
-
-```bash
-phaseo prime-agent --model anthropic/claude-sonnet-4.6
-phaseo prime-agent --catalog default
-```
-
-## Iniciar e verificar
-
-```bash
-prime-agent
-```
-
-Abra `/model`, selecione o provedor `phaseo` e envie uma solicitação simples. O provedor gerado usa o formato de chave baseado em comando aceito pelo Prime Agent:
+O provedor obtém a chave no momento da solicitação com o formato de chave baseado em comando do Prime Agent, então nenhuma chave em texto puro é gravada no arquivo:
 
 ```text
 !phaseo integrations credential prime-agent
 ```
 
-Remova somente o provedor gerenciado pelo Phaseo e revogue sua chave exclusiva com:
+## Confira se funciona
+
+```bash
+prime-agent
+```
+
+Abra `/model`, selecione o provedor `phaseo` e envie um prompt curto. Confirme que a solicitação aparece em **Configurações → Uso → Registros**.
+
+## Remova o Phaseo
 
 ```bash
 phaseo integrations remove prime-agent
 ```
+
+Isso remove só o provedor do Phaseo e revoga a chave.

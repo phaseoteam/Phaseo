@@ -34,7 +34,7 @@ If a backup is added later, they need access to every service Phaseo runs on: Gi
    - Upstream providers: `https://phaseo.app/api/_web/status/providers` summarises the public status feeds of the largest providers, then check the provider's own status page.
    - Database: Supabase dashboard for the production project. Check memory, swap and disk IO before blaming a query. Read-only queries only, one at a time, with a `limit`.
 6. **Stop the damage:**
-   - **Bad web deploy:** in Vercel, open the project's Deployments, pick the last good production deployment and use Instant Rollback (or `vercel rollback`). Vercel then stops promoting new production deployments automatically; promote the fixed one when it is ready.
+   - **Bad web deploy:** from `apps/web`, run `pnpm exec wrangler rollback --name phaseo-web` (or roll back in the Cloudflare dashboard under the `phaseo-web` Worker's Deployments). The next green CI run on `main` deploys again, so revert or fix the change at the source too.
    - **Bad Worker deploy:** from `apps/api`, run `pnpm exec wrangler rollback --config wrangler.toml`, then the same with `wrangler.eu.toml` and `wrangler.us.toml`. From `apps/web-api`, `pnpm exec wrangler rollback`. Check the [deploy scripts](../../apps/api/scripts/deploy-global.ps1) for any secret the rolled-back version still needs. Rollback doesn't undo Durable Object migrations: if the bad deploy added a `[[migrations]]` entry in `wrangler.toml`, rolling back past it can fail, so revert at the source instead.
    - **Bad migration:** there is no automatic rollback. Write a forward-fix migration and ship it through a pull request.
    - **Revert at the source:** revert the merge commit in a pull request. Merging it redeploys everything through CI. Running CI on `main` by hand with `deploy_production` set is not a quick redeploy: it does nothing unless the `ENABLE_PRODUCTION_DB_MIGRATIONS` variable is `true`, and when it is, it applies pending production migrations first and then redeploys every service (web, the three gateways, Web API, MCP, Slack agent and docs).
@@ -96,9 +96,9 @@ Fixes shipped, with pull request links, and follow-up issues with owners.
 
 How money goes back today:
 
-- **Self-serve refunds:** a customer can refund a whole top-up within 24 hours if the credit from it hasn't been used ([refund route](../../apps/web/src/app/api/stripe/refunds/request/route.ts)). This doesn't help after an incident that consumed credit.
+- **Self-serve refunds:** a customer can refund a whole top-up within 24 hours if the credit from it hasn't been used ([refund route](../../apps/web/src/routes/api/stripe/refunds/request/index.ts)). This doesn't help after an incident that consumed credit.
 - **Credit codes:** `/internal/credits` creates a promo code with an amount, a redemption limit and an expiry. Send the code to the affected workspace by email.
-- **Ledger adjustments:** the credit ledger supports `grant`, `refund` and `adjustment` entries ([v2_credit_ledger.sql](../../supabase/schemas/public/tables/v2_credit_ledger.sql)), but there is no admin tool to add one to a single workspace, so use credit codes for now.
+- **Ledger adjustments:** balances live in `wallets` and `credit_ledger` ([credit_ledger.sql](../../supabase/schemas/public/tables/credit_ledger.sql)), but there is no admin tool to add an adjustment entry for a single workspace, so use credit codes for now.
 - **Card refunds** beyond the self-serve window go through the Stripe dashboard.
 
 When Phaseo gives money back:
@@ -123,12 +123,12 @@ When Phaseo gives money back:
 | Alerts to Linear | `POST /internal/observability-incidents` on the gateway turns PostHog and Axiom alerts into deduplicated Linear Triage issues (not yet tested end to end with a real alert from either); [observability-incidents.ts](../../apps/api/src/routes/internal/observability-incidents.ts), setup in the [API README](../../apps/api/README.md#observability-incident-triage) |
 | Uptime monitors | Instatus, alerting through incident.io; see [Outage alerts](#outage-alerts) |
 | Public probes | "Phaseo Health Pilot" workflow, run by hand; [health-pilot.yml](../../.github/workflows/health-pilot.yml). It creates no incidents. |
-| Provider routing health | Circuit breaker settings in [health.config.ts](../../apps/api/src/pipeline/execute/health.config.ts); shared state in [routing-health-durable-object.ts](../../apps/api/src/core/routing-health-durable-object.ts) |
+| Provider routing health | Circuit breaker settings in [health.config.ts](../../apps/api/src/pipeline/execute/health.config.ts); shared state in [routing-health-durable-object.ts](../../apps/api/src/core/routing-health-durable-object.ts). Each breaker's last transition (state, reason, open until) is in `gateway_provider_health_states`, which also drives the provider badges on model pages; the live evidence is the KV key `gw:health:v2:<endpoint>:<model>`. Per-attempt outcomes, latency and errors are in `v2_request_attempts`. An open breaker recovers by itself after its cooldown through sampled probe requests; use route switches to take a provider out by hand. |
 | Route switches | `/internal/data/models/edit/<model id>` |
 | Cache purge | `/internal/cache` |
 | Key leak response | `/internal/key-incidents` |
 | Credit codes | `/internal/credits` |
-| Deploys | [ci.yml](../../.github/workflows/ci.yml) `deploy (…)` jobs; Vercel for the web app; Cloudflare for the Workers |
+| Deploys | [ci.yml](../../.github/workflows/ci.yml) `deploy (…)` jobs; Cloudflare for the web app and the other Workers |
 | Discord webhooks | `DISCORD_SIGNUP_WEBHOOK_URL` (signups, deletions, Slack agent installs) and `DISCORD_BILLING_WEBHOOK_URL` (checkouts, purchases). Neither sends outage alerts; those come from incident.io. |
 | Support | `support@phaseo.app`, `https://phaseo.app/help` |
 

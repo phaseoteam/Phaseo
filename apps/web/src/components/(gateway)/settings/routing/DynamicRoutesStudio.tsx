@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useRef, useState, useTransition, type DragEvent as ReactDragEvent } from "react";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import {
@@ -47,7 +45,7 @@ import {
 	X,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { Controls } from "@/components/ai-elements/controls";
 import { Logo } from "@/components/Logo";
@@ -79,7 +77,7 @@ import {
 	deployDynamicRouteVersionAction,
 	deleteDynamicRouteAction,
 	updateDynamicRouteAction,
-} from "@/app/(dashboard)/settings/routing/actions";
+} from "@/features/settings/routing/actions";
 import "@xyflow/react/dist/style.css";
 import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
@@ -564,7 +562,7 @@ export default function DynamicRoutesStudio({ initialData, demoMode = false }: {
 			setRoutes((current) => [route, ...current]); setSelectedRouteId(id); setSelectedNodeId("start"); setTab("editor");
 		};
 	if (demoMode) { createLocal(crypto.randomUUID(), 1); toast.success(rs("draftCreated")); return; }
-	startTransition(async () => { try { const config = newConfig(); const created = await createDynamicRouteAction({ name: rs("titleNewRoute", { number: routes.length + 1 }), description: null, config }); createLocal(created.id, created.version); router.refresh(); } catch (error) { toast.error(localizedSettingsError(error, settingsT, "Action failed", rs("couldNotCreate"))); } });
+	startTransition(async () => { try { const config = newConfig(); const created = await createDynamicRouteAction({ data: { name: rs("titleNewRoute", { number: routes.length + 1 }), description: null, config } }); createLocal(created.id, created.version); router.refresh(); } catch (error) { toast.error(localizedSettingsError(error, settingsT, "Action failed", rs("couldNotCreate"))); } });
 	}
 
 	function saveRoute() {
@@ -574,21 +572,21 @@ export default function DynamicRoutesStudio({ initialData, demoMode = false }: {
 			return { ...route, version: nextVersion, updated_at: savedAt, versions: [{ version: nextVersion, status: "draft", created_at: savedAt }, ...(route.versions ?? []).filter((version) => version.version !== nextVersion).map((version) => version.status === "draft" ? { ...version, status: "superseded" as const } : version)] };
 		});
 		if (demoMode) { saveLocal(); toast.success(rs("draftSaved")); return; }
-		startTransition(async () => { try { const [saved] = await Promise.all([updateDynamicRouteAction(selectedRoute.id, { name: selectedRoute.name, description: selectedRoute.description, status: selectedRoute.status, config: selectedRoute.config }), attachDynamicRouteKeysAction(selectedRoute.id, selectedRoute.keyIds)]); saveLocal(saved.version); toast.success(rs("draftSaved")); router.refresh(); } catch (error) { toast.error(localizedSettingsError(error, settingsT, "Action failed", rs("couldNotSave"))); } });
+		startTransition(async () => { try { const [saved] = await Promise.all([updateDynamicRouteAction({ data: { routeId: selectedRoute.id, input: { name: selectedRoute.name, description: selectedRoute.description, status: selectedRoute.status, config: selectedRoute.config } } }), attachDynamicRouteKeysAction({ data: { routeId: selectedRoute.id, keyIds: selectedRoute.keyIds } })]); saveLocal(saved.version); toast.success(rs("draftSaved")); router.refresh(); } catch (error) { toast.error(localizedSettingsError(error, settingsT, "Action failed", rs("couldNotSave"))); } });
 	}
 
 	function deleteRoute() {
 		if (!selectedRoute) return;
 		const remove = () => { const remaining = routes.filter((route) => route.id !== selectedRoute.id); setRoutes(remaining); setSelectedRouteId(remaining[0]?.id ?? null); setSelectedNodeId(remaining[0]?.config.entryNodeId ?? null); };
 		if (demoMode) { remove(); toast.success(rs("routeDeleted")); return; }
-		startTransition(async () => { try { await deleteDynamicRouteAction(selectedRoute.id, selectedRoute.name); remove(); router.refresh(); } catch (error) { toast.error(localizedSettingsError(error, settingsT, "Action failed", rs("couldNotDelete"))); } });
+		startTransition(async () => { try { await deleteDynamicRouteAction({ data: { routeId: selectedRoute.id, confirmName: selectedRoute.name } }); remove(); router.refresh(); } catch (error) { toast.error(localizedSettingsError(error, settingsT, "Action failed", rs("couldNotDelete"))); } });
 	}
 
 	function deployVersion(version: number) {
 		if (!selectedRoute) return;
 		const deployLocal = () => replaceSelected((route) => ({ ...route, deployed_version: version, versions: (route.versions ?? []).map((item) => ({ ...item, status: item.version === version ? "deployed" as const : item.status === "deployed" ? "superseded" as const : item.status })) }));
 		if (demoMode) { deployLocal(); toast.success(rs("versionDeployedLocally", { version })); return; }
-		startTransition(async () => { try { await deployDynamicRouteVersionAction(selectedRoute.id, version); deployLocal(); toast.success(rs("versionDeployed", { version })); router.refresh(); } catch (error) { toast.error(localizedSettingsError(error, settingsT, "Action failed", rs("couldNotDeploy"))); } });
+		startTransition(async () => { try { await deployDynamicRouteVersionAction({ data: { routeId: selectedRoute.id, version } }); deployLocal(); toast.success(rs("versionDeployed", { version })); router.refresh(); } catch (error) { toast.error(localizedSettingsError(error, settingsT, "Action failed", rs("couldNotDeploy"))); } });
 	}
 
 	function renderEditorSurface() {
@@ -655,9 +653,34 @@ export default function DynamicRoutesStudio({ initialData, demoMode = false }: {
 				</DialogContent>
 			</Dialog>
 
-			{tab === "versions" ? <div className="mx-auto min-h-0 w-full max-w-4xl overflow-y-auto py-5"><div className="flex items-start justify-between"><div><h2 className="text-lg font-semibold">{rs("versionHistory")}</h2><p className="mt-1 text-sm text-muted-foreground">{rs("versionHistoryDescription")}</p></div><Button onClick={() => deployVersion(selectedRoute.version)}><Rocket className="size-4" />{rs("deployVersion", { version: selectedRoute.version })}</Button></div><div className="mt-4 divide-y border-y">{(selectedRoute.versions?.length ? selectedRoute.versions : [{ version: selectedRoute.version, status: "draft" as const, created_at: selectedRoute.updated_at }]).map((version) => <div key={`${version.version}-${version.created_at}`} className="flex items-center gap-4 p-4"><div className="grid size-9 place-items-center rounded-lg bg-muted"><History className="size-4" /></div><div className="flex-1"><div className="flex items-center gap-2"><p className="text-sm font-medium">{rs("version", { version: version.version })}</p><Badge variant="outline">{rs(version.status as never)}</Badge></div><p className="mt-1 text-xs text-muted-foreground">{new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(version.created_at))}</p></div>{version.status !== "deployed" ? <Button size="sm" variant="outline" onClick={() => deployVersion(version.version)}>{rs("deploy")}</Button> : <span className="flex items-center gap-1 text-xs text-emerald-500"><Check className="size-3.5" />{rs("live")}</span>}</div>)}</div></div> : null}
+			{tab === "versions" ? <div className="min-h-0 w-full max-w-4xl overflow-y-auto py-5"><div className="flex flex-wrap items-start justify-between gap-4"><div><h2 className="text-lg font-semibold">{rs("versionHistory")}</h2><p className="mt-1 text-sm text-muted-foreground">{rs("versionHistoryDescription")}</p></div><Button onClick={() => deployVersion(selectedRoute.version)}><Rocket className="size-4" />{rs("deployVersion", { version: selectedRoute.version })}</Button></div><div className="mt-4 divide-y border-y">{(selectedRoute.versions?.length ? selectedRoute.versions : [{ version: selectedRoute.version, status: "draft" as const, created_at: selectedRoute.updated_at }]).map((version) => <div key={`${version.version}-${version.created_at}`} className="flex items-center gap-4 p-4"><div className="grid size-9 place-items-center rounded-lg bg-muted"><History className="size-4" /></div><div className="flex-1"><div className="flex items-center gap-2"><p className="text-sm font-medium">{rs("version", { version: version.version })}</p><Badge variant="outline">{rs(version.status as never)}</Badge></div><p className="mt-1 text-xs text-muted-foreground">{new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(version.created_at))}</p></div>{version.status !== "deployed" ? <Button size="sm" variant="outline" onClick={() => deployVersion(version.version)}>{rs("deploy")}</Button> : <span className="flex items-center gap-1 text-xs text-emerald-500"><Check className="size-3.5" />{rs("live")}</span>}</div>)}</div></div> : null}
 
-			{tab === "settings" ? <div className="mx-auto grid min-h-0 w-full max-w-4xl gap-8 overflow-y-auto py-5 md:grid-cols-2"><div className="space-y-5"><div><h2 className="text-lg font-semibold">{rs("routeDetails")}</h2><p className="mt-1 text-sm text-muted-foreground">{rs("routeDetailsDescription")}</p></div><div className="space-y-2"><Label>{rs("name")}</Label><Input value={selectedRoute.name} onChange={(event) => replaceSelected((route) => ({ ...route, name: event.target.value }))} /></div><div className="space-y-2"><Label>{rs("description")}</Label><Textarea value={selectedRoute.description ?? ""} onChange={(event) => replaceSelected((route) => ({ ...route, description: event.target.value }))} /></div><div className="flex items-center justify-between rounded-lg border p-4"><div><p className="text-sm font-medium">{rs("cacheAwareRouting")}</p><p className="text-xs text-muted-foreground">{rs("cacheAwareRoutingDescription")}</p></div><Switch checked={config.cacheAwareRouting !== false} onCheckedChange={(cacheAwareRouting) => updateConfig((current) => ({ ...current, cacheAwareRouting }))} /></div><div className="flex items-center justify-between rounded-lg border p-4"><div><p className="text-sm font-medium">{rs("sessionAffinity")}</p><p className="text-xs text-muted-foreground">{rs("sessionAffinityDescription")}</p></div><Switch checked={config.sessionAffinity !== false} onCheckedChange={(sessionAffinity) => updateConfig((current) => ({ ...current, sessionAffinity }))} /></div></div><div><div><h2 className="text-lg font-semibold">{rs("attachApiKeys")}</h2><p className="mt-1 text-sm text-muted-foreground">{rs("attachApiKeysDescription")}</p></div><Popover><PopoverTrigger asChild><Button variant="outline" className="mt-4 w-full justify-between"><span className="flex items-center gap-2"><KeyRound className="size-4" />{rs("keysAttached", { count: selectedRoute.keyIds.length })}</span><ChevronsUpDown className="size-4" /></Button></PopoverTrigger><PopoverContent align="start" className="w-80 max-w-[calc(100vw-2rem)] p-0"><Command><CommandInput placeholder={rs("searchKeys")} /><CommandList className="max-h-64"><CommandEmpty>{rs("noKeys")}</CommandEmpty><CommandGroup>{initialData.keys.map((key) => { const active = selectedRoute.keyIds.includes(key.id); return <CommandItem key={key.id} value={`${key.id} ${key.name} ${key.prefix}`} onSelect={() => replaceSelected((route) => ({ ...route, keyIds: active ? route.keyIds.filter((id) => id !== key.id) : [...route.keyIds, key.id] }))}><Check className={cn("size-4 shrink-0", !active && "opacity-0")} /><div className="min-w-0 flex-1"><p className="truncate">{key.name}</p><p className="text-xs text-muted-foreground">{key.prefix}</p></div><span className="sr-only">{active ? rs("attached") : rs("notAttached")}</span></CommandItem>; })}</CommandGroup></CommandList></Command></PopoverContent></Popover><Button variant="destructive" className="mt-8" onClick={deleteRoute}><Trash2 className="size-4" />{rs("deleteRoute")}</Button></div></div> : null}
+			{tab === "settings" ? <div className="min-h-0 min-w-0 w-full max-w-4xl space-y-8 overflow-y-auto py-5">
+				<section className="space-y-5">
+					<div><h2 className="text-base font-semibold">{rs("routeDetails")}</h2><p className="mt-1 text-sm text-muted-foreground">{rs("routeDetailsDescription")}</p></div>
+					<div className="grid gap-3 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-center sm:gap-8">
+						<Label htmlFor="dynamic-route-name">{rs("name")}</Label>
+						<Input id="dynamic-route-name" value={selectedRoute.name} onChange={(event) => replaceSelected((route) => ({ ...route, name: event.target.value }))} />
+					</div>
+					<div className="grid gap-3 border-t border-border/60 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:gap-8">
+						<Label htmlFor="dynamic-route-description">{rs("description")}</Label>
+						<Textarea id="dynamic-route-description" value={selectedRoute.description ?? ""} onChange={(event) => replaceSelected((route) => ({ ...route, description: event.target.value }))} />
+					</div>
+					<div className="flex items-center justify-between gap-4 border-t border-border/60 py-5">
+						<div><Label htmlFor="dynamic-route-cache">{rs("cacheAwareRouting")}</Label><p className="mt-1 text-sm text-muted-foreground">{rs("cacheAwareRoutingDescription")}</p></div>
+						<Switch id="dynamic-route-cache" checked={config.cacheAwareRouting !== false} onCheckedChange={(cacheAwareRouting) => updateConfig((current) => ({ ...current, cacheAwareRouting }))} />
+					</div>
+					<div className="flex items-center justify-between gap-4 border-t border-border/60 py-5">
+						<div><Label htmlFor="dynamic-route-affinity">{rs("sessionAffinity")}</Label><p className="mt-1 text-sm text-muted-foreground">{rs("sessionAffinityDescription")}</p></div>
+						<Switch id="dynamic-route-affinity" checked={config.sessionAffinity !== false} onCheckedChange={(sessionAffinity) => updateConfig((current) => ({ ...current, sessionAffinity }))} />
+					</div>
+				</section>
+				<section className="grid gap-3 border-t border-border/60 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:gap-8">
+					<div><h2 className="text-base font-semibold">{rs("attachApiKeys")}</h2><p className="mt-1 text-sm text-muted-foreground">{rs("attachApiKeysDescription")}</p></div>
+					<Popover><PopoverTrigger asChild><Button variant="outline" className="w-full justify-between"><span className="flex items-center gap-2"><KeyRound className="size-4" />{rs("keysAttached", { count: selectedRoute.keyIds.length })}</span><ChevronsUpDown className="size-4" /></Button></PopoverTrigger><PopoverContent align="start" className="w-80 max-w-[calc(100vw-2rem)] p-0"><Command><CommandInput placeholder={rs("searchKeys")} /><CommandList className="max-h-64"><CommandEmpty>{rs("noKeys")}</CommandEmpty><CommandGroup>{initialData.keys.map((key) => { const active = selectedRoute.keyIds.includes(key.id); return <CommandItem key={key.id} value={`${key.id} ${key.name} ${key.prefix}`} onSelect={() => replaceSelected((route) => ({ ...route, keyIds: active ? route.keyIds.filter((id) => id !== key.id) : [...route.keyIds, key.id] }))}><Check className={cn("size-4 shrink-0", !active && "opacity-0")} /><div className="min-w-0 flex-1"><p className="truncate">{key.name}</p><p className="text-xs text-muted-foreground">{key.prefix}</p></div><span className="sr-only">{active ? rs("attached") : rs("notAttached")}</span></CommandItem>; })}</CommandGroup></CommandList></Command></PopoverContent></Popover>
+				</section>
+				<div className="border-t border-border/60 py-5"><Button variant="destructive" onClick={deleteRoute}><Trash2 className="size-4" />{rs("deleteRoute")}</Button></div>
+			</div> : null}
 
 		</section>
 	);

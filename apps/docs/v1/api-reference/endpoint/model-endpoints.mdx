@@ -6,58 +6,46 @@ description: "Inspect the provider routes, modalities, parameters, availability,
 "og:image": "https://phaseo.app/og/dynamic?title=List%20model%20endpoint%20capabilities&description=Inspect%20the%20provider%20routes%2C%20modalities%2C%20parameters%2C%20availability%2C%20and%20pricing%20available%20for%20one%20model.&pathname=/docs/v1/api-reference/endpoint/model-endpoints"
 ---
 
-Use this endpoint before sending a request when your application needs to confirm that a model, provider, endpoint, and parameter combination is available.
-
-For `openai/gpt-5.4-mini`, use:
+Call this endpoint before sending a request to confirm that a model, provider, endpoint and parameter combination is available. For `openai/gpt-6-astra`:
 
 ```bash
-curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints" \
+curl "https://api.phaseo.app/v1/models/openai/gpt-6-astra/endpoints" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-Each row represents one provider and endpoint capability. It includes:
+Each entry in `endpoints` is one provider route for one endpoint:
 
-- the canonical capability ID and public API path
-- the provider ID, name, and provider model slug
-- input and output modalities
-- supported parameter names and structured parameter detail
-- provider, model, capability, routing, and availability states
-- effective dates when the route is scheduled or time-bounded
-- an endpoint pricing summary
+| Field | Contains |
+| --- | --- |
+| `endpoint`, `capability_id`, `public_path`, `collection` | The canonical endpoint and capability IDs and the public API path |
+| `provider`, `model` | The provider ID and name, and the provider's model slug |
+| `routable`, `status`, `status_reason` | Whether the route takes traffic now, its availability, and why it is preview-only or inactive |
+| `modalities` | Input and output modalities |
+| `capabilities` | Supported parameter names and structured parameter detail |
+| `routing` | Provider, model and capability routing states |
+| `effective` | `from` and `to` dates when the route is scheduled or time-bounded |
+| `pricing` | The endpoint pricing summary |
+
+To compare models first, use [List models](./models.mdx); to see every endpoint the API exposes, use [List endpoints](./endpoints.mdx).
 
 ## Include planned and inactive routes
 
 The default `availability=active` only returns publicly routable rows. Use `availability=all` to inspect coming-soon and inactive routes:
 
 ```bash
-curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?availability=all" \
+curl "https://api.phaseo.app/v1/models/openai/gpt-6-astra/endpoints?availability=all" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-Do not route production traffic to a row unless `availability_status` is `active` and `is_active_gateway` is `true`.
+Only route production traffic to a row whose `routable` is `true` and `status` is `active`.
 
 ## Filter routes
 
-Use repeatable or comma-separated filters for:
+These filters accept repeated parameters or a comma-separated list: `provider`, `provider_status`, `provider_routing_status`, `model_routing_status`, `capability_status`, `provider_availability_status`, `provider_availability_reason`, `status`, and `supported_parameters` (alias `params`). [List models](./models.mdx#filter-the-list) describes their values.
 
-- `provider`
-- `provider_status`
-- `provider_routing_status`
-- `model_routing_status`
-- `capability_status`
-- `provider_availability_status`
-- `provider_availability_reason`
-- `status`
-- `supported_parameters`
-
-For example, this returns OpenAI routes that support `temperature`:
+This returns OpenAI routes that support `reasoning_effort`:
 
 ```bash
-curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?provider=openai&supported_parameters=temperature" \
+curl "https://api.phaseo.app/v1/models/openai/gpt-6-astra/endpoints?provider=openai&supported_parameters=reasoning_effort" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
-
-## Related endpoints
-
-- [List models](./models.mdx)
-- [List endpoints](./endpoints)

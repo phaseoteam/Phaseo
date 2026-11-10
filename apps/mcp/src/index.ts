@@ -1,7 +1,8 @@
 import { createMcpHandler } from "agents/mcp/server";
 import { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod/v4";
-import { registerModelExplorer, modelExplorerToolMeta } from "./model-explorer";
+import { resolveLogo } from "@phaseo/app-kit/logos";
+import { registerModelExplorer, modelExplorerToolMeta, modelCardToolMeta } from "./model-explorer";
 import { modelExplorerIcon } from "./generated/modelExplorerHtml";
 import { registerInference } from "./inference";
 import { MCP_MANAGEMENT_SCOPES, hasManagementConsent, registerManagementTools } from "./management";
@@ -194,6 +195,7 @@ const modelSummarySchema = {
 	gatewayAvailable: z.boolean(),
 	gatewayModelId: z.string().nullable(),
 	modelUrl: z.string(),
+	logo: z.object({ light: z.string(), dark: z.string() }).nullable(),
 	availableProviders: z.array(z.string()),
 	providerSupport: z.array(z.object({
 		providerId: z.string(),
@@ -298,6 +300,18 @@ function modelUrl(env: PhaseoEnv, modelId: string): string {
 	return new URL(`/models/${path}`, env.PHASEO_WEB_BASE_URL).toString();
 }
 
+// Organisation logos come from the website's logo set, so cards show the same marks as phaseo.app.
+function organisationLogo(env: PhaseoEnv, organisationId: string | null | undefined) {
+	if (!organisationId) return null;
+	const light = resolveLogo(organisationId, { theme: "light" }).src;
+	const dark = resolveLogo(organisationId, { theme: "dark" }).src;
+	if (!light && !dark) return null;
+	return {
+		light: new URL(light ?? dark!, env.PHASEO_WEB_BASE_URL).toString(),
+		dark: new URL(dark ?? light!, env.PHASEO_WEB_BASE_URL).toString(),
+	};
+}
+
 function modelSummary(env: PhaseoEnv, model: Awaited<ReturnType<typeof listModels>>[number]) {
 	const gatewayAvailable = model.offers.some((offer) => offer.routable);
 	const inputPrice = lowestPaidPrice(model, "input");
@@ -324,6 +338,7 @@ function modelSummary(env: PhaseoEnv, model: Awaited<ReturnType<typeof listModel
 		gatewayAvailable,
 		gatewayModelId: gatewayAvailable ? model.id : null,
 		modelUrl: modelUrl(env, model.id),
+		logo: organisationLogo(env, model.organization?.id),
 		availableProviders: model.offers.filter((offer) => offer.routable).map((offer) => offer.provider.id),
 		providerSupport: model.offers.map((offer) => ({
 			providerId: offer.provider.id,
@@ -379,6 +394,18 @@ function providerSummary(provider: Awaited<ReturnType<typeof listProviders>>[num
 		description: provider.description,
 		link: provider.link,
 		country_code: provider.country_code,
+	};
+}
+
+// The MCP spec asks tools that return structuredContent to repeat it as serialized JSON in a text block. Hosts
+// that do not read structuredContent (Google's Connected Apps, for example) would otherwise see only the summary.
+function toolResult<T extends Record<string, unknown>>(summary: string, structuredContent: T) {
+	return {
+		content: [
+			{ type: "text" as const, text: summary },
+			{ type: "text" as const, text: JSON.stringify(structuredContent) },
+		],
+		structuredContent,
 	};
 }
 
@@ -613,7 +640,10 @@ function registerControlPlaneReadTools(
 				inputSchema: definition.inputSchema,
 				outputSchema,
 				annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-				_meta: oauthToolMeta(definition.scopes),
+				// The credit balance renders as an inline card; the other reads stay text and data only.
+				_meta: definition.name === "credits_get"
+					? { ...oauthToolMeta(definition.scopes), ...modelCardToolMeta }
+					: oauthToolMeta(definition.scopes),
 			},
 			async (input) => {
 				try {
@@ -623,10 +653,7 @@ function registerControlPlaneReadTools(
 						{ accessToken: authenticatedUser.accessToken },
 						definition.query?.(input) ?? {},
 					);
-					return {
-						content: [{ type: "text" as const, text: `${definition.title} completed.` }],
-						structuredContent: normaliseControlPlaneResult(definition.name, result),
-					};
+					return toolResult(`${definition.title} completed.`, normaliseControlPlaneResult(definition.name, result));
 				} catch (error) {
 					return errorResult(error);
 				}
@@ -704,10 +731,7 @@ export function createServer(
 				const result = sortModels(priceFiltered, sortBy, sortOrder)
 					.slice(0, limit)
 					.map((model) => modelSummary(env, model));
-				return {
-					content: [{ type: "text" as const, text: `Found ${result.length} matching Phaseo model${result.length === 1 ? "" : "s"}.` }],
-					structuredContent: { models: result },
-				};
+				return toolResult(`Found ${result.length} matching Phaseo model${result.length === 1 ? "" : "s"}.`, { models: result });
 			} catch (error) { return errorResult(error); }
 		},
 	);
@@ -729,7 +753,7 @@ export function createServer(
 			try {
 				const model = await getModel(env, modelId, { accessToken: authenticatedUser.accessToken });
 				if (!model) return { isError: true as const, content: [{ type: "text" as const, text: `No Phaseo model exists with ID "${modelId}".` }] };
-				return { content: [{ type: "text" as const, text: `Retrieved ${model.name} from Phaseo.` }], structuredContent: { model: modelSummary(env, model) } };
+				return toolResult(`Retrieved ${model.name} from Phaseo.`, { model: modelSummary(env, model) });
 			} catch (error) { return errorResult(error); }
 		},
 	);
@@ -792,9 +816,9 @@ export function createServer(
 						updatedAt: entry.updated_at,
 					}];
 				}).slice(0, limit);
-				return {
-					content: [{ type: "text" as const, text: `Retrieved ${entries.length} models from ${ranking.name}. Rankings are benchmark-specific; they are not a universal measure of the best model.` }],
-					structuredContent: { benchmark: {
+				return toolResult(
+					`Retrieved ${entries.length} models from ${ranking.name}. Rankings are benchmark-specific; they are not a universal measure of the best model.`,
+					{ benchmark: {
 						id: ranking.benchmark_id,
 						name: ranking.name,
 						focus,
@@ -802,7 +826,7 @@ export function createServer(
 						totalModels: ranking.total_models,
 						entries,
 					} },
-				};
+				);
 			} catch (error) { return errorResult(error); }
 		},
 	);
@@ -820,7 +844,7 @@ export function createServer(
 		async () => {
 			try {
 				const providers = (await listProviders(env, { accessToken: authenticatedUser.accessToken })).map(providerSummary);
-				return { content: [{ type: "text" as const, text: `Phaseo currently lists ${providers.length} providers.` }], structuredContent: { providers } };
+				return toolResult(`Phaseo currently lists ${providers.length} providers.`, { providers });
 			} catch (error) { return errorResult(error); }
 		},
 	);
@@ -843,7 +867,9 @@ export function createServer(
 			outputSchema: {
 				estimate: z.object({
 					modelId: z.string(),
+					modelName: z.string(),
 					providerId: z.string(),
+					providerName: z.string().nullable(),
 					pricingPlan: z.string(),
 					isFree: z.boolean(),
 					inputTokens: z.number().int(),
@@ -857,7 +883,7 @@ export function createServer(
 				}),
 			},
 			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-			_meta: oauthToolMeta(["models:read", "pricing:read"]),
+			_meta: { ...oauthToolMeta(["models:read", "pricing:read"]), ...modelCardToolMeta },
 		},
 		async ({ modelId, providerId, inputTokens, cachedInputTokens, outputTokens }) => {
 			try {
@@ -886,12 +912,13 @@ export function createServer(
 					return { isError: true as const, content: [{ type: "text" as const, text: `Phaseo does not currently expose enough token pricing to estimate ${modelId}${qualifier}.` }] };
 				}
 				const estimate = {
-					modelId, providerId: selected.offer.provider.id, pricingPlan: selected.offer.pricing.pricing_plan,
+					modelId, modelName: model.name, providerId: selected.offer.provider.id,
+					providerName: selected.offer.provider.name ?? null, pricingPlan: selected.offer.pricing.pricing_plan,
 					isFree: selected.isFree, inputTokens, cachedInputTokens, outputTokens,
 					inputCostUSD: selected.inputCostUSD, cachedInputCostUSD: selected.cachedInputCostUSD,
 					outputCostUSD: selected.outputCostUSD, totalCostUSD: selected.totalCostUSD, currency: "USD" as const,
 				};
-				return { content: [{ type: "text" as const, text: `Estimated cost for ${model.name} through ${selected.offer.provider.name ?? selected.offer.provider.id}: $${selected.totalCostUSD.toFixed(6)} USD.` }], structuredContent: { estimate } };
+				return toolResult(`Estimated cost for ${model.name} through ${selected.offer.provider.name ?? selected.offer.provider.id}: $${selected.totalCostUSD.toFixed(6)} USD.`, { estimate });
 			} catch (error) { return errorResult(error); }
 		},
 	);
@@ -899,8 +926,11 @@ export function createServer(
 	registerControlPlaneReadTools(server, env, authenticatedUser);
 	registerManagementTools(server, env, authenticatedUser, options.managementAccess);
 	registerInference(server, env, authenticatedUser);
-	if (authenticatedUser.scopes.includes("models:read") && authenticatedUser.scopes.includes("pricing:read")) {
-		registerModelExplorer(server);
+	if (
+		(authenticatedUser.scopes.includes("models:read") && authenticatedUser.scopes.includes("pricing:read")) ||
+		authenticatedUser.scopes.includes("credits:read")
+	) {
+		registerModelExplorer(server, env);
 	}
 
 	return server;
@@ -998,6 +1028,36 @@ function openAiAppsChallenge(env: PhaseoEnv): Response {
 	});
 }
 
+// Google Connected Apps domain verification: the JSON file downloaded from Google Connected Console, served at
+// /.well-known/google-connected-apps on the MCP host with a 200 and no redirect.
+function googleConnectedAppsVerification(env: PhaseoEnv): Response {
+	const file = env.GOOGLE_CONNECTED_APPS_VERIFICATION?.trim() ?? "";
+	if (!file) return new Response("Not found", { status: 404 });
+	let valid = file.length <= 16_384;
+	if (valid) {
+		try {
+			const parsed: unknown = JSON.parse(file);
+			valid = typeof parsed === "object" && parsed !== null && !Array.isArray(parsed);
+		} catch {
+			valid = false;
+		}
+	}
+	if (!valid) return new Response("Verification file is invalid.", { status: 503 });
+	return new Response(file, {
+		status: 200,
+		headers: {
+			"Content-Type": "application/json; charset=utf-8",
+			"Cache-Control": "no-store",
+			"X-Content-Type-Options": "nosniff",
+		},
+	});
+}
+
+const DOMAIN_VERIFICATION_ROUTES: Record<string, (env: PhaseoEnv) => Response> = {
+	"/.well-known/openai-apps-challenge": openAiAppsChallenge,
+	"/.well-known/google-connected-apps": googleConnectedAppsVerification,
+};
+
 function isAllowedMcpOrigin(request: Request): boolean {
 	const value = request.headers.get("origin");
 	if (!value) return true;
@@ -1020,14 +1080,15 @@ export default {
 			return secureResponse(new Response("Origin is not allowed.", { status: 403 }));
 		}
 		if (request.method === "OPTIONS") return secureResponse(new Response(null, { status: 204 }));
-		if (url.pathname === "/.well-known/openai-apps-challenge") {
+		const domainVerification = DOMAIN_VERIFICATION_ROUTES[url.pathname];
+		if (domainVerification) {
 			if (request.method !== "GET" && request.method !== "HEAD") {
 				return secureResponse(new Response("Method not allowed", {
 					status: 405,
 					headers: { Allow: "GET, HEAD" },
 				}));
 			}
-			const challenge = secureResponse(openAiAppsChallenge(env));
+			const challenge = secureResponse(domainVerification(env));
 			return request.method === "HEAD"
 				? new Response(null, { status: challenge.status, headers: challenge.headers })
 				: challenge;

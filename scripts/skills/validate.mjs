@@ -2,6 +2,7 @@
 // Validate the agent skills in `.agents/skills` and the Phaseo plugin and marketplaces.
 //
 // Every skill: Agent Skills frontmatter (https://agentskills.io/specification) and working relative links.
+// Third-party skills listed in skills-lock.json only get a warning past 500 lines, since their text is upstream's.
 // Public skills also need a third-person description with "Use when" and "Not for", agents/openai.yaml, at least
 // three evals (one negative), reference files with a table of contents past 100 lines, and examples that use
 // catalogue model IDs, the right request body for each endpoint, and no key-like strings.
@@ -17,6 +18,9 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), "../..");
 const skillsRoot = join(repoRoot, ".agents/skills");
 const openapiPath = join(repoRoot, "apps/docs/openapi/v1/openapi.yaml");
 const pluginRoot = join(repoRoot, "apps/mcp/plugin/phaseo");
+// Third-party skills installed with `npx skills add` are recorded in skills-lock.json and kept as upstream wrote them.
+const lockPath = join(repoRoot, "skills-lock.json");
+const VENDORED_SKILLS = new Set(existsSync(lockPath) ? Object.keys(JSON.parse(readFileSync(lockPath, "utf8")).skills ?? {}) : []);
 
 const errors = [];
 const warnings = [];
@@ -169,7 +173,10 @@ function checkSkill(skillDir, catalogue) {
 	if (description.length > 1024) error(skillFile, `description is ${description.length} characters (limit 1,024)`);
 	if (/<[a-z/][^>]*>/i.test(description)) error(skillFile, "description must not contain XML tags");
 	const body = readFileSync(skillFile, "utf8");
-	if (body.split("\n").length > 500) error(skillFile, "SKILL.md must stay under 500 lines; move detail to references/");
+	if (body.split("\n").length > 500) {
+		const report = VENDORED_SKILLS.has(name) ? warn : error;
+		report(skillFile, "SKILL.md must stay under 500 lines; move detail to references/");
+	}
 	const isPublic = PUBLIC_SKILLS.includes(name);
 	for (const file of listFiles(skillDir).filter((path) => path.endsWith(".md"))) {
 		const markdown = readFileSync(file, "utf8");
@@ -190,12 +197,19 @@ function checkSkill(skillDir, catalogue) {
 	checkEvals(skillDir);
 }
 
-// Codex, ChatGPT and Claude Code read different manifests for the same plugin; keep them in step.
+// Cursor's plugin schema rejects unknown keys (https://github.com/cursor/plugins/blob/main/schemas/plugin.schema.json).
+const CURSOR_PLUGIN_KEYS = new Set([
+	"name", "displayName", "description", "version", "minClientVersions", "author", "publisher", "homepage", "repository",
+	"license", "logo", "keywords", "category", "tags", "commands", "agents", "skills", "rules", "hooks", "variables", "mcpServers",
+]);
+
+// Codex, ChatGPT, Claude Code and Cursor read different manifests for the same plugin; keep them in step.
 function checkPlugin() {
 	const manifests = {
 		portable: join(pluginRoot, "plugin.json"),
 		codex: join(pluginRoot, ".codex-plugin/plugin.json"),
 		claude: join(pluginRoot, ".claude-plugin/plugin.json"),
+		cursor: join(pluginRoot, ".cursor-plugin/plugin.json"),
 	};
 	const data = {};
 	for (const [key, path] of Object.entries(manifests)) {
@@ -217,11 +231,18 @@ function checkPlugin() {
 		collect(manifest);
 		for (const path of paths) if (!existsSync(join(pluginRoot, path))) error(manifests[key], `path ${path} does not exist`);
 	}
-	for (const file of [".mcp.json", "mcp.json"]) {
-		const config = readJson(join(pluginRoot, file));
-		for (const [server, entry] of Object.entries(config?.mcpServers ?? {})) {
-			if (!/^https:\/\//.test(entry.url ?? "")) error(join(pluginRoot, file), `server ${server} needs an https url`);
+	if (data.cursor) {
+		for (const key of Object.keys(data.cursor)) if (!CURSOR_PLUGIN_KEYS.has(key)) error(manifests.cursor, `Cursor rejects the key ${key}`);
+		for (const key of Object.keys(data.cursor.author ?? {})) if (key !== "name" && key !== "email") error(manifests.cursor, `Cursor rejects author.${key}`);
+	}
+	const serverUrls = (file) => Object.fromEntries(Object.entries(readJson(join(pluginRoot, file))?.mcpServers ?? {}).map(([server, entry]) => [server, entry.url]));
+	const expected = JSON.stringify(serverUrls("mcp.json"));
+	for (const file of [".mcp.json", "mcp.json", ".cursor-plugin/mcp.json"]) {
+		const urls = serverUrls(file);
+		for (const [server, url] of Object.entries(urls)) {
+			if (!/^https:\/\//.test(url ?? "")) error(join(pluginRoot, file), `server ${server} needs an https url`);
 		}
+		if (JSON.stringify(urls) !== expected) error(join(pluginRoot, file), "MCP servers differ from mcp.json");
 	}
 	const skills = readdirSync(join(pluginRoot, "skills"));
 	for (const skill of [...PUBLIC_SKILLS, ...PLUGIN_ONLY_SKILLS]) {
@@ -287,8 +308,43 @@ function checkListing() {
 	if (!submission.publication?.release_notes?.trim()) error(submissionPath, "publication.release_notes is required");
 }
 
+// Official MCP Registry entries (https://registry.modelcontextprotocol.io). `mcp-publisher validate` checks the full
+// schema in the publish workflow; this keeps the limits and the endpoints in step with the plugin.
+const REGISTRY_SCHEMA = "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json";
+
+function checkRegistry() {
+	const registryRoot = join(repoRoot, "apps/mcp/registry");
+	const pluginUrls = Object.values(readJson(join(pluginRoot, "mcp.json"))?.mcpServers ?? {}).map((entry) => entry.url).sort();
+	const registryUrls = [];
+	for (const server of readdirSync(registryRoot)) {
+		const path = join(registryRoot, server, "server.json");
+		const entry = existsSync(path) ? readJson(path) : null;
+		if (!entry) {
+			error(path, "missing server.json");
+			continue;
+		}
+		if (entry.$schema !== REGISTRY_SCHEMA) error(path, `$schema must be ${REGISTRY_SCHEMA}`);
+		if (!/^app\.phaseo\/[a-z0-9-]+$/.test(entry.name ?? "")) error(path, "name must be app.phaseo/<server>, the namespace proved by DNS");
+		if (!entry.description || entry.description.length > 100) error(path, "description needs 1-100 characters");
+		if ((entry.title ?? "").length > 100) error(path, "title must be at most 100 characters");
+		if (!/^\d+\.\d+\.\d+$/.test(entry.version ?? "")) error(path, "version must be semver, and bumped before every publish");
+		for (const icon of entry.icons ?? []) if (!/^https:\/\//.test(icon.src ?? "") || icon.src.length > 255) error(path, "icon src must be an https URL of at most 255 characters");
+		for (const remote of entry.remotes ?? []) {
+			if (remote.type !== "streamable-http") error(path, "remotes must use streamable-http");
+			registryUrls.push(remote.url);
+		}
+	}
+	if (JSON.stringify(registryUrls.sort()) !== JSON.stringify(pluginUrls)) {
+		error(registryRoot, `registry remotes (${registryUrls.join(", ")}) differ from the plugin's MCP servers (${pluginUrls.join(", ")})`);
+	}
+}
+
 function checkMarketplaces() {
-	const marketplaces = [join(repoRoot, ".claude-plugin/marketplace.json"), join(repoRoot, ".agents/plugins/marketplace.json")];
+	const marketplaces = [
+		join(repoRoot, ".claude-plugin/marketplace.json"),
+		join(repoRoot, ".agents/plugins/marketplace.json"),
+		join(repoRoot, ".cursor-plugin/marketplace.json"),
+	];
 	for (const path of marketplaces) {
 		if (!existsSync(path)) {
 			error(path, "missing marketplace");
@@ -314,6 +370,7 @@ for (const skillDir of skillDirs) checkSkill(skillDir, catalogue);
 for (const skill of PLUGIN_ONLY_SKILLS) checkSkill(join(pluginRoot, "skills", skill), catalogue);
 checkPlugin();
 checkListing();
+checkRegistry();
 checkMarketplaces();
 
 for (const message of warnings) process.stdout.write(`warning ${message}\n`);

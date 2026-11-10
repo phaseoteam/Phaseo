@@ -1,65 +1,92 @@
 ---
-title: "Ruby Agent SDK से आंतरिक नोट्स का सार बनाएँ"
-sidebarTitle: "Ruby में नोट्स का सार"
+title: "Ruby Agent SDK से आंतरिक नोट्स का सारांश बनाएँ"
+sidebarTitle: "Ruby में आंतरिक नोट्स का सारांश"
 icon: "notebook-tabs"
-description: "स्थानीय notes खोजकर Phaseo Gateway के ज़रिए सीमित सार लौटाने के लिए Ruby Agent SDK उपयोग करें।"
+description: "स्थानीय नोट्स से पूछताछ करने और Phaseo Gateway के ज़रिए एक सीमित सारांश लौटाने के लिए Ruby Agent SDK इस्तेमाल करें।"
 ---
 
-किसी Ruby सेवा को orchestration कहीं और भेजे बिना छोटा आंतरिक-notes assistant चाहिए, तो यह रेसिपी उपयोग करें।
+एक Ruby एजेंट चलाएँ जो स्थानीय टूल से कोई आंतरिक नोट खोजे और एक छोटे पैराग्राफ़ में जवाब दे, बिना ऑर्केस्ट्रेशन किसी दूसरे सिस्टम को सौंपे। अंत में आपके पास एक स्क्रिप्ट होगी जो प्रीसेट के बारे में आपके नोट का सारांश बनाती है।
 
-## 1. SDK तैयार करें
+टूल तय नमूना डेटा लौटाता है, इसलिए यह स्क्रिप्ट उदाहरण के लिए है; इसे अपने नोट्स स्टोर के lookup से बदलें। यह ऐसे Ruby ऐप के लिए सही है जो पहले से डेटा का मालिक है और जिसके टूल इनपुट सरल और निर्धारक हैं।
 
-<Note type="warning">Ruby Agent SDK पैकेज अभी RubyGems पर उपलब्ध नहीं है।[सोर्स से इंस्टॉल करने के निर्देश](../sdk-reference/ruby/agent-sdk-installation.mdx) देखें।</Note>
+## इसे बनाएँ
 
-## 2. नोट्स खोजने का टूल तय करें
+<Steps>
+<Step title="इंस्टॉल करें">
 
-```ruby
+```bash
+gem install phaseo_agent_sdk
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+या अपनी `Gemfile` में `gem "phaseo_agent_sdk"` जोड़ें। यह अपने साथ `phaseo_sdk` इंस्टॉल करता है और इसके लिए Ruby 3.2 या नया चाहिए। [Ruby Agent SDK इंस्टॉलेशन](../sdk-reference/agent/installation) देखें।
+
+</Step>
+<Step title="एजेंट लिखें">
+
+```ruby notes.rb
+require "phaseo_agent_sdk"
+
+TOPICS = %w[presets routing guardrails].freeze
+
 lookup_note = PhaseoAgentSdk.define_tool(
   PhaseoAgentSdk::Tool.new(
     id: "lookup-note",
     description: "Look up one internal note by topic.",
     parameters: {
       type: "object",
-      properties: {
-        topic: { type: "string" },
-      },
+      properties: { topic: { type: "string", enum: TOPICS } },
       required: ["topic"],
+      additionalProperties: false
     },
+    # आर्ग्युमेंट मॉडल से आते हैं: सिर्फ़ ज्ञात विषय ही execute तक पहुँचते हैं।
+    input_schema: lambda do |input|
+      raise ArgumentError, "topic must be one of #{TOPICS.join(', ')}" unless input.is_a?(Hash) && TOPICS.include?(input["topic"])
+
+      input
+    end,
     execute: lambda do |input, _context|
       {
         topic: input["topic"],
-        summary: "Presets centralize routing defaults so app code stays smaller.",
+        summary: "Presets centralize routing defaults so app code stays smaller."
       }
     end
   )
 )
-```
 
-## 3. एजेंट बनाएँ और चलाएँ
-
-```ruby
 agent = PhaseoAgentSdk.create_agent(
   id: "notes-agent",
-  model: "openai/gpt-5.4-nano",
+  model: "openai/gpt-6-astra",
   instructions: "Use tools when helpful and answer in one short paragraph.",
-  tools: [lookup_note]
+  tools: [lookup_note],
+  max_steps: 4
 )
 
+# PHASEO_API_KEY को एनवायरनमेंट से पढ़ता है।
 result = agent.run(
   input: "Summarize our note about presets.",
   client: PhaseoAgentSdk.create_gateway_agent_client
 )
 
+puts result.run.status
 puts result.output
 ```
 
-## यह रेसिपी कब उपयुक्त है
+</Step>
+<Step title="इसे चलाएँ">
 
-- tool input सरल और नियतात्मक हों
-- Ruby ऐप पहले से डेटा स्रोत का स्वामी हो
-- सीमित workflow के लिए आसान local-tool pattern चाहिए
+```bash
+ruby notes.rb
+```
 
-## संबंधित विषय
+</Step>
+</Steps>
 
-- [Ruby Agent SDK](../sdk-reference/ruby/agent-sdk.mdx)
-- [टिकाऊ एजेंट loop बनाएँ](./agent-sdk-durable-loop.mdx)
+## जाँचें कि यह काम किया
+
+- स्क्रिप्ट `completed` प्रिंट करती है, फिर प्रीसेट के बारे में एक पैराग्राफ़।
+- **सेटिंग → उपयोग → लॉग्स** में पहले मॉडल टर्न में `{"topic": "presets"}` के साथ `lookup-note` कॉल दिखती है।
+
+## प्रोडक्शन से पहले
+
+टूल को सिर्फ़ पढ़ने वाला रखें, और `max_steps` को उतना कम रखें जितना काम अनुमति दे (डिफ़ॉल्ट `12` है)। अगर आपका नोट्स स्टोर बड़ा है, तो पूरे दस्तावेज़ के बजाय सिर्फ़ मेल खाता अंश लौटाएँ, ताकि हर मॉडल टर्न छोटा रहे। रन सहेजने और बाद में फिर से शुरू करने के लिए [टिकाऊ लूप](./agent-sdk-durable-loop) देखें; Ruby SDK का `state:` विकल्प उसी तरह काम करता है। [Ruby Agent SDK संदर्भ](../sdk-reference/agent/usage) में स्थिति, अनुमोदन और स्ट्रीमिंग की जानकारी है।

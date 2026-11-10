@@ -74,7 +74,7 @@ export function applyReasoningParams(args: {
 }): void {
 	const reasoning = args.ir.reasoning;
 	if (!reasoning) return;
-	if (args.providerId === "wafer" || args.providerId === "wafer-zdr") {
+	if (args.providerId === "wafer" || args.providerId === "wafer-zdr" || args.providerId === "wafer-us") {
 		// Chat Completions accepts none, low, medium, high, xhigh or max; anything else,
 		// minimal included, is a 400 (https://docs.wafer.ai/serverless/models).
 		const requested = typeof reasoning.effort === "string" ? reasoning.effort : undefined;
@@ -128,10 +128,56 @@ export function applyReasoningParams(args: {
 		}
 		return;
 	}
+	if (args.providerId === "particle-ai") {
+		// Particle takes reasoning_effort none, minimal, low, medium, high, xhigh, max
+		// (and ultra); omitting it means high (https://docs.particle.ai/reasoning).
+		// An explicit enabled: false wins over any effort, so a disable request never bills reasoning.
+		const effort = reasoning.enabled === false
+			? "none"
+			: typeof reasoning.effort === "string"
+				? reasoning.effort
+				: reasoning.enabled === true ? "high" : undefined;
+		if (effort !== undefined) args.request.reasoning_effort = effort;
+		return;
+	}
+	if (args.providerId === "tencent-cloud" && /^(?:tencent\/)?hy\d/i.test(String(args.providerModelSlug ?? args.ir.model ?? ""))) {
+		// TokenHub's Hy models (hy3, hy4, hy4-preview) take reasoning_effort low or high
+		// (default high) and thinking: { type: "disabled" } to turn thinking off.
+		// https://intl.cloud.tencent.com/document/product/1300/80695
+		const rawEffort = typeof reasoning.effort === "string" ? reasoning.effort : undefined;
+		if (reasoning.enabled === false || rawEffort === "none") {
+			args.request.thinking = { type: "disabled" };
+			return;
+		}
+		const effort = rawEffort === "minimal" || rawEffort === "low"
+			? "low"
+			: rawEffort !== undefined || reasoning.enabled === true
+				? "high"
+				: undefined;
+		if (effort !== undefined) args.request.reasoning_effort = effort;
+		return;
+	}
 	if (args.providerId === "thinking-machines") {
 		const effort = typeof reasoning.effort === "string"
 			? reasoning.effort
 			: reasoning.enabled === false ? "none" : reasoning.enabled === true ? "high" : undefined;
+		if (effort !== undefined) args.request.reasoning_effort = effort;
+		return;
+	}
+	if (args.providerId === "lg") {
+		// K-EXAONE always thinks (enable_thinking is forced on) and takes reasoning_effort
+		// low, high or max, defaulting to max (https://docs.exaone.ai/en/docs/k-exaone-2.5).
+		// Requests that turn reasoning off never reach here: providerDocsValidation skips
+		// this provider for them. Budgets have no upstream field.
+		if (reasoning.enabled === false || reasoning.effort === "none") return;
+		const rawEffort = typeof reasoning.effort === "string" ? reasoning.effort : undefined;
+		const effort = rawEffort === "instant" || rawEffort === "minimal" || rawEffort === "low"
+			? "low"
+			: rawEffort === "medium" || rawEffort === "high"
+				? "high"
+				: rawEffort === "xhigh" || rawEffort === "max"
+					? "max"
+					: undefined;
 		if (effort !== undefined) args.request.reasoning_effort = effort;
 		return;
 	}

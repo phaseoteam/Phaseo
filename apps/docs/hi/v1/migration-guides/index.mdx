@@ -4,86 +4,44 @@ description: "प्लेटफ़ॉर्म बदलने या किस
 icon: "compass"
 ---
 
-Phaseo की माइग्रेशन गाइड दो तरह के बदलावों को कवर करती हैं:
+आप जो बदल रहे हैं, उसके लिए गाइड चुनें: वह प्लेटफ़ॉर्म जिसे आपका ऐप कॉल करता है (नीचे), या वह मॉडल जिसे वह उपयोग करता है ([मॉडल माइग्रेशन](../model-migrations))। अगर आप दोनों बदल रहे हैं, तो पहले प्लेटफ़ॉर्म बदलें और नया पथ सत्यापित होने तक मॉडल वही रखें।
 
-- किसी दूसरे प्लेटफ़ॉर्म या गेटवे से Phaseo पर जाना
-- उसी प्लेटफ़ॉर्म पर किसी ख़ास मॉडल रिलीज़ को अपनाना
+अपने हिसाब से बनी चेकलिस्ट के लिए [Migration Assistant](https://phaseo.app/migrate) उपयोग करें।
 
-<Columns cols={2}>
-	<Card title="मॉडल माइग्रेशन" icon="brain-circuit" href="../model-migrations/index.mdx">
-		आसपास का इंटीग्रेशन लगभग वैसा ही रखते हुए मॉडल अपग्रेड करें।
-	</Card>
-	<Card title="प्लेटफ़ॉर्म माइग्रेशन" icon="arrow-right-left" href="./gateway-parity-review.mdx">
-		किसी SDK, प्रदाता या गेटवे इंटीग्रेशन को Phaseo पर ले जाएँ।
-	</Card>
-</Columns>
-
-## मॉडल माइग्रेशन
-
-अनुकूलित शुरुआती चेकलिस्ट के लिए [माइग्रेशन सहायक](https://phaseo.app/migrate) इस्तेमाल करें।
-
-जब इंटीग्रेशन लगभग वैसा ही रहे, लेकिन उसके नीचे इस्तेमाल होने वाला मॉडल बदले, तब मॉडल माइग्रेशन गाइड का उपयोग करें।
-
-इन गाइड में मुख्य रूप से ये बातें शामिल हैं:
-
-- अनुरोध पैरामीटर में बदलाव
-- प्रॉम्प्ट और रीज़निंग के व्यवहार में बदलाव
-- संरचित आउटपुट और टूल कॉलिंग में अंतर
-- रोलआउट, फ़ॉलबैक और रोलबैक की रणनीति
-
-मौजूदा मॉडल माइग्रेशन गाइड:
-
-- [Anthropic Claude Opus 5](../model-migrations/anthropic-claude-opus-5.mdx)
-- [OpenAI GPT-5.6](../model-migrations/openai-migrating-to-gpt-5-6.mdx)
-- [Anthropic Claude Opus 4.8](../model-migrations/anthropic-claude-opus-4-1-to-4-8.mdx)
-- [Anthropic Claude Opus 4.7](../model-migrations/anthropic-claude-opus-4-6-to-4-7.mdx)
-- [Mistral Small 4](../model-migrations/mistral-small-3-2-to-mistral-small-4.mdx)
-- [OpenAI GPT-5.4](../model-migrations/openai-migrating-to-gpt-5-4.mdx)
-- [Google Nano Banana 2](../model-migrations/google-nano-banana-1-to-nano-banana-2.mdx)
-- [Google Gemini 3.1](../model-migrations/google-migrating-to-gemini-3-and-3-1.mdx)
-- [Anthropic Claude Sonnet 4.6](../model-migrations/anthropic-claude-sonnet-4-5-to-4-6.mdx)
-- [SpaceXAI Grok 4.20](../model-migrations/xai-grok-4-20.mdx)
-- [Anthropic Claude Opus 4.6](../model-migrations/anthropic-claude-opus-4-5-to-4-6.mdx)
-
+<span id="platform-migrations"></span>
 ## प्लेटफ़ॉर्म माइग्रेशन
 
-अगर आप SDK, प्रदाता या गेटवे बदल रहे हैं और अपने मौजूदा इंटीग्रेशन को Phaseo से मैप करना है, तो प्लेटफ़ॉर्म माइग्रेशन गाइड का उपयोग करें।
+हर प्लेटफ़ॉर्म गाइड एक ही क्रम में चलती है: बेस URL और कुंजी बदलें, मॉडल ID मैप करें, प्लेटफ़ॉर्म की सुविधाएं मैप करें, फिर टेस्ट करें और रोलआउट करें, जबकि रोलबैक सिर्फ़ बेस URL और कुंजी बदलने तक सीमित रहे।
 
-<Card title="माइग्रेशन चेकलिस्ट बनाएँ" icon="list-checks" href="https://phaseo.app/migrate">
-	अपना मौजूदा इंटीग्रेशन चुनें और इंटरैक्टिव माइग्रेशन सहायक खोलें।
-</Card>
+| आप कॉल करते हैं | कोड में संकेत | गाइड |
+| --- | --- | --- |
+| सीधे OpenAI | `api.openai.com`, `OPENAI_API_KEY`, `AzureOpenAI` | [OpenAI SDK](./from-openai) |
+| सीधे Anthropic | `api.anthropic.com`, `ANTHROPIC_API_KEY`, `@anthropic-ai/sdk` | [Anthropic SDK](./from-anthropic) |
+| OpenRouter | `openrouter.ai`, `OPENROUTER_API_KEY`, `sk-or-v1` कुंजियां | [OpenRouter](./from-openrouter) |
+| Vercel AI Gateway | `ai-gateway.vercel.sh`, `@ai-sdk/gateway`, AI SDK कॉल में सादे स्ट्रिंग मॉडल | [Vercel AI Gateway](./from-vercel) |
+| LLM Gateway | `api.llmgateway.io`, `LLM_GATEWAY_API_KEY` | [LLM Gateway](./from-llmgateway) |
+| कोई LiteLLM प्रॉक्सी | `model_list` वाली `config.yaml`, `LITELLM_*` वेरिएबल, पोर्ट 4000 | [LiteLLM](./from-litellm) |
+| Cloudflare AI Gateway | `gateway.ai.cloudflare.com`, `cf-aig-*` हेडर | [Cloudflare AI Gateway](./from-cloudflare) |
+| Helicone | `*.helicone.ai`, `Helicone-Auth` | [Helicone](./from-helicone) |
 
-<Prompt description="किसी कोडिंग एजेंट से माइग्रेशन की योजना बनाने और उसे पूरा करने में मदद लें।" icon="arrow-right-left" actions={["copy", "cursor"]}>
+रोलआउट की योजना बनाने और जांचने के लिए [माइग्रेशन सुविधा चेकलिस्ट](./feature-parity-matrix) उपयोग करें।
+
+## कोडिंग एजेंट के साथ माइग्रेट करें
+
+<Prompt description="किसी कोडिंग एजेंट से माइग्रेशन की योजना बनाने और उसे आपके साथ पूरा करने को कहें।" icon="arrow-right-left" actions={["copy", "cursor"]}>
 {`Migrate this project's AI requests to Phaseo Gateway.
 
 1. Install the Phaseo skills: npx skills add https://phaseo.app/docs
    Use phaseo-migration, which has a guide for each source platform (and openrouter-to-phaseo-migration for a detailed OpenRouter move).
 2. Find every place the project calls its current provider or gateway (OpenAI, Anthropic, OpenRouter, Vercel AI Gateway, LiteLLM or another), including environment variables, SDK clients, base URLs and model IDs.
-3. Read the matching guide at https://phaseo.app/docs/v1/migration-guides and map each call to its Phaseo equivalent at https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY.
-4. Check every model ID with GET /v1/models. Do not assume IDs carry over unchanged.
+3. Read the matching guide at https://phaseo.app/docs/hi/v1/migration-guides and map each call to its Phaseo equivalent at https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY.
+4. Check every model ID against data[].id from GET /v1/models?format=openai. Do not assume IDs carry over unchanged.
 5. List the changes and a rollback plan before editing. After editing, verify one normal request and one streaming request if the project streams.
 6. Never print or commit API keys, and do not switch production traffic without my approval.`}
 </Prompt>
 
-मौजूदा प्लेटफ़ॉर्म माइग्रेशन गाइड:
+## मॉडल माइग्रेशन
 
-- [OpenAI SDK से माइग्रेशन](./from-openai.mdx)
-- [Anthropic SDK से माइग्रेशन](./from-anthropic.mdx)
-- [OpenRouter से माइग्रेशन](./from-openrouter.mdx): एंडपॉइंट और कुंजी बदलें, मॉडल ID सत्यापित करें, और स्ट्रीमिंग व रोलबैक का परीक्षण करें।
-- [Vercel AI Gateway से माइग्रेशन](./from-vercel.mdx)
-- [LLMGateway से माइग्रेशन](./from-llmgateway.mdx)
-- [LiteLLM से माइग्रेशन](./from-litellm.mdx)
-- [Cloudflare AI Gateway से माइग्रेशन](./from-cloudflare.mdx)
-- [Helicone AI Gateway से माइग्रेशन](./from-helicone.mdx)
+जब इंटीग्रेशन वही रहे लेकिन मॉडल बदले, तब [मॉडल माइग्रेशन गाइड](../model-migrations) उपयोग करें। हर गाइड अनुरोध पैरामीटर में बदलाव, प्रॉम्प्ट और रीज़निंग व्यवहार में बदलाव, संरचित आउटपुट और टूल कॉलिंग के अंतर, और फ़ॉलबैक के साथ रोलआउट का तरीका बताती है।
 
-रोलआउट की योजना बनाएँ और उसे सत्यापित करें:
-
-- [माइग्रेशन तैयारी की समीक्षा](./gateway-parity-review.mdx)
-- [माइग्रेशन फ़ीचर चेकलिस्ट](./feature-parity-matrix.mdx)
-
-## इन गाइड का उपयोग कैसे करें
-
-1. तय करें कि आप प्लेटफ़ॉर्म, मॉडल या दोनों बदल रहे हैं।
-2. माइग्रेशन के सबसे जोखिम वाले हिस्से वाली गाइड से शुरू करें।
-3. आउटपुट की गुणवत्ता की तुलना करने से पहले अनुरोध पैरामीटर और एंडपॉइंट का व्यवहार जाँचें।
-4. लाइव ट्रैफ़िक बदलने से पहले प्रोडक्शन जैसे मूल्यांकन चलाएँ।
+किसी भी तरह के माइग्रेशन में, आउटपुट गुणवत्ता की तुलना से पहले अनुरोध पैरामीटर और एंडपॉइंट व्यवहार जांचें, और लाइव ट्रैफ़िक बदलने से पहले प्रोडक्शन जैसे मूल्यांकन चलाएं।

@@ -1,84 +1,50 @@
 ---
 icon: "clock-3"
-title: "Ferramenta de data e hora"
-description: "Forneça aos modelos a data e a hora atuais em um ou mais fusos horários."
+title: "Ferramenta de servidor Datetime"
+description: "Informe aos modelos a data e a hora atuais em um ou mais fusos horários."
 ---
 
-Use `phaseo:datetime` quando uma solicitação depender da data atual, do dia da semana, da hora ou do fuso horário.
-
-O modelo decide quando chamar a ferramenta. O Phaseo retorna ao modelo os fusos horários resolvidos e os registros de data e hora atuais; em seguida, o modelo escreve a resposta final.
-
-## Início rápido
+Adicione `phaseo:datetime` para que o modelo possa consultar a data e a hora atuais quando um prompt depender delas, como em "que dia é hoje em Tóquio?". O modelo decide quando chamá-la; o Phaseo retorna a hora em cada fuso horário que você listou.
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "What day of the week is it in Tokyo?" }
     ],
     "tools": [
       {
         "type": "phaseo:datetime",
-        "parameters": {
-          "timezones": ["Asia/Tokyo", "UTC"]
-        }
+        "parameters": { "timezones": ["Asia/Tokyo", "UTC"] }
       }
     ]
   }'
 ```
 
-## Configuração
-
-```json
-{
-  "type": "phaseo:datetime",
-  "parameters": {
-    "timezones": ["Europe/London", "UTC"]
-  }
-}
-```
+## Parâmetros
 
 | Parâmetro | Tipo | Padrão | Descrição |
 | --- | --- | --- | --- |
-| `timezones` | string[] | `["UTC"]` | Até 5 nomes de fusos horários IANA para retornar em uma chamada da ferramenta, como `["Europe/London", "UTC"]`. |
+| `timezones` | string[] | `["UTC"]` | Até 5 nomes de fuso horário IANA, como `["Europe/London", "UTC"]`. |
 
-## Resultado da ferramenta
+Mais de 5 fusos horários, ou um nome que não seja um fuso horário IANA válido, fazem a solicitação ser rejeitada antes de o modelo rodar. O nome de tipo antigo `gateway:datetime` continua sendo aceito.
 
-O resultado da ferramenta contém uma entrada para cada fuso horário solicitado.
+## O que a ferramenta retorna
+
+Uma entrada por fuso horário:
 
 ```json
 {
   "timezones": [
-    {
-      "timezone": "Europe/London",
-      "datetime": "2026-07-03T10:00:00.123+01:00"
-    },
-    {
-      "timezone": "UTC",
-      "datetime": "2026-07-03T09:00:00.123+00:00"
-    }
+    { "timezone": "Europe/London", "datetime": "2026-07-03T10:00:00.123+01:00" },
+    { "timezone": "UTC", "datetime": "2026-07-03T09:00:00.123+00:00" }
   ]
 }
 ```
 
-## Uso
+## Uso e preços
 
-As chamadas do Datetime incrementam:
-
-```json
-{
-  "usage": {
-    "server_tool_use": {
-      "datetime_requests": 1
-    }
-  }
-}
-```
-
-## Relacionados
-
-- [Ferramentas do servidor](./index.mdx)
-- [Chamadas de ferramentas](../tool-calling.mdx)
+Cada chamada soma 1 a `usage.server_tool_use.datetime_requests`. A Datetime não tem medidor de preço próprio.

@@ -132,4 +132,39 @@ describe("OpenAI audio transcription contract", () => {
 		expect(result.upstream.status).toBe(400);
 		expect(await result.upstream.clone().json()).toMatchObject({ error: { param: "include" } });
 	});
+
+	describe("per-provider Whisper upload limits", () => {
+		const MB = 1024 * 1024;
+		const whisper = (bytes: number) => ({
+			model: "openai/whisper-large-v3",
+			file: new File([new Uint8Array(bytes)], "call.mp3", { type: "audio/mpeg" }),
+			response_format: "json",
+		});
+
+		it.each([
+			["groq", 25 * MB + 1, "25 MB"],
+			["together", 80 * MB + 1, "80 MB"],
+		])("rejects a %s upload over its documented limit before sending it", async (providerId, bytes, label) => {
+			const mock = installFetchMock([]);
+			const result = await exec(args(whisper(bytes), providerId));
+			mock.restore();
+			expect(mock.calls).toHaveLength(0);
+			expect(result.upstream.status).toBe(400);
+			expect(await result.upstream.clone().json()).toMatchObject({ error: { param: "file", message: expect.stringContaining(label) } });
+		});
+
+		it.each([
+			["groq", 25 * MB],
+			["together", 26 * MB],
+		])("sends a %s upload within its limit", async (providerId, bytes) => {
+			const mock = installFetchMock([{
+				match: (url) => url.endsWith("/audio/transcriptions"),
+				response: jsonResponse({ text: "ok" }),
+			}]);
+			const result = await exec(args(whisper(bytes), providerId));
+			mock.restore();
+			expect(mock.calls).toHaveLength(1);
+			expect(result.upstream.status).toBe(200);
+		});
+	});
 });

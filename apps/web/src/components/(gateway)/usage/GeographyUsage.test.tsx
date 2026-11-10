@@ -1,10 +1,18 @@
+import { describe, it, expect } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
 
 import { GeographyUsage } from "./GeographyUsage";
+import type { ReactNode } from "react";
+import { AppIntlProvider } from "@/i18n/react";
+import { getPublicMessages } from "@/i18n/messages";
+import { DisplayPreferencesProvider } from "@/components/providers/DisplayPreferencesProvider";
+
+const messages = await getPublicMessages("en-GB");
+const withIntl = (node: ReactNode) => <AppIntlProvider locale="en-GB" timeZone="UTC" messages={messages}><DisplayPreferencesProvider locale="en-GB">{node}</DisplayPreferencesProvider></AppIntlProvider>;
 
 describe("GeographyUsage", () => {
 	it("renders the private Settings view as responsive cards and a desktop table", () => {
-		const html = renderToStaticMarkup(
+		const html = renderToStaticMarkup(withIntl(
 			<GeographyUsage
 				rows={[
 					{
@@ -16,7 +24,7 @@ describe("GeographyUsage", () => {
 						averageLatencyMs: 245.4,
 					},
 				]}
-			/>,
+			/>),
 		);
 
 		expect(html).toContain("md:hidden");
@@ -34,7 +42,7 @@ describe("GeographyUsage", () => {
 	});
 
 	it("uses the Settings empty-state pattern", () => {
-		const html = renderToStaticMarkup(<GeographyUsage rows={[]} />);
+		const html = renderToStaticMarkup(withIntl(<GeographyUsage rows={[]} />));
 
 		expect(html).toContain("border-dashed");
 		expect(html).toContain("No geographic usage yet");

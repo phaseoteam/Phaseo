@@ -2,7 +2,7 @@ import { Hono, type Context } from "hono";
 import { bodyLimit } from "hono/body-limit";
 import type { Env } from "./env";
 import { defaultDeps, isRemovalEvent, processEvent, type Deps, type SlackEnvelope } from "./events";
-import { companyApp, hostedApp, SLACK_APP_ID_PATTERN, type SlackAppContext } from "./installations";
+import { companyAppByRow, hostedApp, verifiedCompanyApp, SLACK_APP_ID_PATTERN, type SlackAppContext } from "./installations";
 import { handleInteraction, type InteractionPayload } from "./interactions";
 import { finishSignIn, servePage } from "./page-viewer";
 import { runDueSchedules } from "./scheduled-runs";
@@ -18,7 +18,8 @@ export { defaultDeps };
 // The Phaseo Slack agent's Worker (slack.phaseo.app).
 //
 //   POST /events                Events API, hosted Phaseo app
-//   POST /events/:appId         Events API, a company's own app (Slack app id A...)
+//   POST /events/:appId         Events API, a company's own app once verified (Slack app id A...)
+//   POST /apps/:rowId/events    Events API, one saved company app (slack_apps.id), verified or not
 //   POST /interactions[/:appId] Button clicks
 //   GET  /p/:store/:page        A shared page (pages.ts, page-viewer.ts)
 //   GET  /p/signin              Sign in with Slack, for pages shared with a workspace
@@ -38,24 +39,31 @@ const MAX_BODY_BYTES = 512 * 1024;
 
 type AppEnv = { Bindings: Env };
 
-async function resolveApp(deps: Deps, appId: string | undefined): Promise<SlackAppContext | null> {
-	if (appId === undefined) return hostedApp(deps.env);
-	if (!SLACK_APP_ID_PATTERN.test(appId)) return null;
-	return companyApp(deps.env, deps.db, appId);
+/**
+ * The app a request is for: a saved company app by its own URL (/apps/<row id>/...), the verified
+ * company app with a Slack app id (/events/<app id>), or the hosted app.
+ */
+async function resolveApp(deps: Deps, path: { appId?: string; rowId?: string }): Promise<SlackAppContext | null> {
+	if (path.rowId !== undefined) return companyAppByRow(deps.env, deps.db, path.rowId);
+	if (path.appId === undefined) return hostedApp(deps.env);
+	if (!SLACK_APP_ID_PATTERN.test(path.appId)) return null;
+	return verifiedCompanyApp(deps.env, deps.db, path.appId);
 }
 
 /** Verifies a Slack request for the hosted app or a company's own app. Returns the raw body, or a response to send. */
 async function verified(c: Context<AppEnv>, deps: Deps, kind: "events" | "interactions"): Promise<{ app: SlackAppContext; body: string } | Response> {
 	const appId = c.req.param("appId");
+	const rowId = c.req.param("rowId");
+	const label = rowId ?? appId ?? "hosted";
 	const body = await c.req.text();
 	let app: SlackAppContext | null;
 	try {
-		app = await resolveApp(deps, appId);
+		app = await resolveApp(deps, { appId, rowId });
 	} catch {
-		console.error("[slack-agent] app lookup failed", { kind, appId: appId ?? "hosted" });
+		console.error("[slack-agent] app lookup failed", { kind, appId: label });
 		return c.json({ error: "unavailable" }, 503);
 	}
-	if (!app) return appId === undefined ? c.json({ error: "not_configured" }, 503) : c.json({ error: "unknown_app" }, 404);
+	if (!app) return appId === undefined && rowId === undefined ? c.json({ error: "not_configured" }, 503) : c.json({ error: "unknown_app" }, 404);
 	const check = await verifySlackSignature({
 		signingSecret: app.signingSecret,
 		timestamp: c.req.header("x-slack-request-timestamp"),
@@ -64,7 +72,7 @@ async function verified(c: Context<AppEnv>, deps: Deps, kind: "events" | "intera
 		now: deps.now(),
 	});
 	if (check !== "ok") {
-		console.warn("[slack-agent] request refused", { kind, appId: appId ?? "hosted", check });
+		console.warn("[slack-agent] request refused", { kind, appId: label, check });
 		return c.json({ error: "invalid_signature" }, 401);
 	}
 	return { app, body };
@@ -123,6 +131,8 @@ export function createApp(makeDeps: (env: Env) => Deps = defaultDeps) {
 	app.post("/events/:appId", limit, events);
 	app.post("/interactions", limit, interactions);
 	app.post("/interactions/:appId", limit, interactions);
+	app.post("/apps/:rowId/events", limit, events);
+	app.post("/apps/:rowId/interactions", limit, interactions);
 	app.get("/p/signin", (c) => finishSignIn(makeDeps(c.env), c.req.raw));
 	app.get("/p/:store/:page", (c) => servePage(makeDeps(c.env), c.req.raw, c.req.param("store"), c.req.param("page")));
 	app.notFound((c) => c.json({ error: "not_found" }, 404));

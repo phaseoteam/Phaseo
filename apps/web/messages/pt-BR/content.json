@@ -50,7 +50,8 @@
 		"fromJournal": "Do diário",
 		"journalDescription": "Novidades do produto, guias e notas de versão.",
 		"viewAllPosts": "Ver todas as publicações",
-		"englishBodyNotice": "Este conteúdo editorial está disponível atualmente em inglês. A interface ao redor está traduzida; o artigo original é exibido para preservar seu significado."
+		"englishBodyNotice": "Este conteúdo editorial está disponível atualmente em inglês. A interface ao redor está traduzida; o artigo original é exibido para preservar seu significado.",
+		"faqTitle": "Perguntas frequentes"
 	},
 	"roadmap": {
 		"title": "Roadmap da Phaseo",
@@ -386,9 +387,9 @@
 				"description": "O modelo declarativo de componentes e estado que sustenta as interfaces interativas do Phaseo.",
 				"usedFor": "Chat, comparação de modelos, configurações, observabilidade e todas as interfaces com estado são compostos por componentes React."
 			},
-			"nextjs": {
-				"description": "O framework de aplicações que reúne renderização no servidor, roteamento, metadados, cache e interação no cliente.",
-				"usedFor": "O catálogo público, o espaço de trabalho autenticado, as integrações de API e esta página compartilham uma aplicação App Router."
+			"tanstackStart": {
+				"description": "O framework React full-stack que une renderização no servidor, roteamento, carregamento de dados e funções de servidor.",
+				"usedFor": "O catálogo público, o espaço de trabalho autenticado, as pontes de API e esta página compartilham um único aplicativo executado no Cloudflare Workers."
 			},
 			"tailwind": {
 				"description": "Um sistema de estilos baseado em utilitários que mantém as decisões visuais próximas dos componentes afetados.",

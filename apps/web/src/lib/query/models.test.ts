@@ -1,3 +1,4 @@
+import { describe, it, expect, afterEach, vi } from "vitest";
 import type {
 	ModelsFilterFacets,
 	ModelsPageModel,
@@ -40,7 +41,7 @@ describe("fetchModelsPageData", () => {
 	});
 
 	it("merges staged records only through the account-scoped admin request", async () => {
-		global.fetch = jest.fn(async (url) => {
+		global.fetch = vi.fn(async (url) => {
 			const path = String(url);
 			if (path.includes("/models/hidden")) return new Response(JSON.stringify({ models: [
 				{ model_id: "test/staged", name: "Staged", status: "draft", hidden: true, organisation: { lab_slug: "test", name: "Test" } },
@@ -58,7 +59,7 @@ describe("fetchModelsPageData", () => {
 	});
 
 	it("combines every API page while retaining the catalogue facets", async () => {
-		const fetchMock = jest
+		const fetchMock = vi
 			.fn()
 			.mockResolvedValueOnce(
 				new Response(
@@ -94,7 +95,7 @@ describe("fetchModelsPageData", () => {
 	});
 
 	it("rejects responses that cannot power the filters", async () => {
-		global.fetch = jest.fn().mockResolvedValue(
+		global.fetch = vi.fn().mockResolvedValue(
 			new Response(
 				JSON.stringify({
 					models: [],
@@ -111,7 +112,7 @@ describe("fetchModelsPageData", () => {
 	});
 
 	it("loads the dedicated V2 page response without a pricing waterfall", async () => {
-		const fetchMock = jest.fn().mockResolvedValue(
+		const fetchMock = vi.fn().mockResolvedValue(
 			new Response(
 				JSON.stringify({
 					models: [model("v2-model")],
@@ -136,7 +137,7 @@ describe("fetchModelsPageData", () => {
 	});
 
 	it("rejects a mismatched catalogue response for the V2 cache key", async () => {
-		global.fetch = jest.fn().mockResolvedValue(
+		global.fetch = vi.fn().mockResolvedValue(
 			new Response(
 				JSON.stringify({
 					models: [],

@@ -13,8 +13,8 @@ const migration = async (suffix) => {
   assert.ok(name, `migration *${suffix} exists`);
   return readFile(new URL(name, migrations), 'utf8');
 };
-const create = `select * from public.create_workload_identity_policy($1::uuid, $2::uuid, $3, $4, $5, $6, $7::jsonb, $8)`;
-// Phase 2 overload: the pinned claim sits between issuer and owner.
+// The pinned claim sits between issuer and owner. `create` takes the preset arguments and passes no pinned claim.
+const create = `select * from public.create_workload_identity_policy($1::uuid, $2::uuid, $3, $4, $5, null, $6, $7::jsonb, $8)`;
 const createWithClaim = `select * from public.create_workload_identity_policy($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8::jsonb, $9)`;
 const withClaim = (args, claim) => [...args.slice(0, 5), claim, ...args.slice(5)];
 const vercel = (overrides = {}) => {
@@ -30,6 +30,7 @@ try {
   const sql = await migration('_workload_identity_policies.sql');
   const capSql = await migration('_workload_identity_policy_cap.sql');
   const moreIssuersSql = await migration('_workload_identity_more_issuers.sql');
+  const dropLegacySql = await migration('_drop_legacy_function_overloads.sql');
   // The migrations must carry the current declarative definitions verbatim.
   assert.ok(sql.includes(await readFile(new URL('public/functions/active_workload_identity_issuers.sql', schemas), 'utf8')), 'migration includes active_workload_identity_issuers.sql');
   const tableSchema = await readFile(new URL('public/tables/workload_identity_policies.sql', schemas), 'utf8');
@@ -41,8 +42,8 @@ try {
   assert.ok(moreIssuersSql.includes(tableComment), 'more-issuers migration sets the declared table comment');
   const functionSchema = await readFile(new URL('public/functions/create_workload_identity_policy.sql', schemas), 'utf8');
   const bodies = (text) => [...text.matchAll(/\$function\$[\s\S]*?\$function\$/g)].map((match) => match[0]);
-  const [body8, body9] = bodies(functionSchema);
-  assert.ok(bodies(capSql).includes(body8), 'cap migration carries the 8-argument create function');
+  const [body9, ...extra] = bodies(functionSchema);
+  assert.deepEqual(extra, [], 'only the 9-argument create function is declared');
   assert.ok(bodies(moreIssuersSql).includes(body9), 'more-issuers migration carries the 9-argument create function');
   const keysSchema = await readFile(new URL('public/tables/keys.sql', schemas), 'utf8');
   // Later migrations may allow more values (the desktop app's 'desktop' issued_via), but never drop these.
@@ -75,6 +76,9 @@ try {
   await db.exec(sql);
   await db.exec(capSql);
   await db.exec(moreIssuersSql);
+  await db.exec(dropLegacySql);
+  assert.deepEqual(await rows("select p.oid::regprocedure::text as sig from pg_proc p where p.proname = 'create_workload_identity_policy'"),
+    [{ sig: 'create_workload_identity_policy(uuid,uuid,text,text,text,text,text,jsonb,integer)' }], 'the 8-argument overload is dropped');
 
   for (const role of ['anon', 'authenticated']) {
     await db.exec(`set role ${role}`);
@@ -146,10 +150,8 @@ try {
     [withClaim(vercel({ provider: 'custom', issuer: 'https://oidc.example.com/x' }), ''), /pinned_claim_check/],
     [withClaim(vercel(), 'sub'), /pinned_claim_check/],
     [withClaim(vercel({ provider: 'kubernetes' }), null), /provider_check/],
-    // The original overload cannot create a custom policy, which needs a pinned claim.
-    [vercel({ provider: 'custom', issuer: 'https://oidc.example.com/x' }), /pinned_claim_check/],
   ]) {
-    await assert.rejects(rows(args.length === 9 ? createWithClaim : create, args), pattern);
+    await assert.rejects(rows(createWithClaim, args), pattern);
   }
   assert.equal((await rows('select count(*)::int as n from public.keys'))[0].n, beforePhase2);
 

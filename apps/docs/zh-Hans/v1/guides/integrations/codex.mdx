@@ -1,56 +1,27 @@
 ---
 title: "Codex"
 icon: "/icons/brands/codex.svg"
-description: "将 Phaseo Gateway 用作 Codex CLI、Codex App 和 Codex IDE 扩展的自定义提供商。"
+description: "将 Phaseo Gateway 作为 Codex CLI、Codex App 和 Codex IDE 扩展的自定义提供商。"
 ---
 
-Codex 通过 `config.toml` 支持自定义模型提供商。这样你可以将 Codex 请求路由到 Phaseo，同时继续使用原有的 CLI、应用或 IDE 工作流。
-
-如果还希望 Codex 在工作时读取最新的 Phaseo 文档，请同时添加 [Docs MCP](./docs-mcp.mdx) 服务器。
-
-<Visibility for="humans">
-<Note>
-除了配置提供商，还需要可复用的智能体设置帮助？从 [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json) 安装 Phaseo 公开技能：
-
-```bash
-npx skills add https://phaseo.app/docs --agent codex --skill '*'
-```
-</Note>
-</Visibility>
-
-<Visibility for="agents">
-<Note>
-可复用的 Phaseo 技能可从 [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json) 获取。为 Codex 安装时，请使用：
-
-```bash
-npx skills add https://phaseo.app/docs --agent codex --skill '*'
-```
-</Note>
-</Visibility>
+运行 `phaseo codex` 为 Codex 添加一个 Phaseo 配置档案，或者自己在 `config.toml` 中添加 `phaseo` 提供商。同一份配置适用于 Codex CLI、Codex App 和 Codex IDE 扩展。
 
 ## 使用 Phaseo CLI 设置
 
 ```bash
 phaseo login
 phaseo codex --model openai/gpt-5.6-terra
-```
-
-请先安装 Codex 官方版本。设置过程会创建一个 90 天后过期、每月支出上限为 100 美元的 `Phaseo CLI: Codex API Key`，将其保存到操作系统凭据库，并写入专用的 Phaseo 配置档案。Codex 通过 CLI 助手读取密钥，旧密钥过期时助手会自动创建新密钥，因此不会将明文密钥写入 `config.toml`。
-
-使用以下命令启动 Codex：
-
-```bash
 codex --profile phaseo
 ```
 
-同一 Phaseo CLI 工作流也可启动 [Cline](./cline)、[Kilo Code](./kilo-code)、[oh-my-pi](./oh-my-pi)、[Muse Code](./muse-code) 和 [MiniMax Code](./minimax-code)，并使用隔离的临时提供商配置。
+如果没有安装 Codex，CLI 会显示官方安装命令，并在运行前征求你的确认。随后 setup 会打开一个控制台页面，由你批准一个 `Phaseo CLI: Codex API Key`，它 90 天后过期，每月支出上限为 $100。CLI 把密钥保存在操作系统凭据存储中，并把配置档案写入 `~/.codex/phaseo.config.toml`（或 `CODEX_HOME` 下）。Codex 从 CLI 获取密钥，所以配置中不会写入明文密钥。密钥过期后，再次运行 `phaseo codex` 批准新密钥。不指定 `--model` 时，配置档案使用 `openai/gpt-5.6-terra`。
 
-## 手动配置
+## 手动配置 Codex
 
-创建或更新用户配置文件 `~/.codex/config.toml`。对于可信项目，也可以将相同设置放在仓库中的 `.codex/config.toml`。
+将以下内容添加到 `~/.codex/config.toml`，或受信任项目中的 `.codex/config.toml`：
 
 ```toml
-model = "openai/gpt-5.5"
+model = "openai/gpt-6-astra"
 model_provider = "phaseo"
 
 [model_providers.phaseo]
@@ -60,17 +31,34 @@ env_key = "PHASEO_API_KEY"
 wire_api = "responses"
 ```
 
-Codex 当前通过 Responses 协议连接自定义提供商。请保留 `wire_api = "responses"`，或省略此项以使用默认值。
+然后导出 `PHASEO_API_KEY` 并启动 Codex。Codex 自定义提供商使用 Responses 线路协议，这也是默认值，所以你也可以省略 `wire_api`。在 IDE 扩展中，通过 **Codex Settings → Open config.toml** 打开该文件。
 
-Codex App 和 IDE 扩展共用相同的配置层。在 IDE 扩展中，可通过 `Codex Settings > Open config.toml` 打开配置文件。
+## 确认可以正常使用
 
-## 验证
+发送一条简短的提示词，并确认该请求出现在 **设置 → 用量 → 日志** 中。Codex 调用的是 [Responses](../../api-reference/endpoint/responses.mdx)，因此模型必须支持该端点。
 
-- 启动前，请在[模型](../../api-reference/endpoint/models.mdx)中确认模型 ID 存在。
-- Codex 默认工作流请使用 [Responses](../../api-reference/endpoint/responses.mdx)。
+## 移除 Phaseo
 
-## 故障排查
+```bash
+phaseo integrations remove codex
+```
 
-- `401 Unauthorized`：运行 `phaseo whoami`，然后重新运行 `phaseo codex`。
-- `model_not_found`：从[模型](../../api-reference/endpoint/models.mdx)获取当前 ID 并更新 `model`。
-- 提供商特有问题：查看[路由与回退](../routing-and-fallbacks.mdx)了解故障转移行为。
+如果 `phaseo.config.toml` 是 Phaseo 创建的，此命令会删除它，并吊销密钥。对于手动设置，请从 `config.toml` 中删除 `phaseo` 提供商。
+
+## 解决常见问题
+
+| 错误 | 解决方法 |
+| --- | --- |
+| `401 Unauthorized` | 运行 `phaseo whoami`，然后重新运行 `phaseo codex`。 |
+| `model_not_found` | 从 [Models](../../api-reference/endpoint/models.mdx) 获取当前 ID 并更新 `model`。 |
+| 某个提供商失败 | 故障转移请参阅[路由和回退](../routing-and-fallbacks.mdx)。 |
+
+## 添加 Phaseo 技能和文档
+
+要让 Codex 在工作时读取最新的 Phaseo 文档，请添加 [Docs MCP](./docs-mcp.mdx) 服务器。要为 Codex 安装公开的 [Phaseo 技能](https://phaseo.app/docs/.well-known/agent-skills/index.json)：
+
+```bash
+npx skills add https://phaseo.app/docs --agent codex --skill '*'
+```
+
+同样的 CLI 工作流也可以用临时设置启动 [Cline](./cline.mdx)、[Kilo Code](./kilo-code.mdx)、[oh-my-pi](./oh-my-pi.mdx)、[Muse Code](./muse-code.mdx) 和 [MiniMax Code](./minimax-code.mdx)。

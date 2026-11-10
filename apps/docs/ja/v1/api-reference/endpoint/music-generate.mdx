@@ -5,46 +5,20 @@ badge: "Beta"
 openapi: "/ja/openapi/v1/openapi.localized.yaml POST /music/generate"
 ---
 
-プロバイダーに依存しない1つのAPIで音楽を生成します。Phaseoが同期レスポンスとプロバイダーキューのポーリングをバックグラウンドで処理します。
+`model` と `prompt` を `POST /v1/music/generate` に送信すると、1 つのリクエスト形式でどの音楽プロバイダーからでもトラックを取得できます。同期型のプロバイダーへの対応や、プロバイダーのキューのポーリングは Phaseo が行います。
 
-生成が完了すると、レスポンスには`audio_url`または`audio_base64`が含まれます。プロバイダーが未完了のジョブを返した場合は、同じレスポンスの`id`を使って`GET /music/generate/{music_id}`を呼び出してください。
-
-## リクエストの形式
-
-```json
-{
-  "model": "minimax/music-3.0:free",
-  "prompt": "Warm jazz trio with brushed drums",
-  "format": "mp3"
-}
+```bash
+curl https://api.phaseo.app/v1/music/generate \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "minimax/music-3.0:free",
+    "prompt": "Warm jazz trio with brushed drums",
+    "format": "mp3"
+  }'
 ```
 
-## Sunoのオプション
-
-- `suno.customMode` （boolean、既定値: `false`）
-- `suno.instrumental` （boolean、既定値: `false`）
-- `suno.prompt` （トップレベルの`prompt`を任意で上書き）
-- `suno.style`, `suno.title` （`customMode = true`の場合に必須）
-- `suno.personaId`, `suno.personaModel`
-- `suno.negativeTags`, `suno.vocalGender`
-- `suno.styleWeight`, `suno.weirdnessConstraint`, `suno.audioWeight`
-
-## 検証ルール
-
-- `customMode = false`の場合、`prompt`が必要です。
-- `customMode = true`の場合、`style`と`title`の両方が必要です。
-- `customMode = true`かつ`instrumental = false`の場合、`prompt`が必要です。
-
-検証エラーは`400`と次の内容を返します。
-
-```json
-{
-  "error": "validation_error",
-  "reason": "..."
-}
-```
-
-## 応答
+## 結果を読む
 
 ```json
 {
@@ -62,8 +36,32 @@ openapi: "/ja/openapi/v1/openapi.localized.yaml POST /music/generate"
 }
 ```
 
-- `id` は Phaseo の固定リクエスト ID です。`GET /music/generate/{music_id}` でリクエストを取得できます。
-- `nativeResponseId` は上流プロバイダーの識別子で、プロバイダーとの照合やサポート時に使用します。
-- `status` は `queued`、`in_progress`、`completed`、`failed` のいずれかです。
-- プロバイダーが生成時間を返す場合、`usage` に `output_audio_seconds` が含まれることがあります。
+完了した生成には `audio_url` または `audio_base64` が含まれます。`status` は `queued`、`in_progress`、`completed`、`failed` のいずれかです。まだ最終状態でない場合は、同じ `id` で [`GET /v1/music/generate/{music_id}`](./music-status.mdx) をポーリングしてください。
 
+`id` は Phaseo の固定のリクエスト ID です。`nativeResponseId` は上流プロバイダーの識別子で、プロバイダー側との照合やサポートに使います。プロバイダーが生成された長さを報告する場合、`usage` に `output_audio_seconds` が含まれます。
+
+## Suno のオプションを設定する
+
+Suno のモデルは、任意の `suno` オブジェクトを受け付けます。
+
+| フィールド | 型 | 備考 |
+| --- | --- | --- |
+| `customMode` | boolean | デフォルト `false` |
+| `instrumental` | boolean | デフォルト `false` |
+| `prompt` | string | トップレベルの `prompt` を上書きします |
+| `style`、`title` | string | `customMode` が `true` の場合は必須 |
+| `personaId`、`personaModel` | string | |
+| `negativeTags` | string | |
+| `vocalGender` | `m` または `f` | |
+| `styleWeight`、`weirdnessConstraint`、`audioWeight` | number | 0〜1 |
+
+`prompt` は、`customMode` が `false` の場合と、`customMode` が `true` で `instrumental` が `false` の場合に必須です。
+
+プロバイダーのルールに違反するリクエストは `400` を返します。
+
+```json
+{
+  "error": "validation_error",
+  "reason": "..."
+}
+```

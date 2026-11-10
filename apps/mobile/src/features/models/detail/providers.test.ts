@@ -87,11 +87,59 @@ describe("routing order", () => {
   });
 });
 
-test("runtime stats prefer 30-minute figures and hide uptime without health requests", () => {
+test("runtime stats prefer 30-minute figures; uptime is never request-level", () => {
   const stats = runtimeStatsFromHealth([
     { provider_id: "a", service_tier: "default", requests: 10, requests_30m: 1, health_requests: 0, uptime_pct: 100, percentile_latency_ms_30m: 500, percentile_latency_ms: 900, avg_throughput: 40 },
     { provider_id: "a", service_tier: "fast", requests: 3, requests_30m: 0, health_requests: 3, uptime_pct: 66.7, avg_latency_ms: 300 },
+    { provider_id: "idle", service_tier: "standard", requests: 0, requests_30m: 0, health_requests: 0, uptime_pct: null },
   ]);
-  expect(stats.get(statsKey("a"))).toMatchObject({ latencyMs: 500, throughput: 40, uptimePct: null });
-  expect(stats.get(statsKey("a", "priority"))).toMatchObject({ latencyMs: 300, uptimePct: 66.7 });
+  const allDays100 = [{ offset: 2, uptimePct: 100 }, { offset: 1, uptimePct: 100 }, { offset: 0, uptimePct: 100 }];
+  // Traffic but no attempt rates: 100%, not the request-level 66.7%.
+  expect(stats.get(statsKey("a"))).toMatchObject({ latencyMs: 500, throughput: 40, uptimePct: 100, attemptHealth: null, uptimeDays: allDays100 });
+  expect(stats.get(statsKey("a", "priority"))).toMatchObject({ latencyMs: 300, uptimePct: 100, uptimeDays: allDays100 });
+  // No traffic in the window: no uptime to show.
+  expect(stats.get(statsKey("idle"))).toMatchObject({ uptimePct: null, uptimeDays: null });
+});
+
+describe("attempt health per provider", () => {
+  const now = new Date("2026-11-05T06:30:00Z");
+  const rates = (uptime: number | null) => ({ reachability_pct: uptime, capacity_pct: uptime == null ? null : 100, call_error_pct: uptime == null ? null : 100, uptime_pct: uptime });
+
+  test("uptime is per attempt, with the last three UTC days oldest first", () => {
+    const stats = runtimeStatsFromHealth(
+      [{ provider_id: "a", service_tier: "standard", requests: 10, requests_30m: 1, health_requests: 10, uptime_pct: 100 }],
+      [{
+        provider_id: "a", service_tier: "standard", ...rates(97.5), capacity_pct: 99, call_error_pct: 99.99,
+        days: [
+          { start: "2026-11-01T00:00:00.000Z", ...rates(50) },
+          { start: "2026-11-03T00:00:00.000Z", ...rates(98) },
+          { start: "2026-11-05T00:00:00.000Z", ...rates(99.5) },
+        ],
+      }],
+      now,
+    );
+    expect(stats.get(statsKey("a"))).toMatchObject({
+      uptimePct: 97.5,
+      attemptHealth: { reachabilityPct: 97.5, capacityPct: 99, callErrorPct: 99.99, uptimePct: 97.5 },
+      // A day outside the window is dropped; a day without attempts shows 100%.
+      uptimeDays: [{ offset: 2, uptimePct: 98 }, { offset: 1, uptimePct: 100 }, { offset: 0, uptimePct: 99.5 }],
+    });
+  });
+
+  test("without eligible attempts uptime reads 100%, never request-level; a provider that only failed over still gets a row", () => {
+    const stats = runtimeStatsFromHealth(
+      [{ provider_id: "a", service_tier: "standard", requests: 10, requests_30m: 0, health_requests: 10, uptime_pct: 99 }],
+      [
+        { provider_id: "a", service_tier: "standard", ...rates(null), days: [] },
+        { provider_id: "b", service_tier: "default", ...rates(0) },
+      ],
+      now,
+    );
+    expect(stats.get(statsKey("a"))).toMatchObject({ uptimePct: 100, uptimeDays: [{ offset: 2, uptimePct: 100 }, { offset: 1, uptimePct: 100 }, { offset: 0, uptimePct: 100 }] });
+    // No daily rates sent: each day reads 100%, and the window's rates still show.
+    expect(stats.get(statsKey("b"))).toMatchObject({
+      uptimePct: 0, latencyMs: null, requests3d: 0, attemptHealth: { reachabilityPct: 0, capacityPct: 100 },
+      uptimeDays: [{ offset: 2, uptimePct: 100 }, { offset: 1, uptimePct: 100 }, { offset: 0, uptimePct: 100 }],
+    });
+  });
 });

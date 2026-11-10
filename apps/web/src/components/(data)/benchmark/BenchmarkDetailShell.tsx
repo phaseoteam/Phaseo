@@ -1,6 +1,6 @@
+import { useTranslations } from "@/i18n/react";
 import { ReactNode } from "react";
-import { getTranslations } from "next-intl/server";
-import Image from "next/image";
+import Image from "@/components/image";
 import { Trophy } from "lucide-react";
 import { ArtificialAnalysisLogo } from "@/components/ArtificialAnalysisLogo";
 import { isArtificialAnalysisBenchmark } from "@/lib/benchmarks/artificialAnalysis";
@@ -16,13 +16,13 @@ interface BenchmarkDetailShellProps {
 	tocItems?: ModelPageTocItem[];
 }
 
-export default async function BenchmarkDetailShell({
+export default function BenchmarkDetailShell({
 	benchmark,
 	children,
 	tocItems = [],
 }: BenchmarkDetailShellProps) {
-	const t = await getTranslations("Catalogue.benchmarks");
-	const tChart = await getTranslations("Common.ui.benchmarkChartCopy");
+	const t = useTranslations("Catalogue.benchmarks");
+	const tChart = useTranslations("Common.ui.benchmarkChartCopy");
 	if (!benchmark) {
 		return (
 			<main className="flex min-h-screen flex-col">

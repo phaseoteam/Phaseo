@@ -51,6 +51,38 @@ describe("OpenAI image generation schema", () => {
 		}).success).toBe(true);
 	});
 
+	it.each([
+		["openai/gpt-image-2.5-flare", "xhigh"],
+		["openai/gpt-image-2.6-flare", "xhigh"],
+		["openai/gpt-image-2.6-sunburst", "max"],
+	])("accepts the 2.5-and-later quality levels on %s (%s)", (model, quality) => {
+		expect(ImagesGenerationSchema.safeParse({ model, prompt: "A lighthouse in a storm", quality }).success).toBe(true);
+	});
+
+	it("applies the GPT Image 2 size rules to 2.6 as well", () => {
+		expect(ImagesGenerationSchema.safeParse({ model: "openai/gpt-image-2.6-flare", prompt: "A", size: "1025x1024" }).success).toBe(false);
+		expect(ImagesGenerationSchema.safeParse({ model: "openai/gpt-image-2.6-flare", prompt: "A", size: "2048x1152" }).success).toBe(true);
+	});
+
+	it.each(["openai/gpt-image-2.6-flare", "openai/gpt-image-2.6-sunburst"])("accepts complexity on %s", (model) => {
+		for (const complexity of ["low", "medium", "high"]) {
+			const parsed = ImagesGenerationSchema.safeParse({ model, prompt: "A lighthouse", complexity });
+			expect(parsed.success).toBe(true);
+			if (parsed.success) expect(parsed.data.complexity).toBe(complexity);
+		}
+		expect(ImagesGenerationSchema.safeParse({ model, prompt: "A lighthouse", complexity: "max" }).success).toBe(false);
+	});
+
+	// Ids without a version (gpt-image-latest) pass; OpenAI rejects the field if the target lacks it.
+	it.each(["openai/gpt-image-2.5-flare", "openai/gpt-image-2", "google/gemini-3-pro-image"])(
+		"rejects complexity on %s",
+		(model) => {
+			const parsed = ImagesGenerationSchema.safeParse({ model, prompt: "A lighthouse", complexity: "low" });
+			expect(parsed.success).toBe(false);
+			if (!parsed.success) expect(parsed.error.issues[0]?.path).toEqual(["complexity"]);
+		},
+	);
+
 	it("rejects GPT Image 2.5-only quality levels for earlier GPT Image models", () => {
 		expect(ImagesGenerationSchema.safeParse({
 			model: "openai/gpt-image-2",
@@ -133,5 +165,43 @@ describe("OpenAI image generation schema", () => {
 			width: 4096,
 			height: 4096,
 		}).success).toBe(true);
+	});
+});
+
+describe("GPT Image 2.6 generation options", () => {
+	const base = { model: "openai/gpt-image-2.6-flare", prompt: "A red kite" };
+	const issues = (body: Record<string, unknown>) => {
+		const parsed = ImagesGenerationSchema.safeParse({ ...base, ...body });
+		return parsed.success ? [] : parsed.error.issues.map((issue) => issue.path.join("."));
+	};
+
+	it("accepts complexity, GIF frames and SVG with an author model", () => {
+		expect(issues({ complexity: "low" })).toEqual([]);
+		expect(issues({ output_format: "gif", frame_count: 9, frame_duration_ms: 200, size: "512x512" })).toEqual([]);
+		expect(issues({ output_format: "gif", size: "auto" })).toEqual([]);
+		expect(issues({ output_format: "svg", n: 1, svg: { model: "openai/gpt-5-nano", reasoning: { effort: "low" } } })).toEqual([]);
+		expect(issues({ model: "openai/gpt-image-flare-latest", complexity: "high" })).toEqual([]);
+	});
+
+	it("rejects combinations OpenAI does not support", () => {
+		expect(issues({ output_format: "svg" })).toContain("svg.model");
+		expect(issues({ output_format: "svg", n: 2, svg: { model: "gpt-5-nano" } })).toContain("n");
+		expect(issues({ output_format: "svg", stream: true, svg: { model: "gpt-5-nano" } })).toContain("stream");
+		expect(issues({ output_format: "svg", output_compression: 50, svg: { model: "gpt-5-nano" } })).toContain("output_compression");
+		expect(issues({ svg: { model: "gpt-5-nano" } })).toContain("svg");
+		expect(issues({ frame_count: 4 })).toContain("frame_count");
+		expect(issues({ output_format: "gif", frame_count: 1 })).toContain("frame_count");
+		expect(issues({ output_format: "gif", size: "500x500" })).toContain("size");
+		expect(issues({ output_format: "gif", partial_images: 1, stream: true })).toEqual(expect.arrayContaining(["stream", "partial_images"]));
+		expect(issues({ complexity: "extreme" })).toContain("complexity");
+	});
+
+	it("keeps 2.6 options to GPT Image 2.6 models", () => {
+		expect(issues({ model: "openai/gpt-image-2.5-flare", complexity: "low" })).toContain("complexity");
+		expect(issues({ model: "openai/gpt-image-2.5-flare", output_format: "gif" })).toContain("output_format");
+		expect(issues({ model: "openai/gpt-image-1", output_format: "svg", svg: { model: "gpt-5-nano" } })).toEqual(expect.arrayContaining(["svg", "output_format"]));
+		expect(issues({ model: "black-forest-labs/flux-2-pro", complexity: "low" })).toContain("complexity");
+		expect(issues({ model: "black-forest-labs/flux-2-pro", output_format: "svg" })).toContain("output_format");
+		expect(issues({ model: "black-forest-labs/flux-2-pro", output_format: "gif" })).toContain("output_format");
 	});
 });

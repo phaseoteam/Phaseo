@@ -6,7 +6,7 @@ import type { GitCommitSummary, GitDiffRequest, GitDiffResult, GitRefs } from ".
 import type { Task } from "../../shared/workspace";
 import { useWorkspace } from "../app/workspace";
 import { usePersistedState } from "../lib/persistedState";
-import { useWorkspacePreferences } from "../lib/workspacePreferences";
+import { useWorkspacePreferences, saveChatPreferences } from "../lib/workspacePreferences";
 import { cn } from "../lib/utils";
 import { allCollapsed, diffFileTree, diffLineStat, diffTurns, fileDiffKey, resolveFileDiffPath, scopeLabel, sectionOf, selectedTurn, changeTone, toggleAll, toggleOne, type DiffSelection } from "../lib/diffSurface";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSub, DropdownMenuSubContent, DropdownMenuSubTrigger, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
@@ -100,9 +100,9 @@ export function DiffSurface({ projectId, taskId, onOpenFile }: { projectId: stri
 		window.addEventListener(OPEN_TURN_DIFF_EVENT, open);
 		return () => window.removeEventListener(OPEN_TURN_DIFF_EVENT, open);
 	});
-	const [layout, setLayout] = usePersistedState<"unified" | "split">("phaseo.desktop.diffLayout", "unified");
+	const { diffLayout: layout, diffIgnoreWhitespace: ignoreWhitespace } = useWorkspacePreferences().chat;
+	const setLayout = (diffLayout: "unified" | "split") => void saveChatPreferences({ diffLayout }), setIgnoreWhitespace = (diffIgnoreWhitespace: boolean) => void saveChatPreferences({ diffIgnoreWhitespace });
 	const [wrap, setWrap] = usePersistedState("phaseo.desktop.diffWrap", false);
-	const [ignoreWhitespace, setIgnoreWhitespace] = usePersistedState("phaseo.desktop.diffIgnoreWhitespace", false);
 	const [treeOpen, setTreeOpen] = usePersistedState("phaseo.desktop.diffFileTree", false);
 	const [task, setTask] = useState<Task>();
 	const [loaded, setLoaded] = useState<Loaded>();

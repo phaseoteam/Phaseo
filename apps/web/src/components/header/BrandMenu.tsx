@@ -1,6 +1,4 @@
-"use client";
-
-import Image from "next/image";
+import Image from "@/components/image";
 import {
 	Check,
 	Copy,
@@ -10,8 +8,8 @@ import {
 	Moon,
 	Sun,
 } from "lucide-react";
-import { useTheme } from "next-themes";
-import { useTranslations } from "next-intl";
+import { useTheme } from "@/components/theme/ThemeProvider";
+import { useTranslations } from "@/i18n/react";
 import {
 	cloneElement,
 	type KeyboardEvent,

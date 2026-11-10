@@ -35,6 +35,30 @@ describe("LTX audio-to-video request mapping", () => {
 			.toThrow("input_audio_duration is required");
 	});
 
+	it("caps LTX-2.5 Pro input audio at 10 seconds at every resolution", () => {
+		const audioRef = [{ type: "audio" as const, role: "source" as const, url: "https://example.com/speech.mp3" }];
+		expect(buildLtxVideoRequest(request({ inputAudioDurationSeconds: 10, inputReferences: audioRef }), "ltx-2-5-pro").seconds).toBe(10);
+		expect(() => buildLtxVideoRequest(request({ inputAudioDurationSeconds: 12, inputReferences: audioRef }), "ltx-2-5-pro"))
+			.toThrow("between 2 and 10 seconds for ltx-2-5-pro");
+	});
+
+	it("allows 20 seconds of audio on LTX-2.5 Fast and LTX-2.3 Pro only up to 1080p", () => {
+		const audioRef = [{ type: "audio" as const, role: "source" as const, url: "https://example.com/speech.mp3" }];
+		for (const model of ["ltx-2-5-fast", "ltx-2-3-pro"]) {
+			expect(buildLtxVideoRequest(request({ inputAudioDurationSeconds: 20, inputReferences: audioRef }), model).inputAudioSeconds).toBe(20);
+			expect(() => buildLtxVideoRequest(request({ inputAudioDurationSeconds: 12, size: "3840x2160", inputReferences: audioRef }), model))
+				.toThrow("between 2 and 10 seconds");
+		}
+	});
+
+	it("refuses generate_audio false for audio-to-video", () => {
+		expect(() => buildLtxVideoRequest(request({
+			generateAudio: false,
+			inputAudioDurationSeconds: 8,
+			inputReferences: [{ type: "audio", role: "source", url: "https://example.com/speech.mp3" }],
+		}), "ltx-2-5-pro")).toThrow("does not apply to LTX audio-to-video");
+	});
+
 	it("rejects audio mode on models that do not support it", () => {
 		expect(() => buildLtxVideoRequest(request({ inputAudioDurationSeconds: 8, inputReferences: [{ type: "audio", role: "source", url: "https://example.com/speech.mp3" }] }), "ltx-2-3-fast"))
 			.toThrow("does not support LTX audio-to-video");
@@ -56,9 +80,26 @@ describe("LTX documented model constraints", () => {
 		}), "ltx-2-3-pro")).toThrow("only supported by LTX-2.5");
 	});
 
-	it("rejects 48 fps on LTX-2.5 Pro", () => {
-		expect(() => buildLtxVideoRequest(request({
-			rawRequest: { config: { ltx: { fps: 48 } } },
-		}), "ltx-2-5-pro")).toThrow("supports 24, 25, or 50 fps");
+	it("forwards a top-level generate_audio false and defaults to true", () => {
+		expect(buildLtxVideoRequest(request({ generateAudio: false }), "ltx-2-5-pro").body.generate_audio).toBe(false);
+		expect(buildLtxVideoRequest(request({ generateAudio: false, inputImage: "https://example.com/a.png" }), "ltx-2-5-fast").body)
+			.toMatchObject({ generate_audio: false, image_uri: "https://example.com/a.png" });
+		expect(buildLtxVideoRequest(request(), "ltx-2-5-pro").body.generate_audio).toBe(true);
+	});
+
+	it("refuses automatic duration because LTX does not report the length it bills", () => {
+		expect(() => buildLtxVideoRequest(request({ rawRequest: { config: { ltx: { duration: null } } } }), "ltx-2-5-pro"))
+			.toThrow("Automatic LTX duration is not available");
+	});
+
+	it("sends 48 fps and 1440p/4K to LTX-2.5 Pro", () => {
+		expect(buildLtxVideoRequest(request({ rawRequest: { config: { ltx: { fps: 48 } } } }), "ltx-2-5-pro").fps).toBe(48);
+		for (const size of ["2560x1440", "3840x2160", "2160x3840"]) {
+			expect(buildLtxVideoRequest(request({ size } as any), "ltx-2-5-pro").resolution).toBe(size);
+		}
+	});
+
+	it.each(["1440x1440", "2160x2160", "1440p", "4k"])("refuses the unpriced or non-pixel size %s before submission", (size) => {
+		expect(() => buildLtxVideoRequest(request({ size } as any), "ltx-2-5-fast")).toThrow("LTX resolution must be one of");
 	});
 });

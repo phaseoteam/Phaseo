@@ -1,54 +1,62 @@
 ---
 title: "Von Helicone AI Gateway migrieren"
 sidebarTitle: "Helicone"
-description: "Migriere eine OpenAI-kompatible Helicone-Proxy-Integration zu Phaseo und entferne nicht mehr benötigte Observability-Header."
+description: "Migriere eine OpenAI-kompatible Helicone-Proxy-Integration zu Phaseo und ersetze die Observability-Header, die sie nicht mehr braucht."
 icon: "activity"
 ---
 
-Nutze diese Anleitung, wenn Helicone zwischen deiner Anwendung und einem KI-Anbieter sitzt. Die Änderung an der Anfrage ist meist klein. Plane die Umstellung der Observability aber ebenso sorgfältig wie den Wechsel des Endpunkts.
+Richte den Client mit einem Phaseo-Schlüssel auf `https://api.phaseo.app/v1` aus, entferne `Helicone-Auth` und übertrage jeden `Helicone-*`-Header, den du noch brauchst, auf seine Phaseo-Entsprechung. Die Änderung an der Anfrage ist klein; plane die Umstellung der Observability ebenso sorgfältig.
 
-## Was sich ändert
-
-| Einstellung | Vorher | Nachher |
+| Einstellung | Helicone | Phaseo |
 | --- | --- | --- |
-| Basis-URL | Helicone-Proxy-URL | `https://api.phaseo.app/v1` |
-| Authentifizierung | Anbieterschlüssel plus Helicone-Authentifizierung | `PHASEO_API_KEY` |
-| Helicone-Header | Werden zu Anfragen hinzugefügt | Werden entfernt |
-| Einblick in Anfragen | Helicone-Dashboard | Phaseo-Aktivität und Anfragedetails |
+| Basis-URL | `oai.helicone.ai/v1`, `anthropic.helicone.ai`, `ai-gateway.helicone.ai` oder `gateway.helicone.ai` mit `Helicone-Target-URL` | `https://api.phaseo.app/v1` |
+| Authentifizierung | Anbieterschlüssel plus `Helicone-Auth` oder `HELICONE_API_KEY` im AI Gateway | Nur `PHASEO_API_KEY` |
+| Benutzerdefinierte Eigenschaften | `Helicone-Property-<Name>` | `X-Phaseo-Metadata`-Labels |
+| Einblick in Anfragen | Helicone-Dashboard | Phaseo-Anfrage-Logs und Anfragedetails |
 
-<Steps>
-<Step title="Erfasse die genutzten Helicone-Funktionen">
-
-Notiere benutzerdefinierte Eigenschaften, Sitzungen, Benutzerkennungen, Caching, Ratenbegrenzungen, Warnmeldungen und Dashboards, die den Produktionsbetrieb beeinflussen. Gehe nicht davon aus, dass das Entfernen des Proxys diese Abläufe automatisch an anderer Stelle wiederherstellt.
-
-</Step>
-
-<Step title="Ersetze die Proxy-Konfiguration">
-
-Richte deinen OpenAI-kompatiblen Client auf Phaseo aus und entferne `Helicone-Auth` sowie alle weiteren Helicone-spezifischen Header.
+## Client umstellen
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// Vorher:
+// new OpenAI({
+//   apiKey: process.env.OPENAI_API_KEY,
+//   baseURL: "https://oai.helicone.ai/v1",
+//   defaultHeaders: {
+//     "Helicone-Auth": `Bearer ${process.env.HELICONE_API_KEY}`,
+//     "Helicone-Property-Team": "support",
+//   },
+// });
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
+  defaultHeaders: {
+    "X-Phaseo-Metadata": JSON.stringify({ labels: [{ key: "team", value: "support" }] }),
+  },
 });
 
-const response = await client.chat.completions.create({
-  model: "openai/gpt-4.1-mini",
-  messages: [{ role: "user", content: "Reply with: migration ready" }],
-});
+const response = await client.chat.completions.create(
+  {
+    model: "openai/gpt-6-astra",
+    messages: [{ role: "user", content: "Reply with: migration ready" }],
+  },
+  { headers: { "X-Phaseo-User-Id": "user_123" } },
+);
 ```
 
 ```python Python
+import json
 import os
 from openai import OpenAI
 
 client = OpenAI(
     api_key=os.environ["PHASEO_API_KEY"],
     base_url="https://api.phaseo.app/v1",
+    default_headers={
+        "X-Phaseo-Metadata": json.dumps({"labels": [{"key": "team", "value": "support"}]}),
+    },
 )
 ```
 
@@ -57,37 +65,43 @@ curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
+    "model": "openai/gpt-6-astra",
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+Werte pro Anfrage wie Benutzer-IDs gehören an die Anfrage, nicht an den Client. Routen über `anthropic.helicone.ai` wechseln zur Einrichtung aus [Vom Anthropic-SDK migrieren](./from-anthropic).
 
-<Step title="Übertrage die Einsicht in Anfragen">
+Im Helicone AI Gateway steckt das Routing im `model`-String. Teile ihn auf: Der erste kommagetrennte Eintrag wird zu `model`, die übrigen werden zum `models`-Array; eine Festlegung `<model>/<provider>` wird zu `provider.only` oder einer ID `provider:org/model`; ein Ausschluss `!provider` wird zu `provider.ignore`.
 
-Nutze für die Betriebsdiagnose Phaseo-Aktivität, Request-IDs, Anbieter-Versuche und Preisinformationen. Wenn dein Team Telemetrie an anderer Stelle exportiert, richte vor der Umstellung die passende [Observability](../guides/integrations/observability.mdx)-Integration ein.
+## Helicone-Header zuordnen
 
-</Step>
+| Helicone | Bei Phaseo |
+| --- | --- |
+| `Helicone-Auth` | Entfernen. |
+| `Helicone-Property-<Name>` | `X-Phaseo-Metadata`-[Labels](../guides/request-labels): bis zu 32, Schlüssel entsprechen `[A-Za-z0-9_.:-]` (64 Zeichen), benenne Eigenschaften mit Leerzeichen also um. Fehlerhaftes JSON oder doppelte Schlüssel geben `400` zurück. Schreib keine personenbezogenen Daten in Labels. |
+| `Helicone-User-Id` | Body-Feld `user` oder `X-Phaseo-User-Id`. Es dient auch als Schlüssel für Ratenlimit-Richtlinien pro Endbenutzer. |
+| `Helicone-Session-Id` | Body-Feld `session_id`. Es steuert Cache- und Anbieteraffinität, keinen Trace-Baum. |
+| `Helicone-Session-Path`, `Helicone-Session-Name` | Body-Felder `metadata.trace_id`, `parent_span_id`, `trace_name`, `span_name` oder ein W3C-Header `traceparent`. Diese Felder formen die Spans, die an Observability-Ziele gehen; die eigenen Logs von Phaseo haben keinen Trace-Baum. |
+| `Helicone-Cache-Enabled` | Kein Antwort-Cache. Cache bei Bedarf in der App. |
+| `Helicone-Fallbacks`, `Helicone-Retry-Enabled` | `models`-Array, versucht bei `429`, `500`, `502`, `503` und `504`, plus integrierter Anbieter-Fallback. Behalte den Backoff im Client. |
+| `Helicone-RateLimit-Policy` | Ratenlimit-Richtlinien und Schlüssellimits. Siehe [Limits](../api-reference/limits). |
+| `Helicone-LLM-Security-Enabled` | Erkennung von Prompt-Injection durch Guardrails, nur bei Anfragen. |
+| `Helicone-Moderations-Enabled` | Keine Entsprechung im Gateway. Rufe `/v1/moderations` aus der App auf. |
+| `Helicone-Omit-Request`, `Helicone-Omit-Response` | Logging-Richtlinie des Workspace oder Zero Data Retention. |
+| `Helicone-Posthog-*` | PostHog-[Observability-Ziel](../guides/integrations/observability). |
+| Prompt-Verwaltung | [Prompt-Vorlagen in Presets](../guides/prompt-templates): `"prompt": {"id": "@slug", "version": "production", "variables": {...}}`. |
 
-<Step title="Teste und rolle aus">
+## Einblick in Anfragen verlagern
 
-Prüfe, ob Anfragen ohne Helicone-Header abgeschlossen werden und dein Team bei Vorfällen weiterhin die nötigen Betriebsfragen beantworten kann. Leite den Datenverkehr schrittweise um, sobald Inferenz und Observability erfolgreich geprüft wurden.
+Verwende zum Debuggen Anfrage-Logs, Anfrage-IDs, Anbieterversuche und Preisdetails. Wenn das Team Telemetrie exportiert, verbinde das passende [Observability-Ziel](../guides/integrations/observability) vor der Umstellung, damit keine Lücke entsteht. Das asynchrone Logging von Helicone, das keinen Traffic weiterleitet, ist eine eigene Entscheidung, unabhängig vom Gateway-Wechsel.
 
-</Step>
-</Steps>
+## Testen und umstellen
 
-## Migrations-Checkliste
+Prüfe, dass Anfragen ohne Helicone-Header erfolgreich sind und dass das Team die Fragen, die es bei Vorfällen stellt, weiterhin beantworten kann. Bevor du Traffic verschiebst:
 
-- Helicone-Proxy-URL und Authentifizierungsheader wurden entfernt.
-- Produktionsmodell-IDs wurden mit `GET /v1/models` überprüft.
-- Erforderliche Request-Metadaten sind weiterhin in Phaseo oder deinem Telemetrie-Stack verfügbar.
-- Für Warnmeldungen und Dashboards gibt es bei Bedarf einen geplanten Ersatz.
-- Ein Rollback erfordert weiterhin nur eine Änderung von Endpunkt und Schlüssel.
-
-## Nächste Schritte
-
-- [Observability](../guides/integrations/observability.mdx)
-- [Anbieterstatus](../guides/provider-statuses.mdx)
-- [Fehlerbehandlung](../api-reference/errors.mdx)
+- jede Helicone-URL und jeder `Helicone-*`-Header ist entfernt oder zugeordnet;
+- die Produktions-Modell-IDs stehen in `GET /v1/models?format=openai`;
+- Alarme und Dashboards haben dort einen Ersatz, wo das Team einen braucht;
+- das Zurückrollen ist weiterhin nur eine Änderung von Basis-URL und Schlüssel.

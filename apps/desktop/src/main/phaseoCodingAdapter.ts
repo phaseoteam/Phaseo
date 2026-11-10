@@ -105,7 +105,10 @@ export class PhaseoCodingAdapter implements AgentAdapter {
 		const unfinished = previous && previous.run.status !== "completed" ? previous : undefined;
 		const requestedAction = nativeAction;
 		if (!nativeAction && unfinished) nativeAction = restoredPhaseoSkill(unfinished.run.context, text);
-		const skills = this.globalInstructionsRoot ? new PhaseoSkills(path.dirname(this.globalInstructionsRoot), task.projectId ? cwd : undefined) : undefined;
+		// Someone else's checkout (Factory's): its AGENTS.md, CLAUDE.md and skills are the repository's text, not the person's, so
+		// only the person's own instructions and skills load. The agent can still read those files as code.
+		const repositoryConfig = !task.untrustedCheckout;
+		const skills = this.globalInstructionsRoot ? new PhaseoSkills(path.dirname(this.globalInstructionsRoot), task.projectId && repositoryConfig ? cwd : undefined) : undefined;
 		if (nativeAction && !skills) throw new AgentInputRejectedError("Phaseo skill storage is unavailable.");
 		const approvedSkill = nativeAction ? await skills!.approve(nativeAction, callbacks, this.controller.signal) : undefined;
 		if (approvedSkill) callbacks.onActivity?.({ id: "selected-skill", type: "tool", title: "Skill activated", text: approvedSkill.name, status: "completed" });
@@ -114,7 +117,7 @@ export class PhaseoCodingAdapter implements AgentAdapter {
 		if (!skillTools && unfinished?.run.context && typeof unfinished.run.context === "object" && "phaseoModelSkills" in unfinished.run.context) throw new AgentInputRejectedError("Phaseo skill storage is unavailable for recovery.");
 		try { if (unfinished) await skillTools?.restore(unfinished.run.context, callbacks); } catch (error) { throw new AgentInputRejectedError("Active Phaseo skills could not be restored; input was not submitted.", { cause: error }); }
 		const activeSkills = async () => [...selectedSkill ? [await selectedSkill()] : [], ...await skillTools?.instructions() ?? []];
-		const instructions = new ProjectInstructions(cwd, files => callbacks.onActivity?.({ id: "project-instructions", type: "tool", title: "Project instructions", text: files.length ? `Loaded ${files.join(", ")}` : "Previously loaded project instructions no longer apply.", status: "completed" }), this.globalInstructionsRoot, activeSkills);
+		const instructions = new ProjectInstructions(cwd, files => callbacks.onActivity?.({ id: "project-instructions", type: "tool", title: "Project instructions", text: files.length ? `Loaded ${files.join(", ")}` : "Previously loaded project instructions no longer apply.", status: "completed" }), this.globalInstructionsRoot, activeSkills, repositoryConfig ? undefined : []);
 		try {
 			await instructions.load(".", true);
 			// After a restart, instructions the model already saw (same files, same revision) do not hold back its next write.

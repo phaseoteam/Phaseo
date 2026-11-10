@@ -22,6 +22,16 @@ describe("OpenCode 2 integration", () => {
 		await new OpenCodeAdapter().run({ ...task, mode: "chat", model: modelId, modelOptions }, ".", "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" });
 		expect(list).toHaveBeenCalledTimes(listed ? 1 : 0); expect(create.mock.lastCall?.[0].model).toEqual(expected);
 	});
+	it("runs someone else's checkout on a turn's own service that ignores the checkout's config, never the shared one", async () => {
+		let prompted!: () => void; const prompt = new Promise<void>(resolve => { prompted = resolve; });
+		sdk.make.mockReturnValue({ model: { list: async () => ({ data: [] }) }, session: { create: async () => ({ id: "session" }), prompt: async () => { prompted(); }, wait: async () => {} }, event: { subscribe: async function* (options: { onActivity: () => void }) { options.onActivity(); await prompt; yield { type: "session.execution.succeeded", data: { sessionID: "session" } }; } } });
+		const connect = vi.fn(async () => ({ url: "http://localhost:4096" })), close = vi.fn(async () => {});
+		const isolate = vi.fn(async () => ({ endpoint: { url: "http://localhost:5000" }, close }));
+		await new OpenCodeAdapter(connect, [], undefined, isolate).run({ ...task, untrustedCheckout: true }, ".", "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" });
+		expect(connect).not.toHaveBeenCalled(); expect(isolate).toHaveBeenCalledWith(expect.anything(), { ignoreProjectConfig: true }); expect(close).toHaveBeenCalledOnce();
+		await expect(new OpenCodeAdapter(connect).run({ ...task, untrustedCheckout: true }, ".", "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" })).rejects.toThrow(/service of its own/);
+		expect(connect).not.toHaveBeenCalled();
+	});
 	it("switches a resumed session to the model with its offered variant", async () => {
 		sdk.discover.mockResolvedValue({ url: "http://localhost:4096" }); let prompted!: () => void; const prompt = new Promise<void>(resolve => { prompted = resolve; });
 		const switchModel = vi.fn(async () => {});

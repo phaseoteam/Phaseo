@@ -199,6 +199,10 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 				output_compression: request.outputCompression,
 				background: request.background,
 				moderation: request.moderation,
+				complexity: raw.complexity,
+				frame_count: raw.frame_count,
+				frame_duration_ms: raw.frame_duration_ms,
+				svg: raw.svg,
 				style: request.style,
 				user: request.userId,
 				aspect_ratio: raw.aspect_ratio,
@@ -231,6 +235,8 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 				negative_prompt: raw.negative_prompt,
 				provider_params: raw.provider_params,
 				mask: request.mask ?? raw.mask,
+				markup: raw.markup,
+				complexity: raw.complexity,
 				prompt: request.prompt,
 				size: request.size,
 				resolution: raw.resolution,
@@ -272,6 +278,9 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 					stepfun: raw.config?.stepfun,
 					elevenlabs: (request.vendor as any)?.elevenlabs,
 					minimax: (request.vendor as any)?.minimax ?? raw.config?.minimax,
+					// xAI language (config.xai.language, also spelled config["x-ai"]).
+					...(raw.config?.xai ? { xai: raw.config.xai } : {}),
+					...(raw.config?.["x-ai"] ? { "x-ai": raw.config["x-ai"] } : {}),
 				},
 				user: request.userId,
 			};
@@ -438,6 +447,7 @@ async function adapterResultToIR(
 					}))
 					: [],
 				usage,
+				...(payload?.svg_usage && typeof payload.svg_usage === "object" ? { svgUsage: payload.svg_usage } : {}),
 				rawResponse: payload,
 			};
 		}

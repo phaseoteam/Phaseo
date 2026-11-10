@@ -1,0 +1,124 @@
+---
+icon: "activity"
+title: "المراقبة"
+description: "اقرأ حالة تشغيل الوكيل واستخدامه وتكلفته، وتتبّع كل خطوة حتى طلب Gateway الخاص بها."
+---
+
+اقرأ نتيجة التشغيل لترى كيف انتهى، وكم كلّف، وأي طلب Gateway خدم كل دور للنموذج. تتضمن كل نتيجة المخرجات النهائية، وسجل التشغيل مع حالته، والاستخدام التراكمي، وسجلًا واحدًا لكل خطوة يتضمن معرّف الطلب والمزوّد والنموذج.
+
+<CodeGroup>
+
+```typescript TypeScript
+const result = await agent.run({ input, client });
+
+console.log(result.output);            // final value
+console.log(result.run.status);        // completed, stopped, waiting_for_human or cancelled
+console.log(result.usage.totalTokens); // summed over all steps
+console.log(result.usage.cost);        // as reported by the gateway
+```
+
+```python Python
+result = agent.run(input=prompt, client=client)
+
+print(result.output)              # final value
+print(result.run.status)          # completed, stopped or waiting_for_human
+print(result.usage.total_tokens)  # summed over all steps
+print(result.usage.cost)          # as reported by the gateway
+```
+
+```go Go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+if err != nil {
+  return err
+}
+
+fmt.Println(result.Output)            // final value
+fmt.Println(result.Run.Status)        // completed, stopped, or waiting_for_human
+fmt.Println(result.Usage.TotalTokens) // summed over all steps
+fmt.Println(result.Usage.Cost)        // as reported by the gateway
+```
+
+```csharp C#
+var result = await agent.Run(new RunOptions { Input = prompt, Client = client });
+
+Console.WriteLine(result.Output);            // final value
+Console.WriteLine(result.Run.Status);        // completed, stopped, or waiting_for_human
+Console.WriteLine(result.Usage.TotalTokens); // summed over all steps
+Console.WriteLine(result.Usage.Cost);        // as reported by the gateway
+```
+
+```php PHP
+$result = $agent->run(input: $prompt, client: $client);
+
+echo $result->output;                 // final value
+echo $result->run->status;            // completed, stopped, or waiting_for_human
+echo $result->usage["total_tokens"];  // summed over all steps
+echo $result->usage["cost"];          // as reported by the gateway
+```
+
+```ruby Ruby
+result = agent.run(input: prompt, client: client)
+
+puts result.output               # final value
+puts result.run.status           # completed, stopped, or waiting_for_human
+puts result.usage[:total_tokens] # summed over all steps
+puts result.usage[:cost]         # as reported by the gateway
+```
+
+```java Java
+var result = agent.run(options);
+
+System.out.println(result.output());              // final value
+System.out.println(result.run().status());        // completed, stopped, or waiting_for_human
+System.out.println(result.usage().totalTokens()); // summed over all steps
+System.out.println(result.usage().cost());        // as reported by the gateway
+```
+
+```rust Rust
+let result = agent.run(&mut client, RunOptions::new("Explain when to use routing presets."))?;
+
+println!("{}", result.output);              // final value
+println!("{}", result.run.status);          // completed, stopped, or waiting_for_human
+println!("{}", result.usage.total_tokens);  // summed over all steps
+println!("{:?}", result.usage.cost);        // supplied by the model client
+```
+
+</CodeGroup>
+
+## اقرأ الاستخدام والتكلفة
+
+يتضمن الاستخدام رموز الإدخال والإخراج والمخزّنة مؤقتًا والإجمالية، إضافة إلى التكلفة: `inputTokens` و`outputTokens` و`cachedTokens` و`totalTokens` و`cost` في TypeScript وJava؛ و`input_tokens` وما شابهها في Python وPHP وRuby وRust؛ و`InputTokens` وما شابهها في Go وC#. ولكل خطوة أيضًا استخدامها الخاص.
+
+| اللغة | موضع الاستخدام | تنبيه |
+| --- | --- | --- |
+| TypeScript، Python، Go، C#، Java | `usage` في النتيجة | |
+| PHP | `$result->usage`، وهو مصفوفة | تتركه النتيجة الموقوفة مؤقتًا فارغًا؛ اقرأ `$result->run->usage` |
+| Ruby | `result.usage`، وهو Hash بمفاتيح رمزية | تتركه النتيجة الموقوفة مؤقتًا غير مضبوط؛ اقرأ `result.run.usage` |
+| Rust | `result.usage` (`UsageSummary`) | يملأ محوّل Gateway المدمج في `0.2` الحقل `cost` فقط من حقل رقمي `meta.cost` أو `cost`، ولا يحوّل `cost_nanos` أو `cost_cents`. استخدم استجابة Gateway أو سجل التوليد لتقارير الإنفاق. |
+
+## تحقّق من طريقة انتهاء التشغيل
+
+حالات التشغيل هي `queued` و`running` و`waiting_for_tools` و`waiting_for_human` و`completed` و`stopped` و`failed`؛ وتضيف TypeScript الحالة `cancelled`. النتيجة التي تعود إليك تكون `completed`، أو `stopped` (تطابق [شرط إيقاف](./stop-conditions)، والسبب في سبب إيقاف التشغيل)، أو `waiting_for_human` (راجع [الحالة والموافقة](./state-and-approval))، أو `cancelled` في TypeScript. أما عمليات التشغيل الفاشلة فترمي خطأً أو تعيده بدلًا من ذلك؛ راجع [الأحداث والأخطاء](./events-and-errors).
+
+## تتبّع خطوة حتى طلب Gateway الخاص بها
+
+يربط سجل كل خطوة دورًا واحدًا للنموذج بطلب Gateway الذي خدمه. ابحث عن معرّف الطلب في سجلات Phaseo، أو عن معرّف الاستجابة الأصلي لدى المزوّد الأصلي.
+
+| حقل الخطوة | camelCase (TypeScript، PHP، Java) | snake_case (Python، Ruby، Rust) | PascalCase (Go، C#) |
+| --- | --- | --- | --- |
+| معرّف طلب Gateway | `requestId` | `request_id` | `RequestID` (Go)، `RequestId` (C#) |
+| معرّف الاستجابة لدى المزوّد الأصلي | `nativeResponseId` | `native_response_id` (غير موجود في Rust) | `NativeResponseID` (Go)، `NativeResponseId` (C#) |
+| المزوّد والنموذج | `provider`، `model` | `provider`، `model` | `Provider`، `Model` |
+| سبب الانتهاء | `finishReason` | `finish_reason` | `FinishReason` |
+| المحاولات، بما فيها إعادة المحاولات | `modelAttempts` | `model_attempts` | `ModelAttempts` |
+| استدعاءات الأدوات | `toolCalls` | `tool_calls` | `ToolCalls` |
+| الخطأ | `error` (وتضيف TypeScript `errorDetails`) | `error` | `Error` |
+| كتلة meta من Gateway والتحذيرات | `responseMeta`، `warnings` | `response_meta`، `warnings` (غير موجودة في Rust) | `ResponseMeta`، `Warnings` |
+
+توجد الخطوات في `steps` على النتيجة (`Steps` في Go وC#، و`steps()` في Java). سجلات الخطوات في Python من النوع `AgentStepRecord`؛ وتسميها اللغات الأخرى `RunStep`.
+
+## سجّل عمليات التشغيل في الإنتاج
+
+سجّل معرّف التشغيل وفهرس الخطوة ومعرّف الطلب ومعرّف الاستجابة الأصلي والمزوّد والنموذج وسبب الانتهاء ومعرّف استدعاء الأداة وسبب الإيقاف. تمنحك [خطافات دورة الحياة](./lifecycle-hooks) كل ذلك أثناء حدوث التشغيل، وتحمل أحداث `run.failed` نص الخطأ حيث ترسلها لغتك. لا تسجّل المطالبات الخام أو مدخلات الأدوات أو بيانات الاعتماد؛ احجبها قبل أن تغادر الأحداث عمليتك.
+
+للحصول على سجل محلي لعمليات تشغيل كاملة أثناء التطوير، استخدم [DevTools](./devtools) بدلًا من ذلك.

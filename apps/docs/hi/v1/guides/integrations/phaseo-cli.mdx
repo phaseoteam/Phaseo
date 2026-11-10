@@ -1,208 +1,172 @@
 ---
 title: "Phaseo CLI"
 icon: "terminal"
-description: "आधिकारिक Phaseo CLI इंस्टॉल करें, कोडिंग परिवेश कॉन्फ़िगर करें और टर्मिनल से Phaseo प्रबंधित करें।"
+description: "आधिकारिक Phaseo CLI इंस्टॉल करें, कोडिंग हार्नेस कॉन्फ़िगर करें, और टर्मिनल से Phaseo प्रबंधित करें।"
 ---
 
-Phaseo CLI को `@phaseo/cli` पैकेज के रूप में वितरित किया जाता है। यह कोडिंग परिवेशों को Phaseo से जोड़ता है और Phaseo कंट्रोल प्लेन के लिए आधिकारिक टर्मिनल वर्कफ़्लो देता है।
-
-इन कामों के लिए इसका उपयोग करें:
-
-- लोकल या रिमोट shell अथवा एजेंट रनटाइम से Phaseo उपयोगकर्ता के रूप में साइन इन करें
-- API कुंजियाँ या प्रबंधन कुंजियाँ बनाएँ और रोटेट करें
-- वर्कस्पेस, प्रीसेट, सेटिंग और गार्डरेल प्रबंधित करें
-- उपयोगकर्ता-निर्मित OAuth ऐप निजी परीक्षण में रहते हुए आधिकारिक CLI OAuth इस्तेमाल करें
-- मॉडल, प्रदाता, मूल्य, क्रेडिट, गतिविधि, एनालिटिक्स और जनरेशन देखें
+कोडिंग एजेंट को Phaseo से जोड़ने और टर्मिनल से कुंजियाँ, वर्कस्पेस, प्रीसेट, सेटिंग्स और गार्डरेल प्रबंधित करने के लिए `@phaseo/cli` इंस्टॉल करें और `phaseo login` चलाएँ। CLI मॉडल, प्रदाता, कीमतें, क्रेडिट, गतिविधि, एनालिटिक्स और जनरेशन भी पढ़ता है।
 
 ## इंस्टॉल करें
 
 <CodeGroup>
 
-```bash title="npm"
+```bash npm
 npm install -g @phaseo/cli
 ```
 
-```bash title="pnpm"
+```bash pnpm
 pnpm add -g @phaseo/cli
 ```
 
-```bash title="yarn"
+```bash yarn
 yarn global add @phaseo/cli
 ```
 
-```bash title="bun"
+```bash bun
 bun add -g @phaseo/cli
 ```
 
 </CodeGroup>
 
-## इंस्टॉल किया गया संस्करण जाँचें
+वर्ज़न जाँचें:
 
-```bash
-phaseo --version
-phaseo version
-phaseo version --json
-```
+| कमांड | क्या प्रिंट करता है |
+| --- | --- |
+| `phaseo --version` | इंस्टॉल किया गया वर्ज़न। |
+| `phaseo version` | वर्ज़न और आपके पैकेज मैनेजर के लिए अपडेट कमांड। संरचित आउटपुट के लिए `--json` जोड़ें। |
 
-- `phaseo --version` इंस्टॉल किया गया संस्करण दिखाता है।
-- `phaseo version` संस्करण और मौजूदा पैकेज मैनेजर के लिए सुझाया गया अपडेट कमांड दिखाता है।
-- नया प्रकाशित संस्करण उपलब्ध होने पर इंटरैक्टिव रन में अपडेट संकेत भी दिखता है。
-
-पुराना `phaseo` कमांड संगतता alias के रूप में उपलब्ध है।
+नया वर्ज़न प्रकाशित होने पर इंटरैक्टिव रन एक संकेत भी दिखाते हैं।
 
 ## साइन इन करें
-
-यह कमांड चलाएँ:
 
 ```bash
 phaseo login
 ```
 
-CLI दो आधिकारिक फ़्लो का समर्थन करती है:
+| फ़्लो | फ़्लैग | किसके लिए इस्तेमाल करें |
+| --- | --- | --- |
+| Phaseo से साइन इन करें | `--browser` | ऑथराइज़ेशन कोड और PKCE के साथ ब्राउज़र OAuth। |
+| डिवाइस कोड से साइन इन करें | `--device-code` | SSH, CI, हेडलेस शेल और एजेंट एनवायरनमेंट। |
 
-- **Phaseo से साइन इन**: authorization code और PKCE के साथ ब्राउज़र OAuth
-- **डिवाइस कोड से साइन इन**: SSH, CI, हेडलेस shell और एजेंट परिवेशों के लिए बेहतर
-
-आप इनमें से कोई भी तरीका स्पष्ट रूप से चुन सकते हैं:
-
-```bash
-phaseo login --browser
-phaseo login --device-code
-```
-
-रिमोट और नॉन-इंटरैक्टिव परिवेश अपने-आप डिवाइस कोड को प्राथमिकता देते हैं。
-
-## टर्मिनल आउटपुट
-
-इंटरैक्टिव टर्मिनल Phaseo के रंग और दृश्य क्रम के साथ सेटअप के दौरान अस्थायी स्पिनर दिखाते हैं। स्पिनर `stderr` का उपयोग करते हैं और काम पूरा होने पर अपनी लाइन साफ़ करते हैं। गैर-TTY `stderr` और `TERM=dumb` एनीमेशन बंद करते हैं; `NO_COLOR` रंग बंद करता है। `--json` वाले कमांड एजेंट और ऑटोमेशन के लिए बिना सजावट वाला संरचित आउटपुट देते हैं। `FORCE_COLOR=1` तभी इस्तेमाल करें जब टर्मिनल wrapper रंग समर्थित करता हो लेकिन स्वयं को TTY न बताए।
-
-## अपनी पहचान की पुष्टि करें
+रिमोट और गैर-इंटरैक्टिव एनवायरनमेंट अपने आप डिवाइस कोड इस्तेमाल करते हैं। आप किस खाते से साइन इन हैं, अपने स्कोप, सक्रिय वर्कस्पेस और दूसरे वर्कस्पेस के साथ देखें:
 
 ```bash
 phaseo whoami
 phaseo whoami --json
 ```
 
-यह आपका मौजूदा Phaseo उपयोगकर्ता, scopes, सक्रिय workspace और उपलब्ध workspaces दिखाता है।
-
-## कुंजियाँ बनाएँ
+## अपना वर्कस्पेस प्रबंधित करें
 
 ```bash
-phaseo keys create --name "Local CLI Key"
-phaseo keys create --name "Agent Sandbox Key" --json
+phaseo keys list
 phaseo keys current
-```
 
-जब किसी एजेंट या ऑटोमेशन को बनाई गई कुंजी एक बार raw रूप में चाहिए, तब `--json` इस्तेमाल करें।
-
-## वर्कस्पेस और गार्डरेल प्रबंधित करें
-
-```bash
 phaseo workspaces list
 phaseo workspaces members <workspace-id-or-slug>
 
 phaseo guardrails list
-phaseo guardrails create --name "Production Safety" --body-json '{"enabled":true}'
 ```
 
-CLI टर्मिनल से Phaseo डैशबोर्ड के प्रबंधन काम करता है, जिनमें बिलिंग, बजट, BYOK, रूटिंग और पहचान शामिल हैं। हर काम का कमांड [एजेंट से Phaseo प्रबंधित करें](../../developers/manage-from-an-agent) में देखें।
+जब कोई एजेंट या स्क्रिप्ट आउटपुट पढ़े, तो `--json` इस्तेमाल करें। CLI रोज़मर्रा के खाता कामों को कवर करता है; कुंजियों की सीमाएँ, बजट, BYOK, रूटिंग नियम, प्रीसेट और पहचान डैशबोर्ड में या प्रबंधन कुंजी से बदले जाते हैं। CLI कौन-से काम कवर करता है, यह [एजेंट से Phaseo प्रबंधित करें](../../developers/manage-from-an-agent) में देखें।
 
-## समर्थित कोडिंग परिवेश चलाएँ
+## कोडिंग एजेंट जोड़ें
 
-स्थायी एकीकरण सीधे उत्पाद का नाम इस्तेमाल करते हैं:
+एजेंट का नाम कमांड के रूप में इस्तेमाल करें। CLI एक समर्पित कुंजी का अनुरोध करता है, जिसे आप ब्राउज़र में स्वीकृत करते हैं, और एजेंट का कॉन्फ़िगरेशन लिखता है:
 
 ```bash
 phaseo codex
 phaseo claude-code
-phaseo deepseek-harness
 phaseo opencode
+phaseo fx
+phaseo deepseek-harness
 phaseo pi
 phaseo prime-agent
 phaseo openclaw
+phaseo hermes
 phaseo aider
+phaseo continue
+phaseo zed
 phaseo roo-code
 phaseo kilo-code
-phaseo continue
 phaseo cursor
-phaseo zed
 ```
 
-ज़रूरत के अनुसार `--model`, `--catalog all|default` या `--dry-run` इस्तेमाल करें। पुराना `phaseo integrations setup <integration>` रूप अनुकूलता के लिए उपलब्ध है, लेकिन आवश्यक नहीं।
+ज़रूरत के अनुसार `--model`, `--catalog all|default` या `--dry-run` इस्तेमाल करें। `phaseo setup <agent>` और `phaseo integrations setup <agent>` भी काम करते हैं।
 
-CLI अस्थायी प्रदाता कॉन्फ़िगरेशन और समर्पित Phaseo कुंजी से Cline, Kilo Code, oh-my-pi, Muse Code और MiniMax Code चलाता है। हर परिवेश की सेटअप और समस्या समाधान गाइड है: [Cline](./cline), [Kilo Code](./kilo-code), [oh-my-pi](./oh-my-pi), [Muse Code](./muse-code) और [MiniMax Code](./minimax-code)।
+### ब्राउज़र में कुंजी स्वीकृत करें
+
+किसी एजेंट को पहली बार सेट अप करने पर CLI Phaseo डैशबोर्ड का एक पेज खोलता है और उसका लिंक दिखाता है। पेज पर वर्कस्पेस, कुंजी का नाम, उसकी $100 मासिक खर्च सीमा और 90 दिन की समाप्ति, और यह दिखता है कि Phaseo CLI ने उसका अनुरोध किया है। **स्वीकृत करें और कुंजी बनाएं** चुनें, तो CLI कुंजी को एक बार ले लेता है और सेटअप पूरा करता है। **अस्वीकार करें** चुनें, या अनुरोध को 10 मिनट में समाप्त होने दें, तो कुछ भी नहीं बनता।
+
+डैशबोर्ड में उसी खाते से साइन इन रहकर स्वीकृत करें जिसका उपयोग आपने CLI में किया था, वर्कस्पेस के मालिक या एडमिन के रूप में, और अगर आपने दूसरा फ़ैक्टर सेट किया है तो उसके साथ। SSH या CI में, दिखाया गया लिंक किसी भी ऐसे डिवाइस पर खोलें जिस पर आप साइन इन हैं।
+
+डैशबोर्ड में बनाई गई कुंजी का उपयोग करने के लिए उसे `--key <key>` से दें, या शेल हिस्ट्री से बाहर रखने के लिए `--key-stdin` से। CLI कुंजी को जांचकर सहेजता है, और एजेंट हटाने पर उसे रद्द नहीं करता।
+
+Cline, Kilo Code, oh-my-pi, Muse Code या MiniMax Code को ऐसी अस्थायी सेटिंग्स के साथ चलाने के लिए जो उनके बंद होने पर मिट जाएँ, सत्र रनर इस्तेमाल करें। Phaseo के फ़्लैग `--` से पहले, और एजेंट के अपने फ़्लैग उसके बाद लिखें:
 
 ```bash
 phaseo cline --model openai/gpt-5.6-terra -- --tui
-phaseo kilo --model openai/gpt-5.6-terra --
-phaseo omp --model openai/gpt-5.6-terra --
-phaseo muse --model meta/muse-spark-1.3 --
-phaseo minimax --model openai/gpt-5.6-terra --
+phaseo kilo --model openai/gpt-5.6-terra
+phaseo omp --model openai/gpt-5.6-terra
+phaseo muse --model meta/muse-spark-1.3
+phaseo minimax --model openai/gpt-5.6-terra
 ```
 
-स्पष्ट रूप के लिए `phaseo run <cline|kilo|omp|muse|minimax>` इस्तेमाल करें। Phaseo विकल्प `--` से पहले और परिवेश विकल्प उसके बाद आते हैं। सभी सक्रिय Phaseo टेक्स्ट/चैट मॉडल सिंक करने के लिए `--catalog all`, या बिना क्रेडेंशियल बनाए पूर्वावलोकन के लिए यह इस्तेमाल करें:
+`phaseo run <cline|kilo|omp|muse|minimax>` लंबा रूप है। हर सक्रिय Phaseo टेक्स्ट मॉडल दिखाने के लिए `--catalog all` जोड़ें, या कुंजी बनाए बिना पूर्वावलोकन के लिए `--dry-run --json`। इंटरैक्टिव टर्मिनल में रनर गायब एजेंट को इंस्टॉल करने का विकल्प देते हैं (Windows पर MiniMax Code अपना आधिकारिक PowerShell इंस्टॉलर इस्तेमाल करता है; Windows पर Muse Code हाथ से इंस्टॉल करना होता है)। जब आप एजेंट ख़ुद संभालते हैं, तो `--skip-install` इस्तेमाल करें।
 
-```bash
-phaseo cline --model openai/gpt-5.6-terra --dry-run --json
-```
+[कोडिंग एजेंट](./coding-assistants.mdx) हर एजेंट, उसकी कमांड क्या करती है, और उसकी गाइड की सूची देता है।
 
-Cline, Kilo Code और oh-my-pi न हों तो इंस्टॉल का विकल्प संवादात्मक रूप से दिया जाता है। Muse Code और MiniMax Code कमांड गायब हो तो अपने आधिकारिक इंस्टॉलर इस्तेमाल करते हैं। Windows पर MiniMax Code आधिकारिक PowerShell इंस्टॉलर इस्तेमाल करता है; परिवेश अलग से सँभालते हों तो `--skip-install` दें। लॉन्चर मौजूदा Cline, Kilo, oh-my-pi, Muse Code या MiniMax Code कॉन्फ़िगरेशन नहीं बदलते।
+## CLI से स्क्रिप्ट लिखें
+
+`--json` वाली कमांड बिना रंग या स्पिनर के सादा संरचित आउटपुट प्रिंट करती हैं। बाकी जगहों पर स्पिनर `stderr` पर जाते हैं और काम पूरा होने पर अपनी लाइन साफ़ कर देते हैं।
+
+| वेरिएबल | असर |
+| --- | --- |
+| `NO_COLOR` | रंग बंद करता है। |
+| `TERM=dumb` | एनिमेशन बंद करता है। Non-TTY `stderr` भी यही करता है। |
+| `FORCE_COLOR=1` | जब कोई टर्मिनल रैपर रंग सपोर्ट करता है लेकिन TTY रिपोर्ट नहीं करता, तब रंग ज़बरदस्ती चालू करता है। |
+
+## CLI क्रेडेंशियल कैसे सुरक्षित रखता है
+
+- सत्र OS क्रेडेंशियल स्टोर में रखे जाते हैं। `PHASEO_SESSION_BACKEND=file` सिर्फ़ तभी सेट करें जब कोई क्रेडेंशियल स्टोर उपलब्ध न हो; यह रिफ़्रेश टोकन को सीमित अनुमतियों वाली सादा-टेक्स्ट फ़ाइल में रखता है।
+- `phaseo logout` लोकल स्थिति साफ़ करने से पहले सेव किया गया रिफ़्रेश टोकन रद्द करता है।
+- प्रबंधन कुंजियों को स्पष्ट क्षमताएँ चाहिए। इनफ़रेंस कुंजियाँ स्कोप की जगह गार्डरेल, रूटिंग नीतियों और वर्कस्पेस सेटिंग्स से सीमित होती हैं।
+
 ## OAuth ऐप
 
-Phaseo आधिकारिक CLI, उपयोगकर्ता-निर्मित ऐप और डायनामिक रूप से पंजीकृत MCP क्लाइंट के लिए एक OAuth प्राधिकरण सर्वर इस्तेमाल करता है। CLI रोटेट होते refresh token के साथ ब्राउज़र या डिवाइस कोड से लॉगिन करता है। तृतीय-पक्ष क्लाइंट PKCE वाला authorization code, स्पष्ट scopes और workspace सहमति, और वैकल्पिक protected-resource binding इस्तेमाल करते हैं। उन्हें 7 दिन चलने वाला, रद्द किया जा सकने वाला delegated access token और आख़िरी इस्तेमाल से 90 दिन चलने वाला रोटेट होता refresh token मिलता है; refresh कैसे काम करता है, यह [OAuth Next.js वर्कबेंच बनाएँ](../../cookbook/build-an-oauth-nextjs-workbench) में देखें। व्यक्ति के उसी ऐप को फिर से मंज़ूरी देने पर दूसरी कुंजी नहीं जुड़ती, बल्कि वही कुंजी नवीनीकृत होती है।
+Phaseo CLI, उपयोगकर्ताओं के बनाए ऐप और डायनामिक रूप से रजिस्टर किए गए MCP क्लाइंट के लिए एक ही OAuth ऑथराइज़ेशन सर्वर इस्तेमाल करता है। CLI रोटेट होने वाले रिफ़्रेश टोकन के साथ ब्राउज़र या डिवाइस लॉगिन इस्तेमाल करता है। तीसरे पक्ष के क्लाइंट PKCE के साथ ऑथराइज़ेशन कोड, स्पष्ट स्कोप और वर्कस्पेस सहमति, और वैकल्पिक protected-resource बाइंडिंग इस्तेमाल करते हैं। उन्हें 7 दिन चलने वाला रद्द करने योग्य एक्सेस टोकन और आख़िरी इस्तेमाल से 90 दिन चलने वाला रोटेट होने वाला रिफ़्रेश टोकन मिलता है; रिफ़्रेश कैसे काम करता है, इसके लिए [OAuth Next.js वर्कबेंच बनाएँ](../../cookbook/build-an-oauth-nextjs-workbench) देखें। उसी ऐप को फिर से मंज़ूरी देने पर दूसरी कुंजी जोड़ने की जगह उसकी कुंजी नवीनीकृत होती है।
 
-होस्ट की गई Phaseo API तृतीय-पक्ष OAuth सक्षम करती है। सेल्फ-होस्टेड या प्रीव्यू API डिप्लॉयमेंट में यह तब तक बंद रहता है जब तक `PHASEO_THIRD_PARTY_OAUTH_ENABLED` को सत्य मान पर सेट न किया जाए। `1`, `true`, `yes` और `on` स्वीकार होते हैं; रिक्त स्थान हटाकर और अक्षरों के केस को अनदेखा करके मिलान होता है। इसे सक्षम करने पर उपयोगकर्ता-निर्मित OAuth ऐप प्रबंधन और डायनामिक क्लाइंट पंजीकरण उपलब्ध होते हैं, इसलिए redirect URI, सहमति, client secret, rate limit और workspace प्राधिकरण कॉन्फ़िगरेशन की समीक्षा करें।
+होस्ट किए गए Phaseo API में तीसरे पक्ष का OAuth चालू है। सेल्फ़-होस्टेड और प्रीव्यू API डिप्लॉयमेंट में यह बंद रहता है, जब तक `PHASEO_THIRD_PARTY_OAUTH_ENABLED` सत्य मान न हो: `1`, `true`, `yes` या `on`, बड़े-छोटे अक्षरों का फ़र्क़ नहीं, और आसपास के स्पेस अनदेखे किए जाते हैं।
 
-```bash title=".env"
+```bash .env
 PHASEO_THIRD_PARTY_OAUTH_ENABLED=true
 ```
 
-```bash title="Docker"
-docker run -e PHASEO_THIRD_PARTY_OAUTH_ENABLED=true phaseo
-```
-
-```yaml title="Kubernetes"
-env:
-  - name: PHASEO_THIRD_PARTY_OAUTH_ENABLED
-    value: "true"
-```
-
-## सुरक्षा मॉडल
-
-- CLI सत्रों के लिए डिफ़ॉल्ट रूप से OS-आधारित सुरक्षित स्टोरेज ज़रूरी है। OS क्रेडेंशियल स्टोर उपलब्ध न हो तभी स्पष्ट रूप से `PHASEO_SESSION_BACKEND=file` सेट करें; इससे refresh token सीमित अनुमतियों वाली plain-text फ़ाइल में रखे जाते हैं।
-- `phaseo logout` स्थानीय स्थिति साफ़ करने से पहले संग्रहीत refresh token रद्द करता है।
-- प्रबंधन कुंजियों के लिए स्पष्ट क्षमताएँ ज़रूरी हैं।
-- सामान्य inference कुंजियाँ अलग scope मॉडल के बजाय guardrail, routing नीति और workspace सेटिंग पर निर्भर करती हैं।
+इसे चालू करने से उपयोगकर्ताओं के बनाए OAuth ऐप का प्रबंधन और डायनामिक क्लाइंट रजिस्ट्रेशन उपलब्ध हो जाते हैं, इसलिए पहले अपनी redirect URI, सहमति, client-secret, रेट-लिमिट और वर्कस्पेस ऑथराइज़ेशन सेटिंग्स की समीक्षा करें।
 
 ## अपडेट करें
 
+```bash
+phaseo update
+```
+
+यह उसी पैकेज मैनेजर से अपडेट चलाता है जिससे आपने CLI इंस्टॉल किया था। हाथ से अपडेट करने के लिए:
+
 <CodeGroup>
 
-```bash title="npm"
+```bash npm
 npm install -g @phaseo/cli@latest
 ```
 
-```bash title="pnpm"
+```bash pnpm
 pnpm add -g @phaseo/cli@latest
 ```
 
-```bash title="yarn"
+```bash yarn
 yarn global add @phaseo/cli@latest
 ```
 
-```bash title="bun"
+```bash bun
 bun add -g @phaseo/cli@latest
 ```
 
 </CodeGroup>
-
-## अगले चरण
-
-- [प्रबंधन API कुंजियाँ](../../developers/management-api-keys.mdx)
-- [प्रमाणीकरण](../../developers/authentication.mdx)
-- [Codex](./codex.mdx)
-- [Claude Code](./claude-code.mdx)
-- [Cline](./cline)
-- [Kilo Code](./kilo-code)
-- [oh-my-pi](./oh-my-pi)
-- [Muse Code](./muse-code)
-- [MiniMax Code](./minimax-code)

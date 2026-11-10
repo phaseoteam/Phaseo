@@ -4,7 +4,7 @@ import { spawn } from "node:child_process";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { clearScreenDown, cursorTo, moveCursor } from "node:readline";
 import { createInterface } from "node:readline/promises";
-import { stdin as input, stdout as output, platform } from "node:process";
+import { stdin as input, stdout as output } from "node:process";
 import {
 	apiFetch,
 	assertApiRootAllowed,
@@ -20,18 +20,21 @@ import {
 	startDeviceLogin,
 } from "./api.js";
 import { clearSession, readSession, writeSession } from "./session.js";
+import { openUrl, prefersDeviceCodeByEnvironment } from "./browser.js";
 import { printError, printJson, sanitizeTerminalText, terminalUi, type TerminalOptions } from "./output.js";
 import { CLI_VERSION } from "./generated/meta.js";
 import { createDoctorReport, detectInstalledPackageManager, type DoctorReport, type PackageManager } from "./installation.js";
 import { getVersionInfo, removeCommandFor, updateCommandFor, updateInvocationFor } from "./release.js";
 import { runCurie } from "./curie.js";
-import { appendQuery, compact, flagBool, flagNumber, flagString, parseCsvFlag, parseJsonFlag } from "./flags.js";
+import { appendQuery, compact, flagBool, flagNumber, flagString, parseCsvFlag, parseJsonFlag, resolveWorkspaceFlag } from "./flags.js";
 import { managementHelpEntries, runManagementCommand } from "./management.js";
 import { parityHelpEntries, parseIpAllowlist, runParityCommand } from "./parity.js";
 import { isIntegrationSetupName, runIntegrationCommand } from "./integrations/index.js";
 import { isRunnerName, runRunnerCommand } from "./integrations/runners.js";
 import { integrationCredentialsForNewLogin, revokeIntegrationGatewayCredential } from "./integrations/credential.js";
 import { findPackageManagerExecutable, packageManagerChildEnv, packageManagerChildInvocation, windowsCommandInterpreter } from "./integrations/installer.js";
+
+export { prefersDeviceCodeByEnvironment, windowsBrowserOpenArgs } from "./browser.js";
 
 type ParsedArgs = {
 	command: string[];
@@ -138,8 +141,8 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 		description: "Phaseo CLI",
 		usage: [
 			"phaseo login [--api-url <url> [--allow-custom-api-url]] [--method browser|device] [--browser] [--device-code] [--scopes <csv>] [--json]",
-			"phaseo <codex|claude-code|hermes|opencode|fx|pi|prime-agent|deepseek-harness|openclaw|aider|roo-code|kilo-code|continue|cursor|zed> [--model <id>] [--catalog all|default] [--dry-run] [--json]",
-			"phaseo <cline|kilo|omp|muse|minimax> [--model <id>] [--catalog all|default] [--dry-run] [--skip-install] -- [harness args]",
+			"phaseo <codex|claude-code|hermes|opencode|fx|pi|prime-agent|deepseek-harness|openclaw|aider|roo-code|kilo-code|continue|cursor|zed> [--model <id>] [--catalog all|default] [--key <key>|--key-stdin] [--dry-run] [--json]",
+			"phaseo <cline|kilo|omp|muse|minimax> [--model <id>] [--catalog all|default] [--key <key>|--key-stdin] [--dry-run] [--skip-install] -- [harness args]",
 			"phaseo logout [--json]",
 			"phaseo whoami [--json]",
 			"phaseo version | v [--json]",
@@ -206,12 +209,12 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 		],
 	},
 	setup: {
-		description: "Configure an installed coding harness with a dedicated Phaseo key and compatible model catalog.",
-		usage: ["phaseo setup <integration> [--model <id>] [--catalog all|default] [--dry-run] [--json]"],
+		description: "Configure an installed coding harness with a dedicated Phaseo key and compatible model catalog. The first setup opens a dashboard page where you approve the key (name, spending limit and expiry); the CLI then picks it up once. --key uses a key you made in the dashboard instead.",
+		usage: ["phaseo setup <integration> [--model <id>] [--catalog all|default] [--key <key>|--key-stdin] [--dry-run] [--json]"],
 	},
 	run: {
 		description: "Launch Cline, Kilo Code, oh-my-pi, Muse Code, or MiniMax Code against the Phaseo gateway without changing persistent harness configuration.",
-		usage: ["phaseo run <cline|kilo|omp|muse|minimax> [--model <id>] [--catalog all|default] [--dry-run] [--skip-install] -- [harness args]"],
+		usage: ["phaseo run <cline|kilo|omp|muse|minimax> [--model <id>] [--catalog all|default] [--key <key>|--key-stdin] [--dry-run] [--skip-install] -- [harness args]"],
 	},
 	login: {
 		usage: [
@@ -238,7 +241,7 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	},
 	"curie run": { usage: ["phaseo curie run <config.json> [--repeats <n>] [--report <path>] [--base-url <url> --allow-custom-base-url --api-key-env PHASEO_CURIE_API_KEY] [--dry-run] [--json]"] },
 	integrations: {
-		description: "Configure coding agents to use the Phaseo gateway with a dedicated key per integration. Codex, Claude Code, Pi, Prime Agent and OpenClaw fetch it on demand through phaseo integrations credential; Aider, Continue, Hermes, OpenCode and DeepSeek Harness store it in their own config or credential files. New keys expire after 90 days with a $100 monthly spend limit; setup replaces an expired key. To rotate a key, run phaseo integrations remove <integration>, then phaseo setup <integration>.",
+		description: "Configure coding agents to use the Phaseo gateway with a dedicated key per integration. Codex, Claude Code, Pi, Prime Agent and OpenClaw fetch it on demand through phaseo integrations credential; Aider, Continue, Hermes, OpenCode and DeepSeek Harness store it in their own config or credential files. You approve each new key in the browser, where the dashboard shows its name, $100 monthly spend limit and 90-day expiry; setup asks for a new one when a key expires. --key uses a key you made in the dashboard instead. To rotate a key, run phaseo integrations remove <integration>, then phaseo setup <integration>.",
 		usage: [
 			"phaseo integrations list [integration] [--json]",
 			"phaseo integrations status [integration] [--json]",
@@ -248,26 +251,27 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	},
 	"integrations list": { usage: ["phaseo integrations list [integration] [--json]"] },
 	"integrations status": { usage: ["phaseo integrations status [integration] [--json]"] },
-	"integrations setup": { usage: ["phaseo integrations setup <integration> [--model <id>] [--catalog all|default] [--dry-run] [--json]"] },
+	"integrations setup": { usage: ["phaseo integrations setup <integration> [--model <id>] [--catalog all|default] [--key <key>|--key-stdin] [--dry-run] [--json]"] },
 	"integrations remove": { usage: ["phaseo integrations remove <integration> [--dry-run] [--json]"] },
 	logout: { usage: ["phaseo logout [--json]"] },
 	whoami: { usage: ["phaseo whoami [--json]"] },
 	keys: {
+		description: "Manage API keys. They belong to the workspace you chose at phaseo login unless you pass --workspace <id-or-slug>, which names another workspace where you are an owner or admin (phaseo whoami lists yours). --workspace needs a phaseo login session; API keys and management keys can only manage their own workspace.",
 		usage: [
 			"phaseo keys current [--json]",
-			"phaseo keys list [--limit <n>] [--offset <n>] [--include-disabled] [--json]",
-			"phaseo keys create --name <name> [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]",
-			"phaseo keys get <id-or-hash> [--json]",
-			"phaseo keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--ip-allowlist <label=address,...>|none] [--json]",
-			"phaseo keys delete <id-or-hash> [--json]",
+			"phaseo keys list [--workspace <id-or-slug>] [--limit <n>] [--offset <n>] [--include-disabled] [--json]",
+			"phaseo keys create --name <name> [--workspace <id-or-slug>] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]",
+			"phaseo keys get <id-or-hash> [--workspace <id-or-slug>] [--json]",
+			"phaseo keys update <id-or-hash> [--workspace <id-or-slug>] [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--ip-allowlist <label=address,...>|none] [--json]",
+			"phaseo keys delete <id-or-hash> [--workspace <id-or-slug>] [--json]",
 		],
 	},
 	"keys current": { usage: ["phaseo keys current [--json]"] },
-	"keys list": { usage: ["phaseo keys list [--limit <n>] [--offset <n>] [--include-disabled] [--json]"] },
-	"keys create": { usage: ["phaseo keys create --name <name> [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]"] },
-	"keys get": { usage: ["phaseo keys get <id-or-hash> [--json]"] },
-	"keys update": { usage: ["phaseo keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--ip-allowlist <label=address,...>|none] [--json]"] },
-	"keys delete": { usage: ["phaseo keys delete <id-or-hash> [--json]"] },
+	"keys list": { usage: ["phaseo keys list [--workspace <id-or-slug>] [--limit <n>] [--offset <n>] [--include-disabled] [--json]"] },
+	"keys create": { usage: ["phaseo keys create --name <name> [--workspace <id-or-slug>] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]"] },
+	"keys get": { usage: ["phaseo keys get <id-or-hash> [--workspace <id-or-slug>] [--json]"] },
+	"keys update": { usage: ["phaseo keys update <id-or-hash> [--workspace <id-or-slug>] [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--ip-allowlist <label=address,...>|none] [--json]"] },
+	"keys delete": { usage: ["phaseo keys delete <id-or-hash> [--workspace <id-or-slug>] [--json]"] },
 	workspaces: {
 		usage: [
 			"phaseo workspaces list [--json]",
@@ -724,21 +728,6 @@ function isInteractiveTerminal(): boolean {
 	return Boolean(input.isTTY && output.isTTY);
 }
 
-export function prefersDeviceCodeByEnvironment(
-	env: NodeJS.ProcessEnv = process.env,
-): boolean {
-	return Boolean(
-		env.SSH_CONNECTION ||
-			env.SSH_CLIENT ||
-			env.SSH_TTY ||
-			env.CI,
-	);
-}
-
-export function windowsBrowserOpenArgs(url: string): string[] {
-	return ["url.dll,FileProtocolHandler", url];
-}
-
 export function renderOneTimeClientSecret(secret: unknown, showSecret: boolean): string {
 	if (typeof secret !== "string" || !secret) return "";
 	return showSecret
@@ -904,30 +893,6 @@ export function validateLoopbackRedirectUri(value: string): string {
 export function callbackListenHost(redirectUri: string): string {
 	const hostname = new URL(redirectUri).hostname;
 	return hostname === "[::1]" ? "::1" : hostname;
-}
-
-function openUrl(url: string): boolean {
-	if (prefersDeviceCodeByEnvironment()) {
-		return false;
-	}
-	try {
-		if (platform === "win32") {
-			// Pass the authorization URL as data, never through a command interpreter.
-			spawn("rundll32.exe", windowsBrowserOpenArgs(url), {
-				detached: true,
-				stdio: "ignore",
-			}).unref();
-			return true;
-		}
-		if (platform === "darwin") {
-			spawn("open", [url], { detached: true, stdio: "ignore" }).unref();
-			return true;
-		}
-		spawn("xdg-open", [url], { detached: true, stdio: "ignore" }).unref();
-		return true;
-	} catch {
-		return false;
-	}
 }
 
 function resolveLoginMethod(flags: Record<string, string | boolean>, json: boolean): LoginMethod {
@@ -1269,8 +1234,17 @@ async function whoami(flags: Record<string, string | boolean>) {
 	process.stdout.write(renderWhoami(body, session.apiUrl));
 }
 
+// --workspace on the keys commands: another workspace where the signed-in person is an owner or admin.
+function keysWorkspaceId(flags: Record<string, string | boolean>) {
+	return resolveWorkspaceFlag(flags, async () => {
+		const body = await request("/me");
+		return Array.isArray(body?.data?.workspaces) ? body.data.workspaces : [];
+	});
+}
+
 async function listKeys(flags: Record<string, string | boolean>) {
 	const body = await request(appendQuery("/keys", {
+		workspace_id: await keysWorkspaceId(flags),
 		limit: flagString(flags, "limit"),
 		offset: flagString(flags, "offset"),
 		include_disabled: flagBool(flags, "include-disabled") || undefined,
@@ -1282,11 +1256,12 @@ async function listKeys(flags: Record<string, string | boolean>) {
 async function createKey(flags: Record<string, string | boolean>) {
 	const name = flagString(flags, "name");
 	if (!name) throw new Error("`--name` is required");
+	const workspaceId = await keysWorkspaceId(flags);
 	const body = await request("/keys", {
 		method: "POST",
 		body: compact({
 			name,
-			workspace_id: flagString(flags, "workspace"),
+			workspace_id: workspaceId,
 			limit: flagNumber(flags, "limit"),
 			limit_reset: flagString(flags, "limit-reset"),
 			expires_at: flagString(flags, "expires-at"),
@@ -1304,7 +1279,7 @@ async function createKey(flags: Record<string, string | boolean>) {
 
 async function getKey(id: string | undefined, flags: Record<string, string | boolean>) {
 	if (!id) throw new Error("Key id or hash is required");
-	const body = await request(`/keys/${encodeURIComponent(id)}`);
+	const body = await request(appendQuery(`/keys/${encodeURIComponent(id)}`, { workspace_id: await keysWorkspaceId(flags) }));
 	if (flagBool(flags, "json")) return printJson(body);
 	const key = body.data;
 	writeServerText(`${key.name ?? key.id}\nStatus: ${key.disabled ? "disabled" : "active"}\nID: ${key.id}\nPrefix: ${key.prefix ?? "unknown"}\n`);
@@ -1312,7 +1287,7 @@ async function getKey(id: string | undefined, flags: Record<string, string | boo
 
 async function updateKey(id: string | undefined, flags: Record<string, string | boolean>) {
 	if (!id) throw new Error("Key id or hash is required");
-	const body = await request(`/keys/${encodeURIComponent(id)}`, {
+	const body = await request(appendQuery(`/keys/${encodeURIComponent(id)}`, { workspace_id: await keysWorkspaceId(flags) }), {
 		method: "PATCH",
 		body: compact({
 			name: flagString(flags, "name"),
@@ -1329,7 +1304,7 @@ async function updateKey(id: string | undefined, flags: Record<string, string | 
 
 async function deleteKey(id: string | undefined, flags: Record<string, string | boolean>) {
 	if (!id) throw new Error("Key id or hash is required");
-	const body = await request(`/keys/${encodeURIComponent(id)}`, { method: "DELETE" });
+	const body = await request(appendQuery(`/keys/${encodeURIComponent(id)}`, { workspace_id: await keysWorkspaceId(flags) }), { method: "DELETE" });
 	if (flagBool(flags, "json")) return printJson(body);
 	process.stdout.write("Deleted API key.\n");
 }

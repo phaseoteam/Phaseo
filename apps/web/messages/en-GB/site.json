@@ -2413,7 +2413,7 @@
 			],
 			"retentionIntro": "We retain personal data for as long as reasonably necessary to fulfil the purposes described in this Policy, including:",
 			"retentionReasons": [
-				"Request-level metadata for BYOK Gateway calls is kept for up to 90 days. Aggregated, non-content usage totals may be kept longer for billing, reliability and statistical purposes.",
+				"Request-level metadata for BYOK Gateway calls is kept for up to 365 days. Aggregated, non-content usage totals may be kept longer for billing, reliability and statistical purposes.",
 				"operating and maintaining your account and any paid features;",
 				"complying with our legal and regulatory obligations, such as keeping tax and accounting records; and",
 				"resolving disputes and enforcing our agreements."

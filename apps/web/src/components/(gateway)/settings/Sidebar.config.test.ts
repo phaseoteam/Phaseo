@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { getActiveSettingsNav, getSettingsSidebar, isSettingsNavChildActive } from "./Sidebar.config";
 
 describe("settings sidebar navigation", () => {
@@ -49,8 +50,8 @@ describe("settings sidebar navigation", () => {
 		expect(getSettingsSidebar().flatMap((group) => group.items).some((item) => item.href === "/settings/classifiers")).toBe(false);
 	});
 
-	it("lists Budgets right after API keys in the workspace section", () => {
-		const workspace = getSettingsSidebar().find((group) => group.scope === "workspace")!.items.map((item) => item.href);
+	it("keeps Budgets with API keys in the gateway group", () => {
+		const workspace = getSettingsSidebar().find((group) => group.heading === "Gateway")!.items.map((item) => item.href);
 		expect(workspace.indexOf("/settings/budgets")).toBe(workspace.indexOf("/settings/keys") + 1);
 		expect(getActiveSettingsNav("/settings/budgets")?.item.label).toBe("Budgets");
 	});
@@ -101,38 +102,23 @@ describe("settings sidebar navigation", () => {
 			.toBe(false);
 	});
 
-	it("orders workspace settings by task", () => {
-		const workspaceGroups = getSettingsSidebar({ showClassifiers: true })
-			.filter((group) => group.scope === "workspace")
-			.map((group) => ({
-				heading: group.heading,
-				items: group.items.map((item) => item.label),
-			}));
+	it("retains task groups instead of flattening workspace navigation", () => {
+		const groups = getSettingsSidebar({ showClassifiers: true, showOAuthApps: true }).filter((group) => group.scope === "workspace");
+		expect(groups.map((group) => group.heading)).toEqual(["Workspace", "Observe", "Gateway", "Developer"]);
+		expect(groups.find((group) => group.heading === "Observe")?.items.map((item) => item.label)).toEqual(["Usage", "Logs"]);
+		expect(groups.find((group) => group.heading === "Gateway")?.items.map((item) => item.label)).toContain("Routing");
+		expect(getActiveSettingsNav("/settings/routing/access")?.item.children?.find((child) => isSettingsNavChildActive("/settings/routing/access", child))?.label).toBe("Access");
+	});
 
-		expect(workspaceGroups).toEqual([{
-			heading: undefined,
-			items: [
-				"Settings",
-				"Enterprise",
-				"API Keys",
-				"Budgets",
-				"Usage",
-				"Logs",
-				"Routing",
-				"Guardrails",
-				"Rate limits",
-				"Classifiers",
-				"Privacy",
-				"Presets",
-				"Private Models",
-				"Bring Your Own Key",
-				"Apps",
-				"Management Keys",
-				"Broadcast",
-				"OAuth Apps",
-				"Webhooks",
-			],
-		}]);
+	it("applies the same feature gates to destinations and active navigation", () => {
+		const hidden = { showBroadcast: false, showWebhooks: false, showEnterprise: false, showInternal: false, showOAuthApps: false };
+		const hrefs = getSettingsSidebar(hidden).flatMap((group) => group.items.map((item) => item.href));
+		for (const href of ["/settings/broadcast", "/settings/webhooks", "/settings/workspaces/enterprise", "/settings/internal/provider-review", "/settings/oauth-apps"]) {
+			expect(hrefs).not.toContain(href);
+			expect(getActiveSettingsNav(href, hidden)?.item.href).not.toBe(href);
+		}
+		expect(getActiveSettingsNav("/settings/internal/provider-review", { showInternal: true })?.item.label).toBe("Provider review");
+		expect(getActiveSettingsNav("/settings/oauth-apps", { showOAuthApps: true })?.item.label).toBe("OAuth Apps");
 	});
 
 	it("shows provider review only to internal users", () => {

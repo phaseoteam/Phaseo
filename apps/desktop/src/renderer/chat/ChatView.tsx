@@ -143,6 +143,7 @@ function ChatComposer({ task }: { task: Task }) {
 	const running = ["running", "waiting"].includes(task.status);
 	const code = task.mode !== "chat";
 	const preferences = useWorkspacePreferences();
+	const followUpSteers = preferences.chat.followUp === "steer";
 	// Questions and approvals that arrive mid-sentence wait until the person pauses, so Enter never answers one unseen.
 	const guard = useTypingGuard(task.id, [...(task.questions ?? []).map(request => request.id), ...(task.approvals ?? []).map(approval => approval.id)]);
 	// While the agent waits on a question, the composer is its own-answer field.
@@ -150,8 +151,9 @@ function ChatComposer({ task }: { task: Task }) {
 	// A proposed plan waits: a blank send implements it, text asks for changes. Other approvals are declined by a message, which redirects the agent.
 	const plan = !answerer ? task.approvals?.find(approval => approval.kind === "plan" && !guard.held.has(approval.id)) : undefined;
 	const redirect = (task.approvals ?? []).filter(approval => approval.kind !== "plan" && !guard.held.has(approval.id));
+	const followUp = followUpSteers ? "Steer the running turn…" : "Queue a follow-up…";
 	const editor = useComposerEditor({ value: draft.text, onChange: value => { draft.setText(value); guard.typed(); }, disabled: task.archived, onFiles: files => void upload(files),
-		placeholder: task.archived ? "This chat is archived" : answerer ? (answerer.choiceOnly ? "Choose an option above" : "Type your own answer, or leave this blank to use the selected option") : plan ? "Add feedback to refine the plan, or leave this blank to implement it" : redirect.length ? "Send a message to decline and redirect the agent" : running ? "Queue a follow-up…" : code ? "Ask for a change, or reply to the agent…" : "Reply…" });
+		placeholder: task.archived ? "This chat is archived" : answerer ? (answerer.choiceOnly ? "Choose an option above" : "Type your own answer, or leave this blank to use the selected option") : plan ? "Add feedback to refine the plan, or leave this blank to implement it" : redirect.length ? "Send a message to decline and redirect the agent" : running ? followUp : code ? "Ask for a change, or reply to the agent…" : "Reply…" });
 	useEffect(() => {
 		const instance = editor.editor;
 		if (!instance) return;
@@ -247,9 +249,10 @@ function ChatComposer({ task }: { task: Task }) {
 		finally { setBusy(false); }
 	}
 	useCommand("composer.steer", () => { void steer(); });
-	// While a turn runs, Enter queues; the other send key steers instead. With Mod+Enter as the send key it just sends.
+	// While a turn runs, sending queues and the other send key steers, or the other way round when follow-ups steer by default (Settings → Chat). With Mod+Enter as the send key it just sends.
 	const sendKey = useSendKey();
-	useCommand("composer.sendAlternate", () => { if (!running || sendKey !== "enter") return false; void steer(); });
+	useCommand("composer.sendAlternate", () => { if (!running || sendKey !== "enter") return false; void (followUpSteers ? send() : steer()); });
+	const submit = () => { if (running && followUpSteers && !editing && !answerer && !plan) void steer(); else void send(); };
 	useCommand("composer.editQueued", () => { const last = ownQueue(task).at(-1); return last && !editing ? editQueued(last.id) : false; });
 	useCommand("composer.sendAndNewChat", () => { if (!canSend || editing || answerer || plan) return false; void send().then(sent => { if (sent) select(undefined); }); });
 
@@ -340,8 +343,8 @@ function ChatComposer({ task }: { task: Task }) {
 	const blocker = steerBlocker(task);
 	const limitsLabel = limits && limits !== "loading" && !("error" in limits) ? harnessNames[task.harness] : undefined;
 	return <div className="mx-auto w-full max-w-[760px] px-6 pb-4">
-		<ComposerTaskContext value={task.id}><Composer editor={editor} onSubmit={alternate => void send(alternate)} canSend={canSend || Boolean(editing)} disabled={task.archived}
-			running={running} onStop={() => void command({ type: "cancel", id: task.id })} placeholder={running ? "Queue a follow-up…" : "Reply…"}
+		<ComposerTaskContext value={task.id}><Composer editor={editor} onSubmit={alternate => alternate ? void send(true) : submit()} canSend={canSend || Boolean(editing)} disabled={task.archived}
+			running={running} onStop={() => void command({ type: "cancel", id: task.id })} placeholder={running ? followUp : "Reply…"}
 			collapsible={!task.questions?.length && !plan && !editing}
 			menu={task.archived ? undefined : menu}
 			keys={event => stash.open && !menu.expanded ? stashKeys.current?.(event) ?? false : false}
@@ -370,7 +373,7 @@ function ChatComposer({ task }: { task: Task }) {
 			</>}
 			/* Only Phaseo's harness reports its window, and /compact is its own. */
 			meter={<ContextMeter task={task} onCompact={canCompact && task.harness === "phaseo" ? () => void command({ type: "send", id: task.id, text: "/compact" }) : undefined} />}
-			primary={<ComposerPrimaryActions running={running} hasContent={hasContent} canSend={canSend || Boolean(editing)} busy={busy} onSubmit={alternate => void send(alternate)} onStop={() => void command({ type: "cancel", id: task.id })}
+			primary={<ComposerPrimaryActions running={running} hasContent={hasContent} canSend={canSend || Boolean(editing)} busy={busy} onSubmit={alternate => alternate ? void send(true) : submit()} onStop={() => void command({ type: "cancel", id: task.id })}
 				editing={Boolean(editing)} plan={Boolean(plan)} canSteer={!blocker} steerBlocker={blocker}
 				question={answerer ? { step: answerer.step, count: answerer.count, ready: answerer.ready || (!answerer.choiceOnly && Boolean(message.text)), busy: answerer.busy, onPrevious: answerer.previous } : undefined} />}
 			context={(task.projectId || links) && <>

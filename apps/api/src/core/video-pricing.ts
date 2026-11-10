@@ -318,11 +318,24 @@ function buildRequestContext(args: {
 	};
 }
 
+// Token meters a provider reports for a video it bills by tokens (Gemini
+// Interactions). Only server-side callers pass them: never read them from
+// request options, which batch lines and clients can shape.
+const PROVIDER_USAGE_METERS = [
+	"input_text_tokens",
+	"input_image_tokens",
+	"input_audio_tokens",
+	"input_video_tokens",
+	"output_text_tokens",
+	"output_video_tokens",
+] as const;
+
 export function computeVideoPricedUsage(args: {
 	seconds: number;
 	card: PriceCard;
 	model: string;
 	requestOptions?: Record<string, unknown>;
+	providerUsageMeters?: Record<string, number> | null;
 }): Record<string, unknown> {
 	const hasTotalTokensMeter = hasMeter(args.card, "total_tokens");
 	const estimatedTotalTokens = hasTotalTokensMeter
@@ -361,6 +374,12 @@ export function computeVideoPricedUsage(args: {
 	if (typeof inputVideoCount === "number" && inputVideoCount > 0) usageMeters.input_video_count = inputVideoCount;
 	if (typeof estimatedTotalTokens === "number" && estimatedTotalTokens > 0) {
 		usageMeters.total_tokens = estimatedTotalTokens;
+	}
+	for (const meter of PROVIDER_USAGE_METERS) {
+		const value = args.providerUsageMeters?.[meter];
+		if (typeof value === "number" && Number.isFinite(value) && value > 0 && hasMeter(args.card, meter)) {
+			usageMeters[meter] = value;
+		}
 	}
 	let priced = computeBill(
 		usageMeters,

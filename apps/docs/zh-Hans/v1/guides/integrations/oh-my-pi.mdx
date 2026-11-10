@@ -4,35 +4,38 @@ icon: "/icons/brands/oh-my-pi.svg"
 description: "使用 Phaseo CLI 通过 Phaseo Gateway 运行 oh-my-pi。"
 ---
 
-Phaseo CLI 可以使用专用网关密钥和临时的 OpenAI 兼容提供商目录启动 oh-my-pi。
+运行 `phaseo omp` 通过 Phaseo 启动 oh-my-pi 会话，或者在 `~/.omp/agent/models.yml` 中添加 `phaseo` 提供商，让 Phaseo 在每个会话中都可用。
 
-## 使用 Phaseo CLI 配置
+## 通过 Phaseo CLI 运行 oh-my-pi
 
 ```bash
 phaseo login
-phaseo omp --model openai/gpt-5.6-terra --
+phaseo omp --model openai/gpt-5.6-terra
 ```
 
-首次交互式运行时，如果缺少 `omp` 命令，系统会提示安装。使用 `--catalog all` 提供所有有效的 Phaseo 文本/聊天模型，或使用 `--dry-run --json` 预览安装和启动计划，而不创建密钥或启动 oh-my-pi：
+运行器会创建一个专用密钥，把 `models.yml` 写入一个临时的 `PI_CODING_AGENT_DIR`，用 `--model phaseo/<model>` 启动 `omp`，并在 oh-my-pi 退出时删除该目录。如果没有安装 `omp`，首次交互式运行会提示你安装。oh-my-pi 自己的参数放在 `--` 之后。
 
-```bash
-phaseo omp --catalog all --dry-run --json
-```
+| 参数 | 作用 |
+| --- | --- |
+| `--model <id>` | 要使用的模型。默认为 `openai/gpt-5.6-terra`。 |
+| `--catalog all` | 列出所有活跃的 Phaseo 文本模型，而不只是所选模型。 |
+| `--dry-run --json` | 显示安装和启动计划，但不创建密钥，也不启动 oh-my-pi。 |
+| `--skip-install` | 跳过安装检查。 |
 
-使用 `phaseo run omp ...` 这一显式命令形式。将 oh-my-pi 的选项放在 `--` 后，让 Phaseo 先处理自己的选项。
+`phaseo run omp ...` 是同一命令的完整形式。
 
 ## 手动配置 oh-my-pi
 
-如果希望在每个 oh-my-pi 会话中都能使用 Phaseo，请使用持久提供商配置。创建 Phaseo 密钥，在启动 oh-my-pi 的 shell 中导出，并向 `~/.omp/agent/models.yml` 添加提供商：
+在控制台的**设置 → API 密钥**中创建一个密钥，在启动 oh-my-pi 的 shell 中导出它，并创建配置目录：
 
 ```bash
-phaseo login
-phaseo keys create --name "oh-my-pi Phaseo key" --json
 export PHASEO_OMP_API_KEY="<your Phaseo API key>"
 mkdir -p ~/.omp/agent
 ```
 
-```yaml title="~/.omp/agent/models.yml"
+添加提供商：
+
+```yaml ~/.omp/agent/models.yml
 providers:
   phaseo:
     baseUrl: https://api.phaseo.app/v1
@@ -46,31 +49,24 @@ providers:
         maxTokens: 8192
 ```
 
-使用带提供商前缀的模型 ID 启动 oh-my-pi：
+`apiKey` 指定的是环境变量名，因此密钥不会写入 `models.yml`。按需在 `models` 下添加更多条目；上面的限制只是示例。用带提供商前缀的模型 ID 启动 oh-my-pi：
 
 ```bash
 omp --model phaseo/openai/gpt-5.6-terra
 ```
 
-按需为同一提供商添加更多模型。让 `apiKey` 指向环境变量，不要将密钥直接写入 `models.yml`。
+其他字段请参阅 oh-my-pi 的[提供商配置](https://github.com/can1357/oh-my-pi/blob/main/docs/providers.md)文档。
 
-## 验证
+## 确认可以正常使用
 
-通过已启动的运行环境发送简短提示词，然后确认请求出现在 Phaseo 活动中。运行器将 `models.yml` 写入临时的 `PI_CODING_AGENT_DIR`，并在 oh-my-pi 退出时删除。
+发送一条简短的提示词，并确认该请求出现在 **设置 → 用量 → 日志** 中。
 
-## 故障排除
+## 解决常见问题
 
 ### 未安装 oh-my-pi
 
-在交互式终端中运行命令并批准安装，或单独安装 oh-my-pi 后使用 `--skip-install` 重新运行。
+在交互式终端中运行该命令以批准安装，或者自己安装 oh-my-pi，再加上 `--skip-install` 重新运行。
 
-### 未列出模型
+### 模型没有列出
 
-使用 `--catalog all` 或通过 `--model` 传入模型 ID。Phaseo 网关不要求使用模型发现功能。
-
-## 相关内容
-
-- [Phaseo CLI](./phaseo-cli)
-- [oh-my-pi 提供商配置](https://github.com/can1357/oh-my-pi/blob/main/docs/providers.md)
-- [模型](../../api-reference/endpoint/models.mdx)
-- [活动](../../api-reference/endpoint/activity.mdx)
+使用 `--catalog all`，或用 `--model` 传入模型 ID。Phaseo 不需要模型发现功能。

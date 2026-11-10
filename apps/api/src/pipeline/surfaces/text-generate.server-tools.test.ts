@@ -868,6 +868,7 @@ describe("runTextGeneratePipeline server tools", () => {
 			latency_ms: meta.latency_ms,
 			gateway_ttft_ms: meta.gateway_ttft_ms,
 			failover_ms: meta.providerRoundsFailoverMs,
+			speed_window: meta.lastProviderRoundSpeedWindow,
 		}).toEqual({
 			// Before the fix: 1000 ms "total" (from round 2's dispatch only) and no TTFT.
 			end_to_end_ms: 3000,
@@ -877,6 +878,9 @@ describe("runTextGeneratePipeline server tools", () => {
 			// The live sink forwarded round 1's first output at 1500.
 			gateway_ttft_ms: 1500,
 			failover_ms: 0,
+			// Output speed is the last round's. This one was buffered, so no output was
+			// observed and round 1's window must not stand in for it.
+			speed_window: null,
 		});
 	});
 

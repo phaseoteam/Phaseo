@@ -40,7 +40,6 @@ export async function userHasPaidTeamAccess(
 
 	const [
 		{ count: topUpCount, error: topUpError },
-		{ count: invoiceCount, error: invoiceError },
 		{ count: enterpriseTeamCount, error: enterpriseError },
 	] = await Promise.all([
 		admin
@@ -51,12 +50,6 @@ export async function userHasPaidTeamAccess(
 			.in("status", [...SUCCESS_PAYMENT_STATUSES])
 			.gt("amount_nanos", 0),
 		admin
-			.from("workspace_invoices")
-			.select("id", { count: "exact", head: true })
-			.in("workspace_id", adminTeamIds)
-			.eq("status", "paid")
-			.gt("amount_nanos", 0),
-		admin
 			.from("workspaces")
 			.select("id", { count: "exact", head: true })
 			.in("id", adminTeamIds)
@@ -64,12 +57,10 @@ export async function userHasPaidTeamAccess(
 	]);
 
 	if (topUpError) throw topUpError;
-	if (invoiceError) throw invoiceError;
 	if (enterpriseError) throw enterpriseError;
 
 	return (
 		(topUpCount ?? 0) > 0 ||
-		(invoiceCount ?? 0) > 0 ||
 		(enterpriseTeamCount ?? 0) > 0
 	);
 }

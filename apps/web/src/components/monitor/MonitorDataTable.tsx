@@ -1,9 +1,7 @@
-"use client";
-
 import { Fragment, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import {
 	Table,
 	TableBody,
@@ -60,7 +58,7 @@ import type {
 	TableDensity,
 } from "@/components/(gateway)/usage/tablePreferences";
 
-import Link from "next/link";
+import Link from "@/components/link";
 import { useQueryState } from "nuqs";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 import {
@@ -285,17 +283,9 @@ const statusMetaByKey: Record<
 		icon: CheckCircle2,
 		color: "text-green-600 dark:text-green-400",
 	},
-	deranked_lvl1: {
-		icon: AlertTriangle,
-		color: "text-amber-500 dark:text-amber-400",
-	},
-	deranked_lvl2: {
+	deranked: {
 		icon: AlertTriangle,
 		color: "text-amber-600 dark:text-amber-400",
-	},
-	deranked_lvl3: {
-		icon: AlertTriangle,
-		color: "text-red-500 dark:text-red-400",
 	},
 	coming_soon: {
 		icon: Clock3,
@@ -320,9 +310,7 @@ const statusMetaByKey: Record<
 };
 const statusLegendOrder = [
 	"active",
-	"deranked_lvl1",
-	"deranked_lvl2",
-	"deranked_lvl3",
+	"deranked",
 	"coming_soon",
 	"inactive",
 	"disabled",

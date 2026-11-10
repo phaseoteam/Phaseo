@@ -5,31 +5,34 @@ description: "Prepare automatic Phaseo API key rotation with Infisical."
 "og:image": "https://phaseo.app/og/dynamic?title=Infisical&description=Prepare%20automatic%20Phaseo%20API%20key%20rotation%20with%20Infisical.&pathname=/docs/v1/guides/integrations/infisical"
 ---
 
-Infisical can rotate Phaseo Gateway API keys by authenticating with a scoped Phaseo Management API key. Phaseo already exposes the key lifecycle required for dual-phase, zero-downtime rotation.
+Rotate Phaseo API keys without downtime by creating a replacement key with a [management key](../../developers/management-api-keys.mdx), switching your app to it, then deleting the old one. This page gives the values an Infisical connection uses for that rotation.
 
 <Warning>
-Phaseo is not yet a selectable App Connection in Infisical. This page documents the supported Phaseo contract and the configuration to use once the Infisical connection is available.
+Phaseo isn't a selectable App Connection in Infisical yet. The connector, tests, and UI entry still have to be accepted into Infisical. Until then, use the requests below from your own rotation job.
 </Warning>
 
 ## How rotation works
 
-1. Infisical authenticates to Phaseo with a Management API key.
-2. Infisical creates a replacement Gateway API key with `POST /v1/keys`.
-3. Infisical stores the returned plaintext key in the configured secret.
-4. The application begins using the replacement key.
-5. Infisical revokes the previous key with `DELETE /v1/keys/{id}`.
+```mermaid
+flowchart LR
+  mk["Management key"] -->|"POST /v1/keys"| newkey["New API key"]
+  newkey -->|"Store in the secret"| app["App uses the new key"]
+  app -->|"DELETE /v1/keys/{id}"| old["Old key revoked"]
+```
 
-Phaseo returns a Gateway API key's plaintext value only when it is created. The old and replacement keys can overlap while the secret is updated.
+Phaseo shows an API key's value only once, when it's created. The old and new keys both work until you delete the old one, so your app can switch over while the secret updates.
 
-## Create a scoped Management API key
+## Create a scoped management key
 
-In **Dashboard → Settings → Management Keys**, create a key with these capabilities:
+In **Settings → Management Keys**, create a key with these capabilities:
 
-- `keys:read` to validate the connection and inspect managed keys
-- `keys:write` to create replacement keys
-- `keys:delete` to revoke previous keys
+| Capability | Used to |
+| --- | --- |
+| `keys:read` | Check the connection and list managed keys. |
+| `keys:write` | Create replacement keys. |
+| `keys:delete` | Revoke old keys. |
 
-Store the resulting `phaseo_v1_mk_...` secret in Infisical. Management API keys are control-plane credentials and cannot be used for inference.
+Store the `phaseo_v1_mk_...` value in Infisical. Management keys control your account and can't be used for inference.
 
 ## Connection details
 
@@ -37,12 +40,12 @@ Store the resulting `phaseo_v1_mk_...` secret in Infisical. Management API keys 
 | --- | --- |
 | Base URL | `https://api.phaseo.app/v1` |
 | Authentication | `Authorization: Bearer <PHASEO_MANAGEMENT_KEY>` |
-| Validate | `GET /keys` |
-| List Gateway keys | `GET /keys` |
-| Create Gateway key | `POST /keys` |
-| Revoke Gateway key | `DELETE /keys/{id}` |
+| Check the connection | `GET /keys` |
+| List API keys | `GET /keys` |
+| Create an API key | [`POST /keys`](../../api-reference/endpoint/keys-create.mdx) |
+| Revoke an API key | [`DELETE /keys/{id}`](../../api-reference/endpoint/keys-delete.mdx) |
 
-## Create a rotated key
+## Create the replacement key
 
 ```bash
 curl https://api.phaseo.app/v1/keys \
@@ -56,27 +59,19 @@ curl https://api.phaseo.app/v1/keys \
   }'
 ```
 
-The response contains the new Gateway key once in `data.key`, plus its stable identifier in `data.id`.
+The response holds the new key once in `data.key`, and its ID in `data.id`.
 
-## Revoke the previous key
+| Field | Values |
+| --- | --- |
+| `limit` | Spend limit in US dollars. |
+| `limit_reset` | `daily`, `weekly`, or `monthly`. |
+| `include_byok_in_limit` | Accepted for compatibility only. BYOK usage never counts toward this limit. |
+
+## Revoke the old key
 
 ```bash
 curl -X DELETE https://api.phaseo.app/v1/keys/$PREVIOUS_KEY_ID \
   -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY"
 ```
 
-Deletion is idempotent. A key that is already deleted returns a successful deleted state, which makes rotation retries safe.
-
-## Limits and BYOK
-
-Phaseo accepts the compatibility fields `limit`, `limit_reset`, and `include_byok_in_limit`. Supported reset periods are daily, weekly, and monthly. `include_byok_in_limit` is currently compatibility-only; Phaseo excludes BYOK usage from this key-limit field.
-
-## Partner status
-
-A native Infisical connection requires a Phaseo App Connection and Phaseo API Key Rotation implementation to be accepted into Infisical. Phaseo's management and key lifecycle APIs are already available; the remaining work is the Infisical-side connector, tests, UI entry, and documentation.
-
-## Related
-
-- [Management API Keys](../../developers/management-api-keys.mdx)
-- [Create API key](../../api-reference/endpoint/keys-create.mdx)
-- [Delete API key](../../api-reference/endpoint/keys-delete.mdx)
+Deleting is idempotent: deleting a key that's already deleted returns `200` with `{"deleted": true}`, so a retried rotation is safe.

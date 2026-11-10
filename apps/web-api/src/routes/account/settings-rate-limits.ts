@@ -5,7 +5,9 @@ import { SLACK_AGENT_MANAGED_KEY_NAME } from "@/lib/managed-keys";
 import { requireAccountWorkspace, type AccountWorkspaceContext } from "./context";
 import { callGatewayControl, type GatewayResult } from "./gateway-control";
 
-// Settings → Rate limits. Reads come straight from the database. Writes go
+// Settings → Rate limits. Reads come straight from the database: rate limit
+// policies are rate guardrails (workspace_guardrails kind rate, same ids), shown
+// here as the gateway's /v1/rate-limits API shows them. Writes go
 // through the gateway's /v1/rate-limits routes with the user's session, because
 // the gateway validates them, records the audit event and republishes the
 // workspace's enforcement plan at once; a direct table write would only be
@@ -15,8 +17,8 @@ import { callGatewayControl, type GatewayResult } from "./gateway-control";
 // can see them, as on the classifiers page.
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-const POLICY_COLUMNS = "id,name,description,requests_per_minute,tokens_per_minute,concurrent_requests,fail_closed,updated_at";
-const ASSIGNMENT_COLUMNS = "id,policy_id,target_type,key_id,user_id,department_id,guardrail_id";
+const POLICY_COLUMNS = "id,name,description,rate_requests_per_minute,rate_tokens_per_minute,rate_concurrent_requests,rate_fail_closed,rate_counting,updated_at";
+const ASSIGNMENT_COLUMNS = "id,guardrail_id,target_type,target_id";
 /** The gateway's page limit; the page lists every policy in one request. */
 const MAX_POLICIES = 250;
 const MAX_ASSIGNMENTS = 1000;
@@ -41,14 +43,18 @@ function numberOrNull(value: unknown): number | null {
 	return value == null ? null : Number(value);
 }
 
-function assignmentTargetId(row: any): string | null {
-	switch (row.target_type) {
-		case "key": return row.key_id;
-		case "member": return row.user_id;
-		case "department": return row.department_id;
-		case "guardrail": return row.guardrail_id;
-		default: return null;
+/**
+ * A rate guardrail assignment as a policy assignment. A workspace assignment is
+ * the end-user default when the guardrail counts per end user (or was made
+ * through the API, with no counting set); ones that count another way have no
+ * equivalent on this page.
+ */
+function toAssignment(row: any, counting: string | null | undefined) {
+	if (row.target_type === "workspace") {
+		if (counting != null && counting !== "each_end_user") return null;
+		return { id: row.id, policyId: row.guardrail_id, targetType: "end_user_default", targetId: null };
 	}
+	return { id: row.id, policyId: row.guardrail_id, targetType: row.target_type, targetId: row.target_id };
 }
 
 function emptyData(workspaceId: string | null) {
@@ -97,11 +103,15 @@ accountSettingsRateLimitsRouter.get("/rate-limits", async (c) => {
 	if (!context) return json(c, { error: "forbidden" }, 403);
 	if (!isManager(context)) return json(c, emptyData(workspaceId));
 	const since = new Date(Date.now() - THROTTLE_WINDOW_HOURS * 3_600_000).toISOString();
-	const [policies, assignments, keys, members, departments, guardrails, throttles, tier] = await Promise.all([
-		context.client.from("workspace_rate_limit_policies").select(POLICY_COLUMNS)
-			.eq("workspace_id", workspaceId).order("name", { ascending: true }).limit(MAX_POLICIES),
-		context.client.from("workspace_rate_limit_policy_assignments").select(ASSIGNMENT_COLUMNS)
-			.eq("workspace_id", workspaceId).order("created_at", { ascending: true }).limit(MAX_ASSIGNMENTS),
+	const policies = await context.client.from("workspace_guardrails").select(POLICY_COLUMNS)
+		.eq("workspace_id", workspaceId).eq("kind", "rate").order("name", { ascending: true }).limit(MAX_POLICIES);
+	if (policies.error) return json(c, { error: "settings_unavailable" }, 503);
+	const counting = new Map<string, string | null>((policies.data ?? []).map((row: any) => [row.id, row.rate_counting ?? null]));
+	const [assignments, keys, members, departments, throttles, tier] = await Promise.all([
+		counting.size
+			? context.client.from("workspace_guardrail_assignments").select(ASSIGNMENT_COLUMNS)
+				.eq("workspace_id", workspaceId).in("guardrail_id", [...counting.keys()]).order("created_at", { ascending: true }).limit(MAX_ASSIGNMENTS)
+			: Promise.resolve({ data: [], error: null }),
 		context.client.from("keys").select("id,name,prefix,status")
 			.eq("workspace_id", workspaceId).neq("status", "deleted")
 			.neq("name", "__chat_route_managed_key__").neq("name", SLACK_AGENT_MANAGED_KEY_NAME).order("created_at", { ascending: false }),
@@ -109,13 +119,11 @@ accountSettingsRateLimitsRouter.get("/rate-limits", async (c) => {
 			.eq("workspace_id", workspaceId),
 		context.client.from("workspace_departments").select("id,name")
 			.eq("workspace_id", workspaceId).order("name", { ascending: true }),
-		context.client.from("workspace_guardrails").select("id,name")
-			.eq("workspace_id", workspaceId).order("name", { ascending: true }),
 		// Summed in the database from the per-minute rollup.
 		context.client.rpc("workspace_rate_limit_throttle_summary", { p_workspace_id: workspaceId, p_since: since }),
 		readTier(c, workspaceId),
 	]);
-	if ([policies, assignments, keys, members, departments, guardrails, throttles].some((result) => result.error)) {
+	if ([assignments, keys, members, departments, throttles].some((result) => result.error)) {
 		return json(c, { error: "settings_unavailable" }, 503);
 	}
 	return json(c, {
@@ -125,18 +133,13 @@ accountSettingsRateLimitsRouter.get("/rate-limits", async (c) => {
 			id: row.id,
 			name: row.name,
 			description: row.description ?? null,
-			requestsPerMinute: numberOrNull(row.requests_per_minute),
-			tokensPerMinute: numberOrNull(row.tokens_per_minute),
-			concurrentRequests: numberOrNull(row.concurrent_requests),
-			failClosed: row.fail_closed === true,
+			requestsPerMinute: numberOrNull(row.rate_requests_per_minute),
+			tokensPerMinute: numberOrNull(row.rate_tokens_per_minute),
+			concurrentRequests: numberOrNull(row.rate_concurrent_requests),
+			failClosed: row.rate_fail_closed === true,
 			updatedAt: row.updated_at,
 		})),
-		assignments: (assignments.data ?? []).map((row: any) => ({
-			id: row.id,
-			policyId: row.policy_id,
-			targetType: row.target_type,
-			targetId: assignmentTargetId(row),
-		})),
+		assignments: (assignments.data ?? []).map((row: any) => toAssignment(row, counting.get(row.guardrail_id))).filter(Boolean),
 		targets: {
 			keys: (keys.data ?? []).map((key: any) => ({ id: key.id, name: key.name, prefix: key.prefix, status: key.status })),
 			members: (members.data ?? []).map((member: any) => ({
@@ -145,7 +148,8 @@ accountSettingsRateLimitsRouter.get("/rate-limits", async (c) => {
 				role: member.role,
 			})),
 			departments: (departments.data ?? []).map((department: any) => ({ id: department.id, name: department.name })),
-			guardrails: (guardrails.data ?? []).map((guardrail: any) => ({ id: guardrail.id, name: guardrail.name })),
+			// Rate limits are no longer assigned to guardrails.
+			guardrails: [],
 		},
 		throttles: (Array.isArray(throttles.data) ? throttles.data : []).map((row: any) => ({
 			policyId: row.policy_id,

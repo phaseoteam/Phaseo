@@ -1,111 +1,104 @@
 ---
-title: "上线预设并调试路由"
+title: "推行预设并调试路由"
 icon: "route"
-description: "使用预设统一提示词和路由默认值，然后检查请求详情，了解 Phaseo 为何以这种方式路由请求。"
+description: "使用预设统一提示和路由默认值，然后检查请求详情，了解 Phaseo 为何这样路由一个请求。"
 ---
 
-如果希望多个服务复用同一个预设，而不是到处复制相同的提示词、模型和路由默认值，请使用此操作指南。
+把多个服务迁移到同一个预设上，让它们共享提示、模型和提供商规则，然后用请求日志解释每个请求去了哪里。完成后，你的调用方只需发送 `"model": "@release-summary"` 和输入，你也可以把策略变更一次推行到一个调用方。
 
-## 目标
+该请求结构可直接用于生产环境。[预设](../guides/presets)说明了预设的设置如何与请求合并；本指南讲的是推行过程。
 
-- 统一提示词和参数的默认值。
-- 在发布或合规边界内限制可使用的提供商。
-- 保留足够的请求上下文，以解释请求为何以这种方式路由。
+## 把调用方迁移到预设
 
-## 1. 创建预设
+<Steps>
+<Step title="创建预设">
 
-在**控制台 -> 设置 -> 预设**中创建预设，并设置：
+在**设置 → 预设**中创建 `release-summary`，包含系统提示、批准的模型、提供商偏好，以及 `temperature` 等默认参数。也可以使用管理密钥：
 
-- 清晰的名称和 slug
-- 系统提示词
-- 已批准的模型
-- 提供商偏好
-- `temperature` 等参数默认值
+```bash
+curl https://api.phaseo.app/v1/presets \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"@release-summary","config":{"model":"anthropic/claude-sonnet-5.5"}}'
+```
 
-在调用代码中使用预设 slug，即可在不同环境中复用同一请求策略。
+</Step>
+<Step title="按名称调用">
 
-## 2. 保持请求正文简洁
-
-预设的主要优势是调用方无需在每个请求中重复相同的路由和提示词默认值。
+把预设作为 `model` 发送。没有单独的 `preset` 字段。
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-sonnet-4-5",
+    "model": "@release-summary",
     "input": "Generate a release summary for the last 24 hours.",
-    "preset": "release-summary"
+    "meta": true
   }'
 ```
 
-```typescript TypeScript SDK
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "anthropic/claude-sonnet-4-5",
+  model: "@release-summary",
   input: "Generate a release summary for the last 24 hours.",
-  preset: "release-summary",
+  meta: true,
 });
 
-console.log(response.output_text);
+console.log(response.model, response.meta?.routing);
 ```
 
-```python Python SDK
+```python Python
+import os
+
 from phaseo import Phaseo
 
-client = Phaseo(api_key="YOUR_API_KEY")
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
 response = client.generate_response(
     {
-        "model": "anthropic/claude-sonnet-4-5",
+        "model": "@release-summary",
         "input": "Generate a release summary for the last 24 hours.",
-        "preset": "release-summary",
+        "meta": True,
     }
 )
 
-print(response.get("output_text"))
+print(response.get("model"), response["meta"]["routing"]["selected_provider"])
 ```
 </CodeGroup>
 
-## 3. 了解预设会更改哪些内容
+响应中的 `model` 是实际回答的模型，`meta.routing.selected_provider` 是提供商。
 
-预设会在提供商路由前应用：
+</Step>
+<Step title="查看预设应用了什么">
 
-- 请求中缺失的参数会由预设补齐
-- 预设提示词会添加到系统层开头
-- 提供商偏好会在排序前缩小可用提供商列表
-- 模型限制会提前检查，而不是静默改用其他路由
+在**设置 → 用量 → 日志**中打开该请求。它会显示应用了哪些预设默认值。不在预设允许模型范围内的模型会以 `validation_error`（关键字 `preset_model_not_allowed`）失败，而不会被重新路由。
 
-## 4. 调试路由结果
+</Step>
+</Steps>
 
-如果请求的路由结果不符合预期，请在 **Gateway -> 用量** 中打开请求并检查：
+## 解释路由决策
 
-- 纳入考虑的提供商
-- 排序后的候选项
-- 每个候选项关联的路由因素
-- 工作区策略或护栏导致的阻止
+当请求没有按你预期的方式路由时，在**设置 → 用量 → 日志**中展开该请求的**路由可观测性**。它回答三个问题：
 
-这是查明以下问题最快的方法：
+| 问题 | 查看 |
+| --- | --- |
+| 为什么跳过了某个提供商？ | 在排序前被排除的提供商及原因，以及因推出状态或路由状态而被降权的提供商 |
+| 为什么请求被拦截？ | 请求上的工作区策略或护栏拦截 |
+| 为什么是这个提供商胜出？ | 每个参与排序的提供商的最终分数及其背后的因素 |
 
-- 提供商为何被跳过
-- 请求为何被阻止
-- 成本更低或延迟更低的目标为何排名靠前
+[解释路由决策](../guides/routing-and-fallbacks#explain-a-routing-decision)介绍了每个字段。
 
-## 5. 运维模式
+## 推行策略变更
 
-更改路由行为时，请按此模式逐步上线：
+1. 把变更发布为新的预设版本；如果策略差异很大，就创建一个新的 slug。
+2. 把一个低风险的调用方迁移过去，例如让它指向 `@release-summary@v4` 或 `canary` 标签。
+3. 将它的请求详情和用量趋势与其他调用方进行比较。
+4. 路由符合预期后，迁移其余调用方。要回滚，就把标签指回之前的版本。
 
-1. 为新策略创建新的预设 slug。
-2. 将一个低风险调用方切换到新预设。
-3. 检查请求详情和活动趋势。
-4. 只有在路由结果符合预期后才扩大上线范围。
-
-## 相关指南
-
-- [预设](../guides/presets.mdx)
-- [路由与回退](../guides/routing-and-fallbacks.mdx)
-- [错误处理](../api-reference/errors.mdx)
+[版本与回滚](../guides/presets#version-and-roll-back)介绍了版本和标签。对于不应放在预设中的请求级覆盖，请参见[固定或忽略提供商](./pin-or-ignore-providers-per-request)。

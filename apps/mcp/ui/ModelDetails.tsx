@@ -69,7 +69,7 @@ export function ModelDetails({
       >
         ×
       </button>
-      <p className="eyebrow">{model.provider ?? "MODEL DETAILS"}</p>
+      <p className="eyebrow">{model.provider ?? "Model details"}</p>
       <h2>{model.name}</h2>
       <code>{model.id}</code>
       <p>{model.description ?? "No description listed."}</p>

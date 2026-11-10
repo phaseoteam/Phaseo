@@ -1,156 +1,136 @@
 ---
-title: "使用托管网页搜索为 TypeScript SDK 工作流提供依据"
-sidebarTitle: "TypeScript SDK 托管网页搜索"
+title: "用托管网页搜索为 TypeScript SDK 工作流提供依据"
+sidebarTitle: "用 TypeScript 进行托管网页搜索"
 icon: "search"
-description: "结合官方 TypeScript SDK、托管网页搜索和响应元数据，构建有依据且易于调试的工作流。"
+description: "使用官方 TypeScript SDK 搭配预设、托管网页搜索和响应元数据，让一个工作流既有依据又便于调试。"
 ---
 
-如果 TypeScript 或 JavaScript 服务需要组合以下能力，请使用此方案：
+为一个 TypeScript 请求提供 `phaseo:web_search` 工具和 JSON Schema，让模型先搜索再回答，并返回附带来源的简报。完成后，你会得到一个脚本，它打印经过验证的 `{ summary, sources }` 对象，以及调试所需的 ID 和搜索计数。
 
-- 由预设定义的路由默认值
-- 托管的 `phaseo:web_search` 工具
-- 严格的响应解析
-- 用于调试的请求级元数据
+把预设和域名换成你自己的之后，该脚本即可用于生产环境。搜索结果是不可信的网页内容：请验证输出，不要执行其中出现的指令。
 
-## 目标
+## 构建
 
-- 让调用方继续使用官方 SDK
-- 避免手动重建原始兼容性负载
-- 保留足够的元数据，以便调试搜索结果、路由和插件行为
+<Steps>
+<Step title="创建预设">
 
-## 1. 从共享客户端开始
+在**设置 → 预设**中创建 `research-brief`，包含所有调用方应共享的模型、提供商偏好、推理设置和系统提示。模型必须支持工具和 JSON Schema 输出。
 
-```ts
-import Phaseo from "@phaseo/sdk";
+</Step>
+<Step title="安装 SDK">
 
-export const gateway = new Phaseo({
-  apiKey: process.env.PHASEO_API_KEY!,
-});
+```bash
+npm install @phaseo/sdk zod
+export PHASEO_API_KEY="phaseo_v1_sk_..."
 ```
 
-## 2. 先将稳定的默认值放入预设
+</Step>
+<Step title="编写脚本">
 
-如果多个调用方需要共享以下内容，请创建一个预设：
+```ts research-brief.ts
+import Phaseo from "@phaseo/sdk";
+import { z } from "zod";
 
-- 模型策略
-- 提供方偏好
-- 推理默认值
-- 系统提示词
-- 确定性的缓存行为
+const gateway = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
-之后，只在 SDK 请求中保留本次调用会变化的值。
+const Brief = z
+  .object({
+    summary: z.string().min(1),
+    sources: z
+      .array(z.object({ title: z.string(), url: z.string().url() }).strict())
+      .min(1),
+  })
+  .strict();
 
-## 3. 通过托管搜索工具请求有依据的输出
-
-```ts
 const response = await gateway.generateResponse({
-  preset: "research-brief",
-  input: "Find the latest public changes to our webhook delivery behavior and summarize them.",
+  model: "@research-brief",
+  input: "Find the latest public changes to Phaseo webhook delivery behavior and summarize them.",
   tools: [
     {
       type: "phaseo:web_search",
       parameters: {
-        query: "site:phaseo.app webhook delivery retries",
+        allowed_domains: ["phaseo.app"],
         max_results: 5,
         include_highlights: true,
       },
     },
   ],
   tool_choice: "phaseo:web_search",
-  response_format: {
-    type: "json_schema",
-    name: "research_brief",
-    schema: {
-      type: "object",
-      required: ["summary", "sources"],
-      properties: {
-        summary: { type: "string" },
-        sources: {
-          type: "array",
-          minItems: 1,
-          items: {
-            type: "object",
-            required: ["title", "url"],
-            properties: {
-              title: { type: "string" },
-              url: { type: "string", format: "uri" },
+  text: {
+    format: {
+      type: "json_schema",
+      name: "research_brief",
+      strict: true,
+      schema: {
+        type: "object",
+        required: ["summary", "sources"],
+        properties: {
+          summary: { type: "string" },
+          sources: {
+            type: "array",
+            minItems: 1,
+            items: {
+              type: "object",
+              required: ["title", "url"],
+              properties: {
+                title: { type: "string" },
+                url: { type: "string", format: "uri" },
+              },
+              additionalProperties: false,
             },
-            additionalProperties: false,
           },
         },
+        additionalProperties: false,
       },
-      additionalProperties: false,
     },
   },
   plugins: [{ id: "response-healing" }],
   meta: true,
 });
-```
 
-这样可以获得：
+const text = (response.output ?? [])
+  .filter((item) => item.type === "message")
+  .flatMap((item) => item.content ?? [])
+  .filter((part) => part.type === "output_text")
+  .map((part) => part.text ?? "")
+  .join("");
 
-- 由预设管理的路由和提示词默认值
-- 由服务器管理的搜索，不依赖提供方是否支持原生搜索
-- 便于可靠地解析下游数据的结构化输出
-- 进行运行诊断所需的元数据
-
-## 4. 解析输出并保留调试字段
-
-```ts
-const firstMessage = Array.isArray(response.output)
-  ? response.output.find((item) => item?.type === "message")
-  : null;
-
-const text = Array.isArray(firstMessage?.content)
-  ? firstMessage.content.find((part) => part?.type === "output_text")?.text ?? ""
-  : "";
-
-const payload = JSON.parse(text);
+const brief = Brief.parse(JSON.parse(text));
 
 console.log({
   responseId: response.id,
-  selectedProvider: response.meta?.routing?.selected_provider,
+  model: response.model,
+  routing: response.meta?.routing,
   pluginExecutions: response.meta?.plugin_executions,
   serverToolUse: response.usage?.server_tool_use,
 });
-
-console.log(payload);
+console.log(brief);
 ```
 
-借助这些字段，你可以轻松确认：
+| 字段 | 作用 |
+| --- | --- |
+| 带 `phaseo:web_search` 的 `tools` | 由 Phaseo 执行搜索，无论提供商是否有自己的搜索。查询由模型编写。 |
+| `allowed_domains` | 把结果限制在你自己的来源中。所有参数都在[网页搜索指南](../guides/server-tools/web-search#parameters)中。 |
+| `tool_choice: "phaseo:web_search"` | 让模型去搜索，而不是凭记忆回答。 |
+| `text.format` | 回答的 JSON Schema。 |
+| `plugins` | 修复接近有效的 JSON；参见[响应修复](./response-healing-for-structured-json)。 |
+| `meta: true` | 添加 `meta.routing` 和 `meta.plugin_executions`。 |
 
-- 实际处理请求的提供方
-- 托管搜索是否运行
-- 响应修复是否运行
-- 应在控制台中检查哪个请求
+</Step>
+<Step title="运行">
 
-## 5. 在日志中验证有依据的请求
+```bash
+npx tsx research-brief.ts
+```
 
-在 **Gateway -> 用量** 中打开请求，并检查：
+</Step>
+</Steps>
 
-- 标准化的搜索结果
-- 引用
-- 提供方选择
-- 插件执行元数据
+## 检查是否成功
 
-如果搜索行为或排序不正确，请根据日志证据调整预设或工具参数，避免盲目添加覆盖项。
+- `serverToolUse.web_search_requests` 至少为 `1`，说明搜索已运行。
+- `brief.sources` 列出 `phaseo.app` 的 URL。
+- `routing.selected_provider` 给出提供商，`pluginExecutions` 显示修复是否改动了内容。
+- 在**设置 → 用量 → 日志**中，该请求的**网络搜索可观测性**部分会显示托管搜索、结果和引用。
 
-## 6. 拆分探索型和确定型工作流
-
-建议采用以下模式：
-
-1. 一个预设用于确定性的结构化研究结果
-2. 另一个预设用于探索型请求或更高 temperature 的请求
-
-这样可以保持：
-
-- 响应缓存更整洁
-- 路由行为更容易理解
-- 将搜索密集型工作流与通用生成流量分开
-
-## 相关指南
-
-- [调试网页搜索请求](./web-search-debugging.mdx)
-- [推出预设并调试路由](./preset-rollout-and-routing-debug.mdx)
-- [修复结构化 JSON 响应](./response-healing-for-structured-json.mdx)
-- [TypeScript SDK 概览](../sdk-reference/typescript/overview.mdx)
+如果结果看起来不对，请根据日志显示的情况修改预设或工具参数，而不是添加覆盖。[调试网页搜索](./web-search-debugging)列出了常见情况。把探索性、temperature 较高的研究放在另一个预设中，与这个确定性的预设分开，这样两者的路由就容易比较。

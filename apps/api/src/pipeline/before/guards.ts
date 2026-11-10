@@ -3,7 +3,7 @@
 // Why: Keeps pre-execution logic centralized and consistent.
 // How: Implements guard functions that return ok/response tuples.
 
-import { z } from "zod";
+import * as z from "zod";
 import type { Endpoint, RequestBetaOptions, RequestLabel, RequestMeta } from "@core/types";
 import { getEdgeMeta } from "@core/edge";
 import { getBindings } from "@/runtime/env";
@@ -29,7 +29,7 @@ import { detectClientAttribution } from "./clientAttribution";
 import { noteSpendLimitReached } from "../notifications/spend-limit-alerts";
 import { hasConfiguredKeyLimits } from "./context.shared";
 import { parsePresetReference } from "./presetReference";
-import { enforcedSpendLimit, shadowSpendLimitOnce, type SpendLimitSlot } from "@core/spend-limits";
+import { enforcedSpendLimit, shadowSpendLimitOnce, startSpendLimitFootprint, type SpendLimitSlot } from "@core/spend-limits";
 export { parseW3cTraceContext } from "@observability/trace-context";
 
 const MIN_CREDIT_AMOUNT = 1.0;
@@ -122,6 +122,8 @@ function describeKeyLimitExceeded(args: {
 	currentValue?: number | null;
 	limitValue?: number | null;
 	departmentName?: string | null;
+	guardrailName?: string | null;
+	guardrailCounting?: "shared" | "each_key" | null;
 }): string {
 	if (args.limitMetric === "soft_blocked") {
 		return "This API key is currently soft-blocked and cannot send requests.";
@@ -139,6 +141,18 @@ function describeKeyLimitExceeded(args: {
 					: "configured";
 	const department = args.reason?.startsWith("department_");
 	const departmentName = args.departmentName?.trim();
+	if (args.reason?.startsWith("guardrail_")) {
+		// "The Contractors guardrail's daily spend limit has been reached ($11.00 of $10.00)."
+		const name = args.guardrailName?.trim();
+		const owner = name ? `the ${name} guardrail` : "a spend guardrail";
+		const usage = typeof args.currentValue === "number" && Number.isFinite(args.currentValue) &&
+			typeof args.limitValue === "number" && Number.isFinite(args.limitValue) && args.limitValue > 0
+			? ` (${formatUsdFromNanos(args.currentValue)} of ${formatUsdFromNanos(args.limitValue)})`
+			: "";
+		return args.guardrailCounting === "each_key"
+			? `This API key has reached its ${windowLabel} spend limit from ${owner}${usage}.`
+			: `${owner.charAt(0).toUpperCase()}${owner.slice(1)}'s ${windowLabel} spend limit has been reached${usage}.`;
+	}
 	// "The Engineering department has reached its daily budget ($11.00 of $10.00)."
 	const subject = department
 		? departmentName ? `The ${departmentName} department` : "This API key's department"
@@ -183,6 +197,7 @@ function keyLimitExceededResponse(gate: GateCheck, args: { workspaceId: string; 
 		current_value: gate.currentValue ?? null,
 		limit_value: gate.limitValue ?? null,
 		...(gate.departmentId ? { department_id: gate.departmentId, department_name: gate.departmentName ?? null } : {}),
+		...(gate.guardrailId ? { guardrail_id: gate.guardrailId, guardrail_name: gate.guardrailName ?? null } : {}),
 		buckets: gate.buckets ?? null,
 		budgets: gate.budgets ?? null,
 		description: describeKeyLimitExceeded({
@@ -192,6 +207,8 @@ function keyLimitExceededResponse(gate: GateCheck, args: { workspaceId: string; 
 			currentValue: gate.currentValue ?? null,
 			limitValue: gate.limitValue ?? null,
 			departmentName: gate.departmentName ?? null,
+			guardrailName: gate.guardrailName ?? null,
+			guardrailCounting: gate.guardrailCounting ?? null,
 		}),
 		request_id: args.requestId,
 		workspace_id: args.workspaceId,
@@ -537,6 +554,13 @@ export async function guardContext(args: {
     onCreditCacheWrite?: (write: Promise<void>) => void;
 }): Promise<GuardResult<{ context: any; providers: any[]; resolvedModel?: string | null; candidateDiagnostics: ProviderCandidateBuildDiagnostics }>> {
     try {
+        // Enforce mode: read whether any spend limit can apply to this key while the context loads.
+        const spendLimitFootprint = startSpendLimitFootprint({
+            workspaceId: args.workspaceId,
+            keyId: args.apiKeyId,
+            internal: args.internal,
+            slot: args.spendLimit,
+        });
         const context = await fetchGatewayContext({
             workspaceId: args.workspaceId,
             model: args.model,
@@ -565,15 +589,22 @@ export async function guardContext(args: {
         }
 
         // Enforce mode only: the spend-limit coordinator (key caps, department and workspace
-        // budgets), decided once per request however many candidate models are checked.
+        // budgets), decided once per request however many candidate models are checked. Skipped
+        // when this context and the footprint both show nothing it could enforce.
         const enforced = enforcedSpendLimit({
             workspaceId: args.workspaceId,
             keyId: args.apiKeyId,
             requestId: args.requestId,
             internal: args.internal,
             slot: args.spendLimit,
+            footprint: spendLimitFootprint,
+            keyLimit: context.keyLimit,
         });
+        const spendLimitStartedAt = performance.now();
         const decision = enforced ? await enforced : null;
+        if (enforced && context.contextTelemetry) {
+            context.contextTelemetry.spendLimitMs = Math.round((performance.now() - spendLimitStartedAt) * 1000) / 1000;
+        }
         if (decision?.outcome === "denied") {
             return { ok: false, response: keyLimitExceededResponse(decision.keyLimit, args) };
         }
@@ -676,6 +707,17 @@ export async function guardContext(args: {
                 }),
             };
         }
+        if (presetReference && message.includes("preset_ambiguous")) {
+            return {
+                ok: false,
+                response: err("validation_error", {
+                    reason: "preset_ambiguous",
+                    description: `Preset "${args.model}" matches more than one preset whose slugs differ only in case. Rename one of them in the dashboard so their slugs differ.`,
+                    request_id: args.requestId,
+                    workspace_id: args.workspaceId,
+                }),
+            };
+        }
         if (presetReference && (message.includes("preset_not_found") || message.includes("preset_no_model"))) {
             const missing = message.includes("preset_not_found");
             return {
@@ -720,7 +762,7 @@ export function makeMeta(input: {
     providerCapabilitiesBeta?: boolean;
     beta?: RequestBetaOptions;
     beforeContextMs?: number | null;
-    beforeContextCacheStatus?: "hit" | "miss" | "bypass" | "credit_refresh" | null;
+    beforeContextCacheStatus?: "hit" | "miss" | "bypass" | "credit_refresh" | "model_miss" | null;
     beforeContextKeyVersionMs?: number | null;
     beforeContextCacheReadMs?: number | null;
     beforeContextCreditRefreshMs?: number | null;

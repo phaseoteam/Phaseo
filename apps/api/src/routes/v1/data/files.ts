@@ -79,11 +79,52 @@ function toText(value: unknown): string | null {
 	return batchText(value);
 }
 
-function proxyResponse(upstream: Response): Response {
+// Batch input and output files are JSONL; anything else is served as opaque bytes.
+const FILE_CONTENT_TYPES = new Set([
+	"application/jsonl",
+	"application/x-ndjson",
+	"application/json",
+	"text/plain",
+	"text/csv",
+	"application/octet-stream",
+]);
+
+function attachmentFilename(disposition: string | null): string | null {
+	const match = disposition?.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+	const name = match?.[1] ? decodeURIComponentSafe(match[1]).split(/[\\/]/).pop() ?? "" : "";
+	return /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/.test(name) ? name : null;
+}
+
+function decodeURIComponentSafe(value: string): string {
+	try { return decodeURIComponent(value); } catch { return value; }
+}
+
+/**
+ * The provider's response with only the headers a client needs. Provider headers such as
+ * openai-organization, openai-project, Set-Cookie or request ids never pass through.
+ * File content is always a download with a safe type, so a provider-chosen type such as
+ * text/html is never rendered.
+ */
+function proxyResponse(upstream: Response, kind: "metadata" | "content" = "metadata"): Response {
+	const headers = new Headers({
+		"Cache-Control": "private, no-store",
+		"X-Content-Type-Options": "nosniff",
+	});
+	// fetch already decoded a compressed body, so its length no longer applies.
+	const length = upstream.headers.get("content-length");
+	if (length && /^\d+$/.test(length) && !upstream.headers.get("content-encoding")) headers.set("Content-Length", length);
+	const type = (upstream.headers.get("content-type") ?? "").split(";")[0]!.trim().toLowerCase();
+	if (kind === "content" && upstream.ok) {
+		headers.set("Content-Type", FILE_CONTENT_TYPES.has(type) ? type : "application/octet-stream");
+		const filename = attachmentFilename(upstream.headers.get("content-disposition"));
+		headers.set("Content-Disposition", filename ? `attachment; filename="${filename}"` : "attachment");
+	} else {
+		headers.set("Content-Type", type.includes("json") ? "application/json" : "text/plain; charset=utf-8");
+	}
 	return new Response(upstream.body, {
 		status: upstream.status,
 		statusText: upstream.statusText,
-		headers: upstream.headers,
+		headers,
 	});
 }
 
@@ -465,7 +506,7 @@ async function handleRetrieveContent(req: Request, id: string) {
 		keySource: owned.keySource,
 		byokKeyId: owned.byokKeyId,
 	});
-	return proxyResponse(upstream);
+	return proxyResponse(upstream, "content");
 }
 
 export const filesRoutes = new Hono<Env>();

@@ -356,7 +356,7 @@ export const PLATFORM_DISCOVERY_RULES: PlatformDiscoveryRule[] = [
         platformId: "phala",
         platformName: "Phala",
         providerIds: ["phala"],
-        modelsEndpoint: "https://inference.phala.com/v1/models",
+        modelsEndpoint: "https://api.redpill.ai/v1/models",
         active: true,
     },
     {

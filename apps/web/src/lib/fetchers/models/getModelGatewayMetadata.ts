@@ -67,9 +67,7 @@ export interface GatewayProviderModel {
 		| "project_limited"
 		| "paused"
 		| "soft_blocked"
-		| "deranked_lvl1"
-		| "deranked_lvl2"
-		| "deranked_lvl3"
+		| "deranked"
 		| "internal_testing"
 		| "scheduled"
 		| "coming_soon"
@@ -206,9 +204,7 @@ function isPublicRoutingStatus(status: string | null): boolean {
 	return (
 		status === null ||
 		status === "active" ||
-		status === "deranked_lvl1" ||
-		status === "deranked_lvl2" ||
-		status === "deranked_lvl3"
+		status === "deranked"
 	);
 }
 
@@ -282,9 +278,7 @@ function resolveAvailabilityReason(args: {
 	| "project_limited"
 	| "paused"
 	| "soft_blocked"
-	| "deranked_lvl1"
-	| "deranked_lvl2"
-	| "deranked_lvl3"
+	| "deranked"
 	| "internal_testing"
 	| "scheduled"
 	| "coming_soon"
@@ -347,16 +341,12 @@ function resolveAvailabilityReason(args: {
 	if (args.modelRoutingStatus === "disabled") return "model_disabled";
 	if (args.capabilityStatus === "disabled") return "capability_disabled";
 	if (
-		args.providerRoutingStatus === "deranked_lvl1" ||
-		args.providerRoutingStatus === "deranked_lvl2" ||
-		args.providerRoutingStatus === "deranked_lvl3"
+		args.providerRoutingStatus === "deranked"
 	) {
 		return args.providerRoutingStatus;
 	}
 	if (
-		args.modelRoutingStatus === "deranked_lvl1" ||
-		args.modelRoutingStatus === "deranked_lvl2" ||
-		args.modelRoutingStatus === "deranked_lvl3"
+		args.modelRoutingStatus === "deranked"
 	) {
 		return args.modelRoutingStatus;
 	}

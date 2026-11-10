@@ -91,6 +91,13 @@ CREATE POLICY "gateway_async_operations_update_service" ON "public"."gateway_asy
   USING (true)
   WITH CHECK (true);
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."gateway_async_operations"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_async_operations" TO "anon", "authenticated", "service_role";
 
 COMMENT ON COLUMN "public"."gateway_async_operations"."internal_id" IS 'Gateway-facing identifier used on retrieval routes (e.g. /videos/{id}, /batches/{id}).';

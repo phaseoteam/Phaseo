@@ -9,6 +9,7 @@ import { showToast } from "../components/ui/toast";
 import { extractTerminalLinks, projectPath, splitPosition, terminalContext } from "../lib/terminalLinks";
 import { localUrlsIn } from "../../shared/browser";
 import { openInChatBrowser } from "../lib/actionPreview";
+import { openLink as openTerminalLink, openSystemLink, type LinkClick } from "../lib/openLink";
 import { Tip } from "../components/ui/tooltip";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
@@ -52,10 +53,13 @@ function TerminalView({ session, api, focus, onFocus, onError }: { session: Term
 		const { path, line } = splitPosition(text), relative = projectPath(path, current.current.cwd, directory, window.phaseoDesktop?.platform === "win32");
 		return relative ? () => openProjectFile({ projectId, path: relative, ...line ? { line } : {} }) : undefined;
 	};
-	const openLink = (url: string, external: boolean) => {
+	const reportError = (reason: unknown) => report.current(reason instanceof Error ? reason.message : String(reason));
+	/** A clicked address opens where Settings → Browser says (Ctrl or Cmd-click: the other one); the preview offer always uses the chat's browser. */
+	const openLink = (url: string, click?: LinkClick) => {
 		const taskId = current.current.taskId;
-		if (!taskId || external) { void window.phaseoDesktop?.openExternal(url).catch(reason => report.current(String(reason))); return; }
-		try { openInChatBrowser(taskId, url); } catch (reason) { report.current(reason instanceof Error ? reason.message : String(reason)); }
+		const inApp = taskId ? () => { try { openInChatBrowser(taskId, url); } catch (reason) { reportError(reason); } } : undefined;
+		if (click) { void openTerminalLink(url, click, inApp).catch(reportError); return; }
+		if (inApp) inApp(); else void openSystemLink(url).catch(reportError);
 	};
 	// An action's terminal offers the local address its server prints, for previewing a dev server.
 	const offers = Boolean(session.scriptId && session.taskId);
@@ -78,13 +82,13 @@ function TerminalView({ session, api, focus, onFocus, onError }: { session: Term
 		// The app's terminal shortcuts reach the app, not the shell.
 		terminal.attachCustomKeyEventHandler(event => !(event.type === "keydown" && isCommandKey(event, terminalKeys)));
 		const input = terminal.onData(data => { if (current.current.status === "running") void api.terminal({ type: "write", id: current.current.id, data }).catch(reason => report.current(String(reason))); });
-		// Terminal links: a web address opens in the chat's browser (Ctrl or Cmd-click: the system browser); a
+		// Terminal links: a web address opens where Settings → Browser says (Ctrl or Cmd-click: the other one); a
 		// project file path, with its line, opens in the Files pane.
 		const links = terminal.registerLinkProvider({ provideLinks(line, callback) {
 			const text = terminal.buffer.active.getLine(line - 1)?.translateToString(true) ?? "";
 			const found = extractTerminalLinks(text).flatMap(link => {
 				const range = { start: { x: link.start + 1, y: line }, end: { x: link.end, y: line } };
-				if (link.kind === "url") return [{ text: link.text, range, activate: (event: MouseEvent, target: string) => openLink(target, event.ctrlKey || event.metaKey) }];
+				if (link.kind === "url") return [{ text: link.text, range, activate: (event: MouseEvent, target: string) => openLink(target, event) }];
 				const open = fileLink(link.text);
 				return open ? [{ text: link.text, range, activate: () => open() }] : [];
 			});
@@ -132,7 +136,7 @@ function TerminalView({ session, api, focus, onFocus, onError }: { session: Term
 		{offer && <div role="status" aria-label="Local server" className="absolute right-2 bottom-2 z-10 flex max-w-[calc(100%-1rem)] items-center gap-1.5 rounded-md border border-border/60 bg-background py-0.5 pr-0.5 pl-2 text-xs">
 			<Globe className="size-3.5 shrink-0 text-muted-foreground" />
 			<span className="min-w-0 truncate font-mono text-muted-foreground">{offer.replace(/^https?:\/\//, "").replace(/\/$/, "")}</span>
-			<button type="button" onClick={() => { openLink(offer, false); setDismissed(offer); }} className="h-6 shrink-0 rounded-md px-2 font-medium text-foreground hover:bg-accent/60">Open in browser</button>
+			<button type="button" onClick={() => { openLink(offer); setDismissed(offer); }} className="h-6 shrink-0 rounded-md px-2 font-medium text-foreground hover:bg-accent/60">Open in browser</button>
 			<Tip label="Dismiss"><button type="button" aria-label="Dismiss" onClick={() => setDismissed(offer)} className="grid size-6 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-accent/60 hover:text-foreground"><X className="size-3.5" /></button></Tip>
 		</div>}
 	</div>;

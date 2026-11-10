@@ -250,10 +250,66 @@
 					"zh-Hans": "从左上角起，以图像尺寸比例表示的边缘。top 必须小于 bottom；left 必须小于 right。",
 					"ar": "الحواف كنسب من أبعاد الصورة بدءًا من الزاوية العلوية اليسرى. يجب أن تكون top أقل من bottom وleft أقل من right."
 				}
+			},
+			"GatewayProviderAvailabilityReason": {
+				"/description": {
+					"es": "Una ruta con prioridad reducida (`deranked`) solo se enruta como último recurso, después de todos los demás proveedores en buen estado. `deranked_lvl1`, `deranked_lvl2` y `deranked_lvl3` ya no se devuelven.",
+					"fr": "Une route rétrogradée (`deranked`) n’est routée qu’en dernier recours, après tous les autres fournisseurs sains. `deranked_lvl1`, `deranked_lvl2` et `deranked_lvl3` ne sont plus renvoyés.",
+					"de": "Eine zurückgestufte Route (`deranked`) wird nur als letzte Reserve geroutet, nach allen anderen gesunden Anbietern. `deranked_lvl1`, `deranked_lvl2` und `deranked_lvl3` werden nicht mehr zurückgegeben.",
+					"pt-BR": "Uma rota rebaixada (`deranked`) só é roteada como último recurso, depois de todos os outros provedores saudáveis. `deranked_lvl1`, `deranked_lvl2` e `deranked_lvl3` não são mais retornados.",
+					"hi": "प्राथमिकता घटाया गया रूट (`deranked`) सिर्फ़ अंतिम विकल्प के रूप में, बाकी सभी स्वस्थ प्रदाताओं के बाद रूट होता है। `deranked_lvl1`, `deranked_lvl2` और `deranked_lvl3` अब नहीं लौटाए जाते।",
+					"ja": "優先度が下げられたルート（`deranked`）は、他のすべての正常なプロバイダーの後に、最終手段としてのみルーティングされます。`deranked_lvl1`、`deranked_lvl2`、`deranked_lvl3` は返されなくなりました。",
+					"zh-Hans": "降级路由（`deranked`）仅作为最后手段，在所有其他健康的提供商之后才会被路由。不再返回 `deranked_lvl1`、`deranked_lvl2` 和 `deranked_lvl3`。",
+					"ar": "لا يُوجَّه المسار المخفّض الأولوية (`deranked`) إلا كملاذ أخير، بعد جميع المزوّدين السليمين الآخرين. لم تعد القيم `deranked_lvl1` و`deranked_lvl2` و`deranked_lvl3` تُعاد."
+				}
+			},
+			"GatewayRoutingStatus": {
+				"/description": {
+					"es": "Una ruta con prioridad reducida (`deranked`) solo se enruta como último recurso, después de todos los demás proveedores en buen estado. `deranked_lvl1`, `deranked_lvl2` y `deranked_lvl3` ya no se devuelven.",
+					"fr": "Une route rétrogradée (`deranked`) n’est routée qu’en dernier recours, après tous les autres fournisseurs sains. `deranked_lvl1`, `deranked_lvl2` et `deranked_lvl3` ne sont plus renvoyés.",
+					"de": "Eine zurückgestufte Route (`deranked`) wird nur als letzte Reserve geroutet, nach allen anderen gesunden Anbietern. `deranked_lvl1`, `deranked_lvl2` und `deranked_lvl3` werden nicht mehr zurückgegeben.",
+					"pt-BR": "Uma rota rebaixada (`deranked`) só é roteada como último recurso, depois de todos os outros provedores saudáveis. `deranked_lvl1`, `deranked_lvl2` e `deranked_lvl3` não são mais retornados.",
+					"hi": "प्राथमिकता घटाया गया रूट (`deranked`) सिर्फ़ अंतिम विकल्प के रूप में, बाकी सभी स्वस्थ प्रदाताओं के बाद रूट होता है। `deranked_lvl1`, `deranked_lvl2` और `deranked_lvl3` अब नहीं लौटाए जाते।",
+					"ja": "優先度が下げられたルート（`deranked`）は、他のすべての正常なプロバイダーの後に、最終手段としてのみルーティングされます。`deranked_lvl1`、`deranked_lvl2`、`deranked_lvl3` は返されなくなりました。",
+					"zh-Hans": "降级路由（`deranked`）仅作为最后手段，在所有其他健康的提供商之后才会被路由。不再返回 `deranked_lvl1`、`deranked_lvl2` 和 `deranked_lvl3`。",
+					"ar": "لا يُوجَّه المسار المخفّض الأولوية (`deranked`) إلا كملاذ أخير، بعد جميع المزوّدين السليمين الآخرين. لم تعد القيم `deranked_lvl1` و`deranked_lvl2` و`deranked_lvl3` تُعاد."
+				}
+			},
+			"GatewayCapabilityStatus": {
+				"/description": {
+					"es": "Una ruta con prioridad reducida (`deranked`) solo se enruta como último recurso, después de todos los demás proveedores en buen estado. `deranked_lvl1`, `deranked_lvl2` y `deranked_lvl3` ya no se devuelven.",
+					"fr": "Une route rétrogradée (`deranked`) n’est routée qu’en dernier recours, après tous les autres fournisseurs sains. `deranked_lvl1`, `deranked_lvl2` et `deranked_lvl3` ne sont plus renvoyés.",
+					"de": "Eine zurückgestufte Route (`deranked`) wird nur als letzte Reserve geroutet, nach allen anderen gesunden Anbietern. `deranked_lvl1`, `deranked_lvl2` und `deranked_lvl3` werden nicht mehr zurückgegeben.",
+					"pt-BR": "Uma rota rebaixada (`deranked`) só é roteada como último recurso, depois de todos os outros provedores saudáveis. `deranked_lvl1`, `deranked_lvl2` e `deranked_lvl3` não são mais retornados.",
+					"hi": "प्राथमिकता घटाया गया रूट (`deranked`) सिर्फ़ अंतिम विकल्प के रूप में, बाकी सभी स्वस्थ प्रदाताओं के बाद रूट होता है। `deranked_lvl1`, `deranked_lvl2` और `deranked_lvl3` अब नहीं लौटाए जाते।",
+					"ja": "優先度が下げられたルート（`deranked`）は、他のすべての正常なプロバイダーの後に、最終手段としてのみルーティングされます。`deranked_lvl1`、`deranked_lvl2`、`deranked_lvl3` は返されなくなりました。",
+					"zh-Hans": "降级路由（`deranked`）仅作为最后手段，在所有其他健康的提供商之后才会被路由。不再返回 `deranked_lvl1`、`deranked_lvl2` 和 `deranked_lvl3`。",
+					"ar": "لا يُوجَّه المسار المخفّض الأولوية (`deranked`) إلا كملاذ أخير، بعد جميع المزوّدين السليمين الآخرين. لم تعد القيم `deranked_lvl1` و`deranked_lvl2` و`deranked_lvl3` تُعاد."
+				}
 			}
 		}
 	},
 	"_strings": {
+		"Output compression. Vertex Veo takes optimized or lossless and rejects a number; other providers that support it take an integer.": {
+			"es": "Compresión de la salida. Vertex Veo acepta optimized o lossless y rechaza un número; los demás proveedores que la admiten aceptan un entero.",
+			"fr": "Compression de la sortie. Vertex Veo accepte optimized ou lossless et refuse un nombre ; les autres fournisseurs qui la prennent en charge acceptent un entier.",
+			"de": "Ausgabekomprimierung. Vertex Veo akzeptiert optimized oder lossless und lehnt eine Zahl ab; andere Anbieter, die sie unterstützen, akzeptieren eine ganze Zahl.",
+			"pt-BR": "Compactação da saída. O Vertex Veo aceita optimized ou lossless e rejeita um número; os outros provedores que a suportam aceitam um inteiro.",
+			"hi": "आउटपुट कम्प्रेशन। Vertex Veo optimized या lossless लेता है और संख्या अस्वीकार करता है; इसे सपोर्ट करने वाले अन्य प्रोवाइडर पूर्णांक लेते हैं।",
+			"ja": "出力の圧縮。Vertex Veo は optimized または lossless を受け付け、数値は拒否します。対応しているほかのプロバイダーは整数を受け付けます。",
+			"zh-Hans": "输出压缩。Vertex Veo 接受 optimized 或 lossless，不接受数字；支持此参数的其他提供商接受整数。",
+			"ar": "ضغط المخرجات. يقبل Vertex Veo القيمة optimized أو lossless ويرفض الرقم؛ أما المزوّدون الآخرون الذين يدعمونه فيقبلون عددًا صحيحًا."
+		},
+		"Provider-specific extensions only. Complete request passthrough and duplicate routing, prompt, callback, or billing fields are rejected. For example, Wan 3.0 takes smart_duration: true to let the model choose the length (send no duration with it); the job reserves 30 seconds and is billed for the length the provider reports.": {
+			"es": "Solo extensiones específicas del proveedor. Se rechazan el paso completo de la solicitud y los campos duplicados de enrutamiento, prompt, callback o facturación. Por ejemplo, Wan 3.0 acepta smart_duration: true para que el modelo elija la duración (no envíes duration con esta opción); el trabajo reserva 30 segundos y se factura la duración que informa el proveedor.",
+			"fr": "Extensions propres au fournisseur uniquement. La transmission intégrale de la requête et les doublons de champs de routage, prompt, callback ou facturation sont rejetés. Par exemple, Wan 3.0 accepte smart_duration: true pour laisser le modèle choisir la durée (n’envoyez pas duration avec) ; la tâche réserve 30 secondes et la durée indiquée par le fournisseur est facturée.",
+			"de": "Nur anbieterspezifische Erweiterungen. Vollständige Durchleitung der Anfrage und doppelte Routing-, Prompt-, Callback- oder Abrechnungsfelder werden abgelehnt. Wan 3.0 akzeptiert zum Beispiel smart_duration: true, damit das Modell die Länge wählt (dann keine duration senden); der Job reserviert 30 Sekunden und abgerechnet wird die vom Anbieter gemeldete Länge.",
+			"pt-BR": "Somente extensões específicas do provedor. O repasse completo da solicitação e campos duplicados de roteamento, prompt, callback ou cobrança são rejeitados. Por exemplo, o Wan 3.0 aceita smart_duration: true para deixar o modelo escolher a duração (não envie duration junto); o job reserva 30 segundos e é cobrada a duração informada pelo provedor.",
+			"ja": "プロバイダー固有の拡張のみ。リクエスト全体のパススルーと、重複するルーティング、プロンプト、コールバック、課金フィールドは拒否されます。たとえば Wan 3.0 では smart_duration: true を指定するとモデルが長さを決めます（この場合 duration は送らないでください）。ジョブは 30 秒分を確保し、プロバイダーが報告した長さで請求されます。",
+			"zh-Hans": "仅限提供商特定扩展。完整请求透传以及重复的路由、提示词、回调或计费字段会被拒绝。例如，Wan 3.0 接受 smart_duration: true，由模型决定时长（此时不要发送 duration）；任务预留 30 秒，并按提供商报告的时长计费。",
+			"hi": "केवल प्रदाता-विशिष्ट एक्सटेंशन। पूरे अनुरोध का passthrough और दोहराए गए रूटिंग, prompt, callback या बिलिंग फ़ील्ड अस्वीकार किए जाते हैं। उदाहरण के लिए, Wan 3.0 smart_duration: true लेता है ताकि मॉडल लंबाई चुने (इसके साथ duration न भेजें); जॉब 30 सेकंड आरक्षित करता है और प्रोवाइडर द्वारा बताई गई लंबाई का बिल बनता है।",
+			"ar": "امتدادات خاصة بالمزوّد فقط. يُرفض تمرير الطلب كاملاً وتكرار حقول التوجيه أو الموجه أو رد الاتصال أو الفوترة. على سبيل المثال، يقبل Wan 3.0 الخيار smart_duration: true ليختار النموذج المدة (لا ترسل duration معه)؛ تحجز المهمة 30 ثانية وتُحتسب المدة التي يبلغ عنها المزوّد."
+		},
 		"Creates a daily, weekly, or monthly spend budget for one department. Once the department has used it, API-key requests that count toward the department return 429 key_limit_exceeded until the budget resets. Batch jobs, realtime sessions and OAuth requests are not blocked. If the budget check is briefly unavailable, requests are allowed rather than refused. Owners and admins get a mobile push at about 80% and at 100%.": {
 			"es": "Crea un presupuesto de gasto diario, semanal o mensual para un departamento. Cuando el departamento lo agota, las solicitudes con clave API que cuentan para él devuelven 429 key_limit_exceeded hasta que el presupuesto se restablece. Los trabajos por lotes, las sesiones en tiempo real y las solicitudes OAuth no se bloquean. Si la comprobación del presupuesto no está disponible durante un momento, las solicitudes se permiten en lugar de rechazarse. Los propietarios y administradores reciben una notificación push en el móvil hacia el 80 % y al 100 %.",
 			"fr": "Crée un budget de dépenses quotidien, hebdomadaire ou mensuel pour un service. Une fois le budget épuisé, les requêtes par clé API imputées au service renvoient 429 key_limit_exceeded jusqu’à la réinitialisation du budget. Les tâches par lots, les sessions en temps réel et les requêtes OAuth ne sont pas bloquées. Si la vérification du budget est brièvement indisponible, les requêtes sont acceptées plutôt que refusées. Les propriétaires et les administrateurs reçoivent une notification push sur mobile à environ 80 % et à 100 %.",
@@ -2034,16 +2090,6 @@
 			"zh-Hans": "删除工作区",
 			"ar": "حذف مساحة عمل"
 		},
-		"Deletes a workspace by UUID or slug. Management API key required.": {
-			"es": "Elimina un espacio de trabajo por UUID o slug. Se requiere una clave de API de gestión.",
-			"fr": "Supprime un espace de travail par UUID ou slug. Une clé API de gestion est requise.",
-			"de": "Löscht einen Arbeitsbereich anhand von UUID oder Slug. Ein Management-API-Schlüssel ist erforderlich.",
-			"pt-BR": "Exclui um espaço de trabalho por UUID ou slug. É necessária uma chave de API de gerenciamento.",
-			"hi": "UUID या slug से वर्कस्पेस हटाता है। प्रबंधन API कुंजी आवश्यक है।",
-			"ja": "UUID または slug でワークスペースを削除します。管理 API キーが必要です。",
-			"zh-Hans": "根据 UUID 或 slug 删除工作区。需要管理 API 密钥。",
-			"ar": "يحذف مساحة عمل باستخدام UUID أو slug. يلزم مفتاح API للإدارة."
-		},
 		"Workspace deleted": {
 			"es": "Espacio de trabajo eliminado",
 			"fr": "Espace de travail supprimé",
@@ -2094,16 +2140,6 @@
 			"zh-Hans": "向工作区添加成员",
 			"ar": "إضافة أعضاء إلى مساحة العمل"
 		},
-		"Adds existing users to a workspace with an admin or member role. Management API key required.": {
-			"es": "Añade usuarios existentes a un espacio de trabajo con el rol `admin` o `member`. Se requiere una clave de API de gestión.",
-			"fr": "Ajoute des utilisateurs existants à un espace de travail avec le rôle `admin` ou `member`. Une clé API de gestion est requise.",
-			"de": "Fügt vorhandene Benutzer mit der Rolle `admin` oder `member` zu einem Arbeitsbereich hinzu. Ein Management-API-Schlüssel ist erforderlich.",
-			"pt-BR": "Adiciona usuários existentes a um espaço de trabalho com a função `admin` ou `member`. É necessária uma chave de API de gerenciamento.",
-			"hi": "मौजूदा उपयोगकर्ताओं को `admin` या `member` भूमिका के साथ वर्कस्पेस में जोड़ता है। प्रबंधन API कुंजी आवश्यक है।",
-			"ja": "既存のユーザーを `admin` または `member` ロールでワークスペースに追加します。管理 API キーが必要です。",
-			"zh-Hans": "将现有用户以 `admin` 或 `member` 角色添加到工作区。需要管理 API 密钥。",
-			"ar": "يضيف مستخدمين حاليين إلى مساحة عمل بدور `admin` أو `member`. يلزم مفتاح API للإدارة."
-		},
 		"Members added": {
 			"es": "Miembros añadidos",
 			"fr": "Membres ajoutés",
@@ -2133,16 +2169,6 @@
 			"ja": "ワークスペースからメンバーを削除",
 			"zh-Hans": "从工作区移除成员",
 			"ar": "إزالة أعضاء من مساحة العمل"
-		},
-		"Removes non-owner members from a workspace. Management API key required.": {
-			"es": "Elimina del espacio de trabajo a los miembros que no sean propietarios. Se requiere una clave de API de gestión.",
-			"fr": "Supprime de l’espace de travail les membres qui n’en sont pas propriétaires. Une clé API de gestion est requise.",
-			"de": "Entfernt Mitglieder, die nicht Inhaber sind, aus einem Arbeitsbereich. Ein Management-API-Schlüssel ist erforderlich.",
-			"pt-BR": "Remove do espaço de trabalho os membros que não são titulares. É necessária uma chave de API de gerenciamento.",
-			"hi": "वर्कस्पेस से गैर-स्वामी सदस्यों को हटाता है। प्रबंधन API कुंजी आवश्यक है।",
-			"ja": "所有者以外のメンバーをワークスペースから削除します。管理 API キーが必要です。",
-			"zh-Hans": "从工作区移除非所有者成员。需要管理 API 密钥。",
-			"ar": "يزيل الأعضاء غير المالكين من مساحة العمل. يلزم مفتاح API للإدارة."
 		},
 		"Members removed": {
 			"es": "Miembros eliminados",
@@ -7734,16 +7760,6 @@
 			"hi": "वर्तमान API कुंजी का मेटाडेटा",
 			"ar": "البيانات الوصفية لمفتاح API الحالي"
 		},
-		"Updates one or more durable notification-policy sections. Enabling auto top-up requires an existing saved payment method identifier and verified two-factor authentication. An existing auto top-up configuration may be updated without repeating the MFA acknowledgement. To enable auto top-up without MFA, clients must explicitly set `mfa_bypass_acknowledged` to true and provide the exact `mfa_bypass_phrase` value `I ACCEPT THE RISK`; payment collection remains an interactive account flow.": {
-			"es": "Actualiza una o más secciones persistentes de la política de notificaciones. Habilitar la recarga automática requiere un identificador existente de método de pago guardado y autenticación de dos factores verificada. Una configuración existente de recarga automática puede actualizarse sin repetir la aceptación MFA. Para habilitar la recarga automática sin MFA, los clientes deben establecer explícitamente `mfa_bypass_acknowledged` en true y proporcionar el valor exacto `I ACCEPT THE RISK` en `mfa_bypass_phrase`; la recopilación del pago sigue siendo un proceso interactivo de la cuenta.",
-			"fr": "Met à jour une ou plusieurs sections persistantes de la politique de notification. Activer la recharge automatique exige un identifiant existant de moyen de paiement enregistré et une authentification à deux facteurs vérifiée. Une configuration existante peut être mise à jour sans répéter l’acceptation MFA. Pour activer la recharge automatique sans MFA, les clients doivent définir explicitement `mfa_bypass_acknowledged` sur true et fournir la valeur exacte `I ACCEPT THE RISK` dans `mfa_bypass_phrase` ; la collecte du paiement reste un parcours interactif du compte.",
-			"de": "Aktualisiert einen oder mehrere dauerhafte Abschnitte der Benachrichtigungsrichtlinie. Die automatische Aufladung erfordert eine vorhandene Kennung einer gespeicherten Zahlungsmethode und bestätigte Zwei-Faktor-Authentifizierung. Eine bestehende Konfiguration kann ohne erneute MFA-Bestätigung aktualisiert werden. Zur Aktivierung ohne MFA müssen Clients `mfa_bypass_acknowledged` ausdrücklich auf true setzen und den exakten Wert `I ACCEPT THE RISK` für `mfa_bypass_phrase` angeben; die Zahlungserfassung bleibt ein interaktiver Kontovorgang.",
-			"pt-BR": "Atualiza uma ou mais seções persistentes da política de notificações. Habilitar a recarga automática exige um identificador existente de método de pagamento salvo e autenticação de dois fatores verificada. Uma configuração existente pode ser atualizada sem repetir a confirmação MFA. Para habilitar sem MFA, os clientes devem definir explicitamente `mfa_bypass_acknowledged` como true e fornecer o valor exato `I ACCEPT THE RISK` em `mfa_bypass_phrase`; a coleta do pagamento continua sendo um fluxo interativo da conta.",
-			"ja": "永続的な通知ポリシーの1つ以上のセクションを更新します。自動チャージの有効化には、保存済み支払い方法の既存識別子と検証済みの2要素認証が必要です。既存の自動チャージ設定はMFA確認を繰り返さず更新できます。MFAなしで有効化するには、クライアントが`mfa_bypass_acknowledged`を明示的にtrueに設定し、`mfa_bypass_phrase`に正確な値`I ACCEPT THE RISK`を指定する必要があります。支払い情報の収集は引き続き対話的なアカウント操作です。",
-			"zh-Hans": "更新一个或多个持久化通知策略区段。启用自动充值需要现有已保存付款方式标识符和已验证的双因素认证。更新现有自动充值配置无需重复MFA确认。要在没有MFA的情况下启用自动充值，客户端必须显式将`mfa_bypass_acknowledged`设为true，并为`mfa_bypass_phrase`提供精确值`I ACCEPT THE RISK`；付款信息收集仍是交互式账户流程。",
-			"hi": "टिकाऊ अधिसूचना नीति के एक या अधिक खंड अपडेट करता है। ऑटो टॉप-अप सक्षम करने के लिए मौजूदा सहेजी गई भुगतान विधि का पहचानकर्ता और सत्यापित दो-कारक प्रमाणीकरण आवश्यक है। मौजूदा कॉन्फ़िगरेशन MFA स्वीकृति दोहराए बिना अपडेट हो सकती है। MFA के बिना सक्षम करने के लिए क्लाइंट को स्पष्ट रूप से `mfa_bypass_acknowledged` को true करना और `mfa_bypass_phrase` में सटीक मान `I ACCEPT THE RISK` देना होगा; भुगतान जानकारी संग्रह खाते का इंटरैक्टिव प्रवाह बना रहता है।",
-			"ar": "يحدّث قسماً واحداً أو أكثر من سياسة الإشعارات الدائمة. يتطلب تفعيل التعبئة التلقائية معرّفاً موجوداً لطريقة دفع محفوظة ومصادقة ثنائية موثقة. يمكن تحديث إعداد قائم دون تكرار إقرار MFA. للتفعيل دون MFA يجب على العملاء تعيين `mfa_bypass_acknowledged` صراحةً إلى true وتوفير القيمة الدقيقة `I ACCEPT THE RISK` للحقل `mfa_bypass_phrase`؛ يظل جمع معلومات الدفع إجراءً تفاعلياً في الحساب."
-		},
 		"List private models": {
 			"es": "Listar modelos privados",
 			"fr": "Lister les modèles privés",
@@ -11953,6 +11969,286 @@
 			"ja": "支出レポートをオーナーだけでなくワークスペースの管理者にもメールで送ります。既定値は false です。メール内のリンクから誰でも配信を停止できます。",
 			"zh-Hans": "将支出报告也通过邮件发送给工作区管理员，而不仅是所有者。默认为 false。任何人都可以通过邮件中的链接退订。",
 			"ar": "إرسال تقرير الإنفاق بالبريد الإلكتروني إلى مسؤولي مساحة العمل أيضًا، وليس إلى المالكين فقط. القيمة الافتراضية false. يمكن لأي شخص إلغاء الاشتراك من الرابط الموجود في البريد."
+		},
+		"Every request parameter the provider accepts on this endpoint, in one standard shape whatever way the catalogue stores it.": {
+			"es": "Todos los parámetros de solicitud que el proveedor acepta en este endpoint, con una forma estándar sin importar cómo los guarde el catálogo.",
+			"fr": "Tous les paramètres de requête que le fournisseur accepte sur cet endpoint, dans une forme standard quelle que soit la façon dont le catalogue les stocke.",
+			"de": "Alle Anfrageparameter, die der Anbieter an diesem Endpunkt akzeptiert, in einer einheitlichen Form, unabhängig davon, wie der Katalog sie speichert.",
+			"pt-BR": "Todos os parâmetros de requisição que o provedor aceita neste endpoint, em um formato padrão, seja qual for a forma como o catálogo os armazena.",
+			"hi": "इस एंडपॉइंट पर प्रदाता जो भी अनुरोध पैरामीटर स्वीकार करता है, वे सभी एक मानक रूप में, चाहे कैटलॉग उन्हें किसी भी तरह संग्रहीत करे।",
+			"ja": "このエンドポイントでプロバイダーが受け付けるすべてのリクエストパラメーター。カタログでの保存形式にかかわらず、1 つの標準形式で返します。",
+			"zh-Hans": "提供商在此端点接受的所有请求参数，无论目录以何种方式存储，均以统一的标准格式返回。",
+			"ar": "جميع معلمات الطلب التي يقبلها المزوّد على نقطة النهاية هذه، بصيغة قياسية واحدة أيًّا كانت طريقة تخزينها في الكتالوج."
+		},
+		"When every parameter in if has one of its listed values, the other fields replace the parameter's own.": {
+			"es": "Cuando cada parámetro de if tiene uno de sus valores indicados, los demás campos sustituyen a los del propio parámetro.",
+			"fr": "Lorsque chaque paramètre de if a l’une des valeurs indiquées, les autres champs remplacent ceux du paramètre.",
+			"de": "Wenn jeder Parameter in if einen seiner aufgeführten Werte hat, ersetzen die übrigen Felder die des Parameters selbst.",
+			"pt-BR": "Quando cada parâmetro em if tem um dos valores listados, os demais campos substituem os do próprio parâmetro.",
+			"hi": "जब if में हर पैरामीटर का मान उसके सूचीबद्ध मानों में से एक होता है, तो बाकी फ़ील्ड पैरामीटर के अपने फ़ील्ड की जगह लेते हैं।",
+			"ja": "if 内のすべてのパラメーターが列挙された値のいずれかである場合、その他のフィールドがパラメーター自身の値を置き換えます。",
+			"zh-Hans": "当 if 中的每个参数都取其所列值之一时，其余字段将替换该参数自身的字段。",
+			"ar": "عندما تكون لكل معلمة في if إحدى قيمها المدرجة، تحلّ الحقول الأخرى محل حقول المعلمة نفسها."
+		},
+		"Set to parameter_specs to add each offer's request parameters in the standard shape.": {
+			"es": "Usa parameter_specs para añadir los parámetros de solicitud de cada oferta con la forma estándar.",
+			"fr": "Indiquez parameter_specs pour ajouter les paramètres de requête de chaque offre dans la forme standard.",
+			"de": "Auf parameter_specs setzen, um die Anfrageparameter jedes Angebots in der einheitlichen Form hinzuzufügen.",
+			"pt-BR": "Defina como parameter_specs para incluir os parâmetros de requisição de cada oferta no formato padrão.",
+			"hi": "हर ऑफ़र के अनुरोध पैरामीटर मानक रूप में जोड़ने के लिए parameter_specs सेट करें।",
+			"ja": "parameter_specs を指定すると、各オファーのリクエストパラメーターを標準形式で追加します。",
+			"zh-Hans": "设置为 parameter_specs 可按标准格式附加每个报价的请求参数。",
+			"ar": "اضبطها على parameter_specs لإضافة معلمات الطلب لكل عرض بالصيغة القياسية."
+		},
+		"Applies a policy to one API key, workspace member or department, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for every assignment.": {
+			"es": "Aplica una política a una clave de API, un miembro del espacio de trabajo o un departamento, o define el valor predeterminado del espacio de trabajo para cada usuario final. Cada destino puede tener una política. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en cada asignación.",
+			"fr": "Applique une politique à une clé d’API, à un membre de l’espace de travail ou à un département, ou définit la valeur par défaut de l’espace de travail pour chaque utilisateur final. Chaque cible peut avoir une politique. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests à chaque affectation.",
+			"de": "Wendet eine Richtlinie auf einen API-Schlüssel, ein Workspace-Mitglied oder eine Abteilung an oder legt den Workspace-Standard für jeden Endnutzer fest. Jedes Ziel kann eine Richtlinie haben. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für jede Zuweisung durch.",
+			"pt-BR": "Aplica uma política a uma chave de API, a um membro do workspace ou a um departamento, ou define o padrão do workspace para cada usuário final. Cada destino pode ter uma política. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em cada atribuição.",
+			"hi": "किसी एक API कुंजी, वर्कस्पेस सदस्य या विभाग पर नीति लागू करता है, या हर अंतिम उपयोगकर्ता के लिए वर्कस्पेस का डिफ़ॉल्ट सेट करता है। हर लक्ष्य पर एक नीति हो सकती है। गेटवे हर असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "1 つの API キー、ワークスペースメンバー、または部門にポリシーを適用するか、各エンドユーザーに対するワークスペースのデフォルトを設定します。各対象に設定できるポリシーは 1 つです。ゲートウェイはすべての割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "将策略应用于一个 API 密钥、工作区成员或部门，或为每个最终用户设置工作区默认值。每个目标只能有一个策略。网关会对每个分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يطبّق سياسة على مفتاح API واحد أو عضو في مساحة العمل أو قسم، أو يضبط الإعداد الافتراضي لمساحة العمل لكل مستخدم نهائي. يمكن أن يكون لكل هدف سياسة واحدة. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على كل تعيين."
+		},
+		"What a policy applies to. A department policy is one allowance shared by its members and linked keys. end_user_default applies to each end user identified on a request.": {
+			"es": "A qué se aplica una política. Una política de departamento es una asignación compartida por sus miembros y las claves vinculadas. end_user_default se aplica a cada usuario final identificado en una solicitud.",
+			"fr": "Ce à quoi une politique s’applique. Une politique de département est une allocation partagée par ses membres et les clés liées. end_user_default s’applique à chaque utilisateur final identifié dans une requête.",
+			"de": "Worauf eine Richtlinie angewendet wird. Eine Abteilungsrichtlinie ist ein gemeinsames Kontingent für ihre Mitglieder und verknüpften Schlüssel. end_user_default gilt für jeden Endnutzer, der in einer Anfrage identifiziert wird.",
+			"pt-BR": "A que uma política se aplica. Uma política de departamento é uma cota compartilhada por seus membros e chaves vinculadas. end_user_default se aplica a cada usuário final identificado em uma solicitação.",
+			"hi": "नीति किस पर लागू होती है। विभाग की नीति एक साझा सीमा है, जिसे उसके सदस्य और जुड़ी कुंजियाँ साझा करते हैं। end_user_default अनुरोध में पहचाने गए हर अंतिम उपयोगकर्ता पर लागू होता है।",
+			"ja": "ポリシーの適用対象です。部門ポリシーは、そのメンバーとリンクされたキーで共有される 1 つの枠です。end_user_default はリクエストで識別された各エンドユーザーに適用されます。",
+			"zh-Hans": "策略的适用对象。部门策略是由其成员和关联密钥共享的一份额度。end_user_default 适用于请求中识别出的每个最终用户。",
+			"ar": "ما تنطبق عليه السياسة. سياسة القسم حصة واحدة يتشاركها أعضاؤه والمفاتيح المرتبطة به. ينطبق end_user_default على كل مستخدم نهائي يُحدَّد في الطلب."
+		},
+		"Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Enumera las políticas de límite de velocidad con nombre del espacio de trabajo. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Liste les politiques de limite de débit nommées de l’espace de travail. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Listet die benannten Rate-Limit-Richtlinien des Workspace auf. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Lista as políticas de limite de taxa nomeadas do workspace. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "वर्कस्पेस की नामित रेट लिमिट नीतियों की सूची देता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "ワークスペースの名前付きレート制限ポリシーを一覧表示します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "列出工作区的命名速率限制策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يسرد سياسات حدود المعدل المسماة لمساحة العمل. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Crea una política con nombre con límites de solicitudes por minuto, tokens por minuto o solicitudes simultáneas. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Crée une politique nommée avec des limites de requêtes par minute, de tokens par minute ou de requêtes simultanées. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Erstellt eine benannte Richtlinie mit Limits für Anfragen pro Minute, Tokens pro Minute oder gleichzeitige Anfragen. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Cria uma política nomeada com limites de solicitações por minuto, tokens por minuto ou solicitações simultâneas. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "प्रति मिनट अनुरोध, प्रति मिनट टोकन या समवर्ती अनुरोध सीमाओं के साथ एक नामित नीति बनाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "1 分あたりのリクエスト数、1 分あたりのトークン数、または同時リクエスト数の制限を持つ名前付きポリシーを作成します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "创建一个带有每分钟请求数、每分钟令牌数或并发请求限制的命名策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "ينشئ سياسة مسماة بحدود للطلبات في الدقيقة أو الرموز في الدقيقة أو الطلبات المتزامنة. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Devuelve una política de límite de velocidad. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Renvoie une politique de limite de débit. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Gibt eine Rate-Limit-Richtlinie zurück. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Retorna uma política de limite de taxa. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "एक रेट लिमिट नीति लौटाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "1 つのレート制限ポリシーを返します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "返回一个速率限制策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يعيد سياسة حد معدل واحدة. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Cambia el nombre, la descripción, los límites o el ajuste de bloqueo ante fallos de una política. Establece un límite en null para quitarlo; debe quedar al menos un límite. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Modifie le nom, la description, les limites ou le réglage de blocage en cas d’échec d’une politique. Définissez une limite sur null pour la supprimer ; au moins une limite doit rester. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Ändert Name, Beschreibung, Limits oder die Fail-Closed-Einstellung einer Richtlinie. Setze ein Limit auf null, um es zu entfernen; mindestens ein Limit muss bleiben. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Altera o nome, a descrição, os limites ou a configuração de bloqueio em falha de uma política. Defina um limite como null para removê-lo; pelo menos um limite deve permanecer. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "नीति का नाम, विवरण, सीमाएँ या फ़ेल-क्लोज़्ड सेटिंग बदलता है। किसी सीमा को हटाने के लिए उसे null पर सेट करें; कम से कम एक सीमा बनी रहनी चाहिए। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "ポリシーの名前、説明、制限、またはフェイルクローズ設定を変更します。制限を削除するには null に設定します。少なくとも 1 つの制限が残っている必要があります。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "更改策略的名称、描述、限制或失败关闭设置。将某个限制设为 null 即可移除；至少需要保留一个限制。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يغيّر اسم السياسة أو وصفها أو حدودها أو إعداد الإغلاق عند الفشل. اضبط الحد على null لإزالته؛ يجب أن يبقى حد واحد على الأقل. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Elimina una política y todas las asignaciones que la usan. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Supprime une politique et toutes les affectations qui l’utilisent. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Löscht eine Richtlinie und jede Zuweisung, die sie verwendet. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Exclui uma política e todas as atribuições que a usam. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "एक नीति और उसका उपयोग करने वाले हर असाइनमेंट को हटाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "ポリシーと、それを使用するすべての割り当てを削除します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "删除一个策略以及使用它的所有分配。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يحذف سياسة وكل تعيين يستخدمها. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Enumera dónde se aplican las políticas de límite de velocidad, con filtro opcional por política o tipo de destino. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Liste où s’appliquent les politiques de limite de débit, avec un filtre facultatif par politique ou type de cible. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Listet auf, wo Rate-Limit-Richtlinien gelten, optional gefiltert nach Richtlinie oder Zieltyp. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Lista onde as políticas de limite de taxa se aplicam, com filtro opcional por política ou tipo de destino. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "बताता है कि रेट लिमिट नीतियाँ कहाँ लागू होती हैं, वैकल्पिक रूप से नीति या लक्ष्य प्रकार के अनुसार फ़िल्टर करके। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "レート制限ポリシーの適用先を一覧表示します。ポリシーまたは対象タイプで絞り込むこともできます。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "列出速率限制策略的适用位置，可按策略或目标类型筛选。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يسرد أماكن تطبيق سياسات حدود المعدل، مع إمكانية التصفية حسب السياسة أو نوع الهدف. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Devuelve una asignación de límite de velocidad. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Renvoie une affectation de limite de débit. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Gibt eine Rate-Limit-Zuweisung zurück. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Retorna uma atribuição de limite de taxa. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "एक रेट लिमिट असाइनमेंट लौटाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "1 つのレート制限の割り当てを返します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "返回一个速率限制分配。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يعيد تعيين حد معدل واحدًا. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Cambia la política aplicada al destino de una asignación. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Change la politique appliquée à la cible d’une affectation. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Wechselt die Richtlinie, die auf das Ziel einer Zuweisung angewendet wird. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Troca a política aplicada ao destino de uma atribuição. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "किसी असाइनमेंट के लक्ष्य पर लागू नीति बदलता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "割り当ての対象に適用されるポリシーを切り替えます。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "切换应用于分配目标的策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يبدّل السياسة المطبقة على هدف التعيين. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.": {
+			"es": "Quita una política de su destino. El gateway aplica requests_per_minute, tokens_per_minute y concurrent_requests en las asignaciones de clave, miembro, departamento y usuario final predeterminado.",
+			"fr": "Retire une politique de sa cible. La passerelle applique requests_per_minute, tokens_per_minute et concurrent_requests aux affectations de clé, de membre, de département et d’utilisateur final par défaut.",
+			"de": "Entfernt eine Richtlinie von ihrem Ziel. Das Gateway setzt requests_per_minute, tokens_per_minute und concurrent_requests für Zuweisungen an Schlüssel, Mitglieder, Abteilungen und den Endnutzer-Standard durch.",
+			"pt-BR": "Remove uma política do seu destino. O gateway aplica requests_per_minute, tokens_per_minute e concurrent_requests em atribuições de chave, membro, departamento e usuário final padrão.",
+			"hi": "किसी नीति को उसके लक्ष्य से हटाता है। गेटवे कुंजी, सदस्य, विभाग और अंतिम-उपयोगकर्ता डिफ़ॉल्ट असाइनमेंट के लिए requests_per_minute, tokens_per_minute और concurrent_requests लागू करता है।",
+			"ja": "ポリシーを対象から外します。 ゲートウェイは、キー、メンバー、部門、エンドユーザーデフォルトの割り当てで requests_per_minute、tokens_per_minute、concurrent_requests を適用します。",
+			"zh-Hans": "从目标中移除策略。 网关会对密钥、成员、部门和最终用户默认分配强制执行 requests_per_minute、tokens_per_minute 和 concurrent_requests。",
+			"ar": "يزيل سياسة من هدفها. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي."
+		},
+		"Id of the key, member (user id) or department. Null for end_user_default.": {
+			"es": "Id de la clave, el miembro (id de usuario) o el departamento. Null para end_user_default.",
+			"fr": "Id de la clé, du membre (id utilisateur) ou du département. Null pour end_user_default.",
+			"de": "Id des Schlüssels, Mitglieds (Nutzer-Id) oder der Abteilung. Null für end_user_default.",
+			"pt-BR": "Id da chave, do membro (id de usuário) ou do departamento. Null para end_user_default.",
+			"hi": "कुंजी, सदस्य (उपयोगकर्ता id) या विभाग की id। end_user_default के लिए null।",
+			"ja": "キー、メンバー（ユーザー ID）、または部門の ID。end_user_default の場合は null。",
+			"zh-Hans": "密钥、成员（用户 ID）或部门的 ID。end_user_default 时为 null。",
+			"ar": "معرّف المفتاح أو العضو (معرّف المستخدم) أو القسم. null لـ end_user_default."
+		},
+		"Id of the key, member (user id) or department. Omit for end_user_default.": {
+			"es": "Id de la clave, el miembro (id de usuario) o el departamento. Omítelo para end_user_default.",
+			"fr": "Id de la clé, du membre (id utilisateur) ou du département. À omettre pour end_user_default.",
+			"de": "Id des Schlüssels, Mitglieds (Nutzer-Id) oder der Abteilung. Lass es bei end_user_default weg.",
+			"pt-BR": "Id da chave, do membro (id de usuário) ou do departamento. Omita para end_user_default.",
+			"hi": "कुंजी, सदस्य (उपयोगकर्ता id) या विभाग की id। end_user_default के लिए इसे छोड़ दें।",
+			"ja": "キー、メンバー（ユーザー ID）、または部門の ID。end_user_default の場合は省略します。",
+			"zh-Hans": "密钥、成员（用户 ID）或部门的 ID。end_user_default 时省略。",
+			"ar": "معرّف المفتاح أو العضو (معرّف المستخدم) أو القسم. احذفه لـ end_user_default."
+		},
+		"Output format. gif and svg need a GPT Image 2.6 model and do not support stream or partial_images. svg also needs svg.model and n=1.": {
+			"es": "Formato de salida. gif y svg requieren un modelo GPT Image 2.6 y no admiten stream ni partial_images. svg también requiere svg.model y n=1.",
+			"fr": "Format de sortie. gif et svg nécessitent un modèle GPT Image 2.6 et ne prennent pas en charge stream ni partial_images. svg nécessite aussi svg.model et n=1.",
+			"de": "Ausgabeformat. gif und svg erfordern ein GPT-Image-2.6-Modell und unterstützen weder stream noch partial_images. svg erfordert außerdem svg.model und n=1.",
+			"pt-BR": "Formato de saída. gif e svg exigem um modelo GPT Image 2.6 e não aceitam stream nem partial_images. svg também exige svg.model e n=1.",
+			"hi": "आउटपुट फ़ॉर्मेट। gif और svg के लिए GPT Image 2.6 मॉडल चाहिए, और ये stream या partial_images का समर्थन नहीं करते। svg के लिए svg.model और n=1 भी चाहिए।",
+			"ja": "出力形式。gif と svg には GPT Image 2.6 モデルが必要で、stream と partial_images は使えません。svg には svg.model と n=1 も必要です。",
+			"zh-Hans": "输出格式。gif 和 svg 需要 GPT Image 2.6 模型，且不支持 stream 或 partial_images。svg 还需要 svg.model 和 n=1。",
+			"ar": "تنسيق الإخراج. يتطلب gif وsvg نموذج GPT Image 2.6 ولا يدعمان stream أو partial_images. ويتطلب svg أيضًا svg.model وn=1."
+		},
+		"Required when output_format is svg. svg.model is the OpenAI text model that writes the SVG from the reference image. Its tokens are billed at that model's text prices, with reasoning tokens counted as output, in addition to the image cost.": {
+			"es": "Obligatorio cuando output_format es svg. svg.model es el modelo de texto de OpenAI que escribe el SVG a partir de la imagen de referencia. Sus tokens se cobran a los precios de texto de ese modelo, con los tokens de razonamiento contados como salida, además del coste de la imagen.",
+			"fr": "Obligatoire lorsque output_format vaut svg. svg.model est le modèle de texte OpenAI qui écrit le SVG à partir de l’image de référence. Ses tokens sont facturés aux prix texte de ce modèle, les tokens de raisonnement comptant comme sortie, en plus du coût de l’image.",
+			"de": "Erforderlich, wenn output_format svg ist. svg.model ist das OpenAI-Textmodell, das das SVG aus dem Referenzbild schreibt. Seine Tokens werden zusätzlich zu den Bildkosten zu den Textpreisen dieses Modells abgerechnet, wobei Reasoning-Tokens als Ausgabe zählen.",
+			"pt-BR": "Obrigatório quando output_format é svg. svg.model é o modelo de texto da OpenAI que escreve o SVG a partir da imagem de referência. Os tokens dele são cobrados pelos preços de texto desse modelo, com tokens de raciocínio contados como saída, além do custo da imagem.",
+			"hi": "output_format svg होने पर ज़रूरी। svg.model वह OpenAI टेक्स्ट मॉडल है जो रेफ़रेंस इमेज से SVG लिखता है। इसके टोकन उस मॉडल की टेक्स्ट कीमतों पर, इमेज की लागत के अलावा, बिल होते हैं, और रीज़निंग टोकन आउटपुट में गिने जाते हैं।",
+			"ja": "output_format が svg の場合は必須です。svg.model は参照画像から SVG を書く OpenAI のテキストモデルです。そのトークンは画像の料金に加えて、そのモデルのテキスト料金で課金され、推論トークンは出力として数えられます。",
+			"zh-Hans": "当 output_format 为 svg 时必填。svg.model 是根据参考图像编写 SVG 的 OpenAI 文本模型。其 token 按该模型的文本价格计费，推理 token 计为输出，并在图像费用之外另行收取。",
+			"ar": "مطلوب عندما تكون قيمة output_format هي svg. يحدد svg.model نموذج النص من OpenAI الذي يكتب ملف SVG من الصورة المرجعية. تُحتسب رموزه بأسعار النص لذلك النموذج، مع احتساب رموز الاستدلال كمخرجات، إضافةً إلى تكلفة الصورة."
+		},
+		"Transparent PNG annotation layer over the first image, as a file upload, URL or base64 string. Needs GPT Image 2.5 or later and cannot be combined with mask.": {
+			"es": "Capa de anotación PNG transparente sobre la primera imagen, como archivo subido, URL o cadena base64. Requiere GPT Image 2.5 o posterior y no se puede combinar con mask.",
+			"fr": "Calque d’annotation PNG transparent superposé à la première image, sous forme de fichier envoyé, d’URL ou de chaîne base64. Nécessite GPT Image 2.5 ou ultérieur et ne peut pas être combiné avec mask.",
+			"de": "Transparente PNG-Annotationsebene über dem ersten Bild, als Datei-Upload, URL oder Base64-String. Erfordert GPT Image 2.5 oder neuer und lässt sich nicht mit mask kombinieren.",
+			"pt-BR": "Camada de anotação PNG transparente sobre a primeira imagem, como upload de arquivo, URL ou string base64. Exige GPT Image 2.5 ou posterior e não pode ser combinada com mask.",
+			"hi": "पहली इमेज के ऊपर पारदर्शी PNG एनोटेशन लेयर, फ़ाइल अपलोड, URL या base64 स्ट्रिंग के रूप में। इसके लिए GPT Image 2.5 या बाद का मॉडल चाहिए, और इसे mask के साथ नहीं जोड़ा जा सकता।",
+			"ja": "最初の画像に重ねる透明な PNG の注釈レイヤー。ファイルのアップロード、URL、base64 文字列のいずれかで指定します。GPT Image 2.5 以降が必要で、mask とは併用できません。",
+			"zh-Hans": "覆盖在第一张图像上的透明 PNG 标注层，可以是上传的文件、URL 或 base64 字符串。需要 GPT Image 2.5 或更高版本，且不能与 mask 同时使用。",
+			"ar": "طبقة تعليقات توضيحية بتنسيق PNG شفاف فوق الصورة الأولى، كملف مرفوع أو عنوان URL أو سلسلة base64. تتطلب GPT Image 2.5 أو أحدث، ولا يمكن دمجها مع mask."
+		},
+		"Adds people who asked to join: each user must have a pending join request (created when they accept an invite), which this approves. Other users are rejected; send them an invite instead. Existing members keep their role. Without a role, each person gets their invite's role; adding an admin needs the workspace owner. Management API key required. Each person is approved separately. If one fails, everyone approved before them stays added, the rest aren't tried, and the response is a 409 that lists approved, failed and not_attempted users.": {
+			"es": "Añade a las personas que pidieron unirse: cada usuario debe tener una solicitud de acceso pendiente (creada al aceptar una invitación), que esta operación aprueba. Los demás usuarios se rechazan; envíales una invitación. Los miembros existentes conservan su rol. Sin rol, cada persona recibe el rol de su invitación; añadir un administrador requiere al propietario del espacio de trabajo. Se requiere una clave de API de gestión. Cada persona se aprueba por separado. Si una falla, las aprobadas antes siguen añadidas, las demás no se intentan y la respuesta es un 409 que enumera los usuarios en approved, failed y not_attempted.",
+			"fr": "Ajoute les personnes qui ont demandé à rejoindre l’espace : chaque utilisateur doit avoir une demande d’adhésion en attente (créée lorsqu’il accepte une invitation), que cette opération approuve. Les autres utilisateurs sont refusés ; envoyez-leur plutôt une invitation. Les membres existants conservent leur rôle. Sans rôle, chaque personne reçoit le rôle de son invitation ; ajouter un administrateur nécessite le propriétaire de l’espace de travail. Une clé API de gestion est requise. Chaque personne est approuvée séparément. Si l’une échoue, celles approuvées avant restent ajoutées, les suivantes ne sont pas tentées et la réponse est un 409 qui liste les utilisateurs approved, failed et not_attempted.",
+			"de": "Fügt Personen hinzu, die den Beitritt angefragt haben: Jeder Benutzer braucht eine ausstehende Beitrittsanfrage (die beim Annehmen einer Einladung entsteht), die hiermit genehmigt wird. Andere Benutzer werden abgelehnt; sende ihnen stattdessen eine Einladung. Bestehende Mitglieder behalten ihre Rolle. Ohne Rolle erhält jede Person die Rolle ihrer Einladung; einen Admin hinzuzufügen erfordert den Workspace-Inhaber. Management-API-Schlüssel erforderlich. Jede Person wird einzeln genehmigt. Schlägt eine fehl, bleiben die zuvor genehmigten hinzugefügt, die übrigen werden nicht versucht, und die Antwort ist ein 409, das die Benutzer in approved, failed und not_attempted auflistet.",
+			"pt-BR": "Adiciona as pessoas que pediram para entrar: cada usuário precisa ter uma solicitação de entrada pendente (criada ao aceitar um convite), que esta operação aprova. Outros usuários são recusados; envie um convite a eles. Membros existentes mantêm a função. Sem função, cada pessoa recebe a função do convite; adicionar um administrador exige o proprietário do espaço de trabalho. É necessária uma chave de API de gerenciamento. Cada pessoa é aprovada separadamente. Se uma falhar, as aprovadas antes continuam adicionadas, as restantes não são tentadas e a resposta é um 409 que lista os usuários em approved, failed e not_attempted.",
+			"hi": "जुड़ने का अनुरोध करने वाले लोगों को जोड़ता है: हर उपयोगकर्ता का एक लंबित जुड़ने का अनुरोध होना चाहिए (जो आमंत्रण स्वीकार करने पर बनता है), जिसे यह स्वीकृत करता है। दूसरे उपयोगकर्ता अस्वीकार किए जाते हैं; उन्हें आमंत्रण भेजें। मौजूदा सदस्यों की भूमिका नहीं बदलती। भूमिका न देने पर हर व्यक्ति को उसके आमंत्रण की भूमिका मिलती है; एडमिन जोड़ने के लिए वर्कस्पेस का मालिक आवश्यक है। प्रबंधन API कुंजी आवश्यक है। हर व्यक्ति को अलग से स्वीकृत किया जाता है। अगर किसी एक की स्वीकृति विफल होती है, तो उससे पहले स्वीकृत लोग जुड़े रहते हैं, बाकी लोगों के लिए प्रयास नहीं किया जाता, और प्रतिक्रिया 409 होती है जिसमें approved, failed और not_attempted उपयोगकर्ता सूचीबद्ध होते हैं।",
+			"ja": "参加を申請したユーザーを追加します。各ユーザーには保留中の参加リクエスト（招待の承諾時に作成）が必要で、この操作で承認されます。それ以外のユーザーは拒否されるため、代わりに招待を送ってください。既存メンバーのロールは変わりません。ロールを指定しない場合は招待のロールが付与されます。管理者の追加にはワークスペースのオーナーが必要です。管理APIキーが必要です。各ユーザーは個別に承認されます。途中で失敗した場合、それまでに承認されたユーザーは追加されたままとなり、残りは試行されません。レスポンスは 409 で、approved、failed、not_attempted のユーザーを一覧で返します。",
+			"zh-Hans": "添加已申请加入的用户：每个用户都必须有待处理的加入请求（在接受邀请时创建），此操作会批准该请求。其他用户会被拒绝，请改为向他们发送邀请。现有成员保留原有角色。未指定角色时，每个人获得其邀请的角色；添加管理员需要工作区所有者。需要管理 API 密钥。每个人单独批准。如果其中一人失败，之前已批准的人仍保持添加状态，其余的人不会被尝试，响应为 409，并列出 approved、failed 和 not_attempted 中的用户。",
+			"ar": "يضيف الأشخاص الذين طلبوا الانضمام: يجب أن يكون لكل مستخدم طلب انضمام معلّق (يُنشأ عند قبول دعوة)، وتوافق هذه العملية عليه. يُرفض المستخدمون الآخرون؛ أرسل إليهم دعوة بدلًا من ذلك. يحتفظ الأعضاء الحاليون بأدوارهم. إذا لم يُحدَّد دور، يحصل كل شخص على دور دعوته؛ وتتطلب إضافة مسؤول مالك مساحة العمل. يلزم مفتاح API للإدارة. تتم الموافقة على كل شخص على حدة. إذا فشلت إحدى الموافقات، يبقى من تمت الموافقة عليهم قبلها مضافين، ولا تتم محاولة الباقين، وتكون الاستجابة 409 تسرد المستخدمين في approved وfailed وnot_attempted."
+		},
+		"Removes non-owner members from a workspace. Only the workspace owner can remove other members; anyone can remove themselves. Management API key required.": {
+			"es": "Quita del espacio de trabajo a los miembros que no sean propietarios. Solo el propietario del espacio de trabajo puede quitar a otros miembros; cualquiera puede quitarse a sí mismo. Se requiere una clave de API de gestión.",
+			"fr": "Retire de l’espace de travail les membres qui n’en sont pas propriétaires. Seul le propriétaire de l’espace de travail peut retirer d’autres membres ; chacun peut se retirer lui-même. Une clé API de gestion est requise.",
+			"de": "Entfernt Mitglieder, die nicht Inhaber sind, aus einem Workspace. Nur der Workspace-Inhaber kann andere Mitglieder entfernen; jede Person kann sich selbst entfernen. Management-API-Schlüssel erforderlich.",
+			"pt-BR": "Remove do espaço de trabalho os membros que não são proprietários. Só o proprietário do espaço de trabalho pode remover outros membros; qualquer pessoa pode remover a si mesma. É necessária uma chave de API de gerenciamento.",
+			"hi": "वर्कस्पेस से उन सदस्यों को हटाता है जो मालिक नहीं हैं। केवल वर्कस्पेस का मालिक दूसरे सदस्यों को हटा सकता है; कोई भी व्यक्ति ख़ुद को हटा सकता है। प्रबंधन API कुंजी आवश्यक है।",
+			"ja": "オーナー以外のメンバーをワークスペースから削除します。他のメンバーを削除できるのはワークスペースのオーナーだけで、自分自身は誰でも削除できます。管理APIキーが必要です。",
+			"zh-Hans": "从工作区移除非所有者成员。只有工作区所有者可以移除其他成员；任何人都可以移除自己。需要管理 API 密钥。",
+			"ar": "يزيل من مساحة العمل الأعضاء الذين ليسوا مالكين. وحده مالك مساحة العمل يمكنه إزالة الأعضاء الآخرين؛ ويمكن لأي شخص إزالة نفسه. يلزم مفتاح API للإدارة."
+		},
+		"Deletes a workspace by UUID or slug. Only the workspace owner can delete it. Management API key required.": {
+			"es": "Elimina un espacio de trabajo por su UUID o slug. Solo el propietario del espacio de trabajo puede eliminarlo. Se requiere una clave de API de gestión.",
+			"fr": "Supprime un espace de travail par son UUID ou son slug. Seul le propriétaire de l’espace de travail peut le supprimer. Une clé API de gestion est requise.",
+			"de": "Löscht einen Workspace anhand von UUID oder Slug. Nur der Workspace-Inhaber kann ihn löschen. Management-API-Schlüssel erforderlich.",
+			"pt-BR": "Exclui um espaço de trabalho pelo UUID ou slug. Só o proprietário do espaço de trabalho pode excluí-lo. É necessária uma chave de API de gerenciamento.",
+			"hi": "UUID या slug से वर्कस्पेस हटाता है। केवल वर्कस्पेस का मालिक उसे हटा सकता है। प्रबंधन API कुंजी आवश्यक है।",
+			"ja": "UUID または slug を指定してワークスペースを削除します。削除できるのはワークスペースのオーナーだけです。管理APIキーが必要です。",
+			"zh-Hans": "按 UUID 或 slug 删除工作区。只有工作区所有者可以删除。需要管理 API 密钥。",
+			"ar": "يحذف مساحة عمل حسب UUID أو slug. وحده مالك مساحة العمل يمكنه حذفها. يلزم مفتاح API للإدارة."
+		},
+		"Updates one or more durable notification-policy sections. Turning on auto top-up, or changing its amount, threshold or payment method, needs `billing:write`, an existing saved payment method identifier and verified two-factor authentication, and apps that use Sign in with Phaseo can't do it. Turning it off needs only `settings:write`. An existing auto top-up configuration may be updated without repeating the MFA acknowledgement. The two-factor bypass (`mfa_bypass_acknowledged` and `mfa_bypass_phrase`) can only be accepted in Settings; the API rejects it. Payment collection remains an interactive account flow.": {
+			"es": "Actualiza una o más secciones persistentes de la política de notificaciones. Activar la recarga automática, o cambiar su importe, umbral o método de pago, requiere `billing:write`, el identificador de un método de pago guardado y la autenticación en dos pasos verificada, y las aplicaciones que usan Iniciar sesión con Phaseo no pueden hacerlo. Desactivarla solo requiere `settings:write`. Una configuración de recarga automática existente puede actualizarse sin repetir la confirmación de MFA. La omisión de la autenticación en dos pasos (`mfa_bypass_acknowledged` y `mfa_bypass_phrase`) solo puede aceptarse en Configuración; la API la rechaza. El cobro sigue siendo un flujo interactivo de la cuenta.",
+			"fr": "Met à jour une ou plusieurs sections persistantes de la politique de notification. Activer la recharge automatique, ou modifier son montant, son seuil ou son moyen de paiement, nécessite `billing:write`, l’identifiant d’un moyen de paiement enregistré et une authentification à deux facteurs vérifiée, et les applications qui utilisent Se connecter avec Phaseo ne peuvent pas le faire. La désactiver nécessite seulement `settings:write`. Une configuration de recharge automatique existante peut être mise à jour sans répéter la confirmation MFA. Le contournement de l’authentification à deux facteurs (`mfa_bypass_acknowledged` et `mfa_bypass_phrase`) ne peut être accepté que dans les Paramètres ; l’API le refuse. L’encaissement reste un parcours interactif du compte.",
+			"de": "Aktualisiert einen oder mehrere dauerhafte Abschnitte der Benachrichtigungsrichtlinie. Die automatische Aufladung einzuschalten oder ihren Betrag, Schwellenwert oder ihre Zahlungsmethode zu ändern, erfordert `billing:write`, die Kennung einer gespeicherten Zahlungsmethode und bestätigte Zwei-Faktor-Authentifizierung; Apps, die Mit Phaseo anmelden verwenden, können das nicht. Zum Ausschalten genügt `settings:write`. Eine bestehende Konfiguration kann ohne erneute MFA-Bestätigung aktualisiert werden. Die Umgehung der Zwei-Faktor-Authentifizierung (`mfa_bypass_acknowledged` und `mfa_bypass_phrase`) kann nur in den Einstellungen akzeptiert werden; die API lehnt sie ab. Die Zahlungserfassung bleibt ein interaktiver Kontovorgang.",
+			"pt-BR": "Atualiza uma ou mais seções persistentes da política de notificações. Ativar a recarga automática, ou alterar o valor, o limite ou a forma de pagamento, exige `billing:write`, o identificador de uma forma de pagamento salva e autenticação de dois fatores verificada, e apps que usam Entrar com Phaseo não podem fazer isso. Desativá-la exige apenas `settings:write`. Uma configuração existente de recarga automática pode ser atualizada sem repetir a confirmação de MFA. A dispensa da autenticação de dois fatores (`mfa_bypass_acknowledged` e `mfa_bypass_phrase`) só pode ser aceita nas Configurações; a API a recusa. A cobrança continua sendo um fluxo interativo da conta.",
+			"hi": "सूचना नीति के एक या अधिक स्थायी अनुभागों को अपडेट करता है। ऑटो टॉप-अप चालू करने, या उसकी राशि, सीमा या भुगतान विधि बदलने के लिए `billing:write`, सहेजी गई भुगतान विधि का पहचानकर्ता और सत्यापित दो-चरणीय प्रमाणीकरण आवश्यक है, और Phaseo से साइन इन करने वाले ऐप यह नहीं कर सकते। इसे बंद करने के लिए केवल `settings:write` चाहिए। मौजूदा ऑटो टॉप-अप कॉन्फ़िगरेशन को MFA पुष्टि दोहराए बिना अपडेट किया जा सकता है। दो-चरणीय प्रमाणीकरण की छूट (`mfa_bypass_acknowledged` और `mfa_bypass_phrase`) केवल सेटिंग्स में स्वीकार की जा सकती है; API इसे अस्वीकार करता है। भुगतान लेना एक इंटरैक्टिव खाता प्रक्रिया बना रहता है।",
+			"ja": "通知ポリシーの永続的なセクションを1つ以上更新します。自動チャージを有効にする、または金額・しきい値・支払い方法を変更するには、`billing:write`、保存済みの支払い方法の識別子、確認済みの二要素認証が必要で、Phaseo でサインインを使うアプリからは変更できません。無効にするだけなら `settings:write` で足ります。既存の自動チャージ設定は、MFA の確認を繰り返さずに更新できます。二要素認証の回避（`mfa_bypass_acknowledged` と `mfa_bypass_phrase`）は設定画面でのみ受け付け、API では拒否されます。支払いの回収は引き続き対話型のアカウント操作です。",
+			"zh-Hans": "更新一个或多个持久化的通知策略部分。开启自动充值，或更改其金额、阈值或付款方式，需要 `billing:write`、已保存付款方式的标识符以及已验证的双重身份验证，且使用 Phaseo 登录的应用无法执行此操作。关闭自动充值只需 `settings:write`。现有的自动充值配置可在不重复 MFA 确认的情况下更新。跳过双重身份验证（`mfa_bypass_acknowledged` 和 `mfa_bypass_phrase`）只能在设置中接受；API 会拒绝。付款收取仍是交互式账户流程。",
+			"ar": "يحدّث قسمًا واحدًا أو أكثر من أقسام سياسة الإشعارات الدائمة. يتطلب تشغيل الشحن التلقائي، أو تغيير مبلغه أو حدّه أو طريقة الدفع، الإذن `billing:write` ومعرّف طريقة دفع محفوظة ومصادقة ثنائية مُتحقَّقًا منها، ولا يمكن للتطبيقات التي تستخدم تسجيل الدخول عبر Phaseo فعل ذلك. يكفي `settings:write` لإيقافه. يمكن تحديث إعداد الشحن التلقائي الحالي دون تكرار تأكيد MFA. لا يُقبل تجاوز المصادقة الثنائية (`mfa_bypass_acknowledged` و`mfa_bypass_phrase`) إلا في الإعدادات؛ وترفضه API. يظل تحصيل الدفع مسار حساب تفاعليًا."
+		},
+		"Not every user could be added. The body lists who was added, who failed and who wasn't tried.": {
+			"es": "No se pudo añadir a todos los usuarios. El cuerpo indica quién se añadió, quién falló y a quién no se intentó añadir.",
+			"fr": "Tous les utilisateurs n’ont pas pu être ajoutés. Le corps indique qui a été ajouté, qui a échoué et qui n’a pas été tenté.",
+			"de": "Nicht alle Benutzer konnten hinzugefügt werden. Der Body listet, wer hinzugefügt wurde, wer fehlgeschlagen ist und wer nicht versucht wurde.",
+			"pt-BR": "Nem todos os usuários puderam ser adicionados. O corpo lista quem foi adicionado, quem falhou e quem não foi tentado.",
+			"hi": "सभी उपयोगकर्ताओं को नहीं जोड़ा जा सका। बॉडी में बताया जाता है कि किसे जोड़ा गया, किसकी स्वीकृति विफल हुई और किसके लिए प्रयास नहीं किया गया।",
+			"ja": "一部のユーザーを追加できませんでした。本文には、追加されたユーザー、失敗したユーザー、試行されなかったユーザーが含まれます。",
+			"zh-Hans": "并非所有用户都已添加。响应正文列出了已添加、失败和未尝试的用户。",
+			"ar": "تعذّرت إضافة جميع المستخدمين. يسرد نص الاستجابة من أُضيف ومن فشلت إضافته ومن لم تتم محاولة إضافته."
+		},
+		"Users added by this request, in the order they were approved.": {
+			"es": "Usuarios añadidos por esta solicitud, en el orden en que se aprobaron.",
+			"fr": "Utilisateurs ajoutés par cette requête, dans l’ordre de leur approbation.",
+			"de": "Durch diese Anfrage hinzugefügte Benutzer, in der Reihenfolge ihrer Genehmigung.",
+			"pt-BR": "Usuários adicionados por esta solicitação, na ordem em que foram aprovados.",
+			"hi": "इस अनुरोध से जोड़े गए उपयोगकर्ता, उसी क्रम में जिसमें उन्हें स्वीकृत किया गया।",
+			"ja": "このリクエストで追加されたユーザー（承認された順）。",
+			"zh-Hans": "此请求添加的用户，按批准顺序排列。",
+			"ar": "المستخدمون الذين أضافهم هذا الطلب، بترتيب الموافقة عليهم."
+		},
+		"The user whose approval failed, with the reason. Users after them aren't tried.": {
+			"es": "El usuario cuya aprobación falló, con el motivo. Los usuarios posteriores no se intentan.",
+			"fr": "L’utilisateur dont l’approbation a échoué, avec la raison. Les utilisateurs suivants ne sont pas tentés.",
+			"de": "Der Benutzer, dessen Genehmigung fehlgeschlagen ist, mit dem Grund. Nachfolgende Benutzer werden nicht versucht.",
+			"pt-BR": "O usuário cuja aprovação falhou, com o motivo. Os usuários seguintes não são tentados.",
+			"hi": "वह उपयोगकर्ता जिसकी स्वीकृति विफल हुई, कारण सहित। उसके बाद के उपयोगकर्ताओं के लिए प्रयास नहीं किया जाता।",
+			"ja": "承認に失敗したユーザーとその理由。以降のユーザーは試行されません。",
+			"zh-Hans": "批准失败的用户及原因。其后的用户不会被尝试。",
+			"ar": "المستخدم الذي فشلت الموافقة عليه، مع السبب. لا تتم محاولة المستخدمين الذين يلونه."
+		},
+		"Users not tried because an earlier approval failed. Their join requests are still pending.": {
+			"es": "Usuarios que no se intentaron porque falló una aprobación anterior. Sus solicitudes de acceso siguen pendientes.",
+			"fr": "Utilisateurs non tentés parce qu’une approbation précédente a échoué. Leurs demandes d’adhésion restent en attente.",
+			"de": "Benutzer, die nicht versucht wurden, weil eine frühere Genehmigung fehlgeschlagen ist. Ihre Beitrittsanfragen sind weiterhin ausstehend.",
+			"pt-BR": "Usuários não tentados porque uma aprovação anterior falhou. As solicitações de entrada deles continuam pendentes.",
+			"hi": "वे उपयोगकर्ता जिनके लिए प्रयास नहीं किया गया क्योंकि पहले की स्वीकृति विफल हुई। उनके जुड़ने के अनुरोध अभी भी लंबित हैं।",
+			"ja": "前の承認が失敗したため試行されなかったユーザー。参加リクエストは保留中のままです。",
+			"zh-Hans": "因先前的批准失败而未尝试的用户。他们的加入请求仍处于待处理状态。",
+			"ar": "المستخدمون الذين لم تتم محاولتهم لأن موافقة سابقة فشلت. تبقى طلبات انضمامهم معلّقة."
+		},
+		"The added members' details. Left out if they couldn't be read back after the approvals; approved still lists who was added.": {
+			"es": "Los datos de los miembros añadidos. Se omiten si no se pudieron leer después de las aprobaciones; approved sigue indicando quién se añadió.",
+			"fr": "Les détails des membres ajoutés. Omis s’ils n’ont pas pu être relus après les approbations ; approved indique toujours qui a été ajouté.",
+			"de": "Die Details der hinzugefügten Mitglieder. Fehlen, wenn sie nach den Genehmigungen nicht gelesen werden konnten; approved listet trotzdem, wer hinzugefügt wurde.",
+			"pt-BR": "Os detalhes dos membros adicionados. São omitidos se não puderem ser lidos depois das aprovações; approved continua listando quem foi adicionado.",
+			"hi": "जोड़े गए सदस्यों का विवरण। स्वीकृतियों के बाद इन्हें पढ़ा न जा सके तो यह छोड़ दिया जाता है; approved में फिर भी बताया जाता है कि किसे जोड़ा गया।",
+			"ja": "追加されたメンバーの詳細。承認後に読み取れなかった場合は省略されます。その場合も approved に追加されたユーザーが含まれます。",
+			"zh-Hans": "已添加成员的详细信息。如果批准后无法读取，则省略此字段；approved 仍会列出已添加的用户。",
+			"ar": "تفاصيل الأعضاء المضافين. تُحذف إذا تعذّرت قراءتها بعد الموافقات؛ ويظل approved يسرد من أُضيف."
 		}
 	},
 	"GET /apps": {

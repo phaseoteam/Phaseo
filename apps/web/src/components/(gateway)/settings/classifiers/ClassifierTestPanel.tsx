@@ -1,13 +1,11 @@
-"use client";
-
 import { useState, useTransition } from "react";
 import { FlaskConical, Loader2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { testClassifier, type ClassifierTestResult } from "@/app/(dashboard)/settings/classifiers/actions";
+import { testClassifier, type ClassifierTestResult } from "@/features/settings/classifiers/actions";
 import { formatUsd } from "./classifierForm";
 
 type Outcome = { kind: "result"; result: ClassifierTestResult } | { kind: "privacy" } | { kind: "error"; message: string | null } | null;
@@ -31,11 +29,11 @@ export function ClassifierTestPanel({ classifierId, buildRequest, includeRespons
 		setInvalid(!classifier);
 		if (!classifier || !prompt.trim()) return;
 		startTransition(async () => {
-			const result = await testClassifier({
+			const result = await testClassifier({ data: {
 				classifierId,
 				classifier,
 				sample: { prompt, ...(includeResponse && response.trim() ? { response } : {}) },
-			});
+			} });
 			if (result.ok) setOutcome({ kind: "result", result: result.result });
 			else if (result.code === "chat_privacy_review_required") setOutcome({ kind: "privacy" });
 			else setOutcome({ kind: "error", message: result.message });

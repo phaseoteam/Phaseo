@@ -270,6 +270,9 @@ describe("filesRoutes", () => {
 						headers: {
 							"Content-Type": "application/jsonl",
 							"Content-Disposition": 'attachment; filename="batch-output.jsonl"',
+							"openai-organization": "org-provider-secret",
+							"openai-project": "proj_provider_secret",
+							"Set-Cookie": "__cf_bm=provider-cookie; Path=/",
 						},
 					});
 				}
@@ -338,6 +341,11 @@ describe("filesRoutes", () => {
 		expect(contentResponse.status).toBe(200);
 		expect(contentResponse.headers.get("content-type")).toBe("application/jsonl");
 		expect(contentResponse.headers.get("content-disposition")).toBe('attachment; filename="batch-output.jsonl"');
+		expect(contentResponse.headers.get("x-content-type-options")).toBe("nosniff");
+		expect(contentResponse.headers.get("cache-control")).toBe("private, no-store");
+		for (const leaked of ["openai-organization", "openai-project", "set-cookie"]) {
+			expect(contentResponse.headers.get(leaked)).toBeNull();
+		}
 		expect(await contentResponse.text()).toBe('{"ok":true}\n');
 		expect(state.fetchCalls.map((call) => `${call.method} ${call.url}`)).toEqual([
 			"POST https://api.openai.example/v1/files",
@@ -403,10 +411,11 @@ describe("filesRoutes", () => {
 				}
 
 				if (url === "https://api.mistral.ai/v1/files/file_mistral_123/content" && method === "GET") {
+					// A provider-chosen type that a browser would render.
 					return new Response('{"ok":true}\n', {
 						status: 200,
 						headers: {
-							"Content-Type": "application/jsonl",
+							"Content-Type": "text/html; charset=utf-8",
 						},
 					});
 				}
@@ -438,6 +447,9 @@ describe("filesRoutes", () => {
 		});
 
 		expect(contentResponse.status).toBe(200);
+		expect(contentResponse.headers.get("content-type")).toBe("application/octet-stream");
+		expect(contentResponse.headers.get("content-disposition")).toBe("attachment");
+		expect(contentResponse.headers.get("x-content-type-options")).toBe("nosniff");
 		expect(await contentResponse.text()).toBe('{"ok":true}\n');
 		expect(state.fetchCalls.map((call) => `${call.method} ${call.url}`)).toEqual([
 			"POST https://api.mistral.ai/v1/files",

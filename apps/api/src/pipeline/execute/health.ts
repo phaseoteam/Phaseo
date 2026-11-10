@@ -7,6 +7,7 @@ import { HEALTH_CONSTANTS, HEALTH_KEYS, isRecoveryProbeRequest } from "./health.
 import type { Endpoint } from "@core/types";
 import { awaitShared } from "@core/shared-wait";
 import { TOKEN_MIX_TAU_MS } from "./health-evidence";
+import { classifyAttemptHealth, isRateLimitSignal, PROVIDER_FAILURE_CLASSES } from "./attempt-health";
 import { coordinatedHealthEnabled, coordinatedHealthMany, coordinatedHealthRead, reportCoordinatedHealth, resetCoordinatedHealthForTests } from "./health-coordinator";
 
 export type BreakerState = "closed" | "open" | "half_open";
@@ -57,22 +58,6 @@ export type ProviderHealth = {
     last_updated: number;
 };
 
-function normalizeHealthSignal(value: unknown): string {
-    return String(value ?? "").trim().toLowerCase();
-}
-
-function isRateLimitSignal(value: unknown): boolean {
-    const normalized = normalizeHealthSignal(value);
-    if (!normalized) return false;
-    return (
-        normalized.includes("rate limit") ||
-        normalized.includes("rate_limit") ||
-        normalized.includes("too many requests") ||
-        normalized.includes("ratelimit") ||
-        normalized.includes("quota exceeded")
-    );
-}
-
 export function classifyProviderHealthImpact(args: {
     upstreamStatus?: number | null;
     aborted?: boolean;
@@ -83,33 +68,12 @@ export function classifyProviderHealthImpact(args: {
     credentialSource?: "gateway" | "byok";
     failureOrigin?: "provider" | "gateway" | "client";
 }): HealthImpact {
-    if (args.aborted || args.failureOrigin === "client" || args.failureOrigin === "gateway") return "neutral";
-    const status = Number(args.upstreamStatus ?? 0);
-    // Credential ownership remains authoritative if a stream also reports an error.
-    if (args.credentialSource === "byok" && [401, 402, 403, 429].includes(status)) return "neutral";
-	if (args.midStreamError) return "failure";
-	const finishReason = normalizeHealthSignal(args.finishReason);
-	if (finishReason === "error" || finishReason === "failed" || finishReason === "failure" || finishReason === "upstream_failure") {
-		return "failure";
-	}
-
-    if (Number.isFinite(status) && status >= 200 && status < 300) {
-        return "success";
-    }
-	// A user's own key/quota is not evidence against the shared managed route.
-	if (status === 429 || status === 408) return "failure";
-	// Authentication, billing, model lookup and request validation describe a
-	// credential/request/configuration problem, not shared provider reliability.
-	if (status >= 400 && status < 500) return "neutral";
-	if (status >= 500 && status < 600) return "failure";
-    if (isRateLimitSignal(args.errorCode) || isRateLimitSignal(args.errorMessage)) {
-        return args.credentialSource !== "byok" && args.failureOrigin === "provider" ? "failure" : "neutral";
-    }
-    const code = normalizeHealthSignal(args.errorCode);
-    if (/^(econnreset|econnrefused|etimedout|ehostunreach|enetunreach|und_err_(connect_timeout|headers_timeout|body_timeout|socket))$/.test(code)) return args.failureOrigin === "provider" ? "failure" : "neutral";
-    // Unknown exceptions may be request mapping, billing, or gateway bugs.
-    // Only explicit upstream evidence should affect provider selection.
-    return args.failureOrigin === "provider" ? "failure" : "neutral";
+	// Same classes the model pages report per attempt: provider failures
+	// (reachability, capacity, call errors) count against the route; customer-
+	// and Phaseo-caused failures are neutral.
+	const healthClass = classifyAttemptHealth(args);
+	if (healthClass === "success") return "success";
+	return PROVIDER_FAILURE_CLASSES.has(healthClass) ? "failure" : "neutral";
 }
 
 type ProviderConfigField = "err_open_th" | "base_open_secs" | "max_open_secs" | "load_soft_cap";

@@ -5,18 +5,16 @@ import type { DiffLineAnnotation, SelectedLineRange } from "@pierre/diffs";
 import type { PullRequestFile } from "../../../shared/pullRequestFiles";
 import type { PullRequestAction, PullRequestComment, PullRequestReviewCommentDraft, PullRequestReviewThreadView, PullRequestView } from "../../../shared/pullRequestView";
 import { DiffView } from "../../components/DiffView";
-import type { DiffLayout } from "../../components/diffRendering";
 import { Button } from "../../components/ui/button";
 import { Checkbox } from "../../components/ui/checkbox";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuItem, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../../components/ui/dropdown-menu";
 import { ScrollArea } from "../../components/ui/scroll-area";
-import { Textarea } from "../../components/ui/textarea";
 import { showToast } from "../../components/ui/toast";
 import { Toggle } from "../../components/ui/toggle";
 import { ToggleGroup, ToggleGroupItem } from "../../components/ui/toggle-group";
 import { pullRequestPatch } from "../../lib/pullRequestPatch";
 import { usePersistedState } from "../../lib/persistedState";
-import { useWorkspacePreferences } from "../../lib/workspacePreferences";
+import { useWorkspacePreferences, saveChatPreferences } from "../../lib/workspacePreferences";
 import { cn } from "../../lib/utils";
 import { DiffFileHeadersLoading } from "../../panels/surfaceChrome";
 import { ActorLabel, DiffStat, errorMessage, MetaLine, Tip } from "./presentation";
@@ -28,6 +26,7 @@ import { nextPendingReviewCommentId, pullRequestReviewKey, reviewDrafts, usePend
 import { Reactions } from "./SummaryTab";
 import type { PullRequestHandoff } from "./usePullRequestHandoff";
 import { usePullRequestFilesViewed } from "./usePullRequestFilesViewed";
+import { MarkdownTextarea } from "../../components/MarkdownTextarea";
 
 const statusLetter: Record<string, { letter: string; tone: string }> = { added: { letter: "A", tone: "text-emerald-600 dark:text-emerald-400" }, removed: { letter: "D", tone: "text-red-600 dark:text-red-400" }, renamed: { letter: "R", tone: "text-info" }, copied: { letter: "C", tone: "text-info" } };
 const fileAnchor = (path: string) => `pr-file-${encodeURIComponent(path)}`;
@@ -82,7 +81,7 @@ export function ReviewThread({ thread, view, projectId, pending, onAction, hando
 			</article>)}
 			{more.cursor && <Button size="xs" variant="ghost" className="text-muted-foreground" disabled={loadingMore} onClick={() => void loadMore()}>{loadingMore ? "Loading…" : "Load more comments"}</Button>}
 			{thread.canReply && (replying
-				? <div className="space-y-2"><Textarea autoFocus value={draft} disabled={pending} onChange={event => setDraft(event.target.value)} placeholder="Reply" aria-label="Reply to this conversation" className="min-h-14 text-xs" onKeyDown={event => { if (event.key === "Escape") { event.stopPropagation(); setReplying(false); } else if (event.key === "Enter" && (event.metaKey || event.ctrlKey) && draft.trim()) { event.preventDefault(); void reply(); } }} />
+				? <div className="space-y-2"><MarkdownTextarea ui autoFocus value={draft} disabled={pending} onChange={event => setDraft(event.target.value)} placeholder="Reply" aria-label="Reply to this conversation" className="min-h-14 text-xs" onKeyDown={event => { if (event.key === "Escape") { event.stopPropagation(); setReplying(false); } else if (event.key === "Enter" && (event.metaKey || event.ctrlKey) && draft.trim()) { event.preventDefault(); void reply(); } }} />
 					<div className="flex justify-end gap-2"><Button size="xs" variant="ghost" disabled={pending} onClick={() => setReplying(false)}>Cancel</Button><Button size="xs" disabled={pending || !draft.trim()} onClick={() => void reply()}>{pending ? "Posting…" : "Reply"}</Button></div></div>
 				: <Button size="xs" variant="ghost" className="text-muted-foreground" onClick={() => setReplying(true)}><MessageSquareReply className="size-3.5" />Reply</Button>)}
 		</div>}
@@ -105,7 +104,7 @@ function DraftComment({ label, onReview, onAgent, onCancel }: { label: string; o
 	const [text, setText] = useState("");
 	return <div className="border-y border-border/60 bg-background px-3 py-2 font-sans text-xs whitespace-normal" data-draft-comment="" onPointerDown={event => event.stopPropagation()}>
 		<p className="mb-1.5 truncate font-mono text-muted-foreground">{label}</p>
-		<Textarea autoFocus value={text} rows={3} onChange={event => setText(event.target.value)} placeholder="Leave a comment" aria-label={`Comment on ${label}`} className="min-h-16 text-xs"
+		<MarkdownTextarea ui autoFocus value={text} rows={3} onChange={event => setText(event.target.value)} placeholder="Leave a comment" aria-label={`Comment on ${label}`} className="min-h-16 text-xs"
 			onKeyDown={event => { if (event.nativeEvent.isComposing) return; if (event.key === "Escape") { event.stopPropagation(); onCancel(); } else if (event.key === "Enter" && (event.metaKey || event.ctrlKey) && text.trim()) { event.preventDefault(); event.stopPropagation(); onReview(text); } }} />
 		<div className="mt-2 flex flex-wrap justify-end gap-2">
 			<Button size="xs" variant="ghost" onClick={onCancel}>Cancel</Button>
@@ -137,9 +136,9 @@ export function CodeTab({ view, projectId, pending, onAction, onOpen, handoff, c
 	const api = window.phaseoDesktop?.workspace;
 	const [files, setFiles] = useState<PullRequestFile[]>([]), [page, setPage] = useState(0), [hasNext, setHasNext] = useState(false), [total, setTotal] = useState(view.changedFiles);
 	const [loading, setLoading] = useState(true), [error, setError] = useState("");
-	const [layout, setLayout] = usePersistedState<DiffLayout>("phaseo.desktop.pullRequestDiffLayout", "unified");
+	const { diffLayout: layout, diffIgnoreWhitespace: ignoreWhitespace } = useWorkspacePreferences().chat;
+	const setLayout = (diffLayout: "unified" | "split") => void saveChatPreferences({ diffLayout }), setIgnoreWhitespace = (diffIgnoreWhitespace: boolean) => void saveChatPreferences({ diffIgnoreWhitespace });
 	const [wrap, setWrap] = usePersistedState("phaseo.desktop.pullRequestDiffWrap", true);
-	const [ignoreWhitespace, setIgnoreWhitespace] = usePersistedState("phaseo.desktop.pullRequestIgnoreWhitespace", false);
 	const [treeOpen, setTreeOpen] = usePersistedState("phaseo.desktop.pullRequestFileTree", false);
 	const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 	const { diffFilesCollapsed } = useWorkspacePreferences();

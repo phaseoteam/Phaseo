@@ -3,13 +3,13 @@
 // Why: Keeps pre-execution logic centralized and consistent.
 // How: Orchestrates auth, validation, and context loading to build PipelineContext.
 
-import { z } from "zod";
+import * as z from "zod";
 import { getBindings } from "@/runtime/env";
 import { getAutoRoutingFeatureGateName, isAutoRoutingAccessEnabled, isModelSuccessorRedirectAccessEnabled } from "@core/feature-flags";
 import { keyIdIsOAuthClientId } from "@core/request-key";
 import { schemaFor } from "@core/schemas";
 import type { Endpoint, RequestBetaOptions, RequestMeta } from "@core/types";
-import type { PipelineContext } from "./types";
+import type { PipelineContext, WorkspacePolicy } from "./types";
 import { guardAuth, guardJson, guardZod, guardModel, guardContext, makeMeta, normalizeReturnFlag } from "./guards";
 import { createSpendLimitSlot, releaseSpend, slotAdmission, type SpendLimitSlot } from "@core/spend-limits";
 import { err } from "./http";
@@ -53,6 +53,7 @@ import {
 	validateProviderQualifiedModelProvider,
 } from "../requestRouting";
 import { fetchWorkspacePolicy, applyWorkspacePolicy, providerPermittedByPolicy } from "./workspacePolicy";
+import { normalizeSvgAuthorModel, resolveSvgAuthor } from "@providers/openai/endpoints/images-svg";
 import {
     findModelSuccessor,
     findWorkspaceModelSuccessor,
@@ -138,11 +139,15 @@ function requiredExecutionParams(endpoint: Endpoint): string[] {
 		: [];
 }
 
+/**
+ * Asks routing for zero data retention when the key's policy requires it: the workspace baseline
+ * guardrail or one of the key's guardrails (the auto router uses the same rule).
+ */
 function applyWorkspacePrivacyRoutingDefaults(
     body: any,
-    teamSettings: PipelineContext["teamSettings"] | null | undefined,
+    workspacePolicy: Pick<WorkspacePolicy, "privacyZdrOnly"> | null | undefined,
 ): any {
-    if (!teamSettings?.privacyZdrOnly) return body;
+    if (!workspacePolicy?.privacyZdrOnly) return body;
     return {
         ...body,
         routing: {
@@ -777,7 +782,6 @@ async function runBeforeRequest(
 					resolvedModel: candidateResolvedModel,
 					body: autoRouterBody,
 					workspacePolicy: policyLoad.value,
-					teamSettings: candidateContext.value.context.teamSettings ?? null,
 				});
 				if (policyResult.ok === false) {
 					return { ok: false as const, reason: policyResult.reason === "model_not_allowed" ? "model_restricted_by_policy" : "no_policy_compliant_providers" };
@@ -945,6 +949,7 @@ async function runBeforeRequest(
         context_rpc: contextTelemetry?.rpcMs,
         context_enrich: contextTelemetry?.enrichMs,
         context_cache_write: contextTelemetry?.cacheWriteMs,
+        context_spend_limit: contextTelemetry?.spendLimitMs,
     };
     for (const [name, durationMs] of Object.entries(contextTimingSpans)) {
         if (typeof durationMs === "number") timer.record(name, durationMs);
@@ -1203,7 +1208,7 @@ async function runBeforeRequest(
     mergedBody = serverToolPlugins.body;
     mergedBody = applyWorkspacePrivacyRoutingDefaults(
         mergedBody,
-        context.teamSettings,
+        workspacePolicy,
     );
     const unsupportedRoutingFields = collectUnsupportedRoutingFields(mergedBody);
     if (unsupportedRoutingFields.length > 0) {
@@ -1378,12 +1383,37 @@ async function runBeforeRequest(
     }
     presetFilteredProviders = providerQualifiedCandidates.providers;
 
+    const requestedSvgAuthor = endpoint === "images.generations" && mergedBody?.output_format === "svg" && typeof mergedBody?.svg?.model === "string"
+        ? mergedBody.svg.model as string
+        : null;
+    const svgAuthorModel = requestedSvgAuthor ? normalizeSvgAuthorModel(requestedSvgAuthor) : null;
+    // The author must be an OpenAI text model with a Phaseo price, or its tokens could not be billed.
+    // Checked here so the caller gets a plain validation error, not a provider failure.
+    if (requestedSvgAuthor && (!svgAuthorModel || !(await resolveSvgAuthor(requestedSvgAuthor)))) {
+        const description = `svg.model "${requestedSvgAuthor}" is not an OpenAI text model with Phaseo pricing. Use an OpenAI model id such as openai/gpt-5-nano.`;
+        return {
+            ok: false,
+            response: err("validation_error", {
+                reason: "invalid_svg_model",
+                description,
+                error_type: "user",
+                error_origin: "user",
+                details: [{
+                    message: description,
+                    path: ["svg", "model"],
+                    keyword: "invalid_svg_model",
+                    params: { model: requestedSvgAuthor },
+                }],
+                request_id: requestId,
+                workspace_id: workspaceId,
+            }),
+        };
+    }
     const workspacePolicyResult = applyWorkspacePolicy({
         providers: presetFilteredProviders,
         resolvedModel: resolvedModel || model,
         body: mergedBody,
         workspacePolicy,
-        teamSettings: context.teamSettings ?? null,
     });
     if (!workspacePolicyResult.ok) {
         const workspacePolicyFailure = workspacePolicyResult as Extract<
@@ -1452,6 +1482,45 @@ async function runBeforeRequest(
         };
     }
     presetFilteredProviders = workspacePolicyResult.providers;
+
+    // GPT Image SVG output also runs, and bills, the text model named in svg.model. Hold it to
+    // the same workspace and key model rules as the image model, on the OpenAI routes that run it.
+    if (svgAuthorModel) {
+        const authorPolicy = applyWorkspacePolicy({
+            providers: presetFilteredProviders
+                .filter((candidate) => candidate.providerId === "openai")
+                .map((candidate) => ({ ...candidate, apiModelId: svgAuthorModel })),
+            resolvedModel: svgAuthorModel,
+            body: { ...mergedBody, model: svgAuthorModel },
+            workspacePolicy,
+        });
+        if (!authorPolicy.ok) {
+            const description = `SVG author model "${svgAuthorModel}" is blocked by a workspace policy or guardrail`;
+            return {
+                ok: false,
+                response: err("guardrail_blocked", {
+                    model: resolvedModel || model,
+                    reason: "model_restricted_by_policy",
+                    description,
+                    error_operational_kind: "model_restricted_by_policy",
+                    guardrail: {
+                        type: "route_access",
+                        scope: "workspace",
+                        active_guardrail_ids: authorPolicy.diagnostics.activeGuardrailIds,
+                    },
+                    details: [{
+                        message: description,
+                        path: ["svg", "model"],
+                        keyword: "model_restricted_by_policy",
+                        params: authorPolicy.diagnostics,
+                    }],
+                    routing_diagnostics: { workspacePolicy: authorPolicy.diagnostics },
+                    request_id: requestId,
+                    workspace_id: workspaceId,
+                }),
+            };
+        }
+    }
 
     const { applyPromptInjectionGuardrails } = await import("./promptInjection");
     const promptInjectionResult = applyPromptInjectionGuardrails({
@@ -1574,7 +1643,6 @@ async function runBeforeRequest(
 				resolvedModel: candidate.apiModelId ?? resolvedModel ?? model,
 				body: mergedBody,
 				workspacePolicy,
-				teamSettings: context.teamSettings ?? null,
 			}).ok,
         })
     );

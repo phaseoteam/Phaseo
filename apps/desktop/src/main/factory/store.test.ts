@@ -1,9 +1,12 @@
 import { mkdtemp } from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { parseReport } from "../../shared/factory/report";
-import type { RunReport } from "../../shared/factory/types";
+import type { RunReport, WorkItem } from "../../shared/factory/types";
+import type * as GithubModule from "./github";
+const github = vi.hoisted(() => ({ failedLog: vi.fn(async () => "FAIL: expected 12.5") }));
+vi.mock("./github", async (importOriginal) => ({ ...(await importOriginal<typeof GithubModule>()), failedLog: github.failedLog }));
 import { FactoryStore, assertCanPush, pushTarget } from "./store";
 
 /** The demo store runs nothing for real: runs start, and the test finishes them with the report an agent would give. */
@@ -193,6 +196,35 @@ describe("FactoryStore", () => {
 		await store.act(item(3117).id, { id: "accept", label: "" });
 		expect(run(started.id).outcome?.kind).toBe("manual");
 		expect(item(3117).stages.triage.status).toBe("done");
+	});
+});
+
+describe("pull requests from forks", () => {
+	const fork = { repo: "someone/phaseo", canPush: true };
+	const patchItem = (store: FactoryStore, id: string, patch: (item: WorkItem) => WorkItem) => (store as unknown as { patchItem: (id: string, patch: (item: WorkItem) => WorkItem) => void }).patchItem(id, patch);
+
+	it("won't run an agent that loads a fork's own config on a fork's pull request, and runs any agent on the repository's own", async () => {
+		const { store, item } = await demoStore();
+		patchItem(store, item(3107).id, (current) => ({ ...current, fork }));
+		await expect(store.act(item(3107).id, { id: "run", stage: "review", label: "Run Review", agentId: "codex-gpt" })).rejects.toThrow("Factory can't run Codex on a pull request from a fork: it loads the repository's own Codex settings, which can run code on this computer. Choose Claude, Cursor, Pi, OpenCode or Phaseo for Factory, or review this pull request yourself.");
+		expect(store.get().runs.filter((run) => run.itemId === item(3107).id && run.status === "running")).toEqual([]);
+		await store.act(item(3107).id, { id: "run", stage: "review", label: "Run Review", agentId: "claude-opus" });
+		expect(store.get().runs.find((run) => run.itemId === item(3107).id && run.status === "running")).toMatchObject({ agentId: "claude-opus" });
+		const own = await demoStore();
+		await own.store.act(own.item(3107).id, { id: "run", stage: "review", label: "Run Review", agentId: "codex-gpt" });
+		expect(own.store.get().runs.find((run) => run.itemId === own.item(3107).id && run.status === "running")).toMatchObject({ agentId: "codex-gpt" });
+	});
+
+	it.each([[undefined, 1], [fork, 0]] as const)("reads failed checks' logs for Fix CI only on the repository's own pull request (fork: %o)", async (from, reads) => {
+		const { store, item } = await demoStore();
+		patchItem(store, item(3107).id, (current) => ({ ...current, fork: from, ci: { state: "failed", checkedAt: 0, failed: [{ name: "test", link: "https://github.com/phaseo-app/phaseo/actions/runs/1/job/2" }] }, stages: { ...current.stages, fix: { ...current.stages.fix, agentId: "claude-opus" } } }));
+		// Out of demo mode, with no checkouts: the logs are read from GitHub (mocked), then the run fails before any worktree is made.
+		Object.assign(store, { demo: false, snapshot: { ...store.get(), settings: { ...store.get().settings, repos: [] } } });
+		github.failedLog.mockClear();
+		await store.act(item(3107).id, { id: "fix-ci", label: "Fix CI" });
+		expect(github.failedLog).toHaveBeenCalledTimes(reads);
+		const run = store.get().runs.find((candidate) => candidate.itemId === item(3107).id && candidate.stage === "fix")!;
+		expect(run.log.some((line) => line.text.startsWith("Didn't pass on the failed checks' logs: this pull request comes from a fork"))).toBe(!reads);
 	});
 });
 

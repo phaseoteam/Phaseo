@@ -1,0 +1,307 @@
+---
+icon: "braces"
+title: "مرجع API"
+description: "ابحث عن كل دالة وطريقة وخيار ونوع نتيجة في Agent SDK، مع اسمه في كل لغة."
+---
+
+ابحث عن دالة أو نوع في Agent SDK حسب وظيفته، ثم اعثر على اسمه في لغتك. توضح صفحة [الاستخدام](./usage) كيف تتكامل الأجزاء معًا. TypeScript هو التصميم المرجعي؛ وحيث تفتقر لغة إلى شيء ما، تذكر خليتها ذلك.
+
+| اللغة | الحزمة | الاستيراد من | المصدر |
+| --- | --- | --- | --- |
+| TypeScript | `@phaseo/agent-sdk` | `@phaseo/agent-sdk` | `packages/sdk/agent-sdk-ts` |
+| Python | `phaseo-agent-sdk` | `phaseo_agent` | `packages/sdk/agent-sdk-py` |
+| Go | `github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go` | الحزمة `phaseoagent` | `packages/sdk/agent-sdk-go/agent.go` |
+| C# | `Phaseo.AgentSdk` (NuGet) | مساحة الأسماء `PhaseoAgentSdk`، والصنف الثابت `AgentSdk` | `packages/sdk/agent-sdk-csharp/AgentSdk.cs` |
+| PHP | `phaseo/agent-sdk` (Composer) | مساحة الأسماء `Phaseo\AgentSdk`، والصنف `AgentSdk` | `packages/sdk/agent-sdk-php/src/AgentSdk.php` |
+| Ruby | `phaseo_agent_sdk` (gem) | الوحدة `PhaseoAgentSdk` | `packages/sdk/agent-sdk-ruby/lib/phaseo_agent_sdk.rb` |
+| Java | `app.phaseo:phaseo-agent-sdk` (Maven) | سجلات متداخلة في `app.phaseo.agent.AgentSdk` | `packages/sdk/agent-sdk-java/src/main/java/app/phaseo/agent/AgentSdk.java` |
+| Rust | `phaseo-agent` `0.2` (crates.io، [docs.rs](https://docs.rs/phaseo-agent/0.2.0/phaseo_agent/)) | `phaseo_agent` | `packages/sdk/agent-sdk-rust` |
+
+## أنشئ وكيلًا
+
+تنشئ وكيلًا من تعريف. ينطبق حد الخطوات في التعريف على كل استدعاء تشغيل أو متابعة.
+
+| اللغة | الاسم | حد الخطوات الافتراضي |
+| --- | --- | --- |
+| TypeScript | `createAgent(definition)` | 12 |
+| Python | `create_agent(definition)`، من قاموس أو `AgentDefinition` | 12 |
+| Go | `CreateAgent(AgentDefinition) *Agent` | 8 |
+| C# | `AgentSdk.CreateAgent(AgentDefinition)` | 12 |
+| PHP | `AgentSdk::createAgent(AgentDefinition)` | 12 |
+| Ruby | `PhaseoAgentSdk.create_agent(definition)`، من `AgentDefinition` أو حقول بالكلمات المفتاحية | 12 |
+| Java | `AgentSdk.createAgent(AgentDefinition)` | 12 (تصبح قيمة `maxSteps` الأقل من 1 مساوية لـ 12) |
+| Rust | `create_agent(AgentDefinition::new(id, model))` | 8 (تُقيَّد القيم بحد أدنى 1) |
+
+### حقول التعريف
+
+تبني Rust التعريف بدوال بدلًا من الحقول: `AgentDefinition::new(id, model)`، ثم `.instructions(text)` و`.tool(tool)` (مرة لكل أداة) و`.max_steps(limit)` و`.model_retries(count, backoff)` و`.human_review(callback)`. أما `AgentDefinition` في Java فسجل بمُنشئات ذات 10 و13 و19 وسيطًا.
+
+| الحقل | camelCase (TypeScript، PHP، Java) | snake_case (Python، Ruby) | PascalCase (Go، C#) | غير موجود في |
+| --- | --- | --- | --- | --- |
+| معرّف الوكيل (مطلوب) | `id` | `id` | `ID` (Go)، `Id` (C#) | |
+| النموذج أو الإعداد المسبق | `model`، `preset` | `model`، `preset` | `Model`، `Preset` | لا يوجد `preset` في Rust |
+| قائمة النماذج (لا يُستخدم إلا الأول، عندما لا يكون `model` مضبوطًا؛ دون بديل احتياطي) | `models` | | | الكل عدا TypeScript |
+| التعليمات | `instructions` | `instructions` | `Instructions` | |
+| الأدوات | `tools` | `tools` | `Tools` | |
+| الأدوات المعروضة في خطوة | `activeTools` | | | الكل عدا TypeScript |
+| إعادة كتابة السجل قبل كل طلب للنموذج | `prepareMessages` | | | الكل عدا TypeScript |
+| حد الخطوات وشروط الإيقاف | `maxSteps`، `stopWhen` | `max_steps`، `stop_when` | `MaxSteps`، `StopWhen` | لا يوجد `stop_when` في Rust |
+| إعادة محاولة النموذج وتزامن الأدوات | `modelRetry`، `toolExecution` | `model_retry`، `tool_execution` | `ModelRetry`، `ToolExecution` | لا يوجد تزامن للأدوات في Rust |
+| أخذ العينات والطول | `temperature`، `maxOutputTokens`، `topP` | `temperature`، `max_output_tokens`، `top_p` | | Go، C#، Java، Rust |
+| تحليل المخرجات النهائية والتحقق منها | `parseOutput`، `outputSchema` | `parse_output`، `output_schema` | `ParseOutput`، `OutputSchema` | Rust |
+| الموافقة على كل استدعاء أداة | `requireApproval` | `require_approval` | `RequireApproval` | Rust (الموافقة لكل أداة) |
+| المراجعة بعد كل استجابة من النموذج | `humanReview` | `human_review` | `HumanReview` | |
+| تغيير الأدوات أو الإعدادات بين الأدوار | `dynamicTools` (PHP) ودوال رد النداء الخاصة بـ [الأدوار الديناميكية](./dynamic-turns) | `dynamic_tools` (Ruby) | دوال رد النداء الخاصة بالأدوار الديناميكية | Rust |
+
+في TypeScript، يمكن أن تكون `model` و`instructions` وقيم أخذ العينات ثابتة أو ديناميكية.
+
+## عرّف أداة
+
+| اللغة | الاسم | ملاحظات |
+| --- | --- | --- |
+| TypeScript | `defineTool(definition)`، والاسم البديل `tool(definition)` | محلية، أو يدوية (`execute: false`)، أو مشروطة بالموافقة، أو تُنتج تقدّمًا |
+| Python | `define_tool(AgentTool)`، والاسم البديل `tool(AgentTool)` | احذف `execute` لأداة يدوية |
+| Go | `DefineTool(Tool) Tool` | تعيد `Tool` نفسها |
+| C# | `AgentSdk.DefineTool(Tool)` | تعيد `Tool` نفسها |
+| PHP | `AgentSdk::defineTool(Tool)` | تعيد `Tool` نفسها |
+| Ruby | `PhaseoAgentSdk.define_tool(Tool)` | تعيد `Tool` نفسها |
+| Java | `AgentSdk.defineTool(Tool)` | تعيد `Tool` نفسها |
+| Rust | `Tool::new(id, description, parameters, executor)` و`Tool::external(id, description, parameters)` و`.require_approval()`؛ وتعيد `define_tool(tool)` الأداة | المنفّذ هو `Fn(serde_json::Value, &RuntimeContext) -> Result<serde_json::Value, AgentError> + Send + Sync + 'static` |
+
+تسرد صفحة [الأدوات](./tools) كل حقول الأداة.
+
+## اتصل بـ Phaseo Gateway
+
+| اللغة | الاسم | ما تعيده |
+| --- | --- | --- |
+| TypeScript | `createGatewayAgentClient(options)` | عميل وكيل Gateway |
+| Python | `create_gateway_agent_client(**options)` | عميل وكيل Gateway |
+| Go | `CreateGatewayAgentClient(GatewayAgentClientOptions)` | `(*GatewayAgentClient, error)` |
+| C# | `AgentSdk.CreateGatewayAgentClient(GatewayAgentClientOptions? options = null)` | `GatewayAgentClient`؛ وترمي استثناءً إذا لم يوجد مفتاح API |
+| PHP | `AgentSdk::createGatewayAgentClient(?GatewayAgentClientOptions)` | `GatewayAgentClient`؛ وترمي استثناءً إذا لم يوجد مفتاح API |
+| Ruby | `PhaseoAgentSdk.create_gateway_agent_client(**options)` | `GatewayAgentClient`؛ وترفع استثناءً إذا لم يوجد مفتاح API |
+| Java | `AgentSdk.createGatewayAgentClient()`، `createGatewayAgentClient(GatewayOptions)` | `ModelClient` / `StreamingModelClient`؛ وترمي استثناءً إذا لم يوجد مفتاح API |
+| Rust | `create_gateway_agent_client(model)` (مثل `GatewayAgentClient::from_env(model)`)، `GatewayAgentClient::new(phaseo_client, model)` | `GatewayAgentClient`، الذي يرسل `POST /responses` ويوحّد نص المخرجات واستدعاءات الدوال وبيانات الطلب الوصفية والاستخدام |
+
+تسرد صفحة [المخرجات وإعادة المحاولة](./run-controls#set-gateway-defaults-on-the-client) خيارات العميل في كل لغة.
+
+## التقط عمليات التشغيل محليًا
+
+| اللغة | الاسم | ما تعيده |
+| --- | --- | --- |
+| TypeScript | `createAgentDevtools(options)` | إعداد DevTools |
+| Python | `create_agent_devtools(**options)` | إعداد DevTools |
+| Go | `CreateAgentDevtools(directory)` | `*DevtoolsConfig` |
+| C# | `AgentSdk.CreateAgentDevtools(string directory = ".phaseo-devtools")` | `AgentDevtoolsConfig` |
+| PHP | `AgentSdk::createAgentDevtools(string $directory = ".phaseo-devtools")` | `DevtoolsConfig` |
+| Ruby | `PhaseoAgentSdk.create_agent_devtools(directory: ".phaseo-devtools", enabled: true)` | `DevtoolsConfig` |
+| Java | `AgentSdk.createAgentDevtools(String directory)` | `DevtoolsConfig` |
+| Rust | لا يوجد | |
+
+راجع [DevTools](./devtools).
+
+## شروط الإيقاف
+
+| الشرط | camelCase (TypeScript، PHP، Java) | snake_case (Python، Ruby) | PascalCase (Go، C#) |
+| --- | --- | --- | --- |
+| عدد الخطوات | `stepCountIs` | `step_count_is` | `StepCountIs` |
+| الرموز المستخدمة | `maxTokensUsed` | `max_tokens_used` | `MaxTokensUsed` |
+| التكلفة | `maxCost` | `max_cost` | `MaxCost` |
+| الوقت المنقضي | `maxDuration` (بالملّي ثانية في TypeScript وPHP؛ و`Duration` في Java) | `max_duration` (بالملّي ثانية) | `MaxDuration` (`time.Duration` في Go؛ و`TimeSpan` في C#) |
+| استُدعيت أداة | `hasToolCall` | `has_tool_call` | `HasToolCall` |
+| سبب الانتهاء | `finishReasonIs` | `finish_reason_is` | `FinishReasonIs` |
+
+تعيد Go وJava القيمة `StopCondition`؛ وتعيد C# القيمة `Func<StopState, (bool Stop, string Reason)>`؛ وتعيد PHP قيمة `callable`؛ وتعيد Ruby دالة lambda. لا توجد شروط إيقاف في Rust، بل حد الخطوات فقط. راجع [شروط الإيقاف](./stop-conditions).
+
+## التشغيل والمتابعة
+
+| الغرض | TypeScript | Python | Go | C# | PHP | Ruby | Java | Rust |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| التشغيل | `run(options)` | `run(...)` | `Run(ctx, RunOptions)` | `Run(RunOptions)` | `run(...)` | `run(...)` | `run(RunOptions)` | `run(&mut client, options)`، `run_with_events(&mut client, options, callback)` |
+| التشغيل مع البث | `stream(options)` | `stream(...)` | `Stream(ctx, RunOptions)` | `Stream(RunOptions)` | `stream(...)` | `stream(...)` | `stream(RunOptions)` | لا يوجد |
+| المتابعة | `continueRun(options)` | `continue_run(...)` | `Continue(ctx, ContinueOptions)` | `ContinueRun(ContinueOptions)` | `continueRun(...)`، `continueRunById(...)` | `continue_run(...)` | `continueRun(ContinueOptions)` | `continue_run(&mut client, options)`، `continue_with_events(...)` |
+| المتابعة مع البث | `continueStream(options)` | `continue_stream(...)` | `ContinueStream(ctx, ContinueOptions)` | `ContinueStream(ContinueOptions)` | `continueStream(...)` | `continue_stream(...)` | `continueStream(ContinueOptions)` | لا يوجد |
+
+تعيد دالتا التشغيل والمتابعة نتيجة تشغيل: `Promise<AgentRunResult>` في TypeScript، و`(RunResult, error)` في Go، و`Task<RunResult>` في C#، و`Result<RunResult, AgentError>` في Rust، ونتيجة التشغيل مباشرة في غيرها. وتعيد دوال البث نتيجة بث فورًا.
+
+### خيارات التشغيل
+
+تأخذ PHP وRuby هذه الخيارات بوصفها وسائط مسمّاة أو بالكلمات المفتاحية؛ أما `RunOptions` في Java فسجل موضعي بالترتيب `input, client, context, model, preset, maxSteps, modelRetry, toolExecution, onEvent, devtools`، ثم `state` اختياريًا.
+
+| الخيار | camelCase (TypeScript، PHP، Java) | snake_case (Python، Ruby، Rust) | PascalCase (Go، C#) | غير موجود في |
+| --- | --- | --- | --- | --- |
+| الإدخال | `input` | `input` | `Input` | |
+| المحادثة كاملة بدلًا من الإدخال | `messages` | | | الكل عدا TypeScript |
+| عميل النموذج | `client` | `client` | `Client` | تمرّره Rust وسيطًا منفصلًا |
+| سياق التطبيق | `context` | `context` | `Context` | |
+| تجاوزات النموذج والإعداد المسبق وحد الخطوات | `model`، `preset`، `maxSteps` | `model`، `preset`، `max_steps` | `Model`، `Preset`، `MaxSteps` | لدى Rust `model` و`max_steps` فقط |
+| تجاوزات إعادة المحاولة وتزامن الأدوات | `modelRetry`، `toolExecution` | `model_retry`، `tool_execution` | `ModelRetry`، `ToolExecution` | Rust |
+| تجاوزات أخذ العينات | `temperature`، `maxOutputTokens`، `topP` (TypeScript) | | | الكل عدا TypeScript |
+| الإلغاء | `signal` (TypeScript) | | `CancellationToken` (C#) | تستخدم Go `ctx`؛ وتلغي اللغات الأخرى عبر البث |
+| معالج الأحداث | `onEvent` | `on_event` | `OnEvent` | تستخدم Rust `run_with_events` |
+| الالتقاط المحلي | `devtools` | `devtools` | `Devtools` | Rust |
+| أداة الوصول إلى الحالة | `state` | `state` | `State` | Rust |
+| إضافة رسائل قبل طلب النموذج التالي | `takeMessages` (TypeScript) | | | الكل عدا TypeScript |
+
+تقبل `run()` في Python أيضًا `stop_when` لكنها تتجاهلها؛ اضبط شروط الإيقاف على التعريف. تأخذ `stream()` في PHP و`stream` في Ruby فقط `input` و`client` و`context` و`state`. تنشئ Rust القيم الافتراضية عبر `RunOptions::new(input)`.
+
+### خيارات المتابعة
+
+تأخذ خيارات المتابعة تجاوزات التشغيل أعلاه، إضافة إلى:
+
+| الخيار | camelCase (TypeScript، PHP، Java) | snake_case (Python، Ruby، Rust) | PascalCase (Go، C#) | غير موجود في |
+| --- | --- | --- | --- | --- |
+| التشغيل المحفوظ | `run` | `run` (في Rust: `result`) | `Run` | |
+| تحميل التشغيل بالمعرّف عبر `state` | `runId` | `run_id` | `RunID` (Go)، `RunId` (C#) | Rust؛ وتستخدم PHP `continueRunById($runId, $state, $client, ...)` |
+| الإدخال البشري | `humanInput` | `human_input` | `HumanInput` | |
+| رسائل بشرية منظَّمة | `humanMessages` (TypeScript) | | | الكل عدا TypeScript |
+| الموافقات | `approvals` (الاسم البديل في TypeScript `approveToolCalls`) | `approvals` | `Approvals` | |
+| حالات الرفض | `rejections` (الاسم البديل في TypeScript `rejectToolCalls`) | `rejections` | `Rejections` | Rust |
+| مخرجات الأدوات | `toolOutputs` | `tool_outputs` | `ToolOutputs` | |
+
+ترتيب `ContinueOptions` في Java هو `run, client, context, model, preset, maxSteps, humanInput, modelRetry, toolExecution, onEvent, devtools`، ثم `approvals, rejections, toolOutputs`، ثم `runId, state`. وإلى جانب هذه الصيغة ذات الوسائط الستة عشر، توجد دوال إنشاء تأخذ أول 11 وسيطًا فقط أو أول 14 وسيطًا فقط، وتأخذ البقية قيمًا افتراضية هي قوائم فارغة أو `null`. تنشئ Rust القيم الافتراضية عبر `ContinueOptions::new(result)`.
+
+## نتيجة البث
+
+| الغرض | TypeScript | Python | Go | C# | PHP | Ruby | Java |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| النتيجة المكتملة | `getResult()`، أو `await` على البث | `result()` | `Result()` | `GetResult()` | `getResult()` | `result` | `getResult()` |
+| النص النهائي كاملًا | `getText()` | | | | | | |
+| أجزاء النص | `getTextStream()` | `text_stream()` | `Text()` | `TextStream()` | `textStream()` | `text_stream` | `textStream()` |
+| أجزاء الاستدلال | `getReasoningStream()` | `reasoning_stream()` | | | `reasoningStream()` | `reasoning_stream` | |
+| العناصر | `getItemsStream()` | `item_stream()` | | | `itemStream()` | `item_stream` | |
+| أحداث الأدوات | `getToolStream()` | `tool_stream()` | | | | | |
+| كل الأحداث | `getFullStream()` | `full_stream()` | `Events()` | `FullStream()` | `fullStream()` | `full_stream` | `fullStream()` |
+| الإلغاء | `cancel(reason?)` | `cancel()` | `Cancel()` | `Cancel()` | `cancel()` | `cancel` | `cancel()` |
+
+يعيد المستهلكون التشغيل من البداية، لذا يمكن لعدة مستهلكين قراءة التشغيل نفسه. ويختلف سلوكهم:
+
+| اللغة | نوع نتيجة البث | السلوك |
+| --- | --- | --- |
+| TypeScript | `AgentStreamResult` | تنتهي `getFullStream()` بحدث `result` |
+| Python | `AgentStreamResult` | تعمل في خيط في الخلفية؛ وتحجب `result()` حتى الانتهاء |
+| Go | `*StreamResult` | `Text()` و`Events()` قنوات؛ وتُلغي `Cancel()` سياق التشغيل |
+| C# | `AgentStreamResult` | مستهلكو `IAsyncEnumerable`؛ وتُلغي `Cancel()` الرمز المرتبط بالتشغيل |
+| PHP | `AgentStreamResult` | تعمل داخل Fiber؛ ويحتوي `$result` على `RunResult` بعد استنزاف البث، وإلا فقيمته `null` |
+| Ruby | `StreamResult` | تعمل في خيط عامل؛ وتنضم `result` إليه وتنهيه `cancel` |
+| Java | `StreamResult` | تعيد `textStream()` و`fullStream()` قائمة `List` بعد انتهاء التشغيل؛ وتقاطع `cancel()` الخيط العامل |
+| Rust | لا يوجد | لا يوجد بث في `0.2` |
+
+## نتيجة التشغيل
+
+| الحقل | camelCase (TypeScript، PHP، Java) | snake_case (Python، Ruby، Rust) | PascalCase (Go، C#) |
+| --- | --- | --- | --- |
+| سجل التشغيل | `run` | `run` | `Run` |
+| سجلات الخطوات | `steps` | `steps` | `Steps` |
+| المخرجات النهائية | `output` | `output` | `Output` |
+| المحادثة كاملة | `messages` | `messages` | `Messages` |
+| الاستخدام التراكمي | `usage` | `usage` | `Usage` |
+
+النوع هو `AgentRunResult` في TypeScript وPython و`RunResult` في غيرهما. تضيف TypeScript الحقل `stepResults` (نتائج الخطوات الموحّدة) و`items` (الرسائل والاستدلال ونشاط الأدوات والأخطاء والمخرجات النهائية مرتّبة؛ راجع [العناصر](./items)). في Rust، يكون `output` من النوع `serde_json::Value`، وتُسلسَل `RunResult` و`RunRecord` و`RunStep` و`Message` و`ToolCall` و`HumanPause` و`PendingToolCall` و`ToolDecision` و`ToolOutput` و`UsageSummary` باستخدام Serde.
+
+### سجل التشغيل
+
+| الحقل | camelCase (TypeScript، PHP، Java) | snake_case (Python، Ruby، Rust) | PascalCase (Go، C#) |
+| --- | --- | --- | --- |
+| المعرّفات | `id`، `agentId` | `id`، `agent_id` | `ID`/`Id`، `AgentID`/`AgentId` |
+| الحالة | `status` | `status` | `Status` |
+| الإدخال والسياق والرسائل | `input`، `context`، `messages` | `input`، `context`، `messages` | `Input`، `Context`، `Messages` |
+| الخطوات المنفّذة | `stepCount` | `step_count` | `StepCount` |
+| النتيجة والخطأ | `result`، `error` | `result`، `error` | `Result`، `Error` |
+| التوقف المؤقت | `pause` | `pause` | `Pause` |
+| سبب الإيقاف | `stopReason` | `stop_reason` | `StopReason` |
+| الاستخدام | `usage` | `usage` | `Usage` |
+| تجاوزات الدور التالي | `nextTurn` (Java)، `nextTurnParams` (PHP) | `next_turn_params` (Ruby) | `NextTurn` |
+| الطوابع الزمنية | `createdAt`، `updatedAt` | `created_at`، `updated_at` | `CreatedAt`، `UpdatedAt` |
+
+يخزّن `RunRecord` في Rust أيضًا النموذج الفعلي وحد الخطوات. وتضيف TypeScript الحقل `errorDetails` مع تفاصيل خطأ Gateway.
+
+حالات التشغيل هي `queued` و`running` و`waiting_for_tools` و`waiting_for_human` و`completed` و`stopped` و`failed`. وتضيف TypeScript الحالة `cancelled`.
+
+### سجل الخطوة
+
+| الحقل | camelCase (TypeScript، PHP، Java) | snake_case (Python، Ruby، Rust) | PascalCase (Go، C#) |
+| --- | --- | --- | --- |
+| الفهرس والحالة | `index`، `status` | `index`، `status` | `Index`، `Status` |
+| استدعاءات الأدوات | `toolCalls` | `tool_calls` | `ToolCalls` |
+| معرّف طلب Gateway | `requestId` | `request_id` | `RequestID`/`RequestId` |
+| معرّف الاستجابة لدى المزوّد الأصلي | `nativeResponseId` | `native_response_id` (ليس في Rust) | `NativeResponseID`/`NativeResponseId` |
+| المزوّد والنموذج | `provider`، `model` | `provider`، `model` | `Provider`، `Model` |
+| محاولات النموذج | `modelAttempts` | `model_attempts` | `ModelAttempts` |
+| الاستخدام | `usage` | `usage` | `Usage` |
+| كتلة meta من Gateway | `responseMeta` | `response_meta` (ليس في Rust) | `ResponseMeta` |
+| الخطأ | `error` | `error` | `Error` |
+| سبب الانتهاء | `finishReason` | `finish_reason` | `FinishReason` |
+| التحذيرات | `warnings` | `warnings` (ليس في Rust) | `Warnings` |
+
+النوع هو `RunStep` في كل مكان باستثناء TypeScript وPython (`AgentStepRecord`).
+
+### ملخص الاستخدام
+
+`inputTokens` و`outputTokens` و`cachedTokens` و`totalTokens` و`cost` (TypeScript وJava)؛ و`input_tokens` و`output_tokens` و`cached_tokens` و`total_tokens` و`cost` (مفاتيح Python وPHP وRuby، وRust)؛ و`InputTokens` و`OutputTokens` و`CachedTokens` و`TotalTokens` و`Cost` (Go وC#). النوع هو `AgentUsageSummary` في TypeScript وPython و`UsageSummary` في Go وC# وJava وRust. وتستخدم PHP وRuby مصفوفة أو Hash. راجع [المراقبة](./observability) لمعرفة التنبيهات المتعلقة بـ `cost`.
+
+## التوقفات المؤقتة والقرارات
+
+| النوع | TypeScript | Python | Go، C#، PHP، Ruby، Java، Rust | الحقول |
+| --- | --- | --- | --- | --- |
+| الموافقة على استدعاء أو رفضه | `{ toolCallId, reason? }` | `AgentToolDecision` | `ToolDecision` | معرّف استدعاء الأداة وسبب اختياري |
+| تقديم نتيجة أداة | `{ toolCallId, output }` | `AgentToolOutput` | `ToolOutput` | معرّف استدعاء الأداة والمخرجات |
+| طلب مراجعة | `{ reason, payload }` | `AgentHumanReviewRequest` | `HumanReviewRequest` | `reason`، و`payload` اختياري |
+| مدخلات دالة رد نداء المراجعة | | `AgentHumanReviewContext` | `HumanReviewContext` | معرّفا التشغيل والوكيل وفهرس الخطوة والرسائل واستجابة النموذج والمخرجات المحلَّلة (في Rust: سياق التطبيق بدلًا من المخرجات المحلَّلة) |
+| التوقف المؤقت | `run.pause` | `AgentHumanPause` | `HumanPause` | `reason` و`payload` و`kind` واستدعاءات الأدوات المعلّقة |
+| استدعاء معلّق | | | `PendingToolCall` | `call` و`kind` (`approval` أو `manual` أو `hitl`)؛ وتضيف Rust الحقل `reason` المقروء للبشر |
+
+تتبع أسماء الحقول أسلوب كل لغة: `toolCallId` (TypeScript وPHP وJava)، و`tool_call_id` (Python وRuby وRust)، و`ToolCallID` (Go)، و`ToolCallId` (C#). `ToolDecision` في Rust للموافقة فقط. راجع [الحالة والموافقة](./state-and-approval).
+
+## سياق وقت التشغيل الممرّر إلى الأدوات
+
+| الحقل | camelCase (TypeScript، PHP، Java) | snake_case (Python، Ruby، Rust) | PascalCase (Go، C#) | غير موجود في |
+| --- | --- | --- | --- | --- |
+| المعرّفات والخطوة | `runId`، `agentId`، `stepIndex` | `run_id`، `agent_id`، `step_index` | `RunID`/`RunId`، `AgentID`/`AgentId`، `StepIndex` | |
+| سياق التطبيق | `context` | `context` | `Context` | |
+| الاستدعاء الجاري تنفيذه | `toolCall` | `tool_call` | `ToolCall` | |
+| الإبلاغ عن التقدّم | `emitProgress` | `emit_progress` | `EmitProgress` | Rust |
+| تحديث سياق التطبيق | `setContext` | `set_context` | `SetContext` | Rust |
+| الإلغاء | `signal` (TypeScript) | | `CancellationToken` (C#) | كل اللغات الأخرى |
+
+## أداة الوصول إلى الحالة
+
+| اللغة | الاسم | الدوال |
+| --- | --- | --- |
+| TypeScript | `AgentStateAccessor` | `load(runId)` و`save(result)`، وكلتاهما غير متزامنة |
+| Python | `AgentStateAccessor` (بروتوكول) | `load(run_id)` و`save(result)` |
+| Go | `StateAccessor` (واجهة) | `Load(ctx, runID)` و`Save(ctx, result)` |
+| C# | `IStateAccessor` | `Load(runId, ct)` و`Save(result, ct)` |
+| PHP | `StateAccessor` (واجهة) | `load(string $runId): ?RunResult` و`save(RunResult $result): void` |
+| Ruby | أي كائن | `load(run_id)` و`save(result)` |
+| Java | `StateAccessor` | `load(runId)` و`save(result)` |
+| Rust | لا يوجد | سلسِل `RunResult` بنفسك |
+
+## عملاء النموذج
+
+نفّذ عميل نموذج لإرسال أدوار النموذج عبر وسيلة نقل أخرى، أو لتغليف عميل Gateway.
+
+| اللغة | الواجهة | الدوال |
+| --- | --- | --- |
+| Go | `ModelClient`، `StreamingModelClient` | `Generate(ctx, ModelRequest)`؛ `Stream(ctx, ModelRequest)` |
+| C# | `IModelClient`، `IStreamingModelClient` | `Generate(ModelRequest)`؛ `Stream(ModelRequest)` |
+| PHP | `ModelClient`، `StreamingModelClient` (واجهات) | `generate(ModelRequest)`؛ `stream(ModelRequest)` |
+| Java | `ModelClient`، `StreamingModelClient` | `generate(ModelRequest)`؛ `stream(ModelRequest)` |
+| Rust | `ModelClient` (trait) | `fn generate(&mut self, request: &ModelRequest) -> Result<ModelResponse, AgentError>` |
+
+في Rust، يحتوي `ModelRequest` على معرّف الوكيل والنموذج الفعلي والتعليمات والرسائل الحالية ومواصفات الأدوات (`ToolSpec`: `id` و`description` و`parameters` بصيغة JSON Schema) وسياق التطبيق. ويحتوي `ModelResponse` على `message` و`usage` و`request_id` و`provider` و`model` و`finish_reason`. ويتضمن `Message` الحقول `role` و`content` و`tool_calls` و`tool_call_id` و`name` و`is_error`، مع المُنشئين `Message::user(content)` و`Message::assistant(content)`؛ ويتضمن `ToolCall` الحقول `id` و`name` و`input` بصيغة JSON.
+
+## الأحداث والأخطاء
+
+| اللغة | نوع الحدث | أنواع الأخطاء |
+| --- | --- | --- |
+| TypeScript | كائنات أحداث تتضمن `type` | `AgentGatewayError` (`isAgentGatewayError()`)، `AgentStreamError`، `AgentSchemaValidationError` |
+| Python | قواميس تتضمن `"type"` | الاستثناءات المدمجة و`phaseo.PhaseoHTTPError` |
+| Go | `AgentEvent` | قيم `error` |
+| C# | `AgentEvent` | استثناءات |
+| PHP | مصفوفات تتضمن `"type"` | `RuntimeException` |
+| Ruby | Hashes تتضمن `:type` | استثناءات |
+| Java | `AgentEvent` | استثناءات |
+| Rust | `AgentEvent` (`event_type`، `run_id`، `agent_id`، `timestamp_ms`، `details`) | `AgentError` (`AgentError::new(...)`، `message()`؛ وينفّذ `std::error::Error` و`Display`) |
+
+تصدّر TypeScript أيضًا `agentErrorIsRetryable()` و`agentRetryAfterMs()` و`agentErrorIsContextOverflow()` لتصنيف الأخطاء، و`repairToolHistory(messages)` للإجابة عن استدعاءات الأدوات التي بقيت دون نتيجة وحذف النتائج التي لا تجيب عن أي استدعاء، و`truncateToolOutput(text, limit)` للاحتفاظ ببداية النص الطويل ونهايته مع إشعار بما قُطع. راجع [خطافات دورة الحياة](./lifecycle-hooks) و[الأحداث والأخطاء](./events-and-errors).

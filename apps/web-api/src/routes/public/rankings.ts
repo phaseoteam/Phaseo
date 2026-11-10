@@ -38,7 +38,24 @@ function csv(value: string | undefined, max = 500) {
 
 export const publicRankingsRouter = new Hono<{ Bindings: Env }>();
 
-const PERIOD_METRICS = ["text_tokens", "image_inputs", "image_outputs", "audio_tokens", "audio_seconds", "speech_seconds", "transcription_seconds", "video_tokens", "video_seconds", "cached_tokens", "embedding_tokens", "rerank_quad_tokens", "tool_calls", "users"];
+// Every value the ranking RPCs understand. Each distinct URL misses the edge cache, so
+// free text in time_range or bucket_size would run the aggregates uncached at will.
+const RANKING_TIME_RANGES = new Set(["today", "24h", "week", "4w", "month", "year", "all"]);
+const RANKING_BUCKET_SIZES = new Set(["15m", "hour", "day", "week", "month"]);
+
+publicRankingsRouter.use("/rankings/*", async (c, next) => {
+	const timeRange = c.req.query("time_range");
+	const bucketSize = c.req.query("bucket_size");
+	if (timeRange !== undefined && timeRange !== "" && !RANKING_TIME_RANGES.has(timeRange)) {
+		return c.json({ error: "invalid_ranking_period" }, 400);
+	}
+	if (bucketSize !== undefined && bucketSize !== "" && !RANKING_BUCKET_SIZES.has(bucketSize)) {
+		return c.json({ error: "invalid_ranking_bucket" }, 400);
+	}
+	await next();
+});
+
+const PERIOD_METRICS = ["text_tokens", "image_inputs", "image_outputs", "audio_tokens", "audio_seconds", "speech_seconds", "transcription_seconds", "video_tokens", "video_seconds", "cached_tokens", "embedding_tokens", "rerank_quad_tokens", "decision_tokens", "tool_calls", "users"];
 
 publicRankingsRouter.get("/rankings/period-leaderboard", async (c) => {
 	const metric = c.req.query("metric") || "text_tokens";
@@ -107,7 +124,7 @@ publicRankingsRouter.get("/rankings/multimodal", async (c) => {
 
 publicRankingsRouter.get("/rankings/modality-timeseries", async (c) => {
 	const metric = c.req.query("metric") || "text_tokens";
-	if (!["text_tokens", "image_inputs", "image_outputs", "audio_tokens", "audio_seconds", "speech_seconds", "transcription_seconds", "video_tokens", "video_seconds", "cached_tokens", "embedding_tokens", "rerank_quad_tokens"].includes(metric)) {
+	if (!["text_tokens", "image_inputs", "image_outputs", "audio_tokens", "audio_seconds", "speech_seconds", "transcription_seconds", "video_tokens", "video_seconds", "cached_tokens", "embedding_tokens", "rerank_quad_tokens", "decision_tokens"].includes(metric)) {
 		return c.json({ error: "invalid_ranking_metric" }, 400);
 	}
 	try { const { data, error } = await getDataClient(c.env).rpc("get_public_modality_usage_timeseries", { p_metric: metric, p_time_range: c.req.query("time_range") || "year", p_top_n: 20 }); if (error) throw error; return withPublicCache(c.json({ data: data ?? [] }), LIVE_CACHE); }
@@ -445,10 +462,12 @@ publicRankingsRouter.get("/rankings/top-apps", async (c) => {
 });
 
 publicRankingsRouter.get("/rankings/models", async (c) => {
+	const metric = c.req.query("metric") || "tokens";
+	if (!["tokens", "requests", "cost"].includes(metric)) return c.json({ error: "invalid_ranking_metric" }, 400);
 	try {
 		const client = getDataClient(c.env);
 		const [rankings, trending, summary] = await Promise.all([
-			client.rpc("get_public_model_rankings", { p_time_range: c.req.query("time_range") || "week", p_metric: c.req.query("metric") || "tokens", p_limit: bounded(c.req.query("limit"), 50, 250) }),
+			client.rpc("get_public_model_rankings", { p_time_range: c.req.query("time_range") || "week", p_metric: metric, p_limit: bounded(c.req.query("limit"), 50, 250) }),
 			client.rpc("get_public_trending_models", { p_limit: 20 }),
 			client.rpc("get_public_summary_stats"),
 		]);

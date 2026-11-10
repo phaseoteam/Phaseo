@@ -1,9 +1,7 @@
-"use client";
-
 import { useState, useTransition } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
-import { updateSlackAgent } from "@/app/(dashboard)/settings/slack/actions";
+import { updateSlackAgent } from "@/features/settings/slack/actions";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { Choice, Section, SlackError } from "./SlackAgentFields";
 import { SLACK_SEARCH_MODES, slackErrorKey, type SlackErrorKey, type SlackSearchMode } from "./slackAgentForm";
@@ -27,7 +25,7 @@ export function SlackSearchSection({ initial, granted }: { initial: SlackSearchM
 	function change(next: SlackSearchMode) {
 		setError(null);
 		startSaving(async () => {
-			const result = await write(updateSlackAgent({ search_mode: next }));
+			const result = await write(updateSlackAgent({ data: { search_mode: next } }));
 			if (!result.ok) {
 				setError({ key: slackErrorKey(result.code, result.status), message: result.message });
 				return;

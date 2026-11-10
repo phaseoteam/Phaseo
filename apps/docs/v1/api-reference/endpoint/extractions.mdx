@@ -10,10 +10,24 @@ openapi: "/openapi/v1/openapi.yaml POST /extractions"
 
 <Warning>Extraction is in preview. Model availability depends on configured provider routes.</Warning>
 
-Extraction belongs to the Decisions family. Use decisions to choose among known
-options; use extraction to return values such as an invoice number, date or total.
+Name the `fields` you want and send them with your source text to `POST /v1/extractions` to get typed values back, such as an invoice number, date or total. To choose among known options instead, use [Decisions](./decisions.mdx).
 
-```typescript
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/extractions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "cloudflare/clairic",
+    "input": "Invoice INV-2291: 4 pallets at $250 each, shipping $80.",
+    "fields": {
+      "invoice_number": { "type": "text" },
+      "total": { "type": "number", "decimals": 2, "instructions": "Total including shipping" }
+    }
+  }'
+```
+
+```typescript TypeScript SDK
 import { Phaseo } from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY });
@@ -28,7 +42,7 @@ const result = await client.extractions.create({
 console.log(result.answers.total.value);
 ```
 
-```python
+```python Python SDK
 import os
 from phaseo import Phaseo
 
@@ -41,8 +55,9 @@ result = client.extractions.create({
 })
 print(result["answers"]["total"]["value"])
 ```
+</CodeGroup>
 
-The examples require an active extraction model route. Check model availability
+The examples need an active extraction model route, so check model availability
 before sending requests. Python `AsyncPhaseo` also exposes
 `await client.extractions.create(...)`.
 

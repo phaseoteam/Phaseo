@@ -1,51 +1,47 @@
 ---
 title: "Muse Code"
 icon: "/icons/brands/meta.svg"
-description: "Phaseo CLI を使って Phaseo Gateway 経由で Muse Code を実行します。"
+description: "Phaseo CLI を使って、Phaseo Gateway 経由で Muse Code を実行します。"
 ---
 
-Phaseo CLI は、専用のゲートウェイキーと一時的なプロバイダー設定を使って Muse Code を起動できます。
+`phaseo muse` を実行すると、Phaseo 経由で Muse Code のセッションを開始できます。Muse Code で Phaseo を使うためにサポートされている方法は、このランナーだけです。
 
-## Phaseo CLI でセットアップ
+## Phaseo CLI で Muse Code を実行する
 
 ```bash
 phaseo login
-phaseo muse --model meta/muse-spark-1.3 --
+phaseo muse --model meta/muse-spark-1.3
 ```
 
-`--catalog all` で Phaseo のすべての有効なテキスト・チャットモデルを利用可能にできます。`--dry-run --json` では、キーを作成したり Muse Code を起動したりせずに起動計画を確認できます。
+ランナーは専用のキーを作成し、一時的な `XDG_CONFIG_HOME` の下に Muse の設定を書き込んで `muse` を起動し、Muse Code の終了時に設定を削除します。Muse Code 自体のフラグは `--` の後に指定します。
 
-```bash
-phaseo muse --catalog all --dry-run --json
-```
+| フラグ | 効果 |
+| --- | --- |
+| `--model <id>` | 使用するモデル。デフォルトは `openai/gpt-5.6-terra` です。 |
+| `--catalog all` | 選択したモデルだけでなく、Phaseo の有効なテキストモデルをすべて表示します。 |
+| `--dry-run --json` | キーの作成や Muse Code の起動を行わずに、起動の計画を表示します。 |
+| `--skip-install` | インストールの確認をスキップします。 |
 
-明示的なコマンド形式は `phaseo run muse ...` です。Phaseo が自身のオプションを先に処理できるよう、Muse Code のオプションは `--` の後に指定してください。
+`phaseo run muse ...` は同じコマンドの完全な形式です。
 
-Unix 系システムでは、初回の対話実行時に Meta のインストーラーで Muse Code をインストールすることを提案します。Windows では Muse Code を別途インストールし、`muse --version` を確認して `--skip-install` を使ってください。
+macOS と Linux では、初回の対話型の実行で Meta のインストーラーによる Muse Code のインストールを提案します。Windows では、Muse Code を自分でインストールして `muse --version` を確認し、`--skip-install` を使います。
 
-## 手動設定
+## 手動での設定がない理由
 
-Muse Code の公開セットアップは、Meta 独自の Model API と認証フローを前提としています。Meta は現在、このエンドポイントをサードパーティーの OpenAI 互換ゲートウェイに置き換えるための安定した永続設定を公開していません。そのため、Muse Code を Phaseo 経由でルーティングする際は Phaseo CLI ランナーを使用する方法がサポートされています。
+Muse Code は Meta 独自の [Model API](https://ai.meta.com/llama) とサインインを前提に作られています。Meta は別の OpenAI 互換エンドポイントに向けるための安定した設定を公開していないため、ランナーを使ってください。ランナーの一時的な設定を通常の Muse のプロファイルにコピーしないでください。これは内部の詳細であり、ランナーの終了時に削除されます。
 
-別のクライアントから Phaseo モデルを手動で使用する場合は、`https://api.phaseo.app/v1` と Phaseo API キーを使って [OpenAI 互換の連携](./openai-sdk)を設定してください。ランナーが作成する一時的な Muse 設定を通常の Muse プロファイルにコピーしないでください。これらのファイルは内部実装用であり、ランナーの終了時に削除されます。
+代わりに自分のコードから Phaseo のモデルを呼び出すには、`https://api.phaseo.app/v1` と Phaseo の API キーで [OpenAI SDK](./openai-sdk.mdx) を使います。
 
-## 確認
+## 動作を確認する
 
-起動した環境から短いプロンプトを送信し、Phaseo のアクティビティにリクエストが表示されることを確認します。ランナーは一時的な `XDG_CONFIG_HOME` 内に `settings.json` を作成し、Muse Code の終了時に削除します。
+短いプロンプトを送信し、**設定 → 利用状況 → ログ**にリクエストが表示されることを確認します。
 
-## トラブルシューティング
+## よくある問題を解決する
 
 ### Muse Code がインストールされていない
 
-Muse Code を別途インストールし、`muse --version` を確認して、`--skip-install` を指定して再実行してください。
+Muse Code を自分でインストールして `muse --version` を確認し、`--skip-install` を付けて再実行します。
 
-### モデルが表示されない
+### モデルが一覧に表示されない
 
-`--catalog all` を使うか、`--model` でモデル ID を指定してください。Phaseo ゲートウェイではモデルの自動検出は必須ではありません。
-
-## 関連情報
-
-- [Phaseo CLI](./phaseo-cli)
-- [Meta Model API](https://ai.meta.com/llama)
-- [モデル](../../api-reference/endpoint/models.mdx)
-- [アクティビティ](../../api-reference/endpoint/activity.mdx)
+`--catalog all` を使うか、`--model` でモデル ID を渡します。Phaseo はモデルの自動検出を必要としません。

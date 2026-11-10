@@ -1009,7 +1009,240 @@
 		"rules": "normas",
 		"flag": "Marcar",
 		"redact": "Ocultar datos",
-		"block": "Bloquear"
+		"block": "Bloquear",
+		"workspaceBaseline": "Guardrail base del espacio de trabajo",
+		"workspaceBaselineDescription": "Se aplica a todas las claves del espacio de trabajo. Edítalo en Privacidad.",
+		"wholeWorkspace": "Todo el espacio de trabajo"
+	},
+	"guardrailAssignments": {
+		"tabGuardrails": "Guardrails",
+		"tabAssignments": "Asignaciones",
+		"keysView": "Claves API",
+		"membersView": "Miembros",
+		"search": "Buscar nombres y guardrails",
+		"columnKey": "Clave API",
+		"columnMember": "Miembro",
+		"columnGuardrails": "Guardrails",
+		"columnAccess": "Acceso",
+		"none": "Ninguno",
+		"off": "Desactivado",
+		"offHint": "Este guardrail está desactivado, así que el gateway lo omite.",
+		"viaMember": "a través de {name}",
+		"inheritedHint": "Se aplica mediante la asignación de miembro de {name}. Cámbiala en la vista Miembros.",
+		"formerMember": "un antiguo miembro",
+		"formerMemberHint": "Se aplica mediante la asignación de miembro de quien creó esta clave y ya salió del espacio de trabajo. El gateway la sigue aplicando. Desmárcala aquí para quitarla.",
+		"noLimits": "Sin límites",
+		"zdrOnly": "Solo ZDR",
+		"providersAllowed": "{count, plural, one {# proveedor permitido} other {# proveedores permitidos}}",
+		"providersBlocked": "{count, plural, one {# proveedor bloqueado} other {# proveedores bloqueados}}",
+		"modelsAllowed": "{count, plural, one {# modelo permitido} other {# modelos permitidos}}",
+		"modelsBlocked": "{count, plural, one {# modelo bloqueado} other {# modelos bloqueados}}",
+		"noProvidersAllowed": "Ningún proveedor permitido",
+		"noModelsAllowed": "Ningún modelo permitido",
+		"editGuardrails": "Editar guardrails de {name}",
+		"selectRow": "Seleccionar {name}",
+		"selectAll": "Seleccionar todo",
+		"selectedCount": "{count} seleccionados",
+		"addGuardrail": "Añadir guardrail",
+		"removeGuardrail": "Quitar guardrail",
+		"clearSelection": "Borrar",
+		"saved": "Asignaciones actualizadas",
+		"saveFailed": "No se pudieron actualizar las asignaciones",
+		"savedPartly": "Se actualizaron {done} de {count}. El resto no cambió.",
+		"emptyTitle": "No hay guardrails que asignar",
+		"emptyBody": "Crea primero un guardrail y luego asígnalo aquí a claves API o miembros.",
+		"noKeys": "Este espacio de trabajo no tiene claves API.",
+		"noMembers": "Este espacio de trabajo no tiene miembros.",
+		"noMatches": "Nada coincide con tu búsqueda.",
+		"readOnly": "Solo los propietarios y administradores del espacio de trabajo pueden cambiar las asignaciones.",
+		"workspaceView": "Espacio de trabajo",
+		"departmentsView": "Departamentos",
+		"columnWorkspace": "Espacio de trabajo",
+		"columnDepartment": "Departamento",
+		"columnSafety": "Seguridad",
+		"wholeWorkspace": "Todo el espacio de trabajo",
+		"wholeWorkspaceDetail": "Todas las claves de API y todos los miembros",
+		"departmentReach": "{members, plural, one {# miembro} other {# miembros}} · {keys, plural, one {# clave} other {# claves}}",
+		"noDepartments": "Este espacio de trabajo aún no tiene departamentos.",
+		"fromWorkspace": "Espacio de trabajo",
+		"workspaceHint": "Se aplica a todo el espacio de trabajo. Cámbialo en la vista Espacio de trabajo.",
+		"departmentHint": "Se aplica a través del departamento {name}. Cámbialo en la vista Departamentos.",
+		"baselineHint": "El guardrail base del espacio de trabajo se aplica a todas las claves de API y miembros. Edítalo en Privacidad.",
+		"fromGuardrails": "De {names}",
+		"promptInjectionPart": "Inyección de prompts: {action}",
+		"sensitiveInfoPart": "{count, plural, one {# regla de información sensible} other {# reglas de información sensible}}",
+		"footnoteLevels": "Cada fila muestra todos los guardrails que le llegan: los suyos y los de su miembro, sus departamentos y todo el espacio de trabajo. Cuando se aplican varios, gana la regla más estricta.",
+		"noTraining": "Sin entrenamiento",
+		"noPaidTraining": "Sin entrenamiento en endpoints de pago",
+		"noFreeTraining": "Sin entrenamiento en endpoints gratuitos",
+		"noLogging": "Sin endpoints que registren",
+		"columnRate": "Frecuencia",
+		"rateRequests": "{count, plural, one {# solicitud} other {# solicitudes}} por minuto",
+		"rateTokens": "{count, plural, one {# token} other {# tokens}} por minuto",
+		"rateConcurrent": "{count, plural, other {# a la vez}}",
+		"columnSpend": "Gasto",
+		"spend": {
+			"daily": "{amount} al día",
+			"weekly": "{amount} a la semana",
+			"monthly": "{amount} al mes"
+		},
+		"spendBlocks": "Bloquea",
+		"spendNotifies": "Solo avisos"
+	},
+	"guardrailWizard": {
+		"title": "Nuevo guardrail",
+		"subtitle": "Elige qué comprueba, configúralo y luego elige a quién se aplica.",
+		"stepsLabel": "Pasos para configurar el guardrail",
+		"step": {
+			"start": "Qué hace",
+			"configure": "Configurar",
+			"assign": "Asignar",
+			"review": "Revisar"
+		},
+		"cancel": "Cancelar",
+		"back": "Atrás",
+		"continue": "Continuar",
+		"create": "Crear guardrail",
+		"creating": "Creando…",
+		"issue": {
+			"nameRequired": "Añade un nombre para continuar.",
+			"chooseSection": "Elige una plantilla o al menos una comprobación para continuar.",
+			"accessEmpty": "Activa al menos una regla de acceso o privacidad, o quita esta comprobación.",
+			"providerAllowlistEmpty": "Elige al menos un proveedor permitido. Una lista vacía bloquea todos los proveedores.",
+			"modelAllowlistEmpty": "Elige al menos un modelo permitido. Una lista vacía bloquea todos los modelos.",
+			"promptInjectionOff": "Elige cómo tratar la inyección de prompts, o quita esta comprobación.",
+			"sensitiveInfoOff": "Activa al menos un patrón de información sensible, o quita esta comprobación.",
+			"rateLimitEmpty": "Define al menos un límite para continuar.",
+			"rateLimitInvalid": "Los límites deben ser números enteros mayores que 0.",
+			"rateCountingRequired": "Elige cómo cuentan los límites para continuar.",
+			"spendLimitEmpty": "Establece un límite para continuar.",
+			"spendLimitInvalid": "Introduce un importe superior a $0.00 con hasta 2 decimales.",
+			"spendPeriodRequired": "Elige un periodo para continuar.",
+			"spendActionRequired": "Elige qué ocurre al llegar al límite para continuar.",
+			"spendCountingRequired": "Elige cómo cuenta el límite para continuar."
+		},
+		"nameLabel": "Nombre",
+		"namePlaceholder": "p. ej., Política para contratistas",
+		"descriptionLabel": "Descripción (opcional)",
+		"descriptionPlaceholder": "¿Para quién es?",
+		"templatesTitle": "Empezar con una plantilla",
+		"templatesBody": "Una plantilla rellena la configuración. Puedes cambiarla toda en el siguiente paso.",
+		"templateZdr": {
+			"name": "Sin retención de datos",
+			"body": "Enrutar solo a endpoints que no guardan prompts ni respuestas."
+		},
+		"templateNoTraining": {
+			"name": "Sin entrenamiento con prompts",
+			"body": "Omitir endpoints que pueden entrenar con tus prompts o publicarlos."
+		},
+		"templateApprovedProviders": {
+			"name": "Solo proveedores aprobados",
+			"body": "Permitir solo los proveedores que elijas."
+		},
+		"templateApprovedModels": {
+			"name": "Solo modelos aprobados",
+			"body": "Permitir solo los modelos que elijas."
+		},
+		"templateBlockPromptInjection": {
+			"name": "Bloquear inyección de prompts",
+			"body": "Detener las solicitudes que parecen inyección de prompts antes de que lleguen al modelo."
+		},
+		"templateRedactPersonalInfo": {
+			"name": "Ocultar datos personales",
+			"body": "Sustituir correos, teléfonos, SSN y números de tarjeta antes de que las solicitudes salgan de Phaseo."
+		},
+		"sectionsTitle": "Comprobaciones",
+		"sectionsBody": "Elige una o más. Al elegir una plantilla se marcan por ti.",
+		"sectionAccess": {
+			"name": "Acceso y privacidad",
+			"body": "Retención de datos, entrenamiento y qué proveedores y modelos se pueden usar."
+		},
+		"sectionPromptInjection": {
+			"name": "Inyección de prompts",
+			"body": "Analizar las solicitudes en busca de inyección de prompts y marcarlas, ocultarlas o bloquearlas."
+		},
+		"sectionSensitiveInfo": {
+			"name": "Información sensible",
+			"body": "Detectar datos personales y secretos en las solicitudes y marcarlos, ocultarlos o bloquearlos."
+		},
+		"addCheck": "Añadir comprobación:",
+		"assignTitle": "¿A quién se debe aplicar «{name}»?",
+		"assignBody": "Elige todo el espacio de trabajo, o departamentos, miembros y claves de API. Cada fila muestra el resultado de sus guardrails ahora y con este. Puedes saltarte este paso y asignarlo más tarde.",
+		"columnNow": "Ahora",
+		"columnAfter": "Con este guardrail",
+		"assignMemberHint": "Los guardrails de un miembro también se aplican a las claves de API que crea.",
+		"notApplied": "No aplicado",
+		"coveredVia": "A través de {name}",
+		"noTighter": "Sin cambios: sus guardrails actuales ya cubren esto.",
+		"promptInjectionPart": "Inyección de prompts: {action}",
+		"sensitiveInfoPart": "{count, plural, one {# regla de información sensible} other {# reglas de información sensible}}",
+		"reviewWhat": "Qué hace",
+		"reviewModels": "Modelos",
+		"reviewWho": "Se aplica a",
+		"change": "Cambiar",
+		"modelsAvailable": "Se pueden seguir usando {available} de {total} modelos.",
+		"blocksEverything": "Estas reglas bloquean todos los modelos, así que fallarán las solicitudes de las claves afectadas.",
+		"appliesToNothing": "Nada todavía. Puedes asignarlo más tarde desde la pestaña Asignaciones.",
+		"turnOnNow": "Activar ahora",
+		"turnOnNowBody": "Si está desactivado, se guarda pero el gateway lo omite.",
+		"summaryZdr": "Solo enruta a endpoints sin retención de datos",
+		"summaryNoPaidTraining": "Omite endpoints de pago que pueden entrenar con prompts",
+		"summaryNoFreeTraining": "Omite endpoints gratuitos que pueden entrenar con prompts",
+		"summaryNoPublishing": "Omite endpoints gratuitos que pueden publicar prompts",
+		"summaryNoLogging": "Omite endpoints que registran prompts y respuestas",
+		"summaryProvidersAllowed": "Solo permite {count, plural, one {# proveedor} other {# proveedores}}",
+		"summaryProvidersBlocked": "Bloquea {count, plural, one {# proveedor} other {# proveedores}}",
+		"summaryModelsAllowed": "Solo permite {count, plural, one {# modelo} other {# modelos}}",
+		"summaryModelsBlocked": "Bloquea {count, plural, one {# modelo} other {# modelos}}",
+		"summaryPromptInjection": "Inyección de prompts: {action}",
+		"summarySensitiveInfo": "Comprueba {count, plural, one {# patrón de información sensible} other {# patrones de información sensible}}",
+		"wholeWorkspaceTitle": "Todo el espacio de trabajo",
+		"wholeWorkspaceBody": "Se aplica a todas las claves de API y miembros, también a los que se añadan después.",
+		"wholeWorkspaceOn": "Se aplica a todo el espacio de trabajo, así que todas las filas de abajo lo reciben.",
+		"coveredByWorkspace": "Cubierto por todo el espacio de trabajo",
+		"coveredByDepartment": "Cubierto a través de {name}",
+		"levelWorkspace": "Todo el espacio de trabajo",
+		"levelDepartments": "{count, plural, one {# departamento} other {# departamentos}}",
+		"levelMembers": "{count, plural, one {# miembro} other {# miembros}}",
+		"levelKeys": "{count, plural, one {# clave de API} other {# claves de API}}",
+		"templateRateLimit": {
+			"name": "Límite de frecuencia",
+			"body": "Limita las solicitudes o los tokens por minuto, o las solicitudes simultáneas."
+		},
+		"sectionRate": {
+			"name": "Límites de frecuencia",
+			"body": "Solicitudes y tokens por minuto, y solicitudes simultáneas. Una barrera de frecuencia no tiene más comprobaciones."
+		},
+		"summaryRateRequests": "{count, plural, one {# solicitud} other {# solicitudes}} por minuto",
+		"summaryRateTokens": "{count, plural, one {# token} other {# tokens}} por minuto",
+		"summaryRateConcurrent": "{count, plural, one {# solicitud} other {# solicitudes}} a la vez",
+		"summaryRateCounting": {
+			"shared": "Compartido por todo aquello a lo que está asignado",
+			"each_key": "Independiente para cada clave",
+			"each_end_user": "Independiente para cada usuario final"
+		},
+		"summaryRateFailClosed": "Rechaza solicitudes si no se pueden comprobar los límites",
+		"templateSpendLimit": {
+			"name": "Límite de gasto",
+			"body": "Limita el gasto por día, semana o mes, con avisos."
+		},
+		"sectionSpend": {
+			"name": "Límite de gasto",
+			"body": "Un límite en dólares por día, semana o mes. Una barrera de gasto no tiene otras comprobaciones."
+		},
+		"summarySpendLimit": {
+			"daily": "Hasta {amount} al día",
+			"weekly": "Hasta {amount} a la semana",
+			"monthly": "Hasta {amount} al mes"
+		},
+		"summarySpendAction": {
+			"notify": "Avisa al 80 % y al 100 %, sin bloquear",
+			"block": "Bloquea las solicitudes con clave de API al llegar al límite"
+		},
+		"summarySpendCounting": {
+			"shared": "Compartido por todo aquello a lo que está asignado",
+			"each_key": "Independiente para cada clave"
+		}
 	},
 	"broadcastControls": {
 		"optional": "(opcional)",
@@ -1145,6 +1378,8 @@
 		"authorizedUsers": "Usuarios autorizados",
 		"noAuthorizations": "No hay usuarios autorizados",
 		"authorizationEmpty": "Los usuarios que autoricen esta aplicación aparecerán aquí.",
+		"usersAdminsOnly": "Solo los propietarios y administradores pueden ver los usuarios de esta aplicación",
+		"usersAdminsOnlyDescription": "Quienes autorizan una aplicación suelen pertenecer a otros espacios de trabajo, así que solo los propietarios y administradores de este espacio de trabajo ven quiénes son y sus solicitudes.",
 		"activityDescription": "Autorización reciente y actividad de uso.",
 		"noActivity": "Aún no hay actividad",
 		"activityEmpty": "La actividad aparecerá después de que se utilice la aplicación.",
@@ -1410,7 +1645,9 @@
 			"selectWorkspace": "Selecciona un espacio de trabajo para administrar los guardrails.",
 			"notFound": "No se ha encontrado el guardrail.",
 			"back": "Volver a los guardrails",
-			"permissions": "Solo los propietarios y administradores del espacio de trabajo pueden cambiar los guardrails. Las políticas asignadas se aplican automáticamente a los miembros."
+			"permissions": "Solo los propietarios y administradores del espacio de trabajo pueden cambiar los guardrails. Las políticas asignadas se aplican automáticamente a los miembros.",
+			"workspaceBaseline": "Este es el guardrail base del espacio de trabajo. Contiene las reglas de Configuración, Privacidad y se aplica a todo el espacio de trabajo, así que no se puede eliminar, desactivar ni asignar a claves o miembros concretos.",
+			"openPrivacy": "Editarlo en Privacidad"
 		},
 		"keyDelete": {
 			"permanent": "Esta acción es permanente.",
@@ -1945,6 +2182,8 @@
 		"Completion": "Respuesta",
 		"phraseNoIOPayloadIsAvailableForThisRequest": "No hay ninguna carga útil de E/S disponible para esta solicitud.",
 		"Technical Details": "Detalles técnicos",
+		"SVG author": "Autor del SVG",
+		"Image tool": "Herramienta de imagen",
 		"Pricing": "Precios",
 		"Direct HTTP": "Solicitud HTTP directa",
 		"Data policy": "Política de datos",
@@ -2484,6 +2723,8 @@
 		"Are you sure you want to leave {workspace}?": "¿Estás seguro de que quieres salir de {workspace}?",
 		"phraseYouCanTRevokeAccessForSomeoneWithAHigherRoleThanYours": "No puedes revocar el acceso a alguien con un rol superior al tuyo.",
 		"Are you sure you want to revoke access for {member}?": "¿Estás seguro de que quieres revocar el acceso a {member}?",
+		"phraseMemberKeysWillBeRevoked": "Se revocarán las claves de API y las claves de gestión que creó en este espacio de trabajo.",
+		"phraseYourKeysWillBeRevoked": "Se revocarán las claves de API y las claves de gestión que creaste en este espacio de trabajo.",
 		"phraseUpdatedMemberSSampleRole": "Se actualizó el rol de muestra de {member}.",
 		"phraseUnableToUpdateTheMemberRoleRightNow": "No se puede actualizar el rol del miembro en este momento.",
 		"phraseYouCanTRevokeAccessForMembersWithAHigherRoleThanYours": "No puedes revocar el acceso a miembros con un rol superior al tuyo.",
@@ -5820,6 +6061,12 @@
 		"voiceProfile": "{language} · {style} · {gender}",
 		"english": "Inglés",
 		"portuguese": "Portugués",
+		"voiceProfileShort": "{language} · {gender}",
+		"french": "Francés",
+		"german": "Alemán",
+		"hindi": "Hindi",
+		"japanese": "Japonés",
+		"korean": "Coreano",
 		"filipino": "Influencia filipina",
 		"brazilian": "Influencia brasileña",
 		"southernUs": "Influencia del sur de EE. UU.",
@@ -7182,6 +7429,12 @@
 			"copyRedirectUrl": "Copiar URL de redirección",
 			"scopes": "Scopes del token de bot",
 			"copyScopes": "Copiar scopes",
+			"requestUrls": "URL de solicitud",
+			"requestUrlsHelp": "Las URL de solicitud propias de esta app. Pega cada una en el ajuste correspondiente del manifiesto de tu app de Slack.",
+			"eventsUrl": "URL de solicitud de Event Subscriptions",
+			"interactionsUrl": "URL de solicitud de Interactivity",
+			"copyEventsUrl": "Copiar la URL de solicitud de Event Subscriptions",
+			"copyInteractionsUrl": "Copiar la URL de solicitud de Interactivity",
 			"appId": "ID de la aplicación",
 			"clientId": "ID de cliente",
 			"clientSecret": "Secreto de cliente",
@@ -7446,8 +7699,11 @@
 		"link": {
 			"metaTitle": "Conectar Slack",
 			"title": "Conecta tu cuenta de Slack",
-			"description": "Esto vincula la cuenta de Slack que abrió esta página con tu cuenta de Phaseo, para que el agente de Phaseo sepa quién eres.",
-			"warning": "Continúa solo si abriste este enlace desde el mensaje del agente de Phaseo en Slack.",
+			"description": "Esto vincula la cuenta de Slack indicada abajo con tu cuenta de Phaseo, para que el agente de Phaseo sepa quién eres.",
+			"account": "Cuenta de Slack: {name} ({id}) en {team}",
+			"accountUnnamed": "Cuenta de Slack: {id} en {team}",
+			"unknownTeam": "un espacio de trabajo de Slack cuyo nombre Slack no ha indicado",
+			"warning": "Continúa solo si esta es tu propia cuenta de Slack. Si alguien te envió este enlace, no lo uses: esa cuenta de Slack actuaría en tu nombre.",
 			"confirm": "Conectar cuenta",
 			"confirming": "Conectando…",
 			"missingToken": "A este enlace le falta su código. Ábrelo de nuevo desde el mensaje del agente de Phaseo en Slack.",
@@ -7458,6 +7714,7 @@
 			"close": "Puedes cerrar esta página y volver a Slack.",
 			"errors": {
 				"expired": "Este enlace ha caducado. Pide uno nuevo al agente de Phaseo en Slack.",
+				"used": "Este enlace ya se ha usado. Pide uno nuevo al agente de Phaseo en Slack.",
 				"invalid": "Este enlace no es válido. Pide uno nuevo al agente de Phaseo en Slack.",
 				"notInstalled": "El agente de Phaseo ya no está instalado en ese espacio de trabajo de Slack.",
 				"wrongWorkspace": "Inicia sesión con una cuenta del espacio de trabajo de Phaseo que añadió el agente a Slack.",
@@ -7850,5 +8107,144 @@
 		"expiredBody": "Nadie respondió en 30 minutos, así que no se ha cobrado nada. Se indica al agente que no lo reintente; puede iniciar una nueva solicitud cuando haya alguien disponible.",
 		"resume": "Terminar la verificación de la tarjeta",
 		"resumeNotice": "Esta recarga se confirmó, pero no se terminó la verificación de la tarjeta del banco. Termínala para completar el pago."
+	},
+	"keyRequests": {
+		"title": "Aprobar clave de API",
+		"description": "Una aplicación en la que has iniciado sesión ha pedido una nueva clave de API. No se crea nada hasta que la apruebes aquí.",
+		"requestedBy": "Solicitada por",
+		"workspace": "Espacio de trabajo",
+		"keyName": "Nombre de la clave",
+		"dailyLimit": "Límite de gasto diario",
+		"monthlyLimit": "Límite de gasto mensual",
+		"noLimit": "Sin límite",
+		"keyExpires": "La clave caduca",
+		"keyLifetime": "{days, plural, one {# día} other {# días}} después de la aprobación",
+		"requestedAt": "Solicitada",
+		"requestExpires": "Aprobar antes de",
+		"phaseoAppTitle": "Aprueba solo si lo iniciaste tú",
+		"phaseoAppBody": "Aprueba solo si acabas de ejecutar tú mismo un comando de configuración de la CLI de Phaseo. La nueva clave se envía una vez a ese terminal y nunca se muestra aquí.",
+		"otherAppTitle": "Solicitada por {app}, no por la CLI de Phaseo",
+		"otherAppBody": "{app} es una aplicación que usa Iniciar sesión con Phaseo. Aprueba solo si tú le pediste una clave. Recibirá la nueva clave una vez.",
+		"approve": "Aprobar y crear clave",
+		"approving": "Creando la clave…",
+		"deny": "Rechazar",
+		"approvedTitle": "Clave aprobada",
+		"approvedBody": "Vuelve a tu terminal: la configuración recoge la clave y termina. Puedes cambiar sus límites o eliminarla en Configuración, Claves de API.",
+		"approvingTitle": "Creando la clave",
+		"approvingBody": "Recarga la página en un momento.",
+		"deniedTitle": "Solicitud rechazada",
+		"deniedBody": "No se ha creado ninguna clave. La configuración en tu terminal deja de esperar.",
+		"expiredTitle": "Solicitud caducada",
+		"expiredBody": "No se ha creado nada. Vuelve a ejecutar el comando de configuración para pedir una clave nueva.",
+		"forbiddenTitle": "No puedes crear claves de API en este espacio de trabajo",
+		"forbiddenBody": "Solo los propietarios y administradores del espacio de trabajo pueden crear claves de API. Pide una clave a uno de ellos y pásala a la configuración con --key.",
+		"notFoundTitle": "No se encontró la solicitud de clave",
+		"notFoundBody": "Inicia sesión con la cuenta que usaste en la CLI y abre el enlace completo que mostró la configuración.",
+		"errorTitle": "No se pudo completar",
+		"keyLimitReached": "Este espacio de trabajo ha alcanzado su límite de claves de API. Elimina una clave que ya no uses y vuelve a aprobar.",
+		"requestChanged": "Esta solicitud ha cambiado. Recarga la página y revísala de nuevo.",
+		"notPending": "Esta solicitud ya se respondió o ha caducado. Recarga la página.",
+		"genericError": "Algo ha fallado. Inténtalo de nuevo."
+	},
+	"rateGuardrail": {
+		"title": "Límites de frecuencia",
+		"description": "Limita las solicitudes y los tokens por minuto, y cuántas solicitudes se ejecutan a la vez.",
+		"limitsTitle": "Límites",
+		"limitsBody": "Define al menos uno. Deja un límite en blanco para no limitarlo.",
+		"noLimit": "Sin límite",
+		"invalidLimit": "Introduce un número entero mayor que 0.",
+		"requests": {
+			"label": "Solicitudes por minuto",
+			"help": "Se cuentan en un minuto móvil."
+		},
+		"tokens": {
+			"label": "Tokens por minuto",
+			"help": "Tokens de entrada y salida, contados al terminar cada solicitud."
+		},
+		"concurrent": {
+			"label": "Solicitudes simultáneas",
+			"help": "Solicitudes en curso al mismo tiempo."
+		},
+		"countingTitle": "Cómo cuenta",
+		"countingBody": "Elige quién comparte cada asignación. No hay valor predeterminado.",
+		"legacyCounting": "Se creó con la API de límites de frecuencia, así que cuenta por cada clave, miembro o departamento al que está asignado, y por usuario final en todo el espacio de trabajo. Elige una opción para cambiarlo.",
+		"countingLegacy": "Por asignación",
+		"counting": {
+			"shared": {
+				"name": "Compartido",
+				"body": "Una asignación para todo aquello a lo que está asignado. En un departamento, la comparte todo el departamento."
+			},
+			"each_key": {
+				"name": "Por clave",
+				"body": "Cada clave API que cubre tiene su propia asignación. Las solicitudes OAuth cuentan por persona."
+			},
+			"each_end_user": {
+				"name": "Por usuario final",
+				"body": "Cada usuario final tiene su propia asignación, según el campo user de la solicitud o la cabecera X-Phaseo-User-Id. Las solicitudes sin usuario final no quedan limitadas por ella."
+			}
+		},
+		"failClosedTitle": "Rechazar solicitudes si no se pueden comprobar los límites",
+		"failClosedBody": "Espera al contador en cada solicitud, lo que añade algo de latencia. Si está desactivado, las solicitudes pasan cuando el contador no responde.",
+		"issue": {
+			"rateLimitEmpty": "Define al menos un límite para continuar.",
+			"rateLimitInvalid": "Los límites deben ser números enteros mayores que 0.",
+			"rateCountingRequired": "Elige cómo cuentan los límites para continuar."
+		}
+	},
+	"spendGuardrail": {
+		"title": "Límite de gasto",
+		"description": "Limita lo que gastan las claves que cubre en un día, una semana o un mes.",
+		"limitTitle": "Límite",
+		"limitBody": "Lo máximo que pueden gastar las claves que cubre en cada periodo, en dólares estadounidenses.",
+		"limitLabel": "Importe",
+		"limitHelp": "Hasta 2 decimales, por ejemplo 25.00.",
+		"invalidLimit": "Introduce un importe superior a $0.00 con hasta 2 decimales.",
+		"periodTitle": "Periodo",
+		"periodBody": "Los periodos son días naturales UTC, semanas desde el lunes y meses. No hay valor predeterminado.",
+		"period": {
+			"daily": {
+				"name": "Diario",
+				"body": "Se restablece cada día a las 00:00 UTC."
+			},
+			"weekly": {
+				"name": "Semanal",
+				"body": "Se restablece cada lunes a las 00:00 UTC."
+			},
+			"monthly": {
+				"name": "Mensual",
+				"body": "Se restablece el día 1 de cada mes a las 00:00 UTC."
+			}
+		},
+		"actionTitle": "Al llegar al límite",
+		"actionBody": "Qué ocurre cuando el gasto llega al límite. Los propietarios y administradores reciben un aviso push al 80 % y al 100 % en ambos casos. No hay valor predeterminado.",
+		"action": {
+			"notify": {
+				"name": "Avisar",
+				"body": "Solo enviar los avisos. Las solicitudes siguen pasando."
+			},
+			"block": {
+				"name": "Bloquear",
+				"body": "Rechazar las solicitudes con clave de API que cubre hasta que se restablezca el periodo. No se bloquean los trabajos por lotes, las sesiones en tiempo real ni las solicitudes OAuth."
+			}
+		},
+		"countingTitle": "Cómo cuenta",
+		"countingBody": "Elige quién comparte el límite. No hay valor predeterminado.",
+		"counting": {
+			"shared": {
+				"name": "Compartido",
+				"body": "Un límite para todo aquello a lo que está asignado. En un departamento, lo comparten todas las claves del departamento."
+			},
+			"each_key": {
+				"name": "Cada clave",
+				"body": "Cada clave de API que cubre tiene su propio límite."
+			}
+		},
+		"issue": {
+			"spendLimitEmpty": "Establece un límite para continuar.",
+			"spendLimitInvalid": "Introduce un importe superior a $0.00 con hasta 2 decimales.",
+			"spendPeriodRequired": "Elige un periodo para continuar.",
+			"spendActionRequired": "Elige qué ocurre al llegar al límite para continuar.",
+			"spendCountingRequired": "Elige cómo cuenta el límite para continuar."
+		}
 	}
 }

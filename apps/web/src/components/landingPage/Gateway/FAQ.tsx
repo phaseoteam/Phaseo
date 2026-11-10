@@ -1,4 +1,4 @@
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Card, CardContent } from "@/components/ui/card";
 import {
 	Accordion,

@@ -122,7 +122,7 @@ export function resolveActionDockPageRefresh(pathname: string): ActionDockPageRe
 		if (dataSection === "registries") return targetFor("catalogue", currentPath);
 
 		// Internal data tools without a public cache family still benefit from
-		// invalidating the active Next.js route.
+		// refreshing the active route's data.
 		return { pathname: currentPath };
 	}
 

@@ -193,6 +193,10 @@ function buildSupabaseMock() {
 					select: () => buildSelectChain(table, { data: [], error: null }),
 				};
 			}
+			// The management key acts as its creator, an admin of the workspace.
+			if (table === "workspace_members") {
+				return { select: () => buildSelectChain(table, { data: { role: "admin" }, error: null }) };
+			}
 			throw new Error(`Unexpected table: ${table}`);
 		},
 	};

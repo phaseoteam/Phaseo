@@ -3,7 +3,7 @@
 	"workspaces": {
 		".": {},
 		"apps/web": {
-			"entry": ["apps/web/src/app/**/*.tsx"]
+			"entry": ["src/routes/**", "src/router.tsx", "src/start.ts", "vite.config.ts"]
 		},
 		"apps/api": {
 			"entry": ["apps/api/src/**/*.ts"]
@@ -15,6 +15,9 @@
 		"**/.turbo/**",
 		"**/node_modules/**",
 		"apps/api/.wrangler/**",
+		"apps/web/.wrangler/**",
+		"apps/web/.tanstack/**",
+		"apps/web/src/routeTree.gen.ts",
 		"apps/web/scripts/**"
 	],
 	"jest": false

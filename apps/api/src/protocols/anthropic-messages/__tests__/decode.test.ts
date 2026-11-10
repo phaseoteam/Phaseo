@@ -910,6 +910,7 @@ describe("decodeAnthropicMessagesRequest cache control", () => {
 		expect(camelAliasIr.anthropicCacheControl).toEqual({
 			type: "ephemeral",
 			ttl: "1h",
+			scope: "automatic",
 		});
 	});
 });

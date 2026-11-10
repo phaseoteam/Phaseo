@@ -47,9 +47,8 @@ CREATE OR REPLACE FUNCTION public.get_public_model_catalogue_rows (
       r.*,
       case
         when lower(coalesce(r.capability_status, '')) = 'disabled' then 'disabled'
-        when lower(coalesce(r.capability_status, '')) in ('deranked', 'de_ranked', 'deranked_lvl1', 'deranked_lvl_1') then 'deranked_lvl1'
-        when lower(coalesce(r.capability_status, '')) in ('deranked_lvl2', 'deranked_lvl_2') then 'deranked_lvl2'
-        when lower(coalesce(r.capability_status, '')) in ('deranked_lvl3', 'deranked_lvl_3') then 'deranked_lvl3'
+        when lower(coalesce(r.capability_status, '')) in ('degraded', 'deranked', 'de_ranked', 'deranked_lvl1', 'deranked_lvl_1', 'deranked_lvl2', 'deranked_lvl_2', 'deranked_lvl3', 'deranked_lvl_3')
+          then case when coalesce(r.is_active_gateway, false) then 'deranked' else 'inactive' end
         when lower(coalesce(r.capability_status, '')) in ('coming_soon', 'comingsoon') then 'coming_soon'
         when lower(coalesce(r.capability_status, '')) = 'inactive' then 'inactive'
         when coalesce(r.is_active_gateway, false) then 'active'
@@ -68,9 +67,7 @@ CREATE OR REPLACE FUNCTION public.get_public_model_catalogue_rows (
         case sr.normalized_gateway_status
           when 'active' then 1
           when 'coming_soon' then 2
-          when 'deranked_lvl1' then 3
-          when 'deranked_lvl2' then 4
-          when 'deranked_lvl3' then 5
+          when 'deranked' then 3
           when 'inactive' then 6
           when 'disabled' then 7
           else 8
@@ -92,9 +89,7 @@ CREATE OR REPLACE FUNCTION public.get_public_model_catalogue_rows (
             case mps.status_rank
               when 1 then 'active'
               when 2 then 'coming_soon'
-              when 3 then 'deranked_lvl1'
-              when 4 then 'deranked_lvl2'
-              when 5 then 'deranked_lvl3'
+              when 3 then 'deranked'
               when 6 then 'inactive'
               when 7 then 'disabled'
               else 'inactive'
@@ -153,7 +148,7 @@ CREATE OR REPLACE FUNCTION public.get_public_model_catalogue_rows (
       count(distinct sr.provider_id) filter (
         where sr.provider_id is not null
           and btrim(sr.provider_id) <> ''
-          and sr.normalized_gateway_status in ('active', 'deranked_lvl1', 'deranked_lvl2', 'deranked_lvl3')
+          and sr.normalized_gateway_status in ('active', 'deranked')
       )::integer as gateway_active_provider_count,
       bool_or(sr.normalized_gateway_status = 'coming_soon') as has_coming_soon_provider,
       array_agg(distinct sr.capability_id order by sr.capability_id) filter (where sr.capability_id is not null and btrim(sr.capability_id) <> '') as gateway_endpoints,
@@ -163,19 +158,19 @@ CREATE OR REPLACE FUNCTION public.get_public_model_catalogue_rows (
       array_agg(distinct coalesce(nullif(sr.api_provider_name, ''), sr.provider_id) order by coalesce(nullif(sr.api_provider_name, ''), sr.provider_id)) filter (
         where sr.provider_id is not null
           and btrim(sr.provider_id) <> ''
-          and sr.normalized_gateway_status in ('active', 'deranked_lvl1', 'deranked_lvl2', 'deranked_lvl3')
+          and sr.normalized_gateway_status in ('active', 'deranked')
       ) as gateway_active_provider_names,
       array_agg(distinct sr.api_model_id order by sr.api_model_id) filter (where sr.api_model_id is not null and btrim(sr.api_model_id) <> '') as gateway_api_model_ids,
       array_agg(distinct coalesce(sr.context_length, sr.capability_max_input_tokens) order by coalesce(sr.context_length, sr.capability_max_input_tokens)) filter (where coalesce(sr.context_length, sr.capability_max_input_tokens) > 0) as context_lengths,
-      min(sr.input_price) filter (where sr.normalized_gateway_status in ('active', 'deranked_lvl1', 'deranked_lvl2', 'deranked_lvl3') and sr.input_price > 0) as lowest_input_price,
-      min(sr.output_price) filter (where sr.normalized_gateway_status in ('active', 'deranked_lvl1', 'deranked_lvl2', 'deranked_lvl3') and sr.output_price > 0) as lowest_output_price,
-      min(sr.standard_input_price) filter (where sr.normalized_gateway_status in ('active', 'deranked_lvl1', 'deranked_lvl2', 'deranked_lvl3') and sr.standard_input_price > 0) as lowest_standard_input_price,
-      min(sr.standard_output_price) filter (where sr.normalized_gateway_status in ('active', 'deranked_lvl1', 'deranked_lvl2', 'deranked_lvl3') and sr.standard_output_price > 0) as lowest_standard_output_price,
+      min(sr.input_price) filter (where sr.normalized_gateway_status in ('active', 'deranked') and sr.input_price > 0) as lowest_input_price,
+      min(sr.output_price) filter (where sr.normalized_gateway_status in ('active', 'deranked') and sr.output_price > 0) as lowest_output_price,
+      min(sr.standard_input_price) filter (where sr.normalized_gateway_status in ('active', 'deranked') and sr.standard_input_price > 0) as lowest_standard_input_price,
+      min(sr.standard_output_price) filter (where sr.normalized_gateway_status in ('active', 'deranked') and sr.standard_output_price > 0) as lowest_standard_output_price,
       min(sr.standard_input_price_label) filter (where sr.standard_input_price_label is not null) as lowest_standard_input_price_label,
       min(sr.standard_input_price_unit) filter (where sr.standard_input_price_unit is not null) as lowest_standard_input_price_unit,
       min(sr.standard_output_price_label) filter (where sr.standard_output_price_label is not null) as lowest_standard_output_price_label,
       min(sr.standard_output_price_unit) filter (where sr.standard_output_price_unit is not null) as lowest_standard_output_price_unit,
-      min(sr.from_price) filter (where sr.normalized_gateway_status in ('active', 'deranked_lvl1', 'deranked_lvl2', 'deranked_lvl3') and sr.from_price >= 0) as lowest_from_price,
+      min(sr.from_price) filter (where sr.normalized_gateway_status in ('active', 'deranked') and sr.from_price >= 0) as lowest_from_price,
       case
         when count(distinct sr.from_price_unit) filter (where sr.from_price_unit is not null and btrim(sr.from_price_unit) <> '') = 1
           then min(sr.from_price_unit) filter (where sr.from_price_unit is not null and btrim(sr.from_price_unit) <> '')

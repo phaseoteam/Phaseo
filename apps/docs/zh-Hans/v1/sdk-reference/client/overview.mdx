@@ -1,0 +1,487 @@
+---
+icon: "compass"
+title: "客户端 SDK"
+sidebarTitle: "概览"
+description: "安装 Phaseo 客户端 SDK，并找到每个 Gateway 端点对应的方法。"
+---
+
+为你的语言安装 Phaseo 包，用你的 API 密钥创建客户端，然后每个 Gateway 端点调用一个方法。如果你不传入密钥，每个 SDK 都会读取 `PHASEO_API_KEY`。
+
+| 语言 | 包 | 注册表 | 已发布版本 |
+| --- | --- | --- | --- |
+| TypeScript | [`@phaseo/sdk`](https://www.npmjs.com/package/@phaseo/sdk) | npm | `3.0.0` |
+| Python | [`phaseo`](https://pypi.org/project/phaseo/) | PyPI | `3.0.0` |
+| Go | [`github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3`](https://pkg.go.dev/github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3) | Go modules | `v3.0.0` |
+| C# | [`Phaseo.Sdk`](https://www.nuget.org/packages/Phaseo.Sdk) | NuGet | `3.0.0` |
+| PHP | [`phaseo/sdk`](https://packagist.org/packages/phaseo/sdk) | Packagist | `v3.0.0` |
+| Ruby | [`phaseo_sdk`](https://rubygems.org/gems/phaseo_sdk) | RubyGems | `3.0.0` |
+| Java | `app.phaseo:phaseo-sdk` | Maven Central（旧版 API）；请改为构建当前源码 | `3.0.0` |
+| Rust | [`phaseo`](https://crates.io/crates/phaseo) | crates.io | `0.2.0` |
+
+[安装](./installation)列出了每种语言的安装命令和要求。C++ SDK 尚未发布。
+
+<CodeGroup>
+
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
+
+const response = await client.generateText({
+  model: "openai/gpt-6-astra",
+  messages: [{ role: "user", content: "Hello, how are you?" }],
+});
+
+console.log(response.choices[0].message.content);
+```
+
+```python Python
+from phaseo import Phaseo
+
+client = Phaseo()  # 读取 PHASEO_API_KEY
+
+response = client.generate_response(
+    {
+        "model": "openai/gpt-6-astra",
+        "input": "Reply with: python sdk works",
+    }
+)
+
+print(response.output_text, response.request_id, response.trace_url)
+```
+
+```go Go
+import (
+  "context"
+  "fmt"
+
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client, err := phaseo.NewFromEnv() // 读取 PHASEO_API_KEY
+if err != nil {
+  panic(err)
+}
+
+resp, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
+  Model: "openai/gpt-6-astra",
+  Input: "Reply with: go sdk works",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp)
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo(); // 读取 PHASEO_API_KEY；或使用 new Phaseo("YOUR_KEY")
+
+var response = await client.GenerateResponse(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-6-astra",
+    ["input"] = "Reply with: csharp sdk works",
+});
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo(); // 读取 PHASEO_API_KEY；或使用 new Phaseo('YOUR_KEY')
+
+$response = $client->generateResponse([
+    'model' => 'openai/gpt-6-astra',
+    'input' => 'Reply with: php sdk works',
+]);
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new # 读取 PHASEO_API_KEY；或使用 PhaseoSdk::Phaseo.new(api_key: 'YOUR_KEY')
+
+response = client.generate_response(
+  model: 'openai/gpt-6-astra',
+  input: 'Reply with: ruby sdk works'
+)
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
+
+public class Main {
+    public static void main(String[] args) throws Exception {
+        var client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+        var response = client.createResponse(Map.of(
+            "model", "openai/gpt-6-astra",
+            "input", "Reply with: Java SDK works"
+        ));
+        System.out.println(response);
+    }
+}
+```
+
+```rust Rust
+use phaseo::Phaseo;
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+    let response = client.responses(&json!({
+        "model": "openai/gpt-6-astra",
+        "input": "Reply with exactly: Rust SDK works"
+    }))?;
+
+    println!("{}", response.body);
+    Ok(())
+}
+```
+
+</CodeGroup>
+
+## 你发送什么，拿回什么
+
+在每个 SDK 中，请求正文都使用 API 的 JSON 字段名。[用法](./usage)为每个端点提供了一个示例。
+
+| 语言 | 请求正文 | 返回值 |
+| --- | --- | --- |
+| TypeScript | 由 OpenAPI 规范生成的带类型对象 | 带类型对象 |
+| Python | dict；类型位于 `phaseo.models` | 带有 `output_text`、`request_id` 和 `trace_url` 的 `APIResponse` dict |
+| Go | `map[string]interface{}`，或带类型的 `phaseo.ChatCompletionsRequest` 和 `phaseo.ResponsesRequest`（PascalCase 结构体字段，例如 `Model`、`Messages`、`Input`） | 解码后的 JSON |
+| C# | `Dictionary<string, object>` | `Dictionary<string, object>?` |
+| PHP | 数组 | 数组 |
+| Ruby | Hash（关键字参数） | Hash |
+| Java | `Map` 或 Jackson `JsonNode`；JSON 字符串需先解析 | `JsonNode` |
+| Rust | `&serde_json::Value` | 带有 `status`、`body` 和 `request_id` 的 `PhaseoResponse` |
+
+缺少密钥时，创建客户端就会失败。Python 抛出 `ValueError`，Go 的 `NewFromEnv()` 返回错误，C# 和 PHP 抛出 `Missing API key. Pass apiKey or set PHASEO_API_KEY.`，Ruby 抛出 `ArgumentError: Missing API key. Pass api_key or set PHASEO_API_KEY.`，Rust 的 `Phaseo::from_env()` 返回 `PhaseoError`。
+
+<span id="find-the-method-for-each-endpoint"></span>
+## 找到每个端点对应的方法
+
+短横线表示该 SDK 没有针对此操作的封装。请使用最后一行中的方法，或直接调用 HTTP API。“仅 JSON”表示该方法无法发送 multipart 文件上传：请改为传入 URL 或 base64 data URL，或者像端点页面所示，用你所用语言的 HTTP 客户端发送上传。大多数 SDK 还为每个 `generate…` 方法提供了 `create…` 别名（例如 Go 和 C# 中的 `CreateChatCompletion`，Ruby 中的 `create_response`）。
+
+| 操作 | TypeScript | Python | Go | C# | PHP | Ruby | Java | Rust |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| [对话补全](./chat-completions) | `generateText` | `generate_text` | `GenerateText` | `GenerateText` | `generateText` | `generate_text` | `createChatCompletion` | `chat_completions` |
+| 流式对话补全 | `streamChat` | `stream_chat` | — | — | — | — | `rawClient().requestLines` | — |
+| [Responses](./responses) | `generateResponse` | `generate_response` | `GenerateResponse` | `GenerateResponse` | `generateResponse` | `generate_response` | `createResponse` | `responses` |
+| 流式 Responses | `streamResponses` | `stream_responses` | — | `StreamResponse`（原始 SSE 行） | `streamResponse`（原始 SSE 行） | — | `streamResponse`（原始 SSE 行） | — |
+| Anthropic Messages | `generateMessage`、`streamMessages` | `generate_message`、`stream_message` | `CreateAnthropicMessage` | `CreateAnthropicMessage` | `createAnthropicMessage` | `create_anthropic_message` | `createAnthropicMessage` | `post` |
+| [图片生成](./images-generations) | `generateImage`、`streamImage` | `generate_image` | `CreateImage` | `GenerateImage` | `generateImage` | `generate_image` | `createImage` | `post` |
+| [图片编辑](./images-edits) | `generateImageEdit`、`streamImageEdit` | `generate_image_edit` | `CreateImageEdit` | `CreateImageEdit` | `generateImageEdit` | `generate_image_edit` | `createImageEdit`（仅 JSON） | `post` |
+| [语音](./audio-speech) | `generateSpeech` | `generate_speech` | `CreateSpeech` | `CreateSpeech` | `createSpeech` | `generate_speech` | `rawClient().requestBytes` | — |
+| [转写](./audio-transcriptions) | `generateTranscription` | `generate_transcription` | `CreateTranscription` | `CreateTranscription` | `generateTranscription` | `generate_transcription` | —（用 `java.net.http` 发送 multipart） | — |
+| [翻译](./audio-translations) | `generateTranslation` | `generate_translation` | `CreateTranslation` | `CreateTranslation` | `generateTranslation` | `generate_translation` | —（用 `java.net.http` 发送 multipart） | — |
+| [实时语音](./audio-realtime) | `realtime.connect` | `realtime.connect`（在 `AsyncPhaseo` 上） | `realtime.Connect` | `Realtime.ConnectAsync` | `realtime()->connect` | `realtime.connect` | `realtime.connect` | `realtime().connect` |
+| [嵌入](./embeddings) | `generateEmbedding` | `generate_embedding` | `GenerateEmbedding` | `CreateEmbedding` | `generateEmbedding` | `generate_embedding` | `createEmbedding` | `post` |
+| [内容审核](./moderations) | `generateModeration` | `generate_moderation` | `GenerateModeration` | `GenerateModeration` | `generateModeration` | `generate_moderation` | `createModeration` | `post` |
+| [重排序](./rerank) | `rerank.create` | `rerank.create` | — | — | — | — | — | `post` |
+| 视频 | `videos.*` | `videos.*` | `CreateVideo`、`GetVideo`、`ListVideos`、… | `GenerateVideo`、`GetVideo`、`ListVideos`、… | `generateVideo`、`getVideo`、`listVideos`、… | `generate_video`、`get_video`、`list_videos`、… | `createVideo`、`getVideo`、`listVideos`、… | — |
+| [上传文件](./files) | `uploadFile` | `upload_file` | — | — | — | — | — | — |
+| [读取文件](./files) | `getFile`、`getFileContent`、`listFiles` | `get_file`、`get_file_content`、`list_files` | `RetrieveFile`、`RetrieveFileContent`、`ListFiles` | `RetrieveFile`、`RetrieveFileContent`、`ListFiles` | `retrieveFile`、`retrieveFileContent`、`listFiles` | `retrieve_file`、`retrieve_file_content`、`list_files` | `retrieveFile`、`retrieveFileContent`、`listFiles` | — |
+| 批处理 | `batches.*` | `batches.*` | `CreateBatch`、`RetrieveBatch`、`CancelBatch` | `CreateBatch`、`RetrieveBatch`、`CancelBatch` | `createBatch`、`retrieveBatch`、`cancelBatch` | `create_batch`、`retrieve_batch`、`cancel_batch` | `createBatch`、`retrieveBatch`、`cancelBatch` | — |
+| 任务 WebSocket URL | `asyncJobs.websocketUrl` | `async_jobs.websocket_url` | `GetAsyncJobWebSocketURL` | `GetAsyncJobWebSocketUrl` | `getAsyncJobWebSocketUrl` | `get_async_job_websocket_url` | `getAsyncJobWebSocketUrl` | — |
+| [等待任务完成](#wait-for-music-video-or-batches) | `generateAndWait`、`createAndWait`、`wait` | `generate_and_wait`、`create_and_wait`、`wait` | — | — | — | — | — | — |
+| [列出模型](./models) | `getModels`、`models.list` | `get_models`、`models.list` | `GetModels` | `ListModels` | `listModels` | `list_models` | `listModels` | — |
+| [检查模型参数](./models#check-one-model) | `models.checkParameters` | `models.check_parameters` | `CheckModelParameters`（下个版本） | `CheckModelParameters`（下个版本） | `checkModelParameters`（下个版本） | `check_model_parameters`（下个版本） | `checkModelParameters`（源码构建） | `check_model_parameters`（下个版本） |
+| 验证模型 | `models.validate`、`models.getDeprecationInfo` | `models.validate`、`models.get_deprecation_info` | `ValidateModel`、`GetModelDeprecationInfo` | `ValidateModel`、`GetModelDeprecationInfo` | `validateModel`、`getModelDeprecationInfo` | `validate_model`、`get_model_deprecation_info` | `validateModel`、`getModelDeprecationInfo` | — |
+| [生成记录查询](./generation) | `getGeneration` | `get_generation` | `GetGeneration` | `GetGeneration` | `getGeneration` | `get_generation` | `getGeneration` | — |
+| 提供商、端点和定价 | `listProviders`、`listEndpoints`、`listPricingModels`、`calculatePricing` | `list_providers`、`list_endpoints`、`list_pricing_models`、`calculate_pricing` | `ListProviders`、`ListEndpoints`、`ListPricingModels`、`CalculatePricing` | `ListProviders`、`ListEndpoints`、`ListPricingModels`、`CalculatePricing` | `listProviders`、`listEndpoints`、`listPricingModels`、`calculatePricing` | `list_providers`、`list_endpoints`、`list_pricing_models`、`calculate_pricing` | `listProviders`、`listEndpoints`、`listPricingModels`、`calculatePricing` | — |
+| 额度、活动和分析 | `getCredits`、`getActivity`、`getAnalytics` | `get_credits`、`get_activity`、`get_analytics` | `GetCredits`、`GetActivity`、`GetAnalytics` | `GetCredits`、`GetActivity`、`GetAnalytics` | `getCredits`、`getActivity`、`getAnalytics` | `get_credits`、`get_activity`、`get_analytics` | `getCredits`、`getActivity`、`getAnalytics` | — |
+| 健康检查 | `getHealth` | `get_health` | `Health` | `Health`、`Healthz` | `health`、`healthz` | `health`、`healthz` | `healthz` | — |
+| 密钥和工作区 | `listApiKeys`、`createApiKey`、`listWorkspaces`、… | `list_api_keys`、`create_api_key`、`list_workspaces`、… | `ListApiKeys`、`CreateApiKey`、`ListWorkspaces`、… | `ListApiKeys`、`CreateApiKey`、`ListWorkspaces`、… | `listApiKeys`、`createApiKey`、`listWorkspaces`、… | `list_api_keys`、`create_api_key`、`list_workspaces`、… | `listApiKeys`、`createApiKey`、`listWorkspaces`、… | — |
+| 其他任意端点 | `client.rawClient()` | `client.raw_client()` | `client.Request(ctx, method, path, query, headers, body)`、`client.RawClient()` | — | — | — | `client.request(...)`、`client.rawClient()` | `client.post(path, body)`、`phaseo::operations` |
+
+C#、PHP、Ruby 和 Java 有上传方法，但它发送的是 JSON，无法上传文件；[文件](./files)和 [STT](./audio-transcriptions) 展示了每种语言的 multipart 请求。除 Rust 外，每个 SDK 的密钥和工作区还提供 `get`、`update` 和 `delete` 方法，以及当前密钥查询（`getCurrentApiKey`、`get_current_api_key`、`GetCurrentApiKey`）。TypeScript 和 Python 还覆盖音乐、OCR、解析、决策和提取。
+
+<span id="check-what-each-package-ships"></span>
+## 查看每个包包含的内容
+
+已发布的包早于 SDK 源码中的部分功能：
+
+| 语言 | 尚未进入已发布的包 |
+| --- | --- |
+| Go | `GetModelEndpointCapabilities`、`CheckModelParameters` 和 `PreflightRequest` 不在 `v3.0.0` 中；它们会随下个版本发布。 |
+| C# | `GetModelEndpointCapabilities`、`CheckModelParameters` 和 `PreflightRequest` 不在 `3.0.0` 中；它们会随下个版本发布。 |
+| PHP | `getModelEndpointCapabilities`、`checkModelParameters` 和 `preflightRequest` 不在 `v3.0.0` 中；它们会随下个版本发布。 |
+| Ruby | `model_endpoint_capabilities`、`check_model_parameters` 和 `preflight_request` 不在 `3.0.0` gem 中；它们会随下个版本发布。 |
+| Java | Maven Central 上的 `3.0.0` 构件缺少重试控制、响应元数据和参数检查。请按[安装](./installation)构建固定版本的源码以获得它们。 |
+| Rust | `Phaseo::model_endpoint_capabilities(...)` 和 `Phaseo::check_model_parameters(...)` 不在 `0.2.0` crate 中。该 crate 尚未到 `1.0`，因此在生产环境中请固定一个兼容的次版本。 |
+
+<span id="configure-the-client"></span>
+## 配置客户端
+
+<Tabs>
+<Tab title="TypeScript">
+
+| 选项 | 作用 |
+| --- | --- |
+| `apiKey` | 密钥字符串，或一个为每个请求返回凭据的函数（例如[受信任的工作负载](/zh-Hans/v1/developers/trusted-workloads)令牌）。默认读取 `PHASEO_API_KEY`。 |
+| `baseUrl` / `region` | `region` 为 `global`、`eu` 或 `us`。两者不能同时设置。 |
+| `timeoutMs`、`maxRetries`、`signal` | 请求控制；参见[请求控制和错误](#request-controls-and-errors)。 |
+| `app` | 你的应用的 `id`、`name`、`url` 和最多三个 `categories`，作为归属请求头发送。 |
+| `modelLifecycleChecks` | 默认为 `true`：客户端会对每个模型查询一次（`GET /models`），并拒绝非活跃的模型。设为 `false` 可跳过查询。 |
+| `enableDeprecationWarnings`、`warningsAsErrors`、`logger` | 控制模型的弃用警告。 |
+| `devtools` | 本地 DevTools 捕获。 |
+| `headers`、`fetchImpl` | 额外请求头和自定义 `fetch`。 |
+
+</Tab>
+<Tab title="Python">
+
+| 选项 | 作用 |
+| --- | --- |
+| `api_key` | 密钥字符串，或一个为每个请求返回凭据的可调用对象（例如[受信任的工作负载](/zh-Hans/v1/developers/trusted-workloads)令牌）。默认读取 `PHASEO_API_KEY`。 |
+| `base_url` / `region` | `region` 为 `global`、`eu` 或 `us`。两者不能同时设置。 |
+| `timeout`、`max_retries` | 请求控制；参见[请求控制和错误](#request-controls-and-errors)。 |
+| `app` | 包含你的应用 `id`、`name` 和 `url` 的 dict，作为归属请求头发送。 |
+| `enable_deprecation_warnings`、`warnings_as_errors`、`logger` | 控制模型的弃用警告。仅 `Phaseo` 提供。 |
+| `devtools` | 本地 DevTools 捕获。仅 `Phaseo` 提供。 |
+| `http_client` | 用于发送请求的 `httpx.Client`（`AsyncPhaseo` 使用 `httpx.AsyncClient`）。你注入的客户端仍由你负责关闭。 |
+| `on_request`、`on_response`、`on_retry` | 每次尝试时调用的钩子。 |
+
+在 asyncio 下使用 `AsyncPhaseo`：
+
+```python Python
+import asyncio
+from phaseo import AsyncPhaseo
+
+async def main():
+    async with AsyncPhaseo() as client:
+        response = await client.responses.create({"model": "openai/gpt-6-astra", "input": "Hello"})
+        print(response.output_text, response.request_id, response.trace_url)
+
+asyncio.run(main())
+```
+
+使用 `async for event in client.responses.stream(request)` 获取解析后的文本事件。取消 asyncio 任务会停止 HTTP 请求以及任何轮询。`AsyncPhaseo` 为文本、图片、音频、实时、音乐、视频、批处理、文件、模型、嵌入、OCR、重排序、解析、审核、决策和提取提供资源命名空间；其他 HTTP 操作请使用 `await client.request(...)`。
+
+</Tab>
+<Tab title="Go">
+
+`phaseo.New(apiKey, baseURL)` 接受密钥和基础 URL，例如 `phaseo.New(os.Getenv("PHASEO_API_KEY"), "https://api.phaseo.app/v1")`。`phaseo.NewFromEnv()` 读取 `PHASEO_API_KEY`，未设置时返回错误。每个方法的第一个参数都是 `context.Context`。
+
+</Tab>
+<Tab title="C#">
+
+`new Phaseo()` 读取 `PHASEO_API_KEY`；`new Phaseo("YOUR_KEY")` 直接接受密钥。客户端位于 `PhaseoSdk` 命名空间中，每个方法都可以 await。
+
+</Tab>
+<Tab title="PHP">
+
+`new Phaseo()` 读取 `PHASEO_API_KEY`；`new Phaseo('YOUR_KEY')` 直接接受密钥。类为 `Phaseo\Sdk\Phaseo`。
+
+</Tab>
+<Tab title="Ruby">
+
+`PhaseoSdk::Phaseo.new` 读取 `PHASEO_API_KEY`；传入 `api_key:` 可直接设置密钥。
+
+</Tab>
+<Tab title="Java">
+
+`new Phaseo(apiKey)` 创建客户端。`setTimeout(Duration)` 和 `setMaxRetries(int)` 会返回客户端，因此可以链式调用：
+
+```java Java
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"))
+    .setTimeout(Duration.ofSeconds(30))
+    .setMaxRetries(2);
+```
+
+</Tab>
+<Tab title="Rust">
+
+客户端是同步的。`Phaseo` 会在其 `Debug` 输出中隐去 API 密钥和自定义请求头的值。
+
+| 方法 | 返回值 | 作用 |
+| --- | --- | --- |
+| `Phaseo::new(api_key)` | `Result<Phaseo, PhaseoError>` | 使用生产环境基础 URL 创建客户端。 |
+| `Phaseo::from_env()` | `Result<Phaseo, PhaseoError>` | 读取 `PHASEO_API_KEY` 和可选的 `PHASEO_BASE_URL`。 |
+| `.with_base_url(url)` | `Result<Phaseo, PhaseoError>` | 替换基础 URL。远程 URL 必须使用 HTTPS；只有当主机恰好是 `localhost` 或回环 IP 地址时，才接受普通 HTTP。 |
+| `.with_header(name, value)` | `Phaseo` | 为之后的每个请求添加一个请求头。 |
+
+</Tab>
+</Tabs>
+
+<span id="wait-for-music-video-or-batches"></span>
+## 等待音乐、视频或批处理完成
+
+等待辅助方法仅在 TypeScript 和 Python 中提供。其他 SDK 从创建调用中返回任务；请用 get 方法轮询它，或打开它的[任务 WebSocket URL](#find-the-method-for-each-endpoint)。
+
+<CodeGroup>
+
+```typescript TypeScript
+const music = await client.music.generateAndWait(
+  { model: process.env.PHASEO_MUSIC_MODEL!, prompt: "Gentle instrumental piano" },
+  { timeoutMs: 600_000, onPoll: (job) => console.log(job.id, job.status) },
+);
+```
+
+```python Python
+import os
+
+music = client.music.generate_and_wait(
+    {"model": os.environ["PHASEO_MUSIC_MODEL"], "prompt": "Gentle instrumental piano"},
+    timeout=600,
+    on_poll=lambda job: print(job["id"], job["status"]),
+)
+```
+
+</CodeGroup>
+
+视频使用 `videos.generateAndWait` / `videos.generate_and_wait`，批处理使用 `batches.createAndWait` / `batches.create_and_wait`。每个辅助方法只提交一次。如果第一个响应已经完成，它会直接返回而不轮询；否则它会轮询同一个任务直到结束，并返回完整响应。失败、取消或过期的任务会抛出 `JobFailedError`，其 `response` 包含详细信息。已完成的批处理中仍可能包含失败的单个请求。
+
+每个资源上的 `wait(id, options)` 会接续一个已有任务，并返回任何终态响应，包括失败。在 Python 中，音乐还提供 `create(request)` 和 `retrieve(id)`。
+
+| TypeScript | Python | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `intervalMs` | `interval` | `5000` 毫秒 / `5` 秒 | 最小 `250` 毫秒 / `0.25` 秒。 |
+| `timeoutMs` | `timeout` | `1800000` 毫秒 / `1800` 秒（30 分钟） | 从提交返回后开始计时；提交请求本身保留自己的超时。 |
+| `signal` | `cancel_event` | 无 | 停止等待。在 Python 中是一个 `threading.Event`。 |
+| `onPoll` | `on_poll` | 无 | 接收第一个响应以及每次轮询结果。 |
+
+`JobTimeoutError` 和 `JobCancelledError` 会保留任务 ID 和最后一个响应（TypeScript 中为 `jobId`/`lastResponse`，Python 中为 `job_id`/`last_response`），因此你可以用 `.wait(error.jobId)` 或 `.wait(error.job_id)` 接续。停止等待不会取消远程任务。在 TypeScript 中，它会取消正在进行的轮询；同步 Python 客户端在请求和回调之间检查取消和截止时间，因此无法中断已经在进行的 HTTP 调用。HTTP 失败会原样抛出，提交永远不会重试。这些辅助方法从你的进程中轮询；它们不会给网关增加后台执行。
+
+### 跨进程保留句柄
+
+`music.start`、`videos.start` 和 `batches.start` 返回一个带有 `result()`、`events()` 和 `cancel()` 的句柄，以及 `toJSON()`（TypeScript）或 `to_dict()`（Python）。保存它返回的类型和 ID，之后用 `resume(id)` 重建句柄。`result()` 遇到终态失败时会抛出异常。只有视频和批处理任务支持 `cancel()`。在 `AsyncPhaseo` 上，请 await 这些方法，并用 `async for` 迭代事件。
+
+| 任务 | TypeScript | Python |
+| --- | --- | --- |
+| 流式获取视频内容 | `videos.streamContent(id)`，用 `downloadTo(stream, writable)` 写入 | `videos.stream_content(id)`，用同步的 `download_to(chunks, binary_file)` 写入，不会把整个下载内容保存在内存中 |
+| 流式获取批处理结果 | `batchResults(await client.batches.streamResults(id))` 逐行解析 JSONL；`matchBatchResult(row, inputsByCustomId)` 把每一行与其输入配对，并保留每行的错误 | `batches.results(id)` |
+| 准备上传 | `toFile(bytes, filename, contentType)` | 传入 bytes、`Path` 对象、文件对象或 HTTPX 文件元组 |
+
+<span id="request-controls-and-errors"></span>
+## 请求控制和错误
+
+在 TypeScript、Python 和 Java 中，重试默认为 `0`，并且只适用于 `GET` 和 `HEAD` 请求。付费提交、写入和流式请求永远不会重试。
+
+<CodeGroup>
+
+```typescript TypeScript
+const fast = client.withOptions({ timeoutMs: 30_000, signal, maxRetries: 2 });
+```
+
+```python Python
+fast = client.with_options(timeout=30, max_retries=2)
+```
+
+```java Java
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"))
+    .setTimeout(Duration.ofSeconds(30))
+    .setMaxRetries(2);
+```
+
+</CodeGroup>
+
+<Tabs>
+<Tab title="TypeScript">
+
+`withOptions(...)` 返回一个新客户端，这些控制会应用到它的每个资源、流和媒体调用；原客户端保持不变。重试遵循 `Retry-After`。`timeoutMs` 包括读取响应正文的时间。
+
+`responseMetadata(result)` 返回网关请求 ID 和控制台追踪 URL。HTTP 错误为 `PhaseoHttpError`，包含 HTTP `status`、API 错误 `code`、`requestId`、`traceUrl`、重试延迟、正文和 `headers`。
+
+</Tab>
+<Tab title="Python">
+
+`with_options(...)` 返回一个新客户端，还接受 `headers=...`；它在 `Phaseo` 和 `AsyncPhaseo` 上都可用。重试发生在读取响应之前，最多 `10` 次。超时是以秒为单位的 HTTPX 超时，因此它限制的是网络无活动时间，而不是总时长。
+
+JSON 响应是带有 `output_text`、`request_id` 和 `trace_url` 的 `APIResponse` dict。HTTP 错误为 `PhaseoHTTPError`，包含 `status`、`code`、`request_id`、`trace_url`、重试延迟和正文。
+
+从旧版本升级时，把捕获 `urllib.error.HTTPError` 的地方换成 `PhaseoHTTPError`（或 `httpx.HTTPStatusError`），把捕获连接错误的地方换成 `httpx.TransportError`。
+
+</Tab>
+<Tab title="Java">
+
+HTTP 错误为 `Client.ApiException`（`app.phaseo.gen.Client`），提供 `getStatusCode()`、`getRequestId()`、`getResponseBody()` 和请求头。`requestWithResponse(...)` 返回数据及其 `requestId()`。
+
+</Tab>
+<Tab title="Rust">
+
+每次调用都返回 `Result<PhaseoResponse, PhaseoError>`。`PhaseoError` 实现了 `std::error::Error` 和 `Display`；传输和配置失败没有 `status`。
+
+| 类型 | 字段 | 含义 |
+| --- | --- | --- |
+| `PhaseoResponse` | `status: u16` | HTTP 状态码。 |
+| `PhaseoResponse` | `body: serde_json::Value` | 解析后的 JSON 响应；响应不是有效 JSON 时为一个 JSON 字符串。 |
+| `PhaseoResponse` | `request_id: Option<String>` | 响应头 `x-request-id`（存在时）。 |
+| `PhaseoError` | `message: String` | 配置、传输或 Gateway 错误消息。 |
+| `PhaseoError` | `status: Option<u16>` | 收到响应时的 Gateway HTTP 状态。 |
+| `PhaseoError` | `body: Option<serde_json::Value>` | 解析后的 Gateway 错误正文（可用时）。 |
+
+</Tab>
+</Tabs>
+
+[用法](./usage#handle-errors)展示了每种语言的完整错误处理程序。
+
+## 调用没有封装的端点
+
+每个 SDK 还附带由 Phaseo OpenAPI 规范生成的客户端：
+
+| 语言 | 生成的客户端 |
+| --- | --- |
+| TypeScript | `client.rawClient()`；生成的操作导出为 `operations`。 |
+| Python | `client.raw_client()`；生成的操作位于 `phaseo.ops`。 |
+| Go | `client.RawClient()`，来自 `src/gen`。`client.Request(ctx, method, path, query, headers, body)` 可发送任意请求。 |
+| Java | `client.rawClient()`，用 `requestLines` 处理流，用 `requestBytes` 处理二进制响应。 |
+| Rust | `phaseo::gen` 包含生成的客户端、模型和操作，并重新导出为 `phaseo::client`、`phaseo::models` 和 `phaseo::operations`。`phaseo::model_ids` 包含生成的模型 ID。`client.post(path, body)` 向基础 URL 下的任意路径发送 JSON。参见 [docs.rs](https://docs.rs/phaseo)。 |
+
+生成的操作比封装方法更底层；有封装方法时请优先使用封装方法。
+
+## 解析输出并收集流
+
+这些辅助方法仅在 TypeScript 和 Python 中提供。`responses.parse(request, schema)` 验证已完成的 JSON 响应。在 TypeScript 中，`schema` 是兼容 Zod 的解析器；在 Python 中，是一个 Pydantic 模型。同时还要在请求中设置结构化输出格式；解析器只负责验证。
+
+`collectStream(client.streamResponses(request))`（TypeScript），或 `collect_stream` 和 `collect_async_stream`（Python），会汇总流式输出的文本和用量。
+
+## 调用前检查模型
+
+`checkModelCapabilities` / `check_model_capabilities`（TypeScript 和 Python）会针对一个活跃的提供商报价，检查其公布的能力和标量约束（`inputTypes`、`outputTypes`、`endpoints`、`parameters`、`parameterValues`，Python 中为对应的 snake_case 名称）。它从不更换模型或丢弃参数，也无法保证实时提供商一定会接受请求。缺少元数据时处理方式不同：TypeScript 将其报告为未知，Python 则判定检查失败。
+
+对于模型选择器和参数编辑器，请使用实时端点元数据：
+
+<CodeGroup>
+
+```typescript TypeScript
+const support = await client.models.checkParameters(
+  "anthropic/claude-haiku-4.5",
+  { temperature: 0.7, top_p: 0.9 },
+  { endpoint: "responses" },
+);
+```
+
+```python Python
+support = client.models.check_parameters(
+    "anthropic/claude-haiku-4.5",
+    {"temperature": 0.7, "top_p": 0.9},
+    endpoint="responses",
+)
+```
+
+</CodeGroup>
+
+每个参数都会返回 `supported`、`partial`、`unsupported` 或 `unknown`，并附带匹配的提供商路由和约束问题，你可以在界面中就地高亮显示。这些检查需要显式调用；它们不会给生成请求增加查询。[模型](./models#check-one-model)列出了每个 SDK 中的对应方法。
+
+## 不联网进行测试
+
+<Tabs>
+<Tab title="TypeScript">
+
+从 `@phaseo/sdk/testing` 导入 `createMockTransport` 和 `jobFixtures`，并把 mock 的 `fetchImpl` 传给客户端。fixture 是严格且有序的：意外的调用会在本地失败，永远不会到达网络。调用 `mock.assertDone()` 检查每个预期请求是否都已发生。
+
+</Tab>
+<Tab title="Python">
+
+把 `phaseo.testing.MockTransport(fixtures)` 传给 `httpx.Client` 或 `httpx.AsyncClient`，再把它作为 `http_client` 交给 Phaseo 客户端。意外的请求会在本地失败；调用 `assert_done()` 检查每个 fixture 是否都已被使用。`phaseo.testing.job_fixtures(path, job_id)` 为一个任务构建提交和轮询的 fixture。fixture 不会验证实时提供商的行为。
+
+</Tab>
+</Tabs>
+
+## 从房间导出代码
+
+在 Phaseo 房间中发送请求后，**获取代码** 会将其模型和设置导出为 TypeScript 或 Python，并且在有请求 ID 时，**查看请求** 会打开它的控制台追踪。请在设置了 `PHASEO_API_KEY` 的服务器上运行导出的代码。

@@ -1,87 +1,71 @@
 ---
-title: "संरचित आउटपुट और वेब खोज से शोध करें"
+title: "संरचित आउटपुट और वेब खोज के साथ शोध करें"
+sidebarTitle: "वेब खोज के साथ शोध ब्रीफ़"
 icon: "telescope"
-description: "वेब खोज पर आधारित ऐसा TypeScript एजेंट बनाएँ जो Agent SDK के ज़रिए सख्त JSON लौटाए।"
+description: "खोज पर आधारित TypeScript एजेंट बनाएँ जो Agent SDK के ज़रिए सख्त JSON लौटाए।"
 ---
 
-जब किसी एजेंट वर्कफ़्लो को यह करना हो, तब यह तरीका अपनाएँ:
+एक TypeScript एजेंट बनाएँ जो जवाब देने से पहले Phaseo के ज़रिए वेब पर खोजे, और स्रोतों के साथ शोध ब्रीफ़ सख्त JSON के रूप में लौटाए। अंत में आपके पास एक स्क्रिप्ट होगी जो आपके दिए किसी भी विषय के लिए सत्यापित `{ topic, summary, sources }` ऑब्जेक्ट प्रिंट करती है।
 
-- TypeScript Agent SDK से चलना
-- प्रबंधित वेब खोज पर निर्भर रहना
-- सख्त संरचित JSON लौटाना
-- लगभग सही लेकिन गलत फ़ॉर्मैट वाले JSON को नियतात्मक तरीके से रिकवर करना
+यह स्क्रिप्ट एक बार के शोध के लिए प्रोडक्शन के लिए तैयार है। खोज के नतीजे अविश्वसनीय वेब सामग्री हैं: नीचे की स्कीमा जाँच गलत रूप वाले आउटपुट को रोकती है, लेकिन उन पर अमल करने से पहले स्रोतों की समीक्षा करें। पैकेज किया गया संस्करण `packages/sdk/agent-sdk-ts/examples/research-brief-agent.ts` में है।
 
-## 1. SDK इंस्टॉल करें
+## इसे बनाएँ
+
+<Steps>
+<Step title="इंस्टॉल करें">
 
 <CodeGroup>
 ```bash npm
-npm install @phaseo/sdk @phaseo/agent-sdk
+npm install @phaseo/agent-sdk zod
 ```
 
 ```bash pnpm
-pnpm add @phaseo/sdk @phaseo/agent-sdk
+pnpm add @phaseo/agent-sdk zod
 ```
 
 ```bash yarn
-yarn add @phaseo/sdk @phaseo/agent-sdk
+yarn add @phaseo/agent-sdk zod
 ```
 
 ```bash bun
-bun add @phaseo/sdk @phaseo/agent-sdk
+bun add @phaseo/agent-sdk zod
 ```
 </CodeGroup>
 
-## 2. एक सीमित आउटपुट अनुबंध तय करें
-
-शोध का पहला आउटपुट इतना छोटा रखें कि ऑपरेटर उसे लॉग में आसानी से जाँच सकें।
-
-```ts
-type ResearchBrief = {
-  topic: string;
-  summary: string;
-  sources: Array<{
-    title: string;
-    url: string;
-  }>;
-};
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
 ```
 
-## 3. एजेंट बनाएँ
+</Step>
+<Step title="एजेंट लिखें">
 
-`parseOutput` इस्तेमाल करें ताकि रनटाइम कच्चे टेक्स्ट के बजाय प्रकारयुक्त डेटा लौटाए।
+```ts research-agent.ts
+import { z } from "zod";
+import { createAgent, createGatewayAgentClient } from "@phaseo/agent-sdk";
 
-```ts
-import { createAgent } from "@phaseo/agent-sdk";
+// इतना छोटा कि एक लॉग लाइन में पढ़ा जा सके।
+const ResearchBrief = z
+  .object({
+    topic: z.string(),
+    summary: z.string().min(1),
+    sources: z.array(z.object({ title: z.string(), url: z.string().url() }).strict()).min(1),
+  })
+  .strict();
+type ResearchBrief = z.infer<typeof ResearchBrief>;
 
-export const researchBriefAgent = createAgent<string, ResearchBrief>({
+const researchBriefAgent = createAgent<string, ResearchBrief>({
   id: "research-brief-agent",
-  model: "phaseo/free",
+  model: "openai/gpt-6-astra",
   instructions:
-    "Research the user's topic with web search when needed and return a concise JSON brief with cited sources.",
-  parseOutput(text) {
-    return JSON.parse(text) as ResearchBrief;
-  },
+    "Research the user's topic with web search and return a concise JSON brief with cited sources.",
+  maxSteps: 4,
+  parseOutput: (text) => JSON.parse(text),
+  outputSchema: ResearchBrief,
 });
-```
-
-## 4. Gateway से जुड़े एडाप्टर को एक बार कॉन्फ़िगर करें
-
-यह सबसे महत्वपूर्ण हिस्सा है:
-
-- `responseFormat` आउटपुट स्कीमा स्पष्ट रखता है
-- `plugins` लगभग सही JSON के लिए प्रतिक्रिया सुधार चालू करता है
-- `gatewayTools` मॉडल को प्रबंधित वेब खोज उपलब्ध कराता है
-- जब वर्कफ़्लो को हमेशा स्रोतों पर आधारित रहना हो, तो `toolChoice` खोज टूल को अनिवार्य करता है
-
-```ts
-import {
-  createGatewayAgentClient,
-} from "@phaseo/agent-sdk";
 
 const client = createGatewayAgentClient({
-  clientOptions: {
-    apiKey: process.env.PHASEO_API_KEY!,
-  },
+  clientOptions: { apiKey: process.env.PHASEO_API_KEY! },
+  // वह JSON Schema जो Gateway मॉडल से माँगता है।
   responseFormat: {
     type: "json_schema",
     name: "research_brief",
@@ -94,10 +78,7 @@ const client = createGatewayAgentClient({
           type: "array",
           items: {
             type: "object",
-            properties: {
-              title: { type: "string" },
-              url: { type: "string" },
-            },
+            properties: { title: { type: "string" }, url: { type: "string" } },
             required: ["title", "url"],
             additionalProperties: false,
           },
@@ -108,18 +89,15 @@ const client = createGatewayAgentClient({
       additionalProperties: false,
     },
   },
+  // लगभग-सही JSON की मरम्मत करें।
   plugins: [{ id: "response-healing" }],
-  gatewayTools: [
-    { type: "phaseo:web_search", parameters: { max_results: 5 } },
-  ],
+  // खोज Phaseo चलाता है; क्वेरी मॉडल लिखता है।
+  gatewayTools: [{ type: "phaseo:web_search", parameters: { max_results: 5 } }],
+  // जवाब देने से पहले हमेशा खोजें।
   toolChoice: "phaseo:web_search",
   webSearchOptions: { search_context_size: "high" },
 });
-```
 
-## 5. वर्कफ़्लो चलाएँ
-
-```ts
 const result = await researchBriefAgent.run({
   input: "Summarize the latest browser automation support patterns for coding agents.",
   client,
@@ -131,33 +109,34 @@ const result = await researchBriefAgent.run({
 console.log(result.output);
 ```
 
-## 6. लॉग में क्या जाँचें
+| क्लाइंट विकल्प | क्या करता है |
+| --- | --- |
+| `responseFormat` | आउटपुट स्कीमा को स्पष्ट रखता है |
+| `plugins` | लगभग-सही JSON के लिए [response healing](./response-healing-for-structured-json) |
+| `gatewayTools` | `phaseo:web_search` जोड़ता है; [वेब खोज गाइड](../guides/server-tools/web-search) में इसके पैरामीटर हैं |
+| `toolChoice` | ऐसे वर्कफ़्लो के लिए खोज ज़रूरी बनाता है जिसे हमेशा खुद को स्रोतों पर आधारित करना है |
+| `webSearchOptions` | उन इंजनों के लिए खोज सेटिंग जो अपने नतीजों का आकार तय करते हैं |
 
-एक सफल रन के बाद अनुरोध विवरण खोलें और पुष्टि करें:
+</Step>
+<Step title="इसे चलाएँ">
 
-- `requested native web search tools` या प्रबंधित खोज गतिविधि मौजूद है
-- खोज परिणाम और उद्धरण सहेजे गए हैं
-- प्लगइन निष्पादन में `response-healing` तभी दिखता है जब रिकवरी की ज़रूरत पड़ी हो
-- अंतिम आउटपुट आपके माँगे गए JSON स्कीमा से मेल खाता है
+```bash
+npx tsx research-agent.ts
+```
 
-## 7. यह तरीका कब इस्तेमाल करें
+</Step>
+</Steps>
 
-यह तरीका तब अपनाएँ जब:
+## जाँचें कि यह काम किया
 
-- वर्कफ़्लो मुख्य रूप से एक बार का शोध हो, न कि स्थानीय टूल का गहरा लूप
-- जवाब देने से पहले मॉडल को स्रोत देखने चाहिए
-- आगे के कॉलर को गद्य के बजाय प्रकारयुक्त JSON चाहिए
+स्क्रिप्ट कम से कम एक स्रोत URL वाला ब्रीफ़ प्रिंट करती है। फिर **सेटिंग → उपयोग → लॉग्स** में अनुरोध खोलें और जाँचें:
 
-यह तरीका तब न अपनाएँ जब:
+- **वेब खोज की निगरानी** में प्रबंधित खोजें, नतीजे और उद्धरण दिखते हैं।
+- प्लगइन रिकॉर्ड `response-healing` को `applied` सिर्फ़ तब दिखाता है जब JSON की मरम्मत की ज़रूरत पड़ी हो।
+- प्रतिक्रिया स्कीमा से मेल खाती थी; मेल न खाने पर रन `AgentSchemaValidationError` के साथ विफल हो जाता।
 
-- वर्कफ़्लो को सटीक URL पहले से पता हों और `phaseo:web_fetch` पर्याप्त हो
-- एजेंट को अपस्ट्रीम प्रदाता के नेटिव टूल से ज़्यादा समृद्ध स्थानीय टूल चाहिए
-- आउटपुट अनुबंध इतना ढीला हो कि सख्त JSON से मिलने वाले लाभ से ज़्यादा काम बढ़े
+जिन मामलों में कोई खोज नहीं चली, उनके लिए [वेब खोज डीबग करें](./web-search-debugging) देखें।
 
-## संबंधित गाइड
+## कब कुछ और इस्तेमाल करें
 
-- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
-- [संरचित आउटपुट](../guides/structured-outputs.mdx)
-- [संरचित आउटपुट सत्यापित करें](../guides/structured-outputs.mdx)
-- [वेब खोज अनुरोध डीबग करें](./web-search-debugging.mdx)
-- [गलत फ़ॉर्मैट वाले संरचित JSON को रिकवर करें](./response-healing-for-structured-json.mdx)
+यह तरीका एक बार के ऐसे शोध के लिए सही है जहाँ मॉडल को खुद को स्रोतों पर आधारित करना हो और कॉल करने वालों को टाइप किया हुआ JSON चाहिए। जब आपको URL पहले से पता हों, तो [`phaseo:web_fetch`](./tool-grounding-with-web-fetch) इस्तेमाल करें; जब काम को वेब से ज़्यादा आपके अपने डेटा की ज़रूरत हो, तो [स्थानीय-टूल एजेंट](./agent-sdk-durable-loop); और जब अनुबंध इतना ढीला हो कि स्कीमा जितना बचाता है उससे ज़्यादा काम जोड़ता है, तो सादा टेक्स्ट आउटपुट।

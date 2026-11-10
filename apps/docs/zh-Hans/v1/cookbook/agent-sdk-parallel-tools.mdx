@@ -4,101 +4,132 @@ icon: "network"
 description: "在 TypeScript Agent SDK 中限制本地工具并发数，让模型在一个轮次内收集互不依赖的信息，无需将每个工具调用串行执行。"
 ---
 
-当一个智能体轮次可以安全地调用多个互不依赖的本地工具，并且你希望运行时并发执行、同时保留确定的结果顺序时，请使用此方案。
+设置 `toolExecution.toolConcurrency`，让 TypeScript Agent SDK 同时运行同一模型轮次中的多个独立工具调用，而不是逐个运行。完成后，你会得到一个智能体：它并行收集文档、状态和事故信息，同时仍按模型请求的顺序记录结果。
 
-## 适用场景
+这些工具返回固定的示例数据，因此该脚本仅作演示；请将它们替换为你自己的只读查询。打包好的版本位于 `packages/sdk/agent-sdk-ts/examples/parallel-tool-agent.ts`。
 
-在以下情况下使用 `toolExecution.toolConcurrency`：
+## 构建
 
-- 模型可在一个轮次中发出多个本地工具调用
-- 这些工具的输出互不依赖
-- 串行执行会浪费工作线程时间
-- 仍希望保存的工具结果消息保持原始调用顺序
+<Steps>
+<Step title="安装">
 
-如果某个工具会修改共享状态，或后续工具依赖前面工具的结果，请勿设置过高的并发数。
+```bash
+npm install @phaseo/agent-sdk zod
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
 
-## 示例
+</Step>
+<Step title="编写智能体">
 
-```ts
-import {
-  createAgent,
-  createGatewayAgentClient,
-  defineTool,
-} from "@phaseo/agent-sdk";
+```ts parallel-agent.ts
+import { z } from "zod";
+import { createAgent, createGatewayAgentClient, defineTool } from "@phaseo/agent-sdk";
 
 const fetchDocs = defineTool({
   id: "fetch-docs",
-  async execute(input: { slug: string }) {
-    return {
-      slug: input.slug,
-      summary: `Docs summary for ${input.slug}`,
-    };
+  description: "Return a short summary of one Phaseo docs page by slug.",
+  parameters: {
+    type: "object",
+    properties: { slug: { type: "string" } },
+    required: ["slug"],
+    additionalProperties: false,
+  },
+  inputSchema: z.object({ slug: z.string().regex(/^[a-z0-9/-]{1,80}$/) }).strict(),
+  parallelSafe: true,
+  timeoutMs: 5_000,
+  async execute({ slug }) {
+    return { slug, summary: `Docs summary for ${slug}` };
   },
 });
 
 const fetchStatus = defineTool({
   id: "fetch-status",
-  async execute(input: { component: string }) {
-    return {
-      component: input.component,
-      status: "operational",
-    };
+  description: "Return the status of one Phaseo component.",
+  parameters: {
+    type: "object",
+    properties: { component: { type: "string", enum: ["gateway", "dashboard", "async-jobs"] } },
+    required: ["component"],
+    additionalProperties: false,
+  },
+  inputSchema: z.object({ component: z.enum(["gateway", "dashboard", "async-jobs"]) }).strict(),
+  parallelSafe: true,
+  timeoutMs: 5_000,
+  async execute({ component }) {
+    return { component, status: "operational" };
   },
 });
 
 const fetchIncidents = defineTool({
   id: "fetch-incidents",
-  async execute(input: { service: string }) {
-    return {
-      service: input.service,
-      openIncidents: 0,
-    };
+  description: "Return the open incident count for one service.",
+  parameters: {
+    type: "object",
+    properties: { service: { type: "string", enum: ["gateway", "dashboard", "async-jobs"] } },
+    required: ["service"],
+    additionalProperties: false,
+  },
+  inputSchema: z.object({ service: z.enum(["gateway", "dashboard", "async-jobs"]) }).strict(),
+  parallelSafe: true,
+  timeoutMs: 5_000,
+  async execute({ service }) {
+    return { service, openIncidents: 0 };
   },
 });
 
 const agent = createAgent({
   id: "parallel-tool-agent",
-  model: "phaseo/free",
+  model: "openai/gpt-6-astra",
   instructions:
     "Use the available tools to gather context, then return one concise operational summary.",
   tools: [fetchDocs, fetchStatus, fetchIncidents],
-  toolExecution: {
-    toolConcurrency: 3,
-  },
+  toolExecution: { toolConcurrency: 3 },
+  maxSteps: 4,
 });
 
 const result = await agent.run({
   input:
-    "Fetch the presets docs, the gateway status component, and the async-jobs incident digest, then summarize the current state.",
+    "Fetch the presets docs, the gateway status, and the async-jobs incident digest, then summarize the current state.",
   client: createGatewayAgentClient({
-    clientOptions: {
-      apiKey: process.env.PHASEO_API_KEY!,
-    },
+    clientOptions: { apiKey: process.env.PHASEO_API_KEY! },
+    parallelToolCalls: true,
   }),
+  onEvent(event) {
+    if (event.type === "tool.started" || event.type === "tool.completed") {
+      console.log(event.type, event.toolName, event.timestamp);
+    }
+  },
 });
+
+console.log(result.output);
 ```
 
-请参阅以下打包示例： `packages/sdk/agent-sdk-ts/examples/parallel-tool-agent.ts`.
+</Step>
+<Step title="运行">
 
-## 运行时保证
+```bash
+npx tsx parallel-agent.ts
+```
 
-- 本地工具可并发执行，数量不超过配置的 `toolConcurrency`
-- 每个工具仍会触发 `tool.started` 和 `tool.completed` 事件
-- 已保存的工具结果消息仍保持原始调用顺序
-- 工具阶段完成后仍会创建检查点
-- `timeoutMs` 超时仍分别应用于每个工具
+</Step>
+</Steps>
 
-## 操作建议
+## 检查是否成功
 
-- 从较小的并发值开始，例如 `2` 或 `3`
-- 确保本地工具幂等且副作用较少
-- 设置 `timeoutMs`，避免一个依赖卡住并占用所有工作线程
-- 仅当应用确实需要恢复运行或远程协调时才添加 `store`
+- 当模型在一个轮次中请求全部三个工具时，三行 `tool.started` 会在对应的 `tool.completed` 之前打印，且时间戳相近。
+- 无论工具按什么顺序完成，`result.messages` 都会按模型工具调用的顺序列出工具结果。
+- 运行结束时，`result.output` 中会有一段摘要。
 
-## 验证
+## 哪些调用会一起运行
 
-启用此模式后：
+| 设置 | 效果 |
+| --- | --- |
+| `toolExecution.toolConcurrency` | 同一轮次中最多同时运行这么多个工具调用。默认值为 `1`。 |
+| 该轮次中每个工具都设置 `parallelSafe: true` | 最多同时运行 8 个；如果 `toolConcurrency` 更高，则按 `toolConcurrency`。只对只读工具使用。 |
+| 工具上的 `timeoutMs` | 调用超过此时长即失败，因此一个卡住的依赖不会占满所有槽位。 |
+| Gateway 客户端上的 `parallelToolCalls` | 允许模型在一个轮次中请求多个工具调用；模型是否这样做取决于模型本身。 |
 
-- 运行涵盖多工具轮次的智能体循环测试
-- 确认工作流仍按顺序生成工具结果消息
-- 确认操作日志仍包含预期的 `tool.started` 和 `tool.completed` 事件
+每次调用仍会触发 `tool.started` 和 `tool.completed`，工具阶段结束后，运行会保存一次检查点。
+
+## 保持安全
+
+只对不依赖彼此输出、也不更改共享状态的工具使用并发。从 `2` 或 `3` 开始，让工具保持幂等、副作用少，并像上面那样用 `inputSchema` 验证每个参数。只有在需要恢复运行时，才像[持久化循环](./agent-sdk-durable-loop)中那样添加 `state` 访问器。在依赖并发之前，运行覆盖多工具轮次的测试，并检查结果顺序。

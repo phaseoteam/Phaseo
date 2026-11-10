@@ -148,12 +148,14 @@ describe("validateProviderDocsCompliance", () => {
 		});
 	});
 
-	it("rejects a forced tool choice for Sonnet 5.5, Fable 5.1 and Mythos 5.1 with a clear 400", async () => {
+	it("rejects a forced tool choice for Sonnet 5.5 and Fable and Mythos 5.1 and 5.2 with a clear 400", async () => {
 		const tools = [{ name: "get_weather", input_schema: { type: "object", properties: {} } }];
 		for (const [model, label] of [
 			["anthropic/claude-sonnet-5.5", "Sonnet 5.5"],
 			["anthropic/claude-fable-5.1", "Fable 5.1"],
 			["anthropic/claude-mythos-5.1", "Mythos 5.1"],
+			["anthropic/claude-fable-5.2", "Fable 5.2"],
+			["anthropic/claude-mythos-5.2", "Mythos 5.2"],
 		]) {
 			for (const toolChoice of [{ type: "any" }, { type: "tool", name: "get_weather" }]) {
 				const result = validateProviderDocsCompliance({

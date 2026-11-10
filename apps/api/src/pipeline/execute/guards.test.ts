@@ -300,6 +300,33 @@ describe("guardAllFailed", () => {
 		expect(result.response.status).toBe(502);
 	});
 
+	it("never returns a JavaScript stack trace to the client", async () => {
+		const stack = "TypeError: Cannot read properties of undefined (reading 'choices')\n    at mapResponse (index.js:1234:56)\n    at async execute (index.js:99:1)";
+		const ctx: any = {
+			model: "openai/gpt-5-mini",
+			endpoint: "responses",
+			requestId: "req_stack",
+			attemptErrors: [{
+				provider: "openai",
+				type: "error",
+				upstream_error_message: "Cannot read properties of undefined (reading 'choices')",
+				upstream_error_description: stack,
+				message: stack,
+			}],
+		};
+		const result = await guardAllFailed(ctx, makeTiming());
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		const payload = await result.response.json();
+		const text = JSON.stringify(payload);
+		expect(text).not.toContain("index.js");
+		expect(text).not.toMatch(/\bat mapResponse\b/);
+		expect(payload.failure_sample[0]).toMatchObject({
+			provider: "openai",
+			upstream_error_message: "Cannot read properties of undefined (reading 'choices')",
+		});
+	});
+
 	it("summarizes multi-provider failures in the description", async () => {
 		const ctx: any = {
 			model: "xiaomi/mimo-v2-tts:free",

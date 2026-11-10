@@ -1,31 +1,38 @@
 ---
 icon: "braces"
 title: "Strukturierte Ausgabe (AI SDK)"
-description: "Erzeuge schemageprüfte JSON-Objekte mit Phaseo und Vercel AI SDK."
+sidebarTitle: "Strukturierte Ausgabe"
+description: "Erzeuge schemavalidierte JSON-Objekte mit Phaseo und Vercel AI SDK."
 ---
 
-Verwende `generateObject` für typisierte Ausgaben.
+Übergib `output: Output.object({ schema })` an `generateText`, um ein typisiertes Objekt zu erhalten, das deinem Schema entspricht. Das AI SDK sendet das Schema als JSON-Schema-Antwortformat und validiert das Ergebnis.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { z } from "zod";
 
-const { object } = await generateObject({
-  model: phaseo("openai/gpt-5-nano"),
-  schema: z.object({
-    title: z.string(),
-    priority: z.enum(["low", "medium", "high"]),
-    actions: z.array(z.string()),
+const { output } = await generateText({
+  model: phaseo("openai/gpt-6-astra"),
+  output: Output.object({
+    schema: z.object({
+      title: z.string(),
+      priority: z.enum(["low", "medium", "high"]),
+      actions: z.array(z.string()),
+    }),
   }),
   prompt: "Create a short incident follow-up plan.",
 });
 
-console.log(object);
+console.log(output);
 ```
 
-## Hinweise
+`generateObject` funktioniert in AI SDK 7 weiterhin mit demselben `schema` und gibt `object` zurück, ist aber zugunsten von `generateText` mit `output` veraltet.
 
-- Bevorzuge explizite Enums und Pflichtfelder in Schemas.
-- Stimme Prompts auf die Struktur des Schemas ab.
-- Behandle Parsing- und Validierungsfehler im aufrufenden Code.
+## Ungültige Ausgabe behandeln
+
+Das Lesen von `output` wirft `NoOutputGeneratedError`, wenn das Modell kein verwendbares Objekt zurückgibt, zum Beispiel wenn der letzte Schritt mit einem Tool-Aufruf endete. Fange den Fehler dort ab, wo du das Modell aufrufst.
+
+- Verwende explizite Enums und Pflichtfelder im Schema.
+- Halte den Prompt konsistent mit der Form des Schemas.
+- Die Unterstützung für Ausgabe nach JSON Schema unterscheidet sich je nach Modell; prüfe die unterstützten Parameter des Modells in `/v1/models`.

@@ -1,4 +1,4 @@
-import { appendQuery, flagBool, flagNumber, flagString, parseCsvFlag, parseJsonFlag, type Flags } from "./flags.js";
+import { appendQuery, flagBool, flagNumber, flagString, parseCsvFlag, parseJsonFlag, resolveWorkspaceFlag, type Flags } from "./flags.js";
 import { sanitizeTerminalText } from "./output.js";
 
 // Dedicated commands for the /v1 management routes. Each entry maps CLI
@@ -482,12 +482,12 @@ const COMMANDS: Record<string, CommandSpec> = {
 		base: "/rate-limits/assignments",
 		noun: "rate limit assignment",
 		label: "Rate limit assignment id",
-		listUsage: `[--policy <id>] [--target-type key|member|department|guardrail|end_user_default] ${PAGE}`,
+		listUsage: `[--policy <id>] [--target-type key|member|department|end_user_default] ${PAGE}`,
 		listBuild: (_args, flags) => ({
 			method: "GET",
 			path: appendQuery("/rate-limits/assignments", { policy_id: flagString(flags, "policy"), target_type: flagString(flags, "target-type"), ...pageQuery(flags) }),
 		}),
-		createUsage: "--policy <id> --target-type key|member|department|guardrail|end_user_default [--target <id>]",
+		createUsage: "--policy <id> --target-type key|member|department|end_user_default [--target <id>]",
 		updateUsage: "--policy <id>",
 		create: (flags) => ({
 			policy_id: required(flagString(flags, "policy"), "policy"),
@@ -532,7 +532,7 @@ const COMMANDS: Record<string, CommandSpec> = {
 	"notifications settings get": { usage: "", output: "detail", build: () => ({ method: "GET", path: "/notifications/settings" }) },
 	"notifications settings update": {
 		usage: "[--auto-top-up true|false] [--auto-top-up-threshold-usd <usd>] [--auto-top-up-amount-usd <usd>] [--payment-method <id>] [--low-balance-email true|false] [--low-balance-threshold-usd <usd>] [--auto-top-up-failure-email true|false] [--payment-method-expiring-email true|false] [--model-deprecation-email true|false] [--department-attribution all|primary] [--billing-time-zone <tz>] [--body-json <json>]",
-		description: "Enabling auto top-up needs --auto-top-up-threshold-usd, --auto-top-up-amount-usd (at least 1) and --payment-method in the same call.",
+		description: "Enabling auto top-up needs --auto-top-up-threshold-usd, --auto-top-up-amount-usd (5 to 1,000,000) and --payment-method in the same call.",
 		output: "action",
 		done: "Updated notification settings",
 		build: (_args, flags) => {
@@ -947,14 +947,16 @@ const COMMANDS: Record<string, CommandSpec> = {
 	})),
 
 	"keys rotate": {
-		usage: "<id> [--previous-key-expires-at <iso>] [--show-secret] [--yes]",
-		description: "Create a replacement key with the same settings. The old key keeps working until --previous-key-expires-at, if given. The new secret is shown once.",
+		usage: "<id> [--workspace <id-or-slug>] [--previous-key-expires-at <iso>] [--show-secret] [--yes]",
+		description: "Create a replacement key with the same settings. The old key keeps working until --previous-key-expires-at, if given. The new secret is shown once. --workspace names another workspace where you are an owner or admin.",
 		output: "action",
 		done: "Rotated API key",
 		confirm: (args) => `This creates a replacement for API key ${args[0]} and shows its secret once; the old key stops working at --previous-key-expires-at if you set it.`,
-		build: (args, flags) => ({
+		build: async (args, flags, input) => ({
 			method: "POST",
-			path: `/keys/${id(arg(args, 0, "Key id"))}/rotate`,
+			path: appendQuery(`/keys/${id(arg(args, 0, "Key id"))}/rotate`, {
+				workspace_id: await resolveWorkspaceFlag(flags, async () => (await input.request?.("/me", { method: "GET" }))?.data?.workspaces ?? []),
+			}),
 			body: bodyFromFlags(flags, [["previous-key-expires-at", "previous_key_expires_at"]]),
 		}),
 	},

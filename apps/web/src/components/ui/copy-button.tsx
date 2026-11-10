@@ -1,4 +1,3 @@
-"use client";
 import * as React from "react";
 import { AnimatePresence, HTMLMotionProps, motion } from "motion/react";
 import { CheckIcon, CopyIcon } from "lucide-react";

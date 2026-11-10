@@ -4,22 +4,25 @@ sidebarTitle: "获取生成记录"
 badge: "Beta"
 openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml GET /generations"
 ---
-获取属于你团队的指定 `request_id` 的已存储审计记录。
 
-新请求会获得服务器生成的 `G-` 生成 ID，通过 `x-request-id` 响应标头和生成响应返回。请使用此 ID 查询请求日志、查找生成记录及联系支持。客户端提供的 `x-request-id` 不会替换生成 ID。历史日志的 UUID 标识符仍可用于查询。
+调用 `GET /v1/generations?id=<request_id>`，获取你工作区中某个请求已存储的审计记录。它需要 `generations:read` 范围；缺少 `id` 会返回 `400` `missing_id`。
 
-使用：
-- `GET /v1/generations?id=<request_id>`
+新请求会获得服务器生成的 `G-` 生成 ID，通过 `x-request-id` 响应标头和生成响应返回。请使用此 ID 查询请求日志、查找生成记录和联系支持。调用方提供的 `x-request-id` 不会替换生成 ID。旧的 UUID 日志 ID 仍可用于查找。
 
-如果网关捕获了该生成请求的完整详细信息，响应还会包含：
+## 重放请求
 
-- `replay_supported`：指示是否存在可用于重放的载荷
-- `replay_request`：已存储的请求正文，可发送回原始端点以受控地重新运行
+每个响应都包含 `replay_supported`。当 I/O 日志存储了请求正文，且你有权读取存储的内容时，`replay_supported` 为 `true`，`replay_request` 中保存着可发回以受控重新运行的正文：
 
-典型的重放流程：
+<Steps>
+  <Step title="读取生成记录">
+    调用 `GET /v1/generations?id=<request_id>`。
+  </Step>
+  <Step title="确认可以重放">
+    只有在 `replay_supported` 为 `true` 时才继续。
+  </Step>
+  <Step title="再次发送">
+    将 `replay_request` 发送到 `endpoint` 中指定的端点，例如 `/v1/chat/completions` 或 `/v1/responses`。
+  </Step>
+</Steps>
 
-1. 使用 `GET /v1/generations?id=<request_id>` 读取生成记录。
-2. 检查 `replay_supported === true`。
-3. 将 `replay_request` 重新提交到 `endpoint` 指定的原始端点，例如 `/v1/chat/completions` 或 `/v1/responses`。
-
-
+工作区可以将存储的内容限制为仅所有者和管理员可见。此时其他调用方（包括成员创建的 API 密钥）会得到 `replay_request: null`，以及不含内容的请求详情。

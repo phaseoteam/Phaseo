@@ -20,6 +20,7 @@ import {
 import {
 	isResponse,
 	internalServerError,
+	rejectThirdPartyOAuthSpendingChange,
 	requireCapability,
 	requireJsonBody,
 	requireOAuthWorkspaceRole,
@@ -141,6 +142,12 @@ async function authenticate(req: Request, write = false, auditConsentDenials = f
 	if (roleError) {
 		if (auditConsentDenials) await auditConsentDenial(auth.value, "insufficient_workspace_role");
 		return roleError;
+	}
+	// Data contribution shares request content, so an app that signs in with Phaseo must not turn it on or change it.
+	const appError = write ? rejectThirdPartyOAuthSpendingChange(auth.value, "Apps that use Sign in with Phaseo can't change data contribution, because it shares request content. The person can change it under Settings, Privacy.") : null;
+	if (appError) {
+		if (auditConsentDenials) await auditConsentDenial(auth.value, "third_party_app");
+		return appError;
 	}
 	return requireAdminPreview({ ok: true, ...auth.value }, auditConsentDenials);
 }

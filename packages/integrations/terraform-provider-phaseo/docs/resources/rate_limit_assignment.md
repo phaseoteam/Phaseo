@@ -26,11 +26,11 @@ Each key, member, department and guardrail can have one policy. A department's p
 ### Required
 
 - `policy_id` (String) The policy to apply. Changing it switches the target to another policy in place.
-- `target_type` (String) `key`, `member`, `department`, `guardrail` or `end_user_default`. Changing it replaces the assignment.
+- `target_type` (String) `key`, `member`, `department` or `end_user_default`. Changing it replaces the assignment.
 
 ### Optional
 
-- `target_id` (String) The key, user, department or guardrail ID. Omit it for `end_user_default`. Changing it replaces the assignment.
+- `target_id` (String) The key, user or department ID. Omit it for `end_user_default`. Changing it replaces the assignment.
 
 ### Read-only
 

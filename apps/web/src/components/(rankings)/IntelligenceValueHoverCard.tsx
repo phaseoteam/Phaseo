@@ -3,7 +3,7 @@ import { Logo } from "@/components/Logo";
 import { HoverCardContent } from "@/components/ui/hover-card";
 import { artificialAnalysisValueLabel, formatArtificialAnalysisValue, formatArtificialAnalysisScore } from "@/lib/benchmarks/artificialAnalysis";
 import type { PublicIntelligenceValueEntry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { localizedBenchmarkConfiguration } from "@/i18n/benchmark-display";
 
 export function IntelligenceValueHoverCard({ entry, total }: { entry: PublicIntelligenceValueEntry; total: number }) {

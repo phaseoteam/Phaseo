@@ -1,14 +1,12 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import ConfigurableLogTable from "./ConfigurableLogTable";
 import { SESSION_COLUMNS } from "./logColumns";
 import { getSessionPrimary } from "./sessionPrimary";
-import dynamic from "next/dynamic";
-import Link from "next/link";
+import dynamic from "@/lib/dynamic";
+import Link from "@/components/link";
 import {
 	fetchAppMetadata,
 	fetchModelMetadata,
@@ -20,12 +18,12 @@ import {
 	fetchSessionRollups,
 	type SessionRequestRow,
 	type SessionRollupRow,
-} from "@/app/(dashboard)/gateway/usage/server-actions";
+} from "@/features/gateway/usage/server-actions";
 import { Logo } from "@/components/Logo";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
-import { useSearchParams } from "next/navigation";
+import { useSearchParams } from "@/lib/navigation";
 import { buildOpenRequestInChatHref } from "@/components/(chat)/chatMessageMetadata";
 import { normalizeLogReplayEndpoint } from "@/lib/chat/logReplay";
 import { CopyButton } from "@/components/ui/copy-button";
@@ -1027,14 +1025,14 @@ export default function SessionsPanel({
 		return (async () => {
 			setIsRefreshing(true);
 			try {
-				const nextSessions = await fetchSessionRollups({
+				const nextSessions = await fetchSessionRollups({ data: {
 					timeRange,
 					limit: refreshLimit,
 					appId: appFilter,
 					modelId: modelFilter,
 					provider: providerFilter,
 					sessionId: sessionFilter,
-				});
+				} });
 				setSessions(nextSessions);
 
 				const missingAppIds = collectSessionAppIds(nextSessions).filter(
@@ -1053,16 +1051,16 @@ export default function SessionsPanel({
 				const [nextAppMetadata, nextModelMetadata, nextProviderNames, nextProviderMetadata] =
 					await Promise.all([
 						missingAppIds.length > 0
-							? fetchAppMetadata(missingAppIds)
+							? fetchAppMetadata({ data: missingAppIds })
 							: Promise.resolve(new Map()),
 						missingModelIds.length > 0
-							? fetchModelMetadata(missingModelIds)
+							? fetchModelMetadata({ data: missingModelIds })
 							: Promise.resolve(new Map()),
 						missingProviderIds.length > 0
-							? fetchProviderNames(missingProviderIds)
+							? fetchProviderNames({ data: missingProviderIds })
 							: Promise.resolve(new Map()),
 						missingProviderMetadataIds.length > 0
-							? fetchProviderMetadata(missingProviderMetadataIds)
+							? fetchProviderMetadata({ data: missingProviderMetadataIds })
 							: Promise.resolve(new Map()),
 					]);
 
@@ -1110,10 +1108,10 @@ export default function SessionsPanel({
 			}
 			setSelectedRequests([]);
 			startLoadingDetail(async () => {
-				const requests = await fetchSessionRequests({
+				const requests = await fetchSessionRequests({ data: {
 					sessionId: session.session_id,
 					timeRange,
-				});
+				} });
 				detailCacheRef.current.set(cacheKey, requests);
 				setSelectedRequests(requests);
 
@@ -1151,20 +1149,20 @@ export default function SessionsPanel({
 				const [nextAppMetadata, nextModelMetadata, nextProviderNames, nextProviderMetadata] =
 					await Promise.all([
 						fetchAppMetadata(
-							requestAppIds.filter((appId) => !appMetadata.has(appId)),
+							{ data: requestAppIds.filter((appId) => !appMetadata.has(appId)) },
 						),
 						fetchModelMetadata(
-							requestModelIds.filter((modelId) => !modelMetadata.has(modelId)),
+							{ data: requestModelIds.filter((modelId) => !modelMetadata.has(modelId)) },
 						),
 						fetchProviderNames(
-							requestProviderIds.filter(
+							{ data: requestProviderIds.filter(
 								(providerId) => !providerNames.has(providerId),
-							),
+							) },
 						),
 						fetchProviderMetadata(
-							requestProviderIds.filter(
+							{ data: requestProviderIds.filter(
 								(providerId) => !providerMetadata.has(providerId),
-							),
+							) },
 						),
 					]);
 

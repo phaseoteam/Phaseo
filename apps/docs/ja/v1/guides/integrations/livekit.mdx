@@ -1,59 +1,62 @@
 ---
 title: "LiveKit"
 icon: "radio"
-description: "LiveKit AgentsでPhaseoのモデルを使います。"
+description: "LiveKit Agents で Phaseo のモデルを使います。"
 ---
 
-LiveKit AgentsはOpenAIプラグイン経由で、OpenAI互換のチャットエンドポイントを呼び出せます。プラグインをPhaseoに向けると、PhaseoのモデルIDとルーティングを使えます。
+LiveKit Agents の OpenAI プラグインの LLM を Phaseo のキーとともに `https://api.phaseo.app/v1` に向けると、音声エージェントが Phaseo のモデル ID とルーティングを使います。プラグインは Phaseo の Chat Completions エンドポイントを呼び出します。
 
-## Python
+## インストール
 
-```bash
+<CodeGroup>
+
+```bash Python
 uv add "livekit-agents[openai]"
 ```
 
-```python
+```bash Node.js
+pnpm add @livekit/agents @livekit/agents-plugin-openai
+```
+
+</CodeGroup>
+
+## エージェントの LLM を Phaseo に向ける
+
+<CodeGroup>
+
+```python Python
 import os
 from livekit.agents import AgentSession
 from livekit.plugins import openai
 
 session = AgentSession(
     llm=openai.LLM(
-        model="openai/gpt-5-nano",
+        model="openai/gpt-6-astra",
         api_key=os.environ["PHASEO_API_KEY"],
         base_url="https://api.phaseo.app/v1",
     ),
 )
 ```
 
-## Node.js
-
-```bash
-pnpm add @livekit/agents @livekit/agents-plugin-openai
-```
-
-```ts
+```ts Node.js
 import { voice } from "@livekit/agents";
 import * as openai from "@livekit/agents-plugin-openai";
 
 const session = new voice.AgentSession({
 	llm: new openai.LLM({
-		model: "openai/gpt-5-nano",
+		model: "openai/gpt-6-astra",
 		apiKey: process.env.PHASEO_API_KEY,
 		baseURL: "https://api.phaseo.app/v1",
 	}),
 });
 ```
 
-## 注意事項
+</CodeGroup>
 
-- カスタムエンドポイントにはOpenAI互換のChat Completionsモードを使います。
-- LiveKitのResponses専用OpenAIツールが、自動的にPhaseoサーバーツールになるわけではありません。
-- 選択したLiveKitインターフェースがそのモダリティ向けのOpenAI互換カスタムURLに対応していない限り、音声認識と音声合成は別々に設定します。
-- 音声の本番トラフィックを流す前に、中断処理、ツール呼び出し、ストリーミング遅延をテストします。
+セッションを開始して何か話しかけ、**設定 → 利用状況 → ログ**にリクエストが表示されることを確認します。
 
-## 関連項目
+## 既知の制限
 
-- [OpenAI SDK](./openai-sdk.mdx)
-- [ストリーミング](../streaming.mdx)
-- [ツール呼び出し](../tool-calling.mdx)
+- カスタムエンドポイントには、プラグインの Chat Completions モードを使います。LiveKit の Responses 専用の OpenAI ツールは、Phaseo のサーバーツールにはなりません。
+- ルーティングされるのは LLM だけです。使用する LiveKit のインターフェースがそのモダリティでカスタムの OpenAI 互換 URL を受け付ける場合を除き、音声認識と音声合成は別途設定してください。
+- 本番の音声トラフィックの前に、割り込みの処理、[ツール呼び出し](../tool-calling.mdx)、[ストリーミング](../streaming.mdx)のレイテンシをテストしてください。

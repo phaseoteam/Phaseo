@@ -1,7 +1,5 @@
-"use client";
-
 import React, { useMemo, useState } from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { Button } from "@/components/ui/button";
 import {
 	DropdownMenu,
@@ -13,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { MoreVertical, Copy, AtSign, Edit2, GitBranch, Trash2, Upload } from "lucide-react";
 import DeletePresetItem from "./DeletePresetItem";
 import { toast } from "sonner";
-import { applyPresetUpstreamVersionAction, publishPresetVersionAction } from "@/app/(dashboard)/settings/presets/actions";
+import { applyPresetUpstreamVersionAction, publishPresetVersionAction } from "@/features/settings/presets/actions";
 import {
 	Empty,
 	EmptyDescription,
@@ -21,7 +19,7 @@ import {
 	EmptyMedia,
 	EmptyTitle,
 } from "@/components/ui/empty";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 interface PresetsPanelProps {
@@ -63,12 +61,12 @@ export default function PresetsPanel({
 		const versionLabel = preset.versioning_method === "semver" ? window.prompt(t("strings.phraseSemanticVersionForExample120Or200Beta1" as never)) ?? undefined : undefined;
 		if (preset.versioning_method === "semver" && !versionLabel) return;
 		setPublishingPresetId(preset.id);
-		try { const result = await publishPresetVersionAction(preset.id, releaseNotes, versionLabel); toast.success(`${t("credits.Published" as never)} ${result.version?.version_label ?? `${t("credits.release" as never)} ${result.version?.version_number ?? t("credits.next" as never)}`}`); window.location.reload(); }
+		try { const result = await publishPresetVersionAction({ data: { id: preset.id, releaseNotes, versionLabel } }); toast.success(`${t("credits.Published" as never)} ${result.version?.version_label ?? `${t("credits.release" as never)} ${result.version?.version_number ?? t("credits.next" as never)}`}`); window.location.reload(); }
 		catch (error) { toast.error(localizedSettingsError(error, t, "Failed to publish version")); setPublishingPresetId(null); }
 	}
 
 	async function onApplyUpstream(id: string, versionId: string, versionNumber: number) {
-		try { await applyPresetUpstreamVersionAction(id, versionId); toast.success(`${t("credits.Upstream" as never)} v${versionNumber} ${t("credits.applied to your draft" as never)}`); window.location.reload(); }
+		try { await applyPresetUpstreamVersionAction({ data: { id, versionId } }); toast.success(`${t("credits.Upstream" as never)} v${versionNumber} ${t("credits.applied to your draft" as never)}`); window.location.reload(); }
 		catch (error) { toast.error(localizedSettingsError(error, t, "Failed to apply upstream update")); }
 	}
 

@@ -1,25 +1,25 @@
 ---
 title: "LlamaIndex"
 icon: "database"
-description: "Use o Phaseo em fluxos de trabalho RAG do LlamaIndex."
+description: "Use o Phaseo em fluxos de RAG do LlamaIndex."
 ---
 
-Use este guia quando quiser rotear a geração ou os embeddings de um app LlamaIndex pelo Phaseo.
+Crie um LLM `OpenAILike` com sua chave do Phaseo e `api_base="https://api.phaseo.app/v1"` e defina-o como padrão do LlamaIndex, para que a geração nos seus fluxos de RAG passe pelo Phaseo.
 
-## Instalar
+## Instale
 
 ```bash
 pip install llama-index llama-index-llms-openai-like llama-index-embeddings-openai-like
 ```
 
-## Configure um LLM compatível com OpenAI
+## Aponte o LlamaIndex para o Phaseo
 
 ```python
 import os
 from llama_index.llms.openai_like import OpenAILike
 
 llm = OpenAILike(
-    model="openai/gpt-5-nano",
+    model="openai/gpt-6-astra",
     api_key=os.environ["PHASEO_API_KEY"],
     api_base="https://api.phaseo.app/v1",
     is_chat_model=True,
@@ -29,6 +29,8 @@ response = llm.complete("Write one sentence about retrieval quality.")
 print(response)
 ```
 
+Se uma frase for impressa, a configuração funciona. `OpenAILike` é a classe do LlamaIndex para APIs de terceiros compatíveis com OpenAI.
+
 ## Use em um índice
 
 ```python
@@ -37,16 +39,9 @@ from llama_index.core import Settings
 Settings.llm = llm
 ```
 
-Em seguida, crie ou consulte o índice como de costume.
+Depois, crie ou consulte seu índice normalmente.
 
-## Observações
+## Limitações conhecidas
 
-- Use `OpenAILike` para APIs de terceiros compatíveis com OpenAI.
-- Mantenha explícitos os IDs dos modelos de geração e embeddings. Não presuma que os padrões do LlamaIndex apontem para o Phaseo.
-- Se usar embeddings do Phaseo, configure o modelo de embeddings com um ID de modelo do Phaseo e a mesma URL base.
-
-## Relacionados
-
-- [Embeddings](../../api-reference/endpoint/embeddings.mdx)
-- [Modelos](../../api-reference/endpoint/models.mdx)
-- [SDK da OpenAI](./openai-sdk.mdx)
+- Os padrões do LlamaIndex não apontam para o Phaseo. Defina explicitamente os modelos de geração e de embeddings.
+- Para [embeddings](../../api-reference/endpoint/embeddings.mdx) do Phaseo, configure o modelo de embeddings com um ID de modelo do Phaseo e a mesma URL base.

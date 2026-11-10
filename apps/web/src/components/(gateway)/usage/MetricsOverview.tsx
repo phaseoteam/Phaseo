@@ -1,7 +1,5 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { useQueryState } from "nuqs";
 import { Activity, Coins, Zap } from "lucide-react";
@@ -13,7 +11,7 @@ import {
 	ChartDataResult,
 	fetchModelMetadata,
 	fetchOrganizationColors,
-} from "@/app/(dashboard)/gateway/usage/server-actions";
+} from "@/features/gateway/usage/server-actions";
 
 interface MetricsOverviewProps {
 	timeRange: { from: string; to: string };
@@ -94,10 +92,10 @@ export default function MetricsOverview({
 				);
 				const [liveColors, liveMetadata] = await Promise.all([
 					missingColorModelIds.length > 0
-						? fetchOrganizationColors(missingColorModelIds)
+						? fetchOrganizationColors({ data: missingColorModelIds })
 						: Promise.resolve(new Map<string, string>()),
 					missingMetadataModelIds.length > 0
-						? fetchModelMetadata(missingMetadataModelIds)
+						? fetchModelMetadata({ data: missingMetadataModelIds })
 						: Promise.resolve(new Map()),
 				]);
 				if (liveColors.size > 0) {
@@ -129,11 +127,11 @@ export default function MetricsOverview({
 
 			setLoading(true);
 			try {
-				const data = await fetchChartData({
+				const data = await fetchChartData({ data: {
 					timeRange,
 					range,
 					keyFilter: normalizedKeyFilter,
-				});
+				} });
 				chartCacheRef.current.set(chartCacheKey, data);
 				setChartData(data);
 				await hydrateChartMetadata(data);

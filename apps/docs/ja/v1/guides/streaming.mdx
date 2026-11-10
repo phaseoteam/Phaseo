@@ -4,7 +4,11 @@ description: "増分出力を受け取り、エンドポイント固有のイベ
 icon: "radio"
 ---
 
-`stream: true`を設定するとServer-Sent Events（SSE）として出力を受け取れます。Phaseo APIキーはサーバーに保持し、出力をUIへ転送してください。
+import { StreamEventsExplorer } from "/snippets/stream-events.jsx";
+
+`stream: true` を設定すると、Gateway はモデルが書いている間、出力を Server-Sent Events（SSE）として送ります。ストリームが完了したといえるのは、正常な終了イベントが届いたときだけです。**再生** を押してストリームを見てから、**途中で失敗** に切り替えると、壊れたストリームがどう終わるかを確認できます。
+
+<StreamEventsExplorer locale="ja" />
 
 ## ストリーミングリクエストを送る
 
@@ -13,53 +17,50 @@ curl --no-buffer https://api.phaseo.app/v1/responses \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "input": "Say hello in one sentence.",
     "stream": true
   }'
 ```
 
-ストリームを読む前にHTTPステータスを確認します。開始前の失敗は通常の[JSONエラー応答](../api-reference/errors.mdx)を返します。
+本文を読む前に HTTP ステータスを確認してください。ストリーミングが始まる前に失敗したリクエストには、ストリームではなく通常の [JSON エラーレスポンス](../api-reference/errors.mdx)が返されます。Phaseo API キーはサーバーに保持し、そこからテキストを UI に転送してください。
 
 ## イベントを読む
 
-呼び出したエンドポイントのイベント形式を使ってください。
+エンドポイントごとにイベントの形式が異なります。
 
-| エンドポイント | 増分出力 | 完了 |
-| --- | --- | --- |
-| [Responses](../api-reference/endpoint/responses.mdx) | `response.output_text.delta`などのイベント | 最終応答イベントとその状態を確認 |
-| [Chat Completions](../api-reference/endpoint/chat-completions.mdx) | `choices[].delta` | `finish_reason`を確認。`[DONE]`でストリーム終了 |
-| [Messages](../api-reference/endpoint/anthropic-messages.mdx) | `message_start`, `content_block_delta`, および関連イベント | `message_stop` |
+| エンドポイント | テキストが届く場所 | 正常な終了 | 失敗による終了 |
+| --- | --- | --- | --- |
+| [Responses](../api-reference/endpoint/responses.mdx) | `response.output_text.delta` | `response.completed` | `response.failed` または `error` |
+| [Chat Completions](../api-reference/endpoint/chat-completions.mdx) | `choices[].delta` | `finish_reason` の後に `[DONE]` | `finish_reason` のない `error` フレーム |
+| [Messages](../api-reference/endpoint/anthropic-messages.mdx) | `content_block_delta` | `message_stop` | `message_stop` のない `error` イベント |
 
-SSEイベントは空行で区切られます。ネットワークチャンクはイベントの一部や複数イベントを含むため、各チャンクを独立したJSONとして解析しないでください。不完全なフレームをバッファリングするか、SDKのストリーミングヘルパーを使います。すべてのエンドポイントが`[DONE]`を送るとは限りません。
+イベントは空行で区切られますが、1 つのネットワークチャンクにはイベントの半分や複数のイベントが含まれることがあります。各イベントが揃うまでバッファリングしてから JSON として解析するか、これを自動で行う SDK のヘルパーを使ってください。
 
-SDKのヘルパーがストリーム転送を処理します。
+- TypeScript：`streamResponses()`、`streamChat()`、`streamMessages()`；Python：`stream_responses()`、`stream_chat()`、`stream_message()`（[使用ガイド](../sdk-reference/client/usage.mdx)）
+- Vercel AI SDK：`@phaseo/ai-sdk-provider` と `streamText()`
 
-- TypeScript: `streamResponses()`, `streamChat()`, `streamMessages()`.
-- Python: `stream_responses()`, `stream_chat()`, `stream_message()`.
-- Vercel AI SDK: `streamText()` を使って `@phaseo/ai-sdk-provider`.
-
-クライアントの設定は[TypeScript使用ガイド](../sdk-reference/typescript/usage.mdx)または[Python使用ガイド](../sdk-reference/python/usage.mdx)を参照してください。
+`[DONE]` を送るのは Chat Completions だけです。ほかのエンドポイントではこれを待たないでください。
 
 ## ツール呼び出しをストリーミングする
 
-Gatewayはツールを伴うストリーミングを受け付けますが、対応状況はモデルとプロバイダーに依存します。呼び出し完了まで引数の差分を蓄積し、実行前に解析、検証、認可を行ってください。部分的な引数を実行しないでください。
+ツール呼び出しは、テキストと同じように引数の差分として届きます。モデルがそれをストリーミングするかどうかは、モデルとプロバイダーによって異なります。呼び出しが完了するまで差分を集めてから、引数を解析、検証、認可してください。部分的な引数でツールを実行してはいけません。
 
-継続リクエストは[ツール呼び出しパターン](./tool-calling-patterns.mdx)、検証と承認の制御は[ツールの安全性](./tool-calling-safety.mdx)に従ってください。
+結果を返す方法は[ツール呼び出しのパターン](./tool-calling-patterns.mdx)を、検証と承認は[ツールの安全性](./tool-calling-safety.mdx)を参照してください。
 
-## キャンセルと復旧
+## ストリームをキャンセルする
 
-サーバー側HTTPクライアントに`AbortSignal`を渡し、ユーザーの停止や切断時にキャンセルします。処理に適した期限を設定してください。キャンセルしてもプロバイダーの即時停止や生成済み出力の無料化は保証されません。
+`AbortSignal`（または HTTP クライアントの同等の仕組み）を渡し、ユーザーが停止したり切断したりしたときに中止します。処理に合った期限を設定してください。キャンセルしても、プロバイダーがすぐに止まることや、すでに生成された出力が無料になることは保証されません。
 
-部分テキストは順次表示できますが、エンドポイントの正常な最終イベントを受け取ってから完了としてください。接続の切断だけでは完了を証明できません。
+## 中断したストリームから復旧する
 
-出力開始後にストリームが失敗すると、正常な最終イベントではなくエンドポイントの失敗イベントで終わります。Chat Completions では `error` フレーム（`finish_reason` なし）、Responses では `response.failed` または `error`、Messages では `error` イベント（`message_stop` なし）です。失敗したストリームの部分出力は Phaseo では課金されません。
+テキストが始まった後にストリームが失敗すると、正常な終了イベントではなく、上の表にある失敗のイベントで終わります。接続が閉じただけでは、回答が完了したことにはなりません。失敗したストリームの部分的な出力は、Phaseo では課金されません。
 
-その場合：
+その場合は次のようにします。
 
-1. 部分応答を中断として記録します。
-2. リクエストまたは生成ID、エンドポイント、モデルをログに残します。
-3. 明示的な再試行を提示します。新しいリクエストは異なる出力と追加料金を生じる場合があります。
-4. 実行済みツールの再実行や、部分出力への再試行応答の自動追加をしないでください。
+1. 部分的なテキストは画面に残し、中断されたことを示します。
+2. リクエスト ID または生成 ID、エンドポイント、モデルをログに残します。
+3. 再試行を提示します。新しいリクエストは異なるテキストを返すことがあり、改めて課金されます。
+4. すでに実行したツールを再実行したり、再試行した回答を部分的な回答に付け足したりしないでください。
 
-出力開始前の失敗には回数を制限した再試行を行い、[レート制限ヘッダー](../api-reference/limits.mdx)に従います。表示前に出力全体の検証が必要な場合は、非ストリーミングリクエストかサーバーでの結果バッファリングを使ってください。
+テキストが届く前の失敗は、バックオフを入れて再試行し、[レート制限ヘッダー](../api-reference/limits.mdx)に従ってください。誰かが見る前に回答全体を検証する必要がある場合は、ストリーミングしないリクエストを使うか、サーバーでストリームをバッファリングしてください。

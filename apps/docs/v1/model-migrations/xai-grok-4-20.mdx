@@ -5,73 +5,36 @@ description: "What to know when adopting Grok 4.20, including reasoning and mult
 icon: "/icons/brands/grok.svg"
 ---
 
-# SpaceXAI Grok 4.20
+Change the model ID and re-run your validation set; request and response shapes stay the same. The only new control is how deep the multi-agent variant works.
 
-Use this guide to adopt Grok 4.20 safely through the Phaseo Gateway.
+| Model | Phaseo model ID | Reasoning control |
+| --- | --- | --- |
+| Grok 4.20 | `spacex-ai/grok-4.20` | `reasoning.enabled`: on or off |
+| Grok 4.20 Multi-Agent (beta) | `spacex-ai/grok-4.20-multi-agent-beta` | `reasoning.effort`: `low`, `medium`, or `high` |
 
-Primary route in our catalog:
+## Toggle reasoning on Grok 4.20
 
-- `spacex-ai/grok-4-20-2026-02-17`
-
-Optional multi-agent route exposed by provider model ID:
-
-- `spacex-ai/grok-4.20-multi-agent-beta-0309`
-
-## Migration quickstart
-
-For most integrations, there is no required migration work beyond updating the model ID and re-running your normal validation set.
-
-Existing request and response patterns can remain the same.
-
-## What's new
-
-For the base Grok 4.20 route, there is no behavior change you need to migrate for in Phaseo Gateway.
-
-The only practical change is how to tune the multi-agent variant.
-
-For Phaseo Gateway usage:
-
-- base Grok 4.20 can still be toggled with `reasoning.enabled` as normal
-- multi-agent Grok 4.20 should be tuned with `reasoning.effort`
-- use `low`, `medium`, `high`, and `extra high`
-- as described in SpaceXAI guidance, `low` and `medium` map to 4 agents, while `high` and `extra high` use higher multi-agent configurations
-
-We do not use `agent_count` directly in gateway requests.
-
-### Base Grok 4.20 with reasoning toggle
-
-Use the base model and set `reasoning.enabled` directly:
+Set `reasoning.enabled: true` to use the reasoning version of the model. Without it, or with `false`, Phaseo calls the non-reasoning version.
 
 ```json
 {
-  "model": "spacex-ai/grok-4-20-2026-02-17",
+  "model": "spacex-ai/grok-4.20",
   "input": "Explain this architecture",
-  "reasoning": {
-    "enabled": true
-  }
+  "reasoning": { "enabled": true }
 }
 ```
 
-### Multi-agent Grok 4.20 with effort control
+## Set depth on the multi-agent model
 
-Use the multi-agent model and control depth with `reasoning.effort`:
+Control depth with `reasoning.effort`. Gateway requests don't take xAI's `agent_count`; according to xAI, `low` and `medium` run 4 agents and `high` runs a larger configuration.
 
 ```json
 {
-  "model": "spacex-ai/grok-4.20-multi-agent-beta-0309",
+  "model": "spacex-ai/grok-4.20-multi-agent-beta",
   "input": "Evaluate three rollout options with tradeoffs",
-  "reasoning": {
-    "effort": "medium"
-  }
+  "reasoning": { "effort": "medium" }
 }
 ```
-
-Reasoning effort tiers:
-
-- `low`
-- `medium`
-- `high`
-- `extra high`
 
 ## Sources
 

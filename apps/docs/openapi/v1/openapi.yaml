@@ -100,6 +100,15 @@ paths:
             enum:
               - asc
               - desc
+        - name: include
+          in: query
+          description: Set to parameter_specs to add each offer's request parameters in the standard shape.
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - parameter_specs
         - name: endpoints
           in: query
           description: Filter by endpoints
@@ -4028,13 +4037,15 @@ paths:
       operationId: updateWorkspaceNotificationSettings
       summary: Update workspace notification settings
       description: >-
-        Updates one or more durable notification-policy sections. Enabling auto
-        top-up requires an existing saved payment method identifier and verified
-        two-factor authentication. An existing auto top-up configuration may be
-        updated without repeating the MFA acknowledgement. To enable auto top-up
-        without MFA, clients must explicitly set `mfa_bypass_acknowledged` to
-        true and provide the exact `mfa_bypass_phrase` value `I ACCEPT THE
-        RISK`; payment collection remains an interactive account flow.
+        Updates one or more durable notification-policy sections. Turning on auto
+        top-up, or changing its amount, threshold or payment method, needs
+        `billing:write`, an existing saved payment method identifier and verified
+        two-factor authentication, and apps that use Sign in with Phaseo can't
+        do it. Turning it off needs only `settings:write`. An existing auto
+        top-up configuration may be updated without repeating the MFA
+        acknowledgement. The two-factor bypass (`mfa_bypass_acknowledged` and
+        `mfa_bypass_phrase`) can only be accepted in Settings; the API rejects
+        it. Payment collection remains an interactive account flow.
       requestBody:
         required: true
         content:
@@ -5393,7 +5404,7 @@ paths:
       description: >-
         Lists the workspace's named rate limit policies. The gateway enforces
         requests_per_minute, tokens_per_minute and concurrent_requests for key,
-        member, department, guardrail and end-user-default assignments.
+        member, department and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policies
@@ -5416,8 +5427,8 @@ paths:
       description: >-
         Creates a named policy with requests per minute, tokens per minute, or
         concurrent request limits. The gateway enforces requests_per_minute,
-        tokens_per_minute and concurrent_requests for key, member, department,
-        guardrail and end-user-default assignments.
+        tokens_per_minute and concurrent_requests for key, member, department
+        and end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -5454,8 +5465,8 @@ paths:
       summary: Get a rate limit policy
       description: >-
         Returns one rate limit policy. The gateway enforces requests_per_minute,
-        tokens_per_minute and concurrent_requests for key, member, department,
-        guardrail and end-user-default assignments.
+        tokens_per_minute and concurrent_requests for key, member, department
+        and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policy
@@ -5479,8 +5490,8 @@ paths:
         Changes a policy's name, description, limits, or fail-closed setting.
         Set a limit to null to remove it; at least one limit must remain. The
         gateway enforces requests_per_minute, tokens_per_minute and
-        concurrent_requests for key, member, department, guardrail and
-        end-user-default assignments.
+        concurrent_requests for key, member, department and end-user-default
+        assignments.
       requestBody:
         required: true
         content:
@@ -5509,7 +5520,7 @@ paths:
       description: >-
         Deletes a policy and every assignment that uses it. The gateway enforces
         requests_per_minute, tokens_per_minute and concurrent_requests for key,
-        member, department, guardrail and end-user-default assignments.
+        member, department and end-user-default assignments.
       responses:
         '200':
           description: Rate limit policy deleted
@@ -5533,8 +5544,8 @@ paths:
       description: >-
         Lists where rate limit policies apply, optionally filtered by policy or
         target type. The gateway enforces requests_per_minute, tokens_per_minute
-        and concurrent_requests for key, member, department, guardrail and
-        end-user-default assignments.
+        and concurrent_requests for key, member, department and end-user-default
+        assignments.
       parameters:
         - name: policy_id
           in: query
@@ -5586,11 +5597,10 @@ paths:
       operationId: createRateLimitAssignment
       summary: Assign a rate limit policy
       description: >-
-        Applies a policy to one API key, workspace member, department, or
-        guardrail, or sets the workspace default for each end user. Each target
-        can have one policy. The gateway enforces requests_per_minute,
-        tokens_per_minute and concurrent_requests for key, member, department,
-        guardrail and end-user-default assignments.
+        Applies a policy to one API key, workspace member or department, or
+        sets the workspace default for each end user. Each target can have one
+        policy. The gateway enforces requests_per_minute, tokens_per_minute and
+        concurrent_requests for every assignment.
       requestBody:
         required: true
         content:
@@ -5628,7 +5638,7 @@ paths:
       description: >-
         Returns one rate limit assignment. The gateway enforces
         requests_per_minute, tokens_per_minute and concurrent_requests for key,
-        member, department, guardrail and end-user-default assignments.
+        member, department and end-user-default assignments.
       responses:
         '200':
           description: Rate limit assignment
@@ -5651,7 +5661,7 @@ paths:
       description: >-
         Switches the policy applied to an assignment's target. The gateway
         enforces requests_per_minute, tokens_per_minute and concurrent_requests
-        for key, member, department, guardrail and end-user-default assignments.
+        for key, member, department and end-user-default assignments.
       requestBody:
         required: true
         content:
@@ -5680,7 +5690,7 @@ paths:
       description: >-
         Removes a policy from its target. The gateway enforces
         requests_per_minute, tokens_per_minute and concurrent_requests for key,
-        member, department, guardrail and end-user-default assignments.
+        member, department and end-user-default assignments.
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -7725,7 +7735,9 @@ paths:
         - Gateway
       operationId: deleteWorkspace
       summary: Delete a workspace
-      description: Deletes a workspace by UUID or slug. Management API key required.
+      description: >-
+        Deletes a workspace by UUID or slug. Only the workspace owner can delete
+        it. Management API key required.
       parameters:
         - name: id
           in: path
@@ -7803,8 +7815,14 @@ paths:
       operationId: addWorkspaceMembers
       summary: Add workspace members
       description: >-
-        Adds existing users to a workspace with an admin or member role.
-        Management API key required.
+        Adds people who asked to join: each user must have a pending join
+        request (created when they accept an invite), which this approves.
+        Other users are rejected; send them an invite instead. Existing members
+        keep their role. Without a role, each person gets their invite's role;
+        adding an admin needs the workspace owner. Management API key required.
+        Each person is approved separately. If one fails, everyone approved
+        before them stays added, the rest aren't tried, and the response is a
+        409 that lists approved, failed and not_attempted users.
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -7816,6 +7834,14 @@ paths:
       responses:
         '200':
           description: Members added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceMemberAddResponse'
+        '409':
+          description: >-
+            Not every user could be added. The body lists who was added, who
+            failed and who wasn't tried.
           content:
             application/json:
               schema:
@@ -7845,7 +7871,10 @@ paths:
         - Gateway
       operationId: removeWorkspaceMembers
       summary: Remove workspace members
-      description: Removes non-owner members from a workspace. Management API key required.
+      description: >-
+        Removes non-owner members from a workspace. Only the workspace owner can
+        remove other members; anyone can remove themselves. Management API key
+        required.
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -12008,6 +12037,8 @@ components:
             type: string
         parameter_details:
           $ref: '#/components/schemas/SupportedParameterDetails'
+        parameter_specs:
+          $ref: '#/components/schemas/ParameterSpecs'
     GatewayPricingMeter:
       type: object
       nullable: true
@@ -12048,6 +12079,7 @@ components:
             $ref: '#/components/schemas/GatewayPricingMeter'
     GatewayProviderAvailabilityReason:
       type: string
+      description: "A deranked route is routable only as a last resort, after every other healthy provider. `deranked_lvl1`, `deranked_lvl2` and `deranked_lvl3` are no longer returned."
       enum:
         - active
         - preview_only
@@ -12057,6 +12089,7 @@ components:
         - project_limited
         - paused
         - soft_blocked
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3
@@ -12072,17 +12105,21 @@ components:
         - retired
     GatewayRoutingStatus:
       type: string
+      description: "A deranked route is routable only as a last resort, after every other healthy provider. `deranked_lvl1`, `deranked_lvl2` and `deranked_lvl3` are no longer returned."
       enum:
         - active
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3
         - disabled
     GatewayCapabilityStatus:
       type: string
+      description: "A deranked route is routable only as a last resort, after every other healthy provider. `deranked_lvl1`, `deranked_lvl2` and `deranked_lvl3` are no longer returned."
       enum:
         - active
         - coming_soon
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3
@@ -12308,6 +12345,198 @@ components:
           $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters_detail:
           $ref: '#/components/schemas/SupportedParameterDetails'
+    ParameterValue:
+      oneOf:
+        - type: string
+        - type: number
+        - type: boolean
+    ParameterOption:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          $ref: '#/components/schemas/ParameterValue'
+        label:
+          type: string
+        description:
+          type: string
+      additionalProperties: true
+    ParameterRule:
+      type: object
+      description: When every parameter in if has one of its listed values, the other fields replace the parameter's own.
+      required:
+        - if
+      properties:
+        if:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/ParameterValue'
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        min:
+          type: number
+        max:
+          type: number
+        step:
+          type: number
+        default:
+          $ref: '#/components/schemas/ParameterValue'
+        supported:
+          type: boolean
+        message:
+          type: string
+    ParameterDimensions:
+      type: object
+      properties:
+        min:
+          type: number
+        max:
+          type: number
+        multiple_of:
+          type: number
+        max_width:
+          type: number
+        max_height:
+          type: number
+        min_pixels:
+          type: number
+        max_pixels:
+          type: number
+        max_aspect_ratio:
+          type: string
+        aspect_ratios:
+          type: array
+          items:
+            type: string
+    ParameterSpec:
+      type: object
+      required:
+        - supported
+      properties:
+        supported:
+          type: boolean
+        type:
+          oneOf:
+            - $ref: '#/components/schemas/ParameterType'
+            - type: array
+              items:
+                $ref: '#/components/schemas/ParameterType'
+        media:
+          type: string
+          enum:
+            - image
+            - audio
+            - video
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        open:
+          type: boolean
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterOption'
+        min:
+          type: number
+        max:
+          type: number
+        step:
+          type: number
+        multiple_of:
+          type: number
+        default:
+          $ref: '#/components/schemas/ParameterValue'
+        provider_default:
+          $ref: '#/components/schemas/ParameterValue'
+        required:
+          type: boolean
+        always_on:
+          type: boolean
+        aliases:
+          type: array
+          items:
+            type: string
+        alias_of:
+          type: string
+        upstream_name:
+          type: string
+        upstream_values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        requires:
+          type: array
+          items:
+            type: string
+        min_length:
+          type: number
+        max_length:
+          type: number
+        max_tokens:
+          type: number
+        min_items:
+          type: number
+        max_items:
+          type: number
+        item_types:
+          type: array
+          items:
+            type: string
+        formats:
+          type: array
+          items:
+            type: string
+        max_file_size_bytes:
+          type: number
+        format:
+          type: string
+        dimensions:
+          $ref: '#/components/schemas/ParameterDimensions'
+        properties:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        when:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterRule'
+        support_level:
+          type: string
+        notes:
+          type: string
+        source:
+          type: object
+          properties:
+            url:
+              type: string
+            verified_at:
+              type: string
+        extra:
+          type: object
+          additionalProperties: true
+    ParameterType:
+      type: string
+      enum:
+        - string
+        - integer
+        - number
+        - boolean
+        - array
+        - object
+        - file
+    ParameterSpecs:
+      type: object
+      description: >-
+        Every request parameter the provider accepts on this endpoint, in one standard shape whatever way the catalogue stores it.
+      additionalProperties:
+        $ref: '#/components/schemas/ParameterSpec'
     SupportedParameterDetails:
       type: object
       description: >-
@@ -16225,10 +16454,13 @@ components:
           maximum: 3
         output_format:
           type: string
+          description: "Output format. gif and svg need a GPT Image 2.6 model and do not support stream or partial_images. svg also needs svg.model and n=1."
           enum:
             - png
             - jpeg
             - webp
+            - gif
+            - svg
         output_compression:
           type: integer
           minimum: 0
@@ -16244,6 +16476,41 @@ components:
           enum:
             - auto
             - low
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        frame_count:
+          type: integer
+          minimum: 2
+          maximum: 64
+        frame_duration_ms:
+          type: integer
+          minimum: 20
+          maximum: 2000
+        svg:
+          type: object
+          description: "Required when output_format is svg. svg.model is the OpenAI text model that writes the SVG from the reference image. Its tokens are billed at that model's text prices, with reasoning tokens counted as output, in addition to the image cost."
+          required:
+            - model
+          properties:
+            model:
+              type: string
+            reasoning:
+              type: object
+              properties:
+                effort:
+                  type: string
+                  enum:
+                    - none
+                    - minimal
+                    - low
+                    - medium
+                    - high
+                    - xhigh
+                    - max
         response_format:
           type: string
         style:
@@ -16261,6 +16528,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Image'
+        svg_usage:
+          type: object
+          properties:
+            model:
+              type: string
+            input_tokens:
+              type: integer
+            output_tokens:
+              type: integer
+            reasoning_tokens:
+              type: integer
+            total_tokens:
+              type: integer
     Image:
       type: object
       properties:
@@ -16291,6 +16571,15 @@ components:
                 type: string
         mask:
           type: string
+        markup:
+          type: string
+          description: "Transparent PNG annotation layer over the first image, as a file upload, URL or base64 string. Needs GPT Image 2.5 or later and cannot be combined with mask."
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
         prompt:
           type: string
         size:
@@ -16424,7 +16713,13 @@ components:
         enhance_prompt:
           type: boolean
         compression_quality:
-          type: integer
+          description: "Output compression. Vertex Veo takes optimized or lossless and rejects a number; other providers that support it take an integer."
+          oneOf:
+            - type: integer
+            - type: string
+              enum:
+                - optimized
+                - lossless
         person_generation:
           type: string
         resize_mode:
@@ -16475,9 +16770,7 @@ components:
         provider_params:
           type: object
           additionalProperties: true
-          description: >-
-            Provider-specific extensions only. Complete request passthrough and
-            duplicate routing, prompt, callback, or billing fields are rejected.
+          description: "Provider-specific extensions only. Complete request passthrough and duplicate routing, prompt, callback, or billing fields are rejected. For example, Wan 3.0 takes smart_duration: true to let the model choose the length (send no duration with it); the job reserves 30 seconds and is billed for the length the provider reports."
         provider_options:
           type: object
           additionalProperties:
@@ -16971,6 +17264,8 @@ components:
           $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters_detail:
           $ref: '#/components/schemas/SupportedParameterDetails'
+        parameter_specs:
+          $ref: '#/components/schemas/ParameterSpecs'
     VideoModelCapability:
       type: object
       properties:
@@ -19199,7 +19494,6 @@ components:
       type: object
       required:
         - id
-        - hash
         - workspace_id
         - name
         - label
@@ -19229,9 +19523,6 @@ components:
           type: string
           format: uuid
           example: 11111111-1111-4111-8111-111111111111
-        hash:
-          type: string
-          example: a3f5b7c9d8e1f23456789abcdeffedcba9876543210fedcba1234567890abcdef
         workspace_id:
           type: string
           format: uuid
@@ -19801,15 +20092,61 @@ components:
       type: object
       required:
         - added_count
-        - data
+        - approved
+        - failed
+        - not_attempted
       properties:
+        error:
+          type: string
+        message:
+          type: string
         added_count:
           type: integer
           minimum: 0
         data:
           type: array
+          description: >-
+            The added members' details. Left out if they couldn't be read back
+            after the approvals; approved still lists who was added.
           items:
             $ref: '#/components/schemas/WorkspaceMember'
+        approved:
+          type: array
+          description: Users added by this request, in the order they were approved.
+          items:
+            type: string
+        failed:
+          type: array
+          description: >-
+            The user whose approval failed, with the reason. Users after them
+            aren't tried.
+          items:
+            $ref: '#/components/schemas/WorkspaceMemberAddFailure'
+        not_attempted:
+          type: array
+          description: >-
+            Users not tried because an earlier approval failed. Their join
+            requests are still pending.
+          items:
+            type: string
+      additionalProperties: false
+    WorkspaceMemberAddFailure:
+      type: object
+      required:
+        - user_id
+        - code
+        - message
+      properties:
+        user_id:
+          type: string
+        code:
+          type: string
+          enum:
+            - forbidden
+            - conflict
+            - internal_error
+        message:
+          type: string
       additionalProperties: false
     WorkspaceMemberRemoveResponse:
       type: object
@@ -25193,14 +25530,12 @@ components:
       type: string
       description: >-
         What a policy applies to. A department policy is one allowance shared by
-        its members and linked keys. A guardrail policy gives each key and
-        member the guardrail covers its own allowance. end_user_default applies
-        to each end user identified on a request.
+        its members and linked keys. end_user_default applies to each end user
+        identified on a request.
       enum:
         - key
         - member
         - department
-        - guardrail
         - end_user_default
     RateLimitAssignment:
       type: object
@@ -25229,7 +25564,7 @@ components:
           format: uuid
           nullable: true
           description: >-
-            Id of the key, member (user id), department, or guardrail. Null for
+            Id of the key, member (user id) or department. Null for
             end_user_default.
         created_by:
           type: string
@@ -25257,7 +25592,7 @@ components:
           type: string
           format: uuid
           description: >-
-            Id of the key, member (user id), department, or guardrail. Omit for
+            Id of the key, member (user id) or department. Omit for
             end_user_default.
       additionalProperties: false
     RateLimitAssignmentUpdateInput:

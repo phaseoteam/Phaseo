@@ -1,31 +1,38 @@
 ---
 icon: "braces"
 title: "संरचित आउटपुट (AI SDK)"
-description: "Phaseo और Vercel AI SDK से schema-validated JSON objects बनाएँ।"
+sidebarTitle: "संरचित आउटपुट"
+description: "Phaseo और Vercel AI SDK से schema-मान्य JSON objects जनरेट करें।"
 ---
 
-Typed outputs के लिए `generateObject` उपयोग करें।
+अपने schema से मेल खाने वाला typed object पाने के लिए `generateText` में `output: Output.object({ schema })` पास करें। AI SDK schema को JSON Schema प्रतिक्रिया फ़ॉर्मैट के रूप में भेजता है और नतीजे की जाँच करता है।
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { z } from "zod";
 
-const { object } = await generateObject({
-  model: phaseo("openai/gpt-5-nano"),
-  schema: z.object({
-    title: z.string(),
-    priority: z.enum(["low", "medium", "high"]),
-    actions: z.array(z.string()),
+const { output } = await generateText({
+  model: phaseo("openai/gpt-6-astra"),
+  output: Output.object({
+    schema: z.object({
+      title: z.string(),
+      priority: z.enum(["low", "medium", "high"]),
+      actions: z.array(z.string()),
+    }),
   }),
   prompt: "Create a short incident follow-up plan.",
 });
 
-console.log(object);
+console.log(output);
 ```
 
-## नोट्स
+`generateObject` AI SDK 7 में उसी `schema` के साथ अब भी काम करता है और `object` लौटाता है, लेकिन यह deprecated है और इसकी जगह `output` के साथ `generateText` का उपयोग करना चाहिए।
 
-- Schemas में explicit enums और required fields को प्राथमिकता दें।
-- Prompts को schema structure के अनुरूप रखें।
-- Caller code में parse/validation errors handle करें।
+## अमान्य आउटपुट संभालें
+
+जब मॉडल कोई उपयोगी object नहीं लौटाता, उदाहरण के लिए जब आख़िरी स्टेप टूल कॉल पर ख़त्म हुआ हो, तब `output` पढ़ने पर `NoOutputGeneratedError` फेंका जाता है। जहाँ आप मॉडल कॉल करते हैं, वहीं इसे catch करें।
+
+- schema में स्पष्ट enums और आवश्यक फ़ील्ड का उपयोग करें।
+- prompt को schema के आकार के अनुरूप रखें।
+- JSON Schema आउटपुट के लिए मॉडल का समर्थन अलग-अलग होता है; `/v1/models` में मॉडल के समर्थित पैरामीटर जाँचें।

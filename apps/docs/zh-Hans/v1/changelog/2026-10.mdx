@@ -1,6 +1,6 @@
 ---
-title: "十月"
-description: "十月 2026 - Phaseo"
+title: "10月"
+description: "Phaseo 2026年10月的产品更新、SDK 变更和模型发布。"
 ---
 
 import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
@@ -13,9 +13,9 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">产品</p>
 
-- **设置 -> 路由 -> 已停用模型的路由** 现在列出 **受影响的模型**：工作区在过去 90 天内使用过、即将停用或已不再提供的每个模型，以及它的替代模型、价格对比、请求是否会被重定向，以及不会时的原因。使用 **选择替代模型** 可为某个模型设置你自己的替代模型；请参阅[模型弃用与停用](../guides/model-retirement.mdx#see-which-of-your-models-are-affected) ([#3357](https://github.com/phaseoteam/Phaseo/pull/3357))。
+- **设置 -> 路由 -> 已停用模型的路由** 会列出工作区在过去 90 天内使用过、即将停用的模型，使用 **选择替代模型** 可设置你自己的替代模型；请参阅[模型弃用与停用](../guides/model-retirement.mdx#see-which-of-your-models-are-affected) ([#3357](https://github.com/phaseoteam/Phaseo/pull/3357))。
 
-- [服务条款](https://phaseo.app/terms)现在要求用户年满 18 岁，并禁止儿童性虐待材料；[隐私政策](https://phaseo.app/privacy)说明了我们如何检测、保存和举报此类材料 ([#3388](https://github.com/phaseoteam/Phaseo/pull/3388))。
+- [服务条款](https://phaseo.app/terms)现在要求用户年满 18 岁，并禁止儿童性虐待材料；[隐私政策](https://phaseo.app/privacy)说明了 Phaseo 如何检测、保存和举报此类材料 ([#3388](https://github.com/phaseoteam/Phaseo/pull/3388))。
 
 </div>
 
@@ -111,7 +111,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <p className="changelog-category">产品</p>
 
 - 所有工作区都可以使用已停用模型的路由：所有者和管理员在 **设置 -> 路由 -> 已停用模型的路由** 中开启后，请求会转到已批准的替代模型；请参阅[模型弃用与停用](../guides/model-retirement.mdx) ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#2896](https://github.com/phaseoteam/Phaseo/pull/2896))。
-- 已停用模型的路由只使用价格不高于已停用模型的已批准替代模型，除非所有者和管理员允许更高的价格；他们自己选择的替代模型无论价格高低都会使用 ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211))。
+- 已停用模型的路由会跳过价格高于已停用模型的已批准替代模型，除非所有者和管理员允许；他们自己选择的替代模型不受价格限制 ([#2899](https://github.com/phaseoteam/Phaseo/pull/2899), [#3211](https://github.com/phaseoteam/Phaseo/pull/3211))。
 - 即使完整模型目录加载失败，预设列表和编辑器也能打开；此前页面会显示错误 ([#3221](https://github.com/phaseoteam/Phaseo/pull/3221))。
 
 </div>
@@ -349,7 +349,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">API 与 SDK</p>
 
-- SDK 文档新增 Java SDK，需从源码安装；请参阅[Java SDK — 安装](../sdk-reference/java/installation.mdx) ([#2904](https://github.com/phaseoteam/Phaseo/pull/2904))。
+- SDK 文档新增 Java SDK，需从源码安装；请参阅[Java SDK — 安装](../sdk-reference/client/installation.mdx) ([#2904](https://github.com/phaseoteam/Phaseo/pull/2904))。
 
 </div>
 

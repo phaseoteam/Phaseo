@@ -4,39 +4,28 @@ sidebarTitle: "Crear una finalización de chat"
 openapi: "/es/openapi/v1/openapi.localized.yaml POST /chat/completions"
 description: "Genera finalizaciones de chat mediante el endpoint de chat compatible con OpenAI."
 ---
-## Herramientas del servidor
 
-`/v1/chat/completions` admite herramientas de funciones normales y estas herramientas de servidor administradas por Gateway:
+## Usa herramientas del servidor
 
-- `gateway:datetime`
-- `phaseo:web_search`
-- `phaseo:web_fetch`
-- `phaseo:advisor`
-- `phaseo:image_generation`
-
-### Ejemplo de fecha y hora
+Añade una herramienta `phaseo:` a `tools` junto a tus propias herramientas de función, y Phaseo la ejecuta cuando el modelo la llama. `/v1/chat/completions` acepta todas las herramientas del servidor excepto `phaseo:apply_patch`; la guía de [Herramientas del servidor](../../guides/server-tools) las enumera.
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
-    "stream": false,
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "What is the current datetime in Europe/London?" }
     ],
     "tools": [
-      {
-        "type": "gateway:datetime",
-        "parameters": { "timezone": "Europe/London" }
-      }
+      { "type": "phaseo:datetime", "parameters": { "timezones": ["Europe/London"] } }
     ],
     "tool_choice": "auto"
   }'
 ```
 
-Cuando se usa una herramienta del servidor, los datos de uso incluyen:
+Cada llamada a una herramienta del servidor se cuenta en `usage.server_tool_use`:
 
 ```json
 {
@@ -51,25 +40,25 @@ Cuando se usa una herramienta del servidor, los datos de uso incluyen:
 }
 ```
 
-`phaseo:web_search` agrega `server_tool_use.web_search_requests`, `server_tool_use.web_search_results` y `server_tool_use.web_search_extra_results`. `phaseo:web_fetch` agrega `server_tool_use.web_fetch_requests`.
+`phaseo:web_search` añade `web_search_requests`, `web_search_results` y `web_search_extra_results`; `phaseo:web_fetch` añade `web_fetch_requests`. El tipo antiguo `gateway:datetime` sigue funcionando.
 
-## Nota sobre el streaming
+Con `stream: true`, Phaseo ejecuta los turnos de herramientas por su cuenta y después te transmite la respuesta continuada como un único stream.
 
-También se admite `stream: true`. Para las herramientas de servidor administradas por Gateway, Phaseo puede materializar el turno de llamada a la herramienta upstream, continuar el ciclo y volver a emitir un flujo sintético.
+## Razonamiento en bucles de herramientas
 
-## Razonamiento en ciclos de herramientas
-
-Los modelos de razonamiento devuelven su razonamiento en dos campos del mensaje del asistente:
+Los modelos de razonamiento devuelven su razonamiento en el mensaje del asistente, en dos campos:
 
 - `reasoning_content`: el texto del razonamiento, cuando el proveedor lo devuelve.
-- `reasoning_details`: un array de bloques de razonamiento en el formato que usa OpenRouter. Cada entrada tiene un `type` (`reasoning.text`, `reasoning.summary` o `reasoning.encrypted`), un `index` y un `format` que indica la familia del proveedor, por ejemplo `anthropic-claude-v1` o `google-gemini-v1`.
+- `reasoning_details`: un array de bloques de razonamiento. Cada entrada tiene un `type` (`reasoning.text`, `reasoning.summary` o `reasoning.encrypted`), un `index` y un `format` que nombra la familia del proveedor, por ejemplo `anthropic-claude-v1` o `google-gemini-v1`.
 
-Las entradas pueden llevar estado del proveedor que el modelo necesita en el siguiente paso de un ciclo de herramientas:
+Las entradas pueden llevar estado del proveedor que el modelo necesita en el siguiente paso de un bucle de herramientas:
 
-- Firmas de thinking de Claude, en `signature` en las entradas `reasoning.text`.
-- Thinking censurado de Claude y razonamiento cifrado de OpenAI, en `data` en las entradas `reasoning.encrypted`.
-- Firmas de pensamiento de Gemini, en `data` en las entradas `reasoning.encrypted` cuyo `id` es la llamada a herramienta a la que pertenecen.
+| Estado del proveedor | Dónde está |
+| --- | --- |
+| Firmas de pensamiento de Claude | `signature` en las entradas `reasoning.text` |
+| Pensamiento censurado de Claude, razonamiento cifrado de OpenAI | `data` en las entradas `reasoning.encrypted` |
+| Firmas de pensamiento de Gemini | `data` en las entradas `reasoning.encrypted` cuyo `id` es la llamada a herramienta a la que pertenecen |
 
-Con streaming, llega un delta de `reasoning_details` cuando se completa cada bloque de razonamiento.
+Con streaming, llega un delta `reasoning_details` cuando se completa cada bloque de razonamiento.
 
-Para que el modelo conserve su razonamiento entre pasos, devuelva el mensaje del asistente con su `reasoning_details` sin cambios. Los valores de `signature` y `data` son opacos y registran el proveedor y el modelo que los generaron. Phaseo los envía solo a esa familia de proveedores y a ese modelo, así que un fallback a otro proveedor los descarta en lugar de fallar. Los modelos Claude en modo de thinking manual necesitan recibir su thinking para seguir pensando durante un ciclo de herramientas; si falta, ese paso se ejecuta sin thinking.
+Para conservar el razonamiento del modelo entre pasos, devuelve el mensaje del asistente con su `reasoning_details` sin cambios. Los valores de `signature` y `data` son opacos y registran el proveedor y el modelo que los generaron. Phaseo solo los envía a esa familia de proveedor y a ese modelo, así que un fallback a otro proveedor los descarta en lugar de fallar. Los modelos de Claude en modo de pensamiento manual necesitan que se les devuelva su pensamiento para seguir pensando durante un bucle de herramientas; si falta, ese paso se ejecuta sin pensamiento.

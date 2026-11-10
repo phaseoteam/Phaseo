@@ -4,31 +4,50 @@ title: "Salidas estructuradas"
 description: "Devuelve JSON predecible con los formatos de salida json_object o json_schema."
 ---
 
-Las salidas estructuradas permiten exigir una respuesta legible por máquina en lugar de texto libre.
+Envía un JSON Schema con la solicitud y el modelo devuelve JSON con esa forma en lugar de texto libre. Tu código sigue teniendo que analizarlo y validarlo antes de usarlo.
 
-## Compatibilidad de endpoints
+```mermaid
+flowchart LR
+  schema["Solicitud con un JSON Schema"] --> model["El modelo responde"]
+  model --> parse{{"¿Se analiza y cumple tu validador?"}}
+  parse -->|"Sí"| use["Usar el resultado"]
+  parse -->|"No, la primera vez"| retry["Un reintento corrector"]
+  retry --> parse
+  parse -->|"No, otra vez"| fail["Devolver un fallo seguro"]
+```
 
-Usa las salidas estructuradas en:
+## Elegir un formato
 
-- `/v1/chat/completions` con `response_format`
-- `/v1/responses` con `text.format`
-- `/v1/messages` puede seguir devolviendo texto JSON, pero no usa el mismo contrato de `response_format`.
+| `type` | Qué obtienes |
+| --- | --- |
+| `json_schema` | JSON que sigue el esquema que envías. Úsalo de forma predeterminada. |
+| `json_object` | Algún objeto JSON válido, sin una forma impuesta. |
+| `text` | Texto sin formato (el valor predeterminado). |
 
-## Solicitud
+Dónde va el formato depende del endpoint:
 
-```bash
+| Endpoint | Campo |
+| --- | --- |
+| `/v1/chat/completions` | `response_format` |
+| `/v1/responses` | `text.format` |
+| `/v1/messages` | `output_config.format` (solo `json_schema`) |
+
+## Enviar un esquema
+
+<CodeGroup>
+```bash Chat Completions
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
-      { "role": "user", "content": "Return a JSON object with city and weather for London." }
+      { "role": "user", "content": "Return the city and weather for London." }
     ],
     "response_format": {
       "type": "json_schema",
       "json_schema": {
-        "name": "weather_schema",
+        "name": "weather",
         "strict": true,
         "schema": {
           "type": "object",
@@ -44,14 +63,39 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-## Respuesta
+```bash Responses
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-6-astra",
+    "input": "Return the city and weather for London.",
+    "text": {
+      "format": {
+        "type": "json_schema",
+        "name": "weather",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "city": { "type": "string" },
+            "weather": { "type": "string" }
+          },
+          "required": ["city", "weather"],
+          "additionalProperties": false
+        }
+      }
+    }
+  }'
+```
+</CodeGroup>
+
+El JSON vuelve como una cadena en el contenido del mensaje:
 
 ```json
 {
-  "id": "chatcmpl_...",
   "choices": [
     {
-      "index": 0,
       "finish_reason": "stop",
       "message": {
         "role": "assistant",
@@ -62,19 +106,14 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-## Notas sobre el contrato
+## Diseñar el esquema
 
-- `response_format.type` debe ser `text`, `json_object` o `json_schema`.
-- Para `json_schema`, incluye un objeto de esquema (`response_format.json_schema.schema` en solicitudes tipo chat o `text.format.schema` en solicitudes tipo Responses).
-- Valida el JSON en tu servidor antes de usarlo en otros sistemas.
+Empieza con un objeto pequeño. Incluye todos los campos en `required`, usa `enum` para las categorías conocidas y define `additionalProperties: false` cuando haya que rechazar claves adicionales. Versiona el esquema junto con tu validador del servidor para que nunca se desincronicen.
 
-## Diseña tu esquema
+<span id="validate-the-result"></span>
+## Validar el resultado
 
-Empieza con un objeto pequeño, marca explícitamente los campos obligatorios y usa enumeraciones para las categorías conocidas. Define `additionalProperties: false` cuando deban rechazarse las claves adicionales. Mantén sincronizados el esquema solicitado y el validador del servidor; versiónalos juntos.
-
-## Valida el resultado
-
-Analiza y valida el resultado completo antes de usarlo posteriormente. Este ejemplo de TypeScript usa Zod y coincide con el esquema meteorológico anterior:
+Antes de analizarla, comprueba si la respuesta es un rechazo, si falta contenido o si está truncada (`finish_reason` distinto de `stop`). Después valida el objeto analizado. Este validador de Zod corresponde al esquema anterior:
 
 ```typescript
 import { z } from "zod";
@@ -89,6 +128,6 @@ function parseWeather(content: string) {
 }
 ```
 
-Gestiona rechazos, contenido ausente y respuestas truncadas antes de analizar. Si falla la validación, permite como máximo un número limitado de reintentos correctivos y después devuelve un fallo seguro. Las generaciones reintentadas pueden generar cargos adicionales. Un JSON válido no demuestra que los valores sean correctos ni autoriza una acción.
+Si la validación falla, reintenta una vez con el error en el prompt y después devuelve un fallo seguro. Cada reintento se cobra. Un JSON válido sigue sin demostrar que los valores sean correctos ni que una acción esté autorizada.
 
-Registra los fallos de validación por modelo y versión del esquema. Vuelve a comprobar tus casos de evaluación cuando cambie cualquiera de los dos. Para recuperar JSON mal formado, consulta [reparación de respuestas](../cookbook/response-healing-for-structured-json.mdx).
+Haz un seguimiento de los fallos de validación por modelo y versión del esquema, y vuelve a ejecutar tus casos de evaluación cuando cambie cualquiera de los dos. Para reparar automáticamente un JSON mal formado, consulta la [reparación de respuestas](../cookbook/response-healing-for-structured-json.mdx).

@@ -1,7 +1,5 @@
-"use client";
-
 import { useRef, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import ModelPerformanceCards, { selectProviderTrendData } from "@/components/(data)/models/ModelPerformanceCards";
 import { Activity, CalendarDays, CircleAlert, Globe2, Loader2 } from "lucide-react";
 import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerformance";
@@ -401,9 +399,17 @@ export default function ModelPerformanceDashboard({
 						<EmptyMedia variant="icon">
 							<Activity className="size-5" />
 						</EmptyMedia>
-						<EmptyTitle>{t("noTelemetry")}</EmptyTitle>
+						{/* All-traffic views publish at any volume, so an empty one had no requests;
+						    a location view is also empty below its privacy minimum. */}
+						<EmptyTitle>
+							{activeMetrics.cloudflareColo
+								? t("noFilteredTelemetry", { location: formatCloudflareColo(activeMetrics.cloudflareColo) })
+								: t("noTelemetry")}
+						</EmptyTitle>
 						<EmptyDescription>
-							{t("telemetryHint")}
+							{activeMetrics.cloudflareColo
+								? t("filteredTelemetryHint")
+								: t("telemetryHint")}
 						</EmptyDescription>
 					</EmptyHeader>
 				</Empty>

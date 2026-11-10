@@ -7,7 +7,7 @@ import { compileSafeRegex, type RegexBudget, type SafeRegex } from "./safe-regex
 import { publishBroadcastEvent, type BroadcastTelemetry } from "./broadcast-event";
 import { BroadcastHealthRecorder } from "./broadcast-health";
 import { decryptWebhookSecret, validateWebhookEndpointUrlForDelivery } from "@core/webhook-endpoints";
-import { keyNeverStoresContent } from "@pipeline/audit/io-logging";
+import { keyKeepsContentOutOfTelemetry, requestAsksForZeroDataRetention } from "@pipeline/audit/io-logging";
 import {
 	buildAsyncGenAiOtlpPayload,
 	buildGatewayGenAiOtlpPayload,
@@ -274,11 +274,38 @@ export function renderBroadcastPayload(telemetry: BroadcastTelemetry, destinatio
 	return filterMetadata(payload, destination);
 }
 
+// The provider's raw error body can echo the request or output.
+function attemptsWithoutPayloads(attempts: GatewayGenAiTelemetry["providerAttempts"]): GatewayGenAiTelemetry["providerAttempts"] {
+	if (!Array.isArray(attempts)) return attempts;
+	return attempts.map((attempt) => {
+		if (!attempt || typeof attempt !== "object" || !("upstream_payload_preview" in attempt)) return attempt;
+		const { upstream_payload_preview: _payload, ...kept } = attempt;
+		return kept;
+	});
+}
+
+// Whether Phaseo's telemetry keeps this request's content out: the key never stores
+// content, or zero data retention applies (workspace, key guardrail, the request's own
+// or its preset's), as for every other telemetry sink.
+async function keepsContentOut(selection: GatewayGenAiTelemetry): Promise<boolean> {
+	return selection.zeroDataRetention === true
+		|| requestAsksForZeroDataRetention(selection.requestPayload)
+		|| await keyKeepsContentOutOfTelemetry({ workspaceId: selection.workspaceId, keyId: selection.keyId });
+}
+
 // Prompts and outputs are left out of the event when no selected destination
 // receives them, so they never reach the queue or its R2 spill.
 function withoutContent(telemetry: BroadcastTelemetry): BroadcastTelemetry {
 	return telemetry.kind === "gateway"
-		? { kind: "gateway", args: { ...telemetry.args, requestPayload: requestParametersOnly(telemetry.args.requestPayload), responsePayload: null } }
+		? {
+			kind: "gateway",
+			args: {
+				...telemetry.args,
+				requestPayload: requestParametersOnly(telemetry.args.requestPayload),
+				responsePayload: null,
+				providerAttempts: attemptsWithoutPayloads(telemetry.args.providerAttempts),
+			},
+		}
 		: { kind: "async", args: { ...telemetry.args, requestPayload: null, responsePayload: null } };
 }
 
@@ -292,10 +319,10 @@ async function enqueuePayloads(args: {
 	const configured = await destinations(args.workspaceId);
 	const selectedDestinations = configured.filter((destination) => selected(destination, args.gatewaySelection, args.eventId));
 	if (!selectedDestinations.length) return 0;
-	// A key created with never_store_content never has its content forwarded,
-	// whatever each destination asks for.
+	// A key created with never_store_content, or a request under zero data retention,
+	// never has its content forwarded, whatever each destination asks for.
 	const telemetry = selectedDestinations.some((destination) => buildOptions(destination).includeSensitiveContent)
-		&& !(await keyNeverStoresContent({ workspaceId: args.workspaceId, keyId: args.gatewaySelection.keyId }))
+		&& !(await keepsContentOut(args.gatewaySelection))
 		? args.telemetry
 		: withoutContent(args.telemetry);
 	const queued = await publishBroadcastEvent({

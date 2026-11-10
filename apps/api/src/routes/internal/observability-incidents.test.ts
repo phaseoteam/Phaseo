@@ -233,8 +233,9 @@ describe("PostHog producer contract", () => {
 		expect(posthogBodyTemplate).toMatchObject({
 			source: "posthog",
 			fingerprint: "{event.properties.$exception_fingerprint}",
-			source_url: expect.stringContaining("/error_tracking/{event.properties.$exception_issue_id}"),
-			replay_url: expect.stringContaining("/replay/{event.properties.$session_id}"),
+			// Workflow webhooks render `project.url` as empty, which makes the link relative and the bridge reject it.
+			source_url: expect.stringContaining("f'https://eu.posthog.com/project/81404/error_tracking/{event.properties.$exception_issue_id}'"),
+			replay_url: expect.stringContaining("f'https://eu.posthog.com/project/81404/replay/{event.properties.$session_id}'"),
 			release: "{event.properties.release}",
 		});
 	});

@@ -1,7 +1,8 @@
-"use client";
-
 import { Maximize2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useRef, type ReactNode } from "react";
+import { useTranslations } from "@/i18n/react";
+import ModelChartShareButton from "@/components/(data)/model/share/ModelChartShareButton";
+import type { ChartShareRenderSize } from "@/components/share/ChartShareButton";
 import type {
 	ModelPerformancePoint,
 	ModelPerformanceSummary,
@@ -23,6 +24,32 @@ import ModelProviderTrendChart, {
 	type MetricKey,
 } from "./ModelProviderTrendChart";
 import ModelQualityTrendChart from "./ModelQualityTrendChart";
+
+/** A metric card whose chart can be shared as an image. The toolbar is left out of the image. */
+function ShareableMetricCard({ metric, title, subtitle, renderForShare, children }: {
+	metric: MetricKey;
+	title: string;
+	subtitle: string;
+	renderForShare: (size: ChartShareRenderSize) => ReactNode;
+	children: (shareAction: ReactNode) => ReactNode;
+}) {
+	const ref = useRef<HTMLDivElement>(null);
+	return (
+		<div ref={ref} className="min-w-0 rounded-lg border border-border/70 bg-background px-4 py-4">
+			{children(
+				<ModelChartShareButton
+					targetRef={ref}
+					renderForShare={renderForShare}
+					size="sm"
+					section="performance"
+					chartId={`performance-${metric}`}
+					title={title}
+					subtitle={subtitle}
+				/>,
+			)}
+		</div>
+	);
+}
 
 type MetricValueKey =
 	| "avgThroughput"
@@ -187,6 +214,7 @@ export default function ModelPerformanceCards({
 }: ModelPerformanceCardsProps) {
 	const t = useTranslations("Catalogue.modelDetail.performance");
 	const tx = useTranslations();
+	const tShare = useTranslations("Common.ui.chartShare");
 	void summary;
 	void prevSummary;
 	const hasHourly = hourly.some((point) => point.requests > 0);
@@ -262,26 +290,45 @@ export default function ModelPerformanceCards({
 			<div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
 				{metrics.map((definition) => (
 					<Dialog key={definition.metric}>
-						<div className="min-w-0 rounded-lg border border-border/70 bg-background px-4 py-4">
-							<ModelProviderTrendChart
-								title={definition.label}
-								data={metricData(definition.metric, false)}
-								metric={definition.metric}
-								maxSeries={3}
-								timeResolution={metricTimeResolution(definition.metric)}
-								headerAction={
-									<DialogTrigger asChild>
-										<button
-											type="button"
-											className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-												aria-label={t("expandMetric", { metric: definition.label } as never)}
-										>
-											<Maximize2 className="size-3.5" />
-										</button>
-									</DialogTrigger>
-								}
-							/>
-						</div>
+						<ShareableMetricCard
+							metric={definition.metric}
+							title={definition.label}
+							subtitle={`${metricSeriesLabel(definition.metric)} · ${tShare("last7Days")}`}
+							renderForShare={(size) => (
+								<ModelProviderTrendChart
+									title={definition.label}
+									data={metricData(definition.metric, false)}
+									metric={definition.metric}
+									maxSeries={3}
+									timeResolution={metricTimeResolution(definition.metric)}
+									exportSize={size}
+								/>
+							)}
+						>
+							{(shareAction) => (
+								<ModelProviderTrendChart
+									title={definition.label}
+									data={metricData(definition.metric, false)}
+									metric={definition.metric}
+									maxSeries={3}
+									timeResolution={metricTimeResolution(definition.metric)}
+									headerAction={
+										<div data-share-hide className="flex items-center gap-0.5">
+											{shareAction}
+											<DialogTrigger asChild>
+												<button
+													type="button"
+													className="inline-flex size-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+														aria-label={t("expandMetric", { metric: definition.label } as never)}
+												>
+													<Maximize2 className="size-3.5" />
+												</button>
+											</DialogTrigger>
+										</div>
+									}
+								/>
+							)}
+						</ShareableMetricCard>
 						<DialogContent className="h-[min(90vh,850px)] grid-rows-[auto_minmax(0,1fr)] overflow-hidden sm:max-w-5xl">
 							<DialogHeader className="pr-10">
 								<DialogTitle className="text-xl">{definition.label}</DialogTitle>

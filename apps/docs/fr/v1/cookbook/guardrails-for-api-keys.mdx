@@ -1,102 +1,83 @@
 ---
-title: "Déployer des garde-fous sur les clés d’API"
-sidebarTitle: "Garde-fous sur les clés d’API"
+title: "Déployer des garde-fous sur les clés API"
 icon: "shield-check"
-description: "Appliquez des garde-fous aux clés d’API, testez leur application avant le déploiement et vérifiez les blocages, masquages et alertes dans l’activité."
+description: "Appliquez des garde-fous aux clés API, testez leur application avant le déploiement et vérifiez les blocages, masquages et signalements dans les vues d’activité."
 ---
 
-Utilisez cette recette lorsque vous devez protéger une ou plusieurs clés API avec des restrictions de routage, des vérifications d'injection de prompt ou un traitement des informations sensibles.
+Créez un garde-fou dans **Paramètres → Règles de protection**, associez-le à une clé API à faible risque, et étendez-le seulement une fois que les journaux montrent qu’il se comporte comme prévu. À la fin, cette clé ne peut atteindre que les fournisseurs et modèles que vous autorisez, et ses prompts sont analysés pour détecter les injections de prompt et les données sensibles avant d’atteindre un modèle.
 
-## 1. Créer le garde-fou dans l’espace de travail
+Il s’agit d’une procédure dans le tableau de bord ; la même règle peut être scriptée avec l’[API des garde-fous](../api-reference/endpoint/guardrails-create).
 
-Créez d’abord les garde-fous au niveau de l’espace de travail afin de pouvoir réutiliser la même politique sur plusieurs clés.
+```mermaid
+flowchart LR
+  ws["Règles de confidentialité de l’espace de travail"] --> gr["Garde-fou : traitement des données"]
+  gr --> prov["Liste d’autorisation ou de blocage des fournisseurs"]
+  prov --> mdl["Liste d’autorisation des modèles"]
+  mdl --> scan["Analyse des injections de prompt et des informations sensibles"]
+  scan -->|"signaler, masquer ou bloquer"| route["Router la requête"]
+```
 
-Pour commencer :
+Les règles de confidentialité de l’espace de travail s’appliquent en premier ; un garde-fou peut seulement les restreindre. Les garde-fous ne plafonnent pas les dépenses : définissez plutôt une limite sur la clé ou un [budget d’espace de travail](../api-reference/limits#key-limits-and-budgets).
 
-- ajoutez les restrictions de modèles et de fournisseurs avant les contrôles de contenu
-- limitez le premier déploiement à une seule clé ou à un seul environnement
-- choisissez un nom qui décrit le résultat de la politique, pas le nom de l’équipe
+## Déployer le garde-fou
 
-## 2. Associer le garde-fou à une clé d’API
+<Steps>
+<Step title="Créer le garde-fou">
 
-Dans les paramètres de la clé d’API, associez le garde-fou à la clé qui doit appliquer la politique.
+Ouvrez **Paramètres → Règles de protection → Nouveau garde-corps**. Nommez-le d’après ce qu’il impose, par exemple `eu-models-pii-redact`, et non d’après une équipe, pour pouvoir le réutiliser sur plusieurs clés.
 
-Procédez dans cet ordre :
+Définissez l’accès aux routes avant les contrôles de contenu :
 
-1. commencez par une clé de test ou à faible risque
-2. si possible, associez un seul garde-fou à la fois
-3. vérifiez que la fenêtre des détails de la clé affiche le garde-fou appliqué
+| Réglage | Choix |
+| --- | --- |
+| **Mode fournisseur** | Autoriser tout fournisseurs, Autoriser uniquement les fournisseurs sélectionnés, ou Autoriser tous sauf les fournisseurs sélectionnés |
+| **Mode modèle** | Autoriser tous les modèles, ou Autoriser uniquement les fournisseurs sélectionnés modèles (appliqué après le filtrage des fournisseurs) |
+| **Données traitement** | ZDR uniquement, et si les endpoints gratuits ou payants susceptibles d’entraîner des modèles sur les entrées restent éligibles |
 
-## 3. Définir les restrictions de routage
+Une première règle courante bloque les fournisseurs peu fiables et n’autorise que les modèles de production exacts que la clé doit atteindre. Utilisez l’aperçu pour vérifier quels fournisseurs et modèles restent routables, et si **Autoriser uniquement** est plus restrictif que prévu.
 
-Combinaison courante :
+</Step>
+<Step title="Ajouter des contrôles de contenu">
 
-- liste de blocage des fournisseurs considérés comme peu fiables
-- liste d’autorisation des modèles exacts de production qui doivent rester routables
+**Injection d’invite** analyse le contenu fourni par l’utilisateur à la recherche de schémas d’injection courants. **Informations sensibles** détecte les données avant que la requête ne quitte Phaseo :
 
-Les garde-fous n'appliquent pas de limites de dépenses. Pour plafonner les dépenses, définissez une limite sur la clé API elle-même ou créez un [budget d'espace de travail](../api-reference/endpoint/budgets-list.mdx).
+| Détecteur | Masqué en | Ajoute de la latence |
+| --- | --- | --- |
+| Adresse e-mail | `[EMAIL]` | Non |
+| Numéro de téléphone | `[PHONE]` | Non |
+| Numéro de sécurité sociale américain | `[SSN]` | Non |
+| Numéro de carte bancaire | `[CREDIT_CARD]` | Non |
+| Adresse IP (IPv4) | `[IP_ADDRESS]` | Non |
+| Nom de personne | `[PERSON_NAME]` | Oui |
+| Adresse postale | `[ADDRESS]` | Oui |
 
-Utilisez l’aperçu en direct de l’éditeur de garde-fous pour vérifier :
+Chaque contrôle a une action : **Signaler**, **Masquer** ou **Bloquer**. Démarrez l’injection de prompt sur **Signaler** ou **Masquer**, et passez à **Bloquer** seulement après avoir examiné les faux positifs. Utilisez d’abord les détecteurs rapides. Ajoutez des schémas personnalisés sous forme de règles regex explicites.
 
-- quels fournisseurs restent autorisés
-- quels modèles sont bloqués
-- si `Only allow` restreint davantage que prévu
+</Step>
+<Step title="Le tester dans l’aperçu">
 
-## 4. Ajouter des règles contre l’injection de prompt et sur les informations sensibles
+Avant d’enregistrer, faites passer trois entrées dans l’aperçu : une inoffensive, une qui doit clairement être arrêtée et un prompt de production réaliste. Vérifiez le texte de masquage, le résultat de blocage ou d’autorisation, et qu’aucun élément sans rapport ne correspond.
 
-Pour un déploiement pratique :
+</Step>
+<Step title="L’associer à une clé">
 
-- commencez par `flag` ou `redact` pour l’injection de prompt
-- passez à `block` uniquement après avoir examiné les faux positifs
-- utilisez d’abord des règles déterministes pour les informations sensibles :
-  - adresse e-mail
-  - numéro de téléphone
-  - numéro de sécurité sociale américain (SSN)
-  - carte de crédit
-  - adresse IP
+Sous **Appliquer aux clés**, choisissez une clé de préproduction ou à faible risque. Vous pouvez associer le garde-fou dès sa création. **Appliquer aux membres** l’impose plutôt aux clés API que ces membres créent. Les membres ne peuvent ni modifier ni retirer un garde-fou attribué par un propriétaire ou un administrateur de l’espace de travail.
 
-Si vous avez besoin de motifs personnalisés, ajoutez-les en tant que règles regex explicites et testez-les dans le champ d’aperçu avant l’enregistrement.
+</Step>
+<Step title="Vérifier son application">
 
-## 5. Tester la politique avant un déploiement à grande échelle
+Envoyez de vraies requêtes avec la clé, puis vérifiez :
 
-Dans l’aperçu du garde-fou, testez :
+- **Paramètres → Utilisation → Règles de protection** pour le nombre de requêtes bloquées, masquées et signalées.
+- La section **Application des règles de protection** d’une requête dans **Paramètres → Utilisation → Journaux**, pour voir le garde-fou et le détecteur qui se sont déclenchés.
+- La colonne **Règles de protection** dans **Paramètres → Clés API**, pour confirmer les clés auxquelles il est associé.
 
-- une entrée sans risque
-- une entrée clairement interdite
-- un prompt réaliste, proche de ceux utilisés en production
+</Step>
+<Step title="Étendre le déploiement">
 
-Vérifiez :
+Associez le même garde-fou à d’autres clés, durcissez les actions de **Signaler** vers **Masquer** ou **Bloquer**, et n’ajoutez les détecteurs de nom de personne et d’adresse que là où leur latence est acceptable.
 
-- le texte de masquage attendu
-- le comportement de blocage et d’autorisation
-- l’absence de détection accidentelle dans du contenu sans rapport
+</Step>
+</Steps>
 
-## 6. Vérifier l’application dans l’activité et les journaux
-
-Après avoir envoyé de vraies requêtes avec la clé protégée, vérifiez :
-
-- le panneau **Application des garde-fous** sur la page d’activité
-- les fenêtres de détail des requêtes bloquées ou dont le contenu a été masqué
-- l’activité des garde-fous par clé dans la fenêtre des détails de la clé d’API
-
-Vous devriez voir :
-
-- le nombre de blocages
-- le nombre de contenus masqués
-- le nombre d’alertes
-- les détails du garde-fou et du détecteur concernés lorsqu’une règle s’est appliquée
-
-## 7. Étendre le déploiement en toute sécurité
-
-Lorsque la première clé fonctionne comme prévu :
-
-1. associez le même garde-fou à d’autres clés
-2. renforcez les actions de `flag` vers `redact` ou `block`
-3. activez la détection plus lente des noms et des adresses uniquement si le coût en latence est acceptable
-
-## Guides associés
-
-- [Préréglages](../guides/presets.mdx)
-- [Guide de démarrage rapide](../quickstart.mdx)
-- [Agents de programmation avec `SKILL.md`](./coding-agents-skill-md.mdx)
-
+Un garde-fou désactivé conserve sa configuration mais n’est pas appliqué. Pour partager des règles de routage entre appelants plutôt que de les imposer à des clés, utilisez un [préréglage](../guides/presets).

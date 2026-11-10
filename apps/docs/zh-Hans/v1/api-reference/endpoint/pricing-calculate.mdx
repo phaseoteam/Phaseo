@@ -3,17 +3,14 @@ title: "计算价格"
 sidebarTitle: "计算价格"
 badge: "Beta"
 openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /pricing/calculate"
-description: "估算特定供应商/模型/端点用量载荷的费用。"
+description: "估算特定提供商/模型/端点用量载荷的费用。"
 ---
 
-根据当前有效的网关定价规则计算所提供用量载荷的价格。
+发送一份用量载荷，按某个提供商、模型和端点当前有效的 Gateway 定价规则为其计价。四个字段都是必填项：
 
-请提供：
+- `provider`：提供商 ID，例如 `openai`。
+- `model`：路由的模型 ID。
+- `endpoint`：端点类型，例如 `responses` 或 `chat.completions`。
+- `usage`：要计价的用量，例如 token 数量或其他计量输入。
 
-- `provider`：供应商 ID，例如 `openai`
-- `model`：路由模型 ID
-- `endpoint`：端点类型，例如 `responses` 或 `chat.completions`
-- `usage`：要计价的用量对象，例如 token 数量或其他计量输入
-
-如果你已确定目标供应商/模型/端点，并希望估算特定用量载荷的账单，请使用此路由；`GET /pricing/models` 则用于列出当前公开的目录定价信息。
-
+如果你想列出当前价格，而不是为单个载荷计价，请使用[列出模型定价](./pricing-models.mdx)。

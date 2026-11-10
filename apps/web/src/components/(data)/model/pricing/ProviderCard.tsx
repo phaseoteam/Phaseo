@@ -1,5 +1,3 @@
-"use client";
-
 import { formatLatency } from "@phaseo/app-kit/format";
 import { currentCatalogDataPolicy } from "@/lib/providers/catalogDataPolicy";
 import { GroupedInputPrice } from "./GroupedInputPrice";
@@ -12,7 +10,7 @@ import { ProviderRoutingHelp } from "./ProviderRoutingHelp";
 import React, { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { resolveScopedZdr } from "@/components/(data)/model/pricing/zdr";
 import { Link } from "@/i18n/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { getLocalizedDocsHref } from "@/lib/docs";
 import { motion, useReducedMotion } from "motion/react";
 import NumberFlow from "@number-flow/react";
@@ -47,11 +45,6 @@ import {
 	HoverCardContent,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
-import {
-	Tooltip,
-	TooltipContent,
-	TooltipTrigger,
-} from "@/components/ui/tooltip";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { TableCell, TableRow } from "@/components/ui/table";
 import {
@@ -82,7 +75,10 @@ import {
 } from "@/components/(data)/model/pricing/pricingHelpers";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import type { PricingRuntimeStats as ProviderRuntimeStats } from "./pricingRuntimeStats";
+import type { ProviderAttemptHealth } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
+import { type AttemptFailureShare, attemptFailureShares, formatFailureShare } from "@/components/(data)/models/attemptFunnel";
 import type { ProviderRoutingStatus } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
+import { ProviderLiveRoutingIndicator, useLiveRouting } from "./ProviderLiveRouting";
 import { Logo } from "@/components/Logo";
 import ProviderInfoHoverIcons from "@/components/(data)/model/ProviderInfoHoverIcons";
 import PricingPlanSelect from "@/components/(data)/model/pricing/PricingPlanSelect";
@@ -187,6 +183,8 @@ function hasUptimeObservation(
 	runtimeStats: ProviderRuntimeStats | null | undefined,
 ): boolean {
 	if (!runtimeStats) return false;
+	// A provider that only ever failed over has attempt uptime but no served requests.
+	if (runtimeStats.attemptHealth3d?.uptimePct != null) return true;
 	if ((runtimeStats.healthRequests3d ?? 0) > 0) return true;
 	return runtimeStats.uptimeDaily3d.some((entry) => entry.requests > 0);
 }
@@ -258,14 +256,26 @@ function getDisplayedUptimePct(
 	return runtimeStats?.uptimePct3d ?? null;
 }
 
-function getUptimeTrendPoints(
+export type UptimeTrendPoint = {
+	dayOffset: 0 | 1 | 2;
+	value: number | null;
+	/** No eligible attempts that day (shown as 100% when the provider had traffic in the window). */
+	noTraffic: boolean;
+};
+
+/** The last 3 UTC days' uptime, oldest first. */
+export function getUptimeTrendPoints(
 	runtimeStats: ProviderRuntimeStats | null | undefined,
-): Array<number | null> {
-	if (!hasUptimeObservation(runtimeStats)) return [null, null, null];
-	const pointsByDay = new Map(
-		(runtimeStats?.uptimeDaily3d ?? []).map((entry) => [entry.dayOffset, entry.uptimePct]),
+): UptimeTrendPoint[] {
+	const observed = hasUptimeObservation(runtimeStats);
+	const entriesByDay = new Map(
+		(runtimeStats?.uptimeDaily3d ?? []).map((entry) => [entry.dayOffset, entry]),
 	);
-	return [2, 1, 0].map((dayOffset) => pointsByDay.get(dayOffset as 0 | 1 | 2) ?? null);
+	return ([2, 1, 0] as const).map((dayOffset) => {
+		const entry = observed ? entriesByDay.get(dayOffset) : undefined;
+		const value = entry?.uptimePct != null && Number.isFinite(entry.uptimePct) ? entry.uptimePct : null;
+		return { dayOffset, value, noTraffic: value == null || entry?.noTraffic === true };
+	});
 }
 
 function formatUptimeDayLabel(dayOffset: number, locale: string, todayLabel: string): string {
@@ -273,6 +283,44 @@ function formatUptimeDayLabel(dayOffset: number, locale: string, todayLabel: str
 	return new Intl.RelativeTimeFormat(locale, { numeric: "always", style: "short" }).format(
 		-dayOffset,
 		"day",
+	);
+}
+
+/**
+ * Reachable, accepted and completed per provider attempt, with the share that
+ * failed each step. Percentages only: the counts behind them reveal the model's
+ * traffic volume. Customer- and Phaseo-caused attempts are not counted.
+ */
+function AttemptHealthBreakdown({ health }: { health: ProviderAttemptHealth }) {
+	const t = useTranslations("Catalogue.modelDetail.uptime");
+	const locale = useLocale();
+	// Each rate is of the step before it: reached of eligible, accepted of reached, completed of accepted.
+	const shares = attemptFailureShares(health);
+	const detail = (share: AttemptFailureShare, failedText: (percent: string) => string, unmeasured: string) => {
+		if (share.kind === "none") return t("noFailures");
+		if (share.kind === "unmeasured") return unmeasured;
+		return failedText(formatFailureShare(share.pct, locale));
+	};
+	const metrics = [
+		{ key: "reachability", label: t("reachabilityLabel"), pct: health.reachabilityPct, detail: detail(shares.reachability, (percent) => t("reachabilityFailureShare", { percent }), t("noFailures")) },
+		{ key: "capacity", label: t("capacityLabel"), pct: health.capacityPct, detail: detail(shares.capacity, (percent) => t("capacityFailureShare", { percent }), t("capacityUnmeasured")) },
+		{ key: "callErrors", label: t("callErrorsLabel"), pct: health.callErrorPct, detail: detail(shares.callErrors, (percent) => t("callErrorsFailureShare", { percent }), t("callErrorsUnmeasured")) },
+	];
+	return (
+		<dl className="space-y-1.5 border-t border-zinc-200 pt-2.5 dark:border-zinc-800">
+			{metrics.map((metric) => (
+				<div key={metric.key}>
+					<div className="flex items-center justify-between gap-4">
+						<dt className="text-xs text-foreground">{metric.label}</dt>
+						<dd className={cn("text-xs font-medium tabular-nums", uptimeValueClass(metric.pct))}>
+							{formatPercent(metric.pct, locale)}
+						</dd>
+					</div>
+					<p className="text-[11px] text-muted-foreground tabular-nums">{metric.detail}</p>
+				</div>
+			))}
+			<p className="text-[11px] text-muted-foreground">{t("attemptBasis")}</p>
+		</dl>
 	);
 }
 
@@ -325,100 +373,83 @@ function UptimeHoverContent({
 					);
 				})}
 			</div>
+			{runtimeStats?.attemptHealth3d ? <AttemptHealthBreakdown health={runtimeStats.attemptHealth3d} /> : null}
 			<UptimeKey className="border-t border-zinc-200 pt-2.5 dark:border-zinc-800" />
 		</div>
 	);
 }
 
-function UptimeSparkline({
+/**
+ * The last 3 days' uptime as bars, oldest first, coloured by the uptime bands.
+ * Each bar is a button whose card gives its day and rate on hover, keyboard
+ * focus or tap (the row it sits in ignores clicks on buttons). A day with no
+ * traffic says so. `interactive={false}` draws plain bars, for a sparkline that
+ * sits inside another control.
+ */
+export function UptimeSparkline({
 	points,
 	className,
+	interactive = true,
 }: {
-	points: Array<number | null>;
+	points: UptimeTrendPoint[];
 	className?: string;
+	interactive?: boolean;
 }) {
 	const t = useTranslations("Catalogue.modelDetail.sections");
+	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
 	const locale = useLocale();
-	const values = points.filter(
-		(value): value is number => value != null && Number.isFinite(value),
-	);
+	if (!points.some((point) => point.value != null)) return null;
 
-	if (values.length === 0) return null;
-
-	const width = 28;
-	const height = 14;
-	const insetX = 1;
-	const insetY = 1.5;
-	const gap = 2.5;
-	const barWidth =
-		(width - insetX * 2 - gap * Math.max(points.length - 1, 0)) / Math.max(points.length, 1);
-	const barHeight = height - insetY * 2;
+	const describe = (point: UptimeTrendPoint) => {
+		const day = formatUptimeDayLabel(point.dayOffset, locale, t("today"));
+		return point.noTraffic
+			? tProvider("uptimeDayNoTraffic", { day })
+			: `${day}: ${formatPercent(point.value, locale)}`;
+	};
 
 	return (
-		<svg
-			viewBox={`0 0 ${width} ${height}`}
-			className={cn("h-3.5 w-8 shrink-0 overflow-visible", className)}
+		<span
+			role={interactive ? "group" : "img"}
 			aria-label={t("dailyUptime")}
-			role="img"
+			className={cn("inline-flex h-3.5 w-8 shrink-0 items-stretch gap-[3px] px-px", className)}
 		>
-			{points.map((value, index) => {
-				const x = insetX + index * (barWidth + gap);
-				const y = height - insetY - barHeight;
-				const opacity =
-					value == null || !Number.isFinite(value)
-						? 0.45
-						: 1;
-
-				const day = formatUptimeDayLabel(
-					points.length - 1 - index,
-					locale,
-					t("today"),
+			{points.map((point) => {
+				const bar = (
+					<span
+						aria-hidden="true"
+						className={cn(
+							"block w-full rounded-[2px] bg-current",
+							point.value == null ? "text-muted-foreground opacity-45" : uptimeValueClass(point.value),
+						)}
+					/>
 				);
-
+				if (!interactive) {
+					return (
+						<span key={point.dayOffset} className="flex flex-1">
+							{bar}
+						</span>
+					);
+				}
+				const label = describe(point);
 				return (
-					<Tooltip key={`${index}-${value ?? "null"}`}>
-						<TooltipTrigger asChild>
-							<g
-								aria-label={`${day}: ${formatPercent(value, locale)}`}
-								className="cursor-help"
-								tabIndex={0}
+					<HoverCard key={point.dayOffset}>
+						{/* The wrapper ignores openDelay; Base UI takes the delays on the trigger. */}
+						<HoverCardTrigger asChild delay={100} closeDelay={80}>
+							<button
+								type="button"
+								aria-label={label}
+								className="relative flex flex-1 cursor-help rounded-[2px] after:absolute after:-inset-y-2 after:inset-x-0 after:content-[''] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
 							>
-								<rect
-									className={cn(
-										value == null || !Number.isFinite(value)
-											? "text-muted-foreground"
-											: uptimeValueClass(value),
-									)}
-									x={x}
-									y={y}
-									width={barWidth}
-									height={barHeight}
-									rx={1.8}
-									fill="currentColor"
-									fillOpacity={opacity}
-									stroke={
-										index === points.length - 1 && value != null && Number.isFinite(value)
-											? "currentColor"
-											: "none"
-									}
-									strokeOpacity={0.12}
-									strokeWidth={0.6}
-								/>
-							</g>
-						</TooltipTrigger>
-						<TooltipContent side="top">{day}: {formatPercent(value, locale)}</TooltipContent>
-					</Tooltip>
+								{bar}
+							</button>
+						</HoverCardTrigger>
+						<HoverCardContent side="top" className="w-auto rounded-md px-2 py-1 text-xs tabular-nums">
+							{label}
+						</HoverCardContent>
+					</HoverCard>
 				);
 			})}
-			<path
-				d={`M ${insetX} ${height - insetY} H ${width - insetX}`}
-				fill="none"
-				stroke="currentColor"
-				strokeOpacity="0.14"
-				strokeWidth="1"
-				strokeLinecap="round"
-			/>
-		</svg>
+		</span>
 	);
 }
 
@@ -611,6 +642,9 @@ function ProviderHourlyPerformance({
 		.sort((a, b) => b[1] - a[1]);
 	const totalFailures = categories.reduce((sum, [, count]) => sum + count, 0);
 	const rateLimited = runtimeStats?.rateLimited3d ?? 0;
+	// A share of the provider's requests, never the count: counts reveal traffic volume.
+	const requests3d = runtimeStats?.requests3d ?? 0;
+	const rateLimitedPct = rateLimited > 0 && requests3d > 0 ? Math.min(100, (rateLimited / requests3d) * 100) : null;
 	const metricLabel = getPerformanceMetricLabel(activeMetric, tx);
 	const metricTooltipLabel = getPerformanceMetricTooltipLabel(activeMetric, tx);
 	const performancePeriod = hoveredPoint
@@ -623,7 +657,7 @@ function ProviderHourlyPerformance({
 	const hasHourlyPerformance = points.length > 0 && (
 		metricValues.length > 0 || hasUptimeObservation(runtimeStats)
 	);
-	if (!hasHourlyPerformance && categories.length === 0 && rateLimited === 0) return null;
+	if (!hasHourlyPerformance && categories.length === 0 && rateLimitedPct == null) return null;
 
 	return (
 		<div className="space-y-3 py-3">
@@ -688,14 +722,14 @@ function ProviderHourlyPerformance({
 					) : null}
 				</div>
 			) : null}
-			{categories.length > 0 || rateLimited > 0 ? (
+			{categories.length > 0 || rateLimitedPct != null ? (
 				<div>
 					<p className="text-[11px] text-muted-foreground">{tx("Common.ui.providerCardCopy.errorBreakdown3Days" as never)}</p>
 					<div className="mt-1.5 flex flex-wrap gap-x-4 gap-y-1 text-xs">
 						{categories.map(([category, count]) => (
 							<span key={category} className="tabular-nums"><span className="text-muted-foreground">{ERROR_CATEGORY_LABELS[category] ? tx(ERROR_CATEGORY_LABELS[category] as never) : category}</span> {totalFailures > 0 ? formatPercent((count / totalFailures) * 100, locale) : "—"}</span>
 						))}
-						{rateLimited > 0 ? <span className="tabular-nums">{tx("Common.ui.providerCardCopy.rateLimitedCountExcluded", { count: rateLimited.toLocaleString(locale) })}</span> : null}
+						{rateLimitedPct != null ? <span className="tabular-nums">{tx("Common.ui.providerCardCopy.rateLimitedShareExcluded", { percent: formatFailureShare(rateLimitedPct, locale) })}</span> : null}
 					</div>
 				</div>
 			) : null}
@@ -865,31 +899,6 @@ function renderSecondaryTierSummary(
 			</div>
 		</div>
 	);
-}
-
-function getRoutingHealthSummary(
-	routingStatus: ProviderRoutingStatus | null | undefined,
-	labels: {
-		limited: string;
-		limitedDescription: (count: number) => string;
-		recovering: string;
-		recoveringDescription: (count: number) => string;
-	},
-): { label: string; description: string } | null {
-	if (!routingStatus) return null;
-	if (routingStatus.deranked) {
-		return {
-			label: labels.limited,
-			description: labels.limitedDescription(routingStatus.openCount),
-		};
-	}
-	if (routingStatus.recovering) {
-		return {
-			label: labels.recovering,
-			description: labels.recoveringDescription(routingStatus.halfOpenCount),
-		};
-	}
-	return null;
 }
 
 /** "131,072 tokens": token limits in full in the provider details, in the reader's language. */
@@ -1756,23 +1765,11 @@ export const PROVIDER_STATUS_META: Record<
 		iconClass: "text-sky-600",
 		description: "Visible to admins only while this provider/model capability is being tested.",
 	},
-	deranked_lvl1: {
-		label: "Deranked L1",
-		icon: AlertTriangle,
-		iconClass: "text-amber-500",
-		description: "Routable, but slightly deprioritized by routing health.",
-	},
-	deranked_lvl2: {
-		label: "Deranked L2",
+	deranked: {
+		label: "Lower priority",
 		icon: AlertTriangle,
 		iconClass: "text-amber-600",
-		description: "Routable, but currently deprioritized by routing health.",
-	},
-	deranked_lvl3: {
-		label: "Deranked L3",
-		icon: AlertTriangle,
-		iconClass: "text-red-500",
-		description: "Routable, but heavily deprioritized by routing health.",
+		description: "Set by Phaseo. Used only as a backup when the other providers fail.",
 	},
 	inactive: {
 		label: "Not Active",
@@ -2144,20 +2141,13 @@ export default function ProviderCard({
 		coming_soon: { label: "statuses.comingSoon", description: "statusDescriptions.comingSoon" },
 		external: { label: "statuses.external", description: "statusDescriptions.external" },
 		internal_testing: { label: "statuses.internalTesting", description: "statusDescriptions.internalTesting" },
-		deranked_lvl1: { label: "statuses.rateLimited", description: "statusDescriptions.rateLimited" },
-		deranked_lvl2: { label: "statuses.rateLimited", description: "statusDescriptions.rateLimited" },
-		deranked_lvl3: { label: "statuses.rateLimited", description: "statusDescriptions.rateLimited" },
+		deranked: { label: "statuses.rateLimited", description: "statusDescriptions.rateLimited" },
 		inactive: { label: "statuses.inactive", description: "statusDescriptions.inactive" },
 		disabled: { label: "statuses.disabled", description: "statusDescriptions.disabled" },
 		not_listed: { label: "statuses.inactive", description: "statusDescriptions.inactive" },
 	};
 	const statusLabel = tProvider(statusTranslationKeys[statusKey].label as never);
-	const routingHealthSummary = getRoutingHealthSummary(routingStatus, {
-		limited: tSections("routingHealthLimited"),
-		limitedDescription: (count) => tSections("routingHealthLimitedDescription", { count }),
-		recovering: tSections("routingHealthRecovering"),
-		recoveringDescription: (count) => tSections("routingHealthRecoveringDescription", { count }),
-	});
+	const liveRouting = useLiveRouting(routingStatus, statusKey);
 	const statusDescription = tProvider(statusTranslationKeys[statusKey].description as never);
 	const statusDetail = statusKey === "active" && leavingSoonProviderModel?.effective_to
 		? `${statusDescription} ${tProvider("availabilityEndsOn", { date: formatLeavingDate(leavingSoonProviderModel.effective_to, format.calendarDate) })}`
@@ -3380,12 +3370,6 @@ export default function ProviderCard({
 										<ProviderLifecycleDetails
 											providerModels={tableProviderModelsInScope}
 										/>
-										{routingHealthSummary ? (
-											<div className="mt-2 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
-												<p className="font-semibold">{routingHealthSummary.label}</p>
-												<p>{routingHealthSummary.description}</p>
-											</div>
-										) : null}
 										<div className="mt-2 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
 											<Link
 								href={getLocalizedDocsHref(locale, PROVIDER_STATUSES_DOCS_HREF)}
@@ -3398,6 +3382,12 @@ export default function ProviderCard({
 										</div>
 									</HoverCardContent>
 								</HoverCard>
+								<ProviderLiveRoutingIndicator
+									routingStatus={routingStatus}
+									statusKey={tableStatusKey}
+									docsHref={getLocalizedDocsHref(locale, PROVIDER_STATUSES_DOCS_HREF)}
+									docsLabel={tProvider("learnMoreProviderStatuses")}
+								/>
 								{privacyIgnoredReasons?.length || workspacePolicyBlockedReasons?.length ? (
 									<HoverCard openDelay={120} closeDelay={80}>
 										<HoverCardTrigger asChild>
@@ -3614,12 +3604,6 @@ export default function ProviderCard({
 											<ProviderLifecycleDetails
 												providerModels={providerModelsInScope}
 											/>
-											{routingHealthSummary ? (
-												<div className="mt-2 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
-													<p className="font-semibold">{routingHealthSummary.label}</p>
-													<p>{routingHealthSummary.description}</p>
-												</div>
-											) : null}
 											<div className="mt-2 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
 												<Link
 								href={getLocalizedDocsHref(locale, PROVIDER_STATUSES_DOCS_HREF)}
@@ -3632,6 +3616,13 @@ export default function ProviderCard({
 											</div>
 										</HoverCardContent>
 									</HoverCard>
+									<ProviderLiveRoutingIndicator
+										routingStatus={routingStatus}
+										statusKey={statusKey}
+										docsHref={getLocalizedDocsHref(locale, PROVIDER_STATUSES_DOCS_HREF)}
+										docsLabel={tProvider("learnMoreProviderStatuses")}
+										size="sm"
+									/>
 								</div>
 								<ProviderInspectorSheetDescription className="mt-1 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 font-mono text-[11px]">
 									<button
@@ -3882,7 +3873,7 @@ export default function ProviderCard({
 										>
 											<ProviderPerformanceMetricValue metric={metric.key} value={metric.value} />
 											{metric.key === "uptime" && activePerformanceMetric !== "uptime" ? (
-												<UptimeSparkline points={uptimeTrendPoints} className="h-4 w-10" />
+												<UptimeSparkline points={uptimeTrendPoints} className="h-4 w-10" interactive={false} />
 											) : null}
 										</div>
 									</button>
@@ -3895,9 +3886,9 @@ export default function ProviderCard({
 								onPointHover={handlePerformancePointHover}
 								onPointLeave={handlePerformancePointLeave}
 							/>
-								{routingHealthSummary ? (
-									<Callout tone="warning" title={routingHealthSummary.label}>
-										{routingHealthSummary.description}
+								{liveRouting ? (
+									<Callout tone={liveRouting.state === "limited" ? "warning" : "info"} title={liveRouting.label}>
+										{liveRouting.description} {liveRouting.automatic}
 									</Callout>
 								) : null}
 							</section>
@@ -3921,6 +3912,15 @@ export default function ProviderCard({
 												<span>{statusLabel}</span>
 											</div>
 									</div>
+									{liveRouting ? (
+										<div className="grid grid-cols-[minmax(0,1fr)_auto] items-baseline gap-4">
+											<div className="text-[11px] text-muted-foreground">{tSections("liveRouting")}</div>
+											<div className="flex items-center justify-end gap-2 text-sm font-medium text-foreground">
+												<liveRouting.icon className={cn("h-3.5 w-3.5", liveRouting.className)} aria-hidden />
+												<span>{liveRouting.label}</span>
+											</div>
+										</div>
+									) : null}
 									<div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-4">
 										<div className="text-[11px] text-muted-foreground">{tSections("providerModelIds")}</div>
 										<div className="flex max-w-[18rem] flex-wrap justify-end gap-1.5">

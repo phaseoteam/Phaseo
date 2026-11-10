@@ -1,66 +1,46 @@
 ---
 icon: "book-open"
 title: "Zitieren"
-description: "So kennzeichnest du in deiner Arbeit die Nutzung von Phaseo-Daten, Benchmarks und Gateway-Tools."
+description: "So nennst du Phaseo-Daten, Benchmarks und Gateway-Tools in deiner Arbeit."
 ---
 
-Phaseo bündelt öffentliche Informationen und Benchmark-Ergebnisse von Modellanbietern und Evaluierungsprojekten.
-Wenn du Phaseo zum Nachschlagen, Vergleichen oder Überwachen von Modellen nutzt, hilft eine kurze Quellenangabe anderen dabei, die Plattform zu entdecken.
-
----
-
-## Kurzfassung
-
-Wenn Phaseo hilfreich war, verlinke die Plattform an einer passenden Stelle (Methodik, Fußnote oder Danksagung):
+Zitiere den ursprünglichen Benchmark als Hauptquelle und verlinke Phaseo dort, wo du Modelle nachgeschlagen, verglichen oder überwacht hast. Ein Link in der Methodik, einer Fußnote oder der Danksagung genügt:
 
 > Diese Arbeit nutzt Modellmetadaten und aggregierte Benchmark-Ergebnisse von [Phaseo](https://phaseo.app).
 
----
+## Formelle Quellenangabe
 
-## Zitierempfehlung (optional)
+Verwende das Jahr, in dem du die Daten abgerufen hast.
 
-Für eine formellere Quellenangabe kannst du Folgendes verwenden:
-
-```text
-Phaseo. (2025). Phaseo: Aggregated benchmarks and gateway for AI models. https://phaseo.app
+<CodeGroup>
+```text APA
+Phaseo. (2026). Phaseo: Aggregated benchmarks and gateway for AI models. https://phaseo.app
 ```
 
-BibTeX (optional):
-
-```bibtex
-@misc{phaseo-2025,
+```bibtex BibTeX
+@misc{phaseo-2026,
     title  = {Phaseo: Aggregated benchmarks and gateway for AI models},
     author = {{Phaseo Team}},
-    year   = {2025},
+    year   = {2026},
     url    = {https://phaseo.app}
 }
 ```
+</CodeGroup>
 
----
+## Benchmark-Scores zitieren
 
-## Benchmark-Daten
+Phaseo führt keine Benchmarks aus. Es veröffentlicht Scores, die Benchmark-Autoren, Modellentwickler und Herausgeber von Indizes melden, jeweils mit einem Link zur Quelle (siehe [Benchmark-Methodik](./benchmark-methodology.mdx)).
 
-Phaseo **führt Benchmarks nicht selbst aus**. Wir stellen von Benchmark-Autoren und Modellanbietern veröffentlichte Scores dar und vereinheitlichen sie.
-
-Wenn du Benchmark-Ergebnisse verwendest, die du über Phaseo abgerufen hast:
+Wenn du einen Score verwendest, den du auf Phaseo gefunden hast:
 
 1. Zitiere den ursprünglichen Benchmark und das Paper als Hauptquelle.
-2. Du kannst Phaseo zusätzlich als Ort nennen, an dem du die Scores abgerufen oder verglichen hast.
-3. Gib Folgendes an:
+2. Nenne Phaseo optional als Ort, an dem du den Score abgerufen oder verglichen hast.
+3. Gib den Benchmark-Namen und den Split (zum Beispiel `MMLU test`), die Phaseo-Modell-ID und den Anbieter, die URL der Phaseo-Seite oder des API-Aufrufs sowie das Abrufdatum an.
 
-- Benchmark-Name und Split (zum Beispiel `MMLU test`).
-- Modell-ID und Anbieter.
-- URL der betreffenden Phaseo-Seite oder API.
-- Abrufdatum.
+> Benchmark-Scores wurden über Phaseo abgerufen (MMLU-test-Split), abgerufen am 3. März 2026. Modell: `openai/gpt-6-astra`, Anbieter: OpenAI.
 
-Textbeispiel:
+## Das Gateway nennen
 
-> Benchmark-Scores wurden über Phaseo abgerufen (MMLU-test-Split), abgerufen am 3. März 2025. Modell: `openai-gpt-4o`; Anbieter: OpenAI.
+Wenn Phaseo deine Integrationsschicht und keine Datenquelle war, beschreibe es als Gateway und verlinke die [API-Referenz](../api-reference/introduction.mdx):
 
-## Gateway und Tools
-
-Bei der Beschreibung von Integrationen kannst du Phaseo als Gateway-Schicht und nicht als Quelle für Forschungsbenchmarks nennen:
-
-> Wir haben Phaseo Gateway verwendet, um den Zugriff auf Modelle von OpenAI, Anthropic und Google über eine einzige API zu vereinheitlichen.
-
-Verlinke direkt auf die [API-Referenz](../api-reference/introduction.mdx), damit Leser mehr erfahren können.
+> Wir haben das Phaseo Gateway verwendet, um Modelle von OpenAI, Anthropic und Google über eine einzige API aufzurufen.

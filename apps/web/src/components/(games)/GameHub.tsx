@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/link";
 import {
   ArrowRight,
   CalendarClock,
@@ -15,7 +15,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { GAME_INFO, GAME_KEYS, type GameKey } from "@/lib/games/types";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 const ICONS: Record<GameKey, React.ComponentType<{ className?: string }>> = {
   modele: Target,

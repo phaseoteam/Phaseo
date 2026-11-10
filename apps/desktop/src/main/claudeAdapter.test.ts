@@ -34,6 +34,12 @@ describe("Claude SDK integration", () => {
   await expect(adapter.run(task, "/project", "/review target", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => { if (condition === "cancelled") await adapter.cancel(); return condition === "declined" ? "decline" : "accept"; } }, undefined, [], { kind: "command", id: "review", name: "review", arguments: "target" })).rejects.toBeInstanceOf(AgentInputRejectedError); await admitted; expect(inputs).toEqual([]); expect(close).toHaveBeenCalledOnce();
  });
 
+	it.each([[true, ["user"]], [undefined, ["user", "project", "local"]]] as const)("loads the repository's own settings, hooks and MCP servers only for a checkout the person opened (untrusted: %s)", async (untrustedCheckout, sources) => {
+		sdk.query.mockReturnValue(Object.assign((async function* () { yield { type: "result", subtype: "success", is_error: false, result: "Done" }; })(), { close: vi.fn() }));
+		await new ClaudeAdapter().run({ ...task, mode: "code", permissionMode: "full-access", ...(untrustedCheckout ? { untrustedCheckout } : {}) }, "/project", "Review", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "accept" });
+		expect(sdk.query.mock.lastCall?.[0].options).toMatchObject({ settingSources: sources, permissionMode: "bypassPermissions" });
+	});
+
 	it("publishes todo progress only after successful foreground tool results", async () => {
 		sdk.query.mockReturnValue(Object.assign((async function* () {
 			for (const [id, parent, failed] of [["success", null, false], ["failure", null, true], ["child", "delegate", false]] as const) {

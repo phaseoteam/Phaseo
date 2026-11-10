@@ -5,57 +5,28 @@ description: "Connect the Phaseo documentation MCP server to Codex, Claude Code,
 "og:image": "https://phaseo.app/og/dynamic?title=Docs%20MCP&description=Connect%20the%20Phaseo%20documentation%20MCP%20server%20to%20Codex%2C%20Claude%20Code%2C%20Cursor%2C%20or%20VS%20Code.&pathname=/docs/v1/guides/integrations/docs-mcp"
 ---
 
-If you want your coding agent to answer Phaseo questions using the live docs instead of stale training data, connect the Phaseo documentation MCP server.
-
-This MCP server is read-only. It helps agents search the docs and read full pages while they work.
-
-## Server URL
-
-`https://phaseo.app/docs/mcp`
-
-## What it gives you
-
-- live search across the Phaseo docs
-- full page content when an agent needs more detail
-- access to the hosted [skill.md](https://phaseo.app/docs/skill.md) capability summary
+Add `https://phaseo.app/docs/mcp` to your coding agent as an MCP server so it answers Phaseo questions from the live docs instead of its training data. The server is read-only: agents can search the docs, read full pages, and read the hosted [skill.md](https://phaseo.app/docs/skill.md) capability summary.
 
 ## Codex
 
-Add the server:
-
 ```bash
 codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
-```
-
-Check it:
-
-```bash
 codex mcp list
 ```
 
 ## Claude Code
 
-Add the server for the current project:
+Add the server to the current project, or add `--scope user` to make it available in every project:
 
 ```bash
 claude mcp add --transport http phaseo-docs https://phaseo.app/docs/mcp
-```
-
-Make it available across all projects:
-
-```bash
 claude mcp add --transport http --scope user phaseo-docs https://phaseo.app/docs/mcp
-```
-
-Check it:
-
-```bash
 claude mcp list
 ```
 
 ## Cursor
 
-Use the contextual menu in the docs to install the MCP server in Cursor, or add it manually:
+Install it from the contextual menu on any docs page, or add it to Cursor's MCP config:
 
 ```json
 {
@@ -67,25 +38,9 @@ Use the contextual menu in the docs to install the MCP server in Cursor, or add 
 }
 ```
 
-## OpenCode
-
-Add the Phaseo docs server to `opencode.json`:
-
-```json
-{
-  "$schema": "https://opencode.ai/config.json",
-  "mcp": {
-    "phaseoDocs": {
-      "type": "remote",
-      "url": "https://phaseo.app/docs/mcp"
-    }
-  }
-}
-```
-
 ## VS Code
 
-Use the contextual menu in the docs to install the MCP server in VS Code, or add it manually:
+Install it from the contextual menu on any docs page, or add it to VS Code's MCP config:
 
 ```json
 {
@@ -98,24 +53,28 @@ Use the contextual menu in the docs to install the MCP server in VS Code, or add
 }
 ```
 
-## When to use this
+## OpenCode
 
-Use Docs MCP when you want your agent to:
+Add it to `opencode.json`:
 
-- look up the latest request shape before writing code
-- confirm endpoint support for a model or provider
-- check routing, presets, guardrails, or async-job behavior
-- pull examples from the docs while staying in your editor
+```json opencode.json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "phaseoDocs": {
+      "type": "remote",
+      "url": "https://phaseo.app/docs/mcp"
+    }
+  }
+}
+```
 
-## Good prompts
+## Check it works
+
+Ask the agent something only the docs can answer, and check that it calls the Phaseo docs server:
 
 - `Look up the Responses request format in the Phaseo docs and give me a minimal example.`
 - `Use the Phaseo docs MCP server to check how provider.sort works before you change this request.`
 - `Find the guardrails docs in Phaseo and summarize the parts that affect provider routing.`
 
-## Related guides
-
-- [Codex](./codex.mdx)
-- [Claude Code](./claude-code.mdx)
-- [Quickstart](../../quickstart.mdx)
-- [API Reference](../../api-reference/introduction.mdx)
+Agents use it to check request shapes, which endpoints a model or provider supports, and how routing, presets, guardrails, and async jobs behave. The docs server doesn't make Phaseo your model gateway; for that, see [Coding Agents](./coding-assistants.mdx).

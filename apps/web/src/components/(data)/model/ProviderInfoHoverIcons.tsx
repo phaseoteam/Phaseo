@@ -1,8 +1,6 @@
-"use client";
-
-import Link from "next/link";
+import Link from "@/components/link";
 import type { ReactNode } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import {
@@ -39,7 +37,7 @@ import { normalizeQuantizationScheme } from "@/lib/quantization";
 import { getLocalizedDocsHref } from "@/lib/docs";
 
 const QUANTIZATION_DOCS_URL =
-	"https://phaseo.app/docs/v1/guides/model-quantization";
+	"https://phaseo.app/docs/v1/guides/quantization";
 
 function uniqueDefined(values: Array<string | null | undefined>): string[] {
 	return Array.from(

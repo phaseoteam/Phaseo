@@ -11,6 +11,9 @@ afterEach(() => {
 
 describe("account usage settings routes", () => {
 	it("hides legacy upstream payloads from members when contents are limited to owners and admins", async () => {
+		// The legacy table is only read for ranges before the attempt-detail cut-over.
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-11-01T12:00:00Z"));
 		const upstreamFor = async (role: string) => {
 			vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 				const url = new URL(input instanceof Request ? input.url : String(input));
@@ -153,6 +156,28 @@ describe("account usage settings routes", () => {
 				organisationId: "google",
 			})],
 		]));
+	});
+
+	it("names only this workspace's apps and public apps, and never sends non-UUID ids to the filter", async () => {
+		const appQueries: URL[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(input instanceof Request ? input.url : String(input));
+			if (url.pathname === "/auth/v1/user") return Response.json({ id: "user-1" });
+			if (url.pathname.endsWith("workspace_members")) return Response.json([{ role: "member" }]);
+			if (url.pathname.endsWith("workspaces")) return Response.json([{ owner_user_id: "owner" }]);
+			if (url.pathname.endsWith("api_apps")) { appQueries.push(url); return Response.json([]); }
+			return Response.json([]);
+		}));
+		const appId = "b0000000-0000-4000-8000-000000000002";
+		const response = await app.request(
+			`https://phaseo.app/api/account/settings/usage/metadata?workspaceId=workspace-1&apps=${appId},x)%2Cis_public.eq.false`,
+			{ headers: { authorization: "Bearer session-token" } },
+			env,
+		);
+		expect(response.status).toBe(200);
+		expect(appQueries).toHaveLength(1);
+		expect(appQueries[0].searchParams.get("id")).toBe(`in.(${appId})`);
+		expect(appQueries[0].searchParams.get("or")).toBe("(workspace_id.eq.workspace-1,is_public.eq.true)");
 	});
 
 	it("scopes ambiguous provider aliases before selecting canonical metadata", async () => {
@@ -384,7 +409,7 @@ describe("account usage settings routes", () => {
 		for (const args of labelFacetArgs) expect(args).toEqual({ p_workspace_id: "workspace-1", p_from: expect.any(String), p_to: expect.any(String) });
 		expect(labelTotalsArgs).toEqual([{ p_workspace_id: "workspace-1", p_from: expect.any(String), p_to: expect.any(String), p_label_key: "team", p_label_value: "support" }]);
 		await expect(labeledLogs.json()).resolves.toMatchObject({ view: "logs", data: { labelSummary: { key: "team", value: "support", requestCount: 1, totalCostNanos: 1000, isSampled: false } } });
-		await expect(upstream.json()).resolves.toMatchObject({ view: "upstream", data: { availableKeys: [{ id: "key-1", name: "Production" }], upstreamRequests: [{ id: "upstream-2", request_id: "G-test", attempt_number: 2, attempt_count: 2, request_latency_ms: 360 }, { id: "upstream-1", request_id: "G-test", attempt_number: 1 }], providerMetadataEntries: [["openai", { name: "OpenAI" }]], providerNameEntries: [["openai", "OpenAI"]] } });
+		await expect(upstream.json()).resolves.toMatchObject({ view: "upstream", data: { availableKeys: [{ id: "key-1", name: "Production" }], upstreamRequests: [{ id: "upstream-2", request_id: "G-test", attempt_number: 2, attempt_count: 2, request_latency_ms: 360 }, { id: "upstream-1", request_id: "G-test", attempt_number: 1, error_type: "provider_error" }], providerMetadataEntries: [["openai", { name: "OpenAI" }]], providerNameEntries: [["openai", "OpenAI"]] } });
 		await expect(jobs.json()).resolves.toMatchObject({ view: "jobs", data: { recentJobs: [{ internal_id: "job-1", request_cost_nanos: 0, request_created_at: "2026-07-17T00:00:00Z", webhook: { configured: true, attempt_count: 0 } }], jobProviders: ["openai"] } });
 		await expect(sessions.json()).resolves.toMatchObject({ view: "sessions", data: { sessions: [{ session_id: "session-1", request_count: 1, total_cost_nanos: 1000, model_counts: [{ model_id: "openai/gpt-test", request_count: 1 }], model_provider_counts: [{ model_id: "openai/gpt-test", provider: "openai", request_count: 1 }] }], sessionAppIds: ["app-1"] } });
 		await expect(detail.json()).resolves.toMatchObject({ data: { request: { request_id: "request-1" }, providerNames: [["openai", "OpenAI"]] } });
@@ -412,6 +437,8 @@ describe("account usage settings routes", () => {
 		expect(await response.json()).toMatchObject({ data: { upstreamRequests: [{ request_latency_ms: expected, latency_ms: 60 }] } });
 	});
 	it.each([0, 640, null])("keeps legacy gateway latency distinct from provider latency: %s", async (gatewayLatency) => {
+		vi.useFakeTimers({ toFake: ["Date"] });
+		vi.setSystemTime(new Date("2026-11-01T12:00:00Z"));
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = new URL(input instanceof Request ? input.url : String(input));
 			if (url.pathname.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
@@ -429,6 +456,82 @@ describe("account usage settings routes", () => {
 		expect(response.status).toBe(200);
 		expect(await response.json()).toMatchObject({ data: { upstreamRequests: [{ request_latency_ms: gatewayLatency, latency_ms: 60 }] } });
 	});
+	it("maps the provider detail stored on v2 attempts after the cut-over", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(input instanceof Request ? input.url : String(input));
+			if (url.pathname.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
+			if (url.pathname.includes("workspace_members")) return Response.json([{ role: "admin" }]);
+			if (url.pathname.endsWith("/workspaces")) return Response.json([{ owner_user_id: "user-1" }]);
+			if (url.pathname.endsWith("/v2_request_facts")) {
+				expect(url.searchParams.get("select")).toContain("upstream_error_message");
+				expect(url.searchParams.get("select")).toContain("upstream_error_type");
+				return Response.json([{
+					request_event_id: "event-1", request_id: "G-new", occurred_at: "2026-11-09T15:00:00Z", provider_model_id: "openai:openai/gpt-6-luna",
+					stream: true, gateway_ttft_ms: 300, generation_ms: 800, gateway_total_ms: 900, upstream_attempt_count: 2, cost_nanos: 3800, currency: "USD", stop_reason: "stop", native_response_id: "resp_final", error_code: null,
+					v2_request_attempts: [
+						{ attempt_id: "a2", attempt_number: 2, provider_model_id: "openai:openai/gpt-6-luna", started_at: "2026-11-09T15:00:01.500Z", status_code: 200, status_text: "OK", success: true, latency_ms: 268, safe_metadata: { provider: "openai", provider_api_model_id: "gpt-6-luna", fallback_attempted: true } },
+						{ attempt_id: "a1", attempt_number: 1, provider_model_id: "openai:openai/gpt-6-luna", started_at: "2026-11-09T15:00:00.100Z", status_code: 400, status_text: "Bad Request", success: false, error_code: "upstream_non_2xx", failure_class: "upstream_non_2xx", latency_ms: 383, safe_metadata: { provider: "openai", provider_api_model_id: "gpt-6-luna" }, upstream_error_code: "invalid_value", upstream_error_type: "invalid_request_error", upstream_error_message: "Failed to download file.", upstream_error_description: "url" },
+					],
+				}]);
+			}
+			if (url.pathname.endsWith("/gateway_upstream_requests")) throw new Error("legacy table read for a post-cut-over request");
+			return Response.json([]);
+		}));
+		const response = await app.request("https://phaseo.app/api/account/settings/usage/logs?workspaceId=workspace-1&view=upstream&usage_from=2026-11-09T14:30:00Z&usage_to=2026-11-09T16:00:00Z", { headers: { authorization: "Bearer session-token" } }, env);
+		expect(response.status).toBe(200);
+		const body = await response.json() as { data: { upstreamRequests: Array<Record<string, unknown>> } };
+		expect(body.data.upstreamRequests).toMatchObject([
+			{ id: "a2", created_at: "2026-11-09T15:00:01.500Z", provider: "openai", api_model_id: "openai/gpt-6-luna", provider_model_slug: "gpt-6-luna", status_text: "OK", fallback_attempted: true, finish_reason: "stop", cost_nanos: 3800, generation_ms: 800, total_ms: 900, error_message: null },
+			{ id: "a1", status_code: 400, status_text: "Bad Request", outcome: "upstream_non_2xx", fallback_attempted: false, finish_reason: null, cost_nanos: 0, generation_ms: null, total_ms: 383, error_code: "invalid_value", error_type: "invalid_request_error", error_message: "Failed to download file.", error_description: "url" },
+		]);
+	});
+	it.each([
+		{ name: "skips the legacy table for a range after the cut-over", from: "2026-11-09T14:00:00Z", to: "2026-11-09T16:00:00Z", legacyFilter: null },
+		{ name: "stops the legacy read at the cut-over", from: "2026-11-09T12:00:00Z", to: "2026-11-09T16:00:00Z", legacyFilter: ["created_at=gte.2026-11-09T12:00:00.000Z", "created_at=lt.2026-11-09T14:00:00.000Z"] },
+		{ name: "reads the legacy table for a range before the cut-over", from: "2026-11-08T12:00:00Z", to: "2026-11-09T12:00:00Z", legacyFilter: ["created_at=gte.2026-11-08T12:00:00.000Z", "created_at=lte.2026-11-09T12:00:00.000Z"] },
+	])("$name", async ({ from, to, legacyFilter }) => {
+		const legacyReads: string[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(input instanceof Request ? input.url : String(input));
+			if (url.pathname.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
+			if (url.pathname.includes("workspace_members")) return Response.json([{ role: "admin" }]);
+			if (url.pathname.endsWith("/workspaces")) return Response.json([{ owner_user_id: "user-1" }]);
+			if (url.pathname.endsWith("/gateway_upstream_requests")) {
+				legacyReads.push(decodeURIComponent(url.search));
+				return Response.json([{ id: "legacy", request_id: "G-old", created_at: from, error_message: "Old error" }]);
+			}
+			return Response.json([]);
+		}));
+		const response = await app.request(`https://phaseo.app/api/account/settings/usage/logs?workspaceId=workspace-1&view=upstream&usage_from=${from}&usage_to=${to}`, { headers: { authorization: "Bearer session-token" } }, env);
+		expect(response.status).toBe(200);
+		const body = await response.json() as { data: { upstreamRequests: Array<Record<string, unknown>> } };
+		if (!legacyFilter) {
+			expect(legacyReads).toEqual([]);
+			expect(body.data.upstreamRequests).toEqual([]);
+			return;
+		}
+		expect(legacyReads).toHaveLength(1);
+		for (const filter of legacyFilter) expect(legacyReads[0]).toContain(filter);
+		expect(body.data.upstreamRequests).toMatchObject([{ id: "legacy", error_message: "Old error" }]);
+	});
+	it("fails instead of returning only the legacy part when the v2 read fails for a range past the cut-over", async () => {
+		const legacyReads: string[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(input instanceof Request ? input.url : String(input));
+			if (url.pathname.includes("/auth/v1/user")) return Response.json({ id: "user-1" });
+			if (url.pathname.includes("workspace_members")) return Response.json([{ role: "admin" }]);
+			if (url.pathname.endsWith("/workspaces")) return Response.json([{ owner_user_id: "user-1" }]);
+			if (url.pathname.endsWith("/v2_request_facts")) return Response.json({ code: "57014", message: "canceling statement due to statement timeout" }, { status: 500 });
+			if (url.pathname.endsWith("/gateway_upstream_requests")) {
+				legacyReads.push(url.pathname);
+				return Response.json([{ id: "legacy", request_id: "G-old" }]);
+			}
+			return Response.json([]);
+		}));
+		const response = await app.request("https://phaseo.app/api/account/settings/usage/logs?workspaceId=workspace-1&view=upstream&usage_from=2026-11-09T12:00:00Z&usage_to=2026-11-09T16:00:00Z", { headers: { authorization: "Bearer session-token" } }, env);
+		expect(response.status).toBe(503);
+		expect(legacyReads).toEqual([]);
+	});
 	it("returns the private observability windows and lookup metadata", async () => {
 		vi.useFakeTimers({ toFake: ["Date"] });
 		vi.setSystemTime(new Date("2026-10-15T12:00:00Z"));
@@ -439,7 +542,7 @@ describe("account usage settings routes", () => {
 			if (url.includes("/auth/v1/user")) return new Response(JSON.stringify({ id: "user-1", created_at: "2025-01-01" }), { status: 200 });
 			if (url.includes("/rpc/get_private_usage_overview")) {
 				overviewArgs.push(JSON.parse(String(init?.body ?? "{}")));
-				return new Response(JSON.stringify([{ bucket: "2026-07-17T00:00:00+00:00", modelId: "openai/gpt-test", provider: "openai", keyId: "key-1", appId: "app-1", byok: false, requests: 3, successfulRequests: 3, guardrailBlocked: 0, costNanos: 1000, tokens: 12, inputTokens: 10, outputTokens: 2, reasoningTokens: 0, cachedTokens: 0 }]), { status: 200 });
+				return new Response(JSON.stringify([{ bucket: "2026-07-17T00:00:00+00:00", modelId: "openai/gpt-test", provider: "openai", keyId: "key-1", appId: "a0000000-0000-4000-8000-000000000001", byok: false, requests: 3, successfulRequests: 3, guardrailBlocked: 0, costNanos: 1000, tokens: 12, inputTokens: 10, outputTokens: 2, reasoningTokens: 0, cachedTokens: 0 }]), { status: 200 });
 			}
 			if (url.includes("/rpc/get_private_usage_month_days")) {
 				monthUsageArgs = JSON.parse(String(init?.body ?? "{}"));
@@ -454,7 +557,7 @@ describe("account usage settings routes", () => {
 			if (url.includes("/keys")) return new Response(JSON.stringify([{ id: "key-1", name: "Production", prefix: "ph_" }]), { status: 200 });
 			if (url.includes("v2_model_provider_routes")) return new Response(JSON.stringify([]), { status: 200 });
 			if (url.includes("v2_models")) return new Response(JSON.stringify([{ model_id: "openai/gpt-test", name: "GPT Test", organisation_id: "openai", organisation: { name: "OpenAI" } }]), { status: 200 });
-			if (url.includes("api_apps")) return new Response(JSON.stringify([{ id: "app-1", title: "Example App", app_key: "example", image_url: null }]), { status: 200 });
+			if (url.includes("api_apps")) return new Response(JSON.stringify([{ id: "a0000000-0000-4000-8000-000000000001", title: "Example App", app_key: "example", image_url: null }]), { status: 200 });
 			return new Response(JSON.stringify([]), { status: 200 });
 		}));
 		const params = new URLSearchParams({
@@ -478,8 +581,8 @@ describe("account usage settings routes", () => {
 			labelFacets: [{ key: "team", value: "support" }],
 			labelSummary: null,
 			modelMetadataEntries: [["openai/gpt-test", { modelName: "GPT Test" }]],
-			appMetadataEntries: [["app-1", { title: "Example App", imageUrl: null }]],
-			appNameEntries: [["app-1", "Example App"]],
+			appMetadataEntries: [["a0000000-0000-4000-8000-000000000001", { title: "Example App", imageUrl: null }]],
+			appNameEntries: [["a0000000-0000-4000-8000-000000000001", "Example App"]],
 			monthUsage: { days: [
 				{ date: "2026-07-16", costNanos: 3000, requests: 2, successfulRequests: 2, tokens: 40, cachedTokens: 0 },
 				{ date: "2026-07-17", costNanos: 1500, requests: 2, successfulRequests: 1, tokens: 12, cachedTokens: 5 },

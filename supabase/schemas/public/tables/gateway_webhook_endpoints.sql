@@ -33,6 +33,25 @@ CREATE UNIQUE INDEX gateway_webhook_endpoints_workspace_secret_hash_idx ON publi
 
 CREATE INDEX gateway_webhook_endpoints_workspace_status_idx ON public.gateway_webhook_endpoints USING btree (workspace_id, status, created_at DESC);
 
+CREATE POLICY "gateway_webhook_endpoints_no_oauth_client_insert" ON "public"."gateway_webhook_endpoints"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "gateway_webhook_endpoints_no_oauth_client_update" ON "public"."gateway_webhook_endpoints"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "gateway_webhook_endpoints_no_oauth_client_delete" ON "public"."gateway_webhook_endpoints"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
 CREATE POLICY "gateway_webhook_endpoints_insert_workspace_admins" ON "public"."gateway_webhook_endpoints"
   FOR INSERT
   TO "authenticated"
@@ -50,6 +69,13 @@ CREATE POLICY "gateway_webhook_endpoints_update_workspace_admins" ON "public"."g
   TO "authenticated"
   USING (public.is_workspace_admin(workspace_id))
   WITH CHECK (public.is_workspace_admin(workspace_id));
+
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."gateway_webhook_endpoints"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
 
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_webhook_endpoints" TO "anon";
 

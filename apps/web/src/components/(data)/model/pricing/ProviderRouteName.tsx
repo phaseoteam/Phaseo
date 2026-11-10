@@ -1,5 +1,3 @@
-"use client";
-
 import type { ProviderInfo } from "@/lib/fetchers/models/getModelPricing";
 import { getProviderRoutePresentation, isSelectableServiceTier } from "./providerRoutePresentation";
 import { ServiceTierBadge } from "./ServiceTierBadge";

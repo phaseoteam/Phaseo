@@ -133,8 +133,15 @@ select
     filter (where base.success and base.tpot_ms is not null)::numeric,
   percentile_cont(p.percentile / 100.0) within group (order by base.itl_ms)
     filter (where base.success and base.itl_ms is not null)::numeric,
+  -- Unfiltered views publish at any volume. A colo, stream or context filter can
+  -- narrow a cohort to one customer's requests, so filtered views need 20.
   case
-    when count(base.cached_input_pct) >= 20 then
+    when count(base.cached_input_pct) >= case
+      when nullif(trim(p_cloudflare_colo), '') is null
+        and coalesce(lower(p_stream_mode), 'all') not in ('stream', 'non_stream')
+        and coalesce(lower(p_context_bucket), 'all') not in ('lte_4k', '4k_16k', '16k_64k', 'gt_64k')
+      then 1 else 20
+    end then
       percentile_cont(p.percentile / 100.0) within group (order by base.cached_input_pct)
         filter (where base.cached_input_pct is not null)::numeric
     else null

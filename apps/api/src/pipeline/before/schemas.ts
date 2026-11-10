@@ -2,7 +2,7 @@
 // Why: Keeps stage-specific logic isolated and testable.
 // How: Exposes helpers used by before/execute/after orchestration.
 
-import { z } from "zod";
+import * as z from "zod";
 import type { PriceCard } from "../pricing";
 import type { PriceRule, PricingDimensionKey, PricingTimestampBasis, PricingTimeWindow } from "../pricing/types";
 import { canonicalPricingPlan } from "../pricing/service-tiers";

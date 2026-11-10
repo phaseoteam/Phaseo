@@ -1,69 +1,45 @@
 ---
 title: "Anthropic Claude Sonnet 4.6"
-description: "コーディング、コンピューター操作、エージェント計画で Claude Sonnet 4.6 を導入する際のポイントです。"
+description: "コーディング、コンピューター操作、エージェントの計画で Claude Sonnet 4.6 を導入する際に知っておくべきことです。"
 icon: "/icons/brands/anthropic.svg"
 ---
 
-# Anthropic Claude Sonnet 4.6
+モデルを `anthropic/claude-sonnet-4.6` に変更し、assistant のプリフィルを削除し、構造化出力を `output_config.format` に移します。Sonnet 4.6 のこれらのリクエストの変更は [Claude Opus 4.6](./anthropic-claude-opus-4-5-to-4-6) と共通です。さらに、コーディング、コンピューター操作、エージェントの計画での性能が大きく異なるため、プロンプトとルーティングの前提を再テストする必要があります。
 
-`anthropic/claude-sonnet-4.6` を本番環境に安全に導入するには、このガイドを使います。
+| | Claude Sonnet 4.5 | Claude Sonnet 4.6 |
+| --- | --- | --- |
+| Phaseo のモデル ID | `anthropic/claude-sonnet-4.5` | `anthropic/claude-sonnet-4.6` |
+| ステータス | 非推奨。2026 年 11 月 30 日に提供終了 | 利用可能 |
+| コンテキストウィンドウ | 200K トークン | 1M トークン |
+| 最大出力 | 64K トークン | 64K トークン |
+| assistant のプリフィル | サポート | `400` を返す |
+| 構造化出力 | `output_format` | `output_config.format` |
+| 思考 | `budget_tokens` | 適応型。`output_config.effort` で調整 |
 
-Sonnet 4.6 の移行手順は Claude 4.6 系と共通ですが、性能特性が十分に変わるため、プロンプトとルーティングの前提を再検証する必要があります。
+## リクエストを更新する
 
-## 新機能
+**1. assistant のプリフィルをやめます。** Sonnet 4.5 のプロンプトで、assistant のターンを JSON の書き出し、XML タグ、書式のひな形で始めている場合は、展開前に削除してください。Sonnet 4.6 は `400` を返します。
 
-- Claude 4.6 モデルでは assistant prefill が使えなくなり、`400` が返されます。
-- 構造化出力の設定は `output_format` から `output_config.format` に移りました。
-- 適応型思考は `output_config.effort` で設定します。
-- 古いベータヘッダーを削除します。
-- Sonnet 4.6 はコーディング、コンピューター操作、長いコンテキストの推論、エージェント計画、指示追従を総合的に改善します。
-- Sonnet 4.6 はベータ版で 100 万トークンのコンテキストウィンドウを追加します。
+**2. 構造化出力を移します。** `/v1/messages` では `output_format` から `output_config.format` に移し、スキーマとパーサーのテストを再実行します。`/v1/chat/completions` と `/v1/responses` では、引き続き `response_format` を使います。
 
-## 移行クイックスタート
+**3. レイテンシーに合わせて effort を調整し直します。** Sonnet 4.6 は求められたときだけ思考します。Phaseo では、`reasoning.effort` または `reasoning.enabled: true` で適応型思考が有効になり、`output_config.effort` が設定されます。`xhigh` 以外のすべてのレベルを受け付け、`xhigh` は `max` として送られます。対話的なルートで 4.6 を既定にする前に、レイテンシーの予算に対して各レベルをベンチマークしてください。
 
-### 1. assistant prefill を使わない
+**4. 古いベータヘッダーを削除します。** Phaseo は `anthropic-beta` ヘッダーを転送しません。
 
-既存の Sonnet 4.5 プロンプトが JSON プレフィックス、XML タグ、書式テンプレートで assistant ターンを始めている場合、ロールアウト前にその方法を削除します。
+## テストする内容
 
-### 2. 構造化出力設定を移す
+- **出力の動作:** 書式に敏感なプロンプト、複数ステップのエージェントの計画、コーディング・リファクタリング・レビューのプロンプト、長いコンテキストでの検索と要約。
+- **契約の安定性:** JSON とスキーマの合格率、ツール引数の完全性、終了理由と空の出力、プリフィルに依存していたルート。
+- **本番のメトリクス:** effort レベルごとのレイテンシー、Sonnet 4.5 と比べたタスク成功率、タイムアウトとリトライの率、成功したタスクあたりのコスト。
 
-`output_format` を `output_config.format` に置き換え、スキーマやパーサーのテストを再実行します。
+## 展開する
 
-### 3. effort とレイテンシの想定を調整する
+1. まずプリフィルを削除し、構造化出力を更新します。
+2. 現在の本番プロンプトで Sonnet 4.6 を評価します。
+3. `models` に Sonnet 4.5 または別の安定したモデルをフォールバックとして入れてカナリアリリースし、Sonnet 4.5 の提供終了前に完了させます。
+4. 品質と契約の安定性が維持されたら、トラフィックを増やします。
 
-対話型の経路で使う場合は、4.6 をデフォルトにする前に複数の `effort` レベルを比較します。モデルの性能は向上していますが、最適な設定はレイテンシ予算によって異なります。
-
-## テスト項目
-
-### 出力の動作
-
-- 書式に厳しいプロンプトでの指示追従。
-- 複数ステップのタスクにおけるエージェント計画の品質。
-- コーディング、リファクタリング、レビューのプロンプト。
-- 長いコンテキストからの検索と要約。
-
-### 契約の安定性
-
-- JSON およびスキーマの検証成功率。
-- ツール引数の完全性。
-- 終了理由と空の出力の処理。
-- 安定した書式のために prefill に依存していた経路。
-
-### 本番メトリクス
-
-- effort レベルごとのレイテンシ。
-- Sonnet 4.5 に対するタスク成功率。
-- タイムアウトとリトライの割合。
-- タスク成功あたりのコスト。
-
-## 安全なロールアウト
-
-1. prefill を削除し、構造化出力設定を先に更新します。
-2. 現在の本番プロンプトセットで Sonnet 4.6 を評価します。
-3. Sonnet 4.5 または別の安定した経路をフォールバックに残して段階的に試します。
-4. 品質と契約の安定性が保たれてからトラフィックを増やします。
-
-## 参考資料
+## 出典
 
 - [Anthropic の移行ガイド](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
-- [Claude Sonnet 4.6 の紹介](https://www.anthropic.com/news/claude-sonnet-4-6)
+- [Claude Sonnet 4.6 の発表](https://www.anthropic.com/news/claude-sonnet-4-6)

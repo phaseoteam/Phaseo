@@ -1,7 +1,5 @@
-"use client";
-
 import { useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { ArrowLeft } from "lucide-react";
 import { Link } from "@/i18n/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -28,7 +26,7 @@ export function WorkspaceUserView({ data }: { data: WorkspaceUserData }) {
 	const name = data.profile.name ?? t("oauthDetail.unknownUser");
 	const money = (value: number) => format.number(value, { style: "currency", currency: "USD", maximumFractionDigits: 4, notation: "standard" });
 	const pageHref = (page: number) => `/settings/workspaces/users/${encodeURIComponent(data.profile.id)}?${new URLSearchParams({ workspaceId: data.workspaceId, keyPage: String(page) })}#keys`;
-	return <div className="mx-auto max-w-6xl space-y-8 pb-10">
+	return <div className="min-w-0 space-y-8">
 		<header className="flex flex-wrap items-center gap-4 border-b pb-6">
 			<Button variant="ghost" size="icon" asChild><Link href={`/settings/workspaces/members?${new URLSearchParams({ workspaceId: data.workspaceId })}`} aria-label={t("workspaceUser.back")}><ArrowLeft className="size-4" /></Link></Button>
 			<Avatar className="size-14">{data.profile.avatarUrl && <AvatarImage src={data.profile.avatarUrl} alt="" />}<AvatarFallback>{name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("")}</AvatarFallback></Avatar>

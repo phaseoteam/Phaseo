@@ -1,117 +1,99 @@
 ---
 title: "从 LLM Gateway 迁移"
 sidebarTitle: "LLM Gateway"
-description: "通过替换兼容 OpenAI 的端点、验证模型 ID 并分阶段检查，从 LLMGateway 迁移到 Phaseo Gateway。"
+description: "通过替换 OpenAI 兼容接口、核对模型 ID 和分阶段上线验证，从 LLMGateway 迁移到 Phaseo Gateway。"
 icon: "/icons/brands/llmgateway.svg"
 ---
 
-如果应用已经通过兼容 OpenAI 的客户端使用 LLM Gateway，通常可以保留请求负载，并先只替换 Gateway 边界。
+替换 base URL 和密钥，保留请求载荷，并映射每个模型 ID：LLM Gateway 的前缀表示提供服务的提供商，而 Phaseo 的前缀表示模型的开发方。
 
-## 变更内容
-
-| 设置 | 之前 | 之后 |
+| 设置 | LLM Gateway | Phaseo |
 | --- | --- | --- |
-| 基础 URL | `https://api.llmgateway.io/v1` | `https://api.phaseo.app/v1` |
-| API 密钥 | `LLM_GATEWAY_API_KEY` | `PHASEO_API_KEY` |
-| 模型别名 | 现有 Gateway 别名 | 使用 `GET /v1/models` 验证，或在单一边界处统一转换 |
-| 请求负载 | 现有兼容 OpenAI 的请求 | 首次迁移时保持不变 |
+| Base URL | `https://api.llmgateway.io/v1` | `https://api.phaseo.app/v1` |
+| Anthropic 风格的客户端 | `ANTHROPIC_BASE_URL=https://api.llmgateway.io` | `https://api.phaseo.app`，参见[从 Anthropic SDK 迁移](./from-anthropic) |
+| API 密钥 | `LLM_GATEWAY_API_KEY`（`llmgtwy_…`） | `PHASEO_API_KEY` |
+| 模型 ID | `gpt-4o`、`<provider>/<model>`、`auto` | `GET /v1/models?format=openai` 中的 `<org>/<model>` |
+| 请求载荷 | OpenAI 兼容 | 不变 |
 
-## 开始前
-
-- 当前的 LLM Gateway 端点和 API 密钥配置。
-- 在本地、预发布和生产环境中配置 `PHASEO_API_KEY`。
-- 用于比较输出质量、延迟和错误率的基准样本。
-
-## 1) 梳理集成位置
-
-找到创建和配置 LLM Gateway 客户端的具体文件。
-
-- 查找所有使用 `LLM_GATEWAY_*` 环境变量的位置。
-- 找出运行时配置中的所有基础 URL 引用。
-- 记录当前启用的模型 ID 和回退链。
-- 记录应迁移到 Gateway 预设中的共享提示词默认值、提供商允许或拒绝规则以及参数预设。
-
-## 2) 切换端点和凭据
-
-先保持请求负载不变。首先只替换端点和密钥，以降低风险。
+## 切换客户端
 
 <CodeGroup>
 ```typescript TypeScript
-// Before
 import OpenAI from "openai";
 
-const before = new OpenAI({
-  apiKey: process.env.LLM_GATEWAY_API_KEY,
-  baseURL: "https://api.llmgateway.io/v1",
-});
-```
-
-```typescript TypeScript
-// After
-import OpenAI from "openai";
-
-const after = new OpenAI({
+// 之前：
+// new OpenAI({ apiKey: process.env.LLM_GATEWAY_API_KEY, baseURL: "https://api.llmgateway.io/v1" });
+const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
 });
 ```
 
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+```
+
 ```bash cURL
-curl -s "https://api.phaseo.app/v1/chat/completions" \
+curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
-    "messages": [{"role":"user","content":"Hello"}]
+    "model": "openai/gpt-6-astra",
+    "messages": [{"role": "user", "content": "Hello"}]
   }'
 ```
 </CodeGroup>
 
-## 3) 验证模型兼容性
+映射或删除每个 `LLM_GATEWAY_*` 变量，包括 CI 和托管设置中的变量。如果应用使用 `@llmgateway/ai-sdk-provider`，请按[从 Vercel AI Gateway 迁移](./from-vercel)中的说明切换到 `@phaseo/ai-sdk-provider`。
 
-查询 Phaseo 模型目录，并验证每个生产环境正在使用的模型。
+## 映射模型 ID
 
-如果当前配置使用 `gpt-4o` 这类无前缀别名，请在单一边界处统一转换，而不是修改每个调用方。
-
-如果原有 Gateway 层还集中管理请求默认值或提供商限制，请在迁移时将其映射到[预设](../guides/presets.mdx)和[路由和回退](../guides/routing-and-fallbacks.mdx)，不要为每个调用方分别重新实现。
+列出 Phaseo 的 ID，并用它们核对每个生产模型：
 
 ```bash
-curl -s "https://api.phaseo.app/v1/models" \
-  -H "Authorization: Bearer $PHASEO_API_KEY" | jq '.data | length'
+curl -s "https://api.phaseo.app/v1/models?format=openai" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" | jq -r '.data[].id'
 ```
 
-## 4) LLMGateway 迁移检查清单
+LLM Gateway 上的 `alibaba/<model>` 不是 Phaseo ID。把每个 ID 映射到 Phaseo 的 `<org>/<model>`，并用 `provider.only` 或 `provider:org/model` ID 保留提供商固定。像 `gpt-4o` 这样不带前缀的别名，请在客户端边界用一个函数统一转换，而不是在每个调用处转换。
 
-- 已映射或移除所有 `LLM_GATEWAY_*` 环境变量。
-- 基础 URL 已更新为 `https://api.phaseo.app/v1`。
-- 已在所有部署环境中配置 `PHASEO_API_KEY`。
-- 已通过 `/v1/models` 验证生产模型 ID。
-- 已在预发布环境中验证一条非流式请求和一条流式请求。
-- 已重新检查无效密钥和无效模型的错误处理。
-- 已将适用的共享提示词和路由默认值移至预设。
-- 已通过 `GET /v1/generations?id=<request_id>` 重新检查生成记录查询；当 `replay_supported=true` 时，可使用已保存的 `replay_request` 负载重放失败请求。
+## 映射网关功能
 
-## 5) 验证并逐步发布
+| LLM Gateway | 在 Phaseo 上 |
+| --- | --- |
+| `auto` 路由器 | `phaseo/auto`（[自动路由](../guides/auto-routing)，alpha）；不能与 `models` 一起使用。 |
+| 回退链 | `models` 数组或动态路由，在 `429`、`500`、`502`、`503` 和 `504` 时尝试，请求错误时从不触发。 |
+| `X-No-Fallback` | `provider.allow_fallbacks: false`，或 `provider:org/model` ID。 |
+| 提供商允许和拒绝逻辑 | `provider.only`、`provider.ignore` 或[预设](../guides/presets)。至少保留一个符合条件的提供商。 |
+| `X-LLMGateway-<Key>` 请求头 | `X-Phaseo-Metadata` [标签](../guides/request-labels)，最多 32 个。 |
+| 会话请求头（`x-session-id`） | 请求体字段 `session_id`；Phaseo 会忽略会话请求头。 |
+| `X-Source` | `HTTP-Referer` 或 `X-App-Name`。参见[应用归因](../guides/app-attribution)。 |
+| 响应缓存 | 没有响应缓存。 |
+| 提供商密钥 | BYOK（**设置 → BYOK** 或 `POST /v1/byok`），或 Phaseo 额度。是否回退到额度由工作区设置 `byok_fallback_enabled` 决定。 |
+| 请求日志 | 请求日志、可观测性目标和 `GET /v1/generations?id=<request_id>`。当 `replay_supported` 为 `true` 时，可以用失败请求的 `replay_request` 载荷重放它。 |
 
-1. 运行基准提示词套件，并与基准值比较质量、延迟和费用。
-2. 确认可以通过 `GET /v1/generations` 返回的重放负载恢复预发布环境中的失败请求。
-3. 使用金丝雀开关发布，稳定后再逐步增加流量比例。
-4. 至少观察一个发布周期的生产指标，再移除旧配置。
+## 测试并上线
 
-## 验证命令
+用你的黄金提示词集分别调用两个网关，比较质量、延迟和成本。先检查接口：
 
 ```bash
 curl -s "https://api.phaseo.app/v1/health"
-curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
+curl -s "https://api.phaseo.app/v1/models?format=openai" -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-然后：
+迁移流量之前确认：
 
-- 在预发布环境中分别运行一条非流式请求和一条流式请求。
-- 重放基准提示词并与基准值比较。
+- 每个环境都设置了 `PHASEO_API_KEY`；
+- 每个生产模型 ID 都已映射并出现在列表中；
+- 一个非流式请求和一个流式请求在预发布环境中通过；
+- 已处理无效密钥和无效模型错误；它们的响应体可能与 LLM Gateway 不同；
+- 预发布环境中的失败请求可以通过 `GET /v1/generations` 找回；
+- 共享的提示词和路由默认设置放在了预设中。
 
-## 后续步骤
-
-- [从 OpenRouter 迁移](./from-openrouter.mdx)
-- [从 Vercel AI Gateway 迁移](./from-vercel.mdx)
-- [快速入门](../quickstart.mdx)
+在金丝雀开关后发布，稳定后从一小部分流量扩大到全部流量，并在删除旧配置之前至少观察一个发布周期的生产指标。

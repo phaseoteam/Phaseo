@@ -1,4 +1,4 @@
-import { z } from "zod";
+import * as z from "zod";
 import type { IRDecisionsRequest, IRDecisionsResponse } from "@core/ir";
 
 const models = ["drex-v1.0", "drex-v1.5", "drex-v2.0", "drex-max"] as const;

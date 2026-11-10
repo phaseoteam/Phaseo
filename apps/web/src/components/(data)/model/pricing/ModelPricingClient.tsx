@@ -1,5 +1,3 @@
-"use client";
-
 import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import { currentCatalogDataPolicy } from "@/lib/providers/catalogDataPolicy";
 import { GroupedInputPrice } from "./GroupedInputPrice";
@@ -18,8 +16,8 @@ import { fetchPublicWebApi } from "@/lib/web-api/client";
 import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
 import { webQueryKeys } from "@/lib/query/queryKeys";
 import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { parseAsString, useQueryStates } from "nuqs";
 import {
     ArrowDown,
@@ -247,11 +245,10 @@ function toggleProviderStatusFilter(
 
 const DEFAULT_ROUTING_ERROR_RATE = 0;
 
+// The gateway tries a deranked route only after every other healthy provider; this sinks it in the estimate.
 function routingStatusMultiplier(status: CanonicalGatewayStatus): number {
     if (status === "active") return 1;
-    if (status === "deranked_lvl1") return 1e-3;
-    if (status === "deranked_lvl2") return 1e-6;
-    if (status === "deranked_lvl3") return 1e-9;
+    if (status === "deranked") return 1e-6;
     return 0;
 }
 
@@ -268,6 +265,8 @@ function hasProviderUptimeObservation(
 	stats: ProviderRuntimeStatsMap[string] | undefined
 ): boolean {
 	if (!stats) return false;
+	// A provider that only ever failed over has attempt uptime but no served requests.
+	if (stats.attemptHealth3d?.uptimePct != null) return true;
 	if ((stats.healthRequests3d ?? 0) > 0) return true;
 	return stats.uptimeDaily3d.some((entry) => entry.requests > 0);
 }
@@ -457,6 +456,7 @@ function UptimeHeaderHoverContent() {
 	return (
 		<div className="space-y-2">
 			<p className="text-sm font-medium text-foreground">{t("threeDayUptime")}</p>
+			<p className="text-xs leading-5 text-muted-foreground">{t("uptimeExplanation")}</p>
 			<UptimeKey className="border-t border-zinc-200 pt-2.5 dark:border-zinc-800" />
 		</div>
 	);
@@ -613,7 +613,7 @@ function ProviderServiceTierInfoIcons({
 					? "statuses.external"
 				: statusKey === "internal_testing"
 					? "statuses.internalTesting"
-					: statusKey.startsWith("deranked_")
+					: statusKey === "deranked"
 						? "statuses.rateLimited"
 						: "statuses.inactive";
 	const statusLabel = tProvider(statusLabelKey as never);
@@ -627,7 +627,7 @@ function ProviderServiceTierInfoIcons({
 					? "statusDescriptions.external"
 				: statusKey === "internal_testing"
 					? "statusDescriptions.internalTesting"
-					: statusKey.startsWith("deranked_")
+					: statusKey === "deranked"
 						? "statusDescriptions.rateLimited"
 						: "statusDescriptions.inactive";
 	const tierPolicy = currentCatalogDataPolicy(provider.provider.service_tier_data_policies?.[plan]) ?? null;
@@ -1684,7 +1684,7 @@ export default function ModelPricingClient({
 			return (
 				<HoverCard openDelay={120} closeDelay={80}>
 					<HoverCardTrigger asChild openOnTap={false}>{button}</HoverCardTrigger>
-					<HoverCardContent align="end" className="w-72 text-left">
+					<HoverCardContent align="end" className="w-72 rounded-md text-left">
 						<UptimeHeaderHoverContent />
 					</HoverCardContent>
 				</HoverCard>

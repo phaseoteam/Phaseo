@@ -1,7 +1,5 @@
-"use client";
-
 import * as React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { parseAsString, useQueryStates } from "nuqs";
 import { Check, Sparkles, Tag, X } from "lucide-react";
 

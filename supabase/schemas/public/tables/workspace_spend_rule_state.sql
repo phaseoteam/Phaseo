@@ -30,6 +30,13 @@ CREATE TRIGGER workspace_spend_rule_state_set_updated_at
   FOR EACH ROW
   EXECUTE FUNCTION public.set_updated_at_if_changed();
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspace_spend_rule_state"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "workspace_spend_rule_state_select_member" ON "public"."workspace_spend_rule_state"
   FOR SELECT
   TO "authenticated"

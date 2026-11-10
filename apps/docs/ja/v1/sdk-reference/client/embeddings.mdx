@@ -1,0 +1,123 @@
+---
+icon: "binary"
+title: "埋め込み"
+description: "どの Phaseo SDK からでも POST /v1/embeddings でテキストなどの入力をベクトルに変換します。"
+---
+
+テキストを `POST /v1/embeddings` に送ると、入力ごとに 1 つのベクトルが返ってきます。例では、[インストール](./installation)のとおりに作成した `client` を使います。
+
+<CodeGroup>
+
+```typescript TypeScript
+const embedding = await client.generateEmbedding({
+  model: "openai/text-embedding-3-large",
+  input: "Sample text",
+});
+```
+
+```python Python
+embedding = client.generate_embedding({
+    "model": "openai/text-embedding-3-large",
+    "input": "Sample text",
+})
+```
+
+```go Go
+resp, err := client.GenerateEmbedding(context.Background(), map[string]interface{}{
+  "model": "openai/text-embedding-3-large",
+  "input": "Sample text",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp["data"])
+```
+
+```csharp C#
+var response = await client.CreateEmbedding(new Dictionary<string, object>
+{
+    ["model"] = "openai/text-embedding-3-large",
+    ["input"] = "Sample text",
+});
+```
+
+```php PHP
+$response = $client->generateEmbedding([
+    'model' => 'openai/text-embedding-3-large',
+    'input' => 'Sample text',
+]);
+```
+
+```ruby Ruby
+response = client.generate_embedding(
+  model: 'openai/text-embedding-3-large',
+  input: 'Sample text'
+)
+```
+
+```java Java
+String body = """
+{
+  "model": "openai/text-embedding-3-large",
+  "input": "Sample text"
+}
+""";
+
+Object response = client.createEmbedding(new com.fasterxml.jackson.databind.ObjectMapper().readTree(body));
+System.out.println(String.valueOf(response));
+```
+
+```rust Rust
+// No embeddings method yet: post() sends JSON to any Phaseo path.
+let response = client.post("/embeddings", &json!({
+    "model": "openai/text-embedding-3-large",
+    "input": "Sample text"
+}))?;
+```
+
+</CodeGroup>
+
+| 言語 | メソッド | 戻り値 |
+| --- | --- | --- |
+| TypeScript | `client.generateEmbedding(request)` | 型付きのレスポンス |
+| Python | `client.generate_embedding(request)` または `client.embeddings.create(request)` | dict |
+| Go | `client.GenerateEmbedding(ctx, req)`、別名 `CreateEmbedding` | `map[string]interface{}` |
+| C# | `client.CreateEmbedding(request)` | `Dictionary<string, object>?` |
+| PHP | `$client->generateEmbedding($request)`、別名 `createEmbedding()` | 配列 |
+| Ruby | `client.generate_embedding(...)`、別名 `create_embedding` | Hash |
+| Java | `client.createEmbedding(jsonNode)` | `Object` |
+| Rust | `client.post("/embeddings", &request)` | `PhaseoResponse`。JSON は `body` にあります |
+
+## パラメーター
+
+どの SDK でも、フィールド名は JSON 本文のフィールドです。
+
+| フィールド | 注記 |
+| --- | --- |
+| `model` | 必須。埋め込みモデルの ID。 |
+| `input` | 必須。文字列、文字列の配列、または対応するモデル向けのマルチモーダルなコンテンツパーツ（テキスト、画像、音声、動画）。 |
+| `encoding_format` | `float`（デフォルト）、`base64`、`base64_int8`、`base64_binary` のいずれか。 |
+| `dimensions` | 各ベクトルを短くする正の整数（対応するモデルのみ）。 |
+| `provider_options` | Google の `task_type` と `title`、Mistral の `output_dtype` などのプロバイダー設定。 |
+| `user` | エンドユーザーのタグ。 |
+
+完全なスキーマは [Embeddings API リファレンス](/ja/v1/api-reference/endpoint/embeddings)にあります。
+
+## レスポンス
+
+```json
+{
+  "data": [
+    {
+      "embedding": [0.1, 0.2, 0.3],
+      "index": 0
+    }
+  ],
+  "usage": {
+    "input_tokens": 5,
+    "output_tokens": 0,
+    "total_tokens": 5,
+    "embedding_tokens": 5
+  }
+}
+```

@@ -1,9 +1,5 @@
-"use client";
-
-import { useModelsLayoutTracking } from "./useModelsLayoutExperiment";
-
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { decisionModelCapabilities } from "@/lib/models/modelCapabilities";
 import {
 	memo,
@@ -20,6 +16,8 @@ import {
 	Copy,
 	BadgeAlert,
 	CalendarClock,
+	EyeOff,
+	LockKeyhole,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -31,6 +29,7 @@ import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDispl
 import { hasPassedLifecycleDate } from "@/lib/models/modelLifecycle";
 import { resolveProviderLogoId } from "@/lib/providers/providerOffers";
 import { getModalityIcon } from "./modalityIcons";
+import { resolveModelVisibility } from "./modelVisibility";
 
 type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
 	gateway_status?:
@@ -41,10 +40,12 @@ type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
 		| null;
 	router_requests_30d?: number | null;
 	router_spend_nanos_30d?: number | null;
+	// Set on workspace private-endpoint models, which only their workspace sees.
+	is_private?: boolean;
 };
 import { Logo } from "@/components/Logo";
 import { getModalityTone } from "@/lib/models/modalityStyles";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/lib/navigation";
 import {
 	Tooltip,
 	TooltipContent,
@@ -80,9 +81,7 @@ const MODALITY_DISPLAY_ORDER = [
 const PROVIDER_STATUS_ORDER = [
 	"active",
 	"coming_soon",
-	"deranked_lvl1",
-	"deranked_lvl2",
-	"deranked_lvl3",
+	"deranked",
 	"internal_testing",
 	"external",
 	"inactive",
@@ -114,20 +113,10 @@ const PROVIDER_STATUS_META: Record<
 		badgeClassName: "bg-violet-500/10 text-violet-600",
 		dotClassName: "bg-violet-500",
 	},
-	deranked_lvl1: {
-		label: "Deranked L1",
-		badgeClassName: "bg-amber-500/10 text-amber-600",
-		dotClassName: "bg-amber-500",
-	},
-	deranked_lvl2: {
-		label: "Deranked L2",
+	deranked: {
+		label: "Lower priority",
 		badgeClassName: "bg-amber-600/10 text-amber-700",
 		dotClassName: "bg-amber-600",
-	},
-	deranked_lvl3: {
-		label: "Deranked L3",
-		badgeClassName: "bg-red-500/10 text-red-600",
-		dotClassName: "bg-red-500",
 	},
 	disabled: {
 		label: "Disabled",
@@ -228,12 +217,8 @@ function normalizeProviderStatus(value: unknown): string {
 	if (!normalized) return "inactive";
 	if (normalized === "not_active") return "inactive";
 	if (normalized === "comingsoon") return "coming_soon";
-	if (normalized === "deranked" || normalized === "de_ranked") {
-		return "deranked_lvl1";
-	}
-	if (normalized === "deranked_lvl_1") return "deranked_lvl1";
-	if (normalized === "deranked_lvl_2") return "deranked_lvl2";
-	if (normalized === "deranked_lvl_3") return "deranked_lvl3";
+	// The catalogue stores a deranked route as `degraded`; the former levels are one level now.
+	if (normalized === "degraded" || normalized === "de_ranked" || /^deranked(_lvl_?[123])?$/.test(normalized)) return "deranked";
 	return normalized;
 }
 
@@ -542,10 +527,22 @@ function ModelCardImpl({
 		(lifecycleStatus === "deprecated" ||
 			hasPassedLifecycleDate(model.deprecation_date));
 	const LifecycleIcon = isRetired || isDeprecated ? BadgeAlert : null;
-	const lifecycleLabel = isRetired ? "End of life" : isDeprecated ? "Deprecated" : null;
-	const modelDescription = String(model.description ?? "").trim();
+	const lifecycleLabel = isRetired
+		? t("lifecycleEndOfLife")
+		: isDeprecated
+			? t("lifecycleDeprecated")
+			: null;
 	const isComingSoon =
 		!isRetired && !isDeprecated && model.gateway_status === "coming_soon";
+	const visibility = resolveModelVisibility(model);
+	const isInternal = visibility === "internal";
+	const isPrivate = visibility === "private";
+	const visibilityLabel = isInternal
+		? tDetail("sections.internalOnly")
+		: isPrivate
+			? t("filtersUi.tierPrivate")
+			: null;
+	const VisibilityIcon = isInternal ? EyeOff : isPrivate ? LockKeyhole : null;
 	const [copied, setCopied] = useState(false);
 	const routerRequests30d =
 		Number.isFinite(Number(model.router_requests_30d)) &&
@@ -734,8 +731,13 @@ function ModelCardImpl({
 		? null
 		: headline.kind === "free"
 			? t("free")
-			: headline.kind === "usage"
-				? `${headlinePrice(headline.price)} / ${headline.unit}`
+			: headline.kind === "provider_cost"
+				? t("atProviderCost")
+				: headline.kind === "usage"
+				? headline.per_image !== undefined
+					// Three significant digits keep a sub-cent estimate exact ($0.0336, not $0.034).
+					? t("pricePerImageEstimate", { price: `$${format.number(headline.per_image, { maximumSignificantDigits: 3, notation: "standard" })}` })
+					: `${headlinePrice(headline.price)} / ${headline.unit}`
 				: headline.input !== null && headline.output !== null
 					? `${t("priceInputOutput", { input: headlinePrice(headline.input), output: headlinePrice(headline.output) })} / ${headline.unit}`
 					: headline.input !== null
@@ -750,7 +752,7 @@ function ModelCardImpl({
 				? structuredPriceSummary
 				: fromPriceSummary);
 	const priceLabel = headlineSummary
-		? headline?.kind !== "free" && headline?.from ? t("from") : null
+		? headline && "from" in headline && headline.from ? t("from") : null
 		: structuredPriceSummary || isTextModel ? t("pricing") : t("from");
 	// Models with meter details but no headline price (for example, billed at
 	// provider cost) still get a pill that opens the details.
@@ -970,11 +972,9 @@ function ModelCardImpl({
 		? format.number(weeklyUsage.quantity, { maximumFractionDigits: 2, notation: "standard" })
 		: format.count(weeklyUsage.quantity)}${weeklyUsage.unitSuffix}`;
 
-	const trackLayout = useModelsLayoutTracking();
 	const copyModelId = async () => {
 		try {
 			await navigator.clipboard.writeText(displayModelId);
-			trackLayout("models_layout_model_id_copied", { model_id: model.model_id });
 			setCopied(true);
 			setTimeout(() => setCopied(false), 1400);
 		} catch {
@@ -992,7 +992,6 @@ function ModelCardImpl({
 		) {
 			return;
 		}
-		trackLayout("models_layout_model_opened", { model_id: model.model_id });
 		router.push(modelHref, { scroll: true });
 	};
 
@@ -1037,13 +1036,25 @@ function ModelCardImpl({
 						<div className="flex items-center gap-1 min-w-0">
 							<Link
 								href={modelHref}
-							onClick={() => trackLayout("models_layout_model_opened", { model_id: model.model_id })}
 								prefetch={false}
 								scroll
 								className="font-semibold text-sm leading-[1.1] text-foreground hover:underline underline-offset-4 transition-colors duration-200 line-clamp-1"
 							>
 								{safeModelDisplayName}
 							</Link>
+							{VisibilityIcon && visibilityLabel ? (
+								<span
+									className={cn(
+										"inline-flex shrink-0 items-center gap-1 rounded-md border px-1.5 py-px text-[11px] font-medium leading-4",
+										isInternal
+											? "border-[#00b8db]/30 bg-[#00b8db]/10 text-cyan-700 dark:text-cyan-300"
+											: "border-border bg-muted text-muted-foreground",
+									)}
+								>
+									<VisibilityIcon className="size-3" aria-hidden="true" />
+									{visibilityLabel}
+								</span>
+							) : null}
 							{displayModelId ? (
 								<Tooltip>
 									<TooltipTrigger asChild>
@@ -1089,7 +1100,6 @@ function ModelCardImpl({
 					<Button asChild size="icon" variant="ghost" className="h-8 w-8 shrink-0">
 						<Link
 							href={modelHref}
-							onClick={() => trackLayout("models_layout_model_opened", { model_id: model.model_id })}
 							prefetch={false}
 							scroll
 							aria-label={t("viewDetails")}
@@ -1106,12 +1116,6 @@ function ModelCardImpl({
 						</Link>
 					</Button>
 				</div>
-
-				{modelDescription ? (
-					<p className="-mt-2 line-clamp-2 text-xs leading-snug text-muted-foreground">
-						{modelDescription}
-					</p>
-				) : null}
 
 				<div className="grid gap-2 text-xs md:grid-cols-3">
 					<ModelCardScrollRail ariaLabel={t("modelSummary")} className="md:col-span-3">

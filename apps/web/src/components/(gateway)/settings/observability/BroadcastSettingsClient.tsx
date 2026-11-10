@@ -1,6 +1,4 @@
-"use client";
-
-import Link from "next/link";
+import Link from "@/components/link";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { useMemo, useState, useTransition } from "react";
 import { MoreHorizontal, Plus, SendHorizontal, Webhook } from "lucide-react";
@@ -31,7 +29,7 @@ import {
 	enableBroadcastDestinationAction,
 	refreshBroadcastDestinationStatusAction,
 	sendBroadcastSampleTraceAction,
-} from "@/app/(dashboard)/settings/broadcast/actions";
+} from "@/features/settings/broadcast/actions";
 import {
 	AVAILABLE_DESTINATIONS,
 	COMING_SOON_DESTINATIONS,
@@ -42,7 +40,7 @@ import {
 	type BroadcastDestinationHealth,
 	type BroadcastHealthState,
 } from "@/components/(gateway)/settings/observability/broadcastHealth";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 type ConfiguredDestination = {
@@ -218,7 +216,7 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 														runAction(destination.id, async () => {
 															const result =
 																await refreshBroadcastDestinationStatusAction(
-																	destination.id,
+																	{ data: destination.id },
 																);
 															setStatus(destination.id, result.status);
 															if (result.ok) toast.success(t("broadcastControls.connectionStatusRefreshed"));
@@ -232,7 +230,7 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 													onClick={() =>
 														runAction(destination.id, async () => {
 															const result = await sendBroadcastSampleTraceAction(
-																destination.id,
+																{ data: destination.id },
 															);
 															setStatus(destination.id, "Connected");
 															toast.success(
@@ -248,11 +246,11 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 													onClick={() =>
 														runAction(destination.id, async () => {
 															if (destination.enabled) {
-																await disableBroadcastDestinationAction(destination.id);
+																await disableBroadcastDestinationAction({ data: destination.id });
 																clearStatus(destination.id);
 										toast.success(t("credits.Connection disabled" as never));
 															} else {
-																await enableBroadcastDestinationAction(destination.id);
+																await enableBroadcastDestinationAction({ data: destination.id });
 																clearStatus(destination.id);
 										toast.success(t("credits.Connection enabled" as never));
 															}
@@ -379,7 +377,7 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 								const target = deleteTarget;
 								if (!target) return;
 								runAction(target.id, async () => {
-									await deleteBroadcastDestinationAction(target.id);
+									await deleteBroadcastDestinationAction({ data: target.id });
 						toast.success(t("credits.Destination deleted" as never));
 									setDeleteTarget(null);
 								});

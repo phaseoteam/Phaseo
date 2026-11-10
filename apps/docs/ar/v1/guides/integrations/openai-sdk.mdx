@@ -4,15 +4,27 @@ icon: "code"
 description: "استخدم حزم OpenAI SDK الرسمية مع Phaseo."
 ---
 
-استخدم هذا الدليل إذا كان تطبيقك يستدعي OpenAI بالفعل من TypeScript أو JavaScript أو Python. غيّر مفتاح API وعنوان URL الأساسي ومعرّف النموذج فقط.
+وجّه OpenAI SDK الرسمية إلى Phaseo بتغيير ثلاثة أشياء: مفتاح API، وBase URL ‏(`https://api.phaseo.app/v1`)، ومعرّف النموذج.
 
-## TypeScript
+## التثبيت
 
-```bash
+<CodeGroup>
+
+```bash TypeScript
 npm install openai
 ```
 
-```ts
+```bash Python
+pip install openai
+```
+
+</CodeGroup>
+
+## توجيه العميل إلى Phaseo
+
+<CodeGroup>
+
+```ts TypeScript
 import OpenAI from "openai";
 
 const client = new OpenAI({
@@ -21,20 +33,14 @@ const client = new OpenAI({
 });
 
 const response = await client.responses.create({
-	model: "openai/gpt-5-nano",
+	model: "openai/gpt-6-astra",
 	input: "Write one sentence about reliable model routing.",
 });
 
 console.log(response.output_text);
 ```
 
-## Python
-
-```bash
-pip install openai
-```
-
-```python
+```python Python
 import os
 from openai import OpenAI
 
@@ -44,32 +50,30 @@ client = OpenAI(
 )
 
 response = client.responses.create(
-    model="openai/gpt-5-nano",
+    model="openai/gpt-6-astra",
     input="Write one sentence about reliable model routing.",
 )
 
 print(response.output_text)
 ```
 
-## Chat Completions
+</CodeGroup>
 
-قد تظل المكتبات الأقدم تستدعي Chat Completions:
+طباعة جملة تعني أن المفتاح وBase URL يعملان. يظهر الطلب أيضًا في **الإعدادات → الاستخدام → السجلات**.
+
+## استخدام Chat Completions
+
+يعمل الكود الذي يستدعي Chat Completions مع العميل نفسه:
 
 ```ts
 const completion = await client.chat.completions.create({
-	model: "openai/gpt-5-nano",
+	model: "openai/gpt-6-astra",
 	messages: [{ role: "user", content: "Reply with only: ok" }],
 });
 ```
 
-## ملاحظات
+## القيود المعروفة
 
-- استخدم معرّفات نماذج Phaseo، بما في ذلك بادئات المزوّد مثل `openai/` أو `anthropic/` أو `google/`.
-- تستخدم أدوات الخادم أسماء أدوات Phaseo مثل `phaseo:web_search`.
-- بالنسبة إلى عملاء Anthropic الأصليين، استخدم دليل [Anthropic SDK](./anthropic-sdk.mdx).
-
-## صفحات ذات صلة
-
-- [Responses API](../../api-reference/endpoint/responses.mdx)
-- [Chat Completions](../../api-reference/endpoint/chat-completions.mdx)
-- [أدوات الخادم](../server-tools/index.mdx)
+- استخدم معرّفات نماذج Phaseo مع بادئة المزوّد: `openai/` و`anthropic/` و`google/` وهكذا. راجع [Responses](../../api-reference/endpoint/responses.mdx) و[Chat Completions](../../api-reference/endpoint/chat-completions.mdx) للاطلاع على أشكال الطلبات كاملة.
+- تستخدم [أدوات الخادم](../server-tools/index.mdx) أسماء أدوات Phaseo، مثل `phaseo:web_search`.
+- لعملاء `/v1/messages` على نمط Anthropic، استخدم دليل [Anthropic SDK](./anthropic-sdk.mdx).

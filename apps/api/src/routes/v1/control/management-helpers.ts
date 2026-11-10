@@ -18,6 +18,14 @@ export const MANAGED_KEY_NAMES_FILTER = `(${[CHAT_MANAGED_KEY_NAME, SLACK_AGENT_
 export function isManagedKeyName(name: string): boolean {
 	return name === CHAT_MANAGED_KEY_NAME || name === SLACK_AGENT_MANAGED_KEY_NAME;
 }
+/**
+ * Names Phaseo keeps for keys it manages: the managed names above and anything else wrapped in double
+ * underscores, the pattern they follow. A key requested under one would be hidden like a managed key.
+ */
+export function isReservedKeyName(name: string): boolean {
+	const trimmed = name.trim();
+	return isManagedKeyName(trimmed) || /^__.*__$/.test(trimmed);
+}
 export type WorkspaceKeyType = "api" | "management";
 
 type WorkspaceKeyState = {

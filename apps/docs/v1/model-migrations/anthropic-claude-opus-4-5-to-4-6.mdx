@@ -5,72 +5,53 @@ description: "What to know when adopting Claude Opus 4.6, including structured o
 icon: "/icons/brands/anthropic.svg"
 ---
 
-# Anthropic Claude Opus 4.6
+Change the model to `anthropic/claude-opus-4.6`, remove assistant prefills, and move structured output to `output_config.format`. These are request-shape changes: old Opus 4.5 patterns fail with `400` if left in place.
 
-Use this guide to adopt `anthropic/claude-opus-4.6` safely in production.
+| | Claude Opus 4.5 | Claude Opus 4.6 |
+| --- | --- | --- |
+| Phaseo model ID | `anthropic/claude-opus-4.5` | `anthropic/claude-opus-4.6` |
+| Context window | 200K tokens | 1M tokens |
+| Max output | 64K tokens | 128K tokens |
+| Assistant prefill | Supported | Returns `400` |
+| Structured output | `output_format` | `output_config.format` |
+| Thinking | `budget_tokens` | Adaptive, steered by `output_config.effort` |
+| `interleaved-thinking-2025-05-14` beta | Needed | Not needed |
 
-Claude Opus 4.6 is not just a model-ID swap. Anthropic's migration guidance includes request-shape changes, removed beta flags, and stricter behavior around prefills.
+## Update the request
 
-## What's new
+**1. Remove assistant prefills.** If you pre-seed the assistant turn to force JSON or a prefix, Opus 4.6 returns `400`. Use clearer system instructions, examples in the prompt, or structured output instead.
 
-- assistant prefills are no longer supported on Claude 4.6 models and now return `400`
-- structured output moved from `output_format` to `output_config.format`
-- adaptive thinking is now handled through `output_config.effort`
-- older beta headers should be removed
-- Opus 4.6 specifically no longer needs the `interleaved-thinking-2025-05-14` beta header
-- Opus 4.6 adds a 1M-token context window in beta and improves long-running coding and agentic tasks
+**2. Move structured output** from `output_format` to `output_config.format`, and rerun your schema and parser tests:
 
-## Migration quickstart
+```json
+{
+  "model": "anthropic/claude-opus-4.6",
+  "max_tokens": 1024,
+  "messages": [{ "role": "user", "content": "Extract the invoice fields." }],
+  "output_config": {
+    "format": { "type": "json_schema", "schema": { "type": "object", "properties": { "total": { "type": "number" } } } }
+  }
+}
+```
 
-### 1. Remove assistant prefills
+On `/v1/chat/completions` and `/v1/responses`, keep using `response_format`.
 
-If you were forcing JSON or a response prefix by partially pre-seeding the assistant turn, that pattern now breaks on 4.6. Move that control into:
+**3. Switch thinking to adaptive.** Opus 4.6 doesn't think unless the request asks. On Phaseo, `reasoning.effort` or `reasoning.enabled: true` without a token budget turns on adaptive thinking, and the effort becomes `output_config.effort`. Opus 4.6 takes every effort level except `xhigh`, which Phaseo sends as `max`. While thinking is on, Phaseo leaves out `temperature` and `top_k`, and `top_p` below 0.95.
 
-- clearer system instructions
-- examples in the user or system prompt
-- structured outputs through `output_config.format`
-
-### 2. Migrate structured outputs
-
-If you still send `output_format`, update the request body to use `output_config.format` instead.
-
-### 3. Review thinking configuration
-
-If you were depending on older thinking betas, migrate to the current `effort` setting inside `output_config` and retest latency-sensitive routes.
-
-### 4. Remove stale beta flags
-
-Audit hard-coded beta headers in SDK wrappers, middleware, and gateway presets. Leaving obsolete flags in place creates noisy failures during rollout.
+**4. Remove stale beta headers** from SDK wrappers, middleware, and presets. Phaseo doesn't forward `anthropic-beta` headers, so they no longer have any effect.
 
 ## What to test
 
-### Prompt behavior
+- **Prompts:** long coding and refactor prompts, multi-step research and document workflows, prompts that relied on prefills, and long-context tasks if you'll use the 1M window.
+- **Contracts and tools:** schema pass rate after moving to `output_config.format`, tool-call arguments on multi-step agent tasks, retries when the model refuses or reformats output, and code-review and debugging workflows.
+- **Operations:** median and p95 latency with thinking on, token use on longer runs, timeout rate on large-context tasks, and success rate against Opus 4.5 on your evaluation set.
 
-- long coding and refactor prompts
-- multi-step research or document workflows
-- prompts that previously depended on assistant prefills
-- long-context tasks if you plan to use the 1M-token beta window
+## Roll out
 
-### Contracts and tools
-
-- schema pass rate after moving to `output_config.format`
-- tool-call argument quality on multi-step agent tasks
-- retry behavior when the model refuses or reformats output
-- regression handling in code-review and debugging workflows
-
-### Operations
-
-- median and p95 latency with the new thinking settings
-- token consumption on longer runs
-- timeout rate on large-context tasks
-- success rate versus Opus 4.5 on your production eval set
-
-## Safe rollout
-
-1. Remove prefills and migrate structured output config before any traffic shift.
-2. Shadow Opus 4.6 on production prompts that matter to you.
-3. Canary traffic with Opus 4.5 still configured as a fallback.
-4. Promote only after schema pass rate, latency, and task completion stay stable.
+1. Remove prefills and migrate structured output before shifting any traffic.
+2. Shadow Opus 4.6 on the production prompts that matter to you.
+3. Canary with Opus 4.5 as a fallback in `models`.
+4. Promote once schema pass rate, latency, and task completion hold.
 
 ## Sources
 

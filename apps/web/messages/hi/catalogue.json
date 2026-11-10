@@ -232,9 +232,7 @@
 			"featureStructuredOutputs": "संरचित आउटपुट",
 			"featureWebSearch": "वेब खोज",
 			"featureFree": "निःशुल्क वैरिएंट",
-			"statusDeranked1": "स्तर 1 पर रैंक घटाई गई",
-			"statusDeranked2": "स्तर 2 पर रैंक घटाई गई",
-			"statusDeranked3": "स्तर 3 पर रैंक घटाई गई",
+			"statusDeranked": "कम प्राथमिकता",
 			"statusDisabled": "अक्षम",
 			"regionJapan": "जापान",
 			"regionAustralia": "ऑस्ट्रेलिया",
@@ -294,21 +292,8 @@
 			"embedDescription": "उपलब्ध मॉडल खोजने और तुलना करने के लिए एक लचीला गेटवे रूट।"
 		},
 		"cardView": "कार्ड दृश्य",
-		"listView": "सूची दृश्य",
-		"listPricePerUnit": "प्रति {unit}",
-		"listPriceFromPerUnit": "से शुरू, प्रति {unit}",
-		"listContext": "{count} संदर्भ",
-		"listProviders": "{count, plural, one {# प्रदाता} other {# प्रदाता}}",
-		"listProvidersLive": "{total} में से {live} प्रदाता सक्रिय",
-		"listProvidersComingSoon": "{count, plural, one {# प्रदाता जल्द आ रहा है} other {# प्रदाता जल्द आ रहे हैं}}",
-		"listProviderStandard": "मानक",
-		"listProviderGlobal": "वैश्विक",
-		"listProviderZdr": "शून्य डेटा प्रतिधारण",
-		"listProviderE2ee": "एंड-टू-एंड एन्क्रिप्टेड",
-		"listInternal": "आंतरिक",
-		"listPrivate": "निजी",
-		"listEndOfLife": "जीवनकाल समाप्त",
-		"listDeprecated": "अप्रचलित",
+		"lifecycleEndOfLife": "जीवनकाल समाप्त",
+		"lifecycleDeprecated": "अप्रचलित",
 		"tableView": "तालिका दृश्य",
 		"searchPlaceholder": "मॉडल खोजें...",
 		"allModels": "सभी मॉडल",
@@ -340,6 +325,8 @@
 		"videoOutputFrom": "वीडियो आउटपुट (से)",
 		"priceInputOutput": "{input} इनपुट · {output} आउटपुट",
 		"priceOutputOnly": "{output} आउटपुट",
+		"atProviderCost": "प्रदाता की लागत पर",
+		"pricePerImageEstimate": "≈{price} / 1K छवि",
 		"filters": "फ़िल्टर",
 		"shown": "दिखाए गए",
 		"noModelsForFilters": "चुने गए फ़िल्टर के लिए कोई मॉडल नहीं मिला।",
@@ -811,17 +798,9 @@
 						"label": "अस्थायी रूप से अवरुद्ध",
 						"description": "रूटिंग पर अस्थायी रोक लगी है।"
 					},
-					"deranked_lvl1": {
-						"label": "रूटिंग प्राथमिकता कम L1",
-						"description": "सार्वजनिक रूटिंग उपलब्ध है, लेकिन स्वास्थ्य संकेतों के कारण प्राथमिकता थोड़ी कम है।"
-					},
-					"deranked_lvl2": {
-						"label": "रूटिंग प्राथमिकता कम L2",
-						"description": "सार्वजनिक रूटिंग उपलब्ध है, लेकिन स्वास्थ्य संकेतों के कारण प्राथमिकता कम है।"
-					},
-					"deranked_lvl3": {
-						"label": "रूटिंग प्राथमिकता कम L3",
-						"description": "सार्वजनिक रूटिंग उपलब्ध है, लेकिन स्वास्थ्य संकेतों के कारण प्राथमिकता बहुत कम है।"
+					"deranked": {
+						"label": "कम प्राथमिकता",
+						"description": "सार्वजनिक रूप से रूट किया जा सकता है, लेकिन सिर्फ़ तब बैकअप के रूप में इस्तेमाल होता है जब दूसरे प्रदाता विफल हों।"
 					},
 					"internal_testing": {
 						"label": "आंतरिक परीक्षण",
@@ -1081,7 +1060,7 @@
 				"disabled": "अक्षम",
 				"comingSoon": "जल्द आ रहा है",
 				"internalTesting": "आंतरिक परीक्षण",
-				"rateLimited": "सीमित",
+				"rateLimited": "कम प्राथमिकता",
 				"degraded": "घटित",
 				"external": "बाहरी"
 			},
@@ -1099,13 +1078,15 @@
 			"inactiveDisabled": "निष्क्रिय / अक्षम",
 			"externalProviders": "बाहरी प्रदाता",
 			"threeDayUptime": "3-दिवसीय उपलब्धता",
+			"uptimeDayNoTraffic": "{day}: कोई ट्रैफ़िक नहीं",
+			"uptimeExplanation": "पिछले 3 दिनों में इस प्रदाता पर किए गए प्रयासों में से सफल प्रयासों का हिस्सा। अनुरोध या Phaseo के कारण हुई त्रुटियाँ नहीं गिनी जातीं। दैनिक बार में बिना ट्रैफ़िक वाला दिन 100% दिखाता है। 3 दिनों में बिना ट्रैफ़िक वाला प्रदाता -- दिखाता है।",
 			"statusDescriptions": {
 				"active": "उपलब्ध।",
 				"inactive": "उपलब्ध नहीं।",
 				"disabled": "स्पष्ट रूप से अक्षम और रूट नहीं किया जा सकता।",
 				"comingSoon": "जल्द आ रहा है; अभी रूट नहीं किया जा सकता।",
 				"internalTesting": "केवल आंतरिक परीक्षण के लिए उपलब्ध।",
-				"rateLimited": "रूट किया जा सकता है, लेकिन रूटिंग स्वास्थ्य के कारण प्राथमिकता कम है।",
+				"rateLimited": "Phaseo द्वारा सेट किया गया। सिर्फ़ तब बैकअप के रूप में इस्तेमाल होता है जब दूसरे प्रदाता विफल हों।",
 				"degraded": "उपलब्ध है, लेकिन रूटिंग स्वास्थ्य घटा हुआ है।",
 				"external": "बाहरी कैटलॉग में सूचीबद्ध; Phaseo के माध्यम से रूट नहीं किया जा सकता।"
 			},
@@ -1363,9 +1344,12 @@
 			"discountEndsInDaysHours": "{days} दिन {hours} घंटे में समाप्त होगी",
 			"discountEndsInHours": "{hours} घंटे में समाप्त होगी",
 			"routingHealthLimited": "अस्थायी रूप से सीमित",
-			"routingHealthLimitedDescription": "रूटिंग स्वास्थ्य ने इस प्रदाता की प्राथमिकता अस्थायी रूप से घटा दी है (प्रभावित रूट जोड़े: {count})।",
+			"routingHealthLimitedDescription": "इस प्रदाता को भेजे गए अनुरोध बार-बार विफल हुए, इसलिए Phaseo ट्रैफ़िक पहले दूसरे प्रदाताओं को भेज रहा है (प्रभावित रूट: {count})।",
 			"routingHealthRecovering": "पुनर्प्राप्त हो रहा है",
-			"routingHealthRecoveringDescription": "रूटिंग स्वास्थ्य पुनर्प्राप्ति की जाँच कर रहा है (हाफ-ओपन स्थिति में रूट जोड़े: {count})।",
+			"routingHealthRecoveringDescription": "Phaseo यह जाँचने के लिए कुछ अनुरोध आगे भेज रहा है कि यह प्रदाता फिर से काम कर रहा है या नहीं (रूट: {count})।",
+			"routingHealthAutomatic": "यह अपने आप होता है और अनुरोध फिर से सफल होते ही हट जाता है। यह इससे पहले वाले स्टेटस आइकन से अलग है, जिसे Phaseo मैन्युअल रूप से सेट करता है।",
+			"liveRouting": "लाइव रूटिंग",
+			"liveRoutingStatus": "लाइव रूटिंग: {status}",
 			"processing": "प्रोसेसिंग",
 			"dataCenters": "डेटा सेंटर",
 			"unknown": "अज्ञात",
@@ -1481,19 +1465,26 @@
 			"submittedPrices": "प्रदाताओं द्वारा जमा की गई वर्तमान कीमतें ऊपर की प्रदाता तालिका में दिखाई गई हैं।"
 		},
 		"uptime": {
-			"title": "औसत उपलब्धता",
 			"last24Hours": "पिछले 24 घंटे",
 			"noRequests": "कोई अनुरोध दर्ज नहीं हुआ",
-			"requestsObserved": "दर्ज अनुरोध: {count}",
 			"perHour": "प्रति घंटे उपलब्धता",
-			"chartLabel": "पिछले {hours} घंटों में मॉडल की प्रति घंटे उपलब्धता। उपलब्धता: {uptime}। दर्ज अनुरोध: {count}।",
-			"leastStableProviderLabel": "Phaseo Routing के बिना",
-			"tooltipUptime": "अपटाइम:",
-			"tooltipWorstProvider": "Phaseo Routing के बिना:",
-			"hourlyAverage": "पिछले 24 घंटे · प्रति घंटे औसत",
-			"routingChartLabel": "पिछले 24 घंटों में मॉडल की प्रति घंटे उपलब्धता। Phaseo Routing: {uptime}।{comparison}",
-			"routingComparison": " Phaseo Routing के बिना: {uptime}।",
-			"routingLabel": "Phaseo रूटिंग"
+			"noFailuresThisHour": "इस घंटे कोई विफलता नहीं",
+			"providerHealthTitle": "प्रदाता की स्थिति",
+			"reachabilityLabel": "पहुँचे",
+			"capacityLabel": "स्वीकृत",
+			"callErrorsLabel": "पूरे हुए",
+			"reachabilityHelp": "Phaseo को प्रदाता से जवाब कितनी बार मिला। कनेक्शन विफलताएँ, जवाब शुरू होने से पहले टाइमआउट, गेटवे त्रुटियाँ (502, 504, 520–527) और ओवरलोड का संकेत न देने वाले 503 इसके विरुद्ध गिने जाते हैं।",
+			"capacityHelp": "प्रदाता तक पहुँची कॉल में से उसने कितनी बार उन्हें स्वीकार किया, बजाय लोड के कारण ठुकराने के। Phaseo की अपनी कुंजी पर दर सीमाएँ (429), 529 और प्रदाता के ओवरलोड होने की सूचना देने वाले जवाब इसके विरुद्ध गिने जाते हैं।",
+			"callErrorsHelp": "प्रदाता द्वारा स्वीकार की गई कॉल में से कितनी बार वे प्रदाता की त्रुटि के बिना पूरी हुईं। सर्वर त्रुटियाँ, बीच में टूटी स्ट्रीम और खाली या अमान्य आउटपुट इसके विरुद्ध गिने जाते हैं।",
+			"noFailures": "कोई विफलता नहीं",
+			"reachabilityFailureShare": "{percent} प्रयास प्रदाता तक नहीं पहुँच सके",
+			"capacityFailureShare": "{percent} को ठुकराया गया क्योंकि प्रदाता की क्षमता पूरी थी",
+			"capacityUnmeasured": "कोई प्रयास प्रदाता तक नहीं पहुँचा",
+			"callErrorsFailureShare": "{percent} प्रदाता के स्वीकार करने के बाद विफल हुए",
+			"callErrorsUnmeasured": "कोई प्रयास स्वीकार नहीं हुआ",
+			"attemptShare24h": "पिछले 24 घंटे · सभी प्रदाता प्रयासों का हिस्सा। अनुरोध या Phaseo के कारण हुई त्रुटियाँ नहीं गिनी जातीं।",
+			"providerHealthChartLabel": "पिछले 24 घंटों में प्रति घंटा प्रदाता की स्थिति। इस अवधि के सभी प्रयासों में, पहुँचे: {reachability}। स्वीकृत: {capacity}। पूरे हुए: {callErrors}।",
+			"attemptBasis": "पिछले 3 दिन, प्रति प्रदाता प्रयास। अनुरोध या Phaseo के कारण हुई त्रुटियाँ नहीं गिनी जातीं।"
 		},
 		"providerInfo": {
 			"dataPolicy": "डेटा नीति",
@@ -1623,8 +1614,10 @@
 			"viewLicense": "लाइसेंस देखें"
 		},
 		"performance": {
-			"noTelemetry": "पिछले 7 दिनों में Gateway टेलीमेट्री नहीं है",
-			"telemetryHint": "चुने हुए स्थान पर यह मॉडल Gateway ट्रैफ़िक प्रोसेस करेगा, तब प्रति घंटे के चार्ट दिखेंगे।",
+			"noTelemetry": "पिछले 7 दिनों में कोई अनुरोध नहीं",
+			"telemetryHint": "यह मॉडल Phaseo के ज़रिए अनुरोध प्रोसेस करेगा, तब चार्ट दिखेंगे।",
+			"noFilteredTelemetry": "{location} में प्रकाशित करने लायक पर्याप्त ट्रैफ़िक नहीं है",
+			"filteredTelemetryHint": "किसी स्थान के चार्ट तभी दिखते हैं जब उसके पास इतने अनुरोध हों कि किसी एक ग्राहक का ट्रैफ़िक अलग से पहचाना न जा सके। सभी अनुरोध देखने के लिए सभी स्थान चुनें।",
 			"filterByLocation": "API स्थान के अनुसार प्रदर्शन फ़िल्टर करें",
 			"providerPerformance": "प्रदाता का प्रदर्शन",
 			"last24Hours": "पिछले 24 घंटे",
@@ -1672,9 +1665,9 @@
 				"tpot": "पहले टोकन के बाद प्रति आउटपुट टोकन का औसत समय।",
 				"itl": "जनरेट किए गए टोकन के बीच का औसत अंतराल।",
 				"cachedInput": "प्रदाता के कैश से दिए गए इनपुट टोकन का अनुपात।",
-				"throughputCard": "चुनी गई अवधि में प्रदाता का औसत थ्रूपुट।",
-				"latencyCard": "पहला उत्तर टोकन मिलने तक उपयोगकर्ताओं का प्रतीक्षा समय।",
-				"endToEndCard": "अनुरोध शुरू होने से उत्तर पूरा होने तक का कुल समय।"
+				"throughputCard": "प्रति सेकंड आउटपुट टोकन: सभी आउटपुट टोकन को प्रदाता की पूरी अवधि से भाग दिया जाता है, यानी प्रदाता को अनुरोध भेजने से उसके अंतिम उत्तर तक।",
+				"latencyCard": "पहले टोकन तक का समय: Phaseo को अनुरोध मिलने से पहले जनरेट हुए आउटपुट तक। केवल स्ट्रीमिंग उत्तरों पर मापा जाता है।",
+				"endToEndCard": "पूरे अनुरोध का समय: Phaseo को अनुरोध मिलने से उत्तर पूरा होने तक।"
 			},
 			"axisTokensPerSecond": "टोकन प्रति सेकंड",
 			"axisMilliseconds": "मिलीसेकंड",
@@ -2183,7 +2176,8 @@
 			"audio": "ऑडियो मॉडल रैंकिंग",
 			"video": "वीडियो मॉडल रैंकिंग",
 			"speech": "स्पीच मॉडल रैंकिंग",
-			"transcription": "ट्रांसक्रिप्शन मॉडल रैंकिंग"
+			"transcription": "ट्रांसक्रिप्शन मॉडल रैंकिंग",
+			"decisions": "निर्णय मॉडल रैंकिंग"
 		},
 		"leaderboard": "लीडरबोर्ड",
 		"fastestModels": "सबसे तेज़ मॉडल",
@@ -2286,7 +2280,8 @@
 			"video-seconds": "जनरेट किए गए वीडियो सेकंड",
 			"video-tokens": "कुल वीडियो टोकन",
 			"speech-seconds": "जनरेट किए गए स्पीच सेकंड",
-			"transcription-minutes": "ट्रांसक्राइब किए गए मिनट"
+			"transcription-minutes": "ट्रांसक्राइब किए गए मिनट",
+			"decision-volume": "निर्णय टोकन"
 		},
 		"usageImagesUnit": "इमेज",
 		"usageSecondsUnit": "सेकंड",
@@ -2335,7 +2330,8 @@
 			"audio": "ऑडियो",
 			"video": "वीडियो",
 			"speech": "वाक्",
-			"transcription": "ट्रांसक्रिप्शन"
+			"transcription": "ट्रांसक्रिप्शन",
+			"decisions": "निर्णय"
 		},
 		"shareLabel": "हिस्सेदारी",
 		"tokensLabel": "टोकन",
@@ -2766,13 +2762,6 @@
 		"perMonth": "प्रति माह",
 		"calculatorNote": "हर मॉडल के नीचे चुने गए रूट और स्तर का उपयोग करता है, 30 दिनों के लिए। कैश किया गया इनपुट कैश-रीड दर पर बिल होता है।",
 		"providers": "प्रदाता",
-		"providersSub": "आज Phaseo पर उपलब्ध रूट, प्रति 1M टोकन मानक स्तर की कीमतें",
-		"provider": "प्रदाता",
-		"tiers": "स्तर",
-		"providerPriceNote": "मानक स्तर की कीमतें। पहली पंक्ति सबसे सस्ता रूट है; दूसरा रूट ऊपर मॉडल के नाम के नीचे चुनें।",
-		"noRoutesFor": "Phaseo अभी {name} को रूट नहीं करता।",
-		"otherListings": "{count, plural, one {अन्य लिस्टिंग, Phaseo से रूट नहीं होतीं: # प्रदाता} other {अन्य लिस्टिंग, Phaseo से रूट नहीं होतीं: # प्रदाता}}",
-		"otherListingsNote": "संदर्भ के लिए: अन्य गेटवे की लिस्टिंग और वे रूट जिन्हें Phaseo ने बंद या निष्क्रिय किया है।",
 		"benchmarks": "बेंचमार्क",
 		"benchmarksSub": "पंक्ति केवल उन परिणामों की है जिन्हें चुने गए दो या अधिक मॉडल रिपोर्ट करते हैं",
 		"benchmarksSubSingle": "इस मॉडल के सभी बेंचमार्क परिणाम",
@@ -2808,10 +2797,6 @@
 				"title": "मौजूदा फ़्लैगशिप",
 				"description": "तीन लैब के सबसे नए शीर्ष मॉडल"
 			},
-			"pairing": {
-				"title": "GPT 5 बनाम Claude Sonnet 4.5",
-				"description": "एक जोड़ी जिस पर कई टीमें विचार करती हैं"
-			},
 			"anthropic": {
 				"title": "Opus या Sonnet?",
 				"description": "Anthropic के दो मौजूदा स्तर"
@@ -2819,6 +2804,18 @@
 			"openWeights": {
 				"title": "ओपन वेट्स",
 				"description": "ऐसे मॉडल जिन्हें आप डाउनलोड करके खुद चला सकते हैं"
+			},
+			"video": {
+				"title": "वीडियो मॉडल",
+				"description": "रिज़ॉल्यूशन और मोड के अनुसार प्रति सेकंड कीमत"
+			},
+			"image": {
+				"title": "इमेज मॉडल",
+				"description": "आकार और गुणवत्ता के अनुसार प्रति इमेज कीमत"
+			},
+			"decisions": {
+				"title": "निर्णय मॉडल",
+				"description": "ऐसे मॉडल जो टेक्स्ट नहीं, निर्णय लौटाते हैं"
 			}
 		},
 		"badgeOnPhaseo": "Phaseo पर",
@@ -2839,18 +2836,15 @@
 		"pricedOn": "कीमत का आधार",
 		"pricingSubRoute": "हर मॉडल के नीचे चुने गए रूट और स्तर पर कीमतें",
 		"perMillionTokens": "/ 10 लाख टोकन",
-		"bandPrice": "{condition}: {price}",
 		"moreMeters": "{count, plural, one {# और मीटर दिखाएँ} other {# और मीटर दिखाएँ}}",
 		"fewerMeters": "कम मीटर दिखाएँ",
 		"otherCategory": "अन्य",
 		"activity": "गतिविधि",
 		"activitySub": "पिछले 30 दिनों में हर दिन Phaseo के ज़रिए भेजे गए टोकन",
-		"activityTotal": "टोकन, पिछले 30 दिन",
 		"activityInput": "इनपुट",
 		"activityOutput": "आउटपुट",
 		"activityReasoning": "रीज़निंग",
 		"activityRequests": "अनुरोध",
-		"activityDay": "{date}: {tokens} टोकन, {count, plural, other {{requests} अनुरोध}}",
 		"activityChart": "Phaseo के ज़रिए {name} के दैनिक टोकन, पिछले 30 दिन",
 		"activityNone": "पिछले 30 दिनों में Phaseo के ज़रिए कोई ट्रैफ़िक नहीं",
 		"activityNoneAll": "पिछले 30 दिनों में इनमें से किसी भी मॉडल पर Phaseo के ज़रिए कोई ट्रैफ़िक नहीं आया।",
@@ -2859,7 +2853,46 @@
 		"peerModels": "{count, plural, one {# मॉडल रैंक किया गया} other {# मॉडल रैंक किए गए}}",
 		"headToHead": "आमने-सामने तुलनाएँ",
 		"pairTitle": "{a} बनाम {b}",
-		"activityRequestsTotal": "अनुरोध, पिछले 30 दिन"
+		"selected": "चुना गया",
+		"pickerReturnsOther": "यह {types} लौटाता है, इसलिए आपके चयन से इसकी तुलना नहीं हो सकती",
+		"pickerNoOutputTypes": "इसके आउटपुट प्रकार प्रकाशित नहीं हैं, इसलिए इसे आपके चयन से मिलाया नहीं जा सकता",
+		"pickerHiddenIncompatible": "{count, plural, one {अलग प्रकार लौटाने वाला # मॉडल छिपा है।} other {अलग प्रकार लौटाने वाले # मॉडल छिपे हैं।}} उन्हें ढूँढने के लिए खोजें।",
+		"activityTokens30d": "टोकन, पिछले 30 दिन",
+		"activityPerDay": "प्रति दिन",
+		"activityNoTokens": "केवल अनुरोध, कोई टोकन दर्ज नहीं",
+		"moreMetersCount": "{count, plural, one {# और मीटर} other {# और मीटर}}",
+		"priceFrom": "{price} से",
+		"conditionFields": {
+			"input": "इनपुट",
+			"duration": "अवधि",
+			"inputVideo": "इनपुट वीडियो",
+			"resolution": "रिज़ॉल्यूशन",
+			"quality": "गुणवत्ता",
+			"aspectRatio": "आस्पेक्ट रेशियो",
+			"audio": "ऑडियो",
+			"mode": "मोड",
+			"draft": "ड्राफ़्ट",
+			"cacheDuration": "कैश अवधि",
+			"region": "क्षेत्र",
+			"serviceTier": "सेवा स्तर"
+		},
+		"conditionIs": "{field}: {value}",
+		"conditionIsNot": "{field}: {value} नहीं",
+		"conditionOn": "चालू",
+		"conditionOff": "बंद",
+		"showAllPrices": "सभी {count} कीमतें दिखाएँ",
+		"showFewerPrices": "कम कीमतें दिखाएँ",
+		"showAllProviders": "सभी {count} प्रदाता दिखाएँ",
+		"showFewerProviders": "कम प्रदाता दिखाएँ",
+		"moreCount": "+{count}",
+		"routePrice": "{input} इनपुट · {output} आउटपुट",
+		"providersAcrossSub": "हर मॉडल Phaseo पर कहाँ चलता है, प्रति 10 लाख टोकन मानक स्तर की कीमत के साथ। इनमें से ज़्यादा मॉडल देने वाले प्रदाता पहले दिखते हैं।",
+		"providersAcrossSubMeters": "हर मॉडल Phaseo पर कहाँ चलता है, हर रूट की मानक स्तर की कीमत के साथ। इनमें से ज़्यादा मॉडल देने वाले प्रदाता पहले दिखते हैं।",
+		"providersAcrossNote": "पूरे पेज की कीमत इनमें से किसी प्रदाता पर देखने के लिए, ऊपर मॉडल के नाम के नीचे उसे चुनें।",
+		"routeContext": "{value} संदर्भ",
+		"otherListingsLabel": "सूची में भी, Phaseo से रूट नहीं",
+		"noRoutesAny": "Phaseo आज इनमें से किसी भी मॉडल को रूट नहीं करता।",
+		"comparedSections": "हर तुलना में शामिल है"
 	},
 	"countries": {
 		"title": "देश के अनुसार AI",
@@ -3132,9 +3165,7 @@
 		"providerStatus": {
 			"active": "सक्रिय",
 			"coming_soon": "जल्द आ रहा है",
-			"deranked_lvl1": "रैंक घटा L1",
-			"deranked_lvl2": "रैंक घटा L2",
-			"deranked_lvl3": "रैंक घटा L3",
+			"deranked": "कम प्राथमिकता",
 			"disabled": "अक्षम",
 			"inactive": "सक्रिय नहीं",
 			"internal_testing": "आंतरिक परीक्षण",

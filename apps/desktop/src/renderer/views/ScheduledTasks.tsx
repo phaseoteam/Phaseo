@@ -11,6 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { SettingsButton, SettingsField, SettingsNote, SettingsPageLayout, SettingsSection, settingsInput } from "../settings/SettingsLayout";
 import { modelName } from "../chat/ModelPicker";
 import { cn } from "../lib/utils";
+import { MarkdownTextarea } from "../components/MarkdownTextarea";
 
 const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const statusText: Record<Mission["lastStatus"], string> = { never: "Not run yet", running: "Running", completed: "Last run completed", failed: "Last run failed", interrupted: "Last run interrupted", limited: "Last run hit a usage limit" };
@@ -48,7 +49,7 @@ function ScheduledTaskForm({ draft, setDraft, busy, onSubmit, onCancel }: { draf
 	const set = (patch: Partial<Draft>) => setDraft({ ...draft, ...patch });
 	return <form aria-label="Scheduled task" className="flex flex-col gap-4 px-4 py-4 [&_[data-slot=select-trigger]]:text-[13px] [&_[data-slot=select-trigger]]:font-normal" onSubmit={event => { event.preventDefault(); if (draft.templateTaskId) onSubmit(); }}>
 		<SettingsField label="Name"><input aria-label="Task name" required maxLength={200} value={draft.title} onChange={event => set({ title: event.target.value })} placeholder="Morning dependency check" className={settingsInput} /></SettingsField>
-		<SettingsField label="Instructions"><textarea aria-label="Instructions" required maxLength={100000} rows={4} value={draft.prompt} onChange={event => set({ prompt: event.target.value })} placeholder="What should the agent do each time it runs?" className={cn(settingsInput, "h-auto resize-y py-2 leading-relaxed")} /></SettingsField>
+		<SettingsField label="Instructions"><MarkdownTextarea aria-label="Instructions" required maxLength={100000} rows={4} value={draft.prompt} onChange={event => set({ prompt: event.target.value })} placeholder="What should the agent do each time it runs?" className={cn(settingsInput, "h-auto resize-y py-2 leading-relaxed")} /></SettingsField>
 		<SettingsField label="Run like" hint="Each run starts a fresh chat with this chat's account, agent, model and project.">
 			<Select label="Run like" value={draft.templateTaskId} onValueChange={templateTaskId => set({ templateTaskId })} options={[{ value: "", label: "Choose a chat" }, ...templates.map(task => ({ value: task.id, label: [task.title, modelName(task), project(task.projectId)].filter(Boolean).join(" · ") }))]} />
 		</SettingsField>

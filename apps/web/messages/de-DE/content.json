@@ -50,7 +50,8 @@
 		"fromJournal": "Aus dem Journal",
 		"journalDescription": "Produktneuigkeiten, Anleitungen und Versionshinweise.",
 		"viewAllPosts": "Alle Beiträge ansehen",
-		"englishBodyNotice": "Dieser redaktionelle Inhalt ist derzeit auf Englisch verfügbar. Die umgebende Oberfläche ist übersetzt; der Originalartikel wird angezeigt, damit seine Bedeutung erhalten bleibt."
+		"englishBodyNotice": "Dieser redaktionelle Inhalt ist derzeit auf Englisch verfügbar. Die umgebende Oberfläche ist übersetzt; der Originalartikel wird angezeigt, damit seine Bedeutung erhalten bleibt.",
+		"faqTitle": "Häufig gestellte Fragen"
 	},
 	"roadmap": {
 		"title": "Phaseo-Roadmap",
@@ -386,9 +387,9 @@
 				"description": "Das deklarative Komponenten- und Zustandsmodell, auf dem Phaseos interaktive Produktoberflächen aufbauen.",
 				"usedFor": "Chat, Modellvergleich, Einstellungen, Observability und alle zustandsbehafteten Oberflächen bestehen aus React-Komponenten."
 			},
-			"nextjs": {
-				"description": "Das Anwendungsframework für serverseitiges Rendering, Routing, Metadaten, Caching und Interaktionen im Browser.",
-				"usedFor": "Der öffentliche Katalog, der angemeldete Arbeitsbereich, API-Brücken und diese Seite nutzen dieselbe App-Router-Anwendung."
+			"tanstackStart": {
+				"description": "Das Full-Stack-React-Framework, das Server-Rendering, Routing, Datenladen und Serverfunktionen verbindet.",
+				"usedFor": "Der öffentliche Katalog, der angemeldete Arbeitsbereich, die API-Brücken und diese Seite teilen sich eine Anwendung, die auf Cloudflare Workers läuft."
 			},
 			"tailwind": {
 				"description": "Ein Utility-basiertes Styling-System, das Gestaltungsentscheidungen nahe an den betroffenen Komponenten hält.",

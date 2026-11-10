@@ -4,30 +4,31 @@ icon: "/icons/brands/minimax.svg"
 description: "使用 Phaseo CLI 通过 Phaseo Gateway 运行 MiniMax Code。"
 ---
 
-Phaseo CLI 可以使用专用网关密钥和临时提供商设置启动 MiniMax Code。
+运行 `phaseo minimax` 通过 Phaseo 启动 MiniMax Code（`mcode`）会话，或者用 `mcode provider add` 添加 Phaseo，让它在每个会话中都可用。
 
-## 使用 Phaseo CLI 配置
+## 通过 Phaseo CLI 运行 MiniMax Code
 
 ```bash
 phaseo login
-phaseo minimax --model openai/gpt-5.6-terra --
+phaseo minimax --model openai/gpt-5.6-terra
 ```
 
-启动器通过 MiniMax Code 的 `mcode provider add` 命令配置 Phaseo 的 OpenAI 兼容端点，然后使用所选提供商启动 `mcode`。使用 `--catalog all` 注册所有兼容 Chat Completions 的有效 Phaseo 文本/聊天模型，或预览安装和启动计划而不创建密钥：
+运行器会创建一个专用密钥，把 `MINIMAX_DATA_DIR` 设为一个临时目录，用 `mcode provider add` 在其中添加 Phaseo 提供商，启动 `mcode`，并在 `mcode` 退出时删除该目录。你平时的 `~/.minimax` 配置不会被更改，密钥也只会传给提供商设置进程。MiniMax Code 自己的参数放在 `--` 之后。
 
-```bash
-phaseo minimax --catalog all --dry-run --json
-```
+| 参数 | 作用 |
+| --- | --- |
+| `--model <id>` | 要使用的模型。默认为 `openai/gpt-5.6-terra`。 |
+| `--catalog all` | 注册所有支持 Chat Completions 的活跃 Phaseo 文本模型。 |
+| `--dry-run --json` | 显示安装和启动计划，但不创建密钥。 |
+| `--skip-install` | 跳过安装检查。 |
 
-使用 `phaseo run minimax ...` 这一显式命令形式。将 MiniMax Code 的选项放在 `--` 后，让 Phaseo 先处理自己的选项。
+`phaseo run minimax ...` 是同一命令的完整形式。
 
-在类 Unix 系统上，首次交互式运行会提示使用 MiniMax 的官方安装程序安装 MiniMax Code。在 Windows 上，Phaseo 使用官方 PowerShell 安装程序。如果 MiniMax Code 已单独管理，请自行安装，检查 `mcode --version`，并使用 `--skip-install` 重新运行。
+如果没有安装 `mcode`，首次交互式运行会提示你用 MiniMax 官方安装程序安装（在 Windows 上是 PowerShell 安装程序）。如果你自己管理 MiniMax Code，请先安装，检查 `mcode --version`，再加上 `--skip-install` 重新运行。
 
-启动器将 `MINIMAX_DATA_DIR` 设置为临时目录，并在 `mcode` 退出时删除。常规的 `~/.minimax` 配置不会改变，专用 Phaseo 密钥仅传递给临时提供商配置进程。
+## 手动配置 MiniMax Code
 
-## 手动配置
-
-要持久配置 MiniMax Code 提供商，请直接使用 MiniMax Code 的提供商命令：
+要长期保留 Phaseo 提供商，请用 MiniMax Code 自己的命令添加：
 
 ```bash
 export MCODE_PROVIDER_API_KEY="your_phaseo_api_key"
@@ -39,29 +40,22 @@ mcode provider add \
   --use
 ```
 
-MiniMax Code 将持久提供商设置保存在配置的数据目录中。如果希望将这些设置隔离到单个会话，请使用 Phaseo CLI 运行器。
+MiniMax Code 会把该提供商保存在它的数据目录中。
 
-## 验证
+## 确认可以正常使用
 
-通过 MiniMax Code 发送简短提示词，然后确认请求出现在 Phaseo 活动中。要查看可用模型 ID，请使用 `--catalog all` 或通过 `--model` 指定某个 Phaseo 模型。
+发送一条简短的提示词，并确认该请求出现在 **设置 → 用量 → 日志** 中。
 
-## 故障排除
+## 解决常见问题
 
 ### 未安装 MiniMax Code
 
-在交互式终端中运行命令并批准官方安装程序，或单独安装 MiniMax Code 后使用 `--skip-install` 重新运行。
+在交互式终端中运行该命令以批准官方安装程序，或者自己安装 MiniMax Code，再加上 `--skip-install` 重新运行。
 
-### 未列出提供商或模型
+### 提供商或模型没有列出
 
-使用 `phaseo minimax --catalog all`，或通过 `--model` 传入所需模型 ID。CLI 会在启动 `mcode` 前，在临时 MiniMax 数据目录中创建提供商。
+使用 `phaseo minimax --catalog all`，或用 `--model` 传入模型 ID。
 
-### 我需要 ACP 而非交互式 CLI
+### 你需要 ACP 而不是交互式 CLI
 
-MiniMax Code 还通过 `mcode acp` 提供 ACP 进程，用于编辑器和宿主集成。`phaseo minimax` 是交互式 CLI 运行器；如果宿主直接使用 ACP 通信，请使用 MiniMax Code 的 ACP 配置。
-
-## 相关内容
-
-- [Phaseo CLI](./phaseo-cli)
-- [编程智能体](./coding-assistants)
-- [模型](../../api-reference/endpoint/models.mdx)
-- [活动](../../api-reference/endpoint/activity.mdx)
+`phaseo minimax` 运行的是交互式 CLI。MiniMax Code 也可以用 `mcode acp` 作为 ACP 进程运行；当你的编辑器或宿主程序直接使用 ACP 时，请使用 MiniMax Code 的 ACP 配置。

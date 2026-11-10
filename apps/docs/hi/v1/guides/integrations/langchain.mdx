@@ -1,10 +1,10 @@
 ---
 title: "LangChain"
 icon: "link"
-description: "OpenAI-संगत चैट API के माध्यम से LangChain को Phaseo के साथ उपयोग करें।"
+description: "OpenAI-संगत चैट API के ज़रिए LangChain को Phaseo के साथ इस्तेमाल करें।"
 ---
 
-अगर आप LangChain chains, agents या LangGraph वर्कफ़्लो से Phaseo के ज़रिए मॉडल कॉल करना चाहते हैं, तो इस गाइड का उपयोग करें।
+अपनी Phaseo कुंजी और `base_url="https://api.phaseo.app/v1"` के साथ एक `ChatOpenAI` मॉडल बनाएँ, और LangChain चेन, एजेंट और LangGraph वर्कफ़्लो Phaseo के ज़रिए मॉडल कॉल करते हैं।
 
 ## इंस्टॉल करें
 
@@ -12,14 +12,14 @@ description: "OpenAI-संगत चैट API के माध्यम से
 pip install -U langchain langchain-openai
 ```
 
-## ChatOpenAI कॉन्फ़िगर करें
+## ChatOpenAI को Phaseo पर ले जाएँ
 
 ```python
 import os
 from langchain_openai import ChatOpenAI
 
 llm = ChatOpenAI(
-    model="openai/gpt-5-nano",
+    model="openai/gpt-6-astra",
     api_key=os.environ["PHASEO_API_KEY"],
     base_url="https://api.phaseo.app/v1",
 )
@@ -28,9 +28,11 @@ result = llm.invoke("Write one sentence about routing reliability.")
 print(result.content)
 ```
 
-## LangGraph के साथ उपयोग करें
+एक वाक्य प्रिंट होने का मतलब है कि सेटअप काम करता है।
 
-उसी `llm` को अपने graph nodes या agent builder में पास करें:
+## LangGraph में इस्तेमाल करें
+
+वही `llm` अपने ग्राफ़ नोड या एजेंट बिल्डर को दें:
 
 ```python
 def call_model(state):
@@ -38,14 +40,8 @@ def call_model(state):
     return {"messages": [response]}
 ```
 
-## नोट्स
+## ज्ञात सीमाएँ
 
-- LangChain का OpenAI-संगत पथ Chat Completions को लक्ष्य करता है। `/v1/chat/completions` पर उपलब्ध Phaseo सुविधाओं का उपयोग करें।
-- `phaseo:apply_patch` जैसे केवल Responses वाले server tools के लिए सीधे Phaseo कॉल करें या OpenAI SDK गाइड देखें।
-- ट्रेसिंग के लिए इस सेटअप को [ऑब्ज़र्वेबिलिटी](./observability.mdx) के साथ जोड़ें।
-
-## संबंधित
-
-- [OpenAI SDK](./openai-sdk.mdx)
-- [टूल कॉलिंग](../tool-calling.mdx)
-- [रूटिंग और फ़ॉलबैक](../routing-and-fallbacks.mdx)
+- यह तरीका [Chat Completions](../../api-reference/endpoint/chat-completions.mdx) इस्तेमाल करता है, इसलिए सिर्फ़ `/v1/chat/completions` पर उपलब्ध Phaseo सुविधाएँ काम करती हैं, जिनमें [टूल कॉलिंग](../tool-calling.mdx) और [रूटिंग और फ़ॉलबैक](../routing-and-fallbacks.mdx) शामिल हैं।
+- `phaseo:apply_patch` जैसे सिर्फ़-Responses सर्वर टूल के लिए Phaseo को सीधे कॉल करें या [OpenAI SDK](./openai-sdk.mdx) इस्तेमाल करें।
+- LangSmith से ट्रेसिंग के लिए [ऑब्ज़र्वेबिलिटी](./observability.mdx) देखें।

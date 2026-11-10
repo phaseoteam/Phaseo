@@ -14,7 +14,6 @@ class ApiKeyTest < Minitest::Test
       {
         "data" => {
           "id" => "key_123",
-          "hash" => "keyhash_123",
           "status" => "active"
         }
       }
@@ -23,7 +22,6 @@ class ApiKeyTest < Minitest::Test
     response = client.get_api_key("key_123")
 
     assert_equal "key_123", response["data"]["id"]
-    assert_equal "keyhash_123", response["data"]["hash"]
     assert_equal "active", response["data"]["status"]
     assert_equal [["GET", "/keys/key_123", nil, nil, nil]], calls
   end

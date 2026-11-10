@@ -1,5 +1,3 @@
-"use client";
-
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { DisplayDateValue } from "@/lib/displayPreferences";
 

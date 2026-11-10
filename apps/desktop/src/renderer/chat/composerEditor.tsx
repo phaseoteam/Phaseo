@@ -13,6 +13,8 @@ import { chatDragType, mentionToken, parseMentions, type Mention } from "../lib/
 import { showToast } from "../components/ui/toast";
 import { isMac } from "../lib/shortcuts";
 import { isLargePaste } from "./largePaste";
+import { ComposerMarkdown, refreshComposerMarkdown } from "./composerMarkdown";
+import { useWorkspacePreferences } from "../lib/workspacePreferences";
 import { registerComposer } from "./composerFocusRedirect";
 
 /** The chat a sidebar row carries when dragged, if this drag is one. */
@@ -102,10 +104,11 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 	const keys = useRef<(event: KeyboardEvent) => boolean>(undefined);
 	const pasteInline = useRef(false);
 	const last = useRef(value);
-	const latest = useRef({ onChange, onFiles, placeholder });
-	latest.current = { onChange, onFiles, placeholder };
+	const richText = useWorkspacePreferences().chat.richTextComposer;
+	const latest = useRef({ onChange, onFiles, placeholder, richText });
+	latest.current = { onChange, onFiles, placeholder, richText };
 	const editor = useEditor({
-		extensions: [Document, Paragraph, Text, HardBreak, UndoRedo, MentionNode, Placeholder.configure({ placeholder: () => latest.current.placeholder })],
+		extensions: [Document, Paragraph, Text, HardBreak, UndoRedo, MentionNode, Placeholder.configure({ placeholder: () => latest.current.placeholder }), ComposerMarkdown.configure({ enabled: () => latest.current.richText })],
 		content: draftContent(value),
 		editable: !disabled,
 		editorProps: {
@@ -163,6 +166,8 @@ export function useComposerEditor({ value, onChange, placeholder, disabled, onFi
 	useEffect(() => editor ? registerComposer(editor) : undefined, [editor]);
 	// Placeholder text is read when the editor redraws; nudge it when the text changes.
 	useEffect(() => { if (editor && !editor.isDestroyed) editor.view.dispatch(editor.state.tr.setMeta("placeholder", placeholder)); }, [editor, placeholder]);
+	// Turning rich text on or off in Settings restyles open drafts straight away.
+	useEffect(() => { if (editor && !editor.isDestroyed) editor.view.dispatch(editor.state.tr.setMeta(refreshComposerMarkdown, true)); }, [editor, richText]);
 
 	// Scripts drive the composer like a text field: `value` reads and replaces the draft text.
 	useEffect(() => {

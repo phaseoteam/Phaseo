@@ -14,7 +14,10 @@
     "icon": "./assets/phaseo-icon.png",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.phaseo.client"
+      "bundleIdentifier": "app.phaseo.client",
+      "infoPlist": {
+        "CADisableMinimumFrameDurationOnPhone": true
+      }
     },
     "android": {
       "package": "app.phaseo.client",

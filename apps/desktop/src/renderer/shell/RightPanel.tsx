@@ -230,7 +230,7 @@ export function RightPanel() {
 	// Pages that open a new tab, links from messages, and files opened anywhere join this chat's pane.
 	useEffect(() => onBrowserTabOpened(opened => { if (opened.context === context) { show(`browser:${opened.id}`, opened.background); } }));
 	useEffect(() => {
-		const openLink = (event: Event) => { const url = (event as CustomEvent<unknown>).detail; if (typeof url === "string" && /^https?:\/\//i.test(url)) show(`browser:${createBrowserTab(context, { url })}`); };
+		const openLink = (event: Event) => { const url = (event as CustomEvent<unknown>).detail; if (typeof url === "string" && /^https?:\/\//i.test(url)) { event.preventDefault(); show(`browser:${createBrowserTab(context, { url })}`); } };
 		const openFile = (event: Event) => { const detail = (event as CustomEvent<OpenProjectFileDetail>).detail; if (detail?.path && (!projectId || detail.projectId === projectId)) show(`file:${detail.path}`); };
 		const openSide = (event: Event) => { const detail = (event as CustomEvent<OpenSideChatDetail>).detail; if (detail?.parentId === selectedId) show(`side:${detail.id}`); };
 		const openPull = (event: Event) => { const detail = (event as CustomEvent<OpenPullRequestDetail>).detail; if (!projectId || !detail) return; if ("list" in detail) show("pulls"); else if (Number.isSafeInteger(detail.number) && detail.number > 0) show(`pull:${detail.number}`); };

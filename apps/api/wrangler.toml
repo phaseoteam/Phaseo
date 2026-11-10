@@ -45,6 +45,8 @@ AMAZON_BEDROCK_MANTLE_BASE_URL = "https://bedrock-mantle.us-west-2.api.aws"
 MODEL_DISCOVERY_ENABLED = "true"
 ACCOUNT_DELETION_PURGE_ENABLED = "true"
 MODEL_DISCOVERY_RETENTION_DAYS = "7"
+# A model must be missing from a provider's /models list this long (minutes) before its removal is announced.
+MODEL_DISCOVERY_REMOVAL_CONFIRM_MINUTES = "360"
 MODEL_DISCOVERY_SHARD_SIZE = "20"
 # Run every provider check in one scheduled invocation. The watcher itself
 # uses bounded concurrency so this removes shard-to-shard notification delay.

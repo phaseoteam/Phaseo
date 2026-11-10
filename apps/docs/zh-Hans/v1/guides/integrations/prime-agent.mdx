@@ -4,40 +4,41 @@ icon: "/icons/brands/prime-agent.svg"
 description: "将已安装的 Prime Agent 模型目录连接到 Phaseo。"
 ---
 
-## 使用 Phaseo CLI 设置
+运行 `phaseo prime-agent`，为 Prime Agent 添加一个包含所有兼容 Phaseo 模型的 Phaseo 提供商。Prime Agent 可在 macOS 和 Linux 上运行；在 Windows 上，请在 WSL 中安装它并运行 setup。
 
-这些可用于生产环境的命令需要 Phaseo 账户；CLI 会在登录和设置期间创建专用网关凭据。
+## 使用 Phaseo CLI 设置
 
 ```bash
 phaseo login
 phaseo prime-agent
 ```
 
-先从官方版本安装 Prime Agent。设置过程会在 `~/.prime/agent/models.json` 写入受管理的 `phaseo` 供应商。它会提供所有兼容 Chat Completions 的活动 Phaseo 文本模型，并在每次请求时从 Phaseo CLI 获取专用 API 密钥。
+如果没有安装 Prime Agent，CLI 会显示官方安装程序命令，并在运行前征求你的确认。随后 setup 会创建一个 `Phaseo CLI: Prime Agent API Key`（90 天后过期，每月支出上限为 $100），并把 `phaseo` 提供商写入 `~/.prime/agent/models.json`。该提供商列出所有支持 Chat Completions 的活跃 Phaseo 文本模型。
 
-Prime Agent 当前支持 macOS 和 Linux。在 Windows 上，请先在 WSL 中安装可执行文件，再于 WSL 中运行设置。
+| 参数 | 作用 |
+| --- | --- |
+| `--model <id>` | 设置初始模型。默认为 `anthropic/claude-sonnet-4.6`。 |
+| `--catalog default` | 只添加所选模型。 |
+| `--dry-run` | 显示将要进行的文件更改，但不实际执行。 |
 
-选择一个初始目录条目，或按需仅配置一个模型：
-
-```bash
-phaseo prime-agent --model anthropic/claude-sonnet-4.6
-phaseo prime-agent --catalog default
-```
-
-## 启动并验证
-
-```bash
-prime-agent
-```
-
-打开 `/model`，选择 `phaseo` 供应商并发送一个简单提示。生成的供应商使用 Prime Agent 支持的命令式密钥格式：
+该提供商在请求时通过 Prime Agent 的命令式密钥格式获取密钥，因此文件中不会写入明文密钥：
 
 ```text
 !phaseo integrations credential prime-agent
 ```
 
-如需仅移除由 Phaseo 管理的供应商并撤销其专用密钥，请运行：
+## 确认可以正常使用
+
+```bash
+prime-agent
+```
+
+打开 `/model`，选择 `phaseo` 提供商，并发送一条简短的提示词。确认该请求出现在 **设置 → 用量 → 日志** 中。
+
+## 移除 Phaseo
 
 ```bash
 phaseo integrations remove prime-agent
 ```
+
+此命令只删除 Phaseo 提供商，并吊销密钥。

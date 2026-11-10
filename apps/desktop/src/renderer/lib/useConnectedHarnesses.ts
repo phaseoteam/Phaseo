@@ -4,6 +4,7 @@ import { connectedHarnesses } from "../../shared/rememberedModels";
 import type { Harness } from "../../shared/workspace";
 import { emptyOverview } from "../../shared/workspaceOverview";
 import { BACKGROUND_REFRESH_MS } from "./useBackgroundRefresh";
+import { providerHealthMs } from "./providerHealth";
 
 /** The agents a chat can run on now, by the same rule phones use (shared/rememberedModels.ts's connectedHarnesses). */
 export function useConnectedHarnesses() {
@@ -16,7 +17,8 @@ export function useConnectedHarnesses() {
 		const unsubscribe = api.onOverviewChange(setOverview);
 		return () => { active = false; unsubscribe(); };
 	}, [api]);
-	// Main checks the local agents once for the window and phones, and keeps the answer for a minute.
-	const { data = [] } = useSWR<Harness[]>(api ? "connected-local-harnesses" : null, () => api!.connectedHarnesses(), { dedupingInterval: BACKGROUND_REFRESH_MS, refreshInterval: BACKGROUND_REFRESH_MS, revalidateOnFocus: false });
+	// Main checks the local agents once for the window and phones, and keeps the answer for a minute. Re-checked as
+	// often as Settings → Agents → Health checks says.
+	const { data = [] } = useSWR<Harness[]>(api ? "connected-local-harnesses" : null, () => api!.connectedHarnesses(), { dedupingInterval: providerHealthMs() || BACKGROUND_REFRESH_MS, refreshInterval: providerHealthMs(), revalidateOnFocus: false });
 	return connectedHarnesses(data, overview);
 }

@@ -5,12 +5,13 @@ import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
-import { CHAT_MANAGED_KEY_NAME, SLACK_AGENT_MANAGED_KEY_NAME, isManagedKeyName } from "@/lib/managed-keys";
+import { CHAT_MANAGED_KEY_NAME, SLACK_AGENT_MANAGED_KEY_NAME, isManagedKeyName, isReservedKeyName } from "@/lib/managed-keys";
 import { requireAccountWorkspace } from "./context";
 import { keyIpAllowlistSchema } from "./keyIpAllowlist";
 import { parseKeyStorageLocations } from "./key-storage-locations";
 import { workspaceUserProfile } from "./workspaceUserProfile";
 import { keyUsageSeries } from "./keyUsageSeries";
+import { keyDisplayData } from "./settings-key-display";
 
 const BASE62 = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
 const CONTROL_SCOPES = ["me:read","models:read","providers:read","pricing:read","credits:read","activity:read","analytics:read","generations:read","feedback:read","feedback:write","workspaces:read","workspaces:write","workspaces:delete","keys:read","keys:write","keys:delete","presets:read","presets:write","presets:delete","settings:read","settings:write","provider_credentials:read","provider_credentials:write","provider_credentials:delete","private_models:read","private_models:write","private_models:delete","guardrails:read","guardrails:write","guardrails:delete","management_keys:read","management_keys:write","management_keys:delete","oauth_clients:read","oauth_clients:write","oauth_clients:delete"] as const;
@@ -175,6 +176,35 @@ accountSettingsKeysRouter.post("/keys/lookup", bodyLimit({ maxSize: 4096,
 	}
 });
 
+/**
+ * Creates an API key the way the dashboard does: the workspace's key limit, a new kid and secret hashed
+ * with the active pepper, the signed-in person as created_by, the given limits, and an api_key.created
+ * audit event. The dashboard's Create key and an approved CLI key request (settings-key-requests.ts) both
+ * use it, so their keys are made identically. The plaintext is returned once and never stored. Reserved
+ * (managed) names throw reserved_key_name: such a key would be hidden from Settings and the key limit.
+ */
+export async function createWorkspaceApiKey(
+	context: NonNullable<Awaited<ReturnType<typeof requireAccountWorkspace>>>,
+	env: Env,
+	input: {
+		userId: string;
+		name: string;
+		limits: Record<string, unknown>;
+		storageLocations: string[];
+		scopes?: string;
+		expiresAt?: string | null;
+		auditMetadata?: Record<string, unknown>;
+		requestId?: string | null;
+	},
+): Promise<{ id: string; plaintext: string; prefix: string }> {
+	if (isReservedKeyName(input.name)) throw new Error("reserved_key_name");
+	await enforceKeyLimit(context, env, "api"); const key = generateKey("sk"); const limits = limitMetadata(input.limits);
+	const result = await context.client.from("keys").insert({ workspace_id: context.workspaceId, name: input.name, kid: key.kid, hash: await hmac(env, key.secret), prefix: key.prefix, status: "active", scopes: input.scopes ?? "[]", created_by: input.userId, daily_limit_requests: limits.dailyRequests, weekly_limit_requests: limits.weeklyRequests, monthly_limit_requests: limits.monthlyRequests, daily_limit_cost_nanos: limits.dailyCostNanos, weekly_limit_cost_nanos: limits.weeklyCostNanos, monthly_limit_cost_nanos: limits.monthlyCostNanos, storage_locations: input.storageLocations, ...(input.expiresAt ? { expires_at: input.expiresAt } : {}) }).select("id").maybeSingle();
+	if (result.error || !result.data?.id) throw result.error ?? new Error("key_write_failed");
+	await recordWorkspaceAuditEvent(context.client, { workspaceId: context.workspaceId, actorUserId: input.userId, action: "api_key.created", targetType: "api_key", targetId: result.data.id, targetName: input.name, metadata: { prefix: key.prefix, status: "active", limits, storageLocations: input.storageLocations, ...(input.expiresAt ? { expiresAt: input.expiresAt } : {}), ...input.auditMetadata }, requestId: input.requestId ?? null });
+	return { id: result.data.id, plaintext: key.plaintext, prefix: key.prefix };
+}
+
 accountSettingsKeysRouter.post("/keys", async (c) => {
 	const user = await requireUser(c.req.raw, c.env); if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 	const body: Record<string, any> = await c.req.json<Record<string, any>>().catch(() => ({})); const workspaceId = String(body.workspaceId ?? "").trim(); const name = String(body.name ?? "").trim();
@@ -182,12 +212,9 @@ accountSettingsKeysRouter.post("/keys", async (c) => {
 	const storage = parseKeyStorageLocations(body.storageLocations ?? []);
 	if (storage.ok === false) return c.json({ error: "invalid_storage_locations", message: storage.message }, 400, PRIVATE_NO_STORE_HEADERS);
 	try {
-		await enforceKeyLimit(context, c.env, "api"); const key = generateKey("sk"); const limits = limitMetadata(body.limits ?? {});
-		const result = await context.client.from("keys").insert({ workspace_id: workspaceId, name, kid: key.kid, hash: await hmac(c.env, key.secret), prefix: key.prefix, status: "active", scopes: typeof body.scopes === "string" ? body.scopes : "[]", created_by: user.id, daily_limit_requests: limits.dailyRequests, weekly_limit_requests: limits.weeklyRequests, monthly_limit_requests: limits.monthlyRequests, daily_limit_cost_nanos: limits.dailyCostNanos, weekly_limit_cost_nanos: limits.weeklyCostNanos, monthly_limit_cost_nanos: limits.monthlyCostNanos, storage_locations: storage.value }).select("id").maybeSingle();
-		if (result.error || !result.data?.id) throw result.error ?? new Error("key_write_failed");
-		await recordWorkspaceAuditEvent(context.client, { workspaceId, actorUserId: user.id, action: "api_key.created", targetType: "api_key", targetId: result.data.id, targetName: name, metadata: { prefix: key.prefix, status: "active", limits, storageLocations: storage.value }, requestId: requestId(c) });
-		return c.json({ id: result.data.id, plaintext: key.plaintext, prefix: key.prefix }, 200, PRIVATE_NO_STORE_HEADERS);
-	} catch (error) { return c.json({ error: error instanceof Error ? error.message : "key_write_failed" }, 409, PRIVATE_NO_STORE_HEADERS); }
+		const created = await createWorkspaceApiKey(context, c.env, { userId: user.id, name, limits: body.limits ?? {}, storageLocations: storage.value, scopes: typeof body.scopes === "string" ? body.scopes : "[]", requestId: requestId(c) });
+		return c.json(created, 200, PRIVATE_NO_STORE_HEADERS);
+	} catch (error) { const message = error instanceof Error ? error.message : "key_write_failed"; return c.json({ error: message }, message === "reserved_key_name" ? 400 : 409, PRIVATE_NO_STORE_HEADERS); }
 });
 
 async function apiKeyContext(c: any) {
@@ -273,6 +300,10 @@ accountSettingsKeysRouter.post("/keys/:keyId/rotate", async (c) => {
 accountSettingsKeysRouter.delete("/keys/:keyId", async (c) => {
 	const loaded = await apiKeyContext(c); if (!loaded) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); const confirm = c.req.query("confirmName"); if (confirm && confirm !== loaded.key.name) return c.json({ error: "confirmation_mismatch" }, 409, PRIVATE_NO_STORE_HEADERS); if (String(loaded.key.status).toLowerCase() === "deleted") return c.json({ success: true, alreadyDeleted: true }, 200, PRIVATE_NO_STORE_HEADERS);
 	await invalidateGatewayKey(c.env, loaded.key.id); let result = await loaded.context.client.from("keys").update({ status: "deleted", expires_at: new Date().toISOString(), soft_blocked: true, hash: `deleted:${loaded.key.id}` }).eq("id", loaded.key.id); if (result.error && missingExpiry(result.error)) result = await loaded.context.client.from("keys").update({ status: "deleted", soft_blocked: true, hash: `deleted:${loaded.key.id}` }).eq("id", loaded.key.id); if (result.error) return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS);
+	// Bump again now the row is written: a gateway request between the first bump and the update
+	// could have cached the still-active row under the new version. If this fails, the database
+	// trigger on keys still refreshes the gateway within about a minute, so the delete doesn't wait.
+	c.executionCtx.waitUntil(invalidateGatewayKey(c.env, loaded.key.id)); // logs its own failures
 	for (const table of ["key_guardrails", "broadcast_destination_keys"] as const) { const links = await loaded.context.client.from(table).delete().eq("key_id", loaded.key.id); if (links.error) return c.json({ error: "key_write_failed" }, 503, PRIVATE_NO_STORE_HEADERS); }
 	await recordWorkspaceAuditEvent(loaded.context.client, { workspaceId: loaded.context.workspaceId, actorUserId: loaded.user.id, action: "api_key.deleted", targetType: "api_key", targetId: loaded.key.id, targetName: loaded.key.name, metadata: { prefix: loaded.key.prefix ?? null }, requestId: requestId(c) });
 	return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
@@ -295,8 +326,8 @@ accountSettingsKeysRouter.post("/management-keys", async (c) => {
 	} catch (error) { return c.json({ error: error instanceof Error ? error.message : "key_write_failed" }, 409, PRIVATE_NO_STORE_HEADERS); }
 });
 
-accountSettingsKeysRouter.get("/management-keys", async (c) => { const workspaceId = c.req.query("workspaceId")?.trim(); const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId }); if (!context || !["owner", "admin"].includes(context.role.toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); const result = await context.client.from("management_keys").select("*").eq("workspace_id", context.workspaceId).order("created_at", { ascending: false }); if (result.error) return c.json({ error: "key_read_failed" }, 503, PRIVATE_NO_STORE_HEADERS); return c.json({ keys: result.data ?? [] }, 200, PRIVATE_NO_STORE_HEADERS); });
-accountSettingsKeysRouter.get("/management-keys/:keyId", async (c) => { const loaded = await managementContext(c); if (!loaded) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); return c.json({ key: loaded.key }, 200, PRIVATE_NO_STORE_HEADERS); });
+accountSettingsKeysRouter.get("/management-keys", async (c) => { const workspaceId = c.req.query("workspaceId")?.trim(); const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId }); if (!context || !["owner", "admin"].includes(context.role.toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); const result = await context.client.from("management_keys").select("*").eq("workspace_id", context.workspaceId).order("created_at", { ascending: false }); if (result.error) return c.json({ error: "key_read_failed" }, 503, PRIVATE_NO_STORE_HEADERS); return c.json({ keys: (result.data ?? []).map(keyDisplayData) }, 200, PRIVATE_NO_STORE_HEADERS); });
+accountSettingsKeysRouter.get("/management-keys/:keyId", async (c) => { const loaded = await managementContext(c); if (!loaded) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); return c.json({ key: keyDisplayData(loaded.key) }, 200, PRIVATE_NO_STORE_HEADERS); });
 
 accountSettingsKeysRouter.put("/management-keys/:keyId", async (c) => {
 	const loaded = await managementContext(c); if (!loaded) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS); const body: Record<string, any> = await c.req.json<Record<string, any>>().catch(() => ({})); const update: Record<string, unknown> = {};
