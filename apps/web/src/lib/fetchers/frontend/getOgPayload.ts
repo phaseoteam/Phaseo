@@ -184,6 +184,7 @@ export function buildModelOgStats(model: ModelOverviewPage | null, pricing: Prov
 		const promotionCandidate = getPromotionCandidate(cheapest, standardCandidates);
 		const promotionPercent = getPromotionPercent(cheapest, standardCandidates);
 		const hasPromotion = promotionCandidate != null && promotionPercent != null;
+		const audience = hasPromotion ? audienceLabel(promotionCandidate.rule.match) : undefined;
 		return {
 			value: promotionCandidate && promotionPercent != null
 				? promotionCandidate.pricePerMillion
@@ -191,7 +192,7 @@ export function buildModelOgStats(model: ModelOverviewPage | null, pricing: Prov
 			...(hasPromotion ? { originalValue: cheapest.pricePerMillion } : {}),
 			...(promotionPercent != null ? { promotion: formatPromotionPercent(promotionPercent) } : {}),
 			// A price limited to one app says which, so other apps do not look eligible.
-			...(hasPromotion && audienceLabel(promotionCandidate.rule.match) ? { audience: audienceLabel(promotionCandidate.rule.match) } : {}),
+			...(audience ? { audience } : {}),
 		};
 	};
 
