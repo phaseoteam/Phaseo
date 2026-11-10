@@ -21,11 +21,13 @@ const analytics = jest.requireActual<typeof import("./appAnalytics")>("./appAnal
 
 afterEach(() => { analytics.setAppAnalyticsEnabled(false); mockClients.length = 0; mockData.clear(); mockNetwork.mockClear(); });
 
-test("new installations start analytics without changing a saved preference", () => {
-  expect(analytics.analyticsStore.get()).toBe(true);
+test("new installations create no SDK or tracking identifier before opt-in", () => {
+  expect(analytics.analyticsStore.get()).toBe(false);
   analytics.startAppAnalytics();
-  expect(mockClients).toHaveLength(1);
-  expect(mockData.has("phaseo.analytics.enabled")).toBe(false);
+  analytics.trackAppScreen(["(app)", "chat", "[id]"]);
+  analytics.trackAppError(new Error("private error"));
+  expect(mockClients).toHaveLength(0);
+  expect(mockData.size).toBe(0);
 });
 
 test.each<[string, boolean]>([ ["true", true], ["false", false], ["invalid", false] ])("a saved %s preference is respected after restart", (saved, expected) => {

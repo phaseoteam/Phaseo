@@ -2,9 +2,9 @@ import { describe, expect, it } from "vitest";
 import { defaultPreferences, validatePreferences } from "./preferences";
 
 describe("workspace preferences", () => {
-  it("defaults app analytics on while preserving a saved opt-out", () => {
-    expect(defaultPreferences.analyticsEnabled).toBe(true);
-    expect(validatePreferences({ notifications: "off", notificationTitles: false }).analyticsEnabled).toBe(true);
+  it("keeps app analytics off until enabled and preserves saved choices", () => {
+    expect(defaultPreferences.analyticsEnabled).toBe(false);
+    expect(validatePreferences({ notifications: "off", notificationTitles: false }).analyticsEnabled).toBe(false);
     expect(validatePreferences({ ...defaultPreferences, analyticsEnabled: false }).analyticsEnabled).toBe(false);
     expect(validatePreferences({ ...defaultPreferences, analyticsEnabled: true }).analyticsEnabled).toBe(true);
     expect(() => validatePreferences({ ...defaultPreferences, analyticsEnabled: "yes" })).toThrow("analytics");

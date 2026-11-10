@@ -165,7 +165,7 @@ export function GeneralSettings() {
 		<GlobalInstructions />
 		<About />
 		<SettingsSection title="Privacy">
-			<SettingsRow title="Share app usage and errors" description="Send screen names, sanitized errors, app version and OS to help improve Phaseo. No chat content, files or recordings. On by default; turn off anytime."
+			<SettingsRow title="Share app usage and errors" description="Send screen names, sanitized errors, app version and OS to help improve Phaseo. No chat content, files or recordings. Off by default; turn off anytime."
 				control={<Switch aria-label="Share app usage and errors" checked={preferences.analyticsEnabled} disabled={!ready || busy} onCheckedChange={checked => void save({ ...preferences, analyticsEnabled: checked })} />} />
 		</SettingsSection>
 	</SettingsPageLayout>;

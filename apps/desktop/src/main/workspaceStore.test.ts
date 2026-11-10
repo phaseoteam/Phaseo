@@ -7,7 +7,7 @@ import { validateCommand } from "../shared/workspace";
 import { defaultPreferences, defaultWorktreeCleanup } from "../shared/preferences";
 
 // Defaults shared by the saved-preference fixtures.
-const preferenceGroups = { analyticsEnabled: true, chat: defaultPreferences.chat, browser: defaultPreferences.browser, sourceControl: defaultPreferences.sourceControl, threads: defaultPreferences.threads };
+const preferenceGroups = { analyticsEnabled: false, chat: defaultPreferences.chat, browser: defaultPreferences.browser, sourceControl: defaultPreferences.sourceControl, threads: defaultPreferences.threads };
 import { localDay, todayPace } from "../shared/usageLedger";
 import { DatabaseSync } from "node:sqlite";
 
@@ -63,12 +63,12 @@ describe("workspace durability", () => {
 			expect(() => store.apply({ type: "create-task", harness: "grok", model: "default", mode: "chat" })).toThrow("Code and Plan");
 		} finally { store.close(); }
 	});
-	it("retains an analytics opt-out after restart", () => {
+	it.each([false, true])("retains analytics preference %s after restart", analyticsEnabled => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-analytics-preferences-")); const filename = path.join(directory, "workspace.sqlite"); let store = new WorkspaceStore(filename);
 		try {
-			expect(store.getPreferences().analyticsEnabled).toBe(true);
-			store.savePreferences({ ...store.getPreferences(), analyticsEnabled: false }); store.close(); store = new WorkspaceStore(filename);
 			expect(store.getPreferences().analyticsEnabled).toBe(false);
+			store.savePreferences({ ...store.getPreferences(), analyticsEnabled }); store.close(); store = new WorkspaceStore(filename);
+			expect(store.getPreferences().analyticsEnabled).toBe(analyticsEnabled);
 		} finally { store.close(); rmSync(directory, { recursive: true, force: true }); }
 	});
 	it("retains notification settings after restart and rejects invalid updates", () => {

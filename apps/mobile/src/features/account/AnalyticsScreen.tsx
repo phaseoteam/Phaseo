@@ -14,10 +14,10 @@ export function AnalyticsScreen() {
       <Header back={!split} title="App analytics" />
       <ScrollView contentContainerClassName="pb-16">
         <ReadableWidth>
-          <Section description="Help us improve reliability. On by default; turn off anytime. Saved only on this device.">
+          <Section description="Help us improve reliability. Off by default; turn off anytime. Saved only on this device.">
             <Row title="Share app usage and errors" chevron={false} last trailing={<Switch value={enabled} accessibilityLabel="Share app usage and errors" onValueChange={change} />} />
           </Section>
-          <Text variant="muted" className="px-4">Shares screen names, app version, operating system and sanitized error locations using an anonymous installation ID. No chat content, credentials, file paths or session recordings. Turning this off discards queued events.</Text>
+          <Text variant="muted" className="px-4">Shares screen names, app version, operating system and sanitized error locations using a random installation ID. Events from this device can be linked across sessions. No chat content, credentials, file paths or session recordings. Turning this off discards queued events.</Text>
         </ReadableWidth>
       </ScrollView>
     </Screen>

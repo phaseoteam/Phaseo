@@ -12,7 +12,7 @@ const extra = Constants.expoConfig?.extra;
 const key = process.env.EXPO_PUBLIC_POSTHOG_KEY || extra?.posthogKey;
 const host = process.env.EXPO_PUBLIC_POSTHOG_HOST || extra?.posthogHost || "https://eu.i.posthog.com";
 const available = !__DEV__ && process.env.EXPO_PUBLIC_PERF_TOOLS !== "1" && Boolean(key) && /^https:\/\/(?:eu|us)\.i\.posthog\.com$/.test(host);
-function readConsent() { try { const saved = kv.getItemSync(preference); return saved === null || saved === "true"; } catch { return false; } }
+function readConsent() { try { return kv.getItemSync(preference) === "true"; } catch { return false; } }
 export const analyticsStore = createStore(readConsent());
 const budget = createAppBudget({ getItem: key => kv.getItemSync(key), setItem: (key, value) => kv.setItemSync(key, value) });
 
