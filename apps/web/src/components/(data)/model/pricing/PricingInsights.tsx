@@ -518,7 +518,7 @@ function PricingLineTypeIcon({ plan, color }: { plan: string; color: string }) {
 
 function PricingTierLabel({ providerName, plan }: { providerName: string; plan: string }) {
 	return (
-		<span className="inline-flex items-center gap-2.5 whitespace-nowrap text-foreground">
+		<span className="inline-flex items-center gap-2.5 whitespace-nowrap text-foreground max-sm:whitespace-normal">
 			<span>{providerName}</span>
 			<ServiceTierBadge plan={plan} />
 		</span>
@@ -1715,7 +1715,7 @@ export default function PricingInsights({
 												event.preventDefault();
 												openProviderSheet(row.providerId);
 											}}
-											className="group/provider inline-flex items-center gap-2.5 whitespace-nowrap"
+											className="group/provider inline-flex min-w-0 items-center gap-2.5 whitespace-nowrap max-sm:whitespace-normal"
 										>
 											<span className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-zinc-200/80 bg-background transition-colors group-hover/provider:border-zinc-300 dark:border-zinc-800 dark:group-hover/provider:border-zinc-700">
 												<span className="relative h-3.5 w-3.5">

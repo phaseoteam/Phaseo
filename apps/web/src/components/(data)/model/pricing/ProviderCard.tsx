@@ -3325,7 +3325,7 @@ export default function ProviderCard({
 						<div className="max-sm:min-w-0">
 						<div className="flex items-center gap-2.5 max-sm:flex-wrap max-sm:gap-y-1">
 							<div
-								className="inline-flex items-center gap-2.5 whitespace-nowrap text-foreground"
+								className="inline-flex items-center gap-2.5 whitespace-nowrap text-foreground max-sm:whitespace-normal"
 							>
 								<div className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-zinc-200/80 bg-background transition-colors group-hover:border-zinc-300 dark:border-zinc-800 dark:group-hover:border-zinc-700">
 									<div className="relative h-3.5 w-3.5">
@@ -3338,7 +3338,7 @@ export default function ProviderCard({
 										/>
 									</div>
 								</div>
-								<span className="inline-flex items-baseline gap-1 whitespace-nowrap">
+								<span className="inline-flex items-baseline gap-1 whitespace-nowrap max-sm:whitespace-normal">
 									<span className="font-semibold text-foreground">
 										<ProviderRouteName provider={provider.provider} plan={tablePlan} nameOverride={formattedDisplayName} />
 									</span>

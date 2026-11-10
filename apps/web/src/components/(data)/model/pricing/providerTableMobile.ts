@@ -16,7 +16,7 @@ export const MOBILE_FULL_CELL = "max-sm:col-span-3 max-sm:p-0 max-sm:text-left";
 
 /** A number in the card grid; its label comes from the cell's `data-label`. */
 export const MOBILE_STAT_CELL =
-	"max-sm:min-w-0 max-sm:p-0 max-sm:text-left max-sm:before:block max-sm:before:text-[11px] max-sm:before:font-normal max-sm:before:text-muted-foreground max-sm:before:content-[attr(data-label)]";
+	"max-sm:min-w-0 max-sm:p-0 max-sm:text-left max-sm:before:block max-sm:before:whitespace-normal max-sm:before:text-[11px] max-sm:before:font-normal max-sm:before:text-muted-foreground max-sm:before:content-[attr(data-label)]";
 
 /** Separator rows span the full card width. */
 export const MOBILE_BLOCK_ROW = "max-sm:block";
