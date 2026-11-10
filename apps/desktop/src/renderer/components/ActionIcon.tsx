@@ -1,4 +1,4 @@
-import { Activity, Archive, ArchiveRestore, ArrowDown, ArrowUp, ArrowUpRight, Bot, Bug, CalendarClock, Camera, ChartLine, Check, CircleCheck, CircleDot, CircleSlash, CloudUpload, Columns3, Copy, createLucideIcon, Download, ExternalLink, Files, FileSearch, FolderPlus, GitBranch, GitBranchPlus, GitMerge, GitPullRequestArrow, GitPullRequestClosed, GitPullRequestDraft, History, Keyboard, Link2, ListFilter, LogIn, Mail, MessageSquare, MessagesSquare, Monitor, Moon, Paperclip, Pause, Pencil, PenLine, Pin, PinOff, Play, Plus, RefreshCw, RotateCcw, Search, Settings, SquareCode, SquarePen, SquareTerminal, Sun, TextSearch, TriangleAlert, Undo2, UserRound, Globe, type LucideProps } from "lucide-react";
+import { Activity, ArrowDown, ArrowUp, ArrowUpRight, Bot, Bug, Camera, ChartLine, Check, CircleCheck, CircleDot, CircleSlash, CloudUpload, Columns3, Copy, createLucideIcon, Download, ExternalLink, Files, FileSearch, FolderPlus, GitBranch, GitBranchPlus, GitPullRequestClosed, GitPullRequestDraft, History, Keyboard, Link2, ListFilter, LogIn, Mail, MessageSquare, MessagesSquare, Monitor, Moon, Paperclip, Pause, Pencil, PenLine, Pin, PinOff, Play, Plus, RefreshCw, RotateCcw, Search, Settings, SquareCode, SquareTerminal, Sun, TextSearch, TriangleAlert, Undo2, UserRound, Globe, type LucideProps } from "lucide-react";
 import { cn } from "../lib/utils";
 
 // These installed-library shapes join moving and stationary parts in one path. Split at those joins.
@@ -53,7 +53,51 @@ const InboxTray = createLucideIcon("inbox-tray", [
 	["polyline", { points: "22 12 16 12 14 15 10 15 8 12 2 12", key: "front" }],
 	["path", { d: "M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z", key: "frame" }],
 ]);
-const icons = { account: UserRound, activity: Activity, approve: Check, archive: Archive, restore: ArchiveRestore, back: NavigationBack, bot: Bot, branch: GitBranch, browser: Globe, bug: Bug, camera: Camera, clone: GitBranchPlus, code: TypedCode, comment: MessageSquare, compare: Columns3, complete: CircleCheck, copy: Copy, closePullRequest: GitPullRequestClosed, down: ArrowDown, download: Download, draftPullRequest: GitPullRequestDraft, edit: PenLine, editor: SquareCode, external: ExternalLink, files: Files, fileSearch: FileSearch, filter: ListFilter, folder: OpenFolder, addFolder: FolderPlus, forward: NavigationForward, history: History, inbox: InboxTray, issue: CircleDot, keyboard: Keyboard, limits: LimitsGauge, link: Link2, mail: Mail, merge: GitMerge, moon: Moon, newChat: SquarePen, notPlanned: CircleSlash, open: ArrowUpRight, paperclip: Paperclip, pause: Pause, pencil: Pencil, pin: Pin, unpin: PinOff, play: Play, plus: Plus, publish: CloudUpload, pullRequest: GitPullRequestArrow, refresh: RefreshCw, requestChanges: TriangleAlert, retry: RotateCcw, schedule: CalendarClock, search: Search, settings: Settings, sidebarLeft: SidebarLeft, sidebarRight: SidebarRight, signIn: LogIn, sun: Sun, system: Monitor, terminal: SquareTerminal, textSearch: TextSearch, thread: MessagesSquare, undo: Undo2, unlink: Unlink, up: ArrowUp, usage: ChartLine, wrap: WordWrap };
+const ScheduledCalendar = createLucideIcon("scheduled-calendar", [
+	["path", { d: "M16 14v2.2l1.6 1", "data-calendar-hand": "", key: "hand" }],
+	["path", { d: "M16 2v4", key: "right-ring" }],
+	["path", { d: "M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v4", key: "top" }],
+	["path", { d: "M3 10h5", key: "rule" }],
+	["path", { d: "M8 2v4", key: "left-ring" }],
+	["circle", { cx: "16", cy: "16", r: "6", key: "clock" }],
+	["path", { d: "M3 10v10a2 2 0 0 0 2 2h3.5", "data-calendar-page": "", key: "page" }],
+]);
+// A three-pixel marker stays visible when these route glyphs render at 16px.
+const RoutedPullRequest = createLucideIcon("routed-pull-request", [
+	["circle", { cx: "5", cy: "6", r: "3", key: "base" }],
+	["path", { d: "M5 9v12", key: "stem" }],
+	["circle", { cx: "19", cy: "18", r: "3", key: "branch" }],
+	["path", { d: "m15 9-3-3 3-3", key: "arrow" }],
+	["path", { d: "M12 6h5a2 2 0 0 1 2 2v7", "data-route-track": "", key: "route" }],
+	["circle", { cx: "0", cy: "0", r: "2.25", fill: "currentColor", stroke: "none", "data-route-node": "", key: "traveller" }],
+]);
+const RoutedMerge = createLucideIcon("routed-merge", [
+	["circle", { cx: "18", cy: "18", r: "3", key: "branch" }],
+	["circle", { cx: "6", cy: "6", r: "3", key: "base" }],
+	["path", { d: "M6 21V9", key: "stem" }],
+	["path", { d: "M6 9a9 9 0 0 0 9 9", "data-route-track": "", key: "route" }],
+	["circle", { cx: "0", cy: "0", r: "2.25", fill: "currentColor", stroke: "none", "data-route-node": "", key: "traveller" }],
+]);
+const ArchiveBox = createLucideIcon("archive-box", [
+	["rect", { x: "2", y: "3", width: "20", height: "5", rx: "1", "data-archive-lid": "", key: "lid" }],
+	["path", { d: "M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8", key: "box" }],
+	["path", { d: "M10 12h4", "data-archive-symbol": "", key: "handle" }],
+	["rect", { x: "9", y: "9", width: "6", height: "6", rx: "0.75", "data-archive-paper": "", key: "paper" }],
+]);
+const RestoreBox = createLucideIcon("restore-box", [
+	["rect", { x: "2", y: "3", width: "20", height: "5", rx: "1", "data-archive-lid": "", key: "lid" }],
+	["path", { d: "M4 8v11a2 2 0 0 0 2 2h2", key: "left" }],
+	["path", { d: "M20 8v11a2 2 0 0 1-2 2h-2", key: "right" }],
+	["path", { d: "m9 15 3-3 3 3", "data-archive-symbol": "", key: "arrow" }],
+	["path", { d: "M12 12v9", "data-archive-symbol": "", key: "shaft" }],
+	["rect", { x: "9", y: "9", width: "6", height: "6", rx: "0.75", "data-archive-paper": "", key: "paper" }],
+]);
+const WritingChat = createLucideIcon("writing-chat", [
+	["path", { d: "M12 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7", key: "frame" }],
+	["path", { d: "M18.375 2.625a1 1 0 0 1 3 3l-9.013 9.014a2 2 0 0 1-.853.505l-2.873.84a.5.5 0 0 1-.62-.62l.84-2.873a2 2 0 0 1 .506-.852z", "data-writing-pen": "", key: "pen" }],
+	["path", { d: "M7 18h5", "data-writing-line": "", key: "line" }],
+]);
+const icons = { account: UserRound, activity: Activity, approve: Check, archive: ArchiveBox, restore: RestoreBox, back: NavigationBack, bot: Bot, branch: GitBranch, browser: Globe, bug: Bug, camera: Camera, clone: GitBranchPlus, code: TypedCode, comment: MessageSquare, compare: Columns3, complete: CircleCheck, copy: Copy, closePullRequest: GitPullRequestClosed, down: ArrowDown, download: Download, draftPullRequest: GitPullRequestDraft, edit: PenLine, editor: SquareCode, external: ExternalLink, files: Files, fileSearch: FileSearch, filter: ListFilter, folder: OpenFolder, addFolder: FolderPlus, forward: NavigationForward, history: History, inbox: InboxTray, issue: CircleDot, keyboard: Keyboard, limits: LimitsGauge, link: Link2, mail: Mail, merge: RoutedMerge, moon: Moon, newChat: WritingChat, notPlanned: CircleSlash, open: ArrowUpRight, paperclip: Paperclip, pause: Pause, pencil: Pencil, pin: Pin, unpin: PinOff, play: Play, plus: Plus, publish: CloudUpload, pullRequest: RoutedPullRequest, refresh: RefreshCw, requestChanges: TriangleAlert, retry: RotateCcw, schedule: ScheduledCalendar, search: Search, settings: Settings, sidebarLeft: SidebarLeft, sidebarRight: SidebarRight, signIn: LogIn, sun: Sun, system: Monitor, terminal: SquareTerminal, textSearch: TextSearch, thread: MessagesSquare, undo: Undo2, unlink: Unlink, up: ArrowUp, usage: ChartLine, wrap: WordWrap };
 export type ActionIconName = keyof typeof icons;
 
 // Normalised lengths let a stroke trace independently of the icon's rendered size.

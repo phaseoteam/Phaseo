@@ -1,7 +1,7 @@
 import { ActionIcon } from "../components/ActionIcon";
 import { formatDateParts } from "@phaseo/app-kit/format";
 import { useState } from "react";
-import { AlarmClock, AlarmClockOff, CircleCheck, Clock, Copy, Filter, RefreshCw, Settings, SquarePen, Timer, Trash2, Undo2 } from "lucide-react";
+import { AlarmClock, AlarmClockOff, CircleCheck, Clock, Copy, Filter, RefreshCw, Settings, Timer, Trash2, Undo2 } from "lucide-react";
 import { hasWoken, isSettled, isSnoozed, settleBlocker, snoozeBlocker, snoozePresets } from "../../shared/threadLifecycle";
 import type { TaskOverview } from "../../shared/workspaceOverview";
 import { useWorkspace } from "../app/workspace";
@@ -105,7 +105,7 @@ export function ThreadMenuItems({ task, scope, onScope, onRename, onDelete, onCu
 	const settled = isSettled(task), snoozed = isSnoozed(task), woke = hasWoken(task);
 	const copy = (text: string) => void navigator.clipboard.writeText(text);
 	return <>
-		{project && <DropdownMenuItem onClick={() => { setNewChatProjectId(project.id); select(undefined); }}><SquarePen />{project.worktree ? `New chat on ${project.worktree.branch}` : `New chat in ${project.name}`}</DropdownMenuItem>}
+		{project && <DropdownMenuItem onClick={() => { setNewChatProjectId(project.id); select(undefined); }}><ActionIcon name="newChat" />{project.worktree ? `New chat on ${project.worktree.branch}` : `New chat in ${project.name}`}</DropdownMenuItem>}
 		<DropdownMenuItem onClick={() => void actions.pin(task)}>{task.pinned ? <ActionIcon name="unpin" /> : <ActionIcon name="pin" />}{task.pinned ? "Unpin chat" : "Pin chat"}</DropdownMenuItem>
 		{settled
 			? <DropdownMenuItem onClick={() => void actions.unsettle(task)}><Undo2 />Un-settle chat</DropdownMenuItem>

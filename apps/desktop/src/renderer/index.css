@@ -615,9 +615,7 @@ summary:has(> svg:first-child)::before { display: none; }
 @keyframes icon-refresh-turn { from { transform: rotate(0deg); } to { transform: rotate(180deg); } }
 @keyframes icon-download-land { from { transform: translateY(-3px); opacity: 0.4; } to { transform: none; opacity: 1; } }
 @keyframes icon-open-out { from { transform: translate(-2px, 2px); opacity: 0.5; } to { transform: none; opacity: 1; } }
-@keyframes icon-terminal-cursor { 0%, 45% { opacity: 0.25; } 100% { opacity: 1; } }
 @keyframes icon-branch-route { from { stroke-dashoffset: -1; opacity: 0.45; } to { stroke-dashoffset: 0; opacity: 1; } }
-@keyframes icon-pr-arrow { from { transform: translateX(2px); opacity: 0.4; } to { transform: none; opacity: 1; } }
 @keyframes icon-seat { from { transform: translateY(-2px); } to { transform: none; } }
 @keyframes icon-lift { from { transform: translateY(2px); } to { transform: none; } }
 @keyframes icon-pin-needle { from { transform: scaleY(0.4); } to { transform: none; } }
@@ -689,20 +687,11 @@ button:is(:disabled, [aria-disabled="true"]) .gesture-icon:is([data-icon-gesture
 .gesture-icon[data-icon-gesture="refresh"] > path { --icon-gesture: icon-refresh-turn; --icon-gesture-duration: 460ms; }
 .gesture-icon[data-icon-gesture="download"] > :is(:first-child, :nth-child(3)) { --icon-gesture: icon-download-land; --icon-gesture-duration: 380ms; }
 .gesture-icon[data-icon-gesture="external"] > :nth-child(-n+2) { --icon-gesture: icon-open-out; --icon-gesture-duration: 340ms; }
-.gesture-icon[data-icon-gesture="terminal"] > path:first-child { --icon-gesture: icon-thread; --icon-gesture-duration: 320ms; stroke-dasharray: 1; }
-.gesture-icon[data-icon-gesture="terminal"] > path:nth-child(2) { --icon-gesture: icon-terminal-cursor; --icon-gesture-duration: 400ms; }
-.gesture-icon[data-icon-gesture="pullRequest"] > path:last-child { --icon-gesture: icon-branch-route; --icon-gesture-duration: 420ms; stroke-dasharray: 1; }
-.gesture-icon[data-icon-gesture="pullRequest"] > path:nth-child(4) { --icon-gesture: icon-pr-arrow; --icon-gesture-duration: 220ms; --icon-gesture-delay: 160ms; }
 .gesture-icon[data-icon-gesture="branch"] > path { --icon-gesture: icon-branch-route; --icon-gesture-duration: 420ms; stroke-dasharray: 1; }
-.gesture-icon[data-icon-gesture="merge"] > path { --icon-gesture: icon-thread; --icon-gesture-duration: 420ms; stroke-dasharray: 1; }
 .gesture-icon[data-icon-gesture="pin"] > path:first-child { --icon-gesture: icon-pin-needle; transform-origin: 12px 17px; }
-.gesture-icon[data-icon-gesture="pin"] > path:last-child,
-.gesture-icon[data-icon-gesture="archive"] > rect { --icon-gesture: icon-seat; }
-.gesture-icon[data-icon-gesture="unpin"] > :is(:nth-child(2), :nth-child(4)),
-.gesture-icon[data-icon-gesture="restore"] > rect { --icon-gesture: icon-lift; }
+.gesture-icon[data-icon-gesture="pin"] > path:last-child { --icon-gesture: icon-seat; }
+.gesture-icon[data-icon-gesture="unpin"] > :is(:nth-child(2), :nth-child(4)) { --icon-gesture: icon-lift; }
 .gesture-icon[data-icon-gesture="unpin"] > path:nth-child(3) { --icon-gesture: icon-thread; stroke-dasharray: 1; }
-.gesture-icon[data-icon-gesture="archive"] > path:last-child { --icon-gesture: icon-download-land; --icon-gesture-delay: 60ms; }
-.gesture-icon[data-icon-gesture="restore"] > :nth-child(n+4) { --icon-gesture: send-flight; --icon-gesture-duration: 360ms; }
 .gesture-icon[data-icon-gesture="pencil"] > path,
 .gesture-icon[data-icon-gesture="edit"] > path:last-child { --icon-gesture: icon-write; }
 .gesture-icon[data-icon-gesture="edit"] > path:first-child { --icon-gesture: icon-thread; --icon-gesture-delay: 80ms; stroke-dasharray: 1; }
@@ -720,7 +709,6 @@ button:is(:disabled, [aria-disabled="true"]) .gesture-icon:is([data-icon-gesture
 .gesture-icon[data-icon-gesture="addFolder"] > path:nth-child(2) { --icon-gesture: icon-add-horizontal; --icon-gesture-delay: 45ms; }
 .gesture-icon[data-icon-gesture="mail"] > path { --icon-gesture: icon-mail-flap; transform-origin: 12px 7px; }
 .gesture-icon[data-icon-gesture="signIn"] > :nth-child(-n+2) { --icon-gesture: icon-sign-in; }
-.gesture-icon[data-icon-gesture="schedule"] > path:first-child { --icon-gesture: icon-clock-hand; transform-origin: 16px 16px; --icon-gesture-duration: 380ms; }
 .gesture-icon[data-icon-gesture="thread"] > path:last-child,
 .gesture-icon[data-icon-gesture="usage"] > path:last-child,
 .gesture-icon[data-icon-gesture="comment"] > path { --icon-gesture: icon-thread; --icon-gesture-duration: 380ms; stroke-dasharray: 1; }
@@ -743,8 +731,6 @@ button:is(:disabled, [aria-disabled="true"]) .gesture-icon:is([data-icon-gesture
 .gesture-icon[data-icon-gesture="account"] > * { --icon-gesture: icon-emphasis; --icon-gesture-duration: 180ms; }
 .gesture-icon[data-icon-gesture="bot"] > path:nth-last-child(-n+2) { --icon-gesture: icon-eye-blink; --icon-gesture-duration: 240ms; transform-origin: 12px 14px; }
 .gesture-icon[data-icon-gesture="history"] > path:last-child { --icon-gesture: icon-clock-hand; }
-.gesture-icon[data-icon-gesture="files"] > path:nth-child(-n+2) { --icon-gesture: icon-seat; }
-.gesture-icon[data-icon-gesture="newChat"] > path:last-child,
 .gesture-icon[data-icon-gesture="bug"] > path:is(:nth-child(3), :nth-child(10)) { --icon-gesture: icon-write; }
 .gesture-icon[data-icon-gesture="clone"] > path:nth-child(5) { --icon-gesture: icon-add-vertical; }
 .gesture-icon[data-icon-gesture="clone"] > path:nth-child(6) { --icon-gesture: icon-add-horizontal; }
@@ -766,6 +752,19 @@ button:is(:disabled, [aria-disabled="true"]) .gesture-icon:is([data-icon-gesture
 @keyframes icon-code-cursor { 0% { opacity: 1; transform: translateX(0); } 12% { transform: translateX(6px); } 42% { transform: translateX(14px); } 72% { transform: translateX(20px); } 92%, 100% { opacity: 0; transform: translateX(20px); } }
 @keyframes icon-inbox-receive { 0% { opacity: 0; transform: translateY(-1px); } 15% { opacity: 1; transform: translateY(-1px); } 65% { opacity: 1; transform: translateY(1.5px); } 85% { opacity: 0; transform: translateY(3px); } 100% { opacity: 0; transform: none; } }
 @keyframes icon-key-tap { 0%, 100% { transform: none; } 50% { transform: translateY(1.25px); } }
+@keyframes icon-terminal-prompt { 0% { opacity: 0; } 12%, 100% { opacity: 1; } }
+@keyframes icon-terminal-type { 0%, 20% { transform: none; opacity: 1; } 38%, 72% { transform: translateX(3px); } 52%, 64% { opacity: 0; } 76%, 100% { transform: none; opacity: 1; } }
+@keyframes icon-calendar-page { 0%, 8%, 64%, 100% { transform: none; } 32% { transform: scaleY(0.15); } }
+@keyframes icon-calendar-tick { 0%, 36%, 100% { transform: none; } 64%, 76% { transform: rotate(90deg); } }
+@keyframes icon-route-travel { 0% { offset-distance: 0%; opacity: 0; } 12% { offset-distance: 0%; opacity: 1; } 80% { offset-distance: 100%; opacity: 1; } 92% { offset-distance: 100%; opacity: 0; } 100% { offset-distance: 0%; opacity: 0; } }
+@keyframes icon-route-track { 0%, 100% { opacity: 1; } 12%, 80% { opacity: 0.35; } }
+@keyframes icon-archive-lid { 0%, 100% { transform: none; } 20%, 72% { transform: translateY(-2px); } }
+@keyframes icon-archive-symbol { 0%, 100% { opacity: 1; } 20%, 76% { opacity: 0; } }
+@keyframes icon-archive-paper { 0%, 16% { transform: translateY(-3px); opacity: 0; } 30% { opacity: 1; } 66% { transform: translateY(2px); opacity: 1; } 78% { transform: translateY(2px); opacity: 0; } 100% { transform: none; opacity: 0; } }
+@keyframes icon-restore-paper { 0%, 16% { transform: translateY(2px); opacity: 0; } 30% { opacity: 1; } 66% { transform: translateY(-3px); opacity: 1; } 78% { transform: translateY(-3px); opacity: 0; } 100% { transform: none; opacity: 0; } }
+@keyframes icon-chat-write { 0%, 100% { transform: none; } 18% { transform: translate(-1px, 1px) scale(0.75); } 62% { transform: translate(3px, 1px) scale(0.75); } 80% { transform: translate(3px, -1px) scale(0.75); } }
+@keyframes icon-chat-line { 0%, 18% { stroke-dashoffset: 1; opacity: 0; } 19% { opacity: 1; } 62%, 78% { stroke-dashoffset: 0; opacity: 1; } 90%, 100% { stroke-dashoffset: 0; opacity: 0; } }
+@keyframes icon-file-peek { 0%, 100% { transform: none; } 40%, 64% { transform: translate(2px, -1px); } }
 .gesture-icon > [data-gauge-needle] { --icon-sequence: icon-gauge-drain; transform-origin: 12px 14px; }
 .gesture-icon > [data-gauge-track] { opacity: 0.35; }
 .gesture-icon > [data-gauge-fill] { --icon-sequence: icon-gauge-empty; stroke-dasharray: 1; stroke-linecap: butt; opacity: 0; }
@@ -776,11 +775,31 @@ button:is(:disabled, [aria-disabled="true"]) .gesture-icon:is([data-icon-gesture
 .gesture-icon > [data-inbox-letter] { opacity: 0; }
 .gesture-icon[data-icon-gesture="keyboard"] > path:nth-child(3) { --icon-tap-delay: 120ms; }
 .gesture-icon[data-icon-gesture="keyboard"] > path:nth-child(7) { --icon-tap-delay: 240ms; }
+.gesture-icon[data-icon-gesture="terminal"] { --icon-sequence-duration: 560ms; }
+.gesture-icon[data-icon-gesture="terminal"] > path:first-child { --icon-sequence: icon-terminal-prompt; }
+.gesture-icon[data-icon-gesture="terminal"] > path:nth-child(2) { --icon-sequence: icon-terminal-type; }
+.gesture-icon > [data-calendar-page] { --icon-sequence: icon-calendar-page; transform-origin: 3px 10px; }
+.gesture-icon > [data-calendar-hand] { --icon-sequence: icon-calendar-tick; transform-origin: 16px 16px; }
+.gesture-icon > [data-route-track] { --icon-sequence: icon-route-track; }
+/* Route coordinates are measured from the SVG view-box origin. */
+.gesture-icon > [data-route-node] { --icon-sequence: icon-route-travel; offset-anchor: 0px 0px; offset-rotate: 0deg; opacity: 0; }
+.gesture-icon[data-icon-gesture="pullRequest"] > [data-route-node] { offset-path: path("M19 15V8a2 2 0 0 0-2-2h-5"); }
+.gesture-icon[data-icon-gesture="merge"] > [data-route-node] { offset-path: path("M15 18a9 9 0 0 1-9-9v9"); }
+.gesture-icon > [data-archive-lid] { --icon-sequence: icon-archive-lid; }
+.gesture-icon > [data-archive-symbol] { --icon-sequence: icon-archive-symbol; }
+.gesture-icon > [data-archive-paper] { --icon-sequence: icon-archive-paper; opacity: 0; }
+.gesture-icon[data-icon-gesture="restore"] > [data-archive-paper] { --icon-sequence: icon-restore-paper; }
+.gesture-icon > [data-writing-pen] { --icon-sequence: icon-chat-write; transform-origin: 8px 16px; }
+.gesture-icon > [data-writing-line] { --icon-sequence: icon-chat-line; stroke-dasharray: 1; opacity: 0; }
+.gesture-icon[data-icon-gesture="files"] { --icon-sequence-duration: 480ms; }
+.gesture-icon[data-icon-gesture="files"] > path:nth-child(-n+2) { --icon-sequence: icon-file-peek; }
 @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
 	:root:not([data-animations="off"]) :is(button, [role="menuitem"], [role="option"]):hover:not(:disabled):not([aria-disabled="true"]):not([data-disabled="true"]) .gesture-icon[data-icon-gesture="limits"] > :is([data-gauge-needle], [data-gauge-fill]) { animation: var(--icon-sequence) 880ms cubic-bezier(0.77, 0, 0.175, 1) both; }
 	:root:not([data-animations="off"]) :is(button, [role="menuitem"], [role="option"]):hover:not(:disabled):not([aria-disabled="true"]):not([data-disabled="true"]) .gesture-icon[data-icon-gesture="code"] > * { animation: var(--icon-sequence) 480ms steps(1, end) both; }
 	:root:not([data-animations="off"]) :is(button, [role="menuitem"], [role="option"]):hover:not(:disabled):not([aria-disabled="true"]):not([data-disabled="true"]) .gesture-icon > [data-inbox-letter] { animation: icon-inbox-receive 480ms cubic-bezier(0.77, 0, 0.175, 1) both; }
 	:root:not([data-animations="off"]) :is(button, [role="menuitem"], [role="option"]):hover:not(:disabled):not([aria-disabled="true"]):not([data-disabled="true"]) .gesture-icon[data-icon-gesture="keyboard"] > :is(path:first-child, path:nth-child(3), path:nth-child(7)) { animation: icon-key-tap 140ms cubic-bezier(0.77, 0, 0.175, 1) var(--icon-tap-delay, 0ms) both; }
+	:root:not([data-animations="off"]) :is(button, [role="menuitem"], [role="option"]):hover:not(:disabled):not([aria-disabled="true"]):not([data-disabled="true"]) .gesture-icon:is([data-icon-gesture="terminal"], [data-icon-gesture="schedule"], [data-icon-gesture="pullRequest"], [data-icon-gesture="merge"], [data-icon-gesture="archive"], [data-icon-gesture="restore"], [data-icon-gesture="newChat"], [data-icon-gesture="files"]) > * { animation: var(--icon-sequence, none) var(--icon-sequence-duration, 640ms) cubic-bezier(0.77, 0, 0.175, 1) both; }
+	:root:not([data-animations="off"]) :is(button, [role="menuitem"], [role="option"]):hover:not(:disabled):not([aria-disabled="true"]):not([data-disabled="true"]) .gesture-icon > [data-route-node] { animation-timing-function: linear; }
 }
 @media (prefers-reduced-motion: reduce) {
 	.gesture-icon:is([data-icon-gesture="editor"], [data-icon-gesture="compare"], [data-icon-gesture="fileSearch"], [data-icon-gesture="textSearch"], [data-icon-gesture="pause"]) > * { translate: 0 !important; transition: none; }

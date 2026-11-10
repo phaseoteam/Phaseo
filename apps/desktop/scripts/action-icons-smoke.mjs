@@ -9,10 +9,10 @@ import { build } from "vite";
 const scratch = mkdtempSync(path.join(tmpdir(), "phaseo-action-icons-"));
 app.setPath("userData", path.join(scratch, "profile"));
 const root = path.resolve(import.meta.dirname, "..");
-const names = ["pin", "unpin", "archive", "restore", "edit", "pencil", "link", "unlink", "camera", "up", "down", "publish", "folder", "addFolder", "mail", "signIn", "schedule", "inbox", "thread", "usage", "issue", "complete", "notPlanned", "draftPullRequest", "closePullRequest", "comment", "open", "approve", "requestChanges", "retry", "sidebarLeft", "sidebarRight", "back", "forward", "play", "filter", "account", "activity", "bot", "browser", "bug", "clone", "code", "compare", "editor", "files", "fileSearch", "history", "keyboard", "limits", "moon", "newChat", "pause", "sun", "system", "textSearch", "undo"];
-const fixedParts = { archive: [1], restore: [1], camera: [0], publish: [1], folder: [0], addFolder: [2], mail: [1], signIn: [2], schedule: [1, 2, 3, 4, 5], inbox: [1, 2], thread: [0], usage: [0], issue: [0], complete: [0], notPlanned: [0], draftPullRequest: [0, 1, 4], closePullRequest: [0, 1, 4, 5], requestChanges: [0, 2], sidebarLeft: [0, 1, 2], sidebarRight: [0, 1, 2], bot: [0, 1, 2, 3], browser: [0, 2], bug: [0, 1, 3, 4, 5, 6, 7, 8, 10], clone: [0, 1, 2], compare: [0], editor: [2], files: [2], fileSearch: [0, 1], history: [0, 1], keyboard: [8], limits: [1], newChat: [0], sun: [0], system: [1, 2], textSearch: [0, 1, 2] };
+const names = ["pin", "unpin", "archive", "restore", "edit", "pencil", "link", "unlink", "camera", "up", "down", "publish", "folder", "addFolder", "mail", "signIn", "schedule", "inbox", "thread", "usage", "issue", "complete", "notPlanned", "draftPullRequest", "closePullRequest", "comment", "open", "approve", "requestChanges", "retry", "sidebarLeft", "sidebarRight", "back", "forward", "play", "filter", "account", "activity", "bot", "browser", "bug", "clone", "code", "compare", "editor", "files", "fileSearch", "history", "keyboard", "limits", "moon", "newChat", "pause", "sun", "system", "textSearch", "undo", "terminal", "pullRequest", "merge"];
+const fixedParts = { archive: [1], restore: [1, 2], camera: [0], publish: [1], folder: [0], addFolder: [2], mail: [1], signIn: [2], schedule: [1, 2, 3, 4, 5], inbox: [1, 2], thread: [0], usage: [0], issue: [0], complete: [0], notPlanned: [0], draftPullRequest: [0, 1, 4], closePullRequest: [0, 1, 4, 5], requestChanges: [0, 2], sidebarLeft: [0, 1, 2], sidebarRight: [0, 1, 2], bot: [0, 1, 2, 3], browser: [0, 2], bug: [0, 1, 3, 4, 5, 6, 7, 8, 10], clone: [0, 1, 2], compare: [0], editor: [2], files: [2], fileSearch: [0, 1], history: [0, 1], keyboard: [8], terminal: [2], pullRequest: [0, 1, 2, 3], merge: [0, 1, 2], limits: [1], newChat: [0], sun: [0], system: [1, 2], textSearch: [0, 1, 2] };
 const hoverPoses = { editor: [-0.75, 0.75, 0], compare: [0, -0.75, 0.75], fileSearch: [0, 0, -1, -1], textSearch: [0, 0, 0, -1, -1], pause: [-0.5, 0.5] };
-const sequences = ["code", "limits", "inbox", "keyboard"];
+const sequences = ["code", "limits", "inbox", "keyboard", "terminal", "schedule", "pullRequest", "merge", "archive", "restore", "newChat", "files"];
 const importPath = relative => JSON.stringify(path.join(root, relative).replaceAll("\\", "/"));
 writeFileSync(path.join(scratch, "entry.tsx"), `
 import React from ${importPath("node_modules/react/index.js")};
@@ -39,10 +39,10 @@ assert(start > 0 && end > start, "Product gesture CSS is missing");
 writeFileSync(path.join(scratch, "index.html"), `<!doctype html><html class="dark"><head><meta charset="utf-8"><style>
 ${readFileSync(path.join(root, "src/renderer/theme-tokens.generated.css"), "utf8")}
 ${source.slice(start, end)}
-body{font:14px system-ui;background:#161616;color:#eee;margin:24px}.samples{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}button{display:flex;align-items:center;gap:8px;padding:12px;background:transparent;color:inherit;border:1px solid #555;border-radius:6px}svg{width:18px;height:18px}
+body{font:14px system-ui;background:#161616;color:#eee;margin:24px}.samples{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}button{display:flex;align-items:center;gap:8px;padding:12px;background:transparent;color:inherit;border:1px solid #555;border-radius:6px}svg{width:16px;height:16px}
 </style></head><body><div id="root"></div><script src="bundle/icons.js"></script></body></html>`);
 const output = process.argv.find(value => value.startsWith("--output="))?.slice(9);
-const deadline = setTimeout(() => { console.error("Action icon fixture deadline"); app.exit(1); }, 240_000);
+const deadline = setTimeout(() => { console.error("Action icon fixture deadline"); app.exit(1); }, 360_000);
 deadline.unref();
 app.whenReady().then(async () => { try {
 	const window = new BrowserWindow({ show: false, width: 800, height: 1000, webPreferences: { backgroundThrottling: false } });
@@ -137,7 +137,7 @@ app.whenReady().then(async () => { try {
 	console.log("Action icon fixture: drain and typing milestones");
 	const phase = async (name, fraction, elapsed) => {
 		await run(`document.getElementById('${name}').querySelector('svg').getAnimations({subtree:true}).forEach(animation=>{animation.pause();animation.currentTime=${elapsed ?? `Number(animation.effect.getTiming().duration)*${fraction}`};});true`);
-		return run(`(()=>{const svg=document.querySelector('#${name} svg');return Array.from(svg.children).map(part=>{const style=getComputedStyle(part),matrix=new DOMMatrixReadOnly(style.transform);return {opacity:Number(style.opacity),dash:parseFloat(style.strokeDashoffset),angle:Math.atan2(matrix.b,matrix.a)*180/Math.PI,x:matrix.m41,y:matrix.m42,stroke:style.stroke};});})()`);
+		return run(`(()=>{const svg=document.querySelector('#${name} svg'),box=svg.getBoundingClientRect();return Array.from(svg.children).map(part=>{const style=getComputedStyle(part),matrix=new DOMMatrixReadOnly(style.transform),bounds=part.getBoundingClientRect();return {opacity:Number(style.opacity),dash:parseFloat(style.strokeDashoffset),angle:Math.atan2(matrix.b,matrix.a)*180/Math.PI,x:matrix.m41,y:matrix.m42,scaleY:matrix.d,centre:[(bounds.x+bounds.width/2-box.x)*24/box.width,(bounds.y+bounds.height/2-box.y)*24/box.height],offset:parseFloat(style.offsetDistance),stroke:style.stroke};});})()`);
 	};
 	await force("limits", "hover");
 	for (const [fraction, angle, dash] of [[0, 75, 0], [0.36, undefined, undefined], [0.7, -165, 1], [1, 0, 0]]) {
@@ -174,6 +174,47 @@ app.whenReady().then(async () => { try {
 		keys.forEach((part, index) => assert(Math.abs(part.y - (index === pressed ? 1.25 : 0)) < 0.001, `Keyboard taps the wrong key at ${elapsed}ms`));
 	}
 	await force("keyboard", null);
+	console.log("Action icon fixture: 16px action sequences");
+	for (const name of ["terminal", "schedule", "pullRequest", "merge", "archive", "restore", "newChat", "files"]) {
+		assert.equal(await run(`document.querySelector('#${name} svg').getBoundingClientRect().width`), 16);
+		await force(name, "hover");
+		if (name === "terminal") {
+			assert.equal((await phase(name, 0))[0].opacity, 0);
+			assert.equal((await phase(name, 0.4))[1].x, 3);
+			assert.equal((await phase(name, 0.58))[1].opacity, 0);
+		}
+		if (name === "schedule") {
+			assert(Math.abs((await phase(name, 0.32))[6].scaleY - 0.15) < 0.001);
+			assert(Math.abs((await phase(name, 0.7))[0].angle - 90) < 0.001);
+		}
+		if (["pullRequest", "merge"].includes(name)) {
+			const route = name === "pullRequest" ? [[0.12, 19, 15], [0.8, 12, 6]] : [[0.12, 15, 18], [0.8, 6, 18]];
+			for (const [fraction, x, y] of route) {
+				const marker = (await phase(name, fraction)).at(-1);
+				assert.equal(marker.opacity, 1);
+				assert(Math.abs(marker.centre[0] - x) < 0.001 && Math.abs(marker.centre[1] - y) < 0.001, `${name} marker misses its branch: ${JSON.stringify(marker)}`);
+			}
+		}
+		if (["archive", "restore"].includes(name)) {
+			const start = (await phase(name, 0.3)).at(-1), end = (await phase(name, 0.66)).at(-1);
+			assert.equal(end.opacity, 1);
+			assert(name === "archive" ? end.y > start.y : end.y < start.y, `${name} moves its document the wrong way`);
+		}
+		if (name === "newChat") {
+			const writing = await phase(name, 0.62);
+			assert.equal(writing[1].x, 3); assert.equal(writing[1].y, 1);
+			assert.equal(writing[2].opacity, 1); assert.equal(writing[2].dash, 0);
+		}
+		if (name === "files") {
+			const sheets = await phase(name, 0.5);
+			assert(sheets.slice(0, 2).every(part => part.x === 2 && part.y === -1));
+			assert.equal(sheets[2].x, 0); assert.equal(sheets[2].y, 0);
+		}
+		const rest = await phase(name, 1);
+		assert(rest.every(part => Math.abs(part.x) < 0.001 && Math.abs(part.y) < 0.001 && Math.abs(part.angle) < 0.001 && part.scaleY === 1), `${name} does not settle while hovered`);
+		if (["pullRequest", "merge", "archive", "restore", "newChat"].includes(name)) assert.equal(rest.at(-1).opacity, 0);
+		await force(name, null);
+	}
 	for (const name of sequences) {
 		await force(name, "focus-visible");
 		assert.equal(await run(`document.querySelector('#${name} svg').getAnimations({subtree:true}).length`), 0, `${name} plays on keyboard focus`);

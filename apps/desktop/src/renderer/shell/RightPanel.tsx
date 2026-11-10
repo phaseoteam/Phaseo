@@ -39,7 +39,7 @@ const TerminalSurface = lazy(() => import("../views/Terminals").then(module => (
 const launchers: { kind: "browser" | "terminal" | "files" | "diff" | "pull" | "pulls" | "agents"; label: string; icon: ReactNode; letter: string; needsProject?: boolean; reason?: string }[] = [
 	{ kind: "browser", label: "Browser", icon: <Globe />, letter: "B" },
 	{ kind: "terminal", label: "Terminal", icon: <ActionIcon name="terminal" />, letter: "T" },
-	{ kind: "files", label: "Files", icon: <Files />, letter: "F", needsProject: true, reason: "Files are only available when a project is open." },
+	{ kind: "files", label: "Files", icon: <ActionIcon name="files" />, letter: "F", needsProject: true, reason: "Files are only available when a project is open." },
 	{ kind: "diff", label: "Diff", icon: <FileDiff />, letter: "D", needsProject: true, reason: "Diff is only available for chats in a project." },
 	{ kind: "pull", label: "Pull request", icon: <ActionIcon name="pullRequest" />, letter: "P", needsProject: true, reason: "This chat's branch has no pull request yet." },
 	{ kind: "pulls", label: "Linked pull requests", icon: <ActionIcon name="link" />, letter: "L", needsProject: true, reason: "Pull requests are only available for chats in a project." },

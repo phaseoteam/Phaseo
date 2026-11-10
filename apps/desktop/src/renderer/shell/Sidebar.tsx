@@ -306,7 +306,7 @@ export function Sidebar() {
 				<ActionIcon name="plus" className="size-4" />New issue
 			</button> : <button type="button" onClick={() => { if (mode === "chat") setNewChatProjectId(""); select(undefined); }}
 				className={cn("flex h-8 w-full items-center gap-2 rounded-md px-2.5 text-[13px] font-semibold transition-colors", fresh ? "bg-sidebar-accent text-foreground" : "bg-primary text-primary-foreground hover:bg-primary/85")}>
-				<ActionIcon name="plus" className="size-4" />New chat<span className={cn("ml-auto text-[10.5px] font-medium", fresh ? "text-muted-foreground" : "text-primary-foreground/70")}>{shortcut("chat.new")}</span>
+				<ActionIcon name="newChat" className="size-4" />New chat<span className={cn("ml-auto text-[10.5px] font-medium", fresh ? "text-muted-foreground" : "text-primary-foreground/70")}>{shortcut("chat.new")}</span>
 			</button>}
 			<InboxLink />
 			{mode === "code" && !factory && <PullRequestsLink />}

@@ -28,7 +28,7 @@ app.whenReady().then(async () => { try {
 	const originalPreferences = await run("window.phaseoDesktop.workspace.preferences()");
 	console.log("Composer fixture: preferences ready");
 	let preferences = originalPreferences.preferences;
-	let tasks, revision = 0, projects = [];
+	let tasks = [], revision = 0, projects = [];
 	const commands = new EventEmitter();
 	const calls = [];
 	let pullWrites = 0;
@@ -318,7 +318,7 @@ app.whenReady().then(async () => { try {
 		for (const pseudo of ["hover", "focus-visible"]) {
 			await force(selector, pseudo);
 			const active = await state();
-			if (pseudo === "focus-visible" && (name === "inbox" || await run(`!!document.querySelector(${JSON.stringify(selector)}).closest('.desktop-command-palette')`))) {
+			if (pseudo === "focus-visible" && (["inbox", "terminal", "schedule", "pullRequest", "merge", "archive", "restore", "newChat", "files"].includes(name) || await run(`!!document.querySelector(${JSON.stringify(selector)}).closest('.desktop-command-palette')`))) {
 				assert.equal(active.animations.length, 0, `${name} animates during keyboard selection`);
 				await force(selector, null);
 				continue;
@@ -331,7 +331,7 @@ app.whenReady().then(async () => { try {
 			assert.notDeepEqual(middle.parts, idle.parts, `${name} has no visible part movement`);
 			const frame = { download: 1, terminal: 2, external: 2, archive: 1, camera: 0 }[name];
 			if (frame !== undefined) assert.deepEqual(middle.parts[frame], idle.parts[frame], `${name} moved its tray or frame`);
-			for (const node of ({ pullRequest: [0, 1, 2], branch: [1, 2], merge: [0, 1] }[name] ?? [])) assert.deepEqual(middle.parts[node], idle.parts[node], `${name} moved its fixed node`);
+			for (const node of ({ pullRequest: [0, 1, 2, 3], branch: [1, 2], merge: [0, 1, 2] }[name] ?? [])) assert.deepEqual(middle.parts[node], idle.parts[node], `${name} moved its fixed node`);
 			for (const node of ({ signIn: [2], schedule: [1, 2, 3, 4, 5], inbox: [1, 2], usage: [0] }[name] ?? [])) assert.deepEqual(middle.parts[node], idle.parts[node], `${name} moved its navigation frame`);
 			gestures[name] = active.animations.map(animation => animation.name);
 			await force(selector, null);
@@ -551,7 +551,7 @@ app.whenReady().then(async () => { try {
 			const point = await run(`(()=>{const box=document.querySelector(${JSON.stringify(selector)}).getBoundingClientRect();return {x:box.x+box.width/2,y:box.y+box.height/2};})()`);
 			await cdp("Input.dispatchMouseEvent", { type: "mouseMoved", ...point });
 			if (row.disabled) { assert.equal((await state()).animations.length, 0); continue; }
-			await run(`document.querySelector(${JSON.stringify(selector)}+' .gesture-icon').getAnimations({subtree:true}).forEach(animation=>{animation.pause();animation.currentTime=110;});true`);
+			await run(`document.querySelector(${JSON.stringify(selector)}+' .gesture-icon').getAnimations({subtree:true}).forEach(animation=>{animation.pause();animation.currentTime=Math.max(110,Number(animation.effect.getTiming().duration)/2);});true`);
 			const active = await state();
 			assert(active.animations.length > 0, `${row.label} has no hover gesture`);
 			assert(active.animations.every(animation => animation.iterations === 1), `${row.label} repeats its gesture`);
@@ -566,8 +566,9 @@ app.whenReady().then(async () => { try {
 					if (fraction === 1) assert.equal(gauge.opacity, 0, "Palette gauge does not reset while hovered");
 				}
 			}
-			if (["inbox", "keyboard"].includes(row.name)) {
-				await run(`document.querySelector(${JSON.stringify(selector)}+' svg').getAnimations({subtree:true}).forEach(animation=>{const timing=animation.effect.getTiming();if(Number(timing.duration)!==${row.name === "inbox" ? 480 : 140})throw Error('Miniature sequence duration overridden');animation.currentTime=Number(timing.delay)+Number(timing.duration);});true`);
+			const duration = { inbox: 480, keyboard: 140, terminal: 560, schedule: 640, pullRequest: 640, merge: 640, archive: 640, restore: 640, newChat: 640, files: 480 }[row.name];
+			if (duration) {
+				await run(`document.querySelector(${JSON.stringify(selector)}+' svg').getAnimations({subtree:true}).forEach(animation=>{const timing=animation.effect.getTiming();if(Number(timing.duration)!==${duration})throw Error('Miniature sequence duration overridden');animation.currentTime=Number(timing.delay)+Number(timing.duration);});true`);
 				assert.deepEqual((await state()).parts, idle.parts, `${row.label} does not return to rest while hovered`);
 			}
 			await cdp("Input.dispatchMouseEvent", { type: "mouseMoved", x: 0, y: 0 });
