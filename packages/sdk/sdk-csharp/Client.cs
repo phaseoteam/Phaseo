@@ -90,7 +90,7 @@ namespace PhaseoSdk
             HttpClient? httpClient = null,
             DevtoolsConfig? devtools = null,
             string clientSource = "phaseo-csharp",
-            string clientSourceVersion = "2.1.0")
+            string clientSourceVersion = "3.0.0")
             : this(apiKey, null, basePath, enableDeprecationWarnings, warningsAsErrors, logger, lifecycleResolver, httpClient, devtools, clientSource, clientSourceVersion)
         {
         }
@@ -112,7 +112,7 @@ namespace PhaseoSdk
             HttpClient? httpClient = null,
             DevtoolsConfig? devtools = null,
             string clientSource = "phaseo-csharp",
-            string clientSourceVersion = "2.1.0")
+            string clientSourceVersion = "3.0.0")
             => new(null, apiKeyProvider ?? throw new ArgumentNullException(nameof(apiKeyProvider)), basePath, enableDeprecationWarnings, warningsAsErrors, logger, lifecycleResolver, httpClient, devtools, clientSource, clientSourceVersion);
 
         private Phaseo(

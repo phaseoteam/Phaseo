@@ -114,6 +114,16 @@ async function main(): Promise<void> {
           pattern: /new TelemetryRecorder\(devtools,\s*"([^"]+)"\)/m,
           label: "TelemetryRecorder constructor version",
         },
+        {
+          filePath: file("packages", "sdk", "sdk-csharp", "Client.cs"),
+          pattern: /string clientSourceVersion = "([^"]+)"\)\s*: this\(/m,
+          label: "constructor clientSourceVersion default",
+        },
+        {
+          filePath: file("packages", "sdk", "sdk-csharp", "Client.cs"),
+          pattern: /FromApiKeyProvider\([\s\S]*?string clientSourceVersion = "([^"]+)"\)/m,
+          label: "FromApiKeyProvider clientSourceVersion default",
+        },
       ],
     },
     {
@@ -137,6 +147,11 @@ async function main(): Promise<void> {
           filePath: file("packages", "sdk", "sdk-php", "src", "index.php"),
           pattern: /new TelemetryRecorder\(\$devtools,\s*"([^"]+)"\)/m,
           label: "TelemetryRecorder constructor version",
+        },
+        {
+          filePath: file("packages", "sdk", "sdk-php", "src", "index.php"),
+          pattern: /string \$clientSourceVersion = "([^"]+)"/m,
+          label: "constructor clientSourceVersion default",
         },
       ],
     },
