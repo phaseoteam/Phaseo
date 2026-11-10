@@ -241,6 +241,8 @@ function renderTable(element: ElementNode, ctx: Context): string {
 				const cells: string[] = [];
 				for (const cell of child.children) {
 					if (cell.kind !== "element" || (cell.name !== "td" && cell.name !== "th") || isHidden(cell)) continue;
+					// Only pipes are escaped here: text backslashes were already escaped by
+					// escapeInline, and backslashes inside code spans are literal.
 					cells.push(tidy(renderChildren(cell, { ...ctx, inTable: true })).replace(/\n+/g, " ").replace(/\|/g, "\\|"));
 					// A cell spanning several columns keeps the cells after it under the right headers.
 					const span = Math.min(Math.max(Number.parseInt(cell.attribs.colspan ?? "1", 10) || 1, 1), 50);
