@@ -8,7 +8,7 @@ import zlib from 'node:zlib';
 import { fileURLToPath } from 'node:url';
 
 const webRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const budgetKB = Number(process.env.ROOT_BUNDLE_BUDGET_KB ?? 850);
+const budgetKB = Number(process.env.ROOT_BUNDLE_BUDGET_KB ?? 550);
 const serverAssets = path.join(webRoot, 'dist/server/assets');
 const clientRoot = path.join(webRoot, 'dist/client');
 
