@@ -486,6 +486,8 @@ jobs:
                   pnpm --filter @phaseo/web test:i18n:ui-audit
                   # The build generates src/routeTree.gen.ts, which the typecheck needs.
                   pnpm --filter @phaseo/web build
+                  # Fails when the JavaScript every page preloads grows past its budget.
+                  pnpm --filter @phaseo/web check:root-bundle
                   pnpm --filter @phaseo/web typecheck
                   pnpm --filter @phaseo/web lint
                   # The whole web unit suite (about a minute).
