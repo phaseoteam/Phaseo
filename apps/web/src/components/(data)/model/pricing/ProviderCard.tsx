@@ -73,6 +73,15 @@ import {
 	type TokenTriple,
 	type UsageRow,
 } from "@/components/(data)/model/pricing/pricingHelpers";
+import {
+	MOBILE_BLOCK_ROW,
+	MOBILE_FULL_CELL,
+	MOBILE_NAME_CELL,
+	MOBILE_ROW,
+	MOBILE_STAT_CELL,
+	getPriceColumnMobileLabel,
+	isMobileHiddenPriceColumn,
+} from "@/components/(data)/model/pricing/providerTableMobile";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import type { PricingRuntimeStats as ProviderRuntimeStats } from "./pricingRuntimeStats";
 import type { ProviderAttemptHealth } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
@@ -3281,9 +3290,10 @@ export default function ProviderCard({
 				className={cn(
 					"group cursor-pointer hover:bg-zinc-50/70 dark:hover:bg-zinc-900/30",
 					isLastVisible && "border-b-0",
+					MOBILE_ROW,
 				)}
 			>
-				<TableCell className="relative min-w-[280px] py-1 pl-3 pr-2">
+				<TableCell className={cn("relative min-w-[280px] py-1 pl-3 pr-2", MOBILE_NAME_CELL)}>
 					{summaryActive ? (
 						<motion.span
 							aria-hidden="true"
@@ -3312,8 +3322,8 @@ export default function ProviderCard({
 								<ChevronDown className={cn("size-3 transition-transform", !serviceTiersExpanded && "-rotate-90")} aria-hidden="true" />
 							</button>
 						) : null}
-						<div>
-						<div className="flex items-center gap-2.5">
+						<div className="max-sm:min-w-0">
+						<div className="flex items-center gap-2.5 max-sm:flex-wrap max-sm:gap-y-1">
 							<div
 								className="inline-flex items-center gap-2.5 whitespace-nowrap text-foreground"
 							>
@@ -3469,12 +3479,20 @@ export default function ProviderCard({
 				</TableCell>
 				{priceColumns.length > 0 ? (
 					isCustomerManagedPricing ? (
-						<TableCell colSpan={priceColumns.length} className="py-1 pl-2 pr-4 text-right text-xs font-medium text-muted-foreground whitespace-nowrap">
+						<TableCell colSpan={priceColumns.length} className={cn("py-1 pl-2 pr-4 text-right text-xs font-medium text-muted-foreground whitespace-nowrap", MOBILE_FULL_CELL)}>
 							{tx("Common.ui.providerCardCopy.customerManaged")}
 						</TableCell>
 					) : (
 						priceColumns.map((column) => (
-							<TableCell key={column.key} className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+							<TableCell
+								key={column.key}
+								data-label={getPriceColumnMobileLabel(column)}
+								className={cn(
+									"py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap",
+									MOBILE_STAT_CELL,
+									isMobileHiddenPriceColumn(column) && "max-sm:hidden",
+								)}
+							>
 								{renderTablePriceSummary(
 									tablePriceSummaries[column.key] ?? buildProviderTablePriceSummaryForColumn(tableSec, column),
 									tablePlanPriceClass,
@@ -3483,16 +3501,16 @@ export default function ProviderCard({
 						))
 					)
 				) : null}
-				<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+				<TableCell data-label={tProvider("latency")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL)}>
 					<div className="font-medium text-foreground">{tablePerformanceMetrics[0].value}</div>
 				</TableCell>
-				<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+				<TableCell data-label={tProvider("throughput")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL)}>
 					<div className="font-medium text-foreground">{tablePerformanceMetrics[1].value}</div>
 				</TableCell>
-				<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+				<TableCell data-label={tProvider("uptime")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL)}>
 					<div
 						className={cn(
-							"inline-flex items-center justify-end gap-2 font-medium tabular-nums",
+							"inline-flex items-center justify-end gap-2 font-medium tabular-nums max-sm:justify-start",
 							tablePerformanceMetrics[2].valueClassName,
 						)}
 					>
@@ -3501,10 +3519,10 @@ export default function ProviderCard({
 					</div>
 				</TableCell>
 			</TableRow>
-			<TableRow className="h-0 border-0 hover:bg-transparent">
+			<TableRow className={cn("h-0 border-0 hover:bg-transparent", MOBILE_BLOCK_ROW)}>
 				<TableCell
 					colSpan={priceColumns.length + 4}
-					className="h-0 border-0 p-0"
+					className={cn("h-0 border-0 p-0", MOBILE_BLOCK_ROW)}
 				>
 					<ProviderInspectorSheet open={expanded} onOpenChange={handleInspectorOpenChange}>
 						<ProviderInspectorSheetContent

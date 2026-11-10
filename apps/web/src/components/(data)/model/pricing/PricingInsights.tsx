@@ -116,6 +116,14 @@ import { MONEY_LOCALE } from "@/lib/displayPreferences";
 import ModelChartShareButton from "@/components/(data)/model/share/ModelChartShareButton";
 import type { ChartShareRenderSize } from "@/components/share/ChartShareButton";
 import { fromShareDate, readSharedChartState, toShareDate } from "@/lib/share/chartShare";
+import {
+	MOBILE_HEAD_CELL,
+	MOBILE_HEAD_ROW,
+	MOBILE_NAME_CELL,
+	MOBILE_ROW,
+	MOBILE_STAT_CELL,
+	MOBILE_TABLE_BLOCK,
+} from "@/components/(data)/model/pricing/providerTableMobile";
 
 const dailyAveragePricePer1MCache = new WeakMap<ModelPricingHistoryRule, number>();
 
@@ -1607,10 +1615,10 @@ export default function PricingInsights({
 					}
 					viewportRef={effectivePricingViewportRef}
 				>
-					<Table className="min-w-[1040px]" wrapInContainer={false}>
-						<TableHeader>
-							<TableRow className="hover:bg-transparent">
-								<TableHead className="h-8 w-[28%] px-3">
+					<Table className={cn("sm:min-w-[1040px]", MOBILE_TABLE_BLOCK)} wrapInContainer={false}>
+						<TableHeader className={MOBILE_TABLE_BLOCK}>
+							<TableRow className={cn("hover:bg-transparent", MOBILE_HEAD_ROW)}>
+								<TableHead className={cn("h-8 w-[28%] px-3", MOBILE_HEAD_CELL)}>
 									<SortHead
 										label={t("table.provider")}
 										sortKey="provider"
@@ -1620,7 +1628,7 @@ export default function PricingInsights({
 										onToggle={handleSortToggle}
 									/>
 								</TableHead>
-								<TableHead className="h-8 pl-2 pr-3 text-left">
+								<TableHead className={cn("h-8 pl-2 pr-3 text-left", MOBILE_HEAD_CELL)}>
 									<SortHead
 										label={t("table.effectiveIn")}
 										sortKey="input"
@@ -1629,7 +1637,7 @@ export default function PricingInsights({
 										onToggle={handleSortToggle}
 									/>
 								</TableHead>
-								<TableHead className="h-8 pl-2 pr-3 text-left">
+								<TableHead className={cn("h-8 pl-2 pr-3 text-left", MOBILE_HEAD_CELL)}>
 									<SortHead
 										label={t("table.effectiveOut")}
 										sortKey="output"
@@ -1638,13 +1646,13 @@ export default function PricingInsights({
 										onToggle={handleSortToggle}
 									/>
 								</TableHead>
-								<TableHead className="h-8 pl-2 pr-3 text-left">
+								<TableHead className={cn("h-8 pl-2 pr-3 text-left", MOBILE_HEAD_CELL)}>
 									<SortHead label={t("table.listIn")} sortKey="listedInput" activeSortKey={sortKey} direction={sortDirection} onToggle={handleSortToggle} />
 								</TableHead>
-								<TableHead className="h-8 pl-2 pr-3 text-left">
+								<TableHead className={cn("h-8 pl-2 pr-3 text-left", MOBILE_HEAD_CELL)}>
 									<SortHead label={t("table.listOut")} sortKey="listedOutput" activeSortKey={sortKey} direction={sortDirection} onToggle={handleSortToggle} />
 								</TableHead>
-								<TableHead className="h-8 pl-2 pr-3 text-left">
+								<TableHead className={cn("h-8 pl-2 pr-3 text-left", MOBILE_HEAD_CELL)}>
 									<SortHead
 										label={t("table.cacheHitRate")}
 										sortKey="cacheHitRate"
@@ -1653,7 +1661,7 @@ export default function PricingInsights({
 										onToggle={handleSortToggle}
 									/>
 								</TableHead>
-								<TableHead className="h-8 pl-2 pr-3 text-left">
+								<TableHead className={cn("h-8 pl-2 pr-3 text-left", MOBILE_HEAD_CELL)}>
 									<SortHead
 										label={t("table.tokenShare")}
 										sortKey="tokenShare"
@@ -1664,7 +1672,7 @@ export default function PricingInsights({
 								</TableHead>
 							</TableRow>
 						</TableHeader>
-						<TableBody>
+						<TableBody className={MOBILE_TABLE_BLOCK}>
 							{sortedRows.map((row) => {
 								const additionalTierRows = (providerTierRowsById.get(row.providerId) ?? [])
 									.filter((tierRow) => tierRow.pricingPlan !== row.pricingPlan);
@@ -1684,9 +1692,9 @@ export default function PricingInsights({
 									}}
 									onClick={(event) => handleProviderRowClick(event, row.providerId)}
 									onKeyDown={(event) => handleProviderRowKeyDown(event, row.providerId)}
-									className="cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+									className={cn("cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring", MOBILE_ROW)}
 								>
-									<TableCell className="relative px-3 py-1.5">
+									<TableCell className={cn("relative px-3 py-1.5", MOBILE_NAME_CELL)}>
 										{activeProviderInspectorId === row.providerId ? (
 											<span aria-hidden="true" className="absolute inset-y-0 left-0 w-0.5 bg-primary" />
 										) : null}
@@ -1744,24 +1752,24 @@ export default function PricingInsights({
 										</Button> : null}
 										</div>
 									</TableCell>
-									<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">
+									<TableCell data-label={t("table.effectiveIn")} className={cn("px-3 py-1.5 text-left font-medium tabular-nums text-foreground", MOBILE_STAT_CELL)}>
 										{formatUsd(row.inputPricePer1M)}
 									</TableCell>
-									<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">
+									<TableCell data-label={t("table.effectiveOut")} className={cn("px-3 py-1.5 text-left font-medium tabular-nums text-foreground", MOBILE_STAT_CELL)}>
 										{formatUsd(row.outputPricePer1M)}
 									</TableCell>
-									<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">
+									<TableCell data-label={t("table.listIn")} className={cn("px-3 py-1.5 text-left font-medium tabular-nums text-foreground", MOBILE_STAT_CELL)}>
 										{formatUsd(row.listedInputPricePer1M)}
 									</TableCell>
-									<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">
+									<TableCell data-label={t("table.listOut")} className={cn("px-3 py-1.5 text-left font-medium tabular-nums text-foreground", MOBILE_STAT_CELL)}>
 										{formatUsd(row.listedOutputPricePer1M)}
 									</TableCell>
-									<TableCell className="px-3 py-1.5 text-left tabular-nums">
+									<TableCell data-label={t("table.cacheHitRate")} className={cn("px-3 py-1.5 text-left tabular-nums", MOBILE_STAT_CELL)}>
 										<div className="font-medium text-foreground">
 											{formatPercent(row.cacheHitRatePct)}
 										</div>
 									</TableCell>
-									<TableCell className="px-3 py-1.5 text-left tabular-nums">
+									<TableCell data-label={t("table.tokenShare")} className={cn("px-3 py-1.5 text-left tabular-nums", MOBILE_STAT_CELL)}>
 										<Tooltip delayDuration={120}>
 											<TooltipTrigger asChild>
 												<button
@@ -1805,9 +1813,9 @@ export default function PricingInsights({
 											}}
 											onClick={(event) => handleProviderRowClick(event, row.providerId)}
 											onKeyDown={(event) => handleProviderRowKeyDown(event, row.providerId)}
-											className="cursor-pointer bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring"
+											className={cn("cursor-pointer bg-muted/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring", MOBILE_ROW)}
 										>
-						<TableCell className="px-3 py-1.5">
+						<TableCell className={cn("px-3 py-1.5", MOBILE_NAME_CELL)}>
 						<div className="flex items-center gap-2">
 											<button type="button" disabled={!canToggleTierSeries} onClick={(event) => { event.stopPropagation(); toggleSeries(tierRow); }} aria-pressed={canToggleTierSeries ? isTierVisible : undefined} aria-label={canToggleTierSeries ? t("seriesVisibility", { action: formatAction(isTierVisible), provider: row.providerName, plan: formatPricingPlanLabel(tierRow.pricingPlan, tx) }) : t("tierUnavailable", { provider: row.providerName, plan: formatPricingPlanLabel(tierRow.pricingPlan, tx) })} className={cn("grid size-7 shrink-0 place-items-center rounded-md transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2", !canToggleTierSeries && "cursor-not-allowed opacity-35", canToggleTierSeries && !isTierVisible && "opacity-45")}>
 									<PricingLineTypeIcon plan={tierRow.pricingPlan} color={tierRow.color} />
@@ -1815,12 +1823,12 @@ export default function PricingInsights({
 								<PricingTierLabel providerName={row.providerName} plan={tierRow.pricingPlan} />
 							</div>
 						</TableCell>
-										<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">{formatUsd(tierRow.inputPricePer1M)}</TableCell>
-										<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">{formatUsd(tierRow.outputPricePer1M)}</TableCell>
-										<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">{formatUsd(tierRow.listedInputPricePer1M)}</TableCell>
-										<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">{formatUsd(tierRow.listedOutputPricePer1M)}</TableCell>
-										<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">{formatPercent(tierRow.cacheHitRatePct)}</TableCell>
-										<TableCell className="px-3 py-1.5 text-left font-medium tabular-nums text-foreground">{formatPercent(tierRow.tokenSharePct)}</TableCell>
+										<TableCell data-label={t("table.effectiveIn")} className={cn("px-3 py-1.5 text-left font-medium tabular-nums text-foreground", MOBILE_STAT_CELL)}>{formatUsd(tierRow.inputPricePer1M)}</TableCell>
+										<TableCell data-label={t("table.effectiveOut")} className={cn("px-3 py-1.5 text-left font-medium tabular-nums text-foreground", MOBILE_STAT_CELL)}>{formatUsd(tierRow.outputPricePer1M)}</TableCell>
+										<TableCell data-label={t("table.listIn")} className={cn("px-3 py-1.5 text-left font-medium tabular-nums text-foreground", MOBILE_STAT_CELL)}>{formatUsd(tierRow.listedInputPricePer1M)}</TableCell>
+										<TableCell data-label={t("table.listOut")} className={cn("px-3 py-1.5 text-left font-medium tabular-nums text-foreground", MOBILE_STAT_CELL)}>{formatUsd(tierRow.listedOutputPricePer1M)}</TableCell>
+										<TableCell data-label={t("table.cacheHitRate")} className={cn("px-3 py-1.5 text-left font-medium tabular-nums text-foreground", MOBILE_STAT_CELL)}>{formatPercent(tierRow.cacheHitRatePct)}</TableCell>
+										<TableCell data-label={t("table.tokenShare")} className={cn("px-3 py-1.5 text-left font-medium tabular-nums text-foreground", MOBILE_STAT_CELL)}>{formatPercent(tierRow.tokenSharePct)}</TableCell>
 										</TableRow>
 									);
 								}) : null}

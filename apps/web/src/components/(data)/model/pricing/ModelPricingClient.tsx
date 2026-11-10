@@ -122,6 +122,16 @@ import ModelPercentileSelect, {
 } from "@/components/(data)/models/ModelPercentileSelect";
 import { publishProviderView } from "@/components/(data)/model/pricing/providerViewSync";
 import {
+	MOBILE_HEAD_CELL,
+	MOBILE_HEAD_ROW,
+	MOBILE_NAME_CELL,
+	MOBILE_ROW,
+	MOBILE_STAT_CELL,
+	MOBILE_TABLE_BLOCK,
+	getPriceColumnMobileLabel,
+	isMobileHiddenPriceColumn,
+} from "@/components/(data)/model/pricing/providerTableMobile";
+import {
 	clearProviderInspector,
     dispatchProviderInspectorOpen,
     subscribeProviderInspectorSelection,
@@ -736,6 +746,7 @@ function ProviderServiceTierRow({
 	const providerName = getProviderServiceTierDisplayName(provider);
 	const logoProviderId = sections.logoProviderId;
 	const tSections = useTranslations("Catalogue.modelDetail.sections");
+	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
 	const discountBadge = getProviderTableDiscountBadge(sections, {
 		discount: tSections("discount"),
 		off: tSections("off"),
@@ -765,13 +776,14 @@ function ProviderServiceTierRow({
 			className={cn(
 				"group cursor-pointer hover:bg-zinc-50/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring dark:hover:bg-zinc-900/30",
 				isActive && "bg-primary/[0.06]",
+				MOBILE_ROW,
 			)}
 		>
-			<TableCell className="relative min-w-[280px] py-1 pl-3 pr-2">
+			<TableCell className={cn("relative min-w-[280px] py-1 pl-3 pr-2", MOBILE_NAME_CELL)}>
 				{isActive ? <span aria-hidden="true" className="absolute inset-y-0 left-0 w-0.5 bg-primary" /> : null}
 				<div className="flex items-center gap-1.5 whitespace-nowrap">
-					{showDisclosureGutter ? <span aria-hidden="true" className="size-5 shrink-0" /> : null}
-					<span className="inline-flex w-max shrink-0 items-center gap-2.5 font-semibold text-foreground">
+					{showDisclosureGutter ? <span aria-hidden="true" className="size-5 shrink-0 max-sm:hidden" /> : null}
+					<span className="inline-flex w-max shrink-0 items-center gap-2.5 font-semibold text-foreground max-sm:w-auto max-sm:shrink max-sm:flex-wrap">
 						<span className="relative flex size-6 shrink-0 items-center justify-center rounded-md border border-zinc-200/80 bg-background transition-colors group-hover:border-zinc-300 dark:border-zinc-800 dark:group-hover:border-zinc-700">
 							<span className="relative size-3.5">
 								<Logo
@@ -794,19 +806,27 @@ function ProviderServiceTierRow({
 				</div>
 			</TableCell>
 			{priceColumns.map((column) => (
-				<TableCell key={column.key} className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+				<TableCell
+					key={column.key}
+					data-label={getPriceColumnMobileLabel(column)}
+					className={cn(
+						"py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap",
+						MOBILE_STAT_CELL,
+						isMobileHiddenPriceColumn(column) && "max-sm:hidden",
+					)}
+				>
 					{renderTierTablePrice(
 						priceSummaries[column.key] ?? buildProviderTablePriceSummaryForColumn(sections, column),
 					)}
 				</TableCell>
 			))}
-			<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+			<TableCell data-label={tProvider("latency")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL)}>
 				{plan === "batch" ? "--" : formatTierLatency(runtimeStats?.latencyMs30m)}
 			</TableCell>
-			<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+			<TableCell data-label={tProvider("throughput")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL)}>
 				{plan === "batch" ? "--" : formatTierThroughput(runtimeStats?.throughput30m)}
 			</TableCell>
-			<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+			<TableCell data-label={tProvider("uptime")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL)}>
 				{plan === "batch" ? "--" : formatTierUptime(runtimeStats)}
 			</TableCell>
 		</TableRow>
@@ -1915,11 +1935,14 @@ export default function ModelPricingClient({
                                 viewportRef={providerTableViewportRef}
                             >
 								<Table
-									className="table-auto lg:min-w-full"
-									style={{ minWidth: providerTableMinWidth }}
+									className={cn(
+										"table-auto sm:min-w-[var(--provider-table-min-width)] lg:min-w-full",
+										MOBILE_TABLE_BLOCK,
+									)}
+									style={{ "--provider-table-min-width": `${providerTableMinWidth}px` } as React.CSSProperties}
 									wrapInContainer={false}
 								>
-									<colgroup>
+									<colgroup className="max-sm:hidden">
 										<col className="w-72" />
 										{visiblePriceColumns.map((column) => (
 											<col key={column.key} className="w-28" />
@@ -1928,28 +1951,35 @@ export default function ModelPricingClient({
 										<col className="w-28" />
 										<col className="w-32" />
 									</colgroup>
-									<TableHeader>
-										<TableRow className="hover:bg-transparent">
-											<TableHead className="h-8 min-w-[280px] px-3 whitespace-nowrap">
+									<TableHeader className={MOBILE_TABLE_BLOCK}>
+										<TableRow className={cn("hover:bg-transparent", MOBILE_HEAD_ROW)}>
+											<TableHead className={cn("h-8 min-w-[280px] px-3 whitespace-nowrap", MOBILE_HEAD_CELL)}>
 												{renderTableSortHead(tProvider("provider"), "provider", "left")}
 											</TableHead>
 											{visiblePriceColumns.map((column) => (
-												<TableHead key={column.key} className="h-8 min-w-28 pl-2 pr-4 text-right whitespace-nowrap">
+												<TableHead
+													key={column.key}
+													className={cn(
+														"h-8 min-w-28 pl-2 pr-4 text-right whitespace-nowrap",
+														MOBILE_HEAD_CELL,
+														isMobileHiddenPriceColumn(column) && "max-sm:hidden",
+													)}
+												>
 													{renderTablePriceHead(column)}
 												</TableHead>
 											))}
-											<TableHead className="h-8 w-24 min-w-24 pl-2 pr-4 text-right whitespace-nowrap">
+											<TableHead className={cn("h-8 w-24 min-w-24 pl-2 pr-4 text-right whitespace-nowrap", MOBILE_HEAD_CELL)}>
 												{renderTableSortHead(tProvider("latency"), "latency")}
 											</TableHead>
-											<TableHead className="h-8 w-28 min-w-28 pl-2 pr-4 text-right whitespace-nowrap">
+											<TableHead className={cn("h-8 w-28 min-w-28 pl-2 pr-4 text-right whitespace-nowrap", MOBILE_HEAD_CELL)}>
 												{renderTableSortHead(tProvider("throughput"), "throughput")}
 											</TableHead>
-											<TableHead className="h-8 w-32 min-w-32 pl-2 pr-4 text-right whitespace-nowrap">
+											<TableHead className={cn("h-8 w-32 min-w-32 pl-2 pr-4 text-right whitespace-nowrap", MOBILE_HEAD_CELL)}>
 												{renderTableSortHead(tProvider("uptime"), "uptime")}
 											</TableHead>
                                         </TableRow>
                                     </TableHeader>
-                                    <TableBody>
+                                    <TableBody className={MOBILE_TABLE_BLOCK}>
                                         {displayedOfferings.map(({ provider: prov, plan, isPrimary }, index) => {
                                             const providerId = prov.provider.api_provider_id;
                                             const runtimeStatsForTier = getProviderRuntimeStats(
