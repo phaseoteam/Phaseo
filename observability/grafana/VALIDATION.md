@@ -1,5 +1,13 @@
 # Observability validation
 
+## Investigation and notification follow-up, 10 November 2026
+
+The installed dashboards have evolved beyond the original generated definitions below. `investigations.mjs --apply` enriched five existing dashboards in place and added `phaseo-investigation`, preserving their layouts and deployment annotations. A real web API trace ID returned one matching record; a blank lookup and a quoted/backslash lookup each returned zero. All three queries succeeded. Grafana's image renderer showed the real record as readable columns with a linked trace ID and no raw JSON. Link configuration and selected-time propagation were checked through API readback and focused tests; interactive hover/click behavior was not exercised.
+
+The rendered check caught Grafana's JSON variable formatter leaving strings unquoted. The lookup now compares percent-encoded IDs with Loki `urlencode`, normalizing spaces, so user input cannot introduce query syntax. The new deployment annotation uses the installed `phaseo-deployment` and `environment:$environment` tags.
+
+`node --test observability/grafana/definitions.test.mjs observability/grafana/investigations.test.mjs observability/grafana/notifications.test.mjs`: **18 passed**, zero failures/skips. `git diff --check`: passed. Notification tests cover production-only matching, preservation of unrelated policies, secure token readback before enabling rules, recovery messages, and failure/concurrent-edit paths. The existing incident.io **Grafana alerts** source was found through its **Manage connection** screen. The owned Grafana contact point, production route and rule investigation annotations were applied and read back successfully; the API requires a server-generated receiver name on creation. The incident.io source had zero routes, and creating its Slack route was interrupted by a stalled browser tab. Slack delivery and recovery delivery remain unverified; production and staging alert rules remain paused. Collection volume, sampling, retention and paid plans were not changed.
+
 Release preparation on 6 November 2026, based on `f7a27db05011e8ff60581eccd7d48d578203220f` (current TanStack Start/Cloudflare application). The original dirty checkout was preserved; checks from its obsolete Next.js application are not used as release evidence.
 
 ## Cloud configuration

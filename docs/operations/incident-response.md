@@ -28,6 +28,7 @@ If a backup is added later, they need access to every service Phaseo runs on: Gi
 3. **Post on the status page** for SEV1 and SEV2, using the "Investigating" template below. If an Instatus alert already posted one for the same component (see [Outage alerts](#outage-alerts)), update that post instead of creating a second one. The site footer reads from it, and the docs and Trust page link to it.
 4. **Check what changed.** Look at the latest `deploy (…)` jobs of [CI](../../.github/workflows/ci.yml) on `main`, the latest production migration, and catalogue edits made today. Most incidents follow a change.
 5. **Find the cause:**
+   - Start with [Grafana Overview](https://honestcushion71.grafana.net/d/phaseo-overview), select **production** and the incident time. Open the affected service, compare failures with deployment markers, and click a release to inspect its commit. Click a request or trace ID in a record table to find related records across services. The [request investigation](https://honestcushion71.grafana.net/d/phaseo-investigation) page also accepts an ID directly. Missing records do not establish success; traces are sampled.
    - Gateway errors and latency: Axiom, dataset set by `AXIOM_WIDE_DATASET` (sampled; see [axiom.ts](../../apps/api/src/observability/axiom.ts) and the `AXIOM_*_SAMPLE_RATE` settings in [wrangler.toml](../../apps/api/wrangler.toml)).
    - Worker logs: Cloudflare dashboard, Workers, then `phaseo-gateway`, `phaseo-gateway-eu`, `phaseo-gateway-us` or `phaseo-web-api`. Gateway logs are sampled at 10%; Web API logs at 100%. `pnpm exec wrangler tail <worker>` from `apps/api` or `apps/web-api` streams live logs.
    - Website errors: PostHog error tracking (EU, project 81404). Browser and server errors are captured only for visitors who accepted analytics cookies ([instrumentation.ts](../../apps/web/instrumentation.ts), [instrumentation-client.ts](../../apps/web/instrumentation-client.ts)), so a quiet PostHog doesn't mean the site is fine.
@@ -120,6 +121,7 @@ When Phaseo gives money back:
 | Customer-facing reliability guide | [reliability-and-status.mdx](../../apps/docs/v1/developers/reliability-and-status.mdx) |
 | Gateway events | Axiom, `AXIOM_WIDE_DATASET`; [axiom.ts](../../apps/api/src/observability/axiom.ts) |
 | Website errors | PostHog EU, project 81404 |
+| Service failures and related records | [Grafana Overview](https://honestcushion71.grafana.net/d/phaseo-overview), then request/trace links in record tables; [direct ID lookup](https://honestcushion71.grafana.net/d/phaseo-investigation) |
 | Alerts to Linear | `POST /internal/observability-incidents` on the gateway turns PostHog and Axiom alerts into deduplicated Linear Triage issues (not yet tested end to end with a real alert from either); [observability-incidents.ts](../../apps/api/src/routes/internal/observability-incidents.ts), setup in the [API README](../../apps/api/README.md#observability-incident-triage) |
 | Uptime monitors | Instatus, alerting through incident.io; see [Outage alerts](#outage-alerts) |
 | Public probes | "Phaseo Health Pilot" workflow, run by hand; [health-pilot.yml](../../.github/workflows/health-pilot.yml). It creates no incidents. |
@@ -133,6 +135,8 @@ When Phaseo gives money back:
 | Support | `support@phaseo.app`, `https://phaseo.app/help` |
 
 ## Outage alerts
+
+Grafana application alerts use a separate incident.io Grafana source intended for Slack `#ops-incidents`. Connection and delivery testing require that source's private URL and bearer token; do not unpause the five production rules before confirming delivery. See the [notification setup and rollback instructions](../../observability/grafana/README.md#slack-alerts-through-incidentio). Keep this source separate from Instatus's automatic paging and public status-page workflows. A recovered application alert is a signal to verify recovery, not proof that every affected customer is healthy.
 
 Instatus runs the uptime monitors. When one fails, it sends an alert to incident.io through the "Instatus monitoring" alert route. incident.io opens a Triage incident and pages the "Phaseo Primary Escalation" path. Workflows then post an "Investigating" incident on the status page for the Models, Homepage and Docs components, with subscriber notifications switched off in those workflows, so these automatic posts don't email subscribers. When the monitor recovers, the route declines the incident, and the workflows are set to resolve the status page post (untested, see below). This is all configured in the Instatus and incident.io dashboards, not in the repo.
 
