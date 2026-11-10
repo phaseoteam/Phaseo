@@ -1528,6 +1528,7 @@
 			"unknown": "不明",
 			"policySource": "ポリシーの出典",
 			"pricingSource": "料金の出典",
+			"residencySource": "データ所在地の出典",
 			"providerLabel": "プロバイダーラベル",
 			"providerMappingIntro": "このプロバイダーは次の名前でモデルを提供しています：",
 			"viewProviderPage": "プロバイダーページを表示",
@@ -3346,19 +3347,6 @@
 		"noUsageDataForPeriod": "この期間の利用データはありません。",
 		"rangePeriod": "{range}期間の利用状況",
 		"averageTokensPerRequest": "リクエストあたりの平均トークン数"
-	},
-	"apiModelCard": {
-		"gatewayActive": "Gateway：有効",
-		"gatewayInactive": "Gateway：無効",
-		"copiedModelId": "モデル ID をコピーしました",
-		"endpointsCount": "{count, plural, other {エンドポイント # 件}}",
-		"supportedEndpoints": "対応エンドポイント",
-		"alias": "エイリアス",
-		"providerAlias": "プロバイダーのエイリアス",
-		"copiedProviderAlias": "プロバイダーのエイリアスをコピーしました",
-		"providerAliasDescription": "これはプロバイダーがこのモデルに付けている名前です。プロバイダー独自の API を呼び出す際に使用します。",
-		"endpoint": "エンドポイント",
-		"modalityTool": "ツール呼び出し"
 	},
 	"modelTimeline": {
 		"heading": "モデルのタイムライン",

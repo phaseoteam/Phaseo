@@ -1260,7 +1260,7 @@ export function MonitorDataTable({
 		if (column.id !== "status") return content;
 		return (
 			<HoverCard openDelay={1000} closeDelay={120}>
-				<HoverCardTrigger asChild>{content}</HoverCardTrigger>
+				<HoverCardTrigger asChild openOnTap={false}>{content}</HoverCardTrigger>
 				<HoverCardContent align="start" className="w-52 p-3">
 					<div className="space-y-2">
 						<p className="text-[11px] font-medium text-muted-foreground">{t("statusKeyLabel")}</p>

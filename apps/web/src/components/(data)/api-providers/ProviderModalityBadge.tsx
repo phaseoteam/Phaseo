@@ -28,16 +28,17 @@ export function ProviderModalityBadge({
 	return (
 		<HoverCard>
 			<HoverCardTrigger asChild>
-				<span
+				{/* A button, so the surrounding provider card's click guard skips it. */}
+				<button
+					type="button"
 					aria-label={label}
-					tabIndex={0}
 					className={cn(
-						"inline-flex size-6 cursor-default items-center justify-center rounded-md outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+						"inline-flex size-6 cursor-default items-center justify-center rounded-md p-0 outline-none ring-offset-background focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
 						tone.badgeClassName,
 					)}
 				>
 					<Icon className={cn("size-3.5", tone.iconClassName)} />
-				</span>
+				</button>
 			</HoverCardTrigger>
 			<HoverCardContent side="top" className="w-56 rounded-md p-3">
 				<div className="flex items-center gap-2">

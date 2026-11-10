@@ -263,7 +263,7 @@ export default function ModelPerformanceDashboard({
 										</Badge>
 									</button>
 								</HoverCardTrigger>
-								<HoverCardContent align="start" className="w-72 rounded-lg p-3">
+								<HoverCardContent align="start" className="w-72 rounded-md p-3">
 									<p className="font-medium text-foreground">{t("performanceDataOld")}</p>
 									<p className="mt-1 text-xs text-muted-foreground">
 										{t("staleDescription", { date: formatSampleTime(latestSampleAt, locale) })}
