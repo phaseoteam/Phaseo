@@ -80,7 +80,10 @@ import {
 	MOBILE_ROW,
 	MOBILE_STAT_CELL,
 	getPriceColumnMobileLabel,
-	isMobileHiddenPriceColumn,
+	MOBILE_PERF_ORDER,
+	MOBILE_PERF_ROW_START,
+	getMobilePriceCellClass,
+	getMobilePriceColumnKeys,
 } from "@/components/(data)/model/pricing/providerTableMobile";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import type { PricingRuntimeStats as ProviderRuntimeStats } from "./pricingRuntimeStats";
@@ -287,6 +290,12 @@ export function getUptimeTrendPoints(
 	});
 }
 
+function formatShortWeekday(dayOffset: number, locale: string): string {
+	// Uptime days are UTC days, so name them in UTC too.
+	const date = new Date(Date.now() - dayOffset * 86_400_000);
+	return new Intl.DateTimeFormat(locale, { weekday: "short", timeZone: "UTC" }).format(date);
+}
+
 function formatUptimeDayLabel(dayOffset: number, locale: string, todayLabel: string): string {
 	if (dayOffset === 0) return todayLabel;
 	return new Intl.RelativeTimeFormat(locale, { numeric: "always", style: "short" }).format(
@@ -395,6 +404,50 @@ function UptimeHoverContent({
  * traffic says so. `interactive={false}` draws plain bars, for a sparkline that
  * sits inside another control.
  */
+/**
+ * Phones can't hover the sparkline, so cards show the same three days as a labelled
+ * strip: one coloured bar per day with its name underneath, readable without a tap.
+ */
+export function UptimeDayStrip({
+	points,
+	className,
+}: {
+	points: UptimeTrendPoint[];
+	className?: string;
+}) {
+	const t = useTranslations("Catalogue.modelDetail.sections");
+	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
+	const locale = useLocale();
+	if (!points.some((point) => point.value != null)) return null;
+
+	return (
+		<span role="list" aria-label={t("dailyUptime")} className={cn("flex gap-1", className)}>
+			{points.map((point) => {
+				const day = formatUptimeDayLabel(point.dayOffset, locale, t("today"));
+				// Short weekday names fit the narrow strip; the accessible label keeps the full day.
+				const shortDay = point.dayOffset === 0 ? t("today") : formatShortWeekday(point.dayOffset, locale);
+				const description = point.noTraffic
+					? tProvider("uptimeDayNoTraffic", { day })
+					: `${day}: ${formatPercent(point.value, locale)}`;
+				return (
+					<span key={point.dayOffset} role="listitem" aria-label={description} className="flex min-w-0 flex-1 flex-col gap-1">
+						<span
+							aria-hidden="true"
+							className={cn(
+								"block h-[3px] rounded-full bg-current",
+								point.value == null ? "text-muted-foreground opacity-45" : uptimeValueClass(point.value),
+							)}
+						/>
+						<span aria-hidden="true" className="truncate text-center text-[10px] font-normal text-muted-foreground">
+							{shortDay}
+						</span>
+					</span>
+				);
+			})}
+		</span>
+	);
+}
+
 export function UptimeSparkline({
 	points,
 	className,
@@ -1155,7 +1208,7 @@ function renderTablePriceSummary(
 					: summary.primary.formattedPrice}
 			</div>
 			{showVideoVariant ? (
-				<div className="max-w-40 truncate text-[10px] font-normal text-muted-foreground">
+				<div className="max-w-40 truncate text-[10px] font-normal text-muted-foreground max-sm:hidden">
 					{variantLabels.join(" · ")}
 					{summary.extraCount > 0 ? ` · +${summary.extraCount}` : ""}
 				</div>
@@ -2519,6 +2572,7 @@ export default function ProviderCard({
 			: fallback ?? null;
 	const tableUptimePct = getDisplayedUptimePct(runtimeStats);
 	const tableUptimeTrendPoints = getUptimeTrendPoints(runtimeStats);
+	const mobilePriceKeys = getMobilePriceColumnKeys(priceColumns);
 	const tableThroughputValue = formatThroughputValue(runtimeStats?.throughput30m, locale);
 	const activeDiscountEntries = collectDiscountEntriesFromSections(sec);
 	// A promotion can have an open-ended published duration. Show its discount
@@ -3494,7 +3548,7 @@ export default function ProviderCard({
 								className={cn(
 									"py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap",
 									MOBILE_STAT_CELL,
-									isMobileHiddenPriceColumn(column) && "max-sm:hidden",
+									getMobilePriceCellClass(mobilePriceKeys, column.key),
 								)}
 							>
 								{renderTablePriceSummary(
@@ -3505,13 +3559,13 @@ export default function ProviderCard({
 						))
 					)
 				) : null}
-				<TableCell data-label={tProvider("latency")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL)}>
+				<TableCell data-label={tProvider("latency")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL, MOBILE_PERF_ROW_START, MOBILE_PERF_ORDER)}>
 					<div className="font-medium text-foreground">{tablePerformanceMetrics[0].value}</div>
 				</TableCell>
-				<TableCell data-label={tProvider("throughput")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL)}>
+				<TableCell data-label={tProvider("throughput")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL, MOBILE_PERF_ORDER)}>
 					<div className="font-medium text-foreground">{tablePerformanceMetrics[1].value}</div>
 				</TableCell>
-				<TableCell data-label={tProvider("uptime")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL)}>
+				<TableCell data-label={tProvider("uptime")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL, MOBILE_PERF_ORDER)}>
 					<div
 						className={cn(
 							"inline-flex items-center justify-end gap-2 font-medium tabular-nums max-sm:justify-start",
@@ -3519,8 +3573,9 @@ export default function ProviderCard({
 						)}
 					>
 						<span>{tablePerformanceMetrics[2].value}</span>
-						<UptimeSparkline points={tableUptimeTrendPoints} />
+						<UptimeSparkline points={tableUptimeTrendPoints} className="max-sm:hidden" />
 					</div>
+					<UptimeDayStrip points={tableUptimeTrendPoints} className="mt-1 sm:hidden" />
 				</TableCell>
 			</TableRow>
 			<TableRow className={cn("h-0 border-0 hover:bg-transparent", MOBILE_BLOCK_ROW)}>

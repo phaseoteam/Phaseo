@@ -434,6 +434,16 @@ async function adapterResultToIR(
 		case "images.edits": {
 			const payload = normalized ?? {};
 			const created = Number(payload?.created);
+			// Token-billed image models (GPT Image, MiniMax H3-Image) move their output
+			// tokens into output_image_tokens, so the generic count would read 0.
+			const outputImageTokens = numberOrUndefined((usage as any)?.output_image_tokens);
+			if (usage && !usage.outputTokens && outputImageTokens) {
+				usage.outputTokens = outputImageTokens;
+				const inputTokens = usage.inputTokens ?? 0;
+				if (!usage.totalTokens || usage.totalTokens < inputTokens + outputImageTokens) {
+					usage.totalTokens = inputTokens + outputImageTokens;
+				}
+			}
 			return {
 				id: requestId,
 				nativeId: payload?.id ?? payload?.nativeResponseId ?? undefined,

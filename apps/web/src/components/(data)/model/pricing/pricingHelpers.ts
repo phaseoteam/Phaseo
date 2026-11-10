@@ -958,6 +958,34 @@ export function ruleComparisonMatchSignature(rule: any): string {
 }
 
 /* ---------- section builder (uses fixes) ---------- */
+function hasInferenceGeoCondition(rule: any): boolean {
+    return ruleConditions(rule).some((condition) => condition.path === "inference_geo");
+}
+
+/**
+ * Drops prices that only apply when a request asks to run in one region (Anthropic's
+ * `inference_geo`) when the same meter also has a price without that condition. Those
+ * region prices still bill; they are shown on the region's own provider row (for
+ * example "Anthropic (US)") rather than repeated under the global provider.
+ */
+export function withoutRegionSurchargeRules<T>(rules: T[], nowMs: number = Date.now()): T[] {
+    // Only a global price in effect now replaces the regional one; an expired or
+    // scheduled global price would otherwise hide the only current price.
+    const isCurrent = (rule: any): boolean => {
+        const from = rule?.effective_from ? Date.parse(rule.effective_from) : Number.NaN;
+        const to = rule?.effective_to ? Date.parse(rule.effective_to) : Number.NaN;
+        return !(Number.isFinite(from) && from > nowMs) && !(Number.isFinite(to) && to <= nowMs);
+    };
+    const metersWithGlobalPrice = new Set(
+        rules
+            .filter((rule) => !hasInferenceGeoCondition(rule) && isCurrent(rule))
+            .map((rule: any) => String(rule?.meter ?? "")),
+    );
+    return rules.filter(
+        (rule: any) => !hasInferenceGeoCondition(rule) || !metersWithGlobalPrice.has(String(rule?.meter ?? "")),
+    );
+}
+
 export function buildProviderSections(
     p: ProviderPricing,
     plan: string,
@@ -967,7 +995,7 @@ export function buildProviderSections(
     const nowMs = now.getTime();
     const pricingTimeUtc = formatUtcPricingMinute(now);
     const normalizedPlan = normalizePricingPlan(plan);
-    const rules = getProviderPricingRulesForPlan(p, normalizedPlan);
+    const rules = withoutRegionSurchargeRules(getProviderPricingRulesForPlan(p, normalizedPlan), nowMs);
     const endpointByKey = new Map<string, string>();
     for (const pm of p.provider_models) {
         if (!pm.endpoint) continue;
