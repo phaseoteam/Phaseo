@@ -1528,6 +1528,7 @@
 			"unknown": "Desconocido",
 			"policySource": "Fuente de la política",
 			"pricingSource": "Fuente de precios",
+			"residencySource": "Fuente de residencia de datos",
 			"providerLabel": "Etiqueta del proveedor",
 			"providerMappingIntro": "Este proveedor ofrece esta asignación como:",
 			"viewProviderPage": "Ver la página del proveedor",
@@ -3346,19 +3347,6 @@
 		"noUsageDataForPeriod": "No hay datos de uso para este periodo.",
 		"rangePeriod": "Uso durante el periodo de {range}",
 		"averageTokensPerRequest": "Tokens medios por solicitud"
-	},
-	"apiModelCard": {
-		"gatewayActive": "Gateway: activo",
-		"gatewayInactive": "Gateway: inactivo",
-		"copiedModelId": "ID del modelo copiado",
-		"endpointsCount": "{count, plural, one {# punto de conexión} other {# puntos de conexión}}",
-		"supportedEndpoints": "Puntos de conexión compatibles",
-		"alias": "Alias",
-		"providerAlias": "Alias del proveedor",
-		"copiedProviderAlias": "Alias del proveedor copiado",
-		"providerAliasDescription": "Este es el nombre que el proveedor usa para este modelo. Úsalo al llamar a su API nativa.",
-		"endpoint": "Punto de conexión",
-		"modalityTool": "Uso de herramientas"
 	},
 	"modelTimeline": {
 		"heading": "Cronología del modelo",

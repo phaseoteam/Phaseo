@@ -962,10 +962,10 @@ export default function RequestDetailDialog({
 					const attemptFinishReason =
 						attempt.provider_finish_reason ?? attempt.finish_reason ?? null;
 					const attemptCostNanos = Number(attempt.cost_nanos ?? 0) || 0;
-					const attemptModelParts = getConcreteModelParts({
-						apiModelId: attempt.api_model_id,
-						providerModelSlug: attempt.provider_model_slug,
-					});
+					// Attempts record only the upstream model id, and a fallback attempt can
+					// target another model, so only the attempt that served the request
+					// can be labelled with its Phaseo model id.
+					const attemptPhaseoModelId = finalSuccessAttempt === attempt ? routedModelId : null;
 					const providerRow = {
 						key: `provider-${attempt.attempt_number ?? index}`,
 						label: (
@@ -1020,14 +1020,14 @@ export default function RequestDetailDialog({
 													</Link>
 												) : attemptProviderName}
 											</dd>
-											{attemptModelParts.length > 0 ? (
+											{attemptPhaseoModelId ? (
 												<>
 													<dt className="text-muted-foreground">{s("Model")}</dt>
 													<dd
 														className="min-w-0 truncate text-right font-mono text-[11px]"
-														title={attemptModelParts[0]}
+														title={attemptPhaseoModelId}
 													>
-														{attemptModelParts[0]}
+														{attemptPhaseoModelId}
 													</dd>
 												</>
 											) : null}

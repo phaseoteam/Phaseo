@@ -1528,6 +1528,7 @@
 			"unknown": "غير معروف",
 			"policySource": "مصدر السياسة",
 			"pricingSource": "مصدر الأسعار",
+			"residencySource": "مصدر إقامة البيانات",
 			"providerLabel": "تسمية المزوّد",
 			"providerMappingIntro": "يقدّم هذا المزوّد هذا التعيين بالاسم التالي:",
 			"viewProviderPage": "عرض صفحة المزوّد",
@@ -3346,19 +3347,6 @@
 		"noUsageDataForPeriod": "لا تتوفر بيانات استخدام لهذه الفترة.",
 		"rangePeriod": "الاستخدام خلال فترة {range}",
 		"averageTokensPerRequest": "متوسط الرموز لكل طلب"
-	},
-	"apiModelCard": {
-		"gatewayActive": "Gateway: نشط",
-		"gatewayInactive": "Gateway: غير نشط",
-		"copiedModelId": "تم نسخ معرّف النموذج",
-		"endpointsCount": "{count, plural, zero {لا توجد نقاط نهاية} one {نقطة نهاية واحدة} two {نقطتا نهاية} few {# نقاط نهاية} many {# نقطة نهاية} other {# نقطة نهاية}}",
-		"supportedEndpoints": "نقاط النهاية المدعومة",
-		"alias": "الاسم المستعار",
-		"providerAlias": "الاسم المستعار لدى المزوّد",
-		"copiedProviderAlias": "تم نسخ الاسم المستعار للمزوّد",
-		"providerAliasDescription": "هذا هو الاسم الذي يستخدمه المزوّد لهذا النموذج. استخدمه عند استدعاء واجهة API الأصلية للمزوّد.",
-		"endpoint": "نقطة النهاية",
-		"modalityTool": "استخدام الأدوات"
 	},
 	"modelTimeline": {
 		"heading": "الخط الزمني للنموذج",
