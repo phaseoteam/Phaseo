@@ -164,10 +164,18 @@ begin
     -- 7. Every other debit taken from credits (a captured 'charge' ledger row):
     --    Phaseo Connect months, Slack agent months, and any product that later
     --    charges the wallet directly, at their debit time. Left out are the
-    --    debits counted above: async_job_charge (5.) and realtime_session, whose
-    --    session cost is written to its gateway_requests row (1.). Stepped
-    --    charges are 'adjustment' rows (2.); refunds and chargebacks are not
-    --    usage.
+    --    debits counted elsewhere: async_job_charge (5.) and realtime_session
+    --    (8.). Stepped charges are 'adjustment' rows (2.); refunds and
+    --    chargebacks are not usage.
+    -- 8. Realtime sessions, per session, at the larger of what was debited for
+    --    it since the purchase (its realtime_session ledger rows, by debit
+    --    time: ref_id is the session id, or <session id>:confirmed:<total> for
+    --    a capture during billing review) and its summary gateway_requests row's
+    --    cost when that row is in the window. The summary row is dated when the
+    --    session started, so a session that started before the purchase and was
+    --    charged after it counts through its debits; a capture can also debit
+    --    without a summary row. 1. leaves summary rows out, so a session counts
+    --    once, and the larger amount when its debits and summary differ.
     -- Pending reconciliation: expected_cost_nanos is set or, for rows written
     -- before private.pending_json_cutoff() (the deploy's marker: from then on
     -- every pending row carries the column), the audit's
@@ -178,6 +186,7 @@ begin
     where gr.workspace_id = p_team_id
       and gr.cost_nanos > 0
       and gr.created_at >= v_purchase.event_time
+      and gr.realtime_session_id is null
       and not (gr.billing_request_id is not null and (
         exists (
           select 1 from public.credit_ledger adjustment
@@ -294,6 +303,29 @@ begin
         and debit.amount_nanos < 0
         and debit.ref_type not in ('async_job_charge', 'realtime_session')
         and debit.created_at >= v_purchase.event_time
+    ), 0)::bigint;
+
+    v_usage_nanos := v_usage_nanos + coalesce((
+      select sum(greatest(coalesce(debited.nanos, 0), coalesce(summarized.nanos, 0)))
+      from (
+        select split_part(debit.ref_id, ':confirmed:', 1) as session_id, -sum(debit.amount_nanos) as nanos
+        from public.credit_ledger debit
+        where debit.workspace_id = p_team_id
+          and debit.ref_type = 'realtime_session'
+          and debit.kind = 'charge'
+          and debit.status = 'captured'
+          and debit.amount_nanos < 0
+          and debit.created_at >= v_purchase.event_time
+        group by 1
+      ) debited
+      full join (
+        select gr.realtime_session_id as session_id, sum(greatest(coalesce(gr.cost_nanos, 0), 0)) as nanos
+        from public.gateway_requests gr
+        where gr.workspace_id = p_team_id
+          and gr.realtime_session_id is not null
+          and gr.created_at >= v_purchase.event_time
+        group by 1
+      ) summarized on summarized.session_id = debited.session_id
     ), 0)::bigint;
 
     v_usage_nanos := v_usage_nanos + coalesce((

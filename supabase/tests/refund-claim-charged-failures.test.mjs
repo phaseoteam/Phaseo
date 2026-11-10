@@ -9,6 +9,8 @@
 // a failure after the debit with no cost) counts what they fall short of it
 // (refund_claim_counts_under_recorded_charges). Debits taken from credits directly, such as Phaseo
 // Connect and Slack agent months, count at their debit time (refund_claim_counts_product_debits).
+// Realtime sessions count by when their money moved, through the real realtime settlement
+// (refund_claim_counts_realtime_at_debit_time).
 // Runs the claim on the body shipped by 20261104193047_billing_security_fixes first, then on the
 // real migration. Install @electric-sql/pglite@0.5.8 in a temporary directory and set PGLITE_MODULE
 // to its dist/index.js file URL. Run: node supabase/tests/refund-claim-charged-failures.test.mjs
@@ -36,6 +38,11 @@ const migration = await findMigration('_refund_claim_counts_charged_failures.sql
 const billingIndex = await findMigration('_gateway_requests_billing_request_index.sql');
 const underRecorded = await findMigration('_refund_claim_counts_under_recorded_charges.sql');
 const productDebits = await findMigration('_refund_claim_counts_product_debits.sql');
+const realtimeDebits = await findMigration('_refund_claim_counts_realtime_at_debit_time.sql');
+assert(realtimeDebits.name > productDebits.name, 'the realtime migration runs after the product debit migration');
+assert(realtimeDebits.sql.startsWith("SET LOCAL lock_timeout = '10s';\n"), 'the realtime migration starts with the lock timeout');
+assert(!/\b(alter|lock)\s+table\b|\bcreate\s+(unique\s+)?index\b/i.test(realtimeDebits.sql.replace(/--.*$/gm, '')),
+  'the realtime migration changes functions only');
 assert(productDebits.name > underRecorded.name, 'the product debit migration runs after the shortfall migration');
 assert(productDebits.sql.startsWith("SET LOCAL lock_timeout = '10s';\n"), 'the product debit migration starts with the lock timeout');
 assert(!/\b(alter|lock)\s+table\b|\bcreate\s+(unique\s+)?index\b/i.test(productDebits.sql.replace(/--.*$/gm, '')),
@@ -75,7 +82,8 @@ const functionBody = (sql) => {
   return sql.slice(start, sql.indexOf('$function$', start + 10) + 10);
 };
 const schemaBody = functionBody(normalize(await read('../schemas/public/functions/stripe_claim_self_serve_refund.sql')));
-assert(schemaBody.length > 20 && productDebits.sql.includes(schemaBody), 'the latest migration ships the schema body of stripe_claim_self_serve_refund');
+assert(schemaBody.length > 20 && realtimeDebits.sql.includes(schemaBody), 'the latest migration ships the schema body of stripe_claim_self_serve_refund');
+const productDebitsBody = functionBody(productDebits.sql);
 const underRecordedBody = functionBody(underRecorded.sql);
 // The shortfall migration changes only the one-off charge term (step 3) of 20261110140727's body.
 const withoutOneOffTerm = (body) => body.replace(/^[ \t]*--.*\n/gm, '')
@@ -96,8 +104,38 @@ const PRODUCT_DEBIT_TERM = `    v_usage_nanos := v_usage_nanos + coalesce((
 
 `;
 const withoutComments = (body) => body.replace(/^[ \t]*--.*\n/gm, '');
-assert(schemaBody.includes(PRODUCT_DEBIT_TERM), 'the product debit term is in the body');
-assert.equal(withoutComments(schemaBody).replace(PRODUCT_DEBIT_TERM, ''), withoutComments(underRecordedBody), 'only the product debit term was added');
+assert(productDebitsBody.includes(PRODUCT_DEBIT_TERM), 'the product debit term is in the body');
+assert.equal(withoutComments(productDebitsBody).replace(PRODUCT_DEBIT_TERM, ''), withoutComments(underRecordedBody), 'only the product debit term was added');
+// The realtime migration leaves summary rows out of the request rows term (1.) and adds the realtime
+// term (8.), and changes nothing else.
+const REALTIME_TERM = `    v_usage_nanos := v_usage_nanos + coalesce((
+      select sum(greatest(coalesce(debited.nanos, 0), coalesce(summarized.nanos, 0)))
+      from (
+        select split_part(debit.ref_id, ':confirmed:', 1) as session_id, -sum(debit.amount_nanos) as nanos
+        from public.credit_ledger debit
+        where debit.workspace_id = p_team_id
+          and debit.ref_type = 'realtime_session'
+          and debit.kind = 'charge'
+          and debit.status = 'captured'
+          and debit.amount_nanos < 0
+          and debit.created_at >= v_purchase.event_time
+        group by 1
+      ) debited
+      full join (
+        select gr.realtime_session_id as session_id, sum(greatest(coalesce(gr.cost_nanos, 0), 0)) as nanos
+        from public.gateway_requests gr
+        where gr.workspace_id = p_team_id
+          and gr.realtime_session_id is not null
+          and gr.created_at >= v_purchase.event_time
+        group by 1
+      ) summarized on summarized.session_id = debited.session_id
+    ), 0)::bigint;
+
+`;
+const SUMMARY_EXCLUSION = '\n      and gr.realtime_session_id is null';
+assert(schemaBody.includes(REALTIME_TERM) && schemaBody.includes(SUMMARY_EXCLUSION), 'the realtime term and the summary row exclusion are in the body');
+assert.equal(withoutComments(schemaBody).replace(REALTIME_TERM, '').replace(SUMMARY_EXCLUSION, ''), withoutComments(productDebitsBody),
+  'only the realtime term and the summary row exclusion changed');
 // Every schema function that debits credits with a 'charge' ledger row uses a ref_type the claim
 // has classified: counted by the product debit term, or counted elsewhere and left out of it. A new
 // product that charges the wallet must be classified here (and in the claim if it is counted
@@ -106,7 +144,7 @@ const CLASSIFIED_CHARGE_REF_TYPES = {
   connect_month: 'product debit term (7.)',
   slack_agent_month: 'product debit term (7.)',
   async_job_charge: 'reserved batch and video debits (5.)',
-  realtime_session: 'its gateway_requests row (1.)',
+  realtime_session: 'realtime sessions, at debit time (8.)',
 };
 const functionsDir = new URL('../schemas/public/functions/', import.meta.url);
 for (const file of (await readdir(functionsDir)).filter((name) => name.endsWith('.sql'))) {
@@ -220,6 +258,49 @@ const connectScenario = async (prefix) => {
   await purchase(`${prefix}_second`, usd(10), usd(9), 1);
   await setBalance(usd(19));
 };
+// A realtime session as the gateway opens it: the session, its summary gateway_requests row dated
+// when it started (cost 0 until settlement), and a hold. Settled by the real settlement functions.
+const resetRealtime = () => db.exec('delete from public.gateway_realtime_sessions');
+const openRealtime = async (id, { startedMinutesAgo, held, summary = true }) => {
+  await db.query(`insert into public.gateway_realtime_sessions (session_id, workspace_id, provider, model_id, status, reservation_prefix, started_at)
+    values ($2, $1, 'openai', 'openai/gpt-realtime', 'connected', $3, now() - make_interval(mins => $4::int))`,
+    [ws, id, `rt:${id}:`, startedMinutesAgo]);
+  if (summary) await db.query(`insert into public.gateway_requests (workspace_id, request_id, realtime_session_id, created_at, cost_nanos)
+    select $1, 'realtime:' || session_id, session_id, started_at, 0 from public.gateway_realtime_sessions where session_id = $2`, [ws, id]);
+  await db.query(`insert into public.gateway_wallet_reservations (workspace_id, reservation_id, amount_nanos, status, hold_ref_id)
+    values ($1, $2, $3, 'reserved', $4)`, [ws, `rt:${id}:0001`, held, id]);
+};
+const holdWallet = (balance, reserved) => db.query('update public.wallets set balance_nanos = $2, reserved_nanos = $3 where workspace_id = $1', [ws, balance, reserved]);
+const settleRealtime = (id, nanos) => one('select * from public.gateway_realtime_settle_once($1, $2, $3)', [ws, id, nanos]);
+// Sol's repro: $1 held for a session that started 20 minutes ago; top up $10 ten minutes ago; the
+// session settles at $2; top up $10 more. The wallet holds $19.
+const realtimeAcrossPurchase = async (prefix) => {
+  await reset();
+  await resetRealtime();
+  await openRealtime(`${prefix}_session`, { startedMinutesAgo: 20, held: usd(1) });
+  await purchase(`${prefix}_first`, usd(10), usd(1), 0);
+  await db.query("update public.credit_ledger set event_time = now() - interval '10 minutes' where ref_id = $1", [`${prefix}_first`]);
+  await holdWallet(usd(11), usd(1));
+  const settled = await settleRealtime(`${prefix}_session`, usd(2));
+  assert.equal(settled.applied, true, JSON.stringify(settled));
+  await purchase(`${prefix}_second`, usd(10), usd(9), 0);
+  await setBalance(usd(19));
+  return claim(`${prefix}_first`);
+};
+// The claim at a prior balance of $6 less 1 nano and of exactly $6, for a purchase an hour ago and a
+// realtime session `run` opens and settles after it: ['lot_used', 'ok'] is exactly $6 of usage.
+const realtimeUsageAtSix = async (prefix, run) => {
+  const once = async (suffix, prior) => {
+    await reset();
+    await resetRealtime();
+    await purchase(`${prefix}_${suffix}_first`, usd(10), prior, 1);
+    await run(`${prefix}_${suffix}`);
+    await setBalance(prior + usd(10));
+    const result = await claim(`${prefix}_${suffix}_first`);
+    return result.ok ? 'ok' : result.reason;
+  };
+  return [await once('below', usd(6) - 1), await once('at', usd(6))];
+};
 const underRecordedShapes = {
   // An old Worker: debited $6, then a failure row with no cost, billing_status 'recorded'.
   old_worker: (billingId) => auditRow(billingId, { cost: null }),
@@ -246,6 +327,15 @@ try {
   // then this PR's migrations in order.
   await db.exec(`alter table public.gateway_requests add column billing_request_id text, add column request_id text,
     add column detail_metadata jsonb;`);
+  await db.exec(`alter table public.gateway_requests add column realtime_session_id text,
+    add column native_response_id text, add column status_code integer, add column error_code text,
+    add column error_message text, add column generation_ms integer, add column usage jsonb,
+    add column currency text, add column pricing_lines jsonb`);
+  await db.exec('create table public.keys (id uuid primary key)');
+  const realtimeTable = normalize(await read('../schemas/public/tables/gateway_realtime_sessions.sql'));
+  await db.exec(realtimeTable.slice(0, realtimeTable.indexOf('\n);') + 4));
+  await db.exec(await read('../schemas/public/functions/gateway_realtime_settle_once.sql'));
+  await db.exec(await read('../schemas/public/functions/gateway_realtime_mark_billing_unresolved.sql'));
   await db.exec('create schema if not exists private; grant usage on schema private to service_role;');
   await db.exec(cutoffs.sql);
   // The marker starts NULL (no cutoff: the JSON flag is always read); a later migration sets it
@@ -305,6 +395,12 @@ try {
   assert.equal((await claim('pre_connect_first')).ok, true, 'before the fix a Connect debit is not usage of the purchase');
   await db.exec(productDebits.sql);
   await db.exec(productDebits.sql);
+
+  // ---------- Before the realtime term (20261110170735's body) ----------
+  // Sol's repro: a session started before the purchase and charged $2 after it counted nothing.
+  assert.equal((await realtimeAcrossPurchase('pre_rt')).ok, true, 'before the fix a realtime debit after the purchase is not usage');
+  await db.exec(realtimeDebits.sql);
+  await db.exec(realtimeDebits.sql);
 
   // ---------- After the fix ----------
   // $5 spent through charged cancellations uses the first purchase.
@@ -652,15 +748,43 @@ try {
   // Counted once, by its debit: a $6 Slack agent month is exactly $6 of usage.
   assert.deepEqual(await shapeUsageAtSix('slack', () => ledgerDebit('slack_agent_month', usd(6), 60)), ['lot_used', 'ok'],
     'a Slack agent month counts its debit');
-  // A realtime session is counted by its gateway_requests row (its cost is written there), not again
-  // by its realtime_session debit: $6, not $12.
-  assert.deepEqual(await shapeUsageAtSix('realtime', async () => {
-    await ledgerDebit('realtime_session', usd(6), 60);
-    await db.query(`insert into public.gateway_requests (workspace_id, success, cost_nanos, created_at, request_id)
-      values ($1, true, $2, now() - interval '1 hour', 'realtime_req')`, [ws, usd(6)]);
-  }), ['lot_used', 'ok'], 'a realtime session counts once');
+  // ---------- Realtime sessions, through the real settlement ----------
+  // Sol's repro: started before the purchase, charged $2 after it: the first top-up is used.
+  assert.equal((await realtimeAcrossPurchase('rt_cross')).reason, 'lot_used', 'a realtime debit after the purchase is usage of it');
+  assert.equal(await balance(), usd(19), 'nothing is refunded');
+  // A session inside the window, settled at $6: its debit and its summary row count once, $6.
+  assert.deepEqual(await realtimeUsageAtSix('rt_inside', async (id) => {
+    await openRealtime(id, { startedMinutesAgo: 30, held: usd(1) });
+    await holdWallet(usd(100), usd(1));
+    assert.equal((await settleRealtime(id, usd(6))).applied, true);
+  }), ['lot_used', 'ok'], 'a realtime session inside the window counts once');
+  // A capture during billing review with no summary row: counted from the ledger, $6.
+  assert.deepEqual(await realtimeUsageAtSix('rt_capture', async (id) => {
+    await openRealtime(id, { startedMinutesAgo: 30, held: usd(6), summary: false });
+    await holdWallet(usd(100), usd(6));
+    const captured = await one('select captured_nanos from public.gateway_realtime_mark_billing_unresolved($1, $2, $3, $4, $5)',
+      [ws, id, '{}', 'missing-summary', usd(6)]);
+    assert.equal(Number(captured.captured_nanos), usd(6));
+  }), ['lot_used', 'ok'], 'a realtime capture without a summary row counts its debit');
+  // Under-collected: $1 held, no free balance, so the settlement debits $2 of its $6 (overdraft cap)
+  // and the summary row records $6. The larger, $6, counts.
+  assert.deepEqual(await realtimeUsageAtSix('rt_short', async (id) => {
+    await openRealtime(id, { startedMinutesAgo: 30, held: usd(1) });
+    await holdWallet(usd(1), usd(1));
+    const settled = await settleRealtime(id, usd(6));
+    assert.equal(Number(settled.uncollected_nanos), usd(4));
+  }), ['lot_used', 'ok'], 'a realtime session counts the larger of its debits and its summary cost');
+  // A session started, settled and debited before the purchase does not use it.
+  await reset();
+  await resetRealtime();
+  await openRealtime('rt_before', { startedMinutesAgo: 120, held: usd(1) });
+  await holdWallet(usd(100), usd(1));
+  assert.equal((await settleRealtime('rt_before', usd(6))).applied, true);
+  await purchase('rt_before_first', usd(10), 0, 0);
+  await setBalance(usd(10));
+  assert.equal((await claim('rt_before_first')).ok, true, 'a realtime session before the purchase does not use it');
 
-  console.log(JSON.stringify({ passed: true, migration: productDebits.name }));
+  console.log(JSON.stringify({ passed: true, migration: realtimeDebits.name }));
 } finally {
   await db.close();
 }
