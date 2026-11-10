@@ -184,6 +184,8 @@ export async function recordUsageAndChargeOnce(args: {
 		: { kind: "one_off", costNanos });
 	if (!lastError) {
 		meta.__usageChargeRecorded = true;
+		// The amount the wallet confirmed: a failure audit after this still records it (audit.ts).
+		meta.__chargedNanos = Math.round(costNanos);
 		return;
 	}
 

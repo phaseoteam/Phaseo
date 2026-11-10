@@ -14,6 +14,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 // So this file asserts no counts after a reseed for failure rows.
 const runtime = vi.hoisted(() => ({ bindings: null as Record<string, unknown> | null, background: [] as Promise<unknown>[] }));
 const chargeRpcMock = vi.hoisted(() => vi.fn(async (_kind: string, _args: any) => ({ applied: true })));
+const auditRows = vi.hoisted(() => [] as Array<Record<string, unknown>>);
+// Writes the audit row through its writer, then reports it delivered.
+const delivered = vi.hoisted(() => async (args: any) => {
+	await args?.writeSupabase?.();
+	return [{ sink: "supabase", delivered: true }];
+});
+const telemetryMock = vi.hoisted(() => vi.fn(delivered));
 
 vi.mock("cloudflare:workers", () => ({
 	DurableObject: class {
@@ -33,7 +40,13 @@ vi.mock("../pricing/persist", () => ({
 }));
 // The audit row is written (the Supabase sink delivers it); nothing else is exported.
 vi.mock("@observability/gateway-telemetry", () => ({
-	runGatewayTelemetryPipelines: async () => [{ sink: "supabase", delivered: true }],
+	runGatewayTelemetryPipelines: (args: any) => telemetryMock(args),
+}));
+// The rows the audit writes (the request row write itself is covered elsewhere).
+vi.mock("../audit", async (importOriginal) => ({
+	...(await importOriginal<typeof import("../audit")>()),
+	auditFailure: async (args: Record<string, unknown>) => { auditRows.push({ kind: "failure", ...args }); },
+	auditSuccess: async (args: Record<string, unknown>) => { auditRows.push({ kind: "success", ...args }); },
 }));
 vi.mock("@observability/otlp-export", () => ({ enqueueGatewayOtlpExport: vi.fn(async () => undefined) }));
 vi.mock("@observability/events", () => ({ emitGatewayRequestEvent: vi.fn(async () => undefined) }));
@@ -171,6 +184,8 @@ describe("a stream charged at drain checkpoints, with main's spend-limit coordin
 		vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout"] });
 		rows.length = 0;
 		chargeRpcMock.mockReset().mockResolvedValue({ applied: true });
+		telemetryMock.mockReset().mockImplementation(delivered);
+		auditRows.length = 0;
 		const sqlite = new DatabaseSync(":memory:");
 		coordinator = new SeededCoordinator({
 			blockConcurrencyWhile: (fn: () => Promise<unknown>) => fn(),
@@ -261,5 +276,39 @@ describe("a stream charged at drain checkpoints, with main's spend-limit coordin
 		expect(sent.map((entry) => [entry.billingRequestId, entry.costNanos, entry.requests])).toEqual([["bill_cancel", 1_000_000, 0]]);
 		expect(await daily()).toMatchObject({ costUsedNanos: 1_000_000, requestsUsed: 0 });
 		// No count after a reseed here: main's seed leaves out unsuccessful rows; #3547 covers it.
+	});
+
+	it("counts a one-off charge once, as 0 requests, when the stream fails after the debit", async () => {
+		const decision = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: "req_after" });
+		if (decision.outcome !== "allowed") throw new Error("expected admission");
+		const c: any = {
+			requestId: "req_after", billingRequestId: "bill_after", workspaceId: WORKSPACE, keyId: KEY,
+			endpoint: "chat.completions", protocol: "openai.chat.completions", capability: "text.generate",
+			model: "openai/gpt-5-mini", requestedModel: "openai/gpt-5-mini", stream: true,
+			body: { model: "openai/gpt-5-mini", stream: true, messages: [{ role: "user", content: "x".repeat(500) }] }, rawBody: {},
+			meta: { requestId: "req_after", apiKeyId: KEY, authMethod: "api_key" }, providers: [], pricing: {},
+			gating: { key: { ok: true }, keyLimit: { ok: true }, credit: { ok: true } },
+			spendAdmission: decision.admission,
+		};
+		// The success audit fails after the wallet debit; the finalization error audit follows.
+		telemetryMock.mockRejectedValueOnce(new Error("telemetry unavailable"));
+		const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+		const { upstream, reader } = await start(c);
+		upstream.text("Hello");
+		upstream.finish({ prompt_tokens: 120, completion_tokens: 250, total_tokens: 370 });
+		while (!(await reader.read()).done) { /* the client reads to the end */ }
+		await settle();
+		await flushSpendRecordsForTests();
+		await settle();
+		error.mockRestore();
+		expect(chargeRpcMock.mock.calls.map(([kind, args]) => [kind, args.cost_nanos])).toEqual([["one_off", FINAL_TOTAL]]);
+		// The failure audit wrote the row with the confirmed charge ...
+		expect(auditRows.map((row) => [row.kind, row.errorCode ?? null, row.costNanos ?? null])).toEqual([
+			["failure", "gateway:stream_finalization_failed", FINAL_TOTAL],
+		]);
+		// ... and the coordinator got one record of it, as 0 successful requests.
+		const sent = recorded.flat() as Array<{ billingRequestId: string; costNanos: number; requests: number }>;
+		expect(sent.map((entry) => [entry.billingRequestId, entry.costNanos, entry.requests])).toEqual([["bill_after", FINAL_TOTAL, 0]]);
+		expect(await daily()).toMatchObject({ costUsedNanos: FINAL_TOTAL, requestsUsed: 0 });
 	});
 });

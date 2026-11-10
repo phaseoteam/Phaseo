@@ -176,4 +176,44 @@ describe("failed requests that were still charged", () => {
 			expect(budget.recorded.get("bill_refund_failed")).toBe(300);
 		});
 	});
+
+	describe("a request that fails after its one-off charge went through", () => {
+		// recordUsageAndChargeOnce succeeded ($6 debited), then something failed before the success
+		// audit: the failure row records the $6, and spend limits count it once, as 0 requests.
+		async function failedAfterCharge(id: string, errorCode: string, billingStatus: string, rowLands = true) {
+			const ctx = context(id, admit(id), { __usageChargeRecorded: true, __chargedNanos: 600, __intendedChargeNanos: 600 });
+			if (!rowLands) auditFailureMock.mockRejectedValueOnce(new Error("insert failed"));
+			const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+			const warn = vi.spyOn(console, "warn").mockImplementation(() => undefined);
+			await handleFailureAudit(
+				ctx,
+				{ provider: "openai", bill: { cost_cents: 0, currency: "USD", usage: {}, finish_reason: "stop" } } as any,
+				500, "gateway", errorCode, "Accounting finalization failed.",
+				{ billing_status: billingStatus },
+			);
+			await Promise.all(background.splice(0));
+			error.mockRestore();
+			warn.mockRestore();
+			return auditFailureMock.mock.calls.at(-1)![0];
+		}
+
+		it.each([
+			["a stream, audited as recorded", "stream_finalization_failed", "recorded"],
+			["a buffered response, pending reconciliation", "nonstream_finalization_failed", "pending_reconciliation"],
+			["streamed speech, pending reconciliation", "speech_finalization_failed", "pending_reconciliation"],
+		])("keeps the charge of %s", async (_label, errorCode, billingStatus) => {
+			const id = `charged_${errorCode}`;
+			const row = await failedAfterCharge(id, errorCode, billingStatus);
+			expect(row.costNanos).toBe(600);
+			expect(budget.recorded.get(`bill_${id}`)).toBe(600);
+			expect(budget.settledAs).toEqual(["charged_failure"]);
+			expect(budget.open.size).toBe(0);
+		});
+
+		it("still counts the charge when the failure row does not land", async () => {
+			await failedAfterCharge("charged_no_row", "stream_finalization_failed", "recorded", false);
+			expect(budget.recorded.get("bill_charged_no_row")).toBe(600);
+			expect(budget.settledAs).toEqual(["charged_failure"]);
+		});
+	});
 });

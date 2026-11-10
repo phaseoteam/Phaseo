@@ -261,13 +261,13 @@ export function pendingChargeFields(
 	const meta = ctx.meta as Record<string, unknown>;
 	const intended = nanosOrNull(meta.__intendedChargeNanos);
 	const recorded = meta.__usageChargeRecorded === true;
+	// The charge the wallet confirmed, when it went through; the intended bill for older contexts.
+	const confirmed = recorded ? nanosOrNull(meta.__chargedNanos) ?? intended ?? 0 : null;
 	if (meta.__chargedInSteps === true) {
-		const charged = recorded
-			? intended ?? 0
-			: nanosOrNull(ctx.confirmedChargeNanos) ?? nanosOrNull(meta.__checkpointTotalNanos) ?? 0;
+		const charged = confirmed ?? nanosOrNull(ctx.confirmedChargeNanos) ?? nanosOrNull(meta.__checkpointTotalNanos) ?? 0;
 		return { expectedCostNanos: intended ?? charged, costNanos: charged };
 	}
-	return { expectedCostNanos: intended ?? 0, costNanos: recorded ? intended ?? 0 : 0 };
+	return { expectedCostNanos: intended ?? 0, costNanos: confirmed ?? 0 };
 }
 
 function isPendingReconciliation(errorDetails: unknown): boolean {
@@ -310,8 +310,14 @@ export async function handleFailureAudit(
 	// A delivered request whose charge did not go through: the row owns what the database holds
 	// (ctx.confirmedChargeNanos) and the bill it meant to charge (expected_cost_nanos).
 	const pending = pendingChargeFields(ctx, isPendingReconciliation(errorDetails));
-	const billedNanos = Math.max(0, Math.round(Number(billing?.costNanos ?? pending.costNanos) || 0));
-	const writeCost = billing != null || pending.costNanos != null;
+	// A charge the wallet confirmed before this failure (the request failed after its debit): the
+	// row records it and spend limits count it, whatever the billing status says.
+	const meta = ctx.meta as Record<string, unknown>;
+	const confirmedCharge = meta.__usageChargeRecorded === true && typeof meta.__chargedNanos === "number" && meta.__chargedNanos >= 0
+		? meta.__chargedNanos
+		: null;
+	const billedNanos = Math.max(0, Math.round(Number(billing?.costNanos ?? pending.costNanos ?? confirmedCharge) || 0));
+	const writeCost = billing != null || pending.costNanos != null || confirmedCharge != null;
 	// Spend limits count the bill even when the wallet did not take it.
 	const spendNanos = Math.max(billedNanos, pending.expectedCostNanos ?? 0);
 	// A stream charged at drain checkpoints already recorded its charge: settle it to the final
@@ -508,7 +514,7 @@ export async function handleFailureAudit(
         // A stream charged at drain checkpoints, or a one-off charge pending reconciliation, holds a
         // debit whether or not this row was written: record it rather than release the admission
         // (the coordinator counts it until its pending entry expires if no row ever lands).
-        const settleAsFinal = chargedInSteps || pending.expectedCostNanos != null;
+        const settleAsFinal = chargedInSteps || pending.expectedCostNanos != null || (confirmedCharge ?? 0) > 0;
         // One record per billing id, at the final total, with 0 successful requests.
         settleChargedFailureSpend({
             admission: ctx.spendAdmission,
