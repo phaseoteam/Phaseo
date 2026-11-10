@@ -57,6 +57,28 @@ describe("MiniMax H3-Image through the non-text surface", () => {
 		expect(sent).toMatchObject({ area: "2K", images: [{ image_url: "https://example.com/a.jpg" }] });
 	});
 
+	it("reports image output tokens as output_tokens in the public usage", async () => {
+		// The usage MiniMax returned for a live 1K request on 2026-11-10.
+		const mock = installFetchMock([{
+			match: (url) => url.endsWith("/v1/images/generations"),
+			response: jsonResponse({
+				data: [{ url: "https://cdn.example.com/fox.jpeg" }],
+				usage: {
+					generated_images: 1, total_tokens: 6388, input_tokens: 2284, output_tokens: 4104,
+					input_tokens_details: { text_tokens: 2284, image_tokens: 0 },
+					output_tokens_details: { image_tokens: 4104 },
+				},
+			}),
+		}]);
+		const result = await run("images.generations", { model: "minimax/minimax-h3-image", prompt: "A fox" });
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		if (result.kind !== "completed") return;
+		const encoded = encodeNonTextResponse("images.generations", result.ir as any, "req_h3_surface");
+		expect(encoded.usage).toMatchObject({ input_tokens: 2284, output_tokens: 4104, total_tokens: 6388 });
+	});
+
 	it("keeps per-image failures from a partial result in the public response", async () => {
 		const mock = installFetchMock([{
 			match: (url) => url.endsWith("/v1/images/generations"),
