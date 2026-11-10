@@ -15,6 +15,9 @@ export type ConnectClientPorts = {
 	/** The signed-in Phaseo gateway key the relay checks. */
 	gatewayKey: () => Promise<string>;
 	devices: () => PhoneDeviceRecord[];
+	/** Devices the relay must forget: sent on every connect until it confirms, then passed to onRemovalConfirmed. */
+	pendingRemovals?: () => readonly string[];
+	onRemovalConfirmed?: (deviceId: string) => void;
 	pairing: PhonePairing;
 	hub: PhoneHub;
 	onState?: (state: ConnectClientState) => void;
@@ -22,6 +25,8 @@ export type ConnectClientPorts = {
 	backoff?: (attempt: number) => number;
 };
 
+/** A remove_device request's id, so the relay's reply says which removal it confirms. */
+const removalPrefix = "remove:";
 const defaultBackoff = (attempt: number) => Math.min(60_000, 1_000 * 2 ** attempt) * (0.5 + Math.random() / 2);
 /** A connection that lasts this long resets the backoff, so a relay that drops us at once isn't retried every second. */
 const stableMs = 30_000;
@@ -71,8 +76,9 @@ export class ConnectClient {
 
 	/** Lets a phone sign in to the relay; sent again on every reconnect. */
 	registerDevice(deviceId: string, relayTokenHash: string) { this.write({ type: "register_device", deviceId, relayTokenHash }); }
+	/** Revokes a phone (or a pairing code) on the relay. While offline it waits in pendingRemovals for the next connect. */
 	removeDevice(deviceId: string) {
-		this.write({ type: "remove_device", deviceId });
+		this.write({ id: `${removalPrefix}${deviceId}`, type: "remove_device", deviceId });
 		this.channels.delete(deviceId); this.sessions.get(deviceId)?.close();
 	}
 	/** Attention for paired phones without a live connection; the relay holds it for them. */
@@ -95,6 +101,8 @@ export class ConnectClient {
 		let openedAt = 0, refusal: ConnectRefusal | undefined;
 		socket.on("open", () => {
 			openedAt = Date.now();
+			// Removals first: a phone removed while this computer was offline loses relay access before anything else is sent.
+			for (const deviceId of this.ports.pendingRemovals?.() ?? []) this.write({ id: `${removalPrefix}${deviceId}`, type: "remove_device", deviceId });
 			for (const device of this.ports.devices()) this.registerDevice(device.id, device.relayTokenHash);
 			for (const code of this.ports.pairing.relayCodes()) this.registerDevice(code.deviceId, code.relayTokenHash);
 			this.setState({ status: "connected" });
@@ -105,6 +113,7 @@ export class ConnectClient {
 			if (!frame) return;
 			if ("ciphertext" in frame) { this.receive(frame); return; }
 			if ("type" in frame && frame.type === "device_offline") this.sessions.get(frame.deviceId)?.close();
+			if ("ok" in frame && frame.ok && typeof frame.id === "string" && frame.id.startsWith(removalPrefix)) this.ports.onRemovalConfirmed?.(frame.id.slice(removalPrefix.length));
 		});
 		// A refused sign-in: the status says most, and the body's { error } tells a switched-off workspace from another workspace's room.
 		socket.on("unexpected-response", (_request, response) => {

@@ -106,17 +106,19 @@ function ChatView({ client, desktopId, chatId, desktopName }: { client: DesktopC
     icon: GitPullRequest,
     onPress: () => void Linking.openURL(pr.url),
   }));
+  // Git acts in the chat's own checkout: a worktree chat is listed under its parent project but works in the worktree.
+  const workProjectId = chat?.workProjectId ?? chat?.projectId;
   // From protocol 6 the Git menu holds the linked pull requests too, so the header keeps three buttons.
-  const gitMenu = readsGit(connection) && chat?.projectId ? (
+  const gitMenu = readsGit(connection) && workProjectId ? (
     <IconButton
       icon={GitBranch}
       label="Git"
       onPress={() => showActions({
         title: "Git",
         actions: [
-          { key: "git", label: "Commit, push and branches", icon: GitBranch, onPress: () => router.push(desktopGitHref(desktopId, chat.projectId!, chatId, chat.project)) },
+          { key: "git", label: "Commit, push and branches", icon: GitBranch, onPress: () => router.push(desktopGitHref(desktopId, workProjectId, chatId, chat?.project)) },
           ...linkedActions,
-          { key: "all", label: "All pull requests", icon: List, onPress: () => router.push(desktopPullRequestsHref(desktopId, chat.projectId, chat.project)) },
+          { key: "all", label: "All pull requests", icon: List, onPress: () => router.push(desktopPullRequestsHref(desktopId, workProjectId, chat?.project)) },
         ],
       })}
     />

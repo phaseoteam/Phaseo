@@ -44,11 +44,15 @@ export type PhoneChatMode = "chat" | "code" | "plan";
 /** A chat as the phone's list shows it. needsYou is set while it waits on the person (an approval, a question, a failure). */
 export type PhoneChat = {
 	id: string; title: string; mode: PhoneChatMode; status: PhoneChatStatus; updatedAt: string; unread: boolean; needsYou: boolean; /** Why it needs the person, in words. */ attention?: string; projectId?: string; project?: string;
+	/** A worktree chat's own project, where Git, files and terminals act; projectId is the project it's listed under. */ workProjectId?: string;
 	/** The model's id on the computer. */ model?: string; /** The worktree branch it works on. */ branch?: string; /** Settled on the computer: done with, kept at the foot of the list. */ settled?: true;
 	/** From protocol 3. */ pinned?: true; /** Hidden until then, unless it needs the person sooner. */ snoozedUntil?: string; /** Only in the archived list, or in the update that archived it. */ archived?: true;
 };
 export type PhoneApproval = { id: string; title: string; description: string; /** A proposed plan: its Markdown is the description. */ plan?: true };
-export type PhoneQuestionOption = { label: string; description?: string };
+/** `value` is what answer_question sends for it, when it differs from the label (MCP choices, yes/no questions). */
+export type PhoneQuestionOption = { label: string; value?: string; description?: string };
+/** What a phone sends when an option is chosen. */
+export const phoneOptionValue = (option: PhoneQuestionOption) => option.value ?? option.label;
 export type PhoneQuestion = { id: string; header: string; question: string; multiSelect?: true; isOther?: true; isSecret?: true; options?: PhoneQuestionOption[] };
 /** One set of questions; answer_question names it by id and answers each question by its own id. */
 export type PhoneQuestionRequest = { id: string; questions: PhoneQuestion[] };

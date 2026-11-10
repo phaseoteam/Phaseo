@@ -53,13 +53,15 @@ describe("Phaseo Connect client", () => {
 		const states: ConnectClientState[] = [], watchers: { status: string; resolve: () => void }[] = [];
 		const onState = (state: ConnectClientState) => { states.push(state); for (const watcher of watchers.filter(value => value.status === state.status)) { watchers.splice(watchers.indexOf(watcher), 1); watcher.resolve(); } };
 		const reaches = (status: ConnectClientState["status"]) => new Promise<void>(resolve => watchers.push({ status, resolve }));
-		const client = new ConnectClient({ relayUrl: relay.url, desktopId: "desk-1", desktopName: () => "Test PC", privateKey: desktop.privateKey, gatewayKey: async () => "phaseo-gateway-key", devices: () => store.value.devices, pairing, hub, onState, backoff: () => 0 });
+		const removals: string[] = [];
+		const client = new ConnectClient({ relayUrl: relay.url, desktopId: "desk-1", desktopName: () => "Test PC", privateKey: desktop.privateKey, gatewayKey: async () => "phaseo-gateway-key", devices: () => store.value.devices, pairing, hub, onState, backoff: () => 0,
+			pendingRemovals: () => removals, onRemovalConfirmed: id => { const at = removals.indexOf(id); if (at >= 0) removals.splice(at, 1); } });
 		// As the phone service wires them.
 		hub.onAttention = (event, connected) => client.notifyOffline(event, connected);
 		pairing.onCodeExpired = id => client.removeDevice(id);
 		cleanup.push(() => client.stop());
 		const phoneChannel = new EnvelopeChannel(sharedKey(phone.privateKey, desktop.publicKey), paired.device.id, relayDesktopAddress);
-		return { relay, app, client, states, reaches, pairing, hub, paired, desktop, phone, phoneChannel };
+		return { relay, app, client, states, reaches, pairing, hub, paired, desktop, phone, phoneChannel, removals };
 	}
 
 	it("signs in with the gateway key, registers phones, and answers a phone's frames end to end", async () => {
@@ -147,6 +149,18 @@ describe("Phaseo Connect client", () => {
 		const answer = JSON.parse(channel.open(await relay.next(0, frame => isEnvelope(frame)) as unknown as Envelope));
 		expect(answer).toMatchObject({ id: "p", type: "pair", ok: true, result: { desktopId: "desk-1", desktopName: "Test PC" } });
 		expect(await relay.next(0, frame => frame.type === "register_device" && frame.deviceId === answer.result.deviceId)).toMatchObject({ relayTokenHash: tokenHash(answer.result.relayToken) });
-		expect(await relay.next(0, frame => frame.type === "remove_device")).toEqual({ type: "remove_device", deviceId: relaySignIn.deviceId });
+		expect(await relay.next(0, frame => frame.type === "remove_device")).toEqual({ id: `remove:${relaySignIn.deviceId}`, type: "remove_device", deviceId: relaySignIn.deviceId });
+	});
+
+	it("sends a removal made while offline on the next connect, before registering, and forgets it once the relay confirms", async () => {
+		const { relay, client, removals } = await setup();
+		removals.push("phone-removed-offline");
+		client.start();
+		const connection = await relay.connection(0);
+		const first = await relay.next(0, frame => frame.type === "remove_device" || frame.type === "register_device");
+		expect(first).toEqual({ id: "remove:phone-removed-offline", type: "remove_device", deviceId: "phone-removed-offline" });
+		expect(removals).toEqual(["phone-removed-offline"]);
+		connection.socket.send(JSON.stringify({ id: "remove:phone-removed-offline", ok: true }));
+		await expect.poll(() => removals).toEqual([]);
 	});
 });

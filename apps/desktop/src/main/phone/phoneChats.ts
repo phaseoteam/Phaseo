@@ -1,4 +1,5 @@
 import type { AttentionKind, PhoneActivity, PhoneChat, PhoneChatDetail, PhoneEntry, PhoneMessage, PhoneProject, PhoneTurnChanges } from "@phaseo/phone-protocol";
+import { optionValue, questionOptions } from "../../shared/agentQuestions";
 import type { TurnFileChange } from "../../shared/gitDiff";
 import { isFactoryWorktree } from "../../shared/factory/projects";
 import { isProjectArchived } from "../../shared/projectShelf";
@@ -45,7 +46,7 @@ export function phoneChat(task: TaskOverview, projects: readonly Project[], now 
 	const needsYou = Boolean(task.attentionReason) && task.attentionReason !== "Task completed" && !["snoozed", "settled"].includes(sidebarSection(task, now));
 	return {
 		id: task.id, title: task.title, mode: task.mode, status: task.status, updatedAt: task.updatedAt, unread: isUnread(task), needsYou,
-		...needsYou ? { attention: task.attentionReason } : {}, ...project ? { projectId: project.id, project: project.name } : {},
+		...needsYou ? { attention: task.attentionReason } : {}, ...project ? { projectId: project.id, project: project.name } : {}, ...own && own !== project ? { workProjectId: own.id } : {},
 		...task.model ? { model: task.model } : {}, ...own?.worktree ? { branch: own.worktree.branch } : {}, ...isSettled(task) ? { settled: true as const } : {},
 		...task.pinned ? { pinned: true as const } : {}, ...isSnoozed(task, now) ? { snoozedUntil: task.snoozedUntil } : {}, ...task.archived ? { archived: true as const } : {},
 	};
@@ -79,7 +80,7 @@ export function phoneDetail(task: Task, overview: TaskOverview, projects: readon
 		approvals: (task.approvals ?? []).map(approval => ({ id: approval.id, title: approval.method, description: cut(approval.description, requestChars).text, ...approval.kind === "plan" ? { plan: true as const } : {} })),
 		questions: (task.questions ?? []).map(request => ({ id: request.id, questions: request.questions.map(question => ({
 			id: question.id, header: question.header, question: question.question, ...question.multiSelect ? { multiSelect: true as const } : {}, ...question.isOther ? { isOther: true as const } : {}, ...question.isSecret ? { isSecret: true as const } : {},
-			...question.options?.length ? { options: question.options.map(option => ({ label: option.label, ...option.description ? { description: option.description } : {} })) } : {},
+			...questionOptions(question).length ? { options: questionOptions(question).map(option => ({ label: option.label, ...optionValue(option) !== option.label ? { value: optionValue(option) } : {}, ...option.description ? { description: option.description } : {} })) } : {},
 		})) })),
 	};
 }

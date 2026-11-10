@@ -13,8 +13,11 @@ const readAccess = (value: unknown): PhoneAccess => {
 /** The capabilities a phone is told it has, in the protocol's order. */
 export const capabilitiesOf = (access: PhoneAccess): PhoneCapability[] => phoneCapabilities.filter(capability => access[capability]);
 /** Settings → Phone as kept on disk. Tokens are kept only as hashes; the identity key is in the credential vault. */
-export type PhoneSettings = { enabled: boolean; port: number; addresses: Record<PhoneAddressKind, boolean>; desktopId: string; tailscaleServe: boolean; connect: boolean; devices: PhoneDeviceRecord[] };
-const defaults = (): PhoneSettings => ({ enabled: false, port: defaultPhonePort, addresses: { lan: false, "tailscale-ip": true, "tailscale-https": true }, desktopId: randomUUID(), tailscaleServe: false, connect: false, devices: [] });
+export type PhoneSettings = { enabled: boolean; port: number; addresses: Record<PhoneAddressKind, boolean>; desktopId: string; tailscaleServe: boolean; connect: boolean; devices: PhoneDeviceRecord[];
+	/** Phones and pairing codes removed while the relay couldn't be told, sent again until it confirms (see ConnectClient). */
+	relayRemovals?: string[];
+};
+const defaults = (): PhoneSettings => ({ enabled: false, port: defaultPhonePort, addresses: { lan: false, "tailscale-ip": true, "tailscale-https": true }, desktopId: randomUUID(), tailscaleServe: false, connect: false, devices: [], relayRemovals: [] });
 const text = (value: unknown, max = 200): value is string => typeof value === "string" && value.length > 0 && value.length <= max;
 
 /** phone.json in the workspace folder, written whole on each change. A damaged file starts over: off, with no phones. */
@@ -32,6 +35,7 @@ export class PhoneSettingsFile {
 				addresses: { lan: addresses.lan === true, "tailscale-ip": addresses["tailscale-ip"] !== false, "tailscale-https": addresses["tailscale-https"] !== false },
 				desktopId: text(stored.desktopId, 100) ? stored.desktopId : fallback.desktopId, tailscaleServe: stored.tailscaleServe === true, connect: stored.connect === true,
 				devices: (Array.isArray(stored.devices) ? stored.devices : []).filter(device => device && text(device.id) && text(device.name) && text(device.publicKey) && text(device.relayTokenHash) && text(device.pairedAt)).map(device => ({ ...device, access: readAccess(device.access) })),
+				relayRemovals: (Array.isArray(stored.relayRemovals) ? stored.relayRemovals : []).filter(id => text(id, 100)).slice(-100),
 			};
 		} catch { this.value = fallback; }
 	}

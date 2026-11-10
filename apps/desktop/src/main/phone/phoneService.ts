@@ -58,8 +58,8 @@ export class PhoneService {
 		this.hub = new PhoneHub(ports.host);
 		this.server = new PhoneServer({ hub: this.hub, pairing: this.pairing, desktopId: () => this.store.value.desktopId, desktopName: ports.host.desktopName, identity: () => this.loadIdentity() });
 		this.pairing.onPaired = device => { this.connect?.registerDevice(device.id, device.relayTokenHash); this.emit(); };
-		this.pairing.onRemoved = deviceId => { this.hub.closeDevice(deviceId); this.connect?.removeDevice(deviceId); this.emit(); };
-		this.pairing.onCodeExpired = relayDeviceId => this.connect?.removeDevice(relayDeviceId);
+		this.pairing.onRemoved = deviceId => { this.hub.closeDevice(deviceId); this.revokeOnRelay(deviceId); this.emit(); };
+		this.pairing.onCodeExpired = relayDeviceId => this.revokeOnRelay(relayDeviceId);
 		// Read on every request, so turning a switch off refuses the phone's next one.
 		this.hub.capabilitiesOf = deviceId => { const device = this.pairing.device(deviceId); return device ? capabilitiesOf(device.access) : []; };
 		this.pairing.onAccessChanged = deviceId => { this.hub.accessChanged(deviceId); this.emit(); };
@@ -228,6 +228,8 @@ export class PhoneService {
 		const client: ConnectClient = this.connect = new ConnectClient({
 			relayUrl: this.relayUrl(), desktopId: settings.desktopId, desktopName: this.ports.host.desktopName, privateKey: identity.privateKey,
 			gatewayKey: () => signIn!.gatewayKey(), devices: () => this.store.value.devices, pairing: this.pairing, hub: this.hub,
+			pendingRemovals: () => this.store.value.relayRemovals ?? [],
+			onRemovalConfirmed: deviceId => { const pending = this.store.value.relayRemovals ?? []; if (pending.includes(deviceId)) this.store.save({ relayRemovals: pending.filter(id => id !== deviceId) }); },
 			onState: state => {
 				if (this.connect !== client) return;
 				this.connectState = state; this.emit();
@@ -236,6 +238,15 @@ export class PhoneService {
 			},
 		});
 		this.connect.start();
+	}
+	/**
+	 * Revokes a phone or pairing code on the relay. It's kept until the relay confirms, so a removal made while Connect is off
+	 * or offline still reaches it: the relay keeps registrations, which would otherwise outlive the phone.
+	 */
+	private revokeOnRelay(deviceId: string) {
+		const pending = this.store.value.relayRemovals ?? [];
+		if (!pending.includes(deviceId)) this.store.save({ relayRemovals: [...pending, deviceId].slice(-100) });
+		this.connect?.removeDevice(deviceId);
 	}
 	private stopConnect() { const client = this.connect; this.connect = undefined; client?.stop(); this.connectState = { status: "stopped" }; }
 

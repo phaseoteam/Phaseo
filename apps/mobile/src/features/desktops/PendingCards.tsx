@@ -6,7 +6,7 @@ import { Button, Icon, Text, TextField } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { haptic } from "@/lib/haptics";
 import type { DesktopClient } from "./client";
-import type { PhoneApproval, PhoneQuestionRequest } from "./protocol";
+import { phoneOptionValue, type PhoneApproval, type PhoneQuestionRequest } from "./protocol";
 
 const CARD = "gap-2.5 rounded-md border border-border bg-card p-4";
 
@@ -123,14 +123,15 @@ function QuestionCard({ client, chatId, request, onSettled, onStop, onFailure }:
           {question.header ? <Text variant="caption" className="font-bold">{question.header}</Text> : null}
           <Text variant="muted" selectable className="text-foreground">{question.question}</Text>
           {question.options?.map((option) => {
-            const selected = (chosen[question.id] ?? []).includes(option.label);
+            const value = phoneOptionValue(option);
+            const selected = (chosen[question.id] ?? []).includes(value);
             return (
               <Pressable
                 key={option.label}
                 accessibilityRole={question.multiSelect ? "checkbox" : "radio"}
                 accessibilityState={{ checked: selected, disabled: busy }}
                 disabled={busy}
-                onPress={() => toggle(question.id, option.label, Boolean(question.multiSelect))}
+                onPress={() => toggle(question.id, value, Boolean(question.multiSelect))}
                 className={cn("min-h-12 w-full gap-0.5 rounded-md border px-3.5 py-3", selected ? "border-primary bg-primary/10" : "border-border bg-background")}
               >
                 <Text variant="label" className={cn(!selected && "text-muted-foreground")}>{option.label}</Text>
