@@ -5,6 +5,9 @@
 // - a stream whose drain the runtime stopped, which has only its open stepped charge row
 //   (gateway_request_charges, is_final = false) and no gateway_requests row.
 // A charge recorded by both a charge row and its request row (billing_request_id) is counted once.
+// A one-off charge whose request rows under-record it (a Worker older than the lost-charge fix wrote
+// a failure after the debit with no cost) counts what they fall short of it
+// (refund_claim_counts_under_recorded_charges).
 // Runs the claim on the body shipped by 20261104193047_billing_security_fixes first, then on the
 // real migration. Install @electric-sql/pglite@0.5.8 in a temporary directory and set PGLITE_MODULE
 // to its dist/index.js file URL. Run: node supabase/tests/refund-claim-charged-failures.test.mjs
@@ -30,6 +33,11 @@ const overdraftColumn = await findMigration('_gateway_wallet_reservations_overdr
 const settlement = await findMigration('_async_settlement_always_charges.sql');
 const migration = await findMigration('_refund_claim_counts_charged_failures.sql');
 const billingIndex = await findMigration('_gateway_requests_billing_request_index.sql');
+const underRecorded = await findMigration('_refund_claim_counts_under_recorded_charges.sql');
+assert(underRecorded.name > billingIndex.name, 'the shortfall migration runs after the index it reads through');
+assert(underRecorded.sql.startsWith("SET LOCAL lock_timeout = '10s';\n"), 'the shortfall migration starts with the lock timeout');
+assert(!/\b(alter|lock)\s+table\b|\bcreate\s+(unique\s+)?index\b/i.test(underRecorded.sql.replace(/--.*$/gm, '')),
+  'the shortfall migration changes functions only');
 assert(migration.name > chargeTotals.name, 'the refund migration runs after the stepped charge columns exist');
 // The claim reads gateway_requests.expected_cost_nanos: this PR adds the column, before every other
 // migration of it, so no claim runs between the new body and the column (#3547 reads it too).
@@ -61,9 +69,16 @@ const functionBody = (sql) => {
   return sql.slice(start, sql.indexOf('$function$', start + 10) + 10);
 };
 const schemaBody = functionBody(normalize(await read('../schemas/public/functions/stripe_claim_self_serve_refund.sql')));
-assert(schemaBody.length > 20 && migration.sql.includes(schemaBody), 'the migration ships the schema body of stripe_claim_self_serve_refund');
+assert(schemaBody.length > 20 && underRecorded.sql.includes(schemaBody), 'the latest migration ships the schema body of stripe_claim_self_serve_refund');
+// The shortfall migration changes only the one-off charge term (step 3) of 20261110112514's body.
+const withoutOneOffTerm = (body) => body.replace(/^[ \t]*--.*\n/gm, '')
+  .replace(/    v_usage_nanos := v_usage_nanos \+ coalesce\(\(\n      select sum\((?:charge\.cost_nanos\)|case)[\s\S]*?\n    \), 0\)::bigint;\n\n    v_usage_nanos := v_usage_nanos \+ coalesce\(\(\n      select sum\(charge\.cost_nanos\)\n      from public\.gateway_request_charges charge\n      where charge\.workspace_id = p_team_id\n        and charge\.status = 'applied'\n        and charge\.cost_nanos > 0\n        and charge\.created_at >= v_purchase\.event_time\n        and starts_with/, 'ONE_OFF_TERM starts_with');
+assert(withoutOneOffTerm(schemaBody).includes('ONE_OFF_TERM'), 'the one-off charge term was found');
+assert.equal(withoutOneOffTerm(schemaBody), withoutOneOffTerm(functionBody(migration.sql)), 'only the one-off charge term changed');
+assert(/charge\.cost_nanos - audit\.row_cost/.test(schemaBody) && /not audit\.succeeded and charge\.cost_nanos > audit\.row_cost/.test(schemaBody),
+  'a one-off charge its unsuccessful, non-pending rows under-record counts the shortfall');
 assert(!schemaBody.includes('gr.success is true'), 'unsuccessful charged rows count as usage');
-assert(/from public\.gateway_request_charges charge[\s\S]*gr\.billing_request_id = charge\.request_id/.test(schemaBody),
+assert(/from public\.gateway_request_charges charge[\s\S]*request\.billing_request_id = charge\.request_id/.test(schemaBody),
   'charges without a request row count as usage');
 assert(!/charge\.is_final/.test(schemaBody) && !/interval '1 day'/.test(schemaBody),
   'every applied charge counts, open or settled, with no time window on the request lookup');
@@ -116,6 +131,40 @@ async function scenario(prefix, spend) {
   await setBalance(usd(15));
 }
 const viaCancellations = () => chargedCancellations(120);
+// A $6 one-off charge debited after the purchase, then its request row(s) by `shape`. Returns the
+// claim at a prior balance of $6 less 1 nano and of exactly $6: ['lot_used', 'ok'] means the usage
+// since the purchase is exactly $6, ['ok', 'ok'] that it is below it.
+const auditRow = (billingId, { success = false, cost, expected = null, status = 'recorded' }) => db.query(
+  `insert into public.gateway_requests (workspace_id, success, cost_nanos, created_at, billing_request_id, expected_cost_nanos, detail_metadata)
+   values ($1, $2, $3, now() - interval '2 hours', $4, $5, $6::jsonb)`,
+  [ws, success, cost, billingId, expected, JSON.stringify({ accounting_finalization: { billing_status: status } })]);
+const usageAtSix = async (prefix, shape) => {
+  const run = async (suffix, prior) => {
+    await reset();
+    await purchase(`${prefix}_${suffix}_first`, usd(10), prior, 3);
+    const billingId = `${prefix}_${suffix}_bill`;
+    await asService(() => db.query('select public.gateway_charge_with_credit_cache($1, $2, $3, null)', [ws, billingId, usd(6)]));
+    await db.query(`update public.gateway_request_charges set created_at = now() - interval '2 hours' where request_id = $1`, [billingId]);
+    await shape(billingId);
+    await setBalance(prior + usd(10));
+    const result = await claim(`${prefix}_${suffix}_first`);
+    return result.ok ? 'ok' : result.reason;
+  };
+  return [await run('below', usd(6) - 1), await run('at', usd(6))];
+};
+const underRecordedShapes = {
+  // An old Worker: debited $6, then a failure row with no cost, billing_status 'recorded'.
+  old_worker: (billingId) => auditRow(billingId, { cost: null }),
+  // A failure row carrying $2 of the $6.
+  partial: (billingId) => auditRow(billingId, { cost: usd(2) }),
+  // This Worker: the failure row carries the confirmed $6.
+  new_worker: (billingId) => auditRow(billingId, { cost: usd(6) }),
+  // A successful one-off charge.
+  success: (billingId) => auditRow(billingId, { success: true, cost: usd(6) }),
+  // A buffered request whose charge committed unacknowledged: pending, expected $6, cost read back.
+  buffered_pending: (billingId) => auditRow(billingId, { cost: usd(6), expected: usd(6), status: 'pending_reconciliation' }),
+  buffered_pending_unread: (billingId) => auditRow(billingId, { cost: null, expected: usd(6), status: 'pending_reconciliation' }),
+};
 const viaStoppedDrain = (prefix) => stoppedDrain(`${prefix}_bill`, usd(5), 120);
 
 try {
@@ -170,6 +219,16 @@ try {
   await db.exec(billingIndex.sql);
   await db.exec(billingIndex.sql);
   assert.equal(Number((await one(`select count(*)::int as n from pg_indexes where indexname = 'gateway_requests_workspace_billing_request_idx'`)).n), 1);
+
+  // ---------- Before the shortfall fix (20261110112514's body) ----------
+  // A row that is neither successful nor pending hid its one-off charge: the old Worker's $6 debit
+  // counted 0 and a row carrying $2 counted $2, so the purchase looked unused.
+  assert.deepEqual(await usageAtSix('pre_old_worker', underRecordedShapes.old_worker), ['ok', 'ok'],
+    'before the fix an old-Worker failure row with no cost hides its $6 debit');
+  assert.deepEqual(await usageAtSix('pre_partial', underRecordedShapes.partial), ['ok', 'ok'],
+    'before the fix a failure row carrying $2 hides the other $4');
+  await db.exec(underRecorded.sql);
+  await db.exec(underRecorded.sql);
 
   // ---------- After the fix ----------
   // $5 spent through charged cancellations uses the first purchase.
@@ -368,27 +427,28 @@ try {
     'both JSON-pending lookups apply the cutoff');
   assert(!/2026-11-09/.test(shipped), 'no fixed date');
   const cutoff = (await one(`select date_trunc('second', now() - interval '1 hour') as at`)).at;
-  // A committed $5 one-off charge whose audit row has a NULL cost and only the JSON flag.
+  // A committed $5 one-off charge whose audit row has only the JSON flag and a stale $8 cost (read
+  // back before a correction). Pending, the row is left out and the $5 charge counts; not pending,
+  // the row's $8 counts. A $6 prior balance tells them apart.
   const flaggedAt = async (prefix, offsetMs) => {
     await reset();
-    await purchase(`${prefix}_first`, usd(10), 0, 3);
+    await purchase(`${prefix}_first`, usd(10), usd(6), 3);
     await asService(() => db.query('select public.gateway_charge_with_credit_cache($1, $2, $3, null)', [ws, `${prefix}_bill`, usd(5)]));
     await db.query(`insert into public.gateway_requests (workspace_id, success, cost_nanos, created_at, billing_request_id, detail_metadata)
-      values ($1, false, null, $2::timestamptz + make_interval(secs => $3::float8 / 1000), $4, $5::jsonb)`,
-      [ws, cutoff, offsetMs, `${prefix}_bill`, JSON.stringify({ accounting_finalization: { billing_status: 'pending_reconciliation' } })]);
-    await purchase(`${prefix}_second`, usd(10), usd(5), 1);
-    await setBalance(usd(15));
+      values ($1, false, $6, $2::timestamptz + make_interval(secs => $3::float8 / 1000), $4, $5::jsonb)`,
+      [ws, cutoff, offsetMs, `${prefix}_bill`, JSON.stringify({ accounting_finalization: { billing_status: 'pending_reconciliation' } }), usd(8)]);
+    await setBalance(usd(16));
     return claim(`${prefix}_first`);
   };
   // Marker unset: the flag is read for every row, whenever it was written (an old Worker still live).
   assert.equal(await marker(), null);
-  assert.equal((await flaggedAt('unset_at', 0)).reason, 'lot_used', 'with no marker a JSON-only pending row counts its charge');
-  assert.equal((await flaggedAt('unset_after', 3_600_000)).reason, 'lot_used', 'however late it was written');
+  assert.equal((await flaggedAt('unset_at', 0)).ok, true, 'with no marker a JSON-only pending row counts its $5 charge, not its row');
+  assert.equal((await flaggedAt('unset_after', 3_600_000)).ok, true, 'however late it was written');
   // Marker set (an hour ago here): the flag is read strictly before it.
   await db.query('update private.billing_cutoffs set pending_json_cutoff = $1', [cutoff]);
-  assert.equal((await flaggedAt('cut_before', -1)).reason, 'lot_used', 'just before the cutoff the flag marks the row pending: the charge counts');
-  assert.equal((await flaggedAt('cut_at', 0)).ok, true, 'exactly at the cutoff the flag is not read: the row (NULL cost) counts, not the charge');
-  assert.equal((await flaggedAt('cut_after', 1)).ok, true, 'after the cutoff the flag is not read either');
+  assert.equal((await flaggedAt('cut_before', -1)).ok, true, 'just before the cutoff the flag marks the row pending: the charge counts');
+  assert.equal((await flaggedAt('cut_at', 0)).reason, 'lot_used', 'exactly at the cutoff the flag is not read: the row ($8) counts');
+  assert.equal((await flaggedAt('cut_after', 1)).reason, 'lot_used', 'after the cutoff the flag is not read either');
   await db.query('update private.billing_cutoffs set pending_json_cutoff = null');
 
   // A delivered request pending reconciliation with no charge row at all (its charge was never
@@ -478,7 +538,29 @@ try {
   assert.equal((await steppedPending('unpaid_ok', 9, { finalTotal: null, frozen: 5, expected: 8 })).ok, true,
     'the debits and the unpaid part are counted once ($8 fits in $9)');
 
-  console.log(JSON.stringify({ passed: true, migration: migration.name }));
+  // ---------- One-off charges their request rows under-record ----------
+  // Usage since the purchase is exactly the $6 debited, whatever the row recorded.
+  for (const [shape, expectation] of [
+    ['old_worker', 'an old-Worker failure row with no cost: the $6 debit counts'],
+    ['partial', 'a failure row carrying $2: the row and the $4 shortfall count $6'],
+    ['new_worker', 'a failure row carrying the $6: counted once, not $12'],
+    ['success', 'a successful one-off charge: counted once'],
+    ['buffered_pending', 'a buffered request pending reconciliation, cost read back: counted once'],
+    ['buffered_pending_unread', 'a buffered request pending reconciliation, cost unread: counted once'],
+  ]) {
+    assert.deepEqual(await usageAtSix(shape, underRecordedShapes[shape]), ['lot_used', 'ok'], expectation);
+  }
+  // The old-Worker shape with a $10 top-up on an empty wallet: the $6 debit uses it, nothing is refunded.
+  await reset();
+  await purchase('old_worker_refund_first', usd(10), 0, 3);
+  await asService(() => db.query('select public.gateway_charge_with_credit_cache($1, $2, $3, null)', [ws, 'old_worker_refund_bill', usd(6)]));
+  await underRecordedShapes.old_worker('old_worker_refund_bill');
+  // The wallet holds the whole $10, so only the usage can refuse the claim.
+  await setBalance(usd(10));
+  assert.equal((await claim('old_worker_refund_first')).reason, 'lot_used', 'the spent top-up is not refunded');
+  assert.equal(await balance(), usd(10));
+
+  console.log(JSON.stringify({ passed: true, migration: underRecorded.name }));
 } finally {
   await db.close();
 }

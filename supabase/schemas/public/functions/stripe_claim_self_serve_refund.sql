@@ -145,7 +145,11 @@ begin
     --    still debit it at later checkpoints.
     -- 3. One-off charges no request row records (billing_request_id, with
     --    gateway_requests_workspace_billing_request_idx): an audit row that
-    --    never landed, or one pending reconciliation.
+    --    never landed, or one pending reconciliation. When none of its rows
+    --    succeeded and none is pending, what their cost (which 1. counts) falls
+    --    short of the charge: a Worker older than the lost-charge fix wrote a
+    --    failure after a confirmed debit with no cost, and that row would
+    --    otherwise hide the debit. As private.unbilled_spend counts it.
     -- 4. Batch captures (batch_capture:<batch> charge rows), whole, at their
     --    debit time.
     -- 5. Reserved batches and videos, settled or captured from their
@@ -224,25 +228,26 @@ begin
     ), 0)::bigint;
 
     v_usage_nanos := v_usage_nanos + coalesce((
-      select sum(charge.cost_nanos)
+      select sum(case when audit.found and not audit.pending
+        then charge.cost_nanos - audit.row_cost else charge.cost_nanos end)
       from public.gateway_request_charges charge
+      left join lateral (
+        select count(*) > 0 as found,
+          coalesce(bool_or(request.success is true), false) as succeeded,
+          coalesce(bool_or(request.expected_cost_nanos is not null
+            or (request.created_at < (select private.pending_json_cutoff())
+              and coalesce(request.detail_metadata #>> '{accounting_finalization,billing_status}' = 'pending_reconciliation', false))), false) as pending,
+          coalesce(sum(greatest(coalesce(request.cost_nanos, 0), 0)), 0) as row_cost
+        from public.gateway_requests request
+        where request.workspace_id = charge.workspace_id
+          and request.billing_request_id = charge.request_id
+      ) audit on true
       where charge.workspace_id = p_team_id
         and charge.status = 'applied'
         and charge.cost_nanos > 0
         and charge.created_at >= v_purchase.event_time
         and not starts_with(charge.request_id, 'batch_capture:')
-        and (not exists (
-          select 1 from public.gateway_requests gr
-          where gr.workspace_id = charge.workspace_id
-            and gr.billing_request_id = charge.request_id
-        ) or exists (
-          select 1 from public.gateway_requests pending
-          where pending.workspace_id = charge.workspace_id
-            and pending.billing_request_id = charge.request_id
-            and (pending.expected_cost_nanos is not null
-              or (pending.created_at < (select private.pending_json_cutoff())
-                and pending.detail_metadata #>> '{accounting_finalization,billing_status}' = 'pending_reconciliation'))
-        ))
+        and (not audit.found or audit.pending or (not audit.succeeded and charge.cost_nanos > audit.row_cost))
         and not exists (
           select 1 from public.credit_ledger adjustment
           where adjustment.ref_type = 'gateway_request_charge'

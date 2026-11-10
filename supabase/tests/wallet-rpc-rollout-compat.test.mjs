@@ -30,7 +30,8 @@ const migration = async (suffix) => {
 const PR_MIGRATIONS = ['_billing_cutoffs.sql', '_gateway_requests_expected_cost_nanos.sql', '_validate_gateway_requests_expected_cost_nanos_check.sql',
   '_gateway_request_charges_stepped_columns.sql', '_gateway_charge_request_total.sql',
   '_validate_gateway_request_charges_cost_check.sql', '_gateway_wallet_reservations_overdraft.sql',
-  '_async_settlement_always_charges.sql', '_refund_claim_counts_charged_failures.sql', '_gateway_requests_billing_request_index.sql'];
+  '_async_settlement_always_charges.sql', '_refund_claim_counts_charged_failures.sql', '_gateway_requests_billing_request_index.sql',
+  '_refund_claim_counts_under_recorded_charges.sql'];
 const prNames = PR_MIGRATIONS.map((suffix) => migrations.find((file) => file.endsWith(suffix)));
 assert.deepEqual([...prNames].sort(), prNames, 'the migrations run in this order');
 for (const suffix of PR_MIGRATIONS) {
