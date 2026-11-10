@@ -553,6 +553,14 @@ app.whenReady().then(async () => { try {
 			assert(active.animations.every(animation => animation.iterations === 1), `${row.label} repeats its gesture`);
 			assert.notDeepEqual(active.parts, idle.parts, `${row.label} does not visibly animate`);
 			assert.deepEqual(active.box, idle.box, `${row.label} moves its row`); assert.equal(active.transform, "none");
+			if (row.name === "limits") {
+				for (const [fraction, angle, dash] of [[0, 75, 0], [0.5, undefined, undefined], [1, -165, 1]]) {
+					const gauge = await run(`(()=>{const svg=document.querySelector(${JSON.stringify(selector)}+' svg');svg.getAnimations({subtree:true}).forEach(animation=>{if(Number(animation.effect.getTiming().duration)!==640)throw Error('Gauge sequence duration overridden');animation.currentTime=640*${fraction};});const matrix=new DOMMatrixReadOnly(getComputedStyle(svg.querySelector('[data-gauge-needle]')).transform);return {angle:Math.atan2(matrix.b,matrix.a)*180/Math.PI,dash:parseFloat(getComputedStyle(svg.querySelector('[data-gauge-fill]')).strokeDashoffset)};})()`);
+					if (angle !== undefined) assert(Math.abs(gauge.angle - angle) < 0.01 && Math.abs(gauge.dash - dash) < 0.01, `Palette gauge misses its endpoint: ${JSON.stringify(gauge)}`);
+					else assert(gauge.dash > 0 && gauge.dash < 1, "Palette gauge skips partial fill");
+					assert(Math.abs(gauge.angle - (75 - 240 * gauge.dash)) < 0.01, "Palette needle and arc disagree");
+				}
+			}
 			await cdp("Input.dispatchMouseEvent", { type: "mouseMoved", x: 0, y: 0 });
 			await run(`Promise.all(document.querySelector(${JSON.stringify(selector)}+' .gesture-icon').getAnimations({subtree:true}).map(animation=>animation.finished)).then(()=>true)`);
 			assert.deepEqual((await state()).parts, idle.parts, `${row.label} does not return after hover`);
@@ -584,7 +592,19 @@ app.whenReady().then(async () => { try {
 		assert.equal(await resumeOffset(), 1);
 		await cdp("Input.dispatchMouseEvent", { type: "mouseMoved", x: 0, y: 0 });
 		assert.equal(await resumeOffset(), 0);
-		console.log("PALETTE_ICON_GESTURES", JSON.stringify({ rows: rows.length, allActionIcons: true, hover: true, keyboardStill: true, disabledStill: true, motionPreferences: true, resumeGlyph: true }));
+		await run("localStorage.setItem('phaseo.desktop.workspaceMode','\"chat\"');true");
+		await owner.loadFile(page); await ready("!!document.querySelector('main form')"); await open();
+		const codeRow = '.desktop-command-palette [role=option]:has([data-icon-gesture=code])';
+		await ready(`!!document.querySelector(${JSON.stringify(codeRow)})`);
+		await run(`document.querySelector(${JSON.stringify(codeRow)}).scrollIntoView({block:'center'});true`);
+		await force(codeRow, "hover");
+		for (const [fraction, opacity] of [[0.05, [0, 0, 0, 1]], [0.25, [0, 1, 0, 1]], [0.55, [0, 1, 1, 1]], [1, [1, 1, 1, 0]]]) {
+			const code = await run(`(()=>{const svg=document.querySelector(${JSON.stringify(codeRow)}+' svg');svg.getAnimations({subtree:true}).forEach(animation=>{if(Number(animation.effect.getTiming().duration)!==480)throw Error('Typing sequence duration overridden');animation.pause();animation.currentTime=480*${fraction};});return Array.from(svg.children).map(part=>({opacity:Number(getComputedStyle(part).opacity),stroke:getComputedStyle(part).stroke}));})()`);
+			assert.deepEqual(code.map(part => part.opacity), opacity, "Palette Code does not type in order");
+			assert.notEqual(code[1].stroke, code[2].stroke, "Palette Code loses syntax accents");
+		}
+		await force(codeRow, null);
+		console.log("PALETTE_ICON_GESTURES", JSON.stringify({ rows: rows.length, allActionIcons: true, hover: true, keyboardStill: true, disabledStill: true, motionPreferences: true, resumeGlyph: true, fullToEmpty: true, typedCode: true }));
 	}
 	if (baseline) await paletteIcons(baseline, "before", false);
 	await paletteIcons(renderer, "after", true);

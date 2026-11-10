@@ -10,8 +10,9 @@ const scratch = mkdtempSync(path.join(tmpdir(), "phaseo-action-icons-"));
 app.setPath("userData", path.join(scratch, "profile"));
 const root = path.resolve(import.meta.dirname, "..");
 const names = ["pin", "unpin", "archive", "restore", "edit", "pencil", "link", "unlink", "camera", "up", "down", "publish", "folder", "addFolder", "mail", "signIn", "schedule", "inbox", "thread", "usage", "issue", "complete", "notPlanned", "draftPullRequest", "closePullRequest", "comment", "open", "approve", "requestChanges", "retry", "sidebarLeft", "sidebarRight", "back", "forward", "play", "filter", "account", "activity", "bot", "browser", "bug", "clone", "code", "compare", "editor", "files", "fileSearch", "history", "keyboard", "limits", "moon", "newChat", "pause", "sun", "system", "textSearch", "undo"];
-const fixedParts = { archive: [1], restore: [1], camera: [0], publish: [1], folder: [0], addFolder: [2], mail: [1], signIn: [2], schedule: [1, 2, 3, 4, 5], inbox: [1], thread: [0], usage: [0], issue: [0], complete: [0], notPlanned: [0], draftPullRequest: [0, 1, 4], closePullRequest: [0, 1, 4, 5], requestChanges: [0, 2], sidebarLeft: [0, 1, 2], sidebarRight: [0, 1, 2], bot: [0, 1, 2, 3], browser: [0, 2], bug: [0, 1, 3, 4, 5, 6, 7, 8, 10], clone: [0, 1, 2], code: [2], compare: [0], editor: [2], files: [2], fileSearch: [0, 1], history: [0, 1], keyboard: [8], limits: [1], newChat: [0], sun: [0], system: [1, 2], textSearch: [0, 1, 2] };
-const hoverPoses = { code: [1, -1, 0], editor: [-0.75, 0.75, 0], compare: [0, -0.75, 0.75], fileSearch: [0, 0, -1, -1], textSearch: [0, 0, 0, -1, -1], pause: [-0.5, 0.5] };
+const fixedParts = { archive: [1], restore: [1], camera: [0], publish: [1], folder: [0], addFolder: [2], mail: [1], signIn: [2], schedule: [1, 2, 3, 4, 5], inbox: [1], thread: [0], usage: [0], issue: [0], complete: [0], notPlanned: [0], draftPullRequest: [0, 1, 4], closePullRequest: [0, 1, 4, 5], requestChanges: [0, 2], sidebarLeft: [0, 1, 2], sidebarRight: [0, 1, 2], bot: [0, 1, 2, 3], browser: [0, 2], bug: [0, 1, 3, 4, 5, 6, 7, 8, 10], clone: [0, 1, 2], compare: [0], editor: [2], files: [2], fileSearch: [0, 1], history: [0, 1], keyboard: [8], limits: [1], newChat: [0], sun: [0], system: [1, 2], textSearch: [0, 1, 2] };
+const hoverPoses = { editor: [-0.75, 0.75, 0], compare: [0, -0.75, 0.75], fileSearch: [0, 0, -1, -1], textSearch: [0, 0, 0, -1, -1], pause: [-0.5, 0.5] };
+const sequences = ["code", "limits"];
 const importPath = relative => JSON.stringify(path.join(root, relative).replaceAll("\\", "/"));
 writeFileSync(path.join(scratch, "entry.tsx"), `
 import React from ${importPath("node_modules/react/index.js")};
@@ -35,12 +36,13 @@ const source = readFileSync(path.join(root, "src/renderer/index.css"), "utf8");
 const start = source.indexOf("/* State changes crossfade");
 const end = source.indexOf("/* Settings", start);
 assert(start > 0 && end > start, "Product gesture CSS is missing");
-writeFileSync(path.join(scratch, "index.html"), `<!doctype html><html><head><meta charset="utf-8"><style>
+writeFileSync(path.join(scratch, "index.html"), `<!doctype html><html class="dark"><head><meta charset="utf-8"><style>
+${readFileSync(path.join(root, "src/renderer/theme-tokens.generated.css"), "utf8")}
 ${source.slice(start, end)}
 body{font:14px system-ui;background:#161616;color:#eee;margin:24px}.samples{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}button{display:flex;align-items:center;gap:8px;padding:12px;background:transparent;color:inherit;border:1px solid #555;border-radius:6px}svg{width:18px;height:18px}
 </style></head><body><div id="root"></div><script src="bundle/icons.js"></script></body></html>`);
 const output = process.argv.find(value => value.startsWith("--output="))?.slice(9);
-const deadline = setTimeout(() => { console.error("Action icon fixture deadline"); app.exit(1); }, 150_000);
+const deadline = setTimeout(() => { console.error("Action icon fixture deadline"); app.exit(1); }, 240_000);
 deadline.unref();
 app.whenReady().then(async () => { try {
 	const window = new BrowserWindow({ show: false, width: 800, height: 1000, webPreferences: { backgroundThrottling: false } });
@@ -53,7 +55,7 @@ app.whenReady().then(async () => { try {
 	const cdp = (method, params = {}) => window.webContents.debugger.sendCommand(method, params);
 	await cdp("DOM.enable"); await cdp("CSS.enable");
 	const force = async (name, pseudo) => {
-		if (["back", "forward", "play", "filter"].includes(name) || name in hoverPoses) {
+		if (["back", "forward", "play", "filter", ...sequences].includes(name) || name in hoverPoses) {
 			if (pseudo === "hover") {
 				const point = await run(`(()=>{const button=document.getElementById('${name}');button.scrollIntoView({block:'center'});const box=button.getBoundingClientRect();return {x:box.x+box.width/2,y:box.y+box.height/2};})()`);
 				await cdp("Input.dispatchMouseEvent", { type: "mouseMoved", ...point });
@@ -72,14 +74,16 @@ app.whenReady().then(async () => { try {
 	const media = reduce => cdp("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: reduce ? "reduce" : "no-preference" }] });
 	const samples = {}, gestures = {};
 	for (const name of names) {
+		console.log("Action icon fixture: checking", name);
 		const navigation = name === "back" || name === "forward";
-		const hoverOnly = name === "play" || name === "filter" || name in hoverPoses;
-		const held = navigation || hoverOnly;
+		const sequence = sequences.includes(name);
+		const hoverOnly = name === "play" || name === "filter" || name in hoverPoses || sequence;
+		const held = navigation || hoverOnly && !sequence;
 		if (hoverOnly) console.log("Action icon fixture: held hover", name);
 		const offsets = hoverPoses[name] ?? (name === "filter" ? [0, 1, -1] : name === "play" ? [1] : name === "back" ? [-1.5, -1.5] : [1.5, 1.5]);
-		const state = () => run(`(()=>{const button=document.getElementById('${name}'),svg=button.querySelector('svg');return {box:button.getBoundingClientRect().toJSON(),svgTransform:getComputedStyle(svg).transform,animations:svg.getAnimations({subtree:true}).map(a=>({name:a.animationName??a.transitionProperty,iterations:a.effect.getTiming().iterations})),parts:Array.from(svg.children).map(p=>{const style=getComputedStyle(p);return {transform:style.transform,translate:style.translate,x:new DOMMatrixReadOnly(style.transform).m41+(parseFloat(style.translate)||0),scale:style.scale,dash:style.strokeDashoffset,opacity:style.opacity};}),lengths:Array.from(svg.children).map(p=>p.getAttribute('pathLength'))};})()`);
+		const state = () => run(`(()=>{const button=document.getElementById('${name}'),svg=button.querySelector('svg');return {box:button.getBoundingClientRect().toJSON(),svgTransform:getComputedStyle(svg).transform,animations:svg.getAnimations({subtree:true}).map(a=>({name:a.animationName??a.transitionProperty,iterations:a.effect.getTiming().iterations})),parts:Array.from(svg.children).map(p=>{const style=getComputedStyle(p);return {transform:style.transform,translate:style.translate,x:new DOMMatrixReadOnly(style.transform).m41+(parseFloat(style.translate)||0),scale:style.scale,dash:style.strokeDashoffset,opacity:style.opacity,stroke:style.stroke};}),lengths:Array.from(svg.children).map(p=>p.getAttribute('pathLength'))};})()`);
 		await media(false);
-		if (held) await run(`document.getElementById('${name}').scrollIntoView({block:'center'});true`);
+		if (held || sequence) await run(`document.getElementById('${name}').scrollIntoView({block:'center'});true`);
 		const idle = await state();
 		assert.equal(idle.animations.length, 0, `${name} moves at rest`);
 		assert(idle.lengths.every(value => value === "1"), `${name} has an unnormalised stroke`);
@@ -130,6 +134,36 @@ app.whenReady().then(async () => { try {
 		await media(false); await run("document.documentElement.dataset.animations='on'"); await force(name, null);
 		samples[name] = await run(`document.getElementById('${name}').querySelector('svg').outerHTML`);
 	}
+	console.log("Action icon fixture: drain and typing milestones");
+	const phase = async (name, fraction) => {
+		await run(`document.getElementById('${name}').querySelector('svg').getAnimations({subtree:true}).forEach(animation=>{animation.pause();animation.currentTime=Number(animation.effect.getTiming().duration)*${fraction};});true`);
+		return run(`(()=>{const svg=document.querySelector('#${name} svg');return Array.from(svg.children).map(part=>{const style=getComputedStyle(part),matrix=new DOMMatrixReadOnly(style.transform);return {opacity:Number(style.opacity),dash:parseFloat(style.strokeDashoffset),angle:Math.atan2(matrix.b,matrix.a)*180/Math.PI,x:matrix.m41,stroke:style.stroke};});})()`);
+	};
+	await force("limits", "hover");
+	for (const [fraction, angle, dash] of [[0, 75, 0], [0.5, undefined, undefined], [1, -165, 1]]) {
+		const parts = await phase("limits", fraction);
+		if (angle !== undefined) assert(Math.abs(parts[0].angle - angle) < 0.01, `Limits needle misses its ${fraction} milestone: ${JSON.stringify(parts)}`);
+		if (dash !== undefined) assert(Math.abs(parts[2].dash - dash) < 0.01, `Limits arc misses its ${fraction} milestone`);
+		else assert(parts[2].dash > 0 && parts[2].dash < 1, "Limits does not pass through a partial fill");
+		assert(Math.abs(parts[0].angle - (75 - 240 * parts[2].dash)) < 0.01, "Limits needle and arc disagree");
+	}
+	await force("limits", null); await force("limits", "hover");
+	assert(Math.abs((await phase("limits", 0))[0].angle - 75) < 0.01, "Limits does not replay from full");
+	await force("limits", null);
+	await force("code", "hover");
+	for (const [fraction, opacity, cursor] of [[0.05, [0, 0, 0, 1], 0], [0.25, [0, 1, 0, 1], 6], [0.55, [0, 1, 1, 1], 14], [0.85, [1, 1, 1, 1], 20], [1, [1, 1, 1, 0], 20]]) {
+		const parts = await phase("code", fraction);
+		assert.deepEqual(parts.map(part => part.opacity), opacity, `Code does not type in order at ${fraction}`);
+		assert.equal(parts[3].x, cursor, "Code cursor does not follow the typed token");
+		assert.equal(parts[0].stroke, parts[1].stroke);
+		assert.notEqual(parts[1].stroke, parts[2].stroke, "Code has no syntax accents");
+	}
+	await force("code", null);
+	for (const name of sequences) {
+		await force(name, "focus-visible");
+		assert.equal(await run(`document.querySelector('#${name} svg').getAnimations({subtree:true}).length`), 0, `${name} plays on keyboard focus`);
+		await force(name, null);
+	}
 	console.log("Action icon fixture: word-wrap states");
 	const wrapPose = () => run(`(async()=>{const svg=document.querySelector('#wrap svg');await Promise.all(svg.getAnimations({subtree:true}).map(animation=>animation.finished));return {wrapped:svg.dataset.wrapped,parts:Array.from(svg.children).map(part=>{const style=getComputedStyle(part);return {scale:style.scale,opacity:style.opacity,translate:style.translate};})};})()`);
 	const straight = await wrapPose();
@@ -172,6 +206,6 @@ app.whenReady().then(async () => { try {
 	await run("document.getElementById('swap').click();true");
 	assert.equal(await run("document.querySelector('#swap [data-on]').dataset.iconGesture"), "unlink");
 	if (output) writeFileSync(output, JSON.stringify({ samples, gestures }, null, 2));
-	console.log("ACTION_ICONS_SMOKE", JSON.stringify({ variants: names.length, triggers: 4, finite: true, stationaryFrames: true, stationaryControls: true, disabled: true, motionPreferences: true, stateSwap: true, sidebarCentres }));
+	console.log("ACTION_ICONS_SMOKE", JSON.stringify({ variants: names.length, triggers: 4, finite: true, stationaryFrames: true, stationaryControls: true, disabled: true, motionPreferences: true, stateSwap: true, fullToEmpty: true, typedTokens: true, syntaxAccents: true, sidebarCentres }));
 	window.webContents.debugger.detach(); window.destroy(); clearTimeout(deadline); app.exit(0);
 } catch (error) { console.error(error); app.exit(1); } });
