@@ -35,7 +35,7 @@ vi.mock("@/runtime/env", () => ({
 vi.mock("@/pipeline/before/workspacePolicy", () => ({ fetchWorkspacePolicy: async () => ({ privacyZdrOnly: false, neverStoreContent: false }) }));
 vi.mock("../after/apps", () => ({ ensureAppId: async () => "app_pending" }));
 
-import { auditFailure } from "./index";
+import { auditFailure, auditSuccess } from "./index";
 
 async function pendingRow(fields: { costNanos?: number; expectedCostNanos?: number }) {
 	await auditFailure({
@@ -70,5 +70,46 @@ describe("the failure row of a delivered request whose charge did not go through
 		const row = await pendingRow({});
 		expect(row).not.toHaveProperty("expected_cost_nanos");
 		expect(row).not.toHaveProperty("cost_nanos");
+	});
+});
+
+describe("the success row of a delivered request whose charge did not go through", () => {
+	beforeEach(() => { state.writes = {}; });
+
+	async function successRow(pendingCharge?: { costNanos: number | null; expectedCostNanos: number }) {
+		await auditSuccess({
+			requestId: "req_pending_success",
+			billingRequestId: "bill_pending_success",
+			workspaceId: "ws_pending",
+			keyId: "00000000-0000-4000-8000-000000000001",
+			provider: "openai",
+			model: "openai/gpt-5-mini",
+			endpoint: "chat.completions",
+			stream: false,
+			byok: false,
+			usagePriced: { input_tokens: 10, output_tokens: 20 },
+			totalCents: 0.03,
+			totalNanos: 300,
+			currency: "USD",
+			statusCode: 200,
+			...(pendingCharge ? { pendingCharge } : {}),
+		} as Parameters<typeof auditSuccess>[0]);
+		return state.writes.gateway_requests!.at(-1)!;
+	}
+
+	it("stays a success with its status, the stored charge and the expected bill", async () => {
+		expect(await successRow({ costNanos: 0, expectedCostNanos: 300 })).toMatchObject({
+			success: true, status_code: 200, billing_request_id: "bill_pending_success", cost_nanos: 0, expected_cost_nanos: 300,
+		});
+		// The stored total could not be read: the row records no charge, only the expected bill.
+		const unread = await successRow({ costNanos: null, expectedCostNanos: 300 });
+		expect(unread).toMatchObject({ success: true, expected_cost_nanos: 300 });
+		expect(unread).not.toHaveProperty("cost_nanos");
+	});
+
+	it("writes the bill and no expected cost for an ordinary success", async () => {
+		const row = await successRow();
+		expect(row).toMatchObject({ success: true, cost_nanos: 300 });
+		expect(row).not.toHaveProperty("expected_cost_nanos");
 	});
 });

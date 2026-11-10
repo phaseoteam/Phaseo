@@ -424,29 +424,73 @@ describe("charged requests, with main's spend-limit coordinator", () => {
 			expect(await daily()).toMatchObject({ costUsedNanos: FINAL_TOTAL, requestsUsed: 0 });
 		});
 
-		it("sends one record when the success audit throws after it settled", async () => {
-			const decision = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: "req_buffered_late" });
+		it.each(["buffered", "streamed", "speech"] as const)(
+			"keeps one success row and one record when a %s request's success audit throws after its row landed",
+			async (path) => {
+				const id = `${path}_late`;
+				const decision = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: `req_${id}` });
+				if (decision.outcome !== "allowed") throw new Error("expected admission");
+				// The success row lands and spend is settled; data contribution then throws, which sends
+				// the request to the finalization failure audit.
+				dataContributionMock.mockRejectedValueOnce(new Error("contribution store unavailable"));
+				const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+				await callers[path](contextFor(id, {
+					spendAdmission: decision.admission,
+					teamSettings: { dataContributionEnabled: true },
+				}));
+				await settle();
+				await flushSpendRecordsForTests();
+				await settle();
+				const reported = error.mock.calls.filter(([message]) => message === "[gateway] request accounting error");
+				error.mockRestore();
+				expect(dataContributionMock).toHaveBeenCalledTimes(1);
+				// One row, the success: the later error writes no second, billed row ...
+				expect(auditRows.map((row) => [row.kind, row.statusCode])).toEqual([["success", 200]]);
+				// ... and is reported as an accounting error instead.
+				expect(reported.map(([, detail]) => (detail as { reason: string }).reason)).toEqual([
+					`${path === "buffered" ? "nonstream" : path === "streamed" ? "stream" : "speech"}_finalization_failed`,
+				]);
+				// Data contribution discounts the bill (1% by default): the record is what was debited.
+				const debited = chargeRpcMock.mock.calls.map(([, args]) => args.cost_nanos);
+				expect(debited).toEqual([Math.round(FINAL_TOTAL * 0.99)]);
+				const sent = recorded.flat() as Array<{ billingRequestId: string; costNanos: number; requests: number }>;
+				expect(sent.map((entry) => [entry.billingRequestId, entry.costNanos, entry.requests])).toEqual([[`bill_${id}`, debited[0], 1]]);
+				expect(await daily()).toMatchObject({ costUsedNanos: debited[0], requestsUsed: 1 });
+			},
+		);
+
+		it("keeps a delivered buffered request a success, pending reconciliation, when its charge never goes through", async () => {
+			const decision = await checkSpendLimit({ workspaceId: WORKSPACE, keyId: KEY, admissionId: "req_charge_failed" });
 			if (decision.outcome !== "allowed") throw new Error("expected admission");
-			// The success row lands and spend is settled; data contribution then throws, which sends
-			// the request to the finalization failure audit.
-			dataContributionMock.mockRejectedValueOnce(new Error("contribution store unavailable"));
+			// Every charge attempt fails; the stored total reads back 0.
+			chargeRpcMock.mockRejectedValue(new Error("db unavailable"));
 			const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
-			await callers.buffered(contextFor("buffered_late", {
-				spendAdmission: decision.admission,
-				teamSettings: { dataContributionEnabled: true },
-			}));
+			await callers.buffered(contextFor("charge_failed", { spendAdmission: decision.admission }));
+			await settle();
+			await vi.advanceTimersByTimeAsync(700);
 			await settle();
 			await flushSpendRecordsForTests();
 			await settle();
+			const reported = error.mock.calls.filter(([message]) => message === "[gateway] request accounting error");
 			error.mockRestore();
-			expect(dataContributionMock).toHaveBeenCalledTimes(1);
-			expect(auditRows.map((row) => row.kind)).toEqual(["success", "failure"]);
-			// Data contribution discounts the bill (1% by default): the record is what was debited.
-			const debited = chargeRpcMock.mock.calls.map(([, args]) => args.cost_nanos);
-			expect(debited).toEqual([Math.round(FINAL_TOTAL * 0.99)]);
+			expect(chargeRpcMock).toHaveBeenCalledTimes(3);
+			// The request is reported as the success it was, with its real status, and its row holds
+			// what the database has (0) and the bill it meant to charge, pending reconciliation.
+			expect(auditRows).toHaveLength(1);
+			expect(auditRows[0]).toMatchObject({
+				kind: "success",
+				statusCode: 200,
+				pendingCharge: { costNanos: 0, expectedCostNanos: FINAL_TOTAL },
+				detailMetadata: expect.objectContaining({
+					accounting_finalization: expect.objectContaining({ billing_status: "pending_reconciliation", response_delivered: true, expected_cost_nanos: FINAL_TOTAL }),
+				}),
+			});
+			// The accounting error is reported apart from the request.
+			expect(reported.map(([, detail]) => (detail as { reason: string }).reason)).toEqual(["charge_pending_reconciliation"]);
+			// Spend limits count one successful request at the bill it meant to charge.
 			const sent = recorded.flat() as Array<{ billingRequestId: string; costNanos: number; requests: number }>;
-			expect(sent.map((entry) => [entry.billingRequestId, entry.costNanos, entry.requests])).toEqual([["bill_buffered_late", debited[0], 1]]);
-			expect(await daily()).toMatchObject({ costUsedNanos: debited[0], requestsUsed: 1 });
+			expect(sent.map((entry) => [entry.billingRequestId, entry.costNanos, entry.requests])).toEqual([["bill_charge_failed", FINAL_TOTAL, 1]]);
+			expect(await daily()).toMatchObject({ costUsedNanos: FINAL_TOTAL, requestsUsed: 1 });
 		});
 	});
 });

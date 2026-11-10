@@ -763,6 +763,11 @@ export async function auditSuccess(input: {
     serverToolTrace?: unknown;
 	lifecycleEvents?: unknown;
     detailMetadata?: Record<string, unknown> | null;
+    /**
+     * A delivered request whose charge did not go through: the row records what the database holds
+     * (costNanos, null when unreadable) and the bill it meant to charge (expected_cost_nanos).
+     */
+    pendingCharge?: { costNanos: number | null; expectedCostNanos: number } | null;
     // Wide event enrichment
     teamEnrichment?: any | null;
     keyEnrichment?: any | null;
@@ -848,7 +853,10 @@ export async function auditSuccess(input: {
             usage: strippedUsage ?? {},
             requestPayload: args.requestPayload,
             gatewayResponse: args.gatewayResponse,
-            costNanos: args.totalNanos ?? (Number.isFinite(args.totalCents) ? Math.round((args.totalCents as number) * 1e7) : null),
+            costNanos: args.pendingCharge
+                ? args.pendingCharge.costNanos
+                : args.totalNanos ?? (Number.isFinite(args.totalCents) ? Math.round((args.totalCents as number) * 1e7) : null),
+            ...(args.pendingCharge ? { expectedCostNanos: args.pendingCharge.expectedCostNanos } : {}),
             currency: args.currency,
             pricingLines,
             throughput: args.throughput ?? null,
@@ -911,7 +919,7 @@ export async function auditSuccess(input: {
                     nativeResponseId: args.nativeResponseId ?? null,
                     userAgent: args.userAgent ?? null,
                     clientSource: args.clientSource ?? null,
-                    costNanos: args.totalNanos ?? (
+                    costNanos: args.pendingCharge ? args.pendingCharge.costNanos : args.totalNanos ?? (
                         Number.isFinite(args.totalCents)
                             ? Math.round(args.totalCents * 1e7)
                             : null

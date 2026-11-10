@@ -272,11 +272,12 @@ function dispatchNonStreamSuccessSideEffects(args: {
             }
 
             try {
+                // The response was delivered: a charge that does not go through after its retries
+                // leaves the request a success, pending reconciliation (handleSuccessAudit).
                 await recordUsageAndChargeOnce({
                     ctx,
                     costNanos: totalNanos,
                     endpoint: ctx.endpoint,
-                    throwOnFailure: true,
                 });
                 await recordManagedProviderTokensOnce({
                     ctx,
@@ -301,8 +302,9 @@ function dispatchNonStreamSuccessSideEffects(args: {
                     gatewayPayload,
                 );
             } catch (error) {
-                // The response was already sent: the failure row keeps a confirmed charge (or the
-                // bill it meant to charge, pending reconciliation) and spend limits count it.
+                // The response was already sent. Before the success row is written, the failure row
+                // keeps a confirmed charge (or the bill it meant to charge, pending reconciliation);
+                // after it, handleFailureAudit only reports the error.
                 await handleFailureAudit(ctx, result, 500, "gateway", "nonstream_finalization_failed",
                     "The response was delivered but accounting finalization failed.", {
                         upstream_status: responseStatus,

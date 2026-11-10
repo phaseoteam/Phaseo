@@ -22,7 +22,7 @@ import type { RequestResult } from "../execute";
 import { sanitizeForAxiom } from "@observability/privacy";
 import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
 import { emitGatewayRequestEvent } from "@observability/events";
-import { emitGatewayTelemetryDeliveryFailure } from "@observability/axiom";
+import { emitGatewayOperationalFailure, emitGatewayTelemetryDeliveryFailure } from "@observability/axiom";
 import { runGatewayTelemetryPipelines } from "@observability/gateway-telemetry";
 import { enqueueGatewayOtlpExport } from "@observability/otlp-export";
 import { attachToolUsageMetrics, summarizeToolUsage } from "./tool-usage";
@@ -287,6 +287,39 @@ function confirmedChargeNanos(ctx: PipelineContext): number | null {
 }
 
 /**
+ * A delivered request whose charge did not go through after its retries
+ * (recordUsageAndChargeOnce without throwOnFailure): what the database holds (null when it could
+ * not be read) and the bill it meant to charge, for reconciliation.
+ */
+function uncollectedCharge(ctx: PipelineContext): { costNanos: number | null; expectedCostNanos: number } | null {
+	if ((ctx.meta as Record<string, unknown>).__usageChargeRecorded === true) return null;
+	const expected = nanosOrNull(ctx.uncollectedChargeNanos);
+	if (expected == null) return null;
+	return { costNanos: nanosOrNull(ctx.confirmedChargeNanos), expectedCostNanos: expected };
+}
+
+/** An accounting error that does not change the request's record: logged and reported, never billed. */
+function reportAccountingError(ctx: PipelineContext, reason: string, error?: unknown): void {
+	console.error("[gateway] request accounting error", {
+		requestId: ctx.requestId,
+		workspaceId: ctx.workspaceId,
+		reason,
+		error: error instanceof Error ? error.message : error == null ? null : String(error),
+	});
+	try {
+		dispatchBackground(emitGatewayOperationalFailure({
+			workflow: "request_accounting",
+			workspaceId: ctx.workspaceId,
+			resourceId: ctx.requestId,
+			reason,
+			error,
+		}));
+	} catch {
+		// Reporting never fails the request.
+	}
+}
+
+/**
  * The request's one spend-limit settlement. The coordinator keeps the first record of a billing
  * id, so whether it counts as a success or a charged failure is decided once, here, and later
  * calls do nothing. A confirmed debit is always recorded, whether or not its audit row was
@@ -336,6 +369,14 @@ export async function handleFailureAudit(
     /** What the failed request was charged (a stream the client left, charged at drain checkpoints). */
     billing?: { costNanos: number },
 ) {
+	// The success row is this request's record: its status, cost and spend are already settled. An
+	// error after it (a later accounting step) must not write a second, billed row, which the spend
+	// readers would add to the first.
+	if ((ctx.meta as Record<string, unknown>).__successRowWritten === true) {
+		const cause = errorDetails && typeof errorDetails === "object" ? (errorDetails as Record<string, unknown>).cause : undefined;
+		reportAccountingError(ctx, errorCode, cause ?? errorMessage);
+		return;
+	}
 	finishStreamingProvider(ctx, "error");
 	// The served attempt was marked successful when headers arrived. A stream that
 	// broke afterwards, or empty/invalid output, is that provider's call error; a
@@ -583,6 +624,10 @@ export async function handleSuccessAudit(
 	}
 	// Runs before anything is written so classifier labels land in the first insert.
 	await applyRequestClassifiers(ctx, gatewayResponse ?? null);
+	// The response was delivered but its charge did not go through: the row stays a success with its
+	// real status, pending reconciliation (expected_cost_nanos), and the error is reported apart.
+	const pendingCharge = uncollectedCharge(ctx);
+	if (pendingCharge) reportAccountingError(ctx, "charge_pending_reconciliation");
     const protectedOtlp = protectStealthAuditArgs({
         model: ctx.model,
         requestedModel: ctx.requestedModel ?? ctx.model,
@@ -745,9 +790,19 @@ export async function handleSuccessAudit(
             providerResponse: result.rawResponse ?? null,
             serverToolTrace: ctx.serverToolTrace,
 			lifecycleEvents: retainedLifecycle(ctx),
+            ...(pendingCharge ? { pendingCharge } : {}),
             detailMetadata: {
                 stage: "execute",
                 testing_mode: ctx.testingMode === true,
+                ...(pendingCharge ? {
+                    accounting_finalization: {
+                        billing_status: "pending_reconciliation",
+                        response_delivered: true,
+                        billing_request_id: ctx.billingRequestId ?? null,
+                        charged_total_nanos: pendingCharge.costNanos,
+                        expected_cost_nanos: pendingCharge.expectedCostNanos,
+                    },
+                } : {}),
                 response_timeline: buildResponseTimeline(ctx),
                 labels: ctx.meta.labels ?? [],
                 classifications: ctx.requestClassifications ?? null,
@@ -839,6 +894,7 @@ export async function handleSuccessAudit(
 
 	// Shadow mode only: once the success row is written, the spend-limit coordinator can count it.
 	const rowWritten = deliveries.some((delivery) => delivery.sink === "supabase" && delivery.delivered);
+	if (rowWritten) (ctx.meta as Record<string, unknown>).__successRowWritten = true;
 	if (rowWritten && !keyIdIsOAuthClientId(ctx.meta.apiKeyRef) && hasConfiguredKeyLimits(ctx.gating?.keyLimit)) {
 		recordShadowSpend({
 			workspaceId: ctx.workspaceId,
@@ -849,10 +905,14 @@ export async function handleSuccessAudit(
 			internal: ctx.internal,
 		});
 	}
-	// Enforce mode only: count the charge with the coordinator, as a success. A confirmed debit is
-	// counted even when its row was not delivered; with no row and no debit the admission is
-	// released. Independent of the legacy key-limit state.
-	settleRequestSpend(ctx, { kind: "success", rowWritten, costNanos: totalNanos });
+	// Enforce mode only: count the charge with the coordinator, as a success. A confirmed debit, or a
+	// bill pending reconciliation, is counted even when its row was not delivered; with no row and
+	// nothing charged the admission is released. Independent of the legacy key-limit state.
+	settleRequestSpend(ctx, {
+		kind: "success",
+		rowWritten: rowWritten || pendingCharge != null,
+		costNanos: Math.max(totalNanos, pendingCharge?.expectedCostNanos ?? 0),
+	});
 
 	// A key that never stores content, or a request under zero data retention, is never
 	// sampled for data contribution either.
