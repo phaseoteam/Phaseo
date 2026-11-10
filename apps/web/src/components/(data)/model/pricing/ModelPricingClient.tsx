@@ -22,7 +22,6 @@ import { parseAsString, useQueryStates } from "nuqs";
 import {
     ArrowDown,
     ArrowDownUp,
-    Check,
     ArrowUp,
     Ban,
     CheckCircle2,
@@ -48,6 +47,8 @@ import {
     DropdownMenuContent,
     DropdownMenuGroup,
     DropdownMenuItem,
+    DropdownMenuRadioGroup,
+    DropdownMenuRadioItem,
     DropdownMenuPortal,
     DropdownMenuSeparator,
     DropdownMenuSub,
@@ -872,6 +873,7 @@ export default function ModelPricingClient({
     emptyState?: React.ReactNode;
 }) {
 	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
+	const tSortState = useTranslations("Common.ui.finalSharedCopy");
 	const tPricingEmpty = useTranslations("Catalogue.modelDetail.emptyStates");
     const pricingTimeMs = usePricingClock(initialPricingTimeMs);
 	const pricingPath = `/api/_web/models/${encodeURIComponent(modelId)}/pricing` as const;
@@ -1792,21 +1794,26 @@ export default function ModelPricingClient({
 				{tProvider("sortButton")}
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end" className="w-56 rounded-md">
-				<DropdownMenuItem onClick={() => applySort("default", "desc")}>
-					<span className="flex-1">{tProvider("sortDefault")}</span>
-					{sort === "default" ? <Check className="size-4 text-muted-foreground" aria-hidden="true" /> : null}
-				</DropdownMenuItem>
-				<DropdownMenuSeparator />
-				{mobileSortOptions.map(({ option, label }) => (
-					<DropdownMenuItem
-						key={option}
-						onClick={() => handleMobileSortSelect(option)}
-						aria-label={tProvider("sortBy", { metric: label })}
-					>
-						<span className="flex-1">{label}</span>
-						{sort === option ? <SortDirectionIcon className="size-4 text-foreground" aria-hidden="true" /> : null}
-					</DropdownMenuItem>
-				))}
+				{/* Radio items expose the selected sort; the active metric also announces its direction. */}
+				<DropdownMenuRadioGroup value={sort} onValueChange={() => {}}>
+					<DropdownMenuRadioItem value="default" onClick={() => applySort("default", "desc")}>
+						{tProvider("sortDefault")}
+					</DropdownMenuRadioItem>
+					<DropdownMenuSeparator />
+					{mobileSortOptions.map(({ option, label }) => (
+						<DropdownMenuRadioItem key={option} value={option} onClick={() => handleMobileSortSelect(option)}>
+							<span className="flex-1">{label}</span>
+							{sort === option ? (
+								<>
+									<SortDirectionIcon className="size-4 text-foreground" aria-hidden="true" />
+									<span className="sr-only">
+										{tSortState(sortDirection === "asc" ? "sortedAscending" : "sortedDescending")}
+									</span>
+								</>
+							) : null}
+						</DropdownMenuRadioItem>
+					))}
+				</DropdownMenuRadioGroup>
 			</DropdownMenuContent>
 		</DropdownMenu>
 	);
