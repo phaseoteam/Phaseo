@@ -727,7 +727,7 @@
 					"frequency_penalty": "Verringert die Wahrscheinlichkeit von Token abhängig davon, wie oft sie bereits vorkamen.",
 					"presence_penalty": "Fördert neue Formulierungen oder Themen, nachdem sie erstmals aufgetreten sind.",
 					"repetition_penalty": "Wendet das anbieterspezifische Verhalten zur Vermeidung von Wiederholungen an.",
-					"include_reasoning": "Fordert Reasoning-Inhalte oder Zusammenfassungen an, sofern unterstützt.",
+					"include_reasoning": "Wird aus Kompatibilitätsgründen akzeptiert und hat keine Wirkung. Reasoning wird immer zurückgegeben, wenn das Modell es erzeugt.",
 					"reasoning_effort": "Fordert, sofern verfügbar, ein niedrigeres oder höheres Reasoning-Budget an.",
 					"reasoning_tokens": "Stellt ein reasoning-spezifisches Token-Budget oder Nutzungsfeld dar.",
 					"service_tier": "Wählt eine unterstützte Anfragestufe wie priority oder flex aus.",

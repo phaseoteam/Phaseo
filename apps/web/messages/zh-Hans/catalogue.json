@@ -727,7 +727,7 @@
 					"frequency_penalty": "根据 token 已出现的次数降低其再次出现的倾向。",
 					"presence_penalty": "鼓励模型在某个词语或主题首次出现后探索新的表达或主题。",
 					"repetition_penalty": "应用提供商专属的防重复处理。",
-					"include_reasoning": "在支持时请求返回推理内容或摘要。",
+					"include_reasoning": "为兼容而接受，不起作用。只要模型生成推理内容就会返回。",
 					"reasoning_effort": "在提供此选项时请求较低或较高的推理预算。",
 					"reasoning_tokens": "表示推理专用的 token 预算或用量字段。",
 					"service_tier": "选择受支持的请求层级，例如 priority 或 flex。",
