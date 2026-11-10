@@ -106,7 +106,8 @@ export async function withMarkdownForAgents(request: Request, fetchPage: PageFet
 		const location = response.headers.get("location");
 		if (wanted.viaSuffix && location && response.status >= 300 && response.status < 400) {
 			const target = new URL(location, pageUrl);
-			if (target.origin === url.origin) {
+			// Only pages have a Markdown version; sign-in, MFA and handler URLs keep theirs.
+			if (target.origin === url.origin && isPagePath(target.pathname) && !target.pathname.endsWith(MARKDOWN_SUFFIX)) {
 				const redirected = new Response(null, response);
 				redirected.headers.set("location", markdownUrlFor(target) + target.search);
 				return redirected;

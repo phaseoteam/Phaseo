@@ -238,9 +238,14 @@ function renderTable(element: ElementNode, ctx: Context): string {
 		for (const child of node.children) {
 			if (child.kind !== "element" || isHidden(child)) continue;
 			if (child.name === "tr") {
-				const cells = child.children
-					.filter((cell): cell is ElementNode => cell.kind === "element" && (cell.name === "td" || cell.name === "th"))
-					.map((cell) => tidy(renderChildren(cell, { ...ctx, inTable: true })).replace(/\n+/g, " ").replace(/\|/g, "\\|"));
+				const cells: string[] = [];
+				for (const cell of child.children) {
+					if (cell.kind !== "element" || (cell.name !== "td" && cell.name !== "th") || isHidden(cell)) continue;
+					cells.push(tidy(renderChildren(cell, { ...ctx, inTable: true })).replace(/\n+/g, " ").replace(/\|/g, "\\|"));
+					// A cell spanning several columns keeps the cells after it under the right headers.
+					const span = Math.min(Math.max(Number.parseInt(cell.attribs.colspan ?? "1", 10) || 1, 1), 50);
+					for (let i = 1; i < span; i++) cells.push("");
+				}
 				if (!cells.some(Boolean)) continue;
 				const isHeader = inHead || child.children.every((cell) => cell.kind !== "element" || cell.name === "th");
 				if (isHeader && rows.length === headerRows) headerRows += 1;

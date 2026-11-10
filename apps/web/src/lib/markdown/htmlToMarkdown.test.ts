@@ -95,6 +95,14 @@ describe("htmlToMarkdown", () => {
 		expect(markdown.split("---\n\n")[1]).toBe("OpenAI\n\n[Chat](https://phaseo.app/chat) [Compare](https://phaseo.app/compare)\n\n| Provider |\n| --- |\n| OpenAI |\n");
 	});
 
+	it("expands column spans and drops hidden table cells", () => {
+		const { markdown } = htmlToMarkdown(
+			page(`<main><table><thead><tr><th>Provider</th><th>Input</th><th>Output</th><th>Latency</th><th class="competitor-cell hidden">Other</th></tr></thead><tbody><tr><td>Private</td><td colspan="2">Customer managed</td><td>120 ms</td><td class="competitor-cell hidden">x</td></tr></tbody></table></main>`),
+			"https://phaseo.app/x",
+		);
+		expect(markdown.split("---\n\n")[1]).toBe("| Provider | Input | Output | Latency |\n| --- | --- | --- | --- |\n| Private | Customer managed | | 120 ms |\n");
+	});
+
 	it("keeps hard line breaks and blockquotes", () => {
 		const { markdown } = htmlToMarkdown(page(`<main><p>Line one<br>Line two</p><blockquote><p>Quoted</p><p>More</p></blockquote></main>`), "https://phaseo.app/x");
 		expect(markdown.split("---\n\n")[1]).toBe("Line one  \nLine two\n\n> Quoted\n>\n> More\n");

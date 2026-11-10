@@ -80,6 +80,15 @@ describe("withMarkdownForAgents", () => {
 		expect(response.headers.get("set-cookie")).toBe("PHASEO_LOCALE=de-DE");
 	});
 
+	it("leaves .md redirects to sign-in, MFA and handler URLs unchanged", async () => {
+		for (const location of ["/auth/verify-mfa?returnUrl=%2Fsettings", "/sign-in?next=%2Fsettings", "/api/_web/x", "/assets/a.js"]) {
+			const fetchPage = async () => new Response(null, { status: 307, headers: { location } });
+			const response = await withMarkdownForAgents(new Request(`${origin}/settings.md`), fetchPage);
+			const expected = location.startsWith("/sign-in") ? `${origin}/sign-in.md?next=%2Fsettings` : location;
+			expect(response.headers.get("location")).toBe(expected);
+		}
+	});
+
 	it("passes negotiated redirects and non-HTML responses through", async () => {
 		const redirect = new Response(null, { status: 308, headers: { location: "/models/openai/gpt-5-5" } });
 		expect(await withMarkdownForAgents(new Request(`${origin}/models/openai/gpt-5-5/old`, { headers: { accept: "text/markdown" } }), async () => redirect)).toBe(redirect);
