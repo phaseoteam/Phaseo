@@ -1230,6 +1230,7 @@
 				"output_video_seconds": "Output video seconds",
 				"output_video_frames": "Output video frames",
 				"bfl_credits": "BFL credits",
+				"deepinfra_cost_usd": "DeepInfra usage (USD)",
 				"server_tool_web_search_requests": "Server tool web search requests",
 				"server_tool_web_search_extra_results": "Server tool web search extra results",
 				"server_tool_web_fetch_requests": "Server tool web fetch requests",

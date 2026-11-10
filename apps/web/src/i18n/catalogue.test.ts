@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import englishCatalogue from "../../messages/en-GB/catalogue.json";
 import germanCatalogue from "../../messages/de-DE/catalogue.json";
 import { PARAMETER_REFERENCE_IDS } from "@/lib/parameters/reference";
+import { PRICING_METER_VALUES } from "@/lib/pricing/meters";
 
 function flatten(value: unknown, prefix = "", result: Record<string, string> = {}) {
 	if (typeof value === "string") {
@@ -34,5 +35,10 @@ describe("catalogue localisation", () => {
 	it("describes every parameter in the parameter reference", () => {
 		const descriptions = englishCatalogue.models.detail.quickstart.parameterDescriptions;
 		expect(PARAMETER_REFERENCE_IDS.filter((id) => !(id in descriptions))).toEqual([]);
+	});
+
+	it("labels every pricing meter", () => {
+		const meters = englishCatalogue.modelDetail.pricing.meters;
+		expect(PRICING_METER_VALUES.filter((meter) => !(meter in meters))).toEqual([]);
 	});
 });

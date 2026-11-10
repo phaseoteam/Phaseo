@@ -1230,6 +1230,7 @@
 				"output_video_seconds": "输出视频秒数",
 				"output_video_frames": "输出视频帧数",
 				"bfl_credits": "BFL 积分",
+				"deepinfra_cost_usd": "DeepInfra 用量（美元）",
 				"server_tool_web_search_requests": "服务器工具网页搜索请求数",
 				"server_tool_web_search_extra_results": "服务器工具网页搜索额外结果数",
 				"server_tool_web_fetch_requests": "服务器工具网页抓取请求数",

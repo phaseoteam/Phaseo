@@ -1230,6 +1230,7 @@
 				"output_video_seconds": "出力動画の秒数",
 				"output_video_frames": "出力動画フレーム数",
 				"bfl_credits": "BFL クレジット",
+				"deepinfra_cost_usd": "DeepInfra 利用額 (USD)",
 				"server_tool_web_search_requests": "サーバーツールのウェブ検索リクエスト数",
 				"server_tool_web_search_extra_results": "サーバーツールのウェブ検索追加結果数",
 				"server_tool_web_fetch_requests": "サーバーツールのウェブ取得リクエスト数",
