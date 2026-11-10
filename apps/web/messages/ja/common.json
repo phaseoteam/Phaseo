@@ -2489,7 +2489,8 @@
 			"messages": "メッセージ",
 			"serviceTierLineStyles": "サービス階層の線スタイル",
 			"inAudience": "{audience} 限定",
-			"usOnlyInference": "米国限定の推論"
+			"usOnlyInference": "米国限定の推論",
+			"regionOnlyInference": "{region}限定の推論"
 		},
 		"publicModelCopy": {
 			"days": "{count}日",

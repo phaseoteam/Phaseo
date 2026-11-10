@@ -44,5 +44,11 @@ describe("generated pricing presentation copy", () => {
 			const usOnlyDisplay = localizedPricingDisplayLabel(usOnly, locale, t as never);
 			expect(usOnlyDisplay).not.toMatch(/inference_geo|Common\.ui\./);
 			if (locale !== "en-GB") expect(usOnlyDisplay).not.toBe("US-only inference");
+			const euOnly = conciseConditionLabel([{ op: "eq", path: "inference_geo", value: "eu" }]);
+			expect(euOnly).toBe("EU-only inference");
+			const euOnlyDisplay = localizedPricingDisplayLabel(euOnly, locale, t as never);
+			expect(euOnlyDisplay).toContain("EU");
+			expect(euOnlyDisplay).not.toMatch(/Common\.ui\.|\{region\}/);
+			if (locale !== "en-GB") expect(euOnlyDisplay).not.toBe("EU-only inference");
 	});
 });

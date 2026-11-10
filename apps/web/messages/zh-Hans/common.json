@@ -2489,7 +2489,8 @@
 			"messages": "消息",
 			"serviceTierLineStyles": "服务层级线条样式",
 			"inAudience": "仅限 {audience}",
-			"usOnlyInference": "仅限美国推理"
+			"usOnlyInference": "仅限美国推理",
+			"regionOnlyInference": "仅限{region}推理"
 		},
 		"publicModelCopy": {
 			"days": "{count}天",

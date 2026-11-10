@@ -2489,7 +2489,8 @@
 			"messages": "Nachrichten",
 			"serviceTierLineStyles": "Linienstile der Servicestufen",
 			"inAudience": "In {audience}",
-			"usOnlyInference": "Inferenz nur in den USA"
+			"usOnlyInference": "Inferenz nur in den USA",
+			"regionOnlyInference": "Inferenz nur in {region}"
 		},
 		"publicModelCopy": {
 			"days": "{count, plural, one {# Tag} other {# Tage}}",
