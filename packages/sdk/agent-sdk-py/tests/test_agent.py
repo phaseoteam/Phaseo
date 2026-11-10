@@ -243,3 +243,26 @@ def test_run_and_continue_run_stop_when_override_the_definition():
     review_free = create_agent({"id": "stop-run", "stop_when": lambda _state: None})
     stopped = review_free.run(input="go", client=AnswerClient(), stop_when=stop_now)
     assert stopped.run.status == "stopped" and stopped.run.stop_reason == "run_override"
+
+
+def test_stop_when_ends_a_tool_loop():
+    calls = []
+
+    class LoopingClient:
+        def generate(self, request):
+            return AgentModelResponse(AgentMessage("assistant", "calling", [AgentToolCall(f"ping_{len(calls)}", "ping", {})]))
+
+    agent = create_agent({
+        "id": "looping",
+        "max_steps": 5,
+        "tools": [AgentTool("ping", lambda _input, _ctx: calls.append(1) or "pong")],
+    })
+
+    result = agent.run(input="go", client=LoopingClient(), stop_when=lambda state: "enough" if state["step_count"] >= 2 else None)
+    assert len(calls) == 2
+    assert result.run.status == "stopped" and result.run.stop_reason == "enough"
+    assert result.output == "calling"
+
+    calls.clear()
+    by_tool = agent.run(input="go", client=LoopingClient(), stop_when=lambda state: "pinged" if any(call.name == "ping" for call in state["tool_calls"]) else None)
+    assert len(calls) == 1 and by_tool.run.stop_reason == "pinged"

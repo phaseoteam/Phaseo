@@ -980,6 +980,10 @@ class Agent:
             run.usage.cost += current_usage.cost
             _emit(on_event, "model.completed", run, step_index=step_index, attempt=step.model_attempts, request_id=response.request_id, model=step.model)
 
+            def stop_reason() -> Any:
+                state = {"step_count": run.step_count, "usage": run.usage, "tool_calls": response.message.tool_calls, "finish_reason": response.finish_reason, "elapsed_ms": (__import__("time").time() - loop_started) * 1000}
+                return next((value for condition in stop_conditions if (value := condition(state))), None)
+
             parsed_output = self.definition.parse_output(response.message.content) if self.definition.parse_output and not response.message.tool_calls else None
             if self.definition.human_review:
                 review = self.definition.human_review(
@@ -1054,11 +1058,16 @@ class Agent:
                     _emit(on_event, "run.waiting_for_human", run, step_index=step_index, pause=_jsonable(run.pause))
                     return AgentRunResult(run, steps, None, run.messages, run.usage)
                 step.status = "checkpointed"
+                reason = stop_reason()
+                if reason:
+                    run.status = "stopped"
+                    run.stop_reason = str(reason)
+                    run.result = response.message.content
+                    return AgentRunResult(run, steps, run.result, run.messages, run.usage)
                 _emit(on_event, "checkpoint.saved", run, step_index=step_index)
                 continue
 
-            stop_state = {"step_count": run.step_count, "usage": run.usage, "tool_calls": response.message.tool_calls, "finish_reason": response.finish_reason, "elapsed_ms": (__import__("time").time() - loop_started) * 1000}
-            reason = next((value for condition in stop_conditions if (value := condition(stop_state))), None)
+            reason = stop_reason()
             output = parsed_output if self.definition.parse_output else response.message.content
             output = _validate(self.definition.output_schema, output, "agent output")
             if reason:
