@@ -1483,4 +1483,14 @@ describe("withoutRegionSurchargeRules", () => {
 		];
 		expect(withoutRegionSurchargeRules(rules).map((rule) => rule.id)).toEqual(["input-us", "output"]);
 	});
+
+	test("keeps region-only prices when the global price is not in effect", () => {
+		const now = Date.parse("2026-11-10T12:00:00Z");
+		const rules = [
+			{ id: "input-old", meter: "input_text_tokens", match: [], effective_to: "2026-11-01T00:00:00Z" },
+			{ id: "input-next", meter: "input_text_tokens", match: [], effective_from: "2026-12-01T00:00:00Z" },
+			{ id: "input-us", meter: "input_text_tokens", match: us },
+		];
+		expect(withoutRegionSurchargeRules(rules, now).map((rule) => rule.id)).toEqual(["input-old", "input-next", "input-us"]);
+	});
 });
