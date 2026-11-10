@@ -241,6 +241,31 @@ describe("main's spend-limit coordinator on the v1 seed", () => {
 		expect(await counters(ws)).toEqual(exactly(700));
 	});
 
+	it.each([
+		{ shape: "nothing charged (cost read back as 0)", charged: null, rowCost: 0 },
+		{ shape: "the debit committed (cost unread)", charged: 600, rowCost: null },
+		{ shape: "300 of it charged (cost read back as 300)", charged: 300, rowCost: 300 },
+	])("a pending success row with $shape counts its expected 600 once, as 1 request", async ({ charged, rowCost }) => {
+		// #3633 (9c8f4c7): a buffered request whose charge fails after its 200 stays a success row,
+		// with cost_nanos as read back and expected_cost_nanos as the bill, recorded as 1 request.
+		const ws = await workspace();
+		const ids = { billingId: `bill-pending-ok-${charged}`, requestId: `req-pending-ok-${charged}` };
+		startCoordinator();
+		expect(await counters(ws)).toEqual(exactly(0));
+		if (charged !== null) await chargeOnce(ws, ids.billingId, charged);
+		await auditRow(ws, { ...ids, success: true, costNanos: rowCost, expectedCostNanos: 600, billingStatus: "pending_reconciliation" });
+		await record(ws, { ...ids, costNanos: 600, requests: 1 });
+		expect(await counters(ws)).toEqual(exactly(600, 1));
+		await coordinator.reseedNow();
+		// An applied charge is also counted from its row while the coordinator holds the request.
+		if (charged === null) expect(await counters(ws)).toEqual(exactly(600, 1));
+		else atLeast(await counters(ws), 600);
+		await coordinator.reseedNow();
+		expect(await counters(ws)).toEqual(exactly(600, 1));
+		startCoordinator();
+		expect(await counters(ws)).toEqual(exactly(600, 1));
+	});
+
 	it("a one-off debit of 600 whose failure audit row keeps cost_nanos 600 counts 600 once, through reseeds and a restart", async () => {
 		const ws = await workspace();
 		startCoordinator();
