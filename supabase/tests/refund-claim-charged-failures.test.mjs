@@ -67,8 +67,9 @@ assert(/LANGUAGE plpgsql/.test(normalize(await read('../schemas/public/functions
 assert(normalize(await read('../schemas/public/tables/gateway_requests.sql')).includes('"expected_cost_nanos"               bigint,'),
   'the declarative table has the column');
 assert(billingIndex.name > migration.name, 'the index migration runs after the refund migration');
-// Later migrations (budget_enforcement_money_hygiene) do not replace stripe_claim_self_serve_refund again.
-for (const later of migrations.filter((name) => name > migration.name)) {
+// After the shortfall migration, the last to define it, no migration (budget_enforcement_money_hygiene
+// and the rest of #3547) replaces stripe_claim_self_serve_refund again.
+for (const later of migrations.filter((name) => name > underRecorded.name)) {
   assert(!(await read(`../migrations/${later}`)).includes('FUNCTION public.stripe_claim_self_serve_refund'),
     `${later} does not redefine stripe_claim_self_serve_refund`);
 }
