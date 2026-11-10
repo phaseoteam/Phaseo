@@ -1041,6 +1041,8 @@
 			"showHiddenProviders": "Mostrar provedores ocultos",
 			"selectPercentile": "Selecionar percentil dos provedores",
 			"sortBy": "Ordenar provedores por {metric}",
+			"sortButton": "Ordenar",
+			"sortDefault": "Ordem padrão",
 			"provider": "Provedor",
 			"inputPerMillion": "Entrada $/M",
 			"outputPerMillion": "Saída $/M",

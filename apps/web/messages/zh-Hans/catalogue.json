@@ -1041,6 +1041,8 @@
 			"showHiddenProviders": "显示隐藏的提供商",
 			"selectPercentile": "选择提供商百分位",
 			"sortBy": "按{metric}对提供商排序",
+			"sortButton": "排序",
+			"sortDefault": "默认顺序",
 			"provider": "提供商",
 			"inputPerMillion": "输入价格 $/M",
 			"outputPerMillion": "输出价格 $/M",

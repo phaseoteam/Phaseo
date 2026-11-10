@@ -1041,6 +1041,8 @@
 			"showHiddenProviders": "非表示のプロバイダーを表示",
 			"selectPercentile": "プロバイダーのパーセンタイルを選択",
 			"sortBy": "{metric}でプロバイダーを並べ替え",
+			"sortButton": "並べ替え",
+			"sortDefault": "デフォルトの順序",
 			"provider": "プロバイダー",
 			"inputPerMillion": "入力 $/M",
 			"outputPerMillion": "出力 $/M",
