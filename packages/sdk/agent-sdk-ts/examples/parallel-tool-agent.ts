@@ -3,6 +3,14 @@ import { createAgent, createGatewayAgentClient, defineTool } from "@phaseo/agent
 const fetchDocs = defineTool({
 	id: "fetch-docs",
 	description: "Fetch one internal docs summary by slug.",
+	parameters: {
+		type: "object",
+		properties: {
+			slug: { type: "string" },
+		},
+		required: ["slug"],
+		additionalProperties: false,
+	},
 	async execute(input: { slug: string }) {
 		return {
 			slug: input.slug,
@@ -14,6 +22,14 @@ const fetchDocs = defineTool({
 const fetchStatus = defineTool({
 	id: "fetch-status",
 	description: "Fetch one status summary by component id.",
+	parameters: {
+		type: "object",
+		properties: {
+			component: { type: "string" },
+		},
+		required: ["component"],
+		additionalProperties: false,
+	},
 	async execute(input: { component: string }) {
 		return {
 			component: input.component,
@@ -25,6 +41,14 @@ const fetchStatus = defineTool({
 const fetchIncidents = defineTool({
 	id: "fetch-incidents",
 	description: "Fetch one current incident digest by service id.",
+	parameters: {
+		type: "object",
+		properties: {
+			service: { type: "string" },
+		},
+		required: ["service"],
+		additionalProperties: false,
+	},
 	async execute(input: { service: string }) {
 		return {
 			service: input.service,

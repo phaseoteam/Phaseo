@@ -14,6 +14,14 @@ type CodeReviewPlan = {
 const lookupDiffSummary = defineTool({
 	id: "lookup-diff-summary",
 	description: "Return a short summary of the changed files in one pull request.",
+	parameters: {
+		type: "object",
+		properties: {
+			pullRequestId: { type: "string" },
+		},
+		required: ["pullRequestId"],
+		additionalProperties: false,
+	},
 	async execute(input: { pullRequestId: string }) {
 		return {
 			pullRequestId: input.pullRequestId,
@@ -27,6 +35,14 @@ const lookupDiffSummary = defineTool({
 const lookupFailingChecks = defineTool({
 	id: "lookup-failing-checks",
 	description: "Return the failing CI checks for one pull request.",
+	parameters: {
+		type: "object",
+		properties: {
+			pullRequestId: { type: "string" },
+		},
+		required: ["pullRequestId"],
+		additionalProperties: false,
+	},
 	async execute(input: { pullRequestId: string }) {
 		return {
 			pullRequestId: input.pullRequestId,
