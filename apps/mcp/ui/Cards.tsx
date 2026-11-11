@@ -6,11 +6,42 @@ import type { Credits, Estimate } from "./cardData";
 
 export { cardFor } from "./cardData";
 
-// Inline cards follow ChatGPT's card guidance: no tabs or drill-ins, at most two
-// actions, and the full explorer only when the user asks for it.
+// Inline cards follow ChatGPT's and Claude's card guidance: no tabs or drill-ins,
+// at most two actions, and the full explorer only when the user asks for it.
 
 const MAX_CARD_MODELS = 5;
 const USAGE_URL = "https://phaseo.app/gateway/usage";
+
+// Shown until the tool result arrives, in the shape of the card that is coming.
+export function CardSkeleton({ tool }: { tool: string | undefined }) {
+  const stat = tool === "cost_estimate" || tool === "credits_get";
+  return (
+    <section className="card" aria-busy="true">
+      <span className="sr-only" role="status">
+        Loading Phaseo data…
+      </span>
+      {stat ? (
+        <div className="stat" aria-hidden="true">
+          <span className="skeleton" style={{ width: 96 }} />
+          <span className="skeleton value" />
+        </div>
+      ) : (
+        <div className="rows" aria-hidden="true">
+          {[0, 1, 2].map((index) => (
+            <div className="row" key={index}>
+              <span className="logo skeleton" />
+              <div className="skeleton-stack">
+                <span className="skeleton" style={{ width: `${60 - index * 10}%` }} />
+                <span className="skeleton" style={{ width: "40%" }} />
+              </div>
+              <span className="skeleton price" />
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
 
 export function ModelsCard({
   models,

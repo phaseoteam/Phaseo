@@ -32,9 +32,20 @@ Tool results render inline as cards: `models_list` as rows laid out like the
 website's model list, `cost_estimate` as a total with its breakdown, and
 `credits_get` as the balance with 30-day usage. Cards have no tabs or drill-ins and
 at most two actions; "Compare these" and "Open explorer" request fullscreen. Nothing
-opens fullscreen on its own. The resource prefers `inline`, and `models_list`
-declares no sidebar or thread entry points: ChatGPT opens entry-point tools
-fullscreen even when the model calls them.
+opens fullscreen on its own. The resource prefers `inline` (ChatGPT's
+`openai/ui.preferredDisplayMode`; Claude is inline by default).
+
+Hosts open entry-point tools fullscreen even when the model calls them, so
+`models_list` declares none. The launcher is a separate tool,
+`open_model_explorer`, with no inputs: its `openai/ui.entrypoints` (`global` and
+`thread`) list it in ChatGPT's sidebar and thread panel and on Claude's Artifacts
+page, where people can pin it. It returns the explorer's own first page of the
+catalogue. On Claude, custom connectors added by URL and Verified directory
+listings get the entry point; Community listings do not.
+
+Cards follow Claude's mobile guidance too: the resource asks for no host border, so
+the view pads itself with the host's `safeAreaInsets`; touch screens get 44px tap
+targets; and a card-shaped placeholder shows while the tool runs.
 
 Colours fall back to Phaseo's neutral tokens from `apps/web/src/styles/globals.css`
 but take the host's MCP Apps theme variables and font stack when provided. The cards

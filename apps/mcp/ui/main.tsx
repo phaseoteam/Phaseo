@@ -4,7 +4,7 @@ import { money, type CardModel, type Model } from "./model";
 import { ModelComparison } from "./ModelComparison";
 import { ModelDetails } from "./ModelDetails";
 import { ModelRow } from "./ModelRow";
-import { cardFor, CreditsCard, EstimateCard, ModelsCard } from "./Cards";
+import { CardSkeleton, cardFor, CreditsCard, EstimateCard, ModelsCard } from "./Cards";
 import { bridge, canOpenFullscreen, openFullscreen, readResult, useBridge } from "./bridge";
 import { linkedModels, modelLink, modelContext } from "./integration";
 import { SavedShortlists } from "./SavedShortlists";
@@ -713,12 +713,7 @@ function Root() {
         <p role="alert" className="card-error">{error}</p>
       </section>
     );
-  else if (!card)
-    inline = (
-      <section className="card" aria-busy="true">
-        <p className="card-empty">Loading Phaseo data…</p>
-      </section>
-    );
+  else if (!card) inline = <CardSkeleton tool={context?.toolInfo?.tool.name} />;
   else if (card.kind === "estimate") inline = <EstimateCard estimate={card.estimate} />;
   else if (card.kind === "credits") inline = <CreditsCard credits={card.credits} />;
   else
