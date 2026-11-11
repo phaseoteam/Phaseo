@@ -8,6 +8,7 @@ require_relative "phaseo_sdk/model_ids"
 require_relative "phaseo_sdk/workflows"
 require_relative "phaseo_sdk/realtime"
 require_relative "phaseo_sdk/workload_tokens"
+require_relative "phaseo_sdk/multipart"
 require_relative "gen/client"
 require_relative "gen/models"
 require_relative "gen/operations"
@@ -264,8 +265,12 @@ module PhaseoSdk
       generate_speech(payload)
     end
 
+    # Transcribes audio. With "file" (a Pathname, an IO such as File.open(path, "rb"), or a String of
+    # raw bytes) the request is sent as multipart/form-data; set "filename" (its extension names the
+    # format) and optionally "content_type" for raw bytes. Without "file", sends JSON for "file_url",
+    # "file_id" or "s3_presigned_url" requests.
     def generate_transcription(payload)
-      with_lifecycle_and_telemetry(endpoint: "audio.transcriptions", payload: payload, check_lifecycle: true) do
+      audio_request(endpoint: "audio.transcriptions", path: "/audio/transcriptions", payload: payload) do
         ::Phaseo::Gen::Operations.createTranscription(@raw_client, body: payload)
       end
     end
@@ -274,8 +279,10 @@ module PhaseoSdk
       generate_transcription(payload)
     end
 
+    # Translates audio to English. The gateway requires "file" (a Pathname, an IO or a String of raw
+    # bytes), sent as multipart/form-data; set "filename" (its extension names the format) for raw bytes.
     def generate_translation(payload)
-      with_lifecycle_and_telemetry(endpoint: "audio.translations", payload: payload, check_lifecycle: true) do
+      audio_request(endpoint: "audio.translations", path: "/audio/translations", payload: payload) do
         ::Phaseo::Gen::Operations.createTranslation(@raw_client, body: payload)
       end
     end
@@ -366,9 +373,32 @@ module PhaseoSdk
       end
     end
 
+    # Uploads a batch input file as multipart/form-data to /batches/files. "file" is a Pathname, an IO
+    # or a String of content (for example JSONL text); "purpose" is sent as a form field, "filename"
+    # and "content_type" name the part, and "model" / "provider" go in the query string.
     def upload_file(payload)
-      with_lifecycle_and_telemetry(endpoint: "files.upload", payload: payload, check_lifecycle: false) do
-        ::Phaseo::Gen::Operations.uploadFile(@raw_client, body: payload)
+      fields = stringify_payload_keys(payload)
+      raise ArgumentError, "file is required" if fields["file"].nil?
+
+      file = fields.delete("file")
+      filename = fields.delete("filename")
+      content_type = fields.delete("content_type") || "application/octet-stream"
+      query = {}
+      %w[model provider].each do |key|
+        value = fields.delete(key)
+        query[key] = value.to_s unless value.nil? || value.to_s.empty?
+      end
+      telemetry_payload = fields.merge(query).merge("file" => "[File]")
+      with_lifecycle_and_telemetry(endpoint: "files.upload", payload: telemetry_payload, check_lifecycle: false) do
+        bytes, name = Multipart.read_file(file, filename)
+        name = Multipart::DEFAULT_UPLOAD_FILENAME if name.nil? || name.empty?
+        body = Multipart.encode(
+          fields: Multipart.fields(fields),
+          file_bytes: bytes,
+          filename: name,
+          content_type: content_type
+        )
+        @raw_client.request(method: "POST", path: "/batches/files", query: query.empty? ? nil : query, body: body)
       end
     end
 
@@ -652,6 +682,24 @@ module PhaseoSdk
       return if is_model_requestable_for_inference?(lifecycle)
 
       raise RuntimeError, build_inactive_model_request_message(lifecycle)
+    end
+
+    def audio_request(endpoint:, path:, payload:, &json_request)
+      fields = payload.is_a?(Hash) ? stringify_payload_keys(payload) : nil
+      if fields.nil? || fields["file"].nil?
+        return with_lifecycle_and_telemetry(endpoint: endpoint, payload: payload, check_lifecycle: true, &json_request)
+      end
+
+      telemetry_payload = fields.merge("file" => "[File]")
+      with_lifecycle_and_telemetry(endpoint: endpoint, payload: telemetry_payload, check_lifecycle: true) do
+        @raw_client.request(method: "POST", path: path, body: Multipart.audio_body(fields))
+      end
+    end
+
+    def stringify_payload_keys(payload)
+      raise ArgumentError, "payload must be a Hash" unless payload.is_a?(Hash)
+
+      payload.each_with_object({}) { |(key, value), out| out[key.to_s] = value }
     end
 
     def with_lifecycle_and_telemetry(endpoint:, payload:, check_lifecycle:)
