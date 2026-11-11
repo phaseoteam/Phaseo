@@ -773,7 +773,7 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect((result as Response).status).toBe(400);
 		expect(await (result as Response).json()).toMatchObject({
 			error: "unsupported_parameter",
-			message: "This request has 129 questions, and no route for openai/gpt-6-luna that supports its inputs accepts more than 128.",
+			message: "This request has 129 questions, and none of the routes available for this request accepts more than 128.",
 		});
 		expect(rankProvidersMock).not.toHaveBeenCalled();
 		expect(resolveProviderExecutorMock).not.toHaveBeenCalled();
@@ -789,7 +789,22 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		} as any, createTiming());
 		expect((result as Response).status).toBe(400);
 		expect(await (result as Response).json()).toMatchObject({
-			message: "This request has 65 questions, and no route for typesafe/jev-1.14.0 that supports its inputs accepts more than 64.",
+			message: "This request has 65 questions, and none of the routes available for this request accepts more than 64.",
+		});
+		expect(rankProvidersMock).not.toHaveBeenCalled();
+	});
+	it("reports the limit of the routes left after provider selection", async () => {
+		// The guard has already applied `provider.only`, which removed the route allowing 1,000.
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [
+			{ providerId: "cloudflare", inputModalities: ["text"], capabilityParams: { max_questions: 64 } },
+		] });
+		const questions = Object.fromEntries(Array.from({ length: 100 }, (_, index) => [`q${index}`, { type: "noul", instructions: "Safe?" }]));
+		const result = await doRequestWithIR(createCtx({ endpoint: "decisions", capability: "decisions.make", model: "google/gemini-decision-1" }), {
+			model: "google/gemini-decision-1", state: "Text", questions, providerOptions: undefined,
+		} as any, createTiming());
+		expect((result as Response).status).toBe(400);
+		expect(await (result as Response).json()).toMatchObject({
+			message: "This request has 100 questions, and none of the routes available for this request accepts more than 64.",
 		});
 		expect(rankProvidersMock).not.toHaveBeenCalled();
 	});
