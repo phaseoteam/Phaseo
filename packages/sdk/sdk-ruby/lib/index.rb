@@ -265,10 +265,11 @@ module PhaseoSdk
       generate_speech(payload)
     end
 
-    # Transcribes audio. With "file" (a Pathname, an IO such as File.open(path, "rb"), or a String of
-    # raw bytes) the request is sent as multipart/form-data; set "filename" (its extension names the
-    # format) and optionally "content_type" for raw bytes. Without "file", sends JSON for "file_url",
-    # "file_id" or "s3_presigned_url" requests.
+    # Transcribes audio. With "file" the request is sent as multipart/form-data. "file" is a
+    # Pathname, an IO such as File.open(path, "rb") (named by its path, or by "filename"), or a Hash
+    # { file_name:, content:, content_type: } for bytes in memory. A plain String is rejected. The
+    # filename's extension tells the gateway the audio format; "content_type" is optional. Without
+    # "file", sends JSON for "file_url", "file_id" or "s3_presigned_url" requests.
     def generate_transcription(payload)
       audio_request(endpoint: "audio.transcriptions", path: "/audio/transcriptions", payload: payload) do
         ::Phaseo::Gen::Operations.createTranscription(@raw_client, body: payload)
@@ -279,8 +280,8 @@ module PhaseoSdk
       generate_transcription(payload)
     end
 
-    # Translates audio to English. The gateway requires "file" (a Pathname, an IO or a String of raw
-    # bytes), sent as multipart/form-data; set "filename" (its extension names the format) for raw bytes.
+    # Translates audio to English. The gateway requires "file", sent as multipart/form-data and given
+    # in the same forms as for generate_transcription (Pathname, IO, or { file_name:, content: }).
     def generate_translation(payload)
       audio_request(endpoint: "audio.translations", path: "/audio/translations", payload: payload) do
         ::Phaseo::Gen::Operations.createTranslation(@raw_client, body: payload)
@@ -374,30 +375,23 @@ module PhaseoSdk
     end
 
     # Uploads a batch input file as multipart/form-data to /batches/files. "file" is a Pathname, an IO
-    # or a String of content (for example JSONL text); "purpose" is sent as a form field, "filename"
-    # and "content_type" name the part, and "model" / "provider" go in the query string.
+    # (named by its path, or by "filename"), or a Hash { file_name:, content:, content_type: } for
+    # content in memory such as JSONL text. A plain String is rejected. "purpose" is sent as a form
+    # field, "content_type" optionally names the part's type, and "model" / "provider" go in the
+    # query string.
     def upload_file(payload)
       fields = stringify_payload_keys(payload)
       raise ArgumentError, "file is required" if fields["file"].nil?
 
-      file = fields.delete("file")
-      filename = fields.delete("filename")
-      content_type = fields.delete("content_type") || "application/octet-stream"
       query = {}
       %w[model provider].each do |key|
         value = fields.delete(key)
         query[key] = value.to_s unless value.nil? || value.to_s.empty?
       end
-      telemetry_payload = fields.merge(query).merge("file" => "[File]")
+      body = Multipart.file_body(fields)
+      telemetry_payload = fields.reject { |key, _| %w[filename content_type].include?(key) }
+                                .merge(query).merge("file" => "[File]")
       with_lifecycle_and_telemetry(endpoint: "files.upload", payload: telemetry_payload, check_lifecycle: false) do
-        bytes, name = Multipart.read_file(file, filename)
-        name = Multipart::DEFAULT_UPLOAD_FILENAME if name.nil? || name.empty?
-        body = Multipart.encode(
-          fields: Multipart.fields(fields),
-          file_bytes: bytes,
-          filename: name,
-          content_type: content_type
-        )
         @raw_client.request(method: "POST", path: "/batches/files", query: query.empty? ? nil : query, body: body)
       end
     end
@@ -690,9 +684,10 @@ module PhaseoSdk
         return with_lifecycle_and_telemetry(endpoint: endpoint, payload: payload, check_lifecycle: true, &json_request)
       end
 
+      body = Multipart.audio_body(fields)
       telemetry_payload = fields.merge("file" => "[File]")
       with_lifecycle_and_telemetry(endpoint: endpoint, payload: telemetry_payload, check_lifecycle: true) do
-        @raw_client.request(method: "POST", path: path, body: Multipart.audio_body(fields))
+        @raw_client.request(method: "POST", path: path, body: body)
       end
     end
 

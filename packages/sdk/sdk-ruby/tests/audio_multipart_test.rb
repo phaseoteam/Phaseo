@@ -59,18 +59,21 @@ class AudioMultipartTest < Minitest::Test
     end
   end
 
-  def test_transcription_with_file_sends_multipart
+  def file_part(captured)
+    parse_multipart(captured).find { |part| part[:name] == "file" }
+  end
+
+  def test_transcription_with_file_object_sends_multipart
     audio = "RIFF\x00\x01fake-wav-bytes".b
     result, captured = with_server('{"text":"hello"}') do |client|
       client.generate_transcription(
-        "model" => "openai/gpt-4o-transcribe",
-        "file" => audio,
-        "filename" => "clip.wav",
+        "model" => "example/transcribe-1",
+        "file" => { file_name: "clip.wav", content: audio, content_type: "audio/x-wav" },
         "language" => "en",
         "temperature" => 0.2,
         "stream" => false,
         "timestamp_granularities" => ["word", "segment"],
-        "provider" => { "order" => ["openai"] }
+        "provider" => { "order" => ["example"] }
       )
     end
 
@@ -81,33 +84,48 @@ class AudioMultipartTest < Minitest::Test
     file = parts.find { |part| part[:name] == "file" }
     refute_nil file, "file part missing"
     assert_equal "clip.wav", file[:filename]
-    assert_equal "audio/wav", file[:content_type]
+    assert_equal "audio/x-wav", file[:content_type]
     assert_equal audio, file[:value]
     fields = parts.reject { |part| part[:name] == "file" }.to_h { |part| [part[:name], part[:value]] }
-    assert_equal "openai/gpt-4o-transcribe", fields["model"]
+    assert_equal "example/transcribe-1", fields["model"]
     assert_equal "en", fields["language"]
     assert_equal "0.2", fields["temperature"]
     assert_equal "false", fields["stream"]
     assert_equal '["word","segment"]', fields["timestamp_granularities"]
-    assert_equal '{"order":["openai"]}', fields["provider"]
+    assert_equal '{"order":["example"]}', fields["provider"]
     refute fields.key?("filename")
+    refute fields.key?("content_type")
+  end
+
+  def test_file_object_accepts_string_keys_and_io_content
+    _result, captured = with_server('{"text":"hi"}') do |client|
+      client.generate_transcription(
+        "model" => "example/transcribe-1",
+        "file" => { "file_name" => "note.flac", "content" => StringIO.new("flac-bytes") }
+      )
+    end
+
+    file = file_part(captured)
+    assert_equal "note.flac", file[:filename]
+    assert_equal "audio/flac", file[:content_type]
+    assert_equal "flac-bytes", file[:value]
   end
 
   def test_transcription_with_url_only_sends_json
     _result, captured = with_server('{"text":"hello"}') do |client|
-      client.generate_transcription("model" => "openai/whisper-1", "file_url" => "https://example.com/a.mp3")
+      client.generate_transcription("model" => "example/transcribe-1", "file_url" => "https://example.com/a.mp3")
     end
 
     assert_equal "application/json", captured.headers["content-type"]
-    assert_equal({ "model" => "openai/whisper-1", "file_url" => "https://example.com/a.mp3" }, JSON.parse(captured.body))
+    assert_equal({ "model" => "example/transcribe-1", "file_url" => "https://example.com/a.mp3" }, JSON.parse(captured.body))
   end
 
-  def test_translation_with_path_sends_multipart_with_file_name
+  def test_translation_with_pathname_uses_basename
     Dir.mktmpdir do |dir|
       path = File.join(dir, "speech.ogg")
       File.binwrite(path, "OggS-bytes".b)
       _result, captured = with_server('{"text":"hi"}') do |client|
-        client.generate_translation(model: "openai/whisper-1", file: Pathname.new(path))
+        client.generate_translation(model: "example/transcribe-1", file: Pathname.new(path))
       end
 
       assert_equal "POST /v1/audio/translations HTTP/1.1", captured.request_line
@@ -117,19 +135,75 @@ class AudioMultipartTest < Minitest::Test
       assert_equal "speech.ogg", file[:filename]
       assert_equal "audio/ogg", file[:content_type]
       assert_equal "OggS-bytes".b, file[:value]
-      assert_equal "openai/whisper-1", parts.find { |part| part[:name] == "model" }[:value]
+      assert_equal "example/transcribe-1", parts.find { |part| part[:name] == "model" }[:value]
     end
   end
 
-  def test_translation_with_io_uses_default_filename
+  def test_translation_with_file_io_uses_its_own_name
+    Dir.mktmpdir do |dir|
+      path = File.join(dir, "memo.webm")
+      File.binwrite(path, "webm-bytes".b)
+      _result, captured = File.open(path, "rb") do |io|
+        with_server('{"text":"hi"}') do |client|
+          client.create_translation("model" => "example/transcribe-1", "file" => io)
+        end
+      end
+
+      file = file_part(captured)
+      assert_equal "memo.webm", file[:filename]
+      assert_equal "audio/webm", file[:content_type]
+      assert_equal "webm-bytes", file[:value]
+    end
+  end
+
+  def test_io_with_sibling_filename
     _result, captured = with_server('{"text":"hi"}') do |client|
-      client.create_translation("model" => "openai/whisper-1", "file" => StringIO.new("mp3-bytes"))
+      client.create_translation(
+        "model" => "example/transcribe-1",
+        "file" => StringIO.new("mp3-bytes"),
+        "filename" => "clip.mp3"
+      )
     end
 
-    file = parse_multipart(captured).find { |part| part[:name] == "file" }
-    assert_equal "audio.mp3", file[:filename]
+    file = file_part(captured)
+    assert_equal "clip.mp3", file[:filename]
     assert_equal "audio/mpeg", file[:content_type]
     assert_equal "mp3-bytes", file[:value]
+  end
+
+  def test_unknown_extension_falls_back_to_octet_stream
+    _result, captured = with_server('{"text":"hi"}') do |client|
+      client.create_transcription("model" => "example/transcribe-1", "file" => StringIO.new("x"), "filename" => "clip.xyz")
+    end
+
+    assert_equal "application/octet-stream", file_part(captured)[:content_type]
+  end
+
+  def test_io_without_filename_raises
+    client = PhaseoSdk::Phaseo.new(api_key: "test", enable_deprecation_warnings: false)
+    error = assert_raises(ArgumentError) do
+      client.create_translation("model" => "example/transcribe-1", "file" => StringIO.new("mp3-bytes"))
+    end
+
+    assert_match(/filename/, error.message)
+    assert_match(/extension/, error.message)
+  end
+
+  def test_plain_string_file_raises
+    client = PhaseoSdk::Phaseo.new(api_key: "test", enable_deprecation_warnings: false)
+    error = assert_raises(ArgumentError) do
+      client.generate_transcription("model" => "example/transcribe-1", "file" => "clip.wav", "filename" => "clip.wav")
+    end
+
+    assert_match(/Pathname\.new/, error.message)
+    assert_match(/file_name:/, error.message)
+  end
+
+  def test_file_object_without_file_name_raises
+    client = PhaseoSdk::Phaseo.new(api_key: "test", enable_deprecation_warnings: false)
+    assert_raises(ArgumentError) do
+      client.generate_transcription("model" => "example/transcribe-1", "file" => { content: "bytes".b })
+    end
   end
 
   def test_upload_file_sends_multipart_with_model_and_provider_query
@@ -137,19 +211,19 @@ class AudioMultipartTest < Minitest::Test
     result, captured = with_server('{"id":"file_123","purpose":"batch"}') do |client|
       client.upload_file(
         "purpose" => "batch",
-        "file" => jsonl,
-        "filename" => "input.jsonl",
-        "model" => "openai/gpt-5-mini",
-        "provider" => "openai"
+        "file" => { "file_name" => "input.jsonl", "content" => jsonl, "content_type" => "application/jsonl" },
+        "model" => "example/chat-1",
+        "provider" => "example"
       )
     end
 
     assert_equal "file_123", result["id"]
-    assert_equal "POST /v1/batches/files?model=openai%2Fgpt-5-mini&provider=openai HTTP/1.1", captured.request_line
+    assert_equal "POST /v1/batches/files?model=example%2Fchat-1&provider=example HTTP/1.1", captured.request_line
     assert_match %r{\Amultipart/form-data; boundary=}, captured.headers["content-type"]
     parts = parse_multipart(captured)
     file = parts.find { |part| part[:name] == "file" }
     assert_equal "input.jsonl", file[:filename]
+    assert_equal "application/jsonl", file[:content_type]
     assert_equal jsonl, file[:value]
     assert_equal [["purpose", "batch"]], parts.reject { |part| part[:name] == "file" }.map { |part| [part[:name], part[:value]] }
   end

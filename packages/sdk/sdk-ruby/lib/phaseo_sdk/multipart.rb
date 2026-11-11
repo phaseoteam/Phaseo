@@ -18,8 +18,7 @@ module PhaseoSdk
       ".wav" => "audio/wav",
       ".webm" => "audio/webm"
     }.freeze
-    DEFAULT_AUDIO_FILENAME = "audio.mp3"
-    DEFAULT_UPLOAD_FILENAME = "upload"
+    DEFAULT_CONTENT_TYPE = "application/octet-stream"
     # The gateway parses these form fields from one JSON string.
     JSON_FIELDS = %w[
       provider debug include timestamp_granularities chunking_strategy languages keywords context_bias
@@ -27,20 +26,84 @@ module PhaseoSdk
 
     module_function
 
-    # Reads a file input into [bytes, filename]. Accepts a Pathname (read from disk), an IO-like
-    # object that responds to #read (a File's path names the part), or a String of raw content.
-    # Strings are always content, never paths: pass Pathname("audio.mp3") or File.open(...) for a file.
-    def read_file(value, filename = nil)
-      if value.is_a?(Pathname)
-        [File.binread(value.to_s), filename || value.basename.to_s]
-      elsif value.respond_to?(:read)
-        name = value.respond_to?(:path) && value.path ? File.basename(value.path.to_s) : nil
-        [value.read.to_s.b, filename || name]
+    # Resolves a file value into [bytes, filename, content_type]. A file value is one of:
+    # - a Hash { file_name:, content:, content_type: } (String or Symbol keys): file_name is required,
+    #   content is a binary String or an IO, content_type is optional;
+    # - a Pathname, read from disk and named by its basename;
+    # - an IO (responds to #read), named by +filename+ or else by its own #path (a File has one).
+    # A plain String is rejected because it could be either bytes or a path.
+    #
+    # +filename+ and +content_type+ come from the request's sibling "filename" and "content_type"
+    # keys. With no filename at all this raises, because the gateway reads the format from the file
+    # extension. The content type is the explicit one, else looked up from the filename extension,
+    # else application/octet-stream.
+    def resolve_file(value, filename: nil, content_type: nil)
+      filename = present(filename)
+      explicit_type = present(content_type)
+      if value.is_a?(Hash)
+        bytes, name, object_type = read_file_object(value)
+        explicit_type = object_type || explicit_type
+      elsif value.is_a?(Pathname)
+        bytes = File.binread(value.to_s)
+        name = value.basename.to_s
       elsif value.is_a?(String)
-        [value.b, filename]
+        raise ArgumentError,
+              "file must not be a plain String (it could be bytes or a path): pass Pathname.new(\"audio.mp3\") " \
+              "for a file on disk, or { file_name: \"audio.mp3\", content: bytes } for bytes in memory"
+      elsif value.respond_to?(:read)
+        bytes = value.read.to_s.b
+        name = filename || io_name(value)
       else
-        raise ArgumentError, "file must be a Pathname, an IO (responds to #read) or a String of bytes"
+        raise ArgumentError,
+              "file must be a Pathname, an IO (responds to #read) or a Hash { file_name:, content:, content_type: }"
       end
+      if name.nil?
+        raise ArgumentError,
+              "file has no filename: pass \"filename\" (for example \"audio.mp3\") with the file, " \
+              "because the gateway reads the audio format from its extension"
+      end
+      [bytes, name, explicit_type || content_type_for(name)]
+    end
+
+    # Looks up a content type from the filename extension.
+    def content_type_for(filename)
+      AUDIO_CONTENT_TYPES.fetch(File.extname(filename.to_s).downcase, DEFAULT_CONTENT_TYPE)
+    end
+
+    def read_file_object(value)
+      name = present(hash_value(value, "file_name"))
+      if name.nil?
+        raise ArgumentError, "file Hash needs a file_name, for example { file_name: \"audio.mp3\", content: bytes }"
+      end
+
+      content = hash_value(value, "content")
+      bytes =
+        if content.is_a?(String)
+          content.b
+        elsif content.respond_to?(:read)
+          content.read.to_s.b
+        else
+          raise ArgumentError, "file Hash content must be a binary String or an IO"
+        end
+      [bytes, name, present(hash_value(value, "content_type"))]
+    end
+
+    def hash_value(hash, key)
+      hash.key?(key) ? hash[key] : hash[key.to_sym]
+    end
+
+    def io_name(io)
+      return nil unless io.respond_to?(:path)
+
+      path = io.path
+      path.nil? || path.to_s.empty? ? nil : File.basename(path.to_s)
+    end
+
+    def present(value)
+      return nil if value.nil?
+
+      text = value.to_s
+      text.empty? ? nil : text
     end
 
     # Converts a non-file field value to the string the gateway expects: booleans lowercase,
@@ -86,18 +149,18 @@ module PhaseoSdk
       ::Phaseo::Gen::RawBody.new("multipart/form-data; boundary=#{boundary}", body)
     end
 
-    # Builds the multipart body for an audio request from a payload Hash whose "file" key holds the
-    # audio. "filename" (its extension names the format; defaults to the file's name, then
-    # audio.mp3) and "content_type" are taken out of the payload and not sent as fields.
-    def audio_body(payload)
+    # Builds a multipart body from a payload Hash whose "file" key holds the file (see resolve_file).
+    # "filename" and "content_type" are taken out of the payload and not sent as fields.
+    def file_body(payload)
       fields = payload.dup
       file = fields.delete("file")
-      filename = fields.delete("filename")
-      content_type = fields.delete("content_type")
-      bytes, name = read_file(file, filename)
-      name = DEFAULT_AUDIO_FILENAME if name.nil? || name.empty?
-      content_type ||= AUDIO_CONTENT_TYPES.fetch(File.extname(name).downcase, "application/octet-stream")
-      encode(fields: self.fields(fields), file_bytes: bytes, filename: name, content_type: content_type)
+      bytes, name, type = resolve_file(file, filename: fields.delete("filename"), content_type: fields.delete("content_type"))
+      encode(fields: self.fields(fields), file_bytes: bytes, filename: name, content_type: type)
+    end
+
+    # Builds the multipart body for an audio request (transcription or translation).
+    def audio_body(payload)
+      file_body(payload)
     end
 
     # Percent-encodes quotes and line breaks in a Content-Disposition value, as browsers do.
