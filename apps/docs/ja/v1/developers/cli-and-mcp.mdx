@@ -122,6 +122,19 @@ Claude で **Settings → Connectors** を開き、**Add custom connector** を�
 
 他の MCP クライアントでは、同じ URL をリモートの Streamable HTTP サーバーとして追加します。クライアントは、OAuth ディスカバリー、S256 PKCE を使う認可コード、MCP の `resource` パラメーターに対応している必要があります。
 
+### Phaseo CLI のログインを使う
+
+Phaseo CLI をすでに使っている場合、ローカルのエージェントは CLI を通じて MCP に接続できます。もう一度ログインする必要はありません。
+
+```bash
+phaseo login
+claude mcp add --scope user phaseo -- phaseo mcp
+# or, for Codex
+codex mcp add phaseo -- phaseo mcp
+```
+
+`phaseo mcp` は CLI のログインを使って MCP を stdio で実行します。このログインを、MCP でのみ使える 15 分間有効なトークンに交換します。このトークンがログインより多くのアクセス権を持つことはなく、有料のモデル呼び出しも許可しません。`--manage` を付けない限り読み取り専用です。`phaseo setup codex` を実行すると、Codex の Phaseo プロファイルに自動で追加されます。この方法で接続したエージェントがログ、アクティビティ、分析を読み取ると、結果には全データを取得するための対応する CLI コマンドも表示されます。
+
 ### MCP が読み取れるデータ
 
 読み取り専用のツールは、モデル、プロバイダー、ベンチマークのランキング、価格とコストの見積もりに加えて、クレジット、アクティビティ、分析、リクエストのログ、生成のメタデータを扱います。プロンプト、レスポンス、シークレットの値は決して返しません。
@@ -141,19 +154,21 @@ codex mcp login phaseo
 
 すでに読み取り専用の URL で接続している場合は、クライアントを管理用の URL に切り替えて、もう一度ログインします。読み取り専用のアクセスに戻すには、通常の URL で再接続するか、**設定 → 接続アプリ** でアプリを取り消します。
 
-| 分野 | ツール | 権限 |
-| --- | --- | --- |
-| API キー | `api_keys_list`、`api_key_get`、`api_key_create`、`api_key_update`、`api_key_rotate`、`api_key_delete` | `keys:read`、`keys:write`、`keys:delete` |
-| 予算 | `budgets_list`、`budget_create`、`budget_update`、`budget_delete` | `budgets:read`、`budgets:write`、`budgets:delete` |
-| 支出ルール | `spend_rules_list`、`spend_rule_create`、`spend_rule_update`、`spend_rule_delete` | `spend_rules:read`、`spend_rules:write`、`spend_rules:delete` |
-| プロバイダーキー（BYOK） | `provider_keys_list`、`provider_key_create`、`provider_key_update`、`provider_key_delete` | `provider_credentials:read`、`provider_credentials:write`、`provider_credentials:delete` |
-| ガードレール | `guardrails_list`、`guardrail_get`、`guardrail_create`、`guardrail_update`、`guardrail_delete`、`guardrail_keys_set` | `guardrails:read`、`guardrails:write`、`guardrails:delete` |
-| プリセット | `presets_list`、`preset_get`、`preset_create`、`preset_update`、`preset_version_publish` | `presets:read`、`presets:write` |
-| 設定 | `settings_get`、`settings_update`（ルーティングモード、プライバシーと ZDR、ログ記録、プロバイダーの制限） | `settings:read`、`settings:write` |
-| Webhook | `webhooks_list`、`webhook_create`、`webhook_delete` | `settings:read`、`settings:write` |
-| 可観測性の送信先 | `observability_destinations_list`、`observability_destination_create`、`observability_destination_delete` | `settings:read`、`settings:write` |
+管理用の接続は以下のすべてを読み取れますが、変更できるのは API キーとワークスペースの設定だけです。予算、支出ルール、プロバイダーキー、ガードレール、プリセット、Webhook、可観測性の送信先は、支出やリクエスト内容の送信先を左右するため、ダッシュボードまたは管理キーで変更します。
 
-何かを変更または削除するツールにはその旨の印が付いているため、対応している MCP クライアントは呼び出しのたびに確認を求めます。新しい API キーや Webhook の署名シークレットはツールの結果に一度だけ表示され、再表示はできません。保存されたプロバイダーキーや送信先の認証情報は決して返されません。
+| 分野 | 読み取り | 変更 |
+| --- | --- | --- |
+| API キー | `api_keys_list`, `api_key_get` | `phaseo mcp --manage` の場合: `api_key_create`、`api_key_update`、`api_key_rotate`、`api_key_delete`。その他のクライアントは名前の変更（`api_key_update`）と削除（`api_key_delete`）のみ |
+| 設定 | `settings_get` | `settings_update`（プライバシー、ログ記録、プロバイダー制限を維持または厳しくする変更） |
+| 予算 | `budgets_list` | ダッシュボードで変更 |
+| 支出ルール | `spend_rules_list` | ダッシュボードで変更 |
+| プロバイダーキー（BYOK） | `provider_keys_list` | ダッシュボードで変更 |
+| ガードレール | `guardrails_list`, `guardrail_get` | ダッシュボードで変更 |
+| プリセット | `presets_list`, `preset_get` | ダッシュボードで変更 |
+| Webhook | `webhooks_list` | ダッシュボードで変更 |
+| 可観測性の送信先 | `observability_destinations_list` | ダッシュボードで変更 |
+
+何かを変更または削除するツールにはその旨が示されるため、対応する MCP クライアントは呼び出しのたびに確認を求めます。新しい API キーはツールの結果に一度だけ表示され、再表示はできません。保存済みのプロバイダーキーや送信先の認証情報が返されることはありません。
 
 MCP には、請求、支払い、ワークスペース、メンバー、管理キー、OAuth アプリのツールはありません。これらにはダッシュボード、CLI、または Management API を使ってください。
 

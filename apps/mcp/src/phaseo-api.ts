@@ -285,6 +285,13 @@ export async function listBenchmarkRankings(env: PhaseoEnv): Promise<BenchmarkRa
 	return payload.benchmarks;
 }
 
+// `phaseo mcp` signs in as the first-party CLI, so the agent runs where the Phaseo CLI is installed.
+const CLI_BRIDGE_CLIENT_IDS = new Set(["phaseo_cli", "aistats_cli"]);
+
+export function isCliBridgeClient(clientId: string | undefined): boolean {
+	return CLI_BRIDGE_CLIENT_IDS.has(String(clientId ?? ""));
+}
+
 export async function authenticatePhaseoUser(request: Request, env: PhaseoEnv): Promise<AuthenticatedPhaseoUser | null> {
 	const authorization = request.headers.get("authorization") ?? "";
 	if (!authorization.toLowerCase().startsWith("bearer ")) return null;

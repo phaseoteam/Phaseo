@@ -1,6 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod/v4";
-import { PhaseoApiError, requestPhaseo, type AuthenticatedPhaseoUser, type PhaseoEnv } from "./phaseo-api";
+import { PhaseoApiError, isCliBridgeClient, requestPhaseo, type AuthenticatedPhaseoUser, type PhaseoEnv } from "./phaseo-api";
 
 // Scopes an MCP connection may hold for account management. They are never
 // requested by default: only the "manage" connection URL asks for them, and the
@@ -825,13 +825,47 @@ function oauthToolMeta(scopes: readonly string[]) {
  * MCP hosts drop `instructions` or load tools lazily, so every tool that changes the live workspace
  * carries them itself.
  */
-export function managementToolDescription(definition: ManagementToolDefinition): string {
+export function managementToolDescription(definition: ManagementToolDefinition, user?: AuthenticatedPhaseoUser): string {
 	if (definition.effect === "read") return definition.description;
+	// The API lets an app only rename keys (rejectThirdPartyOAuthAppChange on every other field).
+	const appLimit = definition.name === "api_key_update" && user && !isCliBridgeClient(user.clientId)
+		? "This connection can only rename keys; the user changes limits, status and expiry in the Phaseo dashboard."
+		: "";
 	const rules = [
+		appLimit,
 		/confirm/i.test(definition.description) ? "" : "Confirm with the user first.",
 		"Never retry a failed change automatically.",
 	].filter(Boolean).join(" ");
 	return `${definition.description} ${rules}`;
+}
+
+/**
+ * Changes the API refuses to every MCP caller, whatever its scopes: apps that use Sign in with Phaseo and
+ * CLI or desktop sign-ins alike (rejectThirdPartyOAuthSpendingChange in apps/api route-helpers.ts). They
+ * control spending, its limits, or where request content goes, so the person makes them in the dashboard.
+ * Offering them would only give the agent a tool that always fails.
+ */
+export const DASHBOARD_ONLY_TOOLS: ReadonlySet<string> = new Set([
+	"budget_create", "budget_update", "budget_delete",
+	"spend_rule_create", "spend_rule_update", "spend_rule_delete",
+	"provider_key_create", "provider_key_update", "provider_key_delete",
+	"guardrail_create", "guardrail_update", "guardrail_delete", "guardrail_keys_set",
+	"preset_create", "preset_update", "preset_version_publish",
+	"webhook_create", "webhook_delete",
+	"observability_destination_create", "observability_destination_delete",
+]);
+
+/**
+ * Changes the API allows a `phaseo mcp` (CLI) sign-in but refuses to apps (rejectThirdPartyOAuthAppChange):
+ * minting a key would escape the spend limit set on an app's consent screen; a CLI sign-in has none.
+ */
+export const CLI_ONLY_TOOLS: ReadonlySet<string> = new Set(["api_key_create", "api_key_rotate"]);
+
+/** Whether the API can ever accept this tool's change from this caller. */
+export function isManagementToolOffered(definition: ManagementToolDefinition, user: AuthenticatedPhaseoUser): boolean {
+	if (DASHBOARD_ONLY_TOOLS.has(definition.name)) return false;
+	if (CLI_ONLY_TOOLS.has(definition.name)) return isCliBridgeClient(user.clientId);
+	return true;
 }
 
 export function registerManagementTools(
@@ -844,11 +878,12 @@ export function registerManagementTools(
 	if (!managementAccess || !hasManagementConsent(user)) return;
 	for (const definition of managementTools) {
 		if (!definition.scopes.every((scope) => user.scopes.includes(scope))) continue;
+		if (!isManagementToolOffered(definition, user)) continue;
 		server.registerTool(
 			definition.name,
 			{
 				title: definition.title,
-				description: managementToolDescription(definition),
+				description: managementToolDescription(definition, user),
 				inputSchema: definition.inputSchema,
 				outputSchema: managementOutputSchema,
 				annotations: managementAnnotations(definition),

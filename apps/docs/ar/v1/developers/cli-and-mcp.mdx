@@ -120,6 +120,19 @@ codex mcp list
 
 لعميل MCP آخر، أضف العنوان نفسه كخادم Streamable HTTP بعيد. يجب أن يدعم العميل اكتشاف OAuth، ورمز التفويض مع S256 PKCE، ومعامل MCP `resource`.
 
+### استخدم تسجيل الدخول إلى Phaseo CLI
+
+إذا كنت تستخدم Phaseo CLI بالفعل، فيمكن لوكيل محلي الوصول إلى MCP من خلالها دون تسجيل دخول ثانٍ:
+
+```bash
+phaseo login
+claude mcp add --scope user phaseo -- phaseo mcp
+# or, for Codex
+codex mcp add phaseo -- phaseo mcp
+```
+
+يشغّل `phaseo mcp` خادم MCP عبر stdio باستخدام تسجيل دخولك إلى CLI. ويستبدل تسجيل الدخول هذا برمز صالح لمدة 15 دقيقة يعمل على MCP فقط، ولا يملك أبدًا صلاحيات أكثر من تسجيل دخولك، ولا يسمح أبدًا باستدعاءات مدفوعة للنماذج. وهو للقراءة فقط ما لم تضف `--manage`. ويضيفه `phaseo setup codex` إلى ملف Phaseo الشخصي في Codex نيابةً عنك. وعندما يقرأ وكيل متصل بهذه الطريقة السجلات أو النشاط أو التحليلات، تقترح النتيجة أيضًا أمر CLI المطابق للحصول على البيانات كاملة.
+
 ### ما الذي يستطيع MCP قراءته
 
 تغطي أدوات القراءة فقط النماذج، والمزوّدين، وتصنيفات المقاييس المرجعية، والأسعار وتقديرات التكلفة، إضافةً إلى الأرصدة والنشاط والتحليلات وسجلات الطلبات والبيانات الوصفية للإنشاء. ولا تعيد أبدًا المطالبات أو الردود أو القيم السرية.
@@ -139,19 +152,21 @@ codex mcp login phaseo
 
 إذا كنت قد اتصلت بالفعل باستخدام عنوان القراءة فقط، فبدّل العميل إلى عنوان الإدارة وسجّل الدخول مجددًا. للعودة إلى الوصول للقراءة فقط، أعِد الاتصال بالعنوان العادي أو ألغِ التطبيق من **الإعدادات → التطبيقات المتصلة**.
 
-| المجال | الأدوات | الأذونات |
-| --- | --- | --- |
-| مفاتيح API | `api_keys_list`، `api_key_get`، `api_key_create`، `api_key_update`، `api_key_rotate`، `api_key_delete` | `keys:read`، `keys:write`، `keys:delete` |
-| الميزانيات | `budgets_list`، `budget_create`، `budget_update`، `budget_delete` | `budgets:read`، `budgets:write`، `budgets:delete` |
-| قواعد الإنفاق | `spend_rules_list`، `spend_rule_create`، `spend_rule_update`، `spend_rule_delete` | `spend_rules:read`، `spend_rules:write`، `spend_rules:delete` |
-| مفاتيح المزوّدين (BYOK) | `provider_keys_list`، `provider_key_create`، `provider_key_update`، `provider_key_delete` | `provider_credentials:read`، `provider_credentials:write`، `provider_credentials:delete` |
-| ضوابط الحماية | `guardrails_list`، `guardrail_get`، `guardrail_create`، `guardrail_update`، `guardrail_delete`، `guardrail_keys_set` | `guardrails:read`، `guardrails:write`، `guardrails:delete` |
-| الإعدادات المسبقة | `presets_list`، `preset_get`، `preset_create`، `preset_update`، `preset_version_publish` | `presets:read`، `presets:write` |
-| الإعدادات | `settings_get`، `settings_update` (وضع التوجيه، والخصوصية وZDR، والتسجيل، وقيود المزوّدين) | `settings:read`، `settings:write` |
-| خطافات الويب | `webhooks_list`، `webhook_create`، `webhook_delete` | `settings:read`، `settings:write` |
-| وجهات قابلية الرصد | `observability_destinations_list`، `observability_destination_create`، `observability_destination_delete` | `settings:read`، `settings:write` |
+يقرأ اتصال الإدارة كل ما يرد أدناه، لكنه لا يغيّر إلا مفاتيح API وإعدادات مساحة العمل. أما الميزانيات وقواعد الإنفاق ومفاتيح المزوّدين وضوابط الحماية والإعدادات المسبقة وخطافات الويب ووجهات قابلية الرصد فهي تتحكم في الإنفاق أو في وجهة محتوى الطلبات، لذا تغيّرها من لوحة التحكم أو باستخدام مفتاح إدارة.
 
-الأدوات التي تغيّر شيئًا أو تحذفه موسومة بذلك، لذا تطلب منك عملاء MCP التي تدعم ذلك الموافقة قبل كل استدعاء. يُعرض مفتاح API الجديد أو سر توقيع خطاف الويب مرة واحدة في نتيجة الأداة ولا يمكن عرضه مجددًا. ولا تُعاد أبدًا مفاتيح المزوّدين المخزّنة أو بيانات اعتماد الوجهات.
+| المجال | القراءة | التغيير |
+| --- | --- | --- |
+| مفاتيح API | `api_keys_list`, `api_key_get` | مع `phaseo mcp --manage`: `api_key_create` و`api_key_update` و`api_key_rotate` و`api_key_delete`. ويمكن للعملاء الآخرين إعادة التسمية (`api_key_update`) والحذف (`api_key_delete`) |
+| الإعدادات | `settings_get` | `settings_update`، للتغييرات التي تُبقي على الخصوصية والتسجيل وقيود المزوّدين أو تشدّدها |
+| الميزانيات | `budgets_list` | من لوحة التحكم |
+| قواعد الإنفاق | `spend_rules_list` | من لوحة التحكم |
+| مفاتيح المزوّدين (BYOK) | `provider_keys_list` | من لوحة التحكم |
+| ضوابط الحماية | `guardrails_list`, `guardrail_get` | من لوحة التحكم |
+| الإعدادات المسبقة | `presets_list`, `preset_get` | من لوحة التحكم |
+| خطافات الويب | `webhooks_list` | من لوحة التحكم |
+| وجهات قابلية الرصد | `observability_destinations_list` | من لوحة التحكم |
+
+تُوسَم الأدوات التي تغيّر شيئًا أو تحذفه بذلك، لذا تطلب منك عملاء MCP التي تدعم ذلك التأكيد قبل كل استدعاء. يظهر مفتاح API الجديد مرة واحدة في نتيجة الأداة ولا يمكن عرضه مرة أخرى. ولا تُعاد أبدًا مفاتيح المزوّدين المخزّنة ولا بيانات اعتماد الوجهات.
 
 لا يتضمن MCP أدوات للفوترة أو الدفع أو مساحات العمل أو الأعضاء أو مفاتيح الإدارة أو تطبيقات OAuth. استخدم لوحة التحكم أو CLI أو Management API لذلك.
 
