@@ -92,7 +92,27 @@ type ReadToolDefinition = {
 	inputSchema: McpZodRawShape;
 	path: (input: ReadToolInput) => string;
 	query?: (input: ReadToolInput) => Record<string, QueryValue>;
+	/** The Phaseo CLI command for the full data, shown only to `phaseo mcp` clients (they have a shell). */
+	cliCommand?: (input: ReadToolInput) => string;
 };
+
+// `phaseo mcp` signs in as the first-party CLI, so the agent runs where the Phaseo CLI is installed.
+const CLI_BRIDGE_CLIENT_IDS = new Set(["phaseo_cli", "aistats_cli"]);
+
+export function isCliBridgeClient(clientId: string | undefined): boolean {
+	return CLI_BRIDGE_CLIENT_IDS.has(String(clientId ?? ""));
+}
+
+// Only plain identifiers go into a suggested shell command; anything else becomes a placeholder.
+function shellArgument(value: unknown, placeholder: string): string {
+	const text = String(value ?? "");
+	// Must start with a letter or digit, so a value can never turn into a flag such as --workspace.
+	return /^[A-Za-z0-9][A-Za-z0-9_.:\/-]{0,199}$/.test(text) ? text : placeholder;
+}
+
+export function cliHint(command: string): string {
+	return `For more rows or raw data than this tool returns, run \`${command}\` in a terminal (the Phaseo CLI is signed in to this workspace) and read or grep its output instead of paging through this tool.`;
+}
 
 const paginationInputSchema = {
 	limit: z.number().int().min(1).max(250).optional(),
@@ -116,6 +136,7 @@ const controlPlaneReadTools: ReadToolDefinition[] = [
 		inputSchema: { days: z.number().int().min(1).max(90).optional(), ...paginationInputSchema },
 		path: () => "/v1/activity",
 		query: ({ days, limit, offset }) => ({ days: days as number | undefined, limit: limit as number | undefined, offset: offset as number | undefined }),
+		cliCommand: ({ days }) => `phaseo activity list --days ${Number.isInteger(days) ? days : 30} --limit 250 --json`,
 	},
 	{
 		name: "analytics_get",
@@ -125,6 +146,7 @@ const controlPlaneReadTools: ReadToolDefinition[] = [
 		inputSchema: { date: z.string().date().optional() },
 		path: () => "/v1/analytics",
 		query: ({ date }) => ({ date: date as string | undefined }),
+		cliCommand: ({ date }) => `phaseo analytics export${date ? ` --date ${shellArgument(date, "YYYY-MM-DD")}` : ""} > phaseo-analytics.csv`,
 	},
 	{
 		name: "generation_get",
@@ -154,6 +176,14 @@ const controlPlaneReadTools: ReadToolDefinition[] = [
 			error_code: input.errorCode as string | undefined,
 			limit: input.limit as number | undefined, offset: input.offset as number | undefined,
 		}),
+		cliCommand: (input) => [
+			"phaseo logs list",
+			`--since ${shellArgument(input.since ?? "7d", "7d")}`,
+			input.status ? `--status ${shellArgument(input.status, "error")}` : "",
+			input.model ? `--model ${shellArgument(input.model, "<model-id>")}` : "",
+			input.provider ? `--provider ${shellArgument(input.provider, "<provider-id>")}` : "",
+			"--limit 250 --json",
+		].filter(Boolean).join(" "),
 	},
 	{
 		name: "log_get",
@@ -162,6 +192,7 @@ const controlPlaneReadTools: ReadToolDefinition[] = [
 		scopes: ["activity:read"],
 		inputSchema: { requestId: z.string().min(1).max(200) },
 		path: ({ requestId }) => `/v1/logs/${encodeURIComponent(String(requestId))}`,
+		cliCommand: ({ requestId }) => `phaseo logs get ${shellArgument(requestId, "<request-id>")} --json`,
 	},
 ];
 
@@ -653,7 +684,9 @@ function registerControlPlaneReadTools(
 						{ accessToken: authenticatedUser.accessToken },
 						definition.query?.(input) ?? {},
 					);
-					return toolResult(`${definition.title} completed.`, normaliseControlPlaneResult(definition.name, result));
+					const summary = `${definition.title} completed.`;
+					const hint = isCliBridgeClient(authenticatedUser.clientId) ? definition.cliCommand?.(input) : undefined;
+					return toolResult(hint ? `${summary} ${cliHint(hint)}` : summary, normaliseControlPlaneResult(definition.name, result));
 				} catch (error) {
 					return errorResult(error);
 				}

@@ -418,6 +418,50 @@ export async function issueMcpUpstreamToken(input: TokenIssueInput) {
 	};
 }
 
+export const CLI_MCP_ACCESS_TOKEN_TTL_SECONDS = 15 * 60;
+
+/**
+ * `phaseo mcp` swaps the CLI's own access token for this one. Its audience is the MCP resource and
+ * never `phaseo-api`, so every API route rejects it (validateLocalAccessToken checks that audience)
+ * and only the MCP token exchange accepts it. It has no refresh token: the CLI swaps again from its
+ * own session when it expires.
+ */
+export async function issueCliMcpAccessToken(input: TokenIssueInput & { resource: string }) {
+	const now = Math.floor(Date.now() / 1000);
+	return {
+		access_token: await signJwt({
+			iss: getIssuer(),
+			sub: input.userId,
+			aud: input.resource,
+			exp: now + CLI_MCP_ACCESS_TOKEN_TTL_SECONDS,
+			iat: now,
+			jti: crypto.randomUUID(),
+			user_id: input.userId,
+			workspace_id: input.workspaceId,
+			client_id: input.clientId,
+			scope: input.scopes.join(" "),
+		}),
+		issued_token_type: "urn:ietf:params:oauth:token-type:access_token" as const,
+		token_type: "Bearer" as const,
+		expires_in: CLI_MCP_ACCESS_TOKEN_TTL_SECONDS,
+		scope: input.scopes.join(" "),
+		resource: input.resource,
+	};
+}
+
+/** Claims of a token from issueCliMcpAccessToken for this resource, or null for anything else. */
+export async function validateCliMcpAccessToken(token: string, resource: string): Promise<JWTClaims | null> {
+	if (!resource || resource === ACCESS_TOKEN_AUDIENCE) return null;
+	const jwks = await getLocalJwks();
+	const result = await validateOAuthToken(token, jwks.keys, getIssuer(), resource);
+	if (!result.valid || !result.claims) return null;
+	// Exactly one audience: a token that also names phaseo-api is not an MCP-only token.
+	const audiences = Array.isArray(result.claims.aud) ? result.claims.aud : [result.claims.aud];
+	if (audiences.length !== 1 || audiences[0] !== resource) return null;
+	if (!isFirstPartyCliClient(String(result.claims.client_id))) return null;
+	return result.claims;
+}
+
 async function fetchUserProfile(userId: string): Promise<{ email?: string | null; name?: string | null }> {
 	const supabase = getSupabaseAdmin();
 	const { data } = await supabase.auth.admin.getUserById(userId);

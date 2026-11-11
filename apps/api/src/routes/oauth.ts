@@ -28,6 +28,7 @@ import {
 	getApiBaseUrl,
 	getGatewayOAuthResource,
 	getIssuer,
+	getActiveOAuthWorkspaceScopes,
 	getLocalJwks,
 	getSupabaseActor,
 	hashOAuthSecret,
@@ -37,6 +38,7 @@ import {
 	issueTokenPairForGrant,
 	issueOAuthManagedKeyForAuthorizationCode,
 	issueMcpUpstreamToken,
+	issueCliMcpAccessToken,
 	isGatewayOAuthResource,
 	isValidPkceChallenge,
 	isFirstPartyCliClient,
@@ -51,6 +53,8 @@ import {
 	renewDesktopKey,
 	revokeToken,
 	rotateRefreshToken,
+	validateCliMcpAccessToken,
+	validateLocalAccessToken,
 	verificationUriFor,
 	verifyPkce,
 	ensureGrant,
@@ -108,6 +112,23 @@ const DYNAMIC_MCP_SCOPE_SET = new Set<string>(DYNAMIC_MCP_SCOPES);
 const RESOURCE_BOUND_MCP_SCOPE_SET = new Set<string>(RESOURCE_BOUND_MCP_SCOPES);
 const MCP_STEP_UP_SCOPE_SET = new Set<string>([GATEWAY_ACCESS_SCOPE, ...MCP_MANAGEMENT_SCOPES]);
 const MCP_RESOURCE_SERVER_CLIENT_ID = "phaseo_mcp_resource_server";
+const TOKEN_EXCHANGE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";
+const ACCESS_TOKEN_TYPE = "urn:ietf:params:oauth:token-type:access_token";
+// What `phaseo mcp` may carry to the MCP: the MCP's read and management scopes, never gateway:access.
+const CLI_MCP_SCOPE_SET = new Set<string>([...RESOURCE_BOUND_MCP_SCOPES, ...MCP_MANAGEMENT_SCOPES]);
+
+/** The scopes a CLI token may take to the MCP: what it holds, still consented, used by the MCP, and asked for. */
+export function cliMcpExchangeScopes(
+	tokenScope: unknown,
+	activeAuthorizationScopes: readonly string[],
+	requested: readonly string[] | null,
+): string[] {
+	const tokenScopes = typeof tokenScope === "string" ? tokenScope.split(/\s+/).filter(Boolean) : [];
+	return [...new Set(tokenScopes)].filter((scope) =>
+		activeAuthorizationScopes.includes(scope)
+		&& CLI_MCP_SCOPE_SET.has(scope)
+		&& (requested === null || requested.includes(scope)));
+}
 
 class OAuthRequestBodyTooLarge extends Error {}
 
@@ -1050,6 +1071,63 @@ oauthRouter.post(
 			return oauthError("invalid_grant", "Refresh token is invalid or expired", 401);
 		}
 
+		// `phaseo mcp`: the CLI swaps its own access token for a short-lived one that only the Phaseo
+		// MCP accepts, so one `phaseo login` also signs in the local MCP without a second consent.
+		// Only first-party CLI tokens qualify, only for the MCP resource, never for more than the
+		// session already holds, and never with gateway:access.
+		if (grantType === TOKEN_EXCHANGE_GRANT_TYPE) {
+			const subjectToken = String(body.subject_token ?? "").trim();
+			const subjectTokenType = String(body.subject_token_type ?? "").trim();
+			const resource = String(body.resource ?? "").trim();
+			if (!subjectToken || subjectTokenType !== ACCESS_TOKEN_TYPE) {
+				return oauthError("invalid_request", "subject_token and an access_token subject_token_type are required");
+			}
+			if (body.actor_token !== undefined || (body.requested_token_type !== undefined && String(body.requested_token_type) !== ACCESS_TOKEN_TYPE)) {
+				return oauthError("invalid_request", "Only access tokens can be requested, without an actor token");
+			}
+			if (resource !== PHASEO_MCP_RESOURCE) {
+				return oauthError("invalid_target", "Token exchange is only available for the Phaseo MCP");
+			}
+			const validation = await validateLocalAccessToken(subjectToken).catch(() => ({ valid: false, claims: undefined }));
+			const claims = validation.valid ? validation.claims : undefined;
+			if (!claims) return oauthError("invalid_grant", "subject_token is invalid or expired");
+			const clientId = String(claims.client_id);
+			if (!isFirstPartyCliClient(clientId)) {
+				return oauthError("invalid_grant", "Token exchange is only available to the Phaseo CLI");
+			}
+			const requestedClientId = String(body.client_id ?? "").trim();
+			if (requestedClientId && requestedClientId !== clientId) {
+				return oauthError("invalid_client", "client_id does not match the subject token", 401);
+			}
+			const activeScopes = await getActiveOAuthWorkspaceScopes({
+				userId: String(claims.user_id),
+				workspaceId: String(claims.workspace_id),
+				clientId,
+			});
+			if (activeScopes === null) return oauthError("invalid_grant", "OAuth workspace access is no longer active");
+			const requested = body.scope === undefined ? null : normalizeScopes(body.scope, []);
+			const scopes = cliMcpExchangeScopes(claims.scope, activeScopes, requested);
+			if (scopes.length === 0) {
+				return oauthError("invalid_scope", "The CLI session holds none of the requested Phaseo MCP scopes");
+			}
+			try {
+				const tokens = await issueCliMcpAccessToken({
+					userId: String(claims.user_id),
+					workspaceId: String(claims.workspace_id),
+					clientId,
+					scopes,
+					resource,
+				});
+				return json(tokens, 200, { "Cache-Control": "no-store" });
+			} catch (error) {
+				console.error("oauth_cli_mcp_token_issue_failed", {
+					clientId,
+					message: error instanceof Error ? error.message : String(error),
+				});
+				return oauthError("server_error", "Failed to issue OAuth token", 500);
+			}
+		}
+
 		return oauthError("unsupported_grant_type", "Unsupported grant_type");
 	}),
 );
@@ -1083,6 +1161,35 @@ oauthRouter.post(
 		const resource = String(body.resource ?? "").trim();
 		if (!subjectToken || !resource || !isProtectedResourceAllowed(resource)) {
 			return oauthError("invalid_request", "subject_token and a valid protected resource are required");
+		}
+		// A `phaseo mcp` token (see the token-exchange grant) is a JWT whose only audience is the MCP.
+		const cliClaims = await validateCliMcpAccessToken(subjectToken, resource).catch(() => null);
+		if (cliClaims) {
+			const activeScopes = await getActiveOAuthWorkspaceScopes({
+				userId: String(cliClaims.user_id),
+				workspaceId: String(cliClaims.workspace_id),
+				clientId: String(cliClaims.client_id),
+			});
+			// Revoked consent, a removed membership or withdrawn scopes take effect at once, not at expiry.
+			const scopes = activeScopes === null ? [] : cliMcpExchangeScopes(cliClaims.scope, activeScopes, null);
+			if (scopes.length === 0) return json({ active: false }, 200, { "Cache-Control": "no-store" });
+			const upstream = await issueMcpUpstreamToken({
+				userId: String(cliClaims.user_id),
+				workspaceId: String(cliClaims.workspace_id),
+				clientId: String(cliClaims.client_id),
+				scopes,
+			});
+			return json({
+				active: true,
+				resource,
+				user_id: cliClaims.user_id,
+				client_id: cliClaims.client_id,
+				workspace_id: cliClaims.workspace_id,
+				scope: scopes.join(" "),
+				upstream_access_token: upstream.access_token,
+				token_type: upstream.token_type,
+				expires_in: upstream.expires_in,
+			}, 200, { "Cache-Control": "no-store" });
 		}
 		const tokenRequest = new Request(req.url, {
 			headers: { Authorization: `Bearer ${subjectToken}` },
