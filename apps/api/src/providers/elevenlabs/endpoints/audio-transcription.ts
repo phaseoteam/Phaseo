@@ -11,6 +11,7 @@ import { computeBillAfterProviderCharge } from "@pipeline/pricing/engine";
 import { estimateAudioDurationSeconds } from "../../openai/endpoints/audio-transcription-usage";
 
 const ELEVENLABS_TIMESTAMP_GRANULARITIES = new Set(["none", "word", "character"]);
+const ELEVENLABS_REPEATED_FORM_FIELDS = new Set(["secondary_language_codes"]);
 
 function invalidParameterResponse(param: string, message: string): Response {
 	return new Response(JSON.stringify({ error: { type: "invalid_request_error", message, param } }), {
@@ -116,6 +117,11 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 	}
 	for (const [key, value] of Object.entries(elevenlabs)) {
 		if (value == null || ["model_id", "file", "source_url", "language_code", "keyterms", "enable_logging", "timestamps_granularity"].includes(key)) continue;
+		if (ELEVENLABS_REPEATED_FORM_FIELDS.has(key) && Array.isArray(value)) {
+			// ElevenLabs reads these as one form field per item and rejects a JSON array string.
+			for (const item of value) if (item != null) form.append(key, String(item));
+			continue;
+		}
 		form.append(key, typeof value === "object" ? JSON.stringify(value) : String(value));
 	}
 	const query = typeof elevenlabs.enable_logging === "boolean"

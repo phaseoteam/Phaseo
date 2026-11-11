@@ -531,6 +531,40 @@ describe("ElevenLabs audio endpoints", () => {
 		expect(fileName).toBe("sample.wav");
 	});
 
+	it("sends Scribe v3 secondary language codes as one form field each", async () => {
+		let form: FormData | null = null;
+		const mock = installFetchMock([{
+			match: (url, init) => {
+				if (!url.includes("/v1/speech-to-text")) return false;
+				form = init?.body as FormData;
+				return true;
+			},
+			response: jsonResponse({ text: "Transcribed" }),
+		}]);
+		await execTranscription({
+			endpoint: "audio.transcription",
+			model: "eleven-labs/scribe-v3",
+			body: {
+				model: "eleven-labs/scribe-v3",
+				file: makeAudioFile("sample.wav"),
+				config: { elevenlabs: { numbers_format: "digits", secondary_language_codes: ["es", "fr"] } },
+			},
+			meta: REQUEST_META,
+			workspaceId: "team_test",
+			providerId: "elevenlabs",
+			byokMeta: [],
+			pricingCard: { ...PRICING_CARD, endpoint: "audio.transcription" },
+			providerModelSlug: "scribe_v3",
+			stream: false,
+		} as any);
+		mock.restore();
+
+		expect(form).not.toBeNull();
+		expect(form!.get("model_id")).toBe("scribe_v3");
+		expect(form!.get("numbers_format")).toBe("digits");
+		expect(form!.getAll("secondary_language_codes")).toEqual(["es", "fr"]);
+	});
+
 	it("derives billable audio seconds when ElevenLabs omits usage", async () => {
 		const mock = installFetchMock([{
 			match: (url) => url.includes("/v1/speech-to-text"),
