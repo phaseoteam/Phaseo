@@ -289,6 +289,41 @@ Gemini 2.5 et versions ultérieures mettent en cache implicitement, sans rien à
 
 Phaseo ne stocke pas les réponses. Les requêtes qui définissent `previous_response_id` ou `conversation` renvoient `400` `unsupported_param` : envoyez donc toute la conversation dans `input` à chaque étape. Son ouverture stable est le préfixe mis en cache. Dans les boucles d’outils, renvoyez aussi les éléments de sortie `reasoning` ; consultez [Raisonnement dans les boucles d’outils](../api-reference/endpoint/responses.mdx#reasoning-in-tool-loops).
 
+<span id="change-reasoning-effort-mid-conversation"></span>
+### Changer l’effort de raisonnement en cours de conversation
+
+Envoyez l’effort souhaité dans chaque requête (`reasoning_effort` sur Chat Completions, `reasoning.effort` sur Responses) : Phaseo change l’effort de Claude sans redémarrer son cache de prompts. Un nouvel effort de premier niveau invaliderait la conversation en cache : Phaseo continue donc d’envoyer à Claude le premier niveau de la conversation et ajoute le changement sous forme de marqueur d’[effort par message](https://platform.claude.com/docs/en/build-with-claude/effort-per-message) après votre nouveau message :
+
+| Requête | Vous envoyez | Phaseo envoie à Claude |
+| --- | --- | --- |
+| 1 | `"high"` | `output_config.effort: "high"` |
+| 2 | `"low"` | `"high"`, plus un marqueur `low` après votre nouveau message. Le préfixe en cache correspond toujours. |
+| 3 | `"low"` | `"high"`, plus le même marqueur au même endroit |
+| 4 | `"high"` | `"high"`, le marqueur précédent et un marqueur `high` après votre nouveau message |
+
+Phaseo ne stocke rien entre les requêtes. Il lit les niveaux précédents dans la conversation que vous envoyez : cela ne fonctionne donc que si :
+
+- **Vous renvoyez le raisonnement inchangé.** Chaque réponse de Claude se termine par une entrée de raisonnement qui enregistre le niveau auquel elle s’est exécutée : la dernière entrée `reasoning.encrypted` dans `reasoning_details` de Chat, ou le dernier élément `reasoning` dans la sortie de Responses. Elle n’a pas de texte. Si vous l’abandonnez, ou tout autre raisonnement, le changement suivant passe au premier niveau.
+- **Le changement arrive avec un nouveau message utilisateur.** Un changement entre les étapes d’une boucle d’outils, lorsque votre dernier message ne contient que des résultats d’outils, passe au premier niveau et redémarre le cache.
+- **Le raisonnement reste activé.** Les requêtes dont le raisonnement est désactivé conservent le comportement actuel.
+- **La route le prend en charge.** Anthropic et Google Vertex AI : Claude Fable 5.2 et 5.1, Mythos 5.2 et 5.1, Opus 5.5 et 5, Sonnet 5.5 et Haiku 5.5. Claude on AWS : les mêmes modèles sauf Mythos. Amazon Bedrock : Fable 5.1 et Opus 5.5. Ailleurs, y compris pour Claude sur Azure, le changement passe au premier niveau.
+
+Sur Anthropic Messages, envoyez vous-même le marqueur : un message `system` avec un `content` vide et `output_config.effort`. Il peut se trouver n’importe où dans `messages`, et Phaseo ajoute l’en-tête bêta `mid-conversation-output-config-2026-07-01`. Laissez-le en place dans les requêtes suivantes. Sur les routes sans effort par message, Phaseo le supprime et envoie le niveau en vigueur comme effort de premier niveau.
+
+```json
+{
+  "model": "anthropic/claude-opus-5.5",
+  "max_tokens": 4096,
+  "output_config": { "effort": "high" },
+  "messages": [
+    { "role": "user", "content": "Plan a migration from SQLite to PostgreSQL." },
+    { "role": "assistant", "content": "1. Export the data. 2. Create the schema. 3. Import and verify." },
+    { "role": "system", "content": [], "output_config": { "effort": "low" } },
+    { "role": "user", "content": "Summarise the plan in one sentence." }
+  ]
+}
+```
+
 <span id="usage-and-pricing-fields"></span>
 ## Champs d’utilisation et de tarification
 

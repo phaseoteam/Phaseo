@@ -3739,6 +3739,8 @@ export async function buildServerToolContinuation(
 			...(firstChoice.message.phase !== undefined
 				? { phase: firstChoice.message.phase }
 				: {}),
+			// Keeps the next round on the same effort plan, so its cached prefix holds.
+			...(firstChoice.message.effortRecord ? { effortRecord: firstChoice.message.effortRecord } : {}),
 		},
 		toolResults,
 		serverToolCallCount: serverToolCalls.length,

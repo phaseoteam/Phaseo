@@ -6,6 +6,7 @@
 //      before they reach a client, and checked against the target route before
 //      a request builder replays them.
 
+import type { IRClaudeEffort, IREffortRecord } from "@core/ir";
 import { normalizeProviderId } from "@/lib/config/providerAliases";
 
 /**
@@ -46,9 +47,11 @@ export function isReasoningFormat(value: unknown): value is ReasoningFormat {
  * - `signature`: an Anthropic thinking signature, a Gemini thought signature or a
  *   Mistral ThinkChunk signature;
  * - `redacted`: the `data` of an Anthropic `redacted_thinking` block;
- * - `encrypted`: OpenAI, Azure or xAI `encrypted_content`.
+ * - `encrypted`: OpenAI, Azure or xAI `encrypted_content`;
+ * - `effort`: the gateway's own record of the effort a Claude turn ran at (see
+ *   sealEffortRecord). It is never sent to a provider.
  */
-export type ReasoningStateKind = "signature" | "redacted" | "encrypted";
+export type ReasoningStateKind = "signature" | "redacted" | "encrypted" | "effort";
 
 export type ReasoningState = {
 	format: ReasoningFormat;
@@ -127,7 +130,7 @@ export function openReasoningState(
 		}
 		if (!isReasoningFormat(header?.f)) return null;
 		const kind = header?.k;
-		if (kind !== "signature" && kind !== "redacted" && kind !== "encrypted") return null;
+		if (kind !== "signature" && kind !== "redacted" && kind !== "encrypted" && kind !== "effort") return null;
 		return {
 			format: header.f,
 			kind,
@@ -249,4 +252,44 @@ export function canReplayReasoning(origin: ReasoningOrigin, target: ReasoningTar
 		return true;
 	}
 	return originKey === targetKey;
+}
+
+// ---------------------------------------------------------------------------
+// Claude per-message effort records
+// ---------------------------------------------------------------------------
+
+const CLAUDE_EFFORTS = new Set<IRClaudeEffort>(["low", "medium", "high", "xhigh", "max"]);
+
+function isClaudeEffort(value: unknown): value is IRClaudeEffort {
+	return typeof value === "string" && CLAUDE_EFFORTS.has(value as IRClaudeEffort);
+}
+
+/**
+ * Seal the effort a Claude turn ran at. It goes to Chat and Responses clients
+ * as a reasoning entry of its own, which they send back with the rest of the
+ * reasoning, so the gateway can rebuild per-message effort changes on the next
+ * request without storing the conversation.
+ */
+export function sealEffortRecord(record: IREffortRecord, origin?: { model?: string | null; provider?: string | null }): string {
+	return sealReasoningState({
+		format: ANTHROPIC_REASONING_FORMAT,
+		kind: "effort",
+		value: `e=${record.effort};b=${record.base}`,
+		...(origin?.model ? { model: origin.model } : {}),
+		...(origin?.provider ? { provider: origin.provider } : {}),
+	});
+}
+
+/** The effort record in an opened state, or null when it is not one or is malformed. */
+export function effortRecordFromState(state: ReasoningState | null | undefined): IREffortRecord | null {
+	if (!state || state.kind !== "effort" || state.format !== ANTHROPIC_REASONING_FORMAT) return null;
+	const fields = new Map(state.value.split(";").map((entry) => {
+		const eq = entry.indexOf("=");
+		return [entry.slice(0, eq), entry.slice(eq + 1)] as const;
+	}));
+	const effort = fields.get("e");
+	const base = fields.get("b");
+	if (!isClaudeEffort(effort)) return null;
+	if (base !== "default" && !isClaudeEffort(base)) return null;
+	return { effort, base };
 }

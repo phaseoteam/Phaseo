@@ -289,6 +289,41 @@ O Gemini 2.5 e posteriores armazenam em cache implicitamente, sem nada a enviar.
 
 O Phaseo não armazena respostas. Solicitações que definem `previous_response_id` ou `conversation` retornam `400` `unsupported_param`, então envie a conversa inteira em `input` a cada etapa. A abertura estável dela é o prefixo que fica em cache. Em loops de ferramentas, envie de volta também os itens de saída `reasoning`; veja [Raciocínio em loops de ferramentas](../api-reference/endpoint/responses.mdx#reasoning-in-tool-loops).
 
+<span id="change-reasoning-effort-mid-conversation"></span>
+### Mudar o esforço de raciocínio no meio da conversa
+
+Envie o esforço que você quer em cada solicitação (`reasoning_effort` no Chat Completions, `reasoning.effort` no Responses), e o Phaseo muda o esforço do Claude sem reiniciar o cache de prompts dele. Um novo esforço de nível superior invalidaria a conversa em cache, então o Phaseo continua enviando ao Claude o primeiro nível da conversa e adiciona a mudança como um marcador de [esforço por mensagem](https://platform.claude.com/docs/en/build-with-claude/effort-per-message) depois da sua nova mensagem:
+
+| Solicitação | Você envia | O Phaseo envia ao Claude |
+| --- | --- | --- |
+| 1 | `"high"` | `output_config.effort: "high"` |
+| 2 | `"low"` | `"high"`, mais um marcador `low` depois da sua nova mensagem. O prefixo em cache continua correspondendo. |
+| 3 | `"low"` | `"high"`, mais o mesmo marcador no mesmo lugar |
+| 4 | `"high"` | `"high"`, o marcador anterior e um marcador `high` depois da sua nova mensagem |
+
+O Phaseo não armazena nada entre as solicitações. Ele lê os níveis anteriores da conversa que você envia, então isso só funciona quando:
+
+- **Você envia o raciocínio de volta sem alterações.** Cada resposta do Claude termina com uma entrada de raciocínio que registra o nível em que ela foi executada: a última entrada `reasoning.encrypted` em `reasoning_details` do Chat, ou o último item `reasoning` na saída do Responses. Ela não tem texto. Se você a descartar, ou descartar qualquer outro raciocínio, a próxima mudança vai para o nível superior.
+- **A mudança vem com uma nova mensagem do usuário.** Uma mudança entre passos de um loop de ferramentas, quando a sua mensagem mais recente contém apenas resultados de ferramentas, vai para o nível superior e reinicia o cache.
+- **O raciocínio continua ativado.** Solicitações com o raciocínio desativado mantêm o comportamento atual.
+- **A rota oferece suporte.** Anthropic e Google Vertex AI: Claude Fable 5.2 e 5.1, Mythos 5.2 e 5.1, Opus 5.5 e 5, Sonnet 5.5 e Haiku 5.5. Claude on AWS: os mesmos modelos, exceto Mythos. Amazon Bedrock: Fable 5.1 e Opus 5.5. Nos demais casos, incluindo o Claude no Azure, a mudança vai para o nível superior.
+
+No Anthropic Messages, envie você mesmo o marcador: uma mensagem `system` com `content` vazio e `output_config.effort`. Ela pode ficar em qualquer lugar de `messages`, e o Phaseo adiciona o cabeçalho beta `mid-conversation-output-config-2026-07-01`. Mantenha-a no lugar nas solicitações seguintes. Em rotas sem esforço por mensagem, o Phaseo a remove e envia o nível em vigor como esforço de nível superior.
+
+```json
+{
+  "model": "anthropic/claude-opus-5.5",
+  "max_tokens": 4096,
+  "output_config": { "effort": "high" },
+  "messages": [
+    { "role": "user", "content": "Plan a migration from SQLite to PostgreSQL." },
+    { "role": "assistant", "content": "1. Export the data. 2. Create the schema. 3. Import and verify." },
+    { "role": "system", "content": [], "output_config": { "effort": "low" } },
+    { "role": "user", "content": "Summarise the plan in one sentence." }
+  ]
+}
+```
+
 <span id="usage-and-pricing-fields"></span>
 ## Campos de uso e preços
 

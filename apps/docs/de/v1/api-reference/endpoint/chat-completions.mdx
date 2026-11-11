@@ -58,7 +58,12 @@ Einträge können Anbieterzustand enthalten, den das Modell im nächsten Schritt
 | Claude-Thinking-Signaturen | `signature` in `reasoning.text`-Einträgen |
 | Geschwärztes Claude-Thinking, verschlüsseltes OpenAI-Reasoning | `data` in `reasoning.encrypted`-Einträgen |
 | Gemini-Thought-Signaturen | `data` in `reasoning.encrypted`-Einträgen, deren `id` der zugehörige Tool-Aufruf ist |
+| Die Aufwandsstufe, mit der eine Claude-Antwort lief | `data` im letzten `reasoning.encrypted`-Eintrag, der keinen Text hat |
 
 Beim Streaming kommt ein `reasoning_details`-Delta, sobald ein Reasoning-Block vollständig ist.
 
-Damit das Modell sein Reasoning zwischen den Schritten behält, sende die Assistentennachricht mit unveränderten `reasoning_details` zurück. `signature`- und `data`-Werte sind undurchsichtig und halten fest, welcher Anbieter und welches Modell sie erzeugt haben. Phaseo sendet sie nur an diese Anbieterfamilie und dieses Modell, sodass ein Fallback auf einen anderen Anbieter sie verwirft, statt fehlzuschlagen. Claude-Modelle im manuellen Thinking-Modus brauchen ihr Thinking zurück, um während einer Tool-Schleife weiter zu denken; fehlt es, läuft dieser Schritt ohne Thinking.
+<Warning>
+Sende jede Assistentennachricht bei jeder Anfrage mit unveränderten `reasoning_details` zurück, nicht nur in Tool-Schleifen. Verwirf, bearbeite oder sortiere Einträge nie um, ob verschlüsselt oder nicht, auch Einträge ohne Text.
+</Warning>
+
+`signature`- und `data`-Werte sind undurchsichtig und halten fest, welcher Anbieter und welches Modell sie erzeugt haben. Phaseo sendet sie nur an diese Anbieterfamilie und dieses Modell, sodass ein Fallback auf einen anderen Anbieter sie verwirft, statt fehlzuschlagen. Ohne sie führen Claude-Modelle im manuellen Thinking-Modus den nächsten Schritt der Tool-Schleife ohne Thinking aus, und eine Änderung von `reasoning_effort` startet Claudes Prompt-Cache neu; siehe [Reasoning-Aufwand mitten in der Unterhaltung ändern](../../guides/prompt-caching#change-reasoning-effort-mid-conversation).

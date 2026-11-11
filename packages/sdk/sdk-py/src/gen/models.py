@@ -92,6 +92,7 @@ class AnthropicMessagesResponse(TypedDict):
 
 class AnthropicSystemMessage(TypedDict):
 	content: Union[str, List[AnthropicSystemTextBlock]]
+	output_config: NotRequired[Dict[str, Any]]
 	role: Literal["system"]
 
 class AnthropicSystemTextBlock(TypedDict):

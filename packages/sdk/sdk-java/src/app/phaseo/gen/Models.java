@@ -101,6 +101,7 @@ public final class Models {
 
 	public static class AnthropicSystemMessage {
 		public Object content;
+		public Object output_config;
 		public Object role;
 	}
 

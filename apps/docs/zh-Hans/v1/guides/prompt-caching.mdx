@@ -289,6 +289,41 @@ Gemini 2.5 及更高版本会隐式缓存，无需发送任何内容。要使用
 
 Phaseo 不存储响应。设置了 `previous_response_id` 或 `conversation` 的请求会返回 `400` `unsupported_param`，因此每一步都要在 `input` 中发送完整对话。对话中稳定的开头部分就是被缓存的前缀。在工具循环中，也要把 `reasoning` 输出项发送回来；参见[工具循环中的推理](../api-reference/endpoint/responses.mdx#reasoning-in-tool-loops)。
 
+<span id="change-reasoning-effort-mid-conversation"></span>
+### 在对话中途更改推理强度
+
+在每个请求中发送你想要的强度（Chat Completions 上为 `reasoning_effort`，Responses 上为 `reasoning.effort`），Phaseo 会在不重启 Claude 提示词缓存的情况下更改其强度。新的顶层强度会使已缓存的对话失效，因此 Phaseo 会继续向 Claude 发送对话最初的级别，并在你的新消息之后以[逐消息强度](https://platform.claude.com/docs/en/build-with-claude/effort-per-message)标记的形式加入这次更改：
+
+| 请求 | 你发送的值 | Phaseo 发送给 Claude 的内容 |
+| --- | --- | --- |
+| 1 | `"high"` | `output_config.effort: "high"` |
+| 2 | `"low"` | `"high"`，外加你的新消息之后的一个 `low` 标记。已缓存的前缀仍然匹配。 |
+| 3 | `"low"` | `"high"`，外加同一位置的同一个标记 |
+| 4 | `"high"` | `"high"`、之前的标记，以及你的新消息之后的一个 `high` 标记 |
+
+Phaseo 在请求之间不存储任何内容。它从你发送的对话中读取之前的级别，因此只有在以下情况下才有效：
+
+- **你原样发回推理内容。** Claude 的每条回复都以一个推理条目结尾，记录该回复运行时的级别：Chat `reasoning_details` 中的最后一个 `reasoning.encrypted` 条目，或 Responses 输出中的最后一个 `reasoning` 项。它没有文本。丢弃它或任何其他推理内容，下一次更改就会作为顶层强度发送。
+- **更改随新的用户消息一起发送。** 在工具循环的步骤之间更改（你的最新消息只包含工具结果时），会作为顶层强度发送并重启缓存。
+- **推理保持开启。** 关闭推理的请求保持现有行为。
+- **路由支持该功能。** Anthropic 和 Google Vertex AI：Claude Fable 5.2 和 5.1、Mythos 5.2 和 5.1、Opus 5.5 和 5、Sonnet 5.5 以及 Haiku 5.5。Claude on AWS：除 Mythos 外的相同模型。Amazon Bedrock：Fable 5.1 和 Opus 5.5。在其他路由上（包括 Azure 上的 Claude），更改会作为顶层强度发送。
+
+在 Anthropic Messages 上，请自行发送标记：一条 `content` 为空并带有 `output_config.effort` 的 `system` 消息。它可以放在 `messages` 中的任何位置，Phaseo 会添加 `mid-conversation-output-config-2026-07-01` beta 请求头。在后续请求中请把它保留在原位。在不支持逐消息强度的路由上，Phaseo 会移除它，并把当前生效的级别作为顶层强度发送。
+
+```json
+{
+  "model": "anthropic/claude-opus-5.5",
+  "max_tokens": 4096,
+  "output_config": { "effort": "high" },
+  "messages": [
+    { "role": "user", "content": "Plan a migration from SQLite to PostgreSQL." },
+    { "role": "assistant", "content": "1. Export the data. 2. Create the schema. 3. Import and verify." },
+    { "role": "system", "content": [], "output_config": { "effort": "low" } },
+    { "role": "user", "content": "Summarise the plan in one sentence." }
+  ]
+}
+```
+
 <span id="usage-and-pricing-fields"></span>
 ## 用量与定价字段
 

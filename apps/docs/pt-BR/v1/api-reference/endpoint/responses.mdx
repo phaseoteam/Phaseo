@@ -50,7 +50,12 @@ Cada item `reasoning` tem `id`, `summary` e `content`. Quando o provedor retorna
 - Raciocínio criptografado da OpenAI, do Azure OpenAI e da xAI. O Phaseo o solicita com `include: ["reasoning.encrypted_content"]` para modelos de raciocínio.
 - Assinaturas de pensamento e pensamento redigido do Claude.
 - Assinaturas de pensamento do Gemini, incluindo um item `reasoning` separado colocado logo antes da chamada de função a que a assinatura pertence.
+- O nível de esforço em que uma resposta do Claude foi executada, no último item `reasoning` da saída, que não tem texto.
 
 As respostas em streaming trazem os mesmos itens em `response.output_item.done` e `response.completed`.
 
-Para continuar um loop de ferramentas, envie de volta em `input` todos os itens de saída, incluindo os itens `reasoning`, sem alterações. `encrypted_content` é opaco e registra o provedor e o modelo que o produziram. O Phaseo o envia somente para essa família de provedor e esse modelo, de modo que um fallback para outro provedor o descarta em vez de falhar.
+<Warning>
+Envie de volta em `input` todos os itens de saída sem alterações em todas as solicitações, não só em loops de ferramentas. Nunca descarte, edite nem reordene itens `reasoning`, com ou sem `encrypted_content`, incluindo itens sem texto.
+</Warning>
+
+`encrypted_content` é opaco e registra o provedor e o modelo que o produziram. O Phaseo o envia somente para essa família de provedor e esse modelo, de modo que um fallback para outro provedor o descarta em vez de falhar. Sem ele, o Claude perde o raciocínio entre os passos do loop de ferramentas, e uma mudança de `reasoning.effort` reinicia o cache de prompts do Claude; veja [Mudar o esforço de raciocínio no meio da conversa](../../guides/prompt-caching#change-reasoning-effort-mid-conversation).

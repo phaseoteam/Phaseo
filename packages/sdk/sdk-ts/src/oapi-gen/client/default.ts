@@ -971,6 +971,9 @@ export type CreateAnthropicMessageParams = {
                 text: string;
                 type: "text";
               }[];
+          output_config?: {
+            effort: "low" | "medium" | "high" | "xhigh" | "max";
+          };
           role: "system";
         }
     )[];

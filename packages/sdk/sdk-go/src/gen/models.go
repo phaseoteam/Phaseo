@@ -98,6 +98,7 @@ type AnthropicMessagesResponse struct {
 
 type AnthropicSystemMessage struct {
 	Content interface{} `json:"content"`
+	OutputConfig *map[string]interface{} `json:"output_config,omitempty"`
 	Role string `json:"role"`
 }
 

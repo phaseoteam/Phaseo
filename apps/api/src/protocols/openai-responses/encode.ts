@@ -9,6 +9,7 @@ import type { IRChatResponse, IRUsage, IRContentPart } from "@core/ir";
 import { irUsageToOpenAIStyle, openAICacheWriteTtlDetails } from "@core/cache-usage";
 import { responsesStatusFor } from "@core/finish-reason";
 import {
+	encodeResponsesEffortItem,
 	encodeResponsesReasoningItem,
 	encodeResponsesToolSignatureItem,
 	sealReasoningPart,
@@ -234,6 +235,10 @@ export function encodeOpenAIResponsesResponse(
 	}
 
 	const mainChoice = ir.choices[0];
+	// A Claude reply's effort record goes last, after its message and calls.
+	if (mainChoice?.message.effortRecord) {
+		outputItems.push(encodeResponsesEffortItem(mainChoice.message.effortRecord, `rs_effort_${responseId}`, origin));
+	}
 	// length and content_filter are incomplete, with the documented reason.
 	const { status, incompleteDetails } = responsesStatusFor(mainChoice?.finishReason);
 

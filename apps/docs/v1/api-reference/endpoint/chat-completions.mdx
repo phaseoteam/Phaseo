@@ -59,7 +59,12 @@ Entries can carry provider state that the model needs on the next step of a tool
 | Claude thinking signatures | `signature` on `reasoning.text` entries |
 | Claude redacted thinking, OpenAI encrypted reasoning | `data` on `reasoning.encrypted` entries |
 | Gemini thought signatures | `data` on `reasoning.encrypted` entries whose `id` is the tool call they belong to |
+| The effort level a Claude reply ran at | `data` on the last `reasoning.encrypted` entry, which has no text |
 
 When streaming, a `reasoning_details` delta arrives once each reasoning block is complete.
 
-To keep the model's reasoning between steps, send the assistant message back with its `reasoning_details` unchanged. `signature` and `data` values are opaque and record the provider and model that produced them. Phaseo sends them only to that provider family and model, so a fallback to another provider drops them rather than failing. Claude models in manual thinking mode need their thinking back to keep thinking during a tool loop; if it is missing, that step runs without thinking.
+<Warning>
+Send every assistant message back with its `reasoning_details` unchanged, on every request, not only in tool loops. Never drop, edit or reorder entries, encrypted or not, including entries with no text.
+</Warning>
+
+`signature` and `data` values are opaque and record the provider and model that produced them. Phaseo sends them only to that provider family and model, so a fallback to another provider drops them rather than failing. Without them, Claude models in manual thinking mode run the next tool-loop step without thinking, and a change of `reasoning_effort` restarts Claude's prompt cache; see [Change reasoning effort mid-conversation](../../guides/prompt-caching#change-reasoning-effort-mid-conversation).

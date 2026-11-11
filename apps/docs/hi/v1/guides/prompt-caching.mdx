@@ -289,6 +289,41 @@ Gemini 2.5 और बाद के मॉडल बिना कुछ भेज
 
 Phaseo प्रतिक्रियाएँ सेव नहीं करता। `previous_response_id` या `conversation` सेट करने वाले अनुरोध `400` `unsupported_param` लौटाते हैं, इसलिए हर चरण पर पूरी बातचीत `input` में भेजें। इसकी स्थिर शुरुआत ही वह प्रीफ़िक्स है जो कैश होता है। टूल लूप में `reasoning` आउटपुट आइटम भी वापस भेजें; [टूल लूप में रीज़निंग](../api-reference/endpoint/responses.mdx#reasoning-in-tool-loops) देखें।
 
+<span id="change-reasoning-effort-mid-conversation"></span>
+### बातचीत के बीच में रीज़निंग प्रयास बदलें
+
+हर अनुरोध पर अपना मनचाहा प्रयास भेजें (Chat Completions पर `reasoning_effort`, Responses पर `reasoning.effort`), और Phaseo Claude का प्रयास उसके प्रॉम्प्ट कैश को दोबारा शुरू किए बिना बदल देता है। नया टॉप-लेवल प्रयास कैश की गई बातचीत को अमान्य कर देगा, इसलिए Phaseo Claude को बातचीत का पहला लेवल ही भेजता रहता है और बदलाव को आपके नए संदेश के बाद एक [प्रति-संदेश प्रयास](https://platform.claude.com/docs/en/build-with-claude/effort-per-message) मार्कर के रूप में जोड़ता है:
+
+| अनुरोध | आप भेजते हैं | Phaseo Claude को भेजता है |
+| --- | --- | --- |
+| 1 | `"high"` | `output_config.effort: "high"` |
+| 2 | `"low"` | `"high"`, साथ में आपके नए संदेश के बाद एक `low` मार्कर। कैश किया गया प्रीफ़िक्स अब भी मेल खाता है। |
+| 3 | `"low"` | `"high"`, साथ में वही मार्कर उसी जगह |
+| 4 | `"high"` | `"high"`, पिछला मार्कर, और आपके नए संदेश के बाद एक `high` मार्कर |
+
+Phaseo अनुरोधों के बीच कुछ भी सेव नहीं करता। यह पिछले लेवल आपकी भेजी गई बातचीत से पढ़ता है, इसलिए यह सिर्फ़ तब काम करता है जब:
+
+- **आप रीज़निंग बिना बदले वापस भेजते हैं।** Claude का हर जवाब एक रीज़निंग प्रविष्टि पर खत्म होता है जो दर्ज करती है कि वह किस लेवल पर चला: Chat `reasoning_details` में आखिरी `reasoning.encrypted` प्रविष्टि, या Responses आउटपुट में आखिरी `reasoning` item। इसमें कोई टेक्स्ट नहीं होता। इसे, या कोई दूसरी रीज़निंग, हटाने पर अगला बदलाव टॉप-लेवल पर जाता है।
+- **बदलाव एक नए उपयोगकर्ता संदेश के साथ आता है।** टूल लूप के चरणों के बीच का बदलाव, जब आपके सबसे नए संदेश में सिर्फ़ टूल परिणाम हों, टॉप-लेवल पर जाता है और कैश को दोबारा शुरू करता है।
+- **रीज़निंग चालू रहती है।** रीज़निंग बंद वाले अनुरोधों का व्यवहार पहले जैसा रहता है।
+- **रूट इसका समर्थन करता है।** Anthropic और Google Vertex AI: Claude Fable 5.2 और 5.1, Mythos 5.2 और 5.1, Opus 5.5 और 5, Sonnet 5.5 और Haiku 5.5। Claude on AWS: Mythos को छोड़कर यही मॉडल। Amazon Bedrock: Fable 5.1 और Opus 5.5। बाकी जगहों पर, Azure पर Claude समेत, बदलाव टॉप-लेवल पर जाता है।
+
+Anthropic Messages पर, मार्कर खुद भेजें: खाली `content` और `output_config.effort` वाला एक `system` संदेश। यह `messages` में कहीं भी हो सकता है, और Phaseo `mid-conversation-output-config-2026-07-01` beta header जोड़ता है। बाद के अनुरोधों में इसे उसी जगह रखें। प्रति-संदेश प्रयास के बिना वाले रूट पर, Phaseo इसे हटा देता है और लागू लेवल को टॉप-लेवल प्रयास के रूप में भेजता है।
+
+```json
+{
+  "model": "anthropic/claude-opus-5.5",
+  "max_tokens": 4096,
+  "output_config": { "effort": "high" },
+  "messages": [
+    { "role": "user", "content": "Plan a migration from SQLite to PostgreSQL." },
+    { "role": "assistant", "content": "1. Export the data. 2. Create the schema. 3. Import and verify." },
+    { "role": "system", "content": [], "output_config": { "effort": "low" } },
+    { "role": "user", "content": "Summarise the plan in one sentence." }
+  ]
+}
+```
+
 <span id="usage-and-pricing-fields"></span>
 ## उपयोग और प्राइसिंग फ़ील्ड
 

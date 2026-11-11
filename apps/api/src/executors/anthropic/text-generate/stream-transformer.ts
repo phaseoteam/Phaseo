@@ -4,7 +4,8 @@
 
 import { toResponsesAnnotations } from "@protocols/shared/citations";
 import { SseParser } from "@core/sse-parser";
-import { ANTHROPIC_REASONING_FORMAT, sealReasoningState } from "@core/reasoning-state";
+import { ANTHROPIC_REASONING_FORMAT, sealEffortRecord, sealReasoningState } from "@core/reasoning-state";
+import type { IREffortRecord } from "@core/ir";
 import { gatewayContextManagementEntry, gatewayStopEntry, normalizeFinishReason, responsesStatusFor } from "@core/finish-reason";
 import { mergeMessagesStreamUsage } from "@core/usage-normalization";
 
@@ -121,6 +122,12 @@ export function createAnthropicToResponsesStreamTransformer(
 		 * terminal response, for the Messages adapter. Only Messages clients get it.
 		 */
 		keepContextManagement?: boolean;
+		/**
+		 * The effort this reply ran at. It goes out as a final reasoning item with a
+		 * sealed record, which the client sends back so the next request can keep
+		 * Claude's cached prefix when the effort changes (core/claudePerMessageEffort.ts).
+		 */
+		effortRecord?: IREffortRecord;
 	},
 ): TransformStream<Uint8Array, Uint8Array> {
 	const accounting = options?.accounting;
@@ -495,6 +502,24 @@ export function createAnthropicToResponsesStreamTransformer(
 								arguments: typeof parsedInput === "string" ? parsedInput : JSON.stringify(parsedInput),
 							});
 						}
+					}
+
+					if (options?.effortRecord) {
+						const effortItem = {
+							type: "reasoning",
+							id: `rs_effort_${requestId}`,
+							status: "completed",
+							summary: [],
+							content: [],
+							encrypted_content: sealEffortRecord(options.effortRecord, { model, provider: providerId }),
+						};
+						const outputIndex = outputCounter++;
+						emitEvent(controller, "response.output_item.added", {
+							output_index: outputIndex,
+							item: { type: "reasoning", id: effortItem.id, summary: [], content: [] },
+						});
+						emitEvent(controller, "response.output_item.done", { output_index: outputIndex, item: effortItem });
+						outputItems.push(effortItem);
 					}
 
 					// Map Anthropic stop_reason to Responses API status: max_tokens and

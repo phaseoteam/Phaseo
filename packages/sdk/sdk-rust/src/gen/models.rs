@@ -105,6 +105,7 @@ pub struct AnthropicMessagesResponse {
 
 pub struct AnthropicSystemMessage {
 	pub content: String,
+	pub output_config: Option<HashMap<String, String>>,
 	pub role: String,
 }
 

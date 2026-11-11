@@ -91,6 +91,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 				toolCalls,
 				...(typeof msgAny.name === "string" && msgAny.name.length > 0 ? { name: msgAny.name } : {}),
 				...(audioId ? { audio: { id: audioId } } : {}),
+				...(decodedDetails.effortRecord ? { effortRecord: decodedDetails.effortRecord } : {}),
 			});
 		} else if (normalizedRole === "tool") {
 			const toolResult = normalizeToolResultContent(msgAny.content);

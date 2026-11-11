@@ -289,6 +289,41 @@ Gemini 2.5 und neuer cachen implizit, ohne dass du etwas senden musst. Um einen 
 
 Phaseo speichert keine Antworten. Anfragen, die `previous_response_id` oder `conversation` setzen, geben `400` `unsupported_param` zurück. Sende daher bei jedem Schritt die ganze Unterhaltung in `input`. Ihr stabiler Anfang ist das Präfix, das gecacht wird. Sende in Tool-Schleifen auch die `reasoning`-Ausgabeelemente zurück; siehe [Reasoning in Tool-Schleifen](../api-reference/endpoint/responses.mdx#reasoning-in-tool-loops).
 
+<span id="change-reasoning-effort-mid-conversation"></span>
+### Reasoning-Aufwand mitten in der Unterhaltung ändern
+
+Sende bei jeder Anfrage den gewünschten Aufwand (`reasoning_effort` bei Chat Completions, `reasoning.effort` bei Responses), und Phaseo ändert Claudes Aufwand, ohne seinen Prompt-Cache neu zu starten. Ein neuer Aufwand auf oberster Ebene würde die gecachte Unterhaltung ungültig machen. Phaseo sendet Claude deshalb weiter die erste Stufe der Unterhaltung und fügt die Änderung als Markierung für [Aufwand pro Nachricht](https://platform.claude.com/docs/en/build-with-claude/effort-per-message) nach deiner neuen Nachricht ein:
+
+| Anfrage | Du sendest | Phaseo sendet an Claude |
+| --- | --- | --- |
+| 1 | `"high"` | `output_config.effort: "high"` |
+| 2 | `"low"` | `"high"`, dazu eine `low`-Markierung nach deiner neuen Nachricht. Das gecachte Präfix passt weiterhin. |
+| 3 | `"low"` | `"high"`, dazu dieselbe Markierung an derselben Stelle |
+| 4 | `"high"` | `"high"`, die frühere Markierung und eine `high`-Markierung nach deiner neuen Nachricht |
+
+Phaseo speichert zwischen Anfragen nichts. Es liest frühere Stufen aus der Unterhaltung, die du sendest. Das funktioniert daher nur, wenn:
+
+- **Du Reasoning unverändert zurücksendest.** Jede Claude-Antwort endet mit einem Reasoning-Eintrag, der die Stufe festhält, mit der sie lief: dem letzten `reasoning.encrypted`-Eintrag in den Chat-`reasoning_details` oder dem letzten `reasoning`-Element in der Responses-Ausgabe. Er hat keinen Text. Verwirfst du ihn oder anderes Reasoning, geht die nächste Änderung an die oberste Ebene.
+- **Die Änderung mit einer neuen Benutzernachricht kommt.** Eine Änderung zwischen Schritten einer Tool-Schleife, wenn deine letzte Nachricht nur Tool-Ergebnisse enthält, geht an die oberste Ebene und startet den Cache neu.
+- **Reasoning eingeschaltet bleibt.** Anfragen mit ausgeschaltetem Reasoning verhalten sich wie bisher.
+- **Die Route es unterstützt.** Anthropic und Google Vertex AI: Claude Fable 5.2 und 5.1, Mythos 5.2 und 5.1, Opus 5.5 und 5, Sonnet 5.5 und Haiku 5.5. Claude on AWS: dieselben Modelle außer Mythos. Amazon Bedrock: Fable 5.1 und Opus 5.5. Überall sonst, auch bei Claude auf Azure, geht die Änderung an die oberste Ebene.
+
+Bei Anthropic Messages sendest du die Markierung selbst: eine `system`-Nachricht mit leerem `content` und `output_config.effort`. Sie kann überall in `messages` stehen, und Phaseo fügt den Beta-Header `mid-conversation-output-config-2026-07-01` hinzu. Lass sie bei späteren Anfragen an ihrer Stelle. Auf Routen ohne Aufwand pro Nachricht entfernt Phaseo sie und sendet die geltende Stufe als Aufwand auf oberster Ebene.
+
+```json
+{
+  "model": "anthropic/claude-opus-5.5",
+  "max_tokens": 4096,
+  "output_config": { "effort": "high" },
+  "messages": [
+    { "role": "user", "content": "Plan a migration from SQLite to PostgreSQL." },
+    { "role": "assistant", "content": "1. Export the data. 2. Create the schema. 3. Import and verify." },
+    { "role": "system", "content": [], "output_config": { "effort": "low" } },
+    { "role": "user", "content": "Summarise the plan in one sentence." }
+  ]
+}
+```
+
 <span id="usage-and-pricing-fields"></span>
 ## Nutzungs- und Abrechnungsfelder
 

@@ -5,15 +5,17 @@
 //      core/reasoning-state.ts) and read back into IR reasoning parts or Gemini
 //      function-call signatures.
 
-import type { IRContentPart, IRToolCall } from "@core/ir";
+import type { IRContentPart, IREffortRecord, IRToolCall } from "@core/ir";
 import type { GatewayReasoningDetail } from "@core/types";
 import {
 	ANTHROPIC_REASONING_FORMAT,
 	GOOGLE_REASONING_FORMAT,
 	OPENAI_REASONING_FORMAT,
+	effortRecordFromState,
 	isReasoningFormat,
 	openReasoningState,
 	reasoningFormatForRoute,
+	sealEffortRecord,
 	sealReasoningState,
 	type ReasoningFormat,
 	type ReasoningState,
@@ -122,6 +124,18 @@ export function encodeResponsesReasoningItem(
 	};
 }
 
+/**
+ * The reasoning item that carries a Claude reply's effort record. It has no text
+ * and goes last in the output, after the message and function calls.
+ */
+export function encodeResponsesEffortItem(
+	record: IREffortRecord,
+	id: string,
+	origin?: ReasoningResponseOrigin,
+): ResponsesReasoningItem {
+	return { type: "reasoning", id, summary: [], content: [], encrypted_content: sealEffortRecord(record, origin) };
+}
+
 /** A reasoning item that only carries a Gemini function-call signature. */
 export function encodeResponsesToolSignatureItem(
 	call: IRToolCall,
@@ -141,6 +155,7 @@ function textsOf(value: unknown): string {
 
 export type DecodedResponsesReasoning =
 	| { kind: "part"; part: ReasoningPart }
+	| { kind: "effort"; record: IREffortRecord }
 	| { kind: "tool_signature"; callId: string; signature: ToolCallSignature }
 	| null;
 
@@ -171,6 +186,10 @@ export function decodeResponsesReasoningItem(item: any): DecodedResponsesReasoni
 			part: { type: "reasoning_text", text, ...(summaryText ? { summary: summaryText } : {}) },
 		};
 	}
+	if (state.kind === "effort") {
+		const record = effortRecordFromState(state);
+		return record ? { kind: "effort", record } : null;
+	}
 	if (state.format === GOOGLE_REASONING_FORMAT && state.callId) {
 		return {
 			kind: "tool_signature",
@@ -198,6 +217,7 @@ export function encodeChatReasoningDetails(
 	toolCalls: IRToolCall[] | undefined,
 	idPrefix: string,
 	origin?: ReasoningResponseOrigin,
+	effortRecord?: IREffortRecord,
 ): GatewayReasoningDetail[] {
 	const details: GatewayReasoningDetail[] = [];
 	const push = (detail: Omit<GatewayReasoningDetail, "index">) => {
@@ -234,6 +254,10 @@ export function encodeChatReasoningDetails(
 		const sealed = sealToolCallSignature(call, origin);
 		if (sealed) push({ id: call.id, type: "reasoning.encrypted", data: sealed, format: GOOGLE_REASONING_FORMAT });
 	}
+	// The effort record goes last: the client sends it back with the rest.
+	if (effortRecord) {
+		push({ id: `${idPrefix}-effort`, type: "reasoning.encrypted", data: sealEffortRecord(effortRecord, origin), format: ANTHROPIC_REASONING_FORMAT });
+	}
 	return details;
 }
 
@@ -260,9 +284,10 @@ function defaultKindForFormat(format: ReasoningFormat | null): ReasoningStateKin
 export function decodeChatReasoningDetails(
 	details: unknown,
 	toolCallIds: ReadonlySet<string>,
-): { parts: ReasoningPart[]; toolSignatures: Map<string, ToolCallSignature> } {
+): { parts: ReasoningPart[]; toolSignatures: Map<string, ToolCallSignature>; effortRecord?: IREffortRecord } {
 	const parts: ReasoningPart[] = [];
 	const toolSignatures = new Map<string, ToolCallSignature>();
+	let effortRecord: IREffortRecord | undefined;
 	if (!Array.isArray(details)) return { parts, toolSignatures };
 	for (const entry of details) {
 		if (!entry || typeof entry !== "object") continue;
@@ -291,6 +316,10 @@ export function decodeChatReasoningDetails(
 		}
 		const state = openReasoningState((entry as any).data, format ? { format, kind: defaultKindForFormat(format) } : undefined);
 		if (!state) continue;
+		if (state.kind === "effort") {
+			effortRecord = effortRecordFromState(state) ?? effortRecord;
+			continue;
+		}
 		if (state.format === GOOGLE_REASONING_FORMAT) {
 			const callId = state.callId ?? (id && toolCallIds.has(id) ? id : undefined);
 			if (callId) {
@@ -312,7 +341,7 @@ export function decodeChatReasoningDetails(
 		}
 		parts.push(reasoningPartFromState(state, "", { reasoningId: id }));
 	}
-	return { parts, toolSignatures };
+	return { parts, toolSignatures, ...(effortRecord ? { effortRecord } : {}) };
 }
 
 /** Apply decoded Gemini function-call signatures to tool calls in place. */
@@ -348,6 +377,10 @@ export function decodeAnthropicThinkingBlock(block: any): DecodedResponsesReason
 	const text = typeof block.thinking === "string" ? block.thinking : "";
 	const state = openReasoningState(block.signature, { format: ANTHROPIC_REASONING_FORMAT, kind: "signature" });
 	if (!state) return text ? { kind: "part", part: { type: "reasoning_text", text } } : null;
+	if (state.kind === "effort") {
+		const record = effortRecordFromState(state);
+		return record ? { kind: "effort", record } : null;
+	}
 	if (state.format === GOOGLE_REASONING_FORMAT && state.callId) {
 		return {
 			kind: "tool_signature",

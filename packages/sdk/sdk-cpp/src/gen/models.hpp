@@ -104,6 +104,7 @@ struct AnthropicMessagesResponse {
 
 struct AnthropicSystemMessage {
 	std::any content;
+	std::map<std::string, std::any> output_config;
 	std::any role;
 };
 
