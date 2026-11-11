@@ -4,7 +4,7 @@ import Link from "@/components/link";
 import { TimestampHoverCard } from "@/components/display/TimestampHoverCard";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Badge } from "@/components/ui/badge";
-import { joinMeta } from "@/components/ui/hover-card-layout";
+import { joinMeta } from "@/components/ui/hover-card";
 import { useRelativeNow } from "@/hooks/useRelativeNow";
 import type { DeprecationWarning } from "@/lib/fetchers/usage/types";
 import { cn } from "@/lib/utils";

@@ -247,7 +247,6 @@ const UsageLogsView = memo(function UsageLogsView({ initialData, timeRange, sp, 
 				rows={filteredRows}
 				modelMetadata={new Map(data?.modelMetadataEntries ?? [])}
 				providerNames={new Map(data?.providerNameEntries ?? [])}
-				providerMetadata={new Map(data?.providerMetadataEntries ?? [])}
 				keys={new Map((data?.availableKeys ?? []).map((key) => [key.id, key]))}
 			/>
 		);

@@ -1,0 +1,68 @@
+// Number and date formatting for entity cards. Money is always US dollars in
+// the US style ("$12.50"); sub-cent rates keep three significant digits so a
+// cheap model never reads as free (as MonitorDataTable's formatRate does).
+
+const usd = (options: Intl.NumberFormatOptions) =>
+	new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", notation: "standard", ...options });
+
+/** "$8", "$12.50", "$0.075", "$0.000425". */
+export function formatUsd(value: number | null | undefined): string | null {
+	if (value === null || value === undefined || !Number.isFinite(value) || value < 0) return null;
+	if (value === 0) return "$0";
+	if (value < 0.01) return usd({ maximumSignificantDigits: 3 }).format(value);
+	const integer = Math.abs(value - Math.round(value)) < 1e-9;
+	return usd(integer ? { maximumFractionDigits: 0 } : { minimumFractionDigits: 2, maximumFractionDigits: 3 }).format(value);
+}
+
+/**
+ * Context windows in compact form: "1M", "1.05M", "131K". The K/M suffixes are
+ * the token units used across the catalogue, so they stay the same in every
+ * locale (locale compact notation would give "1m" in en-GB).
+ */
+export function formatTokensCompact(value: number | null | undefined, locale: string): string | null {
+	if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) return null;
+	const number = (amount: number, digits: number) => new Intl.NumberFormat(locale, { maximumFractionDigits: digits }).format(amount);
+	if (value >= 1_000_000) return `${number(value / 1_000_000, 2)}M`;
+	if (value >= 1_000) return `${number(value / 1_000, 0)}K`;
+	return number(value, 0);
+}
+
+/**
+ * A percentage to one decimal, rounded down so 99.99% (a failure happened)
+ * never shows as 100.0%.
+ */
+export function formatPercentFloor(value: number | null | undefined, locale: string): string | null {
+	if (value === null || value === undefined || !Number.isFinite(value)) return null;
+	const floored = Math.floor(value * 10) / 10;
+	return new Intl.NumberFormat(locale, { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(floored / 100);
+}
+
+/** Token shares: one decimal, or "<0.1%" for tiny shares. */
+export function formatShare(value: number | null | undefined, locale: string): string | null {
+	if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) return null;
+	const format = new Intl.NumberFormat(locale, { style: "percent", maximumFractionDigits: 1 });
+	return value < 0.1 ? `<${format.format(0.001)}` : format.format(value / 100);
+}
+
+/** A signed rank change: "+2", "−1", "0". */
+export function formatRankChange(value: number | null | undefined, locale: string): string | null {
+	if (value === null || value === undefined || !Number.isFinite(value)) return null;
+	return new Intl.NumberFormat(locale, { signDisplay: "exceptZero" }).format(value);
+}
+
+/** A calendar date ("9 Nov 2026" in en-GB), read as UTC so it never shifts a day. */
+export function formatCardDate(value: string | null | undefined, locale: string): string | null {
+	if (!value) return null;
+	const time = Date.parse(value.length === 10 ? `${value}T00:00:00Z` : value);
+	if (!Number.isFinite(time)) return null;
+	return new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" }).format(time);
+}
+
+export function countryName(code: string | null | undefined, locale: string): string | null {
+	if (!code) return null;
+	try {
+		return new Intl.DisplayNames([locale], { type: "region" }).of(code.toUpperCase()) ?? code;
+	} catch {
+		return code;
+	}
+}

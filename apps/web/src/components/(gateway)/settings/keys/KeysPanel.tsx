@@ -51,15 +51,13 @@ import {
 } from "@/components/ui/tooltip";
 import {
 	HoverCard,
-	HoverCardContent,
-	HoverCardTrigger,
-} from "@/components/ui/hover-card";
-import {
 	HoverCardBody,
+	HoverCardContent,
 	HoverCardFacts,
 	HoverCardHeadline,
 	HoverCardTitle,
-} from "@/components/ui/hover-card-layout";
+	HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import {
 	Empty,
 	EmptyDescription,

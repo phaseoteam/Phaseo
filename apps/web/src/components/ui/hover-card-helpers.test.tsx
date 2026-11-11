@@ -8,6 +8,8 @@ import {
 	HoverCardMeta,
 	HoverCardRows,
 	HoverCardStat,
+	HoverCardStats,
+	joinMeta,
 } from "./hover-card";
 
 function html(node: ReactNode) {
@@ -73,5 +75,30 @@ describe("hover card layout helpers", () => {
 		const stat = html(<HoverCardStat>99.5%</HoverCardStat>).querySelector("[data-slot=hover-card-stat]")!;
 		expect(stat.className).toContain("text-lg");
 		expect(stat.className).toContain("tabular-nums");
+	});
+
+	it("lays out up to four stat tiles with the value above a sentence-case label", () => {
+		const stats = html(
+			<HoverCardStats
+				items={[
+					{ label: "Input / 1M", value: "$8" },
+					null,
+					{ label: "Output / 1M", value: "$40" },
+					{ label: "Context", value: "1M" },
+					{ label: "Providers", value: "1/2" },
+					{ label: "Extra", value: "x" },
+				]}
+			/>,
+		).querySelector("[data-slot=hover-card-stats]")!;
+		expect(stats.className).toContain("rounded-md");
+		expect(stats.className).not.toContain("uppercase");
+		expect(Array.from(stats.querySelectorAll("dt")).map((dt) => dt.textContent)).toEqual(["Input / 1M", "Output / 1M", "Context", "Providers"]);
+		expect(Array.from(stats.querySelectorAll("dd")).map((dd) => dd.textContent)).toEqual(["$8", "$40", "1M", "1/2"]);
+		expect(html(<HoverCardStats items={[null]} />).innerHTML).toBe("");
+	});
+
+	it("joins meta parts, or returns null when there are none", () => {
+		expect(html(<>{joinMeta(["Acme", null, "", "Released 9 Nov 2026"])}</>).textContent).toBe("Acme · Released 9 Nov 2026");
+		expect(joinMeta([null, false, ""])).toBeNull();
 	});
 });

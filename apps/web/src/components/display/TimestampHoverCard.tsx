@@ -3,17 +3,15 @@ import * as React from "react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	HoverCard,
-	HoverCardContent,
-	HoverCardTrigger,
-} from "@/components/ui/hover-card";
-import {
 	HoverCardBody,
+	HoverCardContent,
 	HoverCardFacts,
 	HoverCardHeadline,
 	HoverCardTitle,
+	HoverCardTrigger,
 	joinMeta,
 	type HoverCardFact,
-} from "@/components/ui/hover-card-layout";
+} from "@/components/ui/hover-card";
 import { useRelativeNow } from "@/hooks/useRelativeNow";
 import { useTranslations } from "@/i18n/react";
 import type { DisplayDateValue } from "@/lib/displayPreferences";

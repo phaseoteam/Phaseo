@@ -11,6 +11,7 @@ import {
 import { ProductAnalyticsGaBridge } from "@/components/analytics/ProductAnalyticsGaBridge";
 import { ConsoleEasterEgg } from "@/components/ConsoleEasterEgg";
 import AdminDeveloperMenuLauncher from "@/components/developer-menu/AdminDeveloperMenuLauncher";
+import { EntityCards } from "@/components/entity-cards/EntityCards";
 import { WebQueryProvider } from "@/components/providers/WebQueryProvider";
 import { DisplayPreferencesProvider } from "@/components/providers/DisplayPreferencesProvider";
 import { CatalogNavigationGuardProvider } from "@/components/(data)/UnsavedChangesGuard";
@@ -103,6 +104,8 @@ export function RootDocument({
 							<NuqsAdapter>
 								{children}
 								<AdminDeveloperMenuLauncher />
+								{/* One card for every entity link on the page (models, providers, organisations, apps, ...). */}
+								<EntityCards />
 							</NuqsAdapter>
 							</WebQueryProvider>
 						</Suspense>

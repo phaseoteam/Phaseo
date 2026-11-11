@@ -67,13 +67,15 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import {
+	HoverCard,
 	HoverCardBody,
+	HoverCardContent,
 	HoverCardFacts,
 	HoverCardTitle,
+	HoverCardTrigger,
 	joinMeta,
-} from "@/components/ui/hover-card-layout";
+} from "@/components/ui/hover-card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
