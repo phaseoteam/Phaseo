@@ -182,7 +182,10 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 				usage: usageMeters,
 			};
 			if (args.pricingCard) {
-				const pricedUsage = computeBillAfterProviderCharge(usageMeters, args.pricingCard, { model: modelId, pricing_plan: "standard" }, "standard");
+				// ElevenLabs charges more per audio hour when keyterms are sent; the
+				// catalogue prices that as a rule matching `keyterms: true`.
+				const pricingContext = { model: modelId, pricing_plan: "standard", keyterms: Boolean(typedPayload.keywords?.length) };
+				const pricedUsage = computeBillAfterProviderCharge(usageMeters, args.pricingCard, pricingContext, "standard");
 				bill.cost_cents = Number(pricedUsage.pricing.total_nanos ?? 0) / 10_000_000;
 				bill.currency = pricedUsage.pricing.currency;
 				bill.usage = pricedUsage;
