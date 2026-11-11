@@ -53,13 +53,13 @@ const events = async (where = 'true') => (await rows(`select kind, dedupe_key, p
 try {
     // The migration carries every schema file it added, and the manifest lists them.
     const v4 = await read(v4File);
-    // sweep_spend_limit_warnings was last replaced by budget_enforcement_money_hygiene (charged async
-    // requests that did not succeed count toward cost).
-    const latestFile = '../migrations/20261110181826_budget_enforcement_money_hygiene.sql';
+    const latestFile = '../migrations/20261111145919_bound_spend_warning_sweep_work.sql';
     const latest = await read(latestFile);
     for (const file of schemaFiles) {
         const shipped = file.endsWith('sweep_spend_limit_warnings.sql') ? latest : v4;
-        assert.ok(shipped.includes((await read(file)).trim()), `${file} is in the migration`);
+        const definition = (await read(file)).replace(/\r\n/g, '\n');
+        const expected = file.endsWith('sweep_spend_limit_warnings.sql') ? definition.split('$function$')[1] : definition.trim();
+        assert.ok(shipped.replace(/\r\n/g, '\n').includes(expected), `${file} is in the migration`);
     }
     const manifest = JSON.parse(await read('../schemas/.pgdelta-export.json'));
     for (const file of schemaFiles) {

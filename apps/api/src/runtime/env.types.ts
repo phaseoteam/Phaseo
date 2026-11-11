@@ -92,6 +92,7 @@ export type GatewayBindings = {
     GATEWAY_CONTROL_KEY?: string;
     AI_STATS_GATEWAY_KEY?: string;
     NEXT_PUBLIC_GATEWAY_VERSION?: string;
+    CF_VERSION_METADATA?: { id: string };
     AXIOM_API_KEY?: string;
     AXIOM_DATASET?: string;
     AXIOM_WIDE_DATASET?: string;

@@ -85,12 +85,13 @@ try {
     'private/functions/workspace_budget_status.sql', 'public/functions/gateway_workspace_budget_status.sql', 'public/functions/gateway_spend_limit_seed.sql',
     'public/functions/workspace_department_budget_status.sql']) {
     const definition = (await schema(path)).trim();
-    // These three were replaced again by function-only migrations after the usage migration; the
-    // latest (realtime spend at debit time) carries all three.
-    const carrier = ['private/functions/unbilled_spend.sql', 'private/functions/key_spend_items.sql', 'private/functions/budget_spend_items.sql'].includes(path)
+    const carrier = path === 'private/functions/unbilled_spend.sql'
+      ? await readFile(new URL('../migrations/20261111145919_bound_spend_warning_sweep_work.sql', import.meta.url), 'utf8')
+      : ['private/functions/key_spend_items.sql', 'private/functions/budget_spend_items.sql'].includes(path)
       ? await readFile(new URL('../migrations/20261110182228_realtime_spend_counts_at_debit_time.sql', import.meta.url), 'utf8')
       : usageMigration;
-    assert.ok(carrier.includes(definition), `${path} matches its migration`);
+    const expected = path === 'private/functions/unbilled_spend.sql' ? definition.replace(/\r\n/g, '\n').split('$function$')[1] : definition;
+    assert.ok(carrier.includes(expected), `${path} matches its migration`);
     await db.exec(definition);
   }
   assert.ok(attributionMigration.includes((await schema('private/functions/department_budget_key_departments.sql')).trim()),
