@@ -80,13 +80,15 @@ Independent uptime checks are optional and not installed. Two HTTP checks (homep
 
 ## Private source maps
 
-Ordinary builds produce no browser maps. Optionally configure `FARO_SOURCEMAP_ENDPOINT`, `FARO_SOURCEMAP_APP_ID`, `FARO_SOURCEMAP_STACK_ID`, `FARO_SOURCEMAP_API_KEY` and a unique `PUBLIC_RELEASE`, then run:
+Production web CI can upload hidden browser/server source maps to PostHog EU project 81404. Set the GitHub Actions secret `POSTHOG_CLI_API_KEY` to a personal API key with `error_tracking:write` and `organization:read` scopes. The pinned [official upload action](https://posthog.com/docs/error-tracking/upload-source-maps/github-actions) injects matching bundle identifiers and uploads the exact files that are deployed, with `phaseo-web` and the commit SHA as their release. The upload credential is withheld from Vite. Upload failure blocks deployment; cleanup removes public map files even after failure. Without the secret, CI reports uploads disabled and builds without maps. Verify a post-deploy error resolves to original source before relying on symbolication. Desktop/mobile source-map uploads and native crashes remain separate work.
+
+For Grafana browser symbolication, optionally configure `FARO_SOURCEMAP_ENDPOINT`, `FARO_SOURCEMAP_APP_ID`, `FARO_SOURCEMAP_STACK_ID`, `FARO_SOURCEMAP_API_KEY` and a unique `PUBLIC_RELEASE`, then run:
 
 ```powershell
 pnpm --filter @phaseo/web build:observability
 ```
 
-The wrapper runs Vite with hidden maps, uploads recursively through the pinned official Faro CLI, and removes all maps under `dist/client` in a finally block. It rejects maps above 30 MB before upload. The upload key is withheld from the build subprocess. Deploy that exact successful artifact; rebuilding changes mappings. The upload bundle ID matches Faro's release. Do not enable `PHASEO_PRIVATE_SOURCEMAPS` in ordinary builds. cURL is required. Cloud upload and symbolication need separate verification and are not enabled in the standard release workflow.
+The wrapper runs Vite with hidden maps, uploads recursively through the pinned official Faro CLI, and removes all maps under `dist/client` in a finally block. It rejects maps above 30 MB before upload. The upload key is withheld from the build subprocess. Deploy that exact successful artifact; rebuilding changes mappings. The upload bundle ID matches Faro's release. Do not enable `PHASEO_PRIVATE_SOURCEMAPS` in ordinary builds. cURL is required. Faro upload and symbolication need separate verification and are not enabled in the standard release workflow.
 
 ## Costs and rollback
 

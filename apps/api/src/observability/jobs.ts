@@ -12,10 +12,6 @@ export function createJobObserver(env: GatewayBindings, scheduledTime: number) {
 			catch (error) {
 				outcome = "error";
 				diagnostic = safeError(error);
-				// RPC messages and details can contain customer data; export only a database code.
-				const cause = error instanceof Error ? error.cause : null;
-				if (cause && typeof cause === "object" && "code" in cause && typeof cause.code === "string"
-					&& /^(?:[0-9A-Z]{5}|PGRST[0-9]{3})$/.test(cause.code)) diagnostic.error_code = cause.code;
 				throw error;
 			}
 			finally {

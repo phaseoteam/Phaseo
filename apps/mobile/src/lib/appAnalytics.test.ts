@@ -74,6 +74,17 @@ test("only screen categories leave the app, never IDs or arbitrary routes", () =
   expect(analytics.mobileScreen(["secret-title"])).toBeUndefined();
 });
 
+test("autocaptured errors include the current screen category and clear it on withdrawal", () => {
+  analytics.setAppAnalyticsEnabled(true);
+  analytics.trackAppScreen(["(app)", "chat", "[id]"]);
+  const event = () => ({ event: "$exception", properties: { $exception_list: [{ type: "TypeError", stacktrace: { frames: [] } }] } });
+  expect(mockClients[0]!.options.before_send(event())).toMatchObject({ properties: { screen_name: "chat/detail" } });
+  expect(mockClients[0]!.options.before_send({ event: "$exception", properties: { $exception_list: [{ type: "RangeError" }] } })).toMatchObject({ properties: { screen_name: "chat/detail" } });
+  expect(mockClients[0]!.options.before_send(event())).toBeNull();
+  analytics.setAppAnalyticsEnabled(false); analytics.setAppAnalyticsEnabled(true);
+  expect(mockClients[1]!.options.before_send({ event: "$exception", properties: { $exception_list: [{ type: "ReferenceError" }] } })).not.toHaveProperty("properties.screen_name");
+});
+
 test("a failed preference write revokes the current queue and reports the failure", async () => {
   analytics.setAppAnalyticsEnabled(true);
   const previous = mockClients[0]!;
