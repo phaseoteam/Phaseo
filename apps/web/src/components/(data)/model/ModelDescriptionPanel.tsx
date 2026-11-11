@@ -5,7 +5,7 @@ import { useTranslations } from "@/i18n/react";
 import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { TAP_TARGET_28 } from "@/lib/tapTargets";
+import { TAP_AREA_28, TAP_TARGET_28 } from "@/lib/tapTargets";
 import { modelMarkdownComponents } from "./modelMarkdown";
 
 interface ModelDescriptionPanelProps {
@@ -73,8 +73,7 @@ export default function ModelDescriptionPanel({
 					size="sm"
 					className={cn(
 						"h-7 gap-1.5 rounded-md bg-background px-2.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground",
-						TAP_TARGET_28,
-						expanded ? "mt-2 ml-auto flex w-fit" : "absolute right-0 bottom-2",
+						expanded ? cn("mt-2 ml-auto flex w-fit", TAP_TARGET_28) : cn("absolute right-0 bottom-2", TAP_AREA_28),
 					)}
 					aria-expanded={expanded}
 					aria-controls={descriptionId}

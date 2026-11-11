@@ -15,6 +15,8 @@ export const TAP_TARGET_20 =
 export const TAP_TARGET_28_TIGHT =
 	"max-sm:relative max-sm:after:absolute max-sm:after:-inset-1 max-sm:after:content-['']";
 
+/** The 40px touch box for a 28px control, without `relative`: for controls that are already positioned. */
+export const TAP_AREA_28 = "max-sm:after:absolute max-sm:after:-inset-1.5 max-sm:after:content-['']";
+
 /** 28px control → 40px touch area on phones. */
-export const TAP_TARGET_28 =
-	"max-sm:relative max-sm:after:absolute max-sm:after:-inset-1.5 max-sm:after:content-['']";
+export const TAP_TARGET_28 = `max-sm:relative ${TAP_AREA_28}`;
