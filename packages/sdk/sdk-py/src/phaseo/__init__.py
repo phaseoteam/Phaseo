@@ -23,7 +23,7 @@ from .transport import HttpClient, APIResponse, PhaseoHTTPError, RawResponse, Re
 from .helpers import parse_output, output_text, collect_stream, check_capabilities, check_parameter_support, batch_results, match_batch_result, StructuredOutputError, StreamResponseError
 from .async_client import AsyncPhaseo, AsyncJobHandle, collect_async_stream, ParsedOutput
 from .realtime import AsyncRealtime, RealtimeSession, RealtimeSessionClosedError, realtime_final_bill
-from .media import upload_input, audio_upload, form_fields, download_to
+from .media import upload_input, form_fields, download_to
 from .jobs import (
     JobWaitOptions, JobTimeoutError, JobCancelledError, JobFailedError, JobHandle,
     wait_for_job, create_and_wait_for_job,
@@ -1125,8 +1125,9 @@ class Phaseo:
         return self.request("GET", "/videos/models")
 
     def generate_transcription(self, body: dict[str, Any]) -> dict[str, Any]:
-        """Transcribe audio. With `file` (bytes, a path, or an open binary file), sends multipart/form-data;
-        set `filename` (its extension names the format) and optionally `content_type` for raw bytes.
+        """Transcribe audio. With `file`, sends multipart/form-data. `file` is a `{"file_name", "content",
+        "content_type"}` dict, bytes or a binary file object (name from `filename`, else the file's own
+        name; its extension names the format), or a `pathlib.Path`. A plain `str` is not a file.
         Without `file`, sends JSON for `file_url`, `file_id` or `s3_presigned_url` requests."""
         payload = dict(body)
         self._maybe_warn_for_payload(payload)
@@ -1135,8 +1136,8 @@ class Phaseo:
         return ops.createTranscription(self._client, body=payload)
 
     def generate_translation(self, body: dict[str, Any]) -> dict[str, Any]:
-        """Translate audio to English. The gateway requires `file` (bytes, a path, or an open binary file),
-        sent as multipart/form-data; set `filename` (its extension names the format) for raw bytes."""
+        """Translate audio to English. The gateway requires `file`, sent as multipart/form-data; it takes
+        the same file values as `generate_transcription`."""
         payload = dict(body)
         self._maybe_warn_for_payload(payload)
         if payload.get("file") is not None:
@@ -1147,7 +1148,7 @@ class Phaseo:
         from .transport import decode_response
         fields = dict(payload)
         file, filename, content_type = fields.pop("file"), fields.pop("filename", None), fields.pop("content_type", None)
-        with audio_upload(file, filename, content_type) as part:
+        with upload_input(file, filename, content_type) as part:
             with self._client.stream("POST", self._base_url + path, files=[("file", part), *form_fields(fields)]) as response:
                 response.read()
                 return decode_response(response)
@@ -1403,9 +1404,12 @@ class Phaseo:
         response.raise_for_status()
         return response.content
 
-    def upload_file(self, *, purpose: Optional[str] = None, file: Any = None, filename: str = "upload", content_type: str = "application/octet-stream",
-                    model: Optional[str] = None, provider: Optional[str] = None) -> dict[str, Any]:
-        """Upload a batch input file. `model` and `provider` go in the query string so the gateway can place the file."""
+    def upload_file(self, *, purpose: Optional[str] = None, file: Any = None, filename: Optional[str] = None,
+                    content_type: Optional[str] = None, model: Optional[str] = None, provider: Optional[str] = None) -> dict[str, Any]:
+        """Upload a batch input file. `file` is a `{"file_name", "content", "content_type"}` dict, bytes or a
+        binary file object (name from `filename`, else the file's own name), or a `pathlib.Path`; a plain
+        `str` is not a file. `content_type` defaults to a guess from the filename extension.
+        `model` and `provider` go in the query string so the gateway can place the file."""
         from .transport import decode_response
         query = {key: value for key, value in (("model", model), ("provider", provider)) if value}
         with upload_input(file, filename, content_type) as value:

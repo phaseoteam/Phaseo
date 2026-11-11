@@ -9,6 +9,7 @@ from email.policy import HTTP
 from typing import Any, Callable
 
 import httpx
+import pytest
 
 from phaseo import AsyncPhaseo, Phaseo
 
@@ -87,13 +88,15 @@ def test_sync_translation_resource_accepts_path_and_file_object(tmp_path):
     path.write_bytes(AUDIO)
 
     client.audio.translations.create({"model": "openai/whisper-1", "file": path})
-    client.audio.translations.create({"model": "openai/whisper-1", "file": str(path)})
     with path.open("rb") as handle:
         client.audio.transcriptions.create({"model": "openai/whisper-1", "file": handle})
-    client.audio.translations.create({"model": "openai/whisper-1", "file": io.BytesIO(AUDIO)})
+    client.audio.translations.create({"model": "openai/whisper-1", "file": io.BytesIO(AUDIO), "filename": "note.mp3"})
+    client.audio.translations.create({
+        "model": "openai/whisper-1", "file": {"file_name": "take.webm", "content": AUDIO, "content_type": "video/webm"},
+    })
 
     assert [request.url.path for request in seen] == [
-        "/v1/audio/translations", "/v1/audio/translations", "/v1/audio/transcriptions", "/v1/audio/translations",
+        "/v1/audio/translations", "/v1/audio/transcriptions", "/v1/audio/translations", "/v1/audio/translations",
     ]
     filenames = []
     for request in seen:
@@ -103,8 +106,60 @@ def test_sync_translation_resource_accepts_path_and_file_object(tmp_path):
         assert form["model"][0]["value"] == b"openai/whisper-1"
         filenames.append((form["file"][0]["filename"], form["file"][0]["content_type"]))
     assert filenames == [
-        ("meeting.m4a", "audio/mp4"), ("meeting.m4a", "audio/mp4"), ("meeting.m4a", "audio/mp4"), ("audio.mp3", "audio/mpeg"),
+        ("meeting.m4a", "audio/mp4"), ("meeting.m4a", "audio/mp4"), ("note.mp3", "audio/mpeg"), ("take.webm", "video/webm"),
     ]
+
+
+def test_file_values_follow_the_explicit_file_rule(tmp_path):
+    seen: list[httpx.Request] = []
+    client = sync_client(ok, seen)
+    path = tmp_path / "meeting.flac"
+    path.write_bytes(AUDIO)
+
+    with pytest.raises(TypeError, match=r"pathlib\.Path"):
+        client.generate_transcription({"model": "openai/whisper-1", "file": str(path)})
+    with pytest.raises(ValueError, match="filename"):
+        client.generate_transcription({"model": "openai/whisper-1", "file": AUDIO})
+    with pytest.raises(ValueError, match="filename"):
+        client.audio.translations.create({"model": "openai/whisper-1", "file": io.BytesIO(AUDIO)})
+    with pytest.raises(ValueError, match="filename"):
+        client.upload_file(purpose="batch", file=b"{}")
+    with pytest.raises(TypeError, match=r"pathlib\.Path"):
+        client.files.create({"purpose": "batch", "file": "batch.jsonl"})
+    assert seen == []
+
+    client.generate_transcription({"model": "openai/whisper-1", "file": {"file_name": "clip.wav", "content": AUDIO}})
+    client.generate_transcription({"model": "openai/whisper-1", "file": path})
+    client.generate_transcription({"model": "openai/whisper-1", "file": bytearray(AUDIO), "filename": "x.ogg",
+                                   "content_type": "audio/x-custom"})
+    client.generate_transcription({"model": "openai/whisper-1", "file": ("raw.bin", AUDIO, "audio/wav")})
+    client.upload_file(purpose="batch", file=b"{}", filename="batch.json")
+
+    parts = [parse_form(request)["file"][0] for request in seen]
+    assert [(part["filename"], part["content_type"]) for part in parts] == [
+        ("clip.wav", "audio/wav"), ("meeting.flac", "audio/flac"), ("x.ogg", "audio/x-custom"),
+        ("raw.bin", "audio/wav"), ("batch.json", "application/json"),
+    ]
+    assert all(part["value"] in (AUDIO, b"{}") for part in parts)
+    assert "content_type" not in parse_form(seen[2])
+
+
+def test_upload_file_reads_path_and_keeps_explicit_keywords(tmp_path):
+    seen: list[httpx.Request] = []
+    client = sync_client(lambda _request: httpx.Response(200, json={"id": "file_1"}), seen)
+    path = tmp_path / "rows.jsonl"
+    path.write_bytes(b'{"custom_id":"a"}\n')
+
+    client.upload_file(purpose="batch", file=path, content_type="application/jsonl")
+    with path.open("rb") as handle:
+        client.files.create({"purpose": "batch", "file": handle, "filename": "renamed.jsonl"})
+    client.files.create({"purpose": "batch", "file": {"file_name": "inline.jsonl", "content": io.BytesIO(b"{}")}})
+
+    parts = [parse_form(request)["file"][0] for request in seen]
+    assert [(part["filename"], part["value"]) for part in parts] == [
+        ("rows.jsonl", b'{"custom_id":"a"}\n'), ("renamed.jsonl", b'{"custom_id":"a"}\n'), ("inline.jsonl", b"{}"),
+    ]
+    assert parts[0]["content_type"] == "application/jsonl"
 
 
 def test_sync_transcription_by_url_stays_json():
@@ -146,7 +201,12 @@ def test_async_audio_and_upload_use_multipart():
                 "model": "openai/gpt-4o-transcribe", "file": AUDIO, "filename": "clip.ogg",
                 "provider": {"only": ["openai"]}, "stream": True,
             })
-            await client.audio.translations.create({"model": "openai/whisper-1", "file": AUDIO})
+            await client.audio.translations.create({"model": "openai/whisper-1", "file": {"file_name": "a.mp3", "content": AUDIO}})
+            for bad, error in (("clip.mp3", TypeError), (AUDIO, ValueError)):
+                with pytest.raises(error):
+                    await client.audio.translations.create({"model": "openai/whisper-1", "file": bad})
+                with pytest.raises(error):
+                    await client.files.create({"purpose": "batch", "file": bad})
             await client.audio.transcriptions.create({"model": "elevenlabs/scribe-v2", "file_id": "file_9"})
             await client.files.create({"purpose": "batch", "file": b"{}", "filename": "batch.jsonl",
                                        "model": "openai/gpt-5-mini", "provider": "openai"})
@@ -164,7 +224,8 @@ def test_async_audio_and_upload_use_multipart():
 
     translation = parse_form(seen[1])
     assert seen[1].url.path == "/v1/audio/translations"
-    assert translation["file"][0]["filename"] == "audio.mp3"
+    assert translation["file"][0]["filename"] == "a.mp3"
+    assert translation["file"][0]["content_type"] == "audio/mpeg"
     assert translation["model"][0]["value"] == b"openai/whisper-1"
 
     assert seen[2].headers["content-type"] == "application/json"
