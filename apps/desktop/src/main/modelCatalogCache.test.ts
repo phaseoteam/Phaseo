@@ -62,6 +62,17 @@ describe("model catalog disk cache", () => {
 		await settle(); await cache.remove(key); resolve(first); await pending;
 		expect(await cache.read(key)).toBeUndefined(); expect(onChange).toHaveBeenCalledOnce();
 	});
+	it("saves what workspace rules hide with the list, keeps it when nothing changed and reports when only it changed", async () => {
+		const onChange = vi.fn(); const cache = new ModelCatalogCache(root, onChange);
+		const hidden = { restricted: true, hiddenModelCount: 1, hiddenModels: [{ id: "x/hidden", name: "Hidden" }], limitedModelCount: 0 };
+		await cache.refresh(key, async () => ({ models: first, validators: [{ offset: 0, etag: "\"v1\"" }], access: hidden }));
+		expect(await cache.access(key)).toEqual(hidden);
+		await cache.refresh(key, async () => ({ notModified: true }));
+		expect(await cache.access(key)).toEqual(hidden); expect(onChange).not.toHaveBeenCalled();
+		// The same models with different rules still tells the window.
+		await cache.refresh(key, async () => ({ models: first, validators: [], access: { ...hidden, hiddenModelCount: 0, hiddenModels: [] } }));
+		expect(onChange).toHaveBeenCalledOnce(); expect((await cache.access(key))?.hiddenModelCount).toBe(0);
+	});
 	it("re-checks with saved validators and keeps the list when nothing changed", async () => {
 		let now = 0; const onChange = vi.fn(); const cache = new ModelCatalogCache(root, onChange, () => now);
 		await cache.refresh(key, async () => ({ models: first, validators: [{ offset: 0, etag: "\"v1\"" }] }));

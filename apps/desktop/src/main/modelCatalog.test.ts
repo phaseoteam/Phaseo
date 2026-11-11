@@ -41,6 +41,16 @@ describe("API model catalog", () => {
 		expect(fetcher.mock.calls.map(([url]) => new URL(url).pathname)).toEqual(["/v1/models/me", "/v1/models"]);
 		expect(new URL(fetcher.mock.calls[1][0]).searchParams.get("endpoints")).toBe("text.generate");
 	});
+	it("keeps /models/me's summary of what workspace rules hide, checked field by field", async () => {
+		const access = { restricted: true, hidden_model_count: 2, hidden_models: [{ id: "x/one", name: "One" }, { id: "x/two" }, { name: "no id" }, 42], limited_model_count: 3 };
+		const catalog = await apiModelCatalog(gatewayAccount, "owned-key", undefined, vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [nativeModel("owned/a")], access }))));
+		expect(catalog).toMatchObject({ access: { restricted: true, hiddenModelCount: 2, hiddenModels: [{ id: "x/one", name: "One" }, { id: "x/two", name: "x/two" }], limitedModelCount: 3 } });
+		// The shared list (an older server) has no summary, and a malformed one is dropped.
+		const fallback = vi.fn().mockResolvedValueOnce(new Response("{}", { status: 501 })).mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [nativeModel("owned/a")], access })));
+		expect(await apiModelCatalog(gatewayAccount, "owned-key", undefined, fallback)).not.toHaveProperty("access");
+		const malformed = await apiModelCatalog(gatewayAccount, "owned-key", undefined, vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [nativeModel("owned/a")], access: { restricted: "yes" } }))));
+		expect(malformed).not.toHaveProperty("access");
+	});
 	it("doesn't fall back when the key's own list fails for another reason", async () => {
 		const fetcher = vi.fn().mockResolvedValue(new Response("{}", { status: 500 }));
 		await expect(apiModels(gatewayAccount, "owned-key", fetcher)).rejects.toThrow("HTTP 500");

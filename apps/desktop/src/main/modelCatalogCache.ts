@@ -1,7 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { mkdir, readdir, readFile, rename, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
-import type { ModelOption } from "../shared/workspace";
+import type { ModelAccess, ModelOption } from "../shared/workspace";
 import type { ApiModelCatalog, CatalogPageValidator } from "./apiModelCatalog";
 import { span } from "./diagnostics/tracer";
 
@@ -10,7 +10,7 @@ export const MODEL_CATALOG_FRESH_MS = 15 * 60 * 1000;
 export type ModelCatalogKey = { endpoint: string; accountId: string };
 /** Version 3 added model facts, 4 their cache prices and 5 the Phaseo list with the key's guardrails applied (/models/me); older files are still served but count as stale and re-download in full, since their ETags would answer that nothing changed. */
 export const CATALOG_VERSION = 5;
-type CatalogFile = { version: 1 | 2 | 3 | 4 | 5; endpoint: string; accountId: string; fetchedAt: string; models: ModelOption[]; validators?: CatalogPageValidator[] };
+type CatalogFile = { version: 1 | 2 | 3 | 4 | 5; endpoint: string; accountId: string; fetchedAt: string; models: ModelOption[]; validators?: CatalogPageValidator[]; access?: ModelAccess };
 /** Fetches the catalog; given the saved page validators it may answer that nothing changed. */
 export type CatalogFetch = (validators?: CatalogPageValidator[]) => Promise<ModelOption[] | ApiModelCatalog>;
 
@@ -64,15 +64,22 @@ export class ModelCatalogCache {
 			if (!Array.isArray(result) && result.notModified && !previous) result = await fetchModels();
 			const models = Array.isArray(result) ? result : result.notModified ? previous!.models : result.models;
 			const validators = Array.isArray(result) ? undefined : result.notModified ? previous!.validators : result.validators;
+			// The rules' summary comes with the list's body, so an unchanged list keeps the saved one.
+			const access = Array.isArray(result) ? undefined : result.notModified ? previous!.access : result.access;
 			// A removal while fetching means the account is gone; do not resurrect its cache.
 			if ((this.generations.get(file) ?? 0) !== generation) return models;
-			try { await this.write(file, { version: CATALOG_VERSION, ...key, fetchedAt: new Date(this.now()).toISOString(), models, ...(validators?.length ? { validators } : {}) }); }
+			try { await this.write(file, { version: CATALOG_VERSION, ...key, fetchedAt: new Date(this.now()).toISOString(), models, ...(validators?.length ? { validators } : {}), ...(access ? { access } : {}) }); }
 			catch (error) { this.warn(`Model catalog cache write failed: ${error instanceof Error ? error.message : "unknown error"}`); }
-			if (previous && JSON.stringify(previous.models) !== JSON.stringify(models)) this.onChange(key);
+			if (previous && (JSON.stringify(previous.models) !== JSON.stringify(models) || JSON.stringify(previous.access) !== JSON.stringify(access))) this.onChange(key);
 			return models;
 		}).finally(() => { if (this.refreshes.get(file) === refresh) this.refreshes.delete(file); });
 		this.refreshes.set(file, refresh);
 		return refresh;
+	}
+	/** What workspace rules leave out of the saved list, from its last download. */
+	async access(key: ModelCatalogKey): Promise<ModelAccess | undefined> {
+		const cached = await this.read(key);
+		return cached?.version === CATALOG_VERSION ? cached.access : undefined;
 	}
 	/** Keeps serving the list, but re-checks it on the next read: a new key for the same account sees the same catalog, give or take. */
 	async expire(key: ModelCatalogKey) {

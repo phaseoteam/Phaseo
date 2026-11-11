@@ -516,6 +516,11 @@ async function modelCheck<T>(harness: Harness, check: () => Promise<T>) {
 	finally { const remaining = modelChecks.get(harness)! - 1; if (remaining) modelChecks.set(harness, remaining); else modelChecks.delete(harness); }
 }
 ipcMain.handle("workspace:models", (event, harness: unknown, accountId: unknown, projectId: unknown) => modelRequest(event, harness, accountId, projectId, false));
+ipcMain.handle("workspace:model-access", async (event, accountId: unknown) => {
+	if (!senderWindow(event) || typeof accountId !== "string") throw new Error("Invalid model access request.");
+	const account = workspaceRuntime.store.getAccounts().find(value => value.id === accountId && value.harness === "phaseo" && value.configured && value.endpoint);
+	return account ? await modelCatalogCache.access({ endpoint: account.endpoint!, accountId: account.id }) : undefined;
+});
 // Skips the caches' freshness windows: Phaseo's catalog and the lists local harnesses last gave.
 ipcMain.handle("workspace:refresh-models", (event, harness: unknown, accountId: unknown) => modelRequest(event, harness, accountId, undefined, true));
 app.on("before-quit", event => {

@@ -1,4 +1,4 @@
-import type { Account, ModelOption } from "../shared/workspace";
+import type { Account, ModelAccess, ModelOption } from "../shared/workspace";
 import { phaseoModelFacts } from "./phaseoModelFacts";
 import { phaseoModelOptions } from "./phaseoModelOptions";
 
@@ -6,7 +6,15 @@ const record = (value: unknown): Record<string, unknown> | undefined => value !=
 
 /** One fetched page of a catalog and the ETag it was served with, for conditional re-checks. */
 export type CatalogPageValidator = { offset: number; etag: string };
-export type ApiModelCatalog = { notModified: true } | { notModified?: false; models: ModelOption[]; validators: CatalogPageValidator[] };
+export type ApiModelCatalog = { notModified: true } | { notModified?: false; models: ModelOption[]; validators: CatalogPageValidator[]; access?: ModelAccess };
+
+/** /models/me's summary of what the key's rules left out, checked field by field (it reaches the window). */
+function modelAccess(value: unknown): ModelAccess | undefined {
+	const access = record(value);
+	if (!access || typeof access.restricted !== "boolean" || !Number.isSafeInteger(access.hidden_model_count) || !Array.isArray(access.hidden_models)) return undefined;
+	const hiddenModels = access.hidden_models.flatMap(entry => { const model = record(entry); return model && typeof model.id === "string" && model.id ? [{ id: model.id, name: typeof model.name === "string" && model.name.trim() ? model.name : model.id }] : []; }).slice(0, 1000);
+	return { restricted: access.restricted, hiddenModelCount: Math.max(0, access.hidden_model_count as number), hiddenModels, limitedModelCount: Number.isSafeInteger(access.limited_model_count) ? Math.max(0, access.limited_model_count as number) : 0 };
+}
 
 export async function apiModels(account: Account, key: string, fetcher: typeof fetch = fetch): Promise<ModelOption[]> {
 	const catalog = await apiModelCatalog(account, key, undefined, fetcher);
@@ -39,6 +47,7 @@ export async function apiModelCatalog(account: Account, key: string, previous?: 
 	const signal = AbortSignal.timeout(30_000);
 	if (previous?.length && await unchanged(url, key, previous, fetcher, signal)) return { notModified: true };
 	const validators: CatalogPageValidator[] = [];
+	let access: ModelAccess | undefined;
 	for (let page = 0; page < 40; page++) {
 		let response = await fetcher(url.href, { headers: { Authorization: `Bearer ${key}` }, signal, redirect: "error" });
 		if (phaseo && page === 0 && url.pathname.endsWith("/models/me") && [404, 405, 501].includes(response.status)) {
@@ -52,6 +61,8 @@ export async function apiModelCatalog(account: Account, key: string, previous?: 
 		const result = record(await response.json());
 		if (!result) throw new Error("The endpoint returned an invalid model catalog.");
 		const native = Array.isArray(result.models);
+		// The same on every page; read from the first.
+		if (page === 0 && url.pathname.endsWith("/models/me")) access = modelAccess(result.access);
 		const entries = native ? result.models as unknown[] : result.data;
 		if (!Array.isArray(entries) || entries.length > 10_000) throw new Error("The endpoint returned an invalid model catalog.");
 		if (native && (result.ok !== true || !Number.isSafeInteger(result.offset) || result.offset !== offset || !Number.isSafeInteger(result.total) || (result.total as number) < 0)) throw new Error("The endpoint returned invalid model pagination.");
@@ -77,7 +88,7 @@ export async function apiModelCatalog(account: Account, key: string, previous?: 
 		if (seenIds.size > 10_000) throw new Error("Model catalog exceeded the limit.");
 		if (native && ((!entries.length && offset < (result.total as number)) || (page > 0 && entries.length > 0 && !added))) throw new Error("Model catalog repeated or omitted a page.");
 		// Conditional re-checks need an ETag for every page; otherwise the next refresh downloads in full.
-		if (!native || offset + entries.length >= (result.total as number)) return { models: [...models.values()], validators: validators.length === page + 1 ? validators : [] };
+		if (!native || offset + entries.length >= (result.total as number)) return { models: [...models.values()], validators: validators.length === page + 1 ? validators : [], ...(access ? { access } : {}) };
 		offset += entries.length;
 		if (offset > 5000) throw new Error("Model catalog exceeded the pagination limit.");
 		url.searchParams.set("offset", String(offset));
