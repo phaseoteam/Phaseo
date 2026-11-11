@@ -1174,8 +1174,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: Phaseo मॉडल ID, उदाहरण के लिए `eleven-labs/scribe-v3-live`।
                   model_id:
                     type: string
+                    description: Phaseo मॉडल ID। `model` के समान।
+                  provider_model:
+                    type: string
+                    description: प्रोवाइडर द्वारा मॉडल का अपना नाम, उदाहरण के लिए `scribe_v3_live`।
                   voice:
                     type: string
                     nullable: true
@@ -1373,8 +1378,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: Phaseo मॉडल ID, उदाहरण के लिए `eleven-labs/scribe-v3-live`।
                   model_id:
                     type: string
+                    description: Phaseo मॉडल ID। `model` के समान।
+                  provider_model:
+                    type: string
+                    description: प्रोवाइडर द्वारा मॉडल का अपना नाम, उदाहरण के लिए `scribe_v3_live`।
                   voice:
                     type: string
                     nullable: true
@@ -1585,8 +1595,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: Phaseo मॉडल ID, उदाहरण के लिए `eleven-labs/scribe-v3-live`।
                   model_id:
                     type: string
+                    description: Phaseo मॉडल ID। `model` के समान।
+                  provider_model:
+                    type: string
+                    description: प्रोवाइडर द्वारा मॉडल का अपना नाम, उदाहरण के लिए `scribe_v3_live`।
                   voice:
                     type: string
                     nullable: true

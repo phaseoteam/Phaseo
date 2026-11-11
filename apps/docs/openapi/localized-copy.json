@@ -12259,6 +12259,36 @@
 			"ja": "部門の支出予算と、現在の UTC 期間における各部門のこれまでの支出を一覧表示します。支出は部門の受け入れ判定と同じ方法で計算されるため、最新です。",
 			"zh-Hans": "列出各部门的支出预算，以及每个部门在当前 UTC 周期内迄今的支出。支出的计算方式与部门准入检查相同，因此是最新的。",
 			"ar": "يسرد ميزانيات إنفاق الأقسام مع إنفاق كل قسم حتى الآن في فترة UTC الحالية. يُحتسب الإنفاق بالطريقة نفسها التي يحتسبه بها فحص قبول القسم، لذا فهو محدَّث."
+		},
+		"Phaseo model id, for example `eleven-labs/scribe-v3-live`.": {
+			"es": "ID de modelo de Phaseo, por ejemplo `eleven-labs/scribe-v3-live`.",
+			"fr": "ID de modèle Phaseo, par exemple `eleven-labs/scribe-v3-live`.",
+			"de": "Phaseo-Modell-ID, zum Beispiel `eleven-labs/scribe-v3-live`.",
+			"pt-BR": "ID de modelo da Phaseo, por exemplo `eleven-labs/scribe-v3-live`.",
+			"hi": "Phaseo मॉडल ID, उदाहरण के लिए `eleven-labs/scribe-v3-live`।",
+			"ja": "Phaseo のモデル ID。例: `eleven-labs/scribe-v3-live`。",
+			"zh-Hans": "Phaseo 模型 ID，例如 `eleven-labs/scribe-v3-live`。",
+			"ar": "معرّف نموذج Phaseo، مثل `eleven-labs/scribe-v3-live`."
+		},
+		"Phaseo model id. Same as `model`.": {
+			"es": "ID de modelo de Phaseo. Igual que `model`.",
+			"fr": "ID de modèle Phaseo. Identique à `model`.",
+			"de": "Phaseo-Modell-ID. Gleich wie `model`.",
+			"pt-BR": "ID de modelo da Phaseo. Igual a `model`.",
+			"hi": "Phaseo मॉडल ID। `model` के समान।",
+			"ja": "Phaseo のモデル ID。`model` と同じです。",
+			"zh-Hans": "Phaseo 模型 ID。与 `model` 相同。",
+			"ar": "معرّف نموذج Phaseo. مطابق لـ `model`."
+		},
+		"The provider's own name for the model, for example `scribe_v3_live`.": {
+			"es": "El nombre que el proveedor da al modelo, por ejemplo `scribe_v3_live`.",
+			"fr": "Le nom du modèle chez le fournisseur, par exemple `scribe_v3_live`.",
+			"de": "Der eigene Name des Anbieters für das Modell, zum Beispiel `scribe_v3_live`.",
+			"pt-BR": "O nome que o provedor dá ao modelo, por exemplo `scribe_v3_live`.",
+			"hi": "प्रोवाइडर द्वारा मॉडल का अपना नाम, उदाहरण के लिए `scribe_v3_live`।",
+			"ja": "プロバイダー側でのモデル名。例: `scribe_v3_live`。",
+			"zh-Hans": "提供商自己的模型名称，例如 `scribe_v3_live`。",
+			"ar": "اسم النموذج لدى المزوّد، مثل `scribe_v3_live`."
 		}
 	},
 	"GET /apps": {

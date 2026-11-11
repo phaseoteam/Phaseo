@@ -1174,8 +1174,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: ID de modèle Phaseo, par exemple `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: ID de modèle Phaseo. Identique à `model`.
+                  provider_model:
+                    type: string
+                    description: Le nom du modèle chez le fournisseur, par exemple `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
@@ -1373,8 +1378,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: ID de modèle Phaseo, par exemple `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: ID de modèle Phaseo. Identique à `model`.
+                  provider_model:
+                    type: string
+                    description: Le nom du modèle chez le fournisseur, par exemple `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
@@ -1585,8 +1595,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: ID de modèle Phaseo, par exemple `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: ID de modèle Phaseo. Identique à `model`.
+                  provider_model:
+                    type: string
+                    description: Le nom du modèle chez le fournisseur, par exemple `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
