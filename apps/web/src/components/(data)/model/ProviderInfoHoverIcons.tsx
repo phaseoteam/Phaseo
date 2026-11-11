@@ -12,6 +12,7 @@ import {
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { TAP_TARGET_24 } from "@/lib/tapTargets";
 import {
 	CircleHelp,
 	MapPin,
@@ -297,6 +298,7 @@ function IconHover({
 					aria-label={ariaLabel}
 					className={cn(
 						"inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+						TAP_TARGET_24,
 						triggerClassName,
 					)}
 				>

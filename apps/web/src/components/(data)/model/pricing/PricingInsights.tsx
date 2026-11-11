@@ -1430,7 +1430,7 @@ export default function PricingInsights({
 				</div>
 
 				<div className="flex w-full flex-wrap items-center gap-2">
-					<div className="inline-flex h-8 rounded-md border bg-background p-0.5" aria-label={t("pricingView")}>
+					<div className="inline-flex h-8 rounded-md border bg-background p-0.5 max-sm:h-10" aria-label={t("pricingView")}>
 						{(["effective", "listed"] as const).map((view) => (
 							<button
 								key={view}
@@ -1447,7 +1447,7 @@ export default function PricingInsights({
 						<SelectTrigger
 							id={expanded ? "expanded-pricing-meter" : "pricing-meter"}
 							size="default"
-							className="h-8 w-fit max-w-full rounded-md border border-border bg-background px-2.5 text-xs font-medium text-foreground hover:bg-muted/40"
+							className="h-8 w-fit max-w-full rounded-md border border-border bg-background px-2.5 text-xs font-medium text-foreground hover:bg-muted/40 max-sm:h-10!"
 							aria-label={t("meter")}
 						>
 							<SelectValue>{formatLocalizedMeterLabel(activeMeter)}</SelectValue>
@@ -1460,19 +1460,21 @@ export default function PricingInsights({
 							))}
 						</SelectContent>
 					</Select>
-					<div className="ml-auto flex flex-wrap items-center gap-1.5">
-						<div className="inline-flex h-8 rounded-md border bg-background p-0.5" aria-label={t("historyRange")}>
+					<div className="ml-auto flex flex-wrap items-center gap-1.5 max-sm:w-full">
+						<div className="inline-flex h-8 rounded-md border bg-background p-0.5 max-sm:h-10 max-sm:flex-1" aria-label={t("historyRange")}>
 							{RANGE_OPTIONS.map((range) => (
 								<button
 									key={range}
 									type="button"
+									aria-label={range === "7d" ? t("ranges.week") : range === "30d" ? t("ranges.month") : range === "90d" ? t("ranges.quarter") : range === "1y" ? t("ranges.year") : t("all")}
+									title={range === "7d" ? t("ranges.week") : range === "30d" ? t("ranges.month") : range === "90d" ? t("ranges.quarter") : range === "1y" ? t("ranges.year") : t("all")}
 									onClick={() => {
 										setCustomPricingRange(undefined);
 										setPricingRange(range);
 									}}
-									className={cn("rounded-[5px] px-2 text-xs font-medium transition-colors", !customPricingRange && pricingRange === range ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
+									className={cn("rounded-[5px] px-2 text-xs font-medium transition-colors max-sm:flex-1", !customPricingRange && pricingRange === range ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}
 								>
-									{range === "7d" ? t("ranges.week") : range === "30d" ? t("ranges.month") : range === "90d" ? t("ranges.quarter") : range === "1y" ? t("ranges.year") : t("all")}
+									{range === "7d" ? t("rangesShort.week") : range === "30d" ? t("rangesShort.month") : range === "90d" ? t("rangesShort.quarter") : range === "1y" ? t("rangesShort.year") : t("all")}
 								</button>
 							))}
 						</div>
@@ -1481,7 +1483,7 @@ export default function PricingInsights({
 							onOpenChange={(open) => setOpenCalendarSurface(open ? (expanded ? "expanded" : "base") : null)}
 						>
 							<PopoverTrigger asChild>
-								<Button type="button" variant="outline" size="icon" className={cn("size-8 rounded-md", customPricingRange && "bg-muted text-foreground")} aria-label={t("customRange")}>
+								<Button type="button" variant="outline" size="icon" className={cn("size-8 rounded-md max-sm:size-10", customPricingRange && "bg-muted text-foreground")} aria-label={t("customRange")}>
 									<CalendarDays className="size-3.5" />
 								</Button>
 							</PopoverTrigger>

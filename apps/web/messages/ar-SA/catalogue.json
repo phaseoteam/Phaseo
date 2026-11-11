@@ -1161,6 +1161,12 @@
 				"quarter": "3 أشهر",
 				"year": "سنة واحدة"
 			},
+			"rangesShort": {
+				"week": "أسبوع",
+				"month": "شهر",
+				"quarter": "3 أشهر",
+				"year": "سنة"
+			},
 			"units": {
 				"token": "رموز",
 				"image": "صور",

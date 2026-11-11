@@ -1161,6 +1161,12 @@
 				"quarter": "3 Monate",
 				"year": "1 Jahr"
 			},
+			"rangesShort": {
+				"week": "1W",
+				"month": "1M",
+				"quarter": "3M",
+				"year": "1J"
+			},
 			"units": {
 				"token": "Tokens",
 				"image": "Bilder",

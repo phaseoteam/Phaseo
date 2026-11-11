@@ -1750,7 +1750,7 @@ export default function ModelPricingClient({
 		<DropdownMenu>
 			<DropdownMenuTrigger
 				render={
-					<Button type="button" variant="outline" size="sm" className="h-8 min-w-0 flex-1 justify-center gap-2 rounded-md px-3 text-xs sm:hidden" />
+					<Button type="button" variant="outline" size="sm" className="h-8 min-w-0 flex-1 justify-center gap-2 rounded-md px-3 text-xs max-sm:h-10 sm:hidden" />
 				}
 			>
 				<ArrowDownUp className="size-3.5" />
@@ -1802,7 +1802,7 @@ export default function ModelPricingClient({
                         <DropdownMenu>
                             <DropdownMenuTrigger
                                 render={
-                                    <Button type="button" variant="outline" size="sm" className="h-8 min-w-0 flex-1 justify-center gap-2 rounded-md px-3 text-xs sm:flex-none" />
+                                    <Button type="button" variant="outline" size="sm" className="h-8 min-w-0 flex-1 justify-center gap-2 rounded-md px-3 text-xs max-sm:h-10 sm:flex-none" />
                                 }
                             >
                                 <Filter className="size-3.5" />
@@ -1935,7 +1935,7 @@ export default function ModelPricingClient({
                             onChange={handlePercentileChange}
                             isLoading={isLoadingPercentile}
                             ariaLabel={tProvider("selectPercentile")}
-                            className="min-w-0 flex-1 justify-center sm:flex-none"
+                            className="min-w-0 flex-1 justify-center max-sm:h-10 sm:flex-none"
                         />
                     </div>
                 ) : null}
