@@ -24,6 +24,7 @@ import {
 	Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TAP_TARGET_20 } from "@/lib/tapTargets";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
@@ -3254,15 +3255,15 @@ export default function ProviderCard({
 									{ provider: displayName },
 								)}
 								onClick={onToggleServiceTiers}
-								className="inline-flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+								className={cn("inline-flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40", TAP_TARGET_20)}
 							>
 								<ChevronDown className={cn("size-3 transition-transform", !serviceTiersExpanded && "-rotate-90")} aria-hidden="true" />
 							</button>
 						) : null}
-						<div className="max-sm:min-w-0">
+						<div className="max-sm:min-w-0 max-sm:flex-1">
 						<div className="flex items-center gap-2.5 max-sm:flex-wrap max-sm:gap-y-1">
 							<div
-								className="inline-flex items-center gap-2.5 whitespace-nowrap text-foreground max-sm:whitespace-normal"
+								className="inline-flex items-center gap-2.5 whitespace-nowrap text-foreground max-sm:min-w-0 max-sm:flex-1 max-sm:basis-0"
 							>
 								<div className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-zinc-200/80 bg-background transition-colors group-hover:border-zinc-300 dark:border-zinc-800 dark:group-hover:border-zinc-700">
 									<div className="relative h-3.5 w-3.5">
@@ -3275,13 +3276,13 @@ export default function ProviderCard({
 										/>
 									</div>
 								</div>
-								<span className="inline-flex items-baseline gap-1 whitespace-nowrap max-sm:whitespace-normal">
-									<span className="font-semibold text-foreground">
+								<span className="inline-flex items-baseline gap-1 whitespace-nowrap max-sm:min-w-0">
+									<span className="font-semibold text-foreground max-sm:truncate">
 										<ProviderRouteName provider={provider.provider} plan={tablePlan} nameOverride={formattedDisplayName} />
 									</span>
 								</span>
 							</div>
-							<div className="flex shrink-0 items-center gap-1">
+							<div className="flex shrink-0 items-center gap-1 max-sm:gap-3">
 								{provider.provider.credential_mode === "byok_only" ? <ProviderByokOnlyHoverCard /> : null}
 								<ProviderStatusHoverCard
 									statusKey={tableStatusKey}
@@ -3314,10 +3315,10 @@ export default function ProviderCard({
 										]}
 									/>
 								) : null}
-								<ProviderInfoHoverIcons {...providerInfoProps} />
+								<ProviderInfoHoverIcons {...providerInfoProps} className="max-sm:gap-3" />
 							</div>
 							{inlineProviderLabels.length > 0 || tableDiscountBadge ? (
-								<div className="flex shrink-0 items-center gap-x-1.5 text-[11px] text-muted-foreground">
+								<div className="flex shrink-0 items-center gap-x-1.5 text-[11px] text-muted-foreground max-sm:basis-full">
 									{inlineProviderLabels.map((item, index) => (
 										<React.Fragment key={item}>
 											{index > 0 ? <span className="text-zinc-300 dark:text-zinc-700">/</span> : null}

@@ -13,6 +13,7 @@ import {
 import { Link } from "@/i18n/navigation";
 import { useLocale, useTranslations } from "@/i18n/react";
 import { getLocalizedDocsHref } from "@/lib/docs";
+import { TAP_TARGET_20, TAP_TARGET_24 } from "@/lib/tapTargets";
 import { cn } from "@/lib/utils";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -169,7 +170,7 @@ export function ProviderStatusHoverCard({
 				<button
 					type="button"
 					aria-label={tProvider("providerStatus", { status: label })}
-					className={cn(ICON_TRIGGER_CLASS, size === "sm" ? "h-5 w-5" : "h-6 w-6")}
+					className={cn(ICON_TRIGGER_CLASS, size === "sm" ? cn("h-5 w-5", TAP_TARGET_20) : cn("h-6 w-6", TAP_TARGET_24))}
 				>
 					<Icon className={cn("h-3 w-3", meta.iconClass)} />
 				</button>
@@ -227,6 +228,7 @@ export function ProviderByokOnlyHoverCard({ align = "start" }: { align?: "start"
 					className={cn(
 						ICON_TRIGGER_CLASS,
 						"h-6 w-6 text-amber-700 hover:text-amber-800 dark:text-amber-300 dark:hover:text-amber-200",
+						TAP_TARGET_24,
 					)}
 				>
 					<KeyRound className="h-3.5 w-3.5" />
@@ -275,6 +277,7 @@ export function ProviderPolicyBlockedHoverCard({
 					className={cn(
 						ICON_TRIGGER_CLASS,
 						"h-6 w-6 text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300",
+						TAP_TARGET_24,
 					)}
 				>
 					{workspaceBlocked ? <Ban className="h-3.5 w-3.5" /> : <ShieldBan className="h-3.5 w-3.5" />}

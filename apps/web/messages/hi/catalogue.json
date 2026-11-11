@@ -1161,6 +1161,12 @@
 				"quarter": "3 महीने",
 				"year": "1 वर्ष"
 			},
+			"rangesShort": {
+				"week": "1 सप्ताह",
+				"month": "1 माह",
+				"quarter": "3 माह",
+				"year": "1 वर्ष"
+			},
 			"units": {
 				"token": "टोकन",
 				"image": "चित्र",

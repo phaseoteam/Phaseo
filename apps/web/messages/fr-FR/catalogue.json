@@ -1161,6 +1161,12 @@
 				"quarter": "3 mois",
 				"year": "1 an"
 			},
+			"rangesShort": {
+				"week": "1S",
+				"month": "1M",
+				"quarter": "3M",
+				"year": "1A"
+			},
 			"units": {
 				"token": "jetons",
 				"image": "images",

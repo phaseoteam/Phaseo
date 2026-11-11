@@ -1161,6 +1161,12 @@
 				"quarter": "3 か月",
 				"year": "1 年"
 			},
+			"rangesShort": {
+				"week": "1週",
+				"month": "1か月",
+				"quarter": "3か月",
+				"year": "1年"
+			},
 			"units": {
 				"token": "トークン",
 				"image": "画像",

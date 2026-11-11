@@ -11,6 +11,7 @@ import {
 import { Link } from "@/i18n/navigation";
 import type { ProviderRoutingStatus } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
 import { cn } from "@/lib/utils";
+import { TAP_TARGET_20, TAP_TARGET_24 } from "@/lib/tapTargets";
 
 export type LiveRoutingState = "limited" | "recovering";
 
@@ -85,7 +86,7 @@ export function ProviderLiveRoutingIndicator({
 					data-live-routing={live.state}
 					className={cn(
 						"inline-flex shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
-						size === "sm" ? "h-5 w-5" : "h-6 w-6",
+						size === "sm" ? cn("h-5 w-5", TAP_TARGET_20) : cn("h-6 w-6", TAP_TARGET_24),
 					)}
 				>
 					<Icon className={cn("h-3 w-3", live.className)} aria-hidden />
