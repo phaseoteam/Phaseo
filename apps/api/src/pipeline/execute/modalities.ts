@@ -29,8 +29,12 @@ export function decisionQuestionLimit(candidate: Pick<ProviderCandidate, "capabi
 		: DEFAULT_ROUTE_QUESTION_LIMIT;
 }
 
-export function filterDecisionCandidatesByModalities(candidates: ProviderCandidate[], ir: IRDecisionsRequest): ProviderCandidate[] {
-	const questionCount = Object.keys(ir.questions ?? {}).length;
+export function filterDecisionCandidatesByModalities(
+	candidates: ProviderCandidate[],
+	ir: IRDecisionsRequest,
+	options: { ignoreQuestionLimit?: boolean } = {},
+): ProviderCandidate[] {
+	const questionCount = options.ignoreQuestionLimit ? 0 : Object.keys(ir.questions ?? {}).length;
 	const requestsBox = Object.values(ir.questions ?? {}).some(question => question.type === "box");
 	const requestsLongContext = ir.providerOptions?.typesafe?.long_context === true;
 	const requestsImageUrls = (ir.images ?? []).some(image => typeof image === "string" && !/^data:/i.test(image));

@@ -147,7 +147,7 @@ La réponse (valeurs données à titre indicatif) :
 
 `input` est une chaîne, ou un tableau de messages `user` dont le `content` est une chaîne ou une liste d’éléments `input_text`, `input_image`, `input_audio` et `input_video`. `name` est facultatif ; les réponses conservent l’ordre de la requête, y compris pour les questions sans nom et les noms répétés.
 
-Une requête contient au plus 128 questions, sauf sur `google/gemini-decision-1`, qui en accepte jusqu’à 1000, et sur Clef, qui en accepte jusqu’à 64. Une requête qui dépasse la limite du modèle renvoie `400`.
+Une requête contient au plus 128 questions, sauf sur `google/gemini-decision-1`, qui en accepte jusqu’à 1000, sur `parallel/decisions-fast`, qui en accepte jusqu’à 100, et sur Clef, qui en accepte jusqu’à 64. Une requête qui dépasse la limite du modèle renvoie `400`.
 
 | `type` | Champs supplémentaires | Champs de la réponse |
 | --- | --- | --- |

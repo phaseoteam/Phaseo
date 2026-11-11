@@ -14,7 +14,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">API e SDKs</p>
 
-- `POST /v1/decisions` aceita até 1000 perguntas em `google/gemini-decision-1`; os demais modelos mantêm o limite de 128 ou menos; veja [Tomar uma decisão](./api-reference/endpoint/decisions.mdx) ([#3682](https://github.com/phaseoteam/Phaseo/pull/3682)).
+- `POST /v1/decisions` aceita até 1000 perguntas em `google/gemini-decision-1`; os demais modelos aceitam até 128, e uma solicitação acima do limite do modelo retorna `400`; veja [Tomar uma decisão](./api-reference/endpoint/decisions.mdx) ([#3682](https://github.com/phaseoteam/Phaseo/pull/3682)).
 
 </div>
 

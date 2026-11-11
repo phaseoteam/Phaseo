@@ -773,10 +773,25 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect((result as Response).status).toBe(400);
 		expect(await (result as Response).json()).toMatchObject({
 			error: "unsupported_parameter",
-			message: "This request has 129 questions, and openai/gpt-6-luna accepts at most 128 per request.",
+			message: "This request has 129 questions, and no route for openai/gpt-6-luna that supports its inputs accepts more than 128.",
 		});
 		expect(rankProvidersMock).not.toHaveBeenCalled();
 		expect(resolveProviderExecutorMock).not.toHaveBeenCalled();
+	});
+	it("reports the limit of the routes that support the request's other inputs", async () => {
+		const questions = Object.fromEntries(Array.from({ length: 65 }, (_, index) => [`q${index}`, { type: "box", instructions: "The mug" }]));
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [
+			{ providerId: "text-only", inputModalities: ["text"], capabilityParams: { max_questions: 1000 } },
+			{ providerId: "typesafe", inputModalities: ["text", "image"], capabilityParams: { images: true, box: true, max_questions: 64 } },
+		] });
+		const result = await doRequestWithIR(createCtx({ endpoint: "decisions", capability: "decisions.make", model: "typesafe/jev-1.14.0" }), {
+			model: "typesafe/jev-1.14.0", state: "Photo", questions, images: ["data:image/png;base64,AQID"],
+		} as any, createTiming());
+		expect((result as Response).status).toBe(400);
+		expect(await (result as Response).json()).toMatchObject({
+			message: "This request has 65 questions, and no route for typesafe/jev-1.14.0 that supports its inputs accepts more than 64.",
+		});
+		expect(rankProvidersMock).not.toHaveBeenCalled();
 	});
 
 	it("still returns pricing guard failure on non-testing traffic when no pricing is preloaded", async () => {

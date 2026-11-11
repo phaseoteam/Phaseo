@@ -147,7 +147,7 @@ Die Antwort (Werte zur Veranschaulichung):
 
 `input` ist ein String oder ein Array von `user`-Nachrichten, deren `content` ein String oder eine Liste von `input_text`-, `input_image`-, `input_audio`- und `input_video`-Teilen ist. `name` ist optional; Antworten behalten die Reihenfolge der Anfrage bei, auch bei unbenannten und wiederholten Namen.
 
-Eine Anfrage enthält höchstens 128 Fragen, außer bei `google/gemini-decision-1`, das bis zu 1000 akzeptiert, und bei Clef, das bis zu 64 akzeptiert. Eine Anfrage über dem Limit des Modells gibt `400` zurück.
+Eine Anfrage enthält höchstens 128 Fragen, außer bei `google/gemini-decision-1`, das bis zu 1000 akzeptiert, bei `parallel/decisions-fast`, das bis zu 100 akzeptiert, und bei Clef, das bis zu 64 akzeptiert. Eine Anfrage über dem Limit des Modells gibt `400` zurück.
 
 | `type` | Zusätzliche Felder | Antwortfelder |
 | --- | --- | --- |

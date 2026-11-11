@@ -30,6 +30,9 @@ describe("decisions feature routing", () => {
 		expect(filterDecisionCandidatesByModalities(candidates, ask(129))).toEqual([gemini]);
 		expect(filterDecisionCandidatesByModalities(candidates, ask(1000))).toEqual([gemini]);
 		expect(filterDecisionCandidatesByModalities([clef, undeclared] as any, ask(129))).toEqual([]);
+		expect(filterDecisionCandidatesByModalities([clef, undeclared] as any, ask(129), { ignoreQuestionLimit: true })).toEqual([clef, undeclared]);
+		const mug = { ...ask(65), images: ["data:image/png;base64,AQID"], questions: { mug: { type: "box" as const, instructions: "The mug" } } };
+		expect(filterDecisionCandidatesByModalities([gemini, clef] as any, mug, { ignoreQuestionLimit: true })).toEqual([]);
 	});
 	it("reads a route's question limit from max_questions and ignores invalid values", () => {
 		expect(decisionQuestionLimit({ capabilityParams: { max_questions: 1000 } })).toBe(1000);

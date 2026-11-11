@@ -622,11 +622,14 @@ export async function doRequestWithIR(
 		if (!candidates.length) {
 			const decisions = ir as IRDecisionsRequest;
 			const questionCount = Object.keys(decisions.questions ?? {}).length;
-			const questionLimit = Math.max(...decisionRoutes.map(decisionQuestionLimit));
-			if (questionCount > questionLimit) {
+			// Routes that fail for another reason (no Box, no media) must not set the
+			// limit the caller is told about.
+			const eligibleRoutes = filterDecisionCandidatesByModalities(decisionRoutes, decisions, { ignoreQuestionLimit: true });
+			const questionLimit = Math.max(0, ...eligibleRoutes.map(decisionQuestionLimit));
+			if (eligibleRoutes.length && questionCount > questionLimit) {
 				return Response.json({ error: "unsupported_parameter", model: ctx.model, endpoint: ctx.endpoint,
 					request_id: ctx.requestId,
-					message: `This request has ${questionCount} questions, and ${ctx.model} accepts at most ${questionLimit} per request.`,
+					message: `This request has ${questionCount} questions, and no route for ${ctx.model} that supports its inputs accepts more than ${questionLimit}.`,
 				}, { status: 400 });
 			}
 			if (Object.values(decisions.questions ?? {}).some(question => question.type === "box") ||

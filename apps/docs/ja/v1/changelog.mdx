@@ -14,7 +14,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">API と SDK</p>
 
-- `POST /v1/decisions` は `google/gemini-decision-1` で最大 1,000 個の質問を受け付けます。ほかのモデルは 128 個以下の上限のままです。詳しくは [判断を行う](./api-reference/endpoint/decisions.mdx) ([#3682](https://github.com/phaseoteam/Phaseo/pull/3682))。
+- `POST /v1/decisions` は `google/gemini-decision-1` で最大 1,000 個の質問を受け付けます。ほかのモデルは最大 128 個で、モデルの上限を超えるリクエストは `400` を返します。詳しくは [判断を行う](./api-reference/endpoint/decisions.mdx) ([#3682](https://github.com/phaseoteam/Phaseo/pull/3682))。
 
 </div>
 

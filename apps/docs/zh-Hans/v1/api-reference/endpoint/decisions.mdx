@@ -147,7 +147,7 @@ print(decision["answers"])
 
 `input` 是一个字符串，或一个 `user` 消息数组，其中 `content` 是字符串，或由 `input_text`、`input_image`、`input_audio` 和 `input_video` 部分组成的列表。`name` 是可选的；回答保持请求中的顺序，包括未命名的问题和重复的名称。
 
-每个请求最多包含 128 个问题，但 `google/gemini-decision-1` 最多可接受 1,000 个，Clef 最多可接受 64 个。超出模型上限的请求会返回 `400`。
+每个请求最多包含 128 个问题，但 `google/gemini-decision-1` 最多可接受 1,000 个，`parallel/decisions-fast` 最多可接受 100 个，Clef 最多可接受 64 个。超出模型上限的请求会返回 `400`。
 
 | `type` | 额外字段 | 回答字段 |
 | --- | --- | --- |

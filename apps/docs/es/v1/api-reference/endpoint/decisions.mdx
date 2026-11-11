@@ -147,7 +147,7 @@ La respuesta (valores ilustrativos):
 
 `input` es una cadena, o un array de mensajes `user` cuyo `content` es una cadena o una lista de partes `input_text`, `input_image`, `input_audio` e `input_video`. `name` es opcional; las respuestas mantienen el orden de la solicitud, incluidas las preguntas sin nombre y los nombres repetidos.
 
-Una solicitud lleva como máximo 128 preguntas, salvo en `google/gemini-decision-1`, que acepta hasta 1000, y en Clef, que acepta hasta 64. Una solicitud que supera el límite del modelo devuelve `400`.
+Una solicitud lleva como máximo 128 preguntas, salvo en `google/gemini-decision-1`, que acepta hasta 1000, en `parallel/decisions-fast`, que acepta hasta 100, y en Clef, que acepta hasta 64. Una solicitud que supera el límite del modelo devuelve `400`.
 
 | `type` | Campos adicionales | Campos de la respuesta |
 | --- | --- | --- |
