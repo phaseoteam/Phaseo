@@ -1,7 +1,9 @@
 # Performance suite
 
 `pnpm --filter @phaseo/desktop perf` builds the app, measures it on fixture workspaces and writes
-`output/perf/<time>/report.md` and `report.json`. Nothing reaches the network: models are fixed, local agents are
+`output/perf/<time>/report.md`, `report.json` and `report.html`. The HTML page shows headline changes, a before/after dot
+chart per section, time to interactive per profile, and the distribution of every keystroke and frame; rebuild it from
+saved reports with `node scripts/perf/report-html.mjs <report.json> [--baseline=<earlier report.json>]`. Nothing reaches the network: models are fixed, local agents are
 hidden, and the streaming load talks to a stand-in gateway on 127.0.0.1.
 
 ## What it measures

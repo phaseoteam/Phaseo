@@ -1,5 +1,5 @@
 // The desktop performance suite: startup, interactions, parallel streaming, the store and the bundle, measured on the
-// built app with fixture workspaces, written as report.json and report.md.
+// built app with fixture workspaces, written as report.json, report.md and report.html (charts).
 //
 //   pnpm --filter @phaseo/desktop perf [options]
 //     --only=startup,interactions,load,store,bundle   sections to run (default: all)
@@ -21,6 +21,7 @@ import path from "node:path";
 import { createServer } from "node:net";
 import { brotliCompressSync, gzipSync } from "node:zlib";
 import { compare, markdown, summary } from "./report.mjs";
+import { html } from "./report-html.mjs";
 
 const desktop = path.resolve(import.meta.dirname, "../..");
 const argument = (name, fallback) => process.argv.find(value => value.startsWith(`--${name}=`))?.slice(name.length + 3) ?? fallback;
@@ -183,7 +184,8 @@ if (sections.includes("store")) {
 		const result = JSON.parse(readFileSync(file, "utf8"));
 		raw.store = result;
 		const group = "Store under load (8 streams into long chats, history of 2,000)";
-		for (const [name, stats] of Object.entries(result.operations)) add(group, name, "ms", stats.p50, "lower", `p95 ${stats.p95} ms, ${stats.n} calls`);
+		// "seed" is setting the history up, not something the app does while used.
+		for (const [name, stats] of Object.entries(result.operations)) if (name !== "seed") add(group, name, "ms", stats.p50, "lower", `p95 ${stats.p95} ms, ${stats.n} calls`);
 		add(group, "Main-thread share for 8 streams", "%", result.mainThreadPercent);
 		add(group, "WAL written per flush", "KB", result.walKbPerFlush);
 		add(group, "Database on disk", "MB", result.diskMb);
@@ -211,11 +213,13 @@ const commit = (() => { try { return execFileSync("git", ["rev-parse", "--short"
 const machine = `${os.cpus()[0]?.model.trim()} (${os.cpus().length} threads), ${Math.round(os.totalmem() / 1024 ** 3)} GB RAM, ${os.platform()} ${os.release()}, Electron ${JSON.parse(readFileSync(path.join(path.dirname(createRequire(path.join(desktop, "package.json")).resolve("electron/package.json")), "package.json"), "utf8")).version}`;
 const baselineFile = argument("baseline", "");
 const report = { version: 1, startedAt, finishedAt: new Date().toISOString(), commit, machine, options: { runs, threshold, stressChats, sections, load: [loadChats, loadCodes, loadSeconds], realHome: flag("real-home") }, metrics, notes, raw, ...(baselineFile ? { baselineFile } : {}) };
-const compared = baselineFile ? compare(report, JSON.parse(readFileSync(path.resolve(baselineFile), "utf8")), threshold) : undefined;
+const baseline = baselineFile ? JSON.parse(readFileSync(path.resolve(baselineFile), "utf8")) : undefined;
+const compared = baseline ? compare(report, baseline, threshold) : undefined;
 const text = markdown(report, compared);
 writeFileSync(path.join(out, "report.json"), JSON.stringify(report, null, 1));
 writeFileSync(path.join(out, "report.md"), text);
+writeFileSync(path.join(out, "report.html"), html(report, compared, baseline));
 rmSync(templates, { recursive: true, force: true });
 console.log(`\n${text}\n`);
-log(`report: ${path.join(out, "report.md")}`);
+log(`report: ${path.join(out, "report.md")} and report.html`);
 if (flag("fail-on-regression") && compared?.some(metric => metric.verdict === "worse")) process.exit(1);
