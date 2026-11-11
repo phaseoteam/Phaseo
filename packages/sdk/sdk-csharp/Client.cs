@@ -38,6 +38,201 @@ namespace PhaseoSdk
         public string? Message { get; init; }
     }
 
+    /// <summary>
+    /// A file sent as a multipart/form-data part (audio for transcription/translation, JSONL for batch uploads).
+    /// The gateway uses the file name extension to detect the audio format, so keep it accurate.
+    /// </summary>
+    public sealed class PhaseoFile
+    {
+        public byte[] Content { get; }
+        public string FileName { get; }
+        public string ContentType { get; }
+
+        public PhaseoFile(byte[] content, string fileName, string? contentType = null)
+        {
+            Content = content ?? throw new ArgumentNullException(nameof(content));
+            FileName = string.IsNullOrWhiteSpace(fileName) ? "file" : fileName;
+            ContentType = string.IsNullOrWhiteSpace(contentType) ? GuessContentType(FileName) : contentType!;
+        }
+
+        public static PhaseoFile FromBytes(byte[] content, string fileName, string? contentType = null) => new(content, fileName, contentType);
+
+        public static PhaseoFile FromPath(string path, string? contentType = null, string? fileName = null)
+        {
+            return new PhaseoFile(System.IO.File.ReadAllBytes(path), fileName ?? System.IO.Path.GetFileName(path), contentType);
+        }
+
+        /// <summary>Reads the stream to the end so the body can be rebuilt on retries.</summary>
+        public static PhaseoFile FromStream(System.IO.Stream stream, string fileName, string? contentType = null)
+        {
+            if (stream is null) throw new ArgumentNullException(nameof(stream));
+            using var buffer = new System.IO.MemoryStream();
+            stream.CopyTo(buffer);
+            return new PhaseoFile(buffer.ToArray(), fileName, contentType);
+        }
+
+        /// <summary>
+        /// Converts a request "file" value into a file: PhaseoFile, byte[], Stream, FileInfo, a data: URL,
+        /// or a path to an existing file. Returns null for anything else (for example a remote URL).
+        /// </summary>
+        public static PhaseoFile? FromValue(object? value, string? fileName = null, string? contentType = null)
+        {
+            switch (value)
+            {
+                case null:
+                    return null;
+                case PhaseoFile file:
+                    return file;
+                case byte[] bytes:
+                    return new PhaseoFile(bytes, fileName ?? "file", contentType);
+                case ReadOnlyMemory<byte> memory:
+                    return new PhaseoFile(memory.ToArray(), fileName ?? "file", contentType);
+                case System.IO.Stream stream:
+                    return FromStream(stream, fileName ?? (stream is System.IO.FileStream fs ? System.IO.Path.GetFileName(fs.Name) : "file"), contentType);
+                case System.IO.FileInfo info:
+                    return FromPath(info.FullName, contentType, fileName);
+                case string text:
+                    if (text.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var comma = text.IndexOf(',');
+                        if (comma < 0) return null;
+                        var meta = text.Substring(5, comma - 5);
+                        var data = text.Substring(comma + 1);
+                        var isBase64 = meta.EndsWith(";base64", StringComparison.OrdinalIgnoreCase);
+                        var mime = isBase64 ? meta.Substring(0, meta.Length - 7) : meta;
+                        var semicolon = mime.IndexOf(';');
+                        if (semicolon >= 0) mime = mime.Substring(0, semicolon);
+                        var decoded = isBase64 ? Convert.FromBase64String(data) : System.Text.Encoding.UTF8.GetBytes(Uri.UnescapeDataString(data));
+                        var resolvedMime = contentType ?? (string.IsNullOrWhiteSpace(mime) ? null : mime);
+                        return new PhaseoFile(decoded, fileName ?? "file" + ExtensionFor(resolvedMime), resolvedMime);
+                    }
+                    if (text.Length > 0 && text.Length < 4096 && !text.Contains("://", StringComparison.Ordinal) && System.IO.File.Exists(text))
+                    {
+                        return FromPath(text, contentType, fileName);
+                    }
+                    return null;
+                default:
+                    return null;
+            }
+        }
+
+        public override string ToString() => $"[File {FileName}, {Content.Length} bytes]";
+
+        private static readonly Dictionary<string, string> ContentTypes = new(StringComparer.OrdinalIgnoreCase)
+        {
+            [".flac"] = "audio/flac",
+            [".mp3"] = "audio/mpeg",
+            [".mp4"] = "audio/mp4",
+            [".mpeg"] = "audio/mpeg",
+            [".mpga"] = "audio/mpeg",
+            [".m4a"] = "audio/mp4",
+            [".ogg"] = "audio/ogg",
+            [".wav"] = "audio/wav",
+            [".webm"] = "audio/webm",
+            [".jsonl"] = "application/jsonl",
+            [".json"] = "application/json",
+        };
+
+        private static string GuessContentType(string fileName)
+        {
+            var extension = System.IO.Path.GetExtension(fileName);
+            return !string.IsNullOrEmpty(extension) && ContentTypes.TryGetValue(extension, out var type) ? type : "application/octet-stream";
+        }
+
+        private static string ExtensionFor(string? contentType)
+        {
+            if (string.IsNullOrWhiteSpace(contentType)) return string.Empty;
+            foreach (var pair in ContentTypes)
+            {
+                if (string.Equals(pair.Value, contentType, StringComparison.OrdinalIgnoreCase)) return pair.Key;
+            }
+            return string.Empty;
+        }
+    }
+
+    internal static class MultipartRequests
+    {
+        private static readonly string[] FileNameKeys = { "filename", "file_name" };
+        private static readonly string[] ContentTypeKeys = { "content_type", "file_content_type" };
+
+        /// <summary>Builds a multipart body when the request carries a file-like "file" value, otherwise null.</summary>
+        public static MultipartFormBody? TryBuild(Dictionary<string, object> request)
+        {
+            if (!request.TryGetValue("file", out var value)) return null;
+            var file = PhaseoFile.FromValue(value, StringField(request, FileNameKeys), StringField(request, ContentTypeKeys));
+            return file is null ? null : Build(request, file);
+        }
+
+        public static MultipartFormBody Build(Dictionary<string, object> request, PhaseoFile file)
+        {
+            var form = new MultipartFormBody();
+            form.AddFile("file", file.Content, file.FileName, file.ContentType);
+            foreach (var pair in request)
+            {
+                if (pair.Key == "file" || IsMetaKey(pair.Key)) continue;
+                var encoded = EncodeField(pair.Value);
+                if (encoded is not null) form.AddField(pair.Key, encoded);
+            }
+            return form;
+        }
+
+        public static Dictionary<string, object> WithFile(Dictionary<string, object>? fields, PhaseoFile file)
+        {
+            var request = fields is null ? new Dictionary<string, object>() : new Dictionary<string, object>(fields);
+            request["file"] = file;
+            return request;
+        }
+
+        /// <summary>A copy of the request that is safe to hand to telemetry (no file bytes).</summary>
+        public static Dictionary<string, object> Redact(Dictionary<string, object> request)
+        {
+            var copy = new Dictionary<string, object>(request);
+            if (copy.ContainsKey("file")) copy["file"] = "[File]";
+            return copy;
+        }
+
+        /// <summary>Form fields are strings: bools lowercase, numbers invariant, objects and arrays as JSON.</summary>
+        public static string? EncodeField(object? value)
+        {
+            switch (value)
+            {
+                case null:
+                    return null;
+                case string text:
+                    return text;
+                case bool flag:
+                    return flag ? "true" : "false";
+                case IFormattable formattable when value is sbyte or byte or short or ushort or int or uint or long or ulong or float or double or decimal:
+                    return formattable.ToString(null, CultureInfo.InvariantCulture);
+                case JsonElement element:
+                    return element.ValueKind switch
+                    {
+                        JsonValueKind.Null or JsonValueKind.Undefined => null,
+                        JsonValueKind.String => element.GetString(),
+                        JsonValueKind.True => "true",
+                        JsonValueKind.False => "false",
+                        _ => element.GetRawText(),
+                    };
+                default:
+                    return JsonSerializer.Serialize(value);
+            }
+        }
+
+        private static bool IsMetaKey(string key)
+        {
+            return Array.IndexOf(FileNameKeys, key) >= 0 || Array.IndexOf(ContentTypeKeys, key) >= 0;
+        }
+
+        private static string? StringField(Dictionary<string, object> request, string[] keys)
+        {
+            foreach (var key in keys)
+            {
+                if (request.TryGetValue(key, out var value) && value is string text && !string.IsNullOrWhiteSpace(text)) return text;
+            }
+            return null;
+        }
+    }
+
     // Lightweight facade over the in-house generated SDK.
     // Regenerate with: `pnpm openapi:gen:csharp`
     public class Phaseo
@@ -518,22 +713,45 @@ namespace PhaseoSdk
                 () => Operations.CreateSpeechAsync(_client, body: request));
         }
 
+        /// <summary>
+        /// Transcribes audio. When request["file"] is a <see cref="PhaseoFile"/>, byte[], Stream, FileInfo,
+        /// data: URL or local path, the request is sent as multipart/form-data; requests that only carry
+        /// file_url, file_id or s3_presigned_url are sent as JSON.
+        /// </summary>
         public Task<Dictionary<string, object>?> CreateTranscription(Dictionary<string, object> request)
         {
+            var form = MultipartRequests.TryBuild(request);
             return WithLifecycleAndTelemetry(
                 "audio.transcriptions",
-                request,
+                form is null ? request : MultipartRequests.Redact(request),
                 true,
-                () => Operations.CreateTranscriptionAsync(_client, body: request));
+                () => Operations.CreateTranscriptionAsync(_client, body: (object?)form ?? request));
         }
 
+        /// <summary>Transcribes an audio file sent as multipart/form-data. Other fields (model, language, ...) go in <paramref name="fields"/>.</summary>
+        public Task<Dictionary<string, object>?> CreateTranscription(PhaseoFile file, Dictionary<string, object>? fields = null)
+        {
+            return CreateTranscription(MultipartRequests.WithFile(fields, file));
+        }
+
+        /// <summary>
+        /// Translates audio to English. The gateway requires a multipart "file" part, so request["file"] should be a
+        /// <see cref="PhaseoFile"/>, byte[], Stream, FileInfo, data: URL or local path.
+        /// </summary>
         public Task<Dictionary<string, object>?> CreateTranslation(Dictionary<string, object> request)
         {
+            var form = MultipartRequests.TryBuild(request);
             return WithLifecycleAndTelemetry(
                 "audio.translations",
-                request,
+                form is null ? request : MultipartRequests.Redact(request),
                 true,
-                () => Operations.CreateTranslationAsync(_client, body: request));
+                () => Operations.CreateTranslationAsync(_client, body: (object?)form ?? request));
+        }
+
+        /// <summary>Translates an audio file sent as multipart/form-data. Other fields (model, prompt, ...) go in <paramref name="fields"/>.</summary>
+        public Task<Dictionary<string, object>?> CreateTranslation(PhaseoFile file, Dictionary<string, object>? fields = null)
+        {
+            return CreateTranslation(MultipartRequests.WithFile(fields, file));
         }
 
         public Task<Dictionary<string, object>?> CreateBatch(Dictionary<string, object> request)
@@ -820,9 +1038,47 @@ namespace PhaseoSdk
                 () => _client.SendAsync<Dictionary<string, object>?>("POST", $"/videos/{Uri.EscapeDataString(videoId)}/download_url", body: request));
         }
 
-        public Task<Dictionary<string, object>?> UploadFile(Dictionary<string, object> request)
+        /// <summary>
+        /// Uploads a batch input file as multipart/form-data to POST /batches/files. request["file"] must be a
+        /// <see cref="PhaseoFile"/>, byte[], Stream, FileInfo, data: URL or local path; other entries (purpose, ...)
+        /// become form fields. model and provider (arguments or request entries) are sent as query parameters.
+        /// </summary>
+        public Task<Dictionary<string, object>?> UploadFile(Dictionary<string, object> request, string? model = null, string? provider = null)
         {
-            return WithLifecycleAndTelemetry("files.upload", request, false, () => Operations.UploadFileAsync(_client, body: request));
+            if (request is null) throw new ArgumentNullException(nameof(request));
+            var fields = new Dictionary<string, object>(request);
+            model ??= TakeString(fields, "model");
+            provider ??= TakeString(fields, "provider");
+            fields.Remove("model");
+            fields.Remove("provider");
+            var form = MultipartRequests.TryBuild(fields)
+                ?? throw new ArgumentException("UploadFile requires request[\"file\"] to be a PhaseoFile, byte[], Stream, FileInfo, data: URL or path to an existing file.", nameof(request));
+            var query = new Dictionary<string, string>();
+            if (!string.IsNullOrWhiteSpace(model)) query["model"] = model!;
+            if (!string.IsNullOrWhiteSpace(provider)) query["provider"] = provider!;
+            var telemetryPayload = MultipartRequests.Redact(fields);
+            if (query.TryGetValue("model", out var m)) telemetryPayload["model"] = m;
+            if (query.TryGetValue("provider", out var p)) telemetryPayload["provider"] = p;
+            return WithLifecycleAndTelemetry(
+                "files.upload",
+                telemetryPayload,
+                false,
+                () => _client.SendAsync<Dictionary<string, object>?>("POST", "/batches/files", query.Count > 0 ? query : null, null, form));
+        }
+
+        /// <summary>Uploads a batch input file (multipart/form-data, POST /batches/files).</summary>
+        public Task<Dictionary<string, object>?> UploadFile(PhaseoFile file, string? purpose = null, string? model = null, string? provider = null)
+        {
+            var request = new Dictionary<string, object> { ["file"] = file };
+            if (!string.IsNullOrWhiteSpace(purpose)) request["purpose"] = purpose!;
+            return UploadFile(request, model, provider);
+        }
+
+        private static string? TakeString(Dictionary<string, object> values, string key)
+        {
+            if (!values.TryGetValue(key, out var value)) return null;
+            var text = value is JsonElement element && element.ValueKind == JsonValueKind.String ? element.GetString() : value?.ToString();
+            return string.IsNullOrWhiteSpace(text) ? null : text;
         }
 
         public Task<Dictionary<string, object>?> Health()
