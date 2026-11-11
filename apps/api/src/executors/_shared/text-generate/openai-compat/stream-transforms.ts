@@ -1423,6 +1423,8 @@ function buildReasoningDetailDelta(item: any, args: ExecutorExecuteArgs, index: 
 		model: state.model ?? model,
 		provider: state.provider ?? args.providerId,
 		...(state.callId ? { callId: state.callId } : {}),
+		...(state.afterCallId ? { afterCallId: state.afterCallId } : {}),
+		...(state.textOffset ? { textOffset: state.textOffset } : {}),
 	});
 	const text = [item?.content, item?.summary]
 		.map((parts) => Array.isArray(parts) ? parts.map((part: any) => (typeof part?.text === "string" ? part.text : "")).join("") : "")

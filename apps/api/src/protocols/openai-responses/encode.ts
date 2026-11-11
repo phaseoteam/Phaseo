@@ -109,7 +109,15 @@ export function encodeOpenAIResponsesResponse(
 		// preceded, so the item order matches the provider's output order.
 		const anchoredReasoning = new Map<string, OpenAIResponseOutputItem[]>();
 		let reasoningIndex = 0;
+		// Text written before a later reasoning block goes out as its own message
+		// item ahead of it: Claude's thinking signatures record everything before them.
+		let pendingText: Array<Extract<IRContentPart, { type: "text" }>> = [];
+		const emittedText = new Set<IRContentPart>();
 		for (const part of choice.message.content as IRContentPart[] ?? []) {
+			if (part.type === "text") {
+				pendingText.push(part);
+				continue;
+			}
 			let item: OpenAIResponseOutputItem | null = null;
 			let anchor: string | undefined;
 			if (part.type === "reasoning_text") {
@@ -129,11 +137,22 @@ export function encodeOpenAIResponsesResponse(
 			if (anchor && choice.message.toolCalls?.some((call) => call.id === anchor)) {
 				anchoredReasoning.set(anchor, [...(anchoredReasoning.get(anchor) ?? []), item]);
 			} else {
+				if (pendingText.length > 0) {
+					outputItems.push({
+						type: "message",
+						role: "assistant",
+						content: pendingText.map((text) => ({ type: "output_text", text: text.text, annotations: toResponsesAnnotations(text.annotations) })),
+						phase: choice.message.phase,
+					});
+					for (const text of pendingText) emittedText.add(text);
+					pendingText = [];
+				}
 				outputItems.push(item);
 			}
 		}
+		const remainingText = textParts.filter((part) => !emittedText.has(part));
 
-		const hasText = textParts.length > 0;
+		const hasText = remainingText.length > 0;
 		const hasImages = imageParts.length > 0;
 		const hasAudios = audioParts.length > 0;
 		const shouldEmitMessage =
@@ -143,8 +162,8 @@ export function encodeOpenAIResponsesResponse(
 
 		if (shouldEmitMessage) {
 			const content: any[] = [];
-			if (textParts.length > 0) {
-				for (const part of textParts) {
+			if (remainingText.length > 0) {
+				for (const part of remainingText) {
 					content.push({
 						type: "output_text",
 						text: part.text,

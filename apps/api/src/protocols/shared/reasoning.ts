@@ -48,7 +48,11 @@ export function reasoningPartFormat(part: ReasoningPart, origin?: ReasoningRespo
 }
 
 /** The sealed value a client should send back for this part, if it has state. */
-export function sealReasoningPart(part: ReasoningPart, origin?: ReasoningResponseOrigin): string | null {
+export function sealReasoningPart(
+	part: ReasoningPart,
+	origin?: ReasoningResponseOrigin,
+	position?: { afterCallId?: string; textOffset?: number },
+): string | null {
 	const state = partStateKind(part);
 	if (!state) return null;
 	const format = resolvePartFormat(part, origin);
@@ -59,6 +63,8 @@ export function sealReasoningPart(part: ReasoningPart, origin?: ReasoningRespons
 		value: state.value,
 		model: part.reasoningModel ?? origin?.model ?? undefined,
 		provider: part.reasoningProvider ?? origin?.provider ?? undefined,
+		...(position?.afterCallId ? { afterCallId: position.afterCallId } : {}),
+		...(position?.textOffset ? { textOffset: position.textOffset } : {}),
 	});
 }
 
@@ -223,14 +229,27 @@ export function encodeChatReasoningDetails(
 	const push = (detail: Omit<GatewayReasoningDetail, "index">) => {
 		details.push({ ...detail, index: details.length } as GatewayReasoningDetail);
 	};
+	// Chat keeps reasoning apart from tool calls, so a Claude thinking block written
+	// between two tool calls records the call before it, to go back in its place.
+	const callOrder = (toolCalls ?? []).map((call) => call.id);
+	// Chat also joins a reply's text into one string, so a block written after text
+	// (and before any tool call) records how much text came before it.
+	let textChars = 0;
+	const positionOf = (part: ReasoningPart): { afterCallId?: string; textOffset?: number } | undefined => {
+		if (reasoningPartFormat(part, origin) !== ANTHROPIC_REASONING_FORMAT) return undefined;
+		const index = part.beforeToolCallId ? callOrder.indexOf(part.beforeToolCallId) : -1;
+		if (index > 0) return { afterCallId: callOrder[index - 1] };
+		return !part.beforeToolCallId && textChars > 0 ? { textOffset: textChars } : undefined;
+	};
 	for (const part of Array.isArray(parts) ? parts : []) {
+		if (part.type === "text") textChars += part.text.length;
 		if (part.type === "provider_block" && part.block?.type === "thinking" && typeof part.block.thinking === "string" && part.block.thinking) {
 			push({ id: `${idPrefix}-${details.length + 1}`, type: "reasoning.text", text: part.block.thinking, format: "unknown" });
 			continue;
 		}
 		if (part.type !== "reasoning_text") continue;
 		const format = reasoningPartFormat(part, origin);
-		const sealed = sealReasoningPart(part, origin);
+		const sealed = sealReasoningPart(part, origin, positionOf(part));
 		const id = part.reasoningId ?? `${idPrefix}-${details.length + 1}`;
 		if (part.redactedData && sealed) {
 			push({ id, type: "reasoning.encrypted", data: sealed, format: format ?? "unknown" });
@@ -284,11 +303,22 @@ function defaultKindForFormat(format: ReasoningFormat | null): ReasoningStateKin
 export function decodeChatReasoningDetails(
 	details: unknown,
 	toolCallIds: ReadonlySet<string>,
-): { parts: ReasoningPart[]; toolSignatures: Map<string, ToolCallSignature>; effortRecord?: IREffortRecord } {
+): { parts: ReasoningPart[]; toolSignatures: Map<string, ToolCallSignature>; effortRecord?: IREffortRecord; textOffsets: Map<ReasoningPart, number> } {
 	const parts: ReasoningPart[] = [];
 	const toolSignatures = new Map<string, ToolCallSignature>();
 	let effortRecord: IREffortRecord | undefined;
-	if (!Array.isArray(details)) return { parts, toolSignatures };
+	const textOffsets = new Map<ReasoningPart, number>();
+	if (!Array.isArray(details)) return { parts, toolSignatures, textOffsets };
+	// Put a Claude thinking block back before the tool call that followed it.
+	const callOrder = [...toolCallIds];
+	const anchored = (part: ReasoningPart, state: ReasoningState): ReasoningPart => {
+		if (state.format !== ANTHROPIC_REASONING_FORMAT) return part;
+		if (state.textOffset && !state.afterCallId) textOffsets.set(part, state.textOffset);
+		if (!state.afterCallId) return part;
+		const index = callOrder.indexOf(state.afterCallId);
+		const next = index >= 0 ? callOrder[index + 1] : undefined;
+		return next ? { ...part, beforeToolCallId: next } : part;
+	};
 	for (const entry of details) {
 		if (!entry || typeof entry !== "object") continue;
 		const kind = detailKind((entry as any).type);
@@ -301,7 +331,7 @@ export function decodeChatReasoningDetails(
 				: typeof (entry as any).summary === "string" ? (entry as any).summary : "";
 			const state = openReasoningState((entry as any).signature, { format: format ?? ANTHROPIC_REASONING_FORMAT, kind: "signature" });
 			if (state && state.kind === "signature") {
-				parts.push(reasoningPartFromState(state, text));
+				parts.push(anchored(reasoningPartFromState(state, text), state));
 				continue;
 			}
 			if (!text) continue;
@@ -339,9 +369,9 @@ export function decodeChatReasoningDetails(
 				continue;
 			}
 		}
-		parts.push(reasoningPartFromState(state, "", { reasoningId: id }));
+		parts.push(anchored(reasoningPartFromState(state, "", { reasoningId: id }), state));
 	}
-	return { parts, toolSignatures, ...(effortRecord ? { effortRecord } : {}) };
+	return { parts, toolSignatures, textOffsets, ...(effortRecord ? { effortRecord } : {}) };
 }
 
 /** Apply decoded Gemini function-call signatures to tool calls in place. */

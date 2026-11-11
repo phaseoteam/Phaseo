@@ -63,6 +63,18 @@ export type ReasoningState = {
 	provider?: string;
 	/** Gemini signature that belongs on this function call rather than a thought. */
 	callId?: string;
+	/**
+	 * The tool call that came just before this Claude thinking block in the same
+	 * reply. Chat Completions keeps reasoning apart from tool calls, so this is how
+	 * the block goes back to its place: each signature records everything before it.
+	 */
+	afterCallId?: string;
+	/**
+	 * How many characters of the reply's text came before this Claude thinking
+	 * block, for a block written after text and before any tool call. Chat joins a
+	 * reply's text into one string, so this is where the block goes back.
+	 */
+	textOffset?: number;
 	/** True when the value arrived without a gateway seal. */
 	unsealed?: boolean;
 };
@@ -102,6 +114,8 @@ export function sealReasoningState(state: Omit<ReasoningState, "unsealed">): str
 	if (state.model) header.m = state.model;
 	if (state.provider) header.p = state.provider;
 	if (state.callId) header.c = state.callId;
+	if (state.afterCallId) header.a = state.afterCallId;
+	if (state.textOffset) header.o = String(state.textOffset);
 	return `${SEAL_PREFIX}${toBase64Url(JSON.stringify(header))}.${state.value}`;
 }
 
@@ -138,6 +152,8 @@ export function openReasoningState(
 			...(typeof header.m === "string" && header.m ? { model: header.m } : {}),
 			...(typeof header.p === "string" && header.p ? { provider: header.p } : {}),
 			...(typeof header.c === "string" && header.c ? { callId: header.c } : {}),
+			...(typeof header.a === "string" && header.a ? { afterCallId: header.a } : {}),
+			...(typeof header.o === "string" && /^[1-9]\d*$/.test(header.o) ? { textOffset: Number(header.o) } : {}),
 		};
 	}
 	if (!fallback?.format) return null;

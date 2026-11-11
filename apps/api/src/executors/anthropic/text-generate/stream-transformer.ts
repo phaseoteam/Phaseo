@@ -167,7 +167,7 @@ export function createAnthropicToResponsesStreamTransformer(
 	// A reasoning item for a thinking or redacted_thinking block. The signature
 	// (or redacted data) is sealed with its origin so the client can send it
 	// back and the gateway replays it only to Claude.
-	const buildReasoningItem = (block: { type: string; itemId: string; text?: string; signature?: string; data?: string }) => {
+	const buildReasoningItem = (block: { type: string; itemId: string; text?: string; signature?: string; data?: string; afterCallId?: string; textOffset?: number }) => {
 		const redacted = block.type === "redacted_thinking";
 		const value = redacted ? block.data : block.signature;
 		return {
@@ -187,6 +187,8 @@ export function createAnthropicToResponsesStreamTransformer(
 						value,
 						model,
 						...(providerId ? { provider: providerId } : {}),
+						...(block.afterCallId ? { afterCallId: block.afterCallId } : {}),
+						...(block.textOffset ? { textOffset: block.textOffset } : {}),
 					}),
 				}
 				: {}),
@@ -194,6 +196,10 @@ export function createAnthropicToResponsesStreamTransformer(
 	};
 
 	let outputCounter = 0;
+	// The latest client tool call in this reply, for anchoring later thinking blocks.
+	let lastToolUseId: string | undefined;
+	// Characters of text in this reply so far, for thinking written after text.
+	let textChars = 0;
 	let createdEmitted = false;
 
 	const emitEvent = (
@@ -278,7 +284,12 @@ export function createAnthropicToResponsesStreamTransformer(
 						name: block.name || "",
 						input: "",
 						...(Array.isArray(block.citations) && block.citations.length > 0 ? { citations: [...block.citations] } : {}),
+						// Thinking between tool calls records the call before it (see afterCallId).
+						...((block.type === "thinking" || block.type === "redacted_thinking") && lastToolUseId ? { afterCallId: lastToolUseId } : {}),
+						...((block.type === "thinking" || block.type === "redacted_thinking") && !lastToolUseId && textChars > 0 ? { textOffset: textChars } : {}),
 					});
+					if (block.type === "tool_use" && block.id) lastToolUseId = block.id;
+					if (block.type === "text" && typeof block.text === "string") textChars += block.text.length;
 
 					if (block.type === "thinking" || block.type === "redacted_thinking") {
 						emitEvent(controller, "response.output_item.added", {
@@ -336,6 +347,7 @@ export function createAnthropicToResponsesStreamTransformer(
 						// Regular text content
 						const chunk = typeof delta.text === "string" ? delta.text : "";
 						block.text = (block.text || "") + chunk;
+						textChars += chunk.length;
 						emitEvent(controller, "response.output_text.delta", {
 							delta: chunk,
 							output_index: block.outputIndex,
