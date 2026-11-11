@@ -107,7 +107,7 @@ export function isCliBridgeClient(clientId: string | undefined): boolean {
 function shellArgument(value: unknown, placeholder: string): string {
 	const text = String(value ?? "");
 	// Must start with a letter or digit, so a value can never turn into a flag such as --workspace.
-	return /^[A-Za-z0-9][A-Za-z0-9_.:\/-]{0,199}$/.test(text) ? text : placeholder;
+	return /^[A-Za-z0-9][A-Za-z0-9_.:\/+-]{0,199}$/.test(text) ? text : placeholder;
 }
 
 export function cliHint(command: string): string {
@@ -176,14 +176,25 @@ const controlPlaneReadTools: ReadToolDefinition[] = [
 			error_code: input.errorCode as string | undefined,
 			limit: input.limit as number | undefined, offset: input.offset as number | undefined,
 		}),
-		cliCommand: (input) => [
-			"phaseo logs list",
-			`--since ${shellArgument(input.since ?? "7d", "7d")}`,
-			input.status ? `--status ${shellArgument(input.status, "error")}` : "",
-			input.model ? `--model ${shellArgument(input.model, "<model-id>")}` : "",
-			input.provider ? `--provider ${shellArgument(input.provider, "<provider-id>")}` : "",
-			"--limit 250 --json",
-		].filter(Boolean).join(" "),
+		// Every filter the tool got, so the command returns the same logs (only pagination differs).
+		cliCommand: (input) => {
+			const filters: Array<[flag: string, value: unknown, placeholder: string]> = [
+				["since", input.since ?? (input.from || input.to ? undefined : "7d"), "7d"],
+				["from", input.from, "<iso-time>"],
+				["to", input.to, "<iso-time>"],
+				["status", input.status, "<status>"],
+				["provider", input.provider, "<provider-id>"],
+				["model", input.model, "<model-id>"],
+				["endpoint", input.endpoint, "<endpoint>"],
+				["request-id", input.requestId, "<request-id>"],
+				["error-code", input.errorCode, "<error-code>"],
+			];
+			return [
+				"phaseo logs list",
+				...filters.filter(([, value]) => value).map(([flag, value, placeholder]) => `--${flag} ${shellArgument(value, placeholder)}`),
+				"--limit 250 --json",
+			].join(" ");
+		},
 	},
 	{
 		name: "log_get",

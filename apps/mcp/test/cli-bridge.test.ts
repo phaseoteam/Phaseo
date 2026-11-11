@@ -43,6 +43,15 @@ describe("`phaseo mcp` steering", () => {
 		expect(text).toContain("`phaseo logs list --since 24h --status error --model openai/gpt-5.6-sol --limit 250 --json`");
 	});
 
+	it("keeps every log filter in the suggested command, without adding --since to a time window", async () => {
+		const text = await callLogs("phaseo_cli", {
+			from: "2026-11-01T00:00:00Z", to: "2026-11-02T00:00:00Z", endpoint: "responses",
+			requestId: "req_123", errorCode: "upstream_timeout", provider: "openai", limit: 5, offset: 10,
+		});
+		expect(text).toContain("`phaseo logs list --from 2026-11-01T00:00:00Z --to 2026-11-02T00:00:00Z --provider openai --endpoint responses --request-id req_123 --error-code upstream_timeout --limit 250 --json`");
+		expect(text).not.toContain("--since");
+	});
+
 	it("never suggests a terminal to hosted clients such as ChatGPT or claude.ai", async () => {
 		for (const clientId of [undefined, "chatgpt_connector", "https://claude.ai/oauth/mcp-oauth-client-metadata"]) {
 			expect(await callLogs(clientId, {})).toBe("List Phaseo request logs completed.");
@@ -51,7 +60,7 @@ describe("`phaseo mcp` steering", () => {
 
 	it("keeps agent input out of the suggested command unless it is a plain identifier", async () => {
 		const text = await callLogs("phaseo_cli", { model: "x; rm -rf ~", provider: "--workspace=other", since: "$(id)" });
-		expect(text).toContain("--since 7d --model <model-id> --provider <provider-id>");
+		expect(text).toContain("--since 7d --provider <provider-id> --model <model-id>");
 		expect(text).not.toMatch(/rm -rf|--workspace|\$\(/);
 	});
 });
