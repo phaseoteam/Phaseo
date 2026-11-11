@@ -40,7 +40,7 @@ namespace PhaseoSdk
 
     /// <summary>
     /// A file sent as a multipart/form-data part (audio for transcription/translation, JSONL for batch uploads).
-    /// The gateway uses the file name extension to detect the audio format, so keep it accurate.
+    /// The gateway reads the audio format from the file name extension, so the file name is required and should be accurate.
     /// </summary>
     public sealed class PhaseoFile
     {
@@ -51,7 +51,11 @@ namespace PhaseoSdk
         public PhaseoFile(byte[] content, string fileName, string? contentType = null)
         {
             Content = content ?? throw new ArgumentNullException(nameof(content));
-            FileName = string.IsNullOrWhiteSpace(fileName) ? "file" : fileName;
+            if (string.IsNullOrWhiteSpace(fileName))
+            {
+                throw new ArgumentException(MissingFileNameMessage, nameof(fileName));
+            }
+            FileName = fileName;
             ContentType = string.IsNullOrWhiteSpace(contentType) ? GuessContentType(FileName) : contentType!;
         }
 
@@ -59,6 +63,7 @@ namespace PhaseoSdk
 
         public static PhaseoFile FromPath(string path, string? contentType = null, string? fileName = null)
         {
+            if (string.IsNullOrWhiteSpace(path)) throw new ArgumentException("path is required.", nameof(path));
             return new PhaseoFile(System.IO.File.ReadAllBytes(path), fileName ?? System.IO.Path.GetFileName(path), contentType);
         }
 
@@ -66,57 +71,70 @@ namespace PhaseoSdk
         public static PhaseoFile FromStream(System.IO.Stream stream, string fileName, string? contentType = null)
         {
             if (stream is null) throw new ArgumentNullException(nameof(stream));
+            if (string.IsNullOrWhiteSpace(fileName)) throw new ArgumentException(MissingFileNameMessage, nameof(fileName));
             using var buffer = new System.IO.MemoryStream();
             stream.CopyTo(buffer);
             return new PhaseoFile(buffer.ToArray(), fileName, contentType);
         }
 
         /// <summary>
-        /// Converts a request "file" value into a file: PhaseoFile, byte[], Stream, FileInfo, a data: URL,
-        /// or a path to an existing file. Returns null for anything else (for example a remote URL).
+        /// Converts a request "file" value into a file. Accepted values:
+        /// <list type="bullet">
+        /// <item><see cref="PhaseoFile"/> (its own file name and content type are used);</item>
+        /// <item>byte[] or <see cref="System.IO.Stream"/>: the file name comes from <paramref name="fileName"/> (the request's
+        /// "filename" entry), else from <see cref="System.IO.FileStream.Name"/>;</item>
+        /// <item><see cref="System.IO.FileInfo"/>: the file name is the path's base name.</item>
+        /// </list>
+        /// A plain string is never treated as a file (no path or data URL detection). Anything else throws
+        /// <see cref="ArgumentException"/>.
         /// </summary>
-        public static PhaseoFile? FromValue(object? value, string? fileName = null, string? contentType = null)
+        public static PhaseoFile FromValue(object? value, string? fileName = null, string? contentType = null)
         {
             switch (value)
             {
-                case null:
-                    return null;
                 case PhaseoFile file:
                     return file;
                 case byte[] bytes:
-                    return new PhaseoFile(bytes, fileName ?? "file", contentType);
-                case ReadOnlyMemory<byte> memory:
-                    return new PhaseoFile(memory.ToArray(), fileName ?? "file", contentType);
+                    return new PhaseoFile(bytes, RequireFileName(fileName), contentType);
                 case System.IO.Stream stream:
-                    return FromStream(stream, fileName ?? (stream is System.IO.FileStream fs ? System.IO.Path.GetFileName(fs.Name) : "file"), contentType);
+                {
+                    var name = fileName;
+                    if (string.IsNullOrWhiteSpace(name) && stream is System.IO.FileStream fileStream)
+                    {
+                        name = System.IO.Path.GetFileName(fileStream.Name);
+                    }
+                    return FromStream(stream, RequireFileName(name), contentType);
+                }
                 case System.IO.FileInfo info:
-                    return FromPath(info.FullName, contentType, fileName);
-                case string text:
-                    if (text.StartsWith("data:", StringComparison.OrdinalIgnoreCase))
-                    {
-                        var comma = text.IndexOf(',');
-                        if (comma < 0) return null;
-                        var meta = text.Substring(5, comma - 5);
-                        var data = text.Substring(comma + 1);
-                        var isBase64 = meta.EndsWith(";base64", StringComparison.OrdinalIgnoreCase);
-                        var mime = isBase64 ? meta.Substring(0, meta.Length - 7) : meta;
-                        var semicolon = mime.IndexOf(';');
-                        if (semicolon >= 0) mime = mime.Substring(0, semicolon);
-                        var decoded = isBase64 ? Convert.FromBase64String(data) : System.Text.Encoding.UTF8.GetBytes(Uri.UnescapeDataString(data));
-                        var resolvedMime = contentType ?? (string.IsNullOrWhiteSpace(mime) ? null : mime);
-                        return new PhaseoFile(decoded, fileName ?? "file" + ExtensionFor(resolvedMime), resolvedMime);
-                    }
-                    if (text.Length > 0 && text.Length < 4096 && !text.Contains("://", StringComparison.Ordinal) && System.IO.File.Exists(text))
-                    {
-                        return FromPath(text, contentType, fileName);
-                    }
-                    return null;
+                    return FromPath(info.FullName, contentType);
+                case string:
+                    throw new ArgumentException(
+                        "request[\"file\"] is a string, and strings are never read as files. Pass PhaseoFile.FromPath(path), "
+                        + "PhaseoFile.FromBytes(bytes, fileName), a FileInfo, or byte[]/Stream with a \"filename\" entry. "
+                        + "To send a remote file, use \"file_url\" instead of \"file\".",
+                        "request");
+                case null:
+                    throw new ArgumentException(
+                        "request[\"file\"] is null. Pass a PhaseoFile, FileInfo, byte[] or Stream, or remove the \"file\" entry.",
+                        "request");
                 default:
-                    return null;
+                    throw new ArgumentException(
+                        $"request[\"file\"] has unsupported type {value.GetType().FullName}. Pass a PhaseoFile, FileInfo, byte[] or Stream.",
+                        "request");
             }
         }
 
         public override string ToString() => $"[File {FileName}, {Content.Length} bytes]";
+
+        private const string MissingFileNameMessage =
+            "A file name is required: pass a \"filename\" entry with the request (or use PhaseoFile.FromBytes/FromStream with a fileName), "
+            + "because the gateway reads the audio format from the file name extension.";
+
+        private static string RequireFileName(string? fileName)
+        {
+            if (string.IsNullOrWhiteSpace(fileName)) throw new ArgumentException(MissingFileNameMessage, "request");
+            return fileName!;
+        }
 
         private static readonly Dictionary<string, string> ContentTypes = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -138,29 +156,22 @@ namespace PhaseoSdk
             var extension = System.IO.Path.GetExtension(fileName);
             return !string.IsNullOrEmpty(extension) && ContentTypes.TryGetValue(extension, out var type) ? type : "application/octet-stream";
         }
-
-        private static string ExtensionFor(string? contentType)
-        {
-            if (string.IsNullOrWhiteSpace(contentType)) return string.Empty;
-            foreach (var pair in ContentTypes)
-            {
-                if (string.Equals(pair.Value, contentType, StringComparison.OrdinalIgnoreCase)) return pair.Key;
-            }
-            return string.Empty;
-        }
     }
 
     internal static class MultipartRequests
     {
-        private static readonly string[] FileNameKeys = { "filename", "file_name" };
-        private static readonly string[] ContentTypeKeys = { "content_type", "file_content_type" };
+        private const string FileNameKey = "filename";
+        private const string ContentTypeKey = "content_type";
 
-        /// <summary>Builds a multipart body when the request carries a file-like "file" value, otherwise null.</summary>
+        /// <summary>
+        /// Builds a multipart body when the request has a "file" entry, otherwise null (the request is sent as JSON).
+        /// Throws <see cref="ArgumentException"/> when the "file" entry is not an accepted file value.
+        /// </summary>
         public static MultipartFormBody? TryBuild(Dictionary<string, object> request)
         {
             if (!request.TryGetValue("file", out var value)) return null;
-            var file = PhaseoFile.FromValue(value, StringField(request, FileNameKeys), StringField(request, ContentTypeKeys));
-            return file is null ? null : Build(request, file);
+            var file = PhaseoFile.FromValue(value, StringField(request, FileNameKey), StringField(request, ContentTypeKey));
+            return Build(request, file);
         }
 
         public static MultipartFormBody Build(Dictionary<string, object> request, PhaseoFile file)
@@ -218,18 +229,11 @@ namespace PhaseoSdk
             }
         }
 
-        private static bool IsMetaKey(string key)
-        {
-            return Array.IndexOf(FileNameKeys, key) >= 0 || Array.IndexOf(ContentTypeKeys, key) >= 0;
-        }
+        private static bool IsMetaKey(string key) => key == FileNameKey || key == ContentTypeKey;
 
-        private static string? StringField(Dictionary<string, object> request, string[] keys)
+        private static string? StringField(Dictionary<string, object> request, string key)
         {
-            foreach (var key in keys)
-            {
-                if (request.TryGetValue(key, out var value) && value is string text && !string.IsNullOrWhiteSpace(text)) return text;
-            }
-            return null;
+            return request.TryGetValue(key, out var value) && value is string text && !string.IsNullOrWhiteSpace(text) ? text : null;
         }
     }
 
@@ -714,9 +718,9 @@ namespace PhaseoSdk
         }
 
         /// <summary>
-        /// Transcribes audio. When request["file"] is a <see cref="PhaseoFile"/>, byte[], Stream, FileInfo,
-        /// data: URL or local path, the request is sent as multipart/form-data; requests that only carry
-        /// file_url, file_id or s3_presigned_url are sent as JSON.
+        /// Transcribes audio. A request with a "file" entry is sent as multipart/form-data; the value must be a
+        /// <see cref="PhaseoFile"/>, FileInfo, or byte[]/Stream (with a "filename" entry unless the stream is a FileStream).
+        /// Plain strings are rejected. Requests that only carry file_url, file_id or s3_presigned_url are sent as JSON.
         /// </summary>
         public Task<Dictionary<string, object>?> CreateTranscription(Dictionary<string, object> request)
         {
@@ -736,7 +740,7 @@ namespace PhaseoSdk
 
         /// <summary>
         /// Translates audio to English. The gateway requires a multipart "file" part, so request["file"] should be a
-        /// <see cref="PhaseoFile"/>, byte[], Stream, FileInfo, data: URL or local path.
+        /// <see cref="PhaseoFile"/>, FileInfo, or byte[]/Stream (with a "filename" entry unless the stream is a FileStream).
         /// </summary>
         public Task<Dictionary<string, object>?> CreateTranslation(Dictionary<string, object> request)
         {
@@ -1040,10 +1044,19 @@ namespace PhaseoSdk
 
         /// <summary>
         /// Uploads a batch input file as multipart/form-data to POST /batches/files. request["file"] must be a
-        /// <see cref="PhaseoFile"/>, byte[], Stream, FileInfo, data: URL or local path; other entries (purpose, ...)
-        /// become form fields. model and provider (arguments or request entries) are sent as query parameters.
+        /// <see cref="PhaseoFile"/>, FileInfo, or byte[]/Stream (with a "filename" entry unless the stream is a FileStream);
+        /// other entries (purpose, ...) become form fields. "model" and "provider" entries are sent as query parameters.
         /// </summary>
-        public Task<Dictionary<string, object>?> UploadFile(Dictionary<string, object> request, string? model = null, string? provider = null)
+        public Task<Dictionary<string, object>?> UploadFile(Dictionary<string, object> request)
+        {
+            return UploadFile(request, null, null);
+        }
+
+        /// <summary>
+        /// Uploads a batch input file as multipart/form-data to POST /batches/files. model and provider (arguments, else
+        /// request entries) are sent as query parameters. See <see cref="UploadFile(Dictionary{string, object})"/>.
+        /// </summary>
+        public Task<Dictionary<string, object>?> UploadFile(Dictionary<string, object> request, string? model, string? provider)
         {
             if (request is null) throw new ArgumentNullException(nameof(request));
             var fields = new Dictionary<string, object>(request);
@@ -1052,7 +1065,7 @@ namespace PhaseoSdk
             fields.Remove("model");
             fields.Remove("provider");
             var form = MultipartRequests.TryBuild(fields)
-                ?? throw new ArgumentException("UploadFile requires request[\"file\"] to be a PhaseoFile, byte[], Stream, FileInfo, data: URL or path to an existing file.", nameof(request));
+                ?? throw new ArgumentException("UploadFile requires request[\"file\"]: pass a PhaseoFile (for example PhaseoFile.FromPath(path)), a FileInfo, or byte[]/Stream with a \"filename\" entry.", nameof(request));
             var query = new Dictionary<string, string>();
             if (!string.IsNullOrWhiteSpace(model)) query["model"] = model!;
             if (!string.IsNullOrWhiteSpace(provider)) query["provider"] = provider!;

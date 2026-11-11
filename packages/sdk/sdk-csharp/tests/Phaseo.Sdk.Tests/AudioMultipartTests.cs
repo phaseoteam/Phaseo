@@ -120,7 +120,27 @@ public class AudioMultipartTests
     }
 
     [Fact]
-    public async Task TranscriptionDictionaryWithLocalPathSendsMultipart()
+    public async Task TranscriptionWithExplicitFileUsesItsContentType()
+    {
+        var (client, requests, http) = CreateClient();
+        using var _ = http;
+
+        await client.CreateTranscription(new Dictionary<string, object>
+        {
+            ["model"] = "openai/whisper-1",
+            ["file"] = PhaseoFile.FromBytes(Encoding.ASCII.GetBytes("pcmdata"), "take1.raw", "audio/L16"),
+        });
+
+        var request = Assert.Single(requests);
+        Assert.Equal("multipart/form-data", request.MediaType);
+        var file = Field(request, "file");
+        Assert.Equal("take1.raw", file.FileName);
+        Assert.Equal("audio/L16", file.ContentType);
+        Assert.Equal("pcmdata", file.Body);
+    }
+
+    [Fact]
+    public async Task TranscriptionWithFileInfoUsesBaseName()
     {
         var (client, requests, http) = CreateClient();
         using var _ = http;
@@ -132,7 +152,7 @@ public class AudioMultipartTests
             var response = await client.CreateTranscription(new Dictionary<string, object>
             {
                 ["model"] = "openai/whisper-1",
-                ["file"] = path,
+                ["file"] = new FileInfo(path),
             });
 
             Assert.Equal("hello", response!["text"]?.ToString());
@@ -140,6 +160,7 @@ public class AudioMultipartTests
             Assert.Equal("multipart/form-data", request.MediaType);
             var file = Field(request, "file");
             Assert.Equal("speech.wav", file.FileName);
+            Assert.Equal("audio/wav", file.ContentType);
             Assert.Equal("wavdata", file.Body);
             Assert.Equal("openai/whisper-1", Field(request, "model").Body);
         }
@@ -147,6 +168,111 @@ public class AudioMultipartTests
         {
             dir.Delete(true);
         }
+    }
+
+    [Fact]
+    public async Task TranscriptionWithFileStreamUsesStreamName()
+    {
+        var (client, requests, http) = CreateClient();
+        using var _ = http;
+        var dir = Directory.CreateTempSubdirectory("phaseo-audio-");
+        var path = Path.Combine(dir.FullName, "memo.m4a");
+        await File.WriteAllTextAsync(path, "m4adata");
+        try
+        {
+            await using (var stream = File.OpenRead(path))
+            {
+                await client.CreateTranscription(new Dictionary<string, object>
+                {
+                    ["model"] = "openai/whisper-1",
+                    ["file"] = stream,
+                });
+            }
+
+            var request = Assert.Single(requests);
+            var file = Field(request, "file");
+            Assert.Equal("memo.m4a", file.FileName);
+            Assert.Equal("audio/mp4", file.ContentType);
+            Assert.Equal("m4adata", file.Body);
+        }
+        finally
+        {
+            dir.Delete(true);
+        }
+    }
+
+    [Fact]
+    public async Task TranscriptionWithPlainStringThrowsEvenForExistingPath()
+    {
+        var (client, requests, http) = CreateClient();
+        using var _ = http;
+        var dir = Directory.CreateTempSubdirectory("phaseo-audio-");
+        var path = Path.Combine(dir.FullName, "speech.wav");
+        await File.WriteAllTextAsync(path, "wavdata");
+        try
+        {
+            var pathError = await Assert.ThrowsAsync<ArgumentException>(() => client.CreateTranscription(new Dictionary<string, object>
+            {
+                ["model"] = "openai/whisper-1",
+                ["file"] = path,
+            }));
+            Assert.Contains("PhaseoFile.FromPath", pathError.Message);
+
+            await Assert.ThrowsAsync<ArgumentException>(() => client.CreateTranslation(new Dictionary<string, object>
+            {
+                ["model"] = "openai/whisper-1",
+                ["file"] = "data:audio/wav;base64,d2F2ZGF0YQ==",
+            }));
+            Assert.Empty(requests);
+        }
+        finally
+        {
+            dir.Delete(true);
+        }
+    }
+
+    [Fact]
+    public async Task BytesOrNamelessStreamWithoutFilenameThrows()
+    {
+        var (client, requests, http) = CreateClient();
+        using var _ = http;
+
+        var bytesError = await Assert.ThrowsAsync<ArgumentException>(() => client.CreateTranscription(new Dictionary<string, object>
+        {
+            ["model"] = "openai/whisper-1",
+            ["file"] = Encoding.ASCII.GetBytes("audio"),
+        }));
+        Assert.Contains("filename", bytesError.Message);
+        Assert.Contains("extension", bytesError.Message);
+
+        await Assert.ThrowsAsync<ArgumentException>(() => client.CreateTranscription(new Dictionary<string, object>
+        {
+            ["model"] = "openai/whisper-1",
+            ["file"] = new MemoryStream(Encoding.ASCII.GetBytes("audio")),
+        }));
+        Assert.Throws<ArgumentException>(() => PhaseoFile.FromBytes(Encoding.ASCII.GetBytes("audio"), ""));
+        Assert.Empty(requests);
+    }
+
+    [Fact]
+    public async Task NamelessStreamWithSiblingFilenameSendsMultipart()
+    {
+        var (client, requests, http) = CreateClient();
+        using var _ = http;
+
+        await client.CreateTranscription(new Dictionary<string, object>
+        {
+            ["model"] = "openai/whisper-1",
+            ["file"] = new MemoryStream(Encoding.ASCII.GetBytes("flacdata")),
+            ["filename"] = "note.flac",
+        });
+
+        var request = Assert.Single(requests);
+        var file = Field(request, "file");
+        Assert.Equal("note.flac", file.FileName);
+        Assert.Equal("audio/flac", file.ContentType);
+        Assert.Equal("flacdata", file.Body);
+        Assert.DoesNotContain(request.Parts, p => p.Name == "filename");
     }
 
     [Fact]
@@ -226,7 +352,8 @@ public class AudioMultipartTests
 
         await client.UploadFile(new Dictionary<string, object>
         {
-            ["file"] = "data:application/jsonl;base64,eyJhIjoxfQo=",
+            ["file"] = Encoding.UTF8.GetBytes("{\"a\":1}\n"),
+            ["filename"] = "requests.jsonl",
             ["purpose"] = "batch",
             ["model"] = "openai/gpt-5-mini",
         });
@@ -234,8 +361,52 @@ public class AudioMultipartTests
         var request = Assert.Single(requests);
         Assert.Equal("/batches/files?model=openai%2Fgpt-5-mini", request.PathAndQuery);
         Assert.Equal("multipart/form-data", request.MediaType);
-        Assert.Equal("{\"a\":1}\n", Field(request, "file").Body);
+        var file = Field(request, "file");
+        Assert.Equal("requests.jsonl", file.FileName);
+        Assert.Equal("application/jsonl", file.ContentType);
+        Assert.Equal("{\"a\":1}\n", file.Body);
         Assert.Equal("batch", Field(request, "purpose").Body);
+    }
+
+    [Fact]
+    public async Task UploadFileDictionaryWithModelAndProviderArguments()
+    {
+        var (client, requests, http) = CreateClient();
+        using var _ = http;
+
+        await client.UploadFile(
+            new Dictionary<string, object> { ["file"] = PhaseoFile.FromBytes(Encoding.UTF8.GetBytes("{}\n"), "b.jsonl"), ["purpose"] = "batch" },
+            "openai/gpt-5-mini",
+            "openai");
+
+        var request = Assert.Single(requests);
+        Assert.Equal("/batches/files?model=openai%2Fgpt-5-mini&provider=openai", request.PathAndQuery);
+    }
+
+    [Fact]
+    public void UploadFileKeepsOriginalOneParameterSignature()
+    {
+        var single = typeof(PhaseoSdk.Phaseo).GetMethod("UploadFile", new[] { typeof(Dictionary<string, object>) });
+        Assert.NotNull(single);
+        Assert.Single(single!.GetParameters());
+
+        var withQuery = typeof(PhaseoSdk.Phaseo).GetMethod("UploadFile", new[] { typeof(Dictionary<string, object>), typeof(string), typeof(string) });
+        Assert.NotNull(withQuery);
+        Assert.DoesNotContain(withQuery!.GetParameters(), p => p.IsOptional);
+    }
+
+    [Fact]
+    public async Task UploadFileWithPlainStringThrows()
+    {
+        var (client, requests, http) = CreateClient();
+        using var _ = http;
+
+        await Assert.ThrowsAsync<ArgumentException>(() => client.UploadFile(new Dictionary<string, object>
+        {
+            ["file"] = "requests.jsonl",
+            ["purpose"] = "batch",
+        }));
+        Assert.Empty(requests);
     }
 
     [Fact]

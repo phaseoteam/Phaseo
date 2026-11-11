@@ -46,7 +46,7 @@ public class FilesTests
         var response = await client.UploadFile(new Dictionary<string, object>
         {
             ["purpose"] = "batch",
-            ["file"] = "data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ==",
+            ["file"] = PhaseoFile.FromBytes(Encoding.UTF8.GetBytes("{\"test\":true}"), "file.json"),
         });
 
         Assert.Equal("file_123", response!["id"]?.ToString());
