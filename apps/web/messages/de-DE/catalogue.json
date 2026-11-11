@@ -1665,7 +1665,7 @@
 			"itl": "ITL",
 			"cachedInput": "Gecachter Input",
 			"metricDescriptions": {
-				"throughput": "Durchschnittlicher Generierungsdurchsatz laut Anbieter.",
+				"throughput": "Ausgabetokens pro Sekunde, einschließlich der Wartezeit bis zum ersten Token. Von Phaseo über die gesamte Anbieterdauer gemessen.",
 				"outputSpeed": "Durchschnittliche Generierungsgeschwindigkeit der Ausgabetokens nach dem ersten Token.",
 				"latency": "Durchschnittliche Zeit zwischen dem Senden einer Anfrage und dem Eintreffen des ersten Tokens.",
 				"endToEnd": "Durchschnittliche Zeit vom Beginn der Anfrage bis zum vollständigen Eintreffen der Antwort.",

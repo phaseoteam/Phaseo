@@ -1665,7 +1665,7 @@
 			"itl": "ITL",
 			"cachedInput": "Entrée mise en cache",
 			"metricDescriptions": {
-				"throughput": "Débit moyen de génération communiqué par le fournisseur.",
+				"throughput": "Jetons de sortie par seconde, attente du premier jeton comprise. Mesuré par Phaseo sur toute la durée du fournisseur.",
 				"outputSpeed": "Vitesse moyenne de génération des jetons de sortie après le premier jeton.",
 				"latency": "Temps moyen entre l’envoi d’une requête et l’arrivée du premier jeton.",
 				"endToEnd": "Temps moyen entre le début de la requête et la réception de la réponse complète.",

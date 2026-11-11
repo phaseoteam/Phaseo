@@ -1665,7 +1665,7 @@
 			"itl": "ITL",
 			"cachedInput": "Entrada em cache",
 			"metricDescriptions": {
-				"throughput": "Vazão média de geração informada pelo provedor.",
+				"throughput": "Tokens de saída por segundo, incluindo a espera pelo primeiro token. Medido pela Phaseo durante toda a duração do provedor.",
 				"outputSpeed": "Velocidade média de geração dos tokens de saída após o primeiro token.",
 				"latency": "Tempo médio entre o envio da solicitação e a chegada do primeiro token.",
 				"endToEnd": "Tempo médio entre o início da solicitação e a chegada da resposta completa.",

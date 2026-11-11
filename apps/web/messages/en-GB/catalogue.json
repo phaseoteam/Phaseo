@@ -1665,7 +1665,7 @@
 			"itl": "ITL",
 			"cachedInput": "Cached input",
 			"metricDescriptions": {
-				"throughput": "Average generation throughput reported by the provider.",
+				"throughput": "Output tokens per second, including the wait for the first token. Measured by Phaseo over the full provider duration.",
 				"outputSpeed": "Average output-token generation rate after the first token.",
 				"latency": "Average time from sending a request until the first token arrives.",
 				"endToEnd": "Average time from request start until the complete response arrives.",
