@@ -22,7 +22,8 @@ export function compare(current, baseline, percent = 10) {
 		const was = old.summary.median, now = metric.summary.median, delta = now - was, share = was ? delta / was * 100 : Math.sign(delta) * 100;
 		const worse = metric.better === "higher" ? -delta : delta;
 		const verdict = worse > (floors[metric.unit] ?? 0) && Math.abs(share) > percent ? "worse" : -worse > (floors[metric.unit] ?? 0) && Math.abs(share) > percent ? "better" : "same";
-		return { ...metric, baseline: old.summary, delta: Math.round(delta * 10) / 10, deltaPercent: Math.round(share), verdict };
+		// A change from zero has no percentage (null); the verdict above still treats it as a full-size change.
+		return { ...metric, baseline: old.summary, delta: Math.round(delta * 10) / 10, deltaPercent: was ? Math.round(share) : null, verdict };
 	});
 }
 
@@ -41,7 +42,7 @@ export function markdown(report, compared) {
 		for (const metric of rows.filter(value => value.group === group)) {
 			const s = metric.summary ?? {}, unit = metric.unit === "count" ? "" : ` ${metric.unit}`;
 			const base = [`${metric.name}${metric.note ? ` (${metric.note})` : ""}`, `${cell(s.median)}${s.median === undefined ? "" : unit}`, cell(s.p95), cell(s.min), cell(s.max), cell(s.n)];
-			if (withBaseline) base.push(metric.baseline ? `${metric.baseline.median}${unit}` : "–", metric.verdict ? `${metric.delta > 0 ? "+" : ""}${metric.delta}${unit} (${metric.deltaPercent > 0 ? "+" : ""}${metric.deltaPercent}%)${metric.verdict === "worse" ? " ⚠ worse" : metric.verdict === "better" ? " ✓ better" : ""}` : "–");
+			if (withBaseline) base.push(metric.baseline ? `${metric.baseline.median}${unit}` : "–", metric.verdict ? `${metric.delta > 0 ? "+" : ""}${metric.delta}${unit}${metric.deltaPercent === null ? " (from 0)" : ` (${metric.deltaPercent > 0 ? "+" : ""}${metric.deltaPercent}%)`}${metric.verdict === "worse" ? " ⚠ worse" : metric.verdict === "better" ? " ✓ better" : ""}` : "–");
 			lines.push(`| ${base.join(" | ")} |`);
 		}
 		lines.push("");

@@ -54,20 +54,27 @@ export class FactoryService {
 			this.loaded = true;
 			if (!this.options.demo && !this.store.get().settings.repos.length) return;
 			// The window asking for work activates it at once (activate); otherwise it waits for activateAfterMs.
-			if (this.options.activateAfterMs) setTimeout(() => this.activate(), this.options.activateAfterMs).unref?.();
+			if (this.options.activateAfterMs) { this.activateTimer = setTimeout(() => this.activate(), this.options.activateAfterMs); this.activateTimer.unref?.(); }
 			else this.activate();
 		})();
 		return this.started;
 	}
 
-	/** Starts reading GitHub and finding agents, once. */
+	/** Starts reading GitHub and finding agents, once; not after shutdown has begun. */
 	activate() {
+		clearTimeout(this.activateTimer);
+		if (this.closing) return;
 		this.working ??= this.store.start().catch(() => undefined);
 	}
 	private working?: Promise<void>;
+	private activateTimer?: ReturnType<typeof setTimeout>;
+	private closing = false;
 
 	/** Runs going are saved as interrupted, to carry on at the next start; call before the runtime closes. */
 	async shutdown() {
+		// A delayed activation must not start gh or read the workspace once the app is closing.
+		this.closing = true;
+		clearTimeout(this.activateTimer);
 		this.threads.close();
 		if (this.loaded) await this.store.shutdown();
 	}

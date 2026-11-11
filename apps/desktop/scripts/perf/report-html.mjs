@@ -21,7 +21,7 @@ const ticks = max => {
 function deltaLabel(metric) {
 	if (!metric.verdict) return "";
 	const sign = metric.delta > 0 ? "+" : "";
-	const text = `${sign}${format(metric.delta, metric.unit)} (${sign}${metric.deltaPercent}%)`;
+	const text = `${sign}${format(metric.delta, metric.unit)}${metric.deltaPercent === null ? " (from 0)" : ` (${sign}${metric.deltaPercent}%)`}`;
 	if (metric.verdict === "better") return `<span class="delta good"><span aria-hidden="true">▼</span> ${escape(text)} better</span>`;
 	if (metric.verdict === "worse") return `<span class="delta bad"><span aria-hidden="true">▲</span> ${escape(text)} worse</span>`;
 	return `<span class="delta same">${escape(text)}</span>`;
@@ -35,7 +35,7 @@ function chart(rows, unit) {
 	const at = value => `${Math.max(0, Math.min(100, value / top * 100)).toFixed(2)}%`;
 	const axis = `<div class="axis" aria-hidden="true">${steps.map(step => `<span style="left:${at(step)}">${escape(format(step, unit))}</span>`).join("")}</div>`;
 	const body = rows.map(metric => {
-		const s = metric.summary, tip = escape(JSON.stringify({ name: metric.name, note: metric.note, unit, median: s.median, p95: s.p95, min: s.min, max: s.max, n: s.n, before: metric.baseline?.median, delta: metric.verdict ? `${metric.delta > 0 ? "+" : ""}${format(metric.delta, unit)} (${metric.deltaPercent > 0 ? "+" : ""}${metric.deltaPercent}%)` : undefined, verdict: metric.verdict }));
+		const s = metric.summary, tip = escape(JSON.stringify({ name: metric.name, note: metric.note, unit, median: s.median, p95: s.p95, min: s.min, max: s.max, n: s.n, before: metric.baseline?.median, delta: metric.verdict ? `${metric.delta > 0 ? "+" : ""}${format(metric.delta, unit)}${metric.deltaPercent === null ? " (from 0)" : ` (${metric.deltaPercent > 0 ? "+" : ""}${metric.deltaPercent}%)`}` : undefined, verdict: metric.verdict }));
 		let marks;
 		if (withBaseline && metric.baseline) {
 			const a = metric.baseline.median, b = s.median, left = Math.min(a, b), right = Math.max(a, b);

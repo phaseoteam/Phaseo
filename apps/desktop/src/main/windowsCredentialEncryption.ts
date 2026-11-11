@@ -40,7 +40,12 @@ export const launchOnWorker: HelperLaunch = (executable, args, options, input) =
  }
  const thread = helperThread, id = nextRequest++;
  clearTimeout(thread.idle);
- thread.pending.set(id, run => { resolve(run); if (!thread.pending.size) thread.idle = setTimeout(() => { if (!thread.pending.size) void thread.worker.terminate(); }, 30_000).unref(); });
+ thread.pending.set(id, run => { resolve(run); if (!thread.pending.size) thread.idle = setTimeout(() => {
+  if (thread.pending.size) return;
+  // Forget it first, so a request arriving while it shuts down starts a new thread instead of joining this one.
+  if (helperThread === thread) helperThread = undefined;
+  void thread.worker.terminate();
+ }, 30_000).unref(); });
  thread.worker.postMessage({ id, executable, args, options, input });
 });
 
