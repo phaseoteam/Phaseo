@@ -9,7 +9,9 @@
 // - Mouse only: on touch a tap just follows the link.
 // - Opens after 450 ms, switches after 120 ms when moving from an open card's
 //   link to another, closes 200 ms after the pointer leaves the link and card.
-//   Any pointerdown and any navigation close it at once.
+//   A pointerdown outside the card and any navigation close it at once; a
+//   pointerdown inside the card leaves it open, so a click on one of its links
+//   reaches the link and the navigation that follows closes the card.
 // - The card's data is requested as soon as the pointer is over a link (hover
 //   intent) and cached for the page's lifetime. The card UI itself loads on the
 //   first hover, so pages that never show a card do not pay for it.
@@ -106,13 +108,21 @@ export function EntityCardsController({ pathname }: { pathname: string }) {
 			if (to && (insideCard(to) || open?.contains(to))) return;
 			scheduleClose();
 		};
+		const down = (event: PointerEvent) => {
+			// Closing here would unmount the card before an in-card link gets its click.
+			if (insideCard(event.target)) {
+				clearTimeout(openTimer.current);
+				return;
+			}
+			hide();
+		};
 		document.addEventListener("pointerover", over);
 		document.addEventListener("pointerout", out);
-		document.addEventListener("pointerdown", hide, true);
+		document.addEventListener("pointerdown", down, true);
 		return () => {
 			document.removeEventListener("pointerover", over);
 			document.removeEventListener("pointerout", out);
-			document.removeEventListener("pointerdown", hide, true);
+			document.removeEventListener("pointerdown", down, true);
 			clearTimeout(openTimer.current);
 			clearTimeout(closeTimer.current);
 		};

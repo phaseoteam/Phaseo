@@ -196,6 +196,29 @@ describe("EntityCards", () => {
 		expect(card()?.hasAttribute("data-open") ?? false).toBe(false);
 	});
 
+	it("keeps the card open on a pointerdown inside it, so an in-card link gets its click", async () => {
+		render();
+		pointer("pointerover", link("model"));
+		await advance(OPEN_DELAY_MS);
+		await respond("/api/_web/entity-cards/model/acme/rocket-2", { card: MODEL });
+		const inCardLink = card()!.querySelector<HTMLAnchorElement>("a[href='/organisations/acme']")!;
+		expect(inCardLink).not.toBeNull();
+		const clicked = vi.fn((event: Event) => event.preventDefault());
+		inCardLink.addEventListener("click", clicked);
+
+		pointer("pointerdown", inCardLink);
+		await advance(0);
+		expect(card()?.hasAttribute("data-open")).toBe(true);
+		expect(card()?.contains(inCardLink)).toBe(true);
+		pointer("click", inCardLink);
+		expect(clicked).toHaveBeenCalledTimes(1);
+
+		// The navigation the click starts closes the card.
+		render("/organisations/acme");
+		await advance(0);
+		expect(card()?.hasAttribute("data-open") ?? false).toBe(false);
+	});
+
 	it("ignores touch, navigation links, sub-page tabs and the page's own entity", async () => {
 		render("/models/acme/rocket-2");
 		pointer("pointerover", link("org"), { pointerType: "touch" });
