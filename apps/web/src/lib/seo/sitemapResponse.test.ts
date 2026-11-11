@@ -62,7 +62,8 @@ describe("sitemap response", () => {
 
 	it("never caches a sitemap that is missing a failed source", async () => {
 		buildSitemap.mockResolvedValueOnce(sitemap(["https://phaseo.app/"], false)).mockResolvedValueOnce(sitemap(["https://phaseo.app/", "https://phaseo.app/models/openai/gpt-5"]));
-		await serveSitemap(SITEMAP_URL);
+		const partial = await serveSitemap(SITEMAP_URL);
+		expect(partial.headers.get("cache-control")).toBe("public, max-age=0, must-revalidate");
 		await settle();
 		expect(await (await serveSitemap(SITEMAP_URL)).text()).toContain("/models/openai/gpt-5");
 		expect(buildSitemap).toHaveBeenCalledTimes(2);

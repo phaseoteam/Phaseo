@@ -36,11 +36,12 @@ function sitemapCache(): Cache | null {
 	return (globalThis as { caches?: CacheStorage & { default?: Cache } }).caches?.default ?? null;
 }
 
-function sitemapResponse(xml: string, builtAt: number): Response {
+function sitemapResponse(xml: string, builtAt: number, complete: boolean): Response {
 	return new Response(xml, {
 		headers: {
 			"content-type": "application/xml",
-			"cache-control": `public, max-age=${SITEMAP_CACHE_SECONDS}`,
+			// Crawlers must not keep an incomplete copy either.
+			"cache-control": complete ? `public, max-age=${SITEMAP_CACHE_SECONDS}` : "public, max-age=0, must-revalidate",
 			[BUILT_AT_HEADER]: String(builtAt),
 		},
 	});
@@ -60,6 +61,6 @@ export async function serveSitemap(requestUrl: string): Promise<Response> {
 	const { entries, complete } = await buildSitemap();
 	const xml = toSitemapXml(entries);
 	const builtAt = Date.now();
-	if (cache && complete) void waitUntil(cache.put(key, sitemapResponse(xml, builtAt)));
-	return sitemapResponse(xml, builtAt);
+	if (cache && complete) void waitUntil(cache.put(key, sitemapResponse(xml, builtAt, true)));
+	return sitemapResponse(xml, builtAt, complete);
 }
