@@ -436,8 +436,8 @@ paths:
       tags:
         - Gateway
       operationId: listTeamModels
-      summary: 列出团队范围的网关模型
-      description: 返回团队范围的网关模型列表。默认返回当前可公开路由的模型；使用 `availability=all` 可包含不可路由的可用性记录。
+      summary: 列出此密钥可以使用的模型
+      description: 返回应用了调用方护栏规则的 /models 列表：被规则屏蔽的模型以及没有任何允许提供商的模型不会列出，每个模型只保留其请求可以路由到的服务，价格、能力和可用性也据此计算。access 对象说明规则排除了哪些内容。默认只包含当前可公开路由的模型；使用 availability=all 可包含不可路由的可用性记录。
       parameters:
         - name: endpoints
           in: query
@@ -21093,6 +21093,48 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Model'
+        access:
+          $ref: '#/components/schemas/GatewayModelAccess'
+      additionalProperties: false
+    GatewayModelAccess:
+      type: object
+      description: 仅由 /models/me 返回：在搜索和分页之前，调用方的护栏规则从列表中排除的内容。
+      required:
+        - restricted
+        - hidden_model_count
+        - hidden_models
+        - limited_model_count
+      properties:
+        restricted:
+          type: boolean
+          description: 是否有任何规则为此密钥限制模型或提供商。
+          example: true
+        hidden_model_count:
+          type: integer
+          minimum: 0
+          description: 被规则排除的模型数量。
+          example: 12
+        hidden_models:
+          type: array
+          description: 被排除的模型及其名称（最多 500 个）。
+          items:
+            type: object
+            required:
+              - id
+              - name
+            properties:
+              id:
+                type: string
+                example: deepseek/deepseek-v4
+              name:
+                type: string
+                example: DeepSeek V4
+            additionalProperties: false
+        limited_model_count:
+          type: integer
+          minimum: 0
+          description: 有多少列出的模型因规则失去了部分提供商。
+          example: 3
       additionalProperties: false
     ModelEndpointCapability:
       type: object

@@ -2308,6 +2308,13 @@ type GatewayModalities struct {
 	Output []string `json:"output"`
 }
 
+type GatewayModelAccess struct {
+	HiddenModelCount int `json:"hidden_model_count"`
+	HiddenModels []map[string]interface{} `json:"hidden_models"`
+	LimitedModelCount int `json:"limited_model_count"`
+	Restricted bool `json:"restricted"`
+}
+
 type GatewayModelLifecycle struct {
 	DeprecatedAt *string `json:"deprecated_at"`
 	Message *string `json:"message"`
@@ -2340,6 +2347,7 @@ type GatewayModelOffer struct {
 type GatewayModelOrganization = *map[string]interface{}
 
 type GatewayModelsResponse struct {
+	Access *map[string]interface{} `json:"access,omitempty"`
 	AvailabilityMode string `json:"availability_mode"`
 	Limit int `json:"limit"`
 	Models []map[string]interface{} `json:"models"`

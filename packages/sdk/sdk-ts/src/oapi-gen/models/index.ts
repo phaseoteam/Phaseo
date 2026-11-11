@@ -194,6 +194,7 @@ export type { GatewayFeedbackResponse } from "./GatewayFeedbackResponse.js";
 export type { GatewayFeedbackSummaryResponse } from "./GatewayFeedbackSummaryResponse.js";
 export type { GatewayFeedbackSummaryRow } from "./GatewayFeedbackSummaryRow.js";
 export type { GatewayModalities } from "./GatewayModalities.js";
+export type { GatewayModelAccess } from "./GatewayModelAccess.js";
 export type { GatewayModelLifecycle } from "./GatewayModelLifecycle.js";
 export type { GatewayModelLimits } from "./GatewayModelLimits.js";
 export type { GatewayModelOffer } from "./GatewayModelOffer.js";
