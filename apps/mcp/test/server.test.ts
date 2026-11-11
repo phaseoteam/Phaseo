@@ -61,6 +61,7 @@ describe("Phaseo MCP server metadata", () => {
 		const tools = Object.fromEntries(result.tools.map((tool) => [tool.name, tool]));
 
 		expect(Object.keys(tools)).toEqual([
+			"open_model_explorer",
 			"models_list",
 			"model_get",
 			"benchmark_rankings",
@@ -154,8 +155,21 @@ describe("Phaseo MCP server metadata", () => {
 		expect(tools.models_list?._meta?.ui).toMatchObject({
 			resourceUri: "ui://phaseo/model-explorer.html", visibility: ["model", "app"],
 		});
-		// Entry points make ChatGPT open the tool fullscreen, so models_list declares none.
+		// Entry points make hosts open the tool fullscreen, so models_list declares none.
 		expect(tools.models_list?._meta?.["openai/ui"]).toBeUndefined();
+		// The launcher carries them instead: ChatGPT's sidebar and thread panel, and
+		// Claude's Artifacts page. Claude also needs ui.resourceUri and model visibility.
+		const launcher = tools.open_model_explorer;
+		expect(launcher?._meta?.["openai/ui"]).toEqual({ entrypoints: [{ type: "global" }, { type: "thread" }] });
+		expect(launcher?._meta?.ui).toMatchObject({
+			resourceUri: "ui://phaseo/model-explorer.html", visibility: ["model", "app"],
+		});
+		expect(launcher?._meta?.securitySchemes).toEqual([
+			{ type: "oauth2", scopes: ["models:read", "pricing:read"] },
+		]);
+		expect(launcher?.title?.length).toBeLessThanOrEqual(60);
+		expect(launcher?.name).not.toMatch(/__|\.\.|\._|_\./);
+		expect(launcher?.inputSchema.required ?? []).toEqual([]);
 		const icon = tools.models_list?.icons?.[0];
 		expect(icon?.mimeType).toBe("image/svg+xml");
 		const svg = atob(icon!.src.split(",")[1]!);
@@ -408,6 +422,10 @@ describe("Phaseo MCP server metadata", () => {
 		});
 		expect((priceFiltered.structuredContent as { models: Array<{ id: string }> }).models.map((item) => item.id))
 			.toEqual(["lab/cheap"]);
+		// The launcher opens on the explorer's own first page of the catalogue.
+		const launched = await client.callTool({ name: "open_model_explorer", arguments: {} });
+		expect((launched.structuredContent as { models: Array<{ id: string }> }).models.map((item) => item.id))
+			.toEqual(["lab/cheap", "lab/expensive"]);
 		const detail = await client.callTool({ name: "model_get", arguments: { modelId: "lab/expensive" } });
 		expect(detail.structuredContent).toMatchObject({ model: {
 			id: "lab/expensive",

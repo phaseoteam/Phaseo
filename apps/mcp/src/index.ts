@@ -732,13 +732,72 @@ export function createServer(
 		},
 	);
 
+	type ModelListArgs = {
+		query?: string;
+		provider?: string;
+		modality?: "text" | "image" | "audio" | "video";
+		minimumContextTokens?: number;
+		maximumInputPricePerMillion?: number;
+		gatewayAvailableOnly: boolean;
+		sortBy: "relevance" | "input_price" | "output_price" | "context_length" | "provider_count";
+		sortOrder?: "asc" | "desc";
+		limit: number;
+	};
+	const listModels = async ({ query, provider, modality, minimumContextTokens, maximumInputPricePerMillion, gatewayAvailableOnly, sortBy, sortOrder, limit }: ModelListArgs) => {
+		try {
+			const models = await searchModels(env, {
+				query,
+				provider,
+				modality,
+				minimumContextTokens,
+				gatewayAvailableOnly,
+				limit: 250,
+			}, { accessToken: authenticatedUser.accessToken });
+			const priceFiltered = maximumInputPricePerMillion === undefined
+				? models
+				: models.filter((model) => {
+					const price = lowestPaidPrice(model, "input")?.rate;
+					return price !== undefined && price * 1_000_000 <= maximumInputPricePerMillion;
+				});
+			const result = sortModels(priceFiltered, sortBy, sortOrder)
+				.slice(0, limit)
+				.map((model) => modelSummary(env, model));
+			return toolResult(`Found ${result.length} matching Phaseo model${result.length === 1 ? "" : "s"}.`, { models: result });
+		} catch (error) { return errorResult(error); }
+	};
+
+	if (
+		authenticatedUser.scopes.includes("models:read") &&
+		authenticatedUser.scopes.includes("pricing:read")
+	) server.registerTool(
+		"open_model_explorer",
+		{
+			title: "Phaseo model explorer",
+			icons: [{ src: modelExplorerIcon, mimeType: "image/svg+xml", sizes: ["20x20"] }],
+			description: "Use this when the user wants to open the Phaseo model explorer to browse, filter and compare current AI models themselves. Opens with the first page of the live catalogue. For a specific search, use models_list instead. Read-only.",
+			inputSchema: {},
+			outputSchema: { models: z.array(z.object(modelSummarySchema)) },
+			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+			// The host launcher (ChatGPT's sidebar and thread panel, Claude's Artifacts
+			// page). Both hosts open entry-point tools fullscreen, so this lives on its
+			// own tool and models_list results stay inline.
+			_meta: {
+				...oauthToolMeta(["models:read", "pricing:read"]),
+				...modelCardToolMeta,
+				"openai/ui": { entrypoints: [{ type: "global" }, { type: "thread" }] },
+			},
+		},
+		// The same first page the explorer loads for itself.
+		async () => listModels({ gatewayAvailableOnly: false, sortBy: "relevance", limit: 20 }),
+	);
+
 	if (
 		authenticatedUser.scopes.includes("models:read") &&
 		authenticatedUser.scopes.includes("pricing:read")
 	) server.registerTool(
 		"models_list",
 		{
-			title: "Model explorer",
+			title: "Search Phaseo models",
 			icons: [{ src: modelExplorerIcon, mimeType: "image/svg+xml", sizes: ["20x20"] }],
 			description: "Use this when the user wants to find or compare current AI models, including the cheapest paid standard-tier price and provider-by-provider pricing. A free provider is reported explicitly and never presented as if every provider were free. Filters and sorts the live Phaseo catalogue; it does not measure model quality. Read-only.",
 			inputSchema: {
@@ -754,32 +813,12 @@ export function createServer(
 			},
 			outputSchema: { models: z.array(z.object(modelSummarySchema)) },
 			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-			// No sidebar or thread entry points: ChatGPT always opens entry-point tools
-			// fullscreen, even when the model calls them, which hid the inline card.
+			// No entry points here: hosts open entry-point tools fullscreen, even when
+			// the model calls them, which hid the inline card. open_model_explorer is
+			// the launcher.
 			_meta: { ...oauthToolMeta(["models:read", "pricing:read"]), ...modelCardToolMeta },
 		},
-		async ({ query, provider, modality, minimumContextTokens, maximumInputPricePerMillion, gatewayAvailableOnly, sortBy, sortOrder, limit }) => {
-			try {
-				const models = await searchModels(env, {
-					query,
-					provider,
-					modality,
-					minimumContextTokens,
-					gatewayAvailableOnly,
-					limit: 250,
-				}, { accessToken: authenticatedUser.accessToken });
-				const priceFiltered = maximumInputPricePerMillion === undefined
-					? models
-					: models.filter((model) => {
-						const price = lowestPaidPrice(model, "input")?.rate;
-						return price !== undefined && price * 1_000_000 <= maximumInputPricePerMillion;
-					});
-				const result = sortModels(priceFiltered, sortBy, sortOrder)
-					.slice(0, limit)
-					.map((model) => modelSummary(env, model));
-				return toolResult(`Found ${result.length} matching Phaseo model${result.length === 1 ? "" : "s"}.`, { models: result });
-			} catch (error) { return errorResult(error); }
-		},
+		listModels,
 	);
 
 	if (
