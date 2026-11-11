@@ -8,6 +8,26 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"製品","api":"API と SDK","models":"モデル"}} clearLabel="クリア" />
 
+<Update label="2026年11月11日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API と SDK</p>
+
+- `POST /v1/decisions` は `google/gemini-decision-1` で最大 1,000 個の質問を受け付けます。ほかのモデルは 128 個以下の上限のままです。詳しくは [判断を行う](./api-reference/endpoint/decisions.mdx) ([#3682](https://github.com/phaseoteam/Phaseo/pull/3682))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">モデル</p>
+
+- [Google: Gemini Decision 1](https://phaseo.app/models/google/gemini-decision-1)
+
+</div>
+
+</Update>
+
 <Update label="2026年11月10日">
 
 <div data-changelog-category="models">
