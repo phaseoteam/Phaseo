@@ -39,7 +39,7 @@ export const FOLLOW_UP_MIGRATION_FILES = [
   '20261110182228_realtime_spend_counts_at_debit_time.sql',
 ];
 export const FOLLOW_UP_MIGRATIONS = {
-  'private/functions/unbilled_spend.sql': '20261110182228_realtime_spend_counts_at_debit_time.sql',
+  'private/functions/unbilled_spend.sql': '20261111145919_bound_spend_warning_sweep_work.sql',
   'private/functions/key_spend_items.sql': '20261110182228_realtime_spend_counts_at_debit_time.sql',
   'private/functions/budget_spend_items.sql': '20261110182228_realtime_spend_counts_at_debit_time.sql',
 };
@@ -185,6 +185,7 @@ export async function applyMigration(db, migration) {
   await db.exec(migration);
   for (const table of await readTableMigrations()) await db.exec(table);
   for (const name of FOLLOW_UP_MIGRATION_FILES) await db.exec(await readFollowUpMigration(name));
+  await db.exec(await readFollowUpMigration('20261111145919_bound_spend_warning_sweep_work.sql'));
   await db.exec(CONTEXT_STUBS);
 }
 

@@ -35,6 +35,10 @@ node --env-file=observability/grafana/.env.local observability/grafana/provision
 
 The first command regenerates JSON; the second prints a local plan without network calls. `--check` evaluates all dashboard and alert queries against Loki. Empty results establish syntax/access, not collection. `--apply` checks ownership and updates five dashboards and five paused alert rules. Reapplying replaces edits to owned resources; writes are sequential, so rerun after an interruption. `GRAFANA_ENVIRONMENT` chooses separate staging or production rule UIDs.
 
+For an existing stack with edited dashboards or enabled rules, do not use `provision.mjs --apply` to update one alert. After deployment authorization, export `phaseo-jobs-failing-production` and change only query A's expression, `noDataState` and the summary to the corresponding fields from `alertRules()` in `definitions.mjs`. Preserve the installed rule's pause state, labels, routing, other rules and dashboards. Read those fields back after saving; staging has its own UID and remains paused.
+
+The job rule compares the latest failed scheduled time with the latest completed scheduled time for the same service/job over 48 hours, covering daily and quarter-hour jobs. Skips and unrelated completions do not resolve it. Empty results keep the prior alert state. This bounded log history is not durable incident state: a failure older than the lookback is no longer compared, and missing telemetry is not proof of recovery. Verify a new successful scheduled run and its recovery notification separately; keep the scheduler-missing rule and external uptime/status monitoring in place.
+
 `--apply --frontend` creates the browser application if missing, using `GRAFANA_FRONTEND_ORIGINS` (comma-separated exact HTTPS origins). Existing application settings are preserved. The current app allows `https://phaseo.app` and `https://www.phaseo.app`; add the real staging origin before testing there.
 
 ```powershell
@@ -104,5 +108,7 @@ pnpm --filter @phaseo/gateway-api exec vitest run src/observability/platform.tes
 pnpm --filter @phaseo/web-api exec vitest run src/observability.test.ts src/chat/proxy.test.ts
 pnpm --filter @phaseo/web exec vitest run src/lib/grafana.test.ts src/lib/grafanaConfig.test.ts
 ```
+
+`LOKI_TEST_URL` pointing to an isolated localhost Loki also enables `node --test observability/grafana/loki.test.mjs observability/grafana/job-alert.loki.test.mjs`. Historical fixtures need old samples enabled, an ingester chunk age above 48 hours, and queries sent to ingesters for the full lookback; they never write to a Cloud stack.
 
 Also run scoped lint/typechecks and production/Worker builds. [VALIDATION.md](VALIDATION.md) records actual results; previous checks in the obsolete Next.js checkout do not validate the current release.

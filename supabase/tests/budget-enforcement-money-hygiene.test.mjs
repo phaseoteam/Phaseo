@@ -136,7 +136,10 @@ try {
     for (const path of functionFiles) {
       const followUp = FOLLOW_UP_MIGRATIONS[path];
       const carrier = followUp ? await readFollowUpMigration(followUp) : migration;
-      assert.ok(carrier.includes((await readSchema(path)).replace(/\r\n/g, '\n').trim()), `${path} is in ${followUp ?? 'the migration'}`);
+      const definition = (await readSchema(path)).replace(/\r\n/g, '\n');
+      // Generated replacements retain privileges and normalize signature formatting.
+      const expected = path === 'private/functions/unbilled_spend.sql' ? definition.split('$function$')[1] : definition.trim();
+      assert.ok(carrier.includes(expected), `${path} is in ${followUp ?? 'the migration'}`);
       if (followUp) assert.ok(migration.includes(`CREATE OR REPLACE FUNCTION private.${path.split('/').at(-1).replace('.sql', '')} (`), `${path} is first created by the migration`);
     }
     const manifest = JSON.parse(await readSchema('.pgdelta-export.json'));

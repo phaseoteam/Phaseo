@@ -72,6 +72,7 @@ export const BINDING_KEYS: Array<keyof GatewayBindings> = [
     "GATEWAY_CONTROL_KEY",
     "AI_STATS_GATEWAY_KEY",
     "NEXT_PUBLIC_GATEWAY_VERSION",
+    "CF_VERSION_METADATA",
     "AXIOM_API_KEY",
     "AXIOM_DATASET",
     "AXIOM_WIDE_DATASET",

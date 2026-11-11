@@ -87,7 +87,7 @@ export type SpendLimitSweepSummary = { budgets: number; limitedKeys: number; war
 
 export async function runSpendLimitWarningSweep(): Promise<SpendLimitSweepSummary> {
 	const { data, error } = await getSupabaseAdmin().rpc("sweep_spend_limit_warnings", {});
-	if (error) throw new Error(`spend_limit_sweep_failed:${error.message}`);
+	if (error) throw new Error(`spend_limit_sweep_failed:${error.message}`, { cause: { code: error.code } });
 	const result = (data && typeof data === "object" ? data : {}) as Record<string, unknown>;
 	const count = (value: unknown) => (Number.isFinite(Number(value)) ? Number(value) : 0);
 	return { budgets: count(result.budgets), limitedKeys: count(result.limitedKeys), warned: count(result.warned) };
@@ -102,7 +102,7 @@ export type DepartmentBudgetSweepSummary = { budgets: number; alerted: number };
  */
 export async function runDepartmentBudgetAlertSweep(): Promise<DepartmentBudgetSweepSummary> {
 	const { data, error } = await getSupabaseAdmin().rpc("sweep_department_budget_alerts", {});
-	if (error) throw new Error(`department_budget_sweep_failed:${error.message}`);
+	if (error) throw new Error(`department_budget_sweep_failed:${error.message}`, { cause: { code: error.code } });
 	const result = (data && typeof data === "object" ? data : {}) as Record<string, unknown>;
 	const count = (value: unknown) => (Number.isFinite(Number(value)) ? Number(value) : 0);
 	return { budgets: count(result.budgets), alerted: count(result.alerted) };
@@ -116,7 +116,7 @@ export type SpendGuardrailSweepSummary = { workspaces: number; alerted: number }
  */
 export async function runSpendGuardrailAlertSweep(): Promise<SpendGuardrailSweepSummary> {
 	const { data, error } = await getSupabaseAdmin().rpc("sweep_spend_guardrail_alerts", {});
-	if (error) throw new Error(`spend_guardrail_sweep_failed:${error.message}`);
+	if (error) throw new Error(`spend_guardrail_sweep_failed:${error.message}`, { cause: { code: error.code } });
 	const result = (data && typeof data === "object" ? data : {}) as Record<string, unknown>;
 	const count = (value: unknown) => (Number.isFinite(Number(value)) ? Number(value) : 0);
 	return { workspaces: count(result.workspaces), alerted: count(result.alerted) };

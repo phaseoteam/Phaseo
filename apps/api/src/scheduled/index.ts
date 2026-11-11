@@ -410,13 +410,15 @@ async function handleMobilePushScheduledEvent(env: GatewayBindings): Promise<voi
 }
 
 // Budget warnings are push-only, so they are swept only where mobile push runs.
-async function handleSpendLimitSweepScheduledEvent(env: GatewayBindings): Promise<void> {
+async function handleSpendLimitSweepScheduledEvent(env: GatewayBindings, jobs: ReturnType<typeof createJobObserver>): Promise<void> {
 	if (env.MOBILE_PUSH_ENABLED !== "true") return;
 	configureRuntime(env);
 	try {
 		// Independent sweeps: one failing must not hold back the others' alerts.
 		const [spend, departments, guardrails] = await Promise.allSettled([
-			runSpendLimitWarningSweep(), runDepartmentBudgetAlertSweep(), runSpendGuardrailAlertSweep(),
+			jobs.run("spend_limit_warnings", runSpendLimitWarningSweep),
+			jobs.run("department_budget_alerts", runDepartmentBudgetAlertSweep),
+			jobs.run("spend_guardrail_alerts", runSpendGuardrailAlertSweep),
 		]);
 		if (spend.status === "fulfilled" && spend.value.warned > 0) console.log("spend_limit_warnings_swept", spend.value);
 		if (departments.status === "fulfilled" && departments.value.alerted > 0) console.log("department_budget_alerts_swept", departments.value);
@@ -905,7 +907,7 @@ export async function handleScheduledEvent(event: ScheduledController, env: Gate
 			}
 			if (isQuarterHourTick(event)) {
 				try {
-					await jobs.run("spend_limit_sweep", () => handleSpendLimitSweepScheduledEvent(env), env.MOBILE_PUSH_ENABLED === "true");
+					await jobs.run("spend_limit_sweep", () => handleSpendLimitSweepScheduledEvent(env, jobs), env.MOBILE_PUSH_ENABLED === "true");
 				} catch (error) {
 					console.error("spend_limit_sweep_scheduled_failed", serializeError(error));
 				}
