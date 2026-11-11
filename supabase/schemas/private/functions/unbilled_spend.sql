@@ -195,6 +195,8 @@ CREATE OR REPLACE FUNCTION private.unbilled_spend (
   where session.workspace_id = p_workspace_id
     and coalesce(session.ended_at, session.started_at) >= coalesce(p_since, '-infinity'::timestamptz)
     and summary.workspace_id = p_workspace_id
+    -- Bound the realtime index scan before the merge join; ordinary requests have NULL here.
+    and summary.realtime_session_id is not null
     and summary.cost_nanos > coalesce(session.captured_nanos, 0)
     and (p_key_ids is null or coalesce(summary.key_id, session.key_id) = any (p_key_ids))
   union all
