@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { useSearch } from '@tanstack/react-router'
+import { useParams, useSearch } from '@tanstack/react-router'
 import {
     Card,
     CardContent,
@@ -21,6 +21,8 @@ import { authDialogHref } from '@/lib/auth/authDialogRedirect'
 export function ResetPasswordPage() {
     const t = useTranslations('Common.authFlows.passwordReset')
     const search = useSearch({ strict: false }) as Record<string, unknown>
+    // The route locale (/fr-FR/auth/reset-password); ?locale= covers the unprefixed email link.
+    const { locale } = useParams({ strict: false }) as { locale?: string }
 
     React.useEffect(() => {
         const supabase = createClient()
@@ -29,14 +31,14 @@ export function ResetPasswordPage() {
         } = supabase.auth.onAuthStateChange((event) => {
             if (event === 'PASSWORD_RECOVERY') {
                 // A full load, so the page renders with the recovery session.
-                window.location.replace(authDialogHref({ params: {}, search }, { auth: 'reset' }))
+                window.location.replace(authDialogHref({ params: { locale }, search }, { auth: 'reset' }))
             }
         })
 
         return () => {
             subscription.unsubscribe()
         }
-    }, [search])
+    }, [locale, search])
 
     return (
         <div className="flex min-h-screen items-center justify-center p-4">

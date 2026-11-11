@@ -1,6 +1,6 @@
 // The dialog body for AuthDialog: one view per step of the sign-in flow.
 import { Suspense } from "react";
-import { useSuspenseQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useLocale } from "@/i18n/react";
 import type { PublicLocale } from "@/i18n/routing";
 import { AnalyticsIdentitySync } from "@/components/analytics/AnalyticsIdentitySync";
@@ -15,7 +15,9 @@ import { SsoStep } from "./SsoStep";
 import type { AuthDialogState } from "./authDialogStore";
 
 function SignInStep({ state, locale }: { state: AuthDialogState; locale: PublicLocale }) {
-	const { data: ssoEnabled } = useSuspenseQuery(samlSsoEnabledQuery());
+	// Not suspending: if the flag check fails, the other sign-in methods stay and the SSO button is left out
+	// (React Query retries; the next open checks again).
+	const { data: ssoEnabled = false } = useQuery(samlSsoEnabledQuery());
 	return (
 		<Login
 			signupNotice={state.notice === "check-email" ? "check-email" : null}

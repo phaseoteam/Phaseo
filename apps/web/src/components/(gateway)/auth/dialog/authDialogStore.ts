@@ -137,8 +137,9 @@ export function authDialogTargetFromSearch(search: string): OpenAuthDialogOption
 	const options: OpenAuthDialogOptions = {};
 	if (auth === "error") {
 		options.step = "sign-in";
-		options.errorCode = params.get("code") ?? "default";
+		// The legacy /error?message= form names the error by its text; only fall back to "default" with neither.
 		const message = params.get("message");
+		options.errorCode = params.get("code") ?? (message ? undefined : "default");
 		if (message) options.errorMessage = message;
 	} else if ((AUTH_DIALOG_STEPS as readonly string[]).includes(auth)) {
 		options.step = auth as AuthDialogStep;

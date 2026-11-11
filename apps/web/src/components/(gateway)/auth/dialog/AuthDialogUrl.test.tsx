@@ -74,6 +74,31 @@ describe("AuthDialog URL state", () => {
 		expect(last.options).toMatchObject({ shallow: true, scroll: false, history: "replace" });
 	});
 
+	it("keeps ?auth= in step when a URL-opened dialog moves on in place", async () => {
+		const updates: UrlUpdateEvent[] = [];
+		await render("?auth=sign-in&returnUrl=%2Fsettings&tab=1", (event) => updates.push(event));
+		// Password sign-in on an MFA account opens the two-factor step without navigating.
+		await act(async () => openAuthDialog({ step: "mfa", returnUrl: "/settings" }));
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 100));
+		});
+		const last = updates.at(-1)!;
+		expect(last.searchParams.get("auth")).toBe("mfa");
+		expect(last.searchParams.get("returnUrl")).toBe("/settings");
+		expect(last.searchParams.get("tab")).toBe("1");
+		expect(getAuthDialogState()).toMatchObject({ open: true, step: "mfa" });
+	});
+
+	it("does not write ?auth= for a dialog opened from a link", async () => {
+		const updates: UrlUpdateEvent[] = [];
+		await render("?tab=1", (event) => updates.push(event));
+		await act(async () => openAuthDialog({ step: "sign-up", returnUrl: "/models" }));
+		await act(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 100));
+		});
+		expect(updates).toHaveLength(0);
+	});
+
 	it("closes when Back/Forward removes ?auth=", async () => {
 		await render("?auth=sign-in");
 		expect(getAuthDialogState()).toMatchObject({ open: true, fromUrl: true });

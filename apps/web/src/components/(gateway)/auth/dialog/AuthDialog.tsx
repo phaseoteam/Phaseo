@@ -88,6 +88,21 @@ export function AuthDialog() {
 		else if (getAuthDialogState().fromUrl) closeAuthDialog();
 	}, [pathname, search]);
 
+	// A dialog the URL opened keeps ?auth= in step with what it shows (password → two-factor in
+	// place, sign-up → "check your email"), so a refresh or a later URL change cannot bring back a
+	// stale step. Dialogs opened from a link leave the URL alone.
+	useEffect(() => {
+		if (!state.open || query.auth === null) return;
+		const next = {
+			auth: state.errorCode || state.errorMessage ? "error" : state.step,
+			returnUrl: state.returnUrl ?? null,
+			notice: state.notice ?? null,
+			code: state.errorCode ?? null,
+			message: state.errorMessage ?? null,
+		};
+		if (toSearch(next) !== search) void setQuery(next);
+	}, [state, query.auth, search, setQuery]);
+
 	const onOpenChange = (open: boolean) => {
 		if (open) return;
 		closeAuthDialog();

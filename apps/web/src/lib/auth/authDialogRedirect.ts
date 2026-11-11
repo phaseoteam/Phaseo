@@ -9,6 +9,8 @@ import { defaultLocale, isPublicLocale } from "@/i18n/routing";
 type RedirectInput = {
 	params: Record<string, string | undefined>;
 	search: Record<string, unknown>;
+	/** On the server the hash is never sent, and the browser keeps the original across the 307. */
+	location?: { hash?: string };
 };
 
 export type AuthDialogRedirectParams = {
@@ -29,7 +31,8 @@ export function searchValue(search: Record<string, unknown>, key: string): strin
 }
 
 /** The home page in the route's locale (technical routes carry it as ?locale=) with the dialog's parameters. */
-export function authDialogHref({ params, search }: RedirectInput, dialog: AuthDialogRedirectParams): string {
+export function authDialogHref(input: RedirectInput, dialog: AuthDialogRedirectParams): string {
+	const { params, search } = input;
 	const locale = [params.locale, searchValue(search, "locale")].find(
 		(value): value is string => typeof value === "string" && isPublicLocale(value),
 	);
@@ -38,7 +41,9 @@ export function authDialogHref({ params, search }: RedirectInput, dialog: AuthDi
 		if (value) query.set(key, value);
 	}
 	const home = locale && locale !== defaultLocale ? `/${locale}` : "/";
-	return `${home}?${query.toString()}`;
+	// Client-side redirects would drop it otherwise: Supabase puts error details (access_denied) there.
+	const hash = input.location?.hash ? `#${input.location.hash.replace(/^#/, "")}` : "";
+	return `${home}?${query.toString()}${hash}`;
 }
 
 /** beforeLoad for an old auth page: redirect to the home page with the dialog open. */

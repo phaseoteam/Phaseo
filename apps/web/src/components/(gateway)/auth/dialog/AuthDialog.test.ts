@@ -54,6 +54,10 @@ describe("authDialogTargetFromSearch", () => {
 			returnUrl: "/",
 		});
 		expect(authDialogTargetFromSearch("?auth=error")).toMatchObject({ errorCode: "default" });
+		// The legacy message-only form keeps its message, so the matching guidance shows instead of the default.
+		const legacy = authDialogTargetFromSearch("?auth=error&message=Sign-in%20was%20cancelled");
+		expect(legacy).toMatchObject({ errorMessage: "Sign-in was cancelled" });
+		expect(legacy?.errorCode).toBeUndefined();
 	});
 
 	it("ignores pages without a known step", () => {
@@ -76,6 +80,13 @@ describe("authDialogHref", () => {
 	it("takes the locale from ?locale= on technical routes and ignores unknown locales", () => {
 		expect(authDialogHref({ params: {}, search: { locale: "ja" } }, { auth: "mfa" })).toBe("/ja?auth=mfa");
 		expect(authDialogHref({ params: {}, search: { locale: "xx" } }, { auth: "mfa" })).toBe("/?auth=mfa");
+	});
+
+	it("forwards a client-side hash (Supabase error details)", () => {
+		expect(authDialogHref({ params: {}, search: {}, location: { hash: "error=access_denied" } }, { auth: "error", code: "default" })).toBe(
+			"/?auth=error&code=default#error=access_denied",
+		);
+		expect(authDialogHref({ params: {}, search: {}, location: { hash: "" } }, { auth: "error" })).toBe("/?auth=error");
 	});
 });
 
