@@ -16,14 +16,19 @@ class FilesTest < Minitest::Test
 
     uploaded = client.upload_file(
       "purpose" => "batch",
-      "file" => "data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=="
+      "file" => "{\"test\":true}\n",
+      "filename" => "input.jsonl"
     )
 
     assert_equal "file_123", uploaded["id"]
-    assert_equal [["POST", "/files", nil, nil, {
-      "purpose" => "batch",
-      "file" => "data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=="
-    }]], calls
+    assert_equal 1, calls.length
+    method, path, query, _headers, body = calls.first
+    assert_equal ["POST", "/batches/files", nil], [method, path, query]
+    assert_instance_of Phaseo::Gen::RawBody, body
+    assert_match %r{\Amultipart/form-data; boundary=}, body.content_type
+    assert_includes body.bytes, "name=\"file\"; filename=\"input.jsonl\""
+    assert_includes body.bytes, "{\"test\":true}\n"
+    assert_includes body.bytes, "name=\"purpose\"\r\n\r\nbatch\r\n"
   end
 
   def test_retrieve_file_content_returns_bytes
