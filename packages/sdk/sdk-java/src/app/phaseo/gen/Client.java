@@ -41,6 +41,12 @@ public class Client {
 		RetryEvent(RequestEvent request, Integer statusCode, long delayMillis, Exception error) { this.request = request; this.statusCode = statusCode; this.delayMillis = delayMillis; this.error = error; }
 	}
 
+	/** A pre-encoded request body, such as multipart/form-data, sent as-is with its own Content-Type. */
+	public static final class RawBody {
+		public final String contentType; public final byte[] bytes;
+		public RawBody(String contentType, byte[] bytes) { this.contentType = contentType; this.bytes = bytes; }
+	}
+
 	public static final class RawResponse<T> {
 		public final int statusCode; public final Map<String, List<String>> headers; public final T data;
 		RawResponse(int statusCode, Map<String, List<String>> headers, T data) { this.statusCode = statusCode; this.headers = headers; this.data = data; }
@@ -98,7 +104,11 @@ public class Client {
 	public Client setMaxRetries(int value) { if (value < 0 || value > 10) throw new IllegalArgumentException("max retries must be between 0 and 10"); this.maxRetries = value; return this; }
 	public Client setHooks(Consumer<RequestEvent> request, Consumer<ResponseEvent> response, Consumer<RetryEvent> retry) { this.onRequest = request; this.onResponse = response; this.onRetry = retry; return this; }
 
-	private HttpRequest buildRequest(String method, String path, Map<String, String> query, Map<String, String> extraHeaders, String body, RequestOptions options) {
+	private static RawBody jsonBody(String body) {
+		return body == null ? null : new RawBody("application/json", body.getBytes(StandardCharsets.UTF_8));
+	}
+
+	private HttpRequest buildRequest(String method, String path, Map<String, String> query, Map<String, String> extraHeaders, RawBody body, RequestOptions options) {
 		String url = baseUrl + path;
 		if (query != null && !query.isEmpty()) {
 			StringBuilder qs = new StringBuilder();
@@ -110,7 +120,7 @@ public class Client {
 			}
 			url += "?" + qs;
 		}
-		HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(url)).method(method, body != null ? HttpRequest.BodyPublishers.ofString(body) : HttpRequest.BodyPublishers.noBody());
+		HttpRequest.Builder builder = HttpRequest.newBuilder(URI.create(url)).method(method, body != null ? HttpRequest.BodyPublishers.ofByteArray(body.bytes) : HttpRequest.BodyPublishers.noBody());
 		for (Map.Entry<String, String> entry : headers.entrySet()) {
 			builder.header(entry.getKey(), entry.getValue());
 		}
@@ -126,7 +136,7 @@ public class Client {
 		Duration requestTimeout = options != null && options.timeout != null ? options.timeout : timeout;
 		if (requestTimeout != null) builder.timeout(requestTimeout);
 		if (body != null) {
-			builder.header("Content-Type", "application/json");
+			builder.header("Content-Type", body.contentType);
 		}
 		return builder.build();
 	}
@@ -143,6 +153,14 @@ public class Client {
 	}
 
 	public RawResponse<String> requestWithResponse(String method, String path, Map<String, String> query, Map<String, String> extraHeaders, String body, RequestOptions options) throws IOException, InterruptedException {
+		return requestRawWithResponse(method, path, query, extraHeaders, jsonBody(body), options);
+	}
+
+	public String requestRaw(String method, String path, Map<String, String> query, Map<String, String> extraHeaders, RawBody body) throws IOException, InterruptedException {
+		return requestRawWithResponse(method, path, query, extraHeaders, body, null).data;
+	}
+
+	public RawResponse<String> requestRawWithResponse(String method, String path, Map<String, String> query, Map<String, String> extraHeaders, RawBody body, RequestOptions options) throws IOException, InterruptedException {
 		String normalizedMethod = method.toUpperCase();
 		int retries = options != null && options.maxRetries != null ? options.maxRetries : maxRetries;
 		if (retries < 0 || retries > 10) throw new IllegalArgumentException("max retries must be between 0 and 10");
@@ -178,7 +196,7 @@ public class Client {
 		Map<String, String> streamHeaders = new HashMap<>();
 		if (extraHeaders != null) streamHeaders.putAll(extraHeaders);
 		streamHeaders.put("Accept", "text/event-stream");
-		HttpResponse<Stream<String>> response = http.send(buildRequest(method, path, query, streamHeaders, body, null), HttpResponse.BodyHandlers.ofLines());
+		HttpResponse<Stream<String>> response = http.send(buildRequest(method, path, query, streamHeaders, jsonBody(body), null), HttpResponse.BodyHandlers.ofLines());
 		if (response.statusCode() >= 400) {
 			try (Stream<String> lines = response.body()) {
 				String raw = String.join("\n", lines.toList());
@@ -189,7 +207,7 @@ public class Client {
 	}
 
 	public byte[] requestBytes(String method, String path, Map<String, String> query, Map<String, String> extraHeaders, String body) throws IOException, InterruptedException {
-		HttpRequest request = buildRequest(method, path, query, extraHeaders, body, null);
+		HttpRequest request = buildRequest(method, path, query, extraHeaders, jsonBody(body), null);
 		HttpResponse<byte[]> response = http.send(request, HttpResponse.BodyHandlers.ofByteArray());
 		if (response.statusCode() >= 400) {
 			String raw = new String(response.body(), StandardCharsets.UTF_8);

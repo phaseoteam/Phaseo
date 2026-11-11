@@ -183,9 +183,19 @@ HTTP status, response body, headers, and request ID.
 The `createSpeech` wrapper expects JSON and cannot decode binary audio. Use
 `rawClient().requestBytes("POST", "/audio/speech", null, null, jsonBody)` instead.
 
-The JSON helpers `uploadFile`, `createTranscription`, `createTranslation`, and
-`createImageEdit` do not encode multipart file uploads. Use Java's standard HTTP
-client for file bytes, following the [multipart upload example](https://phaseo.app/docs/v1/sdk-reference/client/files).
+`createTranscription`, `createTranslation`, and `uploadFile` send
+multipart/form-data when the request has a `file` entry (`byte[]`, `Path`,
+`File`, `InputStream`, or a `String` of content; strings are never paths).
+Set `filename` for raw bytes, since its extension names the audio format:
+
+```java
+client.createTranscription(Path.of("clip.wav"), Map.of("model", "openai/gpt-4o-transcribe"));
+client.uploadFile(Path.of("input.jsonl"), "batch", "openai/gpt-5-mini", null);
+```
+
+A transcription with only `file_url`, `file_id`, or `s3_presigned_url` is sent
+as JSON. `uploadFile` posts to `/batches/files` with `model` and `provider` in
+the query string. `createImageEdit` does not encode multipart uploads yet.
 
 See the [Java SDK guide](https://phaseo.app/docs/v1/sdk-reference/client/overview)
 for complete examples.

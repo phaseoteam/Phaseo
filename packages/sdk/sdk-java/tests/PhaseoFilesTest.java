@@ -19,11 +19,13 @@ public class PhaseoFilesTest {
 	void uploadFileReturnsPayload() throws Exception {
 		HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
 		final String[] requestBody = new String[1];
-		server.createContext("/files", new HttpHandler() {
+		final String[] contentType = new String[1];
+		server.createContext("/batches/files", new HttpHandler() {
 			@Override
 			public void handle(HttpExchange exchange) throws IOException {
 				byte[] requestBytes = exchange.getRequestBody().readAllBytes();
 				requestBody[0] = new String(requestBytes, StandardCharsets.UTF_8);
+				contentType[0] = exchange.getRequestHeaders().getFirst("Content-Type");
 
 				byte[] bytes = "{\"id\":\"file_123\",\"purpose\":\"batch\",\"bytes\":17}".getBytes(StandardCharsets.UTF_8);
 				exchange.getResponseHeaders().add("Content-Type", "application/json");
@@ -40,16 +42,15 @@ public class PhaseoFilesTest {
 			Phaseo client = new Phaseo("test", baseUrl, false, false, null);
 			var response = client.uploadFile(Map.of(
 				"purpose", "batch",
-				"file", "data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ=="
+				"file", "{\"test\":true}\n",
+				"filename", "input.jsonl"
 			));
 			assertEquals("file_123", response.get("id").asText());
 			assertEquals("batch", response.get("purpose").asText());
-			assertEquals('{', requestBody[0].charAt(0));
-			assertEquals('}', requestBody[0].charAt(requestBody[0].length() - 1));
-			org.junit.jupiter.api.Assertions.assertTrue(requestBody[0].contains("\"purpose\":\"batch\""));
-			org.junit.jupiter.api.Assertions.assertTrue(
-				requestBody[0].contains("\"file\":\"data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ==\"")
-			);
+			org.junit.jupiter.api.Assertions.assertTrue(contentType[0].startsWith("multipart/form-data; boundary="), contentType[0]);
+			org.junit.jupiter.api.Assertions.assertTrue(requestBody[0].contains("name=\"purpose\"\r\n\r\nbatch\r\n"));
+			org.junit.jupiter.api.Assertions.assertTrue(requestBody[0].contains("name=\"file\"; filename=\"input.jsonl\""));
+			org.junit.jupiter.api.Assertions.assertTrue(requestBody[0].contains("{\"test\":true}\n"));
 		} finally {
 			server.stop(0);
 		}
