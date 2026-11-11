@@ -77,7 +77,9 @@ jobs:
                   RUNS: ${{ inputs.runs || '5' }}
                   BASELINE: ${{ steps.baseline.outputs.file }}
               run: |
-                  $options = @("--skip-build", "--runs=$env:RUNS", "--out=$env:GITHUB_WORKSPACE/output/desktop-perf", "--threshold=25")
+                  # --strict: a section that failed, or a metric the baseline has and this run lacks, fails the run, so an
+                  # incomplete report never becomes the next baseline.
+                  $options = @("--skip-build", "--strict", "--runs=$env:RUNS", "--out=$env:GITHUB_WORKSPACE/output/desktop-perf", "--threshold=25")
                   if ($env:BASELINE) { $options += @("--baseline=$env:BASELINE", "--fail-on-regression") }
                   pnpm --filter @phaseo/desktop exec node scripts/perf/run.mjs @options
                   $code = $LASTEXITCODE

@@ -19,6 +19,9 @@ const argument = (name, fallback) => process.argv.find(value => value.startsWith
 const profile = path.resolve(argument("profile", "")), scenario = argument("scenario", "startup"), out = argument("out", "");
 const spawned = Number(process.env.PHASEO_PERF_SPAWNED_AT) || entered;
 if (!argument("profile", "")) throw new Error("--profile is required");
+// appData is set rather than looked up: with the empty home run.mjs gives each launch, a CI runner's lookup fails
+// ("Failed to get 'appData' path"). Under --real-home the machine's own is kept.
+if (process.env.APPDATA && path.resolve(process.env.APPDATA).startsWith(profile + path.sep)) app.setPath("appData", process.env.APPDATA);
 app.setPath("userData", profile);
 // Covered windows still render, so frame timings don't depend on what else is on screen.
 app.commandLine.appendSwitch("disable-features", "CalculateNativeWinOcclusion");

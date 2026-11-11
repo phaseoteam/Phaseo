@@ -11,6 +11,7 @@
 //     --load=25,25,40       Chat chats, Code chats and seconds for the parallel streaming load
 //     --out=<dir>           where the report goes (default output/perf/<time>)
 //     --fail-on-regression  exit 1 when any metric is worse than the baseline
+//     --strict              exit 1 when a section failed or a baseline metric is missing (CI: no incomplete baselines)
 //     --real-home           let the app read this machine's home folder (Claude Code and Codex transcripts, agent
 //                           settings); by default each launch gets an empty home, so runs compare across machines
 import { spawn, spawnSync, execFileSync } from "node:child_process";
@@ -64,7 +65,12 @@ const remove = directory => { try { rmSync(directory, { recursive: true, force: 
 function launch(profile, scenario, extra = []) {
 	const file = path.join(out, `result-${Date.now()}-${Math.random().toString(36).slice(2, 7)}.json`);
 	const env = { ...process.env, PHASEO_PERF_SPAWNED_AT: String(Date.now()) };
-	if (!flag("real-home")) { const home = path.join(profile, "home"); mkdirSync(home, { recursive: true }); env.HOME = env.USERPROFILE = home; }
+	if (!flag("real-home")) {
+		const home = path.join(profile, "home"), roaming = path.join(home, "AppData", "Roaming"), local = path.join(home, "AppData", "Local");
+		mkdirSync(roaming, { recursive: true }); mkdirSync(local, { recursive: true });
+		// Windows' own AppData folders, inside the empty home too: on CI runners Electron can't resolve them otherwise.
+		env.HOME = env.USERPROFILE = home; env.APPDATA = roaming; env.LOCALAPPDATA = local;
+	}
 	delete env.ELECTRON_RUN_AS_NODE;
 	const child = spawn(electron, [path.join(import.meta.dirname, "perf-app.mjs"), `--profile=${profile}`, `--scenario=${scenario}`, `--out=${file}`, ...extra], { cwd: desktop, env, stdio: ["ignore", "pipe", "pipe"] });
 	let output = "";
@@ -224,4 +230,12 @@ writeFileSync(path.join(out, "report.html"), html(report, compared, baseline));
 rmSync(templates, { recursive: true, force: true });
 console.log(`\n${text}\n`);
 log(`report: ${path.join(out, "report.md")} and report.html`);
+// --strict (CI): an incomplete report fails, so it never becomes the next baseline. A section that failed leaves a
+// note, and a metric the baseline had but this run lacks would otherwise never be compared again.
+if (flag("strict")) {
+	const measured = new Set(metrics.map(metric => `${metric.group}\0${metric.name}`));
+	const missing = (baseline?.metrics ?? []).filter(metric => !measured.has(`${metric.group}\0${metric.name}`)).map(metric => `${metric.group}: ${metric.name}`);
+	const problems = [...notes, ...missing.length ? [`Missing from this run but in the baseline: ${missing.join("; ")}`] : []];
+	if (problems.length) { console.error(`\n[perf] incomplete run (--strict):\n${problems.map(problem => `- ${problem}`).join("\n")}`); process.exit(1); }
+}
 if (flag("fail-on-regression") && compared?.some(metric => metric.verdict === "worse")) process.exit(1);
