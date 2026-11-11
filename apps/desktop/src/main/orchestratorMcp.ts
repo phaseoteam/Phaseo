@@ -1,8 +1,7 @@
 import { createServer, type Server as HttpServer } from "node:http";
 import { randomBytes, randomUUID } from "node:crypto";
-import { Server } from "@modelcontextprotocol/sdk/server/index.js";
-import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { CallToolRequestSchema, ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
+import type { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { loadedMcpServerSdk, mcpServerSdk } from "./mcpSdk";
 import type { McpConnection } from "../shared/mcp";
 import type { ThreadTools } from "../shared/orchestration";
 import { span } from "./diagnostics/tracer";
@@ -44,6 +43,7 @@ export class OrchestratorMcp {
 				const session = this.activeSession(token);
 				if (request.url !== "/mcp" || !session || request.headers.origin || !["127.0.0.1"].includes(request.socket.remoteAddress ?? "")) { response.writeHead(401).end(); return; }
 				if (request.method !== "POST") { response.writeHead(405).end(); return; }
+				const { Server, StreamableHTTPServerTransport, CallToolRequestSchema, ListToolsRequestSchema } = loadedMcpServerSdk() ?? await mcpServerSdk();
 				const transport = new StreamableHTTPServerTransport({ sessionIdGenerator: undefined, enableJsonResponse: true });
 				const mcp = new Server({ name: "phaseo-orchestrator", version: "1.0.0" }, { capabilities: { tools: {} } });
 				// ask_user (Phaseo's AskUserQuestion) is offered only to harnesses without a question tool of their own (Cursor).

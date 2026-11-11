@@ -25,8 +25,12 @@ async function unchanged(url: URL, key: string, validators: CatalogPageValidator
 
 export async function apiModelCatalog(account: Account, key: string, previous?: CatalogPageValidator[], fetcher: typeof fetch = fetch): Promise<ApiModelCatalog> {
 	if (!account.endpoint || account.kind !== "api") throw new Error("Choose an API account.");
-	const url = new URL(`${account.endpoint.replace(/\/$/, "")}/models`);
+	const base = account.endpoint.replace(/\/$/, "");
+	let url = new URL(`${base}/models`);
 	const phaseo = url.protocol === "https:" && url.hostname === "api.phaseo.app";
+	// Phaseo lists the models this key may use: its workspace's guardrails (blocked models and providers, privacy
+	// rules) applied, as its requests get them. A server without /models/me yet gets the shared list.
+	if (phaseo) url = new URL(`${base}/models/me`);
 	// Phaseo advertises canonical capabilities, not wire protocol route names.
 	if (phaseo) { url.searchParams.set("limit", "250"); url.searchParams.set("gateway_available_only", "true"); url.searchParams.set("endpoints", "text.generate"); }
 	const models = new Map<string, ModelOption>();
@@ -36,7 +40,12 @@ export async function apiModelCatalog(account: Account, key: string, previous?: 
 	if (previous?.length && await unchanged(url, key, previous, fetcher, signal)) return { notModified: true };
 	const validators: CatalogPageValidator[] = [];
 	for (let page = 0; page < 40; page++) {
-		const response = await fetcher(url.href, { headers: { Authorization: `Bearer ${key}` }, signal, redirect: "error" });
+		let response = await fetcher(url.href, { headers: { Authorization: `Bearer ${key}` }, signal, redirect: "error" });
+		if (phaseo && page === 0 && url.pathname.endsWith("/models/me") && [404, 405, 501].includes(response.status)) {
+			await response.body?.cancel();
+			url.pathname = url.pathname.replace(/\/me$/, "");
+			response = await fetcher(url.href, { headers: { Authorization: `Bearer ${key}` }, signal, redirect: "error" });
+		}
 		const etag = response.headers?.get("etag");
 		if (etag && response.ok) validators.push({ offset, etag });
 		if (!response.ok) throw new Error(`Model discovery returned HTTP ${response.status}.`);

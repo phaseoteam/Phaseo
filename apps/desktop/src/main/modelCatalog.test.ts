@@ -30,8 +30,21 @@ describe("API model catalog", () => {
 		const fetcher = vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 0, limit: 250, total: 3, models: [nativeModel("owned/first", { name: "First Model", description: "Owned model" }), nativeModel("owned/second")] }))).mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 2, limit: 250, total: 3, models: [nativeModel("owned/last")] })));
 		expect(await apiModels(gatewayAccount, "owned-key", fetcher)).toEqual([{ id: "owned/first", name: "First Model", description: "Owned model" }, { id: "owned/second", name: "owned/second" }, { id: "owned/last", name: "owned/last" }]);
 		const first = new URL(fetcher.mock.calls[0][0]); const last = new URL(fetcher.mock.calls[1][0]);
+		// The key's own list, with its guardrails applied, on every page.
+		expect([first.pathname, last.pathname]).toEqual(["/v1/models/me", "/v1/models/me"]);
 		expect(first.searchParams.get("limit")).toBe("250"); expect(first.searchParams.get("endpoints")).toBe("text.generate"); expect(first.searchParams.get("gateway_available_only")).toBe("true"); expect(last.searchParams.get("offset")).toBe("2");
 		expect(fetcher.mock.calls.every(([, options]) => options.headers.Authorization === "Bearer owned-key" && options.redirect === "error")).toBe(true);
+	});
+	it.each([404, 405, 501])("falls back to the shared Phaseo list when the server answers /models/me with %i", async status => {
+		const fetcher = vi.fn().mockResolvedValueOnce(new Response("{}", { status })).mockResolvedValueOnce(new Response(JSON.stringify({ ok: true, offset: 0, total: 1, models: [nativeModel("owned/shared")] })));
+		expect(await apiModels(gatewayAccount, "owned-key", fetcher)).toEqual([{ id: "owned/shared", name: "owned/shared" }]);
+		expect(fetcher.mock.calls.map(([url]) => new URL(url).pathname)).toEqual(["/v1/models/me", "/v1/models"]);
+		expect(new URL(fetcher.mock.calls[1][0]).searchParams.get("endpoints")).toBe("text.generate");
+	});
+	it("doesn't fall back when the key's own list fails for another reason", async () => {
+		const fetcher = vi.fn().mockResolvedValue(new Response("{}", { status: 500 }));
+		await expect(apiModels(gatewayAccount, "owned-key", fetcher)).rejects.toThrow("HTTP 500");
+		expect(fetcher).toHaveBeenCalledTimes(1);
 	});
 	it("records page ETags and re-checks them with If-None-Match, downloading again only when a page changed", async () => {
 		const page = (offset: number, ids: string[], etag: string) => new Response(JSON.stringify({ ok: true, offset, total: 3, models: ids.map(id => nativeModel(id)) }), { headers: { etag } });
