@@ -31,6 +31,7 @@ import {
 	resolveOpenAIKey,
 	resolveXAIKey,
 	isDurationBilledRealtimeProvider,
+	isRealtimeTranscriptionProvider,
 	isRelayMeteredRealtimeProvider,
 	ELEVENLABS_REALTIME_MAX_DURATION_SECONDS,
 	settleRealtimeSession,
@@ -61,6 +62,21 @@ import {
 	resolveMistralRealtimeKey,
 	sanitizeMistralSessionUpdate,
 } from "./mistral-realtime";
+import {
+	ELEVENLABS_SCRIBE_CONNECT_AUDIO_BUFFER_MS,
+	ELEVENLABS_SCRIBE_INPUT_SAMPLE_RATE,
+	ELEVENLABS_SCRIBE_MIN_COMMIT_AUDIO_MS,
+	ELEVENLABS_SCRIBE_REALTIME_PROVIDER,
+	ELEVENLABS_SCRIBE_SETUP_TIMEOUT_MS,
+	ElevenLabsScribeTranscript,
+	elevenLabsScribeAudioChunk,
+	elevenLabsScribeCommit,
+	elevenLabsScribeProviderModel,
+	elevenLabsScribeRealtimeUrl,
+	isElevenLabsScribeRealtimeModel,
+	mergeElevenLabsScribeSessionUpdate,
+	type ElevenLabsScribeSettings,
+} from "./elevenlabs-scribe-realtime";
 import { isLiveModel, liveConfig, liveStartEvent, ingestLiveUsage, assertLiveFinalUsage, priceLiveUsage, liveUsageMeters, type LiveUsage } from "./live-sessions";
 import {
 	buildSessionEndedEvent,
@@ -288,6 +304,9 @@ function providerFromSession(session: RealtimeSessionRow): RealtimeProvider {
 	const provider = String(session.provider ?? "").trim().toLowerCase();
 	if (provider === "xai" || provider === "x-ai") return "spacex-ai";
 	if (provider === "google") return "google-ai-studio";
+	// Scribe Live is provider "elevenlabs" on the session row but a different protocol.
+	if ((provider === ELEVENLABS_PROVIDER || provider === ELEVENLABS_SCRIBE_REALTIME_PROVIDER)
+		&& isElevenLabsScribeRealtimeModel(session.model_id)) return ELEVENLABS_SCRIBE_REALTIME_PROVIDER;
 	return provider as RealtimeProvider;
 }
 
@@ -502,6 +521,7 @@ function inputSampleRate(provider: RealtimeProvider): number {
 	if (provider === "google-ai-studio") return GOOGLE_INPUT_SAMPLE_RATE;
 	if (provider === "spacex-ai") return XAI_INPUT_SAMPLE_RATE;
 	if (provider === MISTRAL_REALTIME_PROVIDER) return MISTRAL_REALTIME_INPUT_SAMPLE_RATE;
+	if (provider === ELEVENLABS_SCRIBE_REALTIME_PROVIDER) return ELEVENLABS_SCRIBE_INPUT_SAMPLE_RATE;
 	return OPENAI_INPUT_SAMPLE_RATE;
 }
 
@@ -593,8 +613,25 @@ export class RealtimeRelayDurableObject {
 	private elevenLabsModel: string | null = null;
 	private elevenLabsQuickRetryMs = [0, 2_000, 5_000];
 	private elevenLabsCostRetryMs = ELEVENLABS_COST_RETRY_MS;
+	// ElevenLabs Scribe Live: settings from session.update, fixed when the socket
+	// opens at the client's first audio chunk; audio held while it opens; the
+	// audio sent since the last commit; and the end-of-session commit.
+	private scribeSettings: ElevenLabsScribeSettings = {};
+	private scribeTranscript: ElevenLabsScribeTranscript | null = null;
+	private scribeConnecting: Promise<boolean> | null = null;
+	private scribeSetupWaiter: ((ready: boolean) => void) | null = null;
+	private scribeReady = false;
+	private scribeHeldAudio: Array<{ audio: string; ms: number }> = [];
+	private scribeHeldAudioMs = 0;
+	private scribeChunksSent = 0;
+	private scribeAudioSinceCommitMs = 0;
+	private scribeFinishing = false;
+	// The commit count when the final commit was sent (null: none was needed).
+	private scribeFinalCommitAfter: number | null = null;
+	private scribeDoneSent = false;
 
 	private get isLive() { return isLiveModel(this.session?.model_id); }
+	private get isScribe() { return !!this.session && providerFromSession(this.session) === ELEVENLABS_SCRIBE_REALTIME_PROVIDER; }
 	// Playground rules (idle timeout, hold and spend-limit closes) apply only to source "chat".
 	private get isPlayground() { return isPlaygroundRealtimeSession(this.session); }
 
@@ -802,6 +839,15 @@ export class RealtimeRelayDurableObject {
 			return;
 		}
 
+		if (provider === ELEVENLABS_SCRIBE_REALTIME_PROVIDER) {
+			// ElevenLabs fixes the settings in the socket URL and closes a socket that
+			// gets no audio for 15 s, so the socket opens at the client's first audio
+			// chunk, after any session.update. Until then the relay is ready on its own.
+			if (!resolveElevenLabsKey()) throw new Error("elevenlabs_key_missing");
+			this.providerSetupComplete = true;
+			return;
+		}
+
 		if (provider === MISTRAL_REALTIME_PROVIDER) {
 			// Header auth from the relay. Audio is only accepted after Mistral's
 			// session.created, so wait for it before the client hears relay.connected.
@@ -880,8 +926,11 @@ export class RealtimeRelayDurableObject {
 			this.queueUpstreamEvent(() => this.handleUpstreamMessage(event.data, upstream));
 		});
 		upstream.addEventListener("close", (event) => {
-			// A Mistral socket that closes during setup ends the wait at once.
-			if (upstream === this.upstream) this.mistralSetupWaiter?.(false);
+			// A Mistral or Scribe socket that closes during setup ends the wait at once.
+			if (upstream === this.upstream) {
+				this.mistralSetupWaiter?.(false);
+				this.scribeSetupWaiter?.(false);
+			}
 			this.queueUpstreamEvent(() => this.handleUpstreamClose(event, upstream));
 		});
 		upstream.addEventListener("error", () => {
@@ -955,6 +1004,7 @@ export class RealtimeRelayDurableObject {
 		});
 		this.upstream = null;
 		this.markProviderClosed();
+		this.sendScribeDone();
 		if (this.pendingSettlement) {
 			// Already ending: the provider closing first means no more usage will arrive.
 			await this.settle(this.pendingSettlementStatus(this.pendingSettlement), this.pendingSettlement.reason);
@@ -1000,6 +1050,10 @@ export class RealtimeRelayDurableObject {
 			else this.sendClient({ type: "relay.client_event_rejected", event_type: type, reason: "realtime_session_update_not_accepted" });
 			return;
 		}
+		if (provider === ELEVENLABS_SCRIBE_REALTIME_PROVIDER && (type === "session.update" || type === "input_audio.commit")) {
+			this.handleScribeClientEvent(message as unknown as Record<string, unknown>, type);
+			return;
+		}
 		if (!message || message.type !== "client.audio" || !message.audio) return;
 		if (!provider || !this.acceptingAudio || !this.providerSetupComplete) return;
 		if (!this.audioStartedAt) this.audioStartedAt = Date.now();
@@ -1013,14 +1067,23 @@ export class RealtimeRelayDurableObject {
 			await this.rejectAudio(validated.reason);
 			return;
 		}
-		// While Google's connection is being switched, audio is held (or dropped), not rejected.
-		if (!this.googleResuming
+		// While Google's connection is being switched, or Scribe's is opening, audio is held, not rejected.
+		const scribeOpening = provider === ELEVENLABS_SCRIBE_REALTIME_PROVIDER && !this.scribeReady;
+		if (!this.googleResuming && !scribeOpening
 			&& (this.upstream?.readyState !== WebSocket.OPEN || this.upstream.bufferedAmount > RELAY_MAX_BUFFERED_BYTES)) {
+			await this.rejectAudio("realtime_upstream_backpressure");
+			return;
+		}
+		if (scribeOpening && this.scribeHeldAudioMs + validated.durationMs > ELEVENLABS_SCRIBE_CONNECT_AUDIO_BUFFER_MS) {
 			await this.rejectAudio("realtime_upstream_backpressure");
 			return;
 		}
 		// Ingress limits include dropped silence; billable usage must not.
 		this.receivedAudioMs += validated.durationMs;
+		if (provider === ELEVENLABS_SCRIBE_REALTIME_PROVIDER) {
+			await this.forwardScribeAudio(message.audio, validated.durationMs);
+			return;
+		}
 		if (this.isLive) {
 			this.resetIdleTimer();
 			this.sendUpstream({ type: "session.input_audio.append", audio: message.audio });
@@ -1233,6 +1296,209 @@ export class RealtimeRelayDurableObject {
 	}
 
 	/**
+	 * Scribe session.update (before the first audio chunk, while the socket is
+	 * not open) and input_audio.commit (manual commits). Settings ElevenLabs
+	 * bills extra for, or rejects, are refused with relay.client_event_rejected.
+	 */
+	private handleScribeClientEvent(message: Record<string, unknown>, type: string) {
+		const reject = (reason: string, param?: string) => this.sendClient({
+			type: "relay.client_event_rejected", event_type: type, reason, ...(param ? { param } : {}),
+		});
+		if (type === "input_audio.commit") {
+			// ElevenLabs closes the session on a commit of less than 0.3 s of new audio.
+			if (!this.acceptingAudio || !this.scribeReady || this.scribeAudioSinceCommitMs < ELEVENLABS_SCRIBE_MIN_COMMIT_AUDIO_MS) {
+				reject("realtime_commit_not_accepted");
+				return;
+			}
+			this.scribeAudioSinceCommitMs = 0;
+			this.sendUpstream(elevenLabsScribeCommit());
+			return;
+		}
+		const result = mergeElevenLabsScribeSessionUpdate(this.scribeSettings, message);
+		if ("reason" in result) {
+			reject(result.reason, result.param);
+			return;
+		}
+		if (!this.acceptingAudio || this.receivedAudioMs > 0 || this.scribeConnecting) {
+			reject("realtime_session_update_not_accepted");
+			return;
+		}
+		this.scribeSettings = result.settings;
+		this.sendClient({ type: "session.updated", session: { ...result.settings, commit_strategy: result.settings.commit_strategy ?? "vad" } });
+	}
+
+	/** Forwards (and meters) Scribe audio, or holds it while the socket opens at the first chunk. */
+	private async forwardScribeAudio(audio: string, durationMs: number) {
+		this.resetIdleTimer();
+		if (!this.scribeReady) {
+			this.scribeHeldAudio.push({ audio, ms: durationMs });
+			this.scribeHeldAudioMs += durationMs;
+			if (!this.scribeConnecting) {
+				this.scribeConnecting = this.openScribeSocket().catch((error) => {
+					console.error("realtime_relay_scribe_open_failed", { sessionId: this.session?.session_id, error });
+					return false;
+				});
+				this.state.waitUntil(this.scribeConnecting);
+			}
+			return;
+		}
+		this.sendScribeAudio(audio, durationMs);
+		await this.checkpointUsage();
+		void this.maybePersistUsage();
+	}
+
+	/** Audio is metered when it is sent: audio that never reached ElevenLabs is not billed. */
+	private sendScribeAudio(audio: string, durationMs: number) {
+		this.usage = addDuration(this.usage, "input_audio_ms", durationMs);
+		this.scribeAudioSinceCommitMs += durationMs;
+		const previousText = this.scribeChunksSent === 0 ? this.scribeSettings.previous_text : undefined;
+		this.scribeChunksSent += 1;
+		this.sendUpstream(elevenLabsScribeAudioChunk(audio, previousText));
+	}
+
+	/**
+	 * Opens the Scribe socket with the client's settings, waits for
+	 * session_started, then sends the audio held meanwhile. A failure ends the
+	 * session unbilled: none of the held audio reached ElevenLabs.
+	 */
+	private async openScribeSocket(): Promise<boolean> {
+		if (!this.session) return false;
+		const fail = async (reason: string, error?: unknown) => {
+			console.error("realtime_relay_scribe_connect_failed", {
+				sessionId: this.session?.session_id,
+				reason,
+				error: error instanceof Error ? error.message : error === undefined ? undefined : String(error),
+			});
+			this.scribeHeldAudio = [];
+			this.scribeHeldAudioMs = 0;
+			if (this.settled || this.settling) return false;
+			this.sendClient({ type: "relay.upstream_error", provider: this.session?.provider, reason });
+			this.closeUpstream(reason);
+			await this.settle("failed", reason);
+			return false;
+		};
+		const key = resolveElevenLabsKey();
+		if (!key) return fail("realtime_provider_connection_failed", "elevenlabs_key_missing");
+		const model = this.session.provider_model_id ?? elevenLabsScribeProviderModel(this.session.model_id);
+		this.scribeTranscript = new ElevenLabsScribeTranscript(this.scribeSettings);
+		let socket: WebSocket;
+		try {
+			socket = await connectWebSocket(elevenLabsScribeRealtimeUrl(model, this.scribeSettings), { headers: { "xi-api-key": key } });
+		} catch (error) {
+			return fail("realtime_provider_connection_failed", error);
+		}
+		// A session ending meanwhile still sends the held audio, so it is transcribed.
+		if (this.settled || this.settling) {
+			try { socket.close(1000, "realtime_relay_settling"); } catch { /* already closed */ }
+			this.scribeHeldAudio = [];
+			this.scribeHeldAudioMs = 0;
+			return false;
+		}
+		this.upstream = socket;
+		const ready = new Promise<boolean>((resolve) => {
+			const timer = setTimeout(() => resolve(false), ELEVENLABS_SCRIBE_SETUP_TIMEOUT_MS);
+			this.scribeSetupWaiter = (ok) => { clearTimeout(timer); resolve(ok); };
+		});
+		this.attachUpstream();
+		const setUp = await ready;
+		this.scribeSetupWaiter = null;
+		if (!setUp) return fail("provider_session_setup_failed");
+		if (this.settled || this.settling) return false;
+		// Synchronous: audio arriving from here on is sent directly, after the held audio.
+		for (const held of this.scribeHeldAudio) this.sendScribeAudio(held.audio, held.ms);
+		this.scribeHeldAudio = [];
+		this.scribeHeldAudioMs = 0;
+		this.scribeReady = true;
+		await this.checkpointUsage(true);
+		return true;
+	}
+
+	/**
+	 * Scribe events are translated to transcription.* events, never forwarded
+	 * raw. ElevenLabs sends no usage: the bill is the audio the relay sent. Once
+	 * the session is ending, the final commit's transcript and every follow-up
+	 * event (timestamps, speaker labels) lets it settle.
+	 */
+	private async handleScribeEvent(event: Record<string, unknown>) {
+		const transcript = this.scribeTranscript ?? (this.scribeTranscript = new ElevenLabsScribeTranscript(this.scribeSettings));
+		const { kind, events } = transcript.translate(event);
+		if (kind === "session_started") this.scribeSetupWaiter?.(true);
+		if (kind === "committed" && this.scribeFinalCommitAfter === null) this.scribeAudioSinceCommitMs = 0;
+		// The relay's own final commit can be refused when VAD already committed
+		// the audio; ElevenLabs then closes the socket, which ends the session.
+		const ownCommitRefused = kind === "error" && this.scribeFinishing && event.message_type === "commit_throttled";
+		if (!ownCommitRefused) for (const translated of events) this.sendClient(translated);
+		if (!this.providerCompletedResponseSeen && (kind === "committed" || (kind === "partial" && transcript.pendingText))) {
+			this.markProviderResponseCompleted();
+			await this.checkpointUsage(true);
+		}
+		if (this.scribeFinishing && this.pendingSettlement && this.scribeEndComplete()) {
+			const pending = this.pendingSettlement;
+			this.sendScribeDone();
+			await this.persistUsage();
+			await this.settle(this.pendingSettlementStatus(pending), pending.reason);
+		}
+	}
+
+	private scribeEndComplete(): boolean {
+		const transcript = this.scribeTranscript;
+		if (!transcript) return true;
+		return transcript.complete && (this.scribeFinalCommitAfter === null || transcript.committed > this.scribeFinalCommitAfter);
+	}
+
+	/** Once, and only for a session ElevenLabs started. */
+	private sendScribeDone() {
+		if (!this.isScribe || this.scribeDoneSent || !this.scribeTranscript || !this.scribeReady) return;
+		this.scribeDoneSent = true;
+		this.sendClient(this.scribeTranscript.done());
+	}
+
+	/**
+	 * Ends a Scribe session: commits the audio not yet committed (unless there is
+	 * too little, which ElevenLabs refuses by closing), waits boundedly for its
+	 * transcript, sends transcription.done and settles.
+	 */
+	private async endScribe(
+		status: PendingSettlement["status"],
+		reason: string,
+		options?: { statusFromResponses?: boolean },
+	) {
+		if (this.scribeConnecting && !this.scribeReady) await this.scribeConnecting.catch(() => false);
+		if (this.settled || this.settling || this.pendingSettlement?.phase === "authoritative") return;
+		// With nobody to read the transcript and no usage to wait for, settle at once.
+		if (!this.scribeTranscript || this.upstream?.readyState !== WebSocket.OPEN || this.client?.readyState !== WebSocket.OPEN) {
+			this.sendScribeDone();
+			await this.settle(status, reason);
+			return;
+		}
+		this.scribeFinishing = true;
+		if (this.scribeAudioSinceCommitMs >= ELEVENLABS_SCRIBE_MIN_COMMIT_AUDIO_MS) {
+			this.scribeFinalCommitAfter = this.scribeTranscript.committed;
+			this.scribeAudioSinceCommitMs = 0;
+			this.sendUpstream(elevenLabsScribeCommit());
+		}
+		if (this.scribeEndComplete()) {
+			this.sendScribeDone();
+			await this.settle(status, reason);
+			return;
+		}
+		await this.checkpointUsage(true);
+		await this.setPendingSettlement({
+			status,
+			reason,
+			phase: "authoritative",
+			...(options?.statusFromResponses ? { statusFromResponses: true } : {}),
+		}, RELAY_AUTHORITATIVE_USAGE_TIMEOUT_MS);
+		if (this.drainTimer != null) clearTimeout(this.drainTimer);
+		this.drainTimer = setTimeout(() => {
+			this.drainTimer = null;
+			const pending = this.pendingSettlement;
+			this.sendScribeDone();
+			void this.settle(pending ? this.pendingSettlementStatus(pending) : status, `${reason}_authoritative_usage_timeout`);
+		}, RELAY_AUTHORITATIVE_USAGE_TIMEOUT_MS) as unknown as number;
+	}
+
+	/**
 	 * Mistral streaming transcription: session.created ends setup, the first
 	 * transcript text marks the session as having produced output, and
 	 * transcription.done (after session.end flushes the stream) carries the
@@ -1307,6 +1573,8 @@ export class RealtimeRelayDurableObject {
 		// Connection management is handled by the relay: goAway and resumption
 		// handles are never forwarded (a handle resumes our provider session).
 		if (event && (event.goAway || event.sessionResumptionUpdate)) forwarded = true;
+		// Scribe events are translated (handleScribeEvent), not forwarded as they are.
+		if (event && this.isScribe) forwarded = true;
 		// The relay retries a refused ElevenLabs session length itself.
 		if (event?.type === "error" && !this.providerSetupComplete && !this.elevenLabsDurationFallback
 			&& getStringField(getRecordField(event, "error") ?? {}, "param") === "session.max_duration_seconds") forwarded = true;
@@ -1359,6 +1627,10 @@ export class RealtimeRelayDurableObject {
 				await this.settle(pending?.status ?? "completed", pending?.reason
 					?? (this.liveCloseReason === "expired" ? "live_session_expired" : "live_session_closed"));
 			}
+			return;
+		}
+		if (provider === ELEVENLABS_SCRIBE_REALTIME_PROVIDER) {
+			await this.handleScribeEvent(event);
 			return;
 		}
 		if (type === "session.updated" || event.setupComplete) this.providerSetupComplete = true;
@@ -1743,11 +2015,12 @@ export class RealtimeRelayDurableObject {
 	}
 
 	/**
-	 * Mistral transcribes audio it already has after the stream is ended, so
-	 * every end path flushes it and waits for transcription.done.
+	 * Streaming transcription finishes audio it already has after the stream
+	 * ends (Mistral) or is committed (Scribe), so every end path waits for the
+	 * final transcript.
 	 */
-	private mistralFinishPending(): boolean {
-		return !!this.session && providerFromSession(this.session) === MISTRAL_REALTIME_PROVIDER && this.receivedAudioMs > 0;
+	private transcriptionFinishPending(): boolean {
+		return !!this.session && isRealtimeTranscriptionProvider(providerFromSession(this.session)) && this.receivedAudioMs > 0;
 	}
 
 	private hasPendingBilling(): boolean {
@@ -1963,7 +2236,11 @@ export class RealtimeRelayDurableObject {
 		if (this.pendingSettlement?.phase === "authoritative") return;
 		const provider = providerFromSession(this.session);
 		this.cancelResponsesOnDrain = true;
-		const mistralFinishing = this.mistralFinishPending();
+		if (provider === ELEVENLABS_SCRIBE_REALTIME_PROVIDER) {
+			await this.endScribe(status, reason, options);
+			return;
+		}
+		const mistralFinishing = this.transcriptionFinishPending();
 		if (
 			isDurationBilledRealtimeProvider(provider) ||
 			(!this.hasPendingBilling() && !this.waitingForOpenAIInputClear && !mistralFinishing) ||
@@ -2279,7 +2556,7 @@ export class RealtimeRelayDurableObject {
 		this.acceptingAudio = false;
 		if (this.isLive) { await this.requestLiveClose(status, reason); return; }
 		// Transcription has no reply to finish: end the stream and wait for the final transcript.
-		if (this.session && providerFromSession(this.session) === MISTRAL_REALTIME_PROVIDER) {
+		if (this.session && isRealtimeTranscriptionProvider(providerFromSession(this.session))) {
 			await this.forceAuthoritativeUsage(status, reason, options);
 			return;
 		}
@@ -2619,7 +2896,7 @@ export class RealtimeRelayDurableObject {
 			await this.forceAuthoritativeUsage(pending.status, pending.reason, { statusFromResponses: pending.statusFromResponses });
 			return;
 		}
-		if (!pending && (this.hasPendingBilling() || this.waitingForOpenAIInputClear || this.mistralFinishPending())) {
+		if (!pending && (this.hasPendingBilling() || this.waitingForOpenAIInputClear || this.transcriptionFinishPending())) {
 			await this.forceAuthoritativeUsage("expired", "realtime_max_duration");
 			return;
 		}
@@ -2634,7 +2911,7 @@ export class RealtimeRelayDurableObject {
 			&& !this.settling
 			&& !this.pendingSettlement
 			&& this.client?.readyState === WebSocket.OPEN
-			&& (this.upstream?.readyState === WebSocket.OPEN || this.googleResuming)
+			&& (this.upstream?.readyState === WebSocket.OPEN || this.googleResuming || (this.isScribe && !this.scribeReady))
 			// An API call with both sockets open is healthy however quiet it is.
 			&& (!this.isPlayground || Date.now() - this.lastActivityAt < REALTIME_IDLE_TIMEOUT_SECONDS * 1_000);
 	}
@@ -2657,7 +2934,7 @@ export class RealtimeRelayDurableObject {
 			// Still inside its bounded wait for final usage.
 			return Response.json({ active: true, settled: false, healthy: true });
 		}
-		const needsAuthoritativeDrain = this.hasPendingBilling() || this.waitingForOpenAIInputClear || this.mistralFinishPending();
+		const needsAuthoritativeDrain = this.hasPendingBilling() || this.waitingForOpenAIInputClear || this.transcriptionFinishPending();
 		if (pending?.phase === "drain" || (!pending && needsAuthoritativeDrain)) {
 			this.pendingSettlement = null;
 			await this.forceAuthoritativeUsage(

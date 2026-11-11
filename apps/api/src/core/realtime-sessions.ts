@@ -29,6 +29,14 @@ import {
 	mistralCanonicalModel,
 	mistralProviderModel,
 } from "./mistral-realtime";
+import {
+	ELEVENLABS_SCRIBE_CATALOGUE_PROVIDER,
+	ELEVENLABS_SCRIBE_MAX_DURATION_SECONDS,
+	ELEVENLABS_SCRIBE_REALTIME_PROVIDER,
+	elevenLabsScribeCanonicalModel,
+	elevenLabsScribeProviderModel,
+	isElevenLabsScribeRealtimeModel,
+} from "./elevenlabs-scribe-realtime";
 
 export const REALTIME_INITIAL_HOLD_NANOS = 5_000_000_000;
 export const REALTIME_HOLD_INCREMENT_NANOS = 5_000_000_000;
@@ -69,7 +77,20 @@ const GOOGLE_AUTH_TOKENS_URL = "https://generativelanguage.googleapis.com/v1alph
 const GOOGLE_LIVE_CONSTRAINED_URL =
 	"wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1alpha.GenerativeService.BidiGenerateContentConstrained";
 
-export type RealtimeProvider = "openai" | "x-ai" | "spacex-ai" | "google-ai-studio" | "elevenlabs" | "mistral";
+// "elevenlabs-scribe" is internal: Scribe Live sessions are provider "elevenlabs" in the
+// catalogue and on the session row, but use a different protocol and billing from the
+// Eleven Realtime voice models. realtimeCatalogueProvider maps it back.
+export type RealtimeProvider = "openai" | "x-ai" | "spacex-ai" | "google-ai-studio" | "elevenlabs" | "elevenlabs-scribe" | "mistral";
+
+/** Streaming transcription: no voice, no instructions, billed on the audio the relay forwards. */
+export function isRealtimeTranscriptionProvider(provider: string | null | undefined): boolean {
+	return provider === MISTRAL_REALTIME_PROVIDER || provider === ELEVENLABS_SCRIBE_REALTIME_PROVIDER;
+}
+
+/** The catalogue provider id (routes, prices, workspace policy, session rows). */
+export function realtimeCatalogueProvider(provider: RealtimeProvider): string {
+	return provider === ELEVENLABS_SCRIBE_REALTIME_PROVIDER ? ELEVENLABS_SCRIBE_CATALOGUE_PROVIDER : provider;
+}
 
 /**
  * Providers that bill a relayed session by connected time rather than by
@@ -85,7 +106,7 @@ export function isDurationBilledRealtimeProvider(provider: string | null | undef
  * so a session's stored usage can always be settled.
  */
 export function isRelayMeteredRealtimeProvider(provider: string | null | undefined): boolean {
-	return isDurationBilledRealtimeProvider(provider) || provider === MISTRAL_REALTIME_PROVIDER;
+	return isDurationBilledRealtimeProvider(provider) || isRealtimeTranscriptionProvider(provider);
 }
 export type RealtimeSource = "api" | "chat";
 export type RealtimeTerminalStatus = "completed" | "failed" | "cancelled" | "expired";
@@ -126,6 +147,7 @@ export function realtimeMaxDurationSeconds(provider: RealtimeProvider, model?: s
 	if (provider === "x-ai" || provider === "spacex-ai") return XAI_REALTIME_MAX_DURATION_SECONDS;
 	if (provider === ELEVENLABS_PROVIDER) return ELEVENLABS_REALTIME_MAX_DURATION_SECONDS;
 	if (provider === MISTRAL_REALTIME_PROVIDER) return MISTRAL_REALTIME_MAX_DURATION_SECONDS;
+	if (provider === ELEVENLABS_SCRIBE_REALTIME_PROVIDER) return ELEVENLABS_SCRIBE_MAX_DURATION_SECONDS;
 	if (model && isLiveModel(model)) return LIVE_MAX_DURATION_SECONDS;
 	return OPENAI_REALTIME_MAX_DURATION_SECONDS;
 }
@@ -348,13 +370,17 @@ export function providerFromModel(model: string, explicitProvider?: string | nul
 	if (provider === "openai") return "openai";
 	if (provider === "xai" || provider === "x-ai" || provider === "spacex-ai") return "spacex-ai";
 	if (provider === "google" || provider === "google-ai-studio") return "google-ai-studio";
-	if (provider === ELEVENLABS_PROVIDER || provider === "eleven-labs") return ELEVENLABS_PROVIDER;
+	if (provider === ELEVENLABS_PROVIDER || provider === "eleven-labs" || provider === ELEVENLABS_SCRIBE_REALTIME_PROVIDER) {
+		return isElevenLabsScribeRealtimeModel(model) ? ELEVENLABS_SCRIBE_REALTIME_PROVIDER : ELEVENLABS_PROVIDER;
+	}
 	if (provider === MISTRAL_REALTIME_PROVIDER || provider === "mistralai") return MISTRAL_REALTIME_PROVIDER;
 	const normalized = model.trim().toLowerCase();
 	if (normalized.startsWith("openai/")) return "openai";
 	if (/^(x-ai|xai|spacex-ai)\//.test(normalized)) return "spacex-ai";
 	if (normalized.startsWith("google/")) return "google-ai-studio";
-	if (/^(eleven-labs|elevenlabs)\//.test(normalized)) return ELEVENLABS_PROVIDER;
+	if (/^(eleven-labs|elevenlabs)\//.test(normalized)) {
+		return isElevenLabsScribeRealtimeModel(normalized) ? ELEVENLABS_SCRIBE_REALTIME_PROVIDER : ELEVENLABS_PROVIDER;
+	}
 	if (isMistralRealtimeModel(normalized)) return MISTRAL_REALTIME_PROVIDER;
 	return null;
 }
@@ -362,6 +388,7 @@ export function providerFromModel(model: string, explicitProvider?: string | nul
 export function canonicalModel(provider: RealtimeProvider, model: string): string {
 	const trimmed = model.trim();
 	if (provider === ELEVENLABS_PROVIDER) return elevenLabsCanonicalModel(trimmed);
+	if (provider === ELEVENLABS_SCRIBE_REALTIME_PROVIDER) return elevenLabsScribeCanonicalModel(trimmed);
 	if (provider === MISTRAL_REALTIME_PROVIDER) return mistralCanonicalModel(trimmed);
 	if (!trimmed.includes("/")) {
 		if (provider === "openai") return `openai/${trimmed}`;
@@ -375,6 +402,7 @@ export function canonicalModel(provider: RealtimeProvider, model: string): strin
 function providerModel(provider: RealtimeProvider, model: string): string {
 	const canonical = canonicalModel(provider, model);
 	if (provider === ELEVENLABS_PROVIDER) return elevenLabsProviderModel(canonical);
+	if (provider === ELEVENLABS_SCRIBE_REALTIME_PROVIDER) return elevenLabsScribeProviderModel(canonical);
 	if (provider === MISTRAL_REALTIME_PROVIDER) return mistralProviderModel(canonical);
 	if (provider === "openai") return canonical.replace(/^openai\//, "");
 	if (provider === "x-ai" || provider === "spacex-ai") return canonical.replace(/^spacex-ai\//, "");
@@ -937,12 +965,12 @@ export function realtimeBilledMeters(provider: RealtimeProvider): string[] {
 	if (provider === ELEVENLABS_PROVIDER) return ["audio_minutes", "input_text_tokens", "output_text_tokens"];
 	if (isDurationBilledRealtimeProvider(provider)) return ["audio_minutes"];
 	// Streaming transcription: the audio the relay forwarded, per minute.
-	if (provider === MISTRAL_REALTIME_PROVIDER) return ["input_audio_minutes"];
+	if (isRealtimeTranscriptionProvider(provider)) return ["input_audio_minutes"];
 	return ["input_text_tokens", "input_audio_tokens", "output_text_tokens", "output_audio_tokens"];
 }
 
 async function requireRealtimePriceCard(provider: RealtimeProvider, modelId: string) {
-	const card = await loadPriceCard(provider, modelId, "audio.realtime");
+	const card = await loadPriceCard(realtimeCatalogueProvider(provider), modelId, "audio.realtime");
 	if (!card || !Array.isArray(card.rules) || card.rules.length === 0) {
 		throw new Error("realtime_price_card_missing");
 	}
@@ -1064,7 +1092,7 @@ async function evaluateActiveRealtimePolicy(
 	const policyResult = applyWorkspacePolicy({
 		providers: candidates,
 		resolvedModel: context.resolvedModel || session.model_id,
-		body: { model: context.resolvedModel || session.model_id, provider },
+		body: { model: context.resolvedModel || session.model_id, provider: provider ? realtimeCatalogueProvider(provider) : provider },
 		workspacePolicy,
 	});
 	if (!policyResult.ok) {
@@ -1074,7 +1102,7 @@ async function evaluateActiveRealtimePolicy(
 		body: { model: session.model_id, provider }, workspacePolicy }).ok) {
 		return { ok: false, reason: "realtime_workspace_policy_blocked", spendLimit: false };
 	}
-	if (!provider || !policyResult.providers.some((candidate) => candidate.providerId === provider)) {
+	if (!provider || !policyResult.providers.some((candidate) => candidate.providerId === realtimeCatalogueProvider(provider))) {
 		return { ok: false, reason: "realtime_provider_not_available", spendLimit: false };
 	}
 	if (spendLimitReason) return { ok: false, reason: spendLimitReason, spendLimit: true };
@@ -1116,10 +1144,10 @@ export async function createRealtimeSession(args: {
 			? args.thinkingLevel ?? "low"
 			: null;
 	// Streaming transcription has no voice or instructions: nothing is spoken back.
-	if (provider === MISTRAL_REALTIME_PROVIDER && (args.voice || args.instructions)) {
+	if (isRealtimeTranscriptionProvider(provider) && (args.voice || args.instructions)) {
 		throw new Error("realtime_transcription_option_not_supported");
 	}
-	const voice = provider === MISTRAL_REALTIME_PROVIDER ? null : defaultVoice(provider, args.voice);
+	const voice = isRealtimeTranscriptionProvider(provider) ? null : defaultVoice(provider, args.voice);
 	const live = isLiveModel(modelId);
 	// GPT Live runs only through the relay (it owns billing). Playground sessions
 	// also need the signed-in user; API sessions are authorised by the key.
@@ -1136,8 +1164,8 @@ export async function createRealtimeSession(args: {
 	const expiresAt = new Date(Date.now() + realtimeMaxDurationSeconds(provider, modelId) * 1000).toISOString();
 
 	const useRelay = args.relay !== false || !args.auth.internal;
-	// ElevenLabs is only reachable through the relay: its key never leaves the gateway.
-	if ((provider === ELEVENLABS_PROVIDER || provider === MISTRAL_REALTIME_PROVIDER) && !useRelay) {
+	// ElevenLabs and Mistral are only reachable through the relay: their keys never leave the gateway.
+	if ((provider === ELEVENLABS_PROVIDER || isRealtimeTranscriptionProvider(provider)) && !useRelay) {
 		throw new Error("realtime_relay_required");
 	}
 	const relaySecret = useRelay ? `rtsec_${ulid().toLowerCase()}${ulid().toLowerCase()}` : null;
@@ -1172,7 +1200,7 @@ export async function createRealtimeSession(args: {
 		p_key_id: args.auth.apiKeyId,
 		p_user_id: args.auth.userId ?? null,
 		p_source: args.source ?? "api",
-		p_provider: provider,
+		p_provider: realtimeCatalogueProvider(provider),
 		p_model_id: modelId,
 		p_provider_model_id: providerModelId,
 		p_voice: voice,
@@ -1199,7 +1227,7 @@ export async function createRealtimeSession(args: {
 		phase: "submit",
 		endpoint: "audio.realtime",
 		model: modelId,
-		provider,
+		provider: realtimeCatalogueProvider(provider),
 		providerModel: providerModelId,
 		sessionId,
 		startedAtMs: telemetryStartedAtMs,

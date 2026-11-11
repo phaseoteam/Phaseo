@@ -39,8 +39,8 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
 
 | प्रदाता | इनपुट ऑडियो |
 | --- | --- |
-| OpenAI, xAI, ElevenLabs, GPT Live | 24 kHz PCM16 |
-| Google, Mistral | 16 kHz PCM16 |
+| OpenAI, xAI, ElevenLabs Realtime, GPT Live | 24 kHz PCM16 |
+| Google, Mistral, ElevenLabs Scribe v3 Live | 16 kHz PCM16 |
 
 सत्र शुरू होने पर Phaseo $5 का क्रेडिट होल्ड करता है और कॉल चलने के साथ होल्ड बढ़ाता है।
 
@@ -109,7 +109,7 @@ ElevenLabs कॉल के कनेक्ट रहने के हर से
 
 ### स्ट्रीमिंग ट्रांसक्रिप्शन
 
-Mistral के Voxtral Realtime मॉडल लाइव ऑडियो को आते ही ट्रांसक्राइब करते हैं: `mistral/voxtral-mini-transcribe-realtime-3` और `mistral/voxtral-mini-transcribe-realtime`। ये जवाब में बोलते नहीं, इसलिए सत्र `voice` या `instructions` के बिना बनाएँ:
+स्ट्रीमिंग ट्रांसक्रिप्शन मॉडल लाइव ऑडियो को आते ही ट्रांसक्राइब करते हैं: Mistral के `mistral/voxtral-mini-transcribe-realtime-3` और `mistral/voxtral-mini-transcribe-realtime`, और ElevenLabs का `eleven-labs/scribe-v3-live`। ये जवाब में बोलते नहीं, इसलिए सत्र `voice` या `instructions` के बिना बनाएँ:
 
 ```bash
 curl https://api.phaseo.app/v1/audio/realtime/sessions \
@@ -122,7 +122,13 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
 
 जब आप `session.end` भेजते हैं, तो रिले Mistral की ऑडियो स्ट्रीम खत्म करता है और सेटल करने और `session.ended` भेजने से पहले `transcription.done` के लिए 10 सेकंड तक इंतज़ार करता है, जिसमें पूरा ट्रांसक्रिप्ट होता है। आपके द्वारा पहले भेजा गया ऑडियो उपयोग होता है; कुछ भी हटाया नहीं जाता।
 
-स्ट्रीमिंग ट्रांसक्रिप्शन का बिल आपके द्वारा भेजे गए ऑडियो के प्रति मिनट पर बनता है (Voxtral Mini Transcribe Realtime 3 के लिए $0.008 प्रति मिनट), जिसे रिले मापता है। `transcription.done` में Mistral की अपनी गिनती न्यूनतम चार्ज है। पहले से मौजूद रिकॉर्डिंग के लिए इसके बजाय [ऑडियो ट्रांसक्रिप्शन](/hi/v1/api-reference/endpoint/audio-transcriptions) का उपयोग करें।
+`eleven-labs/scribe-v3-live` के लिए रिले ElevenLabs के इवेंट को उन्हीं `transcription.*` इवेंट में बदलता है: `session.created`, फिर चल रहे सेगमेंट के टेक्स्ट के साथ `transcription.partial` (हर एक पिछले की जगह लेता है और उसमें `turn_probability` होता है), और हर पूरे हुए सेगमेंट के लिए उसके टेक्स्ट के साथ `transcription.text.delta` और उसके `segment_index` के साथ `transcription.segment`। `include_timestamps` या `include_language_detection` के साथ, इसके बाद शब्दों की टाइमिंग और पहचानी गई भाषा के साथ `transcription.segment.words` आता है, और भाषा बदलने पर `transcription.language`। `diarize` के साथ, इसके बाद स्पीकर लेबल के साथ `transcription.segment.speakers` आता है, और `transcription.speakers_merged` बताता है कि दो स्पीकर ID एक ही व्यक्ति के हैं। ElevenLabs की त्रुटियाँ `error` के रूप में आती हैं।
+
+रिले आपके पहले `client.audio` पर ElevenLabs से जुड़ता है, और उसके बाद सेटिंग्स तय हो जाती हैं। उससे पहले `session.update` भेजें, जिसमें इनमें से कोई भी हो: `language`, `secondary_languages`, `commit_strategy` (`vad`, डिफ़ॉल्ट, `turn_prediction` या `manual`), `vad_silence_threshold_secs` (0.192 से 3 तक), `vad_threshold`, `min_speech_duration_ms`, `min_silence_duration_ms`, `include_timestamps`, `include_language_detection`, `multilang_mode`, `diarize`, `no_verbatim`, `filter_background_audio` और `previous_text`; रिले `session.updated` से जवाब देता है। Keyterms, keyterm लाइब्रेरी, ट्रांसक्रिप्ट एडिटिंग और एंटिटी डिटेक्शन या रिडैक्शन के लिए ElevenLabs अलग से शुल्क लेता है और ये अभी उपलब्ध नहीं हैं: इन्हें `relay.client_event_rejected` और `reason: "realtime_transcription_option_not_supported"` के साथ अस्वीकार किया जाता है। `manual` के साथ, कम से कम 0.3 सेकंड का नया ऑडियो भेजे जाने के बाद सेगमेंट पूरा करने के लिए `{"type": "input_audio.commit"}` भेजें। ऑडियो भेजते रहें, खामोशी भी: ElevenLabs उस सत्र को खत्म कर देता है जिसे 15 सेकंड तक कुछ नहीं मिलता।
+
+जब आप किसी Scribe सत्र को `session.end` भेजते हैं, तो रिले अभी तक ट्रांसक्राइब न हुए ऑडियो को कमिट करता है और उसके ट्रांसक्रिप्ट के लिए 10 सेकंड तक इंतज़ार करता है, फिर पूरे ट्रांसक्रिप्ट के साथ `transcription.done` भेजता है और सेटल करता है। आखिरी सेगमेंट के बाद 0.3 सेकंड से कम ऑडियो कमिट नहीं हो सकता, इसलिए वह ट्रांसक्राइब नहीं होता।
+
+स्ट्रीमिंग ट्रांसक्रिप्शन का बिल आपके द्वारा भेजे गए ऑडियो के प्रति मिनट पर बनता है (Voxtral Mini Transcribe Realtime 3 के लिए $0.008 प्रति मिनट, Scribe v3 Live के लिए $0.22 प्रति घंटा), जिसे रिले मापता है। `transcription.done` में Mistral की अपनी गिनती न्यूनतम चार्ज है; ElevenLabs उपयोग की जानकारी नहीं देता, इसलिए Scribe सत्र का बिल सिर्फ़ रिले की गिनती पर बनता है। पहले से मौजूद रिकॉर्डिंग के लिए इसके बजाय [ऑडियो ट्रांसक्रिप्शन](/hi/v1/api-reference/endpoint/audio-transcriptions) का उपयोग करें।
 
 ## सत्र खत्म करें
 
@@ -248,7 +254,7 @@ Phaseo API सत्रों को निष्क्रिय होने �
 | Google Live | 60 मिनट, उन कनेक्शनों में कुल मिलाकर जिन्हें रिले रिज़्यूम करता है। अगर आपका क्लाइंट लगभग 150 सेकंड तक ऑडियो भेजना बंद कर दे, तब भी कॉल खत्म होती है। |
 | GPT Live | 25 मिनट |
 | ElevenLabs Realtime | 30 मिनट |
-| Mistral स्ट्रीमिंग ट्रांसक्रिप्शन | 60 मिनट |
+| Mistral और ElevenLabs स्ट्रीमिंग ट्रांसक्रिप्शन | 60 मिनट |
 | ओवरड्राफ़्ट सीमा | आपके होल्ड और मुक्त बैलेंस से आगे $1 |
 | पहुँच खोना | कुंजी रद्द, समाप्त या रोक दी गई, या वर्कस्पेस हटा दिया गया। लगभग एक मिनट में पता चलता है, फिर कॉल बिना किसी अतिरिक्त समय के खत्म होती है। |
 | नीति बदलाव | `policy_blocked` चेतावनी के 30 सेकंड बाद, अगर नीति अब भी कॉल को ब्लॉक करती है |
