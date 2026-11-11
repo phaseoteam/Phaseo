@@ -448,6 +448,127 @@ describe("Phaseo MCP server metadata", () => {
 		} });
 	});
 
+	it("filters by output type, required parameters, release date and lifecycle without borrowing prices", async () => {
+		const meters = (providerId: string, input: string) => ({
+			input_tokens: { unit: "token", unit_size: 1_000_000, price_per_unit: input, currency: "USD", provider_id: providerId },
+			output_tokens: { unit: "token", unit_size: 1_000_000, price_per_unit: "10", currency: "USD", provider_id: providerId },
+		});
+		const offer = (providerId: string, input: string, parameters: string[], parameterDetails: Record<string, Record<string, unknown>> = {}) => ({
+			provider: { id: providerId, name: providerId }, model: providerId, status: "active", routable: true,
+			capabilities: { parameters, parameter_details: parameterDetails },
+			pricing: { pricing_plan: "standard", meters: meters(providerId, input) },
+		});
+		const model = (
+			id: string,
+			releasedAt: string | null,
+			status: "active" | "deprecated" | "retired",
+			offers: ReturnType<typeof offer>[],
+			aggregateProvider: string,
+		) => ({
+			id, name: id, description: null,
+			organization: { id: "lab", name: "Example Lab", color: null },
+			lifecycle: { status, released_at: releasedAt, deprecated_at: null, retires_at: null, replacement_id: null, message: null },
+			modalities: { input: ["text"], output: ["text"] },
+			limits: { input_tokens: 128_000, output_tokens: 16_000 },
+			capabilities: { endpoints: ["responses"], parameters: ["tools", "response_format"], parameter_details: {} },
+			availability: { status: "active", provider_count: offers.length, active_provider_count: offers.length, coming_soon_provider_count: 0, inactive_provider_count: 0 },
+			// The aggregate meter names the cheapest provider overall, which may not support the request.
+			pricing: { pricing_plan: "standard", meters: meters(aggregateProvider, "0.5") },
+			offers,
+		});
+		const models = [
+			// The cheap provider lacks response_format; only the dearer provider supports both parameters.
+			model("lab/both", "2026-09-01", "active", [
+				offer("cheap", "0.5", ["tools"]),
+				offer("full", "3", ["tools"], { response_format: { type: "json_schema" } }),
+			], "cheap"),
+			model("lab/tools-only", "2026-10-01", "active", [offer("cheap", "0.5", ["tools"])], "cheap"),
+			model("lab/undated", null, "active", [offer("full", "1", ["tools", "response_format"])], "full"),
+			model("lab/old", "2026-10-15", "deprecated", [offer("full", "1", ["tools", "response_format"])], "full"),
+		];
+		const fetchMock = vi.fn(async () => Response.json({ ok: true, models }));
+		vi.stubGlobal("fetch", fetchMock);
+		const server = createServer(env, { accessToken: "upstream-token", workspaceId: "workspace_1", scopes: ["models:read", "pricing:read"] });
+		const client = new Client({ name: "phaseo-mcp-test", version: "1.0.0" });
+		connectedClients.push(client);
+		const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+		await server.connect(serverTransport);
+		await client.connect(clientTransport);
+
+		const ids = (result: Awaited<ReturnType<typeof client.callTool>>) =>
+			(result.structuredContent as { models: Array<{ id: string }> }).models.map((item) => item.id);
+
+		const both = await client.callTool({
+			name: "models_list",
+			arguments: { outputModality: "embeddings", requiredParameters: ["tools", "response_format"], sortBy: "input_price" },
+		});
+		const url = new URL((fetchMock.mock.calls[0] as unknown as [Request])[0].url);
+		expect(url.searchParams.get("output_types")).toBe("embeddings,embedding");
+		expect(url.searchParams.get("supported_parameters")).toBe("tools,response_format");
+		expect(ids(both)).toEqual(["lab/old", "lab/undated", "lab/both"]);
+		const bothModel = (both.structuredContent as { models: Array<Record<string, unknown>> }).models[2];
+		// The price comes from the provider that supports both parameters, not the cheaper one that does not.
+		expect(bothModel).toMatchObject({
+			inputPricePerMillion: 3,
+			inputPriceProviderId: "full",
+			availableProviders: ["full"],
+			lifecycleStatus: "active",
+			maxOutputTokens: 16_000,
+		});
+
+		const recent = await client.callTool({
+			name: "models_list",
+			arguments: { releasedAfter: "2026-09-15", hideDeprecated: true, sortBy: "release_date" },
+		});
+		// The undated model is left out rather than assumed recent, and the deprecated one is hidden.
+		expect(ids(recent)).toEqual(["lab/tools-only"]);
+
+		const newestFirst = await client.callTool({ name: "models_list", arguments: { sortBy: "release_date" } });
+		expect(ids(newestFirst)).toEqual(["lab/old", "lab/tools-only", "lab/both", "lab/undated"]);
+	});
+
+	it("finds required-parameter matches by alias and beyond the first page of results", async () => {
+		const model = (id: string, parameters: string[], parameterDetails: Record<string, Record<string, unknown>>) => ({
+			id, name: id, description: null,
+			organization: { id: "lab", name: "Example Lab", color: null },
+			lifecycle: { status: "active", released_at: "2026-09-01", deprecated_at: null, retires_at: null, replacement_id: null, message: null },
+			modalities: { input: ["text"], output: ["video"] },
+			limits: { input_tokens: null, output_tokens: null },
+			capabilities: { endpoints: ["video.generations"], parameters, parameter_details: parameterDetails },
+			availability: { status: "active", provider_count: 1, active_provider_count: 1, coming_soon_provider_count: 0, inactive_provider_count: 0 },
+			pricing: { pricing_plan: "standard", meters: {} },
+			offers: [{
+				provider: { id: "provider", name: "Provider" }, model: id, status: "active", routable: true,
+				capabilities: { parameters, parameter_details: parameterDetails },
+				pricing: { pricing_plan: "standard", meters: {} },
+			}],
+		});
+		// 250 models on the first page support only one of the two parameters.
+		const firstPage = Array.from({ length: 250 }, (_, index) => model(`lab/partial-${index}`, ["prompt"], {}));
+		// The only full match is on the second page, and supports duration through its alias duration_seconds.
+		const secondPage = [model("lab/full", ["prompt"], { duration: { aliases: ["duration_seconds"] } })];
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL((input instanceof Request ? input : new Request(input)).url);
+			const models = url.searchParams.get("offset") === "250" ? secondPage : firstPage;
+			return Response.json({ ok: true, models, total: 251 });
+		});
+		vi.stubGlobal("fetch", fetchMock);
+		const server = createServer(env, { accessToken: "upstream-token", workspaceId: "workspace_1", scopes: ["models:read", "pricing:read"] });
+		const client = new Client({ name: "phaseo-mcp-test", version: "1.0.0" });
+		connectedClients.push(client);
+		const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+		await server.connect(serverTransport);
+		await client.connect(clientTransport);
+
+		const result = await client.callTool({
+			name: "models_list",
+			arguments: { requiredParameters: ["prompt", "duration_seconds"] },
+		});
+		expect((result.structuredContent as { models: Array<{ id: string }> }).models.map((item) => item.id)).toEqual(["lab/full"]);
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+		expect(new URL((fetchMock.mock.calls[1] as unknown as [Request])[0].url).searchParams.get("offset")).toBe("250");
+	});
+
 	it("keeps benchmark order neutral while reporting Gateway availability", async () => {
 		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
 			const request = input instanceof Request ? input : new Request(input);
