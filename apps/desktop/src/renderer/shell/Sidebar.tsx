@@ -1,7 +1,7 @@
 import { formatAgoShort, formatDateParts } from "@phaseo/app-kit/format";
 import { useNow } from "../lib/useNow";
 import { prefetchTask } from "../lib/useSelectedTask";
-import { useMemo, useState, type ReactNode } from "react";
+import { lazy, Suspense, useMemo, useState, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
 import { Archive, ArchiveRestore, CalendarClock, Copy, Mail, Trash2, ChartLine, Inbox, Columns3, GitPullRequestArrow, Ellipsis, ExternalLink, LogIn, WandSparkles, Pencil, Pin, PinOff, Plus, Settings, Gauge, UserRound } from "lucide-react";
@@ -15,11 +15,13 @@ import { shortcut } from "../lib/keybindings";
 import { usePersistedState } from "../lib/persistedState";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { Tip } from "../components/ui/tooltip";
-import { SettingsNav } from "../settings/SettingsPage";
+// Settings' navigation comes with the Settings page, which loads when it is first opened (App.tsx).
+const SettingsNav = lazy(() => import("../settings/SettingsPage").then(module => ({ default: module.SettingsNav })));
 import { ModelStack } from "../chat/ModelPicker";
-import { useScheduledTasks } from "../views/ScheduledTasks";
+import { useScheduledTasks } from "../views/scheduledTasksData";
 import { CodeThreadList } from "./CodeThreadList";
-import { FactorySidebar } from "../factory/FactoryPage";
+// Factory's work list comes with the Factory page, which loads when it is first opened (App.tsx).
+const FactorySidebar = lazy(() => import("../factory/FactoryPage").then(module => ({ default: module.FactorySidebar })));
 import { UsageRings } from "./UsageRings";
 import { deleteWithUndo, dismissUndo, offerUndo, runUndo, undoLabel, usePendingDeletes, useThreadUndo } from "./threadUndo";
 import { isUnread } from "../../shared/threadLifecycle";
@@ -282,9 +284,10 @@ export function Sidebar() {
 	const factory = mode === "code" && codeView === "factory";
 	const writing = factory && factoryRoute.page === "new" && !inboxPage;
 	const [chatViewport, setChatViewport] = useState<HTMLDivElement | null>(null);
+	const [codeViewport, setCodeViewport] = useState<HTMLDivElement | null>(null);
 	const fresh = !factory && !selectedId && !compareId && !scheduled && !pullRequestsPage && !inboxPage;
 	// The settings list is taller than short windows, so it scrolls like the chat list does.
-	if (settings) return <SidebarFrame label="Settings"><ScrollArea className="min-h-0 flex-1"><SettingsNav /></ScrollArea></SidebarFrame>;
+	if (settings) return <SidebarFrame label="Settings"><ScrollArea className="min-h-0 flex-1"><Suspense fallback={null}><SettingsNav /></Suspense></ScrollArea></SidebarFrame>;
 	return <SidebarFrame label={mode === "chat" ? "Chats" : factory ? "Factory" : "Projects"}>
 		<div className="p-2.5">
 			{factory ? <button type="button" onClick={() => openFactory({ page: "new" })}
@@ -298,10 +301,10 @@ export function Sidebar() {
 			{mode === "code" && !factory && <PullRequestsLink />}
 		</div>
 		{factory
-			? <FactorySidebar />
+			? <Suspense fallback={null}><FactorySidebar /></Suspense>
 			: mode === "chat"
 			? <ScrollArea className="min-h-0 flex-1" viewportRef={setChatViewport}><nav className="pb-3"><ChatList viewport={chatViewport} /></nav></ScrollArea>
-			: <ScrollArea className="min-h-0 flex-1" viewportClassName="[&>div]:min-h-full [&>div]:flex [&>div]:flex-col"><nav aria-label="Code chats" className="flex flex-1 flex-col"><CodeThreadList /></nav></ScrollArea>}
+			: <ScrollArea className="min-h-0 flex-1" viewportRef={setCodeViewport} viewportClassName="[&>div]:min-h-full [&>div]:flex [&>div]:flex-col"><nav aria-label="Code chats" className="flex flex-1 flex-col"><CodeThreadList viewport={codeViewport} /></nav></ScrollArea>}
 		<UndoNotice />
 		<ArchivedChatsDialog />
 		<AccountFooter />

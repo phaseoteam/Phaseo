@@ -57,7 +57,7 @@ import { resolveGrokCommand } from "./grokLaunch";
 import { grokAccountStatus } from "./grokAccountStatus";
 import { grokModelCatalog } from "./grokModelCatalog";
 import { SecretVault } from "./secretVault";
-import { windowsCredentialEncryption } from "./windowsCredentialEncryption";
+import { stopCredentialHelper, windowsCredentialEncryption } from "./windowsCredentialEncryption";
 import { signInNative } from "./accountConnections";
 import { gitReview, gitWorkingStatus, listProjectFiles, projectRelativePath, readFilePreview, readProjectFile } from "./projectFiles";
 import { gitCommits, gitRefs, gitScopedDiff, readScopedDiffContents } from "./gitDiffScopes";
@@ -521,6 +521,7 @@ app.on("before-quit", event => {
 	event.preventDefault();
 	if (shutdownStarted || quitGuard.intercept()) return;
 	shutdownStarted = true;
+	void stopCredentialHelper();
 	browserHost.downloads.close();
 	diagnostics.close();
 	missionService?.close();
@@ -1510,7 +1511,7 @@ app.whenReady().then(() => {
 	};
 	workspaceRuntime.discoverThreadModels = discoverDesktopModels;
 	workspaceRuntime.discoverInstallations = harnessInstallations;
-	factoryService = new FactoryService(workspaceRuntime, { dataDir: factoryDataFolder(workspaceDirectory), legacyFolder: legacyFactoryFolder(app.getPath("appData")), demo: process.env.PHASEO_FACTORY_DEMO === "1", broadcast: factoryBroadcaster(() => BrowserWindow.getAllWindows()) });
+	factoryService = new FactoryService(workspaceRuntime, { dataDir: factoryDataFolder(workspaceDirectory), legacyFolder: legacyFactoryFolder(app.getPath("appData")), demo: process.env.PHASEO_FACTORY_DEMO === "1", broadcast: factoryBroadcaster(() => BrowserWindow.getAllWindows()), activateAfterMs: 4000 });
 	workspaceRuntime.factoryTools = threadId => factoryService!.agentTools(threadId);
 	void factoryService.start().catch(() => {});
 	globalInstructions = new GlobalInstructions(path.join(workspaceDirectory, "instructions"));

@@ -5,7 +5,7 @@
 	"author": "Phaseo",
 	"private": true,
 	"type": "module",
-	"main": "dist/main/index.mjs",
+	"main": "dist/main/boot.mjs",
 	"engines": {
 		"node": "^22.13.0 || >=24.0.0"
 	},
@@ -27,6 +27,7 @@
 		"test:history": "pnpm run build && electron scripts/history-smoke.mjs",
 		"audit:design": "pnpm run build && electron scripts/chat-shell-smoke.mjs",
 		"preview:ui": "pnpm run build && electron scripts/ui-preview.mjs",
+		"perf": "node scripts/perf/run.mjs",
 		"clean": "rimraf dist release"
 	},
 	"devDependencies": {

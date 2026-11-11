@@ -29,6 +29,8 @@ if (!root) throw new Error("Phaseo desktop root element was not found");
 // Main keeps the remembered model in memory only, so each start tells it again (for chats started from a phone).
 mirrorModelPreferences();
 
+// The performance suite times startup from this mark (scripts/perf).
+performance.mark("phaseo:render-start");
 createRoot(root).render(
 	<StrictMode>
 		<DesktopFlags><App /></DesktopFlags>

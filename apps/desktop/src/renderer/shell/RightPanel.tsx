@@ -12,7 +12,7 @@ import { cn } from "../lib/utils";
 import { AgentThreadsPanel } from "../components/AgentThreadsPanel";
 import { BrowserSurface } from "../views/BrowserSurface";
 import { createBrowserTab, ensureBrowserTab, closeBrowserTab, confirmCloseBrowserTabs, onBrowserTabOpened, setBrowserTabMuted, useBrowserTab, useBrowserTabs } from "../lib/browserTabs";
-import { PullRequestListSurface, PullRequestSurface, pullRequestStatePresentation } from "../views/pullRequests";
+import { pullRequestStatePresentation } from "../views/pullRequests/presentation";
 import { closeTerminal, createTerminal, terminalTitle, terminalsFor, useTerminalSessions } from "../lib/terminalSessions";
 import { OPEN_PROJECT_FILE_EVENT, OPEN_SIDE_CHAT_EVENT, OPEN_TURN_DIFF_EVENT, type OpenProjectFileDetail, type OpenSideChatDetail, type OpenTurnDiffDetail } from "../panels/events";
 import { SideChatPane } from "../chat/SideChatPane";
@@ -28,6 +28,8 @@ const DiffSurface = lazy(() => import("../panels/DiffSurface").then(module => ({
 const FileSurface = lazy(() => import("../panels/FileSurface").then(module => ({ default: module.FileSurface })));
 const FileBrowserSurface = lazy(() => import("../panels/FileBrowserSurface").then(module => ({ default: module.FileBrowserSurface })));
 const TerminalSurface = lazy(() => import("../views/Terminals").then(module => ({ default: module.TerminalSurface })));
+const PullRequestListSurface = lazy(() => import("../views/pullRequests/PullRequestListSurface").then(module => ({ default: module.PullRequestListSurface })));
+const PullRequestSurface = lazy(() => import("../views/pullRequests/PullRequestSurface").then(module => ({ default: module.PullRequestSurface })));
 
 /** The "+" menu and empty-pane launcher, in order, with the letter that opens each and why it may be unavailable. */
 const launchers: { kind: "browser" | "terminal" | "files" | "diff" | "pull" | "pulls" | "agents"; label: string; icon: ReactNode; letter: string; needsProject?: boolean; reason?: string }[] = [
@@ -291,9 +293,9 @@ export function RightPanel() {
 		: kind === "files" ? <Suspense fallback={fallback}><FileBrowserSurface projectId={projectId} onOpenFile={path => show(`file:${path}`)} /></Suspense>
 		: kind === "file" ? <Suspense fallback={fallback}><FileSurface key={value} projectId={projectId} path={value} onDirtyChange={isDirty => setDirty(current => current[active] === isDirty ? current : { ...current, [active]: isDirty })} onOpenFile={path => show(`file:${path}`)} /></Suspense>
 		: kind === "diff" ? <Suspense fallback={fallback}><DiffSurface projectId={projectId} taskId={selectedId} onOpenFile={path => show(`file:${path}`)} /></Suspense>
-		: kind === "pulls" ? <PullRequestListSurface projectId={projectId} taskId={selectedId} onOpen={pull => { seedPullRequestTabStatus(projectId, pull.number, pull); show(`pull:${pull.number}`); }} />
+		: kind === "pulls" ? <Suspense fallback={fallback}><PullRequestListSurface projectId={projectId} taskId={selectedId} onOpen={pull => { seedPullRequestTabStatus(projectId, pull.number, pull); show(`pull:${pull.number}`); }} /></Suspense>
 		: kind === "side" ? <SideChatPane key={value} id={value} onClose={() => close([active])} />
-		: kind === "pull" ? <PullRequestSurface key={value} projectId={projectId} number={Number(value)} onBack={() => show("pulls")} />
+		: kind === "pull" ? <Suspense fallback={fallback}><PullRequestSurface key={value} projectId={projectId} number={Number(value)} onBack={() => show("pulls")} /></Suspense>
 		: <AgentThreadsPanel id={selectedId} onOpen={select} />;
 	const finishDrag = () => { drag.current = undefined; setDragging(false); };
 	const pane = <aside aria-label="Tools" data-focus-region data-maximized={state.maximized || undefined}

@@ -1,5 +1,6 @@
 import { prefetchTask } from "../lib/useSelectedTask";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type DragEvent, type MouseEvent, type ReactNode } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { isFactoryWorktree } from "../../shared/factory/projects";
 import { JumpHint, publishSidebarOrder, useJumpHints } from "../lib/sidebarOrder";
 import { ContextMenu } from "@base-ui/react/context-menu";
@@ -25,6 +26,11 @@ import { IssueBadge } from "../views/issues/IssueBadge";
 
 /** A Code chat being dragged within the sidebar. */
 const codeRowType = "application/x-phaseo-code-chat";
+/**
+ * From this many rows the pinned and active lists mount only the rows in view (each row carries its own menus,
+ * tooltips and dialogs). Shorter lists render in full and keep the slide when rows move.
+ */
+export const virtualizeCodeRowsFrom = 60;
 // When this window saw each chat leave the Working section; kept at module scope so the order survives remounts.
 const returns = createReturnTracker();
 
@@ -146,7 +152,7 @@ function FolderHeader({ project, count, open, onToggle }: { project: Project; co
 	</button>;
 }
 
-export function CodeThreadList() {
+export function CodeThreadList({ viewport }: { viewport?: HTMLDivElement | null }) {
 	const { overview, api, setOverview, setError, selectedId, openProjectSettings } = useWorkspace();
 	// The filter used to be one project under the old key; that choice carries over until the person changes it.
 	const [storedScope, setStoredScope] = usePersistedState<string[]>(projectScopeKey, (() => { try { return projectScopes(JSON.parse(localStorage.getItem("phaseo.desktop.codeProjectScope") ?? "\"\"")); } catch { return []; } })());
@@ -242,7 +248,9 @@ export function CodeThreadList() {
 	useLayoutEffect(() => {
 		const rows = [...cards.current?.querySelectorAll<HTMLElement>("[data-row-id]") ?? []];
 		const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-		const next = new Map(rows.map(row => [row.dataset.rowId!, row.getBoundingClientRect().top]));
+		// Measured from the list's own top, so scrolling the sidebar (or the virtual list re-rendering as it scrolls) moves nothing.
+		const origin = cards.current?.getBoundingClientRect().top ?? 0;
+		const next = new Map(rows.map(row => [row.dataset.rowId!, row.getBoundingClientRect().top - origin]));
 		if (!reduce && rows.length <= 40) for (const row of rows) {
 			const before = tops.current.get(row.dataset.rowId!), after = next.get(row.dataset.rowId!)!;
 			if (before === undefined || Math.abs(before - after) < 1) continue;
@@ -254,6 +262,22 @@ export function CodeThreadList() {
 	const card = (task: TaskOverview, fixed = false, twoLine = false) => { const index = ordered.indexOf(task.id); return <CardRow key={task.id} task={task} now={now} scope={scope} onScope={setScope} hint={hints && index >= 0 && index < 9 ? index + 1 : undefined} controls={controls(task, fixed)} twoLine={twoLine} />; };
 	const slim = (task: TaskOverview, kind: "snoozed" | "settled") => <SlimRow key={task.id} task={task} now={now} kind={kind} scope={scope} onScope={setScope} />;
 	const toggleFolder = (id: string) => setCollapsedFolders(collapsedFolders.includes(id) ? collapsedFolders.filter(value => value !== id) : [...collapsedFolders, id]);
+	// The cards as one flat list of rows (folder headings included), for the virtual list. Sizes include the 2px gap.
+	type Entry = { key: string; size: number; node: () => ReactNode };
+	const entries: Entry[] = [
+		...sections.pinned.map(task => ({ key: task.id, size: 74, node: () => card(task) })),
+		...folders ? folders.flatMap(folder => { const open = !collapsedFolders.includes(folder.project.id); return [{ key: `folder:${folder.project.id}`, size: 34, node: () => <FolderHeader project={folder.project} count={folder.tasks.length} open={open} onToggle={() => toggleFolder(folder.project.id)} /> }, ...visibleIn(folder.tasks, open).map(task => ({ key: task.id, size: 58, node: () => card(task, true, true) }))]; })
+			: sections.active.map(task => ({ key: task.id, size: 74, node: () => card(task) })),
+	];
+	const virtual = Boolean(viewport) && entries.length >= virtualizeCodeRowsFrom;
+	// Where the cards start inside the scrolled content, for the virtual list's offsets.
+	const [cardsTop, setCardsTop] = useState(0);
+	useLayoutEffect(() => {
+		if (!virtual || !viewport || !cards.current) return;
+		const top = Math.round(cards.current.getBoundingClientRect().top - viewport.getBoundingClientRect().top + viewport.scrollTop);
+		if (top !== cardsTop) setCardsTop(top);
+	});
+	const virtualizer = useVirtualizer({ count: virtual ? entries.length : 0, getScrollElement: () => viewport ?? null, estimateSize: index => entries[index].size, getItemKey: index => entries[index].key, overscan: 8, scrollMargin: cardsTop });
 	return <div className="flex flex-1 flex-col pb-3">
 		<div className="flex h-9 items-center gap-1 px-3 pt-1">
 			<DropdownMenu>
@@ -290,10 +314,12 @@ export function CodeThreadList() {
 		</div>}
 		{projects.length > 0 && !sections.pinned.length && !sections.active.length && !sections.working.length && <p className="px-4 py-3 text-xs text-muted-foreground">{scoped ? `No chats in ${scoped.name} yet` : scope.length ? "No chats in these projects yet" : "No chats yet"}</p>}
 		{/* In folders the list is ordered by time, so their rows are not dragged. */}
-		<div ref={cards} className="flex flex-col gap-0.5">{sections.pinned.map(task => card(task))}{folders ? folders.map(folder => { const open = !collapsedFolders.includes(folder.project.id); return <div key={folder.project.id} role="group" aria-label={folder.project.name} className="flex flex-col gap-0.5">
+		{virtual ? <div ref={cards} className="relative w-full" style={{ height: virtualizer.getTotalSize() }} data-code-row-count={entries.length}>
+			{virtualizer.getVirtualItems().map(item => <div key={item.key} data-index={item.index} ref={virtualizer.measureElement} className="absolute top-0 left-0 w-full pb-0.5" style={{ transform: `translateY(${item.start - cardsTop}px)` }}>{entries[item.index].node()}</div>)}
+		</div> : <div ref={cards} className="flex flex-col gap-0.5" data-code-row-count={entries.length}>{sections.pinned.map(task => card(task))}{folders ? folders.map(folder => { const open = !collapsedFolders.includes(folder.project.id); return <div key={folder.project.id} role="group" aria-label={folder.project.name} className="flex flex-col gap-0.5">
 			<FolderHeader project={folder.project} count={folder.tasks.length} open={open} onToggle={() => toggleFolder(folder.project.id)} />
 			{visibleIn(folder.tasks, open).map(task => card(task, true, true))}
-		</div>; }) : sections.active.map(task => card(task))}</div>
+		</div>; }) : sections.active.map(task => card(task))}</div>}
 		<div className="mt-auto flex flex-col pt-3">
 			{sections.working.length > 0 && <>
 				<SectionHeader label="Working" count={sections.working.length} open={workingOpen} onToggle={() => setWorkingOpen(!workingOpen)} />
