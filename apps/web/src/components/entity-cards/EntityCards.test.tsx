@@ -91,6 +91,11 @@ function render(pathname = "/rankings") {
 				<a id="org" href="/organisations/acme">Acme</a>
 				<a id="tab" href="/organisations/acme/models">Models tab</a>
 				<nav><a id="nav" href="/models/acme/rocket-2">Rocket 2</a></nav>
+				{/* A listing box that is itself the model: its own links opt out, its organisation link does not. */}
+				<div id="box">
+					<a id="box-title" href="/models/acme/rocket-3" data-no-entity-card>Rocket 3</a>
+					<a id="box-org" href="/organisations/acme">Acme</a>
+				</div>
 			</main>
 			<EntityCardsController pathname={pathname} />
 		</AppIntlProvider>,
@@ -110,6 +115,32 @@ const card = () => document.body.querySelector<HTMLElement>("[data-slot=entity-c
 const advance = async (ms: number) => act(async () => {
 	await vi.advanceTimersByTimeAsync(ms);
 });
+/**
+ * Gives a link a box on screen; jsdom lays nothing out, so every box is 0,0 otherwise.
+ * Once removed from the page it measures as an empty box at 0,0, as in a browser.
+ */
+function placeAt(element: Element, left: number, top: number) {
+	vi.spyOn(element, "getBoundingClientRect").mockImplementation(() => element.isConnected
+		? DOMRect.fromRect({ x: left, y: top, width: 80, height: 20 })
+		: DOMRect.fromRect({ x: 0, y: 0, width: 0, height: 0 }));
+}
+/** Where the positioner put the card, from its inline style. */
+function positionOf(popup: Element) {
+	const style = (popup.parentElement as HTMLElement).style;
+	return { left: style.left, top: style.top, transform: style.transform };
+}
+/** Where the card sits against a link placed at 200,300 (flipped above it in jsdom's empty layout); never 0,0. */
+const PLACED = { left: "0px", top: "0px", transform: "translate(200px, 294px)" };
+/** Holds the card's exit animation running, as a browser would for its 100 ms, until `finish` is called. */
+function holdExitAnimation(popup: HTMLElement) {
+	let finish!: () => void;
+	const finished = new Promise<void>((resolve) => { finish = resolve; });
+	Object.defineProperty(popup, "getAnimations", { configurable: true, value: () => [{ finished }] });
+	return async () => act(async () => {
+		finish();
+		await vi.advanceTimersByTimeAsync(50);
+	});
+}
 const respond = async (path: string, body: unknown) => act(async () => {
 	resolvers.get(path)?.(body);
 	await vi.advanceTimersByTimeAsync(0);
@@ -227,6 +258,93 @@ describe("EntityCards", () => {
 		pointer("pointerover", link("model"));
 		await advance(OPEN_DELAY_MS * 2);
 		expect(fetchPublicWebApi).not.toHaveBeenCalled();
+		expect(card()).toBeNull();
+	});
+
+	it("never opens a card on a link that opts out, but does on other entity links in the same box", async () => {
+		render();
+		pointer("pointerover", link("box-title"));
+		await advance(OPEN_DELAY_MS * 2);
+		expect(fetchPublicWebApi).not.toHaveBeenCalled();
+		expect(card()).toBeNull();
+		// Keyboard focus on the opted-out link does not open one either.
+		const nativeMatches = Element.prototype.matches;
+		const visible = vi.spyOn(Element.prototype, "matches").mockImplementation(function (this: Element, selector: string) {
+			if (selector === ":focus-visible") return this === document.activeElement;
+			return nativeMatches.call(this, selector);
+		});
+		try {
+			act(() => link("box-title").focus());
+			await advance(OPEN_DELAY_MS * 2);
+			expect(fetchPublicWebApi).not.toHaveBeenCalled();
+		} finally {
+			visible.mockRestore();
+		}
+
+		pointer("pointerout", link("box-title"), { relatedTarget: link("box-org") });
+		pointer("pointerover", link("box-org"));
+		await advance(OPEN_DELAY_MS);
+		await respond("/api/_web/entity-cards/organisation/acme", { card: ORGANISATION });
+		expect(card()?.textContent).toContain("Model creator since 2023");
+	});
+
+	it("keeps the card at its link while it closes, until the exit animation ends", async () => {
+		render();
+		placeAt(link("model"), 200, 300);
+		pointer("pointerover", link("model"));
+		await advance(OPEN_DELAY_MS);
+		await respond("/api/_web/entity-cards/model/acme/rocket-2", { card: MODEL });
+		const opened = card()!;
+		expect(positionOf(opened)).toEqual(PLACED);
+
+		const finishExit = holdExitAnimation(opened);
+		pointer("pointerout", link("model"), { relatedTarget: document.body });
+		await advance(CLOSE_DELAY_MS);
+		await act(async () => {
+			window.dispatchEvent(new Event("resize"));
+			await vi.advanceTimersByTimeAsync(50);
+		});
+		// Closing, still mounted, still at the link and still showing the model.
+		expect(card()).toBe(opened);
+		expect(opened.hasAttribute("data-open")).toBe(false);
+		expect(positionOf(opened)).toEqual(PLACED);
+		expect(opened.textContent).toContain("Rocket 2");
+		expect(opened.querySelector("[data-slot=entity-card-loading]")).toBeNull();
+
+		await finishExit();
+		expect(card()).toBeNull();
+	});
+
+	it("closes the card when the page replaces its link, without moving it to the corner", async () => {
+		render();
+		placeAt(link("model"), 200, 300);
+		pointer("pointerover", link("model"));
+		await advance(OPEN_DELAY_MS);
+		await respond("/api/_web/entity-cards/model/acme/rocket-2", { card: MODEL });
+		const opened = card()!;
+		expect(opened.hasAttribute("data-open")).toBe(true);
+
+		const finishExit = holdExitAnimation(opened);
+		// A re-render swaps the hovered link for a new element.
+		act(() => link("model").replaceWith(link("model").cloneNode(true)));
+		await advance(50);
+		expect(opened.hasAttribute("data-open")).toBe(false);
+		// The positioner measures again (as on scroll or resize) while the card fades out.
+		await act(async () => {
+			window.dispatchEvent(new Event("resize"));
+			await vi.advanceTimersByTimeAsync(50);
+		});
+		expect(positionOf(opened)).toEqual(PLACED);
+		await finishExit();
+		expect(card()).toBeNull();
+	});
+
+	it("does not open a card for a link the page replaced during the open delay", async () => {
+		render();
+		pointer("pointerover", link("model"));
+		await advance(OPEN_DELAY_MS - 100);
+		act(() => link("model").replaceWith(link("model").cloneNode(true)));
+		await advance(200);
 		expect(card()).toBeNull();
 	});
 

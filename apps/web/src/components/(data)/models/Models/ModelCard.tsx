@@ -977,6 +977,7 @@ function ModelCardImpl({
 								href={modelHref}
 								prefetch={false}
 								scroll
+								data-no-entity-card
 								className="font-semibold text-sm leading-[1.1] text-foreground hover:underline underline-offset-4 transition-colors duration-200 line-clamp-1"
 							>
 								{showLabPrefix ? (
@@ -1040,6 +1041,7 @@ function ModelCardImpl({
 							prefetch={false}
 							scroll
 							aria-label={t("viewDetails")}
+							data-no-entity-card
 							className="group/open"
 						>
 							<ArrowUpRight
