@@ -282,6 +282,7 @@ export function Sidebar() {
 	const factory = mode === "code" && codeView === "factory";
 	const writing = factory && factoryRoute.page === "new" && !inboxPage;
 	const [chatViewport, setChatViewport] = useState<HTMLDivElement | null>(null);
+	const [codeViewport, setCodeViewport] = useState<HTMLDivElement | null>(null);
 	const fresh = !factory && !selectedId && !compareId && !scheduled && !pullRequestsPage && !inboxPage;
 	// The settings list is taller than short windows, so it scrolls like the chat list does.
 	if (settings) return <SidebarFrame label="Settings"><ScrollArea className="min-h-0 flex-1"><SettingsNav /></ScrollArea></SidebarFrame>;
@@ -301,7 +302,7 @@ export function Sidebar() {
 			? <FactorySidebar />
 			: mode === "chat"
 			? <ScrollArea className="min-h-0 flex-1" viewportRef={setChatViewport}><nav className="pb-3"><ChatList viewport={chatViewport} /></nav></ScrollArea>
-			: <ScrollArea className="min-h-0 flex-1" viewportClassName="[&>div]:min-h-full [&>div]:flex [&>div]:flex-col"><nav aria-label="Code chats" className="flex flex-1 flex-col"><CodeThreadList /></nav></ScrollArea>}
+			: <ScrollArea className="min-h-0 flex-1" viewportRef={setCodeViewport} viewportClassName="[&>div]:min-h-full [&>div]:flex [&>div]:flex-col"><nav aria-label="Code chats" className="flex flex-1 flex-col"><CodeThreadList viewport={codeViewport} /></nav></ScrollArea>}
 		<UndoNotice />
 		<ArchivedChatsDialog />
 		<AccountFooter />

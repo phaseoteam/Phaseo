@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { appendFileSync, mkdtempSync, rmSync, statSync } from "node:fs";
+import { appendFileSync, mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import type { DatabaseSync } from "node:sqlite";
@@ -34,6 +34,8 @@ describe.skipIf(!enabled)("store under concurrent load", () => {
 	it("streams into eight long chats while reading and writing from a second connection", async () => {
 		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-store-bench-")), filename = path.join(directory, "workspace.sqlite");
 		let opened: WorkspaceStore | undefined;
+		// STORE_BENCH_JSON=<file> also writes the numbers as JSON, for the performance suite (scripts/perf).
+		const numbers: Record<string, unknown> = {};
 		const report: string[] = [], time = new Map<string, number[]>(), record = (name: string, run: () => unknown) => { const started = performance.now(); const value = run(); (time.get(name) ?? time.set(name, []).get(name)!).push(performance.now() - started); return value; };
 		try {
 			// The history, saved through the store as the app saves it. The JSON size is what one-row-per-chat used to hold.
@@ -43,6 +45,7 @@ describe.skipIf(!enabled)("store under concurrent load", () => {
 			const json = seeded.reduce((sum, task) => sum + Buffer.byteLength(JSON.stringify(task)), 0);
 			record("seed", () => { opened = store = new WorkspaceStore(filename); const db = (store as unknown as { db: DatabaseSync }).db; db.exec("BEGIN"); for (const task of seeded) store.saveTask(task, true); db.exec("COMMIT"); db.exec("PRAGMA wal_checkpoint(TRUNCATE)"); });
 			const pages = (store as unknown as { db: DatabaseSync }).db.prepare("SELECT page_count * page_size AS bytes FROM pragma_page_count(), pragma_page_size()").get() as { bytes: number };
+			numbers.diskMb = +(pages.bytes / 1024 / 1024).toFixed(1);
 			report.push(`history: ${seeded.length} chats (${(json / 1024 / 1024).toFixed(1)} MB as JSON), ${(pages.bytes / 1024 / 1024).toFixed(1)} MB on disk; ${streams} long chats of ${longTurns} turns`);
 			store.getOverview();
 			const raw = (store as unknown as { db: DatabaseSync }).db;
@@ -109,6 +112,9 @@ describe.skipIf(!enabled)("store under concurrent load", () => {
 			for (const [name, values] of time) report.push(`${name.padEnd(22)} ${JSON.stringify(stats(values))}`);
 			// Eight chats streaming, each flushing every 40 ms, is 200 flushes a second; this is the main-thread share they need.
 			report.push(`main thread for 8 streams at 25 flushes/s each: ${Math.round(flushStats.total / flushStats.n * 200 / 10)}% of one thread (mean flush ${(flushStats.total / flushStats.n).toFixed(2)} ms)`);
+			numbers.operations = Object.fromEntries([...time].map(([name, values]) => [name, stats(values)]));
+			numbers.mainThreadPercent = Math.round(flushStats.total / flushStats.n * 200 / 10);
+			numbers.walKbPerFlush = Math.round(walBytes / flushes / 1024);
 			report.push(`written to the WAL: ${(walBytes / 1024 / 1024).toFixed(1)} MB (${(walBytes / flushes / 1024).toFixed(0)} KB per flush)`);
 			report.push(`second connection: ${side.writes} writes, ${side.busy} locked; main thread locked: ${mainBusy}`);
 			const integrity = raw.prepare("PRAGMA integrity_check").get() as { integrity_check: string };
@@ -126,6 +132,7 @@ describe.skipIf(!enabled)("store under concurrent load", () => {
 		} finally {
 			const text = report.join("\n");
 			console.log(text);
+			if (process.env.STORE_BENCH_JSON) writeFileSync(process.env.STORE_BENCH_JSON, JSON.stringify(numbers));
 			if (process.env.STORE_BENCH_OUT) appendFileSync(process.env.STORE_BENCH_OUT, `${process.env.STORE_BENCH_LABEL ?? "run"}\n${text}\n\n`);
 			try { opened?.close(); } catch { /* already closed */ }
 			rmSync(directory, { recursive: true, force: true });

@@ -119,7 +119,8 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		if (!api) return;
 		let active = true;
-		void api.overview().then(value => { if (active) setOverview(value); }, reason => { if (active) setError(errorText(reason)); });
+		// The performance suite times startup to this mark (scripts/perf).
+		void api.overview().then(value => { if (performance.getEntriesByName("phaseo:workspace-ready").length === 0) performance.mark("phaseo:workspace-ready"); if (active) setOverview(value); }, reason => { if (active) setError(errorText(reason)); });
 		const unsubscribe = api.onOverviewChange(setOverview);
 		return () => { active = false; unsubscribe(); };
 	}, [api]);
