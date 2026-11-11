@@ -50,7 +50,7 @@ Each model lists one entry in `offers` per provider route (abridged, values illu
 
 Only route production traffic to an offer whose `routable` is `true`. `status_reason` explains why an offer is preview-only or inactive. The full schema is below.
 
-`GET /models/me` returns the same list with your key's guardrails applied: your workspace's privacy and provider rules, and the guardrails on the key's departments, its member and the key itself. Models a model rule blocks, and models with no provider you allow, are left out, and each model keeps only the offers its requests may be routed to. It takes the same filters as `GET /models`.
+`GET /models/me` returns the same list with your key's guardrails applied: your workspace's privacy and provider rules, and the guardrails on the key's departments, its member and the key itself. Models a model rule blocks, and models with no provider you allow, are left out, and each model keeps only the offers its requests may be routed to. It takes the same filters as `GET /models`. The response also has `access`: whether any rule applies (`restricted`), the models they leave out (`hidden_model_count` and `hidden_models`, with ids and names) and how many listed models lost some providers (`limited_model_count`), so you can tell people why a model is missing.
 
 ## Filter the list
 

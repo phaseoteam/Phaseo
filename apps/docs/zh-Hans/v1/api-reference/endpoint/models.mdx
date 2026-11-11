@@ -49,7 +49,7 @@ curl "https://api.phaseo.app/v1/models?limit=50" \
 
 只能将生产流量路由到 `routable` 为 `true` 的 offer。`status_reason` 说明 offer 为何仅为预览或处于非活动状态。完整的架构见下文。
 
-`GET /models/me` 返回同一列表，但会应用你的密钥的护栏规则：工作区的隐私和提供商规则，以及密钥所属部门、其成员和密钥本身的护栏。被模型规则屏蔽的模型，以及没有任何允许的提供商的模型都不会列出，每个模型只保留其请求可以路由到的服务。它接受与 `GET /models` 相同的筛选参数。
+`GET /models/me` 返回同一列表，但会应用你的密钥的护栏规则：工作区的隐私和提供商规则，以及密钥所属部门、其成员和密钥本身的护栏。被模型规则屏蔽的模型，以及没有任何允许的提供商的模型都不会列出，每个模型只保留其请求可以路由到的服务。它接受与 `GET /models` 相同的筛选参数。 响应中还包含 `access`：是否有规则生效（`restricted`）、被规则排除的模型（`hidden_model_count` 和 `hidden_models`，含 ID 和名称），以及有多少列出的模型失去了部分提供商（`limited_model_count`），方便你说明某个模型为何不见了。
 
 <span id="filter-the-list"></span>
 ## 筛选列表

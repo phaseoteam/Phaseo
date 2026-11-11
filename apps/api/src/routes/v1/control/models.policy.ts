@@ -122,6 +122,28 @@ export function filterModelsForPolicy<T extends ListedModel>(models: T[], policy
     });
 }
 
+/** Up to this many hidden models are named; the count is always exact. */
+const MAX_HIDDEN_MODELS_NAMED = 500;
+
+/**
+ * What the key's rules took out of a listing, for apps to explain it: whether any rule restricts models or providers,
+ * the models left out (by id and name) and how many kept models lost some of their providers.
+ */
+export function modelAccessSummary(
+    listed: Array<{ id: string; name?: string | null; offers: unknown[] }>,
+    permitted: Array<{ id: string; offers: unknown[] }>,
+    policy: WorkspacePolicy,
+) {
+    const kept = new Map(permitted.map((model) => [model.id, model.offers.length]));
+    const hidden = listed.filter((model) => !kept.has(model.id));
+    return {
+        restricted: policyRestrictsModels(policy),
+        hidden_model_count: hidden.length,
+        hidden_models: hidden.slice(0, MAX_HIDDEN_MODELS_NAMED).map((model) => ({ id: model.id, name: model.name ?? model.id })),
+        limited_model_count: listed.filter((model) => kept.has(model.id) && kept.get(model.id)! < model.offers.length).length,
+    };
+}
+
 /** The list for one key: the shared catalogue with the key's policy applied. */
 export async function modelsForPolicy<T extends ListedModel>(models: T[], policy: WorkspacePolicy): Promise<T[]> {
     if (!policyRestrictsModels(policy)) return models;

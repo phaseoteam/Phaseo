@@ -1271,6 +1271,13 @@ describe("handleModels", () => {
             expect(body.total).toBe(1);
             expect(body.models.map((model: any) => model.id)).toEqual(["openai/gpt-4o-mini"]);
             expect(body.models[0].offers.map((offer: any) => offer.provider.id)).toEqual(["openai"]);
+            // What was left out, so apps can explain a missing model.
+            expect(body.access).toEqual({
+                restricted: true,
+                hidden_model_count: 1,
+                hidden_models: [{ id: "azure/only", name: "GPT-4o Mini" }],
+                limited_model_count: 1,
+            });
             expect(response.headers.get("cache-control")).toBe("private, max-age=60");
             expect(response.headers.get("vary")).toBe("Authorization");
         });
@@ -1286,6 +1293,9 @@ describe("handleModels", () => {
             const mine = await (await handleMyModels(new Request("https://api.example.com/v1/models/me"))).json() as any;
             const shared = await (await handleModels(new Request("https://api.example.com/v1/models"))).json() as any;
             expect(mine.models).toEqual(shared.models);
+            expect(mine.access).toEqual({ restricted: false, hidden_model_count: 0, hidden_models: [], limited_model_count: 0 });
+            // The shared list has no per-key summary.
+            expect(shared.access).toBeUndefined();
         });
 
         it("doesn't read the policy for the shared list", async () => {

@@ -25,7 +25,7 @@ import { normalizeParameterSpecs } from "@core/model-parameters";
 import { getBindingsIfConfigured, getSupabaseAdmin } from "@/runtime/env";
 import { normalizeGatewayRoutingRegion } from "@pipeline/before/deployment-region";
 import { fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
-import { modelsForPolicy } from "./models.policy";
+import { modelAccessSummary, modelsForPolicy } from "./models.policy";
 
 type LifecycleStatus = "active" | "deprecated" | "retired" | null;
 type AvailabilityMode = "active" | "all";
@@ -1062,9 +1062,12 @@ async function listModels(req: Request, scope: "shared" | "me") {
         });
         const listed = [...privateByModelId.values(), ...mergedPublicModels] as PhaseoModel[];
         // Filtered before search and paging, so totals and pages count only what the key may use.
-        const permitted = scope === "me"
-            ? await modelsForPolicy(listed, await fetchWorkspacePolicy({ workspaceId: auth.value.workspaceId, apiKeyId: auth.value.apiKeyId }))
-            : listed;
+        const policy = scope === "me"
+            ? await fetchWorkspacePolicy({ workspaceId: auth.value.workspaceId, apiKeyId: auth.value.apiKeyId })
+            : null;
+        const permitted = policy ? await modelsForPolicy(listed, policy) : listed;
+        // What the key's rules leave out of this listing (before search), so apps can say why a model is missing.
+        const access = policy ? modelAccessSummary(listed, permitted, policy) : undefined;
         const models = filterAndSortModels(
             permitted,
             {
@@ -1126,6 +1129,7 @@ async function listModels(req: Request, scope: "shared" | "me") {
                 offset,
                 total: models.length,
                 models: paged,
+                ...(access ? { access } : {}),
             },
             // gateway_region is deliberately left out: the same catalogue served
             // from another region keeps the same ETag. That is why the ETag is
@@ -1137,6 +1141,7 @@ async function listModels(req: Request, scope: "shared" | "me") {
                 offset,
                 total: models.length,
                 models: paged,
+                ...(access ? { access } : {}),
             },
             headers,
         );
