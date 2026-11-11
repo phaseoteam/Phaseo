@@ -1,5 +1,15 @@
 import { describe, expect, it, vi } from "vitest";
-import { windowsCredentialEncryption } from "./windowsCredentialEncryption";
+import { launchOnWorker, windowsCredentialEncryption } from "./windowsCredentialEncryption";
+describe("credential helper thread", () => {
+ it("starts the helper from a worker thread and returns its output, input and failures", async () => {
+  const echo = await launchOnWorker(process.execPath, ["-e", "process.stdin.pipe(process.stdout)"], { timeout: 20_000, windowsHide: true }, "c2VjcmV0");
+  expect(echo).toEqual({ stdout: "c2VjcmV0", stderr: "" });
+  const failed = await launchOnWorker(process.execPath, ["-e", "process.stderr.write('phaseo-credential:input\\n'); process.exit(3)"], { timeout: 20_000, windowsHide: true }, "");
+  expect(failed).toEqual({ failed: { killed: false }, stdout: "", stderr: "phaseo-credential:input\n" });
+  const runs = await Promise.all(["a", "b", "c"].map(input => launchOnWorker(process.execPath, ["-e", "process.stdin.pipe(process.stdout)"], { timeout: 20_000, windowsHide: true }, input)));
+  expect(runs.map(run => run.stdout)).toEqual(["a", "b", "c"]);
+ }, 60_000);
+});
 describe("Windows credential protection", () => {
  it.skipIf(process.platform !== "win32")("keeps the event loop responsive while native protection is running", async () => {
   let ticks = 0; const timer = setInterval(() => { ticks++; }, 10);

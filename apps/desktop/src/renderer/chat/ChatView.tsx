@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState, type ReactNode } from "react";
-import { TerminalDrawer } from "../views/Terminals";
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
+// The terminal (xterm, about 400 KB) loads when a chat first opens its drawer, not with the window.
+const TerminalDrawer = lazy(() => import("../views/Terminals").then(module => ({ default: module.TerminalDrawer })));
 import { AlarmClockOff, Archive, Box, CircleCheck, Clock, Undo2, CornerLeftUp, Download, Ellipsis, Gauge, GitBranch, Layers, ListChecks, MessagesSquare, Paperclip, Pencil, PenLine, Pin, PinOff, Plug, RotateCcw, Settings, ShieldCheck, SquarePen, UserRound } from "lucide-react";
 import { ProjectIcon } from "../components/ProjectIcon";
 import { QuestionPanel } from "./QuestionPanel";
@@ -45,7 +46,7 @@ import { optionHarnesses, selectionSettings } from "./startChat";
 import { ProjectScriptsControl } from "../components/ProjectScripts";
 import { PullRequestBadge } from "../views/pullRequests/PullRequestBadge";
 import { IssueBadge } from "../views/issues/IssueBadge";
-import { FactoryThreadChip } from "../factory/FactoryPage";
+import { FactoryThreadChip } from "../factory/FactoryThreadChip";
 import { RewindDialog } from "./RewindDialog";
 import { ContextMeter } from "./ContextMeter";
 import { restoreDraft, restoreDraftEvent, rewoundDraft } from "./rewind";
@@ -460,7 +461,7 @@ export function ChatView({ id }: { id: string }) {
 		</Conversation>}
 		<IssueDraftPanel task={task} />
 		<ChatComposer task={task} />
-		{drawers[task.id] && <TerminalDrawer projectId={task.projectId} taskId={task.id} />}
+		{drawers[task.id] && <Suspense fallback={null}><TerminalDrawer projectId={task.projectId} taskId={task.id} /></Suspense>}
 		{preview && <AttachmentPreview taskId={task.id} id={preview} onClose={() => setPreview(undefined)} />}
 		<RewindDialog task={task} message={rewinding} onClose={() => setRewinding(undefined)} onConfirm={restoreFiles => rewind(rewinding!, restoreFiles)} />
 	</div>;

@@ -25,7 +25,8 @@ export class FactoryService {
 	/** Set once saved state is loaded: shutting down before that has nothing of its own to save. */
 	private loaded = false;
 
-	constructor(private readonly runtime: WorkspaceRuntime, private readonly options: { dataDir: string; legacyFolder: string; demo: boolean; broadcast: (snapshot: FactorySnapshot) => void }) {
+	/** `activateAfterMs` holds back launch-time activation, so its processes don't compete with the first window. */
+	constructor(private readonly runtime: WorkspaceRuntime, private readonly options: { dataDir: string; legacyFolder: string; demo: boolean; broadcast: (snapshot: FactorySnapshot) => void; activateAfterMs?: number }) {
 		this.threads = new StageThreads(runtime, { get: (itemId) => this.store.threadOf(itemId), set: (itemId, threadId) => this.store.setThread(itemId, threadId) });
 		this.store = new FactoryStore({
 			dataDir: options.dataDir,
@@ -51,7 +52,10 @@ export class FactoryService {
 			if (!this.options.demo) await importLegacyOnce(this.runtime.store, this.options.legacyFolder, () => this.discover(), this.options.dataDir).catch(() => undefined);
 			await this.store.load();
 			this.loaded = true;
-			if (this.options.demo || this.store.get().settings.repos.length) this.activate();
+			if (!this.options.demo && !this.store.get().settings.repos.length) return;
+			// The window asking for work activates it at once (activate); otherwise it waits for activateAfterMs.
+			if (this.options.activateAfterMs) setTimeout(() => this.activate(), this.options.activateAfterMs).unref?.();
+			else this.activate();
 		})();
 		return this.started;
 	}

@@ -7,9 +7,10 @@
 // DevTools Performance, or summarise them with scripts/perf/profile-summary.mjs.
 // Input goes through webContents.sendInputEvent, so the window sees trusted events, as it would from a person.
 import { app, BrowserWindow, ipcMain } from "electron";
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import inspector from "node:inspector/promises";
 import path from "node:path";
+import { pathToFileURL } from "node:url";
 import { demoId, fixtureModels } from "../fixtures/previewWorkspace.mjs";
 import { javascriptLiteral } from "../javascript-literal.mjs";
 
@@ -45,8 +46,10 @@ const fail = error => { console.error(error); if (out) writeFileSync(out, JSON.s
 process.on("unhandledRejection", fail);
 setTimeout(() => fail(new Error(`The ${scenario} scenario did not finish in 10 minutes.`)), 600_000).unref();
 
+// The app's own entry (package.json "main"), or another build's with PHASEO_PERF_ENTRY (A/B runs of two builds).
+const entry = process.env.PHASEO_PERF_ENTRY ? path.resolve(process.env.PHASEO_PERF_ENTRY) : path.join(import.meta.dirname, "../..", JSON.parse(readFileSync(path.join(import.meta.dirname, "../../package.json"), "utf8")).main);
 const imported = Date.now();
-await import("../../dist/main/index.mjs");
+await import(pathToFileURL(entry).href);
 marks.mainImportMs = Date.now() - imported;
 
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
