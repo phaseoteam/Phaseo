@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { bridge } from "./bridge";
 import { ModelRow } from "./ModelRow";
-import { money, tokenCount, type CardModel } from "./model";
+import { headlinePrice, money, tokenCount, type CardModel } from "./model";
 import type { Credits, Estimate } from "./cardData";
 
 export { cardFor } from "./cardData";
@@ -72,9 +72,9 @@ export function ModelsCard({
   );
 }
 
+// Per-1M rates use the website's price format, so $0.095 never rounds to $0.10.
 function rate(cost: number, tokens: number): string {
-  const perMillion = (cost / tokens) * 1_000_000;
-  return money(perMillion).replace(/\.00$/, "");
+  return headlinePrice((cost / tokens) * 1_000_000);
 }
 
 export function EstimateCard({ estimate }: { estimate: Estimate }) {

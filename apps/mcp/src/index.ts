@@ -2,7 +2,7 @@ import { createMcpHandler } from "agents/mcp/server";
 import { McpServer } from "@modelcontextprotocol/server";
 import * as z from "zod/v4";
 import { resolveLogo } from "@phaseo/app-kit/logos";
-import { registerModelExplorer, modelExplorerToolMeta, modelCardToolMeta } from "./model-explorer";
+import { registerModelExplorer, modelCardToolMeta } from "./model-explorer";
 import { modelExplorerIcon } from "./generated/modelExplorerHtml";
 import { registerInference } from "./inference";
 import { MCP_MANAGEMENT_SCOPES, hasManagementConsent, registerManagementTools } from "./management";
@@ -754,7 +754,9 @@ export function createServer(
 			},
 			outputSchema: { models: z.array(z.object(modelSummarySchema)) },
 			annotations: { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
-			_meta: { ...oauthToolMeta(["models:read", "pricing:read"]), ...modelExplorerToolMeta },
+			// No sidebar or thread entry points: ChatGPT always opens entry-point tools
+			// fullscreen, even when the model calls them, which hid the inline card.
+			_meta: { ...oauthToolMeta(["models:read", "pricing:read"]), ...modelCardToolMeta },
 		},
 		async ({ query, provider, modality, minimumContextTokens, maximumInputPricePerMillion, gatewayAvailableOnly, sortBy, sortOrder, limit }) => {
 			try {
