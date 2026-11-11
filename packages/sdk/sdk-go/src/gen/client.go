@@ -76,6 +76,14 @@ type Client struct {
 	OnRequest  func(RequestEvent)
 	OnResponse func(ResponseEvent)
 	OnRetry    func(RetryEvent)
+	ctx        context.Context
+}
+
+// RawBody is sent as the request body unchanged, with its own Content-Type, instead of
+// being encoded as JSON. Use it for multipart/form-data uploads.
+type RawBody struct {
+	ContentType string
+	Data        []byte
 }
 
 type HTTPError struct {
@@ -122,8 +130,16 @@ func NewClient(baseURL string) *Client {
 	}
 }
 
+// WithContext returns a shallow copy of the client whose requests use ctx, so cancelling
+// ctx or passing its deadline stops them. RequestOptions.Context still wins when set.
+func (c *Client) WithContext(ctx context.Context) *Client {
+	clone := *c
+	clone.ctx = ctx
+	return &clone
+}
+
 func (c *Client) Request(method string, path string, query map[string]string, headers map[string]string, body any) ([]byte, error) {
-	response, err := c.RequestWithOptions(method, path, query, body, &RequestOptions{Headers: headers})
+	response, err := c.RequestWithOptions(method, path, query, body, &RequestOptions{Context: c.ctx, Headers: headers})
 	if err != nil {
 		return nil, err
 	}
@@ -144,14 +160,26 @@ func (c *Client) RequestWithOptions(method string, path string, query map[string
 		endpoint += "?" + values.Encode()
 	}
 	var bodyBytes []byte
-	if body != nil {
+	contentType := ""
+	switch typed := body.(type) {
+	case nil:
+	case RawBody:
+		bodyBytes, contentType = typed.Data, typed.ContentType
+	case *RawBody:
+		if typed != nil {
+			bodyBytes, contentType = typed.Data, typed.ContentType
+		}
+	default:
 		data, err := json.Marshal(body)
 		if err != nil {
 			return nil, err
 		}
-		bodyBytes = data
+		bodyBytes, contentType = data, "application/json"
 	}
 	ctx := options.Context
+	if ctx == nil {
+		ctx = c.ctx
+	}
 	if ctx == nil {
 		ctx = context.Background()
 	}
@@ -192,8 +220,8 @@ func (c *Client) RequestWithOptions(method string, path string, query map[string
 		if options.IdempotencyKey != "" {
 			req.Header.Set("Idempotency-Key", options.IdempotencyKey)
 		}
-		if body != nil {
-			req.Header.Set("Content-Type", "application/json")
+		if contentType != "" {
+			req.Header.Set("Content-Type", contentType)
 		}
 		event := RequestEvent{Method: method, URL: endpoint, Attempt: attempt, IdempotencyKey: options.IdempotencyKey, StartedAt: time.Now()}
 		if c.OnRequest != nil {

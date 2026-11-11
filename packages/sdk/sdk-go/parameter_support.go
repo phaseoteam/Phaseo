@@ -78,12 +78,12 @@ func splitModelID(modelID string) (map[string]string, error) {
 }
 
 // GetModelEndpointCapabilities returns live, provider-specific endpoint metadata for a model.
-func (c *Phaseo) GetModelEndpointCapabilities(_ context.Context, modelID string, query map[string]string) (map[string]interface{}, error) {
+func (c *Phaseo) GetModelEndpointCapabilities(ctx context.Context, modelID string, query map[string]string) (map[string]interface{}, error) {
 	path, err := splitModelID(modelID)
 	if err != nil {
 		return nil, err
 	}
-	return gen.ListModelEndpoints(c.raw, path, query, nil, nil)
+	return gen.ListModelEndpoints(c.raw.WithContext(ctx), path, query, nil, nil)
 }
 
 // CheckModelParameters reports which active routes support and accept the supplied values.
