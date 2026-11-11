@@ -116,7 +116,8 @@ export default function EmailPassword({
 						setError(result.error);
 					}
 				}}
-				className="grid gap-3.5"
+				// Flex, not grid: the collapsed error's negative margin cancels its gap.
+				className="flex flex-col gap-3.5"
 				onSubmit={handleSubmit}
 			>
 				<input type="hidden" name="locale" value={locale} />
@@ -194,11 +195,17 @@ export default function EmailPassword({
 					</div>
 				</div>
 
-				{error ? (
-					<p id="sign-in-error" className="text-sm text-red-600 dark:text-red-400" role="alert" aria-live="polite">
-						{t("invalidCredentials")}
-					</p>
-				) : null}
+				{/* Grows in and out like the other collapses; the text is only present while shown, so it is announced. */}
+				<div
+					className={`grid transition-[grid-template-rows,opacity,margin] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none ${error ? "grid-rows-[1fr] opacity-100" : "-mb-3.5 grid-rows-[0fr] opacity-0"}`}
+				>
+					<div className="overflow-hidden">
+						{/* The live region stays (so the text is announced when it appears); it is only an alert while showing one. */}
+						<p id="sign-in-error" className="text-sm text-red-600 dark:text-red-400" role={error ? "alert" : undefined} aria-live="polite">
+							{error ? t("invalidCredentials") : null}
+						</p>
+					</div>
+				</div>
 
 				<SubmitButton />
 			</form>

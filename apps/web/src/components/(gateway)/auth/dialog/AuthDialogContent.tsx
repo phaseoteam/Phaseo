@@ -1,5 +1,5 @@
 // The dialog body for AuthDialog: one view per step of the sign-in flow.
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocale } from "@/i18n/react";
 import type { PublicLocale } from "@/i18n/routing";
@@ -13,6 +13,7 @@ import { MfaStep } from "./MfaStep";
 import { ResetPasswordStep } from "./ResetPasswordStep";
 import { SsoStep } from "./SsoStep";
 import type { AuthDialogState } from "./authDialogStore";
+import { useFocusAnchor, useStepHeightTransition } from "./dialogMotion";
 
 function SignInStep({ state, locale }: { state: AuthDialogState; locale: PublicLocale }) {
 	// Not suspending: if the flag check fails, the other sign-in methods stay and the SSO button is left out
@@ -59,6 +60,19 @@ export default function AuthDialogContent({
 	// The two-factor and new-password steps belong to a session that is already signed in.
 	const startsNewSession = state.step === "sign-in" || state.step === "sign-up" || state.step === "sso";
 
+	// Motion: keep what the user is interacting with still while the step resizes, and
+	// animate the height between steps (dialogMotion.ts).
+	const [stepElement, setStepElement] = useState<HTMLDivElement | null>(null);
+	const resetShift = useFocusAnchor(stepElement);
+	useStepHeightTransition(stepElement, state.step, resetShift);
+	// A step reached by switching fades in; the first one arrives with the dialog itself.
+	const [shownStep, setShownStep] = useState(state.step);
+	const [switched, setSwitched] = useState(false);
+	if (shownStep !== state.step) {
+		setShownStep(state.step);
+		setSwitched(state.open);
+	}
+
 	return (
 		<Dialog open={state.open} onOpenChange={onOpenChange}>
 			<DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto px-6 py-7 sm:max-w-md sm:px-8">
@@ -71,7 +85,11 @@ export default function AuthDialogContent({
 						</div>
 					}
 				>
-					<StepView state={state} locale={locale} />
+					<div ref={setStepElement}>
+						<div key={state.step} className={switched ? "animate-in fade-in-0 duration-200 motion-reduce:animate-none" : undefined}>
+							<StepView state={state} locale={locale} />
+						</div>
+					</div>
 				</Suspense>
 			</DialogContent>
 		</Dialog>
