@@ -11,6 +11,7 @@ import {
 } from "@pipeline/execute/attempt-health";
 import { auditSuccess, auditFailure } from "../audit";
 import { protectStealthAuditArgs } from "../audit/stealth-identity";
+import { claimFailureSpendSettlement, failureBudgetNanos, failureSpendSettled, recordsServerToolAccounting, serverToolReconciliation } from "./server-tool-charges";
 import { isStealthRequest } from "../stealth";
 import { applyRequestClassifiers } from "../classification/request-classifiers";
 import { keyIdIsOAuthClientId } from "@core/request-key";
@@ -325,7 +326,7 @@ function reportAccountingError(ctx: PipelineContext, reason: string, error?: unk
  * calls do nothing. A confirmed debit is always recorded, whether or not its audit row was
  * delivered; an admission is released only when nothing was charged.
  */
-function settleRequestSpend(
+export function settleRequestSpend(
 	ctx: PipelineContext,
 	settlement: { kind: "success" | "charged_failure"; rowWritten: boolean; costNanos: number } | { kind: "release" },
 ): void {
@@ -352,6 +353,15 @@ function settleRequestSpend(
 	});
 }
 
+/**
+ * Whether this request's gateway_requests success row has committed (set by auditSuccess's
+ * onPrimaryRowWritten as soon as the insert commits, before its secondary writes). From then on the
+ * row is the request's record: later errors report, but write no second billed row and settle nothing.
+ */
+export function primaryRowWritten(ctx: Pick<PipelineContext, "meta">): boolean {
+	return (ctx.meta as Record<string, unknown>).__successRowWritten === true;
+}
+
 export async function handleFailureAudit(
     ctx: PipelineContext,
     result: RequestResult,
@@ -372,7 +382,7 @@ export async function handleFailureAudit(
 	// The success row is this request's record: its status, cost and spend are already settled. An
 	// error after it (a later accounting step) must not write a second, billed row, which the spend
 	// readers would add to the first.
-	if ((ctx.meta as Record<string, unknown>).__successRowWritten === true) {
+	if (primaryRowWritten(ctx)) {
 		const cause = errorDetails && typeof errorDetails === "object" ? (errorDetails as Record<string, unknown>).cause : undefined;
 		reportAccountingError(ctx, errorCode, cause ?? errorMessage);
 		return;
@@ -390,19 +400,50 @@ export async function handleFailureAudit(
 	// request that was still charged counts its charge instead, once its row is written.
 	// A delivered request whose charge did not go through: the row owns what the database holds
 	// (ctx.confirmedChargeNanos) and the bill it meant to charge (expected_cost_nanos).
-	const pending = pendingChargeFields(ctx, isPendingReconciliation(errorDetails));
+	// Completed server-tool rounds: the row carries their charge and usage. Rounds held for
+	// reconciliation are recorded on the row even when nothing was charged.
+	const partialCharge = ctx.serverToolPartialCharge && !ctx.serverToolPartialCharge.persistedBy &&
+		recordsServerToolAccounting(ctx.serverToolPartialCharge)
+		? ctx.serverToolPartialCharge
+		: null;
+	const reconciliation = partialCharge ? serverToolReconciliation(partialCharge, ctx.billingRequestId, ctx.uncollectedChargeReason) : null;
+	// This writes the failure row, so handleError (always called after this) writes none.
+	if (partialCharge) partialCharge.persistedBy = "failure_audit";
+	// Every row pending reconciliation records expected_cost_nanos (pendingChargeFields), including
+	// rounds held for reconciliation with nothing charged.
+	const pending = pendingChargeFields(ctx, isPendingReconciliation(errorDetails) || reconciliation != null);
 	// A charge the wallet confirmed before this failure (the request failed after its debit): the
 	// row records it and spend limits count it, whatever the billing status says.
+	const meta = ctx.meta as Record<string, unknown>;
 	const confirmedCharge = confirmedChargeNanos(ctx);
-	const billedNanos = Math.max(0, Math.round(Number(billing?.costNanos ?? pending.costNanos ?? confirmedCharge) || 0));
-	const writeCost = billing != null || pending.costNanos != null || confirmedCharge != null;
-	// Spend limits count the bill even when the wallet did not take it.
-	const spendNanos = Math.max(billedNanos, pending.expectedCostNanos ?? 0);
-	// A stream charged at drain checkpoints already recorded its charge: settle it to the final
+	// The row's cost: a stream's drain-checkpoint charge, else what the database confirmed after a
+	// failed charge (absent when unreadable), else the charged server-tool rounds, else a confirmed debit.
+	const rowCostNanos = billing != null ? billing.costNanos
+		: pending.expectedCostNanos != null ? pending.costNanos
+		: partialCharge && partialCharge.costNanos > 0 ? partialCharge.costNanos
+		: confirmedCharge ?? undefined;
+	const billedNanos = Math.max(0, Math.round(Number(rowCostNanos) || 0));
+	const writeCost = rowCostNanos != null;
+	// Spend limits count the bill even when the wallet did not take it: charged rounds, or the
+	// bill of a delivered response the wallet did not take.
+	const spendNanos = Math.max(billedNanos, pending.expectedCostNanos ?? 0, failureBudgetNanos(ctx));
+	// A stream charged at drain checkpoints already holds its charge: settle it to the final
 	// amount, 0 included (a refund), instead of releasing.
-	const chargedInSteps = (ctx.meta as Record<string, unknown>).__chargedInSteps === true;
-	const settleBilledSpend = (spendNanos > 0 || (writeCost && chargedInSteps)) && !keyIdIsOAuthClientId(ctx.meta.apiKeyRef);
-	if (!settleBilledSpend) settleRequestSpend(ctx, { kind: "release" });
+	const chargedInSteps = meta.__chargedInSteps === true;
+	const owesSpend = (spendNanos > 0 || (writeCost && chargedInSteps)) && !keyIdIsOAuthClientId(ctx.meta.apiKeyRef);
+	// This writer settles once its row write is done (settleRequestSpend, once per request);
+	// handleError, called after it, sees the claim and neither settles nor releases.
+	const settleBilledSpend = owesSpend && claimFailureSpendSettlement(ctx);
+	if (!owesSpend && !failureSpendSettled(ctx)) settleRequestSpend(ctx, { kind: "release" });
+	// A charge that did not go through (recordUsageAndChargeOnce gave a reason): the standard
+	// pending-accounting record, for every caller.
+	const uncollected = ctx.uncollectedChargeReason && pending.expectedCostNanos != null ? {
+		billing_status: "pending_reconciliation",
+		billing_request_id: ctx.billingRequestId ?? null,
+		charged_nanos: pending.costNanos ?? null,
+		expected_nanos: pending.expectedCostNanos,
+		reason: ctx.uncollectedChargeReason,
+	} : null;
     const protectedOtlp = protectStealthAuditArgs({
         model: ctx.model,
         requestedModel: ctx.requestedModel ?? ctx.model,
@@ -506,7 +547,11 @@ export async function handleFailureAudit(
                         finish_reason: result.bill?.finish_reason ?? null,
                         raw_usage: accountingContext.rawUsage,
                         pricing_card: accountingContext.pricingCard ?? null,
+                        ...(reconciliation ?? {}),
+                        ...(uncollected ?? {}),
                     }),
+                } : reconciliation || uncollected ? {
+                    accounting_finalization: sanitizeForAxiom({ ...(reconciliation ?? {}), ...(uncollected ?? {}) }),
                 } : {}),
                 labels: ctx.meta.labels ?? [],
                 client_source: ctx.meta.clientSource ?? null,
@@ -525,15 +570,23 @@ export async function handleFailureAudit(
                 )),
                 replay_supported: true,
             },
-            usage: (result.bill?.usage && typeof result.bill.usage === "object")
-                ? result.bill.usage as Record<string, unknown>
-                : {},
-            currency: result.bill?.currency ?? null,
-			pricingLines: Array.isArray((result.bill?.usage as any)?.pricing?.lines)
-				? (result.bill?.usage as any).pricing.lines
-				: [],
-            ...(writeCost ? { costNanos: billedNanos } : {}),
             ...(pending.expectedCostNanos != null ? { expectedCostNanos: pending.expectedCostNanos } : {}),
+            ...(partialCharge
+                ? {
+                    usage: partialCharge.usage,
+                    currency: partialCharge.currency,
+                    pricingLines: partialCharge.pricingLines,
+                }
+                : {
+                    usage: (result.bill?.usage && typeof result.bill.usage === "object")
+                        ? result.bill.usage as Record<string, unknown>
+                        : {},
+                    currency: result.bill?.currency ?? null,
+                    pricingLines: Array.isArray((result.bill?.usage as any)?.pricing?.lines)
+                        ? (result.bill?.usage as any).pricing.lines
+                        : [],
+                }),
+            ...(writeCost ? { costNanos: billedNanos } : {}),
         }) : null,
         writeOtlp: () => enqueueGatewayOtlpExport({
             requestId: ctx.requestId,
@@ -589,10 +642,11 @@ export async function handleFailureAudit(
         onDeliveryFailure: emitGatewayTelemetryDeliveryFailure,
     }).then((deliveries) => {
         if (!settleBilledSpend) return;
-        // A stream charged at drain checkpoints, or a charge pending reconciliation, holds a debit
-        // whether or not this row was written: record it rather than release the admission (the
-        // coordinator counts it until its pending entry expires if no row ever lands).
-        const settleAsFinal = chargedInSteps || pending.expectedCostNanos != null;
+        // A stream charged at drain checkpoints, a charge pending reconciliation, or charged
+        // server-tool rounds hold a debit whether or not this row was written: record it rather
+        // than release the admission (settleRequestSpend also records any confirmed debit).
+        const settleAsFinal = chargedInSteps || pending.expectedCostNanos != null ||
+            (partialCharge?.costNanos ?? 0) > 0 || failureBudgetNanos(ctx) > 0;
         // One record per billing id, at the final total, with 0 successful requests.
         settleRequestSpend(ctx, {
             kind: "charged_failure",
@@ -774,6 +828,9 @@ export async function handleSuccessAudit(
             usagePriced: usageWithMultimodal,
             totalCents,
             totalNanos,
+            // Rounds that could not be priced make the row pending reconciliation: it records the
+            // priced bill as expected_cost_nanos (the unpriced rounds stay on it for repricing).
+            ...(Array.isArray(ctx.serverToolRoundsBill?.pricing?.unpriced_rounds) ? { expectedCostNanos: totalNanos } : {}),
             currency,
             finishReason,
             statusCode,
@@ -797,14 +854,23 @@ export async function handleSuccessAudit(
             detailMetadata: {
                 stage: "execute",
                 testing_mode: ctx.testingMode === true,
-                ...(pendingCharge ? {
-                    accounting_finalization: {
+                // One reconciliation record: a charge that did not go through (with why), and the
+                // rounds of a server-tool request that could not be priced, as an unpriceable single
+                // request records them.
+                ...(pendingCharge || Array.isArray(ctx.serverToolRoundsBill?.pricing?.unpriced_rounds) ? {
+                    accounting_finalization: sanitizeForAxiom({
                         billing_status: "pending_reconciliation",
-                        response_delivered: true,
                         billing_request_id: ctx.billingRequestId ?? null,
-                        charged_total_nanos: pendingCharge.costNanos,
-                        expected_cost_nanos: pendingCharge.expectedCostNanos,
-                    },
+                        ...(pendingCharge ? {
+                            response_delivered: true,
+                            charged_total_nanos: pendingCharge.costNanos,
+                            expected_cost_nanos: pendingCharge.expectedCostNanos,
+                            reason: ctx.uncollectedChargeReason ?? "persistence_failed",
+                        } : { charged_nanos: totalNanos }),
+                        ...(Array.isArray(ctx.serverToolRoundsBill?.pricing?.unpriced_rounds)
+                            ? { unpriced_rounds: ctx.serverToolRoundsBill.pricing.unpriced_rounds }
+                            : {}),
+                    }),
                 } : {}),
                 response_timeline: buildResponseTimeline(ctx),
                 labels: ctx.meta.labels ?? [],

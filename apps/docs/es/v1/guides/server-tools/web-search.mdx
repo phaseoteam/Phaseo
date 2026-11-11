@@ -122,4 +122,4 @@ Cada búsqueda suma a `usage.server_tool_use`:
 }
 ```
 
-La búsqueda gestionada se factura con `server_tool_web_search_requests` y `server_tool_web_search_extra_results`. La búsqueda nativa se factura con `native_web_search_requests` cuando la tarjeta de precios del modelo lo define. TinyFish Search es gratuito en sus planes publicados, por lo que Phaseo no añade ningún cargo de búsqueda con `engine: "tinyfish"`; se sigue aplicando el precio normal por tokens de la solicitud.
+Phaseo cobra cada búsqueda gestionada a $0.007, más $0.001 por cada resultado después de los 10 primeros, salvo que la tarjeta de precios del modelo fije sus propios precios para `server_tool_web_search_requests` y `server_tool_web_search_extra_results`. Las búsquedas fallidas no se cobran, y TinyFish Search es gratuito en sus planes publicados, así que `engine: "tinyfish"` no añade cargo de búsqueda. Las búsquedas con motores de pago requieren saldo aunque el modelo sea gratuito. La búsqueda nativa se cobra con `native_web_search_requests` donde la tarjeta de precios del modelo lo define.

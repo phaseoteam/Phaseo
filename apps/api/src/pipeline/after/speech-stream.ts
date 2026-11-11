@@ -101,7 +101,7 @@ async function settleSpeechStream(
 		const isByok = (result.keySource ?? ctx.meta.keySource) === "byok";
 		const withByok = await applyByokServiceFee({
 			workspaceId: ctx.workspaceId,
-			idempotencyKey: ctx.billingRequestId,
+			idempotencyKey: ctx.byokAllowanceId ?? ctx.billingRequestId,
 			isByok,
 			baseCostNanos: priced.totalNanos,
 			pricedUsage: priced.pricedUsage,

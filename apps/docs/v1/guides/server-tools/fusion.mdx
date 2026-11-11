@@ -63,4 +63,4 @@ A `prompt`: the question that needs several perspectives.
 
 ## Usage and pricing
 
-Each call adds 1 to `usage.server_tool_use.fusion_requests` and can be billed with `server_tool_fusion_requests`. Every analysis and analyst call's tokens are added to the request's usage and priced at that model's rates.
+Each call adds 1 to `usage.server_tool_use.fusion_requests` and can be billed with `server_tool_fusion_requests`. Every analysis and analyst call is billed at that model's own rates, as a separate line on the request's bill; its tokens are not added to the calling model's token counts. Paid models need credits even when the calling model is free.

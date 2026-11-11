@@ -709,10 +709,51 @@ export type WebFetchObservability = {
 };
 
 /**
+ * A model call a server tool made for the request (advisor, subagent, fusion panel), priced on the
+ * called model's own route rather than the main model's card. Image generation is priced by
+ * meta.serverToolPricing.
+ */
+export type ServerToolSubCallCharge = {
+    kind: "advisor";
+    model: string;
+    provider: string;
+    keySource: "gateway" | "byok";
+    totalNanos: number;
+    currency: string;
+    inputTokens?: number;
+    outputTokens?: number;
+};
+
+/**
  * The main context object passed through the entire pipeline
  * Contains all information needed for request processing
  */
 export type PipelineContext = {
+	/** Charges for model calls server tools made during this request, added to its bill. */
+	serverToolSubCallCharges?: ServerToolSubCallCharge[];
+	/**
+	 * Why uncollectedChargeNanos was not collected: the wallet refused the debit (a definite, known unpaid amount), or the debit's outcome
+	 * is unknown after every retry (a transport error or lost response).
+	 */
+	uncollectedChargeReason?: "wallet_refused" | "wallet_not_found" | "persistence_failed";
+	/** The round-by-round bill of a successful multi-round server-tool response, charged instead of the aggregate. */
+	serverToolRoundsBill?: import("../after/server-tool-charges").ServerToolRoundsBill | null;
+	/**
+	 * What a server-tool request that then failed was charged for its completed rounds. The
+	 * failure row carries it and counts it against spend limits instead of releasing them.
+	 */
+	serverToolPartialCharge?: {
+		costNanos: number;
+		currency: string;
+		usage: Record<string, unknown>;
+		pricingLines: unknown[];
+		/** Completed rounds that could not be priced, recorded for reconciliation. */
+		unpricedRounds?: unknown[];
+		/** What should have been charged when the wallet charge did not go through (costNanos is 0). */
+		expectedNanos?: number;
+		/** Set by the writer that persists the failure row; only it settles spend limits. */
+		persistedBy?: "failure_audit" | "error_handler";
+	} | null;
 	/** Authenticated key owner or OAuth user; never use caller attribution for quotas. */
 	quotaUserId?: string | null;
 	/** Guardrails active for this key or OAuth user; selects guardrail rate limit policies. */
@@ -751,6 +792,12 @@ export type PipelineContext = {
     confirmedChargeNanos?: number | null;
     /** Where confirmedChargeNanos came from: the charge row, or the last checkpoint sent. */
     confirmedChargeSource?: "database" | "last_checkpoint";
+    /**
+     * The HTTP request's position in the workspace's monthly BYOK allowance, shared by its model
+     * fallbacks (each has its own billingRequestId), so the request counts once and is free or
+     * pays the fee as one request.
+     */
+    byokAllowanceId?: string;
     requestId: string;
     protocol?: string;
     providerCapabilitiesBeta?: boolean;

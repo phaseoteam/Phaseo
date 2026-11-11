@@ -41,6 +41,38 @@ describe("recordUsageAndChargeOnce", () => {
 		recordUsageAndChargeMock.mockReset().mockResolvedValue(undefined);
 	});
 
+	it.each([
+		{ code: "P0001", message: "wallet_not_found", details: null, hint: null },
+		new Error("gateway_charge_not_applied:wallet_not_found"),
+	])("does not retry a missing wallet and records it as wallet_not_found (%o)", async (missing) => {
+		recordUsageAndChargeMock.mockRejectedValue(missing);
+		const ctx: any = { requestId: "r", billingRequestId: "bill", workspaceId: "ws", meta: {} };
+		await expect(recordUsageAndChargeOnce({ ctx, costNanos: 1_400_000, endpoint: "responses", throwOnFailure: true })).rejects.toThrow("usage_charge_refused");
+		expect(recordUsageAndChargeMock).toHaveBeenCalledTimes(1);
+		expect(ctx).toMatchObject({ uncollectedChargeNanos: 1_400_000, uncollectedChargeReason: "wallet_not_found" });
+	});
+
+	it.each([
+		new Error("gateway_charge_not_applied:insufficient_balance"),
+		{ code: "P0001", message: "insufficient_unreserved_balance" },
+	])("does not retry a wallet refusal and records it as refused (%o)", async (refusal) => {
+		recordUsageAndChargeMock.mockRejectedValue(refusal);
+		const ctx: any = { requestId: "r", billingRequestId: "bill", workspaceId: "ws", meta: {} };
+		await expect(recordUsageAndChargeOnce({ ctx, costNanos: 1_400_000, endpoint: "responses", throwOnFailure: true })).rejects.toThrow("usage_charge_refused");
+		expect(recordUsageAndChargeMock).toHaveBeenCalledTimes(1);
+		expect(ctx).toMatchObject({ uncollectedChargeNanos: 1_400_000, uncollectedChargeReason: "wallet_refused" });
+	});
+
+	it("records a charge the wallet did not take after every retry as uncollected", async () => {
+		recordUsageAndChargeMock.mockRejectedValue(new Error("database unavailable"));
+		const ctx: any = { requestId: "r", billingRequestId: "bill", workspaceId: "ws", meta: {} };
+		await expect(recordUsageAndChargeOnce({ ctx, costNanos: 1_400_000, endpoint: "responses", throwOnFailure: true })).rejects.toThrow("usage_charge_persistence_failed");
+		expect(recordUsageAndChargeMock).toHaveBeenCalledTimes(3);
+		expect(ctx.uncollectedChargeNanos).toBe(1_400_000);
+		expect(ctx.uncollectedChargeReason).toBe("persistence_failed");
+		expect(ctx.meta.__usageChargeRecorded).toBeUndefined();
+	});
+
 	it("records usage charge once per request context", async () => {
 		const ctx: any = {
 			requestId: "req_charge",

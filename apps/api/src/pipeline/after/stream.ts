@@ -15,8 +15,11 @@ import { handleFailureAudit, handleSuccessAudit } from "./audit";
 import { keepChargedTotalAsFinal, recordProvisionalStreamCharge, recordUsageAndChargeOnce } from "./charge";
 import { noteIntendedCharge } from "./intended-charge";
 import { estimateDrainProgressUsage } from "./drain-progress";
+import { serverToolRoundsBilled } from "./server-tool-charges";
+import { emptyDeliveredOutput, withFrameOutput, type DeliveredOutput } from "./response-output";
 import {
     countRequestMediaInputs,
+    pickManagedServerToolMeters,
     shapeUsageForClient,
     stripUsagePricing,
     type RequestMediaCounts,
@@ -269,16 +272,23 @@ export async function handleStreamResponse(
     // snapshot, finalization and re-pricing); walk the request body for media
     // inputs once per request instead of on every call.
     let requestMediaCounts: RequestMediaCounts | null | undefined;
+    // A server-tool stream is re-encoded from the IR, whose usage carries only server_tool_use;
+    // the loop's flat managed-tool meters (zeros included) live on the bill and must reach
+    // pricing, or managed searches would be priced as provider-native ones.
+    const managedServerToolMeters = pickManagedServerToolMeters(result.bill?.usage);
     const shapeStreamUsageForClient = (usage: any) => {
         if (!usage || typeof usage !== "object") return usage;
         if (requestMediaCounts === undefined) {
             requestMediaCounts = countRequestMediaInputs(ctx.endpoint, ctx.body);
         }
-        return shapeUsageForClient(withProviderHint(usage), {
+        const shaped = shapeUsageForClient(withProviderHint(usage), {
             endpoint: ctx.endpoint,
             body: ctx.body,
             mediaCounts: requestMediaCounts,
         });
+        return managedServerToolMeters && shaped && typeof shaped === "object"
+            ? { ...shaped, ...managedServerToolMeters }
+            : shaped;
     };
     // Usage frames carry what settlement will charge. They are priced from the usage that
     // settlement bills: an authoritative executor's own reading of the upstream stream when
@@ -301,7 +311,9 @@ export async function handleStreamResponse(
         if (!record || typeof record !== "object" || typeof record.cost !== "number") return usage;
         const { cost, cost_details, ...rest } = record;
         if (!costKnown) return rest as T;
-        if (!streamIsByok) return usage;
+        // A multi-round response's cost is its settled round bill (Phaseo's charge, whatever key the
+        // final round used), not the final BYOK round's upstream inference cost.
+        if (!streamIsByok || ctx.serverToolRoundsBill) return usage;
         return { ...rest, cost_details: { ...(cost_details ?? {}), upstream_inference_cost: cost } } as T;
     };
     // Mirrors the authoritative branch of finalizeFromBill below.
@@ -313,8 +325,13 @@ export async function handleStreamResponse(
         return withInputModalityTokenMeters(shapeStreamUsageForClient(meters), meters);
     };
     // Prices a frame's shaped usage. The priced usage keeps the frame's own token counts and
-    // carries the settled charge as its `pricing`.
+    // carries the settled charge as its `pricing`. Without a card it
+    // prices only a multi-round response, from its round bill.
     const priceStreamFrameUsage = (shapedUsage: any): { pricedUsage: any; costKnown: boolean } => {
+        // A multi-round server-tool response settles its round-by-round bill; the frame shows that,
+        // without pricing the aggregate usage on the final card (which may be missing or unpriceable).
+        const roundsBilled = serverToolRoundsBilled(ctx, shapedUsage);
+        if (roundsBilled) return { pricedUsage: roundsBilled.pricedUsage, costKnown: !streamHasFailed() };
         const tier = ctx.teamEnrichment?.tier ?? 'basic';
         const priced = calculatePricing(shapedUsage, card, ctx.body, tier, ctx.meta);
         let basis = priced;
@@ -328,6 +345,8 @@ export async function handleStreamResponse(
         if (!streamIsByok) {
             const successful = applySuccessfulResponseBillingPolicy({
                 endpoint: ctx.endpoint,
+                delivered: withFrameOutput(deliveredOutput, outgoingOutput),
+                subCallCharges: ctx.serverToolSubCallCharges,
                 pricedUsage: attachToolUsageMetrics(basis.pricedUsage, buildToolUsage()),
                 totalNanos: basis.totalNanos,
                 totalCents: basis.totalCents,
@@ -356,7 +375,7 @@ export async function handleStreamResponse(
     // Messages usage frames are not otherwise priced for the client: add only the cost
     // fields, priced the same way as the Chat and Responses usage frames.
     const messagesStreamCostFields = (usage: any) => {
-        if (!card || !usage || typeof usage !== "object") return undefined;
+        if ((!card && !ctx.serverToolRoundsBill) || !usage || typeof usage !== "object") return undefined;
         try {
             const { pricedUsage, costKnown } = priceStreamFrameUsage(shapeStreamUsageForClient(usage));
             return withStreamCostBasis(usageCostFields((pricedUsage as any)?.pricing), costKnown);
@@ -377,6 +396,28 @@ export async function handleStreamResponse(
 
     // Output streamed so far, for settling a stream charged at drain checkpoints.
     let streamedOutputChars = 0;
+    // Non-text output the client received, for the zero-output check (response-output.ts): a
+    // stream has no IR, so billing reads the frames written to the client (onClientEvent), after
+    // re-encoding: a part the client protocol's encoder drops was not delivered.
+    const deliveredOutput = emptyDeliveredOutput();
+    const deliveredToolCallKeys = new Set<string>();
+    const recordOutput = (target: DeliveredOutput, keys: Set<string>, event: UnifiedStreamEvent) => {
+        if (event.type === "delta_text" && event.channel === "reasoning_text" && event.text.trim()) target.reasoning = true;
+        else if (event.type === "delta_content_part") target.media = true;
+        else if (event.type === "delta_tool" && (event.toolName?.trim() || event.argumentsDelta?.trim() || event.arguments?.trim())) {
+            keys.add(resolveStreamedToolCallKey(event));
+            target.toolCalls = keys.size;
+        }
+    };
+    const onClientEvent = (event: UnifiedStreamEvent) => recordOutput(deliveredOutput, deliveredToolCallKeys, event);
+    // The output of the frame being written: its usage is priced before the write, so the price
+    // the client sees counts that frame's own output, as settlement will.
+    let outgoingOutput = emptyDeliveredOutput();
+    const onOutgoingFrame = (events: UnifiedStreamEvent[] | null) => {
+        outgoingOutput = emptyDeliveredOutput();
+        const keys = new Set<string>();
+        for (const event of events ?? []) recordOutput(outgoingOutput, keys, event);
+    };
     const onStreamEvent = (event: UnifiedStreamEvent) => {
 		if (event.type === "error") {
 			streamFailed = true;
@@ -386,9 +427,12 @@ export async function handleStreamResponse(
         // Sees the provider's own frame, also when it is re-encoded for the client.
         if (event.type === "start") rememberNativeId(event.payload);
         if (event.type === "delta_tool") {
-            const key = resolveStreamedToolCallKey(event);
-            streamedToolCallKeys.add(key);
-            cachedOutputToolCallCount = streamedToolCallKeys.size;
+            // Counted once it names a tool or carries arguments: an empty placeholder is not output
+            // (response-output.ts isBillableToolCall).
+            if (event.toolName?.trim() || event.argumentsDelta?.trim() || event.arguments?.trim()) {
+                streamedToolCallKeys.add(resolveStreamedToolCallKey(event));
+                cachedOutputToolCallCount = streamedToolCallKeys.size;
+            }
             if (event.toolName) {
                 streamedToolCallNames.add(event.toolName);
                 cachedOutputToolCallNames = Array.from(streamedToolCallNames);
@@ -491,7 +535,7 @@ export async function handleStreamResponse(
                     const costFields = next.type === "message_delta" ? messagesStreamCostFields(messagesStreamUsage) : undefined;
                     next.usage = normalizeAnthropicUsage(next.usage);
                     if (costFields) Object.assign(next.usage, costFields);
-                } else if (card) {
+                } else if (card || ctx.serverToolRoundsBill) {
                     const { pricedUsage, costKnown } = priceStreamFrameUsage(withInputModalityTokenMeters(shapeStreamUsageForClient(next.usage), next.usage));
                     if (ctx.meta.debug) {
                         console.log("[gateway][pricing] stream frame priced usage", {
@@ -521,7 +565,7 @@ export async function handleStreamResponse(
                 }
                 if (ctx.endpoint === "messages" || ctx.protocol === "anthropic.messages") {
                     next.response.usage = normalizeAnthropicUsage(next.response.usage);
-                } else if (card) {
+                } else if (card || ctx.serverToolRoundsBill) {
                     const { pricedUsage, costKnown } = priceStreamFrameUsage(withInputModalityTokenMeters(shapeStreamUsageForClient(next.response.usage), next.response.usage));
                     if (ctx.meta.debug) {
                         console.log("[gateway][pricing] stream response priced usage", {
@@ -631,6 +675,8 @@ export async function handleStreamResponse(
             return next;
         },
         onStreamEvent,
+        onClientEvent,
+        onOutgoingFrame,
         // Client gone and the drain still running: charge an estimate of what was generated so
         // far, in case the runtime stops the drain before the final usage (see
         // DRAIN_CHECKPOINT_DELAYS_MS). The final bill then settles the request's total, refunding
@@ -908,7 +954,8 @@ export async function handleStreamResponse(
                     Object.values(usageWithToolMetrics).some(
                         (value) => typeof value === "number" && Number.isFinite(value) && value >= 0
                     );
-                if (card && usageHasMeters) {
+                const roundsBilled = serverToolRoundsBilled(ctx, usageWithToolMetrics);
+                if (!roundsBilled && card && usageHasMeters) {
                     const tier = ctx.teamEnrichment?.tier ?? 'basic';
                     const repriced = priceFinal(() => calculatePricing(
                         withInputModalityTokenMeters(shapeStreamUsageForClient(usageWithToolMetrics), usageWithToolMetrics),
@@ -924,32 +971,38 @@ export async function handleStreamResponse(
                 }
                 alertUnexpectedZeroCostMedia({ ctx, result, card, totalNanos: totalNanosOverride });
 
-                const pricedWithByokSubtotal = await applyByokServiceFeeWithToolCharges({
-                    toolCharges: ctx.meta.serverToolPricing,
-                    workspaceId: ctx.workspaceId,
-                    idempotencyKey: ctx.billingRequestId,
-                    isByok,
-                    baseCostNanos: totalNanosOverride,
-                    pricedUsage: usageWithToolMetrics,
-                    currencyHint,
-                });
-				const successfulBilling = applySuccessfulResponseBillingPolicy({
-					endpoint: ctx.endpoint,
-					pricedUsage: pricedWithByokSubtotal.pricedUsage,
-					totalNanos: pricedWithByokSubtotal.totalNanos,
-					totalCents: pricedWithByokSubtotal.totalCents,
-				});
-                const pricedWithByok = {
-					...pricedWithByokSubtotal,
-					...successfulBilling,
-					...applyDataContributionDiscount({
-						pricedUsage: successfulBilling.pricedUsage,
-						totalNanos: successfulBilling.totalNanos,
-						enabled: ctx.teamSettings?.dataContributionEnabled === true,
-						isByok,
-						discountBps: ctx.teamSettings?.dataContributionDiscountBps,
-					}),
-				};
+                // A multi-round request is charged its round bill: the aggregate usage is not priced, so a
+                // final card that cannot price it cannot lose the bill.
+                const pricedWithByok = roundsBilled ?? await (async () => {
+                    const pricedWithByokSubtotal = await applyByokServiceFeeWithToolCharges({
+                        toolCharges: ctx.meta.serverToolPricing,
+                        workspaceId: ctx.workspaceId,
+                        idempotencyKey: ctx.byokAllowanceId ?? ctx.billingRequestId,
+                        isByok,
+                        baseCostNanos: totalNanosOverride,
+                        pricedUsage: usageWithToolMetrics,
+                        currencyHint,
+                    });
+					const successfulBilling = applySuccessfulResponseBillingPolicy({
+						endpoint: ctx.endpoint,
+						delivered: deliveredOutput,
+						subCallCharges: ctx.serverToolSubCallCharges,
+						pricedUsage: pricedWithByokSubtotal.pricedUsage,
+						totalNanos: pricedWithByokSubtotal.totalNanos,
+						totalCents: pricedWithByokSubtotal.totalCents,
+					});
+                    return {
+						...pricedWithByokSubtotal,
+						...successfulBilling,
+						...applyDataContributionDiscount({
+							pricedUsage: successfulBilling.pricedUsage,
+							totalNanos: successfulBilling.totalNanos,
+							enabled: ctx.teamSettings?.dataContributionEnabled === true,
+							isByok,
+							discountBps: ctx.teamSettings?.dataContributionDiscountBps,
+						}),
+                    };
+                })();
                 noteIntendedCharge(ctx, pricedWithByok.totalNanos);
                 result.bill.cost_cents = pricedWithByok.totalCents;
                 result.bill.currency = pricedWithByok.currency;
@@ -1018,32 +1071,39 @@ export async function handleStreamResponse(
                     shapeStreamUsageForClient(usageForShaping),
                     buildToolUsage()
                 );
-                const pricedWithByokSubtotal = await applyByokServiceFeeWithToolCharges({
-                    toolCharges: ctx.meta.serverToolPricing,
-                    workspaceId: ctx.workspaceId,
-                    idempotencyKey: ctx.billingRequestId,
-                    isByok,
-                    baseCostNanos: 0,
-                    pricedUsage: fallbackUsageWithToolMetrics ?? usageWithToolMetrics,
-                    currencyHint: result.bill.currency ?? card?.currency ?? "USD",
-                });
-				const successfulBilling = applySuccessfulResponseBillingPolicy({
-					endpoint: ctx.endpoint,
-					pricedUsage: pricedWithByokSubtotal.pricedUsage,
-					totalNanos: pricedWithByokSubtotal.totalNanos,
-					totalCents: pricedWithByokSubtotal.totalCents,
-				});
-                const pricedWithByok = {
-					...pricedWithByokSubtotal,
-					...successfulBilling,
-					...applyDataContributionDiscount({
-						pricedUsage: successfulBilling.pricedUsage,
-						totalNanos: successfulBilling.totalNanos,
-						enabled: ctx.teamSettings?.dataContributionEnabled === true,
-						isByok,
-						discountBps: ctx.teamSettings?.dataContributionDiscountBps,
-					}),
-				};
+                const roundsBilled = serverToolRoundsBilled(ctx, fallbackUsageWithToolMetrics ?? usageWithToolMetrics);
+                // A multi-round request is charged its round bill: the aggregate usage is not priced, so a
+                // final card that cannot price it cannot lose the bill.
+                const pricedWithByok = roundsBilled ?? await (async () => {
+                    const pricedWithByokSubtotal = await applyByokServiceFeeWithToolCharges({
+                        toolCharges: ctx.meta.serverToolPricing,
+                        workspaceId: ctx.workspaceId,
+                        idempotencyKey: ctx.byokAllowanceId ?? ctx.billingRequestId,
+                        isByok,
+                        baseCostNanos: 0,
+                        pricedUsage: fallbackUsageWithToolMetrics ?? usageWithToolMetrics,
+                        currencyHint: result.bill.currency ?? card?.currency ?? "USD",
+                    });
+					const successfulBilling = applySuccessfulResponseBillingPolicy({
+						endpoint: ctx.endpoint,
+						delivered: deliveredOutput,
+						subCallCharges: ctx.serverToolSubCallCharges,
+						pricedUsage: pricedWithByokSubtotal.pricedUsage,
+						totalNanos: pricedWithByokSubtotal.totalNanos,
+						totalCents: pricedWithByokSubtotal.totalCents,
+					});
+                    return {
+						...pricedWithByokSubtotal,
+						...successfulBilling,
+						...applyDataContributionDiscount({
+							pricedUsage: successfulBilling.pricedUsage,
+							totalNanos: successfulBilling.totalNanos,
+							enabled: ctx.teamSettings?.dataContributionEnabled === true,
+							isByok,
+							discountBps: ctx.teamSettings?.dataContributionDiscountBps,
+						}),
+                    };
+                })();
                 noteIntendedCharge(ctx, pricedWithByok.totalNanos);
                 await maybeWriteStickyForUsage(pricedWithByok.pricedUsage);
 				await recordManagedProviderTokensOnce({ ctx, providerId: result.provider, keySource: result.keySource, usage: pricedWithByok.pricedUsage, reservation: result.providerRateLimitReservation });
@@ -1070,56 +1130,63 @@ export async function handleStreamResponse(
                 return;
             }
 
-            const tier = ctx.teamEnrichment?.tier ?? 'basic';
-            const { pricedUsage, totalCents, totalNanos, currency } = priceFinal(() => calculatePricing(
-                shapedUsage,
-                card,
-                ctx.body,
-                tier,
-                ctx.meta
-            ));
-            alertUnexpectedZeroCostMedia({ ctx, result, card, totalNanos });
-            if (ctx.meta.debug) {
-                console.log("[gateway][pricing] stream final priced usage", {
-                    requestId: ctx.requestId,
-                    endpoint: ctx.endpoint,
-                    provider: result.provider,
-                    pricing: (pricedUsage as any)?.pricing ?? null,
-                    totalCents,
-                    totalNanos,
-                    currency,
-                });
-            }
+            const roundsBilled = serverToolRoundsBilled(ctx, attachToolUsageMetrics(shapedUsage, { ...buildToolUsage() }));
+            // A multi-round request is charged its round bill: the aggregate usage is not priced, so a
+            // final card that cannot price it cannot lose the bill.
+            const pricedWithByok = roundsBilled ?? await (async () => {
+                const tier = ctx.teamEnrichment?.tier ?? 'basic';
+                const { pricedUsage, totalCents, totalNanos, currency } = priceFinal(() => calculatePricing(
+                    shapedUsage,
+                    card,
+                    ctx.body,
+                    tier,
+                    ctx.meta
+                ));
+                alertUnexpectedZeroCostMedia({ ctx, result, card, totalNanos });
+                if (ctx.meta.debug) {
+                    console.log("[gateway][pricing] stream final priced usage", {
+                        requestId: ctx.requestId,
+                        endpoint: ctx.endpoint,
+                        provider: result.provider,
+                        pricing: (pricedUsage as any)?.pricing ?? null,
+                        totalCents,
+                        totalNanos,
+                        currency,
+                    });
+                }
 
-            const usageWithToolMetrics = attachToolUsageMetrics(pricedUsage, {
-                ...buildToolUsage(),
-            });
-            const pricedWithByokSubtotal = await applyByokServiceFeeWithToolCharges({
-                toolCharges: ctx.meta.serverToolPricing,
-                workspaceId: ctx.workspaceId,
-                idempotencyKey: ctx.billingRequestId,
-                isByok,
-                baseCostNanos: totalNanos,
-                pricedUsage: usageWithToolMetrics,
-                currencyHint: currency,
-            });
-			const successfulBilling = applySuccessfulResponseBillingPolicy({
-				endpoint: ctx.endpoint,
-				pricedUsage: pricedWithByokSubtotal.pricedUsage,
-				totalNanos: pricedWithByokSubtotal.totalNanos,
-				totalCents: pricedWithByokSubtotal.totalCents,
-			});
-            const pricedWithByok = {
-				...pricedWithByokSubtotal,
-				...successfulBilling,
-				...applyDataContributionDiscount({
-					pricedUsage: successfulBilling.pricedUsage,
-					totalNanos: successfulBilling.totalNanos,
-					enabled: ctx.teamSettings?.dataContributionEnabled === true,
-					isByok,
-					discountBps: ctx.teamSettings?.dataContributionDiscountBps,
-				}),
-			};
+                const usageWithToolMetrics = attachToolUsageMetrics(pricedUsage, {
+                    ...buildToolUsage(),
+                });
+                const pricedWithByokSubtotal = await applyByokServiceFeeWithToolCharges({
+                    toolCharges: ctx.meta.serverToolPricing,
+                    workspaceId: ctx.workspaceId,
+                    idempotencyKey: ctx.byokAllowanceId ?? ctx.billingRequestId,
+                    isByok,
+                    baseCostNanos: totalNanos,
+                    pricedUsage: usageWithToolMetrics,
+                    currencyHint: currency,
+                });
+				const successfulBilling = applySuccessfulResponseBillingPolicy({
+					endpoint: ctx.endpoint,
+					delivered: deliveredOutput,
+					subCallCharges: ctx.serverToolSubCallCharges,
+					pricedUsage: pricedWithByokSubtotal.pricedUsage,
+					totalNanos: pricedWithByokSubtotal.totalNanos,
+					totalCents: pricedWithByokSubtotal.totalCents,
+				});
+                return {
+					...pricedWithByokSubtotal,
+					...successfulBilling,
+					...applyDataContributionDiscount({
+						pricedUsage: successfulBilling.pricedUsage,
+						totalNanos: successfulBilling.totalNanos,
+						enabled: ctx.teamSettings?.dataContributionEnabled === true,
+						isByok,
+						discountBps: ctx.teamSettings?.dataContributionDiscountBps,
+					}),
+                };
+            })();
             noteIntendedCharge(ctx, pricedWithByok.totalNanos);
 
             result.bill.cost_cents = pricedWithByok.totalCents;

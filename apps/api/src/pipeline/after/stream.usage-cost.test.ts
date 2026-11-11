@@ -221,12 +221,13 @@ describe("usage.cost on streamed text responses", () => {
 		expect(usage.cost).toBe(0.00225);
 	});
 
-	it("reports a zero-output stream as free, as settlement charges it", async () => {
+	it("charges a zero-output stream's prompt, and its frame reports what settlement charges", async () => {
+		// The provider bills the 11 prompt tokens even though nothing was generated.
 		const frames = await runStream(ctxFor("chat.completions", "openai.chat.completions"), chatStream(0));
 		const usage = frames.find((frame) => frame.usage)?.usage;
 
-		expect(chargeMock).toHaveBeenCalledWith(expect.objectContaining({ costNanos: 0 }));
-		expect(usage.cost).toBe(0);
+		expect(chargeMock).toHaveBeenCalledWith(expect.objectContaining({ costNanos: FRAME_PRICE_NANOS }));
+		expect(usage.cost).toBe(0.0025);
 	});
 
 	it("prices the frame from an authoritative executor's usage, which settlement bills", async () => {

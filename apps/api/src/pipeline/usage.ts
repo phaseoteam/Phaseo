@@ -31,6 +31,43 @@ const openAIChatAudioTokens = (obj: any, detailsKey: "prompt_tokens_details" | "
 };
 
 /**
+ * The reasoning and media output a raw usage record reports, under every alias the providers use
+ * (flat meters, then the Responses and Chat detail objects, then counts). Usage shaping and the
+ * output check that decides the zero-output waiver (after/response-output.ts) both read it, so
+ * they recognise the same fields.
+ */
+export function outputModalityCounts(usage: any): {
+    reasoningTokens: number | undefined;
+    outputImages: number | undefined;
+    outputAudio: number | undefined;
+    outputVideo: number | undefined;
+} {
+    const base = usage && typeof usage === "object" ? usage : {};
+    return {
+        reasoningTokens:
+            pickNumber(base, "reasoning_tokens") ??
+            pickNumber(base, "output_tokens_details.reasoning_tokens") ??
+            pickNumber(base, "completion_tokens_details.reasoning_tokens"),
+        outputImages:
+            pickNumber(base, "output_image_tokens") ??
+            pickNumber(base, "output_tokens_details.output_images") ??
+            pickNumber(base, "completion_tokens_details.output_images") ??
+            pickNumber(base, "output_image_count"),
+        outputAudio:
+            pickNumber(base, "output_audio_tokens") ??
+            pickNumber(base, "output_tokens_details.output_audio") ??
+            pickNumber(base, "completion_tokens_details.output_audio") ??
+            openAIChatAudioTokens(base, "completion_tokens_details") ??
+            pickNumber(base, "output_audio_count"),
+        outputVideo:
+            pickNumber(base, "output_video_tokens") ??
+            pickNumber(base, "output_tokens_details.output_videos") ??
+            pickNumber(base, "completion_tokens_details.output_videos") ??
+            pickNumber(base, "output_video_count"),
+    };
+}
+
+/**
  * Remove billing outputs from a usage payload so downstream pricing
  * always derives from raw usage meters.
  */
@@ -110,6 +147,32 @@ export function keepStreamServerToolMeters(
         if (billUsage[key] != null) merged[key] = billUsage[key];
     }
     return merged;
+}
+
+/**
+ * Flat meters for Phaseo's own server tools, written by the server-tool loop. A zero is an
+ * explicit "not billable" marker (a TinyFish search, a direct fetch): it stops the engine
+ * from pricing server_tool_use counts as a provider-native tool.
+ */
+export const MANAGED_SERVER_TOOL_METER_KEYS = [
+    "server_tool_web_search_requests",
+    "server_tool_web_search_extra_results",
+    "server_tool_web_fetch_requests",
+    "server_tool_advisor_requests",
+    "server_tool_image_generation_requests",
+    "server_tool_apply_patch_requests",
+    "server_tool_subagent_requests",
+    "server_tool_fusion_requests",
+    "server_tool_search_models_requests",
+] as const;
+
+export function pickManagedServerToolMeters(usage: unknown): Record<string, number> | null {
+    if (!isUsageObject(usage)) return null;
+    const meters: Record<string, number> = {};
+    for (const key of MANAGED_SERVER_TOOL_METER_KEYS) {
+        if (isFiniteCount(usage[key])) meters[key] = usage[key];
+    }
+    return Object.keys(meters).length ? meters : null;
 }
 
 /** Media inputs counted from the request body, used when upstream usage omits them. */
@@ -235,10 +298,7 @@ export function shapeUsageForClient(
     const cachedWrite = cache.writeTokens;
     const cachedWrite5m = cache.write5mTokens;
     const cachedWrite1h = cache.write1hTokens;
-    const reasoningTokens =
-        pickNumber(base, "reasoning_tokens") ??
-        pickNumber(base, "output_tokens_details.reasoning_tokens") ??
-        pickNumber(base, "completion_tokens_details.reasoning_tokens");
+    const { reasoningTokens, outputImages, outputAudio, outputVideo } = outputModalityCounts(base);
 
     // Multimodal signals (prefer tokenized meters, then detail fields, then count-based fallbacks).
     const inputImageTokens =
@@ -254,26 +314,10 @@ export function shapeUsageForClient(
         pickNumber(base, "input_video_tokens") ??
         pickNumber(base, "input_tokens_details.input_videos") ??
         pickNumber(base, "input_details.input_videos");
-    const outputImageTokens =
-        pickNumber(base, "output_image_tokens") ??
-        pickNumber(base, "output_tokens_details.output_images") ??
-        pickNumber(base, "completion_tokens_details.output_images");
-    const outputAudioTokens =
-        pickNumber(base, "output_audio_tokens") ??
-        pickNumber(base, "output_tokens_details.output_audio") ??
-        pickNumber(base, "completion_tokens_details.output_audio") ??
-        openAIChatAudioTokens(base, "completion_tokens_details");
-    const outputVideoTokens =
-        pickNumber(base, "output_video_tokens") ??
-        pickNumber(base, "output_tokens_details.output_videos") ??
-        pickNumber(base, "completion_tokens_details.output_videos");
 
     const inputImages = inputImageTokens ?? pickNumber(base, "input_image_count");
     const inputAudio = inputAudioTokens ?? pickNumber(base, "input_audio_count");
     const inputVideo = inputVideoTokens ?? pickNumber(base, "input_video_count");
-    const outputImages = outputImageTokens ?? pickNumber(base, "output_image_count");
-    const outputAudio = outputAudioTokens ?? pickNumber(base, "output_audio_count");
-    const outputVideo = outputVideoTokens ?? pickNumber(base, "output_video_count");
 
     const inputDetails: Record<string, any> = {};
     const nativeDecisions = ctx?.endpoint === "decisions" && Array.isArray(ctx.body?.questions);

@@ -120,4 +120,4 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 ## الاستخدام والتسعير
 
-يضيف كل استدعاء 1 إلى `usage.server_tool_use.advisor_requests` ويمكن احتسابه باستخدام `server_tool_advisor_requests`. تُضاف توكنات Advisor إلى استخدام الطلب وتُسعَّر بأسعار نموذج Advisor.
+يضيف كل استدعاء 1 إلى `usage.server_tool_use.advisor_requests` ويمكن احتسابه عبر `server_tool_advisor_requests`. تُحتسب رموز Advisor بأسعار نموذج Advisor نفسه، كبند مستقل في فاتورة الطلب، ولا تُضاف إلى عدد رموز النموذج المستدعي. ويتطلب نموذج Advisor المدفوع رصيدًا حتى عندما يكون النموذج المستدعي مجانيًا.

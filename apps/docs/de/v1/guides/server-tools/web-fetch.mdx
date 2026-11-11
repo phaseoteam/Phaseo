@@ -109,4 +109,4 @@ Prüfe `truncated`, bevor du annimmst, dass das Modell die ganze Seite gesehen h
 
 ## Nutzung und Preise
 
-Jeder Abruf erhöht `usage.server_tool_use.web_fetch_requests` um 1. Verwaltete Abrufe werden über `server_tool_web_fetch_requests` abgerechnet. Native Abrufe werden über `native_web_fetch_requests` abgerechnet, sofern die Preiskarte des Modells diesen Zähler definiert.
+Jeder Abruf erhöht `usage.server_tool_use.web_fetch_requests` um 1. Phaseo berechnet jeden verwalteten Abruf über Exa, Parallel oder Firecrawl mit $0.001, sofern die Preiskarte des Modells keinen eigenen Preis für `server_tool_web_fetch_requests` festlegt; direkte Abrufe sind kostenlos. Abrufe über kostenpflichtige Engines erfordern Guthaben, auch wenn das Modell kostenlos ist. Nativer Abruf wird über `native_web_fetch_requests` abgerechnet, wenn die Preiskarte des Modells dies festlegt.

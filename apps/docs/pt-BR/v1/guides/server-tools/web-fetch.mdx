@@ -109,4 +109,4 @@ Verifique `truncated` antes de presumir que o modelo viu a página inteira. Para
 
 ## Uso e preços
 
-Cada busca soma 1 a `usage.server_tool_use.web_fetch_requests`. A busca gerenciada é cobrada com `server_tool_web_fetch_requests`. A busca nativa é cobrada com `native_web_fetch_requests` quando a tabela de preços do modelo a define.
+Cada busca de página soma 1 a `usage.server_tool_use.web_fetch_requests`. A Phaseo cobra $0.001 por busca gerenciada feita pelo Exa, Parallel ou Firecrawl, a menos que o cartão de preços do modelo defina o próprio preço de `server_tool_web_fetch_requests`; buscas diretas são gratuitas. Buscas por mecanismos pagos exigem créditos mesmo quando o modelo é gratuito. A busca nativa é cobrada com `native_web_fetch_requests` quando o cartão de preços do modelo a define.

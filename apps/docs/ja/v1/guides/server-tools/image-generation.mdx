@@ -61,4 +61,4 @@ curl https://api.phaseo.app/v1/responses \
 
 ## 利用量と料金
 
-画像ごとに `usage.server_tool_use.image_generation_requests` に 1 が加算され、`server_tool_image_generation_requests` で課金されることがあります。画像モデルがトークンの利用量を報告する場合、その利用量はリクエストの利用量に加算され、そのモデルの通常の料金で課金されます。
+画像ごとに `usage.server_tool_use.image_generation_requests` に 1 が加算され、`server_tool_image_generation_requests` で課金されることがあります。画像モデルは自身の料金で、リクエストの請求の別項目として課金されます。有料の画像モデルを使うには、呼び出し元モデルが無料でもクレジットが必要です。

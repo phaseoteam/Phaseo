@@ -548,6 +548,12 @@ export function presentUsageForClient(usage: any, ctx?: { endpoint?: PipelineCon
 
     if (Object.keys(inputDetails).length) out.input_tokens_details = inputDetails;
     if (Object.keys(outputDetails).length) out.output_tokens_details = outputDetails;
+    if (ctx?.endpoint === "responses") {
+        // A Responses usage object always has both detail objects (the OpenAI SDKs require them):
+        // no cached, cache-write or reasoning tokens reported is 0, which is also what was billed.
+        out.input_tokens_details = { cached_tokens: 0, cache_write_tokens: 0, ...(out.input_tokens_details ?? {}) };
+        out.output_tokens_details = { reasoning_tokens: 0, ...(out.output_tokens_details ?? {}) };
+    }
     if (serverToolUse) out.server_tool_use = serverToolUse;
     if (typeof serviceTier === "string") out.service_tier = serviceTier;
     if (pricing) out.pricing_breakdown = pricing;
