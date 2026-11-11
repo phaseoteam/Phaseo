@@ -643,10 +643,12 @@ async function loadCimdClient(clientId: string): Promise<OAuthClient | null> {
 	) return null;
 	const responseTypes = Array.isArray(metadata.response_types) ? metadata.response_types.map(String) : ["code"];
 	const grantTypes = Array.isArray(metadata.grant_types) ? metadata.grant_types.map(String) : ["authorization_code"];
+	// Clients publish one document for every server they talk to, so it can list
+	// grants Phaseo doesn't offer (Claude lists the JWT bearer grant). Ignore those:
+	// the token endpoint answers unsupported_grant_type for anything but its own.
 	if (
 		!responseTypes.every((value) => value === "code")
 		|| !grantTypes.includes("authorization_code")
-		|| !grantTypes.every((value) => value === "authorization_code" || value === "refresh_token")
 	) return null;
 	const requestedScopes = normalizeScopes(metadata.scope, CIMD_DEFAULT_SCOPES);
 	const allowedScopeSet = new Set<string>(CIMD_DEFAULT_SCOPES);
