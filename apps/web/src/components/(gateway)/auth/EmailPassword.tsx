@@ -10,6 +10,7 @@ import { ForgotPasswordDialog } from "./ForgotPasswordDialog";
 import { Eye, EyeOff } from "lucide-react";
 import { defaultLocale, type PublicLocale } from "@/i18n/routing";
 import { buildLocalizedAuthPath } from "@/lib/auth/localized-paths";
+import { openAuthDialog } from "./dialog/authDialogStore";
 
 const LAST_AUTH_PROVIDER_STORAGE_KEY = "phaseo:last-auth-provider";
 
@@ -28,15 +29,20 @@ export default function EmailPassword({
 	returnUrl,
 	isLastUsed = false,
 	locale = defaultLocale,
+	surface = "page",
 }: {
 	returnUrl?: string;
 	isLastUsed?: boolean;
 	locale?: PublicLocale;
+	/** In the sign-in dialog a wrong password is shown in place instead of loading /sign-in. */
+	surface?: "page" | "dialog";
 }) {
 	const shared = useTranslations("Auth.shared");
 	const t = useTranslations("Auth.signIn");
 	const [forgotPasswordOpen, setForgotPasswordOpen] = React.useState(false);
 	const [showPassword, setShowPassword] = React.useState(false);
+	// Controlled, so a failed attempt in the dialog keeps what was typed (form actions reset uncontrolled fields).
+	const [email, setEmail] = React.useState("");
 	const [password, setPassword] = React.useState("");
 	const [storedLastUsedProvider, setStoredLastUsedProvider] =
 		React.useState<string | null>(null);
@@ -78,11 +84,23 @@ export default function EmailPassword({
 			</div>
 
 			<form
-				action={(formData) => handlePasswordSignIn({ data: formData })}
+				action={async (formData) => {
+					const result = await handlePasswordSignIn({ data: formData });
+					if (result?.step === "mfa") {
+						openAuthDialog({ step: "mfa", returnUrl: returnUrl ?? "/" });
+						return;
+					}
+					if (result?.error) {
+						setPassword("");
+						setShowPassword(false);
+						openAuthDialog({ step: "sign-in", returnUrl: returnUrl ?? "/", notice: result.error });
+					}
+				}}
 				className="grid gap-3"
 				onSubmit={handleSubmit}
 			>
 				<input type="hidden" name="locale" value={locale} />
+				{surface === "dialog" ? <input type="hidden" name="surface" value="dialog" /> : null}
 				{returnUrl ? (
 					<input type="hidden" name="returnUrl" value={returnUrl} />
 				) : null}
@@ -97,6 +115,8 @@ export default function EmailPassword({
 						autoCapitalize="none"
 						spellCheck={false}
 						placeholder={shared("emailPlaceholder")}
+						value={email}
+						onChange={(event) => setEmail(event.target.value)}
 						required
 					/>
 				</div>

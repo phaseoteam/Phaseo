@@ -1,137 +1,42 @@
 import * as React from 'react'
-import { useRouter } from '@/lib/navigation'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { useSearch } from '@tanstack/react-router'
 import {
     Card,
     CardContent,
     CardDescription,
-    CardFooter,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card'
 import { createClient } from '@/utils/supabase/client'
-import { toast } from 'sonner'
 import { Loader2, Lock } from 'lucide-react'
-import { PasswordStrengthIndicator } from '@/components/(gateway)/settings/account/PasswordStrengthIndicator'
-import { z } from 'zod'
 import { useTranslations } from '@/i18n/react'
-import { revokeOtherSessionsAfterPasswordResetAction } from './actions'
+import { authDialogHref } from '@/lib/auth/authDialogRedirect'
 
+/**
+ * Landing page of the reset-password email. The Supabase browser client reads the
+ * recovery tokens from this URL and fires PASSWORD_RECOVERY; the session is then in
+ * cookies and the new password is set in the auth dialog over the home page.
+ * This page stays separate so nothing else on a full page consumes the tokens first.
+ */
 export function ResetPasswordPage() {
-    const router = useRouter()
     const t = useTranslations('Common.authFlows.passwordReset')
-    const [password, setPassword] = React.useState('')
-    const [confirmPassword, setConfirmPassword] = React.useState('')
-    const [loading, setLoading] = React.useState(false)
-    const [isRecoveryMode, setIsRecoveryMode] = React.useState(false)
+    const search = useSearch({ strict: false }) as Record<string, unknown>
 
     React.useEffect(() => {
-        // Listen for password recovery event
         const supabase = createClient()
-
         const {
             data: { subscription },
-        } = supabase.auth.onAuthStateChange((event, session) => {
+        } = supabase.auth.onAuthStateChange((event) => {
             if (event === 'PASSWORD_RECOVERY') {
-                setIsRecoveryMode(true)
+                // A full load, so the page renders with the recovery session.
+                window.location.replace(authDialogHref({ params: {}, search }, { auth: 'reset' }))
             }
         })
 
         return () => {
             subscription.unsubscribe()
         }
-    }, [])
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault()
-
-        const passwordSchema = z
-            .object({
-                password: z
-                    .string()
-                    .min(8, t('minLength'))
-                    .regex(/[A-Z]/, t('uppercase'))
-                    .regex(/[a-z]/, t('lowercase'))
-                    .regex(/[0-9]/, t('number')),
-                confirmPassword: z.string(),
-            })
-            .refine((data) => data.password === data.confirmPassword, {
-                message: t('mismatch'),
-                path: ['confirmPassword'],
-            })
-        const parsed = passwordSchema.safeParse({ password, confirmPassword })
-
-        if (!parsed.success) {
-            const msg =
-                parsed.error.issues[0]?.message ?? t('checkInputs')
-            toast.error(msg)
-            return
-        }
-
-        setLoading(true)
-
-        try {
-            const supabase = createClient()
-
-            const { error } = await supabase.auth.updateUser({
-                password,
-            })
-
-            if (error) {
-                throw error
-            }
-
-            // Sign out every other session and app grant made with the old password.
-            const revoked = await revokeOtherSessionsAfterPasswordResetAction()
-                .then(() => true)
-                .catch(() => false)
-            if (!revoked) {
-                toast.error(t('signOutOthersFailed'))
-                return
-            }
-
-            toast.success(t('success'))
-
-            // Redirect to home or settings page
-            setTimeout(() => {
-                router.push('/settings/account')
-            }, 1500)
-        } catch (error: any) {
-            toast.error(t('failure'))
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    if (!isRecoveryMode) {
-        return (
-            <div className="flex min-h-screen items-center justify-center p-4">
-                <Card className="w-full max-w-md">
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                            <Lock className="h-5 w-5" />
-                            {t('title')}
-                        </CardTitle>
-                        <CardDescription>
-                            {t('loading')}
-                        </CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex justify-center py-8">
-                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                        </div>
-                        <p className="text-center text-sm text-muted-foreground">
-                            {t('expiredLink')}
-                            <br />
-                            {t('requestNew')}
-                        </p>
-                    </CardContent>
-                </Card>
-            </div>
-        )
-    }
+    }, [search])
 
     return (
         <div className="flex min-h-screen items-center justify-center p-4">
@@ -139,69 +44,22 @@ export function ResetPasswordPage() {
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <Lock className="h-5 w-5" />
-                            {t('setTitle')}
+                        {t('title')}
                     </CardTitle>
                     <CardDescription>
-                        {t('description')}
+                        {t('loading')}
                     </CardDescription>
                 </CardHeader>
-
-                <form onSubmit={handleSubmit}>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="password">{t('newPassword')}</Label>
-                            <Input
-                                id="password"
-                                type="password"
-                                dir="ltr"
-                                autoComplete="new-password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder={t('newPasswordPlaceholder')}
-                                disabled={loading}
-                                autoFocus
-                            />
-                            {password && (
-                                <PasswordStrengthIndicator password={password} />
-                            )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label htmlFor="confirmPassword">
-                                {t('confirmPassword')}
-                            </Label>
-                            <Input
-                                id="confirmPassword"
-                                type="password"
-                                dir="ltr"
-                                autoComplete="new-password"
-                                value={confirmPassword}
-                                onChange={(e) =>
-                                    setConfirmPassword(e.target.value)
-                                }
-                                placeholder={t('confirmPasswordPlaceholder')}
-                                disabled={loading}
-                            />
-                        </div>
-                    </CardContent>
-
-                    <CardFooter>
-                        <Button
-                            type="submit"
-                            className="w-full"
-                            disabled={!password || !confirmPassword || loading}
-                        >
-                            {loading ? (
-                                <>
-                                    <Loader2 className="me-2 h-4 w-4 animate-spin" />
-                                    {t('resetting')}
-                                </>
-                            ) : (
-                                t('submit')
-                            )}
-                        </Button>
-                    </CardFooter>
-                </form>
+                <CardContent>
+                    <div className="flex justify-center py-8">
+                        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                    </div>
+                    <p className="text-center text-sm text-muted-foreground">
+                        {t('expiredLink')}
+                        <br />
+                        {t('requestNew')}
+                    </p>
+                </CardContent>
             </Card>
         </div>
     )

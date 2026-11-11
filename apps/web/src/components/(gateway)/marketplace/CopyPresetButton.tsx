@@ -5,6 +5,7 @@ import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { forkPresetAction } from "@/features/settings/presets/actions";
+import { openAuthDialog } from "@/components/(gateway)/auth/dialog/authDialogStore";
 
 export default function CopyPresetButton({
 	sourcePresetId,
@@ -32,7 +33,7 @@ export default function CopyPresetButton({
 					} catch (error) {
 						const message = error instanceof Error ? error.message : "";
 						if (message === "AUTH_REQUIRED") {
-							router.push("/sign-in");
+							openAuthDialog({ step: "sign-in" });
 							return;
 						}
 						if (message === "TEAM_REQUIRED") {
