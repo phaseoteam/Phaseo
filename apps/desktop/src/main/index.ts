@@ -57,7 +57,7 @@ import { resolveGrokCommand } from "./grokLaunch";
 import { grokAccountStatus } from "./grokAccountStatus";
 import { grokModelCatalog } from "./grokModelCatalog";
 import { SecretVault } from "./secretVault";
-import { windowsCredentialEncryption } from "./windowsCredentialEncryption";
+import { stopCredentialHelper, windowsCredentialEncryption } from "./windowsCredentialEncryption";
 import { signInNative } from "./accountConnections";
 import { gitReview, gitWorkingStatus, listProjectFiles, projectRelativePath, readFilePreview, readProjectFile } from "./projectFiles";
 import { gitCommits, gitRefs, gitScopedDiff, readScopedDiffContents } from "./gitDiffScopes";
@@ -521,6 +521,7 @@ app.on("before-quit", event => {
 	event.preventDefault();
 	if (shutdownStarted || quitGuard.intercept()) return;
 	shutdownStarted = true;
+	void stopCredentialHelper();
 	browserHost.downloads.close();
 	diagnostics.close();
 	missionService?.close();

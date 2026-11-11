@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { launchOnWorker, windowsCredentialEncryption } from "./windowsCredentialEncryption";
+import { launchOnWorker, stopCredentialHelper, windowsCredentialEncryption } from "./windowsCredentialEncryption";
 describe("credential helper thread", () => {
  it("starts the helper from a worker thread and returns its output, input and failures", async () => {
   const echo = await launchOnWorker(process.execPath, ["-e", "process.stdin.pipe(process.stdout)"], { timeout: 20_000, windowsHide: true }, "c2VjcmV0");
@@ -8,6 +8,10 @@ describe("credential helper thread", () => {
   expect(failed).toEqual({ failed: { killed: false }, stdout: "", stderr: "phaseo-credential:input\n" });
   const runs = await Promise.all(["a", "b", "c"].map(input => launchOnWorker(process.execPath, ["-e", "process.stdin.pipe(process.stdout)"], { timeout: 20_000, windowsHide: true }, input)));
   expect(runs.map(run => run.stdout)).toEqual(["a", "b", "c"]);
+  // Stopped at quit; a request afterwards starts a new thread.
+  await stopCredentialHelper();
+  expect((await launchOnWorker(process.execPath, ["-e", "process.stdin.pipe(process.stdout)"], { timeout: 20_000, windowsHide: true }, "again")).stdout).toBe("again");
+  await stopCredentialHelper();
  }, 60_000);
 });
 describe("Windows credential protection", () => {

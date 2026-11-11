@@ -45,9 +45,20 @@ export const launchOnWorker: HelperLaunch = (executable, args, options, input) =
   // Forget it first, so a request arriving while it shuts down starts a new thread instead of joining this one.
   if (helperThread === thread) helperThread = undefined;
   void thread.worker.terminate();
- }, 30_000).unref(); });
+  // Briefly kept, so the reads at launch share one thread; not longer, since a thread still alive when the app exits
+  // can end the process with a crash on Windows.
+ }, 1_000).unref(); });
  thread.worker.postMessage({ id, executable, args, options, input });
 });
+
+/** Ends the helper thread (its requests fail like a helper that did not start). Call when the app begins to quit. */
+export async function stopCredentialHelper() {
+ const thread = helperThread;
+ if (!thread) return;
+ helperThread = undefined;
+ clearTimeout(thread.idle);
+ await thread.worker.terminate();
+}
 
 /** DPAPI owns key durability; no newly generated Chromium profile key is needed. */
 export function windowsCredentialEncryption(fallback: CredentialEncryption, launch: HelperLaunch = launchOnWorker): CredentialEncryption {
