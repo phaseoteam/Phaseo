@@ -1,48 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isTokenExpired, refreshAccessToken } from '@/lib/oauth';
+import { isTokenExpired, PHASEO_API_URL, refreshAccessToken } from '@/lib/oauth';
 import { getTokens, updateTokens } from '@/lib/session';
 
-const DEFAULT_GATEWAY_ORIGIN = 'https://api.phaseo.app';
-const GATEWAY_ORIGIN = (process.env.NEXT_PUBLIC_GATEWAY_URL || DEFAULT_GATEWAY_ORIGIN).replace(/\/+$/, '');
-const GATEWAY_PATH_PREFIX = /\/v1$/i.test(GATEWAY_ORIGIN) ? '' : '/v1';
+const GATEWAY_BASE = `${PHASEO_API_URL}/v1`;
 
+// Only the Gateway paths the workbench calls. Every entry is a path the
+// browser can reach with the signed-in person's key, so extend it deliberately.
 const ALLOWED_EXACT_SURFACES = new Set<string>([
   'health',
   'models',
   'providers',
-  'generations',
-  'chat/completions',
   'responses',
-  'responses/ws',
-  'messages',
   'embeddings',
   'moderations',
-  'audio/speech',
-  'audio/transcriptions',
-  'audio/translations',
   'images/generations',
-  'images/edits',
   'videos',
-  'videos/models',
   'ocr',
   'music/generate',
-  'files',
 ]);
 
-const ALLOWED_PREFIX_SURFACES = ['videos/', 'music/generate/', 'control/', 'internal/'];
+// Status, content and cancel routes for the video and music jobs started above.
+const ALLOWED_PREFIX_SURFACES = ['videos/', 'music/generate/'];
+
+const SAFE_SEGMENT = /^[A-Za-z0-9._:-]+$/;
 
 function normalizeSurface(segments: string[]): string | null {
   if (!segments.length) return null;
 
-  const joined = segments
-    .map((segment) => decodeURIComponent(segment).trim())
-    .filter(Boolean)
-    .join('/');
+  let decoded: string[];
+  try {
+    decoded = segments.map((segment) => decodeURIComponent(segment).trim()).filter(Boolean);
+  } catch {
+    return null;
+  }
 
-  if (!joined) return null;
-  if (joined.includes('..')) return null;
+  if (!decoded.length) return null;
+  if (decoded.some((segment) => segment === '.' || segment === '..' || !SAFE_SEGMENT.test(segment))) return null;
 
-  return joined;
+  return decoded.join('/');
 }
 
 function isAllowedSurface(surface: string): boolean {
@@ -50,7 +45,7 @@ function isAllowedSurface(surface: string): boolean {
   return ALLOWED_PREFIX_SURFACES.some((prefix) => surface.startsWith(prefix));
 }
 
-async function getGatewayAccessToken(): Promise<string> {
+export async function getGatewayAccessToken(): Promise<string> {
   const tokens = await getTokens();
   if (!tokens) {
     throw new Error('AUTH_REQUIRED');
@@ -66,7 +61,7 @@ async function getGatewayAccessToken(): Promise<string> {
 }
 
 function buildTargetUrl(request: NextRequest, surface: string): URL {
-  const upstream = new URL(`${GATEWAY_ORIGIN}${GATEWAY_PATH_PREFIX}/${surface}`);
+  const upstream = new URL(`${GATEWAY_BASE}/${surface}`);
   upstream.search = request.nextUrl.search;
   return upstream;
 }
@@ -84,7 +79,7 @@ function copyRequestHeaders(request: NextRequest, accessToken: string): Headers 
   const title = process.env.GATEWAY_APP_TITLE || 'Phaseo Gateway Integration Example';
   headers.set('x-title', title);
 
-  const referer = process.env.GATEWAY_HTTP_REFERER || process.env.NEXT_PUBLIC_REDIRECT_URI;
+  const referer = process.env.GATEWAY_HTTP_REFERER;
   if (referer) {
     headers.set('http-referer', referer);
   }
