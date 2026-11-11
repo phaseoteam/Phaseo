@@ -188,6 +188,48 @@ describe("EntityCards", () => {
 		expect(card()?.textContent).toContain("FastInfer +4 more");
 	});
 
+	it("switches to the card of a link inside the open card, at that link's last box, instead of closing", async () => {
+		render();
+		placeAt(link("model"), 200, 300);
+		pointer("pointerover", link("model"));
+		await advance(OPEN_DELAY_MS);
+		await respond("/api/_web/entity-cards/model/acme/rocket-2", { card: MODEL });
+		const opened = card()!;
+		const inCardLink = opened.querySelector<HTMLAnchorElement>("a[href='/organisations/acme']")!;
+		placeAt(inCardLink, 220, 340);
+
+		// The organisation card is already cached: the switch shows it with no loading state.
+		pointer("pointerout", link("model"), { relatedTarget: opened });
+		pointer("pointerover", inCardLink, { relatedTarget: link("model") });
+		await respond("/api/_web/entity-cards/organisation/acme", { card: ORGANISATION });
+		await advance(SWITCH_DELAY_MS);
+		// The switch replaced the card's content, so the link that is now the anchor has left the page.
+		expect(inCardLink.isConnected).toBe(false);
+		expect(card()?.hasAttribute("data-open")).toBe(true);
+		expect(card()?.textContent).toContain("Model creator since 2023");
+		expect(card()?.querySelector("[data-slot=entity-card-loading]")).toBeNull();
+		await act(async () => {
+			window.dispatchEvent(new Event("resize"));
+			await vi.advanceTimersByTimeAsync(50);
+		});
+		expect(positionOf(card()!)).toEqual({ left: "0px", top: "0px", transform: "translate(220px, 334px)" });
+
+		// An uncached card from inside the card shows the loading state, then the card.
+		const servedBy = card()!.querySelector<HTMLAnchorElement>("a[href='/api-providers/fastinfer']")!;
+		expect(servedBy).not.toBeNull();
+		pointer("pointerover", servedBy);
+		await advance(SWITCH_DELAY_MS);
+		expect(card()?.hasAttribute("data-open")).toBe(true);
+		expect(card()?.querySelector("[data-slot=entity-card-loading]")).not.toBeNull();
+		await respond("/api/_web/entity-cards/provider/fastinfer", { card: {
+			kind: "provider", id: "fastinfer", name: "FastInfer", countryCode: null, totalModels: 3, activeModels: 2,
+			dataPolicyTier: null, zeroDataRetention: null, byok: false, regions: [], popular: { items: [], more: 0 }, newest: null,
+		} });
+		expect(card()?.hasAttribute("data-open")).toBe(true);
+		expect(card()?.querySelector("[data-slot=entity-card-loading]")).toBeNull();
+		expect(card()?.textContent).toContain("FastInfer");
+	});
+
 	it("closes 200 ms after the pointer leaves, unless it moves onto the card", async () => {
 		render();
 		pointer("pointerover", link("model"));

@@ -132,7 +132,14 @@ const MAX_CACHED_CARDS = 400;
 /** A miss is remembered as long as the API caches its 404, so a newly published entity gets its card. */
 export const MISS_TTL_MS = 5 * 60 * 1000;
 // `expiresAt` is set only for misses; cards stay for the page's lifetime.
-const cache = new Map<string, { promise: Promise<EntityCard | null>; expiresAt?: number }>();
+// `settled` holds the result once the request has finished, so a cached card can render at once.
+type CacheEntry = { promise: Promise<EntityCard | null>; expiresAt?: number; settled?: { card: EntityCard | null } };
+const cache = new Map<string, CacheEntry>();
+
+function liveEntry(key: string): CacheEntry | undefined {
+	const cached = cache.get(key);
+	return cached && (cached.expiresAt === undefined || cached.expiresAt > Date.now()) ? cached : undefined;
+}
 
 export function entityCardPath(kind: EntityKind, id: string): `/api/_web/${string}` {
 	// Model and family ids keep their slashes as path segments.
@@ -142,10 +149,10 @@ export function entityCardPath(kind: EntityKind, id: string): `/api/_web/${strin
 /** The card for an entity; null when it has none. Failed loads are not cached. */
 export function loadEntityCard(kind: EntityKind, id: string): Promise<EntityCard | null> {
 	const key = `${kind}:${id}`;
-	const cached = cache.get(key);
-	if (cached && (cached.expiresAt === undefined || cached.expiresAt > Date.now())) return cached.promise;
+	const cached = liveEntry(key);
+	if (cached) return cached.promise;
 	cache.delete(key);
-	const entry: { promise: Promise<EntityCard | null>; expiresAt?: number } = { promise: Promise.resolve(null) };
+	const entry: CacheEntry = { promise: Promise.resolve(null) };
 	entry.promise = fetchPublicWebApi<{ card?: EntityCard }>(entityCardPath(kind, id))
 		.then((body) => (body.card && body.card.kind === kind ? body.card : null))
 		.catch((error: unknown) => {
@@ -155,12 +162,18 @@ export function loadEntityCard(kind: EntityKind, id: string): Promise<EntityCard
 		})
 		.then((card) => {
 			if (card === null) entry.expiresAt = Date.now() + MISS_TTL_MS;
+			entry.settled = { card };
 			return card;
 		});
 	cache.set(key, entry);
 	const promise = entry.promise;
 	if (cache.size > MAX_CACHED_CARDS) cache.delete(cache.keys().next().value!);
 	return promise;
+}
+
+/** The card if it has already loaded (null when the entity has none); undefined until then. */
+export function cachedEntityCard(kind: EntityKind, id: string): EntityCard | null | undefined {
+	return liveEntry(`${kind}:${id}`)?.settled?.card;
 }
 
 /** Test seam: forget every cached card. */
