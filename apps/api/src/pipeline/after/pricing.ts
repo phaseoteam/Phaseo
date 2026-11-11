@@ -66,6 +66,9 @@ function buildTrustedPricingRequestOptions(body: any, usage: any, pricingPlan: s
         ...deriveCachePricingContext(body),
         ...buildImagePricingRequestOptions(body ?? {}, usage),
         pricing_plan: pricingPlan,
+        // Transcription keyterms (`keywords`) carry a provider surcharge that a
+        // catalogue rule can price by matching `keyterms: true`.
+        keyterms: Array.isArray(body?.keywords) && body.keywords.length > 0,
     };
 
     const serviceTier = normalizePricingServiceTier(body, usage, card);
