@@ -1,7 +1,13 @@
+import { describe, it, expect } from "vitest";
 import {
+	bestBenchmarkIndices,
 	bestIndices,
+	distinctDigits,
 	buildVerdicts,
 	defaultEffort,
+	describeCondition,
+	parseLegacyCondition,
+	providerLines,
 	doSameJob,
 	effortLevels,
 	formatUsd,
@@ -156,6 +162,23 @@ describe("bestIndices", () => {
 	});
 });
 
+describe("distinctDigits", () => {
+	const compact = (value: number, digits: number) => new Intl.NumberFormat("en-US", { notation: "compact", maximumSignificantDigits: digits }).format(value);
+
+	it("adds digits until different context windows read differently", () => {
+		// Production, 27 Oct: GPT-6 Astra and Gemini 4 Argon both rendered as "1.05M".
+		const values = [1_050_000, 200_000, 1_048_576];
+		const digits = distinctDigits(values, compact);
+		expect(digits).toBe(4);
+		expect(values.map((value) => compact(value, digits))).toEqual(["1.05M", "200K", "1.049M"]);
+	});
+
+	it("keeps three digits when the values already read differently or truly tie", () => {
+		expect(distinctDigits([400_000, 200_000, null], compact)).toBe(3);
+		expect(distinctDigits([1_048_576, 1_048_576], compact)).toBe(3);
+	});
+});
+
 describe("doSameJob", () => {
 	it("separates chat from speech", () => {
 		expect(doSameJob([gpt5, sonnet])).toBe(true);
@@ -211,6 +234,24 @@ describe("benchmark efforts", () => {
 		expect(effortLevels([lab], ["openai/gpt-5"])).toEqual([]);
 	});
 
+	it("marks no winner when a lab reported any of the scores", () => {
+		// Production, 2 Nov: each lab's own launch numbers, with different versions and task sets.
+		const lab = (score: number, variant: string | null) => ({ score, variant, effort: null, ci: null, selfReported: true, sourceLink: null });
+		const agentsLastExam: CompareViewBenchmark = { ...eci, id: "agents-last-exam", source: "lab", results: {
+			"openai/gpt-6-astra": [lab(59.3, null), lab(58.3, "xhigh")],
+			"google/gemini-4-argon": [lab(39.5, "Pass rate")],
+		} };
+		const picks = flagshipIds.map((id) => pickResult(agentsLastExam, id, "high"));
+		expect(picks.map((picked) => (picked.kind === "result" ? picked.result.score : picked.kind))).toEqual([59.3, "none", 39.5]);
+		expect(bestBenchmarkIndices(picks, true).size).toBe(0);
+	});
+
+	it("still marks the best independent result", () => {
+		const picks = flagshipIds.map((id) => pickResult(flagshipAa, id, "high"));
+		expect([...bestBenchmarkIndices(picks, true)]).toEqual([1]);
+		expect([...bestBenchmarkIndices(picks, false)]).toEqual([0]);
+	});
+
 	it("keeps benchmarks two models share and sets aside the rest", () => {
 		const single = { ...eci, id: "gpqa", name: "GPQA Diamond", source: "lab" as const, results: { "openai/gpt-6-astra": eci.results["openai/gpt-6-astra"]! } };
 		const groups = groupBenchmarks([single, flagshipAa, eci], flagshipIds);
@@ -250,5 +291,84 @@ describe("buildVerdicts", () => {
 describe("visibleOnPhone", () => {
 	it("shows two models per page", () => {
 		expect([0, 1, 2, 3].map((index) => visibleOnPhone(index, 1))).toEqual([false, false, true, true]);
+	});
+});
+
+describe("describeCondition", () => {
+	const words = {
+		field: (field: string) => ({ input_tokens: "Input", resolution: "Resolution", mode: "Mode", draft: "Draft", seconds: "Duration", audio: "Audio" } as Record<string, string>)[field] ?? field,
+		is: (field: string, value: string) => `${field}: ${value}`,
+		isNot: (field: string, value: string) => `${field}: not ${value}`,
+		on: "on",
+		off: "off",
+		tokens: (value: number) => `${value / 1000}K`,
+		number: (value: number) => value.toLocaleString("en-US"),
+		seconds: (value: number) => `${value} sec`,
+	};
+
+	// Shapes taken from production price rules on 3 Nov.
+	it("reads token limits, options and flags the way a reader would write them", () => {
+		expect(describeCondition({ field: "input_tokens", op: "gt", value: 272_000 }, words)).toBe("Input > 272K");
+		expect(describeCondition({ field: "input_tokens", op: "gt", value: 272_001 }, words)).toBe("Input > 272,001");
+		expect(describeCondition({ field: "resolution", op: "eq", value: "1080P" }, words)).toBe("Resolution: 1080p");
+		expect(describeCondition({ field: "mode", op: "ne", value: "v2v" }, words)).toBe("Mode: not v2v");
+		expect(describeCondition({ field: "mode", op: "eq", value: "image_to_video" }, words)).toBe("Mode: image to video");
+		expect(describeCondition({ field: "draft", op: "eq", value: 1 }, words)).toBe("Draft: on");
+		expect(describeCondition({ field: "draft", op: "eq", value: 0 }, words)).toBe("Draft: off");
+		expect(describeCondition({ field: "audio", op: "eq", value: false }, words)).toBe("Audio: off");
+		expect(describeCondition({ field: "resolution", op: "eq", value: "fhd" }, words)).toBe("Resolution: FHD");
+		// Claude Opus 5.5's US-only price rows.
+		expect(describeCondition({ field: "inference_geo", op: "eq", value: "us" }, words)).toBe("inference_geo: US");
+	});
+
+	it("keeps one short name for each option in a list", () => {
+		expect(describeCondition({ field: "resolution", op: "in", value: ["480P", "480p", "854x480", "480x854", "854*480"] }, words)).toBe("Resolution: 480p");
+		expect(describeCondition({ field: "resolution", op: "in", value: ["480p", "720p"] }, words)).toBe("Resolution: 480p / 720p");
+		expect(describeCondition({ field: "resolution", op: "in", value: ["1024x1792", "1792x1024"] }, words)).toBe("Resolution: 1024x1792 / 1792x1024");
+		expect(describeCondition({ field: "seconds", op: "in", value: [10] }, words)).toBe("Duration: 10 sec");
+	});
+});
+
+describe("parseLegacyCondition", () => {
+	const words = {
+		field: (field: string) => ({ input_tokens: "Input", resolution: "Resolution", mode: "Mode", draft: "Draft", seconds: "Duration" } as Record<string, string>)[field] ?? field,
+		is: (field: string, value: string) => `${field}: ${value}`,
+		isNot: (field: string, value: string) => `${field}: not ${value}`,
+		on: "on",
+		off: "off",
+		tokens: (value: number) => `${value / 1000}K`,
+		number: (value: number) => value.toLocaleString("en-US"),
+		seconds: (value: number) => `${value} sec`,
+	};
+	const read = (text: string) => parseLegacyCondition(text)!.map((condition) => describeCondition(condition, words)).join(" · ");
+
+	// The text the deployed web API sent for Grok Imagine Video 1.5 and FLUX 3 Video on 3 Nov.
+	it("reads the deployed API's condition text back into tidy labels", () => {
+		expect(read("video params.resolution = 480p")).toBe("Resolution: 480p");
+		expect(read("video params.mode ne v2v and video params.draft = 1")).toBe("Mode: not v2v · Draft: on");
+		expect(read("video params.mode ne v2v and video params.resolution = hd and video params.draft = 0")).toBe("Mode: not v2v · Resolution: HD · Draft: off");
+		expect(read("input tokens > 272K")).toBe("Input > 272K");
+		expect(read("video params.resolution in 480P,480p,854x480")).toBe("Resolution: 480p");
+		expect(read("video params.seconds in 10")).toBe("Duration: 10 sec");
+	});
+
+	it("leaves text it can't read alone", () => {
+		expect(parseLegacyCondition("draft")).toBeNull();
+		expect(parseLegacyCondition(null)).toBeNull();
+	});
+});
+
+describe("providerLines", () => {
+	const route = (id: string, input: number) => ({ id, name: id.toUpperCase(), input, output: input * 4, cacheRead: null, contextWindow: null, maxOutput: null, tiers: ["standard"], quantisation: null });
+
+	it("lists each provider once with every model's route, shared providers first, then the cheapest", () => {
+		const glm = model("z-ai/glm-5.2", { providers: [route("ambient", 0.6), route("deepinfra", 0.75), route("wafer", 0.8)] });
+		const kimi = model("moonshotai/kimi-k3", { providers: [route("wafer", 0.5), route("deepinfra", 0.9)] });
+		const lines = providerLines([glm, kimi]);
+		expect(lines.map((line) => [line.id, line.routes.map((entry) => entry?.input ?? null)])).toEqual([
+			["wafer", [0.8, 0.5]],
+			["deepinfra", [0.75, 0.9]],
+			["ambient", [0.6, null]],
+		]);
 	});
 });

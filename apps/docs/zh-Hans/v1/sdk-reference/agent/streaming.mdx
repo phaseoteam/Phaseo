@@ -1,0 +1,179 @@
+---
+icon: "radio"
+title: "Agent SDK 流式传输"
+sidebarTitle: "流式传输"
+description: "在运行进行时展示智能体的文本、推理和工具活动。"
+---
+
+调用智能体的流式方法而不是运行方法，即可在运行进行时展示文本和工具活动。它在网关的 Responses SSE 流上运行同样可恢复的循环，而继续流式方法会对已暂停的运行做同样的事。Rust 没有流式传输。
+
+## 流式输出文本
+
+<CodeGroup>
+
+```typescript TypeScript
+const result = agent.stream({ input, client });
+
+for await (const delta of result.getTextStream()) {
+  process.stdout.write(delta);
+}
+
+const completed = await result.getResult();
+console.log(completed.run.status);
+```
+
+```python Python
+stream = agent.stream(input="Research this topic", client=client)
+
+for delta in stream.text_stream():
+    print(delta, end="", flush=True)
+
+completed = stream.result()
+```
+
+```go Go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: input, Client: client})
+
+for delta := range stream.Text() {
+  fmt.Print(delta)
+}
+
+completed, err := stream.Result()
+```
+
+```csharp C#
+var stream = agent.Stream(new RunOptions { Input = input, Client = client });
+
+await foreach (var delta in stream.TextStream())
+{
+    Console.Write(delta);
+}
+
+var completed = await stream.GetResult();
+```
+
+```php PHP
+$stream = $agent->stream(input: $input, client: $client);
+
+foreach ($stream->textStream() as $delta) {
+    echo $delta;
+}
+
+$completed = $stream->getResult();
+```
+
+```ruby Ruby
+stream = agent.stream(input: "Research this topic", client: client)
+
+stream.text_stream.each { |delta| print delta }
+
+completed = stream.result
+```
+
+```java Java
+// textStream() 会阻塞到运行结束；请改为从 onEvent 打印实时增量。
+var options = new AgentSdk.RunOptions(
+    input, AgentSdk.createGatewayAgentClient(), null, null, null, null, null, null,
+    event -> {
+        if (event.type().equals("response.output_text.delta")) {
+            System.out.print(event.details().get("delta"));
+        }
+    },
+    null);
+var completed = agent.stream(options).getResult();
+```
+
+</CodeGroup>
+
+最终结果与运行方法返回的运行结果相同。流的运行方式因语言而异：
+
+<Tabs>
+<Tab title="TypeScript">
+
+`agent.stream()` 和 `agent.continueStream()` 会立即返回一个流结果。运行结束时 `getResult()` 完成。
+
+</Tab>
+<Tab title="Python">
+
+`agent.stream(...)` 和 `agent.continue_stream(...)` 在后台线程中运行循环，并返回一个可重放的 `AgentStreamResult`。`result()` 会等待运行完成。
+
+</Tab>
+<Tab title="Go">
+
+`agent.Stream` 和 `agent.ContinueStream` 在 goroutine 中启动运行，并立即返回一个 `*StreamResult`。`Result()` 会阻塞到运行结束。
+
+</Tab>
+<Tab title="C#">
+
+`agent.Stream` 和 `agent.ContinueStream` 启动运行，并立即返回一个 `AgentStreamResult`。运行结束时 `GetResult()` 完成。
+
+</Tab>
+<Tab title="PHP">
+
+`$agent->stream()` 和 `$agent->continueStream()` 返回一个 `AgentStreamResult`。PHP 没有后台线程：只有在你的代码拉取下一个事件时，运行才会在 Fiber 中推进，`getResult()` 会读完剩余的事件。这适合 CLI 脚本和请求 worker；对于实时界面，请在负责返回响应的请求内部迭代，或者在 worker 中运行智能体，再自行把事件推送到浏览器。
+
+`stream()` 只接收 `input`、`client`、`context` 和 `state`；其他选项请使用 `run()`。
+
+</Tab>
+<Tab title="Ruby">
+
+`agent.stream` 和 `agent.continue_stream` 在工作线程上启动运行，并立即返回一个 `StreamResult`。`result` 会 join 该线程，重新抛出任何错误，并返回运行结果。
+
+`stream` 只接收 `input:`、`client:`、`context:` 和 `state:`；其他选项请使用 `run`。
+
+</Tab>
+<Tab title="Java">
+
+`agent.stream` 和 `agent.continueStream` 在名为 `phaseo-agent-stream` 的守护线程上启动运行，并立即返回一个 `StreamResult`。`textStream()` 和 `fullStream()` 返回列表，并会阻塞到运行结束，所以遍历 `textStream()` 的循环会在最后一次性打印整个回答。如果要在运行进行时处理事件，请像上面那样在 `RunOptions` 中传入一个 `onEvent` 消费者。
+
+</Tab>
+<Tab title="Rust">
+
+`phaseo-agent` 0.2 没有流式传输。调用 `run_with_events` 或 `continue_with_events` 可以通过回调获取生命周期事件，文本则从已完成的运行中读取。
+
+</Tab>
+</Tabs>
+
+## 选择流
+
+每个消费者都会从头重放事件，所以界面渲染器、日志记录器和持久化代码可以读取同一个运行，而无需第二次模型请求。
+
+| 产出 | TypeScript | Python | Go | C# | PHP | Ruby | Java |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 回答文本增量 | `getTextStream()` | `text_stream()` | `Text()` | `TextStream()` | `textStream()` | `text_stream` | `textStream()`（列表） |
+| 推理增量 | `getReasoningStream()` | `reasoning_stream()` | `Events()`，再过滤 | `FullStream()`，再过滤 | `reasoningStream()` | `reasoning_stream` | `fullStream()`，再过滤 |
+| 时间线条目 | `getItemsStream()`（带类型） | `item_stream()`（字典） | `Events()`，再过滤 | `FullStream()`，再过滤 | `itemStream()` | `item_stream` | `fullStream()`，再过滤 |
+| 工具生命周期事件 | `getToolStream()` | `tool_stream()` | `Events()`，再过滤 | `FullStream()`，再过滤 | `fullStream()`，再过滤 | `full_stream`，再过滤 | `fullStream()`，再过滤 |
+| 所有事件 | `getFullStream()`，最后是一个 `result` 事件 | `full_stream()` | `Events()`（channel） | `FullStream()`（`IAsyncEnumerable`） | `fullStream()` | `full_stream`（`Enumerator`） | `fullStream()`（列表，在运行结束后） |
+
+TypeScript 还提供 `getText()` 用于等待完整回答，这样渲染和持久化可以并行进行：
+
+```typescript
+const result = agent.stream({ input, client });
+
+const [text, completed] = await Promise.all([
+  result.getText(),
+  result.getResult(),
+]);
+```
+
+模型事件有 `response.output_text.delta`、`response.reasoning.delta` 和 `response.item`；它们的字段见[条目](./items)。只有当客户端支持流式传输时才会流式发送模型事件，所有网关客户端都支持。如果使用其他模型客户端（没有实现 `StreamingModelClient`、`IStreamingModelClient`，或不响应 `stream` 的客户端），流仍然会发出生命周期事件，但不会有文本增量。
+
+## 流式传输工具进度
+
+会报告进度的工具会发布 `tool.preliminary_result` 事件，这些事件出现在完整流中（以及 TypeScript 的工具流中），并保留在已完成的步骤上。[工具](./tools#report-progress-and-update-context)展示了各语言如何报告进度。
+
+## 取消流
+
+| 语言 | 调用 | 会发生什么 |
+| --- | --- | --- |
+| TypeScript | `cancel()` | 中止运行。本地工具通过 `context.signal` 收到取消信号。 |
+| Python | `cancel()` | 关闭当前的模型请求；运行抛出 `InterruptedError` |
+| Go | `stream.Cancel()` | 取消传给运行的 context，从而停止模型请求；`Result()` 返回错误 |
+| C# | `stream.Cancel()`，或取消 `RunOptions.CancellationToken` | 取消一个关联令牌，它会传到模型请求和每个工具的 `runtime.CancellationToken`；`GetResult()` 抛出异常 |
+| PHP | `$stream->cancel()` | 向 Fiber 抛出 `Agent stream cancelled`，在下一个挂起点停止运行 |
+| Ruby | `stream.cancel` | 终止工作线程，从而关闭 HTTP 流并结束所有枚举器 |
+| Java | `stream.cancel()` | 中断工作线程和 HTTP 读取，并取消结果 future；`getResult()` 抛出异常 |
+| Rust | 不支持 | 运行是同步的 |
+
+每个已完成的步骤都会保留它的请求 ID、提供商、模型、结束原因、警告和用量。

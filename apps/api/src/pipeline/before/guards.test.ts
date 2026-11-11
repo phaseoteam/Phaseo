@@ -101,6 +101,19 @@ describe("guardJson", () => {
 		expect(typeof File !== "undefined" && result.value.file instanceof File).toBe(true);
 	});
 
+	it("parses a multipart config field sent as JSON into an object", async () => {
+		const form = new FormData();
+		form.set("model", "eleven-labs/scribe-v3");
+		form.append("file", new File([new Uint8Array([1, 2, 3])], "sample.mp3", { type: "audio/mpeg" }));
+		form.append("config", JSON.stringify({ elevenlabs: { numbers_format: "digits", secondary_language_codes: ["es", "fr"] } }));
+		const result = await guardJson(new Request("https://gateway.local/v1/audio/transcriptions", {
+			method: "POST",
+			body: form,
+		}), "team_test", "req_test");
+
+		expect(result.ok && result.value.config).toEqual({ elevenlabs: { numbers_format: "digits", secondary_language_codes: ["es", "fr"] } });
+	});
+
 	it("returns invalid_json for malformed JSON requests", async () => {
 		const req = new Request("https://gateway.local/v1/chat/completions", {
 			method: "POST",

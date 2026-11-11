@@ -37,6 +37,9 @@ jobs:
     windows:
         runs-on: windows-latest
         timeout-minutes: 30
+        env:
+            PUBLIC_POSTHOG_KEY: ${{ secrets.NEXT_PUBLIC_POSTHOG_KEY || vars.NEXT_PUBLIC_POSTHOG_KEY }}
+            PUBLIC_POSTHOG_HOST: ${{ vars.PUBLIC_POSTHOG_HOST }}
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
               with:
@@ -56,6 +59,9 @@ jobs:
               run: npm install --global @openai/codex@0.160.0
             - name: Build desktop and agent SDK
               run: pnpm --filter @phaseo/desktop build
+            # No timing, so it never flakes: packages loaded before the window, startup bytes, compile cache, loading logo.
+            - name: Startup budgets
+              run: pnpm --filter @phaseo/desktop perf:budgets
             - name: Lint
               run: pnpm --filter @phaseo/desktop lint
             - name: Typecheck
@@ -256,7 +262,7 @@ jobs:
                       output/playwright/chat-shell/
                       output/playwright/shadcn-controls/
                       output/playwright/chat-design/
-                      output/playwright/t3-layout/
+                      output/playwright/settings-layout/
                       output/playwright/new-chat/
                       output/playwright/harness-maintenance/
                       output/playwright/prompt-commands/

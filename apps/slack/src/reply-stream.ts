@@ -231,9 +231,13 @@ export async function replaceReply(slack: SlackClient, args: { channel: string; 
 	return stopped.ok;
 }
 
-/** Posts the whole answer as a new message, when its stream never started. Throws so the step retries. */
+/**
+ * Posts the whole answer as a new message, when its stream never started. Throws so the step retries. Links stay
+ * links: a preview would make Slack fetch a URL the model wrote (perhaps one a page it read asked for), and a stream
+ * never unfurls either.
+ */
 export async function postReply(slack: SlackClient, args: { channel: string; threadTs: string; text: string; footer: Footer | null }): Promise<string> {
-	const posted = await slack.call<{ ts?: string }>("chat.postMessage", { channel: args.channel, thread_ts: args.threadTs, markdown_text: wholeReply(args.text, args.footer) });
+	const posted = await slack.call<{ ts?: string }>("chat.postMessage", { channel: args.channel, thread_ts: args.threadTs, markdown_text: wholeReply(args.text, args.footer), unfurl_links: false, unfurl_media: false });
 	if (posted.ok === false || typeof posted.data.ts !== "string") throw new SlackPostError("postMessage", posted.ok === false ? posted.error : "ts_missing");
 	return posted.data.ts;
 }

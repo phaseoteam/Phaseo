@@ -4,7 +4,7 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { captureCheckpoint } from "./gitCheckpoints";
-import { gitRefs, gitScopedDiff, limitPatch, readScopedDiffContents } from "./gitDiffScopes";
+import { gitCommits, gitRefs, gitScopedDiff, limitPatch, readScopedDiffContents } from "./gitDiffScopes";
 
 function repository() {
 	const root = mkdtempSync(path.join(tmpdir(), "phaseo-scoped-diff-"));
@@ -71,5 +71,42 @@ describe("scoped Git diffs", () => {
 		const patch = file("a") + file("b") + file("c");
 		expect(limitPatch(patch, patch.length)).toEqual({ patch, truncated: false });
 		expect(limitPatch(patch, file("a").length + 10)).toEqual({ patch: file("a"), truncated: true });
+	});
+});
+
+describe("reviewing one commit", () => {
+	it("lists the branch's commits newest first and diffs each against its first parent", async () => {
+		const owned = repository();
+		try {
+			owned.git(["switch", "-c", "feature"]);
+			writeFileSync(path.join(owned.root, "kept.txt"), "One\nTwo changed\nThree\n"); owned.git(["commit", "-am", "First change"]);
+			writeFileSync(path.join(owned.root, "added.txt"), "Added\n"); owned.git(["add", "."]); owned.git(["commit", "-m", "Second change"]);
+			writeFileSync(path.join(owned.root, "dirty.txt"), "Not committed\n");
+			const commits = await gitCommits(owned.root);
+			expect(commits.map(commit => commit.subject)).toEqual(["Second change", "First change"]);
+			expect(commits[0]).toMatchObject({ author: "Fixture", merge: false });
+			const second = await gitScopedDiff(owned.root, { scope: "commit", commit: commits[0].sha });
+			expect(second.patch).toContain("+Added"); expect(second.patch).not.toContain("Two changed"); expect(second.patch).not.toContain("Not committed");
+			const first = await gitScopedDiff(owned.root, { scope: "commit", commit: commits[1].sha });
+			expect(first.patch).toContain("+Two changed"); expect(first.patch).not.toContain("+Added");
+			const contents = await readScopedDiffContents(owned.root, { diff: { scope: "commit", commit: commits[1].sha }, filename: "kept.txt", hash: first.hash });
+			expect(contents.oldFile.contents).toBe("One\nTwo\nThree\n"); expect(contents.newFile.contents).toBe("One\nTwo changed\nThree\n");
+			await expect(gitScopedDiff(owned.root, { scope: "commit", commit: "f".repeat(40) })).rejects.toThrow("not in the local repository");
+			await expect(gitScopedDiff(owned.root, { scope: "commit", commit: "HEAD" })).rejects.toThrow("Choose a commit");
+		} finally { owned.cleanup(); }
+	});
+
+	it("shows a merge against its first parent and the newest commits on the default branch itself", async () => {
+		const owned = repository();
+		try {
+			owned.git(["switch", "-c", "side"]); writeFileSync(path.join(owned.root, "side.txt"), "Side\n"); owned.git(["add", "."]); owned.git(["commit", "-m", "Side work"]);
+			owned.git(["switch", "main"]); owned.git(["merge", "--no-ff", "side", "-m", "Merge side"]);
+			const commits = await gitCommits(owned.root);
+			expect(commits.map(commit => commit.subject)).toEqual(["Merge side", "Side work", "Base"]);
+			expect(commits[0].merge).toBe(true);
+			expect((await gitScopedDiff(owned.root, { scope: "commit", commit: commits[0].sha })).patch).toContain("+Side");
+			const root = await gitScopedDiff(owned.root, { scope: "commit", commit: commits[2].sha });
+			expect(root.patch).toContain("+One");
+		} finally { owned.cleanup(); }
 	});
 });

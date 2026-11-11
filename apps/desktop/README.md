@@ -4,6 +4,46 @@ Phaseo Desktop organises coding and everyday AI work around chats, with optional
 
 [Phaseo skills](docs/phaseo-skills.md) documents global/project definitions, invocation policies, full-body approvals and unfinished-run recovery.
 
+## Acknowledgements: inspired by T3 Code
+
+Many of the desktop app's features, and much of how it behaves, were inspired by [T3 Code](https://github.com/pingdotgg/t3code): the Code-mode chat lifecycle (settle, snooze, Working), the right pane and its browser, terminals, diff and pull request surfaces, worktrees, project actions, keyboard shortcuts, agent orchestration and much of the chat composer. Some code was adapted from T3 Code under its MIT licence. The app also reads T3 Code's own files where that helps people move over: a checkout's `t3.json` project file, its theme files and the usage hubs in `~/.t3/userdata`.
+
+Thank you to the T3 Code authors. T3 Code's licence:
+
+```text
+MIT License
+
+Copyright (c) 2026 T3 Tools Inc.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+```
+
+The app shows the same credit in Settings → General → About.
+
+## App analytics
+
+Packaged builds can share app opens, screen categories and sanitized JavaScript errors with the existing PostHog project after opt-in. Enable **Settings → General → Privacy → Share app usage and errors** on each installation; it is off by default and can be turned off anytime. Saved choices are preserved across updates. Development builds and CI runs never collect. Local Diagnostics remain on the device.
+
+Set the public project key as `PUBLIC_POSTHOG_KEY` (or `NEXT_PUBLIC_POSTHOG_KEY`) when building. GitHub desktop builds use the existing repository key. `PUBLIC_POSTHOG_HOST` defaults to `https://eu.i.posthog.com`; use `https://us.i.posthog.com` for a US project. Website proxy paths such as `/ingest` cannot be used by a native app. Never bundle a personal API key.
+
+Filter PostHog events or error tracking by `app_surface = desktop`, then `app_version`, `app_build`, `app_os` or `screen_name`. Random installation IDs link events across sessions without using signed-in account IDs; this is pseudonymous telemetry, not guaranteed anonymity. No prompts, responses, filenames from chats, full local paths, device names or recordings are collected. Error messages and source context are stripped; stack locations refer to bundled code, with no source-map upload or guaranteed fatal-crash delivery. Each installation persists a cap of 200 events/day, including at most 20 errors. These caps reduce usage; project-wide free-tier limits still depend on installation count. Opting out discards queued events.
+
 ## Development
 
 From the monorepo root:
@@ -35,7 +75,7 @@ Electron Forge creates platform-native distributables: MSIX and ZIP on Windows, 
 
 Forge needs to crawl a physical `node_modules` tree while packaging. The repository therefore narrowly public-hoists Electron Forge packages while leaving the rest of pnpm's dependency layout unchanged.
 
-Release builds can set `PHASEO_DESKTOP_UPDATE_URL` to enable the in-app update check. Store-managed MSIX releases receive updates through the Microsoft Store.
+Release builds can set `PHASEO_DESKTOP_UPDATE_URL` when building to enable the in-app update check. The URL is fixed into the bundle; packaged apps ignore the variable at run time. Store-managed MSIX releases receive updates through the Microsoft Store.
 
 Set `VITE_STATSIG_CLIENT_KEY` to your public Statsig client key when building the renderer. The `desktop_browser_suggestions` gate controls new-tab suggestions and address history suggestions. An unavailable gate or offline initialization preserves suggestions. Initialization uses an anonymous installation ID and disables event logging; server keys never belong in the renderer.
 

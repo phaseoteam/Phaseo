@@ -43,7 +43,7 @@ Wenn das Modell der Anfrage im Chat nicht verfügbar ist, verwendet der Chat sta
 ## Wie der Chat fortgesetzt wird
 
 - Die Anfrage wird als neuer Chat mit eigener Sitzungs-ID geöffnet und wie jeder andere Chat in deinem Browser gespeichert. Fortgesetzte Schritte werden nicht der ursprünglichen Sitzung in den Protokollen hinzugefügt.
-- Nachrichten, die du nicht bearbeitet hast, werden in ihrer ursprünglichen Form gesendet, sodass Tool-Aufrufe, Tool-Ergebnisse, Bilder, Audio und Dateien im nächsten Schritt erhalten bleiben. Bearbeitete und neue Nachrichten werden wie in jedem Chat als Text gesendet.
+- Nachrichten, die du nicht bearbeitet hast, werden in ihrer ursprünglichen Form gesendet, sodass Tool-Aufrufe, Tool-Ergebnisse und Bild-URLs im nächsten Schritt erhalten bleiben. Bearbeitete und neue Nachrichten werden wie in jedem Chat als Text gesendet.
 - Du kannst wie in jedem Chat Modelle wechseln, mehrere Modelle nebeneinander vergleichen, verzweigen oder bearbeiten.
 - Fortgesetzte Schritte laufen in deinem aktiven Workspace und werden wie jede andere Chat-Anfrage abgerechnet.
 
@@ -52,6 +52,7 @@ Wenn das Modell der Anfrage im Chat nicht verfügbar ist, verwendet der Chat sta
 Der Chat listet alles auf, was er nicht übernehmen konnte, bevor du fortfährst:
 
 - Schritte, die der Provider über `previous_response_id` oder eine Konversations-ID vorhält. Gespeichert werden nur die Schritte in der Anfrage selbst.
+- Inline gesendete Bilder, Audio und Dateien. I/O-Logs speichern ihre Bytes nie. Per URL gesendete Bilder bleiben erhalten.
 - Anhänge, die per Datei-ID oder Remote-Referenz statt inline gesendet wurden.
 - Antworten, die fehlgeschlagen sind, abgebrochen wurden oder mehrere Auswahlmöglichkeiten enthielten (nur die erste wird übernommen).
 - Tool-Aufrufe, die nie ein Ergebnis erhalten haben. Diese werden als Text gesendet.

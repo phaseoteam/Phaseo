@@ -4,19 +4,42 @@ title: "Journal d’audit de l’espace de travail"
 description: "Consultez les modifications d’administration de l’espace de travail liées à la sécurité."
 ---
 
-Les propriétaires et administrateurs de l’espace de travail peuvent consulter les changements du cycle de vie des clés dans **Paramètres → Espace de travail → Activité**. Les événements sont limités à l’espace de travail actif et classés du plus récent au plus ancien.
+Ouvrez **Paramètres → Espace de travail → Activité** pour voir qui a modifié une clé, un membre ou un autre contrôle administratif dans l’espace de travail actif, et à quel moment. Les événements sont classés du plus récent au plus ancien. Seuls les propriétaires et administrateurs de l’espace de travail peuvent lire le journal.
 
-La première version consigne les opérations suivantes :
+Les journaux des requêtes et des générations indiquent quel trafic a été exécuté. Le journal d’audit indique qui a modifié les contrôles qui l’encadrent.
 
-- Création, renommage, mise en pause, reprise, modification des limites, rotation et suppression de clés API
-- Création et suppression de clés de gestion ; renommage, mise en pause, reprise et modification des modèles d’accès, des limites et de l’expiration
+## Ce qui est enregistré
 
-Chaque événement comprend l’acteur, l’action, la cible, l’horodatage et quelques métadonnées sûres sur la modification. Les événements d’audit sont ajoutés sans être modifiés. Phaseo ne stocke dans ce journal ni clés en texte brut, ni hachages d’identifiants, ni en-têtes d’autorisation, ni listes complètes de portées, ni corps de requêtes.
+| Domaine | Exemples d’actions |
+| --- | --- |
+| Clés API | `api_key.created`, `api_key.updated`, `api_key.paused`, `api_key.resumed`, `api_key.rotated`, `api_key.deleted` |
+| Clés de gestion | `management_key.created`, `management_key.updated`, `management_key.deleted` |
+| Membres et invitations | `workspace.member.added`, `workspace.member.role_updated`, `workspace.member.removed`, `workspace.invite.created` |
+| Clés de fournisseur (BYOK) | `provider_credential.created`, `provider_credential.updated`, `provider_credential.reordered`, `provider_credential.deleted` |
+| Routage et préréglages | `routing.policy.updated`, `routing.dynamic_route.deployed`, `preset.version.published` |
+| Budgets et dépenses | `workspace_budget.updated`, `spend_block.lifted`, `rate_limit_raise.requested` |
+| Garde-fous | `guardrail.created`, `guardrail.updated`, `guardrail.keys.added` |
+| Identité | `identity.sso.updated`, `identity.scim_token.created`, `identity.group_mapping.updated` |
+| Intégrations | `observability.destination.created`, `notifications.destination.created`, `webhook_endpoint.secret_rotated`, `oauth_authorization.revoked` |
 
-L’accès au journal d’audit est réservé aux propriétaires et administrateurs de l’espace de travail. Les membres ordinaires ne peuvent pas consulter les événements, et la table sous-jacente n’est pas exposée aux clients de base de données authentifiés.
+Chaque événement comprend l’acteur, l’action, le type de cible, l’ID et le nom de la cible, l’horodatage, l’ID de requête et quelques métadonnées sur la modification. Les événements sont uniquement ajoutés, jamais modifiés.
 
-Pour automatiser la consultation, appelez `GET /v1/audit-events` avec une clé de gestion disposant du droit `activity:read`. Utilisez le `next_cursor` renvoyé pour récupérer les événements plus anciens sans intervalle entre les horodatages.
+Le journal ne stocke jamais de clés en texte brut, de hachages d’identifiants, d’en-têtes d’autorisation, de listes complètes de portées ni de corps de requêtes. Les champs de métadonnées dont le nom mentionne un secret, un token, un hachage, un identifiant, une portée ou une valeur sont retirés avant l’écriture de l’événement.
 
-<Note>
-  Les journaux des requêtes et des générations indiquent quel trafic a été exécuté. Le journal d’audit de l’espace de travail indique qui a modifié un contrôle administratif et à quel moment.
-</Note>
+## Lire les événements depuis l’API
+
+Appelez `GET /v1/audit-events` avec une [clé de gestion](../developers/management-api-keys.mdx) qui dispose de `activity:read`. Un token OAuth a aussi besoin de `activity:read`, et son utilisateur doit être propriétaire ou administrateur de l’espace de travail.
+
+```bash
+curl "https://api.phaseo.app/v1/audit-events?limit=50" \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY"
+```
+
+| Paramètre de requête | Signification |
+| --- | --- |
+| `limit` | Événements par page, de 1 à 100. `50` par défaut. |
+| `cursor` | Le `next_cursor` de la page précédente. La pagination par curseur ne saute jamais d’événements qui partagent un horodatage. |
+| `action` | Ne renvoie qu’une action, comme `api_key.rotated`. |
+| `target_type` | Ne renvoie qu’un type de cible, comme `api_key`. |
+
+La réponse contient `data`, `has_more` et `next_cursor`. Chaque événement inclut un objet `actor` avec le `display_name` et l’`email` du membre.

@@ -18,6 +18,7 @@ const gatewayPolicy = {
 	name: "Website production",
 	provider: "vercel",
 	issuer: "https://oidc.vercel.com/acme",
+	owner_claim: "owner_id",
 	owner_id: "team_123",
 	claim_conditions: { project_id: ["prj_web"], environment: ["production"] },
 	max_token_lifetime_seconds: 43200,
@@ -86,6 +87,7 @@ describe("trusted workloads settings reads", () => {
 				name: "Website production",
 				provider: "vercel",
 				issuer: "https://oidc.vercel.com/acme",
+				ownerClaim: "owner_id",
 				ownerId: "team_123",
 				claimConditions: { project_id: ["prj_web"], environment: ["production"] },
 				maxTokenLifetimeSeconds: 43200,
@@ -99,6 +101,31 @@ describe("trusted workloads settings reads", () => {
 		expect(forwarded?.url.pathname).toBe("/v1/workload-identity/policies");
 		expect(forwarded?.headers.get("authorization")).toBe("Bearer fixture-token");
 		expect(forwarded?.headers.get("x-phaseo-workspace-id")).toBe(WORKSPACE);
+	});
+
+	it("passes every platform and the owner claim through, leaving out platforms it does not know", async () => {
+		const policy = (provider: string, issuer: string, ownerClaim: string, ownerId: string) => ({ ...gatewayPolicy, provider, issuer, owner_claim: ownerClaim, owner_id: ownerId, claim_conditions: {} });
+		const rows = [
+			policy("github_actions", "https://token.actions.githubusercontent.com", "repository_owner_id", "42"),
+			policy("gitlab", "https://gitlab.com", "project_id", "12345"),
+			policy("google_cloud", "https://accounts.google.com", "sub", "104523456789012345678"),
+			policy("buildkite", "https://agent.buildkite.com", "organization_id", "0b9f7c5e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"),
+			policy("circleci", "https://oidc.circleci.com/org/0b9f7c5e-1a2b-4c3d-8e9f-0a1b2c3d4e5f", "oidc.circleci.com/org-id", "0b9f7c5e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"),
+			policy("aws", "https://0b9f7c5e-1a2b-4c3d-8e9f-0a1b2c3d4e5f.tokens.sts.global.api.aws", "sub", "arn:aws:iam::123456789012:role/evals"),
+			policy("custom", "https://k8s.example.com", "sub", "system:serviceaccount:default:app"),
+			policy("azure", "https://login.example.com", "sub", "x"),
+		];
+		database({ role: "owner", gateway: () => Response.json({ data: rows, audience: "https://api.phaseo.app" }) });
+		const body = await (await call(`/trusted-workloads?workspaceId=${WORKSPACE}`)).json() as { policies: Array<Record<string, unknown>> };
+		expect(body.policies.map((entry) => [entry.provider, entry.ownerClaim, entry.ownerId])).toEqual([
+			["github_actions", "repository_owner_id", "42"],
+			["gitlab", "project_id", "12345"],
+			["google_cloud", "sub", "104523456789012345678"],
+			["buildkite", "organization_id", "0b9f7c5e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"],
+			["circleci", "oidc.circleci.com/org-id", "0b9f7c5e-1a2b-4c3d-8e9f-0a1b2c3d4e5f"],
+			["aws", "sub", "arn:aws:iam::123456789012:role/evals"],
+			["custom", "sub", "system:serviceaccount:default:app"],
+		]);
 	});
 
 	it("reports workspaces outside the rollout as unavailable", async () => {
@@ -117,7 +144,7 @@ describe("trusted workloads settings writes", () => {
 		const requests = database({ role: "owner", gateway: () => Response.json({ data: { id: POLICY } }, { status: 201 }) });
 		const create = await call("/trusted-workloads/policies", {
 			method: "POST",
-			body: JSON.stringify({ workspaceId: WORKSPACE, name: "CI", provider: "github_actions", owner_id: "42" }),
+			body: JSON.stringify({ workspaceId: WORKSPACE, name: "Cluster", provider: "custom", issuer: "https://k8s.example.com", owner_claim: "sub", owner_id: "system:serviceaccount:default:app" }),
 		});
 		expect(create.status).toBe(201);
 		await expect(create.json()).resolves.toEqual({ ok: true, id: POLICY });
@@ -129,7 +156,7 @@ describe("trusted workloads settings writes", () => {
 			`PATCH /v1/workload-identity/policies/${POLICY}`,
 			`DELETE /v1/workload-identity/policies/${POLICY}`,
 		]);
-		expect(forwarded[0].body).toEqual({ name: "CI", provider: "github_actions", owner_id: "42" });
+		expect(forwarded[0].body).toEqual({ name: "Cluster", provider: "custom", issuer: "https://k8s.example.com", owner_claim: "sub", owner_id: "system:serviceaccount:default:app" });
 		expect(forwarded[1].body).toEqual({ status: "disabled" });
 		expect(forwarded[2].body).toBeNull();
 		for (const request of forwarded) expect(request.headers.get("x-phaseo-workspace-id")).toBe(WORKSPACE);

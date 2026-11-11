@@ -4,8 +4,7 @@
 
 // apps/api/src/runtime/env.ts
 import { AsyncLocalStorage } from "node:async_hooks";
-import type { SupabaseClient } from "@supabase/supabase-js";
-import { createClient } from "@supabase/supabase-js";
+import { createClient, type GatewaySupabaseClient } from "./supabase-client";
 import type { ResponseCacheStore } from "@/core/response-cache";
 
 import { BINDING_KEYS } from "./env.binding-keys";
@@ -16,13 +15,13 @@ export type { GatewayBindings, GatewayRuntime } from "./env.types";
 type RuntimeState = {
     bindings: GatewayBindings;
     cache: KVNamespace;
-    supabase: SupabaseClient;
+    supabase: GatewaySupabaseClient;
 };
 
 let runtimeState: RuntimeState | null = null;
 let runtimeActiveCount = 0;
 let lastBindingsSnapshot: GatewayBindings | null = null;
-let cachedSupabase: { url: string; key: string; client: SupabaseClient } | null = null;
+let cachedSupabase: { url: string; key: string; client: GatewaySupabaseClient } | null = null;
 type WaitUntilEntry = {
     id: number;
     handler: (promise: Promise<unknown>) => void;
@@ -180,7 +179,7 @@ export function getCache(): KVNamespace {
     return ensureRuntime().cache;
 }
 
-export function getSupabaseAdmin(): SupabaseClient {
+export function getSupabaseAdmin(): GatewaySupabaseClient {
     return ensureRuntime().supabase;
 }
 

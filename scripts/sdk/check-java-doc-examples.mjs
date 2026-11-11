@@ -13,8 +13,8 @@ const classpath = [path.join(sdk, "target/classes"), (await readFile(path.join(s
 const snippets = new Set();
 for (const locale of ["", "ar", "de", "es", "fr", "hi", "ja", "pt-BR", "zh-Hans"]) {
   const docs = path.join(root, "apps/docs", locale, "v1");
-  const directory = path.join(docs, "sdk-reference/java");
-  const files = (await readdir(directory)).filter(file => file.endsWith(".mdx") && !file.startsWith("agent-"));
+  const directory = path.join(docs, "sdk-reference/client");
+  const files = (await readdir(directory)).filter(file => file.endsWith(".mdx"));
   for (const file of [...files.map(file => path.join(directory, file)), path.join(docs, "quickstart.mdx")]) {
     const contents = await readFile(file, "utf8");
     const examples = [...contents.matchAll(/```java(?:[ \t][^\n]*)?\r?\n([\s\S]*?)```/g)].map(match => match[1]);

@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import {
 	CHAT_DEFAULT_MODEL_IDS,
 	FEATURED_MODEL_IDS,

@@ -1,47 +1,34 @@
 ---
 title: "إعداد وكلاء البرمجة باستخدام SKILL.md"
 icon: "file-code"
-description: "اربط SDK بملف SKILL.md حتى تستخدم وكلاء البرمجة المحليون تكامل Phaseo باتساق."
+description: "اربط SDK بملف SKILL.md ليستخدم وكلاء البرمجة المحليون تكامل Phaseo لديك بشكل متسق."
 ---
 
-هذا الدليل مخصص للفرق التي تنشئ أدوات داخلية أو واجهات سطر أوامر أو تدفقات عمل لوكلاء البرمجة باستخدام SDKs الخاصة بـ Gateway.
+أضف ملف `SKILL.md` إلى مستودعك لكي يستدعي وكلاء البرمجة Phaseo بالطريقة التي يتوقعها مشروعك: عنوان الأساس نفسه، ومتغير المفتاح نفسه، ونقطة النهاية نفسها، والنماذج المعتمدة، والتسجيل. في النهاية تكون قد ثبّتّ مهارات Phaseo العامة، وأضفت فوقها مهارة واحدة خاصة بالمشروع، ووحدة عميل مشتركة واحدة تشير إليها المهارة.
+
+المهارة والوحدة أدناه جاهزتان للإنتاج بمجرد أن تستبدل معرّفات النماذج وأسماء الإعدادات المسبقة بما يخصك.
+
+<Steps>
+<Step title="ثبّت مهارات Phaseo العامة">
 
 <Visibility for="humans">
-<Note>
-إذا أردت نقطة بداية قابلة لإعادة الاستخدام بدل كتابة كل مهارة من الصفر، فثبّت مهارات Phaseo العامة من [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json):
-
-```bash
-npx skills add https://phaseo.app/docs --agent codex --skill '*'
-```
-
-ثم احتفظ بالتعليمات الخاصة بالمشروع في ملف `SKILL.md` المحلي.
-</Note>
+تغطي المهارات العامة الـ Gateway وحزم SDK والإعدادات المسبقة والتوجيه والترحيل. ثبّتها من [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json):
 </Visibility>
 
 <Visibility for="agents">
-<Note>
-توجد مهارات Phaseo القابلة لإعادة الاستخدام في [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json). ثبّتها أولًا باستخدام:
+ثبّت مهارات Phaseo العامة من [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json) قبل كتابة تعليمات محلية خاصة بالمشروع:
+</Visibility>
 
 ```bash
 npx skills add https://phaseo.app/docs --agent codex --skill '*'
 ```
 
-بعد ذلك، أضف تعليمات المشروع المحلية إلى ملف `SKILL.md` في المستودع.
-</Note>
-</Visibility>
+غيّر `--agent` إلى الوكيل الذي يستخدمه فريقك. احتفظ في ملف `SKILL.md` الخاص بك بالقواعد الخاصة بالمشروع فقط.
 
-الفكرة الأساسية بسيطة:
-
-- احتفظ بإعداد SDK داخل المستودع
-- أضف ملف `SKILL.md` يوضح للوكيل الطريقة التي يتوقع المشروع إرسال الطلبات بها
-- وجّه الوكيل إلى هذا الملف أثناء الإعداد حتى تظل أنماط الطلبات متسقة
-
-## 1. تثبيت SDK
-
-إذا كنت تستخدم TypeScript أو JavaScript:
+</Step>
+<Step title="ثبّت SDK">
 
 <CodeGroup>
-
 ```bash npm
 npm install @phaseo/sdk
 ```
@@ -58,34 +45,17 @@ yarn add @phaseo/sdk
 bun add @phaseo/sdk
 ```
 
-</CodeGroup>
-
-إذا كنت تستخدم Python:
-
-```bash
+```bash Python
 pip install phaseo
 ```
+</CodeGroup>
 
-## 2. إضافة ملف مهارة خاص بالمشروع
+</Step>
+<Step title="أضف عميلًا مشتركًا واحدًا">
 
-أنشئ `SKILL.md` في جذر المستودع أو في موقع مهارات الوكلاء الذي يستخدمه فريقك.
+يعيد الوكلاء استخدام دالة مساعدة صغيرة وواضحة بموثوقية أكبر من غلاف كبير. ضع العميل في وحدة واحدة واستورده في كل مكان:
 
-```md
-# Phaseo Gateway
-
-- Use `https://api.phaseo.app/v1` as the gateway base URL.
-- Read the API key from `PHASEO_API_KEY`.
-- Prefer the Responses API for new text integrations.
-- Use preset slugs when the repository defines shared request defaults.
-- Log request ids and model ids for debugging.
-- For async video jobs, store the returned id and poll status until terminal.
-```
-
-## 3. إبقاء التكامل الأول صغيرًا
-
-يسهل على وكلاء البرمجة إعادة استخدام مساعدات الطلب الصغيرة مقارنةً بالأغلفة الكبيرة.
-
-```ts
+```ts src/lib/phaseo.ts
 import Phaseo from "@phaseo/sdk";
 
 export const gateway = new Phaseo({
@@ -93,35 +63,48 @@ export const gateway = new Phaseo({
 });
 ```
 
-بعد ذلك، احتفظ بمسار استدعاء واضح لكل واجهة:
+احتفظ بمسار استدعاء واحد لكل واجهة تستخدمها، مثل إنشاء النص أو التضمينات أو إنشاء الصور أو الفيديو غير المتزامن.
 
-- توليد النص
-- الفيديو غير المتزامن
-- التضمينات
-- توليد الصور
+</Step>
+<Step title="اكتب مهارة المشروع">
 
-## 4. ما ينبغي أن توضحه المهارة
+أنشئ `SKILL.md` في جذر المستودع أو في مجلد المهارات الذي يقرؤه وكيلك (مثل `.agents/skills/phaseo-project/SKILL.md`). الحقلان `name` و`description` في الترويسة هما ما يقرؤه الوكيل ليقرر متى يحمّل المهارة:
 
-ينبغي أن يجيب ملف `SKILL.md` عن الأسئلة التي تهدر معظم وقت الوكيل:
+```md SKILL.md
+---
+name: phaseo-project
+description: "How this repository calls Phaseo Gateway: client module, endpoint, approved models and presets, logging and async jobs. Use when adding or changing any Phaseo call in this repo."
+---
 
-- عائلة نقاط النهاية التي ينبغي تفضيلها
-- متغير البيئة الذي يحتوي على بيانات الاعتماد
-- معرّفات النماذج أو معرّفات الإعدادات المسبقة المعتمدة
-- طريقة تسجيل معرّفات الطلبات
-- طريقة تتبع المهام غير المتزامنة
+# Phaseo in this repository
 
-## 5. نمط المستودع الموصى به
+- Import the client from `src/lib/phaseo.ts`. Never create another one.
+- The base URL is `https://api.phaseo.app/v1`. The key is in `PHASEO_API_KEY`; never hard-code it or send it to the browser.
+- Use the Responses API (`POST /v1/responses`) for new text features.
+- Approved models: `openai/gpt-6-astra` for drafts, `anthropic/claude-sonnet-5.5` for reviews. Ask before adding another.
+- Prefer the `@support-triage` preset for support features; pass it as `model`.
+- Log the response `id` and `model` on every call, and `generation_id` from error bodies.
+- For async video jobs, store the returned ID and poll status until it is terminal.
+- Validate any model-generated tool arguments before acting on them.
+```
 
-- وحدة مشتركة لمساعدات SDK
-- ملف `SKILL.md` بجوار كود التكامل أو في جذر المستودع
-- مثال قصير لكل نقطة نهاية رئيسية
-- ملاحظة عن تسجيل الطلبات ومعالجة الأخطاء
+</Step>
+</Steps>
 
-يوفر ذلك للبشر ووكلاء البرمجة نقطة دخول تشغيلية واحدة.
+## تحقّق من نجاحه
 
-## أدلة ذات صلة
+اطلب من وكيلك إضافة ميزة صغيرة تستخدم Phaseo، مثل "summarise a ticket with Phaseo". يجب أن يستورد التغيير `src/lib/phaseo.ts`، ويقرأ `PHASEO_API_KEY`، ويستخدم نموذجًا أو إعدادًا مسبقًا معتمدًا، ويسجّل معرّف الرد. إن لم يحدث ذلك، فعلى الأرجح أن `description` في المهارة لا يطابق الطلب: اذكر فيه الكلمات التي يستخدمها فريقك لوصف المهمة.
 
-- [Codex](../guides/integrations/codex.mdx)
-- [تكامل AI SDK](../guides/integrations/ai-sdk.mdx)
-- [أمثلة](../guides/examples.mdx)
+## ما الذي تضعه في المهارة
 
+أجب عن الأسئلة التي تكلّف الوكيل أكبر قدر من الوقت، ولا شيء غيرها:
+
+| السؤال | مثال على الإجابة |
+| --- | --- |
+| أي عائلة من نقاط النهاية؟ | Responses للنص، وEmbeddings للبحث |
+| أين بيانات الاعتماد؟ | `PHASEO_API_KEY`، من جهة الخادم فقط |
+| ما معرّفات النماذج أو الإعدادات المسبقة المعتمدة؟ | قائمة قصيرة، بصيغة `org/model` |
+| ما الذي يُسجَّل؟ | `id` و`model` للرد، و`generation_id` عند الأخطاء |
+| كيف تُتابَع المهام غير المتزامنة؟ | احفظ المعرّف، واستعلم حتى تصل إلى حالة نهائية |
+
+تعرض صفحات [Codex](../guides/integrations/codex) و[Vercel AI SDK](../guides/integrations/ai-sdk) و[الأمثلة](../guides/examples) الاصطلاحات نفسها في كل أداة.

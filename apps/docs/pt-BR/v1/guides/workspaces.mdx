@@ -1,69 +1,40 @@
 ---
 title: "Espaços de trabalho"
-description: "Organize chaves de API, configurações e acesso administrativo sem alterar seu plano de preços do Phaseo."
+description: "Organize chaves de API, configurações e acesso administrativo sem alterar o seu plano de preços do Phaseo."
 icon: "building-2"
 ---
 
-Os espaços de trabalho organizam chaves de API, configurações de roteamento, predefinições, guardrails e acesso administrativo para uma equipe, produto ou ambiente.
+Crie um espaço de trabalho para cada equipe, produto ou ambiente para manter separados as chaves de API, as configurações de roteamento, as predefinições, os guardrails e o acesso administrativo de cada um. Toda conta começa com um espaço de trabalho pessoal, que basta para uma integração pequena.
 
-Os espaços de trabalho estão incluídos no serviço padrão de pagamento por uso do Phaseo. Você não precisa de um plano separado para criá-los ou usá-los.
+Espaços de trabalho separados ajudam quando você quer:
 
-## Quando criar um espaço de trabalho
-
-Use espaços de trabalho separados se quiser:
-
-- isolar credenciais de desenvolvimento, staging e produção
+- isolar as credenciais de desenvolvimento, staging e produção
 - manter produtos ou projetos de clientes separados
-- dar às integrações administrativas acesso apenas aos recursos necessários
+- dar a uma integração administrativa acesso só aos recursos de que ela precisa
 - aplicar políticas diferentes de roteamento, predefinições ou guardrails
 
-Para uma integração pequena, o espaço de trabalho padrão pode ser suficiente.
+Os espaços de trabalho não mudam o seu preço: todo o uso continua no faturamento padrão de pagamento conforme o uso, descrito em [Preços e faturamento](../pricing/tiers). Espaços de trabalho adicionais são liberados depois do seu primeiro depósito de créditos; até lá, criar um falha com `403 workspace_upgrade_required`.
 
-## Gerenciar espaços de trabalho
+## Gerenciar espaços de trabalho pela API
 
-Você pode gerenciar espaços de trabalho pelo painel do Phaseo ou pela API de gerenciamento.
+Gerencie os espaços de trabalho no painel ou com a API de gerenciamento. A API precisa de uma [chave de gerenciamento](../developers/management-api-keys); as chaves de API comuns do Gateway servem para inferência e não podem chamar esses endpoints.
 
-A API de espaços de trabalho usa [chaves de API de gerenciamento](../developers/management-api-keys.mdx). As chaves padrão do Gateway servem para solicitações de inferência e não podem chamar endpoints administrativos de espaços de trabalho.
+| Tarefa | Endpoint | Capacidade |
+| --- | --- | --- |
+| Listar espaços de trabalho | [`GET /workspaces`](../api-reference/endpoint/workspaces-list) | `workspaces:read` |
+| Ler um espaço de trabalho | [`GET /workspaces/{id}`](../api-reference/endpoint/workspaces-get) | `workspaces:read` |
+| Criar um espaço de trabalho | [`POST /workspaces`](../api-reference/endpoint/workspaces-create) | `workspaces:write` |
+| Atualizar um espaço de trabalho | [`PATCH /workspaces/{id}`](../api-reference/endpoint/workspaces-update) | `workspaces:write` |
+| Excluir um espaço de trabalho | [`DELETE /workspaces/{id}`](../api-reference/endpoint/workspaces-delete) | `workspaces:delete` |
 
-| Tarefa | Endpoint |
-| --- | --- |
-| Listar espaços de trabalho | [`GET /workspaces`](../api-reference/endpoint/workspaces-list.mdx) |
-| Criar um espaço de trabalho | [`POST /workspaces`](../api-reference/endpoint/workspaces-create.mdx) |
-| Ler um espaço de trabalho | [`GET /workspaces/{id}`](../api-reference/endpoint/workspaces-get.mdx) |
-| Atualizar um espaço de trabalho | [`PATCH /workspaces/{id}`](../api-reference/endpoint/workspaces-update.mdx) |
-| Excluir um espaço de trabalho | [`DELETE /workspaces/{id}`](../api-reference/endpoint/workspaces-delete.mdx) |
+Dê à chave só as capacidades de que ela precisa. O Phaseo também verifica a participação e o papel no espaço de trabalho, então uma capacidade sozinha nunca dá acesso a outro espaço de trabalho. O `slug` de um novo espaço de trabalho precisa ter de 1 a 50 letras minúsculas, números ou hifens.
+
+Guarde as chaves de gerenciamento em um armazenamento de segredos no servidor, nunca em código de navegador, registros do app de desktop, controle de versão ou chat.
 
 <Note>
-Os endpoints de gerenciamento de espaços de trabalho estão marcados como Beta. Mantenha a automação administrativa fácil de repetir e revise as respostas da API antes de aplicar alterações subsequentes.
+Os endpoints de espaços de trabalho estão em beta. Faça com que a sua automação possa ser repetida com segurança e confira cada resposta antes de fazer uma alteração seguinte.
 </Note>
 
-## Escolher o acesso adequado
+## Renomear ou excluir um espaço de trabalho
 
-Crie uma chave de gerenciamento apenas com os recursos de espaço de trabalho necessários para a sua integração:
-
-- `workspaces:read` para listar e consultar espaços de trabalho
-- `workspaces:write` para criar ou atualizar espaços de trabalho
-- `workspaces:delete` para excluir espaços de trabalho
-
-O Phaseo também verifica a associação ao espaço de trabalho e as funções. Uma capacidade, por si só, não concede acesso a outro espaço de trabalho.
-
-Armazene chaves de gerenciamento no armazenamento de secrets do servidor. Não as exponha em código do navegador, logs de desktop, controle de versão ou chats.
-
-## Excluir um espaço de trabalho
-
-O espaço de trabalho padrão não pode ser excluído. Antes de excluir outro, remova ou mova as chaves de API ativas dele para que as solicitações não apontem para um espaço de trabalho inexistente.
-
-## Cobrança
-
-Os espaços de trabalho não criam planos de preços separados. O uso continua sendo cobrado pelo modelo padrão de pagamento por uso descrito em [Preços e cobrança](../pricing/tiers.mdx).
-
-## Próximas etapas
-
-<CardGroup cols={2}>
-	<Card title="Chaves de API de gerenciamento" icon="key-round" href="../developers/management-api-keys.mdx">
-		Crie uma credencial de servidor com escopo limitado para administrar espaços de trabalho.
-	</Card>
-	<Card title="Autenticação" icon="key" href="../developers/authentication.mdx">
-		Use chaves de API do Gateway para solicitações de modelos e geração.
-	</Card>
-</CardGroup>
+O espaço de trabalho pessoal (padrão) não pode ser renomeado nem excluído; as duas operações retornam `400 bad_request`. Antes de excluir outro espaço de trabalho, remova ou mova as chaves de API ativas dele para que nenhuma solicitação aponte para um espaço de trabalho que não existe mais.

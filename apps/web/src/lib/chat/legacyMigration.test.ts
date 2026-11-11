@@ -1,3 +1,4 @@
+import { it, expect } from "vitest";
 import { planLegacyRows } from "./legacyMigration";
 
 it("keeps existing conversations and imports colliding IDs without overwriting", () => {

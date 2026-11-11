@@ -6,11 +6,13 @@ import { Pressable, ScrollView, View } from "react-native";
 import { Logo } from "@/components/Logo";
 import { Button, EmptyState, Header, Icon, Screen, Text } from "@/components/ui";
 import { compareStore, toggleCompare, useCatalogueIndex } from "@/features/models/state";
+import { useLayout } from "@/hooks/useLayout";
 import { getComparison, getComparisonUsage, MAX_COMPARE, type ComparedModel } from "@/lib/api/compare";
 import type { ModelCard } from "@/lib/api/models";
 import { contextWindow, modelName, organisationName } from "@/lib/catalogue";
 import { cn } from "@/lib/cn";
 import { formatCalendarDate, formatCompact, formatDateParts, formatPrice, formatTokens, modalityLabel } from "@/lib/format";
+import { benchmarkBestIndex, sharedBenchmarks } from "./compareBenchmarks";
 
 type Column = { id: string; card?: ModelCard; detail?: ComparedModel; tokens30d?: number | null };
 type Better = "high" | "low" | null;
@@ -39,27 +41,12 @@ function bestIndex(columns: Column[], row: RowSpec) {
   return values.filter((value) => value === target).length === 1 ? values.indexOf(target) : -1;
 }
 
-/** Benchmarks at least two of the compared models report, with each model's best score. */
-function sharedBenchmarks(columns: Column[]) {
-  const byBenchmark = new Map<string, { name: string; ascending: boolean; scores: (number | null)[] }>();
-  columns.forEach((column, index) => {
-    for (const result of column.detail?.benchmark_results ?? []) {
-      const score = Number(result.score);
-      if (!Number.isFinite(score)) continue;
-      const entry = byBenchmark.get(result.benchmark_id) ?? { name: result.benchmark?.name ?? result.benchmark_id, ascending: Boolean(result.benchmark?.ascending_order), scores: columns.map(() => null) };
-      const current = entry.scores[index];
-      entry.scores[index] = current == null ? score : entry.ascending ? Math.min(current, score) : Math.max(current, score);
-      byBenchmark.set(result.benchmark_id, entry);
-    }
-  });
-  return [...byBenchmark.values()].filter((entry) => entry.scores.filter((score) => score != null).length >= 2).slice(0, 12);
-}
-
 export function CompareScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ ids?: string }>();
   const ids = compareStore.use();
   const { index, isLoading } = useCatalogueIndex();
+  const { split } = useLayout();
 
   // A shared link (phaseo://compare?ids=a,b) replaces the current selection.
   useEffect(() => {
@@ -76,12 +63,12 @@ export function CompareScreen() {
     detail: details.data?.find((model) => model.id === id),
     tokens30d: usage.data?.[id]?.tokens30d ?? null,
   })), [ids, index, details.data, usage.data]);
-  const benchmarks = useMemo(() => sharedBenchmarks(columns), [columns]);
+  const benchmarks = useMemo(() => sharedBenchmarks(columns.map((column) => column.detail)), [columns]);
 
   if (!ids.length) {
     return (
       <Screen>
-        <Header large title="Compare" />
+        <Header large back={!split} title="Compare" />
         <EmptyState className="flex-1" icon={Columns3} title="Pick models to compare" body={`Compare up to ${MAX_COMPARE} models side by side: price, context, modalities, providers and benchmarks.`} action="Choose models" onAction={() => router.push("/sheets/compare")} />
       </Screen>
     );
@@ -89,7 +76,7 @@ export function CompareScreen() {
 
   return (
     <Screen>
-      <Header large title="Compare" right={ids.length < MAX_COMPARE ? <Button label="Add" icon={Plus} variant="ghost" size="sm" onPress={() => router.push("/sheets/compare")} /> : null} />
+      <Header large back={!split} title="Compare" right={ids.length < MAX_COMPARE ? <Button label="Add" icon={Plus} variant="ghost" size="sm" onPress={() => router.push("/sheets/compare")} /> : null} />
       <ScrollView contentContainerClassName="pb-16">
         <View className="flex-row gap-2 px-4 pb-3">
           {columns.map((column) => (
@@ -115,11 +102,9 @@ export function CompareScreen() {
         {benchmarks.length ? (
           <>
             <Text variant="heading" className="px-4 pb-1 pt-6">Benchmarks</Text>
-            {benchmarks.map((benchmark) => {
-              const present = benchmark.scores.filter((score): score is number => score != null);
-              const target = benchmark.ascending ? Math.min(...present) : Math.max(...present);
-              return <CompareRow key={benchmark.name} label={benchmark.name} values={benchmark.scores.map((score) => (score == null ? "—" : Number(score.toFixed(2)).toString()))} best={benchmark.scores.indexOf(target)} />;
-            })}
+            {benchmarks.map((benchmark) => (
+              <CompareRow key={benchmark.name} label={benchmark.name} values={benchmark.scores.map((score) => (score == null ? "—" : Number(score.toFixed(2)).toString()))} best={benchmarkBestIndex(benchmark)} />
+            ))}
           </>
         ) : null}
       </ScrollView>

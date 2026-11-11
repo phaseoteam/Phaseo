@@ -1,76 +1,55 @@
 ---
 title: "OpenAI GPT-5.4"
-description: "O que considerar ao adotar GPT-5.4, incluindo controles de raciocínio, visão e uso do computador."
+description: "O que saber ao adotar o GPT-5.4, incluindo controles de raciocínio, visão e uso do computador."
 icon: "/icons/brands/openai.svg"
 ---
 
-# OpenAI GPT-5.4
+Troque o modelo para `openai/gpt-5.4`, mantenha o resto da solicitação e escolha um esforço de raciocínio por rota. O formato da solicitação é o mesmo dos modelos GPT-5 anteriores; o que muda é a faixa de esforço, o detalhe de imagem e a ferramenta de computador. A documentação da OpenAI não descreve um parâmetro `phase` específico do GPT-5.4.
 
-Use este guia para adotar `openai/gpt-5.4` com segurança em produção.
+| Mudança | O que fazer |
+| --- | --- |
+| `reasoning.effort` aceita `none`, `low`, `medium`, `high` e `xhigh` | Teste de novo cada rota no esforço que cabe no orçamento de latência dela. |
+| Entrada de imagem `detail: "original"` para percepção com fidelidade total | Teste separadamente: muda a qualidade e o custo. |
+| A ferramenta `computer` atualizada é o caminho para o uso do computador | Migre a automação de navegador e de desktop para ela e teste de novo de ponta a ponta. |
+| Melhor uso de ferramentas de longo horizonte, trabalho com contexto grande e fluxos de documentos | Execute de novo as suas avaliações de agentes e de documentos. |
 
-GPT-5.4 trata menos de um formato de requisição totalmente novo e mais de controles de raciocínio atualizados, processamento de visão e uso de ferramentas. Em 10 de março de 2026, a documentação oficial da OpenAI destaca `reasoning.effort`, uso do computador aprimorado e entrada de imagem com maior fidelidade. Ela não documenta um parâmetro `phase` específico do GPT-5.4.
+```json
+{
+  "model": "openai/gpt-5.4",
+  "input": "Summarize the open risks in this design review.",
+  "reasoning": { "effort": "medium" }
+}
+```
 
-## Início rápido da migração
+## Escolha um esforço de raciocínio
 
-1. Troque o ID do modelo para `openai/gpt-5.4` sem alterar o restante da requisição.
-2. Escolha e teste o nível de esforço de raciocínio adequado ao orçamento de latência da rota.
-3. Teste novamente visão, saída estruturada e fluxos de uso do computador quando aplicável.
-4. Faça canário do GPT-5.4 mantendo a rota anterior como fallback.
+Se você está vindo do GPT-4.1 ou de um modelo GPT-5 anterior, não presuma que os padrões anteriores ainda servem:
 
-## Novidades
+| Rota | Comece com |
+| --- | --- |
+| Baixa latência | `none` ou `low` |
+| A maioria das tarefas estruturadas | `medium` ou `high` |
+| Raciocínio profundo e fluxos de agentes | `xhigh` |
 
-- `reasoning.effort` aceita `none`, `low`, `medium`, `high` e `xhigh`.
-- GPT-5.4 adiciona o nível de detalhe de imagem `original` para percepção visual de alta fidelidade.
-- A ferramenta `computer` atualizada é o caminho oficial para fluxos de uso do computador com GPT-5.4.
-- GPT-5.4 melhora uso prolongado de ferramentas, trabalho com contexto amplo e fluxos de documentos profissionais.
+## Envie imagens com detalhe total
 
-## O que mudar na integração
+Para capturas de tela densas, documentos ou localização de interface, defina `detail: "original"` na entrada de imagem. O Phaseo repassa esse valor aos provedores que oferecem suporte a ele, incluindo OpenAI e Azure, e envia `high`, o nível mais próximo, aos que não oferecem.
 
-### 1. Revise as configurações de raciocínio
+## Migre o uso do computador para a ferramenta `computer`
 
-Se você vem do GPT-4.1 ou de uma variante anterior do GPT-5, não presuma que os padrões antigos ainda são os melhores. Teste novamente cada rota no nível de esforço adequado ao orçamento de latência:
-
-- `none` ou `low` para rotas de baixa latência
-- `medium` ou `high` para a maioria das tarefas estruturadas
-- `xhigh` para raciocínio profundo ou fluxos agentivos
-
-### 2. Revise os fluxos de visão
-
-Se o fluxo depende de capturas detalhadas, documentos ou localização de interface, teste o novo detalhe de imagem `original`. Isso muda a fidelidade e o custo.
-
-### 3. Verifique novamente as rotas de uso do computador
-
-Se você está migrando tarefas de automação de navegador ou desktop, atualize para o caminho atual da ferramenta `computer` e teste a conclusão das etapas de ponta a ponta.
+Atualize a automação de navegador e de desktop para a ferramenta `computer` e teste de novo a conclusão das etapas em tarefas completas. Ferramentas hospedadas só são roteadas para provedores que as executam.
 
 ## O que testar
 
-### Compatibilidade dos prompts
+- **Prompts:** prompts de sistema longos, extração e classificação, saídas sensíveis ao formato e prompts que precisavam de novas tentativas para não sair do assunto.
+- **Ferramentas e saídas estruturadas:** aderência ao esquema em cada nível de esforço, seleção de ferramentas, completude dos argumentos e estabilidade do uso do computador em várias etapas.
+- **Visão e operações:** capturas de tela e documentos com detalhe `high` em comparação com `original`, latência e uso de tokens sob carga, taxa de novas tentativas e de timeout, e custo por tarefa bem-sucedida em relação ao modelo que você está substituindo.
 
-- prompts de sistema longos
-- prompts de extração e classificação
-- saídas sensíveis à formatação
-- prompts que antes precisavam de novas tentativas para manter o foco
+## Faça o rollout
 
-### Ferramentas e saídas estruturadas
-
-- aderência ao esquema em cada nível de esforço
-- qualidade da seleção de ferramentas
-- completude dos argumentos
-- estabilidade de fluxos de uso do computador com várias etapas
-
-### Visão e operações
-
-- compreensão de capturas e documentos com detalhe `high` versus `original`
-- latência e uso de tokens sob carga realista
-- taxa de novas tentativas e timeouts
-- custo por tarefa bem-sucedida em comparação ao modelo substituído
-
-## Rollout seguro
-
-1. Avalie GPT-5.4 com os níveis de esforço exatos que pretende usar.
-2. Se usa imagens, teste `original` separadamente porque altera qualidade e custo.
-3. Execute prompts de produção em paralelo antes de trocar uma rota padrão.
-4. Aumente o tráfego gradualmente, mantendo um modelo OpenAI anterior ou outro provedor como fallback.
+1. Faça benchmark do GPT-5.4 exatamente nos níveis de esforço que você vai usar.
+2. Rode prompts de produção em modo sombra antes de trocar uma rota padrão.
+3. Promova aos poucos, com um modelo mais antigo da OpenAI ou de outro provedor como fallback em `models`.
 
 ## Fontes
 

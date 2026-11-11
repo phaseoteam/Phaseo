@@ -1,0 +1,470 @@
+---
+icon: "phone"
+title: "الصوت في الوقت الفعلي"
+description: "أجرِ مكالمة صوتية في الوقت الفعلي عبر مرحّل Phaseo من أي حزمة Phaseo SDK، واحصل على الفاتورة النهائية عند انتهائها."
+---
+
+<Note>
+الصوت في الوقت الفعلي في مرحلة تجريبية (Beta)، والوصول إليه مقيّد لكل مساحة عمل. عملاء الوقت الفعلي موجودون في مصدر حزم SDK لكنهم ليسوا في الحزم المنشورة (`3.0.0`، وRust `0.2.0`)؛ وسيُطرحون مع الإصدار القادم من كل حزمة SDK باستثناء C++.
+</Note>
+
+اتصل لإنشاء الجلسة (`POST /v1/audio/realtime/sessions`)، وافتح WebSocket المرحّل، وانتظر `relay.connected`. بعد ذلك، أرسل صوت PCM16 بالبث، واقرأ أحداث المزوّد، ثم أنهِ المكالمة لتحصل على فاتورتها النهائية. بروتوكول المرحّل والتحذيرات ورموز الأسباب موضّحة في [جلسات الصوت في الوقت الفعلي](/ar/v1/guides/realtime-voice).
+
+## ثبّت ما تحتاجه لغتك
+
+<Tabs>
+<Tab title="TypeScript">
+
+ترسل `client.realtime.connect()` مفتاح API الخاص بك، لذا استدعها على خادمك فقط. يتضمن Node.js 22 أو أحدث `WebSocket` عامًا؛ وفي بيئات التشغيل الأقدم، ثبّت الحزمة `ws` أو مرّر المُنشئ الخاص بك بوصفه `webSocket`.
+
+للمكالمة التي تعمل في المتصفح، أنشئ الجلسة على خادمك وافتح المقبس في المتصفح باستخدام `connectRealtimeSession()`. تقبل هذه الدالة الجلسة التي أنشأها خادمك، بما في ذلك `client_secret` الخاص بها، الذي لا يعمل إلا لتلك الجلسة وحدها، ولا تحتاج أبدًا إلى مفتاح API. يعرض قسم [المكالمات من المتصفح](#browser-calls) الجزأين كليهما.
+
+</Tab>
+<Tab title="Python">
+
+عميل الوقت الفعلي متاح على `AsyncPhaseo` فقط ويحتاج إلى الحزمة الاختيارية `websockets`:
+
+```bash
+pip install "phaseo[realtime]"
+```
+
+من دونها، تطلق `connect()` الخطأ `ImportError` مع أمر التثبيت هذا.
+
+</Tab>
+<Tab title="Go">
+
+استورد الحزمة المنفصلة `realtime`، أي `github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3/realtime`. تفتح المقبس باستخدام `github.com/coder/websocket`، الذي لا يُترجَم إلا عند استيراد الحزمة.
+
+</Tab>
+<Tab title="C#">
+
+تستخدم `client.Realtime.ConnectAsync()` الصنف `System.Net.WebSockets.ClientWebSocket`. لا حاجة إلى تثبيت أي شيء إضافي.
+
+</Tab>
+<Tab title="PHP">
+
+تحتاج `$client->realtime()->connect()` إلى الحزمة الاختيارية `phrity/websocket`:
+
+```bash
+composer require phrity/websocket
+```
+
+تعمل PHP بخيط واحد، لذا لا تُقرأ الأحداث إلا عند استدعاء `receive()`، أو التكرار على `events()`، أو استدعاء `end()`. تعمل المستمعات الخاصة بك عند قراءة كل حدث.
+
+</Tab>
+<Tab title="Ruby">
+
+تحتاج `client.realtime.connect()` إلى الحزمة الاختيارية `websocket`: نفّذ `gem install websocket`، أو أضف `gem "websocket"` إلى ملف Gemfile.
+
+</Tab>
+<Tab title="Java">
+
+تستخدم `client.realtime.connect()` الواجهة `java.net.http.WebSocket` من JDK. لا حاجة إلى تثبيت أي شيء إضافي.
+
+</Tab>
+<Tab title="Rust">
+
+فعّل الميزة `realtime`، التي تضيف `tungstenite`:
+
+```toml
+phaseo = { version = "...", features = ["realtime"] }
+```
+
+</Tab>
+</Tabs>
+
+## إجراء مكالمة
+
+<CodeGroup>
+
+```typescript TypeScript
+import { Phaseo, RealtimeSessionClosedError } from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY });
+
+const session = await client.realtime.connect({
+  model: "openai/gpt-realtime-2",
+  voice: "marin",
+  instructions: "Answer in one sentence.",
+});
+
+session.onWarning((warning) => console.warn(warning.code, warning.message));
+session.on("response.output_audio.delta", (event) => play(event.delta as string));
+
+// صوت الميكروفون بتنسيق PCM16: 24 kHz لـ OpenAI وxAI، و16 kHz لـ Google.
+session.sendAudio(pcm16Chunk);
+
+try {
+  const ended = await session.end({ reason: "caller hung up" });
+  console.log(ended.reason, ended.duration_seconds, ended.cost.total_usd, ended.billing_status);
+} catch (error) {
+  if (error instanceof RealtimeSessionClosedError) {
+    // تظل المكالمة مُفوترة. اجلب التكلفة النهائية لاحقًا باستخدام error.finalBill.path.
+    console.error(error.message);
+  } else {
+    throw error;
+  }
+}
+```
+
+```python Python
+import asyncio
+from phaseo import AsyncPhaseo, RealtimeSessionClosedError
+
+async def main(pcm16_chunk: bytes) -> None:
+    client = AsyncPhaseo()  # يقرأ PHASEO_API_KEY
+    session = await client.realtime.connect(
+        "openai/gpt-realtime-2", voice="marin", instructions="Answer in one sentence."
+    )
+    session.on_warning(lambda warning: print("warning", warning["code"]))
+
+    # صوت الميكروفون بتنسيق PCM16: 24 kHz لـ OpenAI وxAI، و16 kHz لـ Google.
+    await session.send_audio(pcm16_chunk)
+
+    try:
+        ended = await session.end(reason="caller hung up")
+        print(ended["reason"], ended["duration_seconds"], ended["cost"]["total_usd"], ended["billing_status"])
+    except RealtimeSessionClosedError as error:
+        # تظل المكالمة مُفوترة. اجلب التكلفة النهائية لاحقًا باستخدام error.final_bill["path"].
+        print(error)
+    finally:
+        await client.close()
+```
+
+```go Go
+import (
+  "context"
+  "errors"
+  "log"
+
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+  "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3/realtime"
+)
+
+ctx := context.Background()
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  return err
+}
+
+session, err := realtime.Connect(ctx, client, realtime.Options{
+  Model:        "openai/gpt-realtime-2",
+  Voice:        "marin",
+  Instructions: "Answer in one sentence.",
+})
+if err != nil {
+  return err
+}
+
+session.OnWarning(func(w realtime.Warning) { log.Println(w.Code, w.Message) })
+
+// صوت الميكروفون بتنسيق PCM16: 24 kHz لـ OpenAI وxAI، و16 kHz لـ Google.
+_ = session.SendAudio(ctx, pcm16Chunk)
+
+ended, err := session.End(ctx, realtime.EndOptions{Reason: "caller hung up"})
+var closed *realtime.ClosedError
+if errors.As(err, &closed) {
+  // تظل المكالمة مُفوترة. اجلب التكلفة النهائية لاحقًا باستخدام closed.FinalBill.Path.
+  log.Println(closed)
+} else if err != nil {
+  return err
+} else {
+  log.Println(ended.Reason, ended.DurationSeconds, ended.Cost.TotalUSD, ended.BillingStatus)
+}
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+
+var session = await client.Realtime.ConnectAsync(new RealtimeConnectOptions
+{
+    Model = "openai/gpt-realtime-2",
+    Voice = "marin",
+    Instructions = "Answer in one sentence.",
+});
+
+using var warnings = session.OnWarning(warning => Console.WriteLine(warning.GetProperty("code").GetString()));
+
+// صوت الميكروفون بتنسيق PCM16: 24 kHz لـ OpenAI وxAI، و16 kHz لـ Google.
+await session.SendAudioAsync(pcm16Chunk);
+
+try
+{
+    var ended = await session.EndAsync(reason: "caller hung up");
+    Console.WriteLine(ended.GetProperty("billing_status").GetString());
+}
+catch (RealtimeSessionClosedException error)
+{
+    // تظل المكالمة مُفوترة. اجلب التكلفة النهائية لاحقًا باستخدام error.FinalBillPath.
+    Console.Error.WriteLine(error.Message);
+}
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+use Phaseo\Sdk\RealtimeSessionClosedException;
+
+$client = new Phaseo();
+
+$session = $client->realtime()->connect([
+    'model' => 'openai/gpt-realtime-2',
+    'voice' => 'marin',
+    'instructions' => 'Answer in one sentence.',
+]);
+
+$session->onWarning(fn (array $warning) => error_log($warning['code']));
+
+// صوت الميكروفون بتنسيق PCM16: 24 kHz لـ OpenAI وxAI، و16 kHz لـ Google.
+$session->sendAudio($pcm16Chunk);
+
+try {
+    $ended = $session->end(reason: 'caller hung up');
+    echo $ended['reason'], ' ', $ended['cost']['total_usd'], ' ', $ended['billing_status'], PHP_EOL;
+} catch (RealtimeSessionClosedException $error) {
+    // تظل المكالمة مُفوترة. اجلب التكلفة النهائية لاحقًا باستخدام $error->getFinalBillPath().
+    error_log($error->getMessage());
+}
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+
+session = client.realtime.connect(
+  model: 'openai/gpt-realtime-2',
+  voice: 'marin',
+  instructions: 'Answer in one sentence.'
+)
+
+session.on_warning { |warning| warn warning['code'] }
+
+# صوت الميكروفون بتنسيق PCM16: 24 kHz لـ OpenAI وxAI، و16 kHz لـ Google.
+session.send_audio(pcm16_chunk)
+
+begin
+  ended = session.end(reason: 'caller hung up')
+  puts ended['reason'], ended['cost']['total_usd'], ended['billing_status']
+rescue PhaseoSdk::RealtimeSessionClosedError => error
+  # تظل المكالمة مُفوترة. اجلب التكلفة النهائية لاحقًا باستخدام error.final_bill_path.
+  warn error.message
+end
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import app.phaseo.sdk.RealtimeSession;
+import app.phaseo.sdk.RealtimeSessionClosedException;
+import com.fasterxml.jackson.databind.JsonNode;
+import java.time.Duration;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+RealtimeSession session = client.realtime.connect(Map.of(
+    "model", "openai/gpt-realtime-2",
+    "voice", "marin",
+    "instructions", "Answer in one sentence."));
+
+session.onWarning(warning -> System.out.println(warning.path("code").asText()));
+session.on("response.output_audio.delta", event -> play(event.path("delta").asText()));
+
+// صوت الميكروفون بتنسيق PCM16: 24 kHz لـ OpenAI وxAI، و16 kHz لـ Google.
+session.sendAudio(pcm16Chunk);
+
+try {
+    JsonNode ended = session.end("caller hung up", null, Duration.ofSeconds(60));
+    System.out.println(ended.path("billing_status").asText());
+} catch (RealtimeSessionClosedException error) {
+    // تظل المكالمة مُفوترة. اجلب التكلفة النهائية لاحقًا باستخدام error.finalBillPath().
+    System.err.println(error.getMessage());
+}
+```
+
+```rust Rust
+use phaseo::Phaseo;
+use phaseo::realtime::{EndOptions, RealtimeError, RealtimeOptions};
+
+fn talk(pcm16_chunk: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+
+    let session = client.realtime().connect(
+        RealtimeOptions::new("openai/gpt-realtime-2")
+            .voice("marin")
+            .instructions("Answer in one sentence."),
+    )?;
+
+    session.on_warning(|warning| eprintln!("{}", warning["code"]));
+
+    // صوت الميكروفون بتنسيق PCM16: 24 kHz لـ OpenAI وxAI، و16 kHz لـ Google.
+    session.send_audio(pcm16_chunk)?;
+
+    match session.end(EndOptions { reason: Some("caller hung up".into()), ..EndOptions::default() }) {
+        Ok(ended) => println!("{} {}", ended["cost"]["total_usd"], ended["billing_status"]),
+        // تظل المكالمة مُفوترة. اجلب التكلفة النهائية لاحقًا باستخدام final_bill_path.
+        Err(RealtimeError::Closed { final_bill_path, .. }) => eprintln!("bill later: GET {final_bill_path}"),
+        Err(error) => return Err(error.into()),
+    }
+    Ok(())
+}
+```
+
+</CodeGroup>
+
+## قراءة كل الأحداث
+
+كرّر على الجلسة بدلًا من الاشتراك في كل نوع حدث على حدة. يتوقف التكرار عند إغلاق المقبس. في Python، يحصل أول مكرِّر أيضًا على الأحداث المستلمة منذ عودة `connect()`، بدءًا من `relay.connected`.
+
+<CodeGroup>
+
+```typescript TypeScript
+for await (const event of session) {
+  if (event.type === "session.ended") console.log("bill", event.cost);
+}
+```
+
+```python Python
+async for event in session:
+    if event["type"] == "response.output_audio.delta":
+        play(event["delta"])
+```
+
+```go Go
+for event := range session.Events() {
+  if event.Type() == "response.output_audio.delta" {
+    play(event["delta"].(string))
+  }
+}
+```
+
+```csharp C#
+await foreach (var item in session.EventsAsync())
+{
+    if (item.GetProperty("type").GetString() == "response.output_audio.delta")
+        Play(item.GetProperty("delta").GetString()!);
+}
+```
+
+```php PHP
+foreach ($session->events() as $event) {
+    if ($event['type'] === 'response.output_audio.delta') {
+        play($event['delta']);
+    }
+}
+```
+
+```ruby Ruby
+session.each_event do |event|
+  play(event['delta']) if event['type'] == 'response.output_audio.delta'
+end
+```
+
+```java Java
+for (JsonNode event : session.events()) {
+    if (event.path("type").asText().equals("response.output_audio.delta")) {
+        play(event.path("delta").asText());
+    }
+}
+```
+
+```rust Rust
+// تضع events() كل حدث في قائمة انتظار، بما في ذلك أجزاء الصوت، حتى تستلمه.
+// أفرغها في خيط مستقل، أو تخلّص منها عندما تنتهي.
+let events = session.events();
+let reader = std::thread::spawn(move || {
+    for event in events {
+        println!("{}", event["type"]);
+    }
+});
+```
+
+</CodeGroup>
+
+**Python:** تنهي `async with session:` المكالمة باستخدام `end()` عند الخروج من الكتلة، إن لم تكن قد انتهت بالفعل.
+
+<span id="browser-calls"></span>
+## المكالمات من المتصفح
+
+في TypeScript فقط. لا تضع أبدًا مفتاح Phaseo API في شيفرة المتصفح. على خادمك، أنشئ الجلسة باستخدام `client.realtime.createSession()`، التي تقبل خيارات `model` و`voice` و`instructions` و`provider` و`metadata` نفسها التي تقبلها `connect()`، وأعد الاستجابة إلى صفحتك:
+
+```typescript TypeScript
+// مسار على الخادم، مثل POST /api/voice-session
+const info = await client.realtime.createSession({ model: "openai/gpt-realtime-2", voice: "marin" });
+return Response.json(info);
+```
+
+في المتصفح، انضم إلى الجلسة باستخدام `connectRealtimeSession()`. تفتح هذه الدالة المرحّل باستخدام `client_secret` الخاص بالجلسة وتعيد كائن الجلسة نفسه الذي تعيده `connect()`:
+
+```typescript TypeScript
+import { connectRealtimeSession } from "@phaseo/sdk";
+
+const info = await fetch("/api/voice-session", { method: "POST" }).then((response) => response.json());
+const session = await connectRealtimeSession(info);
+session.sendAudio(pcm16Chunk);
+```
+
+تقبل `connectRealtimeSession(info, options)` الخيارين `webSocket` و`connectTimeoutMs` مثل `connect()`، إضافة إلى `baseUrl` (القيمة الافتراضية `https://api.phaseo.app/v1`) إذا كنت تستخدم نقطة نهاية إقليمية.
+
+## خيارات الاتصال
+
+ترسل كل حزمة SDK الحقل `model` (مطلوب، مثل `openai/gpt-realtime-2`) والحقول الاختيارية `voice` و`instructions` و`provider` و`metadata` إلى طلب إنشاء الجلسة، وتنتظر `relay.connected` مدة 30 ثانية افتراضيًا.
+
+| اللغة | استدعاء الاتصال | المهلة | مقبس مخصص |
+| --- | --- | --- | --- |
+| TypeScript | `client.realtime.connect({ model, voice, ... })` | `connectTimeoutMs` | `webSocket`: مُنشئ WebSocket يُستخدم بدلًا من المُنشئ العام |
+| Python | `await client.realtime.connect(model, voice=..., ...)` على `AsyncPhaseo` | `connect_timeout`، بالثواني | `websocket_connect`: دالة غير متزامنة `(url, subprotocols)` تعيد مقبسًا متصلًا |
+| Go | `realtime.Connect(ctx, client, realtime.Options{Model: ..., ...})` | `ConnectTimeout`، من النوع `time.Duration` | `realtime.ConnectWithDialer(ctx, client, options, dial)` |
+| C# | `await client.Realtime.ConnectAsync(new RealtimeConnectOptions { Model = ..., ... })` | `ConnectTimeout`، من النوع `TimeSpan` | لا يوجد |
+| PHP | `$client->realtime()->connect(['model' => ..., ...], $connectTimeout)` | الوسيط الثاني، بالثواني | لا يوجد |
+| Ruby | `client.realtime.connect(model: ..., voice: ..., ...)` | `connect_timeout:`، بالثواني | `transport:` |
+| Java | `client.realtime.connect(model)` أو `connect(Map params, Duration connectTimeout)` | وسيط من النوع `Duration` | لا يوجد |
+| Rust | `client.realtime().connect(RealtimeOptions::new(model).voice(...).instructions(...))` | الحقل `connect_timeout`، من النوع `Duration` | لا يوجد |
+
+## الجلسة
+
+في TypeScript وPython:
+
+| TypeScript | Python | الوصف |
+| --- | --- | --- |
+| `id`، `info` | `id`، `info` | معرّف الجلسة واستجابة إنشاء الجلسة، دون `client_secret`. |
+| `sendAudio(pcm16)` | `await send_audio(pcm16)` | ترسل صوت PCM16 بوصفه `client.audio` (في TypeScript: `Uint8Array` أو `ArrayBuffer`؛ وفي Python: `bytes`). ترمّزه حزمة SDK بترميز base64. |
+| `send(event)` | `await send(event)` | ترسل أي حدث بوصفه JSON، للرسائل الخاصة بالمزوّد. |
+| `on(type, listener)` | `on(type, listener)` | تشترك في نوع حدث واحد، أو في كل الأحداث باستخدام `"*"`. تعيد دالة لإلغاء الاشتراك. تصل أحداث المزوّد دون تغيير (بوصفها قواميس في Python). |
+| `onWarning(listener)`، `onEnded(listener)` | `on_warning(listener)`، `on_ended(listener)` | دوال مساعدة لـ `session.warning` و`session.ended`. |
+| `[Symbol.asyncIterator]` | `async for event in session` | تُنتج كل حدث منذ بدء التكرار حتى إغلاق المقبس. |
+| `end({ reason?, cancelResponse?, timeoutMs? })` | `await end(reason=None, cancel_response=None, timeout=60)` | ترسل `session.end` وتعيد `session.ended`: `reason` و`initiated_by` و`duration_seconds` و`usage` و`cost` و`billing_status`، و`final_bill` ما لم تكن التسوية قد تمت. المهلة الافتراضية 60 ثانية. |
+| `ended` | `ended` | وعد (promise) (في Python: future) لـ `session.ended` أيًا كانت طريقة انتهاء المكالمة، بما في ذلك الإنهاء الذي بدأه المزوّد أو البوابة. |
+| `close()` | `await close()` | تغلق المقبس دون انتظار الفاتورة. تظل المكالمة مُفوترة. |
+
+تتضمن حزم SDK الأخرى العمليات نفسها. الصوت بايتات PCM16، تُرمَّز بترميز base64 نيابةً عنك؛ وتمر أحداث المزوّد دون تغيير بنوع JSON الخاص بكل لغة؛ والمهلة الافتراضية لـ `end` هي 60 ثانية.
+
+| اللغة | إرسال الصوت، إرسال حدث | الاشتراك | كل الأحداث | الإنهاء، الانتظار، الإغلاق | نوع الحدث |
+| --- | --- | --- | --- | --- | --- |
+| Go | `SendAudio(ctx, pcm16)`، `Send(ctx, event)` | `On(type, fn)`، `OnWarning`، `OnEnded`؛ تعيد كل منها دالة لإلغاء الاشتراك | `Events()`، قناة (channel) | تعيد `End(ctx, realtime.EndOptions{...})` القيمة `*realtime.Ended`؛ و`Done()` و`Result()`؛ و`Close()` | `realtime.Event` (خريطة) |
+| C# | `SendAudioAsync(pcm16)`، `SendAsync(event)` | `On(type, fn)`، `OnWarning`، `OnEnded`؛ تعيد كل منها `IDisposable` | `await foreach (var e in session.EventsAsync())` | `EndAsync(reason, cancelResponse, timeout)`؛ والمهمة `Ended`؛ و`CloseAsync()` | `JsonElement` |
+| PHP | `sendAudio($pcm16)`، `send($event)` | `on($type, $fn)`، `onWarning`، `onEnded`؛ تعيد كل منها closure لإلغاء الاشتراك | المولّد `events()`، أو `receive($timeout)` لحدث واحد | `end(reason:, cancelResponse:, timeout:)`؛ و`close()` | مصفوفة |
+| Ruby | `send_audio(pcm16)`، `send_event(event)` | `on(type) { }`، `on_warning { }`، `on_ended { }` | `each_event`، مع كتلة | `end(reason:, cancel_response:, timeout:)`؛ و`wait(timeout:)`؛ و`close` | Hash |
+| Java | `sendAudio(byte[])`، `send(event)` | `on(type, fn)`، `onWarning`، `onEnded`؛ تعيد كل منها `Runnable` يلغي الاشتراك | `events()`، من النوع `Iterable` | `end()` أو `end(reason, cancelResponse, timeout)`؛ وfuture `ended()`؛ و`close()` | `JsonNode` |
+| Rust | `send_audio(&pcm16)`، `send(&event)` | `on(type, fn)`، `on_warning`، `on_ended`؛ تعيد كل منها معرّفًا لـ `off(id)` | `events()`، من النوع `Receiver` الذي يضع كل حدث في قائمة انتظار حتى قراءته | `end(EndOptions { ... })`؛ و`wait(timeout)`؛ و`close()` | `serde_json::Value` |
+
+## الأخطاء
+
+إذا أُغلق المقبس، أو انتهت مهلة `end()`، دون `session.ended`، يفشل إنهاء المكالمة بخطأ جلسة مغلقة. تظل المكالمة مُفوترة. يحمل الخطأ مسار الفاتورة النهائية، `GET /v1/generations?id=realtime%3A<session_id>`، الذي يعيد التكلفة النهائية بمجرد تسويتها.
+
+| اللغة | الخطأ | مسار الفاتورة النهائية |
+| --- | --- | --- |
+| TypeScript | `RealtimeSessionClosedError` مع `sessionId` و`closeCode` و`closeReason` | `error.finalBill.path`، أو `realtimeFinalBill(sessionId)` |
+| Python | `RealtimeSessionClosedError` مع `session_id` و`close_code` و`close_reason` | `error.final_bill["path"]`، أو `realtime_final_bill(session_id)` |
+| Go | `*realtime.ClosedError` مع `SessionID` و`CloseCode` | `FinalBill.Path`، أو `realtime.FinalBillFor(sessionID)` |
+| C# | `RealtimeSessionClosedException` مع `SessionId` و`CloseCode` و`CloseReason` | `FinalBillPath` |
+| PHP | `RealtimeSessionClosedException` مع `getSessionId()` و`getCloseCode()` | `getFinalBillPath()` |
+| Ruby | `PhaseoSdk::RealtimeSessionClosedError` مع `session_id` و`close_code` و`close_reason` | `final_bill_path` |
+| Java | `RealtimeSessionClosedException` مع `sessionId()` و`closeCode()` و`closeReason()` | `finalBillPath()` |
+| Rust | `RealtimeError::Closed { session_id, close_code, .. }` | `final_bill_path` |
+
+تفشل `connect()` إذا أنهى المرحّل الجلسة قبل أن يتصل، أو إذا لم يصل `relay.connected` في الوقت المحدد (تطلق Python الخطأ `TimeoutError`؛ وتعيد Rust `RealtimeError::EndedBeforeConnecting` أو `RealtimeError::ConnectTimeout`).

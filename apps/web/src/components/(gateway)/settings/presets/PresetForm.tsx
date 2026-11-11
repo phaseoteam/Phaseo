@@ -1,11 +1,11 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 
 import React, { useState, useMemo } from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { SettingsFormActions } from "../SettingsFormActions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,7 +35,7 @@ import {
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
 import { toast } from "sonner";
-import { createPresetAction, publishPresetDraftAction, updatePresetAction } from "@/app/(dashboard)/settings/presets/actions";
+import { createPresetAction, publishPresetDraftAction, updatePresetAction } from "@/features/settings/presets/actions";
 import {
 	Dialog,
 	DialogContent,
@@ -51,7 +51,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { SortablePresetList } from "./SortablePresetList";
 import { PresetVersionLabels, labelsSummary, usePresetVersions, versionName } from "./PresetVersionLabels";
 import { PresetPromptTemplateEditor, buildPromptTemplate, draftFromTemplate } from "./PresetPromptTemplateEditor";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 interface APIProviderCard {
@@ -670,10 +670,10 @@ export default function PresetForm({
 		setLoading(true);
 		try {
 			if (initialPreset?.id) {
-				await updatePresetAction({ id: initialPreset.id, ...submission });
+				await updatePresetAction({ data: { id: initialPreset.id, ...submission } });
 				toast.success(t("credits.Draft saved" as never));
 			} else {
-				await createPresetAction({ ...submission, creatorUserId: currentUserId!, workspaceId: currentTeamId! });
+				await createPresetAction({ data: { ...submission, creatorUserId: currentUserId!, workspaceId: currentTeamId! } });
 				toast.success(t("credits.Preset created" as never));
 			}
 			router.push("/settings/presets");
@@ -710,10 +710,10 @@ export default function PresetForm({
 		setPublishError(null);
 		try {
 			if (formHasUnsavedChanges) {
-				await updatePresetAction({ id: presetId, ...submission });
+				await updatePresetAction({ data: { id: presetId, ...submission } });
 				markSaved(submission);
 			}
-			const result = await publishPresetDraftAction(presetId, releaseNotes, needsVersionLabel ? publishVersionLabel : undefined);
+			const result = await publishPresetDraftAction({ data: { id: presetId, releaseNotes, versionLabel: needsVersionLabel ? publishVersionLabel : undefined } });
 			if (!result.ok) {
 				setPublishError(publishErrorMessage(result.error));
 				return;
@@ -747,7 +747,7 @@ export default function PresetForm({
 	return (
 		<form
 			onSubmit={onSubmit}
-			className="space-y-6 [&_[data-slot=button]]:rounded-md [&_[data-slot=select-trigger]]:w-full [&_[data-slot=select-trigger]]:rounded-md"
+			className={cn("min-w-0 w-full space-y-8 [&_[data-slot=select-trigger]]:w-full", activeView !== "versions" && "max-w-4xl")}
 		>
 			{activeView === "overview" ? (
 				<>
@@ -773,20 +773,6 @@ export default function PresetForm({
 										className="min-w-0 flex-1 bg-transparent py-1 font-mono text-sm outline-none placeholder:text-muted-foreground/60"
 									/>
 								</div>
-							</div>
-							<div className="flex flex-wrap items-center gap-2">
-								<Button type="button" variant="outline" asChild disabled={loading}>
-				<Link href="/settings/presets">{t("labels.cancel")}</Link>
-								</Button>
-								<Button type="submit" variant={canPublish ? "outline" : "default"} disabled={loading || publishing || !name.trim()}>
-									{loading ? t("strings.phraseSaving") : initialPreset ? t("finalSettingsCopy.saveDraft") : t("labels.create")}
-								</Button>
-								{canPublish ? (
-									<Button type="button" disabled={loading || publishing || !name.trim()} onClick={() => { setPublishError(null); setPublishOpen(true); }}>
-										{publishing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-										{publishing ? t("presetVersions.publishing") : t("presetVersions.publish")}
-									</Button>
-								) : null}
 							</div>
 						</div>
 						{publishNotice ? (
@@ -1602,6 +1588,18 @@ export default function PresetForm({
 				</div>
 			) : null}
 
+			<SettingsFormActions active={formHasUnsavedChanges || loading || publishing}>
+				<Button type="button" variant="outline" asChild disabled={loading || publishing}>
+					<Link href="/settings/presets">{t("labels.cancel")}</Link>
+				</Button>
+				<Button type="submit" variant={canPublish ? "outline" : "default"} disabled={loading || publishing || !name.trim()}>
+					{loading ? t("strings.phraseSaving") : initialPreset ? t("finalSettingsCopy.saveDraft") : t("labels.create")}
+				</Button>
+				{canPublish ? <Button type="button" disabled={loading || publishing || !name.trim()} onClick={() => { setPublishError(null); setPublishOpen(true); }}>
+					{publishing ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+					{publishing ? t("presetVersions.publishing") : t("presetVersions.publish")}
+				</Button> : null}
+			</SettingsFormActions>
 			<Dialog open={publishOpen} onOpenChange={(open) => { if (!publishing) setPublishOpen(open); }}>
 				<DialogContent>
 					<DialogHeader>

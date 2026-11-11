@@ -1,14 +1,14 @@
-import { Fragment, useState } from "react";
+import { Fragment, useState, type ComponentProps, type KeyboardEvent } from "react";
 import { useCommand } from "../lib/keybindings";
-import { ChevronDown, Zap } from "lucide-react";
+import { Check, ChevronDown, Zap } from "lucide-react";
 import type { ModelOption, ModelOptionDescriptor } from "../../shared/workspace";
 import type { ModelSelection } from "../lib/modelPreferences";
 import { rememberSettings } from "../lib/modelSettings";
 import { useModels } from "../lib/useModels";
 import { cn } from "../lib/utils";
-import { shortcut } from "../lib/keybindings";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuRadioGroup, DropdownMenuRadioItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { optionHarnesses } from "./startChat";
+import { ModelPicker } from "./ModelPicker";
 
 const effortLabels: Record<string, string> = { none: "None", minimal: "Minimal", low: "Low", medium: "Medium", high: "High", xhigh: "Extra High", max: "Max", ultra: "Ultra" };
 export const effortLabel = (id: string) => effortLabels[id] ?? id.charAt(0).toUpperCase() + id.slice(1);
@@ -49,24 +49,125 @@ export function withSetting(selection: ModelSelection, descriptor: ModelOptionDe
 	return { ...selection, options: Object.keys(options).length ? options : undefined };
 }
 
-/** Composer control for a model's reasoning, speed, context window and similar settings, like T3 Code's traits picker. */
-export function ModelSettings({ selection, onChange, disabled }: { selection: ModelSelection; onChange: (selection: ModelSelection) => void; disabled?: boolean }) {
-	const [open, setOpen] = useState(false);
-	const usesCatalog = selection.harness !== "acp";
-	const { models } = useModels(selection.harness, selection.accountId, undefined, undefined, usesCatalog);
+/** The settings shown after the model's name: "High", "High · 1M context"; empty when they are all the model's usual. */
+export function settingsLabel(selection: ModelSelection, descriptors: ModelOptionDescriptor[]) {
+	return descriptors.filter(descriptor => !speedIds.includes(descriptor.id) || (descriptor.id === "speed" && current(selection, descriptor) === "flex")).map(descriptor => {
+		const value = current(selection, descriptor);
+		return descriptor.type === "boolean" ? `${descriptor.label} ${value ? "On" : "Off"}` : descriptor.options.find(option => option.id === value)?.label ?? "";
+	}).filter(Boolean).join(" · ");
+}
+
+/** The selected model's own settings (reasoning, speed, context and the like), and how to show them. */
+export function useModelSettings(selection: ModelSelection | undefined) {
+	const usesCatalog = !!selection && selection.harness !== "acp";
+	const { models } = useModels(selection?.harness ?? "phaseo", selection?.accountId, undefined, undefined, usesCatalog);
+	if (!selection) return { descriptors: [], label: "", fast: false };
 	const model = models.find(value => selection.model === "default" ? value.default : value.id === selection.model);
 	const descriptors = settingDescriptors(selection.harness, model);
-	useCommand("modelSettings.toggle", () => setOpen(value => !value), descriptors.length > 0 && !disabled);
-	if (!descriptors.length) return null;
+	return { descriptors, label: settingsLabel(selection, descriptors), fast: descriptors.some(descriptor => isFast(descriptor, current(selection, descriptor))) };
+}
 
-	const values = descriptors.map(descriptor => ({ descriptor, value: current(selection, descriptor) }));
-	const fast = values.some(({ descriptor, value }) => isFast(descriptor, value));
-	const parts = values.filter(({ descriptor }) => !speedIds.includes(descriptor.id) || (descriptor.id === "speed" && current(selection, descriptor) === "flex")).map(({ descriptor, value }) => descriptor.type === "boolean" ? `${descriptor.label} ${value ? "On" : "Off"}` : descriptor.options.find(option => option.id === value)?.label ?? "");
-	const label = parts.filter(Boolean).join(" · ") || (fast ? "Fast" : "Normal");
+const choices = (descriptor: ModelOptionDescriptor): { id: string; label: string; description?: string; isDefault?: boolean }[] => descriptor.type === "boolean"
+	? [{ id: "true", label: "On", isDefault: descriptor.default === true }, { id: "false", label: "Off", isDefault: descriptor.default !== true }]
+	: descriptor.options;
+
+const effortPattern = /reason|effort|think/i;
+const isEffort = (descriptor: ModelOptionDescriptor) => effortPattern.test(`${descriptor.id} ${descriptor.label}`);
+const columnRow = "flex h-8 w-full shrink-0 cursor-pointer items-center gap-2 rounded-md px-2 text-left text-[13px] text-foreground outline-none hover:bg-foreground/[0.07] focus-visible:bg-foreground/[0.07] disabled:cursor-not-allowed disabled:opacity-60";
+const columnLabel = "px-2 pt-1.5 pb-1 text-xs font-medium text-muted-foreground";
+
+/**
+ * The model picker's effort column: the selected model's reasoning levels first, then its other settings. Speed sits in
+ * the picker's footer instead. The model's default level says Default; the chosen one has a check.
+ */
+export function EffortColumn({ selection, descriptors, modelName, onChange }: { selection: ModelSelection; descriptors: ModelOptionDescriptor[]; modelName: string; onChange: (selection: ModelSelection) => void }) {
+	const change = (descriptor: ModelOptionDescriptor, value: string | boolean) => { const next = withSetting(selection, descriptor, value); rememberSettings(next); onChange(next); };
+	const column = descriptors.filter(descriptor => !speedIds.includes(descriptor.id));
+	const effort = column.find(isEffort);
+	const ordered = effort ? [effort, ...column.filter(descriptor => descriptor !== effort)] : column;
+	const moveBetweenRows = (event: KeyboardEvent<HTMLElement>) => {
+		if (event.key !== "ArrowDown" && event.key !== "ArrowUp") return;
+		const rows = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>("[data-effort-row]:not(:disabled)"));
+		const next = rows[Math.min(rows.length - 1, Math.max(0, rows.indexOf(document.activeElement as HTMLButtonElement) + (event.key === "ArrowDown" ? 1 : -1)))];
+		if (!next) return;
+		event.preventDefault(); event.stopPropagation(); next.focus(); next.scrollIntoView({ block: "nearest" });
+	};
+	return <>
+		<div className="shrink-0 px-3 pt-2.5">
+			<div className="flex h-8 items-center gap-2 border-b border-border/70 pb-1.5 text-[13px]">
+				<span className="text-muted-foreground">{effort?.label ?? "Effort"}</span>
+				<span className="ml-auto min-w-0 truncate text-xs text-muted-foreground">{modelName}</span>
+			</div>
+		</div>
+		<div className="flex min-h-0 flex-1 flex-col gap-0.5 overflow-y-auto overscroll-contain px-2 pt-2 pb-1.5" onKeyDown={moveBetweenRows}>
+			{!ordered.length && <div className="flex h-8 items-center px-2 text-[13px] text-muted-foreground">No effort levels</div>}
+			{ordered.map(descriptor => {
+				const value = String(current(selection, descriptor));
+				return <div key={descriptor.id} role="radiogroup" aria-label={descriptor.label} className="flex flex-col gap-0.5">
+					{descriptor !== effort && <div className={columnLabel}>{descriptor.label}</div>}
+					{choices(descriptor).map(option => {
+						const checked = option.id === value;
+						return <button key={option.id} type="button" role="radio" aria-checked={checked} data-effort-row tabIndex={checked ? 0 : -1} title={option.description}
+							// "Default" is drawn after the label, so the row's text stays the level's name.
+							data-default={option.isDefault && !checked ? "" : undefined}
+							onClick={() => change(descriptor, descriptor.type === "boolean" ? option.id === "true" : option.id)}
+							className={cn(columnRow, "data-default:after:ml-auto data-default:after:text-xs data-default:after:text-muted-foreground/70 data-default:after:content-['Default']")}>
+							<span className="min-w-0 flex-1 truncate">{option.label}</span>
+							{checked && <Check aria-hidden className="size-3.5 shrink-0" />}
+						</button>;
+					})}
+				</div>;
+			})}
+		</div>
+	</>;
+}
+
+/** Speed in the picker's footer: Standard or Fast (or the agent's own tiers), one click away. */
+export function SpeedControl({ selection, descriptors, onChange }: { selection: ModelSelection; descriptors: ModelOptionDescriptor[]; onChange: (selection: ModelSelection) => void }) {
+	const descriptor = descriptors.find(value => speedIds.includes(value.id));
+	if (!descriptor) return null;
+	const change = (value: string | boolean) => { const next = withSetting(selection, descriptor, value); rememberSettings(next); onChange(next); };
+	const value = String(current(selection, descriptor));
+	const options = descriptor.type === "boolean" ? [{ id: "false", label: "Standard" }, { id: "true", label: "Fast" }] : descriptor.options.map(option => ({ id: option.id, label: option.label, description: option.description }));
+	return <div role="radiogroup" aria-label={descriptor.label} className="flex rounded-md bg-muted/70 p-0.5">
+		{options.map(option => {
+			const checked = option.id === value, fast = isFast(descriptor, descriptor.type === "boolean" ? option.id === "true" : option.id);
+			return <button key={option.id} type="button" role="radio" aria-checked={checked} title={"description" in option ? option.description : undefined}
+				onClick={() => change(descriptor.type === "boolean" ? option.id === "true" : option.id)}
+				className={cn("flex h-6 cursor-pointer items-center justify-center gap-1 rounded-md px-2 text-xs text-muted-foreground outline-none hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset", checked && "bg-background text-foreground shadow-xs")}>
+				{fast && <Zap aria-hidden className="size-3 fill-current" />}{option.label}
+			</button>;
+		})}
+	</div>;
+}
+
+/**
+ * The composer's model control: the model, then its effort and other settings after the name, all chosen in one
+ * picker. With several models (comparing), the settings stay each model's own remembered ones.
+ */
+export function ModelControl({ selections, onChange, onSettings, openEvent, disabled, ...picker }: Omit<ComponentProps<typeof ModelPicker>, "settings"> & { onSettings: (selection: ModelSelection) => void; openEvent: string }) {
+	const single = selections.length === 1 ? selections[0] : undefined;
+	const { descriptors, label, fast } = useModelSettings(single);
+	useCommand("modelSettings.toggle", () => { window.dispatchEvent(new Event(openEvent)); }, descriptors.length > 0 && !disabled);
+	useCommand("modelPicker.toggle", () => { window.dispatchEvent(new Event(openEvent)); }, !disabled);
+	return <ModelPicker {...picker} selections={selections} onChange={onChange} openEvent={openEvent} disabled={disabled}
+		settings={single && descriptors.length ? {
+			label, fast,
+			column: descriptors.some(descriptor => !speedIds.includes(descriptor.id)) ? (modelName: string) => <EffortColumn selection={single} descriptors={descriptors} modelName={modelName} onChange={onSettings} /> : undefined,
+			speed: <SpeedControl selection={single} descriptors={descriptors} onChange={onSettings} />,
+		} : undefined} />;
+}
+
+/** A model's settings on their own, for places that choose the model separately (Settings → General). */
+export function ModelSettings({ selection, onChange, disabled }: { selection: ModelSelection; onChange: (selection: ModelSelection) => void; disabled?: boolean }) {
+	const [open, setOpen] = useState(false);
+	const { descriptors, label: named, fast } = useModelSettings(selection);
+	if (!descriptors.length) return null;
+	const label = named || (fast ? "Fast" : "Normal");
 	const change = (descriptor: ModelOptionDescriptor, value: string | boolean) => { const next = withSetting(selection, descriptor, value); rememberSettings(next); onChange(next); };
 
 	return <DropdownMenu open={open} onOpenChange={setOpen}>
-		<DropdownMenuTrigger disabled={disabled} render={<button type="button" aria-label={`Model settings: ${label}${fast ? ", fast" : ""}`} title={`Model settings (${shortcut("modelSettings.toggle")})`}
+		<DropdownMenuTrigger disabled={disabled} render={<button type="button" aria-label={`Model settings: ${label}${fast ? ", fast" : ""}`} title="Model settings"
 			className="flex h-8 max-w-56 shrink-0 items-center gap-1 rounded-lg px-2 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 data-popup-open:bg-muted data-popup-open:text-foreground" />}>
 			{fast && <Zap className={cn("size-3.5 shrink-0 fill-current", selection.harness === "claude" ? "text-[#d97757]" : "text-amber-500")} />}
 			<span className="truncate">{label}</span>

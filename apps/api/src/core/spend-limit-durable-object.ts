@@ -1,6 +1,8 @@
-// Purpose: Coordinate API-key spend/request caps, department budgets and workspace budgets for one
-//          workspace. A department budget counts the cost of every key the seed lists for the
-//          department (private.department_budget_key_departments), like a shared key cost limit.
+// Purpose: Coordinate API-key spend/request caps, department budgets, blocking spend guardrails and
+//          workspace budgets for one workspace. A department budget counts the cost of every key the
+//          seed lists for the department (private.department_budget_key_departments), like a shared
+//          key cost limit. A spend guardrail counter (private.spend_guardrail_usage) is counted the
+//          same way over its keys: every key an assignment covers when shared, one key when each_key.
 // Why: Capped keys currently bypass the cached gateway context and recount day/week/month usage
 //      in Postgres on every request.
 // How: One object per workspace seeds usage from `gateway_spend_limit_seed`, keeps hot counters
@@ -21,7 +23,7 @@
 // until they are settled or expire.
 
 import { DurableObject } from "cloudflare:workers";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createClient, type GatewaySupabaseClient } from "@/runtime/supabase-client";
 import type { GatewayBindings } from "@/runtime/env.types";
 import type { GateCheck } from "@pipeline/before/types";
 import type { LeaseAcquireResult, LeaseReturn, LeaseVector } from "@core/lease-pool";
@@ -81,6 +83,20 @@ export type SpendLimitSeed = {
 		/** Every key whose cost counts toward the department. */
 		key_ids: string[];
 	}> | null;
+	/** Blocking spend guardrail counters. Absent from seeds written before spend guardrails. */
+	guardrail_budgets?: Array<{
+		guardrail_id: string;
+		guardrail_name: string | null;
+		counting: "shared" | "each_key";
+		/** 'department:<id>', 'member:<id>', 'key:<id>' or 'workspace:' (one per assignment), or 'key:<id>' for each_key. */
+		counter: string;
+		interval: KeyWindow;
+		limit_nanos: number;
+		usage_nanos: number;
+		window_start: string;
+		reset_at: string | null;
+		key_ids: string[];
+	}> | null;
 };
 
 type KeyState = {
@@ -102,11 +118,17 @@ type BudgetState = {
 	resetAt: string | null;
 };
 
-/** A department budget: counted like a key cost limit, over every key of the department. */
+/**
+ * A department budget or a blocking spend guardrail counter: counted like a key cost limit, over
+ * every key of the department or counter.
+ */
 type DepartmentBudgetState = {
 	id: string;
+	source: "department" | "guardrail";
+	/** The department, or the guardrail for guardrail counters. */
 	departmentId: string;
 	departmentName: string | null;
+	counting?: "shared" | "each_key";
 	interval: KeyWindow;
 	limit: number;
 	/** Seeded usage (excluding recorded spend not yet in the seed, as for keys). */
@@ -183,7 +205,7 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 	private readonly leases = new Map<string, Lease>();
 	private readonly drainUntil = new Map<string, number>();
 	private sweepAt = 0;
-	private supabase: SupabaseClient | null = null;
+	private supabase: GatewaySupabaseClient | null = null;
 
 	constructor(ctx: DurableObjectState, env: GatewayBindings) {
 		super(ctx, env);
@@ -249,8 +271,9 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 		if (denial) {
 			if (!requests) return { ok: false, denial: null };
 			// Ask isolates holding slices of this allowance to return them early. Workspace and
-			// department budgets are shared by many keys, so every key drains.
-			const shared = denial.gate.reason?.startsWith("workspace_") || denial.gate.reason?.startsWith("department_");
+			// department budgets and shared spend guardrails are shared by many keys, so every key drains.
+			const shared = denial.gate.reason?.startsWith("workspace_") || denial.gate.reason?.startsWith("department_") ||
+				(denial.gate.reason?.startsWith("guardrail_") && denial.gate.guardrailCounting !== "each_key");
 			if (denial.contended) this.drainUntil.set(shared ? "*" : keyId, now + SPEND_LEASE.drainMs);
 			return { ok: false, denial };
 		}
@@ -534,8 +557,9 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 		// Older seeds have no department budgets: nothing to enforce for departments.
 		this.departmentBudgets = (Array.isArray(seed.department_budgets) ? seed.department_budgets : [])
 			.filter((budget) => KEY_WINDOWS.includes(budget?.interval))
-			.map((budget) => ({
+			.map((budget): DepartmentBudgetState => ({
 				id: String(budget.id),
+				source: "department",
 				departmentId: String(budget.department_id),
 				departmentName: typeof budget.department_name === "string" ? budget.department_name : null,
 				interval: budget.interval,
@@ -546,6 +570,25 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 				keyIds: new Set((Array.isArray(budget.key_ids) ? budget.key_ids : []).map(String)),
 			}))
 			.filter((budget) => budget.limit > 0);
+		// Blocking spend guardrail counters are enforced like department budgets.
+		for (const counter of Array.isArray(seed.guardrail_budgets) ? seed.guardrail_budgets : []) {
+			if (!KEY_WINDOWS.includes(counter?.interval)) continue;
+			const limit = nonNegative(counter.limit_nanos);
+			if (limit <= 0) continue;
+			this.departmentBudgets.push({
+				id: `guardrail:${counter.guardrail_id}:${counter.counter}`,
+				source: "guardrail",
+				departmentId: String(counter.guardrail_id),
+				departmentName: typeof counter.guardrail_name === "string" ? counter.guardrail_name : null,
+				counting: counter.counting === "each_key" ? "each_key" : "shared",
+				interval: counter.interval,
+				limit,
+				base: nonNegative(counter.usage_nanos),
+				windowStart: parse(counter.window_start),
+				resetAt: counter.reset_at ?? null,
+				keyIds: new Set((Array.isArray(counter.key_ids) ? counter.key_ids : []).map(String)),
+			});
+		}
 		if (!this.workspaceAvgCost) {
 			const averages = [...this.keys.values()].map((key) => key.avgCost).filter((value) => value > 0);
 			if (averages.length) this.workspaceAvgCost = averages.reduce((sum, value) => sum + value, 0) / averages.length;
@@ -711,19 +754,23 @@ export class SpendLimitDurableObject extends DurableObject<GatewayBindings> {
 		const pick = states.find((state) => state.usage >= state.budget.limit) ??
 			states.find((state) => state.usage + state.held >= state.budget.limit);
 		if (!pick) return null;
+		const guardrail = pick.budget.source === "guardrail";
 		return {
 			contended: pick.usage < pick.budget.limit,
 			gate: {
 				ok: false,
-				reason: `department_${pick.budget.interval}_cost_budget_reached`,
+				reason: guardrail
+					? `guardrail_${pick.budget.interval}_spend_limit_reached`
+					: `department_${pick.budget.interval}_cost_budget_reached`,
 				resetAt: pick.budget.resetAt ?? iso(windowEnd(pick.budget.interval, pick.budget.windowStart)),
 				now: iso(now),
 				limitWindow: pick.budget.interval,
 				limitMetric: "cost",
 				currentValue: pick.usage,
 				limitValue: pick.budget.limit,
-				departmentId: pick.budget.departmentId,
-				departmentName: pick.budget.departmentName,
+				...(guardrail
+					? { guardrailId: pick.budget.departmentId, guardrailName: pick.budget.departmentName, guardrailCounting: pick.budget.counting ?? "shared" }
+					: { departmentId: pick.budget.departmentId, departmentName: pick.budget.departmentName }),
 			},
 		};
 	}

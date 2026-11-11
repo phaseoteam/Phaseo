@@ -1,23 +1,17 @@
 ---
-title: "Patch anwenden"
-description: "Lass Responses-Modelle geprüfte Patch-Operationen zurückgeben."
+title: "Apply Patch"
+description: "Lass Responses-Modelle validierte Patch-Operationen zurückgeben."
 icon: "file-pen-line"
 ---
 
-Verwende `phaseo:apply_patch`, wenn ein Responses-Workflow Dateiänderungen als strukturierte Patch-Operationen zurückgeben soll. Phaseo prüft die Operation und gibt sie an deinen Client zurück; das Dateisystem oder Repository wird nicht verändert.
-
-<Note>
-`phaseo:apply_patch` is available on `/v1/responses`.
-</Note>
-
-## Anfrage
+Füge `phaseo:apply_patch` auf `/v1/responses` hinzu, um Dateiänderungen als strukturierte Patch-Operationen zurückzubekommen. Phaseo prüft die Form jeder Operation und gibt sie zurück, deine Dateien fasst es nie an. Deine App entscheidet, ob sie den Patch anwendet, einem Nutzer zeigt, ablehnt oder eine Überarbeitung anfordert.
 
 ```bash
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "input": "Create a small README patch for this project.",
     "tools": [
       { "type": "phaseo:apply_patch" }
@@ -25,9 +19,15 @@ curl https://api.phaseo.app/v1/responses \
   }'
 ```
 
-## Aufbau der Operation
+Auf `/v1/chat/completions` oder `/v1/messages` wird die Anfrage abgelehnt.
 
-Wenn das Modell das Tool aufruft, sendet es ein Operationsobjekt:
+## Parameter
+
+Keine. Füge `{ "type": "phaseo:apply_patch" }` unverändert hinzu.
+
+## Was das Modell sendet
+
+Ein `operation`-Objekt:
 
 ```json
 {
@@ -39,17 +39,15 @@ Wenn das Modell das Tool aufruft, sendet es ein Operationsobjekt:
 }
 ```
 
-Unterstützte Operationstypen:
+| `type` | Pflichtfelder | Diff-Regeln |
+| --- | --- | --- |
+| `create_file` | `path`, `diff` | Jede nicht leere Zeile beginnt mit `+` |
+| `update_file` | `path`, `diff` | Jede nicht leere Zeile beginnt mit `@@`, einem Leerzeichen, `+` oder `-` |
+| `delete_file` | `path` | Keine |
 
-| Typ | Erforderliche Felder |
-| --- | --- |
-| `create_file` | `path`, `diff` |
-| `update_file` | `path`, `diff` |
-| `delete_file` | `path` |
+`path` darf keine Null-Bytes enthalten.
 
-## Tool-Ergebnis
-
-Phaseo gibt die geprüfte Operation an die Modellsitzung zurück:
+## Was das Tool zurückgibt
 
 ```json
 {
@@ -63,25 +61,8 @@ Phaseo gibt die geprüfte Operation an die Modellsitzung zurück:
 }
 ```
 
-Deine Anwendung ist weiterhin dafür verantwortlich, den Patch anzuwenden, ihn einem Nutzer zu zeigen, ihn abzulehnen oder das Modell um eine überarbeitete Operation zu bitten.
+Eine Operation, die gegen die obigen Regeln verstößt, gibt `apply_patch_invalid_operation` mit dem Grund zurück, damit das Modell es erneut versuchen kann.
 
 ## Nutzung und Preise
 
-Phaseo erfasst:
-
-```json
-{
-  "usage": {
-    "server_tool_use": {
-      "apply_patch_requests": 1
-    }
-  }
-}
-```
-
-Preiskarten können dies über den Zähler `server_tool_apply_patch_requests` abrechnen.
-
-## Verwandte Seiten
-
-- [Server-Tools](./index.mdx)
-- [Responses-API](../../api-reference/endpoint/responses.mdx)
+Jeder Aufruf erhöht `usage.server_tool_use.apply_patch_requests` um 1 und kann über `server_tool_apply_patch_requests` abgerechnet werden.

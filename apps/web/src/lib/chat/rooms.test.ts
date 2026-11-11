@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import {
 	CHAT_ROOM_BY_ID,
 	CHAT_ROOMS,

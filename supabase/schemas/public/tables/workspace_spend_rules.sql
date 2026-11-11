@@ -114,6 +114,13 @@ CREATE TRIGGER workspace_spend_rules_validate
   FOR EACH ROW
   EXECUTE FUNCTION public.validate_workspace_spend_rule();
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspace_spend_rules"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "workspace_spend_rules_select_member" ON "public"."workspace_spend_rules"
   FOR SELECT
   TO "authenticated"

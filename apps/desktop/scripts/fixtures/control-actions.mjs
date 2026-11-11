@@ -41,7 +41,8 @@ export async function installControlActions(owner) {
 const shellActions = String.raw`
   window.__auditUntil = async function(predicate,label,attempts=400) {
     for(let attempt=0;attempt<attempts;attempt++){const value=await predicate();if(value)return value;await new Promise(resolve=>setTimeout(resolve,25));}
-    throw Error('Did not settle: '+label);
+    // A label can be a function, so a failure says what the page showed when it gave up.
+    throw Error('Did not settle: '+(typeof label==='function'?label():label));
   };
   window.__auditButton = (text,root=document) => Array.from(root.querySelectorAll('button')).find(button=>button.textContent.trim()===text);
   window.__auditType = (input,value) => {
@@ -99,6 +100,30 @@ const shellActions = String.raw`
     if(item.hasAttribute('data-disabled')||item.getAttribute('aria-disabled')==='true')throw Error('Menu item disabled: '+label);
     item.click();
     await window.__auditUntil(()=>!document.querySelector('[data-slot="dropdown-menu-content"]'),'menu close '+label);
+  };
+  /** The composer model button's model name, without the effort shown after it. */
+  window.__auditModelName = function() {
+    const trigger=document.querySelector('main form button[aria-label="Choose model"]');if(!trigger)return undefined;
+    return Array.from(trigger.childNodes).filter(node=>!(node.nodeType===1&&(node.matches('[data-model-settings]')||node.matches('[aria-label="Fast"]')))).map(node=>node.textContent).join('').trim();
+  };
+  /** The effort and other settings named after the model on the composer's model button. */
+  window.__auditModelSettings = function() { return document.querySelector('main form button[aria-label="Choose model"] [data-model-settings]')?.textContent.trim()??''; };
+  /** A narrow window rests the message box on one line without its model button, so open it first. */
+  window.__auditOpenComposer = async function() {
+    document.querySelector('main form [aria-label="Open the message box"]')?.click();
+    return window.__auditUntil(()=>document.querySelector('main form button[aria-label="Choose model"]'),'message box open');
+  };
+  /** Choose one of the model's settings (such as Reasoning: High) in the model picker, then close it. */
+  window.__auditModelSetting = async function(group,label) {
+    await window.__auditOpenComposer();
+    const trigger=await window.__auditUntil(()=>{const value=document.querySelector('main form button[aria-label="Choose model"]');return value&&!value.disabled&&value;},'model picker');
+    if(trigger.getAttribute('aria-expanded')!=='true')trigger.click();
+    const radios=()=>Array.from(document.querySelector('[data-slot="popover-content"] [role="group"][aria-label="Model settings"]')?.querySelectorAll('[role="radiogroup"]')??[]).find(row=>row.getAttribute('aria-label')===group)?.querySelectorAll('[role="radio"]')??[];
+    const option=await window.__auditUntil(()=>Array.from(radios()).find(radio=>radio.textContent.trim()===label),'model setting '+group+': '+label);
+    option.click();
+    await window.__auditUntil(()=>Array.from(radios()).find(radio=>radio.getAttribute('aria-checked')==='true')?.textContent.trim()===label,'model setting chosen '+label);
+    trigger.click();
+    await window.__auditUntil(()=>!document.querySelector('[data-slot="popover-content"]'),'model picker close');
   };
   window.__auditSettings = async function(section) {
     if(!document.querySelector('nav[aria-label="Settings sections"]'))window.dispatchEvent(new KeyboardEvent('keydown',{key:',',ctrlKey:true,bubbles:true}));

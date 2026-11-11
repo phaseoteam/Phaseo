@@ -1,13 +1,17 @@
 ---
-title: "Instalação do SDK de C++ (em andamento)"
-description: "Use os cabeçalhos C++ em desenvolvimento diretamente do código-fonte."
+title: "Instalação do SDK de C++ (em desenvolvimento)"
+description: "Use os headers de C++ em desenvolvimento a partir do código-fonte."
 ---
 
 <Note type="warning">O SDK de C++ está em desenvolvimento e ainda não foi publicado em um registro de pacotes.</Note>
 
 ## Uso local
 
-- Use os cabeçalhos gerados em `packages/sdk/sdk-cpp/src/gen`.
-- Adicione essa pasta ao caminho de inclusão do seu sistema de compilação.
-- Atualmente, o cliente contém apenas cabeçalhos.
+O SDK é composto apenas de headers C++17. Adicione `packages/sdk/sdk-cpp` ao seu build do CMake e vincule o target de interface, ou coloque `packages/sdk/sdk-cpp/src` no seu include path:
 
+```cmake
+add_subdirectory(path/to/Phaseo/packages/sdk/sdk-cpp)
+target_link_libraries(your_app PRIVATE phaseo::sdk)
+```
+
+Depois, inclua `phaseo.hpp`, que importa o cliente gerado em `src/gen`.

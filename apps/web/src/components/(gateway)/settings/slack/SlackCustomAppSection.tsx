@@ -1,9 +1,7 @@
-"use client";
-
 import { useState, useTransition } from "react";
 import { ChevronRight, Trash2 } from "lucide-react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -20,7 +18,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { CopyButton } from "@/components/ui/copy-button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { removeSlackCustomApp, saveSlackCustomApp } from "@/app/(dashboard)/settings/slack/actions";
+import { removeSlackCustomApp, saveSlackCustomApp } from "@/features/settings/slack/actions";
 import { cn } from "@/lib/utils";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { Notice, SlackError } from "./SlackAgentFields";
@@ -57,7 +55,7 @@ export function SlackCustomAppSection({ view }: { view: SlackAgentManagerView })
 			return;
 		}
 		startSaving(async () => {
-			const result = await write(saveSlackCustomApp(built.value));
+			const result = await write(saveSlackCustomApp({ data: built.value }));
 			if (!result.ok) {
 				setError({ key: slackErrorKey(result.code, result.status), message: result.message });
 				return;
@@ -176,6 +174,24 @@ export function SlackCustomAppSection({ view }: { view: SlackAgentManagerView })
 								</div>
 							</div>
 						)}
+						{saved ? (
+							<div className="space-y-1.5">
+								<Label>{t("customApp.requestUrls")}</Label>
+								<p className="text-xs text-muted-foreground">{t("customApp.requestUrlsHelp")}</p>
+								{([
+									{ url: saved.events_url, label: t("customApp.eventsUrl"), copy: t("customApp.copyEventsUrl") },
+									{ url: saved.interactions_url, label: t("customApp.interactionsUrl"), copy: t("customApp.copyInteractionsUrl") },
+								]).map(({ url, label, copy }) => (
+									<div key={url} className="space-y-1">
+										<p className="text-xs font-medium">{label}</p>
+										<div className="flex items-center gap-2 rounded-md border bg-muted/30 px-3 py-2">
+											<code className="min-w-0 flex-1 truncate font-mono text-xs">{url}</code>
+											<CopyButton size="sm" variant="ghost" content={url} aria-label={copy} />
+										</div>
+									</div>
+								))}
+							</div>
+						) : null}
 						{error ? <SlackError error={error} /> : null}
 					</>
 				)}

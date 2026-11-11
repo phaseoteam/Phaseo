@@ -1,12 +1,11 @@
-// Department spend budgets. The gateway's spend-limit coordinator refuses
-// API-key requests that count toward a department once its budget is used
-// (batch, realtime and OAuth requests excepted). It reseeds budgets from
+// Department spend budgets. Once a department's budget is used, the gateway refuses
+// the requests, holds and realtime sessions of the keys that count toward it,
+// OAuth-delegated keys included. The spend-limit coordinator reseeds budgets from
 // gateway_spend_limit_seed about every minute, so changes here need no cache
-// invalidation. The 15-minute sweep (sweep_department_budget_alerts) pushes
-// owners and admins at about 80% and 100%. Spend shown here comes from
-// workspace_department_budget_status, which counts a department's linked keys
-// plus its members' unlinked keys and OAuth requests, from the hourly usage
-// rollup.
+// invalidation. The 15-minute sweep (sweep_department_budget_alerts) pushes owners
+// and admins at about 80% and 100%. Spend shown here comes from
+// workspace_department_budget_status: a department's linked keys plus its members'
+// unlinked and OAuth-delegated keys, counted as admission counts them.
 import { Hono } from "hono";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
@@ -18,6 +17,7 @@ import {
 	internalServerError,
 	isResponse,
 	parsePathId,
+	rejectThirdPartyOAuthSpendingChange,
 	requireCapability,
 	requireJsonBody,
 	requireOAuthWorkspaceRole,
@@ -113,6 +113,9 @@ async function authorize(req: Request, capability: string) {
 	if (!auth.ok) return { response: (auth as GuardErr).response } as const;
 	const scopeError = requireCapability(auth.value, capability);
 	if (scopeError) return { response: scopeError } as const;
+	// Department budgets refuse requests once used up: apps can read them but not change them.
+	const appError = capability === CAPABILITIES.BUDGETS_READ ? null : rejectThirdPartyOAuthSpendingChange(auth.value, "Apps that use Sign in with Phaseo can't change department budgets. The person can change them under Settings, Budgets.");
+	if (appError) return { response: appError } as const;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return { response: roleError } as const;
 	return { auth: auth.value } as const;

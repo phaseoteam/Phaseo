@@ -4,10 +4,10 @@ import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import { ArrowRight, AudioLines, Check, ChevronDown, ChevronRight, CircleAlert, Copy, FileText, GitBranch, Info, Layers, MoreHorizontal, Pencil, RefreshCw, RotateCcw, SlidersHorizontal, WalletCards } from "lucide-react-native";
 import { createContext, memo, useContext, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Platform, Pressable, ScrollView, View, type GestureResponderEvent } from "react-native";
+import { ActivityIndicator, Platform, Pressable, View, type GestureResponderEvent } from "react-native";
 import { Logo } from "@/components/Logo";
 import { Markdown } from "@/components/Markdown";
-import { Button, Icon, measureAnchor, pointAnchor, showActions, Text, toast, useToneColor, type ViewRef } from "@/components/ui";
+import { Button, HorizontalScroll, Icon, measureAnchor, pointAnchor, showActions, Text, toast, useToneColor, type ViewRef } from "@/components/ui";
 import { WEB_ORIGIN } from "@/lib/config";
 import { cn } from "@/lib/cn";
 import { formatUsdCost } from "@/lib/format";
@@ -99,7 +99,7 @@ function UserRow({ turn, last }: { turn: Turn; last: boolean }) {
     <View className={cn(last && "pb-5")}>
       <UserMessage message={turn.user} />
       {answers.length > 1 ? (
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-1.5 px-4 pb-1 pt-4">
+        <HorizontalScroll contentContainerClassName="gap-1.5 px-4 pb-1 pt-4">
           {answers.map((answer, index) => {
             const { label, orgId, orgName } = labels(answer.model, settings[answer.model ?? ""]);
             const current = index === selected;
@@ -111,7 +111,7 @@ function UserRow({ turn, last }: { turn: Turn; last: boolean }) {
               </Pressable>
             );
           })}
-        </ScrollView>
+        </HorizontalScroll>
       ) : null}
     </View>
   );

@@ -4,26 +4,33 @@ description: "Erhalte Warnungen zu Ausgaben, Budgets, Prognosen, Ausgabenspitzen
 icon: "badge-dollar-sign"
 ---
 
-Ausgabenregeln beobachten die Ausgaben deines Arbeitsbereichs und senden eine Warnung, wenn sie eine Schwelle überschreiten. Eine Regel kann außerdem Anfragen sperren, sobald die Ausgaben über eine Kulanzspanne hinausgehen. Jeder Tarif kann bis zu 50 Regeln pro Arbeitsbereich anlegen.
+Lege eine Ausgabenregel an, um eine Warnung zu bekommen, wenn die Ausgaben deines Arbeitsbereichs eine Schwelle überschreiten, und auf Wunsch Anfragen zu sperren, sobald die Ausgaben über eine Kulanzspanne hinausgehen. Öffne **Einstellungen → Benachrichtigungen → Ausgabenwarnungen** und wähle **Warnung hinzufügen**. Ein Arbeitsbereich kann in jedem Tarif bis zu 50 Regeln haben; die 51. schlägt mit `409 spend_rule_limit_reached` fehl.
 
-<Note>Ausgabenwarnungen, Sperren und Ausgabenberichte werden schrittweise eingeführt. Bis sie aktiviert sind, werden Regeln und Einstellungen gespeichert, aber nichts wird ausgewertet, gesperrt oder gesendet.</Note>
+<Note>Ausgabenwarnungen, Sperren und Ausgabenberichte werden schrittweise eingeführt. Bis sie aktiviert sind, werden Regeln und Einstellungen gespeichert, aber nichts wird ausgewertet, gesperrt oder gesendet, und neue Regeln können `action: "block"` nicht verwenden.</Note>
 
-## So funktioniert eine Regel
+```mermaid
+flowchart LR
+  usage["Anfragen werden abgeschlossen"] --> eval["Regel wird einige Minuten später ausgewertet"]
+  eval -->|"Schwelle überschritten"| alert["spend_alert wird gesendet"]
+  eval -->|"Sperrpunkt überschritten (Sperrregeln)"| block["Anfragen im Geltungsbereich erhalten 429"]
+  block -->|"Zeitraum wird zurückgesetzt, Ausgaben sinken oder ein Administrator hebt sie auf"| lifted["Sperre aufgehoben"]
+```
 
 Eine Regel kombiniert:
 
-- eine **Metrik**: was gemessen wird (siehe [Warnungsarten](#alert-types-and-bases));
-- einen **Geltungsbereich**: wessen Ausgaben zählen, etwa der Arbeitsbereich, ein API-Schlüssel oder eine Abteilung;
-- einen **Zeitraum**: ein Kalendertag, eine Woche oder ein Monat, oder ein rollierendes Fenster aus Stunden;
-- **Schwellen**: der Dollarbetrag oder die Prozentsätze, die eine Warnung auslösen;
-- eine **Aktion**: `notify` oder `block`, um zusätzlich Anfragen über einem Limit abzulehnen.
+| Teil | Feld | Werte |
+| --- | --- | --- |
+| Metrik | `metric` | `spend`, `budget_percent`, `forecast`, `spike`, `balance`. Siehe [Warnungsarten](#alert-types-and-bases). |
+| Geltungsbereich | `scope_type`, `scope_id` | Wessen Ausgaben zählen: der Arbeitsbereich, ein API-Schlüssel, ein Mitglied, eine Abteilung, ein Modell oder ein Anbieter |
+| Zeitraum | `period` | Ein Kalender-`day`, eine `week` oder ein `month`, oder `rolling` über `window_hours` |
+| Schwellen | `threshold_amount` oder `threshold_percents` | Der Dollarbetrag oder die Prozentsätze, die eine Warnung auslösen |
+| Aktion | `action` | `notify` oder `block`, um zusätzlich Anfragen über einem Limit abzulehnen |
 
 Phaseo wertet Regeln anhand der erfassten Nutzung aus, einige Minuten nachdem Anfragen abgeschlossen sind. Arbeitsbereiche mit Regeln werden zusätzlich stündlich geprüft, Guthabenregeln alle 15 Minuten. Die Ausgaben umfassen Video-, Batch-, Musik- und Echtzeitaufträge.
 
-Um eine Regel zu erstellen, öffne **Gateway → Einstellungen → Benachrichtigungen → Ausgabenwarnungen** und wähle **Warnung hinzufügen**. Der Editor zeigt den aktuellen Wert einer gespeicherten Regel und kann eine Testwarnung senden. Die Seite eines API-Schlüssels und die Budgetseite haben Verknüpfungen, die den Editor mit dem Limit des Schlüssels oder dem Budget als Basis öffnen. Mitglieder können Regeln sehen; Inhaber und Administratoren erstellen, ändern, testen und löschen sie.
+Der Editor zeigt den aktuellen Wert einer gespeicherten Regel und kann eine Testwarnung senden. Die Seite eines API-Schlüssels und die Budgetseite haben Verknüpfungen, die den Editor mit dem Limit des Schlüssels oder dem Budget als Basis öffnen. Mitglieder können Regeln sehen; Inhaber und Administratoren erstellen, ändern, testen und löschen sie.
 
 <span id="alert-types-and-bases"></span>
-
 ## Warnungsarten und Basen
 
 | Metrik | Sendet eine Warnung, wenn | Zeiträume |
@@ -43,7 +50,7 @@ Prozentsätze werden an einer Basis (`base_kind`) gemessen:
 
 Eine Regel, deren Basis fehlt, etwa ein gelöschtes Budget oder ein Schlüssel ohne Ausgabenlimit, sendet nichts, bis die Basis wieder existiert. Guardrails haben keine Ausgabenlimits und können keine Basis sein.
 
-## Geltungsbereiche
+## Festlegen, wessen Ausgaben zählen
 
 | Geltungsbereich | `scope_id` | Zählt |
 | --- | --- | --- |
@@ -51,7 +58,7 @@ Eine Regel, deren Basis fehlt, etwa ein gelöschtes Budget oder ein Schlüssel o
 | `key` | ID des API-Schlüssels | Anfragen mit diesem Schlüssel |
 | `member` | die Benutzer-ID des Mitglieds | Anfragen mit Schlüsseln, die das Mitglied erstellt hat, plus die eigenen OAuth-Anfragen des Mitglieds |
 | `department` | Abteilungs-ID | alles, was Personen in der Abteilung tun (siehe unten) |
-| `model` | Modell-ID, etwa `openai/gpt-5` | Anfragen, die das Modell beantwortet |
+| `model` | Modell-ID, etwa `openai/gpt-6-astra` | Anfragen, die das Modell beantwortet |
 | `provider` | Anbieter-ID | Anfragen, die der Anbieter beantwortet |
 
 Abteilungsausgaben werden pro Anfrage zugeordnet:
@@ -81,10 +88,9 @@ Eine Regel hat je nach Metrik eine bis fünf Prozentschwellen (1 bis 1000) oder 
 **Test senden** schickt die Warnung, die die Regel jetzt senden würde, als `[TEST]` markiert an die Ziele der Regel. Es wird nichts gespeichert, und ein Arbeitsbereich kann fünf Tests pro Minute senden. Der **Verlauf** jeder Regel listet die gesendeten Warnungen und Sperren auf.
 
 <span id="block-requests"></span>
-
 ## Anfragen sperren
 
-Eine `spend`- oder `budget_percent`-Regel mit `action: "block"` warnt an ihren Schwellen und sperrt, sobald die Ausgaben den Sperrpunkt erreichen: `block_at_percent` der Basis (Standard 110, mindestens die höchste Schwelle) oder `block_at_amount` bei einer `spend`-Regel. Regeln mit einer Basis `previous_period` können nicht sperren. Der Abstand zwischen der letzten Warnung und dem Sperrpunkt ist die Kulanzspanne: Dein Team wird gewarnt, bevor Anfragen gestoppt werden.
+Eine `spend`- oder `budget_percent`-Regel mit `action: "block"` warnt an ihren Schwellen und sperrt, sobald die Ausgaben den Sperrpunkt erreichen: `block_at_percent` der Basis (100 bis 1000, Standard 110, mindestens die höchste Schwelle) oder `block_at_amount` bei einer `spend`-Regel (mindestens `threshold_amount`). Regeln mit einer Basis `previous_period` können nicht sperren. Der Abstand zwischen der letzten Warnung und dem Sperrpunkt ist die Kulanzspanne: Dein Team wird gewarnt, bevor Anfragen gestoppt werden.
 
 <Warning>Sperren erfolgen nach bestem Bemühen. Sie beruhen auf der erfassten Nutzung, daher beginnt eine Sperre einige Minuten nachdem die Ausgaben den Sperrpunkt überschritten haben, und die Ausgaben können in dieser Zeit darüber hinausgehen. Für eine harte Obergrenze, die bei jeder Anfrage geprüft wird, verwende Schlüssellimits oder Arbeitsbereichsbudgets.</Warning>
 
@@ -103,29 +109,29 @@ Solange die Ausgaben über der letzten Schwelle der Regel, aber unter ihrem Sper
 
 Eine Sperre wird von selbst aufgehoben, wenn der Zeitraum zurückgesetzt wird, wenn die Ausgaben einer rollierenden Regel unter ihren Sperrpunkt fallen, oder wenn die Regel deaktiviert, gelöscht oder geändert wird. Inhaber und Administratoren können sie unter **Ausgabenwarnungen → Aktive Blockierungen** oder mit [`POST /v1/spend-blocks/{id}/lift`](../api-reference/endpoint/spend-blocks-lift.mdx) aufheben. Eine aufgehobene Sperre beginnt im selben Zeitraum nicht erneut (bei rollierenden Regeln für ein Fenster). Benachrichtigungen zu Ausgabensperren werden gesendet, wenn eine Sperre beginnt und wenn sie aufgehoben wird.
 
-## Guthaben und Reichweite
+## Guthaben und Reichweite beobachten
 
 Eine `balance`-Regel beobachtet das verfügbare Guthaben des Arbeitsbereichs: sein Guthaben abzüglich der Beträge, die für laufende Anfragen reserviert sind. Sie nutzt den Geltungsbereich Arbeitsbereich und einen rollierenden Zeitraum und warnt, sobald eine der Bedingungen erfüllt ist:
 
 - `threshold_amount`: Das verfügbare Guthaben liegt bei oder unter diesem Betrag;
-- `runway_days`: Bei den durchschnittlichen Tagesausgaben der letzten `window_hours` würde das Guthaben weniger als so viele Tage reichen. Ohne aktuelle Ausgaben gibt es keine Warnung zur Reichweite.
+- `runway_days` (1 bis 365): Bei den durchschnittlichen Tagesausgaben der letzten `window_hours` würde das Guthaben weniger als so viele Tage reichen. Ohne aktuelle Ausgaben gibt es keine Warnung zur Reichweite.
 
 Eine Guthabenregel warnt einmal pro Rückgang. Sie warnt erst wieder, nachdem sich das Guthaben erholt hat und erneut gefallen ist, und nicht öfter als ihre Abklingzeit. Solange die automatische Aufladung aktiviert ist und funktioniert, wird keine Warnung gesendet.
 
-Die E-Mail bei niedrigem Guthaben unter **Einstellungen → Guthaben** bleibt die einfache Standardeinstellung. Sie wird einmal gesendet, jedes Mal wenn das Guthaben unter ihren Schwellenwert fällt, höchstens alle sechs Stunden und nicht, solange die automatische Aufladung funktioniert. Verwende eine Guthabenregel für Warnungen zur Reichweite, andere Ziele oder einen anderen Schwellenwert.
+Die E-Mail bei niedrigem Guthaben unter **Einstellungen → Guthaben** bleibt die einfache Standardeinstellung. Sie wird jedes Mal einmal gesendet, wenn das Guthaben unter ihren Schwellenwert fällt, höchstens alle sechs Stunden und nicht, solange die automatische Aufladung funktioniert. Verwende eine Guthabenregel für Warnungen zur Reichweite, andere Ziele oder einen anderen Schwellenwert.
 
-## Prognose
+## Ausgaben bis zum Ende des Zeitraums hochrechnen
 
-Eine `forecast`-Regel rechnet die Ausgaben linear bis zum Ende des aktuellen Tages, der Woche oder des Monats hoch: die bisherigen Ausgaben geteilt durch den bereits vergangenen Anteil des Zeitraums. Sie wartet, bis 3 Stunden eines Tages, 24 Stunden einer Woche oder 72 Stunden eines Monats vergangen sind und mindestens 0,01 $ ausgegeben wurden, damit ein ruhiger Start keine Warnung auslöst. Die Warnung sagt, wann das Limit beim aktuellen Tempo erreicht wird.
+Eine `forecast`-Regel rechnet die Ausgaben linear bis zum Ende des aktuellen Tages, der Woche oder des Monats hoch: die bisherigen Ausgaben geteilt durch den bereits vergangenen Anteil des Zeitraums. Sie wartet, bis 3 Stunden eines Tages, 24 Stunden einer Woche oder 72 Stunden eines Monats vergangen sind und mindestens $0.01 ausgegeben wurden, damit ein ruhiger Start keine Warnung auslöst. Die Warnung sagt, wann das Limit beim aktuellen Tempo erreicht wird.
 
 Lege einen Dollarbetrag `threshold_amount` fest oder eine Basis mit Prozentsätzen. Bei einer Basis `previous_period` wird die Hochrechnung mit dem gesamten vorherigen Zeitraum verglichen. Jede Schwelle warnt einmal pro Zeitraum.
 
-## Ausgabenspitze
+## Plötzliche Ausgabenspitzen erkennen
 
 Eine `spike`-Regel vergleicht die Ausgaben der letzten `window_hours` (1 bis 56) mit den üblichen Ausgaben für diese Zeit:
 
 - Bei Fenstern unter 24 Stunden sind die üblichen Ausgaben der Median derselben Stunden an jedem der vorherigen sieben Tage. Bei längeren Fenstern ist es der Median der früheren Fenster gleicher Länge in den vorherigen sieben Tagen.
-- Sie warnt, wenn die Ausgaben mindestens `spike_multiplier` mal so hoch wie üblich sind (Standard 3) und mindestens `spike_floor` betragen (Standard 5 $).
+- Sie warnt, wenn die Ausgaben mindestens `spike_multiplier` mal so hoch wie üblich sind (mehr als 1 und bis zu 100, Standard 3) und mindestens `spike_floor` betragen (Standard $5).
 - Sie benötigt Ausgaben des Arbeitsbereichs in mindestens drei dieser früheren Fenster. Bis dahin zeigt der Editor, dass sie noch lernt. Sind die üblichen Ausgaben null, gilt nur die Untergrenze.
 - Sie verwendet eine Abklingzeit (Standard 6 Stunden) und sperrt nie.
 
@@ -140,7 +146,7 @@ Inhaber erhalten standardmäßig einen wöchentlichen Ausgabenbericht, Administr
 - Die Summen für Mitglieder und Abteilungen enthalten asynchrone Aufträge und folgen der obigen Abteilungsregel, sodass sie leicht von der Gesamtsumme abweichen können.
 - Jede Person meldet sich nur von ihrer eigenen Kopie des Berichts eines Arbeitsbereichs ab. Mitglieder, die weder Inhaber noch Administratoren sind, erhalten ihn nie.
 
-## Routing und Ziele
+## Festlegen, wohin Warnungen gehen
 
 Ausgabenregeln senden drei Arten von Benachrichtigungen. Lege unter **Einstellungen → Benachrichtigungen** fest, wohin jede geht:
 
@@ -152,7 +158,7 @@ Ausgabenregeln senden drei Arten von Benachrichtigungen. Lege unter **Einstellun
 
 Eine Regel kann eigene Ziele haben. Sie ersetzen für diese Regel die Routen Ausgabenwarnungen und Ausgabensperren; sind sie alle pausiert, werden die Warnungen der Regel nicht stattdessen an die Routen gesendet. Warnungen und Sperren erreichen außerdem die mobile App für Inhaber und Administratoren sowie für den Ersteller des Schlüssels oder das Mitglied, um das es in einer Regel geht.
 
-Benutzerdefinierte Webhooks erhalten die Warnung als JSON mit `title`, `message`, `rule_id`, `rule_name`, `metric`, `scope`, `period`, `value_nanos` und, je nach Metrik, `base_nanos`, `forecast`, `spike` oder den Guthabenfeldern. Prüfe jede Zustellung anhand ihrer Signatur; siehe den Abschnitt zum Prüfen von Webhook-Signaturen in den [Workspace-Benachrichtigungen](./workspace-notifications.mdx).
+Benutzerdefinierte Webhooks erhalten die Warnung als JSON mit `title`, `message`, `rule_id`, `rule_name`, `metric`, `scope`, `period`, `value_nanos` und, je nach Metrik, `base_nanos`, `forecast`, `spike` oder den Guthabenfeldern. Prüfe jede Zustellung anhand ihrer Signatur; siehe [Webhook-Signaturen prüfen](./workspace-notifications.mdx#verify-webhook-signatures).
 
 ## Regeln mit der API verwalten
 

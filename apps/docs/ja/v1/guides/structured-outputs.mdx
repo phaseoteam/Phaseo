@@ -1,34 +1,53 @@
 ---
 icon: "shapes"
 title: "構造化出力"
-description: "json_objectまたはjson_schemaの出力形式で、予測可能なJSONを返します。"
+description: "json_object または json_schema の出力形式で、予測可能な JSON を返します。"
 ---
 
-構造化出力を使うと、自由形式のテキストではなく機械可読な形式を指定できます。
+リクエストに JSON Schema を付けて送ると、モデルは自由形式のテキストではなく、その形の JSON を返します。それでも、使う前にはコードで解析と検証を行ってください。
 
-## 対応エンドポイント
+```mermaid
+flowchart LR
+  schema["JSON Schema 付きのリクエスト"] --> model["モデルが回答"]
+  model --> parse{{"解析でき、バリデーターに合う？"}}
+  parse -->|"はい"| use["結果を使う"]
+  parse -->|"いいえ（1 回目）"| retry["修正のための再試行を 1 回"]
+  retry --> parse
+  parse -->|"いいえ（2 回目）"| fail["安全な失敗を返す"]
+```
 
-構造化出力は次のエンドポイントで使えます。
+## 形式を選ぶ
 
-- `response_format`を使う`/v1/chat/completions`
-- `text.format`を使う`/v1/responses`
-- `/v1/messages`もJSONテキストを返せますが、同じ`response_format`の仕様は使いません。
+| `type` | 得られるもの |
+| --- | --- |
+| `json_schema` | 送ったスキーマに従う JSON。既定ではこれを使ってください。 |
+| `json_object` | 何らかの有効な JSON オブジェクト。形は強制されません。 |
+| `text` | プレーンテキスト（既定）。 |
 
-## リクエスト
+形式を指定する場所はエンドポイントによって異なります。
 
-```bash
+| エンドポイント | フィールド |
+| --- | --- |
+| `/v1/chat/completions` | `response_format` |
+| `/v1/responses` | `text.format` |
+| `/v1/messages` | `output_config.format`（`json_schema` のみ） |
+
+## スキーマを送る
+
+<CodeGroup>
+```bash Chat Completions
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "messages": [
-      { "role": "user", "content": "Return a JSON object with city and weather for London." }
+      { "role": "user", "content": "Return the city and weather for London." }
     ],
     "response_format": {
       "type": "json_schema",
       "json_schema": {
-        "name": "weather_schema",
+        "name": "weather",
         "strict": true,
         "schema": {
           "type": "object",
@@ -44,14 +63,39 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-## レスポンス
+```bash Responses
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-6-astra",
+    "input": "Return the city and weather for London.",
+    "text": {
+      "format": {
+        "type": "json_schema",
+        "name": "weather",
+        "strict": true,
+        "schema": {
+          "type": "object",
+          "properties": {
+            "city": { "type": "string" },
+            "weather": { "type": "string" }
+          },
+          "required": ["city", "weather"],
+          "additionalProperties": false
+        }
+      }
+    }
+  }'
+```
+</CodeGroup>
+
+JSON はメッセージの内容に文字列として返されます。
 
 ```json
 {
-  "id": "chatcmpl_...",
   "choices": [
     {
-      "index": 0,
       "finish_reason": "stop",
       "message": {
         "role": "assistant",
@@ -62,19 +106,14 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-## 仕様上の注意
-
-- `response_format.type`には`text`、`json_object`、`json_schema`を指定します。
-- `json_schema`ではスキーマオブジェクトを含めます（chat形式のペイロードでは`response_format.json_schema.schema`、Responses形式では`text.format.schema`）。
-- 後続処理に渡す前に、サーバー側でJSONを検証します。
-
 ## スキーマを設計する
 
-小さなオブジェクトから始め、必須フィールドを明示し、既知のカテゴリには列挙型を使います。余分なキーを拒否する場合は`additionalProperties: false`を設定してください。リクエストのスキーマとサーバー側のバリデーターを同期し、一緒にバージョン管理します。
+小さなオブジェクトから始めてください。すべてのフィールドを `required` に並べ、既知のカテゴリには `enum` を使い、余分なキーを拒否する必要がある場合は `additionalProperties: false` を設定します。スキーマはサーバー側のバリデーターと一緒にバージョン管理し、両者がずれないようにしてください。
 
+<span id="validate-the-result"></span>
 ## 結果を検証する
 
-後続処理で使う前に、結果全体を解析・検証してください。このTypeScriptの例はZodを使い、上記の天気スキーマに対応しています。
+解析する前に、拒否、内容の欠落、途中で切れた回答（`finish_reason` が `stop` 以外）がないかを確認します。その後、解析したオブジェクトを検証します。次の Zod バリデーターは上のスキーマに対応しています。
 
 ```typescript
 import { z } from "zod";
@@ -89,6 +128,6 @@ function parseWeather(content: string) {
 }
 ```
 
-解析前に拒否、コンテンツの欠落、途中で切れた応答を処理してください。検証に失敗した場合は修正の再試行回数を制限し、その後は安全に失敗として返します。再生成には追加料金がかかる場合があります。有効なJSONでも、値の事実上の正確性や操作の許可は保証されません。
+検証に失敗した場合は、エラーをプロンプトに含めて 1 回だけ再試行し、それでも失敗したら安全な失敗を返します。再試行のたびに課金されます。有効な JSON であっても、値が正しいことや、操作が認可されていることの証明にはなりません。
 
-検証失敗をモデルとスキーマのバージョン別に記録し、どちらかが変わったら評価ケースを再確認してください。不正なJSONの復旧については[応答修復](../cookbook/response-healing-for-structured-json.mdx)を参照してください。
+検証の失敗はモデルとスキーマのバージョンごとに記録し、どちらかが変わったら評価ケースを実行し直してください。不正な形式の JSON を自動で修復するには、[レスポンスの修復](../cookbook/response-healing-for-structured-json.mdx)を参照してください。

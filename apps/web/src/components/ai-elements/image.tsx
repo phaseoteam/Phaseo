@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import NextImage from "next/image";
+import NextImage from "@/components/image";
 import type { Experimental_GeneratedImage } from "ai";
 
 export type ImageProps = Experimental_GeneratedImage & {

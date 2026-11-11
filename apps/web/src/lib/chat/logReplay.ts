@@ -32,6 +32,7 @@ export type LogReplayWarningCode =
 	| "earlier_history_missing"
 	| "unsupported_content"
 	| "attachment_reference"
+	| "media_not_stored"
 	| "no_response"
 	| "response_truncated"
 	| "extra_choices"
@@ -79,6 +80,12 @@ const isObject = (value: unknown): value is Json =>
 	Boolean(value) && typeof value === "object" && !Array.isArray(value);
 
 const asString = (value: unknown): string => (typeof value === "string" ? value : "");
+
+// I/O logs replace image, audio and file bytes with these placeholders.
+const MEDIA_PLACEHOLDERS = new Set(["[REDACTED_DATA_URL]", "[REDACTED_BASE64]"]);
+const isMediaPlaceholder = (value: string): boolean =>
+	// A Messages base64 source is rebuilt into a data URL around its placeholder.
+	MEDIA_PLACEHOLDERS.has(value) || MEDIA_PLACEHOLDERS.has(value.slice(value.indexOf(",") + 1));
 
 const asFiniteNumber = (value: unknown): number | undefined =>
 	typeof value === "number" && Number.isFinite(value) ? value : undefined;
@@ -155,6 +162,19 @@ class ReplayBuilder {
 
 	/** Image, audio and file inputs, in any of the three request shapes. */
 	mediaPart(part: Json): LogReplayPart | null {
+		const media = this.storedMediaPart(part);
+		if (media?.type === "image" && isMediaPlaceholder(media.url)) return this.mediaNotStored();
+		if (media?.type === "audio" && isMediaPlaceholder(media.data)) return this.mediaNotStored();
+		if (media?.type === "file" && isMediaPlaceholder(media.data)) return this.mediaNotStored();
+		return media;
+	}
+
+	mediaNotStored(): null {
+		this.warn("media_not_stored");
+		return null;
+	}
+
+	storedMediaPart(part: Json): LogReplayPart | null {
 		const type = asString(part.type);
 		if (type === "image_url" || type === "input_image") {
 			const url = typeof part.image_url === "string" ? part.image_url : asString(part.image_url?.url);

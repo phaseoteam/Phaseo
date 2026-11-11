@@ -8,10 +8,9 @@ beforeAll(() => setupRuntimeFromEnv({ WAFER_API_KEY: "test-wafer-key" }));
 afterAll(teardownTestRuntime);
 
 describe("Wafer ZDR routing", () => {
-	it.each([
-		["wafer-zdr", "required"],
-		["wafer", undefined],
-	])("sends the correct upstream headers for %s", async (providerId, expectedZdrHeader) => {
+	// Every Wafer Serverless request is ZDR (docs.wafer.ai/serverless/zero-data-retention),
+	// so no Wafer offer sends the legacy Wafer-ZDR header.
+	it.each(["wafer-zdr", "wafer-us", "wafer"])("sends the same upstream headers for %s", async (providerId) => {
 		const executor = resolveProviderExecutor(providerId, "text.generate");
 		expect(executor).toBeTruthy();
 		const mock = installFetchMock([{
@@ -42,7 +41,7 @@ describe("Wafer ZDR routing", () => {
 			expect(result.kind).toBe("completed");
 			expect(mock.calls).toHaveLength(1);
 			expect(mock.calls[0].headers).toMatchObject({ Authorization: "Bearer test-wafer-key" });
-			expect(mock.calls[0].headers["Wafer-ZDR"]).toBe(expectedZdrHeader);
+			expect(mock.calls[0].headers["Wafer-ZDR"]).toBeUndefined();
 		} finally {
 			mock.restore();
 		}

@@ -154,6 +154,9 @@ ALTER TABLE "public"."v2_request_facts"
 CREATE INDEX v2_request_facts_app_time_idx ON public.v2_request_facts USING btree (app_id, occurred_at DESC)
   WHERE (app_id IS NOT NULL);
 
+CREATE INDEX v2_request_facts_byok_retention_idx ON public.v2_request_facts USING btree (occurred_at, request_event_id)
+  WHERE (byok AND (NOT (safe_metadata ? 'retention_redacted_at'::text)));
+
 CREATE INDEX v2_request_facts_country_time_idx ON public.v2_request_facts USING btree (edge_country, occurred_at DESC)
   WHERE (edge_country IS NOT NULL);
 
@@ -254,6 +257,13 @@ CREATE TRIGGER v2_request_facts_service_tier
   BEFORE INSERT OR UPDATE OF service_tier_requested, service_tier_observed, service_tier_slug, safe_metadata, endpoint ON public.v2_request_facts
   FOR EACH ROW
   EXECUTE FUNCTION public.set_v2_request_fact_service_tier();
+
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."v2_request_facts"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
 
 CREATE POLICY "v2_request_facts_workspace_select" ON "public"."v2_request_facts"
   FOR SELECT

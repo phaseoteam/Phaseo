@@ -137,7 +137,6 @@ struct ApiKey {
 	std::optional<std::string> department_id;
 	bool disabled;
 	std::optional<std::string> expires_at;
-	std::string hash;
 	std::string id;
 	bool include_byok_in_limit;
 	std::vector<std::map<std::string, std::any>> ip_allowlist;
@@ -258,7 +257,6 @@ struct ApiKeyWithValue {
 	std::optional<std::string> department_id;
 	bool disabled;
 	std::optional<std::string> expires_at;
-	std::string hash;
 	std::string id;
 	bool include_byok_in_limit;
 	std::vector<std::map<std::string, std::any>> ip_allowlist;
@@ -1527,6 +1525,7 @@ struct FusionToolDefinition {
 struct GatewayCapabilities {
 	std::vector<std::string> endpoints;
 	std::map<std::string, std::any> parameter_details;
+	std::map<std::string, std::any> parameter_specs;
 	std::vector<std::string> parameters;
 };
 
@@ -1606,6 +1605,13 @@ struct GatewayModalities {
 	std::vector<std::string> output;
 };
 
+struct GatewayModelAccess {
+	int hidden_model_count;
+	std::vector<std::map<std::string, std::any>> hidden_models;
+	int limited_model_count;
+	bool restricted;
+};
+
 struct GatewayModelLifecycle {
 	std::optional<std::string> deprecated_at;
 	std::optional<std::string> message;
@@ -1638,6 +1644,7 @@ struct GatewayModelOffer {
 using GatewayModelOrganization = std::any;
 
 struct GatewayModelsResponse {
+	std::map<std::string, std::any> access;
 	std::any availability_mode;
 	int limit;
 	std::vector<std::map<std::string, std::any>> models;
@@ -1978,8 +1985,10 @@ struct ImageModerationInput {
 
 struct ImagesEditRequest {
 	std::any background;
+	std::any complexity;
 	std::any image;
 	std::any input_fidelity;
+	std::string markup;
 	std::string mask;
 	std::optional<bool> meta;
 	std::string model;
@@ -2006,6 +2015,9 @@ struct ImagesEditResponse {
 
 struct ImagesGenerationRequest {
 	std::any background;
+	std::any complexity;
+	std::optional<int> frame_count;
+	std::optional<int> frame_duration_ms;
 	std::string model;
 	std::vector<std::string> models;
 	std::any moderation;
@@ -2021,12 +2033,14 @@ struct ImagesGenerationRequest {
 	std::string size;
 	std::optional<bool> stream;
 	std::string style;
+	std::map<std::string, std::any> svg;
 	std::string user;
 };
 
 struct ImagesGenerationResponse {
 	std::optional<int> created;
 	std::vector<std::map<std::string, std::any>> data;
+	std::map<std::string, std::any> svg_usage;
 };
 
 struct InputTokensDetails {
@@ -2710,6 +2724,80 @@ struct OpenAIWebSearchToolDefinition {
 using OrganisationId = std::any;
 
 using OrganisationIdList = std::any;
+
+struct ParameterDimensions {
+	std::vector<std::string> aspect_ratios;
+	std::optional<double> max;
+	std::string max_aspect_ratio;
+	std::optional<double> max_height;
+	std::optional<double> max_pixels;
+	std::optional<double> max_width;
+	std::optional<double> min;
+	std::optional<double> min_pixels;
+	std::optional<double> multiple_of;
+};
+
+struct ParameterOption {
+	std::string description;
+	std::string label;
+	std::any value;
+};
+
+struct ParameterRule {
+	std::any default;
+	std::map<std::string, std::any> if;
+	std::optional<double> max;
+	std::string message;
+	std::optional<double> min;
+	std::optional<double> step;
+	std::optional<bool> supported;
+	std::vector<std::any> values;
+};
+
+struct ParameterSpec {
+	std::string alias_of;
+	std::vector<std::string> aliases;
+	std::optional<bool> always_on;
+	std::any default;
+	std::map<std::string, std::any> dimensions;
+	std::map<std::string, std::any> extra;
+	std::string format;
+	std::vector<std::string> formats;
+	std::vector<std::string> item_types;
+	std::optional<double> max;
+	std::optional<double> max_file_size_bytes;
+	std::optional<double> max_items;
+	std::optional<double> max_length;
+	std::optional<double> max_tokens;
+	std::any media;
+	std::optional<double> min;
+	std::optional<double> min_items;
+	std::optional<double> min_length;
+	std::optional<double> multiple_of;
+	std::string notes;
+	std::optional<bool> open;
+	std::vector<std::map<std::string, std::any>> options;
+	std::map<std::string, std::any> properties;
+	std::any provider_default;
+	std::optional<bool> required;
+	std::vector<std::string> requires;
+	std::map<std::string, std::any> source;
+	std::optional<double> step;
+	std::string support_level;
+	bool supported;
+	std::any type;
+	std::string upstream_name;
+	std::vector<std::any> upstream_values;
+	std::vector<std::any> values;
+	std::vector<std::map<std::string, std::any>> when;
+};
+
+struct ParameterSpecs {
+};
+
+using ParameterType = std::any;
+
+using ParameterValue = std::any;
 
 using ParseBlock = std::any;
 
@@ -3839,7 +3927,7 @@ struct VideoDeleteResponse {
 
 struct VideoGenerationRequest {
 	std::string aspect_ratio;
-	std::optional<int> compression_quality;
+	std::any compression_quality;
 	std::optional<int> duration;
 	std::optional<bool> enhance_prompt;
 	std::vector<std::map<std::string, std::any>> frame_images;
@@ -3929,6 +4017,7 @@ struct VideoModelCapability {
 
 struct VideoModelProviderCapability {
 	std::string id;
+	std::map<std::string, std::any> parameter_specs;
 	std::vector<std::string> supported_parameters;
 	std::map<std::string, std::any> supported_parameters_detail;
 	std::vector<std::string> supported_params;
@@ -4054,6 +4143,7 @@ struct WorkloadIdentityPolicy {
 	std::optional<std::string> last_used_at;
 	int max_token_lifetime_seconds;
 	std::string name;
+	std::string owner_claim;
 	std::string owner_id;
 	std::any provider;
 	std::any status;
@@ -4069,6 +4159,7 @@ struct WorkloadIdentityPolicyInput {
 	std::string issuer;
 	std::optional<int> max_token_lifetime_seconds;
 	std::string name;
+	std::string owner_claim;
 	std::string owner_id;
 	std::any provider;
 };
@@ -4473,9 +4564,20 @@ struct WorkspaceMember {
 	std::string workspace_id;
 };
 
+struct WorkspaceMemberAddFailure {
+	std::any code;
+	std::string message;
+	std::string user_id;
+};
+
 struct WorkspaceMemberAddResponse {
 	int added_count;
+	std::vector<std::string> approved;
 	std::vector<std::map<std::string, std::any>> data;
+	std::string error;
+	std::vector<std::map<std::string, std::any>> failed;
+	std::string message;
+	std::vector<std::string> not_attempted;
 };
 
 struct WorkspaceMemberBulkRequest {

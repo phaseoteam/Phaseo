@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useLayout } from "@/hooks/useLayout";
 import { cn } from "@/lib/cn";
 import { haptic } from "@/lib/haptics";
+import { BottomDrawer } from "./dialog";
 import { Icon } from "./icon";
 import { placeDropdown, type Anchor } from "./overlay";
 import type { MenuAction } from "./overlayStore";
@@ -89,12 +90,10 @@ function MenuSurface({ open, onClose, anchor, title, children }: { open: boolean
   }
   return (
     <Modal visible={open} transparent animationType="fade" statusBarTranslucent navigationBarTranslucent onRequestClose={onClose}>
-      <Pressable accessibilityLabel="Close" className="flex-1 justify-end bg-black/40" onPress={onClose}>
-        <Pressable className="max-h-[75%] rounded-t-md border-t border-border bg-popover" style={{ paddingBottom: insets.bottom + 8 }} onPress={() => undefined}>
-          {title ? <Text variant="label" numberOfLines={1} className="px-4 pb-1 pt-4">{title}</Text> : null}
-          <ScrollView contentContainerClassName="py-1">{children(false)}</ScrollView>
-        </Pressable>
-      </Pressable>
+      <BottomDrawer onClose={onClose} maxHeight="75%" paddingBottom={insets.bottom + 8}>
+        {title ? <Text variant="label" numberOfLines={1} className="px-4 pb-1 pt-2">{title}</Text> : null}
+        <ScrollView contentContainerClassName="py-1">{children(false)}</ScrollView>
+      </BottomDrawer>
     </Modal>
   );
 }

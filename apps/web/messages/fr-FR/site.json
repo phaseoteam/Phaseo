@@ -1034,7 +1034,7 @@
 					},
 					{
 						"title": "Contribution de données",
-						"description": "Une acceptation explicite peut enregistrer les prompts et réponses réussis, hors BYOK, dans un Cloudflare R2 privé pendant 30 jours au maximum. Phaseo applique une rédaction au mieux, mais les clients ne doivent pas la considérer comme une garantie. Un échantillon configuré est envoyé à OpenAI, avec le stockage API désactivé, pour classifier les tâches de manière asynchrone."
+						"description": "Une acceptation explicite peut enregistrer les prompts et réponses réussis, hors BYOK, dans un Cloudflare R2 privé pendant 30 jours au maximum. Phaseo applique un masquage au mieux, mais les clients ne doivent pas le considérer comme une garantie. Un échantillon configuré est envoyé à OpenAI, avec le stockage API désactivé, pour classifier les tâches de manière asynchrone."
 					},
 					{
 						"title": "Exports d’observabilité et notifications",
@@ -2281,7 +2281,7 @@
 			"gatewayStorageItems": [
 				"Nous ne stockons pas durablement le texte brut des prompts ni le texte intégral des Outputs des modèles dans notre base de données principale ou nos outils d’analyse.",
 				"Les Outputs textuels éligibles qui ne sont pas diffusés en streaming peuvent être conservés dans un cache de réponses propre à l’espace de travail pendant cinq minutes par défaut. Un preset configuré peut fixer une durée comprise entre 30 secondes et 24 heures. La requête contribue à une empreinte unidirectionnelle de clé de cache ; l’enregistrement conserve l’Output et les métadonnées de réponse, pas le corps brut de la requête.",
-				"Si vous activez la journalisation privée des entrées-sorties, nous pouvons conserver les Inputs, les Outputs et les charges utiles facultatives du fournisseur pendant 90, 180 ou 365 jours. Si vous choisissez de contribuer des données, nous pouvons appliquer une rédaction raisonnable et conserver les Inputs et Outputs éligibles pendant 30 jours au maximum. Ces fonctions sont distinctes de la conservation par le fournisseur.",
+				"Si vous activez la journalisation privée des entrées-sorties, nous pouvons conserver les Inputs, les Outputs et les charges utiles facultatives du fournisseur pendant 90, 180 ou 365 jours. Si vous choisissez de contribuer des données, nous pouvons appliquer un masquage raisonnable et conserver les Inputs et Outputs éligibles pendant 30 jours au maximum. Ces fonctions sont distinctes de la conservation par le fournisseur.",
 				"Nous envoyons le contenu nécessaire de la requête au fournisseur tiers concerné afin qu’il génère un Output. Ces fournisseurs peuvent enregistrer ou stocker les données selon leurs propres politiques."
 			],
 			"sensitiveDataWarning": "Puisque vous contrôlez ce que vous envoyez, évitez d’inclure des données personnelles sensibles dans les prompts ou les Outputs, sauf si cela est strictement nécessaire et si les pratiques de confidentialité des fournisseurs concernés vous conviennent.",
@@ -2413,7 +2413,7 @@
 			],
 			"retentionIntro": "Nous conservons les données personnelles aussi longtemps que cela est raisonnablement nécessaire pour atteindre les objectifs décrits dans la présente Politique, notamment pour :",
 			"retentionReasons": [
-				"Les métadonnées par requête des appels Gateway BYOK sont conservées jusqu’à 90 jours. Les totaux d’utilisation agrégés sans contenu peuvent être conservés plus longtemps à des fins de facturation, de fiabilité et de statistiques.",
+				"Les métadonnées par requête des appels Gateway BYOK sont conservées jusqu’à 365 jours. Les totaux d’utilisation agrégés sans contenu peuvent être conservés plus longtemps à des fins de facturation, de fiabilité et de statistiques.",
 				"exploiter et maintenir votre compte et les fonctionnalités payantes ;",
 				"respecter nos obligations légales et réglementaires, par exemple en conservant des documents fiscaux et comptables ; et",
 				"résoudre les litiges et faire respecter nos accords."
@@ -2599,6 +2599,7 @@
 			"assignment": "Vous ne pouvez céder ni transférer vos droits ou obligations au titre des présentes Conditions sans notre accord écrit préalable. Nous pouvons transférer nos droits et obligations à une autre organisation dans le cadre d’une réorganisation ou d’une vente.",
 			"waiver": "Le fait de ne pas faire appliquer un droit ou une disposition des présentes Conditions ne constitue pas une renonciation à ce droit ou à cette disposition.",
 			"survival": "À la fin de votre accès au Service, les sections 2, 3, 4, 5 et 8 à 15 continuent de s’appliquer.",
+			"languageVersion": "Nous pouvons fournir ces Conditions dans d'autres langues que l'anglais par commodité. En cas de différence entre une traduction et la version anglaise, la version anglaise prévaut, sauf si le droit de la consommation de votre lieu de résidence en dispose autrement.",
 			"contactQuestions": "Pour toute question concernant ces Conditions, contactez-nous :",
 			"contactEmailLabel": "E-mail",
 			"operatorDetails": "Le Service est proposé par <person>Daniel Butler</person>, qui exerce sous le nom de <brand>Phaseo</brand>.",

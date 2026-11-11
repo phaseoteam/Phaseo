@@ -1,0 +1,470 @@
+---
+icon: "phone"
+title: "实时语音"
+description: "在任意 Phaseo SDK 中通过 Phaseo 中继进行实时语音通话，并在通话结束时获取最终账单。"
+---
+
+<Note>
+实时语音处于 Beta 阶段，按工作区开放访问。实时客户端已在 SDK 源码中，但尚未进入已发布的包（`3.0.0`、Rust `0.2.0`）；除 C++ 外，它们会随每个 SDK 的下个版本一起发布。
+</Note>
+
+连接时会创建会话（`POST /v1/audio/realtime/sessions`），打开中继 WebSocket，并等待 `relay.connected`。然后把 PCM16 音频流式发送进去，读取提供商事件，最后结束通话以获取最终账单。中继协议、警告和原因代码请参阅[实时语音会话](/zh-Hans/v1/guides/realtime-voice)。
+
+## 安装你的语言所需的依赖
+
+<Tabs>
+<Tab title="TypeScript">
+
+`client.realtime.connect()` 会发送你的 API 密钥，因此只能在服务器上调用。Node.js 22 或更高版本提供全局 `WebSocket`；在更旧的运行时上，请安装 `ws` 包，或通过 `webSocket` 传入你自己的构造函数。
+
+对于在浏览器中进行的通话，请在服务器上创建会话，然后在浏览器中用 `connectRealtimeSession()` 打开 socket。它接收你的服务器创建的会话，包括只对该会话有效的 `client_secret`，从不需要 API 密钥。[浏览器通话](#browser-calls)展示了这两部分。
+
+</Tab>
+<Tab title="Python">
+
+实时客户端仅在 `AsyncPhaseo` 上提供，并需要可选的 `websockets` 包：
+
+```bash
+pip install "phaseo[realtime]"
+```
+
+没有它时，`connect()` 会抛出带有该安装命令的 `ImportError`。
+
+</Tab>
+<Tab title="Go">
+
+请导入单独的 `realtime` 包：`github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3/realtime`。它使用 `github.com/coder/websocket` 打开 socket，只有在你导入该包时才会被编译进来。
+
+</Tab>
+<Tab title="C#">
+
+`client.Realtime.ConnectAsync()` 使用 `System.Net.WebSockets.ClientWebSocket`。无需额外安装任何东西。
+
+</Tab>
+<Tab title="PHP">
+
+`$client->realtime()->connect()` 需要可选的 `phrity/websocket` 包：
+
+```bash
+composer require phrity/websocket
+```
+
+PHP 是单线程的，因此只有在你调用 `receive()`、迭代 `events()` 或调用 `end()` 时才会读取事件。每读取一个事件，你的监听器就会运行。
+
+</Tab>
+<Tab title="Ruby">
+
+`client.realtime.connect()` 需要可选的 `websocket` gem：运行 `gem install websocket`，或在 Gemfile 中添加 `gem "websocket"`。
+
+</Tab>
+<Tab title="Java">
+
+`client.realtime.connect()` 使用 JDK 的 `java.net.http.WebSocket`。无需额外安装任何东西。
+
+</Tab>
+<Tab title="Rust">
+
+启用 `realtime` feature，它会引入 `tungstenite`：
+
+```toml
+phaseo = { version = "...", features = ["realtime"] }
+```
+
+</Tab>
+</Tabs>
+
+## 发起通话
+
+<CodeGroup>
+
+```typescript TypeScript
+import { Phaseo, RealtimeSessionClosedError } from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY });
+
+const session = await client.realtime.connect({
+  model: "openai/gpt-realtime-2",
+  voice: "marin",
+  instructions: "Answer in one sentence.",
+});
+
+session.onWarning((warning) => console.warn(warning.code, warning.message));
+session.on("response.output_audio.delta", (event) => play(event.delta as string));
+
+// PCM16 麦克风音频：OpenAI 和 xAI 为 24 kHz，Google 为 16 kHz。
+session.sendAudio(pcm16Chunk);
+
+try {
+  const ended = await session.end({ reason: "caller hung up" });
+  console.log(ended.reason, ended.duration_seconds, ended.cost.total_usd, ended.billing_status);
+} catch (error) {
+  if (error instanceof RealtimeSessionClosedError) {
+    // 通话仍会计费。稍后用 error.finalBill.path 获取最终费用。
+    console.error(error.message);
+  } else {
+    throw error;
+  }
+}
+```
+
+```python Python
+import asyncio
+from phaseo import AsyncPhaseo, RealtimeSessionClosedError
+
+async def main(pcm16_chunk: bytes) -> None:
+    client = AsyncPhaseo()  # 读取 PHASEO_API_KEY
+    session = await client.realtime.connect(
+        "openai/gpt-realtime-2", voice="marin", instructions="Answer in one sentence."
+    )
+    session.on_warning(lambda warning: print("warning", warning["code"]))
+
+    # PCM16 麦克风音频：OpenAI 和 xAI 为 24 kHz，Google 为 16 kHz。
+    await session.send_audio(pcm16_chunk)
+
+    try:
+        ended = await session.end(reason="caller hung up")
+        print(ended["reason"], ended["duration_seconds"], ended["cost"]["total_usd"], ended["billing_status"])
+    except RealtimeSessionClosedError as error:
+        # 通话仍会计费。稍后用 error.final_bill["path"] 获取最终费用。
+        print(error)
+    finally:
+        await client.close()
+```
+
+```go Go
+import (
+  "context"
+  "errors"
+  "log"
+
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+  "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3/realtime"
+)
+
+ctx := context.Background()
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  return err
+}
+
+session, err := realtime.Connect(ctx, client, realtime.Options{
+  Model:        "openai/gpt-realtime-2",
+  Voice:        "marin",
+  Instructions: "Answer in one sentence.",
+})
+if err != nil {
+  return err
+}
+
+session.OnWarning(func(w realtime.Warning) { log.Println(w.Code, w.Message) })
+
+// PCM16 麦克风音频：OpenAI 和 xAI 为 24 kHz，Google 为 16 kHz。
+_ = session.SendAudio(ctx, pcm16Chunk)
+
+ended, err := session.End(ctx, realtime.EndOptions{Reason: "caller hung up"})
+var closed *realtime.ClosedError
+if errors.As(err, &closed) {
+  // 通话仍会计费。稍后用 closed.FinalBill.Path 获取最终费用。
+  log.Println(closed)
+} else if err != nil {
+  return err
+} else {
+  log.Println(ended.Reason, ended.DurationSeconds, ended.Cost.TotalUSD, ended.BillingStatus)
+}
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+
+var session = await client.Realtime.ConnectAsync(new RealtimeConnectOptions
+{
+    Model = "openai/gpt-realtime-2",
+    Voice = "marin",
+    Instructions = "Answer in one sentence.",
+});
+
+using var warnings = session.OnWarning(warning => Console.WriteLine(warning.GetProperty("code").GetString()));
+
+// PCM16 麦克风音频：OpenAI 和 xAI 为 24 kHz，Google 为 16 kHz。
+await session.SendAudioAsync(pcm16Chunk);
+
+try
+{
+    var ended = await session.EndAsync(reason: "caller hung up");
+    Console.WriteLine(ended.GetProperty("billing_status").GetString());
+}
+catch (RealtimeSessionClosedException error)
+{
+    // 通话仍会计费。稍后用 error.FinalBillPath 获取最终费用。
+    Console.Error.WriteLine(error.Message);
+}
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+use Phaseo\Sdk\RealtimeSessionClosedException;
+
+$client = new Phaseo();
+
+$session = $client->realtime()->connect([
+    'model' => 'openai/gpt-realtime-2',
+    'voice' => 'marin',
+    'instructions' => 'Answer in one sentence.',
+]);
+
+$session->onWarning(fn (array $warning) => error_log($warning['code']));
+
+// PCM16 麦克风音频：OpenAI 和 xAI 为 24 kHz，Google 为 16 kHz。
+$session->sendAudio($pcm16Chunk);
+
+try {
+    $ended = $session->end(reason: 'caller hung up');
+    echo $ended['reason'], ' ', $ended['cost']['total_usd'], ' ', $ended['billing_status'], PHP_EOL;
+} catch (RealtimeSessionClosedException $error) {
+    // 通话仍会计费。稍后用 $error->getFinalBillPath() 获取最终费用。
+    error_log($error->getMessage());
+}
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+
+session = client.realtime.connect(
+  model: 'openai/gpt-realtime-2',
+  voice: 'marin',
+  instructions: 'Answer in one sentence.'
+)
+
+session.on_warning { |warning| warn warning['code'] }
+
+# PCM16 麦克风音频：OpenAI 和 xAI 为 24 kHz，Google 为 16 kHz。
+session.send_audio(pcm16_chunk)
+
+begin
+  ended = session.end(reason: 'caller hung up')
+  puts ended['reason'], ended['cost']['total_usd'], ended['billing_status']
+rescue PhaseoSdk::RealtimeSessionClosedError => error
+  # 通话仍会计费。稍后用 error.final_bill_path 获取最终费用。
+  warn error.message
+end
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import app.phaseo.sdk.RealtimeSession;
+import app.phaseo.sdk.RealtimeSessionClosedException;
+import com.fasterxml.jackson.databind.JsonNode;
+import java.time.Duration;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+RealtimeSession session = client.realtime.connect(Map.of(
+    "model", "openai/gpt-realtime-2",
+    "voice", "marin",
+    "instructions", "Answer in one sentence."));
+
+session.onWarning(warning -> System.out.println(warning.path("code").asText()));
+session.on("response.output_audio.delta", event -> play(event.path("delta").asText()));
+
+// PCM16 麦克风音频：OpenAI 和 xAI 为 24 kHz，Google 为 16 kHz。
+session.sendAudio(pcm16Chunk);
+
+try {
+    JsonNode ended = session.end("caller hung up", null, Duration.ofSeconds(60));
+    System.out.println(ended.path("billing_status").asText());
+} catch (RealtimeSessionClosedException error) {
+    // 通话仍会计费。稍后用 error.finalBillPath() 获取最终费用。
+    System.err.println(error.getMessage());
+}
+```
+
+```rust Rust
+use phaseo::Phaseo;
+use phaseo::realtime::{EndOptions, RealtimeError, RealtimeOptions};
+
+fn talk(pcm16_chunk: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+
+    let session = client.realtime().connect(
+        RealtimeOptions::new("openai/gpt-realtime-2")
+            .voice("marin")
+            .instructions("Answer in one sentence."),
+    )?;
+
+    session.on_warning(|warning| eprintln!("{}", warning["code"]));
+
+    // PCM16 麦克风音频：OpenAI 和 xAI 为 24 kHz，Google 为 16 kHz。
+    session.send_audio(pcm16_chunk)?;
+
+    match session.end(EndOptions { reason: Some("caller hung up".into()), ..EndOptions::default() }) {
+        Ok(ended) => println!("{} {}", ended["cost"]["total_usd"], ended["billing_status"]),
+        // 通话仍会计费。稍后用 final_bill_path 获取最终费用。
+        Err(RealtimeError::Closed { final_bill_path, .. }) => eprintln!("bill later: GET {final_bill_path}"),
+        Err(error) => return Err(error.into()),
+    }
+    Ok(())
+}
+```
+
+</CodeGroup>
+
+## 读取每个事件
+
+迭代会话，而不是按事件类型逐一订阅。socket 关闭时迭代停止。在 Python 中，第一个迭代器还会收到自 `connect()` 返回以来接收到的事件，从 `relay.connected` 开始。
+
+<CodeGroup>
+
+```typescript TypeScript
+for await (const event of session) {
+  if (event.type === "session.ended") console.log("bill", event.cost);
+}
+```
+
+```python Python
+async for event in session:
+    if event["type"] == "response.output_audio.delta":
+        play(event["delta"])
+```
+
+```go Go
+for event := range session.Events() {
+  if event.Type() == "response.output_audio.delta" {
+    play(event["delta"].(string))
+  }
+}
+```
+
+```csharp C#
+await foreach (var item in session.EventsAsync())
+{
+    if (item.GetProperty("type").GetString() == "response.output_audio.delta")
+        Play(item.GetProperty("delta").GetString()!);
+}
+```
+
+```php PHP
+foreach ($session->events() as $event) {
+    if ($event['type'] === 'response.output_audio.delta') {
+        play($event['delta']);
+    }
+}
+```
+
+```ruby Ruby
+session.each_event do |event|
+  play(event['delta']) if event['type'] == 'response.output_audio.delta'
+end
+```
+
+```java Java
+for (JsonNode event : session.events()) {
+    if (event.path("type").asText().equals("response.output_audio.delta")) {
+        play(event.path("delta").asText());
+    }
+}
+```
+
+```rust Rust
+// events() 会把每个事件（包括音频增量）排队，直到你接收它。
+// 请在单独的线程中读完它，或在用完后丢弃它。
+let events = session.events();
+let reader = std::thread::spawn(move || {
+    for event in events {
+        println!("{}", event["type"]);
+    }
+});
+```
+
+</CodeGroup>
+
+**Python：** 如果通话尚未结束，`async with session:` 会在代码块退出时用 `end()` 结束通话。
+
+<span id="browser-calls"></span>
+## 浏览器通话
+
+仅 TypeScript。永远不要把 Phaseo API 密钥放进浏览器代码。在服务器上用 `client.realtime.createSession()` 创建会话，它接受与 `connect()` 相同的 `model`、`voice`、`instructions`、`provider` 和 `metadata` 选项，然后把响应返回给你的页面：
+
+```typescript TypeScript
+// 服务器路由，例如 POST /api/voice-session
+const info = await client.realtime.createSession({ model: "openai/gpt-realtime-2", voice: "marin" });
+return Response.json(info);
+```
+
+在浏览器中，用 `connectRealtimeSession()` 加入会话。它使用会话的 `client_secret` 打开中继，并返回与 `connect()` 相同的会话对象：
+
+```typescript TypeScript
+import { connectRealtimeSession } from "@phaseo/sdk";
+
+const info = await fetch("/api/voice-session", { method: "POST" }).then((response) => response.json());
+const session = await connectRealtimeSession(info);
+session.sendAudio(pcm16Chunk);
+```
+
+`connectRealtimeSession(info, options)` 与 `connect()` 一样接受 `webSocket` 和 `connectTimeoutMs`，如果你使用区域端点，还可以传入 `baseUrl`（默认为 `https://api.phaseo.app/v1`）。
+
+## 连接选项
+
+每个 SDK 都会把 `model`（必填，例如 `openai/gpt-realtime-2`）以及可选的 `voice`、`instructions`、`provider` 和 `metadata` 发送到创建会话的请求中，并默认等待 30 秒以接收 `relay.connected`。
+
+| 语言 | 连接调用 | 超时 | 自定义 socket |
+| --- | --- | --- | --- |
+| TypeScript | `client.realtime.connect({ model, voice, ... })` | `connectTimeoutMs` | `webSocket`：用来代替全局 WebSocket 的构造函数 |
+| Python | 在 `AsyncPhaseo` 上调用 `await client.realtime.connect(model, voice=..., ...)` | `connect_timeout`，单位为秒 | `websocket_connect`：一个异步可调用对象 `(url, subprotocols)`，返回已连接的 socket |
+| Go | `realtime.Connect(ctx, client, realtime.Options{Model: ..., ...})` | `ConnectTimeout`，类型为 `time.Duration` | `realtime.ConnectWithDialer(ctx, client, options, dial)` |
+| C# | `await client.Realtime.ConnectAsync(new RealtimeConnectOptions { Model = ..., ... })` | `ConnectTimeout`，类型为 `TimeSpan` | 无 |
+| PHP | `$client->realtime()->connect(['model' => ..., ...], $connectTimeout)` | 第二个参数，单位为秒 | 无 |
+| Ruby | `client.realtime.connect(model: ..., voice: ..., ...)` | `connect_timeout:`，单位为秒 | `transport:` |
+| Java | `client.realtime.connect(model)` 或 `connect(Map params, Duration connectTimeout)` | `Duration` 参数 | 无 |
+| Rust | `client.realtime().connect(RealtimeOptions::new(model).voice(...).instructions(...))` | `connect_timeout` 字段，类型为 `Duration` | 无 |
+
+## 会话
+
+TypeScript 和 Python：
+
+| TypeScript | Python | 说明 |
+| --- | --- | --- |
+| `id`、`info` | `id`、`info` | 会话 ID 和创建会话的响应，不含 `client_secret`。 |
+| `sendAudio(pcm16)` | `await send_audio(pcm16)` | 以 `client.audio` 发送 PCM16 音频（TypeScript：`Uint8Array` 或 `ArrayBuffer`；Python：`bytes`）。SDK 会对其进行 base64 编码。 |
+| `send(event)` | `await send(event)` | 以 JSON 发送任意事件，用于提供商特定的消息。 |
+| `on(type, listener)` | `on(type, listener)` | 订阅一种事件类型，或用 `"*"` 订阅所有事件。返回一个取消订阅的函数。提供商事件原样到达（在 Python 中为 dict）。 |
+| `onWarning(listener)`、`onEnded(listener)` | `on_warning(listener)`、`on_ended(listener)` | `session.warning` 和 `session.ended` 的辅助方法。 |
+| `[Symbol.asyncIterator]` | `async for event in session` | 产出从迭代开始到 socket 关闭期间的每个事件。 |
+| `end({ reason?, cancelResponse?, timeoutMs? })` | `await end(reason=None, cancel_response=None, timeout=60)` | 发送 `session.end` 并返回 `session.ended`：`reason`、`initiated_by`、`duration_seconds`、`usage`、`cost`、`billing_status`，以及尚未结算时的 `final_bill`。默认超时 60 秒。 |
+| `ended` | `ended` | 一个针对 `session.ended` 的 promise（Python 中为 future），无论通话如何结束都会完成，包括由提供商或网关发起的结束。 |
+| `close()` | `await close()` | 关闭 socket，不等待账单。通话仍会计费。 |
+
+其他 SDK 提供相同的操作。音频是 PCM16 字节，SDK 会为你进行 base64 编码；提供商事件以各语言的 JSON 类型原样传递；`end` 的默认超时为 60 秒。
+
+| 语言 | 发送音频、发送事件 | 订阅 | 所有事件 | 结束、等待、关闭 | 事件类型 |
+| --- | --- | --- | --- | --- | --- |
+| Go | `SendAudio(ctx, pcm16)`、`Send(ctx, event)` | `On(type, fn)`、`OnWarning`、`OnEnded`；每个都返回一个取消订阅的 func | `Events()`，一个 channel | `End(ctx, realtime.EndOptions{...})` 返回 `*realtime.Ended`；`Done()` 和 `Result()`；`Close()` | `realtime.Event`（一个 map） |
+| C# | `SendAudioAsync(pcm16)`、`SendAsync(event)` | `On(type, fn)`、`OnWarning`、`OnEnded`；每个都返回 `IDisposable` | `await foreach (var e in session.EventsAsync())` | `EndAsync(reason, cancelResponse, timeout)`；`Ended` task；`CloseAsync()` | `JsonElement` |
+| PHP | `sendAudio($pcm16)`、`send($event)` | `on($type, $fn)`、`onWarning`、`onEnded`；每个都返回一个取消订阅的闭包 | `events()` 生成器，或用 `receive($timeout)` 读取一个事件 | `end(reason:, cancelResponse:, timeout:)`；`close()` | 数组 |
+| Ruby | `send_audio(pcm16)`、`send_event(event)` | `on(type) { }`、`on_warning { }`、`on_ended { }` | `each_event`，配合代码块 | `end(reason:, cancel_response:, timeout:)`；`wait(timeout:)`；`close` | Hash |
+| Java | `sendAudio(byte[])`、`send(event)` | `on(type, fn)`、`onWarning`、`onEnded`；每个都返回一个用于取消订阅的 `Runnable` | `events()`，一个 `Iterable` | `end()` 或 `end(reason, cancelResponse, timeout)`；`ended()` future；`close()` | `JsonNode` |
+| Rust | `send_audio(&pcm16)`、`send(&event)` | `on(type, fn)`、`on_warning`、`on_ended`；每个都返回一个用于 `off(id)` 的 ID | `events()`，一个 `Receiver`，在读取前把每个事件排队 | `end(EndOptions { ... })`；`wait(timeout)`；`close()` | `serde_json::Value` |
+
+## 错误
+
+如果 socket 关闭，或 `end()` 超时，而没有收到 `session.ended`，结束通话会以会话已关闭错误失败。通话仍会计费。该错误携带最终账单路径 `GET /v1/generations?id=realtime%3A<session_id>`，结算完成后它会返回最终费用。
+
+| 语言 | 错误 | 最终账单路径 |
+| --- | --- | --- |
+| TypeScript | `RealtimeSessionClosedError`，带有 `sessionId`、`closeCode`、`closeReason` | `error.finalBill.path`，或 `realtimeFinalBill(sessionId)` |
+| Python | `RealtimeSessionClosedError`，带有 `session_id`、`close_code`、`close_reason` | `error.final_bill["path"]`，或 `realtime_final_bill(session_id)` |
+| Go | `*realtime.ClosedError`，带有 `SessionID`、`CloseCode` | `FinalBill.Path`，或 `realtime.FinalBillFor(sessionID)` |
+| C# | `RealtimeSessionClosedException`，带有 `SessionId`、`CloseCode`、`CloseReason` | `FinalBillPath` |
+| PHP | `RealtimeSessionClosedException`，带有 `getSessionId()`、`getCloseCode()` | `getFinalBillPath()` |
+| Ruby | `PhaseoSdk::RealtimeSessionClosedError`，带有 `session_id`、`close_code`、`close_reason` | `final_bill_path` |
+| Java | `RealtimeSessionClosedException`，带有 `sessionId()`、`closeCode()`、`closeReason()` | `finalBillPath()` |
+| Rust | `RealtimeError::Closed { session_id, close_code, .. }` | `final_bill_path` |
+
+如果中继在连接前结束了会话，或者 `relay.connected` 没有及时到达，`connect()` 会失败（Python 抛出 `TimeoutError`；Rust 返回 `RealtimeError::EndedBeforeConnecting` 或 `RealtimeError::ConnectTimeout`）。

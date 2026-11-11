@@ -1,6 +1,8 @@
 SELECT cron.schedule_in_database('activate-provider-catalog-releases', '*/5 * * * *', 'select public.activate_due_provider_catalog_releases()', 'postgres', NULL, true);
 
-SELECT cron.schedule_in_database('cleanup-dormant-enterprise-teams', '0 0 1 * *', 'SELECT cleanup_dormant_enterprise_teams()', 'postgres', NULL, true);
+SELECT
+  cron.schedule_in_database('enforce-pricing-promotion-budgets', '* * * * *',
+  'set statement_timeout = ''30s''; set lock_timeout = ''5s''; select public.enforce_pricing_promotion_budgets();', 'postgres', NULL, true);
 
 SELECT cron.schedule_in_database('ensure-gateway-requests-partitions', '0 3 * * 1', 'select public.ensure_gateway_requests_partitions(1);', 'postgres', NULL, true);
 
@@ -9,24 +11,28 @@ SELECT
   true);
 
 SELECT
+  cron.schedule_in_database('prune-artificial-analysis-public-snapshots', '37 4 * * 0',
+  'set statement_timeout = ''60s''; set lock_timeout = ''5s''; select private.prune_artificial_analysis_public_snapshots(50);', 'postgres', NULL, true);
+
+SELECT
+  cron.schedule_in_database('prune-catalogue-row-history', '23 * * * *',
+  'set statement_timeout = ''60s''; set lock_timeout = ''5s''; select private.prune_catalogue_row_history(5000);', 'postgres', NULL, true);
+
+SELECT
   cron.schedule_in_database('prune-completed-analytics-outbox', '* * * * *',
   'set statement_timeout = ''10s''; set lock_timeout = ''500ms''; select private.prune_completed_analytics_outbox(500);', 'postgres', NULL, true);
+
+SELECT
+  cron.schedule_in_database('prune-provider-catalog-sync-runs', '47 3 * * *',
+  'set statement_timeout = ''60s''; set lock_timeout = ''5s''; select private.prune_provider_catalog_sync_runs(50, 1000);', 'postgres', NULL, true);
 
 SELECT
   cron.schedule_in_database('public-reporting-refresh-queue', '2-59/5 * * * *',
   'set statement_timeout = ''10s''; set lock_timeout = ''500ms''; select private.drain_public_reporting_refresh();', 'postgres', NULL, true);
 
 SELECT
-  cron.schedule_in_database('refresh-public-leaderboard-rollups', '7 3 * * *', 'select public.refresh_public_leaderboard_rollups(now() - interval ''90 days'', now());', 'postgres',
-  NULL, false);
-
-SELECT
-  cron.schedule_in_database('refresh-public-model-user-usage-daily', '11 * * * *', 'select public.refresh_public_model_user_usage_daily(now() - interval ''2 days'', now());',
-  'postgres', NULL, false);
-
-SELECT
-  cron.schedule_in_database('refresh-public-model-workspace-usage-weekly', '17 * * * *',
-  'select public.refresh_public_model_workspace_usage_weekly(now() - interval ''12 weeks'', now());', 'postgres', NULL, false);
+  cron.schedule_in_database('redact-expired-byok-request-metadata', '37 * * * *',
+  'set statement_timeout = ''60s''; set lock_timeout = ''500ms''; select private.redact_expired_byok_request_metadata(false, 500, 365);', 'postgres', NULL, true);
 
 SELECT
   cron.schedule_in_database('refresh-public-monitor-weekly-usage', '4-59/15 * * * *',

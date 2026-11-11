@@ -35,7 +35,9 @@ function buildSupabaseMock() {
 							return {
 								eq: (nextColumn: string, nextValue: unknown) => {
 									filters.push({ column: nextColumn, value: nextValue });
-									return {
+									const single = {
+										// Rate guardrails are left out (.neq("kind", "rate")); none are in these fixtures.
+										neq: () => single,
 										maybeSingle: async () => {
 											const index = state.guardrailRows.findIndex((row) => rowMatchesFilters(row, filters));
 											return {
@@ -44,6 +46,7 @@ function buildSupabaseMock() {
 											};
 										},
 									};
+									return single;
 								},
 							};
 						},
@@ -80,6 +83,11 @@ function buildSupabaseMock() {
 				};
 			}
 
+			// The management key acts as its creator, an admin of the workspace.
+			if (table === "workspace_members") {
+				const membership: any = { select: () => membership, eq: () => membership, maybeSingle: async () => ({ data: { role: "admin" }, error: null }) };
+				return membership;
+			}
 			throw new Error(`Unexpected table: ${table}`);
 		},
 	};
@@ -96,6 +104,7 @@ vi.mock("@/pipeline/before/guards", () => ({
 			workspaceId: "ws_attacker",
 			apiKeyId: "mgmt_1",
 			authMethod: "api_key",
+			userId: "user_1",
 			scopes: ["guardrails:delete"],
 		},
 	})),
@@ -161,7 +170,7 @@ describe("guardrail management security", () => {
 		const { guardManagementAuth } = await import("@/pipeline/before/guards");
 		vi.mocked(guardManagementAuth).mockResolvedValueOnce({
 			ok: true,
-			value: { workspaceId: "ws_attacker", apiKeyId: "mgmt_1", authMethod: "api_key", scopes: ["guardrails:write"] },
+			value: { workspaceId: "ws_attacker", apiKeyId: "mgmt_1", authMethod: "api_key", userId: "user_1", scopes: ["guardrails:write"] },
 		} as any);
 
 		const { guardrailsRoutes } = await import("./guardrails");
@@ -175,6 +184,21 @@ describe("guardrail management security", () => {
 
 		expect(response.status).toBe(409);
 		expect(await response.json()).toMatchObject({ error: "guardrail_protected" });
+		expect(state.policyVersionBumps).toEqual([]);
+		expect(state.audit).not.toHaveBeenCalled();
+	});
+
+	it("returns 409 for the workspace baseline guardrail", async () => {
+		state.guardrailRows.push({ id: "gr_baseline", workspace_id: "ws_attacker", name: "Workspace baseline" });
+		state.keyGuardrailDeleteError = { message: "workspace_baseline_guardrail_protected" };
+
+		const { guardrailsRoutes } = await import("./guardrails");
+		const response = await guardrailsRoutes.request("https://example.com/gr_baseline", { method: "DELETE" });
+		const body = await response.json();
+
+		expect(response.status).toBe(409);
+		expect(body).toMatchObject({ error: "guardrail_protected" });
+		expect(body.message).toContain("workspace baseline");
 		expect(state.policyVersionBumps).toEqual([]);
 		expect(state.audit).not.toHaveBeenCalled();
 	});

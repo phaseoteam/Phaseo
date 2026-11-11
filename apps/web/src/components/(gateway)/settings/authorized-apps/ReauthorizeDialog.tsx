@@ -1,14 +1,12 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import { useState } from "react";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { Copy, ExternalLink, RefreshCw, Terminal } from "lucide-react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
-import { reauthorizeCliScopesAction } from "@/app/(dashboard)/settings/authorized-apps/actions";
+import { reauthorizeCliScopesAction } from "@/features/settings/authorized-apps/actions";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -41,7 +39,7 @@ export default function ReauthorizeDialog({ authorizationId, appName, homepageUr
 	};
 	const reauthorizeOnWeb = async () => {
 		setSaving(true);
-		const result = await reauthorizeCliScopesAction(authorizationId, Array.from(new Set([...currentScopes, ...selectedAdditionalScopes])));
+		const result = await reauthorizeCliScopesAction({ data: { authorizationId, scopes: Array.from(new Set([...currentScopes, ...selectedAdditionalScopes])) } });
 		setSaving(false);
 		if (result.error) {
 			toast.error(localizedSettingsError(result.error, t, "Action failed"));

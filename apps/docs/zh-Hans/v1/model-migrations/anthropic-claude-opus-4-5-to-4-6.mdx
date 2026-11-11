@@ -1,77 +1,58 @@
 ---
 title: "Anthropic Claude Opus 4.6"
-description: "介绍采用 Claude Opus 4.6 时需要了解的结构化输出、自适应思考和预填充内容。"
+description: "采用 Claude Opus 4.6 时需要了解的内容，包括结构化输出、自适应思考和预填充。"
 icon: "/icons/brands/anthropic.svg"
 ---
 
-# Anthropic Claude Opus 4.6
+把模型改为 `anthropic/claude-opus-4.6`，删除 assistant 预填充，并把结构化输出移到 `output_config.format`。这些都是请求结构的变更：如果保留旧的 Opus 4.5 写法，请求会以 `400` 失败。
 
-使用本指南，在生产环境中安全采用 `anthropic/claude-opus-4.6`。
+| | Claude Opus 4.5 | Claude Opus 4.6 |
+| --- | --- | --- |
+| Phaseo 模型 ID | `anthropic/claude-opus-4.5` | `anthropic/claude-opus-4.6` |
+| 上下文窗口 | 200K token | 1M token |
+| 最大输出 | 64K token | 128K token |
+| Assistant 预填充 | 支持 | 返回 `400` |
+| 结构化输出 | `output_format` | `output_config.format` |
+| 思考 | `budget_tokens` | 自适应，由 `output_config.effort` 调节 |
+| `interleaved-thinking-2025-05-14` beta | 需要 | 不需要 |
 
-迁移到 Claude Opus 4.6 不只是更换模型 ID。Anthropic 的迁移指南还涉及请求格式变化、移除 Beta 标志，以及对预填充内容更严格的处理。
+## 更新请求
 
-## 新功能
+**1. 删除 assistant 预填充。** 如果你预先填充 assistant 轮次来强制输出 JSON 或某个前缀，Opus 4.6 会返回 `400`。请改用更清晰的系统指令、提示词中的示例或结构化输出。
 
-- Claude 4.6 模型不再支持助手预填充内容，现在会返回 `400`。
-- 结构化输出从 `output_format` 改为 `output_config.format`。
-- 自适应思考现在通过 `output_config.effort` 配置。
-- 应移除过时的 Beta 请求头。
-- Opus 4.6 不再需要 `interleaved-thinking-2025-05-14` Beta 请求头。
-- Opus 4.6 在 Beta 阶段新增 100 万 token 上下文窗口，并改进长周期编程和代理任务。
+**2. 把结构化输出**从 `output_format` 移到 `output_config.format`，并重新运行 schema 和解析器测试：
 
-## 迁移快速入门
+```json
+{
+  "model": "anthropic/claude-opus-4.6",
+  "max_tokens": 1024,
+  "messages": [{ "role": "user", "content": "Extract the invoice fields." }],
+  "output_config": {
+    "format": { "type": "json_schema", "schema": { "type": "object", "properties": { "total": { "type": "number" } } } }
+  }
+}
+```
 
-### 1. 移除助手预填充内容
+在 `/v1/chat/completions` 和 `/v1/responses` 上，继续使用 `response_format`。
 
-如果你之前通过预先填充部分助手轮次来强制 JSON 格式或回复前缀，此方式在 4.6 中会失效。请改用：
+**3. 把思考切换为自适应。** 除非请求要求，否则 Opus 4.6 不会思考。在 Phaseo 上，`reasoning.effort` 或不带 token 预算的 `reasoning.enabled: true` 会开启自适应思考，effort 会转为 `output_config.effort`。Opus 4.6 接受除 `xhigh` 以外的所有 effort 级别，Phaseo 会把 `xhigh` 作为 `max` 发送。思考开启时，Phaseo 会省略 `temperature` 和 `top_k`，以及低于 0.95 的 `top_p`。
 
-- 更清晰的系统指令
-- 用户或系统提示词中的示例
-- 通过 `output_config.format` 设置结构化输出
+**4. 从 SDK 封装、中间件和预设中删除过时的 beta 请求头。** Phaseo 不会转发 `anthropic-beta` 请求头，因此它们不再起任何作用。
 
-### 2. 迁移结构化输出
+## 要测试的内容
 
-如果仍在发送 `output_format`，请将请求正文改为使用 `output_config.format`。
+- **提示词：** 长的编码和重构提示词、多步骤研究和文档工作流、依赖预填充的提示词，以及（如果你会用到 1M 窗口）长上下文任务。
+- **契约和工具：** 迁移到 `output_config.format` 后的 schema 通过率、多步骤智能体任务中的工具调用参数、模型拒绝或重新格式化输出时的重试，以及代码审查和调试工作流。
+- **运营：** 开启思考时的中位数和 p95 延迟、较长运行中的 token 用量、大上下文任务的超时率，以及在你的评估集上相对 Opus 4.5 的成功率。
 
-### 3. 检查思考配置
+## 上线
 
-如果依赖旧版思考 Beta，请迁移到 `output_config` 中当前的 `effort` 设置，并重新测试对延迟敏感的路由。
-
-### 4. 移除过时的 Beta 标志
-
-检查 SDK 封装、中间件和 Gateway 预设中的硬编码 Beta 请求头。保留过时标志会在发布期间造成无谓错误。
-
-## 测试内容
-
-### 提示词行为
-
-- 长篇编程和重构提示词。
-- 多步骤研究或文档工作流。
-- 之前依赖助手预填充内容的提示词。
-- 如果计划使用 100 万 token Beta 窗口，请测试长上下文任务。
-
-### 接口约定和工具
-
-- 改用 `output_config.format` 后的 Schema 通过率。
-- 多步骤代理任务中的工具参数质量。
-- 模型拒答或重新格式化输出时的重试行为。
-- 代码审查和调试工作流中的回归处理。
-
-### 运维
-
-- 使用新思考设置时的中位数和 p95 延迟。
-- 长时间运行时的 token 用量。
-- 大上下文任务的超时率。
-- 在生产评估集上与 Opus 4.5 相比的成功率。
-
-## 安全发布
-
-1. 切换流量前，先移除预填充内容并迁移结构化输出配置。
-2. 使用重要的生产提示词对 Opus 4.6 进行影子测试。
-3. 保留 Opus 4.5 作为回退模型，逐步切换流量。
-4. 只有在 Schema 通过率、延迟和任务完成情况稳定后才扩大流量。
+1. 迁移任何流量之前，先删除预填充并迁移结构化输出。
+2. 在对你重要的生产提示词上影子运行 Opus 4.6。
+3. 金丝雀发布，把 Opus 4.5 作为 `models` 中的回退。
+4. 当 schema 通过率、延迟和任务完成率保持稳定时再全面推广。
 
 ## 来源
 
 - [Anthropic 迁移指南](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
-- [Claude Opus 4.6 发布介绍](https://www.anthropic.com/news/claude-opus-4-6)
+- [Claude Opus 4.6 发布公告](https://www.anthropic.com/news/claude-opus-4-6)

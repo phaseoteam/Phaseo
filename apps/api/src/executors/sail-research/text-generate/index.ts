@@ -7,6 +7,8 @@ import type { ProviderExecutor } from "../../types";
 const BALANCED_MODEL_SLUGS = new Set([
 	"zai-org/GLM-5.2-FP8",
 	"moonshotai/Kimi-K2.6",
+	"moonshotai/Kimi-K3",
+	"moonshotai/Kimi-K3.1-Pro",
 	"google/gemma-4-31B-it",
 	"nvidia/Gemma-4-31B-IT-NVFP4",
 ]);

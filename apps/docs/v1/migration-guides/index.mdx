@@ -5,54 +5,28 @@ description: "Guides for moving between platforms or adopting a specific model r
 icon: "compass"
 ---
 
-Phaseo migration guides cover two different upgrade problems:
+Pick the guide for what you're changing: the platform your app calls (below), or the model it uses ([model migrations](../model-migrations)). If you're changing both, move the platform first and keep the model the same until the new path is verified.
 
-- moving from one platform or gateway to Phaseo
-- adopting a specific model release on the same platform
-
-<Columns cols={2}>
-	<Card title="Model migrations" icon="brain-circuit" href="../model-migrations">
-		Upgrade a model while keeping the surrounding integration broadly the same.
-	</Card>
-	<Card title="Platform migrations" icon="arrow-right-left" href="./gateway-parity-review.mdx">
-		Move an SDK, provider, or gateway integration onto Phaseo.
-	</Card>
-</Columns>
-
-## Model migrations
-
-For a tailored starting checklist, use the [Migration Assistant](https://phaseo.app/migrate).
-
-Use model migrations when the integration stays broadly the same but the model changes underneath it.
-
-These guides focus on:
-
-- request parameter changes
-- prompt and reasoning behavior shifts
-- structured output and tool-calling differences
-- rollout, fallback, and rollback strategy
-
-Current model migration guides:
-
-- [Anthropic Claude Opus 5](../model-migrations/anthropic-claude-opus-5)
-- [OpenAI GPT-5.6](../model-migrations/openai-migrating-to-gpt-5-6)
-- [Anthropic Claude Opus 4.8](../model-migrations/anthropic-claude-opus-4-1-to-4-8)
-- [Anthropic Claude Opus 4.7](../model-migrations/anthropic-claude-opus-4-6-to-4-7)
-- [Mistral Small 4](../model-migrations/mistral-small-3-2-to-mistral-small-4)
-- [OpenAI GPT-5.4](../model-migrations/openai-migrating-to-gpt-5-4)
-- [Google Nano Banana 2](../model-migrations/google-nano-banana-1-to-nano-banana-2)
-- [Google Gemini 3.1](../model-migrations/google-migrating-to-gemini-3-and-3-1)
-- [Anthropic Claude Sonnet 4.6](../model-migrations/anthropic-claude-sonnet-4-5-to-4-6)
-- [SpaceXAI Grok 4.20](../model-migrations/xai-grok-4-20)
-- [Anthropic Claude Opus 4.6](../model-migrations/anthropic-claude-opus-4-5-to-4-6)
+For a tailored checklist, use the [Migration Assistant](https://phaseo.app/migrate).
 
 ## Platform migrations
 
-Use platform migrations when you are changing SDKs, providers, or gateways and need to map your current integration onto Phaseo.
+Every platform guide follows the same order: swap the base URL and key, map model IDs, map the platform's features, then test and roll out with rollback kept to a base URL and key change.
 
-<Card title="Build a migration checklist" icon="list-checks" href="https://phaseo.app/migrate">
-	Choose your current integration and open the interactive migration assistant.
-</Card>
+| You call | Code signals | Guide |
+| --- | --- | --- |
+| OpenAI directly | `api.openai.com`, `OPENAI_API_KEY`, `AzureOpenAI` | [OpenAI SDK](./from-openai) |
+| Anthropic directly | `api.anthropic.com`, `ANTHROPIC_API_KEY`, `@anthropic-ai/sdk` | [Anthropic SDK](./from-anthropic) |
+| OpenRouter | `openrouter.ai`, `OPENROUTER_API_KEY`, `sk-or-v1` keys | [OpenRouter](./from-openrouter) |
+| Vercel AI Gateway | `ai-gateway.vercel.sh`, `@ai-sdk/gateway`, bare string models in AI SDK calls | [Vercel AI Gateway](./from-vercel) |
+| LLM Gateway | `api.llmgateway.io`, `LLM_GATEWAY_API_KEY` | [LLM Gateway](./from-llmgateway) |
+| A LiteLLM proxy | `config.yaml` with `model_list`, `LITELLM_*` variables, port 4000 | [LiteLLM](./from-litellm) |
+| Cloudflare AI Gateway | `gateway.ai.cloudflare.com`, `cf-aig-*` headers | [Cloudflare AI Gateway](./from-cloudflare) |
+| Helicone | `*.helicone.ai`, `Helicone-Auth` | [Helicone](./from-helicone) |
+
+To plan and check the rollout, use the [Migration Feature Checklist](./feature-parity-matrix).
+
+## Migrate with a coding agent
 
 <Prompt description="Ask a coding agent to plan and carry out the migration with you." icon="arrow-right-left" actions={["copy", "cursor"]}>
 {`Migrate this project's AI requests to Phaseo Gateway.
@@ -61,30 +35,13 @@ Use platform migrations when you are changing SDKs, providers, or gateways and n
    Use phaseo-migration, which has a guide for each source platform (and openrouter-to-phaseo-migration for a detailed OpenRouter move).
 2. Find every place the project calls its current provider or gateway (OpenAI, Anthropic, OpenRouter, Vercel AI Gateway, LiteLLM or another), including environment variables, SDK clients, base URLs and model IDs.
 3. Read the matching guide at https://phaseo.app/docs/v1/migration-guides and map each call to its Phaseo equivalent at https://api.phaseo.app/v1 with a server-side PHASEO_API_KEY.
-4. Check every model ID with GET /v1/models. Do not assume IDs carry over unchanged.
+4. Check every model ID against data[].id from GET /v1/models?format=openai. Do not assume IDs carry over unchanged.
 5. List the changes and a rollback plan before editing. After editing, verify one normal request and one streaming request if the project streams.
 6. Never print or commit API keys, and do not switch production traffic without my approval.`}
 </Prompt>
 
-Current platform migration guides:
+## Model migrations
 
-- [OpenAI SDK Migration](./from-openai)
-- [Anthropic SDK Migration](./from-anthropic)
-- [OpenRouter Migration](./from-openrouter) — switch the endpoint and key, verify model IDs, and test streaming and rollback.
-- [Vercel AI Gateway Migration](./from-vercel)
-- [LLMGateway Migration](./from-llmgateway)
-- [LiteLLM Migration](./from-litellm)
-- [Cloudflare AI Gateway Migration](./from-cloudflare)
-- [Helicone AI Gateway Migration](./from-helicone)
+Use a [model migration guide](../model-migrations) when the integration stays the same but the model changes. Each one covers request parameter changes, shifts in prompt and reasoning behavior, structured-output and tool-calling differences, and how to roll out with a fallback.
 
-Plan and validate the rollout:
-
-- [Migration Readiness Review](./gateway-parity-review)
-- [Migration Feature Checklist](./feature-parity-matrix)
-
-## How to use these guides
-
-1. Identify whether you are changing the platform, the model, or both.
-2. Start with the guide that matches the riskiest part of the migration.
-3. Verify request parameters and endpoint behavior before comparing output quality.
-4. Run production-like evals before shifting live traffic.
+For either kind of migration, check request parameters and endpoint behavior before comparing output quality, and run production-like evaluations before shifting live traffic.

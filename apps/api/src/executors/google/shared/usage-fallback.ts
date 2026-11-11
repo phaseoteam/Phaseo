@@ -1,4 +1,4 @@
-import type { IRChatResponse, IRContentPart } from "@core/ir";
+import type { IRChatResponse, IRContentPart, IRUsage } from "@core/ir";
 
 function estimateTokensFromTextChars(chars: number): number {
 	if (!Number.isFinite(chars) || chars <= 0) return 0;
@@ -63,6 +63,26 @@ export function applyGoogleOutputTokenFallback(ir: IRChatResponse | undefined): 
 	};
 
 	return { applied: true, estimatedOutputTokens: estimate };
+}
+
+/**
+ * The same fallback for a streamed answer, applied to its usage report: when Google
+ * reports no output tokens but `outputChars` of text and reasoning were streamed,
+ * output is estimated from them, as for a buffered answer.
+ */
+export function applyStreamedOutputTokenFallback(usage: IRUsage, outputChars: number): boolean {
+	if (!(outputChars > 0)) return false;
+	const existingOutput = Number(usage.outputTokens ?? 0);
+	if (Number.isFinite(existingOutput) && existingOutput > 0) return false;
+	const estimate = estimateTokensFromTextChars(outputChars);
+	const inputTokens = Number(usage.inputTokens ?? 0);
+	const safeInput = Number.isFinite(inputTokens) && inputTokens > 0 ? inputTokens : 0;
+	const existingTotal = Number(usage.totalTokens ?? 0);
+	const safeTotal = Number.isFinite(existingTotal) && existingTotal > 0 ? existingTotal : 0;
+	usage.inputTokens = safeInput;
+	usage.outputTokens = estimate;
+	usage.totalTokens = Math.max(safeTotal, safeInput + estimate);
+	return true;
 }
 
 export function applyOpenAIUsageFallback(

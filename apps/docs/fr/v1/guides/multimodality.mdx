@@ -1,27 +1,24 @@
 ---
 title: "Multimodalité"
-description: "Utilisez du texte, des images, de l’audio, de la vidéo et d’autres modalités via la passerelle."
+description: "Utilisez du texte, des images, de l’audio, de la vidéo et d’autres modalités via le Gateway."
 icon: "shapes"
 ---
 
-La passerelle expose plusieurs modalités via une API unifiée. Chaque endpoint correspond à une capacité différente et la prise en charge des modèles varie selon le fournisseur.
+Choisissez l’endpoint correspondant à la sortie voulue, puis un modèle qui prend en charge cet endpoint. Un même nom de modèle peut apparaître sur plusieurs endpoints, et la prise en charge par les fournisseurs diffère pour chacun.
 
-## Modalités et endpoints
-
-| Modalité | Endpoints principaux | Remarques |
+| Modalité | Endpoints | Rôle |
 | --- | --- | --- |
-| Texte | `/v1/responses`, `/v1/chat/completions`, `/v1/messages` | Sorties structurées et conversationnelles. |
-| Images | `/v1/images/generations`, `/v1/images/edits` | Génération d’images à partir de texte et retouche d’images. |
-| Audio (TTS/STT/traductions) | `/v1/audio/speech`, `/v1/audio/transcriptions`, `/v1/audio/translations` | Synthèse vocale, reconnaissance vocale et traduction audio. |
-| Vidéo | `/v1/videos`, `/v1/videos/{video_id}`, `/v1/videos/{video_id}/content`, `/v1/videos/{video_id}` (DELETE) | Créez des tâches vidéo asynchrones, consultez leur statut, récupérez leur contenu et supprimez-les. |
-| Musique | `/v1/music/generate` | Génération musicale via les fournisseurs pris en charge. |
-| OCR | `/v1/ocr` | Extrait le texte des images lorsque cette fonction est prise en charge. |
+| Texte | `/v1/responses`, `/v1/chat/completions`, `/v1/messages` | Sortie texte conversationnelle et structurée. |
+| Images | [`/v1/images/generations`](../api-reference/endpoint/images-generations.mdx), [`/v1/images/edits`](../api-reference/endpoint/images-edits.mdx) | Génération d’images à partir de texte et retouche d’images. |
+| Audio | [`/v1/audio/speech`](../api-reference/endpoint/audio-speech.mdx), [`/v1/audio/transcriptions`](../api-reference/endpoint/audio-transcriptions.mdx), [`/v1/audio/translations`](../api-reference/endpoint/audio-translations.mdx) | Synthèse vocale, transcription et traduction d’audio parlé. |
+| Voix en temps réel | `/v1/audio/realtime/sessions` | Appels vocaux en direct. Consultez [Sessions vocales en temps réel](./realtime-voice.mdx). |
+| Vidéo | [`POST /v1/videos`](../api-reference/endpoint/video-create.mdx), `GET /v1/videos/{video_id}`, `GET /v1/videos/{video_id}/content`, `DELETE /v1/videos/{video_id}` | Créez une tâche vidéo asynchrone, consultez son état, récupérez le contenu et supprimez la tâche. Consultez [Tâches vidéo et par lots](./async-video-and-batch.mdx). |
+| Musique | [`/v1/music/generate`](../api-reference/endpoint/music-generate.mdx) | Génération musicale chez les fournisseurs pris en charge. |
+| OCR | [`/v1/ocr`](../api-reference/endpoint/ocr.mdx) | Extraction du texte des images. |
+| Analyse de documents | [`/v1/parse`](../api-reference/endpoint/parse.mdx) | Texte ordonné, tableaux et mise en page à partir d’images de documents. Consultez [Analyser des images de documents](./document-parsing.mdx). |
 
-## Vérifier la prise en charge des modèles
+## Vérifier quels modèles prennent en charge un endpoint
 
-Utilisez l’[endpoint des modèles](../api-reference/endpoint/models.mdx) pour voir les modèles disponibles et les endpoints qu’ils prennent en charge. La couverture des fournisseurs est indiquée par l’[endpoint des fournisseurs](../api-reference/endpoint/providers.mdx).
+Appelez l’[endpoint Models](../api-reference/endpoint/models.mdx) : chaque modèle liste les `endpoints` qu’il prend en charge, et `GET /v1/models/{author}/{slug}/endpoints` affiche chaque route fournisseur d’un modèle, avec ses modalités et ses paramètres pris en charge. L’[endpoint Providers](../api-reference/endpoint/providers.mdx) liste la couverture des fournisseurs.
 
-## Bonnes pratiques
-
-- Choisissez l’endpoint selon la modalité nécessaire, même si un même nom de modèle est utilisé pour plusieurs modalités.
-- Avant la mise en production, validez les charges utiles à l’aide de la [référence de l’API](../api-reference/introduction.mdx).
+Vérifiez les corps de requête dans la [référence de l’API](../api-reference/introduction) de l’endpoint avant la mise en production.

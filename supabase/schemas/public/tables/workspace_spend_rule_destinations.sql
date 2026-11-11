@@ -15,6 +15,13 @@ CREATE INDEX workspace_spend_rule_destinations_destination_idx ON public.workspa
 
 CREATE INDEX workspace_spend_rule_destinations_workspace_idx ON public.workspace_spend_rule_destinations USING btree (workspace_id);
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspace_spend_rule_destinations"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "workspace_spend_rule_destinations_select_member" ON "public"."workspace_spend_rule_destinations"
   FOR SELECT
   TO "authenticated"

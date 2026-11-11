@@ -1,0 +1,177 @@
+---
+icon: "arrow-right-left"
+title: "अनुवाद"
+description: "किसी भी Phaseo SDK से POST /v1/audio/translations के ज़रिए स्पीच को अंग्रेज़ी टेक्स्ट में अनुवाद करें।"
+---
+
+अंग्रेज़ी टेक्स्ट वापस पाने के लिए स्पीच को `POST /v1/audio/translations` पर अपलोड करें। यह एंडपॉइंट ऑडियो सिर्फ़ multipart `file` फ़ील्ड से पढ़ता है और इसमें URL का कोई विकल्प नहीं है, इसलिए सिर्फ़ TypeScript SDK इसे सीधे कॉल कर सकता है; बाकी हर भाषा फ़ॉर्म को अपने स्टैंडर्ड HTTP क्लाइंट से पोस्ट करती है।
+
+<CodeGroup>
+
+```typescript TypeScript
+import { readFile } from "node:fs/promises";
+
+const form = new FormData();
+form.append("model", "openai/whisper-1");
+form.append("file", new Blob([await readFile("interview.mp3")], { type: "audio/mpeg" }), "interview.mp3");
+
+const translated = await client.generateTranslation(form as unknown as Record<string, unknown>);
+console.log(translated.text);
+```
+
+```python Python
+# generate_translation() अभी ऑडियो अपलोड नहीं कर सकता, इसलिए फ़ॉर्म HTTPX से पोस्ट करें।
+import os
+import httpx
+
+with open("interview.mp3", "rb") as audio:
+    response = httpx.post(
+        "https://api.phaseo.app/v1/audio/translations",
+        headers={"Authorization": f"Bearer {os.environ['PHASEO_API_KEY']}"},
+        data={"model": "openai/whisper-1"},
+        files={"file": ("interview.mp3", audio, "audio/mpeg")},
+        timeout=120,
+    )
+response.raise_for_status()
+print(response.json()["text"])
+```
+
+```go Go
+// CreateTranslation() JSON भेजता है, इसलिए फ़ॉर्म net/http और mime/multipart से पोस्ट करें।
+var body bytes.Buffer
+form := multipart.NewWriter(&body)
+_ = form.WriteField("model", "openai/whisper-1")
+part, _ := form.CreateFormFile("file", "interview.mp3")
+audio, _ := os.ReadFile("interview.mp3")
+_, _ = part.Write(audio)
+_ = form.Close()
+
+req, _ := http.NewRequest("POST", "https://api.phaseo.app/v1/audio/translations", &body)
+req.Header.Set("Authorization", "Bearer "+os.Getenv("PHASEO_API_KEY"))
+req.Header.Set("Content-Type", form.FormDataContentType())
+
+resp, err := http.DefaultClient.Do(req)
+```
+
+```csharp C#
+// CreateTranslation() JSON भेजता है, इसलिए फ़ॉर्म HttpClient से पोस्ट करें।
+using var http = new HttpClient();
+http.DefaultRequestHeaders.Authorization =
+    new("Bearer", Environment.GetEnvironmentVariable("PHASEO_API_KEY"));
+
+using var form = new MultipartFormDataContent
+{
+    { new StringContent("openai/whisper-1"), "model" },
+    { new ByteArrayContent(await File.ReadAllBytesAsync("interview.mp3")), "file", "interview.mp3" },
+};
+
+var response = await http.PostAsync("https://api.phaseo.app/v1/audio/translations", form);
+Console.WriteLine(await response.Content.ReadAsStringAsync());
+```
+
+```php PHP
+<?php
+// generateTranslation() JSON भेजता है, इसलिए फ़ॉर्म Guzzle से पोस्ट करें, जिसे Composer ने SDK के साथ इंस्टॉल किया है।
+require 'vendor/autoload.php';
+
+$http = new GuzzleHttp\Client();
+
+$response = $http->post('https://api.phaseo.app/v1/audio/translations', [
+    'headers' => ['Authorization' => 'Bearer ' . getenv('PHASEO_API_KEY')],
+    'multipart' => [
+        ['name' => 'model', 'contents' => 'openai/whisper-1'],
+        ['name' => 'file', 'contents' => fopen('interview.mp3', 'r'), 'filename' => 'interview.mp3'],
+    ],
+]);
+
+echo $response->getBody();
+```
+
+```ruby Ruby
+# generate_translation JSON भेजता है, इसलिए फ़ॉर्म Net::HTTP से पोस्ट करें।
+require 'net/http'
+
+uri = URI('https://api.phaseo.app/v1/audio/translations')
+request = Net::HTTP::Post.new(uri)
+request['Authorization'] = "Bearer #{ENV.fetch('PHASEO_API_KEY')}"
+request.set_form(
+  [['model', 'openai/whisper-1'], ['file', File.open('interview.mp3')]],
+  'multipart/form-data'
+)
+
+response = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |http| http.request(request) }
+puts response.body
+```
+
+```java Java
+// SDK के JSON हेल्पर multipart एन्कोड नहीं करते, इसलिए फ़ॉर्म java.net.http से पोस्ट करें।
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpRequest.BodyPublishers;
+import java.net.http.HttpResponse.BodyHandlers;
+import java.nio.file.Path;
+import java.time.Duration;
+import java.util.UUID;
+
+String baseUrl = System.getenv().getOrDefault("PHASEO_BASE_URL", "https://api.phaseo.app/v1")
+    .replaceAll("/+$", "");
+String apiKey = System.getenv("PHASEO_API_KEY");
+String boundary = "phaseo-" + UUID.randomUUID();
+var body = BodyPublishers.concat(
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"model\"\r\n\r\nopenai/whisper-1\r\n"),
+    BodyPublishers.ofString("--" + boundary + "\r\nContent-Disposition: form-data; name=\"file\"; filename=\"interview.mp3\"\r\nContent-Type: audio/mpeg\r\n\r\n"),
+    BodyPublishers.ofFile(Path.of("interview.mp3")),
+    BodyPublishers.ofString("\r\n--" + boundary + "--\r\n")
+);
+var request = HttpRequest.newBuilder(URI.create(baseUrl + "/audio/translations"))
+    .header("Authorization", "Bearer " + apiKey)
+    .header("Content-Type", "multipart/form-data; boundary=" + boundary)
+    .timeout(Duration.ofSeconds(60))
+    .POST(body)
+    .build();
+var response = HttpClient.newHttpClient().send(request, BodyHandlers.ofString());
+if (response.statusCode() < 200 || response.statusCode() >= 300) {
+    throw new IOException("HTTP " + response.statusCode() + ": " + response.body());
+}
+System.out.println(response.body());
+```
+
+</CodeGroup>
+
+| भाषा | SDK मेथड | क्या यह फ़ाइल अपलोड कर सकता है? |
+| --- | --- | --- |
+| TypeScript | `client.generateTranslation(form)` | हाँ। `FormData` बॉडी दें और SDK उसे बिना बदले multipart के रूप में भेजता है; cast इसलिए ज़रूरी है क्योंकि मेथड का टाइप JSON बॉडी बताता है। |
+| Python | `client.generate_translation(request)` | नहीं। यह JSON भेजता है, इसलिए ऊपर की तरह फ़ॉर्म HTTPX से पोस्ट करें। |
+| Go | `client.CreateTranslation(ctx, req)` | नहीं। यह JSON भेजता है, और गेटवे इसे `file is required` के साथ अस्वीकार करता है। |
+| C# | `client.CreateTranslation(request)` | नहीं। यह JSON भेजता है, और गेटवे इसे `file is required` के साथ अस्वीकार करता है। |
+| PHP | `$client->generateTranslation($request)` | नहीं। यह JSON भेजता है, और गेटवे इसे `file is required` के साथ अस्वीकार करता है। |
+| Ruby | `client.generate_translation(...)` | नहीं। यह JSON भेजता है, और गेटवे इसे `file is required` के साथ अस्वीकार करता है। |
+| Java | कोई नहीं | नहीं। multipart बॉडी के साथ `java.net.http.HttpClient` इस्तेमाल करें। |
+
+Rust में कोई translation मेथड नहीं है, और उसका `post()` हेल्पर सिर्फ़ JSON भेजता है।
+
+## पैरामीटर
+
+हर भाषा में फ़ील्ड के नाम फ़ॉर्म के फ़ील्ड ही हैं।
+
+| फ़ील्ड | नोट |
+| --- | --- |
+| `model` | ज़रूरी। एक translation मॉडल ID। |
+| `file` | ज़रूरी। 25 MB तक, `flac`, `mp3`, `mp4`, `mpeg`, `mpga`, `m4a`, `ogg`, `wav` या `webm` के रूप में। |
+| `prompt` | अनुवाद को दिशा देने वाला संदर्भ। |
+| `temperature` | `0` से `1`। |
+| `response_format` | `json`, `text`, `srt`, `verbose_json` या `vtt`। |
+
+पूरा स्कीमा [Translations API संदर्भ](/hi/v1/api-reference/endpoint/audio-translations) में है।
+
+## प्रतिक्रिया
+
+`AudioTranslationResponse`:
+
+```json
+{
+  "text": "Hello world"
+}
+```

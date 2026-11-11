@@ -1,5 +1,3 @@
-"use client";
-
 import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -20,7 +18,7 @@ import {
 	type PricingMeter,
 } from "@/components/(data)/model/pricing/pricingHelpers";
 import { sanitizeRequestMultiplier } from "./calculatorState";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import {
 	MeterLabel,
 	PricingModelHeader,

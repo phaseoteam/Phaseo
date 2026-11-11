@@ -241,6 +241,20 @@ const providerTrendPointSchema = z.object({
 
 export type ProviderTrendPoint = z.infer<typeof providerTrendPointSchema>;
 
+/**
+ * Per-attempt provider health as rates (percentages): reachable of eligible attempts, accepted of those that
+ * reached the provider, completed of those it accepted. web-api publishes only the rates; the attempt and failure
+ * counts behind them reveal traffic volume and stay internal. A rate is null when nothing reached that step.
+ */
+const attemptRatesSchema = z.object({
+  reachabilityPct: num,
+  capacityPct: num,
+  callErrorPct: num,
+  uptimePct: num,
+}).passthrough();
+
+export type AttemptRates = z.infer<typeof attemptRatesSchema>;
+
 const performanceSchema = z.object({
   cloudflareColo: str,
   percentile: num,
@@ -254,7 +268,13 @@ const performanceSchema = z.object({
     worstProviderRequests: count,
     providerCount: count,
     requests: count,
+    // All providers' attempts this hour; null or absent for an hour with nothing to rate (it shows as 100%).
+    reachabilityPct: num,
+    capacityPct: num,
+    callErrorPct: num,
   }).passthrough()).default([]),
+  /** The uptime chart's 24 hours rated from all their attempts (newer web-api only). */
+  attemptHealth24h: attemptRatesSchema.nullish(),
   providerHourly7d: z.array(providerTrendPointSchema).default([]),
   providerDaily7d: z.array(providerTrendPointSchema).default([]),
   providerPercentileDaily7d: z.array(providerTrendPointSchema).default([]),
@@ -264,15 +284,22 @@ const performanceSchema = z.object({
 export type ModelPerformance = z.infer<typeof performanceSchema>;
 export type SuccessPoint = ModelPerformance["successSeries"][number];
 
-export async function getModelPerformance(id: string, options: { percentile?: number; colo?: string | null; range?: 1 | 3 | 7 } = {}): Promise<ModelPerformance | null> {
-  const raw = await request(path(id, "/performance"), { query: { percentile: options.percentile ?? 50, range: options.range ?? 3, colo: options.colo ?? undefined } });
+export function parseModelPerformance(raw: unknown): ModelPerformance | null {
   return z.object({ metrics: performanceSchema.nullish() }).passthrough().parse(raw).metrics ?? null;
 }
 
-/** Cloudflare locations that served enough requests to show their own charts. */
-export async function getModelPerformanceColos(id: string): Promise<{ colo: string; requests: number }[]> {
+export async function getModelPerformance(id: string, options: { percentile?: number; colo?: string | null; range?: 1 | 3 | 7 } = {}): Promise<ModelPerformance | null> {
+  const raw = await request(path(id, "/performance"), { query: { percentile: options.percentile ?? 50, range: options.range ?? 3, colo: options.colo ?? undefined } });
+  return parseModelPerformance(raw);
+}
+
+/**
+ * Cloudflare locations that served enough requests to show their own charts. `requests` only orders and filters
+ * the list; it is never shown (counts reveal traffic volume), and it may be left out (null).
+ */
+export async function getModelPerformanceColos(id: string): Promise<{ colo: string; requests: number | null }[]> {
   const raw = await request(path(id, "/performance/colos"));
-  return z.object({ colos: z.array(z.object({ colo: z.string(), requests: count })).default([]) }).passthrough().parse(raw).colos;
+  return z.object({ colos: z.array(z.object({ colo: z.string(), requests: z.coerce.number().nullish().transform((value) => value ?? null) }).passthrough()).default([]) }).passthrough().parse(raw).colos;
 }
 
 const providerHealthRowSchema = z.object({
@@ -300,12 +327,43 @@ const providerHealthRowSchema = z.object({
 
 export type ProviderHealthRow = z.infer<typeof providerHealthRowSchema>;
 
+const wireRates = {
+  reachability_pct: num,
+  capacity_pct: num,
+  call_error_pct: num,
+  uptime_pct: num,
+};
+
+/**
+ * One provider and tier's per-attempt health over the window (`attempt_health`), rates only, with the same rates
+ * per UTC day. Hourly buckets are left unparsed (passthrough); the app doesn't draw them.
+ */
+const providerAttemptHealthRowSchema = z.object({
+  provider_id: z.string(),
+  service_tier: str,
+  provider_name: str,
+  ...wireRates,
+  days: z.array(z.object({ start: z.string(), end: str, ...wireRates }).passthrough()).nullish(),
+}).passthrough();
+
+export type ProviderAttemptHealthRow = z.infer<typeof providerAttemptHealthRowSchema>;
+
+export type ProviderHealth = { rows: ProviderHealthRow[]; attemptHealth: ProviderAttemptHealthRow[] };
+
+export function parseProviderHealth(raw: unknown): ProviderHealth {
+  const parsed = z.object({
+    rows: z.array(providerHealthRowSchema).default([]),
+    attempt_health: z.array(providerAttemptHealthRowSchema).nullish(),
+  }).passthrough().parse(raw);
+  return { rows: parsed.rows, attemptHealth: parsed.attempt_health ?? [] };
+}
+
 /** Three days of routing health per provider and service tier, as the website's provider table reads it. */
-export async function getModelProviderHealth(id: string, providerIds: string[], percentile = 50): Promise<ProviderHealthRow[]> {
+export async function getModelProviderHealth(id: string, providerIds: string[], percentile = 50): Promise<ProviderHealth> {
   const ids = [...new Set(providerIds.filter(Boolean))].sort();
-  if (!ids.length) return [];
+  if (!ids.length) return { rows: [], attemptHealth: [] };
   const raw = await request(path(id, "/provider-health"), { query: { provider_ids: ids.join(","), window_days: 3, bucket_hours: 1, percentile } });
-  return z.object({ rows: z.array(providerHealthRowSchema).default([]) }).passthrough().parse(raw).rows;
+  return parseProviderHealth(raw);
 }
 
 const pricingHistoryRuleSchema = z.object({
@@ -529,8 +587,8 @@ const releaseSchema = z.object({
 
 export type ModelRelease = z.infer<typeof releaseSchema>;
 
-export async function getReleases(): Promise<{ past: ModelRelease[]; future: ModelRelease[] }> {
-  const raw = await request("/api/_web/updates/models", { query: { limit: 20, upcoming_limit: 10 } });
-  const parsed = z.object({ past: z.array(releaseSchema).default([]), future: z.array(releaseSchema).default([]) }).passthrough().parse(raw);
-  return { past: parsed.past.filter((release) => release.model.model_id), future: parsed.future.filter((release) => release.model.model_id) };
+export async function getReleases(): Promise<{ past: ModelRelease[] }> {
+  const raw = await request("/api/_web/updates/models", { query: { limit: 20 } });
+  const parsed = z.object({ past: z.array(releaseSchema).default([]) }).passthrough().parse(raw);
+  return { past: parsed.past.filter((release) => release.model.model_id) };
 }

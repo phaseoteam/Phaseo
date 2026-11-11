@@ -3,11 +3,16 @@ returns numeric
 language sql immutable security invoker set search_path = ''
 as $$
   select case p_metric
-    when 'tokens' then coalesce((meters->>'total_tokens')::numeric,
+    -- Market share and top apps sit on the text page, so they leave decision tokens out too.
+    when 'tokens' then greatest(coalesce((meters->>'total_tokens')::numeric,
       case when meters ? 'input_tokens' or meters ? 'output_tokens'
         then coalesce((meters->>'input_tokens')::numeric, 0) + coalesce((meters->>'output_tokens')::numeric, 0)
         else coalesce((meters->>'input_text_tokens')::numeric, 0) + coalesce((meters->>'output_text_tokens')::numeric, 0) end)
-    when 'text_tokens' then coalesce((meters->>'input_text_tokens')::numeric, 0) + coalesce((meters->>'output_text_tokens')::numeric, 0)
+      - coalesce((meters->>'decision_tokens')::numeric, 0), 0)
+    -- Decisions have their own ranking; keep them out of text volume.
+    when 'text_tokens' then greatest(coalesce((meters->>'input_text_tokens')::numeric, 0) + coalesce((meters->>'output_text_tokens')::numeric, 0)
+      - coalesce((meters->>'decision_tokens')::numeric, 0), 0)
+    when 'decision_tokens' then coalesce((meters->>'decision_tokens')::numeric, 0)
     when 'image_inputs' then coalesce((meters->>'image_inputs')::numeric, (meters->>'input_images')::numeric, 0)
     when 'image_outputs' then coalesce((meters->>'image_outputs')::numeric, (meters->>'output_images')::numeric, 0)
     when 'audio_tokens' then coalesce((meters->>'input_audio_tokens')::numeric, 0) + coalesce((meters->>'output_audio_tokens')::numeric, 0)

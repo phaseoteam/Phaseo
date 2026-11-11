@@ -1,10 +1,8 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import { useEffect, useState } from "react";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
-import NextImage from "next/image";
+import NextImage from "@/components/image";
 import { BookOpen, CheckCircle2, ChevronDown, Folder, ImageOff, LoaderCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,7 +23,7 @@ import {
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import {
 	APP_CATEGORY_OPTIONS,

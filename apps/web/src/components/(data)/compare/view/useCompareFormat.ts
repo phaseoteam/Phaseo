@@ -1,9 +1,7 @@
-"use client";
-
 import { useMemo } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
-import { asUtc, formatUsd } from "./compareViewMath";
+import { asUtc, CONDITION_FIELDS, describeCondition, formatUsd, parseLegacyCondition, type ConditionWords } from "./compareViewMath";
 import type { CompareUsageWindow, CompareViewPriceRow } from "./types";
 
 const MODALITY_KEYS: Record<string, string> = {
@@ -47,11 +45,28 @@ export function useCompareFormat() {
 	const locale = useLocale();
 	return useMemo(() => {
 		const known = (key: string | undefined, fallback: string) => (key ? tCompare(key as never) : fallback);
+		const numberLocale = locale.startsWith("en") ? "en-US" : locale;
+		const compactTokens = (value: number, digits = 3) => new Intl.NumberFormat(numberLocale, { notation: "compact", maximumSignificantDigits: digits }).format(value);
+		const conditionWords: ConditionWords = {
+			field: (field) => (CONDITION_FIELDS[field] ? t(`conditionFields.${CONDITION_FIELDS[field]}` as never) : capitalise(field)),
+			is: (field, value) => t("conditionIs", { field, value }),
+			isNot: (field, value) => t("conditionIsNot", { field, value }),
+			on: t("conditionOn"),
+			off: t("conditionOff"),
+			tokens: (value) => compactTokens(value, 21),
+			number: (value) => format.number(value, { maximumFractionDigits: 0 }),
+			seconds: (value) => new Intl.NumberFormat(numberLocale, { style: "unit", unit: "second", unitDisplay: "short" }).format(value),
+		};
 		return {
 			usd: formatUsd,
 			tokens: (value: number) => format.number(value, { maximumFractionDigits: 0 }),
 			/** "400K", "1.05M": exact counts read slowly side by side. English uses the US capitals ("1.05M", not en-GB's "1.05m"). */
-			compactTokens: (value: number) => new Intl.NumberFormat(locale.startsWith("en") ? "en-US" : locale, { notation: "compact", maximumSignificantDigits: 3 }).format(value),
+			compactTokens,
+			/** "Resolution: 480p · Draft: off". Older API responses send only text, which is read back into conditions. */
+			condition: (row: Pick<CompareViewPriceRow, "condition" | "conditions">) => {
+				const conditions = row.conditions?.length ? row.conditions : parseLegacyCondition(row.condition);
+				return conditions ? conditions.map((condition) => describeCondition(condition, conditionWords)).join(" · ") : row.condition ?? "";
+			},
 			latency: (ms: number) => format.latency(ms) ?? "-",
 			throughput: (value: number) => format.tps(value) ?? "-",
 			monthYear: (value: string) => format.dateParts(asUtc(value), { month: "short", year: "numeric", timeZone: "UTC" }),

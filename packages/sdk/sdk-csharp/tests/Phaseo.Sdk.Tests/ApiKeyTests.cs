@@ -18,7 +18,7 @@ public class ApiKeyTests
             {
                 return new HttpResponseMessage(HttpStatusCode.OK)
                 {
-                    Content = new StringContent("{\"data\":{\"id\":\"key_123\",\"hash\":\"keyhash_123\",\"status\":\"active\"}}", Encoding.UTF8, "application/json")
+                    Content = new StringContent("{\"data\":{\"id\":\"key_123\",\"status\":\"active\"}}", Encoding.UTF8, "application/json")
                 };
             }
 
@@ -40,7 +40,6 @@ public class ApiKeyTests
         Assert.NotNull(response);
         var data = Assert.IsType<JsonElement>(response!["data"]);
         Assert.Equal("key_123", data.GetProperty("id").GetString());
-        Assert.Equal("keyhash_123", data.GetProperty("hash").GetString());
         Assert.Equal("active", data.GetProperty("status").GetString());
     }
 

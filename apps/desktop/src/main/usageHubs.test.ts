@@ -3,7 +3,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { mkdirSync, writeFileSync } from "node:fs";
-import { UsageHubs, claudeHubUsage, claudeProfilePlan, codexHubUsage, t3CodeHubs, usageHubFile } from "./usageHubs";
+import { UsageHubs, claudeHubUsage, claudeProfilePlan, codexHubUsage, importableHubs, usageHubFile } from "./usageHubs";
 import type { UsageHub, UsageHubSnapshot } from "../shared/usageHubs";
 
 /** A CLIProxyAPI stand-in: auth-files lists accounts, api-call answers with the provider's usage. */
@@ -24,7 +24,7 @@ function store() {
 	const secrets = new Map<string, string>();
 	return { secrets, vault: { set: async (id: string, value: string) => { secrets.set(id, value); }, get: async (id: string) => secrets.get(id) ?? "", remove: (id: string) => { secrets.delete(id); } } };
 }
-/** No T3 Code hubs, so tests never read this computer's. */
+/** No importable hubs, so tests never read this computer's. */
 const none = () => [];
 async function withDirectory(test: (directory: string) => Promise<void>) { const directory = mkdtempSync(path.join(tmpdir(), "phaseo-hubs-")); try { await test(directory); } finally { rmSync(directory, { recursive: true, force: true }); } }
 
@@ -99,8 +99,8 @@ describe("UsageHubs", () => {
 	}));
 });
 
-describe("T3 Code hubs", () => {
-	it("reads enabled CLIProxyAPI sources and their keys from T3 Code, skipping the rest", async () => withDirectory(async directory => {
+describe("importable hubs", () => {
+	it("reads enabled CLIProxyAPI sources and their keys from the other app's settings, skipping the rest", async () => withDirectory(async directory => {
 		mkdirSync(path.join(directory, "secrets"));
 		writeFileSync(path.join(directory, "settings.json"), JSON.stringify({ usageLimitSources: {
 			"claude-pool-hub": { kind: "cliproxy", label: "Claude", url: "http://127.0.0.1:8317/", enabled: true, managementKey: "••••••" },
@@ -110,28 +110,28 @@ describe("T3 Code hubs", () => {
 		} }));
 		const secret = (id: string, value: string) => writeFileSync(path.join(directory, "secrets", `usage-limit-source-${Buffer.from(id).toString("base64url")}.bin`), value);
 		secret("claude-pool-hub", "secret\n"); secret("off-hub", "x");
-		expect(t3CodeHubs(directory)).toEqual([{ label: "Claude", url: "http://127.0.0.1:8317", key: "secret" }]);
-		expect(t3CodeHubs(path.join(directory, "missing"))).toEqual([]);
+		expect(importableHubs(directory)).toEqual([{ label: "Claude", url: "http://127.0.0.1:8317", key: "secret" }]);
+		expect(importableHubs(path.join(directory, "missing"))).toEqual([]);
 		const { vault, secrets } = store(), { fetcher } = hubFixture();
-		const hubs = new UsageHubs(usageHubFile(directory), vault, fetcher, () => t3CodeHubs(directory));
-		expect(await hubs.request({ type: "t3-hubs" })).toEqual([{ label: "Claude", url: "http://127.0.0.1:8317" }]);
-		const [hub] = await hubs.request({ type: "import-t3" }) as UsageHub[];
+		const hubs = new UsageHubs(usageHubFile(directory), vault, fetcher, () => importableHubs(directory));
+		expect(await hubs.request({ type: "importable-hubs" })).toEqual([{ label: "Claude", url: "http://127.0.0.1:8317" }]);
+		const [hub] = await hubs.request({ type: "import-hubs" }) as UsageHub[];
 		expect(hub).toMatchObject({ label: "Claude", url: "http://127.0.0.1:8317" }); expect(secrets.get(hub.id)).toBe("secret");
-		expect(await hubs.request({ type: "t3-hubs" })).toEqual([]);
+		expect(await hubs.request({ type: "importable-hubs" })).toEqual([]);
 	}));
-	it("connects T3 Code's hubs on its own once, but not one removed here or one that refuses its key", async () => withDirectory(async directory => {
+	it("connects importable hubs on its own once, but not one removed here or one that refuses its key", async () => withDirectory(async directory => {
 		const { vault, secrets } = store(), { fetcher, calls } = hubFixture();
-		const t3 = vi.fn(() => [{ label: "Claude", url: "http://127.0.0.1:8317", key: "secret" }, { label: "Old", url: "http://10.0.0.9:8317", key: "wrong" }]);
-		const hubs = new UsageHubs(usageHubFile(directory), vault, fetcher, t3);
+		const found = vi.fn(() => [{ label: "Claude", url: "http://127.0.0.1:8317", key: "secret" }, { label: "Old", url: "http://10.0.0.9:8317", key: "wrong" }]);
+		const hubs = new UsageHubs(usageHubFile(directory), vault, fetcher, found);
 		const [listed] = await Promise.all([hubs.request({ type: "list" }), hubs.request({ type: "list" })]);
 		expect((listed as UsageHub[]).map(hub => hub.url)).toEqual(["http://127.0.0.1:8317"]);
 		expect(secrets.size).toBe(1);
 		await hubs.request({ type: "list" });
-		expect(t3).toHaveBeenCalledTimes(1);
+		expect(found).toHaveBeenCalledTimes(1);
 		expect(calls.filter(call => call.authorization === "Bearer wrong")).toHaveLength(1);
 		await hubs.request({ type: "remove", id: (listed as UsageHub[])[0].id });
-		expect(await new UsageHubs(usageHubFile(directory), vault, fetcher, t3).request({ type: "list" })).toEqual([]);
+		expect(await new UsageHubs(usageHubFile(directory), vault, fetcher, found).request({ type: "list" })).toEqual([]);
 		// Importing on purpose brings it back.
-		expect((await new UsageHubs(usageHubFile(directory), vault, fetcher, () => t3().slice(0, 1)).request({ type: "import-t3" }) as UsageHub[]).map(hub => hub.url)).toEqual(["http://127.0.0.1:8317"]);
+		expect((await new UsageHubs(usageHubFile(directory), vault, fetcher, () => found().slice(0, 1)).request({ type: "import-hubs" }) as UsageHub[]).map(hub => hub.url)).toEqual(["http://127.0.0.1:8317"]);
 	}));
 });

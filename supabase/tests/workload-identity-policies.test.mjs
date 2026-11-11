@@ -13,7 +13,10 @@ const migration = async (suffix) => {
   assert.ok(name, `migration *${suffix} exists`);
   return readFile(new URL(name, migrations), 'utf8');
 };
-const create = `select * from public.create_workload_identity_policy($1::uuid, $2::uuid, $3, $4, $5, $6, $7::jsonb, $8)`;
+// The pinned claim sits between issuer and owner. `create` takes the preset arguments and passes no pinned claim.
+const create = `select * from public.create_workload_identity_policy($1::uuid, $2::uuid, $3, $4, $5, null, $6, $7::jsonb, $8)`;
+const createWithClaim = `select * from public.create_workload_identity_policy($1::uuid, $2::uuid, $3, $4, $5, $6, $7, $8::jsonb, $9)`;
+const withClaim = (args, claim) => [...args.slice(0, 5), claim, ...args.slice(5)];
 const vercel = (overrides = {}) => {
   const value = {
     name: 'Production website', provider: 'vercel', issuer: 'https://oidc.vercel.com/acme', owner: 'team_123',
@@ -26,11 +29,22 @@ const vercel = (overrides = {}) => {
 try {
   const sql = await migration('_workload_identity_policies.sql');
   const capSql = await migration('_workload_identity_policy_cap.sql');
+  const moreIssuersSql = await migration('_workload_identity_more_issuers.sql');
+  const dropLegacySql = await migration('_drop_legacy_function_overloads.sql');
   // The migrations must carry the current declarative definitions verbatim.
-  for (const file of ['public/tables/workload_identity_policies.sql', 'public/functions/active_workload_identity_issuers.sql']) {
-    assert.ok(sql.includes(await readFile(new URL(file, schemas), 'utf8')), `migration includes ${file}`);
+  assert.ok(sql.includes(await readFile(new URL('public/functions/active_workload_identity_issuers.sql', schemas), 'utf8')), 'migration includes active_workload_identity_issuers.sql');
+  const tableSchema = await readFile(new URL('public/tables/workload_identity_policies.sql', schemas), 'utf8');
+  for (const constraint of ['workload_identity_policies_provider_check', 'workload_identity_policies_pinned_claim_check']) {
+    const line = tableSchema.split('\n').find((row) => row.includes(`"${constraint}"`)).trim().replace(/,$/, '');
+    assert.ok(moreIssuersSql.includes(`ADD ${line};`), `more-issuers migration adds ${constraint} as declared`);
   }
-  assert.ok(capSql.includes(await readFile(new URL('public/functions/create_workload_identity_policy.sql', schemas), 'utf8')), 'cap migration includes create_workload_identity_policy.sql');
+  const tableComment = tableSchema.split('\n').find((row) => row.startsWith('COMMENT ON TABLE'));
+  assert.ok(moreIssuersSql.includes(tableComment), 'more-issuers migration sets the declared table comment');
+  const functionSchema = await readFile(new URL('public/functions/create_workload_identity_policy.sql', schemas), 'utf8');
+  const bodies = (text) => [...text.matchAll(/\$function\$[\s\S]*?\$function\$/g)].map((match) => match[0]);
+  const [body9, ...extra] = bodies(functionSchema);
+  assert.deepEqual(extra, [], 'only the 9-argument create function is declared');
+  assert.ok(bodies(moreIssuersSql).includes(body9), 'more-issuers migration carries the 9-argument create function');
   const keysSchema = await readFile(new URL('public/tables/keys.sql', schemas), 'utf8');
   // Later migrations may allow more values (the desktop app's 'desktop' issued_via), but never drop these.
   for (const constraint of sql.match(/ADD CONSTRAINT "keys_[a-z_]+" CHECK \(.*\);/g)) {
@@ -61,11 +75,16 @@ try {
   `);
   await db.exec(sql);
   await db.exec(capSql);
+  await db.exec(moreIssuersSql);
+  await db.exec(dropLegacySql);
+  assert.deepEqual(await rows("select p.oid::regprocedure::text as sig from pg_proc p where p.proname = 'create_workload_identity_policy'"),
+    [{ sig: 'create_workload_identity_policy(uuid,uuid,text,text,text,text,text,jsonb,integer)' }], 'the 8-argument overload is dropped');
 
   for (const role of ['anon', 'authenticated']) {
     await db.exec(`set role ${role}`);
     await assert.rejects(rows('select * from public.workload_identity_policies'), /permission denied/);
     await assert.rejects(rows(create, vercel()), /permission denied/);
+    await assert.rejects(rows(createWithClaim, withClaim(vercel(), null)), /permission denied/);
     await assert.rejects(rows('select public.active_workload_identity_issuers()'), /permission denied/);
     await db.exec('reset role');
   }
@@ -109,7 +128,7 @@ try {
   // A rejected policy must not leave a stray secretless key behind.
   const before = (await rows('select count(*)::int as n from public.keys'))[0].n;
   for (const [overrides, pattern] of [
-    [{ provider: 'custom' }, /provider_check/],
+    [{ provider: 'bitbucket' }, /provider_check/],
     [{ lifetime: 10 }, /lifetime_check/],
     [{ owner: ' ' }, /pinned_owner_id_check/],
     [{ name: '' }, /name_check/],
@@ -118,6 +137,23 @@ try {
   }
   await assert.rejects(rows(create, [...vercel().slice(0, 6), '[]', null]), /claim_conditions_check/);
   assert.equal((await rows('select count(*)::int as n from public.keys'))[0].n, before);
+
+  // Phase 2: new presets, and custom issuers that name their pinned claim.
+  const [gitlab] = await rows(createWithClaim, withClaim(vercel({ name: 'GitLab', provider: 'gitlab', issuer: 'https://gitlab.com', owner: '1234' }), null));
+  assert.equal((await rows('select pinned_claim from public.workload_identity_policies where id = $1', [gitlab.policy_id]))[0].pinned_claim, null);
+  const [cluster] = await rows(createWithClaim, withClaim(vercel({ name: 'Cluster', provider: 'custom', issuer: 'https://oidc.example.com/cluster', owner: 'system:serviceaccount:prod:api' }), 'sub'));
+  assert.equal((await rows('select pinned_claim from public.workload_identity_policies where id = $1', [cluster.policy_id]))[0].pinned_claim, 'sub');
+  assert.deepEqual(await issuers(), ['https://gitlab.com', 'https://oidc.example.com/cluster', 'https://oidc.vercel.com/acme']);
+  const beforePhase2 = (await rows('select count(*)::int as n from public.keys'))[0].n;
+  for (const [args, pattern] of [
+    [withClaim(vercel({ provider: 'custom', issuer: 'https://oidc.example.com/x' }), null), /pinned_claim_check/],
+    [withClaim(vercel({ provider: 'custom', issuer: 'https://oidc.example.com/x' }), ''), /pinned_claim_check/],
+    [withClaim(vercel(), 'sub'), /pinned_claim_check/],
+    [withClaim(vercel({ provider: 'kubernetes' }), null), /provider_check/],
+  ]) {
+    await assert.rejects(rows(createWithClaim, args), pattern);
+  }
+  assert.equal((await rows('select count(*)::int as n from public.keys'))[0].n, beforePhase2);
 
   // Standard keys are unaffected; unknown kinds still fail.
   await rows(`insert into public.keys(workspace_id, name, hash, prefix, scopes, created_by) values ($1, 'plain', 'h1', 'p', '[]', $2)`, [ws, admin]);

@@ -42,6 +42,7 @@ import {
 	modelSupportsGoogleThinkingLevels,
 	resolveGoogleThinkingLevelForEffort,
 } from "@executors/google/shared/thinking";
+import { supportsGeminiArgumentStreaming } from "@executors/google/shared/function-call-stream";
 import { sanitizeGeminiSchema } from "@executors/google/shared/schema";
 import type { ProviderExecutor } from "../../types";
 import { resolveVertexAccessToken } from "@providers/google-vertex/auth";
@@ -112,7 +113,10 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		// Claude on Vertex AI reads base64 sources only.
 		const inlined = await inlineClaudeMediaForBase64OnlyPlatform(irRequest, args);
 		if (inlined.ok === false) return inlined.result;
-		payload = irToAnthropicMessages(inlined.ir, args.maxOutputTokens, route.modelForPath, { providerId: args.providerId || "google-vertex" });
+		payload = irToAnthropicMessages(inlined.ir, args.maxOutputTokens, route.modelForPath, {
+			providerId: args.providerId || "google-vertex",
+			eagerInputStreaming: irRequest.stream === true,
+		});
 		delete payload.model;
 		payload.anthropic_version = "vertex-2023-10-16";
 		payload.stream = true;
@@ -440,7 +444,7 @@ export function vertexRequiredLocation(providerId?: string, family?: VertexModel
 		: providerId === "google-vertex" && family === "anthropic" ? "global"
 		// Gemini Transcribe is served on global only
 		// (https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/3-5-transcribe).
-		: providerId === "google-vertex" && family === "gemini" && /^(?:google\/)?(?:gemini-4-argon|gemini-3\.1-flash-lite|gemini-3\.5-transcribe(?:-preview)?)$/.test(model ?? "") ? "global"
+		: providerId === "google-vertex" && family === "gemini" && /^(?:google\/)?(?:gemini-4-argon|gemini-4-carbon|gemini-3\.1-flash-lite|gemini-3\.5-transcribe(?:-preview)?)$/.test(model ?? "") ? "global"
 		: providerId === "google-vertex" && family === "openapi_chat" && model?.endsWith("-maas")
 			? model === "openai/gpt-oss-20b-maas" ? "us-central1" : "global" : undefined;
 }
@@ -766,6 +770,12 @@ export async function irToGemini(ir: IRChatRequest, modelOverride?: string | nul
 		}
 	}
 
+	if (ir.stream && ir.tools?.length && ir.toolChoice !== "none" && supportsGeminiArgumentStreaming(modelOverride ?? ir.model)) {
+		request.toolConfig = {
+			...request.toolConfig,
+			functionCallingConfig: { ...request.toolConfig?.functionCallingConfig, streamFunctionCallArguments: true },
+		};
+	}
 	return request;
 }
 

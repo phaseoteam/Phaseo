@@ -1,19 +1,17 @@
 ---
 icon: "image"
 title: "画像生成"
-description: "Phaseoのサーバーツールを使ってモデルに画像を作成させます。"
+description: "Phaseo のサーバーツールを通じて、モデルが画像を作成できるようにします。"
 ---
 
-回答中にモデルが画像を作成する必要がある場合は、`phaseo:image_generation`を使います。Phaseoは管理されたツールをモデルに公開し、サーバー側で画像リクエストを実行して、その結果をモデルループに返します。
-
-## リクエスト
+`phaseo:image_generation` を追加すると、モデルは回答しながら画像を作成できます。モデルが画像のプロンプトを書き、Phaseo が画像モデルを呼び出して、画像をモデルのループに返します。
 
 ```bash
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "input": "Design a wide product concept image for a compact desktop synthesizer.",
     "tools": [
       {
@@ -31,24 +29,24 @@ curl https://api.phaseo.app/v1/responses \
 
 ## パラメーター
 
-| パラメーター | 型 | 説明 |
-| --- | --- | --- |
-| `model` | string | 画像対応モデルの任意のID。ツールまたはツール呼び出しでモデルが指定されない場合、デフォルトは`openai/gpt-image-2`です。 |
-| `quality` | string | `low`、`medium`、`high`などの任意の品質ヒントをプロバイダーに渡します。 |
-| `size` | string | 任意の画像サイズヒント。 |
-| `aspect_ratio` | string | `1:1`、`16:9`、`9:16`などの任意のアスペクト比。 |
-| `background` | string | 任意の背景モードヒント。 |
-| `output_format` | string | `png`、`jpeg`、`webp`などの任意の出力形式。 |
-| `output_compression` | integer | 任意のプロバイダー圧縮ヒント。 |
-| `moderation` | string | 任意のプロバイダーモデレーションヒント。 |
+すべてのパラメーターは任意です。
 
-ツール呼び出し時にモデルが最終的な`prompt`を指定します。ツールレベルのパラメーターは、その呼び出しのデフォルト値と制約を設定します。
+| パラメーター | 型 | デフォルト | 説明 |
+| --- | --- | --- | --- |
+| `model` | string | `openai/gpt-image-2` | 画像モデル。ここで設定すると、メインのモデルが求めるモデルよりも優先されます。 |
+| `quality` | string | プロバイダーのデフォルト | `low`、`medium`、`high` などの品質のヒント。 |
+| `size` | string | プロバイダーのデフォルト | 画像サイズのヒント。 |
+| `aspect_ratio` | string | プロバイダーのデフォルト | `1:1`、`16:9`、`9:16` などのアスペクト比。 |
+| `background` | string | プロバイダーのデフォルト | 背景モードのヒント。 |
+| `output_format` | string | プロバイダーのデフォルト | `png`、`jpeg`、または `webp`。 |
+| `output_compression` | integer | プロバイダーのデフォルト | 圧縮のヒント。`0`〜`100` の範囲に収められます。 |
+| `moderation` | string | プロバイダーのデフォルト | プロバイダーのモデレーションのヒント。 |
 
-ツール呼び出しでは`prompt`の代わりに`description`を送ることもできます。モデル生成の画像説明との互換性を保つため、Phaseoは`description`をpromptの別名として扱います。
+## モデルが送信する内容
 
-## ツールの結果
+`prompt`（または同じ扱いの `description`）です。ツールでモデルが設定されていない場合にのみ使われる `model` や、上記のその他のパラメーターも送信でき、その呼び出しではツールの値が置き換えられます。
 
-結果はJSONとしてモデルに返されます。
+## ツールが返す内容
 
 ```json
 {
@@ -59,34 +57,8 @@ curl https://api.phaseo.app/v1/responses \
 }
 ```
 
-プロバイダーによっては、代わりにbase64画像データを返します。
+プロバイダーによっては、`imageUrl` の代わりに base64 の画像データを含む `b64_json` を返します。呼び出しにプロンプトがない場合、モデルには `image_generation_invalid_request` が返り、画像モデルが失敗した場合は `image_generation_failed` が返ります。
 
-```json
-{
-  "status": "ok",
-  "model": "openai/gpt-image-2",
-  "b64_json": "...",
-  "mime_type": "image/png"
-}
-```
+## 利用量と料金
 
-## 使用量と料金
-
-画像モデルがトークン使用量を報告する場合、画像生成の使用量は親レスポンスの使用量に含まれます。Phaseoは次の値も記録します。
-
-```json
-{
-  "usage": {
-    "server_tool_use": {
-      "image_generation_requests": 1
-    }
-  }
-}
-```
-
-料金カードでは`server_tool_image_generation_requests`メーターで課金できます。基盤となる画像モデルの使用量も通常のモデル料金で課金される場合があります。
-
-## 関連項目
-
-- [サーバーツール](./index.mdx)
-- [ツール呼び出し](../tool-calling.mdx)
+画像ごとに `usage.server_tool_use.image_generation_requests` に 1 が加算され、`server_tool_image_generation_requests` で課金されることがあります。画像モデルは自身の料金で、リクエストの請求の別項目として課金されます。有料の画像モデルを使うには、呼び出し元モデルが無料でもクレジットが必要です。

@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { GLOBAL_NAVIGATION_ITEMS } from "./Search.navigation";
 import {
 	EXTERNAL_RESOURCE_ITEMS,

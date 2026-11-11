@@ -1,4 +1,3 @@
-"use client";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 
@@ -16,9 +15,9 @@ import {
 } from "@/components/ui/dialog";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Trash2, Sparkles } from "lucide-react";
-import { deletePresetAction } from "@/app/(dashboard)/settings/presets/actions";
+import { deletePresetAction } from "@/features/settings/presets/actions";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 export default function DeletePresetItem({ p, open: controlledOpen, onOpenChange, showTrigger = true }: any) {
 	const write = useSettingsWrite();
@@ -33,7 +32,7 @@ export default function DeletePresetItem({ p, open: controlledOpen, onOpenChange
 		e?.preventDefault();
 		if (confirm !== p.name) return;
 		setLoading(true);
-		const promise = write(deletePresetAction(p.id, confirm));
+		const promise = write(deletePresetAction({ data: { id: p.id, confirmName: confirm } }));
 		try {
 			await toast.promise(promise, {
 				loading: t("strings.phraseDeletingPreset" as never),

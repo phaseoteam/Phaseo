@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import type { SettingsDepartmentBudget } from "@/lib/fetchers/internal/settingsTypes";
 import { departmentsWithFreeIntervals, freeDepartmentIntervals, sortDepartmentBudgets } from "./departmentBudgets";
 

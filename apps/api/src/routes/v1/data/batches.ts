@@ -768,7 +768,6 @@ async function validateBatchRequestPolicies(args: {
 			resolvedModel: guarded.resolvedModel ?? gatewayModel,
 			body: row.body,
 			workspacePolicy,
-			teamSettings: guarded.context.teamSettings ?? null,
 		});
 		let policyReason: string | null = null;
 		if (policyResult.ok === false) {

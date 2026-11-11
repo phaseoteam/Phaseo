@@ -1,0 +1,124 @@
+---
+icon: "activity"
+title: "ऑब्ज़र्वेबिलिटी"
+description: "एजेंट रन का स्टेटस, उपयोग और लागत पढ़ें, और हर स्टेप को उसके gateway अनुरोध तक ट्रेस करें।"
+---
+
+रन कैसे ख़त्म हुआ, उसकी लागत कितनी रही, और हर मॉडल टर्न किस gateway अनुरोध से पूरा हुआ, यह देखने के लिए रन नतीजा पढ़ें। हर नतीजे में अंतिम आउटपुट, स्टेटस वाला रन रिकॉर्ड, कुल उपयोग, और हर स्टेप के लिए अनुरोध ID, प्रदाता और मॉडल वाला एक रिकॉर्ड होता है।
+
+<CodeGroup>
+
+```typescript TypeScript
+const result = await agent.run({ input, client });
+
+console.log(result.output);            // अंतिम मान
+console.log(result.run.status);        // completed, stopped, waiting_for_human या cancelled
+console.log(result.usage.totalTokens); // सभी स्टेप का योग
+console.log(result.usage.cost);        // जैसा gateway ने बताया
+```
+
+```python Python
+result = agent.run(input=prompt, client=client)
+
+print(result.output)              # अंतिम मान
+print(result.run.status)          # completed, stopped या waiting_for_human
+print(result.usage.total_tokens)  # सभी स्टेप का योग
+print(result.usage.cost)          # जैसा gateway ने बताया
+```
+
+```go Go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+if err != nil {
+  return err
+}
+
+fmt.Println(result.Output)            // अंतिम मान
+fmt.Println(result.Run.Status)        // completed, stopped या waiting_for_human
+fmt.Println(result.Usage.TotalTokens) // सभी स्टेप का योग
+fmt.Println(result.Usage.Cost)        // जैसा gateway ने बताया
+```
+
+```csharp C#
+var result = await agent.Run(new RunOptions { Input = prompt, Client = client });
+
+Console.WriteLine(result.Output);            // अंतिम मान
+Console.WriteLine(result.Run.Status);        // completed, stopped या waiting_for_human
+Console.WriteLine(result.Usage.TotalTokens); // सभी स्टेप का योग
+Console.WriteLine(result.Usage.Cost);        // जैसा gateway ने बताया
+```
+
+```php PHP
+$result = $agent->run(input: $prompt, client: $client);
+
+echo $result->output;                 // अंतिम मान
+echo $result->run->status;            // completed, stopped या waiting_for_human
+echo $result->usage["total_tokens"];  // सभी स्टेप का योग
+echo $result->usage["cost"];          // जैसा gateway ने बताया
+```
+
+```ruby Ruby
+result = agent.run(input: prompt, client: client)
+
+puts result.output               # अंतिम मान
+puts result.run.status           # completed, stopped या waiting_for_human
+puts result.usage[:total_tokens] # सभी स्टेप का योग
+puts result.usage[:cost]         # जैसा gateway ने बताया
+```
+
+```java Java
+var result = agent.run(options);
+
+System.out.println(result.output());              // अंतिम मान
+System.out.println(result.run().status());        // completed, stopped या waiting_for_human
+System.out.println(result.usage().totalTokens()); // सभी स्टेप का योग
+System.out.println(result.usage().cost());        // जैसा gateway ने बताया
+```
+
+```rust Rust
+let result = agent.run(&mut client, RunOptions::new("Explain when to use routing presets."))?;
+
+println!("{}", result.output);              // अंतिम मान
+println!("{}", result.run.status);          // completed, stopped या waiting_for_human
+println!("{}", result.usage.total_tokens);  // सभी स्टेप का योग
+println!("{:?}", result.usage.cost);        // मॉडल क्लाइंट द्वारा दिया गया
+```
+
+</CodeGroup>
+
+## उपयोग और लागत पढ़ें
+
+उपयोग में इनपुट, आउटपुट, cached और कुल टोकन, साथ में लागत होती है: TypeScript और Java में `inputTokens`, `outputTokens`, `cachedTokens`, `totalTokens`, `cost`; Python, PHP, Ruby और Rust में `input_tokens` वगैरह; Go और C# में `InputTokens` वगैरह। हर स्टेप का अपना उपयोग भी होता है।
+
+| भाषा | उपयोग कहाँ है | ध्यान दें |
+| --- | --- | --- |
+| TypeScript, Python, Go, C#, Java | नतीजे पर `usage` | |
+| PHP | `$result->usage`, एक array | रुके हुए नतीजे में यह ख़ाली रहता है; `$result->run->usage` पढ़ें |
+| Ruby | `result.usage`, symbol keys वाला एक Hash | रुके हुए नतीजे में यह सेट नहीं होता; `result.run.usage` पढ़ें |
+| Rust | `result.usage` (`UsageSummary`) | अंतर्निहित `0.2` gateway adapter `cost` सिर्फ़ संख्यात्मक `meta.cost` या `cost` फ़ील्ड से भरता है और `cost_nanos` या `cost_cents` को map नहीं करता। ख़र्च की रिपोर्टिंग के लिए gateway प्रतिक्रिया या generation रिकॉर्ड का उपयोग करें। |
+
+## जाँचें कि रन कैसे ख़त्म हुआ
+
+रन स्टेटस `queued`, `running`, `waiting_for_tools`, `waiting_for_human`, `completed`, `stopped` और `failed` हैं; TypeScript में `cancelled` भी है। आपको लौटाया गया नतीजा `completed`, `stopped` (कोई [रोकने की शर्त](./stop-conditions) मेल खाई, और कारण रन के stop reason में होता है), `waiting_for_human` ([स्टेट और अनुमोदन](./state-and-approval) देखें) या, TypeScript में, `cancelled` होता है। विफल रन इसकी जगह त्रुटि फेंकते या लौटाते हैं; [इवेंट और त्रुटियाँ](./events-and-errors) देखें।
+
+## किसी स्टेप को उसके gateway अनुरोध तक ट्रेस करें
+
+हर स्टेप रिकॉर्ड एक मॉडल टर्न को उस gateway अनुरोध से जोड़ता है जिसने उसे पूरा किया। अनुरोध ID अपने Phaseo लॉग में खोजें, या native response ID upstream प्रदाता के पास।
+
+| स्टेप फ़ील्ड | camelCase (TypeScript, PHP, Java) | snake_case (Python, Ruby, Rust) | PascalCase (Go, C#) |
+| --- | --- | --- | --- |
+| Gateway अनुरोध ID | `requestId` | `request_id` | `RequestID` (Go), `RequestId` (C#) |
+| Upstream प्रतिक्रिया ID | `nativeResponseId` | `native_response_id` (Rust में नहीं) | `NativeResponseID` (Go), `NativeResponseId` (C#) |
+| प्रदाता और मॉडल | `provider`, `model` | `provider`, `model` | `Provider`, `Model` |
+| समाप्ति का कारण | `finishReason` | `finish_reason` | `FinishReason` |
+| retries सहित प्रयास | `modelAttempts` | `model_attempts` | `ModelAttempts` |
+| टूल कॉल | `toolCalls` | `tool_calls` | `ToolCalls` |
+| त्रुटि | `error` (TypeScript में `errorDetails` भी) | `error` | `Error` |
+| Gateway meta ब्लॉक और चेतावनियाँ | `responseMeta`, `warnings` | `response_meta`, `warnings` (Rust में नहीं) | `ResponseMeta`, `Warnings` |
+
+स्टेप नतीजे पर `steps` में होते हैं (Go और C# में `Steps`, Java में `steps()`)। Python के स्टेप रिकॉर्ड `AgentStepRecord` हैं; बाकी उन्हें `RunStep` कहते हैं।
+
+## प्रोडक्शन में रन रिकॉर्ड करें
+
+रन ID, स्टेप इंडेक्स, अनुरोध ID, native response ID, प्रदाता, मॉडल, समाप्ति का कारण, टूल-कॉल ID और रोकने का कारण लॉग करें। [लाइफ़साइकल हुक](./lifecycle-hooks) रन के दौरान ये सब देते हैं, और जिन भाषाओं में `run.failed` इवेंट भेजे जाते हैं, उनमें त्रुटि का टेक्स्ट होता है। raw प्रॉम्प्ट, टूल इनपुट या क्रेडेंशियल लॉग न करें; इवेंट आपके प्रोसेस से बाहर जाने से पहले उन्हें redact करें।
+
+डेवलपमेंट के दौरान पूरे रन के स्थानीय रिकॉर्ड के लिए, इसकी जगह [DevTools](./devtools) का उपयोग करें।

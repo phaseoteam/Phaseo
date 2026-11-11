@@ -7,6 +7,7 @@ import {
 	isNativeWebSearchTool,
 	isNativeWebSearchToolType,
 } from "@core/nativeTools";
+import { countBillableToolCalls, isBillableToolCall } from "./response-output";
 
 type ToolUsageMetrics = {
 	request_tool_count?: number | null;
@@ -119,8 +120,8 @@ function countFromChatLikePayload(payload: any): number {
 	if (!payload || typeof payload !== "object" || !Array.isArray(payload.choices)) return 0;
 	let total = 0;
 	for (const choice of payload.choices) {
-		const messageCalls = Array.isArray(choice?.message?.tool_calls) ? choice.message.tool_calls.length : 0;
-		const deltaCalls = Array.isArray(choice?.delta?.tool_calls) ? choice.delta.tool_calls.length : 0;
+		const messageCalls = countBillableToolCalls(choice?.message?.tool_calls);
+		const deltaCalls = countBillableToolCalls(choice?.delta?.tool_calls);
 		total += Math.max(messageCalls, deltaCalls);
 	}
 	return total;
@@ -146,7 +147,7 @@ function countFromResponsesPayload(payload: any): number {
 	let total = 0;
 	for (const item of items) {
 		const type = String(item?.type ?? "").toLowerCase();
-		if (type === "function_call") total += 1;
+		if (type === "function_call" && isBillableToolCall(item)) total += 1;
 	}
 	return total;
 }
@@ -167,7 +168,7 @@ function countFromAnthropicPayload(payload: any): number {
 	if (!payload || typeof payload !== "object" || !Array.isArray(payload.content)) return 0;
 	let total = 0;
 	for (const block of payload.content) {
-		if (String(block?.type ?? "").toLowerCase() === "tool_use") total += 1;
+		if (String(block?.type ?? "").toLowerCase() === "tool_use" && isBillableToolCall(block)) total += 1;
 	}
 	return total;
 }
@@ -201,8 +202,7 @@ export function countOutputToolCallsFromIR(ir: any): number {
 	if (!ir || typeof ir !== "object" || !Array.isArray(ir.choices)) return 0;
 	let total = 0;
 	for (const choice of ir.choices) {
-		const calls = Array.isArray(choice?.message?.toolCalls) ? choice.message.toolCalls.length : 0;
-		total += calls;
+		total += countBillableToolCalls(choice?.message?.toolCalls);
 	}
 	return total;
 }

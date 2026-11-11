@@ -5,20 +5,16 @@ description: "Reliable tool-calling loops for chat completions and responses end
 "og:image": "https://phaseo.app/og/dynamic?title=Tool%20Calling%20Patterns&description=Reliable%20tool-calling%20loops%20for%20chat%20completions%20and%20responses%20endpoints.&pathname=/docs/v1/guides/tool-calling-patterns"
 ---
 
-Use these patterns to keep tool-calling deterministic and debuggable.
+After the model calls a tool, send a follow-up request that repeats the conversation, the model's call, and your tool's result. The model then writes its answer, or calls another tool and you repeat. Use the endpoint whose message format your app already uses: `/v1/chat/completions` for OpenAI-style message loops, `/v1/responses` for the Responses API, `/v1/messages` for Anthropic-native apps.
 
-## Pattern 1: Chat Completions loop
+<Tabs>
+<Tab title="Chat Completions">
 
-1. Send user message + tool definitions.
-2. If `finish_reason` is `tool_calls`, execute each tool call.
-3. Send tool outputs back as `role: "tool"` messages.
-4. Read final assistant answer.
-
-### Request (continuation)
+When `finish_reason` is `tool_calls`, run each call, then send the assistant message unchanged followed by one `role: "tool"` message per call, matched by `tool_call_id`. Send `tools` again.
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "messages": [
     { "role": "user", "content": "What is the weather in Seattle?" },
     {
@@ -57,16 +53,14 @@ Use these patterns to keep tool-calling deterministic and debuggable.
 }
 ```
 
-## Pattern 2: Responses loop
+</Tab>
+<Tab title="Responses">
 
-For `/v1/responses`, model tool calls appear as output items of type `function_call`.
-Then send a follow-up request with `function_call_output` input items.
-
-### Request (follow-up)
+Calls arrive as output items of type `function_call`. Send the call item back as input, followed by a `function_call_output` item with the same `call_id`.
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "input": [
     {
       "type": "message",
@@ -88,9 +82,7 @@ Then send a follow-up request with `function_call_output` input items.
 }
 ```
 
-## Endpoint selection
+</Tab>
+</Tabs>
 
-- Prefer `/v1/chat/completions` if you already use OpenAI-style message loops.
-- Prefer `/v1/responses` if your app is standardized on the Responses API.
-- Use `/v1/messages` if your app is Anthropic-native.
-
+Before you run a call, validate its arguments; see [Tool Calling Safety](./tool-calling-safety).

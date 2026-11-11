@@ -1,0 +1,49 @@
+import { useTranslations } from "@/i18n/react";
+import type { PageMetadata } from "@/lib/seo/metadataTypes";
+import type { RouteMetadataInput } from "@/lib/start/metadata";
+import Image from "@/components/image";
+import { MigrationGuide } from "@/components/(migrate)/MigrationGuide";
+import { buildMetadata } from "@/lib/seo";
+import { getTranslations } from "@/i18n/server";
+import type { PublicLocale } from "@/i18n/routing";
+
+export async function getMigrateMetadata({ params }: RouteMetadataInput): Promise<PageMetadata> {
+	const { locale } = params as { locale: PublicLocale };
+	const t = await getTranslations({ locale, namespace: "Content.migrate" });
+	return buildMetadata({ title: t("title"), description: t("description"), path: "/migrate", keywords: ["AI gateway migration", "migrate to Phaseo"] });
+}
+
+export function MigratePage() {
+	const t = useTranslations("Content.migrate");
+	return (
+		<div className="container mx-auto space-y-8 px-4 py-6 sm:space-y-10 sm:px-6 sm:py-10 lg:px-8">
+			<div className="flex flex-col gap-5 rounded-3xl border border-border/70 bg-background p-4 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+				<div className="space-y-2">
+					<h1 className="text-2xl font-bold sm:text-3xl">{t("heading")}</h1>
+					<p className="max-w-2xl text-muted-foreground">
+						{t("intro")}
+					</p>
+				</div>
+				<div className="flex h-14 w-fit items-center rounded-2xl border border-border/70 bg-muted/30 px-4">
+					<Image
+						src="/wordmark_light.svg"
+						alt="Phaseo"
+						width={142}
+						height={36}
+						className="h-8 w-auto dark:hidden"
+						priority
+					/>
+					<Image
+						src="/wordmark_dark.svg"
+						alt="Phaseo"
+						width={142}
+						height={36}
+						className="hidden h-8 w-auto dark:block"
+						priority
+					/>
+				</div>
+			</div>
+			<MigrationGuide />
+		</div>
+	);
+}

@@ -4,15 +4,15 @@ title: "解析文档图像"
 description: "使用 Cohere Parse v5.0 从文档图像中提取有序文本、表格、图像和布局元数据。"
 ---
 
-如果需要的不只是普通 OCR，请使用 Parse 端点。它会保留页面顺序，并可返回 Markdown 或结构化的文本、图像和表格区块。
+将文档图像发送到 `POST /v1/parse`，即可按阅读顺序取回其中的文本，格式为 Markdown，或结构化的文本、图像和表格区块。如果只需要纯文本，请使用 [OCR](../api-reference/endpoint/ocr.mdx)。
 
 <Warning>
-  Cohere 的公开 Parse API 目前仅接受图像 URL 和 base64 图像数据 URI。发送前请将 PDF 页面转换为图像。每张图像不得超过 20 MB、5000 万像素或解码后 200 MB。
+  Parse 每个请求只接受一张图像，形式为 `http(s)` URL 或 base64 `data:image/...` URI。不接受 PDF：请先将每一页转换为图像。Cohere 限制每张图像不超过 20 MB、5000 万像素，解码后不超过 200 MB。
 </Warning>
 
-## 解析并返回 Markdown
+## 解析为 Markdown
 
-Markdown 会保留阅读顺序、以内嵌 HTML 的形式呈现表格，并将检测到的图像链接到页面元数据。
+Markdown 是默认的 `output_format`。它会保留阅读顺序，以 HTML 内联表格，并将检测到的图像链接到页面上的元数据。
 
 <CodeGroup>
 ```bash cURL
@@ -73,6 +73,8 @@ print(response.json()["pages"][0]["markdown"]["content"])
 
 ## 返回结构化区块
 
-将 `output_format` 设为 `blocks`，即可接收按顺序排列的文本、图像和表格区域。图像和表格区块会在可用时包含像素坐标和归一化边界框。
+将 `output_format` 设为 `blocks`，即可获得按顺序排列的文本、图像和表格区域。图像和表格区块在可用时会包含像素边界框和归一化边界框。
 
-Parse 按页计量。供应商报告计费页数时，响应会包含 Cohere 元数据和规范化的 `usage.input_pages` 值。Cohere 目前提供免费的限速评估 API，尚未公布 Parse 的生产环境费率。
+## Parse 如何计费
+
+Parse 用量按页计量。当提供商报告计费页数时，响应会包含 Cohere 的元数据和归一化的 `usage.input_pages` 值。Cohere 目前提供免费且有速率限制的评估 API 访问，尚未公布生产环境的 Parse API 费率。

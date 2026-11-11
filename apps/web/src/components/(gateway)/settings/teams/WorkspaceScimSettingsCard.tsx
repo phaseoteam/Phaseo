@@ -1,7 +1,5 @@
-"use client";
-
 import * as React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { Check, Clipboard, KeyRound, Loader2, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -16,7 +14,7 @@ import {
 	revokeWorkspaceScimTokenAction,
 	updateWorkspaceScimSettingsAction,
 	type WorkspaceScimSettings,
-} from "@/app/(dashboard)/settings/teams/actions";
+} from "@/features/settings/teams/actions";
 
 const SCIM_BASE_URL = "https://phaseo.app/scim/v2";
 
@@ -30,7 +28,7 @@ export default function WorkspaceScimSettingsCard({ workspaceId, canEdit, previe
 	const [label, setLabel] = React.useState("Provisioning token");
 	const [newToken, setNewToken] = React.useState<string | null>(null);
 
-	const loadSettings = React.useCallback(() => getWorkspaceScimSettingsAction(workspaceId), [workspaceId]);
+	const loadSettings = React.useCallback(() => getWorkspaceScimSettingsAction({ data: workspaceId }), [workspaceId]);
 
 	React.useEffect(() => {
 		if (preview) return;
@@ -46,7 +44,7 @@ export default function WorkspaceScimSettingsCard({ workspaceId, canEdit, previe
 	async function updateEnabled(enabled: boolean) {
 		setWorking(true);
 		try {
-			await updateWorkspaceScimSettingsAction(workspaceId, enabled);
+			await updateWorkspaceScimSettingsAction({ data: { workspaceId, enabled } });
 			await refresh();
 			toast.success(enabled ? t("scim.enabled") : t("scim.disabled"));
 		} catch (error) {
@@ -57,7 +55,7 @@ export default function WorkspaceScimSettingsCard({ workspaceId, canEdit, previe
 	async function createToken() {
 		setWorking(true);
 		try {
-			const created = await createWorkspaceScimTokenAction(workspaceId, label.trim() || "Provisioning token");
+			const created = await createWorkspaceScimTokenAction({ data: { workspaceId, label: label.trim() || "Provisioning token" } });
 			setNewToken(created.token);
 			await refresh();
 			toast.success(t("scim.tokenCreated"));
@@ -69,7 +67,7 @@ export default function WorkspaceScimSettingsCard({ workspaceId, canEdit, previe
 	async function revokeToken(tokenId: string) {
 		setWorking(true);
 		try {
-			await revokeWorkspaceScimTokenAction(workspaceId, tokenId);
+			await revokeWorkspaceScimTokenAction({ data: { workspaceId, tokenId } });
 			setNewToken(null);
 			await refresh();
 			toast.success(t("scim.tokenRevoked"));

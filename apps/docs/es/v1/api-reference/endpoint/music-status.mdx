@@ -6,9 +6,12 @@ openapi: "/es/openapi/v1/openapi.localized.yaml GET /music/generate/{music_id}"
 description: "Recupera una generación musical con su ID de solicitud de Phaseo."
 ---
 
-Recupera un resultado musical creado con `POST /music/generate`. Este endpoint devuelve el resultado normalizado guardado cuando el proveedor terminó y consulta al proveedor de origen si el trabajo sigue siendo asíncrono.
+Pasa el `id` que devolvió [`POST /v1/music/generate`](./music-generate.mdx), no su `nativeResponseId`. Phaseo devuelve el resultado guardado cuando la generación ha terminado, y consulta al proveedor por ti mientras sigue en curso.
 
-## Estructura de la respuesta
+```bash
+curl https://api.phaseo.app/v1/music/generate/req_01JY6MUSIC123 \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
 
 ```json
 {
@@ -37,10 +40,4 @@ Recupera un resultado musical creado con `POST /music/generate`. Este endpoint d
 }
 ```
 
-## Notas
-
-- `status` puede ser: `queued`, `in_progress`, `completed` o `failed`.
-- `usage` se incluye cuando termina la generación.
-- Envía el `id` de Phaseo que devuelve `POST /music/generate`, no `nativeResponseId`.
-- Este endpoint gestiona internamente las API de estado y recuperación específicas de cada proveedor.
-
+`status` es `queued`, `in_progress`, `completed` o `failed`. `usage` se incluye cuando la generación se ha completado.

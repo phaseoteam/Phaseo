@@ -1,7 +1,8 @@
 CREATE OR REPLACE FUNCTION public.gateway_deduct_and_check_top_up_once (
   p_workspace_id uuid,
   p_request_id   text,
-  p_cost_nanos   bigint
+  p_cost_nanos   bigint,
+  p_key_id       uuid   DEFAULT NULL::uuid
 )
   RETURNS TABLE (
     applied                  boolean,
@@ -36,20 +37,24 @@ begin
     raise exception 'invalid_cost_nanos';
   end if;
 
+  -- key_id attributes the charge to its key (and department) even when its
+  -- request row never lands.
   insert into public.gateway_request_charges (
     workspace_id,
     request_id,
     cost_nanos,
     status,
     created_at,
-    updated_at
+    updated_at,
+    key_id
   ) values (
     p_workspace_id,
     p_request_id,
     p_cost_nanos,
     'applying',
     now(),
-    now()
+    now(),
+    p_key_id
   )
   on conflict (workspace_id, request_id) do nothing;
 
@@ -136,6 +141,12 @@ begin
   set status = 'applied',
       deducted_status = v_status,
       auto_top_up_required = v_status = 'top_up_required',
+      -- deduct_and_check_top_up returns json, so the record nests it under the function name.
+      overdraft_nanos = case
+        when coalesce(coalesce(v_result_json -> 'deduct_and_check_top_up', v_result_json) ->> 'overdraft_nanos', '') ~ '^[0-9]+$'
+          then (coalesce(v_result_json -> 'deduct_and_check_top_up', v_result_json) ->> 'overdraft_nanos')::bigint
+        else 0::bigint
+      end,
       updated_at = now()
   where workspace_id = p_workspace_id
     and request_id = p_request_id;
@@ -151,10 +162,10 @@ begin
 end;
 $function$;
 
-GRANT EXECUTE ON FUNCTION "public"."gateway_deduct_and_check_top_up_once"(uuid, text, bigint) TO "service_role";
+GRANT EXECUTE ON FUNCTION "public"."gateway_deduct_and_check_top_up_once"(uuid, text, bigint, uuid) TO "service_role";
 
-REVOKE ALL ON FUNCTION "public"."gateway_deduct_and_check_top_up_once"(uuid, text, bigint) FROM "postgres";
+REVOKE ALL ON FUNCTION "public"."gateway_deduct_and_check_top_up_once"(uuid, text, bigint, uuid) FROM "postgres";
 
-GRANT EXECUTE ON FUNCTION "public"."gateway_deduct_and_check_top_up_once"(uuid, text, bigint) TO "postgres";
+GRANT EXECUTE ON FUNCTION "public"."gateway_deduct_and_check_top_up_once"(uuid, text, bigint, uuid) TO "postgres";
 
-REVOKE ALL ON FUNCTION "public"."gateway_deduct_and_check_top_up_once"(uuid, text, bigint) FROM PUBLIC, "anon", "authenticated";
+REVOKE ALL ON FUNCTION "public"."gateway_deduct_and_check_top_up_once"(uuid, text, bigint, uuid) FROM PUBLIC, "anon", "authenticated";

@@ -4,7 +4,7 @@ import { ArrowLeft, ArrowUpRight, ShieldCheck } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Callout } from "@/components/ui/callout";
 import { trustLastReviewed } from "@/lib/trust-centre";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 export function TrustDocument({
 	title,

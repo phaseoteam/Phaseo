@@ -151,7 +151,7 @@ describe("finishing a reply", () => {
 	it("posts the whole answer when its stream never started", async () => {
 		const ts = await postReply(slack.client("xoxb-1-test-token"), { channel: "C0CHANNEL1", threadTs: "1792600000.000100", text: "Answer", footer: FOOTER });
 		expect(ts).toBe("1792600100.000001");
-		expect(slack.of("chat.postMessage")[0].args).toEqual({ channel: "C0CHANNEL1", thread_ts: "1792600000.000100", markdown_text: `Answer\n\n_${FOOTER_TEXT}_` });
+		expect(slack.of("chat.postMessage")[0].args).toEqual({ channel: "C0CHANNEL1", thread_ts: "1792600000.000100", markdown_text: `Answer\n\n_${FOOTER_TEXT}_`, unfurl_links: false, unfurl_media: false });
 		slack.failures.set("chat.postMessage", ["channel_not_found"]);
 		await expect(postReply(slack.client("xoxb-1-test-token"), { channel: "C0CHANNEL1", threadTs: "1792600000.000100", text: "Answer", footer: null })).rejects.toBeInstanceOf(SlackPostError);
 	});

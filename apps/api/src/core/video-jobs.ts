@@ -31,6 +31,9 @@ export type VideoJobMeta = {
 	appId?: string | null;
 	model?: string | null;
 	seconds?: number | null;
+	// The provider picked the length (e.g. Wan 3.0 smart duration). `seconds` then holds the
+	// maximum we reserved for, and completion bills the length the provider reports.
+	autoDuration?: boolean | null;
 	outputCount?: number | null;
 	resolution?: string | null;
 	aspectRatio?: string | null;
@@ -50,6 +53,9 @@ export type VideoJobMeta = {
 	googleOperationName?: string | null;
 	googleVideoUri?: string | null;
 	googleVideoMimeType?: string | null;
+	// Token counts Google reported for a Gemini Interactions video, priced at
+	// finalization alongside the output seconds (input and thinking tokens).
+	googleUsageMeters?: Record<string, number> | null;
 	durationMs?: number | null;
 	latencyMs?: number | null;
 	generationMs?: number | null;
@@ -153,6 +159,7 @@ function parseVideoJobMeta(value: unknown): VideoJobMeta | null {
 	if (typeof source.app_id === "string") out.appId = source.app_id;
 	if (typeof source.model === "string") out.model = source.model;
 	if (typeof source.seconds === "number") out.seconds = source.seconds;
+	if (typeof source.autoDuration === "boolean") out.autoDuration = source.autoDuration;
 	const outputCount = toNonNegativeInteger(source.outputCount ?? source.output_count);
 	if (outputCount != null && outputCount > 0) out.outputCount = outputCount;
 	if (typeof source.resolution === "string") out.resolution = source.resolution;
@@ -200,6 +207,11 @@ function parseVideoJobMeta(value: unknown): VideoJobMeta | null {
 	if (typeof source.google_video_uri === "string") out.googleVideoUri = source.google_video_uri;
 	if (typeof source.googleVideoMimeType === "string") out.googleVideoMimeType = source.googleVideoMimeType;
 	if (typeof source.google_video_mime_type === "string") out.googleVideoMimeType = source.google_video_mime_type;
+	if (source.googleUsageMeters && typeof source.googleUsageMeters === "object" && !Array.isArray(source.googleUsageMeters)) {
+		const meters = Object.entries(source.googleUsageMeters as Record<string, unknown>)
+			.filter((entry): entry is [string, number] => typeof entry[1] === "number" && Number.isFinite(entry[1]) && entry[1] >= 0);
+		if (meters.length > 0) out.googleUsageMeters = Object.fromEntries(meters);
+	}
 	if (typeof source.durationMs === "number") out.durationMs = source.durationMs;
 	if (typeof source.duration_ms === "number") out.durationMs = source.duration_ms;
 	if (typeof source.latencyMs === "number") out.latencyMs = source.latencyMs;

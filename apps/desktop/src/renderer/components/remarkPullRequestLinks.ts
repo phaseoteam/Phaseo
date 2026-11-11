@@ -8,7 +8,7 @@ const SKIPPED = new Set(["link", "linkReference", "code", "inlineCode", "html", 
 const VIDEO = /^https:\/\/github\.com\/(?:user-attachments\/assets\/[0-9a-f-]{36}|[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\/assets\/\d+\/[0-9a-f-]{36})$/iu;
 export const isGitHubVideoUpload = (url: string) => VIDEO.test(url);
 
-/** `#123` and full commit SHAs in plain text become links into the repository, the way GitHub renders them (T3's remarkPullRequestAutolinks). */
+/** `#123` and full commit SHAs in plain text become links into the repository, the way GitHub renders them. */
 export function autolinkText(value: string, repositoryUrl: string): MarkdownNode[] {
 	const nodes: MarkdownNode[] = [];
 	let last = 0;

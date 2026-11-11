@@ -6,39 +6,35 @@ description: "Replace a Cloudflare AI Gateway route with Phaseo while preserving
 icon: "/icons/brands/cloudflare.svg"
 ---
 
-Use this guide when your application already sends OpenAI-compatible requests through Cloudflare AI Gateway. Move the gateway boundary first, then recreate only the routing, caching, and observability behavior your production traffic actually needs.
+Replace the Cloudflare gateway URL and the provider key with `https://api.phaseo.app/v1` and a Phaseo key, and remove the `cf-aig-*` headers. The request payload stays the same.
 
-## What changes
-
-| Setting | Before | After |
+| Setting | Cloudflare AI Gateway | Phaseo |
 | --- | --- | --- |
-| Gateway URL | Account and gateway-specific Cloudflare URL | `https://api.phaseo.app/v1` |
-| Authentication | Cloudflare and provider credentials | `PHASEO_API_KEY` |
-| Routing policy | Cloudflare gateway configuration | Phaseo routing settings and presets |
-| Request visibility | Cloudflare analytics | Phaseo activity and request details |
+| Base URL | `gateway.ai.cloudflare.com/v1/<account_id>/<gateway_id>/<provider>`, or `api.cloudflare.com/client/v4/accounts/<account_id>/ai/v1` | `https://api.phaseo.app/v1` |
+| Authentication | Provider key, plus `cf-aig-authorization` or a Cloudflare API token | `PHASEO_API_KEY` as `Authorization: Bearer` |
+| Provider choice | One route per provider | One base URL; the model ID picks the model and routing picks the provider |
+| Gateway headers | `cf-aig-*` | Removed, or mapped as in the table below |
+| Request visibility | Cloudflare analytics | Phaseo request logs and request details |
 
-<Steps>
-<Step title="Inventory the current gateway configuration">
-
-Record the Cloudflare gateway URL, provider routes, custom headers, cache rules, retry behavior, and analytics your application relies on. This separates required behavior from settings that no longer need to move.
-
-</Step>
-
-<Step title="Replace the endpoint and credentials">
-
-Keep the request payload unchanged where possible and update the OpenAI-compatible client boundary.
+## Switch the client
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// Before:
+// new OpenAI({
+//   apiKey: process.env.OPENAI_API_KEY,
+//   baseURL: `https://gateway.ai.cloudflare.com/v1/${accountId}/${gatewayId}/openai`,
+//   defaultHeaders: { "cf-aig-authorization": `Bearer ${process.env.CF_AIG_TOKEN}` },
+// });
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
 });
 
 const response = await client.chat.completions.create({
-  model: "openai/gpt-4.1-mini",
+  model: "openai/gpt-6-astra",
   messages: [{ role: "user", content: "Reply with: migration ready" }],
 });
 ```
@@ -58,39 +54,40 @@ curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
+    "model": "openai/gpt-6-astra",
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+An `/anthropic` route moves to the Anthropic SDK setup in [Migrating from Anthropic SDK](./from-anthropic). Workers AI binding calls (`env.AI.run(model, input, { gateway })`) aren't HTTP clients: replace them with `fetch` or the OpenAI SDK against Phaseo, and only for models that `GET /v1/models?format=openai` lists. Store `PHASEO_API_KEY` as a Worker secret, not in `wrangler` config.
 
-<Step title="Recreate routing and shared defaults">
+## Map gateway features
 
-Move stable provider restrictions, prompt defaults, and generation parameters into [Presets](../guides/presets). Configure provider ranking and fallback behavior through [Routing and Fallbacks](../guides/routing-and-fallbacks).
+Cloudflare settings don't transfer automatically. Decide for each one whether it belongs in Phaseo, the application, or the edge layer.
 
-Cloudflare cache and analytics settings do not transfer automatically. Decide explicitly whether each behavior belongs in Phaseo, your application, or your edge layer.
+| Cloudflare AI Gateway | On Phaseo |
+| --- | --- |
+| Fallback chains | `models` array, provider fallback, or [dynamic routes](../guides/routing-and-fallbacks). Model fallbacks trigger on `429`, `500`, `502`, `503` and `504`, never on request errors. |
+| `dynamic/<route>` model strings | Dynamic routes attached to API keys; send a real model ID. |
+| `cloudflare/auto` | `phaseo/auto` ([Auto Routing](../guides/auto-routing), alpha); can't be combined with `models`. |
+| Caching (`cf-aig-cache-ttl`, `cf-aig-skip-cache`, `cf-aig-cache-key`) | No response cache. Cache in the app if needed; [prompt caching](../guides/prompt-caching) still cuts input cost. |
+| `cf-aig-metadata` | `X-Phaseo-Metadata` [labels](../guides/request-labels): up to 32, keys match `[A-Za-z0-9_.:-]` (64 characters), values are strings of up to 256. Convert numbers and booleans. |
+| `cf-aig-collect-log` | Workspace logging policy, or `provider.require_zero_data_retention`, which also limits routing to ZDR providers. |
+| `cf-aig-request-timeout`, `cf-aig-max-attempts` | No per-request control. Built-in provider fallback plus client backoff. |
+| `cf-aig-session-id` | `session_id` body field. |
+| `cf-aig-custom-cost` | No equivalent. |
+| Rate limiting, spend limits | Rate limit policies, key limits, and workspace, key, and department budgets. See [Limits](../api-reference/limits). |
+| Guardrails and DLP | Key and member guardrails scan requests for prompt injection and PII. Responses aren't scanned; call `/v1/moderations` for content safety. |
+| Logs and analytics | Request logs, request details with provider attempts and pricing, and [observability destinations](../guides/integrations/observability). |
+| Workers AI `@cf/...` models | Only if `GET /v1/models?format=openai` lists them; otherwise keep those calls on Workers AI. |
 
-</Step>
+## Test and roll out
 
-<Step title="Validate before cutover">
+Test non-streaming, streaming, errors, tools, and structured outputs as the app uses them, and compare latency, output, token usage, and cost before moving traffic gradually. Before cutover:
 
-Test non-streaming, streaming, errors, tools, and structured outputs as applicable. Compare latency, output, token usage, and cost before moving traffic gradually.
-
-</Step>
-</Steps>
-
-## Migration checklist
-
-- Cloudflare-specific gateway URLs and headers have been removed.
-- Production model IDs are verified against `GET /v1/models`.
-- Required cache behavior has been deliberately recreated or retired.
-- Activity and request details provide the visibility your team needs.
-- Rollback remains a configuration-only endpoint and key change.
-
-## Next steps
-
-- [Presets](../guides/presets)
-- [Routing and Fallbacks](../guides/routing-and-fallbacks)
-- [Observability](../guides/integrations/observability)
+- every `gateway.ai.cloudflare.com` and `api.cloudflare.com/.../ai/v1` URL and every `cf-aig-*` header is gone; a leftover route keeps traffic on the old path;
+- production model IDs are in `GET /v1/models?format=openai`;
+- each cache behavior has been recreated in the app or deliberately dropped;
+- request logs give the team the visibility it needs;
+- rollback is still only a base URL and key change.

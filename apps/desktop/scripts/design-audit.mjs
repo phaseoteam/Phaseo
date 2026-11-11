@@ -12,7 +12,7 @@ let activeTaskFixture,taskActionCalls=0;
 let holdProposals=false,pendingProposals,proposalCalls=0,emptyProposals=false,failProposalLink=false,proposalLinks=[],proposalCursors=[],passingProposals=false;
 const proposalFixture={repository:'phaseoteam/Phaseo',fetchedAt:'2026-10-04T00:00:00Z',limitReached:false,requests:[{number:2702,title:'Keep <untrusted> 世界 and review the desktop changes',url:'https://github.com/phaseoteam/Phaseo/pull/2702',author:'fixture',draft:true,head:'feature/desktop',base:'main',updatedAt:'2026-10-04T00:00:00Z',review:'required',checks:'pending'},{number:2703,title:'Ready for review',url:'https://github.com/phaseoteam/Phaseo/pull/2703',author:'fixture',draft:false,head:'feature/next',base:'main',updatedAt:'2026-10-04T00:00:00Z',review:'approved',checks:'passing'}]};
 async function auditProposals(window,output,width,theme){
- // The surface is the T3-style pull request list (views/pullRequests); it reads the project of the chat it sits beside.
+ // The surface is the pull request list (views/pullRequests); it reads the project of the chat it sits beside.
  const js=code=>window.webContents.executeJavaScript(code);
  const until=async(code,message)=>{for(let attempt=0;!await js(code);attempt++){if(attempt>50)throw Error(message);await new Promise(resolve=>setTimeout(resolve,20));}};
  const list='section[aria-label="Pull requests"]';
@@ -459,7 +459,7 @@ try {
           if(!await window.webContents.executeJavaScript(`document.querySelector('select[aria-label="Initial reasoning effort"]').value===''`))throw Error('Changing harness must clear prior effort');
         }
         if(page==="Terminals"){
-          // Saved transcripts are not listed any more: as in T3 Code a terminal closes when its process exits.
+          // Saved transcripts are not listed any more: a terminal closes when its process exits.
           // The surface opens empty with a New terminal action, and one terminal fills it with a floating action cluster.
           for(let attempt=0;;attempt++){if(await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.terminal-surface button')).some(button=>button.textContent.startsWith('New terminal'))`))break;if(attempt>50)throw new Error("Terminal empty state did not render.");await new Promise(resolve=>setTimeout(resolve,100));}
           await window.webContents.executeJavaScript(`Array.from(document.querySelectorAll('.terminal-surface button')).find(button=>button.textContent.startsWith('New terminal')).click()`);
@@ -615,7 +615,7 @@ try {
           await new Promise(resolve => setTimeout(resolve, 200));
           const conversationColumns = await window.webContents.executeJavaScript(`(()=>{const pane=document.querySelector('.task-detail').getBoundingClientRect(),viewport=document.querySelector('.task-messages'),column=viewport.firstElementChild.getBoundingClientRect(),composer=document.querySelector('.task-composer').getBoundingClientRect(),row=document.querySelector('.task-history-list .task-row');return {paneWidth:pane.width,columnWidth:column.width,composerWidth:composer.width,columnLeft:column.left,composerLeft:composer.left,composerRight:composer.right,paneLeft:pane.left,paneRight:pane.right,rowPadding:getComputedStyle(row).padding,rowGap:getComputedStyle(row).gap}})()`);
           if(conversationColumns.columnWidth>801||conversationColumns.composerWidth>801||Math.abs(conversationColumns.columnLeft-conversationColumns.composerLeft)>1||Math.abs(conversationColumns.columnWidth-conversationColumns.composerWidth)>1||conversationColumns.composerLeft<conversationColumns.paneLeft+23||conversationColumns.composerRight>conversationColumns.paneRight-23||conversationColumns.rowPadding!=='10px 12px'||conversationColumns.rowGap!=='6px')throw new Error('Conversation columns or task row spacing is inconsistent: '+JSON.stringify(conversationColumns));
-          const messageLayout = await window.webContents.executeJavaScript(`(()=>{const message=document.querySelector('.message-markdown'),heading=message?.querySelector('h2'),paragraph=heading?.nextElementSibling;return {whiteSpace:message&&getComputedStyle(message).whiteSpace,headingGap:heading&&paragraph?paragraph.getBoundingClientRect().top-heading.getBoundingClientRect().bottom:null}})()`);
+          const messageLayout = await window.webContents.executeJavaScript(`(()=>{const message=document.querySelector('.message-markdown:not(.message-user .message-markdown)'),heading=message?.querySelector('h2'),paragraph=heading?.nextElementSibling;return {whiteSpace:message&&getComputedStyle(message).whiteSpace,headingGap:heading&&paragraph?paragraph.getBoundingClientRect().top-heading.getBoundingClientRect().bottom:null}})()`);
           if (messageLayout.whiteSpace !== "normal" || messageLayout.headingGap === null || messageLayout.headingGap > 20) throw new Error("Markdown conversation spacing is inconsistent.");
           for (let attempt = 0; ; attempt++) {
             const highlighted = await window.webContents.executeJavaScript(`(()=>{const tokens=Array.from(document.querySelectorAll('.message-code-block .code-token'));return tokens.length>0&&new Set(tokens.map(token=>getComputedStyle(token).color)).size>1})()`);

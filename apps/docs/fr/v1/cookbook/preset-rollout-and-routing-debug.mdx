@@ -1,112 +1,104 @@
 ---
 title: "Déployer des préréglages et déboguer le routage"
-sidebarTitle: "Déployer et déboguer le routage"
 icon: "route"
-description: "Utilisez des préréglages pour uniformiser les valeurs par défaut des prompts et du routage, puis examinez les détails des requêtes pour comprendre le choix de routage de Phaseo."
+description: "Utilisez des préréglages pour uniformiser les valeurs par défaut des prompts et du routage, puis examinez le détail des requêtes pour comprendre pourquoi Phaseo a routé une requête ainsi."
 ---
 
-Utilisez cette recette pour partager un préréglage entre plusieurs services au lieu de recopier partout les mêmes prompts, modèles et valeurs de routage.
+Faites passer plusieurs services sur un même préréglage pour qu’ils partagent un prompt, un modèle et des règles de fournisseur, puis utilisez les journaux de requêtes pour expliquer où chaque requête est allée. À la fin, vos appelants envoient `"model": "@release-summary"` et leur entrée, et vous pouvez déployer un changement de règle un appelant à la fois.
 
-## Objectif
+La forme de requête est prête pour la production. [Préréglages](../guides/presets) explique comment les réglages d’un préréglage se fusionnent avec la requête ; cette recette porte sur le déploiement.
 
-- Uniformiser les valeurs par défaut des prompts et paramètres.
-- Limiter les fournisseurs autorisés lors d’un déploiement ou pour respecter une exigence de conformité.
-- Conserver suffisamment de contexte pour expliquer le choix de routage d’une requête.
+## Faire passer un appelant sur un préréglage
 
-## 1. Créer le préréglage
+<Steps>
+<Step title="Créer le préréglage">
 
-Dans **Tableau de bord -> Paramètres -> Préréglages**, créez un préréglage avec :
+Dans **Paramètres → Préréglages**, créez `release-summary` avec un prompt système, les modèles approuvés, les préférences de fournisseur et des paramètres par défaut comme `temperature`. Ou avec une clé de gestion :
 
-- un nom et un slug explicites
-- un prompt système
-- les modèles approuvés
-- les préférences de fournisseur
-- des valeurs de paramètre par défaut, comme `temperature`
+```bash
+curl https://api.phaseo.app/v1/presets \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"@release-summary","config":{"model":"anthropic/claude-sonnet-5.5"}}'
+```
 
-Utilisez le slug du préréglage dans votre code d’appel afin de réutiliser la même politique de requête dans différents environnements.
+</Step>
+<Step title="L’appeler par son nom">
 
-## 2. Garder un corps de requête réduit
-
-Le principal avantage des préréglages est que l’appelant n’a plus à répéter les mêmes valeurs par défaut de routage et de prompts dans chaque requête.
+Envoyez le préréglage comme `model`. Il n’existe pas de champ `preset` séparé.
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-sonnet-4-5",
+    "model": "@release-summary",
     "input": "Generate a release summary for the last 24 hours.",
-    "preset": "release-summary"
+    "meta": true
   }'
 ```
 
-```typescript TypeScript SDK
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "anthropic/claude-sonnet-4-5",
+  model: "@release-summary",
   input: "Generate a release summary for the last 24 hours.",
-  preset: "release-summary",
+  meta: true,
 });
 
-console.log(response.output_text);
+console.log(response.model, response.meta?.routing);
 ```
 
-```python Python SDK
+```python Python
+import os
+
 from phaseo import Phaseo
 
-client = Phaseo(api_key="YOUR_API_KEY")
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
 response = client.generate_response(
     {
-        "model": "anthropic/claude-sonnet-4-5",
+        "model": "@release-summary",
         "input": "Generate a release summary for the last 24 hours.",
-        "preset": "release-summary",
+        "meta": True,
     }
 )
 
-print(response.get("output_text"))
+print(response.get("model"), response["meta"]["routing"]["selected_provider"])
 ```
 </CodeGroup>
 
-## 3. Comprendre les changements apportés par le préréglage
+Dans la réponse, `model` est le modèle qui a répondu, et `meta.routing.selected_provider` le fournisseur.
 
-Le préréglage est appliqué avant le routage des fournisseurs :
+</Step>
+<Step title="Vérifier ce que le préréglage a appliqué">
 
-- les paramètres manquants de la requête sont complétés à partir du préréglage
-- le prompt du préréglage est ajouté au début de la couche système
-- les préférences de fournisseur réduisent la liste des fournisseurs disponibles avant leur classement
-- les restrictions de modèle sont vérifiées en amont au lieu de modifier silencieusement le routage
+Ouvrez la requête dans **Paramètres → Utilisation → Journaux**. Vous y voyez les valeurs par défaut du préréglage qui ont été appliquées. Un modèle hors des modèles autorisés du préréglage échoue avec `validation_error` (mot-clé `preset_model_not_allowed`) au lieu d’être rerouté.
 
-## 4. Déboguer le résultat du routage
+</Step>
+</Steps>
 
-Si une requête n’est pas routée comme prévu, ouvrez-la dans **Gateway -> Utilisation** et examinez :
+## Expliquer une décision de routage
 
-- les fournisseurs pris en compte
-- les candidats classés
-- les facteurs de routage associés à chaque candidat
-- les blocages liés aux règles de l’espace de travail ou aux garde-fous
+Quand une requête n’a pas été routée comme prévu, dépliez **Observabilité du routage** sur la requête dans **Paramètres → Utilisation → Journaux**. Cette section répond à trois questions :
 
-C’est le moyen le plus rapide de savoir :
+| Question | Où regarder |
+| --- | --- |
+| Pourquoi un fournisseur a-t-il été écarté ? | Les fournisseurs exclus avant le classement, avec la raison, et ceux rétrogradés en raison de leur état de déploiement ou de routage |
+| Pourquoi la requête a-t-elle été bloquée ? | Les blocages par une règle de l’espace de travail ou par un garde-fou sur la requête |
+| Pourquoi ce fournisseur l’a-t-il emporté ? | Le score final de chaque fournisseur classé et les facteurs qui l’expliquent |
 
-- pourquoi un fournisseur a été ignoré
-- pourquoi une requête a été bloquée
-- pourquoi une option moins coûteuse ou moins latente est arrivée en tête
+[Expliquer une décision de routage](../guides/routing-and-fallbacks#explain-a-routing-decision) décrit chaque champ.
 
-## 5. Modèle opérationnel
+## Déployer un changement de règle
 
-Suivez ce modèle de déploiement lorsque vous modifiez le comportement du routage :
+1. Publiez le changement comme nouvelle version du préréglage, ou créez un nouveau slug pour une règle très différente.
+2. Faites passer un appelant à faible risque dessus, par exemple en le faisant pointer vers `@release-summary@v4` ou vers un libellé `canary`.
+3. Comparez le détail de ses requêtes et ses tendances d’utilisation avec celles des autres appelants.
+4. Faites passer les autres appelants une fois que le routage correspond à vos attentes. Pour revenir en arrière, faites pointer le libellé vers la version précédente.
 
-1. Créez un nouveau slug de préréglage pour la nouvelle règle.
-2. Faites passer un appel à faible risque au nouveau préréglage.
-3. Examinez les détails des requêtes et les tendances d’activité.
-4. Élargissez le déploiement uniquement lorsque les résultats de routage sont conformes aux attentes.
-
-## Guides associés
-
-- [Préréglages](../guides/presets.mdx)
-- [Routage et solutions de repli](../guides/routing-and-fallbacks.mdx)
-- [Gestion des erreurs](../api-reference/errors.mdx)
+[Versionner et revenir en arrière](../guides/presets#version-and-roll-back) présente les versions et les libellés. Pour les ajustements au niveau de la requête qui n’ont pas leur place dans un préréglage, voir [Épingler ou ignorer des fournisseurs](./pin-or-ignore-providers-per-request).

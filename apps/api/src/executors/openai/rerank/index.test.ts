@@ -208,6 +208,32 @@ describe("openai rerank executor", () => {
 		expect(priced.totalNanos).toBe(6_000_000);
 	});
 
+	it("bills Cohere Rerank v5 on billed input tokens", async () => {
+		setupRuntimeFromEnv({ COHERE_API_KEY: "test-cohere-key" } as any);
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.cohere.example/v2/rerank",
+			response: jsonResponse({
+				id: "rerank_v5",
+				results: [{ index: 1, relevance_score: 0.84 }, { index: 0, relevance_score: 0.2 }],
+				meta: { api_version: { version: "2" }, billed_units: { input_tokens: 192 } },
+			}),
+		}]);
+		const documents = Array.from({ length: 250 }, (_, index) => `doc ${index}`);
+		const result = await executor(buildArgs({ ir: { model: "cohere/rerank-v5.0-pro", documents } }));
+		mock.restore();
+
+		const usage = (result as any).bill.usage;
+		expect(usage).toMatchObject({ requests: 1, input_text_tokens: 192 });
+		expect(usage.search_units).toBeUndefined();
+		// Rerank 5 Pro: $0.05 per 1M tokens (https://cohere.com/blog/rerank-5).
+		const card = {
+			provider: "cohere", model: "cohere/rerank-v5.0-pro", endpoint: "text.rerank", currency: "USD",
+			effective_from: null, effective_to: null, version: null,
+			rules: [{ id: "in", pricing_plan: "standard", meter: "input_text_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: "0.05", currency: "USD", match: [], priority: 0 }],
+		} as any;
+		expect(calculatePricing(usage, card, { model: "cohere/rerank-v5.0-pro" }).totalNanos).toBe(9_600);
+	});
+
 	it("prefers provider_model_slug when present", async () => {
 		setupRuntimeFromEnv({
 			FIREWORKS_API_KEY: "test-fireworks-key",

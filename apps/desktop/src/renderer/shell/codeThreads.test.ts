@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { TaskOverview } from "../../shared/workspaceOverview";
-import { codeSections, createReturnTracker, isWorking, withBackgroundWork } from "./codeThreads";
+import { codeFolders, codeSections, createReturnTracker, isWorking, scopeLabel, withBackgroundWork } from "./codeThreads";
 
 const now = Date.parse("2026-10-16T12:00:00Z");
 const iso = (offset: number) => new Date(now + offset).toISOString();
@@ -55,5 +55,38 @@ describe("the Working section", () => {
 		tracker.observe([]);
 		expect(tracker.returnedAt("a")).toBeUndefined();
 		tracker.observe(null);
+	});
+});
+
+describe("project folders, archived projects and the project filter", () => {
+	const many = [
+		{ id: "a", name: "App", directory: "/app", createdAt: iso(-1e9) },
+		{ id: "b", name: "Blog", directory: "/blog", createdAt: iso(-1e9) },
+		{ id: "a-tree", name: "App", directory: "/app-tree", createdAt: iso(-1e9), worktree: { sourceProjectId: "a", branch: "fix", baseCommit: "c" } },
+		{ id: "old", name: "Old", directory: "/old", createdAt: iso(-1e9), archived: true },
+		{ id: "old-tree", name: "Old", directory: "/old-tree", createdAt: iso(-1e9), worktree: { sourceProjectId: "old", branch: "x", baseCommit: "c" } },
+	];
+	const chats = [
+		task("a1", { projectId: "a", status: "idle", lastUserMessageAt: iso(-3000) }),
+		task("tree", { projectId: "a-tree", status: "idle", lastUserMessageAt: iso(-1000) }),
+		task("b1", { projectId: "b", status: "idle", lastUserMessageAt: iso(-2000) }),
+		task("gone", { projectId: "old", status: "idle" }),
+		task("gone-tree", { projectId: "old-tree", status: "idle" }),
+	];
+
+	it("keeps archived projects' chats, worktrees included, out of the sidebar", () => {
+		expect(codeSections(chats, many, "", now).active.map(chat => chat.id).sort()).toEqual(["a1", "b1", "tree"]);
+	});
+
+	it("filters by any number of projects, and still reads the old single id", () => {
+		expect(codeSections(chats, many, ["b", "a-tree"], now).active.map(chat => chat.id).sort()).toEqual(["b1", "tree"]);
+		expect(codeSections(chats, many, "b", now).active.map(chat => chat.id)).toEqual(["b1"]);
+		expect(codeSections(chats, many, [], now).active).toHaveLength(3);
+		expect([scopeLabel([]), scopeLabel([{ name: "App" }]), scopeLabel([{ name: "App" }, { name: "Blog" }])]).toEqual(["All projects", "App", "2 projects"]);
+	});
+
+	it("groups active chats by project, a worktree's under its project, with the latest message's folder first", () => {
+		const folders = codeFolders(codeSections(chats, many, "", now).active, many);
+		expect(folders.map(folder => [folder.project.id, folder.tasks.map(chat => chat.id).sort()])).toEqual([["a", ["a1", "tree"]], ["b", ["b1"]]]);
 	});
 });

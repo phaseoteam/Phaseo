@@ -1,14 +1,24 @@
 import { useEffect } from "react";
 import useSWR, { mutate } from "swr";
-import type { Harness, ModelOption } from "../../shared/workspace";
+import type { Harness, ModelAccess, ModelOption } from "../../shared/workspace";
 import { BACKGROUND_REFRESH_MS } from "./useBackgroundRefresh";
+import { providerHealthMs } from "./providerHealth";
 
 const PHASEO_POLL_MS = 5 * 60 * 1000;
 const modelsKey = (harness: Harness, accountId?: string, projectId?: string) => ["workspace-models", harness, accountId ?? "", projectId ?? ""];
 
 /** Re-read a catalog after a refresh; the main process caches Phaseo's on disk and refreshes it in the background. */
 export function revalidateModels(harness: Harness, accountId?: string) {
+	// What workspace rules hide is saved with Phaseo's list, so it is re-read with it.
+	if (harness === "phaseo") void mutate(key => Array.isArray(key) && key[0] === "workspace-model-access" && (accountId === undefined || key[1] === accountId));
 	return mutate(key => Array.isArray(key) && key[0] === "workspace-models" && key[1] === harness && (accountId === undefined || key[2] === accountId));
+}
+
+/** What the Phaseo account's workspace rules leave out of its model list, from the list's last download. */
+export function useModelAccess(accountId?: string): ModelAccess | undefined {
+	const api = window.phaseoDesktop?.workspace;
+	const { data } = useSWR<ModelAccess | undefined>(api && accountId ? ["workspace-model-access", accountId] : null, () => api!.modelAccess(accountId!), { dedupingInterval: PHASEO_POLL_MS, refreshInterval: PHASEO_POLL_MS, revalidateOnFocus: false });
+	return data;
 }
 
 /** Fetch a catalog now, skipping the cache's freshness window. */
@@ -25,8 +35,9 @@ export function useModels(harness: Harness, accountId?: string, projectId?: stri
 	const { data, error } = useSWR<ModelOption[]>(
 		available ? modelsKey(harness, accountId, projectId) : null,
 		() => api!.models(harness, accountId || undefined, projectId || undefined),
-		// Phaseo reads hit the main process disk cache, which re-checks the gateway once its 15-minute window lapses.
-		{ fallbackData: fallback?.length ? fallback : undefined, dedupingInterval: harness === "phaseo" ? PHASEO_POLL_MS : BACKGROUND_REFRESH_MS, refreshInterval: harness === "phaseo" ? PHASEO_POLL_MS : BACKGROUND_REFRESH_MS, revalidateOnFocus: false,
+		// Phaseo reads hit the main process disk cache, which re-checks the gateway once its 15-minute window lapses. Agent CLIs
+		// follow Settings → Agents → Health checks.
+		{ fallbackData: fallback?.length ? fallback : undefined, dedupingInterval: harness === "phaseo" ? PHASEO_POLL_MS : providerHealthMs() || BACKGROUND_REFRESH_MS, refreshInterval: harness === "phaseo" ? PHASEO_POLL_MS : providerHealthMs(), revalidateOnFocus: false,
 			onErrorRetry: (_error, _key, _config, revalidate, options) => { setTimeout(() => { void revalidate(options); }, BACKGROUND_REFRESH_MS); } },
 	);
 	useEffect(() => {

@@ -1,17 +1,18 @@
 ---
 icon: "message-square"
-title: "生成文本（AI SDK）"
-description: "使用 Vercel AI SDK 和 Phaseo 非流式生成文本。"
+title: "生成文本 (AI SDK)"
+sidebarTitle: "生成文本"
+description: "使用 Vercel AI SDK 和 Phaseo 进行非流式文本生成。"
 ---
 
-使用 `generateText` 和 `phaseo(modelId)` 执行单次生成。
+使用 `phaseo(modelId)` 调用 `generateText`，获取一个完整的响应。
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const result = await generateText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   prompt: "Write a concise summary of Phaseo Gateway.",
 });
 
@@ -19,14 +20,16 @@ console.log(result.text);
 console.log(result.providerMetadata);
 ```
 
-## 使用聊天历史
+## 发送聊天历史
+
+单轮对话使用 `prompt`；需要多轮对话或系统角色时使用 `messages`。
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const result = await generateText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   messages: [
     { role: "system", content: "You are a terse assistant." },
     { role: "user", content: "Give me three bullet points on retrieval augmentation." },
@@ -37,16 +40,16 @@ console.log(result.text);
 console.log(result.providerMetadata);
 ```
 
-## 按模型设置
+## 在模型上设置默认值
+
+把设置作为第二个参数传给 `phaseo()`。它们会应用到使用该模型实例的每次调用。
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const result = await generateText({
-  model: phaseo("openai/gpt-5-nano", {
-    temperature: 0.2,
-    topP: 0.9,
+  model: phaseo("openai/gpt-6-astra", {
     maxTokens: 300,
   }),
   prompt: "Draft a release note for an API update.",
@@ -56,8 +59,4 @@ console.log(result.text);
 console.log(result.providerMetadata);
 ```
 
-## Prompt 与 messages
-
-- 单轮快速请求使用 `prompt`。
-- 多轮上下文和角色控制使用 `messages`。
-- 查询 `/v1/models` 以获取最新模型 ID（参见[模型发现](../get-models/index.mdx)）。
+模型 ID 采用 `provider/model` 格式。要让它们保持最新，请从 `/v1/models` 读取；参见[模型发现](/zh-Hans/v1/sdk-reference/sdk/get-models)。

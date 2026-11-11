@@ -23,7 +23,13 @@ begin
     )
   ) then raise exception 'preset_label_forbidden'; end if;
   if normalized !~ '^[a-z][a-z0-9_-]{0,31}$' or normalized ~ '^v[0-9]+$' then raise exception 'invalid_preset_label'; end if;
-  if not exists (select 1 from public.preset_versions v where v.id = p_version_id and v.preset_id = p.id) then
+  -- A version published while the preset was private is its creator's: nobody else may point a label
+  -- at it (that would also reveal it). It reads as not found, as for another preset's version.
+  if not exists (
+    select 1 from public.preset_versions v
+    where v.id = p_version_id and v.preset_id = p.id
+      and (v.visibility is distinct from 'private' or p.created_by is not distinct from actor_user_id)
+  ) then
     raise exception 'preset_version_not_found';
   end if;
   insert into public.preset_version_labels as l (preset_id, label, version_id, updated_by)

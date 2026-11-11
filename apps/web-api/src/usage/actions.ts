@@ -7,6 +7,9 @@ import type { AccountWorkspaceContext } from "@/routes/account/context";
 import { metadataForIds } from "@/routes/account/settings-usage";
 import { applyRequestLabelFilter, requestLabelFilterFromParams } from "@/usage/requestClassifiers";
 import { canReadIoLogContents, readIoLogContentsAccess } from "@/usage/ioLogContentsAccess";
+import { detailMetadataWithoutContent } from "@/usage/requestContentDetails";
+import { validPageCursor } from "@/lib/pageCursor";
+import { V2_ATTEMPT_DETAIL_COLUMNS, hasV2AttemptDetail, v2AttemptsToProviderAttempts } from "@/usage/requestAttempts";
 import {
 	LONG_RUNNING_REQUEST_ENDPOINTS,
 	buildNotInFilter,
@@ -226,6 +229,7 @@ export interface RequestRow extends NormalizedRequestUsageColumns {
 		retryable?: boolean | null;
 		fallback_attempted?: boolean;
 		upstream_error_code: string | null;
+		upstream_error_type?: string | null;
 		upstream_error_message: string | null;
 		upstream_error_description: string | null;
 	}>;
@@ -281,6 +285,30 @@ export type GatewayIoLog = {
 	payload: Record<string, unknown> | null;
 };
 
+/**
+ * Provider attempts for the request detail. Requests created at or after the cut-over read
+ * v2_request_attempts through the request's v2_request_facts row; older ones read
+ * gateway_upstream_requests. An empty result keeps gateway_requests.provider_attempts.
+ */
+export async function fetchRequestProviderAttempts(
+	workspaceId: string,
+	requestId: string,
+	createdAt: string | null | undefined,
+): Promise<RequestRow["provider_attempts"]> {
+	if (!hasV2AttemptDetail(createdAt)) return fetchGatewayUpstreamRequests(workspaceId, requestId);
+	const { data, error } = await createAdminClient()
+		.from("v2_request_facts")
+		.select(`latency_ms,generation_ms,gateway_total_ms,cost_nanos,currency,stop_reason,v2_request_attempts(${V2_ATTEMPT_DETAIL_COLUMNS})`)
+		.eq("workspace_id", workspaceId)
+		.eq("request_id", requestId)
+		.maybeSingle();
+	if (error) {
+		console.error("Error fetching request attempts:", error);
+		return [];
+	}
+	return v2AttemptsToProviderAttempts(data);
+}
+
 async function fetchGatewayUpstreamRequests(
 	workspaceId: string,
 	requestId: string,
@@ -309,6 +337,7 @@ async function fetchGatewayUpstreamRequests(
 			retryable,
 			fallback_attempted,
 			error_code,
+			error_type,
 			error_message,
 			error_description,
 			metadata
@@ -359,6 +388,7 @@ export function normalizeGatewayUpstreamRows(
 		retryable: typeof row.retryable === "boolean" ? row.retryable : null,
 		fallback_attempted: row.fallback_attempted === true,
 		upstream_error_code: stringOrNull(row.error_code),
+		upstream_error_type: stringOrNull(row.error_type),
 		upstream_error_message: stringOrNull(row.error_message),
 		upstream_error_description: stringOrNull(row.error_description),
 		};
@@ -375,13 +405,19 @@ const RESTRICTED_IO_LOG: GatewayIoLog = {
 	payload: null,
 };
 
+/** Whether the signed-in member may read this workspace's stored request contents. */
+async function memberMayReadContents(workspaceId: string): Promise<boolean> {
+	const { account } = current();
+	return canReadIoLogContents(await readIoLogContentsAccess(account.client, workspaceId), account.role);
+}
+
 async function fetchGatewayIoLog(
 	workspaceId: string,
 	requestId: string,
+	mayReadContents: boolean,
 ): Promise<GatewayIoLog | null> {
-	const { account, env } = current();
-	const access = await readIoLogContentsAccess(account.client, workspaceId);
-	if (!canReadIoLogContents(access, account.role)) return RESTRICTED_IO_LOG;
+	const { env } = current();
+	if (!mayReadContents) return RESTRICTED_IO_LOG;
 	const token = String(env.GATEWAY_INTERNAL_TEST_TOKEN ?? "").trim();
 	if (!token) return null;
 
@@ -744,8 +780,11 @@ export async function fetchPaginatedRequests(
 		else query = query.gte(column, value);
 	}
 
-	if (params.cursor?.createdAt && params.cursor.id) {
-		query = query.or(`created_at.lt.${params.cursor.createdAt},and(created_at.eq.${params.cursor.createdAt},id.lt.${params.cursor.id})`);
+	if (params.cursor) {
+		// The cursor comes from the browser and goes into a filter string, so only a timestamp and UUID pass.
+		const cursor = validPageCursor(params.cursor);
+		if (!cursor) throw new Error("Invalid requests cursor");
+		query = query.or(`created_at.lt.${cursor.createdAt},and(created_at.eq.${cursor.createdAt},id.lt.${cursor.id})`);
 	}
 	query = query.order("created_at", { ascending: false }).order("id", { ascending: false }).limit(pageSize + 1);
 
@@ -1802,9 +1841,10 @@ export async function investigateGeneration(
 		}
 
 		const request = toRequestRow(fallbackData);
-		const upstreamRequests = await fetchGatewayUpstreamRequests(
+		const upstreamRequests = await fetchRequestProviderAttempts(
 			workspaceId,
 			trimmedRequestId,
+			request.created_at,
 		);
 		if (upstreamRequests.length > 0) request.provider_attempts = upstreamRequests;
 		await attachRoutingObservability(supabase, workspaceId, trimmedRequestId, request);
@@ -1834,7 +1874,10 @@ export async function investigateGeneration(
 		const appName = request.app_id
 			? appMetadata.get(request.app_id)?.title ?? null
 			: null;
-		const ioLog = await fetchGatewayIoLog(workspaceId, trimmedRequestId);
+		// Search queries and fetched URLs follow the same contents setting as the I/O log.
+		const mayReadContents = await memberMayReadContents(workspaceId);
+		if (!mayReadContents) request.detail_metadata = detailMetadataWithoutContent(request.detail_metadata);
+		const ioLog = await fetchGatewayIoLog(workspaceId, trimmedRequestId, mayReadContents);
 
 		return {
 			success: true,
@@ -1857,9 +1900,10 @@ export async function investigateGeneration(
 	}
 
 	const request = toRequestRow(data);
-	const upstreamRequests = await fetchGatewayUpstreamRequests(
+	const upstreamRequests = await fetchRequestProviderAttempts(
 		workspaceId,
 		trimmedRequestId,
+		request.created_at,
 	);
 	if (upstreamRequests.length > 0) request.provider_attempts = upstreamRequests;
 	await attachRoutingObservability(supabase, workspaceId, trimmedRequestId, request);
@@ -1894,7 +1938,10 @@ export async function investigateGeneration(
 			: request.app_id
 			? appMetadata.get(request.app_id)?.title ?? null
 			: null;
-	const ioLog = await fetchGatewayIoLog(workspaceId, trimmedRequestId);
+	// Search queries and fetched URLs follow the same contents setting as the I/O log.
+	const mayReadContents = await memberMayReadContents(workspaceId);
+	if (!mayReadContents) request.detail_metadata = detailMetadataWithoutContent(request.detail_metadata);
+	const ioLog = await fetchGatewayIoLog(workspaceId, trimmedRequestId, mayReadContents);
 
 	return {
 		success: true,

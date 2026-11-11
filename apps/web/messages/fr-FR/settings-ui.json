@@ -1008,8 +1008,241 @@
 		"blocked": "{count} bloqué",
 		"rules": "règles",
 		"flag": "Signaler",
-		"redact": "Masquer les données",
-		"block": "Bloquer"
+		"redact": "Masquer",
+		"block": "Bloquer",
+		"workspaceBaseline": "Garde-fou de base de l’espace de travail",
+		"workspaceBaselineDescription": "S’applique à chaque clé de l’espace de travail. Modifiez-le dans Confidentialité.",
+		"wholeWorkspace": "Tout l’espace de travail"
+	},
+	"guardrailAssignments": {
+		"tabGuardrails": "Garde-corps",
+		"tabAssignments": "Attributions",
+		"keysView": "Clés API",
+		"membersView": "Membres",
+		"search": "Rechercher des noms et des garde-corps",
+		"columnKey": "Clé API",
+		"columnMember": "Membre",
+		"columnGuardrails": "Garde-corps",
+		"columnAccess": "Accès",
+		"none": "Aucun",
+		"off": "Désactivé",
+		"offHint": "Ce garde-corps est désactivé, le gateway l'ignore donc.",
+		"viaMember": "via {name}",
+		"inheritedHint": "S'applique via l'attribution de membre de {name}. Modifiez-la dans la vue Membres.",
+		"formerMember": "un ancien membre",
+		"formerMemberHint": "S'applique via l'attribution de membre de la personne qui a créé cette clé et a quitté l'espace de travail. Le gateway l'applique toujours. Décochez-la ici pour la retirer.",
+		"noLimits": "Aucune limite",
+		"zdrOnly": "ZDR uniquement",
+		"providersAllowed": "{count, plural, one {# fournisseur autorisé} other {# fournisseurs autorisés}}",
+		"providersBlocked": "{count, plural, one {# fournisseur bloqué} other {# fournisseurs bloqués}}",
+		"modelsAllowed": "{count, plural, one {# modèle autorisé} other {# modèles autorisés}}",
+		"modelsBlocked": "{count, plural, one {# modèle bloqué} other {# modèles bloqués}}",
+		"noProvidersAllowed": "Aucun fournisseur autorisé",
+		"noModelsAllowed": "Aucun modèle autorisé",
+		"editGuardrails": "Modifier les garde-corps de {name}",
+		"selectRow": "Sélectionner {name}",
+		"selectAll": "Tout sélectionner",
+		"selectedCount": "{count} sélectionné(s)",
+		"addGuardrail": "Ajouter un garde-corps",
+		"removeGuardrail": "Retirer un garde-corps",
+		"clearSelection": "Effacer",
+		"saved": "Attributions mises à jour",
+		"saveFailed": "Impossible de mettre à jour les attributions",
+		"savedPartly": "{done} sur {count} mises à jour. Le reste n'a pas changé.",
+		"emptyTitle": "Aucun garde-corps à attribuer",
+		"emptyBody": "Créez d'abord un garde-corps, puis attribuez-le ici à des clés API ou à des membres.",
+		"noKeys": "Cet espace de travail n'a aucune clé API.",
+		"noMembers": "Cet espace de travail n'a aucun membre.",
+		"noMatches": "Aucun résultat pour votre recherche.",
+		"readOnly": "Seuls les propriétaires et administrateurs de l'espace de travail peuvent modifier les attributions.",
+		"workspaceView": "Espace de travail",
+		"departmentsView": "Départements",
+		"columnWorkspace": "Espace de travail",
+		"columnDepartment": "Département",
+		"columnSafety": "Sécurité",
+		"wholeWorkspace": "Tout l’espace de travail",
+		"wholeWorkspaceDetail": "Chaque clé d'API et chaque membre",
+		"departmentReach": "{members, plural, one {# membre} other {# membres}} · {keys, plural, one {# clé} other {# clés}}",
+		"noDepartments": "Cet espace de travail n'a pas encore de départements.",
+		"fromWorkspace": "Espace de travail",
+		"workspaceHint": "S'applique à tout l'espace de travail. Modifiez-le dans la vue Espace de travail.",
+		"departmentHint": "S'applique via le département {name}. Modifiez-le dans la vue Départements.",
+		"baselineHint": "Le garde-corps de base de l'espace de travail s'applique à chaque clé d'API et à chaque membre. Modifiez-le dans Confidentialité.",
+		"fromGuardrails": "Issu de {names}",
+		"promptInjectionPart": "Injection de prompt : {action}",
+		"sensitiveInfoPart": "{count, plural, one {# règle d'informations sensibles} other {# règles d'informations sensibles}}",
+		"footnoteLevels": "Chaque ligne montre tous les garde-corps qui s'y appliquent : les siens, et ceux de son membre, de ses départements et de tout l'espace de travail. Quand plusieurs s'appliquent, la règle la plus stricte l'emporte.",
+		"noTraining": "Pas d'entraînement",
+		"noPaidTraining": "Pas d'entraînement sur les endpoints payants",
+		"noFreeTraining": "Pas d'entraînement sur les endpoints gratuits",
+		"noLogging": "Pas d'endpoints qui journalisent",
+		"columnRate": "Débit",
+		"rateRequests": "{count, plural, one {# requête} other {# requêtes}} par minute",
+		"rateTokens": "{count, plural, one {# token} other {# tokens}} par minute",
+		"rateConcurrent": "{count, plural, other {# à la fois}}",
+		"columnSpend": "Dépenses",
+		"spend": {
+			"daily": "{amount} par jour",
+			"weekly": "{amount} par semaine",
+			"monthly": "{amount} par mois"
+		},
+		"spendBlocks": "Bloque",
+		"spendNotifies": "Alertes seulement"
+	},
+	"guardrailWizard": {
+		"title": "Nouveau garde-corps",
+		"subtitle": "Choisissez ce qu'il vérifie, configurez-le, puis choisissez à qui il s'applique.",
+		"stepsLabel": "Étapes de configuration du garde-corps",
+		"step": {
+			"start": "Ce qu'il fait",
+			"configure": "Configurer",
+			"assign": "Attribuer",
+			"review": "Vérifier"
+		},
+		"cancel": "Annuler",
+		"back": "Retour",
+		"continue": "Continuer",
+		"create": "Créer le garde-corps",
+		"creating": "Création…",
+		"issue": {
+			"nameRequired": "Ajoutez un nom pour continuer.",
+			"chooseSection": "Choisissez un modèle ou au moins une vérification pour continuer.",
+			"accessEmpty": "Activez au moins une règle d'accès ou de confidentialité, ou retirez cette vérification.",
+			"providerAllowlistEmpty": "Choisissez au moins un fournisseur autorisé. Une liste vide bloque tous les fournisseurs.",
+			"modelAllowlistEmpty": "Choisissez au moins un modèle autorisé. Une liste vide bloque tous les modèles.",
+			"promptInjectionOff": "Choisissez comment traiter l'injection de prompt, ou retirez cette vérification.",
+			"sensitiveInfoOff": "Activez au moins un motif d'informations sensibles, ou retirez cette vérification.",
+			"rateLimitEmpty": "Définissez au moins une limite pour continuer.",
+			"rateLimitInvalid": "Les limites doivent être des nombres entiers supérieurs à 0.",
+			"rateCountingRequired": "Choisissez un mode de comptage pour continuer.",
+			"spendLimitEmpty": "Définissez une limite pour continuer.",
+			"spendLimitInvalid": "Saisissez un montant supérieur à $0.00 avec jusqu’à 2 décimales.",
+			"spendPeriodRequired": "Choisissez une période pour continuer.",
+			"spendActionRequired": "Choisissez ce qui se passe à la limite pour continuer.",
+			"spendCountingRequired": "Choisissez le mode de décompte pour continuer."
+		},
+		"nameLabel": "Nom",
+		"namePlaceholder": "ex. Règle pour les prestataires",
+		"descriptionLabel": "Description (facultatif)",
+		"descriptionPlaceholder": "À qui est-il destiné ?",
+		"templatesTitle": "Partir d'un modèle",
+		"templatesBody": "Un modèle remplit les paramètres. Vous pourrez tout modifier à l'étape suivante.",
+		"templateZdr": {
+			"name": "Aucune conservation des données",
+			"body": "Router uniquement vers des endpoints qui ne conservent ni prompts ni réponses."
+		},
+		"templateNoTraining": {
+			"name": "Pas d'entraînement sur les prompts",
+			"body": "Ignorer les endpoints susceptibles d'entraîner sur vos prompts ou de les publier."
+		},
+		"templateApprovedProviders": {
+			"name": "Fournisseurs approuvés uniquement",
+			"body": "Autoriser uniquement les fournisseurs que vous choisissez."
+		},
+		"templateApprovedModels": {
+			"name": "Modèles approuvés uniquement",
+			"body": "Autoriser uniquement les modèles que vous choisissez."
+		},
+		"templateBlockPromptInjection": {
+			"name": "Bloquer l'injection de prompt",
+			"body": "Arrêter les requêtes qui ressemblent à une injection de prompt avant qu'elles n'atteignent le modèle."
+		},
+		"templateRedactPersonalInfo": {
+			"name": "Masquer les données personnelles",
+			"body": "Remplacer e-mails, numéros de téléphone, SSN et numéros de carte avant que les requêtes ne quittent Phaseo."
+		},
+		"sectionsTitle": "Vérifications",
+		"sectionsBody": "Choisissez-en une ou plusieurs. Un modèle les coche pour vous.",
+		"sectionAccess": {
+			"name": "Accès et confidentialité",
+			"body": "Conservation des données, entraînement, et fournisseurs et modèles utilisables."
+		},
+		"sectionPromptInjection": {
+			"name": "Injection de prompt",
+			"body": "Analyser les requêtes pour détecter l'injection de prompt, puis les signaler, les masquer ou les bloquer."
+		},
+		"sectionSensitiveInfo": {
+			"name": "Informations sensibles",
+			"body": "Repérer les données personnelles et les secrets dans les requêtes, puis les signaler, les masquer ou les bloquer."
+		},
+		"addCheck": "Ajouter une vérification :",
+		"assignTitle": "À qui « {name} » doit-il s'appliquer ?",
+		"assignBody": "Choisissez tout l'espace de travail, ou des départements, des membres et des clés d'API. Chaque ligne montre le résultat de ses garde-corps maintenant et avec celui-ci. Vous pouvez passer cette étape et l'attribuer plus tard.",
+		"columnNow": "Maintenant",
+		"columnAfter": "Avec ce garde-corps",
+		"assignMemberHint": "Les garde-corps d'un membre s'appliquent aussi aux clés d'API qu'il crée.",
+		"notApplied": "Non appliqué",
+		"coveredVia": "Via {name}",
+		"noTighter": "Aucun changement : ses garde-corps actuels couvrent déjà cela.",
+		"promptInjectionPart": "Injection de prompt : {action}",
+		"sensitiveInfoPart": "{count, plural, one {# règle d'informations sensibles} other {# règles d'informations sensibles}}",
+		"reviewWhat": "Ce qu'il fait",
+		"reviewModels": "Modèles",
+		"reviewWho": "S'applique à",
+		"change": "Modifier",
+		"modelsAvailable": "{available} modèles sur {total} restent utilisables.",
+		"blocksEverything": "Ces règles bloquent tous les modèles : les requêtes des clés concernées échoueront.",
+		"appliesToNothing": "Rien pour l'instant. Vous pourrez l'attribuer plus tard depuis l'onglet Attributions.",
+		"turnOnNow": "Activer maintenant",
+		"turnOnNowBody": "Désactivé, il est enregistré mais la passerelle l'ignore.",
+		"summaryZdr": "Route uniquement vers des endpoints sans conservation des données",
+		"summaryNoPaidTraining": "Ignore les endpoints payants susceptibles d'entraîner sur les prompts",
+		"summaryNoFreeTraining": "Ignore les endpoints gratuits susceptibles d'entraîner sur les prompts",
+		"summaryNoPublishing": "Ignore les endpoints gratuits susceptibles de publier les prompts",
+		"summaryNoLogging": "Ignore les endpoints qui journalisent prompts et réponses",
+		"summaryProvidersAllowed": "N'autorise que {count, plural, one {# fournisseur} other {# fournisseurs}}",
+		"summaryProvidersBlocked": "Bloque {count, plural, one {# fournisseur} other {# fournisseurs}}",
+		"summaryModelsAllowed": "N'autorise que {count, plural, one {# modèle} other {# modèles}}",
+		"summaryModelsBlocked": "Bloque {count, plural, one {# modèle} other {# modèles}}",
+		"summaryPromptInjection": "Injection de prompt : {action}",
+		"summarySensitiveInfo": "Vérifie {count, plural, one {# motif d'informations sensibles} other {# motifs d'informations sensibles}}",
+		"wholeWorkspaceTitle": "Tout l’espace de travail",
+		"wholeWorkspaceBody": "S'applique à chaque clé d'API et à chaque membre, y compris ceux ajoutés plus tard.",
+		"wholeWorkspaceOn": "S'applique à tout l'espace de travail, donc à chaque ligne ci-dessous.",
+		"coveredByWorkspace": "Couvert par tout l'espace de travail",
+		"coveredByDepartment": "Couvert via {name}",
+		"levelWorkspace": "Tout l'espace de travail",
+		"levelDepartments": "{count, plural, one {# département} other {# départements}}",
+		"levelMembers": "{count, plural, one {# membre} other {# membres}}",
+		"levelKeys": "{count, plural, one {# clé d'API} other {# clés d'API}}",
+		"templateRateLimit": {
+			"name": "Limite de débit",
+			"body": "Plafonnez les requêtes ou les tokens par minute, ou les requêtes simultanées."
+		},
+		"sectionRate": {
+			"name": "Limites de débit",
+			"body": "Requêtes et tokens par minute, et requêtes simultanées. Un garde-fou de débit n'a pas d'autre contrôle."
+		},
+		"summaryRateRequests": "{count, plural, one {# requête} other {# requêtes}} par minute",
+		"summaryRateTokens": "{count, plural, one {# token} other {# tokens}} par minute",
+		"summaryRateConcurrent": "{count, plural, one {# requête} other {# requêtes}} à la fois",
+		"summaryRateCounting": {
+			"shared": "Partagé par tout ce à quoi il est attribué",
+			"each_key": "Distinct pour chaque clé",
+			"each_end_user": "Distinct pour chaque utilisateur final"
+		},
+		"summaryRateFailClosed": "Refuse les requêtes si les limites ne peuvent pas être vérifiées",
+		"templateSpendLimit": {
+			"name": "Limite de dépenses",
+			"body": "Plafonnez les dépenses par jour, semaine ou mois, avec des alertes."
+		},
+		"sectionSpend": {
+			"name": "Limite de dépenses",
+			"body": "Une limite en dollars par jour, semaine ou mois. Un garde-fou de dépenses n’a pas d’autres vérifications."
+		},
+		"summarySpendLimit": {
+			"daily": "Jusqu’à {amount} par jour",
+			"weekly": "Jusqu’à {amount} par semaine",
+			"monthly": "Jusqu’à {amount} par mois"
+		},
+		"summarySpendAction": {
+			"notify": "Alerte à 80 % et 100 %, sans bloquer",
+			"block": "Bloque les requêtes par clé d’API à la limite"
+		},
+		"summarySpendCounting": {
+			"shared": "Partagée par tout ce à quoi elle est affectée",
+			"each_key": "Distincte pour chaque clé"
+		}
 	},
 	"broadcastControls": {
 		"optional": "(facultatif)",
@@ -1145,6 +1378,8 @@
 		"authorizedUsers": "Utilisateurs autorisés",
 		"noAuthorizations": "Non autorisé utilisateurs",
 		"authorizationEmpty": "Les utilisateurs qui autorisent cette application apparaîtront ici.",
+		"usersAdminsOnly": "Seuls les propriétaires et les administrateurs voient les utilisateurs de cette application",
+		"usersAdminsOnlyDescription": "Les personnes qui autorisent une application appartiennent généralement à d'autres espaces de travail : seuls les propriétaires et administrateurs de cet espace de travail voient qui elles sont et leurs requêtes.",
 		"activityDescription": "Activité d'autorisation et d'utilisation récente.",
 		"noActivity": "Aucune activité pour l'instant",
 		"activityEmpty": "L'activité apparaîtra après l'utilisation de l'application.",
@@ -1410,7 +1645,9 @@
 			"selectWorkspace": "Sélectionnez un espace de travail pour gérer les garde-fous.",
 			"notFound": "Garde-fou introuvable.",
 			"back": "Retour aux garde-fous",
-			"permissions": "Seuls les propriétaires et les administrateurs de l’espace de travail peuvent modifier les garde-fous. Les règles attribuées sont appliquées automatiquement aux membres."
+			"permissions": "Seuls les propriétaires et les administrateurs de l’espace de travail peuvent modifier les garde-fous. Les règles attribuées sont appliquées automatiquement aux membres.",
+			"workspaceBaseline": "Voici le garde-fou de base de l’espace de travail. Il contient les règles de Paramètres, Confidentialité et s’applique à tout l’espace de travail : il ne peut donc pas être supprimé, désactivé ni attribué à des clés ou des membres en particulier.",
+			"openPrivacy": "Le modifier dans Confidentialité"
 		},
 		"keyDelete": {
 			"permanent": "Cette action est irréversible.",
@@ -1908,13 +2145,13 @@
 		"Action:": "Action :",
 		"Source:": "Source :",
 		"Detections:": "Détections :",
-		"Redactions:": "Rédaction :",
+		"Redactions:": "Masquages :",
 		"Guardrails": "Règles de protection",
 		"Detectors": "Détecteurs",
 		"Plugin execution": "Exécution du plug-in",
 		"Changed:": "Modifié :",
 		"Attempted:": "Tentative :",
-		"Healed:": "Guéri:",
+		"Healed:": "Réparé :",
 		"Mode:": "Mode :",
 		"Failure reason:": "Raison de l'échec :",
 		"Execution reason:": "Raison de l'exécution :",
@@ -1933,7 +2170,7 @@
 		"Provider latency": "Latence du fournisseur",
 		"Generation time": "Durée de génération",
 		"Stop reason": "Raison de l'arrêt",
-		"Provider Responses": "Provider réponses",
+		"Provider Responses": "Réponses des fournisseurs",
 		"Native": "Natif",
 		"Internal measures": "Mesures internes",
 		"phraseNoUsageMetricsAvailable": "Aucune métrique d’utilisation disponible.",
@@ -1945,6 +2182,8 @@
 		"Completion": "Achèvement",
 		"phraseNoIOPayloadIsAvailableForThisRequest": "Aucune charge utile d'E/S n'est disponible pour cette demande.",
 		"Technical Details": "Détails techniques",
+		"SVG author": "Auteur du SVG",
+		"Image tool": "Outil d’image",
 		"Pricing": "Prix",
 		"Direct HTTP": "Requête HTTP directe",
 		"Data policy": "Politique de données",
@@ -2064,7 +2303,7 @@
 		"Handling": "Gestion",
 		"Disabled": "Désactivé",
 		"Flag": "Signaler",
-		"Redact": "Rédiger",
+		"Redact": "Masquer",
 		"Block": "Bloquer",
 		"Sensitive Info Detection": "Détection des informations sensibles",
 		"phraseDetectAndHandleSensitiveDataBeforeRequestsLeavePhaseo": "Détecter et gérer les données sensibles avant que les requêtes ne quittent Phaseo.",
@@ -2138,7 +2377,7 @@
 		"phraseEnterTheProviderSlugAndWebsiteFirst": "Entrez d'abord le slug et le site Web du fournisseur.",
 		"Ownership proof created": "Preuve de propriété créé",
 		"Could not create ownership proof": "Impossible de créer une preuve de propriété",
-		"Webhook signing secret rotated": "URL secret de signature pivoté",
+		"Webhook signing secret rotated": "Secret de signature du webhook renouvelé",
 		"Could not rotate webhook secret": "Impossible de faire pivoter le secret du webhook",
 		"Classifiers": "Classificateurs",
 		"phraseRunAsynchronouslyOnADeterministicUpstreamSampleUsingFlexByDefault": "Exécuter de manière asynchrone sur un échantillon déterministe en amont, en utilisant Flex par défaut.",
@@ -2484,6 +2723,8 @@
 		"Are you sure you want to leave {workspace}?": "Êtes-vous sûr de vouloir quitter {workspace} ?",
 		"phraseYouCanTRevokeAccessForSomeoneWithAHigherRoleThanYours": "Vous ne pouvez pas révoquer l'accès d'une personne ayant un rôle supérieur au vôtre.",
 		"Are you sure you want to revoke access for {member}?": "Êtes-vous sûr de vouloir révoquer l'accès pour {member} ?",
+		"phraseMemberKeysWillBeRevoked": "Les clés API et les clés de gestion créées par ce membre dans cet espace de travail seront révoquées.",
+		"phraseYourKeysWillBeRevoked": "Les clés API et les clés de gestion que vous avez créées dans cet espace de travail seront révoquées.",
 		"phraseUpdatedMemberSSampleRole": "Exemple de rôle de {member} mis à jour.",
 		"phraseUnableToUpdateTheMemberRoleRightNow": "Impossible de mettre à jour le rôle de membre pour le moment.",
 		"phraseYouCanTRevokeAccessForMembersWithAHigherRoleThanYours": "Vous ne pouvez pas révoquer l'accès pour les membres ayant un rôle supérieur au vôtre.",
@@ -2638,7 +2879,7 @@
 		"Recent window": "Fenêtre récente",
 		"Last triggered": "Dernier déclenchement",
 		"phraseGuardrailActivityWasRecordedButTheSourceRuleCouldNotBeResolvedFromCurrentWorkspaceMappings": "L'activité de garde-corps a été enregistrée, mais la règle source n'a pas pu être résolue à partir des mappages d'espace de travail actuels.",
-		"phraseNoRecordedBlockedRedactedOrFlaggedRequestsForThisKeyInTheLast30Days": "Aucune demande bloquée, expurgée ou signalée enregistrée pour cette clé au cours des 30 derniers jours.",
+		"phraseNoRecordedBlockedRedactedOrFlaggedRequestsForThisKeyInTheLast30Days": "Aucune demande bloquée, masquée ou signalée enregistrée pour cette clé au cours des 30 derniers jours.",
 		"Activity": "Activité",
 		"Logs": "Journaux",
 		"Any eligible provider": "Tout fournisseur éligible",
@@ -3832,13 +4073,13 @@
 		"Enable beta channel": "Activer le canal bêta",
 		"Alpha Channel": "Canal alpha",
 		"Enable alpha channel": "Activer le canal alpha",
-		"Response Healing": "Réponse Guérison",
+		"Response Healing": "Réparation des réponses",
 		"Enable by Default": "Activer par défaut",
-		"Enable default response healing": "Activer la guérison des réponses par défaut",
-		"Healing Mode": "Mode de guérison",
-		"Select a healing mode": "Sélectionnez un mode de guérison",
+		"Enable default response healing": "Activer la réparation des réponses par défaut",
+		"Healing Mode": "Mode de réparation",
+		"Select a healing mode": "Sélectionnez un mode de réparation",
 		"Lock Workspace Policy": "Verrouiller la stratégie d'espace de travail",
-		"Lock default response healing policy": "Verrouiller la stratégie de guérison de réponse par défaut",
+		"Lock default response healing policy": "Verrouiller la stratégie de réparation des réponses par défaut",
 		"Routing Preview": "Aperçu du routage",
 		"Routing policy updated": "Politique de routage mise à jour",
 		"Routing policy updated; gateway cache refresh pending": "Politique de routage mise à jour ; Actualisation du cache de la passerelle en attente",
@@ -4027,7 +4268,7 @@
 		"Detection disabled": "Détection désactivée",
 		"No matches": "Aucune correspondance",
 		"Would block": "Bloquerait",
-		"Would redact": "Caviarderait",
+		"Would redact": "Serait masqué",
 		"Would flag": "Marquerait",
 		"Transformed text": "Texte transformé",
 		"Effective availability": "Effectif disponibilité",
@@ -5820,6 +6061,12 @@
 		"voiceProfile": "{language} · {style} · {gender}",
 		"english": "Anglais",
 		"portuguese": "Portugais",
+		"voiceProfileShort": "{language} · {gender}",
+		"french": "Français",
+		"german": "Allemand",
+		"hindi": "Hindi",
+		"japanese": "Japonais",
+		"korean": "Coréen",
 		"filipino": "Influence philippine",
 		"brazilian": "Influence brésilienne",
 		"southernUs": "Influence du sud des États-Unis",
@@ -6754,17 +7001,17 @@
 	},
 	"trustedWorkloads": {
 		"title": "Workloads de confiance",
-		"description": "Permettez aux déploiements Vercel et aux jobs GitHub Actions d'appeler l'API avec un jeton OIDC de courte durée au lieu d'une clé API.",
+		"description": "Permettez aux déploiements, aux jobs de CI et aux workloads cloud d'appeler l'API avec un jeton OIDC de courte durée au lieu d'une clé API.",
 		"feedback": "Comment les workloads de confiance pourraient-ils mieux fonctionner pour vous ?",
 		"selectWorkspace": "Sélectionnez un espace de travail pour gérer les workloads de confiance.",
 		"unavailable": "Les workloads de confiance ne sont pas encore disponibles pour cet espace de travail.",
 		"adminsOnly": "Seuls les propriétaires et administrateurs de l'espace de travail peuvent voir et modifier les workloads de confiance.",
-		"howItWorks": "Vercel et GitHub Actions remettent à chaque déploiement ou job un jeton signé qui indique son identité et expire en quelques heures. Quand un jeton correspond à l'une de ces règles, la requête s'exécute avec la clé de cette règle, avec les mêmes limites, budgets, journaux et la même facturation qu'une clé API. Aucun secret n'est à stocker.",
+		"howItWorks": "Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI et AWS peuvent remettre à chaque déploiement, job ou workload un jeton signé qui indique son identité et expire en quelques heures, tout comme un émetteur OIDC que vous gérez vous-même, par exemple un cluster Kubernetes. Quand un jeton correspond à l'une de ces règles, la requête s'exécute avec la clé de cette règle, avec les mêmes limites, budgets, journaux et la même facturation qu'une clé API. Aucun secret n'est à stocker.",
 		"policiesTitle": "Règles de confiance",
 		"propagation": "Les modifications prennent effet en une minute environ.",
 		"newPolicy": "Nouvelle règle",
 		"emptyTitle": "Aucun workload de confiance pour l'instant",
-		"emptyBody": "Ajoutez une règle pour un projet Vercel ou un dépôt GitHub afin qu'il puisse appeler l'API sans clé API.",
+		"emptyBody": "Ajoutez une règle pour un projet, un dépôt, un pipeline, un compte de service ou un rôle afin qu'il puisse appeler l'API sans clé API.",
 		"noConditions": "Aucune",
 		"disabled": "Désactivée",
 		"enabledLabel": "Accepter les jetons pour {name}",
@@ -6789,15 +7036,28 @@
 		"audienceLabel": "Audience",
 		"providers": {
 			"vercel": "Vercel",
-			"github_actions": "GitHub Actions"
+			"github_actions": "GitHub Actions",
+			"gitlab": "GitLab",
+			"google_cloud": "Google Cloud",
+			"buildkite": "Buildkite",
+			"circleci": "CircleCI",
+			"aws": "AWS",
+			"custom": "Émetteur OIDC personnalisé"
 		},
 		"ownerLabel": {
 			"vercel": "ID de l'équipe",
-			"github_actions": "ID du propriétaire"
+			"github_actions": "ID du propriétaire",
+			"gitlab": "ID du projet",
+			"google_cloud": "ID du compte de service",
+			"buildkite": "ID de l'organisation",
+			"circleci": "ID de l'organisation",
+			"aws": "ARN du rôle"
 		},
 		"ownerWide": {
 			"vercel": "Fait confiance à tous les projets de cette équipe Vercel. Ajoutez un ID de projet pour la restreindre.",
-			"github_actions": "Fait confiance à tous les dépôts de ce propriétaire. Ajoutez un ID de dépôt pour la restreindre."
+			"github_actions": "Fait confiance à tous les dépôts de ce propriétaire. Ajoutez un ID de dépôt pour la restreindre.",
+			"buildkite": "Fait confiance à tous les pipelines de cette organisation Buildkite. Ajoutez le slug d'un pipeline pour la restreindre.",
+			"circleci": "Fait confiance à tous les projets de cette organisation CircleCI. Ajoutez un ID de projet pour la restreindre."
 		},
 		"environments": {
 			"production": "Production",
@@ -6820,7 +7080,36 @@
 			"githubIdsHint": "Utilisez les ID numériques, qui ne changent pas si le propriétaire ou le dépôt est renommé. L'ID du dépôt est facultatif, mais sans lui tous les dépôts du propriétaire sont approuvés.",
 			"githubRef": "Branche ou tag (facultatif)",
 			"lifetime": "Jeton le plus long accepté (heures)",
-			"lifetimeHint": "Les jetons émis pour durer plus longtemps sont refusés. Jusqu'à {max} heures."
+			"lifetimeHint": "Les jetons émis pour durer plus longtemps sont refusés. Jusqu'à {max} heures.",
+			"environmentOptional": "Environnement (facultatif)",
+			"gitlabProjectId": "ID du projet",
+			"gitlabProjectHint": "L'ID numérique affiché sur la page de présentation du projet sur GitLab.com. Il ne change pas si le projet est renommé ou déplacé. Pour un GitLab autogéré, choisissez Émetteur OIDC personnalisé.",
+			"gitlabRef": "Branche ou tag (facultatif)",
+			"gitlabConditionsHint": "Utilisez le nom de la branche ou du tag, par exemple main. Laissez les deux vides pour accepter tous les jobs du projet.",
+			"googleServiceAccountId": "ID unique du compte de service",
+			"googleServiceAccountHint": "L'ID unique numérique affiché sur la page de détails du compte de service dans la console Google Cloud. Utilisez-le plutôt que l'e-mail, qui peut être réutilisé si le compte est supprimé.",
+			"googleServiceAccountEmail": "E-mail du compte de service (facultatif)",
+			"googleEmailHint": "Les jetons n'incluent l'e-mail que si le workload les demande avec format=full.",
+			"buildkiteOrganizationId": "ID de l'organisation",
+			"buildkiteOrganizationHint": "L'UUID de l'organisation, que chaque jeton Buildkite contient dans sa revendication organization_id.",
+			"buildkitePipelineSlug": "Slug du pipeline (facultatif)",
+			"buildkitePipelineHint": "Sans lui, tous les pipelines de l'organisation sont approuvés.",
+			"circleciOrganizationId": "ID de l'organisation",
+			"circleciOrganizationHint": "Vous le trouverez dans CircleCI sous Organization Settings → Overview.",
+			"circleciProjectId": "ID du projet (facultatif)",
+			"circleciProjectHint": "Vous le trouverez sous Project Settings → Overview. Sans lui, tous les projets de l'organisation sont approuvés.",
+			"awsIssuer": "URL de l'émetteur",
+			"awsIssuerHint": "Chaque compte AWS a son propre émetteur. Exécutez aws iam get-outbound-web-identity-federation-info et copiez IssuerIdentifier.",
+			"awsRoleArn": "ARN du rôle IAM",
+			"awsRoleHint": "Seuls les jetons de ce rôle sont acceptés.",
+			"customIssuer": "URL de l'émetteur",
+			"customIssuerHint": "Une URL https publique qui sert /.well-known/openid-configuration, avec ses clés de signature sur le même hôte.",
+			"customOwnerClaim": "Revendication du propriétaire",
+			"customOwnerId": "Valeur du propriétaire",
+			"customOwnerHint": "Chaque jeton doit contenir cette revendication avec exactement cette valeur, par exemple sub pour un compte de service Kubernetes. Choisissez une revendication que personne d'autre ne peut réutiliser.",
+			"customConditionClaim": "Revendication supplémentaire (facultatif)",
+			"customConditionValue": "Valeur requise",
+			"customConditionHint": "Les jetons doivent aussi contenir cette revendication avec exactement cette valeur."
 		},
 		"problems": {
 			"name": "Saisissez un nom de 100 caractères maximum.",
@@ -6829,7 +7118,19 @@
 			"vercelProjectId": "Les ID de projet commencent par prj_.",
 			"githubOwnerId": "Saisissez l'ID numérique du propriétaire.",
 			"githubRepositoryId": "Saisissez l'ID numérique du dépôt.",
-			"lifetime": "Saisissez un nombre entier d'heures entre 1 et 12."
+			"lifetime": "Saisissez un nombre entier d'heures entre 1 et 12.",
+			"gitlabProjectId": "Saisissez l'ID numérique du projet.",
+			"googleServiceAccountId": "Saisissez l'ID unique numérique du compte de service.",
+			"googleServiceAccountEmail": "Saisissez une adresse e-mail, par exemple app@project.iam.gserviceaccount.com.",
+			"buildkiteOrganizationId": "Saisissez l'UUID de l'organisation.",
+			"circleciOrganizationId": "Saisissez l'ID de l'organisation, qui est un UUID.",
+			"circleciProjectId": "Saisissez l'ID du projet, qui est un UUID.",
+			"awsIssuer": "Saisissez l'émetteur fourni par AWS. Il se termine par .tokens.sts.global.api.aws.",
+			"awsRoleArn": "Saisissez un ARN de rôle, par exemple arn:aws:iam::123456789012:role/evals.",
+			"customIssuer": "Saisissez une URL https publique sans port, requête ni fragment.",
+			"customOwnerClaim": "Saisissez un nom de revendication comme sub. iss, aud, exp, iat, nbf et jti ne sont pas autorisés.",
+			"customOwnerId": "Saisissez la valeur que doit avoir la revendication du propriétaire.",
+			"customCondition": "Saisissez une revendication et une valeur, ou laissez les deux vides. La revendication doit être différente de celle du propriétaire."
 		},
 		"errors": {
 			"invalid": "{message}",
@@ -6842,7 +7143,10 @@
 			"deleted": "Règle supprimée",
 			"enabled": "Règle activée",
 			"disabled": "Règle désactivée"
-		}
+		},
+		"listPipeline": "Pipeline",
+		"listEmail": "E-mail du compte de service",
+		"usageCustomHint": "Tout émetteur OIDC avec une découverte publique fonctionne. Cet exemple donne à un pod Kubernetes un jeton de compte de service pour l'audience."
 	},
 	"budgets": {
 		"title": "Budgets",
@@ -6928,7 +7232,7 @@
 			"period": "Période",
 			"createTitle": "Ajouter un budget de département",
 			"editTitle": "Modifier le budget du département",
-			"limitHelp": "Lorsque les dépenses du département sur la période atteignent ce montant, ses requêtes par clé API sont refusées jusqu'à la réinitialisation de la période. Les requêtes par lots, en temps réel et OAuth ne sont pas bloquées. Si la vérification du budget est brièvement indisponible, les requêtes sont acceptées plutôt que refusées. Les propriétaires et les administrateurs sont prévenus à environ 80 % et 100 %.",
+			"limitHelp": "Lorsque les dépenses du département sur la période atteignent ce montant, ses requêtes par clé API sont refusées jusqu'à la réinitialisation de la période. Si la vérification du budget est brièvement indisponible, les requêtes sont acceptées plutôt que refusées. Les propriétaires et les administrateurs sont prévenus à environ 80 % et 100 %.",
 			"saved": "Budget du département enregistré",
 			"deleted": "Budget du département supprimé",
 			"deleteTitle": "Supprimer ce budget de département ?",
@@ -7125,6 +7429,12 @@
 			"copyRedirectUrl": "Copier l’URL de redirection",
 			"scopes": "Scopes du token de bot",
 			"copyScopes": "Copier les scopes",
+			"requestUrls": "URL de requête",
+			"requestUrlsHelp": "Les URL de requête propres à cette app. Collez chacune dans le paramètre correspondant du manifeste de votre app Slack.",
+			"eventsUrl": "URL de requête d’Event Subscriptions",
+			"interactionsUrl": "URL de requête d’Interactivity",
+			"copyEventsUrl": "Copier l’URL de requête d’Event Subscriptions",
+			"copyInteractionsUrl": "Copier l’URL de requête d’Interactivity",
 			"appId": "ID de l’application",
 			"clientId": "ID client",
 			"clientSecret": "Secret client",
@@ -7389,8 +7699,11 @@
 		"link": {
 			"metaTitle": "Connecter Slack",
 			"title": "Connectez votre compte Slack",
-			"description": "Cela associe le compte Slack qui a ouvert cette page à votre compte Phaseo, pour que l’agent Phaseo sache qui vous êtes.",
-			"warning": "Ne continuez que si vous avez ouvert ce lien depuis le message de l’agent Phaseo dans Slack.",
+			"description": "Cela associe le compte Slack ci-dessous à votre compte Phaseo, pour que l’agent Phaseo sache qui vous êtes.",
+			"account": "Compte Slack : {name} ({id}) dans {team}",
+			"accountUnnamed": "Compte Slack : {id} dans {team}",
+			"unknownTeam": "un espace de travail Slack dont Slack n’a pas communiqué le nom",
+			"warning": "Ne continuez que s’il s’agit de votre propre compte Slack. Si quelqu’un vous a envoyé ce lien, ne l’utilisez pas : ce compte Slack agirait en votre nom.",
 			"confirm": "Connecter le compte",
 			"confirming": "Connexion…",
 			"missingToken": "Il manque le code de ce lien. Ouvrez-le de nouveau depuis le message de l’agent Phaseo dans Slack.",
@@ -7401,6 +7714,7 @@
 			"close": "Vous pouvez fermer cette page et revenir à Slack.",
 			"errors": {
 				"expired": "Ce lien a expiré. Demandez-en un nouveau à l’agent Phaseo dans Slack.",
+				"used": "Ce lien a déjà été utilisé. Demandez-en un nouveau à l’agent Phaseo dans Slack.",
 				"invalid": "Ce lien n’est pas valide. Demandez-en un nouveau à l’agent Phaseo dans Slack.",
 				"notInstalled": "L’agent Phaseo n’est plus installé dans cet espace de travail Slack.",
 				"wrongWorkspace": "Connectez-vous avec un compte de l’espace de travail Phaseo qui a ajouté l’agent à Slack.",
@@ -7793,5 +8107,144 @@
 		"expiredBody": "Personne n’a répondu en 30 minutes, rien n’a donc été débité. L’agent est invité à ne pas réessayer ; il peut lancer une nouvelle demande lorsque quelqu’un est disponible.",
 		"resume": "Terminer la vérification de la carte",
 		"resumeNotice": "Cette recharge a été confirmée, mais la vérification de la carte par la banque n’a pas été terminée. Terminez-la pour finaliser le paiement."
+	},
+	"keyRequests": {
+		"title": "Approuver la clé d'API",
+		"description": "Une application à laquelle vous êtes connecté a demandé une nouvelle clé d'API. Rien n'est créé tant que vous ne l'approuvez pas ici.",
+		"requestedBy": "Demandée par",
+		"workspace": "Espace de travail",
+		"keyName": "Nom de la clé",
+		"dailyLimit": "Plafond de dépenses quotidien",
+		"monthlyLimit": "Plafond de dépenses mensuel",
+		"noLimit": "Aucun plafond",
+		"keyExpires": "La clé expire",
+		"keyLifetime": "{days, plural, one {# jour} other {# jours}} après l'approbation",
+		"requestedAt": "Demandée",
+		"requestExpires": "À approuver avant",
+		"phaseoAppTitle": "N'approuvez que si vous êtes à l'origine de la demande",
+		"phaseoAppBody": "N'approuvez que si vous venez de lancer vous-même une commande de configuration de la CLI Phaseo. La nouvelle clé est envoyée une seule fois à ce terminal et n'est jamais affichée ici.",
+		"otherAppTitle": "Demandée par {app}, pas par la CLI Phaseo",
+		"otherAppBody": "{app} est une application qui utilise Se connecter avec Phaseo. N'approuvez que si vous lui avez vous-même demandé une clé. Elle recevra la nouvelle clé une seule fois.",
+		"approve": "Approuver et créer la clé",
+		"approving": "Création de la clé…",
+		"deny": "Refuser",
+		"approvedTitle": "Clé approuvée",
+		"approvedBody": "Revenez à votre terminal : la configuration récupère la clé et se termine. Vous pouvez modifier ses plafonds ou la supprimer dans Paramètres, Clés d'API.",
+		"approvingTitle": "Création de la clé",
+		"approvingBody": "Rechargez la page dans un instant.",
+		"deniedTitle": "Demande refusée",
+		"deniedBody": "Aucune clé n'a été créée. La configuration dans votre terminal cesse d'attendre.",
+		"expiredTitle": "Demande expirée",
+		"expiredBody": "Rien n'a été créé. Relancez la commande de configuration pour demander une nouvelle clé.",
+		"forbiddenTitle": "Vous ne pouvez pas créer de clés d'API dans cet espace de travail",
+		"forbiddenBody": "Seuls les propriétaires et les administrateurs de l'espace de travail peuvent créer des clés d'API. Demandez une clé à l'un d'eux, puis transmettez-la à la configuration avec --key.",
+		"notFoundTitle": "Demande de clé introuvable",
+		"notFoundBody": "Connectez-vous avec le compte utilisé dans la CLI et ouvrez le lien complet affiché par la configuration.",
+		"errorTitle": "Impossible de terminer",
+		"keyLimitReached": "Cet espace de travail a atteint sa limite de clés d'API. Supprimez une clé que vous n'utilisez plus, puis approuvez à nouveau.",
+		"requestChanged": "Cette demande a changé. Rechargez la page et vérifiez-la à nouveau.",
+		"notPending": "Cette demande a déjà reçu une réponse ou a expiré. Rechargez la page.",
+		"genericError": "Une erreur s'est produite. Réessayez."
+	},
+	"rateGuardrail": {
+		"title": "Limites de débit",
+		"description": "Limitez les requêtes et les tokens par minute, et le nombre de requêtes simultanées.",
+		"limitsTitle": "Limites",
+		"limitsBody": "Définissez-en au moins une. Laissez une limite vide pour ne pas la limiter.",
+		"noLimit": "Aucune limite",
+		"invalidLimit": "Saisissez un nombre entier supérieur à 0.",
+		"requests": {
+			"label": "Requêtes par minute",
+			"help": "Comptées sur une minute glissante."
+		},
+		"tokens": {
+			"label": "Tokens par minute",
+			"help": "Tokens d'entrée et de sortie, comptés à la fin de chaque requête."
+		},
+		"concurrent": {
+			"label": "Requêtes simultanées",
+			"help": "Requêtes en cours au même moment."
+		},
+		"countingTitle": "Mode de comptage",
+		"countingBody": "Choisissez qui partage chaque quota. Il n'y a pas de valeur par défaut.",
+		"legacyCounting": "Cette limite a été créée via l'API des limites de débit : elle compte par clé, membre ou service auquel elle est attribuée, et par utilisateur final sur tout l'espace de travail. Choisissez une option pour changer cela.",
+		"countingLegacy": "Par attribution",
+		"counting": {
+			"shared": {
+				"name": "Partagé",
+				"body": "Un quota pour tout ce à quoi elle est attribuée. Sur un service, tout le service le partage."
+			},
+			"each_key": {
+				"name": "Par clé",
+				"body": "Chaque clé API couverte a son propre quota. Les requêtes OAuth comptent par personne."
+			},
+			"each_end_user": {
+				"name": "Par utilisateur final",
+				"body": "Chaque utilisateur final a son propre quota, identifié par le champ user de la requête ou l'en-tête X-Phaseo-User-Id. Les requêtes sans utilisateur final n'en sont pas limitées."
+			}
+		},
+		"failClosedTitle": "Refuser les requêtes si les limites ne peuvent pas être vérifiées",
+		"failClosedBody": "Attend le compteur à chaque requête, ce qui ajoute un peu de latence. Désactivé, les requêtes passent si le compteur ne répond pas.",
+		"issue": {
+			"rateLimitEmpty": "Définissez au moins une limite pour continuer.",
+			"rateLimitInvalid": "Les limites doivent être des nombres entiers supérieurs à 0.",
+			"rateCountingRequired": "Choisissez un mode de comptage pour continuer."
+		}
+	},
+	"spendGuardrail": {
+		"title": "Limite de dépenses",
+		"description": "Limitez ce que les clés couvertes dépensent par jour, semaine ou mois.",
+		"limitTitle": "Limite",
+		"limitBody": "Le montant maximal que les clés couvertes peuvent dépenser par période, en dollars américains.",
+		"limitLabel": "Montant",
+		"limitHelp": "Jusqu’à 2 décimales, par exemple 25.00.",
+		"invalidLimit": "Saisissez un montant supérieur à $0.00 avec jusqu’à 2 décimales.",
+		"periodTitle": "Période",
+		"periodBody": "Les périodes sont des jours calendaires UTC, des semaines à partir du lundi et des mois. Il n’y a pas de valeur par défaut.",
+		"period": {
+			"daily": {
+				"name": "Quotidienne",
+				"body": "Réinitialisée chaque jour à 00:00 UTC."
+			},
+			"weekly": {
+				"name": "Hebdomadaire",
+				"body": "Réinitialisée chaque lundi à 00:00 UTC."
+			},
+			"monthly": {
+				"name": "Mensuelle",
+				"body": "Réinitialisée le 1er de chaque mois à 00:00 UTC."
+			}
+		},
+		"actionTitle": "À la limite",
+		"actionBody": "Ce qui se passe quand les dépenses atteignent la limite. Les propriétaires et les admins reçoivent une notification push à 80 % et à 100 % dans tous les cas. Il n’y a pas de valeur par défaut.",
+		"action": {
+			"notify": {
+				"name": "Notifier",
+				"body": "Envoyer uniquement les alertes. Les requêtes continuent de passer."
+			},
+			"block": {
+				"name": "Bloquer",
+				"body": "Refuser les requêtes par clé d’API couvertes jusqu’à la réinitialisation de la période. Les tâches par lots, les sessions en temps réel et les requêtes OAuth ne sont pas bloquées."
+			}
+		},
+		"countingTitle": "Mode de décompte",
+		"countingBody": "Choisissez qui partage la limite. Il n’y a pas de valeur par défaut.",
+		"counting": {
+			"shared": {
+				"name": "Partagée",
+				"body": "Une limite pour tout ce à quoi elle est affectée. Sur un département, toutes les clés du département la partagent."
+			},
+			"each_key": {
+				"name": "Par clé",
+				"body": "Chaque clé d’API couverte a sa propre limite."
+			}
+		},
+		"issue": {
+			"spendLimitEmpty": "Définissez une limite pour continuer.",
+			"spendLimitInvalid": "Saisissez un montant supérieur à $0.00 avec jusqu’à 2 décimales.",
+			"spendPeriodRequired": "Choisissez une période pour continuer.",
+			"spendActionRequired": "Choisissez ce qui se passe à la limite pour continuer.",
+			"spendCountingRequired": "Choisissez le mode de décompte pour continuer."
+		}
 	}
 }

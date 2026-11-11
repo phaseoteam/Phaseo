@@ -16,6 +16,15 @@ declare
   v_req public.workspace_join_requests%rowtype;
   v_role public.workspace_role := 'member'::public.workspace_role;
 begin
+  if not public.mfa_satisfied() then
+    raise exception using errcode = '42501', message = 'mfa_required';
+  end if;
+
+  -- A token issued to an OAuth client (the CLI and desktop app too) cannot change membership.
+  if public.request_is_oauth_client() then
+    raise exception using errcode = '42501', message = 'oauth_client_refused';
+  end if;
+
   if v_user_id is null then
     raise exception using errcode = '42501', message = 'Unauthorized';
   end if;
@@ -51,6 +60,14 @@ begin
     if not found then
       raise exception using errcode = '23514', message = 'Invite is invalid for this request';
     end if;
+  end if;
+
+  -- Making someone an admin is the owner's call, also when the role comes from the invite.
+  if v_role = 'admin'::public.workspace_role and not exists (
+    select 1 from public.workspaces w where w.id = v_req.workspace_id and w.owner_user_id = v_user_id
+  ) then
+    raise exception using errcode = '42501', message = 'workspace_admin_owner_only',
+      detail = 'Only the workspace owner can approve someone as an admin.';
   end if;
 
   insert into public.workspace_members (workspace_id, user_id, role)

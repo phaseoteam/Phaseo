@@ -4,20 +4,16 @@ description: "使用 Phaseo CLI 自动化终端任务，或将经过身份验证
 icon: "square-terminal"
 ---
 
-# CLI 与 MCP
+使用 CLI 从终端或脚本更改 Phaseo，或把 AI 客户端连接到 Phaseo MCP 服务器，为它提供 Phaseo 实时数据。两者都通过 Phaseo OAuth 登录。
 
-你可以在终端中使用 Phaseo CLI，也可以通过 MCP 连接 AI 客户端。两者都使用 Phaseo OAuth，但用途不同。
-
-| 接口 | 适用场景 | 访问权限 |
+| 接口 | 用途 | 访问权限 |
 | --- | --- | --- |
-| Phaseo CLI | 终端工作流、CI、管理和自动化 | 根据授权范围和工作区角色限制读取与写入权限 |
-| Phaseo MCP | 在 Codex、Claude、ChatGPT 等 MCP 客户端中访问 Phaseo 实时数据，并可选择管理账户 | 已验证身份；除非以账户管理方式连接，否则仅可读取 |
-| Docs MCP | 在编写代码时查阅最新 Phaseo 文档 | 仅文档，只读 |
-| Phaseo 插件 | 在 Claude Code 或 Codex 中一次性安装 Phaseo MCP、Docs MCP 和 Phaseo 技能 | 与各 MCP 服务器相同 |
+| [Phaseo CLI](#phaseo-cli) | 从 shell 或 CI 创建密钥、更改设置、管理工作区，以及自动化管理工作 | 读取和写入，受你的作用域和工作区角色限制 |
+| [Phaseo MCP](#phaseo-mcp) | 为 Codex、Claude、ChatGPT 等 MCP 客户端提供 Phaseo 实时数据，并可选择让它们管理你的账户 | 只读，除非你以账户管理方式连接 |
+| [Docs MCP](#docs-mcp) | 为编程助手提供最新的 Phaseo 文档 | 仅文档，无账户访问权限 |
+| [Phaseo 插件](#phaseo-plugin) | 在 Claude Code 或 Codex 中一次性安装两个 MCP 服务器和 Phaseo 技能 | 与各 MCP 服务器相同 |
 
 ## Phaseo CLI
-
-需要创建或修改 Phaseo 资源、编写工作流脚本或从 shell 检查账户数据时，请使用 CLI。
 
 ### 安装并登录
 
@@ -33,56 +29,104 @@ phaseo whoami
 phaseo login --device-code
 ```
 
-### 常见工作流
+### 常用工作流
 
 ```bash
 phaseo models list --limit 20
 phaseo pricing models
 phaseo credits get
 phaseo workspaces list
-phaseo keys create --name "Local development"
+phaseo keys list
 phaseo logs list --since 1h --status error --json
 ```
 
-其他工具或脚本需要结构化输出时，请使用 `--json`。只有明确创建或显示密钥的命令才会返回密钥值。
+当其他工具或脚本需要结构化输出时，使用 `--json`。只有明确用于创建或显示密钥值的命令才会显示这些值。
 
-<Card title="Phaseo CLI 指南" icon="terminal" href="../guides/integrations/phaseo-cli.mdx">
-	了解身份验证选项、密钥管理、工作区、护栏和完整命令流程。
+<Card title="Phaseo CLI 指南" icon="terminal" href="../guides/integrations/phaseo-cli">
+	查看身份验证选项、密钥管理、工作区、护栏和完整的命令工作流。
 </Card>
 
 ## Phaseo MCP
 
-如果你希望 AI 客户端根据模型、价格、提供商、用量和工作区的实时数据回答问题，请连接 Phaseo MCP 服务器。
+服务器 URL 是 `https://mcp.phaseo.app/mcp`。连接到它的 AI 客户端可以用实时的模型、价格、提供商、用量和工作区数据回答问题。
 
-### 服务器 URL
+### 连接你的客户端
 
-`https://mcp.phaseo.app/mcp`
+一键安装：[添加到 Cursor](cursor://anysphere.cursor-deeplink/mcp/install?name=phaseo&config=eyJ1cmwiOiJodHRwczovL21jcC5waGFzZW8uYXBwL21jcCJ9) · [添加到 VS Code](vscode:mcp/install?%7B%22name%22%3A%22phaseo%22%2C%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fmcp.phaseo.app%2Fmcp%22%7D)。当客户端要求你登录时，浏览器会打开 Phaseo OAuth。选择一个工作区，并批准所请求的读取权限范围。
 
-### 从 Codex 连接
+<Tabs>
+<Tab title="Claude Code">
+```bash
+claude mcp add --transport http phaseo https://mcp.phaseo.app/mcp
+```
 
+然后运行 `/mcp`，选择 `phaseo`，再选择 **Authenticate**。加上 `--scope user` 可在所有项目中使用。
+</Tab>
+<Tab title="Codex">
 ```bash
 codex mcp add phaseo --url https://mcp.phaseo.app/mcp
 codex mcp login phaseo
-```
-
-登录命令会打开 Phaseo OAuth。选择工作区、批准请求的只读权限，然后确认连接：
-
-```bash
 codex mcp list
 ```
 
-对于其他 MCP 客户端，请将相同 URL 添加为远程 Streamable HTTP 服务器。客户端必须支持 OAuth 发现、S256 PKCE 授权码流程和 MCP `resource` 参数。
+登录命令会打开 Phaseo OAuth。`codex mcp list` 可确认连接。
+</Tab>
+<Tab title="Cursor">
+```json ~/.cursor/mcp.json
+{
+  "mcpServers": {
+    "phaseo": {
+      "url": "https://mcp.phaseo.app/mcp"
+    }
+  }
+}
+```
 
-### MCP 可读取的数据
+使用上方的 **添加到 Cursor**，或将服务器添加到 `~/.cursor/mcp.json`，然后在 Cursor 的 MCP 设置中登录。
+</Tab>
+<Tab title="VS Code">
+```json .vscode/mcp.json
+{
+  "servers": {
+    "phaseo": {
+      "type": "http",
+      "url": "https://mcp.phaseo.app/mcp"
+    }
+  }
+}
+```
 
-- 模型、提供商、基准排名、价格和成本估算
-- 积分、活动、分析、请求日志和生成元数据
+使用上方的 **添加到 VS Code**，或将服务器添加到 `.vscode/mcp.json`。在 MCP 视图中启动它，并在 VS Code 提示时登录。
+</Tab>
+<Tab title="Claude">
+在 Claude 中打开 **Settings → Connectors**，选择 **Add custom connector**，输入 `Phaseo` 和服务器 URL，然后选择 **Connect**。如果看不到该选项，需要由你的 Claude 组织所有者允许自定义连接器。
+</Tab>
+<Tab title="OpenCode">
+```json opencode.json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "phaseo": {
+      "type": "remote",
+      "url": "https://mcp.phaseo.app/mcp"
+    }
+  }
+}
+```
 
-这些工具仅可读取，绝不会返回提示词、响应或密钥值。
+将服务器添加到 `opencode.json`，然后运行 `opencode mcp auth phaseo` 登录。
+</Tab>
+</Tabs>
 
-### 管理账户（可选）
+对于其他 MCP 客户端，把同一个 URL 添加为远程 Streamable HTTP 服务器。客户端必须支持 OAuth 发现、使用 S256 PKCE 的授权码流程，以及 MCP `resource` 参数。
 
-如需让智能体更改你的 Phaseo 工作区，请改用管理 URL 连接：
+### MCP 可以读取什么
+
+只读工具涵盖模型、提供商、基准排名、价格和成本估算，以及额度、活动、分析、请求日志和生成元数据。它们从不返回提示、响应或密钥值。
+
+### 管理你的账户（可选）
+
+要让智能体更改你的 Phaseo 工作区，请改用管理 URL 连接：
 
 `https://mcp.phaseo.app/mcp?access=manage`
 
@@ -91,43 +135,42 @@ codex mcp add phaseo --url "https://mcp.phaseo.app/mcp?access=manage"
 codex mcp login phaseo
 ```
 
-登录时，授权同意页面会逐项列出此连接请求的每项权限，例如管理 API 密钥或删除预算，并标记为**读取**、**写入**或**删除**。取消勾选你不想授予的权限。智能体只会获得你所允许权限对应的工具；每次更改时，Phaseo 仍会检查你在工作区中的角色，因此既不是所有者也不是管理员的成员无法通过这种方式更改仅限管理员的设置。
+登录时，授权同意页面会列出该连接请求的每项权限（例如管理 API 密钥或删除预算），并标记为**读取**、**写入**或**删除**。取消勾选你不想授予的权限。智能体只会获得你允许的权限所对应的工具，并且 Phaseo 在每次更改时仍会检查你的工作区角色，因此非所有者或管理员的成员无法通过这种方式更改仅限管理员的设置。
 
-如果你已通过只读 URL 连接，请将客户端切换到管理 URL 并重新登录。如需恢复只读访问，请使用普通 URL 重新连接，或在**设置 → 已连接应用**中撤销该应用。
+如果你已经用只读 URL 连接过，请把客户端切换到管理 URL 并重新登录。要恢复为只读访问，请用普通 URL 重新连接，或在**设置 → 已连接应用**中撤销该应用。
 
 | 范围 | 工具 | 权限 |
 | --- | --- | --- |
-| API 密钥 | `api_keys_list`, `api_key_get`, `api_key_create`, `api_key_update`, `api_key_rotate`, `api_key_delete` | `keys:read`, `keys:write`, `keys:delete` |
-| 预算 | `budgets_list`, `budget_create`, `budget_update`, `budget_delete` | `budgets:read`, `budgets:write`, `budgets:delete` |
-| 支出规则 | `spend_rules_list`, `spend_rule_create`, `spend_rule_update`, `spend_rule_delete` | `spend_rules:read`, `spend_rules:write`, `spend_rules:delete` |
-| 提供商密钥（BYOK） | `provider_keys_list`, `provider_key_create`, `provider_key_update`, `provider_key_delete` | `provider_credentials:read`, `provider_credentials:write`, `provider_credentials:delete` |
-| 护栏 | `guardrails_list`, `guardrail_get`, `guardrail_create`, `guardrail_update`, `guardrail_delete`, `guardrail_keys_set` | `guardrails:read`, `guardrails:write`, `guardrails:delete` |
-| 预设 | `presets_list`, `preset_get`, `preset_create`, `preset_update`, `preset_version_publish` | `presets:read`, `presets:write` |
-| 设置 | `settings_get`, `settings_update` (路由模式、隐私和 ZDR、日志记录、提供商限制) | `settings:read`, `settings:write` |
-| Webhook | `webhooks_list`, `webhook_create`, `webhook_delete` | `settings:read`, `settings:write` |
-| 可观测性目标 | `observability_destinations_list`, `observability_destination_create`, `observability_destination_delete` | `settings:read`, `settings:write` |
+| API 密钥 | `api_keys_list`、`api_key_get`、`api_key_create`、`api_key_update`、`api_key_rotate`、`api_key_delete` | `keys:read`、`keys:write`、`keys:delete` |
+| 预算 | `budgets_list`、`budget_create`、`budget_update`、`budget_delete` | `budgets:read`、`budgets:write`、`budgets:delete` |
+| 支出规则 | `spend_rules_list`、`spend_rule_create`、`spend_rule_update`、`spend_rule_delete` | `spend_rules:read`、`spend_rules:write`、`spend_rules:delete` |
+| 提供商密钥（BYOK） | `provider_keys_list`、`provider_key_create`、`provider_key_update`、`provider_key_delete` | `provider_credentials:read`、`provider_credentials:write`、`provider_credentials:delete` |
+| 护栏 | `guardrails_list`、`guardrail_get`、`guardrail_create`、`guardrail_update`、`guardrail_delete`、`guardrail_keys_set` | `guardrails:read`、`guardrails:write`、`guardrails:delete` |
+| 预设 | `presets_list`、`preset_get`、`preset_create`、`preset_update`、`preset_version_publish` | `presets:read`、`presets:write` |
+| 设置 | `settings_get`、`settings_update`（路由模式、隐私和 ZDR、日志记录、提供商限制） | `settings:read`、`settings:write` |
+| Webhook | `webhooks_list`、`webhook_create`、`webhook_delete` | `settings:read`、`settings:write` |
+| 可观测性目标 | `observability_destinations_list`、`observability_destination_create`、`observability_destination_delete` | `settings:read`、`settings:write` |
 
-会更改或删除内容的工具都带有相应标记，因此支持此功能的 MCP 客户端会在每次调用前请你确认。新的 API 密钥或 webhook 签名密钥只会在工具结果中显示一次，之后无法再次显示。已保存的提供商密钥和目标凭证绝不会返回。
+会更改或删除内容的工具都有相应标记，因此支持该功能的 MCP 客户端会在每次调用前征求你的确认。新的 API 密钥或 webhook 签名密钥只会在工具结果中显示一次，之后无法再次显示。已存储的提供商密钥和目标凭据永远不会被返回。
 
-MCP 不提供账单、付款、工作区、成员、管理密钥或 OAuth 应用相关的工具。如需执行这些操作，请使用控制台、CLI 或管理 API。
+MCP 没有账单、支付、工作区、成员、管理密钥或 OAuth 应用相关的工具。这些操作请使用仪表板、CLI 或管理 API。
 
 ## Docs MCP
 
-Docs MCP 是用于搜索和阅读 Phaseo 文档的独立端点，不会访问你的账户或工作区。
+Docs MCP 是一个单独的端点，用于搜索和阅读 Phaseo 文档。它不会访问你的账户或工作区。
 
 ```bash
 codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
 ```
 
-当编程助手需要最新 API 示例、集成指南或功能文档时，请使用它。
-
-<Card title="Docs MCP 指南" icon="book-open" href="../guides/integrations/docs-mcp.mdx">
-	将文档服务器连接到 Codex、Claude Code、Cursor、OpenCode 或 VS Code。
+<Card title="Docs MCP 指南" icon="book-open" href="../guides/integrations/docs-mcp">
+	把文档服务器连接到 Codex、Claude Code、Cursor、OpenCode 或 VS Code。
 </Card>
 
+<span id="phaseo-plugin"></span>
 ## Phaseo 插件
 
-Phaseo 插件打包了 Phaseo MCP、Docs MCP，以及用于集成、迁移、模型选择、用量监控、SDK 和 CLI 的 Phaseo 智能体技能。只需安装一次，无需逐一连接。
+Phaseo 插件打包了 Phaseo MCP、Docs MCP，以及用于集成、迁移、模型选择、用量监控、SDK 和 CLI 的 Phaseo 智能体技能。安装一次即可，无需逐个自行连接。
 
 ### Claude Code
 
@@ -136,7 +179,7 @@ claude plugin marketplace add phaseoteam/skills
 claude plugin install phaseo@phaseo
 ```
 
-运行 `/mcp` 并登录 `plugin:phaseo:phaseo`，即可连接你的 Phaseo 账户。当请求与技能匹配时会自动加载，你也可以直接运行某个技能，例如 `/phaseo:phaseo-gateway`。
+运行 `/mcp` 并登录 `plugin:phaseo:phaseo`，以连接你的 Phaseo 账户。技能会在请求与其匹配时加载，你也可以直接运行某个技能，例如 `/phaseo:phaseo-gateway`。
 
 ### Codex
 
@@ -146,12 +189,4 @@ codex plugin add phaseo@phaseo
 codex mcp login phaseo
 ```
 
-最后一条命令会为 Phaseo MCP 打开 Phaseo OAuth。当请求与技能匹配时会自动加载。
-
-## 选择合适的接口
-
-- 使用 **CLI** 创建密钥、修改设置、管理工作区或自动执行管理工作流。
-- 使用 **Phaseo MCP** 为 AI 客户端安全地开放 Phaseo 实时数据。
-- 使用 **Docs MCP** 为编程助手提供最新 Phaseo 文档，同时不授予账户访问权限。
-- 使用 **Phaseo 插件**，在 Claude Code 或 Codex 中一次性设置两个 MCP 服务器和 Phaseo 技能。
-
+最后一条命令会为 Phaseo MCP 打开 Phaseo OAuth。技能会在请求与其匹配时加载。

@@ -36,13 +36,23 @@ scoped_facts as (
 usage_tokens as (
   select
     usage.request_event_id,
-    sum(usage.quantity) filter (
-      where usage.meter_key in ('input_tokens', 'input_text_tokens', 'prompt_tokens')
+    -- input_tokens already includes input_text_tokens; the others are fallbacks only.
+    coalesce(
+      sum(usage.quantity) filter (where usage.meter_key = 'input_tokens'),
+      sum(usage.quantity) filter (where usage.meter_key = 'prompt_tokens'),
+      sum(usage.quantity) filter (where usage.meter_key = 'input_text_tokens')
     )::numeric input_tokens,
-    sum(usage.quantity) filter (
+    -- The gateway writes no meter row for a zero quantity, so a request with input
+    -- tokens and no cached row is a cache miss (0 cached tokens), not missing telemetry.
+    coalesce(sum(usage.quantity) filter (
       where usage.meter_key = 'cached_input_tokens'
-    )::numeric cached_input_tokens,
-    bool_or(usage.meter_key = 'cached_input_tokens') cache_telemetry_observed
+    ), 0)::numeric cached_input_tokens,
+    coalesce(
+      sum(usage.quantity) filter (where usage.meter_key = 'input_tokens'),
+      sum(usage.quantity) filter (where usage.meter_key = 'prompt_tokens'),
+      sum(usage.quantity) filter (where usage.meter_key = 'input_text_tokens'),
+      0
+    ) > 0 cache_telemetry_observed
   from public.v2_request_usage usage
   join scoped_facts on scoped_facts.request_event_id = usage.request_event_id
   where usage.meter_key in (
@@ -133,8 +143,15 @@ select
     filter (where base.success and base.tpot_ms is not null)::numeric,
   percentile_cont(p.percentile / 100.0) within group (order by base.itl_ms)
     filter (where base.success and base.itl_ms is not null)::numeric,
+  -- Unfiltered views publish at any volume. A colo, stream or context filter can
+  -- narrow a cohort to one customer's requests, so filtered views need 20.
   case
-    when count(base.cached_input_pct) >= 20 then
+    when count(base.cached_input_pct) >= case
+      when nullif(trim(p_cloudflare_colo), '') is null
+        and coalesce(lower(p_stream_mode), 'all') not in ('stream', 'non_stream')
+        and coalesce(lower(p_context_bucket), 'all') not in ('lte_4k', '4k_16k', '16k_64k', 'gt_64k')
+      then 1 else 20
+    end then
       percentile_cont(p.percentile / 100.0) within group (order by base.cached_input_pct)
         filter (where base.cached_input_pct is not null)::numeric
     else null

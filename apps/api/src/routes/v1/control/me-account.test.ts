@@ -49,9 +49,28 @@ describe("account routes", () => {
 
 	it("reads and updates the profile", async () => {
 		expect((await (await call("/profile")).json() as any).data).toMatchObject({ display_name: "Old Name", obfuscate_info: false });
+		// The person's dashboard session can set every field.
+		state.auth = { ...state.auth, oauthClientId: null, apiKeyRef: "dashboard" };
 		const response = await call("/profile", "PATCH", { display_name: "  New Name ", default_workspace_id: "ws_1", obfuscate_info: true });
 		expect(response.status).toBe(200);
 		expect((await response.json() as any).data).toEqual({ user_id: "user_1", display_name: "New Name", default_workspace_id: "ws_1", obfuscate_info: true });
+	});
+
+	it.each([
+		["a CLI sign-in", { oauthClientId: "phaseo_cli", apiKeyRef: "oauth_phaseo_cli" }],
+		["a desktop sign-in", { oauthClientId: "phaseo_desktop", apiKeyRef: "oauth_phaseo_desktop" }],
+		["an app that signs in with Phaseo", { oauthClientId: "client_tool", apiKeyRef: "oauth_client_tool" }],
+	])("doesn't let %s move the default workspace, which browser chat uses", async (_caller, client) => {
+		state.auth = { ...state.auth, ...client };
+		state.db.tables.workspace_members.push({ workspace_id: "ws_theirs", user_id: "user_1", role: "member" });
+		const response = await call("/profile", "PATCH", { default_workspace_id: "ws_theirs" });
+		expect(response.status).toBe(403);
+		expect((await response.json() as any).error).toBe("forbidden");
+		expect((await call("/profile", "PATCH", { default_workspace_id: null })).status).toBe(403);
+		expect(state.db.tables.users[0].default_workspace_id).toBeNull();
+		// The name and display preference stay its to change.
+		expect((await call("/profile", "PATCH", { display_name: "Pat", obfuscate_info: true })).status).toBe(200);
+		expect(state.db.tables.users[0]).toMatchObject({ display_name: "Pat", obfuscate_info: true, default_workspace_id: null });
 	});
 
 	it("refuses invalid profile changes and workspaces you do not belong to", async () => {
@@ -78,6 +97,28 @@ describe("account routes", () => {
 		expect(response.status).toBe(200);
 		expect(state.db.tables.oauth_authorizations[0].scopes).toEqual(["me:read", "keys:read"]);
 		expect(state.audits).toEqual([expect.objectContaining({ action: "oauth_authorization.reduced", targetId: "auth_cli", metadata: { removed: ["keys:write"] } })]);
+	});
+
+	it("doesn't put back a scope removed after the reduction read it", async () => {
+		const from = state.db.client.from;
+		let reads = 0;
+		state.db.client.from = (table: string) => {
+			// The second query on the table is the update: the dashboard removed keys:read just before it.
+			if (table === "oauth_authorizations" && ++reads === 2) state.db.tables.oauth_authorizations[0].scopes = ["me:read", "keys:write"];
+			return from(table);
+		};
+		const response = await call("/authorized-apps/auth_cli", "PATCH", { scopes: ["me:read", "keys:read"] });
+		expect(response.status).toBe(409);
+		expect((await response.json() as any).error).toBe("scopes_changed");
+		expect(state.db.tables.oauth_authorizations[0].scopes).toEqual(["me:read", "keys:write"]);
+		expect(state.audits).toEqual([]);
+	});
+
+	it("matches the stored scopes as read, in stored order and with duplicates", async () => {
+		state.db.tables.oauth_authorizations[0].scopes = ["keys:write", "me:read", "keys:write"];
+		const response = await call("/authorized-apps/auth_cli", "PATCH", { scopes: ["me:read"] });
+		expect(response.status).toBe(200);
+		expect(state.db.tables.oauth_authorizations[0].scopes).toEqual(["me:read"]);
 	});
 
 	it("revokes your own authorizations only", async () => {

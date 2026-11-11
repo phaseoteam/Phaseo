@@ -154,7 +154,8 @@ describe("fetchGatewayContext inflight dedupe", () => {
         runtime.privateRows.length = 0;
         await invalidatePrivateRoutes(args.workspaceId);
         const deleted = await fetchGatewayContext(args);
-        expect(deleted.contextTelemetry?.cacheStatus).toBe("hit");
+        // An edit bumps the workspace cache version, so the base context reloads too.
+        expect(deleted.contextTelemetry?.cacheStatus).toBe("miss");
         expect(deleted.providers).toHaveLength(0);
     });
 

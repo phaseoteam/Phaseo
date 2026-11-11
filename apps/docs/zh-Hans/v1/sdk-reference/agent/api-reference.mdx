@@ -1,0 +1,307 @@
+---
+icon: "braces"
+title: "API 参考"
+description: "查阅 Agent SDK 的每个函数、方法、选项和结果类型，以及它在各语言中的名称。"
+---
+
+按用途查找 Agent SDK 的函数或类型，再找到它在你所用语言中的名称。[用法](./usage)展示了这些部分如何组合在一起。TypeScript 是参考设计；某种语言缺少某项功能时，对应单元格会注明。
+
+| 语言 | 包 | 导入自 | 源码 |
+| --- | --- | --- | --- |
+| TypeScript | `@phaseo/agent-sdk` | `@phaseo/agent-sdk` | `packages/sdk/agent-sdk-ts` |
+| Python | `phaseo-agent-sdk` | `phaseo_agent` | `packages/sdk/agent-sdk-py` |
+| Go | `github.com/phaseoteam/Phaseo/packages/sdk/agent-sdk-go` | 包 `phaseoagent` | `packages/sdk/agent-sdk-go/agent.go` |
+| C# | `Phaseo.AgentSdk`（NuGet） | 命名空间 `PhaseoAgentSdk`，静态类 `AgentSdk` | `packages/sdk/agent-sdk-csharp/AgentSdk.cs` |
+| PHP | `phaseo/agent-sdk`（Composer） | 命名空间 `Phaseo\AgentSdk`，类 `AgentSdk` | `packages/sdk/agent-sdk-php/src/AgentSdk.php` |
+| Ruby | `phaseo_agent_sdk`（gem） | 模块 `PhaseoAgentSdk` | `packages/sdk/agent-sdk-ruby/lib/phaseo_agent_sdk.rb` |
+| Java | `app.phaseo:phaseo-agent-sdk`（Maven） | 嵌套在 `app.phaseo.agent.AgentSdk` 中的 record | `packages/sdk/agent-sdk-java/src/main/java/app/phaseo/agent/AgentSdk.java` |
+| Rust | `phaseo-agent` `0.2`（crates.io，[docs.rs](https://docs.rs/phaseo-agent/0.2.0/phaseo_agent/)） | `phaseo_agent` | `packages/sdk/agent-sdk-rust` |
+
+## 创建智能体
+
+根据定义创建一个智能体。定义中的步数上限作用于每次运行或继续调用。
+
+| 语言 | 名称 | 默认步数上限 |
+| --- | --- | --- |
+| TypeScript | `createAgent(definition)` | 12 |
+| Python | `create_agent(definition)`，接受字典或 `AgentDefinition` | 12 |
+| Go | `CreateAgent(AgentDefinition) *Agent` | 8 |
+| C# | `AgentSdk.CreateAgent(AgentDefinition)` | 12 |
+| PHP | `AgentSdk::createAgent(AgentDefinition)` | 12 |
+| Ruby | `PhaseoAgentSdk.create_agent(definition)`，接受 `AgentDefinition` 或关键字字段 | 12 |
+| Java | `AgentSdk.createAgent(AgentDefinition)` | 12（小于 1 的 `maxSteps` 会变为 12） |
+| Rust | `create_agent(AgentDefinition::new(id, model))` | 8（值至少会被限制为 1） |
+
+### 定义字段
+
+Rust 用方法而不是字段构建定义：先 `AgentDefinition::new(id, model)`，再调用 `.instructions(text)`、`.tool(tool)`（每个工具调用一次）、`.max_steps(limit)`、`.model_retries(count, backoff)` 和 `.human_review(callback)`。Java 的 `AgentDefinition` 是一个 record，有 10 个、13 个和 19 个参数的构造函数。
+
+| 字段 | camelCase（TypeScript、PHP、Java） | snake_case（Python、Ruby） | PascalCase（Go、C#） | 不支持的语言 |
+| --- | --- | --- | --- | --- |
+| 智能体 ID（必填） | `id` | `id` | `ID`（Go）、`Id`（C#） | |
+| 模型或预设 | `model`、`preset` | `model`、`preset` | `Model`、`Preset` | Rust 没有 `preset` |
+| 模型列表（未设置 `model` 时只使用第一个；没有回退） | `models` | | | 除 TypeScript 外的所有语言 |
+| 指令 | `instructions` | `instructions` | `Instructions` | |
+| 工具 | `tools` | `tools` | `Tools` | |
+| 某一步提供的工具 | `activeTools` | | | 除 TypeScript 外的所有语言 |
+| 在每次模型请求前改写历史 | `prepareMessages` | | | 除 TypeScript 外的所有语言 |
+| 步数上限和停止条件 | `maxSteps`、`stopWhen` | `max_steps`、`stop_when` | `MaxSteps`、`StopWhen` | Rust 没有 `stop_when` |
+| 模型重试和工具并发 | `modelRetry`、`toolExecution` | `model_retry`、`tool_execution` | `ModelRetry`、`ToolExecution` | Rust 没有工具并发 |
+| 采样和长度 | `temperature`、`maxOutputTokens`、`topP` | `temperature`、`max_output_tokens`、`top_p` | | Go、C#、Java、Rust |
+| 解析并校验最终输出 | `parseOutput`、`outputSchema` | `parse_output`、`output_schema` | `ParseOutput`、`OutputSchema` | Rust |
+| 每个工具调用都需要审批 | `requireApproval` | `require_approval` | `RequireApproval` | Rust（按工具审批） |
+| 每个模型响应后的审核 | `humanReview` | `human_review` | `HumanReview` | |
+| 在轮次之间更换工具或设置 | `dynamicTools`（PHP）以及[动态轮次](./dynamic-turns)回调 | `dynamic_tools`（Ruby） | 动态轮次回调 | Rust |
+
+在 TypeScript 中，`model`、`instructions` 和采样参数既可以是固定值，也可以是动态的。
+
+## 定义工具
+
+| 语言 | 名称 | 说明 |
+| --- | --- | --- |
+| TypeScript | `defineTool(definition)`，别名 `tool(definition)` | 本地工具、手动工具（`execute: false`）、需要审批的工具或会产生进度的工具 |
+| Python | `define_tool(AgentTool)`，别名 `tool(AgentTool)` | 省略 `execute` 即为手动工具 |
+| Go | `DefineTool(Tool) Tool` | 返回同一个 `Tool` |
+| C# | `AgentSdk.DefineTool(Tool)` | 返回同一个 `Tool` |
+| PHP | `AgentSdk::defineTool(Tool)` | 返回同一个 `Tool` |
+| Ruby | `PhaseoAgentSdk.define_tool(Tool)` | 返回同一个 `Tool` |
+| Java | `AgentSdk.defineTool(Tool)` | 返回同一个 `Tool` |
+| Rust | `Tool::new(id, description, parameters, executor)`、`Tool::external(id, description, parameters)`、`.require_approval()`；`define_tool(tool)` 返回该工具 | 执行器为 `Fn(serde_json::Value, &RuntimeContext) -> Result<serde_json::Value, AgentError> + Send + Sync + 'static` |
+
+[工具](./tools)列出了所有工具字段。
+
+## 连接到 Phaseo Gateway
+
+| 语言 | 名称 | 返回 |
+| --- | --- | --- |
+| TypeScript | `createGatewayAgentClient(options)` | 一个网关智能体客户端 |
+| Python | `create_gateway_agent_client(**options)` | 一个网关智能体客户端 |
+| Go | `CreateGatewayAgentClient(GatewayAgentClientOptions)` | `(*GatewayAgentClient, error)` |
+| C# | `AgentSdk.CreateGatewayAgentClient(GatewayAgentClientOptions? options = null)` | `GatewayAgentClient`；没有 API 密钥时抛出异常 |
+| PHP | `AgentSdk::createGatewayAgentClient(?GatewayAgentClientOptions)` | `GatewayAgentClient`；没有 API 密钥时抛出异常 |
+| Ruby | `PhaseoAgentSdk.create_gateway_agent_client(**options)` | `GatewayAgentClient`；没有 API 密钥时抛出异常 |
+| Java | `AgentSdk.createGatewayAgentClient()`、`createGatewayAgentClient(GatewayOptions)` | `ModelClient` / `StreamingModelClient`；没有 API 密钥时抛出异常 |
+| Rust | `create_gateway_agent_client(model)`（等同于 `GatewayAgentClient::from_env(model)`）、`GatewayAgentClient::new(phaseo_client, model)` | `GatewayAgentClient`，它发送 `POST /responses`，并规范化输出文本、函数调用、请求元数据和用量 |
+
+[输出与重试](./run-controls#set-gateway-defaults-on-the-client)列出了各语言的客户端选项。
+
+## 在本地捕获运行
+
+| 语言 | 名称 | 返回 |
+| --- | --- | --- |
+| TypeScript | `createAgentDevtools(options)` | 一个 DevTools 配置 |
+| Python | `create_agent_devtools(**options)` | 一个 DevTools 配置 |
+| Go | `CreateAgentDevtools(directory)` | `*DevtoolsConfig` |
+| C# | `AgentSdk.CreateAgentDevtools(string directory = ".phaseo-devtools")` | `AgentDevtoolsConfig` |
+| PHP | `AgentSdk::createAgentDevtools(string $directory = ".phaseo-devtools")` | `DevtoolsConfig` |
+| Ruby | `PhaseoAgentSdk.create_agent_devtools(directory: ".phaseo-devtools", enabled: true)` | `DevtoolsConfig` |
+| Java | `AgentSdk.createAgentDevtools(String directory)` | `DevtoolsConfig` |
+| Rust | 无 | |
+
+参见 [DevTools](./devtools)。
+
+## 停止条件
+
+| 条件 | camelCase（TypeScript、PHP、Java） | snake_case（Python、Ruby） | PascalCase（Go、C#） |
+| --- | --- | --- | --- |
+| 步数 | `stepCountIs` | `step_count_is` | `StepCountIs` |
+| 已用 token 数 | `maxTokensUsed` | `max_tokens_used` | `MaxTokensUsed` |
+| 费用 | `maxCost` | `max_cost` | `MaxCost` |
+| 已用时间 | `maxDuration`（TypeScript 和 PHP 中为毫秒；Java 中为 `Duration`） | `max_duration`（毫秒） | `MaxDuration`（Go 中为 `time.Duration`；C# 中为 `TimeSpan`） |
+| 调用了某个工具 | `hasToolCall` | `has_tool_call` | `HasToolCall` |
+| 结束原因 | `finishReasonIs` | `finish_reason_is` | `FinishReasonIs` |
+
+Go 和 Java 返回 `StopCondition`；C# 返回 `Func<StopState, (bool Stop, string Reason)>`；PHP 返回 `callable`；Ruby 返回 lambda。Rust 没有停止条件，只有步数上限。参见[停止条件](./stop-conditions)。
+
+## 运行与继续
+
+| 用途 | TypeScript | Python | Go | C# | PHP | Ruby | Java | Rust |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 运行 | `run(options)` | `run(...)` | `Run(ctx, RunOptions)` | `Run(RunOptions)` | `run(...)` | `run(...)` | `run(RunOptions)` | `run(&mut client, options)`、`run_with_events(&mut client, options, callback)` |
+| 运行并流式传输 | `stream(options)` | `stream(...)` | `Stream(ctx, RunOptions)` | `Stream(RunOptions)` | `stream(...)` | `stream(...)` | `stream(RunOptions)` | 无 |
+| 继续 | `continueRun(options)` | `continue_run(...)` | `Continue(ctx, ContinueOptions)` | `ContinueRun(ContinueOptions)` | `continueRun(...)`、`continueRunById(...)` | `continue_run(...)` | `continueRun(ContinueOptions)` | `continue_run(&mut client, options)`、`continue_with_events(...)` |
+| 继续并流式传输 | `continueStream(options)` | `continue_stream(...)` | `ContinueStream(ctx, ContinueOptions)` | `ContinueStream(ContinueOptions)` | `continueStream(...)` | `continue_stream(...)` | `continueStream(ContinueOptions)` | 无 |
+
+运行和继续都返回运行结果：TypeScript 中为 `Promise<AgentRunResult>`，Go 中为 `(RunResult, error)`，C# 中为 `Task<RunResult>`，Rust 中为 `Result<RunResult, AgentError>`，其他语言直接返回运行结果。流式方法会立即返回一个流结果。
+
+### 运行选项
+
+PHP 和 Ruby 以命名参数或关键字参数接收这些选项；Java 的 `RunOptions` 是按位置传参的 record，顺序为 `input, client, context, model, preset, maxSteps, modelRetry, toolExecution, onEvent, devtools`，之后是可选的 `state`。
+
+| 选项 | camelCase（TypeScript、PHP、Java） | snake_case（Python、Ruby、Rust） | PascalCase（Go、C#） | 不支持的语言 |
+| --- | --- | --- | --- | --- |
+| 输入 | `input` | `input` | `Input` | |
+| 用完整对话代替输入 | `messages` | | | 除 TypeScript 外的所有语言 |
+| 模型客户端 | `client` | `client` | `Client` | Rust 把它作为单独的参数传入 |
+| 应用上下文 | `context` | `context` | `Context` | |
+| 覆盖模型、预设和步数上限 | `model`、`preset`、`maxSteps` | `model`、`preset`、`max_steps` | `Model`、`Preset`、`MaxSteps` | Rust 只有 `model` 和 `max_steps` |
+| 覆盖重试和工具并发 | `modelRetry`、`toolExecution` | `model_retry`、`tool_execution` | `ModelRetry`、`ToolExecution` | Rust |
+| 覆盖采样参数 | `temperature`、`maxOutputTokens`、`topP`（TypeScript） | | | 除 TypeScript 外的所有语言 |
+| 取消 | `signal`（TypeScript） | | `CancellationToken`（C#） | Go 使用 `ctx`；其他语言通过流取消 |
+| 事件处理函数 | `onEvent` | `on_event` | `OnEvent` | Rust 使用 `run_with_events` |
+| 本地捕获 | `devtools` | `devtools` | `Devtools` | Rust |
+| 状态访问器 | `state` | `state` | `State` | Rust |
+| 在下一次模型请求前添加消息 | `takeMessages`（TypeScript） | | | 除 TypeScript 外的所有语言 |
+
+Python 的 `run()` 也接受 `stop_when`，但会忽略它；请在定义上设置停止条件。PHP 的 `stream()` 和 Ruby 的 `stream` 只接收 `input`、`client`、`context` 和 `state`。Rust 用 `RunOptions::new(input)` 创建默认值。
+
+### 继续选项
+
+继续选项接收上面的运行覆盖项，另外还有：
+
+| 选项 | camelCase（TypeScript、PHP、Java） | snake_case（Python、Ruby、Rust） | PascalCase（Go、C#） | 不支持的语言 |
+| --- | --- | --- | --- | --- |
+| 已保存的运行 | `run` | `run`（Rust：`result`） | `Run` | |
+| 通过 `state` 按 ID 加载运行 | `runId` | `run_id` | `RunID`（Go）、`RunId`（C#） | Rust；PHP 使用 `continueRunById($runId, $state, $client, ...)` |
+| 人工输入 | `humanInput` | `human_input` | `HumanInput` | |
+| 结构化的人工消息 | `humanMessages`（TypeScript） | | | 除 TypeScript 外的所有语言 |
+| 批准 | `approvals`（TypeScript 别名 `approveToolCalls`） | `approvals` | `Approvals` | |
+| 拒绝 | `rejections`（TypeScript 别名 `rejectToolCalls`） | `rejections` | `Rejections` | Rust |
+| 工具输出 | `toolOutputs` | `tool_outputs` | `ToolOutputs` | |
+
+Java 的 `ContinueOptions` 顺序为 `run, client, context, model, preset, maxSteps, humanInput, modelRetry, toolExecution, onEvent, devtools`，然后是 `approvals, rejections, toolOutputs`，最后是 `runId, state`。除了这个 16 参数的形式，还有只接收前 11 个或前 14 个参数的构造函数，其余参数默认为空列表或 `null`。Rust 用 `ContinueOptions::new(result)` 创建默认值。
+
+## 流结果
+
+| 用途 | TypeScript | Python | Go | C# | PHP | Ruby | Java |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 完成后的结果 | `getResult()`，或对流使用 `await` | `result()` | `Result()` | `GetResult()` | `getResult()` | `result` | `getResult()` |
+| 完整的最终文本 | `getText()` | | | | | | |
+| 文本增量 | `getTextStream()` | `text_stream()` | `Text()` | `TextStream()` | `textStream()` | `text_stream` | `textStream()` |
+| 推理增量 | `getReasoningStream()` | `reasoning_stream()` | | | `reasoningStream()` | `reasoning_stream` | |
+| 条目 | `getItemsStream()` | `item_stream()` | | | `itemStream()` | `item_stream` | |
+| 工具事件 | `getToolStream()` | `tool_stream()` | | | | | |
+| 所有事件 | `getFullStream()` | `full_stream()` | `Events()` | `FullStream()` | `fullStream()` | `full_stream` | `fullStream()` |
+| 取消 | `cancel(reason?)` | `cancel()` | `Cancel()` | `Cancel()` | `cancel()` | `cancel` | `cancel()` |
+
+消费者会从头重放，所以多个消费者可以读取同一个运行。它们的行为有所不同：
+
+| 语言 | 流结果类型 | 行为 |
+| --- | --- | --- |
+| TypeScript | `AgentStreamResult` | `getFullStream()` 以一个 `result` 事件结束 |
+| Python | `AgentStreamResult` | 在后台线程中运行；`result()` 会阻塞直到完成 |
+| Go | `*StreamResult` | `Text()` 和 `Events()` 是 channel；`Cancel()` 会取消运行的 context |
+| C# | `AgentStreamResult` | `IAsyncEnumerable` 消费者；`Cancel()` 会取消运行的关联令牌 |
+| PHP | `AgentStreamResult` | 在 Fiber 中运行；流被读完后 `$result` 保存 `RunResult`，否则为 `null` |
+| Ruby | `StreamResult` | 在工作线程中运行；`result` 会 join 该线程，`cancel` 会终止它 |
+| Java | `StreamResult` | `textStream()` 和 `fullStream()` 在运行结束后返回一个 `List`；`cancel()` 会中断工作线程 |
+| Rust | 无 | `0.2` 中没有流式传输 |
+
+## 运行结果
+
+| 字段 | camelCase（TypeScript、PHP、Java） | snake_case（Python、Ruby、Rust） | PascalCase（Go、C#） |
+| --- | --- | --- | --- |
+| 运行记录 | `run` | `run` | `Run` |
+| 步骤记录 | `steps` | `steps` | `Steps` |
+| 最终输出 | `output` | `output` | `Output` |
+| 完整对话 | `messages` | `messages` | `Messages` |
+| 累计用量 | `usage` | `usage` | `Usage` |
+
+该类型在 TypeScript 和 Python 中为 `AgentRunResult`，在其他语言中为 `RunResult`。TypeScript 还增加了 `stepResults`（规范化的步骤结果）和 `items`（按顺序排列的消息、推理、工具活动、错误和最终输出；参见[条目](./items)）。在 Rust 中，`output` 是 `serde_json::Value`，`RunResult`、`RunRecord`、`RunStep`、`Message`、`ToolCall`、`HumanPause`、`PendingToolCall`、`ToolDecision`、`ToolOutput` 和 `UsageSummary` 都可以用 Serde 序列化。
+
+### 运行记录
+
+| 字段 | camelCase（TypeScript、PHP、Java） | snake_case（Python、Ruby、Rust） | PascalCase（Go、C#） |
+| --- | --- | --- | --- |
+| ID | `id`、`agentId` | `id`、`agent_id` | `ID`/`Id`、`AgentID`/`AgentId` |
+| 状态 | `status` | `status` | `Status` |
+| 输入、上下文和消息 | `input`、`context`、`messages` | `input`、`context`、`messages` | `Input`、`Context`、`Messages` |
+| 已执行的步数 | `stepCount` | `step_count` | `StepCount` |
+| 结果和错误 | `result`、`error` | `result`、`error` | `Result`、`Error` |
+| 暂停 | `pause` | `pause` | `Pause` |
+| 停止原因 | `stopReason` | `stop_reason` | `StopReason` |
+| 用量 | `usage` | `usage` | `Usage` |
+| 下一轮覆盖 | `nextTurn`（Java）、`nextTurnParams`（PHP） | `next_turn_params`（Ruby） | `NextTurn` |
+| 时间戳 | `createdAt`、`updatedAt` | `created_at`、`updated_at` | `CreatedAt`、`UpdatedAt` |
+
+Rust 的 `RunRecord` 还会保存实际使用的模型和步数上限。TypeScript 还增加了包含网关错误详情的 `errorDetails`。
+
+运行状态有 `queued`、`running`、`waiting_for_tools`、`waiting_for_human`、`completed`、`stopped` 和 `failed`。TypeScript 还增加了 `cancelled`。
+
+### 步骤记录
+
+| 字段 | camelCase（TypeScript、PHP、Java） | snake_case（Python、Ruby、Rust） | PascalCase（Go、C#） |
+| --- | --- | --- | --- |
+| 索引和状态 | `index`、`status` | `index`、`status` | `Index`、`Status` |
+| 工具调用 | `toolCalls` | `tool_calls` | `ToolCalls` |
+| 网关请求 ID | `requestId` | `request_id` | `RequestID`/`RequestId` |
+| 上游响应 ID | `nativeResponseId` | `native_response_id`（Rust 没有） | `NativeResponseID`/`NativeResponseId` |
+| 提供商和模型 | `provider`、`model` | `provider`、`model` | `Provider`、`Model` |
+| 模型尝试次数 | `modelAttempts` | `model_attempts` | `ModelAttempts` |
+| 用量 | `usage` | `usage` | `Usage` |
+| 网关 meta 块 | `responseMeta` | `response_meta`（Rust 没有） | `ResponseMeta` |
+| 错误 | `error` | `error` | `Error` |
+| 结束原因 | `finishReason` | `finish_reason` | `FinishReason` |
+| 警告 | `warnings` | `warnings`（Rust 没有） | `Warnings` |
+
+除 TypeScript 和 Python（`AgentStepRecord`）外，该类型在所有语言中都是 `RunStep`。
+
+### 用量汇总
+
+`inputTokens`、`outputTokens`、`cachedTokens`、`totalTokens`、`cost`（TypeScript、Java）；`input_tokens`、`output_tokens`、`cached_tokens`、`total_tokens`、`cost`（Python、PHP 和 Ruby 的键，Rust）；`InputTokens`、`OutputTokens`、`CachedTokens`、`TotalTokens`、`Cost`（Go、C#）。该类型在 TypeScript 和 Python 中为 `AgentUsageSummary`，在 Go、C#、Java 和 Rust 中为 `UsageSummary`。PHP 和 Ruby 使用数组或 Hash。关于 `cost` 的注意事项，参见[可观测性](./observability)。
+
+## 暂停与决定
+
+| 类型 | TypeScript | Python | Go、C#、PHP、Ruby、Java、Rust | 字段 |
+| --- | --- | --- | --- | --- |
+| 批准或拒绝调用 | `{ toolCallId, reason? }` | `AgentToolDecision` | `ToolDecision` | 工具调用 ID 和可选的原因 |
+| 提供工具结果 | `{ toolCallId, output }` | `AgentToolOutput` | `ToolOutput` | 工具调用 ID 和输出 |
+| 请求审核 | `{ reason, payload }` | `AgentHumanReviewRequest` | `HumanReviewRequest` | `reason`，可选的 `payload` |
+| 审核回调的输入 | | `AgentHumanReviewContext` | `HumanReviewContext` | 运行 ID 和智能体 ID、步骤索引、消息、模型响应、解析后的输出（Rust：用应用上下文代替解析后的输出） |
+| 暂停 | `run.pause` | `AgentHumanPause` | `HumanPause` | `reason`、`payload`、`kind`、待处理的工具调用 |
+| 待处理的调用 | | | `PendingToolCall` | `call` 和 `kind`（`approval`、`manual` 或 `hitl`）；Rust 还增加了一个人类可读的 `reason` |
+
+字段名遵循各语言的风格：`toolCallId`（TypeScript、PHP、Java）、`tool_call_id`（Python、Ruby、Rust）、`ToolCallID`（Go）和 `ToolCallId`（C#）。Rust 的 `ToolDecision` 只用于批准。参见[状态与审批](./state-and-approval)。
+
+## 传给工具的运行时上下文
+
+| 字段 | camelCase（TypeScript、PHP、Java） | snake_case（Python、Ruby、Rust） | PascalCase（Go、C#） | 不支持的语言 |
+| --- | --- | --- | --- | --- |
+| ID 和步骤 | `runId`、`agentId`、`stepIndex` | `run_id`、`agent_id`、`step_index` | `RunID`/`RunId`、`AgentID`/`AgentId`、`StepIndex` | |
+| 应用上下文 | `context` | `context` | `Context` | |
+| 正在运行的调用 | `toolCall` | `tool_call` | `ToolCall` | |
+| 报告进度 | `emitProgress` | `emit_progress` | `EmitProgress` | Rust |
+| 更新应用上下文 | `setContext` | `set_context` | `SetContext` | Rust |
+| 取消 | `signal`（TypeScript） | | `CancellationToken`（C#） | 其他所有语言 |
+
+## 状态访问器
+
+| 语言 | 名称 | 方法 |
+| --- | --- | --- |
+| TypeScript | `AgentStateAccessor` | `load(runId)` 和 `save(result)`，都是异步的 |
+| Python | `AgentStateAccessor`（protocol） | `load(run_id)` 和 `save(result)` |
+| Go | `StateAccessor`（接口） | `Load(ctx, runID)` 和 `Save(ctx, result)` |
+| C# | `IStateAccessor` | `Load(runId, ct)` 和 `Save(result, ct)` |
+| PHP | `StateAccessor`（接口） | `load(string $runId): ?RunResult` 和 `save(RunResult $result): void` |
+| Ruby | 任何对象 | `load(run_id)` 和 `save(result)` |
+| Java | `StateAccessor` | `load(runId)` 和 `save(result)` |
+| Rust | 无 | 自行序列化 `RunResult` |
+
+## 模型客户端
+
+实现一个模型客户端，即可通过其他传输方式发送模型轮次，或包装网关客户端。
+
+| 语言 | 接口 | 方法 |
+| --- | --- | --- |
+| Go | `ModelClient`、`StreamingModelClient` | `Generate(ctx, ModelRequest)`；`Stream(ctx, ModelRequest)` |
+| C# | `IModelClient`、`IStreamingModelClient` | `Generate(ModelRequest)`；`Stream(ModelRequest)` |
+| PHP | `ModelClient`、`StreamingModelClient`（接口） | `generate(ModelRequest)`；`stream(ModelRequest)` |
+| Java | `ModelClient`、`StreamingModelClient` | `generate(ModelRequest)`；`stream(ModelRequest)` |
+| Rust | `ModelClient`（trait） | `fn generate(&mut self, request: &ModelRequest) -> Result<ModelResponse, AgentError>` |
+
+在 Rust 中，`ModelRequest` 包含智能体 ID、实际使用的模型、指令、当前消息、工具规范（`ToolSpec`：`id`、`description`、JSON Schema `parameters`）和应用上下文。`ModelResponse` 包含 `message`、`usage`、`request_id`、`provider`、`model` 和 `finish_reason`。`Message` 有 `role`、`content`、`tool_calls`、`tool_call_id`、`name` 和 `is_error`，并提供 `Message::user(content)` 和 `Message::assistant(content)` 构造函数；`ToolCall` 有 `id`、`name` 和 JSON 格式的 `input`。
+
+## 事件与错误
+
+| 语言 | 事件类型 | 错误类型 |
+| --- | --- | --- |
+| TypeScript | 带有 `type` 的事件对象 | `AgentGatewayError`（`isAgentGatewayError()`）、`AgentStreamError`、`AgentSchemaValidationError` |
+| Python | 带有 `"type"` 的字典 | 内置异常和 `phaseo.PhaseoHTTPError` |
+| Go | `AgentEvent` | `error` 值 |
+| C# | `AgentEvent` | 异常 |
+| PHP | 带有 `"type"` 的数组 | `RuntimeException` |
+| Ruby | 带有 `:type` 的 Hash | 异常 |
+| Java | `AgentEvent` | 异常 |
+| Rust | `AgentEvent`（`event_type`、`run_id`、`agent_id`、`timestamp_ms`、`details`） | `AgentError`（`AgentError::new(...)`、`message()`；实现了 `std::error::Error` 和 `Display`） |
+
+TypeScript 还导出了 `agentErrorIsRetryable()`、`agentRetryAfterMs()` 和 `agentErrorIsContextOverflow()` 用于对错误分类，`repairToolHistory(messages)` 用于回应缺少结果的工具调用并丢弃不对应任何调用的结果，以及 `truncateToolOutput(text, limit)` 用于保留长文本的开头和结尾，并附上被截掉内容的说明。参见[生命周期钩子](./lifecycle-hooks)和[事件与错误](./events-and-errors)。

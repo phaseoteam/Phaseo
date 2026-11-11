@@ -1,50 +1,24 @@
 ---
-title: "संगीत बनाएँ"
-sidebarTitle: "संगीत बनाएँ"
-badge: "Beta"
+title: "संगीत बनाएं"
+sidebarTitle: "संगीत बनाएं"
+badge: "बीटा"
 openapi: "/hi/openapi/v1/openapi.localized.yaml POST /music/generate"
 ---
 
-एक प्रदाता-स्वतंत्र API के ज़रिए संगीत बनाएँ। Phaseo सिंक्रोनस प्रतिक्रियाओं और प्रदाता कतार की जाँच को पर्दे के पीछे संभालता है।
+एक ही अनुरोध रूप से किसी भी संगीत प्रदाता से ट्रैक पाने के लिए `POST /v1/music/generate` पर `model` और `prompt` भेजें। सिंक्रोनस प्रदाताओं और प्रदाता की कतार की पोलिंग को Phaseo आपकी ओर से संभालता है।
 
-जनरेशन पूरा होने पर प्रतिक्रिया में `audio_url` या `audio_base64` शामिल होता है। यदि प्रदाता ऐसा जॉब लौटाता है जो अभी पूरा नहीं हुआ है, तो उसी प्रतिक्रिया के `id` के साथ `GET /music/generate/{music_id}` उपयोग करें।
-
-## अनुरोध का स्वरूप
-
-```json
-{
-  "model": "minimax/music-3.0:free",
-  "prompt": "Warm jazz trio with brushed drums",
-  "format": "mp3"
-}
+```bash
+curl https://api.phaseo.app/v1/music/generate \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "minimax/music-3.0:free",
+    "prompt": "Warm jazz trio with brushed drums",
+    "format": "mp3"
+  }'
 ```
 
-## Suno विकल्प
-
-- `suno.customMode` (बूलियन, डिफ़ॉल्ट `false`)
-- `suno.instrumental` (बूलियन, डिफ़ॉल्ट `false`)
-- `suno.prompt` (शीर्ष-स्तरीय `prompt` का वैकल्पिक ओवरराइड)
-- `suno.style`, `suno.title` (`customMode = true` होने पर आवश्यक)
-- `suno.personaId`, `suno.personaModel`
-- `suno.negativeTags`, `suno.vocalGender`
-- `suno.styleWeight`, `suno.weirdnessConstraint`, `suno.audioWeight`
-
-## मान्यकरण नियम
-
-- `customMode = false` होने पर `prompt` आवश्यक है।
-- `customMode = true` होने पर `style` और `title` दोनों आवश्यक हैं।
-- `customMode = true` और `instrumental = false` होने पर `prompt` आवश्यक है।
-
-मान्यकरण त्रुटियाँ `400` के साथ यह लौटाती हैं:
-
-```json
-{
-  "error": "validation_error",
-  "reason": "..."
-}
-```
-
-## जवाब
+## परिणाम पढ़ें
 
 ```json
 {
@@ -62,8 +36,32 @@ openapi: "/hi/openapi/v1/openapi.localized.yaml POST /music/generate"
 }
 ```
 
-- `id` Phaseo का स्थिर अनुरोध ID है। अनुरोध प्राप्त करने के लिए `GET /music/generate/{music_id}` का उपयोग करें।
-- `nativeResponseId` upstream provider का पहचानकर्ता है और provider से अनुरोध मिलान तथा सहायता पाने के लिए उपयोग होता है।
-- `status` `queued`, `in_progress`, `completed` या `failed` हो सकता है।
-- `usage` में `output_audio_seconds` शामिल हो सकता है, जब provider जनरेट की गई अवधि बताता है।
+पूरे हुए जनरेशन में `audio_url` या `audio_base64` होता है। `status` का मान `queued`, `in_progress`, `completed` या `failed` होता है। जब यह अभी अंतिम न हो, तो उसी `id` के साथ [`GET /v1/music/generate/{music_id}`](./music-status.mdx) पोल करें।
 
+`id` स्थिर Phaseo अनुरोध ID है। `nativeResponseId` अपस्ट्रीम प्रदाता का पहचानकर्ता है, जो प्रदाता से मिलान और सपोर्ट के लिए है। जब प्रदाता बनाई गई अवधि बताता है, तो `usage` में `output_audio_seconds` शामिल होता है।
+
+## Suno विकल्प सेट करें
+
+Suno मॉडल एक वैकल्पिक `suno` ऑब्जेक्ट लेते हैं:
+
+| फ़ील्ड | प्रकार | नोट्स |
+| --- | --- | --- |
+| `customMode` | boolean | डिफ़ॉल्ट `false` |
+| `instrumental` | boolean | डिफ़ॉल्ट `false` |
+| `prompt` | string | शीर्ष-स्तर के `prompt` की जगह लेता है |
+| `style`, `title` | string | `customMode` के `true` होने पर आवश्यक |
+| `personaId`, `personaModel` | string | |
+| `negativeTags` | string | |
+| `vocalGender` | `m` या `f` | |
+| `styleWeight`, `weirdnessConstraint`, `audioWeight` | number | 0 से 1 |
+
+`customMode` के `false` होने पर `prompt` आवश्यक है, और तब भी जब `customMode` `true` हो और `instrumental` `false` पर सेट हो।
+
+प्रदाता का कोई नियम तोड़ने वाला अनुरोध `400` लौटाता है:
+
+```json
+{
+  "error": "validation_error",
+  "reason": "..."
+}
+```

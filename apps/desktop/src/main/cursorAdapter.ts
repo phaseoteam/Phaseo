@@ -1,6 +1,5 @@
 import path from "node:path";
-import { Agent, Cursor, JsonlLocalAgentStore } from "@cursor/sdk";
-import type { AgentOptions, McpServerConfig, ModelListItem, ModelSelection, Run, SDKAgent } from "@cursor/sdk";
+import type { AgentOptions, JsonlLocalAgentStore, McpServerConfig, ModelListItem, ModelSelection, Run, SDKAgent } from "@cursor/sdk";
 import type { Account, ModelOptionDescriptor, ModelOptionValues, QueuedMessage, Task } from "../shared/workspace";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import { AgentInputRejectedError } from "./agentAdapter";
@@ -59,9 +58,11 @@ export function cursorModelSelection(model: string, values?: ModelOptionValues, 
 	});
 	return params.length ? { id, params } : { id };
 }
+/** The Cursor SDK and its dependencies take about 0.2 s to load, so they load when Cursor is first used, not at startup. */
+export const cursorSdk = () => import("@cursor/sdk");
 async function cursorCatalogModel(apiKey: string, model: string) {
 	const id = model === "default" ? "auto" : model;
-	try { return (await bounded(Cursor.models.list({ apiKey }))).find(item => item.id === id || item.aliases?.includes(id)); }
+	try { const { Cursor } = await cursorSdk(); return (await bounded(Cursor.models.list({ apiKey }))).find(item => item.id === id || item.aliases?.includes(id)); }
 	catch { return undefined; }
 }
 
@@ -70,7 +71,7 @@ export function cursorOptions(task: Task, cwd: string, apiKey: string, store: Js
 	// Chat and Plan admit only the orchestration server; "mcp" in their tool allowlists covers just that server.
 	for (const connection of connections) if (connection.enabled && !connection.archived && (connection.orchestration || (task.mode === "code" && (!connection.projectId || connection.projectId === task.projectId)))) mcpServers[nativeMcpName(connection)] = connection.transport === "stdio" ? { command: connection.executable, args: connection.arguments, cwd } : { url: connection.url, ...(connection.headers ? { headers: connection.headers } : {}) };
 	const orchestration = Object.keys(mcpServers).length && task.mode !== "code" ? ["mcp"] : [];
-	return { apiKey, model: cursorModelSelection(task.model, task.modelOptions, catalog), name: `Phaseo ${task.id}`, mode: task.mode === "plan" ? "plan" : "agent", ...(task.mode === "chat" ? { tools: orchestration } : task.mode === "plan" ? { tools: ["read", "grep", "glob", "ls", "readLints", "semSearch", "webSearch", "webFetch", "readTodos", "updateTodos", ...orchestration] } : {}), mcpServers, local: { cwd, store, autoReview: true, enableAgentRetries: false, settingSources: task.mode === "code" ? ["project", "user", "team", "mdm", "plugins"] : [] } };
+	return { apiKey, model: cursorModelSelection(task.model, task.modelOptions, catalog), name: `Phaseo ${task.id}`, mode: task.mode === "plan" ? "plan" : "agent", ...(task.mode === "chat" ? { tools: orchestration } : task.mode === "plan" ? { tools: ["read", "grep", "glob", "ls", "readLints", "semSearch", "webSearch", "webFetch", "readTodos", "updateTodos", ...orchestration] } : {}), mcpServers, local: { cwd, store, autoReview: true, enableAgentRetries: false, settingSources: task.mode !== "code" ? [] : task.untrustedCheckout ? ["user", "team", "mdm", "plugins"] : ["project", "user", "team", "mdm", "plugins"] } };
 }
 export class CursorAdapter implements AgentAdapter {
 	private agent?: SDKAgent;
@@ -93,6 +94,7 @@ export class CursorAdapter implements AgentAdapter {
 			const guided = !task.nativeSessionId && this.connections.some(connection => connection.orchestration) ? `${orchestrationInstructions}\n\n---\n\n${prompt}` : prompt;
 			const catalog = task.modelOptions && Object.keys(task.modelOptions).length ? await cursorCatalogModel(apiKey, task.model) : undefined;
 			if (this.stopped) throw new Error("Cursor task stopped.");
+			const { Agent, JsonlLocalAgentStore } = await cursorSdk();
 			const options = cursorOptions(task, cwd, apiKey, new JsonlLocalAgentStore(path.join(this.directory, "native", "cursor", account.id)), this.connections, catalog);
 			this.agent = task.nativeSessionId ? await Agent.resume(task.nativeSessionId, options) : await Agent.create(options);
 			callbacks.onSession(this.agent.agentId); if (this.stopped) throw new Error("Cursor task stopped.");

@@ -1,127 +1,110 @@
 ---
-title: "EU または ZDR 対応プロバイダーのみにルーティングする"
-sidebarTitle: "EU・ZDR 対応のみにルーティング"
+title: "EU または ZDR 対応のプロバイダーだけにルーティングする"
+sidebarTitle: "EU・ZDR のプロバイダーにルーティング"
 icon: "globe"
-description: "リクエストにデータ所在地とデータ保持ゼロの要件を設定し、条件に適合するプロバイダーのみにルーティングします。"
+description: "リクエスト単位でデータ所在地とゼロデータ保持の要件を適用し、モデルが要件を満たすプロバイダーの提供だけにルーティングされるようにします。"
 ---
 
-ワークスペース全体のポリシーを変更せずに、コンプライアンスやデータ処理の理由から特定のリクエストでプロバイダーを絞り込みたい場合は、このレシピを使います。
+1 件のリクエストの `provider` オブジェクトにデータ所在地と <Tooltip tip="ゼロデータ保持: プロバイダーがプロンプトや出力を保持しません。">ZDR</Tooltip> の要件を追加すると、Phaseo は残りを順位付けする前に、要件を満たさないプロバイダーの提供をすべて除外します。完成すると、ワークスペース全体のポリシーを変えずに、1 つのワークフローだけを EU または ZDR 対応のプロバイダーで実行できます。
 
-## 目標
+このリクエストは本番環境で使えます。モデルのどのプロバイダーもすべての要件を満たさない場合、リクエストはプロバイダーを呼び出す前に失敗するため、先に提供状況を確認してください。
 
-- EU 内での実行を必須にする
-- EU 内のデータ所在地を必須にする
-- データ保持ゼロに対応するプロバイダーを必須にする
+| フィールド | 残すプロバイダー |
+| --- | --- |
+| `required_execution_region: "eu"` | EU 内でモデルを実行するプロバイダー |
+| `required_data_region: "eu"` | プロンプトと補完のデータを EU 内で扱うプロバイダー |
+| `require_zero_data_retention: true` | ゼロデータ保持の要件を満たすプロバイダー |
 
-## 1. リクエストにデータ所在地の要件を追加する
+## 制限付きのリクエストを送る
 
-プロバイダーの要件をリクエスト本文に直接設定します。
+<Steps>
+<Step title="プロバイダーが条件を満たすか確認する">
+
+モデルのページのプロバイダーカードには、**OpenAI EU** や **Google Vertex EU** などのリージョン別の提供、ZDR への対応、各プロバイダーのデータポリシーに関する注記と出典が表示されます。EU の場合は、EU ゲートウェイが提供するモデルを一覧表示することもできます。
+
+```bash
+curl https://eu.api.phaseo.app/v1/models \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+</Step>
+<Step title="必要な要件だけを追加する">
+
+要件を追加するたびに候補が減るため、より高価なリージョン別の提供にルーティングされたり、プロバイダーが 1 つも残らなかったりすることがあります。ポリシーで求められるものだけを送ってください。
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "google/gemini-3.1-flash-lite",
+    "model": "openai/gpt-5.6-luna",
     "input": "Summarize the ticket in one line.",
     "provider": {
       "required_execution_region": "eu",
-      "required_data_region": "eu",
-      "require_zero_data_retention": true
-    }
+      "required_data_region": "eu"
+    },
+    "meta": true
   }'
 ```
 
-```typescript TypeScript SDK
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "google/gemini-3.1-flash-lite",
+  model: "openai/gpt-5.6-luna",
   input: "Summarize the ticket in one line.",
   provider: {
     required_execution_region: "eu",
     required_data_region: "eu",
-    require_zero_data_retention: true,
   },
+  meta: true,
 });
 
-console.log(response.output_text);
+console.log(response.meta?.routing);
 ```
 
-```python Python SDK
+```python Python
+import os
+
 from phaseo import Phaseo
 
-client = Phaseo(api_key="YOUR_API_KEY")
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
 response = client.generate_response(
     {
-        "model": "google/gemini-3.1-flash-lite",
+        "model": "openai/gpt-5.6-luna",
         "input": "Summarize the ticket in one line.",
         "provider": {
             "required_execution_region": "eu",
             "required_data_region": "eu",
-            "require_zero_data_retention": True,
         },
+        "meta": True,
     }
 )
 
-print(response.get("output_text"))
+print(response["meta"]["routing"]["selected_provider"])
 ```
 </CodeGroup>
 
-このフローでリクエストに設定できるフィルター:
+ZDR も必須にするには、`"require_zero_data_retention": true` を追加します。3 つすべてを指定した場合、モデルには ZDR も満たす EU のプロバイダーが少なくとも 1 つ必要です。
 
-- `required_execution_region`
-- `required_data_region`
-- `require_zero_data_retention`
+</Step>
+<Step title="実行された場所を確認する">
 
-## 2. ポリシーに必要な最小限のルールを使う
+`meta.routing.selected_provider` は、処理したプロバイダー（例: `openai-eu`）を示します。**設定 → 使用量 → ログ** のリクエストには、必須のリージョンと選ばれたプロバイダーが記録されます。
 
-ワークロードに本当に必要な条件だけを指定します。
+</Step>
+</Steps>
 
-例:
+## リクエストのフィールド、EU ゲートウェイ、ワークスペースの設定から選ぶ
 
-- 実行場所のみ:
-  - `required_execution_region: "eu"`
-- データの保存場所のみ:
-  - `required_data_region: "eu"`
-- <Tooltip tip="ゼロデータ保持: ゼロデータ保持の要件を満たすプロバイダーのみ。">ZDR</Tooltip> 対応プロバイダーのみ:
-  - `require_zero_data_retention: true`
+| 使うもの | 使う場面 |
+| --- | --- |
+| `api.phaseo.app` でのこれらのリクエストフィールド | ルールが 1 つのワークフロー、顧客、またはリクエストに適用される場合。すべてのエンドポイントと機能を引き続き利用できます。 |
+| [`eu.api.phaseo.app`](../guides/regional-routing) | サービスからのすべてのテキストリクエストを EU 内に留める必要がある場合。ホスト名がリージョンを強制し、メディア入力、Phaseo のサーバーツール、プロバイダーがホストするツールも拒否します。ここで別のリージョンの `required_execution_region` や `required_data_region` を送ると、理由 `deployment_region_conflict` とともに `400 validation_error` が返ります。 |
+| **設定 → プライバシー** | ルールがワークスペース内のすべてのリクエストに適用される場合。 |
 
-## 3. 候補となるプロバイダーが減ることを考慮する
-
-これらのフィルターはプロバイダーの順位付けより前に適用されるため、プロバイダーが候補から完全に除外されることがあります。
-
-その結果:
-
-- より高価な地域別オファーにルーティングされることがあります。
-- プロバイダーの一覧が大幅に少なくなることがあります。
-- 条件を満たすプロバイダーがそのモデルにない場合、リクエストが失敗することがあります。
-
-## 4. 可能であれば、事前にモデルページを確認する
-
-リクエストを本番環境にデプロイする前に、モデルページのプロバイダーカードで次を確認します。
-
-- `OpenAI EU` や `Google Vertex EU` などの地域別オファー
-- ZDR の対応状況
-- プロバイダーのデータポリシーに関する説明と出典
-
-本番トラフィックに要件を適用する前に、少なくとも1つの適格なプロバイダーがあることを確認できます。
-
-## 5. ワークスペースのプライバシー設定を既定値として使う
-
-ポリシーをワークスペース内のすべてのリクエストに適用する場合、同じリクエストフィルターを繰り返す代わりに、**設定 -> プライバシー**で設定します。
-
-ルールが次の単位で適用される場合は、リクエストのフィールドを使います。
-
-- ワークフローごと
-- 顧客ごと
-- リクエストごと
-
-## 関連ガイド
-
-- [ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)
-- [プリセット](../guides/presets.mdx)
+リージョンルーティングは、モデル呼び出しを処理するプロバイダーを制限するものです。現時点では、エンドツーエンドのデータ所在地を保証するものではありません。共有されるシステムは[リージョン外に残るもの](../guides/regional-routing#what-stays-outside-the-region)に一覧があります。データ所在地のルールなしでプロバイダーを制限するには、[プロバイダーを固定または除外する](./pin-or-ignore-providers-per-request)を参照してください。

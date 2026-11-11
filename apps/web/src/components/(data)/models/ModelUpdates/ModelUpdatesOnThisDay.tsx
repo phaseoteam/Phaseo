@@ -1,4 +1,4 @@
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import type { ModelEvent } from "@/lib/fetchers/updates/types";
 import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 import ModelUpdateCard, { type EventTypeOption } from "./ModelUpdateCard";

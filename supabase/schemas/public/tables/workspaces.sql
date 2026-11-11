@@ -58,6 +58,32 @@ CREATE TRIGGER workspaces_prevent_reserved_publisher_handle
   FOR EACH ROW
   EXECUTE FUNCTION public.prevent_reserved_workspace_publisher_handle();
 
+CREATE POLICY "workspaces_no_oauth_client_insert" ON "public"."workspaces"
+  AS RESTRICTIVE
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "workspaces_no_oauth_client_update" ON "public"."workspaces"
+  AS RESTRICTIVE
+  FOR UPDATE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client))
+  WITH CHECK (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "workspaces_no_oauth_client_delete" ON "public"."workspaces"
+  AS RESTRICTIVE
+  FOR DELETE
+  TO "authenticated"
+  USING (NOT ( SELECT public.request_is_oauth_client() AS request_is_oauth_client));
+
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."workspaces"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "teams: delete if owner" ON "public"."workspaces"
   FOR DELETE
   TO "authenticated"
@@ -94,7 +120,7 @@ COMMENT ON TABLE "public"."workspaces" IS 'Teams (organizations) with RLS enable
 
 REVOKE ALL ON TABLE "public"."workspaces" FROM "anon";
 
-GRANT DELETE, MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."workspaces" TO "anon";
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."workspaces" TO "anon";
 
 REVOKE ALL ON TABLE "public"."workspaces" FROM "authenticated";
 
@@ -126,7 +152,7 @@ REVOKE ALL ("updated_at") ON TABLE "public"."workspaces" FROM "authenticated";
 
 GRANT INSERT ("updated_at"), UPDATE ("updated_at") ON TABLE "public"."workspaces" TO "authenticated";
 
-GRANT DELETE, MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."workspaces" TO "authenticated";
+GRANT MAINTAIN, REFERENCES, SELECT, TRIGGER ON TABLE "public"."workspaces" TO "authenticated";
 
 REVOKE ALL ("owner_user_id") ON TABLE "public"."workspaces" FROM "authenticated";
 

@@ -1,17 +1,18 @@
 ---
 icon: "message-square"
 title: "Générer du texte (AI SDK)"
-description: "Générez du texte sans streaming avec le Vercel AI SDK et Phaseo."
+sidebarTitle: "Générer du texte"
+description: "Génération de texte sans streaming avec Vercel AI SDK et Phaseo."
 ---
 
-Utilisez `generateText` avec `phaseo(modelId)` pour obtenir une réponse en un seul appel.
+Appelez `generateText` avec `phaseo(modelId)` pour obtenir une réponse complète.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const result = await generateText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   prompt: "Write a concise summary of Phaseo Gateway.",
 });
 
@@ -19,14 +20,16 @@ console.log(result.text);
 console.log(result.providerMetadata);
 ```
 
-## Avec l’historique de chat
+## Envoyer un historique de conversation
+
+Utilisez `prompt` pour un seul tour et `messages` quand vous avez besoin de plusieurs tours ou d’un rôle système.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const result = await generateText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   messages: [
     { role: "system", content: "You are a terse assistant." },
     { role: "user", content: "Give me three bullet points on retrieval augmentation." },
@@ -37,16 +40,16 @@ console.log(result.text);
 console.log(result.providerMetadata);
 ```
 
-## Paramètres propres au modèle
+## Définir des valeurs par défaut sur le modèle
+
+Passez des réglages en second argument de `phaseo()`. Ils s’appliquent à chaque appel qui utilise cette instance de modèle.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const result = await generateText({
-  model: phaseo("openai/gpt-5-nano", {
-    temperature: 0.2,
-    topP: 0.9,
+  model: phaseo("openai/gpt-6-astra", {
     maxTokens: 300,
   }),
   prompt: "Draft a release note for an API update.",
@@ -56,8 +59,4 @@ console.log(result.text);
 console.log(result.providerMetadata);
 ```
 
-## Prompt ou messages
-
-- Utilisez `prompt` pour les requêtes rapides en un seul tour.
-- Utilisez `messages` pour le contexte sur plusieurs tours et le contrôle des rôles.
-- Interrogez `/v1/models` pour tenir les ID de modèle à jour (voir [Découverte des modèles](../get-models/index.mdx)).
+Les ID de modèles ont la forme `provider/model`. Pour qu’ils restent à jour, lisez-les depuis `/v1/models` ; consultez [Découverte des modèles](/fr/v1/sdk-reference/sdk/get-models).

@@ -1,11 +1,11 @@
 import { formatDateParts } from "@phaseo/app-kit/format";
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ChevronDown, CircleCheck, LoaderCircle, RotateCw, SearchIcon, Star } from "lucide-react";
-import type { Harness, ModelOption } from "../../shared/workspace";
+import { ChevronDown, CircleCheck, LoaderCircle, RotateCw, SearchIcon, ShieldCheck, Star, Zap } from "lucide-react";
+import { runnableHarnesses, type Harness, type ModelOption } from "../../shared/workspace";
 import { usablePhaseoAccounts, useWorkspace } from "../app/workspace";
-import type { ModelSelection } from "../lib/modelPreferences";
-import { refreshModels, useModels } from "../lib/useModels";
+import { favouriteModelsKey, mirrorModelPreferences, type ModelSelection } from "../lib/modelPreferences";
+import { refreshModels, useModelAccess, useModels } from "../lib/useModels";
 import { useConnectedHarnesses } from "../lib/useConnectedHarnesses";
 import { usePersistedState } from "../lib/persistedState";
 import { rememberedSettings } from "../lib/modelSettings";
@@ -15,7 +15,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "../components/ui/popove
 import { Tooltip, TooltipContent, TooltipTrigger } from "../components/ui/tooltip";
 import { ScrollArea } from "../components/ui/scroll-area";
 
-export const harnessNames: Record<Harness, string> = { phaseo: "Phaseo", codex: "Codex", claude: "Claude Code", opencode: "OpenCode", pi: "Pi", cursor: "Cursor", grok: "Grok", antigravity: "Antigravity", acp: "Agent" };
+import { harnessNames } from "../../shared/harnessNames";
+export { harnessNames };
 export const MAX_COMPARE = 4;
 
 export function modelLabel(id: string) {
@@ -93,6 +94,18 @@ function score(entry: Entry, query: string) {
 	return value;
 }
 
+/** Where admins change the rules; everyone else sees which apply to them there. */
+const GUARDRAILS_URL = "https://phaseo.app/settings/guardrails";
+const plural = (count: number, one: string, many: string) => `${count.toLocaleString()} ${count === 1 ? one : many}`;
+
+/** Says why models are missing: workspace rules (guardrails and Settings → Privacy on phaseo.app) hide them. Read-only; the rules are changed on the web. */
+function AccessNotice({ children }: { children: ReactNode }) {
+	return <p role="note" className="flex items-start gap-2 px-3 py-2 text-xs text-muted-foreground">
+		<ShieldCheck aria-hidden className="mt-px size-3.5 shrink-0 text-info" />
+		<span>{children} <button type="button" onClick={() => void window.phaseoDesktop?.openExternal(GUARDRAILS_URL)} className="font-semibold text-foreground/80 hover:text-foreground hover:underline">View rules</button></span>
+	</p>;
+}
+
 const released = (entry: Entry) => { const time = Date.parse(entry.model.releaseDate ?? ""); return Number.isFinite(time) ? time : Number.NEGATIVE_INFINITY; };
 
 function FilterButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: string }) {
@@ -105,7 +118,7 @@ type Section = { heading: string; entries: Entry[]; harness?: Harness; older?: n
 type Row = { type: "heading"; key: string; heading: string } | { type: "entry"; key: string; entry: Entry } | { type: "older"; key: string; harness: Harness; older: number };
 const rowHeight = (row: Row) => row.type === "heading" ? 30 : 32;
 
-export function ModelPicker({ selections, onChange, multiple, agents, disabled, className, openEvent }: {
+export function ModelPicker({ selections, onChange, multiple, agents, disabled, className, openEvent, settings, footer, hidden }: {
 	selections: ModelSelection[];
 	onChange: (selections: ModelSelection[]) => void;
 	/** Ctrl/⌘-click adds models alongside the first, to compare their answers. */
@@ -116,6 +129,12 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	className?: string;
 	/** A window event that opens this picker, sent by the composer's / menu. */
 	openEvent?: string;
+	/** The chosen model's effort and other settings: named after the model on the button, chosen in a column beside the list, with speed in the footer. */
+	settings?: { label: string; fast: boolean; column?: (modelName: string) => ReactNode; speed?: ReactNode };
+	/** The rest of the footer, such as Permissions in Code. */
+	footer?: ReactNode;
+	/** Agents the chat's project turns off. */
+	hidden?: readonly Harness[];
 }) {
 	const { overview } = useWorkspace();
 	const [open, setOpen] = useState(false);
@@ -123,12 +142,13 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	const [source, setSource] = useState<Source>("phaseo");
 	const [showOlder, setShowOlder] = useState<Partial<Record<Harness, boolean>>>({});
 	const [filters, setFilters] = usePersistedState("phaseo.desktop.modelFilters", { free: false, new: false });
-	const [favourites, setFavourites] = usePersistedState<string[]>("phaseo.desktop.favouriteModels", []);
+	const [favourites, setFavourites] = usePersistedState<string[]>(favouriteModelsKey, []);
 	const [catalogs, setCatalogs] = useState<Partial<Record<Harness, { entries: Entry[]; loading: boolean; error: string }>>>({});
 	const keepOpen = useRef(false);
 	const connected = useConnectedHarnesses();
 	const phaseoAccount = usablePhaseoAccounts(overview)[0];
-	const harnesses = useMemo(() => [...(phaseoAccount ? ["phaseo" as const] : []), ...[...connected].filter(harness => harness !== "phaseo" && harness !== "acp" && (agents || harness !== "grok"))], [connected, agents, phaseoAccount]);
+	const hiddenKey = hidden?.join() ?? "";
+	const harnesses = useMemo(() => [...(phaseoAccount ? ["phaseo" as const] : []), ...[...connected].filter(harness => harness !== "phaseo" && harness !== "acp" && runnableHarnesses.includes(harness) && (agents || harness !== "grok"))].filter(harness => !hiddenKey.split(",").includes(harness)), [connected, agents, phaseoAccount, hiddenKey]);
 	const sources = (["phaseo", "local"] as const).filter(value => harnesses.some(harness => sourceOf(harness) === value));
 	const active: Source = sources.includes(source) ? source : sources[0] ?? "phaseo";
 	const onLoad = useCallback((harness: Harness, state: { entries: Entry[]; loading: boolean; error: string }) => setCatalogs(current => ({ ...current, [harness]: state })), []);
@@ -144,6 +164,19 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 			.sort((a, b) => b.score - a.score || Number(!!a.entry.model.legacy) - Number(!!b.entry.model.legacy) || released(b.entry) - released(a.entry)).map(value => value.entry)
 		: [], [normalized, visible]);
 	const rankedHere = useMemo(() => ranked.filter(entry => sourceOf(entry.harness) === active), [ranked, active]);
+	// What the workspace's rules hide from Phaseo's list, so a missing model is explained rather than just absent.
+	const access = useModelAccess(open ? phaseoAccount?.id : undefined);
+	const restricted = active === "phaseo" && !!access?.restricted;
+	const hiddenMatches = useMemo(() => {
+		if (!restricted || !normalized || !access) return [];
+		const terms = normalized.split(" ").filter(Boolean);
+		return access.hiddenModels.filter(model => { const haystack = `${normalize(model.id)} ${normalize(model.name)}`; return terms.every(term => haystack.includes(term)); });
+	}, [restricted, normalized, access]);
+	const hiddenNotice = !restricted || !access ? undefined
+		: normalized ? hiddenMatches.length === 1 ? <><span className="font-medium text-foreground/80">{hiddenMatches[0].name}</span> is hidden by your workspace's rules.</>
+			: hiddenMatches.length ? <>{plural(hiddenMatches.length, "matching model is", "matching models are")} hidden by your workspace's rules.</> : undefined
+		: access.hiddenModelCount ? <>{plural(access.hiddenModelCount, "model is", "models are")} hidden by your workspace's rules{access.limitedModelCount ? ", and some providers are turned off for others" : ""}.</>
+		: access.limitedModelCount ? <>Your workspace's rules turn off some providers for {plural(access.limitedModelCount, "model", "models")}.</> : undefined;
 	const elsewhere = ranked.length - rankedHere.length;
 	const otherSource: Source = active === "phaseo" ? "local" : "phaseo";
 
@@ -191,6 +224,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	const toggleFavourite = (event: MouseEvent, entry: Entry) => {
 		event.preventDefault(); event.stopPropagation();
 		setFavourites(current => current.includes(entry.key) ? current.filter(value => value !== entry.key) : [...current, entry.key]);
+		mirrorModelPreferences();
 	};
 	const choose = (entry: Entry) => {
 		const selection = selectionOf(entry);
@@ -232,17 +266,21 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 	}, [openEvent, disabled]);
 	return <Popover open={open} onOpenChange={openChange}>
 		{harnesses.filter(harness => open || harness === "phaseo").map(harness => <Catalog key={harness} harness={harness} accountId={harness === "phaseo" ? phaseoAccount?.id : undefined} onLoad={onLoad} />)}
-		<PopoverTrigger disabled={disabled} render={<button type="button" aria-label="Choose model" className={cn("flex h-8 max-w-64 items-center gap-1.5 rounded-lg px-2 text-[13px] font-semibold transition-colors hover:bg-muted disabled:opacity-50 data-popup-open:bg-muted", className)} />}>
+		<PopoverTrigger disabled={disabled} render={<button type="button" aria-label="Choose model" data-composer-model-trigger className={cn("group flex h-7 max-w-64 min-w-0 shrink items-center gap-1.5 rounded-md px-2 text-[13px] font-medium text-foreground/80 transition-colors hover:bg-muted hover:text-foreground disabled:opacity-50 data-popup-open:bg-muted data-popup-open:text-foreground", className)} />}>
 			{selections.length > 1
 				? <><ModelStack models={selections} /><span className="truncate">{selections.length} models</span></>
-				: first ? <><span className="flex size-5 items-center justify-center [&_img]:size-4 [&_.harness-logo]:size-4"><ModelLogo model={knownModel(first.model) ?? { id: first.model, name: first.model }} harness={first.harness} /></span><span className="truncate">{label(first)}</span></>
+				: first ? <><span className="flex size-4 shrink-0 items-center justify-center [&_img]:size-4 [&_.harness-logo]:size-4"><ModelLogo model={knownModel(first.model) ?? { id: first.model, name: first.model }} harness={first.harness} /></span><span className="truncate">{label(first)}</span>
+					{settings?.label && <span data-model-settings className="-ml-0.5 shrink-0 text-muted-foreground group-hover:text-foreground group-data-popup-open:text-foreground">{settings.label}</span>}
+					{settings?.fast && <Zap aria-label="Fast" className={cn("size-3.5 shrink-0 fill-current", first.harness === "claude" ? "text-[#d97757]" : "text-amber-500")} />}</>
 				: <span className="text-muted-foreground">Choose a model</span>}
-			<ChevronDown className="size-3.5 shrink-0 text-muted-foreground" />
 		</PopoverTrigger>
 		{/* Stays above or below the button and shrinks to fit below the title bar, rather than sliding sideways over the composer. */}
-			<PopoverContent align="end" side="top" sideOffset={8} collisionAvoidance={{ side: "flip", align: "shift", fallbackAxisSide: "none" }} collisionPadding={{ top: 52, right: 8, bottom: 8, left: 8 }} className="max-h-(--available-height) w-[min(92vw,520px)] gap-0 overflow-hidden rounded-xl p-0">
+			<PopoverContent align="end" side="top" sideOffset={8} collisionAvoidance={{ side: "flip", align: "shift", fallbackAxisSide: "none" }} collisionPadding={{ top: 52, right: 8, bottom: 8, left: 8 }} className={cn("max-h-(--available-height) gap-0 overflow-hidden rounded-md p-0", settings?.column ? "w-[min(94vw,712px)]" : "w-[min(92vw,520px)]")}>
+			<div role={settings ? "group" : undefined} aria-label={settings ? "Model settings" : undefined} className="flex min-h-0 flex-col">
+			<div className="flex min-h-0">
+			<div className="flex min-w-0 flex-1 flex-col">
 				<div className="p-2 pb-1">
-				<div className="flex h-8 items-center gap-2 rounded-lg border border-input bg-input/50 px-2.5">
+				<div className="flex h-8 items-center gap-2 rounded-md border border-input bg-input/50 px-2.5">
 					<SearchIcon className="size-4 shrink-0 opacity-50" />
 					<input autoFocus role="combobox" aria-expanded aria-controls="model-picker-list" aria-autocomplete="list" aria-activedescendant={rows[activeIndex] ? `model-row-${activeIndex}` : undefined}
 						aria-label="Search models" placeholder="Search models" value={query} onChange={event => setQuery(event.target.value)} onKeyDown={onSearchKey}
@@ -261,6 +299,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 				{multiple && <span className="ml-auto text-[11px] text-muted-foreground">{isMac() ? "⌘" : "Ctrl"}-click to compare up to {MAX_COMPARE}</span>}
 				<button type="button" aria-label="Refresh models" title="Refresh models" disabled={refreshing} onClick={() => void refresh()} className={cn("grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-60", !multiple && "ml-auto")}><RotateCw className={cn("size-3.5", refreshing && "animate-spin")} /></button>
 			</div>
+			{!normalized && hiddenNotice && <div className="border-b border-border/70"><AccessNotice>{hiddenNotice}</AccessNotice></div>}
 			{rows.length > 0 && <ScrollArea style={{ height: `min(60vh, 440px, ${virtualizer.getTotalSize() + 12}px)` }} viewportRef={setViewport} viewportClassName="py-1.5 pr-3.5 pl-1.5">
 				<div id="model-picker-list" role="listbox" aria-label="Models" className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
 					{virtualizer.getVirtualItems().map(item => {
@@ -291,11 +330,17 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 					})}
 				</div>
 			</ScrollArea>}
-			{!rows.length && !loading.length && <p className="py-6 text-center text-sm text-muted-foreground">{!harnesses.length ? "Sign in to Phaseo to choose from hundreds of models."
+			{!rows.length && !loading.length && !(normalized && hiddenNotice && !elsewhere) && <p className="py-6 text-center text-sm text-muted-foreground">{!harnesses.length ? "Sign in to Phaseo to choose from hundreds of models."
 				: elsewhere ? <button type="button" onClick={() => setSource(otherSource)} className="font-semibold text-primary hover:underline">{elsewhere} {elsewhere === 1 ? "match" : "matches"} in {sourceNames[otherSource]}</button>
 				: "No models found."}</p>}
+			{normalized && hiddenNotice && !loading.length && <div className={cn(rows.length ? "border-t border-border/70" : "py-3")}><AccessNotice>{hiddenNotice}</AccessNotice></div>}
 			{loading.map(harness => <div key={harness} className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin" />Loading {harnessNames[harness]} models…</div>)}
 			{errors.map(error => <p key={error} className="px-3 py-2 text-xs text-destructive">{error}</p>)}
+			</div>
+			{settings?.column && first && <div data-model-picker-effort className="flex min-h-0 w-48 shrink-0 flex-col border-l border-border/70 bg-muted/40">{settings.column(label(first))}</div>}
+			</div>
+			{(settings?.speed || footer) && <div className="flex flex-wrap items-center gap-2 border-t border-border/70 bg-muted/40 px-3 py-2">{settings?.speed}{footer}</div>}
+			</div>
 	</PopoverContent>
 	</Popover>;
 }

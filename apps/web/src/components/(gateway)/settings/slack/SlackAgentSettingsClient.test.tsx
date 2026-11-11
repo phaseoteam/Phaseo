@@ -1,28 +1,29 @@
+import { describe, it, expect, afterAll, vi } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import settingsMessages from "../../../../../messages/en-GB/settings-ui.json";
 import commonMessages from "../../../../../messages/en-GB/common.json";
 import SlackAgentSettingsClient from "./SlackAgentSettingsClient";
 import type { SlackAgentCharge, SlackAgentInstallation, SlackAgentManagerView } from "./slackAgentForm";
 
-jest.mock("next/navigation", () => ({ useSearchParams: () => new URLSearchParams() }));
-jest.mock("@/app/(dashboard)/settings/slack/actions", () => ({
-	startSlackInstall: jest.fn(),
-	startSlackPermissionsUpdate: jest.fn(),
-	updateSlackAgent: jest.fn(),
-	uninstallSlackAgent: jest.fn(),
-	saveSlackCustomApp: jest.fn(),
-	removeSlackCustomApp: jest.fn(),
-	loadSlackAgentMemory: jest.fn(),
-	deleteSlackAgentNote: jest.fn(),
-	updateSlackAgentSkill: jest.fn(),
-	deleteSlackAgentSkill: jest.fn(),
+vi.mock("@/lib/navigation", () => ({ useSearchParams: () => new URLSearchParams() }));
+vi.mock("@/features/settings/slack/actions", () => ({
+	startSlackInstall: vi.fn(),
+	startSlackPermissionsUpdate: vi.fn(),
+	updateSlackAgent: vi.fn(),
+	uninstallSlackAgent: vi.fn(),
+	saveSlackCustomApp: vi.fn(),
+	removeSlackCustomApp: vi.fn(),
+	loadSlackAgentMemory: vi.fn(),
+	deleteSlackAgentNote: vi.fn(),
+	updateSlackAgentSkill: vi.fn(),
+	deleteSlackAgentSkill: vi.fn(),
 }));
-jest.mock("../PrivateSettingsQuery", () => ({
+vi.mock("../PrivateSettingsQuery", () => ({
 	useSettingsWrite: () => (operation: Promise<unknown>) => operation,
 }));
-jest.mock("@/i18n/navigation", () => ({
+vi.mock("@/i18n/navigation", () => ({
 	Link: ({ href, children, ...props }: { href: string; children: React.ReactNode }) => <a href={href} {...props}>{children}</a>,
 }));
 
@@ -56,9 +57,9 @@ function render(month: SlackAgentInstallation["month"], charges: SlackAgentCharg
 	};
 	return renderToStaticMarkup(
 		<QueryClientProvider client={queryClient}>
-			<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Common: commonMessages }}>
+			<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Common: commonMessages }}>
 				<SlackAgentSettingsClient view={view} />
-			</NextIntlClientProvider>
+			</AppIntlProvider>
 		</QueryClientProvider>,
 	);
 }
@@ -82,6 +83,38 @@ describe("SlackAgentSettingsClient Slack permissions", () => {
 	it("shows nothing once every scope is granted, or when the API doesn't say", () => {
 		expect(render(MONTH, [], {}, false, { permissions: { granted: [...ORIGINAL, "files:read", "files:write", "search:read.public", "search:read.files"], missing: [] } })).not.toContain("Update Slack permissions");
 		expect(render(MONTH)).not.toContain("Update Slack permissions");
+	});
+});
+
+describe("SlackAgentSettingsClient own Slack app", () => {
+	it("shows the saved app's own request URLs to paste into its manifest", () => {
+		const view: SlackAgentManagerView = {
+			workspaceId: "w1", canManage: true, configured: { hosted_app: true, custom_app: true }, redirect_url: "https://phaseo.app/callback",
+			scopes: [], auto_routing: false, installed: false, installation: null, charges: [],
+			custom_app: {
+				id: "row-1", slack_app_id: "A0CUSTOM01", client_id: "1.2", created_at: "x", updated_at: "x",
+				events_url: "https://slack.phaseo.app/apps/row-1/events", interactions_url: "https://slack.phaseo.app/apps/row-1/interactions",
+			},
+		};
+		const html = renderToStaticMarkup(
+			<QueryClientProvider client={queryClient}>
+				<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages, Common: commonMessages }}>
+					<SlackAgentSettingsClient view={view} />
+				</AppIntlProvider>
+			</QueryClientProvider>,
+		);
+		expect(html).toContain("Request URLs");
+		expect(html).toContain("https://slack.phaseo.app/apps/row-1/events");
+		expect(html).toContain("https://slack.phaseo.app/apps/row-1/interactions");
+		// Each URL is labelled for its Slack setting, and so is its copy button.
+		const eventsAt = html.indexOf("Event Subscriptions request URL");
+		const interactionsAt = html.indexOf("Interactivity request URL");
+		expect(eventsAt).toBeGreaterThan(-1);
+		expect(interactionsAt).toBeGreaterThan(-1);
+		expect(html.indexOf("https://slack.phaseo.app/apps/row-1/events")).toBeGreaterThan(eventsAt);
+		expect(html.indexOf("https://slack.phaseo.app/apps/row-1/interactions")).toBeGreaterThan(interactionsAt);
+		expect(html).toContain('aria-label="Copy Event Subscriptions request URL"');
+		expect(html).toContain('aria-label="Copy Interactivity request URL"');
 	});
 });
 
@@ -155,7 +188,7 @@ describe("SlackAgentSettingsClient model choice", () => {
 		const html = render(MONTH);
 		expect(html).toMatch(/<h2[^>]*>Model choice<\/h2>/);
 		expect(html).toContain("Let people choose a model per message");
-		// The prefix is shown as typed; next-intl doesn't read it as markup.
+		// The prefix is shown as typed; use-intl doesn't read it as markup.
 		expect(html).toContain("People put with &lt;model&gt;: at the start of a message, naming an allowed model by its name or ID.");
 		expect(html).not.toContain("Models people can choose");
 	});

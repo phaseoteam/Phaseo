@@ -5,40 +5,41 @@ description: "Connect an installed Prime Agent model catalog to Phaseo."
 "og:image": "https://phaseo.app/og/dynamic?title=Prime%20Agent&description=Connect%20an%20installed%20Prime%20Agent%20model%20catalog%20to%20Phaseo.&pathname=/docs/v1/guides/integrations/prime-agent"
 ---
 
-## Set up with the Phaseo CLI
+Run `phaseo prime-agent` to add a Phaseo provider with every compatible Phaseo model to Prime Agent. Prime Agent runs on macOS and Linux; on Windows, install it and run setup inside WSL.
 
-These production-ready commands require a Phaseo account; the CLI creates the dedicated gateway credential during sign-in and setup.
+## Set up with the Phaseo CLI
 
 ```bash
 phaseo login
 phaseo prime-agent
 ```
 
-Install Prime Agent from its official release first. Setup writes a managed `phaseo` provider to `~/.prime/agent/models.json`. The provider exposes every active Phaseo text model compatible with Chat Completions and resolves its dedicated API key from the Phaseo CLI at request time.
+If Prime Agent is missing, the CLI shows the official installer command and asks before running it. Setup then creates a `Phaseo CLI: Prime Agent API Key` (90-day expiry, $100 monthly spend limit) and writes a `phaseo` provider to `~/.prime/agent/models.json`. The provider lists every active Phaseo text model that works with Chat Completions.
 
-Prime Agent currently supports macOS and Linux. On Windows, run setup inside WSL after installing the executable there.
+| Flag | Effect |
+| --- | --- |
+| `--model <id>` | Sets the initial model. Defaults to `anthropic/claude-sonnet-4.6`. |
+| `--catalog default` | Adds only the selected model. |
+| `--dry-run` | Shows the file changes without making them. |
 
-Choose an initial catalog entry or configure only one model when needed:
-
-```bash
-phaseo prime-agent --model anthropic/claude-sonnet-4.6
-phaseo prime-agent --catalog default
-```
-
-## Start and verify
-
-```bash
-prime-agent
-```
-
-Open `/model`, select the `phaseo` provider, and send a small prompt. The generated provider uses Prime Agent's supported command-backed key format:
+The provider gets its key at request time with Prime Agent's command-backed key format, so no plaintext key is written to the file:
 
 ```text
 !phaseo integrations credential prime-agent
 ```
 
-Remove only the Phaseo-owned provider and revoke its dedicated key with:
+## Check it works
+
+```bash
+prime-agent
+```
+
+Open `/model`, select the `phaseo` provider, and send a short prompt. Confirm the request appears in **Settings → Usage → Logs**.
+
+## Remove Phaseo
 
 ```bash
 phaseo integrations remove prime-agent
 ```
+
+This removes only the Phaseo provider and revokes the key.

@@ -4,12 +4,20 @@ import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { generateScimToken, hashScimToken } from "@/scim/auth";
 import { requireAccountWorkspace } from "./context";
 import { workspaceHasAddon } from "@/billing/workspaceAddons";
+import { retryTransaction } from "@/data/retry-transaction";
 
 export const accountSettingsScimRouter = new Hono<{ Bindings: Env }>();
 
 async function requireScimAdmin(request: Request, env: Env, workspaceId: string) {
 	const context = await requireAccountWorkspace({ request, env, workspaceId });
 	return context && ["owner", "admin"].includes(context.role.toLowerCase()) ? context : null;
+}
+
+// A group mapping can give everyone in a directory group the admin role, and a SCIM token can add people
+// to those groups, so mappings, SCIM tokens and the SCIM endpoint are the owner's, like other role changes.
+async function requireScimOwner(request: Request, env: Env, workspaceId: string) {
+	const context = await requireAccountWorkspace({ request, env, workspaceId });
+	return context?.isOwner ? context : null;
 }
 
 async function hasIdentityAddon(context: NonNullable<Awaited<ReturnType<typeof requireScimAdmin>>>) {
@@ -37,7 +45,7 @@ accountSettingsScimRouter.get("/teams/:workspaceId/scim", async (c) => {
 });
 
 accountSettingsScimRouter.put("/teams/:workspaceId/scim", async (c) => {
-	const context = await requireScimAdmin(c.req.raw, c.env, c.req.param("workspaceId"));
+	const context = await requireScimOwner(c.req.raw, c.env, c.req.param("workspaceId"));
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const body = await c.req.json<{ enabled?: boolean }>().catch((): { enabled?: boolean } => ({}));
 	if (body.enabled && (await requireIdentityAddon(context))) return c.json({ error: "identity_addon_required" }, 402, PRIVATE_NO_STORE_HEADERS);
@@ -47,7 +55,7 @@ accountSettingsScimRouter.put("/teams/:workspaceId/scim", async (c) => {
 });
 
 accountSettingsScimRouter.post("/teams/:workspaceId/scim/tokens", async (c) => {
-	const context = await requireScimAdmin(c.req.raw, c.env, c.req.param("workspaceId"));
+	const context = await requireScimOwner(c.req.raw, c.env, c.req.param("workspaceId"));
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	if (await requireIdentityAddon(context)) return c.json({ error: "identity_addon_required" }, 402, PRIVATE_NO_STORE_HEADERS);
 	const body = await c.req.json<{ label?: string; expiresAt?: string | null }>().catch((): { label?: string; expiresAt?: string | null } => ({})); const label = String(body.label ?? "Provisioning token").trim().slice(0, 100);
@@ -64,7 +72,7 @@ accountSettingsScimRouter.post("/teams/:workspaceId/scim/tokens", async (c) => {
 });
 
 accountSettingsScimRouter.delete("/teams/:workspaceId/scim/tokens/:tokenId", async (c) => {
-	const context = await requireScimAdmin(c.req.raw, c.env, c.req.param("workspaceId"));
+	const context = await requireScimOwner(c.req.raw, c.env, c.req.param("workspaceId"));
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const endpoint = await context.client.from("scim_endpoints").select("id").eq("workspace_id", context.workspaceId).maybeSingle();
 	if (endpoint.error || !endpoint.data) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
@@ -104,7 +112,7 @@ accountSettingsScimRouter.post("/teams/:workspaceId/scim/departments", async (c)
 	if (await requireIdentityAddon(context)) return c.json({ error: "identity_addon_required" }, 402, PRIVATE_NO_STORE_HEADERS);
 	const body = await c.req.json<{ name?: string; description?: string | null }>().catch((): { name?: string; description?: string | null } => ({}));
 	const name = String(body.name ?? "").trim(); if (!name || name.length > 100) return c.json({ error: "invalid_name" }, 400, PRIVATE_NO_STORE_HEADERS);
-	const result = await context.client.from("workspace_departments").insert({ workspace_id: context.workspaceId, name, description: body.description?.trim() || null }).select("id,name,description,created_at,updated_at").single();
+	const result = await retryTransaction(() => context.client.from("workspace_departments").insert({ workspace_id: context.workspaceId, name, description: body.description?.trim() || null }).select("id,name,description,created_at,updated_at").single());
 	if (result.error) return c.json({ error: result.error.code === "23505" ? "department_exists" : "settings_unavailable" }, result.error.code === "23505" ? 409 : 503, PRIVATE_NO_STORE_HEADERS);
 	return c.json({ department: result.data }, 201, PRIVATE_NO_STORE_HEADERS);
 });
@@ -114,24 +122,28 @@ accountSettingsScimRouter.patch("/teams/:workspaceId/scim/departments/:departmen
 	if (await requireIdentityAddon(context)) return c.json({ error: "identity_addon_required" }, 402, PRIVATE_NO_STORE_HEADERS);
 	const body = await c.req.json<{ name?: string; description?: string | null }>().catch((): { name?: string; description?: string | null } => ({}));
 	const name = body.name?.trim(); if (body.name !== undefined && (!name || name.length > 100)) return c.json({ error: "invalid_name" }, 400, PRIVATE_NO_STORE_HEADERS);
-	const result = await context.client.from("workspace_departments").update({ ...(name && { name }), ...(body.description !== undefined && { description: body.description?.trim() || null }), updated_at: new Date().toISOString() }).eq("workspace_id", context.workspaceId).eq("id", c.req.param("departmentId")).select("id,name,description,updated_at").maybeSingle();
+	const result = await retryTransaction(() => context.client.from("workspace_departments").update({ ...(name && { name }), ...(body.description !== undefined && { description: body.description?.trim() || null }), updated_at: new Date().toISOString() }).eq("workspace_id", context.workspaceId).eq("id", c.req.param("departmentId")).select("id,name,description,updated_at").maybeSingle());
 	if (result.error) return c.json({ error: result.error.code === "23505" ? "department_exists" : "settings_unavailable" }, result.error.code === "23505" ? 409 : 503, PRIVATE_NO_STORE_HEADERS); if (!result.data) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS); return c.json({ department: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsScimRouter.delete("/teams/:workspaceId/scim/departments/:departmentId", async (c) => {
 	const context = await requireScimAdmin(c.req.raw, c.env, c.req.param("workspaceId")); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	if (await requireIdentityAddon(context)) return c.json({ error: "identity_addon_required" }, 402, PRIVATE_NO_STORE_HEADERS);
-	const result = await context.client.from("workspace_departments").delete().eq("workspace_id", context.workspaceId).eq("id", c.req.param("departmentId")).select("id").maybeSingle();
-	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); if (!result.data) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS); return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
+	// The function refuses (42501) to delete a department that directory group mappings use unless the
+	// caller is the owner: deleting it also deletes those mappings and the roles they grant.
+	const result = await retryTransaction(() => context.client.rpc("management_delete_workspace_department", { p_workspace_id: context.workspaceId, p_department_id: c.req.param("departmentId"), p_actor_user_id: context.user.id }));
+	if (result.error?.code === "42501") return c.json({ error: "owner_required", message: "Only the workspace owner can delete a department that directory group mappings use." }, 403, PRIVATE_NO_STORE_HEADERS);
+	if (result.error) return String(result.error.message ?? "").includes("not found") ? c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS) : c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsScimRouter.post("/teams/:workspaceId/scim/mappings", async (c) => {
-	const context = await requireScimAdmin(c.req.raw, c.env, c.req.param("workspaceId"));
+	const context = await requireScimOwner(c.req.raw, c.env, c.req.param("workspaceId"));
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	if (await requireIdentityAddon(context)) return c.json({ error: "identity_addon_required" }, 402, PRIVATE_NO_STORE_HEADERS);
 	const body = await c.req.json<{ groupId?: string; departmentId?: string; accessRole?: string; departmentPosition?: string }>().catch((): { groupId?: string; departmentId?: string; accessRole?: string; departmentPosition?: string } => ({}));
 	if (!["member", "admin"].includes(String(body.accessRole ?? "member")) || !["member", "lead"].includes(String(body.departmentPosition ?? "member"))) return c.json({ error: "invalid_mapping" }, 400, PRIVATE_NO_STORE_HEADERS);
-	const result = await context.client.from("scim_group_mappings").insert({ workspace_id: context.workspaceId, scim_group_id: body.groupId, department_id: body.departmentId, access_role: body.accessRole ?? "member", department_position: body.departmentPosition ?? "member", created_by: context.user.id }).select("id,scim_group_id,department_id,access_role,department_position,created_at,updated_at").single();
+	const result = await retryTransaction(() => context.client.from("scim_group_mappings").insert({ workspace_id: context.workspaceId, scim_group_id: body.groupId, department_id: body.departmentId, access_role: body.accessRole ?? "member", department_position: body.departmentPosition ?? "member", created_by: context.user.id }).select("id,scim_group_id,department_id,access_role,department_position,created_at,updated_at").single());
 	if (result.error) return c.json({ error: result.error.code === "23505" ? "mapping_exists" : "invalid_mapping" }, result.error.code === "23505" ? 409 : 400, PRIVATE_NO_STORE_HEADERS);
 	return c.json({ mapping: result.data }, 201, PRIVATE_NO_STORE_HEADERS);
 });
@@ -141,30 +153,31 @@ accountSettingsScimRouter.put("/teams/:workspaceId/scim/departments/:departmentI
 	if (await requireIdentityAddon(context)) return c.json({ error: "identity_addon_required" }, 402, PRIVATE_NO_STORE_HEADERS);
 	const body = await c.req.json<{ position?: string; primary?: boolean }>().catch((): { position?: string; primary?: boolean } => ({})); const position = String(body.position ?? "member");
 	if (!["member", "lead"].includes(position)) return c.json({ error: "invalid_position" }, 400, PRIVATE_NO_STORE_HEADERS);
-	if (body.primary) await context.client.from("workspace_department_grants").update({ is_primary: false }).eq("workspace_id", context.workspaceId).eq("user_id", c.req.param("userId")).eq("source_type", "manual");
-	const result = await context.client.from("workspace_department_grants").upsert({ workspace_id: context.workspaceId, user_id: c.req.param("userId"), department_id: c.req.param("departmentId"), source_type: "manual", source_id: c.req.param("userId"), position, is_primary: Boolean(body.primary), updated_at: new Date().toISOString() }, { onConflict: "workspace_id,user_id,department_id,source_type,source_id" }).select("user_id,department_id,position,is_primary").single();
+	// Clearing the old primary department and saving this one are one transaction in the function, so a
+	// failure never leaves two primaries or none; only that whole call is retried.
+	const result = await retryTransaction(() => context.client.rpc("management_set_workspace_department_member", { p_workspace_id: context.workspaceId, p_department_id: c.req.param("departmentId"), p_user_id: c.req.param("userId"), p_position: position, p_primary: Boolean(body.primary), p_actor_user_id: context.user.id }).select("user_id,department_id,position,is_primary").single());
 	if (result.error) return c.json({ error: "invalid_membership" }, 400, PRIVATE_NO_STORE_HEADERS); return c.json({ membership: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsScimRouter.delete("/teams/:workspaceId/scim/departments/:departmentId/members/:userId", async (c) => {
 	const context = await requireScimAdmin(c.req.raw, c.env, c.req.param("workspaceId")); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	if (await requireIdentityAddon(context)) return c.json({ error: "identity_addon_required" }, 402, PRIVATE_NO_STORE_HEADERS);
-	const result = await context.client.from("workspace_department_grants").delete().eq("workspace_id", context.workspaceId).eq("department_id", c.req.param("departmentId")).eq("user_id", c.req.param("userId")).eq("source_type", "manual").select("user_id").maybeSingle();
+	const result = await retryTransaction(() => context.client.from("workspace_department_grants").delete().eq("workspace_id", context.workspaceId).eq("department_id", c.req.param("departmentId")).eq("user_id", c.req.param("userId")).eq("source_type", "manual").select("user_id").maybeSingle());
 	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); if (!result.data) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS); return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsScimRouter.patch("/teams/:workspaceId/scim/mappings/:mappingId", async (c) => {
-	const context = await requireScimAdmin(c.req.raw, c.env, c.req.param("workspaceId")); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const context = await requireScimOwner(c.req.raw, c.env, c.req.param("workspaceId")); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	if (await requireIdentityAddon(context)) return c.json({ error: "identity_addon_required" }, 402, PRIVATE_NO_STORE_HEADERS);
 	const body = await c.req.json<{ accessRole?: string; departmentPosition?: string }>().catch((): { accessRole?: string; departmentPosition?: string } => ({}));
 	if ((body.accessRole && !["member", "admin"].includes(body.accessRole)) || (body.departmentPosition && !["member", "lead"].includes(body.departmentPosition))) return c.json({ error: "invalid_mapping" }, 400, PRIVATE_NO_STORE_HEADERS);
-	const result = await context.client.from("scim_group_mappings").update({ ...(body.accessRole && { access_role: body.accessRole }), ...(body.departmentPosition && { department_position: body.departmentPosition }), updated_at: new Date().toISOString() }).eq("workspace_id", context.workspaceId).eq("id", c.req.param("mappingId")).select("id,access_role,department_position,updated_at").maybeSingle();
+	const result = await retryTransaction(() => context.client.from("scim_group_mappings").update({ ...(body.accessRole && { access_role: body.accessRole }), ...(body.departmentPosition && { department_position: body.departmentPosition }), updated_at: new Date().toISOString() }).eq("workspace_id", context.workspaceId).eq("id", c.req.param("mappingId")).select("id,access_role,department_position,updated_at").maybeSingle());
 	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); if (!result.data) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS); return c.json({ mapping: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 accountSettingsScimRouter.delete("/teams/:workspaceId/scim/mappings/:mappingId", async (c) => {
-	const context = await requireScimAdmin(c.req.raw, c.env, c.req.param("workspaceId")); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const context = await requireScimOwner(c.req.raw, c.env, c.req.param("workspaceId")); if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	if (await requireIdentityAddon(context)) return c.json({ error: "identity_addon_required" }, 402, PRIVATE_NO_STORE_HEADERS);
-	const result = await context.client.from("scim_group_mappings").delete().eq("workspace_id", context.workspaceId).eq("id", c.req.param("mappingId")).select("id").maybeSingle();
+	const result = await retryTransaction(() => context.client.from("scim_group_mappings").delete().eq("workspace_id", context.workspaceId).eq("id", c.req.param("mappingId")).select("id").maybeSingle());
 	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS); if (!result.data) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS); return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });

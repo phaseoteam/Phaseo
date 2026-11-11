@@ -10,6 +10,7 @@ import { Tip } from "../../components/ui/tooltip";
 import { since } from "../lib/format";
 import { factory, useNow } from "../lib/useFactory";
 import { cn } from "../../lib/utils";
+import { MarkdownTextarea } from "../../components/MarkdownTextarea";
 
 /** Flagged notes first, for a decision; then pinned; then the ones that held up most. */
 function order(notes: RepoNote[]): RepoNote[] {
@@ -65,7 +66,7 @@ function NoteRow({ note, place, home, agent, now }: { note: RepoNote; place: str
 		<div className="flex items-start gap-3">
 			<div className="min-w-0 flex-1">
 				{editing
-					? <textarea autoFocus value={draft} rows={2} onChange={(event) => setDraft(event.target.value)} onBlur={save} onKeyDown={(event) => {
+					? <MarkdownTextarea autoFocus value={draft} rows={2} onChange={(event) => setDraft(event.target.value)} onBlur={save} onKeyDown={(event) => {
 						if (event.key === "Enter" && !event.shiftKey) {
 							event.preventDefault();
 							save();

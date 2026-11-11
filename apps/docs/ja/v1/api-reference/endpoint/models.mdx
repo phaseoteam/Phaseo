@@ -3,40 +3,109 @@ title: "モデル一覧"
 sidebarTitle: "モデル一覧"
 badge: "Beta"
 openapi: "/ja/openapi/v1/openapi.localized.yaml GET /models"
-description: "Phaseo Gateway で Gateway ネイティブモデルを確認します。現在ルーティングできないモデルの可用性情報も任意で取得できます。"
+description: "Phaseo Gateway で Gateway ネイティブモデルを確認します。現在ルーティングできないモデルの提供状況も任意で取得できます。"
 ---
 
-デフォルトでは、このエンドポイントは現在ルーティング可能なモデルのみを返します。`availability=all` を設定すると、既知だが現在利用できないモデルも含まれます。
-
-カタログのレスポンスは 5 分間キャッシュされ、キャッシュの再検証中はさらに 5 分間提供される場合があります。これは現在のカタログの JSON、RSS、Atom 表現に適用されます。リリースフィードには、より短い独自のポーリングキャッシュがあります。
-
-`GET /models/me` は、現在の呼び出し元に適用されるガードレールに基づくモデルの絞り込みに将来使用するための予約パスです。現在は `501 not implemented` を返すため、共通の Gateway カタログには `GET /models` を使用してください。
-
-## OpenAI 形式
-
-OpenAI のモデル一覧レスポンスを想定しているクライアントには、`GET /v1/models?format=openai` を使用します。既定の `format=json` は、より詳細な Phaseo のモデルメタデータを返します。
+`GET /v1/models` を呼び出すと、現在ルーティングできるモデルが一覧表示されます。把握されているものの現在は利用できないモデルも含めるには、`availability=all` を設定します。
 
 ```bash
-curl 'https://api.phaseo.app/v1/models?format=openai' \
-  -H 'Authorization: Bearer YOUR_PHASEO_API_KEY'
+curl "https://api.phaseo.app/v1/models?limit=50" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+各モデルの `offers` には、プロバイダールートごとに 1 つのエントリーがあります（抜粋。値は説明用です）。
+
+```json
+{
+  "ok": true,
+  "availability_mode": "active",
+  "limit": 50,
+  "offset": 0,
+  "total": 412,
+  "models": [
+    {
+      "id": "anthropic/claude-sonnet-5.5",
+      "name": "Claude Sonnet 5.5",
+      "organization": { "id": "anthropic", "name": "Anthropic", "color": "#d97757" },
+      "lifecycle": { "status": "active", "released_at": "2026-09-28", "replacement_id": null },
+      "modalities": { "input": ["text", "image"], "output": ["text"] },
+      "capabilities": { "endpoints": ["chat.completions", "messages", "responses"] },
+      "availability": { "status": "active", "provider_count": 3, "active_provider_count": 3 },
+      "offers": [
+        {
+          "provider": { "id": "anthropic", "name": "Anthropic" },
+          "model": "claude-sonnet-5-5",
+          "status": "active",
+          "status_reason": null,
+          "routable": true,
+          "service_tiers": ["standard"],
+          "routing": { "provider": "active", "model": "active", "capability": "active" }
+        }
+      ]
+    }
+  ]
+}
+```
+
+本番トラフィックは、`routable` が `true` の提供内容にのみルーティングしてください。`status_reason` は、提供内容がプレビュー限定または無効である理由を示します。完全なスキーマは下にあります。
+
+`GET /models/me` は、同じ一覧にキーのガードレールを適用して返します。対象は、ワークスペースのプライバシーとプロバイダーのルール、およびキーの部署、そのメンバー、キー自体のガードレールです。モデルのルールでブロックされたモデルと、許可されたプロバイダーがないモデルは含まれず、各モデルにはリクエストをルーティングできるオファーだけが残ります。`GET /models` と同じフィルターを使えます。 レスポンスには `access` も含まれます。ルールが適用されているか（`restricted`）、ルールで除外されたモデル（`hidden_model_count` と `hidden_models`、ID と名前付き）、一部のプロバイダーが除かれた掲載モデルの数（`limited_model_count`）を返すので、モデルが見当たらない理由を伝えられます。
+
+<span id="filter-the-list"></span>
+## 一覧を絞り込む
+
+複数の値を取るフィルターは、繰り返しのパラメーターまたはカンマ区切りのリストを受け付けます。
+
+| パラメーター | 絞り込みの対象 |
+| --- | --- |
+| `availability` | 公開でルーティング可能なモデルなら `active`（デフォルト）、`coming_soon`、`inactive`、まだルーティングできないモデルとプロバイダーも加えるなら `all` |
+| `endpoints` | `chat.completions`、`responses`、`messages` などの公開エンドポイント名 |
+| `status` | `active`、`deprecated`、`retired` などのモデルのライフサイクル |
+| `organisation` | `anthropic/claude-3-haiku` の `anthropic` のような、モデル ID のプレフィックス |
+| `provider` | `openai`、`anthropic`、`google_vertex` などの公開プロバイダー ID |
+| `provider_status` | `active`、`beta`、`alpha`、`not_ready` などのプロバイダーのロールアウト段階 |
+| `provider_routing_status` | プロバイダー単位のルーティング状態 |
+| `model_routing_status` | モデル単位のルーティング状態 |
+| `capability_status` | リクエストされたエンドポイントの対応付けに対するプロバイダーの機能の状態 |
+| `provider_availability_status` | `active`、`coming_soon`、`inactive` などのプロバイダー側の提供状況 |
+| `provider_availability_reason` | `preview_only`、`provider_not_ready`、`gated`、`access_limited`、`region_limited` などの、プロバイダーが利用できない理由 |
+| `input_types`（エイリアス `input_modalities`） | 入力のモダリティ |
+| `output_types`（エイリアス `output_modalities`） | 出力のモダリティ |
+| `params`（エイリアス `supported_parameters`） | 対応しているリクエストパラメーター |
+
+1 つのモデルのプロバイダールート、パラメーターの詳細、料金を確認するには、[`GET /models/{author}/{slug}/endpoints`](./model-endpoints.mdx) を呼び出します。
+
+## 提供内容ごとのサービスティアを確認する
+
+`offers` の各エントリーには `service_tiers` が含まれます。これは、そのプロバイダーの提供内容が受け付ける[サービスティア](../../guides/service-tiers.mdx)です。`flex`、`priority`、`standard`、`ultrafast` のうちの一部をアルファベット順に並べたもので、`priority` は Fast ティアです。プロバイダールートに、そのティアについて有効で現在適用中の料金がある場合にティアが表示され、1 つのティアのみを提供するルートにはそのティアだけが表示されます。一部のティアは、表示されていない別のティア専用のプロバイダールートでも利用できます。`pricing` の料金は引き続き標準ティアの料金です。
+
+## OpenAI 形式で一覧を取得する
+
+OpenAI のモデル一覧のレスポンスを期待するクライアントには、`GET /v1/models?format=openai` を使います。デフォルトの `format=json` は、Phaseo のより詳しいモデルのメタデータを返します。
+
+```bash
+curl "https://api.phaseo.app/v1/models?format=openai" \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
 ```json
 {
   "object": "list",
   "data": [
-    { "id": "openai/gpt-4o-mini", "object": "model", "created": 1721260800, "owned_by": "openai" }
+    { "id": "openai/gpt-6-astra", "object": "model", "created": 1788393600, "owned_by": "openai" }
   ]
 }
 ```
 
-OpenAI 形式では、ネイティブの JSON 形式と同じ認証、地域別の利用可否、ワークスペースのプライベートモデル、フィルターが使用されます。`limit` を指定しない限り一致するすべてのモデルを返し、`offset` は引き続き適用されます。ID は推論に使用する Phaseo の正規形式のままです。`created` にはカタログのリリース日が入り、不明な場合は `0` になります。`owned_by` にはカタログの組織が入り、ワークスペースのモデルでは `private`、不明な場合は `phaseo` になります。
+OpenAI 形式では、ネイティブの JSON と同じ認証、リージョンごとの提供状況、ワークスペースのプライベートモデル、フィルターが使われます。`limit` を指定しない限り一致するすべてのモデルが返され、`offset` は引き続き適用されます。ID は推論用の Phaseo の正規の形式のままです。`created` にはカタログのリリース日（不明な場合は `0`）が、`owned_by` にはカタログの組織、ワークスペースのモデルでは `private`、不明な場合は `phaseo` が入ります。
 
-## モデル一覧のキャッシュ
+## モデル一覧をキャッシュする
 
-JSON 形式と OpenAI 形式のレスポンスには、弱い `ETag` ヘッダー（`W/"…"`）が含まれます。ページ上のモデル、`limit`、`offset`、`total`、形式のいずれかが変わると値も変わります。`gateway_region` は無視されるため、別のリージョンから提供された同じカタログでも `ETag` は同じです。そのため弱いバリデーターになっています。同じ値を持つレスポンスは同等ですが、バイト列は異なる場合があります。RSS、Atom、エラーのレスポンスには含まれません。
+カタログのレスポンスは 5 分間キャッシュされ、キャッシュの再検証中はさらに 5 分間提供されることがあります。これは現在のカタログの JSON、RSS、Atom の表現に適用されます。リリースフィードには、より短い独自のポーリング用キャッシュがあります。
 
-保存した値をそのまま `If-None-Match` で送り返してください。カタログが変わっていなければ、レスポンスは本文なしの `304 Not Modified` になり、`ETag`、`Cache-Control`、`Vary` ヘッダーを同じように返します。変わっている場合は、新しい一覧と新しい `ETag` を含む通常の `200` が返ります。`If-None-Match` には、カンマ区切りのリストと `*` も指定できます。比較は弱い比較のため、`W/` プレフィックスの有無にかかわらず値は一致します。
+JSON と OpenAI 形式のレスポンスには、弱い `ETag` ヘッダー（`W/"…"`）が含まれます。これは、ページ上のモデル、`limit`、`offset`、`total`、または形式が変わると変化します。`gateway_region` は無視されるため、別のリージョンから提供された同じカタログには同じ `ETag` が付きます。弱い ETag であるのはこのためで、同じ値を持つレスポンスは同等ですが、バイト列は異なることがあります。RSS、Atom、エラーのレスポンスには含まれません。
+
+保存した値を、そのまま `If-None-Match` で送り返してください。カタログが変わっていない場合、レスポンスは本文のない `304 Not Modified` で、`ETag`、`Cache-Control`、`Vary` ヘッダーが繰り返されます。変わっている場合は、新しい一覧と新しい `ETag` を含む通常の `200` が返されます。`If-None-Match` はカンマ区切りのリストと `*` も受け付け、比較は弱い比較なので、値は `W/` プレフィックスの有無にかかわらず一致します。
 
 ```ts
 let etag: string | null = null;
@@ -49,7 +118,7 @@ async function refreshModels() {
       ...(etag ? { "If-None-Match": etag } : {}),
     },
   });
-  if (response.status === 304) return models; // Unchanged; a 304 has no body.
+  if (response.status === 304) return models; // 変更なし。304 には本文がありません。
   if (!response.ok) throw new Error(`Model list request failed: ${response.status}`);
   etag = response.headers.get("ETag");
   models = (await response.json()).models;
@@ -57,196 +126,4 @@ async function refreshModels() {
 }
 ```
 
-`304` レスポンスには本文がないため、転送量とパース処理を節約できます。ただし、サーバーは引き続きリクエストを評価し、カタログを読み込んで `ETag` を再計算します。そのため、確認はおよそ 15 分ごとが適切です。カタログが変わったときだけ一覧を再ダウンロードしてください。ページ、フィルターの組み合わせ、形式ごとに値が異なるため、`ETag` はリクエスト URL ごとに保持してください。
-
-### オファーごとのサービス階層
-
-`offers` の各エントリには `service_tiers` が含まれます。これは、そのプロバイダーのオファーが受け付ける[サービス階層](../../guides/service-tiers.mdx)です。値は `flex`、`priority`、`standard`、`ultrafast` のうち該当するものをアルファベット順に並べたもので、`priority` は Fast 階層を表します。プロバイダールートにその階層の有効かつ現在適用中の料金がある場合に記載され、1 つの階層だけを提供するルートにはその階層のみが記載されます。一部の階層は、ここに記載されない階層専用の別のプロバイダールートを通じて利用できる場合もあります。`pricing` の料金は引き続き標準階層の料金です。
-
-## 便利なフィルター
-
-- `endpoints` では `chat.completions`、`responses`、`messages` などの公開名を指定します
-- `status` は `active`、`deprecated`、`retired` などのモデルのライフサイクルで絞り込みます
-- `provider` は `openai`、`anthropic`、`google_vertex` などの公開プロバイダー ID で絞り込みます
-- `provider_status` は `active`、`beta`、`alpha`、`not_ready` などのプロバイダーの展開段階で絞り込みます
-- `provider_routing_status` はプロバイダー単位のルーティング状態で絞り込みます
-- `model_routing_status` はモデル単位のルーティング状態で絞り込みます
-- `capability_status` は要求されたエンドポイントの対応付けに対するプロバイダー機能の状態で絞り込みます
-- `provider_availability_status` は `active`、`coming_soon`、`inactive` などのプロバイダー可用性で絞り込みます
-- `provider_availability_reason` は `preview_only`、`provider_not_ready`、`gated`、`access_limited`、`region_limited` などのプロバイダー可用性の理由で絞り込みます
-- `organisation` は公開モデル ID のプレフィックスで絞り込みます。たとえば `anthropic/claude-3-haiku` の `anthropic` を指定します
-- `availability=active` がデフォルトです
-- `availability=all` は `coming_soon`、`inactive`、または一般公開のルーティング対象になっていないモデルやプロバイダーを含みます
-- `input_modalities` は `input_types` の別名です
-- `output_modalities` は `output_types` の別名です
-- `supported_parameters` は `params` の別名です
-
-モデルのエンドポイント契約を確認するには `GET /models/{author}/{slug}/endpoints` を呼び出します。レスポンスではプロバイダーのルートが分けられ、各行に公開パス、モダリティ、対応パラメーターの詳細、可用性、ルーティング状態、プロバイダー側モデルのスラッグ、料金の概要が含まれます。
-
-プロバイダーの各項目には、次の情報も含まれる場合があります。
-
-- `availability_status`
-- `availability_reason`
-- `provider_status`
-- `provider_routing_status`
-- `model_routing_status`
-- `capability_status`
-
-### レスポンス
-
-```json
-{
-  "ok": true,
-  "privacy_scope": "shared",
-  "availability_mode": "all",
-  "limit": 50,
-  "offset": 0,
-  "total": 99,
-  "models": [
-    {
-      "id": "anthropic/claude-3-haiku",
-      "canonical_slug": "anthropic/claude-3-haiku",
-      "model_id": "anthropic/claude-3-haiku",
-      "name": "anthropic/claude-3-haiku",
-      "description": "anthropic/claude-3-haiku via Phaseo Gateway. Supports chat.completions, messages, responses.",
-      "created": null,
-      "release_date": null,
-      "deprecation_date": null,
-      "retirement_date": null,
-      "status": "active",
-      "availability": {
-        "status": "coming_soon",
-        "provider_count": 1,
-        "active_provider_count": 0,
-        "inactive_provider_count": 0
-      },
-      "organisation_id": "anthropic",
-      "organisation_name": null,
-      "organisation_colour": null,
-      "aliases": [],
-      "endpoints": ["chat.completions", "messages", "responses"],
-      "input_types": ["text"],
-      "output_types": ["text"],
-      "architecture": {
-        "modality": "text->text",
-        "input_modalities": ["text"],
-        "output_modalities": ["text"],
-        "tokenizer": null,
-        "instruct_type": "chat"
-      },
-      "providers": [
-        {
-          "api_provider_id": "anthropic",
-          "api_provider_name": "Anthropic",
-          "provider_model_slug": "claude-3-haiku-20240307",
-          "is_active_gateway": false,
-          "availability_status": "coming_soon",
-          "availability_reason": "preview_only",
-          "provider_status": "beta",
-          "provider_routing_status": "active",
-          "model_routing_status": "active",
-          "capability_status": "coming_soon",
-          "effective_from": "2026-06-01T00:00:00Z",
-          "effective_to": null,
-          "endpoints": ["responses"],
-          "input_modalities": ["text"],
-          "output_modalities": ["text"],
-          "params": [
-            "max_tokens",
-            "response_format",
-            "stop",
-            "structured_outputs",
-            "temperature",
-            "tool_choice",
-            "tools",
-            "top_k",
-            "top_p"
-          ],
-          "supported_parameters": [
-            "max_tokens",
-            "response_format",
-            "stop",
-            "structured_outputs",
-            "temperature",
-            "tool_choice",
-            "tools",
-            "top_k",
-            "top_p"
-          ],
-          "supported_parameters_detail": {
-            "temperature": {
-              "supported": true,
-              "type": "number",
-              "minimum": 0,
-              "maximum": 2
-            }
-          }
-        }
-      ],
-      "supported_params": [
-        "max_tokens",
-        "response_format",
-        "stop",
-        "structured_outputs",
-        "temperature",
-        "tool_choice",
-        "tools",
-        "top_k",
-        "top_p"
-      ],
-      "supported_params_detail": {
-        "temperature": {
-          "supported": true,
-          "type": "number",
-          "minimum": 0,
-          "maximum": 2,
-          "providers": ["openai"]
-        }
-      },
-      "supported_parameters": [
-        "max_tokens",
-        "response_format",
-        "stop",
-        "structured_outputs",
-        "temperature",
-        "tool_choice",
-        "tools",
-        "top_k",
-        "top_p"
-      ],
-      "supported_parameters_detail": {
-        "temperature": {
-          "supported": true,
-          "type": "number",
-          "minimum": 0,
-          "maximum": 2,
-          "providers": ["openai"]
-        }
-      },
-      "top_provider_id": null,
-      "top_provider": {
-        "context_length": null,
-        "max_completion_tokens": null,
-        "is_moderated": false
-      },
-      "pricing": {
-        "prompt": null,
-        "completion": null,
-        "request": null,
-        "image": null,
-        "input_cache_read": null,
-        "input_cache_write": null,
-        "web_search": null
-      },
-      "pricing_detail": {
-        "pricing_plan": "standard",
-        "meters": {}
-      },
-      "per_request_limits": null
-    }
-  ]
-}
-```
-
-`availability_reason` は、プロバイダーの項目が有効、プレビューのみ、または無効である理由を説明する単一のフィールドです。
-
+`304` により転送と解析の手間が省けます。それでもサーバーはリクエストを評価し、カタログを読み込んで `ETag` を再計算します。約 15 分ごとのポーリングで十分で、カタログが変わったときにだけ一覧を再ダウンロードすれば済みます。ページ、フィルターの組み合わせ、形式ごとに値が異なるため、`ETag` はリクエスト URL ごとに 1 つ保持してください。

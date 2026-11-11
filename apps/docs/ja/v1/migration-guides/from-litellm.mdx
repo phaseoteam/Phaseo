@@ -1,43 +1,34 @@
 ---
 title: "LiteLLM からの移行"
 sidebarTitle: "LiteLLM"
-description: "アプリケーションが現在使っている OpenAI 互換のリクエスト経路を維持しながら、LiteLLM プロキシを Phaseo に置き換えます。"
+description: "アプリケーションが現在使っている OpenAI 互換のリクエスト経路を保ったまま、LiteLLM プロキシを Phaseo に置き換えます。"
 icon: "blocks"
 ---
 
-OpenAI互換クライアントから LiteLLM プロキシを呼び出している場合は、このガイドを使ってください。まずプロキシとの接続境界を切り替え、その後エイリアス、ルーティングルール、共有デフォルトを明示的に対応付けます。
+LiteLLM プロキシを呼び出しているクライアントの接続先を Phaseo キーとともに `https://api.phaseo.app/v1` に向け、各 `model_name` エイリアスと各プロキシ設定を一つずつ意図的に対応付けます。LiteLLM を残したまま Phaseo をその上流として使う場合は、[LiteLLM 連携](../guides/integrations/litellm)を参照してください。
 
-## 変更点
-
-| 設定 | 変更前 | 変更後 |
+| 設定 | LiteLLM プロキシ | Phaseo |
 | --- | --- | --- |
-| ベースURL | LiteLLM プロキシ | `https://api.phaseo.app/v1` |
-| APIキー | LiteLLM プロキシキー | `PHASEO_API_KEY` |
-| モデルエイリアス | LiteLLM の設定 | Phaseo モデルIDまたはアプリケーションのエイリアス |
-| ルーティングの既定値 | LiteLLM の設定 | Phaseo のプリセットとルーティング設定 |
+| ベース URL | 自分のプロキシ。多くの場合 `http://localhost:4000` | `https://api.phaseo.app/v1` |
+| API キー | `LITELLM_MASTER_KEY` または仮想キー | `PHASEO_API_KEY` |
+| モデル | `config.yaml` の `model_name` エイリアス | Phaseo のモデル ID、プリセット(`"model": "@slug"`)、または 1 つの対応付け関数 |
+| ルーティングと既定値 | `router_settings`、`litellm_settings` | [プリセット](../guides/presets)と[ルーティングとフォールバック](../guides/routing-and-fallbacks) |
 
-<Steps>
-<Step title="プロキシ設定を洗い出す">
-
-現在の LiteLLM デプロイで使われているモデルエイリアス、フォールバック、プロバイダールール、再試行ポリシー、予算、コールバック、環境変数をすべて記録します。共通ポリシーと、単一アプリケーションに属する設定を区別してください。
-
-</Step>
-
-<Step title="プロキシのエンドポイントを置き換える">
-
-OpenAI互換のリクエストコードはそのままにし、ベースURLとキーを変更します。
+## クライアントを切り替える
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// Before:
+// new OpenAI({ apiKey: process.env.LITELLM_API_KEY, baseURL: process.env.LITELLM_BASE_URL });
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
 });
 
 const response = await client.chat.completions.create({
-  model: "openai/gpt-4.1-mini",
+  model: "openai/gpt-6-astra",
   messages: [{ role: "user", content: "Reply with: migration ready" }],
 });
 ```
@@ -57,40 +48,41 @@ curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
+    "model": "openai/gpt-6-astra",
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+すべてのエイリアスに、`GET /v1/models?format=openai` の ID への明示的な対応付けが必要です。呼び出し元が社内用のエイリアスを使っている場合は、すべてのリクエストを編集するのではなく、クライアントの境界にある 1 つの関数で変換してください。
 
-<Step title="エイリアスとルーティングルールを対応付ける">
+## プロキシの設定を対応付ける
 
-すべての本番モデルを `GET /v1/models` で確認します。呼び出し側が内部エイリアスに依存している場合、各リクエストを変更するのではなく、アプリケーションの1か所で正規化します。
+プロキシを外す前に、コールバック、予算、リトライを棚卸ししてください。プロキシがなくなると、これらは何の通知もなく止まります。
 
-再利用するプロンプト、パラメーター、プロバイダー制限は[プリセット](../guides/presets.mdx)に移します。プロバイダーの優先順位とフォールバックは[ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)で設定します。
+| LiteLLM | Phaseo での扱い |
+| --- | --- |
+| `fallbacks` | `models` 配列または動的ルートのフォールバック。`429`、`500`、`502`、`503`、`504` で試され、リクエストエラーでは試されません。 |
+| `context_window_fallbacks`、`content_policy_fallbacks` | 代替はありません。Phaseo は `400` でフォールバックしないため、アプリで処理してください。 |
+| `routing_strategy` | ワークスペースのルーティングモード、または `provider.sort`(`price`、`latency`、`throughput`)。 |
+| デプロイごとのプロバイダー選択 | `provider.order`、`provider.only`、`provider.ignore`、または `provider:org/model` のような[プロバイダー指定 ID](../guides/provider-qualified-models)。後者はプロバイダー間でフォールバックしません。 |
+| セルフホストのデプロイ(vLLM など) | [プライベートモデル](../guides/private-models)。Bearer 認証付きの、公開された HTTPS の OpenAI 互換 `/chat/completions` エンドポイントが必要です。 |
+| レスポンスキャッシュ(`litellm_settings.cache`) | レスポンスキャッシュはありません。必要ならアプリでキャッシュしてください。[プロンプトキャッシュ](../guides/prompt-caching)では引き続き入力コストを削減できます。 |
+| 仮想キー(`max_budget`、`rpm_limit`、`tpm_limit`、`max_parallel_requests`、`models`) | 支出上限と許可モデルを設定した API キー、予算、そして 1 分あたりのリクエスト数・1 分あたりのトークン数・同時リクエスト数のレート制限ポリシー。[制限](../api-reference/limits)を参照してください。 |
+| チームの予算、`metadata.tags` | 部門の予算と `X-Phaseo-Metadata` の[ラベル](../guides/request-labels)。エンドユーザーの予算はエンドユーザー向けのレート制限ポリシーにしか対応付けられず、エンドユーザーの支出上限はありません。 |
+| `guardrails`(Presidio、Lakera など) | キーのガードレールが、リクエストのプロンプトインジェクションと個人情報をスキャンします。レスポンスはスキャンされません。 |
+| コールバック(`success_callback`、Langfuse、Datadog、OpenTelemetry) | [オブザーバビリティの送信先](../guides/integrations/observability)またはクライアント側のトレーシング。ボディの `metadata` は `phaseo.metadata.<key>` としてエクスポートされます。 |
+| 設定内のプロバイダー API キー | BYOK(**設定 → BYOK** または `POST /v1/byok`)、または Phaseo のクレジット。クレジットにフォールバックするには、**設定 → BYOK** で `byok_fallback_enabled` を設定します。 |
 
-</Step>
+プロキシはチーム全体のトラフィックを 1 人のキー所有者経由で送るため、そのユーザーの 1 分あたりのリクエスト数の上限を共有します。新しいワークスペースではこの上限は 10 です。切り替え前に [Gateway の制限](../api-reference/limits#gateway-limits)を確認し、より高い上限を手配してください。
 
-<Step title="本番ワークフローを検証する">
+## テストして展開する
 
-ストリーミング、ツール、構造化出力、再試行、エラー変換、LiteLLM デプロイが担っていたコールバック型の可観測性をテストします。トラフィックを段階的に移す前に、レイテンシ、出力、トークン使用量、コストを比較してください。
+ストリーミング、ツール、構造化出力、リトライ、エラーの対応付け、そしてプロキシが処理していたコールバック経由のテレメトリをテストします。レイテンシー、出力、トークン使用量、コストを比較してから、段階的にトラフィックを移します。切り替え前に、次を確認してください。
 
-</Step>
-</Steps>
-
-## 移行チェックリスト
-
-- LiteLLM の URL、キー、デプロイ依存関係を洗い出した。
-- 本番の各モデルとエイリアスに明示的な Phaseo の対応先がある。
-- 共有デフォルトをプリセットまたはアプリケーションの一か所に移した。
-- 使用する場合、ストリーミング、ツール、構造化出力がステージングで動作する。
-- 必要なコールバックとテレメトリに代替手段がある。
-- ロールバックは引き続きエンドポイントとキーの設定変更だけで行える。
-
-## 次のステップ
-
-- [プリセット](../guides/presets.mdx)
-- [ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)
-- [可観測性](../guides/integrations/observability.mdx)
+- LiteLLM の URL、キー、`LITELLM_*` 変数をすべて特定した
+- 本番のすべてのエイリアスに Phaseo への明示的な対応付けがある
+- 共有の既定値がプリセットまたは 1 つの境界関数にまとまっている
+- 必要なコールバックとテレメトリに代わるものがある
+- 支出の記録を LiteLLM、Phaseo、またはその両方のどれにするか決めた
+- 切り戻しが引き続きベース URL とキーの変更だけで済む

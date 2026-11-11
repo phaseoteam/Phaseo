@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { compareVersions, diffLines, versionMessages } from "./presetVersionDiff";
 
 describe("version messages", () => {

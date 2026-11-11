@@ -2,62 +2,49 @@
 title: "モデルのエンドポイント機能を一覧表示"
 badge: "Beta"
 openapi: "/ja/openapi/v1/openapi.localized.yaml GET /models/{author}/{slug}/endpoints"
-description: "1つのモデルで利用できるプロバイダールート、モダリティ、パラメーター、提供状況、料金を確認します。"
+description: "1 つのモデルで利用できるプロバイダールート、モダリティ、パラメーター、提供状況、料金を確認します。"
 ---
 
-モデル、プロバイダー、エンドポイント、パラメーターの組み合わせが利用可能か確認する必要がある場合は、リクエスト送信前にこのエンドポイントを呼び出してください。
-
-`openai/gpt-5.4-mini`の場合は次を使います。
+リクエストを送信する前にこのエンドポイントを呼び出すと、モデル、プロバイダー、エンドポイント、パラメーターの組み合わせが利用できるかを確認できます。`openai/gpt-6-astra` の場合:
 
 ```bash
-curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints" \
+curl "https://api.phaseo.app/v1/models/openai/gpt-6-astra/endpoints" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-各行はプロバイダーとエンドポイントの機能を表し、次の情報を含みます。
+`endpoints` の各エントリーは、1 つのエンドポイントに対する 1 つのプロバイダールートです。
 
-- 正規の機能IDと公開APIパス
-- プロバイダーID、名前、プロバイダー側のモデルスラッグ
-- 入力と出力のモダリティ
-- サポートされるパラメーター名と構造化された詳細
-- プロバイダー、モデル、機能、ルーティング、提供状況の各ステータス
-- ルートが予定済みまたは期間限定の場合の有効日
-- エンドポイントの料金概要
+| フィールド | 内容 |
+| --- | --- |
+| `endpoint`、`capability_id`、`public_path`、`collection` | 正規のエンドポイント ID と機能 ID、および公開 API パス |
+| `provider`、`model` | プロバイダー ID と名前、およびプロバイダーのモデルスラッグ |
+| `routable`、`status`、`status_reason` | ルートが現在トラフィックを受け付けるか、その提供状況、およびプレビュー限定または無効である理由 |
+| `modalities` | 入力と出力のモダリティ |
+| `capabilities` | 対応しているパラメーター名と、パラメーターの構造化された詳細 |
+| `routing` | プロバイダー、モデル、機能のルーティング状態 |
+| `effective` | ルートが予定されている、または期間限定である場合の `from` と `to` の日付 |
+| `pricing` | エンドポイントの料金の概要 |
 
-## 予定中および無効なルートを含める
+先にモデルを比較するには [モデルを一覧表示](./models.mdx)を、API が公開しているすべてのエンドポイントを確認するには[エンドポイントを一覧表示](./endpoints.mdx)を使ってください。
 
-既定の`availability=active`では、公開ルーティング可能な行のみが返されます。近日提供予定および無効なルートを確認するには`availability=all`を使います。
+## 予定中と無効のルートを含める
+
+デフォルトの `availability=active` は、公開でルーティング可能な行のみを返します。近日提供予定や無効のルートを確認するには `availability=all` を使います。
 
 ```bash
-curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?availability=all" \
+curl "https://api.phaseo.app/v1/models/openai/gpt-6-astra/endpoints?availability=all" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-`availability_status`が`active`で、`is_active_gateway`が`true`の場合を除き、本番トラフィックをその行へルーティングしないでください。
+本番トラフィックは、`routable` が `true` で `status` が `active` の行にのみルーティングしてください。
 
 ## ルートを絞り込む
 
-次の項目は、複数回指定するか、カンマ区切りで絞り込めます。
+次のフィルターは、繰り返しのパラメーターまたはカンマ区切りのリストを受け付けます: `provider`、`provider_status`、`provider_routing_status`、`model_routing_status`、`capability_status`、`provider_availability_status`、`provider_availability_reason`、`status`、`supported_parameters`（エイリアス `params`）。値については[モデルを一覧表示](./models.mdx#filter-the-list)で説明しています。
 
-- `provider`
-- `provider_status`
-- `provider_routing_status`
-- `model_routing_status`
-- `capability_status`
-- `provider_availability_status`
-- `provider_availability_reason`
-- `status`
-- `supported_parameters`
-
-たとえば、次のリクエストでは`temperature`に対応するOpenAIルートが返されます。
+次の例は、`reasoning_effort` に対応する OpenAI のルートを返します。
 
 ```bash
-curl "https://api.phaseo.app/v1/models/openai/gpt-5.4-mini/endpoints?provider=openai&supported_parameters=temperature" \
+curl "https://api.phaseo.app/v1/models/openai/gpt-6-astra/endpoints?provider=openai&supported_parameters=reasoning_effort" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
-
-## 関連エンドポイント
-
-- [モデルを一覧表示](./models.mdx)
-- [エンドポイントを一覧表示](./endpoints.mdx)
-

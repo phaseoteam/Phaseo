@@ -49,6 +49,7 @@ import {
 import { getBaseModel, calculateMaxTries, googleFlexMinimumHeadersTimeoutMs, longThinkingMinimumHeadersTimeoutMs } from "./utils";
 import { rankProviders } from "./providers";
 import { resolveProviderExecutor } from "../../executors";
+import { applyAttemptHealth, classifyAttemptHealthDetail } from "./attempt-health";
 import {
 	admitThroughBreaker,
 	classifyProviderHealthImpact,
@@ -116,8 +117,9 @@ import { loadPriceCard } from "../pricing";
 import { stripUsagePricing } from "../usage";
 import { getEffectiveRoutingHints } from "../requestRouting";
 import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
+import { withoutStackFrames } from "@/lib/safe-json";
 import { extractDownstreamRateLimitHeaders } from "../upstream-rate-limit-headers";
-import { guardFreeRouteQuota } from "@core/customer-rate-limits";
+import { guardFreeRouteQuota, type FreeQuotaTiming } from "@core/customer-rate-limits";
 import { chargeRateLimitPolicyTokens, guardRateLimitPolicies } from "@core/rate-limit-policies";
 import { applySpendRuleBlocks } from "@core/spend-blocks";
 import { shouldRecordLastUsed } from "@core/last-used-throttle";
@@ -287,6 +289,15 @@ function shouldRetrySingleProviderStatus(status: number | null | undefined): boo
 	if (!Number.isFinite(code)) return false;
 	if (code === 408 || code === 429) return true;
 	return code >= 500;
+}
+
+/**
+ * A fixed description for an executor that threw instead of returning an upstream
+ * response: the error class only, never its stack or internal detail.
+ */
+export function thrownExecutorErrorDescription(err: unknown): string {
+	const name = err instanceof Error && /^[A-Za-z][A-Za-z0-9_]{0,59}$/.test(err.name) ? err.name : "Error";
+	return `executor_exception:${name}`;
 }
 
 function truncateAttemptText(value: unknown, limit = ATTEMPT_PREVIEW_LIMIT): string | null {
@@ -484,6 +495,7 @@ function recordProviderAttempt(
 	ctx: PipelineContext,
 	entry: ProviderAttemptLog,
 ): void {
+	applyAttemptHealth(entry);
 	getProviderAttempts(ctx).push(entry);
 	recordProviderResult(ctx, entry);
 }
@@ -857,6 +869,8 @@ async function attemptProviderWithIR(
 	const attemptPrefix = `attempt_${attemptNumber}`;
 	const attemptStartedAtEpochMs = Date.now();
 	const attemptStartedAt = performance.now();
+	// Candidate guards, modality and spend-rule filters, ranking and the credential plan.
+	if (attemptNumber === 1) timing.timer.between("execute_to_attempt", "execute_start");
 
 	// Extract candidate from RoutedCandidate
 	const candidate = routed.candidate;
@@ -896,6 +910,7 @@ async function attemptProviderWithIR(
 	}
 	if (pricingCard && (!pricingCard.currency || pricingCard.currency.toUpperCase() === "USD") &&
 		!pricingCard.rules.some((rule) => rule.currency && rule.currency.toUpperCase() !== "USD")) {
+		const freeQuotaTiming: FreeQuotaTiming = {};
 		const freeQuotaResponse = await timing.timer.span(`${attemptPrefix}_free_customer_quota`, () =>
 			guardFreeRouteQuota({
 				workspaceId: ctx.workspaceId,
@@ -905,8 +920,12 @@ async function attemptProviderWithIR(
 				pricingCard,
 				internal: ctx.internal,
 				testingMode: ctx.testingMode,
+				timing: freeQuotaTiming,
 			}),
 		);
+		// Free-model admission parts: customer limits read, then the counter Durable Object.
+		if (freeQuotaTiming.limitsMs !== undefined) timing.timer.record(`${attemptPrefix}_free_quota_limits`, freeQuotaTiming.limitsMs);
+		if (freeQuotaTiming.counterMs !== undefined) timing.timer.record(`${attemptPrefix}_free_quota_counter`, freeQuotaTiming.counterMs);
 		if (freeQuotaResponse) {
 			recordLifecycleEvent(ctx, { type: "provider.rejected", span_id: lifecycleSpanId, provider: candidate.providerId, model: baseModel, outcome: "quota_rejected", status: freeQuotaResponse.status });
 			return { ok: false, response: freeQuotaResponse };
@@ -1091,11 +1110,11 @@ async function attemptProviderWithIR(
 		// client key for sticky routing inside Phaseo. A session_id only becomes an
 		// upstream key while session affinity is on (routing.session_affinity: false opts out).
 		const upstreamPromptCacheKey = isTextGenerate
-			? await resolveUpstreamPromptCacheKey({
+			? await timing.timer.span(`${attemptPrefix}_prompt_cache_key`, () => resolveUpstreamPromptCacheKey({
 				workspaceId: ctx.workspaceId,
 				promptCacheKey: (ir as IRChatRequest).promptCacheKey,
 				sessionId: resolveSessionAffinityPreference(ctx.rawBody) ? ctx.meta.sessionId : undefined,
-			})
+			}))
 			: null;
 		const tieredIr = isTextGenerate && catalogTier
 			? { ...normalizedIr, serviceTier: catalogTier.upstream ?? undefined }
@@ -1186,6 +1205,11 @@ async function attemptProviderWithIR(
 			throw (lastErr instanceof Error ? lastErr : new Error("executor_retry_exhausted"));
 		};
 
+		// Admission (price card, rate-limit policies, free quota, breaker) and request preparation.
+		timing.timer.record(`${attemptPrefix}_to_executor`, performance.now() - attemptStartedAt);
+		const executorStartedAtEpochMs = Date.now();
+		// Whether this attempt made the request's first dispatch (and so took ctx.meta.routingTiming).
+		let firstDispatchHere = false;
 		const executorResult = await timing.timer.span(`${attemptPrefix}_executor_total`, () =>
 			executeWithRetry(),
 		).finally(() => {
@@ -1194,10 +1218,17 @@ async function attemptProviderWithIR(
 			const firstDispatch = upstreamTracker.snapshot().upstreamFetchStartMs;
 			const receivedAt = ctx.meta.startedAtMs;
 			if (typeof firstDispatch === "number" && Number.isFinite(firstDispatch)) {
+				// The executor's own work before its first fetch (request build, credentials, signing).
+				timing.timer.record(`${attemptPrefix}_executor_to_dispatch`, Math.max(0, firstDispatch - executorStartedAtEpochMs));
 				// Failover time is measured from here, including attempts that threw.
 				ctx.meta.upstreamFetchStartMs ??= firstDispatch;
 				if (typeof receivedAt === "number" && Number.isFinite(receivedAt)) {
 					ctx.meta.timeToUpstreamRequestMs ??= Math.max(0, firstDispatch - receivedAt);
+				}
+				// The routing steps describe this first dispatch only; later rounds never replace them.
+				if (!ctx.meta.routingTiming) {
+					ctx.meta.routingTiming = timing.timer.snapshot();
+					firstDispatchHere = true;
 				}
 			}
 		});
@@ -1247,8 +1278,14 @@ async function attemptProviderWithIR(
 			if (typeof executorResult.timing.requestBuildMs === "number") {
 				timing.timer.record(`${attemptPrefix}_request_build`, executorResult.timing.requestBuildMs);
 				ctx.meta.adapterRequestBuildMs = executorResult.timing.requestBuildMs;
+				// Reported after the fetch: add it to the first-dispatch snapshot this attempt took.
+				if (firstDispatchHere && ctx.meta.routingTiming) {
+					ctx.meta.routingTiming[`${attemptPrefix}_request_build`] = Math.max(0, executorResult.timing.requestBuildMs);
+				}
 			}
 			if (typeof executorResult.timing.upstreamFetchStartMs === "number") {
+				// An executor that reports its own dispatch clock: same first-dispatch snapshot.
+				ctx.meta.routingTiming ??= timing.timer.snapshot();
 				ctx.meta.upstreamFetchStartMs ??= executorResult.timing.upstreamFetchStartMs;
 				if (typeof ctx.meta.startedAtMs === "number") {
 					const timeToThisUpstreamRequestMs = Math.max(
@@ -1565,12 +1602,24 @@ async function attemptProviderWithIR(
 		if (providerRateLimitReservation && upstreamTracker.snapshot().upstreamRequestCount === 0) {
 			await releaseManagedProviderReservation(providerRateLimitReservation);
 		}
+		// The stack stays in the worker log: attempts reach the database, failure_sample
+		// in client error bodies and async job webhooks.
 		console.error(`Executor execution failed for ${candidate.providerId}:`, err);
 		const message = err instanceof Error ? err.message : String(err);
-		const stackPreview = truncateAttemptText(
-			err instanceof Error ? err.stack : null,
-			ATTEMPT_PREVIEW_LIMIT * 3,
-		);
+		const storedMessage = withoutStackFrames(message);
+		const thrownDescription = thrownExecutorErrorDescription(err);
+		const thrownErrorCode = typeof (err as any)?.code === "string" ? (err as any).code : null;
+		// A provider fetch that failed (transport error, headers timeout) is
+		// reachability; caller cancellation is the customer's; any other
+		// exception is treated as Phaseo's own until proven otherwise.
+		const thrownFailureOrigin = upstreamTracker?.isProviderTransportFailure?.(err) ? "provider" as const : undefined;
+		const thrownHealth = classifyAttemptHealthDetail({
+			credentialSource: credentialLog.key_source,
+			failureOrigin: thrownFailureOrigin,
+			aborted: err instanceof Error && err.name === "AbortError",
+			errorCode: thrownErrorCode,
+			errorMessage: message,
+		});
 		attemptErrors.push({
 			...credentialLog,
 			provider: candidate.providerId,
@@ -1581,9 +1630,9 @@ async function attemptProviderWithIR(
 			type: (err as any)?.retryable === true ? "retryable_error" : "error",
 			retryable: (err as any)?.retryable === true,
 			upstream_error_code: typeof (err as any)?.code === "string" ? (err as any).code : null,
-			upstream_error_message: message,
-			upstream_error_description: stackPreview,
-			message,
+			upstream_error_message: storedMessage,
+			upstream_error_description: thrownDescription,
+			message: storedMessage,
 		});
 		recordProviderAttempt(ctx, {
 			...credentialLog,
@@ -1598,14 +1647,16 @@ async function attemptProviderWithIR(
 			duration_ms: Math.round(performance.now() - attemptStartedAt),
 			retryable: (err as any)?.retryable === true,
 			upstream_error_code: typeof (err as any)?.code === "string" ? (err as any).code : null,
-			upstream_error_message: message,
-			upstream_error_description: stackPreview,
+			upstream_error_message: storedMessage,
+			upstream_error_description: thrownDescription,
 			was_probe: isProbe,
+			health_class: thrownHealth.healthClass,
+			health_reason: thrownHealth.reason,
 		});
 		const errorHealthImpact = classifyProviderHealthImpact({
 			credentialSource: credentialLog.key_source,
-			failureOrigin: upstreamTracker?.isProviderTransportFailure?.(err) ? "provider" : undefined,
-			errorCode: typeof (err as any)?.code === "string" ? (err as any).code : null,
+			failureOrigin: thrownFailureOrigin,
+			errorCode: thrownErrorCode,
 			errorMessage: message,
 		});
 		dispatchProviderHealthBackground(async () => {

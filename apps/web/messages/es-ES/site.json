@@ -2413,7 +2413,7 @@
 			],
 			"retentionIntro": "Conservamos los datos personales durante el tiempo razonablemente necesario para cumplir los fines descritos en esta Política, entre ellos:",
 			"retentionReasons": [
-				"Los metadatos de cada solicitud BYOK a Gateway se conservan hasta 90 días. Los totales de uso agregados que no incluyen contenido pueden conservarse durante más tiempo para facturación, fiabilidad y fines estadísticos.",
+				"Los metadatos de cada solicitud BYOK a Gateway se conservan hasta 365 días. Los totales de uso agregados que no incluyen contenido pueden conservarse durante más tiempo para facturación, fiabilidad y fines estadísticos.",
 				"gestionar y mantener tu cuenta y las funciones de pago;",
 				"cumplir nuestras obligaciones legales y normativas, como conservar registros fiscales y contables; y",
 				"resolver disputas y hacer cumplir nuestros acuerdos."
@@ -2599,6 +2599,7 @@
 			"assignment": "No puedes ceder ni transferir tus derechos u obligaciones en virtud de estas Condiciones sin nuestro consentimiento previo por escrito. Podemos transferir nuestros derechos y obligaciones a otra organización en el marco de una reorganización o venta empresarial.",
 			"waiver": "Si no hacemos valer un derecho o una disposición de estas Condiciones, no se entenderá que renunciamos a ellos.",
 			"survival": "Cuando termine tu acceso al Servicio, seguirán vigentes las secciones 2, 3, 4, 5 y 8–15.",
+			"languageVersion": "Podemos ofrecer estos Términos en idiomas distintos del inglés por comodidad. Si una traducción difiere de la versión en inglés, prevalece la versión en inglés, salvo que la ley de consumo de tu lugar de residencia disponga otra cosa.",
 			"contactQuestions": "Si tienes preguntas sobre estas Condiciones, puedes contactar con nosotros:",
 			"contactEmailLabel": "Correo electrónico",
 			"operatorDetails": "El Servicio lo ofrece <person>Daniel Butler</person>, que opera bajo el nombre de <brand>Phaseo</brand>.",

@@ -1,5 +1,5 @@
 /**
- * Changed files in reading order (T3's pullRequestFileOrder.logic): source first, with what a file imports ahead of
+ * Changed files in reading order: source first, with what a file imports ahead of
  * what imports it, then the tests that cover it, then whatever a tool wrote. Ordering by path alone buries the file
  * the change is about under whichever directory sorts first.
  */

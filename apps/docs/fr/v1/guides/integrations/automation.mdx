@@ -4,13 +4,11 @@ icon: "workflow"
 description: "Utilisez Phaseo depuis Zapier, n8n, Pipedream et d’autres plateformes d’automatisation."
 ---
 
-Phaseo fonctionne dès aujourd’hui dans les outils d’automatisation capables d’envoyer des requêtes HTTP authentifiées. Des applications natives dans les marketplaces pourront offrir une expérience plus guidée par la suite.
+Appelez Phaseo depuis n’importe quelle plateforme d’automatisation capable d’envoyer une requête HTTP authentifiée : ajoutez une étape HTTP qui envoie un POST à `https://api.phaseo.app/v1/responses` avec votre clé comme token bearer. Phaseo n’a pas d’application native pour Zapier, n8n ou Pipedream.
 
-## Requête commune
+## Construire la requête
 
-Utilisez ces paramètres dans une action HTTP, webhook ou code :
-
-| Paramètre | Valeur |
+| Réglage | Valeur |
 | --- | --- |
 | Méthode | `POST` |
 | URL | `https://api.phaseo.app/v1/responses` |
@@ -19,45 +17,37 @@ Utilisez ces paramètres dans une action HTTP, webhook ou code :
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "input": "Summarise the supplied workflow data in one paragraph."
 }
 ```
 
-Stockez la clé API Phaseo dans le coffre d’identifiants ou de secrets de la plateforme. Ne l’inscrivez pas directement dans une définition de workflow partagée.
+Stockez la clé dans le gestionnaire d’identifiants ou de secrets de la plateforme, pas dans une définition de workflow partagée. Consultez [Responses](../../api-reference/endpoint/responses.mdx) pour tous les champs de la requête.
 
 ## Zapier
 
 Utilisez **Webhooks by Zapier → Custom Request** :
 
-1. Sélectionnez `POST`.
-2. Saisissez `https://api.phaseo.app/v1/responses`.
-3. Ajoutez les en-têtes bearer et content-type.
-4. Mappez les champs des étapes Zap précédentes dans `input`.
-5. Testez le Zap avec des données non sensibles.
-
-Une application Zapier native de Phaseo ajouterait la sélection de modèles, des actions de sortie structurée et l’authentification propre à Phaseo, mais sa publication nécessiterait la plateforme développeur de Zapier.
+1. Sélectionnez `POST` et saisissez `https://api.phaseo.app/v1/responses`.
+2. Ajoutez les en-têtes bearer et content-type.
+3. Associez les champs des étapes précédentes du Zap à `input`.
+4. Testez le Zap avec des données non sensibles.
 
 ## n8n
 
-Utilisez le nœud **HTTP Request** avec une authentification bearer et un corps JSON. Pour des données de workflow structurées, mappez l’élément en amont dans le champ `input` à l’aide d’une expression n8n.
-
-Un nœud communautaire officiel n8n pourrait ensuite proposer des opérations comme Generate Response, List Models, Get Model Pricing et Create Embedding sans configuration HTTP manuelle.
+Utilisez le nœud **HTTP Request** avec une authentification bearer et un corps JSON. Associez l’élément entrant à `input` avec une expression n8n.
 
 ## Pipedream
 
-Utilisez une étape de requête HTTP ou de code Node.js. Stockez `PHASEO_API_KEY` comme secret Pipedream et lisez-le depuis l’environnement de l’étape.
+Utilisez une étape de requête HTTP ou une étape de code Node.js. Stockez `PHASEO_API_KEY` comme secret Pipedream et lisez-le depuis l’environnement de l’étape.
 
-## Recommandations pour la production
+## Vérifier que tout fonctionne
 
-- Définissez une limite de dépenses pour la clé Gateway API utilisée par chaque automatisation.
-- Attribuez une clé propre à chaque automatisation afin d’isoler l’utilisation et la révocation.
-- Utilisez des sorties structurées lorsque les étapes suivantes attendent des champs lisibles par machine.
-- Gérez les nouvelles tentatives pour les réponses `429` et les erreurs `5xx` récupérables.
-- Ne répétez pas des actions externes non idempotentes simplement parce qu’une étape du modèle a été relancée.
+Exécutez l’étape une fois. Une réponse `200` avec un tableau `output` signifie que la clé et l’URL fonctionnent, et la requête apparaît dans **Paramètres → Utilisation → Journaux**.
 
-## À lire aussi
+## Exécuter les automatisations en toute sécurité
 
-- [Réponses](../../api-reference/endpoint/responses.mdx)
-- [Sorties structurées](../structured-outputs.mdx)
-- [Gestion des erreurs](../../api-reference/errors.mdx)
+- Donnez à chaque automatisation sa propre clé avec une limite de dépenses, pour pouvoir la suivre et la révoquer séparément.
+- Utilisez les [sorties structurées](../structured-outputs.mdx) quand les étapes suivantes attendent des champs lisibles par machine.
+- Réessayez sur `429` et sur les réponses `5xx` récupérables ; consultez [Erreurs](../../api-reference/errors.mdx).
+- Ne répétez pas des actions externes non idempotentes simplement parce qu’une étape de modèle a été relancée.

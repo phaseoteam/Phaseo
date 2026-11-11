@@ -150,20 +150,29 @@ export type AddWorkspaceMembersParams = {
 };
 
 /**
- * Adds existing users to a workspace with an admin or member role. Management API key required.
+ * Adds people who asked to join: each user must have a pending join request (created when they accept an invite), which this approves. Other users are rejected; send them an invite instead. Existing members keep their role. Without a role, each person gets their invite's role; adding an admin needs the workspace owner. Management API key required. Each person is approved separately. If one fails, everyone approved before them stays added, the rest aren't tried, and the response is a 409 that lists approved, failed and not_attempted users.
  */
 export async function addWorkspaceMembers(
   client: Client,
   args: AddWorkspaceMembersParams,
 ): Promise<{
   added_count: number;
-  data: {
+  approved: string[];
+  data?: {
     display_name?: string | null;
     joined_at?: string | null;
     role: "owner" | "admin" | "member";
     user_id: string;
     workspace_id: string;
   }[];
+  error?: string;
+  failed: {
+    code: "forbidden" | "conflict" | "internal_error";
+    message: string;
+    user_id: string;
+  }[];
+  message?: string;
+  not_attempted: string[];
 }> {
   const { path, query, headers, body } = args;
   if ([".", ".."].includes(String(path?.["id"])))
@@ -171,13 +180,22 @@ export async function addWorkspaceMembers(
   const resolvedPath = `/workspaces/${encodeURIComponent(String(path["id"]))}/members/add`;
   return client.request<{
     added_count: number;
-    data: {
+    approved: string[];
+    data?: {
       display_name?: string | null;
       joined_at?: string | null;
       role: "owner" | "admin" | "member";
       user_id: string;
       workspace_id: string;
     }[];
+    error?: string;
+    failed: {
+      code: "forbidden" | "conflict" | "internal_error";
+      message: string;
+      user_id: string;
+    }[];
+    message?: string;
+    not_attempted: string[];
   }>({
     method: "POST",
     path: resolvedPath,
@@ -1350,7 +1368,6 @@ export async function createApiKey(
     department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
-    hash: string;
     id: string;
     include_byok_in_limit: boolean;
     ip_allowlist?: {
@@ -1420,7 +1437,6 @@ export async function createApiKey(
       department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
-      hash: string;
       id: string;
       include_byok_in_limit: boolean;
       ip_allowlist?: {
@@ -3247,7 +3263,7 @@ export type CreateDepartmentBudgetParams = {
 };
 
 /**
- * Creates a daily, weekly, or monthly spend budget for one department. Once the department has used it, API-key requests that count toward the department return 429 key_limit_exceeded until the budget resets. Batch jobs, realtime sessions and OAuth requests are not blocked. If the budget check is briefly unavailable, requests are allowed rather than refused. Owners and admins get a mobile push at about 80% and at 100%.
+ * Creates a daily, weekly, or monthly spend budget for one department. Once the department has used it, API-key requests that count toward the department return 429 key_limit_exceeded until the budget resets. If the budget check is briefly unavailable, requests are allowed rather than refused. Owners and admins get a mobile push at about 80% and at 100%.
  */
 export async function createDepartmentBudget(
   client: Client,
@@ -4248,12 +4264,15 @@ export type CreateImageParams = {
   headers?: Record<string, never>;
   body?: {
     background?: "transparent" | "opaque" | "auto";
+    complexity?: "low" | "medium" | "high";
+    frame_count?: number;
+    frame_duration_ms?: number;
     model: string;
     models?: string[];
     moderation?: "auto" | "low";
     n?: number;
     output_compression?: number;
-    output_format?: "png" | "jpeg" | "webp";
+    output_format?: "png" | "jpeg" | "webp" | "gif" | "svg";
     partial_images?: number;
     prompt: string;
     provider?: {
@@ -4299,6 +4318,13 @@ export type CreateImageParams = {
     size?: string;
     stream?: boolean;
     style?: string;
+    svg?: {
+      model: string;
+      reasoning?: {
+        effort?:
+          "none" | "minimal" | "low" | "medium" | "high" | "xhigh" | "max";
+      };
+    };
     user?: string;
   };
 };
@@ -4316,6 +4342,13 @@ export async function createImage(
     revised_prompt?: string;
     url?: string;
   }[];
+  svg_usage?: {
+    input_tokens?: number;
+    model?: string;
+    output_tokens?: number;
+    reasoning_tokens?: number;
+    total_tokens?: number;
+  };
 }> {
   const { path, query, headers, body } = args;
   const resolvedPath = "/images/generations";
@@ -4326,6 +4359,13 @@ export async function createImage(
       revised_prompt?: string;
       url?: string;
     }[];
+    svg_usage?: {
+      input_tokens?: number;
+      model?: string;
+      output_tokens?: number;
+      reasoning_tokens?: number;
+      total_tokens?: number;
+    };
   }>({
     method: "POST",
     path: resolvedPath,
@@ -4341,8 +4381,10 @@ export type CreateImageEditParams = {
   headers?: Record<string, never>;
   body?: {
     background?: "transparent" | "opaque" | "auto";
+    complexity?: "low" | "medium" | "high";
     image: string | string[];
     input_fidelity?: "high" | "low";
+    markup?: string;
     mask?: string;
     meta?: boolean;
     model: string;
@@ -4514,6 +4556,7 @@ export async function createLiveSession(
   model?: string;
   model_id?: string;
   provider?: string;
+  provider_model?: string;
   session_id?: string;
   status?: string;
   voice?: string | null;
@@ -4538,6 +4581,7 @@ export async function createLiveSession(
     model?: string;
     model_id?: string;
     provider?: string;
+    provider_model?: string;
     session_id?: string;
     status?: string;
     voice?: string | null;
@@ -5941,13 +5985,12 @@ export type CreateRateLimitAssignmentParams = {
   body?: {
     policy_id: string;
     target_id?: string;
-    target_type:
-      "key" | "member" | "department" | "guardrail" | "end_user_default";
+    target_type: "key" | "member" | "department" | "end_user_default";
   };
 };
 
 /**
- * Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+ * Applies a policy to one API key, workspace member or department, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for every assignment.
  */
 export async function createRateLimitAssignment(
   client: Client,
@@ -5959,8 +6002,7 @@ export async function createRateLimitAssignment(
     id: string;
     policy_id: string;
     target_id: string | null;
-    target_type:
-      "key" | "member" | "department" | "guardrail" | "end_user_default";
+    target_type: "key" | "member" | "department" | "end_user_default";
     updated_at: string;
     workspace_id: string;
   };
@@ -5974,8 +6016,7 @@ export async function createRateLimitAssignment(
       id: string;
       policy_id: string;
       target_id: string | null;
-      target_type:
-        "key" | "member" | "department" | "guardrail" | "end_user_default";
+      target_type: "key" | "member" | "department" | "end_user_default";
       updated_at: string;
       workspace_id: string;
     };
@@ -6003,7 +6044,7 @@ export type CreateRateLimitPolicyParams = {
 };
 
 /**
- * Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+ * Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.
  */
 export async function createRateLimitPolicy(
   client: Client,
@@ -6088,6 +6129,7 @@ export async function createRealtimeSession(
   model?: string;
   model_id?: string;
   provider?: string;
+  provider_model?: string;
   session_id?: string;
   status?: string;
   voice?: string | null;
@@ -6112,6 +6154,7 @@ export async function createRealtimeSession(
     model?: string;
     model_id?: string;
     provider?: string;
+    provider_model?: string;
     session_id?: string;
     status?: string;
     voice?: string | null;
@@ -7335,7 +7378,7 @@ export type CreateVideoParams = {
   headers?: Record<string, never>;
   body?: {
     aspect_ratio?: string;
-    compression_quality?: number;
+    compression_quality?: number | "optimized" | "lossless";
     duration?: number;
     enhance_prompt?: boolean;
     frame_images?: {
@@ -7674,7 +7717,7 @@ export type CreateVideoAliasParams = {
   headers?: Record<string, never>;
   body?: {
     aspect_ratio?: string;
-    compression_quality?: number;
+    compression_quality?: number | "optimized" | "lossless";
     duration?: number;
     enhance_prompt?: boolean;
     frame_images?: {
@@ -8173,8 +8216,17 @@ export type CreateWorkloadIdentityPolicyParams = {
     issuer?: string;
     max_token_lifetime_seconds?: number;
     name: string;
+    owner_claim?: string;
     owner_id: string;
-    provider: "vercel" | "github_actions";
+    provider:
+      | "vercel"
+      | "github_actions"
+      | "gitlab"
+      | "google_cloud"
+      | "buildkite"
+      | "circleci"
+      | "aws"
+      | "custom";
   };
 };
 
@@ -8198,8 +8250,17 @@ export async function createWorkloadIdentityPolicy(
     last_used_at: string | null;
     max_token_lifetime_seconds: number;
     name: string;
+    owner_claim: string;
     owner_id: string;
-    provider: "vercel" | "github_actions";
+    provider:
+      | "vercel"
+      | "github_actions"
+      | "gitlab"
+      | "google_cloud"
+      | "buildkite"
+      | "circleci"
+      | "aws"
+      | "custom";
     status: "active" | "disabled";
     updated_at: string;
   };
@@ -8220,8 +8281,17 @@ export async function createWorkloadIdentityPolicy(
       last_used_at: string | null;
       max_token_lifetime_seconds: number;
       name: string;
+      owner_claim: string;
       owner_id: string;
-      provider: "vercel" | "github_actions";
+      provider:
+        | "vercel"
+        | "github_actions"
+        | "gitlab"
+        | "google_cloud"
+        | "buildkite"
+        | "circleci"
+        | "aws"
+        | "custom";
       status: "active" | "disabled";
       updated_at: string;
     };
@@ -9142,7 +9212,7 @@ export type DeleteRateLimitAssignmentParams = {
 };
 
 /**
- * Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+ * Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.
  */
 export async function deleteRateLimitAssignment(
   client: Client,
@@ -9181,7 +9251,7 @@ export type DeleteRateLimitPolicyParams = {
 };
 
 /**
- * Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+ * Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.
  */
 export async function deleteRateLimitPolicy(
   client: Client,
@@ -9409,7 +9479,7 @@ export type DeleteWorkspaceParams = {
 };
 
 /**
- * Deletes a workspace by UUID or slug. Management API key required.
+ * Deletes a workspace by UUID or slug. Only the workspace owner can delete it. Management API key required.
  */
 export async function deleteWorkspace(
   client: Client,
@@ -9753,6 +9823,7 @@ export async function finalizeRealtimeSession(
   model: string;
   model_id: string;
   provider: string;
+  provider_model?: string;
   session_id: string;
   settlement: {
     [key: string]: unknown;
@@ -9778,6 +9849,7 @@ export async function finalizeRealtimeSession(
     model: string;
     model_id: string;
     provider: string;
+    provider_model?: string;
     session_id: string;
     settlement: {
       [key: string]: unknown;
@@ -10379,7 +10451,6 @@ export async function getApiKey(
     department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
-    hash: string;
     id: string;
     include_byok_in_limit: boolean;
     ip_allowlist?: {
@@ -10449,7 +10520,6 @@ export async function getApiKey(
       department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
-      hash: string;
       id: string;
       include_byok_in_limit: boolean;
       ip_allowlist?: {
@@ -10818,7 +10888,6 @@ export async function getCurrentApiKey(
     department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
-    hash: string;
     id: string;
     include_byok_in_limit: boolean;
     ip_allowlist?: {
@@ -10886,7 +10955,6 @@ export async function getCurrentApiKey(
       department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
-      hash: string;
       id: string;
       include_byok_in_limit: boolean;
       ip_allowlist?: {
@@ -12705,7 +12773,7 @@ export type GetRateLimitAssignmentParams = {
 };
 
 /**
- * Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+ * Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.
  */
 export async function getRateLimitAssignment(
   client: Client,
@@ -12717,8 +12785,7 @@ export async function getRateLimitAssignment(
     id: string;
     policy_id: string;
     target_id: string | null;
-    target_type:
-      "key" | "member" | "department" | "guardrail" | "end_user_default";
+    target_type: "key" | "member" | "department" | "end_user_default";
     updated_at: string;
     workspace_id: string;
   };
@@ -12734,8 +12801,7 @@ export async function getRateLimitAssignment(
       id: string;
       policy_id: string;
       target_id: string | null;
-      target_type:
-        "key" | "member" | "department" | "guardrail" | "end_user_default";
+      target_type: "key" | "member" | "department" | "end_user_default";
       updated_at: string;
       workspace_id: string;
     };
@@ -12758,7 +12824,7 @@ export type GetRateLimitPolicyParams = {
 };
 
 /**
- * Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+ * Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.
  */
 export async function getRateLimitPolicy(
   client: Client,
@@ -13647,8 +13713,17 @@ export async function getWorkloadIdentityPolicy(
     last_used_at: string | null;
     max_token_lifetime_seconds: number;
     name: string;
+    owner_claim: string;
     owner_id: string;
-    provider: "vercel" | "github_actions";
+    provider:
+      | "vercel"
+      | "github_actions"
+      | "gitlab"
+      | "google_cloud"
+      | "buildkite"
+      | "circleci"
+      | "aws"
+      | "custom";
     status: "active" | "disabled";
     updated_at: string;
   };
@@ -13671,8 +13746,17 @@ export async function getWorkloadIdentityPolicy(
       last_used_at: string | null;
       max_token_lifetime_seconds: number;
       name: string;
+      owner_claim: string;
       owner_id: string;
-      provider: "vercel" | "github_actions";
+      provider:
+        | "vercel"
+        | "github_actions"
+        | "gitlab"
+        | "google_cloud"
+        | "buildkite"
+        | "circleci"
+        | "aws"
+        | "custom";
       status: "active" | "disabled";
       updated_at: string;
     };
@@ -14356,7 +14440,6 @@ export async function listApiKeys(
     department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
-    hash: string;
     id: string;
     include_byok_in_limit: boolean;
     ip_allowlist?: {
@@ -14425,7 +14508,6 @@ export async function listApiKeys(
       department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
-      hash: string;
       id: string;
       include_byok_in_limit: boolean;
       ip_allowlist?: {
@@ -16084,7 +16166,7 @@ export type ListDepartmentBudgetsParams = {
 };
 
 /**
- * Lists department spend budgets with each department's spend so far in the current UTC period. Spend comes from an hourly rollup, so it can lag by up to an hour.
+ * Lists department spend budgets with each department's spend so far in the current UTC period. Spend is counted the way department admission counts it, so it is current.
  */
 export async function listDepartmentBudgets(
   client: Client,
@@ -16979,6 +17061,96 @@ export async function listModelEndpoints(
           [key: string]: unknown;
         };
       };
+      parameter_specs?: {
+        [key: string]: {
+          alias_of?: string;
+          aliases?: string[];
+          always_on?: boolean;
+          default?: string | number | boolean;
+          dimensions?: {
+            aspect_ratios?: string[];
+            max?: number;
+            max_aspect_ratio?: string;
+            max_height?: number;
+            max_pixels?: number;
+            max_width?: number;
+            min?: number;
+            min_pixels?: number;
+            multiple_of?: number;
+          };
+          extra?: {
+            [key: string]: unknown;
+          };
+          format?: string;
+          formats?: string[];
+          item_types?: string[];
+          max?: number;
+          max_file_size_bytes?: number;
+          max_items?: number;
+          max_length?: number;
+          max_tokens?: number;
+          media?: "image" | "audio" | "video";
+          min?: number;
+          min_items?: number;
+          min_length?: number;
+          multiple_of?: number;
+          notes?: string;
+          open?: boolean;
+          options?: {
+            description?: string;
+            label?: string;
+            value: string | number | boolean;
+            [key: string]: unknown;
+          }[];
+          properties?: {
+            [key: string]: {
+              [key: string]: unknown;
+            };
+          };
+          provider_default?: string | number | boolean;
+          required?: boolean;
+          requires?: string[];
+          source?: {
+            url?: string;
+            verified_at?: string;
+          };
+          step?: number;
+          support_level?: string;
+          supported: boolean;
+          type?:
+            | "string"
+            | "integer"
+            | "number"
+            | "boolean"
+            | "array"
+            | "object"
+            | "file"
+            | (
+                | "string"
+                | "integer"
+                | "number"
+                | "boolean"
+                | "array"
+                | "object"
+                | "file"
+              )[];
+          upstream_name?: string;
+          upstream_values?: (string | number | boolean)[];
+          values?: (string | number | boolean)[];
+          when?: {
+            default?: string | number | boolean;
+            if: {
+              [key: string]: (string | number | boolean)[];
+            };
+            max?: number;
+            message?: string;
+            min?: number;
+            step?: number;
+            supported?: boolean;
+            values?: (string | number | boolean)[];
+          }[];
+        };
+      };
       parameters: string[];
     };
     capability_id: string;
@@ -17027,6 +17199,7 @@ export async function listModelEndpoints(
       capability:
         | "active"
         | "coming_soon"
+        | "deranked"
         | "deranked_lvl1"
         | "deranked_lvl2"
         | "deranked_lvl3"
@@ -17034,12 +17207,14 @@ export async function listModelEndpoints(
         | "internal_testing";
       model:
         | "active"
+        | "deranked"
         | "deranked_lvl1"
         | "deranked_lvl2"
         | "deranked_lvl3"
         | "disabled";
       provider:
         | "active"
+        | "deranked"
         | "deranked_lvl1"
         | "deranked_lvl2"
         | "deranked_lvl3"
@@ -17055,6 +17230,7 @@ export async function listModelEndpoints(
       | "project_limited"
       | "paused"
       | "soft_blocked"
+      | "deranked"
       | "deranked_lvl1"
       | "deranked_lvl2"
       | "deranked_lvl3"
@@ -17097,6 +17273,96 @@ export async function listModelEndpoints(
         parameter_details: {
           [key: string]: {
             [key: string]: unknown;
+          };
+        };
+        parameter_specs?: {
+          [key: string]: {
+            alias_of?: string;
+            aliases?: string[];
+            always_on?: boolean;
+            default?: string | number | boolean;
+            dimensions?: {
+              aspect_ratios?: string[];
+              max?: number;
+              max_aspect_ratio?: string;
+              max_height?: number;
+              max_pixels?: number;
+              max_width?: number;
+              min?: number;
+              min_pixels?: number;
+              multiple_of?: number;
+            };
+            extra?: {
+              [key: string]: unknown;
+            };
+            format?: string;
+            formats?: string[];
+            item_types?: string[];
+            max?: number;
+            max_file_size_bytes?: number;
+            max_items?: number;
+            max_length?: number;
+            max_tokens?: number;
+            media?: "image" | "audio" | "video";
+            min?: number;
+            min_items?: number;
+            min_length?: number;
+            multiple_of?: number;
+            notes?: string;
+            open?: boolean;
+            options?: {
+              description?: string;
+              label?: string;
+              value: string | number | boolean;
+              [key: string]: unknown;
+            }[];
+            properties?: {
+              [key: string]: {
+                [key: string]: unknown;
+              };
+            };
+            provider_default?: string | number | boolean;
+            required?: boolean;
+            requires?: string[];
+            source?: {
+              url?: string;
+              verified_at?: string;
+            };
+            step?: number;
+            support_level?: string;
+            supported: boolean;
+            type?:
+              | "string"
+              | "integer"
+              | "number"
+              | "boolean"
+              | "array"
+              | "object"
+              | "file"
+              | (
+                  | "string"
+                  | "integer"
+                  | "number"
+                  | "boolean"
+                  | "array"
+                  | "object"
+                  | "file"
+                )[];
+            upstream_name?: string;
+            upstream_values?: (string | number | boolean)[];
+            values?: (string | number | boolean)[];
+            when?: {
+              default?: string | number | boolean;
+              if: {
+                [key: string]: (string | number | boolean)[];
+              };
+              max?: number;
+              message?: string;
+              min?: number;
+              step?: number;
+              supported?: boolean;
+              values?: (string | number | boolean)[];
+            }[];
           };
         };
         parameters: string[];
@@ -17147,6 +17413,7 @@ export async function listModelEndpoints(
         capability:
           | "active"
           | "coming_soon"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"
@@ -17154,12 +17421,14 @@ export async function listModelEndpoints(
           | "internal_testing";
         model:
           | "active"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"
           | "disabled";
         provider:
           | "active"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"
@@ -17175,6 +17444,7 @@ export async function listModelEndpoints(
         | "project_limited"
         | "paused"
         | "soft_blocked"
+        | "deranked"
         | "deranked_lvl1"
         | "deranked_lvl2"
         | "deranked_lvl3"
@@ -17219,6 +17489,7 @@ export type ListModelsParams = {
     feed?: "json" | "rss" | "atom";
     format?: "json" | "openai" | "rss" | "atom";
     gateway_available_only?: boolean;
+    include?: "parameter_specs"[];
     input_modalities?: string[];
     input_modality?: "text" | "image" | "audio" | "video";
     input_types?: string[];
@@ -17506,6 +17777,15 @@ export async function listModels(
   args: ListModelsParams = {},
 ): Promise<
   | {
+      access?: {
+        hidden_model_count: number;
+        hidden_models: {
+          id: string;
+          name: string;
+        }[];
+        limited_model_count: number;
+        restricted: boolean;
+      };
       availability_mode: "active" | "all";
       limit: number;
       models: {
@@ -17523,6 +17803,96 @@ export async function listModels(
           parameter_details: {
             [key: string]: {
               [key: string]: unknown;
+            };
+          };
+          parameter_specs?: {
+            [key: string]: {
+              alias_of?: string;
+              aliases?: string[];
+              always_on?: boolean;
+              default?: string | number | boolean;
+              dimensions?: {
+                aspect_ratios?: string[];
+                max?: number;
+                max_aspect_ratio?: string;
+                max_height?: number;
+                max_pixels?: number;
+                max_width?: number;
+                min?: number;
+                min_pixels?: number;
+                multiple_of?: number;
+              };
+              extra?: {
+                [key: string]: unknown;
+              };
+              format?: string;
+              formats?: string[];
+              item_types?: string[];
+              max?: number;
+              max_file_size_bytes?: number;
+              max_items?: number;
+              max_length?: number;
+              max_tokens?: number;
+              media?: "image" | "audio" | "video";
+              min?: number;
+              min_items?: number;
+              min_length?: number;
+              multiple_of?: number;
+              notes?: string;
+              open?: boolean;
+              options?: {
+                description?: string;
+                label?: string;
+                value: string | number | boolean;
+                [key: string]: unknown;
+              }[];
+              properties?: {
+                [key: string]: {
+                  [key: string]: unknown;
+                };
+              };
+              provider_default?: string | number | boolean;
+              required?: boolean;
+              requires?: string[];
+              source?: {
+                url?: string;
+                verified_at?: string;
+              };
+              step?: number;
+              support_level?: string;
+              supported: boolean;
+              type?:
+                | "string"
+                | "integer"
+                | "number"
+                | "boolean"
+                | "array"
+                | "object"
+                | "file"
+                | (
+                    | "string"
+                    | "integer"
+                    | "number"
+                    | "boolean"
+                    | "array"
+                    | "object"
+                    | "file"
+                  )[];
+              upstream_name?: string;
+              upstream_values?: (string | number | boolean)[];
+              values?: (string | number | boolean)[];
+              when?: {
+                default?: string | number | boolean;
+                if: {
+                  [key: string]: (string | number | boolean)[];
+                };
+                max?: number;
+                message?: string;
+                min?: number;
+                step?: number;
+                supported?: boolean;
+                values?: (string | number | boolean)[];
+              }[];
             };
           };
           parameters: string[];
@@ -17552,6 +17922,96 @@ export async function listModels(
             parameter_details: {
               [key: string]: {
                 [key: string]: unknown;
+              };
+            };
+            parameter_specs?: {
+              [key: string]: {
+                alias_of?: string;
+                aliases?: string[];
+                always_on?: boolean;
+                default?: string | number | boolean;
+                dimensions?: {
+                  aspect_ratios?: string[];
+                  max?: number;
+                  max_aspect_ratio?: string;
+                  max_height?: number;
+                  max_pixels?: number;
+                  max_width?: number;
+                  min?: number;
+                  min_pixels?: number;
+                  multiple_of?: number;
+                };
+                extra?: {
+                  [key: string]: unknown;
+                };
+                format?: string;
+                formats?: string[];
+                item_types?: string[];
+                max?: number;
+                max_file_size_bytes?: number;
+                max_items?: number;
+                max_length?: number;
+                max_tokens?: number;
+                media?: "image" | "audio" | "video";
+                min?: number;
+                min_items?: number;
+                min_length?: number;
+                multiple_of?: number;
+                notes?: string;
+                open?: boolean;
+                options?: {
+                  description?: string;
+                  label?: string;
+                  value: string | number | boolean;
+                  [key: string]: unknown;
+                }[];
+                properties?: {
+                  [key: string]: {
+                    [key: string]: unknown;
+                  };
+                };
+                provider_default?: string | number | boolean;
+                required?: boolean;
+                requires?: string[];
+                source?: {
+                  url?: string;
+                  verified_at?: string;
+                };
+                step?: number;
+                support_level?: string;
+                supported: boolean;
+                type?:
+                  | "string"
+                  | "integer"
+                  | "number"
+                  | "boolean"
+                  | "array"
+                  | "object"
+                  | "file"
+                  | (
+                      | "string"
+                      | "integer"
+                      | "number"
+                      | "boolean"
+                      | "array"
+                      | "object"
+                      | "file"
+                    )[];
+                upstream_name?: string;
+                upstream_values?: (string | number | boolean)[];
+                values?: (string | number | boolean)[];
+                when?: {
+                  default?: string | number | boolean;
+                  if: {
+                    [key: string]: (string | number | boolean)[];
+                  };
+                  max?: number;
+                  message?: string;
+                  min?: number;
+                  step?: number;
+                  supported?: boolean;
+                  values?: (string | number | boolean)[];
+                }[];
               };
             };
             parameters: string[];
@@ -17587,6 +18047,7 @@ export async function listModels(
             capability:
               | "active"
               | "coming_soon"
+              | "deranked"
               | "deranked_lvl1"
               | "deranked_lvl2"
               | "deranked_lvl3"
@@ -17594,12 +18055,14 @@ export async function listModels(
               | "internal_testing";
             model:
               | "active"
+              | "deranked"
               | "deranked_lvl1"
               | "deranked_lvl2"
               | "deranked_lvl3"
               | "disabled";
             provider:
               | "active"
+              | "deranked"
               | "deranked_lvl1"
               | "deranked_lvl2"
               | "deranked_lvl3"
@@ -17616,6 +18079,7 @@ export async function listModels(
             | "project_limited"
             | "paused"
             | "soft_blocked"
+            | "deranked"
             | "deranked_lvl1"
             | "deranked_lvl2"
             | "deranked_lvl3"
@@ -17673,6 +18137,15 @@ export async function listModels(
   const resolvedPath = "/models";
   return client.request<
     | {
+        access?: {
+          hidden_model_count: number;
+          hidden_models: {
+            id: string;
+            name: string;
+          }[];
+          limited_model_count: number;
+          restricted: boolean;
+        };
         availability_mode: "active" | "all";
         limit: number;
         models: {
@@ -17690,6 +18163,96 @@ export async function listModels(
             parameter_details: {
               [key: string]: {
                 [key: string]: unknown;
+              };
+            };
+            parameter_specs?: {
+              [key: string]: {
+                alias_of?: string;
+                aliases?: string[];
+                always_on?: boolean;
+                default?: string | number | boolean;
+                dimensions?: {
+                  aspect_ratios?: string[];
+                  max?: number;
+                  max_aspect_ratio?: string;
+                  max_height?: number;
+                  max_pixels?: number;
+                  max_width?: number;
+                  min?: number;
+                  min_pixels?: number;
+                  multiple_of?: number;
+                };
+                extra?: {
+                  [key: string]: unknown;
+                };
+                format?: string;
+                formats?: string[];
+                item_types?: string[];
+                max?: number;
+                max_file_size_bytes?: number;
+                max_items?: number;
+                max_length?: number;
+                max_tokens?: number;
+                media?: "image" | "audio" | "video";
+                min?: number;
+                min_items?: number;
+                min_length?: number;
+                multiple_of?: number;
+                notes?: string;
+                open?: boolean;
+                options?: {
+                  description?: string;
+                  label?: string;
+                  value: string | number | boolean;
+                  [key: string]: unknown;
+                }[];
+                properties?: {
+                  [key: string]: {
+                    [key: string]: unknown;
+                  };
+                };
+                provider_default?: string | number | boolean;
+                required?: boolean;
+                requires?: string[];
+                source?: {
+                  url?: string;
+                  verified_at?: string;
+                };
+                step?: number;
+                support_level?: string;
+                supported: boolean;
+                type?:
+                  | "string"
+                  | "integer"
+                  | "number"
+                  | "boolean"
+                  | "array"
+                  | "object"
+                  | "file"
+                  | (
+                      | "string"
+                      | "integer"
+                      | "number"
+                      | "boolean"
+                      | "array"
+                      | "object"
+                      | "file"
+                    )[];
+                upstream_name?: string;
+                upstream_values?: (string | number | boolean)[];
+                values?: (string | number | boolean)[];
+                when?: {
+                  default?: string | number | boolean;
+                  if: {
+                    [key: string]: (string | number | boolean)[];
+                  };
+                  max?: number;
+                  message?: string;
+                  min?: number;
+                  step?: number;
+                  supported?: boolean;
+                  values?: (string | number | boolean)[];
+                }[];
               };
             };
             parameters: string[];
@@ -17719,6 +18282,96 @@ export async function listModels(
               parameter_details: {
                 [key: string]: {
                   [key: string]: unknown;
+                };
+              };
+              parameter_specs?: {
+                [key: string]: {
+                  alias_of?: string;
+                  aliases?: string[];
+                  always_on?: boolean;
+                  default?: string | number | boolean;
+                  dimensions?: {
+                    aspect_ratios?: string[];
+                    max?: number;
+                    max_aspect_ratio?: string;
+                    max_height?: number;
+                    max_pixels?: number;
+                    max_width?: number;
+                    min?: number;
+                    min_pixels?: number;
+                    multiple_of?: number;
+                  };
+                  extra?: {
+                    [key: string]: unknown;
+                  };
+                  format?: string;
+                  formats?: string[];
+                  item_types?: string[];
+                  max?: number;
+                  max_file_size_bytes?: number;
+                  max_items?: number;
+                  max_length?: number;
+                  max_tokens?: number;
+                  media?: "image" | "audio" | "video";
+                  min?: number;
+                  min_items?: number;
+                  min_length?: number;
+                  multiple_of?: number;
+                  notes?: string;
+                  open?: boolean;
+                  options?: {
+                    description?: string;
+                    label?: string;
+                    value: string | number | boolean;
+                    [key: string]: unknown;
+                  }[];
+                  properties?: {
+                    [key: string]: {
+                      [key: string]: unknown;
+                    };
+                  };
+                  provider_default?: string | number | boolean;
+                  required?: boolean;
+                  requires?: string[];
+                  source?: {
+                    url?: string;
+                    verified_at?: string;
+                  };
+                  step?: number;
+                  support_level?: string;
+                  supported: boolean;
+                  type?:
+                    | "string"
+                    | "integer"
+                    | "number"
+                    | "boolean"
+                    | "array"
+                    | "object"
+                    | "file"
+                    | (
+                        | "string"
+                        | "integer"
+                        | "number"
+                        | "boolean"
+                        | "array"
+                        | "object"
+                        | "file"
+                      )[];
+                  upstream_name?: string;
+                  upstream_values?: (string | number | boolean)[];
+                  values?: (string | number | boolean)[];
+                  when?: {
+                    default?: string | number | boolean;
+                    if: {
+                      [key: string]: (string | number | boolean)[];
+                    };
+                    max?: number;
+                    message?: string;
+                    min?: number;
+                    step?: number;
+                    supported?: boolean;
+                    values?: (string | number | boolean)[];
+                  }[];
                 };
               };
               parameters: string[];
@@ -17754,6 +18407,7 @@ export async function listModels(
               capability:
                 | "active"
                 | "coming_soon"
+                | "deranked"
                 | "deranked_lvl1"
                 | "deranked_lvl2"
                 | "deranked_lvl3"
@@ -17761,12 +18415,14 @@ export async function listModels(
                 | "internal_testing";
               model:
                 | "active"
+                | "deranked"
                 | "deranked_lvl1"
                 | "deranked_lvl2"
                 | "deranked_lvl3"
                 | "disabled";
               provider:
                 | "active"
+                | "deranked"
                 | "deranked_lvl1"
                 | "deranked_lvl2"
                 | "deranked_lvl3"
@@ -17783,6 +18439,7 @@ export async function listModels(
               | "project_limited"
               | "paused"
               | "soft_blocked"
+              | "deranked"
               | "deranked_lvl1"
               | "deranked_lvl2"
               | "deranked_lvl3"
@@ -18863,15 +19520,14 @@ export type ListRateLimitAssignmentsParams = {
     limit?: number;
     offset?: number;
     policy_id?: string;
-    target_type?:
-      "key" | "member" | "department" | "guardrail" | "end_user_default";
+    target_type?: "key" | "member" | "department" | "end_user_default";
   };
   headers?: Record<string, never>;
   body?: never;
 };
 
 /**
- * Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+ * Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.
  */
 export async function listRateLimitAssignments(
   client: Client,
@@ -18883,8 +19539,7 @@ export async function listRateLimitAssignments(
     id: string;
     policy_id: string;
     target_id: string | null;
-    target_type:
-      "key" | "member" | "department" | "guardrail" | "end_user_default";
+    target_type: "key" | "member" | "department" | "end_user_default";
     updated_at: string;
     workspace_id: string;
   }[];
@@ -18899,8 +19554,7 @@ export async function listRateLimitAssignments(
       id: string;
       policy_id: string;
       target_id: string | null;
-      target_type:
-        "key" | "member" | "department" | "guardrail" | "end_user_default";
+      target_type: "key" | "member" | "department" | "end_user_default";
       updated_at: string;
       workspace_id: string;
     }[];
@@ -18925,7 +19579,7 @@ export type ListRateLimitPoliciesParams = {
 };
 
 /**
- * Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+ * Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.
  */
 export async function listRateLimitPolicies(
   client: Client,
@@ -19583,12 +20237,21 @@ export type ListTeamModelsParams = {
 };
 
 /**
- * Returns team-scoped gateway model listings. Defaults to currently publicly routable models; use availability=all to include non-routable availability records.
+ * Returns the /models listing with the caller's guardrails applied: models a rule blocks, and models with no permitted provider, are left out, and each model keeps only the offers its requests may be routed to, with its prices, capabilities and availability from those. The access object says what the rules left out. Defaults to currently publicly routable models; use availability=all to include non-routable availability records.
  */
 export async function listTeamModels(
   client: Client,
   args: ListTeamModelsParams = {},
 ): Promise<{
+  access?: {
+    hidden_model_count: number;
+    hidden_models: {
+      id: string;
+      name: string;
+    }[];
+    limited_model_count: number;
+    restricted: boolean;
+  };
   availability_mode: "active" | "all";
   limit: number;
   models: {
@@ -19606,6 +20269,96 @@ export async function listTeamModels(
       parameter_details: {
         [key: string]: {
           [key: string]: unknown;
+        };
+      };
+      parameter_specs?: {
+        [key: string]: {
+          alias_of?: string;
+          aliases?: string[];
+          always_on?: boolean;
+          default?: string | number | boolean;
+          dimensions?: {
+            aspect_ratios?: string[];
+            max?: number;
+            max_aspect_ratio?: string;
+            max_height?: number;
+            max_pixels?: number;
+            max_width?: number;
+            min?: number;
+            min_pixels?: number;
+            multiple_of?: number;
+          };
+          extra?: {
+            [key: string]: unknown;
+          };
+          format?: string;
+          formats?: string[];
+          item_types?: string[];
+          max?: number;
+          max_file_size_bytes?: number;
+          max_items?: number;
+          max_length?: number;
+          max_tokens?: number;
+          media?: "image" | "audio" | "video";
+          min?: number;
+          min_items?: number;
+          min_length?: number;
+          multiple_of?: number;
+          notes?: string;
+          open?: boolean;
+          options?: {
+            description?: string;
+            label?: string;
+            value: string | number | boolean;
+            [key: string]: unknown;
+          }[];
+          properties?: {
+            [key: string]: {
+              [key: string]: unknown;
+            };
+          };
+          provider_default?: string | number | boolean;
+          required?: boolean;
+          requires?: string[];
+          source?: {
+            url?: string;
+            verified_at?: string;
+          };
+          step?: number;
+          support_level?: string;
+          supported: boolean;
+          type?:
+            | "string"
+            | "integer"
+            | "number"
+            | "boolean"
+            | "array"
+            | "object"
+            | "file"
+            | (
+                | "string"
+                | "integer"
+                | "number"
+                | "boolean"
+                | "array"
+                | "object"
+                | "file"
+              )[];
+          upstream_name?: string;
+          upstream_values?: (string | number | boolean)[];
+          values?: (string | number | boolean)[];
+          when?: {
+            default?: string | number | boolean;
+            if: {
+              [key: string]: (string | number | boolean)[];
+            };
+            max?: number;
+            message?: string;
+            min?: number;
+            step?: number;
+            supported?: boolean;
+            values?: (string | number | boolean)[];
+          }[];
         };
       };
       parameters: string[];
@@ -19635,6 +20388,96 @@ export async function listTeamModels(
         parameter_details: {
           [key: string]: {
             [key: string]: unknown;
+          };
+        };
+        parameter_specs?: {
+          [key: string]: {
+            alias_of?: string;
+            aliases?: string[];
+            always_on?: boolean;
+            default?: string | number | boolean;
+            dimensions?: {
+              aspect_ratios?: string[];
+              max?: number;
+              max_aspect_ratio?: string;
+              max_height?: number;
+              max_pixels?: number;
+              max_width?: number;
+              min?: number;
+              min_pixels?: number;
+              multiple_of?: number;
+            };
+            extra?: {
+              [key: string]: unknown;
+            };
+            format?: string;
+            formats?: string[];
+            item_types?: string[];
+            max?: number;
+            max_file_size_bytes?: number;
+            max_items?: number;
+            max_length?: number;
+            max_tokens?: number;
+            media?: "image" | "audio" | "video";
+            min?: number;
+            min_items?: number;
+            min_length?: number;
+            multiple_of?: number;
+            notes?: string;
+            open?: boolean;
+            options?: {
+              description?: string;
+              label?: string;
+              value: string | number | boolean;
+              [key: string]: unknown;
+            }[];
+            properties?: {
+              [key: string]: {
+                [key: string]: unknown;
+              };
+            };
+            provider_default?: string | number | boolean;
+            required?: boolean;
+            requires?: string[];
+            source?: {
+              url?: string;
+              verified_at?: string;
+            };
+            step?: number;
+            support_level?: string;
+            supported: boolean;
+            type?:
+              | "string"
+              | "integer"
+              | "number"
+              | "boolean"
+              | "array"
+              | "object"
+              | "file"
+              | (
+                  | "string"
+                  | "integer"
+                  | "number"
+                  | "boolean"
+                  | "array"
+                  | "object"
+                  | "file"
+                )[];
+            upstream_name?: string;
+            upstream_values?: (string | number | boolean)[];
+            values?: (string | number | boolean)[];
+            when?: {
+              default?: string | number | boolean;
+              if: {
+                [key: string]: (string | number | boolean)[];
+              };
+              max?: number;
+              message?: string;
+              min?: number;
+              step?: number;
+              supported?: boolean;
+              values?: (string | number | boolean)[];
+            }[];
           };
         };
         parameters: string[];
@@ -19670,6 +20513,7 @@ export async function listTeamModels(
         capability:
           | "active"
           | "coming_soon"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"
@@ -19677,12 +20521,14 @@ export async function listTeamModels(
           | "internal_testing";
         model:
           | "active"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"
           | "disabled";
         provider:
           | "active"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"
@@ -19699,6 +20545,7 @@ export async function listTeamModels(
         | "project_limited"
         | "paused"
         | "soft_blocked"
+        | "deranked"
         | "deranked_lvl1"
         | "deranked_lvl2"
         | "deranked_lvl3"
@@ -19745,6 +20592,15 @@ export async function listTeamModels(
   const { path, query, headers, body } = args;
   const resolvedPath = "/models/me";
   return client.request<{
+    access?: {
+      hidden_model_count: number;
+      hidden_models: {
+        id: string;
+        name: string;
+      }[];
+      limited_model_count: number;
+      restricted: boolean;
+    };
     availability_mode: "active" | "all";
     limit: number;
     models: {
@@ -19762,6 +20618,96 @@ export async function listTeamModels(
         parameter_details: {
           [key: string]: {
             [key: string]: unknown;
+          };
+        };
+        parameter_specs?: {
+          [key: string]: {
+            alias_of?: string;
+            aliases?: string[];
+            always_on?: boolean;
+            default?: string | number | boolean;
+            dimensions?: {
+              aspect_ratios?: string[];
+              max?: number;
+              max_aspect_ratio?: string;
+              max_height?: number;
+              max_pixels?: number;
+              max_width?: number;
+              min?: number;
+              min_pixels?: number;
+              multiple_of?: number;
+            };
+            extra?: {
+              [key: string]: unknown;
+            };
+            format?: string;
+            formats?: string[];
+            item_types?: string[];
+            max?: number;
+            max_file_size_bytes?: number;
+            max_items?: number;
+            max_length?: number;
+            max_tokens?: number;
+            media?: "image" | "audio" | "video";
+            min?: number;
+            min_items?: number;
+            min_length?: number;
+            multiple_of?: number;
+            notes?: string;
+            open?: boolean;
+            options?: {
+              description?: string;
+              label?: string;
+              value: string | number | boolean;
+              [key: string]: unknown;
+            }[];
+            properties?: {
+              [key: string]: {
+                [key: string]: unknown;
+              };
+            };
+            provider_default?: string | number | boolean;
+            required?: boolean;
+            requires?: string[];
+            source?: {
+              url?: string;
+              verified_at?: string;
+            };
+            step?: number;
+            support_level?: string;
+            supported: boolean;
+            type?:
+              | "string"
+              | "integer"
+              | "number"
+              | "boolean"
+              | "array"
+              | "object"
+              | "file"
+              | (
+                  | "string"
+                  | "integer"
+                  | "number"
+                  | "boolean"
+                  | "array"
+                  | "object"
+                  | "file"
+                )[];
+            upstream_name?: string;
+            upstream_values?: (string | number | boolean)[];
+            values?: (string | number | boolean)[];
+            when?: {
+              default?: string | number | boolean;
+              if: {
+                [key: string]: (string | number | boolean)[];
+              };
+              max?: number;
+              message?: string;
+              min?: number;
+              step?: number;
+              supported?: boolean;
+              values?: (string | number | boolean)[];
+            }[];
           };
         };
         parameters: string[];
@@ -19791,6 +20737,96 @@ export async function listTeamModels(
           parameter_details: {
             [key: string]: {
               [key: string]: unknown;
+            };
+          };
+          parameter_specs?: {
+            [key: string]: {
+              alias_of?: string;
+              aliases?: string[];
+              always_on?: boolean;
+              default?: string | number | boolean;
+              dimensions?: {
+                aspect_ratios?: string[];
+                max?: number;
+                max_aspect_ratio?: string;
+                max_height?: number;
+                max_pixels?: number;
+                max_width?: number;
+                min?: number;
+                min_pixels?: number;
+                multiple_of?: number;
+              };
+              extra?: {
+                [key: string]: unknown;
+              };
+              format?: string;
+              formats?: string[];
+              item_types?: string[];
+              max?: number;
+              max_file_size_bytes?: number;
+              max_items?: number;
+              max_length?: number;
+              max_tokens?: number;
+              media?: "image" | "audio" | "video";
+              min?: number;
+              min_items?: number;
+              min_length?: number;
+              multiple_of?: number;
+              notes?: string;
+              open?: boolean;
+              options?: {
+                description?: string;
+                label?: string;
+                value: string | number | boolean;
+                [key: string]: unknown;
+              }[];
+              properties?: {
+                [key: string]: {
+                  [key: string]: unknown;
+                };
+              };
+              provider_default?: string | number | boolean;
+              required?: boolean;
+              requires?: string[];
+              source?: {
+                url?: string;
+                verified_at?: string;
+              };
+              step?: number;
+              support_level?: string;
+              supported: boolean;
+              type?:
+                | "string"
+                | "integer"
+                | "number"
+                | "boolean"
+                | "array"
+                | "object"
+                | "file"
+                | (
+                    | "string"
+                    | "integer"
+                    | "number"
+                    | "boolean"
+                    | "array"
+                    | "object"
+                    | "file"
+                  )[];
+              upstream_name?: string;
+              upstream_values?: (string | number | boolean)[];
+              values?: (string | number | boolean)[];
+              when?: {
+                default?: string | number | boolean;
+                if: {
+                  [key: string]: (string | number | boolean)[];
+                };
+                max?: number;
+                message?: string;
+                min?: number;
+                step?: number;
+                supported?: boolean;
+                values?: (string | number | boolean)[];
+              }[];
             };
           };
           parameters: string[];
@@ -19826,6 +20862,7 @@ export async function listTeamModels(
           capability:
             | "active"
             | "coming_soon"
+            | "deranked"
             | "deranked_lvl1"
             | "deranked_lvl2"
             | "deranked_lvl3"
@@ -19833,12 +20870,14 @@ export async function listTeamModels(
             | "internal_testing";
           model:
             | "active"
+            | "deranked"
             | "deranked_lvl1"
             | "deranked_lvl2"
             | "deranked_lvl3"
             | "disabled";
           provider:
             | "active"
+            | "deranked"
             | "deranked_lvl1"
             | "deranked_lvl2"
             | "deranked_lvl3"
@@ -19855,6 +20894,7 @@ export async function listTeamModels(
           | "project_limited"
           | "paused"
           | "soft_blocked"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"
@@ -19932,6 +20972,96 @@ export async function listVideoModels(
     };
     providers?: {
       id?: string;
+      parameter_specs?: {
+        [key: string]: {
+          alias_of?: string;
+          aliases?: string[];
+          always_on?: boolean;
+          default?: string | number | boolean;
+          dimensions?: {
+            aspect_ratios?: string[];
+            max?: number;
+            max_aspect_ratio?: string;
+            max_height?: number;
+            max_pixels?: number;
+            max_width?: number;
+            min?: number;
+            min_pixels?: number;
+            multiple_of?: number;
+          };
+          extra?: {
+            [key: string]: unknown;
+          };
+          format?: string;
+          formats?: string[];
+          item_types?: string[];
+          max?: number;
+          max_file_size_bytes?: number;
+          max_items?: number;
+          max_length?: number;
+          max_tokens?: number;
+          media?: "image" | "audio" | "video";
+          min?: number;
+          min_items?: number;
+          min_length?: number;
+          multiple_of?: number;
+          notes?: string;
+          open?: boolean;
+          options?: {
+            description?: string;
+            label?: string;
+            value: string | number | boolean;
+            [key: string]: unknown;
+          }[];
+          properties?: {
+            [key: string]: {
+              [key: string]: unknown;
+            };
+          };
+          provider_default?: string | number | boolean;
+          required?: boolean;
+          requires?: string[];
+          source?: {
+            url?: string;
+            verified_at?: string;
+          };
+          step?: number;
+          support_level?: string;
+          supported: boolean;
+          type?:
+            | "string"
+            | "integer"
+            | "number"
+            | "boolean"
+            | "array"
+            | "object"
+            | "file"
+            | (
+                | "string"
+                | "integer"
+                | "number"
+                | "boolean"
+                | "array"
+                | "object"
+                | "file"
+              )[];
+          upstream_name?: string;
+          upstream_values?: (string | number | boolean)[];
+          values?: (string | number | boolean)[];
+          when?: {
+            default?: string | number | boolean;
+            if: {
+              [key: string]: (string | number | boolean)[];
+            };
+            max?: number;
+            message?: string;
+            min?: number;
+            step?: number;
+            supported?: boolean;
+            values?: (string | number | boolean)[];
+          }[];
+        };
+      };
       supported_parameters?: string[];
       supported_parameters_detail?: {
         [key: string]: {
@@ -19974,6 +21104,96 @@ export async function listVideoModels(
       };
       providers?: {
         id?: string;
+        parameter_specs?: {
+          [key: string]: {
+            alias_of?: string;
+            aliases?: string[];
+            always_on?: boolean;
+            default?: string | number | boolean;
+            dimensions?: {
+              aspect_ratios?: string[];
+              max?: number;
+              max_aspect_ratio?: string;
+              max_height?: number;
+              max_pixels?: number;
+              max_width?: number;
+              min?: number;
+              min_pixels?: number;
+              multiple_of?: number;
+            };
+            extra?: {
+              [key: string]: unknown;
+            };
+            format?: string;
+            formats?: string[];
+            item_types?: string[];
+            max?: number;
+            max_file_size_bytes?: number;
+            max_items?: number;
+            max_length?: number;
+            max_tokens?: number;
+            media?: "image" | "audio" | "video";
+            min?: number;
+            min_items?: number;
+            min_length?: number;
+            multiple_of?: number;
+            notes?: string;
+            open?: boolean;
+            options?: {
+              description?: string;
+              label?: string;
+              value: string | number | boolean;
+              [key: string]: unknown;
+            }[];
+            properties?: {
+              [key: string]: {
+                [key: string]: unknown;
+              };
+            };
+            provider_default?: string | number | boolean;
+            required?: boolean;
+            requires?: string[];
+            source?: {
+              url?: string;
+              verified_at?: string;
+            };
+            step?: number;
+            support_level?: string;
+            supported: boolean;
+            type?:
+              | "string"
+              | "integer"
+              | "number"
+              | "boolean"
+              | "array"
+              | "object"
+              | "file"
+              | (
+                  | "string"
+                  | "integer"
+                  | "number"
+                  | "boolean"
+                  | "array"
+                  | "object"
+                  | "file"
+                )[];
+            upstream_name?: string;
+            upstream_values?: (string | number | boolean)[];
+            values?: (string | number | boolean)[];
+            when?: {
+              default?: string | number | boolean;
+              if: {
+                [key: string]: (string | number | boolean)[];
+              };
+              max?: number;
+              message?: string;
+              min?: number;
+              step?: number;
+              supported?: boolean;
+              values?: (string | number | boolean)[];
+            }[];
+          };
+        };
         supported_parameters?: string[];
         supported_parameters_detail?: {
           [key: string]: {
@@ -20035,6 +21255,96 @@ export async function listVideoModelsAlias(
     };
     providers?: {
       id?: string;
+      parameter_specs?: {
+        [key: string]: {
+          alias_of?: string;
+          aliases?: string[];
+          always_on?: boolean;
+          default?: string | number | boolean;
+          dimensions?: {
+            aspect_ratios?: string[];
+            max?: number;
+            max_aspect_ratio?: string;
+            max_height?: number;
+            max_pixels?: number;
+            max_width?: number;
+            min?: number;
+            min_pixels?: number;
+            multiple_of?: number;
+          };
+          extra?: {
+            [key: string]: unknown;
+          };
+          format?: string;
+          formats?: string[];
+          item_types?: string[];
+          max?: number;
+          max_file_size_bytes?: number;
+          max_items?: number;
+          max_length?: number;
+          max_tokens?: number;
+          media?: "image" | "audio" | "video";
+          min?: number;
+          min_items?: number;
+          min_length?: number;
+          multiple_of?: number;
+          notes?: string;
+          open?: boolean;
+          options?: {
+            description?: string;
+            label?: string;
+            value: string | number | boolean;
+            [key: string]: unknown;
+          }[];
+          properties?: {
+            [key: string]: {
+              [key: string]: unknown;
+            };
+          };
+          provider_default?: string | number | boolean;
+          required?: boolean;
+          requires?: string[];
+          source?: {
+            url?: string;
+            verified_at?: string;
+          };
+          step?: number;
+          support_level?: string;
+          supported: boolean;
+          type?:
+            | "string"
+            | "integer"
+            | "number"
+            | "boolean"
+            | "array"
+            | "object"
+            | "file"
+            | (
+                | "string"
+                | "integer"
+                | "number"
+                | "boolean"
+                | "array"
+                | "object"
+                | "file"
+              )[];
+          upstream_name?: string;
+          upstream_values?: (string | number | boolean)[];
+          values?: (string | number | boolean)[];
+          when?: {
+            default?: string | number | boolean;
+            if: {
+              [key: string]: (string | number | boolean)[];
+            };
+            max?: number;
+            message?: string;
+            min?: number;
+            step?: number;
+            supported?: boolean;
+            values?: (string | number | boolean)[];
+          }[];
+        };
+      };
       supported_parameters?: string[];
       supported_parameters_detail?: {
         [key: string]: {
@@ -20077,6 +21387,96 @@ export async function listVideoModelsAlias(
       };
       providers?: {
         id?: string;
+        parameter_specs?: {
+          [key: string]: {
+            alias_of?: string;
+            aliases?: string[];
+            always_on?: boolean;
+            default?: string | number | boolean;
+            dimensions?: {
+              aspect_ratios?: string[];
+              max?: number;
+              max_aspect_ratio?: string;
+              max_height?: number;
+              max_pixels?: number;
+              max_width?: number;
+              min?: number;
+              min_pixels?: number;
+              multiple_of?: number;
+            };
+            extra?: {
+              [key: string]: unknown;
+            };
+            format?: string;
+            formats?: string[];
+            item_types?: string[];
+            max?: number;
+            max_file_size_bytes?: number;
+            max_items?: number;
+            max_length?: number;
+            max_tokens?: number;
+            media?: "image" | "audio" | "video";
+            min?: number;
+            min_items?: number;
+            min_length?: number;
+            multiple_of?: number;
+            notes?: string;
+            open?: boolean;
+            options?: {
+              description?: string;
+              label?: string;
+              value: string | number | boolean;
+              [key: string]: unknown;
+            }[];
+            properties?: {
+              [key: string]: {
+                [key: string]: unknown;
+              };
+            };
+            provider_default?: string | number | boolean;
+            required?: boolean;
+            requires?: string[];
+            source?: {
+              url?: string;
+              verified_at?: string;
+            };
+            step?: number;
+            support_level?: string;
+            supported: boolean;
+            type?:
+              | "string"
+              | "integer"
+              | "number"
+              | "boolean"
+              | "array"
+              | "object"
+              | "file"
+              | (
+                  | "string"
+                  | "integer"
+                  | "number"
+                  | "boolean"
+                  | "array"
+                  | "object"
+                  | "file"
+                )[];
+            upstream_name?: string;
+            upstream_values?: (string | number | boolean)[];
+            values?: (string | number | boolean)[];
+            when?: {
+              default?: string | number | boolean;
+              if: {
+                [key: string]: (string | number | boolean)[];
+              };
+              max?: number;
+              message?: string;
+              min?: number;
+              step?: number;
+              supported?: boolean;
+              values?: (string | number | boolean)[];
+            }[];
+          };
+        };
         supported_parameters?: string[];
         supported_parameters_detail?: {
           [key: string]: {
@@ -20766,7 +22166,7 @@ export type ListWorkloadIdentityPoliciesParams = {
 };
 
 /**
- * Lists the workspace's trusted workload policies: which Vercel deployments and GitHub Actions workflows may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+ * Lists the workspace's trusted workload policies: which deployments, CI jobs and cloud workloads may call the gateway with their OIDC token instead of an API key. Requires keys:read on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
  */
 export async function listWorkloadIdentityPolicies(
   client: Client,
@@ -20786,8 +22186,17 @@ export async function listWorkloadIdentityPolicies(
     last_used_at: string | null;
     max_token_lifetime_seconds: number;
     name: string;
+    owner_claim: string;
     owner_id: string;
-    provider: "vercel" | "github_actions";
+    provider:
+      | "vercel"
+      | "github_actions"
+      | "gitlab"
+      | "google_cloud"
+      | "buildkite"
+      | "circleci"
+      | "aws"
+      | "custom";
     status: "active" | "disabled";
     updated_at: string;
   }[];
@@ -20809,8 +22218,17 @@ export async function listWorkloadIdentityPolicies(
       last_used_at: string | null;
       max_token_lifetime_seconds: number;
       name: string;
+      owner_claim: string;
       owner_id: string;
-      provider: "vercel" | "github_actions";
+      provider:
+        | "vercel"
+        | "github_actions"
+        | "gitlab"
+        | "google_cloud"
+        | "buildkite"
+        | "circleci"
+        | "aws"
+        | "custom";
       status: "active" | "disabled";
       updated_at: string;
     }[];
@@ -22757,7 +24175,7 @@ export type RemoveWorkspaceMembersParams = {
 };
 
 /**
- * Removes non-owner members from a workspace. Management API key required.
+ * Removes non-owner members from a workspace. Only the workspace owner can remove other members; anyone can remove themselves. Management API key required.
  */
 export async function removeWorkspaceMembers(
   client: Client,
@@ -23812,7 +25230,6 @@ export async function rotateApiKey(
     department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
-    hash: string;
     id: string;
     include_byok_in_limit: boolean;
     ip_allowlist?: {
@@ -23884,7 +25301,6 @@ export async function rotateApiKey(
       department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
-      hash: string;
       id: string;
       include_byok_in_limit: boolean;
       ip_allowlist?: {
@@ -24753,7 +26169,6 @@ export async function updateApiKey(
     department_id?: string | null;
     disabled: boolean;
     expires_at: string | null;
-    hash: string;
     id: string;
     include_byok_in_limit: boolean;
     ip_allowlist?: {
@@ -24823,7 +26238,6 @@ export async function updateApiKey(
       department_id?: string | null;
       disabled: boolean;
       expires_at: string | null;
-      hash: string;
       id: string;
       include_byok_in_limit: boolean;
       ip_allowlist?: {
@@ -26610,7 +28024,7 @@ export type UpdateRateLimitAssignmentParams = {
 };
 
 /**
- * Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+ * Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.
  */
 export async function updateRateLimitAssignment(
   client: Client,
@@ -26622,8 +28036,7 @@ export async function updateRateLimitAssignment(
     id: string;
     policy_id: string;
     target_id: string | null;
-    target_type:
-      "key" | "member" | "department" | "guardrail" | "end_user_default";
+    target_type: "key" | "member" | "department" | "end_user_default";
     updated_at: string;
     workspace_id: string;
   };
@@ -26639,8 +28052,7 @@ export async function updateRateLimitAssignment(
       id: string;
       policy_id: string;
       target_id: string | null;
-      target_type:
-        "key" | "member" | "department" | "guardrail" | "end_user_default";
+      target_type: "key" | "member" | "department" | "end_user_default";
       updated_at: string;
       workspace_id: string;
     };
@@ -26670,7 +28082,7 @@ export type UpdateRateLimitPolicyParams = {
 };
 
 /**
- * Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+ * Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department and end-user-default assignments.
  */
 export async function updateRateLimitPolicy(
   client: Client,
@@ -26990,7 +28402,7 @@ export type UpdateWorkloadIdentityPolicyParams = {
 };
 
 /**
- * Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
+ * Changes a policy's name, status, claim conditions or maximum token lifetime. The provider, issuer, owner claim and owner cannot change; create a new policy instead. Changes reach the gateway within a minute. Requires keys:write on management keys and OAuth tokens, or a workspace owner or admin. Available only to workspaces in the trusted workloads beta; other workspaces get 404.
  */
 export async function updateWorkloadIdentityPolicy(
   client: Client,
@@ -27009,8 +28421,17 @@ export async function updateWorkloadIdentityPolicy(
     last_used_at: string | null;
     max_token_lifetime_seconds: number;
     name: string;
+    owner_claim: string;
     owner_id: string;
-    provider: "vercel" | "github_actions";
+    provider:
+      | "vercel"
+      | "github_actions"
+      | "gitlab"
+      | "google_cloud"
+      | "buildkite"
+      | "circleci"
+      | "aws"
+      | "custom";
     status: "active" | "disabled";
     updated_at: string;
   };
@@ -27033,8 +28454,17 @@ export async function updateWorkloadIdentityPolicy(
       last_used_at: string | null;
       max_token_lifetime_seconds: number;
       name: string;
+      owner_claim: string;
       owner_id: string;
-      provider: "vercel" | "github_actions";
+      provider:
+        | "vercel"
+        | "github_actions"
+        | "gitlab"
+        | "google_cloud"
+        | "buildkite"
+        | "circleci"
+        | "aws"
+        | "custom";
       status: "active" | "disabled";
       updated_at: string;
     };
@@ -27577,7 +29007,7 @@ export type UpdateWorkspaceNotificationSettingsParams = {
 };
 
 /**
- * Updates one or more durable notification-policy sections. Enabling auto top-up requires an existing saved payment method identifier and verified two-factor authentication. An existing auto top-up configuration may be updated without repeating the MFA acknowledgement. To enable auto top-up without MFA, clients must explicitly set `mfa_bypass_acknowledged` to true and provide the exact `mfa_bypass_phrase` value `I ACCEPT THE RISK`; payment collection remains an interactive account flow.
+ * Updates one or more durable notification-policy sections. Turning on auto top-up, or changing its amount, threshold or payment method, needs `billing:write`, an existing saved payment method identifier and verified two-factor authentication, and apps that use Sign in with Phaseo can't do it. Turning it off needs only `settings:write`. An existing auto top-up configuration may be updated without repeating the MFA acknowledgement. The two-factor bypass (`mfa_bypass_acknowledged` and `mfa_bypass_phrase`) can only be accepted in Settings; the API rejects it. Payment collection remains an interactive account flow.
  */
 export async function updateWorkspaceNotificationSettings(
   client: Client,

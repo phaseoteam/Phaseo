@@ -1,22 +1,24 @@
-import { z } from "zod";
+import * as z from "zod";
+import { lazySchema } from "./lazy-schema";
 
-const instructions = z.string().max(2048).optional();
-const precision = { integer: z.boolean().optional(), decimals: z.number().int().min(0).max(6).optional() };
-const units = z.enum(["seconds", "minutes", "hours", "days", "weeks", "months", "years"]);
-export const ExtractionFieldSchema = z.discriminatedUnion("type", [
+// Built on first use (lazySchema): only /v1/extractions needs these.
+const instructions = lazySchema(() => z.string().max(2048).optional());
+const precision = () => ({ integer: z.boolean().optional(), decimals: z.number().int().min(0).max(6).optional() });
+const units = lazySchema(() => z.enum(["seconds", "minutes", "hours", "days", "weeks", "months", "years"]));
+export const ExtractionFieldSchema = lazySchema(() => z.discriminatedUnion("type", [
   z.object({ type: z.literal("text"), instructions }).strict(),
-  z.object({ type: z.literal("number"), instructions, ...precision, unit: z.string().max(64).optional() }).strict(),
+  z.object({ type: z.literal("number"), instructions, ...precision(), unit: z.string().max(64).optional() }).strict(),
   z.object({ type: z.literal("date"), instructions }).strict(),
   z.object({ type: z.literal("time"), instructions }).strict(),
   z.object({ type: z.literal("datetime"), instructions }).strict(),
-  z.object({ type: z.literal("duration"), instructions, ...precision, unit: units.optional() }).strict(),
+  z.object({ type: z.literal("duration"), instructions, ...precision(), unit: units.optional() }).strict(),
   z.object({ type: z.literal("list"), instructions, items: z.enum(["text", "number", "date"]), decimals: z.number().int().min(0).max(6).optional() }).strict(),
-]);
-export const ExtractionImageSchema = z.object({
+]));
+export const ExtractionImageSchema = lazySchema(() => z.object({
   content_type: z.enum(["image/png", "image/jpeg", "image/webp"]),
   base64: z.string().max(4 * Math.ceil(4 * 1024 * 1024 / 3)).regex(/^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/),
-}).strict();
-export const ExtractionsSchema = z.object({
+}).strict());
+export const ExtractionsSchema = lazySchema(() => z.object({
   model: z.string().min(1).max(256),
   input: z.string().max(32768).refine(value => Array.from(value).length <= 16384, "Source text exceeds 16,384 characters."),
   fields: z.record(z.string().regex(/^[A-Za-z_][A-Za-z0-9_.-]{0,63}$/), ExtractionFieldSchema)
@@ -32,12 +34,12 @@ export const ExtractionsSchema = z.object({
     if (!size || size > 4 * 1024 * 1024) ctx.addIssue({ code: "custom", path: ["images"], message: "Images must contain 1 byte–4 MiB of decoded data." });
   }
   if (bytes > 8 * 1024 * 1024) ctx.addIssue({ code: "custom", path: ["images"], message: "Images exceed 8 MiB decoded." });
-});
+}));
 export type ExtractionRequest = z.infer<typeof ExtractionsSchema>;
 export type ExtractionField = z.infer<typeof ExtractionFieldSchema>;
-const probability = z.number().finite().min(0).max(1);
+const probability = lazySchema(() => z.number().finite().min(0).max(1));
 const scalar = { confidence: probability, p_null: probability };
-export const ExtractionAnswerSchema = z.discriminatedUnion("type", [
+export const ExtractionAnswerSchema = lazySchema(() => z.discriminatedUnion("type", [
   z.object({ type: z.literal("text"), value: z.string().nullable(), ...scalar }).strip(),
   z.object({ type: z.literal("number"), value: z.number().finite().nullable(), ...scalar }).strip(),
   z.object({ type: z.literal("duration"), value: z.number().finite().nullable(), ...scalar }).strip(),
@@ -45,7 +47,7 @@ export const ExtractionAnswerSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("time"), value: z.iso.time().nullable(), ...scalar }).strip(),
   z.object({ type: z.literal("datetime"), value: z.iso.datetime({ offset: true, local: true }).nullable(), ...scalar }).strip(),
   z.object({ type: z.literal("list"), value: z.array(z.union([z.string(), z.number().finite()])).max(4096), confidence: probability }).strip(),
-]);
+]));
 export type ExtractionAnswer = z.infer<typeof ExtractionAnswerSchema>;
 
 // Provider spans/guesses are intentionally omitted until their Unicode and truncation semantics are pinned.

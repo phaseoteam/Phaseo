@@ -1,23 +1,61 @@
 ---
 title: "使用 Python Agent SDK 提取结构化 JSON"
+sidebarTitle: "用 Python 提取结构化 JSON"
 icon: "file-code"
 description: "使用 Python Agent SDK 构建范围明确的本地工具循环，并通过 Phaseo Gateway 返回严格 JSON。"
 ---
 
-当 Python 工作流需要以下内容时，可使用此示例：
+运行一个 Python 智能体：它用一个本地工具查询信息，并以严格 JSON 返回答案。完成后，你会得到一个脚本，其 `result.output` 是一个经过验证、包含 `summary` 和 `recommendation` 的 `PolicySummary` 对象，而不是自由文本。
 
-- 一个本地查询工具
-- 一个范围明确的 Agent 循环
-- 一种严格的 JSON 输出结构
+该工具返回固定的示例数据，因此该脚本仅作演示；请将它替换为你自己的查询。它适合自行负责编排、工具集小而确定的 Python worker。
 
-## 1. 准备 SDK
+## 构建
 
-<Note type="warning">Python Agent SDK 包尚未发布到 PyPI。请参阅[从源代码安装说明](../sdk-reference/python/agent-sdk-installation.mdx)。</Note>
+<Steps>
+<Step title="安装">
 
-## 2. 定义本地工具
+<CodeGroup>
+```bash pip
+pip install phaseo-agent-sdk
+```
 
-```python
-from phaseo_agent import AgentTool, define_tool
+```bash uv
+uv add phaseo-agent-sdk
+```
+</CodeGroup>
+
+`phaseo-agent-sdk` 会一并安装 `phaseo` 客户端和 Pydantic。
+
+```bash
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+</Step>
+<Step title="编写智能体">
+
+```python extract.py
+import json
+import os
+
+from pydantic import BaseModel, ConfigDict
+
+from phaseo_agent import AgentTool, create_agent, create_gateway_agent_client, define_tool
+
+POLICY_SLUGS = {"presets", "routing", "guardrails"}
+
+
+class PolicySummary(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    summary: str
+    recommendation: str
+
+
+def check_lookup_input(value):
+    # 参数由模型生成：拒绝任何不是已知 slug 的内容。
+    if not isinstance(value, dict) or set(value) != {"slug"} or value["slug"] not in POLICY_SLUGS:
+        raise ValueError(f"slug must be one of {sorted(POLICY_SLUGS)}")
+    return value
+
 
 lookup_policy = define_tool(
     AgentTool(
@@ -25,56 +63,76 @@ lookup_policy = define_tool(
         description="Look up one internal policy by slug.",
         parameters={
             "type": "object",
-            "properties": {
-                "slug": {"type": "string"},
-            },
+            "properties": {"slug": {"type": "string", "enum": sorted(POLICY_SLUGS)}},
             "required": ["slug"],
             "additionalProperties": False,
         },
+        input_schema=check_lookup_input,
         execute=lambda input, ctx: {
             "slug": input["slug"],
             "summary": "Presets centralize routing, prompts, and caching defaults.",
         },
     )
 )
-```
-
-## 3. 创建 Agent
-
-```python
-from phaseo_agent import create_agent
 
 agent = create_agent(
     {
         "id": "policy-extractor",
-        "model": "openai/gpt-5.4-nano",
-        "instructions": "Use tools when needed and return concise JSON.",
+        "model": "openai/gpt-6-astra",
+        "instructions": "Use tools when needed and return JSON with summary and recommendation.",
         "tools": [lookup_policy],
-        "parse_output": lambda text: text,
+        "max_steps": 4,
+        "parse_output": json.loads,
+        "output_schema": PolicySummary,
     }
 )
-```
 
-## 4. 通过网关客户端运行 Agent
-
-```python
-from phaseo_agent import create_gateway_agent_client
-
-result = agent.run(
-    input="Look up presets and return JSON with keys summary and recommendation.",
-    client=create_gateway_agent_client(),
+# Python 客户端不会自行读取 PHASEO_API_KEY：需要显式传入。
+client = create_gateway_agent_client(
+    client_options={"api_key": os.environ["PHASEO_API_KEY"]},
+    response_format={
+        "type": "json_schema",
+        "name": "policy_summary",
+        "schema": {
+            "type": "object",
+            "properties": {
+                "summary": {"type": "string"},
+                "recommendation": {"type": "string"},
+            },
+            "required": ["summary", "recommendation"],
+            "additionalProperties": False,
+        },
+    },
+    plugins=[{"id": "response-healing"}],
 )
 
+result = agent.run(input="Look up our presets policy and recommend when to use it.", client=client)
+
+print(result.run.status)
 print(result.output)
 ```
 
-## 5. 适用场景
+| 部分 | 作用 |
+| --- | --- |
+| `parameters` | 模型看到的工具参数 JSON Schema |
+| `input_schema` | 在 `execute` 运行之前检查参数；错误的调用会使运行失败 |
+| `response_format` | 要求 Gateway 在每个轮次都使用此 JSON Schema |
+| `parse_output` 和 `output_schema` | 解析最终文本，并将其验证为 `PolicySummary` |
 
-- 由一个 Python 工作进程负责编排
-- 工具接口位于本地且行为确定
-- 你想先获得严格输出，再构建更大的编排层
+</Step>
+<Step title="运行">
 
-## 相关内容
+```bash
+python extract.py
+```
 
-- [Python Agent SDK](../sdk-reference/python/agent-sdk.mdx)
-- [使用 Python 输出结构化 JSON](./sdk-python-presets-and-json.mdx)
+</Step>
+</Steps>
+
+## 检查是否成功
+
+- 脚本先打印 `completed`，然后打印两个字段都已填写的 `PolicySummary`。
+- 在 **设置 → 使用情况 → 日志** 中，第一个模型轮次会显示带有 `{"slug": "presets"}` 的 `lookup-policy` 调用。
+- 与该 Pydantic 模型不匹配的输出会以 `Invalid agent output` 失败，而不是返回只填了一半的对象。
+
+如需不使用工具的一次性结构化输出，请[直接调用 Python SDK](./sdk-python-presets-and-json)。[Python Agent SDK 参考](../sdk-reference/agent/usage)介绍了状态、审批和流式传输。

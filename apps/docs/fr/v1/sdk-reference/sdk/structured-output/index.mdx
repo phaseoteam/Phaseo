@@ -1,31 +1,38 @@
 ---
 icon: "braces"
 title: "Sortie structurée (AI SDK)"
+sidebarTitle: "Sortie structurée"
 description: "Générez des objets JSON validés par un schéma avec Phaseo et Vercel AI SDK."
 ---
 
-Utilisez `generateObject` pour obtenir des sorties typées.
+Passez `output: Output.object({ schema })` à `generateText` pour obtenir un objet typé conforme à votre schéma. AI SDK envoie le schéma comme format de réponse JSON Schema et valide le résultat.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { z } from "zod";
 
-const { object } = await generateObject({
-  model: phaseo("openai/gpt-5-nano"),
-  schema: z.object({
-    title: z.string(),
-    priority: z.enum(["low", "medium", "high"]),
-    actions: z.array(z.string()),
+const { output } = await generateText({
+  model: phaseo("openai/gpt-6-astra"),
+  output: Output.object({
+    schema: z.object({
+      title: z.string(),
+      priority: z.enum(["low", "medium", "high"]),
+      actions: z.array(z.string()),
+    }),
   }),
   prompt: "Create a short incident follow-up plan.",
 });
 
-console.log(object);
+console.log(output);
 ```
 
-## Remarques
+`generateObject` fonctionne toujours dans AI SDK 7 avec le même `schema` et renvoie `object`, mais il est déprécié au profit de `generateText` avec `output`.
 
-- Privilégiez les énumérations explicites et les champs obligatoires dans les schémas.
-- Veillez à ce que les prompts correspondent à la structure du schéma.
-- Gérez les erreurs d’analyse et de validation dans le code appelant.
+## Gérer une sortie invalide
+
+La lecture de `output` lève `NoOutputGeneratedError` quand le modèle ne renvoie aucun objet exploitable, par exemple quand la dernière étape s’est terminée par un appel d’outil. Interceptez cette erreur là où vous appelez le modèle.
+
+- Utilisez des enums explicites et des champs obligatoires dans le schéma.
+- Gardez le prompt cohérent avec la forme du schéma.
+- La prise en charge de la sortie JSON Schema varie selon les modèles ; vérifiez les paramètres pris en charge par le modèle dans `/v1/models`.

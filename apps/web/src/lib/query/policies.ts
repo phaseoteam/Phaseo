@@ -1,3 +1,4 @@
+import { isNotFound, isRedirect } from "@tanstack/react-router";
 import { WebApiError } from "@/lib/web-api/client";
 
 const DEFAULT_RETRY_COUNT = 2;
@@ -8,6 +9,8 @@ export function shouldRetryWebQuery(
 	failureCount: number,
 	error: unknown,
 ): boolean {
+	// A thrown redirect or notFound is a decision, not a transient failure.
+	if (isRedirect(error) || isNotFound(error)) return false;
 	if (
 		error instanceof WebApiError &&
 		[400, 401, 403, 404].includes(error.status)

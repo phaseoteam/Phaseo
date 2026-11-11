@@ -1,0 +1,456 @@
+---
+icon: "square-terminal"
+title: "الأمثلة"
+description: "انسخ أنماط Agent SDK مركّزة للموافقات والبث وعمليات التشغيل المحدودة، أو ابدأ من وصفة كاملة."
+---
+
+ابدأ بوكيل واحد، وأداة حتمية أو اثنتين، وموافقة تحيط بالآثار الجانبية. تفترض المقتطفات أدناه وجود عميل وكيل Gateway في `client` (و`ctx` في Go). وهي توضيحية: تمثّل `deployments` و`store` و`search` و`fetchPage` شيفرتك الخاصة.
+
+## نشر مشروط بالموافقة
+
+توقف أداة النشر التشغيل مؤقتًا حتى يوافق شخص على الاستدعاء بعينه. احفظ النتيجة الموقوفة مؤقتًا، واعرض الاستدعاء المعلّق على مراجع، ثم تابع بالقرار.
+
+<CodeGroup>
+
+```typescript TypeScript
+const deploy = defineTool({
+  id: "deploy",
+  requireApproval: ({ environment }) => environment === "production",
+  async execute(input: { environment: string }) {
+    return deployments.deploy(input.environment);
+  },
+});
+
+const agent = createAgent({ id: "release-agent", model: "openai/gpt-6-astra", tools: [deploy] });
+
+let result = await agent.run({ input: "Ship release 42 to production", client });
+if (result.run.status === "waiting_for_human") {
+  await store.save(result); // show result.run.pause.pendingToolCalls to a reviewer
+
+  // Later, after the reviewer approves:
+  const callId = result.run.pause!.pendingToolCalls[0].call.id;
+  result = await agent.continueRun({ run: result, client, approvals: [{ toolCallId: callId }] });
+}
+```
+
+```python Python
+from phaseo_agent import AgentTool, AgentToolDecision, create_agent, define_tool
+
+deploy = define_tool(AgentTool(
+    id="deploy",
+    description="Deploy the selected release",
+    parameters={"type": "object", "properties": {"environment": {"type": "string"}}},
+    require_approval=True,
+    execute=lambda tool_input, runtime: deployments.deploy(tool_input["environment"]),
+))
+
+agent = create_agent({"id": "release-agent", "model": "openai/gpt-6-astra", "tools": [deploy]})
+
+result = agent.run(input="Ship release 42", client=client)
+if result.run.status == "waiting_for_human":
+    store.save(result)  # show result.run.pause.pending_tool_calls to a reviewer
+
+    # Later, after the reviewer approves:
+    call_id = result.run.pause.pending_tool_calls[0].call.id
+    result = agent.continue_run(run=result, client=client, approvals=[AgentToolDecision(call_id)])
+```
+
+```go Go
+deploy := phaseoagent.DefineTool(phaseoagent.Tool{
+  ID:              "deploy",
+  Description:     "Deploy the selected release",
+  RequireApproval: true,
+  Execute: func(input any, runtime phaseoagent.RuntimeContext) (any, error) {
+    return deploymentService.Deploy(input)
+  },
+})
+
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID: "release-agent", Model: "openai/gpt-6-astra", Tools: []phaseoagent.Tool{deploy},
+})
+
+result, err := agent.Run(ctx, phaseoagent.RunOptions{Input: "Ship release 42", Client: client})
+if err == nil && result.Run.Status == "waiting_for_human" {
+  store.Save(result) // show result.Run.Pause.PendingToolCalls to a reviewer
+
+  // Later, after the reviewer approves:
+  callID := result.Run.Pause.PendingToolCalls[0].Call.ID
+  result, err = agent.Continue(ctx, phaseoagent.ContinueOptions{
+    Run: result, Client: client,
+    Approvals: []phaseoagent.ToolDecision{{ToolCallID: callID}},
+  })
+}
+```
+
+```csharp C#
+var deploy = AgentSdk.DefineTool(new Tool(
+    "deploy",
+    async (input, runtime) => await deployments.DeployAsync(input, runtime.CancellationToken),
+    "Deploy the selected release")
+{
+    RequireApproval = true,
+});
+
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "release-agent", Model = "openai/gpt-6-astra", Tools = new[] { deploy },
+});
+
+var result = await agent.Run(new RunOptions { Input = "Ship release 42", Client = client });
+if (result.Run.Status == "waiting_for_human")
+{
+    await store.SaveAsync(result); // show result.Run.Pause.PendingToolCalls to a reviewer
+
+    // Later, after the reviewer approves:
+    var callId = result.Run.Pause!.PendingToolCalls![0].Call.Id;
+    result = await agent.ContinueRun(new ContinueOptions
+    {
+        Run = result, Client = client, Approvals = new[] { new ToolDecision(callId) },
+    });
+}
+```
+
+```php PHP
+use Phaseo\AgentSdk\{AgentDefinition, AgentSdk, Tool, ToolDecision};
+
+$deploy = AgentSdk::defineTool(new Tool(
+    id: "deploy",
+    execute: fn (array $input, $runtime) => $deployments->deploy($input),
+    description: "Deploy the selected release",
+    requireApproval: true,
+));
+
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "release-agent", model: "openai/gpt-6-astra", tools: [$deploy],
+));
+
+$result = $agent->run(input: "Ship release 42", client: $client);
+if ($result->run->status === "waiting_for_human") {
+    $store->save($result); // show $result->run->pause->pendingToolCalls to a reviewer
+
+    // Later, after the reviewer approves:
+    $callId = $result->run->pause->pendingToolCalls[0]->call->id;
+    $result = $agent->continueRun(run: $result, client: $client, approvals: [new ToolDecision($callId)]);
+}
+```
+
+```ruby Ruby
+deploy = PhaseoAgentSdk.define_tool(
+  PhaseoAgentSdk::Tool.new(
+    id: "deploy",
+    description: "Deploy the selected release",
+    require_approval: true,
+    execute: ->(input, runtime) { deployments.deploy(input) }
+  )
+)
+
+agent = PhaseoAgentSdk.create_agent(id: "release-agent", model: "openai/gpt-6-astra", tools: [deploy])
+
+result = agent.run(input: "Ship release 42", client: client)
+if result.run.status == "waiting_for_human"
+  store.save(result) # show result.run.pause.pending_tool_calls to a reviewer
+
+  # Later, after the reviewer approves:
+  call_id = result.run.pause.pending_tool_calls.first.call.id
+  result = agent.continue_run(
+    run: result,
+    client: client,
+    approvals: [PhaseoAgentSdk::ToolDecision.new(tool_call_id: call_id)]
+  )
+end
+```
+
+```java Java
+var deploy = AgentSdk.defineTool(new AgentSdk.Tool(
+    "deploy", (input, context) -> deployments.deploy(input), "Deploy the selected release",
+    Map.of("type", "object"), null,
+    null, null, null,
+    true, null,             // requireApproval
+    null, null, "fail-run"));
+
+var agent = AgentSdk.createAgent(new AgentSdk.AgentDefinition(
+    "release-agent", "openai/gpt-6-astra", null, null, List.of(deploy), 12, null, null, null, null));
+
+var result = agent.run(new AgentSdk.RunOptions(
+    "Ship release 42", client, null, null, null, null, null, null, null, null));
+
+if (result.run().status().equals("waiting_for_human")) {
+    store.save(result); // show result.run().pause().pendingToolCalls() to a reviewer
+
+    // Later, after the reviewer approves:
+    var callId = result.run().pause().pendingToolCalls().get(0).call().id();
+    result = agent.continueRun(new AgentSdk.ContinueOptions(
+        result, client, null, null, null, null, null, null, null, null, null,
+        List.of(new AgentSdk.ToolDecision(callId)), List.of(), List.of()));
+}
+```
+
+```rust Rust
+use phaseo_agent::{
+    create_agent, AgentDefinition, ContinueOptions, RunOptions, Tool, ToolDecision,
+};
+use serde_json::json;
+
+let deploy = Tool::new(
+    "deploy",
+    "Deploy the selected release",
+    json!({ "type": "object", "properties": { "environment": { "type": "string" } } }),
+    |input, _context| Ok(json!({ "environment": input["environment"], "deployed": true })),
+)
+.require_approval();
+
+let agent = create_agent(AgentDefinition::new("release-agent", "openai/gpt-6-astra").tool(deploy));
+
+let mut result = agent.run(&mut client, RunOptions::new("Ship release 42"))?;
+if result.run.status == "waiting_for_human" {
+    store.save(&result)?; // show the pending tool calls to a reviewer
+
+    // Later, after the reviewer approves:
+    let call_id = result.run.pause.as_ref().unwrap().pending_tool_calls[0].call.id.clone();
+    let mut options = ContinueOptions::new(result);
+    options.approvals = vec![ToolDecision { tool_call_id: call_id, reason: None }];
+    result = agent.continue_run(&mut client, options)?;
+}
+```
+
+</CodeGroup>
+
+تتناول صفحة [الحالة والموافقة](./state-and-approval) الرفض ومخرجات الأدوات اليدوية وحفظ عمليات التشغيل.
+
+## البث إلى الطرفية
+
+<CodeGroup>
+
+```typescript TypeScript
+const stream = agent.stream({ input, client });
+
+for await (const delta of stream.getTextStream()) {
+  process.stdout.write(delta);
+}
+
+const completed = await stream.getResult();
+```
+
+```python Python
+stream = agent.stream(input="Research this topic", client=client)
+
+for delta in stream.text_stream():
+    print(delta, end="", flush=True)
+
+completed = stream.result()
+```
+
+```go Go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+for delta := range stream.Text() {
+  fmt.Print(delta)
+}
+result, err := stream.Result()
+```
+
+```csharp C#
+var stream = agent.Stream(new RunOptions { Input = prompt, Client = client });
+await foreach (var delta in stream.TextStream()) Console.Write(delta);
+var completed = await stream.GetResult();
+```
+
+```php PHP
+$stream = $agent->stream(input: $prompt, client: $client);
+foreach ($stream->textStream() as $delta) { echo $delta; }
+$result = $stream->getResult();
+```
+
+```ruby Ruby
+stream = agent.stream(input: prompt, client: client)
+stream.text_stream.each { |delta| print delta }
+result = stream.result
+```
+
+```java Java
+// Java's textStream() is only filled after the run ends, so print deltas from onEvent
+var options = new AgentSdk.RunOptions(prompt, client, null, null, null, null, null, null,
+    event -> { if (event.type().equals("response.output_text.delta")) System.out.print(event.details().get("delta")); },
+    null);
+var completed = agent.stream(options).getResult();
+```
+
+</CodeGroup>
+
+لا يتوفر البث في Rust `0.2`؛ تعود `run` بعد انتهاء التشغيل. راجع [البث](./streaming).
+
+## حدّ البحث المستقل
+
+اجمع عدة حدود؛ أيها يُبلغ أولًا ينهي التشغيل بالحالة `stopped` وسبب إيقاف مثل `max_cost:1`.
+
+<CodeGroup>
+
+```typescript TypeScript
+import { maxCost, maxDuration, maxTokensUsed, stepCountIs } from "@phaseo/agent-sdk";
+
+const agent = createAgent({
+  id: "researcher",
+  model: "openai/gpt-6-astra",
+  tools: [search, fetchPage],
+  maxSteps: 25,
+  stopWhen: [
+    stepCountIs(20),
+    maxTokensUsed(100_000),
+    maxCost(1),
+    maxDuration(300_000),
+  ],
+});
+```
+
+```python Python
+from phaseo_agent import create_agent, max_cost, max_duration, max_tokens_used, step_count_is
+
+agent = create_agent({
+    "id": "researcher",
+    "model": "openai/gpt-6-astra",
+    "tools": [search, fetch_page],
+    "max_steps": 25,
+    "stop_when": [
+        step_count_is(20),
+        max_tokens_used(100_000),
+        max_cost(1),
+        max_duration(300_000),
+    ],
+})
+```
+
+```go Go
+agent := phaseoagent.CreateAgent(phaseoagent.AgentDefinition{
+  ID:    "researcher",
+  Model: "openai/gpt-6-astra",
+  Tools: []phaseoagent.Tool{search, fetchPage},
+  StopWhen: []phaseoagent.StopCondition{
+    phaseoagent.StepCountIs(20),
+    phaseoagent.MaxTokensUsed(100_000),
+    phaseoagent.MaxCost(1.00),
+    phaseoagent.MaxDuration(5 * time.Minute),
+  },
+  MaxSteps: 25,
+})
+```
+
+```csharp C#
+var agent = AgentSdk.CreateAgent(new AgentDefinition
+{
+    Id = "researcher",
+    Model = "openai/gpt-6-astra",
+    Tools = new[] { search, fetchPage },
+    StopWhen = new[]
+    {
+        AgentSdk.StepCountIs(20),
+        AgentSdk.MaxTokensUsed(100_000),
+        AgentSdk.MaxCost(1.00),
+        AgentSdk.MaxDuration(TimeSpan.FromMinutes(5)),
+    },
+    MaxSteps = 25,
+});
+```
+
+```php PHP
+$agent = AgentSdk::createAgent(new AgentDefinition(
+    id: "researcher",
+    model: "openai/gpt-6-astra",
+    tools: [$search, $fetchPage],
+    maxSteps: 25,
+    stopWhen: [
+        AgentSdk::stepCountIs(20),
+        AgentSdk::maxTokensUsed(100000),
+        AgentSdk::maxCost(1.00),
+        AgentSdk::maxDuration(300000),
+    ],
+));
+```
+
+```ruby Ruby
+agent = PhaseoAgentSdk.create_agent(
+  id: "researcher",
+  model: "openai/gpt-6-astra",
+  tools: [search, fetch_page],
+  max_steps: 25,
+  stop_when: [
+    PhaseoAgentSdk.step_count_is(20),
+    PhaseoAgentSdk.max_tokens_used(100_000),
+    PhaseoAgentSdk.max_cost(1.00),
+    PhaseoAgentSdk.max_duration(300_000)
+  ]
+)
+```
+
+```java Java
+var agent = AgentSdk.createAgent(new AgentSdk.AgentDefinition(
+    "researcher", "openai/gpt-6-astra", null, null, List.of(search, fetchPage), 25,
+    null, null, null, null,
+    List.of(
+        AgentSdk.stepCountIs(20),
+        AgentSdk.maxTokensUsed(100_000),
+        AgentSdk.maxCost(1.00),
+        AgentSdk.maxDuration(Duration.ofMinutes(5))),
+    null, null));
+```
+
+```rust Rust
+// Rust 0.2 has no stop conditions; cap the model turns instead.
+let agent = create_agent(
+    AgentDefinition::new("researcher", "openai/gpt-6-astra")
+        .tool(search)
+        .tool(fetch_page)
+        .max_steps(20),
+);
+```
+
+</CodeGroup>
+
+يتبع تنسيق الأرقام في سبب الإيقاف اللغة المستخدمة: `max_cost:1` في Go وC# وPHP، و`max_cost:1.0` في Ruby وJava. في Rust، يُنهي بلوغ حد الخطوات التشغيل بالحالة `stopped` والسبب `max_steps:20`. راجع [شروط الإيقاف](./stop-conditions).
+
+## اجمع الميزات لمنتجات شائعة
+
+| المنتج | اجمع |
+| --- | --- |
+| استخراج منظَّم | [التحقق من المخرجات](./run-controls#validate-the-final-output)، وتنسيق استجابة صارم على عميل Gateway، وإعادة محاولات محدودة |
+| فرز طلبات الدعم | `preset` للتوجيه، و[أدوات](./tools) بحث، ومخرجات منظَّمة للتصنيف النهائي |
+| موجز بحثي | بحث مُدار عبر أدوات Gateway في عميل Gateway، ونص [مبثوث](./streaming)، و[شروط إيقاف](./stop-conditions) |
+| مراجعة الشيفرة أو مساعد برمجة | أدوات ملفات، وأحداث تقدم، و[موافقة](./state-and-approval) قبل التغييرات |
+| دليل تشغيل العمليات | أدوات حالة، وتصعيد يدوي، وتشغيل محفوظ تتم متابعته لاحقًا |
+
+تتضمن حزمة TypeScript نسخًا كاملة من أربعة من هذه في مجلدها `examples/`: `research-brief-agent.ts` و`support-triage-agent.ts` و`coding-review-agent.ts` و`parallel-tool-agent.ts` (أدوات محلية مستقلة تعمل بالتزامن).
+
+## اتّبع وصفة من دليل الوصفات
+
+<CardGroup cols={2}>
+  <Card title="حلقة وكيل متينة" icon="database" href="../../cookbook/agent-sdk-durable-loop">
+    احفظ تشغيلًا معادًا وتابعه في طلب لاحق.
+  </Card>
+  <Card title="موجز بحثي" icon="search-check" href="../../cookbook/agent-sdk-research-brief">
+    اجمع وكيلًا مع بحث ويب مستند إلى مصادر.
+  </Card>
+  <Card title="فرز طلبات الدعم" icon="life-buoy" href="../../cookbook/agent-sdk-support-triage">
+    احتفظ بإعدادات التوجيه والمطالبات الافتراضية في إعداد مسبق مُدار.
+  </Card>
+  <Card title="مراجعة الشيفرة" icon="code-2" href="../../cookbook/agent-sdk-coding-review">
+    اربط أدوات محلية مركّزة بسير عمل برمجي.
+  </Card>
+  <Card title="أدوات متوازية" icon="waypoints" href="../../cookbook/agent-sdk-parallel-tools">
+    وزّع استدعاءات الأدوات المستقلة بالتوازي دون تغيير ترتيب النتائج.
+  </Card>
+  <Card title="استخراج منظَّم (Python)" icon="file-json" href="../../cookbook/agent-sdk-python-structured-extraction">
+    استخرج JSON منظَّمًا باستخدام Agent SDK للغة Python.
+  </Card>
+  <Card title="دليل تشغيل العمليات (Go)" icon="server" href="../../cookbook/agent-sdk-go-ops-runbook">
+    ابنِ وكيلًا لدليل تشغيل العمليات بلغة Go.
+  </Card>
+  <Card title="فرز التذاكر (C#)" icon="ticket" href="../../cookbook/agent-sdk-csharp-ticket-triage">
+    افرز التذاكر باستخدام Agent SDK للغة C#.
+  </Card>
+  <Card title="مراجعة المحتوى (PHP)" icon="file-check" href="../../cookbook/agent-sdk-php-content-review">
+    راجع محتوى نظام إدارة المحتوى باستخدام Agent SDK للغة PHP.
+  </Card>
+  <Card title="تلخيص الملاحظات (Ruby)" icon="notebook-text" href="../../cookbook/agent-sdk-ruby-rag-notes">
+    لخّص الملاحظات الداخلية باستخدام Agent SDK للغة Ruby.
+  </Card>
+</CardGroup>
+
+تستخدم الوصفات الخمس الأولى TypeScript.

@@ -36,6 +36,31 @@ describe("account auth routes", () => {
 		expect(response.headers.get("cloudflare-cdn-cache-control")).toBeNull();
 	});
 
+	it("shows a consent screen only the app's display fields, never its secret hash, owner or workspace", async () => {
+		let metadataSelect: string | null = null;
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL(input instanceof Request ? input.url : String(input));
+			if (url.pathname === "/auth/v1/user") return Response.json({ id: "user-1" });
+			if (url.pathname.endsWith("oauth_app_metadata")) {
+				metadataSelect = url.searchParams.get("select");
+				const row: Record<string, unknown> = { client_id: "client-1", name: "Example", description: "An app", logo_url: null, homepage_url: "https://example.com", client_secret_hash: "do-not-send-hash", created_by: "creator-1", workspace_id: "workspace-owner", redirect_uris: ["https://example.com/cb"] };
+				// PostgREST returns only the selected columns.
+				const columns = (metadataSelect ?? "*").split(",");
+				return Response.json([metadataSelect === "*" ? row : Object.fromEntries(Object.entries(row).filter(([key]) => columns.includes(key)))]);
+			}
+			return Response.json([]);
+		}));
+		const response = await app.request("https://phaseo.app/api/account/auth/oauth-consent?clientId=client-1", { headers: { authorization: "Bearer session-token" } }, env);
+		expect(response.status).toBe(200);
+		const body = await response.json() as { appMetadata: Record<string, unknown> };
+		expect(body.appMetadata).toMatchObject({ client_id: "client-1", name: "Example", homepage_url: "https://example.com" });
+		for (const column of ["client_secret_hash", "created_by", "workspace_id", "redirect_uris"]) {
+			expect(metadataSelect!.split(",")).not.toContain(column);
+			expect(body.appMetadata).not.toHaveProperty(column);
+		}
+		expect(metadataSelect).not.toContain("*");
+	});
+
 	it("returns workspace names for the activation selector", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);

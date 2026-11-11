@@ -1,54 +1,62 @@
 ---
 title: "Helicone AI Gateway からの移行"
 sidebarTitle: "Helicone"
-description: "OpenAI互換のHeliconeプロキシ連携をPhaseoに移行し、不要になった可観測性ヘッダーを削除します。"
+description: "OpenAI 互換の Helicone プロキシ連携を Phaseo に移行し、不要になったオブザーバビリティ用ヘッダーを置き換えます。"
 icon: "activity"
 ---
 
-アプリケーションとAIプロバイダーの間にHeliconeを配置している場合は、このガイドを使ってください。リクエストの変更自体は小さいことが多いですが、エンドポイントの切り替えと同じように可観測性の移行も慎重に計画してください。
+クライアントの接続先を Phaseo キーとともに `https://api.phaseo.app/v1` に向け、`Helicone-Auth` を削除し、まだ必要な `Helicone-*` ヘッダーをそれぞれ Phaseo の対応するものに移します。リクエストの変更は小さいので、オブザーバビリティの切り替えも同じくらい慎重に計画してください。
 
-## 変更点
-
-| 設定 | 変更前 | 変更後 |
+| 設定 | Helicone | Phaseo |
 | --- | --- | --- |
-| ベースURL | HeliconeプロキシURL | `https://api.phaseo.app/v1` |
-| 認証 | プロバイダーキーとHelicone認証 | `PHASEO_API_KEY` |
-| Heliconeヘッダー | リクエストに追加 | 削除 |
-| リクエストの可視性 | Heliconeダッシュボード | Phaseoのアクティビティとリクエスト詳細 |
+| ベース URL | `oai.helicone.ai/v1`、`anthropic.helicone.ai`、`ai-gateway.helicone.ai`、または `Helicone-Target-URL` 付きの `gateway.helicone.ai` | `https://api.phaseo.app/v1` |
+| 認証 | プロバイダーキーと `Helicone-Auth`、または AI Gateway での `HELICONE_API_KEY` | `PHASEO_API_KEY` のみ |
+| カスタムプロパティ | `Helicone-Property-<Name>` | `X-Phaseo-Metadata` のラベル |
+| リクエストの可視化 | Helicone のダッシュボード | Phaseo のリクエストログとリクエストの詳細 |
 
-<Steps>
-<Step title="利用しているHeliconeの機能を確認する">
-
-本番運用に関わるカスタムプロパティ、セッション、ユーザー識別子、キャッシュ、レート制限、アラート、ダッシュボードを記録します。プロキシを削除すれば、それらのワークフローが別の場所に自動で再現されるとは限りません。
-
-</Step>
-
-<Step title="プロキシ設定を置き換える">
-
-OpenAI互換クライアントの接続先をPhaseoに変更し、`Helicone-Auth`とその他のHelicone固有ヘッダーを削除します。
+## クライアントを切り替える
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// Before:
+// new OpenAI({
+//   apiKey: process.env.OPENAI_API_KEY,
+//   baseURL: "https://oai.helicone.ai/v1",
+//   defaultHeaders: {
+//     "Helicone-Auth": `Bearer ${process.env.HELICONE_API_KEY}`,
+//     "Helicone-Property-Team": "support",
+//   },
+// });
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
+  defaultHeaders: {
+    "X-Phaseo-Metadata": JSON.stringify({ labels: [{ key: "team", value: "support" }] }),
+  },
 });
 
-const response = await client.chat.completions.create({
-  model: "openai/gpt-4.1-mini",
-  messages: [{ role: "user", content: "Reply with: migration ready" }],
-});
+const response = await client.chat.completions.create(
+  {
+    model: "openai/gpt-6-astra",
+    messages: [{ role: "user", content: "Reply with: migration ready" }],
+  },
+  { headers: { "X-Phaseo-User-Id": "user_123" } },
+);
 ```
 
 ```python Python
+import json
 import os
 from openai import OpenAI
 
 client = OpenAI(
     api_key=os.environ["PHASEO_API_KEY"],
     base_url="https://api.phaseo.app/v1",
+    default_headers={
+        "X-Phaseo-Metadata": json.dumps({"labels": [{"key": "team", "value": "support"}]}),
+    },
 )
 ```
 
@@ -57,37 +65,43 @@ curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
+    "model": "openai/gpt-6-astra",
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+ユーザー ID のようなリクエストごとの値は、クライアントではなくリクエストに付けます。`anthropic.helicone.ai` のルートは、[Anthropic SDK からの移行](./from-anthropic)の設定に移します。
 
-<Step title="リクエストの可視性を移行する">
+Helicone AI Gateway では、ルーティングは `model` 文字列に含まれています。これを分割してください。カンマ区切りの最初の項目が `model` になり、残りが `models` 配列になります。`<model>/<provider>` による固定は `provider.only` または `provider:org/model` 形式の ID に、`!provider` による除外は `provider.ignore` になります。
 
-運用上の調査には、Phaseoのアクティビティ、リクエストID、プロバイダーへの試行、価格の詳細を使ってください。テレメトリを別の場所にエクスポートしている場合は、切り替え前に対応する[可観測性](../guides/integrations/observability.mdx)連携を設定します。
+## Helicone のヘッダーを対応付ける
 
-</Step>
+| Helicone | Phaseo での扱い |
+| --- | --- |
+| `Helicone-Auth` | 削除します。 |
+| `Helicone-Property-<Name>` | `X-Phaseo-Metadata` の[ラベル](../guides/request-labels)。最大 32 個で、キーは `[A-Za-z0-9_.:-]`(64 文字)に一致する必要があるため、スペースを含むプロパティは名前を変えてください。不正な JSON や重複したキーは `400` を返します。ラベルに個人データを入れないでください。 |
+| `Helicone-User-Id` | ボディの `user` フィールドまたは `X-Phaseo-User-Id`。エンドユーザー向けのレート制限ポリシーのキーにもなります。 |
+| `Helicone-Session-Id` | ボディの `session_id` フィールド。トレースツリーではなく、キャッシュとプロバイダーのアフィニティに使われます。 |
+| `Helicone-Session-Path`、`Helicone-Session-Name` | ボディの `metadata.trace_id`、`parent_span_id`、`trace_name`、`span_name`、または W3C の `traceparent` ヘッダー。これらはオブザーバビリティの送信先に送られるスパンの構造を決めます。Phaseo 自身のログにはトレースツリーはありません。 |
+| `Helicone-Cache-Enabled` | レスポンスキャッシュはありません。必要ならアプリでキャッシュしてください。 |
+| `Helicone-Fallbacks`、`Helicone-Retry-Enabled` | `429`、`500`、`502`、`503`、`504` で試される `models` 配列と、組み込みのプロバイダーフォールバック。クライアント側のバックオフは残してください。 |
+| `Helicone-RateLimit-Policy` | レート制限ポリシーとキーの制限。[制限](../api-reference/limits)を参照してください。 |
+| `Helicone-LLM-Security-Enabled` | ガードレールのプロンプトインジェクション検出。対象はリクエストのみです。 |
+| `Helicone-Moderations-Enabled` | Gateway 内の代替はありません。アプリから `/v1/moderations` を呼び出してください。 |
+| `Helicone-Omit-Request`、`Helicone-Omit-Response` | ワークスペースのログポリシーまたはゼロデータ保持。 |
+| `Helicone-Posthog-*` | PostHog の[オブザーバビリティの送信先](../guides/integrations/observability)。 |
+| プロンプト管理 | [プリセットのプロンプトテンプレート](../guides/prompt-templates): `"prompt": {"id": "@slug", "version": "production", "variables": {...}}`。 |
 
-<Step title="テストして段階的に切り替える">
+## リクエストの可視化を移す
 
-Heliconeヘッダーなしでリクエストが完了し、インシデント対応に必要な運用上の情報をチームが引き続き確認できることを検証します。推論と可観測性の両方の確認に合格したら、トラフィックを段階的に移行してください。
+デバッグには、リクエストログ、リクエスト ID、プロバイダーの試行、料金の詳細を使います。チームがテレメトリをエクスポートしている場合は、空白期間が生じないよう、切り替え前に対応する[オブザーバビリティの送信先](../guides/integrations/observability)を接続してください。トラフィックをプロキシしない Helicone の非同期ロギングは、Gateway の置き換えとは別に判断します。
 
-</Step>
-</Steps>
+## テストして展開する
 
-## 移行チェックリスト
+Helicone のヘッダーなしでリクエストが成功すること、そしてインシデント時にチームが確認する事項に引き続き答えられることを検証します。トラフィックを移す前に、次を確認してください。
 
-- HeliconeプロキシURLと認証ヘッダーを削除した。
-- 本番モデルIDを`GET /v1/models`で確認した。
-- 必要なリクエストメタデータをPhaseoまたはテレメトリ基盤で引き続き確認できる。
-- 必要に応じて、アラートとダッシュボードの代替手段を決めた。
-- ロールバックは引き続きエンドポイントとキーの設定変更だけで行える。
-
-## 次のステップ
-
-- [可観測性](../guides/integrations/observability.mdx)
-- [プロバイダーのステータス](../guides/provider-statuses.mdx)
-- [エラー処理](../api-reference/errors.mdx)
+- Helicone の URL と `Helicone-*` ヘッダーがすべて削除または対応付けされている
+- 本番のモデル ID が `GET /v1/models?format=openai` にある
+- チームが必要とするアラートとダッシュボードに代わるものがある
+- 切り戻しが引き続きベース URL とキーの変更だけで済む

@@ -1,0 +1,100 @@
+---
+icon: "chart-spline"
+title: "DevTools"
+description: "سجّل كل تشغيل للوكيل وكل متابعة في ملف محلي أثناء التطوير."
+---
+
+مرّر إعداد DevTools إلى تشغيل أو متابعة أثناء التطوير لإلحاق سطر JSON واحد لكل تشغيل بالملف `generations.jsonl` في مجلد محلي. يتضمن كل سطر مدخلات التشغيل وخطواته ونشاط الأدوات والمخرجات والاستخدام ومعرّفات طلبات Gateway. لا يُلتقط أي شيء ما لم تفعّله.
+
+<CodeGroup>
+
+```typescript TypeScript
+import { createAgentDevtools } from "@phaseo/agent-sdk";
+
+const result = await agent.run({
+  input,
+  client,
+  devtools: createAgentDevtools(),
+});
+```
+
+```python Python
+from phaseo_agent import create_agent_devtools
+
+result = agent.run(input="Summarise this ticket", client=client, devtools=create_agent_devtools())
+```
+
+```go Go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{
+  Input:    prompt,
+  Client:   client,
+  Devtools: phaseoagent.CreateAgentDevtools(".phaseo-devtools"),
+})
+```
+
+```csharp C#
+var result = await agent.Run(new RunOptions
+{
+    Input = prompt,
+    Client = client,
+    Devtools = AgentSdk.CreateAgentDevtools(".phaseo-devtools"),
+});
+```
+
+```php PHP
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    devtools: AgentSdk::createAgentDevtools(".phaseo-devtools")
+);
+```
+
+```ruby Ruby
+result = agent.run(
+  input: prompt,
+  client: client,
+  devtools: PhaseoAgentSdk.create_agent_devtools(directory: ".phaseo-devtools")
+)
+```
+
+```java Java
+var result = agent.run(new AgentSdk.RunOptions(
+    prompt, client, null, null, null, null, null, null, null,
+    AgentSdk.createAgentDevtools(".phaseo-devtools")));
+```
+
+</CodeGroup>
+
+<Note>
+لا يتوفر التقاط DevTools في Rust `0.2`. استخدم [خطافات دورة الحياة](./lifecycle-hooks) مع `run_with_events` واكتب الأحداث بنفسك.
+</Note>
+
+| اللغة | إنشاء إعداد | مرّره بوصفه | اختيار المجلد |
+| --- | --- | --- | --- |
+| TypeScript | `createAgentDevtools()` | `devtools` في خيارات التشغيل والمتابعة | `createAgentDevtools({ directory: ".local/agent-runs" })` |
+| Python | `create_agent_devtools()` | `devtools=` في `run()` أو `stream()` أو متابعة | `create_agent_devtools(directory=".local/agent-runs")` |
+| Go | `CreateAgentDevtools(directory)` | `Devtools` في `RunOptions` أو `ContinueOptions` | الوسيط `directory` |
+| C# | `AgentSdk.CreateAgentDevtools(directory)` | `Devtools` في `RunOptions` أو `ContinueOptions` | الوسيط `directory` (الافتراضي `.phaseo-devtools`) |
+| PHP | `AgentSdk::createAgentDevtools($directory)` | `devtools:` في `run()` أو `continueRun()` | الوسيط `$directory` (الافتراضي `.phaseo-devtools`) |
+| Ruby | `PhaseoAgentSdk.create_agent_devtools(directory:, enabled:)` | `devtools:` في `run` أو `continue_run` | `directory:` (الافتراضي `.phaseo-devtools`) |
+| Java | `AgentSdk.createAgentDevtools(directory)` | الوسيط `devtools` في `RunOptions` أو `ContinueOptions` | الوسيط `directory` |
+
+## فعّل الالتقاط من البيئة
+
+في غياب إعداد DevTools، يُفعَّل الالتقاط عندما تكون `PHASEO_DEVTOOLS=true`. تُكتب الملفات في `PHASEO_DEVTOOLS_DIR`، أو في `.phaseo-devtools` داخل مجلد العمل إذا لم يكن مضبوطًا. يعمل هذا بالطريقة نفسها في كل لغة تتوفر فيها DevTools.
+
+## ما الذي يُكتب
+
+| الملف | المحتوى |
+| --- | --- |
+| `generations.jsonl` | إدخال واحد لكل تشغيل وإدخال واحد لكل متابعة |
+| `metadata.json` | معرّف الجلسة ووقت البدء واسم SDK (`"sdk": "typescript"` أو `"python"` أو `"go"` أو `"csharp"` أو `"php"` أو `"ruby"` أو `"java"`)، ويُكتب مرة واحدة |
+| `assets/images`، `assets/audio`، `assets/video` | تُنشأ فارغة لعارض DevTools |
+
+قيمة `type` لكل إدخال هي `agent.run` للتشغيل و`agent.continue` للمتابعة. `agent.continue` نوع إدخال وليس اسم دالة: إنه ما يكتبه استدعاء `continueRun()` (TypeScript وPHP وJava) أو `continue_run()` (Python وRuby) أو `Continue` (Go) أو `ContinueRun` (C#).
+
+يتضمن الإدخال معرّفي التشغيل والوكيل، وعدد الأدوات، ونتيجة التشغيل كاملة: الحالة والرسائل والخطوات مع النموذج والمزوّد ومعرّفات طلبات Gateway، ونشاط الأدوات والاستخدام والمخرجات. يحصل التشغيل الفاشل على إدخال يتضمن الخطأ (`error.message` في Go وJava؛ وتفاصيل فشل منظَّمة في TypeScript). في Java تُتجاهل أخطاء الكتابة، لذا لا يتسبب الالتقاط أبدًا في فشل التشغيل.
+
+<Warning>
+تحتوي الإدخالات على المطالبات والرسائل وسياق التطبيق ومدخلات الأدوات ومخرجاتها كنص عادي. أبقِ المجلد خارج نظام التحكم بالمصدر وصور الإنتاج، ولا تستخدمه مخزنًا للتدقيق. لقياسات الإنتاج عن بُعد، استخدم [خطافات دورة الحياة](./lifecycle-hooks).
+</Warning>

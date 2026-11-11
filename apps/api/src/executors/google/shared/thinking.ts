@@ -42,10 +42,13 @@ const GOOGLE_THINKING_LEVEL_SUPPORT: Record<string, GoogleThinkingLevel[]> = {
 	// https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/gemini/4-argon:
 	// "Setting thinking_budget or thinking_level="MINIMAL" returns an HTTP 400 validation error."
 	"gemini-4-argon": GOOGLE_LOW_MEDIUM_HIGH_LEVELS,
+	// Gemini 4 Carbon has no docs page yet. A live Vertex probe on 2026-11-10 gave the same
+	// results as Argon: thinkingLevel LOW works, MINIMAL and any thinkingBudget return HTTP 400.
+	"gemini-4-carbon": GOOGLE_LOW_MEDIUM_HIGH_LEVELS,
 };
 
 // Models that refuse thinkingBudget and take thinkingLevel only.
-const GOOGLE_THINKING_BUDGET_UNSUPPORTED = ["gemini-4-argon"];
+const GOOGLE_THINKING_BUDGET_UNSUPPORTED = ["gemini-4-argon", "gemini-4-carbon"];
 
 function normalizeModelName(model: string): string {
 	return normalizeGoogleModelSlug(String(model ?? "").trim()).replace(/:free$/i, "");

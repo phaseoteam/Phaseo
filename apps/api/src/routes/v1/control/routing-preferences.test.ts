@@ -31,8 +31,9 @@ const send = (handler: (req: Request) => Promise<Response>, method: string, body
 		headers: { "content-type": "application/json" },
 		body: body === undefined ? undefined : JSON.stringify(body),
 	}));
+// A dashboard session for a member with that role (a CLI sign-in gets no exemption for writes).
 const oauth = (role: string) => {
-	state.auth = { workspaceId: WS, authMethod: "oauth", userId: "user_1", requestId: "req_1", oauthScopes: ["settings:read", "settings:write"] };
+	state.auth = { workspaceId: WS, authMethod: "oauth", oauthClientId: null, apiKeyRef: "dashboard", userId: "user_1", requestId: "req_1", oauthScopes: ["settings:read", "settings:write"] };
 	state.db.tables.workspace_members = [{ workspace_id: WS, user_id: "user_1", role }];
 };
 
@@ -46,7 +47,9 @@ beforeEach(() => {
 			{ model_slug: "acme/preview", status: "coming_soon", hidden: false },
 		],
 	});
-	state.auth = { workspaceId: WS, authMethod: "api_key", requestId: "req_1", scopes: [] };
+	// The management key acts as its creator, an admin of the workspace.
+	state.auth = { workspaceId: WS, authMethod: "api_key", userId: "key_creator", requestId: "req_1", scopes: [] };
+	state.db.tables.workspace_members = [{ workspace_id: WS, user_id: "key_creator", role: "admin" }];
 	state.audits.length = 0;
 	state.invalidated.length = 0;
 });
@@ -67,6 +70,41 @@ describe("auto-routing settings", () => {
 		expect(data.revision).toEqual(expect.any(String));
 		expect(state.invalidated).toEqual([WS, WS]);
 		expect(state.audits.map((event) => event.action)).toEqual(["routing.auto.updated", "routing.auto.updated"]);
+	});
+
+	it.each([
+		["a CLI sign-in", { oauthClientId: "phaseo_cli", apiKeyRef: "oauth_phaseo_cli" }],
+		["a management key", { authMethod: "api_key", oauthClientId: null, apiKeyRef: "kid_mgmt" }],
+	])("doesn't let %s's objective change restore price limits the dashboard just tightened", async (_caller, auth) => {
+		oauth("admin");
+		state.auth = { ...state.auth, ...auth };
+		state.db.tables.workspace_settings = [{
+			workspace_id: WS, auto_routing_spend_profile: "custom", auto_routing_max_input_price_per_million: 10,
+			auto_routing_max_output_price_per_million: 30, auto_routing_objective: "balanced", auto_routing_revision: "rev_1",
+		}];
+		const from = state.db.client.from;
+		let reads = 0;
+		state.db.client.from = (table: string) => {
+			// Between the read and the write, the person tightens the limits in the dashboard (a new revision).
+			if (table === "workspace_settings" && ++reads === 2) {
+				Object.assign(state.db.tables.workspace_settings[0], { auto_routing_max_input_price_per_million: 1, auto_routing_max_output_price_per_million: 2, auto_routing_revision: "rev_2" });
+			}
+			return from(table);
+		};
+		const response = await send(handleUpdateAutoRouting, "PATCH", { objective: "cost" });
+		expect(response.status).toBe(409);
+		expect((await response.json() as any).error).toBe("conflict");
+		expect(state.db.tables.workspace_settings[0]).toMatchObject({
+			auto_routing_max_input_price_per_million: 1, auto_routing_max_output_price_per_million: 2, auto_routing_objective: "balanced", auto_routing_revision: "rev_2",
+		});
+		expect(state.invalidated).toEqual([]);
+		expect(state.audits).toEqual([]);
+
+		// Read again, the same change applies over the tightened limits.
+		state.db.client.from = from;
+		const retried = await send(handleUpdateAutoRouting, "PATCH", { objective: "cost" });
+		expect(retried.status).toBe(200);
+		expect((await retried.json() as any).data).toMatchObject({ objective: "cost", max_input_price_per_million: 1, max_output_price_per_million: 2 });
 	});
 
 	it("refuses what the dashboard refuses", async () => {

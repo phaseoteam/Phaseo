@@ -1,6 +1,6 @@
 import { Hono, type Context } from "hono";
 import type { Env } from "@/env";
-import { authenticateScim, type ScimAuthContext } from "./auth";
+import { authenticateScim, type ScimAuthContext, type ScimAuthRefusal } from "./auth";
 import { resourceTypes, schemas, serviceProviderConfig } from "./discovery";
 import { scimError, scimJson } from "./http";
 import { ScimProtocolError } from "./errors";
@@ -13,7 +13,7 @@ import { SCIM_URNS } from "./constants";
 import { executeBulk } from "./bulk";
 
 type ScimVariables = { scim: ScimAuthContext };
-type Authenticate = (request: Request, env: Env) => Promise<ScimAuthContext | null>;
+type Authenticate = (request: Request, env: Env) => Promise<ScimAuthContext | ScimAuthRefusal | null>;
 
 export function createScimRouter(authenticate: Authenticate = authenticateScim) {
 	const router = new Hono<{ Bindings: Env; Variables: ScimVariables }>();
@@ -32,6 +32,7 @@ export function createScimRouter(authenticate: Authenticate = authenticateScim) 
 		}
 		const context = await authenticate(c.req.raw, c.env);
 		if (!context) return scimError(401, "A valid SCIM bearer token is required.");
+		if ("refused" in context) return scimError(401, context.refused);
 		c.set("scim", context);
 		try {
 			if (limiter && !(await limiter.limit({ key: context.tokenId })).success) {

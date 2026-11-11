@@ -1,91 +1,97 @@
 ---
-title: "使用 web fetch 为后续提取提供依据"
+title: "用网页抓取为后续提取提供依据"
+sidebarTitle: "用网页抓取为提取提供依据"
 icon: "file-search"
-description: "使用 `phaseo:web_fetch` 将长度受限的网页文本载入工具循环，以便进行确定性的后续提取和审核。"
+description: "使用 `phaseo:web_fetch` 把有长度上限的页面文本拉入工具循环，用于确定性的后续提取和审查。"
 ---
 
-当工作流需要先获取一个网页并将其转换为长度受限的文本，再由模型进行提取、摘要或分类时，请使用此方案。
+为模型提供 `phaseo:web_fetch` 和一个你已知道的 URL，Phaseo 会抓取该页面、按大小上限截断，并在模型提取、总结或分类之前把文本交还给它。完成后，你会得到一个读取单个页面并从中返回字段的请求，并能在日志中确认它实际读取了哪个页面。
 
-## 1. 使用 `phaseo:web_fetch` 获取单个网页作为依据
+配合示例中的域名限制，该请求可直接用于生产环境。抓取到的页面是不可信的输入：模型可能会在其中看到指令，因此请验证它返回的内容。如果你不知道 URL，请改用[网页搜索](../guides/server-tools/web-search)。
 
-`phaseo:web_fetch` 是由 Gateway 管理的服务器工具。
+## 发送有依据的请求
 
-适用于以下需求：
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-6-astra",
+    "input": "Fetch https://phaseo.app/docs/v1/guides/tool-calling and list the section headings. Use only the fetched text.",
+    "tools": [
+      {
+        "type": "phaseo:web_fetch",
+        "parameters": {
+          "allowed_domains": ["phaseo.app"],
+          "max_chars": 8000,
+          "max_uses": 1
+        }
+      }
+    ],
+    "tool_choice": "phaseo:web_fetch"
+  }'
+```
 
-- 由 Gateway 直接获取一个 URL
-- 向工具循环返回长度受限的文本
-- 按请求跟踪用量
-- 在请求日志中查看获取的网页
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
 
-如果已经知道 URL，这比广泛搜索更合适。
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
-## 2. 明确说明请求内容
+const response = await client.generateResponse({
+  model: "openai/gpt-6-astra",
+  input:
+    "Fetch https://phaseo.app/docs/v1/guides/tool-calling and list the section headings. Use only the fetched text.",
+  tools: [
+    {
+      type: "phaseo:web_fetch",
+      parameters: {
+        allowed_domains: ["phaseo.app"],
+        max_chars: 8000,
+        max_uses: 1,
+      },
+    },
+  ],
+  tool_choice: "phaseo:web_fetch",
+});
 
-典型流程：
+console.log(JSON.stringify(response.output, null, 2));
+console.log(response.usage?.server_tool_use);
+```
+</CodeGroup>
 
-1. 让模型调用 `phaseo:web_fetch`
-2. 由 Gateway 获取并规范化网页
-3. 让模型根据返回的文本继续提取
+在提示中明确说明抓取之后要做什么：提取这些字段、总结这一节、对文档分类，或核实一个说法。
 
-在提示中明确说明获取网页后的最终任务：
+| 参数 | 默认值 | 用途 |
+| --- | --- | --- |
+| `allowed_domains` | 无 | 只从这些域名抓取。模型可以缩小这个列表，但永远不能扩大。 |
+| `max_chars` | `12000` | 返回的页面文本字符数，最多 `100000`。只需标题或摘要时调低，提取字段时调高。 |
+| `max_uses` | `10` | 每个请求的抓取调用次数，最多 `100`。 |
 
-- 提取字段
-- 总结一个章节
-- 对文档进行分类
-- 验证一项陈述
+[网页抓取指南](../guides/server-tools/web-fetch#parameters)列出了其余参数，包括 `blocked_domains` 和各种引擎。
 
-## 3. 有意限制获取内容的大小
+## 检查它读取了什么
 
-当默认上限对当前任务来说过大或过小时，请设置 `max_chars`。
+工具结果（请求日志中会显示）准确说明了模型依据的是哪个页面：
 
-推荐做法：
+```json
+{
+  "url": "https://phaseo.app/docs/v1/guides/tool-calling",
+  "final_url": "https://phaseo.app/docs/v1/guides/tool-calling",
+  "status": 200,
+  "content_type": "text/html",
+  "title": "Tool Calling",
+  "truncated": false,
+  "returned_chars": 8000
+}
+```
 
-- 提取标题或摘要时使用较小上限
-- 提取结构化字段时使用较大上限
+在确信模型看到了完整页面之前，先检查重定向之后的 `final_url` 和 `truncated`。每次抓取会让 `usage.server_tool_use.web_fetch_requests` 加 1。
 
-如果网页内容很多，应缩小提取任务范围，而不是取消获取大小限制。
+## 了解限制
 
-## 4. 检查日志，而不只是最终答案
+使用默认的 `direct` 引擎时，Phaseo 会自行抓取页面，并把 HTML 简化为纯文本。它会拒绝 `localhost` 和私有地址，最多跟随 5 次重定向，并对照你的域名列表检查每次重定向；重定向到列表之外时，会向模型返回 `redirect_blocked_by_domain_policy`。
 
-请求详情应显示：
+网页抓取适用于 HTML 页面、纯文本，以及较小的 JSON 或 XML 响应。它不适合二进制文件、抓取大量页面，或检查页面在 JavaScript 下如何渲染；这些情况请使用浏览器工作流。如果页面非常大，请缩小提取任务的范围，而不是提高 `max_chars`。
 
-- 获取的 URL
-- 重定向后的最终 URL
-- 网页标题（如有）
-- HTTP 状态
-- 内容类型
-- 返回的字符数
-- 截断标记
-
-通过此视图确认模型使用了预期网页作为依据。
-
-## 5. 了解工具限制
-
-`phaseo:web_fetch` 具有有意设置的处理上限。
-
-适用于：
-
-- HTML 网页
-- 纯文本
-- 简单的 JSON 或 XML 响应
-
-不适用于：
-
-- 二进制文件
-- 大规模网页抓取
-- 仅依赖 JavaScript 渲染的页面检查
-
-要验证浏览器渲染的内容，请使用浏览器工作流，不要只依赖获取的文本。
-
-## 6. 建议的上线步骤
-
-1. 从一个预设或一个端点路径开始
-2. 检查请求日志中的获取元数据和截断信息
-3. 如果获取的内容范围过大，则缩小提示范围
-4. 只有在基于网页内容的提取流程稳定后才扩大范围
-
-## 相关内容
-
-- [调试网页搜索请求](./web-search-debugging.mdx)
-- [工具调用](../guides/tool-calling.mdx)
-- [修复结构化 JSON 响应](./response-healing-for-structured-json.mdx)
+先从一个预设或端点开始，在日志中查看抓取详情和截断情况；如果抓取到的文本范围太宽，先收紧提示，再扩大使用范围。

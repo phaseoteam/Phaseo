@@ -1,43 +1,44 @@
 ---
 title: "Prime Agent"
 icon: "/icons/brands/prime-agent.svg"
-description: "اربط كتالوج نماذج Prime Agent المثبّت بـ Phaseo."
+description: "اربط كتالوج نماذج Prime Agent المثبت بـ Phaseo."
 ---
 
-## الإعداد باستخدام CLI الخاصة بـ Phaseo
+شغّل `phaseo prime-agent` لإضافة مزوّد Phaseo مع كل نماذج Phaseo المتوافقة إلى Prime Agent. يعمل Prime Agent على macOS وLinux؛ على Windows، ثبّته وشغّل الإعداد داخل WSL.
 
-تتطلب هذه الأوامر الجاهزة للإنتاج حساب Phaseo؛ وتنشئ CLI بيانات اعتماد مخصصة للبوابة أثناء تسجيل الدخول والإعداد.
+## الإعداد باستخدام Phaseo CLI
 
 ```bash
 phaseo login
 phaseo prime-agent
 ```
 
-ثبّت Prime Agent أولًا من إصداره الرسمي. يكتب الإعداد مزوّد `phaseo` مُدارًا في `~/.prime/agent/models.json`. ويعرض جميع نماذج Phaseo النصية النشطة المتوافقة مع Chat Completions، ويحصل على مفتاح API المخصص من CLI الخاصة بـ Phaseo عند كل طلب.
+إذا لم يكن Prime Agent مثبتًا، تعرض CLI أمر المثبّت الرسمي وتطلب موافقتك قبل تشغيله. ثم ينشئ الإعداد مفتاحًا باسم `Phaseo CLI: Prime Agent API Key` (تنتهي صلاحيته بعد 90 يومًا، وحد إنفاقه الشهري $100) ويكتب مزوّد `phaseo` في `~/.prime/agent/models.json`. يسرد المزوّد كل نماذج النص النشطة في Phaseo التي تعمل مع Chat Completions.
 
-يدعم Prime Agent حاليًا macOS وLinux. على Windows، شغّل الإعداد داخل WSL بعد تثبيت الملف التنفيذي هناك.
+| الخيار | الأثر |
+| --- | --- |
+| `--model <id>` | يحدد النموذج الأولي. القيمة الافتراضية `anthropic/claude-sonnet-4.6`. |
+| `--catalog default` | يضيف النموذج المحدد فقط. |
+| `--dry-run` | يعرض تغييرات الملفات دون تنفيذها. |
 
-اختر إدخالًا أوليًا من الكتالوج أو هيّئ نموذجًا واحدًا فقط عند الحاجة:
-
-```bash
-phaseo prime-agent --model anthropic/claude-sonnet-4.6
-phaseo prime-agent --catalog default
-```
-
-## التشغيل والتحقق
-
-```bash
-prime-agent
-```
-
-افتح `/model`، واختر المزوّد `phaseo`، وأرسل طلبًا بسيطًا. يستخدم المزوّد المُنشأ تنسيق المفتاح المعتمد على الأوامر الذي يدعمه Prime Agent:
+يحصل المزوّد على مفتاحه وقت الطلب باستخدام صيغة المفاتيح المعتمدة على الأوامر في Prime Agent، لذا لا يُكتب أي مفتاح كنص صريح في الملف:
 
 ```text
 !phaseo integrations credential prime-agent
 ```
 
-لإزالة المزوّد المُدار من Phaseo وحده وإلغاء مفتاحه المخصص، شغّل:
+## التحقق من أنه يعمل
+
+```bash
+prime-agent
+```
+
+افتح `/model`، واختر المزوّد `phaseo`، وأرسل موجّهًا قصيرًا. تأكد من ظهور الطلب في **الإعدادات → الاستخدام → السجلات**.
+
+## إزالة Phaseo
 
 ```bash
 phaseo integrations remove prime-agent
 ```
+
+يزيل هذا الأمر مزوّد Phaseo فقط ويلغي المفتاح.

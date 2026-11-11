@@ -5,15 +5,15 @@ description: "Extract ordered text, tables, images, and layout metadata from doc
 "og:image": "https://phaseo.app/og/dynamic?title=Parse%20document%20images&description=Extract%20ordered%20text%2C%20tables%2C%20images%2C%20and%20layout%20metadata%20from%20document%20images%20with%20Cohere%20Parse%20v5.0.&pathname=/docs/v1/guides/document-parsing"
 ---
 
-Use the Parse endpoint when you need more than plain OCR. It preserves page order and can return either Markdown or structured text, image, and table blocks.
+Send a document image to `POST /v1/parse` to get its text back in reading order, as Markdown or as structured text, image, and table blocks. Use [OCR](../api-reference/endpoint/ocr.mdx) when you only need the plain text.
 
 <Warning>
-  Cohere's public Parse API currently accepts image URLs and base64 image data URIs only. Convert PDF pages to images before sending them. Each image must be no larger than 20 MB, 50 megapixels, or 200 MB decoded.
+  Parse accepts one image per request, as an `http(s)` URL or a base64 `data:image/...` URI. PDFs aren't accepted: convert each page to an image first. Cohere limits each image to 20 MB, 50 megapixels, and 200 MB decoded.
 </Warning>
 
 ## Parse into Markdown
 
-Markdown keeps reading order, inlines tables as HTML, and links detected images to metadata on the page.
+Markdown is the default `output_format`. It keeps reading order, inlines tables as HTML, and links detected images to metadata on the page.
 
 <CodeGroup>
 ```bash cURL
@@ -75,5 +75,7 @@ print(response.json()["pages"][0]["markdown"]["content"])
 ## Return structured blocks
 
 Set `output_format` to `blocks` to receive ordered text, image, and table regions. Image and table blocks include pixel and normalized bounding boxes where available.
+
+## How Parse is billed
 
 Parse usage is metered by page. The response includes Cohere's metadata and a normalized `usage.input_pages` value when the provider reports billed pages. Cohere currently offers free, rate-limited evaluation API access and has not published a production Parse API rate.

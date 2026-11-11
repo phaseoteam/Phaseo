@@ -868,6 +868,61 @@ describe("passthroughWithPricing", () => {
 		});
 	});
 
+	it.each([
+		["streamed reasoning", { reasoning_content: "thinking" }, true],
+		["answer text", { content: "hello" }, false],
+	])("notes whether the first output was %s, so output speed keeps or leaves out reasoning tokens", async (_label, delta, expected) => {
+		const ctx = baseCtx({
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+			meta: { startedAtMs: Date.now() - 80, upstreamStartMs: Date.now() - 40 },
+		});
+		const upstream = makeSseResponse([
+			{ data: { object: "chat.completion.chunk", choices: [{ index: 0, delta, finish_reason: null }] } },
+			{
+				data: {
+					object: "chat.completion",
+					choices: [{ index: 0, message: { role: "assistant", content: "hello" }, finish_reason: "stop" }],
+				},
+			},
+		]);
+
+		const response = await passthroughWithPricing({
+			upstream,
+			ctx,
+			provider: "openai",
+			priceCard: null,
+		});
+		await drain(response);
+
+		expect(typeof ctx.meta.provider_ttft_ms).toBe("number");
+		expect(ctx.meta.reasoningStreamed).toBe(expected);
+	});
+
+	it.each([
+		["in one network read", false, 1],
+		["across separate reads", true, 3],
+	])("counts output that arrived %s", async (_label, delayed, expected) => {
+		const ctx = baseCtx({
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+			meta: { startedAtMs: Date.now() - 80, upstreamStartMs: Date.now() - 40 },
+		});
+		const frames = ["one", " two", " three"].map((content) => ({
+			data: { object: "chat.completion.chunk", choices: [{ index: 0, delta: { content }, finish_reason: null }] },
+		}));
+		frames.push({
+			data: {
+				object: "chat.completion",
+				choices: [{ index: 0, message: { role: "assistant", content: "one two three" }, finish_reason: "stop" }],
+			} as any,
+		});
+		const upstream = delayed ? makeDelayedSseResponse(frames, 5).response : makeSseResponse(frames);
+		const response = await passthroughWithPricing({ upstream, ctx, provider: "openai", priceCard: null });
+		await drain(response);
+		expect(ctx.meta.outputArrivals).toBe(expected);
+	});
+
 	it("records first-token latency, dispatch-to-terminal generation, and gateway end-to-end separately", async () => {
 		const ctx = baseCtx({
 			endpoint: "chat.completions",

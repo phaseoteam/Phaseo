@@ -14,7 +14,7 @@ import { crc32, deflateRawSync } from "node:zlib";
 const pluginRoot = "plugin/phaseo";
 const SERVER = "phaseo";
 // Read by other hosts only; the root plugin.json with extensions.com.openai takes precedence in the directory.
-const EXCLUDED = new Set([".claude-plugin", ".codex-plugin", ".mcp.json"]);
+const EXCLUDED = new Set([".claude-plugin", ".codex-plugin", ".cursor-plugin", ".mcp.json", "assets/logo_plate.svg"]);
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
 
 const demoUrlIndex = process.argv.indexOf("--demo-url");

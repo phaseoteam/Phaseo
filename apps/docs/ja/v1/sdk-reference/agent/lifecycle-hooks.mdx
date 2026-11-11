@@ -1,0 +1,166 @@
+---
+icon: "radio-tower"
+title: "ライフサイクルフック"
+description: "エージェントの実行の各時点でイベントを受け取り、インターフェースの更新、監査記録の書き込み、テレメトリーへの送信に使います。"
+---
+
+実行または続行にイベントハンドラーを渡すと、実行の開始時、各モデルターンの開始時と終了時、各ツールの実行時、実行の一時停止時、実行の終了時にイベントを受け取れます。インターフェースの更新、監査記録の書き込み、既存のテレメトリーへの送信に使ってください。
+
+<CodeGroup>
+
+```typescript TypeScript
+const result = await agent.run({
+  input,
+  client,
+  onEvent(event) {
+    console.log(event.type, event.runId);
+  },
+});
+```
+
+```python Python
+def on_event(event):
+    logger.info("%s %s", event["type"], event["run_id"])
+
+result = agent.run(input="Summarise this ticket", client=client, on_event=on_event)
+```
+
+```go Go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{
+  Input:  prompt,
+  Client: client,
+  OnEvent: func(event phaseoagent.AgentEvent) {
+    logger.Info("agent event",
+      "type", event.Type,
+      "run_id", event.RunID,
+      "details", event.Details,
+    )
+  },
+})
+```
+
+```csharp C#
+var result = await agent.Run(new RunOptions
+{
+    Input = prompt,
+    Client = client,
+    OnEvent = value => logger.LogInformation(
+        "{EventType} {RunId} {Details}", value.Type, value.RunId, value.Details),
+});
+```
+
+```php PHP
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    onEvent: function (array $event) use ($logger): void {
+        $logger->info("agent event", $event);
+    }
+);
+```
+
+```ruby Ruby
+result = agent.run(
+  input: prompt,
+  client: client,
+  on_event: ->(event) { logger.info("agent event #{event.inspect}") }
+)
+```
+
+```java Java
+var result = agent.run(new AgentSdk.RunOptions(
+    prompt, client, null, null, null, null, null, null,
+    event -> logger.info("{} {} {}", event.type(), event.runId(), event.details()),
+    null));
+```
+
+```rust Rust
+use phaseo_agent::{AgentEvent, RunOptions};
+
+let mut on_event = |event: &AgentEvent| {
+    println!("{} run={} details={}", event.event_type, event.run_id, event.details);
+};
+
+let result = agent.run_with_events(
+    &mut client,
+    RunOptions::new("Check project health"),
+    Some(&mut on_event),
+)?;
+```
+
+</CodeGroup>
+
+## ハンドラーの置き場所と受け取るもの
+
+| 言語 | ハンドラー | イベントの形 |
+| --- | --- | --- |
+| TypeScript | run と continue のオプションの `onEvent` | `type`、`runId`、`agentId`、`timestamp` と、camelCase のイベントフィールド（`stepIndex`、`toolCallId`）を持つオブジェクト |
+| Python | `run()`、`stream()`、または続行の `on_event` | `type`、`run_id`、`agent_id`、`timestamp`、`status` とイベントのキーを持つ dict |
+| Go | `RunOptions` または `ContinueOptions` の `OnEvent` | `Type`、`RunID`、`AgentID`、`Timestamp`、`Status`、`Details` を持つ `AgentEvent` |
+| C# | `RunOptions` または `ContinueOptions` の `OnEvent` | `Type`、`RunId`、`AgentId`、`Timestamp`、`Status`、`Details` を持つ `AgentEvent` |
+| PHP | `run()` または `continueRun()` の `onEvent` の callable | `type`、`run_id`、`agent_id`、`timestamp`、`status` と、最上位にマージされたイベントのキーを持つ配列 |
+| Ruby | `run` または `continue_run` の `on_event:` | `:type`、`:run_id`、`:agent_id`、`:timestamp`、`:status` と、シンボルとしてマージされたイベントのキーを持つハッシュ |
+| Java | `RunOptions` または `ContinueOptions` の `onEvent` 引数としての `Consumer<AgentEvent>` | `type()`、`runId()`、`agentId()`、`timestamp()`、`status()`、`details()` を持つ `AgentEvent` |
+| Rust | `run_with_events` または `continue_with_events` に渡すコールバック | `event_type`、`run_id`、`agent_id`、`timestamp_ms`、`details`（JSON）を持つ `&AgentEvent` |
+
+## ランタイムが出力するイベント
+
+以下では詳細のキーを snake_case で示します。TypeScript では camelCase の形を使います。
+
+| イベント | タイミング | 詳細 | 言語 |
+| --- | --- | --- | --- |
+| `run.started` | 実行が始まった | なし | すべて |
+| `run.resumed` | 続行が始まった | `previous_status` | すべて |
+| `step.started` | モデルターンが始まった | `step_index` | Rust 以外 |
+| `model.requested` | 再試行を含む、モデルの各試行 | `step_index`、`attempt`、`model` | Rust 以外 |
+| `model.retrying` | 再試行の前 | | TypeScript |
+| `model.completed` | モデルが応答した | `step_index`、`attempt`、`request_id`、`model` | Rust 以外 |
+| `model.failed` | モデルリクエストが失敗した | | TypeScript |
+| `tool.started` | ツールが始まった | `tool_call_id`、`tool_name` | すべて |
+| `tool.preliminary_result` | ツールが進捗を報告した | `tool_call_id`、`tool_name`、`result` | Rust 以外 |
+| `tool.completed` | ツールが戻った | `tool_call_id`、`tool_name`、`output` | すべて |
+| `tool.failed` | ツールが失敗した（きっかけは言語によって異なります。[イベントとエラー](./events-and-errors#which-events-fire-when-something-fails)を参照） | `tool_call_id`、`tool_name`、`error` | Rust 以外 |
+| `step.completed`、`step.failed`、`step.cancelled` | ステップが終わった | `step_index` | TypeScript |
+| `checkpoint.saved` | ステップが完了した | `step_index` | Rust 以外 |
+| `history.repaired` | 続行が、結果のないまま残っていたツール呼び出しに応答した | | TypeScript |
+| `run.waiting_for_human` | 実行が一時停止した | `step_index`、`pause` | Rust 以外 |
+| `run.completed` | モデルが最終回答を返した | `output` | すべて |
+| `run.stopped` | 停止条件が実行を終わらせた（TypeScript）、またはステップ上限に達した（Rust） | `stop_reason`（TypeScript）、`reason`（Rust） | TypeScript、Rust |
+| `run.cancelled` | 実行がキャンセルされた | | TypeScript |
+| `run.failed` | 実行が失敗した（きっかけは言語によって異なります。[イベントとエラー](./events-and-errors#which-events-fire-when-something-fails)を参照） | `error` | Rust 以外 |
+| `response.output_text.delta`、`response.reasoning.delta`、`response.item` などの `response.*` イベント | ストリーミングの実行のみ | | Rust 以外 |
+
+Rust `0.2` は一部のイベントに独自の名前を使います。
+
+| Rust のイベント | 相当するもの | 詳細 |
+| --- | --- | --- |
+| `model.request.started` | `step.started` と `model.requested`。試行ごとではなくステップごとに1回送られます | `step_index` |
+| `model.response.completed` | `model.completed` | `step_index`、`attempts` |
+| `tool.started`、`tool.completed` | 同じイベント | `tool_call_id`、`name`。`tool.completed` には `is_error` が加わります |
+| `run.paused` | `run.waiting_for_human` | なし |
+| `run.stopped` | ステップ上限に達したときに送られます | `reason` |
+
+[停止条件](./stop-conditions)で終わった実行は、TypeScript では `run.stopped` を送りますが、Python、Go、C#、PHP、Ruby、Java では終了イベントを送りません。代わりに実行のステータスを読んでください。TypeScript では、`step.completed` はステップがチェックポイントに記録された後に送られるため、永続化やテレメトリーのコンシューマーはこれを安定した区切りとして扱えます。
+
+## ストリームのイベント
+
+ストリーミングでは、同じライフサイクルイベントがモデルの `response.*` イベントと並んで届きます。TypeScript、Python、Go、C#、Java ではハンドラーがそれらを受け取ります。PHP と Ruby では、`fullStream()` / `full_stream` にも現れます。Rust にはストリーミングがありません。ストリームのコンシューマーについては[ストリーミング](./streaming)を参照してください。
+
+## ハンドラーを速く保つ
+
+ランタイムはハンドラーを待ってから続行するため、すぐに戻り、時間のかかるストレージやネットワークの処理はキューに移してください。イベントがプロセスの外に出る前に、機密性の高いツールの入力と出力は伏せてください。
+
+| 言語 | ハンドラーの実行方法 |
+| --- | --- |
+| TypeScript | 実行が続く前に await される |
+| Python | 同期的に呼び出される |
+| Go | インラインで実行。並行実行するツールは複数の goroutine から呼び出すため、並行利用に対して安全にしてください |
+| C# | インラインで実行。並行実行するツールは複数のタスクから呼び出すため、スレッドセーフにしてください |
+| PHP | インラインで実行 |
+| Ruby | インラインで実行。並行実行するツールはそれぞれのスレッドから呼び出すため、スレッドセーフにしてください |
+| Java | インラインで実行。並行実行するツールはプールのスレッドから呼び出すため、スレッドセーフにしてください |
+| Rust | 実行のスレッド上で実行 |
+
+## 製品のインターフェースに使うイベントを選ぶ
+
+ライブの回答テキストには `response.output_text.delta` を、ツール呼び出しのカードと進捗の表示にはツールのイベントを、承認や入力のコントロールの表示には `run.waiting_for_human`（Rust では `run.paused`）を、読み込み状態の終了には実行の終了イベントを使います。開発中に実行全体をローカルに記録するには、[DevTools](./devtools) を使ってください。

@@ -1,226 +1,114 @@
 ---
 title: "コーディングエージェント"
 icon: "compass"
-description: "CLIまたは手動のプロバイダー設定でコーディングエージェントをPhaseoに接続します。"
+description: "CLI または手動のプロバイダー設定で、コーディングエージェントを Phaseo に接続します。"
 ---
 
-このガイドでコーディングエージェントをPhaseoに接続します。認証情報と設定を管理したい場合はPhaseo CLIを、エージェント内で設定したい場合は手動のプロバイダー値を使ってください。
-
-## 設定方法を選ぶ
-
-| 目的 | 使用する方法 |
-| --- | --- |
-| 分離された一時設定でCline、Kilo Code、oh-my-pi、Muse Code、MiniMax Codeを起動する | `phaseo cline`、`phaseo kilo`、`phaseo omp`、`phaseo muse`、または `phaseo minimax` |
-| インストール済みエージェントを設定し、設定を保持する | `phaseo <integration>` |
-| Phaseo CLIを使わずにエージェントを設定する | 専用ガイドの手動プロバイダー設定手順に従う |
-
-## Phaseo CLI で設定する
-
-1 回ログインしてから、コーディングハーネスを設定します。
+`phaseo login` を実行してから `phaseo <agent>` を実行すると、専用の API キーを使ってコーディングエージェントを Phaseo に向けられます。CLI を使わない場合は、エージェントの設定に[手動のプロバイダー値](#enter-the-provider-values-yourself)を入力します。
 
 ```bash
 phaseo login
 phaseo codex
 ```
 
-このコマンドはハーネスのインストール状態を確認します。対話型ターミナルで未インストールの場合、Phaseo は対応するインストールコマンドを表示し、実行前に確認します。その後、ハーネス専用のキーを作成して設定を書き込みます。非対話型の実行では、無人でシステムを変更せず、具体的なインストール手順を表示します。OpenCode、fx、DeepSeek Harness、Pi、Prime Agent、OpenClaw には、Chat Completions 対応の有効なテキストモデルもすべて追加されます。動作範囲を絞るには `--skip-install`、`--catalog default`、`--dry-run` を使います。
+## エージェント用のコマンドを確認する
 
-永続的な連携には製品名のコマンドを使います。
+CLI は各エージェントを次の 3 つのいずれかの方法で設定します。
 
-```bash
-phaseo codex
-```
+- **設定済み**: CLI がエージェントの設定ファイルを書き込みます。エージェントを起動して Phaseo のモデルを選びます。
+- **キーのみ**: エージェントがキーを独自のアプリストレージに保存するため、CLI はキーを作成し、入力する項目を表示します。
+- **セッション**: CLI は終了時に削除される一時的な設定でエージェントを起動します。通常の設定には影響しません。
 
-対応している連携名は `codex`、`claude-code`、`opencode`、`fx`、`deepseek-harness`、`pi`、`openclaw`、`hermes`、`aider`、`cline`、`roo-code`、`kilo-code`、`continue`、`cursor`、`zed` です。分離された CLI ランナーは `cline`、`kilo`、`omp`、`muse`、`minimax` です。
+| エージェント | コマンド | 設定方法 | ガイド |
+| --- | --- | --- | --- |
+| Claude Code | `phaseo claude-code` | 設定済み | [Claude Code](./claude-code.mdx) |
+| Codex | `phaseo codex` | 設定済み | [Codex](./codex.mdx) |
+| OpenCode | `phaseo opencode` | 設定済み | [OpenCode](./opencode.mdx) |
+| fx | `phaseo fx` | 設定済み | [fx](./fx.mdx) |
+| DeepSeek Harness | `phaseo deepseek-harness` | 設定済み | [DeepSeek Harness](./deepseek-harness.mdx) |
+| Pi | `phaseo pi` | 設定済み | [Pi](./pi.mdx) |
+| Prime Agent | `phaseo prime-agent` | 設定済み | [Prime Agent](./prime-agent.mdx) |
+| OpenClaw | `phaseo openclaw` | 設定済み | [OpenClaw](./openclaw.mdx) |
+| Hermes Agent | `phaseo hermes` | 設定済み | [Hermes Agent](./hermes.mdx) |
+| Aider | `phaseo aider` | 設定済み | [Aider](./aider.mdx) |
+| Continue | `phaseo continue` | 設定済み | [Continue](./continue.mdx) |
+| Zed | `phaseo zed` | 設定済み、その後 Zed にキーを貼り付け | [Zed](./zed.mdx) |
+| Cursor | `phaseo cursor` | キーのみ | [Cursor](./cursor.mdx) |
+| Roo Code | `phaseo roo-code` | キーのみ | [Roo Code](./roo-code.mdx) |
+| Kilo Code | `phaseo kilo-code`（拡張機能）または `phaseo kilo`（CLI） | キーのみ、またはセッション | [Kilo Code](./kilo-code.mdx) |
+| Cline | `phaseo setup cline`（拡張機能）または `phaseo cline`（CLI） | キーのみ、またはセッション | [Cline](./cline.mdx) |
+| oh-my-pi | `phaseo omp` | セッション | [oh-my-pi](./oh-my-pi.mdx) |
+| Muse Code | `phaseo muse` | セッション | [Muse Code](./muse-code.mdx) |
+| MiniMax Code | `phaseo minimax` | セッション | [MiniMax Code](./minimax-code.mdx) |
 
-CLI はアシスタントごとに専用の API キーを作成します。キーは 90 日で失効し、月 $100 の支出上限が設定されます。クリーンインストールでは Aider と Continue を自動設定し、Zed のプロバイダー/モデル設定も自動で書き込みます。シークレットをエディター UI のみで管理するアシスタントでは、残りの入力項目を表示し、専用ガイドにリンクし、そのアシスタントのキーだけをコピーできます。
+`phaseo cline` と `phaseo kilo` はセッションを開始します。VS Code 拡張機能用のキーを作成するには、`phaseo setup cline` と `phaseo kilo-code` を使います。`phaseo run <cline|kilo|omp|muse|minimax>` はセッションコマンドの完全な形式です。CLI のインストール方法は [Phaseo CLI ガイド](./phaseo-cli.mdx)を参照してください。
 
-```bash
-phaseo integrations credential codex
-```
+## CLI が作成するもの
 
-設定前にファイル変更をプレビューし、後から安全に接続を解除できます。
+各エージェントには、エージェント名の付いた専用の API キー（例: `Phaseo CLI: Codex API Key`）が用意されます。月額 $100 の利用上限と 90 日の有効期限があります。新しいキーは CLI が開くダッシュボードのページで承認し、その後 CLI がキーを一度だけ受け取ります。詳しくは[ブラウザーでキーを承認する](./phaseo-cli.mdx#approve-the-key-in-your-browser)を参照してください。期限切れのキーを置き換えるにはセットアップコマンドを再実行し、上限はダッシュボードの **設定 → API キー** で変更します。
 
-```bash
-phaseo codex --dry-run
-phaseo integrations remove codex
-```
+Claude Code、Codex、OpenCode、fx、DeepSeek Harness、Pi、Prime Agent、OpenClaw、Hermes Agent がインストールされていない場合、CLI は公式のインストールコマンドを表示し、実行する前に確認します。対話型ターミナル以外では、インストールコマンドを表示して停止します。OpenCode、fx、DeepSeek Harness、Pi、Prime Agent、OpenClaw には、Chat Completions で動作する Phaseo の有効なテキストモデルもすべて登録されます。
 
-削除すると Phaseo が管理する設定を消去し、そのアシスタントのキーを失効させます。無関係な設定は削除しません。
+| フラグまたはコマンド | 効果 |
+| --- | --- |
+| `--model <id>` | デフォルトのモデルを設定します。Claude Code では使えません。 |
+| `--catalog default` | カタログ全体ではなく、選択したモデルだけを追加します。 |
+| `--skip-install` | 自分で管理しているエージェントのために、インストールの確認をスキップします。 |
+| `--dry-run` | ファイルを変更せずに、変更内容を表示します。 |
+| `--key <key>` | 新しいキーを要求する代わりに、ダッシュボードで作成したキーを使います。`--key-stdin` は標準入力からキーを読み取ります。 |
+| `phaseo integrations credential <agent>` | キーを貼り付けて使うエージェントのために、そのエージェントのキーを表示します。 |
+| `phaseo integrations remove <agent>` | Phaseo が書き込んだ設定を削除し、キーを失効させます。その他の設定はそのまま残ります。 |
 
-## 手動のプロバイダー設定
+<span id="enter-the-provider-values-yourself"></span>
+## プロバイダーの値を手動で入力する
 
-ツールから別のフィールド名を指定されない限り、次の値を使います。
+OpenAI 互換プロバイダーを持つエージェントであれば、次の値を使えます。項目名はツールによって異なります。
 
-| 設定項目 | 値 |
+| 設定 | 値 |
 | --- | --- |
 | プロバイダーの種類 | OpenAI Compatible |
-| ベース URL | `https://api.phaseo.app/v1` |
-| API キー | Phaseo API キー |
-| モデル | `openai/gpt-5-nano` のような Phaseo モデル ID |
+| Base URL | `https://api.phaseo.app/v1` |
+| API キー | Phaseo の API キー |
+| モデル | Phaseo のモデル ID（例: `openai/gpt-6-astra`） |
 
-Anthropic 互換ツールでは、次の値を使います。
+Anthropic Messages API を使うエージェントの場合:
 
-| 設定項目 | 値 |
+| 設定 | 値 |
 | --- | --- |
-| ベース URL | `https://api.phaseo.app` |
-| 認証トークン | Phaseo API キー |
-| モデル | `anthropic/claude-sonnet-4.5` のような Phaseo モデル ID |
+| Base URL | `https://api.phaseo.app`（クライアントが `/v1/messages` を付加します） |
+| 認証トークン | Phaseo の API キー |
+| モデル | Phaseo のモデル ID（例: `anthropic/claude-sonnet-5.5`） |
 
-## Cursor
+`/` を含むモデル ID を受け付けないエージェントもあります。お使いのエージェントがそうで、エイリアスに対応している場合は、Phaseo のモデル ID に対応するローカルのエイリアスを作成します。
 
-Cursor では、OpenAI API キー設定から OpenAI 互換のカスタムエンドポイントを追加できます。
+## 専用ガイドがないエージェント
 
-1. `Cursor Settings` を開きます。
-2. `Models` に移動します。
-3. `OpenAI API Key` の項目を有効にするか追加します。
-4. Phaseo API キーを貼り付けます。
-5. `Override OpenAI Base URL` を有効にします。
-6. ベース URL を `https://api.phaseo.app/v1` に設定します。
-7. `openai/gpt-5-nano` などの Phaseo モデル ID を使ってカスタムモデルを追加します。
-8. モデルを有効にし、Cursor のモデル選択メニューで確認します。
+### VS Code
 
-Cursor が `/` を含むモデル ID を拒否する場合、UI で設定できる最も近いローカルエイリアスを作成し、クライアントがエイリアスに対応していれば、自分の設定でそのエイリアスを Phaseo モデルにルーティングします。
+お使いのビルドに OpenAI 互換プロバイダーが含まれている場合、VS Code は Language Models エディターでモデルを追加できます。
 
-## VS Code
+1. コマンドパレットを開き、`Chat: Manage Language Models` を実行します。
+2. `OpenAI Compatible` または `OAI Compatible` を選びます。
+3. Phaseo の API キーを入力し、エンドポイントを `https://api.phaseo.app/v1` に設定します。
+4. `openai/gpt-6-astra` などの Phaseo のモデル ID を追加し、チャットのモデル選択で選びます。
 
-VS Code の Language Models エディターでは、使用中の VS Code または Insiders ビルドで OpenAI 互換プロバイダーが利用できる場合にモデルを追加できます。
+お使いのビルドに OpenAI 互換プロバイダーがない場合は、カスタムプロバイダーに対応した拡張機能を使います: [Continue](./continue.mdx)、[Cline](./cline.mdx)、[Roo Code](./roo-code.mdx)、[Kilo Code](./kilo-code.mdx)。
 
-1. コマンドパレットを開きます。
-2. `Chat: Manage Language Models` を実行します。
-3. `OpenAI Compatible` または `OAI Compatible` を選択します。
-4. Phaseo API キーを入力します。
-5. エンドポイントまたはベース URL を `https://api.phaseo.app/v1` に設定します。
-6. `openai/gpt-5-nano` などの Phaseo モデル ID を追加します。
-7. チャットのモデル選択メニューから新しいモデルを選びます。
+### Claude Desktop
 
-VS Code に OpenAI 互換プロバイダーが表示されない場合は、Continue、Cline、Roo Code、Kilo Code など、カスタムプロバイダーに対応する拡張機能を使ってください。
+Claude Desktop ではカスタムのモデルプロバイダーを使えません。Phaseo のドキュメントを参照させるには [Docs MCP](./docs-mcp.mdx) を追加し、Phaseo をモデルゲートウェイとして使う必要がある場合は [Claude Code](./claude-code.mdx) を使います。
 
-## Continue
+### Deep Agents CLI とその他の LangChain ツール
 
-Continue では、カスタム API ベース URL を使い、OpenAI プロバイダー経由で Phaseo を利用できます。
-
-```yaml
-name: Phaseo
-version: 0.0.1
-schema: v1
-
-models:
-  - name: Phaseo GPT-5 Nano
-    provider: openai
-    model: openai/gpt-5-nano
-    apiKey: ${{ secrets.PHASEO_API_KEY }}
-    apiBase: https://api.phaseo.app/v1
-    roles:
-      - chat
-      - edit
-      - apply
-```
-
-Continue が既定で Responses を使うモデルで、ワークフローに Chat Completions 互換性が必要な場合は `useResponsesApi: false` を設定します。
-
-## Cline、Roo Code、Kilo Code
-
-これらのツールでは、類似したプロバイダー設定を使います。
-
-1. 拡張機能の設定を開きます。
-2. プロバイダーとして `OpenAI Compatible` を選択します。
-3. ベース URL を `https://api.phaseo.app/v1` に設定します。
-4. Phaseo API キーを貼り付けます。
-5. Phaseo モデル ID を入力します。
-6. ファイル編集ツールを使う前に保存し、短いチャットリクエストを試します。
-
-## Aider
-
-OpenAI 互換の環境変数を設定し、起動時にモデルを指定します。
-
-```bash
-export OPENAI_API_BASE="https://api.phaseo.app/v1"
-export OPENAI_API_KEY="your_phaseo_api_key"
-aider --model openai/openai/gpt-5-nano
-```
-
-Aider では、OpenAI 互換のカスタムモデルに `openai/` プレフィックスが必要な場合があります。Phaseo のモデル ID にはプロバイダープレフィックスが含まれるため、Aider でのモデル指定全体は `openai/openai/gpt-5-nano` のようになります。
-
-## Pi、Prime Agent、OpenClaw、Hermes Agent
-
-`phaseo pi` は専用のプロバイダー拡張機能を追加し、実行時に Phaseo CLI からキーを取得します。`phaseo prime-agent` はコマンド経由のプロバイダーを `~/.prime/agent/models.json` に書き込みます。どちらにも互換性のある Phaseo モデルカタログが追加されます。`phaseo openclaw` は互換モデルカタログと exec ベースの SecretRef を登録し、API キーを `openclaw.json` に保存しません。
-
-`phaseo hermes` は、Hermes が未インストールの場合に Nous Research の公式インストーラーを実行し、インストール後にエージェントを設定します。以前の Hermes モデル設定を保存し、Phaseo をカスタムエンドポイントとして設定します。また、専用キーを Hermes の `.env` ファイルに、`# >>> phaseo managed (do not edit)` で始まるブロック内の `OPENAI_API_KEY` として書き込みます。そのためキーがコマンドラインに渡されることはなく、ほかの行は変更されません。Phaseo はこのファイルの場所を Hermes に問い合わせます。通常は `~/.hermes/.env`、ネイティブの Windows では `%LOCALAPPDATA%\hermes\.env`、または `HERMES_HOME` 内の `.env` です。さらに、Hermes がキーを Phaseo に送るよう、Hermes の `model.key_env` を `OPENAI_API_KEY` に設定します。お使いの Hermes が `model.key_env` に対応していない場合は、先に `hermes update` を実行してください。Hermes はプロバイダー認証情報にこの平文ファイルを意図的に使うため、他の API キーファイルと同様に保護してください。削除時には以前のモデル設定を復元し、`OPENAI_API_KEY` と Phaseo の復旧状態を削除して、キーを失効させます。
-
-## MiniMax Code
-
-`mcode` CLIには専用の[MiniMax Codeガイド](./minimax-code.mdx)を使ってください。`phaseo minimax`はPhaseoのOpenAI互換エンドポイントで一時的なMiniMaxプロバイダーを作成し、CLIを起動して、セッション終了時に一時データディレクトリを削除します。エディターやホストがACPを直接使う場合は、`mcode acp`によるACPにも対応しています。
-
-## Zed
-
-`phaseo zed` を実行し、表示された手順に従って Zed の設定に OpenAI 互換プロバイダーを追加します。生成されたキーは Zed の認証情報欄だけに入力してください。
-
-## Codex
-
-Codex CLI、Codex App、Codex IDE 拡張機能については、[Codex 専用ガイド](./codex.mdx)をご覧ください。要点は次のとおりです。
-
-```toml
-model = "openai/gpt-5.5"
-model_provider = "phaseo"
-
-[model_providers.phaseo]
-name = "Phaseo"
-base_url = "https://api.phaseo.app/v1"
-env_key = "PHASEO_API_KEY"
-wire_api = "responses"
-```
-
-Codex のカスタムプロバイダーは Responses ワイヤープロトコルを使います。
-
-## OpenCode
-
-OpenCode から OpenAI 互換のカスタムプロバイダー経由で Phaseo を呼び出す場合は、[OpenCode 専用ガイド](./opencode.mdx)をご覧ください。
-
-## fx
-
-Vercel Labs の fx コーディングエージェントに Phaseo をカスタムモデル接続として追加する場合は、[fx 専用ガイド](./fx.mdx)をご覧ください。
-
-## Claude Code
-
-[Claude Code 専用ガイド](./claude-code.mdx)をご覧ください。Claude Code は Anthropic 互換のゲートウェイ環境変数を使います。
-
-```bash
-export ANTHROPIC_BASE_URL="https://api.phaseo.app"
-export ANTHROPIC_AUTH_TOKEN="your_phaseo_api_key"
-export ANTHROPIC_API_KEY=""
-```
-
-その後、同じシェルから Claude Code を起動します。
-
-```bash
-claude
-```
-
-## Claude Desktop
-
-Claude Desktop は MCP サーバーに対応していますが、Cursor、Codex、Claude Code などのコーディングエージェントと同じカスタムモデルプロバイダー設定はありません。[Docs MCP](./docs-mcp.mdx) を使うと、Claude Desktop に Phaseo ドキュメントのコンテキストを追加できます。Phaseo をモデルゲートウェイとして使う場合は Claude Code を利用してください。
-
-## Deep Agents CLI と LangChain ツール
-
-[LangChain](./langchain.mdx) と同じベース URL と API キーを使います。ツールが OpenAI 環境変数を読む場合は、次のように設定します。
+[LangChain](./langchain.mdx) にある Base URL とキーを使います。ツールが OpenAI の環境変数を読み込む場合は、次の変数を設定し、モデルの項目に Phaseo のモデル ID を渡します。
 
 ```bash
 export OPENAI_API_KEY="your_phaseo_api_key"
 export OPENAI_BASE_URL="https://api.phaseo.app/v1"
 ```
 
-その後、ツールのモデルフィールドに Phaseo モデル ID を指定します。
+## 既知の制限
 
-## 注意事項
-
-- モデル ID 内のスラッシュの扱いはコーディングエージェントごとに異なります。UI が `openai/gpt-5-nano` を拒否する場合、ツールが対応していればローカルエイリアスを作成してください。
-- ファイル編集のワークフローは慎重にテストしてください。`phaseo:apply_patch` は Responses 専用です。
-- セッション中にアシスタントが Phaseo ドキュメントを参照できるようにするには、[Docs MCP](./docs-mcp.mdx) を追加します。
-- 古いコーディングツールでは、Responses イベントとサーバーツールに明示的に対応している場合を除き、Chat Completions を優先してください。
-
-## 関連情報
-
-- [サーバーツール](../server-tools/index.mdx)
-- [Responses](../../api-reference/endpoint/responses.mdx)
-- [Chat Completions](../../api-reference/endpoint/chat-completions.mdx)
+- サーバーツールは、エージェントが送信する場合にのみ動作します。`phaseo:apply_patch` は [Responses](../../api-reference/endpoint/responses.mdx) でのみ使えます。Responses のイベントや[サーバーツール](../server-tools/index.mdx)を処理できない古いエージェントは、[Chat Completions](../../api-reference/endpoint/chat-completions.mdx) を使うほうが安全です。
+- エージェントにファイルを編集させる前に短いチャットリクエストを送信し、エージェント作業にはツール呼び出しに対応したモデルを選びます。
+- セッション中にエージェントに Phaseo のドキュメントを読ませたい場合は、[Docs MCP](./docs-mcp.mdx) を追加します。

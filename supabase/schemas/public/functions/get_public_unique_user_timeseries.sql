@@ -43,6 +43,8 @@ begin
     from public.reporting_model_user_usage_daily d
     where d.day_bucket >= v_since
       and lower(d.model_id) not in ('unknown', 'other')
+      -- Decision-only models are ranked on the Decisions page.
+      and d.model_id not in (select decision.model_slug from public.public_decision_only_models() decision)
     group by 1, 2, 3
   ),
   base as (

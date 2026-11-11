@@ -1,5 +1,3 @@
-"use client";
-
 import {
 	useEffect,
 	useMemo,
@@ -8,7 +6,7 @@ import {
 	type ReactNode,
 } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 
@@ -65,6 +63,8 @@ type VirtualizedModelCatalogProps<T> = {
 	estimateItemSize?: number;
 	emptyContent?: ReactNode;
 	maxHeightPx?: number;
+	/** Lets a search input point `aria-controls` at the list. */
+	listboxId?: string;
 };
 
 export function VirtualizedModelCatalog<T>({
@@ -78,6 +78,7 @@ export function VirtualizedModelCatalog<T>({
 	estimateItemSize = 36,
 	emptyContent,
 	maxHeightPx,
+	listboxId,
 }: VirtualizedModelCatalogProps<T>) {
 	const t = useTranslations("Product.chat.modelPicker");
 	const [scrollViewport, setScrollViewport] =
@@ -131,6 +132,7 @@ export function VirtualizedModelCatalog<T>({
 			}}
 		>
 			<div
+				id={listboxId}
 				role="listbox"
 				aria-label={t("suggestions")}
 				className="relative w-full"

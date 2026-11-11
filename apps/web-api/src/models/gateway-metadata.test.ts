@@ -149,9 +149,36 @@ describe("composeGatewayMetadata", () => {
 		expect(metadata.activeProviders).toHaveLength(1);
 		expect(metadata.activeProviders[0]).toMatchObject({
 			provider_availability_status: "deprecated",
-			capability_status: "degraded",
+			capability_status: "deranked",
 			availability_reason: "provider_deprecated",
 		});
+	});
+
+	it("lists a deranked route as available, as a last resort, only while its routing is on", () => {
+		const route = (id: string, routing: boolean, status: string) => ({
+			provider_api_model_id: id, provider_id: id, api_model_id: "provider/model", is_active_gateway: routing,
+			phaseo_status: "enabled", access_scope: "public", routing_status: status,
+		});
+		const source: GatewayMetadataSource = {
+			providerModels: [route("route-degraded", true, "degraded"), route("cap-degraded", true, "active"), route("off-degraded", false, "degraded")],
+			caps: ["route-degraded", "cap-degraded", "off-degraded"].map((id) => ({
+				provider_api_model_id: id, capability_id: "text.generate", status: id === "route-degraded" ? "active" : "degraded", params: {},
+			})),
+			providers: ["route-degraded", "cap-degraded", "off-degraded"].map((id) => ({ api_provider_id: id, api_provider_name: id, status: "active", routing_status: "active" })),
+			aliases: [],
+		};
+
+		const metadata = composeGatewayMetadata("provider/model", source);
+
+		expect(metadata.activeProviders.map((provider) => [provider.api_provider_id, provider.availability_reason]).sort()).toEqual([
+			["cap-degraded", "deranked"],
+			["route-degraded", "deranked"],
+		]);
+		expect(metadata.inactiveProviders.map((provider) => [provider.api_provider_id, provider.availability_reason])).toEqual([["off-degraded", "inactive"]]);
+		expect(metadata.activeProviders.map((provider) => [provider.api_provider_id, provider.model_routing_status, provider.capability_status]).sort()).toEqual([
+			["cap-degraded", "active", "deranked"],
+			["route-degraded", "deranked", "active"],
+		]);
 	});
 
 	it("retires a deprecated provider route after its effective_to", () => {

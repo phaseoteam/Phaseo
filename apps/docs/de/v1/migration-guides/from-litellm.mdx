@@ -1,43 +1,34 @@
 ---
 title: "Von LiteLLM migrieren"
 sidebarTitle: "LiteLLM"
-description: "Ersetze einen LiteLLM-Proxy durch Phaseo und behalte den OpenAI-kompatiblen Request-Pfad deiner Anwendung bei."
+description: "Ersetze einen LiteLLM-Proxy durch Phaseo und behalte den OpenAI-kompatiblen Anfragepfad bei, den deine Anwendung bereits nutzt."
 icon: "blocks"
 ---
 
-Nutze diese Anleitung, wenn deine Anwendung über einen OpenAI-kompatiblen Client einen LiteLLM-Proxy aufruft. Ersetze zuerst den Proxy-Pfad und ordne anschließend Aliase, Routing-Regeln und gemeinsame Standardwerte gezielt zu.
+Richte die Clients, die deinen LiteLLM-Proxy aufrufen, mit einem Phaseo-Schlüssel auf `https://api.phaseo.app/v1` aus und ordne dann jeden `model_name`-Alias und jede Proxy-Einstellung bewusst zu. Wenn du LiteLLM behalten und Phaseo stattdessen als dessen Upstream nutzen willst, siehe [LiteLLM-Integration](../guides/integrations/litellm).
 
-## Was sich ändert
-
-| Einstellung | Vorher | Nachher |
+| Einstellung | LiteLLM-Proxy | Phaseo |
 | --- | --- | --- |
-| Basis-URL | Dein LiteLLM-Proxy | `https://api.phaseo.app/v1` |
-| API-Schlüssel | LiteLLM-Proxy-Schlüssel | `PHASEO_API_KEY` |
-| Modell-Aliase | LiteLLM-Konfiguration | Phaseo-Modell-IDs oder Anwendungs-Aliase |
-| Routing-Standards | LiteLLM-Konfiguration | Phaseo-Presets und Routing-Einstellungen |
+| Basis-URL | Dein Proxy, oft `http://localhost:4000` | `https://api.phaseo.app/v1` |
+| API-Schlüssel | `LITELLM_MASTER_KEY` oder ein virtueller Schlüssel | `PHASEO_API_KEY` |
+| Modell | `model_name`-Alias aus `config.yaml` | Phaseo-Modell-ID, ein Preset (`"model": "@slug"`) oder eine Zuordnungsfunktion |
+| Routing und Standards | `router_settings`, `litellm_settings` | [Presets](../guides/presets) und [Routing und Fallbacks](../guides/routing-and-fallbacks) |
 
-<Steps>
-<Step title="Erfasse die Proxy-Konfiguration">
-
-Liste alle Modell-Aliase, Fallbacks, Anbieterregeln, Wiederholungsrichtlinien, Budgets, Callbacks und Umgebungsvariablen auf, die deine aktuelle LiteLLM-Bereitstellung verwendet. Unterscheide gemeinsam genutzte Richtlinien von Einstellungen, die nur zu einer Anwendung gehören.
-
-</Step>
-
-<Step title="Ersetze den Proxy-Endpunkt">
-
-Behalte den OpenAI-kompatiblen Anfragecode bei und ändere Basis-URL und Schlüssel.
+## Client umstellen
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// Vorher:
+// new OpenAI({ apiKey: process.env.LITELLM_API_KEY, baseURL: process.env.LITELLM_BASE_URL });
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
 });
 
 const response = await client.chat.completions.create({
-  model: "openai/gpt-4.1-mini",
+  model: "openai/gpt-6-astra",
   messages: [{ role: "user", content: "Reply with: migration ready" }],
 });
 ```
@@ -57,40 +48,41 @@ curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
+    "model": "openai/gpt-6-astra",
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+Jeder Alias braucht eine explizite Zuordnung zu einer ID aus `GET /v1/models?format=openai`. Wenn Aufrufer interne Aliase verwenden, übersetze sie in einer einzigen Funktion an der Client-Grenze, statt jede Anfrage zu bearbeiten.
 
-<Step title="Ordne Aliase und Routing-Regeln zu">
+## Proxy-Konfiguration zuordnen
 
-Prüfe jedes Produktionsmodell mit `GET /v1/models`. Wenn Aufrufer interne Aliase benötigen, normalisiere sie an einer zentralen Stelle in der Anwendung, statt jede Anfrage zu bearbeiten.
+Erfasse Callbacks, Budgets und Wiederholungen, bevor du den Proxy entfernst: Diese hören stillschweigend auf, sobald er wegfällt.
 
-Verschiebe wiederverwendbare Prompts, Parameter und Anbietereinschränkungen in [Presets](../guides/presets.mdx). Richte die Rangfolge der Anbieter und Fallbacks über [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx) ein.
+| LiteLLM | Bei Phaseo |
+| --- | --- |
+| `fallbacks` | `models`-Array oder Fallbacks dynamischer Routen, versucht bei `429`, `500`, `502`, `503` und `504`, nie bei Anfragefehlern. |
+| `context_window_fallbacks`, `content_policy_fallbacks` | Keine Entsprechung: Phaseo greift bei `400` nie auf einen Fallback zurück. Behandle diese Fälle in der App. |
+| `routing_strategy` | Routing-Modus des Workspace oder `provider.sort` (`price`, `latency`, `throughput`). |
+| Anbieterwahl pro Deployment | `provider.order`, `provider.only`, `provider.ignore` oder eine [anbieterqualifizierte ID](../guides/provider-qualified-models) wie `provider:org/model`, die nicht auf andere Anbieter ausweicht. |
+| Selbst gehostete Deployments (vLLM und Ähnliches) | [Private Modelle](../guides/private-models), die einen öffentlichen HTTPS-Endpunkt `/chat/completions` im OpenAI-Format mit Bearer-Authentifizierung brauchen. |
+| Antwort-Cache (`litellm_settings.cache`) | Kein Antwort-Cache. Cache bei Bedarf in der App; [Prompt-Caching](../guides/prompt-caching) senkt trotzdem die Eingabekosten. |
+| Virtuelle Schlüssel (`max_budget`, `rpm_limit`, `tpm_limit`, `max_parallel_requests`, `models`) | API-Schlüssel mit Ausgabenlimits und erlaubten Modellen, Budgets sowie Ratenlimit-Richtlinien für Anfragen pro Minute, Tokens pro Minute und gleichzeitige Anfragen. Siehe [Limits](../api-reference/limits). |
+| Team-Budgets, `metadata.tags` | Abteilungsbudgets und `X-Phaseo-Metadata`-[Labels](../guides/request-labels). Endbenutzer-Budgets lassen sich nur auf eine Ratenlimit-Richtlinie pro Endbenutzer abbilden; eine Ausgabengrenze pro Endbenutzer gibt es nicht. |
+| `guardrails` (Presidio, Lakera und Ähnliches) | Schlüssel-Guardrails prüfen Anfragen auf Prompt-Injection und personenbezogene Daten. Antworten werden nicht geprüft. |
+| Callbacks (`success_callback`, Langfuse, Datadog, OpenTelemetry) | [Observability-Ziele](../guides/integrations/observability) oder clientseitiges Tracing. Body-`metadata` wird als `phaseo.metadata.<key>` exportiert. |
+| Anbieter-API-Schlüssel in der Konfiguration | BYOK (**Einstellungen → BYOK** oder `POST /v1/byok`) oder Phaseo-Guthaben. Setze `byok_fallback_enabled` mit **Einstellungen → BYOK**, um auf Guthaben auszuweichen. |
 
-</Step>
+Ein Proxy leitet den Traffic eines ganzen Teams über den Schlüssel einer einzelnen Person und teilt sich daher deren Kontingent an Anfragen pro Minute, das bei einem neuen Workspace 10 beträgt. Prüfe die [Gateway-Limits](../api-reference/limits#gateway-limits) und vereinbare vor der Umstellung ein höheres Limit.
 
-<Step title="Prüfe die Produktionsabläufe">
+## Testen und umstellen
 
-Teste Streaming, Tools, strukturierte Ausgaben, Wiederholungen, Fehlerzuordnung und Callback-basierte Observability, die deine LiteLLM-Bereitstellung übernommen hat. Vergleiche Latenz, Ausgabe, Tokenverbrauch und Kosten, bevor du den Datenverkehr schrittweise umleitest.
+Teste Streaming, Tools, strukturierte Ausgaben, Wiederholungen, die Zuordnung von Fehlern und jede Callback-basierte Telemetrie, die der Proxy übernommen hat. Vergleiche Latenz, Ausgabe, Tokennutzung und Kosten, bevor du Traffic schrittweise verschiebst. Vor der Umstellung:
 
-</Step>
-</Steps>
-
-## Migrations-Checkliste
-
-- LiteLLM-URLs, Schlüssel und Deployment-Abhängigkeiten wurden erfasst.
-- Jedes Produktionsmodell und jeder Alias hat eine ausdrückliche Phaseo-Zuordnung.
-- Gemeinsame Standards wurden in Presets oder an eine zentrale Anwendungsgrenze verschoben.
-- Streaming, Tools und strukturierte Ausgaben funktionieren in Staging, sofern sie verwendet werden.
-- Für benötigte Callbacks und Telemetrie gibt es einen geplanten Ersatz.
-- Ein Rollback erfordert weiterhin nur eine Änderung von Endpunkt und Schlüssel.
-
-## Nächste Schritte
-
-- [Presets](../guides/presets.mdx)
-- [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx)
-- [Observability](../guides/integrations/observability.mdx)
+- jede LiteLLM-URL, jeder Schlüssel und jede `LITELLM_*`-Variable ist erfasst;
+- jeder Produktions-Alias hat eine explizite Phaseo-Zuordnung;
+- gemeinsame Standards liegen in Presets oder in einer Grenzfunktion;
+- benötigte Callbacks und Telemetrie haben einen Ersatz;
+- du hast entschieden, ob LiteLLM, Phaseo oder beide maßgeblich für die Ausgaben sind;
+- das Zurückrollen ist weiterhin nur eine Änderung von Basis-URL und Schlüssel.

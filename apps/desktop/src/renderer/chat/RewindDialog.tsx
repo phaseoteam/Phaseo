@@ -11,7 +11,7 @@ const changeLabels = { added: "Deleted", modified: "Reverted", deleted: "Restore
 const changeIcons = { added: FileMinus, modified: FilePen, deleted: FilePlus } as const;
 
 /**
- * T3's "Edit from here" confirmation. In a project the turn's snapshot can also put the files back; the list says
+ * The "Edit from here" confirmation. In a project the turn's snapshot can also put the files back; the list says
  * what restoring would change now, so nothing is reverted unseen.
  */
 export function RewindDialog({ task, message, onClose, onConfirm }: { task: Task; message?: Message; onClose: () => void; onConfirm: (restoreFiles: boolean) => Promise<void> }) {

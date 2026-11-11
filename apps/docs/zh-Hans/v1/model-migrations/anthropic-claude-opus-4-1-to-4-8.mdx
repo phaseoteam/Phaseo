@@ -1,83 +1,65 @@
 ---
 title: "Anthropic Claude Opus 4.8"
-description: "介绍采用 Claude Opus 4.8 时需要了解的自适应思考、采样控制和长上下文。"
+description: "采用 Claude Opus 4.8 时需要了解的内容，包括自适应思考、采样控制和长上下文。"
 icon: "/icons/brands/anthropic.svg"
 ---
 
-# Anthropic Claude Opus 4.8
+把 Claude Opus 4.1 的流量迁移到 `anthropic/claude-opus-4.8`：更改模型 ID，删除采样参数，并用 effort 级别替换思考预算。
 
-使用本指南，在生产环境中安全采用 `anthropic/claude-opus-4.8`。
+Anthropic 于 2026 年 6 月 5 日弃用 Opus 4.1，并于 2026 年 8 月 5 日将其停用。只要还有提供商提供 `anthropic/claude-opus-4.1`，Phaseo 就会继续提供它；一旦没有提供商提供，Phaseo 会把这些请求路由到 Opus 4.8（参见[模型弃用和停用](../guides/model-retirement)）。请在此之前完成迁移，让这次变更经过测试，而不是自动发生。
 
-Anthropic 于 2026 年 6 月 5 日弃用 Claude Opus 4.1，并计划于 2026 年 8 月 5 日停止提供。迁移指南是累积式的：先应用 Claude Opus 4.7 的请求格式变更，再检查 Claude Opus 4.8 的行为变化。
+Anthropic 的指南是累积的：先应用 Opus 4.7 的请求结构变更，再检查 Opus 4.8 的行为变化。
 
-## 新功能
+| | Claude Opus 4.1 | Claude Opus 4.8 |
+| --- | --- | --- |
+| Phaseo 模型 ID | `anthropic/claude-opus-4.1` | `anthropic/claude-opus-4.8` |
+| 上下文窗口 | 200K token | 1M token |
+| 最大输出 | 32K token | 128K token |
+| `temperature`、`top_p`、`top_k` | 会发送 | 由 Phaseo 省略 |
+| 思考 | `budget_tokens` | 自适应，由 effort 调节（默认 `high`） |
+| 对话中途的 system 消息 | 否 | 是 |
 
-- Phaseo 模型 ID 为 `anthropic/claude-opus-4.8`。
-- Opus 4.7 及更高版本会拒绝 `temperature`、`top_p` 和 `top_k` 等非默认采样参数。
-- Opus 4.7 及更高版本会拒绝手动扩展思考预算，请改用自适应思考。
-- Opus 4.8 默认将 `output_config.effort` 设为 `high`。
-- Opus 4.8 支持在对话中途发送系统消息。
-- 在 Claude API、AWS 上的 Claude Platform、Amazon Bedrock 和 Vertex AI 中，Opus 4.8 将基准上下文上限提升至 100 万 token，最大输出提升至 128K token。
+## 更新请求
 
-## 迁移快速入门
+**1. 把模型 ID 改为** `anthropic/claude-opus-4.8`。
 
-### 1. 更新模型 ID
+**2. 删除采样参数。** 在 Opus 4.7 及更高版本上，Anthropic 会以 `400` 拒绝非默认的 `temperature`、`top_p` 和 `top_k`。Phaseo 会省略它们而不是让请求失败，因此它们不再起任何作用；请改用指令进行调整。
 
-将模型 ID 设置为 `anthropic/claude-opus-4.8`。
+**3. 用 effort 级别替换思考预算。** Phaseo 不会把 `budget_tokens` 转发给 Opus 4.8。任何推理设置都会以 `thinking: {"type": "adaptive", "display": "summarized"}` 发送，并由 `reasoning.effort`（在 `/v1/messages` 上为 `output_config.effort`）设定深度：
 
-### 2. 移除非默认采样参数
+```json
+{
+  "model": "anthropic/claude-opus-4.8",
+  "max_tokens": 4096,
+  "thinking": { "type": "adaptive" },
+  "output_config": { "effort": "high" },
+  "messages": [{ "role": "user", "content": "Plan the schema migration." }]
+}
+```
 
-如果 Opus 4.1 请求仍设置以下参数，请在发布前移除：
+没有任何推理设置时，Opus 4.8 不会思考。`reasoning.effort: "none"` 会发送 `thinking: {"type": "disabled"}`。
 
-- `temperature`
-- `top_p`
-- `top_k`
+**4. 重新建立 effort 和长上下文的基线。** Opus 4.8 的 effort 默认为 `high`，上下文窗口也比 Opus 4.1 大得多。请重新测试延迟预算、token 用量、提示词缓存，以及长文档和长智能体轨迹。在 Microsoft Foundry 上，Anthropic 说明 Opus 4.8 发布时的上下文窗口为 200K。
 
-在 Opus 4.7 及更高版本中，这些参数的非默认值会返回 `400`。
+**5. 简化长对话中的指令更新。** Opus 4.8 接受对话中途的 `role: "system"` 消息。如果你的智能体循环每轮都重写整个系统提示词，请改为添加一条 system 消息，以保留更多缓存命中。
 
-### 3. 将手动思考预算改为自适应思考
+## 要测试的内容
 
-如果仍发送旧版思考负载，例如：
+- 仍在发送 `temperature`、`top_p` 或 `top_k` 的请求，因为它们现在已不起作用；
+- 依赖 `budget_tokens` 的思考路由；
+- 长周期的智能体和工具工作流；
+- 每个 `effort` 级别下对 schema 敏感的输出；
+- 你调用量最大的几类 Opus 4.1 提示词的 token 成本和延迟。
 
-- `thinking: { "type": "enabled", "budget_tokens": 32000 }`
+## 上线
 
-请改用：
-
-- `thinking: { "type": "adaptive" }`
-- 以 `output_config.effort = "high"` 作为基准
-
-### 4. 重新校准强度和长上下文预期
-
-Opus 4.8 默认使用 `high`，并且在 Anthropic 运营的 API 平台上支持远大于 Opus 4.1 的上下文窗口。请重新测试：
-
-- 延迟预算
-- token 用量
-- 提示词缓存行为
-- 长文档和代理轨迹
-
-如果使用 Microsoft Foundry，不要假设发布时即可使用 100 万 token 上下文窗口；Anthropic 文档说明 Foundry 上的 Opus 4.8 上下文窗口为 20 万 token。
-
-### 5. 检查长对话中的指令更新
-
-Opus 4.8 支持在对话中途发送系统消息。如果代理循环当前每轮都会重写完整系统提示词，你可能可以简化流程并保留更多缓存命中。
-
-## 测试内容
-
-- 仍发送 `temperature`、`top_p` 或 `top_k` 的请求。
-- 之前依赖 `budget_tokens` 的思考路由。
-- 长周期代理和工具工作流。
-- 显式指定 `effort` 的 Schema 敏感输出。
-- 高频 Opus 4.1 提示词类别的 token 成本和延迟变化。
-
-## 安全发布
-
-1. 切换流量前移除采样参数和旧思考预算。
-2. 使用接近生产环境的提示词和工具工作流对 Opus 4.8 进行影子测试。
-3. 在 2026 年 8 月 5 日之前的并行期保留回退路由并灰度发布。
-4. 只有延迟、成本和任务完成率差异符合目标后才扩大流量。
+1. 切换流量之前删除采样参数和思考预算。
+2. 在类似生产的提示词和工具流程上影子运行 Opus 4.8。
+3. 金丝雀发布，在提供商仍提供 Opus 4.1 时把它作为 `models` 中的回退。
+4. 当延迟、成本和任务完成率的变化都在目标范围内时再全面推广。
 
 ## 来源
 
-- [Anthropic 模型弃用信息](https://platform.claude.com/docs/en/about-claude/model-deprecations)
+- [Anthropic 模型弃用](https://platform.claude.com/docs/en/about-claude/model-deprecations)
 - [Anthropic 迁移指南](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
 - [Claude Opus 4.8 新功能](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-8)

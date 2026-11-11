@@ -180,6 +180,17 @@ export function extractRequestedParams(endpoint: Endpoint, rawBody: any): string
  * Check if a provider supports a specific parameter.
  * Uses code-level overrides first, then falls back to capability metadata.
  */
+/**
+ * A stored entry that says the route does not take the parameter: `false`, or
+ * a spec with `supported: false` or `support_level: "unsupported"`. Listing a
+ * parameter name is still support.
+ */
+function explicitlyUnsupported(value: unknown): boolean {
+	if (value === false) return true;
+	if (!isPlainObject(value)) return false;
+	return value.supported === false || value.support_level === "unsupported";
+}
+
 export function providerSupportsParam(
 	candidate: ProviderCandidate,
 	paramPath: string,
@@ -223,7 +234,7 @@ export function providerParamSupportStatus(
 		return options?.assumeSupportedOnMissingConfig ? "supported" : "unknown";
 	}
 
-	if (paramPath in params) return "supported";
+	if (paramPath in params) return explicitlyUnsupported((params as Record<string, unknown>)[paramPath]) ? "unsupported" : "supported";
 
 	const segments = paramPath.split(".").filter(Boolean);
 	const [root, ...rest] = segments;
@@ -232,7 +243,9 @@ export function providerParamSupportStatus(
 	const keysToCheck = expandCapabilityParamAliases(root);
 	for (const key of keysToCheck) {
 		if (key in params) {
-			if (rest.length === 0) return "supported";
+			if (rest.length === 0) {
+				return explicitlyUnsupported((params as Record<string, unknown>)[key]) ? "unsupported" : "supported";
+			}
 			const rootValue = (params as Record<string, unknown>)[key];
 			if (isPlainObject(rootValue) && hasNestedPath(rootValue, rest)) {
 				return "supported";

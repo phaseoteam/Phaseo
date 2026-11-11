@@ -9,16 +9,31 @@
  * Caching Strategy:
  * - Cache JWKS for 1 hour (3600 seconds)
  * - On cache miss, fetch from Supabase and cache
- * - On signature verification failure, refresh JWKS (key rotation)
+ * - On an unknown kid, refresh JWKS (key rotation) at most once a minute per isolate
  */
 
 const JWKS_CACHE_KEY = "oauth:jwks";
 const JWKS_CACHE_TTL = 3600; // 1 hour in seconds
 const JWKS_ERROR_CACHE_KEY = "oauth:jwks:error";
 const JWKS_ERROR_CACHE_TTL = 60; // 1 minute suppression for repeated failures
+// An unknown kid triggers at most one refetch per JWKS URL per window in each
+// isolate, so unverified tokens with random kids cannot drive Supabase fetches
+// and KV writes on every request.
+const JWKS_FORCED_REFRESH_INTERVAL_MS = 60 * 1000;
 
 export interface JWKS {
 	keys: JsonWebKey[];
+}
+
+// When each Supabase base URL last started a forced refresh, successful or not.
+const forcedRefreshAt = new Map<string, number>();
+// The last JWKS this isolate saw per base URL, served when a forced refresh is
+// throttled or fails.
+const lastKnownJwks = new Map<string, JWKS>();
+
+export function __resetOAuthJwksStateForTests(): void {
+	forcedRefreshAt.clear();
+	lastKnownJwks.clear();
 }
 
 function normalizeSupabaseBaseUrl(supabaseUrl: string): string {
@@ -89,6 +104,7 @@ export async function getJWKSWithCache(
 
 			const cached = (await kv.get(JWKS_CACHE_KEY, "json")) as JWKS | null;
 			if (cached && Array.isArray(cached.keys)) {
+				lastKnownJwks.set(normalizeSupabaseBaseUrl(supabaseUrl), cached);
 				return cached;
 			}
 		} catch (error) {
@@ -116,6 +132,7 @@ export async function getJWKSWithCache(
 		}
 		throw error;
 	}
+	lastKnownJwks.set(normalizeSupabaseBaseUrl(supabaseUrl), jwks);
 
 	// Store in cache (fire and forget)
 	if (kv) {
@@ -148,22 +165,66 @@ export async function invalidateJWKSCache(kv: KVNamespace | null): Promise<void>
 	}
 }
 
+/** Cached JWKS without fetching: KV first (other isolates may have refreshed it), then this isolate's copy. */
+async function readKnownJWKS(baseUrl: string, kv: KVNamespace | null): Promise<JWKS> {
+	if (kv) {
+		try {
+			const cached = (await kv.get(JWKS_CACHE_KEY, "json")) as JWKS | null;
+			if (cached && Array.isArray(cached.keys)) return cached;
+		} catch {
+			// Fall back to the isolate copy.
+		}
+	}
+	return lastKnownJwks.get(baseUrl) ?? { keys: [] };
+}
+
 /**
  * Get JWKS with retry on verification failure
  *
- * This function:
- * 1. Gets cached JWKS
- * 2. If verification fails, invalidates cache and refetches
- * 3. Returns fresh JWKS for retry
+ * Without `forceRefresh` this is `getJWKSWithCache`. With it (the token's kid
+ * was not in the cached set, which may mean key rotation), this refetches at
+ * most once per base URL per minute per isolate. The refresh runs before any
+ * signature check, so it must stay cheap for forged tokens:
+ * - inside the window it returns the cached keys, so an unknown kid just fails;
+ * - the good cached JWKS is replaced only after a successful fetch;
+ * - a failed forced fetch returns the cached keys and does not write the
+ *   error marker, so tokens signed by a known key keep working.
  */
 export async function getJWKSWithRetry(
 	supabaseUrl: string,
 	kv: KVNamespace | null,
-	forceRefresh = false
+	forceRefresh = false,
+	nowMs: number = Date.now()
 ): Promise<JWKS> {
-	if (forceRefresh) {
-		await invalidateJWKSCache(kv);
+	if (!forceRefresh) {
+		return await getJWKSWithCache(supabaseUrl, kv);
 	}
 
-	return await getJWKSWithCache(supabaseUrl, kv);
+	const baseUrl = normalizeSupabaseBaseUrl(supabaseUrl);
+	const last = forcedRefreshAt.get(baseUrl);
+	if (last !== undefined && nowMs - last < JWKS_FORCED_REFRESH_INTERVAL_MS) {
+		return await readKnownJWKS(baseUrl, kv);
+	}
+	// Reserve the slot before the fetch so concurrent requests and failures cannot bypass it.
+	forcedRefreshAt.set(baseUrl, nowMs);
+
+	let jwks: JWKS;
+	try {
+		jwks = await fetchJWKS(supabaseUrl);
+	} catch (error) {
+		console.error("Forced JWKS refresh failed; keeping cached keys:", error);
+		return await readKnownJWKS(baseUrl, kv);
+	}
+	lastKnownJwks.set(baseUrl, jwks);
+	if (kv) {
+		try {
+			await kv.put(JWKS_CACHE_KEY, JSON.stringify(jwks), {
+				expirationTtl: JWKS_CACHE_TTL,
+			});
+			await kv.delete(JWKS_ERROR_CACHE_KEY);
+		} catch {
+			// Caching is best effort.
+		}
+	}
+	return jwks;
 }

@@ -5,18 +5,19 @@ sidebarTitle: "Kontakt und Support"
 icon: "messages-square"
 ---
 
-## Fehler melden
+Beginne im [Phaseo-Hilfezentrum](https://phaseo.app/help) bei Fragen zu Konto, Abrechnung, API und Feedback; das Team leitet jede Anfrage an die richtige Stelle weiter.
 
-Nutze das Phaseo-Hilfezentrum und füge klare Schritte zur Reproduktion, Anfrage-IDs und relevante Logs hinzu:
+| Du möchtest | Gehe zu |
+| --- | --- |
+| Hilfe zu deinem Konto, zur Abrechnung oder zu einer fehlschlagenden Anfrage | [Hilfezentrum](https://phaseo.app/help) |
+| Einen Fehler melden | [Hilfezentrum](https://phaseo.app/help) oder ein [Fehlerbericht](https://github.com/phaseoteam/Phaseo/issues/new?template=bug.yml) auf GitHub |
+| Katalogdaten korrigieren | [Beiträge](../contributing/overview) |
+| Eine Sicherheitslücke melden | Eine private Meldung unter **Security -> Report a vulnerability** im [GitHub-Repository](https://github.com/phaseoteam/Phaseo) oder `security@phaseo.app`. Veröffentliche sie nicht. |
+| Die Community fragen | [Discord](https://discord.gg/aQyywCvgZ5) |
 
-- https://phaseo.app/help
+## Das gehört in einen Fehlerbericht
 
-## Hilfe anfordern
-
-Bei Fragen zu Konto, Abrechnung oder API-Problemen hilft dir das Phaseo-Hilfezentrum weiter:
-
-- https://phaseo.app/help
-
-## Feedback geben
-
-Wenn du nicht weißt, wohin mit deinem Feedback, nutze das Phaseo-Hilfezentrum. Das Team leitet es an die richtige Stelle weiter.
+- Die Anfrage-ID: die `id` der Antwort (`G-...`), die `generation_id` des Fehlers oder der Antwort-Header `x-request-id`.
+- Was du gesendet hast, ohne den API-Schlüssel, und was du erwartet hast.
+- Fehlercode und Fehlermeldung aus dem Antworttext. Die [Fehlerreferenz](../api-reference/errors) erklärt jeden Code.
+- Relevante Logs, ohne Zugangsdaten und Kundendaten.

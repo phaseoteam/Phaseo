@@ -1,0 +1,272 @@
+---
+title: "Use the Slack Agent"
+sidebarTitle: "Use it"
+description: "Mention the Phaseo agent in Slack or message it directly to ask questions, compare models, search Slack, schedule tasks and publish pages."
+"og:image": "https://phaseo.app/og/dynamic?title=Use%20the%20Slack%20Agent&description=Mention%20the%20Phaseo%20agent%20in%20Slack%20or%20message%20it%20directly%20to%20ask%20questions%2C%20compare%20models%2C%20search%20Slack%2C%20schedule%20tasks%20and%20publish%20pages.&pathname=/docs/v1/guides/slack-agent-usage"
+icon: "at-sign"
+---
+
+Mention the Phaseo agent in a Slack channel, or message it directly, and it answers in the thread with the model your workspace chose. This page covers what people can ask it. To add it to Slack first, see [Set up the Slack agent](/v1/guides/slack-agent).
+
+## Use the agent in Slack
+
+- **Direct messages:** open the agent from your apps in Slack and write in its **Messages** tab. It answers every message.
+- **Channels:** invite the agent to a public or private channel, then mention it, for example `@Phaseo which model should we use to summarise call transcripts?`. It replies in a thread. Mention it again for each follow-up in that thread.
+
+While it answers:
+
+- It reads the newest part of the thread, up to your message, so it can follow the conversation. Slack lets it read 15 messages at a time, and lets Phaseo's app read about once a minute in each Slack workspace.
+  - It always sees the thread's first message.
+  - In a direct message, it reads the latest messages of your conversation with it.
+  - In a channel, it reads the latest messages from the last 30 minutes at most.
+  - When more messages were written than it could read, it's told that some are missing.
+  - When Slack doesn't let it read the thread just then, it works from its own earlier replies in the thread.
+- It answers one message at a time in each thread. Up to 5 more messages wait their turn; after that it asks you to wait for the earlier answers.
+- Slack's stop button stops the answer it's working on.
+- Each answer ends with the model and what the answer cost in model tokens, such as `Auto → GPT-6 Astra · $0.0031`. With **Auto**, the model it picked follows an arrow, and other models the answer used follow a +. A model's name links to its page on Phaseo, and the cost links to that answer's requests in **Logs**, which members of the Phaseo workspace can open.
+
+Each answer has a step and spend limit; see [limits on each answer](/v1/guides/slack-agent-admin#limits-on-each-answer).
+
+## Choosing a model per message
+
+Owners and admins can let people choose the model for a single message. In **Settings → Slack**, under **Model choice**, turn on **Let people choose a model per message** and add up to 10 models from the Phaseo catalogue. If your workspace has Auto Routing, **Include Auto** adds **Auto** to the list. The model under **Agent** still answers every other message.
+
+To choose a model, start the message with `with <model>:` and name an allowed model by its name or ID:
+
+```text
+@Phaseo with Claude Opus 5.5: check this incident summary for gaps
+with openai/gpt-6-astra: draft a reply to this customer
+```
+
+- Only the allowed models are matched, ignoring case. The start of a name or ID is enough when only one allowed model has it, so `with claude:` works when one Claude model is on the list. An ID also works without its lab, such as `with gpt-6-astra:`.
+- The agent answers that message with that model, without the `with …:` part, and the footer names the model that answered.
+- If you name a catalogue model that isn't on the list, or the name fits more than one, the agent replies privately with the models you can choose and doesn't answer. That message isn't counted as an answer. A message that starts with "With …:" but names no model, such as "With regards to the invoice: …", is answered as usual.
+- Each answer keeps the same [limits](/v1/guides/slack-agent-admin#limits-on-each-answer), $0.50 and 12 steps, whichever model answers. The model's tokens are billed at its own price.
+- The **Slack agent** guardrail still applies. If no provider of the chosen model meets it, the agent says so instead of answering.
+
+### Asking another model
+
+While model choice is on, the agent can also ask one of the allowed models for a second opinion as it answers, for example when you ask what another model thinks:
+
+```text
+@Phaseo draft a reply to this customer, then ask Claude Opus 5.5 to check it
+```
+
+- The other model only sees what the agent sends it. It doesn't see the Slack thread, and it can't search the web or use tools.
+- The agent can ask other models up to 3 times in one answer. Their cost counts toward the same [$0.50 limit](/v1/guides/slack-agent-admin#limits-on-each-answer), and the agent stops asking when too little is left to finish its answer.
+- The footer names every model used, such as `GPT-6 Astra + Claude Opus 5.5 · $0.0123`, and the cost includes them.
+- If a model can't be used, for example because none of its providers meets the **Slack agent** guardrail, the agent is told why and answers without it.
+
+### Comparing models
+
+To see how 2 or 3 allowed models answer the same question, start the message with `compare`, the models separated by commas, and a colon:
+
+```text
+@Phaseo compare GPT-6 Astra, Claude Opus 5.5: what are the risks of moving our database to another region?
+compare gpt-6-astra, claude, auto: summarise the EU AI Act in five bullet points
+```
+
+- Models are matched like `with <model>:`, only from the allowed list. If a model isn't on the list, a name fits more than one model, you name fewer than 2 or more than 3, or there's no question after the colon, the agent replies privately and doesn't answer. That message isn't counted as an answer. A message that names no model at all, such as `compare the two plans, then pick one: …`, is ordinary text and the agent answers it as usual. While model choice is off, a `compare …:` message that names catalogue models gets a private reply that Compare is off, and isn't counted as an answer.
+- Each model gets your question, not the rest of the thread, and can search the web and read web pages. They answer at the same time.
+- The reply has a section for each model: its name, linked to its page on Phaseo, what it cost, and its answer. Each model is asked to keep its answer short, and long answers are cut so they all fit in one Slack message.
+- If a model fails, its section says why, and the other answers are still shown.
+- A comparison counts as one answer. The [$0.50 limit](/v1/guides/slack-agent-admin#limits-on-each-answer) is split evenly between the models, and the footer names them all and shows the total. The split only decides whether a model is asked: one isn't asked when its share is under $0.02. An answer isn't stopped at its share, so it can cost more; each model's reply is capped in length instead.
+
+### Questions with buttons
+
+When the agent needs you to choose between a few options or approve something before it goes on, it asks in the thread with a button for each option, up to 5. It can also offer **Other…**, which opens a small form for an answer in your own words.
+
+- Only the person it's answering can answer. Anyone else who selects a button gets a private note.
+- You can also reply in the thread instead (in a channel, mention the agent). Your reply is taken as your answer.
+- Once you answer, the buttons are replaced with your answer and the agent carries on from where it stopped.
+- A question waits for up to an hour. After that, the question says it expired and the answer ends there. Ask again when you're ready.
+- Slack's stop button also works while it waits.
+- While it waits, other people's messages in the thread wait their turn, and they're told privately who it's waiting for.
+- One answer can ask up to 3 questions. The whole thing counts as one answer, and the [limits on each answer](/v1/guides/slack-agent-admin#limits-on-each-answer) cover all of it, before and after each question.
+
+### Check the Home tab
+
+Open the agent in Slack and choose **Home** to see how to use it, the model it uses, and whether your Phaseo account is connected. If it isn't, and connecting would help (with **Linked accounts only**, or where usage data is allowed), the tab has the **Connect your Phaseo account** button. Members of the Phaseo workspace who have connected their account also see how many answers the agent has given in the Slack workspace this month (UTC). The tab shows settings and counts only, never messages. It also lists the recurring tasks you set up, with their next run (see [Scheduled tasks](#scheduled-tasks)).
+
+With your own Slack app, the Home tab needs the latest [manifest](/v1/guides/slack-agent#use-your-own-slack-app).
+
+## Charts, images and files
+
+The agent can post charts and images in the thread, and read images and PDFs you share with it.
+
+- **Charts:** ask for a chart, for example `@Phaseo chart our spend by week this month`. The agent draws a bar, line or pie chart from the numbers it has and posts it in the thread as an image. Chart text uses Latin and Cyrillic letters; anything else stays in its reply.
+- **Images:** ask it to make one, for example `@Phaseo make an icon of a paper plane in blue`. It uses [GPT Image 2](https://phaseo.app/models/openai/gpt-image-2) through the agent's API key, billed like any other request. An image costs a few cents and counts towards the answer's [$0.50 limit](/v1/guides/slack-agent-admin#limits-on-each-answer), and the answer's footer includes it. One answer makes at most 2 images, and only while at least $0.15 of its limit is left.
+- **Files you share:** attach images (PNG, JPEG, GIF or WebP, up to 5 MB each) or PDFs (up to 10 MB) to your message, or to earlier messages in the thread that the agent reads. It reads up to 4 files, 12 MB together, for each answer, newest first. Other file types can't be read yet.
+
+The model has to read images or PDFs too. With **Auto**, the agent sends the files, and answers without them if the model it picks can't read them. With a specific model, the agent tells you when that model can't read the kind of file you shared.
+
+Files you share are downloaded for the answer that reads them and never stored. Charts and images the agent posts are files in your Slack workspace, like any other.
+
+An agent added before it could do these needs [updated Slack permissions](/v1/guides/slack-agent#update-slack-permissions).
+
+## Searching Slack
+
+The agent can search your Slack workspace for the person asking, and answer with links to the messages and files it used. For example:
+
+```text
+What did we decide about the launch date?
+@Phaseo find the latest incident review in #ops and summarise it
+Who has been working on the billing migration this month?
+```
+
+- **It searches as you.** It uses Slack's real-time search with the permission Slack gives it for your message, so it finds only what you can see in Slack. It searches public channels only, never private channels, direct messages or group DMs.
+- **It links what it uses.** Each message or file it relies on is linked, so you can open it in Slack. When a search finds nothing, it says so.
+- **It can narrow a search** to a channel, a person or a date range, and searches up to 4 times for one answer, 10 results at a time.
+- **By meaning or by keyword.** Questions in your own words are searched by meaning on Slack plans that include AI search (Business+ and Enterprise+); other plans search by keyword.
+- **Only providers that keep no data.** Once an answer has searched Slack, the rest of it, including another model it asks or an image it makes, goes only to AI providers with zero data retention, so what it found never sits in a provider's logs. Web search and reading web pages are also off for the rest of that answer, so nothing it found can leave in a search or a link: ask it to search the web first if you need both.
+
+Choose where it searches under **Slack search** in **Settings → Slack**. The change applies straight away.
+
+| Option | Where it searches |
+| --- | --- |
+| **Off** | Nowhere. |
+| **Direct messages** (default) | Only in direct messages with the agent, so only the person asking reads what it finds. |
+| **Direct messages and channels** | In channels too, when someone mentions it. Everyone in the channel reads the answer, including guests who can't open the channels it found, so choose this only if that's fine for your workspace. |
+
+A few limits come from Slack:
+
+- It searches only when answering someone's message: Slack gives it permission to search with each message that mentions it or is sent to it directly, and the agent keeps that permission only until it has answered.
+- Slack doesn't let apps search for guests, and the agent never searches for people from other companies.
+- Slack lets each person search about 10 times a minute. When it's busier than that, the agent answers with what it has and says so.
+- Slack allows this search only for apps in the Slack Marketplace and for a company's own apps. Phaseo's Slack app can search once its Slack Marketplace listing is approved; until then, the agent says search isn't available. To search now, use [your own Slack app](/v1/guides/slack-agent#use-your-own-slack-app).
+- Installations from before search need [updated Slack permissions](/v1/guides/slack-agent#update-slack-permissions).
+
+Search also needs a model that a provider with zero data retention can serve. With **Auto**, the agent can search: after a search, Auto picks only among models with a provider that keeps no data. The agent doesn't search with a model whose providers all keep data, and says so when asked. An admin can choose a model that keeps no data in **Settings → Slack**, or, when people can [choose a model per message](#choosing-a-model-per-message), start a message with `with <model>:` to use one. If the gateway reports after a search that no provider that keeps no data can answer, the agent stops there and says why (other failures, such as a missing provider key, get their usual message); what the answer cost so far still counts.
+
+What it finds is used for that answer only and never stored (see [Data and privacy](/v1/guides/slack-agent-admin#data-and-privacy)). For the same reason, an answer that has searched Slack can't stop to ask you a question, save notes, pins, to-dos or skills, set up a recurring task, or publish a shared page.
+
+## Ask about usage
+
+Linked members can ask the agent about this Phaseo workspace (anyone else who asks gets the [button to link their account](/v1/guides/slack-agent#link-a-slack-account)):
+
+- requests and spend over a period, by day, week or month, and by model or provider;
+- the credit balance, credits held for requests in progress, and credits spent this month;
+- requests and spend for each API key;
+- models in the Phaseo catalogue.
+
+Dates are in UTC and weeks start on Monday. Choose where the agent may answer these questions under **Usage data**:
+
+| Option | Where linked members can ask |
+| --- | --- |
+| **Off** | Nowhere. The agent never shares usage data. |
+| **Direct messages** (default) | Only in a direct message with the agent. |
+| **Direct messages and chosen channels** | In direct messages, and in the channels listed under **Channel IDs** (up to 100). |
+
+Everyone in a channel can read the agent's answers, so list only channels whose members may see your workspace's spend. A channel's ID is at the bottom of its details in Slack, such as `C0123ABCD`.
+
+## Memory and skills
+
+The agent can remember what your team asks it to, and follow skills: instructions saved for tasks you repeat. Ask it in Slack, for example:
+
+- `@Phaseo remember that deploys freeze on Fridays after 3pm`
+- `@Phaseo pin this for everyone: our fiscal year starts on 1 April`
+- `@Phaseo add a to-do: send the Q4 budget to finance`, and later `@Phaseo the budget to-do is done`
+- `@Phaseo what do you remember about deploys?` or `@Phaseo forget the note about deploys`
+
+It saves three kinds of note, each up to 500 characters and in its own words:
+
+| Kind | What it's for |
+| --- | --- |
+| **Note** | Something to remember. The agent looks notes up when they're relevant. |
+| **Pin** | Something to keep in mind all the time. The agent sees up to 10 of the conversation's pins and 10 workspace-wide pins with every message. |
+| **To-do** | Something to track, which can be marked done. |
+
+A note belongs to the channel or direct message it was saved in, unless someone asks for it to be workspace-wide. In a conversation, the agent sees that conversation's notes and the workspace-wide ones, never another channel's or direct message's. Workspace-wide notes are available to everyone in your organisation the agent answers. People from other companies in shared Slack Connect channels only see and save the notes for the conversation they're in, never workspace-wide ones; they can use saved skills but not save new ones, because skills apply to the whole workspace. A note can be kept until a date, such as `remember until Friday that the office is closed`, and is deleted after it.
+
+The agent only saves a note when someone asks it to remember, pin or track something, or for a lasting fact such as a decision or a deadline. It never copies whole messages or threads.
+
+### Skills
+
+A skill is a name, a one-line description and instructions of up to 4,000 characters for a task your team repeats, such as a weekly report. Ask the agent to save one:
+
+`@Phaseo save a skill called Weekly report: list what shipped this week, then what slipped, then next week's priorities`
+
+With every message, the agent sees the names and descriptions of the 20 most recently changed skills. It loads a skill's instructions when a request matches it, or when someone asks, such as `@Phaseo use the Weekly report skill`. It only saves a skill when someone explicitly asks, and only replaces a skill with the same name when asked to.
+
+### What admins control
+
+- **Let the agent keep notes** (on by default, under **Memory and skills** in **Settings → Slack**) turns notes, pins and to-dos off. While it's off, the agent saves none and sees none, and tells people who ask it to remember something that an admin has turned memory off. Skills keep working. The notes already saved are kept, and owners and admins can still see and delete them; turn it back on and the agent uses them again.
+- Each Slack workspace keeps up to 500 notes and 100 skills. When memory is full, the agent says so; delete some to make room.
+- Owners and admins see everything the agent has saved under **Memory and skills** in **Settings → Slack**. They can filter notes by kind, delete any note or skill, and edit a skill's name, description and instructions. The workspace activity log records these changes without the text.
+- [Uninstalling the agent](/v1/guides/slack-agent-admin#pause-or-uninstall) deletes all its notes and skills. Adding it again starts with an empty memory.
+
+## Scheduled tasks
+
+Ask the agent to do something regularly, and it sets up a recurring task in that conversation. For example:
+
+- `@Phaseo every weekday at 9:00, summarise yesterday's news about electric vehicles`
+- `@Phaseo every Monday at 8:30, list last week's Phaseo spend by model`
+- `@Phaseo on the 1st of every month at 10:00, list the API keys nobody used last month`
+- `@Phaseo which recurring tasks are set up here?` or `@Phaseo cancel the Monday spend summary`
+
+The agent confirms what it set up: what it does, where it posts, how often, and when it next runs.
+
+- **How often:** every hour (at the minute you choose), every day, on weekdays (Monday to Friday), once a week on a day you choose, or once a month on a day you choose (in shorter months, on their last day). Never more often than once an hour.
+- **When:** at a local time in the Slack time zone of the person who set it up, also when the clocks change.
+- **Where:** in the channel or direct message where it was set up. Each run posts a short **Scheduled: …** message there and answers it in the thread. Replies in that thread are ordinary messages to the agent.
+- **What runs:** the agent saves the request as a self-contained instruction, so each run works without the conversation it was set up in. Scheduled runs don't ask questions with buttons or search Slack, and can't set up or change recurring tasks.
+
+Each run is an ordinary answer to the person who set it up. The agent checks they can still use it, the run counts as one of their answers for your plan, the **Monthly spending cap** and **Answers per person per hour**, it keeps to the [limits on each answer](/v1/guides/slack-agent-admin#limits-on-each-answer), and it ends with the usual footer.
+
+When a run can't go ahead:
+
+- If the agent has been paused in Phaseo, or a Phaseo bill is unpaid (**Payment due**), the run is skipped and the task carries on: it runs again at its next time once the agent is back on, with nothing to resume. These skipped runs don't count as failures, and **Settings → Slack** shows why the last run was skipped.
+- If the person who set it up can no longer use the agent, or the agent can't post in the conversation any more (for example, it was removed from the channel), the run is skipped and the task is paused, with the reason in **Settings → Slack**.
+- Any other run that doesn't go through, such as one refused because the **Monthly spending cap** is reached, counts as a failure. After 3 in a row the task is paused, and the agent tells the person who set it up in a direct message.
+
+People can cancel the tasks they set up by asking the agent. Owners and admins of the Phaseo workspace who have [linked their Slack account](/v1/guides/slack-agent#link-a-slack-account) can cancel anyone's. People from other companies in shared Slack Connect channels can see a conversation's tasks but can't set them up. The agent's **Home** tab lists your own tasks.
+
+### Recurring task settings
+
+Owners and admins set these under **Recurring tasks** in **Settings → Slack**:
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Let people set up recurring tasks** | Turned off, nobody can set one up and none of them run. They're kept, and run again once you turn it back on. | On |
+| **Most recurring tasks in this workspace** | From 1 to 100. Lowering it keeps the ones already set up. | 20 |
+| **Who can set them up** | **Everyone who can use the agent**, or **Only people who connected their Phaseo account**. | Everyone |
+
+The same section lists every task: what it does, where it posts, how often, its next run, who set it up and what its last run did. You can pause, resume or delete any of them. A resumed task runs at its next time, and its failures count from zero again. Uninstalling the agent deletes all its recurring tasks.
+
+## Shared pages
+
+When an answer is too long or too rich for a Slack message, such as a report, a table or a chart, the agent can publish it as a web page and link it in its reply. Ask for one, for example:
+
+- `@Phaseo make a page comparing our spend by model this month`
+- `@Phaseo turn the decisions in this thread into a one-page summary`
+
+A page is one HTML file the agent writes, with text, tables and charts. Pages are static: before keeping a page, Phaseo takes out scripts, links, forms and anything that would load from elsewhere, such as fonts or images from other sites. So a page can't run scripts or send anything anywhere, and web addresses on it are plain text. Pages open on `slack.phaseo.app` in a locked-down sandbox, so a page can't reach your Phaseo or Slack sign-in.
+
+| Who can view a page | How |
+| --- | --- |
+| **Anyone with the link** (default) | Anyone who has the link, without signing in. The link is long and random, so it can't be guessed. |
+| **People in this Slack workspace** | Members of your Slack workspace, after they sign in with Slack. Guests can view it only while **Allow guests** is on, and people from other companies can't. A sign-in lasts 8 hours. |
+
+The agent uses your admins' default unless someone asks for the other, for example `@Phaseo make it a page only our Slack workspace can see`.
+
+If a shared page doesn't open, it may have expired or been deleted: ask the agent for a new one. A page shared with your Slack workspace asks you to sign in with Slack; sign in with that workspace. Guests can open it only while **Allow guests** is on.
+
+### Page limits
+
+- A page is kept for 30 days by default, then deleted. Admins can choose 7, 30 or 90 days for new pages.
+- Each answer can publish up to 3 pages, and each Slack workspace keeps up to 200 pages at a time. A page can be up to 512 KB.
+- Publishing is part of the answer: it costs nothing extra, and the model tokens spent writing the page count toward the answer's $0.50 limit.
+- People from other companies in shared Slack Connect channels can't publish pages.
+- An answer that has searched Slack can't publish a page, because a page keeps what the agent wrote (see [Searching Slack](#searching-slack)).
+
+### What admins control for pages
+
+Under **Shared pages** in **Settings → Slack**:
+
+- **Let the agent publish pages** (on by default) turns publishing off. Pages already published stay until they expire or you delete them.
+- **Keep new pages for** 7, 30 or 90 days.
+- **Anyone with the link can view pages** (on by default). Turned off, every page needs a Slack sign-in, including pages already published.
+- **New pages are open to** sets the default when both options are available.
+- The list shows each page's title, who asked for it, when it was published and when it expires, and how often it was opened. Owners and admins can delete any page, and its link stops working at once. They can open a page when its access lets them: a page for the Slack workspace needs them to sign in with Slack as a member. The workspace activity log records deletions without the title.
+
+**People in this Slack workspace** needs Sign in with Slack for the Slack app the agent uses. Until it's set up, **Settings → Slack** says so, and pages are open to anyone with the link. With your own Slack app, its manifest must include the redirect URL `https://slack.phaseo.app/p/signin`, as Phaseo's manifest does (see [Use your own Slack app](/v1/guides/slack-agent#use-your-own-slack-app)).

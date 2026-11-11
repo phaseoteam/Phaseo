@@ -4,26 +4,33 @@ description: "Recevez des alertes sur les dépenses, les budgets, les prévision
 icon: "badge-dollar-sign"
 ---
 
-Les règles de dépenses surveillent les dépenses de votre espace de travail et envoient une alerte quand elles franchissent un seuil. Une règle peut aussi bloquer les requêtes une fois les dépenses au-delà d'une marge de tolérance. Chaque formule peut créer jusqu'à 50 règles par espace de travail.
+Créez une règle de dépenses pour recevoir une alerte quand les dépenses de votre espace de travail franchissent un seuil, et, si vous le souhaitez, pour bloquer les requêtes une fois les dépenses au-delà d'une marge de tolérance. Ouvrez **Paramètres → Notifications → Alertes de dépenses** et sélectionnez **Ajouter une alerte**. Un espace de travail peut avoir jusqu'à 50 règles, quelle que soit sa formule ; la 51e échoue avec `409 spend_rule_limit_reached`.
 
-<Note>Les alertes de dépenses, le blocage et les rapports de dépenses sont en cours de déploiement. Tant qu'ils ne sont pas activés, les règles et les réglages sont enregistrés, mais rien n'est évalué, bloqué ni envoyé.</Note>
+<Note>Les alertes de dépenses, le blocage et les rapports de dépenses sont en cours de déploiement. Tant qu'ils ne sont pas activés, les règles et les réglages sont enregistrés, mais rien n'est évalué, bloqué ni envoyé, et les nouvelles règles ne peuvent pas utiliser `action: "block"`.</Note>
 
-## Fonctionnement d'une règle
+```mermaid
+flowchart LR
+  usage["Les requêtes se terminent"] --> eval["Règle évaluée quelques minutes plus tard"]
+  eval -->|"Seuil franchi"| alert["spend_alert envoyé"]
+  eval -->|"Au-delà du point de blocage (règles de blocage)"| block["Les requêtes dans la portée reçoivent 429"]
+  block -->|"La période est réinitialisée, les dépenses baissent ou un administrateur le lève"| lifted["Blocage levé"]
+```
 
 Une règle combine :
 
-- une **métrique** : ce qui est mesuré (voir les [types d'alertes](#alert-types-and-bases)) ;
-- une **portée** : les dépenses qui comptent, par exemple celles de l'espace de travail, d'une clé API ou d'un département ;
-- une **période** : un jour, une semaine ou un mois calendaire, ou une fenêtre glissante d'heures ;
-- des **seuils** : le montant en dollars ou les pourcentages qui envoient une alerte ;
-- une **action** : `notify`, ou `block` pour refuser aussi les requêtes au-delà d'une limite.
+| Élément | Champ | Valeurs |
+| --- | --- | --- |
+| Métrique | `metric` | `spend`, `budget_percent`, `forecast`, `spike`, `balance`. Consultez les [types d'alertes](#alert-types-and-bases). |
+| Portée | `scope_type`, `scope_id` | Les dépenses qui comptent : l'espace de travail, une clé API, un membre, un département, un modèle ou un fournisseur |
+| Période | `period` | Un `day`, une `week` ou un `month` calendaire, ou `rolling` sur `window_hours` |
+| Seuils | `threshold_amount` ou `threshold_percents` | Le montant en dollars ou les pourcentages qui envoient une alerte |
+| Action | `action` | `notify`, ou `block` pour refuser aussi les requêtes au-delà d'une limite |
 
 Phaseo évalue les règles à partir de l'utilisation enregistrée, quelques minutes après la fin des requêtes. Les espaces de travail qui ont des règles sont aussi vérifiés toutes les heures, et les règles de solde toutes les 15 minutes. Les dépenses incluent les tâches vidéo, batch, musique et temps réel.
 
-Pour créer une règle, ouvrez **Gateway → Paramètres → Notifications → Alertes de dépenses** et sélectionnez **Ajouter une alerte**. L'éditeur affiche la valeur actuelle d'une règle enregistrée et peut envoyer une alerte de test. La page d'une clé API et la page des budgets proposent des raccourcis qui ouvrent l'éditeur avec la limite de la clé ou le budget comme base. Les membres peuvent voir les règles ; les propriétaires et administrateurs les créent, les modifient, les testent et les suppriment.
+L'éditeur affiche la valeur actuelle d'une règle enregistrée et peut envoyer une alerte de test. La page d'une clé API et la page des budgets proposent des raccourcis qui ouvrent l'éditeur avec la limite de la clé ou le budget comme base. Les membres peuvent voir les règles ; les propriétaires et administrateurs les créent, les modifient, les testent et les suppriment.
 
 <span id="alert-types-and-bases"></span>
-
 ## Types d'alertes et bases
 
 | Métrique | Envoie une alerte quand | Périodes |
@@ -43,7 +50,7 @@ Les pourcentages sont mesurés par rapport à une base (`base_kind`) :
 
 Une règle dont la base manque, comme un budget supprimé ou une clé sans limite de dépenses, n'envoie rien tant que la base n'existe pas de nouveau. Les garde-fous n'ont pas de limites de dépenses et ne peuvent pas servir de base.
 
-## Portées
+## Choisir les dépenses qui comptent
 
 | Portée | `scope_id` | Compte |
 | --- | --- | --- |
@@ -51,7 +58,7 @@ Une règle dont la base manque, comme un budget supprimé ou une clé sans limit
 | `key` | ID de la clé API | les requêtes faites avec la clé |
 | `member` | l'ID utilisateur du membre | les requêtes faites avec des clés créées par le membre, plus ses propres requêtes OAuth |
 | `department` | ID du département | tout ce que font les personnes du département (voir ci-dessous) |
-| `model` | ID du modèle, comme `openai/gpt-5` | les requêtes servies par le modèle |
+| `model` | ID du modèle, comme `openai/gpt-6-astra` | les requêtes servies par le modèle |
 | `provider` | ID du fournisseur | les requêtes servies par le fournisseur |
 
 Les dépenses d'un département sont attribuées requête par requête :
@@ -75,16 +82,15 @@ Une période `rolling` couvre les dernières `window_hours` (de 1 à 720) et ava
 Selon sa métrique, une règle a de un à cinq seuils en pourcentage (de 1 à 1000) ou un seuil en dollars.
 
 - Sur les périodes calendaires, chaque seuil envoie au plus une alerte par période. Quand les dépenses franchissent plusieurs seuils à la fois, une seule alerte nomme le plus élevé et liste les autres.
-- Les règles glissantes, de pic et de solde utilisent à la place `cooldown_minutes` (de 5 à 43 200, 360 par défaut). Pendant ce délai, seul un seuil plus élevé envoie une alerte ; ensuite, la règle alerte de nouveau si les dépenses sont toujours au-dessus.
+- Les règles glissantes, de pic et de solde utilisent à la place `cooldown_minutes` (de 5 à 43 200, 360 par défaut). Pendant ce délai, seul un seuil plus élevé envoie une alerte ; ensuite, la règle alerte de nouveau si les dépenses sont toujours au-dessus.
 - Les seuils déjà envoyés pendant cette période ne sont pas renvoyés lorsque vous modifiez la règle.
 
 **Envoyer un test** envoie l'alerte que la règle enverrait maintenant, marquée `[TEST]`, aux destinations de la règle. Rien n'est enregistré, et un espace de travail peut envoyer cinq tests par minute. L'**Historique** de chaque règle liste les alertes et les blocages qu'elle a envoyés.
 
 <span id="block-requests"></span>
-
 ## Bloquer les requêtes
 
-Une règle `spend` ou `budget_percent` avec `action: "block"` alerte à ses seuils et bloque dès que les dépenses atteignent le point de blocage : `block_at_percent` de la base (110 par défaut, au moins le seuil le plus élevé), ou `block_at_amount` pour une règle `spend`. Les règles avec une base `previous_period` ne peuvent pas bloquer. L'écart entre la dernière alerte et le point de blocage est la marge de tolérance : votre équipe est prévenue avant que les requêtes s'arrêtent.
+Une règle `spend` ou `budget_percent` avec `action: "block"` alerte à ses seuils et bloque dès que les dépenses atteignent le point de blocage : `block_at_percent` de la base (de 100 à 1000, 110 par défaut, et au moins le seuil le plus élevé), ou `block_at_amount` pour une règle `spend` (au moins `threshold_amount`). Les règles avec une base `previous_period` ne peuvent pas bloquer. L'écart entre la dernière alerte et le point de blocage est la marge de tolérance : votre équipe est prévenue avant que les requêtes s'arrêtent.
 
 <Warning>Le blocage est appliqué au mieux. Il s'appuie sur l'utilisation enregistrée : un blocage commence donc quelques minutes après que les dépenses ont dépassé le point de blocage, et les dépenses peuvent le dépasser pendant ce temps. Pour un plafond strict vérifié à chaque requête, utilisez les limites de clé ou les budgets de l'espace de travail.</Warning>
 
@@ -101,31 +107,31 @@ Tant qu'un blocage est actif, les requêtes dans sa portée reçoivent `429` ave
 
 Tant que les dépenses dépassent le dernier seuil de la règle sans atteindre son point de blocage, les réponses aux requêtes dans sa portée portent un en-tête `x-phaseo-spend-warning` qui liste jusqu'à trois règles, par exemple `rule_id=…; scope=workspace; resets_at=2026-11-01T00:00:00.000Z`. Les clients peuvent le journaliser ou ralentir avant le début du blocage.
 
-Un blocage est levé automatiquement quand la période est réinitialisée, quand les dépenses d'une règle glissante repassent sous son point de blocage, ou quand la règle est désactivée, supprimée ou modifiée. Les propriétaires et administrateurs peuvent le lever dans **Alertes de dépenses → Blocages actifs** ou avec [`POST /v1/spend-blocks/{id}/lift`](../api-reference/endpoint/spend-blocks-lift.mdx). Un blocage levé ne reprend pas pendant la même période (pour les règles glissantes, pendant une fenêtre). Des notifications de blocages de dépenses sont envoyées quand un blocage commence et quand il est levé.
+Un blocage est levé automatiquement quand la période est réinitialisée, quand les dépenses d'une règle glissante repassent sous son point de blocage, ou quand la règle est désactivée, supprimée ou modifiée. Les propriétaires et administrateurs peuvent le lever dans **Alertes de dépenses → Blocages actifs** ou avec [`POST /v1/spend-blocks/{id}/lift`](../api-reference/endpoint/spend-blocks-lift.mdx). Un blocage levé ne reprend pas pendant la même période (pour les règles glissantes, pendant une fenêtre). Des notifications de blocage de dépenses sont envoyées quand un blocage commence et quand il est levé.
 
-## Solde et autonomie
+## Surveiller le solde et l'autonomie
 
 Une règle `balance` surveille le solde disponible de l'espace de travail : son solde de crédits moins les montants réservés pour les requêtes en cours. Elle utilise la portée espace de travail et une période glissante, et alerte dès que l'une des conditions est remplie :
 
 - `threshold_amount` : le solde disponible est inférieur ou égal à ce montant ;
-- `runway_days` : au rythme moyen de dépenses quotidiennes des dernières `window_hours`, le solde durerait moins que ce nombre de jours. Sans dépenses récentes, il n'y a pas d'alerte d'autonomie.
+- `runway_days` (de 1 à 365) : au rythme moyen de dépenses quotidiennes des dernières `window_hours`, le solde durerait moins que ce nombre de jours. Sans dépenses récentes, il n'y a pas d'alerte d'autonomie.
 
 Une règle de solde alerte une fois par baisse. Elle n'alerte de nouveau qu'après que le solde est remonté puis redescendu, et pas plus souvent que son délai. Aucune alerte n'est envoyée tant que la recharge automatique est activée et fonctionne.
 
 L'e-mail de solde bas dans **Paramètres → Crédits** reste l'option simple par défaut. Il est envoyé une fois chaque fois que le solde passe sous son seuil, au plus toutes les six heures, et pas tant que la recharge automatique fonctionne. Utilisez une règle de solde pour des alertes d'autonomie, d'autres destinations ou un autre seuil.
 
-## Prévision
+## Prévoir les dépenses jusqu'à la fin de la période
 
-Une règle `forecast` projette en ligne droite les dépenses jusqu'à la fin du jour, de la semaine ou du mois en cours : les dépenses jusqu'ici, divisées par la part de la période déjà écoulée. Elle attend que 3 heures d'un jour, 24 heures d'une semaine ou 72 heures d'un mois se soient écoulées, et qu'au moins 0,01 $ ait été dépensé, pour qu'un début calme ne déclenche pas d'alerte. L'alerte indique quand la limite sera atteinte au rythme actuel.
+Une règle `forecast` projette en ligne droite les dépenses jusqu'à la fin du jour, de la semaine ou du mois en cours : les dépenses jusqu'ici, divisées par la part de la période déjà écoulée. Elle attend que 3 heures d'un jour, 24 heures d'une semaine ou 72 heures d'un mois se soient écoulées, et qu'au moins $0.01 ait été dépensé, pour qu'un début calme ne déclenche pas d'alerte. L'alerte indique quand la limite sera atteinte au rythme actuel.
 
 Définissez un montant `threshold_amount` en dollars, ou une base avec des pourcentages. Avec une base `previous_period`, la projection est comparée à l'ensemble de la période précédente. Chaque seuil alerte une fois par période.
 
-## Pic
+## Repérer les pics soudains
 
 Une règle `spike` compare les dépenses des dernières `window_hours` (de 1 à 56) aux dépenses habituelles pour ce moment :
 
 - Pour les fenêtres de moins de 24 heures, les dépenses habituelles sont la médiane des mêmes heures sur chacun des sept jours précédents. Pour les fenêtres plus longues, c'est la médiane des fenêtres antérieures de même durée sur les sept jours précédents.
-- Elle alerte quand les dépenses atteignent au moins `spike_multiplier` fois les dépenses habituelles (3 par défaut) et au moins `spike_floor` (5 $ par défaut).
+- Elle alerte quand les dépenses atteignent au moins `spike_multiplier` fois les dépenses habituelles (plus de 1 et jusqu'à 100, 3 par défaut) et au moins `spike_floor` ($5 par défaut).
 - Elle a besoin de dépenses de l'espace de travail dans au moins trois de ces fenêtres antérieures. D'ici là, l'éditeur indique qu'elle apprend encore. Quand les dépenses habituelles sont nulles, seul le plancher s'applique.
 - Elle utilise un délai (6 heures par défaut) et ne bloque jamais.
 
@@ -140,7 +146,7 @@ Les propriétaires reçoivent par défaut un rapport de dépenses hebdomadaire, 
 - Les totaux par membre et par département incluent les tâches asynchrones et suivent la règle des départements ci-dessus ; ils peuvent donc différer légèrement du total.
 - Chaque personne se désabonne de sa propre copie du rapport d'un espace de travail. Les membres qui ne sont ni propriétaires ni administrateurs ne le reçoivent jamais.
 
-## Routage et destinations
+## Choisir où vont les alertes
 
 Les règles de dépenses envoient trois types de notification. Choisissez la destination de chacun dans **Paramètres → Notifications** :
 
@@ -152,7 +158,7 @@ Les règles de dépenses envoient trois types de notification. Choisissez la des
 
 Une règle peut avoir ses propres destinations. Elles remplacent les routes Alertes de dépenses et Blocages de dépenses pour cette règle ; si elles sont toutes en pause, les alertes de la règle ne sont pas envoyées aux routes à la place. Les alertes et les blocages arrivent aussi dans l'application mobile des propriétaires et administrateurs, ainsi que du créateur de la clé ou du membre concerné par une règle.
 
-Les webhooks personnalisés reçoivent l'alerte en JSON, avec `title`, `message`, `rule_id`, `rule_name`, `metric`, `scope`, `period`, `value_nanos` et, selon la métrique, `base_nanos`, `forecast`, `spike` ou les champs de solde. Vérifiez chaque livraison avec sa signature ; consultez la section sur la vérification des signatures de webhook dans les [notifications de l'espace de travail](./workspace-notifications.mdx).
+Les webhooks personnalisés reçoivent l'alerte en JSON, avec `title`, `message`, `rule_id`, `rule_name`, `metric`, `scope`, `period`, `value_nanos` et, selon la métrique, `base_nanos`, `forecast`, `spike` ou les champs de solde. Vérifiez chaque livraison avec sa signature ; consultez [Vérifier les signatures de webhook](./workspace-notifications.mdx#verify-webhook-signatures).
 
 ## Gérer les règles avec l'API
 

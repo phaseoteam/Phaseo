@@ -15,6 +15,10 @@ const state = vi.hoisted(() => ({
 	oauthAuth: { ok: false, reason: "invalid_token" } as Record<string, unknown>,
 	pollStatus: "ok" as string,
 	displayName: null as string | null,
+	memberships: [] as Array<{ workspace_id: string }>,
+	insertedCodes: [] as Array<Record<string, unknown>>,
+	issuedCliMcpTokens: [] as Array<Record<string, unknown>>,
+	cliMcpClaims: null as Record<string, unknown> | null,
 }));
 
 const FUTURE_EXPIRES_AT = "2999-01-01T00:00:00.000Z";
@@ -57,8 +61,15 @@ vi.mock("@/runtime/env", () => ({
 					},
 				};
 			}
+			if (table === "workspace_members") {
+				return { select: () => ({ eq: () => ({ in: async () => ({ data: state.memberships, error: null }) }) }) };
+			}
 			if (table === "oauth_authorization_codes") {
 				return {
+					insert: async (payload: Record<string, unknown>) => {
+						state.insertedCodes.push(payload);
+						return { error: null };
+					},
 					select: () => ({
 						in: () => ({
 							eq: () => ({
@@ -156,6 +167,16 @@ vi.mock("@/lib/oauth/service", () => ({
 	getGatewayOAuthResource: vi.fn(() => "https://api.example.com/v1"),
 	getIssuer: vi.fn(() => "https://api.example.com/oauth"),
 	getLocalJwks: vi.fn(async () => ({ keys: [] })),
+	getActiveOAuthWorkspaceScopes: vi.fn(async () => (
+		state.authorizationRow && state.authorizationRow.revoked_at == null
+			? (state.authorizationRow.scopes as string[] | undefined) ?? []
+			: null
+	)),
+	issueCliMcpAccessToken: vi.fn(async (input: Record<string, unknown>) => {
+		state.issuedCliMcpTokens.push(input);
+		return { access_token: "cli-mcp-jwt", token_type: "Bearer", expires_in: 900, scope: (input.scopes as string[]).join(" ") };
+	}),
+	validateCliMcpAccessToken: vi.fn(async () => state.cliMcpClaims),
 	getSupabaseActor: vi.fn(async () => ({ userId: "user_1" })),
 	hashOAuthSecret: vi.fn(async (value: string) => `hash:${value}`),
 	hashOAuthSecretCandidates: vi.fn(async (value: string) => [`hash:${value}`]),
@@ -171,7 +192,7 @@ vi.mock("@/lib/oauth/service", () => ({
 	}),
 	issueOAuthManagedKeyForAuthorizationCode: vi.fn(async (_grantId: string, input: Record<string, unknown>) => {
 		state.issuedManagedKeys.push(input);
-		return { access_token: "phaseo_v1_sk_test", token_type: "Bearer" };
+		return { ok: true, tokens: { access_token: "phaseo_v1_sk_test", token_type: "Bearer" } };
 	}),
 	issueMcpUpstreamToken: vi.fn(async () => ({ access_token: "upstream-jwt", token_type: "Bearer", expires_in: 300 })),
 	isGatewayOAuthResource: vi.fn((resource: string | null | undefined) => {
@@ -230,9 +251,13 @@ describe("OAuth route security", () => {
 		state.issuedTokenPairs.length = 0;
 		state.issuedManagedKeys.length = 0;
 		state.registeredClients.length = 0;
+		state.issuedCliMcpTokens.length = 0;
+		state.cliMcpClaims = null;
 		state.consentParams = null;
 		state.oauthAuth = { ok: false, reason: "invalid_token" };
 		state.pollStatus = "ok";
+		state.memberships = [];
+		state.insertedCodes.length = 0;
 		vi.resetModules();
 	});
 
@@ -563,6 +588,59 @@ describe("OAuth route security", () => {
 		});
 	});
 
+	it("refuses the exchange with a clear error when the app's key in the workspace is paused", async () => {
+		const service = await import("@/lib/oauth/service");
+		vi.mocked(service.issueOAuthManagedKeyForAuthorizationCode).mockResolvedValueOnce({ ok: false, reason: "key_inactive" });
+		state.client = { id: "third_party", name: "Third Party", client_type: "public" };
+		state.authorizationCodeRow = {
+			id: "authorization_code_paused",
+			client_id: "third_party",
+			user_id: "user_1",
+			workspace_id: "ws_1",
+			redirect_uri: "https://example.com/callback",
+			scopes: ["gateway:access"],
+			code_challenge: "challenge",
+			code_challenge_method: "S256",
+			expires_at: FUTURE_EXPIRES_AT,
+			used_at: null,
+		};
+		state.authorizationRow = { id: "auth_1", revoked_at: null };
+
+		const { oauthRouter } = await import("./oauth");
+		const response = await oauthRouter.request("https://example.com/token", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				grant_type: "authorization_code",
+				client_id: "third_party",
+				code: "authorization-code",
+				redirect_uri: "https://example.com/callback",
+				code_verifier: "verifier",
+			}),
+		});
+
+		expect(response.status).toBe(400);
+		const body = await response.json() as { error: string; error_description: string };
+		expect(body.error).toBe("invalid_grant");
+		expect(body.error_description).toContain("paused");
+		expect(body).not.toHaveProperty("access_token");
+	});
+
+	it("reports a revocation the database could not store instead of claiming success", async () => {
+		const service = await import("@/lib/oauth/service");
+		vi.mocked(service.revokeToken).mockRejectedValueOnce(new Error("connection reset"));
+		const { oauthRouter } = await import("./oauth");
+
+		const response = await oauthRouter.request("https://example.com/revoke", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ token: "refresh-token" }),
+		});
+
+		expect(response.status).toBe(500);
+		await expect(response.json()).resolves.toMatchObject({ error: "server_error" });
+	});
+
 	it("rejects Gateway API resource authorization without gateway access consent", async () => {
 		state.client = { id: "third_party", name: "Third Party", client_type: "public" };
 		const challenge = "a".repeat(43);
@@ -600,6 +678,76 @@ describe("OAuth route security", () => {
 		expect(response.status).toBe(403);
 		expect(await response.json()).toMatchObject({ error: "access_denied" });
 		expect(vi.mocked(service.ensureGrants)).not.toHaveBeenCalled();
+	});
+
+	describe("monthly spending limit on consent", () => {
+		const approve = async (extra: Record<string, unknown>) => {
+			const { oauthRouter } = await import("./oauth");
+			return oauthRouter.request("https://example.com/authorize/approve", {
+				method: "POST",
+				headers: { authorization: "Bearer user-session", "content-type": "application/json" },
+				body: JSON.stringify({
+					client_id: state.client.id,
+					redirect_uri: "https://example.com/callback",
+					primary_workspace_id: "ws_1",
+					scopes: ["gateway:access", "models:read"],
+					code_challenge: "a".repeat(43),
+					code_challenge_method: "S256",
+					...extra,
+				}),
+			});
+		};
+
+		beforeEach(() => {
+			state.client = { id: "partner_app", name: "Partner App", client_type: "public", is_first_party: false };
+			state.memberships = [{ workspace_id: "ws_1" }];
+		});
+
+		it("stores the chosen limit with this consent's authorization code, for the active workspace", async () => {
+			const response = await approve({ monthly_limit_cost_nanos: 35_000_000_000 });
+
+			expect(response.status).toBe(200);
+			expect(state.insertedCodes).toEqual([expect.objectContaining({
+				client_id: "partner_app",
+				user_id: "user_1",
+				workspace_id: "ws_1",
+				key_monthly_limit_cost_nanos: 35_000_000_000,
+			})]);
+		});
+
+		it("keeps each approval's amount with its own code when two are in flight", async () => {
+			expect((await approve({ monthly_limit_cost_nanos: 10_000_000_000 })).status).toBe(200);
+			expect((await approve({ monthly_limit_cost_nanos: 30_000_000_000 })).status).toBe(200);
+
+			expect(state.insertedCodes.map((code) => code.key_monthly_limit_cost_nanos)).toEqual([10_000_000_000, 30_000_000_000]);
+		});
+
+		it("stores no limit as 0, and $20 a month when the consent page sent none", async () => {
+			expect((await approve({ monthly_limit_cost_nanos: 0 })).status).toBe(200);
+			expect((await approve({})).status).toBe(200);
+			expect(state.insertedCodes.map((code) => code.key_monthly_limit_cost_nanos)).toEqual([0, 20_000_000_000]);
+		});
+
+		it("rejects a limit that isn't a whole number of nanodollars in range, before granting anything", async () => {
+			const service = await import("@/lib/oauth/service");
+			vi.mocked(service.ensureGrants).mockClear();
+			for (const value of [-1, 1.5, "20", 1_000_000_000_000_001]) {
+				const response = await approve({ monthly_limit_cost_nanos: value });
+				expect(response.status).toBe(400);
+				expect(await response.json()).toMatchObject({ error: "invalid_request" });
+			}
+			expect(vi.mocked(service.ensureGrants)).not.toHaveBeenCalled();
+			expect(state.insertedCodes).toEqual([]);
+		});
+
+		it("sets no limit for first-party apps", async () => {
+			state.client = { id: "phaseo_cli", name: "Phaseo CLI", client_type: "public", is_first_party: true };
+			const response = await approve({ scopes: ["openid", "models:read"] });
+
+			expect(response.status).toBe(200);
+			expect(state.insertedCodes).toHaveLength(1);
+			expect(state.insertedCodes[0]).not.toHaveProperty("key_monthly_limit_cost_nanos");
+		});
 	});
 
 	it("rejects Gateway API resource approval without gateway access consent", async () => {
@@ -1026,7 +1174,7 @@ describe("OAuth route security", () => {
 		expect(state.registeredClients).toEqual([]);
 	});
 
-	it("downgrades dynamic refresh-token requests to the authorization-code grant it issues", async () => {
+	it("registers dynamic clients for the authorization-code and refresh-token grants it issues", async () => {
 		const { oauthRouter } = await import("./oauth");
 		const response = await oauthRouter.request("https://example.com/register", {
 			method: "POST",
@@ -1043,7 +1191,7 @@ describe("OAuth route security", () => {
 		expect(response.status).toBe(201);
 		await expect(response.json()).resolves.toMatchObject({
 			response_types: ["code"],
-			grant_types: ["authorization_code"],
+			grant_types: ["authorization_code", "refresh_token"],
 			token_endpoint_auth_method: "none",
 		});
 	});
@@ -1316,5 +1464,163 @@ describe("OAuth route security", () => {
 			upstream_access_token: "upstream-jwt",
 			expires_in: 300,
 		});
+	});
+});
+
+describe("phaseo mcp token exchange", () => {
+	const MCP = "https://mcp.phaseo.app/mcp";
+	const cliClaims = (overrides: Record<string, unknown> = {}) => ({
+		iss: "https://api.example.com/oauth",
+		sub: "user_1",
+		aud: "phaseo-api",
+		user_id: "user_1",
+		workspace_id: "ws_1",
+		client_id: "phaseo_cli",
+		scope: "openid models:read pricing:read keys:read keys:write gateway:access",
+		...overrides,
+	});
+
+	async function exchange(body: Record<string, unknown>) {
+		const { oauthRouter } = await import("./oauth");
+		return oauthRouter.request("https://example.com/token", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({
+				grant_type: "urn:ietf:params:oauth:grant-type:token-exchange",
+				subject_token: "cli-access-jwt",
+				subject_token_type: "urn:ietf:params:oauth:token-type:access_token",
+				resource: MCP,
+				...body,
+			}),
+		});
+	}
+
+	async function useValidCliToken(claims: Record<string, unknown>) {
+		const service = await import("@/lib/oauth/service");
+		vi.mocked(service.validateLocalAccessToken).mockResolvedValueOnce({ valid: true, claims } as never);
+	}
+
+	beforeEach(() => {
+		state.authorizationRow = null;
+		state.issuedCliMcpTokens.length = 0;
+		state.cliMcpClaims = null;
+		state.oauthAuth = { ok: false, reason: "invalid_token" };
+	});
+
+	it("swaps a CLI token for an MCP-only token with the MCP scopes the session still holds", async () => {
+		await useValidCliToken(cliClaims());
+		// keys:write was consented once but is no longer on the authorization.
+		state.authorizationRow = { revoked_at: null, scopes: ["openid", "models:read", "pricing:read", "keys:read", "gateway:access"] };
+		const response = await exchange({});
+		expect(response.status).toBe(200);
+		expect(response.headers.get("cache-control")).toBe("no-store");
+		expect(state.issuedCliMcpTokens).toEqual([{
+			userId: "user_1",
+			workspaceId: "ws_1",
+			clientId: "phaseo_cli",
+			// Never openid (not an MCP scope), gateway:access (no spending) or a withdrawn scope.
+			scopes: ["models:read", "pricing:read", "keys:read"],
+			resource: MCP,
+		}]);
+	});
+
+	it("narrows to the scopes the CLI asks for, so plain `phaseo mcp` stays read-only", async () => {
+		await useValidCliToken(cliClaims());
+		state.authorizationRow = { revoked_at: null, scopes: ["models:read", "pricing:read", "keys:read", "keys:write"] };
+		const response = await exchange({ scope: "models:read pricing:read" });
+		expect(response.status).toBe(200);
+		expect(state.issuedCliMcpTokens[0]?.scopes).toEqual(["models:read", "pricing:read"]);
+	});
+
+	it("never widens: asking for a scope the token lacks gets nothing extra", async () => {
+		await useValidCliToken(cliClaims({ scope: "models:read" }));
+		state.authorizationRow = { revoked_at: null, scopes: ["models:read", "keys:write"] };
+		const response = await exchange({ scope: "models:read keys:write" });
+		expect(response.status).toBe(200);
+		expect(state.issuedCliMcpTokens[0]?.scopes).toEqual(["models:read"]);
+	});
+
+	it("refuses tokens from any client other than the Phaseo CLI", async () => {
+		for (const clientId of ["phaseo_desktop", "mcp_client", "https://evil.example/client.json"]) {
+			await useValidCliToken(cliClaims({ client_id: clientId }));
+			state.authorizationRow = { revoked_at: null, scopes: ["models:read"] };
+			const response = await exchange({});
+			expect(response.status).toBe(400);
+			expect(await response.json()).toMatchObject({ error: "invalid_grant" });
+		}
+		expect(state.issuedCliMcpTokens).toEqual([]);
+	});
+
+	it("refuses any resource other than the Phaseo MCP", async () => {
+		for (const resource of ["https://api.example.com/v1", "https://evil.example/mcp", "", "https://mcp.phaseo.app/mcp/"]) {
+			const response = await exchange({ resource });
+			expect(response.status).toBe(400);
+			expect(await response.json()).toMatchObject({ error: "invalid_target" });
+		}
+		expect(state.issuedCliMcpTokens).toEqual([]);
+	});
+
+	it("refuses invalid or expired subject tokens, revoked sessions and odd token types", async () => {
+		state.authorizationRow = { revoked_at: null, scopes: ["models:read"] };
+		const invalid = await exchange({});
+		expect(await invalid.json()).toMatchObject({ error: "invalid_grant" });
+
+		await useValidCliToken(cliClaims());
+		state.authorizationRow = { revoked_at: "2026-11-01T00:00:00Z", scopes: ["models:read"] };
+		const revoked = await exchange({});
+		expect(await revoked.json()).toMatchObject({ error: "invalid_grant" });
+
+		const refreshType = await exchange({ subject_token_type: "urn:ietf:params:oauth:token-type:refresh_token" });
+		expect(await refreshType.json()).toMatchObject({ error: "invalid_request" });
+		const withActor = await exchange({ actor_token: "x" });
+		expect(await withActor.json()).toMatchObject({ error: "invalid_request" });
+		const otherClient = await (async () => {
+			await useValidCliToken(cliClaims());
+			state.authorizationRow = { revoked_at: null, scopes: ["models:read"] };
+			return exchange({ client_id: "mcp_client" });
+		})();
+		expect(otherClient.status).toBe(401);
+		expect(state.issuedCliMcpTokens).toEqual([]);
+	});
+
+	it("refuses a session with no MCP scopes left instead of issuing an empty token", async () => {
+		await useValidCliToken(cliClaims({ scope: "openid gateway:access workspaces:read" }));
+		state.authorizationRow = { revoked_at: null, scopes: ["openid", "gateway:access", "workspaces:read"] };
+		const response = await exchange({});
+		expect(await response.json()).toMatchObject({ error: "invalid_scope" });
+		expect(state.issuedCliMcpTokens).toEqual([]);
+	});
+
+	async function mcpTokenExchange() {
+		const { oauthRouter } = await import("./oauth");
+		return oauthRouter.request("https://example.com/mcp/token-exchange", {
+			method: "POST",
+			headers: {
+				Authorization: `Basic ${btoa(`phaseo_mcp_resource_server:${"s".repeat(64)}`)}`,
+				"content-type": "application/json",
+			},
+			body: JSON.stringify({ subject_token: "cli-mcp-jwt", resource: MCP }),
+		});
+	}
+
+	it("lets the MCP accept a `phaseo mcp` token, with the scopes still consented", async () => {
+		state.cliMcpClaims = cliClaims({ aud: MCP, scope: "models:read pricing:read keys:write" });
+		state.authorizationRow = { revoked_at: null, scopes: ["models:read", "pricing:read"] };
+		const response = await mcpTokenExchange();
+		expect(await response.json()).toMatchObject({
+			active: true,
+			resource: MCP,
+			client_id: "phaseo_cli",
+			workspace_id: "ws_1",
+			scope: "models:read pricing:read",
+			upstream_access_token: "upstream-jwt",
+		});
+	});
+
+	it("turns the MCP off for a `phaseo mcp` token at once when the CLI's authorization is revoked", async () => {
+		state.cliMcpClaims = cliClaims({ aud: MCP, scope: "models:read" });
+		state.authorizationRow = { revoked_at: "2026-11-01T00:00:00Z", scopes: ["models:read"] };
+		const response = await mcpTokenExchange();
+		expect(await response.json()).toEqual({ active: false });
 	});
 });

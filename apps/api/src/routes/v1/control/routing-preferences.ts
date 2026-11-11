@@ -18,7 +18,14 @@ import {
 	successorReplacementCatalogueError,
 	type AutoRouting,
 } from "@core/workspace-routing-settings";
-import { internalServerError, isResponse, requireCapability, requireJsonBody, requireOAuthWorkspaceRole } from "./route-helpers";
+import {
+	internalServerError,
+	isResponse,
+	rejectThirdPartyOAuthSpendingChange,
+	requireCapability,
+	requireJsonBody,
+	requireOAuthWorkspaceRole,
+} from "./route-helpers";
 import { invalidateWorkspaceGatewayContextCache } from "./settings";
 
 const NO_STORE = { "Cache-Control": "no-store" };
@@ -58,6 +65,9 @@ const AUTO_ROUTING_FIELDS: Record<string, keyof AutoRouting> = {
 	allow_fallbacks: "allowFallbacks",
 };
 
+// The spend profile and its price ceilings limit what auto-routing may spend, so apps can't change them.
+const PRICE_LIMIT_FIELDS = new Set<string>(["spendProfile", "maxInputPricePerMillion", "maxOutputPricePerMillion"]);
+
 async function readAutoRoutingRow(workspaceId: string) {
 	const { data, error } = await getSupabaseAdmin().from("workspace_settings")
 		.select(AUTO_ROUTING_COLUMNS).eq("workspace_id", workspaceId).maybeSingle();
@@ -90,15 +100,31 @@ export async function handleUpdateAutoRouting(req: Request) {
 	if (Object.keys(changes).length === 0) {
 		return json({ error: "bad_request", message: `Send at least one of: ${Object.keys(AUTO_ROUTING_FIELDS).join(", ")}` }, 400, NO_STORE);
 	}
+	if (Object.keys(changes).some((field) => PRICE_LIMIT_FIELDS.has(field))) {
+		const appError = rejectThirdPartyOAuthSpendingChange(access.auth, "Apps that use Sign in with Phaseo can't change auto-routing's spend profile or price limits. The person can change them under Settings, Routing.");
+		if (appError) return appError;
+	}
 	const { workspaceId } = access.auth;
 	try {
-		const current = autoRoutingFromRow(await readAutoRoutingRow(workspaceId));
+		const stored = await readAutoRoutingRow(workspaceId);
+		const current = autoRoutingFromRow(stored);
 		const update = parseAutoRoutingUpdate({ ...current, ...changes });
 		if (update.ok === false) return json({ ...update.error, message: autoRoutingErrorMessage(update.error.error) }, 400, NO_STORE);
-		const { data, error } = await getSupabaseAdmin().from("workspace_settings")
-			.upsert({ workspace_id: workspaceId, ...update.value }, { onConflict: "workspace_id" })
-			.select(AUTO_ROUTING_COLUMNS).maybeSingle();
+		// The whole settings are written back, so only over the revision they were read at: otherwise an
+		// objective change could restore price limits the dashboard tightened in the meantime. Every save sets a
+		// new revision.
+		const settings = getSupabaseAdmin().from("workspace_settings");
+		const write = stored
+			? (current.revision === null
+				? settings.update(update.value).eq("workspace_id", workspaceId).is("auto_routing_revision", null)
+				: settings.update(update.value).eq("workspace_id", workspaceId).eq("auto_routing_revision", current.revision))
+			: settings.upsert({ workspace_id: workspaceId, ...update.value }, { onConflict: "workspace_id", ignoreDuplicates: true });
+		const { data: written, error } = await write.select(AUTO_ROUTING_COLUMNS);
 		if (error) throw new Error(error.message || "Failed to update auto-routing settings");
+		const data = written?.[0] ?? null;
+		if (!data) {
+			return json({ error: "conflict", message: "Auto-routing settings changed since they were read. Read them again and retry." }, 409, NO_STORE);
+		}
 		await invalidateWorkspaceGatewayContextCache(workspaceId);
 		await recordWorkspaceAuditEvent(getSupabaseAdmin(), {
 			workspaceId,
@@ -157,6 +183,9 @@ export async function handleListSuccessorReplacements(req: Request) {
 export async function handleSaveSuccessorReplacement(req: Request) {
 	const access = await authorize(req, CAPABILITIES.SETTINGS_WRITE, ["owner", "admin"]);
 	if ("response" in access) return access.response;
+	// The workspace's own replacement ignores the successor price policy, which apps can't change either.
+	const appError = rejectThirdPartyOAuthSpendingChange(access.auth, "Apps that use Sign in with Phaseo can't save successor replacements, since a replacement ignores the successor price policy. The person can save them under Settings, Routing.");
+	if (appError) return appError;
 	const body = await requireJsonBody(req);
 	if (isResponse(body)) return body;
 	if (!("successor" in body)) return json({ error: "invalid_successor", message: REPLACEMENT_MESSAGES.invalid_successor }, 400, NO_STORE);

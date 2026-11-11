@@ -4,16 +4,16 @@ description: "Sende einen Trace jeder Anfrage an dein Observability-Tool, einen 
 icon: "radio-tower"
 ---
 
-Broadcast sendet einen Trace jeder Gateway-Anfrage an Ziele deiner Wahl, ohne dass du deinen Code ändern musst. Der Trace folgt den GenAI-Konventionen von OpenTelemetry: ein Span für die Anfrage und ein Span für jeden Versuch bei einem Anbieter, mit Modell, Anbieter, Token-Nutzung, Kosten, Zeitangaben und (sofern du es nicht deaktivierst) Prompt und Ausgabe.
+Füge unter **Einstellungen → Broadcast** ein Ziel hinzu, und Phaseo sendet ihm einen Trace jeder Gateway-Anfrage, ohne Codeänderungen. Der Trace folgt den GenAI-Konventionen von OpenTelemetry: ein Span für die Anfrage und ein Span für jeden Anbieterversuch, mit Modell, Anbieter, Token-Nutzung, Kosten, Zeitangaben und (sofern du es nicht ausschaltest) Prompt und Ausgabe.
 
-Broadcast ist kostenlos. Inhaber und Admins verwalten Ziele unter **Einstellungen → Broadcast** oder mit der [API für Observability-Ziele](../api-reference/endpoint/observability-destinations-create.mdx) und einem [Management-Schlüssel](../developers/management-api-keys.mdx) mit `settings:write`. Ein Workspace kann bis zu fünf Ziele pro Typ haben.
+Broadcast ist kostenlos. Inhaber und Admins verwalten Ziele unter **Einstellungen → Broadcast** oder mit der [API für Observability-Ziele](/de/v1/api-reference/endpoint/observability-destinations-create) und einem [Management-Schlüssel](/de/v1/developers/management-api-keys) mit `settings:write`. Ein Workspace kann bis zu fünf Ziele pro Typ haben. Wenn du stattdessen aus deinem eigenen Client tracen willst, siehe [Observability-Integrationen](./integrations/observability.mdx).
 
 ## Ziel hinzufügen
 
 1. Öffne **Einstellungen → Broadcast** und wähle ein Ziel aus.
-2. Gib die Zugangsdaten ein. Sie werden vor dem Speichern verschlüsselt und nie wieder angezeigt.
-3. Wähle aus, was gesendet wird (siehe den Abschnitt „Festlegen, was gesendet wird“).
-4. Wähle **Verbindung testen** aus. Phaseo sendet einen Beispiel-Trace auf dieselbe Weise wie echte Zustellungen, sodass ein Fehler hier die Fehlermeldung des Ziels selbst zeigt.
+2. Gib seine Zugangsdaten ein. Sie werden vor dem Speichern verschlüsselt und nie wieder angezeigt.
+3. Wähle aus, was gesendet wird (siehe [Festlegen, was gesendet wird](#choose-what-is-sent)).
+4. Wähle **Verbindung testen**. Phaseo sendet einen Beispiel-Trace auf dieselbe Weise wie echte Zustellungen, sodass ein Fehler hier die Fehlermeldung des Ziels selbst zeigt.
 5. Speichere. Anfragen, die danach abgeschlossen werden, werden innerhalb von etwa einer Minute gesendet.
 
 | Art | Ziele |
@@ -26,23 +26,25 @@ Broadcast ist kostenlos. Inhaber und Admins verwalten Ziele unter **Einstellunge
 
 Jedes Formular fragt nur ab, was das jeweilige Tool braucht, etwa einen API-Schlüssel und ein Projekt oder eine Region. OpenTelemetry-Tools erhalten dieselben Spans; Phaseo trägt Endpunkt, Header und Kodierung des jeweiligen Anbieters ein.
 
+<span id="choose-what-is-sent"></span>
 ## Festlegen, was gesendet wird
 
 Jedes Ziel hat eigene Einstellungen:
 
 - **Datenschutzmodus** lässt Prompts, Ausgaben, Systemanweisungen und Tool-Definitionen in jedem Trace weg. Anfragen mit einem API-Schlüssel, der nie Inhalte speichert, werden unabhängig von dieser Einstellung nie mit Inhalten weitergeleitet.
-- **Generierungsmetadaten**, **Kosten**, **Identität** und **Anfragekontext** schalten jeweils eine Gruppe von Span-Attributen ein oder aus. Wenn du **Anfragekontext** ausschaltest, entfallen auch die Anfrage-Metadaten (siehe den Abschnitt „Eigenen Trace-Kontext hinzufügen“).
+- **Generierungsmetadaten**, **Kosten**, **Identität** und **Anfragekontext** schalten jeweils eine Gruppe von Span-Attributen ein oder aus. Wenn du **Anfragekontext** ausschaltest, entfallen auch die [Anfrage-Metadaten](#add-your-own-trace-context).
 - **Rate** sendet einen Anteil der infrage kommenden Anfragen, von 0 bis 1. Die Auswahl ist für jede Anfrage und jedes Ziel stabil, sodass eine wiederholte Zustellung nie anders gesampelt wird.
-- **API-Schlüsselfilter** schließt Anfragen mit bestimmten Schlüsseln ein oder aus.
+- **Nach API-Schlüssel filtern** schließt Anfragen mit bestimmten Schlüsseln ein oder aus.
 - **Filterregeln** senden nur passende Anfragen. Regeln vergleichen Felder wie Modell, Anbieter, Benutzer-ID, Beendigungsgrund, Kosten oder Token-Anzahlen und lassen sich mit **und** und **oder** gruppieren. **Matches regex** nutzt eine Engine mit linearer Laufzeit: Rückverweise und Lookarounds werden nicht unterstützt, und ein zu großes Muster wird beim Speichern abgelehnt.
 
+<span id="add-your-own-trace-context"></span>
 ## Eigenen Trace-Kontext hinzufügen
 
 Füge dem Anfragetext ein `metadata`-Objekt hinzu, um Traces zu benennen und eigene Felder anzuhängen. Phaseo liest es für Broadcast aus:
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "messages": [{ "role": "user", "content": "Summarise this ticket" }],
   "metadata": {
     "trace_id": "ticket-48213",
@@ -55,7 +57,7 @@ Füge dem Anfragetext ein `metadata`-Objekt hinzu, um Traces zu benennen und eig
 
 | Schlüssel | Wirkung |
 | --- | --- |
-| `trace_id` | Der Trace, zu dem die Anfrage gehört. Eine 32-stellige Hex-ID oder eine UUID wird unverändert verwendet; jeder andere String wird gehasht, sodass alle Anfragen mit demselben Wert demselben Trace zugeordnet werden. |
+| `trace_id` | Der Trace, zu dem die Anfrage gehört. Eine 32-stellige Hex-ID oder eine UUID wird unverändert verwendet; jeder andere String wird gehasht, sodass alle Anfragen mit demselben Wert demselben Trace beitreten. |
 | `parent_span_id` | Eine 16-stellige Hex-Span-ID, unter der die Anfrage verschachtelt wird. Wird zusammen mit `trace_id` verwendet. |
 | `trace_name`, `span_name` | Name des Spans der Anfrage. Sind beide gesetzt, hat `span_name` Vorrang. |
 | `generation_name` | Name des Spans jedes Anbieterversuchs. |
@@ -64,6 +66,8 @@ Füge dem Anfragetext ein `metadata`-Objekt hinzu, um Traces zu benennen und eig
 Werte können Strings, Zahlen oder Booleans sein; verschachtelte Objekte werden übersprungen. Phaseo behält bis zu 64 Schlüssel mit höchstens 64 Zeichen und kürzt Werte auf 512 Zeichen. Ist ein W3C-Header `traceparent` vorhanden, bestimmt er den Trace statt `trace_id` und `parent_span_id`.
 
 Lege keine Geheimnisse oder personenbezogenen Daten in `metadata` ab: Es wird an jedes Ziel gesendet, bei dem **Anfragekontext** aktiviert ist.
+
+[Anfrage-Labels](./request-labels.mdx) werden ebenfalls gesendet, als Span-Attribute mit dem Namen `phaseo.label.<key>`.
 
 ## Webhook-Zustellungen
 
@@ -76,7 +80,7 @@ x-phaseo-timestamp: 1792569600
 x-phaseo-signature: 5d2a…e41f
 ```
 
-`x-phaseo-signature` ist der hexadezimale HMAC-SHA256 aus dem Zeitstempel, einem Punkt (`.`) und dem unveränderten Anfrage-Body, mit deinem Geheimnis als Schlüssel. Das ist dasselbe Verfahren wie bei Benachrichtigungs-Webhooks, sodass du deren [Prüfcode](./workspace-notifications.mdx) wiederverwenden kannst. Broadcast-Zustellungen haben keinen Header mit Ereignis-ID: Dedupliziere anhand der Span-IDs im Body.
+`x-phaseo-signature` ist der hexadezimale HMAC-SHA256 aus dem Zeitstempel, einem Punkt (`.`) und dem unveränderten Anfrage-Body, mit deinem Geheimnis als Schlüssel. Das ist dasselbe Verfahren wie bei Benachrichtigungs-Webhooks, sodass du deren [Prüfcode](./workspace-notifications.mdx#verify-webhook-signatures) wiederverwenden kannst. Broadcast-Zustellungen haben keinen Header mit Ereignis-ID: Dedupliziere anhand der Span-IDs im Body.
 
 **Verbindung testen** sendet `{"resourceSpans": []}` mit dem Header `X-Test-Connection: true`. Eine `400`-Antwort gilt als erreichbar, sodass auch ein Empfänger, der leere Exporte ablehnt, den Test besteht.
 
@@ -163,15 +167,8 @@ Füge den privaten Schlüssel (`BEGIN PRIVATE KEY`, unverschlüsselt) in das For
 
 ## Zustellung, Status und Warnungen
 
-Zustellungen, die wegen eines Timeouts, eines Rate-Limits oder eines Serverfehlers fehlschlagen, werden mit Backoff wiederholt, bis zu acht Versuche. Andere Fehler, etwa ein abgelehnter Schlüssel oder eine fehlende Tabelle, werden nicht wiederholt.
+Zustellungen, die wegen eines Timeouts, eines Ratenlimits oder eines Serverfehlers fehlschlagen, werden mit Backoff wiederholt, bis zu acht Versuche. Andere Fehler, etwa ein abgelehnter Schlüssel oder eine fehlende Tabelle, werden nicht wiederholt.
 
 **Einstellungen → Broadcast** zeigt den Status jedes Ziels: **Fehlerfrei**, **Fehlerhaft**, **Noch keine Zustellungen** oder **Deaktiviert**, mit dem letzten Fehler und den zugestellten und fehlgeschlagenen Anfragen der letzten 24 Stunden.
 
 Damit du erfährst, wenn ein Ziel nicht mehr funktioniert, leite **Broadcast-Warnungen** an ein [Benachrichtigungsziel](./workspace-notifications.mdx) weiter. Eine Warnung wird gesendet, wenn bei einem Ziel mindestens fünf Anfragen in Folge fehlgeschlagen sind und es 15 Minuten lang nichts zugestellt hat. Sie wird einmal pro Fehlerserie gesendet und erst wieder, nachdem sich das Ziel erholt hat und mindestens sechs Stunden vergangen sind.
-
-## Verwandte Themen
-
-- [API für Observability-Ziele](../api-reference/endpoint/observability-destinations-list.mdx)
-- [Anfragekennzeichnungen](./request-labels.mdx), die als Attribute `phaseo.label.<key>` gesendet werden
-- [Workspace-Benachrichtigungen](./workspace-notifications.mdx)
-- [Observability-Integrationen](./integrations/observability.mdx), um stattdessen aus deinem eigenen Client zu tracen

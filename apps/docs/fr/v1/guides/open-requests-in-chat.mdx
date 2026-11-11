@@ -43,7 +43,7 @@ Si le modèle de la requête n’est pas disponible dans Chat, le chat utilise v
 ## Comment le chat se poursuit
 
 - La requête s’ouvre dans un nouveau chat avec son propre ID de session, enregistré dans votre navigateur comme tout autre chat. Les tours suivants ne rejoignent pas la session d’origine dans les Journaux.
-- Les messages que vous n’avez pas modifiés sont envoyés sous leur forme d’origine : les appels d’outils, les résultats d’outils, les images, l’audio et les fichiers sont donc conservés au tour suivant. Les messages modifiés et nouveaux sont envoyés sous forme de texte, comme dans tout chat.
+- Les messages que vous n’avez pas modifiés sont envoyés sous leur forme d’origine : les appels d’outils, les résultats d’outils et les URL d’images sont donc conservés au tour suivant. Les messages modifiés et nouveaux sont envoyés sous forme de texte, comme dans tout chat.
 - Vous pouvez changer de modèle, comparer plusieurs modèles côte à côte, créer une branche ou modifier, comme dans tout chat.
 - Les tours suivants s’exécutent dans votre espace de travail actif et sont facturés comme toute autre requête Chat.
 
@@ -52,6 +52,7 @@ Si le modèle de la requête n’est pas disponible dans Chat, le chat utilise v
 Chat liste tout ce qu’il n’a pas pu reprendre avant que vous ne poursuiviez :
 
 - Les tours conservés par le fournisseur via `previous_response_id` ou un ID de conversation. Seuls les tours contenus dans la requête elle-même sont stockés.
+- Les images, l’audio et les fichiers envoyés en ligne. Les journaux d’E/S n’en stockent jamais les octets. Les images envoyées par URL sont conservées.
 - Les pièces jointes envoyées par ID de fichier ou référence distante plutôt qu’en ligne.
 - Les réponses qui ont échoué, ont été interrompues ou proposaient plusieurs choix (seul le premier est conservé).
 - Les appels d’outils qui n’ont jamais reçu de résultat. Ils sont envoyés sous forme de texte.

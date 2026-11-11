@@ -3,6 +3,7 @@ import { ScimProtocolError } from "./errors";
 import type { ScimFilter } from "./filter";
 import { parseScimUserInput, toScimUser, userInputToRow, type ScimUserRow } from "./user";
 import { parseUserPatch } from "./patch";
+import { retryTransaction } from "@/data/retry-transaction";
 
 const USER_COLUMNS = "id,external_id,user_name,active,display_name,given_name,family_name,employee_number,cost_center,organization,division,department,manager_scim_user_id,emails,phone_numbers,addresses,locale,preferred_language,timezone,title,user_type,version,created_at,updated_at";
 const FILTER_COLUMNS: Record<string, string> = { userName: "user_name_normalized", externalId: "external_id", id: "id" };
@@ -18,7 +19,7 @@ export class ScimUserService {
 
 	async create(value: unknown) {
 		const row = { workspace_id: this.workspaceId, ...userInputToRow(parseScimUserInput(value)) };
-		const result = await this.client.from("scim_users").insert(row).select(USER_COLUMNS).single();
+		const result = await retryTransaction(() => this.client.from("scim_users").insert(row).select(USER_COLUMNS).single());
 		if (result.error) databaseError(result.error, "Unable to create User.");
 		return toScimUser(result.data as ScimUserRow, this.baseUrl);
 	}
@@ -44,7 +45,7 @@ export class ScimUserService {
 
 	async replace(id: string, value: unknown) {
 		const input = parseScimUserInput(value);
-		const result = await this.client.from("scim_users").update(userInputToRow(input)).eq("workspace_id", this.workspaceId).eq("id", id).select(USER_COLUMNS).maybeSingle();
+		const result = await retryTransaction(() => this.client.from("scim_users").update(userInputToRow(input)).eq("workspace_id", this.workspaceId).eq("id", id).select(USER_COLUMNS).maybeSingle());
 		if (result.error) databaseError(result.error, "Unable to replace User.");
 		if (!result.data) throw new ScimProtocolError(404, "User not found.", "noTarget");
 		return toScimUser(result.data as ScimUserRow, this.baseUrl);
@@ -55,14 +56,14 @@ export class ScimUserService {
 		if (current.error) databaseError(current.error, "Unable to retrieve User.");
 		if (!current.data) throw new ScimProtocolError(404, "User not found.", "noTarget");
 		const changes = parseUserPatch(value, current.data);
-		const result = await this.client.from("scim_users").update(changes).eq("workspace_id", this.workspaceId).eq("id", id).select(USER_COLUMNS).maybeSingle();
+		const result = await retryTransaction(() => this.client.from("scim_users").update(changes).eq("workspace_id", this.workspaceId).eq("id", id).select(USER_COLUMNS).maybeSingle());
 		if (result.error) databaseError(result.error, "Unable to patch User.");
 		if (!result.data) throw new ScimProtocolError(404, "User not found.", "noTarget");
 		return toScimUser(result.data as ScimUserRow, this.baseUrl);
 	}
 
 	async deactivate(id: string) {
-		const result = await this.client.from("scim_users").update({ active: false }).eq("workspace_id", this.workspaceId).eq("id", id).select(USER_COLUMNS).maybeSingle();
+		const result = await retryTransaction(() => this.client.from("scim_users").update({ active: false }).eq("workspace_id", this.workspaceId).eq("id", id).select(USER_COLUMNS).maybeSingle());
 		if (result.error) databaseError(result.error, "Unable to deactivate User.");
 		if (!result.data) throw new ScimProtocolError(404, "User not found.", "noTarget");
 		return toScimUser(result.data as ScimUserRow, this.baseUrl);
