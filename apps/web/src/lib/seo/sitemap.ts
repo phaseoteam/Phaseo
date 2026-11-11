@@ -288,7 +288,9 @@ function applySuffixesWithEntries<T extends { slug: string; lastModified?: strin
 	return items;
 }
 
-export async function buildSitemap(): Promise<SitemapEntry[]> {
+// `complete` is false when any source failed and its entries were left out,
+// so a partial sitemap is served but never cached.
+export async function buildSitemap(): Promise<{ entries: SitemapEntry[]; complete: boolean }> {
 	// `lastmod` must describe a content change, not a deployment. Omit it until
 	// a route has a reliable source timestamp rather than sending false freshness.
 	const staticItems = staticRoutes.map((route) =>
@@ -500,13 +502,21 @@ export async function buildSitemap(): Promise<SitemapEntry[]> {
 			),
 	);
 
-	return [
-		...staticItems,
-		...helpCategoryItems,
-		...helpArticleItems,
-		...blogItems,
-		...dynamicItems,
-		...comparePairItems,
-		...migrationItems,
-	];
+	const complete = [
+		apiProvidersResult, organisationsResult, benchmarksResult, plansResult, countriesResult,
+		marketplacePresetsResult, modelsResult, helpCategoryResult, helpArticleResult, blogPostsResult, comparePairsResult,
+	].every((result) => result.status === "fulfilled") && modelEntries.length > 0;
+
+	return {
+		complete,
+		entries: [
+			...staticItems,
+			...helpCategoryItems,
+			...helpArticleItems,
+			...blogItems,
+			...dynamicItems,
+			...comparePairItems,
+			...migrationItems,
+		],
+	};
 }
