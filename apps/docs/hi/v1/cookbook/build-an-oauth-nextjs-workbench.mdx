@@ -6,7 +6,7 @@ description: "एक यूनिफ़ाइड प्रॉक्सी वा
 
 लोगों को Phaseo से साइन इन करके आपके ऐप में अपने खुद के क्रेडिट खर्च करने दें: PKCE के साथ OAuth 2.1 आपके सर्वर को एक एक्सेस टोकन देता है, और सर्वर-साइड का एक प्रॉक्सी उसे हर गेटवे कॉल के साथ जोड़ता है। अंत में आपके पास एक लोकल ऐप होगा जिसमें साइन-इन, सत्र में रखे गए रीफ़्रेश होने वाले टोकन, मॉडल खोज, `/responses` पर चैट फ़्लो, और दूसरे एंडपॉइंट के लिए एक टेस्टर होगा।
 
-यह सैंपल उदाहरण के लिए है। इसकी `lib/oauth.ts` अब भी एक पुराने साइन-इन एंडपॉइंट को कॉल करती है, जिसे [इसे चलाएँ](#run-it) का चरण 3 ठीक करता है, और इसकी प्रॉक्सी अनुमति-सूची किसी प्रोडक्ट की ज़रूरत से ज़्यादा चौड़ी है।
+सैंपल Phaseo के OAuth एंडपॉइंट खुद ढूँढता है, लौटते समय `state` और `iss` जाँचता है, टोकन सुरक्षित तरीके से रीफ़्रेश करता है, और व्यक्ति के साइन आउट करने पर कुंजी रद्द कर देता है।
 
 किसी कोडिंग एजेंट से यही ऐप शुरू से बनवाने के लिए, यह प्रॉम्प्ट पेस्ट करें:
 
@@ -46,8 +46,8 @@ Verification:
 flowchart LR
   browser["ब्राउज़र"] -->|"साइन इन"| start["app/api/auth/start"]
   start -->|"PKCE चैलेंज के साथ रीडायरेक्ट"| authz["Phaseo साइन-इन और सहमति"]
-  authz -->|"कोड"| cb["app/auth कॉलबैक"]
-  cb -->|"कोड का आदान-प्रदान"| sess["lib/session.ts: एन्क्रिप्टेड सत्र"]
+  authz -->|"कोड, state, iss"| cb["app/auth/callback"]
+  cb -->|"कोड का आदान-प्रदान, /oauth/userinfo पढ़ना"| sess["lib/session.ts: एन्क्रिप्टेड सत्र"]
   browser -->|"/api/gateway/..."| proxy["app/api/gateway/[...surface]/route.ts"]
   proxy -->|"अनुमति-सूची, Bearer टोकन, समय खत्म होने पर रीफ़्रेश"| gw["api.phaseo.app/v1"]
 ```
@@ -56,11 +56,14 @@ flowchart LR
 
 | फ़ाइल | काम |
 | --- | --- |
-| `app/page.tsx` | साइन-इन का शुरुआती पेज |
+| `app/page.tsx` | साइन-इन का शुरुआती पेज; साइन-इन की त्रुटियाँ दिखाता है |
+| `app/api/auth/start/route.ts` | अधिकृत करने का URL बनाता है और PKCE वेरिफ़ायर व state सहेजता है |
+| `app/auth/callback/route.ts` | `state` और `iss` जाँचता है, कोड का आदान-प्रदान करता है, `/oauth/userinfo` पढ़ता है |
+| `app/api/auth/signout/route.ts` | रीफ़्रेश टोकन रद्द करता है, फिर सत्र साफ़ करता है |
 | `app/dashboard/page.tsx` | सुरक्षित शेल |
-| `app/dashboard/GatewayWorkbench.tsx` | कंट्रोल रूट लोड करता है, मॉडल ID सूचीबद्ध करता है, `POST /responses` पर चैट चलाता है, और दूसरे एंडपॉइंट टेस्ट करता है |
+| `app/dashboard/GatewayWorkbench.tsx` | गेटवे की स्थिति दिखाता है, मॉडल ID सूचीबद्ध करता है, `POST /responses` पर चैट चलाता है, और दूसरे एंडपॉइंट टेस्ट करता है |
 | `app/api/gateway/[...surface]/route.ts` | कैच-ऑल प्रॉक्सी: अनुमति-सूची जाँचता है, Bearer टोकन जोड़ता है, समय खत्म होने पर उसे रीफ़्रेश करता है, बॉडी और स्टेटस आगे भेजता है |
-| `lib/oauth.ts` | PKCE, कोड का आदान-प्रदान और रीफ़्रेश |
+| `lib/oauth.ts` | डिस्कवरी, PKCE, कोड का आदान-प्रदान, रीफ़्रेश, रद्द करना और userinfo |
 | `lib/session.ts` | एन्क्रिप्टेड सत्र स्टोरेज |
 
 साइन-इन को गेटवे कॉल से अलग रखने का मतलब है कि साइन-इन की समस्या कभी मॉडल की समस्या जैसी नहीं दिखती, और हर एंडपॉइंट टोकन संभालने वाली एक ही जगह साझा करता है।
@@ -81,32 +84,23 @@ npm install
 </Step>
 <Step title=".env.local बनाएँ">
 
-सैंपल में `.env.example` नहीं है। कोड जिन नामों को पढ़ता है, उनके साथ `.env.local` बनाएँ:
-
-```bash .env.local
-NEXT_PUBLIC_OAUTH_CLIENT_ID=your_client_id
-OAUTH_CLIENT_SECRET=your_client_secret
-# The sample reads this name for the OAuth server's base URL.
-NEXT_PUBLIC_AISTATS_URL=https://api.phaseo.app
-NEXT_PUBLIC_REDIRECT_URI=http://localhost:3000/auth/callback
-SESSION_SECRET=a-long-random-string
-NEXT_PUBLIC_GATEWAY_URL=https://api.phaseo.app
+```bash
+cp .env.example .env.local
 ```
 
-`OAUTH_CLIENT_SECRET` या `SESSION_SECRET` को कभी किसी `NEXT_PUBLIC_` वेरिएबल में न रखें।
+मान भरें:
 
-</Step>
-<Step title="सैंपल को मौजूदा OAuth एंडपॉइंट पर लगाएँ">
+| वेरिएबल | ज़रूरी | मान |
+| --- | --- | --- |
+| `PHASEO_OAUTH_CLIENT_ID` | हाँ | OAuth ऐप का क्लाइंट ID |
+| `PHASEO_OAUTH_CLIENT_SECRET` | गोपनीय ऐप | OAuth ऐप का क्लाइंट सीक्रेट। सार्वजनिक ऐप के लिए इसे खाली छोड़ें। |
+| `PHASEO_OAUTH_REDIRECT_URI` | हाँ | `http://localhost:3000/auth/callback`, ठीक वैसा ही जैसा रजिस्टर किया गया है |
+| `SESSION_SECRET` | हाँ | कम से कम 32 अक्षरों की एक रैंडम स्ट्रिंग |
+| `PHASEO_API_URL` | नहीं | डिफ़ॉल्ट `https://api.phaseo.app` है |
 
-`lib/oauth.ts` `${NEXT_PUBLIC_AISTATS_URL}/auth/v1/oauth/authorize` और `/auth/v1/token` बनाती है और `openid email profile` माँगती है। Phaseo का OAuth सर्वर अपने एंडपॉइंट `https://api.phaseo.app/.well-known/oauth-authorization-server` पर प्रकाशित करता है:
+सैंपल इन सभी को सिर्फ़ सर्वर पर पढ़ता है। क्लाइंट सीक्रेट या सत्र सीक्रेट को कभी किसी `NEXT_PUBLIC_` वेरिएबल में न रखें।
 
-| उपयोग | URL |
-| --- | --- |
-| अधिकृत करना | `https://api.phaseo.app/oauth/authorize` |
-| टोकन | `https://api.phaseo.app/oauth/token` |
-| रद्द करना | `https://api.phaseo.app/oauth/revoke` |
-
-`lib/oauth.ts` के तीनों URL इनसे बदलें, और `scope` में `gateway:access` जोड़ें ताकि टोकन Gateway को कॉल कर सके।
+सैंपल अधिकृत करने, टोकन, रद्द करने और userinfo के एंडपॉइंट `https://api.phaseo.app/.well-known/oauth-authorization-server` से ढूँढता है, और `openid email profile gateway:access` माँगता है। `gateway:access` से टोकन Gateway को कॉल कर सकता है।
 
 </Step>
 <Step title="डेव सर्वर शुरू करें">
@@ -153,7 +147,8 @@ npm run dev
 
 ## इसे शिप करने से पहले
 
-- **अनुमति-सूची छोटी करें।** `lib/gateway.ts` सटीक पाथ के साथ-साथ `videos/`, `music/generate/`, `control/` और `internal/` के नीचे के हर पाथ की अनुमति देती है। सिर्फ़ वे सटीक पाथ रखें जिन्हें आपका प्रोडक्ट कॉल करता है।
+- **अनुमति-सूची छोटी करें।** `lib/gateway.ts` उन पाथ की अनुमति देती है जिन्हें वर्कबेंच कॉल करता है, साथ ही `videos/` और `music/generate/` के नीचे जॉब स्टेटस की भी। सिर्फ़ वे पाथ रखें जिन्हें आपका प्रोडक्ट कॉल करता है।
+- **इंस्टेंस के बीच रीफ़्रेश साझा करें।** `lib/oauth.ts` समानांतर अनुरोधों के बीच एक ही रीफ़्रेश को मेमोरी में साझा करती है। अगर आप एक से ज़्यादा सर्वर इंस्टेंस चलाते हैं, तो इसे साझा स्टोरेज में ले जाएँ, वरना दो इंस्टेंस एक ही टोकन से रीफ़्रेश करके साइन-इन खत्म कर सकते हैं।
 - **पूरी बातचीत भेजें।** Gateway प्रतिक्रियाएँ सहेजता नहीं है और `previous_response_id` अस्वीकार करता है, इसलिए पिछले टर्न `input` में दोबारा भेजें।
 - **टेस्टर बदलें।** वर्कबेंच को आंतरिक QA के लिए रखें और एंड यूज़र के लिए खास मकसद वाले फ़्लो बनाएँ।
 

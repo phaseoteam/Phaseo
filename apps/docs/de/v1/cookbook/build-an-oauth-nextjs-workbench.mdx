@@ -6,7 +6,7 @@ description: "Nutze das vollständige OAuth-Next.js-Beispiel als Anleitung für 
 
 Lass Personen sich mit Phaseo anmelden und in deiner App ihre eigenen Credits ausgeben: OAuth 2.1 mit PKCE gibt deinem Server ein Zugriffstoken, und ein serverseitiger Proxy hängt es an jeden Gateway-Aufruf an. Am Ende hast du eine lokale App mit Anmeldung, sitzungsgebundenen Tokens, die sich erneuern, Modellsuche, einem Chat-Ablauf über `/responses` und einem Tester für weitere Endpunkte.
 
-Das Beispiel dient zur Veranschaulichung. Seine `lib/oauth.ts` ruft noch einen älteren Anmelde-Endpunkt auf, was Schritt 3 von [Ausführen](#run-it) behebt, und seine Proxy-Zulassungsliste ist breiter, als ein Produkt sie braucht.
+Das Beispiel ermittelt die OAuth-Endpunkte von Phaseo, prüft bei der Rückkehr `state` und `iss`, erneuert Tokens sicher und widerruft den Schlüssel, wenn sich die Person abmeldet.
 
 Damit ein Coding-Agent dieselbe App von Grund auf baut, füge diesen Prompt ein:
 
@@ -46,8 +46,8 @@ Verification:
 flowchart LR
   browser["Browser"] -->|"Anmelden"| start["app/api/auth/start"]
   start -->|"Weiterleitung mit PKCE-Challenge"| authz["Phaseo-Anmeldung und Zustimmung"]
-  authz -->|"Code"| cb["app/auth-Callback"]
-  cb -->|"Code eintauschen"| sess["lib/session.ts: verschlüsselte Sitzung"]
+  authz -->|"Code, state, iss"| cb["app/auth/callback"]
+  cb -->|"Code eintauschen, /oauth/userinfo lesen"| sess["lib/session.ts: verschlüsselte Sitzung"]
   browser -->|"/api/gateway/..."| proxy["app/api/gateway/[...surface]/route.ts"]
   proxy -->|"Zulassungsliste, Bearer-Token, Erneuerung bei Ablauf"| gw["api.phaseo.app/v1"]
 ```
@@ -56,11 +56,14 @@ Das Beispiel liegt in [examples/oauth-client-nextjs](https://github.com/phaseote
 
 | Datei | Aufgabe |
 | --- | --- |
-| `app/page.tsx` | Einstiegsseite für die Anmeldung |
+| `app/page.tsx` | Einstiegsseite für die Anmeldung; zeigt Anmeldefehler an |
+| `app/api/auth/start/route.ts` | Baut die Autorisierungs-URL und speichert den PKCE-Verifier und den State |
+| `app/auth/callback/route.ts` | Prüft `state` und `iss`, tauscht den Code ein, liest `/oauth/userinfo` |
+| `app/api/auth/signout/route.ts` | Widerruft das Refresh-Token und leert dann die Sitzung |
 | `app/dashboard/page.tsx` | Geschützte Shell |
-| `app/dashboard/GatewayWorkbench.tsx` | Lädt Steuerrouten, listet Modell-IDs auf, führt Chats über `POST /responses` aus und testet weitere Endpunkte |
+| `app/dashboard/GatewayWorkbench.tsx` | Zeigt den Gateway-Status, listet Modell-IDs auf, führt Chats über `POST /responses` aus und testet weitere Endpunkte |
 | `app/api/gateway/[...surface]/route.ts` | Catch-all-Proxy: prüft die Zulassungsliste, fügt das Bearer-Token hinzu, erneuert es nach Ablauf und leitet Body und Status weiter |
-| `lib/oauth.ts` | PKCE, Code-Austausch und Erneuerung |
+| `lib/oauth.ts` | Discovery, PKCE, Code-Austausch, Erneuerung, Widerruf und Userinfo |
 | `lib/session.ts` | Verschlüsselte Sitzungsspeicherung |
 
 Weil die Anmeldung von den Gateway-Aufrufen getrennt ist, sieht ein Anmeldeproblem nie wie ein Modellproblem aus, und alle Endpunkte teilen sich eine Stelle, die Tokens verwaltet.
@@ -81,32 +84,23 @@ npm install
 </Step>
 <Step title=".env.local anlegen">
 
-Das Beispiel enthält keine `.env.example`. Lege `.env.local` mit den Namen an, die der Code liest:
-
-```bash .env.local
-NEXT_PUBLIC_OAUTH_CLIENT_ID=your_client_id
-OAUTH_CLIENT_SECRET=your_client_secret
-# Das Beispiel liest diesen Namen für die Basis-URL des OAuth-Servers.
-NEXT_PUBLIC_AISTATS_URL=https://api.phaseo.app
-NEXT_PUBLIC_REDIRECT_URI=http://localhost:3000/auth/callback
-SESSION_SECRET=a-long-random-string
-NEXT_PUBLIC_GATEWAY_URL=https://api.phaseo.app
+```bash
+cp .env.example .env.local
 ```
 
-Lege `OAUTH_CLIENT_SECRET` oder `SESSION_SECRET` nie in eine `NEXT_PUBLIC_`-Variable.
+Trage die Werte ein:
 
-</Step>
-<Step title="Das Beispiel auf die aktuellen OAuth-Endpunkte umstellen">
+| Variable | Erforderlich | Wert |
+| --- | --- | --- |
+| `PHASEO_OAUTH_CLIENT_ID` | Ja | Die Client-ID der OAuth-App |
+| `PHASEO_OAUTH_CLIENT_SECRET` | Vertrauliche Apps | Das Client-Secret der OAuth-App. Lass es bei einer öffentlichen App leer. |
+| `PHASEO_OAUTH_REDIRECT_URI` | Ja | `http://localhost:3000/auth/callback`, genau wie registriert |
+| `SESSION_SECRET` | Ja | Eine zufällige Zeichenfolge mit mindestens 32 Zeichen |
+| `PHASEO_API_URL` | Nein | Standardmäßig `https://api.phaseo.app` |
 
-`lib/oauth.ts` baut `${NEXT_PUBLIC_AISTATS_URL}/auth/v1/oauth/authorize` und `/auth/v1/token` und fordert `openid email profile` an. Der OAuth-Server von Phaseo veröffentlicht seine Endpunkte unter `https://api.phaseo.app/.well-known/oauth-authorization-server`:
+Das Beispiel liest alle Werte nur auf dem Server. Lege das Client-Secret oder das Session-Secret nie in eine `NEXT_PUBLIC_`-Variable.
 
-| Zweck | URL |
-| --- | --- |
-| Autorisieren | `https://api.phaseo.app/oauth/authorize` |
-| Token | `https://api.phaseo.app/oauth/token` |
-| Widerrufen | `https://api.phaseo.app/oauth/revoke` |
-
-Ändere die drei URLs in `lib/oauth.ts` auf diese und füge `gateway:access` zu `scope` hinzu, damit das Token das Gateway aufrufen kann.
+Das Beispiel ermittelt die Endpunkte für Autorisierung, Token, Widerruf und Userinfo über `https://api.phaseo.app/.well-known/oauth-authorization-server` und fordert `openid email profile gateway:access` an. Mit `gateway:access` kann das Token das Gateway aufrufen.
 
 </Step>
 <Step title="Den Entwicklungsserver starten">
@@ -153,7 +147,8 @@ Egal welche Scopes sie hat: Deine App kann dieses Limit über die API weder aufh
 
 ## Bevor du es auslieferst
 
-- **Die Zulassungsliste kürzen.** `lib/gateway.ts` erlaubt exakte Pfade sowie jeden Pfad unter `videos/`, `music/generate/`, `control/` und `internal/`. Behalte nur die exakten Pfade, die dein Produkt aufruft.
+- **Die Zulassungsliste kürzen.** `lib/gateway.ts` erlaubt die Pfade, die die Workbench aufruft, sowie den Jobstatus unter `videos/` und `music/generate/`. Behalte nur die Pfade, die dein Produkt aufruft.
+- **Erneuerungen instanzübergreifend teilen.** `lib/oauth.ts` teilt eine Erneuerung im Arbeitsspeicher zwischen parallelen Anfragen. Wenn du mehr als eine Serverinstanz betreibst, verlagere das in einen gemeinsamen Speicher, sonst können zwei Instanzen mit demselben Token erneuern und damit die Anmeldung beenden.
 - **Die ganze Unterhaltung senden.** Das Gateway speichert keine Antworten und lehnt `previous_response_id` ab, also sende frühere Runden erneut in `input`.
 - **Den Tester ersetzen.** Behalte die Workbench für die interne QA und baue zweckgebundene Abläufe für Endnutzer.
 
