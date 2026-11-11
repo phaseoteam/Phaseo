@@ -5,6 +5,7 @@ const fetchCatalogueMock = vi.fn();
 const fetchGatewayContextMock = vi.fn();
 const privateModelRows = vi.hoisted(() => ({ rows: [] as any[] }));
 const providerFactRows = vi.hoisted(() => ({ rows: [] as any[] }));
+const routePolicyRows = vi.hoisted(() => ({ rows: [] as any[] }));
 const fetchWorkspacePolicyMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/runtime/env", () => ({
@@ -16,6 +17,7 @@ vi.mock("@/runtime/env", () => ({
                 eq: () => query,
                 order: async () => ({ data: privateModelRows.rows, error: null }),
                 in: async () => ({ data: providerFactRows.rows, error: null }),
+                not: async () => ({ data: routePolicyRows.rows, error: null }),
             };
             return query;
         },
@@ -135,6 +137,7 @@ describe("handleModels", () => {
         fetchGatewayContextMock.mockReset();
         fetchWorkspacePolicyMock.mockReset();
         providerFactRows.rows = [];
+        routePolicyRows.rows = [];
         guardAuthMock.mockResolvedValue({
             ok: true,
             value: {
@@ -1280,6 +1283,23 @@ describe("handleModels", () => {
             });
             expect(response.headers.get("cache-control")).toBe("private, max-age=60");
             expect(response.headers.get("vary")).toBe("Authorization");
+        });
+
+        it("reads each text route's own data policy (the effective view) under privacy rules", async () => {
+            const provider = buildCatalogueModel().providers[0];
+            fetchCatalogueMock.mockResolvedValue([buildCatalogueModel({ providers: [
+                // The provider isn't ZDR, but its text route is.
+                { ...provider, route_id_by_endpoint: { "text.generate": "openai:openai/gpt-4o-mini" } },
+                { ...provider, api_provider_id: "azure", api_provider_name: "Azure", route_id_by_endpoint: { "text.generate": "azure:openai/gpt-4o-mini" } },
+            ] })]);
+            providerFactRows.rows = [
+                { provider_slug: "openai", zero_data_retention: false, data_policy_tier: "logs", data_policy_confidence: "confirmed" },
+                { provider_slug: "azure", zero_data_retention: false, data_policy_tier: "logs", data_policy_confidence: "confirmed" },
+            ];
+            routePolicyRows.rows = [{ provider_model_id: "openai:openai/gpt-4o-mini", data_policy: { zeroDataRetention: true, tier: "private", confidence: "confirmed" } }];
+            fetchWorkspacePolicyMock.mockResolvedValue(buildWorkspacePolicy({ globalSettings: { privacy_zdr_only: true } }));
+            const body = await (await handleMyModels(new Request("https://api.example.com/v1/models/me"))).json() as any;
+            expect(body.models.map((model: any) => model.offers.map((offer: any) => offer.provider.id))).toEqual([["openai"]]);
         });
 
         it("leaves out a model a guardrail blocks", async () => {

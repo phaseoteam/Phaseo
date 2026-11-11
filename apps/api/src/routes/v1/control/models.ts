@@ -25,7 +25,7 @@ import { normalizeParameterSpecs } from "@core/model-parameters";
 import { getBindingsIfConfigured, getSupabaseAdmin } from "@/runtime/env";
 import { normalizeGatewayRoutingRegion } from "@pipeline/before/deployment-region";
 import { fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
-import { modelAccessSummary, modelsForPolicy } from "./models.policy";
+import { modelAccessSummary, modelsForPolicy, type PolicyRouteFacts } from "./models.policy";
 
 type LifecycleStatus = "active" | "deprecated" | "retired" | null;
 type AvailabilityMode = "active" | "all";
@@ -441,7 +441,7 @@ async function buildFreeRouterCatalogueModel(args: {
     endpoints: string[];
     catalogue: CatalogueModel[];
     freeContext?: Awaited<ReturnType<typeof fetchGatewayContext>> | null;
-}): Promise<CatalogueModel | null> {
+}): Promise<{ model: CatalogueModel; routes: Map<string, PolicyRouteFacts> } | null> {
     if (!canIncludeFreeRouter(args.endpoints)) return null;
 
     try {
@@ -461,6 +461,8 @@ async function buildFreeRouterCatalogueModel(args: {
         const matchedConcreteModels: CatalogueModel[] = [];
         const providers: CatalogueModel["providers"] = [];
         const providerKeySet = new Set<string>();
+        // Each offer's concrete model and data facts, as the request pipeline checks them (/models/me's policy check).
+        const routes = new Map<string, PolicyRouteFacts>();
         for (const snapshot of freeContext.providers) {
             const providerId = String(snapshot.providerId ?? "").trim();
             const apiModelId = String(snapshot.apiModelId ?? "").trim();
@@ -474,6 +476,17 @@ async function buildFreeRouterCatalogueModel(args: {
 
             providerKeySet.add(providerId);
             matchedConcreteModels.push(concreteModel);
+            routes.set(providerId, {
+                apiModelId,
+                capabilityParams: (snapshot.capabilityParams ?? {}) as Record<string, unknown>,
+                facts: {
+                    zeroDataRetention: snapshot.zeroDataRetention ?? null,
+                    promptTrainingPolicy: snapshot.promptTrainingPolicy ?? null,
+                    dataPolicyTier: snapshot.dataPolicyTier ?? null,
+                    dataPolicyConfidence: snapshot.dataPolicyConfidence ?? null,
+                    dataPolicyVariant: snapshot.dataPolicyVariant ?? null,
+                },
+            });
             providers.push({
                 ...concreteProvider,
                 params: Array.from(
@@ -513,7 +526,7 @@ async function buildFreeRouterCatalogueModel(args: {
             ...providers.map((provider) => provider.params_detail)
         );
 
-        return {
+        return { routes, model: {
             model_id: FREE_ROUTER_MODEL_ID,
             base_model_id: FREE_ROUTER_MODEL_ID,
             variant_kind: "standard",
@@ -557,7 +570,7 @@ async function buildFreeRouterCatalogueModel(args: {
                 coming_soon_provider_count: 0,
                 inactive_provider_count: 0,
             },
-        };
+        } };
     } catch {
         return null;
     }
@@ -1012,13 +1025,14 @@ async function listModels(req: Request, scope: "shared" | "me") {
             const knownModelIds = new Set(catalogue.map((model) => model.model_id));
             catalogue.push(...freeRouterCatalogue.filter((model) => !knownModelIds.has(model.model_id)));
         }
-        const freeRouterModel = await buildFreeRouterCatalogueModel({
+        const freeRouter = await buildFreeRouterCatalogueModel({
             workspaceId: auth.value.workspaceId,
             apiKeyId: auth.value.apiKeyId,
             endpoints,
             catalogue,
             freeContext: prefetchedFreeContext,
         });
+        const freeRouterModel = freeRouter?.model ?? null;
         const enrichedCatalogue =
             freeRouterModel && !catalogue.some((model) => model.model_id === freeRouterModel.model_id)
                 ? [freeRouterModel, ...catalogue]
@@ -1065,7 +1079,19 @@ async function listModels(req: Request, scope: "shared" | "me") {
         const policy = scope === "me"
             ? await fetchWorkspacePolicy({ workspaceId: auth.value.workspaceId, apiKeyId: auth.value.apiKeyId })
             : null;
-        const permitted = policy ? await modelsForPolicy(listed, policy) : listed;
+        // What the request pipeline checks per route, which the listing doesn't show: the Free router's concrete
+        // models and data facts, and each text route's id (its effective data policy is read by it).
+        const routeFacts = new Map<string, Map<string, PolicyRouteFacts>>();
+        if (policy) {
+            for (const model of enrichedCatalogue) {
+                if (model.model_id === FREE_ROUTER_MODEL_ID && freeRouter) { routeFacts.set(model.model_id, freeRouter.routes); continue; }
+                routeFacts.set(model.model_id, new Map(model.providers.map((provider) => {
+                    const routeId = provider.route_id_by_endpoint?.["text.generate"];
+                    return [provider.api_provider_id, routeId ? { routeId } : {}];
+                })));
+            }
+        }
+        const permitted = policy ? await modelsForPolicy(listed, policy, routeFacts) : listed;
         // What the key's rules leave out of this listing (before search), so apps can say why a model is missing.
         const access = policy ? modelAccessSummary(listed, permitted, policy) : undefined;
         const models = filterAndSortModels(

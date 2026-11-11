@@ -289,6 +289,8 @@ type CatalogueProvider = {
     params: string[];
     params_detail: SupportedParamDetails;
     service_tiers: OfferServiceTier[];
+    /** The route (v2 provider_model_id) this entry comes from; internal, for /models/me. */
+    route_id: string | null;
 };
 
 export type SupportedParamDetail = Record<string, unknown>;
@@ -351,6 +353,11 @@ export type ProviderInfo = {
     params_detail: SupportedParamDetails;
     /** Absent on catalogue objects cached before the field existed; read it as ["standard"]. */
     service_tiers?: OfferServiceTier[];
+    /**
+     * The route (v2 provider_model_id) behind each endpoint. Internal: /models/me reads each route's effective data
+     * policy by it, as the request pipeline does; the listing never serialises it.
+     */
+    route_id_by_endpoint?: Record<string, string | null>;
 };
 
 export type PricingMeterSummary = {
@@ -1292,7 +1299,8 @@ async function sha256Hex(text: string): Promise<string> {
 
 /** Public catalogue for `filter`, served from cache. Returns a copy callers may mutate. */
 export async function fetchCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]> {
-    const key = `catalogue-list:v1:${await sha256Hex(catalogueFilterKey(filter))}`;
+    // v2: provider entries carry route_id_by_endpoint (for /models/me), so v1 entries without it are not reused.
+    const key = `catalogue-list:v2:${await sha256Hex(catalogueFilterKey(filter))}`;
     const models = await tieredRead<CatalogueModel[]>({
         key,
         loader: () => loadCatalogue(filter),
@@ -1802,6 +1810,7 @@ async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]
                     effective_to: effectiveTo,
                     params: toParamsList(cap.params),
                     params_detail: toParamsDetail(cap.params),
+                    route_id: typeof cap.provider_api_model_id === "string" ? cap.provider_api_model_id : null,
                     service_tiers: deriveOfferServiceTiers({
                         providerId: row.source_provider_id ?? row.provider_id,
                         skuTiers: skuTiersByRouteOperation.get(
@@ -1984,9 +1993,14 @@ async function loadCatalogue(filter: CatalogueFilters): Promise<CatalogueModel[]
                     params: [...entry.params].sort((a, b) => a.localeCompare(b)),
                     params_detail: { ...entry.params_detail },
                     service_tiers: [...entry.service_tiers],
+                    route_id_by_endpoint: Object.fromEntries(entry.endpoints.map((endpoint) => [endpoint, entry.route_id])),
                 });
                 continue;
             }
+            existing.route_id_by_endpoint = {
+                ...existing.route_id_by_endpoint,
+                ...Object.fromEntries(entry.endpoints.map((endpoint) => [endpoint, entry.route_id])),
+            };
 
             existing.endpoints = Array.from(new Set([...existing.endpoints, ...entry.endpoints])).sort();
             existing.input_modalities = Array.from(

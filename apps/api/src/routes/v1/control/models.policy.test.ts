@@ -7,7 +7,7 @@ vi.mock("@/runtime/env", () => ({
 }));
 
 import { buildWorkspacePolicy } from "@pipeline/before/workspacePolicy";
-import { filterModelsForPolicy, modelsForPolicy, policyRestrictsModels, type ProviderDataFacts } from "./models.policy";
+import { filterModelsForPolicy, modelsForPolicy, policyRestrictsModels, type PolicyRouteFacts, type ProviderDataFacts } from "./models.policy";
 
 const offer = (provider: string, price = "0.000001", status = "active") => ({
     provider: { id: provider, name: provider },
@@ -99,6 +99,41 @@ describe("models for a key's policy", () => {
         const list = [model("x/free", [offer("free-host", "0")]), model("x/paid", [offer("paid-host", "0.000001")])];
         const models = filterModelsForPolicy(list, policy, facts({ "free-host": confirmed("trains"), "paid-host": confirmed("trains") }));
         expect(ids(models)).toEqual(["x/paid"]);
+    });
+
+    it("rebuilds a model's prices from the offers left, so a removed provider's cheaper price isn't advertised", () => {
+        const policy = buildWorkspacePolicy({ globalSettings: { provider_restriction_mode: "blocklist", provider_restriction_provider_ids: ["cheap"] } });
+        const list = [{ ...model("x/m", [offer("cheap", "0.000001"), offer("mid", "0.000002"), offer("dear", "0.000003")]),
+            pricing: { pricing_plan: "standard", meters: { input_text_tokens: { provider_id: "cheap", unit: "token", unit_size: 1, price_per_unit: "0.000001", currency: "USD" }, output_text_tokens: null } } }];
+        const [kept] = filterModelsForPolicy(list, policy, new Map());
+        expect(kept.pricing).toEqual({ pricing_plan: "standard", meters: { input_text_tokens: { provider_id: "mid", unit: "token", unit_size: 1, price_per_unit: "0.000002", currency: "USD" }, output_text_tokens: null } });
+    });
+
+    it("applies each route's capability data policy over the provider's facts, as requests do", () => {
+        const zdr = buildWorkspacePolicy({ globalSettings: { privacy_zdr_only: true } });
+        const list = [model("x/m", [offer("verified"), offer("excluded"), offer("plain")])];
+        const providerFacts = facts({ verified: confirmed("logs", false), excluded: confirmed("private", true), plain: confirmed("private", true) });
+        const routes = new Map([["x/m", new Map<string, PolicyRouteFacts>([
+            // The provider has no ZDR, but this route is verified ZDR.
+            ["verified", { capabilityParams: { data_policy: { zeroDataRetention: true, tier: "private", confidence: "confirmed" } } }],
+            // The provider is ZDR, but this route explicitly isn't.
+            ["excluded", { capabilityParams: { data_policy: { zeroDataRetention: false } } }],
+        ])]]);
+        expect(providers(filterModelsForPolicy(list, zdr, providerFacts, routes), "x/m")?.sort()).toEqual(["plain", "verified"]);
+        // A catalogue guarantee past its date counts for nothing.
+        const expired = new Map([["x/m", new Map<string, PolicyRouteFacts>([["plain", { capabilityParams: { data_policy: { catalogManaged: true, validUntil: "2020-01-01T00:00:00Z", zeroDataRetention: true } } }]])]]);
+        expect(providers(filterModelsForPolicy(list, zdr, providerFacts, expired), "x/m")).toEqual(["excluded"]);
+    });
+
+    it("checks the Free router's routes by the concrete models they serve", () => {
+        const router = [model("phaseo/free", [offer("host-a", "0"), offer("host-b", "0")])];
+        const routes = new Map([["phaseo/free", new Map<string, PolicyRouteFacts>([["host-a", { apiModelId: "x/free-a" }], ["host-b", { apiModelId: "x/free-b" }]])]]);
+        // An allowlist of a concrete free model keeps the router, with that model's route only.
+        const allow = buildWorkspacePolicy({ guardrails: [{ id: "g1", model_restriction_mode: "allowlist", allowed_api_model_ids: ["x/free-a"] }] });
+        expect(providers(filterModelsForPolicy(router, allow, new Map(), routes), "phaseo/free")).toEqual(["host-a"]);
+        // A blocked concrete model's route goes.
+        const block = buildWorkspacePolicy({ guardrails: [{ id: "g1", model_restriction_mode: "blocklist", allowed_api_model_ids: ["x/free-b"] }] });
+        expect(providers(filterModelsForPolicy(router, block, new Map(), routes), "phaseo/free")).toEqual(["host-a"]);
     });
 
     it("lets a workspace's private models through privacy rules", () => {
