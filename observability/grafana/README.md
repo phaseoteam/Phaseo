@@ -69,7 +69,7 @@ node --env-file=observability/grafana/.env.local observability/grafana/notificat
 node --env-file=observability/grafana/.env.local observability/grafana/notifications.mjs --apply
 ```
 
-The Grafana contact point and production notification policy were saved on 10 November 2026. The incident.io source was found with zero routes; its Slack route and delivery test still need completion. Rules remain paused until that test succeeds.
+The Grafana contact point and production notification policy were saved on 10 November 2026. On 11 November, the active **Grafana production alerts** incident.io route was saved for `#ops-incidents`, with escalation and incident creation disabled. A labelled Grafana contact-point test reached Slack and was manually resolved in incident.io. The five production rules were then enabled; staging remains paused. All five rules evaluated successfully, and a real scheduled-job failure also reached Slack. Automatic Grafana recovery delivery has not yet been verified.
 
 This configures only the owned contact point and an `application=phaseo, environment=production` notification route, preserves other/default routes, stores the bearer token in Grafana's secure settings, and adds dashboard/runbook links to production rules. It preserves whether rules are paused. Matching notifications group by rule/environment, wait 30 seconds initially, group updates over five minutes, repeat after four hours, and send recovery messages.
 
@@ -104,7 +104,7 @@ Events use allowlisted JSON and the standard Loki `service_name` resource label.
 
 ## Alerts and uptime
 
-Five paused rules cover actionable gateway failures (>5%, at least 20 requests in ten minutes), missing scheduler telemetry, job exceptions, settlement failures and web errors. Quiet request traffic is healthy; a missing heartbeat is separate. Query failures use Grafana's Error state.
+Five enabled production rules cover actionable gateway failures (>5%, at least 20 requests in ten minutes), missing scheduler telemetry, job exceptions, settlement failures and web errors. Staging rules remain paused. Quiet request traffic is healthy; a missing heartbeat is separate. Query failures use Grafana's Error state.
 
 Once telemetry and notification routing are verified, configure **Alerting > Contact points** and its notification policy, then unpause the desired rules. Provisioning does not create contacts or send messages. `--apply --enable-alerts` explicitly activates owned rules; applying without that flag pauses them again.
 

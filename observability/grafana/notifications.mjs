@@ -63,9 +63,9 @@ export async function provisionNotifications({ args = process.argv.slice(2), env
   const created = await api(`${path}/receivers${existing ? '/' + existing.metadata.name : ''}`, existing ? 'PUT' : 'POST', receiver);
   const receiverName = existing?.metadata.name ?? created.metadata?.name;
   if (!receiverName || !/^[a-zA-Z0-9_-]+$/.test(receiverName)) throw new Error('Grafana did not return a contact point name; alerts remain unchanged');
-  await api(`${path}/routingtrees/user-defined`, 'PUT', routing);
   const saved = await api(`${path}/receivers/${receiverName}`);
   if (!saved.spec.integrations[0]?.secureFields?.authorization_credentials) throw new Error('Grafana did not confirm secure storage of the source token; alerts remain unchanged');
+  await api(`${path}/routingtrees/user-defined`, 'PUT', routing);
   const savedTree = await api(`${path}/routingtrees/user-defined`);
   if (!isDeepStrictEqual(savedTree.spec, routing.spec)) throw new Error('Notification policy readback mismatch; alerts remain unchanged');
   const updated = structuredClone(group);

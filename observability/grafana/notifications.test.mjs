@@ -76,11 +76,12 @@ test('rules enable only after secure credential and route readback; queries and 
   assert.ok(!logs.join('').includes('private-'));
 });
 
-test('failed credential storage or concurrent routing edits never enable rules', async () => {
+test('failed credential storage leaves routing untouched and concurrent routing edits never enable rules', async () => {
   for (const options of [{ secure: false }, { conflict: true }]) {
     const { writes, fetcher } = fixture(options);
     await assert.rejects(provisionNotifications({ args: ['--apply', '--enable-alerts'], env, fetcher, log: () => {} }), /secure storage|HTTP 409/);
     assert.equal(writes.some(write => write.url.includes('/api/ruler/')), false);
+    if (options.secure === false) assert.equal(writes.some(write => write.url.includes('/routingtrees/')), false);
   }
 });
 
