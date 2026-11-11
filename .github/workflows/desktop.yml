@@ -59,6 +59,9 @@ jobs:
               run: npm install --global @openai/codex@0.160.0
             - name: Build desktop and agent SDK
               run: pnpm --filter @phaseo/desktop build
+            # No timing, so it never flakes: packages loaded before the window, startup bytes, compile cache, loading logo.
+            - name: Startup budgets
+              run: pnpm --filter @phaseo/desktop perf:budgets
             - name: Lint
               run: pnpm --filter @phaseo/desktop lint
             - name: Typecheck
