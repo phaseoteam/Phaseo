@@ -101,6 +101,83 @@ function label(map: Record<string, string>, value: string): string {
 	return map[value] ?? value.replace(/[_-]+/g, " ").replace(/^\w/, (char) => char.toUpperCase());
 }
 
+/** Stored app category codes (lib/appCategories) → their message keys. */
+const APP_CATEGORY_KEYS: Record<string, string> = {
+	chat: "chat",
+	"developer-tools": "developerTools",
+	research: "research",
+	productivity: "productivity",
+	education: "education",
+	commerce: "commerce",
+	media: "media",
+	finance: "finance",
+	other: "other",
+};
+
+/** Stored benchmark category codes → their message keys; synonyms share one label. */
+const BENCHMARK_CATEGORY_KEYS: Record<string, string> = {
+	general: "general",
+	agents: "agents",
+	agentic: "agents",
+	code: "coding",
+	coding: "coding",
+	multimodal: "multimodal",
+	math: "math",
+	mathematics: "math",
+	reasoning: "reasoning",
+	language: "language",
+	long_context: "longContext",
+	audio: "audio",
+	health: "health",
+	healthcare: "health",
+	embeddings: "embeddings",
+	biology: "biology",
+	creativity: "creativity",
+	planning: "planning",
+	safety: "safety",
+	communication: "communication",
+	image_to_text: "imageToText",
+	lean_reasoning: "leanReasoning",
+	"3d": "threeD",
+	professional: "professional",
+	legal: "legal",
+	finance: "finance",
+	science: "science",
+	knowledge: "knowledge",
+	"general-knowledge": "knowledge",
+	hallucinations: "hallucinations",
+	cost: "cost",
+	vision: "vision",
+	grounding: "grounding",
+	security: "security",
+	cybersecurity: "security",
+	embodied: "embodied",
+	economics: "economics",
+	ranking: "ranking",
+	chemistry: "chemistry",
+	spatial_reasoning: "spatialReasoning",
+	instruction_following: "instructionFollowing",
+	video: "video",
+	factuality: "factuality",
+};
+
+/**
+ * Category codes translated at the display boundary. App categories are stored as a
+ * comma-separated list; an unknown code is shown as stored, never reworded.
+ */
+function categoryLabel(t: Translate, scope: "appCategory" | "benchmarkCategory", stored: string): string {
+	const keys = scope === "appCategory" ? APP_CATEGORY_KEYS : BENCHMARK_CATEGORY_KEYS;
+	const codes = scope === "appCategory" ? stored.split(",") : [stored];
+	return codes
+		.map((code) => code.trim())
+		.filter(Boolean)
+		.map((code) => {
+			const key = keys[code.toLowerCase()];
+			return key ? t(`${scope}.${key}` as never) : code;
+		})
+		.join(", ");
+}
+
 function useLabels(t: Translate) {
 	return {
 		status: {
@@ -220,7 +297,7 @@ function ProviderView({ card }: { card: ProviderEntityCard }) {
 			<HoverCardStats
 				items={[
 					{ key: "live", label: t("statLiveModels"), value: card.activeModels },
-					{ key: "zdr", label: t("statZdr"), value: card.zeroDataRetention ? tProviders("yes") : tProviders("no") },
+					...(card.zeroDataRetention === null ? [] : [{ key: "zdr", label: t("statZdr"), value: card.zeroDataRetention ? tProviders("yes") : tProviders("no") }]),
 					{ key: "byok", label: t("statByok"), value: card.byok ? tProviders("yes") : tProviders("no") },
 				]}
 			/>
@@ -298,7 +375,7 @@ function AppView({ card }: { card: AppEntityCard }) {
 					? <img src={card.imageUrl} alt="" width={LOGO_SIZE} height={LOGO_SIZE} className="size-7 shrink-0 rounded-md border border-border/60 object-cover" />
 					: <IconTile><Boxes /></IconTile>}
 				title={card.name}
-				meta={[card.category ? label({}, card.category) : null, card.domain]}
+				meta={[card.category ? categoryLabel(t, "appCategory", card.category) || null : null, card.domain]}
 			/>
 			<HoverCardStats
 				items={[
@@ -325,7 +402,7 @@ function BenchmarkView({ card }: { card: BenchmarkEntityCard }) {
 			<Header
 				icon={<IconTile><Gauge /></IconTile>}
 				title={card.name}
-				meta={[card.category ? label({}, card.category) : null, t("modelsScored", { count: card.models })]}
+				meta={[card.category ? categoryLabel(t, "benchmarkCategory", card.category) || null : null, t("modelsScored", { count: card.models })]}
 			/>
 			<HoverCardFacts
 				rows={[

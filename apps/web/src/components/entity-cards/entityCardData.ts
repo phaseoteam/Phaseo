@@ -1,6 +1,7 @@
 // Entity card payloads from `GET /api/_web/entity-cards/<kind>/<id>` (web-api
 // `routes/public/entityCards.ts`), cached for the page's lifetime so moving back
-// over a link opens its card at once. A 404 is cached as "no card".
+// over a link opens its card at once. A 404 is cached as "no card" for as long
+// as the API caches it (MISS_TTL_MS).
 import type { EntityKind } from "@/lib/entityCards/matchEntityHref";
 import { fetchPublicWebApi, WebApiError } from "@/lib/web-api/client";
 
@@ -37,7 +38,8 @@ export type ProviderEntityCard = {
 	totalModels: number;
 	activeModels: number;
 	dataPolicyTier: string | null;
-	zeroDataRetention: boolean;
+	/** The requested provider's own policy; null when it does not state one. */
+	zeroDataRetention: boolean | null;
 	byok: boolean;
 	regions: string[];
 	popular: EntityRefList;
@@ -127,7 +129,10 @@ export type EntityCard =
 
 /** Enough for a long session of hovering; the oldest entries go first. */
 const MAX_CACHED_CARDS = 400;
-const cache = new Map<string, Promise<EntityCard | null>>();
+/** A miss is remembered as long as the API caches its 404, so a newly published entity gets its card. */
+export const MISS_TTL_MS = 5 * 60 * 1000;
+// `expiresAt` is set only for misses; cards stay for the page's lifetime.
+const cache = new Map<string, { promise: Promise<EntityCard | null>; expiresAt?: number }>();
 
 export function entityCardPath(kind: EntityKind, id: string): `/api/_web/${string}` {
 	// Model and family ids keep their slashes as path segments.
@@ -138,15 +143,22 @@ export function entityCardPath(kind: EntityKind, id: string): `/api/_web/${strin
 export function loadEntityCard(kind: EntityKind, id: string): Promise<EntityCard | null> {
 	const key = `${kind}:${id}`;
 	const cached = cache.get(key);
-	if (cached) return cached;
-	const promise = fetchPublicWebApi<{ card?: EntityCard }>(entityCardPath(kind, id))
+	if (cached && (cached.expiresAt === undefined || cached.expiresAt > Date.now())) return cached.promise;
+	cache.delete(key);
+	const entry: { promise: Promise<EntityCard | null>; expiresAt?: number } = { promise: Promise.resolve(null) };
+	entry.promise = fetchPublicWebApi<{ card?: EntityCard }>(entityCardPath(kind, id))
 		.then((body) => (body.card && body.card.kind === kind ? body.card : null))
 		.catch((error: unknown) => {
 			if (error instanceof WebApiError && error.status === 404) return null;
-			cache.delete(key);
+			if (cache.get(key) === entry) cache.delete(key);
 			throw error;
+		})
+		.then((card) => {
+			if (card === null) entry.expiresAt = Date.now() + MISS_TTL_MS;
+			return card;
 		});
-	cache.set(key, promise);
+	cache.set(key, entry);
+	const promise = entry.promise;
 	if (cache.size > MAX_CACHED_CARDS) cache.delete(cache.keys().next().value!);
 	return promise;
 }

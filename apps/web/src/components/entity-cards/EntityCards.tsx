@@ -6,7 +6,9 @@
 //   change. `data-no-entity-card` opts a link or area out; navigation, headers,
 //   breadcrumbs, existing hover-card/popover triggers and the page's own entity
 //   are skipped (`entityLinkFromTarget`).
-// - Mouse only: on touch a tap just follows the link.
+// - Mouse and keyboard: a card opens on hover and on keyboard focus
+//   (:focus-visible), with the same delays, and closes on blur unless focus
+//   moves into the card. Escape closes it. On touch a tap just follows the link.
 // - Opens after 450 ms, switches after 120 ms when moving from an open card's
 //   link to another, closes 200 ms after the pointer leaves the link and card.
 //   A pointerdown outside the card and any navigation close it at once; a
@@ -35,6 +37,15 @@ function anchorFor(event: Event): HTMLAnchorElement | null {
 
 function insideCard(target: EventTarget | null): boolean {
 	return target instanceof Element && target.closest("[data-entity-card]") !== null;
+}
+
+function focusVisible(element: Element): boolean {
+	try {
+		return element.matches(":focus-visible");
+	} catch {
+		// Without :focus-visible support we cannot tell keyboard from mouse focus; stay closed.
+		return false;
+	}
 }
 
 /** The listener and card state; `pathname` is the current page's path. */
@@ -78,23 +89,57 @@ export function EntityCardsController({ pathname }: { pathname: string }) {
 	// link's pointerout at its root, before this document listener would
 	// schedule the close, so the card would close under the pointer.
 	useEffect(() => {
-		const over = (event: PointerEvent) => {
-			if (event.pointerType !== "mouse") return;
-			const link = entityLinkFromTarget(event.target, path.current, window.location.origin);
+		// Hover or focus intent on an eligible link: start the request and the card UI now,
+		// so both are usually ready when the card opens.
+		const intend = (target: EventTarget | null) => {
+			const link = entityLinkFromTarget(target, path.current, window.location.origin);
 			if (!link) {
-				if (insideCard(event.target)) cancelClose();
+				if (insideCard(target)) cancelClose();
 				return;
 			}
 			if (current.current?.element === link.element) {
 				cancelClose();
 				return;
 			}
-			// Hover intent: start the request and the card UI now, so both are usually ready when the card opens.
 			loadEntityCard(link.kind, link.id).catch(() => {});
 			setPopupLoaded(true);
 			clearTimeout(openTimer.current);
 			cancelClose();
 			openTimer.current = setTimeout(() => setTarget(link), current.current ? SWITCH_DELAY_MS : OPEN_DELAY_MS);
+		};
+		const over = (event: PointerEvent) => {
+			if (event.pointerType !== "mouse") return;
+			intend(event.target);
+		};
+		// Keyboard focus only: a mouse click also focuses the link, but is not :focus-visible.
+		const focusIn = (event: FocusEvent) => {
+			if (!(event.target instanceof Element)) return;
+			// Tabbing through a card's own links keeps it as it is: opening their cards
+			// would replace the content that holds focus.
+			if (insideCard(event.target)) {
+				cancelClose();
+				return;
+			}
+			// Focus that lands anywhere else closes an open card, even when the element that
+			// held focus was removed and no focusout came.
+			if (current.current && current.current.element !== event.target) scheduleClose();
+			if (focusVisible(event.target)) intend(event.target);
+		};
+		const focusOut = (event: FocusEvent) => {
+			const to = event.relatedTarget instanceof Element ? event.relatedTarget : null;
+			const anchor = anchorFor(event);
+			const open = current.current?.element ?? null;
+			// Leaving a link that was about to open: forget it.
+			if (anchor && anchor !== open) clearTimeout(openTimer.current);
+			if (!(anchor && anchor === open) && !insideCard(event.target)) return;
+			// Focus moving into the card, or back to its link, keeps it open.
+			if (to && (insideCard(to) || to === open)) return;
+			scheduleClose();
+		};
+		const key = (event: KeyboardEvent) => {
+			if (event.key !== "Escape") return;
+			if (current.current) hide();
+			else clearTimeout(openTimer.current);
 		};
 		const out = (event: PointerEvent) => {
 			const to = event.relatedTarget instanceof Element ? event.relatedTarget : null;
@@ -119,10 +164,16 @@ export function EntityCardsController({ pathname }: { pathname: string }) {
 		document.addEventListener("pointerover", over);
 		document.addEventListener("pointerout", out);
 		document.addEventListener("pointerdown", down, true);
+		document.addEventListener("focusin", focusIn);
+		document.addEventListener("focusout", focusOut);
+		document.addEventListener("keydown", key);
 		return () => {
 			document.removeEventListener("pointerover", over);
 			document.removeEventListener("pointerout", out);
 			document.removeEventListener("pointerdown", down, true);
+			document.removeEventListener("focusin", focusIn);
+			document.removeEventListener("focusout", focusOut);
+			document.removeEventListener("keydown", key);
 			clearTimeout(openTimer.current);
 			clearTimeout(closeTimer.current);
 		};

@@ -20,6 +20,9 @@
   "entityCards": {
     "statOrganisations": "Organizations",
     "organisationCount": "{count, plural, one {# organization} other {# organizations}}",
-    "rowTopOrganisations": "Organizations"
+    "rowTopOrganisations": "Organizations",
+    "benchmarkCategory": {
+      "math": "Math"
+    }
   }
 }

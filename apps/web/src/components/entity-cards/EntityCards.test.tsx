@@ -20,7 +20,7 @@ vi.mock("@/components/link", () => ({
 
 import { WebApiError } from "@/lib/web-api/client";
 import { CLOSE_DELAY_MS, EntityCardsController, OPEN_DELAY_MS, SWITCH_DELAY_MS } from "./EntityCards";
-import { clearEntityCardCache, type ModelEntityCard, type OrganisationEntityCard } from "./entityCardData";
+import { clearEntityCardCache, MISS_TTL_MS, type ModelEntityCard, type OrganisationEntityCard } from "./entityCardData";
 
 const MODEL: ModelEntityCard = {
 	kind: "model",
@@ -243,5 +243,92 @@ describe("EntityCards", () => {
 		pointer("pointerout", link("org"), { relatedTarget: document.body });
 		pointer("pointerover", link("org"));
 		expect(fetchPublicWebApi).toHaveBeenCalledTimes(1);
+
+		// ...but only as long as the API caches its 404, so a newly published entity gets its card.
+		pointer("pointerout", link("org"), { relatedTarget: document.body });
+		await advance(MISS_TTL_MS + 1);
+		pointer("pointerover", link("org"));
+		expect(fetchPublicWebApi).toHaveBeenCalledTimes(2);
+	});
+
+	it("opens on keyboard focus, stays open when focus moves into the card, closes on blur and on Escape", async () => {
+		render();
+		const nativeMatches = Element.prototype.matches;
+		const visible = vi.spyOn(Element.prototype, "matches").mockImplementation(function (this: Element, selector: string) {
+			if (selector === ":focus-visible") return this === document.activeElement;
+			return nativeMatches.call(this, selector);
+		});
+		try {
+			act(() => link("model").focus());
+			expect(fetchPublicWebApi).toHaveBeenCalledWith("/api/_web/entity-cards/model/acme/rocket-2");
+			await advance(OPEN_DELAY_MS);
+			await respond("/api/_web/entity-cards/model/acme/rocket-2", { card: MODEL });
+			expect(card()?.hasAttribute("data-open")).toBe(true);
+
+			// Focus moving into the card keeps it open.
+			const inCardLink = card()!.querySelector<HTMLAnchorElement>("a[href='/organisations/acme']")!;
+			act(() => inCardLink.focus());
+			await advance(CLOSE_DELAY_MS * 2);
+			expect(card()?.hasAttribute("data-open")).toBe(true);
+
+			// Leaving the card for the page closes it after the delay.
+			act(() => link("tab").focus());
+			await advance(CLOSE_DELAY_MS);
+			expect(card()?.hasAttribute("data-open") ?? false).toBe(false);
+
+			// Escape closes a focus-opened card at once.
+			act(() => link("model").focus());
+			await advance(OPEN_DELAY_MS);
+			expect(card()?.hasAttribute("data-open")).toBe(true);
+			act(() => {
+				document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape", bubbles: true }));
+			});
+			await advance(0);
+			expect(card()?.hasAttribute("data-open") ?? false).toBe(false);
+
+			// Mouse focus (not :focus-visible) does not open a card.
+			visible.mockImplementation(function (this: Element, selector: string) {
+				if (selector === ":focus-visible") return false;
+				return nativeMatches.call(this, selector);
+			});
+			fetchPublicWebApi.mockClear();
+			act(() => link("org").focus());
+			await advance(OPEN_DELAY_MS * 2);
+			expect(fetchPublicWebApi).not.toHaveBeenCalled();
+		} finally {
+			visible.mockRestore();
+		}
+	});
+
+	it("leaves out ZDR when the provider does not state it, and translates known categories only", async () => {
+		render();
+		const host = container.querySelector("main")!;
+		host.insertAdjacentHTML("beforeend", "<a id=\"provider\" href=\"/api-providers/fastinfer-eu\">FastInfer EU</a><a id=\"app\" href=\"/apps/rocketchat\">RocketChat</a><a id=\"bench\" href=\"/benchmarks/swe-bench\">SWE-bench</a>");
+		pointer("pointerover", link("provider"));
+		await advance(OPEN_DELAY_MS);
+		await respond("/api/_web/entity-cards/provider/fastinfer-eu", { card: {
+			kind: "provider", id: "fastinfer-eu", name: "FastInfer", countryCode: null, totalModels: 3, activeModels: 2,
+			dataPolicyTier: null, zeroDataRetention: null, byok: false, regions: [], popular: { items: [], more: 0 }, newest: null,
+		} });
+		const labels = Array.from(card()!.querySelectorAll("[data-slot=hover-card-stats] dt")).map((dt) => dt.textContent);
+		expect(labels).not.toContain("ZDR");
+		expect(labels.length).toBe(2);
+
+		pointer("pointerout", link("provider"), { relatedTarget: link("app") });
+		pointer("pointerover", link("app"));
+		await respond("/api/_web/entity-cards/app/rocketchat", { card: {
+			kind: "app", id: "rocketchat", name: "RocketChat", imageUrl: null, category: "chat,developer-tools,space_travel", domain: null,
+			rank: null, tokenSharePct: null, models: null, rankChange: null, topModels: { items: [], more: 0 }, firstSeen: null,
+		} });
+		await advance(SWITCH_DELAY_MS);
+		expect(card()?.textContent).toContain("Chat, Developer tools, space_travel");
+
+		pointer("pointerout", link("app"), { relatedTarget: link("bench") });
+		pointer("pointerover", link("bench"));
+		await respond("/api/_web/entity-cards/benchmark/swe-bench", { card: {
+			kind: "benchmark", id: "swe-bench", name: "SWE-bench", category: "long_context", models: 4, lowerIsBetter: false, leaders: [],
+		} });
+		await advance(SWITCH_DELAY_MS);
+		expect(card()?.textContent).toContain("Long context");
 	});
 });

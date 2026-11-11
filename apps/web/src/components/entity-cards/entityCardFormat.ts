@@ -1,17 +1,29 @@
 // Number and date formatting for entity cards. Money is always US dollars in
-// the US style ("$12.50"); sub-cent rates keep three significant digits so a
-// cheap model never reads as free (as MonitorDataTable's formatRate does).
+// the US style ("$12.50"). A published price is shown with every digit it was
+// published with, so it is never rounded up against the customer and a cheap
+// rate never reads as free.
 
-const usd = (options: Intl.NumberFormatOptions) =>
-	new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", notation: "standard", ...options });
+/** Decimal places in the shortest form of a number ("0.0004255" → 7, "4.2e-7" → 8). */
+function decimalPlaces(value: number): number {
+	const [mantissa, exponent] = String(value).toLowerCase().split("e");
+	const fraction = mantissa.split(".")[1]?.length ?? 0;
+	return Math.max(0, fraction - Number(exponent ?? 0));
+}
 
-/** "$8", "$12.50", "$0.075", "$0.000425". */
+/** "$8", "$12.50", "$0.075", "$0.01049", "$0.0004255". */
 export function formatUsd(value: number | null | undefined): string | null {
 	if (value === null || value === undefined || !Number.isFinite(value) || value < 0) return null;
-	if (value === 0) return "$0";
-	if (value < 0.01) return usd({ maximumSignificantDigits: 3 }).format(value);
-	const integer = Math.abs(value - Math.round(value)) < 1e-9;
-	return usd(integer ? { maximumFractionDigits: 0 } : { minimumFractionDigits: 2, maximumFractionDigits: 3 }).format(value);
+	// Drop binary floating-point noise (0.1 + 0.2) without touching published digits.
+	const price = Number(value.toPrecision(12));
+	const decimals = Math.min(20, decimalPlaces(price));
+	return new Intl.NumberFormat("en-US", {
+		style: "currency",
+		currency: "USD",
+		notation: "standard",
+		// Whole dollars stay whole ("$8"); anything else shows cents at least ("$12.50").
+		minimumFractionDigits: decimals === 0 ? 0 : 2,
+		maximumFractionDigits: Math.max(2, decimals),
+	}).format(price);
 }
 
 /**
