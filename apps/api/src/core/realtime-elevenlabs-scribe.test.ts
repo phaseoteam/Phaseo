@@ -289,6 +289,50 @@ describe("ElevenLabs Scribe Live relay", () => {
 		expect(upstreamSent(upstream).at(-1)).toEqual({ message_type: "input_audio_chunk", audio_base_64: "", commit: true, sample_rate: 16_000 });
 	});
 
+	it("on session.end waits for the transcript of a manual commit still outstanding", async () => {
+		vi.useFakeTimers();
+		const { object, upstream } = await streaming({ commit_strategy: "manual" }, 5);
+		await object.handleClientMessage(JSON.stringify({ type: "input_audio.commit" }));
+		const commits = () => upstreamSent(upstream).filter((message: any) => message.commit === true).length;
+		expect(commits()).toBe(1);
+		await object.handleClientMessage(JSON.stringify({ type: "session.end" }));
+		// Nothing new to commit, but the manual commit's transcript has not arrived yet.
+		expect(commits()).toBe(1);
+		expect(mocks.settleRealtimeSession).not.toHaveBeenCalled();
+		expect(sentOfType(object, "transcription.done")).toEqual([]);
+		await play(object, [{ message_type: "committed_transcript", text: "Hello there." }]);
+		expect(mocks.settleRealtimeSession).toHaveBeenCalledOnce();
+		expect(sentOfType(object, "transcription.done")).toEqual([
+			{ type: "transcription.done", text: "Hello there.", segment_count: 1 },
+		]);
+	});
+
+	it("keeps audio sent after an outstanding commit uncommitted when that commit's transcript arrives", async () => {
+		vi.useFakeTimers();
+		const { object, upstream } = await streaming({ commit_strategy: "manual" }, 5);
+		await object.handleClientMessage(JSON.stringify({ type: "input_audio.commit" }));
+		await speak(object, 4);
+		await play(object, [{ message_type: "committed_transcript", text: "First." }]);
+		// The 0.4 s sent after the first commit is still uncommitted.
+		await object.handleClientMessage(JSON.stringify({ type: "input_audio.commit" }));
+		expect(sentOfType(object, "relay.client_event_rejected")).toEqual([]);
+		expect(upstreamSent(upstream).filter((message: any) => message.commit === true)).toHaveLength(2);
+	});
+
+	it("on session.end commits audio sent after an acknowledged manual commit and waits for it", async () => {
+		vi.useFakeTimers();
+		const { object, upstream } = await streaming({ commit_strategy: "manual" }, 5);
+		await object.handleClientMessage(JSON.stringify({ type: "input_audio.commit" }));
+		await speak(object, 4);
+		await play(object, [{ message_type: "committed_transcript", text: "First." }]);
+		await object.handleClientMessage(JSON.stringify({ type: "session.end" }));
+		expect(upstreamSent(upstream).filter((message: any) => message.commit === true)).toHaveLength(2);
+		expect(mocks.settleRealtimeSession).not.toHaveBeenCalled();
+		await play(object, [{ message_type: "committed_transcript", text: "Second." }]);
+		expect(mocks.settleRealtimeSession).toHaveBeenCalledOnce();
+		expect(sentOfType(object, "transcription.done")[0]).toMatchObject({ text: "First. Second.", segment_count: 2 });
+	});
+
 	it("on session.end commits the rest, sends transcription.done after the last follow-up, then settles once", async () => {
 		vi.useFakeTimers();
 		const { object, upstream } = await streaming(allSettings, 20);

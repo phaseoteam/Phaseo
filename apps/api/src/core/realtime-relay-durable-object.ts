@@ -614,8 +614,8 @@ export class RealtimeRelayDurableObject {
 	private elevenLabsQuickRetryMs = [0, 2_000, 5_000];
 	private elevenLabsCostRetryMs = ELEVENLABS_COST_RETRY_MS;
 	// ElevenLabs Scribe Live: settings from session.update, fixed when the socket
-	// opens at the client's first audio chunk; audio held while it opens; the
-	// audio sent since the last commit; and the end-of-session commit.
+	// opens at the client's first audio chunk; audio held while it opens; where
+	// the audio sent stands against the commits; and the end of the session.
 	private scribeSettings: ElevenLabsScribeSettings = {};
 	private scribeTranscript: ElevenLabsScribeTranscript | null = null;
 	private scribeConnecting: Promise<boolean> | null = null;
@@ -624,10 +624,13 @@ export class RealtimeRelayDurableObject {
 	private scribeHeldAudio: Array<{ audio: string; ms: number }> = [];
 	private scribeHeldAudioMs = 0;
 	private scribeChunksSent = 0;
-	private scribeAudioSinceCommitMs = 0;
+	// Audio sent to ElevenLabs, and the point up to which it is committed (by a
+	// commit the relay sent, or by a VAD commit whose transcript has arrived).
+	private scribeAudioSentMs = 0;
+	private scribeCommittedThroughMs = 0;
+	// Commits the relay sent (manual and final) whose transcript has not arrived.
+	private scribeOutstandingCommits = 0;
 	private scribeFinishing = false;
-	// The commit count when the final commit was sent (null: none was needed).
-	private scribeFinalCommitAfter: number | null = null;
 	private scribeDoneSent = false;
 
 	private get isLive() { return isLiveModel(this.session?.model_id); }
@@ -1306,12 +1309,11 @@ export class RealtimeRelayDurableObject {
 		});
 		if (type === "input_audio.commit") {
 			// ElevenLabs closes the session on a commit of less than 0.3 s of new audio.
-			if (!this.acceptingAudio || !this.scribeReady || this.scribeAudioSinceCommitMs < ELEVENLABS_SCRIBE_MIN_COMMIT_AUDIO_MS) {
+			if (!this.acceptingAudio || !this.scribeReady || this.scribeUncommittedMs < ELEVENLABS_SCRIBE_MIN_COMMIT_AUDIO_MS) {
 				reject("realtime_commit_not_accepted");
 				return;
 			}
-			this.scribeAudioSinceCommitMs = 0;
-			this.sendUpstream(elevenLabsScribeCommit());
+			this.sendScribeCommit();
 			return;
 		}
 		const result = mergeElevenLabsScribeSessionUpdate(this.scribeSettings, message);
@@ -1350,10 +1352,22 @@ export class RealtimeRelayDurableObject {
 	/** Audio is metered when it is sent: audio that never reached ElevenLabs is not billed. */
 	private sendScribeAudio(audio: string, durationMs: number) {
 		this.usage = addDuration(this.usage, "input_audio_ms", durationMs);
-		this.scribeAudioSinceCommitMs += durationMs;
+		this.scribeAudioSentMs += durationMs;
 		const previousText = this.scribeChunksSent === 0 ? this.scribeSettings.previous_text : undefined;
 		this.scribeChunksSent += 1;
 		this.sendUpstream(elevenLabsScribeAudioChunk(audio, previousText));
+	}
+
+	/** Audio sent after the latest commit (sent by the relay, or a VAD commit already transcribed). */
+	private get scribeUncommittedMs() {
+		return this.scribeAudioSentMs - this.scribeCommittedThroughMs;
+	}
+
+	/** Commits everything sent so far; its transcript is awaited before the session settles. */
+	private sendScribeCommit() {
+		this.scribeCommittedThroughMs = this.scribeAudioSentMs;
+		this.scribeOutstandingCommits += 1;
+		this.sendUpstream(elevenLabsScribeCommit());
 	}
 
 	/**
@@ -1416,14 +1430,22 @@ export class RealtimeRelayDurableObject {
 	/**
 	 * Scribe events are translated to transcription.* events, never forwarded
 	 * raw. ElevenLabs sends no usage: the bill is the audio the relay sent. Once
-	 * the session is ending, the final commit's transcript and every follow-up
-	 * event (timestamps, speaker labels) lets it settle.
+	 * the session is ending, the transcript of every commit the relay sent
+	 * (manual or final) and every follow-up event (timestamps, speaker labels)
+	 * lets it settle.
 	 */
 	private async handleScribeEvent(event: Record<string, unknown>) {
 		const transcript = this.scribeTranscript ?? (this.scribeTranscript = new ElevenLabsScribeTranscript(this.scribeSettings));
 		const { kind, events } = transcript.translate(event);
 		if (kind === "session_started") this.scribeSetupWaiter?.(true);
-		if (kind === "committed" && this.scribeFinalCommitAfter === null) this.scribeAudioSinceCommitMs = 0;
+		if (kind === "committed") {
+			// Transcripts arrive in commit order. One answering a relay commit covers
+			// only the audio up to that commit: audio sent since stays uncommitted.
+			// With none outstanding it is a VAD commit, whose end the relay is not
+			// told, so everything sent so far counts as committed.
+			if (this.scribeOutstandingCommits > 0) this.scribeOutstandingCommits -= 1;
+			else this.scribeCommittedThroughMs = this.scribeAudioSentMs;
+		}
 		// The relay's own final commit can be refused when VAD already committed
 		// the audio; ElevenLabs then closes the socket, which ends the session.
 		const ownCommitRefused = kind === "error" && this.scribeFinishing && event.message_type === "commit_throttled";
@@ -1440,10 +1462,11 @@ export class RealtimeRelayDurableObject {
 		}
 	}
 
+	/** Every commit the relay sent has its transcript, and every transcript its follow-ups. */
 	private scribeEndComplete(): boolean {
 		const transcript = this.scribeTranscript;
 		if (!transcript) return true;
-		return transcript.complete && (this.scribeFinalCommitAfter === null || transcript.committed > this.scribeFinalCommitAfter);
+		return this.scribeOutstandingCommits === 0 && transcript.complete;
 	}
 
 	/** Once, and only for a session ElevenLabs started. */
@@ -1455,8 +1478,9 @@ export class RealtimeRelayDurableObject {
 
 	/**
 	 * Ends a Scribe session: commits the audio not yet committed (unless there is
-	 * too little, which ElevenLabs refuses by closing), waits boundedly for its
-	 * transcript, sends transcription.done and settles.
+	 * too little, which ElevenLabs refuses by closing), waits boundedly for the
+	 * transcripts of that and any manual commit still outstanding, sends
+	 * transcription.done and settles.
 	 */
 	private async endScribe(
 		status: PendingSettlement["status"],
@@ -1472,11 +1496,7 @@ export class RealtimeRelayDurableObject {
 			return;
 		}
 		this.scribeFinishing = true;
-		if (this.scribeAudioSinceCommitMs >= ELEVENLABS_SCRIBE_MIN_COMMIT_AUDIO_MS) {
-			this.scribeFinalCommitAfter = this.scribeTranscript.committed;
-			this.scribeAudioSinceCommitMs = 0;
-			this.sendUpstream(elevenLabsScribeCommit());
-		}
+		if (this.scribeUncommittedMs >= ELEVENLABS_SCRIBE_MIN_COMMIT_AUDIO_MS) this.sendScribeCommit();
 		if (this.scribeEndComplete()) {
 			this.sendScribeDone();
 			await this.settle(status, reason);
