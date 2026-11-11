@@ -13,6 +13,10 @@ import { estimateAudioDurationSeconds } from "../../openai/endpoints/audio-trans
 const ELEVENLABS_TIMESTAMP_GRANULARITIES = new Set(["none", "word", "character"]);
 const ELEVENLABS_REPEATED_FORM_FIELDS = new Set(["secondary_language_codes"]);
 
+function isNonEmptyString(value: unknown): value is string {
+	return typeof value === "string" && value.trim().length > 0;
+}
+
 function invalidParameterResponse(param: string, message: string): Response {
 	return new Response(JSON.stringify({ error: { type: "invalid_request_error", message, param } }), {
 		status: 400,
@@ -54,6 +58,24 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 	const raw = typedPayload as AudioTranscriptionRequest & { config?: { elevenlabs?: Record<string, unknown> } };
 	const elevenlabs = raw.config?.elevenlabs ?? {};
 	const nativeTimestampGranularity = elevenlabs.timestamps_granularity;
+	const invalidRepeatedParam = [...ELEVENLABS_REPEATED_FORM_FIELDS].find((key) => {
+		const value = elevenlabs[key];
+		if (value == null || isNonEmptyString(value)) return false;
+		return !Array.isArray(value) || value.length === 0 || !value.every(isNonEmptyString);
+	});
+	if (invalidRepeatedParam) {
+		return {
+			kind: "completed",
+			upstream: invalidParameterResponse(
+				`config.elevenlabs.${invalidRepeatedParam}`,
+				`config.elevenlabs.${invalidRepeatedParam} must be a non-empty list of language code strings.`,
+			),
+			bill: { cost_cents: 0, currency: "USD", usage: undefined, upstream_id: null, finish_reason: null },
+			normalized: undefined,
+			keySource: keyInfo.source,
+			byokKeyId: keyInfo.byokId,
+		};
+	}
 	const invalidTimestampParam = typedPayload.timestamp_granularities?.includes("segment")
 		? "timestamp_granularities"
 		: typeof nativeTimestampGranularity === "string" &&
@@ -119,7 +141,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 		if (value == null || ["model_id", "file", "source_url", "language_code", "keyterms", "enable_logging", "timestamps_granularity"].includes(key)) continue;
 		if (ELEVENLABS_REPEATED_FORM_FIELDS.has(key) && Array.isArray(value)) {
 			// ElevenLabs reads these as one form field per item and rejects a JSON array string.
-			for (const item of value) if (item != null) form.append(key, String(item));
+			for (const item of value) form.append(key, String(item).trim());
 			continue;
 		}
 		form.append(key, typeof value === "object" ? JSON.stringify(value) : String(value));
