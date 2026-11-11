@@ -21,6 +21,7 @@ import { executor as anthropicText } from "./anthropic/text-generate";
 import { executor as azureText } from "./azure/text-generate";
 import { executor as azureDecisions } from "./azure/decisions";
 import { executor as googleAiStudioText } from "./google-ai-studio/text-generate";
+import { executor as googleAiStudioDecisions } from "./google-ai-studio/decisions";
 import { executor as googleAudioSpeech } from "./google/audio-speech";
 import { executor as googleMusic } from "./google/music-generate";
 import { executor as xAiText } from "./x-ai/text-generate";
@@ -416,6 +417,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 		"image.generate": nonTextAdapterExecutor,
 		"music.generate": googleMusic,
 		"video.generate": googleAiStudioVideo,
+		"decisions.make": googleAiStudioDecisions,
 	},
 	"spacex-ai": { "text.generate": xAiText, "video.generate": xAiVideo, "video.edit": xAiVideo, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor },
 	"x-ai": { "text.generate": xAiText, "video.generate": xAiVideo, "video.edit": xAiVideo, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor },
