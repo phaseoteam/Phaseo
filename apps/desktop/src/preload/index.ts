@@ -96,6 +96,7 @@ const desktopApi: PhaseoDesktopApi = {
 		checkAgent: id => ipcRenderer.invoke("workspace:check-agent", id),
 		mcp: command => ipcRenderer.invoke("workspace:mcp", command),
 		models: (harness, accountId, projectId) => ipcRenderer.invoke("workspace:models", harness, accountId, projectId),
+		modelAccess: accountId => ipcRenderer.invoke("workspace:model-access", accountId),
 		refreshModels: (harness, accountId) => ipcRenderer.invoke("workspace:refresh-models", harness, accountId),
 		onModelsChange: listener => { const subscription = (_event: Electron.IpcRendererEvent, change: Parameters<typeof listener>[0]) => listener(change); ipcRenderer.on("workspace:models-changed", subscription); return () => ipcRenderer.removeListener("workspace:models-changed", subscription); },
 		linkTitle: url => ipcRenderer.invoke("workspace:link-title", url),

@@ -15,6 +15,7 @@ import { shortcut } from "../lib/keybindings";
 import { usePersistedState } from "../lib/persistedState";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuShortcut, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
 import { Tip } from "../components/ui/tooltip";
+import { RedactedText } from "../components/RedactedText";
 // Settings' navigation comes with the Settings page, which loads when it is first opened (App.tsx).
 const SettingsNav = lazy(() => import("../settings/SettingsPage").then(module => ({ default: module.SettingsNav })));
 import { ModelStack } from "../chat/ModelPicker";
@@ -191,7 +192,7 @@ function AccountFooter() {
 	const account = usablePhaseoAccounts(overview)[0];
 	// Who signed in, from their Phaseo profile; the account's own name until it has been read. The menu greets them by first name.
 	const name = account?.profile?.name ?? account?.profile?.email?.split("@")[0] ?? account?.name ?? "", picture = account?.profile?.picture;
-	const firstName = account?.profile?.givenName ?? account?.profile?.name?.split(/s+/)[0] ?? name;
+	const firstName = account?.profile?.givenName ?? account?.profile?.name?.split(/\s+/)[0] ?? name;
 	return <div className="sidebar-footer border-t border-sidebar-border"><UsageRings /><div className="flex items-center gap-1 p-2.5">
 		{account
 			? <DropdownMenu>
@@ -201,7 +202,7 @@ function AccountFooter() {
 				<DropdownMenuContent side="top" align="start" className="w-56">
 					<div className="flex items-center gap-2.5 px-2 py-1.5">
 						<Avatar name={name} picture={picture} className="size-7 text-[11px]" />
-						<span className="min-w-0"><span className="block truncate text-[12.5px] font-semibold">{firstName}</span><span className="block truncate text-[11px] text-muted-foreground">{account.profile?.email ?? "Signed in to Phaseo"}</span></span>
+						<span className="min-w-0"><span className="block truncate text-[12.5px] font-semibold">{firstName}</span>{account.profile?.email ? <RedactedText text={account.profile.email} className="block w-full text-[11px] text-muted-foreground" /> : <span className="block truncate text-[11px] text-muted-foreground">Signed in to Phaseo</span>}</span>
 					</div>
 					<DropdownMenuSeparator />
 					<DropdownMenuItem onClick={() => void window.phaseoDesktop?.openExternal("https://phaseo.app/settings/account")}><ExternalLink />Manage account</DropdownMenuItem>
