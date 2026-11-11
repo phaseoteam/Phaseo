@@ -19,6 +19,8 @@ export function SignUp({
 }) {
 	const t = useTranslations("Auth.signUp");
 	const [emailFlowActive, setEmailFlowActive] = useState(false);
+	// While a provider (Google…) is loading, the email form is locked so a second attempt cannot start.
+	const [redirecting, setRedirecting] = useState(false);
 
 	return (
 		<div
@@ -33,16 +35,18 @@ export function SignUp({
 				aria-hidden={emailFlowActive}
 			>
 				<div className="overflow-hidden">
-					<OAuthButtons returnUrl={returnUrl} locale={locale} />
+					<OAuthButtons returnUrl={returnUrl} locale={locale} onRedirectingChange={setRedirecting} />
 				</div>
 			</div>
 
-			<EmailPassword
-				onEmailFlowChange={setEmailFlowActive}
-				returnUrl={returnUrl}
-				locale={locale}
-				surface={surface}
-			/>
+			<div className={`transition-opacity duration-200 motion-reduce:transition-none ${redirecting ? "opacity-50" : ""}`} inert={redirecting}>
+				<EmailPassword
+					onEmailFlowChange={setEmailFlowActive}
+					returnUrl={returnUrl}
+					locale={locale}
+					surface={surface}
+				/>
+			</div>
 		</div>
 	);
 }

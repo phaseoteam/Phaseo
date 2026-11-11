@@ -41,6 +41,8 @@ export function Login({
 	const t = useTranslations("Auth.signIn");
 	// Typing an email or password collapses the other sign-in options, as on sign-up.
 	const [emailFlowActive, setEmailFlowActive] = useState(false);
+	// While a provider (Google…) is loading, the other options are locked so a second attempt cannot start.
+	const [redirecting, setRedirecting] = useState(false);
 	const signupNoticeText =
 		signupNotice === "check-email"
 			? t("signupNotice")
@@ -84,8 +86,11 @@ export function Login({
 				inert={emailFlowActive}
 			>
 			<div className="-m-1 grid gap-2.5 overflow-hidden p-1">
-				<OAuthButtons returnUrl={returnUrl} locale={locale} />
-				<div className={ssoEnabled ? "grid grid-cols-2 gap-2.5" : "grid"}>
+				<OAuthButtons returnUrl={returnUrl} locale={locale} onRedirectingChange={setRedirecting} />
+				<div
+					className={`${ssoEnabled ? "grid grid-cols-2 gap-2.5" : "grid"} transition-opacity duration-200 motion-reduce:transition-none ${redirecting ? "opacity-50" : ""}`}
+					inert={redirecting}
+				>
 					<PasskeySignInButton
 						surface={surface}
 						returnUrl={returnUrl}
@@ -113,13 +118,15 @@ export function Login({
 				</div>
 			</div>
 			</div>
-			<EmailPassword
-				returnUrl={returnUrl}
-				locale={locale}
-				surface={surface}
-				initialError={authError}
-				onEmailFlowChange={setEmailFlowActive}
-			/>
+			<div className={`transition-opacity duration-200 motion-reduce:transition-none ${redirecting ? "opacity-50" : ""}`} inert={redirecting}>
+				<EmailPassword
+					returnUrl={returnUrl}
+					locale={locale}
+					surface={surface}
+					initialError={authError}
+					onEmailFlowChange={setEmailFlowActive}
+				/>
+			</div>
 		</div>
 	);
 }
