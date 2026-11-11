@@ -309,7 +309,7 @@ jobs:
       version: ${{ steps.registry.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
-      - uses: ruby/setup-ruby@26e5b7d197ebf60545ee9667bcbace0be11ccaec # v1.334.0
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
         with:
           ruby-version: "4.0"
       - name: Check RubyGems release status
@@ -364,7 +364,7 @@ jobs:
         with:
           name: ruby-agent-sdk-${{ needs.build-ruby.outputs.version }}
           path: dist/ruby-agent
-      - uses: ruby/setup-ruby@26e5b7d197ebf60545ee9667bcbace0be11ccaec # v1.334.0
+      - uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
         with:
           ruby-version: "4.0"
       - name: Configure RubyGems trusted publishing credentials
