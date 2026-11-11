@@ -670,17 +670,27 @@ func (c *Phaseo) CreateSpeech(ctx context.Context, req any) (interface{}, error)
 	})
 }
 
-// CreateTranscription calls /audio/transcriptions.
+// CreateTranscription calls /audio/transcriptions. Put a File under "file" in a map request to send the audio as a
+// multipart upload; a request without a File is sent as JSON.
 func (c *Phaseo) CreateTranscription(ctx context.Context, req any) (map[string]interface{}, error) {
-	return withLifecycleAndTelemetry(c, ctx, "audio.transcriptions", req, true, func() (map[string]interface{}, error) {
-		return gen.CreateTranscription(c.raw.WithContext(ctx), nil, nil, nil, req)
+	body, summary, err := audioRequestBody(req)
+	if err != nil {
+		return nil, err
+	}
+	return withLifecycleAndTelemetry(c, ctx, "audio.transcriptions", summary, true, func() (map[string]interface{}, error) {
+		return gen.CreateTranscription(c.raw.WithContext(ctx), nil, nil, nil, body)
 	})
 }
 
-// CreateTranslation calls /audio/translations.
+// CreateTranslation calls /audio/translations. Put a File under "file" in a map request to send the audio as a
+// multipart upload; a request without a File is sent as JSON.
 func (c *Phaseo) CreateTranslation(ctx context.Context, req any) (map[string]interface{}, error) {
-	return withLifecycleAndTelemetry(c, ctx, "audio.translations", req, true, func() (map[string]interface{}, error) {
-		return gen.CreateTranslation(c.raw.WithContext(ctx), nil, nil, nil, req)
+	body, summary, err := audioRequestBody(req)
+	if err != nil {
+		return nil, err
+	}
+	return withLifecycleAndTelemetry(c, ctx, "audio.translations", summary, true, func() (map[string]interface{}, error) {
+		return gen.CreateTranslation(c.raw.WithContext(ctx), nil, nil, nil, body)
 	})
 }
 
