@@ -426,24 +426,66 @@ async function benchmarkCard(env: Env, benchmarkId: string) {
 
 // --- family ----------------------------------------------------------------
 
+/**
+ * Visible models of the family, counted in the database, plus the earliest and latest
+ * release dates. A model's date is released_at, or announced_at when it has no release
+ * date, so each bound is the better of one released_at lookup and one announced_at
+ * lookup over the models without a release date.
+ */
+async function familyAggregates(env: Env, familyId: string) {
+	const client = getDataClient(env);
+	const visible = (select: string, options?: { count: "exact"; head: true }) => client.from("v2_models")
+		.select(select, options)
+		.eq("family_slug", familyId)
+		.eq("hidden", false)
+		.neq("status", "disabled");
+	const bound = (column: "released_at" | "announced_at", ascending: boolean) => {
+		let query = visible(column).not(column, "is", null);
+		if (column === "announced_at") query = query.is("released_at", null);
+		return query.order(column, { ascending }).limit(1).maybeSingle();
+	};
+	const [total, active, firstReleased, firstAnnounced, lastReleased, lastAnnounced] = await Promise.all([
+		visible("model_slug", { count: "exact", head: true }),
+		visible("model_slug", { count: "exact", head: true }).eq("status", "active"),
+		bound("released_at", true),
+		bound("announced_at", true),
+		bound("released_at", false),
+		bound("announced_at", false),
+	]);
+	for (const result of [total, active, firstReleased, firstAnnounced, lastReleased, lastAnnounced]) {
+		if (result.error) throw result.error;
+	}
+	const dateOf = (result: { data: unknown }, column: "released_at" | "announced_at") =>
+		isRecord(result.data) ? dateOnly(result.data[column]) : null;
+	const firsts = [dateOf(firstReleased, "released_at"), dateOf(firstAnnounced, "announced_at")].filter((value): value is string => Boolean(value)).sort();
+	const lasts = [dateOf(lastReleased, "released_at"), dateOf(lastAnnounced, "announced_at")].filter((value): value is string => Boolean(value)).sort();
+	return {
+		models: total.count ?? 0,
+		active: active.count ?? 0,
+		firstRelease: firsts[0] ?? null,
+		latestRelease: lasts.at(-1) ?? null,
+	};
+}
+
 async function familyCard(env: Env, familyId: string) {
 	const client = getDataClient(env);
 	const family = await client.from("v2_model_families").select("family_slug,name,lab_slug,lab:v2_labs(lab_slug,name)").eq("family_slug", familyId).maybeSingle();
 	if (family.error) throw family.error;
 	if (!family.data) return null;
-	const models = await client.from("v2_models")
-		.select("model_slug,name,status,released_at,announced_at")
-		.eq("family_slug", familyId)
-		.eq("hidden", false)
-		.neq("status", "disabled")
-		.order("released_at", { ascending: false, nullsFirst: false })
-		.limit(200);
-	if (models.error) throw models.error;
-	const rows = models.data ?? [];
+	const [aggregates, preview] = await Promise.all([
+		familyAggregates(env, familyId),
+		client.from("v2_models")
+			.select("model_slug,name,status,released_at,announced_at")
+			.eq("family_slug", familyId)
+			.eq("hidden", false)
+			.neq("status", "disabled")
+			.order("released_at", { ascending: false, nullsFirst: false })
+			.limit(LIST_LIMIT),
+	]);
+	if (preview.error) throw preview.error;
 	const lab = first(family.data.lab as Row | Row[] | null);
 	const organisationId = str(family.data.lab_slug) || str(lab?.lab_slug) || familyId.split("/")[0] || "";
-	const dates = rows.map((row) => dateOnly(row.released_at ?? row.announced_at)).filter((value): value is string => Boolean(value)).sort();
-	const refs = rows.flatMap((row) => {
+	const refs = (preview.data ?? []).flatMap((row) => {
 		const ref = modelRef(row);
 		return ref ? [ref] : [];
 	});
@@ -452,11 +494,8 @@ async function familyCard(env: Env, familyId: string) {
 		id: familyId,
 		name: str(family.data.name) || familyId,
 		organisation: organisationId ? { id: organisationId, name: str(lab?.name) || organisationId } : null,
-		models: rows.length,
-		active: rows.filter((row) => str(row.status) === "active").length,
-		firstRelease: dates[0] ?? null,
-		latestRelease: dates.at(-1) ?? null,
-		members: list(refs),
+		...aggregates,
+		members: { items: refs, more: Math.max(0, aggregates.models - refs.length) },
 	};
 }
 

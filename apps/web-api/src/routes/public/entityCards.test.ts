@@ -90,13 +90,28 @@ function stubDatabase(overrides: Record<string, unknown> = {}) {
 		"v2_labs?select=lab_slug%2Cname%2Ccountry_code&": [{ lab_slug: "acme", name: "Acme", country_code: "GB" }],
 		...overrides,
 	};
-	const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+	const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
 		const url = String(input);
 		const match = Object.keys(responses).sort((left, right) => right.length - left.length).find((key) => url.includes(`/rest/v1/${key}`));
-		return json(match ? responses[match] : []);
+		const value = match ? responses[match] : [];
+		const body = typeof value === "function" ? (value as (url: string) => unknown)(decodeURIComponent(url)) : value;
+		// Count queries (head: true) read the total from Content-Range, as PostgREST sends it.
+		if (init?.method === "HEAD") return new Response(null, { status: 200, headers: { "Content-Range": `*/${Number(body) || 0}` } });
+		return json(body);
 	});
 	vi.stubGlobal("fetch", fetchMock);
 	return fetchMock;
+}
+
+/** Family totals and release-date bounds, answered the way the database would aggregate them. */
+function familyAggregateStubs(options: { total: number; active: number; released?: [string, string]; announced?: [string, string] }) {
+	const bound = (dates: [string, string] | undefined, column: string) => (url: string) =>
+		dates ? [{ [column]: url.includes(`order=${column}.asc`) ? dates[0] : dates[1] }] : [];
+	return {
+		"v2_models?select=model_slug&": (url: string) => (url.includes("status=eq.active") ? options.active : options.total),
+		"v2_models?select=released_at&": bound(options.released, "released_at"),
+		"v2_models?select=announced_at&": bound(options.announced, "announced_at"),
+	};
 }
 
 const get = (path: string) => app.request(`https://phaseo.app/api/_web/entity-cards/${path}`, {}, env);
@@ -238,6 +253,7 @@ describe("entity card route", () => {
 				{ model_slug: "acme/rocket-2", name: "Rocket 2", status: "active", released_at: "2026-10-01" },
 				{ model_slug: "acme/rocket-1", name: "Rocket 1", status: "deprecated", released_at: "2025-03-01" },
 			],
+			...familyAggregateStubs({ total: 2, active: 1, released: ["2025-03-01", "2026-10-01"] }),
 			"v2_labs?select=lab_slug%2Cname%2Ccountry_code%2Csubdivision_code%2Cmetadata": [{ lab_slug: "acme", name: "Acme", country_code: "GB" }],
 		});
 		const [benchmark, family, collection, country] = await Promise.all([
@@ -256,6 +272,38 @@ describe("entity card route", () => {
 		});
 		await expect(collection.json()).resolves.toMatchObject({ card: { kind: "collection", id: "image-generation", models: 1, newest: { items: [{ id: "acme/rocket-1" }] } } });
 		await expect(country.json()).resolves.toMatchObject({ card: { kind: "country", id: "GB", organisations: 1, models: 2, live: 1, topOrganisations: { items: [{ id: "acme" }] } } });
+	});
+
+	it("counts a family of more than 200 models in the database, not from the member preview", async () => {
+		const fetchMock = stubDatabase({
+			"v2_model_families": [{ family_slug: "acme/rocket", name: "Rocket", lab_slug: "acme", lab: { lab_slug: "acme", name: "Acme" } }],
+			"v2_models?select=model_slug%2Cname%2Cstatus": [
+				{ model_slug: "acme/rocket-250", name: "Rocket 250", status: "active", released_at: "2026-10-01" },
+				{ model_slug: "acme/rocket-249", name: "Rocket 249", status: "active", released_at: "2026-09-01" },
+				{ model_slug: "acme/rocket-248", name: "Rocket 248", status: "deprecated", released_at: "2026-08-01" },
+			],
+			// The oldest member only has an announcement date; the newest bound is a release date.
+			...familyAggregateStubs({ total: 250, active: 180, released: ["2021-06-01", "2026-10-01"], announced: ["2020-01-15", "2024-02-01"] }),
+		});
+		const response = await get("family/acme/rocket");
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toMatchObject({
+			card: {
+				kind: "family",
+				models: 250,
+				active: 180,
+				firstRelease: "2020-01-15",
+				latestRelease: "2026-10-01",
+				members: { items: [{ id: "acme/rocket-250" }, { id: "acme/rocket-249" }, { id: "acme/rocket-248" }], more: 247 },
+			},
+		});
+		const calls = fetchMock.mock.calls.map(([input, init]) => ({ url: decodeURIComponent(String(input)), method: init?.method ?? "GET" }));
+		const familyModelReads = calls.filter((call) => call.url.includes("/v2_models?"));
+		// Totals are HEAD count queries; every row read is bounded to the preview or a single date.
+		expect(familyModelReads.filter((call) => call.method === "HEAD")).toHaveLength(2);
+		for (const call of familyModelReads.filter((call) => call.method !== "HEAD")) expect(call.url).toMatch(/limit=(1|3)(&|$)/);
+		// The announcement-date bounds only cover models without a release date.
+		for (const call of familyModelReads.filter((call) => call.url.includes("select=announced_at"))) expect(call.url).toContain("released_at=is.null");
 	});
 
 	it("returns a briefly cached 404 for unknown ids and kinds", async () => {
