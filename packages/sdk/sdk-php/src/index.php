@@ -15,7 +15,194 @@ require_once __DIR__ . "/Realtime.php";
 require_once __DIR__ . "/WorkloadTokens.php";
 
 use Phaseo\Gen\Client as GenClient;
+use Phaseo\Gen\MultipartBody;
 use RuntimeException;
+
+/**
+ * A file sent as a multipart/form-data part (audio for transcription/translation, JSONL for batch uploads).
+ * The gateway uses the filename extension to detect the audio format, so keep it accurate.
+ */
+final class PhaseoFile
+{
+    private const CONTENT_TYPES = [
+        "flac" => "audio/flac",
+        "mp3" => "audio/mpeg",
+        "mp4" => "audio/mp4",
+        "mpeg" => "audio/mpeg",
+        "mpga" => "audio/mpeg",
+        "m4a" => "audio/mp4",
+        "ogg" => "audio/ogg",
+        "wav" => "audio/wav",
+        "webm" => "audio/webm",
+        "jsonl" => "application/jsonl",
+        "json" => "application/json",
+    ];
+
+    public readonly string $content;
+    public readonly string $filename;
+    public readonly string $contentType;
+
+    public function __construct(string $content, string $filename = "file", ?string $contentType = null)
+    {
+        $this->content = $content;
+        $this->filename = trim($filename) === "" ? "file" : $filename;
+        $this->contentType = ($contentType === null || trim($contentType) === "") ? self::guessContentType($this->filename) : $contentType;
+    }
+
+    public static function fromBytes(string $bytes, string $filename, ?string $contentType = null): self
+    {
+        return new self($bytes, $filename, $contentType);
+    }
+
+    public static function fromPath(string $path, ?string $contentType = null, ?string $filename = null): self
+    {
+        $content = @file_get_contents($path);
+        if ($content === false) {
+            throw new \InvalidArgumentException("Unable to read file: {$path}");
+        }
+        return new self($content, $filename ?? basename($path), $contentType);
+    }
+
+    /** @param resource $stream Read to the end so the body can be rebuilt on retries. */
+    public static function fromStream($stream, ?string $filename = null, ?string $contentType = null): self
+    {
+        if (!is_resource($stream)) {
+            throw new \InvalidArgumentException("fromStream expects a stream resource");
+        }
+        $content = stream_get_contents($stream);
+        if ($content === false) {
+            throw new \InvalidArgumentException("Unable to read stream");
+        }
+        $uri = stream_get_meta_data($stream)["uri"] ?? null;
+        $name = $filename ?? (is_string($uri) && $uri !== "" && !str_starts_with($uri, "php://") ? basename($uri) : "file");
+        return new self($content, $name, $contentType);
+    }
+
+    /**
+     * Converts a payload "file" value: PhaseoFile, CURLFile, CURLStringFile, SplFileInfo, stream resource,
+     * data: URL, or path to an existing file. Returns null for anything else (for example a remote URL).
+     */
+    public static function fromValue(mixed $value, ?string $filename = null, ?string $contentType = null): ?self
+    {
+        if ($value instanceof self) {
+            return $value;
+        }
+        if ($value instanceof \CURLStringFile) {
+            return new self($value->data, $filename ?? $value->postname, $contentType ?? $value->mime);
+        }
+        if ($value instanceof \CURLFile) {
+            $postName = $value->getPostFilename();
+            $mime = $value->getMimeType();
+            return self::fromPath($value->getFilename(), $contentType ?? ($mime === "" ? null : $mime), $filename ?? ($postName === "" ? null : $postName));
+        }
+        if ($value instanceof \SplFileInfo) {
+            return self::fromPath($value->getPathname(), $contentType, $filename);
+        }
+        if (is_resource($value) && get_resource_type($value) === "stream") {
+            return self::fromStream($value, $filename, $contentType);
+        }
+        if (!is_string($value) || $value === "") {
+            return null;
+        }
+        if (strncasecmp($value, "data:", 5) === 0) {
+            $comma = strpos($value, ",");
+            if ($comma === false) {
+                return null;
+            }
+            $meta = substr($value, 5, $comma - 5);
+            $data = substr($value, $comma + 1);
+            $isBase64 = str_ends_with(strtolower($meta), ";base64");
+            $mime = explode(";", $isBase64 ? substr($meta, 0, -7) : $meta)[0];
+            $decoded = $isBase64 ? base64_decode($data, true) : rawurldecode($data);
+            if ($decoded === false) {
+                return null;
+            }
+            $resolvedMime = $contentType ?? ($mime === "" ? null : $mime);
+            $extension = $resolvedMime === null ? false : array_search($resolvedMime, self::CONTENT_TYPES, true);
+            return new self($decoded, $filename ?? ("file" . ($extension === false ? "" : "." . $extension)), $resolvedMime);
+        }
+        if (strlen($value) < 4096 && !str_contains($value, "\0") && !str_contains($value, "://") && is_file($value)) {
+            return self::fromPath($value, $contentType, $filename);
+        }
+        return null;
+    }
+
+    private static function guessContentType(string $filename): string
+    {
+        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        return self::CONTENT_TYPES[$extension] ?? "application/octet-stream";
+    }
+}
+
+/** @internal Builds multipart bodies for the audio and file upload helpers. */
+final class MultipartRequests
+{
+    private const META_KEYS = ["filename", "file_name", "content_type", "file_content_type"];
+
+    /** Returns a multipart body when $payload["file"] is file-like, otherwise null. */
+    public static function tryBuild(array $payload): ?MultipartBody
+    {
+        if (!array_key_exists("file", $payload)) {
+            return null;
+        }
+        $filename = self::stringField($payload, ["filename", "file_name"]);
+        $contentType = self::stringField($payload, ["content_type", "file_content_type"]);
+        $file = PhaseoFile::fromValue($payload["file"], $filename, $contentType);
+        if ($file === null) {
+            return null;
+        }
+        $form = new MultipartBody();
+        $form->addFile("file", $file->content, $file->filename, $file->contentType);
+        foreach ($payload as $key => $value) {
+            $key = (string) $key;
+            if ($key === "file" || in_array($key, self::META_KEYS, true)) {
+                continue;
+            }
+            $encoded = self::encodeField($value);
+            if ($encoded !== null) {
+                $form->addField($key, $encoded);
+            }
+        }
+        return $form;
+    }
+
+    /** A copy of the payload that is safe to hand to telemetry (no file bytes). */
+    public static function redact(array $payload): array
+    {
+        if (array_key_exists("file", $payload)) {
+            $payload["file"] = "[File]";
+        }
+        return $payload;
+    }
+
+    /** Form fields are strings: bools lowercase, objects and arrays as JSON. */
+    public static function encodeField(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+        if (is_bool($value)) {
+            return $value ? "true" : "false";
+        }
+        if (is_string($value)) {
+            return $value;
+        }
+        if (is_int($value) || is_float($value)) {
+            return json_encode($value, JSON_THROW_ON_ERROR | JSON_PRESERVE_ZERO_FRACTION);
+        }
+        return json_encode($value, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+    }
+
+    private static function stringField(array $payload, array $keys): ?string
+    {
+        foreach ($keys as $key) {
+            if (isset($payload[$key]) && is_string($payload[$key]) && trim($payload[$key]) !== "") {
+                return $payload[$key];
+            }
+        }
+        return null;
+    }
+}
 
 class AsyncJobsResource
 {
@@ -386,13 +573,19 @@ class Phaseo
         );
     }
 
+    /**
+     * Transcribes audio. When $payload["file"] is a PhaseoFile, CURLFile, SplFileInfo, stream resource,
+     * data: URL or local path, the request is sent as multipart/form-data; payloads that only carry
+     * file_url, file_id or s3_presigned_url are sent as JSON.
+     */
     public function generateTranscription(array $payload): mixed
     {
+        $form = MultipartRequests::tryBuild($payload);
         return $this->withLifecycleAndTelemetry(
             "audio.transcriptions",
-            $payload,
+            $form === null ? $payload : MultipartRequests::redact($payload),
             true,
-            fn () => \Phaseo\Gen\createTranscription($this->client, null, null, null, $payload)
+            fn () => \Phaseo\Gen\createTranscription($this->client, null, null, null, $form ?? $payload)
         );
     }
 
@@ -401,13 +594,18 @@ class Phaseo
         return $this->generateTranscription($payload);
     }
 
+    /**
+     * Translates audio to English. The gateway requires a multipart "file" part, so $payload["file"] should be a
+     * PhaseoFile, CURLFile, SplFileInfo, stream resource, data: URL or local path.
+     */
     public function generateTranslation(array $payload): mixed
     {
+        $form = MultipartRequests::tryBuild($payload);
         return $this->withLifecycleAndTelemetry(
             "audio.translations",
-            $payload,
+            $form === null ? $payload : MultipartRequests::redact($payload),
             true,
-            fn () => \Phaseo\Gen\createTranslation($this->client, null, null, null, $payload)
+            fn () => \Phaseo\Gen\createTranslation($this->client, null, null, null, $form ?? $payload)
         );
     }
 
@@ -548,13 +746,26 @@ class Phaseo
         );
     }
 
-    public function uploadFile(array $payload): mixed
+    /**
+     * Uploads a batch input file as multipart/form-data to POST /batches/files. $payload["file"] must be a
+     * PhaseoFile, CURLFile, SplFileInfo, stream resource, data: URL or local path; other entries (purpose, ...)
+     * become form fields. model and provider (arguments or payload entries) are sent as query parameters.
+     */
+    public function uploadFile(array $payload, ?string $model = null, ?string $provider = null): mixed
     {
+        $model ??= isset($payload["model"]) && is_string($payload["model"]) && trim($payload["model"]) !== "" ? $payload["model"] : null;
+        $provider ??= isset($payload["provider"]) && is_string($payload["provider"]) && trim($payload["provider"]) !== "" ? $payload["provider"] : null;
+        unset($payload["model"], $payload["provider"]);
+        $form = MultipartRequests::tryBuild($payload);
+        if ($form === null) {
+            throw new \InvalidArgumentException('uploadFile requires $payload["file"] to be a PhaseoFile, CURLFile, SplFileInfo, stream resource, data: URL or path to an existing file.');
+        }
+        $query = array_filter(["model" => $model, "provider" => $provider], static fn ($value) => $value !== null && $value !== "");
         return $this->withLifecycleAndTelemetry(
             "files.upload",
-            $payload,
+            MultipartRequests::redact($payload) + $query,
             false,
-            fn () => \Phaseo\Gen\uploadFile($this->client, null, null, null, $payload)
+            fn () => $this->client->request("POST", "/batches/files", $query === [] ? null : $query, null, $form)
         );
     }
 

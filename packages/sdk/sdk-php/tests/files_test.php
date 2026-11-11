@@ -49,16 +49,11 @@ $uploaded = $client->uploadFile([
     "file" => "data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ==",
 ]);
 assert_true(($uploaded["ok"] ?? null) === true, "expected upload helper to return decoded payload");
-assert_true($fake->calls[0] === [
-    "POST",
-    "/files",
-    null,
-    null,
-    [
-        "purpose" => "batch",
-        "file" => "data:application/json;base64,eyJ0ZXN0Ijp0cnVlfQ==",
-    ],
-], "expected uploadFile to call POST /files");
+[$method, $path, $query, $headers, $body] = $fake->calls[0];
+assert_true($method === "POST" && $path === "/batches/files" && $query === null, "expected uploadFile to call POST /batches/files");
+assert_true($body instanceof \Phaseo\Gen\MultipartBody, "expected uploadFile to send a multipart body");
+assert_true($body->fields() === [["purpose", "batch"]], "expected purpose form field");
+assert_true($body->files() === [["file", "{\"test\":true}", "file.json", "application/json"]], "expected decoded data URL file part");
 
 $content = $client->retrieveFileContent("file_123");
 assert_true($content === "{\"ok\":true}\n", "expected raw file content bytes");
