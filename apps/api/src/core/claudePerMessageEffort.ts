@@ -115,27 +115,29 @@ export function planClaudePerMessageEffort(
 /**
  * The effort in force for the reply to `messages` when explicit effort-only
  * system messages are folded into a top-level value, for routes that do not take
- * them. A marker applies from the next user turn with new input after it, or to
- * the reply to the user turn it directly follows.
+ * them. A marker that directly follows new user input applies at once, to the reply
+ * to that turn and to its tool continuation (assistant tool calls and tool results
+ * after it). A marker anywhere else waits for the next user turn with new input.
  */
 export function effectiveEffortFromMarkers(messages: IRMessage[]): IRClaudeEffort | undefined {
 	let pending: IRClaudeEffort | undefined;
 	let effective: IRClaudeEffort | undefined;
+	let lastNonMarker: IRMessage | undefined;
 	for (const message of messages) {
 		if (message.role === "system" && message.effort) {
-			pending = message.effort;
+			if (lastNonMarker && isNewInput(lastNonMarker)) {
+				effective = message.effort;
+				pending = undefined;
+			} else {
+				pending = message.effort;
+			}
 			continue;
 		}
+		lastNonMarker = message;
 		if (isNewInput(message) && pending) {
 			effective = pending;
 			pending = undefined;
 		}
-	}
-	// A marker after the last user turn applies to this reply when it directly
-	// follows new input; otherwise it waits for the next user turn.
-	if (pending) {
-		const lastNonSystem = [...messages].reverse().find((message) => !(message.role === "system" && message.effort));
-		if (lastNonSystem && isNewInput(lastNonSystem)) effective = pending;
 	}
 	return effective;
 }

@@ -14135,9 +14135,11 @@ components:
           type: object
           description: >-
             Changes Claude's effort level for later turns without restarting
-            the prompt cache. Send it with empty `content` and keep the message
-            in place on later requests. Routes without per-message effort get
-            the level in force as the top-level effort instead.
+            the prompt cache. Send it with empty `content` after the messages
+            already sent, and keep it in place on later requests; inserting it
+            earlier changes the cached prefix. Routes without per-message effort
+            get the level in force as the top-level effort instead, which does
+            not keep the cache.
           required:
             - effort
           properties:

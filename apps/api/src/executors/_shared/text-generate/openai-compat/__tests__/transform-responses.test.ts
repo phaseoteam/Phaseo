@@ -6,8 +6,25 @@
 import { describe, expect, it } from "vitest";
 import { capabilitySupportsReasoning, irToOpenAIResponses, openAIResponsesToIR } from "../transform";
 import { applyJsonSchemaFallback } from "../quirks/structured";
+import { sealEffortRecord } from "@core/reasoning-state";
 
 describe("openAIResponsesToIR", () => {
+	it("keeps the gateway's Claude effort record on the message, not as reasoning", () => {
+		// Buffered Claude replies (Vertex non-streaming) go through this converter.
+		const ir = openAIResponsesToIR({
+			id: "resp_effort",
+			status: "completed",
+			output: [
+				{ type: "reasoning", id: "rs_effort", summary: [], encrypted_content: sealEffortRecord({ effort: "low", base: "high" }) },
+				{ type: "message", role: "assistant", content: [{ type: "output_text", text: "Done" }] },
+			],
+		}, "req-effort", "claude-sonnet-5-5", "google-vertex");
+
+		const message = ir.choices[0].message;
+		expect(message.effortRecord).toEqual({ effort: "low", base: "high" });
+		expect(message.content).toEqual([{ type: "text", text: "Done" }]);
+	});
+
 	it("maps official incomplete status, refusal, annotations, and current usage details", () => {
 		const ir = openAIResponsesToIR({
 			id: "resp_incomplete",

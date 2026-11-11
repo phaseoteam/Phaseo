@@ -145,6 +145,19 @@ describe("effectiveEffortFromMarkers", () => {
 		expect(effectiveEffortFromMarkers([user("a"), toolCall("c1"), toolResult("c1"), marker("low")])).toBeUndefined();
 	});
 
+	it("keeps a marker that followed the user turn in force through its tool loop", () => {
+		expect(effectiveEffortFromMarkers([user("a"), marker("low"), toolCall("c1"), toolResult("c1")])).toBe("low");
+		expect(
+			effectiveEffortFromMarkers([user("a"), marker("low"), toolCall("c1"), toolResult("c1"), toolCall("c2"), toolResult("c2")]),
+		).toBe("low");
+	});
+
+	it("keeps an earlier level in force when a later marker waits for the next user turn", () => {
+		expect(
+			effectiveEffortFromMarkers([user("a"), marker("low"), toolCall("c1"), toolResult("c1"), marker("high")]),
+		).toBe("low");
+	});
+
 	it("uses the latest marker in force", () => {
 		expect(effectiveEffortFromMarkers([user("a"), marker("low"), assistant("b"), user("c"), marker("high")])).toBe("high");
 	});

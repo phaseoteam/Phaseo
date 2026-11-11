@@ -206,12 +206,6 @@ function normalizeMaxTokens(
 }
 
 /**
- * An `allowed_tools` choice limits the model to some of the defined tools.
- * OpenAI is sent the original choice and every tool, which keeps the tool list
- * (and its prompt cache) the same across turns; every other provider has no
- * such choice, so it is sent only the allowed tools.
- */
-/**
  * Replace effort-only system messages with the effort they put in force for this
  * reply, on routes without per-message effort. The reply runs at the same level
  * it would on Claude; only the cached prefix is lost.
@@ -228,6 +222,12 @@ export function foldEffortMarkersForProvider(ir: IRChatRequest, providerId: stri
     };
 }
 
+/**
+ * An `allowed_tools` choice limits the model to some of the defined tools.
+ * OpenAI is sent the original choice and every tool, which keeps the tool list
+ * (and its prompt cache) the same across turns; every other provider has no
+ * such choice, so it is sent only the allowed tools.
+ */
 function restrictToAllowedTools(ir: IRChatRequest, providerId: string): IRChatRequest {
     if (!ir.allowedToolNames) return ir;
     const { allowedToolNames, ...rest } = ir;
