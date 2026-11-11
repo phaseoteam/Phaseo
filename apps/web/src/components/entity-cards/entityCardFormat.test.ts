@@ -16,6 +16,11 @@ describe("formatUsd", () => {
 		expect(formatUsd(0.1 + 0.2)).toBe("$0.30");
 	});
 
+	it("keeps a price with more than 12 significant digits and never shows a tiny price as $0.00", () => {
+		expect(formatUsd(0.1234567890126)).toBe("$0.1234567890126");
+		expect(formatUsd(3e-21)).toBe("$0.000000000000000000003");
+	});
+
 	it("returns null for missing or invalid prices and $0 for free", () => {
 		expect(formatUsd(0)).toBe("$0");
 		expect(formatUsd(null)).toBeNull();

@@ -568,20 +568,37 @@ async function collectionCard(env: Env, collectionId: string) {
  * rows here, rather than with count queries, keeps the page's visibility rules (public
  * access scope, no internal testing) that live in the payload and not in the tables.
  */
-async function countryCard(env: Env, iso: string) {
-	const code = iso.trim().toUpperCase();
-	if (!/^[A-Z]{2}$/.test(code)) return null;
-	const [labs, catalogue] = await Promise.all([
-		getDataClient(env).from("v2_labs")
-			.select("lab_slug,name", { count: "exact" })
+const LAB_PAGE_SIZE = 1000;
+
+/**
+ * Every organisation in one country. PostgREST caps a read at 1,000 rows, so the read is
+ * paged until a short page arrives; a country with more organisations still counts all of
+ * their models.
+ */
+async function readCountryLabs(env: Env, code: string) {
+	const rows: Array<{ lab_slug: unknown; name: unknown }> = [];
+	for (let from = 0; ; from += LAB_PAGE_SIZE) {
+		const page = await getDataClient(env).from("v2_labs")
+			.select("lab_slug,name")
 			// Some rows store the code in lower case; the country page upper-cases it.
 			.in("country_code", [code, code.toLowerCase()])
 			.order("lab_slug", { ascending: true })
-			.limit(1000),
+			.range(from, from + LAB_PAGE_SIZE - 1);
+		if (page.error) throw page.error;
+		const data = page.data ?? [];
+		rows.push(...data);
+		if (data.length < LAB_PAGE_SIZE) return rows;
+	}
+}
+
+async function countryCard(env: Env, iso: string) {
+	const code = iso.trim().toUpperCase();
+	if (!/^[A-Z]{2}$/.test(code)) return null;
+	const [labRows, catalogue] = await Promise.all([
+		readCountryLabs(env, code),
 		fetchModelsPageCatalogue(env, { includeMetrics: false }, "v2"),
 	]);
-	if (labs.error) throw labs.error;
-	const organisations = new Map((labs.data ?? []).map((row) => [str(row.lab_slug), str(row.name) || str(row.lab_slug)] as const).filter(([id]) => id));
+	const organisations = new Map(labRows.map((row) => [str(row.lab_slug), str(row.name) || str(row.lab_slug)] as const).filter(([id]) => id));
 	if (!organisations.size) return null;
 	const models = catalogue.models
 		.filter((model) => organisations.has(str(model.organisation_id)))
@@ -597,7 +614,7 @@ async function countryCard(env: Env, iso: string) {
 	return {
 		kind: "country" as const,
 		id: code,
-		organisations: labs.count ?? organisations.size,
+		organisations: organisations.size,
 		models: models.length,
 		live: models.filter((model) => model.gateway_status === "active").length,
 		topOrganisations: list(ranked),

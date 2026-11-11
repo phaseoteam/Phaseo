@@ -311,6 +311,20 @@ describe("entity card route", () => {
 		for (const call of familyModelReads.filter((call) => call.url.includes("select=announced_at"))) expect(call.url).toContain("released_at=is.null");
 	});
 
+	it("pages a country's organisations past the 1,000-row cap", async () => {
+		const labs = Array.from({ length: 1001 }, (_, index) => ({ lab_slug: `lab-${String(index).padStart(4, "0")}`, name: `Lab ${index}` }));
+		stubDatabase({
+			"v2_labs?select=lab_slug%2Cname&": (url: string) => {
+				const offset = Number(/offset=(\d+)/.exec(url)?.[1] ?? 0);
+				const limit = Number(/limit=(\d+)/.exec(url)?.[1] ?? 1000);
+				return labs.slice(offset, offset + limit);
+			},
+		});
+		const response = await get("country/gb");
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toMatchObject({ card: { kind: "country", organisations: 1001 } });
+	});
+
 	it("gives a model scored only on an older intelligence index no current score", async () => {
 		stubDatabase({
 			"v2_benchmarks?select=benchmark_id%2Ctotal_models": [
@@ -320,6 +334,8 @@ describe("entity card route", () => {
 				{ benchmark_id: "aa-intelligence-index-v6", total_models: 0 },
 			],
 			"v2_benchmark_results?select=score_numeric": (url: string) => (url.includes("benchmark_id=eq.aa-intelligence-index-v4") ? [{ score_numeric: 70 }] : []),
+			// The old read took the model's newest scored version, so it would have shown v4's 70.
+			"v2_benchmark_results?select=benchmark_id%2Cscore_numeric": [{ benchmark_id: "aa-intelligence-index-v4", score_numeric: 70 }],
 		});
 		const response = await get("model/acme/rocket-2");
 		expect(response.status).toBe(200);

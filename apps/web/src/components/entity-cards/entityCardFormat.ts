@@ -13,9 +13,13 @@ function decimalPlaces(value: number): number {
 /** "$8", "$12.50", "$0.075", "$0.01049", "$0.0004255". */
 export function formatUsd(value: number | null | undefined): string | null {
 	if (value === null || value === undefined || !Number.isFinite(value) || value < 0) return null;
-	// Drop binary floating-point noise (0.1 + 0.2) without touching published digits.
-	const price = Number(value.toPrecision(12));
-	const decimals = Math.min(20, decimalPlaces(price));
+	// Drop binary floating-point noise (0.1 + 0.2) without touching published digits: 15
+	// significant digits is all a double holds exactly, so no published digit is lost.
+	const price = Number(value.toPrecision(15));
+	const decimals = decimalPlaces(price);
+	// Intl allows at most 100 fraction digits; a positive price that needs more is not shown
+	// rather than shown as $0.00.
+	if (decimals > 100) return null;
 	return new Intl.NumberFormat("en-US", {
 		style: "currency",
 		currency: "USD",
