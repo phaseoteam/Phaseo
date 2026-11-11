@@ -3,6 +3,7 @@ import { PhaseoSignIn } from "../components/PhaseoSignIn";
 import { PhaseoSignInForm } from "../components/PhaseoSignInForm";
 import { Select } from "../components/Select";
 import { HarnessLogo } from "../components/HarnessLogo";
+import { RedactedEmails } from "../components/RedactedText";
 import type { AccountStatus as NativeAccountStatus, WorkspaceCommand } from "../../shared/workspace";
 import { emptyOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
 import { UsageMeters } from "../settings/UsageMeters";
@@ -74,7 +75,7 @@ export function Accounts() {
 		</SettingsSection>
 		<SettingsSection title="Connected accounts" action={<SettingsButton variant="ghost" onClick={() => { setShowArchived(value => !value); setEditing(undefined); }}>{showArchived ? "Active accounts" : "Archived accounts"}</SettingsButton>}>
 			{visible.map(account => <article key={account.id}>
-				<SettingsRow icon={<HarnessLogo harness={account.harness} />} title={account.name} description={<>{harnessLabel[account.harness] ?? account.harness} · {state(account)}</>}
+				<SettingsRow icon={<HarnessLogo harness={account.harness} />} title={account.name} description={<>{harnessLabel[account.harness] ?? account.harness} · <RedactedEmails text={state(account) ?? ""} /></>}
 					control={<>
 						{account.oauthExpiresAt && !account.archived && phaseoAgain !== account.id && <SettingsButton onClick={() => { setEditing(undefined); setPhaseoAgain(account.id); }}>Sign in again</SettingsButton>}
 						{account.kind === "api" && account.harness === "cursor" && <SettingsButton disabled={!!checking} onClick={() => void check("cursor", account.id)}>Check status</SettingsButton>}

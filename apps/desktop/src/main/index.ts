@@ -58,6 +58,7 @@ import { grokAccountStatus } from "./grokAccountStatus";
 import { grokModelCatalog } from "./grokModelCatalog";
 import { SecretVault } from "./secretVault";
 import { stopCredentialHelper, windowsCredentialEncryption } from "./windowsCredentialEncryption";
+import { warmMcpSdk } from "./mcpSdk";
 import { signInNative } from "./accountConnections";
 import { gitReview, gitWorkingStatus, listProjectFiles, projectRelativePath, readFilePreview, readProjectFile } from "./projectFiles";
 import { gitCommits, gitRefs, gitScopedDiff, readScopedDiffContents } from "./gitDiffScopes";
@@ -434,7 +435,8 @@ async function usagePrices(): Promise<(model: string) => TokenPrices | undefined
 	const account = workspaceRuntime.store.getAccounts().find(value => value.harness === "phaseo" && value.configured && !value.archived && value.endpoint);
 	if (!account) return () => undefined;
 	const cached = await modelCatalogCache.read({ endpoint: account.endpoint!, accountId: account.id });
-	let models = cached?.version === CATALOG_VERSION ? cached.models : [];
+	// Version 4 added cache prices; 5 only applies the key's guardrails, so its prices are as good.
+	let models = cached && cached.version >= 4 && cached.version <= CATALOG_VERSION ? cached.models : [];
 	if (!models.length) models = await discoverDesktopModels("phaseo", account.id, undefined, true).catch(() => []);
 	const prices = new Map<string, TokenPrices>();
 	for (const model of models) {
@@ -514,6 +516,11 @@ async function modelCheck<T>(harness: Harness, check: () => Promise<T>) {
 	finally { const remaining = modelChecks.get(harness)! - 1; if (remaining) modelChecks.set(harness, remaining); else modelChecks.delete(harness); }
 }
 ipcMain.handle("workspace:models", (event, harness: unknown, accountId: unknown, projectId: unknown) => modelRequest(event, harness, accountId, projectId, false));
+ipcMain.handle("workspace:model-access", async (event, accountId: unknown) => {
+	if (!senderWindow(event) || typeof accountId !== "string") throw new Error("Invalid model access request.");
+	const account = workspaceRuntime.store.getAccounts().find(value => value.id === accountId && value.harness === "phaseo" && value.configured && value.endpoint);
+	return account ? await modelCatalogCache.access({ endpoint: account.endpoint!, accountId: account.id }) : undefined;
+});
 // Skips the caches' freshness windows: Phaseo's catalog and the lists local harnesses last gave.
 ipcMain.handle("workspace:refresh-models", (event, harness: unknown, accountId: unknown) => modelRequest(event, harness, accountId, undefined, true));
 app.on("before-quit", event => {
@@ -1554,6 +1561,8 @@ app.whenReady().then(() => {
 	};
 	if (process.platform !== "darwin") Menu.setApplicationMenu(null);
 	createWindow();
+	// The MCP SDK loads once the window is up, so the first chat that uses MCP doesn't wait for it (mcpSdk.ts).
+	setTimeout(() => { if (!shutdownStarted) warmMcpSdk(); }, 3000).unref();
 	missionService.start();
 	void refreshPhaseoSignIns();
 	phaseoSignInTimer = setInterval(() => void refreshPhaseoSignIns(), 6 * 3_600_000); phaseoSignInTimer.unref();

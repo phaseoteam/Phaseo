@@ -436,8 +436,8 @@ paths:
       tags:
         - Gateway
       operationId: listTeamModels
-      summary: Lister les modèles de la passerelle propres à l’équipe
-      description: Renvoie la liste des modèles de passerelle propres à l’équipe. Par défaut, seuls les modèles actuellement routables publiquement sont renvoyés ; utilisez `availability=all` pour inclure les états de disponibilité non routables.
+      summary: Lister les modèles que cette clé peut utiliser
+      description: 'Renvoie la liste de /models avec les garde-fous de l’appelant appliqués : les modèles bloqués par une règle et ceux sans fournisseur autorisé sont exclus, et chaque modèle ne garde que les offres vers lesquelles ses requêtes peuvent être acheminées, avec ses prix, capacités et disponibilité calculés à partir de celles-ci. L’objet access indique ce que les règles ont exclu. Par défaut, seuls les modèles actuellement routables publiquement sont inclus ; utilisez availability=all pour inclure les enregistrements de disponibilité non routables.'
       parameters:
         - name: endpoints
           in: query
@@ -21094,6 +21094,48 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Model'
+        access:
+          $ref: '#/components/schemas/GatewayModelAccess'
+      additionalProperties: false
+    GatewayModelAccess:
+      type: object
+      description: 'Renvoyé uniquement par /models/me : ce que les garde-fous de l’appelant ont exclu de la liste, avant la recherche et la pagination.'
+      required:
+        - restricted
+        - hidden_model_count
+        - hidden_models
+        - limited_model_count
+      properties:
+        restricted:
+          type: boolean
+          description: Indique si une règle restreint des modèles ou des fournisseurs pour cette clé.
+          example: true
+        hidden_model_count:
+          type: integer
+          minimum: 0
+          description: Nombre de modèles exclus par les règles.
+          example: 12
+        hidden_models:
+          type: array
+          description: Les modèles exclus, avec leur nom (jusqu’à 500).
+          items:
+            type: object
+            required:
+              - id
+              - name
+            properties:
+              id:
+                type: string
+                example: deepseek/deepseek-v4
+              name:
+                type: string
+                example: DeepSeek V4
+            additionalProperties: false
+        limited_model_count:
+          type: integer
+          minimum: 0
+          description: Nombre de modèles listés ayant perdu certains de leurs fournisseurs à cause des règles.
+          example: 3
       additionalProperties: false
     ModelEndpointCapability:
       type: object

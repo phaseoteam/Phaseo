@@ -28,6 +28,7 @@
 		"audit:design": "pnpm run build && electron scripts/chat-shell-smoke.mjs",
 		"preview:ui": "pnpm run build && electron scripts/ui-preview.mjs",
 		"perf": "node scripts/perf/run.mjs",
+		"perf:budgets": "node scripts/perf/budgets.mjs",
 		"clean": "rimraf dist release"
 	},
 	"devDependencies": {

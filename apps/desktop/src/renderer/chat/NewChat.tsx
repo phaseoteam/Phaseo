@@ -10,7 +10,7 @@ import { errorText, usablePhaseoAccounts, useWorkspace } from "../app/workspace"
 import { useModelPreferences, type ModelSelection } from "../lib/modelPreferences";
 import { useModels } from "../lib/useModels";
 import { usePersistedState } from "../lib/persistedState";
-import { useConnectedHarnesses } from "../lib/useConnectedHarnesses";
+import { useConnectedHarnessesState } from "../lib/useConnectedHarnesses";
 import { cn } from "../lib/utils";
 import { ModelLogo } from "../components/ModelLogo";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "../components/ui/dropdown-menu";
@@ -49,7 +49,7 @@ function greeting() {
 }
 
 export function NewChat() {
-	const { api, overview, command, setOverview, setError, mode, select, openCompare, saveCompareGroup, newChatProjectId, setNewChatProjectId, openSettings, openUsage } = useWorkspace();
+	const { api, overview, ready, command, setOverview, setError, mode, select, openCompare, saveCompareGroup, newChatProjectId, setNewChatProjectId, openSettings, openUsage } = useWorkspace();
 	const [draft, setDraft] = usePersistedState(newChatDraftKey, "");
 	// Images wait here until the chat exists; the draft holds a chip for each, keyed by a local id.
 	const [images, setImages] = useState<Record<string, File>>({});
@@ -63,7 +63,12 @@ export function NewChat() {
 	const workspacePreferences = useWorkspacePreferences();
 	const preferences = useModelPreferences();
 	const phaseoAccount = usablePhaseoAccounts(overview)[0];
-	const connected = useConnectedHarnesses();
+	const { harnesses: connected, loaded: connectedLoaded } = useConnectedHarnessesState();
+	const hasAgent = !!phaseoAccount || [...connected].some(harness => harness !== "phaseo");
+	// Checking the local agents takes seconds at startup, so the last answer stands in until this one arrives.
+	const [hadAgent, setHadAgent] = usePersistedState("phaseo.desktop.hadConnectedAgent", false);
+	const known = ready && connectedLoaded;
+	useEffect(() => { if (known || hasAgent) setHadAgent(hasAgent); }, [known, hasAgent, setHadAgent]);
 	const { models: phaseoModels } = useModels("phaseo", phaseoAccount?.id, undefined, undefined, !!phaseoAccount);
 	const remembered = preferences.defaultSelection ?? preferences.recentSelection;
 	const [selections, setSelections] = useState<ModelSelection[]>(remembered ? [remembered] : []);
@@ -150,7 +155,10 @@ export function NewChat() {
 		return seen.slice(0, 3);
 	}, [preferences]);
 
-	const needsSignIn = !phaseoAccount && ![...connected].some(harness => harness !== "phaseo");
+	// Until the accounts and local agents have been read, "none connected" isn't known: the composer shows if there was an
+	// agent last time, and otherwise nothing, rather than a sign-in card that may vanish a moment later.
+	const signInUnknown = !known && !hasAgent && !hadAgent;
+	const needsSignIn = known && !hasAgent;
 	const canSend = !busy && (!!message.text || attached.length > 0) && selections.length > 0 && !turnedOff && (!code || !!project) && (!fanOut || (!!worktree.createInWorktree && !triaging)) && (!triaging || (!!preparation && project?.id === preparation.projectId));
 
 	async function submit() {
@@ -192,6 +200,7 @@ export function NewChat() {
 
 	const addProject = () => { if (api) void api.chooseProject().then(state => { setOverview(state); const added = state.projects.find(value => !overview.projects.some(existing => existing.id === value.id)); if (added) setNewChatProjectId(added.id); }, reason => setError(errorText(reason))); };
 
+	if (signInUnknown) return <div className="h-full" />;
 	if (needsSignIn) return <div className="flex h-full items-center justify-center p-8"><SignInCard onOpenSettings={() => openSettings("accounts")} /></div>;
 
 	const projectMenu = <DropdownMenu>
