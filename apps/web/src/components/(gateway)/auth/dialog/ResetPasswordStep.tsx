@@ -62,14 +62,14 @@ export function ResetPasswordStep({ Heading }: { Heading: ElementType }) {
 	};
 
 	return (
-		<div className="flex flex-col gap-6">
+		<div className="flex flex-col gap-4">
 			<div className="flex flex-col items-center gap-1.5 text-center">
-				<Heading className="text-2xl font-bold">{t("setTitle")}</Heading>
+				<Heading className="text-[1.375rem] font-bold">{t("setTitle")}</Heading>
 				<p className="text-sm text-muted-foreground">{t("description")}</p>
 			</div>
 
-			<form onSubmit={submit} className="grid gap-4">
-				<div className="grid gap-2">
+			<form onSubmit={submit} className="grid gap-3.5">
+				<div className="grid gap-1.5">
 					<Label htmlFor="reset-password">{t("newPassword")}</Label>
 					<Input
 						id="reset-password"
@@ -84,7 +84,7 @@ export function ResetPasswordStep({ Heading }: { Heading: ElementType }) {
 					/>
 					{password ? <PasswordStrengthIndicator password={password} /> : null}
 				</div>
-				<div className="grid gap-2">
+				<div className="grid gap-1.5">
 					<Label htmlFor="reset-password-confirm">{t("confirmPassword")}</Label>
 					<Input
 						id="reset-password-confirm"

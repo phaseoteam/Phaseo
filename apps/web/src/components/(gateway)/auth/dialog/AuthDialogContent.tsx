@@ -61,7 +61,7 @@ export default function AuthDialogContent({
 
 	return (
 		<Dialog open={state.open} onOpenChange={onOpenChange}>
-			<DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto px-6 pt-10 pb-6 sm:max-w-sm sm:px-8 sm:pb-8">
+			<DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto px-6 py-7 sm:max-w-md sm:px-8">
 				{/* Whoever signs in or up here may be another account: drop a stale identified person (as the full pages did). */}
 				{state.open && startsNewSession ? <AnalyticsIdentitySync userId={null} workspaceId={null} signedUpAt={null} /> : null}
 				<Suspense

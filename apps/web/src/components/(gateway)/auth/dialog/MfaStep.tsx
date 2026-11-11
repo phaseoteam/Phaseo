@@ -51,12 +51,12 @@ export function MfaStep({
 	};
 
 	return (
-		<div className="flex flex-col gap-6">
+		<div className="flex flex-col gap-4">
 			<div className="flex flex-col items-center gap-1.5 text-center">
 				<div className="mb-2 flex size-12 items-center justify-center rounded-md bg-primary/10">
 					<ShieldCheck className="size-6 text-primary" aria-hidden="true" />
 				</div>
-				<Heading className="text-2xl font-bold">{t("title")}</Heading>
+				<Heading className="text-[1.375rem] font-bold">{t("title")}</Heading>
 				<p className="text-sm text-muted-foreground">{t("description")}</p>
 			</div>
 

@@ -22,10 +22,10 @@ export function SignUp({
 
 	return (
 		<div
-			className={`flex flex-col transition-[gap] duration-500 ease-out ${emailFlowActive ? "gap-3" : "gap-6"}`}
+			className={`flex flex-col transition-[gap] duration-500 ease-out ${emailFlowActive ? "gap-3" : "gap-4"}`}
 		>
 			<div className="flex flex-col items-center gap-2 text-center">
-				<Heading className="text-2xl font-bold">{t("heading")}</Heading>
+				<Heading className="text-[1.375rem] font-bold">{t("heading")}</Heading>
 			</div>
 
 			<div

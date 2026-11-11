@@ -32,16 +32,16 @@ export function SsoStep({
 	const t = useTranslations("Common.authFlows.enterpriseSso");
 
 	return (
-		<div className="flex flex-col gap-6">
+		<div className="flex flex-col gap-4">
 			<div className="flex flex-col items-center gap-1.5 text-center">
-				<Heading className="text-2xl font-bold">{t("title")}</Heading>
+				<Heading className="text-[1.375rem] font-bold">{t("title")}</Heading>
 				<p className="text-sm text-muted-foreground">{t("description")}</p>
 			</div>
 
-			<form action={(formData) => handleEnterpriseSsoRedirect({ data: formData })} className="grid gap-4">
+			<form action={(formData) => handleEnterpriseSsoRedirect({ data: formData })} className="grid gap-3.5">
 				<input type="hidden" name="locale" value={locale} />
 				{returnUrl ? <input type="hidden" name="returnUrl" value={returnUrl} /> : null}
-				<div className="grid gap-2">
+				<div className="grid gap-1.5">
 					<Label htmlFor="sso-domain">{t("emailOrDomain")}</Label>
 					<Input
 						id="sso-domain"

@@ -67,7 +67,7 @@ export default function EmailPassword({
 	};
 
 	return (
-		<div className="grid gap-4">
+		<div className="grid gap-3.5">
 			<div className="flex items-center gap-2">
 				<div className="flex-1 border-t border-border" />
 				<div className="flex items-center gap-2 px-2">
@@ -96,7 +96,7 @@ export default function EmailPassword({
 						openAuthDialog({ step: "sign-in", returnUrl: returnUrl ?? "/", notice: result.error });
 					}
 				}}
-				className="grid gap-3"
+				className="grid gap-3.5"
 				onSubmit={handleSubmit}
 			>
 				<input type="hidden" name="locale" value={locale} />
@@ -104,7 +104,7 @@ export default function EmailPassword({
 				{returnUrl ? (
 					<input type="hidden" name="returnUrl" value={returnUrl} />
 				) : null}
-				<div className="grid gap-3">
+				<div className="grid gap-1.5">
 					<Label htmlFor="email">{shared("email")}</Label>
 					<Input
 						id="email"
@@ -121,7 +121,7 @@ export default function EmailPassword({
 					/>
 				</div>
 
-				<div className="grid gap-3">
+				<div className="grid gap-1.5">
 					<div className="flex h-5 items-center">
 						<Label htmlFor="password">{shared("password")}</Label>
 						<button

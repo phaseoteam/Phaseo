@@ -108,7 +108,7 @@ export default function EmailPassword({
 		ok ? "text-emerald-600" : "text-muted-foreground";
 
 	return (
-		<div className="grid gap-4">
+		<div className="grid gap-3.5">
 			<div className="flex items-center gap-2">
 				<div className="flex-1 border-t border-border" />
 				<span
@@ -130,14 +130,14 @@ export default function EmailPassword({
 					}
 				}}
 				onSubmit={handleSubmit}
-				className="grid gap-3"
+				className="grid gap-3.5"
 			>
 				<input type="hidden" name="locale" value={locale} />
 				{surface === "dialog" ? <input type="hidden" name="surface" value="dialog" /> : null}
 				{returnUrl ? (
 					<input type="hidden" name="returnUrl" value={returnUrl} />
 				) : null}
-				<div className="grid gap-3">
+				<div className="grid gap-1.5">
 					<Label htmlFor="email">{shared("email")}</Label>
 					<Input
 						id="email"
@@ -154,7 +154,7 @@ export default function EmailPassword({
 					/>
 				</div>
 
-				<div className="grid gap-3">
+				<div className="grid gap-1.5">
 					<div className="flex items-center">
 						<Label htmlFor="password">{shared("password")}</Label>
 					</div>

@@ -51,9 +51,9 @@ export function Login({
 		) : null;
 
 	return (
-		<div className="flex flex-col gap-5">
+		<div className="flex flex-col gap-4">
 			<div className="flex flex-col items-center gap-1.5 text-center">
-				<Heading className="text-2xl font-bold">{t("heading")}</Heading>
+				<Heading className="text-[1.375rem] font-bold">{t("heading")}</Heading>
 				<p className="text-sm text-muted-foreground">
 					{t("description")}
 				</p>
