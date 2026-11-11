@@ -19,8 +19,9 @@ import (
 )
 
 // File is a file sent as a multipart/form-data part. Put it under "file" in a transcription
-// or translation request, or pass it to UploadFile. The gateway reads the format from
-// Filename's extension, so keep it (for example "clip.mp3").
+// or translation request, or pass it to UploadFile. Filename is required: the gateway reads
+// the format from its extension (for example "clip.mp3"). ContentType is optional and is
+// otherwise taken from that extension.
 type File struct {
 	Filename    string
 	ContentType string
@@ -33,7 +34,7 @@ func FileFromPath(path string) (File, error) {
 	if err != nil {
 		return File{}, err
 	}
-	return File{Filename: filepath.Base(path), ContentType: mime.TypeByExtension(filepath.Ext(path)), Data: data}, nil
+	return File{Filename: filepath.Base(path), ContentType: contentTypeForName(path), Data: data}, nil
 }
 
 // UploadFileParams describes a batch input file upload. Model and Provider choose the batch
@@ -80,7 +81,13 @@ func (c *Phaseo) UploadFile(ctx context.Context, params UploadFileParams) (map[s
 // is a copy safe to record in telemetry, without file bytes.
 func audioRequestBody(req any) (any, any, error) {
 	fields, ok := req.(map[string]any)
-	if !ok || !hasFilePart(fields) {
+	if !ok {
+		return req, req, nil
+	}
+	if value, present := fields["file"]; present && value != nil && !isFilePart(value) {
+		return nil, nil, fmt.Errorf("phaseo: \"file\" must be a phaseo.File (use phaseo.FileFromPath for a file on disk), not %T", value)
+	}
+	if !hasFilePart(fields) {
 		return req, req, nil
 	}
 	body, err := encodeMultipart(fields)
@@ -157,13 +164,13 @@ func encodeMultipart(fields map[string]any) (gen.RawBody, error) {
 }
 
 func writeFilePart(writer *multipart.Writer, field string, file File) error {
-	filename := file.Filename
-	if strings.TrimSpace(filename) == "" {
-		filename = "upload"
+	filename := strings.TrimSpace(file.Filename)
+	if filename == "" {
+		return fmt.Errorf("phaseo: the %q file needs a Filename, such as \"clip.mp3\"; the gateway reads the format from its extension", field)
 	}
 	contentType := file.ContentType
 	if contentType == "" {
-		contentType = "application/octet-stream"
+		contentType = contentTypeForName(filename)
 	}
 	header := textproto.MIMEHeader{}
 	header.Set("Content-Disposition", mime.FormatMediaType("form-data", map[string]string{"name": field, "filename": filename}))
@@ -212,4 +219,31 @@ func decodeObject(raw []byte) (map[string]interface{}, error) {
 		return nil, fmt.Errorf("decode response: %w", err)
 	}
 	return decoded, nil
+}
+
+// The gateway's audio formats and batch files map to fixed types, so uploads don't depend
+// on the operating system's MIME table.
+var uploadContentTypes = map[string]string{
+	".flac":  "audio/flac",
+	".m4a":   "audio/mp4",
+	".mp3":   "audio/mpeg",
+	".mp4":   "audio/mp4",
+	".mpeg":  "audio/mpeg",
+	".mpga":  "audio/mpeg",
+	".ogg":   "audio/ogg",
+	".wav":   "audio/wav",
+	".webm":  "audio/webm",
+	".jsonl": "application/jsonl",
+	".json":  "application/json",
+}
+
+func contentTypeForName(name string) string {
+	ext := strings.ToLower(filepath.Ext(name))
+	if contentType, ok := uploadContentTypes[ext]; ok {
+		return contentType
+	}
+	if contentType := mime.TypeByExtension(ext); contentType != "" {
+		return contentType
+	}
+	return "application/octet-stream"
 }

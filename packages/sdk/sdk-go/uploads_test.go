@@ -111,6 +111,46 @@ func TestTranscriptionAcceptsAFileFromDisk(t *testing.T) {
 	}
 }
 
+func TestAudioFileMustBeANamedFile(t *testing.T) {
+	var captured capturedUpload
+	server := newUploadServer(t, &captured)
+	client := New("test", server.URL, WithDeprecationWarnings(false))
+
+	cases := map[string]any{
+		"a path string": "clip.mp3",
+		"raw bytes":     []byte("ID3-audio"),
+		"no filename":   File{Data: []byte("ID3-audio")},
+	}
+	for name, file := range cases {
+		t.Run(name, func(t *testing.T) {
+			captured = capturedUpload{}
+			_, err := client.CreateTranslation(context.Background(), map[string]any{"model": "openai/whisper-1", "file": file})
+			if err == nil || !strings.Contains(err.Error(), "phaseo:") {
+				t.Fatalf("error = %v, want a phaseo error", err)
+			}
+			if captured.path != "" {
+				t.Fatalf("sent a request to %s", captured.path)
+			}
+		})
+	}
+}
+
+func TestFileContentTypeComesFromTheExtension(t *testing.T) {
+	var captured capturedUpload
+	server := newUploadServer(t, &captured)
+	client := New("test", server.URL, WithDeprecationWarnings(false))
+
+	if _, err := client.CreateTranslation(context.Background(), map[string]any{
+		"model": "openai/whisper-1",
+		"file":  File{Filename: "clip.wav", Data: []byte("RIFF")},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(captured.fileType, "audio/") {
+		t.Fatalf("file part content type = %q, want audio/*", captured.fileType)
+	}
+}
+
 func TestTranscriptionByURLStaysJSON(t *testing.T) {
 	var captured capturedUpload
 	server := newUploadServer(t, &captured)
