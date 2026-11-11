@@ -17,7 +17,6 @@ import { normalizeModelLicense } from "@/models/license";
 import { fetchModelsPageCatalogue } from "@/models/page-catalogue";
 import { ARTIFICIAL_ANALYSIS_ID } from "@/benchmarks/artificial-analysis-catalogue";
 import { getPublicApp } from "./apps";
-import { combineAttemptHealth, isMissingAttemptHealthRpcError, parseAttemptHealthRows } from "./providerAttemptHealth";
 import { providerIndexWithMembers } from "./providers";
 
 export const ENTITY_CARD_KINDS = ["model", "provider", "organisation", "app", "benchmark", "family", "collection", "country"] as const;
@@ -30,7 +29,6 @@ export type EntityRef = { id: string; name: string };
 const LIST_LIMIT = 3;
 /** Badges after the rows; more would wrap past the card's height budget. */
 const BADGE_LIMIT = 6;
-const UPTIME_WINDOW_DAYS = 3;
 
 const BASE_TAGS = ["web-api-entity-cards"] as const;
 
@@ -42,7 +40,7 @@ const CATALOGUE_CARD_CACHE: PublicCachePolicy = {
 	browserStaleWhileRevalidateSeconds: 0,
 };
 
-/** Cards that carry uptime or usage follow the live telemetry freshness of their pages. */
+/** Cards that carry live status or usage follow the live telemetry freshness of their pages. */
 const LIVE_CARD_CACHE: PublicCachePolicy = { ...PUBLIC_LIVE_DATA_CACHE };
 
 /** Misses are cached briefly, so hovering a dead link does not reach the database each time. */
@@ -89,19 +87,6 @@ function modelRef(row: Row): EntityRef | null {
 
 // --- model -----------------------------------------------------------------
 
-/** Combined 3-day uptime across the model's providers, as on the model page. Rates only. */
-async function modelUptimePct(env: Env, modelId: string): Promise<number | null> {
-	const result = await getDataClient(env).rpc("get_v2_model_provider_attempt_health", {
-		p_model_slug: modelId,
-		p_window_days: UPTIME_WINDOW_DAYS,
-	});
-	if (result.error) {
-		if (!isMissingAttemptHealthRpcError(result.error)) console.error("[web-api/entity-cards] model uptime failed", { modelId, error: result.error });
-		return null;
-	}
-	return combineAttemptHealth(parseAttemptHealthRows(result.data))?.uptimePct ?? null;
-}
-
 /**
  * The model's best score on the current Artificial Analysis Intelligence Index. The current
  * version is resolved for the whole catalogue, not from this model's results, so a model
@@ -145,7 +130,7 @@ async function modelCard(env: Env, modelId: string) {
 	const catalogue = await fetchModelsPageCatalogue(env, { organisationId, includeMetrics: false }, "v2");
 	const row = catalogue.models.find((model) => str(model.model_id) === modelId);
 	if (!row) return null;
-	const [uptimePct, intelligence] = await Promise.all([modelUptimePct(env, modelId), modelIntelligence(env, modelId)]);
+	const intelligence = await modelIntelligence(env, modelId);
 	const providers = Array.isArray(row.gateway_provider_details) ? row.gateway_provider_details.filter(isRecord) : [];
 	return {
 		kind: "model" as const,
@@ -166,7 +151,6 @@ async function modelCard(env: Env, modelId: string) {
 		cheapestProvider: cheapestProvider(row),
 		inputModalities: strings(row.gateway_input_modalities),
 		outputModalities: strings(row.gateway_output_modalities),
-		uptimePct,
 		intelligence,
 		features: strings(row.gateway_features).slice(0, BADGE_LIMIT),
 		tiers: normalizeCatalogueTiers(row.gateway_tiers).filter((tier) => tier !== "standard").slice(0, BADGE_LIMIT),

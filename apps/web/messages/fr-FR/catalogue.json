@@ -3545,8 +3545,6 @@
 		"rowCheapest": "Le moins cher",
 		"rowModalities": "Modalités",
 		"modalitiesValue": "{input} → {output}",
-		"rowUptime": "Disponibilité",
-		"uptimeValue": "{percent} sur 3 jours",
 		"rowIntelligence": "Intelligence",
 		"notScored": "Pas encore évalué",
 		"more": "+{count} de plus",
