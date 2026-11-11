@@ -8,7 +8,7 @@ import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 import Link from "@/components/link";
 import { useSearchParams } from "@/lib/navigation";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
-import { AppWindow, Bot, Braces, Copy, Database, GraduationCap, Info, ListFilter, LoaderCircle, MessageSquare, Package, ShieldCheck, ShieldQuestion, Terminal, Wrench, XCircle } from "lucide-react";
+import { Bot, Braces, Copy, Database, GraduationCap, Info, ListFilter, LoaderCircle, MessageSquare, Package, ShieldCheck, ShieldQuestion, Terminal, Wrench, XCircle } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { buildOpenRequestInChatHref, canOpenRequestInChat } from "@/components/(chat)/chatMessageMetadata";
 import {
@@ -34,16 +34,14 @@ import {
 } from "@/components/ui/tooltip";
 import {
 	HoverCard,
-	HoverCardContent,
-	HoverCardTrigger,
-} from "@/components/ui/hover-card";
-import {
 	HoverCardBody,
+	HoverCardContent,
 	HoverCardFacts,
 	HoverCardHeadline,
 	HoverCardTitle,
+	HoverCardTrigger,
 	joinMeta,
-} from "@/components/ui/hover-card-layout";
+} from "@/components/ui/hover-card";
 import { Logo } from "@/components/Logo";
 import {
 	RequestRow,
@@ -65,7 +63,7 @@ import {
 	normalizeProviderPromptTrainingPolicy,
 } from "@/lib/providers/promptTrainingPolicy";
 import { formatRoomError, type RoomErrorTranslator } from "@/lib/chat/formatRoomError";
-import UsageEntityHoverCard from "./UsageEntityHoverCard";
+import UsageEntityLink from "./UsageEntityLink";
 import { providerAttemptTimelineDuration, responseTimelineTiming } from "./responseTimeline";
 import { readLifecycleJournal } from "./OrderedLifecycleEvents";
 import RequestClassificationsSection from "./RequestClassificationsSection";
@@ -1210,30 +1208,7 @@ export default function RequestDetailDialog({
 			label: s("Routed model"),
 			description: s("phraseTheCanonicalPhaseoModelSelectedAfterAliasesPresetsAndRouterExpansionAreResolved"),
 			value: (
-				<UsageEntityHoverCard
-					title={modelName || routedModelId || "-"}
-					meta={joinMeta([
-						modelMeta?.organisationName,
-						routedModelId ? <code key="id" className="font-mono text-[11px]">{routedModelId}</code> : null,
-					])}
-					href={modelHref}
-					visual={
-						modelMeta ? (
-							<Logo
-								id={modelMeta.organisationId}
-								width={16}
-								height={16}
-								className="flex-shrink-0"
-							/>
-						) : null
-					}
-					rows={[
-						providerName || request.provider
-							? { key: "provider", label: tCards("provider"), value: providerName ?? request.provider }
-							: null,
-					]}
-					requestedAs={requestedModelId ? { id: requestedModelId, routedId: routedModelId } : null}
-				>
+				<UsageEntityLink href={modelHref}>
 					{modelMeta ? (
 						<Logo
 							id={modelMeta.organisationId}
@@ -1245,26 +1220,17 @@ export default function RequestDetailDialog({
 					<span className="min-w-0 break-words sm:truncate">
 						{modelName || routedModelId || "-"}
 					</span>
-				</UsageEntityHoverCard>
+				</UsageEntityLink>
 			),
 		},
 		{
 			label: s("Requested model"),
 			description: s("phraseTheExactModelIDOrAliasSuppliedByTheClientInTheOriginalRequest"),
 			value: requestedModelId ? (
-				<UsageEntityHoverCard
-					title={requestedModelName || requestedModelId}
-					meta={joinMeta([
-						requestedModelMeta?.organisationName,
-						<code key="id" className="font-mono text-[11px]">{requestedModelId}</code>,
-					])}
-					href={requestedModelHref}
-					visual={requestedModelMeta ? <Logo id={requestedModelMeta.organisationId} width={16} height={16} className="shrink-0" /> : null}
-					triggerClassName="sm:justify-end"
-				>
+				<UsageEntityLink href={requestedModelHref} className="sm:justify-end">
 					{requestedModelMeta ? <Logo id={requestedModelMeta.organisationId} width={16} height={16} className="shrink-0" /> : null}
 					<span className="min-w-0 break-words sm:truncate">{requestedModelName || requestedModelId}</span>
-				</UsageEntityHoverCard>
+				</UsageEntityLink>
 			) : (
 				"-"
 			),
@@ -1288,24 +1254,7 @@ export default function RequestDetailDialog({
 		{
 			label: s("Provider"),
 			value: request.provider ? (
-				<UsageEntityHoverCard
-					title={providerName ?? request.provider}
-					meta={<code className="font-mono text-[11px]">{request.provider}</code>}
-					href={request.provider === "private-model" ? "/settings/workspaces/private-models" : `/api-providers/${encodeURIComponent(request.provider)}`}
-					visual={
-						<Logo
-							id={request.provider}
-							width={16}
-							height={16}
-							className="flex-shrink-0"
-						/>
-					}
-					rows={[
-						providerPolicyLabel
-							? { key: "policy", label: s("Data policy"), value: providerPolicyLabel }
-							: null,
-					]}
-				>
+				<UsageEntityLink href={request.provider === "private-model" ? "/settings/workspaces/private-models" : `/api-providers/${encodeURIComponent(request.provider)}`}>
 					<Logo
 						id={request.provider}
 						width={16}
@@ -1313,7 +1262,7 @@ export default function RequestDetailDialog({
 						className="flex-shrink-0"
 					/>
 					<span>{providerName ?? request.provider}</span>
-				</UsageEntityHoverCard>
+				</UsageEntityLink>
 			) : (
 				"-"
 			),
@@ -1360,25 +1309,9 @@ export default function RequestDetailDialog({
 			label: s("App where used"),
 			value:
 				request.app_id && appName ? (
-					<UsageEntityHoverCard
-						title={appName}
-						meta={s("Workspace app")}
-						href={`/apps/${encodeURIComponent(request.app_id)}`}
-						visual={<AppWindow className="h-4 w-4 text-muted-foreground" />}
-						rows={[
-							{
-								key: "app-id",
-								label: s("App ID"),
-								value: (
-									<code className="font-mono text-[11px]">
-										{request.app_id}
-									</code>
-								),
-							},
-						]}
-					>
+					<UsageEntityLink href={`/apps/${encodeURIComponent(request.app_id)}`}>
 						{appName}
-					</UsageEntityHoverCard>
+					</UsageEntityLink>
 				) : (
 					appName ?? request.app_id ?? "-"
 				),

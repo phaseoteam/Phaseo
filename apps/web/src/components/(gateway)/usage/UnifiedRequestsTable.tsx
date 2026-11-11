@@ -65,9 +65,8 @@ import {
 import { exportToCSV, exportToPDF } from "./export-utils";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
-import UsageEntityHoverCard from "./UsageEntityHoverCard";
+import UsageEntityLink from "./UsageEntityLink";
 import { TimestampHoverCard } from "@/components/display/TimestampHoverCard";
-import { joinMeta } from "@/components/ui/hover-card-layout";
 import { formatWordyDateTime } from "@/lib/gateway/usage/timeFormatting";
 import { registerUsageViewRefresher } from "@/lib/gateway/usage/refreshBus";
 import {
@@ -77,10 +76,6 @@ import {
 	formatUsageNumber,
 } from "./usageMeters";
 import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
-import {
-	PROVIDER_PROMPT_TRAINING_POLICY_LABELS,
-	normalizeProviderPromptTrainingPolicy,
-} from "@/lib/providers/promptTrainingPolicy";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 
 import {
@@ -1085,14 +1080,6 @@ export default function UnifiedRequestsTable({
 											routedModelId,
 											resolvedModelMetadata,
 										);
-										const providerPolicyLabel =
-											providerMeta?.promptTrainingPolicy
-												? PROVIDER_PROMPT_TRAINING_POLICY_LABELS[
-														normalizeProviderPromptTrainingPolicy(
-															providerMeta.promptTrainingPolicy,
-														)
-													]
-												: null;
 
 										const normalizedUsage =
 											buildUsageFromNormalizedRequestFields(row.usage, row);
@@ -1150,36 +1137,18 @@ export default function UnifiedRequestsTable({
 																	className="flex-shrink-0"
 																/>
 															) : null}
-															<UsageEntityHoverCard
-																title={routedModelLabel}
-																meta={joinMeta([
-																	routedModelMeta?.organisationName,
-																	<code key="id" className="font-mono text-[11px]">{routedModelId}</code>,
-																])}
-																href={routedModelHref}
-																visual={
-																	routedModelMeta ? (
-																		<Logo
-																			id={routedModelMeta.organisationId}
-																			width={16}
-																			height={16}
-																		/>
-																	) : null
-																}
-																rows={[
-																	providerLabel
-																		? { key: "provider", label: tCards("provider"), value: providerLabel }
-																		: null,
-																]}
-																requestedAs={
-																	requestedModelId
-																		? { id: requestedModelId, routedId: routedModelId }
-																		: null
-																}
-																triggerClassName="font-medium"
-															>
-																<span className="truncate">{routedModelLabel}</span>
-															</UsageEntityHoverCard>
+															<div className="min-w-0">
+																<UsageEntityLink href={routedModelHref} className="max-w-full font-medium">
+																	<span className="truncate">{routedModelLabel}</span>
+																</UsageEntityLink>
+																{/* Workspace-specific, so it stays in the cell: the site-wide model card only describes the routed model. */}
+																{requestedModelId && routedModelId && requestedModelId !== routedModelId ? (
+																	<p className="truncate text-[11px] font-normal text-muted-foreground">
+																		{tCards("requestedAs")}{" "}
+																		<code className="font-mono">{requestedModelId}</code>
+																	</p>
+																) : null}
+															</div>
 														</div>
 													) : (
 														"-"
@@ -1190,31 +1159,13 @@ export default function UnifiedRequestsTable({
 												<TableCell key="provider" className="py-2">
 													<div className="flex min-h-5 items-center">
 														{row.provider ? (
-															<UsageEntityHoverCard
-																title={providerLabel ?? row.provider}
-																meta={<code className="font-mono text-[11px]">{row.provider}</code>}
+															<UsageEntityLink
 																href={
 																	row.provider === "private-model"
 																		? "/settings/workspaces/private-models"
 																		: `/api-providers/${encodeURIComponent(row.provider)}`
 																}
-																visual={
-																	<Logo
-																		id={row.provider}
-																		width={16}
-																		height={16}
-																	/>
-																}
-																rows={[
-																	providerPolicyLabel
-																		? {
-																				key: "policy",
-																				label: t("usageGaps.copyDataPolicy"),
-																				value: providerPolicyLabel,
-																			}
-																		: null,
-																]}
-																triggerClassName="max-w-[180px] font-medium"
+																className="max-w-[180px] font-medium"
 															>
 																<Logo
 																	id={row.provider}
@@ -1225,7 +1176,7 @@ export default function UnifiedRequestsTable({
 																<span className="truncate">
 																	{providerLabel}
 																</span>
-															</UsageEntityHoverCard>
+															</UsageEntityLink>
 														) : (
 															<span className="text-muted-foreground">-</span>
 														)}
@@ -1236,45 +1187,7 @@ export default function UnifiedRequestsTable({
 												<TableCell key="app" className="py-2">
 													<div className="flex min-h-5 items-center">
 														{row.app_id ? (
-															<UsageEntityHoverCard
-																title={appLabel ?? t("usageGaps.unknownApp")}
-																meta={
-																	isPhaseoChatApp(row)
-																		? "Phaseo Chat"
-																		: t("usageGaps.workspaceApp")
-																}
-																href={appHref}
-																visual={
-																	isPhaseoChatApp(row) ? (
-																		<Logo id="phaseo" width={16} height={16} />
-																	) : (
-																		<Avatar className="h-4 w-4 rounded-[4px] border border-border/60">
-																			{row.app_image_url ? (
-																				<AvatarImage
-																					src={row.app_image_url}
-																					alt={appLabel ?? t("usageGaps.copyApp")}
-																					className="object-cover"
-																				/>
-																			) : null}
-																			<AvatarFallback className="rounded-[4px] bg-transparent text-muted-foreground">
-																				<AppWindow className="h-3 w-3" />
-																			</AvatarFallback>
-																		</Avatar>
-																	)
-																}
-																rows={[
-																	{
-																		key: "app-id",
-																		label: t("usageGaps.copyAppID"),
-																		value: (
-																			<code className="font-mono text-[11px]">
-																				{row.app_id}
-																			</code>
-																		),
-																	},
-																]}
-																triggerClassName="max-w-[180px] font-medium"
-															>
+															<UsageEntityLink href={appHref} className="max-w-[180px] font-medium">
 																{isPhaseoChatApp(row) ? (
 																	<Logo
 																		id="phaseo"
@@ -1297,7 +1210,7 @@ export default function UnifiedRequestsTable({
 																	</Avatar>
 																)}
 																<span className="truncate">{appLabel}</span>
-															</UsageEntityHoverCard>
+															</UsageEntityLink>
 														) : (
 															<span className="text-muted-foreground">-</span>
 														)}

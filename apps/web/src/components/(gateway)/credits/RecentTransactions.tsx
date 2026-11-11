@@ -39,8 +39,13 @@ import {
 } from "@/components/ui/table";
 import {
 	HoverCard,
+	HoverCardBody,
 	HoverCardContent,
+	HoverCardFacts,
+	HoverCardHeadline,
+	HoverCardTitle,
 	HoverCardTrigger,
+	joinMeta,
 } from "@/components/ui/hover-card";
 import {
 	Select,
@@ -60,13 +65,6 @@ import {
 import { cn } from "@/lib/utils";
 import { isSlackAgentCharge } from "@/lib/credits/promoCodes";
 import { TimestampHoverCard } from "@/components/display/TimestampHoverCard";
-import {
-	HoverCardBody,
-	HoverCardFacts,
-	HoverCardHeadline,
-	HoverCardTitle,
-	joinMeta,
-} from "@/components/ui/hover-card-layout";
 import { useRelativeNow } from "@/hooks/useRelativeNow";
 import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";
 import {

@@ -37,8 +37,11 @@ import {
 } from "@/components/(data)/model/pricing/ProviderInspectorSheet";
 import {
 	HoverCard,
+	HoverCardBody,
 	HoverCardContent,
+	HoverCardTitle,
 	HoverCardTrigger,
+	joinMeta,
 } from "@/components/ui/hover-card";
 import {
 	Table,
@@ -50,11 +53,6 @@ import {
 } from "@/components/ui/table";
 import { TimestampHoverCard } from "@/components/display/TimestampHoverCard";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
-import {
-	HoverCardBody,
-	HoverCardTitle,
-	joinMeta,
-} from "@/components/ui/hover-card-layout";
 import { formatUsd } from "@phaseo/app-kit/format";
 import { registerUsageViewRefresher } from "@/lib/gateway/usage/refreshBus";
 import { usePrivateUsageRefresh } from "./PrivateUsageQuery";
