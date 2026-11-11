@@ -527,6 +527,48 @@ describe("Phaseo MCP server metadata", () => {
 		expect(ids(newestFirst)).toEqual(["lab/old", "lab/tools-only", "lab/both", "lab/undated"]);
 	});
 
+	it("finds required-parameter matches by alias and beyond the first page of results", async () => {
+		const model = (id: string, parameters: string[], parameterDetails: Record<string, Record<string, unknown>>) => ({
+			id, name: id, description: null,
+			organization: { id: "lab", name: "Example Lab", color: null },
+			lifecycle: { status: "active", released_at: "2026-09-01", deprecated_at: null, retires_at: null, replacement_id: null, message: null },
+			modalities: { input: ["text"], output: ["video"] },
+			limits: { input_tokens: null, output_tokens: null },
+			capabilities: { endpoints: ["video.generations"], parameters, parameter_details: parameterDetails },
+			availability: { status: "active", provider_count: 1, active_provider_count: 1, coming_soon_provider_count: 0, inactive_provider_count: 0 },
+			pricing: { pricing_plan: "standard", meters: {} },
+			offers: [{
+				provider: { id: "provider", name: "Provider" }, model: id, status: "active", routable: true,
+				capabilities: { parameters, parameter_details: parameterDetails },
+				pricing: { pricing_plan: "standard", meters: {} },
+			}],
+		});
+		// 250 models on the first page support only one of the two parameters.
+		const firstPage = Array.from({ length: 250 }, (_, index) => model(`lab/partial-${index}`, ["prompt"], {}));
+		// The only full match is on the second page, and supports duration through its alias duration_seconds.
+		const secondPage = [model("lab/full", ["prompt"], { duration: { aliases: ["duration_seconds"] } })];
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			const url = new URL((input instanceof Request ? input : new Request(input)).url);
+			const models = url.searchParams.get("offset") === "250" ? secondPage : firstPage;
+			return Response.json({ ok: true, models, total: 251 });
+		});
+		vi.stubGlobal("fetch", fetchMock);
+		const server = createServer(env, { accessToken: "upstream-token", workspaceId: "workspace_1", scopes: ["models:read", "pricing:read"] });
+		const client = new Client({ name: "phaseo-mcp-test", version: "1.0.0" });
+		connectedClients.push(client);
+		const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+		await server.connect(serverTransport);
+		await client.connect(clientTransport);
+
+		const result = await client.callTool({
+			name: "models_list",
+			arguments: { requiredParameters: ["prompt", "duration_seconds"] },
+		});
+		expect((result.structuredContent as { models: Array<{ id: string }> }).models.map((item) => item.id)).toEqual(["lab/full"]);
+		expect(fetchMock).toHaveBeenCalledTimes(2);
+		expect(new URL((fetchMock.mock.calls[1] as unknown as [Request])[0].url).searchParams.get("offset")).toBe("250");
+	});
+
 	it("keeps benchmark order neutral while reporting Gateway availability", async () => {
 		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
 			const request = input instanceof Request ? input : new Request(input);

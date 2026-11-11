@@ -20,6 +20,7 @@ import {
 	listModels,
 	listProviders,
 	searchModels,
+	searchAllModels,
 	PhaseoApiError,
 	readControlPlane,
 } from "./phaseo-api";
@@ -413,10 +414,15 @@ export function outputTypeAliases(outputType: keyof typeof OUTPUT_TYPE_ALIASES |
 	return outputType ? [...OUTPUT_TYPE_ALIASES[outputType]] : undefined;
 }
 
-// Same rule as the API's catalogue filter: a parameter is supported when it is listed or described.
+// Same rule as the API's catalogue filter: a parameter is supported when it is listed, described, or named as an
+// alias of a described parameter (duration_seconds for duration, for example).
 function offerSupportsParameter(offer: GatewayModel["offers"][number], parameter: string): boolean {
-	return offer.capabilities.parameters.includes(parameter)
-		|| Object.hasOwn(offer.capabilities.parameter_details, parameter);
+	if (offer.capabilities.parameters.includes(parameter)) return true;
+	return Object.entries(offer.capabilities.parameter_details).some(([name, detail]) => {
+		if (name === parameter) return true;
+		const aliases = detail?.aliases;
+		return Array.isArray(aliases) && aliases.some((alias) => typeof alias === "string" && alias.trim() === parameter);
+	});
 }
 
 function releaseTime(model: GatewayModel): number | null {
@@ -810,7 +816,7 @@ export function createServer(
 		minimumContextTokens, maximumInputPricePerMillion, gatewayAvailableOnly, sortBy, sortOrder, limit,
 	}: ModelListArgs) => {
 		try {
-			const searched = await searchModels(env, {
+			const searchOptions = {
 				query,
 				provider,
 				modality,
@@ -818,8 +824,13 @@ export function createServer(
 				parameters: requiredParameters,
 				minimumContextTokens,
 				gatewayAvailableOnly,
-				limit: 250,
-			}, { accessToken: authenticatedUser.accessToken });
+			};
+			const credentials = { accessToken: authenticatedUser.accessToken };
+			// Filters applied here, not by the API, must see every API match, not only the first page.
+			const filtersLocally = Boolean(requiredParameters?.length || releasedAfter || hideDeprecated);
+			const searched = filtersLocally
+				? await searchAllModels(env, searchOptions, credentials)
+				: await searchModels(env, { ...searchOptions, limit: 250 }, credentials);
 			const models = filterModels(searched, { parameters: requiredParameters, releasedAfter, hideDeprecated });
 			const priceFiltered = maximumInputPricePerMillion === undefined
 				? models
