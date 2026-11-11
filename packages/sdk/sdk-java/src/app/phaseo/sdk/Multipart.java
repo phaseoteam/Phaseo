@@ -24,13 +24,12 @@ import java.util.Set;
  * Builds multipart/form-data bodies for file endpoints (audio transcriptions and translations, batch
  * file uploads) with the standard library only.
  *
- * <p>A file value may be a {@code byte[]}, a {@link Path}, a {@link File}, an {@link InputStream}
- * (read fully, not closed) or a {@code String} of content. Strings are content, never paths: pass a
- * {@link Path} to upload a file from disk.
+ * <p>A file value is a {@link PhaseoFile}, a {@link Path} or {@link File} (named by its basename), or
+ * a {@code byte[]} or {@link InputStream} (read fully, not closed) named by the request's "filename"
+ * entry. A {@code String} is never a file.
  */
 final class Multipart {
-	static final String DEFAULT_AUDIO_FILENAME = "audio.mp3";
-	static final String DEFAULT_UPLOAD_FILENAME = "upload";
+	static final String DEFAULT_CONTENT_TYPE = "application/octet-stream";
 	/** Form fields the gateway parses from one JSON string. */
 	static final Set<String> JSON_FIELDS = Set.of(
 		"provider", "debug", "include", "timestamp_granularities", "chunking_strategy", "languages", "keywords", "context_bias"
@@ -54,31 +53,68 @@ final class Multipart {
 	static final class FilePart {
 		final byte[] bytes;
 		final String filename;
+		final String contentType;
 
-		FilePart(byte[] bytes, String filename) {
+		FilePart(byte[] bytes, String filename, String contentType) {
 			this.bytes = bytes;
 			this.filename = filename;
+			this.contentType = contentType;
 		}
 	}
 
-	static boolean isFileValue(Object value) {
-		return value instanceof byte[] || value instanceof Path || value instanceof File || value instanceof InputStream || value instanceof String;
-	}
-
-	/** Reads a file value; {@code filename} overrides the name taken from a path. */
-	static FilePart readFile(Object value, String filename) throws IOException {
-		if (value instanceof byte[]) return new FilePart((byte[]) value, filename);
-		if (value instanceof Path) {
+	/**
+	 * Resolves a file value. {@code filename} and {@code contentType} are the request's sibling
+	 * "filename" and "content_type" entries (either may be null). The filename is the
+	 * {@link PhaseoFile}'s own name, the basename of a {@link Path} or {@link File}, or {@code filename}
+	 * for {@code byte[]} and {@link InputStream} values; without one this throws, because the gateway
+	 * reads the format from the extension. The content type is the explicit one, else looked up from
+	 * the extension, else application/octet-stream.
+	 */
+	static FilePart resolve(Object value, String filename, String contentType) throws IOException {
+		String siblingName = blankToNull(filename);
+		String explicitType = blankToNull(contentType);
+		byte[] bytes;
+		String name;
+		if (value instanceof PhaseoFile) {
+			PhaseoFile file = (PhaseoFile) value;
+			bytes = file.readContent();
+			name = file.getFileName();
+			if (file.getContentType() != null) explicitType = file.getContentType();
+		} else if (value instanceof Path) {
 			Path path = (Path) value;
-			return new FilePart(Files.readAllBytes(path), filename != null ? filename : fileName(path));
-		}
-		if (value instanceof File) {
+			bytes = Files.readAllBytes(path);
+			name = fileName(path);
+		} else if (value instanceof File) {
 			Path path = ((File) value).toPath();
-			return new FilePart(Files.readAllBytes(path), filename != null ? filename : fileName(path));
+			bytes = Files.readAllBytes(path);
+			name = fileName(path);
+		} else if (value instanceof byte[]) {
+			bytes = (byte[]) value;
+			name = siblingName;
+		} else if (value instanceof InputStream) {
+			bytes = ((InputStream) value).readAllBytes();
+			name = siblingName;
+		} else if (value instanceof CharSequence) {
+			throw new IllegalArgumentException(
+				"file must not be a String: pass Path.of(\"audio.mp3\") or PhaseoFile.fromPath(...) for a file on disk, "
+					+ "or PhaseoFile.fromBytes(bytes, \"audio.mp3\") for bytes in memory"
+			);
+		} else {
+			throw new IllegalArgumentException(
+				"file must be a PhaseoFile, Path, File, byte[] or InputStream, not " + (value == null ? "null" : value.getClass().getName())
+			);
 		}
-		if (value instanceof InputStream) return new FilePart(((InputStream) value).readAllBytes(), filename);
-		if (value instanceof String) return new FilePart(((String) value).getBytes(StandardCharsets.UTF_8), filename);
-		throw new IllegalArgumentException("file must be a byte[], Path, File, InputStream or String of content");
+		if (name == null || name.isBlank()) {
+			throw new IllegalArgumentException(
+				"file has no filename: pass \"filename\" (for example \"audio.mp3\") with the bytes or stream, or use "
+					+ "PhaseoFile.fromBytes(bytes, \"audio.mp3\"), because the gateway reads the audio format from its extension"
+			);
+		}
+		return new FilePart(bytes, name, explicitType != null ? explicitType : contentTypeFor(name));
+	}
+
+	private static String blankToNull(String value) {
+		return value == null || value.isBlank() ? null : value;
 	}
 
 	private static String fileName(Path path) {
@@ -86,10 +122,11 @@ final class Multipart {
 		return name == null ? null : name.toString();
 	}
 
-	static String audioContentType(String filename) {
+	/** Looks up a content type from the filename extension, else application/octet-stream. */
+	static String contentTypeFor(String filename) {
 		int dot = filename.lastIndexOf('.');
 		String extension = dot < 0 ? "" : filename.substring(dot).toLowerCase(Locale.ROOT);
-		return AUDIO_CONTENT_TYPES.getOrDefault(extension, "application/octet-stream");
+		return AUDIO_CONTENT_TYPES.getOrDefault(extension, DEFAULT_CONTENT_TYPE);
 	}
 
 	/** Converts a non-file field value to a string: booleans lowercase, maps and lists as JSON. */
@@ -117,7 +154,7 @@ final class Multipart {
 		return out;
 	}
 
-	static Client.RawBody encode(List<String[]> fields, FilePart file, String contentType) {
+	static Client.RawBody encode(List<String[]> fields, FilePart file) {
 		byte[] random = new byte[16];
 		RANDOM.nextBytes(random);
 		String boundary = "----PhaseoBoundary" + HexFormat.of().formatHex(random);
@@ -130,26 +167,23 @@ final class Multipart {
 		}
 		write(out, "--" + boundary + "\r\n");
 		write(out, "Content-Disposition: form-data; name=\"file\"; filename=\"" + escape(file.filename) + "\"\r\n");
-		write(out, "Content-Type: " + contentType + "\r\n\r\n");
+		write(out, "Content-Type: " + file.contentType + "\r\n\r\n");
 		out.writeBytes(file.bytes);
 		write(out, "\r\n--" + boundary + "--\r\n");
 		return new Client.RawBody("multipart/form-data; boundary=" + boundary, out.toByteArray());
 	}
 
 	/**
-	 * Builds an audio request body from a payload whose "file" entry holds the audio. "filename" (its
-	 * extension names the format; defaults to the file's name, then audio.mp3) and "content_type"
-	 * name the part and are not sent as fields.
+	 * Builds a request body from a payload whose "file" entry holds the file (see {@link #resolve}).
+	 * "filename" and "content_type" name the part and are not sent as fields.
 	 */
-	static Client.RawBody audioBody(Map<String, Object> payload) throws IOException {
+	static Client.RawBody fileBody(Map<String, Object> payload) throws IOException {
 		Map<String, Object> fields = new LinkedHashMap<>(payload);
 		Object file = fields.remove("file");
 		Object filename = fields.remove("filename");
 		Object contentType = fields.remove("content_type");
-		FilePart part = readFile(file, filename == null ? null : filename.toString());
-		String name = part.filename == null || part.filename.isEmpty() ? DEFAULT_AUDIO_FILENAME : part.filename;
-		String type = contentType == null ? audioContentType(name) : contentType.toString();
-		return encode(fields(fields), new FilePart(part.bytes, name), type);
+		FilePart part = resolve(file, filename == null ? null : filename.toString(), contentType == null ? null : contentType.toString());
+		return encode(fields(fields), part);
 	}
 
 	/** Percent-encodes quotes and line breaks in a Content-Disposition value, as browsers do. */

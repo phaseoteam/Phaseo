@@ -508,11 +508,12 @@ public class Phaseo {
 	}
 
 	/**
-	 * Transcribes audio. When {@code request} is a Map with a "file" entry (a {@code byte[]},
-	 * {@link java.nio.file.Path}, {@link java.io.File}, {@link java.io.InputStream} or String of
-	 * content), sends multipart/form-data; set "filename" (its extension names the format) and
-	 * optionally "content_type" for raw bytes. Otherwise sends JSON, for "file_url", "file_id" or
-	 * "s3_presigned_url" requests.
+	 * Transcribes audio. When {@code request} is a Map with a "file" entry, sends multipart/form-data.
+	 * The file is a {@link PhaseoFile}, a {@link java.nio.file.Path} or {@link java.io.File} (named by
+	 * its basename), or a {@code byte[]} or {@link java.io.InputStream} with a "filename" entry; the
+	 * filename's extension tells the gateway the audio format. "content_type" is optional. A String
+	 * file throws {@link IllegalArgumentException}. Without "file", sends JSON, for "file_url",
+	 * "file_id" or "s3_presigned_url" requests.
 	 */
 	public JsonNode createTranscription(Object request) throws IOException, InterruptedException {
 		Map<String, Object> fields = fileFields(request);
@@ -531,8 +532,8 @@ public class Phaseo {
 	}
 
 	/**
-	 * Translates audio to English. The gateway requires a "file" entry ({@code byte[]}, Path, File,
-	 * InputStream or String of content), sent as multipart/form-data; set "filename" for raw bytes.
+	 * Translates audio to English. The gateway requires a "file" entry, sent as multipart/form-data
+	 * and given in the same forms as for {@link #createTranscription(Object)}.
 	 */
 	public JsonNode createTranslation(Object request) throws IOException, InterruptedException {
 		Map<String, Object> fields = fileFields(request);
@@ -551,13 +552,14 @@ public class Phaseo {
 	}
 
 	private JsonNode sendAudio(String endpoint, String path, Map<String, Object> fields) throws IOException, InterruptedException {
+		Client.RawBody body = Multipart.fileBody(fields);
 		Map<String, Object> telemetryPayload = new java.util.LinkedHashMap<>(fields);
 		telemetryPayload.put("file", "[File]");
 		return withLifecycleAndTelemetry(
 			endpoint,
 			telemetryPayload,
 			true,
-			() -> parse(rawClient.requestRaw("POST", path, null, null, Multipart.audioBody(fields)))
+			() -> parse(rawClient.requestRaw("POST", path, null, null, body))
 		);
 	}
 
@@ -566,8 +568,7 @@ public class Phaseo {
 		if (!(request instanceof Map)) return null;
 		Map<String, Object> fields = new java.util.LinkedHashMap<>();
 		for (Map.Entry<?, ?> entry : ((Map<?, ?>) request).entrySet()) fields.put(String.valueOf(entry.getKey()), entry.getValue());
-		Object file = fields.get("file");
-		return file != null && Multipart.isFileValue(file) ? fields : null;
+		return fields.get("file") != null ? fields : null;
 	}
 
 	private static Map<String, Object> withFile(Object file, Map<String, ?> params) {
@@ -815,38 +816,29 @@ public class Phaseo {
 
 	/**
 	 * Uploads a batch input file as multipart/form-data to /batches/files. {@code request} is a Map with
-	 * "file" ({@code byte[]}, Path, File, InputStream or String of content such as JSONL text) and
-	 * optional "purpose" (form field), "filename" and "content_type" (name the part), and "model" /
-	 * "provider" (sent in the query string).
+	 * "file" (a {@link PhaseoFile}, Path, File, or a {@code byte[]} or InputStream with a "filename"
+	 * entry; never a String) and optional "purpose" (form field), "content_type" (the part's type),
+	 * and "model" / "provider" (sent in the query string).
 	 */
 	public JsonNode uploadFile(Object request) throws IOException, InterruptedException {
 		Map<String, Object> fields = fileFields(request);
-		if (fields == null) throw new IllegalArgumentException("uploadFile needs a Map with a \"file\" entry (byte[], Path, File, InputStream or String)");
-		Object file = fields.remove("file");
-		Object filename = fields.remove("filename");
-		Object contentType = fields.remove("content_type");
+		if (fields == null) throw new IllegalArgumentException("uploadFile needs a Map with a \"file\" entry (PhaseoFile, Path, File, byte[] or InputStream)");
 		Map<String, String> query = new java.util.LinkedHashMap<>();
 		for (String key : new String[] { "model", "provider" }) {
 			Object value = fields.remove(key);
 			if (value != null && !value.toString().isBlank()) query.put(key, value.toString());
 		}
+		Client.RawBody body = Multipart.fileBody(fields);
 		Map<String, Object> telemetryPayload = new java.util.LinkedHashMap<>(fields);
+		telemetryPayload.remove("filename");
+		telemetryPayload.remove("content_type");
 		telemetryPayload.putAll(query);
 		telemetryPayload.put("file", "[File]");
 		return withLifecycleAndTelemetry(
 			"files.upload",
 			telemetryPayload,
 			false,
-			() -> {
-				Multipart.FilePart part = Multipart.readFile(file, filename == null ? null : filename.toString());
-				String name = part.filename == null || part.filename.isEmpty() ? Multipart.DEFAULT_UPLOAD_FILENAME : part.filename;
-				Client.RawBody body = Multipart.encode(
-					Multipart.fields(fields),
-					new Multipart.FilePart(part.bytes, name),
-					contentType == null ? "application/octet-stream" : contentType.toString()
-				);
-				return parse(rawClient.requestRaw("POST", "/batches/files", query.isEmpty() ? null : query, null, body));
-			}
+			() -> parse(rawClient.requestRaw("POST", "/batches/files", query.isEmpty() ? null : query, null, body))
 		);
 	}
 

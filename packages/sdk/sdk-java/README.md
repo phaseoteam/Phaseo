@@ -184,13 +184,25 @@ The `createSpeech` wrapper expects JSON and cannot decode binary audio. Use
 `rawClient().requestBytes("POST", "/audio/speech", null, null, jsonBody)` instead.
 
 `createTranscription`, `createTranslation`, and `uploadFile` send
-multipart/form-data when the request has a `file` entry (`byte[]`, `Path`,
-`File`, `InputStream`, or a `String` of content; strings are never paths).
-Set `filename` for raw bytes, since its extension names the audio format:
+multipart/form-data when the request has a `file` entry. The gateway reads the
+audio format from the filename extension, so every file needs a name:
+
+- `PhaseoFile.fromBytes(bytes, "clip.wav")`, `PhaseoFile.fromStream(stream, "clip.wav")`
+  or `PhaseoFile.fromPath(path)`, each with an optional content type;
+- a `Path` or `File`, named by its last segment;
+- a `byte[]` or `InputStream` with a `filename` entry next to `file`.
+
+A `String` is never a file, and bytes or a stream without a filename throw
+`IllegalArgumentException`. Without an explicit content type, the SDK uses the
+one for the filename extension, or `application/octet-stream`.
 
 ```java
-client.createTranscription(Path.of("clip.wav"), Map.of("model", "openai/gpt-4o-transcribe"));
-client.uploadFile(Path.of("input.jsonl"), "batch", "openai/gpt-5-mini", null);
+client.createTranscription(Path.of("clip.wav"), Map.of("model", "provider/transcription-model"));
+client.createTranscription(Map.of(
+    "model", "provider/transcription-model",
+    "file", PhaseoFile.fromBytes(audioBytes, "clip.wav")
+));
+client.uploadFile(Path.of("input.jsonl"), "batch", "provider/chat-model", null);
 ```
 
 A transcription with only `file_url`, `file_id`, or `s3_presigned_url` is sent
