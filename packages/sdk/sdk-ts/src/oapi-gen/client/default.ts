@@ -4556,6 +4556,7 @@ export async function createLiveSession(
   model?: string;
   model_id?: string;
   provider?: string;
+  provider_model?: string;
   session_id?: string;
   status?: string;
   voice?: string | null;
@@ -4580,6 +4581,7 @@ export async function createLiveSession(
     model?: string;
     model_id?: string;
     provider?: string;
+    provider_model?: string;
     session_id?: string;
     status?: string;
     voice?: string | null;
@@ -6127,6 +6129,7 @@ export async function createRealtimeSession(
   model?: string;
   model_id?: string;
   provider?: string;
+  provider_model?: string;
   session_id?: string;
   status?: string;
   voice?: string | null;
@@ -6151,6 +6154,7 @@ export async function createRealtimeSession(
     model?: string;
     model_id?: string;
     provider?: string;
+    provider_model?: string;
     session_id?: string;
     status?: string;
     voice?: string | null;
@@ -9819,6 +9823,7 @@ export async function finalizeRealtimeSession(
   model: string;
   model_id: string;
   provider: string;
+  provider_model?: string;
   session_id: string;
   settlement: {
     [key: string]: unknown;
@@ -9844,6 +9849,7 @@ export async function finalizeRealtimeSession(
     model: string;
     model_id: string;
     provider: string;
+    provider_model?: string;
     session_id: string;
     settlement: {
       [key: string]: unknown;
