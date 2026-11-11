@@ -14519,6 +14519,7 @@ components:
         questions:
           type: array
           minItems: 1
+          maxItems: 1000
           items:
             oneOf:
               - $ref: '#/components/schemas/DecisionPredicateQuestion'
@@ -14816,7 +14817,7 @@ components:
         questions:
           type: object
           minProperties: 1
-          maxProperties: 128
+          maxProperties: 1000
           additionalProperties:
             oneOf:
               - $ref: '#/components/schemas/DecisionNoulQuestion'
@@ -15205,7 +15206,7 @@ components:
         questions:
           type: object
           minProperties: 1
-          maxProperties: 128
+          maxProperties: 1000
           additionalProperties:
             oneOf:
               - $ref: '#/components/schemas/SystemOneNoulQuestion'

@@ -11,11 +11,26 @@ import type {
 	IREmbeddingsInputItem,
 	IRMessage,
 } from "@core/ir";
+import { DECISION_QUESTION_CEILING, DEFAULT_ROUTE_QUESTION_LIMIT } from "@core/decisions";
 import type { ProviderCandidate } from "../before/types";
 
 export type Modality = "text" | "image" | "audio" | "video";
 
+/**
+ * Most questions one request may carry on this route: the capability's
+ * `params.max_questions` when it is a positive whole number, otherwise 128.
+ * A declared value is capped at the request ceiling, which the schema enforces
+ * anyway.
+ */
+export function decisionQuestionLimit(candidate: Pick<ProviderCandidate, "capabilityParams">): number {
+	const declared = candidate.capabilityParams?.max_questions;
+	return Number.isInteger(declared) && declared > 0
+		? Math.min(declared, DECISION_QUESTION_CEILING)
+		: DEFAULT_ROUTE_QUESTION_LIMIT;
+}
+
 export function filterDecisionCandidatesByModalities(candidates: ProviderCandidate[], ir: IRDecisionsRequest): ProviderCandidate[] {
+	const questionCount = Object.keys(ir.questions ?? {}).length;
 	const requestsBox = Object.values(ir.questions ?? {}).some(question => question.type === "box");
 	const requestsLongContext = ir.providerOptions?.typesafe?.long_context === true;
 	const requestsImageUrls = (ir.images ?? []).some(image => typeof image === "string" && !/^data:/i.test(image));
@@ -25,6 +40,7 @@ export function filterDecisionCandidatesByModalities(candidates: ProviderCandida
 		{ modality: "video", parameter: "videos", requested: Boolean(ir.videos?.length) },
 	].filter(item => item.requested);
 	return candidates.filter(candidate =>
+		questionCount <= decisionQuestionLimit(candidate) &&
 		(!requestsBox || (Boolean(ir.images?.length) && candidate.capabilityParams?.box === true)) &&
 		(!requestsLongContext || (candidate.providerId === "typesafe" && candidate.capabilityParams?.long_context === true)) &&
 		(!requestsImageUrls || candidate.capabilityParams?.image_urls === true) &&

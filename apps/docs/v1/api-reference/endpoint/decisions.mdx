@@ -148,6 +148,8 @@ The response (values illustrative):
 
 `input` is a string, or an array of `user` messages whose `content` is a string or a list of `input_text`, `input_image`, `input_audio` and `input_video` parts. `name` is optional; answers keep the request order, including unnamed and repeated names.
 
+A request carries at most 128 questions, except on `google/gemini-decision-1`, which accepts up to 1,000, and Clef, which accepts up to 64. A request over the model's limit returns `400`.
+
 | `type` | Extra fields | Answer fields |
 | --- | --- | --- |
 | `predicate` | none | `probability` (0–1) that the answer is yes |
@@ -164,7 +166,7 @@ Images go in `input_image` parts as data URLs. Hosted HTTPS image URLs work only
 Requests with `state` and a map of named questions still work and return answers keyed by the same names. Together Tev (`together/tev1-4b-experimental`) requires this format, because it returns a label without probabilities, and answers `choice` questions only. Respan Span-01 uses this format too. Don't mix the formats: `input` with `state` or `images` returns `400`.
 
 - `state`: a string, object or array holding the information to evaluate.
-- `questions`: up to 128 named questions. Each sets `type` to `noul` (yes/no), `choice` or `score`, plus `instructions`. Choice questions take `criteria` as a map of option to description; score questions take `criteria` as an array of at least two level descriptions.
+- `questions`: up to 128 named questions, or more on models with a higher limit. Each sets `type` to `noul` (yes/no), `choice` or `score`, plus `instructions`. Choice questions take `criteria` as a map of option to description; score questions take `criteria` as an array of at least two level descriptions.
 - `images`: up to four PNG, JPEG or WebP images, as `data:` URLs or `{ "content_type", "base64" }` objects.
 - `model`: defaults to `typesafe/jev-1.13.0` when omitted.
 
@@ -180,6 +182,7 @@ Check model availability before calling any of these models.
 | `typesafe/jev-1.13.0`, `typesafe/jev-1.14.0` | all three, mixed in one request; `box` on 1.14 | text, PNG/JPEG images | $0.042 (Jev 1.13) |
 | `cloudflare/clef`, `cloudflare/clef-flash` | all three | text, up to 4 images | $0.24 / $0.038 |
 | `cloudflare/clef-omni` | all three | text, images, audio, video | $0.15 |
+| `google/gemini-decision-1` | predicate, choice, score; up to 1,000 per request | text, images, audio, video | $0.10 |
 | `liquid-ai/d1:free`, `liquid-ai/d1` | all three | See the model page | Free during early access |
 | `perplexity/decider-27b` | all three | text, base64 images | $0.04, including image tokens |
 | `inception/mercury-decide` | predicate, choice, score | text or JSON | $0.02 (promotion) |

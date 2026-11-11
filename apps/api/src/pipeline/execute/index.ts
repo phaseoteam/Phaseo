@@ -112,7 +112,7 @@ import { clearDroppedParams, recordDroppedParams } from "./unsupportedParams";
 import { preferTwelveHourCacheRoutes } from "./prompt-cache-ttl";
 import { normalizeCapability } from "@/executors";
 import { isSynchronousMediaCapability } from "@core/synchronous-media";
-import { filterCandidatesByModalities, filterEmbeddingCandidatesByModalities, filterDecisionCandidatesByModalities, routeUploadedFileIds } from "./modalities";
+import { decisionQuestionLimit, filterCandidatesByModalities, filterEmbeddingCandidatesByModalities, filterDecisionCandidatesByModalities, routeUploadedFileIds } from "./modalities";
 import { loadPriceCard } from "../pricing";
 import { stripUsagePricing } from "../usage";
 import { getEffectiveRoutingHints } from "../requestRouting";
@@ -617,9 +617,18 @@ export async function doRequestWithIR(
 		}
 	}
 	if (normalizedCapability === "decisions.make") {
+		const decisionRoutes = candidates;
 		candidates = filterDecisionCandidatesByModalities(candidates, ir as IRDecisionsRequest);
 		if (!candidates.length) {
 			const decisions = ir as IRDecisionsRequest;
+			const questionCount = Object.keys(decisions.questions ?? {}).length;
+			const questionLimit = Math.max(...decisionRoutes.map(decisionQuestionLimit));
+			if (questionCount > questionLimit) {
+				return Response.json({ error: "unsupported_parameter", model: ctx.model, endpoint: ctx.endpoint,
+					request_id: ctx.requestId,
+					message: `This request has ${questionCount} questions, and ${ctx.model} accepts at most ${questionLimit} per request.`,
+				}, { status: 400 });
+			}
 			if (Object.values(decisions.questions ?? {}).some(question => question.type === "box") ||
 				decisions.providerOptions?.typesafe?.long_context === true) {
 				return Response.json({ error: "unsupported_parameter", model: ctx.model, endpoint: ctx.endpoint,

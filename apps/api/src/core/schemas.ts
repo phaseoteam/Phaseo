@@ -5,7 +5,7 @@
 import * as z from "zod";
 import { lazySchema } from "./lazy-schema";
 import type { Endpoint } from "./types";
-import { NativeDecisionsBodySchema, DecisionProviderOptionsSchema } from "./decisions";
+import { NativeDecisionsBodySchema, DecisionProviderOptionsSchema, DECISION_QUESTION_CEILING } from "./decisions";
 import { parseAsyncWebhookConfig } from "./async-notifications";
 import {
 	ANTHROPIC_NATIVE_ADVISOR_TOOL_TYPES,
@@ -1845,8 +1845,8 @@ export const LegacyDecisionsSchema = lazySchema(() => z.object({
         .refine((questions) => Object.keys(questions).length > 0, {
             message: "At least one decision question is required.",
         })
-        .refine((questions) => Object.keys(questions).length <= 128, {
-            message: "Decision requests support at most 128 questions.",
+        .refine((questions) => Object.keys(questions).length <= DECISION_QUESTION_CEILING, {
+            message: `Decision requests support at most ${DECISION_QUESTION_CEILING} questions.`,
         }),
     meta: z.boolean().optional().default(false),
     echo_upstream_request: z.boolean().optional(),

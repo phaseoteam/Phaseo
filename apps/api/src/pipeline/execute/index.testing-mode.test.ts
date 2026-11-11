@@ -760,6 +760,25 @@ describe("doRequestWithIR pricing behavior in testing mode", () => {
 		expect(resolveProviderExecutorMock).not.toHaveBeenCalled();
 	});
 
+	it("rejects more questions than any route accepts and names the limit", async () => {
+		const questions = Object.fromEntries(Array.from({ length: 129 }, (_, index) => [`q${index}`, { type: "noul", instructions: "Safe?" }]));
+		guardCandidatesMock.mockResolvedValue({ ok: true, value: [
+			{ providerId: "openai", inputModalities: ["text"], capabilityParams: {} },
+			{ providerId: "cloudflare", inputModalities: ["text"], capabilityParams: { max_questions: 64 } },
+		] });
+		const result = await doRequestWithIR(createCtx({ endpoint: "decisions", capability: "decisions.make", model: "openai/gpt-6-luna" }), {
+			model: "openai/gpt-6-luna", state: "Text", questions,
+		} as any, createTiming());
+		expect(result).toBeInstanceOf(Response);
+		expect((result as Response).status).toBe(400);
+		expect(await (result as Response).json()).toMatchObject({
+			error: "unsupported_parameter",
+			message: "This request has 129 questions, and openai/gpt-6-luna accepts at most 128 per request.",
+		});
+		expect(rankProvidersMock).not.toHaveBeenCalled();
+		expect(resolveProviderExecutorMock).not.toHaveBeenCalled();
+	});
+
 	it("still returns pricing guard failure on non-testing traffic when no pricing is preloaded", async () => {
 		const candidate = {
 			providerId: "openai",
