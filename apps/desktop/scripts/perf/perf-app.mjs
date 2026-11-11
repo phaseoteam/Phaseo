@@ -185,7 +185,8 @@ async function measure() {
 		// Opening chats, small to huge; each twice, from another chat, so the second is the warm path.
 		const chats = [["small", "stress-5", "s5-u8"], ["long2000Turns", "stress-long-chat", "long-u2000"], ["code600Turns", "stress-long-code", "code-u600"], ["answer400Kb", "stress-huge-answer", "huge-u"], ["pasted300Turns", "stress-pasted", "paste-u300"]];
 		for (let round = 0; round < 2; round++) for (const [label, name, last] of chats) {
-			await measure("openHome", open(undefined), `!document.querySelector("[data-conversation-viewport]")`).catch(() => {});
+			// From another small chat: opening "no chat" isn't a thing the window does, so it would only wait out its timeout.
+			await measure("openOther", open(demoId("stress-7")), opened("s7-u10"));
 			await measure(`openChat.${label}.${round ? "warm" : "cold"}`, open(demoId(name)), opened(last), 60_000);
 			await sleep(300);
 		}

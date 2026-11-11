@@ -1,8 +1,10 @@
 import { unified } from "unified";
 import remarkParse from "remark-parse";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
 import { describe, expect, it } from "vitest";
 import { extractLargeTables, extractTablesFrom, remarkLargeTables } from "./largeTables";
+import { remarkMathGuard } from "./remarkRichBlocks";
 
 const rows = (count: number) => Array.from({ length: count }, (_, row) => `| ${row} | **provider-${row % 17}** | \`${(row * 0.37).toFixed(2)} ms\` | [docs](https://example.com/${row}) |`).join("\n");
 const table = (count: number) => `| # | Provider | Latency | Link |\n| :-- | --- | --: | :-: |\n${rows(count)}`;
@@ -33,6 +35,23 @@ describe("large tables", () => {
 			`${table(300)}\n\n[ref]: https://example.com`,
 		];
 		for (const markdown of cases) expect(extractLargeTables(markdown), markdown.slice(0, 40)).toEqual({ text: markdown, tables: [] });
+	});
+
+	it("keeps the dollar rule for lifted tables, with the message's own plugins", () => {
+		// The rule (remarkMathGuard) reads each `$…$` back from the source text, which a lifted table is not part of.
+		const priced = `| Plan | Price |\n| --- | --- |\n${Array.from({ length: 200 }, (_, row) => `| plan ${row} | $5 and $10 |`).join("\n")}\n\nInline $x^2$ stays math.`;
+		const messageTree = (lift: boolean) => {
+			const { text, tables } = lift ? extractLargeTables(priced) : { text: priced, tables: [] };
+			const processor = unified().use(remarkParse);
+			if (lift) processor.use(remarkLargeTables, { tables });
+			processor.use(remarkMath, { singleDollarTextMath: true }).use(remarkMathGuard).use(remarkGfm);
+			return JSON.parse(JSON.stringify(processor.runSync(processor.parse(text), text), (key, value) => key === "position" ? undefined : value));
+		};
+		expect(extractLargeTables(priced).tables).toHaveLength(1);
+		const lifted = messageTree(true);
+		expect(lifted).toEqual(messageTree(false));
+		expect(JSON.stringify(lifted.children[0].children[1])).toContain('"value":"$5 and $10"');
+		expect(JSON.stringify(lifted.children.at(-1))).toContain('"type":"inlineMath"');
 	});
 
 	it("parses a long table in near-linear time", () => {

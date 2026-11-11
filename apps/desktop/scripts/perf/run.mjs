@@ -185,7 +185,9 @@ if (sections.includes("store")) {
 		raw.store = result;
 		const group = "Store under load (8 streams into long chats, history of 2,000)";
 		// "seed" is setting the history up, not something the app does while used.
-		for (const [name, stats] of Object.entries(result.operations)) if (name !== "seed") add(group, name, "ms", stats.p50, "lower", `p95 ${stats.p95} ms, ${stats.n} calls`);
+		// The bench writes its file even when the workload fails, without operations.
+		if (!result.operations) notes.push(`Store load test did not finish (exit ${bench.status}): ${(bench.stderr || bench.stdout).slice(-400)}`);
+		for (const [name, stats] of Object.entries(result.operations ?? {})) if (name !== "seed") add(group, name, "ms", stats.p50, "lower", `p95 ${stats.p95} ms, ${stats.n} calls`);
 		add(group, "Main-thread share for 8 streams", "%", result.mainThreadPercent);
 		add(group, "WAL written per flush", "KB", result.walKbPerFlush);
 		add(group, "Database on disk", "MB", result.diskMb);
