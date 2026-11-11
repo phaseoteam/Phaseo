@@ -24,6 +24,8 @@ import { getEndpointMetadata } from "./endpoint-metadata";
 import { normalizeParameterSpecs } from "@core/model-parameters";
 import { getBindingsIfConfigured, getSupabaseAdmin } from "@/runtime/env";
 import { normalizeGatewayRoutingRegion } from "@pipeline/before/deployment-region";
+import { fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
+import { modelsForPolicy } from "./models.policy";
 
 type LifecycleStatus = "active" | "deprecated" | "retired" | null;
 type AvailabilityMode = "active" | "all";
@@ -49,6 +51,7 @@ const FREE_ROUTER_ENDPOINTS = ["chat/completions", "responses", "messages"] as c
 // five minutes fresh, followed by five minutes of stale-while-revalidate.
 const MODEL_CATALOGUE_CACHE_TTL_SECONDS = 5 * 60;
 const MODEL_CATALOGUE_CACHE_STALE_SECONDS = 5 * 60;
+const MY_MODELS_CACHE_TTL_SECONDS = 60;
 
 // Bump when the ETag input changes shape so old validators stop matching.
 const MODEL_LIST_ETAG_VERSION = 1;
@@ -803,7 +806,16 @@ async function fetchWorkspacePrivateCatalogue(args: {
     });
 }
 
-export async function handleModels(req: Request) {
+export function handleModels(req: Request) {
+    return listModels(req, "shared");
+}
+
+/** GET /v1/models/me: the catalogue as this key may use it, after its workspace, department, member and key guardrails. */
+export function handleMyModels(req: Request) {
+    return listModels(req, "me");
+}
+
+async function listModels(req: Request, scope: "shared" | "me") {
     const url = new URL(req.url);
     const gatewayRegion = normalizeGatewayRoutingRegion(
 		getBindingsIfConfigured()?.GATEWAY_ROUTING_REGION,
@@ -884,14 +896,17 @@ export async function handleModels(req: Request) {
         );
     }
 
-    const cacheScope = "models:shared:v1";
+    const cacheScope = scope === "me" ? "models:me:v1" : "models:shared:v1";
 
-    const cacheOptions = {
-        scope: cacheScope,
-        ttlSeconds: MODEL_CATALOGUE_CACHE_TTL_SECONDS,
-        staleSeconds: MODEL_CATALOGUE_CACHE_STALE_SECONDS,
-        varyHeaders: [],
-    };
+    // A key's own list follows guardrail edits, so clients re-check it after a minute (cheaply, with If-None-Match).
+    const cacheOptions = scope === "me"
+        ? { scope: cacheScope, ttlSeconds: MY_MODELS_CACHE_TTL_SECONDS, staleSeconds: 0, varyHeaders: [] }
+        : {
+            scope: cacheScope,
+            ttlSeconds: MODEL_CATALOGUE_CACHE_TTL_SECONDS,
+            staleSeconds: MODEL_CATALOGUE_CACHE_STALE_SECONDS,
+            varyHeaders: [],
+        };
 
     const endpoints = parseMultiValue(url.searchParams, "endpoints");
     const includeParameterSpecs = parseMultiValue(url.searchParams, "include").includes("parameter_specs");
@@ -1045,8 +1060,13 @@ export async function handleModels(req: Request) {
                 },
             };
         });
+        const listed = [...privateByModelId.values(), ...mergedPublicModels] as PhaseoModel[];
+        // Filtered before search and paging, so totals and pages count only what the key may use.
+        const permitted = scope === "me"
+            ? await modelsForPolicy(listed, await fetchWorkspacePolicy({ workspaceId: auth.value.workspaceId, apiKeyId: auth.value.apiKeyId }))
+            : listed;
         const models = filterAndSortModels(
-            [...privateByModelId.values(), ...mergedPublicModels] as PhaseoModel[],
+            permitted,
             {
                 search,
                 provider: providerSearch,
@@ -1298,24 +1318,6 @@ export async function handleModelEndpoints(req: Request) {
             { "Cache-Control": "no-store" },
         );
     }
-}
-
-export async function handleMyModels(req: Request) {
-    const auth = await guardAuth(req, { allowOAuthJwt: true });
-    if (!auth.ok) {
-        return (auth as GuardErr).response;
-    }
-
-    return json(
-        {
-            status_code: 501,
-            error: "not_implemented",
-            description:
-                "GET /models/me is reserved for future guardrail-aware model filtering and is not implemented yet. Use /models for the shared gateway catalogue.",
-        },
-        501,
-        { "Cache-Control": "no-store" }
-    );
 }
 
 export const modelsRoutes = new Hono<Env>();

@@ -49,7 +49,7 @@ Chaque modèle liste une entrée dans `offers` par route de fournisseur (extrait
 
 N’envoyez du trafic de production que vers une offre dont `routable` vaut `true`. `status_reason` indique pourquoi une offre est en aperçu uniquement ou inactive. Le schéma complet figure ci-dessous.
 
-`GET /models/me` est réservé à un futur filtrage des modèles tenant compte des garde-fous de l’appelant actuel. Il renvoie aujourd’hui `501 not implemented` : utilisez donc `GET /models`.
+`GET /models/me` renvoie la même liste en appliquant les garde-fous de votre clé : les règles de confidentialité et de fournisseurs de votre espace de travail, ainsi que les garde-fous des départements de la clé, de son membre et de la clé elle-même. Les modèles bloqués par une règle de modèles et ceux sans fournisseur autorisé sont exclus, et chaque modèle ne garde que les offres vers lesquelles ses requêtes peuvent être acheminées. Il accepte les mêmes filtres que `GET /models`.
 
 <span id="filter-the-list"></span>
 ## Filtrer la liste

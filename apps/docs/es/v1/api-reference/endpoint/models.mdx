@@ -49,7 +49,7 @@ Cada modelo incluye una entrada en `offers` por cada ruta de proveedor (resumido
 
 Enruta tráfico de producción solo a una oferta cuyo `routable` sea `true`. `status_reason` explica por qué una oferta está solo en vista previa o inactiva. El esquema completo aparece más abajo.
 
-`GET /models/me` está reservado para un futuro filtrado de modelos que tenga en cuenta los guardrails de quien llama. Hoy devuelve `501 not implemented`, así que usa `GET /models`.
+`GET /models/me` devuelve la misma lista con los guardrails de tu clave aplicados: las reglas de privacidad y de proveedores de tu espacio de trabajo, y los guardrails de los departamentos de la clave, de su miembro y de la propia clave. Se omiten los modelos que bloquea una regla de modelos y los que no tienen ningún proveedor permitido, y cada modelo conserva solo las ofertas a las que se pueden enviar sus solicitudes. Acepta los mismos filtros que `GET /models`.
 
 <span id="filter-the-list"></span>
 ## Filtra la lista
