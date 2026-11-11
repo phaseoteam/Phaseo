@@ -38,7 +38,6 @@ const MODEL: ModelEntityCard = {
 	cheapestProvider: { id: "fastinfer", name: "FastInfer" },
 	inputModalities: ["text", "image"],
 	outputModalities: ["text"],
-	uptimePct: 99.99,
 	intelligence: null,
 	features: ["reasoning", "tools"],
 	tiers: ["batch", "priority"],
@@ -162,7 +161,7 @@ describe("EntityCards", () => {
 		expect(opened.textContent).toContain("Acme · Released 9 Nov 2026 · Active");
 		const stats = Array.from(opened.querySelectorAll("[data-slot=hover-card-stats] dd")).map((dd) => dd.textContent);
 		expect(stats).toEqual(["$8", "$12.50", "1M", "1/2"]);
-		expect(opened.textContent).toContain("99.9% over 3 days");
+		expect(opened.textContent).not.toContain("Uptime");
 		expect(opened.textContent).toContain("Text, Image → Text");
 		expect(opened.textContent).toContain("Not yet scored");
 		expect(opened.textContent).toContain("Priority tier");
