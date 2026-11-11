@@ -1,0 +1,98 @@
+name: Desktop performance
+
+# The full desktop performance suite (startup, interactions, parallel streaming, the store under load and the bundle)
+# on main every night, compared with the previous night's report, so slow creep shows even when no single pull request
+# crosses a threshold. Pull requests get the timing-free startup budgets in desktop.yml instead.
+# A failed night isn't used as the next baseline, so a slowdown keeps failing until it's fixed; after an accepted one,
+# run this workflow by hand with "record only" to start from the new numbers.
+on:
+    schedule:
+        - cron: "23 3 * * *"
+    # A change to the suite or this workflow runs it once on the pull request (recording only).
+    pull_request:
+        paths:
+            - "apps/desktop/scripts/perf/**"
+            - "apps/desktop/perf-budgets.json"
+            - ".github/workflows/desktop-perf.yml"
+    workflow_dispatch:
+        inputs:
+            runs:
+                description: Launches per startup profile
+                default: "5"
+            record_only:
+                description: Record a new baseline without comparing (after an accepted slowdown)
+                type: boolean
+                default: false
+
+permissions:
+    contents: read
+    actions: read
+
+concurrency:
+    group: desktop-perf
+    cancel-in-progress: false
+
+jobs:
+    perf:
+        runs-on: windows-latest
+        timeout-minutes: 60
+        steps:
+            - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+              with:
+                  persist-credentials: false
+            - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+              with:
+                  version: 10.33.0
+                  run_install: false
+                  standalone: true
+            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+              with:
+                  node-version: "24"
+                  package-manager-cache: false
+            - name: Install desktop dependencies
+              run: pnpm install --filter @phaseo/desktop... --frozen-lockfile
+            - name: Build desktop and agent SDK
+              run: pnpm --filter @phaseo/desktop build
+            - name: Startup budgets
+              run: pnpm --filter @phaseo/desktop perf:budgets
+            # The last successful night's report on main is the baseline; the first run has none and only records.
+            - name: Previous report
+              id: baseline
+              if: github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && !inputs.record_only)
+              shell: pwsh
+              env:
+                  GH_TOKEN: ${{ github.token }}
+              run: |
+                  $previous = gh run list --repo $env:GITHUB_REPOSITORY --workflow desktop-perf.yml --branch main --status success --limit 1 --json databaseId --jq '.[0].databaseId'
+                  if ($previous) {
+                    gh run download $previous --repo $env:GITHUB_REPOSITORY --name desktop-perf-report --dir baseline
+                    if ($LASTEXITCODE -eq 0 -and (Test-Path baseline/report.json)) { "file=$((Resolve-Path baseline/report.json).Path)" >> $env:GITHUB_OUTPUT; exit 0 }
+                  }
+                  Write-Host "No earlier report; this run records the first baseline."
+                  exit 0
+            # Shared runners vary by 20-40% from run to run, so only a change past 25% counts as worse here.
+            - name: Performance suite
+              shell: pwsh
+              env:
+                  RUNS: ${{ inputs.runs || '5' }}
+                  BASELINE: ${{ steps.baseline.outputs.file }}
+              run: |
+                  # --strict: a section that failed, or a metric the baseline has and this run lacks, fails the run, so an
+                  # incomplete report never becomes the next baseline.
+                  $options = @("--skip-build", "--strict", "--runs=$env:RUNS", "--out=$env:GITHUB_WORKSPACE/output/desktop-perf", "--threshold=25")
+                  if ($env:BASELINE) { $options += @("--baseline=$env:BASELINE", "--fail-on-regression") }
+                  pnpm --filter @phaseo/desktop exec node scripts/perf/run.mjs @options
+                  $code = $LASTEXITCODE
+                  if (Test-Path output/desktop-perf/report.md) { Get-Content output/desktop-perf/report.md | Add-Content $env:GITHUB_STEP_SUMMARY }
+                  exit $code
+            - name: Upload report
+              if: always()
+              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+              with:
+                  name: desktop-perf-report
+                  path: |
+                      output/desktop-perf/report.json
+                      output/desktop-perf/report.md
+                      output/desktop-perf/report.html
+                  retention-days: 30
+                  if-no-files-found: ignore

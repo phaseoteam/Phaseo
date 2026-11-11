@@ -125,8 +125,11 @@ export const handlePasswordSignIn = createServerFn({ method: "POST" })
 		const password = String(formData.get("password") ?? "");
 		const safeReturnUrl = await resolveSafeReturnUrl(formData);
 
+		const inDialog = formData.get("surface") === "dialog";
 		const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 		if (error) {
+			// The sign-in dialog shows the error in place instead of loading /sign-in.
+			if (inDialog) return { error: "auth-failed" as const };
 			redirect(
 				buildLocalizedAuthPath(locale, "/sign-in", {
 					error: "auth-failed",
@@ -159,6 +162,8 @@ export const handlePasswordSignIn = createServerFn({ method: "POST" })
 			errorRedirectUrl = buildAuthErrorRedirect(locale, "workspace-setup");
 		}
 		if (errorRedirectUrl) redirect(errorRedirectUrl);
+		// The dialog asks for the two-factor code in place; the session stays gated until then.
+		if (inDialog && redirectPath.startsWith("/auth/verify-mfa")) return { step: "mfa" as const };
 		redirect(redirectPath);
 	});
 

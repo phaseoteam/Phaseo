@@ -49,7 +49,7 @@ Jedes Modell führt in `offers` einen Eintrag pro Anbieter-Route (gekürzt, Wert
 
 Route Produktions-Traffic nur an ein Angebot, dessen `routable` gleich `true` ist. `status_reason` erklärt, warum ein Angebot nur Vorschau oder inaktiv ist. Das vollständige Schema steht unten.
 
-`GET /models/me` ist für eine künftige, Guardrail-bewusste Filterung der Modelle für den aktuellen Aufrufer reserviert. Derzeit gibt es `501 not implemented` zurück, verwende also `GET /models`.
+`GET /models/me` gibt dieselbe Liste mit den Guardrails deines Schlüssels zurück: den Datenschutz- und Anbieterregeln deines Workspace sowie den Guardrails der Abteilungen des Schlüssels, seines Mitglieds und des Schlüssels selbst. Modelle, die eine Modellregel sperrt, und Modelle ohne erlaubten Anbieter fehlen, und jedes Modell behält nur die Angebote, an die seine Anfragen geleitet werden dürfen. Es nimmt dieselben Filter wie `GET /models` an. Die Antwort enthält außerdem `access`: ob eine Regel greift (`restricted`), welche Modelle die Regeln ausschließen (`hidden_model_count` und `hidden_models`, mit IDs und Namen) und wie viele gelistete Modelle Anbieter verloren haben (`limited_model_count`), damit du erklären kannst, warum ein Modell fehlt.
 
 <span id="filter-the-list"></span>
 ## Die Liste filtern

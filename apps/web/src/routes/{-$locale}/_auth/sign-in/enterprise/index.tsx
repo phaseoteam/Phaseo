@@ -1,22 +1,19 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { createServerFn } from "@tanstack/react-start";
-import { toSerializableMetadata } from "@/lib/start/metadata";
-import { metadataToHead } from "@/lib/start/metadataToHead";
-import { metadataLoaderData } from "@/lib/start/streamedMetadata";
-import { EnterpriseSignInPage, getEnterpriseSignInMetadata } from "@/features/sign-in/enterprise/EnterpriseSignInPage";
+// Enterprise SSO is a step of the site-wide auth dialog: this URL opens it over the
+// home page (plain sign-in when SAML SSO is switched off).
+import { createFileRoute, redirect } from "@tanstack/react-router";
+import { authDialogHref, searchValue } from "@/lib/auth/authDialogRedirect";
 import { samlSsoEnabledQuery } from "@/features/sign-in/SignInPage.functions";
-import { notFound } from "@/lib/navigation";
-
-const routeMetadata = createServerFn({ method: "GET" })
-	.handler(async () => toSerializableMetadata(await getEnterpriseSignInMetadata()));
 
 export const Route = createFileRoute("/{-$locale}/_auth/sign-in/enterprise/")({
-	loader: async ({ context }) => {
-		const metadataPromise = routeMetadata();
-		metadataPromise.catch(() => undefined);
-		if (!(await context.queryClient.ensureQueryData(samlSsoEnabledQuery()))) notFound();
-		return metadataLoaderData(metadataPromise);
+	beforeLoad: async ({ context, params, search }) => {
+		const ssoEnabled = await context.queryClient.ensureQueryData(samlSsoEnabledQuery());
+		const input = { params, search: search as Record<string, unknown> };
+		throw redirect({
+			href: authDialogHref(input, {
+				auth: ssoEnabled ? "sso" : "sign-in",
+				returnUrl: searchValue(input.search, "returnUrl"),
+			}),
+			statusCode: 307,
+		});
 	},
-	head: ({ loaderData }) => metadataToHead(loaderData?.metadata),
-	component: EnterpriseSignInPage,
 });

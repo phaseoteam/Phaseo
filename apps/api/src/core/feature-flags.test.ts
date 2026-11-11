@@ -58,6 +58,8 @@ describe("batch API feature gate", () => {
 		expect(getVideoApiFeatureGateName({})).toBe("gateway_video_api");
 		expect(getRealtimeVoiceFeatureGateName({ STATSIG_REALTIME_VOICE_GATE: "custom_realtime_gate" })).toBe("custom_realtime_gate");
 		expect(getRealtimeVoiceFeatureGateName({})).toBe("gateway_realtime_voice");
+		expect(getRealtimeVoiceFeatureGateName({}, "chat")).toBe("chat_realtime_voice");
+		expect(getRealtimeVoiceFeatureGateName({ STATSIG_CHAT_REALTIME_VOICE_GATE: "custom_chat_gate" }, "chat")).toBe("custom_chat_gate");
 		expect(getGatewayIoLoggingFeatureGateName({ STATSIG_GATEWAY_IO_LOGGING_GATE: "custom_io_gate" })).toBe("custom_io_gate");
 		expect(getGatewayIoLoggingFeatureGateName({})).toBe("gateway_io_logging");
 		expect(getDataContributionFeatureGateName({ STATSIG_DATA_CONTRIBUTION_GATE: "custom_contribution_gate" })).toBe("custom_contribution_gate");
@@ -153,6 +155,14 @@ describe("batch API feature gate", () => {
 		await expect(isRealtimeVoiceAccessEnabled(auth, {
 			STATSIG_SERVER_KEY: "secret-statsig-key",
 		})).resolves.toBe(true);
+	});
+
+	it("checks Chat realtime voice against the Chat gate", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (_input: RequestInfo | URL, init?: RequestInit) => {
+			expect(JSON.parse(String(init?.body))).toMatchObject({ gateName: "chat_realtime_voice", user: { custom: { surface: "chat_realtime_voice" } } });
+			return new Response(JSON.stringify({ value: true }));
+		}));
+		await expect(isRealtimeVoiceAccessEnabled(auth, { STATSIG_SERVER_KEY: "secret-statsig-key" }, "chat")).resolves.toBe(true);
 	});
 
 	it("fails realtime voice closed when Statsig is unavailable", async () => {

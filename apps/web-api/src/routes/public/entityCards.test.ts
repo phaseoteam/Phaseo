@@ -63,10 +63,6 @@ const json = (value: unknown) => new Response(JSON.stringify(value), { status: 2
 /** Answers each PostgREST table or RPC the cards read; anything else is an empty list. */
 function stubDatabase(overrides: Record<string, unknown> = {}) {
 	const responses: Record<string, unknown> = {
-		"rpc/get_v2_model_provider_attempt_health": [{
-			provider_id: "fastinfer", service_tier: "standard", attempts: 200, eligible_attempts: 200, success_attempts: 199,
-			reachability_failures: 1, capacity_failures: 0, call_error_failures: 0, buckets: [],
-		}],
 		// v5 is the current index version; the model's v4 score must never stand in for it.
 		"v2_benchmarks?select=benchmark_id%2Ctotal_models": [
 			{ benchmark_id: "aa-intelligence-index-v4", total_models: 300 },
@@ -148,7 +144,6 @@ describe("entity card route", () => {
 			providers: { active: 1, total: 2 },
 			cheapestProvider: { id: "fastinfer", name: "FastInfer" },
 			inputModalities: ["text", "image"],
-			uptimePct: 99.5,
 			intelligence: 52.3,
 			features: ["reasoning", "tools"],
 			tiers: ["batch", "free"],

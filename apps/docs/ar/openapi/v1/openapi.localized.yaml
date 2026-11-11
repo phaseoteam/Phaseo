@@ -436,8 +436,8 @@ paths:
       tags:
         - Gateway
       operationId: listTeamModels
-      summary: عرض نماذج البوابة الخاصة بالفريق
-      description: يعرض قائمة نماذج البوابة الخاصة بالفريق. يعرض افتراضيًا النماذج القابلة للتوجيه علنًا؛ استخدم `availability=all` لتضمين سجلات التوفر غير القابلة للتوجيه.
+      summary: عرض النماذج التي يمكن لهذا المفتاح استخدامها
+      description: 'يُرجع قائمة /models بعد تطبيق ضوابط الحماية الخاصة بالمتصل: تُستبعد النماذج التي تحظرها قاعدة، والنماذج التي لا يتوفر لها أي مزوّد مسموح به، ولا يبقى لكل نموذج إلا العروض التي يمكن توجيه طلباته إليها، مع أسعاره وقدراته وتوافره محسوبة منها. ويوضح الكائن access ما استبعدته القواعد. افتراضيًا تُعرض النماذج القابلة للتوجيه علنًا حاليًا؛ استخدم availability=all لتضمين سجلات التوافر غير القابلة للتوجيه.'
       parameters:
         - name: endpoints
           in: query
@@ -1174,8 +1174,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: معرّف نموذج Phaseo، مثل `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: معرّف نموذج Phaseo. مطابق لـ `model`.
+                  provider_model:
+                    type: string
+                    description: اسم النموذج لدى المزوّد، مثل `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
@@ -1373,8 +1378,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: معرّف نموذج Phaseo، مثل `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: معرّف نموذج Phaseo. مطابق لـ `model`.
+                  provider_model:
+                    type: string
+                    description: اسم النموذج لدى المزوّد، مثل `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
@@ -1585,8 +1595,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: معرّف نموذج Phaseo، مثل `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: معرّف نموذج Phaseo. مطابق لـ `model`.
+                  provider_model:
+                    type: string
+                    description: اسم النموذج لدى المزوّد، مثل `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
@@ -21092,6 +21107,48 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Model'
+        access:
+          $ref: '#/components/schemas/GatewayModelAccess'
+      additionalProperties: false
+    GatewayModelAccess:
+      type: object
+      description: 'يُرجعه /models/me فقط: ما استبعدته ضوابط الحماية الخاصة بالمتصل من القائمة، قبل البحث والتقسيم إلى صفحات.'
+      required:
+        - restricted
+        - hidden_model_count
+        - hidden_models
+        - limited_model_count
+      properties:
+        restricted:
+          type: boolean
+          description: ما إذا كانت أي قاعدة تقيّد النماذج أو المزوّدين لهذا المفتاح.
+          example: true
+        hidden_model_count:
+          type: integer
+          minimum: 0
+          description: عدد النماذج التي تستبعدها القواعد.
+          example: 12
+        hidden_models:
+          type: array
+          description: النماذج المستبعدة مع أسمائها (حتى 500).
+          items:
+            type: object
+            required:
+              - id
+              - name
+            properties:
+              id:
+                type: string
+                example: deepseek/deepseek-v4
+              name:
+                type: string
+                example: DeepSeek V4
+            additionalProperties: false
+        limited_model_count:
+          type: integer
+          minimum: 0
+          description: عدد النماذج المدرجة التي فقدت بعض مزوّديها بسبب القواعد.
+          example: 3
       additionalProperties: false
     ModelEndpointCapability:
       type: object

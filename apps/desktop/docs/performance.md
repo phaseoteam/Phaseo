@@ -52,6 +52,10 @@ What holds up the first window, and what the app does about it (compared with T3
   unless the window asks for them first.
 - **Compiling the main bundle.** `boot.mjs` turns on Node's compile cache before loading `index.mjs`, so launches after
   the first skip parsing and compiling it. `@cursor/sdk` loads when Cursor is first used.
+- **Packages loaded before the window.** Resolving a heavy package through pnpm's links cost ~350 ms on Windows (the
+  MCP SDK with ajv and zod). It loads after the window (`src/main/mcpSdk.ts`), warmed 3 s in.
+- **A blank window.** `index.html` draws the Phaseo logo before any script runs, and the workspace removes it once the
+  accounts have loaded, so nothing is drawn from the empty placeholder (such as a sign-in card).
 - **JavaScript before first paint.** Settings, Usage, Scheduled, pull requests, Factory and the terminal load when first
   opened (and in the background once the window is idle); provider logos are files, not inlined. Check what the first
   paint loads with `index.html`'s `modulepreload` list.
@@ -61,6 +65,24 @@ What holds up the first window, and what the app does about it (compared with T3
 
 Watch for a real home folder: `--real-home` includes the credential helper and transcript import, which a clean
 profile skips.
+
+## Checks in CI
+
+- **Startup budgets, on every desktop pull request** (`pnpm perf:budgets`, in `desktop.yml` after the build). No
+  timing, so they never flake:
+  - Packages imported before the window, followed through the built main bundle's static imports from `boot.mjs`,
+    must be listed in `perf-budgets.json`'s `eagerPackages` (today `electron` and `node-pty`). A new one fails with
+    where it's imported; import it where it's first used instead, as `mcpSdk.ts` does.
+  - Byte ceilings for the main code loaded up front, the preload, and what the window loads before first paint
+    (raw and gzip), about 10% over the current build.
+  - The compile cache is on in `boot.mjs`, the loading logo is in `index.html`, and no classic script blocks first paint.
+  - After an intended change, `pnpm perf:budgets --update` rewrites the byte budgets from the current build; say why in
+    the pull request.
+- **The full suite, nightly on main** (`desktop-perf.yml`, 03:23 UTC): every section, compared with the last
+  successful night's report. A metric more than 25% worse fails the run (shared runners vary by 20–40%, so smaller
+  moves only show in the report). The report is in the run summary and as an artifact. A failed night isn't used as
+  the next baseline, so a slowdown keeps failing until it's fixed; after an accepted one, run the workflow by hand
+  with "record only". It also runs once on a pull request that changes the suite, recording only.
 
 ## Comparing fairly
 

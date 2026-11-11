@@ -4559,6 +4559,7 @@ export async function createLiveSession(
   model?: string;
   model_id?: string;
   provider?: string;
+  provider_model?: string;
   session_id?: string;
   status?: string;
   voice?: string | null;
@@ -4583,6 +4584,7 @@ export async function createLiveSession(
     model?: string;
     model_id?: string;
     provider?: string;
+    provider_model?: string;
     session_id?: string;
     status?: string;
     voice?: string | null;
@@ -6130,6 +6132,7 @@ export async function createRealtimeSession(
   model?: string;
   model_id?: string;
   provider?: string;
+  provider_model?: string;
   session_id?: string;
   status?: string;
   voice?: string | null;
@@ -6154,6 +6157,7 @@ export async function createRealtimeSession(
     model?: string;
     model_id?: string;
     provider?: string;
+    provider_model?: string;
     session_id?: string;
     status?: string;
     voice?: string | null;
@@ -9822,6 +9826,7 @@ export async function finalizeRealtimeSession(
   model: string;
   model_id: string;
   provider: string;
+  provider_model?: string;
   session_id: string;
   settlement: {
     [key: string]: unknown;
@@ -9847,6 +9852,7 @@ export async function finalizeRealtimeSession(
     model: string;
     model_id: string;
     provider: string;
+    provider_model?: string;
     session_id: string;
     settlement: {
       [key: string]: unknown;
@@ -17774,6 +17780,15 @@ export async function listModels(
   args: ListModelsParams = {},
 ): Promise<
   | {
+      access?: {
+        hidden_model_count: number;
+        hidden_models: {
+          id: string;
+          name: string;
+        }[];
+        limited_model_count: number;
+        restricted: boolean;
+      };
       availability_mode: "active" | "all";
       limit: number;
       models: {
@@ -18125,6 +18140,15 @@ export async function listModels(
   const resolvedPath = "/models";
   return client.request<
     | {
+        access?: {
+          hidden_model_count: number;
+          hidden_models: {
+            id: string;
+            name: string;
+          }[];
+          limited_model_count: number;
+          restricted: boolean;
+        };
         availability_mode: "active" | "all";
         limit: number;
         models: {
@@ -20216,12 +20240,21 @@ export type ListTeamModelsParams = {
 };
 
 /**
- * Returns team-scoped gateway model listings. Defaults to currently publicly routable models; use availability=all to include non-routable availability records.
+ * Returns the /models listing with the caller's guardrails applied: models a rule blocks, and models with no permitted provider, are left out, and each model keeps only the offers its requests may be routed to, with its prices, capabilities and availability from those. The access object says what the rules left out. Defaults to currently publicly routable models; use availability=all to include non-routable availability records.
  */
 export async function listTeamModels(
   client: Client,
   args: ListTeamModelsParams = {},
 ): Promise<{
+  access?: {
+    hidden_model_count: number;
+    hidden_models: {
+      id: string;
+      name: string;
+    }[];
+    limited_model_count: number;
+    restricted: boolean;
+  };
   availability_mode: "active" | "all";
   limit: number;
   models: {
@@ -20562,6 +20595,15 @@ export async function listTeamModels(
   const { path, query, headers, body } = args;
   const resolvedPath = "/models/me";
   return client.request<{
+    access?: {
+      hidden_model_count: number;
+      hidden_models: {
+        id: string;
+        name: string;
+      }[];
+      limited_model_count: number;
+      restricted: boolean;
+    };
     availability_mode: "active" | "all";
     limit: number;
     models: {

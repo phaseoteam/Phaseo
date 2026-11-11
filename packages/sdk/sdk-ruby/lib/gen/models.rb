@@ -2248,6 +2248,15 @@ module Phaseo
     # @!attribute [rw] output
     #   @return [Array<String>]
     GatewayModalities = Struct.new(:input, :output, keyword_init: true)
+    # @!attribute [rw] hidden_model_count
+    #   @return [Integer]
+    # @!attribute [rw] hidden_models
+    #   @return [Array<Hash{String => Object}>]
+    # @!attribute [rw] limited_model_count
+    #   @return [Integer]
+    # @!attribute [rw] restricted
+    #   @return [Boolean]
+    GatewayModelAccess = Struct.new(:hidden_model_count, :hidden_models, :limited_model_count, :restricted, keyword_init: true)
     # @!attribute [rw] deprecated_at
     #   @return [String, nil]
     # @!attribute [rw] message
@@ -2292,6 +2301,8 @@ module Phaseo
     #   @return [String]
     GatewayModelOffer = Struct.new(:capabilities, :effective, :endpoints, :modalities, :model, :pricing, :provider, :routable, :routing, :service_tiers, :status, :status_reason, keyword_init: true)
     GatewayModelOrganization = Object
+    # @!attribute [rw] access
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] availability_mode
     #   @return [String]
     # @!attribute [rw] limit
@@ -2304,7 +2315,7 @@ module Phaseo
     #   @return [Boolean]
     # @!attribute [rw] total
     #   @return [Integer]
-    GatewayModelsResponse = Struct.new(:availability_mode, :limit, :models, :offset, :ok, :total, keyword_init: true)
+    GatewayModelsResponse = Struct.new(:access, :availability_mode, :limit, :models, :offset, :ok, :total, keyword_init: true)
     # @!attribute [rw] category
     #   @return [String]
     # @!attribute [rw] created_at

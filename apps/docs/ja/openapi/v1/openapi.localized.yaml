@@ -436,8 +436,8 @@ paths:
       tags:
         - Gateway
       operationId: listTeamModels
-      summary: チームスコープのゲートウェイモデルを一覧表示
-      description: チームスコープのゲートウェイモデル一覧を返します。既定では現在パブリックにルーティングできるモデルが対象です。ルーティングできない利用可能性レコードも含めるには `availability=all` を使用します。
+      summary: このキーで使えるモデルを一覧表示
+      description: 呼び出し元のガードレールを適用した /models の一覧を返します。ルールでブロックされたモデルと、許可されたプロバイダーがないモデルは除外され、各モデルにはリクエストをルーティングできるオファーだけが残り、価格・機能・提供状況もそれらから算出されます。access オブジェクトはルールで除外された内容を示します。既定では現在公開ルーティング可能なモデルを返します。ルーティング不可の提供状況レコードも含めるには availability=all を指定してください。
       parameters:
         - name: endpoints
           in: query
@@ -1174,8 +1174,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: 'Phaseo のモデル ID。例: `eleven-labs/scribe-v3-live`。'
                   model_id:
                     type: string
+                    description: Phaseo のモデル ID。`model` と同じです。
+                  provider_model:
+                    type: string
+                    description: 'プロバイダー側でのモデル名。例: `scribe_v3_live`。'
                   voice:
                     type: string
                     nullable: true
@@ -1373,8 +1378,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: 'Phaseo のモデル ID。例: `eleven-labs/scribe-v3-live`。'
                   model_id:
                     type: string
+                    description: Phaseo のモデル ID。`model` と同じです。
+                  provider_model:
+                    type: string
+                    description: 'プロバイダー側でのモデル名。例: `scribe_v3_live`。'
                   voice:
                     type: string
                     nullable: true
@@ -1585,8 +1595,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: 'Phaseo のモデル ID。例: `eleven-labs/scribe-v3-live`。'
                   model_id:
                     type: string
+                    description: Phaseo のモデル ID。`model` と同じです。
+                  provider_model:
+                    type: string
+                    description: 'プロバイダー側でのモデル名。例: `scribe_v3_live`。'
                   voice:
                     type: string
                     nullable: true
@@ -21092,6 +21107,48 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Model'
+        access:
+          $ref: '#/components/schemas/GatewayModelAccess'
+      additionalProperties: false
+    GatewayModelAccess:
+      type: object
+      description: /models/me のみが返します。検索とページ分割の前に、呼び出し元のガードレールが一覧から除外した内容です。
+      required:
+        - restricted
+        - hidden_model_count
+        - hidden_models
+        - limited_model_count
+      properties:
+        restricted:
+          type: boolean
+          description: このキーに対してモデルまたはプロバイダーを制限するルールがあるかどうか。
+          example: true
+        hidden_model_count:
+          type: integer
+          minimum: 0
+          description: ルールで除外されるモデルの数。
+          example: 12
+        hidden_models:
+          type: array
+          description: 除外されたモデルとその名前（最大 500 件）。
+          items:
+            type: object
+            required:
+              - id
+              - name
+            properties:
+              id:
+                type: string
+                example: deepseek/deepseek-v4
+              name:
+                type: string
+                example: DeepSeek V4
+            additionalProperties: false
+        limited_model_count:
+          type: integer
+          minimum: 0
+          description: ルールにより一部のプロバイダーが除かれた掲載モデルの数。
+          example: 3
       additionalProperties: false
     ModelEndpointCapability:
       type: object

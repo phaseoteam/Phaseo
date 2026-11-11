@@ -1,0 +1,72 @@
+---
+title: "Talk to realtime voice models from OpenAI, Google, xAI and ElevenLabs in Phaseo Chat"
+shortTitle: "Realtime voice in Chat"
+seoTitle: "Try Realtime Voice AI Models in Your Browser: GPT Realtime, Gemini Live, Grok Voice"
+description: "Every Phaseo account can now make realtime voice calls in Chat with voice models from OpenAI, Google, xAI and ElevenLabs, and see what each call costs while it runs."
+publishedAt: 2026-11-11
+author: Phaseo Team
+category: announcements
+pinned: false
+tags:
+  - Release
+  - Realtime
+  - Voice
+  - Chat
+keywords:
+  - realtime voice AI
+  - voice to voice AI
+  - GPT realtime playground
+  - Gemini Live
+  - Grok voice
+  - ElevenLabs realtime
+  - compare voice AI models
+faq:
+  - question: "Which voice models can I talk to in Chat?"
+    answer: "From OpenAI, GPT Realtime 2.1, 2.1 mini, 2 and 1.5, and GPT Live 1. From Google, Gemini 3.8 Live, with or without extended thinking, and Gemini 3.1 Flash Live. From xAI, Grok Voice 3.0. From ElevenLabs, Eleven Realtime v1 Mini and Max. New realtime voice models appear in the model picker when Phaseo adds them."
+  - question: "How much does a realtime voice call cost?"
+    answer: "Phaseo charges each call to your workspace credits at the model's published price. Chat shows the call's length and cost while it runs, and the final bill when it ends. There's no subscription."
+  - question: "Is there a limit on how long a call can last?"
+    answer: "Yes. GPT Live calls last up to 25 minutes, ElevenLabs calls 30, GPT Realtime and Gemini Live calls 60, and Grok Voice calls 120. Chat also ends a call after five minutes with no activity, or when your key reaches a spend limit."
+  - question: "Can I use realtime voice through the API?"
+    answer: "Not yet. Phaseo is opening realtime voice on the API to a small number of workspaces first, and will open it to everyone afterwards."
+  - question: "Do I need a microphone?"
+    answer: "Yes. Your browser asks for microphone access when you start your first call. Your audio goes from the browser to Phaseo and then to the provider of the model you picked."
+draft: false
+---
+
+A voice model's benchmark scores don't tell you how long it takes to answer, whether it stops when you interrupt it, or what ten minutes of conversation cost. You find out by talking to it.
+
+Every Phaseo account can now make realtime voice calls in [Chat → Realtime](https://phaseo.app/chat/realtime). Pick a model and a voice, allow microphone access, and start talking. You don't need to install anything or create an API key. Phaseo charges each call to your workspace credits.
+
+## Voice models from four providers
+
+<FeatureGrid>
+  <Feature title="OpenAI" meta="GPT Realtime and GPT Live">GPT Realtime 2.1, 2.1 mini, 2 and 1.5, and GPT Live 1. GPT Live can pass a request to a GPT-5.6 model in the background when it needs a tool, such as web search.</Feature>
+  <Feature title="Google" meta="Gemini Live">Gemini 3.8 Live, with or without extended thinking, and Gemini 3.1 Flash Live.</Feature>
+  <Feature title="xAI" meta="Grok Voice">Grok Voice 3.0, for calls of up to two hours.</Feature>
+  <Feature title="ElevenLabs" meta="Eleven Realtime">Eleven Realtime v1 Mini and Max.</Feature>
+</FeatureGrid>
+
+To compare two models, ask each one the same question with the same instructions, one call after the other.
+
+## The cost of each call, while it runs
+
+Chat shows how long the call has run and how much it has cost so far. When the call ends, Chat shows the final bill. Prices are the model's published prices, the same as on the API.
+
+Chat ends a call after five minutes with no activity, so a tab you forgot about stops charging you. A call also ends when your key reaches a spend limit. Each provider sets a maximum call length, from 25 minutes for GPT Live to two hours for Grok Voice.
+
+## What you can change
+
+Each model offers its own built-in voices. For GPT Live voices, Chat also shows the accent and style the provider documents.
+
+You can give the model instructions, such as who it is and how short its answers should be. Chat keeps them when you switch models.
+
+For GPT Live, you can choose the background model, its reasoning effort and output limit, and whether it can search the web.
+
+## Realtime voice on the API
+
+Phaseo is opening realtime voice on the API to a small number of workspaces first. The [realtime voice guide](https://phaseo.app/docs/v1/guides/realtime-voice) explains how sessions, events and billing work there.
+
+## Get started
+
+Open [Chat → Realtime](https://phaseo.app/chat/realtime). If your workspace has no credits yet, add some in [Settings → Credits](https://phaseo.app/settings/credits) first.

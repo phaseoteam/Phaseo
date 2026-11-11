@@ -5600,26 +5600,6 @@
 			"zh-Hans": "未找到符合所请求可用性和提供商筛选条件的模型",
 			"ar": "لم يتم العثور على نموذج يطابق مرشحات التوفر والمزوّد المطلوبة"
 		},
-		"List team-scoped gateway models": {
-			"es": "Listar modelos de la pasarela del equipo",
-			"fr": "Lister les modèles de la passerelle propres à l’équipe",
-			"de": "Teambezogene Gateway-Modelle auflisten",
-			"pt-BR": "Listar modelos do gateway por equipe",
-			"hi": "टीम-स्कोप वाले गेटवे मॉडल की सूची बनाएँ",
-			"ja": "チームスコープのゲートウェイモデルを一覧表示",
-			"zh-Hans": "列出团队范围的网关模型",
-			"ar": "عرض نماذج البوابة الخاصة بالفريق"
-		},
-		"Returns team-scoped gateway model listings. Defaults to currently publicly routable models; use availability=all to include non-routable availability records.": {
-			"es": "Devuelve los modelos de la pasarela del equipo. De forma predeterminada, muestra los modelos enrutables públicamente; usa `availability=all` para incluir registros de disponibilidad que no se pueden enrutar.",
-			"fr": "Renvoie la liste des modèles de passerelle propres à l’équipe. Par défaut, seuls les modèles actuellement routables publiquement sont renvoyés ; utilisez `availability=all` pour inclure les états de disponibilité non routables.",
-			"de": "Gibt teambezogene Gateway-Modelle zurück. Standardmäßig werden aktuell öffentlich routbare Modelle angezeigt; mit `availability=all` lassen sich nicht routbare Verfügbarkeitsdatensätze einbeziehen.",
-			"pt-BR": "Retorna a lista de modelos do gateway por equipe. Por padrão, inclui modelos roteáveis publicamente; use `availability=all` para incluir registros de disponibilidade não roteáveis.",
-			"hi": "टीम-स्कोप वाले गेटवे मॉडल लौटाता है। डिफ़ॉल्ट रूप से सार्वजनिक रूप से रूट किए जा सकने वाले मॉडल मिलते हैं; रूट न किए जा सकने वाले उपलब्धता रिकॉर्ड शामिल करने के लिए `availability=all` उपयोग करें।",
-			"ja": "チームスコープのゲートウェイモデル一覧を返します。既定では現在パブリックにルーティングできるモデルが対象です。ルーティングできない利用可能性レコードも含めるには `availability=all` を使用します。",
-			"zh-Hans": "返回团队范围的网关模型列表。默认返回当前可公开路由的模型；使用 `availability=all` 可包含不可路由的可用性记录。",
-			"ar": "يعرض قائمة نماذج البوابة الخاصة بالفريق. يعرض افتراضيًا النماذج القابلة للتوجيه علنًا؛ استخدم `availability=all` لتضمين سجلات التوفر غير القابلة للتوجيه."
-		},
 		"List webhook endpoints": {
 			"es": "Listar endpoints de webhook",
 			"fr": "Lister les points de terminaison webhook",
@@ -12269,6 +12249,106 @@
 			"ja": "部門の支出予算と、現在の UTC 期間における各部門のこれまでの支出を一覧表示します。支出は部門の受け入れ判定と同じ方法で計算されるため、最新です。",
 			"zh-Hans": "列出各部门的支出预算，以及每个部门在当前 UTC 周期内迄今的支出。支出的计算方式与部门准入检查相同，因此是最新的。",
 			"ar": "يسرد ميزانيات إنفاق الأقسام مع إنفاق كل قسم حتى الآن في فترة UTC الحالية. يُحتسب الإنفاق بالطريقة نفسها التي يحتسبه بها فحص قبول القسم، لذا فهو محدَّث."
+		},
+		"Phaseo model id, for example `eleven-labs/scribe-v3-live`.": {
+			"es": "ID de modelo de Phaseo, por ejemplo `eleven-labs/scribe-v3-live`.",
+			"fr": "ID de modèle Phaseo, par exemple `eleven-labs/scribe-v3-live`.",
+			"de": "Phaseo-Modell-ID, zum Beispiel `eleven-labs/scribe-v3-live`.",
+			"pt-BR": "ID de modelo da Phaseo, por exemplo `eleven-labs/scribe-v3-live`.",
+			"hi": "Phaseo मॉडल ID, उदाहरण के लिए `eleven-labs/scribe-v3-live`।",
+			"ja": "Phaseo のモデル ID。例: `eleven-labs/scribe-v3-live`。",
+			"zh-Hans": "Phaseo 模型 ID，例如 `eleven-labs/scribe-v3-live`。",
+			"ar": "معرّف نموذج Phaseo، مثل `eleven-labs/scribe-v3-live`."
+		},
+		"Phaseo model id. Same as `model`.": {
+			"es": "ID de modelo de Phaseo. Igual que `model`.",
+			"fr": "ID de modèle Phaseo. Identique à `model`.",
+			"de": "Phaseo-Modell-ID. Gleich wie `model`.",
+			"pt-BR": "ID de modelo da Phaseo. Igual a `model`.",
+			"hi": "Phaseo मॉडल ID। `model` के समान।",
+			"ja": "Phaseo のモデル ID。`model` と同じです。",
+			"zh-Hans": "Phaseo 模型 ID。与 `model` 相同。",
+			"ar": "معرّف نموذج Phaseo. مطابق لـ `model`."
+		},
+		"The provider's own name for the model, for example `scribe_v3_live`.": {
+			"es": "El nombre que el proveedor da al modelo, por ejemplo `scribe_v3_live`.",
+			"fr": "Le nom du modèle chez le fournisseur, par exemple `scribe_v3_live`.",
+			"de": "Der eigene Name des Anbieters für das Modell, zum Beispiel `scribe_v3_live`.",
+			"pt-BR": "O nome que o provedor dá ao modelo, por exemplo `scribe_v3_live`.",
+			"hi": "प्रोवाइडर द्वारा मॉडल का अपना नाम, उदाहरण के लिए `scribe_v3_live`।",
+			"ja": "プロバイダー側でのモデル名。例: `scribe_v3_live`。",
+			"zh-Hans": "提供商自己的模型名称，例如 `scribe_v3_live`。",
+			"ar": "اسم النموذج لدى المزوّد، مثل `scribe_v3_live`."
+		},
+		"List the models this key may use": {
+			"es": "Lista los modelos que puede usar esta clave",
+			"fr": "Lister les modèles que cette clé peut utiliser",
+			"de": "Modelle auflisten, die dieser Schlüssel nutzen darf",
+			"pt-BR": "Listar os modelos que esta chave pode usar",
+			"hi": "वे मॉडल सूचीबद्ध करें जिन्हें यह कुंजी उपयोग कर सकती है",
+			"ja": "このキーで使えるモデルを一覧表示",
+			"zh-Hans": "列出此密钥可以使用的模型",
+			"ar": "عرض النماذج التي يمكن لهذا المفتاح استخدامها"
+		},
+		"Returns the /models listing with the caller's guardrails applied: models a rule blocks, and models with no permitted provider, are left out, and each model keeps only the offers its requests may be routed to, with its prices, capabilities and availability from those. The access object says what the rules left out. Defaults to currently publicly routable models; use availability=all to include non-routable availability records.": {
+			"es": "Devuelve la lista de /models con los guardrails de quien llama aplicados: se omiten los modelos que bloquea una regla y los que no tienen ningún proveedor permitido, y cada modelo conserva solo las ofertas a las que se pueden enviar sus solicitudes, con sus precios, capacidades y disponibilidad calculados a partir de ellas. El objeto access indica qué dejaron fuera las reglas. De forma predeterminada incluye los modelos que se pueden enrutar públicamente; usa availability=all para incluir registros de disponibilidad no enrutables.",
+			"fr": "Renvoie la liste de /models avec les garde-fous de l’appelant appliqués : les modèles bloqués par une règle et ceux sans fournisseur autorisé sont exclus, et chaque modèle ne garde que les offres vers lesquelles ses requêtes peuvent être acheminées, avec ses prix, capacités et disponibilité calculés à partir de celles-ci. L’objet access indique ce que les règles ont exclu. Par défaut, seuls les modèles actuellement routables publiquement sont inclus ; utilisez availability=all pour inclure les enregistrements de disponibilité non routables.",
+			"de": "Gibt die Liste von /models mit den Guardrails des Aufrufers zurück: Modelle, die eine Regel sperrt, und Modelle ohne erlaubten Anbieter fehlen, und jedes Modell behält nur die Angebote, an die seine Anfragen geleitet werden dürfen, mit daraus berechneten Preisen, Fähigkeiten und Verfügbarkeit. Das Objekt access gibt an, was die Regeln ausgeschlossen haben. Standardmäßig nur derzeit öffentlich routbare Modelle; mit availability=all werden auch nicht routbare Verfügbarkeitseinträge geliefert.",
+			"pt-BR": "Retorna a lista de /models com as proteções de quem chama aplicadas: ficam de fora os modelos bloqueados por uma regra e os sem nenhum provedor permitido, e cada modelo mantém apenas as ofertas para as quais as solicitações podem ser roteadas, com preços, capacidades e disponibilidade calculados a partir delas. O objeto access informa o que as regras deixaram de fora. Por padrão inclui os modelos atualmente roteáveis publicamente; use availability=all para incluir registros de disponibilidade não roteáveis.",
+			"hi": "कॉल करने वाले के गार्डरेल लागू करके /models की सूची लौटाता है: जिन मॉडलों को कोई नियम रोकता है और जिनका कोई अनुमत प्रदाता नहीं है, वे शामिल नहीं होते, और हर मॉडल में केवल वे ऑफ़र रहते हैं जिन तक उसके अनुरोध भेजे जा सकते हैं, और उसकी कीमतें, क्षमताएँ और उपलब्धता उन्हीं से निकाली जाती हैं। access ऑब्जेक्ट बताता है कि नियमों ने क्या बाहर रखा। डिफ़ॉल्ट रूप से अभी सार्वजनिक रूप से रूट होने वाले मॉडल; गैर-रूटेबल उपलब्धता रिकॉर्ड शामिल करने के लिए availability=all का उपयोग करें।",
+			"ja": "呼び出し元のガードレールを適用した /models の一覧を返します。ルールでブロックされたモデルと、許可されたプロバイダーがないモデルは除外され、各モデルにはリクエストをルーティングできるオファーだけが残り、価格・機能・提供状況もそれらから算出されます。access オブジェクトはルールで除外された内容を示します。既定では現在公開ルーティング可能なモデルを返します。ルーティング不可の提供状況レコードも含めるには availability=all を指定してください。",
+			"zh-Hans": "返回应用了调用方护栏规则的 /models 列表：被规则屏蔽的模型以及没有任何允许提供商的模型不会列出，每个模型只保留其请求可以路由到的服务，价格、能力和可用性也据此计算。access 对象说明规则排除了哪些内容。默认只包含当前可公开路由的模型；使用 availability=all 可包含不可路由的可用性记录。",
+			"ar": "يُرجع قائمة /models بعد تطبيق ضوابط الحماية الخاصة بالمتصل: تُستبعد النماذج التي تحظرها قاعدة، والنماذج التي لا يتوفر لها أي مزوّد مسموح به، ولا يبقى لكل نموذج إلا العروض التي يمكن توجيه طلباته إليها، مع أسعاره وقدراته وتوافره محسوبة منها. ويوضح الكائن access ما استبعدته القواعد. افتراضيًا تُعرض النماذج القابلة للتوجيه علنًا حاليًا؛ استخدم availability=all لتضمين سجلات التوافر غير القابلة للتوجيه."
+		},
+		"Returned by /models/me only: what the caller's guardrails left out of the listing, before search and paging.": {
+			"es": "Solo lo devuelve /models/me: lo que los guardrails de quien llama dejaron fuera de la lista, antes de la búsqueda y la paginación.",
+			"fr": "Renvoyé uniquement par /models/me : ce que les garde-fous de l’appelant ont exclu de la liste, avant la recherche et la pagination.",
+			"de": "Nur von /models/me geliefert: was die Guardrails des Aufrufers aus der Liste ausgeschlossen haben, vor Suche und Paginierung.",
+			"pt-BR": "Retornado apenas por /models/me: o que as proteções de quem chama deixaram de fora da lista, antes da busca e da paginação.",
+			"hi": "केवल /models/me लौटाता है: कॉल करने वाले के गार्डरेल ने खोज और पेजिंग से पहले सूची से क्या बाहर रखा।",
+			"ja": "/models/me のみが返します。検索とページ分割の前に、呼び出し元のガードレールが一覧から除外した内容です。",
+			"zh-Hans": "仅由 /models/me 返回：在搜索和分页之前，调用方的护栏规则从列表中排除的内容。",
+			"ar": "يُرجعه /models/me فقط: ما استبعدته ضوابط الحماية الخاصة بالمتصل من القائمة، قبل البحث والتقسيم إلى صفحات."
+		},
+		"Whether any rule restricts models or providers for this key.": {
+			"es": "Si alguna regla restringe modelos o proveedores para esta clave.",
+			"fr": "Indique si une règle restreint des modèles ou des fournisseurs pour cette clé.",
+			"de": "Ob eine Regel Modelle oder Anbieter für diesen Schlüssel einschränkt.",
+			"pt-BR": "Se alguma regra restringe modelos ou provedores para esta chave.",
+			"hi": "क्या कोई नियम इस कुंजी के लिए मॉडल या प्रदाताओं को सीमित करता है।",
+			"ja": "このキーに対してモデルまたはプロバイダーを制限するルールがあるかどうか。",
+			"zh-Hans": "是否有任何规则为此密钥限制模型或提供商。",
+			"ar": "ما إذا كانت أي قاعدة تقيّد النماذج أو المزوّدين لهذا المفتاح."
+		},
+		"How many models the rules leave out.": {
+			"es": "Cuántos modelos dejan fuera las reglas.",
+			"fr": "Nombre de modèles exclus par les règles.",
+			"de": "Wie viele Modelle die Regeln ausschließen.",
+			"pt-BR": "Quantos modelos as regras deixam de fora.",
+			"hi": "नियम कितने मॉडलों को बाहर रखते हैं।",
+			"ja": "ルールで除外されるモデルの数。",
+			"zh-Hans": "被规则排除的模型数量。",
+			"ar": "عدد النماذج التي تستبعدها القواعد."
+		},
+		"The models left out, with their names (up to 500).": {
+			"es": "Los modelos que quedan fuera, con sus nombres (hasta 500).",
+			"fr": "Les modèles exclus, avec leur nom (jusqu’à 500).",
+			"de": "Die ausgeschlossenen Modelle mit ihren Namen (bis zu 500).",
+			"pt-BR": "Os modelos que ficaram de fora, com seus nomes (até 500).",
+			"hi": "बाहर रखे गए मॉडल, उनके नामों के साथ (500 तक)।",
+			"ja": "除外されたモデルとその名前（最大 500 件）。",
+			"zh-Hans": "被排除的模型及其名称（最多 500 个）。",
+			"ar": "النماذج المستبعدة مع أسمائها (حتى 500)."
+		},
+		"How many listed models lost some of their providers to the rules.": {
+			"es": "Cuántos modelos de la lista perdieron algunos de sus proveedores por las reglas.",
+			"fr": "Nombre de modèles listés ayant perdu certains de leurs fournisseurs à cause des règles.",
+			"de": "Wie viele gelistete Modelle durch die Regeln einige ihrer Anbieter verloren haben.",
+			"pt-BR": "Quantos modelos listados perderam alguns de seus provedores por causa das regras.",
+			"hi": "सूचीबद्ध कितने मॉडलों के कुछ प्रदाता नियमों के कारण हट गए।",
+			"ja": "ルールにより一部のプロバイダーが除かれた掲載モデルの数。",
+			"zh-Hans": "有多少列出的模型因规则失去了部分提供商。",
+			"ar": "عدد النماذج المدرجة التي فقدت بعض مزوّديها بسبب القواعد."
 		}
 	},
 	"GET /apps": {

@@ -2811,6 +2811,18 @@ class GatewayModalities
 	public $output;
 }
 
+class GatewayModelAccess
+{
+	/** @var int */
+	public $hidden_model_count;
+	/** @var array */
+	public $hidden_models;
+	/** @var int */
+	public $limited_model_count;
+	/** @var bool */
+	public $restricted;
+}
+
 class GatewayModelLifecycle
 {
 	/** @var string|null */
@@ -2867,6 +2879,8 @@ class GatewayModelOrganization { }
 
 class GatewayModelsResponse
 {
+	/** @var array<string, mixed>|null */
+	public $access;
 	/** @var string */
 	public $availability_mode;
 	/** @var int */

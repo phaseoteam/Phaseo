@@ -436,8 +436,8 @@ paths:
       tags:
         - Gateway
       operationId: listTeamModels
-      summary: टीम-स्कोप वाले गेटवे मॉडल की सूची बनाएँ
-      description: टीम-स्कोप वाले गेटवे मॉडल लौटाता है। डिफ़ॉल्ट रूप से सार्वजनिक रूप से रूट किए जा सकने वाले मॉडल मिलते हैं; रूट न किए जा सकने वाले उपलब्धता रिकॉर्ड शामिल करने के लिए `availability=all` उपयोग करें।
+      summary: वे मॉडल सूचीबद्ध करें जिन्हें यह कुंजी उपयोग कर सकती है
+      description: 'कॉल करने वाले के गार्डरेल लागू करके /models की सूची लौटाता है: जिन मॉडलों को कोई नियम रोकता है और जिनका कोई अनुमत प्रदाता नहीं है, वे शामिल नहीं होते, और हर मॉडल में केवल वे ऑफ़र रहते हैं जिन तक उसके अनुरोध भेजे जा सकते हैं, और उसकी कीमतें, क्षमताएँ और उपलब्धता उन्हीं से निकाली जाती हैं। access ऑब्जेक्ट बताता है कि नियमों ने क्या बाहर रखा। डिफ़ॉल्ट रूप से अभी सार्वजनिक रूप से रूट होने वाले मॉडल; गैर-रूटेबल उपलब्धता रिकॉर्ड शामिल करने के लिए availability=all का उपयोग करें।'
       parameters:
         - name: endpoints
           in: query
@@ -1174,8 +1174,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: Phaseo मॉडल ID, उदाहरण के लिए `eleven-labs/scribe-v3-live`।
                   model_id:
                     type: string
+                    description: Phaseo मॉडल ID। `model` के समान।
+                  provider_model:
+                    type: string
+                    description: प्रोवाइडर द्वारा मॉडल का अपना नाम, उदाहरण के लिए `scribe_v3_live`।
                   voice:
                     type: string
                     nullable: true
@@ -1373,8 +1378,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: Phaseo मॉडल ID, उदाहरण के लिए `eleven-labs/scribe-v3-live`।
                   model_id:
                     type: string
+                    description: Phaseo मॉडल ID। `model` के समान।
+                  provider_model:
+                    type: string
+                    description: प्रोवाइडर द्वारा मॉडल का अपना नाम, उदाहरण के लिए `scribe_v3_live`।
                   voice:
                     type: string
                     nullable: true
@@ -1585,8 +1595,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: Phaseo मॉडल ID, उदाहरण के लिए `eleven-labs/scribe-v3-live`।
                   model_id:
                     type: string
+                    description: Phaseo मॉडल ID। `model` के समान।
+                  provider_model:
+                    type: string
+                    description: प्रोवाइडर द्वारा मॉडल का अपना नाम, उदाहरण के लिए `scribe_v3_live`।
                   voice:
                     type: string
                     nullable: true
@@ -21092,6 +21107,48 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Model'
+        access:
+          $ref: '#/components/schemas/GatewayModelAccess'
+      additionalProperties: false
+    GatewayModelAccess:
+      type: object
+      description: 'केवल /models/me लौटाता है: कॉल करने वाले के गार्डरेल ने खोज और पेजिंग से पहले सूची से क्या बाहर रखा।'
+      required:
+        - restricted
+        - hidden_model_count
+        - hidden_models
+        - limited_model_count
+      properties:
+        restricted:
+          type: boolean
+          description: क्या कोई नियम इस कुंजी के लिए मॉडल या प्रदाताओं को सीमित करता है।
+          example: true
+        hidden_model_count:
+          type: integer
+          minimum: 0
+          description: नियम कितने मॉडलों को बाहर रखते हैं।
+          example: 12
+        hidden_models:
+          type: array
+          description: बाहर रखे गए मॉडल, उनके नामों के साथ (500 तक)।
+          items:
+            type: object
+            required:
+              - id
+              - name
+            properties:
+              id:
+                type: string
+                example: deepseek/deepseek-v4
+              name:
+                type: string
+                example: DeepSeek V4
+            additionalProperties: false
+        limited_model_count:
+          type: integer
+          minimum: 0
+          description: सूचीबद्ध कितने मॉडलों के कुछ प्रदाता नियमों के कारण हट गए।
+          example: 3
       additionalProperties: false
     ModelEndpointCapability:
       type: object

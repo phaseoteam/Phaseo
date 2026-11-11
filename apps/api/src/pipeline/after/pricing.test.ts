@@ -197,6 +197,24 @@ function activateDeepSeekV4ProPeakWindows(card: PriceCard): PriceCard {
 }
 
 describe("after/pricing calculatePricing", () => {
+	it("settles a transcription with keywords at the catalogue's keyterm rate", () => {
+		const rule = { meter: "input_audio_seconds", unit: "second", unit_size: 3600, currency: "USD", pricing_plan: "standard", note: null, priority: 100 };
+		const card = {
+			...TTS_CARD,
+			provider: "elevenlabs",
+			model: "eleven-labs/scribe-v3",
+			endpoint: "audio.transcription",
+			rules: [
+				{ ...rule, price_per_unit: "0.2", match: [] },
+				{ ...rule, price_per_unit: "0.25", match: [{ op: "eq", path: "keyterms", value: true }] },
+			],
+		} as PriceCard;
+		const usage = { requests: 1, input_audio_seconds: 3600 };
+		expect(calculatePricing(usage, card, { model: "eleven-labs/scribe-v3" }).totalNanos).toBe(200_000_000);
+		expect(calculatePricing(usage, card, { model: "eleven-labs/scribe-v3", keywords: [] }).totalNanos).toBe(200_000_000);
+		expect(calculatePricing(usage, card, { model: "eleven-labs/scribe-v3", keywords: ["Phaseo"] }).totalNanos).toBe(250_000_000);
+	});
+
 	it("fails closed when paid usage produces no pricing line", () => {
 		expect(() => calculatePricing(
 			{ input_tokens: 11, output_tokens: 7, total_tokens: 18 },

@@ -1969,8 +1969,11 @@ export function publicRealtimeSessionPayload(args: {
 		id: args.session.session_id,
 		session_id: args.session.session_id,
 		provider: args.session.provider,
-		model: args.session.provider_model_id ?? providerModel(providerFromModel(args.session.model_id, args.session.provider) ?? "openai", args.session.model_id),
+		// `model` is the Phaseo model id, as on every other endpoint; `provider_model`
+		// is the provider's own name, which a client talking to the provider needs.
+		model: args.session.model_id,
 		model_id: args.session.model_id,
+		provider_model: args.session.provider_model_id ?? providerModel(providerFromModel(args.session.model_id, args.session.provider) ?? "openai", args.session.model_id),
 		voice: args.session.voice,
 		status: args.session.status,
 		expiresAt: args.session.expires_at,

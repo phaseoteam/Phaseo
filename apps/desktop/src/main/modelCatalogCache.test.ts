@@ -62,6 +62,17 @@ describe("model catalog disk cache", () => {
 		await settle(); await cache.remove(key); resolve(first); await pending;
 		expect(await cache.read(key)).toBeUndefined(); expect(onChange).toHaveBeenCalledOnce();
 	});
+	it("saves what workspace rules hide with the list, keeps it when nothing changed and reports when only it changed", async () => {
+		const onChange = vi.fn(); const cache = new ModelCatalogCache(root, onChange);
+		const hidden = { restricted: true, hiddenModelCount: 1, hiddenModels: [{ id: "x/hidden", name: "Hidden" }], limitedModelCount: 0 };
+		await cache.refresh(key, async () => ({ models: first, validators: [{ offset: 0, etag: "\"v1\"" }], access: hidden }));
+		expect(await cache.access(key)).toEqual(hidden);
+		await cache.refresh(key, async () => ({ notModified: true }));
+		expect(await cache.access(key)).toEqual(hidden); expect(onChange).not.toHaveBeenCalled();
+		// The same models with different rules still tells the window.
+		await cache.refresh(key, async () => ({ models: first, validators: [], access: { ...hidden, hiddenModelCount: 0, hiddenModels: [] } }));
+		expect(onChange).toHaveBeenCalledOnce(); expect((await cache.access(key))?.hiddenModelCount).toBe(0);
+	});
 	it("re-checks with saved validators and keeps the list when nothing changed", async () => {
 		let now = 0; const onChange = vi.fn(); const cache = new ModelCatalogCache(root, onChange, () => now);
 		await cache.refresh(key, async () => ({ models: first, validators: [{ offset: 0, etag: "\"v1\"" }] }));
@@ -70,7 +81,7 @@ describe("model catalog disk cache", () => {
 		expect(await cache.get(key, fetchModels)).toEqual(first);
 		await vi.waitFor(async () => expect((await cache.read(key))?.fetchedAt).toBe(new Date(now).toISOString()), { timeout: 5000 });
 		expect(fetchModels).toHaveBeenCalledWith([{ offset: 0, etag: "\"v1\"" }]); expect(onChange).not.toHaveBeenCalled();
-		expect(await cache.read(key)).toMatchObject({ version: 4, models: first, validators: [{ offset: 0, etag: "\"v1\"" }], fetchedAt: new Date(now).toISOString() });
+		expect(await cache.read(key)).toMatchObject({ version: 5, models: first, validators: [{ offset: 0, etag: "\"v1\"" }], fetchedAt: new Date(now).toISOString() });
 		expect(MODEL_CATALOG_FRESH_MS).toBe(15 * 60 * 1000);
 	});
 	it("lends a new account another account's catalog from the same gateway while its own downloads", async () => {
@@ -92,11 +103,11 @@ describe("model catalog disk cache", () => {
 		expect(await cache.get(key, fetchModels)).toEqual(first);
 		await vi.waitFor(() => expect(fetchModels).toHaveBeenCalledExactlyOnceWith([{ offset: 0, etag: "\"v1\"" }]), { timeout: 5000 });
 	});
-	it("serves an older cache at once but downloads it again in full, since its ETags predate model facts and their cache prices", async () => {
+	it.each([2, 4])("serves an older cache (version %i) at once but downloads it again in full, since its ETags predate model facts, their cache prices or guardrail filtering", async version => {
 		const cache = new ModelCatalogCache(root);
-		writeFileSync(cache.filename(key), JSON.stringify({ version: 2, ...key, fetchedAt: new Date().toISOString(), models: first, validators: [{ offset: 0, etag: "\"v1\"" }] }));
+		writeFileSync(cache.filename(key), JSON.stringify({ version, ...key, fetchedAt: new Date().toISOString(), models: first, validators: [{ offset: 0, etag: "\"v1\"" }] }));
 		const fetchModels = vi.fn().mockResolvedValue({ models: second, validators: [] });
 		expect(await cache.get(key, fetchModels)).toEqual(first); await vi.waitFor(async () => expect((await cache.read(key))?.models).toEqual(second), { timeout: 5000 });
-		expect(fetchModels).toHaveBeenCalledExactlyOnceWith(undefined); expect((await cache.read(key))?.version).toBe(4);
+		expect(fetchModels).toHaveBeenCalledExactlyOnceWith(undefined); expect((await cache.read(key))?.version).toBe(5);
 	});
 });

@@ -1,5 +1,5 @@
 // components/(gateway)/auth/sign-up/SignUp.tsx
-import { useState } from "react";
+import { useState, type ElementType } from "react";
 import { useTranslations } from "@/i18n/react";
 import OAuthButtons from "./OAuthButtons";
 import EmailPassword from "./EmailPassword";
@@ -8,19 +8,26 @@ import { defaultLocale, type PublicLocale } from "@/i18n/routing";
 export function SignUp({
 	returnUrl,
 	locale = defaultLocale,
+	surface = "page",
+	Heading = "h1",
 }: {
 	returnUrl?: string;
 	locale?: PublicLocale;
+	surface?: "page" | "dialog";
+	/** The heading element; the dialog passes its title so it labels the dialog. */
+	Heading?: ElementType;
 }) {
 	const t = useTranslations("Auth.signUp");
 	const [emailFlowActive, setEmailFlowActive] = useState(false);
+	// While a provider (Google…) is loading, the email form is locked so a second attempt cannot start.
+	const [redirecting, setRedirecting] = useState(false);
 
 	return (
 		<div
-			className={`flex flex-col transition-[gap] duration-500 ease-out ${emailFlowActive ? "gap-3" : "gap-6"}`}
+			className={`flex flex-col transition-[gap] duration-500 ease-out ${emailFlowActive ? "gap-3" : "gap-4"}`}
 		>
 			<div className="flex flex-col items-center gap-2 text-center">
-				<h1 className="text-2xl font-bold">{t("heading")}</h1>
+				<Heading className="text-[1.375rem] font-bold">{t("heading")}</Heading>
 			</div>
 
 			<div
@@ -28,15 +35,18 @@ export function SignUp({
 				aria-hidden={emailFlowActive}
 			>
 				<div className="overflow-hidden">
-					<OAuthButtons returnUrl={returnUrl} locale={locale} />
+					<OAuthButtons returnUrl={returnUrl} locale={locale} onRedirectingChange={setRedirecting} />
 				</div>
 			</div>
 
-			<EmailPassword
-				onEmailFlowChange={setEmailFlowActive}
-				returnUrl={returnUrl}
-				locale={locale}
-			/>
+			<div className={`transition-opacity duration-200 motion-reduce:transition-none ${redirecting ? "opacity-50" : ""}`} inert={redirecting}>
+				<EmailPassword
+					onEmailFlowChange={setEmailFlowActive}
+					returnUrl={returnUrl}
+					locale={locale}
+					surface={surface}
+				/>
+			</div>
 		</div>
 	);
 }

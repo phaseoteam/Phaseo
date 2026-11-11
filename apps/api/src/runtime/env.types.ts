@@ -430,6 +430,7 @@ export type GatewayBindings = {
     STATSIG_BATCH_API_GATE?: string;
     STATSIG_VIDEO_API_GATE?: string;
     STATSIG_REALTIME_VOICE_GATE?: string;
+    STATSIG_CHAT_REALTIME_VOICE_GATE?: string;
     STATSIG_GATEWAY_IO_LOGGING_GATE?: string;
     STATSIG_DATA_CONTRIBUTION_GATE?: string;
     STATSIG_AUTO_ROUTING_GATE?: string;

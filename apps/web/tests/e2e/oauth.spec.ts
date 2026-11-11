@@ -192,8 +192,8 @@ test.describe('OAuth Authorization Flow', () => {
 
     await page.goto(authUrl.toString());
 
-    // May redirect to sign-in first
-    if (page.url().includes('/sign-in')) {
+    // May redirect to sign-in first (the sign-in dialog over the home page)
+    if (page.url().includes('auth=sign-in')) {
       await page.fill('input[type="email"]', TEST_USER_EMAIL);
       await page.fill('input[type="password"]', TEST_USER_PASSWORD);
       await page.click('button[type="submit"]');

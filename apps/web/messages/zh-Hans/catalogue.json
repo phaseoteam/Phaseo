@@ -3545,8 +3545,6 @@
 		"rowCheapest": "最便宜",
 		"rowModalities": "模态",
 		"modalitiesValue": "{input} → {output}",
-		"rowUptime": "可用率",
-		"uptimeValue": "近 3 天 {percent}",
 		"rowIntelligence": "智能指数",
 		"notScored": "尚未评分",
 		"more": "另外 {count} 个",

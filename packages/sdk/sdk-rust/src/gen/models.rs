@@ -1607,6 +1607,13 @@ pub struct GatewayModalities {
 	pub output: Vec<String>,
 }
 
+pub struct GatewayModelAccess {
+	pub hidden_model_count: i64,
+	pub hidden_models: Vec<HashMap<String, String>>,
+	pub limited_model_count: i64,
+	pub restricted: bool,
+}
+
 pub struct GatewayModelLifecycle {
 	pub deprecated_at: Option<String>,
 	pub message: Option<String>,
@@ -1639,6 +1646,7 @@ pub struct GatewayModelOffer {
 pub type GatewayModelOrganization = JsonValue;
 
 pub struct GatewayModelsResponse {
+	pub access: Option<HashMap<String, String>>,
 	pub availability_mode: String,
 	pub limit: i64,
 	pub models: Vec<HashMap<String, String>>,

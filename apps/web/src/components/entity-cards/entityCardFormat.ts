@@ -43,16 +43,6 @@ export function formatTokensCompact(value: number | null | undefined, locale: st
 	return number(value, 0);
 }
 
-/**
- * A percentage to one decimal, rounded down so 99.99% (a failure happened)
- * never shows as 100.0%.
- */
-export function formatPercentFloor(value: number | null | undefined, locale: string): string | null {
-	if (value === null || value === undefined || !Number.isFinite(value)) return null;
-	const floored = Math.floor(value * 10) / 10;
-	return new Intl.NumberFormat(locale, { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(floored / 100);
-}
-
 /** Token shares: one decimal, or "<0.1%" for tiny shares. */
 export function formatShare(value: number | null | undefined, locale: string): string | null {
 	if (value === null || value === undefined || !Number.isFinite(value) || value <= 0) return null;

@@ -24,7 +24,6 @@ export type ModelEntityCard = {
 	cheapestProvider: EntityRef | null;
 	inputModalities: string[];
 	outputModalities: string[];
-	uptimePct: number | null;
 	intelligence: number | null;
 	features: string[];
 	tiers: string[];
