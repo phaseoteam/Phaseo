@@ -1,5 +1,5 @@
 import Link from "@/components/link";
-import { useTranslations } from "@/i18n/react";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { decisionModelCapabilities } from "@/lib/models/modelCapabilities";
 import {
 	memo,
@@ -30,6 +30,14 @@ import { hasPassedLifecycleDate } from "@/lib/models/modelLifecycle";
 import { resolveProviderLogoId } from "@/lib/providers/providerOffers";
 import { getModalityIcon } from "./modalityIcons";
 import { resolveModelVisibility } from "./modelVisibility";
+import {
+	buildPriceCardRows,
+	describePriceCardRow,
+	formatCardUsd,
+	priceCardTokenUnits,
+	type PriceCardLabels,
+} from "./priceCardRows";
+import { PriceCardRowList } from "./PriceCardRowList";
 
 type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
 	gateway_status?:
@@ -60,7 +68,6 @@ import {
 	HoverCard,
 	HoverCardContent,
 	HoverCardHeader,
-	HoverCardRows,
 	HoverCardStat,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
@@ -430,6 +437,8 @@ function ModelCardImpl({
 	const t = useTranslations("Catalogue.models");
 	const tDetail = useTranslations("Catalogue.modelDetail");
 	const tCard = useTranslations("Catalogue.hoverCards");
+	const tPriceCard = useTranslations("Catalogue.hoverCards.priceCard");
+	const locale = useLocale();
 	const tProviderStatus = useTranslations(
 		"Catalogue.modelDetail.providerTable.statuses",
 	);
@@ -895,6 +904,62 @@ function ModelCardImpl({
 			},
 		];
 	}
+	const priceCardLabels: PriceCardLabels = {
+		kinds: {
+			input: tPriceCard("rows.input"),
+			output: tPriceCard("rows.output"),
+			reasoning: tPriceCard("rows.reasoning"),
+			cachedInput: tPriceCard("rows.cachedInput"),
+			cachedWrite: tPriceCard("rows.cachedWrite"),
+			requests: tPriceCard("rows.requests"),
+			webSearch: tPriceCard("rows.webSearch"),
+			webFetch: tPriceCard("rows.webFetch"),
+			tokens: tPriceCard("rows.tokens"),
+		},
+		modalities: {
+			image: tPriceCard("modalities.image"),
+			video: tPriceCard("modalities.video"),
+			audio: tPriceCard("modalities.audio"),
+		},
+		list: (items) => new Intl.ListFormat(locale, { style: "long", type: "conjunction" }).format(items),
+		also: (list) => tPriceCard("alsoModalities", { list }),
+		from: tPriceCard("from"),
+		atProviderCost: t("atProviderCost"),
+	};
+	const priceCardRows = buildPriceCardRows(pricingDetailRows);
+	const priceCardTokenUnitMode = priceCardTokenUnits(priceCardRows);
+	const describedPriceCardRows = priceCardRows.map((row) => describePriceCardRow(row, priceCardLabels));
+	const priceCardMeta = [
+		pricingProviderId ? tPriceCard("cheapestRoute") : null,
+		priceCardTokenUnitMode === "all" || (priceCardTokenUnitMode === "none" && headline?.kind === "tokens")
+			? tPriceCard("perMillionTokens")
+			: priceCardTokenUnitMode === "some"
+				? tPriceCard("perMillionTokensUnlessNoted")
+				: null,
+	];
+	// Token headlines read "$2 in · $10 out"; the meta line states the unit.
+	const priceCardHeadline =
+		headline?.kind === "tokens" && (headline.input !== null || headline.output !== null) ? (
+			<>
+				{headline.input !== null ? (
+					<>
+						{formatCardUsd(headline.input)}{" "}
+						<span className="text-xs font-normal text-muted-foreground">{tPriceCard("in")}</span>
+					</>
+				) : null}
+				{headline.input !== null && headline.output !== null ? (
+					<span className="text-muted-foreground"> · </span>
+				) : null}
+				{headline.output !== null ? (
+					<>
+						{formatCardUsd(headline.output)}{" "}
+						<span className="text-xs font-normal text-muted-foreground">{tPriceCard("out")}</span>
+					</>
+				) : null}
+			</>
+		) : (
+			headlineSummary
+		);
 	const formatModalities = (values: string[]) => {
 		const unique = sortModalitiesForDisplay(Array.from(
 			new Set(values.map((value) => String(value ?? "").trim()).filter(Boolean)),
@@ -1089,7 +1154,7 @@ function ModelCardImpl({
 											</span>
 										</Link>
 									</HoverCardTrigger>
-									<HoverCardContent align="start" className="max-h-96 w-72 space-y-2.5 overflow-y-auto">
+									<HoverCardContent align="start" className="max-h-96 w-72 space-y-2.5 overflow-y-auto rounded-md p-3">
 										<HoverCardHeader
 											icon={pricingProviderId && pricingProviderName ? (
 												<span className="relative block h-4 w-4 shrink-0 rounded-[4px] border bg-background">
@@ -1102,15 +1167,10 @@ function ModelCardImpl({
 												</span>
 											) : null}
 											title={pricingProviderName ?? t("pricing")}
+											meta={priceCardMeta}
 										/>
-										{headlineSummary ? <HoverCardStat>{headlineSummary}</HoverCardStat> : null}
-										<HoverCardRows
-											rows={pricingDetailRows.map((row) => ({
-												key: row.id,
-												label: row.label,
-												value: row.value,
-											}))}
-										/>
+										{priceCardHeadline ? <HoverCardStat>{priceCardHeadline}</HoverCardStat> : null}
+										<PriceCardRowList rows={describedPriceCardRows} />
 									</HoverCardContent>
 								</HoverCard>
 							) : (
@@ -1149,46 +1209,48 @@ function ModelCardImpl({
 										</span>
 									</button>
 								</HoverCardTrigger>
-								<HoverCardContent align="start" className="w-72 space-y-2.5">
+								<HoverCardContent align="start" className="w-72 space-y-2.5 rounded-md p-3">
 									<HoverCardHeader
-										title={tDetail("providerTable.heading")}
+										title={t("providers")}
 										meta={[tCard("activeListed", { active: format.number(activeProviders), listed: format.number(providerCount) })]}
 									/>
 									<ScrollArea className="pr-1" style={{ height: providerListHeight }}>
 										<ul className="space-y-1 pr-2 text-xs">
-											{providerStatusItems.map((provider) => (
-												<li
-													key={`${provider.id || "provider"}-${provider.name}`}
-													className="flex items-center justify-between gap-3 py-1"
-												>
-													{provider.id ? (
-														<Link
-															href={`/api-providers/${provider.id}`}
-															prefetch={false}
-															className="flex min-w-0 items-center gap-2 text-foreground underline-offset-2 hover:underline"
-														>
-															<span className="relative h-4 w-4 shrink-0 rounded-[4px] border bg-background">
-																<Logo
-																	id={resolveProviderLogoId({ providerId: provider.id })}
-																	alt=""
-																	className="object-contain p-[1px]"
-																	fill
-																/>
-															</span>
-															<span className="truncate">{provider.name}</span>
-														</Link>
-													) : (
-														<span className="min-w-0 truncate text-foreground">{provider.name}</span>
-													)}
-													<span className="inline-flex shrink-0 items-center gap-1.5 text-muted-foreground">
+											{providerStatusItems.map((provider) => {
+												const statusLabel = formatProviderStatusLabel(provider.status, providerStatusLabels);
+												return (
+													<li
+														key={`${provider.id || "provider"}-${provider.name}`}
+														className="flex items-center gap-2 py-1"
+													>
+														{provider.id ? (
+															<Link
+																href={`/api-providers/${provider.id}`}
+																prefetch={false}
+																className="flex min-w-0 items-center gap-2 text-foreground underline-offset-2 hover:underline"
+															>
+																<span className="relative h-4 w-4 shrink-0 rounded-md border bg-background">
+																	<Logo
+																		id={resolveProviderLogoId({ providerId: provider.id })}
+																		alt=""
+																		className="object-contain p-[1px]"
+																		fill
+																	/>
+																</span>
+																<span className="truncate">{provider.name}</span>
+															</Link>
+														) : (
+															<span className="min-w-0 truncate text-foreground">{provider.name}</span>
+														)}
 														<span
-															aria-hidden="true"
-															className={cn("size-1.5 rounded-full", PROVIDER_STATUS_META[provider.status]?.dotClassName ?? "bg-muted-foreground/60")}
-														/>
-														{formatProviderStatusLabel(provider.status, providerStatusLabels)}
-													</span>
-												</li>
-											))}
+															title={statusLabel}
+															className={cn("size-1.5 shrink-0 rounded-full", PROVIDER_STATUS_META[provider.status]?.dotClassName ?? "bg-muted-foreground/60")}
+														>
+															<span className="sr-only">{statusLabel}</span>
+														</span>
+													</li>
+												);
+											})}
 										</ul>
 									</ScrollArea>
 								</HoverCardContent>

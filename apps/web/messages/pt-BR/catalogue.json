@@ -3417,6 +3417,31 @@
 		"faqScoreTie": "Os dois têm a mesma pontuação no {index}."
 	},
 	"hoverCards": {
+		"priceCard": {
+			"cheapestRoute": "Rota mais barata",
+			"perMillionTokens": "preços por 1 M de tokens",
+			"perMillionTokensUnlessNoted": "por 1 M de tokens, salvo indicação",
+			"in": "entrada",
+			"out": "saída",
+			"from": "A partir de",
+			"alsoModalities": "Também {list}",
+			"rows": {
+				"input": "Entrada",
+				"output": "Saída",
+				"reasoning": "Raciocínio",
+				"cachedInput": "Entrada em cache",
+				"cachedWrite": "Gravação em cache",
+				"requests": "Requisições",
+				"webSearch": "Pesquisa na web",
+				"webFetch": "Busca na web",
+				"tokens": "Tokens"
+			},
+			"modalities": {
+				"image": "imagem",
+				"video": "vídeo",
+				"audio": "áudio"
+			}
+		},
 		"tierLabel": "Nível {tier}",
 		"endsOn": "Termina em {date}",
 		"providerStatuses": "Status dos provedores",
