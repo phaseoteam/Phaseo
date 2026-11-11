@@ -302,7 +302,7 @@ export default function GatewayWorkbench() {
     <div className="panel-stack">
       <section className="panel">
         <div className="panel-header">
-          <h2>Gateway Control Routes</h2>
+          <h2>Gateway Status</h2>
           <button className="button secondary" onClick={() => void refreshControlData()} disabled={loadingControl}>
             {loadingControl ? 'Refreshing...' : 'Refresh'}
           </button>
@@ -338,8 +338,8 @@ export default function GatewayWorkbench() {
           value={selectedModel}
           onChange={(event) => {
             setSelectedModel(event.target.value);
-            setPreviousResponseId(null);
             setChatMessages([]);
+            setChatError(null);
           }}
         >
           {modelOptions.map((model) => (
