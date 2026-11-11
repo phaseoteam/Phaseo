@@ -33,7 +33,6 @@ import type {
 import {
 	countryName,
 	formatCardDate,
-	formatPercentFloor,
 	formatRankChange,
 	formatShare,
 	formatTokensCompact,
@@ -220,7 +219,6 @@ function ModelView({ card }: { card: ModelEntityCard }) {
 	const modalities = (values: string[]) => values.map((value) => label(labels.modality, value)).join(", ");
 	const tokenPriced = (unit: string | null) => !unit || /token/i.test(unit);
 	const released = formatCardDate(card.releaseDate, locale);
-	const uptime = formatPercentFloor(card.uptimePct, locale);
 	return (
 		<HoverCardBody>
 			<Header
@@ -252,7 +250,6 @@ function ModelView({ card }: { card: ModelEntityCard }) {
 						label: t("rowModalities"),
 						value: t("modalitiesValue", { input: modalities(card.inputModalities) || "–", output: modalities(card.outputModalities) || "–" }),
 					},
-					uptime ? { key: "uptime", label: t("rowUptime"), value: t("uptimeValue", { percent: uptime }) } : null,
 					{
 						key: "intelligence",
 						label: t("rowIntelligence"),

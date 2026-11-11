@@ -9,6 +9,7 @@ import { awaitShared } from "@core/shared-wait";
 const DEFAULT_BATCH_API_GATE = "gateway_batch_api";
 const DEFAULT_VIDEO_API_GATE = "gateway_video_api";
 const DEFAULT_REALTIME_VOICE_GATE = "gateway_realtime_voice";
+const DEFAULT_CHAT_REALTIME_VOICE_GATE = "chat_realtime_voice";
 const DEFAULT_GATEWAY_IO_LOGGING_GATE = "gateway_io_logging";
 const DEFAULT_DATA_CONTRIBUTION_GATE = "gateway_data_contribution";
 const DEFAULT_AUTO_ROUTING_GATE = "gateway_auto_routing";
@@ -83,8 +84,15 @@ export function getVideoApiFeatureGateName(bindings: Partial<GatewayBindings> = 
 	return normalizeText(bindings.STATSIG_VIDEO_API_GATE) ?? DEFAULT_VIDEO_API_GATE;
 }
 
-export function getRealtimeVoiceFeatureGateName(bindings: Partial<GatewayBindings> = getBindings()): string {
-	return normalizeText(bindings.STATSIG_REALTIME_VOICE_GATE) ?? DEFAULT_REALTIME_VOICE_GATE;
+// Chat sessions are proven to come from Chat by their key, so Chat can be
+// rolled out on its own gate while API access stays behind the API gate.
+export function getRealtimeVoiceFeatureGateName(
+	bindings: Partial<GatewayBindings> = getBindings(),
+	source: "api" | "chat" = "api",
+): string {
+	return source === "chat"
+		? normalizeText(bindings.STATSIG_CHAT_REALTIME_VOICE_GATE) ?? DEFAULT_CHAT_REALTIME_VOICE_GATE
+		: normalizeText(bindings.STATSIG_REALTIME_VOICE_GATE) ?? DEFAULT_REALTIME_VOICE_GATE;
 }
 
 export function getGatewayIoLoggingFeatureGateName(bindings: Partial<GatewayBindings> = getBindings()): string {
@@ -274,15 +282,16 @@ export async function isVideoApiAccessEnabled(
 export async function isRealtimeVoiceAccessEnabled(
 	auth: AuthSuccess,
 	bindings: Partial<GatewayBindings> = getBindings(),
+	source: "api" | "chat" = "api",
 ): Promise<boolean> {
-	return isStatsigGateEnabled(getRealtimeVoiceFeatureGateName(bindings), {
+	return isStatsigGateEnabled(getRealtimeVoiceFeatureGateName(bindings, source), {
 		workspaceId: auth.workspaceId,
 		apiKeyId: auth.apiKeyId,
 		apiKeyRef: auth.apiKeyRef,
 		apiKeyKid: auth.apiKeyKid,
 		userId: auth.userId,
 		internal: auth.internal,
-		surface: "gateway_realtime_voice",
+		surface: source === "chat" ? "chat_realtime_voice" : "gateway_realtime_voice",
 	}, bindings);
 }
 

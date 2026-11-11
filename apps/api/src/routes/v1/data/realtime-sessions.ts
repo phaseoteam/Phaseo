@@ -423,10 +423,10 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 		ok: true,
 		...auth.value,
 		userId: trustedUserId,
-	})) {
+	}, undefined, source)) {
 		return err("unauthorised", {
 			reason: "realtime_voice_feature_flag_disabled",
-			feature_gate: getRealtimeVoiceFeatureGateName(),
+			feature_gate: getRealtimeVoiceFeatureGateName(undefined, source),
 			request_id: auth.value.requestId,
 			workspace_id: auth.value.workspaceId,
 		});
