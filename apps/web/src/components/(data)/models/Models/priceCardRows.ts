@@ -72,7 +72,27 @@ function cacheWindow(key: string): string | null {
 	return `${Number(match[1])}${match[2].startsWith("h") ? "h" : "m"}`;
 }
 
+// Words a meter may contain and still get a short label. A meter with any other
+// word ("Embedding Input", "Server Tool Input") is a distinct billable meter, so it
+// keeps its own name rather than reading as plain "Input".
+const KNOWN_WORDS = new Set([
+	"input", "output", "prompt", "completion", "text", "token", "tokens",
+	"image", "images", "video", "videos", "audio",
+	"cache", "cached", "read", "reads", "hit", "hits", "write", "writes", "creation",
+	"reasoning", "thinking", "ttl",
+	"web", "search", "searches", "fetch", "fetches", "request", "requests", "total",
+	// Billing-source words that don't change what the meter charges for.
+	"implicit", "native", "server", "tool",
+]);
+const WINDOW_WORD = /^\d+(?:m|min|mins|minute|minutes|h|hr|hrs|hour|hours)?$|^(?:m|min|mins|minute|minutes|h|hr|hrs|hour|hours)$/;
+
+function onlyKnownWords(words: Set<string>): boolean {
+	for (const word of words) if (word && !KNOWN_WORDS.has(word) && !WINDOW_WORD.test(word)) return false;
+	return true;
+}
+
 function meterKind(words: Set<string>, key: string): PriceRowKind | null {
+	if (!onlyKnownWords(words)) return null;
 	if (words.has("reasoning")) return "reasoning";
 	const cache = words.has("cache") || words.has("cached");
 	if (cache && (words.has("write") || words.has("creation"))) return "cachedWrite";

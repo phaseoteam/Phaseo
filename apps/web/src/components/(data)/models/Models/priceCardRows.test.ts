@@ -70,6 +70,20 @@ describe("parsePriceMeterLabel", () => {
 		expect(parsePriceMeterLabel("Image Pixels")).toMatchObject({ kind: null, fallbackLabel: "Image pixels" });
 		expect(parsePriceMeterLabel("BFL Credits").fallbackLabel).toBe("BFL credits");
 	});
+
+	it("keeps a qualified input or output meter under its own name", () => {
+		expect(parsePriceMeterLabel("Embedding Input")).toMatchObject({ kind: null, fallbackLabel: "Embedding input" });
+		expect(parsePriceMeterLabel("Batch Output Tokens").kind).toBeNull();
+	});
+
+	it("never merges a qualified meter into plain Input", () => {
+		const rows = describeAll([
+			["Input", "$0.10 / 1M tokens"],
+			["Embedding Input", "$0.10 / 1M tokens"],
+		]);
+		expect(rows).toHaveLength(2);
+		expect(rows.map((row) => row.label)).toEqual(["Input", "Embedding input"]);
+	});
 });
 
 describe("parsePriceValue", () => {
