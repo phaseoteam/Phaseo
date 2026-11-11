@@ -83,61 +83,129 @@ $encoded = $body->encode();
 assert_true(str_contains($encoded, "Content-Disposition: form-data; name=\"file\"; filename=\"clip.mp3\"\r\nContent-Type: audio/mpeg\r\n\r\nRIFFfakeaudio\r\n"), "expected encoded file part");
 assert_true(str_contains($encoded, "Content-Disposition: form-data; name=\"model\"\r\n\r\nopenai/gpt-4o-transcribe\r\n"), "expected encoded model field");
 
-// Transcription with a local path in the legacy array payload: multipart.
+/** @return array{0: string, 1: string, 2: ?array, 3: ?array, 4: mixed} */
+function last_call(FakeAudioClient $fake): array
+{
+    return $fake->calls[count($fake->calls) - 1];
+}
+
+function expect_invalid(FakeAudioClient $fake, callable $call, string $label, ?string $messageContains = null): void
+{
+    $callCount = count($fake->calls);
+    try {
+        $call();
+    } catch (\InvalidArgumentException $error) {
+        assert_true(count($fake->calls) === $callCount, "expected no request: {$label}");
+        if ($messageContains !== null) {
+            assert_true(str_contains($error->getMessage(), $messageContains), "expected message to mention {$messageContains}: {$label}");
+        }
+        return;
+    }
+    throw new RuntimeException("expected InvalidArgumentException: {$label}");
+}
+
 $tmpDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . "phaseo-audio-" . bin2hex(random_bytes(4));
 mkdir($tmpDir);
 $audioPath = $tmpDir . DIRECTORY_SEPARATOR . "speech.wav";
 file_put_contents($audioPath, "wavdata");
+$memoPath = $tmpDir . DIRECTORY_SEPARATOR . "memo.m4a";
+file_put_contents($memoPath, "m4adata");
 try {
-    $client->generateTranscription(["model" => "openai/whisper-1", "file" => $audioPath]);
-    $body = $fake->calls[1][4];
-    assert_true($body instanceof \Phaseo\Gen\MultipartBody, "expected a local path to be sent as multipart");
+    // Path type: SplFileInfo uses the base name.
+    $client->generateTranscription(["model" => "openai/whisper-1", "file" => new SplFileInfo($audioPath)]);
+    $body = last_call($fake)[4];
+    assert_true($body instanceof \Phaseo\Gen\MultipartBody, "expected SplFileInfo to be sent as multipart");
     assert_true($body->files() === [["file", "wavdata", "speech.wav", "audio/wav"]], "expected file part read from disk");
     assert_true(form_fields($body) === ["model" => "openai/whisper-1"], "expected model field");
+
+    // Stream with its own name (fopen uri).
+    $handle = fopen($memoPath, "rb");
+    $client->generateTranscription(["model" => "openai/whisper-1", "file" => $handle]);
+    fclose($handle);
+    assert_true(last_call($fake)[4]->files() === [["file", "m4adata", "memo.m4a", "audio/mp4"]], "expected stream name from its uri");
+
+    // CURLFile uses its post filename, else the path's base name.
+    $client->generateTranscription(["model" => "openai/whisper-1", "file" => new CURLFile($audioPath)]);
+    assert_true(last_call($fake)[4]->files() === [["file", "wavdata", "speech.wav", "audio/wav"]], "expected CURLFile path base name");
+    $client->generateTranscription(["model" => "openai/whisper-1", "file" => new CURLFile($audioPath, "", "renamed.mp3")]);
+    assert_true(last_call($fake)[4]->files() === [["file", "wavdata", "renamed.mp3", "audio/mpeg"]], "expected CURLFile post filename");
+
+    // A plain string is never a file, even when it names an existing path.
+    expect_invalid($fake, fn () => $client->generateTranscription(["model" => "openai/whisper-1", "file" => $audioPath]), "path string", "PhaseoFile::fromPath");
 } finally {
     @unlink($audioPath);
+    @unlink($memoPath);
     @rmdir($tmpDir);
 }
 
+// Explicit object with a content type, and the array form.
+$client->generateTranscription(["model" => "openai/whisper-1", "file" => PhaseoFile::fromBytes("pcmdata", "take1.raw", "audio/L16")]);
+assert_true(last_call($fake)[4]->files() === [["file", "pcmdata", "take1.raw", "audio/L16"]], "expected explicit content type");
+$client->generateTranscription(["model" => "openai/whisper-1", "file" => ["file_name" => "take2.wav", "content" => "wavbytes", "content_type" => "audio/x-wav"]]);
+assert_true(last_call($fake)[4]->files() === [["file", "wavbytes", "take2.wav", "audio/x-wav"]], "expected array file with content type");
+$arrayStream = fopen("php://memory", "r+");
+fwrite($arrayStream, "mp3bytes");
+rewind($arrayStream);
+$client->generateTranscription(["model" => "openai/whisper-1", "file" => ["file_name" => "take3.mp3", "content" => $arrayStream]]);
+fclose($arrayStream);
+assert_true(last_call($fake)[4]->files() === [["file", "mp3bytes", "take3.mp3", "audio/mpeg"]], "expected array file with stream content and guessed type");
+$client->generateTranscription(["model" => "openai/whisper-1", "file" => ["file_name" => "blob.bin", "content" => "xyz"]]);
+assert_true(last_call($fake)[4]->files() === [["file", "xyz", "blob.bin", "application/octet-stream"]], "expected octet-stream for an unknown extension");
+
 // Transcription with only file_url stays JSON.
 $client->createTranscription(["model" => "openai/whisper-1", "file_url" => "https://example.com/audio.mp3"]);
-assert_true($fake->calls[2] === ["POST", "/audio/transcriptions", null, null, ["model" => "openai/whisper-1", "file_url" => "https://example.com/audio.mp3"]], "expected JSON transcription for file_url only");
+assert_true(last_call($fake) === ["POST", "/audio/transcriptions", null, null, ["model" => "openai/whisper-1", "file_url" => "https://example.com/audio.mp3"]], "expected JSON transcription for file_url only");
 
-// Translation from a stream with an explicit filename.
+// Translation from a nameless stream with a sibling filename.
 $stream = fopen("php://memory", "r+");
 fwrite($stream, "oggdata");
 rewind($stream);
 $client->generateTranslation(["model" => "openai/whisper-1", "file" => $stream, "filename" => "voice.ogg", "prompt" => "Bonjour"]);
 fclose($stream);
-[$method, $path, , , $body] = $fake->calls[3];
+[$method, $path, , , $body] = last_call($fake);
 assert_true($method === "POST" && $path === "/audio/translations", "expected POST /audio/translations");
 assert_true($body instanceof \Phaseo\Gen\MultipartBody, "expected a multipart translation");
 assert_true($body->files() === [["file", "oggdata", "voice.ogg", "audio/ogg"]], "expected stream file part");
 assert_true(form_fields($body) === ["model" => "openai/whisper-1", "prompt" => "Bonjour"], "expected translation fields without filename");
 
+// CURLStringFile: bytes named by its postname.
+$client->generateTranslation(["model" => "openai/whisper-1", "file" => new CURLStringFile("webmdata", "clip.webm")]);
+assert_true(last_call($fake)[4]->files() === [["file", "webmdata", "clip.webm", "audio/webm"]], "expected CURLStringFile postname");
+
+// Bytes without any filename fail before any request; so do plain strings and unsupported values.
+$nameless = fopen("php://memory", "r+");
+fwrite($nameless, "audio");
+rewind($nameless);
+expect_invalid($fake, fn () => $client->generateTranscription(["model" => "openai/whisper-1", "file" => $nameless]), "nameless stream", "filename");
+fclose($nameless);
+expect_invalid($fake, fn () => $client->generateTranscription(["model" => "openai/whisper-1", "file" => ["content" => "audio"]]), "array without file_name", "file_name");
+expect_invalid($fake, fn () => PhaseoFile::fromBytes("audio", ""), "empty filename", "extension");
+expect_invalid($fake, fn () => $client->generateTranslation(["model" => "openai/whisper-1", "file" => "data:audio/wav;base64,d2F2ZGF0YQ=="]), "data URL string");
+expect_invalid($fake, fn () => $client->generateTranscription(["model" => "openai/whisper-1", "file" => 42]), "unsupported type");
+
 // Upload: multipart to /batches/files, model/provider in the query string.
 $client->uploadFile(["file" => PhaseoFile::fromBytes("{\"custom_id\":\"a\"}\n", "batch.jsonl"), "purpose" => "batch"], "openai/gpt-5-mini", "openai");
-[$method, $path, $query, , $body] = $fake->calls[4];
+[$method, $path, $query, , $body] = last_call($fake);
 assert_true($method === "POST" && $path === "/batches/files", "expected POST /batches/files");
 assert_true($query === ["model" => "openai/gpt-5-mini", "provider" => "openai"], "expected model and provider query params");
 assert_true($body instanceof \Phaseo\Gen\MultipartBody, "expected multipart upload");
 assert_true($body->files() === [["file", "{\"custom_id\":\"a\"}\n", "batch.jsonl", "application/jsonl"]], "expected JSONL file part");
 assert_true(form_fields($body) === ["purpose" => "batch"], "expected only purpose as a form field");
 
-// Upload: model in the payload moves to the query string.
-$client->uploadFile(["file" => "data:application/jsonl;base64,eyJhIjoxfQo=", "purpose" => "batch", "model" => "openai/gpt-5-mini"]);
-[, $path, $query, , $body] = $fake->calls[5];
+// Upload: stream with a sibling filename; model in the payload moves to the query string.
+$jsonl = fopen("php://memory", "r+");
+fwrite($jsonl, "{\"a\":1}\n");
+rewind($jsonl);
+$client->uploadFile(["file" => $jsonl, "filename" => "requests.jsonl", "purpose" => "batch", "model" => "openai/gpt-5-mini"]);
+fclose($jsonl);
+[, $path, $query, , $body] = last_call($fake);
 assert_true($path === "/batches/files" && $query === ["model" => "openai/gpt-5-mini"], "expected payload model in the query string");
-assert_true(form_fields($body) === ["purpose" => "batch"], "expected model removed from form fields");
+assert_true($body->files() === [["file", "{\"a\":1}\n", "requests.jsonl", "application/jsonl"]], "expected sibling filename for the upload");
+assert_true(form_fields($body) === ["purpose" => "batch"], "expected model and filename removed from form fields");
 
-// Upload without a file fails before any request.
-$callCount = count($fake->calls);
-try {
-    $client->uploadFile(["purpose" => "batch"]);
-    throw new RuntimeException("expected InvalidArgumentException");
-} catch (\InvalidArgumentException $error) {
-    assert_true(count($fake->calls) === $callCount, "expected no request without a file");
-}
+// Upload without a file, or with a plain string, fails before any request.
+expect_invalid($fake, fn () => $client->uploadFile(["purpose" => "batch"]), "upload without file");
+expect_invalid($fake, fn () => $client->uploadFile(["file" => "requests.jsonl", "purpose" => "batch"]), "upload plain string", "PhaseoFile::fromPath");
 
 // Real transport: send through cURL to php -S and let PHP's multipart parser read it back.
 $probe = stream_socket_server("tcp://127.0.0.1:0");
