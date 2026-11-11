@@ -1,4 +1,5 @@
 import type { Processor } from "unified";
+import { guardInlineMath } from "./remarkRichBlocks";
 
 type MarkdownNode = { type: string; value?: string; children?: MarkdownNode[]; position?: unknown };
 type Root = { type: "root"; children: MarkdownNode[] };
@@ -51,9 +52,15 @@ export function extractLargeTables(markdown: string): { text: string; tables: st
 	return tables.length ? { text: out.join("\n"), tables } : { text: markdown, tables: [] };
 }
 
-/** The remark plugin: each marker becomes its table, parsed piece by piece with the processor's own parser. */
+const withoutPositions = (node: MarkdownNode) => { delete node.position; node.children?.forEach(withoutPositions); };
+
+/**
+ * The remark plugin: each marker becomes its table, parsed piece by piece with the processor's own parser. A piece's
+ * positions point into the piece, not the message, so plugins that read the source by position must not see them: the
+ * dollar rule (remarkMathGuard) is applied here, against the piece's own text, and the positions are then removed.
+ */
 export function remarkLargeTables(this: Processor, options: { tables: readonly string[] }) {
-	const parse = (markdown: string) => this.parse(markdown) as Root;
+	const parse = (markdown: string) => { const root = this.parse(markdown) as Root; guardInlineMath(root, markdown); root.children.forEach(withoutPositions); return root; };
 	return (tree: Root) => {
 		if (!options.tables.length) return;
 		tree.children = tree.children.flatMap((node): MarkdownNode[] => {
@@ -68,7 +75,6 @@ export function remarkLargeTables(this: Processor, options: { tables: readonly s
 				if (piece.length !== 1 || piece[0].type !== "table") return parse(source).children;
 				if (table) table.children?.push(...piece[0].children?.slice(1) ?? []); else table = piece[0];
 			}
-			if (table) delete table.position;
 			return table ? [table] : [];
 		});
 	};

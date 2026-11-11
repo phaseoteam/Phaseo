@@ -19,7 +19,7 @@ export function compare(current, baseline, percent = 10) {
 	return current.metrics.map(metric => {
 		const old = before.get(`${metric.group} / ${metric.name}`);
 		if (!old?.summary || !metric.summary) return { ...metric };
-		const was = old.summary.median, now = metric.summary.median, delta = now - was, share = was ? delta / was * 100 : 0;
+		const was = old.summary.median, now = metric.summary.median, delta = now - was, share = was ? delta / was * 100 : Math.sign(delta) * 100;
 		const worse = metric.better === "higher" ? -delta : delta;
 		const verdict = worse > (floors[metric.unit] ?? 0) && Math.abs(share) > percent ? "worse" : -worse > (floors[metric.unit] ?? 0) && Math.abs(share) > percent ? "better" : "same";
 		return { ...metric, baseline: old.summary, delta: Math.round(delta * 10) / 10, deltaPercent: Math.round(share), verdict };

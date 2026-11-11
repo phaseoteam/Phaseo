@@ -41,6 +41,27 @@ writes `main-startup.cpuprofile`, `renderer-startup.cpuprofile` and `main-idle.c
 node scripts/perf/profile-summary.mjs <dir>/main-startup.cpuprofile --top=30
 ```
 
+## Keeping startup fast
+
+What holds up the first window, and what the app does about it (compared with T3 Code and OpenCode, Nov 2026):
+
+- **Process launches on the main thread.** Starting a process blocks the thread that starts it until Windows lets it
+  run, and an antivirus scan of a command line it hasn't seen lately holds that for 0.5–1.7 s. Electron's main thread
+  is also the browser's UI thread, so the window can't load while it waits. The credential helper (PowerShell, DPAPI)
+  runs from a worker thread (`windowsCredentialEncryption.ts`); Factory's `gh` and agent checks start 4 s after launch
+  unless the window asks for them first.
+- **Compiling the main bundle.** `boot.mjs` turns on Node's compile cache before loading `index.mjs`, so launches after
+  the first skip parsing and compiling it. `@cursor/sdk` loads when Cursor is first used.
+- **JavaScript before first paint.** Settings, Usage, Scheduled, pull requests, Factory and the terminal load when first
+  opened (and in the background once the window is idle); provider logos are files, not inlined. Check what the first
+  paint loads with `index.html`'s `modulepreload` list.
+- Tried and dropped: one chunk for everything the entry imports (slower: one 4 MB file instead of parallel loads), and
+  serving the renderer from a custom scheme for V8's code cache (no clear gain here, and it would move `localStorage`
+  to a new origin).
+
+Watch for a real home folder: `--real-home` includes the credential helper and transcript import, which a clean
+profile skips.
+
 ## Comparing fairly
 
 - Compare runs from the same machine, on power, with other heavy apps closed. The report records the machine.
