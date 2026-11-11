@@ -78,7 +78,7 @@ export function html(report, compared, baseline) {
 		.map(metric => ({ ...metric, name: metric.group.replace(/^Startup \((.*)\), (.*)$/, (_, profile, kind) => `${profile[0].toUpperCase()}${profile.slice(1)}, ${kind}`) }));
 	const worse = compared?.filter(metric => metric.verdict === "worse") ?? [], better = compared?.filter(metric => metric.verdict === "better") ?? [];
 	// Headline tiles: the largest relative improvements outside startup (startup moves with machine state; see the note).
-	const headline = (compared ?? []).filter(metric => metric.verdict === "better" && !metric.group.startsWith("Startup") && metric.unit === "ms").sort((a, b) => a.deltaPercent - b.deltaPercent).slice(0, 4);
+	const headline = (compared ?? []).filter(metric => metric.verdict === "better" && metric.deltaPercent !== null && !metric.group.startsWith("Startup") && metric.unit === "ms").sort((a, b) => a.deltaPercent - b.deltaPercent).slice(0, 4);
 	const tiles = compared ? `<section class="tiles">
 		<div class="tile"><span class="tile-label">Compared with the baseline</span><span class="tile-figure">${better.length} better</span><span class="tile-sub">${worse.length} worse · ${rows.length - better.length - worse.length} about the same</span></div>
 		${headline.map(metric => `<div class="tile"><span class="tile-label">${escape(metric.name)}</span><span class="tile-figure">${escape(format(metric.summary.median, metric.unit))}</span><span class="tile-sub">was ${escape(format(metric.baseline.median, metric.unit))} · <span class="delta good"><span aria-hidden="true">▼</span> ${Math.abs(metric.deltaPercent)}%</span></span></div>`).join("")}
