@@ -123,6 +123,7 @@ Almacena en caché el contenido que se mantiene igual entre solicitudes: instruc
 Phaseo envía a cada proveedor solo los controles de caché que documenta y elimina el resto. Los controles de caché nunca excluyen a un proveedor del enrutamiento. Cada página de modelo indica sus precios de lectura y escritura de caché.
 </Note>
 
+<span id="which-providers-cache-automatically"></span>
 ## Qué proveedores almacenan en caché automáticamente
 
 | Proveedor | Caché | Qué envía Phaseo |
@@ -292,37 +293,7 @@ Phaseo no guarda las respuestas. Las solicitudes que establecen `previous_respon
 <span id="change-reasoning-effort-mid-conversation"></span>
 ### Cambia el esfuerzo de razonamiento a mitad de la conversación
 
-Envía el esfuerzo que quieras en cada solicitud (`reasoning_effort` en Chat Completions, `reasoning.effort` en Responses) y Phaseo cambia el esfuerzo de Claude sin reiniciar su caché de prompts. Un nuevo esfuerzo de nivel superior invalidaría la conversación en caché, así que Phaseo sigue enviando a Claude el primer nivel de la conversación y añade el cambio como un marcador de [esfuerzo por mensaje](https://platform.claude.com/docs/en/build-with-claude/effort-per-message) después de tu nuevo mensaje:
-
-| Solicitud | Tú envías | Phaseo envía a Claude |
-| --- | --- | --- |
-| 1 | `"high"` | `output_config.effort: "high"` |
-| 2 | `"low"` | `"high"`, más un marcador `low` después de tu nuevo mensaje. El prefijo en caché sigue coincidiendo. |
-| 3 | `"low"` | `"high"`, más el mismo marcador en el mismo lugar |
-| 4 | `"high"` | `"high"`, el marcador anterior y un marcador `high` después de tu nuevo mensaje |
-
-Phaseo no guarda nada entre solicitudes. Lee los niveles anteriores de la conversación que envías, así que esto solo funciona cuando:
-
-- **Devuelves el razonamiento sin cambios.** Cada respuesta de Claude termina con una entrada de razonamiento que registra el nivel con el que se ejecutó: la última entrada `reasoning.encrypted` en `reasoning_details` de Chat, o el último elemento `reasoning` en la salida de Responses. No tiene texto. Si la descartas, o descartas cualquier otro razonamiento, el siguiente cambio va al nivel superior.
-- **El cambio llega con un nuevo mensaje de usuario.** Un cambio entre pasos de un bucle de herramientas, cuando tu último mensaje solo contiene resultados de herramientas, va al nivel superior y reinicia la caché.
-- **El razonamiento sigue activado.** Las solicitudes con el razonamiento desactivado mantienen el comportamiento actual.
-- **La ruta lo admite.** Anthropic y Google Vertex AI: Claude Fable 5.2 y 5.1, Mythos 5.2 y 5.1, Opus 5.5 y 5, Sonnet 5.5 y Haiku 5.5. Claude on AWS: los mismos modelos excepto Mythos. Amazon Bedrock: Fable 5.1 y Opus 5.5. En los demás casos, incluido Claude en Azure, el cambio va al nivel superior.
-
-En Anthropic Messages, envía tú mismo el marcador: un mensaje `system` con `content` vacío y `output_config.effort`. Puede ir en cualquier lugar de `messages`, y Phaseo añade la cabecera beta `mid-conversation-output-config-2026-07-01`. Mantenlo en su sitio en las solicitudes posteriores. En las rutas sin esfuerzo por mensaje, Phaseo lo elimina y envía el nivel vigente como esfuerzo de nivel superior.
-
-```json
-{
-  "model": "anthropic/claude-opus-5.5",
-  "max_tokens": 4096,
-  "output_config": { "effort": "high" },
-  "messages": [
-    { "role": "user", "content": "Plan a migration from SQLite to PostgreSQL." },
-    { "role": "assistant", "content": "1. Export the data. 2. Create the schema. 3. Import and verify." },
-    { "role": "system", "content": [], "output_config": { "effort": "low" } },
-    { "role": "user", "content": "Summarise the plan in one sentence." }
-  ]
-}
-```
+Cambia `reasoning_effort` (Chat Completions) o `reasoning.effort` (Responses) entre solicitudes, y Phaseo mantiene la caché de prompts de Claude: envía el cambio como un marcador de esfuerzo dentro de `messages` en lugar de un nuevo esfuerzo de nivel superior. Esto funciona siempre que devuelvas el razonamiento de Claude sin cambios. En Anthropic Messages, envías tú mismo el marcador. Consulta [Cambia el esfuerzo de razonamiento a mitad de la conversación](./reasoning-effort.mdx).
 
 <span id="usage-and-pricing-fields"></span>
 ## Campos de uso y precios

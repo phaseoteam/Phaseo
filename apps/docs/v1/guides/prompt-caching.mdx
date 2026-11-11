@@ -289,37 +289,7 @@ Phaseo doesn't store responses. Requests that set `previous_response_id` or `con
 
 ### Change reasoning effort mid-conversation
 
-Send the effort you want on each request (`reasoning_effort` on Chat Completions, `reasoning.effort` on Responses), and Phaseo changes Claude's effort without restarting its prompt cache. A new top-level effort would invalidate the cached conversation, so Phaseo keeps sending Claude the conversation's first level and adds the change as a [per-message effort](https://platform.claude.com/docs/en/build-with-claude/effort-per-message) marker after your new message:
-
-| Request | You send | Phaseo sends Claude |
-| --- | --- | --- |
-| 1 | `"high"` | `output_config.effort: "high"` |
-| 2 | `"low"` | `"high"`, plus a `low` marker after your new message. The cached prefix still matches. |
-| 3 | `"low"` | `"high"`, plus the same marker in the same place |
-| 4 | `"high"` | `"high"`, the earlier marker, and a `high` marker after your new message |
-
-Phaseo stores nothing between requests. It reads earlier levels from the conversation you send, so this works only when:
-
-- **You send reasoning back unchanged.** Each Claude reply ends with one reasoning entry that records the level it ran at: the last `reasoning.encrypted` entry in Chat `reasoning_details`, or the last `reasoning` item in Responses output. It has no text. Drop it, or any other reasoning, and the next change goes to the top level.
-- **The change comes with a new user message.** A change between tool-loop steps, when your latest message holds only tool results, goes to the top level and restarts the cache.
-- **Reasoning stays on.** Requests with reasoning turned off keep today's behaviour.
-- **The route supports it.** Anthropic and Google Vertex AI: Claude Fable 5.2 and 5.1, Mythos 5.2 and 5.1, Opus 5.5 and 5, Sonnet 5.5 and Haiku 5.5. Claude on AWS: the same models except Mythos. Amazon Bedrock: Fable 5.1 and Opus 5.5. Elsewhere, including Claude on Azure, the change goes to the top level.
-
-On Anthropic Messages, send the marker yourself: a `system` message with empty `content` and `output_config.effort`. It can sit anywhere in `messages`, and Phaseo adds the `mid-conversation-output-config-2026-07-01` beta header. Keep it in place on later requests. On routes without per-message effort, Phaseo removes it and sends the level in force as the top-level effort.
-
-```json
-{
-  "model": "anthropic/claude-opus-5.5",
-  "max_tokens": 4096,
-  "output_config": { "effort": "high" },
-  "messages": [
-    { "role": "user", "content": "Plan a migration from SQLite to PostgreSQL." },
-    { "role": "assistant", "content": "1. Export the data. 2. Create the schema. 3. Import and verify." },
-    { "role": "system", "content": [], "output_config": { "effort": "low" } },
-    { "role": "user", "content": "Summarise the plan in one sentence." }
-  ]
-}
-```
+Change `reasoning_effort` (Chat Completions) or `reasoning.effort` (Responses) between requests, and Phaseo keeps Claude's prompt cache: it sends the change as an effort marker inside `messages` instead of a new top-level effort. This works as long as you send Claude's reasoning back unchanged. On Anthropic Messages, you send the marker yourself. See [Change Reasoning Effort Mid-Conversation](./reasoning-effort.mdx).
 
 ## Usage and pricing fields
 

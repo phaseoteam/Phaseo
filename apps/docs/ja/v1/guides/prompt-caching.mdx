@@ -123,6 +123,7 @@ curl https://api.phaseo.app/v1/messages \
 Phaseo は各プロバイダーに、そのプロバイダーが文書化しているキャッシュ制御だけを送り、それ以外は取り除きます。キャッシュ制御によってプロバイダーがルーティングから除外されることはありません。各モデルページにキャッシュの読み取りと書き込みの料金が掲載されています。
 </Note>
 
+<span id="which-providers-cache-automatically"></span>
 ## 自動でキャッシュするプロバイダー
 
 | プロバイダー | キャッシュ | Phaseo が送る内容 |
@@ -292,37 +293,7 @@ Phaseo はレスポンスを保存しません。`previous_response_id` また�
 <span id="change-reasoning-effort-mid-conversation"></span>
 ### 会話の途中で推論の度合いを変える
 
-各リクエストで希望する度合いを送ってください（Chat Completions では `reasoning_effort`、Responses では `reasoning.effort`）。Phaseo はプロンプトキャッシュをやり直さずに Claude の度合いを変更します。トップレベルの度合いを新しくするとキャッシュされた会話が無効になるため、Phaseo は Claude に会話の最初の度合いを送り続け、変更は新しいメッセージの後に置く[メッセージ単位の度合い](https://platform.claude.com/docs/en/build-with-claude/effort-per-message)のマーカーとして追加します。
-
-| リクエスト | 送る値 | Phaseo が Claude に送る内容 |
-| --- | --- | --- |
-| 1 | `"high"` | `output_config.effort: "high"` |
-| 2 | `"low"` | `"high"` と、新しいメッセージの後の `low` マーカー。キャッシュされたプレフィックスは一致したままです。 |
-| 3 | `"low"` | `"high"` と、同じ場所にある同じマーカー |
-| 4 | `"high"` | `"high"`、以前のマーカー、新しいメッセージの後の `high` マーカー |
-
-Phaseo はリクエスト間で何も保存しません。以前の度合いは送られてきた会話から読み取るため、これが機能するのは次の場合に限られます。
-
-- **推論を変更せずに送り返している。** Claude の各返信の最後には、実行時の度合いを記録した推論エントリーが 1 つあります。Chat の `reasoning_details` では最後の `reasoning.encrypted` エントリー、Responses の出力では最後の `reasoning` アイテムです。テキストはありません。これやほかの推論を削除すると、次の変更はトップレベルに送られます。
-- **変更が新しいユーザーメッセージと一緒に届く。** 最新のメッセージにツールの結果しか含まれない、ツールループのステップ間での変更は、トップレベルに送られ、キャッシュがやり直しになります。
-- **推論が有効のまま。** 推論を無効にしたリクエストは現在の動作のままです。
-- **ルートが対応している。** Anthropic と Google Vertex AI: Claude Fable 5.2 と 5.1、Mythos 5.2 と 5.1、Opus 5.5 と 5、Sonnet 5.5、Haiku 5.5。Claude on AWS: Mythos を除く同じモデル。Amazon Bedrock: Fable 5.1 と Opus 5.5。Azure 上の Claude を含むその他のルートでは、変更はトップレベルに送られます。
-
-Anthropic Messages では、マーカーを自分で送ります。空の `content` と `output_config.effort` を持つ `system` メッセージです。`messages` のどこに置いてもよく、Phaseo が `mid-conversation-output-config-2026-07-01` ベータヘッダーを追加します。以降のリクエストでも同じ位置に残してください。メッセージ単位の度合いに対応していないルートでは、Phaseo はこれを削除し、有効な度合いをトップレベルの度合いとして送ります。
-
-```json
-{
-  "model": "anthropic/claude-opus-5.5",
-  "max_tokens": 4096,
-  "output_config": { "effort": "high" },
-  "messages": [
-    { "role": "user", "content": "Plan a migration from SQLite to PostgreSQL." },
-    { "role": "assistant", "content": "1. Export the data. 2. Create the schema. 3. Import and verify." },
-    { "role": "system", "content": [], "output_config": { "effort": "low" } },
-    { "role": "user", "content": "Summarise the plan in one sentence." }
-  ]
-}
-```
+Chat Completions の `reasoning_effort` または Responses の `reasoning.effort` をリクエスト間で変更すると、Phaseo は Claude のプロンプトキャッシュを保ちます。変更は新しいトップレベルの度合いではなく、`messages` 内の度合いマーカーとして送られます。これは Claude の推論を変更せずに送り返している限り機能します。Anthropic Messages では、マーカーを自分で送ります。[会話の途中で推論の度合いを変える](./reasoning-effort.mdx)を参照してください。
 
 <span id="usage-and-pricing-fields"></span>
 ## 使用量と料金のフィールド

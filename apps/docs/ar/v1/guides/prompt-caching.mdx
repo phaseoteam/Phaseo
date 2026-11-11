@@ -123,6 +123,7 @@ curl https://api.phaseo.app/v1/messages \
 يرسل Phaseo إلى كل مزوّد عناصر التحكم في الذاكرة المؤقتة التي يوثّقها فقط، ويزيل الباقي. لا تستبعد عناصر التحكم في الذاكرة المؤقتة أي مزوّد من التوجيه أبدًا. تسرد كل صفحة نموذج أسعار القراءة من الذاكرة المؤقتة والكتابة فيها.
 </Note>
 
+<span id="which-providers-cache-automatically"></span>
 ## أي المزوّدين يخزّنون مؤقتًا تلقائيًا
 
 | المزوّد | التخزين المؤقت | ما يرسله Phaseo |
@@ -292,37 +293,7 @@ curl https://api.phaseo.app/v1/messages \
 <span id="change-reasoning-effort-mid-conversation"></span>
 ### غيّر جهد الاستدلال في منتصف المحادثة
 
-أرسل الجهد الذي تريده في كل طلب (`reasoning_effort` على Chat Completions، و`reasoning.effort` على Responses)، فيغيّر Phaseo جهد Claude دون إعادة تشغيل ذاكرته المؤقتة للموجّهات. إن تعيين جهد جديد في المستوى الأعلى سيُبطل المحادثة المخزّنة مؤقتًا، لذا يواصل Phaseo إرسال مستوى الجهد الأول في المحادثة إلى Claude، ويضيف التغيير كعلامة [جهد لكل رسالة](https://platform.claude.com/docs/en/build-with-claude/effort-per-message) بعد رسالتك الجديدة:
-
-| الطلب | ما ترسله | ما يرسله Phaseo إلى Claude |
-| --- | --- | --- |
-| 1 | `"high"` | `output_config.effort: "high"` |
-| 2 | `"low"` | `"high"`، بالإضافة إلى علامة `low` بعد رسالتك الجديدة. تظل البادئة المخزّنة مؤقتًا مطابقة. |
-| 3 | `"low"` | `"high"`، بالإضافة إلى العلامة نفسها في المكان نفسه |
-| 4 | `"high"` | `"high"`، والعلامة السابقة، وعلامة `high` بعد رسالتك الجديدة |
-
-لا يخزّن Phaseo أي شيء بين الطلبات. فهو يقرأ مستويات الجهد السابقة من المحادثة التي ترسلها، لذا لا يعمل هذا إلا عندما:
-
-- **تعيد إرسال الاستدلال دون تغيير.** ينتهي كل رد من Claude بإدخال استدلال واحد يسجّل مستوى الجهد الذي عمل به: آخر إدخال `reasoning.encrypted` في `reasoning_details` في Chat، أو آخر عنصر `reasoning` في مخرجات Responses. لا يحتوي على نص. إذا أسقطته، أو أسقطت أي استدلال آخر، يذهب التغيير التالي إلى المستوى الأعلى.
-- **يأتي التغيير مع رسالة مستخدم جديدة.** التغيير بين خطوات حلقة الأدوات، عندما لا تحتوي أحدث رسائلك إلا على نتائج أدوات، يذهب إلى المستوى الأعلى ويعيد تشغيل الذاكرة المؤقتة.
-- **يظل الاستدلال مفعّلًا.** تحتفظ الطلبات التي أُوقف فيها الاستدلال بالسلوك الحالي.
-- **يدعم المسار ذلك.** Anthropic وGoogle Vertex AI: Claude Fable 5.2 و5.1، وMythos 5.2 و5.1، وOpus 5.5 و5، وSonnet 5.5، وHaiku 5.5. Claude on AWS: النماذج نفسها باستثناء Mythos. Amazon Bedrock: Fable 5.1 وOpus 5.5. في غير ذلك، بما في ذلك Claude على Azure، يذهب التغيير إلى المستوى الأعلى.
-
-على Anthropic Messages، أرسل العلامة بنفسك: رسالة `system` بقيمة `content` فارغة ومعها `output_config.effort`. يمكن أن تقع في أي مكان في `messages`، ويضيف Phaseo ترويسة الإصدار التجريبي `mid-conversation-output-config-2026-07-01`. أبقِها في مكانها في الطلبات اللاحقة. على المسارات التي لا تدعم الجهد لكل رسالة، يزيلها Phaseo ويرسل المستوى الساري بوصفه الجهد في المستوى الأعلى.
-
-```json
-{
-  "model": "anthropic/claude-opus-5.5",
-  "max_tokens": 4096,
-  "output_config": { "effort": "high" },
-  "messages": [
-    { "role": "user", "content": "Plan a migration from SQLite to PostgreSQL." },
-    { "role": "assistant", "content": "1. Export the data. 2. Create the schema. 3. Import and verify." },
-    { "role": "system", "content": [], "output_config": { "effort": "low" } },
-    { "role": "user", "content": "Summarise the plan in one sentence." }
-  ]
-}
-```
+غيّر `reasoning_effort` (Chat Completions) أو `reasoning.effort` (Responses) بين الطلبات، فيحافظ Phaseo على ذاكرة Claude المؤقتة للموجّهات: إذ يرسل التغيير كعلامة جهد داخل `messages` بدلًا من جهد جديد في المستوى الأعلى. ينجح هذا ما دمت تعيد إرسال استدلال Claude دون تغيير. على Anthropic Messages، ترسل العلامة بنفسك. راجع [غيّر جهد الاستدلال في منتصف المحادثة](./reasoning-effort.mdx).
 
 <span id="usage-and-pricing-fields"></span>
 ## حقول الاستخدام والتسعير

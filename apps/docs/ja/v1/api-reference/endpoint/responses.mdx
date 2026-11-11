@@ -58,4 +58,4 @@ OpenAI、Azure OpenAI、xAI では、Phaseo は Responses リクエストを `st
 ツールループに限らず、すべてのリクエストで、すべての出力アイテムを変更せずに `input` で送り返してください。`encrypted_content` の有無にかかわらず、テキストのないアイテムも含め、`reasoning` アイテムを削除、編集、並べ替えしないでください。
 </Warning>
 
-`encrypted_content` は不透明で、それを生成したプロバイダーとモデルを記録しています。Phaseo はこれをそのプロバイダーの系統とモデルにのみ送信するため、別のプロバイダーにフォールバックした場合は失敗せずに除外されます。これがないと、Claude はツールループのステップ間で推論を失い、`reasoning.effort` を変更すると Claude のプロンプトキャッシュがやり直しになります。[会話の途中で推論の度合いを変える](../../guides/prompt-caching#change-reasoning-effort-mid-conversation)を参照してください。
+`encrypted_content` は不透明で、それを生成したプロバイダーとモデルを記録しています。Phaseo はこれをそのプロバイダーの系統とモデルにのみ送信するため、別のプロバイダーにフォールバックした場合は失敗せずに除外されます。これがないと、Claude はツールループのステップ間で推論を失い、`reasoning.effort` を変更すると Claude のプロンプトキャッシュがやり直しになります。[会話の途中で推論の度合いを変える](../../guides/reasoning-effort)を参照してください。

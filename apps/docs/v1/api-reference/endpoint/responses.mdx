@@ -58,4 +58,4 @@ Streaming responses carry the same items on `response.output_item.done` and `res
 Send every output item back in `input` unchanged on every request, not only in tool loops. Never drop, edit or reorder `reasoning` items, with or without `encrypted_content`, including items with no text.
 </Warning>
 
-`encrypted_content` is opaque and records the provider and model that produced it. Phaseo sends it only to that provider family and model, so a fallback to another provider drops it rather than failing. Without it, Claude loses its reasoning between tool-loop steps, and a change of `reasoning.effort` restarts Claude's prompt cache; see [Change reasoning effort mid-conversation](../../guides/prompt-caching#change-reasoning-effort-mid-conversation).
+`encrypted_content` is opaque and records the provider and model that produced it. Phaseo sends it only to that provider family and model, so a fallback to another provider drops it rather than failing. Without it, Claude loses its reasoning between tool-loop steps, and a change of `reasoning.effort` restarts Claude's prompt cache; see [Change reasoning effort mid-conversation](../../guides/reasoning-effort).

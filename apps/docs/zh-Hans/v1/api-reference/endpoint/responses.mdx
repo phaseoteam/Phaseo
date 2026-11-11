@@ -58,4 +58,4 @@ curl https://api.phaseo.app/v1/responses \
 在每个请求中（而不仅是在工具循环中）都要在 `input` 中原样发回所有输出项。切勿丢弃、编辑或重新排序 `reasoning` 项，无论是否带有 `encrypted_content`，也包括没有文本的项。
 </Warning>
 
-`encrypted_content` 是不透明的，并记录了生成它的提供商和模型。Phaseo 只会把它发送给该提供商系列和模型，因此回退到其他提供商时会丢弃它，而不会导致请求失败。缺少它时，Claude 会在工具循环的各步骤之间丢失推理，而更改 `reasoning.effort` 会重启 Claude 的提示词缓存；参见[在对话中途更改推理强度](../../guides/prompt-caching#change-reasoning-effort-mid-conversation)。
+`encrypted_content` 是不透明的，并记录了生成它的提供商和模型。Phaseo 只会把它发送给该提供商系列和模型，因此回退到其他提供商时会丢弃它，而不会导致请求失败。缺少它时，Claude 会在工具循环的各步骤之间丢失推理，而更改 `reasoning.effort` 会重启 Claude 的提示词缓存；参见[在对话中途更改推理强度](../../guides/reasoning-effort)。
