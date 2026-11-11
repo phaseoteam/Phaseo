@@ -3417,6 +3417,31 @@
 		"faqScoreTie": "两者在 {index} 上得分相同。"
 	},
 	"hoverCards": {
+		"priceCard": {
+			"cheapestRoute": "最低价路线",
+			"perMillionTokens": "价格按每 100 万 token 计",
+			"perMillionTokensUnlessNoted": "除另有说明外按每 100 万 token 计",
+			"in": "输入",
+			"out": "输出",
+			"from": "起价",
+			"alsoModalities": "{list}同价",
+			"rows": {
+				"input": "输入",
+				"output": "输出",
+				"reasoning": "推理",
+				"cachedInput": "缓存输入",
+				"cachedWrite": "缓存写入",
+				"requests": "请求",
+				"webSearch": "网页搜索",
+				"webFetch": "网页抓取",
+				"tokens": "Token"
+			},
+			"modalities": {
+				"image": "图像",
+				"video": "视频",
+				"audio": "音频"
+			}
+		},
 		"tierLabel": "{tier}层级",
 		"endsOn": "{date} 结束",
 		"providerStatuses": "提供商状态",

@@ -3417,6 +3417,31 @@
 		"faqScoreTie": "They score the same on the {index}."
 	},
 	"hoverCards": {
+		"priceCard": {
+			"cheapestRoute": "Cheapest route",
+			"perMillionTokens": "prices per 1M tokens",
+			"perMillionTokensUnlessNoted": "per 1M tokens unless noted",
+			"in": "in",
+			"out": "out",
+			"from": "From",
+			"alsoModalities": "Also {list}",
+			"rows": {
+				"input": "Input",
+				"output": "Output",
+				"reasoning": "Reasoning",
+				"cachedInput": "Cached input",
+				"cachedWrite": "Cached write",
+				"requests": "Requests",
+				"webSearch": "Web search",
+				"webFetch": "Web fetch",
+				"tokens": "Tokens"
+			},
+			"modalities": {
+				"image": "image",
+				"video": "video",
+				"audio": "audio"
+			}
+		},
 		"tierLabel": "{tier} tier",
 		"endsOn": "Ends {date}",
 		"providerStatuses": "Provider statuses",

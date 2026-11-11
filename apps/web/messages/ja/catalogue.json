@@ -3417,6 +3417,31 @@
 		"faqScoreTie": "{index} ではどちらも同じスコアです。"
 	},
 	"hoverCards": {
+		"priceCard": {
+			"cheapestRoute": "最安ルート",
+			"perMillionTokens": "価格は100万トークンあたり",
+			"perMillionTokensUnlessNoted": "特記なき場合は100万トークンあたり",
+			"in": "入力",
+			"out": "出力",
+			"from": "最低",
+			"alsoModalities": "{list}も同額",
+			"rows": {
+				"input": "入力",
+				"output": "出力",
+				"reasoning": "推論",
+				"cachedInput": "キャッシュ入力",
+				"cachedWrite": "キャッシュ書き込み",
+				"requests": "リクエスト",
+				"webSearch": "ウェブ検索",
+				"webFetch": "ウェブ取得",
+				"tokens": "トークン"
+			},
+			"modalities": {
+				"image": "画像",
+				"video": "動画",
+				"audio": "音声"
+			}
+		},
 		"tierLabel": "{tier} ティア",
 		"endsOn": "{date} に終了",
 		"providerStatuses": "プロバイダーのステータス",

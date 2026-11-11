@@ -3417,6 +3417,31 @@
 		"faqScoreTie": "يحقق كلاهما النتيجة نفسها في {index}."
 	},
 	"hoverCards": {
+		"priceCard": {
+			"cheapestRoute": "أرخص مسار",
+			"perMillionTokens": "الأسعار لكل مليون رمز",
+			"perMillionTokensUnlessNoted": "لكل مليون رمز ما لم يُذكر خلاف ذلك",
+			"in": "إدخال",
+			"out": "إخراج",
+			"from": "ابتداءً من",
+			"alsoModalities": "وأيضًا {list}",
+			"rows": {
+				"input": "الإدخال",
+				"output": "الإخراج",
+				"reasoning": "الاستدلال",
+				"cachedInput": "إدخال مخزّن مؤقتًا",
+				"cachedWrite": "كتابة في ذاكرة التخزين المؤقت",
+				"requests": "الطلبات",
+				"webSearch": "البحث على الويب",
+				"webFetch": "الجلب من الويب",
+				"tokens": "الرموز"
+			},
+			"modalities": {
+				"image": "الصور",
+				"video": "الفيديو",
+				"audio": "الصوت"
+			}
+		},
 		"tierLabel": "فئة {tier}",
 		"endsOn": "ينتهي في {date}",
 		"providerStatuses": "حالات المزوّدين",

@@ -3417,6 +3417,31 @@
 		"faqScoreTie": "{index} पर दोनों का स्कोर बराबर है।"
 	},
 	"hoverCards": {
+		"priceCard": {
+			"cheapestRoute": "सबसे सस्ता रूट",
+			"perMillionTokens": "कीमतें प्रति 10 लाख टोकन",
+			"perMillionTokensUnlessNoted": "अन्यथा न बताया हो तो प्रति 10 लाख टोकन",
+			"in": "इनपुट",
+			"out": "आउटपुट",
+			"from": "न्यूनतम",
+			"alsoModalities": "{list} भी",
+			"rows": {
+				"input": "इनपुट",
+				"output": "आउटपुट",
+				"reasoning": "रीज़निंग",
+				"cachedInput": "कैश्ड इनपुट",
+				"cachedWrite": "कैश राइट",
+				"requests": "अनुरोध",
+				"webSearch": "वेब सर्च",
+				"webFetch": "वेब फ़ेच",
+				"tokens": "टोकन"
+			},
+			"modalities": {
+				"image": "इमेज",
+				"video": "वीडियो",
+				"audio": "ऑडियो"
+			}
+		},
 		"tierLabel": "{tier} टियर",
 		"endsOn": "{date} को समाप्त",
 		"providerStatuses": "प्रदाता स्थितियाँ",
