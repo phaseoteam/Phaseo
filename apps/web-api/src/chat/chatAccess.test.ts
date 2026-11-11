@@ -17,8 +17,16 @@ it("lets a member who never accepted the old privacy review use Chat", async () 
 	expect(await resolveGatewayKeys(new Request("https://example.com/chat"), {} as any, () => {}))
 		.toMatchObject({ code: "chat_key_configuration_missing" });
 });
-it("resolves an inaccessible active cookie to the accessible default workspace", async () => {
+it("refuses a header workspace the user can't use instead of using another one", async () => {
 	const request = new Request("https://example.com/chat", { headers: { cookie: "activeWorkspaceId=former-workspace" } });
+	expect(await resolveChatWorkspace(request, {} as any)).toMatchObject({ status: 409, code: "active_workspace_unavailable" });
+	expect(await resolveGatewayKeys(request, {} as any, () => {})).toMatchObject({ status: 409, code: "active_workspace_unavailable" });
+	expect(mocks.from.mock.calls.map(([table]) => table)).not.toContain("keys");
+});
+it("uses the header workspace when the user can use it", async () => {
+	const request = new Request("https://example.com/chat", { headers: { cookie: "activeWorkspaceId=workspace1" } });
 	expect(await resolveChatWorkspace(request, {} as any)).toMatchObject({ workspaceId: "workspace1" });
-	expect(await resolveGatewayKeys(request, {} as any, () => {})).toMatchObject({ code: "chat_key_configuration_missing" });
+});
+it("uses the default workspace when none has been picked yet", async () => {
+	expect(await resolveChatWorkspace(new Request("https://example.com/chat"), {} as any)).toMatchObject({ workspaceId: "workspace1" });
 });

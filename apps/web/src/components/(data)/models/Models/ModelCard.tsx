@@ -16,6 +16,7 @@ import {
 	Copy,
 	BadgeAlert,
 	CalendarClock,
+	Ban,
 	EyeOff,
 	LockKeyhole,
 } from "lucide-react";
@@ -72,6 +73,7 @@ import {
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useIsBlockedByWorkspace } from "./CatalogueModelAccessContext";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 const MODALITY_DISPLAY_ORDER = [
@@ -539,6 +541,23 @@ function ModelCardImpl({
 			>
 				<VisibilityIcon className="size-3" aria-hidden="true" />
 				<span className={iconOnly ? "sr-only" : undefined}>{visibilityLabel}</span>
+			</span>
+		) : null;
+	// The workspace picked in the header blocks this model (its guardrails or Settings, Privacy). Read-only here.
+	const blockedByWorkspace = useIsBlockedByWorkspace(model.model_id);
+	const blockedLabel = t("blockedByWorkspace");
+	const workspaceBlockedBadge = (display: string, iconOnly = false) =>
+		blockedByWorkspace ? (
+			<span
+				title={t("blockedByWorkspaceTitle")}
+				className={cn(
+					display,
+					"shrink-0 items-center gap-1 rounded-md border border-destructive/30 bg-destructive/5 text-[11px] font-medium leading-4 text-destructive",
+					iconOnly ? "p-0.5" : "px-1.5 py-px",
+				)}
+			>
+				<Ban className="size-3" aria-hidden="true" />
+				<span className={iconOnly ? "sr-only" : undefined}>{blockedLabel}</span>
 			</span>
 		) : null;
 	const [copied, setCopied] = useState(false);
@@ -1055,6 +1074,7 @@ function ModelCardImpl({
 								)}
 							</Link>
 							{visibilityBadge("hidden sm:inline-flex")}
+							{workspaceBlockedBadge("hidden sm:inline-flex")}
 							{displayModelId ? (
 								<Tooltip>
 									<TooltipTrigger asChild>
@@ -1094,6 +1114,7 @@ function ModelCardImpl({
 						</div>
 						<div className="flex min-w-0 items-center gap-1.5">
 							{visibilityBadge("inline-flex sm:hidden", true)}
+							{workspaceBlockedBadge("inline-flex sm:hidden", true)}
 							<div className="min-w-0 truncate text-xs leading-[1.15] text-muted-foreground font-mono">
 								{displayModelId}
 							</div>

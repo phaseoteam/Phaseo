@@ -27,7 +27,7 @@ function ChatPlaygroundContent() {
 	const resolvedParams = useSearch({ from: "/{-$locale}/_dashboard/chat/" }) as StringSearch;
 	// Opening a logged request compares its workspace with the one Chat bills.
 	const opensLoggedRequest = Boolean(resolvedParams.fromRequest);
-	const { data: { effectivePolicy, providerPreviews, internalModels, activeWorkspaceId } } = useSuspenseQuery(chatPlaygroundAccountDataQuery(opensLoggedRequest));
+	const { data: { effectivePolicy, modelAccess, providerPreviews, internalModels, activeWorkspaceId } } = useSuspenseQuery(chatPlaygroundAccountDataQuery(opensLoggedRequest));
 	const previewModels = providerCatalogPreviewsToGatewayModels(providerPreviews);
 	const modelParamRaw = resolvedParams.model;
 	const promptParamRaw = resolvedParams.prompt;
@@ -43,6 +43,7 @@ function ChatPlaygroundContent() {
 			previewModels={previewModels}
 			internalModels={internalModels}
 			effectivePolicy={effectivePolicy}
+			modelAccess={modelAccess}
 			modelParam={modelParam ?? null}
 			promptParam={promptParam ?? null}
 			activeWorkspaceId={activeWorkspaceId}

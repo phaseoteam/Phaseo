@@ -223,6 +223,52 @@ accountSettingsPolicyRouter.get("/chat/effective-policy", async (c) => {
 	}, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
+/** What GET /internal/model-access on the gateway returns (apps/api/src/routes/internal/model-access.ts). */
+type GatewayModelAccess = {
+	ok: true;
+	workspace_id: string;
+	source: "chat_key" | "member";
+	restricted: boolean;
+	hidden_model_count: number;
+	limited_model_count: number;
+	hidden_models: Array<{ id: string; name: string }>;
+	limited_models: Record<string, string[]>;
+};
+
+// Which models the signed-in member may use in the workspace picked in the website's header (the activeWorkspaceId
+// cookie, or an explicit workspaceId the web read from it). The gateway works it out with the rules Chat sends are
+// checked against, so the web hides exactly what would be refused. A workspace the user can't use is refused, never
+// swapped for another one. Read-only: rules are changed on the guardrails and privacy settings pages.
+accountSettingsPolicyRouter.get("/models/access", async (c) => {
+	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: c.req.query("workspaceId")?.trim() || null });
+	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	const token = String(c.env.GATEWAY_INTERNAL_TEST_TOKEN ?? "").trim();
+	if (!token) return c.json({ error: "model_access_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	const origin = String(c.env.GATEWAY_API_ORIGIN ?? "https://api.phaseo.app").replace(/\/+$/, "");
+	const query = new URLSearchParams({ workspace_id: context.workspaceId, user_id: context.user.id });
+	try {
+		const response = await fetch(`${origin}/internal/model-access?${query}`, {
+			headers: { authorization: `Bearer ${token}` },
+			signal: AbortSignal.timeout(10_000),
+		});
+		const body = await response.json().catch(() => null) as GatewayModelAccess | null;
+		if (!response.ok || !body?.ok) throw new Error(`gateway_model_access_${response.status}`);
+		return c.json({
+			workspaceId: context.workspaceId,
+			workspaceName: context.workspaceName,
+			source: body.source,
+			restricted: body.restricted === true,
+			hiddenModelCount: Number(body.hidden_model_count) || 0,
+			limitedModelCount: Number(body.limited_model_count) || 0,
+			hiddenModels: Array.isArray(body.hidden_models) ? body.hidden_models : [],
+			limitedModels: body.limited_models && typeof body.limited_models === "object" ? body.limited_models : {},
+		}, 200, PRIVATE_NO_STORE_HEADERS);
+	} catch (error) {
+		console.error("model_access_failed", { workspaceId: context.workspaceId, error: error instanceof Error ? error.message : String(error) });
+		return c.json({ error: "model_access_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	}
+});
+
 accountSettingsPolicyRouter.get("/routing", async (c) => {
 	const workspaceId = c.req.query("workspaceId")?.trim();
 	if (!workspaceId) return c.json({ canManage: false, responseHealingEnabled: false, responseHealingLocked: false, responseHealingMode: "safe", routingMode: "balanced", teamName: null, alphaChannelEnabled: false, betaChannelEnabled: false, workspaceId: null }, 200, PRIVATE_NO_STORE_HEADERS);

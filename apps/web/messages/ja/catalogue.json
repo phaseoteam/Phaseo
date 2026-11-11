@@ -267,7 +267,10 @@
 			"capabilityTextGeneration": "テキスト生成",
 			"modalityDecisions": "判断",
 			"modalityClassification": "分類",
-			"modalityExtraction": "抽出"
+			"modalityExtraction": "抽出",
+			"usableInWorkspace": "ワークスペースで使用可能",
+			"usableInWorkspaceTitle": "{workspace} のルールで許可されたモデルのみ表示",
+			"usableSignInHint": "サインインすると、ワークスペースで許可されたモデルのみを表示できます。"
 		},
 		"freeRouter": {
 			"title": "無料モデルプール",
@@ -1036,7 +1039,9 @@
 		"features": "機能",
 		"included": "含まれる",
 		"notIncluded": "含まれない",
-		"learnMore": "詳細を見る"
+		"learnMore": "詳細を見る",
+		"blockedByWorkspace": "ワークスペースによりブロック",
+		"blockedByWorkspaceTitle": "ワークスペースのルール（ガードレールまたはプライバシー設定）でこのモデルは許可されていません。"
 	},
 	"modelDetail": {
 		"providerTable": {

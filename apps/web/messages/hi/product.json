@@ -638,7 +638,13 @@
 			"comingSoonGroup": "जल्द आ रहा है · {month}",
 			"removeModel": "{model} हटाएँ",
 			"addToFavorites": "{model} को पसंदीदा में जोड़ें",
-			"removeFromFavorites": "{model} को पसंदीदा से हटाएँ"
+			"removeFromFavorites": "{model} को पसंदीदा से हटाएँ",
+			"hiddenByRules": "{workspace} के नियमों से {count, plural, one {# मॉडल छिपा है} other {# मॉडल छिपे हैं}}।",
+			"hiddenAndLimitedByRules": "{workspace} के नियमों से {count, plural, one {# मॉडल छिपा है} other {# मॉडल छिपे हैं}}, और दूसरों के लिए कुछ प्रदाता बंद हैं।",
+			"limitedByRules": "{workspace} के नियम {count, plural, one {# मॉडल} other {# मॉडल}} के लिए कुछ प्रदाता बंद करते हैं।",
+			"hiddenModelMatch": "{model} आपके वर्कस्पेस के नियमों से छिपा है।",
+			"hiddenModelMatches": "आपके वर्कस्पेस के नियमों से {count, plural, one {# मिलता-जुलता मॉडल छिपा है} other {# मिलते-जुलते मॉडल छिपे हैं}}।",
+			"viewRules": "नियम देखें"
 		},
 		"dataControls": {
 			"exportChats": "चैट एक्सपोर्ट करें",

@@ -267,7 +267,10 @@
 			"capabilityTextGeneration": "文本生成",
 			"modalityDecisions": "决策",
 			"modalityClassification": "分类",
-			"modalityExtraction": "提取"
+			"modalityExtraction": "提取",
+			"usableInWorkspace": "我的工作区可用",
+			"usableInWorkspaceTitle": "仅显示 {workspace} 的规则允许的模型",
+			"usableSignInHint": "登录后可仅查看你的工作区允许的模型。"
 		},
 		"freeRouter": {
 			"title": "免费模型池",
@@ -1036,7 +1039,9 @@
 		"features": "功能",
 		"included": "已包含",
 		"notIncluded": "未包含",
-		"learnMore": "了解更多"
+		"learnMore": "了解更多",
+		"blockedByWorkspace": "已被你的工作区阻止",
+		"blockedByWorkspaceTitle": "你的工作区规则（护栏或隐私设置）不允许使用此模型。"
 	},
 	"modelDetail": {
 		"providerTable": {

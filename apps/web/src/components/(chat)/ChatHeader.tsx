@@ -2,6 +2,8 @@ import { chatLocalStorage } from "@/lib/chat/userStorage";
 import Link from "@/components/link";
 import { useTranslations } from "@/i18n/react";
 import { localizedWorkspacePolicyReason } from "@/i18n/workspace-policy-messages";
+import { hiddenModelsMatching, MODEL_ACCESS_RULES_HREF } from "@/lib/chat/modelAccess";
+import { useChatModelAccess } from "@/components/(chat)/ChatModelAccessContext";
 
 import {
 	useCallback,
@@ -122,6 +124,7 @@ import {
 	Settings,
 	Settings2,
 	Shield,
+	ShieldCheck,
 	Star,
 	Trash2,
 	X,
@@ -1256,6 +1259,26 @@ export function ChatHeader({
 		[modelSearchValue],
 	);
 	const hasModelSearchValue = normalizedModelSearchValue.length > 0;
+	// What the header workspace's rules hide from this list (read-only; rules are edited on the settings pages), so a
+	// missing model is explained rather than just absent: a count, or the hidden models a search matches.
+	const modelAccess = useChatModelAccess();
+	const hiddenSearchMatches = useMemo(
+		() => (hasModelSearchValue ? hiddenModelsMatching(modelAccess, modelSearchValue) : []),
+		[hasModelSearchValue, modelAccess, modelSearchValue],
+	);
+	const modelAccessNotice = !modelAccess?.restricted
+		? null
+		: hasModelSearchValue
+			? hiddenSearchMatches.length === 1
+				? tModelPicker("hiddenModelMatch", { model: hiddenSearchMatches[0]!.name })
+				: hiddenSearchMatches.length > 1
+					? tModelPicker("hiddenModelMatches", { count: hiddenSearchMatches.length })
+					: null
+			: modelAccess.hiddenModelCount > 0
+				? tModelPicker(modelAccess.limitedModelCount > 0 ? "hiddenAndLimitedByRules" : "hiddenByRules", { count: modelAccess.hiddenModelCount, workspace: modelAccess.workspaceName })
+				: modelAccess.limitedModelCount > 0
+					? tModelPicker("limitedByRules", { count: modelAccess.limitedModelCount, workspace: modelAccess.workspaceName })
+					: null;
 	const searchRanking = useMemo(() => {
 		if (!hasModelSearchValue) {
 			return { total: 0, results: [] as Array<{ option: ModelOption; score: number }> };
@@ -1572,6 +1595,15 @@ export function ChatHeader({
 										)
 							}
 					/>
+					{modelAccessNotice ? (
+						<p role="note" className="flex items-start gap-2 border-b px-4 py-2 text-xs text-muted-foreground">
+							<ShieldCheck aria-hidden className="mt-px size-3.5 shrink-0" />
+							<span>
+								{modelAccessNotice}{" "}
+								<Link href={MODEL_ACCESS_RULES_HREF} className="font-medium text-foreground underline-offset-4 hover:underline">{tModelPicker("viewRules")}</Link>
+							</span>
+						</p>
+					) : null}
 					{Array.from(new Map([...modelOptions.active, ...modelOptions.comingSoon].flatMap((option) => option.chatBlockedReasons).map((reason) => [reason.settingsHref, reason])).values()).length ? (
 						<div className="flex flex-wrap gap-x-3 gap-y-1 border-b px-4 py-2 text-xs text-muted-foreground">
 			<span>{tUi("chatSettings.policyUnavailable")}</span>

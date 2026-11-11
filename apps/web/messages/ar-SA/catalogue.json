@@ -267,7 +267,10 @@
 			"capabilityTextGeneration": "توليد النص",
 			"modalityDecisions": "القرارات",
 			"modalityClassification": "التصنيف",
-			"modalityExtraction": "الاستخراج"
+			"modalityExtraction": "الاستخراج",
+			"usableInWorkspace": "متاح في مساحة عملي",
+			"usableInWorkspaceTitle": "عرض النماذج التي تسمح بها قواعد {workspace} فقط",
+			"usableSignInHint": "سجّل الدخول لعرض النماذج التي تسمح بها مساحة عملك فقط."
 		},
 		"freeRouter": {
 			"title": "مجموعة النماذج المجانية",
@@ -1036,7 +1039,9 @@
 		"features": "الميزات",
 		"included": "مضمن",
 		"notIncluded": "غير مضمن",
-		"learnMore": "معرفة المزيد"
+		"learnMore": "معرفة المزيد",
+		"blockedByWorkspace": "محظور من مساحة العمل",
+		"blockedByWorkspaceTitle": "لا تسمح قواعد مساحة العمل (الضوابط أو إعدادات الخصوصية) بهذا النموذج."
 	},
 	"modelDetail": {
 		"providerTable": {

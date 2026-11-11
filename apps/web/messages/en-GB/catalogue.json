@@ -267,7 +267,10 @@
 			"capabilityTextGeneration": "Text generation",
 			"modalityDecisions": "Decisions",
 			"modalityClassification": "Classification",
-			"modalityExtraction": "Extraction"
+			"modalityExtraction": "Extraction",
+			"usableInWorkspace": "Usable in my workspace",
+			"usableInWorkspaceTitle": "Show only models {workspace}'s rules allow",
+			"usableSignInHint": "Sign in to see only the models your workspace allows."
 		},
 		"freeRouter": {
 			"title": "Free model pool",
@@ -1036,7 +1039,9 @@
 		"features": "Features",
 		"included": "Included",
 		"notIncluded": "Not included",
-		"learnMore": "Learn more"
+		"learnMore": "Learn more",
+		"blockedByWorkspace": "Blocked by your workspace",
+		"blockedByWorkspaceTitle": "Your workspace's rules (guardrails or privacy settings) don't allow this model."
 	},
 	"modelDetail": {
 		"providerTable": {

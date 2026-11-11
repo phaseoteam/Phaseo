@@ -638,7 +638,13 @@
 			"comingSoonGroup": "近日公開 · {month}",
 			"removeModel": "{model}を削除",
 			"addToFavorites": "{model}をお気に入りに追加",
-			"removeFromFavorites": "{model}をお気に入りから削除"
+			"removeFromFavorites": "{model}をお気に入りから削除",
+			"hiddenByRules": "{workspace} のルールにより {count, plural, other {# 件のモデル}}が非表示になっています。",
+			"hiddenAndLimitedByRules": "{workspace} のルールにより {count, plural, other {# 件のモデル}}が非表示になっており、ほかのモデルでも一部のプロバイダーがオフになっています。",
+			"limitedByRules": "{workspace} のルールにより、{count, plural, other {# 件のモデル}}で一部のプロバイダーがオフになっています。",
+			"hiddenModelMatch": "{model} はワークスペースのルールにより非表示になっています。",
+			"hiddenModelMatches": "一致する {count, plural, other {# 件のモデル}}がワークスペースのルールにより非表示になっています。",
+			"viewRules": "ルールを表示"
 		},
 		"dataControls": {
 			"exportChats": "チャットをエクスポート",

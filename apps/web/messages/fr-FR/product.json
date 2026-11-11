@@ -638,7 +638,13 @@
 			"comingSoonGroup": "Bientôt disponible · {month}",
 			"removeModel": "Supprimer {model}",
 			"addToFavorites": "Ajouter {model} aux favoris",
-			"removeFromFavorites": "Retirer {model} des favoris"
+			"removeFromFavorites": "Retirer {model} des favoris",
+			"hiddenByRules": "{count, plural, one {# modèle est masqué} other {# modèles sont masqués}} par les règles de {workspace}.",
+			"hiddenAndLimitedByRules": "{count, plural, one {# modèle est masqué} other {# modèles sont masqués}} par les règles de {workspace}, et certains fournisseurs sont désactivés pour d'autres.",
+			"limitedByRules": "Les règles de {workspace} désactivent certains fournisseurs pour {count, plural, one {# modèle} other {# modèles}}.",
+			"hiddenModelMatch": "{model} est masqué par les règles de votre espace de travail.",
+			"hiddenModelMatches": "{count, plural, one {# modèle correspondant est masqué} other {# modèles correspondants sont masqués}} par les règles de votre espace de travail.",
+			"viewRules": "Voir les règles"
 		},
 		"dataControls": {
 			"exportChats": "Exporter les conversations",
