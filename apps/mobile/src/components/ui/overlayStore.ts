@@ -29,8 +29,10 @@ export type ConfirmOptions = {
 export type ConfirmRequest = Required<Omit<ConfirmOptions, "body">> & { id: number; body?: string; open: boolean; resolve(ok: boolean): void };
 
 export type ToastTone = "neutral" | "success" | "error";
+/** A button on a toast, such as Undo; pressing it also dismisses the toast. */
+export type ToastAction = { label: string; onPress(): void };
 /** `key` groups toasts that replace one another, such as a countdown. */
-export type Toast = { id: number; message: string; title?: string; tone: ToastTone; key?: string };
+export type Toast = { id: number; message: string; title?: string; tone: ToastTone; key?: string; action?: ToastAction };
 
 export type MenuRequest = { id: number; title?: string; actions: MenuAction[]; anchor: Anchor | null; open: boolean };
 
@@ -78,8 +80,8 @@ export function onToast(listener: ((shown: Toast) => void) | null) {
  * A toast with the `key` of one still showing replaces it in place (same slot, timer restarted), and the
  * same notice twice only restarts the first one's timer, so repeated taps never stack copies.
  */
-export function toast(message: string, options: { tone?: ToastTone; title?: string; durationMs?: number; key?: string } = {}) {
-  const entry = { message, title: options.title, tone: options.tone ?? "neutral", key: options.key } satisfies Omit<Toast, "id">;
+export function toast(message: string, options: { tone?: ToastTone; title?: string; durationMs?: number; key?: string; action?: ToastAction } = {}) {
+  const entry = { message, title: options.title, tone: options.tone ?? "neutral", key: options.key, action: options.action } satisfies Omit<Toast, "id">;
   const { toasts } = overlayStore.get();
   const existing = toasts.find((shown) => (entry.key ? shown.key === entry.key : !shown.key && shown.message === entry.message && shown.title === entry.title && shown.tone === entry.tone));
   const id = existing?.id ?? nextId++;

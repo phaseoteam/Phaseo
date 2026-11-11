@@ -109,4 +109,4 @@ curl https://api.phaseo.app/v1/chat/completions \
 
 ## الاستخدام والتسعير
 
-تضيف كل عملية جلب 1 إلى `usage.server_tool_use.web_fetch_requests`. يُحتسب الجلب المُدار عبر `server_tool_web_fetch_requests`. ويُحتسب الجلب الأصلي عبر `native_web_fetch_requests` حيث تحدده بطاقة سعر النموذج.
+يضيف كل جلب 1 إلى `usage.server_tool_use.web_fetch_requests`. يحاسب Phaseo كل جلب مُدار عبر Exa أو Parallel أو Firecrawl بمبلغ $0.001، ما لم تحدد بطاقة سعر النموذج سعرها الخاص لـ `server_tool_web_fetch_requests`؛ والجلب المباشر مجاني. وتتطلب عمليات الجلب عبر المحركات المدفوعة رصيدًا حتى عندما يكون النموذج مجانيًا. ويُحتسب الجلب الأصلي عبر `native_web_fetch_requests` حيث تحدده بطاقة سعر النموذج.

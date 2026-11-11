@@ -14,12 +14,6 @@ export const modelCardToolMeta = {
   ui: { resourceUri: MODEL_EXPLORER_URI, visibility: ["model", "app"] },
 };
 
-// models_list also backs the explorer's sidebar and thread entry points.
-export const modelExplorerToolMeta = {
-  ...modelCardToolMeta,
-  "openai/ui": { entrypoints: [{ type: "global" }, { type: "thread" }] },
-};
-
 export function registerModelExplorer(server: McpServer, env: Pick<PhaseoEnv, "PHASEO_WEB_BASE_URL">) {
   const webOrigin = new URL(env.PHASEO_WEB_BASE_URL).origin;
   const metadata = {

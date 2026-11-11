@@ -204,7 +204,7 @@ function errorMessage(error: unknown): string {
 	return String(error);
 }
 
-function responseForError(error: unknown, requestId?: string, workspaceId?: string): Response {
+export function responseForError(error: unknown, requestId?: string, workspaceId?: string): Response {
 	const message = errorMessage(error);
 	if (message.includes("realtime_billing_review_required")) {
 		return err("key_limit_exceeded", { reason: "realtime_billing_review_required",
@@ -224,6 +224,10 @@ function responseForError(error: unknown, requestId?: string, workspaceId?: stri
 			request_id: requestId,
 			workspace_id: workspaceId,
 		});
+	}
+	const budget = /(?:workspace|department)_(?:daily|weekly|monthly|lifetime)_cost_budget_reached/.exec(message);
+	if (budget) {
+		return err("key_limit_exceeded", { reason: budget[0], request_id: requestId, workspace_id: workspaceId });
 	}
 	if (message.includes("insufficient_funds") || message.includes("insufficient_balance")) {
 		return err("insufficient_funds", {
@@ -419,10 +423,10 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 		ok: true,
 		...auth.value,
 		userId: trustedUserId,
-	})) {
+	}, undefined, source)) {
 		return err("unauthorised", {
 			reason: "realtime_voice_feature_flag_disabled",
-			feature_gate: getRealtimeVoiceFeatureGateName(),
+			feature_gate: getRealtimeVoiceFeatureGateName(undefined, source),
 			request_id: auth.value.requestId,
 			workspace_id: auth.value.workspaceId,
 		});

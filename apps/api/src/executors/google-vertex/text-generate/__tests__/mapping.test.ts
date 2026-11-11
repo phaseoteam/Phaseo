@@ -176,7 +176,7 @@ describe("google-vertex route resolution", () => {
 		try { expect((await execute(buildExecuteArgs())).kind).toBe("completed"); }
 		finally { mock.restore(); teardownTestRuntime(); setupTestRuntime(); }
 	});
-	it.each(["gemini-4-argon", "google/gemini-4-argon", "gemini-3.1-flash-lite", "google/gemini-3.1-flash-lite"])("routes %s to global when the configured region is us-central1", async model => {
+	it.each(["gemini-4-argon", "google/gemini-4-argon", "gemini-4-carbon", "google/gemini-4-carbon", "gemini-3.1-flash-lite", "google/gemini-3.1-flash-lite"])("routes %s to global when the configured region is us-central1", async model => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({ GOOGLE_VERTEX_PROJECT: "test-project", GOOGLE_VERTEX_LOCATION: "us-central1", GOOGLE_VERTEX_ACCESS_TOKEN: "test-token" } as any);
 		const mock = installFetchMock([{
@@ -458,6 +458,15 @@ describe("google-vertex Gemini thinking levels", () => {
 		"never sends Argon a thinkingBudget (%j)",
 		async (reasoning, level) => {
 			const config = await thinkingConfigFor("gemini-4-argon", { ...reasoning });
+			expect(config.thinkingLevel).toBe(level);
+			expect(config).not.toHaveProperty("thinkingBudget");
+		},
+	);
+
+	it.each([[{ effort: "low" }, "LOW"], [{ effort: "medium" }, "MEDIUM"], [{ maxTokens: 4096 }, "HIGH"]] as const)(
+		"never sends Carbon a thinkingBudget (%j)",
+		async (reasoning, level) => {
+			const config = await thinkingConfigFor("gemini-4-carbon", { ...reasoning } as any);
 			expect(config.thinkingLevel).toBe(level);
 			expect(config).not.toHaveProperty("thinkingBudget");
 		},

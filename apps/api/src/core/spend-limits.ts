@@ -533,6 +533,35 @@ export function settleEnforcedSpend(args: {
 	}
 }
 
+/**
+ * Enforce mode: settles a failed request that was still charged (a stream the client left, a
+ * failure refunded to its checkpoints, a charge pending reconciliation). Its cost counts like any
+ * charge, but it is not a successful request (`requests: 0`, as the seed counts it). Its request
+ * slot stays held by its lease until the lease is returned or its hold ends. Without a row (and
+ * no charge to keep) the admission is released. Never throws.
+ */
+export function settleChargedFailureSpend(args: Parameters<typeof settleEnforcedSpend>[0]): void {
+	try {
+		if (!args.rowWritten) {
+			releaseSpend(args.admission);
+			return;
+		}
+		if (args.internal || !args.keyId || !KEY_ID.test(args.keyId)) return;
+		if (!args.admission && currentMode() !== "enforce") return;
+		recordSpend({
+			admission: args.admission,
+			workspaceId: args.workspaceId,
+			keyId: args.keyId,
+			billingRequestId: args.billingRequestId,
+			requestId: args.requestId,
+			costNanos: args.costNanos,
+			requests: 0,
+		});
+	} catch (error) {
+		console.warn("spend_limit_enforce_record_failed", { error: error instanceof Error ? error.message : String(error) });
+	}
+}
+
 /** Clears isolate lease state (tests only). */
 export function __resetSpendLimitsForTests(): void {
 	pools.clear();

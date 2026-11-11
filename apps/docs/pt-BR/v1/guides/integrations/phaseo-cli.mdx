@@ -97,7 +97,7 @@ Use `--model`, `--catalog all|default` ou `--dry-run` conforme precisar. `phaseo
 
 Na primeira vez que você configura um agente, a CLI abre uma página do painel da Phaseo e mostra o link dela. A página mostra o workspace, o nome da chave, o limite de gastos mensal de $100 e a expiração após 90 dias, e que a CLI da Phaseo pediu a chave. Escolha **Aprovar e criar chave** e a CLI recebe a chave uma única vez e conclui a configuração. Se você escolher **Recusar**, ou deixar a solicitação expirar após 10 minutos, nada é criado.
 
-Aprove conectado ao painel com a conta que você usou na CLI, como proprietário ou administrador do workspace e com seu segundo fator, se tiver configurado um. Um login da CLI não consegue criar chaves sozinho. Por SSH ou em CI, abra o link mostrado em qualquer dispositivo em que você esteja conectado.
+Aprove conectado ao painel com a conta que você usou na CLI, como proprietário ou administrador do workspace e com seu segundo fator, se tiver configurado um. Por SSH ou em CI, abra o link mostrado em qualquer dispositivo em que você esteja conectado.
 
 Para usar uma chave que você criou no painel, passe-a com `--key <key>`, ou com `--key-stdin` para que ela não fique no histórico do shell. A CLI verifica a chave e a guarda, e não a revoga quando você remove o agente.
 

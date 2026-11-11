@@ -1079,7 +1079,15 @@
 		"columnRate": "速率",
 		"rateRequests": "每分钟 {count} 个请求",
 		"rateTokens": "每分钟 {count} 个令牌",
-		"rateConcurrent": "同时 {count} 个"
+		"rateConcurrent": "同时 {count} 个",
+		"columnSpend": "支出",
+		"spend": {
+			"daily": "每天 {amount}",
+			"weekly": "每周 {amount}",
+			"monthly": "每月 {amount}"
+		},
+		"spendBlocks": "阻止",
+		"spendNotifies": "仅提醒"
 	},
 	"guardrailWizard": {
 		"title": "新建护栏",
@@ -1106,7 +1114,12 @@
 			"sensitiveInfoOff": "请至少开启一个敏感信息模式，或移除此项检查。",
 			"rateLimitEmpty": "至少设置一项限制才能继续。",
 			"rateLimitInvalid": "限制必须是大于 0 的整数。",
-			"rateCountingRequired": "选择限制的计算方式才能继续。"
+			"rateCountingRequired": "选择限制的计算方式才能继续。",
+			"spendLimitEmpty": "请设置上限以继续。",
+			"spendLimitInvalid": "请输入大于 $0.00 且最多 2 位小数的金额。",
+			"spendPeriodRequired": "请选择周期以继续。",
+			"spendActionRequired": "请选择达到上限时的操作以继续。",
+			"spendCountingRequired": "请选择上限的计数方式以继续。"
 		},
 		"nameLabel": "名称",
 		"namePlaceholder": "例如：外包人员策略",
@@ -1208,7 +1221,28 @@
 			"each_key": "每个密钥单独计算",
 			"each_end_user": "每个最终用户单独计算"
 		},
-		"summaryRateFailClosed": "无法检查限制时拒绝请求"
+		"summaryRateFailClosed": "无法检查限制时拒绝请求",
+		"templateSpendLimit": {
+			"name": "支出上限",
+			"body": "按天、周或月限制支出，并发送提醒。"
+		},
+		"sectionSpend": {
+			"name": "支出上限",
+			"body": "按天、周或月设置的美元上限。支出护栏没有其他检查。"
+		},
+		"summarySpendLimit": {
+			"daily": "每天最多 {amount}",
+			"weekly": "每周最多 {amount}",
+			"monthly": "每月最多 {amount}"
+		},
+		"summarySpendAction": {
+			"notify": "在 80% 和 100% 时提醒，不阻止",
+			"block": "达到上限时阻止 API 密钥请求"
+		},
+		"summarySpendCounting": {
+			"shared": "分配到的所有对象共享",
+			"each_key": "每个密钥单独计算"
+		}
 	},
 	"broadcastControls": {
 		"optional": "（可选）",
@@ -7198,7 +7232,7 @@
 			"period": "周期",
 			"createTitle": "添加部门预算",
 			"editTitle": "编辑部门预算",
-			"limitHelp": "部门在该周期内的支出达到此金额后，其 API 密钥请求会被拒绝，直到周期重置。批处理、实时和 OAuth 请求不会被阻止。如果预算检查短暂不可用，请求会被放行而不是被拒绝。达到约 80% 和 100% 时会通知所有者和管理员。",
+			"limitHelp": "部门在该周期内的支出达到此金额后，其 API 密钥请求会被拒绝，直到周期重置。如果预算检查短暂不可用，请求会被放行而不是被拒绝。达到约 80% 和 100% 时会通知所有者和管理员。",
 			"saved": "部门预算已保存",
 			"deleted": "部门预算已删除",
 			"deleteTitle": "删除此部门预算？",
@@ -8155,6 +8189,62 @@
 			"rateLimitEmpty": "至少设置一项限制才能继续。",
 			"rateLimitInvalid": "限制必须是大于 0 的整数。",
 			"rateCountingRequired": "选择限制的计算方式才能继续。"
+		}
+	},
+	"spendGuardrail": {
+		"title": "支出上限",
+		"description": "限制其覆盖的密钥每天、每周或每月的支出。",
+		"limitTitle": "上限",
+		"limitBody": "其覆盖的密钥在每个周期内最多可支出的金额，以美元计。",
+		"limitLabel": "金额",
+		"limitHelp": "最多 2 位小数，例如 25.00。",
+		"invalidLimit": "请输入大于 $0.00 且最多 2 位小数的金额。",
+		"periodTitle": "周期",
+		"periodBody": "周期为 UTC 自然日、从周一开始的周和自然月。没有默认值。",
+		"period": {
+			"daily": {
+				"name": "每天",
+				"body": "每天 00:00 UTC 重置。"
+			},
+			"weekly": {
+				"name": "每周",
+				"body": "每周一 00:00 UTC 重置。"
+			},
+			"monthly": {
+				"name": "每月",
+				"body": "每月 1 日 00:00 UTC 重置。"
+			}
+		},
+		"actionTitle": "达到上限时",
+		"actionBody": "支出达到上限时会发生什么。无论哪种方式，所有者和管理员都会在 80% 和 100% 时收到推送通知。没有默认值。",
+		"action": {
+			"notify": {
+				"name": "通知",
+				"body": "只发送提醒。请求继续通过。"
+			},
+			"block": {
+				"name": "阻止",
+				"body": "在周期重置前拒绝其覆盖的 API 密钥请求。批处理任务、实时会话和 OAuth 请求不会被阻止。"
+			}
+		},
+		"countingTitle": "计数方式",
+		"countingBody": "选择由谁共享上限。没有默认值。",
+		"counting": {
+			"shared": {
+				"name": "共享",
+				"body": "分配到的所有对象共用一个上限。分配给部门时，部门的所有密钥共享该上限。"
+			},
+			"each_key": {
+				"name": "每个密钥",
+				"body": "其覆盖的每个 API 密钥都有自己的上限。"
+			}
+		},
+		"issue": {
+			"spendLimitEmpty": "请设置上限以继续。",
+			"spendLimitInvalid": "请输入大于 $0.00 且最多 2 位小数的金额。",
+			"spendPeriodRequired": "请选择周期以继续。",
+			"spendActionRequired": "请选择达到上限时的操作以继续。",
+			"spendCountingRequired": "请选择上限的计数方式以继续。"
 		}
 	}
 }

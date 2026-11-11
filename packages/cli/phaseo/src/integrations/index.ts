@@ -284,5 +284,8 @@ export async function runIntegrationCommand(
 	if (command === "setup" && !json && adapter.setupInstructions) {
 		printSetupInstructions(adapter, options);
 	}
+	if (command === "setup" && !json) {
+		for (const tip of adapter.setupTips?.(options) ?? []) process.stdout.write(`${ui.dim(`Optional: ${tip}`)}\n`);
+	}
 	if (command === "remove" && !json) printRemoveInstructions(adapter, options);
 }

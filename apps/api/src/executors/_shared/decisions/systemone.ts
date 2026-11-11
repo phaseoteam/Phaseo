@@ -14,7 +14,9 @@ function isProbability(value: unknown): value is number {
 	return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1;
 }
 
-function validAnswer(answer: unknown, question: IRDecisionQuestion): boolean {
+function validAnswer(answer: unknown, question: IRDecisionQuestion, allowRefusal: boolean): boolean {
+	// A provider may decline a single question without failing the request; the other answers stay valid.
+	if (allowRefusal && isRecord(answer) && answer.type === "refusal") return true;
 	// A box answer's confidence is null when the model gives none (https://docs.typesafe.ai/api).
 	const nullBoxConfidence = question.type === "box" && isRecord(answer) && answer.confidence === null;
 	if (!isRecord(answer) || answer.type !== question.type ||
@@ -71,6 +73,12 @@ export async function completeSystemOne(
 	keyInfo: { source: "gateway" | "byok"; byokId: string | null },
 	mappedRequest?: string,
 	unwrapPayload: (payload: unknown) => unknown = payload => payload,
+	options: {
+		allowRefusal?: boolean;
+		// Lets a provider turn a 200 payload that carries no answers (for example a
+		// blocked input) into its own client error instead of an invalid-response 502.
+		rejectPayload?: (payload: unknown) => Response | null;
+	} = {},
 ): Promise<ExecutorResult> {
 	const ir = args.ir as IRDecisionsRequest;
 	const headersMs = args.upstreamTiming?.timingFor(upstream)?.headersMs;
@@ -104,12 +112,14 @@ export async function completeSystemOne(
 	}
 	let payload: unknown;
 	try { payload = JSON.parse(rawBody); } catch { return malformed(rawBody || null); }
+	const rejection = options.rejectPayload?.(payload);
+	if (rejection) return { ...common, upstream: rejection, bill, rawResponse: payload };
 	payload = unwrapPayload(payload);
 	if (!isRecord(payload) || !isRecord(payload.answers) || !isRecord(payload.usage)) return malformed(payload);
 	const answers = payload.answers;
 	const questionIds = Object.keys(ir.questions);
 	if (Object.keys(answers).length !== questionIds.length || questionIds.some(id =>
-		!Object.prototype.hasOwnProperty.call(answers, id) || !validAnswer(answers[id], ir.questions[id]),
+		!Object.prototype.hasOwnProperty.call(answers, id) || !validAnswer(answers[id], ir.questions[id], options.allowRefusal === true),
 	)) return malformed(payload);
 	const inputTokens = payload.usage.input_tokens;
 	const outputTokens = payload.usage.output_tokens;

@@ -19,7 +19,6 @@ import {
     requestZeroDataRetention,
     resolveGatewayIoLoggingPolicy,
 } from "./io-logging";
-import { persistGatewayUpstreamRequests } from "./upstream-requests";
 import { protectStealthAuditArgs } from "./stealth-identity";
 import { buildRoutingObservability, toProviderModelId } from "./routing-observability";
 import { archiveRoutingMetadata } from "./routing-archive";
@@ -549,6 +548,8 @@ function buildSupaRow(args: {
     outputSpeedTps?: number | null; tpotMs?: number | null;
     itlMs?: number | null; phaseoOverheadMs?: number | null;
     usage?: any | null; costNanos?: number | null; currency?: string | null;
+    /** The bill a delivered request meant to charge while its charge is pending reconciliation. */
+    expectedCostNanos?: number | null;
     pricingLines?: any[] | null; throughput?: number | null;
     finishReason?: string | null;
     requestPayload?: unknown;
@@ -626,6 +627,7 @@ function buildSupaRow(args: {
         usage: args.usage ?? {},
         ...usageColumns,
         ...(args.costNanos != null ? { cost_nanos: Math.round(args.costNanos as number) } : {}),
+        ...(args.expectedCostNanos != null ? { expected_cost_nanos: Math.max(0, Math.round(args.expectedCostNanos)) } : {}),
         currency: args.currency ?? null,
         pricing_lines: Array.isArray(args.pricingLines) ? args.pricingLines : [],
         key_id: args.keyId ?? null,
@@ -749,6 +751,8 @@ export async function auditSuccess(input: {
     internalLatencyMs?: number | null;
     endToEndMs?: number | null;
     usagePriced: any; totalCents: number; totalNanos?: number | null; currency: "USD" | string;
+    /** The priced bill of a success pending reconciliation (rounds that could not be priced). */
+    expectedCostNanos?: number | null;
     finishReason?: string | null;
     statusCode: number; throughput?: number | null; keyId?: string | null;
     /** Zero data retention applies to the request, so no content is stored: no I/O log. */
@@ -761,6 +765,16 @@ export async function auditSuccess(input: {
     serverToolTrace?: unknown;
 	lifecycleEvents?: unknown;
     detailMetadata?: Record<string, unknown> | null;
+    /**
+     * A delivered request whose charge did not go through: the row records what the database holds
+     * (costNanos, null when unreadable) and the bill it meant to charge (expected_cost_nanos).
+     */
+    pendingCharge?: { costNanos: number | null; expectedCostNanos: number } | null;
+    /**
+     * Called once the gateway_requests row is committed, before the secondary writes (the V2
+     * request fact, the I/O log) that can still fail: from then on the row is the request's record.
+     */
+    onPrimaryRowWritten?: () => void;
     // Wide event enrichment
     teamEnrichment?: any | null;
     keyEnrichment?: any | null;
@@ -846,7 +860,11 @@ export async function auditSuccess(input: {
             usage: strippedUsage ?? {},
             requestPayload: args.requestPayload,
             gatewayResponse: args.gatewayResponse,
-            costNanos: args.totalNanos ?? (Number.isFinite(args.totalCents) ? Math.round((args.totalCents as number) * 1e7) : null),
+            costNanos: args.pendingCharge
+                ? args.pendingCharge.costNanos
+                : args.totalNanos ?? (Number.isFinite(args.totalCents) ? Math.round((args.totalCents as number) * 1e7) : null),
+            // A charge pending reconciliation, or rounds that could not be priced: the bill it means to charge.
+            expectedCostNanos: args.pendingCharge?.expectedCostNanos ?? args.expectedCostNanos ?? null,
             currency: args.currency,
             pricingLines,
             throughput: args.throughput ?? null,
@@ -864,36 +882,11 @@ export async function auditSuccess(input: {
 
         let supabaseError: Error | null = null;
         try {
-            const insertedRow = await retryWithBackoff(
+            await retryWithBackoff(
                 () => insertGatewayRequest(row),
                 "supabase_audit_success_insert",
             );
-            await persistGatewayUpstreamRequests({
-                insertedRow,
-                requestId: args.requestId,
-                workspaceId: args.workspaceId,
-                appId,
-                keyId: args.keyId ?? null,
-                endpoint: args.endpoint,
-                modelId: args.model,
-                provider: args.provider,
-                providerApiModelId: args.providerApiModelId ?? null,
-                providerModelSlug: args.providerModelSlug ?? null,
-                providerAttempts: args.providerAttempts ?? null,
-                statusCode: args.statusCode,
-                success: true,
-                nativeResponseId: args.nativeResponseId ?? null,
-                finishReason: args.finishReason ?? null,
-                usage: strippedUsage,
-                totalNanos: args.totalNanos ?? (
-                    Number.isFinite(args.totalCents) ? Math.round(args.totalCents * 1e7) : null
-                ),
-                currency: args.currency,
-                latencyMs: args.latencyMs ?? null,
-                generationMs: args.generationMs ?? null,
-                totalMs: args.endToEndMs ?? args.latencyMs ?? null,
-                context: "audit_success",
-            });
+            input.onPrimaryRowWritten?.();
             let v2PersistenceError: Error | null = null;
             try {
                 await retryWithBackoff(() => upsertV2RequestFact({
@@ -935,7 +928,7 @@ export async function auditSuccess(input: {
                     nativeResponseId: args.nativeResponseId ?? null,
                     userAgent: args.userAgent ?? null,
                     clientSource: args.clientSource ?? null,
-                    costNanos: args.totalNanos ?? (
+                    costNanos: args.pendingCharge ? args.pendingCharge.costNanos : args.totalNanos ?? (
                         Number.isFinite(args.totalCents)
                             ? Math.round(args.totalCents * 1e7)
                             : null
@@ -1077,6 +1070,10 @@ type AuditFailureBefore = {
 };
 type AuditFailureExecute = {
     nativeResponseId?: string | null;
+    /** What the failed request was still charged; null or absent when it was not charged. */
+    costNanos?: number | null;
+    /** The bill it meant to charge, while the charge is pending reconciliation (expected_cost_nanos). */
+    expectedCostNanos?: number | null;
     stage: "execute";
     requestId: string;
     workspaceId: string;
@@ -1197,29 +1194,10 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
             let supabaseError: Error | null = null;
             if (args.workspaceId) {
                 try {
-                    const insertedRow = await retryWithBackoff(
+                    await retryWithBackoff(
                         () => insertGatewayRequest(row),
                         "supabase_audit_failure_before_insert",
                     );
-                    await persistGatewayUpstreamRequests({
-                        insertedRow,
-                        requestId: args.requestId,
-                        workspaceId: args.workspaceId,
-                        appId: resolvedAppId,
-                        keyId: args.keyId ?? null,
-                        endpoint: args.endpoint,
-                        modelId: args.requestedModel ?? args.model ?? "unknown",
-                        provider: args.provider ?? null,
-                        providerApiModelId: args.providerApiModelId ?? null,
-                        providerModelSlug: args.providerModelSlug ?? null,
-                        providerAttempts: args.providerAttempts ?? null,
-                        statusCode: args.statusCode,
-                        success: false,
-                        totalNanos: 0,
-                        latencyMs: args.latencyMs ?? null,
-                        totalMs: args.latencyMs ?? null,
-                        context: "audit_failure_before",
-                    });
                     let v2PersistenceError: Error | null = null;
                     try {
                         await retryWithBackoff(() => upsertV2RequestFact({
@@ -1347,6 +1325,8 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
             latencyMs: args.latencyMs ?? null,
             generationMs: args.generationMs ?? null,
             usage: args.usage ?? {},
+            costNanos: args.costNanos ?? null,
+            ...(args.expectedCostNanos != null ? { expectedCostNanos: args.expectedCostNanos } : {}),
             requestPayload: args.requestPayload,
             gatewayResponse: args.gatewayResponse,
             currency: args.currency ?? null,
@@ -1366,32 +1346,10 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
         let supabaseError: Error | null = null;
         if (args.workspaceId) {
             try {
-                const insertedRow = await retryWithBackoff(
+                await retryWithBackoff(
                     () => insertGatewayRequest(row),
                     "supabase_audit_failure_execute_insert",
                 );
-                await persistGatewayUpstreamRequests({
-                    insertedRow,
-                    requestId: args.requestId,
-                    workspaceId: args.workspaceId,
-                    appId: resolvedAppId,
-                    keyId: args.keyId ?? null,
-                    endpoint: args.endpoint,
-                    modelId: args.model,
-                    provider: args.provider ?? null,
-                    providerApiModelId: args.providerApiModelId ?? null,
-                    providerModelSlug: args.providerModelSlug ?? null,
-                    providerAttempts: args.providerAttempts ?? null,
-                    statusCode: args.statusCode,
-                    success: false,
-                    usage: args.usage ?? {},
-                    totalNanos: 0,
-                    currency: args.currency ?? null,
-                    latencyMs: args.latencyMs ?? null,
-                    generationMs: args.generationMs ?? null,
-                    totalMs: args.latencyMs ?? null,
-                    context: "audit_failure_execute",
-                });
                 let v2PersistenceError: Error | null = null;
                 try {
                     await retryWithBackoff(() => upsertV2RequestFact({
@@ -1425,6 +1383,7 @@ export async function auditFailure(input: AuditFailureBefore | AuditFailureExecu
                         authMethod: args.authMethod ?? null,
                         userAgent: args.userAgent ?? null,
                         clientSource: args.clientSource ?? null,
+                        costNanos: args.costNanos ?? null,
                         currency: args.currency ?? null,
                         toolCallCount: readToolCallCount(args.usage, null),
                         // A failed request's tool calls were never checked.

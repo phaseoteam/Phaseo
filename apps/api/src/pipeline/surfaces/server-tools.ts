@@ -456,6 +456,8 @@ export type ServerToolExecutionMetrics = {
 	webSearchResults: number;
 	webSearchExtraResults: number;
 	webFetchRequests: number;
+	/** Fetches that cost Phaseo money; direct fetches are free. Defaults to webFetchRequests. */
+	billableWebFetchRequests?: number;
 	advisorRequests: number;
 	imageGenerationRequests: number;
 	applyPatchRequests: number;
@@ -2619,10 +2621,28 @@ async function executeFirecrawlFetchToolCall(args: {
 	}
 }
 
+/**
+ * A managed search or fetch on a paid engine runs on Phaseo's key and is billed to the
+ * workspace, so it needs the same wallet credit as a paid model; a free main model does not
+ * cover it.
+ */
+function insufficientCreditsToolResult(callId: string, tool: "web search" | "web fetch", engine: string): IRToolResult {
+	return {
+		toolCallId: callId,
+		isError: true,
+		content: JSON.stringify({
+			error: "insufficient_credits",
+			engine,
+			message: `Add credits to use gateway ${tool} with engine "${engine}".`,
+		}),
+	};
+}
+
 async function executeWebFetchToolCall(
 	call: { id: string; arguments: string },
 	config: ServerToolConfig,
-): Promise<{ toolResult: IRToolResult; webFetchRequests: number }> {
+	paidToolsAllowed = true,
+): Promise<{ toolResult: IRToolResult; webFetchRequests: number; billableWebFetchRequests?: number }> {
 	const args = parseJsonObject(call.arguments);
 	const url = parseWebFetchUrl(args);
 	if (!url) {
@@ -2669,6 +2689,9 @@ async function executeWebFetchToolCall(
 			},
 			webFetchRequests: 0,
 		};
+	}
+	if (!paidToolsAllowed && (engine === "exa" || engine === "parallel" || engine === "firecrawl")) {
+		return { toolResult: insufficientCreditsToolResult(call.id, "web fetch", engine), webFetchRequests: 0 };
 	}
 	if (engine === "exa") {
 		const searchConfig = resolveExaSearchConfig();
@@ -2852,6 +2875,8 @@ async function executeWebFetchToolCall(
 				}),
 			},
 			webFetchRequests: 1,
+			// A direct fetch runs on the Worker and costs Phaseo nothing.
+			billableWebFetchRequests: 0,
 		};
 	} catch (error) {
 		return {
@@ -2872,6 +2897,7 @@ async function executeWebSearchToolCall(
 	call: { id: string; arguments: string },
 	config: ServerToolConfig,
 	remainingResults: number,
+	paidToolsAllowed = true,
 ): Promise<{
 	toolResult: IRToolResult;
 	webFetchRequests: number;
@@ -2929,6 +2955,16 @@ async function executeWebSearchToolCall(
 			webFetchRequests: 0,
 			webSearchResults: 0,
 			webSearchExtraResults: 0,
+		};
+	}
+	// TinyFish Search is free on its published plans; every other engine is paid.
+	if (!paidToolsAllowed && engine !== "tinyfish") {
+		return {
+			toolResult: insufficientCreditsToolResult(call.id, "web search", engine),
+			webFetchRequests: 0,
+			webSearchResults: 0,
+			webSearchExtraResults: 0,
+			billableWebSearchRequests: 0,
 		};
 	}
 
@@ -3258,6 +3294,8 @@ export async function buildServerToolContinuation(
 		executeImageGeneration?: ImageGenerationExecutor;
 		searchModels?: ModelSearchExecutor;
 		remainingToolCalls?: number;
+		/** False when the wallet cannot pay for paid managed tools (Exa, Parallel, Firecrawl, Perplexity). */
+		paidToolsAllowed?: boolean;
 		signal?: AbortSignal;
 		onToolStart?: (call: IRToolCall) => void;
 		onToolEnd?: (call: IRToolCall, result: IRToolResult | undefined) => void;
@@ -3369,13 +3407,16 @@ export async function buildServerToolContinuation(
 				{ id: call.id, arguments: call.arguments },
 				config,
 				remainingSearchResults,
+				options?.paidToolsAllowed !== false,
 			);
 			toolResults.push(executed.toolResult);
 			const webSearchRequestsBefore = usage.webSearchRequests;
 			usage.webSearchRequests += 1;
-			if (typeof executed.billableWebSearchRequests === "number") {
+			// A search that failed or never reached a provider costs Phaseo nothing.
+			const billableSearches = executed.toolResult.isError ? 0 : executed.billableWebSearchRequests;
+			if (typeof billableSearches === "number") {
 				usage.billableWebSearchRequests =
-					(usage.billableWebSearchRequests ?? webSearchRequestsBefore) + Math.max(0, executed.billableWebSearchRequests);
+					(usage.billableWebSearchRequests ?? webSearchRequestsBefore) + Math.max(0, billableSearches);
 			} else if (usage.billableWebSearchRequests !== undefined) {
 				usage.billableWebSearchRequests += 1;
 			}
@@ -3396,9 +3437,17 @@ export async function buildServerToolContinuation(
 			const executed = await executeWebFetchToolCall(
 				{ id: call.id, arguments: call.arguments },
 				config,
+				options?.paidToolsAllowed !== false,
 			);
 			toolResults.push(executed.toolResult);
+			const webFetchRequestsBefore = usage.webFetchRequests;
 			usage.webFetchRequests += Math.max(0, executed.webFetchRequests);
+			if (typeof executed.billableWebFetchRequests === "number") {
+				usage.billableWebFetchRequests =
+					(usage.billableWebFetchRequests ?? webFetchRequestsBefore) + Math.max(0, executed.billableWebFetchRequests);
+			} else if (usage.billableWebFetchRequests !== undefined) {
+				usage.billableWebFetchRequests += Math.max(0, executed.webFetchRequests);
+			}
 			continue;
 		}
 
@@ -3899,7 +3948,7 @@ export function attachServerToolUsageToRawUsage(
 	base.server_tool_web_search_extra_results =
 		(Number(base.server_tool_web_search_extra_results ?? 0) || 0) + Math.max(0, args.webSearchExtraResults);
 	base.server_tool_web_fetch_requests =
-		(Number(base.server_tool_web_fetch_requests ?? 0) || 0) + Math.max(0, args.webFetchRequests);
+		(Number(base.server_tool_web_fetch_requests ?? 0) || 0) + Math.max(0, args.billableWebFetchRequests ?? args.webFetchRequests);
 	base.server_tool_advisor_requests =
 		(Number(base.server_tool_advisor_requests ?? 0) || 0) + Math.max(0, args.advisorRequests);
 	base.server_tool_image_generation_requests =

@@ -69,4 +69,4 @@ If the call can't run, the model gets `subagent_invalid_request` (no task), `sub
 
 ## Usage and pricing
 
-Each call adds 1 to `usage.server_tool_use.subagent_requests` and can be billed with `server_tool_subagent_requests`. The worker's tokens are added to the request's usage and priced at the worker model's rates. To get a review rather than delegate work, use [Advisor](./advisor).
+Each call adds 1 to `usage.server_tool_use.subagent_requests` and can be billed with `server_tool_subagent_requests`. The worker's tokens are billed at the worker model's own rates, as a separate line on the request's bill; they are not added to the calling model's token counts. A paid worker model needs credits even when the calling model is free. To get a review rather than delegate work, use [Advisor](./advisor).

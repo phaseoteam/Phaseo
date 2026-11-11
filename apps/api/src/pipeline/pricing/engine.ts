@@ -4,7 +4,7 @@
 
 import { parseUsdToNanos, formatUsdFromNanosExact, formatUsdPriceExact, nanosToCentsCeil, priceLineNanosExact } from "./money";
 import { canonicalPricingPlan, normalizePriceCardPlans, requiresExplicitServiceTier, resolveBasePricingPlan } from "./service-tiers";
-import { assignImplicitCacheRead, cacheCountsReportedOutsideInput, cacheHitIsExplicit, nativeToolFallbackRule, thinkingModeBillsAnswer } from "./meter-semantics";
+import { assignImplicitCacheRead, cacheCountsReportedOutsideInput, cacheHitIsExplicit, managedServerToolFallbackRule, nativeToolFallbackRule, thinkingModeBillsAnswer } from "./meter-semantics";
 import { matchesConditions, shallowMerge, evaluateConditions } from "./conditions";
 import type { PriceCard, PriceRule, PricingBreakdownLine, PricingDimensionKey, PricingResult, PricingTimestampBasis } from "./types";
 import { pickFirstFiniteNumber, resolveCanonicalTokenUsage, resolveRequestCountUsage } from "@core/usage-normalization";
@@ -1071,7 +1071,7 @@ export function computeBillSummary(
             }
         }
         if (!candidates.length) {
-            const nativeFallback = nativeToolFallbackRule(card, dim);
+            const nativeFallback = nativeToolFallbackRule(card, dim) ?? managedServerToolFallbackRule(dim);
             if (nativeFallback) {
                 candidates = [nativeFallback];
                 resolvedPlan = nativeFallback.pricing_plan;

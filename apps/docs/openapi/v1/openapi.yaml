@@ -462,11 +462,14 @@ paths:
       tags:
         - Gateway
       operationId: listTeamModels
-      summary: List team-scoped gateway models
+      summary: List the models this key may use
       description: >-
-        Returns team-scoped gateway model listings. Defaults to currently
-        publicly routable models; use availability=all to include non-routable
-        availability records.
+        Returns the /models listing with the caller's guardrails applied: models
+        a rule blocks, and models with no permitted provider, are left out, and
+        each model keeps only the offers its requests may be routed to, with its
+        prices, capabilities and availability from those. The access object says
+        what the rules left out. Defaults to currently publicly routable models;
+        use availability=all to include non-routable availability records.
       parameters:
         - name: endpoints
           in: query
@@ -1205,8 +1208,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: Phaseo model id, for example `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: Phaseo model id. Same as `model`.
+                  provider_model:
+                    type: string
+                    description: The provider's own name for the model, for example `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
@@ -1408,8 +1416,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: Phaseo model id, for example `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: Phaseo model id. Same as `model`.
+                  provider_model:
+                    type: string
+                    description: The provider's own name for the model, for example `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
@@ -1626,8 +1639,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: Phaseo model id, for example `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: Phaseo model id. Same as `model`.
+                  provider_model:
+                    type: string
+                    description: The provider's own name for the model, for example `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
@@ -5098,8 +5116,8 @@ paths:
       summary: List department budgets
       description: >-
         Lists department spend budgets with each department's spend so far in
-        the current UTC period. Spend comes from an hourly rollup, so it can lag
-        by up to an hour.
+        the current UTC period. Spend is counted the way department admission
+        counts it, so it is current.
       parameters:
         - name: department_id
           in: query
@@ -5130,8 +5148,7 @@ paths:
       description: >-
         Creates a daily, weekly, or monthly spend budget for one department.
         Once the department has used it, API-key requests that count toward the
-        department return 429 key_limit_exceeded until the budget resets. Batch
-        jobs, realtime sessions and OAuth requests are not blocked. If the budget
+        department return 429 key_limit_exceeded until the budget resets. If the budget
         check is briefly unavailable, requests are allowed rather than refused.
         Owners and admins get a mobile push at about 80% and at 100%.
       requestBody:
@@ -21401,7 +21418,7 @@ components:
         retention_days:
           type: integer
           minimum: 90
-          maximum: 365
+          maximum: 90
         include_provider_payloads:
           type: boolean
         billing_status:
@@ -21433,7 +21450,7 @@ components:
         retention_days:
           type: integer
           minimum: 90
-          maximum: 365
+          maximum: 90
         include_provider_payloads:
           type: boolean
       minProperties: 1
@@ -22183,6 +22200,50 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Model'
+        access:
+          $ref: '#/components/schemas/GatewayModelAccess'
+      additionalProperties: false
+    GatewayModelAccess:
+      type: object
+      description: >-
+        Returned by /models/me only: what the caller's guardrails left out of the
+        listing, before search and paging.
+      required:
+        - restricted
+        - hidden_model_count
+        - hidden_models
+        - limited_model_count
+      properties:
+        restricted:
+          type: boolean
+          description: Whether any rule restricts models or providers for this key.
+          example: true
+        hidden_model_count:
+          type: integer
+          minimum: 0
+          description: How many models the rules leave out.
+          example: 12
+        hidden_models:
+          type: array
+          description: The models left out, with their names (up to 500).
+          items:
+            type: object
+            required:
+              - id
+              - name
+            properties:
+              id:
+                type: string
+                example: deepseek/deepseek-v4
+              name:
+                type: string
+                example: DeepSeek V4
+            additionalProperties: false
+        limited_model_count:
+          type: integer
+          minimum: 0
+          description: How many listed models lost some of their providers to the rules.
+          example: 3
       additionalProperties: false
     ModelEndpointCapability:
       type: object

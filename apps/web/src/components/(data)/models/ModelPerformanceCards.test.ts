@@ -76,21 +76,31 @@ describe("selectMetricData", () => {
 		).toBe(cardData);
 	});
 
-	it("falls back to provider data when percentile rows lack the metric", () => {
+	it("stays on percentile data when percentile rows lack the metric", () => {
 		const percentileData = [
 			{ ...point("percentile-50", null), cachedInputPct: 60 },
 		];
 		const providerData = [point("poolside", 420)];
 
+		for (const detailed of [true, false]) {
+			expect(
+				selectMetricData(
+					"endToEnd",
+					detailed,
+					percentileData,
+					percentileData,
+					true,
+					providerData,
+				),
+			).toBe(percentileData);
+		}
+	});
+
+	it("uses provider data when there is no percentile series", () => {
+		const providerData = [point("poolside", 420)];
+
 		expect(
-			selectMetricData(
-				"endToEnd",
-				true,
-				percentileData,
-				percentileData,
-				true,
-				providerData,
-			),
+			selectMetricData("latency", false, providerData, providerData, false, providerData),
 		).toBe(providerData);
 	});
 });

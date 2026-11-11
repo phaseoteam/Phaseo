@@ -39,6 +39,9 @@ export function validateProviderDocsCompliance(args: {
 			request_id: args.requestId, workspace_id: args.workspaceId,
 		}) };
 	}
+	const reasoningCheck = excludeAlwaysReasoningProviders(args);
+	if (reasoningCheck.ok === false) return reasoningCheck;
+	args = { ...args, providers: reasoningCheck.providers };
 	const allowedTools = unmatchedAllowedTools(args.endpoint, args.body);
 	if (allowedTools.length > 0) {
 		// Only OpenAI receives `allowed_tools` itself. Every other provider is sent just
@@ -53,6 +56,36 @@ export function validateProviderDocsCompliance(args: {
 		}) };
 	}
 	return { ok: true, providers: args.providers, body: args.body };
+}
+
+// Providers whose models always reason and have no way to turn it off. A request
+// that disables reasoning skips them rather than being run with reasoning anyway.
+// lg: K-EXAONE forces enable_thinking on (https://docs.exaone.ai/en/docs/k-exaone-2.5).
+const ALWAYS_REASONING_PROVIDERS: Record<string, string> = {
+	lg: "K-EXAONE always reasons and cannot turn reasoning off; choose reasoning effort low, high or max instead.",
+};
+
+function excludeAlwaysReasoningProviders(args: {
+	endpoint: Endpoint;
+	body: any;
+	requestId: string;
+	workspaceId: string;
+	providers: ProviderCandidate[];
+}): { ok: true; providers: ProviderCandidate[] } | { ok: false; response: Response } {
+	if (!["messages", "responses", "chat.completions"].includes(args.endpoint)) return { ok: true, providers: args.providers };
+	if (!args.providers.some(provider => provider.providerId in ALWAYS_REASONING_PROVIDERS)) return { ok: true, providers: args.providers };
+	const protocol = args.endpoint === "messages" ? "anthropic.messages" : args.endpoint === "responses" ? "openai.responses" : "openai.chat.completions";
+	const ir = decodeProtocol(protocol, args.body);
+	if (ir.reasoning?.enabled !== false && ir.reasoning?.effort !== "none") return { ok: true, providers: args.providers };
+	const providers = args.providers.filter(provider => !(provider.providerId in ALWAYS_REASONING_PROVIDERS));
+	if (providers.length) return { ok: true, providers };
+	const excluded = args.providers.map(provider => provider.providerId);
+	const message = ALWAYS_REASONING_PROVIDERS[excluded[0]];
+	return { ok: false, response: err("validation_error", {
+		description: message,
+		details: excluded.map(provider => ({ path: ["reasoning"], message: ALWAYS_REASONING_PROVIDERS[provider], keyword: "unsupported_model_option", params: { provider } })),
+		request_id: args.requestId, workspace_id: args.workspaceId,
+	}) };
 }
 
 /** `allowed_tools` entries that name no tool in the request's `tools`. */

@@ -37,8 +37,11 @@ import {
 } from "@/components/(data)/model/pricing/ProviderInspectorSheet";
 import {
 	HoverCard,
+	HoverCardBody,
 	HoverCardContent,
+	HoverCardTitle,
 	HoverCardTrigger,
+	joinMeta,
 } from "@/components/ui/hover-card";
 import {
 	Table,
@@ -48,7 +51,9 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
-import { formatRelativeToNow } from "@/lib/formatRelative";
+import { TimestampHoverCard } from "@/components/display/TimestampHoverCard";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import { formatUsd } from "@phaseo/app-kit/format";
 import { registerUsageViewRefresher } from "@/lib/gateway/usage/refreshBus";
 import { usePrivateUsageRefresh } from "./PrivateUsageQuery";
 import { formatErrorListSummary } from "@/lib/gateway/usage/errorListSummary";
@@ -61,7 +66,6 @@ import {
 	RefreshCw,
 } from "lucide-react";
 import {
-	formatDateTime,
 	formatWordyDateTime,
 	formatWordyRange,
 	shortenIdentifier,
@@ -235,130 +239,82 @@ function RequestStatusBadge({
 
 function TimeHover({
 	value,
-	userTimeZone,
-	relativeNowMs,
 	triggerClassName,
+	asChild = false,
+	children,
 }: {
 	value: string | null | undefined;
-	userTimeZone: string;
-	relativeNowMs: number | null;
 	triggerClassName?: string;
+	/** With asChild, children is the trigger element (such as a button with its own tap action). */
+	asChild?: boolean;
+	children?: React.ReactElement;
 }) {
 	const locale = useLocale();
-	const tTime = useTranslations("Common.ui.time");
 	if (!value) return <>-</>;
+	const label = formatWordyDateTime(value, { includeTime: true, locale });
 
-	const date = new Date(value);
-	const unixSeconds = Math.floor(date.getTime() / 1000);
-
+	if (asChild && children) {
+		return (
+			<TimestampHoverCard value={value} asChild openOnTap={false}>
+				{children}
+			</TimestampHoverCard>
+		);
+	}
 	return (
-		<HoverCard>
-			<HoverCardTrigger asChild>
-				<span
-					className={cn(
-						"cursor-help underline underline-offset-2 decoration-dotted",
-						triggerClassName,
-					)}
-				>
-					{formatWordyDateTime(value, { includeTime: true, locale })}
-				</span>
-			</HoverCardTrigger>
-			<HoverCardContent align="start" className="w-auto">
-				<div className="grid gap-2 text-xs">
-					<div className="grid grid-cols-[120px_1fr] gap-2">
-						<div className="text-muted-foreground">{userTimeZone}</div>
-						<div className="font-mono">{formatDateTime(date, userTimeZone, locale)}</div>
-					</div>
-					<div className="grid grid-cols-[120px_1fr] gap-2">
-						<div className="text-muted-foreground">UTC</div>
-						<div className="font-mono">{formatDateTime(date, "UTC", locale)}</div>
-					</div>
-					<div className="grid grid-cols-[120px_1fr] gap-2">
-						<div className="text-muted-foreground">{tTime("relative")}</div>
-						<div className="font-mono">
-							{relativeNowMs ? formatRelativeToNow(date, relativeNowMs, locale) : "-"}
-						</div>
-					</div>
-					<div className="grid grid-cols-[120px_1fr] gap-2">
-						<div className="text-muted-foreground">{tTime("timestamp")}</div>
-						<div className="font-mono">{unixSeconds}</div>
-					</div>
-				</div>
-			</HoverCardContent>
-		</HoverCard>
+		<TimestampHoverCard value={value} triggerClassName={triggerClassName}>
+			{label}
+		</TimestampHoverCard>
 	);
 }
 
 function PeriodHover({
 	start,
 	end,
-	userTimeZone,
-	relativeNowMs,
+	session,
 	triggerClassName,
 }: {
 	start: string | null | undefined;
 	end: string | null | undefined;
-	userTimeZone: string;
-	relativeNowMs: number | null;
+	/** Adds the session's request count and total cost to the card. */
+	session?: Pick<SessionRollupRow, "request_count" | "total_cost_nanos">;
 	triggerClassName?: string;
 }) {
 	const locale = useLocale();
-	const tTime = useTranslations("Common.ui.time");
+	const tCards = useTranslations("Common.ui.hoverCards");
+	const format = useDisplayFormatters();
 	if (!start || !end) return <>-</>;
 
 	return (
-		<HoverCard>
-			<HoverCardTrigger asChild>
-				<span
-					className={cn(
-						"cursor-help underline underline-offset-2 decoration-dotted",
-						triggerClassName,
-					)}
-				>
-					{formatWordyRange(start, end, locale)}
-				</span>
-			</HoverCardTrigger>
-			<HoverCardContent align="start" className="w-auto">
-				<div className="grid gap-3 text-xs">
-					<div className="space-y-1">
-						<div className="font-semibold text-foreground">{tTime("start")}</div>
-						<div className="grid grid-cols-[120px_1fr] gap-2">
-							<div className="text-muted-foreground">{userTimeZone}</div>
-							<div className="font-mono">
-								{formatDateTime(new Date(start), userTimeZone, locale)}
-							</div>
-						</div>
-						<div className="grid grid-cols-[120px_1fr] gap-2">
-							<div className="text-muted-foreground">UTC</div>
-							<div className="font-mono">{formatDateTime(new Date(start), "UTC", locale)}</div>
-						</div>
-						<div className="grid grid-cols-[120px_1fr] gap-2">
-							<div className="text-muted-foreground">{tTime("relative")}</div>
-							<div className="font-mono">
-								{relativeNowMs ? formatRelativeToNow(new Date(start), relativeNowMs, locale) : "-"}
-							</div>
-						</div>
-					</div>
-					<div className="space-y-1">
-						<div className="font-semibold text-foreground">{tTime("end")}</div>
-						<div className="grid grid-cols-[120px_1fr] gap-2">
-							<div className="text-muted-foreground">{userTimeZone}</div>
-							<div className="font-mono">{formatDateTime(new Date(end), userTimeZone, locale)}</div>
-						</div>
-						<div className="grid grid-cols-[120px_1fr] gap-2">
-							<div className="text-muted-foreground">UTC</div>
-							<div className="font-mono">{formatDateTime(new Date(end), "UTC", locale)}</div>
-						</div>
-						<div className="grid grid-cols-[120px_1fr] gap-2">
-							<div className="text-muted-foreground">{tTime("relative")}</div>
-							<div className="font-mono">
-								{relativeNowMs ? formatRelativeToNow(new Date(end), relativeNowMs, locale) : "-"}
-							</div>
-						</div>
-					</div>
-				</div>
-			</HoverCardContent>
-		</HoverCard>
+		<TimestampHoverCard
+			variant="period"
+			start={start}
+			end={end}
+			triggerClassName={triggerClassName}
+			extraRows={
+				session
+					? [
+							{
+								key: "requests",
+								label: tCards("requests"),
+								value: <span className="tabular-nums">{format.number(session.request_count)}</span>,
+							},
+							{
+								key: "cost",
+								label: tCards("cost"),
+								value: (
+									<span className="tabular-nums">
+										{formatUsd(
+											session.total_cost_nanos == null ? null : session.total_cost_nanos / 1e9,
+										)}
+									</span>
+								),
+							},
+						]
+					: undefined
+			}
+		>
+			{formatWordyRange(start, end, locale)}
+		</TimestampHoverCard>
 	);
 }
 
@@ -372,11 +328,18 @@ function SessionModelsCell({
 	maxVisible?: number;
 }) {
 	const t = useTranslations("SettingsUI");
-	const s = (key: string) => t(settingsStringKey(key) as never);
 	const m = (key: string, values: Record<string, string | number>) =>
 		t(settingsStringKey(key) as never, values as never);
+	const format = useDisplayFormatters();
 	const visibleModels = modelCounts.slice(0, maxVisible);
 	const hiddenModels = modelCounts.slice(maxVisible);
+	const hiddenModelsByRequests = [...hiddenModels].sort(
+		(a, b) => (b.request_count ?? 0) - (a.request_count ?? 0),
+	);
+	const hiddenRequestTotal = hiddenModels.reduce(
+		(total, model) => total + (model.request_count ?? 0),
+		0,
+	);
 	const hiddenCount = Math.max(0, modelCounts.length - visibleModels.length);
 
 	return (
@@ -422,55 +385,67 @@ function SessionModelsCell({
 					<HoverCardTrigger asChild>
 						<Badge
 							variant="outline"
-							className="cursor-help rounded-md underline decoration-transparent transition-colors duration-200 hover:bg-muted hover:decoration-current"
+							className="cursor-help rounded-md underline decoration-transparent transition-colors duration-200 hover:bg-muted hover:decoration-current focus-visible:ring-2 focus-visible:ring-ring/50"
+							render={<button type="button" />}
 						>
 							{m("More models count", { count: hiddenCount })}
 						</Badge>
 					</HoverCardTrigger>
-					<HoverCardContent align="start" className="w-72 p-3">
-						<div className="space-y-2">
-							<div className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-								{s("More models")}
-							</div>
-							<div className="flex flex-wrap gap-1.5">
-								{hiddenModels.map(({ model_id: modelId }) => {
+					<HoverCardContent align="start" className="w-72">
+						<HoverCardBody>
+							<HoverCardTitle
+								title={joinMeta([
+									m("More models count", { count: hiddenCount }),
+									hiddenRequestTotal > 0
+										? m("Request count", { count: hiddenRequestTotal })
+										: null,
+								])}
+							/>
+							<ul className="grid gap-1.5 text-xs">
+								{hiddenModelsByRequests.map(({ model_id: modelId, request_count: requestCount }) => {
 									const modelLabel = getModelDisplayName(modelId, modelMetadata);
 									const modelHref = getModelDetailsHref(modelId, modelMetadata);
 									const modelLogoId = getModelLogoId(modelId, modelMetadata);
 
 									return (
-										<Badge
-											variant="outline"
+										<li
 											key={`hidden-${modelId}`}
-											className="inline-flex max-w-full items-center gap-1.5 rounded-md"
+											className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3"
 										>
-											{modelLogoId ? (
-												<Logo
-													id={modelLogoId}
-													width={12}
-													height={12}
-													className="flex-shrink-0"
-												/>
-											) : null}
-											{modelHref ? (
-												<Link
-													href={modelHref}
-											className="truncate underline decoration-transparent transition-colors duration-200 hover:decoration-current"
-													title={modelId}
-													onClick={stopRowClick}
-												>
-													{modelLabel}
-												</Link>
-											) : (
-												<span className="truncate" title={modelId}>
-													{modelLabel}
+											<span className="flex min-w-0 items-center gap-1.5">
+												{modelLogoId ? (
+													<Logo
+														id={modelLogoId}
+														width={12}
+														height={12}
+														className="flex-shrink-0"
+													/>
+												) : null}
+												{modelHref ? (
+													<Link
+														href={modelHref}
+														className="truncate text-foreground underline decoration-transparent transition-colors duration-200 hover:decoration-current"
+														title={modelId}
+														onClick={stopRowClick}
+													>
+														{modelLabel}
+													</Link>
+												) : (
+													<span className="truncate" title={modelId}>
+														{modelLabel}
+													</span>
+												)}
+											</span>
+											{hiddenRequestTotal > 0 ? (
+												<span className="tabular-nums text-muted-foreground">
+													{format.number(requestCount)}
 												</span>
-											)}
-										</Badge>
+											) : null}
+										</li>
 									);
 								})}
-							</div>
-						</div>
+							</ul>
+						</HoverCardBody>
 					</HoverCardContent>
 				</HoverCard>
 			) : null}
@@ -504,11 +479,6 @@ function SessionDetailSheet({
 	const m = (key: string, values: Record<string, string | number>) =>
 		t(settingsStringKey(key) as never, values as never);
 	const locale = useLocale();
-	const userTimeZone =
-		typeof Intl !== "undefined"
-			? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
-			: "UTC";
-	const [relativeNowMs, setRelativeNowMs] = React.useState<number | null>(null);
 	const [requestDetailOpen, setRequestDetailOpen] = React.useState(false);
 	const [selectedRequest, setSelectedRequest] =
 		React.useState<SessionRequestRow | null>(null);
@@ -521,13 +491,6 @@ function SessionDetailSheet({
 			(latest, request) => (!latest || request.created_at > latest.created_at ? request : latest),
 			null,
 		);
-
-	React.useEffect(() => {
-		const updateNow = () => setRelativeNowMs(Date.now());
-		updateNow();
-		const interval = setInterval(updateNow, 60_000);
-		return () => clearInterval(interval);
-	}, []);
 
 	if (!session) return null;
 
@@ -617,8 +580,7 @@ function SessionDetailSheet({
 				<PeriodHover
 					start={session.first_request_at}
 					end={session.last_request_at}
-					userTimeZone={userTimeZone}
-					relativeNowMs={relativeNowMs}
+					session={session}
 					triggerClassName="font-medium"
 				/>
 			),
@@ -777,22 +739,20 @@ function SessionDetailSheet({
 												}}
 												>
 													<TableCell className="py-2 font-mono text-xs">
-														<button
-															type="button"
-															className="text-left"
-															aria-label={m("Open details for request", { id: request.request_id })}
-															onClick={(event) => {
-																event.stopPropagation();
-																setSelectedRequest(request);
-																setRequestDetailOpen(true);
-															}}
-														>
-															<TimeHover
-																value={request.created_at}
-																userTimeZone={userTimeZone}
-																relativeNowMs={relativeNowMs}
-															/>
-														</button>
+														<TimeHover value={request.created_at} asChild>
+															<button
+																type="button"
+																className="cursor-help rounded-sm text-left underline decoration-dotted underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+																aria-label={m("Open details for request", { id: request.request_id })}
+																onClick={(event) => {
+																	event.stopPropagation();
+																	setSelectedRequest(request);
+																	setRequestDetailOpen(true);
+																}}
+															>
+																{formatWordyDateTime(request.created_at, { includeTime: true, locale })}
+															</button>
+														</TimeHover>
 													</TableCell>
 											<TableCell className="py-2">
 													{request.client_source_name ?? request.client_source_id ?? s("Direct HTTP")}
@@ -956,10 +916,6 @@ export default function SessionsPanel({
 }) {
 	const t = useTranslations("SettingsUI");
 	const locale = useLocale();
-	const userTimeZone =
-		typeof Intl !== "undefined"
-			? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
-			: "UTC";
 	const [sessions, setSessions] = React.useState(initialSessions);
 	const privateQuery = usePrivateUsageRefresh();
 	const [appMetadata, setAppMetadata] = React.useState(
@@ -980,7 +936,6 @@ export default function SessionsPanel({
 	const [open, setOpen] = React.useState(false);
 	const [isRefreshing, setIsRefreshing] = React.useState(false);
 	const [isLoadingDetail, startLoadingDetail] = React.useTransition();
-	const [relativeNowMs, setRelativeNowMs] = React.useState<number | null>(null);
 	const [copiedSessionId, setCopiedSessionId] = React.useState<string | null>(null);
 	const detailCacheRef = React.useRef(new Map<string, SessionRequestRow[]>());
 
@@ -1004,13 +959,6 @@ export default function SessionsPanel({
 	React.useEffect(() => {
 		setProviderMetadata(new Map(initialProviderMetadata));
 	}, [initialProviderMetadata]);
-
-	React.useEffect(() => {
-		const updateNow = () => setRelativeNowMs(Date.now());
-		updateNow();
-		const interval = setInterval(updateNow, 60_000);
-		return () => clearInterval(interval);
-	}, []);
 
 	const copySessionId = React.useCallback((sessionId: string) => {
 		void navigator.clipboard.writeText(sessionId);
@@ -1194,8 +1142,7 @@ export default function SessionsPanel({
 								<PeriodHover
 									start={session.first_request_at}
 									end={session.last_request_at}
-									userTimeZone={userTimeZone}
-									relativeNowMs={relativeNowMs}
+									session={session}
 									triggerClassName="text-xs font-medium"
 								/>
 							</>

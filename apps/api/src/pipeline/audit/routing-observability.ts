@@ -1,5 +1,6 @@
 import { classifyAttemptLogDetail, isAttemptHealthClass, isAttemptHealthReason } from "@pipeline/execute/attempt-health";
 import type { ProviderAttemptLog } from "@pipeline/before/types";
+import { upstreamAttemptErrorFields } from "./upstream-attempt-errors";
 
 function attemptHealthFields(attempt: Record<string, any>) {
     if (isAttemptHealthClass(attempt.health_class)) {
@@ -54,6 +55,7 @@ export function buildRoutingObservability(args: RoutingInput) {
     const normalizedAttempts = attempts.map((attempt, index) => {
         const status = Number(attempt.status);
         const latency = Number(attempt.latency_ms ?? attempt.duration_ms);
+        const startedAt = attempt.started_at_unix_ms == null ? NaN : Number(attempt.started_at_unix_ms);
         return {
             // The persisted relation keys attempts by sequence. Use array order
             // so duplicate or missing caller numbers cannot abort the whole RPC.
@@ -77,6 +79,13 @@ export function buildRoutingObservability(args: RoutingInput) {
             response_kind: typeof attempt.response_kind === "string" ? attempt.response_kind : null,
             retryable: attempt.retryable === true,
             was_probe: attempt.was_probe === true,
+            // Request-detail fields, stored the way the retired gateway_upstream_requests table held them.
+            status_text: typeof attempt.status_text === "string" && attempt.status_text.trim()
+                ? attempt.status_text.trim()
+                : null,
+            ...upstreamAttemptErrorFields(attempt),
+            started_at_unix_ms: Number.isFinite(startedAt) && startedAt > 0 ? Math.round(startedAt) : null,
+            fallback_attempted: attempt.fallback_attempted === true,
             // Per-attempt provider health class and reason for model pages. Attempts
             // recorded without a class (older callers) are classified from their own fields.
             ...attemptHealthFields(attempt),

@@ -87,18 +87,26 @@ import {
 import GuardrailCreateWizard from "./GuardrailCreateWizard";
 import { MAX_ASSIGNMENT_TARGETS } from "./guardrailAssignmentLimits";
 import { chunkAssignmentChange } from "./guardrailAssignments";
-import { rateIssue, rateLimits, wizardKind, type WizardSection } from "./guardrailWizard";
+import { parseSpendLimit, rateIssue, rateLimits, spendIssue, wizardKind, type WizardSection } from "./guardrailWizard";
 import RateGuardrailSection from "./RateGuardrailSection";
-import type { RateCounting } from "@/features/settings/guardrails/actions";
+import SpendGuardrailSection from "./SpendGuardrailSection";
+import type { RateCounting, SpendAction, SpendCounting, SpendPeriod } from "@/features/settings/guardrails/actions";
 
 const GUARDRAIL_SECTION_IDS = new Set([
 	"access",
 	"prompt-injection",
 	"sensitive-info",
 	"rate",
+	"spend",
 ]);
 
 const RATE_COUNTINGS: readonly string[] = ["shared", "each_key", "each_end_user"];
+const SPEND_PERIODS: readonly string[] = ["daily", "weekly", "monthly"];
+const SPEND_ACTIONS: readonly string[] = ["notify", "block"];
+const SPEND_COUNTINGS: readonly string[] = ["shared", "each_key"];
+/** A stored value when it is one of `choices`, else null (nothing chosen). */
+const choice = <T extends string>(choices: readonly string[], value: unknown): T | null =>
+	choices.includes(String(value)) ? value as T : null;
 const expandedSectionsParser = parseAsArrayOf(parseAsString)
 	.withDefault([])
 	.withOptions({ shallow: true, clearOnDefault: true, history: "replace" });
@@ -154,6 +162,10 @@ type GuardrailRow = {
 	rate_concurrent_requests?: number | null;
 	rate_fail_closed?: boolean | null;
 	rate_counting?: string | null;
+	spend_limit_nanos?: number | null;
+	spend_period?: string | null;
+	spend_action?: string | null;
+	spend_counting?: string | null;
 };
 
 function normalizeMode(value: unknown): ProviderRestrictionMode {
@@ -864,11 +876,15 @@ export default function GuardrailEditorPageClient(props: {
 	const [wizardSections, setWizardSections] = useState<WizardSection[]>([]);
 	const tRate = useTranslations("SettingsUI.rateGuardrail");
 	const rateCopy = (key: string) => tRate(key as never);
-	// One kind per guardrail: a rate guardrail shows only its rate section, and other kinds never show it.
+	const tSpend = useTranslations("SettingsUI.spendGuardrail");
+	const spendCopy = (key: string) => tSpend(key as never);
+	// One kind per guardrail: a rate or spend guardrail shows only its own section, and other kinds never show them.
 	const editingRate = !isWizard && props.initialGuardrail?.kind === "rate";
+	const editingSpend = !isWizard && props.initialGuardrail?.kind === "spend";
+	const editingKindSection: WizardSection | null = editingRate ? "rate" : editingSpend ? "spend" : null;
 	const sectionHidden = (id: WizardSection) => isWizard
 		? !wizardSections.includes(id)
-		: (id === "rate") !== editingRate || Boolean(activeSection && activeSection !== id);
+		: (editingKindSection ? id !== editingKindSection : id === "rate" || id === "spend") || Boolean(activeSection && activeSection !== id);
 	const activeSectionDetails = activeSection
 		? {
 			access: {
@@ -884,7 +900,8 @@ export default function GuardrailEditorPageClient(props: {
 				description: s("phraseDetectAndHandleSensitiveDataBeforeRequestsLeavePhaseo"),
 			},
 			rate: { title: rateCopy("title"), description: rateCopy("description") },
-		}[activeSection as "access" | "prompt-injection" | "sensitive-info" | "rate"]
+			spend: { title: spendCopy("title"), description: spendCopy("description") },
+		}[activeSection as "access" | "prompt-injection" | "sensitive-info" | "rate" | "spend"]
 		: null;
 	const g = props.initialGuardrail;
 
@@ -1080,6 +1097,10 @@ export default function GuardrailEditorPageClient(props: {
 			rateConcurrentRequests: g?.rate_concurrent_requests == null ? "" : String(g.rate_concurrent_requests),
 			rateFailClosed: Boolean(g?.rate_fail_closed ?? false),
 			rateCounting: (RATE_COUNTINGS.includes(String(g?.rate_counting)) ? g?.rate_counting : null) as RateCounting | null,
+			spendLimit: g?.spend_limit_nanos == null ? "" : (Number(g.spend_limit_nanos) / 1e9).toFixed(2),
+			spendPeriod: choice<SpendPeriod>(SPEND_PERIODS, g?.spend_period),
+			spendAction: choice<SpendAction>(SPEND_ACTIONS, g?.spend_action),
+			spendCounting: choice<SpendCounting>(SPEND_COUNTINGS, g?.spend_counting),
 
 			keyIds: props.initialKeyIds ?? [],
 			memberIds: props.initialMemberIds ?? [],
@@ -1548,6 +1569,20 @@ export default function GuardrailEditorPageClient(props: {
 			rateFailClosed: form.rateFailClosed,
 			...(form.rateCounting ? { rateCounting: form.rateCounting } : {}),
 		} : {};
+		const savingSpend = isWizard ? wizardSections.includes("spend") : editingSpend;
+		const spendProblem = savingSpend ? spendIssue(form) : null;
+		if (spendProblem) {
+			toast.error(tSpend(`issue.${String(spendProblem)}` as never));
+			return;
+		}
+		const spendLimitNanos = savingSpend ? parseSpendLimit(form.spendLimit) : null;
+		// A spend guardrail saves only its spend settings; the table refuses any other rule on it.
+		const spendFields = savingSpend && typeof spendLimitNanos === "number" && form.spendPeriod && form.spendAction && form.spendCounting ? {
+			spendLimitNanos,
+			spendPeriod: form.spendPeriod,
+			spendAction: form.spendAction,
+			spendCounting: form.spendCounting,
+		} : {};
 		setSaving(true);
 		const toastId = toast.loading(
 			props.mode === "create" ? t("strings.phraseCreatingGuardrail" as never) : t("strings.phraseSavingGuardrail" as never),
@@ -1558,6 +1593,7 @@ export default function GuardrailEditorPageClient(props: {
 				const created = await createGuardrail({ data: {
 					kind: wizardKind(wizardSections),
 					...rateFields,
+					...spendFields,
 					enabled: form.enabled,
 					name: form.name,
 					description: form.description || null,
@@ -1581,6 +1617,7 @@ export default function GuardrailEditorPageClient(props: {
 			} else if (props.mode === "edit" && props.guardrailId) {
 				await updateGuardrail({ data: { id: props.guardrailId, payload: {
 					...rateFields,
+					...spendFields,
 					enabled: form.enabled,
 					name: form.name,
 					description: form.description || null,
@@ -2340,6 +2377,18 @@ export default function GuardrailEditorPageClient(props: {
 								legacyCounting={editingRate && !props.initialGuardrail?.rate_counting}
 								onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))}
 							/>
+						</AccordionContent>
+					</AccordionItem>
+					<AccordionItem value="spend" className={sectionHidden("spend") ? "hidden" : "border-0"}>
+						<AccordionTrigger className={activeSection || isWizard ? "hidden" : "gap-4 px-4 py-4 hover:bg-muted/20 hover:no-underline [&>svg:last-child]:-rotate-90"}>
+							<div className="min-w-0 flex-1 text-left">
+								<div className="text-sm font-medium">{spendCopy("title")}</div>
+								<p className="mt-1 text-sm font-normal text-muted-foreground">{spendCopy("description")}</p>
+							</div>
+						</AccordionTrigger>
+						<AccordionContent disableAnimation className="pb-2 pt-0">
+							{isWizard ? <WizardSectionHeading title={spendCopy("title")} description={spendCopy("description")} /> : null}
+							<SpendGuardrailSection value={form} onChange={(patch) => setForm((prev) => ({ ...prev, ...patch }))} />
 						</AccordionContent>
 					</AccordionItem>
 				</Accordion>

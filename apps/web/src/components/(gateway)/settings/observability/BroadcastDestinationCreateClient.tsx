@@ -640,7 +640,7 @@ export default function BroadcastDestinationCreateClient(props: {
 			</section>
 
 			<div className="divide-y divide-border/60 border-y border-border/60">
-				<section className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:gap-8">
+				<section className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:gap-8">
 					<div className="space-y-2">
 						<div className="inline-flex items-center gap-2">
 							<Shield className="h-4 w-4 text-muted-foreground" />
@@ -665,7 +665,7 @@ export default function BroadcastDestinationCreateClient(props: {
 					</div>
 				</section>
 
-				<section className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:gap-8">
+				<section className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:gap-8">
 					<div className="space-y-2">
 						<div className="inline-flex items-center gap-2">
 							<Gauge className="h-4 w-4 text-muted-foreground" />
@@ -692,7 +692,7 @@ export default function BroadcastDestinationCreateClient(props: {
 					</div>
 				</section>
 
-				<section className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:gap-8">
+				<section className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:gap-8">
 					<div className="space-y-2">
 						<div className="inline-flex items-center gap-2">
 							<KeyRound className="h-4 w-4 text-muted-foreground" />

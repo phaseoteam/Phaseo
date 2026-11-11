@@ -35,5 +35,20 @@ describe("generated pricing presentation copy", () => {
 			`≤ 100K ${localizedPricingDisplayLabel("input", locale, t as never)} ${localizedPricingDisplayLabel("tokens", locale, t as never)}`,
 		].join(" · "));
 		expect(localizedPricingDisplayLabel("custom_meter_id", locale, t as never)).toBe("custom_meter_id");
+		const audience = localizedPricingDisplayLabel("> 200K input tokens · In Claude Code", locale, t as never);
+		expect(audience).toContain("Claude Code");
+		expect(audience).not.toContain("Common.ui.");
+		if (!["en-GB", "de-DE"].includes(locale)) expect(audience).not.toContain("In Claude Code");
+			const usOnly = conciseConditionLabel([{ op: "eq", path: "inference_geo", value: "us" }]);
+			expect(usOnly).toBe("US-only inference");
+			const usOnlyDisplay = localizedPricingDisplayLabel(usOnly, locale, t as never);
+			expect(usOnlyDisplay).not.toMatch(/inference_geo|Common\.ui\./);
+			if (locale !== "en-GB") expect(usOnlyDisplay).not.toBe("US-only inference");
+			const euOnly = conciseConditionLabel([{ op: "eq", path: "inference_geo", value: "eu" }]);
+			expect(euOnly).toBe("EU-only inference");
+			const euOnlyDisplay = localizedPricingDisplayLabel(euOnly, locale, t as never);
+			expect(euOnlyDisplay).toContain("EU");
+			expect(euOnlyDisplay).not.toMatch(/Common\.ui\.|\{region\}/);
+			if (locale !== "en-GB") expect(euOnlyDisplay).not.toBe("EU-only inference");
 	});
 });

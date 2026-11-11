@@ -97,7 +97,7 @@ Utilisez `--model`, `--catalog all|default` ou `--dry-run` selon vos besoins. `p
 
 La première fois que vous configurez un agent, la CLI ouvre une page du tableau de bord Phaseo et affiche son lien. La page indique l’espace de travail, le nom de la clé, sa limite de dépenses mensuelle de $100 et son expiration au bout de 90 jours, ainsi que le fait que la CLI Phaseo l’a demandée. Choisissez **Approuver et créer la clé** : la CLI récupère la clé une seule fois et termine la configuration. Si vous choisissez **Refuser**, ou laissez la demande expirer au bout de 10 minutes, rien n’est créé.
 
-Approuvez en étant connecté au tableau de bord avec le compte utilisé dans la CLI, en tant que propriétaire ou administrateur de l’espace de travail, et avec votre second facteur si vous en avez configuré un. Une connexion de la CLI ne peut pas créer de clés à elle seule. En SSH ou en CI, ouvrez le lien affiché sur n’importe quel appareil où vous êtes connecté.
+Approuvez en étant connecté au tableau de bord avec le compte utilisé dans la CLI, en tant que propriétaire ou administrateur de l’espace de travail, et avec votre second facteur si vous en avez configuré un. En SSH ou en CI, ouvrez le lien affiché sur n’importe quel appareil où vous êtes connecté.
 
 Pour utiliser plutôt une clé créée dans le tableau de bord, transmettez-la avec `--key <key>`, ou avec `--key-stdin` pour qu’elle n’apparaisse pas dans l’historique du shell. La CLI vérifie la clé et l’enregistre, et ne la révoque pas quand vous retirez l’agent.
 

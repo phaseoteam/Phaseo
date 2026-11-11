@@ -13,9 +13,17 @@ import type {
 	ProviderRestrictionMode,
 	RateCounting,
 	SensitiveInfoAction,
+	SpendAction,
+	SpendCounting,
+	SpendPeriod,
 	SensitiveInfoRulePayload,
 } from "@/features/settings/guardrails/actions";
 import { validateSensitiveInfoRulePayload } from "./sensitiveInfoPreview";
+
+/** Nanodollars as US dollars: $12.50. */
+export function formatUsd(nanos: number): string {
+	return (nanos / 1e9).toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
 
 // Pure state for the new-guardrail flow: start (name + what it does), configure (only the chosen
 // sections), assign (the whole workspace, departments, members and keys) and review. Kept out of the editor so it can be tested.
@@ -23,19 +31,23 @@ import { validateSensitiveInfoRulePayload } from "./sensitiveInfoPreview";
 export const WIZARD_STEPS = ["start", "configure", "assign", "review"] as const;
 export type WizardStep = (typeof WIZARD_STEPS)[number];
 
-export const WIZARD_SECTIONS = ["access", "prompt-injection", "sensitive-info", "rate"] as const;
+export const WIZARD_SECTIONS = ["access", "prompt-injection", "sensitive-info", "rate", "spend"] as const;
 export type WizardSection = (typeof WIZARD_SECTIONS)[number];
 
-/** One kind per guardrail: a rate guardrail has the rate section only. Access and safety sections combine. */
+/** Sections that make a guardrail of their own kind, alone. */
+const EXCLUSIVE_SECTIONS: ReadonlySet<WizardSection> = new Set(["rate", "spend"]);
+
+/** One kind per guardrail: a rate or spend guardrail has that section only. Access and safety sections combine. */
 export function withSection(sections: WizardSection[], section: WizardSection, on: boolean): WizardSection[] {
 	if (!on) return sections.filter((id) => id !== section);
-	if (section === "rate") return ["rate"];
-	return WIZARD_SECTIONS.filter((id) => id !== "rate" && (id === section || sections.includes(id)));
+	if (EXCLUSIVE_SECTIONS.has(section)) return [section];
+	return WIZARD_SECTIONS.filter((id) => !EXCLUSIVE_SECTIONS.has(id) && (id === section || sections.includes(id)));
 }
 
 /** The kind a guardrail with these sections is saved as. */
-export function wizardKind(sections: WizardSection[]): "access" | "safety" | "rate" {
+export function wizardKind(sections: WizardSection[]): "access" | "safety" | "rate" | "spend" {
 	if (sections.includes("rate")) return "rate";
+	if (sections.includes("spend")) return "spend";
 	return sections.includes("access") || !sections.length ? "access" : "safety";
 }
 
@@ -65,6 +77,11 @@ export type GuardrailWizardForm = {
 	rateConcurrentRequests: string;
 	rateFailClosed: boolean;
 	rateCounting: RateCounting | null;
+	/** The spend limit in dollars as typed, and the period, action and counting. None has a default. */
+	spendLimit: string;
+	spendPeriod: SpendPeriod | null;
+	spendAction: SpendAction | null;
+	spendCounting: SpendCounting | null;
 	keyIds: string[];
 	memberIds: string[];
 	/** Departments and the whole workspace, set only by the new-guardrail flow. */
@@ -80,6 +97,7 @@ export const GUARDRAIL_TEMPLATE_IDS = [
 	"block-prompt-injection",
 	"redact-personal-info",
 	"rate-limit",
+	"spend-limit",
 ] as const;
 export type GuardrailTemplateId = (typeof GUARDRAIL_TEMPLATE_IDS)[number];
 
@@ -102,12 +120,14 @@ const ACCESS_FIELDS = [
 const PROMPT_INJECTION_FIELDS = ["promptInjectionEnabled", "promptInjectionAction"] as const satisfies ReadonlyArray<keyof GuardrailWizardForm>;
 const SENSITIVE_INFO_FIELDS = ["sensitiveInfoEnabled", "sensitiveInfoDefaultAction", "sensitiveInfoRules"] as const satisfies ReadonlyArray<keyof GuardrailWizardForm>;
 const RATE_FIELDS = ["rateRequestsPerMinute", "rateTokensPerMinute", "rateConcurrentRequests", "rateFailClosed", "rateCounting"] as const satisfies ReadonlyArray<keyof GuardrailWizardForm>;
+const SPEND_FIELDS = ["spendLimit", "spendPeriod", "spendAction", "spendCounting"] as const satisfies ReadonlyArray<keyof GuardrailWizardForm>;
 
 const SECTION_FIELDS: Record<WizardSection, ReadonlyArray<keyof GuardrailWizardForm>> = {
 	access: ACCESS_FIELDS,
 	"prompt-injection": PROMPT_INJECTION_FIELDS,
 	"sensitive-info": SENSITIVE_INFO_FIELDS,
 	rate: RATE_FIELDS,
+	spend: SPEND_FIELDS,
 };
 
 export type GuardrailTemplate = { id: GuardrailTemplateId; sections: WizardSection[]; patch: (form: GuardrailWizardForm) => SectionFields };
@@ -139,6 +159,8 @@ export const GUARDRAIL_TEMPLATES: Record<GuardrailTemplateId, GuardrailTemplate>
 	},
 	// Limits and counting start blank: nothing is limited until they are chosen.
 	"rate-limit": { id: "rate-limit", sections: ["rate"], patch: () => ({}) },
+	// The limit, period, action and counting all start blank.
+	"spend-limit": { id: "spend-limit", sections: ["spend"], patch: () => ({}) },
 };
 
 /** Puts one section's fields back to their defaults, so a section taken out of the flow saves nothing. */
@@ -186,6 +208,11 @@ export type WizardIssue =
 	| "rateLimitEmpty"
 	| "rateLimitInvalid"
 	| "rateCountingRequired"
+	| "spendLimitEmpty"
+	| "spendLimitInvalid"
+	| "spendPeriodRequired"
+	| "spendActionRequired"
+	| "spendCountingRequired"
 	| { sensitiveRule: string };
 
 /** Largest values the database and the API accept. */
@@ -221,6 +248,36 @@ export function rateIssue(form: GuardrailWizardForm, options: { legacyCounting?:
 	return null;
 }
 
+/** Largest spend limit, in nanodollars, that stays a safe integer (about $9 million). */
+const SPEND_MAX_NANOS = Number.MAX_SAFE_INTEGER;
+
+/**
+ * A typed dollar limit in nanodollars: null when blank, "invalid" unless it is above zero, at most 2
+ * decimals and in range. Commas count only as thousands separators ("1,250.50"); "12,50" is refused
+ * rather than read as 1,250.
+ */
+export function parseSpendLimit(value: string): number | null | "invalid" {
+	const spaced = value.replace(/[\s_$]/g, "");
+	if (!spaced) return null;
+	if (spaced.includes(",") && !/^\d{1,3}(?:,\d{3})+(?:\.\d+)?$/.test(spaced)) return "invalid";
+	const text = spaced.replace(/,/g, "");
+	const match = /^(\d+)(?:\.(\d{1,2}))?$/.exec(text);
+	if (!match) return "invalid";
+	const nanos = Number(match[1]) * 1e9 + Number((match[2] ?? "").padEnd(2, "0")) * 1e7;
+	return Number.isSafeInteger(nanos) && nanos > 0 && nanos <= SPEND_MAX_NANOS ? nanos : "invalid";
+}
+
+/** What stops a spend section being saved, or null. Every setting must be chosen. */
+export function spendIssue(form: GuardrailWizardForm): WizardIssue | null {
+	const limit = parseSpendLimit(form.spendLimit);
+	if (limit === "invalid") return "spendLimitInvalid";
+	if (limit === null) return "spendLimitEmpty";
+	if (!form.spendPeriod) return "spendPeriodRequired";
+	if (!form.spendAction) return "spendActionRequired";
+	if (!form.spendCounting) return "spendCountingRequired";
+	return null;
+}
+
 /** Whether the access section restricts anything at all. A blocklist with nothing on it does not. */
 export function accessRestricts(form: GuardrailWizardForm): boolean {
 	return (
@@ -251,6 +308,10 @@ export function stepIssue(step: WizardStep, form: GuardrailWizardForm, sections:
 		const issue = rateIssue(form);
 		if (issue) return issue;
 	}
+	if (sections.includes("spend")) {
+		const issue = spendIssue(form);
+		if (issue) return issue;
+	}
 	if (sections.includes("prompt-injection") && !form.promptInjectionEnabled) return "promptInjectionOff";
 	if (sections.includes("sensitive-info")) {
 		if (!form.sensitiveInfoEnabled || !form.sensitiveInfoRules.some((rule) => rule.enabled)) return "sensitiveInfoOff";
@@ -272,8 +333,16 @@ export function furthestReachableStep(form: GuardrailWizardForm, sections: Wizar
 /** The guardrail as it would be saved, in the shape the assignments helpers read. */
 export function draftGuardrailRow(form: GuardrailWizardForm, id = "draft", sections?: WizardSection[]): SettingsGuardrailRow {
 	const rate = sections?.includes("rate") ? rateLimits(form) : null;
+	const spendLimit = sections?.includes("spend") ? parseSpendLimit(form.spendLimit) : null;
 	return {
 		id,
+		...(sections?.includes("spend") ? {
+			kind: "spend" as const,
+			spend_limit_nanos: typeof spendLimit === "number" ? spendLimit : null,
+			spend_period: form.spendPeriod,
+			spend_action: form.spendAction,
+			spend_counting: form.spendCounting,
+		} : {}),
 		...(rate ? {
 			kind: "rate" as const,
 			rate_requests_per_minute: rate.requestsPerMinute,
@@ -386,6 +455,14 @@ export function describeGuardrail(form: GuardrailWizardForm, sections: WizardSec
 		if (limits?.concurrentRequests != null) lines.push({ key: "summaryRateConcurrent", values: { count: limits.concurrentRequests } });
 		if (form.rateCounting) lines.push({ key: `summaryRateCounting.${form.rateCounting}` });
 		if (form.rateFailClosed) lines.push({ key: "summaryRateFailClosed" });
+	}
+	if (sections.includes("spend")) {
+		const limit = parseSpendLimit(form.spendLimit);
+		if (typeof limit === "number" && form.spendPeriod) {
+			lines.push({ key: `summarySpendLimit.${form.spendPeriod}`, values: { amount: formatUsd(limit) } });
+		}
+		if (form.spendAction) lines.push({ key: `summarySpendAction.${form.spendAction}` });
+		if (form.spendCounting) lines.push({ key: `summarySpendCounting.${form.spendCounting}` });
 	}
 	return lines;
 }

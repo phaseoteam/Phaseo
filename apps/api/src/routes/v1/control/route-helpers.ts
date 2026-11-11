@@ -56,6 +56,18 @@ export function rejectThirdPartyOAuthSpendingChange(auth: ManagementRouteAuth, m
 }
 
 /**
+ * Like rejectThirdPartyOAuthSpendingChange, but only for apps that sign in with Phaseo. A CLI or desktop
+ * sign-in is the person's own and passes, so it can do what the dashboard can on that route. Use it only
+ * where a CLI sign-in has no spend cap to escape: Phaseo's own clients are issued without a consent-screen
+ * limit (see oauth/service.ts), so a key one creates doesn't dodge any limit the person set. Routes for
+ * management keys, members, budgets and the rest keep rejectThirdPartyOAuthSpendingChange.
+ */
+export function rejectThirdPartyOAuthAppChange(auth: ManagementRouteAuth, message: string): Response | null {
+	if (isThirdPartyOAuthApp(auth)) return json({ error: "forbidden", message }, 403, { "Cache-Control": "no-store" });
+	return null;
+}
+
+/**
  * Whether a management request may name a workspace other than its token's with `workspace_id`.
  * Only Phaseo's own CLI and desktop app, signed in as a person, may. The route must then check that
  * person's role in the named workspace (requireOAuthWorkspaceRole) before acting there. API keys,

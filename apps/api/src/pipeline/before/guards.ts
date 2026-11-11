@@ -34,7 +34,7 @@ export { parseW3cTraceContext } from "@observability/trace-context";
 
 const MIN_CREDIT_AMOUNT = 1.0;
 const TRUTHY_VALUES = new Set(["1", "true", "yes"]);
-const FORM_JSON_FIELDS = new Set(["provider", "debug", "include", "timestamp_granularities", "chunking_strategy", "languages", "keywords", "context_bias", "input_reference", "models"]);
+const FORM_JSON_FIELDS = new Set(["provider", "config", "debug", "include", "timestamp_granularities", "chunking_strategy", "languages", "keywords", "context_bias", "input_reference", "models"]);
 const FORM_FORCE_ARRAY_FIELDS = new Set(["include", "timestamp_granularities", "languages", "keywords", "context_bias", "known_speaker_names", "known_speaker_references", "models"]);
 const DEFAULT_REQUEST_BODY_LIMIT_BYTES = 16 * 1024 * 1024;
 const MULTIPART_REQUEST_BODY_LIMIT_BYTES = 32 * 1024 * 1024;
@@ -57,6 +57,30 @@ function allowsNoCreditForFreeRequest(args: { model: string; context: any; provi
     if (!pricedCards.length) return false;
 
     return pricedCards.every((card) => isFreePriceCard(card));
+}
+
+/**
+ * The wallet credit check every paid request passes: internal callers and invoice-billed
+ * workspaces skip it, a request whose every route is free needs no credit, and anything else
+ * needs the context's credit gate to pass. Server tools apply it to each model they call, so
+ * a free main model cannot unlock paid model calls from an empty wallet.
+ */
+export function passesWalletCreditCheck(args: { model: string; context: any; providers: any[]; internal?: boolean }): boolean {
+    return walletCanPay(args) || allowsNoCreditForFreeRequest(args);
+}
+
+/**
+ * Whether the workspace can pay for paid work at all: internal callers, invoice billing, or a
+ * passing credit gate. Paid managed tools (web search and fetch on Phaseo's keys) need this
+ * even when the model is free.
+ */
+export function walletCanPay(args: { context: { credit?: { ok?: boolean } | null; teamSettings?: { billingMode?: unknown } | null } | null | undefined; internal?: boolean }): boolean {
+    if (args.internal) return true;
+    if (args.context?.credit?.ok) return true;
+    const billingMode = String(args.context?.teamSettings?.billingMode ?? "wallet")
+        .trim()
+        .toLowerCase();
+    return billingMode === "invoice";
 }
 
 function classifyProviderCandidateFailure(diagnostics: ProviderCandidateBuildDiagnostics): {
@@ -122,6 +146,8 @@ function describeKeyLimitExceeded(args: {
 	currentValue?: number | null;
 	limitValue?: number | null;
 	departmentName?: string | null;
+	guardrailName?: string | null;
+	guardrailCounting?: "shared" | "each_key" | null;
 }): string {
 	if (args.limitMetric === "soft_blocked") {
 		return "This API key is currently soft-blocked and cannot send requests.";
@@ -139,6 +165,18 @@ function describeKeyLimitExceeded(args: {
 					: "configured";
 	const department = args.reason?.startsWith("department_");
 	const departmentName = args.departmentName?.trim();
+	if (args.reason?.startsWith("guardrail_")) {
+		// "The Contractors guardrail's daily spend limit has been reached ($11.00 of $10.00)."
+		const name = args.guardrailName?.trim();
+		const owner = name ? `the ${name} guardrail` : "a spend guardrail";
+		const usage = typeof args.currentValue === "number" && Number.isFinite(args.currentValue) &&
+			typeof args.limitValue === "number" && Number.isFinite(args.limitValue) && args.limitValue > 0
+			? ` (${formatUsdFromNanos(args.currentValue)} of ${formatUsdFromNanos(args.limitValue)})`
+			: "";
+		return args.guardrailCounting === "each_key"
+			? `This API key has reached its ${windowLabel} spend limit from ${owner}${usage}.`
+			: `${owner.charAt(0).toUpperCase()}${owner.slice(1)}'s ${windowLabel} spend limit has been reached${usage}.`;
+	}
 	// "The Engineering department has reached its daily budget ($11.00 of $10.00)."
 	const subject = department
 		? departmentName ? `The ${departmentName} department` : "This API key's department"
@@ -183,6 +221,7 @@ function keyLimitExceededResponse(gate: GateCheck, args: { workspaceId: string; 
 		current_value: gate.currentValue ?? null,
 		limit_value: gate.limitValue ?? null,
 		...(gate.departmentId ? { department_id: gate.departmentId, department_name: gate.departmentName ?? null } : {}),
+		...(gate.guardrailId ? { guardrail_id: gate.guardrailId, guardrail_name: gate.guardrailName ?? null } : {}),
 		buckets: gate.buckets ?? null,
 		budgets: gate.budgets ?? null,
 		description: describeKeyLimitExceeded({
@@ -192,6 +231,8 @@ function keyLimitExceededResponse(gate: GateCheck, args: { workspaceId: string; 
 			currentValue: gate.currentValue ?? null,
 			limitValue: gate.limitValue ?? null,
 			departmentName: gate.departmentName ?? null,
+			guardrailName: gate.guardrailName ?? null,
+			guardrailCounting: gate.guardrailCounting ?? null,
 		}),
 		request_id: args.requestId,
 		workspace_id: args.workspaceId,
@@ -638,22 +679,7 @@ export async function guardContext(args: {
             };
         }
 
-        const billingMode = String(context.teamSettings?.billingMode ?? "wallet")
-            .trim()
-            .toLowerCase();
-        const bypassWalletCreditCheck = billingMode === "invoice";
-        const allowFreeWithoutCredits = allowsNoCreditForFreeRequest({
-            model: args.model,
-            context,
-            providers,
-        });
-
-        if (
-            !args.internal &&
-            !context.credit.ok &&
-            !bypassWalletCreditCheck &&
-            !allowFreeWithoutCredits
-        ) {
+        if (!passesWalletCreditCheck({ model: args.model, context, providers, internal: args.internal })) {
             return {
                 ok: false,
                 response: err("insufficient_funds", {

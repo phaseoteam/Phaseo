@@ -214,11 +214,14 @@ function encodeOpenAIResponses(
 		return {
 			eventName: "response.created",
 			frame: {
+				// A complete Response, as SDK accumulators read one: they iterate its output.
 				response: {
 					id: ctx.requestId ?? undefined,
 					object: "response",
+					created_at: ctx.created ?? Math.floor(Date.now() / 1000),
 					model: ctx.model ?? undefined,
 					status: "in_progress",
+					output: [],
 				},
 			},
 		};

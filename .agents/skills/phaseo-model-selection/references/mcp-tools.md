@@ -12,15 +12,19 @@ Scopes: `models:read`, `pricing:read`. In hosts that support MCP Apps it also op
 | --- | --- | --- |
 | `query` | string, optional | Free-text search |
 | `provider` | string, optional | Provider or organisation search |
-| `modality` | `text`, `image`, `audio`, `video` | Input modality only |
+| `modality` | `text`, `image`, `audio`, `video` | Input modality |
+| `outputModality` | `text`, `image`, `audio`, `video`, `embeddings` | Output modality |
+| `requiredParameters` | string array, up to 10 | Request parameters every listed provider must support, such as `tools`, `response_format` or `reasoning`. Prices and providers then come only from offers that support all of them |
+| `releasedAfter` | date, optional | Leaves out models released earlier and models with an unknown release date |
+| `hideDeprecated` | boolean, default `false` | Leaves out deprecated and retired models |
 | `minimumContextTokens` | integer, optional | |
 | `maximumInputPricePerMillion` | number, optional | Compared with the lowest paid input price |
 | `gatewayAvailableOnly` | boolean, default `false` | |
-| `sortBy` | `relevance`, `input_price`, `output_price`, `context_length`, `provider_count` | Default `relevance` |
+| `sortBy` | `relevance`, `input_price`, `output_price`, `context_length`, `provider_count`, `release_date` | Default `relevance`; `release_date` lists the newest first and unknown dates last |
 | `sortOrder` | `asc`, `desc` | |
 | `limit` | 1 to 20, default 10 | Refine filters to see other models |
 
-It cannot filter by output modality, endpoint or parameter. For embeddings, rerank, speech and similar workloads, use `query` and check `supportedEndpoints`, or use REST `endpoints`.
+It cannot filter by endpoint. For rerank, speech-to-text and similar workloads, use `query` and check `supportedEndpoints`, or use REST `endpoints`.
 
 ## phaseo:model_get
 
@@ -32,6 +36,8 @@ Scopes: `models:read`, `pricing:read`. Input: `modelId`. Use it to refresh detai
 | --- | --- |
 | `id`, `name`, `description`, `provider`, `releaseDate` | Identity; `provider` is the organisation name |
 | `contextTokens` | `limits.input_tokens` from REST |
+| `maxOutputTokens` | `limits.output_tokens` from REST; `null` when unknown |
+| `lifecycleStatus` | `active`, `deprecated`, `retired` or `null` when unknown |
 | `inputModalities`, `outputModalities`, `supportedEndpoints` | Capabilities |
 | `inputPricePerMillion`, `outputPricePerMillion` | Lowest paid rate across routable offers; input and output can come from different providers |
 | `inputPriceProviderId`, `outputPriceProviderId` | Provider behind each lowest rate |

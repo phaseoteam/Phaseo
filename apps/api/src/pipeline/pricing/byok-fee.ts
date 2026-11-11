@@ -8,6 +8,22 @@ const COUNTER_RPC_RETRY_BASE_MS = 25;
 export const BYOK_MONTHLY_FREE_REQUESTS = 250_000;
 export const BYOK_SERVICE_FEE_RATE = 0.025;
 
+/**
+ * Pricing lines for work Phaseo pays for on its own keys whatever key the model ran on:
+ * managed web search and fetch. On a BYOK request they are charged at cost on top of the
+ * service fee, never turned into a fee on the customer's provider spend.
+ */
+const PHASEO_FUNDED_DIMENSIONS = new Set([
+	"server_tool_web_search_requests",
+	"server_tool_web_search_extra_results",
+	"server_tool_web_fetch_requests",
+]);
+
+function phaseoFundedLines(pricing: Record<string, any>): any[] {
+	return (Array.isArray(pricing.lines) ? pricing.lines : []).filter((line: any) =>
+		PHASEO_FUNDED_DIMENSIONS.has(String(line?.dimension ?? "")) && normalizeNanos(line?.line_nanos) > 0);
+}
+
 type ByokCounterRow = {
 	month_start?: string | null;
 	request_count?: number | string | null;
@@ -122,8 +138,30 @@ async function readByokCounter(
 const MAX_TRACKED_EXHAUSTED_WORKSPACES = 20_000;
 const exhaustedAllowance = new Map<string, number>();
 
+// One gateway request is one BYOK request, however many rounds it bills (a server-tool loop
+// prices each round on its own credential). Its counter position is resolved once and reused,
+// so a round after the one that used up the allowance is not charged as a separate request.
+const MAX_TRACKED_BILLING_REQUESTS = 10_000;
+const resolvedByBillingRequest = new Map<string, Promise<ByokCounterResolution>>();
+
 export function __resetByokAllowanceCacheForTests(): void {
 	exhaustedAllowance.clear();
+	resolvedByBillingRequest.clear();
+}
+
+function resolveByokCounterOnce(workspaceId: string, countRequest: boolean, requestIncrement: number, idempotencyKey?: string): Promise<ByokCounterResolution> {
+	if (!countRequest || !idempotencyKey) return resolveByokCounter(workspaceId, countRequest, requestIncrement, idempotencyKey);
+	const key = `${workspaceId}:${idempotencyKey}:${requestIncrement}`;
+	const known = resolvedByBillingRequest.get(key);
+	if (known) return known;
+	const resolution = resolveByokCounter(workspaceId, countRequest, requestIncrement, idempotencyKey);
+	resolvedByBillingRequest.set(key, resolution);
+	while (resolvedByBillingRequest.size > MAX_TRACKED_BILLING_REQUESTS) {
+		const oldest = resolvedByBillingRequest.keys().next();
+		if (oldest.done) break;
+		resolvedByBillingRequest.delete(oldest.value);
+	}
+	return resolution;
 }
 
 function rememberCount(workspaceId: string, monthStart: string, requestCount: number | null): void {
@@ -218,6 +256,8 @@ function buildByokPricing(args: {
 	basePricing: Record<string, any>;
 	baseCostNanos: number;
 	chargedNanos: number;
+	feeNanos: number;
+	fundedLines: any[];
 	requestCount: number | null;
 	monthStart: string | null;
 	currency: string;
@@ -231,14 +271,14 @@ function buildByokPricing(args: {
 		total_usd_str: formatUsdFromNanosExact(args.chargedNanos),
 		total_cents: Math.trunc(args.chargedNanos / NANOS_PER_CENT),
 		currency: args.currency,
-		lines: buildByokFeeLine(args.chargedNanos),
+		lines: [...buildByokFeeLine(args.feeNanos), ...args.fundedLines],
 		byok_reference_total_nanos: args.baseCostNanos,
 		byok_reference_total_usd_str: formatUsdFromNanosExact(args.baseCostNanos),
 		byok_service_fee_rate: BYOK_SERVICE_FEE_RATE,
 		byok_monthly_request_count: args.requestCount,
 		byok_monthly_free_request_limit: BYOK_MONTHLY_FREE_REQUESTS,
 		byok_free_requests_remaining: freeRemaining,
-		byok_fee_applied: args.chargedNanos > 0,
+		byok_fee_applied: args.feeNanos > 0,
 		byok_month_start_utc: args.monthStart,
 	};
 }
@@ -276,7 +316,7 @@ export async function applyByokServiceFee(args: ByokFeeArgs): Promise<ByokFeeRes
 	}
 
 	const requestIncrement = Math.max(1, Math.trunc(args.requestCount ?? 1));
-	const counter = await resolveByokCounter(args.workspaceId, args.countRequest !== false, requestIncrement, args.idempotencyKey);
+	const counter = await resolveByokCounterOnce(args.workspaceId, args.countRequest !== false, requestIncrement, args.idempotencyKey);
 	const requestCount = counter.requestCount;
 	const monthStart = counter.monthStart;
 	if (counter.source === "unavailable") {
@@ -287,6 +327,9 @@ export async function applyByokServiceFee(args: ByokFeeArgs): Promise<ByokFeeRes
 	}
 
 	const baseCosts = args.baseCostsNanos?.map(normalizeNanos);
+	const fundedLines = baseCosts ? [] : phaseoFundedLines(pricingIn);
+	const fundedNanos = fundedLines.reduce((sum, line) => sum + normalizeNanos(line.line_nanos), 0);
+	const providerReferenceNanos = Math.max(0, baseTotalNanos - fundedNanos);
 	const freeInThisCall = requestCount == null
 		? 0
 		: Math.min(requestIncrement, Math.max(0, BYOK_MONTHLY_FREE_REQUESTS - (requestCount - requestIncrement)));
@@ -295,11 +338,11 @@ export async function applyByokServiceFee(args: ByokFeeArgs): Promise<ByokFeeRes
 		: null;
 	const feeEligibleBaseNanos = baseCosts
 		? baseCosts.slice(freeInThisCall).reduce((sum, cost) => sum + cost, 0)
-		: freeInThisCall >= requestIncrement ? 0 : baseTotalNanos;
+		: freeInThisCall >= requestIncrement ? 0 : providerReferenceNanos;
 	const byokFeeNanos = chargedCostsNanos
 		? chargedCostsNanos.reduce((sum, cost) => sum + cost, 0)
 		: Math.max(0, Math.round(feeEligibleBaseNanos * BYOK_SERVICE_FEE_RATE));
-	const chargedNanos = byokFeeNanos;
+	const chargedNanos = byokFeeNanos + fundedNanos;
 	const chargedCents = Math.trunc(chargedNanos / NANOS_PER_CENT);
 	const freeRemaining = requestCount == null
 		? null
@@ -309,8 +352,10 @@ export async function applyByokServiceFee(args: ByokFeeArgs): Promise<ByokFeeRes
 		...usageIn,
 		pricing: buildByokPricing({
 			basePricing: pricingIn,
-			baseCostNanos: baseTotalNanos,
+			baseCostNanos: providerReferenceNanos,
 			chargedNanos,
+			feeNanos: byokFeeNanos,
+			fundedLines,
 			requestCount,
 			monthStart,
 			currency,
@@ -323,7 +368,8 @@ export async function applyByokServiceFee(args: ByokFeeArgs): Promise<ByokFeeRes
 			fee_applied: byokFeeNanos > 0,
 			fee_nanos: byokFeeNanos,
 			charged_nanos: chargedNanos,
-			provider_reference_nanos: baseTotalNanos,
+			phaseo_tool_nanos: fundedNanos,
+			provider_reference_nanos: providerReferenceNanos,
 			month_start_utc: monthStart,
 			counter_source: counter.source,
 			counter_failure_mode: requestCount == null ? "charge" : null,

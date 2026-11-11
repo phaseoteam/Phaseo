@@ -127,7 +127,7 @@
     "orgID": 1,
     "condition": "B",
     "for": "0s",
-    "noDataState": "OK",
+    "noDataState": "KeepLast",
     "execErrState": "Error",
     "isPaused": true,
     "labels": {
@@ -136,7 +136,7 @@
       "severity": "warning"
     },
     "annotations": {
-      "summary": "A scheduled invocation threw or reported item failures. Inspect job logs and the relevant platform queue."
+      "summary": "A job failed without a later completed run of the same service/job in the last 48 hours (covers daily jobs). Skipped runs do not prove recovery. Silence is not verified recovery; check scheduler telemetry and native logs."
     },
     "data": [
       {
@@ -148,7 +148,7 @@
         "datasourceUid": "SET_LOKI_DATASOURCE_UID",
         "model": {
           "refId": "A",
-          "expr": "sum(count_over_time({service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", outcome=\"outcome\" | __error__=\"\" | environment=\"production\" | event_name=\"job.run\" | outcome=\"error\" | __error__=\"\" [10m])) or vector(0)",
+          "expr": "sum(max by (service_name, job) (max_over_time({service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", job=\"job\", outcome=\"outcome\", scheduled_at=\"scheduled_at\" | __error__=\"\" | environment=\"production\" | event_name=\"job.run\" | outcome=\"error\" | unwrap scheduled_at | __error__=\"\" [48h])) > bool on (service_name, job) (max by (service_name, job) (max_over_time({service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", job=\"job\", outcome=\"outcome\", scheduled_at=\"scheduled_at\" | __error__=\"\" | environment=\"production\" | event_name=\"job.run\" | outcome=\"completed\" | unwrap scheduled_at | __error__=\"\" [48h])) or on (service_name, job) (max by (service_name, job) (max_over_time({service_name=~\"phaseo-jobs|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", job=\"job\", outcome=\"outcome\", scheduled_at=\"scheduled_at\" | __error__=\"\" | environment=\"production\" | event_name=\"job.run\" | outcome=\"error\" | unwrap scheduled_at | __error__=\"\" [48h])) * 0)))",
           "queryType": "instant",
           "instant": true,
           "range": false,

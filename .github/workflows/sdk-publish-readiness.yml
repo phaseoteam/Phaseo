@@ -19,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Setup pnpm
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+        uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
         with:
           version: 10.33.0
           run_install: false
@@ -116,7 +116,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Setup .NET
-        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68
+        uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73
         with:
           dotnet-version: "8.0.x"
       - name: Build and pack
@@ -142,7 +142,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Setup Java
-        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad
+        uses: actions/setup-java@77dd5b2ce225ea11469928ac317850245a74ae78
         with:
           distribution: "temurin"
           java-version: "17"
@@ -193,7 +193,7 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
       - name: Setup Ruby
-        uses: ruby/setup-ruby@26e5b7d197ebf60545ee9667bcbace0be11ccaec # v1.334.0
+        uses: ruby/setup-ruby@b3aaceaef7e0ee231b499e7b5f49c03fc1d32199 # v1.338.0
         with:
           ruby-version: "4.0"
       - name: Build gem

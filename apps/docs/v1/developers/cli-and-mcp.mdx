@@ -51,18 +51,73 @@ Use `--json` when another tool or script needs structured output. Secret values 
 
 The server URL is `https://mcp.phaseo.app/mcp`. An AI client connected to it can answer questions with live model, pricing, provider, usage and workspace data.
 
-### Connect from Codex
+### Connect your client
 
+Install in one click: [Add to Cursor](cursor://anysphere.cursor-deeplink/mcp/install?name=phaseo&config=eyJ1cmwiOiJodHRwczovL21jcC5waGFzZW8uYXBwL21jcCJ9) · [Add to VS Code](vscode:mcp/install?%7B%22name%22%3A%22phaseo%22%2C%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fmcp.phaseo.app%2Fmcp%22%7D). When the client asks you to sign in, Phaseo OAuth opens in your browser. Choose a workspace and approve the requested read scopes.
+
+<Tabs>
+<Tab title="Claude Code">
+```bash
+claude mcp add --transport http phaseo https://mcp.phaseo.app/mcp
+```
+
+Then run `/mcp`, select `phaseo` and choose **Authenticate**. Add `--scope user` to make it available in every project.
+</Tab>
+<Tab title="Codex">
 ```bash
 codex mcp add phaseo --url https://mcp.phaseo.app/mcp
 codex mcp login phaseo
-```
-
-The login command opens Phaseo OAuth. Choose a workspace and approve the requested read scopes, then confirm the connection:
-
-```bash
 codex mcp list
 ```
+
+The login command opens Phaseo OAuth. `codex mcp list` confirms the connection.
+</Tab>
+<Tab title="Cursor">
+```json ~/.cursor/mcp.json
+{
+  "mcpServers": {
+    "phaseo": {
+      "url": "https://mcp.phaseo.app/mcp"
+    }
+  }
+}
+```
+
+Use **Add to Cursor** above, or add the server to `~/.cursor/mcp.json`, then sign in from Cursor's MCP settings.
+</Tab>
+<Tab title="VS Code">
+```json .vscode/mcp.json
+{
+  "servers": {
+    "phaseo": {
+      "type": "http",
+      "url": "https://mcp.phaseo.app/mcp"
+    }
+  }
+}
+```
+
+Use **Add to VS Code** above, or add the server to `.vscode/mcp.json`. Start it from the MCP view and sign in when VS Code asks.
+</Tab>
+<Tab title="Claude">
+In Claude, open **Settings → Connectors**, choose **Add custom connector**, enter `Phaseo` and the server URL, then select **Connect**. If you don't see the option, an owner of your Claude organisation needs to allow custom connectors.
+</Tab>
+<Tab title="OpenCode">
+```json opencode.json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "phaseo": {
+      "type": "remote",
+      "url": "https://mcp.phaseo.app/mcp"
+    }
+  }
+}
+```
+
+Add the server to `opencode.json`, then run `opencode mcp auth phaseo` to sign in.
+</Tab>
+</Tabs>
 
 For another MCP client, add the same URL as a remote Streamable HTTP server. The client must support OAuth discovery, authorization code with S256 PKCE, and the MCP `resource` parameter.
 

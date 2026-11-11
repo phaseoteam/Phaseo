@@ -21,6 +21,7 @@ import { executor as anthropicText } from "./anthropic/text-generate";
 import { executor as azureText } from "./azure/text-generate";
 import { executor as azureDecisions } from "./azure/decisions";
 import { executor as googleAiStudioText } from "./google-ai-studio/text-generate";
+import { executor as googleAiStudioDecisions } from "./google-ai-studio/decisions";
 import { executor as googleAudioSpeech } from "./google/audio-speech";
 import { executor as googleMusic } from "./google/music-generate";
 import { executor as xAiText } from "./x-ai/text-generate";
@@ -45,6 +46,7 @@ import { executor as ioNetText } from "./io-net/text-generate";
 import { executor as togetherText } from "./together/text-generate";
 import { executor as togetherDecisions } from "./together/decisions";
 import { executor as respanDecisions } from "./respan/decisions";
+import { executor as parallelDecisions } from "./parallel/decisions";
 import { executor as canopyWaveText } from "./canopy-wave/text-generate";
 import { executor as tensorixText } from "./tensorix/text-generate";
 import { executor as basetenText } from "./baseten/text-generate";
@@ -65,6 +67,8 @@ import { executor as liquidAiDecisions } from "./liquid-ai/decisions";
 import { executor as perplexityDecisions } from "./perplexity/decisions";
 import { executor as ai21Text } from "./ai21/text-generate";
 import { executor as akashmlText } from "./akashml/text-generate";
+import { executor as primalabsText } from "./primalabs/text-generate";
+import { executor as lgText } from "./lg/text-generate";
 import { executor as arceeText } from "./arcee/text-generate";
 import { executor as alibabaCloudText } from "./alibaba-cloud/text-generate";
 import { executor as alibabaImage } from "./alibaba/image-generate";
@@ -265,6 +269,12 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	ai21: {
 		"text.generate": ai21Text,
 	},
+	lg: {
+		"text.generate": lgText,
+	},
+	primalabs: {
+		"text.generate": primalabsText,
+	},
 	akashml: {
 		"text.generate": akashmlText,
 	},
@@ -407,6 +417,7 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 		"image.generate": nonTextAdapterExecutor,
 		"music.generate": googleMusic,
 		"video.generate": googleAiStudioVideo,
+		"decisions.make": googleAiStudioDecisions,
 	},
 	"spacex-ai": { "text.generate": xAiText, "video.generate": xAiVideo, "video.edit": xAiVideo, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor },
 	"x-ai": { "text.generate": xAiText, "video.generate": xAiVideo, "video.edit": xAiVideo, "image.generate": nonTextAdapterExecutor, "image.edit": nonTextAdapterExecutor, "audio.speech": nonTextAdapterExecutor, "audio.transcription": nonTextAdapterExecutor },
@@ -506,6 +517,9 @@ export const EXECUTORS_BY_PROVIDER: Record<string, ProviderCapabilityMap> = {
 	},
 	respan: {
 		"decisions.make": respanDecisions,
+	},
+	parallel: {
+		"decisions.make": parallelDecisions,
 	},
 	venice: { "text.generate": veniceText },
 	"venice-e2ee": { "text.generate": veniceText },

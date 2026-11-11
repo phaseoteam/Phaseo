@@ -587,8 +587,8 @@ const releaseSchema = z.object({
 
 export type ModelRelease = z.infer<typeof releaseSchema>;
 
-export async function getReleases(): Promise<{ past: ModelRelease[]; future: ModelRelease[] }> {
-  const raw = await request("/api/_web/updates/models", { query: { limit: 20, upcoming_limit: 10 } });
-  const parsed = z.object({ past: z.array(releaseSchema).default([]), future: z.array(releaseSchema).default([]) }).passthrough().parse(raw);
-  return { past: parsed.past.filter((release) => release.model.model_id), future: parsed.future.filter((release) => release.model.model_id) };
+export async function getReleases(): Promise<{ past: ModelRelease[] }> {
+  const raw = await request("/api/_web/updates/models", { query: { limit: 20 } });
+  const parsed = z.object({ past: z.array(releaseSchema).default([]) }).passthrough().parse(raw);
+  return { past: parsed.past.filter((release) => release.model.model_id) };
 }

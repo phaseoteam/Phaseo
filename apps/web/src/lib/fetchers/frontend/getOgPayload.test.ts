@@ -1,7 +1,7 @@
 import { test, expect } from "vitest";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import type { PricingRule, ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
-import { buildModelOgStats } from "@/lib/fetchers/frontend/getOgPayload";
+import { buildModelOgPromotion, buildModelOgStats, promotionDetailLines } from "@/lib/fetchers/frontend/getOgPayload";
 
 function makeRule(
 	providerId: string,
@@ -148,4 +148,75 @@ test("only uses primary token meters and derives the baseline priority", () => {
 			promotion: "50% off",
 		},
 	]));
+});
+
+test("treats a price limited to one app as a promotion of the list price and headlines it", () => {
+	const clientMatch = [{ path: "client_id", op: "eq", value: "claude-code" }] as unknown as PricingRule["match"];
+	const pricing = [
+		makeProvider("anthropic", [
+			makeRule("anthropic", { price_per_unit: 8 }),
+			makeRule("anthropic", { meter: "output_text_tokens", price_per_unit: 40 }),
+			makeRule("anthropic", {
+				price_per_unit: 6,
+				priority: 200,
+				match: clientMatch,
+				effective_to: "2099-11-11T23:59:00Z",
+			}),
+			makeRule("anthropic", {
+				meter: "output_text_tokens",
+				price_per_unit: 30,
+				priority: 200,
+				match: clientMatch,
+				effective_to: "2099-11-11T23:59:00Z",
+			}),
+		]),
+	];
+
+	expect(buildModelOgStats(model, pricing)).toEqual(expect.arrayContaining([
+		{ label: "INPUT", value: "$6.00", originalValue: "$8.00", helper: "per 1M tokens in Claude Code", promotion: "25% off" },
+		{ label: "OUTPUT", value: "$30.00", originalValue: "$40.00", helper: "per 1M tokens in Claude Code", promotion: "25% off" },
+	]));
+	const promotion = buildModelOgPromotion(pricing);
+	expect(promotion).toEqual({ label: "25% off", endsAt: "2099-11-11T23:59:00Z", audience: "Claude Code" });
+	expect(promotionDetailLines(promotion!)).toEqual(["In Claude Code", "Ends Nov 11, 23:59 UTC"]);
+});
+
+test("finds a promotion when another provider shares the same list price", () => {
+	const pricing = [
+		makeProvider("bedrock", [
+			makeRule("bedrock", { price_per_unit: 8 }),
+			makeRule("bedrock", { meter: "output_text_tokens", price_per_unit: 40 }),
+		]),
+		makeProvider("anthropic", [
+			makeRule("anthropic", { price_per_unit: 8 }),
+			makeRule("anthropic", { meter: "output_text_tokens", price_per_unit: 40 }),
+			makeRule("anthropic", { price_per_unit: 7.2, priority: 200, note: "10% off", effective_to: "2099-11-12T00:00:00Z" }),
+			makeRule("anthropic", {
+				meter: "output_text_tokens",
+				price_per_unit: 36,
+				priority: 200,
+				note: "10% off",
+				effective_to: "2099-11-12T00:00:00Z",
+			}),
+		]),
+		makeProvider("vertex", [
+			makeRule("vertex", { price_per_unit: 8 }),
+			makeRule("vertex", { meter: "output_text_tokens", price_per_unit: 40 }),
+		]),
+	];
+
+	expect(buildModelOgStats(model, pricing)).toEqual(expect.arrayContaining([
+		{ label: "INPUT", value: "$7.20", originalValue: "$8.00", helper: "per 1M tokens", promotion: "10% off" },
+		{ label: "OUTPUT", value: "$36.00", originalValue: "$40.00", helper: "per 1M tokens", promotion: "10% off" },
+	]));
+	expect(buildModelOgPromotion(pricing)).toEqual({ label: "10% off", endsAt: "2099-11-12T00:00:00Z" });
+});
+
+test("has no headline promotion when no promotional price is current", () => {
+	expect(buildModelOgPromotion([
+		makeProvider("anthropic", [
+			makeRule("anthropic", { price_per_unit: 8 }),
+			makeRule("anthropic", { price_per_unit: 6, priority: 200, effective_to: "2020-06-01T00:00:00Z" }),
+		]),
+	])).toBeNull();
 });

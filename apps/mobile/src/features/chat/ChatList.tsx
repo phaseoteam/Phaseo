@@ -1,10 +1,9 @@
 import { LegendList } from "@legendapp/list/react-native";
 import { usePathname, useRouter, type Href } from "expo-router";
-import { MessageSquare, Pin, SquarePen } from "lucide-react-native";
-import { memo, useCallback, useDeferredValue, useMemo, useState } from "react";
+import { MessageSquare, Pin } from "lucide-react-native";
+import { memo, useCallback, useDeferredValue, useMemo } from "react";
 import { Pressable, View } from "react-native";
-import { useOpenDetail } from "@/components/shell/SplitStack";
-import { EmptyState, Header, Icon, IconButton, pointAnchor, Screen, SearchField, showActions, Text } from "@/components/ui";
+import { EmptyState, Icon, pointAnchor, showActions, Text } from "@/components/ui";
 import { cn } from "@/lib/cn";
 import { formatRelativeDay } from "@/lib/format";
 import { haptic } from "@/lib/haptics";
@@ -18,14 +17,16 @@ import { useModelLabels } from "./models";
 import { useChats } from "./state";
 import type { Chat } from "./types";
 
-export function ChatList() {
+/**
+ * Phaseo chats on this device, matching the sidebar's search: the Chat side of the sidebar. `open` shows a chat in the
+ * main area.
+ */
+export function ChatList({ query, open: openDetail }: { query: string; open(href: Href): void }) {
   perf?.chatListRender();
   const router = useRouter();
   const pathname = usePathname();
-  const openDetail = useOpenDetail("/chat");
   const chats = useChats();
   const labels = useModelLabels();
-  const [query, setQuery] = useState("");
   const deferred = useDeferredValue(query.trim());
   const visible = useMemo(() => {
     if (!deferred) return chats;
@@ -50,26 +51,23 @@ export function ChatList() {
   }, [selectedId, labels, open, menu]);
 
   return (
-    <Screen>
-      <Header large title="Chat" right={<IconButton icon={SquarePen} label="New chat" onPress={() => openDetail("/chat/new")} />} />
-      <View className="px-4 pb-1"><SearchField value={query} onChangeText={setQuery} placeholder="Search chats" /></View>
-      <LegendList
-        data={items}
-        keyExtractor={(item) => item.key}
-        getItemType={(item) => item.type}
-        renderItem={renderItem}
-        extraData={extraData}
-        estimatedItemSize={64}
-        // Rows are alike, so scrolled-off rows are reused rather than mounted again.
-        recycleItems
-        onLoad={perf ? () => perf?.chatListLoaded(items.length) : undefined}
-        keyboardDismissMode="on-drag"
-        ListEmptyComponent={deferred
-          ? <EmptyState title="No chats match" body="Search looks through titles and messages." />
-          : <EmptyState icon={MessageSquare} title="No chats yet" body="Chats are saved only on this device. Ask one model, or several side by side." action="Start a chat" onAction={() => openDetail("/chat/new")} />}
-        contentContainerStyle={{ paddingBottom: 24 }}
-      />
-    </Screen>
+    <LegendList
+      data={items}
+      keyExtractor={(item) => item.key}
+      getItemType={(item) => item.type}
+      renderItem={renderItem}
+      extraData={extraData}
+      estimatedItemSize={64}
+      // Rows are alike, so scrolled-off rows are reused rather than mounted again.
+      recycleItems
+      onLoad={perf ? () => perf?.chatListLoaded(items.length) : undefined}
+      keyboardDismissMode="on-drag"
+      keyboardShouldPersistTaps="handled"
+      ListEmptyComponent={deferred
+        ? <EmptyState title="No chats match" body="Search looks through titles and messages." />
+        : <EmptyState icon={MessageSquare} title="No chats yet" body="Chats are saved only on this device. Ask one model, or several side by side." action="Start a chat" onAction={() => openDetail("/chat/new")} />}
+      contentContainerStyle={{ paddingBottom: 24 }}
+    />
   );
 }
 

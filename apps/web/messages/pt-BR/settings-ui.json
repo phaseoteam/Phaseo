@@ -1079,7 +1079,15 @@
 		"columnRate": "Taxa",
 		"rateRequests": "{count, plural, one {# solicitação} other {# solicitações}} por minuto",
 		"rateTokens": "{count, plural, one {# token} other {# tokens}} por minuto",
-		"rateConcurrent": "{count, plural, other {# ao mesmo tempo}}"
+		"rateConcurrent": "{count, plural, other {# ao mesmo tempo}}",
+		"columnSpend": "Gastos",
+		"spend": {
+			"daily": "{amount} por dia",
+			"weekly": "{amount} por semana",
+			"monthly": "{amount} por mês"
+		},
+		"spendBlocks": "Bloqueia",
+		"spendNotifies": "Só alertas"
 	},
 	"guardrailWizard": {
 		"title": "Novo guardrail",
@@ -1106,7 +1114,12 @@
 			"sensitiveInfoOff": "Ative pelo menos um padrão de informação sensível, ou remova esta verificação.",
 			"rateLimitEmpty": "Defina pelo menos um limite para continuar.",
 			"rateLimitInvalid": "Os limites devem ser números inteiros maiores que 0.",
-			"rateCountingRequired": "Escolha como os limites contam para continuar."
+			"rateCountingRequired": "Escolha como os limites contam para continuar.",
+			"spendLimitEmpty": "Defina um limite para continuar.",
+			"spendLimitInvalid": "Insira um valor acima de $0.00 com até 2 casas decimais.",
+			"spendPeriodRequired": "Escolha um período para continuar.",
+			"spendActionRequired": "Escolha o que acontece no limite para continuar.",
+			"spendCountingRequired": "Escolha como o limite conta para continuar."
 		},
 		"nameLabel": "Nome",
 		"namePlaceholder": "ex.: Política para terceirizados",
@@ -1208,7 +1221,28 @@
 			"each_key": "Separado para cada chave",
 			"each_end_user": "Separado para cada usuário final"
 		},
-		"summaryRateFailClosed": "Recusa solicitações quando os limites não podem ser verificados"
+		"summaryRateFailClosed": "Recusa solicitações quando os limites não podem ser verificados",
+		"templateSpendLimit": {
+			"name": "Limite de gastos",
+			"body": "Limite os gastos por dia, semana ou mês, com alertas."
+		},
+		"sectionSpend": {
+			"name": "Limite de gastos",
+			"body": "Um limite em dólares por dia, semana ou mês. Um guardrail de gastos não tem outras verificações."
+		},
+		"summarySpendLimit": {
+			"daily": "Até {amount} por dia",
+			"weekly": "Até {amount} por semana",
+			"monthly": "Até {amount} por mês"
+		},
+		"summarySpendAction": {
+			"notify": "Alerta em 80% e 100%, sem bloquear",
+			"block": "Bloqueia solicitações com chave de API no limite"
+		},
+		"summarySpendCounting": {
+			"shared": "Compartilhado por tudo a que está atribuído",
+			"each_key": "Separado para cada chave"
+		}
 	},
 	"broadcastControls": {
 		"optional": "(opcional)",
@@ -7198,7 +7232,7 @@
 			"period": "Período",
 			"createTitle": "Adicionar um orçamento de departamento",
 			"editTitle": "Editar orçamento de departamento",
-			"limitHelp": "Quando o gasto do departamento no período chega a este valor, suas solicitações com chave de API são recusadas até o período ser redefinido. Solicitações em lote, em tempo real e OAuth não são bloqueadas. Se a verificação do orçamento ficar indisponível por um instante, as solicitações são permitidas em vez de recusadas. Proprietários e administradores são avisados em cerca de 80% e 100%.",
+			"limitHelp": "Quando o gasto do departamento no período chega a este valor, suas solicitações com chave de API são recusadas até o período ser redefinido. Se a verificação do orçamento ficar indisponível por um instante, as solicitações são permitidas em vez de recusadas. Proprietários e administradores são avisados em cerca de 80% e 100%.",
 			"saved": "Orçamento de departamento salvo",
 			"deleted": "Orçamento de departamento excluído",
 			"deleteTitle": "Excluir este orçamento de departamento?",
@@ -8155,6 +8189,62 @@
 			"rateLimitEmpty": "Defina pelo menos um limite para continuar.",
 			"rateLimitInvalid": "Os limites devem ser números inteiros maiores que 0.",
 			"rateCountingRequired": "Escolha como os limites contam para continuar."
+		}
+	},
+	"spendGuardrail": {
+		"title": "Limite de gastos",
+		"description": "Limite o que as chaves cobertas gastam por dia, semana ou mês.",
+		"limitTitle": "Limite",
+		"limitBody": "O máximo que as chaves cobertas podem gastar em cada período, em dólares americanos.",
+		"limitLabel": "Valor",
+		"limitHelp": "Até 2 casas decimais, por exemplo 25.00.",
+		"invalidLimit": "Insira um valor acima de $0.00 com até 2 casas decimais.",
+		"periodTitle": "Período",
+		"periodBody": "Os períodos são dias corridos em UTC, semanas a partir de segunda-feira e meses. Não há padrão.",
+		"period": {
+			"daily": {
+				"name": "Diário",
+				"body": "Reinicia todos os dias às 00:00 UTC."
+			},
+			"weekly": {
+				"name": "Semanal",
+				"body": "Reinicia toda segunda-feira às 00:00 UTC."
+			},
+			"monthly": {
+				"name": "Mensal",
+				"body": "Reinicia no dia 1 de cada mês às 00:00 UTC."
+			}
+		},
+		"actionTitle": "No limite",
+		"actionBody": "O que acontece quando os gastos chegam ao limite. Proprietários e administradores recebem um push em 80% e em 100% de qualquer forma. Não há padrão.",
+		"action": {
+			"notify": {
+				"name": "Notificar",
+				"body": "Enviar apenas os alertas. As solicitações continuam passando."
+			},
+			"block": {
+				"name": "Bloquear",
+				"body": "Recusar as solicitações com chave de API cobertas até o período reiniciar. Jobs em lote, sessões em tempo real e solicitações OAuth não são bloqueados."
+			}
+		},
+		"countingTitle": "Como conta",
+		"countingBody": "Escolha quem compartilha o limite. Não há padrão.",
+		"counting": {
+			"shared": {
+				"name": "Compartilhado",
+				"body": "Um limite para tudo a que está atribuído. Em um departamento, todas as chaves do departamento o compartilham."
+			},
+			"each_key": {
+				"name": "Cada chave",
+				"body": "Cada chave de API coberta tem seu próprio limite."
+			}
+		},
+		"issue": {
+			"spendLimitEmpty": "Defina um limite para continuar.",
+			"spendLimitInvalid": "Insira um valor acima de $0.00 com até 2 casas decimais.",
+			"spendPeriodRequired": "Escolha um período para continuar.",
+			"spendActionRequired": "Escolha o que acontece no limite para continuar.",
+			"spendCountingRequired": "Escolha como o limite conta para continuar."
 		}
 	}
 }

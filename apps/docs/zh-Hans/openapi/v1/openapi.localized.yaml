@@ -436,8 +436,8 @@ paths:
       tags:
         - Gateway
       operationId: listTeamModels
-      summary: 列出团队范围的网关模型
-      description: 返回团队范围的网关模型列表。默认返回当前可公开路由的模型；使用 `availability=all` 可包含不可路由的可用性记录。
+      summary: 列出此密钥可以使用的模型
+      description: 返回应用了调用方护栏规则的 /models 列表：被规则屏蔽的模型以及没有任何允许提供商的模型不会列出，每个模型只保留其请求可以路由到的服务，价格、能力和可用性也据此计算。access 对象说明规则排除了哪些内容。默认只包含当前可公开路由的模型；使用 availability=all 可包含不可路由的可用性记录。
       parameters:
         - name: endpoints
           in: query
@@ -1174,8 +1174,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: Phaseo 模型 ID，例如 `eleven-labs/scribe-v3-live`。
                   model_id:
                     type: string
+                    description: Phaseo 模型 ID。与 `model` 相同。
+                  provider_model:
+                    type: string
+                    description: 提供商自己的模型名称，例如 `scribe_v3_live`。
                   voice:
                     type: string
                     nullable: true
@@ -1373,8 +1378,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: Phaseo 模型 ID，例如 `eleven-labs/scribe-v3-live`。
                   model_id:
                     type: string
+                    description: Phaseo 模型 ID。与 `model` 相同。
+                  provider_model:
+                    type: string
+                    description: 提供商自己的模型名称，例如 `scribe_v3_live`。
                   voice:
                     type: string
                     nullable: true
@@ -1585,8 +1595,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: Phaseo 模型 ID，例如 `eleven-labs/scribe-v3-live`。
                   model_id:
                     type: string
+                    description: Phaseo 模型 ID。与 `model` 相同。
+                  provider_model:
+                    type: string
+                    description: 提供商自己的模型名称，例如 `scribe_v3_live`。
                   voice:
                     type: string
                     nullable: true
@@ -4850,7 +4865,7 @@ paths:
         - Gateway
       operationId: listDepartmentBudgets
       summary: List department budgets
-      description: Lists department spend budgets with each department's spend so far in the current UTC period. Spend comes from an hourly rollup, so it can lag by up to an hour.
+      description: 列出各部门的支出预算，以及每个部门在当前 UTC 周期内迄今的支出。支出的计算方式与部门准入检查相同，因此是最新的。
       parameters:
         - name: department_id
           in: query
@@ -4878,7 +4893,7 @@ paths:
         - Gateway
       operationId: createDepartmentBudget
       summary: Create a department budget
-      description: 为一个部门创建每日、每周或每月支出预算。部门用完预算后，计入该部门的 API 密钥请求会返回 429 key_limit_exceeded，直到预算重置。批处理作业、实时会话和 OAuth 请求不会被阻止。如果预算检查短暂不可用，请求会被放行而不是被拒绝。预算用到约 80% 和 100% 时，所有者和管理员会收到移动推送通知。
+      description: 为一个部门创建每日、每周或每月支出预算。部门用完预算后，计入该部门的 API 密钥请求会返回 429 key_limit_exceeded，直到预算重置。如果预算检查短暂不可用，请求会被放行而不是被拒绝。预算用到约 80% 和 100% 时，所有者和管理员会收到移动推送通知。
       requestBody:
         required: true
         content:
@@ -20309,7 +20324,7 @@ components:
         retention_days:
           type: integer
           minimum: 90
-          maximum: 365
+          maximum: 90
         include_provider_payloads:
           type: boolean
         billing_status:
@@ -20341,7 +20356,7 @@ components:
         retention_days:
           type: integer
           minimum: 90
-          maximum: 365
+          maximum: 90
         include_provider_payloads:
           type: boolean
       minProperties: 1
@@ -21078,6 +21093,48 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Model'
+        access:
+          $ref: '#/components/schemas/GatewayModelAccess'
+      additionalProperties: false
+    GatewayModelAccess:
+      type: object
+      description: 仅由 /models/me 返回：在搜索和分页之前，调用方的护栏规则从列表中排除的内容。
+      required:
+        - restricted
+        - hidden_model_count
+        - hidden_models
+        - limited_model_count
+      properties:
+        restricted:
+          type: boolean
+          description: 是否有任何规则为此密钥限制模型或提供商。
+          example: true
+        hidden_model_count:
+          type: integer
+          minimum: 0
+          description: 被规则排除的模型数量。
+          example: 12
+        hidden_models:
+          type: array
+          description: 被排除的模型及其名称（最多 500 个）。
+          items:
+            type: object
+            required:
+              - id
+              - name
+            properties:
+              id:
+                type: string
+                example: deepseek/deepseek-v4
+              name:
+                type: string
+                example: DeepSeek V4
+            additionalProperties: false
+        limited_model_count:
+          type: integer
+          minimum: 0
+          description: 有多少列出的模型因规则失去了部分提供商。
+          example: 3
       additionalProperties: false
     ModelEndpointCapability:
       type: object

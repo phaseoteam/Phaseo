@@ -12,8 +12,11 @@ try {
   }
   await db.exec(`
     alter table v2_request_facts alter column request_event_id set default gen_random_uuid();
-    -- The declarative ingestion below stores each attempt's provider health class.
-    alter table v2_request_attempts add column health_class text, add column health_reason text;
+    -- The declarative ingestion below stores each attempt's provider health class and upstream detail.
+    alter table v2_request_attempts add column health_class text, add column health_reason text,
+      add column status_text text, add column upstream_error_code text,
+      add column upstream_error_message text, add column upstream_error_description text,
+      add column upstream_error_type text;
     create table v2_model_aliases(alias_slug text, model_slug text, enabled boolean);
     insert into v2_models(model_slug,hidden,status,released_at,updated_at) values
       ('fixture/public:free',false,'active','2026-08-01','2026-10-01'),

@@ -68,4 +68,4 @@ Si la llamada no se puede ejecutar, el modelo recibe `subagent_invalid_request` 
 
 ## Uso y precios
 
-Cada llamada suma 1 a `usage.server_tool_use.subagent_requests` y se puede facturar con `server_tool_subagent_requests`. Los tokens del trabajador se suman al uso de la solicitud y se cobran a las tarifas del modelo trabajador. Para obtener una revisión en lugar de delegar trabajo, usa [Advisor](./advisor).
+Cada llamada suma 1 a `usage.server_tool_use.subagent_requests` y puede cobrarse con `server_tool_subagent_requests`. Los tokens del modelo auxiliar se cobran según las tarifas de ese modelo, como una línea aparte en la factura de la solicitud, y no se suman a los tokens del modelo que lo llama. Un modelo auxiliar de pago requiere saldo aunque el modelo que lo llama sea gratuito. Para obtener una revisión en lugar de delegar trabajo, usa [Advisor](./advisor).

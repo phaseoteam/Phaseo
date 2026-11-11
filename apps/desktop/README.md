@@ -36,6 +36,14 @@ SOFTWARE.
 
 The app shows the same credit in Settings → General → About.
 
+## App analytics
+
+Packaged builds can share app opens, screen categories and sanitized JavaScript errors with the existing PostHog project after opt-in. Enable **Settings → General → Privacy → Share app usage and errors** on each installation; it is off by default and can be turned off anytime. Saved choices are preserved across updates. Development builds and CI runs never collect. Local Diagnostics remain on the device.
+
+Set the public project key as `PUBLIC_POSTHOG_KEY` (or `NEXT_PUBLIC_POSTHOG_KEY`) when building. GitHub desktop builds use the existing repository key. `PUBLIC_POSTHOG_HOST` defaults to `https://eu.i.posthog.com`; use `https://us.i.posthog.com` for a US project. Website proxy paths such as `/ingest` cannot be used by a native app. Never bundle a personal API key.
+
+Filter PostHog events or error tracking by `app_surface = desktop`, then `app_version`, `app_build`, `app_os` or `screen_name`. Random installation IDs link events across sessions without using signed-in account IDs; this is pseudonymous telemetry, not guaranteed anonymity. No prompts, responses, filenames from chats, full local paths, device names or recordings are collected. Error messages and source context are stripped; stack locations refer to bundled code, with no source-map upload or guaranteed fatal-crash delivery. Each installation persists a cap of 200 events/day, including at most 20 errors. These caps reduce usage; project-wide free-tier limits still depend on installation count. Opting out discards queued events.
+
 ## Development
 
 From the monorepo root:

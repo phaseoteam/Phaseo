@@ -66,6 +66,9 @@ function buildTrustedPricingRequestOptions(body: any, usage: any, pricingPlan: s
         ...deriveCachePricingContext(body),
         ...buildImagePricingRequestOptions(body ?? {}, usage),
         pricing_plan: pricingPlan,
+        // Transcription keyterms (`keywords`) carry a provider surcharge that a
+        // catalogue rule can price by matching `keyterms: true`.
+        keyterms: Array.isArray(body?.keywords) && body.keywords.length > 0,
     };
 
     const serviceTier = normalizePricingServiceTier(body, usage, card);
@@ -75,6 +78,24 @@ function buildTrustedPricingRequestOptions(body: any, usage: any, pricingPlan: s
     }
 
     return options;
+}
+
+/**
+ * The calling app the gateway detected (`claude-code`, `codex`, an SDK id; see
+ * before/clientAttribution.ts), so a price rule can match `client_id`, as a
+ * promotional price limited to one app does. It is derived from request headers,
+ * never from the request body, and a request without a detected app gets none.
+ */
+function attachClientAttribution(
+    options: Record<string, unknown>,
+    meta?: PipelineContext["meta"] | null,
+): Record<string, unknown> {
+    const clientId = (meta as { clientSource?: { id?: unknown } | null } | null | undefined)?.clientSource?.id;
+    if (typeof clientId !== "string" || !clientId || clientId === "api") {
+        const { client_id: _ignored, ...rest } = options;
+        return rest;
+    }
+    return { ...options, client_id: clientId };
 }
 
 function attachBillingTimestamps(
@@ -256,8 +277,11 @@ export function calculatePricing(
 					prompt_tokens_details: withoutNestedCachedTokens((usageMeters as any).prompt_tokens_details),
 				};
 			}
-            const requestOptions = attachBillingTimestamps(
-                buildTrustedPricingRequestOptions(body, usage, pricingPlan, card),
+            const requestOptions = attachClientAttribution(
+                attachBillingTimestamps(
+                    buildTrustedPricingRequestOptions(body, usage, pricingPlan, card),
+                    meta,
+                ),
                 meta,
             );
 

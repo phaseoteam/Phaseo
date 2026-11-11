@@ -136,6 +136,33 @@ function maximumOutputTokens(body: Record<string, unknown>): number {
 	throw new Error("batch_max_output_tokens_required");
 }
 
+// OpenAI allows n up to 128; Gemini candidateCount up to 8.
+const MAX_BATCH_OUTPUT_COUNT = 128;
+
+// Each requested choice/candidate is billed as its own output, so the output bound is per choice.
+export function batchOutputCount(body: Record<string, unknown>): number {
+	const candidates = [
+		body.n,
+		body.best_of,
+		(body.generationConfig as any)?.candidateCount,
+		(body.generationConfig as any)?.candidate_count,
+		(body.generation_config as any)?.candidate_count,
+		(body.generation_config as any)?.candidateCount,
+	];
+	let count = 1;
+	for (const value of candidates) {
+		if (value == null) continue;
+		// Only a number or an integer string: Number() would read true as 1 and [2] as 2.
+		if (typeof value !== "number" && !(typeof value === "string" && /^\d+$/.test(value.trim()))) {
+			throw new Error("batch_output_count_invalid");
+		}
+		const parsed = Number(value);
+		if (!Number.isInteger(parsed) || parsed < 1 || parsed > MAX_BATCH_OUTPUT_COUNT) throw new Error("batch_output_count_invalid");
+		count = Math.max(count, parsed);
+	}
+	return count;
+}
+
 function withOvhcloudBatchDiscount(providerId: string, card: Awaited<ReturnType<typeof loadPriceCard>>) {
 	if (providerId !== "ovhcloud" || !card || !Array.isArray((card as any).rules)) return card;
 	return {
@@ -180,7 +207,7 @@ async function quotedRequestCost(providerId: string, request: BatchReservationRe
 	const inputTokensUpperBound = estimateInputTokenUpperBound(body);
 	const outputTokensUpperBound = normalizeBatchEndpoint(request.endpoint) === "/v1/embeddings"
 		? 0
-		: maximumOutputTokens(body);
+		: maximumOutputTokens(body) * batchOutputCount(body);
 	const priced = computeBill({
 		input_tokens: inputTokensUpperBound,
 		output_tokens: outputTokensUpperBound,

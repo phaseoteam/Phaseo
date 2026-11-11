@@ -436,8 +436,8 @@ paths:
       tags:
         - Gateway
       operationId: listTeamModels
-      summary: Listar modelos do gateway por equipe
-      description: Retorna a lista de modelos do gateway por equipe. Por padrão, inclui modelos roteáveis publicamente; use `availability=all` para incluir registros de disponibilidade não roteáveis.
+      summary: Listar os modelos que esta chave pode usar
+      description: 'Retorna a lista de /models com as proteções de quem chama aplicadas: ficam de fora os modelos bloqueados por uma regra e os sem nenhum provedor permitido, e cada modelo mantém apenas as ofertas para as quais as solicitações podem ser roteadas, com preços, capacidades e disponibilidade calculados a partir delas. O objeto access informa o que as regras deixaram de fora. Por padrão inclui os modelos atualmente roteáveis publicamente; use availability=all para incluir registros de disponibilidade não roteáveis.'
       parameters:
         - name: endpoints
           in: query
@@ -1174,8 +1174,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: ID de modelo da Phaseo, por exemplo `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: ID de modelo da Phaseo. Igual a `model`.
+                  provider_model:
+                    type: string
+                    description: O nome que o provedor dá ao modelo, por exemplo `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
@@ -1373,8 +1378,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: ID de modelo da Phaseo, por exemplo `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: ID de modelo da Phaseo. Igual a `model`.
+                  provider_model:
+                    type: string
+                    description: O nome que o provedor dá ao modelo, por exemplo `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
@@ -1585,8 +1595,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: ID de modelo da Phaseo, por exemplo `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: ID de modelo da Phaseo. Igual a `model`.
+                  provider_model:
+                    type: string
+                    description: O nome que o provedor dá ao modelo, por exemplo `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
@@ -4850,7 +4865,7 @@ paths:
         - Gateway
       operationId: listDepartmentBudgets
       summary: List department budgets
-      description: Lists department spend budgets with each department's spend so far in the current UTC period. Spend comes from an hourly rollup, so it can lag by up to an hour.
+      description: Lista os orçamentos de gastos dos departamentos com o gasto de cada departamento no período UTC atual. O gasto é contado como a admissão do departamento o conta, então está atualizado.
       parameters:
         - name: department_id
           in: query
@@ -4878,7 +4893,7 @@ paths:
         - Gateway
       operationId: createDepartmentBudget
       summary: Create a department budget
-      description: Cria um orçamento de gastos diário, semanal ou mensal para um departamento. Quando o departamento o esgota, as solicitações com chave de API que contam para ele retornam 429 key_limit_exceeded até o orçamento ser redefinido. Tarefas em lote, sessões em tempo real e solicitações OAuth não são bloqueadas. Se a verificação do orçamento ficar indisponível por um instante, as solicitações são permitidas em vez de recusadas. Proprietários e administradores recebem uma notificação push no celular em cerca de 80% e em 100%.
+      description: Cria um orçamento de gastos diário, semanal ou mensal para um departamento. Quando o departamento o esgota, as solicitações com chave de API que contam para ele retornam 429 key_limit_exceeded até o orçamento ser redefinido. Se a verificação do orçamento ficar indisponível por um instante, as solicitações são permitidas em vez de recusadas. Proprietários e administradores recebem uma notificação push no celular em cerca de 80% e em 100%.
       requestBody:
         required: true
         content:
@@ -20309,7 +20324,7 @@ components:
         retention_days:
           type: integer
           minimum: 90
-          maximum: 365
+          maximum: 90
         include_provider_payloads:
           type: boolean
         billing_status:
@@ -20341,7 +20356,7 @@ components:
         retention_days:
           type: integer
           minimum: 90
-          maximum: 365
+          maximum: 90
         include_provider_payloads:
           type: boolean
       minProperties: 1
@@ -21078,6 +21093,48 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Model'
+        access:
+          $ref: '#/components/schemas/GatewayModelAccess'
+      additionalProperties: false
+    GatewayModelAccess:
+      type: object
+      description: 'Retornado apenas por /models/me: o que as proteções de quem chama deixaram de fora da lista, antes da busca e da paginação.'
+      required:
+        - restricted
+        - hidden_model_count
+        - hidden_models
+        - limited_model_count
+      properties:
+        restricted:
+          type: boolean
+          description: Se alguma regra restringe modelos ou provedores para esta chave.
+          example: true
+        hidden_model_count:
+          type: integer
+          minimum: 0
+          description: Quantos modelos as regras deixam de fora.
+          example: 12
+        hidden_models:
+          type: array
+          description: Os modelos que ficaram de fora, com seus nomes (até 500).
+          items:
+            type: object
+            required:
+              - id
+              - name
+            properties:
+              id:
+                type: string
+                example: deepseek/deepseek-v4
+              name:
+                type: string
+                example: DeepSeek V4
+            additionalProperties: false
+        limited_model_count:
+          type: integer
+          minimum: 0
+          description: Quantos modelos listados perderam alguns de seus provedores por causa das regras.
+          example: 3
       additionalProperties: false
     ModelEndpointCapability:
       type: object

@@ -91,7 +91,7 @@ export default function RoutingSettingsClient({ workspaceId, canManage, initialM
 				</div>
 
 				<div>
-					<div className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
+					<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-center sm:gap-8">
 						<div>
 							<label htmlFor="routing-mode" className="text-sm font-medium">
 								{t("credits.Routing Preference" as never)}
@@ -174,7 +174,7 @@ export default function RoutingSettingsClient({ workspaceId, canManage, initialM
 						/>
 					</div>
 					<Separator />
-					<div className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-center sm:gap-8">
+					<div className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-center sm:gap-8">
 						<div>
 							<label htmlFor="response-healing-mode" className="text-sm font-medium">{t("strings.Healing Mode" as never)}</label>
 							<p className="mt-1 text-sm text-muted-foreground">

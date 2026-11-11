@@ -190,7 +190,7 @@ app.whenReady().then(async () => {
     await run(`${items}[0].click()`);
     await wait(`!${popup}&&document.querySelector('main form [aria-label="Choose model"]').textContent.includes('Owned model 999')`);
     await run("window.__auditModelSetting('Reasoning','High')");
-    await run("window.__auditModelSetting('Fast mode','On')");
+    await run("window.__auditModelSetting('Fast mode','Fast')");
     await wait("window.__auditModelSettings()==='High'&&Boolean(document.querySelector('main form button[aria-label=\"Choose model\"] [aria-label=\"Fast\"]'))");
     if (modelReads !== cachedReads) throw Error('Reopening the picker refetched a cached catalog');
     console.log('UNIFIED_PICKER_SMOKE',JSON.stringify({modelReasoningSpeed:true,cachedCatalog:true}));

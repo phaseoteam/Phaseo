@@ -122,4 +122,4 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-管理検索は `server_tool_web_search_requests` と `server_tool_web_search_extra_results` で課金されます。ネイティブ検索は、モデルの料金カードに定義がある場合 `native_web_search_requests` で課金されます。TinyFish Search は公開プランでは無料のため、Phaseo は `engine: "tinyfish"` に検索料金を加算しません。ただし、リクエストの通常のトークン料金は適用されます。
+モデルの料金カードで `server_tool_web_search_requests` と `server_tool_web_search_extra_results` の料金を設定していない場合、Phaseo は管理型検索 1 回につき $0.007、最初の 10 件を超える結果 1 件につき $0.001 を課金します。失敗した検索は課金されず、TinyFish Search は公開プランで無料のため、`engine: "tinyfish"` では検索料金は加算されません。有料エンジンでの検索には、モデルが無料でもクレジットが必要です。ネイティブ検索は、モデルの料金カードで定義されている場合に `native_web_search_requests` で課金されます。

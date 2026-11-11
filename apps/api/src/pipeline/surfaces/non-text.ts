@@ -375,6 +375,7 @@ export function encodeNonTextResponse(
 					: [],
 				...(usage ? { usage } : {}),
 				...(image.svgUsage ? { svg_usage: image.svgUsage } : {}),
+				...(image.errors?.length ? { errors: image.errors } : {}),
 			};
 		}
 

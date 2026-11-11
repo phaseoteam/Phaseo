@@ -61,7 +61,11 @@ export function formatArtificialAnalysisScore(id: string, score: number, locale 
     : { maximumFractionDigits: 2 }).format(score);
 }
 export function formatArtificialAnalysisValue(value: number, _locale = "en-US") {
-	return new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", maximumSignificantDigits: 3 }).format(value);
+	// Cents from a dollar up ($2.50); three significant digits below it ($0.00123).
+	const options: Intl.NumberFormatOptions = Math.abs(value) >= 1
+		? { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+		: { maximumSignificantDigits: 3 };
+	return new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", ...options }).format(value);
 }
 export function artificialAnalysisValueKey(entry: PublicIntelligenceValueEntry) {
 	return entry.configuration_id ?? JSON.stringify([entry.model_id, entry.variant, entry.other_info, entry.updated_at]);

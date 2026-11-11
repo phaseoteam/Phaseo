@@ -2138,6 +2138,8 @@ describe("buildServerToolContinuation", () => {
 				webSearchResults: 0,
 				webSearchExtraResults: 0,
 				webFetchRequests: 1,
+				// A direct fetch costs Phaseo nothing, so it is not billed.
+				billableWebFetchRequests: 0,
 				advisorRequests: 0,
 				subagentRequests: 0,
 				fusionRequests: 0,
