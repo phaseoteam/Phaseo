@@ -19,7 +19,6 @@ import { ARTIFICIAL_ANALYSIS_ID } from "@/benchmarks/artificial-analysis-catalog
 import { getPublicApp } from "./apps";
 import { combineAttemptHealth, isMissingAttemptHealthRpcError, parseAttemptHealthRows } from "./providerAttemptHealth";
 import { providerIndexWithMembers } from "./providers";
-import { getCountrySummaries } from "./reference-data";
 
 export const ENTITY_CARD_KINDS = ["model", "provider", "organisation", "app", "benchmark", "family", "collection", "country"] as const;
 export type EntityCardKind = (typeof ENTITY_CARD_KINDS)[number];
@@ -103,24 +102,29 @@ async function modelUptimePct(env: Env, modelId: string): Promise<number | null>
 	return combineAttemptHealth(parseAttemptHealthRows(result.data))?.uptimePct ?? null;
 }
 
-/** The model's best score on the current Artificial Analysis Intelligence Index, when it is mapped. */
+/**
+ * The model's best score on the current Artificial Analysis Intelligence Index. The current
+ * version is resolved for the whole catalogue, not from this model's results, so a model
+ * scored only on an older version gets null rather than its old score shown as current.
+ */
 async function modelIntelligence(env: Env, modelId: string): Promise<number | null> {
-	const { data, error } = await getDataClient(env).from("v2_benchmark_results")
-		.select("benchmark_id,score_numeric")
-		.eq("model_slug", modelId)
-		.like("benchmark_id", "aa-intelligence-index-v%")
-		.or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
-		.not("score_numeric", "is", null)
-		.limit(50);
-	if (error) {
+	try {
+		const current = await resolveBenchmarkId(env, ARTIFICIAL_ANALYSIS_ID);
+		if (!current) return null;
+		const { data, error } = await getDataClient(env).from("v2_benchmark_results")
+			.select("score_numeric")
+			.eq("model_slug", modelId)
+			.eq("benchmark_id", current)
+			.or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
+			.not("score_numeric", "is", null)
+			.limit(20);
+		if (error) throw error;
+		const scores = (data ?? []).map((row) => finite(row.score_numeric)).filter((value): value is number => value !== null);
+		return scores.length ? Math.max(...scores) : null;
+	} catch (error) {
 		console.error("[web-api/entity-cards] model intelligence failed", { modelId, error });
 		return null;
 	}
-	const version = (id: string) => Number(id.match(/^aa-intelligence-index-v(\d+)$/)?.[1] ?? Number.NaN);
-	const rows = (data ?? []).filter((row) => Number.isFinite(version(str(row.benchmark_id))));
-	const latest = Math.max(...rows.map((row) => version(str(row.benchmark_id))));
-	const scores = rows.filter((row) => version(str(row.benchmark_id)) === latest).map((row) => finite(row.score_numeric)).filter((value): value is number => value !== null);
-	return scores.length ? Math.max(...scores) : null;
 }
 
 function maxContext(row: Row): number | null {
@@ -226,6 +230,9 @@ async function providerCard(env: Env, providerId: string) {
 	const visible = new Map(models.map((model) => [model.id, { id: model.id, name: model.name }]));
 	const popular = models.length ? await providerPopularModels(env, providerId, visible) : [];
 	const newest = [...models].sort((left, right) => String(right.date ?? "").localeCompare(String(left.date ?? "")))[0] ?? null;
+	// Privacy facts are the requested provider's own, never its group representative's:
+	// a regional variant can retain data that its global sibling does not.
+	const own = card.member_policies.find((member) => member.id === providerId) ?? null;
 	return {
 		kind: "provider" as const,
 		id: providerId,
@@ -233,8 +240,9 @@ async function providerCard(env: Env, providerId: string) {
 		countryCode: strOrNull(card.country_code),
 		totalModels: card.total_models,
 		activeModels: card.active_models,
-		dataPolicyTier: strOrNull(card.data_policy_tier),
-		zeroDataRetention: card.zero_data_retention === true,
+		dataPolicyTier: strOrNull(own?.data_policy_tier),
+		// null when the provider does not state it; the card then leaves the fact out.
+		zeroDataRetention: typeof own?.zero_data_retention === "boolean" ? own.zero_data_retention : null,
 		byok: card.byok_available === true,
 		regions: strings(card.default_execution_regions).slice(0, 6),
 		popular: list(popular),
@@ -467,25 +475,44 @@ async function familyAggregates(env: Env, familyId: string) {
 	};
 }
 
+/**
+ * The family's newest visible models by the same date as familyAggregates (released_at,
+ * else announced_at). PostgREST cannot order by that coalesce, so the newest few of each
+ * partition (released; announced only; undated) are fetched and merged: the overall
+ * newest LIST_LIMIT are always among them.
+ */
+async function familyNewest(env: Env, familyId: string): Promise<Row[]> {
+	const visible = () => getDataClient(env).from("v2_models")
+		.select("model_slug,name,released_at,announced_at")
+		.eq("family_slug", familyId)
+		.eq("hidden", false)
+		.neq("status", "disabled");
+	const results = await Promise.all([
+		visible().not("released_at", "is", null).order("released_at", { ascending: false }).limit(LIST_LIMIT),
+		visible().is("released_at", null).not("announced_at", "is", null).order("announced_at", { ascending: false }).limit(LIST_LIMIT),
+		visible().is("released_at", null).is("announced_at", null).order("model_slug", { ascending: true }).limit(LIST_LIMIT),
+	]);
+	for (const result of results) {
+		if (result.error) throw result.error;
+	}
+	const time = (row: Row) => {
+		const parsed = Date.parse(str(row.released_at ?? row.announced_at));
+		return Number.isFinite(parsed) ? parsed : Number.NEGATIVE_INFINITY;
+	};
+	return results.flatMap((result) => (result.data ?? []) as Row[])
+		.sort((left, right) => time(right) - time(left))
+		.slice(0, LIST_LIMIT);
+}
+
 async function familyCard(env: Env, familyId: string) {
 	const client = getDataClient(env);
 	const family = await client.from("v2_model_families").select("family_slug,name,lab_slug,lab:v2_labs(lab_slug,name)").eq("family_slug", familyId).maybeSingle();
 	if (family.error) throw family.error;
 	if (!family.data) return null;
-	const [aggregates, preview] = await Promise.all([
-		familyAggregates(env, familyId),
-		client.from("v2_models")
-			.select("model_slug,name,status,released_at,announced_at")
-			.eq("family_slug", familyId)
-			.eq("hidden", false)
-			.neq("status", "disabled")
-			.order("released_at", { ascending: false, nullsFirst: false })
-			.limit(LIST_LIMIT),
-	]);
-	if (preview.error) throw preview.error;
+	const [aggregates, preview] = await Promise.all([familyAggregates(env, familyId), familyNewest(env, familyId)]);
 	const lab = first(family.data.lab as Row | Row[] | null);
 	const organisationId = str(family.data.lab_slug) || str(lab?.lab_slug) || familyId.split("/")[0] || "";
-	const refs = (preview.data ?? []).flatMap((row) => {
+	const refs = preview.flatMap((row) => {
 		const ref = modelRef(row);
 		return ref ? [ref] : [];
 	});
@@ -534,21 +561,47 @@ async function collectionCard(env: Env, collectionId: string) {
 
 // --- country ---------------------------------------------------------------
 
+/**
+ * The country page's summary for one country: only that country's organisations are read,
+ * and its models come from the shared models-page rows (one cached copy per catalogue
+ * revision) without the weekly usage metrics, which the card does not show. Counting the
+ * rows here, rather than with count queries, keeps the page's visibility rules (public
+ * access scope, no internal testing) that live in the payload and not in the tables.
+ */
 async function countryCard(env: Env, iso: string) {
 	const code = iso.trim().toUpperCase();
 	if (!/^[A-Z]{2}$/.test(code)) return null;
-	const country = (await getCountrySummaries(env)).find((entry) => entry.iso === code);
-	if (!country) return null;
-	const organisations = country.organisations.map((entry) => ({ id: str(entry.organisation_id), name: str(entry.organisation_name) || str(entry.organisation_id) })).filter((entry) => entry.id);
-	const latest = country.latestModel ? modelRef(country.latestModel) : null;
+	const [labs, catalogue] = await Promise.all([
+		getDataClient(env).from("v2_labs")
+			.select("lab_slug,name", { count: "exact" })
+			// Some rows store the code in lower case; the country page upper-cases it.
+			.in("country_code", [code, code.toLowerCase()])
+			.order("lab_slug", { ascending: true })
+			.limit(1000),
+		fetchModelsPageCatalogue(env, { includeMetrics: false }, "v2"),
+	]);
+	if (labs.error) throw labs.error;
+	const organisations = new Map((labs.data ?? []).map((row) => [str(row.lab_slug), str(row.name) || str(row.lab_slug)] as const).filter(([id]) => id));
+	if (!organisations.size) return null;
+	const models = catalogue.models
+		.filter((model) => organisations.has(str(model.organisation_id)))
+		.sort((left, right) => Number(right.primary_timestamp ?? 0) - Number(left.primary_timestamp ?? 0));
+	const modelCounts = new Map<string, number>();
+	for (const model of models) modelCounts.set(str(model.organisation_id), (modelCounts.get(str(model.organisation_id)) ?? 0) + 1);
+	// Most models first, as on the country page.
+	const ranked = [...organisations].map(([id, name]) => ({ id, name, count: modelCounts.get(id) ?? 0 }))
+		.sort((left, right) => right.count - left.count)
+		.map(({ id, name }) => ({ id, name }));
+	const latestRow = models[0] ?? null;
+	const latest = latestRow ? modelRef(latestRow) : null;
 	return {
 		kind: "country" as const,
 		id: code,
-		organisations: country.totalOrganisations,
-		models: country.totalModels,
-		live: country.organisations.reduce((sum, entry) => sum + (entry.models as Row[]).filter((model) => model.gateway_status === "active").length, 0),
-		topOrganisations: list(organisations),
-		latest: latest ? { ...latest, date: dateOnly(country.latestModel?.primary_date) } : null,
+		organisations: labs.count ?? organisations.size,
+		models: models.length,
+		live: models.filter((model) => model.gateway_status === "active").length,
+		topOrganisations: list(ranked),
+		latest: latest ? { ...latest, date: dateOnly(latestRow?.primary_date) } : null,
 	};
 }
 
@@ -574,12 +627,8 @@ export const publicEntityCardsRouter = new Hono<{ Bindings: Env }>();
 // Ids can contain slashes (models are "<organisation>/<model>", families nest too).
 publicEntityCardsRouter.get("/entity-cards/:kind/:id{.+}", async (c) => {
 	const kind = c.req.param("kind");
-	let id: string;
-	try {
-		id = decodeURIComponent(c.req.param("id")).trim();
-	} catch {
-		id = "";
-	}
+	// Hono has already percent-decoded the parameter; decoding again would turn a literal "%2F" into "/".
+	const id = (c.req.param("id") ?? "").trim();
 	if (!isKind(kind) || !id || id.length > 200) {
 		return withPublicCache(c.json({ error: "entity_not_found" }, 404), NOT_FOUND_CACHE);
 	}

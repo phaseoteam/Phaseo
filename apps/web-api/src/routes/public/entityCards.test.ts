@@ -67,10 +67,14 @@ function stubDatabase(overrides: Record<string, unknown> = {}) {
 			provider_id: "fastinfer", service_tier: "standard", attempts: 200, eligible_attempts: 200, success_attempts: 199,
 			reachability_failures: 1, capacity_failures: 0, call_error_failures: 0, buckets: [],
 		}],
-		"v2_benchmark_results?select=benchmark_id%2Cscore_numeric": [
-			{ benchmark_id: "aa-intelligence-index-v4", score_numeric: 70 },
-			{ benchmark_id: "aa-intelligence-index-v5", score_numeric: 52.3 },
+		// v5 is the current index version; the model's v4 score must never stand in for it.
+		"v2_benchmarks?select=benchmark_id%2Ctotal_models": [
+			{ benchmark_id: "aa-intelligence-index-v4", total_models: 300 },
+			{ benchmark_id: "aa-intelligence-index-v5", total_models: 120 },
 		],
+		"v2_benchmark_results?select=score_numeric": (url: string) => (url.includes("benchmark_id=eq.aa-intelligence-index-v5")
+			? [{ score_numeric: 52.3 }]
+			: url.includes("benchmark_id=eq.aa-intelligence-index-v4") ? [{ score_numeric: 70 }] : []),
 		"rpc/get_public_provider_index": [{
 			provider_slug: "fastinfer", provider_name: "FastInfer", country_code: "US", default_execution_regions: ["us-east", "eu-west"],
 			is_gateway_provider: true, provider_status: "active", byok_available: true, data_policy_tier: "no_training",
@@ -249,12 +253,13 @@ describe("entity card route", () => {
 			"v2_benchmark_results?select=model_slug%2Cscore%2Crank": [{ model_slug: "acme/rocket-2", score: "81.2%", rank: 1 }, { model_slug: "acme/hidden", score: "80%", rank: 2 }],
 			"v2_models?select=model_slug%2Cname&": [{ model_slug: "acme/rocket-2", name: "Rocket 2" }],
 			"v2_model_families": [{ family_slug: "acme/rocket", name: "Rocket", lab_slug: "acme", lab: { lab_slug: "acme", name: "Acme" } }],
-			"v2_models?select=model_slug%2Cname%2Cstatus": [
-				{ model_slug: "acme/rocket-2", name: "Rocket 2", status: "active", released_at: "2026-10-01" },
-				{ model_slug: "acme/rocket-1", name: "Rocket 1", status: "deprecated", released_at: "2025-03-01" },
-			],
+			"v2_models?select=model_slug%2Cname%2Creleased_at%2Cannounced_at&": (url: string) => (url.includes("released_at=not.is.null") ? [
+				{ model_slug: "acme/rocket-2", name: "Rocket 2", released_at: "2026-10-01", announced_at: null },
+				{ model_slug: "acme/rocket-1", name: "Rocket 1", released_at: "2025-03-01", announced_at: null },
+			] : []),
 			...familyAggregateStubs({ total: 2, active: 1, released: ["2025-03-01", "2026-10-01"] }),
-			"v2_labs?select=lab_slug%2Cname%2Ccountry_code%2Csubdivision_code%2Cmetadata": [{ lab_slug: "acme", name: "Acme", country_code: "GB" }],
+			// Only the requested country's organisations are read.
+			"v2_labs?select=lab_slug%2Cname&": (url: string) => (url.includes("country_code=in.(GB,gb)") ? [{ lab_slug: "acme", name: "Acme" }] : []),
 		});
 		const [benchmark, family, collection, country] = await Promise.all([
 			get("benchmark/mmmu"),
@@ -277,11 +282,11 @@ describe("entity card route", () => {
 	it("counts a family of more than 200 models in the database, not from the member preview", async () => {
 		const fetchMock = stubDatabase({
 			"v2_model_families": [{ family_slug: "acme/rocket", name: "Rocket", lab_slug: "acme", lab: { lab_slug: "acme", name: "Acme" } }],
-			"v2_models?select=model_slug%2Cname%2Cstatus": [
-				{ model_slug: "acme/rocket-250", name: "Rocket 250", status: "active", released_at: "2026-10-01" },
-				{ model_slug: "acme/rocket-249", name: "Rocket 249", status: "active", released_at: "2026-09-01" },
-				{ model_slug: "acme/rocket-248", name: "Rocket 248", status: "deprecated", released_at: "2026-08-01" },
-			],
+			"v2_models?select=model_slug%2Cname%2Creleased_at%2Cannounced_at&": (url: string) => (url.includes("released_at=not.is.null") ? [
+				{ model_slug: "acme/rocket-250", name: "Rocket 250", released_at: "2026-10-01" },
+				{ model_slug: "acme/rocket-249", name: "Rocket 249", released_at: "2026-09-01" },
+				{ model_slug: "acme/rocket-248", name: "Rocket 248", released_at: "2026-08-01" },
+			] : []),
 			// The oldest member only has an announcement date; the newest bound is a release date.
 			...familyAggregateStubs({ total: 250, active: 180, released: ["2021-06-01", "2026-10-01"], announced: ["2020-01-15", "2024-02-01"] }),
 		});
@@ -304,6 +309,96 @@ describe("entity card route", () => {
 		for (const call of familyModelReads.filter((call) => call.method !== "HEAD")) expect(call.url).toMatch(/limit=(1|3)(&|$)/);
 		// The announcement-date bounds only cover models without a release date.
 		for (const call of familyModelReads.filter((call) => call.url.includes("select=announced_at"))) expect(call.url).toContain("released_at=is.null");
+	});
+
+	it("gives a model scored only on an older intelligence index no current score", async () => {
+		stubDatabase({
+			"v2_benchmarks?select=benchmark_id%2Ctotal_models": [
+				{ benchmark_id: "aa-intelligence-index-v4", total_models: 300 },
+				{ benchmark_id: "aa-intelligence-index-v5", total_models: 120 },
+				// A version with no scored models yet is not current.
+				{ benchmark_id: "aa-intelligence-index-v6", total_models: 0 },
+			],
+			"v2_benchmark_results?select=score_numeric": (url: string) => (url.includes("benchmark_id=eq.aa-intelligence-index-v4") ? [{ score_numeric: 70 }] : []),
+		});
+		const response = await get("model/acme/rocket-2");
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toMatchObject({ card: { intelligence: null } });
+	});
+
+	it("shows the requested provider's own data policy, never its group representative's", async () => {
+		const row = (slug: string, zdr: boolean | null, tier: string) => ({
+			provider_slug: slug, provider_name: "FastInfer", country_code: "US", provider_family_id: "fastinfer", offer_scope: slug === "fastinfer" ? "global" : "regional",
+			is_gateway_provider: true, provider_status: "active", byok_available: true, data_policy_tier: tier, zero_data_retention: zdr,
+			total_model_ids: ["acme/rocket-2"], active_model_ids: ["acme/rocket-2"], requests_24h: 1, tokens_24h: 0, tokens_30d: 0,
+		});
+		stubDatabase({
+			"rpc/get_public_provider_index": [row("fastinfer", true, "private"), row("fastinfer-eu", false, "logs"), row("fastinfer-us", null, "private")],
+		});
+		const cards = await Promise.all(["fastinfer", "fastinfer-eu", "fastinfer-us"].map(async (id) => {
+			const response = await get(`provider/${id}`);
+			expect(response.status).toBe(200);
+			return ((await response.json()) as { card: Record<string, unknown> }).card;
+		}));
+		expect(cards.map((card) => [card.id, card.zeroDataRetention, card.dataPolicyTier])).toEqual([
+			["fastinfer", true, "private"],
+			// The EU offer keeps logs: its group representative's "Yes" must not show.
+			["fastinfer-eu", false, "logs"],
+			// Not stated: unknown, so the card leaves it out.
+			["fastinfer-us", null, "private"],
+		]);
+	});
+
+	it("previews the newest family members by release date, else announcement date", async () => {
+		stubDatabase({
+			"v2_model_families": [{ family_slug: "acme/rocket", name: "Rocket", lab_slug: "acme", lab: { lab_slug: "acme", name: "Acme" } }],
+			"v2_models?select=model_slug%2Cname%2Creleased_at%2Cannounced_at&": (url: string) => {
+				if (url.includes("released_at=not.is.null")) return [
+					{ model_slug: "acme/rocket-2", name: "Rocket 2", released_at: "2026-06-01", announced_at: null },
+					{ model_slug: "acme/rocket-1", name: "Rocket 1", released_at: "2025-03-01", announced_at: null },
+				];
+				if (url.includes("announced_at=not.is.null")) return [{ model_slug: "acme/rocket-3", name: "Rocket 3", released_at: null, announced_at: "2026-10-20" }];
+				return [{ model_slug: "acme/rocket-x", name: "Rocket X", released_at: null, announced_at: null }];
+			},
+			...familyAggregateStubs({ total: 4, active: 2, released: ["2025-03-01", "2026-06-01"], announced: ["2026-10-20", "2026-10-20"] }),
+		});
+		const response = await get("family/acme/rocket");
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toMatchObject({
+			card: {
+				latestRelease: "2026-10-20",
+				members: { items: [{ id: "acme/rocket-3" }, { id: "acme/rocket-2" }, { id: "acme/rocket-1" }], more: 1 },
+			},
+		});
+	});
+
+	it("decodes a percent-containing id once", async () => {
+		const fetchMock = stubDatabase({
+			"v2_labs?select=lab_slug%2Cname%2Ccountry_code&": (url: string) => (url.includes("lab_slug=eq.50%off") ? [{ lab_slug: "50%off", name: "Fifty", country_code: "GB" }] : []),
+		});
+		const response = await get("organisation/50%25off");
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toMatchObject({ card: { kind: "organisation", id: "50%off", name: "Fifty" } });
+		// A literal "%2F" stays in the id rather than becoming a slash.
+		await get("organisation/a%252Fb");
+		const labReads = fetchMock.mock.calls.map(([input]) => decodeURIComponent(String(input))).filter((url) => url.includes("/v2_labs?"));
+		expect(labReads.some((url) => url.includes("lab_slug=eq.a%2Fb"))).toBe(true);
+	});
+
+	it("reads only the requested country's organisations and no usage metrics", async () => {
+		const fetchMock = stubDatabase({
+			"v2_labs?select=lab_slug%2Cname&": (url: string) => (url.includes("country_code=in.(GB,gb)") ? [{ lab_slug: "acme", name: "Acme" }] : []),
+		});
+		const response = await get("country/GB");
+		expect(response.status).toBe(200);
+		const urls = fetchMock.mock.calls.map(([input]) => decodeURIComponent(String(input)));
+		const labReads = urls.filter((url) => url.includes("/v2_labs?"));
+		expect(labReads).toHaveLength(1);
+		expect(labReads[0]).toContain("country_code=in.(GB,gb)");
+		expect(labReads[0]).toMatch(/limit=1000/);
+		const { fetchModelsPageCatalogue } = await import("@/models/page-catalogue");
+		expect(vi.mocked(fetchModelsPageCatalogue)).toHaveBeenLastCalledWith(expect.anything(), { includeMetrics: false }, "v2");
+		await expect(response.json()).resolves.toMatchObject({ card: { id: "GB", organisations: 1, models: 2, live: 1, latest: { id: "acme/rocket-2" } } });
 	});
 
 	it("returns a briefly cached 404 for unknown ids and kinds", async () => {

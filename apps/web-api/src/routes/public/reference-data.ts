@@ -72,7 +72,7 @@ function labOrganisation(row: Record<string, unknown>) {
 	};
 }
 
-export async function getCountrySummaries(env: Env) {
+async function getCountrySummaries(env: Env) {
 	const client = getDataClient(env);
 	const [organisationsResult, catalogue] = await Promise.all([
 		client.from("v2_labs").select("lab_slug,name,country_code,subdivision_code,metadata"),
