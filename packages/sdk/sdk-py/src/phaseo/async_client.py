@@ -17,7 +17,7 @@ from .auth import ApiKeyProvider, has_authorization, resolve_async
 from .helpers import check_capabilities, check_parameter_support, parse_output, _batch_line, _accumulate_event
 from .jobs import JobFailedError, JobTimeoutError, job_status, _validate_options
 from .transport import APIResponse, PhaseoHTTPError, RawResponse, RequestHook, decode_response, request_trace_url, retry_after, validate_controls
-from .media import upload_input
+from .media import upload_input, audio_upload, form_fields
 from .pagination import aiter_items, aiter_pages
 from .realtime import AsyncRealtime
 from gen import models
@@ -137,8 +137,23 @@ class AsyncImages(AsyncResource):
 class AsyncAudio:
     def __init__(self, client: "AsyncPhaseo"):
         self.speech = AsyncSpeech(client, "/audio/speech")
-        self.transcriptions = AsyncResource(client, "/audio/transcriptions")
-        self.translations = AsyncResource(client, "/audio/translations")
+        self.transcriptions = AsyncAudioUpload(client, "/audio/transcriptions")
+        self.translations = AsyncAudioUpload(client, "/audio/translations")
+
+
+class AsyncAudioUpload(AsyncResource):
+    async def create(self, params: dict[str, Any]) -> APIResponse:
+        """With `file` (bytes, a path, or an open binary file), sends multipart/form-data; set `filename`
+        (its extension names the format) for raw bytes. Without `file`, sends JSON (transcription
+        `file_url`, `file_id` or `s3_presigned_url`)."""
+        if params.get("file") is None:
+            return await super().create(params)
+        fields = dict(params)
+        file, filename, content_type = fields.pop("file"), fields.pop("filename", None), fields.pop("content_type", None)
+        with audio_upload(file, filename, content_type) as part:
+            async with self.client._stream("POST", self.path, files=[("file", part), *form_fields(fields)]) as response:
+                await response.aread()
+                return decode_response(response)
 
 
 class AsyncSpeech:
@@ -156,8 +171,11 @@ class AsyncDecisions(AsyncResource):
 
 class AsyncFiles(AsyncResource):
     async def create(self, params: dict[str, Any]) -> APIResponse:
+        # `model` and `provider` go in the query string so the gateway can place the file.
+        query = {key: params[key] for key in ("model", "provider") if params.get(key)}
         with upload_input(params["file"], params.get("filename", "upload"), params.get("content_type", "application/octet-stream")) as file:
-            async with self.client._stream("POST", self.path, files={"file": file}, data={"purpose": params["purpose"]} if params.get("purpose") else {}) as response:
+            async with self.client._stream("POST", self.path, params=query or None, files={"file": file},
+                                           data={"purpose": params["purpose"]} if params.get("purpose") else {}) as response:
                 await response.aread()
                 return decode_response(response)
 
