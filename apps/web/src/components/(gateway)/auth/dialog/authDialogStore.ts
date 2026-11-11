@@ -26,6 +26,8 @@ export type AuthDialogState = {
 	errorCode?: string;
 	/** The legacy /error?message= form of an error. */
 	errorMessage?: string;
+	/** Opened by the page URL (?auth=); removing the parameter (Back/Forward) closes it. */
+	fromUrl?: boolean;
 };
 
 export type OpenAuthDialogOptions = Omit<Partial<AuthDialogState>, "open">;
@@ -73,6 +75,7 @@ export function openAuthDialog(options: OpenAuthDialogOptions = {}) {
 		notice: options.notice,
 		errorCode: options.errorCode,
 		errorMessage: options.errorMessage,
+		fromUrl: options.fromUrl,
 	});
 }
 
@@ -149,11 +152,3 @@ export function authDialogTargetFromSearch(search: string): OpenAuthDialogOption
 	return options;
 }
 
-/** The current URL without the dialog's parameters (and the error hash), or null when it has none. */
-export function urlWithoutAuthParams(href: string): string | null {
-	const url = new URL(href);
-	if (!url.searchParams.has("auth")) return null;
-	for (const key of AUTH_DIALOG_PARAMS) url.searchParams.delete(key);
-	url.hash = "";
-	return `${url.pathname}${url.search}`;
-}

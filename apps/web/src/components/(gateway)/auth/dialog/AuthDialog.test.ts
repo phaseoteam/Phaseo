@@ -10,7 +10,6 @@ import {
 	getAuthDialogState,
 	isAuthPagePath,
 	openAuthDialog,
-	urlWithoutAuthParams,
 } from "./authDialogStore";
 
 const ORIGIN = window.location.origin;
@@ -110,11 +109,6 @@ describe("return URLs", () => {
 		expect(currentReturnUrl()).toBe("/models?returnUrl=%2Fx");
 	});
 
-	it("strips the dialog's parameters and error hash when it closes", () => {
-		expect(urlWithoutAuthParams(`${ORIGIN}/?auth=error&code=default#error=access_denied`)).toBe("/");
-		expect(urlWithoutAuthParams(`${ORIGIN}/de-DE?tab=1&auth=mfa&returnUrl=%2Fs`)).toBe("/de-DE?tab=1");
-		expect(urlWithoutAuthParams(`${ORIGIN}/models?tab=1`)).toBeNull();
-	});
 });
 
 describe("handleAuthLinkClick", () => {

@@ -6,26 +6,44 @@
 //   (new tab), target=_blank, downloads and links inside `data-auth-page` navigate.
 // - `?auth=<step>` on any page opens it too. Server redirects, emails, OAuth and SSO
 //   callbacks reach it that way: the old auth URLs redirect to the home page with that
-//   parameter (lib/auth/authDialogRedirect.ts). Closing the dialog removes it.
+//   parameter (lib/auth/authDialogRedirect.ts). The parameters are nuqs state (shallow,
+//   no scroll): closing removes them, and Back/Forward opens or closes the dialog.
 // - After signing in the browser loads the return URL: the page the dialog was opened
 //   on, unless the link or redirect named one.
 // - Only the Google / GitHub / GitLab / SAML provider pages and the emails themselves
 //   are outside the dialog.
 // - The dialog UI loads on first open, so pages that never show it do not pay for it.
 import { lazy, Suspense, useEffect, useState } from "react";
-import { useLocation, useRouter } from "@tanstack/react-router";
+import { useLocation } from "@tanstack/react-router";
+import { parseAsString, useQueryStates } from "nuqs";
 import {
 	authDialogTargetFromHref,
 	authDialogTargetFromSearch,
 	closeAuthDialog,
 	isAuthPagePath,
+	getAuthDialogState,
 	openAuthDialog,
-	urlWithoutAuthParams,
 	useAuthDialogState,
 } from "./authDialogStore";
 
 const loadContent = () => import("./AuthDialogContent");
 const AuthDialogContent = lazy(loadContent);
+
+/** The dialog's query parameters (AUTH_DIALOG_PARAMS). */
+const authQuery = {
+	auth: parseAsString,
+	returnUrl: parseAsString,
+	notice: parseAsString,
+	code: parseAsString,
+	message: parseAsString,
+};
+const CLEARED_QUERY = { auth: null, returnUrl: null, notice: null, code: null, message: null };
+
+function toSearch(query: Record<string, string | null>): string {
+	const params = new URLSearchParams();
+	for (const [key, value] of Object.entries(query)) if (value !== null) params.set(key, value);
+	return params.toString();
+}
 
 /** Opens the dialog for plain clicks on sign-in / sign-up links. Exported for tests. */
 export function handleAuthLinkClick(event: MouseEvent) {
@@ -46,8 +64,10 @@ export function handleAuthLinkClick(event: MouseEvent) {
 
 export function AuthDialog() {
 	const state = useAuthDialogState();
-	const router = useRouter();
-	const { pathname, searchStr } = useLocation();
+	const { pathname } = useLocation();
+	// Replace, so Back after closing does not reopen the dialog.
+	const [query, setQuery] = useQueryStates(authQuery, { shallow: true, scroll: false, history: "replace" });
+	const search = toSearch(query);
 	const [contentRequested, setContentRequested] = useState(false);
 
 	// Capture phase so this runs before the Link's own click handler.
@@ -61,17 +81,17 @@ export function AuthDialog() {
 		closeAuthDialog();
 	}, [pathname]);
 
-	// ... unless the new URL asks for it.
+	// ... unless the new URL asks for it. Losing ?auth= (Back/Forward) closes a dialog the URL opened.
 	useEffect(() => {
-		const target = authDialogTargetFromSearch(searchStr);
-		if (target) openAuthDialog(target);
-	}, [pathname, searchStr]);
+		const target = authDialogTargetFromSearch(search);
+		if (target) openAuthDialog({ ...target, fromUrl: true });
+		else if (getAuthDialogState().fromUrl) closeAuthDialog();
+	}, [pathname, search]);
 
 	const onOpenChange = (open: boolean) => {
 		if (open) return;
 		closeAuthDialog();
-		const cleaned = urlWithoutAuthParams(window.location.href);
-		if (cleaned) void router.navigate({ href: cleaned, replace: true, resetScroll: false });
+		if (query.auth !== null) void setQuery(CLEARED_QUERY);
 	};
 
 	if (state.open && !contentRequested) setContentRequested(true);
