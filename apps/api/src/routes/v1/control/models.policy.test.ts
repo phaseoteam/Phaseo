@@ -136,6 +136,23 @@ describe("models for a key's policy", () => {
         expect(providers(filterModelsForPolicy(router, block, new Map(), routes), "phaseo/free")).toEqual(["host-a"]);
     });
 
+    it("rebuilds endpoints, parameters and status from the offers left", () => {
+        const policy = buildWorkspacePolicy({ globalSettings: { provider_restriction_mode: "blocklist", provider_restriction_provider_ids: ["tools-host"] } });
+        const withCaps = (provider: string, status: string, endpoints: string[], parameters: string[]) => ({ ...offer(provider, "0.000001", status), endpoints, capabilities: { parameters, parameter_details: Object.fromEntries(parameters.map((name) => [name, { supported: true }])) } });
+        const list = [{
+            ...model("x/m", [withCaps("tools-host", "active", ["text.generate", "responses"], ["temperature", "tools"]), withCaps("plain-host", "coming_soon", ["text.generate"], ["temperature"])]),
+            capabilities: { endpoints: ["responses", "text.generate"], parameters: ["temperature", "tools"], parameter_details: { temperature: { supported: true }, tools: { supported: true } } },
+        }];
+        list[0].availability.status = "active";
+        const [kept] = filterModelsForPolicy(list, policy, new Map());
+        // Only the blocked provider served tools and responses, so neither is advertised.
+        expect(kept.capabilities?.endpoints).toEqual(["text.generate"]);
+        expect(kept.capabilities?.parameters).toEqual(["temperature"]);
+        expect(Object.keys(kept.capabilities?.parameter_details ?? {})).toEqual(["temperature"]);
+        // The active provider went; the one left is coming soon.
+        expect(kept.availability).toMatchObject({ status: "coming_soon", active_provider_count: 0, coming_soon_provider_count: 1 });
+    });
+
     it("lets a workspace's private models through privacy rules", () => {
         const policy = buildWorkspacePolicy({ globalSettings: { privacy_zdr_only: true } });
         const models = filterModelsForPolicy([model("acme/internal", [offer("private-model")])], policy, new Map());

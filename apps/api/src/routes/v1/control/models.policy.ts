@@ -10,19 +10,24 @@ import { resolveEffectiveDataPolicy } from "@pipeline/before/dataPolicy";
 import { applyWorkspacePolicy } from "@pipeline/before/workspacePolicy";
 import type { GatewayProviderSnapshot, ProviderCandidate, WorkspacePolicy } from "@pipeline/before/types";
 import type { PriceCard } from "@pipeline/pricing/types";
+import { mergeParamDetails, withProviderOnParamDetails, type SupportedParamDetails } from "./models.catalogue";
 
 type ListedMeter = { provider_id?: string; unit?: string; unit_size?: number; price_per_unit?: string | number | null; currency?: string | null };
 type ListedOffer = {
     provider: { id: string };
     status?: string | null;
     routable?: boolean;
+    endpoints?: string[];
+    capabilities?: { parameters?: string[]; parameter_details?: SupportedParamDetails };
     pricing?: { meters?: Record<string, ListedMeter | null> } | null;
 };
 type ListedModel = {
     id: string;
     offers: ListedOffer[];
     pricing?: { meters?: Record<string, ListedMeter | null>; [key: string]: unknown } | null;
+    capabilities?: { endpoints?: string[]; parameters?: string[]; parameter_details?: SupportedParamDetails; [key: string]: unknown };
     availability: {
+        status?: string;
         provider_count: number;
         active_provider_count: number;
         coming_soon_provider_count: number;
@@ -162,9 +167,20 @@ function pricingFrom<T extends ListedModel>(model: T, offers: ListedOffer[]): T[
     return { ...model.pricing, meters };
 }
 
+/** The model's endpoints and parameters from the offers left, merged as the catalogue merges every offer's. */
+function capabilitiesFrom<T extends ListedModel>(model: T, offers: ListedOffer[]): T["capabilities"] {
+    if (!model.capabilities) return model.capabilities;
+    return {
+        ...model.capabilities,
+        endpoints: Array.from(new Set(offers.flatMap((offer) => offer.endpoints ?? []))).sort(),
+        parameters: Array.from(new Set(offers.flatMap((offer) => offer.capabilities?.parameters ?? []))).sort((a, b) => a.localeCompare(b)),
+        parameter_details: mergeParamDetails(...offers.map((offer) => withProviderOnParamDetails(offer.capabilities?.parameter_details ?? {}, offer.provider.id))),
+    };
+}
+
 /**
- * The models the policy lets this key use, each with only the offers it may be routed to, and its prices and counts
- * from those. A model with no permitted offer, or one a model rule blocks, is left out, as a request would be refused.
+ * The models the policy lets this key use, each with only the offers it may be routed to, and its prices, capabilities,
+ * counts and status from those. A model with no permitted offer, or one a model rule blocks, is left out, as a request would be refused.
  */
 export function filterModelsForPolicy<T extends ListedModel>(
     models: T[],
@@ -186,8 +202,11 @@ export function filterModelsForPolicy<T extends ListedModel>(
             ...model,
             offers,
             pricing: pricingFrom(model, offers),
+            capabilities: capabilitiesFrom(model, offers),
             availability: {
                 ...model.availability,
+                // The catalogue's precedence: any active offer, else coming soon, else inactive.
+                status: active ? "active" : comingSoon ? "coming_soon" : offers.length - active - comingSoon ? "inactive" : "not_listed",
                 provider_count: offers.length,
                 active_provider_count: active,
                 coming_soon_provider_count: comingSoon,

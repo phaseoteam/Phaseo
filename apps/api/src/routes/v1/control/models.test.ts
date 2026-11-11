@@ -33,7 +33,9 @@ vi.mock("@pipeline/before/guards", () => ({
     guardAuth: (...args: any[]) => guardAuthMock(...args),
 }));
 
-vi.mock("./models.catalogue", () => ({
+vi.mock("./models.catalogue", async (importOriginal) => ({
+    // The real merge helpers (models.policy.ts reprices and merges capabilities with them); only the data is mocked.
+    ...await importOriginal<typeof import("./models.catalogue")>(),
     fetchCatalogue: (...args: any[]) => fetchCatalogueMock(...args),
     scopePricingSummary: (pricing: unknown) => pricing,
 }));

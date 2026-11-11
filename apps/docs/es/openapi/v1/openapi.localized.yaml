@@ -436,8 +436,8 @@ paths:
       tags:
         - Gateway
       operationId: listTeamModels
-      summary: Listar modelos de la pasarela del equipo
-      description: Devuelve los modelos de la pasarela del equipo. De forma predeterminada, muestra los modelos enrutables públicamente; usa `availability=all` para incluir registros de disponibilidad que no se pueden enrutar.
+      summary: Lista los modelos que puede usar esta clave
+      description: 'Devuelve la lista de /models con los guardrails de quien llama aplicados: se omiten los modelos que bloquea una regla y los que no tienen ningún proveedor permitido, y cada modelo conserva solo las ofertas a las que se pueden enviar sus solicitudes, con sus precios, capacidades y disponibilidad calculados a partir de ellas. El objeto access indica qué dejaron fuera las reglas. De forma predeterminada incluye los modelos que se pueden enrutar públicamente; usa availability=all para incluir registros de disponibilidad no enrutables.'
       parameters:
         - name: endpoints
           in: query
@@ -21093,6 +21093,48 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Model'
+        access:
+          $ref: '#/components/schemas/GatewayModelAccess'
+      additionalProperties: false
+    GatewayModelAccess:
+      type: object
+      description: 'Solo lo devuelve /models/me: lo que los guardrails de quien llama dejaron fuera de la lista, antes de la búsqueda y la paginación.'
+      required:
+        - restricted
+        - hidden_model_count
+        - hidden_models
+        - limited_model_count
+      properties:
+        restricted:
+          type: boolean
+          description: Si alguna regla restringe modelos o proveedores para esta clave.
+          example: true
+        hidden_model_count:
+          type: integer
+          minimum: 0
+          description: Cuántos modelos dejan fuera las reglas.
+          example: 12
+        hidden_models:
+          type: array
+          description: Los modelos que quedan fuera, con sus nombres (hasta 500).
+          items:
+            type: object
+            required:
+              - id
+              - name
+            properties:
+              id:
+                type: string
+                example: deepseek/deepseek-v4
+              name:
+                type: string
+                example: DeepSeek V4
+            additionalProperties: false
+        limited_model_count:
+          type: integer
+          minimum: 0
+          description: Cuántos modelos de la lista perdieron algunos de sus proveedores por las reglas.
+          example: 3
       additionalProperties: false
     ModelEndpointCapability:
       type: object

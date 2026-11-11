@@ -1616,6 +1616,13 @@ public final class Models {
 		public java.util.List<String> output;
 	}
 
+	public static class GatewayModelAccess {
+		public Integer hidden_model_count;
+		public java.util.List<Object> hidden_models;
+		public Integer limited_model_count;
+		public Boolean restricted;
+	}
+
 	public static class GatewayModelLifecycle {
 		public String deprecated_at;
 		public String message;
@@ -1649,6 +1656,7 @@ public final class Models {
 	}
 
 	public static class GatewayModelsResponse {
+		public Object access;
 		public Object availability_mode;
 		public Integer limit;
 		public java.util.List<Object> models;

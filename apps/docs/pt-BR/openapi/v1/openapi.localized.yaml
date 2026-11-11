@@ -436,8 +436,8 @@ paths:
       tags:
         - Gateway
       operationId: listTeamModels
-      summary: Listar modelos do gateway por equipe
-      description: Retorna a lista de modelos do gateway por equipe. Por padrão, inclui modelos roteáveis publicamente; use `availability=all` para incluir registros de disponibilidade não roteáveis.
+      summary: Listar os modelos que esta chave pode usar
+      description: 'Retorna a lista de /models com as proteções de quem chama aplicadas: ficam de fora os modelos bloqueados por uma regra e os sem nenhum provedor permitido, e cada modelo mantém apenas as ofertas para as quais as solicitações podem ser roteadas, com preços, capacidades e disponibilidade calculados a partir delas. O objeto access informa o que as regras deixaram de fora. Por padrão inclui os modelos atualmente roteáveis publicamente; use availability=all para incluir registros de disponibilidade não roteáveis.'
       parameters:
         - name: endpoints
           in: query
@@ -21093,6 +21093,48 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Model'
+        access:
+          $ref: '#/components/schemas/GatewayModelAccess'
+      additionalProperties: false
+    GatewayModelAccess:
+      type: object
+      description: 'Retornado apenas por /models/me: o que as proteções de quem chama deixaram de fora da lista, antes da busca e da paginação.'
+      required:
+        - restricted
+        - hidden_model_count
+        - hidden_models
+        - limited_model_count
+      properties:
+        restricted:
+          type: boolean
+          description: Se alguma regra restringe modelos ou provedores para esta chave.
+          example: true
+        hidden_model_count:
+          type: integer
+          minimum: 0
+          description: Quantos modelos as regras deixam de fora.
+          example: 12
+        hidden_models:
+          type: array
+          description: Os modelos que ficaram de fora, com seus nomes (até 500).
+          items:
+            type: object
+            required:
+              - id
+              - name
+            properties:
+              id:
+                type: string
+                example: deepseek/deepseek-v4
+              name:
+                type: string
+                example: DeepSeek V4
+            additionalProperties: false
+        limited_model_count:
+          type: integer
+          minimum: 0
+          description: Quantos modelos listados perderam alguns de seus provedores por causa das regras.
+          example: 3
       additionalProperties: false
     ModelEndpointCapability:
       type: object
