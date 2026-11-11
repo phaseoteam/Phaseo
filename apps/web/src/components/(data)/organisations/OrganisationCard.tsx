@@ -28,6 +28,7 @@ export default function OrganisationCard({
 			<CardContent className="flex flex-row items-center gap-3 p-4">
 				<Link
 					href={`/organisations/${organisation.organisation_id}`}
+					data-no-entity-card
 					className="group"
 				>
 					<div className="w-10 h-10 relative flex items-center justify-center rounded-xl border">
@@ -47,6 +48,7 @@ export default function OrganisationCard({
 				<div className="flex flex-col min-w-0 flex-1">
 					<Link
 						href={`/organisations/${organisation.organisation_id}`}
+						data-no-entity-card
 						className="font-semibold truncate leading-tight"
 					>
 						<span className="relative underline decoration-2 underline-offset-2 decoration-transparent hover:decoration-current transition-colors duration-200">
@@ -86,6 +88,7 @@ export default function OrganisationCard({
 					>
 						<Link
 							href={`/organisations/${organisation.organisation_id}`}
+							data-no-entity-card
 							aria-label={t("openLab", { name: organisation.organisation_name ?? t("title") })}
 							tabIndex={-1}
 						>

@@ -17,11 +17,16 @@
 // - The card's data is requested as soon as the pointer is over a link (hover
 //   intent) and cached for the page's lifetime. The card UI itself loads on the
 //   first hover, so pages that never show a card do not pay for it.
-// - Links inside a card open their own cards.
-import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
+// - Links inside a card open their own cards, in the same card: it shows the new
+//   entity (at once when cached) where the link was when the switch happened.
+// - The card is positioned against its link until it has finished closing, and
+//   against the link's last box once the page has replaced the link, so it never
+//   jumps to the corner of the screen. A link the page replaced closes its card
+//   and never opens one; a card's own link leaving with the old content does not.
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocation } from "@tanstack/react-router";
 import { entityLinkFromTarget, type EntityLink } from "@/lib/entityCards/entityLink";
-import { loadEntityCard, type EntityCard } from "./entityCardData";
+import { cachedEntityCard, loadEntityCard, type EntityCard } from "./entityCardData";
 
 export const OPEN_DELAY_MS = 450;
 /** Moving straight from one link to another while a card is open. */
@@ -39,6 +44,45 @@ function insideCard(target: EventTarget | null): boolean {
 	return target instanceof Element && target.closest("[data-entity-card]") !== null;
 }
 
+/**
+ * What the card is positioned against: the link's box while the link is on the
+ * page, and its last box once a re-render has replaced it. A detached element
+ * measures as an empty box at 0,0, which would send the card to the corner.
+ */
+export function lastKnownBox(element: Element) {
+	let box = element.getBoundingClientRect();
+	return {
+		contextElement: element,
+		getBoundingClientRect() {
+			if (element.isConnected) box = element.getBoundingClientRect();
+			return box;
+		},
+	};
+}
+
+/**
+ * What a card opened from a link inside another card is positioned against.
+ * Showing the new card replaces the content that held the link, so the link's
+ * box is taken when the switch happens and follows the page's scroll from there.
+ */
+export function fixedBox(box: DOMRect) {
+	const scrollX = window.scrollX;
+	const scrollY = window.scrollY;
+	return {
+		getBoundingClientRect() {
+			return DOMRect.fromRect({
+				x: box.x - (window.scrollX - scrollX),
+				y: box.y - (window.scrollY - scrollY),
+				width: box.width,
+				height: box.height,
+			});
+		},
+	};
+}
+
+/** The link a card belongs to. `box` is set for a link inside a card: its box when the card switched to it. */
+type CardTarget = EntityLink & { box?: DOMRect };
+
 function focusVisible(element: Element): boolean {
 	try {
 		return element.matches(":focus-visible");
@@ -50,14 +94,14 @@ function focusVisible(element: Element): boolean {
 
 /** The listener and card state; `pathname` is the current page's path. */
 export function EntityCardsController({ pathname }: { pathname: string }) {
-	const [target, setTarget] = useState<EntityLink | null>(null);
+	const [target, setTarget] = useState<CardTarget | null>(null);
 	// The last card that finished loading, with the link it belongs to.
-	const [loaded, setLoaded] = useState<{ link: EntityLink; card: EntityCard | null } | null>(null);
+	const [loaded, setLoaded] = useState<{ link: CardTarget; card: EntityCard | null } | null>(null);
 	const [popupLoaded, setPopupLoaded] = useState(false);
 	const [shownPath, setShownPath] = useState(pathname);
 	const openTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 	const closeTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
-	const current = useRef<EntityLink | null>(null);
+	const current = useRef<CardTarget | null>(null);
 	const path = useRef(pathname);
 
 	// Close on navigation.
@@ -105,7 +149,17 @@ export function EntityCardsController({ pathname }: { pathname: string }) {
 			setPopupLoaded(true);
 			clearTimeout(openTimer.current);
 			cancelClose();
-			openTimer.current = setTimeout(() => setTarget(link), current.current ? SWITCH_DELAY_MS : OPEN_DELAY_MS);
+			openTimer.current = setTimeout(() => {
+				// The page re-rendered and replaced the link while the delay ran: nothing to anchor to.
+				if (!link.element.isConnected) return;
+				// A link inside the card leaves the page as soon as the card shows its entity,
+				// so the card keeps the box the link had at the switch.
+				const next: CardTarget = insideCard(link.element) ? { ...link, box: link.element.getBoundingClientRect() } : link;
+				// A card that has already loaded shows at once, with no loading state between.
+				const cached = cachedEntityCard(next.kind, next.id);
+				if (cached !== undefined) setLoaded({ link: next, card: cached });
+				setTarget(next);
+			}, current.current ? SWITCH_DELAY_MS : OPEN_DELAY_MS);
 		};
 		const over = (event: PointerEvent) => {
 			if (event.pointerType !== "mouse") return;
@@ -190,17 +244,44 @@ export function EntityCardsController({ pathname }: { pathname: string }) {
 		};
 	}, [target]);
 
+	// A link the page replaced while its card is open closes the card. A link inside
+	// a card is removed by the card itself when it switches, so that one does not.
+	useEffect(() => {
+		if (!target || target.box) return;
+		const closeIfDetached = () => {
+			if (!target.element.isConnected) setTarget((open) => (open === target ? null : open));
+		};
+		closeIfDetached();
+		const observer = new MutationObserver(closeIfDetached);
+		observer.observe(document.body, { childList: true, subtree: true });
+		return () => observer.disconnect();
+	}, [target]);
+
+	// The link the card belongs to outlives `target` until the card has finished
+	// closing, so the exit animation plays at the link with the same content.
+	const [shown, setShown] = useState<CardTarget | null>(null);
+	if (target && target !== shown) setShown(target);
+	const link = target ?? shown;
+	const anchorElement = link?.element ?? null;
+	const anchorBox = link?.box ?? null;
+	const anchor = useMemo(
+		() => (anchorBox ? fixedBox(anchorBox) : anchorElement ? lastKnownBox(anchorElement) : null),
+		[anchorBox, anchorElement],
+	);
+	const closed = useCallback(() => setShown(null), []);
+
 	// undefined while loading, null when the entity has no card.
-	const card = target && loaded?.link === target ? loaded.card : undefined;
+	const card = link && loaded?.link === link ? loaded.card : undefined;
 
 	if (!popupLoaded) return null;
 	return (
 		<Suspense fallback={null}>
 			<EntityCardPopup
-				anchor={target?.element ?? null}
+				anchor={anchor}
 				open={Boolean(target) && card !== null}
 				card={card}
 				onClose={hide}
+				onClosed={closed}
 			/>
 		</Suspense>
 	);

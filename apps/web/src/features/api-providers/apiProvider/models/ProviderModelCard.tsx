@@ -276,6 +276,7 @@ export function ProviderModelCard({
 							<Link
 								href={modelHref}
 								prefetch={false}
+								data-no-entity-card
 								className="line-clamp-1 text-sm font-semibold leading-[1.1] text-foreground underline-offset-4 transition-colors duration-200 hover:underline"
 							>
 								{name}
@@ -294,7 +295,7 @@ export function ProviderModelCard({
 						</div>
 					</div>
 					<Button asChild size="icon" variant="ghost" className="h-8 w-8 shrink-0">
-						<Link href={modelHref} prefetch={false} aria-label={tModels("viewDetails")}>
+						<Link href={modelHref} prefetch={false} data-no-entity-card aria-label={tModels("viewDetails")}>
 							<ArrowUpRight className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
 						</Link>
 					</Button>

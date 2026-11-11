@@ -12,16 +12,24 @@ export default function EntityCardPopup({
 	open,
 	card,
 	onClose,
+	onClosed,
 }: {
-	anchor: Element | null;
+	/** The link's box; kept while the card closes. */
+	anchor: PreviewCardPrimitive.Positioner.Props["anchor"];
 	open: boolean;
 	/** undefined while loading. */
 	card: EntityCard | null | undefined;
 	onClose: () => void;
+	/** The card has finished closing, exit animation included. */
+	onClosed: () => void;
 }) {
 	const t = useTranslations("Catalogue.entityCards");
 	return (
-		<PreviewCardPrimitive.Root open={open} onOpenChange={(next) => !next && onClose()}>
+		<PreviewCardPrimitive.Root
+			open={open}
+			onOpenChange={(next) => !next && onClose()}
+			onOpenChangeComplete={(next) => !next && onClosed()}
+		>
 			<PreviewCardPrimitive.Portal>
 				<PreviewCardPrimitive.Positioner
 					anchor={anchor}
