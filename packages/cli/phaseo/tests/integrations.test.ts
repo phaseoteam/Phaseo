@@ -35,6 +35,13 @@ test("Codex profile uses the Responses API without embedding a credential", () =
 	assert.match(profile, /model = "anthropic\/claude-sonnet-4.6"/);
 	assert.doesNotMatch(profile, /phaseo_v1_sk_/);
 	assert.doesNotMatch(profile, /env_key/);
+	// The profile also runs the read-only Phaseo MCP through the CLI login (no --manage).
+	assert.match(profile, /\[mcp_servers\.phaseo\]\ncommand = "phaseo"\nargs = \["mcp"\]\n/);
+});
+
+test("Claude Code setup suggests the Phaseo MCP without editing ~/.claude.json", () => {
+	const tips = claudeCodeAdapter.setupTips?.({ homeDir: "/tmp" }) ?? [];
+	assert.deepEqual(tips.filter((tip) => tip.includes("claude mcp add --scope user phaseo -- phaseo mcp")).length, 1);
 });
 
 test("Pi extension registers Phaseo with a command-backed credential", async () => {

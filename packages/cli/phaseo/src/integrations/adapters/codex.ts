@@ -27,6 +27,11 @@ wire_api = "responses"
 command = "phaseo"
 args = ["integrations", "credential", "codex"]
 refresh_interval_ms = 300000
+
+# Live Phaseo model, pricing and usage tools, signed in with your phaseo login (read-only).
+[mcp_servers.phaseo]
+command = "phaseo"
+args = ["mcp"]
 `;
 }
 
@@ -44,7 +49,7 @@ export const codexAdapter: IntegrationAdapter = {
 			status: owned ? "configured" : current ? "conflict" : installed ? "available" : "not-installed",
 			configPath: path,
 			details: owned
-				? ["Use with: codex --profile phaseo", "Credential source: Phaseo CLI session or PHASEO_API_KEY"]
+				? ["Use with: codex --profile phaseo", "Credential source: Phaseo CLI session or PHASEO_API_KEY", "Phaseo MCP: phaseo mcp (read-only)"]
 				: current
 					? ["A phaseo.config.toml file exists but is not managed by Phaseo."]
 					: [],
