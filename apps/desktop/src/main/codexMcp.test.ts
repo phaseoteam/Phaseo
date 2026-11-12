@@ -22,8 +22,17 @@ describe("Codex managed MCP", () => {
 		const request = vi.fn().mockResolvedValue({ data: [{ name: nativeMcpName(connection), runtimeStatus: "connected" }] });
 		await waitCodexMcp({ request }, "thread", [connection], new AbortController().signal);
 		expect(request).toHaveBeenCalledOnce();
-		expect(request).toHaveBeenCalledWith("mcpServerStatus/list", { threadId: "thread", serverName: nativeMcpName(connection), detail: "toolsAndAuthOnly" }, expect.any(Number));
+		expect(request).toHaveBeenCalledWith("mcpServerStatus/list", { threadId: "thread", serverName: nativeMcpName(connection), cursor: null, detail: "toolsAndAuthOnly" }, expect.any(Number));
 		expect(request.mock.calls[0]![2]).toBeGreaterThan(25000);
+	});
+	it("follows the cursor when an older Codex ignores serverName and returns the whole list", async () => {
+		const request = vi.fn().mockResolvedValueOnce({ data: [{ name: "foreign", runtimeStatus: "connected" }], nextCursor: "next" }).mockResolvedValueOnce({ data: [{ name: nativeMcpName(connection), runtimeStatus: "connected" }], nextCursor: null });
+		await waitCodexMcp({ request }, "thread", [connection], new AbortController().signal);
+		expect(request).toHaveBeenLastCalledWith("mcpServerStatus/list", { threadId: "thread", serverName: nativeMcpName(connection), cursor: "next", detail: "toolsAndAuthOnly" }, expect.any(Number));
+	});
+	it("rejects a repeated pagination cursor", async () => {
+		const request = vi.fn().mockResolvedValue({ data: [], nextCursor: "same" });
+		await expect(waitCodexMcp({ request }, "thread", [connection], new AbortController().signal)).rejects.toThrow("pagination");
 	});
 	it("rejects failed connections without exposing native diagnostics", async () => {
 		const request = vi.fn().mockResolvedValue({ data: [{ name: nativeMcpName(connection), runtimeStatus: "authenticationRequired", toolsError: "secret diagnostic" }] });

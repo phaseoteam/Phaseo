@@ -77,7 +77,7 @@ Gelten mehrere Richtlinien, wird jede gezählt, und die erste ausgeschöpfte leh
 
 ### Anfragen und Tokens pro Minute
 
-Beide werden über eine gleitende Minute gemessen. `tokens_per_minute` zählt die Eingabe- und Ausgabe-Tokens jeder Anfrage, sobald sie abgeschlossen ist, auch bei gestreamten und fehlgeschlagenen Anfragen, die Tokens verbraucht haben. Eine Anfrage wird abgelehnt, sobald der Verbrauch in der letzten Minute das Limit erreicht; bereits laufende Anfragen können den Verbrauch daher darüber hinaus bringen. Anbieter-Fallbacks innerhalb einer Anfrage zählen einmal, und Treffer im Antwort-Cache werden nicht gezählt.
+Beide werden über eine gleitende Minute gemessen. `tokens_per_minute` zählt die Eingabe- und Ausgabe-Tokens jeder Anfrage, sobald sie abgeschlossen ist, auch bei gestreamten und fehlgeschlagenen Anfragen, die Tokens verbraucht haben. Eine Anfrage wird abgelehnt, sobald der Verbrauch in der letzten Minute das Limit erreicht; bereits laufende Anfragen können den Verbrauch daher darüber hinaus bringen. Anbieter-Fallbacks innerhalb einer Anfrage zählen einmal.
 
 Eine abgelehnte Anfrage gibt `429` mit `rate_limit_exceeded`, dem Grund `policy_requests_per_minute` oder `policy_tokens_per_minute`, der `policy_id`, dem `limit_scope` (`key`, `member`, `department`, `workspace` oder `end_user`) und `Retry-After` in Sekunden zurück.
 

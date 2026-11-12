@@ -616,7 +616,7 @@
 			"outputTokens": "Output tokens",
 			"serviceTier": "Service tier",
 			"requestId": "Request ID",
-			"openRequestLog": "Open request log {id}",
+			"viewRequestLog": "View request log",
 			"outputSpeed": "Output speed",
 			"serviceTiers": {
 				"standard": "Standard",

@@ -1,14 +1,14 @@
 # Phaseo observability
 
-Grafana Cloud hosts compact logs, sampled traces, browser monitoring and five operational dashboards. Applications export directly over HTTPS; no collector server or Prometheus installation is required. The website runs on TanStack Start and Cloudflare, alongside the gateway and web API Workers.
+Grafana Cloud hosts compact logs, traces, browser monitoring and six operational dashboards. Applications export directly over HTTPS; no collector server or Prometheus installation is required. The website runs on TanStack Start and Cloudflare, alongside the gateway and web API Workers.
 
 The configured stack is <https://honestcushion71.grafana.net>. See [VALIDATION.md](VALIDATION.md) for verified state and remaining rollout checks.
 
 ## Configuration
 
-Backend delivery requires `PLATFORM_TELEMETRY_ENABLED=true`, `GRAFANA_OTLP_ENDPOINT`, `GRAFANA_OTLP_AUTHORIZATION` and `PLATFORM_TRACE_SAMPLE_RATE=0.05`. Gateway and web API use `ENV`; the website uses `PHASEO_ENV`. Only staging/production environments send data. The OTLP Basic authorization is server-only.
+Backend delivery requires `PLATFORM_TELEMETRY_ENABLED=true`, `GRAFANA_OTLP_ENDPOINT`, `GRAFANA_OTLP_AUTHORIZATION` and `PLATFORM_TRACE_SAMPLE_RATE`. Gateway and web API use `ENV`; the website uses `PHASEO_ENV`. Only staging/production environments send data. The OTLP Basic authorization is server-only. The code defaults to 5% trace sampling; production can collect 100% (`1`) while ingestion remains comfortably below Free allowances.
 
-The website server function returns only the public Faro URL, enabled flag, environment and session sample rate. Configure `PUBLIC_FARO_ENABLED=true`, `PUBLIC_FARO_URL` and `PUBLIC_FARO_SESSION_SAMPLE_RATE=0.1` on the Worker. Browser collection starts after analytics consent; withdrawal stops transport and removes instrumentation. Sampling covers whole sessions, including their errors. CI supplies `PUBLIC_RELEASE` for each build.
+The website server function returns only the public Faro URL, enabled flag, environment and session sample rate. Configure `PUBLIC_FARO_ENABLED=true`, `PUBLIC_FARO_URL` and `PUBLIC_FARO_SESSION_SAMPLE_RATE` on the Worker. The code defaults to 10%; `1` collects every consenting session. Browser collection starts after analytics consent; withdrawal stops transport and removes instrumentation. Sampling covers whole sessions, including their errors. CI supplies `PUBLIC_RELEASE` for each build.
 
 Production settings live in the Phaseo Infisical project:
 
@@ -33,7 +33,7 @@ node --env-file=observability/grafana/.env.local observability/grafana/provision
 node --env-file=observability/grafana/.env.local observability/grafana/provision.mjs --apply
 ```
 
-The first command regenerates JSON; the second prints a local plan without network calls. `--check` evaluates all dashboard and alert queries against Loki. Empty results establish syntax/access, not collection. `--apply` checks ownership and updates five dashboards and five paused alert rules. Reapplying replaces edits to owned resources; writes are sequential, so rerun after an interruption. `GRAFANA_ENVIRONMENT` chooses separate staging or production rule UIDs.
+The first command regenerates JSON; the second prints a local plan without network calls. `--check` evaluates log queries against Loki and usage queries against the `grafanacloud-usage` Prometheus datasource (`GRAFANA_USAGE_UID` can override its UID). Empty results establish syntax/access, not collection. `--apply` checks ownership and updates six dashboards and five paused alert rules. Use `--apply --dashboards-only` to preserve all existing alert rules and notification settings. Reapplying replaces edits to owned resources; writes are sequential, so rerun after an interruption. `GRAFANA_ENVIRONMENT` chooses separate staging or production rule UIDs.
 
 For an existing stack with edited dashboards or enabled rules, do not use `provision.mjs --apply` to update one alert. After deployment authorization, export `phaseo-jobs-failing-production` and change only query A's expression, `noDataState` and the summary to the corresponding fields from `alertRules()` in `definitions.mjs`. Preserve the installed rule's pause state, labels, routing, other rules and dashboards. Read those fields back after saving; staging has its own UID and remains paused.
 
@@ -49,6 +49,44 @@ This sends a harmless log and matching trace without model calls. Query Loki for
 
 ## Dashboards
 
+### Request investigations
+
+Open **Request investigation** from a dashboard, or click a request/trace ID in a record table. The shared lookup finds an exact ID across the gateway, web API, website and job services in the selected environment/time range. It displays up to 100 records as readable columns; an empty lookup returns no records. A trace ID also offers **Open sampled trace**, and a release links to its GitHub commit. Not every service shares the same request ID; use a shared trace ID when available. Missing records or sampled traces do not establish success.
+
+To add or restore these links on the installed dashboards without replacing their layouts, table styling or deployment annotations:
+
+```powershell
+node --env-file=observability/grafana/.env.local observability/grafana/investigations.mjs --check
+node --env-file=observability/grafana/.env.local observability/grafana/investigations.mjs --apply
+```
+
+Run this after a full dashboard reprovision. The command preserves installed versions and fails on concurrent dashboard edits rather than overwriting them. The lookup has no automatic refresh and does not change collection, sampling or retention.
+
+### Slack alerts through incident.io
+
+Keep Instatus's uptime route separate. Open **Grafana alerts** under [incident.io Alert sources](https://app.incident.io/~/on-call/alert-routes/sources), then **Manage connection**. The **URL** and **Authorization Header** fields are the source URL and bearer token; keep **Apply Grafana's grouping** selected. For a new organisation, create a Grafana source first. Store both values privately as `INCIDENT_GRAFANA_WEBHOOK_URL` and `INCIDENT_GRAFANA_BEARER_TOKEN`. The [incident.io integration guide](https://docs.incident.io/integrations/grafana) describes both credentials.
+
+Under **Alert routing > Routes**, create a separate route for this source: **Escalate: No**, **Create incidents: No**, **Send alerts to Slack: Yes**, channel `#ops-incidents`. This provides application alerts for review without automatically declaring a public incident. Do not attach the source to the Instatus route that publishes status-page incidents.
+
+```powershell
+node --env-file=observability/grafana/.env.local observability/grafana/notifications.mjs --check
+node --env-file=observability/grafana/.env.local observability/grafana/notifications.mjs --apply
+```
+
+The Grafana contact point and production notification policy were saved on 10 November 2026. On 11 November, the active **Grafana production alerts** incident.io route was saved for `#ops-incidents`, with escalation and incident creation disabled. A labelled Grafana contact-point test reached Slack and was manually resolved in incident.io. The five production rules were then enabled; staging remains paused. All five rules evaluated successfully, and a real scheduled-job failure also reached Slack. Automatic Grafana recovery delivery has not yet been verified.
+
+This configures only the owned contact point and an `application=phaseo, environment=production` notification route, preserves other/default routes, stores the bearer token in Grafana's secure settings, and adds dashboard/runbook links to production rules. It preserves whether rules are paused. Matching notifications group by rule/environment, wait 30 seconds initially, group updates over five minutes, repeat after four hours, and send recovery messages.
+
+`--check` reports each rule's routing mode and any selected contact point or named policy. Apply refuses rules that bypass the default notification policy; review and migrate those rules in Grafana first. The rule group is refreshed and ownership/routing revalidated immediately before saving, preserving intervening query, membership and pause edits unless `--enable-alerts` explicitly unpauses the rules. Ruler's POST schema has no version precondition, so edits after that final read can still race with the save. Avoid editing the same group during apply. Contact-point and policy writes are sequential and may already be saved if final rule validation fails; such a failure does not enable rules.
+
+Test the contact point in Grafana and verify the alert reaches the intended incident.io route and Slack channel. Then enable the five production rules:
+
+```powershell
+node --env-file=observability/grafana/.env.local observability/grafana/notifications.mjs --apply --enable-alerts
+```
+
+Check **Alerting → Alert rules** for evaluation errors and **Contact points** for delivery errors. Staging rules are unchanged. To stop alerts, pause the production rules in Grafana. A full `provision.mjs --apply` pauses owned rules by default; repeat the notification enable command only after reviewing the rules and routing. Neither script changes Instatus, incident.io escalation policies, public status-page workflows, or paid plans.
+
 | Dashboard | Purpose |
 | --- | --- |
 | [Overview](https://honestcushion71.grafana.net/d/phaseo-overview) | Request health, latency and telemetry arrival |
@@ -56,15 +94,24 @@ This sends a harmless log and matching trace without model calls. Query Loki for
 | [Web experience](https://honestcushion71.grafana.net/d/phaseo-web) | Web API failures, captured server errors and a link to browser monitoring |
 | [Jobs and settlement](https://honestcushion71.grafana.net/d/phaseo-jobs) | Handler outcomes and operational failure hooks |
 | [Telemetry health](https://honestcushion71.grafana.net/d/phaseo-telemetry) | Heartbeats, persistence failures and truncated attempt detail |
+| [Free tier](https://honestcushion71.grafana.net/d/phaseo-free-tier) | Permanent Free allowances, reported billable usage, ingestion pace and missing measurements |
 
 Start with **Overview**, **production**, and **Last 1 hour**. Star this dashboard so it is easy to find again.
+
+The overview groups cards by service, followed by traffic, failure and latency trends. Specialist pages put trends first, then health tables. Expand the record sections for individual requests, errors and trace links; detailed records remain available without filling the main view. Datasource controls are hidden, while environment and relevant search controls stay visible. The Free tier page uses bars scaled to the permanent allowances.
+
+Amber **Deployments** markers show successful production deploy steps, with commit and workflow links. Toggle the overlay at the top of the dashboard and hover a marker for details. Gateway, Web and Jobs show relevant services; Overview and Telemetry show all recorded deployments. Instatus remains the external uptime source.
+
+The `Grafana deployment markers` workflow runs after CI or the manual realtime deployment completes. It reads actual successful deploy steps and their completion timestamps, including successful components of a partially failed release. Skipped website builds, failed deploys and the Mintlify handoff are excluded. A stable run/attempt/job/step tag prevents duplicate markers on retry. Only trusted main-branch code runs with the repository's `GRAFANA_ANNOTATIONS_TOKEN`; its Grafana service account needs organization annotation create/read access. This uses native annotations, not log or trace ingestion, and cannot block a production deployment. New markers arrive when the upstream workflow finishes.
 
 - **Service request health** puts received request counts, actionable failures, failure percentages and p95 timings on the same row. **Grouped failures** identifies recurring routes, error codes, website fingerprints and jobs. Counts describe events, not distinct incidents or affected users; no request traffic leaves the health table empty.
 - On the specialist dashboards, use the route, provider/model or job search fields to narrow the tables and charts. Route and provider/model health tables include up to ten failing and ten busiest groups so low-volume failures stay visible. Provider percentages use attempts, which can recover through fallback. Request ID narrows gateway request records and lookups. Record tables show at most the newest 100 matches; trace links open Tempo, where sampling can leave the trace unavailable. Website error records expose redacted source frames; the release table counts captured errors without inventing an error-rate denominator.
 - Read the top cards first: scheduler telemetry arriving, gateway requests/failures, web API requests/5xx, and failed jobs. The heartbeat uses the five minutes before the selected range ends; other cards count received events across the whole selected range. Click a card to investigate its service with the same environment and incident time.
 - Compare the traffic and failure charts. Each point counts the preceding query interval, with a five-minute minimum. The interval grows on longer time ranges so short spikes between points remain counted. Compare points within the same range; a larger interval naturally contains more events. Gateway and web API traffic are separate populations. The latency charts show p95: 95% of received timings were at or below that duration. Small samples make percentiles unstable.
 - Use the breakdowns to find affected outcomes, HTTP statuses, route templates and providers. A 4xx is a client rejection, and a failed provider attempt can be recovered by fallback. Neither automatically means an outage.
-- Open **Recent actionable events**, expand a line and inspect its service, route, job, outcome and request/trace IDs. The gateway dashboard accepts a request ID. For a retained trace, select **Explore**, choose the Tempo datasource and search its `trace_id`. Five-percent sampling means most logs have no stored trace. Browser diagnostics also depend on session sampling and consent.
+- Read **Recent actionable events** as a table of services, routes, jobs and error classifications. Other event tables show request outcomes, provider attempts, job runs and scheduler heartbeats, with durations formatted in milliseconds. Click a trace ID to investigate; use **Explore** in the table menu for the original records with the same filters and time range. Grafana interpolates the panel query before serializing the Explore URL, including regex escapes in model names. The gateway dashboard accepts a request ID. Sampling, privacy settings and delivery failures can leave a log without a retained trace. Browser diagnostics also depend on session sampling and consent.
+
+The Free tier view uses organization-wide billing metrics across environments and stacks. Its fixed budgets deliberately ignore larger trial allowances. The 31-day pace is an estimate from available rate samples in the preceding 24 hours, not month-to-date ingestion or a guarantee about future traffic. Missing measurements stay unavailable. Yellow at 80% and red at 100% are dashboard thresholds only; they neither cap exporters nor send notifications. Check this view before and after raising sampling and keep the account on Free. Private source maps and external uptime checks require separate setup.
 
 Zero failures describes received events; it does not establish uptime. Missing heartbeat telemetry can mean cron or export trouble. Empty latency or provider charts mean no matching events in that range. Use an external check or test the affected page/endpoint directly to establish availability. Compare incident timing with [recent deployments](https://github.com/phaseoteam/Phaseo/actions/workflows/ci.yml); after a fix or rollback, verify the affected behavior and the error trend.
 
@@ -74,7 +121,7 @@ Events use allowlisted JSON and the standard Loki `service_name` resource label.
 
 ## Alerts and uptime
 
-Five paused rules cover actionable gateway failures (>5%, at least 20 requests in ten minutes), missing scheduler telemetry, job exceptions, settlement failures and web errors. Quiet request traffic is healthy; a missing heartbeat is separate. Query failures use Grafana's Error state.
+Five enabled production rules cover actionable gateway failures (>5%, at least 20 requests in ten minutes), missing scheduler telemetry, job exceptions, settlement failures and web errors. Staging rules remain paused. Quiet request traffic is healthy; a missing heartbeat is separate. Query failures use Grafana's Error state.
 
 Once telemetry and notification routing are verified, configure **Alerting > Contact points** and its notification policy, then unpause the desired rules. Provisioning does not create contacts or send messages. `--apply --enable-alerts` explicitly activates owned rules; applying without that flag pauses them again.
 
@@ -94,7 +141,7 @@ The wrapper runs Vite with hidden maps, uploads recursively through the pinned o
 
 ## Costs and rollback
 
-Published Free allowances at implementation time are 50 GB/month each for logs and traces, 10,000 metric series, 50,000 frontend sessions and 14-day retention. Confirm current limits at <https://grafana.com/pricing/> and in the account usage screen. This integration creates no custom metric series, samples traces at 5% and browser sessions at 10%, bounds payloads/timeouts, and does not retry exports. Browser collection is capped at 60 signals/minute per page; gateway attempt detail stops at 16 attempts. No console capture, replay, prompts, outputs, credentials, IPs or visitor/workspace identities are exported.
+Published Free allowances at implementation time are 50 GB/month each for logs and traces, 10,000 metric series, 50,000 frontend sessions and 14-day retention. Confirm current limits at <https://grafana.com/pricing/> and in the account usage screen. This integration creates no custom metric series, makes trace and browser sampling configurable, bounds payloads/timeouts, and does not retry exports. Browser collection is capped at 60 signals/minute per page; gateway attempt detail stops at 16 attempts. No console capture, replay, prompts, outputs, credentials, IPs or visitor/workspace identities are exported.
 
 Sampling does not guarantee a monthly quota. Review usage daily during rollout. Staying on Free avoids a paid Grafana bill; exhaustion may stop ingestion. Existing platform CPU/network/invocation costs still apply. Customer Broadcast and Axiom behavior are preserved; retiring duplicate collection is a separate decision.
 

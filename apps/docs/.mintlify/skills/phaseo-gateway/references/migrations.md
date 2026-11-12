@@ -24,7 +24,7 @@ const client = new Anthropic({
 ```
 
 ## OpenRouter -> Phaseo
-Swap base URL and normalize model IDs through `/v1/models`.
+Swap base URL and key; `provider` objects and `models` arrays carry over. Check every model ID with `GET /v1/models?format=openai`, because some orgs differ (`meta-llama/` is `meta/`, `mistralai/` is `mistral/`). For a full migration use the `openrouter-to-phaseo-migration` skill.
 
 ## Vercel AI Gateway / AI SDK -> Phaseo
 Use the official provider:
@@ -42,6 +42,6 @@ const result = await generateText({
 1. Replace API key source with `PHASEO_API_KEY`.
 2. Replace base URL with `https://api.phaseo.app/v1`, or `https://api.phaseo.app` for the Anthropic SDK.
 3. Send the key as `Authorization: Bearer`.
-4. Verify model IDs via `/v1/models`.
+4. Verify model IDs via `/v1/models?format=openai` (`data[].id`).
 5. Run one non-streaming and one streaming smoke test.
 6. Add retries/backoff for 429 and 5xx.

@@ -77,7 +77,7 @@ API 密钥的每日、每周或每月请求数和支出限制，以及工作区�
 
 ### 每分钟请求数和 token 数
 
-两者都按滚动的一分钟计算。`tokens_per_minute` 会在每个请求完成后统计其输入和输出 token，包括流式请求和消耗了 token 的失败请求。当过去一分钟的用量达到限制时，请求就会被拒绝，因此已经在进行中的请求可能使用量超出限制。同一请求内的提供商回退只计一次，响应缓存命中不计数。
+两者都按滚动的一分钟计算。`tokens_per_minute` 会在每个请求完成后统计其输入和输出 token，包括流式请求和消耗了 token 的失败请求。当过去一分钟的用量达到限制时，请求就会被拒绝，因此已经在进行中的请求可能使用量超出限制。同一请求内的提供商回退只计一次。
 
 被拒绝的请求会返回 `429` 和 `rate_limit_exceeded`，reason 为 `policy_requests_per_minute` 或 `policy_tokens_per_minute`，并附带 `policy_id`、`limit_scope`（`key`、`member`、`department`、`workspace` 或 `end_user`）以及以秒为单位的 `Retry-After`。
 

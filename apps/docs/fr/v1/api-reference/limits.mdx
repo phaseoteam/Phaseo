@@ -77,7 +77,7 @@ Lorsque plusieurs politiques s’appliquent, chacune est comptée et la premièr
 
 ### Requêtes et tokens par minute
 
-Les deux sont mesurés sur une minute glissante. `tokens_per_minute` compte les tokens d’entrée et de sortie de chaque requête une fois celle-ci terminée, y compris les requêtes en streaming et les requêtes en échec qui ont consommé des tokens. Une requête est refusée dès que l’utilisation sur la dernière minute atteint la limite : les requêtes déjà en cours peuvent donc la faire dépasser. Les fallbacks de fournisseurs au sein d’une même requête comptent une seule fois, et les réponses servies depuis le cache ne sont pas comptées.
+Les deux sont mesurés sur une minute glissante. `tokens_per_minute` compte les tokens d’entrée et de sortie de chaque requête une fois celle-ci terminée, y compris les requêtes en streaming et les requêtes en échec qui ont consommé des tokens. Une requête est refusée dès que l’utilisation sur la dernière minute atteint la limite : les requêtes déjà en cours peuvent donc la faire dépasser. Les fallbacks de fournisseurs au sein d’une même requête comptent une seule fois.
 
 Une requête refusée renvoie `429` avec `rate_limit_exceeded`, le motif `policy_requests_per_minute` ou `policy_tokens_per_minute`, le `policy_id`, le `limit_scope` (`key`, `member`, `department`, `workspace` ou `end_user`) et `Retry-After` en secondes.
 

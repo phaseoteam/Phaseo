@@ -6,7 +6,7 @@
 		"expected_behavior": [
 			"Inventories every OpenRouter usage before editing",
 			"Replaces the endpoint and key with the Phaseo base URL and PHASEO_API_KEY",
-			"Maps model IDs through GET /v1/models instead of assuming they match",
+			"Checks model IDs against data[].id from GET /v1/models?format=openai instead of assuming they match, and maps known org differences such as meta-llama/ to meta/",
 			"Validates with health, models, a non-streaming and a streaming request, and produces a migration report"
 		]
 	},
@@ -15,8 +15,19 @@
 		"query": "Our OpenRouter requests send a provider object with order and allow_fallbacks. What happens to that on Phaseo?",
 		"should_trigger": true,
 		"expected_behavior": [
-			"Explains how the OpenRouter-only behaviour maps to Phaseo routing, or that it has no direct equivalent",
-			"Does not silently drop the setting without telling the user"
+			"States that provider.order and provider.allow_fallbacks work unchanged on Phaseo",
+			"Does not tell the user to remove or rewrite the provider object",
+			"Mentions that data_collection: \"deny\" is rejected and zdr: true replaces it, if the object uses it"
+		]
+	},
+	{
+		"id": "openrouter-only-fields",
+		"query": "Our OpenRouter calls use models like x-ai/grok-4:online, send usage: { include: true }, transforms: [\"middle-out\"] and a file-parser plugin. Move them to Phaseo.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Removes usage: { include: true }, transforms and the file-parser plugin because Phaseo rejects them, and says usage and cost are always returned",
+			"Maps the x-ai/ org to spacex-ai/ and replaces the :online suffix with web search, then verifies the ID with GET /v1/models?format=openai",
+			"Lists the behaviour that is lost (middle-out compression, file parsing) as parity gaps"
 		]
 	},
 	{
