@@ -189,7 +189,7 @@ describe("Codex native integration", () => {
 			if (packet.method === "initialize") send({ id: packet.id, result: {} });
 			if (packet.method === "thread/start") send({ id: packet.id, result: { thread: { id: "native" } } });
 			if (packet.method === "turn/start") { send({ id: packet.id, result: { turn: { id: "turn" } } }); send({ id: "command", method: "item/commandExecution/requestApproval", params: { threadId: "native", command: "git status" } }); send({ id: "files", method: "item/fileChange/requestApproval", params: { threadId: "native", reason: "Edit hello.py" } }); }
-			if (packet.id === "command" || packet.id === "files") { answered.push(String(packet.id)); if (answered.length === 2) send({ method: "turn/completed", params: { threadId: "native", turn: { id: "turn", status: "completed" } } }); }
+			if (String(packet.id) === "command" || String(packet.id) === "files") { answered.push(String(packet.id)); if (answered.length === 2) send({ method: "turn/completed", params: { threadId: "native", turn: { id: "turn", status: "completed" } } }); }
 		});
 		const onApproval = vi.fn(async () => "accept" as const);
 		await new CodexAdapter().run(task, ".", "Start", { onDelta: () => {}, onSession: () => {}, onApproval });
