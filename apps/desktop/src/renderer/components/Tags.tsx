@@ -53,8 +53,9 @@ export function TagEditor({ task, trigger }: { task: Pick<TaskOverview, "id" | "
 	const options = known.filter(tag => !needle || tag.toLowerCase().includes(needle)).slice(0, 30);
 	const exact = known.some(tag => tag.toLowerCase() === needle);
 	const full = tags.length >= tagLimits.perChat;
-	return <div className="flex min-w-0 items-center gap-1">
-		{tags.map(tag => <TagChip key={tag} tag={tag} onRemove={() => toggle(tag)} />)}
+	// Keeps its own room (the title truncates instead), so the add button never spills onto the chips beside it; many tags clip.
+	return <div className="flex shrink-0 items-center gap-1">
+		{tags.length > 0 && <div className="flex max-w-64 items-center gap-1 overflow-hidden">{tags.map(tag => <TagChip key={tag} tag={tag} onRemove={() => toggle(tag)} />)}</div>}
 		<Popover onOpenChange={open => { if (!open) setQuery(""); }}>
 			<PopoverTrigger render={<button type="button" aria-label="Tags" title="Tags" className={cn("inline-flex h-6 shrink-0 items-center gap-1 rounded-full px-1.5 text-[11.5px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground", !tags.length && "border border-dashed border-border px-2")} />}>
 				{trigger ?? (tags.length ? <Plus className="size-3.5" /> : <><Tag className="size-3" />Add tag</>)}
