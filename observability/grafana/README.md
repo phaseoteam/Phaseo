@@ -49,6 +49,44 @@ This sends a harmless log and matching trace without model calls. Query Loki for
 
 ## Dashboards
 
+### Request investigations
+
+Open **Request investigation** from a dashboard, or click a request/trace ID in a record table. The shared lookup finds an exact ID across the gateway, web API, website and job services in the selected environment/time range. It displays up to 100 records as readable columns; an empty lookup returns no records. A trace ID also offers **Open sampled trace**, and a release links to its GitHub commit. Not every service shares the same request ID; use a shared trace ID when available. Missing records or sampled traces do not establish success.
+
+To add or restore these links on the installed dashboards without replacing their layouts, table styling or deployment annotations:
+
+```powershell
+node --env-file=observability/grafana/.env.local observability/grafana/investigations.mjs --check
+node --env-file=observability/grafana/.env.local observability/grafana/investigations.mjs --apply
+```
+
+Run this after a full dashboard reprovision. The command preserves installed versions and fails on concurrent dashboard edits rather than overwriting them. The lookup has no automatic refresh and does not change collection, sampling or retention.
+
+### Slack alerts through incident.io
+
+Keep Instatus's uptime route separate. Open **Grafana alerts** under [incident.io Alert sources](https://app.incident.io/~/on-call/alert-routes/sources), then **Manage connection**. The **URL** and **Authorization Header** fields are the source URL and bearer token; keep **Apply Grafana's grouping** selected. For a new organisation, create a Grafana source first. Store both values privately as `INCIDENT_GRAFANA_WEBHOOK_URL` and `INCIDENT_GRAFANA_BEARER_TOKEN`. The [incident.io integration guide](https://docs.incident.io/integrations/grafana) describes both credentials.
+
+Under **Alert routing > Routes**, create a separate route for this source: **Escalate: No**, **Create incidents: No**, **Send alerts to Slack: Yes**, channel `#ops-incidents`. This provides application alerts for review without automatically declaring a public incident. Do not attach the source to the Instatus route that publishes status-page incidents.
+
+```powershell
+node --env-file=observability/grafana/.env.local observability/grafana/notifications.mjs --check
+node --env-file=observability/grafana/.env.local observability/grafana/notifications.mjs --apply
+```
+
+The Grafana contact point and production notification policy were saved on 10 November 2026. On 11 November, the active **Grafana production alerts** incident.io route was saved for `#ops-incidents`, with escalation and incident creation disabled. A labelled Grafana contact-point test reached Slack and was manually resolved in incident.io. The five production rules were then enabled; staging remains paused. All five rules evaluated successfully, and a real scheduled-job failure also reached Slack. Automatic Grafana recovery delivery has not yet been verified.
+
+This configures only the owned contact point and an `application=phaseo, environment=production` notification route, preserves other/default routes, stores the bearer token in Grafana's secure settings, and adds dashboard/runbook links to production rules. It preserves whether rules are paused. Matching notifications group by rule/environment, wait 30 seconds initially, group updates over five minutes, repeat after four hours, and send recovery messages.
+
+`--check` reports each rule's routing mode and any selected contact point or named policy. Apply refuses rules that bypass the default notification policy; review and migrate those rules in Grafana first. The rule group is refreshed and ownership/routing revalidated immediately before saving, preserving intervening query, membership and pause edits unless `--enable-alerts` explicitly unpauses the rules. Ruler's POST schema has no version precondition, so edits after that final read can still race with the save. Avoid editing the same group during apply. Contact-point and policy writes are sequential and may already be saved if final rule validation fails; such a failure does not enable rules.
+
+Test the contact point in Grafana and verify the alert reaches the intended incident.io route and Slack channel. Then enable the five production rules:
+
+```powershell
+node --env-file=observability/grafana/.env.local observability/grafana/notifications.mjs --apply --enable-alerts
+```
+
+Check **Alerting → Alert rules** for evaluation errors and **Contact points** for delivery errors. Staging rules are unchanged. To stop alerts, pause the production rules in Grafana. A full `provision.mjs --apply` pauses owned rules by default; repeat the notification enable command only after reviewing the rules and routing. Neither script changes Instatus, incident.io escalation policies, public status-page workflows, or paid plans.
+
 | Dashboard | Purpose |
 | --- | --- |
 | [Overview](https://honestcushion71.grafana.net/d/phaseo-overview) | Request health, latency and telemetry arrival |
@@ -83,7 +121,7 @@ Events use allowlisted JSON and the standard Loki `service_name` resource label.
 
 ## Alerts and uptime
 
-Five paused rules cover actionable gateway failures (>5%, at least 20 requests in ten minutes), missing scheduler telemetry, job exceptions, settlement failures and web errors. Quiet request traffic is healthy; a missing heartbeat is separate. Query failures use Grafana's Error state.
+Five enabled production rules cover actionable gateway failures (>5%, at least 20 requests in ten minutes), missing scheduler telemetry, job exceptions, settlement failures and web errors. Staging rules remain paused. Quiet request traffic is healthy; a missing heartbeat is separate. Query failures use Grafana's Error state.
 
 Once telemetry and notification routing are verified, configure **Alerting > Contact points** and its notification policy, then unpause the desired rules. Provisioning does not create contacts or send messages. `--apply --enable-alerts` explicitly activates owned rules; applying without that flag pauses them again.
 
