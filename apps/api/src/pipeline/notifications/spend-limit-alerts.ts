@@ -6,7 +6,7 @@ import { dispatchBackground, getBindingsIfConfigured, getSupabaseAdmin } from "@
 //     used up, record_spend_limit_reached records one "requests blocked" alert for that budget or
 //     key limit and period. This runs in the background after the rejection is returned;
 //   * every 15 minutes, sweep_spend_limit_warnings warns once per period at about 80%, from the
-//     hourly usage rollup, with a forecast for weekly and monthly periods.
+//     same usage the gateway enforces, with a forecast for weekly and monthly periods.
 // Every worker that serves requests records the rejection, including the regional gateways
 // where MOBILE_PUSH_ENABLED is off: the central job that sends pushes fans the alert out. Only
 // the sweep is tied to that job.
@@ -87,7 +87,7 @@ export type SpendLimitSweepSummary = { budgets: number; limitedKeys: number; war
 
 export async function runSpendLimitWarningSweep(): Promise<SpendLimitSweepSummary> {
 	const { data, error } = await getSupabaseAdmin().rpc("sweep_spend_limit_warnings", {});
-	if (error) throw new Error(`spend_limit_sweep_failed:${error.message}`);
+	if (error) throw new Error(`spend_limit_sweep_failed:${error.message}`, { cause: { code: error.code } });
 	const result = (data && typeof data === "object" ? data : {}) as Record<string, unknown>;
 	const count = (value: unknown) => (Number.isFinite(Number(value)) ? Number(value) : 0);
 	return { budgets: count(result.budgets), limitedKeys: count(result.limitedKeys), warned: count(result.warned) };
@@ -97,11 +97,12 @@ export type DepartmentBudgetSweepSummary = { budgets: number; alerted: number };
 
 /**
  * sweep_department_budget_alerts sends the department budget 80% warning and the 100% alert from
- * the same hourly rollup: the gateway's department-budget rejections send no push themselves.
+ * the same usage department admission enforces: the gateway's department-budget rejections send no
+ * push themselves.
  */
 export async function runDepartmentBudgetAlertSweep(): Promise<DepartmentBudgetSweepSummary> {
 	const { data, error } = await getSupabaseAdmin().rpc("sweep_department_budget_alerts", {});
-	if (error) throw new Error(`department_budget_sweep_failed:${error.message}`);
+	if (error) throw new Error(`department_budget_sweep_failed:${error.message}`, { cause: { code: error.code } });
 	const result = (data && typeof data === "object" ? data : {}) as Record<string, unknown>;
 	const count = (value: unknown) => (Number.isFinite(Number(value)) ? Number(value) : 0);
 	return { budgets: count(result.budgets), alerted: count(result.alerted) };
@@ -115,7 +116,7 @@ export type SpendGuardrailSweepSummary = { workspaces: number; alerted: number }
  */
 export async function runSpendGuardrailAlertSweep(): Promise<SpendGuardrailSweepSummary> {
 	const { data, error } = await getSupabaseAdmin().rpc("sweep_spend_guardrail_alerts", {});
-	if (error) throw new Error(`spend_guardrail_sweep_failed:${error.message}`);
+	if (error) throw new Error(`spend_guardrail_sweep_failed:${error.message}`, { cause: { code: error.code } });
 	const result = (data && typeof data === "object" ? data : {}) as Record<string, unknown>;
 	const count = (value: unknown) => (Number.isFinite(Number(value)) ? Number(value) : 0);
 	return { workspaces: count(result.workspaces), alerted: count(result.alerted) };

@@ -120,4 +120,4 @@ Der Advisor behält zwischen Anfragen keinen Zustand. Wenn du frühere Nachricht
 
 ## Nutzung und Preise
 
-Jeder Aufruf erhöht `usage.server_tool_use.advisor_requests` um 1 und kann über `server_tool_advisor_requests` abgerechnet werden. Die Tokens des Advisors werden zur Nutzung der Anfrage addiert und zu den Preisen des Advisor-Modells berechnet.
+Jeder Aufruf erhöht `usage.server_tool_use.advisor_requests` um 1 und kann über `server_tool_advisor_requests` abgerechnet werden. Die Tokens des Advisors werden zu den Preisen des Advisor-Modells als eigene Position der Anfrage abgerechnet und nicht zu den Tokens des aufrufenden Modells addiert. Ein kostenpflichtiges Advisor-Modell erfordert Guthaben, auch wenn das aufrufende Modell kostenlos ist.

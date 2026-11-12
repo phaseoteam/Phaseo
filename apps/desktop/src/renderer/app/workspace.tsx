@@ -23,6 +23,8 @@ export type CompareGroup = { id: string; title: string; taskIds: string[]; creat
 type WorkspaceState = {
 	api?: WorkspaceApi;
 	overview: WorkspaceOverview;
+	/** False until main has sent the real overview. Before then `overview` is an empty placeholder, so "no accounts" means nothing yet. */
+	ready: boolean;
 	setOverview: (overview: WorkspaceOverview) => void;
 	command: (command: WorkspaceCommand) => Promise<WorkspaceOverview | undefined>;
 	error: string;
@@ -82,6 +84,16 @@ type WorkspaceState = {
 	taskById: (id: string) => TaskOverview | undefined;
 };
 
+/** Fades out and removes index.html's loading screen. */
+function hideSplash() {
+	const splash = document.getElementById("phaseo-splash");
+	if (!splash || splash.dataset.leaving) return;
+	splash.dataset.leaving = "true";
+	splash.addEventListener("transitionend", () => splash.remove(), { once: true });
+	// transitionend doesn't fire when motion is reduced (no transition) or the window is hidden.
+	window.setTimeout(() => splash.remove(), 400);
+}
+
 const WorkspaceContext = createContext<WorkspaceState | undefined>(undefined);
 
 export function errorText(reason: unknown) {
@@ -93,6 +105,7 @@ type Location = { mode: WorkspaceMode; codeView?: CodeView; factoryRoute?: Facto
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
 	const api = window.phaseoDesktop?.workspace;
 	const [overview, setOverview] = useState<WorkspaceOverview>(emptyOverview);
+	const [ready, setReady] = useState(!api);
 	const [error, setError] = useState("");
 	const [mode, setModeState] = usePersistedState<WorkspaceMode>("phaseo.desktop.workspaceMode", "chat");
 	const [codeView, setCodeViewState] = usePersistedState<CodeView>("phaseo.desktop.codeView", "threads");
@@ -119,10 +132,15 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 	useEffect(() => {
 		if (!api) return;
 		let active = true;
-		void api.overview().then(value => { if (active) setOverview(value); }, reason => { if (active) setError(errorText(reason)); });
-		const unsubscribe = api.onOverviewChange(setOverview);
+		// The performance suite times startup to this mark (scripts/perf).
+		void api.overview().then(value => { if (performance.getEntriesByName("phaseo:workspace-ready").length === 0) performance.mark("phaseo:workspace-ready"); if (active) { setOverview(value); setReady(true); } }, reason => { if (active) { setError(errorText(reason)); setReady(true); } });
+		const unsubscribe = api.onOverviewChange(value => { setOverview(value); setReady(true); });
 		return () => { active = false; unsubscribe(); };
 	}, [api]);
+
+	// index.html shows the logo until the workspace has loaded, so nothing (such as the sign-in card) is drawn from the placeholder.
+	useEffect(() => { if (ready) hideSplash(); }, [ready]);
+	useEffect(() => { const fallback = window.setTimeout(hideSplash, 10_000); return () => window.clearTimeout(fallback); }, []);
 
 	useEffect(() => {
 		const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -192,7 +210,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
 	const openFactory = useCallback((route?: FactoryRoute) => { setMode("code"); setCodeViewState("factory"); if (route) setFactoryRoute(route); }, [setMode, setCodeViewState, setFactoryRoute]);
 
 	const value: WorkspaceState = {
-		api, overview, setOverview, command, error, setError,
+		api, overview, ready, setOverview, command, error, setError,
 		mode, setMode, codeView, setCodeView, factoryRoute, openFactory, openThread, selectedId, select, compareId, openCompare,
 		compareGroups,
 		saveCompareGroup: group => setCompareGroups(current => [group, ...current.filter(value => value.id !== group.id)]),

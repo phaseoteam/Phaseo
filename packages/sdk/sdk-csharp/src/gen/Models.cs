@@ -252,6 +252,9 @@ public sealed class AnthropicSystemMessage
 	[JsonPropertyName("content")]
 	public object Content { get; set; }
 
+	[JsonPropertyName("output_config")]
+	public Dictionary<string, object>? OutputConfig { get; set; }
+
 	[JsonPropertyName("role")]
 	public string Role { get; set; }
 
@@ -3835,6 +3838,22 @@ public sealed class GatewayModalities
 
 }
 
+public sealed class GatewayModelAccess
+{
+	[JsonPropertyName("hidden_model_count")]
+	public long HiddenModelCount { get; set; }
+
+	[JsonPropertyName("hidden_models")]
+	public List<Dictionary<string, object>> HiddenModels { get; set; }
+
+	[JsonPropertyName("limited_model_count")]
+	public long LimitedModelCount { get; set; }
+
+	[JsonPropertyName("restricted")]
+	public bool Restricted { get; set; }
+
+}
+
 public sealed class GatewayModelLifecycle
 {
 	[JsonPropertyName("deprecated_at")]
@@ -3911,6 +3930,9 @@ public sealed class GatewayModelOrganization { }
 
 public sealed class GatewayModelsResponse
 {
+	[JsonPropertyName("access")]
+	public Dictionary<string, object>? Access { get; set; }
+
 	[JsonPropertyName("availability_mode")]
 	public string AvailabilityMode { get; set; }
 

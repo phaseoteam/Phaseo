@@ -207,6 +207,25 @@ describe("audit request detail persistence", () => {
 		expect(event.safe_metadata.rate_limit).toEqual(expected);
 	});
 
+	it("records what a failed request was charged on its row and request fact", async () => {
+		let row: any;
+		const insert = vi.fn((value: any) => { row = value; return { select: () => ({ single: async () => ({
+			data: { id: "row", created_at: "2026-11-05T00:00:00Z", workspace_id: "ws" }, error: null,
+		}) }) }; });
+		const rpc = vi.fn().mockResolvedValue({ data: "fact", error: null });
+		getSupabaseAdminMock.mockReturnValue({ from: () => ({ insert }), rpc });
+		resolveGatewayIoLoggingPolicyMock.mockResolvedValue({ captureEnabled: false });
+		await auditFailure({
+			stage: "execute", requestId: "req", workspaceId: "ws", model: "model", endpoint: "chat.completions",
+			stream: false, statusCode: 400, errorCode: "upstream:gateway_server_tool_limit",
+			usage: { input_tokens: 3_000, output_tokens: 250 }, costNanos: 18_000_000, currency: "USD",
+			pricingLines: [{ dimension: "server_tool_web_search_requests", quantity: 2, unit_price_usd: "0.007", line_nanos: 14_000_000 }],
+		});
+		expect(row).toMatchObject({ success: false, cost_nanos: 18_000_000 });
+		const event = rpc.mock.calls.find((call) => call[1]?.p_event)?.[1].p_event;
+		expect(event).toMatchObject({ cost_nanos: 18_000_000, pricing_lines: [{ meter_key: "server_tool_web_search_requests", charged_nanos: 14_000_000 }] });
+	});
+
 	it("does not rate the JSON output or tool calls of a failed request", async () => {
 		const insert = vi.fn(() => ({ select: () => ({ single: async () => ({
 			data: { id: "row", created_at: "2026-11-03T00:00:00Z", workspace_id: "ws" }, error: null,

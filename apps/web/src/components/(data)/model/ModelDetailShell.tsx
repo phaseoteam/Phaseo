@@ -117,7 +117,7 @@ function ModelStickyHeaderContent({ modelId, chatModelId, organisationId, organi
 }
 
 function ModelQuickstartAction({ modelId, chatModelId, modelName, gatewayMetadata }: { modelId: string; chatModelId?: string; modelName: string; gatewayMetadata: ModelGatewayMetadata | null }) {
-	return <UseModelSheet modelId={modelId} requestModelId={chatModelId} modelName={modelName} gatewayMetadata={gatewayMetadata} triggerId="quickstart" className="col-span-2 w-full min-w-[8.5rem] justify-center sm:w-auto sm:flex-1 xl:flex-none" />;
+	return <UseModelSheet modelId={modelId} requestModelId={chatModelId} modelName={modelName} gatewayMetadata={gatewayMetadata} triggerId="quickstart" className="col-span-2 w-full min-w-[8.5rem] justify-center max-sm:h-10 sm:w-auto sm:flex-1 xl:flex-none" />;
 }
 
 export default function ModelDetailShell({
@@ -276,20 +276,20 @@ export default function ModelDetailShell({
 							<Suspense fallback={null}><ModelEditButton modelId={modelId} tab={tab} /></Suspense>
 						) : null}
 						{canChat ? (
-							<Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
+							<Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg max-sm:h-10 xl:flex-none">
 								<Link href={`${isDecisionsModel && !supportsText ? "/chat/decisions" : "/chat"}?model=${encodeURIComponent(chatModelId ?? modelId)}`}>
 									<MessageSquare className="h-4 w-4" />
 									{isDecisionsModel && !supportsText ? t("detail.actions.openDecisions") : t("detail.actions.chat")}
 								</Link>
 							</Button>
 						) : null}
-						{canCompare ? <Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
+						{canCompare ? <Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg max-sm:h-10 xl:flex-none">
 							<Link href={`/compare?models=${modelId}`}>
 								<Scale className="h-4 w-4" />
 								{t("detail.actions.compare")}
 							</Link>
 						</Button> : null}
-						{canChat && isDecisionsModel && supportsText ? <Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg xl:flex-none">
+						{canChat && isDecisionsModel && supportsText ? <Button asChild variant="outline" size="sm" className="flex-1 justify-center rounded-lg max-sm:h-10 xl:flex-none">
 							<Link href={`/chat/decisions?model=${encodeURIComponent(chatModelId ?? modelId)}`}><Scale className="h-4 w-4" />{t("detail.actions.openDecisions")}</Link>
 						</Button> : null}
 						{canChat && supportsText ? <Suspense fallback={<Skeleton className="h-9 w-full rounded-lg sm:w-28" />}><ModelQuickstartAction modelId={modelId} chatModelId={chatModelId} modelName={header.name} gatewayMetadata={gatewayMetadata} /></Suspense> : null}

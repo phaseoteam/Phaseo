@@ -4,7 +4,8 @@
 
 import { toResponsesAnnotations } from "@protocols/shared/citations";
 import { SseParser } from "@core/sse-parser";
-import { ANTHROPIC_REASONING_FORMAT, sealReasoningState } from "@core/reasoning-state";
+import { ANTHROPIC_REASONING_FORMAT, sealEffortRecord, sealReasoningState } from "@core/reasoning-state";
+import type { IREffortRecord } from "@core/ir";
 import { gatewayContextManagementEntry, gatewayStopEntry, normalizeFinishReason, responsesStatusFor } from "@core/finish-reason";
 import { mergeMessagesStreamUsage } from "@core/usage-normalization";
 
@@ -121,6 +122,12 @@ export function createAnthropicToResponsesStreamTransformer(
 		 * terminal response, for the Messages adapter. Only Messages clients get it.
 		 */
 		keepContextManagement?: boolean;
+		/**
+		 * The effort this reply ran at. It goes out as a final reasoning item with a
+		 * sealed record, which the client sends back so the next request can keep
+		 * Claude's cached prefix when the effort changes (core/claudePerMessageEffort.ts).
+		 */
+		effortRecord?: IREffortRecord;
 	},
 ): TransformStream<Uint8Array, Uint8Array> {
 	const accounting = options?.accounting;
@@ -160,7 +167,7 @@ export function createAnthropicToResponsesStreamTransformer(
 	// A reasoning item for a thinking or redacted_thinking block. The signature
 	// (or redacted data) is sealed with its origin so the client can send it
 	// back and the gateway replays it only to Claude.
-	const buildReasoningItem = (block: { type: string; itemId: string; text?: string; signature?: string; data?: string }) => {
+	const buildReasoningItem = (block: { type: string; itemId: string; text?: string; signature?: string; data?: string; afterCallId?: string; textOffset?: number }) => {
 		const redacted = block.type === "redacted_thinking";
 		const value = redacted ? block.data : block.signature;
 		return {
@@ -180,6 +187,8 @@ export function createAnthropicToResponsesStreamTransformer(
 						value,
 						model,
 						...(providerId ? { provider: providerId } : {}),
+						...(block.afterCallId ? { afterCallId: block.afterCallId } : {}),
+						...(block.textOffset ? { textOffset: block.textOffset } : {}),
 					}),
 				}
 				: {}),
@@ -187,6 +196,10 @@ export function createAnthropicToResponsesStreamTransformer(
 	};
 
 	let outputCounter = 0;
+	// The latest client tool call in this reply, for anchoring later thinking blocks.
+	let lastToolUseId: string | undefined;
+	// Characters of text in this reply so far, for thinking written after text.
+	let textChars = 0;
 	let createdEmitted = false;
 
 	const emitEvent = (
@@ -271,7 +284,12 @@ export function createAnthropicToResponsesStreamTransformer(
 						name: block.name || "",
 						input: "",
 						...(Array.isArray(block.citations) && block.citations.length > 0 ? { citations: [...block.citations] } : {}),
+						// Thinking between tool calls records the call before it (see afterCallId).
+						...((block.type === "thinking" || block.type === "redacted_thinking") && lastToolUseId ? { afterCallId: lastToolUseId } : {}),
+						...((block.type === "thinking" || block.type === "redacted_thinking") && !lastToolUseId && textChars > 0 ? { textOffset: textChars } : {}),
 					});
+					if (block.type === "tool_use" && block.id) lastToolUseId = block.id;
+					if (block.type === "text" && typeof block.text === "string") textChars += block.text.length;
 
 					if (block.type === "thinking" || block.type === "redacted_thinking") {
 						emitEvent(controller, "response.output_item.added", {
@@ -329,6 +347,7 @@ export function createAnthropicToResponsesStreamTransformer(
 						// Regular text content
 						const chunk = typeof delta.text === "string" ? delta.text : "";
 						block.text = (block.text || "") + chunk;
+						textChars += chunk.length;
 						emitEvent(controller, "response.output_text.delta", {
 							delta: chunk,
 							output_index: block.outputIndex,
@@ -495,6 +514,24 @@ export function createAnthropicToResponsesStreamTransformer(
 								arguments: typeof parsedInput === "string" ? parsedInput : JSON.stringify(parsedInput),
 							});
 						}
+					}
+
+					if (options?.effortRecord) {
+						const effortItem = {
+							type: "reasoning",
+							id: `rs_effort_${requestId}`,
+							status: "completed",
+							summary: [],
+							content: [],
+							encrypted_content: sealEffortRecord(options.effortRecord, { model, provider: providerId }),
+						};
+						const outputIndex = outputCounter++;
+						emitEvent(controller, "response.output_item.added", {
+							output_index: outputIndex,
+							item: { type: "reasoning", id: effortItem.id, summary: [], content: [] },
+						});
+						emitEvent(controller, "response.output_item.done", { output_index: outputIndex, item: effortItem });
+						outputItems.push(effortItem);
 					}
 
 					// Map Anthropic stop_reason to Responses API status: max_tokens and

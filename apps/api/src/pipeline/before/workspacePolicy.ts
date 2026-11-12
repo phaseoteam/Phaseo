@@ -661,6 +661,65 @@ export function buildWorkspacePolicy(args: {
 	};
 }
 
+const GUARDRAIL_POLICY_COLUMNS =
+	"id,privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,allowed_api_model_ids,prompt_injection_enabled,prompt_injection_action,sensitive_info_enabled,sensitive_info_default_action,sensitive_info_rules";
+
+/** The enabled guardrails with these ids. PostgREST returns at most 1,000 rows and long id lists overflow the URL, so this reads in batches. */
+async function fetchEnabledGuardrails(
+	supabase: ReturnType<typeof getSupabaseAdmin>,
+	workspaceId: string,
+	ids: string[],
+): Promise<GuardrailRow[]> {
+	const guardrailIds = [...new Set(ids)];
+	const guardrails: GuardrailRow[] = [];
+	for (let index = 0; index < guardrailIds.length; index += GUARDRAIL_ID_BATCH) {
+		const guardrailsResult = await supabase
+			.from("workspace_guardrails")
+			.select(GUARDRAIL_POLICY_COLUMNS)
+			.eq("workspace_id", workspaceId)
+			.eq("enabled", true)
+			.in("id", guardrailIds.slice(index, index + GUARDRAIL_ID_BATCH));
+
+		if (guardrailsResult.error) {
+			throw new Error(`workspace_guardrails_lookup_failed:${guardrailsResult.error.message}`);
+		}
+
+		guardrails.push(...((guardrailsResult.data ?? []) as GuardrailRow[]));
+	}
+	return guardrails;
+}
+
+const RESOLVE_MEMBER_GUARDRAILS_RPC = "resolve_member_guardrails";
+
+/**
+ * The rules a key this member creates with no department of its own (their Chat key) would get, before that key
+ * exists: the workspace (including the baseline, which holds Settings, Privacy), the member's departments and the
+ * member (resolve_member_guardrails). For the web's model access check when the member has no Chat key yet; once
+ * they do, fetchWorkspacePolicy with that key is used, which also counts guardrails assigned to the key itself.
+ * Not cached: it is read once per check, and a failed read throws rather than reporting no rules.
+ */
+export async function fetchMemberWorkspacePolicy(args: {
+	workspaceId: string;
+	userId: string;
+}): Promise<WorkspacePolicy> {
+	const supabase = getSupabaseAdmin();
+	const ids: string[] = [];
+	for (let from = 0; ; from += RESOLVE_PAGE_SIZE) {
+		const result = await supabase
+			.rpc(RESOLVE_MEMBER_GUARDRAILS_RPC, { p_workspace_id: args.workspaceId, p_user_id: args.userId })
+			.order("guardrail_id")
+			.order("source_type")
+			.order("source_id")
+			.range(from, from + RESOLVE_PAGE_SIZE - 1);
+		if (result.error) throw new Error(`member_guardrails_lookup_failed:${result.error.message}`);
+		const page = Array.isArray(result.data) ? result.data : [];
+		ids.push(...guardrailIdsFrom(page));
+		if (page.length < RESOLVE_PAGE_SIZE) break;
+	}
+	const guardrails = await fetchEnabledGuardrails(supabase, args.workspaceId, ids);
+	return buildWorkspacePolicy({ globalSettings: null, guardrails, dynamicRoute: null, neverStoreContent: false });
+}
+
 export async function fetchWorkspacePolicy(args: {
 	workspaceId: string;
 	apiKeyId: string;
@@ -740,26 +799,7 @@ export async function fetchWorkspacePolicy(args: {
 		}
 	}
 
-	const guardrailIds = [...new Set(sources.guardrailIds)];
-
-	let guardrails: GuardrailRow[] = [];
-	// PostgREST returns at most 1,000 rows and long id lists overflow the URL, so read in batches.
-	for (let index = 0; index < guardrailIds.length; index += GUARDRAIL_ID_BATCH) {
-		const guardrailsResult = await supabase
-			.from("workspace_guardrails")
-			.select(
-				"id,privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,allowed_api_model_ids,prompt_injection_enabled,prompt_injection_action,sensitive_info_enabled,sensitive_info_default_action,sensitive_info_rules",
-			)
-			.eq("workspace_id", args.workspaceId)
-			.eq("enabled", true)
-			.in("id", guardrailIds.slice(index, index + GUARDRAIL_ID_BATCH));
-
-		if (guardrailsResult.error) {
-			throw new Error(`workspace_guardrails_lookup_failed:${guardrailsResult.error.message}`);
-		}
-
-		guardrails.push(...((guardrailsResult.data ?? []) as GuardrailRow[]));
-	}
+	const guardrails = await fetchEnabledGuardrails(supabase, args.workspaceId, sources.guardrailIds);
 
 	let dynamicRoute: DynamicRoutePolicy | null = null;
 	const routeId = String(routeLinkResult.data?.route_id ?? "").trim();

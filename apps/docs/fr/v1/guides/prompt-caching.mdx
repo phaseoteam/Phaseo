@@ -123,6 +123,7 @@ Mettez en cache le contenu qui reste identique d’une requête à l’autre : l
 Phaseo n’envoie à chaque fournisseur que les contrôles de cache qu’il documente et retire les autres. Les contrôles de cache n’excluent jamais un fournisseur du routage. Chaque page de modèle indique ses prix de lecture et d’écriture du cache.
 </Note>
 
+<span id="which-providers-cache-automatically"></span>
 ## Quels fournisseurs mettent en cache automatiquement
 
 | Fournisseur | Mise en cache | Ce que Phaseo envoie |
@@ -288,6 +289,11 @@ Gemini 2.5 et versions ultérieures mettent en cache implicitement, sans rien à
 ### Responses : envoyer toute la conversation
 
 Phaseo ne stocke pas les réponses. Les requêtes qui définissent `previous_response_id` ou `conversation` renvoient `400` `unsupported_param` : envoyez donc toute la conversation dans `input` à chaque étape. Son ouverture stable est le préfixe mis en cache. Dans les boucles d’outils, renvoyez aussi les éléments de sortie `reasoning` ; consultez [Raisonnement dans les boucles d’outils](../api-reference/endpoint/responses.mdx#reasoning-in-tool-loops).
+
+<span id="change-reasoning-effort-mid-conversation"></span>
+### Changer l’effort de raisonnement en cours de conversation
+
+Changez `reasoning_effort` (Chat Completions) ou `reasoning.effort` (Responses) entre deux requêtes : Phaseo conserve le cache de prompts de Claude, car il envoie le changement sous forme de marqueur d’effort à l’intérieur de `messages` au lieu d’un nouvel effort de premier niveau. Cela fonctionne tant que vous renvoyez le raisonnement de Claude inchangé. Sur Anthropic Messages, vous envoyez vous-même le marqueur. Consultez [Changer l’effort de raisonnement en cours de conversation](./reasoning-effort.mdx).
 
 <span id="usage-and-pricing-fields"></span>
 ## Champs d’utilisation et de tarification

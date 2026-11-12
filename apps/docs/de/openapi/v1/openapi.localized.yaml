@@ -436,8 +436,8 @@ paths:
       tags:
         - Gateway
       operationId: listTeamModels
-      summary: Teambezogene Gateway-Modelle auflisten
-      description: Gibt teambezogene Gateway-Modelle zurück. Standardmäßig werden aktuell öffentlich routbare Modelle angezeigt; mit `availability=all` lassen sich nicht routbare Verfügbarkeitsdatensätze einbeziehen.
+      summary: Modelle auflisten, die dieser Schlüssel nutzen darf
+      description: 'Gibt die Liste von /models mit den Guardrails des Aufrufers zurück: Modelle, die eine Regel sperrt, und Modelle ohne erlaubten Anbieter fehlen, und jedes Modell behält nur die Angebote, an die seine Anfragen geleitet werden dürfen, mit daraus berechneten Preisen, Fähigkeiten und Verfügbarkeit. Das Objekt access gibt an, was die Regeln ausgeschlossen haben. Standardmäßig nur derzeit öffentlich routbare Modelle; mit availability=all werden auch nicht routbare Verfügbarkeitseinträge geliefert.'
       parameters:
         - name: endpoints
           in: query
@@ -1174,8 +1174,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: Phaseo-Modell-ID, zum Beispiel `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: Phaseo-Modell-ID. Gleich wie `model`.
+                  provider_model:
+                    type: string
+                    description: Der eigene Name des Anbieters für das Modell, zum Beispiel `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
@@ -1373,8 +1378,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: Phaseo-Modell-ID, zum Beispiel `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: Phaseo-Modell-ID. Gleich wie `model`.
+                  provider_model:
+                    type: string
+                    description: Der eigene Name des Anbieters für das Modell, zum Beispiel `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
@@ -1585,8 +1595,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: Phaseo-Modell-ID, zum Beispiel `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: Phaseo-Modell-ID. Gleich wie `model`.
+                  provider_model:
+                    type: string
+                    description: Der eigene Name des Anbieters für das Modell, zum Beispiel `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
@@ -4850,7 +4865,7 @@ paths:
         - Gateway
       operationId: listDepartmentBudgets
       summary: List department budgets
-      description: Lists department spend budgets with each department's spend so far in the current UTC period. Spend comes from an hourly rollup, so it can lag by up to an hour.
+      description: Listet die Ausgabenbudgets der Abteilungen mit den bisherigen Ausgaben jeder Abteilung im aktuellen UTC-Zeitraum auf. Die Ausgaben werden so gezählt wie bei der Zulassungsprüfung der Abteilung und sind daher aktuell.
       parameters:
         - name: department_id
           in: query
@@ -4878,7 +4893,7 @@ paths:
         - Gateway
       operationId: createDepartmentBudget
       summary: Create a department budget
-      description: Erstellt ein tägliches, wöchentliches oder monatliches Ausgabenbudget für eine Abteilung. Ist es aufgebraucht, liefern API-Schlüssel-Anfragen, die der Abteilung zugerechnet werden, 429 key_limit_exceeded, bis das Budget zurückgesetzt wird. Batch-Jobs, Echtzeitsitzungen und OAuth-Anfragen werden nicht blockiert. Ist die Budgetprüfung kurzzeitig nicht verfügbar, werden Anfragen zugelassen statt abgelehnt. Inhaber und Administratoren erhalten bei etwa 80 % und bei 100 % eine mobile Push-Benachrichtigung.
+      description: Erstellt ein tägliches, wöchentliches oder monatliches Ausgabenbudget für eine Abteilung. Ist es aufgebraucht, liefern API-Schlüssel-Anfragen, die der Abteilung zugerechnet werden, 429 key_limit_exceeded, bis das Budget zurückgesetzt wird. Ist die Budgetprüfung kurzzeitig nicht verfügbar, werden Anfragen zugelassen statt abgelehnt. Inhaber und Administratoren erhalten bei etwa 80 % und bei 100 % eine mobile Push-Benachrichtigung.
       requestBody:
         required: true
         content:
@@ -13286,16 +13301,30 @@ components:
       properties:
         role:
           type: string
-          description: Verwende `system` für eine Anweisung, die ab dieser Stelle der Unterhaltung gilt. Eine Systemnachricht akzeptiert einen String oder Textblöcke, muss direkt auf einen Benutzerzug folgen (oder auf einen Assistentenzug, der mit einem Server-Tool-Ergebnis endet) und muss die letzte Nachricht sein oder von einem Assistentenzug gefolgt werden.
+          description: Verwende `system` für eine Anweisung, die ab dieser Stelle der Unterhaltung gilt. Eine Systemnachricht akzeptiert einen String oder Textblöcke, muss direkt auf einen Benutzerzug folgen (oder auf einen Assistentenzug, der mit einem Server-Tool-Ergebnis endet) und muss die letzte Nachricht sein oder von einem Assistentenzug gefolgt werden. Eine reine Aufwands-Systemnachricht mit leerem `content` und `output_config` kann überall stehen.
           enum:
             - system
         content:
           oneOf:
             - type: string
             - type: array
-              minItems: 1
               items:
                 $ref: '#/components/schemas/AnthropicSystemTextBlock'
+        output_config:
+          type: object
+          description: Ändert Claudes Aufwandsstufe für spätere Züge, ohne den Prompt-Cache neu zu starten. Sende es mit leerem `content` nach den bereits gesendeten Nachrichten und lass es bei späteren Anfragen an seiner Stelle; weiter vorne eingefügt ändert es das gecachte Präfix. Routen ohne Aufwand pro Nachricht erhalten stattdessen die geltende Stufe als Aufwand auf oberster Ebene, wodurch der Cache nicht erhalten bleibt.
+          required:
+            - effort
+          properties:
+            effort:
+              type: string
+              enum:
+                - low
+                - medium
+                - high
+                - xhigh
+                - max
+          additionalProperties: false
       additionalProperties: false
     AnthropicSystemTextBlock:
       type: object
@@ -14504,6 +14533,7 @@ components:
         questions:
           type: array
           minItems: 1
+          maxItems: 1000
           items:
             oneOf:
               - $ref: '#/components/schemas/DecisionPredicateQuestion'
@@ -14801,7 +14831,7 @@ components:
         questions:
           type: object
           minProperties: 1
-          maxProperties: 128
+          maxProperties: 1000
           additionalProperties:
             oneOf:
               - $ref: '#/components/schemas/DecisionNoulQuestion'
@@ -15190,7 +15220,7 @@ components:
         questions:
           type: object
           minProperties: 1
-          maxProperties: 128
+          maxProperties: 1000
           additionalProperties:
             oneOf:
               - $ref: '#/components/schemas/SystemOneNoulQuestion'
@@ -20309,7 +20339,7 @@ components:
         retention_days:
           type: integer
           minimum: 90
-          maximum: 365
+          maximum: 90
         include_provider_payloads:
           type: boolean
         billing_status:
@@ -20341,7 +20371,7 @@ components:
         retention_days:
           type: integer
           minimum: 90
-          maximum: 365
+          maximum: 90
         include_provider_payloads:
           type: boolean
       minProperties: 1
@@ -21078,6 +21108,48 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Model'
+        access:
+          $ref: '#/components/schemas/GatewayModelAccess'
+      additionalProperties: false
+    GatewayModelAccess:
+      type: object
+      description: 'Nur von /models/me geliefert: was die Guardrails des Aufrufers aus der Liste ausgeschlossen haben, vor Suche und Paginierung.'
+      required:
+        - restricted
+        - hidden_model_count
+        - hidden_models
+        - limited_model_count
+      properties:
+        restricted:
+          type: boolean
+          description: Ob eine Regel Modelle oder Anbieter für diesen Schlüssel einschränkt.
+          example: true
+        hidden_model_count:
+          type: integer
+          minimum: 0
+          description: Wie viele Modelle die Regeln ausschließen.
+          example: 12
+        hidden_models:
+          type: array
+          description: Die ausgeschlossenen Modelle mit ihren Namen (bis zu 500).
+          items:
+            type: object
+            required:
+              - id
+              - name
+            properties:
+              id:
+                type: string
+                example: deepseek/deepseek-v4
+              name:
+                type: string
+                example: DeepSeek V4
+            additionalProperties: false
+        limited_model_count:
+          type: integer
+          minimum: 0
+          description: Wie viele gelistete Modelle durch die Regeln einige ihrer Anbieter verloren haben.
+          example: 3
       additionalProperties: false
     ModelEndpointCapability:
       type: object

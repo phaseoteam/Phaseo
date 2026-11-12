@@ -57,7 +57,8 @@ import { resolveGrokCommand } from "./grokLaunch";
 import { grokAccountStatus } from "./grokAccountStatus";
 import { grokModelCatalog } from "./grokModelCatalog";
 import { SecretVault } from "./secretVault";
-import { windowsCredentialEncryption } from "./windowsCredentialEncryption";
+import { stopCredentialHelper, windowsCredentialEncryption } from "./windowsCredentialEncryption";
+import { warmMcpSdk } from "./mcpSdk";
 import { signInNative } from "./accountConnections";
 import { gitReview, gitWorkingStatus, listProjectFiles, projectRelativePath, readFilePreview, readProjectFile } from "./projectFiles";
 import { gitCommits, gitRefs, gitScopedDiff, readScopedDiffContents } from "./gitDiffScopes";
@@ -171,7 +172,8 @@ const quitGuard = new QuitGuard({
 	working: () => workspaceRuntime ? workingChats(workspaceRuntime.store.getOverview().tasks) : 0,
 	ask: async working => {
 		const owner = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows().find(window => !window.isDestroyed());
-		const options = { type: "question" as const, buttons: ["Quit", "Cancel"], defaultId: 1, cancelId: 1, noLink: true, checkboxLabel: "Don't ask again",
+		// Without a title Windows shows the package name ("@phaseo/desktop") in the dialog's title bar.
+		const options = { type: "question" as const, title: "Phaseo", buttons: ["Quit", "Cancel"], defaultId: 1, cancelId: 1, noLink: true, checkboxLabel: "Don't ask again",
 			message: working ? `${working === 1 ? "A chat is" : `${working} chats are`} still working. Quit Phaseo?` : "Quit Phaseo?",
 			detail: working ? "Quitting stops them. Phaseo offers to continue them when it next opens." : "" };
 		const answer = owner ? await dialog.showMessageBox(owner, options) : await dialog.showMessageBox(options);
@@ -434,7 +436,8 @@ async function usagePrices(): Promise<(model: string) => TokenPrices | undefined
 	const account = workspaceRuntime.store.getAccounts().find(value => value.harness === "phaseo" && value.configured && !value.archived && value.endpoint);
 	if (!account) return () => undefined;
 	const cached = await modelCatalogCache.read({ endpoint: account.endpoint!, accountId: account.id });
-	let models = cached?.version === CATALOG_VERSION ? cached.models : [];
+	// Version 4 added cache prices; 5 only applies the key's guardrails, so its prices are as good.
+	let models = cached && cached.version >= 4 && cached.version <= CATALOG_VERSION ? cached.models : [];
 	if (!models.length) models = await discoverDesktopModels("phaseo", account.id, undefined, true).catch(() => []);
 	const prices = new Map<string, TokenPrices>();
 	for (const model of models) {
@@ -514,6 +517,11 @@ async function modelCheck<T>(harness: Harness, check: () => Promise<T>) {
 	finally { const remaining = modelChecks.get(harness)! - 1; if (remaining) modelChecks.set(harness, remaining); else modelChecks.delete(harness); }
 }
 ipcMain.handle("workspace:models", (event, harness: unknown, accountId: unknown, projectId: unknown) => modelRequest(event, harness, accountId, projectId, false));
+ipcMain.handle("workspace:model-access", async (event, accountId: unknown) => {
+	if (!senderWindow(event) || typeof accountId !== "string") throw new Error("Invalid model access request.");
+	const account = workspaceRuntime.store.getAccounts().find(value => value.id === accountId && value.harness === "phaseo" && value.configured && value.endpoint);
+	return account ? await modelCatalogCache.access({ endpoint: account.endpoint!, accountId: account.id }) : undefined;
+});
 // Skips the caches' freshness windows: Phaseo's catalog and the lists local harnesses last gave.
 ipcMain.handle("workspace:refresh-models", (event, harness: unknown, accountId: unknown) => modelRequest(event, harness, accountId, undefined, true));
 app.on("before-quit", event => {
@@ -521,6 +529,7 @@ app.on("before-quit", event => {
 	event.preventDefault();
 	if (shutdownStarted || quitGuard.intercept()) return;
 	shutdownStarted = true;
+	void stopCredentialHelper();
 	browserHost.downloads.close();
 	diagnostics.close();
 	missionService?.close();
@@ -1510,7 +1519,7 @@ app.whenReady().then(() => {
 	};
 	workspaceRuntime.discoverThreadModels = discoverDesktopModels;
 	workspaceRuntime.discoverInstallations = harnessInstallations;
-	factoryService = new FactoryService(workspaceRuntime, { dataDir: factoryDataFolder(workspaceDirectory), legacyFolder: legacyFactoryFolder(app.getPath("appData")), demo: process.env.PHASEO_FACTORY_DEMO === "1", broadcast: factoryBroadcaster(() => BrowserWindow.getAllWindows()) });
+	factoryService = new FactoryService(workspaceRuntime, { dataDir: factoryDataFolder(workspaceDirectory), legacyFolder: legacyFactoryFolder(app.getPath("appData")), demo: process.env.PHASEO_FACTORY_DEMO === "1", broadcast: factoryBroadcaster(() => BrowserWindow.getAllWindows()), activateAfterMs: 4000 });
 	workspaceRuntime.factoryTools = threadId => factoryService!.agentTools(threadId);
 	void factoryService.start().catch(() => {});
 	globalInstructions = new GlobalInstructions(path.join(workspaceDirectory, "instructions"));
@@ -1553,6 +1562,8 @@ app.whenReady().then(() => {
 	};
 	if (process.platform !== "darwin") Menu.setApplicationMenu(null);
 	createWindow();
+	// The MCP SDK loads once the window is up, so the first chat that uses MCP doesn't wait for it (mcpSdk.ts).
+	setTimeout(() => { if (!shutdownStarted) warmMcpSdk(); }, 3000).unref();
 	missionService.start();
 	void refreshPhaseoSignIns();
 	phaseoSignInTimer = setInterval(() => void refreshPhaseoSignIns(), 6 * 3_600_000); phaseoSignInTimer.unref();

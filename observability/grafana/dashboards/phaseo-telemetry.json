@@ -101,6 +101,14 @@
           "value": ""
         },
         "hide": 0
+      },
+      {
+        "name": "tempo",
+        "label": "Traces",
+        "type": "datasource",
+        "query": "tempo",
+        "refresh": 1,
+        "hide": 2
       }
     ]
   },
@@ -394,6 +402,150 @@
         "wrapLogMessage": true,
         "enableLogDetails": true,
         "sortOrder": "Descending"
+      }
+    },
+    {
+      "title": "Collected event types",
+      "type": "table",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Received events in the selected range. Use this to see which services and event types are actually represented. Counts do not estimate billable bytes or prove uptime.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "expr": "label_replace((topk(20, sum by (service_name, event_name) (count_over_time({service_name=~\"phaseo-.*\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | __error__=\"\" [$__range])))), \"measure\", \"Events\", \"\", \"\")"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns",
+            "valueLabel": "measure"
+          }
+        },
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "service_name": 0,
+              "event_name": 1,
+              "Events": 2
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "Events",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "—",
+          "custom": {
+            "filterable": true,
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "service_name"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Service"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "event_name"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Event"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Failure %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p95 ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 7,
+      "gridPos": {
+        "x": 0,
+        "y": 27,
+        "w": 24,
+        "h": 9
       }
     }
   ]

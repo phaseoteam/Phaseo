@@ -971,6 +971,9 @@ export type CreateAnthropicMessageParams = {
                 text: string;
                 type: "text";
               }[];
+          output_config?: {
+            effort: "low" | "medium" | "high" | "xhigh" | "max";
+          };
           role: "system";
         }
     )[];
@@ -3263,7 +3266,7 @@ export type CreateDepartmentBudgetParams = {
 };
 
 /**
- * Creates a daily, weekly, or monthly spend budget for one department. Once the department has used it, API-key requests that count toward the department return 429 key_limit_exceeded until the budget resets. Batch jobs, realtime sessions and OAuth requests are not blocked. If the budget check is briefly unavailable, requests are allowed rather than refused. Owners and admins get a mobile push at about 80% and at 100%.
+ * Creates a daily, weekly, or monthly spend budget for one department. Once the department has used it, API-key requests that count toward the department return 429 key_limit_exceeded until the budget resets. If the budget check is briefly unavailable, requests are allowed rather than refused. Owners and admins get a mobile push at about 80% and at 100%.
  */
 export async function createDepartmentBudget(
   client: Client,
@@ -4556,6 +4559,7 @@ export async function createLiveSession(
   model?: string;
   model_id?: string;
   provider?: string;
+  provider_model?: string;
   session_id?: string;
   status?: string;
   voice?: string | null;
@@ -4580,6 +4584,7 @@ export async function createLiveSession(
     model?: string;
     model_id?: string;
     provider?: string;
+    provider_model?: string;
     session_id?: string;
     status?: string;
     voice?: string | null;
@@ -6127,6 +6132,7 @@ export async function createRealtimeSession(
   model?: string;
   model_id?: string;
   provider?: string;
+  provider_model?: string;
   session_id?: string;
   status?: string;
   voice?: string | null;
@@ -6151,6 +6157,7 @@ export async function createRealtimeSession(
     model?: string;
     model_id?: string;
     provider?: string;
+    provider_model?: string;
     session_id?: string;
     status?: string;
     voice?: string | null;
@@ -9819,6 +9826,7 @@ export async function finalizeRealtimeSession(
   model: string;
   model_id: string;
   provider: string;
+  provider_model?: string;
   session_id: string;
   settlement: {
     [key: string]: unknown;
@@ -9844,6 +9852,7 @@ export async function finalizeRealtimeSession(
     model: string;
     model_id: string;
     provider: string;
+    provider_model?: string;
     session_id: string;
     settlement: {
       [key: string]: unknown;
@@ -16160,7 +16169,7 @@ export type ListDepartmentBudgetsParams = {
 };
 
 /**
- * Lists department spend budgets with each department's spend so far in the current UTC period. Spend comes from an hourly rollup, so it can lag by up to an hour.
+ * Lists department spend budgets with each department's spend so far in the current UTC period. Spend is counted the way department admission counts it, so it is current.
  */
 export async function listDepartmentBudgets(
   client: Client,
@@ -17771,6 +17780,15 @@ export async function listModels(
   args: ListModelsParams = {},
 ): Promise<
   | {
+      access?: {
+        hidden_model_count: number;
+        hidden_models: {
+          id: string;
+          name: string;
+        }[];
+        limited_model_count: number;
+        restricted: boolean;
+      };
       availability_mode: "active" | "all";
       limit: number;
       models: {
@@ -18122,6 +18140,15 @@ export async function listModels(
   const resolvedPath = "/models";
   return client.request<
     | {
+        access?: {
+          hidden_model_count: number;
+          hidden_models: {
+            id: string;
+            name: string;
+          }[];
+          limited_model_count: number;
+          restricted: boolean;
+        };
         availability_mode: "active" | "all";
         limit: number;
         models: {
@@ -20213,12 +20240,21 @@ export type ListTeamModelsParams = {
 };
 
 /**
- * Returns team-scoped gateway model listings. Defaults to currently publicly routable models; use availability=all to include non-routable availability records.
+ * Returns the /models listing with the caller's guardrails applied: models a rule blocks, and models with no permitted provider, are left out, and each model keeps only the offers its requests may be routed to, with its prices, capabilities and availability from those. The access object says what the rules left out. Defaults to currently publicly routable models; use availability=all to include non-routable availability records.
  */
 export async function listTeamModels(
   client: Client,
   args: ListTeamModelsParams = {},
 ): Promise<{
+  access?: {
+    hidden_model_count: number;
+    hidden_models: {
+      id: string;
+      name: string;
+    }[];
+    limited_model_count: number;
+    restricted: boolean;
+  };
   availability_mode: "active" | "all";
   limit: number;
   models: {
@@ -20559,6 +20595,15 @@ export async function listTeamModels(
   const { path, query, headers, body } = args;
   const resolvedPath = "/models/me";
   return client.request<{
+    access?: {
+      hidden_model_count: number;
+      hidden_models: {
+        id: string;
+        name: string;
+      }[];
+      limited_model_count: number;
+      restricted: boolean;
+    };
     availability_mode: "active" | "all";
     limit: number;
     models: {

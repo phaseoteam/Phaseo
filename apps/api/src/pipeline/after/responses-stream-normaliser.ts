@@ -79,15 +79,73 @@ function emptyPart(kind: TextKind, text = ""): Record<string, any> {
 	return kind === "output_text" ? { type: "output_text", text, annotations: [] } : { type: "reasoning_text", text };
 }
 
-export function createResponsesStreamNormaliser(): ResponsesStreamNormaliser {
+/** The lifecycle events that carry the whole Response object. */
+const LIFECYCLE_EVENTS = new Set([
+	"response.created", "response.queued", "response.in_progress", "response.completed", "response.failed", "response.incomplete",
+]);
+
+/** Tool types a Response can list: a gateway server tool (`phaseo:web_search`, `gateway:datetime`) is not one. */
+const isOpenAITool = (tool: unknown): tool is Record<string, any> =>
+	Boolean(tool && typeof tool === "object" && typeof (tool as any).type === "string" && !(tool as any).type.includes(":"));
+
+/**
+ * The fields every Response object carries (the OpenAI Response model requires them), from the
+ * request's settings: what the API returns for a request that did not set them.
+ */
+function responseDefaults(request: Record<string, any> | null | undefined): Record<string, unknown> {
+	const body = request && typeof request === "object" ? request : {};
+	const tools = (Array.isArray(body.tools) ? body.tools : []).filter(isOpenAITool).map((tool: Record<string, any>) =>
+		tool.type === "function"
+			? { type: "function", name: tool.name, description: tool.description ?? null, parameters: tool.parameters ?? null, strict: tool.strict ?? null }
+			: tool);
+	return {
+		object: "response",
+		error: null,
+		incomplete_details: null,
+		instructions: body.instructions ?? null,
+		metadata: body.metadata ?? {},
+		parallel_tool_calls: body.parallel_tool_calls ?? true,
+		temperature: body.temperature ?? null,
+		tool_choice: body.tool_choice ?? "auto",
+		tools,
+		top_p: body.top_p ?? null,
+	};
+}
+
+export function createResponsesStreamNormaliser(options: {
+	/** The client's request: the source of the Response fields a lifecycle event leaves out. */
+	request?: Record<string, any> | null;
+	/** The model the client asked for, when a lifecycle event names none. */
+	model?: string | null;
+} = {}): ResponsesStreamNormaliser {
 	let sequence = 0;
 	let sentInProgress = false;
 	const parts = new Map<string, PartState>();
 	const annotationCounts = new Map<string, number>();
+	const defaults = responseDefaults(options.request);
+	let createdAt: number | null = null;
+	/** Output items sent so far, by output index: a lifecycle event without output carries these. */
+	const outputItems = new Map<number, unknown>();
 
 	const keyOf = (itemId: string, contentIndex: number) => `${itemId}:${contentIndex}`;
+	/** Every lifecycle event carries a complete Response, the same way: what the frame left out is filled in. */
+	const completeResponse = (response: Record<string, any>): Record<string, any> => {
+		if (typeof response.created_at === "number") createdAt ??= response.created_at;
+		createdAt ??= Math.floor(Date.now() / 1000);
+		const output = [...outputItems.entries()].sort(([a], [b]) => a - b).map(([, item]) => item);
+		const filled: Record<string, any> = { ...defaults, created_at: createdAt, output, ...(options.model ? { model: options.model } : {}) };
+		for (const [key, value] of Object.entries(response)) if (value !== undefined) filled[key] = value;
+		return filled;
+	};
 	const stamp = (name: string, frame: Record<string, any>): ResponsesStreamFrame => {
 		const { type: _type, sequence_number: _sequence, ...rest } = frame ?? {};
+		if ((name === "response.output_item.added" || name === "response.output_item.done") &&
+			typeof rest.output_index === "number" && rest.item && typeof rest.item === "object") {
+			outputItems.set(rest.output_index, rest.item);
+		}
+		if (LIFECYCLE_EVENTS.has(name) && rest.response && typeof rest.response === "object") {
+			rest.response = completeResponse(rest.response);
+		}
 		return { eventName: name, frame: { type: name, ...rest, sequence_number: sequence++ } };
 	};
 	const partFor = (frame: any, kind: TextKind): PartState | null => {
@@ -204,4 +262,10 @@ export function createResponsesStreamNormaliser(): ResponsesStreamNormaliser {
 			return out;
 		},
 	};
+}
+
+/** The client's own request body (before the gateway adapted it), for the settings a Response reports. */
+export function responsesRequestBody(ctx: { rawBody?: unknown; body?: unknown }): Record<string, any> | null {
+	const pick = (value: unknown) => (value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length ? value as Record<string, any> : null);
+	return pick(ctx.rawBody) ?? pick(ctx.body);
 }

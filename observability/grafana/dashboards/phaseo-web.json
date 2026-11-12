@@ -100,7 +100,25 @@
           "text": "",
           "value": ""
         },
-        "hide": 0
+        "hide": 2
+      },
+      {
+        "name": "tempo",
+        "label": "Traces",
+        "type": "datasource",
+        "query": "tempo",
+        "refresh": 1,
+        "hide": 2
+      },
+      {
+        "name": "route",
+        "label": "Route contains",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "text": "",
+          "value": ""
+        }
       }
     ]
   },
@@ -124,7 +142,7 @@
       "id": 1,
       "gridPos": {
         "x": 0,
-        "y": 0,
+        "y": 54,
         "w": 12,
         "h": 9
       },
@@ -138,7 +156,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | __error__=\"\" [$__auto])) or vector(0)",
+          "expr": "sum(rate({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", route=\"route\" | __error__=\"\" | route=~\".*${route:regex}.*\" | environment=\"$environment\" | event_name=\"web.request\" | __error__=\"\" [$__auto])) or vector(0)",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -170,7 +188,7 @@
       "id": 2,
       "gridPos": {
         "x": 12,
-        "y": 0,
+        "y": 54,
         "w": 12,
         "h": 9
       },
@@ -184,7 +202,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", status_code=\"status_code\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | status_code >= 500 | __error__=\"\" [$__auto])) or vector(0)",
+          "expr": "sum(rate({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", status_code=\"status_code\", route=\"route\" | __error__=\"\" | route=~\".*${route:regex}.*\" | environment=\"$environment\" | event_name=\"web.request\" | status_code >= 500 | __error__=\"\" [$__auto])) or vector(0)",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -216,7 +234,7 @@
       "id": 3,
       "gridPos": {
         "x": 0,
-        "y": 9,
+        "y": 63,
         "w": 12,
         "h": 9
       },
@@ -230,7 +248,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "quantile_over_time(0.95, {service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", duration_ms=\"duration_ms\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | unwrap duration_ms | __error__=\"\" [$__auto]) by (service_name)",
+          "expr": "quantile_over_time(0.95, {service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", duration_ms=\"duration_ms\", route=\"route\" | __error__=\"\" | route=~\".*${route:regex}.*\" | environment=\"$environment\" | event_name=\"web.request\" | unwrap duration_ms | __error__=\"\" [$__auto]) by (service_name)",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -262,7 +280,7 @@
       "id": 4,
       "gridPos": {
         "x": 12,
-        "y": 9,
+        "y": 63,
         "w": 12,
         "h": 9
       },
@@ -276,7 +294,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(count_over_time({service_name=~\"phaseo-web\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.server_error\" | __error__=\"\" [$__auto])) or vector(0)",
+          "expr": "sum(count_over_time({service_name=~\"phaseo-web\"} | json environment=\"environment\", event_name=\"event_name\", route=\"route\" | __error__=\"\" | route=~\".*${route:regex}.*\" | environment=\"$environment\" | event_name=\"web.server_error\" | __error__=\"\" [$__auto])) or vector(0)",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -308,7 +326,7 @@
       "id": 5,
       "gridPos": {
         "x": 0,
-        "y": 18,
+        "y": 72,
         "w": 12,
         "h": 9
       },
@@ -322,7 +340,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "{service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | actionable=\"true\"",
+          "expr": "{service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\", route=\"route\" | __error__=\"\" | route=~\".*${route:regex}.*\" | environment=\"$environment\" | event_name=\"web.request\" | actionable=\"true\"",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -354,7 +372,7 @@
       "id": 6,
       "gridPos": {
         "x": 12,
-        "y": 18,
+        "y": 72,
         "w": 12,
         "h": 9
       },
@@ -368,7 +386,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "{service_name=~\"phaseo-web\"} | json environment=\"environment\", event_name=\"event_name\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.server_error\"",
+          "expr": "{service_name=~\"phaseo-web\"} | json environment=\"environment\", event_name=\"event_name\", route=\"route\" | __error__=\"\" | route=~\".*${route:regex}.*\" | environment=\"$environment\" | event_name=\"web.server_error\"",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -394,6 +412,1326 @@
         "wrapLogMessage": true,
         "enableLogDetails": true,
         "sortOrder": "Descending"
+      }
+    },
+    {
+      "title": "Web API route health",
+      "type": "table",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Selected-range received events. Up to 10 failing and 10 busiest groups; sorted by failures. Failure % uses the displayed requests population. p95 uses available timings; sparse samples are unstable. A dash means unavailable, not zero. Web API duration measures response headers; gateway duration measures terminal completion.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "expr": "label_replace(((sum by (method, route) (count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", method=\"method\", route=\"route\", status_code=\"status_code\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | route=~\".*${route:regex}.*\" | __error__=\"\" [$__range]))) and on (method, route) (topk(10, sum by (method, route) (count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", method=\"method\", route=\"route\", status_code=\"status_code\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | route=~\".*${route:regex}.*\" | status_code >= 500 | __error__=\"\" [$__range]))) or topk(10, sum by (method, route) (count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", method=\"method\", route=\"route\", status_code=\"status_code\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | route=~\".*${route:regex}.*\" | __error__=\"\" [$__range]))))), \"measure\", \"Requests\", \"\", \"\") or label_replace(((((sum by (method, route) (count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", method=\"method\", route=\"route\", status_code=\"status_code\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | route=~\".*${route:regex}.*\" | status_code >= 500 | __error__=\"\" [$__range]))) or (0 * (sum by (method, route) (count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", method=\"method\", route=\"route\", status_code=\"status_code\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | route=~\".*${route:regex}.*\" | __error__=\"\" [$__range])))))) and on (method, route) (topk(10, sum by (method, route) (count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", method=\"method\", route=\"route\", status_code=\"status_code\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | route=~\".*${route:regex}.*\" | status_code >= 500 | __error__=\"\" [$__range]))) or topk(10, sum by (method, route) (count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", method=\"method\", route=\"route\", status_code=\"status_code\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | route=~\".*${route:regex}.*\" | __error__=\"\" [$__range]))))), \"measure\", \"Failures\", \"\", \"\") or label_replace(((100 * ((sum by (method, route) (count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", method=\"method\", route=\"route\", status_code=\"status_code\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | route=~\".*${route:regex}.*\" | status_code >= 500 | __error__=\"\" [$__range]))) or (0 * (sum by (method, route) (count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", method=\"method\", route=\"route\", status_code=\"status_code\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | route=~\".*${route:regex}.*\" | __error__=\"\" [$__range]))))) / (sum by (method, route) (count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", method=\"method\", route=\"route\", status_code=\"status_code\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | route=~\".*${route:regex}.*\" | __error__=\"\" [$__range])))) and on (method, route) (topk(10, sum by (method, route) (count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", method=\"method\", route=\"route\", status_code=\"status_code\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | route=~\".*${route:regex}.*\" | status_code >= 500 | __error__=\"\" [$__range]))) or topk(10, sum by (method, route) (count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", method=\"method\", route=\"route\", status_code=\"status_code\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | route=~\".*${route:regex}.*\" | __error__=\"\" [$__range]))))), \"measure\", \"Failure %\", \"\", \"\") or label_replace(((quantile_over_time(0.95, {service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", method=\"method\", route=\"route\", status_code=\"status_code\", duration_ms=\"duration_ms\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | route=~\".*${route:regex}.*\" | unwrap duration_ms | __error__=\"\" [$__range]) by (method, route)) and on (method, route) (topk(10, sum by (method, route) (count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", method=\"method\", route=\"route\", status_code=\"status_code\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | route=~\".*${route:regex}.*\" | status_code >= 500 | __error__=\"\" [$__range]))) or topk(10, sum by (method, route) (count_over_time({service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", method=\"method\", route=\"route\", status_code=\"status_code\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | route=~\".*${route:regex}.*\" | __error__=\"\" [$__range]))))), \"measure\", \"p95 ms\", \"\", \"\")"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns",
+            "valueLabel": "measure"
+          }
+        },
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "method": 0,
+              "route": 1,
+              "Requests": 2,
+              "Failures": 3,
+              "Failure %": 4,
+              "p95 ms": 5
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "Failures",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "—",
+          "custom": {
+            "filterable": true,
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "method"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Method"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "route"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Route"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Failure %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p95 ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "route"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Investigate",
+                    "url": "/d/phaseo-web?var-environment=$environment&from=$__from&to=$__to&var-route=${__data.fields[\"route\"]}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 7,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "title": "Grouped failures",
+      "type": "table",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Up to 20 most frequent failure groups in the selected range. Inspect category, code, digest and route, then expand matching logs for source frames. Event counts are not distinct incidents or affected users. Error messages and customer content are not collected.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "expr": "label_replace((topk(20, sum by (service_name, route, event_name, error_kind, error_code, error_name, error_digest, status_code, job) (count_over_time({service_name=~\"phaseo-web-api|phaseo-web\"} | json environment=\"environment\", event_name=\"event_name\", route=\"route\", error_kind=\"error_kind\", error_code=\"error_code\", error_name=\"error_name\", error_digest=\"error_digest\", status_code=\"status_code\", job=\"job\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | route=~\".*${route:regex}.*\" | actionable=\"true\" | __error__=\"\" [$__range])))), \"measure\", \"Events\", \"\", \"\")"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns",
+            "valueLabel": "measure"
+          }
+        },
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "service_name": 0,
+              "route": 1,
+              "event_name": 2,
+              "error_kind": 3,
+              "error_code": 4,
+              "error_name": 5,
+              "error_digest": 6,
+              "status_code": 7,
+              "job": 8,
+              "Events": 9
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "Events",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "—",
+          "custom": {
+            "filterable": true,
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "service_name"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Service"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "route"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Route"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "event_name"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Event"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_kind"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Category"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_code"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Code"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_name"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Error"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_digest"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Fingerprint"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "status_code"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "HTTP"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "job"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Job"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Failure %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p95 ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 8,
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "title": "Recent web API failures",
+      "type": "table",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Newest 100 matching 5xx responses. Click trace ID for a retained trace. Header timing does not measure streamed response completion.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "expr": "{service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", route=\"route\", status_code=\"status_code\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | route=~\".*${route:regex}.*\" | status_code >= 500",
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "maxLines": 100,
+          "direction": "backward"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "Line",
+            "format": "json",
+            "replace": true
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "timestamp",
+                "method",
+                "route",
+                "status_code",
+                "duration_ms",
+                "trace_id"
+              ]
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "indexByName": {
+              "timestamp": 0,
+              "method": 1,
+              "route": 2,
+              "status_code": 3,
+              "duration_ms": 4,
+              "trace_id": 5
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "timestamp",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "—",
+          "custom": {
+            "filterable": true,
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "timestamp"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Time (UTC)"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "method"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Method"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "route"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Route"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "status_code"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "HTTP"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "duration_ms"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Duration"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trace_id"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Trace ID"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "duration_ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "scheduled_at"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_stack"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 480
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Investigate",
+                    "url": "/d/phaseo-gateway?var-environment=$environment&from=$__from&to=$__to&var-request=${__data.fields[\"request_id\"]}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trace_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open sampled trace",
+                    "url": "/explore?schemaVersion=1&panes=%7B%22trace%22%3A%7B%22datasource%22%3A%22${tempo}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22queryType%22%3A%22traceId%22%2C%22query%22%3A%22${__value.raw}%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 9,
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "title": "Slow web API requests",
+      "type": "table",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Newest 100 requests taking at least one second to response headers. These are recent slow samples, not the slowest requests across the entire range.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "expr": "{service_name=~\"phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", route=\"route\", duration_ms=\"duration_ms\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.request\" | route=~\".*${route:regex}.*\" | duration_ms >= 1000 | __error__=\"\"",
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "maxLines": 100,
+          "direction": "backward"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "Line",
+            "format": "json",
+            "replace": true
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "timestamp",
+                "method",
+                "route",
+                "status_code",
+                "duration_ms",
+                "trace_id"
+              ]
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "indexByName": {
+              "timestamp": 0,
+              "method": 1,
+              "route": 2,
+              "status_code": 3,
+              "duration_ms": 4,
+              "trace_id": 5
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "timestamp",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "—",
+          "custom": {
+            "filterable": true,
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "timestamp"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Time (UTC)"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "method"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Method"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "route"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Route"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "status_code"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "HTTP"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "duration_ms"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Duration"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trace_id"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Trace ID"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "duration_ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "scheduled_at"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_stack"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 480
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Investigate",
+                    "url": "/d/phaseo-gateway?var-environment=$environment&from=$__from&to=$__to&var-request=${__data.fields[\"request_id\"]}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trace_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open sampled trace",
+                    "url": "/explore?schemaVersion=1&panes=%7B%22trace%22%3A%7B%22datasource%22%3A%22${tempo}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22queryType%22%3A%22traceId%22%2C%22query%22%3A%22${__value.raw}%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 10,
+      "gridPos": {
+        "x": 0,
+        "y": 27,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "title": "Website error records",
+      "type": "table",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Newest 100 captured website errors with redacted source frames. Filter the digest column to inspect a fingerprint. Error messages are omitted, and private source-map upload is not enabled.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "expr": "{service_name=~\"phaseo-web\"} | json environment=\"environment\", event_name=\"event_name\", route=\"route\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.server_error\" | route=~\".*${route:regex}.*\"",
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "maxLines": 100,
+          "direction": "backward"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "Line",
+            "format": "json",
+            "replace": true
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "timestamp",
+                "route",
+                "signal",
+                "error_name",
+                "error_digest",
+                "error_stack",
+                "trace_id"
+              ]
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "indexByName": {
+              "timestamp": 0,
+              "route": 1,
+              "signal": 2,
+              "error_name": 3,
+              "error_digest": 4,
+              "error_stack": 5,
+              "trace_id": 6
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "timestamp",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "—",
+          "custom": {
+            "filterable": true,
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "timestamp"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Time (UTC)"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "route"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Route"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "signal"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Source"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_name"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Error"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_digest"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Fingerprint"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_stack"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Source frames"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trace_id"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Trace ID"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "duration_ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "scheduled_at"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_stack"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 480
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Investigate",
+                    "url": "/d/phaseo-gateway?var-environment=$environment&from=$__from&to=$__to&var-request=${__data.fields[\"request_id\"]}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trace_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open sampled trace",
+                    "url": "/explore?schemaVersion=1&panes=%7B%22trace%22%3A%7B%22datasource%22%3A%22${tempo}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22queryType%22%3A%22traceId%22%2C%22query%22%3A%22${__value.raw}%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 11,
+      "gridPos": {
+        "x": 0,
+        "y": 36,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "title": "Website errors by release",
+      "type": "table",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Captured website server errors by deployed release and fingerprint. No website request denominator exists, so these counts cannot establish a release error rate. Release comes from OTLP service.version metadata.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "expr": "label_replace((topk(20, sum by (service_version, error_name, error_digest) (count_over_time({service_name=~\"phaseo-web\"} | json environment=\"environment\", event_name=\"event_name\", service_version=\"service_version\", error_name=\"error_name\", error_digest=\"error_digest\", route=\"route\" | __error__=\"\" | environment=\"$environment\" | event_name=\"web.server_error\" | route=~\".*${route:regex}.*\" | __error__=\"\" [$__range])))), \"measure\", \"Events\", \"\", \"\")"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns",
+            "valueLabel": "measure"
+          }
+        },
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "service_version": 0,
+              "error_name": 1,
+              "error_digest": 2,
+              "Events": 3
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "Events",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "—",
+          "custom": {
+            "filterable": true,
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "service_version"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Release"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_name"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Error"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_digest"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Fingerprint"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Failure %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p95 ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 12,
+      "gridPos": {
+        "x": 0,
+        "y": 45,
+        "w": 24,
+        "h": 9
       }
     }
   ]

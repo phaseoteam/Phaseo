@@ -8,6 +8,34 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"Produto","api":"API e SDKs","models":"Modelos"}} clearLabel="Limpar" />
 
+<Update label="11 de novembro de 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produto</p>
+
+- **Beta:** A voz em tempo real agora está disponível para todos os usuários em [Chat → Realtime](https://phaseo.app/chat/realtime), com modelos de voz da OpenAI, Google, xAI e ElevenLabs; veja [Voz em tempo real no Chat](https://phaseo.app/blog/realtime-voice-in-chat) ([#3675](https://github.com/phaseoteam/Phaseo/pull/3675)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API e SDKs</p>
+
+- `POST /v1/decisions` aceita até 1000 perguntas em `google/gemini-decision-1`; os demais modelos têm 128 como padrão e alguns aceitam menos, e uma solicitação acima do limite do modelo retorna `400`; veja [Tomar uma decisão](./api-reference/endpoint/decisions.mdx) ([#3682](https://github.com/phaseoteam/Phaseo/pull/3682)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelos</p>
+
+- [Google: Gemini Decision 1](https://phaseo.app/models/google/gemini-decision-1)
+
+</div>
+
+</Update>
+
 <Update label="10 de novembro de 2026">
 
 <div data-changelog-category="models">

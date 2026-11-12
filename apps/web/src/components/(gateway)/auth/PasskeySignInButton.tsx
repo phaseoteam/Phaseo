@@ -6,15 +6,19 @@ import { Button } from "@/components/ui/button";
 import { createClient } from "@/utils/supabase/client";
 import { defaultLocale, type PublicLocale } from "@/i18n/routing";
 import { withAuthLocale } from "@/lib/auth/localized-paths";
+import { openAuthDialog } from "./dialog/authDialogStore";
 
 export function PasskeySignInButton({
 	returnUrl,
 	compact = false,
 	locale = defaultLocale,
+	surface = "page",
 }: {
 	returnUrl?: string;
 	compact?: boolean;
 	locale?: PublicLocale;
+	/** In the auth dialog the two-factor step opens in place. */
+	surface?: "page" | "dialog";
 }) {
 	const t = useTranslations("Auth.signIn");
 	const [pending, setPending] = useState(false);
@@ -34,6 +38,10 @@ export function PasskeySignInButton({
 				await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 			const mustVerifyMfa =
 				aalData?.currentLevel === "aal1" && aalData?.nextLevel === "aal2";
+			if (mustVerifyMfa && surface === "dialog") {
+				openAuthDialog({ step: "mfa", returnUrl: safeReturnUrl });
+				return;
+			}
 			const redirectPath = mustVerifyMfa
 				? withAuthLocale(
 						safeReturnUrl === "/"

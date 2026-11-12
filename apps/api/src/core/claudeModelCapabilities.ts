@@ -1,3 +1,6 @@
+import { normalizeProviderId } from "@/lib/config/providerAliases";
+import { reasoningModelKey } from "@core/reasoning-state";
+
 export function normalizeClaudeModelId(model: string | null | undefined): string {
 	return typeof model === "string" ? model.trim().toLowerCase() : "";
 }
@@ -134,4 +137,56 @@ export function anthropicThinkingOffType(model: string | null | undefined): "dis
 		return "disabled";
 	}
 	return null;
+}
+
+/**
+ * Family and version of a Claude model id, such as `opus-5.5` or `fable-5.2`, with
+ * platform prefixes (`anthropic.`, `us.`), date and `-v1:0` suffixes removed.
+ * Returns null for ids that are not Claude 5-series or later.
+ */
+function claudeFamilyVersion(model: string | null | undefined): string | null {
+	const key = reasoningModelKey(model);
+	const match = /^claude-(fable|mythos|opus|sonnet|haiku)-(\d+)(?:-(\d))?(?:$|-)/.exec(key);
+	if (!match) return null;
+	return `${match[1]}-${match[2]}${match[3] ? `.${match[3]}` : ""}`;
+}
+
+// Per-message effort support by gateway provider, from the availability table at
+// https://platform.claude.com/docs/en/build-with-claude/effort-per-message.
+// - Claude API: every model that takes it.
+// - Claude Platform on AWS: not Mythos 5.1 or 5.2.
+// - Google Cloud (Google managed): every model that takes it.
+// - Amazon Bedrock: the gateway uses InvokeModel (beta in the body's `anthropic_beta`)
+//   for inference profiles and the Messages route (beta header) otherwise. Only Fable 5.1
+//   and Opus 5.5 are listed on both.
+// Microsoft Foundry (`azure`) is left out until a live request confirms it there.
+const PER_MESSAGE_EFFORT_CLAUDE_API = new Set([
+	"fable-5.2", "mythos-5.2", "fable-5.1", "mythos-5.1", "opus-5.5", "opus-5", "sonnet-5.5", "haiku-5.5",
+]);
+const PER_MESSAGE_EFFORT_BY_PROVIDER: Record<string, ReadonlySet<string>> = {
+	"anthropic": PER_MESSAGE_EFFORT_CLAUDE_API,
+	"anthropic-us": PER_MESSAGE_EFFORT_CLAUDE_API,
+	"anthropic-aws": new Set(["fable-5.2", "fable-5.1", "opus-5.5", "opus-5", "sonnet-5.5", "haiku-5.5"]),
+	"anthropic-aws-us": new Set(["fable-5.2", "fable-5.1", "opus-5.5", "opus-5", "sonnet-5.5", "haiku-5.5"]),
+	"google-vertex": PER_MESSAGE_EFFORT_CLAUDE_API,
+	"google-vertex-eu": PER_MESSAGE_EFFORT_CLAUDE_API,
+	"amazon-bedrock": new Set(["fable-5.1", "opus-5.5"]),
+};
+
+export const ANTHROPIC_PER_MESSAGE_EFFORT_BETA = "mid-conversation-output-config-2026-07-01";
+
+/** Whether this provider route takes effort-only `system` messages for this model. */
+export function supportsAnthropicPerMessageEffort(model: string | null | undefined, providerId: string | null | undefined): boolean {
+	const familyVersion = claudeFamilyVersion(model);
+	if (!familyVersion || !providerId) return false;
+	return PER_MESSAGE_EFFORT_BY_PROVIDER[normalizeProviderId(providerId)]?.has(familyVersion) ?? false;
+}
+
+/**
+ * The effort a Claude model runs at when the request sends none: `medium` on Opus 5.5
+ * and Haiku 5.5, `high` elsewhere (https://platform.claude.com/docs/en/build-with-claude/effort).
+ */
+export function claudeDefaultEffort(model: string | null | undefined): "medium" | "high" {
+	const familyVersion = claudeFamilyVersion(model);
+	return familyVersion === "opus-5.5" || familyVersion === "haiku-5.5" ? "medium" : "high";
 }

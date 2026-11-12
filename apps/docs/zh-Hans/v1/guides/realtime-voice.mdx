@@ -39,8 +39,8 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
 
 | 提供商 | 输入音频 |
 | --- | --- |
-| OpenAI、xAI、ElevenLabs、GPT Live | 24 kHz PCM16 |
-| Google、Mistral | 16 kHz PCM16 |
+| OpenAI、xAI、ElevenLabs Realtime、GPT Live | 24 kHz PCM16 |
+| Google、Mistral、ElevenLabs Scribe v3 Live | 16 kHz PCM16 |
 
 会话开始时，Phaseo 会预留 $5 的额度，并在通话进行中延长这笔预留。
 
@@ -109,7 +109,7 @@ ElevenLabs 按通话连接的每一秒计费，另加它使用的语言模型 to
 
 ### 流式转录
 
-Mistral 的 Voxtral Realtime 模型会在音频到达时实时转录：`mistral/voxtral-mini-transcribe-realtime-3` 和 `mistral/voxtral-mini-transcribe-realtime`。它们不会语音回复，因此创建会话时不要带 `voice` 或 `instructions`：
+流式转录模型会在音频到达时实时转录：Mistral 的 `mistral/voxtral-mini-transcribe-realtime-3` 和 `mistral/voxtral-mini-transcribe-realtime`，以及 ElevenLabs 的 `eleven-labs/scribe-v3-live`。它们不会语音回复，因此创建会话时不要带 `voice` 或 `instructions`：
 
 ```bash
 curl https://api.phaseo.app/v1/audio/realtime/sessions \
@@ -122,7 +122,13 @@ curl https://api.phaseo.app/v1/audio/realtime/sessions \
 
 当你发送 `session.end` 时，中继会结束 Mistral 的音频流，并最多等待 10 秒以接收携带完整转录文本的 `transcription.done`，然后再结算并发送 `session.ended`。你已经发送的音频都会被使用，不会丢弃任何内容。
 
-流式转录按你发送的音频分钟数计费（Voxtral Mini Transcribe Realtime 3 为每分钟 $0.008），由中继计量。`transcription.done` 中 Mistral 自己的计数是最低收费。对于已有的录音，请改用[音频转录](/zh-Hans/v1/api-reference/endpoint/audio-transcriptions)。
+对于 `eleven-labs/scribe-v3-live`，中继会把 ElevenLabs 的事件转换为同样的 `transcription.*` 事件：先是 `session.created`，然后是带有当前片段文本的 `transcription.partial`（每个都会替换上一个，并带有 `turn_probability`），每个片段完成时还有带其文本的 `transcription.text.delta` 和带其 `segment_index` 的 `transcription.segment`。启用 `include_timestamps` 或 `include_language_detection` 时，随后会收到带单词时间和检测到的语言的 `transcription.segment.words`，语言变化时还会收到 `transcription.language`。启用 `diarize` 时，随后会收到带说话人标签的 `transcription.segment.speakers`，当两个说话人 ID 被确认为同一个人时会收到 `transcription.speakers_merged`。ElevenLabs 的错误以 `error` 形式送达。
+
+中继会在你发送第一个 `client.audio` 时连接 ElevenLabs，此后设置即固定。请在此之前发送 `session.update`，可包含以下任意字段：`language`, `secondary_languages`, `commit_strategy` (`vad`, 默认, `turn_prediction` 或 `manual`), `vad_silence_threshold_secs` (0.192 到 3), `vad_threshold`, `min_speech_duration_ms`, `min_silence_duration_ms`, `include_timestamps`, `include_language_detection`, `multilang_mode`, `diarize`, `no_verbatim`, `filter_background_audio` 和 `previous_text`；中继会以 `session.updated` 回复。关键词（keyterms）、关键词库、转录编辑以及实体检测或脱敏在 ElevenLabs 需要额外付费，目前尚不可用：它们会被 `relay.client_event_rejected` 拒绝，并带有 `reason: "realtime_transcription_option_not_supported"`。使用 `manual` 时，在发送了至少 0.3 秒新音频后发送 `{"type": "input_audio.commit"}` 来结束一个片段。请持续发送音频，包括静音：ElevenLabs 会结束 15 秒内没有收到任何内容的会话。
+
+当你向 Scribe 会话发送 `session.end` 时，中继会提交尚未转录的音频，并最多等待 10 秒以获取其转录，然后发送带有完整转录文本的 `transcription.done` 并结算。最后一个片段之后不足 0.3 秒的音频无法提交，因此不会被转录。
+
+流式转录按你发送的音频分钟数计费（Voxtral Mini Transcribe Realtime 3 为每分钟 $0.008，Scribe v3 Live 为每小时 $0.22），由中继计量。`transcription.done` 中 Mistral 自己的计数是最低收费；ElevenLabs 不报告用量，因此 Scribe 会话仅按中继的计数计费。对于已有的录音，请改用[音频转录](/zh-Hans/v1/api-reference/endpoint/audio-transcriptions)。
 
 ## 结束会话
 
@@ -248,7 +254,7 @@ Phaseo 从不因空闲而结束 API 会话，支出限额也只会发出警告�
 | Google Live | 60 分钟，跨中继恢复的各个连接累计。如果你的客户端大约 150 秒停止发送音频，通话也会结束。 |
 | GPT Live | 25 分钟 |
 | ElevenLabs Realtime | 30 分钟 |
-| Mistral 流式转录 | 60 分钟 |
+| Mistral 和 ElevenLabs 流式转录 | 60 分钟 |
 | 透支上限 | 超出你的预留和可用余额 $1 |
 | 失去访问权限 | 密钥被撤销、过期或暂停，或工作区被删除。大约一分钟内检测到，然后通话立即结束，没有宽限期。 |
 | 策略变更 | 在 `policy_blocked` 警告后 30 秒，如果该策略仍然拦截通话 |

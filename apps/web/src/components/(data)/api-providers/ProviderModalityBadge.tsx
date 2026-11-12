@@ -1,6 +1,6 @@
 import type { LucideIcon } from "lucide-react";
-import { useLocale, useTranslations } from "@/i18n/react";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { useTranslations } from "@/i18n/react";
+import { HoverCard, HoverCardContent, HoverCardHeader, HoverCardRows, HoverCardTrigger } from "@/components/ui/hover-card";
 import { getModalityTone } from "@/lib/models/modalityStyles";
 import { cn } from "@/lib/utils";
 import { DisplayNumber } from "@/components/display/DisplayValue";
@@ -21,9 +21,7 @@ export function ProviderModalityBadge({
 	outputCount,
 }: ProviderModalityBadgeProps) {
 	const tone = getModalityTone(modality);
-	const locale = useLocale();
 	const t = useTranslations("Catalogue.providerModelList");
-	const formatCount = (count: number) => new Intl.NumberFormat(locale).format(count);
 
 	return (
 		<HoverCard>
@@ -40,19 +38,14 @@ export function ProviderModalityBadge({
 					<Icon className={cn("size-3.5", tone.iconClassName)} />
 				</button>
 			</HoverCardTrigger>
-			<HoverCardContent side="top" className="w-56 rounded-md p-3">
-				<div className="flex items-center gap-2">
-					<span className={cn("inline-flex size-7 items-center justify-center rounded-md", tone.badgeClassName)}>
-						<Icon className={cn("size-4", tone.iconClassName)} />
-					</span>
-					<div>
-						<p className="font-medium text-foreground">{label}</p>
-					</div>
-				</div>
-				<div className="mt-3 grid grid-cols-2 gap-2 border-t border-border/60 pt-3">
-					<div><p className="text-xs text-muted-foreground">{t("input")}</p><p className="font-medium tabular-nums"><DisplayNumber value={inputCount} /></p></div>
-					<div><p className="text-xs text-muted-foreground">{t("output")}</p><p className="font-medium tabular-nums"><DisplayNumber value={outputCount} /></p></div>
-				</div>
+			<HoverCardContent className="w-56 space-y-2.5">
+				<HoverCardHeader icon={<Icon className={tone.iconClassName} />} title={label} />
+				<HoverCardRows
+					rows={[
+						{ key: "input", label: t("input"), value: <DisplayNumber value={inputCount} /> },
+						{ key: "output", label: t("output"), value: <DisplayNumber value={outputCount} /> },
+					]}
+				/>
 			</HoverCardContent>
 		</HoverCard>
 	);

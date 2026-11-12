@@ -92,6 +92,7 @@ export type GatewayBindings = {
     GATEWAY_CONTROL_KEY?: string;
     AI_STATS_GATEWAY_KEY?: string;
     NEXT_PUBLIC_GATEWAY_VERSION?: string;
+    CF_VERSION_METADATA?: { id: string };
     AXIOM_API_KEY?: string;
     AXIOM_DATASET?: string;
     AXIOM_WIDE_DATASET?: string;
@@ -429,6 +430,7 @@ export type GatewayBindings = {
     STATSIG_BATCH_API_GATE?: string;
     STATSIG_VIDEO_API_GATE?: string;
     STATSIG_REALTIME_VOICE_GATE?: string;
+    STATSIG_CHAT_REALTIME_VOICE_GATE?: string;
     STATSIG_GATEWAY_IO_LOGGING_GATE?: string;
     STATSIG_DATA_CONTRIBUTION_GATE?: string;
     STATSIG_AUTO_ROUTING_GATE?: string;

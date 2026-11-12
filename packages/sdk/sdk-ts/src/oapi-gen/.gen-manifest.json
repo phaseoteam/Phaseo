@@ -199,6 +199,7 @@
     "models/GatewayFeedbackSummaryResponse.ts",
     "models/GatewayFeedbackSummaryRow.ts",
     "models/GatewayModalities.ts",
+    "models/GatewayModelAccess.ts",
     "models/GatewayModelLifecycle.ts",
     "models/GatewayModelLimits.ts",
     "models/GatewayModelOffer.ts",

@@ -1,11 +1,11 @@
 import { formatDateParts } from "@phaseo/app-kit/format";
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent, type ReactNode } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ChevronDown, CircleCheck, LoaderCircle, RotateCw, SearchIcon, Star, Zap } from "lucide-react";
+import { ChevronDown, CircleCheck, LoaderCircle, RotateCw, SearchIcon, ShieldCheck, Star, Zap } from "lucide-react";
 import { runnableHarnesses, type Harness, type ModelOption } from "../../shared/workspace";
 import { usablePhaseoAccounts, useWorkspace } from "../app/workspace";
 import { favouriteModelsKey, mirrorModelPreferences, type ModelSelection } from "../lib/modelPreferences";
-import { refreshModels, useModels } from "../lib/useModels";
+import { refreshModels, useModelAccess, useModels } from "../lib/useModels";
 import { useConnectedHarnesses } from "../lib/useConnectedHarnesses";
 import { usePersistedState } from "../lib/persistedState";
 import { rememberedSettings } from "../lib/modelSettings";
@@ -19,9 +19,11 @@ import { harnessNames } from "../../shared/harnessNames";
 export { harnessNames };
 export const MAX_COMPARE = 4;
 
+/** A readable name from a model id, for before a catalog has named it: "claude-haiku-5-5" reads "Claude Haiku 5.5". */
 export function modelLabel(id: string) {
 	const base = id.includes("/") ? id.slice(id.indexOf("/") + 1) : id;
-	return base.replace(/[-_]/g, " ").replace(/\b([a-z])/g, letter => letter.toUpperCase()).replace(/\bGpt\b/g, "GPT");
+	// Single-digit pairs are versions ("5-5" → "5.5"); dates such as "2024-08-06" have multi-digit parts and stay apart.
+	return base.replace(/(?<!\d)(\d)-(\d)(?!\d)/g, "$1.$2").replace(/[-_]/g, " ").replace(/\b([a-z])/g, letter => letter.toUpperCase()).replace(/\bGpt\b/g, "GPT");
 }
 
 export const sameSelection = (a: ModelSelection, b: ModelSelection) => a.harness === b.harness && a.model === b.model && (a.accountId ?? "") === (b.accountId ?? "");
@@ -94,6 +96,18 @@ function score(entry: Entry, query: string) {
 	return value;
 }
 
+/** Where admins change the rules; everyone else sees which apply to them there. */
+const GUARDRAILS_URL = "https://phaseo.app/settings/guardrails";
+const plural = (count: number, one: string, many: string) => `${count.toLocaleString()} ${count === 1 ? one : many}`;
+
+/** Says why models are missing: workspace rules (guardrails and Settings → Privacy on phaseo.app) hide them. Read-only; the rules are changed on the web. */
+function AccessNotice({ children }: { children: ReactNode }) {
+	return <p role="note" className="flex items-start gap-2 px-3 py-2 text-xs text-muted-foreground">
+		<ShieldCheck aria-hidden className="mt-px size-3.5 shrink-0 text-info" />
+		<span>{children} <button type="button" onClick={() => void window.phaseoDesktop?.openExternal(GUARDRAILS_URL)} className="font-semibold text-foreground/80 hover:text-foreground hover:underline">View rules</button></span>
+	</p>;
+}
+
 const released = (entry: Entry) => { const time = Date.parse(entry.model.releaseDate ?? ""); return Number.isFinite(time) ? time : Number.NEGATIVE_INFINITY; };
 
 function FilterButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: string }) {
@@ -152,6 +166,19 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 			.sort((a, b) => b.score - a.score || Number(!!a.entry.model.legacy) - Number(!!b.entry.model.legacy) || released(b.entry) - released(a.entry)).map(value => value.entry)
 		: [], [normalized, visible]);
 	const rankedHere = useMemo(() => ranked.filter(entry => sourceOf(entry.harness) === active), [ranked, active]);
+	// What the workspace's rules hide from Phaseo's list, so a missing model is explained rather than just absent.
+	const access = useModelAccess(open ? phaseoAccount?.id : undefined);
+	const restricted = active === "phaseo" && !!access?.restricted;
+	const hiddenMatches = useMemo(() => {
+		if (!restricted || !normalized || !access) return [];
+		const terms = normalized.split(" ").filter(Boolean);
+		return access.hiddenModels.filter(model => { const haystack = `${normalize(model.id)} ${normalize(model.name)}`; return terms.every(term => haystack.includes(term)); });
+	}, [restricted, normalized, access]);
+	const hiddenNotice = !restricted || !access ? undefined
+		: normalized ? hiddenMatches.length === 1 ? <><span className="font-medium text-foreground/80">{hiddenMatches[0].name}</span> is hidden by your workspace's rules.</>
+			: hiddenMatches.length ? <>{plural(hiddenMatches.length, "matching model is", "matching models are")} hidden by your workspace's rules.</> : undefined
+		: access.hiddenModelCount ? <>{plural(access.hiddenModelCount, "model is", "models are")} hidden by your workspace's rules{access.limitedModelCount ? ", and some providers are turned off for others" : ""}.</>
+		: access.limitedModelCount ? <>Your workspace's rules turn off some providers for {plural(access.limitedModelCount, "model", "models")}.</> : undefined;
 	const elsewhere = ranked.length - rankedHere.length;
 	const otherSource: Source = active === "phaseo" ? "local" : "phaseo";
 
@@ -274,6 +301,7 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 				{multiple && <span className="ml-auto text-[11px] text-muted-foreground">{isMac() ? "⌘" : "Ctrl"}-click to compare up to {MAX_COMPARE}</span>}
 				<button type="button" aria-label="Refresh models" title="Refresh models" disabled={refreshing} onClick={() => void refresh()} className={cn("grid size-7 shrink-0 place-items-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-60", !multiple && "ml-auto")}><RotateCw className={cn("size-3.5", refreshing && "animate-spin")} /></button>
 			</div>
+			{!normalized && hiddenNotice && <div className="border-b border-border/70"><AccessNotice>{hiddenNotice}</AccessNotice></div>}
 			{rows.length > 0 && <ScrollArea style={{ height: `min(60vh, 440px, ${virtualizer.getTotalSize() + 12}px)` }} viewportRef={setViewport} viewportClassName="py-1.5 pr-3.5 pl-1.5">
 				<div id="model-picker-list" role="listbox" aria-label="Models" className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
 					{virtualizer.getVirtualItems().map(item => {
@@ -304,9 +332,10 @@ export function ModelPicker({ selections, onChange, multiple, agents, disabled, 
 					})}
 				</div>
 			</ScrollArea>}
-			{!rows.length && !loading.length && <p className="py-6 text-center text-sm text-muted-foreground">{!harnesses.length ? "Sign in to Phaseo to choose from hundreds of models."
+			{!rows.length && !loading.length && !(normalized && hiddenNotice && !elsewhere) && <p className="py-6 text-center text-sm text-muted-foreground">{!harnesses.length ? "Sign in to Phaseo to choose from hundreds of models."
 				: elsewhere ? <button type="button" onClick={() => setSource(otherSource)} className="font-semibold text-primary hover:underline">{elsewhere} {elsewhere === 1 ? "match" : "matches"} in {sourceNames[otherSource]}</button>
 				: "No models found."}</p>}
+			{normalized && hiddenNotice && !loading.length && <div className={cn(rows.length ? "border-t border-border/70" : "py-3")}><AccessNotice>{hiddenNotice}</AccessNotice></div>}
 			{loading.map(harness => <div key={harness} className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin" />Loading {harnessNames[harness]} models…</div>)}
 			{errors.map(error => <p key={error} className="px-3 py-2 text-xs text-destructive">{error}</p>)}
 			</div>

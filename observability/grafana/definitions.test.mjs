@@ -19,7 +19,7 @@ test('importable dashboard and alert JSON matches canonical definitions', async 
   for (const rule of alertRules({ lokiUid: 'loki', environment: 'staging' })) {
     assert.equal(rule.isPaused, true);
     assert.equal(rule.execErrState, 'Error');
-    assert.equal(rule.noDataState, 'OK');
+    assert.equal(rule.noDataState, rule.uid.includes('jobs-failing') ? 'KeepLast' : 'OK');
     assert.ok(!rule.data[0].model.expr.includes('$'));
     assert.ok(rule.data[0].model.expr.includes('environment="staging"'));
   }
@@ -42,14 +42,14 @@ test('live validation checks every series and skips instruction panels', async (
   assert.equal(queries.length, dashboardQueries.length + alertRules({ lokiUid: 'logs' }).length);
   assert.ok(queries.some(query => query.includes('web.server_error') && query.includes('[5m]')));
 });
-test('the overview keeps summary cards and investigations visible without overlapping panels', () => {
+test('dashboards keep summary cards and investigations visible without overlapping panels', () => {
   const overview = dashboards()[0];
   assert.equal(overview.time.from, 'now-1h');
   for (const panel of overview.panels.filter(panel => /^(Traffic|Failures) ·/.test(panel.title))) assert.equal(panel.interval, '5m', 'counts use at least a five-minute interval');
-  for (const [index, panel] of overview.panels.entries()) {
+  for (const dashboard of dashboards()) for (const [index, panel] of dashboard.panels.entries()) {
     const a = panel.gridPos;
     assert.ok(a.x >= 0 && a.y >= 0 && a.w > 0 && a.h > 0 && a.x + a.w <= 24);
-    for (const other of overview.panels.slice(index + 1)) {
+    for (const other of dashboard.panels.slice(index + 1)) {
       const b = other.gridPos;
       assert.ok(a.x + a.w <= b.x || b.x + b.w <= a.x || a.y + a.h <= b.y || b.y + b.h <= a.y, `${panel.title} overlaps ${other.title}`);
     }
@@ -79,6 +79,7 @@ test('provisioning checks all ownership before writes, refusing a UID collision'
   assert.deepEqual(writes, []);
 });
 test('provisioning creates only the owned folder, dashboards and paused rules', async () => {
+  const token = 'grafana-token-fixture-do-not-persist';
   const writes = [];
   const fetcher = async (url, init) => {
     if (init.method !== 'GET') { writes.push({ url, method: init.method, body: JSON.parse(init.body) }); return Response.json({}); }
@@ -86,9 +87,9 @@ test('provisioning creates only the owned folder, dashboards and paused rules', 
     if (url.includes('/api/folders')) return Response.json([]);
     return new Response('{}', { status: 404 });
   };
-  await provision({ args: ['--apply'], env: { GRAFANA_URL: 'https://phaseo.grafana.net', GRAFANA_SERVICE_ACCOUNT_TOKEN: 'private', GRAFANA_LOKI_UID: 'logs' }, fetcher, log: () => {} });
+  await provision({ args: ['--apply'], env: { GRAFANA_URL: 'https://phaseo.grafana.net', GRAFANA_SERVICE_ACCOUNT_TOKEN: token, GRAFANA_LOKI_UID: 'logs' }, fetcher, log: () => {} });
   assert.equal(writes.length, 7);
   assert.equal(writes.at(-1).body.rules.filter(item => item.grafana_alert.is_paused).length, 5);
   assert.ok(writes.every(item => !/contact-points|policies|datasources/.test(item.url)));
-  assert.ok(!JSON.stringify(writes).includes('private'));
+  assert.ok(!JSON.stringify(writes).includes(token));
 });

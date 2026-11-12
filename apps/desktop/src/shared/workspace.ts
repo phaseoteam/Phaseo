@@ -169,6 +169,8 @@ export type ModelOptionDescriptor =
 export type ModelOptionValues = Record<string, string | boolean>;
 /** What Phaseo's catalog says about a model, for its info card. Prices are USD per million tokens from the cheapest routable offer. */
 export type ModelFacts = { contextTokens?: number; outputTokens?: number; input?: string[]; inputPrice?: number; outputPrice?: number; /** USD per million cached input tokens read, and written. */ cacheReadPrice?: number; cacheWritePrice?: number; providers?: string[] };
+/** What the account's workspace rules (guardrails, Settings → Privacy on phaseo.app) leave out of its Phaseo model list. */
+export type ModelAccess = { restricted: boolean; hiddenModelCount: number; hiddenModels: { id: string; name: string }[]; limitedModelCount: number };
 export type ModelOption = { id: string; name: string; description?: string; facts?: ModelFacts;/** An older model, listed only when searching. */ legacy?: boolean; options?: ModelOptionDescriptor[]; organisationId?: string; organisationName?: string; releaseDate?: string; default?: boolean; reasoningEfforts?: { id: string; description: string }[]; defaultReasoningEffort?: string; serviceTiers?: { id: string; name: string; description: string }[]; defaultServiceTier?: string };
 export type ModelsChange = { harness: Harness; accountId?: string };
 export type UsageWindow = { usedPercent: number; windowDurationMins: number | null; resetsAt: number | null };
@@ -335,6 +337,8 @@ export type WorkspaceApi = {
 	checkAgent: (agentId: string) => Promise<AgentStatus>;
 	mcp: (command: McpCommand) => Promise<WorkspaceOverview>;
 	models: (harness: Harness, accountId?: string, projectId?: string) => Promise<ModelOption[]>;
+	/** What workspace rules hide from a Phaseo account's model list, from its last download; undefined before one, or from a server that doesn't say. */
+	modelAccess: (accountId: string) => Promise<ModelAccess | undefined>;
 	/** Refetches a harness catalog now, ignoring the Phaseo disk cache freshness. */
 	refreshModels: (harness: Harness, accountId?: string) => Promise<ModelOption[]>;
 	/** Fires when a background refresh changes a cached catalog; call models() again for the new list. */

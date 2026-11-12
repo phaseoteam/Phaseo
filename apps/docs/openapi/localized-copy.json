@@ -310,15 +310,15 @@
 			"hi": "केवल प्रदाता-विशिष्ट एक्सटेंशन। पूरे अनुरोध का passthrough और दोहराए गए रूटिंग, prompt, callback या बिलिंग फ़ील्ड अस्वीकार किए जाते हैं। उदाहरण के लिए, Wan 3.0 smart_duration: true लेता है ताकि मॉडल लंबाई चुने (इसके साथ duration न भेजें); जॉब 30 सेकंड आरक्षित करता है और प्रोवाइडर द्वारा बताई गई लंबाई का बिल बनता है।",
 			"ar": "امتدادات خاصة بالمزوّد فقط. يُرفض تمرير الطلب كاملاً وتكرار حقول التوجيه أو الموجه أو رد الاتصال أو الفوترة. على سبيل المثال، يقبل Wan 3.0 الخيار smart_duration: true ليختار النموذج المدة (لا ترسل duration معه)؛ تحجز المهمة 30 ثانية وتُحتسب المدة التي يبلغ عنها المزوّد."
 		},
-		"Creates a daily, weekly, or monthly spend budget for one department. Once the department has used it, API-key requests that count toward the department return 429 key_limit_exceeded until the budget resets. Batch jobs, realtime sessions and OAuth requests are not blocked. If the budget check is briefly unavailable, requests are allowed rather than refused. Owners and admins get a mobile push at about 80% and at 100%.": {
-			"es": "Crea un presupuesto de gasto diario, semanal o mensual para un departamento. Cuando el departamento lo agota, las solicitudes con clave API que cuentan para él devuelven 429 key_limit_exceeded hasta que el presupuesto se restablece. Los trabajos por lotes, las sesiones en tiempo real y las solicitudes OAuth no se bloquean. Si la comprobación del presupuesto no está disponible durante un momento, las solicitudes se permiten en lugar de rechazarse. Los propietarios y administradores reciben una notificación push en el móvil hacia el 80 % y al 100 %.",
-			"fr": "Crée un budget de dépenses quotidien, hebdomadaire ou mensuel pour un service. Une fois le budget épuisé, les requêtes par clé API imputées au service renvoient 429 key_limit_exceeded jusqu’à la réinitialisation du budget. Les tâches par lots, les sessions en temps réel et les requêtes OAuth ne sont pas bloquées. Si la vérification du budget est brièvement indisponible, les requêtes sont acceptées plutôt que refusées. Les propriétaires et les administrateurs reçoivent une notification push sur mobile à environ 80 % et à 100 %.",
-			"de": "Erstellt ein tägliches, wöchentliches oder monatliches Ausgabenbudget für eine Abteilung. Ist es aufgebraucht, liefern API-Schlüssel-Anfragen, die der Abteilung zugerechnet werden, 429 key_limit_exceeded, bis das Budget zurückgesetzt wird. Batch-Jobs, Echtzeitsitzungen und OAuth-Anfragen werden nicht blockiert. Ist die Budgetprüfung kurzzeitig nicht verfügbar, werden Anfragen zugelassen statt abgelehnt. Inhaber und Administratoren erhalten bei etwa 80 % und bei 100 % eine mobile Push-Benachrichtigung.",
-			"pt-BR": "Cria um orçamento de gastos diário, semanal ou mensal para um departamento. Quando o departamento o esgota, as solicitações com chave de API que contam para ele retornam 429 key_limit_exceeded até o orçamento ser redefinido. Tarefas em lote, sessões em tempo real e solicitações OAuth não são bloqueadas. Se a verificação do orçamento ficar indisponível por um instante, as solicitações são permitidas em vez de recusadas. Proprietários e administradores recebem uma notificação push no celular em cerca de 80% e em 100%.",
-			"hi": "किसी एक विभाग के लिए दैनिक, साप्ताहिक या मासिक खर्च बजट बनाता है। विभाग के बजट पूरा कर लेने पर उसमें गिने जाने वाले API कुंजी अनुरोध बजट रीसेट होने तक 429 key_limit_exceeded लौटाते हैं। बैच जॉब, रियलटाइम सत्र और OAuth अनुरोध नहीं रोके जाते। अगर बजट जाँच थोड़ी देर के लिए उपलब्ध न हो, तो अनुरोध अस्वीकार करने के बजाय स्वीकार किए जाते हैं। लगभग 80% और 100% पर मालिकों और एडमिन को मोबाइल पुश सूचना मिलती है।",
-			"ja": "1 つの部門に日次、週次、または月次の支出予算を作成します。部門が予算を使い切ると、その部門に計上される API キーのリクエストは、予算がリセットされるまで 429 key_limit_exceeded を返します。バッチジョブ、リアルタイムセッション、OAuth リクエストはブロックされません。予算のチェックが一時的に利用できない場合、リクエストは拒否されずに許可されます。約 80% と 100% に達すると、オーナーと管理者にモバイルのプッシュ通知が届きます。",
-			"zh-Hans": "为一个部门创建每日、每周或每月支出预算。部门用完预算后，计入该部门的 API 密钥请求会返回 429 key_limit_exceeded，直到预算重置。批处理作业、实时会话和 OAuth 请求不会被阻止。如果预算检查短暂不可用，请求会被放行而不是被拒绝。预算用到约 80% 和 100% 时，所有者和管理员会收到移动推送通知。",
-			"ar": "ينشئ ميزانية إنفاق يومية أو أسبوعية أو شهرية لقسم واحد. بعد أن يستنفدها القسم، تُرجع طلبات مفاتيح API التي تُحتسب ضمنه 429 key_limit_exceeded حتى إعادة ضبط الميزانية. لا تُحظر مهام الدُفعات وجلسات الوقت الفعلي وطلبات OAuth. إذا تعذّر التحقق من الميزانية لفترة وجيزة، يُسمح بالطلبات بدلًا من رفضها. يتلقى المالكون والمسؤولون إشعارًا فوريًا على الهاتف عند نحو 80% وعند 100%."
+		"Creates a daily, weekly, or monthly spend budget for one department. Once the department has used it, API-key requests that count toward the department return 429 key_limit_exceeded until the budget resets. If the budget check is briefly unavailable, requests are allowed rather than refused. Owners and admins get a mobile push at about 80% and at 100%.": {
+			"es": "Crea un presupuesto de gasto diario, semanal o mensual para un departamento. Cuando el departamento lo agota, las solicitudes con clave API que cuentan para él devuelven 429 key_limit_exceeded hasta que el presupuesto se restablece. Si la comprobación del presupuesto no está disponible durante un momento, las solicitudes se permiten en lugar de rechazarse. Los propietarios y administradores reciben una notificación push en el móvil hacia el 80 % y al 100 %.",
+			"fr": "Crée un budget de dépenses quotidien, hebdomadaire ou mensuel pour un service. Une fois le budget épuisé, les requêtes par clé API imputées au service renvoient 429 key_limit_exceeded jusqu’à la réinitialisation du budget. Si la vérification du budget est brièvement indisponible, les requêtes sont acceptées plutôt que refusées. Les propriétaires et les administrateurs reçoivent une notification push sur mobile à environ 80 % et à 100 %.",
+			"de": "Erstellt ein tägliches, wöchentliches oder monatliches Ausgabenbudget für eine Abteilung. Ist es aufgebraucht, liefern API-Schlüssel-Anfragen, die der Abteilung zugerechnet werden, 429 key_limit_exceeded, bis das Budget zurückgesetzt wird. Ist die Budgetprüfung kurzzeitig nicht verfügbar, werden Anfragen zugelassen statt abgelehnt. Inhaber und Administratoren erhalten bei etwa 80 % und bei 100 % eine mobile Push-Benachrichtigung.",
+			"pt-BR": "Cria um orçamento de gastos diário, semanal ou mensal para um departamento. Quando o departamento o esgota, as solicitações com chave de API que contam para ele retornam 429 key_limit_exceeded até o orçamento ser redefinido. Se a verificação do orçamento ficar indisponível por um instante, as solicitações são permitidas em vez de recusadas. Proprietários e administradores recebem uma notificação push no celular em cerca de 80% e em 100%.",
+			"hi": "किसी एक विभाग के लिए दैनिक, साप्ताहिक या मासिक खर्च बजट बनाता है। विभाग के बजट पूरा कर लेने पर उसमें गिने जाने वाले API कुंजी अनुरोध बजट रीसेट होने तक 429 key_limit_exceeded लौटाते हैं। अगर बजट जाँच थोड़ी देर के लिए उपलब्ध न हो, तो अनुरोध अस्वीकार करने के बजाय स्वीकार किए जाते हैं। लगभग 80% और 100% पर मालिकों और एडमिन को मोबाइल पुश सूचना मिलती है।",
+			"ja": "1 つの部門に日次、週次、または月次の支出予算を作成します。部門が予算を使い切ると、その部門に計上される API キーのリクエストは、予算がリセットされるまで 429 key_limit_exceeded を返します。予算のチェックが一時的に利用できない場合、リクエストは拒否されずに許可されます。約 80% と 100% に達すると、オーナーと管理者にモバイルのプッシュ通知が届きます。",
+			"zh-Hans": "为一个部门创建每日、每周或每月支出预算。部门用完预算后，计入该部门的 API 密钥请求会返回 429 key_limit_exceeded，直到预算重置。如果预算检查短暂不可用，请求会被放行而不是被拒绝。预算用到约 80% 和 100% 时，所有者和管理员会收到移动推送通知。",
+			"ar": "ينشئ ميزانية إنفاق يومية أو أسبوعية أو شهرية لقسم واحد. بعد أن يستنفدها القسم، تُرجع طلبات مفاتيح API التي تُحتسب ضمنه 429 key_limit_exceeded حتى إعادة ضبط الميزانية. إذا تعذّر التحقق من الميزانية لفترة وجيزة، يُسمح بالطلبات بدلًا من رفضها. يتلقى المالكون والمسؤولون إشعارًا فوريًا على الهاتف عند نحو 80% وعند 100%."
 		},
 		"Removes a department budget. Within about a minute, requests are no longer refused because of it, and its alerts stop.": {
 			"es": "Elimina un presupuesto de departamento. En aproximadamente un minuto, las solicitudes dejan de rechazarse por él y sus alertas se detienen.",
@@ -5600,26 +5600,6 @@
 			"zh-Hans": "未找到符合所请求可用性和提供商筛选条件的模型",
 			"ar": "لم يتم العثور على نموذج يطابق مرشحات التوفر والمزوّد المطلوبة"
 		},
-		"List team-scoped gateway models": {
-			"es": "Listar modelos de la pasarela del equipo",
-			"fr": "Lister les modèles de la passerelle propres à l’équipe",
-			"de": "Teambezogene Gateway-Modelle auflisten",
-			"pt-BR": "Listar modelos do gateway por equipe",
-			"hi": "टीम-स्कोप वाले गेटवे मॉडल की सूची बनाएँ",
-			"ja": "チームスコープのゲートウェイモデルを一覧表示",
-			"zh-Hans": "列出团队范围的网关模型",
-			"ar": "عرض نماذج البوابة الخاصة بالفريق"
-		},
-		"Returns team-scoped gateway model listings. Defaults to currently publicly routable models; use availability=all to include non-routable availability records.": {
-			"es": "Devuelve los modelos de la pasarela del equipo. De forma predeterminada, muestra los modelos enrutables públicamente; usa `availability=all` para incluir registros de disponibilidad que no se pueden enrutar.",
-			"fr": "Renvoie la liste des modèles de passerelle propres à l’équipe. Par défaut, seuls les modèles actuellement routables publiquement sont renvoyés ; utilisez `availability=all` pour inclure les états de disponibilité non routables.",
-			"de": "Gibt teambezogene Gateway-Modelle zurück. Standardmäßig werden aktuell öffentlich routbare Modelle angezeigt; mit `availability=all` lassen sich nicht routbare Verfügbarkeitsdatensätze einbeziehen.",
-			"pt-BR": "Retorna a lista de modelos do gateway por equipe. Por padrão, inclui modelos roteáveis publicamente; use `availability=all` para incluir registros de disponibilidade não roteáveis.",
-			"hi": "टीम-स्कोप वाले गेटवे मॉडल लौटाता है। डिफ़ॉल्ट रूप से सार्वजनिक रूप से रूट किए जा सकने वाले मॉडल मिलते हैं; रूट न किए जा सकने वाले उपलब्धता रिकॉर्ड शामिल करने के लिए `availability=all` उपयोग करें।",
-			"ja": "チームスコープのゲートウェイモデル一覧を返します。既定では現在パブリックにルーティングできるモデルが対象です。ルーティングできない利用可能性レコードも含めるには `availability=all` を使用します。",
-			"zh-Hans": "返回团队范围的网关模型列表。默认返回当前可公开路由的模型；使用 `availability=all` 可包含不可路由的可用性记录。",
-			"ar": "يعرض قائمة نماذج البوابة الخاصة بالفريق. يعرض افتراضيًا النماذج القابلة للتوجيه علنًا؛ استخدم `availability=all` لتضمين سجلات التوفر غير القابلة للتوجيه."
-		},
 		"List webhook endpoints": {
 			"es": "Listar endpoints de webhook",
 			"fr": "Lister les points de terminaison webhook",
@@ -9090,15 +9070,25 @@
 			"zh-Hans": "模板变量的值。图像变量接受 https URL、data URL 或图像部分。",
 			"ar": "قيم متغيرات القالب. تقبل متغيرات الصور عنوان https أو عنوان data أو جزء صورة."
 		},
-		"Use `system` for an instruction that applies from this point in the conversation. A system message takes a string or text blocks, must come straight after a user turn (or an assistant turn ending in a server tool result), and must be the last message or be followed by an assistant turn.": {
-			"es": "Usa `system` para una instrucción que se aplica a partir de este punto de la conversación. Un mensaje de sistema acepta una cadena o bloques de texto, debe ir justo después de un turno de usuario (o de un turno del asistente que termine en un resultado de herramienta del servidor) y debe ser el último mensaje o ir seguido de un turno del asistente.",
-			"fr": "Utilisez `system` pour une instruction qui s’applique à partir de ce point de la conversation. Un message système accepte une chaîne ou des blocs de texte, doit suivre directement un tour utilisateur (ou un tour de l’assistant qui se termine par un résultat d’outil serveur) et doit être le dernier message ou être suivi d’un tour de l’assistant.",
-			"de": "Verwende `system` für eine Anweisung, die ab dieser Stelle der Unterhaltung gilt. Eine Systemnachricht akzeptiert einen String oder Textblöcke, muss direkt auf einen Benutzerzug folgen (oder auf einen Assistentenzug, der mit einem Server-Tool-Ergebnis endet) und muss die letzte Nachricht sein oder von einem Assistentenzug gefolgt werden.",
-			"pt-BR": "Use `system` para uma instrução que vale a partir deste ponto da conversa. Uma mensagem de sistema aceita uma string ou blocos de texto, deve vir logo após um turno do usuário (ou um turno do assistente que termine em um resultado de ferramenta do servidor) e deve ser a última mensagem ou ser seguida por um turno do assistente.",
-			"hi": "बातचीत में इस बिंदु से लागू होने वाले निर्देश के लिए `system` का उपयोग करें। सिस्टम संदेश एक स्ट्रिंग या टेक्स्ट ब्लॉक लेता है, उपयोगकर्ता टर्न (या सर्वर टूल परिणाम पर खत्म होने वाले असिस्टेंट टर्न) के ठीक बाद आना चाहिए, और अंतिम संदेश होना चाहिए या उसके बाद असिस्टेंट टर्न आना चाहिए।",
-			"ja": "会話のこの時点以降に適用する指示には `system` を使います。システムメッセージは文字列またはテキストブロックを受け付け、ユーザーターン（またはサーバーツールの結果で終わるアシスタントターン）の直後に置き、最後のメッセージにするか、直後にアシスタントターンを続ける必要があります。",
-			"zh-Hans": "对于从对话此处开始生效的指令，请使用 `system`。系统消息接受字符串或文本块，必须紧跟在用户轮次（或以服务器工具结果结尾的助手轮次）之后，并且必须是最后一条消息，或者后面紧跟助手轮次。",
-			"ar": "استخدم `system` لتعليمة تنطبق من هذه النقطة في المحادثة. تقبل رسالة النظام سلسلة نصية أو كتلًا نصية، ويجب أن تأتي مباشرةً بعد دور المستخدم (أو بعد دور المساعد الذي ينتهي بنتيجة أداة خادم)، ويجب أن تكون الرسالة الأخيرة أو أن يليها دور المساعد."
+		"Use `system` for an instruction that applies from this point in the conversation. A system message takes a string or text blocks, must come straight after a user turn (or an assistant turn ending in a server tool result), and must be the last message or be followed by an assistant turn. An effort-only system message, with empty `content` and `output_config`, can sit anywhere.": {
+			"es": "Usa `system` para una instrucción que se aplica a partir de este punto de la conversación. Un mensaje de sistema acepta una cadena o bloques de texto, debe ir justo después de un turno de usuario (o de un turno del asistente que termine en un resultado de herramienta del servidor) y debe ser el último mensaje o ir seguido de un turno del asistente. Un mensaje de sistema solo de esfuerzo, con `content` vacío y `output_config`, puede ir en cualquier lugar.",
+			"fr": "Utilisez `system` pour une instruction qui s’applique à partir de ce point de la conversation. Un message système accepte une chaîne ou des blocs de texte, doit suivre directement un tour utilisateur (ou un tour de l’assistant qui se termine par un résultat d’outil serveur) et doit être le dernier message ou être suivi d’un tour de l’assistant. Un message système qui ne contient qu’un effort, avec un `content` vide et `output_config`, peut se trouver n’importe où.",
+			"de": "Verwende `system` für eine Anweisung, die ab dieser Stelle der Unterhaltung gilt. Eine Systemnachricht akzeptiert einen String oder Textblöcke, muss direkt auf einen Benutzerzug folgen (oder auf einen Assistentenzug, der mit einem Server-Tool-Ergebnis endet) und muss die letzte Nachricht sein oder von einem Assistentenzug gefolgt werden. Eine reine Aufwands-Systemnachricht mit leerem `content` und `output_config` kann überall stehen.",
+			"pt-BR": "Use `system` para uma instrução que vale a partir deste ponto da conversa. Uma mensagem de sistema aceita uma string ou blocos de texto, deve vir logo após um turno do usuário (ou um turno do assistente que termine em um resultado de ferramenta do servidor) e deve ser a última mensagem ou ser seguida por um turno do assistente. Uma mensagem de sistema só de esforço, com `content` vazio e `output_config`, pode ficar em qualquer lugar.",
+			"hi": "बातचीत में इस बिंदु से लागू होने वाले निर्देश के लिए `system` का उपयोग करें। सिस्टम संदेश एक स्ट्रिंग या टेक्स्ट ब्लॉक लेता है, उपयोगकर्ता टर्न (या सर्वर टूल परिणाम पर खत्म होने वाले असिस्टेंट टर्न) के ठीक बाद आना चाहिए, और अंतिम संदेश होना चाहिए या उसके बाद असिस्टेंट टर्न आना चाहिए। सिर्फ़ प्रयास वाला सिस्टम संदेश, खाली `content` और `output_config` के साथ, कहीं भी आ सकता है।",
+			"ja": "会話のこの時点以降に適用する指示には `system` を使います。システムメッセージは文字列またはテキストブロックを受け付け、ユーザーターン（またはサーバーツールの結果で終わるアシスタントターン）の直後に置き、最後のメッセージにするか、直後にアシスタントターンを続ける必要があります。度合いだけを指定するシステムメッセージ（空の `content` と `output_config`）は、どこに置いてもかまいません。",
+			"zh-Hans": "对于从对话此处开始生效的指令，请使用 `system`。系统消息接受字符串或文本块，必须紧跟在用户轮次（或以服务器工具结果结尾的助手轮次）之后，并且必须是最后一条消息，或者后面紧跟助手轮次。仅设置强度的系统消息（`content` 为空并带有 `output_config`）可以放在任何位置。",
+			"ar": "استخدم `system` لتعليمة تنطبق من هذه النقطة في المحادثة. تقبل رسالة النظام سلسلة نصية أو كتلًا نصية، ويجب أن تأتي مباشرةً بعد دور المستخدم (أو بعد دور المساعد الذي ينتهي بنتيجة أداة خادم)، ويجب أن تكون الرسالة الأخيرة أو أن يليها دور المساعد. يمكن أن تقع رسالة النظام التي تقتصر على الجهد، بقيمة `content` فارغة ومعها `output_config`، في أي مكان."
+		},
+		"Changes Claude's effort level for later turns without restarting the prompt cache. Send it with empty `content` after the messages already sent, and keep it in place on later requests; inserting it earlier changes the cached prefix. Routes without per-message effort get the level in force as the top-level effort instead, which does not keep the cache.": {
+			"es": "Cambia el nivel de esfuerzo de Claude para los turnos posteriores sin reiniciar la caché de prompts. Envíalo con `content` vacío después de los mensajes ya enviados y mantenlo en su sitio en las solicitudes posteriores; insertarlo antes cambia el prefijo en caché. Las rutas sin esfuerzo por mensaje reciben en su lugar el nivel vigente como esfuerzo de nivel superior, lo que no conserva la caché.",
+			"fr": "Change le niveau d’effort de Claude pour les tours suivants sans redémarrer le cache de prompts. Envoyez-le avec un `content` vide après les messages déjà envoyés, et laissez-le en place dans les requêtes suivantes ; l’insérer plus tôt modifie le préfixe mis en cache. Les routes sans effort par message reçoivent à la place le niveau en vigueur comme effort de premier niveau, ce qui ne conserve pas le cache.",
+			"de": "Ändert Claudes Aufwandsstufe für spätere Züge, ohne den Prompt-Cache neu zu starten. Sende es mit leerem `content` nach den bereits gesendeten Nachrichten und lass es bei späteren Anfragen an seiner Stelle; weiter vorne eingefügt ändert es das gecachte Präfix. Routen ohne Aufwand pro Nachricht erhalten stattdessen die geltende Stufe als Aufwand auf oberster Ebene, wodurch der Cache nicht erhalten bleibt.",
+			"pt-BR": "Muda o nível de esforço do Claude para os turnos seguintes sem reiniciar o cache de prompts. Envie-o com `content` vazio depois das mensagens já enviadas e mantenha-o no lugar nas solicitações seguintes; inseri-lo antes muda o prefixo em cache. Rotas sem esforço por mensagem recebem, em vez disso, o nível em vigor como esforço de nível superior, o que não preserva o cache.",
+			"hi": "प्रॉम्प्ट कैश को दोबारा शुरू किए बिना बाद के टर्न के लिए Claude का प्रयास लेवल बदलता है। इसे खाली `content` के साथ पहले भेजे जा चुके संदेशों के बाद भेजें और बाद के अनुरोधों में इसे उसी जगह रखें; इसे पहले डालने से कैश किया गया प्रीफ़िक्स बदल जाता है। प्रति-संदेश प्रयास के बिना वाले रूट को इसके बजाय लागू लेवल टॉप-लेवल प्रयास के रूप में मिलता है, जिससे कैश नहीं बचता।",
+			"ja": "プロンプトキャッシュをやり直さずに、以降のターンの Claude の度合いを変更します。送信済みのメッセージの後に空の `content` と一緒に送り、以降のリクエストでも同じ位置に残してください。それより前に挿入すると、キャッシュされたプレフィックスが変わります。メッセージ単位の度合いに対応していないルートでは、代わりに有効な度合いがトップレベルの度合いとして使われ、キャッシュは保持されません。",
+			"zh-Hans": "在不重启提示词缓存的情况下，更改 Claude 在后续轮次中的强度级别。在已发送的消息之后发送，将 `content` 留空，并在后续请求中把它保留在原位；插入到更早的位置会改变已缓存的前缀。不支持逐消息强度的路由会改为把当前生效的级别作为顶层强度，这样不会保留缓存。",
+			"ar": "يغيّر مستوى جهد Claude للأدوار اللاحقة دون إعادة تشغيل الذاكرة المؤقتة للموجّهات. أرسله بقيمة `content` فارغة بعد الرسائل المُرسلة سابقًا، وأبقِه في مكانه في الطلبات اللاحقة؛ فإدراجه في موضع أسبق يغيّر البادئة المخزّنة مؤقتًا. تتلقى المسارات التي لا تدعم الجهد لكل رسالة بدلًا من ذلك المستوى الساري بوصفه الجهد في المستوى الأعلى، وهذا لا يحافظ على الذاكرة المؤقتة."
 		},
 		"Where you keep this key, such as the hosting platform whose environment variables hold it. Optional. If one of these places reports a breach, you can find and revoke every key stored there. Known ids: railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other.": {
 			"es": "Dónde guardas esta clave, por ejemplo la plataforma de alojamiento cuyas variables de entorno la contienen. Opcional. Si uno de estos lugares informa de una brecha, puedes encontrar y revocar todas las claves guardadas allí. Identificadores conocidos: railway, vercel, netlify, render, fly, heroku, cloudflare, supabase, firebase, digitalocean, replit, modal, convex, koyeb, coolify, northflank, expo, deno-deploy, aws, google-cloud, azure, hetzner, vultr, linode, ovhcloud, scaleway, kubernetes, github, gitlab, circleci, bitbucket, 1password, bitwarden, hashicorp-vault, doppler, infisical, local-machine, own-server, other.",
@@ -12249,6 +12239,116 @@
 			"ja": "追加されたメンバーの詳細。承認後に読み取れなかった場合は省略されます。その場合も approved に追加されたユーザーが含まれます。",
 			"zh-Hans": "已添加成员的详细信息。如果批准后无法读取，则省略此字段；approved 仍会列出已添加的用户。",
 			"ar": "تفاصيل الأعضاء المضافين. تُحذف إذا تعذّرت قراءتها بعد الموافقات؛ ويظل approved يسرد من أُضيف."
+		},
+		"Lists department spend budgets with each department's spend so far in the current UTC period. Spend is counted the way department admission counts it, so it is current.": {
+			"es": "Enumera los presupuestos de gasto de los departamentos con el gasto de cada departamento en el periodo UTC actual. El gasto se cuenta igual que lo cuenta la admisión del departamento, así que está al día.",
+			"fr": "Liste les budgets de dépenses des services avec les dépenses de chaque service sur la période UTC en cours. Les dépenses sont comptées comme le contrôle d’admission du service les compte : elles sont donc à jour.",
+			"de": "Listet die Ausgabenbudgets der Abteilungen mit den bisherigen Ausgaben jeder Abteilung im aktuellen UTC-Zeitraum auf. Die Ausgaben werden so gezählt wie bei der Zulassungsprüfung der Abteilung und sind daher aktuell.",
+			"pt-BR": "Lista os orçamentos de gastos dos departamentos com o gasto de cada departamento no período UTC atual. O gasto é contado como a admissão do departamento o conta, então está atualizado.",
+			"hi": "विभाग खर्च बजट की सूची देता है, साथ में मौजूदा UTC अवधि में हर विभाग का अब तक का खर्च। खर्च वैसे ही गिना जाता है जैसे विभाग की अनुमति जाँच उसे गिनती है, इसलिए यह अद्यतन रहता है।",
+			"ja": "部門の支出予算と、現在の UTC 期間における各部門のこれまでの支出を一覧表示します。支出は部門の受け入れ判定と同じ方法で計算されるため、最新です。",
+			"zh-Hans": "列出各部门的支出预算，以及每个部门在当前 UTC 周期内迄今的支出。支出的计算方式与部门准入检查相同，因此是最新的。",
+			"ar": "يسرد ميزانيات إنفاق الأقسام مع إنفاق كل قسم حتى الآن في فترة UTC الحالية. يُحتسب الإنفاق بالطريقة نفسها التي يحتسبه بها فحص قبول القسم، لذا فهو محدَّث."
+		},
+		"Phaseo model id, for example `eleven-labs/scribe-v3-live`.": {
+			"es": "ID de modelo de Phaseo, por ejemplo `eleven-labs/scribe-v3-live`.",
+			"fr": "ID de modèle Phaseo, par exemple `eleven-labs/scribe-v3-live`.",
+			"de": "Phaseo-Modell-ID, zum Beispiel `eleven-labs/scribe-v3-live`.",
+			"pt-BR": "ID de modelo da Phaseo, por exemplo `eleven-labs/scribe-v3-live`.",
+			"hi": "Phaseo मॉडल ID, उदाहरण के लिए `eleven-labs/scribe-v3-live`।",
+			"ja": "Phaseo のモデル ID。例: `eleven-labs/scribe-v3-live`。",
+			"zh-Hans": "Phaseo 模型 ID，例如 `eleven-labs/scribe-v3-live`。",
+			"ar": "معرّف نموذج Phaseo، مثل `eleven-labs/scribe-v3-live`."
+		},
+		"Phaseo model id. Same as `model`.": {
+			"es": "ID de modelo de Phaseo. Igual que `model`.",
+			"fr": "ID de modèle Phaseo. Identique à `model`.",
+			"de": "Phaseo-Modell-ID. Gleich wie `model`.",
+			"pt-BR": "ID de modelo da Phaseo. Igual a `model`.",
+			"hi": "Phaseo मॉडल ID। `model` के समान।",
+			"ja": "Phaseo のモデル ID。`model` と同じです。",
+			"zh-Hans": "Phaseo 模型 ID。与 `model` 相同。",
+			"ar": "معرّف نموذج Phaseo. مطابق لـ `model`."
+		},
+		"The provider's own name for the model, for example `scribe_v3_live`.": {
+			"es": "El nombre que el proveedor da al modelo, por ejemplo `scribe_v3_live`.",
+			"fr": "Le nom du modèle chez le fournisseur, par exemple `scribe_v3_live`.",
+			"de": "Der eigene Name des Anbieters für das Modell, zum Beispiel `scribe_v3_live`.",
+			"pt-BR": "O nome que o provedor dá ao modelo, por exemplo `scribe_v3_live`.",
+			"hi": "प्रोवाइडर द्वारा मॉडल का अपना नाम, उदाहरण के लिए `scribe_v3_live`।",
+			"ja": "プロバイダー側でのモデル名。例: `scribe_v3_live`。",
+			"zh-Hans": "提供商自己的模型名称，例如 `scribe_v3_live`。",
+			"ar": "اسم النموذج لدى المزوّد، مثل `scribe_v3_live`."
+		},
+		"List the models this key may use": {
+			"es": "Lista los modelos que puede usar esta clave",
+			"fr": "Lister les modèles que cette clé peut utiliser",
+			"de": "Modelle auflisten, die dieser Schlüssel nutzen darf",
+			"pt-BR": "Listar os modelos que esta chave pode usar",
+			"hi": "वे मॉडल सूचीबद्ध करें जिन्हें यह कुंजी उपयोग कर सकती है",
+			"ja": "このキーで使えるモデルを一覧表示",
+			"zh-Hans": "列出此密钥可以使用的模型",
+			"ar": "عرض النماذج التي يمكن لهذا المفتاح استخدامها"
+		},
+		"Returns the /models listing with the caller's guardrails applied: models a rule blocks, and models with no permitted provider, are left out, and each model keeps only the offers its requests may be routed to, with its prices, capabilities and availability from those. The access object says what the rules left out. Defaults to currently publicly routable models; use availability=all to include non-routable availability records.": {
+			"es": "Devuelve la lista de /models con los guardrails de quien llama aplicados: se omiten los modelos que bloquea una regla y los que no tienen ningún proveedor permitido, y cada modelo conserva solo las ofertas a las que se pueden enviar sus solicitudes, con sus precios, capacidades y disponibilidad calculados a partir de ellas. El objeto access indica qué dejaron fuera las reglas. De forma predeterminada incluye los modelos que se pueden enrutar públicamente; usa availability=all para incluir registros de disponibilidad no enrutables.",
+			"fr": "Renvoie la liste de /models avec les garde-fous de l’appelant appliqués : les modèles bloqués par une règle et ceux sans fournisseur autorisé sont exclus, et chaque modèle ne garde que les offres vers lesquelles ses requêtes peuvent être acheminées, avec ses prix, capacités et disponibilité calculés à partir de celles-ci. L’objet access indique ce que les règles ont exclu. Par défaut, seuls les modèles actuellement routables publiquement sont inclus ; utilisez availability=all pour inclure les enregistrements de disponibilité non routables.",
+			"de": "Gibt die Liste von /models mit den Guardrails des Aufrufers zurück: Modelle, die eine Regel sperrt, und Modelle ohne erlaubten Anbieter fehlen, und jedes Modell behält nur die Angebote, an die seine Anfragen geleitet werden dürfen, mit daraus berechneten Preisen, Fähigkeiten und Verfügbarkeit. Das Objekt access gibt an, was die Regeln ausgeschlossen haben. Standardmäßig nur derzeit öffentlich routbare Modelle; mit availability=all werden auch nicht routbare Verfügbarkeitseinträge geliefert.",
+			"pt-BR": "Retorna a lista de /models com as proteções de quem chama aplicadas: ficam de fora os modelos bloqueados por uma regra e os sem nenhum provedor permitido, e cada modelo mantém apenas as ofertas para as quais as solicitações podem ser roteadas, com preços, capacidades e disponibilidade calculados a partir delas. O objeto access informa o que as regras deixaram de fora. Por padrão inclui os modelos atualmente roteáveis publicamente; use availability=all para incluir registros de disponibilidade não roteáveis.",
+			"hi": "कॉल करने वाले के गार्डरेल लागू करके /models की सूची लौटाता है: जिन मॉडलों को कोई नियम रोकता है और जिनका कोई अनुमत प्रदाता नहीं है, वे शामिल नहीं होते, और हर मॉडल में केवल वे ऑफ़र रहते हैं जिन तक उसके अनुरोध भेजे जा सकते हैं, और उसकी कीमतें, क्षमताएँ और उपलब्धता उन्हीं से निकाली जाती हैं। access ऑब्जेक्ट बताता है कि नियमों ने क्या बाहर रखा। डिफ़ॉल्ट रूप से अभी सार्वजनिक रूप से रूट होने वाले मॉडल; गैर-रूटेबल उपलब्धता रिकॉर्ड शामिल करने के लिए availability=all का उपयोग करें।",
+			"ja": "呼び出し元のガードレールを適用した /models の一覧を返します。ルールでブロックされたモデルと、許可されたプロバイダーがないモデルは除外され、各モデルにはリクエストをルーティングできるオファーだけが残り、価格・機能・提供状況もそれらから算出されます。access オブジェクトはルールで除外された内容を示します。既定では現在公開ルーティング可能なモデルを返します。ルーティング不可の提供状況レコードも含めるには availability=all を指定してください。",
+			"zh-Hans": "返回应用了调用方护栏规则的 /models 列表：被规则屏蔽的模型以及没有任何允许提供商的模型不会列出，每个模型只保留其请求可以路由到的服务，价格、能力和可用性也据此计算。access 对象说明规则排除了哪些内容。默认只包含当前可公开路由的模型；使用 availability=all 可包含不可路由的可用性记录。",
+			"ar": "يُرجع قائمة /models بعد تطبيق ضوابط الحماية الخاصة بالمتصل: تُستبعد النماذج التي تحظرها قاعدة، والنماذج التي لا يتوفر لها أي مزوّد مسموح به، ولا يبقى لكل نموذج إلا العروض التي يمكن توجيه طلباته إليها، مع أسعاره وقدراته وتوافره محسوبة منها. ويوضح الكائن access ما استبعدته القواعد. افتراضيًا تُعرض النماذج القابلة للتوجيه علنًا حاليًا؛ استخدم availability=all لتضمين سجلات التوافر غير القابلة للتوجيه."
+		},
+		"Returned by /models/me only: what the caller's guardrails left out of the listing, before search and paging.": {
+			"es": "Solo lo devuelve /models/me: lo que los guardrails de quien llama dejaron fuera de la lista, antes de la búsqueda y la paginación.",
+			"fr": "Renvoyé uniquement par /models/me : ce que les garde-fous de l’appelant ont exclu de la liste, avant la recherche et la pagination.",
+			"de": "Nur von /models/me geliefert: was die Guardrails des Aufrufers aus der Liste ausgeschlossen haben, vor Suche und Paginierung.",
+			"pt-BR": "Retornado apenas por /models/me: o que as proteções de quem chama deixaram de fora da lista, antes da busca e da paginação.",
+			"hi": "केवल /models/me लौटाता है: कॉल करने वाले के गार्डरेल ने खोज और पेजिंग से पहले सूची से क्या बाहर रखा।",
+			"ja": "/models/me のみが返します。検索とページ分割の前に、呼び出し元のガードレールが一覧から除外した内容です。",
+			"zh-Hans": "仅由 /models/me 返回：在搜索和分页之前，调用方的护栏规则从列表中排除的内容。",
+			"ar": "يُرجعه /models/me فقط: ما استبعدته ضوابط الحماية الخاصة بالمتصل من القائمة، قبل البحث والتقسيم إلى صفحات."
+		},
+		"Whether any rule restricts models or providers for this key.": {
+			"es": "Si alguna regla restringe modelos o proveedores para esta clave.",
+			"fr": "Indique si une règle restreint des modèles ou des fournisseurs pour cette clé.",
+			"de": "Ob eine Regel Modelle oder Anbieter für diesen Schlüssel einschränkt.",
+			"pt-BR": "Se alguma regra restringe modelos ou provedores para esta chave.",
+			"hi": "क्या कोई नियम इस कुंजी के लिए मॉडल या प्रदाताओं को सीमित करता है।",
+			"ja": "このキーに対してモデルまたはプロバイダーを制限するルールがあるかどうか。",
+			"zh-Hans": "是否有任何规则为此密钥限制模型或提供商。",
+			"ar": "ما إذا كانت أي قاعدة تقيّد النماذج أو المزوّدين لهذا المفتاح."
+		},
+		"How many models the rules leave out.": {
+			"es": "Cuántos modelos dejan fuera las reglas.",
+			"fr": "Nombre de modèles exclus par les règles.",
+			"de": "Wie viele Modelle die Regeln ausschließen.",
+			"pt-BR": "Quantos modelos as regras deixam de fora.",
+			"hi": "नियम कितने मॉडलों को बाहर रखते हैं।",
+			"ja": "ルールで除外されるモデルの数。",
+			"zh-Hans": "被规则排除的模型数量。",
+			"ar": "عدد النماذج التي تستبعدها القواعد."
+		},
+		"The models left out, with their names (up to 500).": {
+			"es": "Los modelos que quedan fuera, con sus nombres (hasta 500).",
+			"fr": "Les modèles exclus, avec leur nom (jusqu’à 500).",
+			"de": "Die ausgeschlossenen Modelle mit ihren Namen (bis zu 500).",
+			"pt-BR": "Os modelos que ficaram de fora, com seus nomes (até 500).",
+			"hi": "बाहर रखे गए मॉडल, उनके नामों के साथ (500 तक)।",
+			"ja": "除外されたモデルとその名前（最大 500 件）。",
+			"zh-Hans": "被排除的模型及其名称（最多 500 个）。",
+			"ar": "النماذج المستبعدة مع أسمائها (حتى 500)."
+		},
+		"How many listed models lost some of their providers to the rules.": {
+			"es": "Cuántos modelos de la lista perdieron algunos de sus proveedores por las reglas.",
+			"fr": "Nombre de modèles listés ayant perdu certains de leurs fournisseurs à cause des règles.",
+			"de": "Wie viele gelistete Modelle durch die Regeln einige ihrer Anbieter verloren haben.",
+			"pt-BR": "Quantos modelos listados perderam alguns de seus provedores por causa das regras.",
+			"hi": "सूचीबद्ध कितने मॉडलों के कुछ प्रदाता नियमों के कारण हट गए।",
+			"ja": "ルールにより一部のプロバイダーが除かれた掲載モデルの数。",
+			"zh-Hans": "有多少列出的模型因规则失去了部分提供商。",
+			"ar": "عدد النماذج المدرجة التي فقدت بعض مزوّديها بسبب القواعد."
 		}
 	},
 	"GET /apps": {

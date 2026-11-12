@@ -27,8 +27,13 @@ CREATE OR REPLACE FUNCTION private.spend_guardrail_usage (
   -- A key is covered where public.resolve_key_guardrails says the guardrail applies to it.
   -- A shared guardrail has one counter per assignment (counter 'workspace:', 'department:<id>',
   -- 'member:<id>' or 'key:<id>'), over every key that assignment covers; an each_key guardrail has
-  -- one counter per covered key ('key:<id>'). Spend is counted like key cost limits: successful
-  -- gateway_requests rows of those keys since the period start, less p_exclude_request_ids.
+  -- one counter per covered key ('key:<id>'). Spend is counted exactly like key cost limits, by
+  -- private.key_spend_items over those keys since the period start: request cost (charged
+  -- failures included) unless money movements replace it, plus the movements themselves at their
+  -- time (stepped charges and refunds, one-off charges without a request row, batch and video
+  -- debits, uncollected expected bills). p_exclude_request_ids are the ids of admissions the
+  -- SpendLimit Durable Object holds (request ids and billing ids), left out of rows and charges
+  -- alike, as for department budgets.
   with spend_guardrails as (
     select g.id, g.name, g.spend_period, g.spend_action, g.spend_counting, g.spend_limit_nanos
     from public.workspace_guardrails g
@@ -64,13 +69,11 @@ CREATE OR REPLACE FUNCTION private.spend_guardrail_usage (
     c.counter,
     c.key_ids,
     coalesce((
-      select sum(coalesce(gr.cost_nanos, 0))
-      from public.gateway_requests gr
-      where gr.workspace_id = p_workspace_id
-        and gr.key_id = any(c.key_ids)
-        and gr.success is true
-        and gr.created_at >= p.period_start
-        and not (gr.request_id = any(coalesce(p_exclude_request_ids, '{}'::text[])))
+      select sum(item.nanos)
+      from private.key_spend_items(p_workspace_id, p.period_start, c.key_ids,
+        coalesce(p_exclude_request_ids, '{}'::text[]), coalesce(p_exclude_request_ids, '{}'::text[])) item
+      where item.at >= coalesce(p.period_start, '-infinity'::timestamptz)
+        and item.at <= p_now
     ), 0)::bigint,
     p.period_start,
     p.reset_at
@@ -80,7 +83,7 @@ CREATE OR REPLACE FUNCTION private.spend_guardrail_usage (
   order by sg.name, sg.id, c.counter;
 $function$;
 
-COMMENT ON FUNCTION "private"."spend_guardrail_usage"(uuid, timestamp with time zone, text[], text) IS 'Spend counters of a workspace''s enabled spend guardrails: one per assignment when shared, one per covered key when each_key, with their keys and successful gateway_requests cost this UTC period.';
+COMMENT ON FUNCTION "private"."spend_guardrail_usage"(uuid, timestamp with time zone, text[], text) IS 'Spend counters of a workspace''s enabled spend guardrails: one per assignment when shared, one per covered key when each_key, with their keys and their spend this UTC period, counted exactly like key cost limits (private.key_spend_items).';
 
 REVOKE ALL ON FUNCTION "private"."spend_guardrail_usage"(uuid, timestamp with time zone, text[], text) FROM PUBLIC;
 

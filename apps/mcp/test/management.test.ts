@@ -57,6 +57,18 @@ async function sentRequest(fetchMock: ReturnType<typeof stubApi>) {
 }
 
 describe("Phaseo MCP management scope gating", () => {
+	// Claude's directory flags any tool without a title and a readOnlyHint or
+	// destructiveHint; ChatGPT's review asks for the same annotations.
+	it("gives every tool a title and a read-only or destructive annotation", async () => {
+		const client = await connect([...READ_ONLY, ...management.MCP_MANAGEMENT_SCOPES, "gateway:access"]);
+		const { tools } = await client.listTools();
+		expect(tools.length).toBeGreaterThan(20);
+		const missing = tools
+			.filter((tool) => !tool.title || (typeof tool.annotations?.readOnlyHint !== "boolean" && typeof tool.annotations?.destructiveHint !== "boolean"))
+			.map((tool) => tool.name);
+		expect(missing).toEqual([]);
+	});
+
 	it("keeps read-only connections free of management tools, even with older management read scopes", async () => {
 		const names = await toolNames([...READ_ONLY, "keys:read", "presets:read", "settings:read", "guardrails:read"], { managementAccess: false });
 		for (const definition of management.managementTools) expect(names).not.toContain(definition.name);

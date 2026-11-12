@@ -33,7 +33,6 @@ import {
     Globe2,
     GraduationCap,
     ListFilter,
-	KeyRound,
     RotateCcw,
     Shield,
     Server,
@@ -59,8 +58,16 @@ import {
 import {
 	HoverCard,
 	HoverCardContent,
+	HoverCardHeader,
+	HoverCardNote,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import {
+	ProviderByokOnlyHoverCard,
+	ProviderStatusHoverCard,
+	getEarliestEffectiveTo,
+} from "./ProviderRowHoverCards";
 import {
     Table,
     TableBody,
@@ -87,8 +94,8 @@ import type {
 } from "./pricingRuntimeStats";
 import type { ProviderRoutingStatusMap } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
 import ProviderCard, {
+	getPricingPlanTranslationKey,
 	getProviderTableDiscountBadge,
-	PROVIDER_STATUS_META,
 	UptimeKey,
 } from "@/components/(data)/model/pricing/ProviderCard";
 import ProviderInfoHoverIcons from "@/components/(data)/model/ProviderInfoHoverIcons";
@@ -130,7 +137,10 @@ import {
 	MOBILE_STAT_CELL,
 	MOBILE_TABLE_BLOCK,
 	getPriceColumnMobileLabel,
-	isMobileHiddenPriceColumn,
+	MOBILE_PERF_ORDER,
+	MOBILE_PERF_ROW_START,
+	getMobilePriceCellClass,
+	getMobilePriceColumnKeys,
 } from "@/components/(data)/model/pricing/providerTableMobile";
 import {
 	clearProviderInspector,
@@ -465,11 +475,11 @@ function getProviderOfferingSectionRank({ provider, plan }: ProviderOffering): n
 function UptimeHeaderHoverContent() {
 	const t = useTranslations("Catalogue.modelDetail.providerTable");
 	return (
-		<div className="space-y-2">
-			<p className="text-sm font-medium text-foreground">{t("threeDayUptime")}</p>
-			<p className="text-xs leading-5 text-muted-foreground">{t("uptimeExplanation")}</p>
-			<UptimeKey className="border-t border-zinc-200 pt-2.5 dark:border-zinc-800" />
-		</div>
+		<>
+			<HoverCardHeader title={t("threeDayUptime")} />
+			<HoverCardNote>{t("uptimeExplanation")}</HoverCardNote>
+			<UptimeKey />
+		</>
 	);
 }
 
@@ -590,13 +600,18 @@ function renderTierTablePrice(
 function ProviderServiceTierInfoIcons({
 	provider,
 	plan,
+	pricingTimeMs,
 }: {
 	provider: ProviderPricing;
 	plan: string;
+	pricingTimeMs: number;
 }) {
-	const tx = useTranslations();
-	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
+	const tQuickstart = useTranslations("Catalogue.models.detail.quickstart");
+	const format = useDisplayFormatters();
 	const providerModels = getProviderModelScopeForPlan(provider, plan);
+	const planKey = getPricingPlanTranslationKey(plan);
+	const planLabel = planKey ? tQuickstart(planKey as never) : formatServiceTierLabel(plan);
+	const endsOn = getEarliestEffectiveTo(providerModels, pricingTimeMs);
 	const statusKey = chooseGatewayStatus(
 		providerModels.map((providerModel) =>
 			resolveGatewayStatus({
@@ -613,34 +628,6 @@ function ProviderServiceTierInfoIcons({
 			}),
 		),
 	);
-	const statusMeta = PROVIDER_STATUS_META[statusKey] ?? PROVIDER_STATUS_META.not_listed;
-	const statusLabelKey = statusKey === "active"
-		? "statuses.active"
-		: statusKey === "disabled"
-			? "statuses.disabled"
-			: statusKey === "coming_soon"
-				? "statuses.comingSoon"
-				: statusKey === "external"
-					? "statuses.external"
-				: statusKey === "internal_testing"
-					? "statuses.internalTesting"
-					: statusKey === "deranked"
-						? "statuses.rateLimited"
-						: "statuses.inactive";
-	const statusLabel = tProvider(statusLabelKey as never);
-	const statusDescriptionKey = statusKey === "active"
-		? "statusDescriptions.active"
-		: statusKey === "disabled"
-			? "statusDescriptions.disabled"
-			: statusKey === "coming_soon"
-				? "statusDescriptions.comingSoon"
-				: statusKey === "external"
-					? "statusDescriptions.external"
-				: statusKey === "internal_testing"
-					? "statusDescriptions.internalTesting"
-					: statusKey === "deranked"
-						? "statusDescriptions.rateLimited"
-						: "statusDescriptions.inactive";
 	const tierPolicy = currentCatalogDataPolicy(provider.provider.service_tier_data_policies?.[plan]) ?? null;
 	const capabilityPolicies = providerModels
 		.map((providerModel) => currentCatalogDataPolicy(providerModel.data_policy))
@@ -659,40 +646,13 @@ function ProviderServiceTierInfoIcons({
 
 	return (
 		<div className="flex shrink-0 items-center gap-1">
-			{provider.provider.credential_mode === "byok_only" ? (
-				<HoverCard openDelay={120} closeDelay={80}>
-					<HoverCardTrigger asChild>
-						<button
-							type="button"
-							aria-label={tx("Common.ui.providerCardCopy.bYOKOnlyRequiresYourProviderKey" as never)}
-							className="inline-flex h-6 w-6 items-center justify-center rounded-md text-amber-700 transition-colors hover:bg-muted/60 hover:text-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 dark:text-amber-300 dark:hover:text-amber-200"
-						>
-							<KeyRound className="h-3.5 w-3.5" />
-						</button>
-					</HoverCardTrigger>
-					<HoverCardContent align="start" className="w-auto p-2 text-xs">
-						<p className="font-semibold">{tx("Common.ui.providerCardCopy.bYOKOnly" as never)}</p>
-						<p className="mt-1 text-muted-foreground">{tx("Common.ui.providerCardCopy.requiresYourProviderKey" as never)}</p>
-					</HoverCardContent>
-				</HoverCard>
-			) : null}
-			<HoverCard openDelay={120} closeDelay={80}>
-				<HoverCardTrigger asChild>
-					<button
-						type="button"
-						aria-label={tProvider("providerStatus", { status: statusLabel })}
-						className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-					>
-						{React.createElement(statusMeta.icon, {
-							className: cn("h-3 w-3", statusMeta.iconClass),
-						})}
-					</button>
-				</HoverCardTrigger>
-				<HoverCardContent align="start" className="w-auto p-2 text-xs">
-					<p className="font-semibold">{statusLabel}</p>
-					<p className="mt-1 text-muted-foreground">{tProvider(statusDescriptionKey as never)}</p>
-				</HoverCardContent>
-			</HoverCard>
+			{provider.provider.credential_mode === "byok_only" ? <ProviderByokOnlyHoverCard /> : null}
+			<ProviderStatusHoverCard
+				statusKey={statusKey}
+				providerModels={providerModels}
+				planLabel={planLabel}
+				endsOn={statusKey === "active" && endsOn ? format.calendarDate(endsOn) : null}
+			/>
 			<ProviderInfoHoverIcons
 				providerId={provider.provider.api_provider_id}
 				providerModelSlugs={providerModels.map((providerModel) => providerModel.provider_model_slug)}
@@ -748,6 +708,7 @@ function ProviderServiceTierRow({
 	const logoProviderId = sections.logoProviderId;
 	const tSections = useTranslations("Catalogue.modelDetail.sections");
 	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
+	const mobilePriceKeys = getMobilePriceColumnKeys(priceColumns);
 	const discountBadge = getProviderTableDiscountBadge(sections, {
 		discount: tSections("discount"),
 		off: tSections("off"),
@@ -797,7 +758,7 @@ function ProviderServiceTierRow({
 							</span>
 						</span>
 						<ProviderRouteName provider={provider.provider} plan={plan} showTierHelp />
-						<ProviderServiceTierInfoIcons provider={provider} plan={plan} />
+						<ProviderServiceTierInfoIcons provider={provider} plan={plan} pricingTimeMs={pricingTimeMs} />
 						{discountBadge ? (
 							<span className="whitespace-nowrap text-xs font-medium text-emerald-600 dark:text-emerald-400">
 								{discountBadge}
@@ -813,7 +774,7 @@ function ProviderServiceTierRow({
 					className={cn(
 						"py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap",
 						MOBILE_STAT_CELL,
-						isMobileHiddenPriceColumn(column) && "max-sm:hidden",
+						getMobilePriceCellClass(mobilePriceKeys, column.key),
 					)}
 				>
 					{renderTierTablePrice(
@@ -821,13 +782,13 @@ function ProviderServiceTierRow({
 					)}
 				</TableCell>
 			))}
-			<TableCell data-label={tProvider("latency")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL)}>
+			<TableCell data-label={tProvider("latency")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL, MOBILE_PERF_ROW_START, MOBILE_PERF_ORDER)}>
 				{plan === "batch" ? "--" : formatTierLatency(runtimeStats?.latencyMs30m)}
 			</TableCell>
-			<TableCell data-label={tProvider("throughput")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL)}>
+			<TableCell data-label={tProvider("throughput")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL, MOBILE_PERF_ORDER)}>
 				{plan === "batch" ? "--" : formatTierThroughput(runtimeStats?.throughput30m)}
 			</TableCell>
-			<TableCell data-label={tProvider("uptime")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL)}>
+			<TableCell data-label={tProvider("uptime")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL, MOBILE_PERF_ORDER)}>
 				{plan === "batch" ? "--" : formatTierUptime(runtimeStats)}
 			</TableCell>
 		</TableRow>
@@ -1706,7 +1667,7 @@ export default function ModelPricingClient({
 			return (
 				<HoverCard openDelay={120} closeDelay={80}>
 					<HoverCardTrigger asChild openOnTap={false}>{button}</HoverCardTrigger>
-					<HoverCardContent align="end" className="w-72 rounded-md text-left">
+					<HoverCardContent align="end" className="w-72 space-y-2.5 text-left font-normal">
 						<UptimeHeaderHoverContent />
 					</HoverCardContent>
 				</HoverCard>
@@ -1758,9 +1719,11 @@ export default function ModelPricingClient({
 	// Phones hide the column headers, so sorting moves to a Sort menu next to Filters.
 	// Picking a metric sorts by it; picking the active metric again flips the direction.
 	// The active metric shows an arrow for the current direction.
+	const mobileSortPriceKeys = getMobilePriceColumnKeys(visiblePriceColumns);
 	const mobileSortOptions: Array<{ option: Exclude<SortOption, "default">; label: string }> = [
-		...visiblePriceColumns
-			.filter((column) => !isMobileHiddenPriceColumn(column))
+		...mobileSortPriceKeys
+			.map((key) => visiblePriceColumns.find((column) => column.key === key))
+			.filter((column): column is (typeof visiblePriceColumns)[number] => Boolean(column))
 			.map((column) => ({ option: column.sort, label: getPriceColumnMobileLabel(column) })),
 		{ option: "latency", label: tProvider("latency") },
 		{ option: "throughput", label: tProvider("throughput") },
@@ -1787,7 +1750,7 @@ export default function ModelPricingClient({
 		<DropdownMenu>
 			<DropdownMenuTrigger
 				render={
-					<Button type="button" variant="outline" size="sm" className="h-8 min-w-0 flex-1 justify-center gap-2 rounded-md px-3 text-xs sm:hidden" />
+					<Button type="button" variant="outline" size="sm" className="h-8 min-w-0 flex-1 justify-center gap-2 rounded-md px-3 text-xs max-sm:h-10 sm:hidden" />
 				}
 			>
 				<ArrowDownUp className="size-3.5" />
@@ -1839,7 +1802,7 @@ export default function ModelPricingClient({
                         <DropdownMenu>
                             <DropdownMenuTrigger
                                 render={
-                                    <Button type="button" variant="outline" size="sm" className="h-8 min-w-0 flex-1 justify-center gap-2 rounded-md px-3 text-xs sm:flex-none" />
+                                    <Button type="button" variant="outline" size="sm" className="h-8 min-w-0 flex-1 justify-center gap-2 rounded-md px-3 text-xs max-sm:h-10 sm:flex-none" />
                                 }
                             >
                                 <Filter className="size-3.5" />
@@ -1972,7 +1935,7 @@ export default function ModelPricingClient({
                             onChange={handlePercentileChange}
                             isLoading={isLoadingPercentile}
                             ariaLabel={tProvider("selectPercentile")}
-                            className="min-w-0 flex-1 justify-center sm:flex-none"
+                            className="min-w-0 flex-1 justify-center max-sm:h-10 sm:flex-none"
                         />
                     </div>
                 ) : null}

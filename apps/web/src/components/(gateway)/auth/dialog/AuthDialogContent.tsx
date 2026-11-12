@@ -1,0 +1,97 @@
+// The dialog body for AuthDialog: one view per step of the sign-in flow.
+import { Suspense, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useLocale } from "@/i18n/react";
+import type { PublicLocale } from "@/i18n/routing";
+import { AnalyticsIdentitySync } from "@/components/analytics/AnalyticsIdentitySync";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Spinner } from "@/components/ui/spinner";
+import { samlSsoEnabledQuery } from "@/features/sign-in/SignInPage.functions";
+import { Login } from "../Login";
+import { SignUp } from "../sign-up/SignUp";
+import { MfaStep } from "./MfaStep";
+import { ResetPasswordStep } from "./ResetPasswordStep";
+import { SsoStep } from "./SsoStep";
+import type { AuthDialogState } from "./authDialogStore";
+import { useFocusAnchor, useStepHeightTransition } from "./dialogMotion";
+
+function SignInStep({ state, locale }: { state: AuthDialogState; locale: PublicLocale }) {
+	// Not suspending: if the flag check fails, the other sign-in methods stay and the SSO button is left out
+	// (React Query retries; the next open checks again).
+	const { data: ssoEnabled = false } = useQuery(samlSsoEnabledQuery());
+	return (
+		<Login
+			signupNotice={state.notice === "check-email" ? "check-email" : null}
+			authError={state.notice === "auth-failed" ? "auth-failed" : null}
+			errorCode={state.errorCode}
+			errorMessage={state.errorMessage}
+			returnUrl={state.returnUrl}
+			ssoEnabled={ssoEnabled}
+			locale={locale}
+			surface="dialog"
+			Heading={DialogTitle}
+		/>
+	);
+}
+
+function StepView({ state, locale }: { state: AuthDialogState; locale: PublicLocale }) {
+	switch (state.step) {
+		case "sign-up":
+			return <SignUp returnUrl={state.returnUrl} locale={locale} surface="dialog" Heading={DialogTitle} />;
+		case "sso":
+			return <SsoStep returnUrl={state.returnUrl} locale={locale} Heading={DialogTitle} />;
+		case "mfa":
+			return <MfaStep returnUrl={state.returnUrl} locale={locale} Heading={DialogTitle} />;
+		case "reset":
+			return <ResetPasswordStep Heading={DialogTitle} />;
+		default:
+			return <SignInStep state={state} locale={locale} />;
+	}
+}
+
+export default function AuthDialogContent({
+	state,
+	onOpenChange,
+}: {
+	state: AuthDialogState;
+	onOpenChange: (open: boolean) => void;
+}) {
+	const locale = useLocale() as PublicLocale;
+	// The two-factor and new-password steps belong to a session that is already signed in.
+	const startsNewSession = state.step === "sign-in" || state.step === "sign-up" || state.step === "sso";
+
+	// Motion: keep what the user is interacting with still while the step resizes, and
+	// animate the height between steps (dialogMotion.ts).
+	const [stepElement, setStepElement] = useState<HTMLDivElement | null>(null);
+	const resetShift = useFocusAnchor(stepElement);
+	useStepHeightTransition(stepElement, state.step, resetShift);
+	// A step reached by switching fades in; the first one arrives with the dialog itself.
+	const [shownStep, setShownStep] = useState(state.step);
+	const [switched, setSwitched] = useState(false);
+	if (shownStep !== state.step) {
+		setShownStep(state.step);
+		setSwitched(state.open);
+	}
+
+	return (
+		<Dialog open={state.open} onOpenChange={onOpenChange}>
+			<DialogContent className="max-h-[calc(100svh-2rem)] overflow-y-auto px-6 py-7 sm:max-w-md sm:px-8">
+				{/* Whoever signs in or up here may be another account: drop a stale identified person (as the full pages did). */}
+				{state.open && startsNewSession ? <AnalyticsIdentitySync userId={null} workspaceId={null} signedUpAt={null} /> : null}
+				<Suspense
+					fallback={
+						<div className="grid min-h-80 place-items-center">
+							<Spinner className="size-5 text-muted-foreground" />
+						</div>
+					}
+				>
+					<div ref={setStepElement}>
+						<div key={state.step} className={switched ? "animate-in fade-in-0 duration-200 motion-reduce:animate-none" : undefined}>
+							<StepView state={state} locale={locale} />
+						</div>
+					</div>
+				</Suspense>
+			</DialogContent>
+		</Dialog>
+	);
+}

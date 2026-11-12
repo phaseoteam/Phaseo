@@ -50,7 +50,12 @@ Jedes `reasoning`-Element hat eine `id`, `summary` und `content`. Wenn der Anbie
 - Verschlüsseltes Reasoning von OpenAI, Azure OpenAI und xAI. Phaseo fordert es bei Reasoning-Modellen mit `include: ["reasoning.encrypted_content"]` an.
 - Claude-Thinking-Signaturen und geschwärztes Thinking.
 - Gemini-Thought-Signaturen, einschließlich eines separaten `reasoning`-Elements direkt vor dem Funktionsaufruf, zu dem eine Signatur gehört.
+- Die Aufwandsstufe, mit der eine Claude-Antwort lief, im letzten `reasoning`-Element der Ausgabe, das keinen Text hat.
 
 Streaming-Antworten enthalten dieselben Elemente in `response.output_item.done` und `response.completed`.
 
-Um eine Tool-Schleife fortzusetzen, sende jedes Ausgabeelement unverändert in `input` zurück, einschließlich der `reasoning`-Elemente. `encrypted_content` ist undurchsichtig und hält fest, welcher Anbieter und welches Modell es erzeugt haben. Phaseo sendet es nur an diese Anbieterfamilie und dieses Modell, sodass ein Fallback auf einen anderen Anbieter es verwirft, statt fehlzuschlagen.
+<Warning>
+Sende jedes Ausgabeelement bei jeder Anfrage unverändert in `input` zurück, nicht nur in Tool-Schleifen. Verwirf, bearbeite oder sortiere `reasoning`-Elemente nie um, mit oder ohne `encrypted_content`, auch Elemente ohne Text.
+</Warning>
+
+`encrypted_content` ist undurchsichtig und hält fest, welcher Anbieter und welches Modell es erzeugt haben. Phaseo sendet es nur an diese Anbieterfamilie und dieses Modell, sodass ein Fallback auf einen anderen Anbieter es verwirft, statt fehlzuschlagen. Ohne es verliert Claude sein Reasoning zwischen den Schritten der Tool-Schleife, und eine Änderung von `reasoning.effort` startet Claudes Prompt-Cache neu; siehe [Reasoning-Aufwand mitten in der Unterhaltung ändern](../../guides/reasoning-effort).

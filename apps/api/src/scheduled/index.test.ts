@@ -511,6 +511,38 @@ describe("handleScheduledEvent", () => {
 		}
 	});
 
+	it("exports every spend sweep outcome even when several sweeps fail", async () => {
+		const sent: string[] = [];
+		const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(async (_url, init) => {
+			sent.push(String(init?.body));
+			return Response.json({});
+		});
+		const error = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			runSpendLimitWarningSweepMock.mockRejectedValueOnce(new Error("private warning error", { cause: { code: "57014" } }));
+			runDepartmentBudgetAlertSweepMock.mockRejectedValueOnce(new Error("private department error", { cause: { code: "PGRST202" } }));
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:45:00.000Z"), {
+				MOBILE_PUSH_ENABLED: "true", ENV: "staging", CF_VERSION_METADATA: { id: "fixture-version" },
+				PLATFORM_TELEMETRY_ENABLED: "true", GRAFANA_OTLP_ENDPOINT: "https://otlp-gateway-prod-eu-west-0.grafana.net/otlp",
+				GRAFANA_OTLP_AUTHORIZATION: "Basic dGVzdA==",
+			});
+			const records = sent.flatMap(body => JSON.parse(body).resourceLogs[0].scopeLogs[0].logRecords)
+				.map((record: { body: { stringValue: string } }) => JSON.parse(record.body.stringValue));
+			expect(records).toEqual(expect.arrayContaining([
+				expect.objectContaining({ job: "spend_limit_warnings", outcome: "error", error_code: "57014", release: "fixture-version" }),
+				expect.objectContaining({ job: "department_budget_alerts", outcome: "error", error_code: "PGRST202" }),
+				expect.objectContaining({ job: "spend_guardrail_alerts", outcome: "completed" }),
+				expect.objectContaining({ job: "spend_limit_sweep", outcome: "error" }),
+			]));
+			expect(sent.join()).not.toContain("private warning error");
+			expect(sent.join()).not.toContain("private department error");
+			expect(runMobilePushJobMock).toHaveBeenCalledTimes(1);
+		} finally {
+			fetch.mockRestore();
+			error.mockRestore();
+		}
+	});
+
 	it("starts blocks and republishes gateway entries only with SPEND_RULE_BLOCKS_ENABLED, reconciling every quarter hour", async () => {
 		const log = vi.spyOn(console, "log").mockImplementation(() => {});
 		try {

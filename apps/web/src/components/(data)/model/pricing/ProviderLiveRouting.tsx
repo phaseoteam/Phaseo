@@ -1,9 +1,17 @@
 import { RefreshCw, ZapOff } from "lucide-react";
 import { useTranslations } from "@/i18n/react";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import {
+	HoverCard,
+	HoverCardContent,
+	HoverCardHeader,
+	HoverCardLinks,
+	HoverCardNote,
+	HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { Link } from "@/i18n/navigation";
 import type { ProviderRoutingStatus } from "@/lib/fetchers/models/getModelProviderRoutingHealth";
 import { cn } from "@/lib/utils";
+import { TAP_TARGET_20, TAP_TARGET_24 } from "@/lib/tapTargets";
 
 export type LiveRoutingState = "limited" | "recovering";
 
@@ -31,11 +39,16 @@ const LIVE_ROUTING_ICONS = {
 
 export function useLiveRouting(routingStatus: ProviderRoutingStatus | null | undefined, statusKey: string) {
 	const t = useTranslations("Catalogue.modelDetail.sections");
+	const tCard = useTranslations("Catalogue.hoverCards");
 	const state = liveRoutingState(routingStatus, statusKey);
 	if (!state || !routingStatus) return null;
 	return {
 		state,
 		...LIVE_ROUTING_ICONS[state],
+		routesAffected: tCard("routesAffected", {
+			count: state === "limited" ? routingStatus.openCount : routingStatus.halfOpenCount,
+		}),
+		action: state === "limited" ? tCard("limitedAction") : tCard("recoveringAction"),
 		label: state === "limited" ? t("routingHealthLimited") : t("routingHealthRecovering"),
 		description: state === "limited"
 			? t("routingHealthLimitedDescription", { count: routingStatus.openCount })
@@ -65,7 +78,7 @@ export function ProviderLiveRoutingIndicator({
 	if (!live) return null;
 	const Icon = live.icon;
 	return (
-		<HoverCard openDelay={120} closeDelay={80}>
+		<HoverCard>
 			<HoverCardTrigger asChild>
 				<button
 					type="button"
@@ -73,29 +86,24 @@ export function ProviderLiveRoutingIndicator({
 					data-live-routing={live.state}
 					className={cn(
 						"inline-flex shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
-						size === "sm" ? "h-5 w-5" : "h-6 w-6",
+						size === "sm" ? cn("h-5 w-5", TAP_TARGET_20) : cn("h-6 w-6", TAP_TARGET_24),
 					)}
 				>
 					<Icon className={cn("h-3 w-3", live.className)} aria-hidden />
 				</button>
 			</HoverCardTrigger>
-			<HoverCardContent align="start" className="w-72 p-2 text-xs">
-				<p className="flex items-center gap-1.5 font-semibold">
-					<Icon className={cn("h-3 w-3", live.className)} aria-hidden />
-					{live.label}
-				</p>
-				<p className="mt-1">{live.description}</p>
-				<p className="mt-1 text-muted-foreground">{live.automatic}</p>
-				<div className="mt-2 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
-					<Link
-						href={docsHref}
-						target="_blank"
-						rel="noopener noreferrer"
-						className="text-zinc-500 underline-offset-2 transition-colors hover:text-zinc-700 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
-					>
+			<HoverCardContent align="start" className="w-72 space-y-2.5">
+				<HoverCardHeader
+					icon={<Icon className={live.className} aria-hidden />}
+					title={live.label}
+					meta={[live.routesAffected]}
+				/>
+				<HoverCardNote>{live.action}</HoverCardNote>
+				<HoverCardLinks>
+					<Link href={docsHref} target="_blank" rel="noopener noreferrer">
 						{docsLabel}
 					</Link>
-				</div>
+				</HoverCardLinks>
 			</HoverCardContent>
 		</HoverCard>
 	);

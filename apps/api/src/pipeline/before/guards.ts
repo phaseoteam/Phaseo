@@ -34,7 +34,7 @@ export { parseW3cTraceContext } from "@observability/trace-context";
 
 const MIN_CREDIT_AMOUNT = 1.0;
 const TRUTHY_VALUES = new Set(["1", "true", "yes"]);
-const FORM_JSON_FIELDS = new Set(["provider", "debug", "include", "timestamp_granularities", "chunking_strategy", "languages", "keywords", "context_bias", "input_reference", "models"]);
+const FORM_JSON_FIELDS = new Set(["provider", "config", "debug", "include", "timestamp_granularities", "chunking_strategy", "languages", "keywords", "context_bias", "input_reference", "models"]);
 const FORM_FORCE_ARRAY_FIELDS = new Set(["include", "timestamp_granularities", "languages", "keywords", "context_bias", "known_speaker_names", "known_speaker_references", "models"]);
 const DEFAULT_REQUEST_BODY_LIMIT_BYTES = 16 * 1024 * 1024;
 const MULTIPART_REQUEST_BODY_LIMIT_BYTES = 32 * 1024 * 1024;
@@ -57,6 +57,30 @@ function allowsNoCreditForFreeRequest(args: { model: string; context: any; provi
     if (!pricedCards.length) return false;
 
     return pricedCards.every((card) => isFreePriceCard(card));
+}
+
+/**
+ * The wallet credit check every paid request passes: internal callers and invoice-billed
+ * workspaces skip it, a request whose every route is free needs no credit, and anything else
+ * needs the context's credit gate to pass. Server tools apply it to each model they call, so
+ * a free main model cannot unlock paid model calls from an empty wallet.
+ */
+export function passesWalletCreditCheck(args: { model: string; context: any; providers: any[]; internal?: boolean }): boolean {
+    return walletCanPay(args) || allowsNoCreditForFreeRequest(args);
+}
+
+/**
+ * Whether the workspace can pay for paid work at all: internal callers, invoice billing, or a
+ * passing credit gate. Paid managed tools (web search and fetch on Phaseo's keys) need this
+ * even when the model is free.
+ */
+export function walletCanPay(args: { context: { credit?: { ok?: boolean } | null; teamSettings?: { billingMode?: unknown } | null } | null | undefined; internal?: boolean }): boolean {
+    if (args.internal) return true;
+    if (args.context?.credit?.ok) return true;
+    const billingMode = String(args.context?.teamSettings?.billingMode ?? "wallet")
+        .trim()
+        .toLowerCase();
+    return billingMode === "invoice";
 }
 
 function classifyProviderCandidateFailure(diagnostics: ProviderCandidateBuildDiagnostics): {
@@ -394,6 +418,7 @@ export async function guardAuth(req: Request, options: GuardAuthOptions = {}): P
     internal?: boolean;
     authMethod?: "api_key" | "oauth";
     oauthClientId?: string | null;
+    oauthAccessToken?: boolean;
     oauthScopes?: string[];
     oauthResource?: string | null;
     scopes?: string[];
@@ -419,6 +444,7 @@ export async function guardAuth(req: Request, options: GuardAuthOptions = {}): P
             internal: auth.internal,
             authMethod: auth.authMethod ?? "api_key",
             oauthClientId: auth.oauthClientId ?? null,
+            oauthAccessToken: auth.oauthAccessToken === true,
             oauthScopes: auth.oauthScopes ?? [],
             oauthResource: auth.oauthResource ?? null,
             scopes: auth.scopes ?? [],
@@ -655,22 +681,7 @@ export async function guardContext(args: {
             };
         }
 
-        const billingMode = String(context.teamSettings?.billingMode ?? "wallet")
-            .trim()
-            .toLowerCase();
-        const bypassWalletCreditCheck = billingMode === "invoice";
-        const allowFreeWithoutCredits = allowsNoCreditForFreeRequest({
-            model: args.model,
-            context,
-            providers,
-        });
-
-        if (
-            !args.internal &&
-            !context.credit.ok &&
-            !bypassWalletCreditCheck &&
-            !allowFreeWithoutCredits
-        ) {
+        if (!passesWalletCreditCheck({ model: args.model, context, providers, internal: args.internal })) {
             return {
                 ok: false,
                 response: err("insufficient_funds", {

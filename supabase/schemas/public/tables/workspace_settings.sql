@@ -87,7 +87,7 @@ CREATE TABLE "public"."workspace_settings" (
   CONSTRAINT "workspace_settings_io_logging_contents_access_check" CHECK ((io_logging_contents_access = ANY (ARRAY['members'::text, 'admins'::text]))),
   CONSTRAINT "workspace_settings_io_logging_billing_status_check" CHECK ((io_logging_billing_status = ANY (ARRAY['active'::text, 'grace'::text, 'suspended'::text]))),
   CONSTRAINT "workspace_settings_io_logging_price_per_million_units_check" CHECK ((io_logging_price_per_million_units_nanos >= 0)),
-  CONSTRAINT "workspace_settings_io_logging_retention_days_check" CHECK (((io_logging_retention_days >= 90) AND (io_logging_retention_days <= 365))),
+  CONSTRAINT "workspace_settings_io_logging_retention_days_check" CHECK ((io_logging_retention_days = 90)),
   CONSTRAINT "workspace_settings_low_balance_threshold_nonnegative" CHECK ((low_balance_email_threshold_nanos >= 0)),
   CONSTRAINT "workspace_settings_model_restriction_mode_valid" CHECK ((model_restriction_mode = ANY (ARRAY['none'::text, 'allowlist'::text, 'blocklist'::text]))),
   CONSTRAINT "workspace_settings_model_successor_max_price_increase_check"

@@ -661,6 +661,7 @@ async function settleBatchCharge(args: {
 			requestId: `${BATCH_CAPTURE_REQUEST_ID_PREFIX}:${args.batchId}`,
 			workspaceId: args.workspaceId,
 			cost_nanos: costNanos,
+			...(normalizeText(args.meta?.apiKeyId) ? { keyId: normalizeText(args.meta?.apiKeyId) } : {}),
 		});
 		return { status: "charged_without_reservation", charged: true, applied: true };
 	}

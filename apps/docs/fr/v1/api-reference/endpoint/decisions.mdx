@@ -147,6 +147,8 @@ La réponse (valeurs données à titre indicatif) :
 
 `input` est une chaîne, ou un tableau de messages `user` dont le `content` est une chaîne ou une liste d’éléments `input_text`, `input_image`, `input_audio` et `input_video`. `name` est facultatif ; les réponses conservent l’ordre de la requête, y compris pour les questions sans nom et les noms répétés.
 
+Une requête contient au plus 128 questions, sauf sur `google/gemini-decision-1`, qui en accepte jusqu’à 1000, sur `parallel/decisions-fast`, qui en accepte jusqu’à 100, et sur Clef, qui en accepte jusqu’à 64. Une requête qui dépasse la limite du modèle renvoie `400`.
+
 | `type` | Champs supplémentaires | Champs de la réponse |
 | --- | --- | --- |
 | `predicate` | aucun | `probability` (0–1) que la réponse soit oui |
@@ -163,7 +165,7 @@ Les images se placent dans des éléments `input_image` sous forme de data URL. 
 Les requêtes avec `state` et un dictionnaire de questions nommées fonctionnent toujours et renvoient des réponses indexées par les mêmes noms. Together Tev (`together/tev1-4b-experimental`) exige ce format, car il renvoie une étiquette sans probabilités, et ne répond qu’aux questions `choice`. Respan Span-01 utilise aussi ce format. Ne mélangez pas les formats : `input` avec `state` ou `images` renvoie `400`.
 
 - `state` : une chaîne, un objet ou un tableau contenant les informations à évaluer.
-- `questions` : jusqu’à 128 questions nommées. Chacune définit `type` à `noul` (oui/non), `choice` ou `score`, ainsi que `instructions`. Les questions à choix prennent `criteria` sous forme de dictionnaire option → description ; les questions à score prennent `criteria` sous forme de tableau d’au moins deux descriptions de niveaux.
+- `questions` : jusqu’à 128 questions nommées, ou davantage sur les modèles dont la limite est plus élevée. Chacune définit `type` à `noul` (oui/non), `choice` ou `score`, ainsi que `instructions`. Les questions à choix prennent `criteria` sous forme de dictionnaire option → description ; les questions à score prennent `criteria` sous forme de tableau d’au moins deux descriptions de niveaux.
 - `images` : jusqu’à quatre images PNG, JPEG ou WebP, sous forme d’URL `data:` ou d’objets `{ "content_type", "base64" }`.
 - `model` : `typesafe/jev-1.13.0` par défaut s’il est omis.
 
@@ -180,6 +182,7 @@ Vérifiez la disponibilité du modèle avant d’appeler l’un de ces modèles.
 | `typesafe/jev-1.13.0`, `typesafe/jev-1.14.0` | les trois, mélangés dans une même requête ; `box` sur 1.14 | texte, images PNG/JPEG | $0.042 (Jev 1.13) |
 | `cloudflare/clef`, `cloudflare/clef-flash` | les trois | texte, jusqu’à 4 images | $0.24 / $0.038 |
 | `cloudflare/clef-omni` | les trois | texte, images, audio, vidéo | $0.15 |
+| `google/gemini-decision-1` | predicate, choice, score ; jusqu’à 1000 par requête | texte, images, audio, vidéo | $0.10 |
 | `liquid-ai/d1:free`, `liquid-ai/d1` | les trois | Voir la page du modèle | Gratuit pendant l’accès anticipé |
 | `perplexity/decider-27b` | les trois | texte, images en base64 | $0.04, tokens d’image compris |
 | `inception/mercury-decide` | predicate, choice, score | texte ou JSON | $0.02 (promotion) |

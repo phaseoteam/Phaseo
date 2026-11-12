@@ -50,7 +50,12 @@ curl https://api.phaseo.app/v1/responses \
 - OpenAI、Azure OpenAI 和 xAI 的加密推理。对于推理模型，Phaseo 会通过 `include: ["reasoning.encrypted_content"]` 请求它。
 - Claude 思考签名和已编辑的思考。
 - Gemini 思维签名，包括一个单独的 `reasoning` 项，它紧挨着放在签名所属的函数调用之前。
+- Claude 回复运行时的强度级别，位于输出的最后一个 `reasoning` 项中，该项没有文本。
 
 流式响应会在 `response.output_item.done` 和 `response.completed` 上携带相同的项。
 
-要继续工具循环，请在 `input` 中原样发回所有输出项，包括 `reasoning` 项。`encrypted_content` 是不透明的，并记录了生成它的提供商和模型。Phaseo 只会把它发送给该提供商系列和模型，因此回退到其他提供商时会丢弃它，而不会导致请求失败。
+<Warning>
+在每个请求中（而不仅是在工具循环中）都要在 `input` 中原样发回所有输出项。切勿丢弃、编辑或重新排序 `reasoning` 项，无论是否带有 `encrypted_content`，也包括没有文本的项。
+</Warning>
+
+`encrypted_content` 是不透明的，并记录了生成它的提供商和模型。Phaseo 只会把它发送给该提供商系列和模型，因此回退到其他提供商时会丢弃它，而不会导致请求失败。缺少它时，Claude 会在工具循环的各步骤之间丢失推理，而更改 `reasoning.effort` 会重启 Claude 的提示词缓存；参见[在对话中途更改推理强度](../../guides/reasoning-effort)。

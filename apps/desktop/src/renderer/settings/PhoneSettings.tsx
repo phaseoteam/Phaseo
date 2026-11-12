@@ -3,6 +3,7 @@ import { Copy, QrCode, RefreshCw, Trash2 } from "lucide-react";
 import { connectPriceText, phoneAccessLabels, phoneAddressLabels, type ConnectView, type PhoneAccess, type PhonePairingView, type PhoneState } from "../../shared/phone";
 import { formatSpend } from "../../shared/usageAmounts";
 import { Switch } from "../components/ui/switch";
+import { RedactedEmails } from "../components/RedactedText";
 import { showToast } from "../components/ui/toast";
 import { errorText } from "../app/workspace";
 import { SettingsButton, SettingsNote, SettingsPageLayout, SettingsRow, SettingsSection } from "./SettingsLayout";
@@ -74,7 +75,7 @@ export function PhoneSettings() {
 			{tailscale?.installed && tailscale.httpsAvailable === false && !tailscale.serving && <SettingsNote>HTTPS needs certificates turned on for your tailnet in the Tailscale admin console.</SettingsNote>}
 		</SettingsSection>
 		<SettingsSection title="Phaseo Connect" description="Reach this computer from anywhere without Tailscale. Messages are encrypted on this computer and your phone, so the relay can't read them.">
-			<SettingsRow title="Phaseo Connect" description={<>{connectPriceText}.{connect?.account && <><br />Billed to {connect.account}.</>}{connect?.daysOn !== undefined && connect.chargeSoFarNanos !== undefined && (connect.enabled || connect.daysOn > 0) && <><br />This month: {connect.daysOn} {connect.daysOn === 1 ? "day" : "days"} on, {formatSpend(connect.chargeSoFarNanos)} so far{connect.enabled && connect.estimatedNanos !== undefined && <>, about {formatSpend(connect.estimatedNanos)} by the end of the month if it stays on</>}.</>}{connect?.canManage === false && <><br />Only workspace owners and admins can turn it on or off.</>}</>}
+			<SettingsRow title="Phaseo Connect" description={<>{connectPriceText}.{connect?.account && <><br />Billed to <RedactedEmails text={connect.account} />.</>}{connect?.daysOn !== undefined && connect.chargeSoFarNanos !== undefined && (connect.enabled || connect.daysOn > 0) && <><br />This month: {connect.daysOn} {connect.daysOn === 1 ? "day" : "days"} on, {formatSpend(connect.chargeSoFarNanos)} so far{connect.enabled && connect.estimatedNanos !== undefined && <>, about {formatSpend(connect.estimatedNanos)} by the end of the month if it stays on</>}.</>}{connect?.canManage === false && <><br />Only workspace owners and admins can turn it on or off.</>}</>}
 				control={<>
 					{connect && connect.status !== "signed-out" && <SettingsButton variant="ghost" title="Check again" disabled={busy} onClick={() => void run(() => api.refreshPhaseoConnect())}><RefreshCw /></SettingsButton>}
 					<Switch aria-label="Phaseo Connect" checked={connect?.enabled ?? false} disabled={!connect || busy || connect.status === "signed-out" || connect.canManage === false} onCheckedChange={(checked: boolean) => void run(() => api.setPhaseoConnect(checked))} />

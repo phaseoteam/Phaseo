@@ -58,7 +58,12 @@ As entradas podem carregar o estado do provedor de que o modelo precisa no passo
 | Assinaturas de pensamento do Claude | `signature` nas entradas `reasoning.text` |
 | Pensamento redigido do Claude, raciocínio criptografado da OpenAI | `data` nas entradas `reasoning.encrypted` |
 | Assinaturas de pensamento do Gemini | `data` nas entradas `reasoning.encrypted` cujo `id` é a chamada de ferramenta a que pertencem |
+| O nível de esforço em que uma resposta do Claude foi executada | `data` na última entrada `reasoning.encrypted`, que não tem texto |
 
 Durante o streaming, um delta de `reasoning_details` chega assim que cada bloco de raciocínio termina.
 
-Para manter o raciocínio do modelo entre os passos, envie de volta a mensagem do assistente com o `reasoning_details` inalterado. Os valores de `signature` e `data` são opacos e registram o provedor e o modelo que os produziram. O Phaseo os envia somente para essa família de provedor e esse modelo, de modo que um fallback para outro provedor os descarta em vez de falhar. Modelos Claude no modo de pensamento manual precisam receber o pensamento de volta para continuar pensando durante um loop de ferramentas; se ele faltar, aquele passo é executado sem pensamento.
+<Warning>
+Envie de volta cada mensagem do assistente com o `reasoning_details` inalterado, em todas as solicitações, não só em loops de ferramentas. Nunca descarte, edite nem reordene entradas, criptografadas ou não, incluindo entradas sem texto.
+</Warning>
+
+Os valores de `signature` e `data` são opacos e registram o provedor e o modelo que os produziram. O Phaseo os envia somente para essa família de provedor e esse modelo, de modo que um fallback para outro provedor os descarta em vez de falhar. Sem eles, modelos Claude no modo de pensamento manual executam o passo seguinte do loop de ferramentas sem pensamento, e uma mudança de `reasoning_effort` reinicia o cache de prompts do Claude; veja [Mudar o esforço de raciocínio no meio da conversa](../../guides/reasoning-effort).

@@ -249,11 +249,13 @@ describe("Claude adaptive thinking over a streamed Responses tool loop", () => {
 			{ type: "tool_use", id: "toolu_paris", name: "get_weather", input: { city: "Paris" } },
 		]);
 		expect(step1.call.bodyJson.thinking).toEqual({ type: "adaptive", display: "summarized" });
-		const reasoning = step1.output.filter((item) => item.type === "reasoning");
+		// The last item is the gateway's effort record (core/claudePerMessageEffort.ts).
+		expect(step1.output.at(-1)).toMatchObject({ type: "reasoning", content: [], summary: [] });
+		const reasoning = step1.output.filter((item) => item.type === "reasoning").slice(0, -1);
 		expect(reasoning).toHaveLength(2);
 		expect(reasoning.every((item) => /^phx1\./.test(item.encrypted_content))).toBe(true);
 		// Stream clients that collect output_item.done events get the same items.
-		expect(step1.doneItems.filter((item) => item.type === "reasoning")).toEqual(reasoning);
+		expect(step1.doneItems.filter((item) => item.type === "reasoning").slice(0, -1)).toEqual(reasoning);
 		input.push(...step1.output, { type: "function_call_output", call_id: "toolu_paris", output: "{\"temp_c\":18}" });
 
 		const step2 = await streamStep(input, [

@@ -123,6 +123,7 @@ curl https://api.phaseo.app/v1/messages \
 Phaseo 只会向每个提供商发送其文档中支持的缓存控制，其余的都会移除。缓存控制永远不会把某个提供商排除在路由之外。每个模型页面都会列出其缓存读取和写入价格。
 </Note>
 
+<span id="which-providers-cache-automatically"></span>
 ## 哪些提供商会自动缓存
 
 | 提供商 | 缓存方式 | Phaseo 发送的内容 |
@@ -288,6 +289,11 @@ Gemini 2.5 及更高版本会隐式缓存，无需发送任何内容。要使用
 ### Responses：发送完整对话
 
 Phaseo 不存储响应。设置了 `previous_response_id` 或 `conversation` 的请求会返回 `400` `unsupported_param`，因此每一步都要在 `input` 中发送完整对话。对话中稳定的开头部分就是被缓存的前缀。在工具循环中，也要把 `reasoning` 输出项发送回来；参见[工具循环中的推理](../api-reference/endpoint/responses.mdx#reasoning-in-tool-loops)。
+
+<span id="change-reasoning-effort-mid-conversation"></span>
+### 在对话中途更改推理强度
+
+在请求之间更改 `reasoning_effort`（Chat Completions）或 `reasoning.effort`（Responses），Phaseo 会保住 Claude 的提示词缓存：它把更改作为 `messages` 内的强度标记发送，而不是作为新的顶层强度。只要你原样发回 Claude 的推理内容，这就有效。在 Anthropic Messages 上，你需要自己发送标记。参见[在对话中途更改推理强度](./reasoning-effort.mdx)。
 
 <span id="usage-and-pricing-fields"></span>
 ## 用量与定价字段

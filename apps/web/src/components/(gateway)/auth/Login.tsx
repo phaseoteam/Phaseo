@@ -1,4 +1,6 @@
 import Link from "@/components/link";
+import { useState, type ElementType } from "react";
+import AuthErrorMessage from "@/features/error/AuthErrorMessage";
 import { Building2 } from "lucide-react";
 import { useTranslations } from "@/i18n/react";
 import OAuthButtons from "./OAuthButtons";
@@ -19,25 +21,45 @@ export function Login({
 	returnUrl,
 	ssoEnabled = false,
 	locale = defaultLocale,
+	surface = "page",
+	Heading = "h1",
+	errorCode,
+	errorMessage,
 }: {
 	signupNotice?: SignupNotice;
 	authError?: "auth-failed" | null;
 	returnUrl?: string;
 	ssoEnabled?: boolean;
 	locale?: PublicLocale;
+	surface?: "page" | "dialog";
+	/** The heading element; the dialog passes its title so it labels the dialog. */
+	Heading?: ElementType;
+	/** An auth error from a callback (an AuthErrorCode, or the legacy message form). */
+	errorCode?: string;
+	errorMessage?: string;
 }) {
 	const t = useTranslations("Auth.signIn");
+	// Typing an email or password collapses the other sign-in options, as on sign-up.
+	const [emailFlowActive, setEmailFlowActive] = useState(false);
+	// While a provider (Google…) is loading, the other options are locked so a second attempt cannot start.
+	const [redirecting, setRedirecting] = useState(false);
 	const signupNoticeText =
 		signupNotice === "check-email"
 			? t("signupNotice")
 			: null;
+	// Callback errors (expired link, cancelled OAuth, SSO) belong to the whole step; a wrong
+	// password shows in the email form itself (EmailPassword).
 	const authErrorText =
-		authError === "auth-failed" ? t("invalidCredentials") : null;
+		errorCode || errorMessage ? (
+			<AuthErrorMessage initialCode={errorCode} initialMessage={errorMessage} />
+		) : null;
 
 	return (
-		<div className="flex flex-col gap-5">
+		<div
+			className={`flex flex-col transition-[gap] duration-500 ease-out motion-reduce:transition-none ${emailFlowActive ? "gap-3" : "gap-4"}`}
+		>
 			<div className="flex flex-col items-center gap-1.5 text-center">
-				<h1 className="text-2xl font-bold">{t("heading")}</h1>
+				<Heading className="text-[1.375rem] font-bold">{t("heading")}</Heading>
 				<p className="text-sm text-muted-foreground">
 					{t("description")}
 				</p>
@@ -58,10 +80,19 @@ export function Login({
 				</p>
 			) : null}
 
-			<div className="grid gap-2.5">
-				<OAuthButtons returnUrl={returnUrl} locale={locale} />
-				<div className={ssoEnabled ? "grid grid-cols-2 gap-2.5" : "grid"}>
+			<div
+				className={`grid origin-top transition-[grid-template-rows,opacity,margin] duration-500 ease-[cubic-bezier(0.16,1,0.3,1)] motion-reduce:transition-none ${emailFlowActive ? "pointer-events-none -mb-3 grid-rows-[0fr] opacity-0" : "grid-rows-[1fr] opacity-100"}`}
+				aria-hidden={emailFlowActive}
+				inert={emailFlowActive}
+			>
+			<div className="-m-1 grid gap-2.5 overflow-hidden p-1">
+				<OAuthButtons returnUrl={returnUrl} locale={locale} onRedirectingChange={setRedirecting} />
+				<div
+					className={`${ssoEnabled ? "grid grid-cols-2 gap-2.5" : "grid"} transition-opacity duration-200 motion-reduce:transition-none ${redirecting ? "opacity-50" : ""}`}
+					inert={redirecting}
+				>
 					<PasskeySignInButton
+						surface={surface}
 						returnUrl={returnUrl}
 						compact={ssoEnabled}
 						locale={locale}
@@ -86,7 +117,16 @@ export function Login({
 					) : null}
 				</div>
 			</div>
-			<EmailPassword returnUrl={returnUrl} locale={locale} />
+			</div>
+			<div className={`transition-opacity duration-200 motion-reduce:transition-none ${redirecting ? "opacity-50" : ""}`} inert={redirecting}>
+				<EmailPassword
+					returnUrl={returnUrl}
+					locale={locale}
+					surface={surface}
+					initialError={authError}
+					onEmailFlowChange={setEmailFlowActive}
+				/>
+			</div>
 		</div>
 	);
 }

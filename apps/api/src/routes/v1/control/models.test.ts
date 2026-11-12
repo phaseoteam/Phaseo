@@ -4,6 +4,10 @@ const guardAuthMock = vi.fn();
 const fetchCatalogueMock = vi.fn();
 const fetchGatewayContextMock = vi.fn();
 const privateModelRows = vi.hoisted(() => ({ rows: [] as any[] }));
+const providerFactRows = vi.hoisted(() => ({ rows: [] as any[] }));
+const routePolicyRows = vi.hoisted(() => ({ rows: [] as any[] }));
+const fetchWorkspacePolicyMock = vi.hoisted(() => vi.fn());
+const fetchMemberWorkspacePolicyMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/runtime/env", () => ({
     getBindingsIfConfigured: () => null,
@@ -13,17 +17,27 @@ vi.mock("@/runtime/env", () => ({
                 select: () => query,
                 eq: () => query,
                 order: async () => ({ data: privateModelRows.rows, error: null }),
+                in: async () => ({ data: providerFactRows.rows, error: null }),
+                not: async () => ({ data: routePolicyRows.rows, error: null }),
             };
             return query;
         },
     }),
 }));
 
+vi.mock("@pipeline/before/workspacePolicy", async (importOriginal) => ({
+    ...await importOriginal<typeof import("@pipeline/before/workspacePolicy")>(),
+    fetchWorkspacePolicy: (...args: any[]) => fetchWorkspacePolicyMock(...args),
+    fetchMemberWorkspacePolicy: (...args: any[]) => fetchMemberWorkspacePolicyMock(...args),
+}));
+
 vi.mock("@pipeline/before/guards", () => ({
     guardAuth: (...args: any[]) => guardAuthMock(...args),
 }));
 
-vi.mock("./models.catalogue", () => ({
+vi.mock("./models.catalogue", async (importOriginal) => ({
+    // The real merge helpers (models.policy.ts reprices and merges capabilities with them); only the data is mocked.
+    ...await importOriginal<typeof import("./models.catalogue")>(),
     fetchCatalogue: (...args: any[]) => fetchCatalogueMock(...args),
     scopePricingSummary: (pricing: unknown) => pricing,
 }));
@@ -33,6 +47,7 @@ vi.mock("@pipeline/before/context", () => ({
 }));
 
 import { handleModelEndpoints, handleModels, handleMyModels } from "./models";
+import { buildWorkspacePolicy } from "@pipeline/before/workspacePolicy";
 
 function buildCatalogueModel(overrides: Record<string, unknown> = {}) {
     const model = {
@@ -124,6 +139,10 @@ describe("handleModels", () => {
         guardAuthMock.mockReset();
         fetchCatalogueMock.mockReset();
         fetchGatewayContextMock.mockReset();
+        fetchWorkspacePolicyMock.mockReset();
+        fetchMemberWorkspacePolicyMock.mockReset();
+        providerFactRows.rows = [];
+        routePolicyRows.rows = [];
         guardAuthMock.mockResolvedValue({
             ok: true,
             value: {
@@ -1238,16 +1257,119 @@ describe("handleModels", () => {
         ]));
     });
 
-    it("returns a guarded 501 placeholder from /v1/models/me", async () => {
-        const response = await handleMyModels(
-            new Request("https://api.example.com/v1/models/me"),
-        );
+    describe("/v1/models/me", () => {
+        const twoProviders = () => buildCatalogueModel({
+            providers: [
+                { ...buildCatalogueModel().providers[0] },
+                { ...buildCatalogueModel().providers[0], api_provider_id: "azure", api_provider_name: "Azure" },
+            ],
+        });
+        const blocked = (providers: string[]) => buildWorkspacePolicy({ globalSettings: { provider_restriction_mode: "blocklist", provider_restriction_provider_ids: providers } });
 
-        expect(response.status).toBe(501);
-        expect(fetchCatalogueMock).not.toHaveBeenCalled();
-        await expect(response.json()).resolves.toMatchObject({
-            status_code: 501,
-            error: "not_implemented",
+        it("applies the key's policy: a disallowed provider's offers go, and so does a model left with none", async () => {
+            fetchCatalogueMock.mockResolvedValue([
+                twoProviders(),
+                buildCatalogueModel({ model_id: "azure/only", base_model_id: "azure/only", providers: [{ ...buildCatalogueModel().providers[0], api_provider_id: "azure" }] }),
+            ]);
+            fetchWorkspacePolicyMock.mockResolvedValue(blocked(["azure"]));
+            const response = await handleMyModels(new Request("https://api.example.com/v1/models/me"));
+            expect(response.status).toBe(200);
+            expect(fetchWorkspacePolicyMock).toHaveBeenCalledWith({ workspaceId: "ws_test", apiKeyId: "key_test" });
+            const body = await response.json() as any;
+            expect(body.total).toBe(1);
+            expect(body.models.map((model: any) => model.id)).toEqual(["openai/gpt-4o-mini"]);
+            expect(body.models[0].offers.map((offer: any) => offer.provider.id)).toEqual(["openai"]);
+            // What was left out, so apps can explain a missing model.
+            expect(body.access).toEqual({
+                restricted: true,
+                hidden_model_count: 1,
+                hidden_models: [{ id: "azure/only", name: "GPT-4o Mini" }],
+                limited_model_count: 1,
+            });
+            expect(response.headers.get("cache-control")).toBe("private, max-age=60");
+            expect(response.headers.get("vary")).toBe("Authorization");
+        });
+
+        it("reads each text route's own data policy (the effective view) under privacy rules", async () => {
+            const provider = buildCatalogueModel().providers[0];
+            fetchCatalogueMock.mockResolvedValue([buildCatalogueModel({ providers: [
+                // The provider isn't ZDR, but its text route is.
+                { ...provider, route_id_by_endpoint: { "text.generate": "openai:openai/gpt-4o-mini" } },
+                { ...provider, api_provider_id: "azure", api_provider_name: "Azure", route_id_by_endpoint: { "text.generate": "azure:openai/gpt-4o-mini" } },
+            ] })]);
+            providerFactRows.rows = [
+                { provider_slug: "openai", zero_data_retention: false, data_policy_tier: "logs", data_policy_confidence: "confirmed" },
+                { provider_slug: "azure", zero_data_retention: false, data_policy_tier: "logs", data_policy_confidence: "confirmed" },
+            ];
+            routePolicyRows.rows = [{ provider_model_id: "openai:openai/gpt-4o-mini", data_policy: { zeroDataRetention: true, tier: "private", confidence: "confirmed" } }];
+            fetchWorkspacePolicyMock.mockResolvedValue(buildWorkspacePolicy({ globalSettings: { privacy_zdr_only: true } }));
+            const body = await (await handleMyModels(new Request("https://api.example.com/v1/models/me"))).json() as any;
+            expect(body.models.map((model: any) => model.offers.map((offer: any) => offer.provider.id))).toEqual([["openai"]]);
+        });
+
+        it("leaves out a model a guardrail blocks", async () => {
+            fetchWorkspacePolicyMock.mockResolvedValue(buildWorkspacePolicy({ guardrails: [{ id: "g1", model_restriction_mode: "blocklist", allowed_api_model_ids: ["openai/gpt-4o-mini"] }] }));
+            const body = await (await handleMyModels(new Request("https://api.example.com/v1/models/me"))).json() as any;
+            expect(body).toMatchObject({ ok: true, total: 0, models: [] });
+        });
+
+        it("matches /v1/models when nothing is restricted", async () => {
+            fetchWorkspacePolicyMock.mockResolvedValue(buildWorkspacePolicy({}));
+            const mine = await (await handleMyModels(new Request("https://api.example.com/v1/models/me"))).json() as any;
+            const shared = await (await handleModels(new Request("https://api.example.com/v1/models"))).json() as any;
+            expect(mine.models).toEqual(shared.models);
+            expect(mine.access).toEqual({ restricted: false, hidden_model_count: 0, hidden_models: [], limited_model_count: 0 });
+            // The shared list has no per-key summary.
+            expect(shared.access).toBeUndefined();
+        });
+
+        it("doesn't read the policy for the shared list", async () => {
+            await handleModels(new Request("https://api.example.com/v1/models"));
+            expect(fetchWorkspacePolicyMock).not.toHaveBeenCalled();
+        });
+
+        it("refuses, rather than listing everything, when the policy can't be read", async () => {
+            fetchWorkspacePolicyMock.mockRejectedValue(new Error("workspace_guardrails_lookup_failed"));
+            const response = await handleMyModels(new Request("https://api.example.com/v1/models/me"));
+            expect(response.status).toBe(500);
+        });
+
+        it("still requires authentication", async () => {
+            guardAuthMock.mockResolvedValue({ ok: false, response: new Response(null, { status: 401 }) });
+            expect((await handleMyModels(new Request("https://api.example.com/v1/models/me"))).status).toBe(401);
+            expect(fetchCatalogueMock).not.toHaveBeenCalled();
+        });
+
+        it("lists an OAuth token's models under the signed-in person's rules, not a key looked up by the client id", async () => {
+            guardAuthMock.mockResolvedValue({ ok: true, value: { workspaceId: "ws_test", apiKeyId: "phaseo_cli", authMethod: "oauth", oauthAccessToken: true, oauthClientId: "phaseo_cli", oauthScopes: ["openid", "models:read"], userId: "user_1" } });
+            fetchCatalogueMock.mockResolvedValue([twoProviders()]);
+            fetchMemberWorkspacePolicyMock.mockResolvedValue(blocked(["azure"]));
+            const response = await handleMyModels(new Request("https://api.example.com/v1/models/me"));
+            expect(response.status).toBe(200);
+            expect(fetchMemberWorkspacePolicyMock).toHaveBeenCalledWith({ workspaceId: "ws_test", userId: "user_1" });
+            expect(fetchWorkspacePolicyMock).not.toHaveBeenCalled();
+            const body = await response.json() as any;
+            expect(body.models[0].offers.map((offer: any) => offer.provider.id)).toEqual(["openai"]);
+            expect(body.access).toMatchObject({ restricted: true, limited_model_count: 1 });
+            expect(response.headers.get("vary")).toBe("Authorization");
+        });
+
+        it("keeps an OAuth-delegated key (such as Phaseo desktop's) on its key's own rules", async () => {
+            guardAuthMock.mockResolvedValue({ ok: true, value: { workspaceId: "ws_test", apiKeyId: "key_desktop", authMethod: "oauth", oauthClientId: "phaseo_desktop", oauthScopes: ["gateway:access", "models:read"], userId: "user_1" } });
+            fetchWorkspacePolicyMock.mockResolvedValue(buildWorkspacePolicy({}));
+            const response = await handleMyModels(new Request("https://api.example.com/v1/models/me"));
+            expect(response.status).toBe(200);
+            expect(fetchWorkspacePolicyMock).toHaveBeenCalledWith({ workspaceId: "ws_test", apiKeyId: "key_desktop" });
+            expect(fetchMemberWorkspacePolicyMock).not.toHaveBeenCalled();
+        });
+
+        it("asks an OAuth token with no user to sign in again", async () => {
+            guardAuthMock.mockResolvedValue({ ok: true, value: { workspaceId: "ws_test", apiKeyId: "phaseo_cli", authMethod: "oauth", oauthAccessToken: true, oauthClientId: "phaseo_cli", oauthScopes: ["openid", "models:read"] } });
+            const response = await handleMyModels(new Request("https://api.example.com/v1/models/me"));
+            expect(response.status).toBe(401);
+            expect(fetchMemberWorkspacePolicyMock).not.toHaveBeenCalled();
+            expect(fetchWorkspacePolicyMock).not.toHaveBeenCalled();
+            expect((await handleModels(new Request("https://api.example.com/v1/models"))).status).toBe(200);
         });
     });
 });

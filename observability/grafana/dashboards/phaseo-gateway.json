@@ -101,6 +101,34 @@
           "value": ""
         },
         "hide": 0
+      },
+      {
+        "name": "tempo",
+        "label": "Traces",
+        "type": "datasource",
+        "query": "tempo",
+        "refresh": 1,
+        "hide": 2
+      },
+      {
+        "name": "provider",
+        "label": "Provider contains",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "text": "",
+          "value": ""
+        }
+      },
+      {
+        "name": "model",
+        "label": "Model contains",
+        "type": "textbox",
+        "query": "",
+        "current": {
+          "text": "",
+          "value": ""
+        }
       }
     ]
   },
@@ -124,7 +152,7 @@
       "id": 1,
       "gridPos": {
         "x": 0,
-        "y": 0,
+        "y": 27,
         "w": 12,
         "h": 9
       },
@@ -138,7 +166,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (outcome) (rate({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" [$__auto]))",
+          "expr": "sum by (outcome) (rate({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", outcome=\"outcome\", provider=\"provider\", model=\"model\" | __error__=\"\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | environment=\"$environment\" | event_name=\"gateway.request\" [$__auto]))",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -170,7 +198,7 @@
       "id": 2,
       "gridPos": {
         "x": 12,
-        "y": 0,
+        "y": 27,
         "w": 12,
         "h": 9
       },
@@ -184,7 +212,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum by (provider, outcome) (rate({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" [$__auto]))",
+          "expr": "sum by (provider, outcome) (rate({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", outcome=\"outcome\", model=\"model\" | __error__=\"\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | environment=\"$environment\" | event_name=\"provider.attempt\" [$__auto]))",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -216,7 +244,7 @@
       "id": 3,
       "gridPos": {
         "x": 0,
-        "y": 9,
+        "y": 36,
         "w": 12,
         "h": 9
       },
@@ -230,7 +258,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "quantile_over_time(0.95, {service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", ttft_ms=\"ttft_ms\", stream=\"stream\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | stream=\"true\" | unwrap ttft_ms | __error__=\"\" [$__auto]) by (service_name)",
+          "expr": "quantile_over_time(0.95, {service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", ttft_ms=\"ttft_ms\", stream=\"stream\", provider=\"provider\", model=\"model\" | __error__=\"\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | environment=\"$environment\" | event_name=\"gateway.request\" | stream=\"true\" | unwrap ttft_ms | __error__=\"\" [$__auto]) by (service_name)",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -262,7 +290,7 @@
       "id": 4,
       "gridPos": {
         "x": 12,
-        "y": 9,
+        "y": 36,
         "w": 12,
         "h": 9
       },
@@ -276,7 +304,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "quantile_over_time(0.95, {service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider_ttft_ms=\"provider_ttft_ms\", stream=\"stream\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | stream=\"true\" | unwrap provider_ttft_ms | __error__=\"\" [$__auto]) by (service_name)",
+          "expr": "quantile_over_time(0.95, {service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider_ttft_ms=\"provider_ttft_ms\", stream=\"stream\", provider=\"provider\", model=\"model\" | __error__=\"\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | environment=\"$environment\" | event_name=\"gateway.request\" | stream=\"true\" | unwrap provider_ttft_ms | __error__=\"\" [$__auto]) by (service_name)",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -308,7 +336,7 @@
       "id": 5,
       "gridPos": {
         "x": 0,
-        "y": 18,
+        "y": 45,
         "w": 12,
         "h": 9
       },
@@ -322,7 +350,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", attempt_count=\"attempt_count\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | attempt_count > 1 | __error__=\"\" [$__auto])) or vector(0)",
+          "expr": "sum(rate({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", attempt_count=\"attempt_count\", provider=\"provider\", model=\"model\" | __error__=\"\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | environment=\"$environment\" | event_name=\"gateway.request\" | attempt_count > 1 | __error__=\"\" [$__auto])) or vector(0)",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -354,7 +382,7 @@
       "id": 6,
       "gridPos": {
         "x": 12,
-        "y": 18,
+        "y": 45,
         "w": 12,
         "h": 9
       },
@@ -368,7 +396,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "sum(rate({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | outcome=\"cancelled\" | __error__=\"\" [$__auto])) or vector(0)",
+          "expr": "sum(rate({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", outcome=\"outcome\", provider=\"provider\", model=\"model\" | __error__=\"\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | environment=\"$environment\" | event_name=\"gateway.request\" | outcome=\"cancelled\" | __error__=\"\" [$__auto])) or vector(0)",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -400,7 +428,7 @@
       "id": 7,
       "gridPos": {
         "x": 0,
-        "y": 27,
+        "y": 54,
         "w": 12,
         "h": 9
       },
@@ -414,7 +442,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "{service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", request_id=\"request_id\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | request_id=~\"${request:regex}.*\"",
+          "expr": "{service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", request_id=\"request_id\", provider=\"provider\", model=\"model\" | __error__=\"\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | environment=\"$environment\" | event_name=\"gateway.request\" | request_id=~\"${request:regex}.*\"",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -446,7 +474,7 @@
       "id": 8,
       "gridPos": {
         "x": 12,
-        "y": 27,
+        "y": 54,
         "w": 12,
         "h": 9
       },
@@ -460,7 +488,7 @@
       "targets": [
         {
           "refId": "A",
-          "expr": "{service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", request_id=\"request_id\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | request_id=~\"${request:regex}.*\"",
+          "expr": "{service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", request_id=\"request_id\", provider=\"provider\", model=\"model\" | __error__=\"\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | environment=\"$environment\" | event_name=\"provider.attempt\" | request_id=~\"${request:regex}.*\"",
           "datasource": {
             "type": "loki",
             "uid": "${loki}"
@@ -486,6 +514,687 @@
         "wrapLogMessage": true,
         "enableLogDetails": true,
         "sortOrder": "Descending"
+      }
+    },
+    {
+      "title": "Provider and model attempts",
+      "type": "table",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Selected-range received events. Up to 10 failing and 10 busiest groups; sorted by failures. Failure % uses the displayed attempts population. p95 uses available timings; sparse samples are unstable. A dash means unavailable, not zero. Attempt failures can recover through fallback. Model is the provider model slug; stealth attempts are excluded.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "expr": "label_replace(((sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range]))) and on (provider, model) (topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | outcome=\"error\" | __error__=\"\" [$__range]))) or topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range]))))), \"measure\", \"Attempts\", \"\", \"\") or label_replace(((((sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | outcome=\"error\" | __error__=\"\" [$__range]))) or (0 * (sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range])))))) and on (provider, model) (topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | outcome=\"error\" | __error__=\"\" [$__range]))) or topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range]))))), \"measure\", \"Failures\", \"\", \"\") or label_replace(((100 * ((sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | outcome=\"error\" | __error__=\"\" [$__range]))) or (0 * (sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range]))))) / (sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range])))) and on (provider, model) (topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | outcome=\"error\" | __error__=\"\" [$__range]))) or topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range]))))), \"measure\", \"Failure %\", \"\", \"\") or label_replace(((quantile_over_time(0.95, {service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\", duration_ms=\"duration_ms\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | unwrap duration_ms | __error__=\"\" [$__range]) by (provider, model)) and on (provider, model) (topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | outcome=\"error\" | __error__=\"\" [$__range]))) or topk(10, sum by (provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"provider.attempt\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | __error__=\"\" [$__range]))))), \"measure\", \"p95 ms\", \"\", \"\")"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns",
+            "valueLabel": "measure"
+          }
+        },
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "provider": 0,
+              "model": 1,
+              "Attempts": 2,
+              "Failures": 3,
+              "Failure %": 4,
+              "p95 ms": 5
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "Failures",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "—",
+          "custom": {
+            "filterable": true,
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "provider"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Provider"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "model"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Model"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Failure %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p95 ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "model"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Investigate",
+                    "url": "/d/phaseo-gateway?var-environment=$environment&from=$__from&to=$__to&var-model=${__data.fields[\"model\"]}"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 9,
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "title": "Gateway failure reasons",
+      "type": "table",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Logical request failures grouped by classification, including non-actionable client rejections. Cancellations are excluded. Attempt failures can recover through fallback.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "expr": "label_replace((topk(20, sum by (error_origin, error_kind, error_code, provider, model) (count_over_time({service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", error_origin=\"error_origin\", error_kind=\"error_kind\", error_code=\"error_code\", provider=\"provider\", model=\"model\", outcome=\"outcome\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | outcome=\"error\" | __error__=\"\" [$__range])))), \"measure\", \"Events\", \"\", \"\")"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns",
+            "valueLabel": "measure"
+          }
+        },
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "error_origin": 0,
+              "error_kind": 1,
+              "error_code": 2,
+              "provider": 3,
+              "model": 4,
+              "Events": 5
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "Events",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "—",
+          "custom": {
+            "filterable": true,
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_origin"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Origin"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_kind"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Category"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_code"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Code"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "provider"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Provider"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "model"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Model"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Failure %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p95 ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 10,
+      "gridPos": {
+        "x": 0,
+        "y": 9,
+        "w": 24,
+        "h": 9
+      }
+    },
+    {
+      "title": "Request records",
+      "type": "table",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Newest 100 matching terminal requests. Search provider, model or request ID above. Click a trace ID to open it; 5% trace retention means most IDs have no stored trace.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "expr": "{service_name=~\"phaseo-gateway\"} | json environment=\"environment\", event_name=\"event_name\", request_id=\"request_id\", provider=\"provider\", model=\"model\" | __error__=\"\" | environment=\"$environment\" | event_name=\"gateway.request\" | provider=~\".*${provider:regex}.*\" | model=~\".*${model:regex}.*\" | request_id=~\"${request:regex}.*\"",
+          "queryType": "range",
+          "instant": false,
+          "range": true,
+          "maxLines": 100,
+          "direction": "backward"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "extractFields",
+          "options": {
+            "source": "Line",
+            "format": "json",
+            "replace": true
+          }
+        },
+        {
+          "id": "filterFieldsByName",
+          "options": {
+            "include": {
+              "names": [
+                "timestamp",
+                "request_id",
+                "route",
+                "provider",
+                "model",
+                "outcome",
+                "status_code",
+                "error_kind",
+                "error_code",
+                "duration_ms",
+                "attempt_count",
+                "trace_id"
+              ]
+            }
+          }
+        },
+        {
+          "id": "organize",
+          "options": {
+            "indexByName": {
+              "timestamp": 0,
+              "request_id": 1,
+              "route": 2,
+              "provider": 3,
+              "model": 4,
+              "outcome": 5,
+              "status_code": 6,
+              "error_kind": 7,
+              "error_code": 8,
+              "duration_ms": 9,
+              "attempt_count": 10,
+              "trace_id": 11
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "timestamp",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "noValue": "—",
+          "custom": {
+            "filterable": true,
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "timestamp"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Time (UTC)"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "request_id"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Request ID"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "route"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Route"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "provider"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Provider"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "model"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Model"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "outcome"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Outcome"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "status_code"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "HTTP"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_kind"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Category"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_code"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Code"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "duration_ms"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Duration"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "attempt_count"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Attempts"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trace_id"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Trace ID"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "duration_ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "scheduled_at"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "dateTimeAsIso"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_stack"
+            },
+            "properties": [
+              {
+                "id": "custom.width",
+                "value": 480
+              },
+              {
+                "id": "custom.inspect",
+                "value": true
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "request_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Investigate",
+                    "url": "/d/phaseo-gateway?var-environment=$environment&from=$__from&to=$__to&var-request=${__data.fields[\"request_id\"]}"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trace_id"
+            },
+            "properties": [
+              {
+                "id": "links",
+                "value": [
+                  {
+                    "title": "Open sampled trace",
+                    "url": "/explore?schemaVersion=1&panes=%7B%22trace%22%3A%7B%22datasource%22%3A%22${tempo}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22queryType%22%3A%22traceId%22%2C%22query%22%3A%22${__value.raw}%22%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 11,
+      "gridPos": {
+        "x": 0,
+        "y": 18,
+        "w": 24,
+        "h": 9
       }
     }
   ]

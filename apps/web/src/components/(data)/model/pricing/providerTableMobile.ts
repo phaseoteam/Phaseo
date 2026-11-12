@@ -18,13 +18,55 @@ export const MOBILE_FULL_CELL = "max-sm:col-span-3 max-sm:p-0 max-sm:text-left";
 export const MOBILE_STAT_CELL =
 	"max-sm:min-w-0 max-sm:p-0 max-sm:text-left max-sm:before:block max-sm:before:whitespace-normal max-sm:before:text-[11px] max-sm:before:font-normal max-sm:before:text-muted-foreground max-sm:before:content-[attr(data-label)]";
 
+/** Latency, Throughput and Uptime always start their own row under the prices. */
+export const MOBILE_PERF_ROW_START = "max-sm:col-start-1";
+
 /** Separator rows span the full card width. */
 export const MOBILE_BLOCK_ROW = "max-sm:block";
 
-/** Cache prices stay in the inspector on phones, to keep each card short. */
-export function isMobileHiddenPriceColumn(column: Pick<ProviderTablePriceColumn, "direction">): boolean {
-	return column.direction === "cached" || column.direction === "cachewrite";
+export const MOBILE_MAX_PRICE_COLUMNS = 3;
+
+const MEDIA_MODALITIES = new Set(["image", "video", "audio"]);
+
+/**
+ * Phones show at most three prices per card, in this order, so prices fill one row.
+ * Text models get Input, Output and Cache read. Image, video and audio generation
+ * models lead with their main output price (the first non-text output), then input,
+ * so a video model shows its per-video price before any text prices. Spare slots
+ * take the next prices, with cache writes last. Everything else stays in the inspector.
+ */
+export function getMobilePriceColumnKeys(
+	columns: ReadonlyArray<Pick<ProviderTablePriceColumn, "key" | "direction" | "modality">>,
+): string[] {
+	const firstOf = (direction: ProviderTablePriceColumn["direction"]) =>
+		columns.find((column) => column.direction === direction);
+	const mediaOutput = columns.find(
+		(column) => column.direction === "output" && MEDIA_MODALITIES.has(column.modality),
+	);
+	const preferred = mediaOutput
+		? [mediaOutput, firstOf("input"), firstOf("output"), firstOf("cached")]
+		: [firstOf("input"), firstOf("output"), firstOf("cached")];
+	const picked: string[] = [];
+	for (const column of [
+		...preferred,
+		...columns.filter((column) => column.direction !== "cachewrite"),
+		...columns.filter((column) => column.direction === "cachewrite"),
+	]) {
+		if (picked.length >= MOBILE_MAX_PRICE_COLUMNS) break;
+		if (column && !picked.includes(column.key)) picked.push(column.key);
+	}
+	return picked;
 }
+
+/** Card order for a price on phones; hidden when it isn't one of the picked prices. */
+export function getMobilePriceCellClass(mobileKeys: readonly string[], columnKey: string): string {
+	const index = mobileKeys.indexOf(columnKey);
+	if (index < 0) return "max-sm:hidden";
+	return ["max-sm:order-1", "max-sm:order-2", "max-sm:order-3"][index] ?? "";
+}
+
+/** Latency, Throughput and Uptime sit after the prices on phones. */
+export const MOBILE_PERF_ORDER = "max-sm:order-4";
 
 export function getPriceColumnMobileLabel(column: Pick<ProviderTablePriceColumn, "label" | "headerUnitLabel">): string {
 	return column.headerUnitLabel ? `${column.label} ${column.headerUnitLabel}` : column.label;

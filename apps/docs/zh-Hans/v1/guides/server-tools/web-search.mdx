@@ -122,4 +122,4 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-托管搜索按 `server_tool_web_search_requests` 和 `server_tool_web_search_extra_results` 计费。原生搜索在模型价格卡定义了 `native_web_search_requests` 时按它计费。TinyFish Search 在其公开套餐中免费，因此 Phaseo 不会为 `engine: "tinyfish"` 收取搜索费用；请求的常规 token 价格仍然适用。
+除非模型价格卡为 `server_tool_web_search_requests` 和 `server_tool_web_search_extra_results` 设置了自己的价格，Phaseo 对每次托管搜索收取 $0.007，前 10 条之后的每条结果另收 $0.001。失败的搜索不计费；TinyFish Search 在其公开方案中免费，因此 `engine: "tinyfish"` 不增加搜索费用。即使模型免费，使用付费引擎搜索也需要账户有余额。如果模型价格卡定义了 `native_web_search_requests`，原生搜索按该计量项计费。

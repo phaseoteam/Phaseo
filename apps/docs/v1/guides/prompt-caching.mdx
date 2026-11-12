@@ -287,6 +287,10 @@ Gemini 2.5 and later cache implicitly, with nothing to send. To use an explicit 
 
 Phaseo doesn't store responses. Requests that set `previous_response_id` or `conversation` return `400` `unsupported_param`, so send the whole conversation in `input` on every step. Its stable opening is the prefix that gets cached. In tool loops, send `reasoning` output items back too; see [Reasoning in tool loops](../api-reference/endpoint/responses.mdx#reasoning-in-tool-loops).
 
+### Change reasoning effort mid-conversation
+
+Change `reasoning_effort` (Chat Completions) or `reasoning.effort` (Responses) between requests, and Phaseo keeps Claude's prompt cache: it sends the change as an effort marker inside `messages` instead of a new top-level effort. This works as long as you send Claude's reasoning back unchanged. On Anthropic Messages, you send the marker yourself. See [Change Reasoning Effort Mid-Conversation](./reasoning-effort.mdx).
+
 ## Usage and pricing fields
 
 Every text endpoint reports cache reads and writes. Chat Completions and Responses follow OpenAI's semantics: the input count includes cache reads and writes. Anthropic Messages follows Anthropic's: `input_tokens` excludes them.

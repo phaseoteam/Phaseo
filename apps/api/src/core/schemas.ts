@@ -5,7 +5,7 @@
 import * as z from "zod";
 import { lazySchema } from "./lazy-schema";
 import type { Endpoint } from "./types";
-import { NativeDecisionsBodySchema, DecisionProviderOptionsSchema } from "./decisions";
+import { NativeDecisionsBodySchema, DecisionProviderOptionsSchema, DECISION_QUESTION_CEILING } from "./decisions";
 import { parseAsyncWebhookConfig } from "./async-notifications";
 import {
 	ANTHROPIC_NATIVE_ADVISOR_TOOL_TYPES,
@@ -1105,12 +1105,33 @@ const AnthropicToolChoiceSchema = lazySchema(() => z.union([
 
 // Mid-conversation system message
 // (https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages).
-// Strict, so the beta-only `clear_at` and `output_config` are refused rather
-// than dropped; `tool_addition` and `tool_removal` blocks fail the text schema.
+// Strict, so the beta-only `clear_at` is refused rather than dropped;
+// `tool_addition` and `tool_removal` blocks fail the text schema.
+// With `output_config.effort` and empty content it is an effort-only message
+// (https://platform.claude.com/docs/en/build-with-claude/effort-per-message);
+// the gateway adds the beta header itself.
 const AnthropicSystemMessageSchema = lazySchema(() => z.object({
     role: z.literal("system"),
-    content: z.union([z.string(), z.array(AnthropicTextContentSchema).min(1)]),
-}).strict());
+    content: z.union([z.string(), z.array(AnthropicTextContentSchema)]),
+    output_config: z.object({
+        effort: z.enum(["low", "medium", "high", "xhigh", "max"]),
+    }).strict().optional(),
+}).strict().superRefine((message, ctx) => {
+    const empty = message.content.length === 0;
+    if (message.output_config && !empty) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["content"],
+            message: "A system message with output_config.effort must have empty content. Send instructions in a separate system message.",
+        });
+    } else if (!message.output_config && Array.isArray(message.content) && empty) {
+        ctx.addIssue({ code: "custom", path: ["content"], message: "A system message needs at least one text block." });
+    }
+}));
+
+function isAnthropicEffortOnlyMessage(message: { role: string; output_config?: unknown }): boolean {
+    return message.role === "system" && message.output_config !== undefined;
+}
 
 const AnthropicMessagesListSchema = lazySchema(() => z.array(z.discriminatedUnion("role", [
     z.object({
@@ -1119,15 +1140,19 @@ const AnthropicMessagesListSchema = lazySchema(() => z.array(z.discriminatedUnio
     }),
     AnthropicSystemMessageSchema,
 ])).min(1).max(100000).superRefine((messages, ctx) => {
-    // Consecutive system messages are judged together, as Claude does.
-    for (let start = 0; start < messages.length; start += 1) {
-        if (messages[start].role !== "system") continue;
+    // Consecutive system messages are judged together, as Claude does. Effort-only
+    // messages may sit anywhere, so the rule looks past them.
+    const placed = messages
+        .map((message, index) => ({ message, index }))
+        .filter(({ message }) => !isAnthropicEffortOnlyMessage(message));
+    for (let start = 0; start < placed.length; start += 1) {
+        if (placed[start].message.role !== "system") continue;
         let end = start;
-        while (messages[end + 1]?.role === "system") end += 1;
-        if (!isAnthropicSystemMessagePlacementValid(messages[start - 1], messages[end + 1])) {
+        while (placed[end + 1]?.message.role === "system") end += 1;
+        if (!isAnthropicSystemMessagePlacementValid(placed[start - 1]?.message, placed[end + 1]?.message)) {
             ctx.addIssue({
                 code: "custom",
-                path: [start],
+                path: [placed[start].index],
                 message: "A system message must immediately follow a user turn (or an assistant turn ending in a server tool result) and be the last message or be followed by an assistant turn. Use the top-level `system` field for instructions that apply from the start.",
             });
         }
@@ -1845,8 +1870,8 @@ export const LegacyDecisionsSchema = lazySchema(() => z.object({
         .refine((questions) => Object.keys(questions).length > 0, {
             message: "At least one decision question is required.",
         })
-        .refine((questions) => Object.keys(questions).length <= 128, {
-            message: "Decision requests support at most 128 questions.",
+        .refine((questions) => Object.keys(questions).length <= DECISION_QUESTION_CEILING, {
+            message: `Decision requests support at most ${DECISION_QUESTION_CEILING} questions.`,
         }),
     meta: z.boolean().optional().default(false),
     echo_upstream_request: z.boolean().optional(),

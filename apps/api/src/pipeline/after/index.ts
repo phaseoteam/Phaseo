@@ -17,6 +17,8 @@ import { handleSuccessAudit, handleFailureAudit } from "./audit";
 import { makeHeaders, createResponse } from "./http";
 import { withServedModel } from "./served-model";
 import { recordUsageAndChargeOnce } from "./charge";
+import { noteIntendedCharge } from "./intended-charge";
+import { serverToolRoundsBilled } from "./server-tool-charges";
 import { keepStreamServerToolMeters, mergeBillAndPayloadUsage, shapeUsageForClient } from "../usage";
 import { logDebugEvent, previewValue } from "../debug";
 import { normalizeFinishReason } from "../audit/normalize-finish-reason";
@@ -270,34 +272,51 @@ function dispatchNonStreamSuccessSideEffects(args: {
                 });
             }
 
-            await recordUsageAndChargeOnce({
-                ctx,
-                costNanos: totalNanos,
-                endpoint: ctx.endpoint,
-            });
-			await recordManagedProviderTokensOnce({
-				ctx,
-				providerId: result.provider,
-				keySource: result.keySource,
-				usage: usageForBilling,
-				reservation: result.providerRateLimitReservation,
-			});
-			chargeRateLimitPolicyTokens(ctx, usageForBilling);
+            try {
+                // The response was delivered: a charge that does not go through after its retries
+                // leaves the request a success, pending reconciliation (handleSuccessAudit).
+                await recordUsageAndChargeOnce({
+                    ctx,
+                    costNanos: totalNanos,
+                    endpoint: ctx.endpoint,
+                });
+                await recordManagedProviderTokensOnce({
+                    ctx,
+                    providerId: result.provider,
+                    keySource: result.keySource,
+                    usage: usageForBilling,
+                    reservation: result.providerRateLimitReservation,
+                });
+                chargeRateLimitPolicyTokens(ctx, usageForBilling);
 
-            await handleSuccessAudit(
-                ctx,
-                result,
-                false,
-                usageForBilling,
-                totalCents,
-                totalNanos,
-                currency,
-                finishReason,
-                result.upstream.status,
-                nativeResponseId,
-                gatewayPayload,
-            );
-
+                await handleSuccessAudit(
+                    ctx,
+                    result,
+                    false,
+                    usageForBilling,
+                    totalCents,
+                    totalNanos,
+                    currency,
+                    finishReason,
+                    result.upstream.status,
+                    nativeResponseId,
+                    gatewayPayload,
+                );
+            } catch (error) {
+                // The response was already sent. Before the success row is written, the failure row
+                // keeps a confirmed charge (or the bill it meant to charge, pending reconciliation);
+                // after it, handleFailureAudit only reports the error.
+                await handleFailureAudit(ctx, result, 500, "gateway", "nonstream_finalization_failed",
+                    "The response was delivered but accounting finalization failed.", {
+                        upstream_status: responseStatus,
+                        response_delivered: true,
+                        billing_status: (ctx.meta as Record<string, unknown>).__usageChargeRecorded === true ? "recorded" : "pending_reconciliation",
+                        cause: error instanceof Error ? error.message : String(error),
+                    }, null, {
+                        gatewayResponse: clientResponseBody,
+                        rawUsage: usageForBilling,
+                    });
+            }
         } finally {
             releaseRuntime();
         }
@@ -372,6 +391,20 @@ export function markNonStreamResponseReady(
 	return endToEndMs;
 }
 
+/**
+ * The final route's price card. A multi-round server-tool response is charged its round bill
+ * (ctx.serverToolRoundsBill), which already holds the final round, priced or recorded among its
+ * unpriced_rounds; a missing final card then must not fail finalization and charge nothing.
+ */
+async function loadFinalRoutePricing(ctx: PipelineContext, result: RequestResult) {
+    try {
+        return await loadProviderPricing(ctx, result);
+    } catch (error) {
+        if (ctx.serverToolRoundsBill) return null;
+        throw error;
+    }
+}
+
 export async function finalizeRequest(args: {
     pre: { ok: true; ctx: PipelineContext };
     exec: { ok: true; result: RequestResult };
@@ -389,7 +422,7 @@ export async function finalizeRequest(args: {
     if (ctx.stream) {
         ctx.gatewayTimingTrace?.mark("stream_pricing_start");
         let card: Awaited<ReturnType<typeof loadProviderPricing>>;
-        try { card = await loadProviderPricing(ctx, result); }
+        try { card = await loadFinalRoutePricing(ctx, result); }
         catch (error) {
             await handleFailureAudit(ctx, result, 500, "gateway", "stream_finalization_failed",
                 "Pricing could not be loaded.", {
@@ -500,7 +533,7 @@ async function handleNonStreamResponse(
     // console.log("[DEBUG handleNonStreamResponse] usageNormalized:", usageNormalized);
 
     // Load pricing
-    card = await ctx.timer.span("after_load_pricing", () => loadProviderPricing(ctx, result));
+    card = await ctx.timer.span("after_load_pricing", () => loadFinalRoutePricing(ctx, result));
 
     // Calculate pricing (with tier-based markup)
     const rawUsageForPricing = {
@@ -518,46 +551,54 @@ async function handleNonStreamResponse(
         },
         toolUsage
     );
-    const tier = ctx.teamEnrichment?.tier ?? 'basic';
-    const { pricedUsage, totalCents, totalNanos, currency } = await ctx.timer.span("after_calculate_pricing", () => calculatePricing(
-        shapedUsage,
-        card,
-        ctx.body,
-        tier,
-        ctx.meta
-    ));
-    alertUnexpectedZeroCostMedia({ ctx, result, card, totalNanos });
-    const isByok = (result?.keySource ?? ctx.meta.keySource) === "byok";
-    const pricedWithByokSubtotal = await ctx.timer.span("after_apply_byok_fee", () => applyByokServiceFeeWithToolCharges({
-        toolCharges: ctx.meta.serverToolPricing,
-        workspaceId: ctx.workspaceId,
-        idempotencyKey: ctx.billingRequestId,
-        isByok,
-        baseCostNanos: totalNanos,
-        pricedUsage,
-        currencyHint: currency,
-    }));
-    const successfulBilling = applySuccessfulResponseBillingPolicy({
-		endpoint: ctx.endpoint,
-		pricedUsage: pricedWithByokSubtotal.pricedUsage,
-		totalNanos: pricedWithByokSubtotal.totalNanos,
-		totalCents: pricedWithByokSubtotal.totalCents,
-	});
-    const contributionDiscount = applyDataContributionDiscount({
-		pricedUsage: successfulBilling.pricedUsage,
-		totalNanos: successfulBilling.totalNanos,
-		enabled: ctx.teamSettings?.dataContributionEnabled === true,
-		isByok,
-		discountBps: ctx.teamSettings?.dataContributionDiscountBps,
-	});
-    const pricedWithByok = {
-		...pricedWithByokSubtotal,
-		...successfulBilling,
-		...contributionDiscount,
-	};
+    const roundsBilled = serverToolRoundsBilled(ctx, shapedUsage);
+    // A multi-round request is charged its round bill: the aggregate usage is not priced, so a
+    // final card that cannot price it cannot lose the bill.
+    const pricedWithByok = roundsBilled ?? await (async () => {
+        const tier = ctx.teamEnrichment?.tier ?? 'basic';
+        const { pricedUsage, totalCents, totalNanos, currency } = await ctx.timer.span("after_calculate_pricing", () => calculatePricing(
+            shapedUsage,
+            card,
+            ctx.body,
+            tier,
+            ctx.meta
+        ));
+        alertUnexpectedZeroCostMedia({ ctx, result, card, totalNanos });
+        const isByok = (result?.keySource ?? ctx.meta.keySource) === "byok";
+        const pricedWithByokSubtotal = await ctx.timer.span("after_apply_byok_fee", () => applyByokServiceFeeWithToolCharges({
+            toolCharges: ctx.meta.serverToolPricing,
+            workspaceId: ctx.workspaceId,
+            idempotencyKey: ctx.byokAllowanceId ?? ctx.billingRequestId,
+            isByok,
+            baseCostNanos: totalNanos,
+            pricedUsage,
+            currencyHint: currency,
+        }));
+        const successfulBilling = applySuccessfulResponseBillingPolicy({
+			endpoint: ctx.endpoint,
+			ir: result.ir,
+			subCallCharges: ctx.serverToolSubCallCharges,
+			pricedUsage: pricedWithByokSubtotal.pricedUsage,
+			totalNanos: pricedWithByokSubtotal.totalNanos,
+			totalCents: pricedWithByokSubtotal.totalCents,
+		});
+        const contributionDiscount = applyDataContributionDiscount({
+			pricedUsage: successfulBilling.pricedUsage,
+			totalNanos: successfulBilling.totalNanos,
+			enabled: ctx.teamSettings?.dataContributionEnabled === true,
+			isByok,
+			discountBps: ctx.teamSettings?.dataContributionDiscountBps,
+		});
+        return {
+			...pricedWithByokSubtotal,
+			...successfulBilling,
+			...contributionDiscount,
+        };
+    })();
     const pricedUsageFinalRaw = pricedWithByok.pricedUsage;
     const totalCentsFinal = pricedWithByok.totalCents;
     const totalNanosFinal = pricedWithByok.totalNanos;
+    noteIntendedCharge(ctx, totalNanosFinal);
     const currencyFinal = pricedWithByok.currency;
     if (ctx.meta?.debug?.enabled) {
         console.log("[gateway][pricing] non-stream priced usage", {

@@ -132,4 +132,10 @@ describe("spend limit alerts", () => {
 		state.rpc.mockResolvedValueOnce({ data: null, error: { message: "timeout" } });
 		await expect(runSpendGuardrailAlertSweep()).rejects.toThrow("spend_guardrail_sweep_failed:timeout");
 	});
+
+	it.each([runSpendLimitWarningSweep, runDepartmentBudgetAlertSweep, runSpendGuardrailAlertSweep])("preserves the database error for safe job diagnostics", async (run) => {
+		const cause = { code: "57014", message: "canceling statement due to statement timeout" };
+		state.rpc.mockResolvedValueOnce({ data: null, error: cause });
+		await expect(run()).rejects.toMatchObject({ cause: { code: "57014" } });
+	});
 });

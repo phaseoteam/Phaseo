@@ -68,4 +68,4 @@ Si l’appel ne peut pas s’exécuter, le modèle reçoit `subagent_invalid_req
 
 ## Utilisation et tarification
 
-Chaque appel ajoute 1 à `usage.server_tool_use.subagent_requests` et peut être facturé via `server_tool_subagent_requests`. Les tokens de l’exécutant s’ajoutent à l’utilisation de la requête et sont facturés au tarif du modèle exécutant. Pour obtenir une relecture plutôt que déléguer du travail, utilisez [Advisor](./advisor).
+Chaque appel ajoute 1 à `usage.server_tool_use.subagent_requests` et peut être facturé avec `server_tool_subagent_requests`. Les jetons du modèle auxiliaire sont facturés aux tarifs de ce modèle, sur une ligne distincte de la facture de la requête, et ne s’ajoutent pas aux jetons du modèle appelant. Un modèle auxiliaire payant nécessite du crédit même lorsque le modèle appelant est gratuit. Pour obtenir une relecture plutôt que déléguer le travail, utilisez [Advisor](./advisor).

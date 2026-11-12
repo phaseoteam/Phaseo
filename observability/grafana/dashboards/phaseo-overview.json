@@ -101,6 +101,14 @@
           "value": ""
         },
         "hide": 2
+      },
+      {
+        "name": "tempo",
+        "label": "Traces",
+        "type": "datasource",
+        "query": "tempo",
+        "refresh": 1,
+        "hide": 2
       }
     ]
   },
@@ -126,20 +134,20 @@
         "x": 0,
         "y": 0,
         "w": 24,
-        "h": 5
+        "h": 2
       },
       "title": "Start here",
       "type": "text",
       "options": {
         "mode": "markdown",
-        "content": "**1. Check collection:** “Arriving” means a scheduler heartbeat was received in the last 5 minutes. “Missing” means check cron and telemetry delivery. **2. Check failures:** red counts need investigation; click a count to open its service dashboard. **3. Compare the charts:** did failures or latency rise after a deployment?\n\nCounts cover the selected time range and received events only. Zero requests can mean quiet traffic; zero failures does not prove uptime. Use external checks to establish availability and alert rules to configure notifications."
+        "content": "Check **Service request health** for failures and slow responses, then **Grouped failures** for the affected route, error or job. Click a failure card to investigate its service. Counts cover received events; scheduler freshness does not establish external uptime."
       }
     },
     {
       "id": 2,
       "gridPos": {
         "x": 0,
-        "y": 5,
+        "y": 2,
         "w": 4,
         "h": 4
       },
@@ -238,7 +246,7 @@
       "id": 3,
       "gridPos": {
         "x": 4,
-        "y": 5,
+        "y": 2,
         "w": 4,
         "h": 4
       },
@@ -314,7 +322,7 @@
       "id": 4,
       "gridPos": {
         "x": 8,
-        "y": 5,
+        "y": 2,
         "w": 4,
         "h": 4
       },
@@ -390,7 +398,7 @@
       "id": 5,
       "gridPos": {
         "x": 12,
-        "y": 5,
+        "y": 2,
         "w": 4,
         "h": 4
       },
@@ -466,7 +474,7 @@
       "id": 6,
       "gridPos": {
         "x": 16,
-        "y": 5,
+        "y": 2,
         "w": 4,
         "h": 4
       },
@@ -542,7 +550,7 @@
       "id": 7,
       "gridPos": {
         "x": 20,
-        "y": 5,
+        "y": 2,
         "w": 4,
         "h": 4
       },
@@ -618,7 +626,7 @@
       "id": 8,
       "gridPos": {
         "x": 0,
-        "y": 9,
+        "y": 24,
         "w": 12,
         "h": 8
       },
@@ -677,7 +685,7 @@
       "id": 9,
       "gridPos": {
         "x": 12,
-        "y": 9,
+        "y": 24,
         "w": 12,
         "h": 8
       },
@@ -772,7 +780,7 @@
       "id": 10,
       "gridPos": {
         "x": 0,
-        "y": 17,
+        "y": 32,
         "w": 12,
         "h": 8
       },
@@ -818,7 +826,7 @@
       "id": 11,
       "gridPos": {
         "x": 12,
-        "y": 17,
+        "y": 32,
         "w": 12,
         "h": 8
       },
@@ -864,7 +872,7 @@
       "id": 12,
       "gridPos": {
         "x": 0,
-        "y": 25,
+        "y": 40,
         "w": 12,
         "h": 7
       },
@@ -919,7 +927,7 @@
       "id": 13,
       "gridPos": {
         "x": 12,
-        "y": 25,
+        "y": 40,
         "w": 12,
         "h": 7
       },
@@ -974,7 +982,7 @@
       "id": 14,
       "gridPos": {
         "x": 0,
-        "y": 32,
+        "y": 47,
         "w": 12,
         "h": 7
       },
@@ -1029,7 +1037,7 @@
       "id": 15,
       "gridPos": {
         "x": 12,
-        "y": 32,
+        "y": 47,
         "w": 12,
         "h": 7
       },
@@ -1084,7 +1092,7 @@
       "id": 16,
       "gridPos": {
         "x": 0,
-        "y": 39,
+        "y": 54,
         "w": 24,
         "h": 9
       },
@@ -1130,7 +1138,7 @@
       "id": 17,
       "gridPos": {
         "x": 0,
-        "y": 48,
+        "y": 63,
         "w": 24,
         "h": 7
       },
@@ -1139,6 +1147,375 @@
       "options": {
         "mode": "markdown",
         "content": "**API failures:** open [Gateway and providers](/d/phaseo-gateway?var-environment=$environment&from=$__from&to=$__to) and look for shared providers, outcomes or request IDs. **Website problems:** open [Web experience](/d/phaseo-web?var-environment=$environment&from=$__from&to=$__to); browser errors and Web Vitals are in [Frontend Observability](/a/grafana-kowalski-app). **Job or settlement failures:** open [Jobs and settlement](/d/phaseo-jobs?var-environment=$environment&from=$__from&to=$__to).\n\nExpand a log, then search its `trace_id` in **Explore → Tempo**. Only 5% of backend traces are retained; a missing trace is expected for most requests. Compare the incident time with [recent deployments](https://github.com/phaseoteam/Phaseo/actions/workflows/ci.yml). After a fix or rollback, test the affected page or endpoint directly and confirm errors settle. [Alert rules](/alerting/list) show notification-rule state; this dashboard itself does not send notifications."
+      }
+    },
+    {
+      "title": "Service request health",
+      "type": "table",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Selected-range received events. Up to 10 failing and 10 busiest groups; sorted by failures. Failure % uses the displayed requests population. p95 uses available timings; sparse samples are unstable. A dash means unavailable, not zero. Web API duration measures response headers; gateway duration measures terminal completion.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "expr": "label_replace(((sum by (service_name) (count_over_time({service_name=~\"phaseo-gateway|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | event_name=~\"gateway.request|web.request\" | __error__=\"\" [$__range]))) and on (service_name) (topk(10, sum by (service_name) (count_over_time({service_name=~\"phaseo-gateway|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | event_name=~\"gateway.request|web.request\" | actionable=\"true\" | __error__=\"\" [$__range]))) or topk(10, sum by (service_name) (count_over_time({service_name=~\"phaseo-gateway|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | event_name=~\"gateway.request|web.request\" | __error__=\"\" [$__range]))))), \"measure\", \"Requests\", \"\", \"\") or label_replace(((((sum by (service_name) (count_over_time({service_name=~\"phaseo-gateway|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | event_name=~\"gateway.request|web.request\" | actionable=\"true\" | __error__=\"\" [$__range]))) or (0 * (sum by (service_name) (count_over_time({service_name=~\"phaseo-gateway|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | event_name=~\"gateway.request|web.request\" | __error__=\"\" [$__range])))))) and on (service_name) (topk(10, sum by (service_name) (count_over_time({service_name=~\"phaseo-gateway|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | event_name=~\"gateway.request|web.request\" | actionable=\"true\" | __error__=\"\" [$__range]))) or topk(10, sum by (service_name) (count_over_time({service_name=~\"phaseo-gateway|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | event_name=~\"gateway.request|web.request\" | __error__=\"\" [$__range]))))), \"measure\", \"Failures\", \"\", \"\") or label_replace(((100 * ((sum by (service_name) (count_over_time({service_name=~\"phaseo-gateway|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | event_name=~\"gateway.request|web.request\" | actionable=\"true\" | __error__=\"\" [$__range]))) or (0 * (sum by (service_name) (count_over_time({service_name=~\"phaseo-gateway|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | event_name=~\"gateway.request|web.request\" | __error__=\"\" [$__range]))))) / (sum by (service_name) (count_over_time({service_name=~\"phaseo-gateway|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | event_name=~\"gateway.request|web.request\" | __error__=\"\" [$__range])))) and on (service_name) (topk(10, sum by (service_name) (count_over_time({service_name=~\"phaseo-gateway|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | event_name=~\"gateway.request|web.request\" | actionable=\"true\" | __error__=\"\" [$__range]))) or topk(10, sum by (service_name) (count_over_time({service_name=~\"phaseo-gateway|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | event_name=~\"gateway.request|web.request\" | __error__=\"\" [$__range]))))), \"measure\", \"Failure %\", \"\", \"\") or label_replace(((quantile_over_time(0.95, {service_name=~\"phaseo-gateway|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\", duration_ms=\"duration_ms\" | __error__=\"\" | environment=\"$environment\" | event_name=~\"gateway.request|web.request\" | unwrap duration_ms | __error__=\"\" [$__range]) by (service_name)) and on (service_name) (topk(10, sum by (service_name) (count_over_time({service_name=~\"phaseo-gateway|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | event_name=~\"gateway.request|web.request\" | actionable=\"true\" | __error__=\"\" [$__range]))) or topk(10, sum by (service_name) (count_over_time({service_name=~\"phaseo-gateway|phaseo-web-api\"} | json environment=\"environment\", event_name=\"event_name\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | event_name=~\"gateway.request|web.request\" | __error__=\"\" [$__range]))))), \"measure\", \"p95 ms\", \"\", \"\")"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns",
+            "valueLabel": "measure"
+          }
+        },
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "service_name": 0,
+              "Requests": 1,
+              "Failures": 2,
+              "Failure %": 3,
+              "p95 ms": 4
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "Failures",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "—",
+          "custom": {
+            "filterable": true,
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "service_name"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Service"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Failure %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p95 ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 18,
+      "gridPos": {
+        "x": 0,
+        "y": 6,
+        "w": 24,
+        "h": 8
+      }
+    },
+    {
+      "title": "Grouped failures",
+      "type": "table",
+      "datasource": {
+        "type": "loki",
+        "uid": "${loki}"
+      },
+      "description": "Up to 20 most frequent failure groups in the selected range. Inspect category, code, digest and route, then expand matching logs for source frames. Event counts are not distinct incidents or affected users. Error messages and customer content are not collected.",
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "loki",
+            "uid": "${loki}"
+          },
+          "queryType": "instant",
+          "instant": true,
+          "range": false,
+          "expr": "label_replace((topk(20, sum by (service_name, route, event_name, error_kind, error_code, error_name, error_digest, status_code, job) (count_over_time({service_name=~\"phaseo-gateway|phaseo-web-api|phaseo-web|phaseo-jobs\"} | json environment=\"environment\", event_name=\"event_name\", route=\"route\", error_kind=\"error_kind\", error_code=\"error_code\", error_name=\"error_name\", error_digest=\"error_digest\", status_code=\"status_code\", job=\"job\", actionable=\"actionable\" | __error__=\"\" | environment=\"$environment\" | actionable=\"true\" | __error__=\"\" [$__range])))), \"measure\", \"Events\", \"\", \"\")"
+        }
+      ],
+      "transformations": [
+        {
+          "id": "labelsToFields",
+          "options": {
+            "mode": "columns",
+            "valueLabel": "measure"
+          }
+        },
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true
+            },
+            "indexByName": {
+              "service_name": 0,
+              "route": 1,
+              "event_name": 2,
+              "error_kind": 3,
+              "error_code": 4,
+              "error_name": 5,
+              "error_digest": 6,
+              "status_code": 7,
+              "job": 8,
+              "Events": 9
+            }
+          }
+        },
+        {
+          "id": "sortBy",
+          "options": {
+            "sort": [
+              {
+                "field": "Events",
+                "desc": true
+              }
+            ]
+          }
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "decimals": 0,
+          "noValue": "—",
+          "custom": {
+            "filterable": true,
+            "cellOptions": {
+              "type": "auto"
+            }
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "service_name"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Service"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "route"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Route"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "event_name"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Event"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_kind"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Category"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_code"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Code"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_name"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Error"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "error_digest"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Fingerprint"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "status_code"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "HTTP"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "job"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Job"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "Failure %"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "decimals",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "p95 ms"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "ms"
+              },
+              {
+                "id": "decimals",
+                "value": 1
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false
+        }
+      },
+      "id": 19,
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 24,
+        "h": 10
       }
     }
   ]

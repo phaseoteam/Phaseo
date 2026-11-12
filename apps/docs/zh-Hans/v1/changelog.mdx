@@ -8,6 +8,34 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"产品","api":"API 与 SDK","models":"模型"}} clearLabel="清除" />
 
+<Update label="2026年11月11日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- **测试版：** 实时语音现已向所有用户开放，可在 [Chat → Realtime](https://phaseo.app/chat/realtime) 中使用 OpenAI、Google、xAI 和 ElevenLabs 的语音模型；请参阅 [Chat 中的实时语音](https://phaseo.app/blog/realtime-voice-in-chat) ([#3675](https://github.com/phaseoteam/Phaseo/pull/3675))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- `POST /v1/decisions` 在 `google/gemini-decision-1` 上最多可接受 1,000 个问题；其他模型默认接受 128 个，部分模型更少，超出模型上限的请求会返回 `400`；请参阅[作出决策](./api-reference/endpoint/decisions.mdx) ([#3682](https://github.com/phaseoteam/Phaseo/pull/3682))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+- [Google: Gemini Decision 1](https://phaseo.app/models/google/gemini-decision-1)
+
+</div>
+
+</Update>
+
 <Update label="2026年11月10日">
 
 <div data-changelog-category="models">

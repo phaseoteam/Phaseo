@@ -14,6 +14,8 @@ import {
 import {
 	ALLOWED_CLASSIFIER_MODELS,
 	ensureStarterClassifier,
+	isClassifierLimitError,
+	MAX_ENABLED_CLASSIFIERS_PER_WORKSPACE,
 	STARTER_TASK_CATEGORIES,
 	STARTER_CLASSIFIER_SLUG,
 } from "@/pipeline/classification/classifier-worker";
@@ -293,6 +295,14 @@ async function updateConsent(req: Request) {
 	}
 }
 
+function classifierLimitResponse(): Response {
+	return json({
+		error: "classifier_limit_reached",
+		message: `A workspace can have at most ${MAX_ENABLED_CLASSIFIERS_PER_WORKSPACE} enabled classifiers. Disable or delete one first.`,
+		max_enabled_classifiers: MAX_ENABLED_CLASSIFIERS_PER_WORKSPACE,
+	}, 409, { "Cache-Control": "no-store" });
+}
+
 async function createClassifier(req: Request) {
 	const auth = await authenticate(req, true);
 	if (auth instanceof Response) return auth;
@@ -302,13 +312,16 @@ async function createClassifier(req: Request) {
 		const name = String(body.name ?? "").trim();
 		const slugBase = String(body.slug ?? name).trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 64);
 		if (!slugBase || slugBase === STARTER_CLASSIFIER_SLUG) throw new Error("a unique custom slug is required");
+		const patch = classifierPatch(body, true);
 		const { data, error } = await getSupabaseAdmin().from("workspace_classifiers").insert({
 			workspace_id: auth.workspaceId,
 			slug: slugBase,
 			kind: "custom",
 			created_by: auth.userId ?? null,
-			...classifierPatch(body, true),
+			...patch,
 		}).select("*").maybeSingle();
+		// The database caps enabled classifiers atomically (enforce_workspace_classifier_limit).
+		if (isClassifierLimitError(error)) return classifierLimitResponse();
 		if (error) throw error;
 		if (!data) throw new Error("Failed to create classifier");
 		await auditDataContribution(auth, "data_contribution.classifier.created", "workspace_classifier", String(data.id), String(data.name ?? "") || null);
@@ -327,6 +340,7 @@ async function updateClassifier(req: Request, id: string) {
 		const patch = classifierPatch(body, false);
 		const { data, error } = await getSupabaseAdmin().from("workspace_classifiers").update(patch)
 			.eq("id", id).eq("workspace_id", auth.workspaceId).eq("kind", "custom").select("*").maybeSingle();
+		if (isClassifierLimitError(error)) return classifierLimitResponse();
 		if (error) throw error;
 		if (!data) return json({ error: "not_found" }, 404);
 		await auditDataContribution(auth, "data_contribution.classifier.updated", "workspace_classifier", String(data.id), String(data.name ?? "") || null, { changed_fields: Object.keys(patch).filter((field) => field !== "instructions") });

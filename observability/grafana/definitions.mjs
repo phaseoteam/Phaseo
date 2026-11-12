@@ -1,4 +1,5 @@
 // Canonical dashboard/query definitions. Run build.mjs to refresh importable JSON.
+import { addDiagnostics } from './diagnostics.mjs';
 const loki = { type: 'loki', uid: '${loki}' };
 const window = '$__auto';
 const env = '$environment';
@@ -94,7 +95,7 @@ export function dashboards() {
   overview.templating.list[2].hide = 2;
   const destinations = ['telemetry', 'gateway', 'gateway', 'web', 'web', 'jobs'];
   for (const [index, item] of overview.panels.slice(1, 7).entries()) item.fieldConfig.defaults.links = [{ title: 'Investigate', url: `/d/phaseo-${destinations[index]}?var-environment=$environment&from=$__from&to=$__to` }];
-  return [
+  return addDiagnostics([
     overview,
     dashboard('phaseo-gateway', 'Gateway and providers', 'Request summaries cover received terminal events. Trace retention is sampled. Delivery is best effort, so counts are operational rather than financial.', [
       panel('Requests by outcome', `sum by (outcome) (rate(${logs(gateway, 'gateway.request', ['outcome'])} [${window}]))`, { unit: 'reqps', legend: '{{outcome}}' }),
@@ -130,7 +131,16 @@ export function dashboards() {
       panel('Recent heartbeats', logs('phaseo-jobs', 'job.heartbeat'), { type: 'logs' }),
       panel('Persistence errors', logs(gateway, 'telemetry.delivery'), { type: 'logs' }),
     ]),
-  ];
+  ], logs);
+}
+
+export function jobFailureExpression(environment) {
+  // Daily jobs also emit job.run. Match by service/job across releases and streams;
+  // a skipped run is not evidence that the failed operation recovered.
+  const latest = outcome => `max by (service_name, job) (max_over_time(${logs('phaseo-jobs|phaseo-web-api', 'job.run', ['job', 'outcome', 'scheduled_at'], environment)} | outcome="${outcome}" | unwrap scheduled_at | __error__="" [48h]))`;
+  const failed = latest('error');
+  const completed = latest('completed');
+  return `sum(${failed} > bool on (service_name, job) (${completed} or on (service_name, job) (${failed} * 0)))`;
 }
 
 export function alertRules({ lokiUid, environment = 'production', folderUid = 'phaseo-observability', enabled = false }) {
@@ -140,14 +150,14 @@ export function alertRules({ lokiUid, environment = 'production', folderUid = 'p
   const rules = [
     ['gateway-errors', 'Gateway actionable failures', `(((${failure}) / (${total})) > 0.05) and ((${total}) >= 20)`, '5m', 'At least 20 requests in 10 minutes and over 5% actionable failures.'],
     ['scheduler-missing', 'Scheduler telemetry missing', `absent_over_time(${logs('phaseo-jobs', 'job.heartbeat', [], environment)} [15m]) or vector(0)`, '5m', 'No scheduler heartbeat for 15 minutes. Check cron, bindings and Grafana delivery; quiet user traffic does not cause this alert.'],
-    ['jobs-failing', 'Scheduled job failure', count('phaseo-jobs|phaseo-web-api', 'job.run', ' | outcome="error"', ['outcome'], '10m', environment), '0s', 'A scheduled invocation threw or reported item failures. Inspect job logs and the relevant platform queue.'],
+    ['jobs-failing', 'Scheduled job failure', jobFailureExpression(environment), '0s', 'A job failed without a later completed run of the same service/job in the last 48 hours (covers daily jobs). Skipped runs do not prove recovery. Silence is not verified recovery; check scheduler telemetry and native logs.'],
     ['ops-failing', 'Settlement or operational failure', count(gateway, 'ops.failure', '', [], '5m', environment), '0s', 'An existing operational failure hook fired. Inspect request and settlement records before taking action.'],
     ['web-errors', 'Web server failures', `(${count('phaseo-web-api', 'web.request', ' | status_code >= 500', ['status_code'], '10m', environment)}) + (${count('phaseo-web', 'web.server_error', '', [], '10m', environment)})`, '5m', 'Web API 5xx responses or captured web server errors. Check routes, release and source frames.'],
   ];
   return rules.map(([id, title, expr, pending, summary]) => ({
     uid: `phaseo-${id}-${environment}`, title: `Phaseo ${environment} · ${title}`, folderUID: folderUid,
     ruleGroup: `phaseo-${environment}`, orgID: 1, condition: 'B', for: pending,
-    noDataState: 'OK', execErrState: 'Error', isPaused: !enabled,
+    noDataState: id === 'jobs-failing' ? 'KeepLast' : 'OK', execErrState: 'Error', isPaused: !enabled,
     labels: { application: 'phaseo', environment, severity: id === 'ops-failing' ? 'critical' : 'warning' },
     annotations: { summary },
     data: [
