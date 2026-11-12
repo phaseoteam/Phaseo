@@ -34,7 +34,7 @@ pnpm skills:validate  # frontmatter, structure, evals, links and examples
 | `phaseo-sdk-typescript` | `@phaseo/sdk` |
 | `phaseo-sdk-python` | `phaseo` |
 | `phaseo-agent-sdk-typescript` | Agent loops with `@phaseo/agent-sdk` |
-| `phaseo-routing-presets` | Presets, routing policy and response caching |
+| `phaseo-routing-presets` | Presets and routing policy (response caching is not available yet) |
 | `phaseo-guardrails` | Key guardrails, restrictions and budgets |
 | `phaseo-async-webhooks` | Async video, batches and webhooks |
 | `phaseo-web-search-tools` | Web search and web fetch grounding |
