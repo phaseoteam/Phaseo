@@ -309,7 +309,7 @@ export function buildMcpServerCard() {
 				type: "webmcp",
 				url: SITE_URL,
 				description:
-					"Homepage-level browser tools exposed through navigator.modelContext for AI agents running in compatible browsers.",
+					"Homepage browser tools for AI agents in compatible browsers, registered with document.modelContext (navigator.modelContext as a fallback): discovery links, model search and comparison, and navigation to models, docs and pricing.",
 			},
 		],
 		capabilities: {
