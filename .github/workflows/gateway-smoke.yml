@@ -15,7 +15,7 @@ on:
         required: true
         type: string
       paid:
-        description: 'Run the paid checks (credit gating, generations, recorded usage, wallet charge)'
+        description: 'Run the paid checks (credit gating, generations, abandoned stream, upstream failure, batch, recorded usage, wallet charge)'
         required: false
         default: false
         type: boolean
@@ -26,6 +26,11 @@ on:
         type: string
       model:
         description: 'Model to call (defaults to the GATEWAY_SMOKE_MODEL variable)'
+        required: false
+        default: ''
+        type: string
+      batch_id:
+        description: 'Only verify the settlement of a batch an earlier run left pending (sends nothing billable)'
         required: false
         default: ''
         type: string
@@ -58,7 +63,8 @@ jobs:
   smoke:
     if: github.event_name == 'workflow_dispatch' && github.repository == 'phaseoteam/Phaseo'
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    # A paid run waits up to 20 minutes for its batch to settle.
+    timeout-minutes: 30
     # Holds the smoke credentials; its required reviewers approve every run.
     environment: gateway-smoke
     steps:
@@ -72,6 +78,9 @@ jobs:
           node-version: 24
       - name: Validate checker
         run: node --test scripts/gateway-smoke.test.mjs
+      - name: Check psql
+        # Production rows are read with psql, preinstalled on GitHub's Ubuntu runners.
+        run: psql --version
       - name: Run smoke
         env:
           RUN_REASON: ${{ inputs.reason }}
@@ -81,9 +90,19 @@ jobs:
           PHASEO_SMOKE_API_KEY: ${{ secrets.GATEWAY_SMOKE_API_KEY }}
           PHASEO_SMOKE_MANAGEMENT_KEY: ${{ secrets.GATEWAY_SMOKE_MANAGEMENT_KEY }}
           PHASEO_SMOKE_LOW_CREDIT_API_KEY: ${{ secrets.GATEWAY_SMOKE_LOW_CREDIT_API_KEY }}
+          # A read-only Postgres role; see scripts/gateway-smoke.md. Without it the charging-path cases are skipped.
+          PHASEO_SMOKE_DATABASE_URL: ${{ secrets.GATEWAY_SMOKE_DATABASE_URL }}
+          PHASEO_SMOKE_WORKSPACE_ID: ${{ vars.GATEWAY_SMOKE_WORKSPACE_ID }}
+          PHASEO_SMOKE_FAILURE_MODEL: ${{ vars.GATEWAY_SMOKE_FAILURE_MODEL }}
+          PHASEO_SMOKE_BATCH_MODEL: ${{ vars.GATEWAY_SMOKE_BATCH_MODEL }}
+          PHASEO_SMOKE_BATCH_PROVIDER: ${{ vars.GATEWAY_SMOKE_BATCH_PROVIDER }}
+          PHASEO_SMOKE_BATCH_WAIT_MINUTES: '20'
+          BATCH_ID: ${{ inputs.batch_id }}
         run: |
           echo "Reason: $RUN_REASON" >> "$GITHUB_STEP_SUMMARY"
-          if [ "$RUN_PAID" = "true" ]; then
+          if [ -n "$BATCH_ID" ]; then
+            node scripts/gateway-smoke.mjs "--batch-id=$BATCH_ID"
+          elif [ "$RUN_PAID" = "true" ]; then
             node scripts/gateway-smoke.mjs --paid
           else
             node scripts/gateway-smoke.mjs
