@@ -45,7 +45,9 @@ const TOOL_TARGETS = {
 };
 
 // The same public catalogue request the models page makes, so it is usually an edge cache hit.
-const CATALOGUE_PATH = "/api/_web/models?limit=2000&offset=0&shape=page&projection=6&catalogue_version=v2&include_metrics=false";
+// The endpoint caps a page at 2,000 rows.
+const CATALOGUE_PAGE_SIZE = 2000;
+const catalogueUrl = (offset: number) => `/api/_web/models?limit=${CATALOGUE_PAGE_SIZE}&offset=${offset}&shape=page&projection=6&catalogue_version=v2&include_metrics=false`;
 const SEARCH_LIMIT_MAX = 20;
 const COMPARE_MAX = 4;
 
@@ -99,11 +101,25 @@ export function summariseModel(model: CatalogueModel, detail = false) {
 	};
 }
 
-async function fetchCatalogue(path: string, signal?: AbortSignal): Promise<CatalogueModel[]> {
+async function fetchCataloguePage(path: string, signal?: AbortSignal) {
 	const response = await fetch(path, { headers: { accept: "application/json" }, signal });
 	if (!response.ok) throw new Error(`The Phaseo model catalogue returned ${response.status}.`);
-	const body = await response.json() as { models?: CatalogueModel[] };
-	return body.models ?? [];
+	const body = await response.json() as { models?: CatalogueModel[]; total?: number };
+	return { models: body.models ?? [], total: typeof body.total === "number" ? body.total : 0 };
+}
+
+async function fetchCatalogue(path: string, signal?: AbortSignal): Promise<CatalogueModel[]> {
+	return (await fetchCataloguePage(path, signal)).models;
+}
+
+/** Every catalogue row: the first page is the models page's own request, later pages follow `total`. */
+async function fetchWholeCatalogue(signal?: AbortSignal): Promise<CatalogueModel[]> {
+	const first = await fetchCataloguePage(catalogueUrl(0), signal);
+	const models = [...first.models];
+	for (let offset = CATALOGUE_PAGE_SIZE; offset < first.total && first.models.length > 0; offset += CATALOGUE_PAGE_SIZE) {
+		models.push(...(await fetchCataloguePage(catalogueUrl(offset), signal)).models);
+	}
+	return models;
 }
 
 export function compareUrl(ids: string[]) {
@@ -171,7 +187,7 @@ export function createHomepageTools(): ModelContextTool[] {
 					? [...new Set(input.model_ids.filter((id): id is string => typeof id === "string").map((id) => id.trim()).filter(Boolean))]
 					: [];
 				if (ids.length < 2 || ids.length > COMPARE_MAX) throw new Error(`model_ids needs 2 to ${COMPARE_MAX} distinct model IDs.`);
-				const byId = new Map((await fetchCatalogue(CATALOGUE_PATH, options?.signal)).map((model) => [model.model_id, model]));
+				const byId = new Map((await fetchWholeCatalogue(options?.signal)).map((model) => [model.model_id, model]));
 				return JSON.stringify({
 					models: ids.flatMap((id) => {
 						const model = byId.get(id);

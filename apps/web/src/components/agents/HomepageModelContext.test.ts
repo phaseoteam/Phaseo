@@ -53,6 +53,20 @@ describe("homepage WebMCP tools", () => {
 		expect(result.compare_url).toContain("/compare?models=openai_gpt-5&models=anthropic_claude-sonnet-5.5");
 	});
 
+	it("reads later catalogue pages before reporting a model as not found", async () => {
+		const fetchMock = vi.fn(async (url: string) => new Response(JSON.stringify(url.includes("offset=0&")
+			? { models: [sonnet], total: 2001 }
+			: { models: [gpt], total: 2001 })));
+		vi.stubGlobal("fetch", fetchMock);
+		const result = JSON.parse(await tool("compare-phaseo-models").execute({ model_ids: ["anthropic/claude-sonnet-5.5", "openai/gpt-5"] }));
+		expect(fetchMock.mock.calls.map((call) => String(call[0]))).toEqual([
+			expect.stringContaining("limit=2000&offset=0&"),
+			expect.stringContaining("limit=2000&offset=2000&"),
+		]);
+		expect(result.not_found).toEqual([]);
+		expect(result.models).toHaveLength(2);
+	});
+
 	it("needs two to four distinct ids to compare", async () => {
 		await expect(tool("compare-phaseo-models").execute({ model_ids: ["a/b", "a/b"] })).rejects.toThrow("2 to 4");
 		await expect(tool("compare-phaseo-models").execute({ model_ids: ["a/1", "a/2", "a/3", "a/4", "a/5"] })).rejects.toThrow("2 to 4");
