@@ -41,7 +41,7 @@ test('dashboard-only apply succeeds without alert access and never changes alert
   const budget = writes.find(write => write.body.dashboard.uid === 'phaseo-free-tier').body.dashboard;
   assert.deepEqual(budget.templating.list[0].current, { text: 'usage.test', value: 'private-usage' });
   assert.equal(budget.templating.list[0].regex, '/^usage\\.test$/');
-  assert.ok(reads.includes('https://phaseo.grafana.net/api/datasources/uid/private-usage'));
+  assert.ok(reads.some(url => url === 'https://phaseo.grafana.net/api/datasources/uid/private-usage'));
 });
 
 test('live validation sends usage PromQL to Prometheus and log queries to Loki', async () => {
