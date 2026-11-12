@@ -1336,5 +1336,16 @@ describe("handleModels", () => {
             expect((await handleMyModels(new Request("https://api.example.com/v1/models/me"))).status).toBe(401);
             expect(fetchCatalogueMock).not.toHaveBeenCalled();
         });
+
+        it("asks an OAuth token (a CLI or app sign-in) for an API key instead of reading a key's guardrails by its client id", async () => {
+            guardAuthMock.mockResolvedValue({ ok: true, value: { workspaceId: "ws_test", apiKeyId: "phaseo_cli", authMethod: "oauth", oauthClientId: "phaseo_cli", oauthScopes: ["openid", "models:read"] } });
+            const response = await handleMyModels(new Request("https://api.example.com/v1/models/me"));
+            expect(response.status).toBe(403);
+            await expect(response.json()).resolves.toMatchObject({ ok: false, error: "api_key_required" });
+            expect(fetchWorkspacePolicyMock).not.toHaveBeenCalled();
+            expect(fetchCatalogueMock).not.toHaveBeenCalled();
+            // The shared list still answers OAuth tokens.
+            expect((await handleModels(new Request("https://api.example.com/v1/models"))).status).toBe(200);
+        });
     });
 });

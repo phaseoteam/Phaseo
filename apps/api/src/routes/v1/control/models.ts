@@ -892,6 +892,19 @@ async function listModels(req: Request, scope: "shared" | "me") {
     }
     const scopeError = requireCapability(auth.value, CAPABILITIES.MODELS_READ);
     if (scopeError) return scopeError;
+    // A key's guardrails are what /models/me applies, and an OAuth access token (a CLI or app sign-in) is not a key:
+    // its apiKeyId is the client id. Say so, rather than list models the token's eventual key may not reach.
+    if (scope === "me" && auth.value.authMethod === "oauth") {
+        return json(
+            {
+                ok: false,
+                error: "api_key_required",
+                message: "/models/me lists the models an API key may use under its guardrails. Call it with an API key, or use /models for the shared catalogue.",
+            },
+            403,
+            { "Cache-Control": "no-store" },
+        );
+    }
 
     const requestedFormat = url.searchParams.get("format")?.trim().toLowerCase() === "openai"
         ? { ok: true as const, format: "openai" as const }
