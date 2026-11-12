@@ -45,9 +45,17 @@ const GOOGLE_THINKING_LEVEL_SUPPORT: Record<string, GoogleThinkingLevel[]> = {
 	// Gemini 4 Carbon has no docs page yet. A live Vertex probe on 2026-11-10 gave the same
 	// results as Argon: thinkingLevel LOW works, MINIMAL and any thinkingBudget return HTTP 400.
 	"gemini-4-carbon": GOOGLE_LOW_MEDIUM_HIGH_LEVELS,
+	// https://aistudio.google.com/docs/whats-new-gemini-4-hydrogen: Hydrogen "rejects `minimal` with an
+	// error" and defaults to high. It also adds an `xhigh` level that this gateway does not send yet,
+	// so xhigh efforts map to HIGH.
+	"gemini-4-hydrogen": GOOGLE_LOW_MEDIUM_HIGH_LEVELS,
 };
 
-// Models that refuse thinkingBudget and take thinkingLevel only.
+// Models that refuse thinkingBudget and take thinkingLevel only. Gemini 4 Hydrogen is deliberately not
+// listed: Vertex answers a budget with HTTP 400 "Thinking budget is not supported for this model. Use
+// thinking level instead." (live probe 2026-11-12) while the Gemini API accepts one. Rewriting a token
+// budget as a level would change the requested reasoning without a visible signal, so a budget-only
+// request is forwarded and Google's explicit error reaches the caller. Effort requests use levels.
 const GOOGLE_THINKING_BUDGET_UNSUPPORTED = ["gemini-4-argon", "gemini-4-carbon"];
 
 function normalizeModelName(model: string): string {
