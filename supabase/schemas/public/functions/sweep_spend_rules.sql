@@ -103,6 +103,8 @@ begin
   v_slot := (floor(extract(epoch from p_now) / 300)::bigint % v_slots)::integer;
   -- A slot with more than p_limit workspaces starts p_limit further along each hour, so every
   -- workspace in it is reached within ceil(n / p_limit) hours instead of only the first p_limit.
+  -- Positions are taken over the whole slot and workspaces the dirty and rollover sets already
+  -- evaluate are dropped afterwards, so the window does not shift with them.
   v_round := floor(extract(epoch from p_now) / 3600)::bigint;
   select coalesce(array_agg(due.workspace_id), '{}') into v_periodic
   from (
@@ -118,11 +120,11 @@ begin
           and rule.deleted_at is null
           and private.spend_rule_evaluable(rule.metric, rule.period, rule.base_kind)
           and (pg_catalog.hashtextextended(rule.workspace_id::text, 0) % v_slots + v_slots) % v_slots = v_slot
-          and rule.workspace_id <> all (v_dirty)
-          and rule.workspace_id <> all (v_rollover)
       ) candidate
     ) slot
     where ((slot.position - v_round * p_limit) % slot.total + slot.total) % slot.total < p_limit
+      and slot.workspace_id <> all (v_dirty)
+      and slot.workspace_id <> all (v_rollover)
   ) due;
 
   -- Balance rules: a balance moves without usage (reservations, refunds, top-ups, credits), so
