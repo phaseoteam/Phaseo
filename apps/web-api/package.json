@@ -7,7 +7,7 @@
     "dev": "wrangler dev --port 8788",
     "build": "wrangler deploy --dry-run --env=\"\"",
     "lint": "eslint src && pnpm run typecheck",
-    "pretypecheck": "pnpm --filter @phaseo/sdk build",
+    "pretypecheck": "pnpm --filter @phaseo/sdk build && node ../../scripts/generate-provider-catalog-parameters.mjs --check",
     "smoke:production": "node scripts/smoke-production.mjs",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
