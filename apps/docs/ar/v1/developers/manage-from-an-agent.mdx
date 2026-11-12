@@ -66,6 +66,10 @@ phaseo credits add --amount 20 --json
 | المهمة | CLI | مسار API | أداة MCP |
 | --- | --- | --- | --- |
 | عرض المفاتيح أو إعادة تسميتها أو حذفها | `phaseo keys list`, `phaseo keys update <id> --name <name>`, `phaseo keys delete <id>` | `GET /v1/keys`, `PATCH /v1/keys/{id}`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
+| إنشاء مفتاح API | `phaseo keys create --name <name>` | `POST /v1/keys` | — |
+| تغيير حدود المفتاح أو حالته أو تاريخ انتهائه | `phaseo keys update <id> --limit <usd>`, `phaseo keys update <id> --disabled true` | `PATCH /v1/keys/{id}` | — |
+| تدوير مفتاح | — | `POST /v1/keys/{id}/rotate` | — |
+| قصر مفتاح على عناوين IP | — | `PATCH /v1/keys/{id}` | — |
 | مراجعة التطبيقات التي فوّضتها أو تضييق صلاحياتها أو إلغاؤها | `phaseo authorized-apps list`، `phaseo authorized-apps update-scopes <id> --scopes <scope,...>`، `phaseo authorized-apps revoke <id> --yes` | `GET /v1/me/authorized-apps`، `PATCH /v1/me/authorized-apps/{id}`، `DELETE /v1/me/authorized-apps/{id}` | — |
 | تحديث ملفك الشخصي | `phaseo profile update` | `PATCH /v1/me/profile` | — |
 
@@ -105,10 +109,6 @@ phaseo credits add --amount 20 --json
 
 | المهمة | مسار API |
 | --- | --- |
-| إنشاء مفتاح API | `POST /v1/keys` |
-| تغيير حدود المفتاح أو حالته أو تاريخ انتهائه | `PATCH /v1/keys/{id}` |
-| تدوير مفتاح | `POST /v1/keys/{id}/rotate` |
-| قصر مفتاح على عناوين IP | `PATCH /v1/keys/{id}` |
 | إنشاء مفتاح إدارة | `POST /v1/management-keys` |
 | تفعيل الشحن التلقائي أو رسائل انخفاض الرصيد | `PATCH /v1/notifications/settings` |
 | تعيين ميزانيات مساحة العمل | `POST /v1/budgets`، `PATCH /v1/budgets/{id}` |

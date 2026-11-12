@@ -11,6 +11,8 @@ const inheritedContractByProvider: Record<string, string> = {
     scaledown: "openai", // OpenAI chat wire for Summarize/Extract; executor tests cover Decisions.
     baidu: "openai",
     doubleword: "openai",
+    primalabs: "openai",
+    lg: "openai",
     modelscope: "openai",
     reflection: "openai", // Chat wire contract; Reflection-specific controls have executor tests.
     "mistral-eu": "mistral",

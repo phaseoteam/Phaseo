@@ -40,6 +40,11 @@ export const STARTER_TASK_CATEGORIES = {
 
 export const STARTER_CLASSIFIER_SLUG = "phaseo-task-v1";
 export const ALLOWED_CLASSIFIER_MODELS = new Set(["gpt-5-mini"]);
+/**
+ * Each enabled classifier is one model call on Phaseo's OpenAI key per sampled contribution
+ * (up to 200k characters), so a workspace runs at most this many, the starter one included.
+ */
+export const MAX_ENABLED_CLASSIFIERS_PER_WORKSPACE = 3;
 
 export const STARTER_TASK_INSTRUCTIONS = [
 	"Classify the user request by its primary task, not its subject matter.",
@@ -66,11 +71,19 @@ export function starterClassifierRow(workspaceId: string, createdBy?: string | n
 	};
 }
 
+/** The database refused to enable another classifier (enforce_workspace_classifier_limit). */
+export function isClassifierLimitError(error: { message?: string } | null | undefined): boolean {
+	return Boolean(error?.message?.includes("classifier_limit_reached"));
+}
+
 export async function ensureStarterClassifier(workspaceId: string, createdBy?: string | null): Promise<void> {
-	const { error } = await getSupabaseAdmin().from("workspace_classifiers").upsert(
-		starterClassifierRow(workspaceId, createdBy),
+	const upsertStarter = (enabled: boolean) => getSupabaseAdmin().from("workspace_classifiers").upsert(
+		{ ...starterClassifierRow(workspaceId, createdBy), enabled },
 		{ onConflict: "workspace_id,slug", ignoreDuplicates: true },
 	);
+	let { error } = await upsertStarter(true);
+	// At the cap the starter is added switched off, so consenting still works.
+	if (isClassifierLimitError(error)) ({ error } = await upsertStarter(false));
 	if (error) throw new Error(error.message || "Failed to create starter classifier");
 }
 
@@ -224,7 +237,8 @@ export async function runDataContributionClassifierJob(args?: { limit?: number; 
 				const [object, classifiersResult] = await Promise.all([
 					bindings.DATA_CONTRIBUTIONS_BUCKET?.get(contribution.object_key),
 					client.from("workspace_classifiers").select("id,workspace_id,slug,name,instructions,categories,model,service_tier,sample_rate_bps")
-						.eq("workspace_id", contribution.workspace_id).eq("enabled", true),
+						.eq("workspace_id", contribution.workspace_id).eq("enabled", true)
+						.order("created_at", { ascending: true }).limit(MAX_ENABLED_CLASSIFIERS_PER_WORKSPACE),
 				]);
 				if (!object) throw new Error("contribution_object_missing");
 				if (classifiersResult.error) throw new Error(classifiersResult.error.message || "classifier list failed");

@@ -24,6 +24,8 @@ import { getEndpointMetadata } from "./endpoint-metadata";
 import { normalizeParameterSpecs } from "@core/model-parameters";
 import { getBindingsIfConfigured, getSupabaseAdmin } from "@/runtime/env";
 import { normalizeGatewayRoutingRegion } from "@pipeline/before/deployment-region";
+import { fetchMemberWorkspacePolicy, fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
+import { modelAccessSummary, modelsForPolicy, type PolicyRouteFacts } from "./models.policy";
 
 type LifecycleStatus = "active" | "deprecated" | "retired" | null;
 type AvailabilityMode = "active" | "all";
@@ -49,6 +51,7 @@ const FREE_ROUTER_ENDPOINTS = ["chat/completions", "responses", "messages"] as c
 // five minutes fresh, followed by five minutes of stale-while-revalidate.
 const MODEL_CATALOGUE_CACHE_TTL_SECONDS = 5 * 60;
 const MODEL_CATALOGUE_CACHE_STALE_SECONDS = 5 * 60;
+const MY_MODELS_CACHE_TTL_SECONDS = 60;
 
 // Bump when the ETag input changes shape so old validators stop matching.
 const MODEL_LIST_ETAG_VERSION = 1;
@@ -438,7 +441,7 @@ async function buildFreeRouterCatalogueModel(args: {
     endpoints: string[];
     catalogue: CatalogueModel[];
     freeContext?: Awaited<ReturnType<typeof fetchGatewayContext>> | null;
-}): Promise<CatalogueModel | null> {
+}): Promise<{ model: CatalogueModel; routes: Map<string, PolicyRouteFacts> } | null> {
     if (!canIncludeFreeRouter(args.endpoints)) return null;
 
     try {
@@ -458,6 +461,8 @@ async function buildFreeRouterCatalogueModel(args: {
         const matchedConcreteModels: CatalogueModel[] = [];
         const providers: CatalogueModel["providers"] = [];
         const providerKeySet = new Set<string>();
+        // Each offer's concrete model and data facts, as the request pipeline checks them (/models/me's policy check).
+        const routes = new Map<string, PolicyRouteFacts>();
         for (const snapshot of freeContext.providers) {
             const providerId = String(snapshot.providerId ?? "").trim();
             const apiModelId = String(snapshot.apiModelId ?? "").trim();
@@ -471,6 +476,17 @@ async function buildFreeRouterCatalogueModel(args: {
 
             providerKeySet.add(providerId);
             matchedConcreteModels.push(concreteModel);
+            routes.set(providerId, {
+                apiModelId,
+                capabilityParams: (snapshot.capabilityParams ?? {}) as Record<string, unknown>,
+                facts: {
+                    zeroDataRetention: snapshot.zeroDataRetention ?? null,
+                    promptTrainingPolicy: snapshot.promptTrainingPolicy ?? null,
+                    dataPolicyTier: snapshot.dataPolicyTier ?? null,
+                    dataPolicyConfidence: snapshot.dataPolicyConfidence ?? null,
+                    dataPolicyVariant: snapshot.dataPolicyVariant ?? null,
+                },
+            });
             providers.push({
                 ...concreteProvider,
                 params: Array.from(
@@ -510,7 +526,7 @@ async function buildFreeRouterCatalogueModel(args: {
             ...providers.map((provider) => provider.params_detail)
         );
 
-        return {
+        return { routes, model: {
             model_id: FREE_ROUTER_MODEL_ID,
             base_model_id: FREE_ROUTER_MODEL_ID,
             variant_kind: "standard",
@@ -554,7 +570,7 @@ async function buildFreeRouterCatalogueModel(args: {
                 coming_soon_provider_count: 0,
                 inactive_provider_count: 0,
             },
-        };
+        } };
     } catch {
         return null;
     }
@@ -803,7 +819,16 @@ async function fetchWorkspacePrivateCatalogue(args: {
     });
 }
 
-export async function handleModels(req: Request) {
+export function handleModels(req: Request) {
+    return listModels(req, "shared");
+}
+
+/** GET /v1/models/me: the catalogue as this key may use it, after its workspace, department, member and key guardrails. */
+export function handleMyModels(req: Request) {
+    return listModels(req, "me");
+}
+
+async function listModels(req: Request, scope: "shared" | "me") {
     const url = new URL(req.url);
     const gatewayRegion = normalizeGatewayRoutingRegion(
 		getBindingsIfConfigured()?.GATEWAY_ROUTING_REGION,
@@ -867,6 +892,13 @@ export async function handleModels(req: Request) {
     }
     const scopeError = requireCapability(auth.value, CAPABILITIES.MODELS_READ);
     if (scopeError) return scopeError;
+    // An OAuth access token (a CLI or app sign-in) is not a key: its apiKeyId is the client id. It gets the rules of
+    // the person who signed in (the workspace, their departments and their own), as a key they create would.
+    // An OAuth-delegated key (Phaseo desktop's, a third-party app's) is a real key and keeps the key path.
+    const oauthUserId = auth.value.oauthAccessToken ? String(auth.value.userId ?? "").trim() : "";
+    if (scope === "me" && auth.value.oauthAccessToken && !oauthUserId) {
+        return json({ ok: false, error: "unauthorized", message: "This sign-in has no user. Sign in again." }, 401, { "Cache-Control": "no-store" });
+    }
 
     const requestedFormat = url.searchParams.get("format")?.trim().toLowerCase() === "openai"
         ? { ok: true as const, format: "openai" as const }
@@ -884,14 +916,17 @@ export async function handleModels(req: Request) {
         );
     }
 
-    const cacheScope = "models:shared:v1";
+    const cacheScope = scope === "me" ? "models:me:v1" : "models:shared:v1";
 
-    const cacheOptions = {
-        scope: cacheScope,
-        ttlSeconds: MODEL_CATALOGUE_CACHE_TTL_SECONDS,
-        staleSeconds: MODEL_CATALOGUE_CACHE_STALE_SECONDS,
-        varyHeaders: [],
-    };
+    // A key's own list follows guardrail edits, so clients re-check it after a minute (cheaply, with If-None-Match).
+    const cacheOptions = scope === "me"
+        ? { scope: cacheScope, ttlSeconds: MY_MODELS_CACHE_TTL_SECONDS, staleSeconds: 0, varyHeaders: [] }
+        : {
+            scope: cacheScope,
+            ttlSeconds: MODEL_CATALOGUE_CACHE_TTL_SECONDS,
+            staleSeconds: MODEL_CATALOGUE_CACHE_STALE_SECONDS,
+            varyHeaders: [],
+        };
 
     const endpoints = parseMultiValue(url.searchParams, "endpoints");
     const includeParameterSpecs = parseMultiValue(url.searchParams, "include").includes("parameter_specs");
@@ -997,13 +1032,14 @@ export async function handleModels(req: Request) {
             const knownModelIds = new Set(catalogue.map((model) => model.model_id));
             catalogue.push(...freeRouterCatalogue.filter((model) => !knownModelIds.has(model.model_id)));
         }
-        const freeRouterModel = await buildFreeRouterCatalogueModel({
+        const freeRouter = await buildFreeRouterCatalogueModel({
             workspaceId: auth.value.workspaceId,
             apiKeyId: auth.value.apiKeyId,
             endpoints,
             catalogue,
             freeContext: prefetchedFreeContext,
         });
+        const freeRouterModel = freeRouter?.model ?? null;
         const enrichedCatalogue =
             freeRouterModel && !catalogue.some((model) => model.model_id === freeRouterModel.model_id)
                 ? [freeRouterModel, ...catalogue]
@@ -1045,8 +1081,30 @@ export async function handleModels(req: Request) {
                 },
             };
         });
+        const listed = [...privateByModelId.values(), ...mergedPublicModels] as PhaseoModel[];
+        // Filtered before search and paging, so totals and pages count only what the key may use.
+        const policy = scope !== "me"
+            ? null
+            : oauthUserId
+                ? await fetchMemberWorkspacePolicy({ workspaceId: auth.value.workspaceId, userId: oauthUserId })
+                : await fetchWorkspacePolicy({ workspaceId: auth.value.workspaceId, apiKeyId: auth.value.apiKeyId });
+        // What the request pipeline checks per route, which the listing doesn't show: the Free router's concrete
+        // models and data facts, and each text route's id (its effective data policy is read by it).
+        const routeFacts = new Map<string, Map<string, PolicyRouteFacts>>();
+        if (policy) {
+            for (const model of enrichedCatalogue) {
+                if (model.model_id === FREE_ROUTER_MODEL_ID && freeRouter) { routeFacts.set(model.model_id, freeRouter.routes); continue; }
+                routeFacts.set(model.model_id, new Map(model.providers.map((provider) => {
+                    const routeId = provider.route_id_by_endpoint?.["text.generate"];
+                    return [provider.api_provider_id, routeId ? { routeId } : {}];
+                })));
+            }
+        }
+        const permitted = policy ? await modelsForPolicy(listed, policy, routeFacts) : listed;
+        // What the key's rules leave out of this listing (before search), so apps can say why a model is missing.
+        const access = policy ? modelAccessSummary(listed, permitted, policy) : undefined;
         const models = filterAndSortModels(
-            [...privateByModelId.values(), ...mergedPublicModels] as PhaseoModel[],
+            permitted,
             {
                 search,
                 provider: providerSearch,
@@ -1106,6 +1164,7 @@ export async function handleModels(req: Request) {
                 offset,
                 total: models.length,
                 models: paged,
+                ...(access ? { access } : {}),
             },
             // gateway_region is deliberately left out: the same catalogue served
             // from another region keeps the same ETag. That is why the ETag is
@@ -1117,6 +1176,7 @@ export async function handleModels(req: Request) {
                 offset,
                 total: models.length,
                 models: paged,
+                ...(access ? { access } : {}),
             },
             headers,
         );
@@ -1298,24 +1358,6 @@ export async function handleModelEndpoints(req: Request) {
             { "Cache-Control": "no-store" },
         );
     }
-}
-
-export async function handleMyModels(req: Request) {
-    const auth = await guardAuth(req, { allowOAuthJwt: true });
-    if (!auth.ok) {
-        return (auth as GuardErr).response;
-    }
-
-    return json(
-        {
-            status_code: 501,
-            error: "not_implemented",
-            description:
-                "GET /models/me is reserved for future guardrail-aware model filtering and is not implemented yet. Use /models for the shared gateway catalogue.",
-        },
-        501,
-        { "Cache-Control": "no-store" }
-    );
 }
 
 export const modelsRoutes = new Hono<Env>();

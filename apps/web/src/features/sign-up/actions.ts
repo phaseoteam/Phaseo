@@ -63,6 +63,8 @@ export const handleEmailSignup = createServerFn({ method: "POST" })
 		const returnUrl = sanitizeReturnUrl(formData.get('returnUrl'), '/')
 		const safeReturnUrl = returnUrl === '/' ? undefined : returnUrl
 		const callbackUrl = await resolveAuthCallbackUrl(safeReturnUrl, locale)
+		// The sign-up dialog shows "check your email" in place instead of loading /sign-in.
+		const inDialog = formData.get('surface') === 'dialog'
 
 		// Supabase signUp may return "User already registered" for duplicate emails.
 		const { data, error } = await supabase.auth.signUp({
@@ -80,6 +82,7 @@ export const handleEmailSignup = createServerFn({ method: "POST" })
 			const message = (error.message ?? '').toLowerCase()
 			if (message.includes('already registered') || message.includes('already exists')) {
 				// Keep outward response identical to avoid account enumeration.
+				if (inDialog) return { notice: 'check-email' as const }
 				redirect(
 					buildLocalizedAuthPath(locale, '/sign-in', {
 						signup: 'check-email',
@@ -93,6 +96,7 @@ export const handleEmailSignup = createServerFn({ method: "POST" })
 		if (data?.session) {
 			redirect(buildCallbackPath({ returnUrl: safeReturnUrl, type: 'email', locale }))
 		}
+		if (inDialog) return { notice: 'check-email' as const }
 		redirect(
 			buildLocalizedAuthPath(locale, '/sign-in', {
 				signup: 'check-email',

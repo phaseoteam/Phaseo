@@ -62,4 +62,4 @@ Um `prompt`: a pergunta que precisa de várias perspectivas.
 
 ## Uso e preços
 
-Cada chamada soma 1 a `usage.server_tool_use.fusion_requests` e pode ser cobrada com `server_tool_fusion_requests`. Os tokens de todas as chamadas de análise e do analista são somados ao uso da solicitação e cobrados com os preços de cada modelo.
+Cada chamada soma 1 a `usage.server_tool_use.fusion_requests` e pode ser cobrada com `server_tool_fusion_requests`. Cada chamada de análise e de analista é cobrada pelos preços do seu modelo, como uma linha separada na cobrança da solicitação; seus tokens não são somados aos do modelo que a chama. Modelos pagos exigem créditos mesmo quando o modelo que os chama é gratuito.

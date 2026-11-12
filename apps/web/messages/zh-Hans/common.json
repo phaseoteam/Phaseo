@@ -2487,7 +2487,10 @@
 			"frames": "帧",
 			"message": "消息",
 			"messages": "消息",
-			"serviceTierLineStyles": "服务层级线条样式"
+			"serviceTierLineStyles": "服务层级线条样式",
+			"inAudience": "仅限 {audience}",
+			"usOnlyInference": "仅限美国推理",
+			"regionOnlyInference": "仅限{region}推理"
 		},
 		"publicModelCopy": {
 			"days": "{count}天",
@@ -2571,6 +2574,40 @@
 			"highlight": "突出显示",
 			"highlightNone": "无",
 			"highlightHint": "其余部分以灰色显示。"
+		},
+		"hoverCards": {
+			"utc": "UTC",
+			"unix": "Unix",
+			"start": "开始",
+			"end": "结束",
+			"duration": "时长",
+			"took": "耗时",
+			"requests": "请求",
+			"cost": "费用",
+			"retires": "{date} 停用",
+			"deprecatedOn": "{date} 起弃用",
+			"lastUsed": "上次使用",
+			"replacement": "替代模型",
+			"requestedAs": "请求时指定为",
+			"provider": "提供商",
+			"dataPolicy": "数据政策",
+			"notKnown": "未知",
+			"attemptOf": "第 {number} 次尝试，共 {total} 次",
+			"errorCode": "错误代码",
+			"errorMessage": "消息",
+			"balanceAfter": "交易后余额",
+			"paymentReference": "付款参考号",
+			"resetsInUtc": "{time}后重置 · UTC",
+			"percentUsed": "已用 {percent}",
+			"moreSelectedModels": "{count, plural, other {再显示 # 个已选模型}}",
+			"sourceDetails": "{model} 来源详情",
+			"status": "状态",
+			"sourceCompleted": "已完成",
+			"sourceFailed": "失败",
+			"outputTokens": "输出 token",
+			"latency": "延迟",
+			"agreements": "共识点",
+			"uniqueInsight": "独特见解"
 		}
 	},
 	"deprecationNotice": {

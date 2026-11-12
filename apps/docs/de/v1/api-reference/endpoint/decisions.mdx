@@ -147,6 +147,8 @@ Die Antwort (Werte zur Veranschaulichung):
 
 `input` ist ein String oder ein Array von `user`-Nachrichten, deren `content` ein String oder eine Liste von `input_text`-, `input_image`-, `input_audio`- und `input_video`-Teilen ist. `name` ist optional; Antworten behalten die Reihenfolge der Anfrage bei, auch bei unbenannten und wiederholten Namen.
 
+Eine Anfrage enthält höchstens 128 Fragen, außer bei `google/gemini-decision-1`, das bis zu 1000 akzeptiert, bei `parallel/decisions-fast`, das bis zu 100 akzeptiert, und bei Clef, das bis zu 64 akzeptiert. Eine Anfrage über dem Limit des Modells gibt `400` zurück.
+
 | `type` | Zusätzliche Felder | Antwortfelder |
 | --- | --- | --- |
 | `predicate` | keine | `probability` (0–1), dass die Antwort Ja lautet |
@@ -163,7 +165,7 @@ Bilder gehören als Data-URLs in `input_image`-Teile. Gehostete HTTPS-Bild-URLs 
 Anfragen mit `state` und einer Map benannter Fragen funktionieren weiterhin und geben Antworten zurück, die nach denselben Namen geschlüsselt sind. Together Tev (`together/tev1-4b-experimental`) erfordert dieses Format, weil es eine Bezeichnung ohne Wahrscheinlichkeiten zurückgibt, und beantwortet nur `choice`-Fragen. Auch Respan Span-01 nutzt dieses Format. Mische die Formate nicht: `input` zusammen mit `state` oder `images` gibt `400` zurück.
 
 - `state`: ein String, Objekt oder Array mit den zu bewertenden Informationen.
-- `questions`: bis zu 128 benannte Fragen. Jede setzt `type` auf `noul` (Ja/Nein), `choice` oder `score`, dazu `instructions`. Auswahlfragen nehmen `criteria` als Map von Option zu Beschreibung; Bewertungsfragen nehmen `criteria` als Array mit mindestens zwei Stufenbeschreibungen.
+- `questions`: bis zu 128 benannte Fragen, bei Modellen mit höherem Limit mehr. Jede setzt `type` auf `noul` (Ja/Nein), `choice` oder `score`, dazu `instructions`. Auswahlfragen nehmen `criteria` als Map von Option zu Beschreibung; Bewertungsfragen nehmen `criteria` als Array mit mindestens zwei Stufenbeschreibungen.
 - `images`: bis zu vier PNG-, JPEG- oder WebP-Bilder, als `data:`-URLs oder `{ "content_type", "base64" }`-Objekte.
 - `model`: standardmäßig `typesafe/jev-1.13.0`, wenn weggelassen.
 
@@ -180,6 +182,7 @@ Prüfe die Modellverfügbarkeit, bevor du eines dieser Modelle aufrufst.
 | `typesafe/jev-1.13.0`, `typesafe/jev-1.14.0` | alle drei, gemischt in einer Anfrage; `box` bei 1.14 | Text, PNG-/JPEG-Bilder | $0.042 (Jev 1.13) |
 | `cloudflare/clef`, `cloudflare/clef-flash` | alle drei | Text, bis zu 4 Bilder | $0.24 / $0.038 |
 | `cloudflare/clef-omni` | alle drei | Text, Bilder, Audio, Video | $0.15 |
+| `google/gemini-decision-1` | predicate, choice, score; bis zu 1000 pro Anfrage | Text, Bilder, Audio, Video | $0.10 |
 | `liquid-ai/d1:free`, `liquid-ai/d1` | alle drei | Siehe Modellseite | Kostenlos während des Early Access |
 | `perplexity/decider-27b` | alle drei | Text, Base64-Bilder | $0.04, einschließlich Bild-Tokens |
 | `inception/mercury-decide` | predicate, choice, score | Text oder JSON | $0.02 (Aktion) |

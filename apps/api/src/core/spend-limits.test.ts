@@ -22,7 +22,12 @@ vi.mock("./spend-limit-footprint", async (importOriginal) => ({
 	readSpendLimitFootprint: (...args: unknown[]) => runtime.readFootprint(...args),
 }));
 
+// handleError's telemetry sinks; the partial-charge test only needs the spend-limit settlement.
+vi.mock("@observability/events", () => ({ emitGatewayRequestEvent: async () => undefined }));
+vi.mock("@observability/otlp-export", () => ({ enqueueGatewayOtlpExport: async () => undefined }));
+
 import { SpendLimitDurableObject, type SpendLimitSeed } from "./spend-limit-durable-object";
+import { handleError } from "./error-handler";
 import { LeasePool, type LeaseTransport } from "./lease-pool";
 import {
 	__resetSpendLimitsForTests,
@@ -52,6 +57,10 @@ type Row = { requestId: string; keyId: string | null; success: boolean; cost: nu
 type KeyConfig = { workspaceId: string; softBlocked?: boolean; daily?: [number, number]; weekly?: [number, number]; monthly?: [number, number] };
 type Budget = { id: string; interval: "daily" | "weekly" | "monthly" | "lifetime"; limit: number; holds?: number };
 type DepartmentBudget = { id: string; departmentId: string; name: string; interval: "daily" | "weekly" | "monthly"; limit: number; keyIds: string[] };
+type GuardrailCounter = {
+	guardrailId: string; name: string; counting: "shared" | "each_key"; counter: string;
+	interval: "daily" | "weekly" | "monthly"; limit: number; keyIds: string[];
+};
 
 // A JavaScript model of gateway_spend_limit_seed (the PGlite contract test pins the SQL itself).
 class FakeDatabase {
@@ -59,6 +68,8 @@ class FakeDatabase {
 	keys = new Map<string, KeyConfig>();
 	budgets: Budget[] = [];
 	departments: DepartmentBudget[] = [];
+	/** Blocking spend guardrail counters (private.spend_guardrail_usage with action block). */
+	guardrails: GuardrailCounter[] = [];
 	/** Seeds as written before department budgets could block (no department_budgets field). */
 	legacyShape = false;
 	calls: Array<{ keyIds: string[]; exclude: string[] }> = [];
@@ -123,11 +134,23 @@ class FakeDatabase {
 				limit_nanos: budget.limit, usage_nanos: usage, window_start: iso(start), reset_at: iso(end), key_ids: [...budget.keyIds],
 			};
 		});
+		const guardrail_budgets = this.guardrails.map((counter) => {
+			const start = windows[counter.interval];
+			const usage = this.rows.filter((row) => row.keyId !== null && counter.keyIds.includes(row.keyId) && row.success &&
+				row.createdAt >= start && row.createdAt <= now && !exclude.includes(row.requestId)).reduce((sum, row) => sum + row.cost, 0);
+			const end = counter.interval === "daily" ? start + DAY : counter.interval === "weekly" ? start + 7 * DAY
+				: Date.UTC(new Date(start).getUTCFullYear(), new Date(start).getUTCMonth() + 1, 1);
+			return {
+				guardrail_id: counter.guardrailId, guardrail_name: counter.name, counting: counter.counting, counter: counter.counter,
+				interval: counter.interval, limit_nanos: counter.limit, usage_nanos: usage, window_start: iso(start), reset_at: iso(end),
+				key_ids: [...counter.keyIds],
+			};
+		});
 		return {
 			now: iso(now), day_start: iso(windows.daily), week_start: iso(windows.weekly), month_start: iso(windows.monthly),
 			keys,
 			budget_status: { ok: true, budgets },
-			...(this.legacyShape ? {} : { department_budgets }),
+			...(this.legacyShape ? {} : { department_budgets, guardrail_budgets }),
 			excluded_rows: this.rows.filter((row) => exclude.includes(row.requestId))
 				.map((row) => ({ request_id: row.requestId, key_id: row.keyId, success: row.success, cost_nanos: row.cost, created_at: iso(row.createdAt) })),
 		};
@@ -582,6 +605,59 @@ describe("spend-limit coordinator", () => {
 		} finally { warn.mockRestore(); }
 	});
 
+	describe("spend guardrails", () => {
+		const TEAM_A = "team-a";
+		const TEAM_B = "team-b";
+		const OUTSIDER = "outsider";
+		const shared = (limit: number): GuardrailCounter => ({
+			guardrailId: "g-team", name: "Contractors", counting: "shared", counter: "department:d-team", interval: "daily", limit, keyIds: [TEAM_A, TEAM_B],
+		});
+		const eachKey = (keyId: string, limit: number): GuardrailCounter => ({
+			guardrailId: "g-each", name: "Every key", counting: "each_key", counter: `key:${keyId}`, interval: "monthly", limit, keyIds: [keyId],
+		});
+
+		beforeEach(() => {
+			for (const keyId of [TEAM_A, TEAM_B, OUTSIDER]) database.keys.set(keyId, { workspaceId: WORKSPACE });
+		});
+
+		it("blocks every key a shared counter covers once its limit is used, and no other key", async () => {
+			database.guardrails.push(shared(1_000));
+			database.rows.push(
+				{ requestId: "a-1", keyId: TEAM_A, success: true, cost: 700, createdAt: Date.now() - 1_000 },
+				{ requestId: "b-1", keyId: TEAM_B, success: true, cost: 300, createdAt: Date.now() - 1_000 },
+				{ requestId: "o-1", keyId: OUTSIDER, success: true, cost: 9_000, createdAt: Date.now() - 1_000 },
+			);
+			for (const keyId of [TEAM_A, TEAM_B]) {
+				expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId, admissionId: `${keyId}-2` })).toMatchObject({
+					outcome: "denied",
+					keyLimit: {
+						ok: false, reason: "guardrail_daily_spend_limit_reached", limitWindow: "daily", limitMetric: "cost",
+						currentValue: 1_000, limitValue: 1_000, guardrailId: "g-team", guardrailName: "Contractors", guardrailCounting: "shared",
+					},
+				});
+			}
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: OUTSIDER, admissionId: "o-2" }))
+				.toMatchObject({ outcome: "allowed", admission: { unlimited: true } });
+		});
+
+		it("counts each key on its own when the guardrail counts each key", async () => {
+			database.guardrails.push(eachKey(TEAM_A, 500), eachKey(TEAM_B, 500));
+			database.rows.push({ requestId: "a-1", keyId: TEAM_A, success: true, cost: 500, createdAt: Date.now() - 1_000 });
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: TEAM_A, admissionId: "a-2" })).toMatchObject({
+				outcome: "denied",
+				keyLimit: { reason: "guardrail_monthly_spend_limit_reached", guardrailId: "g-each", guardrailCounting: "each_key", currentValue: 500 },
+			});
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: TEAM_B, admissionId: "b-2" })).toMatchObject({ outcome: "allowed" });
+		});
+
+		it("ignores spend guardrails missing from older seeds", async () => {
+			database.guardrails.push(shared(1));
+			database.legacyShape = true;
+			database.rows.push({ requestId: "a-1", keyId: TEAM_A, success: true, cost: 50, createdAt: Date.now() - 1_000 });
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: TEAM_A, admissionId: "a-2" })).toMatchObject({ outcome: "allowed" });
+		});
+	});
+
 	describe("department budgets", () => {
 		const ENG_A = "eng-a";
 		const ENG_B = "eng-b";
@@ -768,11 +844,134 @@ describe("spend-limit coordinator", () => {
 				outcome: "denied", keyLimit: { reason: "daily_request_limit_reached" },
 			});
 		});
+
+		it("counts a server-tool request's whole bill once against a blocking spend guardrail", async () => {
+			// A key allowed 2 successful requests a day, covered by a shared guardrail of 3,000 nanos a day.
+			database.keys.set(API_KEY, { workspaceId: WORKSPACE, daily: [2, 0] });
+			database.guardrails.push({ guardrailId: "g-tools", name: "Tools", counting: "shared", counter: "workspace:", interval: "daily", limit: 3_000, keyIds: [API_KEY] });
+			// A multi-round success: its round bill (rounds, managed search and sub-call) is one charge.
+			const first = createSpendLimitSlot();
+			expect(await enforcedSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: "s1", slot: first })).toMatchObject({ outcome: "allowed" });
+			settleEnforcedSpend({ admission: await slotAdmission(first), rowWritten: true, workspaceId: WORKSPACE, keyId: API_KEY, billingRequestId: "bs1", requestId: "s1", costNanos: 1_400 });
+			await flush();
+			// A failed request charged 400 for its completed rounds, settled by the real error handler.
+			const second = createSpendLimitSlot();
+			expect(await enforcedSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: "f1", slot: second })).toMatchObject({ outcome: "allowed" });
+			await handleError({
+				stage: "execute",
+				res: new Response(JSON.stringify({ error: "gateway_server_tool_limit" }), { status: 400 }),
+				endpoint: "chat.completions",
+				ctx: {
+					requestId: "f1", billingRequestId: "bf1", workspaceId: WORKSPACE, keyId: API_KEY,
+					endpoint: "chat.completions", model: "openai/gpt-5.4-nano", meta: { apiKeyId: API_KEY },
+					spendAdmission: await slotAdmission(second),
+					serverToolPartialCharge: { costNanos: 400, currency: "USD", usage: {}, pricingLines: [{ dimension: "input_text_tokens", line_nanos: 400 }] },
+				} as any,
+				auditFailure: async () => {},
+			});
+			await flush();
+			const counted = { reason: "guardrail_daily_spend_limit_reached", guardrailId: "g-tools", currentValue: 1_800 };
+			// Each bill counted once: 1,800, not 3,600. The failure is not a successful request (1 used of
+			// 2); on main's coordinator its request slot stays held by its lease until the lease returns,
+			// so the next request is refused on requests, not on spend.
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, admissionId: "probe-1" })).toMatchObject({
+				outcome: "denied",
+				keyLimit: { reason: "daily_request_limit_reached", buckets: { daily: { requestsUsed: 1, costUsedNanos: 1_800 } } },
+			});
+			// The success row lands and a reseed counts it from the database: still counted once.
+			database.rows.push({ requestId: "s1", keyId: API_KEY, success: true, cost: 1_400, createdAt: Date.now() });
+			database.keys.set(API_KEY, { workspaceId: WORKSPACE });
+			database.guardrails[0]!.limit = 1_800;
+			vi.setSystemTime(Date.now() + SPEND_LEASE.reseedMs + 1);
+			await checkSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, admissionId: "warm" }).then((d) => d.outcome === "allowed" ? releaseSpend(d.admission) : undefined);
+			await flush();
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, admissionId: "probe-2" })).toMatchObject({ outcome: "denied", keyLimit: counted });
+		});
+
+		it("counts charged server-tool failures against a cost budget, so repeating them cannot drain the wallet", async () => {
+			// $0.000001 a day; each failed request was charged 400 nanos for its completed rounds.
+			database.keys.set(API_KEY, { workspaceId: WORKSPACE, daily: [0, 1_000] });
+			const audited: Array<Record<string, unknown>> = [];
+			let admitted = 0;
+			for (let attempt = 0; attempt < 10; attempt++) {
+				const slot = createSpendLimitSlot();
+				const decision = await enforcedSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: `r${attempt}`, slot });
+				if (decision?.outcome !== "allowed") break;
+				admitted++;
+				await handleError({
+					stage: "execute",
+					res: new Response(JSON.stringify({ error: "gateway_server_tool_limit" }), { status: 400 }),
+					endpoint: "chat.completions",
+					ctx: {
+						requestId: `r${attempt}`, billingRequestId: `b${attempt}`, workspaceId: WORKSPACE, keyId: API_KEY,
+						endpoint: "chat.completions", model: "openai/gpt-5.4-nano", meta: { apiKeyId: API_KEY },
+						spendAdmission: await slotAdmission(slot),
+						serverToolPartialCharge: { costNanos: 400, currency: "USD", usage: { input_tokens: 3_000 }, pricingLines: [{ dimension: "input_text_tokens", line_nanos: 400 }] },
+					} as any,
+					auditFailure: async (args: Record<string, unknown>) => { audited.push(args); },
+				});
+				await flush();
+			}
+			// Admitted while spend is below the budget: 0, 400 and 800 nanos; the fourth (1,200) is refused.
+			expect(admitted).toBe(3);
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, admissionId: "r-next" })).toMatchObject({
+				outcome: "denied", keyLimit: { reason: "daily_cost_limit_reached", currentValue: 1_200 },
+			});
+			// Each failure row carries what was charged.
+			expect(audited.map((args) => args.costNanos)).toEqual([400, 400, 400]);
+			expect(audited[0]).toMatchObject({ usage: { input_tokens: 3_000 }, pricingLines: [{ dimension: "input_text_tokens" }], billingRequestId: "b0" });
+		});
+
+		it("counts delivered responses the wallet did not take even when their failure rows cannot be written", async () => {
+			// A database outage: the wallet charge and the failure-row insert both exhausted their
+			// retries. Each delivered response was expected to cost 400 nanos.
+			database.keys.set(API_KEY, { workspaceId: WORKSPACE, daily: [0, 1_000] });
+			let admitted = 0;
+			for (let attempt = 0; attempt < 10; attempt++) {
+				const slot = createSpendLimitSlot();
+				const decision = await enforcedSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: `d${attempt}`, slot });
+				if (decision?.outcome !== "allowed") break;
+				admitted++;
+				await handleError({
+					stage: "execute",
+					res: new Response(JSON.stringify({ error: "stream_finalization_failed" }), { status: 500 }),
+					endpoint: "chat.completions",
+					ctx: {
+						requestId: `d${attempt}`, billingRequestId: `bd${attempt}`, workspaceId: WORKSPACE, keyId: API_KEY,
+						endpoint: "chat.completions", model: "openai/gpt-5.4-nano", meta: { apiKeyId: API_KEY },
+						spendAdmission: await slotAdmission(slot),
+						uncollectedChargeNanos: 400,
+						uncollectedChargeReason: "persistence_failed",
+					} as any,
+					auditFailure: async () => { throw new Error("database unavailable"); },
+				});
+				await flush();
+			}
+			// The admissions are settled at the expected amount, never released: 0, 400, 800 admitted.
+			expect(admitted).toBe(3);
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, admissionId: "d-next" })).toMatchObject({
+				outcome: "denied", keyLimit: { reason: "daily_cost_limit_reached", currentValue: 1_200 },
+			});
+		});
+
+		it("still frees the admission of a failure that charged nothing", async () => {
+			const slot = createSpendLimitSlot();
+			await enforcedSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, requestId: "r1", slot });
+			await handleError({
+				stage: "execute",
+				res: new Response(JSON.stringify({ error: "upstream_error" }), { status: 502 }),
+				endpoint: "chat.completions",
+				ctx: { requestId: "r1", billingRequestId: "b1", workspaceId: WORKSPACE, keyId: API_KEY, endpoint: "chat.completions", meta: { apiKeyId: API_KEY }, spendAdmission: await slotAdmission(slot) } as any,
+				auditFailure: async () => {},
+			});
+			await flush();
+			expect(await checkSpendLimit({ workspaceId: WORKSPACE, keyId: API_KEY, admissionId: "r2" })).toMatchObject({ outcome: "allowed" });
+		});
 	});
 
 	describe("skipping the coordinator when nothing can be limited", () => {
 		const FREE_KEY = "00000000-0000-4000-8000-000000000003";
-		const NONE: SpendLimitFootprint = { keyLimited: false, softBlocked: false, workspaceBudgets: false, departmentBudgets: false };
+		const NONE: SpendLimitFootprint = { keyLimited: false, softBlocked: false, workspaceBudgets: false, departmentBudgets: false, spendGuardrails: false };
 		const bucket = (requestsLimit = 0, costLimitNanos = 0) => ({ windowStart: "2026-10-09T00:00:00.000Z", requestsUsed: 0, requestsLimit, costUsedNanos: 0, costLimitNanos });
 		// The request context's key-limit check, as context.ts returns it.
 		const contextKeyLimit = (overrides: Record<string, unknown> = {}) => ({
@@ -835,6 +1034,9 @@ describe("spend-limit coordinator", () => {
 			["a department budget", { departmentBudgets: true }, () => {
 				database.departments.push({ id: "db", departmentId: "d1", name: "Engineering", interval: "daily", limit: 5, keyIds: [FREE_KEY] });
 			}, "department_daily_cost_budget_reached"],
+			["a blocking spend guardrail", { spendGuardrails: true }, () => {
+				database.guardrails.push({ guardrailId: "g1", name: "Contractors", counting: "shared", counter: "workspace:", interval: "weekly", limit: 5, keyIds: [FREE_KEY] });
+			}, "guardrail_weekly_spend_limit_reached"],
 		])("asks the coordinator, which enforces it, when the footprint shows %s", async (_label, footprint, configure, reason) => {
 			configure();
 			database.rows.push({ requestId: "used", keyId: FREE_KEY, success: true, cost: 10, createdAt: Date.now() - 1_000 });

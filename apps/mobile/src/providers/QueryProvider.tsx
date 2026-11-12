@@ -29,7 +29,9 @@ export function QueryProvider({ children }: PropsWithChildren) {
       persistOptions={{
         persister,
         maxAge: 7 * DAY,
-        buster: "mobile-v4",
+        // Bump whenever a persisted query's data changes shape: a cache from another build is read back as if it
+        // were this build's. v5: a build from a phone-feature branch cached releases without `future`.
+        buster: "mobile-v5",
         dehydrateOptions: { shouldDehydrateQuery: (query) => query.state.status === "success" && isPublicQuery(query.queryKey) },
       }}
     >

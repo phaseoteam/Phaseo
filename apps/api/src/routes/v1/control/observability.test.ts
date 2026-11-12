@@ -238,16 +238,31 @@ describe("observability destination management", () => {
 		const response = await observabilityRoutes.request("https://example.com/logging-policy", {
 			method: "PATCH",
 			headers: { "content-type": "application/json" },
-			body: JSON.stringify({ enabled: true, retention_days: 120, include_provider_payloads: false }),
+			body: JSON.stringify({ enabled: true, retention_days: 90, include_provider_payloads: false }),
 		});
 		expect(response.status).toBe(200);
 		expect(state.loggingUpdate).toMatchObject({
 			workspace_id: "workspace_1",
 			io_logging_enabled: true,
 			privacy_enable_input_output_logging: true,
-			io_logging_retention_days: 120,
+			io_logging_retention_days: 90,
 			io_logging_include_provider_payloads: false,
 		});
 		expect(state.auditEvents[0]).toMatchObject({ action: "observability.logging_policy.updated" });
+	});
+
+	it("refuses retention over 90 days, which is not billed yet", async () => {
+		const { observabilityRoutes } = await import("./observability");
+		for (const days of [91, 120, 365]) {
+			state.loggingUpdate = null;
+			const response = await observabilityRoutes.request("https://example.com/logging-policy", {
+				method: "PATCH",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify({ retention_days: days }),
+			});
+			expect(response.status).toBe(400);
+			expect(await response.json()).toMatchObject({ error: "bad_request", message: "retention_days must be 90" });
+			expect(state.loggingUpdate).toBeNull();
+		}
 	});
 });

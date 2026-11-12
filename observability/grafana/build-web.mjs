@@ -28,6 +28,10 @@ export async function validateSourceMaps(root) {
     if ((await stat(map)).size > maxMapBytes) throw new Error(`Source map exceeds the 30 MB upload limit: ${path.basename(map)}`);
   }
 }
+export async function removeSourceMaps(root) {
+  for (const map of await sourceMapFiles(root)) await unlink(map);
+  if ((await sourceMapFiles(root)).length) throw new Error('Browser source maps remain in the deployment artifact');
+}
 async function run(bin, args, env) {
   await new Promise((resolve, reject) => {
     const child = spawn(process.execPath, [bin, ...args], { cwd: web, env, stdio: 'inherit', windowsHide: true });
@@ -55,8 +59,7 @@ export async function buildWeb(env = process.env) {
   } finally {
     // Remove individual map files even after upload or build failure. The caller
     // must deploy this exact build artifact only after the command succeeds.
-    for (const map of await sourceMapFiles(root)) await unlink(map);
-    if ((await sourceMapFiles(root)).length) throw new Error('Browser source maps remain in the deployment artifact');
+    await removeSourceMaps(root);
   }
 }
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {

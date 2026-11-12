@@ -62,7 +62,9 @@ import {
 } from "../after/fetch-observability";
 import { fetchGatewayContext } from "../before/context";
 import { buildProviderCandidatesWithDiagnostics } from "../before/utils";
-import type { PipelineContext, ProviderCandidate } from "../before/types";
+import type { PipelineContext, ProviderCandidate, ServerToolSubCallCharge } from "../before/types";
+import { presentUsageForClient } from "../after/payload";
+import { responsesRequestBody } from "../after/responses-stream-normaliser";
 import { applyWorkspacePolicy, fetchWorkspacePolicy } from "../before/workspacePolicy";
 import { decodeNonTextRequest, encodeNonTextResponse } from "./non-text";
 import { priceServerToolResult } from "./server-tool-pricing";
@@ -73,6 +75,8 @@ import { ImagesGenerationSchema } from "@core/schemas";
 import { normalizeCapability } from "@/executors";
 import { resolveCapabilityFromEndpoint } from "@/lib/config/capabilityToEndpoints";
 import { resolveSvgAuthor } from "@providers/openai/endpoints/images-svg";
+import { passesWalletCreditCheck, walletCanPay } from "../before/guards";
+import { chargeCompletedServerToolRounds, priceServerToolRounds, priceServerToolSubCall } from "../after/server-tool-charges";
 import {
 	buildEmptyResponseDiagnostics,
 	emptyResponseMessage,
@@ -239,6 +243,44 @@ function formatAdvisorConversation(messages: IRChatRequest["messages"]): string 
 		.join("\n\n");
 }
 
+/**
+ * Price a server tool's model call on the called model's own route and add it to the
+ * request's bill. A call that cannot be priced is treated as failed so its output is not
+ * delivered for free.
+ */
+async function recordSubCallCharge(
+	pre: PipelineRunnerArgs["pre"],
+	subCtx: PipelineContext,
+	result: any,
+	kind: ServerToolSubCallCharge["kind"],
+	model: string,
+): Promise<string | null> {
+	try {
+		const charge = await priceServerToolSubCall({ ctx: subCtx, result, kind, model });
+		(pre.ctx.serverToolSubCallCharges ??= []).push(charge);
+		return null;
+	} catch (error) {
+		console.error("[gateway] server tool sub-call pricing failed", {
+			requestId: pre.ctx.requestId,
+			kind,
+			model,
+			error: error instanceof Error ? error.message : String(error),
+		});
+		return `Pricing is unavailable for ${model}.`;
+	}
+}
+
+/** The wallet check the main request passed, applied to the model a server tool calls. */
+function subCallCreditDenied(
+	pre: PipelineRunnerArgs["pre"],
+	model: string,
+	context: Awaited<ReturnType<typeof fetchGatewayContext>>,
+	candidates: unknown[],
+): string | null {
+	if (passesWalletCreditCheck({ model, context, providers: candidates as any[], internal: pre.ctx.internal })) return null;
+	return `Insufficient credits to call ${model}. Add credits to use paid models in server tools.`;
+}
+
 async function executeAdvisorModel(args: {
 	pre: PipelineRunnerArgs["pre"];
 	timing: any;
@@ -279,6 +321,8 @@ async function executeAdvisorModel(args: {
 			message: `No text.generate providers are available for advisor model ${args.model}.`,
 		};
 	}
+	const advisorCreditDenied = subCallCreditDenied(args.pre, args.model, advisorContext, candidates);
+	if (advisorCreditDenied) return { ok: false, message: advisorCreditDenied };
 
 	const advisorInstructions = [
 		ADVISOR_DEFAULT_INSTRUCTIONS,
@@ -368,6 +412,7 @@ async function executeAdvisorModel(args: {
 		searchObservability: null,
 		webFetchObservability: null,
 		responseCache: null,
+		serverToolSubCallCharges: undefined,
 	};
 
 	const executed = await doRequestWithIR(advisorCtx, advisorIr, args.timing);
@@ -389,6 +434,8 @@ async function executeAdvisorModel(args: {
 		return { ok: false, message: "Advisor request returned an unsupported response kind." };
 	}
 	const advisorResponse = executed.result.ir as IRChatResponse;
+	const advisorPricingError = await recordSubCallCharge(args.pre, advisorCtx, executed.result, "advisor", advisorCtx.model);
+	if (advisorPricingError) return { ok: false, message: advisorPricingError };
 	return {
 		ok: true,
 		content: extractAssistantText(advisorResponse),
@@ -548,6 +595,9 @@ async function executeImageToolViaImagesApi(
 	candidates: ProviderCandidate[],
 	capability: string,
 ): Promise<ImageToolResult> {
+	// A paid image model needs wallet credit even when the calling model is free.
+	const creditDenied = subCallCreditDenied(args.pre, args.model, context, candidates);
+	if (creditDenied) return { ok: false, message: creditDenied };
 	// GPT Image takes a size, not an aspect ratio; other image models keep aspect_ratio.
 	const gptImageSize = !args.size && args.aspectRatio && isGptImageModel(args.model)
 		? gptImageSizeForAspectRatio(args.aspectRatio)
@@ -671,6 +721,8 @@ async function executeImageToolViaChatModel(args: ImageToolArgs, apiKeyId: strin
 			message: `No Images API or chat providers are available for image generation model ${args.model}.`,
 		};
 	}
+	const imageCreditDenied = subCallCreditDenied(args.pre, args.model, imageContext, candidates);
+	if (imageCreditDenied) return { ok: false, message: imageCreditDenied };
 
 	const imageConfig = {
 		...(args.aspectRatio ? { aspectRatio: args.aspectRatio } : {}),
@@ -1011,11 +1063,33 @@ export async function runTextGeneratePipeline(args: PipelineRunnerArgs): Promise
 				requestId: args.pre.ctx.requestId,
 				model: args.pre.ctx.model,
 				run: (sink) => runTextGeneratePipelineInner(args, sink, reuse),
+				chargedUsage: () => chargedServerToolUsageForClient(args.pre.ctx),
+				request: responsesRequestBody(args.pre.ctx),
 			});
 		}
 		return runTextGeneratePipelineInner(args, undefined, reuse);
 	}
 	return runTextGeneratePipelineInner(args);
+}
+
+/**
+ * The client usage of completed server-tool rounds a failed request was charged for, with the
+ * settled pricing (the failure row records the same charge). Null when nothing was charged.
+ */
+function chargedServerToolUsageForClient(ctx: PipelineContext): Record<string, unknown> | null {
+	const partial = ctx.serverToolPartialCharge;
+	if (!partial || !(partial.costNanos > 0)) return null;
+	const totalNanos = Math.round(partial.costNanos);
+	return presentUsageForClient({
+		...partial.usage,
+		pricing: {
+			currency: partial.currency ?? "USD",
+			total_nanos: totalNanos,
+			total_cents: Math.trunc(totalNanos / 10_000_000),
+			total_usd_str: String(Number((totalNanos / 1_000_000_000).toFixed(9))),
+			lines: partial.pricingLines ?? [],
+		},
+	}, { endpoint: ctx.endpoint, body: ctx.body });
 }
 
 type PreparedServerToolsReuse = {
@@ -1030,6 +1104,12 @@ async function runTextGeneratePipelineInner(
 	reusePrepared?: PreparedServerToolsReuse,
 ): Promise<Response> {
 	const { pre, req, endpoint, timing } = args;
+	// Each attempt (model fallbacks rerun this) bills only the sub-calls it made itself.
+	pre.ctx.serverToolSubCallCharges = [];
+	pre.ctx.serverToolPartialCharge = null;
+	pre.ctx.serverToolRoundsBill = null;
+	// Set once a server-tool round has completed: charges that work if the request then fails.
+	let settleServerToolRoundsOnError: (() => Promise<void>) | null = null;
 
 	try {
 		// Protocol detection
@@ -1068,6 +1148,9 @@ async function runTextGeneratePipelineInner(
 		ir.rawRequest = pre.ctx.rawBody;
 		timing.timer.end("ir_decode");
 		const requestedStream = ir.stream === true;
+		// Anthropic documents max_tokens: 0 as a prompt-cache pre-warm: an empty answer is the
+		// requested result, and the cache writes it made are billed.
+		const cachePreWarm = protocol === "anthropic.messages" && ir.maxTokens === 0;
 		const irForExecution: IRChatRequest = {
 			...ir,
 			// Always use the provider's streaming transport for text generation.
@@ -1265,6 +1348,7 @@ async function runTextGeneratePipelineInner(
 		if (
 			exec.result.kind === "completed" &&
 			exec.result.allowEmptySuccess !== true &&
+			!cachePreWarm &&
 			!hasUsableIRChatResponse(exec.result.ir as IRChatResponse | undefined)
 		) {
 			const emptyResponseDiagnostics = buildEmptyResponseDiagnostics(
@@ -1318,6 +1402,7 @@ async function runTextGeneratePipelineInner(
 			let serverToolRounds = 0;
 			let serverToolCalls = 0;
 			let billableWebSearchRequests: number | undefined;
+			let billableWebFetchRequests: number | undefined;
 			const serverToolUsage = {
 				datetimeRequests: 0,
 				webSearchRequests: 0,
@@ -1338,6 +1423,39 @@ async function runTextGeneratePipelineInner(
 			let webFetchObservability = pre.ctx.webFetchObservability ?? null;
 			let activeToolSpan: string | undefined;
 			let previousParentSpan: string | undefined;
+			// Each completed round as it ran: rounds can use different routes and credentials (a
+			// fallback mid-loop), and the aggregate below replaces each result's own usage.
+			const roundSnapshot = (result: any) => ({
+				result: { ...result, bill: { ...result.bill } },
+				usage: (result.ir as IRChatResponse | undefined)?.usage,
+			});
+			const completedRounds = [roundSnapshot(exec.result)];
+			const serverToolUsageMetrics = () => ({
+				...serverToolUsage,
+				...(billableWebSearchRequests === undefined ? {} : { billableWebSearchRequests }),
+				...(billableWebFetchRequests === undefined ? {} : { billableWebFetchRequests }),
+			});
+			// Completed rounds, the searches and fetches they ran and the model calls their tools
+			// made were all paid for upstream; an error after them must not make them free.
+			const settleCompletedServerToolRounds = async () => {
+				settleServerToolRoundsOnError = null;
+				const metrics = serverToolUsageMetrics();
+				try {
+					await chargeCompletedServerToolRounds({
+						ctx: pre.ctx,
+						protocol,
+						rounds: completedRounds,
+						usage: attachServerToolUsage(aggregateUsage, metrics),
+						toolMeters: attachServerToolUsageToRawUsage(undefined, metrics),
+					});
+				} catch (error) {
+					console.error("[gateway] server tool partial charge failed", {
+						requestId: pre.ctx.requestId,
+						error: error instanceof Error ? error.message : String(error),
+					});
+				}
+			};
+			settleServerToolRoundsOnError = settleCompletedServerToolRounds;
 
 			while (true) {
 				if (liveSink?.signal.aborted) break;
@@ -1345,6 +1463,9 @@ async function runTextGeneratePipelineInner(
 				const serverToolRound: NonNullable<typeof pre.ctx.serverToolTrace>[number] = {
 					round: serverToolRounds + 1, durationMs: 0, calls: [],
 				};
+				// Past the last follow-up turn no tool may run: with no calls left, the
+				// continuation reports server tool calls as over the limit without executing them.
+				const roundsExhausted = serverToolRounds >= maxServerToolRounds;
 				const continuation = await buildServerToolContinuation(
 					latestIrResponse,
 					preparedServerTools.config,
@@ -1419,12 +1540,17 @@ async function runTextGeneratePipelineInner(
 							const matched = filtered.slice(0, searchArgs.maxResults);
 							return { models: matched.map((model) => ({ id: model.model_id, name: model.name, description: model.description, input_modalities: model.input_types, output_modalities: model.output_types, providers: model.providers.map((item) => item.api_provider_id), supported_params: model.supported_params, pricing: model.pricing })), total_results: filtered.length, showing: matched.length };
 						},
-						remainingToolCalls: maxServerToolCalls - serverToolCalls,
+						remainingToolCalls: roundsExhausted ? 0 : maxServerToolCalls - serverToolCalls,
+						paidToolsAllowed: walletCanPay({
+							context: { credit: pre.ctx.gating?.credit, teamSettings: pre.ctx.teamSettings },
+							internal: pre.ctx.internal,
+						}),
 						signal: liveSink?.signal,
 					},
 				);
 				if (!continuation) break;
-				if ("limitExceeded" in continuation) {
+				if ("limitExceeded" in continuation && !roundsExhausted) {
+					await settleCompletedServerToolRounds();
 					const header = timing.timer.header();
 					pre.ctx.timing = timing.timer.snapshot();
 					return await handleError({
@@ -1434,7 +1560,8 @@ async function runTextGeneratePipelineInner(
 					});
 				}
 				serverToolCalls += continuation.serverToolCallCount ?? continuation.toolResults.length;
-				if (!liveSink?.signal.aborted && serverToolRounds >= maxServerToolRounds) {
+				if ("limitExceeded" in continuation) {
+					await settleCompletedServerToolRounds();
 					const header = timing.timer.header();
 					pre.ctx.timing = timing.timer.snapshot();
 					return await handleError({
@@ -1465,7 +1592,14 @@ async function runTextGeneratePipelineInner(
 				}
 				serverToolUsage.webSearchResults += continuation.usage.webSearchResults ?? 0;
 				serverToolUsage.webSearchExtraResults += continuation.usage.webSearchExtraResults ?? 0;
+				const webFetchRequestsBefore = serverToolUsage.webFetchRequests;
 				serverToolUsage.webFetchRequests += continuation.usage.webFetchRequests ?? 0;
+				if (typeof continuation.usage.billableWebFetchRequests === "number") {
+					billableWebFetchRequests =
+						(billableWebFetchRequests ?? webFetchRequestsBefore) + continuation.usage.billableWebFetchRequests;
+				} else if (billableWebFetchRequests !== undefined) {
+					billableWebFetchRequests += continuation.usage.webFetchRequests ?? 0;
+				}
 				serverToolUsage.advisorRequests += continuation.usage.advisorRequests ?? 0;
 				serverToolUsage.imageGenerationRequests += continuation.usage.imageGenerationRequests ?? 0;
 				serverToolUsage.applyPatchRequests += continuation.usage.applyPatchRequests ?? 0;
@@ -1490,9 +1624,8 @@ async function runTextGeneratePipelineInner(
 					serverToolTrace.push(tracedCall);
 					liveSink?.toolResult(serverToolTrace[serverToolTrace.length - 1]);
 				}
-				if (continuation.advisorUsage) {
-					aggregateUsage = mergeIRUsageTotals(aggregateUsage, continuation.advisorUsage);
-				}
+				// Advisor, subagent and fusion calls are billed on their own models' routes
+				// (pre.ctx.serverToolSubCallCharges), not as the main model's tokens.
 				// Tool images are priced on their own model's card, not this request's; the after
 				// stage adds these charges to the total (calculatePricing, meta.serverToolPricing).
 				if (continuation.imageGenerationPricing?.length) {
@@ -1547,6 +1680,7 @@ async function runTextGeneratePipelineInner(
 				delete (pre.ctx.meta as Record<string, unknown>).upstreamFetchStartMs;
 				const followUpExec = await doRequestWithIR(pre.ctx, nextIrRequest, timing);
 				if (followUpExec instanceof Response) {
+					await settleCompletedServerToolRounds();
 					const header = timing.timer.header();
 					pre.ctx.timing = timing.timer.snapshot();
 					return await handleError({
@@ -1573,6 +1707,8 @@ async function runTextGeneratePipelineInner(
 						finishStreamingProvider(pre.ctx);
 					} catch (error) {
 						finishStreamingProvider(pre.ctx, "error");
+						// The failing round's partial output stays free; the rounds before it are charged.
+						await settleCompletedServerToolRounds();
 						const header = timing.timer.header();
 						pre.ctx.timing = timing.timer.snapshot();
 						const upstreamFailed = error instanceof UpstreamStreamError;
@@ -1605,6 +1741,7 @@ async function runTextGeneratePipelineInner(
 				if (
 					followUpResult.kind === "completed" &&
 					followUpResult.allowEmptySuccess !== true &&
+					!cachePreWarm &&
 					!hasUsableIRChatResponse(followUpResult.ir as IRChatResponse | undefined)
 				) {
 					const emptyResponseDiagnostics = buildEmptyResponseDiagnostics(
@@ -1612,6 +1749,7 @@ async function runTextGeneratePipelineInner(
 					);
 					const message = emptyResponseMessage(emptyResponseDiagnostics);
 					await settleNonBillableFailure(pre.ctx, followUpResult);
+					await settleCompletedServerToolRounds();
 					await handleFailureAudit(
 						pre.ctx,
 						followUpResult,
@@ -1641,6 +1779,7 @@ async function runTextGeneratePipelineInner(
 					});
 				}
 				if (followUpResult.kind !== "completed" || !followUpResult.ir) {
+					await settleCompletedServerToolRounds();
 					const header = timing.timer.header();
 					pre.ctx.timing = timing.timer.snapshot();
 					return await handleError({
@@ -1658,6 +1797,7 @@ async function runTextGeneratePipelineInner(
 					});
 				}
 
+				completedRounds.push(roundSnapshot(followUpResult));
 				exec.result = followUpResult;
 				latestIrResponse = followUpResult.ir as IRChatResponse;
 				aggregateUsage = mergeIRUsageTotals(aggregateUsage, latestIrResponse.usage);
@@ -1670,6 +1810,7 @@ async function runTextGeneratePipelineInner(
 
 			pre.ctx.searchObservability = searchObservability;
 			pre.ctx.webFetchObservability = webFetchObservability;
+			settleServerToolRoundsOnError = null;
 
 			if (
 				serverToolUsage.datetimeRequests > 0 ||
@@ -1684,9 +1825,7 @@ async function runTextGeneratePipelineInner(
 				serverToolUsage.fusionRequests > 0 ||
 				serverToolUsage.searchModelsRequests > 0
 			) {
-				const usageMetrics = billableWebSearchRequests === undefined
-					? { ...serverToolUsage }
-					: { ...serverToolUsage, billableWebSearchRequests };
+				const usageMetrics = serverToolUsageMetrics();
 				const mergedUsage = attachServerToolUsage(aggregateUsage, usageMetrics);
 				if (exec.result.ir) {
 					(exec.result.ir as IRChatResponse).usage = mergedUsage;
@@ -1703,6 +1842,17 @@ async function runTextGeneratePipelineInner(
 					);
 					exec.result.rawResponse = rawResponse;
 				}
+			}
+			// Rounds can run on different routes and credentials (a fallback mid-loop): each is
+			// billed on its own, and the finalizer charges that bill once, never the aggregate on
+			// the final round's card. A single round keeps the ordinary pricing of its own usage.
+			if (completedRounds.length > 1) {
+				pre.ctx.serverToolRoundsBill = await priceServerToolRounds({
+					ctx: pre.ctx,
+					protocol,
+					rounds: completedRounds,
+					toolMeters: attachServerToolUsageToRawUsage(undefined, serverToolUsageMetrics()),
+				});
 			}
 		}
 
@@ -1806,6 +1956,7 @@ async function runTextGeneratePipelineInner(
 		});
 	} catch (err) {
 		logPipelineExecutionError("text-generate", err);
+		await (settleServerToolRoundsOnError as (() => Promise<void>) | null)?.();
 		const header = timing.timer.header();
 		pre.ctx.timing = timing.timer.snapshot();
 		return await handleError({

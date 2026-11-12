@@ -72,22 +72,24 @@ export function remarkRichBlocks() { return (tree: unknown) => walk(tree as Mark
  * goes back to the text it was written as. Runs after remark-math.
  */
 export function remarkMathGuard() {
-	return (tree: unknown, file: { value?: unknown }) => {
-		const source = String(file.value ?? "");
-		const visit = (node: MarkdownNode) => {
-			if (!node.children) return;
-			node.children = node.children.map(child => {
-				if (child.type !== "inlineMath") { visit(child); return child; }
-				const start = child.position?.start.offset, end = child.position?.end.offset;
-				if (start === undefined || end === undefined) return child;
-				const raw = source.slice(start, end);
-				if (raw.startsWith("$$")) return child;
-				const value = child.value ?? "";
-				return /^\s|\s$/.test(value) || /^\d/.test(source.charAt(end)) ? { type: "text", value: raw } : child;
-			});
-			// Neighbouring text nodes join again, so later plugins see one run of text.
-			node.children = node.children.reduce<MarkdownNode[]>((joined, child) => { const last = joined.at(-1); if (last?.type === "text" && child.type === "text") last.value = `${last.value ?? ""}${child.value ?? ""}`; else joined.push(child); return joined; }, []);
-		};
-		visit(tree as MarkdownNode);
+	return (tree: unknown, file: { value?: unknown }) => guardInlineMath(tree, String(file.value ?? ""));
+}
+
+/** remarkMathGuard's rule on a tree whose positions point into `source`. Nodes without positions are left alone. */
+export function guardInlineMath(tree: unknown, source: string) {
+	const visit = (node: MarkdownNode) => {
+		if (!node.children) return;
+		node.children = node.children.map(child => {
+			if (child.type !== "inlineMath") { visit(child); return child; }
+			const start = child.position?.start.offset, end = child.position?.end.offset;
+			if (start === undefined || end === undefined) return child;
+			const raw = source.slice(start, end);
+			if (raw.startsWith("$$")) return child;
+			const value = child.value ?? "";
+			return /^\s|\s$/.test(value) || /^\d/.test(source.charAt(end)) ? { type: "text", value: raw } : child;
+		});
+		// Neighbouring text nodes join again, so later plugins see one run of text.
+		node.children = node.children.reduce<MarkdownNode[]>((joined, child) => { const last = joined.at(-1); if (last?.type === "text" && child.type === "text") last.value = `${last.value ?? ""}${child.value ?? ""}`; else joined.push(child); return joined; }, []);
 	};
+	visit(tree as MarkdownNode);
 }

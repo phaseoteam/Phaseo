@@ -24,7 +24,7 @@ test('importable dashboard and alert JSON matches canonical definitions', async 
   for (const rule of alertRules({ lokiUid: 'loki', environment: 'staging' })) {
     assert.equal(rule.isPaused, true);
     assert.equal(rule.execErrState, 'Error');
-    assert.equal(rule.noDataState, 'OK');
+    assert.equal(rule.noDataState, rule.uid.includes('jobs-failing') ? 'KeepLast' : 'OK');
     assert.ok(!rule.data[0].model.expr.includes('$'));
     assert.ok(rule.data[0].model.expr.includes('environment="staging"'));
   }

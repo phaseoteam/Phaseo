@@ -1,5 +1,5 @@
 import Link from "@/components/link";
-import { useTranslations } from "@/i18n/react";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { decisionModelCapabilities } from "@/lib/models/modelCapabilities";
 import {
 	memo,
@@ -16,6 +16,8 @@ import {
 	Copy,
 	BadgeAlert,
 	CalendarClock,
+	EyeOff,
+	LockKeyhole,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -27,6 +29,15 @@ import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDispl
 import { hasPassedLifecycleDate } from "@/lib/models/modelLifecycle";
 import { resolveProviderLogoId } from "@/lib/providers/providerOffers";
 import { getModalityIcon } from "./modalityIcons";
+import { resolveModelVisibility } from "./modelVisibility";
+import {
+	buildPriceCardRows,
+	describePriceCardRow,
+	formatCardUsd,
+	priceCardTokenUnits,
+	type PriceCardLabels,
+} from "./priceCardRows";
+import { PriceCardRowList } from "./PriceCardRowList";
 
 type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
 	gateway_status?:
@@ -37,6 +48,8 @@ type ModelCardLike = Omit<ModelCardType, "gateway_status"> & {
 		| null;
 	router_requests_30d?: number | null;
 	router_spend_nanos_30d?: number | null;
+	// Set on workspace private-endpoint models, which only their workspace sees.
+	is_private?: boolean;
 };
 import { Logo } from "@/components/Logo";
 import { getModalityTone } from "@/lib/models/modalityStyles";
@@ -54,6 +67,8 @@ import {
 import {
 	HoverCard,
 	HoverCardContent,
+	HoverCardHeader,
+	HoverCardStat,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -346,48 +361,6 @@ function inferPriceUnitFromModality(modalityKey: string): string | null {
 	return null;
 }
 
-function summarizePricingValues(
-	values: string[],
-	formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string,
-): string | null {
-	const parsed = values
-		.map((value) => {
-			const match = value.match(/^\$([\d.,]+)(?:-\$?([\d.,]+))?\s*\/\s*(.+)$/);
-			if (!match) return null;
-			const min = Number(match[1]?.replace(/,/g, ""));
-			const max = Number((match[2] ?? match[1])?.replace(/,/g, ""));
-			const unit = match[3]?.trim();
-			if (!Number.isFinite(min) || !Number.isFinite(max) || !unit) return null;
-			return { min, max, unit };
-		})
-		.filter((entry): entry is { min: number; max: number; unit: string } => Boolean(entry));
-	if (parsed.length === 0) return null;
-	const unit = parsed[0]?.unit ?? null;
-	if (!unit || parsed.some((entry) => entry.unit !== unit)) return null;
-	const min = Math.min(...parsed.map((entry) => entry.min));
-	const max = Math.max(...parsed.map((entry) => entry.max));
-	const minText = formatPrice(min, formatNumber, { allowZero: true });
-	const maxText = formatPrice(max, formatNumber, { allowZero: true });
-	if (!minText || !maxText) return null;
-	return min === max ? `${minText} / ${unit}` : `${minText}-${maxText} / ${unit}`;
-}
-
-function summarizeDuplicatePricingItems(
-	items: Array<{ value: string }>,
-	formatNumber: (value: number, options?: Intl.NumberFormatOptions) => string,
-): string | null {
-	const uniqueValues = Array.from(
-		new Set(
-			items
-				.map((item) => String(item.value ?? "").trim())
-				.filter(Boolean),
-		),
-	);
-	if (uniqueValues.length === 0) return null;
-	if (uniqueValues.length === 1) return uniqueValues[0] ?? null;
-	return summarizePricingValues(uniqueValues, formatNumber);
-}
-
 function ModelCardScrollRail({
 	ariaLabel,
 	children,
@@ -463,6 +436,9 @@ function ModelCardImpl({
 	const tAuditCopy = useTranslations();
 	const t = useTranslations("Catalogue.models");
 	const tDetail = useTranslations("Catalogue.modelDetail");
+	const tCard = useTranslations("Catalogue.hoverCards");
+	const tPriceCard = useTranslations("Catalogue.hoverCards.priceCard");
+	const locale = useLocale();
 	const tProviderStatus = useTranslations(
 		"Catalogue.modelDetail.providerTable.statuses",
 	);
@@ -502,13 +478,23 @@ function ModelCardImpl({
 			model.organisation_id,
 		) ?? "",
 	).trim();
+	const labPrefix = `${organisationLabel}: `;
+	const nameHasLabPrefix =
+		Boolean(organisationLabel) &&
+		model.name.toLowerCase().startsWith(labPrefix.toLowerCase());
 	const modelDisplayName =
 		showOrganisationPrefix && organisationLabel
-			? model.name.toLowerCase().startsWith(`${organisationLabel.toLowerCase()}: `)
+			? nameHasLabPrefix
 				? model.name
-				: `${organisationLabel}: ${model.name}`
+				: `${labPrefix}${model.name}`
 			: model.name;
 	const safeModelDisplayName = String(modelDisplayName ?? "").trim() || displayModelId;
+	// Phones drop the "Lab: " prefix; the lab logo sits right beside the name.
+	const shortModelName =
+		String(nameHasLabPrefix ? model.name.slice(labPrefix.length) : model.name).trim() ||
+		displayModelId;
+	const showLabPrefix =
+		Boolean(organisationLabel) && (showOrganisationPrefix || nameHasLabPrefix);
 	const lifecycleStatus = String(model.status ?? "")
 		.trim()
 		.toLowerCase();
@@ -529,6 +515,32 @@ function ModelCardImpl({
 			: null;
 	const isComingSoon =
 		!isRetired && !isDeprecated && model.gateway_status === "coming_soon";
+	const visibility = resolveModelVisibility(model);
+	const isInternal = visibility === "internal";
+	const isPrivate = visibility === "private";
+	const visibilityLabel = isInternal
+		? tDetail("sections.internalOnly")
+		: isPrivate
+			? t("filtersUi.tierPrivate")
+			: null;
+	const VisibilityIcon = isInternal ? EyeOff : isPrivate ? LockKeyhole : null;
+	const visibilityBadge = (display: string, iconOnly = false) =>
+		VisibilityIcon && visibilityLabel ? (
+			<span
+				title={iconOnly ? visibilityLabel : undefined}
+				className={cn(
+					display,
+					"shrink-0 items-center gap-1 rounded-md border text-[11px] font-medium leading-4",
+					iconOnly ? "p-0.5" : "px-1.5 py-px",
+					isInternal
+						? "border-[#00b8db]/30 bg-[#00b8db]/10 text-cyan-700 dark:text-cyan-300"
+						: "border-border bg-muted text-muted-foreground",
+				)}
+			>
+				<VisibilityIcon className="size-3" aria-hidden="true" />
+				<span className={iconOnly ? "sr-only" : undefined}>{visibilityLabel}</span>
+			</span>
+		) : null;
 	const [copied, setCopied] = useState(false);
 	const routerRequests30d =
 		Number.isFinite(Number(model.router_requests_30d)) &&
@@ -892,56 +904,62 @@ function ModelCardImpl({
 			},
 		];
 	}
-	const pricingDetailGroups = pricingDetailRows.reduce<
-		Array<{
-			id: string;
-			baseLabel: string;
-			items: Array<{ id: string; label: string; value: string; variant: string | null }>;
-		}>
-	>((groups, row) => {
-		const match = row.label.match(/^(.*?)(?: \((.+)\))?$/);
-		const baseLabel = match?.[1]?.trim() || row.label;
-		const variant = match?.[2]?.trim() || null;
-		const existingGroup = groups.find((group) => group.baseLabel === baseLabel);
-		if (existingGroup) {
-			existingGroup.items.push({
-				id: row.id,
-				label: row.label,
-				value: row.value,
-				variant,
-			});
-			return groups;
-		}
-		groups.push({
-			id: row.id,
-			baseLabel,
-			items: [
-				{
-					id: row.id,
-					label: row.label,
-					value: row.value,
-					variant,
-				},
-			],
-		});
-		return groups;
-	}, []);
-	const getVideoAudioGroup = (variant: string | null) => {
-		if (!variant) return { heading: null, detail: null as string | null };
-		if (variant.endsWith(", with audio")) {
-			return {
-				heading: "With audio",
-				detail: variant.slice(0, -", with audio".length) || null,
-			};
-		}
-		if (variant.endsWith(", no audio")) {
-			return {
-				heading: "No audio",
-				detail: variant.slice(0, -", no audio".length) || null,
-			};
-		}
-		return { heading: null, detail: variant };
+	const priceCardLabels: PriceCardLabels = {
+		kinds: {
+			input: tPriceCard("rows.input"),
+			output: tPriceCard("rows.output"),
+			reasoning: tPriceCard("rows.reasoning"),
+			cachedInput: tPriceCard("rows.cachedInput"),
+			cachedWrite: tPriceCard("rows.cachedWrite"),
+			requests: tPriceCard("rows.requests"),
+			webSearch: tPriceCard("rows.webSearch"),
+			webFetch: tPriceCard("rows.webFetch"),
+			tokens: tPriceCard("rows.tokens"),
+		},
+		modalities: {
+			image: tPriceCard("modalities.image"),
+			video: tPriceCard("modalities.video"),
+			audio: tPriceCard("modalities.audio"),
+		},
+		list: (items) => new Intl.ListFormat(locale, { style: "long", type: "conjunction" }).format(items),
+		also: (list) => tPriceCard("alsoModalities", { list }),
+		from: tPriceCard("from"),
+		atProviderCost: t("atProviderCost"),
 	};
+	const priceCardRows = buildPriceCardRows(pricingDetailRows);
+	const priceCardTokenUnitMode = priceCardTokenUnits(priceCardRows);
+	const describedPriceCardRows = priceCardRows.map((row) => describePriceCardRow(row, priceCardLabels));
+	const priceCardMeta = [
+		pricingProviderId ? tPriceCard("cheapestRoute") : null,
+		priceCardTokenUnitMode === "all" || (priceCardTokenUnitMode === "none" && headline?.kind === "tokens")
+			? tPriceCard("perMillionTokens")
+			: priceCardTokenUnitMode === "some"
+				? tPriceCard("perMillionTokensUnlessNoted")
+				: null,
+	];
+	// Token headlines read "$2 in · $10 out"; the meta line states the unit.
+	const priceCardHeadline =
+		headline?.kind === "tokens" && (headline.input !== null || headline.output !== null) ? (
+			<>
+				{headline.input !== null ? (
+					<>
+						{formatCardUsd(headline.input)}{" "}
+						<span className="text-xs font-normal text-muted-foreground">{tPriceCard("in")}</span>
+					</>
+				) : null}
+				{headline.input !== null && headline.output !== null ? (
+					<span className="text-muted-foreground"> · </span>
+				) : null}
+				{headline.output !== null ? (
+					<>
+						{formatCardUsd(headline.output)}{" "}
+						<span className="text-xs font-normal text-muted-foreground">{tPriceCard("out")}</span>
+					</>
+				) : null}
+			</>
+		) : (
+			headlineSummary
+		);
 	const formatModalities = (values: string[]) => {
 		const unique = sortModalitiesForDisplay(Array.from(
 			new Set(values.map((value) => String(value ?? "").trim()).filter(Boolean)),
@@ -995,7 +1013,7 @@ function ModelCardImpl({
 					contentPaddingClassName,
 				)}
 			>
-				<div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-start gap-3">
+				<div className="grid grid-cols-[auto_minmax(0,1fr)] items-start gap-3 sm:grid-cols-[auto_minmax(0,1fr)_auto]">
 					<Link
 						href={`/organisations/${model.organisation_id}`}
 						prefetch={false}
@@ -1024,10 +1042,19 @@ function ModelCardImpl({
 								href={modelHref}
 								prefetch={false}
 								scroll
+								data-no-entity-card
 								className="font-semibold text-sm leading-[1.1] text-foreground hover:underline underline-offset-4 transition-colors duration-200 line-clamp-1"
 							>
-								{safeModelDisplayName}
+								{showLabPrefix ? (
+									<>
+										<span className="sr-only sm:not-sr-only">{labPrefix}</span>
+										{shortModelName}
+									</>
+								) : (
+									safeModelDisplayName
+								)}
 							</Link>
+							{visibilityBadge("hidden sm:inline-flex")}
 							{displayModelId ? (
 								<Tooltip>
 									<TooltipTrigger asChild>
@@ -1036,7 +1063,7 @@ function ModelCardImpl({
 											size="icon"
 											variant="ghost"
 											onClick={copyModelId}
-											className="h-5 w-5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100"
+											className="hidden h-5 w-5 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 focus-visible:opacity-100 sm:inline-flex"
 											aria-label={`Copy API model ID for ${safeModelDisplayName}`}
 										>
 											<span className="relative h-3 w-3">
@@ -1065,17 +1092,21 @@ function ModelCardImpl({
 								</Tooltip>
 							) : null}
 						</div>
-						<div className="text-xs leading-[1.15] text-muted-foreground font-mono truncate">
-							{displayModelId}
+						<div className="flex min-w-0 items-center gap-1.5">
+							{visibilityBadge("inline-flex sm:hidden", true)}
+							<div className="min-w-0 truncate text-xs leading-[1.15] text-muted-foreground font-mono">
+								{displayModelId}
+							</div>
 						</div>
 					</div>
 
-					<Button asChild size="icon" variant="ghost" className="h-8 w-8 shrink-0">
+					<Button asChild size="icon" variant="ghost" className="hidden h-8 w-8 shrink-0 sm:inline-flex">
 						<Link
 							href={modelHref}
 							prefetch={false}
 							scroll
 							aria-label={t("viewDetails")}
+							data-no-entity-card
 							className="group/open"
 						>
 							<ArrowUpRight
@@ -1109,10 +1140,11 @@ function ModelCardImpl({
 						)) : <Link href={`${modelHref}/pricing`} className="rounded-md border border-border/60 px-2 py-1 underline underline-offset-2">{t("pricing")}</Link>) : null}
 						{!dualDecisionsModel && pillValue ? (
 							pricingDetailRows.length > 0 ? (
-								<HoverCard openDelay={120} closeDelay={100}>
+								<HoverCard>
 									<HoverCardTrigger asChild>
-										<button
-											type="button"
+										<Link
+											href={`${modelHref}/pricing`}
+											prefetch={false}
 											data-no-row-nav="true"
 											className="inline-flex items-center gap-1 rounded-md border border-border/60 bg-muted/30 px-2 py-1 text-left transition-colors hover:bg-muted/45"
 										>
@@ -1122,198 +1154,25 @@ function ModelCardImpl({
 											<span className="font-medium tabular-nums text-foreground">
 												{pillValue}
 											</span>
-										</button>
+										</Link>
 									</HoverCardTrigger>
-									<HoverCardContent
-										align="start"
-										className="max-h-96 w-fit min-w-[13rem] max-w-[22rem] overflow-y-auto p-3"
-									>
-										{headlineSummary ? (
-											<div className="space-y-2 text-xs">
-												<div className="flex items-center justify-between gap-4">
-													<span className="flex items-center gap-2 font-medium text-foreground">
-														{pricingProviderId && pricingProviderName ? (
-															<span className="relative h-4 w-4 shrink-0 rounded-[4px] border bg-background">
-																<Logo
-																	id={resolveProviderLogoId({ providerId: pricingProviderId })}
-																	alt={pricingProviderName}
-																	className="object-contain p-[1px]"
-																	fill
-																/>
-															</span>
-														) : null}
-														{t("pricing")}
-													</span>
-													{pricingProviderName ? (
-														<span className="truncate text-muted-foreground">{pricingProviderName}</span>
-													) : null}
-												</div>
-												{pricingDetailGroups.map((group) =>
-													group.items.some((item) => item.variant) ? (
-														// One price per variant (resolution, audio, quality)
-														// under the meter it applies to.
-														<div key={group.id} className="space-y-1">
-															<div className="font-medium text-foreground">{group.baseLabel}</div>
-															{group.items.map((item) => (
-																<div key={item.id} className="flex items-baseline justify-between gap-4 pl-2">
-																	<span className="text-muted-foreground">{item.variant ?? item.label}</span>
-																	<span className="shrink-0 tabular-nums text-foreground">{item.value}</span>
-																</div>
-															))}
-														</div>
-													) : (
-														group.items.map((item) => (
-															<div key={item.id} className="flex items-baseline justify-between gap-4">
-																<span className="text-muted-foreground">{item.label}</span>
-																<span className="shrink-0 tabular-nums text-foreground">{item.value}</span>
-															</div>
-														))
-													),
-												)}
-											</div>
-										) : (
-										<div className="space-y-2">
-											{pricingDetailGroups.map((group) => {
-												const shouldGroupVariants =
-													group.items.length > 1 &&
-													group.items.every((item) => Boolean(item.variant));
-												const duplicateSummary =
-													!shouldGroupVariants && group.items.length > 1
-																? summarizeDuplicatePricingItems(group.items, format.number)
-														: null;
-												if (duplicateSummary) {
-													return (
-														<div key={group.id} className="space-y-0.5 text-xs">
-															<div className="font-semibold text-foreground">
-																{group.baseLabel}
-															</div>
-															<div className="text-muted-foreground">
-																{duplicateSummary}
-															</div>
-														</div>
-													);
-												}
-												if (!shouldGroupVariants) {
-													return group.items.map((item) => (
-														<div key={item.id} className="space-y-0.5 text-xs">
-															<div className="font-semibold text-foreground">
-																{item.label}
-															</div>
-															<div className="text-muted-foreground">{item.value}</div>
-														</div>
-													));
-												}
-												if (group.baseLabel === "Image Output" && group.items.length >= 3) {
-															const summarizedValue = summarizePricingValues(
-																group.items.map((item) => item.value),
-																format.number,
-															);
-													if (summarizedValue) {
-														return (
-															<div key={group.id} className="space-y-0.5 text-xs">
-																<div className="font-semibold text-foreground">
-																	{group.baseLabel}
-																</div>
-																<div className="text-muted-foreground">
-																	{summarizedValue}
-																</div>
-															</div>
-														);
-													}
-												}
-												if (group.baseLabel === "Video Output") {
-													const audioGroups = group.items.reduce<
-														Array<{
-															id: string;
-															heading: string | null;
-															items: Array<{ id: string; detail: string | null; value: string }>;
-														}>
-													>((acc, item) => {
-														const parsed = getVideoAudioGroup(item.variant);
-														const key = parsed.heading ?? "__default__";
-														const existing = acc.find(
-															(candidate) => (candidate.heading ?? "__default__") === key,
-														);
-														if (existing) {
-															existing.items.push({
-																id: item.id,
-																detail: parsed.detail,
-																value: item.value,
-															});
-															return acc;
-														}
-														acc.push({
-															id: item.id,
-															heading: parsed.heading,
-															items: [
-																{
-																	id: item.id,
-																	detail: parsed.detail,
-																	value: item.value,
-																},
-															],
-														});
-														return acc;
-													}, []);
-													return (
-														<div key={group.id} className="space-y-1.5 text-xs">
-															<div className="font-semibold text-foreground">
-																{group.baseLabel}
-															</div>
-															<div className="space-y-1.5">
-																{audioGroups.map((audioGroup) => (
-																	<div key={audioGroup.id} className="space-y-1">
-																		{audioGroup.heading ? (
-																			<div className="text-[11px] font-medium text-foreground/80">
-																				{audioGroup.heading}
-																			</div>
-																		) : null}
-																		<div className="space-y-1">
-																			{audioGroup.items.map((item) => (
-																				<div
-																					key={item.id}
-																					className="flex items-baseline justify-between gap-3"
-																				>
-																					<div className="text-muted-foreground">
-																						{item.detail ?? tAuditCopy("Catalogue.models.detail.quickstart.tierStandard")}
-																					</div>
-																					<div className="shrink-0 text-muted-foreground">
-																						{item.value}
-																					</div>
-																				</div>
-																			))}
-																		</div>
-																	</div>
-																))}
-															</div>
-														</div>
-													);
-												}
-												return (
-													<div key={group.id} className="space-y-1 text-xs">
-														<div className="font-semibold text-foreground">
-															{group.baseLabel}
-														</div>
-														<div className="space-y-1">
-															{group.items.map((item) => (
-																<div
-																	key={item.id}
-																	className="flex items-baseline justify-between gap-3"
-																>
-																	<div className="text-muted-foreground">
-																		{item.variant}
-																	</div>
-																	<div className="shrink-0 text-muted-foreground">
-																		{item.value}
-																	</div>
-																</div>
-															))}
-														</div>
-													</div>
-												);
-											})}
-										</div>
-										)}
+									<HoverCardContent align="start" className="max-h-96 w-72 space-y-2.5 overflow-y-auto rounded-md p-3">
+										<HoverCardHeader
+											icon={pricingProviderId && pricingProviderName ? (
+												<span className="relative block h-4 w-4 shrink-0 rounded-[4px] border bg-background">
+													<Logo
+														id={resolveProviderLogoId({ providerId: pricingProviderId })}
+														alt=""
+														className="object-contain p-[1px]"
+														fill
+													/>
+												</span>
+											) : null}
+											title={pricingProviderName ?? t("pricing")}
+											meta={priceCardMeta}
+										/>
+										{priceCardHeadline ? <HoverCardStat>{priceCardHeadline}</HoverCardStat> : null}
+										<PriceCardRowList rows={describedPriceCardRows} />
 									</HoverCardContent>
 								</HoverCard>
 							) : (
@@ -1339,7 +1198,7 @@ function ModelCardImpl({
 								<span>{lifecycleLabel}</span>
 							</span>
 						) : providerStatusItems.length > 0 ? (
-							<HoverCard openDelay={120} closeDelay={100}>
+							<HoverCard>
 								<HoverCardTrigger asChild>
 									<button
 										type="button"
@@ -1352,56 +1211,50 @@ function ModelCardImpl({
 										</span>
 									</button>
 								</HoverCardTrigger>
-								<HoverCardContent align="start" className="w-72 p-3">
-									<div className="space-y-2">
-										<div className="text-xs font-medium text-foreground">
-										{tDetail("providerTable.heading")}
-										</div>
-										<ScrollArea className="pr-1" style={{ height: providerListHeight }}>
-											<div className="space-y-1 pr-2">
-												{providerStatusItems.map((provider) => (
-													<div
+								<HoverCardContent align="start" className="w-72 space-y-2.5 rounded-md p-3">
+									<HoverCardHeader
+										title={t("providers")}
+										meta={[tCard("activeListed", { active: format.number(activeProviders), listed: format.number(providerCount) })]}
+									/>
+									<ScrollArea className="pr-1" style={{ height: providerListHeight }}>
+										<ul className="space-y-1 pr-2 text-xs">
+											{providerStatusItems.map((provider) => {
+												const statusLabel = formatProviderStatusLabel(provider.status, providerStatusLabels);
+												return (
+													<li
 														key={`${provider.id || "provider"}-${provider.name}`}
-														className="flex items-center justify-between gap-3 rounded-sm px-1 py-1 text-xs"
+														className="flex items-center gap-2 py-1"
 													>
 														{provider.id ? (
 															<Link
 																href={`/api-providers/${provider.id}`}
 																prefetch={false}
-																className="flex min-w-0 items-center gap-2 text-foreground hover:underline underline-offset-2"
+																className="flex min-w-0 items-center gap-2 text-foreground underline-offset-2 hover:underline"
 															>
-																<span className="relative h-4 w-4 shrink-0 rounded-[4px] border bg-background">
+																<span className="relative h-4 w-4 shrink-0 rounded-md border bg-background">
 																	<Logo
 																		id={resolveProviderLogoId({ providerId: provider.id })}
-																		alt={provider.name}
+																		alt=""
 																		className="object-contain p-[1px]"
 																		fill
 																	/>
 																</span>
-																<span className="truncate">
-																	{provider.name}
-																</span>
+																<span className="truncate">{provider.name}</span>
 															</Link>
 														) : (
-															<span className="flex min-w-0 items-center gap-2">
-																<span className="truncate text-foreground">
-																	{provider.name}
-																</span>
-															</span>
+															<span className="min-w-0 truncate text-foreground">{provider.name}</span>
 														)}
 														<span
-															className={cn("inline-flex items-center gap-1 rounded-sm px-1.5 py-0.5 text-[11px]", PROVIDER_STATUS_META[provider.status]?.badgeClassName ?? "bg-muted text-muted-foreground")}
+															title={statusLabel}
+															className={cn("size-1.5 shrink-0 rounded-full", PROVIDER_STATUS_META[provider.status]?.dotClassName ?? "bg-muted-foreground/60")}
 														>
-															<span
-																className={cn("h-1.5 w-1.5 rounded-full", PROVIDER_STATUS_META[provider.status]?.dotClassName ?? "bg-muted-foreground/60")}
-															/>
-															{formatProviderStatusLabel(provider.status, providerStatusLabels)}
+															<span className="sr-only">{statusLabel}</span>
 														</span>
-													</div>
-												))}
-											</div>
-										</ScrollArea>
-									</div>
+													</li>
+												);
+											})}
+										</ul>
+									</ScrollArea>
 								</HoverCardContent>
 							</HoverCard>
 						) : (

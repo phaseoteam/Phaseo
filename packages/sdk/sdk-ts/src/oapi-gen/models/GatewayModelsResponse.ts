@@ -1,4 +1,13 @@
 export interface GatewayModelsResponse {
+  access?: {
+    hidden_model_count: number;
+    hidden_models: {
+      id: string;
+      name: string;
+    }[];
+    limited_model_count: number;
+    restricted: boolean;
+  };
   availability_mode: "active" | "all";
   limit: number;
   models: {

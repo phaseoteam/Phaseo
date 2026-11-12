@@ -31,15 +31,13 @@ CREATE UNIQUE INDEX credit_ledger_ref_type_ref_id_key ON public.credit_ledger US
 CREATE INDEX credit_ledger_refund_claim_state_idx ON public.credit_ledger USING btree (refund_claim_state)
   WHERE (ref_type = 'Stripe_Payment_Intent'::text);
 
+CREATE INDEX credit_ledger_request_charge_movements_idx ON public.credit_ledger USING btree (workspace_id, created_at) INCLUDE (source_ref_id, amount_nanos)
+  WHERE ((ref_type = 'gateway_request_charge'::text) AND (source_ref_type = 'gateway_request'::text) AND (status = 'applied'::text));
+
 CREATE INDEX credit_ledger_source_ref_idx ON public.credit_ledger USING btree (source_ref_type, source_ref_id);
 
 CREATE INDEX credit_ledger_workspace_id_idx ON public.credit_ledger USING btree (workspace_id)
   WHERE (workspace_id IS NOT NULL);
-
-CREATE POLICY "Enable insert for users based on user_id" ON "public"."credit_ledger"
-  FOR INSERT
-  TO "authenticated"
-  WITH CHECK (public.is_workspace_member(workspace_id));
 
 CREATE POLICY "credit_ledger_select_own_team" ON "public"."credit_ledger"
   FOR SELECT

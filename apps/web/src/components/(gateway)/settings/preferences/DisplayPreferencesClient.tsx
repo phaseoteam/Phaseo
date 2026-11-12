@@ -130,7 +130,7 @@ function PreferenceRow({
 }) {
 	const t = useTranslations("SettingsUI");
 	return (
-		<div data-slot="preference-row" className="grid gap-3 border-t border-border/60 py-5 first:border-t-0 sm:grid-cols-[minmax(0,1fr)_16rem] sm:items-start sm:gap-8">
+		<div data-slot="preference-row" className="grid gap-3 border-t border-border/60 py-4 first:border-t-0 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:items-start sm:gap-8">
 			<div className="min-w-0 sm:pt-1">
 				<p className="text-sm font-medium">{title}</p>
 				<p className="mt-1 text-sm leading-relaxed text-muted-foreground">{description}</p>

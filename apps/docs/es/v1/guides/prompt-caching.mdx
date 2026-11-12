@@ -123,6 +123,7 @@ Almacena en caché el contenido que se mantiene igual entre solicitudes: instruc
 Phaseo envía a cada proveedor solo los controles de caché que documenta y elimina el resto. Los controles de caché nunca excluyen a un proveedor del enrutamiento. Cada página de modelo indica sus precios de lectura y escritura de caché.
 </Note>
 
+<span id="which-providers-cache-automatically"></span>
 ## Qué proveedores almacenan en caché automáticamente
 
 | Proveedor | Caché | Qué envía Phaseo |
@@ -288,6 +289,11 @@ Gemini 2.5 y posteriores almacenan en caché de forma implícita, sin necesidad 
 ### Responses: envía la conversación completa
 
 Phaseo no guarda las respuestas. Las solicitudes que establecen `previous_response_id` o `conversation` devuelven `400` `unsupported_param`, así que envía la conversación completa en `input` en cada paso. Su inicio estable es el prefijo que se almacena en caché. En los bucles de herramientas, devuelve también los elementos de salida `reasoning`; consulta [Razonamiento en bucles de herramientas](../api-reference/endpoint/responses.mdx#reasoning-in-tool-loops).
+
+<span id="change-reasoning-effort-mid-conversation"></span>
+### Cambia el esfuerzo de razonamiento a mitad de la conversación
+
+Cambia `reasoning_effort` (Chat Completions) o `reasoning.effort` (Responses) entre solicitudes, y Phaseo mantiene la caché de prompts de Claude: envía el cambio como un marcador de esfuerzo dentro de `messages` en lugar de un nuevo esfuerzo de nivel superior. Esto funciona siempre que devuelvas el razonamiento de Claude sin cambios. En Anthropic Messages, envías tú mismo el marcador. Consulta [Cambia el esfuerzo de razonamiento a mitad de la conversación](./reasoning-effort.mdx).
 
 <span id="usage-and-pricing-fields"></span>
 ## Campos de uso y precios

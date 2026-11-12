@@ -71,7 +71,7 @@ app.whenReady().then(async () => {
      await new Promise(resolve=>setTimeout(resolve,${humanWait}));
      await window.__auditOpenChat('Documents '+decision);
      // MCP requests are answered in the panel above the composer; a free-text field is its answer box.
-     const topic=await wait(()=>document.querySelector('[aria-label="Agent questions"] input'));Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(topic,'work');topic.dispatchEvent(new Event('input',{bubbles:true}));await new Promise(resolve=>setTimeout(resolve,50));(await wait(()=>Array.from(document.querySelectorAll('[aria-label="Agent questions"] button')).find(button=>/^Submit answer/.test(button.textContent)&&!button.disabled))).click();
+     const topic=await wait(()=>document.querySelector('[aria-label="Agent questions"] input'));Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(topic,'work');topic.dispatchEvent(new Event('input',{bubbles:true}));await new Promise(resolve=>setTimeout(resolve,50));(await wait(()=>Array.from((document.querySelector('[aria-label="Agent questions"]').closest('form')??document.querySelector('[aria-label="Agent questions"]')).querySelectorAll('button')).find(button=>/^Submit answer/.test(button.textContent)&&!button.disabled))).click();
     }
     await wait(async()=>{const value=await api.task(task.id);if(value.status==='failed')throw Error(value.error);return value.status==='completed';});
    }

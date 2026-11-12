@@ -39,8 +39,8 @@ El relay envía `relay.connected` cuando el proveedor está listo. Después env�
 
 | Proveedor | Audio de entrada |
 | --- | --- |
-| OpenAI, xAI, ElevenLabs, GPT Live | PCM16 a 24 kHz |
-| Google, Mistral | PCM16 a 16 kHz |
+| OpenAI, xAI, ElevenLabs Realtime, GPT Live | PCM16 a 24 kHz |
+| Google, Mistral, ElevenLabs Scribe v3 Live | PCM16 a 16 kHz |
 
 Phaseo retiene $5 de crédito al iniciar la sesión y amplía la retención a medida que avanza la llamada.
 
@@ -109,7 +109,7 @@ ElevenLabs factura una llamada por cada segundo que está conectada, más los to
 
 ### Transcripción en streaming
 
-Los modelos Voxtral Realtime de Mistral transcriben el audio en directo a medida que llega: `mistral/voxtral-mini-transcribe-realtime-3` y `mistral/voxtral-mini-transcribe-realtime`. No responden con voz, así que crea la sesión sin `voice` ni `instructions`:
+Los modelos de transcripción en streaming transcriben el audio en directo a medida que llega: `mistral/voxtral-mini-transcribe-realtime-3` y `mistral/voxtral-mini-transcribe-realtime` de Mistral, y `eleven-labs/scribe-v3-live` de ElevenLabs. No responden con voz, así que crea la sesión sin `voice` ni `instructions`:
 
 ```bash
 curl https://api.phaseo.app/v1/audio/realtime/sessions \
@@ -122,7 +122,13 @@ Conecta de la misma forma y transmite PCM16 a 16 kHz como `client.audio`. Los ev
 
 Cuando envías `session.end`, el relay termina el flujo de audio de Mistral y espera hasta 10 segundos a `transcription.done`, que contiene la transcripción completa, antes de liquidar y enviar `session.ended`. Se usa el audio que ya enviaste; no se descarta nada.
 
-La transcripción en streaming se factura por minuto de audio que envías ($0.008 por minuto para Voxtral Mini Transcribe Realtime 3), medido por el relay. El recuento propio de Mistral en `transcription.done` es el mínimo que se cobra. Para una grabación que ya tienes, usa [transcripciones de audio](/es/v1/api-reference/endpoint/audio-transcriptions).
+Con `eleven-labs/scribe-v3-live`, el relay traduce los eventos de ElevenLabs a los mismos eventos `transcription.*`: `session.created`, después `transcription.partial` con el texto del segmento en curso (cada uno sustituye al anterior e incluye `turn_probability`) y, por cada segmento terminado, `transcription.text.delta` con su texto y `transcription.segment` con su `segment_index`. Con `include_timestamps` o `include_language_detection`, le sigue `transcription.segment.words` con los tiempos de cada palabra y el idioma detectado, y `transcription.language` cuando cambia el idioma. Con `diarize`, le sigue `transcription.segment.speakers` con las etiquetas de hablante, y `transcription.speakers_merged` indica cuándo dos ID de hablante resultan ser la misma persona. Los errores de ElevenLabs llegan como `error`.
+
+El relay se conecta a ElevenLabs con tu primer `client.audio`, y a partir de ahí la configuración queda fija. Envía antes `session.update` con cualquiera de `language`, `secondary_languages`, `commit_strategy` (`vad`, el predeterminado, `turn_prediction` o `manual`), `vad_silence_threshold_secs` (0.192 a 3), `vad_threshold`, `min_speech_duration_ms`, `min_silence_duration_ms`, `include_timestamps`, `include_language_detection`, `multilang_mode`, `diarize`, `no_verbatim`, `filter_background_audio` y `previous_text`; el relay responde con `session.updated`. Los keyterms, la biblioteca de keyterms, la edición de transcripciones y la detección o redacción de entidades tienen un coste adicional en ElevenLabs y aún no están disponibles: se rechazan con `relay.client_event_rejected` y `reason: "realtime_transcription_option_not_supported"`. Con `manual`, envía `{"type": "input_audio.commit"}` para cerrar un segmento cuando se hayan enviado al menos 0,3 segundos de audio nuevo. Sigue enviando audio, también silencio: ElevenLabs termina una sesión que no recibe nada durante 15 segundos.
+
+Cuando envías `session.end` a una sesión de Scribe, el relay confirma el audio que aún no se ha transcrito y espera hasta 10 segundos a su transcripción; después envía `transcription.done` con la transcripción completa y liquida. Menos de 0,3 segundos de audio después del último segmento no se pueden confirmar, así que no se transcriben.
+
+La transcripción en streaming se factura por minuto de audio que envías ($0.008 por minuto para Voxtral Mini Transcribe Realtime 3, $0.22 por hora para Scribe v3 Live), medido por el relay. El recuento propio de Mistral en `transcription.done` es el mínimo que se cobra; ElevenLabs no informa del uso, así que una sesión de Scribe se factura solo con el recuento del relay. Para una grabación que ya tienes, usa [transcripciones de audio](/es/v1/api-reference/endpoint/audio-transcriptions).
 
 ## Termina una sesión
 
@@ -248,7 +254,7 @@ Phaseo nunca termina las sesiones de API por inactividad, y los límites de gast
 | Google Live | 60 minutos, sumando las conexiones que reanuda el relay. La llamada también termina si tu cliente deja de enviar audio durante unos 150 segundos. |
 | GPT Live | 25 minutos |
 | ElevenLabs Realtime | 30 minutos |
-| Transcripción en streaming de Mistral | 60 minutos |
+| Transcripción en streaming de Mistral y ElevenLabs | 60 minutos |
 | Tope de descubierto | $1 por encima de tus retenciones y tu saldo libre |
 | Pérdida de acceso | La clave se revoca, caduca o se pausa, o se elimina el espacio de trabajo. Se detecta en aproximadamente un minuto y después la llamada termina sin periodo de gracia. |
 | Cambio de política | 30 segundos después de un aviso `policy_blocked`, si la política sigue bloqueando la llamada |

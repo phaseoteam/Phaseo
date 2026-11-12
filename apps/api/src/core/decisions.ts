@@ -21,6 +21,18 @@ export type NativeDecisionRequest = {
 	provider_options?: DecisionProviderOptions;
 };
 
+/**
+ * Most questions any request may carry: the highest limit a provider documents
+ * (Google's Gemini Decision takes 1,000). The request schema enforces only this
+ * ceiling; each route's own limit is applied after routing.
+ */
+export const DECISION_QUESTION_CEILING = 1000;
+/**
+ * Limit for a route whose capability does not declare `params.max_questions`.
+ * It is what every route allowed before the limit became per route.
+ */
+export const DEFAULT_ROUTE_QUESTION_LIMIT = 128;
+
 export type DecisionProviderOptions = { typesafe?: { long_context?: boolean } };
 export const DecisionProviderOptionsSchema = lazySchema(() => z.object({
 	typesafe: z.object({ long_context: z.boolean().optional() }).strict().optional(),
@@ -77,7 +89,7 @@ export const NativeDecisionsBodySchema = lazySchema(() => z.object({
 			content: z.union([z.string().max(10485760), z.array(inputPart)]),
 		}).strict()),
 	]),
-	questions: z.array(NativeDecisionQuestionSchema).min(1).superRefine((questions, ctx) => {
+	questions: z.array(NativeDecisionQuestionSchema).min(1).max(DECISION_QUESTION_CEILING).superRefine((questions, ctx) => {
 		questions.forEach((question, index) => {
 			if (question.type !== "choice") return;
 			const values = question.choices.map(choice => JSON.stringify(choice.value));

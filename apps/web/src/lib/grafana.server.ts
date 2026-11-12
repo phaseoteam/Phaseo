@@ -9,7 +9,7 @@ export function capturePlatformServerError(error: unknown, request: Request, con
 		void waitUntil(emitLogs(config, [{
 			event_name: "web.server_error", outcome: "error", actionable: true,
 			route: context.routePath, method: request.method, signal: context.source,
-			trace_id: trace?.traceId, ...safeError(error),
+			trace_id: trace?.traceId, span_id: trace?.parentSpanId, ...safeError(error),
 		}]));
 	} catch { /* Preserve the original response. */ }
 }

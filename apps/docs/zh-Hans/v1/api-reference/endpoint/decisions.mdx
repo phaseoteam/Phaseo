@@ -147,6 +147,8 @@ print(decision["answers"])
 
 `input` 是一个字符串，或一个 `user` 消息数组，其中 `content` 是字符串，或由 `input_text`、`input_image`、`input_audio` 和 `input_video` 部分组成的列表。`name` 是可选的；回答保持请求中的顺序，包括未命名的问题和重复的名称。
 
+每个请求最多包含 128 个问题，但 `google/gemini-decision-1` 最多可接受 1,000 个，`parallel/decisions-fast` 最多可接受 100 个，Clef 最多可接受 64 个。超出模型上限的请求会返回 `400`。
+
 | `type` | 额外字段 | 回答字段 |
 | --- | --- | --- |
 | `predicate` | 无 | 答案为“是”的 `probability`（0–1） |
@@ -163,7 +165,7 @@ print(decision["answers"])
 带有 `state` 和命名问题映射的请求仍然可用，并返回以相同名称为键的回答。Together Tev（`together/tev1-4b-experimental`）需要这种格式，因为它返回不带概率的标签，并且只回答 `choice` 问题。Respan Span-01 也使用这种格式。不要混用两种格式：`input` 与 `state` 或 `images` 同时出现会返回 `400`。
 
 - `state`：一个字符串、对象或数组，包含要评估的信息。
-- `questions`：最多 128 个命名问题。每个问题将 `type` 设为 `noul`（是/否）、`choice` 或 `score`，并提供 `instructions`。选择题的 `criteria` 是选项到描述的映射；评分题的 `criteria` 是至少包含两个级别描述的数组。
+- `questions`：最多 128 个命名问题，上限更高的模型可接受更多。每个问题将 `type` 设为 `noul`（是/否）、`choice` 或 `score`，并提供 `instructions`。选择题的 `criteria` 是选项到描述的映射；评分题的 `criteria` 是至少包含两个级别描述的数组。
 - `images`：最多四张 PNG、JPEG 或 WebP 图像，形式为 `data:` URL 或 `{ "content_type", "base64" }` 对象。
 - `model`：省略时默认为 `typesafe/jev-1.13.0`。
 
@@ -180,6 +182,7 @@ print(decision["answers"])
 | `typesafe/jev-1.13.0`、`typesafe/jev-1.14.0` | 全部三种，可在一个请求中混用；1.14 支持 `box` | 文本、PNG/JPEG 图像 | $0.042（Jev 1.13） |
 | `cloudflare/clef`、`cloudflare/clef-flash` | 全部三种 | 文本，最多 4 张图像 | $0.24 / $0.038 |
 | `cloudflare/clef-omni` | 全部三种 | 文本、图像、音频、视频 | $0.15 |
+| `google/gemini-decision-1` | predicate、choice、score；每个请求最多 1,000 个 | 文本、图像、音频、视频 | $0.10 |
 | `liquid-ai/d1:free`、`liquid-ai/d1` | 全部三种 | 见模型页面 | 抢先体验期间免费 |
 | `perplexity/decider-27b` | 全部三种 | 文本、base64 图像 | $0.04，包含图像 token |
 | `inception/mercury-decide` | predicate、choice、score | 文本或 JSON | $0.02（促销价） |

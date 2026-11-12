@@ -147,6 +147,8 @@ print(decision["answers"])
 
 `input` は文字列、または `user` メッセージの配列です。メッセージの `content` は文字列、または `input_text`、`input_image`、`input_audio`、`input_video` のパーツのリストです。`name` は任意です。回答は、名前のない質問や名前が重複する質問も含め、リクエストの順序を保ちます。
 
+1 つのリクエストに含められる質問は最大 128 個です。ただし `google/gemini-decision-1` は最大 1,000 個、`parallel/decisions-fast` は最大 100 個、Clef は最大 64 個まで受け付けます。モデルの上限を超えるリクエストは `400` を返します。
+
 | `type` | 追加のフィールド | 回答のフィールド |
 | --- | --- | --- |
 | `predicate` | なし | 回答が「はい」である `probability`（0〜1） |
@@ -163,7 +165,7 @@ print(decision["answers"])
 `state` と名前付き質問のマップを使うリクエストも引き続き動作し、同じ名前をキーとする回答を返します。Together Tev（`together/tev1-4b-experimental`）は確率なしのラベルを返すためこの形式が必要で、`choice` の質問にのみ回答します。Respan Span-01 もこの形式を使います。形式を混在させないでください。`input` と `state` または `images` を一緒に送ると `400` が返されます。
 
 - `state`: 評価する情報を保持する文字列、オブジェクト、または配列。
-- `questions`: 最大 128 個の名前付きの質問。それぞれ `type` を `noul`（はい/いいえ）、`choice`、`score` のいずれかに設定し、`instructions` を指定します。choice の質問は、選択肢から説明への対応を `criteria` のマップとして受け取り、score の質問は、2 つ以上のレベルの説明を `criteria` の配列として受け取ります。
+- `questions`: 最大 128 個の名前付きの質問（上限が高いモデルではそれ以上）。それぞれ `type` を `noul`（はい/いいえ）、`choice`、`score` のいずれかに設定し、`instructions` を指定します。choice の質問は、選択肢から説明への対応を `criteria` のマップとして受け取り、score の質問は、2 つ以上のレベルの説明を `criteria` の配列として受け取ります。
 - `images`: 最大 4 枚の PNG、JPEG、WebP の画像。`data:` URL または `{ "content_type", "base64" }` オブジェクトで指定します。
 - `model`: 省略した場合のデフォルトは `typesafe/jev-1.13.0` です。
 
@@ -180,6 +182,7 @@ print(decision["answers"])
 | `typesafe/jev-1.13.0`、`typesafe/jev-1.14.0` | 3 種類すべて（1 つのリクエストで混在可）。1.14 では `box` も | テキスト、PNG/JPEG 画像 | $0.042（Jev 1.13） |
 | `cloudflare/clef`、`cloudflare/clef-flash` | 3 種類すべて | テキスト、最大 4 枚の画像 | $0.24 / $0.038 |
 | `cloudflare/clef-omni` | 3 種類すべて | テキスト、画像、音声、動画 | $0.15 |
+| `google/gemini-decision-1` | predicate、choice、score。1 リクエストあたり最大 1,000 個 | テキスト、画像、音声、動画 | $0.10 |
 | `liquid-ai/d1:free`、`liquid-ai/d1` | 3 種類すべて | モデルページを参照 | 早期アクセス期間中は無料 |
 | `perplexity/decider-27b` | 3 種類すべて | テキスト、base64 画像 | $0.04（画像トークンを含む） |
 | `inception/mercury-decide` | predicate、choice、score | テキストまたは JSON | $0.02（プロモーション） |

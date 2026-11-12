@@ -103,10 +103,20 @@ usage_by_request as (
           )
         )
       )::numeric input_tokens,
-      sum(usage.quantity) filter (
+      -- The gateway writes no meter row for a zero quantity, so a request with input
+      -- tokens and no cached row is a cache miss (0 cached tokens), not missing telemetry.
+      case when count(*) > 0 then coalesce(sum(usage.quantity) filter (
         where usage.meter_key in ('cached_input_tokens', 'cached_read_tokens')
-      )::numeric cached_read_tokens,
-      bool_or(usage.meter_key in ('cached_input_tokens', 'cached_read_tokens')) cache_telemetry_observed
+      ), 0) end::numeric cached_read_tokens,
+      coalesce(
+        sum(usage.quantity) filter (
+          where usage.meter_key in (
+            'input_tokens', 'prompt_tokens', 'input_text_tokens',
+            'input_image_tokens', 'input_audio_tokens', 'input_video_tokens'
+          )
+        ),
+        0
+      ) > 0 cache_telemetry_observed
     from public.v2_request_usage usage
     where usage.request_event_id = fact.request_event_id
   ) meters on true

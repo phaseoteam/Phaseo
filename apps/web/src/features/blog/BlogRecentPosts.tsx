@@ -11,7 +11,7 @@ type BlogRecentPost = {
 	slug: string;
 	title: string;
 	description: string;
-	coverImage: string;
+	coverImage: string | null;
 	categoryLabel: string;
 	isPreview: boolean;
 	author: string | null;
@@ -41,6 +41,7 @@ function PostImage({
 	post: BlogRecentPost;
 	className?: string;
 }) {
+	if (!post.coverImage) return null;
 	return (
 		<img
 			src={post.coverImage}

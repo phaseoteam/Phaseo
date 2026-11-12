@@ -120,4 +120,4 @@ O Advisor não guarda estado entre solicitações. Se você reenviar mensagens e
 
 ## Uso e preços
 
-Cada chamada soma 1 a `usage.server_tool_use.advisor_requests` e pode ser cobrada com `server_tool_advisor_requests`. Os tokens do Advisor são somados ao uso da solicitação e cobrados com os preços do modelo Advisor.
+Cada chamada soma 1 a `usage.server_tool_use.advisor_requests` e pode ser cobrada com `server_tool_advisor_requests`. Os tokens do Advisor são cobrados pelos preços do próprio modelo Advisor, como uma linha separada na cobrança da solicitação, e não são somados aos tokens do modelo que o chama. Um modelo Advisor pago exige créditos mesmo quando o modelo que o chama é gratuito.

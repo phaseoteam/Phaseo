@@ -12,8 +12,12 @@ export function niceTicks(max: number, count = 4) {
   return ticks;
 }
 
-/** The index of the position nearest `x` (positions in ascending order), or -1 when there are none. */
+/**
+ * The index of the position nearest `x` (positions in ascending order), or -1 when there are none. A worklet: a
+ * chart's drag calls it on the UI thread for every move.
+ */
 export function nearestIndex(positions: readonly number[], x: number): number {
+  "worklet";
   if (!positions.length) return -1;
   let low = 0;
   let high = positions.length - 1;
@@ -27,11 +31,6 @@ export function nearestIndex(positions: readonly number[], x: number): number {
   return low;
 }
 
-/** The bar under `x` when `count` bars sit in equal slots from `left`; a finger past either end picks the end bar. */
-export function slotIndex(x: number, left: number, slot: number, count: number): number {
-  if (count <= 0 || !(slot > 0)) return -1;
-  return Math.max(0, Math.min(count - 1, Math.floor((x - left) / slot)));
-}
 
 /** Bars in equal slots: the slot width, each bar's width and its left edge and centre. */
 export function barLayout(count: number, left: number, plotWidth: number, maxBar = 18) {
@@ -66,6 +65,14 @@ export function placeTooltip(args: { anchorX: number; fingerY: number; bubbleWid
   const roomRight = args.width - right - args.bubbleWidth;
   const left = roomRight >= 0 || roomRight >= leftSide ? right : leftSide;
   return { left: clamp(left, 0, args.width - args.bubbleWidth), top };
+}
+
+/**
+ * The reading a chart shows: the chosen index while it's still a point, otherwise none. A series that just got
+ * shorter can leave the choice past its end for a render, and a caller's formatter may not handle a missing point.
+ */
+export function readingIndex(chosen: number | null, count: number): number | null {
+  return chosen != null && chosen >= 0 && chosen < count ? chosen : null;
 }
 
 /** The selected index after an accessibility increment or decrement, starting from the latest point. */

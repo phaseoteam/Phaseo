@@ -49,7 +49,7 @@ Start with `privacy_mode: true`, `include_cost_metadata: true` and a key filter 
 
 ## I/O logging policy
 
-`GET` / `PATCH /v1/observability/logging-policy` (`settings:read` / `settings:write`) controls whether Phaseo stores request input and output: `enabled`, `retention_days` (90–365) and `include_provider_payloads`. Billing fields are read-only. This stores prompt and response content, so change it only on an explicit user request. Cost and usage monitoring does not need it.
+`GET` / `PATCH /v1/observability/logging-policy` (`settings:read` / `settings:write`) controls whether Phaseo stores request input and output: `enabled`, `retention_days` (only 90 for now; longer retention is not offered yet) and `include_provider_payloads`. Billing fields are read-only. This stores prompt and response content, so change it only on an explicit user request. Cost and usage monitoring does not need it.
 
 ## Tracing from your own code
 

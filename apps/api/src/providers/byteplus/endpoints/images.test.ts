@@ -1,6 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { installFetchMock, jsonResponse } from "../../../../tests/helpers/mock-fetch";
 import { setupTestRuntime, teardownTestRuntime } from "../../../../tests/helpers/runtime";
+import { parameterValueIssues } from "@pipeline/before/paramValueSupport";
 
 vi.mock("../../openai-compatible/config", async (importOriginal) => {
 	const actual = await importOriginal<typeof import("../../openai-compatible/config")>();
@@ -10,7 +11,7 @@ vi.mock("../../openai-compatible/config", async (importOriginal) => {
 	};
 });
 
-import { exec } from "./images";
+import { exec, resolveSeedreamFamily } from "./images";
 
 const META = { requestId: "req_byteplus_images", apiKeyId: "key_test", apiKeyRef: "kid_test", apiKeyKid: "kid_test" };
 
@@ -33,6 +34,27 @@ function args(endpoint: "images.generations" | "images.edits", body: Record<stri
 	} as any;
 }
 
+function familyArgs(providerModelSlug: string, endpoint: "images.generations" | "images.edits", body: Record<string, unknown>) {
+	const request = args(endpoint, body);
+	request.providerModelSlug = providerModelSlug;
+	return request;
+}
+
+async function capture(request: any): Promise<{ body: any; result: any }> {
+	let body: any;
+	const mock = installFetchMock([{
+		match: (url) => url.endsWith("/api/v3/images/generations"),
+		response: () => jsonResponse({ data: [{ url: "https://example.com/output.png" }] }),
+		onRequest: (call) => { body = call.bodyJson; },
+	}]);
+	try {
+		const result = await exec(request);
+		return { body, result };
+	} finally {
+		mock.restore();
+	}
+}
+
 describe("BytePlus image adapter", () => {
 	it("sends the request through the upstream timing tracker, so a 2xx is not retried elsewhere", async () => {
 		const mock = installFetchMock([{
@@ -46,19 +68,11 @@ describe("BytePlus image adapter", () => {
 	});
 
 	it("routes generation through ModelArk with the provider-native model slug", async () => {
-		let requestBody: any;
-		const mock = installFetchMock([{
-			match: (url) => url.endsWith("/api/v3/images/generations"),
-			response: jsonResponse({ data: [{ url: "https://example.com/output.png" }] }),
-			onRequest: (call) => { requestBody = call.bodyJson; },
-		}]);
+		const { body, result } = await capture(args("images.generations", { size: "1024x1024", n: 1 }));
 
-		const result = await exec(args("images.generations", { size: "1024x1024", n: 1 }));
-		mock.restore();
-
-		expect(requestBody).toMatchObject({ model: "dola-seedream-5-0-pro-260628", prompt: "Create a poster", size: "1024x1024" });
-		expect(requestBody).not.toHaveProperty("image");
-		expect(requestBody).not.toHaveProperty("n");
+		expect(body).toMatchObject({ model: "dola-seedream-5-0-pro-260628", prompt: "Create a poster", size: "1024x1024" });
+		expect(body).not.toHaveProperty("image");
+		expect(body).not.toHaveProperty("n");
 		expect(result.normalized.data).toHaveLength(1);
 		expect(result.normalized.created).toEqual(expect.any(Number));
 	});
@@ -88,26 +102,138 @@ describe("BytePlus image adapter", () => {
 		expect(result.bill.cost_cents).toBe(9);
 	});
 
-	it("rejects unsupported multiple outputs without contacting BytePlus", async () => {
-		const fetchMock = vi.fn();
-		vi.stubGlobal("fetch", fetchMock);
+	it("turns the watermark off by default and on when provider_params asks for it", async () => {
+		const first = await capture(args("images.generations", {}));
+		const second = await capture(args("images.generations", { provider_params: { byteplus: { watermark: true } } }));
+		const unknown = await capture(familyArgs("seedream-3-0-t2i-250415", "images.generations", {}));
 
-		const result = await exec(args("images.generations", { n: 2 }));
+		expect(first.body.watermark).toBe(false);
+		expect(second.body.watermark).toBe(true);
+		expect(unknown.body.watermark).toBe(false);
+	});
+});
 
-		expect(result.upstream.status).toBe(400);
-		expect(result.normalized).toMatchObject({ error: { param: "n" } });
-		expect(fetchMock).not.toHaveBeenCalled();
+describe("BytePlus Seedream field mapping", () => {
+	it("resolves families from provider slugs and canonical ids", () => {
+		expect(resolveSeedreamFamily("dola-seedream-5-5-261028")).toBe("seedream-5.5");
+		expect(resolveSeedreamFamily("dola-seedream-5-0-pro-260628")).toBe("seedream-5.0-pro");
+		expect(resolveSeedreamFamily("dola-seedream-5-0-flash-260915")).toBe("seedream-5.0-flash");
+		expect(resolveSeedreamFamily("seedream-5-0-260128")).toBe("seedream-5.0-lite");
+		expect(resolveSeedreamFamily("bytedance/seedream-4.5")).toBe("seedream-4.5");
+		expect(resolveSeedreamFamily("seedream-4-0-250828")).toBe("seedream-4.0");
+		expect(resolveSeedreamFamily("seedream-3-0-t2i-250415")).toBeNull();
 	});
 
-	it("rejects multiple outputs when routing falls back to the canonical model ID", async () => {
-		const fetchMock = vi.fn();
-		vi.stubGlobal("fetch", fetchMock);
-		const request = args("images.generations", { n: 2 });
-		request.providerModelSlug = null;
+	it("maps Seedream 5.5 transparent PNG output, prompt optimization and safety_identifier", async () => {
+		const { body } = await capture(familyArgs("dola-seedream-5-5-261028", "images.generations", {
+			size: "1.5k",
+			background: "transparent",
+			output_format: "png",
+			prompt_optimizer: true,
+			provider_params: { byteplus: { safety_identifier: "user-hash-1" } },
+		}));
 
-		const result = await exec(request);
+		expect(body).toEqual({
+			model: "dola-seedream-5-5-261028",
+			prompt: "Create a poster",
+			size: "1.5K",
+			background: "transparent",
+			output_format: "png",
+			optimize_prompt_options: { mode: "standard" },
+			safety_identifier: "user-hash-1",
+			watermark: false,
+		});
+	});
 
-		expect(result.upstream.status).toBe(400);
-		expect(fetchMock).not.toHaveBeenCalled();
+	it("asks for PNG when a transparent background has no explicit format", async () => {
+		const { body } = await capture(familyArgs("dola-seedream-5-5-261028", "images.generations", { background: "transparent" }));
+		expect(body).toMatchObject({ background: "transparent", output_format: "png" });
+	});
+
+	it("leaves the background out when it is auto", async () => {
+		const { body } = await capture(familyArgs("dola-seedream-5-5-261028", "images.generations", { background: "auto" }));
+		expect(body).not.toHaveProperty("background");
+		expect(body).not.toHaveProperty("output_format");
+	});
+
+	it("forwards native prompt optimization options and an explicit output format as given", async () => {
+		const { body } = await capture(familyArgs("dola-seedream-5-0-pro-260628", "images.generations", {
+			size: "2048x1024",
+			output_format: "jpeg",
+			provider_params: { byteplus: { optimize_prompt_options: { mode: "fast" } } },
+		}));
+		expect(body).toMatchObject({ size: "2048x1024", output_format: "jpeg", optimize_prompt_options: { mode: "fast" }, watermark: false });
+	});
+
+	it("does not send seed, stream or n to known Seedream models", async () => {
+		const { body } = await capture(familyArgs("dola-seedream-5-5-261028", "images.generations", { seed: 7, stream: true, n: 2, prompt_optimizer: false }));
+		expect(body).not.toHaveProperty("seed");
+		expect(body).not.toHaveProperty("stream");
+		expect(body).not.toHaveProperty("n");
+		expect(body).not.toHaveProperty("sequential_image_generation");
+		expect(body).not.toHaveProperty("optimize_prompt_options");
+	});
+
+	it.each([
+		["seedream-5-0-260128", 4],
+		["seedream-4-5-251128", 3],
+		["seedream-4-0-250828", 2],
+	])("maps n onto group generation for %s", async (slug, n) => {
+		const { body } = await capture(familyArgs(slug, "images.generations", { n }));
+		expect(body).toMatchObject({ sequential_image_generation: "auto", sequential_image_generation_options: { max_images: n } });
+		expect(body).not.toHaveProperty("n");
+	});
+
+	it("keeps today's pass-through for unknown ModelArk image models", async () => {
+		const { body } = await capture(familyArgs("seedream-3-0-t2i-250415", "images.generations", {
+			size: "512x512",
+			n: 2,
+			seed: 7,
+			output_format: "webp",
+			background: "transparent",
+		}));
+		expect(body).toEqual({
+			model: "seedream-3-0-t2i-250415",
+			prompt: "Create a poster",
+			size: "512x512",
+			n: 2,
+			watermark: false,
+		});
+	});
+});
+
+// The catalogue, not this adapter, says what each route accepts. These are the
+// specs stored for byteplus:bytedance/seedream-5.5 image.generate on 2026-11-09.
+const SEEDREAM_5_5_SPECS = {
+	n: { type: "integer", values: [1], default: 1, supported: true },
+	seed: { supported: false },
+	size: { type: "string", values: ["1K", "1.5K", "2K"], default: "2K", supported: true, dimensions: { max_pixels: 4624220, min_pixels: 921600, max_aspect_ratio: "16:1" } },
+	prompt: { type: "string", required: true, supported: true },
+	stream: { supported: false },
+	background: {
+		type: "string",
+		values: ["auto", "transparent"],
+		default: "auto",
+		supported: true,
+		when: [{ if: { output_format: ["jpeg"] }, values: ["auto"], message: "Transparent backgrounds need output_format png." }],
+	},
+	output_format: { type: "string", values: ["png", "jpeg"], supported: true },
+	prompt_optimizer: { type: "boolean", values: [true], supported: true, upstream_name: "optimize_prompt_options.mode" },
+};
+
+describe("Seedream 5.5 catalogue specs in routing", () => {
+	const route = { capabilityParams: SEEDREAM_5_5_SPECS as Record<string, any> };
+
+	it("accepts transparent PNG output", () => {
+		expect(parameterValueIssues(route, { background: "transparent", output_format: "png" }, "images.generations")).toEqual([]);
+	});
+
+	it("flags JPEG with a transparent background, webp, several outputs and disabling prompt optimization", () => {
+		expect(parameterValueIssues(route, { background: "transparent", output_format: "jpeg" }, "images.generations")).toEqual([
+			expect.objectContaining({ param: "background", reason: "not_allowed", allowed: ["auto"] }),
+		]);
+		expect(parameterValueIssues(route, { output_format: "webp" }, "images.generations")[0]).toMatchObject({ param: "output_format", reason: "not_allowed" });
+		expect(parameterValueIssues(route, { n: 2 }, "images.generations")[0]).toMatchObject({ param: "n", reason: "not_allowed" });
+		expect(parameterValueIssues(route, { prompt_optimizer: false }, "images.generations")[0]).toMatchObject({ param: "prompt_optimizer", reason: "not_allowed" });
 	});
 });

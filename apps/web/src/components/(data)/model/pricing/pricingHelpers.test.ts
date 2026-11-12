@@ -10,6 +10,7 @@ import {
 	calculateDailyAveragePricingMeterPrice,
 	getAvailableProviderTablePriceDirections,
 	getUtcPricingScheduleTimes,
+	withoutRegionSurchargeRules,
 } from "./pricingHelpers";
 
 function makeProviderPricing(): ProviderPricing {
@@ -1416,5 +1417,80 @@ describe("buildProviderSections", () => {
 			{ label: "Peak", timezone: "UTC", start_time: "01:00", end_time: "04:00", price_per_unit: 0.44 },
 			{ label: "Peak", timezone: "UTC", start_time: "06:00", end_time: "10:00", price_per_unit: 0.44 },
 		])).toEqual(["00:00", "01:00", "04:00", "06:00", "10:00"]);
+	});
+});
+
+describe("app-limited promotional prices", () => {
+	test("shows the promotion as a discount on the list price and keeps the app in a ranged label", () => {
+		const provider = makeProviderPricing();
+		provider.provider_models = [{
+			...provider.provider_models[0],
+			id: "anthropic:anthropic/example:text.generate",
+			model_id: "anthropic/example",
+			endpoint: "text.generate",
+		}];
+		const longContext = { op: "gt", path: "input_tokens", value: 200000 };
+		const claudeCode = { op: "eq", path: "client_id", value: "claude-code" };
+		const rule = (id: string, price: number, priority: number, match: unknown[], effectiveTo: string | null = null) => ({
+			...provider.pricing_rules[0],
+			id,
+			model_key: "anthropic:anthropic/example:text.generate",
+			capability_id: "text.generate",
+			modality: "text",
+			meter: "input_text_tokens",
+			price_per_unit: price,
+			priority,
+			match,
+			effective_from: "2026-01-01T00:00:00.000Z",
+			effective_to: effectiveTo,
+		});
+		provider.pricing_rules = [
+			rule("list-long", 0.000008, 100, [longContext]),
+			rule("promo-long", 0.000006, 200, [longContext, claudeCode], "2026-11-12T00:00:00.000Z"),
+		] as any;
+
+		const sections = buildProviderSections(provider, "standard", new Date("2026-11-10T12:00:00.000Z"));
+
+		expect(sections.textTokens?.in).toEqual([
+			expect.objectContaining({
+				ruleId: "promo-long",
+				price: 0.000006,
+				basePrice: 0.000008,
+				comparisonKind: "discount",
+				discountEndsAt: "2026-11-12T00:00:00.000Z",
+				label: expect.stringContaining("In Claude Code"),
+			}),
+		]);
+	});
+});
+
+describe("withoutRegionSurchargeRules", () => {
+	const us = [{ path: "inference_geo", op: "eq", value: "us" }];
+	test("hides region-only prices when the meter has a global price", () => {
+		const rules = [
+			{ id: "input", meter: "input_text_tokens", match: [] },
+			{ id: "input-us", meter: "input_text_tokens", match: us },
+			{ id: "output", meter: "output_text_tokens", match: [] },
+			{ id: "output-us", meter: "output_text_tokens", match: us },
+		];
+		expect(withoutRegionSurchargeRules(rules).map((rule) => rule.id)).toEqual(["input", "output"]);
+	});
+
+	test("keeps region-only prices when they are the only price for the meter", () => {
+		const rules = [
+			{ id: "input-us", meter: "input_text_tokens", match: us },
+			{ id: "output", meter: "output_text_tokens", match: [] },
+		];
+		expect(withoutRegionSurchargeRules(rules).map((rule) => rule.id)).toEqual(["input-us", "output"]);
+	});
+
+	test("keeps region-only prices when the global price is not in effect", () => {
+		const now = Date.parse("2026-11-10T12:00:00Z");
+		const rules = [
+			{ id: "input-old", meter: "input_text_tokens", match: [], effective_to: "2026-11-01T00:00:00Z" },
+			{ id: "input-next", meter: "input_text_tokens", match: [], effective_from: "2026-12-01T00:00:00Z" },
+			{ id: "input-us", meter: "input_text_tokens", match: us },
+		];
+		expect(withoutRegionSurchargeRules(rules, now).map((rule) => rule.id)).toEqual(["input-old", "input-next", "input-us"]);
 	});
 });

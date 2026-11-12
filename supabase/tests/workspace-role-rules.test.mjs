@@ -33,7 +33,11 @@ assert.deepEqual(migrationNames.map((name) => name.replace(/^\d+_/, '')), ['enfo
 const migrationName = migrationNames[0];
 const migrationFiles = await Promise.all(migrationNames.map(async (name) => normalize(await read(`../migrations/${name}`))));
 const migration = migrationFiles.join('\n');
-assert(migrationNames[0] > migrations.filter((name) => !migrationNames.includes(name)).sort().at(-1), 'the migration files are the newest');
+// Nothing applied after this migration may change what it sets up; unrelated later migrations are fine.
+const coveredObjects = /(workspace_members|workspace_settings|enforce_workspace_join_request_write_rules|protect_data_contribution_settings|approve_workspace_join_request|management_decide_workspace_join_request)/;
+for (const name of migrations.filter((name) => name > migrationNames.at(-1)).sort()) {
+  assert(!coveredObjects.test(await read(`../migrations/${name}`)), `${name} runs later and must not change the role rules`);
+}
 
 // Lock plan: each file starts with a lock timeout and locks at most one table strongly. Functions take
 // no table locks; the policies lock only workspace_members; the index locks only workspace_settings.

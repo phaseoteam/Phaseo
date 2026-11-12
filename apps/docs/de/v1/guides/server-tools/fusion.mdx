@@ -62,4 +62,4 @@ Einen `prompt`: die Frage, die mehrere Perspektiven braucht.
 
 ## Nutzung und Preise
 
-Jeder Aufruf erhöht `usage.server_tool_use.fusion_requests` um 1 und kann über `server_tool_fusion_requests` abgerechnet werden. Die Tokens jedes Analyse- und Analystenaufrufs werden zur Nutzung der Anfrage addiert und zu den Preisen des jeweiligen Modells berechnet.
+Jeder Aufruf erhöht `usage.server_tool_use.fusion_requests` um 1 und kann über `server_tool_fusion_requests` abgerechnet werden. Jeder Analyse- und Analystenaufruf wird zu den Preisen seines Modells als eigene Position der Anfrage abgerechnet; seine Tokens werden nicht zu denen des aufrufenden Modells addiert. Kostenpflichtige Modelle erfordern Guthaben, auch wenn das aufrufende Modell kostenlos ist.

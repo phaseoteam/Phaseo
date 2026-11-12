@@ -109,14 +109,11 @@ export function selectMetricData(
 	fallbackData: ModelProviderTrendPoint[] = detailData,
 ) {
 	const definition = METRIC_DEFINITIONS[metric];
-	if (
-		!hasPercentileSeries ||
-		!detailData.some((point) =>
-			isUsableMetricValue(metric, point[definition.valueKey]),
-		)
-	) {
-		return fallbackData;
-	}
+	// Percentile bands and provider series measure some metrics differently (latency is
+	// time to first token in the bands but provider duration in the rollups), so once the
+	// percentile series exists a card never switches to provider series. A metric with no
+	// percentile values shows the chart's empty state instead.
+	if (!hasPercentileSeries) return fallbackData;
 	if (detailed) return detailData;
 	return cardData.some((point) =>
 		isUsableMetricValue(metric, point[definition.valueKey]),
@@ -251,13 +248,7 @@ export default function ModelPerformanceCards({
 		: usesAggregateData
 			? tx("Common.ui.publicModelCopy.hiddenProviderObservations")
 			: tx("Common.ui.publicModelCopy.providerObservations", { resolution: usesHourlyData ? "hour" : "day", count: providerCount });
-	const metricUsesPercentiles = (metric: MetricKey) => {
-		if (!chartProviderDaily7d) return false;
-		const definition = METRIC_DEFINITIONS[metric];
-		return chartProviderDaily7d.some((point) =>
-			isUsableMetricValue(metric, point[definition.valueKey]),
-		);
-	};
+	const metricUsesPercentiles = (_metric: MetricKey) => chartProviderDaily7d != null;
 	const metricData = (metric: MetricKey, detailed: boolean) =>
 		selectMetricData(
 			metric,

@@ -91,7 +91,7 @@ describe("a device-code token for the public CLI client ID", () => {
 		vi.resetModules();
 	});
 
-	it("is issued, authenticates and reads, but can't turn on I/O logging or create a key", async () => {
+	it("is issued, authenticates and reads, can create a key like the dashboard, but can't turn on I/O logging", async () => {
 		const token = await deviceToken();
 		const { PUBLIC_NATIVE_CLIENT_REFUSAL } = await import("./route-helpers");
 
@@ -103,10 +103,11 @@ describe("a device-code token for the public CLI client ID", () => {
 		expect(logging.status, JSON.stringify(logging.body)).toBe(403);
 		expect(logging.body).toMatchObject({ error: "forbidden", message: PUBLIC_NATIVE_CLIENT_REFUSAL });
 
-		const key = await control("keys", "POST", "/", token, { name: "Minted" });
-		expect(key.status, JSON.stringify(key.body)).toBe(403);
-		expect(key.body).toMatchObject({ error: "forbidden", message: PUBLIC_NATIVE_CLIENT_REFUSAL });
-
+		// Key creation is the person's own to make from the CLI: the route doesn't refuse the sign-in. (The fake
+		// database here has no key rows, so only the refusal is asserted, not the created key.)
 		expect(state.writes.filter((write) => !["oauth_authorizations"].includes(write.table))).toEqual([]);
+		const key = await control("keys", "POST", "/", token, { name: "Minted" });
+		expect(key.body?.message, JSON.stringify(key.body)).not.toBe(PUBLIC_NATIVE_CLIENT_REFUSAL);
+		expect(key.status, JSON.stringify(key.body)).not.toBe(403);
 	});
 });

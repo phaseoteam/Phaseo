@@ -8,6 +8,65 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"产品","api":"API 与 SDK","models":"模型"}} clearLabel="清除" />
 
+<Update label="2026年11月11日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- **测试版：** 实时语音现已向所有用户开放，可在 [Chat → Realtime](https://phaseo.app/chat/realtime) 中使用 OpenAI、Google、xAI 和 ElevenLabs 的语音模型；请参阅 [Chat 中的实时语音](https://phaseo.app/blog/realtime-voice-in-chat) ([#3675](https://github.com/phaseoteam/Phaseo/pull/3675))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- `POST /v1/decisions` 在 `google/gemini-decision-1` 上最多可接受 1,000 个问题；其他模型默认接受 128 个，部分模型更少，超出模型上限的请求会返回 `400`；请参阅[作出决策](./api-reference/endpoint/decisions.mdx) ([#3682](https://github.com/phaseoteam/Phaseo/pull/3682))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+- [Google: Gemini Decision 1](https://phaseo.app/models/google/gemini-decision-1)
+
+</div>
+
+</Update>
+
+<Update label="2026年11月10日">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+![Gemini 4 Carbon](/images/model-releases/2026-11-10--google--gemini-4-carbon.png)
+
+- [Google: Gemini 4 Carbon](https://phaseo.app/models/google/gemini-4-carbon)
+- [MiniMax: MiniMax H3-Image](https://phaseo.app/models/minimax/minimax-h3-image)
+- [MiniMax: MiniMax H3-Image Highspeed](https://phaseo.app/models/minimax/minimax-h3-image-highspeed)
+
+</div>
+
+</Update>
+
+<Update label="2026年11月9日">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+![Claude Fable 5.2](/images/model-releases/2026-11-09--anthropic--claude-fable-5.2.png)
+
+- [Anthropic: Claude Fable 5.2](https://phaseo.app/models/anthropic/claude-fable-5.2)
+- [Parallel: Decisions Fast](https://phaseo.app/models/parallel/decisions-fast)
+
+</div>
+
+</Update>
+
 <Update label="2026年11月5日">
 
 <div data-changelog-category="api">
@@ -21,6 +80,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <div data-changelog-category="models">
 
 <p className="changelog-category">模型</p>
+
+![Inkling 2 Small](/images/model-releases/2026-11-05--thinking-machines--inkling-2-small.png)
 
 - [Thinking Machines: Inkling 2 Small](https://phaseo.app/models/thinking-machines/inkling-2-small)
 
@@ -78,6 +139,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <div data-changelog-category="models">
 
 <p className="changelog-category">模型</p>
+
+![GLM 5.3 FlashX Legal](/images/model-releases/2026-11-02--z-ai--glm-5.3-flashx-legal.png)
 
 - [z.AI: GLM 5.3 FlashX Legal](https://phaseo.app/models/z-ai/glm-5.3-flashx-legal)
 

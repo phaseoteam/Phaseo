@@ -2487,7 +2487,10 @@
 			"frames": "إطارات",
 			"message": "رسالة",
 			"messages": "رسائل",
-			"serviceTierLineStyles": "أنماط خطوط مستويات الخدمة"
+			"serviceTierLineStyles": "أنماط خطوط مستويات الخدمة",
+			"inAudience": "في {audience}",
+			"usOnlyInference": "استدلال داخل الولايات المتحدة فقط",
+			"regionOnlyInference": "استدلال داخل {region} فقط"
 		},
 		"publicModelCopy": {
 			"days": "{count, plural, zero {# أيام} one {يوم واحد} two {يومان} few {# أيام} many {# يومًا} other {# يوم}}",
@@ -2571,6 +2574,40 @@
 			"highlight": "تمييز",
 			"highlightNone": "بدون",
 			"highlightHint": "يظهر كل ما عدا ذلك باللون الرمادي."
+		},
+		"hoverCards": {
+			"utc": "UTC",
+			"unix": "Unix",
+			"start": "البداية",
+			"end": "النهاية",
+			"duration": "المدة",
+			"took": "استغرق",
+			"requests": "الطلبات",
+			"cost": "التكلفة",
+			"retires": "يُسحب في {date}",
+			"deprecatedOn": "متوقف منذ {date}",
+			"lastUsed": "آخر استخدام",
+			"replacement": "البديل",
+			"requestedAs": "طُلب باسم",
+			"provider": "المزوّد",
+			"dataPolicy": "سياسة البيانات",
+			"notKnown": "غير معروف",
+			"attemptOf": "المحاولة {number} من {total}",
+			"errorCode": "رمز الخطأ",
+			"errorMessage": "الرسالة",
+			"balanceAfter": "الرصيد بعد",
+			"paymentReference": "مرجع الدفع",
+			"resetsInUtc": "يُعاد الضبط خلال {time} · UTC",
+			"percentUsed": "{percent} مستخدم",
+			"moreSelectedModels": "{count, plural, one {عرض نموذج محدد آخر} other {عرض # نماذج محددة أخرى}}",
+			"sourceDetails": "تفاصيل المصدر {model}",
+			"status": "الحالة",
+			"sourceCompleted": "مكتمل",
+			"sourceFailed": "فشل",
+			"outputTokens": "رموز المخرجات",
+			"latency": "زمن الاستجابة",
+			"agreements": "نقاط الاتفاق",
+			"uniqueInsight": "رؤية فريدة"
 		}
 	},
 	"deprecationNotice": {

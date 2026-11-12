@@ -120,7 +120,13 @@ describe("PUT /guardrails/global", () => {
 		const response = await request("PUT", "/guardrails/global", { ioLoggingEnabled: true, ioLoggingRetentionDays: 120 });
 		expect(response.status).toBe(200);
 		expect(mocks.rpcCalls).toEqual([]);
-		expect(mocks.upserts).toEqual([{ table: "workspace_settings", row: expect.objectContaining({ workspace_id: "ws-1", io_logging_enabled: true, io_logging_retention_days: 120 }) }]);
+		expect(mocks.upserts).toEqual([{ table: "workspace_settings", row: expect.objectContaining({ workspace_id: "ws-1", io_logging_enabled: true, io_logging_retention_days: 90 }) }]);
+	});
+
+	it("keeps log storage at 90 days while extended retention is not billed", async () => {
+		const response = await request("PUT", "/guardrails/global", { ioLoggingEnabled: true, ioLoggingRetentionDays: 365 });
+		expect(response.status).toBe(200);
+		expect(mocks.upserts).toEqual([{ table: "workspace_settings", row: expect.objectContaining({ io_logging_retention_days: 90 }) }]);
 	});
 
 	it("refuses a model that no route serves", async () => {

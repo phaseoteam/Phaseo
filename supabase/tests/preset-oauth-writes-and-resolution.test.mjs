@@ -38,7 +38,17 @@ for (const table of ['preset_versions', 'preset_version_labels']) {
 }
 const index = presetsSql.match(/CREATE UNIQUE INDEX presets_workspace_resolution_key[\s\S]*?;/)?.[0];
 assert(index && migration.includes(index), 'presets.sql and the migration share the resolution index');
-for (const [, path] of contextFiles) assert(migration.includes(await read(path)), `the migration ships ${path} verbatim`);
+// The newest migration that replaces each context function ships its declarative file verbatim (later
+// migrations, such as the budget functions, replace them again and keep the preset checks).
+for (const [name, path] of contextFiles) {
+  let newest = null;
+  for (const file of [...migrationNames].filter((file) => file.endsWith('.sql')).sort().reverse()) {
+    const sql = await read(`../migrations/${file}`);
+    if (new RegExp(`FUNCTION\\s+"?(public|private)"?\\."?${name}"?\\s*\\(`, 'i').test(sql) && /CREATE OR REPLACE/i.test(sql)) { newest = sql; break; }
+  }
+  assert(newest && newest.includes(await read(path)), `the newest migration replacing ${name} ships ${path} verbatim`);
+}
+assert(migration.includes("message = 'preset_ambiguous'"), 'the migration refuses ambiguous presets');
 
 // The preset lookup block of a gateway context function, run inside a small function of the same name so its
 // qualified parameter references (gateway_context_access.workspace_id, ...) resolve.

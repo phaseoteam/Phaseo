@@ -11,7 +11,7 @@ import type {
 	OgEntity,
 	OgPayload,
 } from "@/lib/fetchers/frontend/getOgPayload";
-import { buildModelOgStats } from "@/lib/fetchers/frontend/getOgPayload";
+import { buildModelOgPromotion, buildModelOgStats } from "@/lib/fetchers/frontend/getOgPayload";
 import type {
 	SignInModel,
 	SupportedModelsStats,
@@ -873,9 +873,11 @@ export async function fetchFrontendOgPayload(
 			fetchFrontendModelOverview(resolvedModelId, controller.signal).catch(() => null),
 			fetchFrontendModelPricing(resolvedModelId, controller.signal).catch(() => []),
 		]);
+		const promotion = buildModelOgPromotion(pricing);
 		return {
 			...response.payload,
 			stats: buildModelOgStats(model, pricing),
+			...(promotion ? { promotion } : {}),
 		};
 	} finally {
 		clearTimeout(timeout);

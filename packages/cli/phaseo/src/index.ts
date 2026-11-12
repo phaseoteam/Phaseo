@@ -14,11 +14,13 @@ import {
 	isCustomApiRoot,
 	isTrustedBrowserUrl,
 	normalizeApiRoot,
+	oauthUrl,
 	parseScopeArgument,
 	pollDeviceToken,
 	revokeRefreshToken,
 	startDeviceLogin,
 } from "./api.js";
+import { PHASEO_MCP_URL, createMcpTokenSource, exchangeCliTokenForMcp, mcpEndpoint, mcpScopes, runMcpBridge } from "./mcp.js";
 import { clearSession, readSession, writeSession } from "./session.js";
 import { openUrl, prefersDeviceCodeByEnvironment } from "./browser.js";
 import { printError, printJson, sanitizeTerminalText, terminalUi, type TerminalOptions } from "./output.js";
@@ -148,6 +150,7 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 			"phaseo version | v [--json]",
 			"phaseo update [--check] [--json]",
 			"phaseo doctor [--json]",
+			"phaseo mcp [--manage]",
 			"",
 			"phaseo keys --help",
 			"phaseo workspaces --help",
@@ -253,6 +256,10 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	"integrations status": { usage: ["phaseo integrations status [integration] [--json]"] },
 	"integrations setup": { usage: ["phaseo integrations setup <integration> [--model <id>] [--catalog all|default] [--key <key>|--key-stdin] [--dry-run] [--json]"] },
 	"integrations remove": { usage: ["phaseo integrations remove <integration> [--dry-run] [--json]"] },
+	mcp: {
+		description: "Run the Phaseo MCP over stdio for a local agent, signed in with your phaseo login (no second sign-in). Read-only unless you pass --manage, which adds the account management tools your login allows; your agent must still confirm each change with you. It never runs paid model calls. Add it with: claude mcp add phaseo -- phaseo mcp, or codex mcp add phaseo -- phaseo mcp. Each MCP token lasts 15 minutes; after phaseo logout it stops when the current one runs out.",
+		usage: ["phaseo mcp [--manage]"],
+	},
 	logout: { usage: ["phaseo logout [--json]"] },
 	whoami: { usage: ["phaseo whoami [--json]"] },
 	keys: {
@@ -2151,6 +2158,37 @@ async function rawApi(method: HttpMethod, path: string | undefined, flags: Recor
 	printJson(response);
 }
 
+async function serveMcp(flags: Record<string, string | boolean>) {
+	const manage = flagBool(flags, "manage");
+	const session = await getSessionAccessToken().catch(() => null);
+	if (!session) throw new Error("Not logged in. Run `phaseo login` first, then restart your agent.");
+	// The MCP accepts tokens for its canonical address only; a custom API is for development.
+	const mcpUrl = flagString(flags, "mcp-url") ?? PHASEO_MCP_URL;
+	if (mcpUrl !== PHASEO_MCP_URL && !isCustomApiRoot(session.apiUrl)) {
+		throw new Error("--mcp-url is only for development against a custom --api-url login");
+	}
+	const scopes = mcpScopes(manage);
+	const tokens = createMcpTokenSource(async () => {
+		const current = await getSessionAccessToken();
+		return exchangeCliTokenForMcp({
+			tokenUrl: oauthUrl(current.apiUrl, "/token"),
+			subjectToken: current.accessToken,
+			resource: mcpUrl,
+			scopes,
+		});
+	});
+	// Fail before the agent's first message when the login can't reach the MCP at all.
+	await tokens.get();
+	process.stderr.write(`Phaseo MCP ready (${manage ? "read and account management" : "read-only"}) via ${mcpUrl}\n`);
+	await runMcpBridge({
+		endpoint: mcpEndpoint(mcpUrl, manage),
+		tokens,
+		input: process.stdin,
+		output: process.stdout,
+		log: (line) => process.stderr.write(`${sanitizeTerminalText(line)}\n`),
+	});
+}
+
 async function main() {
 	const parsed = parseArgs(process.argv.slice(2));
 	const json = flagBool(parsed.flags, "json");
@@ -2184,6 +2222,12 @@ async function main() {
 		if (first === "doctor") {
 			if (second) throw new Error(unknownCommandMessage(parsed.command));
 			await doctor(parsed.flags);
+			return;
+		}
+		if (first === "mcp") {
+			// Stdout belongs to the MCP client: no update notice, and errors go to stderr only.
+			if (second) throw new Error(unknownCommandMessage(parsed.command));
+			await serveMcp(parsed.flags);
 			return;
 		}
 		if (parsed.command.length === 1 && isCommandGroup(first)) {

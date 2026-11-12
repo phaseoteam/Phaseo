@@ -73,7 +73,12 @@ export async function completeSystemOne(
 	keyInfo: { source: "gateway" | "byok"; byokId: string | null },
 	mappedRequest?: string,
 	unwrapPayload: (payload: unknown) => unknown = payload => payload,
-	options: { allowRefusal?: boolean } = {},
+	options: {
+		allowRefusal?: boolean;
+		// Lets a provider turn a 200 payload that carries no answers (for example a
+		// blocked input) into its own client error instead of an invalid-response 502.
+		rejectPayload?: (payload: unknown) => Response | null;
+	} = {},
 ): Promise<ExecutorResult> {
 	const ir = args.ir as IRDecisionsRequest;
 	const headersMs = args.upstreamTiming?.timingFor(upstream)?.headersMs;
@@ -107,6 +112,8 @@ export async function completeSystemOne(
 	}
 	let payload: unknown;
 	try { payload = JSON.parse(rawBody); } catch { return malformed(rawBody || null); }
+	const rejection = options.rejectPayload?.(payload);
+	if (rejection) return { ...common, upstream: rejection, bill, rawResponse: payload };
 	payload = unwrapPayload(payload);
 	if (!isRecord(payload) || !isRecord(payload.answers) || !isRecord(payload.usage)) return malformed(payload);
 	const answers = payload.answers;

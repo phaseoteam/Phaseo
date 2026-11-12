@@ -1079,7 +1079,15 @@
 		"columnRate": "Rate",
 		"rateRequests": "{count, plural, one {# Anfrage} other {# Anfragen}} pro Minute",
 		"rateTokens": "{count, plural, one {# Token} other {# Tokens}} pro Minute",
-		"rateConcurrent": "{count, plural, other {# gleichzeitig}}"
+		"rateConcurrent": "{count, plural, other {# gleichzeitig}}",
+		"columnSpend": "Ausgaben",
+		"spend": {
+			"daily": "{amount} pro Tag",
+			"weekly": "{amount} pro Woche",
+			"monthly": "{amount} pro Monat"
+		},
+		"spendBlocks": "Blockiert",
+		"spendNotifies": "Nur Benachrichtigungen"
 	},
 	"guardrailWizard": {
 		"title": "Neue Leitplanke",
@@ -1106,7 +1114,12 @@
 			"sensitiveInfoOff": "Aktiviere mindestens ein Muster für sensible Daten oder entferne diese Prüfung.",
 			"rateLimitEmpty": "Lege mindestens ein Limit fest, um fortzufahren.",
 			"rateLimitInvalid": "Limits müssen ganze Zahlen größer als 0 sein.",
-			"rateCountingRequired": "Wähle eine Zählweise, um fortzufahren."
+			"rateCountingRequired": "Wähle eine Zählweise, um fortzufahren.",
+			"spendLimitEmpty": "Lege ein Limit fest, um fortzufahren.",
+			"spendLimitInvalid": "Gib einen Betrag über $0.00 mit bis zu 2 Nachkommastellen ein.",
+			"spendPeriodRequired": "Wähle einen Zeitraum, um fortzufahren.",
+			"spendActionRequired": "Wähle, was beim Limit passiert, um fortzufahren.",
+			"spendCountingRequired": "Wähle, wie das Limit gezählt wird, um fortzufahren."
 		},
 		"nameLabel": "Name",
 		"namePlaceholder": "z. B. Richtlinie für Auftragnehmer",
@@ -1208,7 +1221,28 @@
 			"each_key": "Eigenes Kontingent pro Schlüssel",
 			"each_end_user": "Eigenes Kontingent pro Endnutzer"
 		},
-		"summaryRateFailClosed": "Lehnt Anfragen ab, wenn Limits nicht geprüft werden können"
+		"summaryRateFailClosed": "Lehnt Anfragen ab, wenn Limits nicht geprüft werden können",
+		"templateSpendLimit": {
+			"name": "Ausgabenlimit",
+			"body": "Begrenze die Ausgaben pro Tag, Woche oder Monat, mit Benachrichtigungen."
+		},
+		"sectionSpend": {
+			"name": "Ausgabenlimit",
+			"body": "Ein Dollar-Limit pro Tag, Woche oder Monat. Ein Ausgaben-Guardrail hat keine weiteren Prüfungen."
+		},
+		"summarySpendLimit": {
+			"daily": "Bis zu {amount} pro Tag",
+			"weekly": "Bis zu {amount} pro Woche",
+			"monthly": "Bis zu {amount} pro Monat"
+		},
+		"summarySpendAction": {
+			"notify": "Benachrichtigt bei 80 % und 100 %, ohne zu blockieren",
+			"block": "Blockiert API-Schlüssel-Anfragen beim Limit"
+		},
+		"summarySpendCounting": {
+			"shared": "Geteilt von allem, dem es zugewiesen ist",
+			"each_key": "Separat für jeden Schlüssel"
+		}
 	},
 	"broadcastControls": {
 		"optional": "(optional)",
@@ -7198,7 +7232,7 @@
 			"period": "Zeitraum",
 			"createTitle": "Abteilungsbudget hinzufügen",
 			"editTitle": "Abteilungsbudget bearbeiten",
-			"limitHelp": "Erreichen die Ausgaben der Abteilung im Zeitraum diesen Betrag, werden ihre API-Schlüssel-Anfragen abgelehnt, bis der Zeitraum zurückgesetzt wird. Batch-, Echtzeit- und OAuth-Anfragen werden nicht blockiert. Ist die Budgetprüfung kurzzeitig nicht verfügbar, werden Anfragen zugelassen statt abgelehnt. Inhaber und Admins werden bei etwa 80 % und 100 % benachrichtigt.",
+			"limitHelp": "Erreichen die Ausgaben der Abteilung im Zeitraum diesen Betrag, werden ihre API-Schlüssel-Anfragen abgelehnt, bis der Zeitraum zurückgesetzt wird. Ist die Budgetprüfung kurzzeitig nicht verfügbar, werden Anfragen zugelassen statt abgelehnt. Inhaber und Admins werden bei etwa 80 % und 100 % benachrichtigt.",
 			"saved": "Abteilungsbudget gespeichert",
 			"deleted": "Abteilungsbudget gelöscht",
 			"deleteTitle": "Dieses Abteilungsbudget löschen?",
@@ -8155,6 +8189,62 @@
 			"rateLimitEmpty": "Lege mindestens ein Limit fest, um fortzufahren.",
 			"rateLimitInvalid": "Limits müssen ganze Zahlen größer als 0 sein.",
 			"rateCountingRequired": "Wähle eine Zählweise, um fortzufahren."
+		}
+	},
+	"spendGuardrail": {
+		"title": "Ausgabenlimit",
+		"description": "Begrenze, was die abgedeckten Schlüssel pro Tag, Woche oder Monat ausgeben.",
+		"limitTitle": "Limit",
+		"limitBody": "Der Höchstbetrag, den die abgedeckten Schlüssel pro Zeitraum ausgeben können, in US-Dollar.",
+		"limitLabel": "Betrag",
+		"limitHelp": "Bis zu 2 Nachkommastellen, zum Beispiel 25.00.",
+		"invalidLimit": "Gib einen Betrag über $0.00 mit bis zu 2 Nachkommastellen ein.",
+		"periodTitle": "Zeitraum",
+		"periodBody": "Zeiträume sind UTC-Kalendertage, Wochen ab Montag und Monate. Es gibt keine Voreinstellung.",
+		"period": {
+			"daily": {
+				"name": "Täglich",
+				"body": "Wird jeden Tag um 00:00 UTC zurückgesetzt."
+			},
+			"weekly": {
+				"name": "Wöchentlich",
+				"body": "Wird jeden Montag um 00:00 UTC zurückgesetzt."
+			},
+			"monthly": {
+				"name": "Monatlich",
+				"body": "Wird am 1. jedes Monats um 00:00 UTC zurückgesetzt."
+			}
+		},
+		"actionTitle": "Beim Limit",
+		"actionBody": "Was passiert, wenn die Ausgaben das Limit erreichen. Inhaber und Admins bekommen in jedem Fall bei 80 % und 100 % eine Push-Mitteilung. Es gibt keine Voreinstellung.",
+		"action": {
+			"notify": {
+				"name": "Benachrichtigen",
+				"body": "Nur die Benachrichtigungen senden. Anfragen gehen weiter durch."
+			},
+			"block": {
+				"name": "Blockieren",
+				"body": "Die abgedeckten API-Schlüssel-Anfragen ablehnen, bis der Zeitraum zurückgesetzt wird. Batch-Jobs, Echtzeitsitzungen und OAuth-Anfragen werden nicht blockiert."
+			}
+		},
+		"countingTitle": "Wie gezählt wird",
+		"countingBody": "Wähle, wer sich das Limit teilt. Es gibt keine Voreinstellung.",
+		"counting": {
+			"shared": {
+				"name": "Gemeinsam",
+				"body": "Ein Limit für alles, dem es zugewiesen ist. Bei einer Abteilung teilen sich alle Schlüssel der Abteilung das Limit."
+			},
+			"each_key": {
+				"name": "Pro Schlüssel",
+				"body": "Jeder abgedeckte API-Schlüssel bekommt sein eigenes Limit."
+			}
+		},
+		"issue": {
+			"spendLimitEmpty": "Lege ein Limit fest, um fortzufahren.",
+			"spendLimitInvalid": "Gib einen Betrag über $0.00 mit bis zu 2 Nachkommastellen ein.",
+			"spendPeriodRequired": "Wähle einen Zeitraum, um fortzufahren.",
+			"spendActionRequired": "Wähle, was beim Limit passiert, um fortzufahren.",
+			"spendCountingRequired": "Wähle, wie das Limit gezählt wird, um fortzufahren."
 		}
 	}
 }

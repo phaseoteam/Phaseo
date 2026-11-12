@@ -8,6 +8,65 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"Produit","api":"API et SDK","models":"Modèles"}} clearLabel="Effacer" />
 
+<Update label="11 novembre 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produit</p>
+
+- **Bêta :** La voix en temps réel est désormais disponible pour tous les utilisateurs dans [Chat → Realtime](https://phaseo.app/chat/realtime), avec les modèles vocaux d'OpenAI, Google, xAI et ElevenLabs ; voir [La voix en temps réel dans Chat](https://phaseo.app/blog/realtime-voice-in-chat) ([#3675](https://github.com/phaseoteam/Phaseo/pull/3675)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API et SDK</p>
+
+- `POST /v1/decisions` accepte jusqu’à 1000 questions sur `google/gemini-decision-1` ; les autres modèles sont limités à 128 par défaut et certains en acceptent moins, et une requête qui dépasse la limite du modèle renvoie `400` ; voir [Prendre une décision](./api-reference/endpoint/decisions.mdx) ([#3682](https://github.com/phaseoteam/Phaseo/pull/3682)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
+
+- [Google: Gemini Decision 1](https://phaseo.app/models/google/gemini-decision-1)
+
+</div>
+
+</Update>
+
+<Update label="10 novembre 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
+
+![Gemini 4 Carbon](/images/model-releases/2026-11-10--google--gemini-4-carbon.png)
+
+- [Google: Gemini 4 Carbon](https://phaseo.app/models/google/gemini-4-carbon)
+- [MiniMax: MiniMax H3-Image](https://phaseo.app/models/minimax/minimax-h3-image)
+- [MiniMax: MiniMax H3-Image Highspeed](https://phaseo.app/models/minimax/minimax-h3-image-highspeed)
+
+</div>
+
+</Update>
+
+<Update label="9 novembre 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modèles</p>
+
+![Claude Fable 5.2](/images/model-releases/2026-11-09--anthropic--claude-fable-5.2.png)
+
+- [Anthropic: Claude Fable 5.2](https://phaseo.app/models/anthropic/claude-fable-5.2)
+- [Parallel: Decisions Fast](https://phaseo.app/models/parallel/decisions-fast)
+
+</div>
+
+</Update>
+
 <Update label="5 novembre 2026">
 
 <div data-changelog-category="api">
@@ -21,6 +80,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <div data-changelog-category="models">
 
 <p className="changelog-category">Modèles</p>
+
+![Inkling 2 Small](/images/model-releases/2026-11-05--thinking-machines--inkling-2-small.png)
 
 - [Thinking Machines: Inkling 2 Small](https://phaseo.app/models/thinking-machines/inkling-2-small)
 
@@ -78,6 +139,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 <div data-changelog-category="models">
 
 <p className="changelog-category">Modèles</p>
+
+![GLM 5.3 FlashX Legal](/images/model-releases/2026-11-02--z-ai--glm-5.3-flashx-legal.png)
 
 - [z.AI: GLM 5.3 FlashX Legal](https://phaseo.app/models/z-ai/glm-5.3-flashx-legal)
 

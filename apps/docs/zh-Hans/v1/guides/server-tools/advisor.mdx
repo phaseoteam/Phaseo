@@ -120,4 +120,4 @@ Advisor 在请求之间不保留任何状态。如果你重放之前的消息和
 
 ## 用量和价格
 
-每次调用会使 `usage.server_tool_use.advisor_requests` 加 1，并可按 `server_tool_advisor_requests` 计费。Advisor 的 token 会计入请求的用量，并按 Advisor 模型的价格计费。
+每次调用会使 `usage.server_tool_use.advisor_requests` 加 1，并可通过 `server_tool_advisor_requests` 计费。Advisor 的 token 按 Advisor 模型自身的费率计费，作为请求账单中的单独一项，不会计入调用模型的 token 数。即使调用模型免费，使用付费 Advisor 模型也需要账户有余额。

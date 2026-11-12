@@ -35,6 +35,10 @@ node --env-file=observability/grafana/.env.local observability/grafana/provision
 
 The first command regenerates JSON; the second prints a local plan without network calls. `--check` evaluates log queries against Loki and usage queries against the `grafanacloud-usage` Prometheus datasource (`GRAFANA_USAGE_UID` can override its UID). Empty results establish syntax/access, not collection. `--apply` checks ownership and updates six dashboards and five paused alert rules. Use `--apply --dashboards-only` to preserve all existing alert rules and notification settings. Reapplying replaces edits to owned resources; writes are sequential, so rerun after an interruption. `GRAFANA_ENVIRONMENT` chooses separate staging or production rule UIDs.
 
+For an existing stack with edited dashboards or enabled rules, do not use `provision.mjs --apply` to update one alert. After deployment authorization, export `phaseo-jobs-failing-production` and change only query A's expression, `noDataState` and the summary to the corresponding fields from `alertRules()` in `definitions.mjs`. Preserve the installed rule's pause state, labels, routing, other rules and dashboards. Read those fields back after saving; staging has its own UID and remains paused.
+
+The job rule compares the latest failed scheduled time with the latest completed scheduled time for the same service/job over 48 hours, covering daily and quarter-hour jobs. Skips and unrelated completions do not resolve it. Empty results keep the prior alert state. This bounded log history is not durable incident state: a failure older than the lookback is no longer compared, and missing telemetry is not proof of recovery. Verify a new successful scheduled run and its recovery notification separately; keep the scheduler-missing rule and external uptime/status monitoring in place.
+
 `--apply --frontend` creates the browser application if missing, using `GRAFANA_FRONTEND_ORIGINS` (comma-separated exact HTTPS origins). Existing application settings are preserved. The current app allows `https://phaseo.app` and `https://www.phaseo.app`; add the real staging origin before testing there.
 
 ```powershell
@@ -87,13 +91,15 @@ Independent uptime checks are optional and not installed. Two HTTP checks (homep
 
 ## Private source maps
 
-Ordinary builds produce no browser maps. Optionally configure `FARO_SOURCEMAP_ENDPOINT`, `FARO_SOURCEMAP_APP_ID`, `FARO_SOURCEMAP_STACK_ID`, `FARO_SOURCEMAP_API_KEY` and a unique `PUBLIC_RELEASE`, then run:
+Production web CI can upload hidden browser/server source maps to PostHog EU project 81404. Set the GitHub Actions secret `POSTHOG_CLI_API_KEY` to a personal API key with `error_tracking:write` and `organization:read` scopes. The pinned [official upload action](https://posthog.com/docs/error-tracking/upload-source-maps/github-actions) injects matching bundle identifiers and uploads the exact files that are deployed, with `phaseo-web` and the commit SHA as their release. The upload credential is withheld from Vite. Upload failure blocks deployment; cleanup removes public map files even after failure. Without the secret, CI reports uploads disabled and builds without maps. Verify a post-deploy error resolves to original source before relying on symbolication. Desktop/mobile source-map uploads and native crashes remain separate work.
+
+For Grafana browser symbolication, optionally configure `FARO_SOURCEMAP_ENDPOINT`, `FARO_SOURCEMAP_APP_ID`, `FARO_SOURCEMAP_STACK_ID`, `FARO_SOURCEMAP_API_KEY` and a unique `PUBLIC_RELEASE`, then run:
 
 ```powershell
 pnpm --filter @phaseo/web build:observability
 ```
 
-The wrapper runs Vite with hidden maps, uploads recursively through the pinned official Faro CLI, and removes all maps under `dist/client` in a finally block. It rejects maps above 30 MB before upload. The upload key is withheld from the build subprocess. Deploy that exact successful artifact; rebuilding changes mappings. The upload bundle ID matches Faro's release. Do not enable `PHASEO_PRIVATE_SOURCEMAPS` in ordinary builds. cURL is required. Cloud upload and symbolication need separate verification and are not enabled in the standard release workflow.
+The wrapper runs Vite with hidden maps, uploads recursively through the pinned official Faro CLI, and removes all maps under `dist/client` in a finally block. It rejects maps above 30 MB before upload. The upload key is withheld from the build subprocess. Deploy that exact successful artifact; rebuilding changes mappings. The upload bundle ID matches Faro's release. Do not enable `PHASEO_PRIVATE_SOURCEMAPS` in ordinary builds. cURL is required. Faro upload and symbolication need separate verification and are not enabled in the standard release workflow.
 
 ## Costs and rollback
 
@@ -115,5 +121,7 @@ pnpm --filter @phaseo/gateway-api exec vitest run src/observability/platform.tes
 pnpm --filter @phaseo/web-api exec vitest run src/observability.test.ts src/chat/proxy.test.ts
 pnpm --filter @phaseo/web exec vitest run src/lib/grafana.test.ts src/lib/grafanaConfig.test.ts
 ```
+
+`LOKI_TEST_URL` pointing to an isolated localhost Loki also enables `node --test observability/grafana/loki.test.mjs observability/grafana/job-alert.loki.test.mjs`. Historical fixtures need old samples enabled, an ingester chunk age above 48 hours, and queries sent to ingesters for the full lookback; they never write to a Cloud stack.
 
 Also run scoped lint/typechecks and production/Worker builds. [VALIDATION.md](VALIDATION.md) records actual results; previous checks in the obsolete Next.js checkout do not validate the current release.

@@ -1079,7 +1079,15 @@
 		"columnRate": "レート",
 		"rateRequests": "1 分あたり {count} リクエスト",
 		"rateTokens": "1 分あたり {count} トークン",
-		"rateConcurrent": "同時に {count}"
+		"rateConcurrent": "同時に {count}",
+		"columnSpend": "支出",
+		"spend": {
+			"daily": "1 日 {amount}",
+			"weekly": "1 週間 {amount}",
+			"monthly": "1 か月 {amount}"
+		},
+		"spendBlocks": "ブロック",
+		"spendNotifies": "通知のみ"
 	},
 	"guardrailWizard": {
 		"title": "新しいガードレール",
@@ -1106,7 +1114,12 @@
 			"sensitiveInfoOff": "機密情報のパターンを1つ以上オンにするか、このチェックを外してください。",
 			"rateLimitEmpty": "続けるには制限を 1 つ以上設定してください。",
 			"rateLimitInvalid": "制限は 0 より大きい整数にしてください。",
-			"rateCountingRequired": "続けるには数え方を選んでください。"
+			"rateCountingRequired": "続けるには数え方を選んでください。",
+			"spendLimitEmpty": "続行するには上限を設定してください。",
+			"spendLimitInvalid": "$0.00 より大きい金額を、小数点以下 2 桁までで入力してください。",
+			"spendPeriodRequired": "続行するには期間を選んでください。",
+			"spendActionRequired": "続行するには上限に達したときの動作を選んでください。",
+			"spendCountingRequired": "続行するにはカウント方法を選んでください。"
 		},
 		"nameLabel": "名前",
 		"namePlaceholder": "例: 業務委託先向けポリシー",
@@ -1208,7 +1221,28 @@
 			"each_key": "キーごとに個別",
 			"each_end_user": "エンドユーザーごとに個別"
 		},
-		"summaryRateFailClosed": "制限を確認できないときはリクエストを拒否"
+		"summaryRateFailClosed": "制限を確認できないときはリクエストを拒否",
+		"templateSpendLimit": {
+			"name": "支出上限",
+			"body": "1 日、1 週間、1 か月ごとの支出を制限し、通知を受け取ります。"
+		},
+		"sectionSpend": {
+			"name": "支出上限",
+			"body": "1 日、1 週間、1 か月ごとのドル建ての上限です。支出ガードレールには他のチェックはありません。"
+		},
+		"summarySpendLimit": {
+			"daily": "1 日 {amount} まで",
+			"weekly": "1 週間 {amount} まで",
+			"monthly": "1 か月 {amount} まで"
+		},
+		"summarySpendAction": {
+			"notify": "80% と 100% で通知 (ブロックなし)",
+			"block": "上限に達すると API キーのリクエストをブロック"
+		},
+		"summarySpendCounting": {
+			"shared": "割り当て先全体で共有",
+			"each_key": "キーごとに個別"
+		}
 	},
 	"broadcastControls": {
 		"optional": "（任意）",
@@ -7198,7 +7232,7 @@
 			"period": "期間",
 			"createTitle": "部門の予算を追加",
 			"editTitle": "部門の予算を編集",
-			"limitHelp": "期間内の部門の支出がこの金額に達すると、期間がリセットされるまでその部門の API キーのリクエストは拒否されます。バッチ、リアルタイム、OAuth のリクエストはブロックされません。予算のチェックが一時的に利用できない場合、リクエストは拒否されずに許可されます。約 80% と 100% に達すると、オーナーと管理者に通知されます。",
+			"limitHelp": "期間内の部門の支出がこの金額に達すると、期間がリセットされるまでその部門の API キーのリクエストは拒否されます。予算のチェックが一時的に利用できない場合、リクエストは拒否されずに許可されます。約 80% と 100% に達すると、オーナーと管理者に通知されます。",
 			"saved": "部門の予算を保存しました",
 			"deleted": "部門の予算を削除しました",
 			"deleteTitle": "この部門の予算を削除しますか？",
@@ -8155,6 +8189,62 @@
 			"rateLimitEmpty": "続けるには制限を 1 つ以上設定してください。",
 			"rateLimitInvalid": "制限は 0 より大きい整数にしてください。",
 			"rateCountingRequired": "続けるには数え方を選んでください。"
+		}
+	},
+	"spendGuardrail": {
+		"title": "支出上限",
+		"description": "対象のキーが 1 日、1 週間、1 か月に使える金額を制限します。",
+		"limitTitle": "上限",
+		"limitBody": "対象のキーが各期間に使える最大金額 (米ドル) です。",
+		"limitLabel": "金額",
+		"limitHelp": "小数点以下 2 桁まで。例: 25.00",
+		"invalidLimit": "$0.00 より大きい金額を、小数点以下 2 桁までで入力してください。",
+		"periodTitle": "期間",
+		"periodBody": "期間は UTC の暦日、月曜始まりの週、月です。既定値はありません。",
+		"period": {
+			"daily": {
+				"name": "毎日",
+				"body": "毎日 00:00 UTC にリセットされます。"
+			},
+			"weekly": {
+				"name": "毎週",
+				"body": "毎週月曜 00:00 UTC にリセットされます。"
+			},
+			"monthly": {
+				"name": "毎月",
+				"body": "毎月 1 日 00:00 UTC にリセットされます。"
+			}
+		},
+		"actionTitle": "上限に達したとき",
+		"actionBody": "支出が上限に達したときの動作です。どちらの場合も、オーナーと管理者には 80% と 100% でプッシュ通知が届きます。既定値はありません。",
+		"action": {
+			"notify": {
+				"name": "通知",
+				"body": "通知だけを送ります。リクエストは引き続き通ります。"
+			},
+			"block": {
+				"name": "ブロック",
+				"body": "期間がリセットされるまで、対象の API キーのリクエストを拒否します。バッチジョブ、リアルタイムセッション、OAuth リクエストはブロックされません。"
+			}
+		},
+		"countingTitle": "カウント方法",
+		"countingBody": "上限を共有する範囲を選びます。既定値はありません。",
+		"counting": {
+			"shared": {
+				"name": "共有",
+				"body": "割り当て先全体で 1 つの上限です。部門に割り当てると、部門のすべてのキーで共有します。"
+			},
+			"each_key": {
+				"name": "キーごと",
+				"body": "対象の API キーごとに個別の上限があります。"
+			}
+		},
+		"issue": {
+			"spendLimitEmpty": "続行するには上限を設定してください。",
+			"spendLimitInvalid": "$0.00 より大きい金額を、小数点以下 2 桁までで入力してください。",
+			"spendPeriodRequired": "続行するには期間を選んでください。",
+			"spendActionRequired": "続行するには上限に達したときの動作を選んでください。",
+			"spendCountingRequired": "続行するにはカウント方法を選んでください。"
 		}
 	}
 }

@@ -58,7 +58,12 @@ Las entradas pueden llevar estado del proveedor que el modelo necesita en el sig
 | Firmas de pensamiento de Claude | `signature` en las entradas `reasoning.text` |
 | Pensamiento censurado de Claude, razonamiento cifrado de OpenAI | `data` en las entradas `reasoning.encrypted` |
 | Firmas de pensamiento de Gemini | `data` en las entradas `reasoning.encrypted` cuyo `id` es la llamada a herramienta a la que pertenecen |
+| El nivel de esfuerzo con el que se ejecutó una respuesta de Claude | `data` en la última entrada `reasoning.encrypted`, que no tiene texto |
 
 Con streaming, llega un delta `reasoning_details` cuando se completa cada bloque de razonamiento.
 
-Para conservar el razonamiento del modelo entre pasos, devuelve el mensaje del asistente con su `reasoning_details` sin cambios. Los valores de `signature` y `data` son opacos y registran el proveedor y el modelo que los generaron. Phaseo solo los envía a esa familia de proveedor y a ese modelo, así que un fallback a otro proveedor los descarta en lugar de fallar. Los modelos de Claude en modo de pensamiento manual necesitan que se les devuelva su pensamiento para seguir pensando durante un bucle de herramientas; si falta, ese paso se ejecuta sin pensamiento.
+<Warning>
+Devuelve cada mensaje del asistente con su `reasoning_details` sin cambios, en cada solicitud, no solo en los bucles de herramientas. Nunca descartes, edites ni reordenes entradas, cifradas o no, incluidas las entradas sin texto.
+</Warning>
+
+Los valores de `signature` y `data` son opacos y registran el proveedor y el modelo que los generaron. Phaseo solo los envía a esa familia de proveedor y a ese modelo, así que un fallback a otro proveedor los descarta en lugar de fallar. Sin ellos, los modelos de Claude en modo de pensamiento manual ejecutan el siguiente paso del bucle de herramientas sin pensamiento, y un cambio de `reasoning_effort` reinicia la caché de prompts de Claude; consulta [Cambia el esfuerzo de razonamiento a mitad de la conversación](../../guides/reasoning-effort).

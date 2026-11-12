@@ -205,6 +205,12 @@ export function decodeOpenAIResponsesRequest(req: ResponsesRequest): IRChatReque
 						bindTurnSignature(decoded.callId, decoded.signature);
 						continue;
 					}
+					if (decoded.kind === "effort") {
+						// The effort record follows the reply it belongs to.
+						const owner = messages[messages.length - 1];
+						if (owner?.role === "assistant") owner.effortRecord = decoded.record;
+						continue;
+					}
 					let lastAssistant = messages[messages.length - 1];
 					if (!lastAssistant || lastAssistant.role !== "assistant") {
 						lastAssistant = { role: "assistant", content: [], toolCalls: [] };

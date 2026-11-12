@@ -104,6 +104,7 @@ struct AnthropicMessagesResponse {
 
 struct AnthropicSystemMessage {
 	std::any content;
+	std::map<std::string, std::any> output_config;
 	std::any role;
 };
 
@@ -1605,6 +1606,13 @@ struct GatewayModalities {
 	std::vector<std::string> output;
 };
 
+struct GatewayModelAccess {
+	int hidden_model_count;
+	std::vector<std::map<std::string, std::any>> hidden_models;
+	int limited_model_count;
+	bool restricted;
+};
+
 struct GatewayModelLifecycle {
 	std::optional<std::string> deprecated_at;
 	std::optional<std::string> message;
@@ -1637,6 +1645,7 @@ struct GatewayModelOffer {
 using GatewayModelOrganization = std::any;
 
 struct GatewayModelsResponse {
+	std::map<std::string, std::any> access;
 	std::any availability_mode;
 	int limit;
 	std::vector<std::map<std::string, std::any>> models;

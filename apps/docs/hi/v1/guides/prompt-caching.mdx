@@ -123,6 +123,7 @@ curl https://api.phaseo.app/v1/messages \
 Phaseo हर प्रदाता को सिर्फ़ वही कैश नियंत्रण भेजता है जिन्हें वह दस्तावेज़ में बताता है, और बाकी हटा देता है। कैश नियंत्रण कभी किसी प्रदाता को रूटिंग से बाहर नहीं करते। हर मॉडल पेज उसकी कैश रीड और राइट कीमतें दिखाता है।
 </Note>
 
+<span id="which-providers-cache-automatically"></span>
 ## कौन-से प्रदाता अपने आप कैश करते हैं
 
 | प्रदाता | कैशिंग | Phaseo क्या भेजता है |
@@ -288,6 +289,11 @@ Gemini 2.5 और बाद के मॉडल बिना कुछ भेज
 ### Responses: पूरी बातचीत भेजें
 
 Phaseo प्रतिक्रियाएँ सेव नहीं करता। `previous_response_id` या `conversation` सेट करने वाले अनुरोध `400` `unsupported_param` लौटाते हैं, इसलिए हर चरण पर पूरी बातचीत `input` में भेजें। इसकी स्थिर शुरुआत ही वह प्रीफ़िक्स है जो कैश होता है। टूल लूप में `reasoning` आउटपुट आइटम भी वापस भेजें; [टूल लूप में रीज़निंग](../api-reference/endpoint/responses.mdx#reasoning-in-tool-loops) देखें।
+
+<span id="change-reasoning-effort-mid-conversation"></span>
+### बातचीत के बीच में रीज़निंग प्रयास बदलें
+
+अनुरोधों के बीच `reasoning_effort` (Chat Completions) या `reasoning.effort` (Responses) बदलें, और Phaseo Claude का प्रॉम्प्ट कैश बनाए रखता है: वह बदलाव को नए टॉप-लेवल प्रयास के बजाय `messages` के अंदर एक प्रयास मार्कर के रूप में भेजता है। यह तब तक काम करता है जब तक आप Claude की रीज़निंग बिना बदले वापस भेजते हैं। Anthropic Messages पर मार्कर आप खुद भेजते हैं। [बातचीत के बीच में रीज़निंग प्रयास बदलें](./reasoning-effort.mdx) देखें।
 
 <span id="usage-and-pricing-fields"></span>
 ## उपयोग और प्राइसिंग फ़ील्ड

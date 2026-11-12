@@ -15,21 +15,16 @@ import { getLocalizedDocsHref } from "@/lib/docs";
 import { motion, useReducedMotion } from "motion/react";
 import NumberFlow from "@number-flow/react";
 import {
-	AlertTriangle,
 	ArrowUpRight,
-	Ban,
 	ChevronDown,
 	ChevronLeft,
 	ChevronRight,
-	CheckCircle2,
 	Clock3,
 	FlaskConical,
 	Info,
-	KeyRound,
-	ShieldBan,
-	XCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { TAP_TARGET_20 } from "@/lib/tapTargets";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Button } from "@/components/ui/button";
 import { Callout } from "@/components/ui/callout";
@@ -43,6 +38,9 @@ import {
 import {
 	HoverCard,
 	HoverCardContent,
+	HoverCardHeader,
+	HoverCardRows,
+	HoverCardStat,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -54,10 +52,7 @@ import {
 	MeterRateRows,
 	UpcomingPricingSection,
 } from "@/components/(data)/model/pricing/sections";
-import {
-	buildParameterSupportSummary,
-	prettifyParamName,
-} from "@/components/(data)/model/pricing/ProviderModelParameters";
+import { buildParameterSupportSummary } from "@/components/(data)/model/pricing/ProviderModelParameters";
 import {
 	buildProviderSections,
 	compareTokenTiers,
@@ -73,6 +68,18 @@ import {
 	type TokenTriple,
 	type UsageRow,
 } from "@/components/(data)/model/pricing/pricingHelpers";
+import {
+	MOBILE_BLOCK_ROW,
+	MOBILE_FULL_CELL,
+	MOBILE_NAME_CELL,
+	MOBILE_ROW,
+	MOBILE_STAT_CELL,
+	getPriceColumnMobileLabel,
+	MOBILE_PERF_ORDER,
+	MOBILE_PERF_ROW_START,
+	getMobilePriceCellClass,
+	getMobilePriceColumnKeys,
+} from "@/components/(data)/model/pricing/providerTableMobile";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import type { PricingRuntimeStats as ProviderRuntimeStats } from "./pricingRuntimeStats";
 import type { ProviderAttemptHealth } from "@/lib/fetchers/models/getModelProviderRuntimeStats";
@@ -82,11 +89,6 @@ import { ProviderLiveRoutingIndicator, useLiveRouting } from "./ProviderLiveRout
 import { Logo } from "@/components/Logo";
 import ProviderInfoHoverIcons from "@/components/(data)/model/ProviderInfoHoverIcons";
 import PricingPlanSelect from "@/components/(data)/model/pricing/PricingPlanSelect";
-import {
-	getParameterDocsHref,
-	getParameterReference,
-	getParameterReferenceTranslationKey,
-} from "@/lib/parameters/reference";
 import {
 	getProviderModelScopeForPlan,
 	getProviderPlanComparisonBase,
@@ -99,13 +101,9 @@ import {
 } from "@/lib/providers/providerOffers";
 import {
 	chooseGatewayStatus,
-	type CanonicalGatewayStatus,
 	resolveGatewayStatus,
 } from "@/components/(data)/model/pricing/providerGatewayStatus";
-import {
-	summarizeProviderLifecycle,
-	type ProviderLifecycleStatusInput,
-} from "@/components/(data)/model/pricing/providerLifecycleStatus";
+import { summarizeProviderLifecycle } from "@/components/(data)/model/pricing/providerLifecycleStatus";
 import {
 	clearProviderInspector,
 	dispatchProviderInspectorOpen,
@@ -113,9 +111,15 @@ import {
 	type ProviderInspectorChangeDetail,
 } from "@/components/(data)/model/pricing/providerInspectorSync";
 import type { WorkspacePolicyBlockedReason } from "@/lib/chat/effectivePolicy";
-
-const PROVIDER_STATUSES_DOCS_HREF =
-	"https://phaseo.app/docs/v1/guides/provider-statuses";
+import {
+	PROVIDER_STATUS_META,
+	PROVIDER_STATUSES_DOCS_HREF,
+	PROVIDER_STATUS_TRANSLATION_KEYS,
+	ProviderByokOnlyHoverCard,
+	ProviderPolicyBlockedHoverCard,
+	ProviderStatusHoverCard,
+} from "@/components/(data)/model/pricing/ProviderRowHoverCards";
+import { ParameterHoverChip, mergeRouteParameterSpecs } from "@/components/(data)/model/pricing/ParameterHoverChip";
 const PROVIDER_SHEET_DOCS = {
 	serviceTier: "https://phaseo.app/docs/v1/guides/service-tiers",
 	pricing: "https://phaseo.app/docs/v1/exploring/pricing-performance",
@@ -204,7 +208,7 @@ function formatPercent(value: number | null | undefined, locale: string): string
 	return new Intl.NumberFormat(locale, { style: "percent", minimumFractionDigits: 1, maximumFractionDigits: 1 }).format(value / 100);
 }
 
-function getPricingPlanTranslationKey(plan: string): string | null {
+export function getPricingPlanTranslationKey(plan: string): string | null {
 	switch (plan) {
 		case "standard":
 			return "tierStandard";
@@ -278,6 +282,12 @@ export function getUptimeTrendPoints(
 	});
 }
 
+function formatShortWeekday(dayOffset: number, locale: string): string {
+	// Uptime days are UTC days, so name them in UTC too.
+	const date = new Date(Date.now() - dayOffset * 86_400_000);
+	return new Intl.DateTimeFormat(locale, { weekday: "short", timeZone: "UTC" }).format(date);
+}
+
 function formatUptimeDayLabel(dayOffset: number, locale: string, todayLabel: string): string {
 	if (dayOffset === 0) return todayLabel;
 	return new Intl.RelativeTimeFormat(locale, { numeric: "always", style: "short" }).format(
@@ -324,97 +334,178 @@ function AttemptHealthBreakdown({ health }: { health: ProviderAttemptHealth }) {
 	);
 }
 
-function UptimeHoverContent({
+/** The UTC calendar day `dayOffset` days before today, as a short date. */
+function formatUtcDay(dayOffset: number, locale: string, now: Date): string {
+	const date = new Date(now.getTime());
+	date.setUTCDate(date.getUTCDate() - dayOffset);
+	return new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" }).format(date);
+}
+
+/**
+ * The card on a provider row's uptime cell: 3-day uptime as the headline, then
+ * one row per UTC day, then the share of attempts that were reachable,
+ * accepted and completed. Percentages only: a public page never shows the
+ * request counts behind them.
+ */
+export function ProviderUptimeHoverContent({
 	uptimePct,
 	runtimeStats,
+	points,
 }: {
 	uptimePct: number | null;
 	runtimeStats: ProviderRuntimeStats | null | undefined;
+	points: UptimeTrendPoint[];
 }) {
 	const t = useTranslations("Catalogue.modelDetail.providerTable");
-	const tSections = useTranslations("Catalogue.modelDetail.sections");
+	const tUptime = useTranslations("Catalogue.modelDetail.uptime");
+	const tCard = useTranslations("Catalogue.hoverCards");
 	const locale = useLocale();
-	const dailyPoints = (runtimeStats?.uptimeDaily3d ?? [])
-		.slice()
-		.sort((a, b) => b.dayOffset - a.dayOffset);
+	// Rendered only while the card is open, so the clock is the viewer's.
+	const now = new Date();
+	const health = runtimeStats?.attemptHealth3d ?? null;
 	return (
-		<div className="space-y-2.5">
-			<div className="flex items-center justify-between gap-4">
-				<p className="text-sm font-medium text-foreground">{t("threeDayUptime")}</p>
-				<span className={cn("font-medium tabular-nums", uptimeValueClass(uptimePct))}>
-					{formatPercent(uptimePct, locale)}
-				</span>
-			</div>
-			<div className="flex items-end gap-2">
-				{dailyPoints.map((point) => {
-					const value = point.uptimePct;
-					const height =
-						value == null || !Number.isFinite(value)
-							? 8
-							: Math.max(8, Math.min(34, 8 + (value / 100) * 26));
-					return (
-						<div
-							key={point.dayOffset}
-							className="flex w-10 flex-col items-center gap-1"
-						>
-							<div
-								className={cn(
-									"w-3 rounded-full",
-									uptimeValueClass(value),
-									value == null ? "bg-muted" : "bg-current",
-								)}
-								style={{ height }}
-								aria-hidden="true"
-							/>
-							<span className="text-[10px] text-muted-foreground">
-								{formatUptimeDayLabel(point.dayOffset, locale, tSections("today"))}
-							</span>
-						</div>
-					);
-				})}
-			</div>
-			{runtimeStats?.attemptHealth3d ? <AttemptHealthBreakdown health={runtimeStats.attemptHealth3d} /> : null}
-			<UptimeKey className="border-t border-zinc-200 pt-2.5 dark:border-zinc-800" />
-		</div>
+		<>
+			<HoverCardHeader title={t("threeDayUptime")} meta={[tCard("uptimeMeta")]} />
+			<HoverCardStat className={uptimeValueClass(uptimePct)}>{formatPercent(uptimePct, locale)}</HoverCardStat>
+			<HoverCardRows
+				rows={[...points].reverse().map((point) => ({
+					key: `day-${point.dayOffset}`,
+					label: formatUtcDay(point.dayOffset, locale, now),
+					value: point.noTraffic ? tCard("noTraffic") : formatPercent(point.value, locale),
+					valueClassName: point.noTraffic ? "text-muted-foreground" : uptimeValueClass(point.value),
+				}))}
+			/>
+			{health ? (
+				<HoverCardRows
+					className="border-t border-border/60 pt-2.5"
+					rows={[
+						{ key: "reachable", label: tUptime("reachabilityLabel"), value: formatPercent(health.reachabilityPct, locale), valueClassName: uptimeValueClass(health.reachabilityPct) },
+						{ key: "accepted", label: tUptime("capacityLabel"), value: formatPercent(health.capacityPct, locale), valueClassName: uptimeValueClass(health.capacityPct) },
+						{ key: "completed", label: tUptime("callErrorsLabel"), value: formatPercent(health.callErrorPct, locale), valueClassName: uptimeValueClass(health.callErrorPct) },
+					]}
+				/>
+			) : null}
+			<UptimeKey />
+		</>
+	);
+}
+
+/**
+ * A provider row's uptime cell: the 3-day rate and a sparkline of the last 3
+ * UTC days. The whole cell is one button whose card gives the breakdown on
+ * hover, keyboard focus or tap (the row ignores clicks on buttons).
+ */
+export function ProviderUptimeCell({
+	valueLabel,
+	valueClassName,
+	uptimePct,
+	runtimeStats,
+	points,
+}: {
+	valueLabel: string;
+	valueClassName?: string;
+	uptimePct: number | null;
+	runtimeStats: ProviderRuntimeStats | null | undefined;
+	points: UptimeTrendPoint[];
+}) {
+	const t = useTranslations("Catalogue.modelDetail.providerTable");
+	const className = cn(
+		"inline-flex items-center justify-end gap-2 font-medium tabular-nums max-sm:justify-start",
+		valueClassName,
+	);
+	const content = (
+		<>
+			<span>{valueLabel}</span>
+			{/* Phones show the labelled day strip under the cell instead. */}
+			<UptimeSparkline points={points} className="max-sm:hidden" />
+		</>
+	);
+	if (!points.some((point) => point.value != null)) return <div className={className}>{content}</div>;
+	return (
+		<HoverCard>
+			<HoverCardTrigger asChild>
+				<button
+					type="button"
+					aria-label={`${t("threeDayUptime")}: ${valueLabel}`}
+					className={cn(className, "cursor-help rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40")}
+				>
+					{content}
+				</button>
+			</HoverCardTrigger>
+			<HoverCardContent align="end" className="w-64 space-y-2.5 text-left">
+				<ProviderUptimeHoverContent uptimePct={uptimePct} runtimeStats={runtimeStats} points={points} />
+			</HoverCardContent>
+		</HoverCard>
 	);
 }
 
 /**
  * The last 3 days' uptime as bars, oldest first, coloured by the uptime bands.
- * Each bar is a button whose card gives its day and rate on hover, keyboard
- * focus or tap (the row it sits in ignores clicks on buttons). A day with no
- * traffic says so. `interactive={false}` draws plain bars, for a sparkline that
- * sits inside another control.
+ * The bars are a picture; the cell around them carries the card with each
+ * day's rate.
  */
-export function UptimeSparkline({
+/**
+ * Phones can't hover the sparkline, so cards show the same three days as a labelled
+ * strip: one coloured bar per day with its name underneath, readable without a tap.
+ */
+export function UptimeDayStrip({
 	points,
 	className,
-	interactive = true,
 }: {
 	points: UptimeTrendPoint[];
 	className?: string;
-	interactive?: boolean;
 }) {
 	const t = useTranslations("Catalogue.modelDetail.sections");
 	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
 	const locale = useLocale();
 	if (!points.some((point) => point.value != null)) return null;
 
-	const describe = (point: UptimeTrendPoint) => {
-		const day = formatUptimeDayLabel(point.dayOffset, locale, t("today"));
-		return point.noTraffic
-			? tProvider("uptimeDayNoTraffic", { day })
-			: `${day}: ${formatPercent(point.value, locale)}`;
-	};
+	return (
+		<span role="list" aria-label={t("dailyUptime")} className={cn("flex gap-1", className)}>
+			{points.map((point) => {
+				const day = formatUptimeDayLabel(point.dayOffset, locale, t("today"));
+				// Short weekday names fit the narrow strip; the accessible label keeps the full day.
+				const shortDay = point.dayOffset === 0 ? t("today") : formatShortWeekday(point.dayOffset, locale);
+				const description = point.noTraffic
+					? tProvider("uptimeDayNoTraffic", { day })
+					: `${day}: ${formatPercent(point.value, locale)}`;
+				return (
+					<span key={point.dayOffset} role="listitem" aria-label={description} className="flex min-w-0 flex-1 flex-col gap-1">
+						<span
+							aria-hidden="true"
+							className={cn(
+								"block h-[3px] rounded-full bg-current",
+								point.value == null ? "text-muted-foreground opacity-45" : uptimeValueClass(point.value),
+							)}
+						/>
+						<span aria-hidden="true" className="truncate text-center text-[10px] font-normal text-muted-foreground">
+							{shortDay}
+						</span>
+					</span>
+				);
+			})}
+		</span>
+	);
+}
+
+export function UptimeSparkline({
+	points,
+	className,
+}: {
+	points: UptimeTrendPoint[];
+	className?: string;
+}) {
+	const t = useTranslations("Catalogue.modelDetail.sections");
+	if (!points.some((point) => point.value != null)) return null;
 
 	return (
 		<span
-			role={interactive ? "group" : "img"}
+			role="img"
 			aria-label={t("dailyUptime")}
 			className={cn("inline-flex h-3.5 w-8 shrink-0 items-stretch gap-[3px] px-px", className)}
 		>
-			{points.map((point) => {
-				const bar = (
+			{points.map((point) => (
+				<span key={point.dayOffset} className="flex flex-1">
 					<span
 						aria-hidden="true"
 						className={cn(
@@ -422,33 +513,8 @@ export function UptimeSparkline({
 							point.value == null ? "text-muted-foreground opacity-45" : uptimeValueClass(point.value),
 						)}
 					/>
-				);
-				if (!interactive) {
-					return (
-						<span key={point.dayOffset} className="flex flex-1">
-							{bar}
-						</span>
-					);
-				}
-				const label = describe(point);
-				return (
-					<HoverCard key={point.dayOffset}>
-						{/* The wrapper ignores openDelay; Base UI takes the delays on the trigger. */}
-						<HoverCardTrigger asChild delay={100} closeDelay={80}>
-							<button
-								type="button"
-								aria-label={label}
-								className="relative flex flex-1 cursor-help rounded-[2px] after:absolute after:-inset-y-2 after:inset-x-0 after:content-[''] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-							>
-								{bar}
-							</button>
-						</HoverCardTrigger>
-						<HoverCardContent side="top" className="w-auto rounded-md px-2 py-1 text-xs tabular-nums">
-							{label}
-						</HoverCardContent>
-					</HoverCard>
-				);
-			})}
+				</span>
+			))}
 		</span>
 	);
 }
@@ -1139,14 +1205,14 @@ function renderTablePriceSummary(
 	const variantLabels = [summary.primary.label, summary.secondary?.label]
 		.filter((label): label is string => Boolean(label));
 	return (
-		<div className="text-right">
+		<div className="text-right max-sm:text-left">
 			<div className={cn("font-medium tabular-nums", accentClassName)}>
 				{summary.primary.modality === "multimodal" ? <GroupedInputPrice price={summary.primary.formattedPrice} modalities={summary.primary.label} /> : summary.secondary
 					? `${summary.primary.formattedPrice}–${summary.secondary.formattedPrice}`
 					: summary.primary.formattedPrice}
 			</div>
 			{showVideoVariant ? (
-				<div className="max-w-40 truncate text-[10px] font-normal text-muted-foreground">
+				<div className="max-w-40 truncate text-[10px] font-normal text-muted-foreground max-sm:hidden">
 					{variantLabels.join(" · ")}
 					{summary.extraCount > 0 ? ` · +${summary.extraCount}` : ""}
 				</div>
@@ -1732,120 +1798,7 @@ function parseRuleAudioMode(value: unknown): "with-audio" | "without-audio" | nu
 	return null;
 }
 
-export const PROVIDER_STATUS_META: Record<
-	CanonicalGatewayStatus,
-	{
-		label: string;
-		icon: React.ElementType;
-		iconClass: string;
-		description: string;
-	}
-> = {
-	active: {
-		label: "Active",
-		icon: CheckCircle2,
-		iconClass: "text-green-600",
-		description: "Available.",
-	},
-	coming_soon: {
-		label: "Coming Soon",
-		icon: Clock3,
-		iconClass: "text-blue-600",
-		description: "Not active yet.",
-	},
-	external: {
-		label: "External",
-		icon: ArrowUpRight,
-		iconClass: "text-violet-600",
-		description: "Listed from an external catalogue; routing requires an explicit provider-level override.",
-	},
-	internal_testing: {
-		label: "Internal Testing",
-		icon: FlaskConical,
-		iconClass: "text-sky-600",
-		description: "Visible to admins only while this provider/model capability is being tested.",
-	},
-	deranked: {
-		label: "Lower priority",
-		icon: AlertTriangle,
-		iconClass: "text-amber-600",
-		description: "Set by Phaseo. Used only as a backup when the other providers fail.",
-	},
-	inactive: {
-		label: "Not Active",
-		icon: XCircle,
-		iconClass: "text-zinc-500",
-		description: "Not available.",
-	},
-	disabled: {
-		label: "Disabled",
-		icon: Ban,
-		iconClass: "text-red-600",
-		description: "Explicitly disabled and not routable.",
-	},
-	not_listed: {
-		label: "Not Active",
-		icon: XCircle,
-		iconClass: "text-zinc-500",
-		description: "Not available.",
-	},
-};
-
-function ProviderLifecycleDetails({
-	providerModels,
-}: {
-	providerModels: ProviderLifecycleStatusInput[];
-}) {
-	const tProvider = useTranslations("Catalogue.modelDetail.providerTable");
-	const tSections = useTranslations("Catalogue.modelDetail.sections");
-	const lifecycle = summarizeProviderLifecycle(providerModels);
-	const providerAvailability = lifecycle.providerAvailability
-		? {
-				label: tSections(
-					`providerLifecycle.availability.${lifecycle.providerAvailability.key}.label` as never,
-				),
-				description: tSections(
-					`providerLifecycle.availability.${lifecycle.providerAvailability.key}.description` as never,
-				),
-			}
-		: null;
-	const phaseoIntegration = lifecycle.phaseo
-		? {
-				label: tSections(
-					`providerLifecycle.phaseo.${lifecycle.phaseo.key}.label` as never,
-				),
-				description: tSections(
-					`providerLifecycle.phaseo.${lifecycle.phaseo.key}.description` as never,
-				),
-			}
-		: null;
-	return (
-		<div className="mt-2 space-y-1 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
-			{providerAvailability ? (
-				<div className="grid grid-cols-[auto_1fr] gap-x-3">
-					<span className="text-muted-foreground">{tProvider("provider")}</span>
-					<span className="text-right font-medium" title={providerAvailability.description}>
-						{providerAvailability.label}
-					</span>
-				</div>
-			) : null}
-			{phaseoIntegration ? (
-				<div className="grid grid-cols-[auto_1fr] gap-x-3">
-					<span className="text-muted-foreground">Phaseo</span>
-					<span className="text-right font-medium" title={phaseoIntegration.description}>
-						{phaseoIntegration.label}
-					</span>
-				</div>
-			) : null}
-			<div className="grid grid-cols-[auto_1fr] gap-x-3">
-				<span className="text-muted-foreground">{tSections("access")}</span>
-				<span className="text-right font-medium">
-					{lifecycle.accessScope === "internal" ? tSections("internalOnly") : tSections("public")}
-				</span>
-			</div>
-		</div>
-	);
-}
+export { PROVIDER_STATUS_META };
 
 export default function ProviderCard({
 	provider,
@@ -2136,22 +2089,11 @@ export default function ProviderCard({
 	const statusMeta = PROVIDER_STATUS_META[statusKey] ?? PROVIDER_STATUS_META.not_listed;
 	const statusIcon = statusMeta.icon;
 	const statusClass = cn("h-3.5 w-3.5", statusMeta.iconClass);
-	const statusTranslationKeys: Record<CanonicalGatewayStatus, { label: string; description: string }> = {
-		active: { label: "statuses.active", description: "statusDescriptions.active" },
-		coming_soon: { label: "statuses.comingSoon", description: "statusDescriptions.comingSoon" },
-		external: { label: "statuses.external", description: "statusDescriptions.external" },
-		internal_testing: { label: "statuses.internalTesting", description: "statusDescriptions.internalTesting" },
-		deranked: { label: "statuses.rateLimited", description: "statusDescriptions.rateLimited" },
-		inactive: { label: "statuses.inactive", description: "statusDescriptions.inactive" },
-		disabled: { label: "statuses.disabled", description: "statusDescriptions.disabled" },
-		not_listed: { label: "statuses.inactive", description: "statusDescriptions.inactive" },
-	};
-	const statusLabel = tProvider(statusTranslationKeys[statusKey].label as never);
+	const statusLabel = tProvider(PROVIDER_STATUS_TRANSLATION_KEYS[statusKey].label as never);
 	const liveRouting = useLiveRouting(routingStatus, statusKey);
-	const statusDescription = tProvider(statusTranslationKeys[statusKey].description as never);
-	const statusDetail = statusKey === "active" && leavingSoonProviderModel?.effective_to
-		? `${statusDescription} ${tProvider("availabilityEndsOn", { date: formatLeavingDate(leavingSoonProviderModel.effective_to, format.calendarDate) })}`
-		: statusDescription;
+	const statusEndsOn = statusKey === "active" && leavingSoonProviderModel?.effective_to
+		? formatLeavingDate(leavingSoonProviderModel.effective_to, format.calendarDate)
+		: null;
 	const isComingSoonProvider = statusKey === "coming_soon";
 	const isInternalTestingProvider = statusKey === "internal_testing";
 	const tableLeavingSoonProviderModel = tableProviderModelsInScope
@@ -2180,15 +2122,9 @@ export default function ProviderCard({
 		})
 	);
 	const tableStatusKey = chooseGatewayStatus(tableResolvedGatewayStatuses);
-	const tableStatusMeta =
-		PROVIDER_STATUS_META[tableStatusKey] ?? PROVIDER_STATUS_META.not_listed;
-	const tableStatusIcon = tableStatusMeta.icon;
-	const tableStatusClass = cn("h-3.5 w-3.5", tableStatusMeta.iconClass);
-	const tableStatusLabel = tProvider(statusTranslationKeys[tableStatusKey].label as never);
-	const tableStatusDescription = tProvider(statusTranslationKeys[tableStatusKey].description as never);
-	const tableStatusDetail = tableStatusKey === "active" && tableLeavingSoonProviderModel?.effective_to
-		? `${tableStatusDescription} ${tProvider("availabilityEndsOn", { date: formatLeavingDate(tableLeavingSoonProviderModel.effective_to, format.calendarDate) })}`
-		: tableStatusDescription;
+	const tableStatusEndsOn = tableStatusKey === "active" && tableLeavingSoonProviderModel?.effective_to
+		? formatLeavingDate(tableLeavingSoonProviderModel.effective_to, format.calendarDate)
+		: null;
 	const privacyReasonMeta = (privacyIgnoredReasons ?? []).map((reason) => {
 		const reasonMeta = getPrivacyReasonMeta(reason);
 		return {
@@ -2510,6 +2446,7 @@ export default function ProviderCard({
 			: fallback ?? null;
 	const tableUptimePct = getDisplayedUptimePct(runtimeStats);
 	const tableUptimeTrendPoints = getUptimeTrendPoints(runtimeStats);
+	const mobilePriceKeys = getMobilePriceColumnKeys(priceColumns);
 	const tableThroughputValue = formatThroughputValue(runtimeStats?.throughput30m, locale);
 	const activeDiscountEntries = collectDiscountEntriesFromSections(sec);
 	// A promotion can have an open-ended published duration. Show its discount
@@ -2542,6 +2479,10 @@ export default function ProviderCard({
 	const selectedPlanLabel = selectedPlanTranslationKey
 		? tQuickstart(selectedPlanTranslationKey as never)
 		: selectedPlan ? selectedPlan.charAt(0).toUpperCase() + selectedPlan.slice(1) : selectedPlan;
+	const tablePlanTranslationKey = getPricingPlanTranslationKey(tablePlan);
+	const tablePlanLabel = tablePlanTranslationKey
+		? tQuickstart(tablePlanTranslationKey as never)
+		: tablePlan ? tablePlan.charAt(0).toUpperCase() + tablePlan.slice(1) : null;
 	const selectedPlanTheme = getPlanTheme(selectedPlan);
 	const tablePlanTheme = getPlanTheme(tablePlan);
 	const selectedPlanPriceClass = selectedPlan === "free" ? "text-foreground" : selectedPlanTheme.accent;
@@ -2933,6 +2874,8 @@ export default function ProviderCard({
 		capacityMetrics.find((metric) => metric.key === "maxOutput")?.value ?? "--";
 	const parameterSupport = buildParameterSupportSummary(infoScope);
 	const supportedParameters = parameterSupport.parameters;
+	// This route's own spec for each parameter (range, values, defaults).
+	const parameterSpecs = mergeRouteParameterSpecs(infoScope.map((providerModel) => providerModel.params));
 	const displayProviderModelIds = Array.from(
 		new Set(
 			infoScope.map(
@@ -2995,20 +2938,24 @@ export default function ProviderCard({
 		<div className="space-y-2.5">
 			{tokenMetricGroups.map((group) => (
 				<div key={group.label} className="space-y-1">
+					{/* Phones stack the tiles: side by side, promo and regional prices don't fit. */}
 					<div
-						className="grid"
-						style={{
-							gridTemplateColumns: `repeat(${group.columns}, minmax(0, 1fr))`,
-						}}
+						className="grid grid-cols-1 sm:grid-cols-[var(--token-tile-columns)]"
+						style={
+							{
+								"--token-tile-columns": `repeat(${group.columns}, minmax(0, 1fr))`,
+							} as React.CSSProperties
+						}
 					>
 						{group.tiles.map((tile, index) => (
 							<div
 								key={tile.key}
 								className={cn(
-									"min-h-[78px] min-w-0 py-2.5",
+									"min-h-[78px] min-w-0 py-2.5 max-sm:min-h-0",
 									index % group.columns === 0
 										? "pr-3"
-										: "border-l border-zinc-200/80 px-3 dark:border-zinc-800",
+										: "border-l border-zinc-200/80 px-3 dark:border-zinc-800 max-sm:border-l-0 max-sm:px-0",
+									index > 0 && "max-sm:border-t max-sm:border-zinc-200/80 max-sm:dark:border-zinc-800",
 								)}
 							>
 								<div className="text-[11px] text-muted-foreground">
@@ -3281,9 +3228,10 @@ export default function ProviderCard({
 				className={cn(
 					"group cursor-pointer hover:bg-zinc-50/70 dark:hover:bg-zinc-900/30",
 					isLastVisible && "border-b-0",
+					MOBILE_ROW,
 				)}
 			>
-				<TableCell className="relative min-w-[280px] py-1 pl-3 pr-2">
+				<TableCell className={cn("relative min-w-[280px] py-1 pl-3 pr-2", MOBILE_NAME_CELL)}>
 					{summaryActive ? (
 						<motion.span
 							aria-hidden="true"
@@ -3307,15 +3255,15 @@ export default function ProviderCard({
 									{ provider: displayName },
 								)}
 								onClick={onToggleServiceTiers}
-								className="inline-flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
+								className={cn("inline-flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40", TAP_TARGET_20)}
 							>
 								<ChevronDown className={cn("size-3 transition-transform", !serviceTiersExpanded && "-rotate-90")} aria-hidden="true" />
 							</button>
 						) : null}
-						<div>
-						<div className="flex items-center gap-2.5">
+						<div className="max-sm:min-w-0 max-sm:flex-1">
+						<div className="flex items-center gap-2.5 max-sm:flex-wrap max-sm:gap-y-1">
 							<div
-								className="inline-flex items-center gap-2.5 whitespace-nowrap text-foreground"
+								className="inline-flex items-center gap-2.5 whitespace-nowrap text-foreground max-sm:min-w-0 max-sm:flex-1 max-sm:basis-0"
 							>
 								<div className="relative flex h-6 w-6 shrink-0 items-center justify-center rounded-md border border-zinc-200/80 bg-background transition-colors group-hover:border-zinc-300 dark:border-zinc-800 dark:group-hover:border-zinc-700">
 									<div className="relative h-3.5 w-3.5">
@@ -3328,60 +3276,20 @@ export default function ProviderCard({
 										/>
 									</div>
 								</div>
-								<span className="inline-flex items-baseline gap-1 whitespace-nowrap">
-									<span className="font-semibold text-foreground">
+								<span className="inline-flex items-baseline gap-1 whitespace-nowrap max-sm:min-w-0">
+									<span className="font-semibold text-foreground max-sm:truncate">
 										<ProviderRouteName provider={provider.provider} plan={tablePlan} nameOverride={formattedDisplayName} />
 									</span>
 								</span>
 							</div>
-							<div className="flex shrink-0 items-center gap-1">
-								{provider.provider.credential_mode === "byok_only" ? (
-									<HoverCard openDelay={120} closeDelay={80}>
-										<HoverCardTrigger asChild>
-											<button
-												type="button"
-												aria-label={tx("Common.ui.providerCardCopy.bYOKOnlyRequiresYourProviderKey" as never)}
-												className="inline-flex h-6 w-6 items-center justify-center rounded-md text-amber-700 transition-colors hover:bg-muted/60 hover:text-amber-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40 dark:text-amber-300 dark:hover:text-amber-200"
-											>
-												<KeyRound className="h-3.5 w-3.5" />
-											</button>
-										</HoverCardTrigger>
-										<HoverCardContent align="start" className="w-auto p-2 text-xs">
-											<p className="font-semibold">{tx("Common.ui.providerCardCopy.bYOKOnly" as never)}</p>
-											<p className="mt-1 text-muted-foreground">{tx("Common.ui.providerCardCopy.requiresYourProviderKey" as never)}</p>
-										</HoverCardContent>
-									</HoverCard>
-								) : null}
-								<HoverCard openDelay={120} closeDelay={80}>
-									<HoverCardTrigger asChild>
-										<button
-											type="button"
-								aria-label={tProvider("providerStatus", { status: tableStatusLabel })}
-										className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-										>
-											{React.createElement(tableStatusIcon, {
-												className: cn("h-3 w-3", tableStatusClass),
-											})}
-										</button>
-									</HoverCardTrigger>
-									<HoverCardContent align="start" className="w-auto p-2 text-xs">
-										<p className="font-semibold">{tableStatusLabel}</p>
-										<p className="mt-1 text-muted-foreground">{tableStatusDetail}</p>
-										<ProviderLifecycleDetails
-											providerModels={tableProviderModelsInScope}
-										/>
-										<div className="mt-2 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
-											<Link
-								href={getLocalizedDocsHref(locale, PROVIDER_STATUSES_DOCS_HREF)}
-												target="_blank"
-												rel="noopener noreferrer"
-												className="text-zinc-500 underline-offset-2 transition-colors hover:text-zinc-700 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
-											>
-												{tProvider("learnMoreProviderStatuses")}
-											</Link>
-										</div>
-									</HoverCardContent>
-								</HoverCard>
+							<div className="flex shrink-0 items-center gap-1 max-sm:gap-3">
+								{provider.provider.credential_mode === "byok_only" ? <ProviderByokOnlyHoverCard /> : null}
+								<ProviderStatusHoverCard
+									statusKey={tableStatusKey}
+									providerModels={tableProviderModelsInScope}
+									planLabel={tablePlanLabel}
+									endsOn={tableStatusEndsOn}
+								/>
 								<ProviderLiveRoutingIndicator
 									routingStatus={routingStatus}
 									statusKey={tableStatusKey}
@@ -3389,62 +3297,28 @@ export default function ProviderCard({
 									docsLabel={tProvider("learnMoreProviderStatuses")}
 								/>
 								{privacyIgnoredReasons?.length || workspacePolicyBlockedReasons?.length ? (
-									<HoverCard openDelay={120} closeDelay={80}>
-										<HoverCardTrigger asChild>
-											<button
-												type="button"
-											aria-label={isWorkspacePrivacyBlocked ? tSections("blockedByWorkspaceDataControls") : tSections("unavailableInPhaseoChat")}
-											className="inline-flex h-6 w-6 items-center justify-center rounded-sm text-red-600 transition-colors hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-											>
-											{isWorkspacePrivacyBlocked ? <Ban className="h-3.5 w-3.5" /> : <ShieldBan className="h-3.5 w-3.5" />}
-											</button>
-										</HoverCardTrigger>
-										<HoverCardContent align="start" className="w-80 p-2 text-xs">
-											<p className="font-semibold text-foreground">{isWorkspacePrivacyBlocked ? tSections("workspaceBlocked") : tSections("chatUnavailable")}</p>
-											<p className="mt-1 text-muted-foreground">
-												{isWorkspacePrivacyBlocked ? tSections("workspacePrivacyPreventsProvider") : tSections("assignedGuardrailPreventsProvider")}
-											</p>
-											<div className="mt-2 space-y-1 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
-												{workspacePolicyBlockedReasons?.map((reason) => (
-													<div key={`${reason.source}:${reason.settingsHref}`} className="space-y-1">
-														<p className="text-muted-foreground">{localizedWorkspacePolicyReason(tPolicy, reason)}</p>
-														<Link href={reason.settingsHref} className="inline-flex text-[11px] font-medium text-primary hover:underline">{tx("Common.ui.providerCardCopy.reviewPolicy" as never)}</Link>
-													</div>
-												))}
-												{privacyReasonMeta.map(({ reason, meta }) => (
-													<div key={reason} className="space-y-1">
-														<p className="text-muted-foreground">
-															{meta?.label ?? reason}
-														</p>
-														{meta ? (
-															<Link
-																href={meta.href}
-																className="inline-flex text-[11px] font-medium text-primary hover:underline"
-															>
-																{meta.linkLabel}
-															</Link>
-														) : null}
-													</div>
-												))}
-											</div>
-											<div className="mt-2 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
-												<p className="text-muted-foreground">
-													{tSections("apiKeyGuardrailsMayAffectRouting")}
-												</p>
-												<Link
-													href="/settings/guardrails"
-													className="mt-1 inline-flex text-[11px] font-medium text-primary hover:underline"
-												>
-													{tSections("reviewGuardrails")}
-												</Link>
-											</div>
-										</HoverCardContent>
-									</HoverCard>
+									<ProviderPolicyBlockedHoverCard
+										workspaceBlocked={isWorkspacePrivacyBlocked}
+										reasons={[
+											...(workspacePolicyBlockedReasons ?? []).map((reason) => ({
+												key: `${reason.source}:${reason.settingsHref}`,
+												label: localizedWorkspacePolicyReason(tPolicy, reason),
+												href: reason.settingsHref,
+												linkLabel: tx("Common.ui.providerCardCopy.reviewPolicy" as never),
+											})),
+											...privacyReasonMeta.map(({ reason, meta }) => ({
+												key: reason,
+												label: meta?.label ?? reason,
+												href: meta?.href ?? null,
+												linkLabel: meta?.linkLabel ?? null,
+											})),
+										]}
+									/>
 								) : null}
-								<ProviderInfoHoverIcons {...providerInfoProps} />
+								<ProviderInfoHoverIcons {...providerInfoProps} className="max-sm:gap-3" />
 							</div>
 							{inlineProviderLabels.length > 0 || tableDiscountBadge ? (
-								<div className="flex shrink-0 items-center gap-x-1.5 text-[11px] text-muted-foreground">
+								<div className="flex shrink-0 items-center gap-x-1.5 text-[11px] text-muted-foreground max-sm:basis-full">
 									{inlineProviderLabels.map((item, index) => (
 										<React.Fragment key={item}>
 											{index > 0 ? <span className="text-zinc-300 dark:text-zinc-700">/</span> : null}
@@ -3469,12 +3343,20 @@ export default function ProviderCard({
 				</TableCell>
 				{priceColumns.length > 0 ? (
 					isCustomerManagedPricing ? (
-						<TableCell colSpan={priceColumns.length} className="py-1 pl-2 pr-4 text-right text-xs font-medium text-muted-foreground whitespace-nowrap">
+						<TableCell colSpan={priceColumns.length} className={cn("py-1 pl-2 pr-4 text-right text-xs font-medium text-muted-foreground whitespace-nowrap", MOBILE_FULL_CELL)}>
 							{tx("Common.ui.providerCardCopy.customerManaged")}
 						</TableCell>
 					) : (
 						priceColumns.map((column) => (
-							<TableCell key={column.key} className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+							<TableCell
+								key={column.key}
+								data-label={getPriceColumnMobileLabel(column)}
+								className={cn(
+									"py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap",
+									MOBILE_STAT_CELL,
+									getMobilePriceCellClass(mobilePriceKeys, column.key),
+								)}
+							>
 								{renderTablePriceSummary(
 									tablePriceSummaries[column.key] ?? buildProviderTablePriceSummaryForColumn(tableSec, column),
 									tablePlanPriceClass,
@@ -3483,28 +3365,27 @@ export default function ProviderCard({
 						))
 					)
 				) : null}
-				<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+				<TableCell data-label={tProvider("latency")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL, MOBILE_PERF_ROW_START, MOBILE_PERF_ORDER)}>
 					<div className="font-medium text-foreground">{tablePerformanceMetrics[0].value}</div>
 				</TableCell>
-				<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
+				<TableCell data-label={tProvider("throughput")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL, MOBILE_PERF_ORDER)}>
 					<div className="font-medium text-foreground">{tablePerformanceMetrics[1].value}</div>
 				</TableCell>
-				<TableCell className="py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap">
-					<div
-						className={cn(
-							"inline-flex items-center justify-end gap-2 font-medium tabular-nums",
-							tablePerformanceMetrics[2].valueClassName,
-						)}
-					>
-						<span>{tablePerformanceMetrics[2].value}</span>
-						<UptimeSparkline points={tableUptimeTrendPoints} />
-					</div>
+				<TableCell data-label={tProvider("uptime")} className={cn("py-1 pl-2 pr-4 text-right tabular-nums whitespace-nowrap", MOBILE_STAT_CELL, MOBILE_PERF_ORDER)}>
+					<ProviderUptimeCell
+						valueLabel={tablePerformanceMetrics[2].value}
+						valueClassName={tablePerformanceMetrics[2].valueClassName}
+						uptimePct={tableUptimePct}
+						runtimeStats={runtimeStats}
+						points={tableUptimeTrendPoints}
+					/>
+					<UptimeDayStrip points={tableUptimeTrendPoints} className="mt-1 sm:hidden" />
 				</TableCell>
 			</TableRow>
-			<TableRow className="h-0 border-0 hover:bg-transparent">
+			<TableRow className={cn("h-0 border-0 hover:bg-transparent", MOBILE_BLOCK_ROW)}>
 				<TableCell
 					colSpan={priceColumns.length + 4}
-					className="h-0 border-0 p-0"
+					className={cn("h-0 border-0 p-0", MOBILE_BLOCK_ROW)}
 				>
 					<ProviderInspectorSheet open={expanded} onOpenChange={handleInspectorOpenChange}>
 						<ProviderInspectorSheetContent
@@ -3586,36 +3467,14 @@ export default function ProviderCard({
 											{displayName}
 										</Link>
 									</ProviderInspectorSheetTitle>
-									<HoverCard openDelay={120} closeDelay={80}>
-										<HoverCardTrigger asChild>
-											<button
-												type="button"
-								aria-label={tProvider("providerStatus", { status: statusLabel })}
-												className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40"
-											>
-												{React.createElement(statusIcon, {
-													className: cn("h-3 w-3", statusClass),
-												})}
-											</button>
-										</HoverCardTrigger>
-										<HoverCardContent align="start" className="w-auto p-2 text-xs">
-											<p className="font-semibold">{statusLabel}</p>
-											<p className="mt-1 text-muted-foreground">{statusDetail}</p>
-											<ProviderLifecycleDetails
-												providerModels={providerModelsInScope}
-											/>
-											<div className="mt-2 border-t border-zinc-200/70 pt-2 dark:border-zinc-800">
-												<Link
-								href={getLocalizedDocsHref(locale, PROVIDER_STATUSES_DOCS_HREF)}
-													target="_blank"
-													rel="noopener noreferrer"
-													className="text-zinc-500 underline-offset-2 transition-colors hover:text-zinc-700 hover:underline dark:text-zinc-400 dark:hover:text-zinc-200"
-												>
-												{tProvider("learnMoreProviderStatuses")}
-												</Link>
-											</div>
-										</HoverCardContent>
-									</HoverCard>
+									<ProviderStatusHoverCard
+										statusKey={statusKey}
+										providerModels={providerModelsInScope}
+										planLabel={selectedPlanLabel}
+										endsOn={statusEndsOn}
+										size="sm"
+										side="bottom"
+									/>
 									<ProviderLiveRoutingIndicator
 										routingStatus={routingStatus}
 										statusKey={statusKey}
@@ -3831,29 +3690,6 @@ export default function ProviderCard({
 										<div className="flex items-center justify-between gap-1 text-[11px] text-muted-foreground">
 											<span className="flex min-w-0 items-center gap-1">
 												<span>{metric.label}</span>
-												{metric.key === "uptime" ? (
-													<HoverCard openDelay={120} closeDelay={80}>
-														<HoverCardTrigger asChild openOnTap={false}>
-															<span
-																aria-label={tProvider("uptime")}
-																tabIndex={0}
-																className="inline-flex size-3.5 items-center justify-center rounded-sm text-muted-foreground transition-colors hover:text-foreground"
-															>
-																<Info className="size-3" />
-															</span>
-														</HoverCardTrigger>
-														<HoverCardContent
-															align="start"
-															side="top"
-															className="w-72 text-left"
-														>
-															<UptimeHoverContent
-																uptimePct={uptimePct}
-																runtimeStats={selectedRuntimeStats}
-															/>
-														</HoverCardContent>
-													</HoverCard>
-												) : null}
 											</span>
 											<ChevronDown
 												className={cn(
@@ -3873,7 +3709,7 @@ export default function ProviderCard({
 										>
 											<ProviderPerformanceMetricValue metric={metric.key} value={metric.value} />
 											{metric.key === "uptime" && activePerformanceMetric !== "uptime" ? (
-												<UptimeSparkline points={uptimeTrendPoints} className="h-4 w-10" interactive={false} />
+												<UptimeSparkline points={uptimeTrendPoints} className="h-4 w-10" />
 											) : null}
 										</div>
 									</button>
@@ -3886,6 +3722,10 @@ export default function ProviderCard({
 								onPointHover={handlePerformancePointHover}
 								onPointLeave={handlePerformancePointLeave}
 							/>
+							{/* The uptime breakdown sits under the chart rather than in a card on the tile. */}
+							{activePerformanceMetric === "uptime" && selectedRuntimeStats?.attemptHealth3d ? (
+								<AttemptHealthBreakdown health={selectedRuntimeStats.attemptHealth3d} />
+							) : null}
 								{liveRouting ? (
 									<Callout tone={liveRouting.state === "limited" ? "warning" : "info"} title={liveRouting.label}>
 										{liveRouting.description} {liveRouting.automatic}
@@ -4025,7 +3865,7 @@ export default function ProviderCard({
 								<div className="flex items-center justify-between gap-3">
 										<h3 className="text-[15px] font-semibold text-foreground">{tQuickstart("parameterSupport")}</h3>
 									{parameterSupport.status !== "documented" ? (
-										<span className="rounded-full border border-amber-300/70 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
+										<span className="rounded-md border border-amber-300/70 bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-200">
 											{parameterSupport.status === "partial" ? tQuickstart("partial") : tQuickstart("unknown")}
 										</span>
 									) : null}
@@ -4038,58 +3878,9 @@ export default function ProviderCard({
 											</p>
 										) : null}
 										<div className="flex flex-wrap items-start gap-1.5">
-											{supportedParameters.map((param) => {
-												const reference = getParameterReference(param);
-												const descriptionKey = getParameterReferenceTranslationKey(param);
-												return (
-													<HoverCard key={param} openDelay={120} closeDelay={80}>
-													<HoverCardTrigger asChild>
-														<Button
-															type="button"
-															variant="outline"
-															size="sm"
-														className="h-7 min-h-0 justify-start rounded-md px-2 py-1 font-mono text-[11px]"
-														>
-															{prettifyParamName(param)}
-														</Button>
-													</HoverCardTrigger>
-													<HoverCardContent align="start" className="w-80 p-3 text-xs">
-														<div className="space-y-2">
-															<div className="space-y-1">
-																<div className="flex items-center justify-between gap-3">
-																	<code className="font-mono text-[11px] text-foreground">
-																		{param}
-																	</code>
-																	<Link
-												href={getLocalizedDocsHref(locale, getParameterDocsHref(param))}
-																		target="_blank"
-																		rel="noopener noreferrer"
-																		className="text-[11px] text-muted-foreground underline underline-offset-4 hover:text-foreground"
-																	>
-																		{tQuickstart("docsLabel")}
-																	</Link>
-																</div>
-																<p className="leading-relaxed text-muted-foreground">
-																	{tQuickstart(`parameterDescriptions.${descriptionKey}` as never)}
-																</p>
-															</div>
-															<div className="flex items-center gap-4 border-t border-zinc-200/70 pt-2 text-[11px] text-muted-foreground dark:border-zinc-800">
-																<span>
-																	{tQuickstart("typeLabel")}{" "}
-																	<span className="text-foreground">{reference.type}</span>
-																</span>
-																<span>
-																	{tQuickstart("defaultLabel")}{" "}
-																	<span className="text-foreground">
-																		{reference.defaultValue === "Provider specific" ? tQuickstart("defaultProviderSpecific") : reference.defaultValue === "Unset" ? tQuickstart("defaultUnset") : reference.defaultValue}
-																	</span>
-																</span>
-															</div>
-														</div>
-													</HoverCardContent>
-													</HoverCard>
-												);
-											})}
+											{supportedParameters.map((param) => (
+												<ParameterHoverChip key={param} param={param} spec={parameterSpecs[param] ?? null} />
+											))}
 										</div>
 									</div>
 								) : (

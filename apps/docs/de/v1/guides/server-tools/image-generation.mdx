@@ -61,4 +61,4 @@ Manche Anbieter geben statt `imageUrl` ein `b64_json` mit Base64-Bilddaten zurü
 
 ## Nutzung und Preise
 
-Jedes Bild erhöht `usage.server_tool_use.image_generation_requests` um 1 und kann über `server_tool_image_generation_requests` abgerechnet werden. Meldet das Bildmodell eine Token-Nutzung, wird sie zur Nutzung der Anfrage addiert und zu den normalen Preisen dieses Modells abgerechnet.
+Jedes Bild erhöht `usage.server_tool_use.image_generation_requests` um 1 und kann über `server_tool_image_generation_requests` abgerechnet werden. Das Bildmodell wird zu seinen eigenen Preisen als eigene Position der Anfrage abgerechnet. Ein kostenpflichtiges Bildmodell erfordert Guthaben, auch wenn das aufrufende Modell kostenlos ist.
