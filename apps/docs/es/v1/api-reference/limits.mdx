@@ -77,7 +77,7 @@ Cuando se aplican varias políticas, se cuentan todas y la primera que se agota 
 
 ### Solicitudes y tokens por minuto
 
-Ambos se miden en una ventana móvil de un minuto. `tokens_per_minute` cuenta los tokens de entrada y salida de cada solicitud cuando termina, incluidas las solicitudes con streaming y las fallidas que usaron tokens. Una solicitud se rechaza en cuanto el uso del último minuto alcanza el límite, así que las solicitudes que ya están en curso pueden llevar el uso por encima. Los fallbacks de proveedor dentro de una misma solicitud cuentan una sola vez, y los aciertos de la caché de respuestas no se cuentan.
+Ambos se miden en una ventana móvil de un minuto. `tokens_per_minute` cuenta los tokens de entrada y salida de cada solicitud cuando termina, incluidas las solicitudes con streaming y las fallidas que usaron tokens. Una solicitud se rechaza en cuanto el uso del último minuto alcanza el límite, así que las solicitudes que ya están en curso pueden llevar el uso por encima. Los fallbacks de proveedor dentro de una misma solicitud cuentan una sola vez.
 
 Una solicitud rechazada devuelve `429` con `rate_limit_exceeded`, el motivo `policy_requests_per_minute` o `policy_tokens_per_minute`, el `policy_id`, el `limit_scope` (`key`, `member`, `department`, `workspace` o `end_user`) y `Retry-After` en segundos.
 

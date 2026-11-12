@@ -1,8 +1,8 @@
 interface:
   display_name: "Phaseo Routing and Presets"
-  short_description: "Roll out presets, routing and response caching"
+  short_description: "Roll out presets and routing policy"
   brand_color: "#0069A8"
-  default_prompt: "Use $phaseo-routing-presets to move these requests onto a preset and check routing and caching."
+  default_prompt: "Use $phaseo-routing-presets to move these requests onto a preset and check routing."
 policy:
   allow_implicit_invocation: true
 dependencies:

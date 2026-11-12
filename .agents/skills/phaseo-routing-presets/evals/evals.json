@@ -13,8 +13,8 @@
 		"query": "We enabled response caching but every request is a miss.",
 		"should_trigger": true,
 		"expected_behavior": [
-			"Compares the fingerprint inputs: system prompt, tool list, response format and provider options",
-			"Checks request-detail cache diagnostics before raising the TTL"
+			"Explains that response caching is not available yet, so no request is served from a response cache",
+			"Points to prompt caching and stable request shapes, or caching in the application, instead of raising the TTL"
 		]
 	},
 	{
