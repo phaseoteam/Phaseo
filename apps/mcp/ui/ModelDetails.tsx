@@ -1,9 +1,17 @@
 import { useEffect, useRef } from "react";
-import { contextSize, pricePerMillion, type Model } from "./model";
+import { Check, Plus } from "lucide-react";
+import { contextSize, headlinePrice, perMillion, type CardModel } from "./model";
 import { IntegrationExamples } from "./IntegrationExamples";
+import { ModalityBadge, sortModalities } from "./modality";
+import { OrganisationLogo } from "./ModelRow";
+import { displayName, priceSummary, providerCounts, releaseDate } from "./ModelListItem";
 
+// A model's page inside the explorer, laid out like the top of the website's model
+// page. It replaces the list rather than floating over it: both hosts ask full-screen
+// apps not to use floating panels.
 export function ModelDetails({
   model,
+  theme,
   selected,
   disabled,
   onClose,
@@ -12,7 +20,8 @@ export function ModelDetails({
   onLink,
   attaching,
 }: {
-  model: Model;
+  model: CardModel;
+  theme: "light" | "dark";
   selected: boolean;
   disabled: boolean;
   onClose: () => void;
@@ -21,76 +30,103 @@ export function ModelDetails({
   onLink: () => void;
   attaching: boolean;
 }) {
-  const closeButton = useRef<HTMLButtonElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     const previous = document.activeElement as HTMLElement | null;
-    closeButton.current?.focus();
+    heading.current?.focus();
     return () => previous?.focus();
   }, []);
-  const fields = [
-    [
-      "Context",
-      model.contextTokens === null
-        ? "Not listed"
-        : `${contextSize(model.contextTokens)} tokens`,
-    ],
-    [
-      "Paid input / 1M tokens",
-      `${pricePerMillion(model.inputPricePerToken)}${model.inputPriceProviderId ? ` · ${model.inputPriceProviderId}` : ""}`,
-    ],
-    [
-      "Paid output / 1M tokens",
-      `${pricePerMillion(model.outputPricePerToken)}${model.outputPriceProviderId ? ` · ${model.outputPriceProviderId}` : ""}`,
-    ],
+  const input = perMillion(model, "input");
+  const output = perMillion(model, "output");
+  const providers = providerCounts(model);
+  const released = releaseDate(model.releaseDate);
+  const fields: Array<[string, string]> = [
+    ["Context length", model.contextTokens === null ? "Not listed" : `${contextSize(model.contextTokens)} tokens`],
+    ["Input price", input === null ? "Not listed" : `${headlinePrice(input)} / 1M tokens`],
+    ["Output price", output === null ? "Not listed" : `${headlinePrice(output)} / 1M tokens`],
     ["Free offer", model.hasFreeProvider ? "Available" : "None listed"],
-    [
-      "Input → output",
-      `${model.inputModalities.join(", ")} → ${model.outputModalities.join(", ")}`,
-    ],
     ["Tool calling", model.supportsTools ? "Supported" : "Not supported"],
-    [
-      "Available providers",
-      model.availableProviders.join(", ") || "None listed",
-    ],
+    ["Providers", model.availableProviders.join(", ") || "None listed"],
+    ["Gateway", model.gatewayAvailable ? "Available" : "Not available"],
+    ["Released", released ?? "Unknown"],
   ];
+  const price = priceSummary(model);
   return (
-    <section
-      className="detail"
+    <article
+      className="model-page"
       aria-label={`${model.name} details`}
       onKeyDown={(event) => {
         if (event.key === "Escape") onClose();
       }}
     >
-      <button
-        ref={closeButton}
-        className="close"
-        onClick={onClose}
-        aria-label="Close model details"
-      >
-        ×
-      </button>
-      <p className="eyebrow">{model.provider ?? "Model details"}</p>
-      <h2>{model.name}</h2>
-      <code>{model.id}</code>
-      <p>{model.description ?? "No description listed."}</p>
-      <dl>
-        {fields.map(([label, value]) => (
-          <div key={label}>
-            <dt>{label}</dt>
-            <dd>{value}</dd>
-          </div>
-        ))}
-      </dl>
-      <button disabled={disabled} onClick={onToggle}>
-        {selected ? "Remove from comparison" : "Add to comparison"}
-      </button>
-      <div className="integration-actions">
-        <button disabled={attaching} onClick={onUse}>
-          Add to chat context
-        </button>
-        <button onClick={onLink}>Get model link</button>
+      <header className="model-page-head">
+        <OrganisationLogo model={model} theme={theme} />
+        <div className="model-title">
+          <h1 ref={heading} tabIndex={-1}>
+            {displayName(model)}
+          </h1>
+          <span className="model-id">{model.id}</span>
+        </div>
+      </header>
+      {model.description && <p className="model-description">{model.description}</p>}
+      <div className="chip-rail">
+        {price && (
+          <span className="chip">
+            <strong>{price}</strong>
+          </span>
+        )}
+        {providers.listed > 0 && (
+          <span className="chip">
+            Providers <strong>{providers.active}/{providers.listed}</strong>
+          </span>
+        )}
+        {model.contextTokens ? (
+          <span className="chip">
+            Context length{" "}
+            <strong>{new Intl.NumberFormat("en-US").format(model.contextTokens)} tokens</strong>
+          </span>
+        ) : null}
       </div>
+      <dl className="modality-rows">
+        <div>
+          <dt>Input</dt>
+          <dd>{sortModalities(model.inputModalities).map((value) => <ModalityBadge key={value} value={value} />)}</dd>
+        </div>
+        <div>
+          <dt>Output</dt>
+          <dd>{sortModalities(model.outputModalities).map((value) => <ModalityBadge key={value} value={value} />)}</dd>
+        </div>
+      </dl>
+      <div className="button-row">
+        <button
+          type="button"
+          className={selected ? undefined : "primary"}
+          disabled={disabled}
+          aria-pressed={selected}
+          onClick={onToggle}
+        >
+          {selected ? <Check aria-hidden="true" /> : <Plus aria-hidden="true" />}
+          {selected ? "In your shortlist" : "Add to shortlist"}
+        </button>
+        <button type="button" disabled={attaching} onClick={onUse}>
+          Add to chat
+        </button>
+        <button type="button" onClick={onLink}>
+          Copy link
+        </button>
+      </div>
+      <section className="section">
+        <h2>Details</h2>
+        <dl className="detail-list">
+          {fields.map(([label, value]) => (
+            <div key={label}>
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
       <IntegrationExamples model={model} />
-    </section>
+    </article>
   );
 }

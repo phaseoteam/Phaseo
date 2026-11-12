@@ -47,11 +47,25 @@ Cards follow Claude's mobile guidance too: the resource asks for no host border,
 the view pads itself with the host's `safeAreaInsets`; touch screens get 44px tap
 targets; and a card-shaped placeholder shows while the tool runs.
 
-Colours fall back to Phaseo's neutral tokens from `apps/web/src/styles/globals.css`
-but take the host's MCP Apps theme variables and font stack when provided. The cards
-bundle no font and show no Phaseo logo, as OpenAI's app guidelines ask; the host
-shows the app name and icon. Organisation logos load from the website's logo set
-(`@phaseo/app-kit/logos`), so the resource CSP allows the website origin for images.
+The explorer copies the website's models page (`apps/web/src/components/(data)/models/Models/ModelCard.tsx`)
+rather than approximating it: logo tile, "Organisation: Model" with the Phaseo ID,
+summary chips for price, providers and context, the website's coloured modality
+badges (`apps/web/src/lib/models/modalityStyles.ts`) and the release date. One column,
+two from 720px. Check changes against phaseo.app/models side by side.
+
+Both hosts' guidelines shape the rest:
+- Structural colours (backgrounds, text, borders), radii and the font come from the
+  host's MCP Apps variables; the fallbacks are Phaseo's website neutrals. Phaseo blue
+  and the modality colours are accents, which both hosts allow. No bundled font.
+- No dropdown menus or floating panels: modality is a row of tabs, sort and the
+  Gateway filter are toggle chips, and a model opens in place of the list.
+- Layout follows the container, down to Claude's 320px side panel.
+- No Phaseo logo in the view; the host shows the app name and icon. Organisation
+  logos load from the website's logo set (`@phaseo/app-kit/logos`), so the resource
+  CSP allows the website origin for images.
+
+The fixture preview (`pnpm dev:ui`) takes `?host=claude` to apply Claude's published
+variables and `?width=360` to narrow the frame.
 
 Before release:
 - Review and merge PR 2680 after current checks and review threads are clear.

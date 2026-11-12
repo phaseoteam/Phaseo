@@ -45,7 +45,13 @@ export type CardModel = Model & {
   modelUrl?: string;
   inputPricePerMillion?: number | null;
   outputPricePerMillion?: number | null;
-  providerSupport?: Array<{ providerId: string; providerName: string | null }>;
+  providerSupport?: Array<{
+    providerId: string;
+    providerName: string | null;
+    status?: "active" | "coming_soon" | "inactive";
+  }>;
+  releaseDate?: string | null;
+  lifecycleStatus?: "active" | "deprecated" | "retired" | null;
 };
 
 // Matches the website's model list: cents for fractional amounts, bare integers, and
