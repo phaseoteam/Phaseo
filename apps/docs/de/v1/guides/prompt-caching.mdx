@@ -123,6 +123,7 @@ Cache Inhalte, die über Anfragen hinweg gleich bleiben: lange Systemanweisungen
 Phaseo sendet jedem Anbieter nur die Cache-Steuerungen, die er dokumentiert, und entfernt die übrigen. Cache-Steuerungen schließen nie einen Anbieter vom Routing aus. Jede Modellseite listet ihre Preise für Cache-Lese- und -Schreibvorgänge auf.
 </Note>
 
+<span id="which-providers-cache-automatically"></span>
 ## Welche Anbieter automatisch cachen
 
 | Anbieter | Caching | Was Phaseo sendet |
@@ -288,6 +289,11 @@ Gemini 2.5 und neuer cachen implizit, ohne dass du etwas senden musst. Um einen 
 ### Responses: die ganze Unterhaltung senden
 
 Phaseo speichert keine Antworten. Anfragen, die `previous_response_id` oder `conversation` setzen, geben `400` `unsupported_param` zurück. Sende daher bei jedem Schritt die ganze Unterhaltung in `input`. Ihr stabiler Anfang ist das Präfix, das gecacht wird. Sende in Tool-Schleifen auch die `reasoning`-Ausgabeelemente zurück; siehe [Reasoning in Tool-Schleifen](../api-reference/endpoint/responses.mdx#reasoning-in-tool-loops).
+
+<span id="change-reasoning-effort-mid-conversation"></span>
+### Reasoning-Aufwand mitten in der Unterhaltung ändern
+
+Ändere `reasoning_effort` (Chat Completions) oder `reasoning.effort` (Responses) zwischen Anfragen, und Phaseo erhält Claudes Prompt-Cache: Es sendet die Änderung als Aufwandsmarkierung innerhalb von `messages` statt als neuen Aufwand auf oberster Ebene. Das funktioniert, solange du Claudes Reasoning unverändert zurücksendest. Bei Anthropic Messages sendest du die Markierung selbst. Siehe [Reasoning-Aufwand mitten in der Unterhaltung ändern](./reasoning-effort.mdx).
 
 <span id="usage-and-pricing-fields"></span>
 ## Nutzungs- und Abrechnungsfelder

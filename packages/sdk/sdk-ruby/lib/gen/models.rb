@@ -149,9 +149,11 @@ module Phaseo
     AnthropicMessagesResponse = Struct.new(:content, :context_management, :id, :model, :role, :stop_reason, :stop_sequence, :type, :usage, keyword_init: true)
     # @!attribute [rw] content
     #   @return [String, Array<Hash{String => Object}>]
+    # @!attribute [rw] output_config
+    #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] role
     #   @return [String]
-    AnthropicSystemMessage = Struct.new(:content, :role, keyword_init: true)
+    AnthropicSystemMessage = Struct.new(:content, :output_config, :role, keyword_init: true)
     # @!attribute [rw] cache_control
     #   @return [Hash{String => Object}, nil]
     # @!attribute [rw] text

@@ -7,7 +7,7 @@
 //      items), decode them with the request-side protocol decoders, and merge them into the
 //      rebuilt choice so encodeProtocol can return them again.
 
-import type { IRChatResponse, IRContentPart } from "@core/ir";
+import type { IRChatResponse, IRContentPart, IREffortRecord } from "@core/ir";
 import { isSealedReasoningValue } from "@core/reasoning-state";
 import type { Protocol } from "@protocols/detect";
 import {
@@ -26,6 +26,7 @@ type AnthropicStreamBlock =
 type DecodedChoiceReasoning = {
 	parts: Array<{ part: ReasoningPart; nextToolUseId?: string }>;
 	toolSignatures: Map<string, ToolCallSignature>;
+	effortRecord?: IREffortRecord;
 };
 
 function hasState(part: ReasoningPart): boolean {
@@ -153,13 +154,18 @@ export function createStreamReasoningStateCollector(protocol: Protocol): StreamR
 			const details = chatSnapshotDetails.get(choiceIndex) ?? chatDetails.get(choiceIndex);
 			if (!details?.length) return null;
 			const decoded = decodeChatReasoningDetails(details, toolCallIds);
-			return { parts: decoded.parts.map((part) => ({ part })), toolSignatures: decoded.toolSignatures };
+			return {
+				parts: decoded.parts.map((part) => ({ part })),
+				toolSignatures: decoded.toolSignatures,
+				...(decoded.effortRecord ? { effortRecord: decoded.effortRecord } : {}),
+			};
 		}
 		if (choiceIndex !== 0) return null;
 		if (protocol === "anthropic.messages") {
 			for (const index of [...openAnthropicBlocks.keys()]) closeAnthropicBlock(index);
 			const parts: DecodedChoiceReasoning["parts"] = [];
 			const toolSignatures = new Map<string, ToolCallSignature>();
+			let effortRecord: IREffortRecord | undefined;
 			let sawToolUse = false;
 			// Thinking after an earlier tool_use belongs in front of the next one.
 			const pendingAnchor: DecodedChoiceReasoning["parts"] = [];
@@ -175,15 +181,20 @@ export function createStreamReasoningStateCollector(protocol: Protocol): StreamR
 					toolSignatures.set(decoded.callId, decoded.signature);
 					continue;
 				}
+				if (decoded.kind === "effort") {
+					effortRecord = decoded.record;
+					continue;
+				}
 				const collected: DecodedChoiceReasoning["parts"][number] = { part: decoded.part };
 				parts.push(collected);
 				if (sawToolUse) pendingAnchor.push(collected);
 			}
-			return { parts, toolSignatures };
+			return { parts, toolSignatures, ...(effortRecord ? { effortRecord } : {}) };
 		}
 		if (protocol === "openai.responses") {
 			const parts: DecodedChoiceReasoning["parts"] = [];
 			const toolSignatures = new Map<string, ToolCallSignature>();
+			let effortRecord: IREffortRecord | undefined;
 			let sawCall = false;
 			// Reasoning after an earlier function_call belongs in front of the next one.
 			const pendingAnchor: DecodedChoiceReasoning["parts"] = [];
@@ -199,11 +210,15 @@ export function createStreamReasoningStateCollector(protocol: Protocol): StreamR
 					toolSignatures.set(decoded.callId, decoded.signature);
 					continue;
 				}
+				if (decoded.kind === "effort") {
+					effortRecord = decoded.record;
+					continue;
+				}
 				const collected: DecodedChoiceReasoning["parts"][number] = { part: decoded.part };
 				parts.push(collected);
 				if (sawCall) pendingAnchor.push(collected);
 			}
-			return { parts, toolSignatures };
+			return { parts, toolSignatures, ...(effortRecord ? { effortRecord } : {}) };
 		}
 		return null;
 	};
@@ -222,6 +237,7 @@ export function createStreamReasoningStateCollector(protocol: Protocol): StreamR
 				const decoded = decodeChoice(choice.index, toolCallIds);
 				if (!decoded) continue;
 				applyToolCallSignatures(toolCalls, decoded.toolSignatures);
+				if (decoded.effortRecord) choice.message.effortRecord = decoded.effortRecord;
 				// Without state there is nothing the accumulated text does not already carry.
 				if (!decoded.parts.some(({ part }) => hasState(part))) continue;
 				const parts: ReasoningPart[] = decoded.parts.map(({ part, nextToolUseId }) =>

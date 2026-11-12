@@ -6,6 +6,7 @@
 //      before they reach a client, and checked against the target route before
 //      a request builder replays them.
 
+import type { IRClaudeEffort, IREffortRecord } from "@core/ir";
 import { normalizeProviderId } from "@/lib/config/providerAliases";
 
 /**
@@ -46,9 +47,11 @@ export function isReasoningFormat(value: unknown): value is ReasoningFormat {
  * - `signature`: an Anthropic thinking signature, a Gemini thought signature or a
  *   Mistral ThinkChunk signature;
  * - `redacted`: the `data` of an Anthropic `redacted_thinking` block;
- * - `encrypted`: OpenAI, Azure or xAI `encrypted_content`.
+ * - `encrypted`: OpenAI, Azure or xAI `encrypted_content`;
+ * - `effort`: the gateway's own record of the effort a Claude turn ran at (see
+ *   sealEffortRecord). It is never sent to a provider.
  */
-export type ReasoningStateKind = "signature" | "redacted" | "encrypted";
+export type ReasoningStateKind = "signature" | "redacted" | "encrypted" | "effort";
 
 export type ReasoningState = {
 	format: ReasoningFormat;
@@ -60,6 +63,18 @@ export type ReasoningState = {
 	provider?: string;
 	/** Gemini signature that belongs on this function call rather than a thought. */
 	callId?: string;
+	/**
+	 * The tool call that came just before this Claude thinking block in the same
+	 * reply. Chat Completions keeps reasoning apart from tool calls, so this is how
+	 * the block goes back to its place: each signature records everything before it.
+	 */
+	afterCallId?: string;
+	/**
+	 * How many characters of the reply's text came before this Claude thinking
+	 * block, for a block written after text and before any tool call. Chat joins a
+	 * reply's text into one string, so this is where the block goes back.
+	 */
+	textOffset?: number;
 	/** True when the value arrived without a gateway seal. */
 	unsealed?: boolean;
 };
@@ -99,6 +114,8 @@ export function sealReasoningState(state: Omit<ReasoningState, "unsealed">): str
 	if (state.model) header.m = state.model;
 	if (state.provider) header.p = state.provider;
 	if (state.callId) header.c = state.callId;
+	if (state.afterCallId) header.a = state.afterCallId;
+	if (state.textOffset) header.o = String(state.textOffset);
 	return `${SEAL_PREFIX}${toBase64Url(JSON.stringify(header))}.${state.value}`;
 }
 
@@ -127,7 +144,7 @@ export function openReasoningState(
 		}
 		if (!isReasoningFormat(header?.f)) return null;
 		const kind = header?.k;
-		if (kind !== "signature" && kind !== "redacted" && kind !== "encrypted") return null;
+		if (kind !== "signature" && kind !== "redacted" && kind !== "encrypted" && kind !== "effort") return null;
 		return {
 			format: header.f,
 			kind,
@@ -135,6 +152,8 @@ export function openReasoningState(
 			...(typeof header.m === "string" && header.m ? { model: header.m } : {}),
 			...(typeof header.p === "string" && header.p ? { provider: header.p } : {}),
 			...(typeof header.c === "string" && header.c ? { callId: header.c } : {}),
+			...(typeof header.a === "string" && header.a ? { afterCallId: header.a } : {}),
+			...(typeof header.o === "string" && /^[1-9]\d*$/.test(header.o) ? { textOffset: Number(header.o) } : {}),
 		};
 	}
 	if (!fallback?.format) return null;
@@ -249,4 +268,44 @@ export function canReplayReasoning(origin: ReasoningOrigin, target: ReasoningTar
 		return true;
 	}
 	return originKey === targetKey;
+}
+
+// ---------------------------------------------------------------------------
+// Claude per-message effort records
+// ---------------------------------------------------------------------------
+
+const CLAUDE_EFFORTS = new Set<IRClaudeEffort>(["low", "medium", "high", "xhigh", "max"]);
+
+function isClaudeEffort(value: unknown): value is IRClaudeEffort {
+	return typeof value === "string" && CLAUDE_EFFORTS.has(value as IRClaudeEffort);
+}
+
+/**
+ * Seal the effort a Claude turn ran at. It goes to Chat and Responses clients
+ * as a reasoning entry of its own, which they send back with the rest of the
+ * reasoning, so the gateway can rebuild per-message effort changes on the next
+ * request without storing the conversation.
+ */
+export function sealEffortRecord(record: IREffortRecord, origin?: { model?: string | null; provider?: string | null }): string {
+	return sealReasoningState({
+		format: ANTHROPIC_REASONING_FORMAT,
+		kind: "effort",
+		value: `e=${record.effort};b=${record.base}`,
+		...(origin?.model ? { model: origin.model } : {}),
+		...(origin?.provider ? { provider: origin.provider } : {}),
+	});
+}
+
+/** The effort record in an opened state, or null when it is not one or is malformed. */
+export function effortRecordFromState(state: ReasoningState | null | undefined): IREffortRecord | null {
+	if (!state || state.kind !== "effort" || state.format !== ANTHROPIC_REASONING_FORMAT) return null;
+	const fields = new Map(state.value.split(";").map((entry) => {
+		const eq = entry.indexOf("=");
+		return [entry.slice(0, eq), entry.slice(eq + 1)] as const;
+	}));
+	const effort = fields.get("e");
+	const base = fields.get("b");
+	if (!isClaudeEffort(effort)) return null;
+	if (base !== "default" && !isClaudeEffort(base)) return null;
+	return { effort, base };
 }

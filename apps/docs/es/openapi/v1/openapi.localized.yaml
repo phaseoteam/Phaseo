@@ -13301,16 +13301,30 @@ components:
       properties:
         role:
           type: string
-          description: Usa `system` para una instrucción que se aplica a partir de este punto de la conversación. Un mensaje de sistema acepta una cadena o bloques de texto, debe ir justo después de un turno de usuario (o de un turno del asistente que termine en un resultado de herramienta del servidor) y debe ser el último mensaje o ir seguido de un turno del asistente.
+          description: Usa `system` para una instrucción que se aplica a partir de este punto de la conversación. Un mensaje de sistema acepta una cadena o bloques de texto, debe ir justo después de un turno de usuario (o de un turno del asistente que termine en un resultado de herramienta del servidor) y debe ser el último mensaje o ir seguido de un turno del asistente. Un mensaje de sistema solo de esfuerzo, con `content` vacío y `output_config`, puede ir en cualquier lugar.
           enum:
             - system
         content:
           oneOf:
             - type: string
             - type: array
-              minItems: 1
               items:
                 $ref: '#/components/schemas/AnthropicSystemTextBlock'
+        output_config:
+          type: object
+          description: Cambia el nivel de esfuerzo de Claude para los turnos posteriores sin reiniciar la caché de prompts. Envíalo con `content` vacío después de los mensajes ya enviados y mantenlo en su sitio en las solicitudes posteriores; insertarlo antes cambia el prefijo en caché. Las rutas sin esfuerzo por mensaje reciben en su lugar el nivel vigente como esfuerzo de nivel superior, lo que no conserva la caché.
+          required:
+            - effort
+          properties:
+            effort:
+              type: string
+              enum:
+                - low
+                - medium
+                - high
+                - xhigh
+                - max
+          additionalProperties: false
       additionalProperties: false
     AnthropicSystemTextBlock:
       type: object

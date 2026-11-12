@@ -50,7 +50,12 @@ Each `reasoning` item has an `id`, `summary` and `content`. When the provider re
 - OpenAI, Azure OpenAI and xAI encrypted reasoning. Phaseo requests it with `include: ["reasoning.encrypted_content"]` for reasoning models.
 - Claude thinking signatures and redacted thinking.
 - Gemini thought signatures, including a separate `reasoning` item placed just before the function call a signature belongs to.
+- The effort level a Claude reply ran at, in the last `reasoning` item of the output, which has no text.
 
 Streaming responses carry the same items on `response.output_item.done` and `response.completed`.
 
-To continue a tool loop, send every output item back in `input`, including `reasoning` items, unchanged. `encrypted_content` is opaque and records the provider and model that produced it. Phaseo sends it only to that provider family and model, so a fallback to another provider drops it rather than failing.
+<Warning>
+Send every output item back in `input` unchanged on every request, not only in tool loops. Never drop, edit or reorder `reasoning` items, with or without `encrypted_content`, including items with no text.
+</Warning>
+
+`encrypted_content` is opaque and records the provider and model that produced it. Phaseo sends it only to that provider family and model, so a fallback to another provider drops it rather than failing. Without it, Claude loses its reasoning between tool-loop steps, and a change of `reasoning.effort` restarts Claude's prompt cache; see [Change reasoning effort mid-conversation](../../guides/reasoning-effort).

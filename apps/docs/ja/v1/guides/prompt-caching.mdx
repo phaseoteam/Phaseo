@@ -123,6 +123,7 @@ curl https://api.phaseo.app/v1/messages \
 Phaseo は各プロバイダーに、そのプロバイダーが文書化しているキャッシュ制御だけを送り、それ以外は取り除きます。キャッシュ制御によってプロバイダーがルーティングから除外されることはありません。各モデルページにキャッシュの読み取りと書き込みの料金が掲載されています。
 </Note>
 
+<span id="which-providers-cache-automatically"></span>
 ## 自動でキャッシュするプロバイダー
 
 | プロバイダー | キャッシュ | Phaseo が送る内容 |
@@ -288,6 +289,11 @@ Gemini 2.5 以降は、何も送らなくても暗黙的にキャッシュしま
 ### Responses：会話全体を送る
 
 Phaseo はレスポンスを保存しません。`previous_response_id` または `conversation` を設定したリクエストは `400` `unsupported_param` を返すため、各ステップで会話全体を `input` に入れて送ってください。その変わらない冒頭部分がキャッシュされるプレフィックスになります。ツールループでは `reasoning` の出力項目も送り返してください。[ツールループでの推論](../api-reference/endpoint/responses.mdx#reasoning-in-tool-loops)を参照してください。
+
+<span id="change-reasoning-effort-mid-conversation"></span>
+### 会話の途中で推論の度合いを変える
+
+Chat Completions の `reasoning_effort` または Responses の `reasoning.effort` をリクエスト間で変更すると、Phaseo は Claude のプロンプトキャッシュを保ちます。変更は新しいトップレベルの度合いではなく、`messages` 内の度合いマーカーとして送られます。これは Claude の推論を変更せずに送り返している限り機能します。Anthropic Messages では、マーカーを自分で送ります。[会話の途中で推論の度合いを変える](./reasoning-effort.mdx)を参照してください。
 
 <span id="usage-and-pricing-fields"></span>
 ## 使用量と料金のフィールド

@@ -252,6 +252,9 @@ public sealed class AnthropicSystemMessage
 	[JsonPropertyName("content")]
 	public object Content { get; set; }
 
+	[JsonPropertyName("output_config")]
+	public Dictionary<string, object>? OutputConfig { get; set; }
+
 	[JsonPropertyName("role")]
 	public string Role { get; set; }
 
