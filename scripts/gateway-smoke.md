@@ -88,16 +88,16 @@ messages or database credentials.
    `GATEWAY_SMOKE_LOW_CREDIT_API_KEY`.
 5. A read-only Postgres role for the DB checks. Its connection URL, through the
    session pooler or a direct connection with `sslmode=require`, goes in
-   `GATEWAY_SMOKE_DATABASE_URL`. These tables have RLS, so the role bypasses it
-   but can only `SELECT` the six tables, and every session is read-only:
+   `GATEWAY_SMOKE_DATABASE_URL`. These tables have RLS, so the role bypasses it,
+   but it can only `SELECT` the columns `QUERIES` reads from the six tables, and
+   every session is read-only. The migration
+   `supabase/migrations/20261112152648_gateway_smoke_reader_role.sql` creates
+   `gateway_smoke_reader` without a login; a query that reads a new column needs
+   a migration that grants it. Once that migration has deployed, enable the
+   role outside the repo and store its URL as the secret:
 
    ```sql
-   create role gateway_smoke_reader login bypassrls password '<generated>';
-   alter role gateway_smoke_reader set default_transaction_read_only = on;
-   grant usage on schema public to gateway_smoke_reader;
-   grant select on public.gateway_requests, public.gateway_request_charges, public.v2_request_facts,
-     public.credit_ledger, public.gateway_async_operations, public.gateway_wallet_reservations
-     to gateway_smoke_reader;
+   alter role gateway_smoke_reader login password '<generated>';
    ```
 
 6. A GitHub environment `gateway-smoke` with required reviewers. It holds the
