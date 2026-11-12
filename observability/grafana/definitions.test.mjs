@@ -65,7 +65,7 @@ test('dashboards keep summary cards and investigations visible without overlappi
   }
 });
 
-test('record investigation links preserve filters and incident time without showing raw log panels', () => {
+test('records use native Explore for filtered queries and preserve direct trace links', () => {
   const definitions = dashboards();
   assert.ok(!definitions.some(dashboard => allPanels(dashboard.panels).some(panel => panel.type === 'logs')));
   const gateway = definitions.find(dashboard => dashboard.uid === 'phaseo-gateway');
@@ -74,18 +74,18 @@ test('record investigation links preserve filters and incident time without show
     .replaceAll('${request:regex}', 'request-123').replaceAll('${provider:regex}', 'provider-a').replaceAll('${model:regex}', 'model-a')
     .replaceAll('${__from}', '1000').replaceAll('${__to}', '2000').replaceAll('${__value.raw}', '0123456789abcdef0123456789abcdef');
   const pane = url => Object.values(JSON.parse(new URL(fill(url), 'https://phaseo.grafana.net').searchParams.get('panes')))[0];
-  const logs = pane(panel.links[0].url);
-  assert.deepEqual(logs.range, { from: '1000', to: '2000' });
-  assert.equal(logs.datasource, 'logs');
-  assert.equal(logs.queries[0].expr, fill(panel.targets[0].expr));
-  assert.ok(logs.queries[0].expr.includes('request-123'));
-  assert.ok(logs.queries[0].expr.includes('provider-a'));
-  assert.equal(logs.queries[0].maxLines, 100);
+  for (const dashboard of definitions) for (const record of allPanels(dashboard.panels).filter(item => item.targets?.some(target => target.maxLines))) {
+    assert.ok(!record.links?.some(link => link.url.startsWith('/explore?')), 'native Explore interpolates queries before serializing their URL');
+  }
+  assert.ok(panel.targets[0].expr.includes('${request:regex}'));
+  assert.ok(panel.targets[0].expr.includes('${provider:regex}'));
+  assert.ok(panel.targets[0].expr.includes('${model:regex}'));
+  assert.equal(panel.targets[0].maxLines, 100);
   const traceOverride = panel.fieldConfig.overrides.find(override => override.matcher.options === 'trace_id' && override.properties.some(property => property.id === 'links'));
   const trace = pane(traceOverride.properties.find(property => property.id === 'links').value[0].url);
   assert.equal(trace.datasource, 'traces');
   assert.equal(trace.queries[0].query, '0123456789abcdef0123456789abcdef');
-  assert.deepEqual(trace.range, logs.range);
+  assert.deepEqual(trace.range, { from: '1000', to: '2000' });
 });
 test('provisioning defaults to no network and rejects credential-unsafe stack URLs', async () => {
   let calls = 0;

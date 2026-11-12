@@ -37,13 +37,10 @@ function exploreUrl(source, queries) {
   return `/explore?schemaVersion=1&panes=${panes}`;
 }
 
-const logLink = expression => ({ title: 'Inspect matching logs', url: exploreUrl('${loki}', [{ refId: 'A', expr: expression, queryType: 'range', maxLines: 100 }]) });
-
 export function records(title, expression, columns, description) {
   const traceUrl = exploreUrl('${tempo}', [{ refId: 'A', queryType: 'traceId', query: '${__value.raw}' }]);
   return {
     title, type: 'table', datasource, description,
-    links: [logLink(expression)],
     targets: [{ refId: 'A', datasource, expr: expression, queryType: 'range', instant: false, range: true, maxLines: 100, direction: 'backward' }],
     transformations: [
       { id: 'extractFields', options: { source: 'labels', format: 'json', replace: false } },
@@ -138,7 +135,6 @@ export function addDiagnostics(dashboards, logs) {
         const missing = filters[0].filter(name => !fields.includes(`${name}="${name}"`));
         return ` | json ${fields}${missing.map(name => `, ${name}="${name}"`).join('')} | __error__=""${filters[1]}`;
       });
-      if (target.maxLines) item.links = [logLink(target.expr)];
     }
   }
   return dashboards;

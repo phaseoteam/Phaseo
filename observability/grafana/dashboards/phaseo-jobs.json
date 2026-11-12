@@ -1367,12 +1367,6 @@
         "uid": "${loki}"
       },
       "description": "Newest 100 failed invocations. Known item failures appear when the job explicitly emits them; arbitrary internally handled errors are not inferred.",
-      "links": [
-        {
-          "title": "Inspect matching logs",
-          "url": "/explore?schemaVersion=1&panes=%7B%22investigate%22%3A%7B%22datasource%22%3A%22${loki}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bservice_name%3D~%5C%22phaseo-jobs%7Cphaseo-web-api%5C%22%7D%20%7C%20json%20environment%3D%5C%22environment%5C%22%2C%20event_name%3D%5C%22event_name%5C%22%2C%20job%3D%5C%22job%5C%22%2C%20outcome%3D%5C%22outcome%5C%22%20%7C%20__error__%3D%5C%22%5C%22%20%7C%20environment%3D%5C%22$environment%5C%22%20%7C%20event_name%3D%5C%22job.run%5C%22%20%7C%20job%3D~%5C%22.*${job:regex}.*%5C%22%20%7C%20outcome%3D%5C%22error%5C%22%22%2C%22queryType%22%3A%22range%22%2C%22maxLines%22%3A100%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
-        }
-      ],
       "targets": [
         {
           "refId": "A",
@@ -2105,12 +2099,6 @@
         "uid": "${loki}"
       },
       "description": "Newest 100 existing settlement and usage persistence failures. Inspect the source hook and request before taking action. No balances, prompts or customer identities are exported.",
-      "links": [
-        {
-          "title": "Inspect matching logs",
-          "url": "/explore?schemaVersion=1&panes=%7B%22investigate%22%3A%7B%22datasource%22%3A%22${loki}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bservice_name%3D~%5C%22phaseo-gateway%5C%22%7D%20%7C%20json%20environment%3D%5C%22environment%5C%22%2C%20event_name%3D%5C%22event_name%5C%22%2C%20job%3D%5C%22job%5C%22%20%7C%20__error__%3D%5C%22%5C%22%20%7C%20job%3D~%5C%22.*${job:regex}.*%5C%22%20%7C%20environment%3D%5C%22$environment%5C%22%20%7C%20event_name%3D%5C%22ops.failure%5C%22%22%2C%22queryType%22%3A%22range%22%2C%22maxLines%22%3A100%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
-        }
-      ],
       "targets": [
         {
           "refId": "A",
@@ -2848,12 +2836,6 @@
             "uid": "${loki}"
           },
           "description": "Newest 100 job invocations. Completed means the handler returned; missing item counts stay unavailable, not zero. Skipped jobs are distinct from failed jobs.",
-          "links": [
-            {
-              "title": "Inspect matching logs",
-              "url": "/explore?schemaVersion=1&panes=%7B%22investigate%22%3A%7B%22datasource%22%3A%22${loki}%22%2C%22queries%22%3A%5B%7B%22refId%22%3A%22A%22%2C%22expr%22%3A%22%7Bservice_name%3D~%5C%22phaseo-jobs%7Cphaseo-web-api%5C%22%7D%20%7C%20json%20environment%3D%5C%22environment%5C%22%2C%20event_name%3D%5C%22event_name%5C%22%2C%20job%3D%5C%22job%5C%22%20%7C%20__error__%3D%5C%22%5C%22%20%7C%20job%3D~%5C%22.*${job:regex}.*%5C%22%20%7C%20environment%3D%5C%22$environment%5C%22%20%7C%20event_name%3D%5C%22job.run%5C%22%22%2C%22queryType%22%3A%22range%22%2C%22maxLines%22%3A100%7D%5D%2C%22range%22%3A%7B%22from%22%3A%22${__from}%22%2C%22to%22%3A%22${__to}%22%7D%7D%7D"
-            }
-          ],
           "targets": [
             {
               "refId": "A",
