@@ -440,7 +440,6 @@
 			"status": "状态",
 			"code": "代码",
 			"request": "请求",
-			"viewRequestLog": "查看请求日志",
 			"requestId": "请求 ID",
 			"endpoint": "端点",
 			"model": "模型",
@@ -617,7 +616,7 @@
 			"outputTokens": "输出 token",
 			"serviceTier": "服务层级",
 			"requestId": "请求 ID",
-			"openRequestLog": "打开请求 {id} 的日志",
+			"viewRequestLog": "查看请求日志",
 			"outputSpeed": "输出速度",
 			"serviceTiers": {
 				"standard": "标准",

@@ -440,7 +440,6 @@
 			"status": "Status",
 			"code": "Code",
 			"request": "Request",
-			"viewRequestLog": "View Request Log",
 			"requestId": "Request ID",
 			"endpoint": "Endpoint",
 			"model": "Model",
@@ -617,7 +616,7 @@
 			"outputTokens": "Output tokens",
 			"serviceTier": "Service tier",
 			"requestId": "Request ID",
-			"openRequestLog": "Open request log {id}",
+			"viewRequestLog": "View request log",
 			"outputSpeed": "Output speed",
 			"serviceTiers": {
 				"standard": "Standard",

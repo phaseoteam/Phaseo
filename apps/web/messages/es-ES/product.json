@@ -440,7 +440,6 @@
 			"status": "Estado",
 			"code": "Código",
 			"request": "Solicitud",
-			"viewRequestLog": "Ver registro de solicitud",
 			"requestId": "ID de solicitud",
 			"endpoint": "Punto de conexión",
 			"model": "Modelo",
@@ -617,7 +616,7 @@
 			"outputTokens": "Tokens de salida",
 			"serviceTier": "Nivel de servicio",
 			"requestId": "ID de solicitud",
-			"openRequestLog": "Abrir registro de solicitud {id}",
+			"viewRequestLog": "Ver registro de solicitud",
 			"outputSpeed": "Velocidad de salida",
 			"serviceTiers": {
 				"standard": "Estándar",

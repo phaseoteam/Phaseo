@@ -440,7 +440,6 @@
 			"status": "Status",
 			"code": "Code",
 			"request": "Anfrage",
-			"viewRequestLog": "Anfrageprotokoll anzeigen",
 			"requestId": "Anfrage-ID",
 			"endpoint": "Endpunkt",
 			"model": "Modell",
@@ -617,7 +616,7 @@
 			"outputTokens": "Ausgabetokens",
 			"serviceTier": "Servicestufe",
 			"requestId": "Anfrage-ID",
-			"openRequestLog": "Anfrageprotokoll {id} öffnen",
+			"viewRequestLog": "Anfrageprotokoll anzeigen",
 			"outputSpeed": "Ausgabegeschwindigkeit",
 			"serviceTiers": {
 				"standard": "Standard",

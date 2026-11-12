@@ -440,7 +440,6 @@
 			"status": "ステータス",
 			"code": "コード",
 			"request": "リクエスト",
-			"viewRequestLog": "リクエストログを表示",
 			"requestId": "リクエスト ID",
 			"endpoint": "エンドポイント",
 			"model": "モデル",
@@ -617,7 +616,7 @@
 			"outputTokens": "出力トークン",
 			"serviceTier": "サービス階層",
 			"requestId": "リクエストID",
-			"openRequestLog": "リクエスト {id} のログを開く",
+			"viewRequestLog": "リクエストログを表示",
 			"outputSpeed": "出力速度",
 			"serviceTiers": {
 				"standard": "標準",

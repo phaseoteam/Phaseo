@@ -15,25 +15,25 @@ describe("private usage cache", () => {
 	afterEach(() => { client.clear(); vi.useRealTimers(); });
 
 	it("recovers a request detail that becomes available after final auditing", async () => {
-		const queryFn = jest.fn().mockRejectedValueOnce(new WebApiError("/api/account/settings/usage/logs/recent", 404)).mockResolvedValue({ request: "recent" });
+		const queryFn = vi.fn().mockRejectedValueOnce(new WebApiError("/api/account/settings/usage/logs/recent", 404)).mockResolvedValue({ request: "recent" });
 		const result = client.fetchQuery({ ...privateUsageOptions(scope, "request-detail", { request: "recent" }), queryFn });
-		await jest.advanceTimersByTimeAsync(2_000);
+		await vi.advanceTimersByTimeAsync(2_000);
 		await expect(result).resolves.toEqual({ request: "recent" });
 		expect(queryFn).toHaveBeenCalledTimes(2);
 	});
 
 	it("stops retrying missing request details after ten seconds", async () => {
 		const error = new WebApiError("/api/account/settings/usage/logs/missing", 404);
-		const queryFn = jest.fn().mockRejectedValue(error);
+		const queryFn = vi.fn().mockRejectedValue(error);
 		const assertion = expect(client.fetchQuery({ ...privateUsageOptions(scope, "request-detail", { request: "missing" }), queryFn })).rejects.toBe(error);
-		await jest.advanceTimersByTimeAsync(10_000);
+		await vi.advanceTimersByTimeAsync(10_000);
 		await assertion;
 		expect(queryFn).toHaveBeenCalledTimes(6);
 	});
 
 	it.each([401, 403])("does not retry request details after authorization status %s", async (status) => {
 		const error = new WebApiError("/api/account/settings/usage/logs/private", status);
-		const queryFn = jest.fn().mockRejectedValue(error);
+		const queryFn = vi.fn().mockRejectedValue(error);
 		await expect(client.fetchQuery({ ...privateUsageOptions(scope, "request-detail", { request: "private" }), queryFn })).rejects.toBe(error);
 		expect(queryFn).toHaveBeenCalledTimes(1);
 	});

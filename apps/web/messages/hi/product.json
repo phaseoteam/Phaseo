@@ -440,7 +440,6 @@
 			"status": "स्थिति",
 			"code": "कोड",
 			"request": "अनुरोध",
-			"viewRequestLog": "अनुरोध लॉग देखें",
 			"requestId": "अनुरोध ID",
 			"endpoint": "एंडपॉइंट",
 			"model": "मॉडल",
@@ -617,7 +616,7 @@
 			"outputTokens": "आउटपुट टोकन",
 			"serviceTier": "सेवा स्तर",
 			"requestId": "अनुरोध ID",
-			"openRequestLog": "अनुरोध {id} का लॉग खोलें",
+			"viewRequestLog": "अनुरोध लॉग देखें",
 			"outputSpeed": "आउटपुट गति",
 			"serviceTiers": {
 				"standard": "मानक",
