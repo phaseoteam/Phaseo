@@ -27,7 +27,7 @@ test('native layouts keep trends first, records expandable and IDs unique', () =
     assert.equal(new Set(panels.map(panel => panel.id)).size, panels.length);
     checkGrid(dashboard.panels);
     const records = panels.filter(panel => panel.targets?.some(target => target.maxLines));
-    assert.ok(records.every(panel => panel.links.some(link => link.title === 'Inspect matching logs')));
+    assert.ok(records.every(panel => panel.targets.every(target => target.datasource.type === 'loki' && target.queryType === 'range')));
     if (dashboard.uid === 'phaseo-free-tier') continue;
     const charts = dashboard.panels.filter(panel => panel.type === 'timeseries');
     assert.ok(charts.length >= 4);
