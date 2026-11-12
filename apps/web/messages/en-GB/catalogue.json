@@ -3161,7 +3161,7 @@
 			"tools": "Supports function calls and external tools.",
 			"reasoning": "Supports enhanced reasoning workflows.",
 			"structured_outputs": "Returns responses constrained to a defined schema.",
-			"caching": "Supports prompt and response caching.",
+			"caching": "Supports prompt caching.",
 			"web_search": "Can retrieve and ground responses in live web results.",
 			"moderated": "Includes provider-side moderation controls.",
 			"free": "Available through a free usage tier."

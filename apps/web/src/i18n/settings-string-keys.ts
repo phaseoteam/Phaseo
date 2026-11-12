@@ -198,7 +198,7 @@ const settingsPhraseKeys: Readonly<Record<string, string>> = {
   "Choose the comparison baseline and narrow the feedback included below.": "phraseChooseTheComparisonBaselineAndNarrowTheFeedbackIncludedBelow",
   "Comparisons use explicit ratings. Positive means thumbs up or correct; negative means thumbs down, incorrect, or unsafe. Numeric scores are optional detail only.": "phraseComparisonsUseExplicitRatingsPositiveMeansThumbsUpOrCorrectNegativeMeansThumbsDownIncorrectOrUnsafeNumericScoresAreOptionalDetailOnly",
   "Choose provider fallback order, exclusions, and routing performance thresholds.": "phraseChooseProviderFallbackOrderExclusionsAndRoutingPerformanceThresholds",
-  "Set routing behavior, response caching, and prompt defaults.": "phraseSetRoutingBehaviorResponseCachingAndPromptDefaults",
+  "Set routing behavior and prompt defaults.": "phraseSetRoutingBehaviorAndPromptDefaults",
   "Enable deterministic gateway plugins for this preset.": "phraseEnableDeterministicGatewayPluginsForThisPreset",
   "Set sampling and deterministic defaults.": "phraseSetSamplingAndDeterministicDefaults",
   "Configure reasoning-specific behavior when supported.": "phraseConfigureReasoningSpecificBehaviorWhenSupported",
