@@ -798,9 +798,13 @@ async function deliverReply(deps: TurnDeps, turn: TurnRef, coordinator: DurableO
 		return { shown: true, stopped: await finishReply(slack, { channel: turn.channel, ts, text, footer, closingText: closing ? `\n\n${closing}` : null }) };
 	}
 	const whole = closing ? `${text}${text ? "\n\n" : ""}${closing}` : text;
-	if (ts) return { shown: Boolean(whole), stopped: await replaceReply(slack, { channel: turn.channel, ts, text: whole, footer }) };
 	// An answer that is only what it posted (a chart, an image) still gets its footer, under the files.
 	const footerOnly = !text && !closing && footer !== null && run.status === "answered" && run.posted === true;
+	if (ts) {
+		// A retry that ends footer-only replaces an earlier try's text with just the footer.
+		const stopped = await replaceReply(slack, { channel: turn.channel, ts, text: whole, footer, footerOnly });
+		return { shown: Boolean(whole) || footerOnly, stopped };
+	}
 	if (text || footerOnly) {
 		const posted = await postReply(slack, { channel: turn.channel, threadTs: turn.threadTs, text, footer });
 		await coordinator.setReplyTs(turn.turnId, posted);
