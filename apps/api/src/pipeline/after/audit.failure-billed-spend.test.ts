@@ -175,6 +175,41 @@ describe("failed requests that were still charged", () => {
 			expect(row).toMatchObject({ costNanos: 300, expectedCostNanos: 0 });
 			expect(budget.recorded.get("bill_refund_failed")).toBe(300);
 		});
+
+		it("records a kept checkpoint charge against the SKU meters the checkpoints priced", async () => {
+			// The highest checkpoint priced 200 input + 400 output; 300 was charged and kept. The
+			// row's lines (its v2_request_pricing_lines, which promotion budgets sum) add up to 300.
+			const row = await finalizationFailed("kept_lines", { uncollected: 0, confirmed: 300 }, {
+				__chargedInSteps: true,
+				__checkpointPricingLines: [
+					{ dimension: "input_text_tokens", rule_id: "meter_in", line_nanos: 200, line_cost_usd: "0.000000200" },
+					{ dimension: "output_text_tokens", rule_id: "meter_out", line_nanos: 400, line_cost_usd: "0.000000400" },
+				],
+			});
+			expect(row.costNanos).toBe(300);
+			expect(row.pricingLines.map((line: any) => [line.rule_id, line.line_nanos, line.line_cost_usd])).toEqual([
+				["meter_in", 100, "0.000000100"],
+				["meter_out", 200, "0.000000200"],
+			]);
+		});
+
+		it("keeps the bill's own pricing lines when it has them", async () => {
+			const ctx = context("own_lines", admit("own_lines"), {
+				__chargedInSteps: true,
+				__checkpointPricingLines: [{ dimension: "output_text_tokens", rule_id: "meter_checkpoint", line_nanos: 999 }],
+			});
+			ctx.confirmedChargeNanos = 300;
+			ctx.uncollectedChargeNanos = 300;
+			const ownLines = [{ dimension: "output_text_tokens", rule_id: "meter_final", line_nanos: 300 }];
+			await handleFailureAudit(
+				ctx,
+				{ provider: "openai", bill: { cost_cents: 0, currency: "USD", usage: { pricing: { lines: ownLines } }, finish_reason: "stop" } } as any,
+				500, "gateway", "stream_finalization_failed", "The response was delivered but accounting finalization failed.",
+				{ billing_status: "pending_reconciliation" },
+			);
+			await Promise.all(background.splice(0));
+			expect(auditFailureMock.mock.calls.at(-1)![0].pricingLines).toEqual(ownLines);
+		});
 	});
 
 	describe("a request that fails after its one-off charge went through", () => {

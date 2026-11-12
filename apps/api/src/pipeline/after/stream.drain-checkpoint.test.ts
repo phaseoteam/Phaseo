@@ -11,6 +11,13 @@ const failureAuditMock = vi.hoisted(() => vi.fn(async (..._args: any[]) => undef
 const storedChargeTotalMock = vi.hoisted(() => vi.fn(async (_args: any) => 0));
 // Set once a meter the price card does not cover appears in the usage: pricing then throws.
 const unpricedMeter = vi.hoisted(() => ({ present: false }));
+const { INPUT_METER_ID, OUTPUT_METER_ID } = vi.hoisted(() => ({
+	INPUT_METER_ID: "11111111-1111-4111-8111-111111111111",
+	OUTPUT_METER_ID: "22222222-2222-4222-8222-222222222222",
+}));
+// What the 499 row's pricing lines charge per SKU meter (what v2_request_pricing_lines, and so
+// promotion budgets, count).
+const chargedByMeter = (lines: any[]) => Object.fromEntries((lines ?? []).map((line) => [line.rule_id, line.line_nanos]));
 
 vi.mock("../pricing/persist", () => ({
 	recordUsageAndCharge: (args: any) => chargeRpcMock("one_off", args),
@@ -45,7 +52,12 @@ vi.mock("./pricing", () => ({
 		const input = Number(usage?.input_tokens ?? usage?.prompt_tokens ?? 0);
 		const output = Number(usage?.output_tokens ?? usage?.completion_tokens ?? 0);
 		const totalNanos = input * 1_000 + output * 10_000;
-		return { pricedUsage: { ...usage, pricing: { total_nanos: totalNanos } }, totalCents: totalNanos / 1e7, totalNanos, currency: "USD" };
+		// One line per SKU meter, as the engine prices them (rule_id is the SKU meter id).
+		const lines = [
+			{ dimension: "input_text_tokens", quantity: input, rule_id: INPUT_METER_ID, line_nanos: input * 1_000 },
+			{ dimension: "output_text_tokens", quantity: output, rule_id: OUTPUT_METER_ID, line_nanos: output * 10_000 },
+		].filter((line) => line.line_nanos > 0);
+		return { pricedUsage: { ...usage, pricing: { total_nanos: totalNanos, lines } }, totalCents: totalNanos / 1e7, totalNanos, currency: "USD" };
 	},
 }));
 vi.mock("@/runtime/env", () => ({
@@ -244,6 +256,9 @@ describe("a stream the client abandons while the upstream keeps draining", () =>
 		expect([status, code]).toEqual([499, "client_closed_request"]);
 		expect(billing).toEqual({ costNanos: 1_000_000 });
 		expect(result.bill.usage.pricing).toMatchObject({ total_nanos: 1_000_000, billing_suppressed: false, billing_basis: "drain_checkpoint" });
+		// Its pricing lines carry the charge per SKU meter: the 2,000,000 the final usage priced at,
+		// lowered to the 1,000,000 charged, so per-SKU totals such as promotion budgets count it.
+		expect(chargedByMeter(result.bill.usage.pricing.lines)).toEqual({ [OUTPUT_METER_ID]: 1_000_000 });
 	});
 
 	it("settles a stream the client left that then ends early from the provider's reported usage", async () => {
@@ -263,6 +278,11 @@ describe("a stream the client abandons while the upstream keeps draining", () =>
 			["checkpoint_total", "bill_drain", 1_120_000],
 			["final_total", "bill_drain", 120 * 1_000 + 200 * 10_000],
 		]);
+		// The 499 row's lines carry the whole charge, per SKU meter.
+		const [, result, status, , , , , , , billing] = failureAuditMock.mock.calls[0];
+		expect(status).toBe(499);
+		expect(billing).toEqual({ costNanos: 2_120_000 });
+		expect(chargedByMeter(result.bill.usage.pricing.lines)).toEqual({ [INPUT_METER_ID]: 120_000, [OUTPUT_METER_ID]: 2_000_000 });
 	});
 
 	it("refunds the checkpoint charges when the upstream connection resets after the client left", async () => {

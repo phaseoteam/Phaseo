@@ -148,6 +148,17 @@ describe("finishing a reply", () => {
 		await expect(replaceReply(slack.client("xoxb-1-test-token"), args)).rejects.toBeInstanceOf(SlackPostError);
 	});
 
+	it("replaces an earlier try's text with just the footer when the answer was only what it posted", async () => {
+		const args = { channel: "C0CHANNEL1", ts: "1792600100.000009", text: "", footer: { ...FOOTER, costNanos: 1_000_000 }, footerOnly: true };
+		await expect(replaceReply(slack.client("xoxb-1-test-token"), args)).resolves.toBe(true);
+		expect(slack.of("chat.update").map((call) => call.args.markdown_text)).toEqual(["_Auto · $0.0010_"]);
+	});
+
+	it("leaves the message alone when there is no text and the answer isn't footer-only", async () => {
+		await replaceReply(slack.client("xoxb-1-test-token"), { channel: "C0CHANNEL1", ts: "1792600100.000009", text: "", footer: FOOTER });
+		expect(slack.of("chat.update")).toEqual([]);
+	});
+
 	it("posts the whole answer when its stream never started", async () => {
 		const ts = await postReply(slack.client("xoxb-1-test-token"), { channel: "C0CHANNEL1", threadTs: "1792600000.000100", text: "Answer", footer: FOOTER });
 		expect(ts).toBe("1792600100.000001");

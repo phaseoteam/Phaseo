@@ -7,6 +7,7 @@ const privateModelRows = vi.hoisted(() => ({ rows: [] as any[] }));
 const providerFactRows = vi.hoisted(() => ({ rows: [] as any[] }));
 const routePolicyRows = vi.hoisted(() => ({ rows: [] as any[] }));
 const fetchWorkspacePolicyMock = vi.hoisted(() => vi.fn());
+const fetchMemberWorkspacePolicyMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/runtime/env", () => ({
     getBindingsIfConfigured: () => null,
@@ -27,6 +28,7 @@ vi.mock("@/runtime/env", () => ({
 vi.mock("@pipeline/before/workspacePolicy", async (importOriginal) => ({
     ...await importOriginal<typeof import("@pipeline/before/workspacePolicy")>(),
     fetchWorkspacePolicy: (...args: any[]) => fetchWorkspacePolicyMock(...args),
+    fetchMemberWorkspacePolicy: (...args: any[]) => fetchMemberWorkspacePolicyMock(...args),
 }));
 
 vi.mock("@pipeline/before/guards", () => ({
@@ -138,6 +140,7 @@ describe("handleModels", () => {
         fetchCatalogueMock.mockReset();
         fetchGatewayContextMock.mockReset();
         fetchWorkspacePolicyMock.mockReset();
+        fetchMemberWorkspacePolicyMock.mockReset();
         providerFactRows.rows = [];
         routePolicyRows.rows = [];
         guardAuthMock.mockResolvedValue({
@@ -1335,6 +1338,38 @@ describe("handleModels", () => {
             guardAuthMock.mockResolvedValue({ ok: false, response: new Response(null, { status: 401 }) });
             expect((await handleMyModels(new Request("https://api.example.com/v1/models/me"))).status).toBe(401);
             expect(fetchCatalogueMock).not.toHaveBeenCalled();
+        });
+
+        it("lists an OAuth token's models under the signed-in person's rules, not a key looked up by the client id", async () => {
+            guardAuthMock.mockResolvedValue({ ok: true, value: { workspaceId: "ws_test", apiKeyId: "phaseo_cli", authMethod: "oauth", oauthAccessToken: true, oauthClientId: "phaseo_cli", oauthScopes: ["openid", "models:read"], userId: "user_1" } });
+            fetchCatalogueMock.mockResolvedValue([twoProviders()]);
+            fetchMemberWorkspacePolicyMock.mockResolvedValue(blocked(["azure"]));
+            const response = await handleMyModels(new Request("https://api.example.com/v1/models/me"));
+            expect(response.status).toBe(200);
+            expect(fetchMemberWorkspacePolicyMock).toHaveBeenCalledWith({ workspaceId: "ws_test", userId: "user_1" });
+            expect(fetchWorkspacePolicyMock).not.toHaveBeenCalled();
+            const body = await response.json() as any;
+            expect(body.models[0].offers.map((offer: any) => offer.provider.id)).toEqual(["openai"]);
+            expect(body.access).toMatchObject({ restricted: true, limited_model_count: 1 });
+            expect(response.headers.get("vary")).toBe("Authorization");
+        });
+
+        it("keeps an OAuth-delegated key (such as Phaseo desktop's) on its key's own rules", async () => {
+            guardAuthMock.mockResolvedValue({ ok: true, value: { workspaceId: "ws_test", apiKeyId: "key_desktop", authMethod: "oauth", oauthClientId: "phaseo_desktop", oauthScopes: ["gateway:access", "models:read"], userId: "user_1" } });
+            fetchWorkspacePolicyMock.mockResolvedValue(buildWorkspacePolicy({}));
+            const response = await handleMyModels(new Request("https://api.example.com/v1/models/me"));
+            expect(response.status).toBe(200);
+            expect(fetchWorkspacePolicyMock).toHaveBeenCalledWith({ workspaceId: "ws_test", apiKeyId: "key_desktop" });
+            expect(fetchMemberWorkspacePolicyMock).not.toHaveBeenCalled();
+        });
+
+        it("asks an OAuth token with no user to sign in again", async () => {
+            guardAuthMock.mockResolvedValue({ ok: true, value: { workspaceId: "ws_test", apiKeyId: "phaseo_cli", authMethod: "oauth", oauthAccessToken: true, oauthClientId: "phaseo_cli", oauthScopes: ["openid", "models:read"] } });
+            const response = await handleMyModels(new Request("https://api.example.com/v1/models/me"));
+            expect(response.status).toBe(401);
+            expect(fetchMemberWorkspacePolicyMock).not.toHaveBeenCalled();
+            expect(fetchWorkspacePolicyMock).not.toHaveBeenCalled();
+            expect((await handleModels(new Request("https://api.example.com/v1/models"))).status).toBe(200);
         });
     });
 });

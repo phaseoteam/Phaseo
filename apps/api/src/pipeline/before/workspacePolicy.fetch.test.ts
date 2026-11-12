@@ -77,7 +77,7 @@ vi.mock("@core/tiered-cache", () => ({
 	writeLocationCache: async () => undefined,
 }));
 
-import { bumpWorkspacePolicyVersion, fetchWorkspacePolicy } from "./workspacePolicy";
+import { bumpWorkspacePolicyVersion, fetchMemberWorkspacePolicy, fetchWorkspacePolicy } from "./workspacePolicy";
 
 const guardrail = (id: string, extra: Record<string, unknown> = {}) => ({ id, ...extra });
 
@@ -313,5 +313,43 @@ describe("fetchWorkspacePolicy guardrail resolution", () => {
 		runtime.tables.keys = { data: null, error: { message: "timeout" } };
 		await expect(fetchWorkspacePolicy({ workspaceId: freshWorkspace(), apiKeyId: "key_1" }))
 			.rejects.toThrow("key_principal_lookup_failed:timeout");
+	});
+});
+
+describe("fetchMemberWorkspacePolicy", () => {
+	it("merges the workspace, department and member guardrails resolve_member_guardrails returns", async () => {
+		const workspaceId = freshWorkspace();
+		runtime.rpc.legacyResult = {
+			data: [
+				{ guardrail_id: "g_baseline", source_type: "workspace", source_id: null },
+				{ guardrail_id: "g_department", source_type: "department", source_id: "dep_1" },
+				{ guardrail_id: "g_member", source_type: "member", source_id: "user_1" },
+			],
+			error: null,
+		};
+		runtime.tables.workspace_guardrails = {
+			data: [
+				guardrail("g_baseline", { privacy_zdr_only: true }),
+				guardrail("g_department", { provider_restriction_mode: "blocklist", provider_restriction_provider_ids: ["openai"] }),
+				guardrail("g_member", { model_restriction_mode: "allowlist", allowed_api_model_ids: ["anthropic/claude-x"] }),
+			],
+			error: null,
+		};
+
+		const policy = await fetchMemberWorkspacePolicy({ workspaceId, userId: "user_1" });
+
+		expect(runtime.rpcCalls).toEqual([{ name: "resolve_member_guardrails", args: { p_workspace_id: workspaceId, p_user_id: "user_1" } }]);
+		expect(runtime.queries.map((query) => query.table)).not.toContain("keys");
+		expect(runtime.queries.find((query) => query.table === "workspace_guardrails")?.filters).toContainEqual(["enabled", true]);
+		expect(policy.activeGuardrailIds).toEqual(["g_baseline", "g_department", "g_member"]);
+		expect(policy.privacyZdrOnly).toBe(true);
+		expect(policy.providerBlocklist).toEqual(["openai"]);
+		expect(policy.allowedApiModels).toEqual(["anthropic/claude-x"]);
+	});
+
+	it("fails closed when the member's guardrails can't be resolved", async () => {
+		runtime.rpc.legacyResult = { data: null, error: { code: "57014", message: "timeout" } };
+		await expect(fetchMemberWorkspacePolicy({ workspaceId: freshWorkspace(), userId: "user_1" }))
+			.rejects.toThrow("member_guardrails_lookup_failed:timeout");
 	});
 });

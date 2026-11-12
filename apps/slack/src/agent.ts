@@ -524,6 +524,18 @@ function errorCodes(error: unknown): { status: number | null; codes: string[]; f
 }
 
 /**
+ * The gateway's refusal of a model response with nothing in it: no text, no
+ * tool call. It names it google_empty_response for every provider (the code is
+ * part of its public API), and empty_response in places. A model may well end
+ * that way on purpose, after posting a chart and being asked for nothing else.
+ */
+const EMPTY_RESPONSE_CODES = new Set(["google_empty_response", "empty_response"]);
+
+export function isEmptyModelResponse(error: unknown): boolean {
+	return errorCodes(error).codes.some((code) => EMPTY_RESPONSE_CODES.has(code));
+}
+
+/**
  * Which plain reply a failed turn gets. `model` is the model the agent asked for.
  * `zeroDataRetention`: the request asked for providers that keep no data (the
  * answer had searched Slack). Then a refusal is search_needs_zdr when the

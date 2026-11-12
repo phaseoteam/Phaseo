@@ -418,6 +418,7 @@ export async function guardAuth(req: Request, options: GuardAuthOptions = {}): P
     internal?: boolean;
     authMethod?: "api_key" | "oauth";
     oauthClientId?: string | null;
+    oauthAccessToken?: boolean;
     oauthScopes?: string[];
     oauthResource?: string | null;
     scopes?: string[];
@@ -443,6 +444,7 @@ export async function guardAuth(req: Request, options: GuardAuthOptions = {}): P
             internal: auth.internal,
             authMethod: auth.authMethod ?? "api_key",
             oauthClientId: auth.oauthClientId ?? null,
+            oauthAccessToken: auth.oauthAccessToken === true,
             oauthScopes: auth.oauthScopes ?? [],
             oauthResource: auth.oauthResource ?? null,
             scopes: auth.scopes ?? [],
