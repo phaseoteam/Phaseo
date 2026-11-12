@@ -49,7 +49,7 @@
 		"@phaseo/app-kit": "workspace:*",
 		"@phaseo/ui": "workspace:*",
 		"@react-three/drei": "^10.7.9",
-		"@react-three/fiber": "^9.6.1",
+		"@react-three/fiber": "^9.8.2",
 		"@rive-app/react-webgl2": "^4.36.0",
 		"@shadcn/react": "0.3.1",
 		"@statsig/js-client": "^3.33.5",
