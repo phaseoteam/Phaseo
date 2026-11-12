@@ -4,80 +4,78 @@ description: "Compara los precios de los proveedores y el rendimiento operativo 
 icon: "chart-spline"
 ---
 
-Usa esta guía para comparar costes y velocidad entre rutas, entender las métricas que muestra Phaseo y diseñar un estudio de carga antes de trasladar tráfico de producción.
+Compara lo que cuesta un modelo en cada proveedor con la rapidez con que ha atendido el tráfico de Gateway y, después, confirma los finalistas con tus propios prompts antes de trasladar el tráfico de producción.
 
-## Empieza por la decisión
+## Elige la métrica que importa para tu carga de trabajo
 
-Elige la métrica que corresponda a la experiencia de usuario que quieres preservar.
-
-| Carga de trabajo | Empieza por | Motivo |
+| Carga de trabajo | Empieza por | Por qué |
 | --- | --- | --- |
-| Chat, copilotos y voz | Gateway TTFT | Los usuarios notan enseguida cuánto tarda en empezar una respuesta útil. |
-| Respuestas largas y generación de código | Output speed | En respuestas largas, la velocidad de generación sostenida es lo más importante. |
-| Herramientas y flujos de trabajo estructurados | Gateway E2E | El enrutamiento, los reintentos y la orquestación afectan al resultado completo. |
-| Procesamiento por lotes o sin conexión | Coste y rendimiento efectivo | Un inicio más lento puede ser aceptable si importan más el rendimiento total y el gasto. |
+| Chat, copilotos y voz | TTFT del Gateway | Los usuarios notan lo rápido que empieza la salida útil. |
+| Respuestas largas y generación de código | Velocidad de salida | La velocidad de generación sostenida domina en las respuestas largas. |
+| Herramientas y flujos estructurados | E2E del Gateway | El enrutamiento, los reintentos y la orquestación afectan al resultado completo. |
+| Trabajo por lotes o sin conexión | Coste y rendimiento efectivo | Un inicio más lento puede ser aceptable cuando importan más el rendimiento total y el gasto. |
 
-Ninguna puntuación demuestra por sí sola que un modelo sea la mejor opción para todas las cargas de trabajo.
+Ninguna puntuación por sí sola demuestra que un modelo sea la mejor opción para todas las cargas de trabajo.
 
-## Comparar precios
+## Compara precios
 
-Las listas de precios de los proveedores usan distintas unidades: por token, por millón de tokens, por imagen, por segundo, por minuto o por solicitud. Phaseo conserva la unidad original y normaliza los precios comparables para el catálogo y la calculadora de precios.
+Las tarifas de los proveedores usan unidades distintas: por token, por millón de tokens, por imagen, por segundo, por minuto o por solicitud. Phaseo mantiene cada precio en su propia unidad y convierte los precios de texto comparables a precio por millón de tokens en las vistas del catálogo y en la calculadora de precios.
 
-En modelos de texto, compara por separado las tarifas de entrada, entrada en caché, escritura en caché, razonamiento y salida cuando estén disponibles. En modelos multimedia, muestra la unidad de facturación original: un precio de video por segundo no debe presentarse como si fuera por token.
+En los modelos de texto, compara por separado los medidores de entrada, entrada en caché, escritura en caché, razonamiento y salida cuando existan. Los modelos multimedia mantienen su propia unidad de facturación; compara un precio de vídeo por segundo solo con otros precios por segundo.
 
 <Note>
-Los precios del catálogo sirven para estimar una solicitud, no son una cotización para cualquier carga útil. Los niveles del proveedor, las ofertas regionales, los precios por lotes, el comportamiento de la caché y los medidores específicos de cada solicitud pueden cambiar el importe final.
+Los precios del catálogo estiman una solicitud; no son un presupuesto para cualquier contenido. Los niveles de los proveedores, las ofertas regionales, los precios por lotes, el comportamiento de la caché y los medidores específicos de cada solicitud cambian el importe final.
 </Note>
 
-Usa la [calculadora de precios](https://phaseo.app/tools/pricing-calculator) con una carga útil representativa y, después de probar, confirma el importe cobrado en el uso de Gateway.
+Usa la [calculadora de precios](https://phaseo.app/tools/pricing-calculator) con un contenido representativo y, después, confirma el importe cobrado en el uso de Gateway tras una solicitud de prueba.
 
-## Entender las métricas de rendimiento
+## Entiende las métricas de rendimiento
 
-Phaseo registra los tiempos operativos de las solicitudes que pasan por Gateway.
+Phaseo registra los tiempos operativos de las solicitudes enrutadas a través del Gateway.
 
 | Métrica | Definición |
 | --- | --- |
-| **Gateway TTFT** | Desde el inicio de la solicitud en Gateway hasta la primera salida generada con contenido. |
-| **Provider TTFT** | Desde el envío al proveedor seleccionado hasta la primera salida generada con contenido. |
-| **Provider duration** | Desde el envío al proveedor seleccionado hasta la respuesta final. |
-| **Gateway E2E** | Desde el inicio de la solicitud en Gateway hasta su finalización. |
-| **Phaseo overhead** | `max(0, Gateway E2E - provider duration)`. |
-| **Effective throughput** | Todos los tokens de salida divididos por la duración total del proveedor. |
-| **Output speed** | Los tokens de salida posteriores al primero divididos por el tiempo del proveedor después de TTFT. |
-| **TPOT / ITL** | Tiempo promedio por token a nivel de solicitud después de la primera salida. |
+| **TTFT del Gateway** | Desde el inicio de la solicitud en el Gateway hasta la primera salida generada con contenido. |
+| **TTFT del proveedor** | Desde el envío al proveedor seleccionado hasta la primera salida generada con contenido. |
+| **Duración del proveedor** | Desde el envío al proveedor seleccionado hasta la respuesta final. |
+| **E2E del Gateway** | Desde el inicio de la solicitud en el Gateway hasta su finalización. |
+| **Sobrecoste de Phaseo** | `max(0, Gateway E2E - provider duration)`. |
+| **Rendimiento efectivo** | Todos los tokens de salida divididos entre la duración total del proveedor. |
+| **Velocidad de salida** | Los tokens de salida posteriores al primero, sin contar el razonamiento oculto previo, divididos entre el tiempo del proveedor después del TTFT. No se muestra cuando toda la respuesta llega en una sola lectura de red. |
+| **TPOT / ITL** | Tiempo medio por token después de la primera salida, a nivel de solicitud. |
 
-TTFT, la velocidad de salida, TPOT e ITL requieren una respuesta en streaming cuya primera salida contenga contenido. Los fragmentos del flujo que solo contienen metadatos no cuentan. Las respuestas que no son de streaming pueden aportar datos de duración del proveedor, Gateway E2E y rendimiento efectivo sin inventar un TTFT.
+El TTFT, la velocidad de salida, el TPOT y el ITL requieren una respuesta en streaming cuya primera salida tenga contenido. Los fragmentos del stream que solo contienen metadatos no cuentan. Las respuestas sin streaming pueden seguir aportando la duración del proveedor, el E2E del Gateway y el rendimiento efectivo, sin inventar un TTFT.
 
-La sobrecarga de Phaseo separa el tiempo que transcurre fuera de la llamada al proveedor seleccionado. Puede incluir el procesamiento de Gateway, el enrutamiento, los reintentos y los efectos de red. No es un valor fijo de la plataforma; debe interpretarse como una distribución dentro de un intervalo definido.
+El sobrecoste de Phaseo es el tiempo fuera de la llamada al proveedor seleccionado: el procesamiento del Gateway, el trabajo de enrutamiento, los reintentos y los efectos de la red. Varía con cada solicitud, así que interprétalo como una distribución en un intervalo definido, no como una cifra fija.
 
-## Interpretar correctamente los datos operativos
+## Interpreta bien los datos operativos
 
-Las páginas de rendimiento resumen el tráfico en vivo de Gateway. Son mediciones observacionales, no pruebas de benchmark controladas ni propiedades intrínsecas del modelo.
+Las páginas de rendimiento resumen el tráfico real del Gateway. Son observaciones, no ejecuciones controladas de benchmarks, y describen una ruta durante un intervalo, no el modelo en sí. La latencia y la disponibilidad pasadas no garantizan resultados futuros.
 
-Los resultados pueden variar debido a:
+Los resultados cambian por:
 
-- la selección del proveedor y la ruta
-- la ubicación de ejecución de Cloudflare y la ruta de red
-- la cola del proveedor o la carga regional
+- la selección del proveedor y de la ruta
+- la ubicación de ejecución en Cloudflare y la ruta de red
+- las colas del proveedor o la carga regional
 - la longitud del prompt y de la salida
-- el comportamiento en streaming frente al modo sin streaming
+- el comportamiento con streaming o sin streaming
 - los reintentos, las cancelaciones y las llamadas a herramientas
 - las actualizaciones del modelo o del proveedor durante el intervalo seleccionado
 
-Los gráficos públicos pueden mostrar percentiles como P50, P90, P95 y P99. En latencia, cuanto menor, mejor. En rendimiento, cuanto mayor, mejor; por eso, un percentil bajo de rendimiento representa la parte más lenta.
+Los gráficos públicos pueden mostrar percentiles como P50, P90, P95 y P99. En la latencia, cuanto más bajo, mejor. En el rendimiento, cuanto más alto, mejor, así que un percentil de rendimiento más bajo describe la cola lenta.
 
-Anota siempre junto al resultado el intervalo elegido, la ruta, la región, los filtros de muestra y el percentil. No compares capturas de pantalla de intervalos distintos como si fueran el mismo estudio.
+Registra siempre junto a un resultado el intervalo de tiempo, la ruta, la región, los filtros de muestra y el percentil seleccionados. No compares dos capturas de pantalla con intervalos distintos como si fueran el mismo estudio.
 
-## Realizar un estudio de carga reproducible
+## Ejecuta un estudio de carga reproducible
 
-Usa la telemetría pública para reducir las opciones y valida los finalistas con tu propia combinación de prompts.
+Usa la telemetría pública para reducir los candidatos y, después, valida los finalistas con tu propia mezcla de prompts.
 
-1. Elige dos o tres modelos disponibles para el enrutamiento en la respuesta predeterminada de `GET /v1/models`.
-2. Crea un conjunto de prompts depurado que represente solicitudes cortas, habituales y largas.
-3. Fija el endpoint, la región, el modo de streaming, las restricciones de proveedor y la concurrencia.
-4. Repite las solicitudes de cada prompt en lugar de basarte en una sola muestra.
-5. Registra el ID de solicitud, el proveedor seleccionado, el éxito o error, los tokens de salida, Gateway TTFT, la duración del proveedor, Gateway E2E, la sobrecarga de Phaseo y el coste.
-6. Compara las distribuciones y los modos de fallo y conserva los resultados sin procesar junto con la configuración de prueba.
+1. Elige dos o tres modelos enrutables de la respuesta predeterminada de `GET /v1/models`.
+2. Crea un conjunto de prompts sin datos sensibles que represente solicitudes cortas, típicas y largas.
+3. Fija el endpoint, la región, el modo de streaming, las restricciones del proveedor y la concurrencia.
+4. Repite las solicitudes de cada prompt en lugar de depender de una sola muestra.
+5. Registra el ID de la solicitud, el proveedor seleccionado, el éxito o el error, los tokens de salida, el TTFT del Gateway, la duración del proveedor, el E2E del Gateway, el sobrecoste de Phaseo y el coste.
+6. Compara las distribuciones y los modos de fallo y, después, conserva los resultados sin procesar junto con la configuración de la prueba.
 
 Esquema de resultado de ejemplo:
 
@@ -99,29 +97,6 @@ Esquema de resultado de ejemplo:
 }
 ```
 
-Los valores cero son marcadores de posición. Publica valores medidos solo junto con la definición de la carga de trabajo, el número de muestras, el intervalo temporal y el permiso para divulgar los datos.
+Los valores cero son marcadores de posición. Publica valores medidos solo junto con la definición de la carga de trabajo, el número de muestras, el intervalo de tiempo y el permiso para divulgar los datos.
 
-## Lo que Phaseo no afirma
-
-- Que un modelo aparezca en el catálogo no significa que se pueda enrutar. Usa el filtro predeterminado de disponibilidad activa.
-- La telemetría operativa pública no garantiza la latencia ni el tiempo de actividad futuros.
-- Una puntuación de benchmark no demuestra la calidad en producción para tu combinación de prompts.
-- Un perfil de UI ilustrativo no es una medición real del modelo.
-- No publiques citas, logotipos ni resultados de cargas de trabajo de clientes sin permiso y pruebas que los respalden.
-
-## Siguientes pasos
-
-<Columns cols={2}>
-  <Card title="Consultar fiabilidad y estado" icon="shield-check" href="../developers/reliability-and-status.mdx">
-    Consulta incidencias, disponibilidad actual de enrutamiento de modelos, definiciones de métricas y diagnóstico de fallos.
-  </Card>
-  <Card title="Comparar modelos" icon="scale" href="https://phaseo.app/compare">
-    Compara precios, metadatos y señales de rendimiento disponibles en paralelo.
-  </Card>
-  <Card title="Inspeccionar rutas de modelos" icon="route" href="../api-reference/endpoint/model-endpoints.mdx">
-    Consulta las rutas de proveedores, capacidades, disponibilidad y precios de un modelo.
-  </Card>
-  <Card title="Revisar la metodología de benchmarks" icon="microscope" href="../research/benchmark-methodology.mdx">
-    Descubre cómo se normalizan las fuentes y puntuaciones de benchmarks de forma independiente de la telemetría de Gateway.
-  </Card>
-</Columns>
+Que un modelo esté en el catálogo no significa que se pueda enrutar, así que parte de la respuesta predeterminada de `GET /v1/models`. Una puntuación de benchmark no establece la calidad con tu mezcla de prompts; consulta la [metodología de benchmarks](../research/benchmark-methodology) para ver de dónde proceden las puntuaciones, que son independientes de la telemetría de Gateway. Para revisar todas las rutas de proveedor, capacidades y precios de un modelo, usa la [API de endpoints de modelos](../api-reference/endpoint/model-endpoints) o [Comparar](https://phaseo.app/compare). Para incidentes y diagnóstico de fallos, consulta [Fiabilidad y estado](../developers/reliability-and-status).

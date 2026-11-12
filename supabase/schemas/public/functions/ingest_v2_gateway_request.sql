@@ -211,7 +211,10 @@ begin
 
   insert into public.v2_request_attempts (
     request_event_id, attempt_number, provider_model_id, status_code, success,
-    error_code, failure_class, upstream_response_id, latency_ms, cloudflare_colo, safe_metadata
+    error_code, failure_class, upstream_response_id, latency_ms, cloudflare_colo, safe_metadata,
+    health_class, health_reason, started_at, completed_at, status_text,
+    upstream_error_code, upstream_error_message, upstream_error_description,
+    upstream_error_type
   )
   select
     v_request_event_id,
@@ -230,8 +233,33 @@ begin
       'key_source', nullif(item.value->>'key_source', ''),
       'response_kind', nullif(item.value->>'response_kind', ''),
       'retryable', nullif(item.value->>'retryable', '')::boolean,
-      'was_probe', coalesce((item.value->>'was_probe')::boolean, false)
-    ))
+      'was_probe', coalesce((item.value->>'was_probe')::boolean, false),
+      'provider_api_model_id', left(nullif(item.value->>'provider_api_model_id', ''), 256),
+      'fallback_attempted', case when item.value->>'fallback_attempted' = 'true' then true end
+    )),
+    case
+      when item.value->>'health_class' in ('success', 'reachability', 'capacity', 'call_error', 'customer', 'phaseo')
+      then item.value->>'health_class'
+    end,
+    case
+      when item.value->>'health_class' in ('success', 'reachability', 'capacity', 'call_error', 'customer', 'phaseo')
+        and item.value->>'health_reason' ~ '^[a-z][a-z0-9_]{0,63}$'
+      then item.value->>'health_reason'
+    end,
+    case
+      when item.value->>'started_at_unix_ms' ~ '^[0-9]{12,14}$'
+      then to_timestamp((item.value->>'started_at_unix_ms')::numeric / 1000)
+    end,
+    case
+      when item.value->>'started_at_unix_ms' ~ '^[0-9]{12,14}$'
+        and item.value->>'latency_ms' ~ '^[0-9]{1,9}$'
+      then to_timestamp(((item.value->>'started_at_unix_ms')::numeric + (item.value->>'latency_ms')::numeric) / 1000)
+    end,
+    left(nullif(trim(item.value->>'status_text'), ''), 120),
+    left(nullif(item.value->>'upstream_error_code', ''), 120),
+    left(nullif(item.value->>'upstream_error_message', ''), 1024),
+    left(nullif(item.value->>'upstream_error_description', ''), 1024),
+    left(nullif(item.value->>'upstream_error_type', ''), 120)
   from jsonb_array_elements(v_attempts) with ordinality as item(value, ordinality)
   left join lateral (
     select candidate.provider_model_id
@@ -289,16 +317,31 @@ begin
     greatest(0, coalesce((item.value->>'charged_nanos')::bigint, 0))
   from jsonb_array_elements(v_pricing) as item(value)
   left join lateral (
-    select sku.sku_id, sku_meter.sku_meter_id
-    from public.v2_pricing_skus sku
-    left join public.v2_pricing_sku_meters sku_meter
-      on sku_meter.sku_id = sku.sku_id
-      and sku_meter.meter_key = lower(item.value->>'meter_key')
-    where sku.provider_model_id = v_provider_model_id
-      and sku.status = 'active'
-      and sku.effective_from <= v_occurred_at
-      and (sku.effective_to is null or sku.effective_to > v_occurred_at)
-    order by sku.version desc, sku.effective_from desc
+    -- The SKU meter the gateway priced the line with. A price card can merge SKUs
+    -- from several routes of the same provider, so it is not limited to this route.
+    (
+      select sku_meter.sku_id, sku_meter.sku_meter_id
+      from public.v2_pricing_sku_meters sku_meter
+      where item.value->>'sku_meter_id' ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+        and sku_meter.sku_meter_id = (item.value->>'sku_meter_id')::uuid
+        and sku_meter.meter_key = lower(item.value->>'meter_key')
+    )
+    union all
+    -- Older gateways send no meter id: the newest active SKU on this route that has
+    -- the meter. It can still pick the wrong tier or operation.
+    (
+      select sku.sku_id, sku_meter.sku_meter_id
+      from public.v2_pricing_skus sku
+      join public.v2_pricing_sku_meters sku_meter
+        on sku_meter.sku_id = sku.sku_id
+        and sku_meter.meter_key = lower(item.value->>'meter_key')
+      where sku.provider_model_id = v_provider_model_id
+        and sku.status = 'active'
+        and sku.effective_from <= v_occurred_at
+        and (sku.effective_to is null or sku.effective_to > v_occurred_at)
+      order by sku.version desc, sku.effective_from desc
+      limit 1
+    )
     limit 1
   ) meter on true;
 

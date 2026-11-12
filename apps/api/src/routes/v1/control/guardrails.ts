@@ -33,6 +33,14 @@ function guardrailWriteFailed(scope: string, error: unknown): Response {
 			message: "This guardrail keeps Slack data out of training and logs. Uninstall the Slack agent to change or remove it.",
 		}, 409, { "Cache-Control": "no-store" });
 	}
+	// The workspace baseline (the Settings, Privacy rules) stays an enabled access guardrail on the
+	// whole workspace; a database trigger refuses anything else.
+	if (String((error as { message?: unknown } | null)?.message ?? "").includes("workspace_baseline_guardrail_protected")) {
+		return json({
+			error: "guardrail_protected",
+			message: "This is the workspace baseline, which holds the rules set under Settings, Privacy. It applies to the whole workspace and can't be deleted, turned off or assigned elsewhere. Change its rules with PATCH /v1/control/settings.",
+		}, 409, { "Cache-Control": "no-store" });
+	}
 	return internalServerError(scope, error);
 }
 
@@ -162,6 +170,8 @@ async function findGuardrail(workspaceId: string, id: string): Promise<Guardrail
 		.select(selectColumns())
 		.eq("workspace_id", workspaceId)
 		.eq("id", id)
+		// Rate guardrails are managed through /v1/rate-limits; spend guardrails are not in this API yet.
+		.in("kind", ["access", "safety"])
 		.maybeSingle();
 	if (error) throw new Error(error.message || "Failed to fetch guardrail");
 	return (data as unknown as GuardrailRow | null) ?? null;
@@ -293,6 +303,8 @@ async function handleListGuardrails(req: Request) {
 			.from("workspace_guardrails")
 			.select(selectColumns(), { count: "exact" })
 			.eq("workspace_id", auth.value.workspaceId)
+			// Rate guardrails are managed through /v1/rate-limits; spend guardrails are not in this API yet.
+			.in("kind", ["access", "safety"])
 			.order("created_at", { ascending: false })
 			.range(offset, offset + limit - 1);
 		if (error) throw new Error(error.message || "Failed to list guardrails");
@@ -387,6 +399,7 @@ async function handleUpdateGuardrail(req: Request) {
 			.update({ ...patch, updated_at: new Date().toISOString() })
 			.eq("workspace_id", auth.value.workspaceId)
 			.eq("id", id)
+			.in("kind", ["access", "safety"])
 			.select(selectColumns())
 			.maybeSingle();
 		if (error) throw new Error(error.message || "Failed to update guardrail");

@@ -51,6 +51,14 @@ existing events, and records actor, transaction and timestamp information. Legac
 admin events remain available. History begins at the baseline; previously unaudited
 changes cannot be reconstructed from the current database.
 
+One exception: an hourly job (`private.prune_catalogue_row_history`) deletes
+benchmark-result UPDATE events that changed nothing but `updated_at`, and
+benchmark-result changes older than 90 days once the model has 100 newer
+non-baseline events (the admin history view shows the newest 100). It never
+deletes events the notification capture has not read. Baseline, insert and
+delete events, and every other table's history, are kept forever; a row-level
+trigger rejects any other delete.
+
 Saved prices are revised by creating a new SKU version and ending the previous
 version at the new start time in one transaction. Existing meters stay attached to
 the old SKU. End-dating uses a separate admin endpoint. Provider routes,

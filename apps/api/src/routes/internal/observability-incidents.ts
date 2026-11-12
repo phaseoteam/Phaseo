@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { z } from "zod";
+import * as z from "zod";
 import type { GatewayBindings } from "@/runtime/env.types";
 import type { Env } from "@/runtime/types";
 

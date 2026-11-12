@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { compareModelsByNewest } from "./modelOrdering";
 import type { ModelsPageModel } from "./modelsDisplay.types";
 

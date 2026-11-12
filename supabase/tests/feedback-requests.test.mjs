@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
+// Table files carry the MFA and OAuth-client policies (require_mfa_for_data_api, refuse_oauth_client_writes); these fixtures don't load their helpers.
+const MFA_SATISFIED_STUB = "create or replace function public.mfa_satisfied() returns boolean language sql stable as 'select true'; create or replace function public.request_is_oauth_client() returns boolean language sql stable as 'select false';";
 const db = new PGlite();
 const read = path => readFile(new URL(path, import.meta.url), 'utf8');
 const schemaFiles = [
@@ -60,12 +62,14 @@ try {
     const replay = new PGlite();
     try {
         await replay.exec(setup(false));
+        await replay.exec(MFA_SATISFIED_STUB);
         await replay.exec(await read('../schemas/public/tables/email_outbox.sql'));
         await replay.exec(await read('../schemas/public/tables/credit_grants.sql'));
         await replay.exec(await read('../migrations/20261016082204_feedback_requests.sql'));
         await replay.exec(await read('../migrations/20261027124704_feedback_answers_to_posthog.sql'));
 
         await db.exec(setup(true));
+        await db.exec(MFA_SATISFIED_STUB);
         await db.exec(await read('../schemas/public/tables/email_outbox.sql'));
         await db.exec(await read('../schemas/public/tables/credit_grants.sql'));
         for (const file of schemaFiles) await db.exec(await read(file));

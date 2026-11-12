@@ -22,7 +22,7 @@ export function cleanupSummary(report: WorktreeCleanupReport) {
 }
 
 /**
- * Worktree cleanup in Settings → General: the rules, whether they run on their own (off by default), and Clean up
+ * Worktree cleanup in Settings → Worktrees: the rules, whether they run on their own (off by default), and Clean up
  * now, which lists what it will remove and asks first.
  */
 export function WorktreeCleanupSettings({ preferences, save, disabled }: { preferences: WorkspacePreferences; save: (value: WorkspacePreferences) => Promise<void>; disabled: boolean }) {

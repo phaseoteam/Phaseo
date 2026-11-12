@@ -273,7 +273,7 @@ export type VideoCreateRequest = {
   negative_prompt?: string;
   generate_audio?: boolean;
   enhance_prompt?: boolean;
-  compression_quality?: number;
+  compression_quality?: number | "optimized" | "lossless";
   person_generation?: string;
   resize_mode?: string;
   input_references?: VideoInputReference[];

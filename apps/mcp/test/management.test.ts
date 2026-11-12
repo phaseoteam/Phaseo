@@ -57,6 +57,18 @@ async function sentRequest(fetchMock: ReturnType<typeof stubApi>) {
 }
 
 describe("Phaseo MCP management scope gating", () => {
+	// Claude's directory flags any tool without a title and a readOnlyHint or
+	// destructiveHint; ChatGPT's review asks for the same annotations.
+	it("gives every tool a title and a read-only or destructive annotation", async () => {
+		const client = await connect([...READ_ONLY, ...management.MCP_MANAGEMENT_SCOPES, "gateway:access"]);
+		const { tools } = await client.listTools();
+		expect(tools.length).toBeGreaterThan(20);
+		const missing = tools
+			.filter((tool) => !tool.title || (typeof tool.annotations?.readOnlyHint !== "boolean" && typeof tool.annotations?.destructiveHint !== "boolean"))
+			.map((tool) => tool.name);
+		expect(missing).toEqual([]);
+	});
+
 	it("keeps read-only connections free of management tools, even with older management read scopes", async () => {
 		const names = await toolNames([...READ_ONLY, "keys:read", "presets:read", "settings:read", "guardrails:read"], { managementAccess: false });
 		for (const definition of management.managementTools) expect(names).not.toContain(definition.name);
@@ -132,12 +144,18 @@ describe("Phaseo MCP management scope gating", () => {
 		for (const definition of management.managementTools) {
 			const annotations = tools[definition.name]?.annotations;
 			expect(annotations?.readOnlyHint, definition.name).toBe(definition.effect === "read");
-			expect(annotations?.destructiveHint, definition.name).toBe(definition.effect === "update" || definition.effect === "delete");
-			expect(annotations?.openWorldHint, definition.name).toBe(false);
+			expect(annotations?.destructiveHint, definition.name).toBe(definition.effect === "update" || definition.effect === "delete" || definition.sensitive === true);
+			expect(annotations?.openWorldHint, definition.name).toBe(definition.external === true);
 			expect(tools[definition.name]?._meta?.securitySchemes).toEqual([{ type: "oauth2", scopes: [...definition.scopes] }]);
 		}
 		expect(tools.api_key_delete?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: true });
-		expect(tools.api_key_create?.annotations).toMatchObject({ destructiveHint: false, idempotentHint: false });
+		// Creating a key, a credential or a place the workspace's data goes can't be taken back: clients confirm it like a delete.
+		expect(tools.api_key_create?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: false, openWorldHint: false });
+		expect(tools.provider_key_create?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: false, openWorldHint: false });
+		// Webhooks and observability destinations send the workspace's data outside Phaseo.
+		expect(tools.webhook_create?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: false, openWorldHint: true });
+		expect(tools.observability_destination_create?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: false, openWorldHint: true });
+		expect(tools.budget_create?.annotations).toMatchObject({ destructiveHint: false, openWorldHint: false });
 		expect(tools.api_key_rotate?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: false });
 		expect(tools.preset_version_publish?.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: true, idempotentHint: false });
 		expect(tools.settings_update?.annotations).toMatchObject({ destructiveHint: true, idempotentHint: true });

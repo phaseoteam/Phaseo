@@ -51,6 +51,11 @@ describe("Pi native harness", () => {
 		expect(packets.find(packet => packet.type === "set_model")).toMatchObject({ provider: "native", modelId: "model" });
 		expect(packets.find(packet => packet.type === "set_thinking_level")?.level).toBe(level);
 	});
+	it.each([[true, true], [undefined, false]] as const)("ignores the checkout's project-local files only for someone else's checkout (%s)", async (untrustedCheckout, ignored) => {
+		fixture((packet, output) => { output({ type: "response", id: packet.id, success: true, data: packet.type === "get_state" ? { sessionFile: "/session", isStreaming: false, pendingMessageCount: 0 } : packet.type === "prompt" ? { disposition: "handled" } : undefined }); });
+		await new PiAdapter().run({ ...task, ...(untrustedCheckout ? { untrustedCheckout } : {}) }, "/project", "Hello", { onDelta: vi.fn(), onSession: vi.fn(), onApproval: async () => "decline" });
+		expect((native.spawn.mock.lastCall?.[1] as string[]).includes("--no-approve")).toBe(ignored);
+	});
 	it("does not set a thinking level for Pi's default model", async () => {
 		const packets: PiRecord[] = [];
 		fixture((packet, output) => { packets.push(packet); output({ type: "response", id: packet.id, success: true, data: packet.type === "get_state" ? { sessionFile: "/session", isStreaming: false, pendingMessageCount: 0 } : packet.type === "prompt" ? { disposition: "handled" } : undefined }); });

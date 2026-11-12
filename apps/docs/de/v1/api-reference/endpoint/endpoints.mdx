@@ -3,12 +3,15 @@ title: "Endpunkte auflisten"
 sidebarTitle: "Endpunkte auflisten"
 badge: "Beta"
 openapi: "/de/openapi/v1/openapi.localized.yaml GET /endpoints"
-description: "Fähigkeitsbasierte Gateway-Endpunkte mit öffentlichen Pfaden sowie Modell- und Anbieterabdeckung auflisten."
+description: "Liste fähigkeitsbasierte Gateway-Endpunkte mit öffentlichen Pfaden sowie Modell- und Anbieterabdeckung auf."
 ---
 
-- `endpoints`: die kanonischen Endpunkt-IDs, die derzeit von der API bereitgestellt werden
-- `data`: Endpunktdatensätze mit `public_path`, `collection`, `model_count` und `provider_count`
-- `sample_models`: bis zu 10 aktuelle, sichtbare Modell-IDs aus dem öffentlichen Katalog
+Die Antwort hat drei Felder:
 
-Verwende [Modell-Endpunktfunktionen auflisten](./model-endpoints.mdx), wenn du Details zu einem Modell nach Anbieter und Parameter benötigst.
+- `endpoints`: die kanonischen Endpunkt-IDs, die die API aktuell bereitstellt.
+- `data`: ein Datensatz pro Endpunkt mit `id`, `capability_id`, `public_path`, `collection`, `model_count` und `provider_count`, sortiert nach `public_path`.
+- `sample_models`: die ersten 10 sichtbaren Modell-IDs aus dem öffentlichen Katalog.
 
+Die Antwort wird 30 Minuten lang zwischengespeichert.
+
+Verwende [Endpunktfähigkeiten eines Modells auflisten](./model-endpoints), wenn du Details auf Anbieter- und Parameterebene für ein einzelnes Modell brauchst.

@@ -1,117 +1,99 @@
 ---
-title: "LLM Gateway से माइग्रेट करें"
+title: "LLM Gateway से माइग्रेट करना"
 sidebarTitle: "LLM Gateway"
-description: "OpenAI-संगत endpoint बदलकर, मॉडल ID सत्यापित करके और चरणबद्ध जांच के साथ LLMGateway से Phaseo Gateway पर जाएं।"
+description: "OpenAI-संगत एंडपॉइंट बदलकर, मॉडल ID सत्यापित करके और चरणबद्ध रोलआउट जांच के साथ LLMGateway से Phaseo Gateway पर जाएं।"
 icon: "/icons/brands/llmgateway.svg"
 ---
 
-अगर आपका ऐप OpenAI-संगत क्लाइंट से LLM Gateway का उपयोग करता है, तो आमतौर पर अनुरोध payload बनाए रखकर पहले केवल Gateway सीमा बदली जा सकती है।
+बेस URL और कुंजी बदलें, अनुरोध पेलोड वैसे ही रखें, और हर मॉडल ID मैप करें: LLM Gateway का प्रीफ़िक्स सर्व करने वाले प्रदाता का नाम बताता है, जबकि Phaseo का प्रीफ़िक्स मॉडल बनाने वाले का।
 
-## क्या बदलेगा
-
-| सेटिंग | पहले | बाद में |
+| सेटिंग | LLM Gateway | Phaseo |
 | --- | --- | --- |
 | बेस URL | `https://api.llmgateway.io/v1` | `https://api.phaseo.app/v1` |
-| API कुंजी | `LLM_GATEWAY_API_KEY` | `PHASEO_API_KEY` |
-| मॉडल aliases | मौजूदा Gateway aliases | `GET /v1/models` से सत्यापित करें या एक सीमा पर सामान्यीकृत करें |
-| अनुरोध payload | मौजूदा OpenAI-संगत अनुरोध | पहले माइग्रेशन चरण में अपरिवर्तित रखें |
+| Anthropic-शैली के क्लाइंट | `ANTHROPIC_BASE_URL=https://api.llmgateway.io` | `https://api.phaseo.app`, देखें [Anthropic SDK से माइग्रेट करना](./from-anthropic) |
+| API कुंजी | `LLM_GATEWAY_API_KEY` (`llmgtwy_…`) | `PHASEO_API_KEY` |
+| मॉडल ID | `gpt-4o`, `<provider>/<model>`, `auto` | `GET /v1/models?format=openai` से `<org>/<model>` |
+| अनुरोध पेलोड | OpenAI-संगत | अपरिवर्तित |
 
-## शुरू करने से पहले
-
-- मौजूदा LLM Gateway endpoint और API कुंजी कॉन्फ़िगरेशन।
-- स्थानीय, staging और production वातावरण में `PHASEO_API_KEY`।
-- आउटपुट गुणवत्ता, विलंबता और त्रुटि दर के लिए आधार नमूना।
-
-## 1) इंटीग्रेशन पॉइंट की सूची बनाएं
-
-LLM Gateway क्लाइंट बनाने और कॉन्फ़िगर करने वाली सटीक फ़ाइलें पहचानें।
-
-- `LLM_GATEWAY_*` पर्यावरण चर के उपयोग खोजें।
-- रनटाइम कॉन्फ़िगरेशन में बेस URL के सभी संदर्भ ढूंढें।
-- वर्तमान सक्रिय मॉडल ID और fallback श्रृंखलाएं दर्ज करें।
-- साझा प्रॉम्प्ट डिफ़ॉल्ट, प्रदाता अनुमति/अस्वीकृति नियम और पैरामीटर presets नोट करें जिन्हें Gateway presets में ले जाना चाहिए।
-
-## 2) endpoint और क्रेडेंशियल बदलें
-
-पहले payload न बदलें। जोखिम कम करने के लिए केवल endpoint और कुंजी बदलें।
+## क्लाइंट बदलें
 
 <CodeGroup>
 ```typescript TypeScript
-// Before
 import OpenAI from "openai";
 
-const before = new OpenAI({
-  apiKey: process.env.LLM_GATEWAY_API_KEY,
-  baseURL: "https://api.llmgateway.io/v1",
-});
-```
-
-```typescript TypeScript
-// After
-import OpenAI from "openai";
-
-const after = new OpenAI({
+// पहले:
+// new OpenAI({ apiKey: process.env.LLM_GATEWAY_API_KEY, baseURL: "https://api.llmgateway.io/v1" });
+const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
 });
 ```
 
+```python Python
+import os
+from openai import OpenAI
+
+client = OpenAI(
+    api_key=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app/v1",
+)
+```
+
 ```bash cURL
-curl -s "https://api.phaseo.app/v1/chat/completions" \
+curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
-    "messages": [{"role":"user","content":"Hello"}]
+    "model": "openai/gpt-6-astra",
+    "messages": [{"role": "user", "content": "Hello"}]
   }'
 ```
 </CodeGroup>
 
-## 3) मॉडल संगतता सत्यापित करें
+हर `LLM_GATEWAY_*` वेरिएबल को मैप करें या हटाएं, CI और होस्टिंग सेटिंग में भी। अगर ऐप `@llmgateway/ai-sdk-provider` उपयोग करता है, तो [Vercel AI Gateway से माइग्रेट करना](./from-vercel) की तरह `@phaseo/ai-sdk-provider` पर जाएं।
 
-Phaseo मॉडल कैटलॉग से पूछें और प्रोडक्शन में उपयोग होने वाले हर मॉडल की पुष्टि करें।
+## मॉडल ID मैप करें
 
-अगर मौजूदा सेटअप `gpt-4o` जैसे बिना prefix वाले aliases का उपयोग करता है, तो हर caller बदलने के बजाय एक सीमा पर उन्हें सामान्यीकृत करें।
-
-अगर मौजूदा Gateway लेयर अनुरोध डिफ़ॉल्ट या प्रदाता प्रतिबंध भी केंद्रीकृत करती है, तो माइग्रेशन के दौरान उस व्यवहार को [Presets](../guides/presets.mdx) और [Routing and Fallbacks](../guides/routing-and-fallbacks.mdx) में मैप करें; हर caller के लिए फिर से लागू न करें।
+Phaseo की ID सूचीबद्ध करें और हर प्रोडक्शन मॉडल को उनसे जांचें:
 
 ```bash
-curl -s "https://api.phaseo.app/v1/models" \
-  -H "Authorization: Bearer $PHASEO_API_KEY" | jq '.data | length'
+curl -s "https://api.phaseo.app/v1/models?format=openai" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" | jq -r '.data[].id'
 ```
 
-## 4) LLMGateway माइग्रेशन चेकलिस्ट
+LLM Gateway पर `alibaba/<model>` Phaseo ID नहीं है। हर ID को Phaseo के `<org>/<model>` से मैप करें, और प्रदाता पिन को `provider.only` या `provider:org/model` ID से बनाए रखें। `gpt-4o` जैसे बिना प्रीफ़िक्स वाले उपनामों का अनुवाद हर कॉल साइट पर नहीं, क्लाइंट सीमा पर एक फ़ंक्शन में करें।
 
-- सभी `LLM_GATEWAY_*` चर मैप या हटा दिए गए हैं।
-- बेस URL को `https://api.phaseo.app/v1` पर अपडेट किया गया है।
-- हर डिप्लॉयमेंट वातावरण में `PHASEO_API_KEY` कॉन्फ़िगर है।
-- प्रोडक्शन मॉडल ID को `/v1/models` से सत्यापित किया गया है।
-- staging में streaming और non-streaming अनुरोध सत्यापित किए गए हैं।
-- अमान्य कुंजी और मॉडल की विफलता जांच फिर से की गई है।
-- ज़रूरत पड़ने पर साझा prompt और routing डिफ़ॉल्ट presets में ले जाए गए हैं।
-- `GET /v1/generations?id=<request_id>` से generation lookup दोबारा जांचे गए हैं, ताकि `replay_supported=true` होने पर संग्रहीत `replay_request` payload से विफल अनुरोध दोहराए जा सकें।
+## गेटवे सुविधाएं मैप करें
 
-## 5) जांचें और रोल आउट करें
+| LLM Gateway | Phaseo पर |
+| --- | --- |
+| `auto` राउटर | `phaseo/auto` ([ऑटो रूटिंग](../guides/auto-routing), अल्फ़ा); `models` के साथ नहीं मिलाया जा सकता। |
+| फ़ॉलबैक चेन | `models` ऐरे या डायनामिक रूट, जो `429`, `500`, `502`, `503` और `504` पर आज़माए जाते हैं, अनुरोध त्रुटियों पर कभी नहीं। |
+| `X-No-Fallback` | `provider.allow_fallbacks: false`, या `provider:org/model` ID। |
+| प्रदाता अनुमति और अस्वीकृति तर्क | `provider.only`, `provider.ignore`, या [प्रीसेट](../guides/presets)। कम से कम एक योग्य प्रदाता रखें। |
+| `X-LLMGateway-<Key>` हेडर | `X-Phaseo-Metadata` [लेबल](../guides/request-labels), अधिकतम 32। |
+| सत्र हेडर (`x-session-id`) | `session_id` बॉडी फ़ील्ड; Phaseo सत्र हेडर को अनदेखा करता है। |
+| `X-Source` | `HTTP-Referer` या `X-App-Name`। देखें [ऐप एट्रिब्यूशन](../guides/app-attribution)। |
+| प्रतिक्रिया कैशिंग | कोई प्रतिक्रिया कैश नहीं। |
+| प्रदाता कुंजियां | BYOK (**सेटिंग्स → BYOK** या `POST /v1/byok`), या Phaseo क्रेडिट। क्रेडिट पर फ़ॉलबैक `byok_fallback_enabled` वर्कस्पेस सेटिंग है। |
+| अनुरोध लॉग | अनुरोध लॉग, ऑब्ज़र्वेबिलिटी गंतव्य, और `GET /v1/generations?id=<request_id>`। `replay_supported` के `true` होने पर, विफल अनुरोध को उसके `replay_request` पेलोड से रीप्ले करें। |
 
-1. अपनी golden prompt suite चलाएं और गुणवत्ता, विलंबता तथा लागत की आधार रेखा से तुलना करें।
-2. पुष्टि करें कि staging में विफल अनुरोध `GET /v1/generations` से मिले replay payload द्वारा वापस प्राप्त किए जा सकते हैं।
-3. canary flag के पीछे रिलीज़ करें और स्थिर होने पर ट्रैफ़िक का हिस्सा धीरे-धीरे बढ़ाएं।
-4. पुराना कॉन्फ़िगरेशन हटाने से पहले कम से कम एक रिलीज़ चक्र तक प्रोडक्शन मेट्रिक्स देखें।
+## टेस्ट करें और रोलआउट करें
 
-## सत्यापन कमांड
+अपने गोल्डन प्रॉम्प्ट दोनों गेटवे पर चलाएं और गुणवत्ता, लेटेंसी और लागत की तुलना करें। पहले एंडपॉइंट जांचें:
 
 ```bash
 curl -s "https://api.phaseo.app/v1/health"
-curl -s "https://api.phaseo.app/v1/models" -H "Authorization: Bearer $PHASEO_API_KEY"
+curl -s "https://api.phaseo.app/v1/models?format=openai" -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-इसके बाद:
+ट्रैफ़िक बदलने से पहले:
 
-- staging में एक non-streaming और एक streaming अनुरोध चलाएं।
-- अपनी golden prompts दोहराएं और परिणामों की आधार रेखा से तुलना करें।
+- `PHASEO_API_KEY` हर एनवायरनमेंट में सेट है;
+- हर प्रोडक्शन मॉडल ID मैप की गई है और सूची में है;
+- स्टेजिंग में एक नॉन-स्ट्रीमिंग और एक स्ट्रीमिंग अनुरोध पास होता है;
+- अमान्य-कुंजी और अमान्य-मॉडल त्रुटियां संभाली जाती हैं; उनकी बॉडी LLM Gateway से अलग हो सकती है;
+- स्टेजिंग का कोई विफल अनुरोध `GET /v1/generations` से वापस पाया जा सकता है;
+- साझा प्रॉम्प्ट और रूटिंग डिफ़ॉल्ट वहीं प्रीसेट में हैं जहां उन्हें होना चाहिए।
 
-## अगले चरण
-
-- [OpenRouter से माइग्रेट करें](./from-openrouter.mdx)
-- [Vercel AI Gateway से माइग्रेट करें](./from-vercel.mdx)
-- [त्वरित शुरुआत](../quickstart.mdx)
+कैनरी फ़्लैग के पीछे रिलीज़ करें, स्थिर होने पर ट्रैफ़िक के छोटे हिस्से से पूरे ट्रैफ़िक तक जाएं, और पुराना कॉन्फ़िगरेशन हटाने से पहले कम से कम एक रिलीज़ चक्र तक प्रोडक्शन मेट्रिक्स पर नज़र रखें।

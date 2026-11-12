@@ -3,7 +3,7 @@
 // Why: Small helpers for model extraction and candidate construction.
 // How: Provides focused utilities used during request preflight.
 
-import { z } from "zod";
+import * as z from "zod";
 import { adapterFor } from "@providers/index";
 import type { Endpoint } from "@core/types";
 import { routeOutputTokenLimit } from "@core/route-token-limits";

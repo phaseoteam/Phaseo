@@ -4,31 +4,43 @@ description: "Enregistrez des configurations Gateway réutilisables pour votre �
 icon: "sliders-horizontal"
 ---
 
-Les préréglages sont des configurations réutilisables qui aident les équipes à uniformiser les prompts, les préférences de modèle et les valeurs de routage par défaut. Ils se gèrent dans le tableau de bord Phaseo et peuvent être partagés avec toute l’équipe. Vous pouvez aussi les gérer avec les commandes `phaseo presets` de la CLI ou l’API `/v1/presets`.
+import { PresetMergeExplorer } from "/snippets/preset-merge.jsx";
 
-## Démarrage rapide
+Un préréglage enregistre le modèle, le prompt système, les paramètres et les règles de fournisseur d’une tâche sous un nom tel que `@support-triage`. Les appelants envoient ce nom comme `model`, avec seulement l’entrée ; le Gateway complète le reste avant de choisir un fournisseur.
+
+Activez ou désactivez les champs de la requête pour voir quelle valeur l’emporte :
+
+<PresetMergeExplorer locale="fr" />
+
+Les règles sont les suivantes :
+
+- **Les paramètres comblent les manques.** Les paramètres par défaut d’un préréglage ne s’appliquent qu’aux champs absents de la requête. Une valeur présente dans la requête l’emporte toujours.
+- **Les prompts système s’empilent.** Le prompt du préréglage vient en premier. Si la requête a son propre prompt système ou ses propres `instructions`, ils suivent après une ligne vide.
+- **Les réglages de fournisseur de la requête l’emportent.** Des champs tels que `provider.order` ou `provider.max_price` dans la requête remplacent la valeur du préréglage pour ce champ.
+- **Les listes d’autorisation restreignent, sans jamais élargir.** Les listes de fournisseurs autorisés et ignorés du préréglage sont appliquées avant la sélection du fournisseur ; elles limitent donc aussi les fournisseurs utilisables en secours. Un modèle hors des modèles autorisés du préréglage échoue avec une `validation_error` dont le mot-clé de détail est `preset_model_not_allowed` ; il n’est pas réacheminé.
+
+## Créer et utiliser un préréglage
 
 <Steps>
-<Step title="Créer un préréglage">
+<Step title="Créer le préréglage">
 
-Ouvrez **Tableau de bord -> Paramètres -> Préréglages** et créez un préréglage avec un slug explicite, par exemple `release-summary`. Ajoutez uniquement les valeurs par défaut à partager entre les appelants. Depuis la CLI, lancez `phaseo presets create --name @release-summary --model <model-id>`.
+Ouvrez **Tableau de bord -> Paramètres -> Préréglages** et créez un préréglage avec un slug tel que `support-triage`. N’ajoutez que les valeurs par défaut que tous les appelants doivent partager.
+
+Pour le créer depuis un script, appelez `POST /v1/presets` avec une clé de gestion.
 
 </Step>
 
-<Step title="Référencer le préréglage dans une requête">
-
-Laissez l’appelant se concentrer sur les données utilisateur ; le préréglage fournit des valeurs stables pour le prompt, les paramètres et le routage.
+<Step title="L’appeler par son nom">
 
 <CodeGroup>
-
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
-	  -d '{
-	    "model": "@release-summary",
-	    "input": "Generate a release summary for the last 24 hours."
-	  }'
+  -d '{
+    "model": "@support-triage",
+    "input": "Customer says the invoice total is wrong."
+  }'
 ```
 
 ```typescript TypeScript
@@ -37,8 +49,8 @@ import Phaseo from "@phaseo/sdk";
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-	  model: "@release-summary",
-	  input: "Generate a release summary for the last 24 hours.",
+  model: "@support-triage",
+  input: "Customer says the invoice total is wrong.",
 });
 ```
 
@@ -48,98 +60,68 @@ from phaseo import Phaseo
 client = Phaseo(api_key="YOUR_API_KEY")
 
 response = client.generate_response({
-	    "model": "@release-summary",
-	    "input": "Generate a release summary for the last 24 hours.",
+    "model": "@support-triage",
+    "input": "Customer says the invoice total is wrong.",
 })
 ```
-
 </CodeGroup>
 
 </Step>
 
-<Step title="Vérifier le résultat du routage">
+<Step title="Vérifier ce qui a été appliqué">
 
-Ouvrez la requête dans **Gateway -> Utilisation** pour confirmer les valeurs par défaut appliquées et le fournisseur qui l’a traitée.
+Ouvrez la requête dans **Gateway -> Utilisation** pour voir quelles valeurs par défaut du préréglage ont été appliquées et quel fournisseur l’a servie.
 
 </Step>
 </Steps>
 
-## Contenu d’un préréglage
+## Ce qu’un préréglage peut contenir
 
-- Un prompt système ajouté au début de chaque requête.
-- Un [modèle de prompt](./prompt-templates.mdx) : des messages contenant des `{{variables}}` que chaque requête complète.
-- Des modèles ou familles de modèles autorisés.
-- Des listes de fournisseurs autorisés ou ignorés pour les préférences de routage.
-- Des paramètres par défaut (temperature, top_p, max_tokens et paramètres similaires).
-- Des valeurs de raisonnement par défaut facultatives pour les modèles pris en charge.
+| Réglage | Effet |
+| --- | --- |
+| Modèle | Utilisé lorsque la requête est envoyée avec le nom du préréglage. |
+| Modèles autorisés | Identifiants de modèles ou motifs tels que `anthropic/*`. Les autres modèles sont refusés. |
+| Prompt système | Ajouté au début de chaque requête. |
+| [Modèle de prompt](./prompt-templates) | Messages avec des `{{variables}}` que chaque requête renseigne. |
+| Paramètres par défaut | `temperature`, `top_p`, `max_tokens`, réglages de raisonnement et similaires. |
+| Règles de fournisseur | Listes d’autorisation et d’exclusion, ordre des fournisseurs, régions, plafonds de prix. |
 
-Les noms de préréglage commencent par `@` pour être faciles à reconnaître.
+Gardez la logique propre à chaque appelant dans votre application, et utilisez des préréglages distincts lorsque des workflows ont besoin de prompts, de routage ou de mise en cache différents.
 
-Appelez un préréglage via le champ `model` de la requête, ou via `prompt.id` lorsque le préréglage contient un [modèle de prompt](./prompt-templates.mdx). Phaseo ne propose pas de champ de requête `preset` distinct.
+## Nommer un préréglage
 
-- Les préréglages privés ou d’espace de travail utilisent `@{slug}` et se résolvent dans l’espace de travail de la clé d’API.
-- Les préréglages publics utilisent `@{username}/{slug}` et sont accessibles depuis n’importe quel espace de travail. Exemple : `@octavia/release-summary`.
+Envoyez un préréglage via le champ `model`, ou via `prompt.id` lorsqu’il a un [modèle de prompt](./prompt-templates). Il n’existe pas de champ `preset` distinct.
 
-La publication publique nécessite un profil public activé et un nom d’utilisateur. Les conflits de slugs publics sont limités à un éditeur : deux éditeurs peuvent donc utiliser le même slug sans ambiguïté. Les noms d’utilisateur sont uniques à l’échelle de la plateforme. Les slugs sont convertis en minuscules et acceptent les lettres, les chiffres, les tirets, les traits de soulignement, les points et les deux-points.
+| Forme | Résolu dans |
+| --- | --- |
+| `@support-triage` | L’espace de travail de la clé API (préréglages privés et d’espace de travail). |
+| `@octavia/support-triage` | N’importe quel espace de travail (préréglages publics, publiés par l’utilisateur `octavia`). |
+| `@support-triage@v3` | Cette version publiée. |
+| `@support-triage@production` | La version vers laquelle pointe le libellé `production`. |
 
-## Versions et forks du marketplace
+Publier un préréglage public nécessite un profil public activé et un nom d’utilisateur. Les noms d’utilisateur sont uniques dans tout Phaseo ; les slugs n’ont besoin d’être uniques que pour un même éditeur. Les slugs sont mis en minuscules et peuvent contenir des lettres, des chiffres, `-`, `_`, `.` et `:`.
 
-L’enregistrement de modifications met à jour un brouillon privé. Lorsque les modifications sont prêtes, utilisez **Publier une nouvelle version** : Phaseo crée une version numérotée immuable et conserve toutes les versions précédentes pour consultation.
+<span id="version-and-roll-back"></span>
+## Versionner et revenir en arrière
 
-Les propriétaires de préréglages peuvent choisir le format d’affichage des versions :
+Enregistrer modifie un brouillon privé. **Publier une nouvelle version** transforme le brouillon en une version numérotée immuable et conserve toutes les précédentes.
 
-- **Séquentiel :** `v1`, `v2`, `v3`.
-- **Versionnage sémantique :** libellés SemVer explicites, par exemple `1.2.0`, `2.0.0-beta.1` ou `1.4.2+build.7`.
-- **Par date :** `YYYY.MM.DD`, avec un suffixe numérique lorsque plusieurs versions sont publiées le même jour, par exemple `2026.08.02.2`.
+Choisissez l’apparence des libellés de version :
 
-En interne, Phaseo conserve un numéro de version monotone distinct. L’ordre chronologique, les comparaisons avec la source et la filiation restent ainsi déterministes, quel que soit le format de libellé public choisi.
+| Format | Exemple |
+| --- | --- |
+| Séquentiel | `v1`, `v2`, `v3` |
+| Semantic Versioning | `1.2.0`, `2.0.0-beta.1`, `1.4.2+build.7` |
+| Date | `2026.08.02`, puis `2026.08.02.2` pour une deuxième version le même jour |
 
-Les copies du marketplace restent épinglées à la version exacte de la source copiée. Lorsque l’éditeur publie une mise à jour, la copie affiche une notification. Son application met à jour uniquement le brouillon de la copie ; le propriétaire de l’espace de travail peut l’examiner puis la publier explicitement sans qu’un auteur en amont modifie le comportement en production.
+Faites pointer un libellé nommé tel que `production` vers une version, et ramenez-le vers une version antérieure pour revenir en arrière. Consultez [Versions et libellés](/fr/v1/guides/prompt-templates#versions-and-labels).
 
-Phaseo conserve à la fois la source immédiate et l’arborescence complète de chaque fork. Les pages du marketplace peuvent ainsi différencier les forks directs de tous leurs descendants, même lorsqu’un préréglage a été copié et republié plusieurs fois.
+Depuis un script, publiez avec `POST /v1/presets/{id}/versions` et déplacez les étiquettes avec `PUT /v1/presets/{id}/labels/{label}`, avec une clé de gestion. Une connexion via la CLI ou une app qui utilise Se connecter avec Phaseo peut lire les préréglages, mais pas les modifier.
 
-Les requêtes peuvent épingler une version publiée par son libellé, comme `@support-triage@v3`, ou par un libellé nommé comme `production` que vous faites pointer vers une version. Ramener un libellé sur une version antérieure est un retour arrière. Voir [Modèles de prompt](./prompt-templates.mdx).
+## Dupliquer un préréglage de la marketplace
 
-## Fusion des préréglages
+Une copie d’un préréglage de la marketplace reste épinglée à la version que vous avez copiée. Lorsque l’éditeur publie une mise à jour, votre copie affiche un avis. L’appliquer ne modifie que votre brouillon : rien n’atteint la production tant que vous ne le publiez pas vous-même.
 
-Lorsqu’une requête est associée à un préréglage dans le contexte Gateway, le préréglage est appliqué avant le routage vers un fournisseur :
+Phaseo enregistre la source et l’ascendance complète de chaque copie, afin qu’une page de la marketplace puisse afficher les copies directes séparément de tous les descendants.
 
-- Les paramètres par défaut remplissent uniquement les champs absents du corps de la requête. Ils ne remplacent pas les valeurs déjà fournies par l’appelant.
-- Si la requête contient déjà un message système, le prompt du préréglage est ajouté avant celui-ci. Avec un champ `system` au format Anthropic, le prompt est ajouté à ce champ.
-- Les listes de fournisseurs autorisés et ignorés sont appliquées avant la sélection. Elles réduisent donc le pool de repli au lieu de servir d’étiquette décorative.
-- Les requêtes utilisant un modèle hors de la liste d’autorisation du préréglage sont rejetées rapidement plutôt que redirigées silencieusement.
-
-Les préréglages constituent ainsi la principale interface publique pour réutiliser des valeurs de requête et appliquer des transformations de compatibilité légères, sans obliger chaque appelant à dupliquer les mêmes règles de prompt ou de paramètres.
-
-## Fonctionnalités publiques actuelles
-
-Le parcours des préréglages dans le tableau de bord est volontairement limité à un sous-ensemble stable et explicite de modifications des requêtes :
-
-- injection du prompt système
-- modèles de prompt avec variables typées
-- listes d’autorisation de modèles
-- contraintes de routage avec listes de fournisseurs autorisés ou ignorés
-- valeurs par défaut de décodage et de génération
-- valeurs par défaut de raisonnement
-
-Pour des transformations plus complexes propres à l’appelant, centralisez-les dans une couche de l’application et utilisez les préréglages pour partager les valeurs par défaut à l’échelle de l’équipe.
-
-## Gérer les préréglages
-
-Créez et gérez les préréglages dans **Tableau de bord -> Paramètres -> Préréglages**. Utilisez des slugs distincts lorsque les workflows nécessitent des prompts, un routage ou un comportement de cache sensiblement différents. Depuis la CLI, utilisez `phaseo presets create|update`, `phaseo presets versions create` et `phaseo presets labels set` (l’API `/v1/presets`).
-
-## Quand utiliser des préréglages
-
-- Uniformiser les prompts système entre plusieurs services.
-- Limiter le routage à des fournisseurs approuvés pour répondre aux exigences de conformité.
-- Garder les paramètres par défaut cohérents entre les environnements.
-- Fournir aux projets de migration un emplacement pérenne pour les valeurs par défaut des prompts, du routage et des paramètres, tout en limitant les changements du code applicatif.
-
-## Guides associés
-
-- [Modèles de prompt](./prompt-templates.mdx)
-- [Recueillir des commentaires sur les préréglages](./preset-feedback.mdx)
-- [Routage et solutions de repli](./routing-and-fallbacks.mdx)
-- [Paramètres d’inférence](./inference-parameters.mdx)
-- [Matrice de parité des fonctionnalités](../migration-guides/feature-parity-matrix.mdx)
-
+Pour recueillir des évaluations sur les réponses d’un préréglage, consultez [Recueillir des commentaires sur les préréglages](./preset-feedback).

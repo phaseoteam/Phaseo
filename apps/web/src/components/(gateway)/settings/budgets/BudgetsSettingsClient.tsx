@@ -1,8 +1,6 @@
-"use client";
-
 import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import { Link } from "@/i18n/navigation";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +34,7 @@ import {
 	deleteWorkspaceBudget,
 	updateWorkspaceBudget,
 	type BudgetActionResult,
-} from "@/app/(dashboard)/settings/budgets/actions";
+} from "@/features/settings/budgets/actions";
 import { useInvalidatePrivateSettings, useSettingsWrite } from "../PrivateSettingsQuery";
 import { useLimitClock } from "../keys/useLimitClock";
 import { BUDGET_WINDOWS, budgetPercentFraction, budgetProjection, budgetSlots, budgetTone } from "./budgetForecast";
@@ -276,8 +274,8 @@ function BudgetForm({ editing, onDone }: { editing: Editing; onDone: () => void 
 		setSaving(true);
 		setError(null);
 		const result = await write(editing.budget
-			? updateWorkspaceBudget(editing.budget.id, limit)
-			: createWorkspaceBudget(editing.interval, limit));
+			? updateWorkspaceBudget({ data: { id: editing.budget.id, limitUsd: limit } })
+			: createWorkspaceBudget({ data: { interval: editing.interval, limitUsd: limit } }));
 		setSaving(false);
 		const key = errorKey(result);
 		if (key) {
@@ -327,7 +325,7 @@ function DeleteBudgetDialog({ budget, onClose }: { budget: SettingsWorkspaceBudg
 	async function confirm() {
 		if (!budget) return;
 		setDeleting(true);
-		const result = await write(deleteWorkspaceBudget(budget.id));
+		const result = await write(deleteWorkspaceBudget({ data: budget.id }));
 		setDeleting(false);
 		const key = errorKey(result);
 		if (key) {

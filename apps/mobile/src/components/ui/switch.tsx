@@ -54,11 +54,11 @@ export function Switch({ value, onValueChange, disabled, size = "default", acces
   const [focused, setFocused] = useState(false);
 
   useEffect(() => {
-    progress.value = withTiming(value ? 1 : 0, { duration: 150, reduceMotion: ReduceMotion.System });
+    progress.set(withTiming(value ? 1 : 0, { duration: 150, reduceMotion: ReduceMotion.System }));
   }, [progress, value]);
 
-  const fill = useAnimatedStyle(() => ({ opacity: progress.value }));
-  const thumb = useAnimatedStyle(() => ({ transform: [{ translateX: progress.value * geometry.travel }] }));
+  const fill = useAnimatedStyle(() => ({ opacity: progress.get() }));
+  const thumb = useAnimatedStyle(() => ({ transform: [{ translateX: progress.get() * geometry.travel }] }));
 
   return (
     <Pressable

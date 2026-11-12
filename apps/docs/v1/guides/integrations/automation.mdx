@@ -5,11 +5,9 @@ description: "Use Phaseo from Zapier, n8n, Pipedream, and other automation platf
 "og:image": "https://phaseo.app/og/dynamic?title=Workflow%20Automation&description=Use%20Phaseo%20from%20Zapier%2C%20n8n%2C%20Pipedream%2C%20and%20other%20automation%20platforms.&pathname=/docs/v1/guides/integrations/automation"
 ---
 
-Phaseo works today in automation products that can send authenticated HTTP requests. Native marketplace apps can provide a more guided experience later.
+Call Phaseo from any automation platform that can send an authenticated HTTP request: add an HTTP step that posts to `https://api.phaseo.app/v1/responses` with your key as a bearer token. Phaseo has no native Zapier, n8n, or Pipedream app.
 
-## Shared request
-
-Use these settings in an HTTP, webhook, or code action:
+## Build the request
 
 | Setting | Value |
 | --- | --- |
@@ -20,45 +18,37 @@ Use these settings in an HTTP, webhook, or code action:
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "input": "Summarise the supplied workflow data in one paragraph."
 }
 ```
 
-Store the Phaseo API key in the platform's credential or secret store. Do not place it directly in a shared workflow definition.
+Store the key in the platform's credential or secret store, not in a shared workflow definition. See [Responses](../../api-reference/endpoint/responses.mdx) for every request field.
 
 ## Zapier
 
 Use **Webhooks by Zapier → Custom Request**:
 
-1. Select `POST`.
-2. Enter `https://api.phaseo.app/v1/responses`.
-3. Add the bearer and content-type headers.
-4. Map fields from earlier Zap steps into `input`.
-5. Test the Zap with non-sensitive data.
-
-A native Phaseo Zapier app would add model selection, structured-output actions, and Phaseo-specific authentication, but it requires publication through Zapier's developer platform.
+1. Select `POST` and enter `https://api.phaseo.app/v1/responses`.
+2. Add the bearer and content-type headers.
+3. Map fields from earlier Zap steps into `input`.
+4. Test the Zap with non-sensitive data.
 
 ## n8n
 
-Use the **HTTP Request** node with bearer authentication and a JSON body. For structured workflow data, map the upstream item into the `input` field with an n8n expression.
-
-A first-party n8n community node can later expose operations such as Generate Response, List Models, Get Model Pricing, and Create Embedding without manual HTTP setup.
+Use the **HTTP Request** node with bearer authentication and a JSON body. Map the incoming item into `input` with an n8n expression.
 
 ## Pipedream
 
 Use an HTTP request step or a Node.js code step. Store `PHASEO_API_KEY` as a Pipedream secret and read it from the step environment.
 
-## Production guidance
+## Check it works
 
-- Set a spending limit on the Gateway API key used by each automation.
-- Give each automation its own key so usage and revocation remain isolated.
-- Use structured outputs when downstream steps expect machine-readable fields.
-- Add retry handling for `429` and recoverable `5xx` responses.
-- Avoid retrying non-idempotent external actions merely because a model step was retried.
+Run the step once. A `200` response with an `output` array means the key and URL work, and the request appears in **Settings → Usage → Logs**.
 
-## Related
+## Run automations safely
 
-- [Responses](../../api-reference/endpoint/responses.mdx)
-- [Structured Outputs](../structured-outputs.mdx)
-- [Error Handling](../../api-reference/errors.mdx)
+- Give each automation its own key with a spending limit, so you can track and revoke it on its own.
+- Use [structured outputs](../structured-outputs.mdx) when later steps expect machine-readable fields.
+- Retry on `429` and recoverable `5xx` responses; see [Errors](../../api-reference/errors.mdx).
+- Don't repeat external actions that aren't idempotent just because a model step was retried.

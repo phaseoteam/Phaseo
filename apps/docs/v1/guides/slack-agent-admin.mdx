@@ -1,0 +1,128 @@
+---
+title: "Slack Agent Admin and Billing"
+sidebarTitle: "Admin and billing"
+description: "Set the Slack agent's limits and spending cap, see what it costs each month, and check how it handles Slack data."
+"og:image": "https://phaseo.app/og/dynamic?title=Slack%20Agent%20Admin%20and%20Billing&description=Set%20the%20Slack%20agent%27s%20limits%20and%20spending%20cap%2C%20see%20what%20it%20costs%20each%20month%2C%20and%20check%20how%20it%20handles%20Slack%20data.&pathname=/docs/v1/guides/slack-agent-admin"
+icon: "user-cog"
+---
+
+import { SlackAgentPricing } from "/snippets/slack-agent-pricing.jsx";
+
+Owners and admins set the Slack agent's limits and spending cap in **Settings → Slack**, and pay a monthly price for the people who used it, plus model tokens at each model's price. To add the agent first, see [Set up the Slack agent](/v1/guides/slack-agent). Settings for single features, such as Slack search, memory, recurring tasks and shared pages, are with those features in [Use the Slack agent](/v1/guides/slack-agent-usage).
+
+## Limits
+
+Owners and admins set these in **Settings → Slack**:
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Plan** | How many people a month the agent serves: up to 3, 10, 25, 50 or 100, or a number you choose above 100. | Up to 3 people |
+| **When a new person would go over the plan** | **Refuse** tells the new person the plan is full. **Move up a plan automatically** lets the plan grow with the people who use the agent, up to **Most people a month**. | **Refuse** |
+| **Most people a month** | A hard limit on people in a month, whatever the plan. It can't be lower than the plan. | No limit |
+| **Monthly spending cap** | The most the agent's monthly charge can reach. When the next answer would go over it, the agent stops answering until next month. It must at least cover the plan's price. | Set when you install |
+| **Answers per person per hour** | Stops one person using up the month. | 60 |
+| **Model spend limit a month** | Caps what the agent's API key spends on model tokens each month. | No limit |
+
+**Allow guests** and **Allow people from other companies** are under **Limits** too; see [Who can use it](/v1/guides/slack-agent#who-can-use-it).
+
+The **Agent** section sets the model and **Instructions**: extra guidance the agent follows in every answer, such as tone or what to focus on, up to 8,000 characters.
+
+### Limits on each answer
+
+Each answer stops after 12 steps or $0.50 of model spend, whichever comes first. A step is one model call and the tools it runs, such as a web search. Other models the agent asks, the models in a comparison, and images the agent makes all count toward the same $0.50. When a limit stops an answer, the agent says so, and you can ask it to continue. These limits are the same for every workspace.
+
+## What it costs
+
+You pay for the number of people who got at least one answer in the month (UTC). A person counts once a month, however many answers they get, and a month nobody uses the agent costs nothing.
+
+| People who used the agent in the month | Price per month |
+| --- | --- |
+| 1 to 3 | $0.99 |
+| 4 to 10 | $2.99 |
+| 11 to 25 | $4.99 |
+| 26 to 50 | $7.99 |
+| 51 to 100 | $14.99 |
+| 101 to 1,000 | Rises evenly from $15 to $59, in whole dollars. For example, 200 people is $20 and 500 people is $35. |
+| More than 1,000 | $59, or $0.045 per person in whole dollars once that is more (from about 1,300 people). For example, 2,000 people is $90. |
+
+Each person includes 300 answers a month, shared across the workspace. Answers beyond that cost $0.25 per 1,000.
+
+For example, if 8 people get 3,000 answers in a month, the price is $2.99 for up to 10 people. They have 2,400 answers included, so the other 600 answers cost $0.15, and the month's charge is $3.14. Change the numbers to work out your own month:
+
+<SlackAgentPricing />
+
+Model tokens aren't part of this price. They're billed through the agent's API key as normal gateway requests, at each model's price, as the agent answers. Limit them with **Model spend limit a month**.
+
+### How you're charged
+
+- The month's charge is taken from your credits in the first hours after the month ends, and never goes above the **Monthly spending cap**.
+- **This month** in **Settings → Slack** shows the people, answers and estimated charge so far. Each charge appears under **Past charges** and in your billing transactions as **Slack agent**.
+- If your credits can't cover the charge, it waits for credits, and the agent's status becomes **Payment due**. It stops answering until the charge is paid. Phaseo retries every hour, so answers resume within about an hour of adding credits. The amount is set at the first attempt.
+
+## Emails to owners and admins
+
+When the agent turns people away for a reason only an owner or admin can fix, Phaseo emails every owner and admin of the workspace:
+
+| Reason | Email subject | What to do |
+| --- | --- | --- |
+| The plan is full | Slack agent: someone new was turned away | Choose a bigger plan, or **Move up a plan automatically**. |
+| **Most people a month** is reached | Slack agent: people limit reached | Raise or remove **Most people a month**. |
+| The **Monthly spending cap** is reached | Slack agent: monthly spending cap reached | Raise the cap, or wait for next month. |
+| A charge is unpaid | Slack agent: paused until the charge is paid | Add credits. |
+
+Each email is sent at most once a month for each reason. It names no Slack user and quotes no messages.
+
+Refusals of guests, people from other companies and the hourly limit aren't emailed. The workspace activity log records the first refusal each month for a full plan, **Most people a month** and the **Monthly spending cap**, and the first for each person for guests, people from other companies and the hourly limit. The agent's reply in Slack never says an admin has been told.
+
+## Data and privacy
+
+Slack's API terms don't allow training on Slack data or archiving it, so the agent is set up this way:
+
+- **No message content in Phaseo's logs.** The agent's API key never stores request or response content, in logs, caches or telemetry, whatever your workspace settings. Its requests still appear in your usage and logs without content, with the [request labels](/v1/guides/request-labels) `app=slack-agent`, `slack_team` and `slack_channel` and the [app title](/v1/guides/app-attribution) `Phaseo Slack agent`.
+- **No providers that train on prompts.** The **Slack agent** [guardrail](/v1/cookbook/guardrails-for-api-keys) turns off training on paid and free models and prompt publishing, so providers that train on prompts are never used. Providers that keep logs without training on them can answer, and may keep message content in those logs under their own policies; Phaseo's own logs, caches and telemetry still keep no message content.
+- **Short working memory.** For each thread, the agent keeps its recent replies, short notes about the tools it used, messages waiting their turn, the IDs (not the text) of the thread's recent messages so it knows where to read from, who it has sent the Connect button, and the questions it asked with their answers. They're deleted 7 days after the thread's last activity.
+- **Memory you can see and delete.** The agent keeps the notes, pins, to-dos and skills people ask it to save, in its own words and never as copies of messages, with the Slack ID of the person who asked. They stay until someone deletes them, the date they were kept until passes, or you uninstall the agent. Owners and admins can see and delete them in **Settings → Slack**, and turn notes off there (see [Memory and skills](/v1/guides/slack-agent-usage#memory-and-skills)). People from other companies never see workspace-wide notes.
+- **Shared files are read, not kept.** The agent downloads the images and PDFs it reads for an answer and sends them to the model with that answer's requests, under the same rules. It never stores them; only their Slack file IDs and names are kept with the message until the answer ends.
+- **Slack search results aren't kept.** What the agent finds when it [searches Slack](/v1/guides/slack-agent-usage#searching-slack) goes to the model with that answer's requests and nowhere else: not in its working memory, its logs or Phaseo's database, not even while it waits for your answer to a question. From an answer's first search on, its requests go only to providers with zero data retention, so the results don't sit in a provider's logs either. For an answer that searched, its working memory keeps only which tools it used and a note that it answered, not what it searched for, what it found or what it wrote. Slack's permission to search for you is kept with your message until the answer ends.
+- **Recurring tasks.** For each task, the agent keeps its title and instruction, where it posts, its schedule and time zone, the Slack ID of the person who set it up and how its last run went. They stay until someone cancels or deletes the task, or you uninstall the agent. Owners and admins can see, pause and delete them in **Settings → Slack**.
+- **Shared pages until they expire.** A page the agent publishes can include what was said in Slack or what it found, but never Slack search results. Pages are static, so a page can't run scripts or send anything anywhere. Phaseo keeps the page, its title, the Slack ID of the person who asked for it and how often it was opened until it expires (after 7, 30 or 90 days, as your admins chose), an owner or admin deletes it, or you uninstall the agent. Anyone with its link can open it, or only signed-in members of your Slack workspace, as set for the page. Pages never appear in Phaseo's logs.
+- **Nothing archived.** Phaseo doesn't archive anything from Slack. The agent's own logs keep Slack IDs and statuses only.
+- **Encrypted secrets.** Bot tokens and your Slack app's secrets are stored encrypted and never shown again.
+
+Uninstalling deletes the agent's API key, notes, saved skills, recurring tasks and shared pages, and removes its guardrail (see [Pause or uninstall](#pause-or-uninstall)).
+
+## Pause or uninstall
+
+- **Pause answers** in **Settings → Slack** stops every answer until you select **Resume answers**. People who message the agent get a private note that it's paused. Recurring tasks skip the runs that come due while it's paused, then carry on at their next time after you resume answers.
+- **Uninstall** stops the agent straight away, deletes its API key, notes, saved skills and recurring tasks, removes its guardrail and removes the app from Slack. If Slack doesn't confirm the removal, Phaseo tells you, and you should remove the app in Slack too. The guardrail stays if you've added it to other keys or members.
+- Uninstalling also deletes the agent's shared pages, so their links stop working.
+- Removing the app inside Slack, or revoking its bot token, uninstalls it in Phaseo in the same way.
+
+Past charges stay in your billing history. The people who used the agent in the month you uninstall are still charged when that month ends. You can add the agent again at any time.
+
+## When the agent can't answer
+
+When the agent can't answer someone, it replies privately in Slack:
+
+| Reply in Slack | Why | Fix |
+| --- | --- | --- |
+| "The Phaseo agent is paused until this workspace's Phaseo bill is paid." | A past month's charge is waiting for credits (**Payment due**). | Add credits. Answers resume within about an hour. |
+| "The Phaseo agent is paused in this Slack workspace." | An admin selected **Pause answers**. | Select **Resume answers**. |
+| "…has answered as many people this month as this workspace's plan covers…" | The plan is full and new people are refused. | Choose a bigger plan, or **Move up a plan automatically**. |
+| "This workspace has reached its Slack agent limit for the month." | **Most people a month** is reached. | Raise or remove the limit. |
+| "…has reached this workspace's monthly spending cap…" | The next answer would go over the **Monthly spending cap**. | Raise the cap, or wait for next month. |
+| "You've reached the limit of … answers an hour." | **Answers per person per hour** is reached. | Wait, or raise the limit. |
+| "The Phaseo agent isn't available to guests in this workspace." | **Allow guests** is off. | Turn it on, if guests should use the agent. |
+| "The Phaseo agent only answers people in this organization." | **Allow people from other companies** is off. | Turn it on, if they should use the agent. |
+| "Connect your Phaseo account to use the Phaseo agent here." | Access is **Linked accounts only**. | [Link the Slack account](/v1/guides/slack-agent#link-a-slack-account). |
+| "I'm still working through earlier messages in this thread." | 5 messages are already waiting in this thread. | Wait for those answers. |
+| "Sorry, I couldn't check your Slack account just now." | Slack didn't answer a lookup. | Try again in a minute. |
+| "The model chosen for this agent isn't available to the Slack agent." | The gateway can't use the agent's model with its key: **Auto** without Auto Routing, or no provider of the model meets the **Slack agent** guardrail. | Choose another model in **Settings → Slack**. |
+| "…isn't one of the models you can choose here, so I didn't answer." | The message started with `with …:` and named a model that isn't under **Model choice**, or one that fits more than one allowed model. | Use a model from the reply's list, or leave out `with …:`. |
+| "The model you chose for this message isn't available to the Slack agent." | The gateway can't use the chosen model with the agent's key, as above. | Ask without `with …:`, or replace the model under **Model choice**. |
+| "The model this agent uses can't read the files shared here." | No provider of the agent's model reads the images or PDFs shared. | Ask without the files, or choose a model that reads images in **Settings → Slack**. |
+| "I stopped here: after a Slack search, I can only use AI providers that keep no data…" | The answer searched Slack, and no provider of the model with zero data retention could answer. | Choose a model that keeps no data in **Settings → Slack**. If the message started with `with <model>:`, choose a model that keeps no data there, or leave it out to use the agent's model. |
+| "…so I didn't compare them." or "Name 2 or 3 different models to compare…" | The message started with `compare …:`, and a model isn't under **Model choice**, a name fits more than one allowed model, or it named fewer than 2 or more than 3 different models. | Use 2 or 3 models from the reply's list. |
+| "Comparing models isn't turned on here, so I didn't answer." | The message started with `compare …:` and named catalogue models, but model choice is off. | Ask an owner or admin to turn on **Let people choose a model per message** under **Model choice**, or leave out `compare …:`. |
+
+If the agent doesn't reply at all, or the install doesn't finish, see [Fix setup problems](/v1/guides/slack-agent#fix-setup-problems).

@@ -1,5 +1,5 @@
 import type { ComponentProps } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Check, Plus, type LucideIcon } from "lucide-react";
 import { AIGeneratedNotice } from "@/components/(chat)/AIGeneratedNotice";
 import { Button } from "@/components/ui/button";

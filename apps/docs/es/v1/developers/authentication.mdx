@@ -4,35 +4,13 @@ description: "Usa claves de API para autenticar cada solicitud a Phaseo Gateway.
 icon: "key-round"
 ---
 
-Crea una clave con `phaseo keys create --name <name> --json` en la [CLI de Phaseo](../guides/integrations/phaseo-cli) o en el [panel](https://phaseo.app/settings/keys), guárdala en tu servidor y envíala como token de portador en las solicitudes al Gateway. Los agentes deben usar la CLI; consulta [Gestionar Phaseo desde un agente](./manage-from-an-agent).
-
----
-
-## Tipos de claves
-
-- **Claves de API de Gateway**: permiten llamar a los endpoints de modelos, proveedores y generaciones disponibles en tu espacio de trabajo.
-- **Claves de API de administración**: permiten llamar a las API de administración. Consulta [Claves de API de administración](./management-api-keys.mdx).
-- **Cargas de trabajo de confianza** (beta): permiten que los despliegues de Vercel y los trabajos de GitHub Actions llamen al Gateway con un token OIDC de corta duración en lugar de una clave guardada. Consulta [Cargas de trabajo de confianza](./trusted-workloads.mdx).
-
-Rota una clave actualizando tu aplicación para usar la nueva antes de invalidar la credencial anterior. Consulta el [endpoint de rotación de claves](../api-reference/endpoint/keys-rotate.mdx).
-
-Las claves tienen el formato `phaseo_v1_sk_<kid>_<secret>`. Trátalas como contraseñas y no las guardes en código del lado del cliente ni en repositorios públicos.
-
-<Note>
-Puedes llamar a modelos `:free` sin ingresar créditos. Los modelos de pago requieren saldo disponible en la cartera.
-</Note>
-
----
-
-## Formato del encabezado
-
-Incluye la clave en el encabezado `Authorization` de cada solicitud:
+Crea una clave en el [panel](https://phaseo.app/settings/keys) o con `POST /v1/keys` y una clave de administración, guárdala en tu servidor y envíala como token bearer en cada solicitud al Gateway. Los agentes deben usar la CLI; consulta [Gestiona Phaseo desde un agente](./manage-from-an-agent).
 
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 ```
 
-La mayoría de los clientes HTTP permiten configurar esto una sola vez. Por ejemplo, con `fetch`:
+Define la cabecera una sola vez en tu cliente. Por ejemplo, con `fetch`:
 
 ```ts
 const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
@@ -42,34 +20,45 @@ const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
 		"Content-Type": "application/json",
 	},
 	body: JSON.stringify({
-		model: "openai/gpt-5-nano",
+		model: "openai/gpt-6-astra",
 		messages: [
 			{ role: "system", content: "You are a helpful assistant." },
-			{
-				role: "user",
-				content: "Summarize the drawbacks to AI.",
-			},
+			{ role: "user", content: "Summarize the drawbacks to AI." },
 		],
 	}),
 });
 ```
 
----
+<Note>
+Puedes llamar a los modelos `:free` sin depositar créditos. Los modelos de pago necesitan saldo disponible en el monedero.
+</Note>
 
-## Lista de comprobación para gestionar claves
+## Elige una credencial
 
-| Práctica            | Por qué importa                                                           |
-| ------------------- | ------------------------------------------------------------------------ |
-| Usa una clave por aplicación | Así podrás rotarla sin afectar a otros servicios.                |
-| Guarda las claves de forma segura | Los gestores de secretos evitan que se expongan accidentalmente en registros o herramientas de seguimiento de errores.  |
-| Supervisa el uso       | El panel muestra métricas por clave para que puedas detectar anomalías rápidamente. |
-| Elimina las claves que no uses  | Eliminar las claves obsoletas reduce la superficie de posibles abusos.        |
+| Credencial | Formato | Úsala para |
+| --- | --- | --- |
+| Clave de API del Gateway | `phaseo_v1_sk_<kid>_<secret>` | Los endpoints de modelos, proveedores y generación disponibles para tu espacio de trabajo. |
+| [Clave de API de gestión](./management-api-keys.mdx) | `phaseo_v1_mk_<kid>_<secret>` | Las APIs de administración. |
+| [Carga de trabajo de confianza](./trusted-workloads.mdx) (beta) | Un token OIDC de corta duración de la plataforma | Despliegues y trabajos de CI en Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI, AWS o tu propio emisor OIDC, sin ninguna clave almacenada. |
 
----
+Trata las claves como contraseñas: mantenlas fuera del código del lado del cliente y de los repositorios públicos.
 
-## Errores habituales de autenticación
+## Maneja las claves de forma segura
 
-- **401 No autorizado**: falta la clave, no es válida o pertenece a un espacio de trabajo deshabilitado.
-- **403 Prohibido**: la clave existe, pero no puede acceder al proveedor o modelo solicitado.
-- **429 Too Many Requests**: la clave o el espacio de trabajo ha superado un límite. Consulta [Límites de solicitudes](../api-reference/limits.mdx).
-- **Errores 5xx**: vuelve a intentarlo con retroceso exponencial y contacta con [soporte](https://phaseo.app/help) si el problema persiste.
+- **Una clave por aplicación y entorno**, para poder rotar una sin afectar a otros servicios.
+- **Guarda las claves en un gestor de secretos**, que las mantiene fuera de los registros y del seguimiento de errores.
+- **Vigila el uso por clave** en el panel para detectar anomalías.
+- **Elimina las claves que ya no uses.**
+
+Para rotar una clave, pasa tu aplicación a la clave de sustitución antes de invalidar la anterior. Consulta el [endpoint de rotación de claves](../api-reference/endpoint/keys-rotate.mdx).
+
+## Corrige errores de autenticación
+
+| Estado | Causa | Qué hacer |
+| --- | --- | --- |
+| `401` | Falta la clave, no es válida o pertenece a un espacio de trabajo desactivado. El `reason` del cuerpo indica cuál de estos casos es. | Comprueba la cabecera y la clave. |
+| `403` | La clave es válida, pero no puede usar el proveedor o el modelo solicitado. | Revisa los guardrails de la clave y los ajustes de proveedores del espacio de trabajo. |
+| `429` | La clave o el espacio de trabajo alcanzó un límite. | Consulta [Límites de solicitudes](../api-reference/limits.mdx). |
+| `5xx` | Falló Phaseo o el proveedor. | Reintenta con espera exponencial y contacta con [soporte](https://phaseo.app/help) si persiste. |
+
+Consulta [Errores y depuración](../api-reference/errors.mdx) para ver todos los códigos de error.

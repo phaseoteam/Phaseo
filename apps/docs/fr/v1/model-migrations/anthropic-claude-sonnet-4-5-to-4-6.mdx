@@ -4,64 +4,40 @@ description: "À connaître pour adopter Claude Sonnet 4.6 en programmation, uti
 icon: "/icons/brands/anthropic.svg"
 ---
 
-# Anthropic Claude Sonnet 4.6
+Changez le modèle pour `anthropic/claude-sonnet-4.6`, supprimez les préremplissages de l’assistant et déplacez les sorties structurées vers `output_config.format`. Sonnet 4.6 partage ces changements de requête avec [Claude Opus 4.6](./anthropic-claude-opus-4-5-to-4-6) ; ses performances en programmation, en utilisation de l’ordinateur et en planification d’agents diffèrent aussi suffisamment pour que les hypothèses sur les prompts et le routage doivent être retestées.
 
-Suivez ce guide pour adopter `anthropic/claude-sonnet-4.6` en production en toute sécurité.
+| | Claude Sonnet 4.5 | Claude Sonnet 4.6 |
+| --- | --- | --- |
+| Identifiant de modèle Phaseo | `anthropic/claude-sonnet-4.5` | `anthropic/claude-sonnet-4.6` |
+| Statut | Déprécié ; retiré le 30 novembre 2026 | Disponible |
+| Fenêtre de contexte | 200K jetons | 1M jetons |
+| Sortie maximale | 64K jetons | 64K jetons |
+| Préremplissage de l’assistant | Pris en charge | Renvoie `400` |
+| Sorties structurées | `output_format` | `output_config.format` |
+| Réflexion | `budget_tokens` | Adaptative, pilotée par `output_config.effort` |
 
-Sonnet 4.6 suit les mêmes principes de migration que les autres modèles Claude 4.6, mais son profil de performances change suffisamment pour nécessiter une nouvelle validation de vos hypothèses sur les prompts et le routage.
+## Mettre à jour la requête
 
-## Nouveautés
+**1. Cessez d’utiliser les préremplissages de l’assistant.** Si vos prompts Sonnet 4.5 commencent le tour de l’assistant par un préfixe JSON, une balise XML ou une ébauche de mise en forme, supprimez-le avant le déploiement ; Sonnet 4.6 renvoie `400`.
 
-- Les modèles Claude 4.6 ne prennent plus en charge les préremplissages de l’assistant et renvoient `400`.
-- La sortie structurée passe de `output_format` à `output_config.format`.
-- La réflexion adaptative se configure via `output_config.effort`.
-- Supprimez les en-têtes bêta obsolètes.
-- Sonnet 4.6 progresse dans l’ensemble en programmation, utilisation de l’ordinateur, raisonnement à long contexte, planification d’agents et suivi des instructions.
-- Sonnet 4.6 ajoute une fenêtre de contexte d’un million de tokens en bêta.
+**2. Déplacez les sorties structurées** de `output_format` vers `output_config.format` sur `/v1/messages`, puis relancez vos tests de schéma et d’analyse. Sur `/v1/chat/completions` et `/v1/responses`, continuez d’utiliser `response_format`.
 
-## Démarrage rapide de la migration
+**3. Réajustez l’effort en fonction de la latence.** Sonnet 4.6 ne réfléchit que sur demande. Sur Phaseo, `reasoning.effort` ou `reasoning.enabled: true` active la réflexion adaptative et définit `output_config.effort` ; tous les niveaux sauf `xhigh` sont acceptés, et `xhigh` est envoyé sous la forme `max`. Mesurez les niveaux par rapport à votre budget de latence avant de faire de 4.6 la valeur par défaut des routes interactives.
 
-### 1. N’utilisez plus les préremplissages de l’assistant
+**4. Supprimez les en-têtes bêta obsolètes.** Phaseo ne transmet pas les en-têtes `anthropic-beta`.
 
-Si vos prompts Sonnet 4.5 commencent le tour de l’assistant par un préfixe JSON, une balise XML ou un modèle de format, supprimez ce modèle avant le déploiement.
+## Ce qu’il faut tester
 
-### 2. Déplacez la configuration de sortie structurée
+- **Comportement des sorties :** prompts sensibles à la mise en forme, planification d’agents en plusieurs étapes, prompts de code, de refactorisation et de revue, et récupération et résumé à long contexte.
+- **Stabilité des contrats :** taux de conformité JSON et au schéma, complétude des arguments d’outils, raisons d’arrêt et sorties vides, et routes qui s’appuyaient sur des préremplissages.
+- **Métriques de production :** latence par niveau d’effort, réussite des tâches par rapport à Sonnet 4.5, taux d’expiration et de nouvelles tentatives, et coût par tâche réussie.
 
-Remplacez `output_format` par `output_config.format` et relancez les tests de schéma et de parsing.
+## Déployer
 
-### 3. Réglez l’effort et les attentes de latence
-
-Pour les routes interactives, comparez différents niveaux de `effort` avant de faire de 4.6 le modèle par défaut. Le modèle est plus performant, mais le réglage optimal dépend de votre budget de latence.
-
-## Points à tester
-
-### Comportement des sorties
-
-- Suivi des instructions dans les prompts exigeant un format précis.
-- Qualité de la planification d’agents pour les tâches en plusieurs étapes.
-- Prompts de programmation, refactorisation et revue.
-- Recherche et résumé sur de longs contextes.
-
-### Stabilité des contrats
-
-- Taux de validation JSON et des schémas.
-- Complétude des arguments d’outils.
-- Raisons de fin et gestion des sorties vides.
-- Routes qui dépendaient auparavant de préremplissages pour assurer un format stable.
-
-### Métriques de production
-
-- Latence par niveau d’effort.
-- Réussite des tâches par rapport à Sonnet 4.5.
-- Taux d’expiration et de nouvelle tentative.
-- Coût par tâche réussie.
-
-## Déploiement sûr
-
-1. Supprimez les préremplissages et mettez à jour la sortie structurée en premier.
-2. Évaluez Sonnet 4.6 sur votre jeu de prompts de production actuel.
-3. Testez progressivement le trafic en gardant Sonnet 4.5 ou une autre route stable en solution de repli.
-4. Augmentez le trafic uniquement si la qualité et la stabilité des contrats restent bonnes.
+1. Supprimez d’abord les préremplissages et mettez à jour les sorties structurées.
+2. Évaluez Sonnet 4.6 sur vos prompts de production actuels.
+3. Lancez un canary avec Sonnet 4.5 ou un autre modèle stable comme secours dans `models`, et terminez avant le retrait de Sonnet 4.5.
+4. Augmentez le trafic une fois que la qualité et la stabilité des contrats se maintiennent.
 
 ## Sources
 

@@ -1,32 +1,37 @@
 ---
 title: "Fonctionnement de Phaseo"
-description: "Comprenez les modèles, fournisseurs, routage et facturation avant d’intégrer Phaseo."
+description: "Comprenez les modèles, fournisseurs, le routage et la facturation avant d’intégrer Phaseo."
 icon: "terminal"
 ---
 
-Phaseo achemine les requêtes de modèles de votre application vers les fournisseurs via une API. Votre application choisit le modèle et le point d’accès ; les réglages de l’espace de travail et les contrôles de requête déterminent les fournisseurs pouvant la traiter.
+Envoyez un ID de modèle à un endpoint Phaseo, et Phaseo route la requête vers un fournisseur qui héberge ce modèle. Votre application choisit le modèle et l’endpoint ; les réglages de votre espace de travail et les contrôles de routage de la requête déterminent quels fournisseurs peuvent la servir.
+
+```mermaid
+flowchart LR
+  app["Votre application"] -->|"modèle + endpoint"| gw["Phaseo Gateway"]
+  gw --> rules{{"Réglages de l’espace de travail et contrôles de routage de la requête"}}
+  rules --> p1["Fournisseur A"]
+  rules -.->|"repli"| p2["Fournisseur B"]
+```
 
 ## Modèles et fournisseurs
 
-Un modèle est le système qui génère la sortie. Un fournisseur l’héberge et détermine sa disponibilité, ses paramètres compatibles, ses tarifs et ses performances. Un même modèle peut avoir plusieurs offres fournisseurs.
+Un modèle est le système qui génère la sortie. Un fournisseur héberge le modèle et en fixe la disponibilité, les paramètres pris en charge, les prix et les performances. Un même modèle peut avoir plusieurs offres de fournisseurs.
 
-Le catalogue public comprend aussi des modèles actuellement indisponibles via le Gateway. Vérifiez la [disponibilité du modèle](../exploring/models.mdx) avant d’utiliser un identifiant dans une requête.
+Le catalogue public liste aussi des modèles qui ne sont pas encore disponibles via le Gateway. Vérifiez la [disponibilité du modèle](../exploring/models.mdx) avant d’utiliser un ID dans une requête.
 
 ## Requêtes et routage
 
-Utilisez [Responses, Chat Completions ou Messages](../api-reference/introduction.mdx) selon le protocole de votre application. Les capacités varient selon le fournisseur ; un point d’accès commun ne signifie pas que chaque modèle accepte chaque paramètre.
+Utilisez [Responses, Chat Completions ou Messages](../api-reference/introduction.mdx), selon le protocole de votre application. Un endpoint commun ne signifie pas que chaque modèle prend en charge chaque paramètre ; les capacités des fournisseurs varient toujours.
 
-Les [contrôles de routage](../guides/routing-and-fallbacks.mdx) permettent de limiter les fournisseurs et de choisir leur classement. Les replis restent soumis à vos restrictions et à la capacité disponible ; ils ne garantissent pas le succès.
+Les [contrôles de routage](../guides/routing-and-fallbacks.mdx) restreignent les fournisseurs qui peuvent servir une requête et la façon dont ils sont classés. Les replis restent dans ces restrictions et dépendent de la capacité disponible ; ils ne garantissent donc pas la réussite.
 
 ## Facturation et accès
 
-Les requêtes gérées utilisent le solde de votre espace de travail Phaseo. Les modèles `:free` fonctionnent sans crédits déposés. Avec des identifiants fournisseur (BYOK), sa facturation et ses limites de compte s’appliquent ; consultez les [tarifs et la facturation](../pricing/tiers.mdx) avant le déploiement.
+Les requêtes gérées utilisent le solde de votre espace de travail Phaseo, et les modèles `:free` s’exécutent sans crédits déposés. Avec vos propres identifiants de fournisseur (BYOK), la facturation et les limites de compte du fournisseur s’appliquent. Consultez [Tarifs et facturation](../pricing/tiers.mdx) avant le déploiement.
 
-Les [tâches vidéo et par lots](../guides/async-video-and-batch.mdx) renvoient une tâche avant la fin du traitement. Leur accès de préversion est géré par espace de travail. Interrogez le statut ou recevez des mises à jour webhook, puis téléchargez le résultat.
+Les [tâches vidéo et batch](../guides/async-video-and-batch.mdx) renvoient une tâche avant la fin du traitement ; l’accès en aperçu à ces tâches est géré par espace de travail. Interrogez l’état ou recevez un webhook, puis téléchargez le résultat.
 
-## Créer votre intégration
+## Étapes suivantes
 
-- [Démarrage rapide](../quickstart.mdx) : envoyez votre première requête.
-- [Intégrer le Gateway](./integrating-with-the-gateway.mdx) : gardez les identifiants sur votre backend et configurez l’application.
-- [Fiabilité et statut](./reliability-and-status.mdx) : examinez la disponibilité et les requêtes échouées.
-- [Journaux et observabilité](../guides/integrations/observability.mdx) : examinez l’utilisation, la latence, le coût et les erreurs.
+Envoyez votre première requête avec le [Démarrage rapide](../quickstart.mdx), puis [intégrez le Gateway](./integrating-with-the-gateway.mdx) à votre application en gardant la clé sur votre backend. En cas d’échec, [Fiabilité et état](./reliability-and-status.mdx) montre comment enquêter, et les [journaux de requêtes](../guides/integrations/observability.mdx) affichent l’utilisation, la latence, le coût et les erreurs de chaque requête.

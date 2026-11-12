@@ -1,3 +1,4 @@
+import { getDefaultVideoRoomParams } from "@/lib/chat/roomModelSettings";
 import type { QuickstartRequestContext } from "./requestContext";
 
 type RoutingMode = "price" | "latency" | "throughput";
@@ -17,9 +18,20 @@ const SORT_TO_ROUTING_MODE: Record<string, RoutingMode | null> = {
 const normalizeEndpointValue = (value: string | null | undefined) =>
 	value ? value.toLowerCase().replace(/^\//, "").replace(/\//g, ".") : "";
 
-function resolveSpeechVoiceForModel(model: string): string {
+/** Speech fields that depend on the model: Gemini and MiMo only return WAV (or PCM), and MiMo VoiceDesign is described in instructions instead of a voice. */
+function speechExampleOptions(model: string): Record<string, string> {
 	const provider = model.split("/")[0]?.toLowerCase();
-	if (provider === "xiaomi") return "mimo_default";
+	const wavOnly = provider === "google" || provider === "google-ai-studio" || provider === "xiaomi";
+	return {
+		response_format: wavOnly ? "wav" : "mp3",
+		...(/voicedesign/i.test(model) ? { instructions: "A warm, calm voice with a steady pace." } : {}),
+	};
+}
+
+/** The example voice for a speech model; MiMo VoiceDesign takes none (the instructions describe it). */
+function resolveSpeechVoiceForModel(model: string): string | undefined {
+	const provider = model.split("/")[0]?.toLowerCase();
+	if (provider === "xiaomi") return /voicedesign/i.test(model) ? undefined : "mimo_default";
 	if (provider === "google" || provider === "google-ai-studio") return "Kore";
 	if (provider === "elevenlabs" || provider === "eleven-labs") return "rachel";
 	return "alloy";
@@ -130,13 +142,17 @@ export function buildExamplePayload(
 				image_url: "https://assets.phaseo.app/sample-image.png",
 			};
 		case "video.generations":
-		case "video.generation":
+		case "video.generation": {
+			// The model's own default length and size: the API rejects duration_seconds,
+			// and each video model accepts different durations and sizes.
+			const { duration, size } = getDefaultVideoRoomParams(model);
 			return {
 				model,
 				prompt: "An engineer exploring a real-time operations room, charts updating smoothly, confident tone.",
-				duration_seconds: 6,
-				aspect_ratio: "16:9",
+				duration,
+				size,
 			};
+		}
 		case "music.generate":
 			return {
 				model,
@@ -146,9 +162,9 @@ export function buildExamplePayload(
 		case "audio.speech":
 			return {
 				model,
-				voice: resolveSpeechVoiceForModel(model),
+				...(resolveSpeechVoiceForModel(model) ? { voice: resolveSpeechVoiceForModel(model) } : {}),
 				input: "Welcome to the Phaseo Gateway where latency, uptime, and pricing are in your control.",
-				response_format: "mp3",
+				...speechExampleOptions(model),
 			};
 		case "audio.realtime":
 			return {

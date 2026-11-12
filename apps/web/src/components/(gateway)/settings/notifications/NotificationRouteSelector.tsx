@@ -1,17 +1,15 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 
 import * as React from "react";
 import { BellRing, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 import { NotificationDestinationIcon } from "@/components/(gateway)/settings/notifications/notificationProviders";
 
-import { setNotificationRoute } from "@/app/(dashboard)/settings/credits/actions";
+import { setNotificationRoute } from "@/features/settings/credits/actions";
 import { Button } from "@/components/ui/button";
 import { DropdownMenu, DropdownMenuCheckboxItem, DropdownMenuContent, DropdownMenuGroup, DropdownMenuLabel, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { NotificationDestination, NotificationEventKind } from "@/lib/fetchers/internal/settingsTypes";
@@ -44,7 +42,7 @@ function NotificationRouteSelectorState({ destinations, eventKind, initialDestin
 		const next = checked ? [...previous.filter((id) => id !== destinationId), destinationId] : previous.filter((id) => id !== destinationId);
 		setSelectedIds(next);
 		startSaving(async () => {
-			try { await write(setNotificationRoute(eventKind, next)); }
+			try { await write(setNotificationRoute({ data: { eventKind, destinationIds: next } })); }
 			catch (error) { setSelectedIds(previous); toast.error(localizedSettingsError(error, t, "Action failed", s("Could not update destinations"))); }
 		});
 	}

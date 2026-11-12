@@ -89,6 +89,15 @@ paths:
             enum:
               - asc
               - desc
+        - name: include
+          in: query
+          description: اضبطها على parameter_specs لإضافة معلمات الطلب لكل عرض بالصيغة القياسية.
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - parameter_specs
         - name: endpoints
           in: query
           description: التصفية حسب نقاط النهاية
@@ -427,8 +436,8 @@ paths:
       tags:
         - Gateway
       operationId: listTeamModels
-      summary: عرض نماذج البوابة الخاصة بالفريق
-      description: يعرض قائمة نماذج البوابة الخاصة بالفريق. يعرض افتراضيًا النماذج القابلة للتوجيه علنًا؛ استخدم `availability=all` لتضمين سجلات التوفر غير القابلة للتوجيه.
+      summary: عرض النماذج التي يمكن لهذا المفتاح استخدامها
+      description: 'يُرجع قائمة /models بعد تطبيق ضوابط الحماية الخاصة بالمتصل: تُستبعد النماذج التي تحظرها قاعدة، والنماذج التي لا يتوفر لها أي مزوّد مسموح به، ولا يبقى لكل نموذج إلا العروض التي يمكن توجيه طلباته إليها، مع أسعاره وقدراته وتوافره محسوبة منها. ويوضح الكائن access ما استبعدته القواعد. افتراضيًا تُعرض النماذج القابلة للتوجيه علنًا حاليًا؛ استخدم availability=all لتضمين سجلات التوافر غير القابلة للتوجيه.'
       parameters:
         - name: endpoints
           in: query
@@ -1165,8 +1174,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: معرّف نموذج Phaseo، مثل `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: معرّف نموذج Phaseo. مطابق لـ `model`.
+                  provider_model:
+                    type: string
+                    description: اسم النموذج لدى المزوّد، مثل `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
@@ -1364,8 +1378,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: معرّف نموذج Phaseo، مثل `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: معرّف نموذج Phaseo. مطابق لـ `model`.
+                  provider_model:
+                    type: string
+                    description: اسم النموذج لدى المزوّد، مثل `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
@@ -1576,8 +1595,13 @@ paths:
                     type: string
                   model:
                     type: string
+                    description: معرّف نموذج Phaseo، مثل `eleven-labs/scribe-v3-live`.
                   model_id:
                     type: string
+                    description: معرّف نموذج Phaseo. مطابق لـ `model`.
+                  provider_model:
+                    type: string
+                    description: اسم النموذج لدى المزوّد، مثل `scribe_v3_live`.
                   voice:
                     type: string
                     nullable: true
@@ -3837,7 +3861,7 @@ paths:
         - Gateway
       operationId: updateWorkspaceNotificationSettings
       summary: تحديث إعدادات إشعارات مساحة العمل
-      description: يحدّث قسماً واحداً أو أكثر من سياسة الإشعارات الدائمة. يتطلب تفعيل التعبئة التلقائية معرّفاً موجوداً لطريقة دفع محفوظة ومصادقة ثنائية موثقة. يمكن تحديث إعداد قائم دون تكرار إقرار MFA. للتفعيل دون MFA يجب على العملاء تعيين `mfa_bypass_acknowledged` صراحةً إلى true وتوفير القيمة الدقيقة `I ACCEPT THE RISK` للحقل `mfa_bypass_phrase`؛ يظل جمع معلومات الدفع إجراءً تفاعلياً في الحساب.
+      description: يحدّث قسمًا واحدًا أو أكثر من أقسام سياسة الإشعارات الدائمة. يتطلب تشغيل الشحن التلقائي، أو تغيير مبلغه أو حدّه أو طريقة الدفع، الإذن `billing:write` ومعرّف طريقة دفع محفوظة ومصادقة ثنائية مُتحقَّقًا منها، ولا يمكن للتطبيقات التي تستخدم تسجيل الدخول عبر Phaseo فعل ذلك. يكفي `settings:write` لإيقافه. يمكن تحديث إعداد الشحن التلقائي الحالي دون تكرار تأكيد MFA. لا يُقبل تجاوز المصادقة الثنائية (`mfa_bypass_acknowledged` و`mfa_bypass_phrase`) إلا في الإعدادات؛ وترفضه API. يظل تحصيل الدفع مسار حساب تفاعليًا.
       requestBody:
         required: true
         content:
@@ -4841,7 +4865,7 @@ paths:
         - Gateway
       operationId: listDepartmentBudgets
       summary: List department budgets
-      description: Lists department spend budgets with each department's spend so far in the current UTC period. Spend comes from an hourly rollup, so it can lag by up to an hour.
+      description: يسرد ميزانيات إنفاق الأقسام مع إنفاق كل قسم حتى الآن في فترة UTC الحالية. يُحتسب الإنفاق بالطريقة نفسها التي يحتسبه بها فحص قبول القسم، لذا فهو محدَّث.
       parameters:
         - name: department_id
           in: query
@@ -4869,7 +4893,7 @@ paths:
         - Gateway
       operationId: createDepartmentBudget
       summary: Create a department budget
-      description: ينشئ ميزانية إنفاق يومية أو أسبوعية أو شهرية لقسم واحد. بعد أن يستنفدها القسم، تُرجع طلبات مفاتيح API التي تُحتسب ضمنه 429 key_limit_exceeded حتى إعادة ضبط الميزانية. لا تُحظر مهام الدُفعات وجلسات الوقت الفعلي وطلبات OAuth. إذا تعذّر التحقق من الميزانية لفترة وجيزة، يُسمح بالطلبات بدلًا من رفضها. يتلقى المالكون والمسؤولون إشعارًا فوريًا على الهاتف عند نحو 80% وعند 100%.
+      description: ينشئ ميزانية إنفاق يومية أو أسبوعية أو شهرية لقسم واحد. بعد أن يستنفدها القسم، تُرجع طلبات مفاتيح API التي تُحتسب ضمنه 429 key_limit_exceeded حتى إعادة ضبط الميزانية. إذا تعذّر التحقق من الميزانية لفترة وجيزة، يُسمح بالطلبات بدلًا من رفضها. يتلقى المالكون والمسؤولون إشعارًا فوريًا على الهاتف عند نحو 80% وعند 100%.
       requestBody:
         required: true
         content:
@@ -5110,7 +5134,7 @@ paths:
             minimum: 1
             maximum: 250
       summary: List rate limit policies
-      description: Lists the workspace's named rate limit policies. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يسرد سياسات حدود المعدل المسماة لمساحة العمل. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       responses:
         '200':
           description: Rate limit policies
@@ -5130,7 +5154,7 @@ paths:
         - Gateway
       operationId: createRateLimitPolicy
       summary: Create a rate limit policy
-      description: Creates a named policy with requests per minute, tokens per minute, or concurrent request limits. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: ينشئ سياسة مسماة بحدود للطلبات في الدقيقة أو الرموز في الدقيقة أو الطلبات المتزامنة. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       requestBody:
         required: true
         content:
@@ -5165,7 +5189,7 @@ paths:
         - Gateway
       operationId: getRateLimitPolicy
       summary: Get a rate limit policy
-      description: Returns one rate limit policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يعيد سياسة حد معدل واحدة. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       responses:
         '200':
           description: Rate limit policy
@@ -5185,7 +5209,7 @@ paths:
         - Gateway
       operationId: updateRateLimitPolicy
       summary: Update a rate limit policy
-      description: Changes a policy's name, description, limits, or fail-closed setting. Set a limit to null to remove it; at least one limit must remain. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يغيّر اسم السياسة أو وصفها أو حدودها أو إعداد الإغلاق عند الفشل. اضبط الحد على null لإزالته؛ يجب أن يبقى حد واحد على الأقل. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       requestBody:
         required: true
         content:
@@ -5211,7 +5235,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitPolicy
       summary: Delete a rate limit policy
-      description: Deletes a policy and every assignment that uses it. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يحذف سياسة وكل تعيين يستخدمها. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       responses:
         '200':
           description: Rate limit policy deleted
@@ -5232,7 +5256,7 @@ paths:
         - Gateway
       operationId: listRateLimitAssignments
       summary: List rate limit assignments
-      description: Lists where rate limit policies apply, optionally filtered by policy or target type. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يسرد أماكن تطبيق سياسات حدود المعدل، مع إمكانية التصفية حسب السياسة أو نوع الهدف. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       parameters:
         - name: policy_id
           in: query
@@ -5283,7 +5307,7 @@ paths:
         - Gateway
       operationId: createRateLimitAssignment
       summary: Assign a rate limit policy
-      description: Applies a policy to one API key, workspace member, department, or guardrail, or sets the workspace default for each end user. Each target can have one policy. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يطبّق سياسة على مفتاح API واحد أو عضو في مساحة العمل أو قسم، أو يضبط الإعداد الافتراضي لمساحة العمل لكل مستخدم نهائي. يمكن أن يكون لكل هدف سياسة واحدة. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على كل تعيين.
       requestBody:
         required: true
         content:
@@ -5318,7 +5342,7 @@ paths:
         - Gateway
       operationId: getRateLimitAssignment
       summary: Get a rate limit assignment
-      description: Returns one rate limit assignment. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يعيد تعيين حد معدل واحدًا. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       responses:
         '200':
           description: Rate limit assignment
@@ -5338,7 +5362,7 @@ paths:
         - Gateway
       operationId: updateRateLimitAssignment
       summary: Change an assignment's policy
-      description: Switches the policy applied to an assignment's target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يبدّل السياسة المطبقة على هدف التعيين. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       requestBody:
         required: true
         content:
@@ -5364,7 +5388,7 @@ paths:
         - Gateway
       operationId: deleteRateLimitAssignment
       summary: Delete a rate limit assignment
-      description: Removes a policy from its target. The gateway enforces requests_per_minute, tokens_per_minute and concurrent_requests for key, member, department, guardrail and end-user-default assignments.
+      description: يزيل سياسة من هدفها. تفرض البوابة requests_per_minute وtokens_per_minute وconcurrent_requests على تعيينات المفتاح والعضو والقسم والمستخدم النهائي الافتراضي.
       responses:
         '200':
           description: Rate limit assignment deleted
@@ -7292,7 +7316,7 @@ paths:
         - Gateway
       operationId: deleteWorkspace
       summary: حذف مساحة عمل
-      description: يحذف مساحة عمل باستخدام UUID أو slug. يلزم مفتاح API للإدارة.
+      description: يحذف مساحة عمل حسب UUID أو slug. وحده مالك مساحة العمل يمكنه حذفها. يلزم مفتاح API للإدارة.
       parameters:
         - name: id
           in: path
@@ -7369,7 +7393,7 @@ paths:
         - Gateway
       operationId: addWorkspaceMembers
       summary: إضافة أعضاء إلى مساحة العمل
-      description: يضيف مستخدمين حاليين إلى مساحة عمل بدور `admin` أو `member`. يلزم مفتاح API للإدارة.
+      description: 'يضيف الأشخاص الذين طلبوا الانضمام: يجب أن يكون لكل مستخدم طلب انضمام معلّق (يُنشأ عند قبول دعوة)، وتوافق هذه العملية عليه. يُرفض المستخدمون الآخرون؛ أرسل إليهم دعوة بدلًا من ذلك. يحتفظ الأعضاء الحاليون بأدوارهم. إذا لم يُحدَّد دور، يحصل كل شخص على دور دعوته؛ وتتطلب إضافة مسؤول مالك مساحة العمل. يلزم مفتاح API للإدارة. تتم الموافقة على كل شخص على حدة. إذا فشلت إحدى الموافقات، يبقى من تمت الموافقة عليهم قبلها مضافين، ولا تتم محاولة الباقين، وتكون الاستجابة 409 تسرد المستخدمين في approved وfailed وnot_attempted.'
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -7403,6 +7427,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: تعذّرت إضافة جميع المستخدمين. يسرد نص الاستجابة من أُضيف ومن فشلت إضافته ومن لم تتم محاولة إضافته.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WorkspaceMemberAddResponse'
   /workspaces/{id}/members/remove:
     post:
       x-beta: true
@@ -7410,7 +7440,7 @@ paths:
         - Gateway
       operationId: removeWorkspaceMembers
       summary: إزالة أعضاء من مساحة العمل
-      description: يزيل الأعضاء غير المالكين من مساحة العمل. يلزم مفتاح API للإدارة.
+      description: يزيل من مساحة العمل الأعضاء الذين ليسوا مالكين. وحده مالك مساحة العمل يمكنه إزالة الأعضاء الآخرين؛ ويمكن لأي شخص إزالة نفسه. يلزم مفتاح API للإدارة.
       parameters:
         - $ref: '#/components/parameters/WorkspaceId'
       requestBody:
@@ -11372,6 +11402,8 @@ components:
             type: string
         parameter_details:
           $ref: '#/components/schemas/SupportedParameterDetails'
+        parameter_specs:
+          $ref: '#/components/schemas/ParameterSpecs'
     GatewayPricingMeter:
       type: object
       nullable: true
@@ -11412,6 +11444,7 @@ components:
             $ref: '#/components/schemas/GatewayPricingMeter'
     GatewayProviderAvailabilityReason:
       type: string
+      description: لا يُوجَّه المسار المخفّض الأولوية (`deranked`) إلا كملاذ أخير، بعد جميع المزوّدين السليمين الآخرين. لم تعد القيم `deranked_lvl1` و`deranked_lvl2` و`deranked_lvl3` تُعاد.
       enum:
         - active
         - preview_only
@@ -11421,6 +11454,7 @@ components:
         - project_limited
         - paused
         - soft_blocked
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3
@@ -11436,17 +11470,21 @@ components:
         - retired
     GatewayRoutingStatus:
       type: string
+      description: لا يُوجَّه المسار المخفّض الأولوية (`deranked`) إلا كملاذ أخير، بعد جميع المزوّدين السليمين الآخرين. لم تعد القيم `deranked_lvl1` و`deranked_lvl2` و`deranked_lvl3` تُعاد.
       enum:
         - active
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3
         - disabled
     GatewayCapabilityStatus:
       type: string
+      description: لا يُوجَّه المسار المخفّض الأولوية (`deranked`) إلا كملاذ أخير، بعد جميع المزوّدين السليمين الآخرين. لم تعد القيم `deranked_lvl1` و`deranked_lvl2` و`deranked_lvl3` تُعاد.
       enum:
         - active
         - coming_soon
+        - deranked
         - deranked_lvl1
         - deranked_lvl2
         - deranked_lvl3
@@ -11668,6 +11706,197 @@ components:
           $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters_detail:
           $ref: '#/components/schemas/SupportedParameterDetails'
+    ParameterValue:
+      oneOf:
+        - type: string
+        - type: number
+        - type: boolean
+    ParameterOption:
+      type: object
+      required:
+        - value
+      properties:
+        value:
+          $ref: '#/components/schemas/ParameterValue'
+        label:
+          type: string
+        description:
+          type: string
+      additionalProperties: true
+    ParameterRule:
+      type: object
+      description: عندما تكون لكل معلمة في if إحدى قيمها المدرجة، تحلّ الحقول الأخرى محل حقول المعلمة نفسها.
+      required:
+        - if
+      properties:
+        if:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/ParameterValue'
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        min:
+          type: number
+        max:
+          type: number
+        step:
+          type: number
+        default:
+          $ref: '#/components/schemas/ParameterValue'
+        supported:
+          type: boolean
+        message:
+          type: string
+    ParameterDimensions:
+      type: object
+      properties:
+        min:
+          type: number
+        max:
+          type: number
+        multiple_of:
+          type: number
+        max_width:
+          type: number
+        max_height:
+          type: number
+        min_pixels:
+          type: number
+        max_pixels:
+          type: number
+        max_aspect_ratio:
+          type: string
+        aspect_ratios:
+          type: array
+          items:
+            type: string
+    ParameterSpec:
+      type: object
+      required:
+        - supported
+      properties:
+        supported:
+          type: boolean
+        type:
+          oneOf:
+            - $ref: '#/components/schemas/ParameterType'
+            - type: array
+              items:
+                $ref: '#/components/schemas/ParameterType'
+        media:
+          type: string
+          enum:
+            - image
+            - audio
+            - video
+        values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        open:
+          type: boolean
+        options:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterOption'
+        min:
+          type: number
+        max:
+          type: number
+        step:
+          type: number
+        multiple_of:
+          type: number
+        default:
+          $ref: '#/components/schemas/ParameterValue'
+        provider_default:
+          $ref: '#/components/schemas/ParameterValue'
+        required:
+          type: boolean
+        always_on:
+          type: boolean
+        aliases:
+          type: array
+          items:
+            type: string
+        alias_of:
+          type: string
+        upstream_name:
+          type: string
+        upstream_values:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterValue'
+        requires:
+          type: array
+          items:
+            type: string
+        min_length:
+          type: number
+        max_length:
+          type: number
+        max_tokens:
+          type: number
+        min_items:
+          type: number
+        max_items:
+          type: number
+        item_types:
+          type: array
+          items:
+            type: string
+        formats:
+          type: array
+          items:
+            type: string
+        max_file_size_bytes:
+          type: number
+        format:
+          type: string
+        dimensions:
+          $ref: '#/components/schemas/ParameterDimensions'
+        properties:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        when:
+          type: array
+          items:
+            $ref: '#/components/schemas/ParameterRule'
+        support_level:
+          type: string
+        notes:
+          type: string
+        source:
+          type: object
+          properties:
+            url:
+              type: string
+            verified_at:
+              type: string
+        extra:
+          type: object
+          additionalProperties: true
+    ParameterType:
+      type: string
+      enum:
+        - string
+        - integer
+        - number
+        - boolean
+        - array
+        - object
+        - file
+    ParameterSpecs:
+      type: object
+      description: جميع معلمات الطلب التي يقبلها المزوّد على نقطة النهاية هذه، بصيغة قياسية واحدة أيًّا كانت طريقة تخزينها في الكتالوج.
+      additionalProperties:
+        $ref: '#/components/schemas/ParameterSpec'
     SupportedParameterDetails:
       type: object
       description: قيود منظمة ودعم المزوّد لمعلمات الطلب، مرتبة حسب اسم المعلمة.
@@ -14290,6 +14519,7 @@ components:
         questions:
           type: array
           minItems: 1
+          maxItems: 1000
           items:
             oneOf:
               - $ref: '#/components/schemas/DecisionPredicateQuestion'
@@ -14587,7 +14817,7 @@ components:
         questions:
           type: object
           minProperties: 1
-          maxProperties: 128
+          maxProperties: 1000
           additionalProperties:
             oneOf:
               - $ref: '#/components/schemas/DecisionNoulQuestion'
@@ -14976,7 +15206,7 @@ components:
         questions:
           type: object
           minProperties: 1
-          maxProperties: 128
+          maxProperties: 1000
           additionalProperties:
             oneOf:
               - $ref: '#/components/schemas/SystemOneNoulQuestion'
@@ -15323,10 +15553,13 @@ components:
           maximum: 3
         output_format:
           type: string
+          description: تنسيق الإخراج. يتطلب gif وsvg نموذج GPT Image 2.6 ولا يدعمان stream أو partial_images. ويتطلب svg أيضًا svg.model وn=1.
           enum:
             - png
             - jpeg
             - webp
+            - gif
+            - svg
         output_compression:
           type: integer
           minimum: 0
@@ -15342,6 +15575,41 @@ components:
           enum:
             - auto
             - low
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
+        frame_count:
+          type: integer
+          minimum: 2
+          maximum: 64
+        frame_duration_ms:
+          type: integer
+          minimum: 20
+          maximum: 2000
+        svg:
+          type: object
+          description: مطلوب عندما تكون قيمة output_format هي svg. يحدد svg.model نموذج النص من OpenAI الذي يكتب ملف SVG من الصورة المرجعية. تُحتسب رموزه بأسعار النص لذلك النموذج، مع احتساب رموز الاستدلال كمخرجات، إضافةً إلى تكلفة الصورة.
+          required:
+            - model
+          properties:
+            model:
+              type: string
+            reasoning:
+              type: object
+              properties:
+                effort:
+                  type: string
+                  enum:
+                    - none
+                    - minimal
+                    - low
+                    - medium
+                    - high
+                    - xhigh
+                    - max
         response_format:
           type: string
         style:
@@ -15359,6 +15627,19 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Image'
+        svg_usage:
+          type: object
+          properties:
+            model:
+              type: string
+            input_tokens:
+              type: integer
+            output_tokens:
+              type: integer
+            reasoning_tokens:
+              type: integer
+            total_tokens:
+              type: integer
     Image:
       type: object
       properties:
@@ -15389,6 +15670,15 @@ components:
                 type: string
         mask:
           type: string
+        markup:
+          type: string
+          description: طبقة تعليقات توضيحية بتنسيق PNG شفاف فوق الصورة الأولى، كملف مرفوع أو عنوان URL أو سلسلة base64. تتطلب GPT Image 2.5 أو أحدث، ولا يمكن دمجها مع mask.
+        complexity:
+          type: string
+          enum:
+            - low
+            - medium
+            - high
         prompt:
           type: string
         size:
@@ -15509,7 +15799,13 @@ components:
         enhance_prompt:
           type: boolean
         compression_quality:
-          type: integer
+          description: ضغط المخرجات. يقبل Vertex Veo القيمة optimized أو lossless ويرفض الرقم؛ أما المزوّدون الآخرون الذين يدعمونه فيقبلون عددًا صحيحًا.
+          oneOf:
+            - type: integer
+            - type: string
+              enum:
+                - optimized
+                - lossless
         person_generation:
           type: string
         resize_mode:
@@ -15552,7 +15848,7 @@ components:
         provider_params:
           type: object
           additionalProperties: true
-          description: امتدادات خاصة بالمزوّد فقط. يُرفض تمرير الطلب كاملاً وتكرار حقول التوجيه أو الموجه أو رد الاتصال أو الفوترة.
+          description: 'امتدادات خاصة بالمزوّد فقط. يُرفض تمرير الطلب كاملاً وتكرار حقول التوجيه أو الموجه أو رد الاتصال أو الفوترة. على سبيل المثال، يقبل Wan 3.0 الخيار smart_duration: true ليختار النموذج المدة (لا ترسل duration معه)؛ تحجز المهمة 30 ثانية وتُحتسب المدة التي يبلغ عنها المزوّد.'
         provider_options:
           type: object
           additionalProperties:
@@ -16008,6 +16304,8 @@ components:
           $ref: '#/components/schemas/SupportedParameterDetails'
         supported_parameters_detail:
           $ref: '#/components/schemas/SupportedParameterDetails'
+        parameter_specs:
+          $ref: '#/components/schemas/ParameterSpecs'
     VideoModelCapability:
       type: object
       properties:
@@ -18171,7 +18469,6 @@ components:
       type: object
       required:
         - id
-        - hash
         - workspace_id
         - name
         - label
@@ -18201,9 +18498,6 @@ components:
           type: string
           format: uuid
           example: 11111111-1111-4111-8111-111111111111
-        hash:
-          type: string
-          example: a3f5b7c9d8e1f23456789abcdeffedcba9876543210fedcba1234567890abcdef
         workspace_id:
           type: string
           format: uuid
@@ -18747,15 +19041,55 @@ components:
       type: object
       required:
         - added_count
-        - data
+        - approved
+        - failed
+        - not_attempted
       properties:
+        error:
+          type: string
+        message:
+          type: string
         added_count:
           type: integer
           minimum: 0
         data:
           type: array
+          description: تفاصيل الأعضاء المضافين. تُحذف إذا تعذّرت قراءتها بعد الموافقات؛ ويظل approved يسرد من أُضيف.
           items:
             $ref: '#/components/schemas/WorkspaceMember'
+        approved:
+          type: array
+          description: المستخدمون الذين أضافهم هذا الطلب، بترتيب الموافقة عليهم.
+          items:
+            type: string
+        failed:
+          type: array
+          description: المستخدم الذي فشلت الموافقة عليه، مع السبب. لا تتم محاولة المستخدمين الذين يلونه.
+          items:
+            $ref: '#/components/schemas/WorkspaceMemberAddFailure'
+        not_attempted:
+          type: array
+          description: المستخدمون الذين لم تتم محاولتهم لأن موافقة سابقة فشلت. تبقى طلبات انضمامهم معلّقة.
+          items:
+            type: string
+      additionalProperties: false
+    WorkspaceMemberAddFailure:
+      type: object
+      required:
+        - user_id
+        - code
+        - message
+      properties:
+        user_id:
+          type: string
+        code:
+          type: string
+          enum:
+            - forbidden
+            - conflict
+            - internal_error
+        message:
+          type: string
       additionalProperties: false
     WorkspaceMemberRemoveResponse:
       type: object
@@ -19991,7 +20325,7 @@ components:
         retention_days:
           type: integer
           minimum: 90
-          maximum: 365
+          maximum: 90
         include_provider_payloads:
           type: boolean
         billing_status:
@@ -20023,7 +20357,7 @@ components:
         retention_days:
           type: integer
           minimum: 90
-          maximum: 365
+          maximum: 90
         include_provider_payloads:
           type: boolean
       minProperties: 1
@@ -20760,6 +21094,48 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Model'
+        access:
+          $ref: '#/components/schemas/GatewayModelAccess'
+      additionalProperties: false
+    GatewayModelAccess:
+      type: object
+      description: 'يُرجعه /models/me فقط: ما استبعدته ضوابط الحماية الخاصة بالمتصل من القائمة، قبل البحث والتقسيم إلى صفحات.'
+      required:
+        - restricted
+        - hidden_model_count
+        - hidden_models
+        - limited_model_count
+      properties:
+        restricted:
+          type: boolean
+          description: ما إذا كانت أي قاعدة تقيّد النماذج أو المزوّدين لهذا المفتاح.
+          example: true
+        hidden_model_count:
+          type: integer
+          minimum: 0
+          description: عدد النماذج التي تستبعدها القواعد.
+          example: 12
+        hidden_models:
+          type: array
+          description: النماذج المستبعدة مع أسمائها (حتى 500).
+          items:
+            type: object
+            required:
+              - id
+              - name
+            properties:
+              id:
+                type: string
+                example: deepseek/deepseek-v4
+              name:
+                type: string
+                example: DeepSeek V4
+            additionalProperties: false
+        limited_model_count:
+          type: integer
+          minimum: 0
+          description: عدد النماذج المدرجة التي فقدت بعض مزوّديها بسبب القواعد.
+          example: 3
       additionalProperties: false
     ModelEndpointCapability:
       type: object
@@ -23988,12 +24364,11 @@ components:
       additionalProperties: false
     RateLimitTargetType:
       type: string
-      description: What a policy applies to. A department policy is one allowance shared by its members and linked keys. A guardrail policy gives each key and member the guardrail covers its own allowance. end_user_default applies to each end user identified on a request.
+      description: ما تنطبق عليه السياسة. سياسة القسم حصة واحدة يتشاركها أعضاؤه والمفاتيح المرتبطة به. ينطبق end_user_default على كل مستخدم نهائي يُحدَّد في الطلب.
       enum:
         - key
         - member
         - department
-        - guardrail
         - end_user_default
     RateLimitAssignment:
       type: object
@@ -24021,7 +24396,7 @@ components:
           type: string
           format: uuid
           nullable: true
-          description: Id of the key, member (user id), department, or guardrail. Null for end_user_default.
+          description: معرّف المفتاح أو العضو (معرّف المستخدم) أو القسم. null لـ end_user_default.
         created_by:
           type: string
           format: uuid
@@ -24047,7 +24422,7 @@ components:
         target_id:
           type: string
           format: uuid
-          description: Id of the key, member (user id), department, or guardrail. Omit for end_user_default.
+          description: معرّف المفتاح أو العضو (معرّف المستخدم) أو القسم. احذفه لـ end_user_default.
       additionalProperties: false
     RateLimitAssignmentUpdateInput:
       type: object

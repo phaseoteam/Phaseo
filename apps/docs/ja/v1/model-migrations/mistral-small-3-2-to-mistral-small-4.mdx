@@ -1,67 +1,43 @@
 ---
 title: "Mistral Small 4"
-description: "推論制御や標準化された応答フィールドなど、Mistral Small 4 の導入時に確認する内容です。"
+description: "推論の制御や正規化されたレスポンスフィールドなど、Mistral Small 4 の導入時に知っておくべきことです。"
 icon: "/icons/brands/mistral.svg"
 ---
 
-# Mistral Small 4
-
-Phaseo Gateway で Mistral Small 4 を安全に導入するには、このガイドを使います。
-
-- `mistral/mistral-small-4-2026-03-16`
-
-## 新機能
-
-- `reasoning_effort` で推論モードを制御できます。
-- Gateway がこのモデル経路で上流に送る値は次の 2 つだけです。
-  - `none`（推論オフ）
-  - `high`（推論オン）
-- Gateway は Mistral の思考ブロックを標準の応答フィールドに変換します。
-  - `message.content`：アシスタントがユーザーに表示するテキスト
-  - `message.reasoning_content` と `message.reasoning_details`：推論テキスト
-
-## 移行クイックスタート
-
-この経路では、推論はデフォルトでオフです。
-
-Gateway のマッピング規則：
-
-- 推論制御を省略すると `reasoning_effort: "none"` を送信します。
-- `reasoning.enabled: true` を指定すると `reasoning_effort: "high"` を送信します。
-- `reasoning.effort: "none"` を指定すると `reasoning_effort: "none"` を送信します。
-- `reasoning.effort` にそれ以外の値を指定すると `reasoning_effort: "high"` を送信します。
-
-推奨設定：
-
-- 軽い処理には `reasoning.effort: "none"` を使います。
-- 深い推論には `reasoning.effort: "high"` を使います。
-
-例：
+モデルを `mistral/mistral-small-4` に変更し、ルートごとに推論をオンにするかどうかを決めます。Mistral Small 4 にはオフと high の 2 つの推論モードがあり、Phaseo はすべての effort の値をそのどちらかに対応付けます。
 
 ```json
 {
-  "model": "mistral/mistral-small-4-2026-03-16",
+  "model": "mistral/mistral-small-4",
   "messages": [
     { "role": "user", "content": "Why is fast inference important?" }
   ],
-  "reasoning": {
-    "effort": "high"
-  }
+  "reasoning": { "effort": "high" }
 }
 ```
 
-## 応答の処理に関する注意
+## 推論をオンまたはオフにする
 
-Mistral は `thinking` と `text` のような異なるアシスタントコンテンツブロックを返すことがあります。Gateway は次の安定した形式に変換します。
+リクエストで求めない限り、推論はオフです。Mistral 自身の API に対して、Phaseo は `reasoning_effort` を次のように送ります。
 
-- ユーザーに表示する最終回答：`choices[0].message.content`
-- 推論テキスト：`choices[0].message.reasoning_content`
+| リクエスト | Mistral に送られる値 |
+| --- | --- |
+| 推論の設定なし | `reasoning_effort: "none"` |
+| `reasoning.effort: "none"` または `reasoning.enabled: false` | `reasoning_effort: "none"` |
+| その他の `reasoning.effort`、または `reasoning.enabled: true` | `reasoning_effort: "high"` |
 
-これにより、OpenAI 形式のチャット補完フィールドを期待する後続処理を維持できます。
+リクエスト内のフラットな `reasoning_effort` は `reasoning.effort` より優先されます。軽量なルートには `none` を、深い推論には `high` を使います。`low` と `medium` は `high` とまったく同じ動作です。
 
-## ロールアウトのチェックリスト
+## 回答と推論を読み取る
 
-1. モデル ID を `mistral/mistral-small-4-2026-03-16` に更新します。
-2. 推論制御が `none` と `high` だけで動作することを確認します。
-3. 高負荷の経路で出力品質とスキーマのテストを再実行します。
-4. 全面移行の前に、`none` と `high` のレイテンシとコストを比較します。
+Mistral は、`thinking` の後に `text` が続くような混在したコンテンツブロックを返すことがあります。Phaseo はこれらを OpenAI 形式のフィールドに分割するため、Chat Completions を読む下流のコードはそのまま動作します。
+
+- 回答は `choices[0].message.content` にあります。
+- 推論のテキストは `choices[0].message.reasoning_content` と `reasoning_details` にあります。
+
+## 展開する
+
+1. モデル ID を Mistral Small 3.2 から `mistral/mistral-small-4` に変更します。
+2. `none` と `high` のみで推論をテストします。
+3. `high` を使うルートで、出力の品質とスキーマのテストを再実行します。
+4. 完全に切り替える前に、`none` と `high` のレイテンシーとコストを比較します。

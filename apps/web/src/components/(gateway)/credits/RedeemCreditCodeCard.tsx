@@ -1,5 +1,3 @@
-"use client";
-
 import { useEffect, useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -16,11 +14,11 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "@/components/ui/select";
-import { redeemCreditCodeAction } from "@/app/(dashboard)/settings/credits/actions";
+import { redeemCreditCodeAction } from "@/features/settings/credits/actions";
 import { normalizePromoCodeInput } from "@/lib/credits/promoCodes";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 type TeamOption = {
@@ -143,10 +141,10 @@ export default function RedeemCreditCodeCard(props: Props) {
 
 		const startedAt = Date.now();
 		try {
-			const result = await redeemCreditCodeAction({
+			const result = await redeemCreditCodeAction({ data: {
 				code: normalizedCode,
 				workspaceId: selectedTeamId,
-			});
+			} });
 			const elapsedMs = Date.now() - startedAt;
 			if (elapsedMs < 400) {
 				await new Promise((resolve) => setTimeout(resolve, 400 - elapsedMs));

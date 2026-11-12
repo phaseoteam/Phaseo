@@ -1,112 +1,104 @@
 ---
 title: "Presets ausrollen und Routing untersuchen"
-sidebarTitle: "Presets ausrollen und debuggen"
 icon: "route"
 description: "Verwende Presets, um Prompt- und Routing-Standardwerte zu vereinheitlichen. Prüfe anschließend die Anfragedetails, um Phaseos Routing-Entscheidung nachzuvollziehen."
 ---
 
-Nutze dieses Rezept, wenn du ein Preset für mehrere Dienste wiederverwenden möchtest, statt überall dieselben Prompts, Modelle und Routing-Standardwerte zu kopieren.
+Stelle mehrere Dienste auf ein Preset um, damit sie sich Prompt, Modell und Anbieterregeln teilen, und erkläre dann anhand der Anfrageprotokolle, wohin jede Anfrage ging. Am Ende senden deine Aufrufer `"model": "@release-summary"` und ihre Eingabe, und du kannst eine Richtlinienänderung Aufrufer für Aufrufer ausrollen.
 
-## Ziel
+Die Anfrageform ist produktionsreif. [Presets](../guides/presets) erklärt, wie die Einstellungen eines Presets mit der Anfrage zusammengeführt werden; dieses Rezept beschreibt den Rollout.
 
-- Prompt- und Parameter-Standardwerte vereinheitlichen.
-- Festlegen, welche Anbieter bei einem Rollout oder aus Compliance-Gründen verwendet werden dürfen.
-- Genügend Anfragekontext behalten, um die Routing-Entscheidung erklären zu können.
+## Einen Aufrufer auf ein Preset umstellen
 
-## 1. Preset erstellen
+<Steps>
+<Step title="Das Preset anlegen">
 
-Erstelle unter **Dashboard -> Einstellungen -> Presets** ein Preset mit:
+Lege unter **Einstellungen → Voreinstellungen** `release-summary` mit einem System-Prompt, den freigegebenen Modellen, Anbieterpräferenzen und Standardparametern wie `temperature` an. Oder mit einem Management-Schlüssel:
 
-- einen eindeutigen Namen und Slug
-- einen System-Prompt
-- freigegebene Modelle
-- Anbieterpräferenzen
-- Parameter-Standardwerte wie `temperature`
+```bash
+curl https://api.phaseo.app/v1/presets \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"@release-summary","config":{"model":"anthropic/claude-sonnet-5.5"}}'
+```
 
-Verwende den Preset-Slug in deinem aufrufenden Code, damit dieselbe Anfragerichtlinie in mehreren Umgebungen genutzt werden kann.
+</Step>
+<Step title="Es über den Namen aufrufen">
 
-## 2. Request-Body klein halten
-
-Der Hauptvorteil von Presets ist, dass der Aufrufer nicht mehr bei jeder Anfrage dieselben Routing- und Prompt-Standardwerte wiederholen muss.
+Sende das Preset als `model`. Ein eigenes `preset`-Feld gibt es nicht.
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-sonnet-4-5",
+    "model": "@release-summary",
     "input": "Generate a release summary for the last 24 hours.",
-    "preset": "release-summary"
+    "meta": true
   }'
 ```
 
-```typescript TypeScript SDK
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "anthropic/claude-sonnet-4-5",
+  model: "@release-summary",
   input: "Generate a release summary for the last 24 hours.",
-  preset: "release-summary",
+  meta: true,
 });
 
-console.log(response.output_text);
+console.log(response.model, response.meta?.routing);
 ```
 
-```python Python SDK
+```python Python
+import os
+
 from phaseo import Phaseo
 
-client = Phaseo(api_key="YOUR_API_KEY")
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
 response = client.generate_response(
     {
-        "model": "anthropic/claude-sonnet-4-5",
+        "model": "@release-summary",
         "input": "Generate a release summary for the last 24 hours.",
-        "preset": "release-summary",
+        "meta": True,
     }
 )
 
-print(response.get("output_text"))
+print(response.get("model"), response["meta"]["routing"]["selected_provider"])
 ```
 </CodeGroup>
 
-## 3. Änderungen durch das Preset verstehen
+`model` in der Antwort ist das Modell, das geantwortet hat, und `meta.routing.selected_provider` der Anbieter.
 
-Das Preset wird vor dem Provider-Routing angewendet:
+</Step>
+<Step title="Prüfen, was das Preset angewendet hat">
 
-- fehlende Anfrageparameter werden aus dem Preset ergänzt
-- der Preset-Prompt wird der Systemebene vorangestellt
-- Anbieterpräferenzen verkleinern die Liste verfügbarer Anbieter, bevor sie sortiert wird
-- Modellbeschränkungen werden früh geprüft, statt unbemerkt auf eine andere Route auszuweichen
+Öffne die Anfrage unter **Einstellungen → Nutzung → Protokolle**. Dort steht, welche Preset-Standards angewendet wurden. Ein Modell außerhalb der erlaubten Modelle des Presets schlägt mit `validation_error` (Schlüsselwort `preset_model_not_allowed`) fehl, statt umgeleitet zu werden.
 
-## 4. Routing-Ergebnis untersuchen
+</Step>
+</Steps>
 
-Wenn eine Anfrage anders als erwartet geroutet wird, öffne sie unter **Gateway -> Nutzung** und prüfe:
+## Eine Routing-Entscheidung erklären
 
-- berücksichtigte Anbieter
-- gerankte Kandidaten
-- Routing-Faktoren der einzelnen Kandidaten
-- Sperren durch Workspace-Richtlinien oder Guardrails
+Wenn eine Anfrage nicht wie erwartet geroutet wurde, klappe bei der Anfrage unter **Einstellungen → Nutzung → Protokolle** **Beobachtbarkeit des Routings** auf. Dort findest du Antworten auf drei Fragen:
 
-So findest du am schnellsten heraus:
+| Frage | Wo du nachsiehst |
+| --- | --- |
+| Warum wurde ein Anbieter übersprungen? | Anbieter, die vor der Rangfolge ausgeschlossen wurden, samt Grund, und Anbieter, die wegen ihres Rollout- oder Routing-Status herabgestuft wurden |
+| Warum wurde die Anfrage blockiert? | Blockierungen durch Workspace-Richtlinien oder Guardrails bei der Anfrage |
+| Warum hat dieser Anbieter gewonnen? | Die Endbewertung jedes gereihten Anbieters und die Faktoren dahinter |
 
-- warum ein Anbieter übersprungen wurde
-- warum eine Anfrage blockiert wurde
-- warum ein günstigeres oder latenzärmeres Ziel den Zuschlag erhielt
+[Eine Routing-Entscheidung erklären](../guides/routing-and-fallbacks#explain-a-routing-decision) beschreibt jedes Feld.
 
-## 5. Betriebsmuster
+## Eine Richtlinienänderung ausrollen
 
-Nutze beim Ändern des Routing-Verhaltens dieses Rollout-Muster:
+1. Veröffentliche die Änderung als neue Preset-Version oder lege für eine sehr andere Richtlinie einen neuen Slug an.
+2. Stelle einen Aufrufer mit geringem Risiko darauf um, zum Beispiel indem du ihn auf `@release-summary@v4` oder ein `canary`-Label zeigen lässt.
+3. Vergleiche seine Anfragedetails und Nutzungstrends mit denen der anderen Aufrufer.
+4. Stelle die übrigen Aufrufer um, sobald das Routing deinen Erwartungen entspricht. Für einen Rollback lässt du das Label auf die frühere Version zeigen.
 
-1. Erstelle einen neuen Preset-Slug für die neue Richtlinie.
-2. Stelle einen Aufrufer mit geringem Risiko auf das neue Preset um.
-3. Prüfe Anfragedetails und Aktivitätstrends.
-4. Weite den Rollout erst aus, wenn die Routing-Ergebnisse den Erwartungen entsprechen.
-
-## Zugehörige Anleitungen
-
-- [Presets](../guides/presets.mdx)
-- [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx)
-- [Fehlerbehandlung](../api-reference/errors.mdx)
+[Versionieren und zurückrollen](../guides/presets#version-and-roll-back) behandelt Versionen und Labels. Für Überschreibungen auf Anfrageebene, die nicht in ein Preset gehören, siehe [Anbieter festlegen oder ignorieren](./pin-or-ignore-providers-per-request).

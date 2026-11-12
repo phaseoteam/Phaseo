@@ -65,20 +65,27 @@ export async function readProjectFile(root: string, filename: string): Promise<s
 	return content.toString("utf8");
 }
 
-export async function gitReview(root: string): Promise<GitReview> {
-	const git = async (args: string[]) => (await execute("git", ["--no-pager", "-c", "core.fsmonitor=false", ...args],{ cwd: root, windowsHide: true, timeout: 15000, maxBuffer: 4 * 1024 * 1024, env: { ...process.env, GIT_OPTIONAL_LOCKS: "0" } })).stdout;
-	const [status, diff, stagedDiff, branch] = await Promise.all([
-		git(["status", "--porcelain=v1", "-z"]), git(["diff", "--no-ext-diff", "--no-textconv", "--full-index"]),
-		git(["diff", "--cached", "--no-ext-diff", "--no-textconv", "--full-index"]), git(["branch", "--show-current"]),
-	]);
-	const files = parseGitStatus(status);
-	const [upstream, counts, remotes] = await Promise.all([
+const reviewGit = (root: string) => async (args: string[]) => (await execute("git", ["--no-pager", "-c", "core.fsmonitor=false", ...args],{ cwd: root, windowsHide: true, timeout: 15000, maxBuffer: 4 * 1024 * 1024, env: { ...process.env, GIT_OPTIONAL_LOCKS: "0" } })).stdout;
+
+/** The review's branch and changed files without the diff text, which a phone's sidebar asks for per project. */
+export async function gitWorkingStatus(root: string): Promise<Pick<GitReview, "files" | "branch" | "upstream" | "hasRemote">> {
+	const git = reviewGit(root);
+	const [status, branch, upstream, counts, remotes] = await Promise.all([
+		git(["status", "--porcelain=v1", "-z"]), git(["branch", "--show-current"]),
 		git(["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"]).then(value => value.trim(), () => ""),
 		git(["rev-list", "--left-right", "--count", "@{upstream}...HEAD"]).then(value => value.trim().split(/\s+/).map(Number), () => [] as number[]),
 		git(["remote"]).then(value => value.trim(), () => ""),
 	]);
-	return { status: files.map(file => `${file.indexStatus}${file.worktreeStatus} ${file.path}${file.oldPath ? ` ← ${file.oldPath}` : ""}`).join("\n"), files, diff, stagedDiff, diffHash: createHash("sha256").update(diff).digest("hex"), stagedDiffHash: createHash("sha256").update(stagedDiff).digest("hex"), branch: branch.trim(),
-		...(upstream && counts.length === 2 ? { upstream: { name: upstream, behind: counts[0] || 0, ahead: counts[1] || 0 } } : {}), hasRemote: Boolean(remotes) };
+	return { files: parseGitStatus(status), branch: branch.trim(), ...(upstream && counts.length === 2 ? { upstream: { name: upstream, behind: counts[0] || 0, ahead: counts[1] || 0 } } : {}), hasRemote: Boolean(remotes) };
+}
+
+export async function gitReview(root: string): Promise<GitReview> {
+	const git = reviewGit(root);
+	const [{ files, branch, upstream, hasRemote }, diff, stagedDiff] = await Promise.all([
+		gitWorkingStatus(root), git(["diff", "--no-ext-diff", "--no-textconv", "--full-index"]), git(["diff", "--cached", "--no-ext-diff", "--no-textconv", "--full-index"]),
+	]);
+	return { status: files.map(file => `${file.indexStatus}${file.worktreeStatus} ${file.path}${file.oldPath ? ` ← ${file.oldPath}` : ""}`).join("\n"), files, diff, stagedDiff, diffHash: createHash("sha256").update(diff).digest("hex"), stagedDiffHash: createHash("sha256").update(stagedDiff).digest("hex"), branch,
+		...(upstream ? { upstream } : {}), hasRemote };
 }
 
 export function parseGitStatus(output: string): GitFile[] {

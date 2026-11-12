@@ -1,8 +1,6 @@
-"use client";
-
 import { useMemo } from "react";
 import { formatRoundedCount } from "@/lib/formatRoundedCount";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import {
 	Area,
 	AreaChart,

@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { resolveDefaultWorkspaceId } from "./defaultWorkspace";
 
 const workspaces = [{ id: "workspace-a" }, { id: "workspace-b" }];

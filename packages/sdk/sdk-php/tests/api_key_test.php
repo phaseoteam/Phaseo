@@ -27,7 +27,6 @@ final class FakeApiKeyClient extends \Phaseo\Gen\Client
         return [
             "data" => [
                 "id" => "key_123",
-                "hash" => "keyhash_123",
                 "status" => "active",
             ],
         ];
@@ -48,7 +47,6 @@ $prop->setValue($client, $fake);
 
 $response = $client->getApiKey("key_123");
 assert_true(($response["data"]["id"] ?? null) === "key_123", "expected key id");
-assert_true(($response["data"]["hash"] ?? null) === "keyhash_123", "expected key hash");
 assert_true(($response["data"]["status"] ?? null) === "active", "expected key status");
 assert_true($fake->calls === [
     ["GET", "/keys/key_123", null, null, null],

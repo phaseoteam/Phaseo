@@ -1,13 +1,13 @@
 ---
 icon: "folder-open"
 title: "Repository Structure"
-description: "Find Phaseo application code, documentation, SDKs, and catalog exports."
-"og:image": "https://phaseo.app/og/dynamic?title=Repository%20Structure&description=Find%20Phaseo%20application%20code%2C%20documentation%2C%20SDKs%2C%20and%20catalog%20exports.&pathname=/docs/v1/contributing/repo-structure"
+description: "Find Phaseo application code, documentation, SDKs, and database schema."
+"og:image": "https://phaseo.app/og/dynamic?title=Repository%20Structure&description=Find%20Phaseo%20application%20code%2C%20documentation%2C%20SDKs%2C%20and%20database%20schema.&pathname=/docs/v1/contributing/repo-structure"
 ---
 
-Phaseo is a pnpm and Turborepo monorepo. Use this reference to find the files for a code or documentation change. For catalog record changes, [open an issue](./overview.mdx).
+Phaseo is a pnpm and Turborepo monorepo. Find the folder for your code or documentation change below. Catalog records aren't in the repository; to change one, [open an issue](./overview.mdx).
 
-## Applications and packages
+## Applications
 
 | Path | Purpose |
 | --- | --- |
@@ -15,29 +15,35 @@ Phaseo is a pnpm and Turborepo monorepo. Use this reference to find the files fo
 | `apps/web-api` | Public catalog reads and authenticated account and admin APIs. |
 | `apps/api` | Gateway routing and provider execution on Cloudflare Workers. |
 | `apps/docs` | Mintlify documentation; MDX pages are in `v1`, navigation in `docs.json`. |
-| `packages/sdk` | TypeScript, Python, Go, C#, PHP, Ruby, Java, Rust, and C++ SDKs. |
-| `supabase/migrations` | Database schema and permission migrations. |
+| `apps/mcp` | Phaseo MCP server for model discovery, pricing and usage. |
+| `apps/desktop` | Phaseo Desktop app. |
+| `apps/mobile` | Phaseo mobile app (Expo, Android first). |
+| `apps/slack` | Worker behind the Phaseo Slack agent. |
+
+## Packages and tooling
+
+| Path | Purpose |
+| --- | --- |
+| `packages/sdk` | TypeScript, Python, Go, C#, PHP, Ruby, Java, Rust and C++ SDKs, plus the Agent SDKs (`agent-sdk-*`). |
+| `packages/cli/phaseo` | The `@phaseo/cli` command-line tool. |
+| `packages/integrations` | The Vercel AI SDK provider and the Terraform provider. |
+| `packages/shared` | Code shared between apps, such as UI, spend rules and routing settings. |
+| `supabase/schemas` | Declarative database definitions. |
+| `supabase/migrations` | Forward SQL migrations that deploy schema and permission changes. |
 | `scripts` | Validation, SDK generation, and automation utilities. |
 | `.github/workflows` | CI, deployment, and catalog synchronization. |
 | `.changeset` | Release metadata for versioned packages. |
 
 ## Catalog data
 
-The database is the source of truth for models, providers, organisations, pricing, benchmarks, and supporting catalog settings. Admins manage records through [Internal data](https://phaseo.app/internal/data). Public contributions are reviewed through GitHub issues.
+The database is the only source for models, providers, organisations, pricing, benchmarks, and catalog settings. The repository holds no catalog JSON. Admins manage records in [Internal data](https://phaseo.app/internal/data); public contributions arrive as GitHub issues.
 
-- The repository holds no catalog JSON. The legacy JSON-to-database importer is retired.
-
-Schema and application changes still use migrations and pull requests. Generated SDK artifacts should be updated through their generation commands.
+Schema and application changes still go through migrations and pull requests. Update generated SDK files with their generation commands, not by hand.
 
 ## Catalog automation
 
-Provider sync queues proposed prices for review in [Provider updates](https://phaseo.app/internal/data/imports). Benchmark and model lifecycle jobs use the database.
+Provider sync queues proposed prices for review in [Provider updates](https://phaseo.app/internal/data/imports). Benchmark and model lifecycle jobs read and write the database.
 
-Catalog-only records do not automatically enable Gateway routing. Route and price changes require the appropriate admin review.
+A catalog record doesn't enable Gateway routing on its own. Route and price changes need admin review.
 
-## Where to start
-
-- [Report a model update](./editing-a-model.mdx).
-- [Report an organisation update](./editing-an-organisation.mdx).
-- [Submit benchmark scores](../research/submitting-scores.mdx).
-- [Contribute code or documentation](./how-to-contribute.mdx).
+To start a change, see [Contribute code or documentation](./how-to-contribute.mdx).

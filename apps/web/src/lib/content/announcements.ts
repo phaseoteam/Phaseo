@@ -1,9 +1,11 @@
-import "server-only";
 
 import { promises as fs } from "node:fs";
 import type { Dirent } from "node:fs";
 import path from "node:path";
 import { load as yamlLoad } from "js-yaml";
+import { dateToSortValue, formatAnnouncementDate, isAnnouncementPublished } from "./announcementDates";
+
+export { formatAnnouncementDate, isAnnouncementPublished };
 
 const ANNOUNCEMENTS_CONTENT_ROOT = path.join(
 	process.cwd(),
@@ -29,6 +31,9 @@ type AnnouncementFrontmatterInput = {
 	pinned?: unknown;
 	coverImage?: unknown;
 	draft?: unknown;
+	seoTitle?: unknown;
+	keywords?: unknown;
+	faq?: unknown;
 };
 
 export type AnnouncementCategory = "announcements" | "guides" | "data";
@@ -49,9 +54,16 @@ export type AnnouncementSummary = {
 	coverImage: string;
 };
 
+export type AnnouncementFaqItem = { question: string; answer: string };
+
 export type AnnouncementPost = AnnouncementSummary & {
 	content: string;
+	/** Path under src/content/announcements; keys the build-time compiled MDX module. */
+	sourceKey: string;
 	contentLocale: string;
+	seoTitle: string | null;
+	keywords: string[];
+	faq: AnnouncementFaqItem[];
 };
 
 type AnnouncementPostLookupOptions = {
@@ -145,6 +157,16 @@ function toTags(value: unknown): string[] {
 	return [];
 }
 
+function toFaq(value: unknown): AnnouncementFaqItem[] {
+	if (!Array.isArray(value)) return [];
+	return value.flatMap((item) => {
+		if (!item || typeof item !== "object") return [];
+		const question = toOptionalString((item as { question?: unknown }).question);
+		const answer = toOptionalString((item as { answer?: unknown }).answer);
+		return question && answer ? [{ question, answer }] : [];
+	});
+}
+
 function isDraft(value: unknown): boolean {
 	return value === true || value === "true";
 }
@@ -224,18 +246,7 @@ function estimateReadingTimeMinutes(content: string): number {
 	return Math.max(1, Math.ceil(wordCount / 225));
 }
 
-function dateToSortValue(value: string): number {
-	const parsed = new Date(value);
-	return Number.isNaN(parsed.getTime()) ? 0 : parsed.getTime();
-}
-
-function isPublishedDate(value: string, now = new Date()): boolean {
-	return dateToSortValue(value) <= now.getTime();
-}
-
-export function isAnnouncementPublished(value: string, now = new Date()): boolean {
-	return isPublishedDate(value, now);
-}
+const isPublishedDate = isAnnouncementPublished;
 
 async function loadAnnouncements(locale?: string): Promise<AnnouncementPost[]> {
 	let entries: Dirent[];
@@ -322,6 +333,10 @@ async function loadAnnouncements(locale?: string): Promise<AnnouncementPost[]> {
 				pinned: isPinned(frontmatter.pinned),
 				coverImage,
 				content,
+				sourceKey: path.relative(ANNOUNCEMENTS_CONTENT_ROOT, filePath).replace(/\\/g, "/"),
+				seoTitle: toOptionalString(frontmatter.seoTitle),
+				keywords: toTags(frontmatter.keywords),
+				faq: toFaq(frontmatter.faq),
 			};
 		})
 	);
@@ -341,7 +356,15 @@ export async function getAnnouncementPosts(
 	const posts = await loadAnnouncements(options.locale);
 	return posts
 		.filter((post) => options.includeFuture || isPublishedDate(post.publishedAt))
-		.map(({ content: _content, contentLocale: _contentLocale, ...summary }) => summary);
+		.map(({
+			content: _content,
+			contentLocale: _contentLocale,
+			sourceKey: _sourceKey,
+			seoTitle: _seoTitle,
+			keywords: _keywords,
+			faq: _faq,
+			...summary
+		}) => summary);
 }
 
 export async function getAnnouncementPost(
@@ -368,16 +391,3 @@ export async function getAnnouncementParams(): Promise<Array<{ slug: string }>> 
 		.map((post) => ({ slug: post.slug }));
 }
 
-export function formatAnnouncementDate(value: string, locale: string): string {
-	const parsed = new Date(value);
-	if (Number.isNaN(parsed.getTime())) {
-		return value;
-	}
-
-	return parsed.toLocaleDateString(locale, {
-		timeZone: "UTC",
-		year: "numeric",
-		month: "long",
-		day: "2-digit",
-	});
-}

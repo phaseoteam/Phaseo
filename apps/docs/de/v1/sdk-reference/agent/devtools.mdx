@@ -1,0 +1,100 @@
+---
+icon: "chart-spline"
+title: "DevTools"
+description: "Jeden Agentenlauf und jede Fortsetzung während der Entwicklung in eine lokale Datei aufzeichnen."
+---
+
+Übergib während der Entwicklung einem Lauf oder einer Fortsetzung eine DevTools-Konfiguration, um pro Lauf eine JSON-Zeile an `generations.jsonl` in einem lokalen Verzeichnis anzuhängen. Jede Zeile enthält Eingabe, Schritte, Tool-Aktivität, Ausgabe, Nutzung und Gateway-Request-IDs des Laufs. Es wird nichts aufgezeichnet, solange du es nicht einschaltest.
+
+<CodeGroup>
+
+```typescript TypeScript
+import { createAgentDevtools } from "@phaseo/agent-sdk";
+
+const result = await agent.run({
+  input,
+  client,
+  devtools: createAgentDevtools(),
+});
+```
+
+```python Python
+from phaseo_agent import create_agent_devtools
+
+result = agent.run(input="Summarise this ticket", client=client, devtools=create_agent_devtools())
+```
+
+```go Go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{
+  Input:    prompt,
+  Client:   client,
+  Devtools: phaseoagent.CreateAgentDevtools(".phaseo-devtools"),
+})
+```
+
+```csharp C#
+var result = await agent.Run(new RunOptions
+{
+    Input = prompt,
+    Client = client,
+    Devtools = AgentSdk.CreateAgentDevtools(".phaseo-devtools"),
+});
+```
+
+```php PHP
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    devtools: AgentSdk::createAgentDevtools(".phaseo-devtools")
+);
+```
+
+```ruby Ruby
+result = agent.run(
+  input: prompt,
+  client: client,
+  devtools: PhaseoAgentSdk.create_agent_devtools(directory: ".phaseo-devtools")
+)
+```
+
+```java Java
+var result = agent.run(new AgentSdk.RunOptions(
+    prompt, client, null, null, null, null, null, null, null,
+    AgentSdk.createAgentDevtools(".phaseo-devtools")));
+```
+
+</CodeGroup>
+
+<Note>
+Rust `0.2` hat keine DevTools-Aufzeichnung. Verwende [Lifecycle-Hooks](./lifecycle-hooks) mit `run_with_events` und schreibe die Events selbst.
+</Note>
+
+| Sprache | Konfiguration erstellen | Übergeben als | Verzeichnis wählen |
+| --- | --- | --- | --- |
+| TypeScript | `createAgentDevtools()` | `devtools` in den Lauf- und Fortsetzungsoptionen | `createAgentDevtools({ directory: ".local/agent-runs" })` |
+| Python | `create_agent_devtools()` | `devtools=` an `run()`, `stream()` oder einer Fortsetzung | `create_agent_devtools(directory=".local/agent-runs")` |
+| Go | `CreateAgentDevtools(directory)` | `Devtools` an `RunOptions` oder `ContinueOptions` | Das Argument `directory` |
+| C# | `AgentSdk.CreateAgentDevtools(directory)` | `Devtools` an `RunOptions` oder `ContinueOptions` | Das Argument `directory` (Standard `.phaseo-devtools`) |
+| PHP | `AgentSdk::createAgentDevtools($directory)` | `devtools:` an `run()` oder `continueRun()` | Das Argument `$directory` (Standard `.phaseo-devtools`) |
+| Ruby | `PhaseoAgentSdk.create_agent_devtools(directory:, enabled:)` | `devtools:` an `run` oder `continue_run` | `directory:` (Standard `.phaseo-devtools`) |
+| Java | `AgentSdk.createAgentDevtools(directory)` | Das Argument `devtools` von `RunOptions` oder `ContinueOptions` | Das Argument `directory` |
+
+## Aufzeichnung über die Umgebung einschalten
+
+Ohne DevTools-Konfiguration wird die Aufzeichnung eingeschaltet, wenn `PHASEO_DEVTOOLS=true` gesetzt ist. Die Dateien landen in `PHASEO_DEVTOOLS_DIR` oder, wenn das nicht gesetzt ist, in `.phaseo-devtools` im Arbeitsverzeichnis. Das funktioniert in jeder Sprache mit DevTools gleich.
+
+## Was geschrieben wird
+
+| Datei | Inhalt |
+| --- | --- |
+| `generations.jsonl` | Ein Eintrag pro Lauf und einer pro Fortsetzung |
+| `metadata.json` | Sitzungs-ID, Startzeit und SDK-Name (`"sdk": "typescript"`, `"python"`, `"go"`, `"csharp"`, `"php"`, `"ruby"` oder `"java"`), einmal geschrieben |
+| `assets/images`, `assets/audio`, `assets/video` | Leer angelegt für den DevTools-Viewer |
+
+Der `type` jedes Eintrags ist `agent.run` für einen Lauf und `agent.continue` für eine Fortsetzung. `agent.continue` ist ein Eintragstyp, kein Methodenname: Er wird von einem Aufruf von `continueRun()` (TypeScript, PHP, Java), `continue_run()` (Python, Ruby), `Continue` (Go) oder `ContinueRun` (C#) geschrieben.
+
+Ein Eintrag enthält Lauf- und Agenten-ID, die Anzahl der Tools und das vollständige Laufergebnis: Status, Nachrichten, Schritte mit Modell, Anbieter und Gateway-Request-IDs, Tool-Aktivität, Nutzung und Ausgabe. Ein fehlgeschlagener Lauf erhält einen Eintrag mit dem Fehler (`error.message` in Go und Java; strukturierte Fehlerdetails in TypeScript). In Java werden Schreibfehler ignoriert, sodass die Aufzeichnung nie einen Lauf fehlschlagen lässt.
+
+<Warning>
+Einträge enthalten Prompts, Nachrichten, Anwendungskontext, Tool-Eingaben und Tool-Ausgaben im Klartext. Halte das Verzeichnis aus der Versionskontrolle und aus Produktions-Images heraus und verwende es nicht als Audit-Speicher. Für Telemetrie in der Produktion verwendest du [Lifecycle-Hooks](./lifecycle-hooks).
+</Warning>

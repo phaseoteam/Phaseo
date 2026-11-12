@@ -45,6 +45,13 @@ CREATE TRIGGER update_oauth_app_metadata_updated_at_trigger
   FOR EACH ROW
   EXECUTE FUNCTION public.update_oauth_app_metadata_updated_at();
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."oauth_app_metadata"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE POLICY "oauth_app_metadata_delete_own_team" ON "public"."oauth_app_metadata"
   FOR DELETE
   TO "authenticated"

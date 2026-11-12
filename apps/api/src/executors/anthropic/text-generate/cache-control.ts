@@ -1,6 +1,8 @@
 // Default Anthropic prompt-cache breakpoints for provider_options.anthropic.cache_control.
 // Shared by the Anthropic, Amazon Bedrock and Google Vertex AI executors through irToAnthropicMessages.
 
+import { toAnthropicCacheControl } from "./breakpoints";
+
 export function normalizeAnthropicCacheControlValue(value: unknown): Record<string, any> | undefined {
 	if (!value || typeof value !== "object" || Array.isArray(value)) return undefined;
 	const next: Record<string, any> = { ...(value as Record<string, any>) };
@@ -164,6 +166,11 @@ export function applyAnthropicCacheControlDefaults(
 	request: any,
 	control: unknown,
 ): void {
+	if ((control as { scope?: string } | undefined)?.scope === "automatic") {
+		const cacheControl = toAnthropicCacheControl(control);
+		if (cacheControl) request.cache_control = cacheControl;
+		return;
+	}
 	const scope = resolveAnthropicCacheScope(control);
 	if (scope === "none") return;
 

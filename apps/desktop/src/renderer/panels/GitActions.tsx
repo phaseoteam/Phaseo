@@ -139,6 +139,8 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 		<button type="button" disabled={busy} onClick={() => void initialise()} className="ml-auto h-7 shrink-0 rounded-md px-2 text-xs font-medium text-foreground hover:bg-accent/60 disabled:opacity-50">Initialise Git</button>
 		{error && <p role="alert" className="w-full text-destructive">{error}</p>}
 	</section>;
+	// Set when the worktree was made and its submodules could not be checked out (Settings → Worktrees → Submodules).
+	const submoduleError = project?.worktree && !project.worktree.removedAt ? project.worktree.submoduleError : undefined;
 	// Publish repository is offered when nothing tells the branch where to go.
 	const canPublish = Boolean(review) && !review?.hasRemote && !review?.upstream;
 	const canCommitPush = Boolean(review?.branch) && Boolean(review?.hasRemote || review?.upstream);
@@ -146,6 +148,7 @@ export function GitActions({ projectId, taskId, onProjectCreated }: { projectId:
 	const commitLabel = staged.length ? `Commit ${staged.length} ${staged.length === 1 ? "file" : "files"}` : `Commit all ${commitCount} ${commitCount === 1 ? "file" : "files"}`;
 	const folder = (project?.worktree ? overview.projects.find(value => value.id === project.worktree?.sourceProjectId) ?? project : project)?.directory.split(/[\\/]/).filter(Boolean).at(-1) ?? "project";
 	return <section className="git-actions flex min-w-0 flex-col gap-1 text-xs" aria-label="Git" aria-busy={busy}>
+		{submoduleError && <p role="status" className="text-muted-foreground">This worktree's submodules weren't checked out: {submoduleError.replace(/\.?\s*$/, ".")} Run <code className="font-mono">git submodule update --init --recursive</code> in its terminal to try again.</p>}
 		<div className="flex items-center gap-1">
 			<DropdownMenu>
 				<DropdownMenuTrigger disabled={busy || !review} render={<button type="button" className="flex h-7 min-w-0 items-center gap-1.5 rounded-md px-1.5 font-mono text-xs hover:bg-accent/60 [&_svg]:size-3.5" />}>

@@ -1,97 +1,83 @@
 ---
 title: "AI SDK"
 icon: "bolt"
-description: "استخدم موفّر Phaseo الرسمي مع Vercel AI SDK."
+description: "استخدم مزوّد Phaseo الرسمي لـ Vercel AI SDK."
 ---
 
-تقدّم Phaseo موفّرًا رسميًا لـ Vercel AI SDK ضمن حزمة `@phaseo/ai-sdk-provider`.
+ثبّت `@phaseo/ai-sdk-provider` ومرّر `phaseo("<model id>")` نموذجًا في أي استدعاء لـ AI SDK. يقرأ المزوّد `PHASEO_API_KEY` من البيئة.
 
 ## التثبيت
-
-يكون AI SDK 7 وتنفيذ `ProviderV4` الأصلي من Phaseo الخيار الافتراضي للمشاريع الجديدة:
 
 ```bash
 npm install @phaseo/ai-sdk-provider
 ```
 
-تتبع حزمة Phaseo التي لا يتضمن اسمها رقم إصدار وسم `latest` في npm، ولذلك تختار إصدار الموفّر النشط المتوافق مع AI SDK 7. وتعلن الحزمة عن AI SDK 7 كاعتمادية نظيرة يثبّتها npm تلقائيًا.
+تتبع الحزمة غير المحددة الإصدار وسم `latest` في npm، وهو خط AI SDK 7، وتعلن `ai@^7` تبعيةً نظيرة يثبّتها npm نيابةً عنك. لإصدار أقدم من AI SDK، ثبّت الوسم المطابق:
 
-### إصدار الصيانة لـ AI SDK 6
+| AI SDK | عقد المزوّد | التثبيت |
+| --- | --- | --- |
+| 7 (الحالي) | `ProviderV4` (المزوّد 2.x) | `npm install @phaseo/ai-sdk-provider` |
+| 6 | `ProviderV3` (المزوّد 1.x، صيانة) | `npm install @phaseo/ai-sdk-provider@ai-sdk-v6` |
+| 5 | `ProviderV2` | `npm install @phaseo/ai-sdk-provider@ai-sdk-v5` |
 
-يستخدم AI SDK 6 عقد `ProviderV3` الأقدم. ثبّت إصدار التوافق ذي الوسم:
+إذا كان مدير الحزم لديك لا يثبّت التبعيات النظيرة، فثبّت أيضًا الإصدار الرئيسي المطابق من `ai` (`ai@^7` أو `ai@^6` أو `ai@^5`).
 
-```bash
-npm install @phaseo/ai-sdk-provider@ai-sdk-v6
-```
+عندما يصبح AI SDK 8 مستقرًا، سيضع Phaseo علامة الإيقاف على المزوّد 1.x في npm. لن تُزال الإصدارات الحالية، وسيُعلن عن أي انتهاء للدعم بشكل منفصل.
 
-يظل Phaseo provider 1.x قيد الصيانة ما دام AI SDK 7 هو الإصدار الحالي. وعندما يصبح AI SDK 8 مستقرًا، ستضع Phaseo علامة الإهمال على سلسلة 1.x في npm. ولن يؤدي ذلك إلى إزالة الإصدارات الحالية؛ وسيُعلن عن أي قرار لاحق بإنهاء الدعم بشكل منفصل.
-
-### التوافق مع AI SDK 5
-
-يقبل AI SDK 5 عقد `ProviderV2` الأقدم. ثبّت إصدار التوافق المخصص من Phaseo:
-
-```bash
-npm install @phaseo/ai-sdk-provider@ai-sdk-v5
-```
-
-إذا لم يثبّت مدير الحزم الاعتماديات النظيرة تلقائيًا، فثبّت الإصدار الرئيسي المطابق من `ai` بشكل منفصل (`ai@^7` أو `ai@^6` أو `ai@^5`).
+## توليد النص
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const result = await generateText({
-	model: phaseo("openai/gpt-4o"),
+	model: phaseo("openai/gpt-6-astra"),
 	prompt: "Summarize this in one sentence.",
 });
+
+console.log(result.text);
 ```
 
-تدعم سلسلة v5 إنشاء النصوص وبثّها والأدوات والمخرجات المنظّمة والتضمينات والصور والنسخ الصوتي وتوليد الكلام. تتوفر إعادة الترتيب المعيارية في عقود الموفّر الخاصة بـ AI SDK 6 و7.
+تعمل الشيفرة نفسها على الخطوط الثلاثة كلها. استخدم معرّفات النماذج من [نقطة نهاية Models](../../api-reference/endpoint/models.mdx)؛ وتظل كل قدرة معتمدة على النموذج والمزوّد الأصلي.
 
-## الاستخدام الأساسي
+## ما يدعمه كل خط
+
+| الميزة | AI SDK 7 (المزوّد 2.x) | AI SDK 5 |
+| --- | --- | --- |
+| توليد النص والبث | نعم | نعم |
+| أدوات الدوال وجولات نتائج الأدوات | نعم، بما في ذلك مدخلات الأدوات المبثوثة | نعم |
+| المخرجات المنظّمة بـ JSON وJSON Schema | نعم | نعم |
+| التضمينات وتوليد الصور | نعم | نعم |
+| التفريغ الصوتي والكلام | نعم | نعم |
+| إعادة الترتيب | نعم | لا |
+| إعدادات الاستدلال ومخرجاته المستقلة عن المزوّد | نعم | |
+| مدخلات الملفات النصية والصور (بيانات ملفات V7 الموسومة) | نعم | |
+| مصادر الاستشهاد بعناوين URL | نعم | |
+| البيانات الوصفية للمزوّد، والاستخدام، وترويسات الطلب، وإشارات الإلغاء، وأجزاء التدفق الخام | نعم | |
+
+يمثّل عمود AI SDK 7 ما ينفّذه المزوّد 2.x ويختبره مقابل عقود v4 الأصلية في AI SDK 7. وتتوفر إعادة الترتيب أيضًا في خط AI SDK 6.
+
+## إعادة ترتيب المستندات
+
+استخدم المساعد `rerank()` في AI SDK مع `phaseo.rerankingModel(modelId)`:
 
 ```ts
-import { phaseo } from "@phaseo/ai-sdk-provider";
-import { generateText } from "ai";
-
-const result = await generateText({
-	model: phaseo("openai/gpt-4o"),
-	prompt: "Summarize this in one sentence.",
-});
-```
-
-## الواجهات المدعومة في AI SDK 7
-
-ينفّذ Provider 2.x عقود v4 الأصلية في AI SDK 7 ويختبرها، وتشمل:
-
-- إنشاء النصوص وبثّها
-- إعدادات الاستدلال ومخرجاته المستقلة عن الموفّر
-- أدوات الوظائف القياسية ومدخلات الأدوات المبثوثة وتبادل نتائج الأدوات
-- المخرجات المنظّمة بتنسيقي JSON وJSON Schema
-- مدخلات الملفات النصية والصورية باستخدام تنسيق بيانات الملفات ذي العلامات في V7
-- مصادر الاستشهاد بعناوين URL
-- التضمينات وإنشاء الصور
-- إعادة الترتيب
-- النسخ الصوتي وتوليد الكلام
-- بيانات الموفّر الوصفية والاستخدام وترويسات الطلب وإشارات الإلغاء ومقاطع البث الخام
-
-استخدم معرّفات النماذج من [نقطة نهاية النماذج](../../api-reference/endpoint/models.mdx). وتعتمد الإمكانات الفردية أيضًا على النموذج المحدد والموفّر الأساسي.
-
-## إعادة الترتيب وحدود الإمكانات
-
-تتوفر إعادة الترتيب عبر المساعد `rerank()` في AI SDK و`phaseo.rerankingModel(modelId)`. لا تُعلن ميزات ProviderV4 التي تتطلب واجهات API من Phaseo غير متاحة حاليًا، ومنها رفع الملفات المُدارة ومراجعها والمهارات وتعريفات الأدوات ونتائجها واستجابات الموافقة التي ينفّذها الموفّر. تظل أدوات الوظائف التي ينفّذها التطبيق مستخدمة لمسار التنفيذ والموافقة المعتاد في AI SDK. وتُصدر الأجزاء غير المدعومة الخاصة بموفّر معين أو المطالبات المخصصة خطأً واضحًا بدل تجاهلها بصمت.
-
-```typescript
 import { rerank } from "ai";
 import { phaseo } from "@phaseo/ai-sdk-provider";
 
 const result = await rerank({
-  model: phaseo.rerankingModel("voyage/rerank-2"),
-  query: "Which document is about TypeScript?",
-  documents: [
-    "TypeScript adds static types to JavaScript.",
-    "Rust is a systems programming language.",
-  ],
-  topN: 1,
+	model: phaseo.rerankingModel("voyage/rerank-2"),
+	query: "Which document is about TypeScript?",
+	documents: [
+		"TypeScript adds static types to JavaScript.",
+		"Rust is a systems programming language.",
+	],
+	topN: 1,
 });
 ```
+
+## الحدود المعروفة
+
+- لا يعلن المزوّد عن ميزات `ProviderV4` التي تحتاج إلى واجهات Phaseo API غير موجودة بعد: رفع الملفات المُدارة ومراجعها، والمهارات، وتعريفات الأدوات التي ينفّذها المزوّد ونتائجها واستجابات الموافقة عليها.
+- تظل أدوات الدوال التي يشغّلها تطبيقك تستخدم مسار التنفيذ والموافقة المعتاد في AI SDK.
+- أجزاء الموجّه الخاصة بالمزوّد أو المخصصة غير المدعومة تفشل بخطأ واضح بدلًا من إسقاطها.

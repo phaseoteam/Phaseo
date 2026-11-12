@@ -1,25 +1,26 @@
+import { it, expect, beforeEach, vi } from "vitest";
 import { fetchPrivateUsage, fetchPrivateUsageOperation } from "./fetchPrivateUsage";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import { createClient } from "@/utils/supabase/client";
 
-jest.mock("@/utils/supabase/client", () => ({ createClient: jest.fn() }));
-jest.mock("@/lib/web-api/client", () => ({
-	...jest.requireActual("@/lib/web-api/client"), fetchAccountWebApi: jest.fn(),
+vi.mock("@/utils/supabase/client", () => ({ createClient: vi.fn() }));
+vi.mock("@/lib/web-api/client", async () => ({
+	...(await vi.importActual("@/lib/web-api/client")), fetchAccountWebApi: vi.fn(),
 }));
 
 const scope = { userId: "user-a", workspaceId: "workspace-a" };
-const getSession = jest.fn();
+const getSession = vi.fn();
 beforeEach(() => {
-	jest.clearAllMocks();
-	jest.mocked(createClient).mockReturnValue({ auth: { getSession } } as any);
+	vi.clearAllMocks();
+	vi.mocked(createClient).mockReturnValue({ auth: { getSession } } as any);
 	getSession.mockResolvedValue({ data: { session: { user: { id: "user-a" }, access_token: "test-token" } } });
-	jest.mocked(fetchAccountWebApi).mockResolvedValue({ result: ["private"] });
+	vi.mocked(fetchAccountWebApi).mockResolvedValue({ result: ["private"] });
 });
 
 it("uses no-store, an abort signal, and an explicitly scoped workspace", async () => {
 	const signal = new AbortController().signal;
 	await fetchPrivateUsageOperation("paginatedRequests", [{ pageSize: 50 }], scope, signal);
-	const [path, , init] = jest.mocked(fetchAccountWebApi).mock.calls[0];
+	const [path, , init] = vi.mocked(fetchAccountWebApi).mock.calls[0];
 	expect(path).toBe("/api/account/settings/usage/actions");
 	expect(init).toMatchObject({ cache: "no-store", signal, method: "POST" });
 	expect(JSON.parse(init!.body as string)).toMatchObject({ workspaceId: "workspace-a", operation: "paginatedRequests" });

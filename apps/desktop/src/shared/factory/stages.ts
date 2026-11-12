@@ -325,10 +325,12 @@ export function ciBrief(failed: { name: string; link?: string; log?: string }[])
 		"Commit each fix on the current branch. Don't push: Factory does that.",
 		"",
 		"Failed checks:",
-		...failed.flatMap((check) => [
+		// A check's name is its workflow job's, which a pull request can set: one line, no fence tags.
+		...failed.map((check) => ({ ...check, name: untrustedLabel(check.name, 200) })).flatMap((check) => [
 			"",
 			`${check.name}${check.link ? ` (${check.link})` : ""}`,
-			...(check.log ? ["Last lines of its log:", "```", check.log.split("\n").slice(-CI_LOG_LINES).join("\n"), "```"] : []),
+			// A log prints whatever the code under test prints (a fork's, perhaps), so it's fenced like other text from GitHub.
+			...(check.log ? ["Last lines of its log:", untrustedBlock(`log of ${check.name}`, check.log.split("\n").slice(-CI_LOG_LINES).join("\n"))] : []),
 		]),
 	].join("\n");
 }

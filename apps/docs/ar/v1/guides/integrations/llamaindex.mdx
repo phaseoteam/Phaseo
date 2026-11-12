@@ -1,10 +1,10 @@
 ---
 title: "LlamaIndex"
 icon: "database"
-description: "استخدم Phaseo في مهام RAG ضمن LlamaIndex."
+description: "استخدم Phaseo في سير عمل RAG في LlamaIndex."
 ---
 
-استخدم هذا الدليل عندما تريد توجيه التوليد أو التضمينات في تطبيق LlamaIndex عبر Phaseo.
+أنشئ نموذج LLM من نوع `OpenAILike` بمفتاح Phaseo و`api_base="https://api.phaseo.app/v1"`، ثم اجعله الافتراضي في LlamaIndex حتى يمر التوليد في سير عمل RAG عبر Phaseo.
 
 ## التثبيت
 
@@ -12,14 +12,14 @@ description: "استخدم Phaseo في مهام RAG ضمن LlamaIndex."
 pip install llama-index llama-index-llms-openai-like llama-index-embeddings-openai-like
 ```
 
-## تهيئة نموذج LLM متوافق مع OpenAI
+## توجيه LlamaIndex إلى Phaseo
 
 ```python
 import os
 from llama_index.llms.openai_like import OpenAILike
 
 llm = OpenAILike(
-    model="openai/gpt-5-nano",
+    model="openai/gpt-6-astra",
     api_key=os.environ["PHASEO_API_KEY"],
     api_base="https://api.phaseo.app/v1",
     is_chat_model=True,
@@ -29,6 +29,8 @@ response = llm.complete("Write one sentence about retrieval quality.")
 print(response)
 ```
 
+طباعة جملة تعني أن الإعداد يعمل. ‏`OpenAILike` هي فئة LlamaIndex لواجهات API الخارجية المتوافقة مع OpenAI.
+
 ## الاستخدام في فهرس
 
 ```python
@@ -37,16 +39,9 @@ from llama_index.core import Settings
 Settings.llm = llm
 ```
 
-بعد ذلك، أنشئ الفهرس أو استعلم عنه كالمعتاد.
+ثم ابنِ فهرسك أو استعلم عنه كالمعتاد.
 
-## ملاحظات
+## القيود المعروفة
 
-- استخدم `OpenAILike` لواجهات API التابعة لجهات خارجية والمتوافقة مع OpenAI.
-- حدّد معرّفات نماذج التوليد والتضمين صراحةً. لا تفترض أن الإعدادات الافتراضية في LlamaIndex تشير إلى Phaseo.
-- إذا استخدمت تضمينات Phaseo، فعيّن نموذج التضمين باستخدام معرّف نموذج Phaseo وعنوان URL الأساسي نفسه.
-
-## مواضيع ذات صلة
-
-- [التضمينات](../../api-reference/endpoint/embeddings.mdx)
-- [النماذج](../../api-reference/endpoint/models.mdx)
-- [OpenAI SDK](./openai-sdk.mdx)
+- لا تشير الإعدادات الافتراضية في LlamaIndex إلى Phaseo. اضبط نموذجي التوليد والتضمين صراحةً.
+- لـ [التضمينات](../../api-reference/endpoint/embeddings.mdx) في Phaseo، اضبط نموذج التضمين بمعرّف نموذج Phaseo وBase URL نفسه.

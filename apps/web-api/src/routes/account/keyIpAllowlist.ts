@@ -4,7 +4,7 @@
 // a generated copy (scripts/sync-key-ip-allowlist.mjs), so the dashboard and the
 // API accept the same lists. The gateway's matcher is lib/security/keyIpAllowlist.ts.
 
-import { z } from "zod";
+import * as z from "zod";
 
 const ipv6 = z.string().refine((value) => {
     if (!value.includes(":") || !/^[0-9a-fA-F:.]+$/.test(value)) return false;

@@ -1,6 +1,9 @@
+import { Hono } from "hono";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
+import { OAUTH_CLIENT_WRITE_REFUSAL } from "@/auth/oauthClientWrites";
 import app from "@/index";
+import { accountSettingsMobileNotificationsRouter } from "./settings-mobile-notifications";
 
 const USER = "6d1f5c58-4a0e-4c5a-9a59-1f9b2a6c0001";
 const RULE = "2b7f3f0e-58c4-4d55-a7f6-0f0b8e6d0002";
@@ -12,6 +15,9 @@ const env = {
 	EXPO_ACCESS_TOKEN: "expo-access-token",
 };
 const BASE = "https://phaseo.app/api/account/settings/mobile-notifications";
+// A token the auth provider's OAuth server issued to an app (here the CLI, whose client ID is public).
+const encode = (value: unknown) => btoa(JSON.stringify(value)).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+const APP_TOKEN = `${encode({ alg: "HS256", typ: "JWT" })}.${encode({ sub: USER, aal: "aal2", client_id: "phaseo_cli" })}.signature`;
 
 type Call = { method: string; url: URL; body: unknown; headers: Headers };
 
@@ -21,7 +27,7 @@ function stubFetch(handler: (call: Call) => Response | undefined) {
 		const request = input instanceof Request ? input : new Request(String(input), init);
 		const url = new URL(request.url);
 		if (url.pathname === "/auth/v1/user") {
-			return request.headers.get("authorization") === "Bearer session-token"
+			return ["Bearer session-token", `Bearer ${APP_TOKEN}`].includes(request.headers.get("authorization") ?? "")
 				? Response.json({ id: USER, email: "user@example.com", created_at: "2026-01-01T00:00:00Z" })
 				: Response.json({ message: "invalid token" }, { status: 401 });
 		}
@@ -33,11 +39,11 @@ function stubFetch(handler: (call: Call) => Response | undefined) {
 	return calls;
 }
 
-function send(path: string, init: { method?: string; body?: unknown; token?: string | null } = {}) {
+function send(path: string, init: { method?: string; body?: unknown; token?: string | null; via?: { request: typeof app.request } } = {}) {
 	const headers: Record<string, string> = {};
 	if (init.token !== null) headers.authorization = `Bearer ${init.token ?? "session-token"}`;
 	if (init.body !== undefined) headers["content-type"] = "application/json";
-	return app.request(`${BASE}${path}`, {
+	return (init.via ?? app).request(`${BASE}${path}`, {
 		method: init.method ?? "GET",
 		headers,
 		body: init.body === undefined ? undefined : typeof init.body === "string" ? init.body : JSON.stringify(init.body),
@@ -404,5 +410,79 @@ describe("test push", () => {
 		const response = await send("/test", { method: "POST", body: { installationId: "no" } });
 		expect(await response.json()).toEqual({ error: "invalid_device", message: "installationId: installationId is not valid." });
 		expect(calls).toHaveLength(0);
+	});
+});
+
+describe("tokens issued to apps", () => {
+	const device = { expoPushToken: "ExponentPushToken[attacker_device]", platform: "android", timeZone: "Europe/London" };
+	const refused = { error: "forbidden", reason: "oauth_client_write_refused", message: OAUTH_CLIENT_WRITE_REFUSAL };
+	// The router alone, without web-api's app-wide refusal, so the handlers' own check is what's tested.
+	const routerOnly = new Hono<{ Bindings: typeof env }>().route("/api/account/settings", accountSettingsMobileNotificationsRouter);
+
+	it.each([["the router alone", routerOnly], ["web-api", app]] as const)("can't register a push device through %s", async (_label, via) => {
+		const calls = stubFetch((call) => call.url.pathname.endsWith("/rpc/register_mobile_push_device") ? Response.json("device-id") : undefined);
+		const response = await send("/devices/install-0001", { method: "PUT", body: device, token: APP_TOKEN, via });
+		expect(response.status).toBe(403);
+		expect(await response.json()).toEqual(refused);
+		expect(calls.some((call) => call.url.pathname.endsWith("/rpc/register_mobile_push_device"))).toBe(false);
+		expect(calls).toHaveLength(0);
+	});
+
+	it.each([
+		["POST", "/rules", { events: ["model_released"] }],
+		["PATCH", `/rules/${RULE}`, { enabled: true }],
+		["DELETE", `/rules/${RULE}`, undefined],
+		["PUT", "/rules/order", { ids: [RULE] }],
+		["POST", "/test", { installationId: "install-0001" }],
+	])("can't %s %s", async (method, path, body) => {
+		for (const via of [routerOnly, app]) {
+			const calls = stubFetch(() => undefined);
+			const response = await send(path, { method, body, token: APP_TOKEN, via });
+			expect(response.status).toBe(403);
+			expect(await response.json()).toEqual(refused);
+			expect(calls).toHaveLength(0);
+		}
+	});
+
+	it.each([
+		["turn notifications on", { enabled: true }],
+		["turn a category on", { categories: { money: true } }],
+		["turn one off and another on", { categories: { money: false, security: true } }],
+		["raise the daily cap", { dailyCap: 100 }],
+		["clear quiet hours", { quietHours: null }],
+	])("can't %s", async (_label, body) => {
+		for (const via of [routerOnly, app]) {
+			const calls = stubFetch((call) => settingsReads(call));
+			const response = await send("", { method: "PUT", body, token: APP_TOKEN, via });
+			expect(response.status).toBe(403);
+			expect(await response.json()).toEqual(refused);
+			expect(calls.filter((call) => call.method !== "GET")).toHaveLength(0);
+		}
+	});
+
+	it("can switch notifications and categories off, and unregister the caller's own device", async () => {
+		const merged: unknown[] = [];
+		const calls = stubFetch((call) => {
+			if (call.method === "POST" && call.url.pathname.endsWith("/mobile_notification_preferences")) return new Response(null, { status: 201 });
+			if (call.url.pathname.endsWith("/rpc/update_mobile_notification_categories")) { merged.push(call.body); return Response.json(null); }
+			if (call.method === "PATCH" && call.url.pathname.endsWith("/mobile_push_devices")) return new Response(null, { status: 204 });
+			return settingsReads(call, { preferences: [{ enabled: false, categories: {}, quiet_start: null, quiet_end: null, daily_cap: 10 }] });
+		});
+		const response = await send("", { method: "PUT", body: { enabled: false, categories: { money: false, security: false } }, token: APP_TOKEN });
+		expect(response.status).toBe(200);
+		expect(calls.find((call) => call.method === "POST" && call.url.pathname.endsWith("/mobile_notification_preferences"))?.body).toMatchObject({ user_id: USER, enabled: false });
+		expect(merged).toEqual([{ p_user_id: USER, p_categories: { money: false, security: false } }]);
+
+		const removed = await send("/devices/install-0001", { method: "DELETE", token: APP_TOKEN });
+		expect(await removed.json()).toEqual({ ok: true });
+		const disabled = calls.find((call) => call.method === "PATCH" && call.url.pathname.endsWith("/mobile_push_devices"));
+		expect(disabled?.body).toMatchObject({ status: "disabled" });
+		expect(disabled?.url.searchParams.get("user_id")).toBe(`eq.${USER}`);
+	});
+
+	it("leaves the person's own session alone", async () => {
+		const calls = stubFetch((call) => call.url.pathname.endsWith("/rpc/register_mobile_push_device") ? Response.json("device-id") : undefined);
+		expect((await send("/devices/install-0001", { method: "PUT", body: device, via: routerOnly })).status).toBe(200);
+		expect(calls.some((call) => call.url.pathname.endsWith("/rpc/register_mobile_push_device"))).toBe(true);
 	});
 });

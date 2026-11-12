@@ -41,7 +41,7 @@ export function PageSection({ id, title, description, action, first, onLayoutSec
 
 /** A sub-heading inside a section ("Effective pricing", "Related models"). */
 export function SubHeading({ children, className }: { children: ReactNode; className?: string }) {
-  return <Text className={cn("text-[15px] font-semibold leading-[22px] text-foreground", className)}>{children}</Text>;
+  return <Text variant="body" className={cn("font-semibold", className)}>{children}</Text>;
 }
 
 /** The website's dashed empty state: an icon tile, a title and a hint. */
@@ -78,9 +78,7 @@ export const STATUS_META: Record<CanonicalGatewayStatus, { label: string; descri
   coming_soon: { label: "Coming soon", description: "Not active yet.", icon: Clock3, light: "#2563eb", dark: "#60a5fa" },
   external: { label: "External", description: "Listed from an external catalogue; routing requires an explicit provider-level override.", icon: ArrowUpRight, light: "#7c3aed", dark: "#a78bfa" },
   internal_testing: { label: "Internal testing", description: "Visible to admins only while this provider/model capability is being tested.", icon: FlaskConical, light: "#0284c7", dark: "#38bdf8" },
-  deranked_lvl1: { label: "Deranked L1", description: "Routable, but slightly deprioritized by routing health.", icon: AlertTriangle, light: "#f59e0b", dark: "#fbbf24" },
-  deranked_lvl2: { label: "Deranked L2", description: "Routable, but currently deprioritized by routing health.", icon: AlertTriangle, light: "#d97706", dark: "#f59e0b" },
-  deranked_lvl3: { label: "Deranked L3", description: "Routable, but heavily deprioritized by routing health.", icon: AlertTriangle, light: "#ef4444", dark: "#f87171" },
+  deranked: { label: "Lower priority", description: "Set by Phaseo. Used only as a backup when the other providers fail.", icon: AlertTriangle, light: "#d97706", dark: "#f59e0b" },
   inactive: { label: "Not active", description: "Not available.", icon: XCircle, light: "#71717a", dark: "#a1a1aa" },
   disabled: { label: "Disabled", description: "Explicitly disabled and not routable.", icon: Ban, light: "#dc2626", dark: "#f87171" },
   not_listed: { label: "Not active", description: "Not available.", icon: XCircle, light: "#71717a", dark: "#a1a1aa" },

@@ -1,104 +1,135 @@
 ---
-title: "ローカルエージェントツールを並行実行する"
+title: "ローカルのエージェントツールを並行して実行する"
 icon: "network"
-description: "TypeScript Agent SDKでローカルツールの同時実行数を制限し、各ツール呼び出しを直列化せずに1回のモデルターンで独立した情報を収集します。"
+description: "TypeScript Agent SDK で上限付きのローカルツール並行実行を使い、1 回のモデルターンで独立したコンテキストを、ツール呼び出しを 1 つずつ順に実行せずに集めます。"
 ---
 
-1回のエージェントターンで複数の独立したローカルツールを安全に呼び出せる場合に、このレシピを使います。結果の順序を保ちながらランタイムで並行実行できます。
+`toolExecution.toolConcurrency` を設定すると、TypeScript Agent SDK は 1 回のモデルターンから出た複数の独立したツール呼び出しを、1 つずつ順にではなく同時に実行します。完成すると、ドキュメント、ステータス、インシデントのコンテキストを並行して集め、その結果をモデルが要求した順序で記録するエージェントができます。
 
-## 使用する場面
+ツールは固定のサンプルデータを返すため、このスクリプトは例示用です。実際には独自の読み取り専用の検索に置き換えてください。パッケージ化した版は `packages/sdk/agent-sdk-ts/examples/parallel-tool-agent.ts` にあります。
 
-次の場合は`toolExecution.toolConcurrency`を使います。
+## 作成する
 
-- 1回のターンでモデルが複数のローカルツール呼び出しを出力できる
-- 各ツールが互いの出力に依存しない
-- 直列実行ではワーカーの時間が無駄になる
-- 保存されるツール結果メッセージを元の呼び出し順に保ちたい
+<Steps>
+<Step title="インストールする">
 
-共有状態を変更するツールがある場合や、後続ツールが先行ツールの結果に依存する場合は、同時実行数を増やさないでください。
+```bash
+npm install @phaseo/agent-sdk zod
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
 
-## 例
+</Step>
+<Step title="エージェントを書く">
 
-```ts
-import {
-  createAgent,
-  createGatewayAgentClient,
-  defineTool,
-} from "@phaseo/agent-sdk";
+```ts parallel-agent.ts
+import { z } from "zod";
+import { createAgent, createGatewayAgentClient, defineTool } from "@phaseo/agent-sdk";
 
 const fetchDocs = defineTool({
   id: "fetch-docs",
-  async execute(input: { slug: string }) {
-    return {
-      slug: input.slug,
-      summary: `Docs summary for ${input.slug}`,
-    };
+  description: "Return a short summary of one Phaseo docs page by slug.",
+  parameters: {
+    type: "object",
+    properties: { slug: { type: "string" } },
+    required: ["slug"],
+    additionalProperties: false,
+  },
+  inputSchema: z.object({ slug: z.string().regex(/^[a-z0-9/-]{1,80}$/) }).strict(),
+  parallelSafe: true,
+  timeoutMs: 5_000,
+  async execute({ slug }) {
+    return { slug, summary: `Docs summary for ${slug}` };
   },
 });
 
 const fetchStatus = defineTool({
   id: "fetch-status",
-  async execute(input: { component: string }) {
-    return {
-      component: input.component,
-      status: "operational",
-    };
+  description: "Return the status of one Phaseo component.",
+  parameters: {
+    type: "object",
+    properties: { component: { type: "string", enum: ["gateway", "dashboard", "async-jobs"] } },
+    required: ["component"],
+    additionalProperties: false,
+  },
+  inputSchema: z.object({ component: z.enum(["gateway", "dashboard", "async-jobs"]) }).strict(),
+  parallelSafe: true,
+  timeoutMs: 5_000,
+  async execute({ component }) {
+    return { component, status: "operational" };
   },
 });
 
 const fetchIncidents = defineTool({
   id: "fetch-incidents",
-  async execute(input: { service: string }) {
-    return {
-      service: input.service,
-      openIncidents: 0,
-    };
+  description: "Return the open incident count for one service.",
+  parameters: {
+    type: "object",
+    properties: { service: { type: "string", enum: ["gateway", "dashboard", "async-jobs"] } },
+    required: ["service"],
+    additionalProperties: false,
+  },
+  inputSchema: z.object({ service: z.enum(["gateway", "dashboard", "async-jobs"]) }).strict(),
+  parallelSafe: true,
+  timeoutMs: 5_000,
+  async execute({ service }) {
+    return { service, openIncidents: 0 };
   },
 });
 
 const agent = createAgent({
   id: "parallel-tool-agent",
-  model: "phaseo/free",
+  model: "openai/gpt-6-astra",
   instructions:
     "Use the available tools to gather context, then return one concise operational summary.",
   tools: [fetchDocs, fetchStatus, fetchIncidents],
-  toolExecution: {
-    toolConcurrency: 3,
-  },
+  toolExecution: { toolConcurrency: 3 },
+  maxSteps: 4,
 });
 
 const result = await agent.run({
   input:
-    "Fetch the presets docs, the gateway status component, and the async-jobs incident digest, then summarize the current state.",
+    "Fetch the presets docs, the gateway status, and the async-jobs incident digest, then summarize the current state.",
   client: createGatewayAgentClient({
-    clientOptions: {
-      apiKey: process.env.PHASEO_API_KEY!,
-    },
+    clientOptions: { apiKey: process.env.PHASEO_API_KEY! },
+    parallelToolCalls: true,
   }),
+  onEvent(event) {
+    if (event.type === "tool.started" || event.type === "tool.completed") {
+      console.log(event.type, event.toolName, event.timestamp);
+    }
+  },
 });
+
+console.log(result.output);
 ```
 
-同梱の実装は次を参照してください。 `packages/sdk/agent-sdk-ts/examples/parallel-tool-agent.ts`.
+</Step>
+<Step title="実行する">
 
-## ランタイムが保証すること
+```bash
+npx tsx parallel-agent.ts
+```
 
-- ローカルツールは設定された`toolConcurrency`の上限まで並行実行できる
-- 各ツールについて`tool.started`と`tool.completed`イベントが引き続き出力される
-- 保存されるツール結果メッセージは元の呼び出し順を保つ
-- ツール処理の完了後にチェックポイントが保存される
-- `timeoutMs`によるタイムアウトが各ツールに適用される
+</Step>
+</Steps>
 
-## 運用上のガイダンス
+## 動作を確認する
 
-- `2`や`3`などの小さい値から始める
-- ローカルツールは冪等にし、副作用を抑える
-- 依存先が停止しても全ワーカーを占有しないよう`timeoutMs`を設定する
-- 実行の再開やリモート調整が本当に必要な場合にのみ`store`を追加する
+- モデルが 1 回のターンで 3 つすべてを要求した場合、3 つの `tool.started` の行が、対応する `tool.completed` の行より前に、近いタイムスタンプで出力されます。
+- `result.messages` には、完了した順序にかかわらず、モデルのツール呼び出しの順序でツールの結果が並びます。
+- 実行は `result.output` の 1 つの要約で終わります。
 
-## 検証
+## 同時に実行されるもの
 
-この方法を有効にした後：
+| 設定 | 効果 |
+| --- | --- |
+| `toolExecution.toolConcurrency` | 1 回のターンのツール呼び出しを、この数まで同時に実行します。デフォルトは `1` です。 |
+| ターン内のすべてのツールに `parallelSafe: true` | 最大 8 個、または `toolConcurrency` のほうが大きければその数まで同時に実行します。読み取り専用のツールにだけ使ってください。 |
+| ツールの `timeoutMs` | この時間が経つとその呼び出しは失敗するため、1 つの依存先が止まってもすべての枠がふさがることはありません。 |
+| Gateway クライアントの `parallelToolCalls` | モデルが 1 回のターンで複数のツール呼び出しを要求できるようにします。実際に要求するかどうかはモデルによって異なります。 |
 
-- 複数ツールを使うターンを対象としたエージェントループのテストを実行する
-- ツール結果のメッセージが引き続き正しい順序で生成されることを確認する
-- 運用ログに想定どおり`tool.started`および`tool.completed`イベントが記録されることを確認する
+`tool.started` と `tool.completed` は引き続き呼び出しごとに発生し、ツールのフェーズが終わると実行がチェックポイントを保存します。
+
+## 安全に使う
+
+並行実行は、互いの出力に依存せず、共有状態を変更しないツールにだけ使ってください。`2` か `3` から始め、ツールは副作用の少ない冪等なものにし、上の例のようにすべての引数を `inputSchema` で検証してください。`state` アクセサーは、[永続化可能なループ](./agent-sdk-durable-loop)のように、実行を再開する必要がある場合にだけ追加してください。本番で頼る前に、複数ツールのターンを扱うテストを実行し、結果の順序を確認してください。

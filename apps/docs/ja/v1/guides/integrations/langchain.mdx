@@ -1,10 +1,10 @@
 ---
 title: "LangChain"
 icon: "link"
-description: "OpenAI 互換のチャット API を使って LangChain と Phaseo を連携します。"
+description: "OpenAI 互換のチャット API を通じて、LangChain で Phaseo を使います。"
 ---
 
-LangChain の chain、agent、LangGraph ワークフローから Phaseo 経由でモデルを呼び出すには、このガイドを使ってください。
+Phaseo のキーと `base_url="https://api.phaseo.app/v1"` で `ChatOpenAI` モデルを作成すると、LangChain のチェーン、エージェント、LangGraph のワークフローが Phaseo 経由でモデルを呼び出します。
 
 ## インストール
 
@@ -12,14 +12,14 @@ LangChain の chain、agent、LangGraph ワークフローから Phaseo 経由�
 pip install -U langchain langchain-openai
 ```
 
-## ChatOpenAI を設定する
+## ChatOpenAI を Phaseo に向ける
 
 ```python
 import os
 from langchain_openai import ChatOpenAI
 
 llm = ChatOpenAI(
-    model="openai/gpt-5-nano",
+    model="openai/gpt-6-astra",
     api_key=os.environ["PHASEO_API_KEY"],
     base_url="https://api.phaseo.app/v1",
 )
@@ -28,9 +28,11 @@ result = llm.invoke("Write one sentence about routing reliability.")
 print(result.content)
 ```
 
+文が 1 つ出力されれば、設定は正しく動作しています。
+
 ## LangGraph で使う
 
-同じ `llm` をグラフのノードまたはエージェントビルダーに渡します。
+同じ `llm` をグラフのノードやエージェントビルダーに渡します。
 
 ```python
 def call_model(state):
@@ -38,14 +40,8 @@ def call_model(state):
     return {"messages": [response]}
 ```
 
-## 注意点
+## 既知の制限
 
-- LangChain の OpenAI 互換経路では Chat Completions を使います。`/v1/chat/completions` で利用できる Phaseo 機能を使用してください。
-- `phaseo:apply_patch` など Responses 専用のサーバーツールが必要な場合は、Phaseo を直接呼び出すか OpenAI SDK ガイドを参照してください。
-- トレースを使う場合は、この設定を[可観測性](./observability.mdx)と組み合わせてください。
-
-## 関連ページ
-
-- [OpenAI SDK](./openai-sdk.mdx)
-- [ツール呼び出し](../tool-calling.mdx)
-- [ルーティングとフォールバック](../routing-and-fallbacks.mdx)
+- この方法は [Chat Completions](../../api-reference/endpoint/chat-completions.mdx) を使うため、[ツール呼び出し](../tool-calling.mdx)や[ルーティングとフォールバック](../routing-and-fallbacks.mdx)など、`/v1/chat/completions` で使える Phaseo の機能だけが動作します。
+- `phaseo:apply_patch` など Responses 専用のサーバーツールを使うには、Phaseo を直接呼び出すか [OpenAI SDK](./openai-sdk.mdx) を使います。
+- LangSmith によるトレースについては、[可観測性](./observability.mdx)を参照してください。

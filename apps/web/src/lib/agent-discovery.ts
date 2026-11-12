@@ -14,10 +14,10 @@ export function normalizeGatewayApiBaseUrl(value: string): string {
 }
 
 export const DOCS_BASE_URL = normalizeUrl(
-	process.env.NEXT_PUBLIC_DOCS_URL ?? DEFAULT_DOCS_BASE_URL,
+	process.env.PUBLIC_DOCS_URL ?? DEFAULT_DOCS_BASE_URL,
 );
 export const API_BASE_URL = normalizeGatewayApiBaseUrl(
-	process.env.NEXT_PUBLIC_GATEWAY_API_URL ?? DEFAULT_GATEWAY_API_BASE_URL,
+	process.env.PUBLIC_GATEWAY_API_URL ?? DEFAULT_GATEWAY_API_BASE_URL,
 );
 export const API_ORIGIN = new URL(API_BASE_URL).origin;
 export const API_HEALTH_URL = `${API_BASE_URL}/health`;
@@ -131,6 +131,7 @@ Phaseo is an open model database and OpenAI-compatible gateway for comparing mod
 
 - Public model and provider browsing pages
 - Pricing and gateway overview pages
+- Every page as Markdown: add \`.md\` to the URL or send \`Accept: text/markdown\`
 - Machine-readable API discovery metadata
 - Browser-native WebMCP homepage tools for navigation and API discovery
 `;

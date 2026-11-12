@@ -5,6 +5,9 @@ compatibility_flags = ["global_fetch_strictly_public", "web_socket_auto_reply_to
 workers_dev = false
 preview_urls = false
 
+[version_metadata]
+binding = "CF_VERSION_METADATA"
+
 [vars]
 GOOGLE_VERTEX_PROJECT_NUMBER = "916177560808"
 GOOGLE_VERTEX_BATCH_LOCATION = "global"
@@ -33,6 +36,8 @@ AMAZON_BEDROCK_MANTLE_BASE_URL = "https://bedrock-mantle.us-west-2.api.aws"
 MODEL_DISCOVERY_ENABLED = "true"
 ACCOUNT_DELETION_PURGE_ENABLED = "true"
 MODEL_DISCOVERY_RETENTION_DAYS = "7"
+# A model must be missing from a provider's /models list this long (minutes) before its removal is announced.
+MODEL_DISCOVERY_REMOVAL_CONFIRM_MINUTES = "360"
 MODEL_DISCOVERY_SHARD_SIZE = "20"
 # Run every provider check in one scheduled invocation. The watcher itself
 # uses bounded concurrency so this removes shard-to-shard notification delay.

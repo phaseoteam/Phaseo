@@ -1,7 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import type { Task } from "../shared/workspace";
 import type { AgentAdapter, AgentCallbacks } from "./agentAdapter";
 import { WorkspaceRuntime } from "./workspaceRuntime";
 import { WorkspaceStore } from "./workspaceStore";
@@ -337,6 +338,47 @@ describe("workspace orchestration", () => {
 			await runtime.command({ type: "cancel", id });
 			await vi.waitFor(() => expect(runtime.store.getTask(id).status).toBe("interrupted"));
 			expect(runtime.store.getTask(id).queue).toHaveLength(1);
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+	it("runs a Factory thread made before the flag, and threads under it, without the repository's own config when sent a message from Chats", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-factory-untrusted-"));
+		const seen: Task[] = [];
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async task => { seen.push(task); }, cancel: async () => {} }));
+		try {
+			// An item's thread in Factory's worktree, and a thread delegated from it into a folder of the person's own: neither flagged.
+			const worktree = path.join(directory, "factory", "worktrees", "acme-app-3"), own = path.join(directory, "own");
+			mkdirSync(worktree, { recursive: true }); mkdirSync(own);
+			const factoryProject = runtime.store.addProject(worktree), ownProject = runtime.store.addProject(own);
+			const thread = runtime.store.apply({ type: "create-task", harness: "codex", model: "gpt", mode: "code", permissionMode: "full-access", projectId: factoryProject.id });
+			const child = runtime.store.createDelegatedTask({ type: "create-task", harness: "codex", model: "gpt", mode: "code", projectId: ownProject.id }, { parentTaskId: thread.id, requestId: "helper" }, "Help", "Helper");
+			const unrelated = runtime.store.apply({ type: "create-task", harness: "codex", model: "gpt", mode: "code", projectId: ownProject.id });
+			expect([thread, child, unrelated].map(task => task.untrustedCheckout)).toEqual([undefined, undefined, undefined]);
+			for (const task of [child, thread, unrelated]) {
+				await runtime.command({ type: "send", id: task.id, text: "From Chats" });
+				await vi.waitFor(() => expect(seen.some(run => run.id === task.id)).toBe(true));
+			}
+			expect(seen.find(run => run.id === child.id)?.untrustedCheckout).toBe(true);
+			expect(seen.find(run => run.id === thread.id)?.untrustedCheckout).toBe(true);
+			expect(seen.find(run => run.id === unrelated.id)?.untrustedCheckout).toBeUndefined();
+			expect(runtime.store.getTask(thread.id).untrustedCheckout).toBe(true);
+		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
+	});
+	it("won't run a thread on a fork's pull request, or one under it, on an agent that loads the fork's own config", async () => {
+		const directory = mkdtempSync(path.join(tmpdir(), "phaseo-fork-checkout-"));
+		const seen: Task[] = [];
+		const runtime = new WorkspaceRuntime(directory, () => ({ run: async task => { seen.push(task); }, cancel: async () => {} }));
+		try {
+			// Made before the check at creation (or past it): a flagged Codex thread, and an unflagged one under a flagged Claude thread.
+			const flagged = runtime.store.apply({ type: "create-task", harness: "codex", model: "gpt", mode: "code" }); flagged.forkCheckout = true; runtime.store.saveTask(flagged);
+			const parent = runtime.store.apply({ type: "create-task", harness: "claude", model: "opus", mode: "code", forkCheckout: true });
+			const child = runtime.store.apply({ type: "create-task", harness: "codex", model: "gpt", mode: "code" }); child.parentId = parent.id; runtime.store.saveTask(child);
+			for (const task of [flagged, child]) {
+				await runtime.command({ type: "send", id: task.id, text: "Go" });
+				await vi.waitFor(() => expect(runtime.store.getTask(task.id)).toMatchObject({ status: "failed", error: expect.stringContaining("This thread works on a pull request from a fork, so it can't run Codex") }));
+			}
+			expect(runtime.store.getTask(child.id).forkCheckout).toBe(true);
+			await runtime.command({ type: "send", id: parent.id, text: "Go" });
+			await vi.waitFor(() => expect(seen.map(task => task.id)).toEqual([parent.id]));
 		} finally { await runtime.close(); rmSync(directory, { recursive: true, force: true }); }
 	});
 });

@@ -1,19 +1,35 @@
 ---
-title: "Classifique tickets com o Agent SDK para C#"
-sidebarTitle: "Classificar tickets em C#"
+title: "Faça a triagem de tickets com o Agent SDK de C#"
 icon: "ticket-check"
-description: "Use o Agent SDK para C# em um fluxo de triagem de tickets com ferramentas locais dentro de um único serviço .NET."
+description: "Use o Agent SDK de C# em um loop de triagem de tickets com ferramentas locais que fica dentro de um único serviço .NET."
 ---
 
-Use esta receita quando um serviço .NET precisar classificar ou resumir tickets de suporte recebidos.
+Execute um agente em C# que carrega um ticket de suporte com uma ferramenta local e escreve um resumo curto da triagem, dentro de um único serviço ASP.NET ou worker. Ao final, você terá um app de console que imprime a próxima ação para o ticket `T-1042`.
 
-## 1. Prepare os SDKs
+A ferramenta retorna dados de exemplo fixos, então o programa é ilustrativo; substitua-a pelo seu armazenamento de tickets. Ele serve para um serviço que já sabe buscar o estado interno dos tickets e quer um loop restrito antes de adicionar filas ou aprovações.
 
-<Note type="warning">O pacote C# Agent SDK ainda não está disponível no NuGet. Siga as [instruções de instalação a partir do código-fonte](../sdk-reference/csharp/agent-sdk-installation.mdx).</Note>
+## Crie o agente
 
-## 2. Defina uma ferramenta interna de consulta
+<Steps>
+<Step title="Instale">
 
-```csharp
+```bash
+dotnet new console -n TicketTriage
+cd TicketTriage
+dotnet add package Phaseo.AgentSdk
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+`Phaseo.AgentSdk` instala o `Phaseo.Sdk` junto e precisa do .NET 8 ou mais recente. Veja [Instalação do Agent SDK de C#](../sdk-reference/agent/installation).
+
+</Step>
+<Step title="Escreva o agente">
+
+```csharp Program.cs
+using System.Text.Json;
+using System.Text.RegularExpressions;
+using PhaseoAgentSdk;
+
 var loadTicket = AgentSdk.DefineTool(new Tool(
     Id: "load-ticket",
     Description: "Load one support ticket by id.",
@@ -22,46 +38,69 @@ var loadTicket = AgentSdk.DefineTool(new Tool(
         ["type"] = "object",
         ["properties"] = new Dictionary<string, object?>
         {
-            ["ticketId"] = new Dictionary<string, object?> { ["type"] = "string" },
+            ["ticketId"] = new Dictionary<string, object?> { ["type"] = "string", ["pattern"] = "^T-\\d+$" },
         },
         ["required"] = new[] { "ticketId" },
+        ["additionalProperties"] = false,
     },
     Execute: (input, ctx) => Task.FromResult<object?>(new Dictionary<string, object?>
     {
-        ["ticketId"] = "T-1042",
+        ["ticketId"] = ((JsonElement)input!).GetProperty("ticketId").GetString(),
         ["severity"] = "medium",
         ["summary"] = "Customer cannot find preset routing settings.",
     })
-));
-```
+))
+{
+    // Os argumentos vêm do modelo: rejeite qualquer coisa que não seja um ID de ticket bem formado.
+    InputSchema = input =>
+    {
+        if (input is JsonElement json
+            && json.TryGetProperty("ticketId", out var id)
+            && id.ValueKind == JsonValueKind.String
+            && Regex.IsMatch(id.GetString()!, @"^T-\d+$"))
+        {
+            return input;
+        }
+        throw new ArgumentException("ticketId must look like T-1042");
+    },
+};
 
-## 3. Crie e execute o agente
-
-```csharp
 var agent = AgentSdk.CreateAgent(new AgentDefinition
 {
     Id = "ticket-triage-agent",
-    Model = "openai/gpt-5.4-nano",
+    Model = "openai/gpt-6-astra",
     Instructions = "Use tools when helpful and answer with a short triage summary.",
     Tools = new[] { loadTicket },
+    MaxSteps = 4,
 });
 
+// Lê PHASEO_API_KEY do ambiente.
 var result = await agent.Run(new RunOptions
 {
     Input = "Review ticket T-1042 and summarize the next action.",
     Client = AgentSdk.CreateGatewayAgentClient(),
 });
 
+Console.WriteLine(result.Run.Status);
 Console.WriteLine(result.Output);
 ```
 
-## Quando esta receita é adequada
+</Step>
+<Step title="Execute">
 
-- o fluxo de trabalho está dentro de um único serviço ASP.NET ou worker
-- seu runtime local já sabe buscar o estado interno dos tickets
-- você quer um loop de agente limitado antes de adicionar filas ou aprovações
+```bash
+dotnet run
+```
 
-## Relacionados
+</Step>
+</Steps>
 
-- [Agent SDK para C#](../sdk-reference/csharp/agent-sdk.mdx)
-- [Faça triagem de solicitações de suporte com agentes orientados por predefinições](./agent-sdk-support-triage.mdx)
+## Verifique se funcionou
+
+- O app imprime `completed` e depois um resumo que menciona as configurações de roteamento de predefinições.
+- Em **Configurações → Uso → Registros**, o primeiro turno do modelo mostra uma chamada `load-ticket` com `{"ticketId": "T-1042"}`.
+- Sem `PHASEO_API_KEY`, `CreateGatewayAgentClient` lança `PHASEO_API_KEY is required.`
+
+## Antes da produção
+
+Mantenha `MaxSteps` baixo (o padrão é `12`), mantenha a ferramenta somente leitura e defina `RequireApproval = true` em qualquer ferramenta que altere um ticket, para que a execução pause para uma pessoa. Para um fluxo de triagem maior com uma predefinição, JSON estrito e pausas para revisão, veja [triagem de suporte](./agent-sdk-support-triage). A [referência do Agent SDK de C#](../sdk-reference/agent/usage) cobre estado, aprovação e streaming.

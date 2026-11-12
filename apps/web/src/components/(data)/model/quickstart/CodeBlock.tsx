@@ -1,8 +1,6 @@
-"use client";
-
 // src/components/code/CodeBlock.tsx
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Separator } from "@/components/ui/separator";
 import { codeToHtmlBoth } from "./shiki";
 import { Button } from "@/components/ui/button";

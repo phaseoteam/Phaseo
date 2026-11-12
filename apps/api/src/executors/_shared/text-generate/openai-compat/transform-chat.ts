@@ -96,7 +96,11 @@ export function irToOpenAIChat(
 				providerId === "stepfun" ||
 				providerId === "wafer" ||
 				providerId === "wafer-zdr" ||
+				providerId === "wafer-us" ||
 				providerId === "doubleword" ||
+				// TokenHub asks for historical reasoning_content on tool calls in thinking mode
+				// (https://intl.cloud.tencent.com/document/product/1300/80695).
+				providerId === "tencent-cloud" ||
 				// Beam returns 400 without it (https://docs.baseten.co/inference/model-apis/reasoning);
 				// Arcee, Together and DeepInfra document it on assistant messages for tool loops.
 				providerId === "baseten" ||

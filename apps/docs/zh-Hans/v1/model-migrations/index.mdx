@@ -1,43 +1,31 @@
 ---
 icon: "compass"
 title: "模型迁移"
-description: "帮助你在生产环境中安全采用新模型版本的专项指南。"
+description: "针对具体模型的指南，帮助你在生产环境中安全地采用新模型版本。"
 ---
 
-# 模型迁移
+找到你要迁移到的模型，按其指南修改请求结构，然后在迁移流量之前重新运行评估。这些指南适用于在同一平台上更换模型；如需更换网关或 SDK，请使用[平台迁移指南](../migration-guides/index)。
 
-如果你继续使用同一平台，只升级模型，请使用这些指南。
+按发布时间从新到旧排列：
 
-这些指南重点介绍最容易导致现有集成出问题的变更：
+| 指南 | Phaseo 模型 ID | 发布日期 | 主要请求变更 |
+| --- | --- | --- | --- |
+| [Anthropic Claude Opus 5](./anthropic-claude-opus-5) | `anthropic/claude-opus-5` | 2026 年 7 月 24 日 | 默认开启自适应思考；不支持采样参数 |
+| [OpenAI GPT-5.6](./openai-migrating-to-gpt-5-6) | `openai/gpt-5.6-sol`、`-terra`、`-luna` | 2026 年 7 月 9 日 | 三个层级、`max` effort、新的缓存计量项 |
+| [Anthropic Claude Opus 4.8](./anthropic-claude-opus-4-1-to-4-8) | `anthropic/claude-opus-4.8` | 2026 年 5 月 28 日 | 替代已停用的 Opus 4.1；自适应思考 |
+| [Anthropic Claude Opus 4.7](./anthropic-claude-opus-4-6-to-4-7) | `anthropic/claude-opus-4.7` | 2026 年 4 月 16 日 | 不支持思考预算和采样参数；`xhigh` effort |
+| [Mistral Small 4](./mistral-small-3-2-to-mistral-small-4) | `mistral/mistral-small-4` | 2026 年 3 月 16 日 | 推理开启或关闭 |
+| [OpenAI GPT-5.4](./openai-migrating-to-gpt-5-4) | `openai/gpt-5.4` | 2026 年 3 月 5 日 | `xhigh` effort、`original` 图像细节 |
+| [Google Nano Banana 2](./google-nano-banana-1-to-nano-banana-2) | `google/gemini-3.1-flash-image` | 2026 年 2 月 26 日 | 宽高比，以及 0.5K 到 4K 的输出 |
+| [Google Gemini 3.1](./google-migrating-to-gemini-3-and-3-1) | `google/gemini-3.1-pro-preview` | 2026 年 2 月 19 日 | 思考级别、思维签名 |
+| [Anthropic Claude Sonnet 4.6](./anthropic-claude-sonnet-4-5-to-4-6) | `anthropic/claude-sonnet-4.6` | 2026 年 2 月 17 日 | 不支持预填充；`output_config.format` |
+| [SpaceXAI Grok 4.20](./xai-grok-4-20) | `spacex-ai/grok-4.20` | 2026 年 2 月 17 日 | 推理开关；多智能体 effort |
+| [Anthropic Claude Opus 4.6](./anthropic-claude-opus-4-5-to-4-6) | `anthropic/claude-opus-4.6` | 2026 年 2 月 5 日 | 不支持预填充；`output_config.format` |
 
-- 请求参数变更
-- 提示词和推理行为变化
-- 结构化输出和工具调用回归
-- 灰度发布、回退和回滚策略
+[OpenAI 弃用说明](./openai-deprecations)列出了 OpenAI 的停止服务日期和替代方案。
 
-## 模型指南
+## 迁移模型
 
-按目标模型的发布日期从新到旧排列。
-
-| 模型 | 发布日期 | 适用场景 |
-| --- | --- | --- |
-| [Anthropic Claude Opus 5](./anthropic-claude-opus-5.mdx) | 2026 年 7 月 24 日 | 复杂推理和长周期代理任务 |
-| [OpenAI GPT-5.6](./openai-migrating-to-gpt-5-6.mdx) | 2026 年 7 月 9 日 | 分层推理、编程和专业工作 |
-| [Anthropic Claude Opus 4.8](./anthropic-claude-opus-4-1-to-4-8.mdx) | 2026 年 5 月 28 日 | 长上下文和自适应思考 |
-| [Anthropic Claude Opus 4.7](./anthropic-claude-opus-4-6-to-4-7.mdx) | 2026 年 4 月 16 日 | 更严格请求控制下的高强度推理 |
-| [Mistral Small 4](./mistral-small-3-2-to-mistral-small-4.mdx) | 2026 年 3 月 16 日 | 可选推理的高效工作负载 |
-| [OpenAI GPT-5.4](./openai-migrating-to-gpt-5-4.mdx) | 2026 年 3 月 5 日 | 推理、视觉和计算机操作 |
-| [Google Nano Banana 2](./google-nano-banana-1-to-nano-banana-2.mdx) | 2026 年 2 月 26 日 | 生产环境中的图像生成与编辑 |
-| [Google Gemini 3.1](./google-migrating-to-gemini-3-and-3-1.mdx) | 2026 年 2 月 19 日 | 多模态和重度推理工作负载 |
-| [Anthropic Claude Sonnet 4.6](./anthropic-claude-sonnet-4-5-to-4-6.mdx) | 2026 年 2 月 17 日 | 编程、计算机操作和代理规划 |
-| [SpaceXAI Grok 4.20](./xai-grok-4-20.mdx) | 2026 年 2 月 17 日 | 推理和多代理工作负载 |
-| [Anthropic Claude Opus 4.6](./anthropic-claude-opus-4-5-to-4-6.mdx) | 2026 年 2 月 5 日 | 长周期编程和代理任务 |
-
-## 如何使用本节
-
-1. 从与你要升级的模型系列完全匹配的指南开始。
-2. 测试输出质量之前，先更新请求参数。
-3. 使用接近生产环境的提示词重新运行提示词和 Schema 评估。
-4. 制定明确的回退和回滚规则，再逐步切换流量。
-
-如果你要更换的是提供商、SDK 或 Gateway，而不只是模型，请参阅[迁移指南](../migration-guides/index.mdx)。
+1. 在测试输出质量之前，先按模型指南更新请求结构。
+2. 在类似生产的提示词上重新运行提示词和 schema 评估。
+3. 逐步迁移流量，把之前的模型作为 `models` 中的回退，并设定明确的回退规则。

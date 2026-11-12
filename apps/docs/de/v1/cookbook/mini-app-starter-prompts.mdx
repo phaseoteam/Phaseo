@@ -4,228 +4,224 @@ icon: "code"
 description: "Kopierbare Prompts, mit denen Coding-Agenten kleine Phaseo-Apps mit Raw-HTTP, SDKs oder Agent-Runtimes erstellen."
 ---
 
-Nutze diese Seite, wenn du einem Coding-Agenten einen konkreten Prompt für eine kleine, funktionierende App statt eines vagen Integrationsplans geben möchtest.
+Füge einen dieser Prompts in Cursor, Claude Code, Codex oder einen ähnlichen Coding-Agenten ein, und er baut eine kleine funktionierende Phaseo-App und berichtet danach, was er ausgeführt hat und was er nicht prüfen konnte. Jeder Prompt nennt die Integrationsschnittstelle, die Sicherheitsregeln und die Überprüfung, die du erwartest.
 
-<Tip>
-Diese Prompts sind ergebnisorientiert und implementationsspezifisch, damit sie in Cursor, Claude Code, Codex und ähnlichen Tools besser funktionieren.
-</Tip>
+Die entstehenden Apps sind Ausgangspunkte: Prüfe den Code, vor allem den Umgang mit Geheimnissen und die Tool-Validierung, bevor du ihn deployst.
 
-## Diese Prompts verwenden
+## Einen Prompt verwenden
 
 <Steps>
-  <Step title="Integrationsschnittstelle auswählen">
-    Wähle den Prompt passend dazu aus, wie die App Phaseo aufrufen soll:
-
-    - Raw-HTTP
-    - ein offizielles SDK
-    - Vercel AI SDK
-    - Agent-SDK
+  <Step title="Die Integrationsschnittstelle wählen">
+    | Prompt | Ruft Phaseo auf mit |
+    | --- | --- |
+    | Raw HTTP | `fetch` gegen `https://api.phaseo.app/v1` |
+    | TypeScript-SDK | `@phaseo/sdk` |
+    | Python-SDK | `phaseo` |
+    | Vercel AI SDK | `@phaseo/ai-sdk-provider` |
+    | Agent-SDK | `@phaseo/agent-sdk`, `phaseo-agent-sdk` oder dem Agent-SDK für deine Sprache |
   </Step>
-  <Step title="Variablen in eckigen Klammern ersetzen">
-    Fülle Werte wie `[APP-IDEE]`, `[FRAMEWORK]`, `[MODELL]` und `[LANGUAGE]` aus, bevor du den Prompt in deinen Coding-Agenten einfügst.
+  <Step title="Die Variablen in eckigen Klammern ersetzen">
+    Fülle Werte wie `[APP IDEA]`, `[FRAMEWORK]`, `[MODEL]` und `[LANGUAGE]` aus, bevor du den Prompt in deinen Coding-Agenten einfügst.
   </Step>
-  <Step title="Verifizierung statt nur Code verlangen">
-    Lass die Verifizierungszeilen im Prompt. So muss der Agent angeben, was er tatsächlich ausgeführt und angenommen hat und was noch manuell eingerichtet werden muss.
+  <Step title="Eine Überprüfung verlangen, nicht nur Code">
+    Behalte die Überprüfungszeilen im Prompt. Sie zwingen den Agenten zu berichten, was er tatsächlich ausgeführt hat, was er angenommen hat und was noch manuell eingerichtet werden muss.
   </Step>
 </Steps>
 
 ## Prompt-Pakete
 
 <AccordionGroup>
-  <Accordion title="Raw-HTTP-Mini-App" icon="globe">
+  <Accordion title="Mini-App mit Raw HTTP" icon="globe">
     <Prompt
-      description="Erstelle eine kleine App, die **Raw-HTTP** mit Phaseo statt eines SDK verwendet."
+      description="Baue eine kleine App, die Phaseo über **direktes HTTP** statt über ein SDK aufruft."
       icon="globe"
       actions={["copy", "cursor"]}
     >
-{`Du implementierst eine kleine Demo-App mit Phaseo Gateway, die produktionsnah aufgebaut ist.
+{`You are implementing a small production-style demo app with Phaseo Gateway.
 
-Erstelle eine [FRAMEWORK]-Mini-App für [APP-IDEE].
+Build a [FRAMEWORK] mini app for [APP IDEA].
 
-Anforderungen:
-- Verwende Raw-HTTP-Anfragen statt eines Phaseo-SDKs.
-- Verwende den Phaseo-Endpoint [ENDPOINT].
-- Verwende das Modell [MODELL].
-- Lies den API-Schlüssel aus der Umgebungsvariable PHASEO_API_KEY.
-- Halte die App bewusst klein: eine Hauptseite, eine Serverroute oder ein Handler und minimale Gestaltung.
-- Zeige die Nutzereingabe, den Status der Anfrageübermittlung, die Modellausgabe und etwaige Gateway-Fehlerzustände.
-- Füge in Kommentaren oder der Dokumentation eine Beispiel-Anfragelast hinzu, damit sich die Integration später leicht prüfen lässt.
+Requirements:
+- Use raw HTTP requests, not a Phaseo SDK.
+- Use the base URL https://api.phaseo.app/v1 and the Phaseo endpoint [ENDPOINT].
+- Use model [MODEL].
+- Read the API key from an environment variable named PHASEO_API_KEY and send it as Authorization: Bearer.
+- Keep the app intentionally small: one main page, one server route or handler, and minimal styling.
+- Show the user input, the request submission state, the model output, and any gateway error state.
+- Add one example request payload in comments or docs so the integration is easy to audit later.
 
-Implementierungsdetails:
-- Verwende fetch.
-- Halte den Request-Body explizit, statt Felder hinter Abstraktionen zu verbergen.
-- Füge vor der API-Anfrage eine einfache Prüfung auf leere Eingaben hinzu.
-- Behandle Antworten ungleich 200 sauber und zeige bei Bedarf den Antworttext an.
-- Bewahre Geheimnisse ausschließlich serverseitig auf.
+Implementation details:
+- Use fetch.
+- Keep the request body explicit instead of hiding fields behind abstractions.
+- Add basic validation for empty input before making the API request.
+- Handle non-200 responses cleanly and surface the response body when useful.
+- Keep secrets server-side only.
 
-Ergebnisse:
-- Der App-Code.
-- Ein kurzer README-Abschnitt, der erklärt, wie die App gestartet wird.
-- Ein .env.example-Eintrag für PHASEO_API_KEY.
+Deliverables:
+- The app code.
+- A short README section explaining how to run it.
+- A .env.example entry for PHASEO_API_KEY.
 
-Verifizierung:
-- Führe die App nach Möglichkeit lokal aus.
-- Prüfe einen erfolgreichen Anfragepfad.
-- Berichte genau, was du geprüft hast, was du nicht prüfen konntest und welche Annahmen noch offen sind.`}
+Verification:
+- Run the local app if possible.
+- Verify one successful request path.
+- Report exactly what you verified, what you could not verify, and any remaining assumptions.`}
     </Prompt>
   </Accordion>
 
-  <Accordion title="TypeScript-SDK-Mini-App" icon="file-code-2">
+  <Accordion title="Mini-App mit dem TypeScript-SDK" icon="file-code-2">
     <Prompt
-      description="Erstelle eine Mini-App mit dem **TypeScript-SDK** und einer kleinen, leicht prüfbaren Integration."
+      description="Baue eine Mini-App auf dem **TypeScript-SDK** mit einer kleinen, nachvollziehbaren Integration."
       icon="file-code-2"
       actions={["copy", "cursor"]}
     >
-{`Du entwickelst eine kleine App auf Basis des Phaseo-TypeScript-SDKs.
+{`You are building a small app on top of the Phaseo TypeScript SDK.
 
-Erstelle eine [FRAMEWORK]-Mini-App für [APP-IDEE].
+Create a [FRAMEWORK] mini app for [APP IDEA].
 
-Anforderungen:
-- Verwende @phaseo/sdk.
-- Verwende das Modell [MODELL].
-- Verwende vorzugsweise die Responses-API, sofern kein überzeugender Grund für einen anderen Endpoint spricht.
-- Lies den API-Schlüssel aus PHASEO_API_KEY.
-- Halte den Code für eine erste Integration kompakt und verständlich.
-- Zeige in der Benutzeroberfläche Lade-, Erfolgs- und Fehlerzustände an.
+Requirements:
+- Use @phaseo/sdk.
+- Use model [MODEL].
+- Prefer the responses API unless there is a strong reason to use another endpoint.
+- Read the API key from PHASEO_API_KEY.
+- Keep the code compact and understandable for a first integration.
+- Show loading, success, and failure states in the UI.
 
-Implementierungsdetails:
-- Bündle die Integration serverseitig an einer Stelle, statt SDK-Aufrufe über viele Dateien zu verteilen.
-- Halte die Anfragestruktur einschließlich Modell, Eingabe und wichtiger Optionen explizit.
-- Füge ein Beispiel für die Antwortverarbeitung hinzu, das den abschließenden Assistenztext sicher extrahiert.
-- Füge nur dort Kommentare hinzu, wo die SDK-Antwortstruktur sonst unklar wäre.
+Implementation details:
+- Use one server-side integration boundary instead of scattering SDK calls across many files.
+- Keep the request shape explicit, including model, input, and any important options.
+- Include one example of response parsing that extracts the final assistant text safely.
+- Add minimal comments only where the SDK response shape would otherwise be unclear.
 
-Ergebnisse:
-- Funktionsfähiger App-Code.
-- Kurze Einrichtungsanleitung.
-- Eine kurze Erklärung, warum der TypeScript-SDK-Weg für diese Mini-App besser geeignet ist als Raw-HTTP.
+Deliverables:
+- Working app code.
+- Short setup instructions.
+- One short explanation of why the TypeScript SDK path is better than raw HTTP for this mini app.
 
-Verifizierung:
-- Führe die App nach Möglichkeit aus.
-- Führe eine Anfrage Ende zu Ende aus.
-- Nenne genau die geänderten Dateien und alle Einrichtungsschritte, die der Nutzer noch ausführen muss.`}
+Verification:
+- Run the app if possible.
+- Exercise one end-to-end request.
+- Report the exact files changed and any remaining setup the user must do.`}
     </Prompt>
   </Accordion>
 
-  <Accordion title="Python-SDK-Mini-App" icon="snake">
+  <Accordion title="Mini-App mit dem Python-SDK" icon="snake">
     <Prompt
-      description="Erstelle eine kleine Python-App oder einen Dienst mit dem **offiziellen Python-SDK**."
+      description="Baue eine kleine Python-App oder einen Dienst mit dem **offiziellen Python-SDK**."
       icon="snake"
       actions={["copy", "cursor"]}
     >
-{`Du implementierst eine kleine KI-gestützte Python-App mit Phaseo Gateway.
+{`You are implementing a small AI-powered Python app with Phaseo Gateway.
 
-Erstelle eine [PYTHON-FRAMEWORK ODER ANWENDUNGSTYP]-App für [APP-IDEE].
+Build a [PYTHON FRAMEWORK OR APP TYPE] app for [APP IDEA].
 
-Anforderungen:
-- Verwende das offizielle Python-SDK phaseo.
-- Verwende das Modell [MODELL].
-- Lies die Zugangsdaten aus PHASEO_API_KEY.
-- Halte den Code so kompakt, dass ein neues Teammitglied ihn schnell versteht.
-- Füge einen Pfad für Nutzereingaben und einen für Modellausgaben hinzu.
-- Behandle ungültige Eingaben und vorgelagerte Gateway-Fehler sauber.
+Requirements:
+- Use the official Python SDK phaseo.
+- Use model [MODEL].
+- Read credentials from PHASEO_API_KEY.
+- Keep the code small enough for a new team member to understand quickly.
+- Include one user input path and one model output path.
+- Include clean error handling for invalid input and upstream gateway failures.
 
-Implementierungsdetails:
-- Bevorzuge ein Integrationsmodul, das den Phaseo-Client erstellt.
-- Verwende die Antwortstruktur des SDK direkt, statt sie in unnötige Abstraktionen zu verpacken.
-- Wenn strukturierte Ausgaben für die App sinnvoll sind, nutze sie und prüfe die zurückgegebene Struktur.
-- Füge im README einen kurzen Abschnitt mit Installations- und Startschritten hinzu.
+Implementation details:
+- Prefer one integration module that owns the Phaseo client creation.
+- Use the SDK response shape directly rather than wrapping it in unnecessary abstractions.
+- If structured output is useful for the app, use it and validate the returned shape.
+- Add a short README section with install and run steps.
 
-Ergebnisse:
-- App-Code.
-- Etwaige Aktualisierungen der Abhängigkeiten.
-- Kurze Nutzungshinweise.
+Deliverables:
+- App code.
+- Any dependency updates.
+- Short usage instructions.
 
-Verifizierung:
-- Führe nach Möglichkeit den passenden Befehl aus.
-- Prüfe einen erfolgreichen Anfragepfad oder erkläre, warum das nicht möglich war.
-- Weise auf Umgebungsvariablen oder lokale Dienste hin, die der Nutzer noch einrichten muss.`}
+Verification:
+- Run the relevant command if possible.
+- Verify one successful request path or explain why you could not.
+- Call out any environment variables or local services the user still needs.`}
     </Prompt>
   </Accordion>
 
-  <Accordion title="Vercel-AI-SDK-Mini-App" icon="code">
+  <Accordion title="Mini-App mit dem Vercel AI SDK" icon="code">
     <Prompt
-      description="Erstelle eine kleine App mit **Phaseo über das Vercel AI SDK**."
+      description="Baue eine kleine App, die **Phaseo über das Vercel AI SDK** nutzt."
       icon="code"
       actions={["copy", "cursor"]}
     >
-{`Du entwickelst eine Mini-App, die Phaseo über den Vercel-AI-SDK-Provider nutzt.
+{`You are building a mini app that uses Phaseo through the Vercel AI SDK provider.
 
-Erstelle eine [FRAMEWORK]-App für [APP-IDEE].
+Create a [FRAMEWORK] app for [APP IDEA].
 
-Anforderungen:
-- Verwende den Phaseo-Provider für das Vercel AI SDK.
-- Verwende das Modell [MODELL].
-- Lies den Phaseo-API-Schlüssel aus PHASEO_API_KEY.
-- Halte die UX schlank und auf eine klare Nutzeraufgabe ausgerichtet.
-- Unterstütze Streaming-Ausgaben bei einer Chat-App; erkläre andernfalls, warum Streaming hier unnötig komplex wäre.
+Requirements:
+- Use the Phaseo Vercel AI SDK provider, @phaseo/ai-sdk-provider.
+- Use model [MODEL].
+- Call the provider only from server code; never ship PHASEO_API_KEY to the browser.
+- Read the Phaseo API key from PHASEO_API_KEY.
+- Keep the UX lightweight and oriented around one clear user task.
+- Support streamed output if the app is chat-like; otherwise explain why non-streaming is simpler here.
 
-Implementierungsdetails:
-- Halte die Provider-Anbindung explizit.
-- Verwende die AI-SDK-Primitives auf übliche, frameworkgerechte Weise.
-- Vermeide in der ersten Version unnötige zusätzliche Zustandsverwaltung.
-- Ergänze eine kurze Erklärung, wie die Provider-Modell-ID ausgewählt wird.
+Implementation details:
+- Keep the provider wiring explicit.
+- Use the AI SDK primitives in a standard, framework-appropriate way.
+- Avoid unnecessary extra state management for the first version.
+- Add one short explanation of how the provider model id is chosen.
 
-Ergebnisse:
-- App-Code.
-- Einrichtungsschritte.
-- Ein kurzer Hinweis dazu, wie später zu einem anderen Modell gewechselt werden kann.
+Deliverables:
+- App code.
+- Setup steps.
+- A brief note on how to switch to a different model later.
 
-Verifizierung:
-- Führe die App nach Möglichkeit aus.
-- Prüfe den wichtigsten Nutzerablauf.
-- Führe ungeprüfte Teile gesondert auf.`}
+Verification:
+- Run the app if possible.
+- Verify the main user flow.
+- Report any unverified parts separately.`}
     </Prompt>
   </Accordion>
 
-  <Accordion title="Agent-SDK-Mini-App" icon="bot">
+  <Accordion title="Mini-App mit dem Agent-SDK" icon="bot">
     <Prompt
-      description="Erstelle eine kleine App mit dem **Phaseo Agent SDK** und einer begrenzten Tool-Schleife."
+      description="Baue eine kleine App mit dem **Phaseo Agent SDK** und einer begrenzten Tool-Schleife."
       icon="bot"
       actions={["copy", "cursor"]}
     >
-{`Du entwickelst eine kleine agentische App auf Basis von Phaseo Gateway.
+{`You are building a small agentic app on top of Phaseo Gateway.
 
-Erstelle mit dem Phaseo Agent SDK eine [LANGUAGE]-Mini-App für [APP-IDEE].
+Create a [LANGUAGE] mini app for [APP IDEA] using the Phaseo Agent SDK.
 
-Anforderungen:
-- Verwende das Phaseo Agent SDK für [LANGUAGE].
-- Verwende das Modell [MODELL].
-- Verwende nur ein oder zwei deterministische lokale Tools.
-- Halte die Tool-Schleife begrenzt und leicht zu debuggen.
-- Lies den API-Schlüssel aus PHASEO_API_KEY.
-- Zeige die endgültige Ausgabe und gegebenenfalls die Tool-Aktivität oder den Zwischenstand des Reasonings.
+Requirements:
+- Use the Phaseo Agent SDK for [LANGUAGE] (@phaseo/agent-sdk for TypeScript, phaseo-agent-sdk for Python).
+- Use model [MODEL].
+- Include one or two deterministic local tools only.
+- Give every tool a JSON Schema for its parameters and validate the model's arguments before running it.
+- Require human approval for any tool that writes, deletes, sends or spends.
+- Keep the tool loop bounded with a step limit and easy to debug.
+- Read the API key from PHASEO_API_KEY.
+- Show the final output and, where appropriate, the tool activity or intermediate reasoning state.
 
-Implementierungsdetails:
-- Bewahre die Agent-Definition an einer Stelle auf.
-- Halte die Tool-Definitionen klein und deterministisch.
-- Vermeide für die erste Version ein großes, allgemeines Agent-Framework.
-- Ergänze einen Hinweis dazu, wo der Laufstatus gespeichert würde, falls die App später fortsetzbar wird.
+Implementation details:
+- Keep the agent definition in one place.
+- Keep tool definitions small and deterministic.
+- Avoid a giant general-purpose agent framework for the first version.
+- Add a note about where run state would be persisted if the app later becomes resumable.
 
-Ergebnisse:
-- App-Code.
-- Einrichtungsanleitung.
-- Eine kurze Erklärung, warum das Agent SDK für diesen Workflow besser geeignet ist als eine einzelne Completion.
+Deliverables:
+- App code.
+- Setup instructions.
+- A short explanation of why the Agent SDK is better than a one-shot completion for this workflow.
 
-Verifizierung:
-- Führe nach Möglichkeit den Hauptpfad aus.
-- Prüfe einen Agent-Lauf Ende zu Ende.
-- Nenne alle verbleibenden Annahmen, insbesondere zur Umgebungseinrichtung oder zu lokalen Tool-Abhängigkeiten.`}
+Verification:
+- Run the main path if possible.
+- Verify one end-to-end agent run.
+- Report any remaining assumptions, especially around environment setup or local tool dependencies.`}
     </Prompt>
   </Accordion>
 </AccordionGroup>
 
-## Prompts optimieren
+## So funktionieren die Prompts besser
 
-- Ersetze `[APP-IDEE]` durch eine klar abgegrenzte Nutzeraufgabe statt durch eine allgemeine Produktbeschreibung.
-- Ersetze `[MODELL]` durch die genaue Modell-ID, die der Agent verwenden soll.
-- Gib an, ob die Ausgabe Freitext, striktes JSON, Chat oder ein einzelnes generiertes Asset sein soll.
-- Nenne das UI-Framework und das Deployment-Ziel, sofern bekannt.
-- Ergänze ein oder zwei wichtige Vorgaben, etwa `nur EU-Anbieter`, `Streaming verwenden` oder `alle Geheimnisse serverseitig speichern`.
+- Ersetze `[APP IDEA]` durch eine eng umrissene Aufgabe für Nutzer, nicht durch eine breite Produktidee.
+- Ersetze `[MODEL]` durch die exakte Modell-ID, die der Agent verwenden soll.
+- Gib an, ob die Ausgabe freier Text, striktes JSON, ein Chat oder ein einzelnes generiertes Asset sein soll.
+- Nenne das UI-Framework und das Deployment-Ziel, wenn du sie kennst.
+- Füge ein oder zwei wichtige Einschränkungen hinzu, etwa `EU-only providers`, `use streaming` oder `keep all secrets server-side`.
 
-## Verwandte Leitfäden
-
-- [Schnellstart](../quickstart.mdx)
-- [Beispiele](../guides/examples.mdx)
-- [Übersicht zum TypeScript-SDK](../sdk-reference/typescript/overview.mdx)
-- [Übersicht zum Python-SDK](../sdk-reference/python/overview.mdx)
-- [Übersicht zum Agent SDK](../sdk-reference/agent-sdk/overview.mdx)
+Die Referenzen zum [TypeScript- und Python-SDK](../sdk-reference/client/overview) und [Agent-SDK](../sdk-reference/agent/overview) listen auf, was jedes Paket bietet, sodass du den Code des Agenten damit abgleichen kannst.

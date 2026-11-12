@@ -1,9 +1,7 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import {
 	Card,
@@ -33,7 +31,7 @@ import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesP
 import {
 	approveJoinRequest,
 	rejectJoinRequest,
-} from "@/app/(dashboard)/settings/teams/actions";
+} from "@/features/settings/teams/actions";
 
 interface Request {
 	id: string;
@@ -166,7 +164,7 @@ export default function TeamsRequests({
 			setLocalStatus("accepted");
 			try {
 				// call server action with toast feedback
-				await toast.promise(approveJoinRequest(request.id), {
+				await toast.promise(approveJoinRequest({ data: request.id }), {
 					loading: s("Approving…"),
 					success: s("Request approved"),
 					error: (err) =>
@@ -184,7 +182,7 @@ export default function TeamsRequests({
 			setBusy(true);
 			setLocalStatus("rejected");
 			try {
-				await toast.promise(rejectJoinRequest(request.id), {
+				await toast.promise(rejectJoinRequest({ data: request.id }), {
 					loading: s("Rejecting…"),
 					success: s("Request rejected"),
 					error: (err) =>

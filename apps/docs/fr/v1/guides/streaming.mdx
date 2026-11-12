@@ -1,10 +1,14 @@
 ---
 title: "Diffusion en continu"
-description: "Recevez une sortie incrémentale, traitez les événements propres au point d’accès et gérez les flux interrompus."
+description: "Recevez une sortie incrémentale, traitez les événements propres à chaque point de terminaison et récupérez les flux interrompus."
 icon: "radio"
 ---
 
-Définissez `stream: true` pour recevoir la sortie sous forme d’événements envoyés par le serveur (SSE). Gardez votre clé API Phaseo sur le serveur et transmettez la sortie à l’interface.
+import { StreamEventsExplorer } from "/snippets/stream-events.jsx";
+
+Définissez `stream: true` et le Gateway envoie la sortie sous forme d’événements envoyés par le serveur (SSE) pendant que le modèle l’écrit. Un flux n’est terminé qu’à l’arrivée de son événement de fin réussie. Appuyez sur **Lecture** pour en regarder un, puis passez à **Échoue en cours** pour voir comment se termine un flux interrompu.
+
+<StreamEventsExplorer locale="fr" />
 
 ## Envoyer une requête en streaming
 
@@ -13,53 +17,50 @@ curl --no-buffer https://api.phaseo.app/v1/responses \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "input": "Say hello in one sentence.",
     "stream": true
   }'
 ```
 
-Vérifiez le statut HTTP avant de lire le flux. Un échec avant le début du streaming renvoie la [réponse d’erreur JSON](../api-reference/errors.mdx) habituelle.
+Vérifiez le statut HTTP avant de lire le corps. Une requête qui échoue avant le début du streaming reçoit la [réponse d’erreur JSON](../api-reference/errors.mdx) habituelle, pas un flux. Gardez votre clé API Phaseo sur votre serveur et transmettez le texte à votre interface depuis celui-ci.
 
 ## Lire les événements
 
-Utilisez le format d’événements du point d’accès appelé :
+Chaque point de terminaison utilise son propre format d’événements :
 
-| Point d’accès | Sortie incrémentale | Fin |
-| --- | --- | --- |
-| [Responses](../api-reference/endpoint/responses.mdx) | Événements tels que `response.output_text.delta` | Examinez l’événement final de réponse et son statut |
-| [Chat Completions](../api-reference/endpoint/chat-completions.mdx) | `choices[].delta` | Examinez `finish_reason` ; `[DONE]` termine le flux |
-| [Messages](../api-reference/endpoint/anthropic-messages.mdx) | `message_start`, `content_block_delta`, et les événements associés | `message_stop` |
+| Point de terminaison | Le texte arrive dans | Fin réussie | Fin en échec |
+| --- | --- | --- | --- |
+| [Responses](../api-reference/endpoint/responses.mdx) | `response.output_text.delta` | `response.completed` | `response.failed` ou `error` |
+| [Chat Completions](../api-reference/endpoint/chat-completions.mdx) | `choices[].delta` | un `finish_reason`, puis `[DONE]` | une trame `error` sans `finish_reason` |
+| [Messages](../api-reference/endpoint/anthropic-messages.mdx) | `content_block_delta` | `message_stop` | un événement `error` sans `message_stop` |
 
-Les événements SSE sont séparés par des lignes vides. Un fragment réseau peut contenir une partie d’événement ou plusieurs événements ; ne l’analysez pas comme un JSON autonome. Mettez en tampon les trames incomplètes ou utilisez un outil de streaming du SDK. Ne supposez pas que chaque point d’accès envoie `[DONE]`.
+Les événements sont séparés par des lignes vides, mais un fragment réseau peut contenir la moitié d’un événement ou plusieurs événements. Mettez en tampon jusqu’à ce que chaque événement soit complet avant de l’analyser comme du JSON, ou utilisez un outil du SDK, qui le fait pour vous :
 
-Les outils du SDK gèrent le transport du flux :
+- TypeScript : `streamResponses()`, `streamChat()`, `streamMessages()` ; Python : `stream_responses()`, `stream_chat()`, `stream_message()` ([guide d’utilisation](../sdk-reference/client/usage.mdx))
+- Vercel AI SDK : `streamText()` avec `@phaseo/ai-sdk-provider`
 
-- TypeScript: `streamResponses()`, `streamChat()`, `streamMessages()`.
-- Python: `stream_responses()`, `stream_chat()`, `stream_message()`.
-- Vercel AI SDK: `streamText()` avec `@phaseo/ai-sdk-provider`.
-
-Consultez le [guide TypeScript](../sdk-reference/typescript/usage.mdx) ou le [guide Python](../sdk-reference/python/usage.mdx) pour configurer le client.
+Seul Chat Completions envoie `[DONE]`. Ne l’attendez pas sur les autres points de terminaison.
 
 ## Diffuser les appels d’outils
 
-Le Gateway accepte le streaming avec des outils, mais sa prise en charge dépend du modèle et du fournisseur choisis. Accumulez les fragments d’arguments jusqu’à la fin de l’appel, puis analysez, validez et autorisez les arguments avant l’exécution. N’exécutez jamais des arguments partiels.
+Les appels d’outils arrivent sous forme de fragments d’arguments, comme le texte. Le fait qu’un modèle les diffuse dépend du modèle et du fournisseur. Rassemblez les fragments jusqu’à ce que l’appel soit complet, puis analysez, validez et autorisez les arguments. N’exécutez jamais un outil sur des arguments partiels.
 
-Suivez les [schémas d’appels d’outils](./tool-calling-patterns.mdx) pour les requêtes de continuation et la [sécurité des outils](./tool-calling-safety.mdx) pour les contrôles de validation et d’approbation.
+Consultez les [modèles d’appel d’outils](./tool-calling-patterns.mdx) pour renvoyer les résultats et la [sécurité des outils](./tool-calling-safety.mdx) pour la validation et l’approbation.
 
-## Annuler et récupérer
+## Annuler un flux
 
-Passez un `AbortSignal` au client HTTP serveur et annulez quand l’utilisateur arrête ou se déconnecte. Fixez une échéance adaptée. L’annulation ne garantit ni l’arrêt immédiat du fournisseur ni la gratuité de la sortie générée.
+Passez un `AbortSignal` (ou l’équivalent de votre client HTTP) et annulez quand l’utilisateur arrête ou se déconnecte. Fixez une échéance adaptée à la charge de travail. L’annulation ne garantit ni que le fournisseur s’arrête immédiatement, ni que la sortie déjà générée est gratuite.
 
-Affichez progressivement le texte partiel, mais ne marquez la réponse terminée qu’après l’événement final réussi du point d’accès. Une connexion fermée ne prouve pas son achèvement.
+## Récupérer un flux interrompu
 
-Si le flux échoue après le début de la sortie, il se termine par l’événement d’échec du point d’accès plutôt que par son événement final réussi : une trame `error` pour Chat Completions (sans `finish_reason`), `response.failed` ou `error` pour Responses et un événement `error` pour Messages (sans `message_stop`). Phaseo ne facture pas la sortie partielle d’un flux en échec.
+Si un flux échoue après le début du texte, il se termine par l’événement d’échec du tableau ci-dessus au lieu de l’événement de fin réussie. Une connexion fermée ne signifie pas à elle seule que la réponse est complète. Phaseo ne facture pas la sortie partielle d’un flux en échec.
 
 Dans ce cas :
 
-1. Marquez la réponse partielle comme interrompue.
-2. Conservez l’identifiant de requête ou de génération, le point d’accès et le modèle dans vos journaux.
-3. Proposez une nouvelle tentative explicite. Une nouvelle requête peut générer une autre sortie et de nouveaux frais.
-4. Ne réexécutez pas les outils déjà exécutés et n’ajoutez pas automatiquement la nouvelle réponse à la sortie partielle.
+1. Laissez le texte partiel à l’écran, marqué comme interrompu.
+2. Journalisez l’ID de requête ou de génération, le point de terminaison et le modèle.
+3. Proposez une nouvelle tentative. Une nouvelle requête peut produire un autre texte et est facturée de nouveau.
+4. Ne relancez pas les outils déjà exécutés, et n’ajoutez pas la réponse de la nouvelle tentative à la réponse partielle.
 
-Pour les échecs avant la sortie, limitez les tentatives et respectez les [en-têtes de limitation](../api-reference/limits.mdx). Si l’application doit valider toute la sortie avant affichage, utilisez une requête sans streaming ou mettez le résultat en tampon sur le serveur.
+Pour les échecs survenus avant l’arrivée du moindre texte, réessayez avec un délai croissant et respectez les [en-têtes de limitation de débit](../api-reference/limits.mdx). Si vous devez valider toute la réponse avant que quiconque la voie, utilisez une requête sans streaming ou mettez le flux en tampon sur votre serveur.

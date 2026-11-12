@@ -1,10 +1,10 @@
 import { browserUrl } from "../../shared/browser";
+import { browserSearchTemplates, browserSearchUrl } from "../../shared/browserPreferences";
 
 /** A page opened in the browser; project is "" for personal chats. */
 export type BrowserRecent = { url: string; title: string; at: number; project?: string; favicon?: string };
 const validFavicon = (value: unknown): value is string => typeof value === "string" && ((value.startsWith("https://") && value.length <= 2048) || (value.startsWith("data:image/") && value.length <= 8192));
 export const browserHistoryLimit = 50;
-const searchUrl = "https://duckduckgo.com/?q=";
 const addressHost = /^(?:localhost|\d{1,3}(?:\.\d{1,3}){3}|\[[\da-f:.]+\])$/i;
 const loopbackHost = /^(?:localhost|127(?:\.\d{1,3}){3}|0\.0\.0\.0|\[::1?\])$/i;
 const bareHostPort = /^[^/?#:@]+:\d+(?:[/?#]|$)/;
@@ -12,9 +12,9 @@ const bareHostPort = /^[^/?#:@]+:\d+(?:[/?#]|$)/;
 /**
  * What was typed in the address bar as the address to open: a scheme is kept; text without spaces whose
  * host has a dot, a port, or is localhost or an IP address gets http:// for loopback hosts and https:// otherwise;
- * anything else is a DuckDuckGo search.
+ * anything else is a search with the template from Settings → Browser (DuckDuckGo unless changed).
  */
-export function browserNavigationAddress(value: string): string {
+export function browserNavigationAddress(value: string, searchTemplate = browserSearchTemplates.duckduckgo): string {
 	const input = value.trim();
 	if (!input || input.length > 8192) throw Error("Enter a URL or search.");
 	if (/^[a-z][a-z\d+.-]*:\/\//i.test(input)) return browserUrl(input);
@@ -27,7 +27,7 @@ export function browserNavigationAddress(value: string): string {
 			try { return browserUrl((loopbackHost.test(host) ? "http://" : "https://") + input); } catch { /* Not an address after all: search for it. */ }
 		}
 	}
-	return searchUrl + encodeURIComponent(input);
+	return browserSearchUrl(searchTemplate, input);
 }
 
 /** Stored recents, validated; at most fifty per project. */

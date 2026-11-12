@@ -17,6 +17,7 @@ import { accountSettingsTeamsRouter } from "./settings-teams";
 import { accountSettingsProfileRouter } from "./settings-profile";
 import { accountSettingsProfileAvatarRouter, ownedProfileAvatarKey } from "./settings-profile-avatar";
 import { accountSettingsKeysRouter } from "./settings-keys";
+import { accountSettingsKeyRequestsRouter } from "./settings-key-requests";
 import { accountSettingsKeySecurityRouter } from "./settings-key-security";
 import { accountSettingsWorkspaceUsersRouter } from "./settings-workspace-users";
 import { accountSettingsAuditRouter } from "./settings-audit";
@@ -28,6 +29,7 @@ import { accountSettingsRateLimitsRouter } from "./settings-rate-limits";
 import { accountSettingsWorkloadIdentityRouter } from "./settings-workload-identity";
 import { accountSettingsBudgetsRouter } from "./settings-budgets";
 import { accountSettingsSlackRouter } from "./settings-slack";
+import { accountSettingsConnectRouter } from "./settings-connect";
 import { accountSettingsSlackMemoryRouter } from "./settings-slack-memory";
 import { accountSettingsSlackPagesRouter } from "./settings-slack-pages";
 import { accountSettingsSlackSchedulesRouter } from "./settings-slack-schedules";
@@ -151,6 +153,7 @@ accountSettingsRouter.route("/", accountSettingsTeamsRouter);
 accountSettingsRouter.route("/", accountSettingsProfileRouter);
 accountSettingsRouter.route("/", accountSettingsProfileAvatarRouter);
 accountSettingsRouter.route("/", accountSettingsKeysRouter);
+accountSettingsRouter.route("/", accountSettingsKeyRequestsRouter);
 accountSettingsRouter.route("/", accountSettingsKeySecurityRouter);
 accountSettingsRouter.route("/", accountSettingsWorkspaceUsersRouter);
 accountSettingsRouter.route("/", accountSettingsAuditRouter);
@@ -162,6 +165,7 @@ accountSettingsRouter.route("/", accountSettingsRateLimitsRouter);
 accountSettingsRouter.route("/", accountSettingsWorkloadIdentityRouter);
 accountSettingsRouter.route("/", accountSettingsBudgetsRouter);
 accountSettingsRouter.route("/", accountSettingsSlackRouter);
+accountSettingsRouter.route("/", accountSettingsConnectRouter);
 accountSettingsRouter.route("/", accountSettingsSlackMemoryRouter);
 accountSettingsRouter.route("/", accountSettingsSlackPagesRouter);
 accountSettingsRouter.route("/", accountSettingsSlackSchedulesRouter);
@@ -349,11 +353,26 @@ accountSettingsRouter.put("/preferences", async (c) => {
 	return c.json({ ok: true, preferences }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
+const WORKSPACE_BASELINE_COLUMNS = "id,privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_free_may_publish_prompts,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,allowed_api_model_ids";
+
+/** The workspace's baseline guardrail (the Settings, Privacy rules), or null data when it has none yet. */
+async function readWorkspaceBaseline(client: ReturnType<typeof getDataClient>, workspaceId: string): Promise<{ data: Record<string, any> | null; error: unknown }> {
+	const result = await client.from("workspace_guardrails").select(WORKSPACE_BASELINE_COLUMNS)
+		.eq("workspace_id", workspaceId).eq("is_workspace_baseline", true).maybeSingle();
+	return { data: (result.data ?? null) as Record<string, any> | null, error: result.error };
+}
+
+/** The baseline's rules under their workspace_settings names (its model list is allowed_api_model_ids). */
+export function workspaceSettingsFromBaseline(baseline: Record<string, any>): Record<string, unknown> {
+	const { id: _id, allowed_api_model_ids: modelIds, ...rules } = baseline;
+	return { ...rules, model_restriction_model_ids: modelIds ?? [] };
+}
+
 accountSettingsRouter.get("/privacy", async (c) => {
 	const workspaceId = c.req.query("workspaceId")?.trim();
 	if (!workspaceId) {
 		return c.json({
-			activeProviderModels: [], initialGlobal: null, providers: [],
+			canManage: false, activeProviderModels: [], initialGlobal: null, providers: [],
 			accountPolicy: null,
 			policy: {
 				privacyEnablePaidMayTrain: true, privacyEnableFreeMayTrain: true,
@@ -377,13 +396,14 @@ accountSettingsRouter.get("/privacy", async (c) => {
 		workspaceId,
 	});
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
-	let [teamResult, settingsResult, providersResult, modelsResult, contributionGatewayResult, ioLogContentsAccess] = await Promise.all([
+	let [teamResult, settingsResult, providersResult, modelsResult, contributionGatewayResult, ioLogContentsAccess, baselineResult] = await Promise.all([
 		context.client.from("workspaces").select("id,name").eq("id", workspaceId).maybeSingle(),
 		context.client.from("workspace_settings").select("privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_free_may_publish_prompts,privacy_enable_input_output_logging,privacy_zdr_only,io_logging_enabled,io_logging_retention_days,io_logging_include_provider_payloads,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,model_restriction_model_ids,response_healing_enabled,response_healing_locked,response_healing_mode").eq("workspace_id", workspaceId).maybeSingle(),
 		context.client.from("v2_providers").select("api_provider_id:provider_slug,api_provider_name:name,provider_family_id:provider_family_slug,offer_label,offer_scope,routable,routing_enabled,status").eq("routable", true).eq("routing_enabled", true).in("status", ["active", "degraded"]).order("name", { ascending: true }),
 		context.client.from("v2_model_provider_routes").select("provider_id:provider_slug,api_model_id:model_slug,internal_model_id:model_slug,is_active_gateway:routing_enabled").eq("routing_enabled", true).in("status", ["active", "degraded"]),
 		callDataContributionGateway({ env: c.env, request: c.req.raw, workspaceId: context.workspaceId }),
 		readIoLogContentsAccess(context.client, workspaceId),
+		readWorkspaceBaseline(context.client, workspaceId),
 	]);
 	if (settingsResult.error && /model_restriction_(mode|model_ids)/i.test(settingsResult.error.message)) {
 		settingsResult = await context.client.from("workspace_settings")
@@ -391,7 +411,7 @@ accountSettingsRouter.get("/privacy", async (c) => {
 			.eq("workspace_id", workspaceId)
 			.maybeSingle();
 	}
-	for (const result of [teamResult, settingsResult, providersResult, modelsResult]) {
+	for (const result of [teamResult, settingsResult, providersResult, modelsResult, baselineResult]) {
 		if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
 	const routableProviderIds = new Set((modelsResult.data ?? []).map((row) => String(row.provider_id ?? "")).filter(Boolean));
@@ -409,7 +429,11 @@ accountSettingsRouter.get("/privacy", async (c) => {
 		ids.add(providerId);
 		providerIdsByModel.set(modelId, ids);
 	}
-	const settings = settingsResult.data as Record<string, any> | null;
+	// The page edits the workspace baseline guardrail. A workspace that has never saved restricting
+	// rules has none yet; its workspace_settings columns hold the same (default) values.
+	const settings = (baselineResult.data
+		? { ...settingsResult.data, ...workspaceSettingsFromBaseline(baselineResult.data) }
+		: settingsResult.data) as Record<string, any> | null;
 	const restrictionMode = (value: unknown) => value === "allowlist" || value === "blocklist" ? value : "none";
 	const stringList = (value: unknown) => Array.isArray(value) ? [...new Set(value.map(String).filter(Boolean))] : [];
 	const contributionData = contributionGatewayResult.status === 200
@@ -423,7 +447,7 @@ accountSettingsRouter.get("/privacy", async (c) => {
 		})),
 		initialGlobal: settingsResult.data
 			// null when the setting couldn't be read, so the page doesn't save a guess.
-			? { ...settingsResult.data, io_logging_contents_access: ioLogContentsAccess }
+			? { ...settings, io_logging_contents_access: ioLogContentsAccess }
 			: null,
 		accountPolicy: null,
 		policy: {
@@ -452,6 +476,7 @@ accountSettingsRouter.get("/privacy", async (c) => {
 		})),
 		teamName: teamResult.data?.name ?? null,
 		workspaceId,
+		canManage: ["owner", "admin"].includes(context.role.toLowerCase()),
 		dataContribution: {
 			available: contributionData !== null,
 			enabled: contributionData?.enabled === true,
@@ -750,6 +775,14 @@ accountSettingsRouter.get("/apps", async (c) => {
 	return c.json({ apps }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
+/** Editing, publishing and merging apps is for workspace owners and admins. */
+function canManageApps(context: { role: string }) { return ["owner", "admin"].includes(context.role.toLowerCase()); }
+
+/** The normalised URL when it is http(s), otherwise null. */
+function httpUrl(value: string): string | null {
+	try { const url = new URL(value); return ["http:", "https:"].includes(url.protocol) ? url.toString() : null; } catch { return null; }
+}
+
 accountSettingsRouter.put("/apps/:appId", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
@@ -760,17 +793,24 @@ accountSettingsRouter.put("/apps/:appId", async (c) => {
 	if (!existing.data?.workspace_id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: existing.data.workspace_id });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	if (!canManageApps(context)) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	if (isInternalApp(existing.data.title, existing.data.app_key)) return c.json({ error: "managed_app" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const body: Record<string, unknown> = await c.req.json<Record<string, unknown>>().catch(() => ({}));
 	const update: Record<string, unknown> = {};
 	if (typeof body.title === "string") { const value = body.title.trim(); if (!value) return c.json({ error: "invalid_title" }, 400, PRIVATE_NO_STORE_HEADERS); update.title = value; }
-	if (body.url === null) update.url = "about:blank"; else if (typeof body.url === "string") update.url = body.url.trim() || "about:blank";
+	if (body.url === null) update.url = "about:blank";
+	else if (typeof body.url === "string") {
+		const value = body.url.trim();
+		if (!value || value.toLowerCase() === "about:blank") update.url = "about:blank";
+		else if (!httpUrl(value)) return c.json({ error: "invalid_url" }, 400, PRIVATE_NO_STORE_HEADERS);
+		else update.url = value;
+	}
 	for (const field of ["docs_url", "image_url"] as const) {
 		if (body[field] === null) update[field] = null;
 		else if (typeof body[field] === "string") {
 			const value = body[field].trim();
 			if (!value) update[field] = null;
-			else { try { const url = new URL(value); if (!["http:", "https:"].includes(url.protocol)) throw new Error(); update[field] = url.toString(); } catch { return c.json({ error: `invalid_${field}` }, 400, PRIVATE_NO_STORE_HEADERS); } }
+			else { const url = httpUrl(value); if (!url) return c.json({ error: `invalid_${field}` }, 400, PRIVATE_NO_STORE_HEADERS); update[field] = url; }
 		}
 	}
 	if (typeof body.is_public === "boolean") update.is_public = body.is_public;
@@ -786,6 +826,11 @@ accountSettingsRouter.put("/apps/:appId", async (c) => {
 			.select("id,is_public,is_active,image_url")
 			.maybeSingle();
 		const result = await updateApp(update);
+		// Apps are identified by URL within a workspace (api_apps_workspace_id_url_key), so a second app
+		// can't take a URL another app has, including "no URL" (about:blank).
+		if (result.error?.code === "23505" && String(result.error.message ?? "").includes("api_apps_workspace_id_url_key")) {
+			return c.json({ error: "app_url_in_use", message: "Another app in this workspace already uses this URL" }, 409, PRIVATE_NO_STORE_HEADERS);
+		}
 		if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 		if (!result.data) return c.json({ error: "app_not_updated" }, 409, PRIVATE_NO_STORE_HEADERS);
 		updatedApp = result.data as Record<string, unknown>;
@@ -808,6 +853,7 @@ accountSettingsRouter.post("/apps/:sourceAppId/merge", async (c) => {
 	if (!workspaceId || !apps.data!.every((app) => app.workspace_id === workspaceId)) return c.json({ error: "invalid_target" }, 400, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	if (!canManageApps(context)) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	if (apps.data!.some((app) => isInternalApp(app.title, app.app_key))) return c.json({ error: "managed_app" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const merged = await context.client.rpc("merge_v2_gateway_app_history", {
 		p_workspace_id: workspaceId,
@@ -885,6 +931,11 @@ accountSettingsRouter.get("/authorized-apps/:authorizationId", async (c) => {
 	return c.json({ authorization: result.data }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
+/** A Postgres array literal, so a text[] column can be matched exactly. */
+function textArrayLiteral(values: string[]): string {
+	return `{${values.map((value) => `"${value.replace(/["\\]/g, "\\$&")}"`).join(",")}}`;
+}
+
 accountSettingsRouter.patch("/authorized-apps/:authorizationId/scopes", async (c) => {
 	const user = await requireUser(c.req.raw, c.env);
 	if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
@@ -910,17 +961,25 @@ accountSettingsRouter.patch("/authorized-apps/:authorizationId/scopes", async (c
 		.maybeSingle();
 	if (existing.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if (!existing.data) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
-	const currentScopes = new Set(Array.isArray(existing.data.scopes) ? existing.data.scopes.map(String) : []);
+	const storedScopes: string[] = Array.isArray(existing.data.scopes) ? existing.data.scopes.map(String) : [];
+	const currentScopes = new Set(storedScopes);
 	if (scopes.some((scope) => !currentScopes.has(scope))) {
 		return c.json({ error: "scopes_can_only_be_reduced" }, 400, PRIVATE_NO_STORE_HEADERS);
 	}
+	// Only while the stored scopes are still the ones checked above: otherwise a reduction checked against an
+	// old read could put back a scope that was removed in the meantime.
 	const updated = await client
 		.from("oauth_authorizations")
 		.update({ scopes })
 		.eq("id", existing.data.id)
 		.eq("user_id", user.id)
-		.is("revoked_at", null);
+		.is("revoked_at", null)
+		.eq("scopes", textArrayLiteral(storedScopes))
+		.select("id");
 	if (updated.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
+	if (!updated.data?.length) {
+		return c.json({ error: "scopes_changed", message: "This app's access changed since it was loaded. Reload and try again." }, 409, PRIVATE_NO_STORE_HEADERS);
+	}
 	return c.json({ success: true, scopes }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
@@ -1265,15 +1324,12 @@ accountSettingsRouter.get("/credits/onboarding", async (c) => {
 	if (!user || !workspaceId) return c.json(empty, 200, PRIVATE_NO_STORE_HEADERS);
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId });
 	if (!context) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
-	const [teamResult, profileResult] = await Promise.all([
-		context.client.from("workspaces")
-			.select("name,tier,billing_mode,invoice_onboarding_status")
-			.eq("id", workspaceId).maybeSingle(),
-		context.client.from("workspace_invoice_profiles")
-			.select("enabled,billing_day,payment_terms_days")
-			.eq("workspace_id", workspaceId).maybeSingle(),
-	]);
-	if (teamResult.error || profileResult.error) {
+	// Invoice profiles are no longer stored in Phaseo (Stripe is the source of
+	// truth), so the onboarding form starts from its defaults.
+	const teamResult = await context.client.from("workspaces")
+		.select("name,tier,billing_mode,invoice_onboarding_status")
+		.eq("id", workspaceId).maybeSingle();
+	if (teamResult.error) {
 		return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
 	if (!teamResult.data) return c.json(empty, 200, PRIVATE_NO_STORE_HEADERS);
@@ -1283,9 +1339,9 @@ accountSettingsRouter.get("/credits/onboarding", async (c) => {
 		canAccessOnboarding: billingMode === "invoice" || onboardingStatus === "pre_invoice",
 		canManageBilling: ["owner", "admin"].includes(context.role.toLowerCase()),
 		currentBillingMode: billingMode,
-		initialBillingDay: Math.min(28, Math.max(1, Number(profileResult.data?.billing_day ?? 1) || 1)),
-		initialPaymentTermsDays: Number(profileResult.data?.payment_terms_days) === 14 ? 14 : 30,
-		invoiceProfileEnabled: Boolean(profileResult.data?.enabled),
+		initialBillingDay: empty.initialBillingDay,
+		initialPaymentTermsDays: empty.initialPaymentTermsDays,
+		invoiceProfileEnabled: false,
 		signedIn: true,
 		signerName,
 		team: {
@@ -1317,19 +1373,8 @@ accountSettingsRouter.get("/credits/transactions", async (c) => {
 	const billingMode = String(teamResult.data?.billing_mode ?? "wallet").toLowerCase() === "invoice" ? "invoice" : "wallet";
 	const isEnterpriseInvoiceMode = teamTier === "enterprise" && billingMode === "invoice";
 	if (isEnterpriseInvoiceMode) {
-		const invoicesResult = await context.client.from("workspace_invoices")
-			.select("id,period_start,period_end,amount_nanos,currency,status,stripe_invoice_id,stripe_invoice_number,due_at,issued_at,paid_at,created_at,updated_at")
-			.eq("workspace_id", workspaceId).order("period_end", { ascending: false }).limit(250);
-		if (invoicesResult.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
-		const invoices = (invoicesResult.data ?? []).map((row) => ({
-			...row,
-			id: String(row.id),
-			period_start: String(row.period_start),
-			period_end: String(row.period_end),
-			amount_nanos: Number(row.amount_nanos ?? 0),
-			currency: row.currency ?? "USD",
-			status: String(row.status ?? "draft"),
-		}));
+		// Invoices live in Stripe; Phaseo no longer keeps a copy to list here.
+		const invoices: never[] = [];
 		return c.json({
 			billingMode, invoices, isEnterpriseInvoiceMode, stripeCustomerId: null,
 			teamTier, transactions: [], workspaceId,
@@ -1340,8 +1385,8 @@ accountSettingsRouter.get("/credits/transactions", async (c) => {
 		context.client.from("credit_ledger")
 			.select("id,event_time,kind,amount_nanos,before_balance_nanos,after_balance_nanos,status,ref_type,ref_id,source_ref_type,source_ref_id,created_at")
 			// Usage debits belong in usage logs; filter before the billing history limit.
-			// The Slack agent's month-end charge is a bill, so it stays.
-			.or("kind.is.null,kind.not.in.(charge,usage),ref_type.eq.slack_agent_month")
+			// The Slack agent's and Phaseo Connect's month-end charges are bills, so they stay.
+			.or("kind.is.null,kind.not.in.(charge,usage),ref_type.eq.slack_agent_month,ref_type.eq.connect_month")
 			.eq("workspace_id", workspaceId).order("event_time", { ascending: false }).limit(250),
 	]);
 	if (walletResult.error || transactionsResult.error) {

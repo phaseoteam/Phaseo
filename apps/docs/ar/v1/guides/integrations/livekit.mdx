@@ -4,56 +4,59 @@ icon: "radio"
 description: "استخدم نماذج Phaseo في LiveKit Agents."
 ---
 
-يمكن لـ LiveKit Agents استدعاء أي نقطة نهاية دردشة متوافقة مع OpenAI عبر إضافة OpenAI. وجّه الإضافة إلى Phaseo لاستخدام معرّفات نماذج Phaseo وتوجيهها.
+وجّه نموذج LLM في إضافة OpenAI الخاصة بـ LiveKit Agents إلى `https://api.phaseo.app/v1` بمفتاح Phaseo، فتستخدم وكلاء الصوت لديك معرّفات نماذج Phaseo وتوجيهه. تستدعي الإضافة نقطة النهاية Chat Completions في Phaseo.
 
-## Python
+## التثبيت
 
-```bash
+<CodeGroup>
+
+```bash Python
 uv add "livekit-agents[openai]"
 ```
 
-```python
+```bash Node.js
+pnpm add @livekit/agents @livekit/agents-plugin-openai
+```
+
+</CodeGroup>
+
+## توجيه LLM الخاص بالوكيل إلى Phaseo
+
+<CodeGroup>
+
+```python Python
 import os
 from livekit.agents import AgentSession
 from livekit.plugins import openai
 
 session = AgentSession(
     llm=openai.LLM(
-        model="openai/gpt-5-nano",
+        model="openai/gpt-6-astra",
         api_key=os.environ["PHASEO_API_KEY"],
         base_url="https://api.phaseo.app/v1",
     ),
 )
 ```
 
-## Node.js
-
-```bash
-pnpm add @livekit/agents @livekit/agents-plugin-openai
-```
-
-```ts
+```ts Node.js
 import { voice } from "@livekit/agents";
 import * as openai from "@livekit/agents-plugin-openai";
 
 const session = new voice.AgentSession({
 	llm: new openai.LLM({
-		model: "openai/gpt-5-nano",
+		model: "openai/gpt-6-astra",
 		apiKey: process.env.PHASEO_API_KEY,
 		baseURL: "https://api.phaseo.app/v1",
 	}),
 });
 ```
 
-## ملاحظات
+</CodeGroup>
 
-- استخدم وضع Chat Completions المتوافق مع OpenAI لنقاط النهاية المخصصة.
-- لا تتحول أدوات OpenAI الخاصة بـ Responses في LiveKit تلقائيًا إلى أدوات خادم Phaseo.
-- هيّئ تحويل الكلام إلى نص وتحويل النص إلى كلام كلٌ على حدة، ما لم تدعم واجهة LiveKit المحددة عنوان URL مخصصًا متوافقًا مع OpenAI لهذه الوسيطة.
-- اختبر معالجة المقاطعات واستدعاءات الأدوات وزمن تأخر التدفق قبل تمرير حركة صوتية للإنتاج.
+ابدأ جلسة، وقل شيئًا، وتأكد من ظهور الطلب في **الإعدادات → الاستخدام → السجلات**.
 
-## مواضيع ذات صلة
+## القيود المعروفة
 
-- [OpenAI SDK](./openai-sdk.mdx)
-- [البث](../streaming.mdx)
-- [استدعاء الأدوات](../tool-calling.mdx)
+- استخدم وضع Chat Completions في الإضافة لنقاط النهاية المخصّصة. أدوات OpenAI الخاصة بـ Responses في LiveKit لا تتحول إلى أدوات خادم في Phaseo.
+- يوجّه هذا نموذج LLM فقط. اضبط تحويل الكلام إلى نص والنص إلى كلام بشكل منفصل، إلا إذا كانت واجهة LiveKit التي تستخدمها تقبل URL مخصّصًا متوافقًا مع OpenAI لتلك الوسيلة.
+- اختبر معالجة المقاطعة و[استدعاءات الأدوات](../tool-calling.mdx) وزمن استجابة [البث](../streaming.mdx) قبل تمرير حركة الصوت في الإنتاج.

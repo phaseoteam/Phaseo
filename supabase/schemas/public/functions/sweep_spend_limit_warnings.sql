@@ -8,12 +8,12 @@ CREATE OR REPLACE FUNCTION public.sweep_spend_limit_warnings (
   AS $function$
 -- Warns once when a workspace budget or an active API key's limit is about 80% used in its
 -- current period, as a money push: owners and admins hear about it, and for a key limit so does
--- the key's creator. Usage comes from v2_private_usage_15m (cost, and successful requests for
--- request limits), which is rebuilt hourly and so lags; the push says "about". The rollup leaves
--- out async jobs and realtime sessions, which the gateway's limits count, so their successful
--- requests are added from gateway_requests through a small partial index. Nothing is sent
--- for a limit already reached this period (record_spend_limit_reached), or one the rollup puts
--- at 100% or more: the gateway blocks the next request and that alert follows. Weekly and
+-- the key's creator. Usage is what the gateway enforces, up to p_now: private.budget_spend_items
+-- for workspace budgets and private.key_spend_items for keys, so money movements win (a request
+-- charged in steps counts its movements, a delivered request pending reconciliation its charge and
+-- what remains uncollected, a debited batch its debit). Nothing is sent for a limit already reached
+-- this period (record_spend_limit_reached), or one at 100% or more: the gateway blocks the next
+-- request and that alert follows. Weekly and
 -- monthly warnings say when the limit runs out at the period's pace so far, if that is before
 -- the period ends. One event per budget or key limit, period and limit value, so a limit raised
 -- mid-period can warn again. Only workspaces with a budget or a limited key are read.
@@ -48,37 +48,47 @@ begin
       and greatest(k.daily_limit_requests, k.weekly_limit_requests, k.monthly_limit_requests,
         k.daily_limit_cost_nanos, k.weekly_limit_cost_nanos, k.monthly_limit_cost_nanos) > 0
   ),
-  async_requests as (
-    -- Async jobs and realtime sessions, which the rollup leaves out (gateway_requests_async_spend_idx).
-    select r.key_id, r.created_at, 1::bigint as requests, coalesce(r.cost_nanos, 0)::numeric as cost_nanos
-    from public.gateway_requests r
-    where r.success is true
-      and r.endpoint = any (array['video.generation', 'batch', 'music.generate', 'audio.realtime'])
-      and r.workspace_id in (select k.workspace_id from limited_keys k)
-      and r.created_at >= least(v_week, v_month)
-      and r.created_at <= p_now
-      and r.key_id in (select k.id from limited_keys k)
+  key_limits as materialized (
+    -- Once warned or reached, this limit cannot warn again until its period or value changes.
+    -- Exclude it before reading spend, rather than repeating that work every quarter hour.
+    select k.*, l.time_window, l.metric, l.limit_value, p.period_start
+    from limited_keys k
+    cross join lateral (values
+      ('daily', 'requests', k.daily_limit_requests),
+      ('weekly', 'requests', k.weekly_limit_requests),
+      ('monthly', 'requests', k.monthly_limit_requests),
+      ('daily', 'cost', k.daily_limit_cost_nanos),
+      ('weekly', 'cost', k.weekly_limit_cost_nanos),
+      ('monthly', 'cost', k.monthly_limit_cost_nanos)
+    ) l(time_window, metric, limit_value)
+    cross join lateral private.spend_limit_period(l.time_window, p_now) p
+    where l.limit_value > 0
+      and not exists (
+        select 1 from public.workspace_notification_events e
+        where e.dedupe_key in (
+          'key_limit_warning:key:' || k.id || ':' || l.metric || ':' || l.time_window || ':' || to_char(p.period_start at time zone 'UTC', 'YYYY-MM-DD') || ':' || l.limit_value,
+          'key_limit_reached:key:' || k.id || ':' || l.metric || ':' || l.time_window || ':' || to_char(p.period_start at time zone 'UTC', 'YYYY-MM-DD') || ':' || l.limit_value
+        )
+      )
   ),
-  key_usage as (
-    -- One pass over each limited key's workspace since the earlier of this week's and this month's start.
+  key_windows as (
+    select k.workspace_id, array_agg(distinct k.id) as key_ids, min(k.period_start) as since
+    from key_limits k
+    group by k.workspace_id
+  ),
+  key_usage as materialized (
+    -- One spend read per workspace, only as far back as an unnotified limit needs.
     select
       u.key_id,
-      coalesce(sum(u.successful_requests) filter (where u.bucket_start >= v_day), 0) as day_requests,
-      coalesce(sum(u.successful_requests) filter (where u.bucket_start >= v_week), 0) as week_requests,
-      coalesce(sum(u.successful_requests) filter (where u.bucket_start >= v_month), 0) as month_requests,
-      coalesce(sum(u.cost_nanos) filter (where u.bucket_start >= v_day), 0) as day_cost,
-      coalesce(sum(u.cost_nanos) filter (where u.bucket_start >= v_week), 0) as week_cost,
-      coalesce(sum(u.cost_nanos) filter (where u.bucket_start >= v_month), 0) as month_cost
-    from (
-      select u.key_id, u.bucket_start, u.successful_requests, u.cost_nanos
-      from public.v2_private_usage_15m u
-      where u.workspace_id in (select k.workspace_id from limited_keys k)
-        and u.bucket_start >= least(v_week, v_month)
-        and u.bucket_start <= p_now
-        and u.key_id in (select k.id from limited_keys k)
-      union all
-      select a.key_id, a.created_at, a.requests, a.cost_nanos from async_requests a
-    ) u
+      count(*) filter (where u.served and u.at >= v_day) as day_requests,
+      count(*) filter (where u.served and u.at >= v_week) as week_requests,
+      count(*) filter (where u.served and u.at >= v_month) as month_requests,
+      coalesce(sum(u.nanos) filter (where u.at >= v_day), 0) as day_cost,
+      coalesce(sum(u.nanos) filter (where u.at >= v_week), 0) as week_cost,
+      coalesce(sum(u.nanos) filter (where u.at >= v_month), 0) as month_cost
+    from key_windows w
+    cross join lateral private.key_spend_items(w.workspace_id, w.since, w.key_ids) u
+    where u.at <= p_now
     group by u.key_id
   ),
   limits as (
@@ -87,38 +97,25 @@ begin
       'budget_warning' as kind, 'budget:' || b.id as subject, b.interval as time_window, 'cost' as metric,
       b.limit_nanos::numeric as limit_value,
       (
-        select coalesce(sum(u.cost_nanos), 0)
-        from public.v2_private_usage_15m u
-        where u.workspace_id = b.workspace_id
-          and u.bucket_start >= coalesce((private.spend_limit_period(b.interval, p_now)).period_start, '-infinity'::timestamptz)
-          and u.bucket_start <= p_now
-      ) + (
-        select coalesce(sum(r.cost_nanos), 0)
-        from public.gateway_requests r
-        where r.success is true
-          and r.endpoint = any (array['video.generation', 'batch', 'music.generate', 'audio.realtime'])
-          and r.workspace_id = b.workspace_id
-          and r.created_at >= coalesce((private.spend_limit_period(b.interval, p_now)).period_start, '-infinity'::timestamptz)
-          and r.created_at <= p_now
-      ) as used
+        -- Active holds count in every period, as the gateway's budget check counts them.
+        select coalesce(sum(item.nanos), 0)
+        from private.budget_spend_items(b.workspace_id, (private.spend_limit_period(b.interval, p_now)).period_start) item
+        where (item.active or item.at >= coalesce((private.spend_limit_period(b.interval, p_now)).period_start, '-infinity'::timestamptz))
+          and item.at <= p_now
+      )::numeric as used
     from public.workspace_budgets b
     union all
     select
       k.workspace_id, k.id, k.name, k.created_by,
-      'key_limit_warning', 'key:' || k.id || ':' || l.metric, l.time_window, l.metric,
-      l.limit_value::numeric,
-      l.used
-    from limited_keys k
+      'key_limit_warning', 'key:' || k.id || ':' || k.metric, k.time_window, k.metric,
+      k.limit_value::numeric,
+      case k.metric when 'requests' then
+        case k.time_window when 'daily' then coalesce(ku.day_requests, 0) when 'weekly' then coalesce(ku.week_requests, 0) else coalesce(ku.month_requests, 0) end
+      else
+        case k.time_window when 'daily' then coalesce(ku.day_cost, 0) when 'weekly' then coalesce(ku.week_cost, 0) else coalesce(ku.month_cost, 0) end
+      end
+    from key_limits k
     left join key_usage ku on ku.key_id = k.id
-    cross join lateral (values
-      ('daily', 'requests', k.daily_limit_requests, coalesce(ku.day_requests, 0)::numeric),
-      ('weekly', 'requests', k.weekly_limit_requests, coalesce(ku.week_requests, 0)::numeric),
-      ('monthly', 'requests', k.monthly_limit_requests, coalesce(ku.month_requests, 0)::numeric),
-      ('daily', 'cost', k.daily_limit_cost_nanos, coalesce(ku.day_cost, 0)::numeric),
-      ('weekly', 'cost', k.weekly_limit_cost_nanos, coalesce(ku.week_cost, 0)::numeric),
-      ('monthly', 'cost', k.monthly_limit_cost_nanos, coalesce(ku.month_cost, 0)::numeric)
-    ) l(time_window, metric, limit_value, used)
-    where l.limit_value > 0
   ),
   due as (
     select

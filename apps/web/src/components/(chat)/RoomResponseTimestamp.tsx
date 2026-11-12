@@ -1,5 +1,3 @@
-"use client";
-
 import { cn } from "@/lib/utils";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 

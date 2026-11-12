@@ -65,13 +65,28 @@ CREATE POLICY "management_keys_update_own_team" ON "public"."management_keys"
   USING (public.is_workspace_admin(workspace_id))
   WITH CHECK (public.is_workspace_admin(workspace_id));
 
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."management_keys"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
 CREATE TRIGGER protect_management_key_created_by
   BEFORE INSERT OR UPDATE OF created_by ON public.management_keys
   FOR EACH ROW
   EXECUTE FUNCTION public.protect_key_created_by();
 
+CREATE TRIGGER protect_management_key_identity_columns
+  BEFORE INSERT OR UPDATE ON public.management_keys
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_key_identity_columns();
+
+CREATE TRIGGER protect_revoked_management_key_status
+  BEFORE UPDATE OF status ON public.management_keys
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_revoked_key_status();
+
 GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."management_keys" TO "service_role";
 
-GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."management_keys" TO "anon";
-
-GRANT DELETE, INSERT, SELECT, UPDATE ON TABLE "public"."management_keys" TO "authenticated";
+GRANT SELECT ("created_at", "created_by", "daily_limit_cost_nanos", "daily_limit_requests", "expires_at", "id", "kid", "last_used_at", "monthly_limit_cost_nanos", "monthly_limit_requests", "name", "prefix", "revoked_at", "revoked_reason", "scopes", "soft_blocked", "status", "updated_at", "weekly_limit_cost_nanos", "weekly_limit_requests", "workspace_id") ON TABLE "public"."management_keys" TO "authenticated";

@@ -14,7 +14,7 @@ func TestGetApiKeyReturnsPayload(t *testing.T) {
 			return
 		}
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"data":{"id":"key_123","hash":"keyhash_123","status":"active"}}`))
+		_, _ = w.Write([]byte(`{"data":{"id":"key_123","status":"active"}}`))
 	}))
 	defer server.Close()
 

@@ -156,6 +156,45 @@ function isExecutableResponseToolItem(item: any): boolean {
 	return (itemType === "function_call" || itemType === "tool_call") && readResponseToolCallName(item) !== null;
 }
 
+/**
+ * Upstream readers whose downstream stream the client cancelled. The adapters read
+ * eagerly, so their loops end early on a cancel; they skip the failure log and close.
+ */
+export const cancelledReaders = new WeakSet<object>();
+
+/**
+ * Reads the upstream. A transport error after the protocol's completion boundary (`[DONE]`, a
+ * terminal Responses event, message_stop) ends the stream like EOF: the output was complete, so
+ * the adapter still emits its final events and billing sees a finished stream.
+ */
+export async function readUntilFailure(
+	reader: ReadableStreamDefaultReader<Uint8Array>,
+	completed: () => boolean,
+): Promise<ReadableStreamReadResult<Uint8Array>> {
+	try {
+		return await reader.read();
+	} catch (err) {
+		if (completed()) return { done: true, value: undefined };
+		throw err;
+	}
+}
+
+type ChoiceProgress = { open: Set<number>; finished: Set<number> };
+
+/**
+ * Whether a Chat chunk completes the stream (as `[DONE]` does): a full chat.completion
+ * snapshot, or usage once every choice seen has finished. One finished choice is not enough.
+ */
+function chatChunkCompletes(payload: any, choices: ChoiceProgress): boolean {
+	for (const choice of Array.isArray(payload?.choices) ? payload.choices : []) {
+		const index = Number(choice?.index ?? 0);
+		choices.open.add(index);
+		if (choice?.finish_reason) choices.finished.add(index);
+	}
+	if (payload?.object === "chat.completion") return true;
+	return Boolean(payload?.usage) && choices.finished.size > 0 && [...choices.open].every((index) => choices.finished.has(index));
+}
+
 export function transformChatStream(
 	stream: ReadableStream<Uint8Array>,
 	args: ExecutorExecuteArgs,
@@ -167,13 +206,18 @@ export function transformChatStream(
 
 	return new ReadableStream<Uint8Array>({
 		async start(controller) {
+			let upstreamError: unknown;
+			// Set at the protocol's completion boundary; a transport error after it is only teardown.
+			let upstreamCompleted = false;
+			const choices: ChoiceProgress = { open: new Set(), finished: new Set() };
 			try {
 				while (true) {
-					const { value, done } = await reader.read();
+					const { value, done } = await readUntilFailure(reader, () => upstreamCompleted);
 					if (done) break;
 
 					for (const frame of parser.pushBytes(value)) {
 						const { data } = frame;
+						if (data === "[DONE]") upstreamCompleted = true;
 						if (!data || data === "[DONE]") continue;
 						let payload: any;
 						try {
@@ -183,14 +227,29 @@ export function transformChatStream(
 						}
 
 						applyStreamQuirks(payload, state, args.providerId);
+						if (chatChunkCompletes(payload, choices)) upstreamCompleted = true;
 						controller.enqueue(encoder.encode(`data: ${JSON.stringify(payload)}\n\n`));
 					}
 				}
 			} catch (err) {
-				console.error("openai compat chat stream transform failed:", err);
+				// A client cancel ends the read loop early; that is not a failure.
+				if (!cancelledReaders.has(reader) && !upstreamCompleted) {
+					console.error("openai compat chat stream transform failed:", err);
+					upstreamError = err;
+				}
 			} finally {
-				controller.close();
+				// A genuine upstream failure (a reset connection) errors this stream too, so billing
+				// sees a broken stream rather than a normal end; our own cancel just stops.
+				if (!cancelledReaders.has(reader)) {
+					if (upstreamError !== undefined) controller.error(upstreamError);
+					else controller.close();
+				}
 			}
+		},
+		// Pass a client cancel on to the stream this one reads, so the upstream stops too.
+		cancel(reason) {
+			cancelledReaders.add(reader);
+		return reader.cancel(reason);
 		},
 	});
 }
@@ -351,13 +410,17 @@ export function transformResponsesStreamToChat(
 
 	return new ReadableStream<Uint8Array>({
 		async start(controller) {
+			let upstreamError: unknown;
+			// Set at the protocol's completion boundary; a transport error after it is only teardown.
+			let upstreamCompleted = false;
 			try {
 				while (true) {
-					const { value, done } = await reader.read();
+					const { value, done } = await readUntilFailure(reader, () => upstreamCompleted);
 					if (done) break;
 
 					for (const frame of parser.pushBytes(value)) {
 						const { data } = frame;
+						if (data === "[DONE]") upstreamCompleted = true;
 						if (!data || data === "[DONE]") continue;
 						let payload: any;
 						try {
@@ -479,6 +542,7 @@ export function transformResponsesStreamToChat(
 							case "response.completed":
 							case "response.incomplete":
 								finalResponse = payload?.response ?? finalResponse;
+								upstreamCompleted = true;
 								break;
 							case "response.failed":
 							case "error":
@@ -499,10 +563,24 @@ export function transformResponsesStreamToChat(
 					await emit(finalChunk, controller);
 				}
 			} catch (err) {
-				console.error("openai compat responses->chat stream transform failed:", err);
+				// A client cancel ends the read loop early; that is not a failure.
+				if (!cancelledReaders.has(reader) && !upstreamCompleted) {
+					console.error("openai compat responses->chat stream transform failed:", err);
+					upstreamError = err;
+				}
 			} finally {
-				controller.close();
+				// A genuine upstream failure (a reset connection) errors this stream too, so billing
+				// sees a broken stream rather than a normal end; our own cancel just stops.
+				if (!cancelledReaders.has(reader)) {
+					if (upstreamError !== undefined) controller.error(upstreamError);
+					else controller.close();
+				}
 			}
+		},
+		// Pass a client cancel on to the stream this one reads, so the upstream stops too.
+		cancel(reason) {
+			cancelledReaders.add(reader);
+		return reader.cancel(reason);
 		},
 	});
 }
@@ -510,6 +588,11 @@ export function transformResponsesStreamToChat(
 type ResponsesStreamChoiceState = {
 	text: string;
 	reasoning: string;
+	// Sealed reasoning state from a Chat reasoning_details entry (a Gemini thought
+	// signature), carried as the reasoning item's encrypted_content.
+	reasoningEncrypted?: string;
+	// The reasoning item has had its done events.
+	closedReasoning?: boolean;
 	refusal: string;
 	// Content index of the refusal part, set when the part is announced.
 	refusalContentIndex?: number;
@@ -596,6 +679,7 @@ export function transformChatStreamToResponses(
 	) => {
 		const { outputIndex, itemId } = ensureMessageIndex(choiceIndex, entry);
 		if (!entry.announcedMessage) {
+			await closeSignedReasoningBeforeOutput(entry, controller);
 			entry.announcedMessage = true;
 			await emitEvent("response.output_item.added", {
 				output_index: outputIndex,
@@ -739,16 +823,16 @@ export function transformChatStreamToResponses(
 		}, controller);
 	};
 
-	// Close each announced message and reasoning item with its done events, using the
-	// accumulated text, as the Anthropic transformer does at content_block_stop.
-	// Returns the output indexes it closed.
-	const closeAnnouncedItems = async (
+	// Close the reasoning item with its done events, once. Returns its output index.
+	const closeReasoningItem = async (
 		entry: ResponsesStreamChoiceState,
 		finalItemAt: (outputIndex: number) => any,
 		controller: ReadableStreamDefaultController<Uint8Array>,
-	): Promise<number[]> => {
-		const closed: number[] = [];
-		if (entry.announcedReasoning && entry.reasoningOutputIndex != null) {
+	): Promise<number | null> => {
+		if (!entry.announcedReasoning || entry.reasoningOutputIndex == null) return null;
+		if (entry.closedReasoning) return entry.reasoningOutputIndex;
+		entry.closedReasoning = true;
+		{
 			const outputIndex = entry.reasoningOutputIndex;
 			const itemId = entry.reasoningItemId!;
 			const part = { type: "reasoning_text", text: entry.reasoning };
@@ -769,10 +853,40 @@ export function transformChatStreamToResponses(
 			// id the stream announced (SDK stream helpers reject a changed item id).
 			const item = finalItem?.type === "reasoning" && finalItem.encrypted_content
 				? { ...finalItem, id: itemId }
-				: { type: "reasoning", id: itemId, status: "completed", summary: [], content: [part] };
+				: {
+					type: "reasoning",
+					id: itemId,
+					status: "completed",
+					summary: [],
+					content: [part],
+					...(entry.reasoningEncrypted ? { encrypted_content: entry.reasoningEncrypted } : {}),
+				};
 			await emitEvent("response.output_item.done", { output_index: outputIndex, item }, controller);
-			closed.push(outputIndex);
+			return outputIndex;
 		}
+	};
+
+	// A signed reasoning item (a Gemini thought signature) closes as soon as the answer
+	// or a tool call starts, as Responses streams order them, so a Messages client gets
+	// the signature on its thinking block before that block ends.
+	const closeSignedReasoningBeforeOutput = async (
+		entry: ResponsesStreamChoiceState,
+		controller: ReadableStreamDefaultController<Uint8Array>,
+	) => {
+		if (entry.reasoningEncrypted) await closeReasoningItem(entry, () => null, controller);
+	};
+
+	// Close each announced message and reasoning item with its done events, using the
+	// accumulated text, as the Anthropic transformer does at content_block_stop.
+	// Returns the output indexes it closed.
+	const closeAnnouncedItems = async (
+		entry: ResponsesStreamChoiceState,
+		finalItemAt: (outputIndex: number) => any,
+		controller: ReadableStreamDefaultController<Uint8Array>,
+	): Promise<number[]> => {
+		const closed: number[] = [];
+		const reasoningIndex = await closeReasoningItem(entry, finalItemAt, controller);
+		if (reasoningIndex != null) closed.push(reasoningIndex);
 		if (entry.announcedMessage && entry.messageOutputIndex != null) {
 			const outputIndex = entry.messageOutputIndex;
 			const itemId = entry.messageItemId!;
@@ -822,15 +936,20 @@ export function transformChatStreamToResponses(
 
 	return new ReadableStream<Uint8Array>({
 		async start(controller) {
+			let upstreamError: unknown;
+			// Set at the protocol's completion boundary; a transport error after it is only teardown.
+			let upstreamCompleted = false;
+			const choices: ChoiceProgress = { open: new Set(), finished: new Set() };
 			let createdEmitted = false;
 			let upstreamFailure: { code: string | null; message: string } | null = null;
 			try {
 				while (true) {
-					const { value, done } = await reader.read();
+					const { value, done } = await readUntilFailure(reader, () => upstreamCompleted);
 					if (done) break;
 
 					for (const frame of parser.pushBytes(value)) {
 						const { data } = frame;
+						if (data === "[DONE]") upstreamCompleted = true;
 						if (!data || data === "[DONE]") continue;
 						let payload: any;
 						try {
@@ -856,6 +975,11 @@ export function transformChatStreamToResponses(
 
 						if (mode === "responses" && !isChatPayload) {
 							const normalized = normalizeResponsesEvent(event) ?? "response.event";
+							// Set before the frame is queued: a later reset must not error the stream and
+							// discard the queued terminal frame.
+							if (normalized === "response.completed" || normalized === "response.incomplete" || normalized === "response.failed") {
+								upstreamCompleted = true;
+							}
 							if (sealResponsesReasoningPayload(payload, args)) {
 								controller.enqueue(encoder.encode(`event: ${normalized}\ndata: ${JSON.stringify(payload)}\n\n`));
 								continue;
@@ -896,6 +1020,7 @@ export function transformChatStreamToResponses(
 						if (payload?.id) nativeResponseId = payload.id;
 						if (payload?.created) createdAt = payload.created;
 						if (payload?.model) model = payload.model;
+						if (chatChunkCompletes(payload, choices)) upstreamCompleted = true;
 
 						finalResponse = accumulateChatCompletion(finalResponse, payload);
 
@@ -948,6 +1073,15 @@ export function transformChatStreamToResponses(
 									}, controller);
 								}
 
+								// A thought signature without a tool-call id belongs to the reasoning
+								// item, so Responses and Messages clients can return it next turn.
+								for (const detail of Array.isArray(choice?.delta?.reasoning_details) ? choice.delta.reasoning_details : []) {
+									if (detail?.type === "reasoning.encrypted" && !detail.id && typeof detail.data === "string" && detail.data) {
+										entry.reasoningEncrypted = detail.data;
+										await announceReasoning(choiceIndex, entry, controller);
+									}
+								}
+
 								for (const part of parseChatMediaParts(choice?.delta?.images)) {
 									entry.mediaParts.push(part);
 									ensureMessageIndex(choiceIndex, entry);
@@ -967,6 +1101,7 @@ export function transformChatStreamToResponses(
 									if (typeof toolDelta?.function?.arguments === "string") {
 										tool.arguments += toolDelta.function.arguments;
 										if (!tool.emittedAdded) {
+											await closeSignedReasoningBeforeOutput(entry, controller);
 											await emitEvent("response.output_item.added", {
 												output_index: tool.outputIndex,
 												item: {
@@ -1221,10 +1356,24 @@ export function transformChatStreamToResponses(
 					}, controller);
 				}
 			} catch (err) {
-				console.error("openai compat chat->responses stream transform failed:", err);
+				// A client cancel ends the read loop early; that is not a failure.
+				if (!cancelledReaders.has(reader) && !upstreamCompleted) {
+					console.error("openai compat chat->responses stream transform failed:", err);
+					upstreamError = err;
+				}
 			} finally {
-				controller.close();
+				// A genuine upstream failure (a reset connection) errors this stream too, so billing
+				// sees a broken stream rather than a normal end; our own cancel just stops.
+				if (!cancelledReaders.has(reader)) {
+					if (upstreamError !== undefined) controller.error(upstreamError);
+					else controller.close();
+				}
 			}
+		},
+		// Pass a client cancel on to the stream this one reads, so the upstream stops too.
+		cancel(reason) {
+			cancelledReaders.add(reader);
+		return reader.cancel(reason);
 		},
 	});
 }

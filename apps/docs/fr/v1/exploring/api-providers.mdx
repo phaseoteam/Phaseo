@@ -5,74 +5,41 @@ sidebarTitle: "Fournisseurs d’API"
 icon: "server"
 ---
 
-Les fournisseurs d’API sont les plateformes qui hébergent et proposent des API de modèles.
+Ouvrez un fournisseur sur la page [Fournisseurs d’API](https://phaseo.app/api-providers) pour voir quels modèles il sert via Phaseo et à quelle vitesse, ou [comparez des fournisseurs](https://phaseo.app/api-providers/compare) côte à côte. Un fournisseur d’API héberge des modèles derrière une API ; l’[organisation](./organisations.mdx) qui a créé un modèle est souvent une autre entreprise.
 
-Les organisations de modèles entraînent les modèles. Les fournisseurs rendent ces modèles accessibles via des points de terminaison de production, l’authentification, des contrôles d’utilisation et des outils d’exploitation.
-
-## Fonctions habituelles d’un fournisseur d’API
-
-- Authentification et gestion des clés
-- Routage des requêtes et gestion de la disponibilité
-- Mesure de l’utilisation et facturation
-- Ergonomie de l’API et du SDK
-- Hébergement régional et contrôles de conformité
-
-## Fournisseur ou organisation
-
-| Aspect | Organisation | Fournisseur d’API |
+| | Organisation | Fournisseur d’API |
 | --- | --- | --- |
-| Rôle principal | Conçoit et entraîne les modèles | Héberge et propose les API de modèles |
-| Priorité | Recherche et qualité des modèles | Fiabilité, accès et exploitation |
-| Distribution | Propose généralement sa propre famille de modèles | Peut proposer des modèles de plusieurs organisations |
+| **Rôle** | Conçoit et entraîne des modèles | Héberge et sert des API de modèles |
+| **Priorité** | Recherche et qualité des modèles | Fiabilité, accès, régions et tarifs |
+| **Modèles** | Généralement ses propres familles | Souvent des modèles de nombreuses organisations |
 
-De nombreuses entreprises remplissent les deux rôles selon le produit.
+Beaucoup d’entreprises sont les deux à la fois.
 
-## Informations disponibles sur les pages fournisseurs Phaseo
+## Ce que montre une page de fournisseur
 
-| Section | Informations |
+| Section | Ce qu’elle vous apprend |
 | --- | --- |
-| Vue d’ensemble | Identité du fournisseur, liens vers la documentation et fonctionnalités prises en charge |
-| Modèles | Modèles et variantes disponibles |
-| Tarification | Normalisation des prix et unités de facturation du fournisseur |
-| Limites | Limites de requêtes et de débit lorsqu’elles sont disponibles |
-| Fonctionnalités | Streaming, outils, sorties structurées et prise en charge des modalités |
+| **Performances** | Latence et débit horaires sur le trafic du Gateway au cours des sept derniers jours. |
+| **Utilisation des tokens** | Les tokens que Phaseo a envoyés au fournisseur au fil du temps. |
+| **Meilleurs modèles** et **Meilleures applications** | Les modèles et les applications publiques qui génèrent le plus de trafic chez ce fournisseur. |
+| **Modèles** | Tous les modèles servis par le fournisseur, avec des onglets pour les modèles de texte, d’image, d’audio, de vidéo, d’embedding et de modération. |
 
-## Phaseo Gateway comme couche fournisseur
+La page de chaque modèle indique ensuite le prix, la longueur de contexte, l’état et la politique de données du fournisseur pour ce modèle ; [États du fournisseur](../guides/provider-statuses) explique les icônes d’état.
 
-Phaseo Gateway unifie l’accès à de nombreux backends.
+## Comment le Gateway utilise les fournisseurs
 
-Avantages :
+Lorsqu’un modèle a plusieurs fournisseurs, le Gateway en choisit un pour chaque requête et bascule vers un autre en cas d’échec. Vous envoyez un seul format de requête et recevez une seule facture et un seul journal d’utilisation, quel que soit le fournisseur qui la sert. Pour facturer plutôt votre propre compte fournisseur, ajoutez une clé de fournisseur ([BYOK](../guides/routing-and-fallbacks#byok-considerations)).
 
-- Format de requête et de réponse unifié entre les fournisseurs
-- Routage tenant compte des fournisseurs et comportement de repli
-- Utilisation unifiée du SDK pour les intégrations multi-fournisseurs
-- Observabilité centralisée de l’utilisation et des coûts
-- Prise en charge BYOK facultative pour les clés propres aux fournisseurs
+[Routage et solutions de repli](../guides/routing-and-fallbacks) explique comment classer, épingler ou exclure des fournisseurs.
 
 ## Choisir un fournisseur
 
-Pour évaluer les fournisseurs, tenez compte des éléments suivants :
+| Si vous tenez à | Consultez |
+| --- | --- |
+| Un modèle précis | La section **Fournisseurs** de la page du modèle, ou `GET /v1/models/{author}/{slug}/endpoints` |
+| La latence dans votre région | La section **Performances** du fournisseur et ses régions sur la page du modèle |
+| Le coût à votre volume | La section **Tarifs** du modèle et le [calculateur de prix](https://phaseo.app/tools/pricing-calculator) |
+| Les outils, le streaming ou la sortie structurée | Les paramètres pris en charge par la route, sur la page du modèle ou via l’API des endpoints |
+| Le traitement des données et la conformité | La politique de données de la route et ses lieux de traitement, sur la page du modèle |
 
-- Disponibilité des modèles pour votre cas d’usage
-- Fiabilité et latence dans votre région cible
-- Coût estimé selon le volume de trafic prévu
-- Prise en charge des outils, du streaming et des sorties structurées
-- Exigences de conformité et de traitement des données
-
-## Questions pour comparer les fournisseurs
-
-- Quels fournisseurs proposent la famille de modèles dont j’ai besoin ?
-- Lequel offre la meilleure latence dans ma région ?
-- Quelle est l’option la moins chère pour mon volume de jetons ?
-- Quel fournisseur prend en charge les fonctionnalités de point de terminaison requises ?
-
-## Étapes suivantes
-
-<Card
-	title="Découvrir les tarifs et les performances"
-	icon="scale"
-	href="./pricing-performance.mdx"
-	horizontal
->
-	Comparez les coûts, la vitesse et les indicateurs d’efficacité des fournisseurs.
-</Card>
+[Prix et performances](./pricing-performance.mdx) explique comment lire les chiffres de coût et de vitesse.

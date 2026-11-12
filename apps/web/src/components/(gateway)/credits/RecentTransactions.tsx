@@ -1,7 +1,5 @@
-"use client";
-
 import React, { useEffect, useMemo, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useQueryState } from "nuqs";
 import {
 	Pagination,
@@ -12,7 +10,7 @@ import {
 	PaginationEllipsis,
 	PaginationLink,
 } from "@/components/ui/pagination";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "@/lib/navigation";
 import { useSettingsWrite } from "../settings/PrivateSettingsQuery";
 import { requestCreditRefund } from "./refundRequest";
 import {
@@ -41,8 +39,13 @@ import {
 } from "@/components/ui/table";
 import {
 	HoverCard,
+	HoverCardBody,
 	HoverCardContent,
+	HoverCardFacts,
+	HoverCardHeadline,
+	HoverCardTitle,
 	HoverCardTrigger,
+	joinMeta,
 } from "@/components/ui/hover-card";
 import {
 	Select,
@@ -61,7 +64,8 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { isSlackAgentCharge } from "@/lib/credits/promoCodes";
-import { formatRelativeToNow } from "@/lib/formatRelative";
+import { TimestampHoverCard } from "@/components/display/TimestampHoverCard";
+import { useRelativeNow } from "@/hooks/useRelativeNow";
 import { useDisplayPreferences } from "@/components/providers/DisplayPreferencesProvider";
 import {
 	formatDisplayDateTime,
@@ -152,18 +156,6 @@ function formatNanos(
 	}
 }
 
-function formatDateTime(
-	date: Date,
-	timeZone: string,
-	preferences: DisplayFormattingPreferences,
-): string {
-	return formatDisplayDateParts(date, preferences, {
-		dateStyle: preferences.dateStyle === "iso" ? "short" : preferences.dateStyle,
-		timeStyle: "medium",
-		timeZone,
-	});
-}
-
 function formatSignedNanos(
 	nanos: number | null | undefined,
 	currency: string,
@@ -172,22 +164,6 @@ function formatSignedNanos(
 	const value = nanos ?? 0;
 	if (value === 0) return formatNanos(0, currency, preferences);
 	return `${value > 0 ? "+" : "-"}${formatNanos(Math.abs(value), currency, preferences)}`;
-}
-
-function formatRelativeDate(date: Date, nowMs: number, locale: string): string {
-	const formatter = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
-	const seconds = (date.getTime() - nowMs) / 1000;
-	const units = [
-		["year", 31_536_000],
-		["month", 2_592_000],
-		["week", 604_800],
-		["day", 86_400],
-		["hour", 3_600],
-		["minute", 60],
-		["second", 1],
-	] as const;
-	const [unit, size] = units.find(([, size]) => Math.abs(seconds) >= size) ?? units[units.length - 1];
-	return formatter.format(Math.round(seconds / size), unit);
 }
 
 type TransactionStatusKey = "succeeded" | "failed" | "pending" | "cancelled" | "processing" | "paid";
@@ -266,6 +242,24 @@ function statusChip(
 		className: cn("capitalize", TRANSACTION_CHIP_TONES.neutral),
 		icon: <Clock className="h-3.5 w-3.5" aria-hidden />,
 	};
+}
+
+/** The kind's label as text, matching kindBadge. */
+function kindLabelText(kind: string | null | undefined, refType: string | null | undefined, labelFor: (key: TransactionKindKey) => string): string | null {
+	if (isSlackAgentCharge(refType)) return labelFor("slackAgent");
+	switch (kind) {
+		case "promo_code": return labelFor("promoCredit");
+		case "goodwill_credit": return labelFor("goodwillCredit");
+		case "top_up_one_off": return labelFor("oneOff");
+		case "top_up": return labelFor("topUp");
+		case "auto_top_up": return labelFor("autoTopUp");
+		case "refund":
+		case "refunded": return labelFor("refund");
+		case "adjustment": return labelFor("adjustment");
+		case "charge":
+		case "usage": return labelFor("usage");
+		default: return kind ?? null;
+	}
 }
 
 function kindBadge(kind: string | null | undefined, refType: string | null | undefined, labelFor: (key: TransactionKindKey) => string) {
@@ -432,37 +426,24 @@ export default function RecentTransactions({
 	stripeCustomerId,
 	currency = "USD",
 }: Props) {
-	const locale = useLocale();
 	const t = useTranslations("SettingsUI");
+	const tCards = useTranslations("Common.ui.hoverCards");
 	const transactionText = (key: string) => t(`credits.transactions.${key}` as never);
 	const statusLabel = (key: TransactionStatusKey) => transactionText(`status.${key}`);
 	const kindLabel = (key: TransactionKindKey) => transactionText(`kind.${key}`);
 	const { formattingPreferences: preferences } = useDisplayPreferences();
-	const userTimeZone =
-		preferences.timeZone !== "system"
-			? preferences.timeZone
-			: typeof Intl !== "undefined"
-			? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
-			: "UTC";
 	const router = useRouter();
 	const write = useSettingsWrite();
 	const [actionBusy, setActionBusy] = useState<Record<string, boolean>>({});
 	const [refundDialogTx, setRefundDialogTx] = useState<Transaction | null>(null);
 	const [refundReason, setRefundReason] =
 		useState<RefundReasonValue>("no_comment");
-	const [relativeNowMs, setRelativeNowMs] = useState<number | null>(null);
+	const relativeNowMs = useRelativeNow();
 	const [pageStr, setPageStr] = useQueryState("tx_page", {
 		defaultValue: "0",
 	});
 	const page = Math.max(0, parseInt(pageStr ?? "0", 10) || 0);
 	const totalPages = Math.max(1, Math.ceil(transactions.length / pageSize));
-
-	useEffect(() => {
-		const updateNow = () => setRelativeNowMs(Date.now());
-		updateNow();
-		const interval = setInterval(updateNow, 60_000);
-		return () => clearInterval(interval);
-	}, []);
 
 	// clamp page if transactions change
 	useEffect(() => {
@@ -670,39 +651,11 @@ export default function RecentTransactions({
 										<TableRow key={t.id} className="align-top">
 											<TableCell className="py-2 font-mono text-xs text-muted-foreground">
 												{createdAtDate && Number.isFinite(createdAtDate.getTime()) ? (
-													<HoverCard>
-														<HoverCardTrigger asChild>
-															<span className="cursor-help underline decoration-dotted underline-offset-2">
-																{relativeNowMs
-																	? formatDisplayTimestamp(createdAtDate, preferences, new Date(relativeNowMs))
-																	: formatDisplayDateTime(createdAtDate, preferences)}
-															</span>
-														</HoverCardTrigger>
-														<HoverCardContent align="start" className="w-auto">
-															<div className="grid gap-2 text-xs">
-																<div className="grid grid-cols-[120px_1fr] gap-2">
-																	<div className="text-muted-foreground">{userTimeZone}</div>
-																	<div className="font-mono">
-															{formatDateTime(createdAtDate, userTimeZone, preferences)}
-																	</div>
-																</div>
-																<div className="grid grid-cols-[120px_1fr] gap-2">
-																	<div className="text-muted-foreground">UTC</div>
-																	<div className="font-mono">
-															{formatDateTime(createdAtDate, "UTC", preferences)}
-																	</div>
-																</div>
-																<div className="grid grid-cols-[120px_1fr] gap-2">
-																	<div className="text-muted-foreground">{transactionText("relative")}</div>
-																	<div className="font-mono">
-																		{relativeNowMs
-																			? formatRelativeDate(createdAtDate, relativeNowMs, locale)
-																			: "-"}
-																	</div>
-																</div>
-															</div>
-														</HoverCardContent>
-													</HoverCard>
+													<TimestampHoverCard value={createdAtDate}>
+														{relativeNowMs
+															? formatDisplayTimestamp(createdAtDate, preferences, new Date(relativeNowMs))
+															: formatDisplayDateTime(createdAtDate, preferences)}
+													</TimestampHoverCard>
 												) : (
 													<span>-</span>
 												)}
@@ -727,50 +680,67 @@ export default function RecentTransactions({
 												{after !== null ? (
 													<HoverCard>
 														<HoverCardTrigger asChild>
-															<span className="cursor-default font-medium tabular-nums">
-																	{formatNanos(after, currency, preferences)}
+															<span
+																tabIndex={0}
+																className="cursor-help rounded-sm font-medium tabular-nums underline decoration-dotted underline-offset-2 outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
+															>
+																{formatNanos(after, currency, preferences)}
 															</span>
 														</HoverCardTrigger>
 														<HoverCardContent align="start" className="w-64">
-															<div className="space-y-3 text-xs">
-																<div>
-																	<div className="font-medium text-foreground">
-																{transactionText("balanceMovement")}
-																	</div>
-																	<p className="mt-0.5 text-muted-foreground">
-																	{transactionText("balanceAfterSettlement")}
-																	</p>
-																</div>
-																<div className="grid gap-2">
-																	<div className="flex items-center justify-between gap-4">
-																		<span className="text-muted-foreground">{transactionText("before")}</span>
-																		<span className="font-mono font-medium tabular-nums">
-																			{before !== null ? formatNanos(before, currency, preferences) : "-"}
-																		</span>
-																	</div>
-																	<div className="flex items-center justify-between gap-4">
-																		<span className="text-muted-foreground">{transactionText("change")}</span>
-																		<span
-																			className={cn(
-																				"font-mono font-medium tabular-nums",
-																				(amountNanos ?? 0) < 0
-																					? "text-rose-500 dark:text-rose-300"
-																					: (amountNanos ?? 0) > 0
-																						? "text-emerald-600 dark:text-emerald-300"
-																						: "text-muted-foreground"
-																			)}
-																		>
-																			{formatSignedNanos(amountNanos, currency, preferences)}
-																		</span>
-																	</div>
-																	<div className="flex items-center justify-between gap-4 border-t pt-2">
-																		<span className="text-muted-foreground">{transactionText("after")}</span>
-																		<span className="font-mono font-semibold tabular-nums text-foreground">
-																			{formatNanos(after, currency, preferences)}
-																		</span>
-																	</div>
-																</div>
-															</div>
+															<HoverCardBody>
+																<HoverCardTitle
+																	title={transactionText("balanceMovement")}
+																	meta={joinMeta([
+																		kindLabelText(t.kind, t.ref_type, kindLabel),
+																		label,
+																		createdAtDate && Number.isFinite(createdAtDate.getTime())
+																			? formatDisplayDateParts(createdAtDate, preferences, { month: "short", day: "numeric" })
+																			: null,
+																	])}
+																/>
+																<HoverCardHeadline prefix={tCards("balanceAfter")}>
+																	{formatNanos(after, currency, preferences)}
+																</HoverCardHeadline>
+																<HoverCardFacts
+																	rows={[
+																		{
+																			key: "before",
+																			label: transactionText("before"),
+																			value: (
+																				<span className="tabular-nums">
+																					{before !== null ? formatNanos(before, currency, preferences) : "-"}
+																				</span>
+																			),
+																		},
+																		{
+																			key: "change",
+																			label: transactionText("change"),
+																			value: (
+																				<span
+																					className={cn(
+																						"tabular-nums",
+																						(amountNanos ?? 0) < 0
+																							? "text-rose-500 dark:text-rose-300"
+																							: (amountNanos ?? 0) > 0
+																								? "text-emerald-600 dark:text-emerald-300"
+																								: "text-muted-foreground"
+																					)}
+																				>
+																					{formatSignedNanos(amountNanos, currency, preferences)}
+																				</span>
+																			),
+																		},
+																		paymentIntentId
+																			? {
+																					key: "reference",
+																					label: tCards("paymentReference"),
+																					value: <code className="break-all font-mono text-[11px]">{paymentIntentId}</code>,
+																				}
+																			: null,
+																	]}
+																/>
+															</HoverCardBody>
 														</HoverCardContent>
 													</HoverCard>
 												) : (

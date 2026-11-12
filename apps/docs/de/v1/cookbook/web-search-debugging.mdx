@@ -1,81 +1,57 @@
 ---
-title: "Websuche-Anfragen überprüfen"
+title: "Websuche-Anfragen debuggen"
 icon: "bug"
 description: "Prüfe Websuche-Anfragen, die Unterstützung durch Anbieter sowie zurückgegebene Suchergebnisse und Quellenangaben."
 ---
 
-Verwende dieses Rezept, wenn eine Websuche-Anfrage anders als erwartet funktioniert und du prüfen möchtest, ob Phaseo sie angenommen, korrekt weitergeleitet und saubere Suchergebnisse zurückgegeben hat.
+Finde anhand der Antwort und des Anfrageprotokolls heraus, ob eine Websuche tatsächlich lief, welche Engine sie ausgeführt hat und was sie zurückgegeben hat. Am Ende kannst du eine Suche, die nie stattfand, von einer unterscheiden, die lief und wenig gefunden hat.
 
-## 1. Die Suchabsicht ausdrücklich angeben
+```mermaid
+flowchart TD
+  req["Anfrage mit Websuche"] --> tool{{"Suche in tools oder web_search_options deklariert?"}}
+  tool -->|"Nein"| none["Keine Suche: Der Prompt allein löst keine aus"]
+  tool -->|"Ja"| ran{{"Zeigt usage.server_tool_use eine Suche?"}}
+  ran -->|"Nein"| skipped["Modell hat sie nicht aufgerufen: tool_choice setzen"]
+  ran -->|"Ja"| results{{"Ergebnisse und Zitate im Protokoll?"}}
+  results -->|"Wenige oder keine"| quality["Engine, Domains und Suchanfrage prüfen"]
+  results -->|"Ja"| ok["Suche hat funktioniert"]
+```
 
-Verlasse dich nicht allein auf die Formulierung des Prompts. Füge die Sucheinstellungen direkt in die Anfrage ein, damit Phaseo weiß, dass du eine Websuche möchtest.
+## Die Suche in der Anfrage deklarieren
 
-Prüfe, ob Folgendes enthalten ist:
+Im Prompt nach „den neuesten Nachrichten“ zu fragen, führt keine Suche aus. Füge sie ausdrücklich hinzu:
 
-- native Such-Tools unter `tools`
-- `web_search_options`, sofern der Endpunkt sie unterstützt
+```json
+{
+  "model": "openai/gpt-6-astra",
+  "input": "What changed in the Phaseo changelog this week?",
+  "tools": [{ "type": "phaseo:web_search", "parameters": { "max_results": 5 } }],
+  "tool_choice": "phaseo:web_search"
+}
+```
 
-## 2. Verfügbarkeit eines kompatiblen Anbieters bestätigen
+`phaseo:web_search` funktioniert bei Chat Completions, Responses und Messages. `web_search_options` funktioniert dort, wo der Endpunkt es unterstützt. `tool_choice` erzwingt den Aufruf; ohne es kann das Modell aus dem Gedächtnis antworten. Der [Leitfaden zur Websuche](../guides/server-tools/web-search) listet jeden Parameter auf.
 
-Wenn die Anfrage blockiert oder anders als erwartet geroutet wird, prüfe die Anfragedetails auf:
+## Prüfen, ob sie lief
 
-- Informationen zu möglichen Anbietern
-- Informationen zur Anbieterfreigabe
-- Routing-Erklärung
+| Wo du nachsiehst | Was es zeigt |
+| --- | --- |
+| `usage.server_tool_use.web_search_requests` in der Antwort | Wie viele verwaltete Suchen liefen |
+| **Überwachung der Websuche** bei der Anfrage unter **Einstellungen → Nutzung → Protokolle** | Verwaltete Suchen, native Suchen, Anzahl der Ergebnisse und Anzahl der Zitate, mit den extrahierten Ergebnis- und Zitateinträgen |
+| **Beobachtbarkeit des Routings** bei derselben Anfrage | Welche Anbieter berücksichtigt wurden und welche entfernt wurden, weil sie die Anfrage nicht unterstützten |
 
-So erkennst du, ob die Anbieterliste wegen fehlender Suchunterstützung eingeschränkt wurde.
+## Die Fehlerfälle unterscheiden
 
-## 3. Nutzungszähler prüfen
+| Was du siehst | Ursache | Lösung |
+| --- | --- | --- |
+| Überhaupt keine Suchzähler | Die Suche wurde nicht deklariert, oder das Modell hat sich gegen den Aufruf entschieden | Tool hinzufügen und `tool_choice` setzen |
+| Das Tool gibt dem Modell `search_not_configured` zurück | Die gewählte verwaltete Engine ist nicht aktiviert | Die Standard-Engine oder eine andere verwenden |
+| Das Tool gibt `unsupported_search_engine` zurück | Das Modell hat innerhalb eines Aufrufs `engine: "native"` angefordert | `native` nur in der Tool-Definition setzen |
+| `400 not_supported`, Grund `regional_hosted_tool_not_supported` | An `eu.api.phaseo.app` oder `us.api.phaseo.app` gesendet, die Server-Tools ablehnen | `api.phaseo.app` verwenden |
+| Suchen liefen, aber es gibt kaum Zitate | Suchanfrage oder Quellen waren schwach | `max_results`, `allowed_domains` oder `engine` anpassen |
 
-Erfolgreiche suchgestützte Anfragen sollten suchbezogene Nutzungszähler anzeigen, zum Beispiel:
+Mit `engine: "native"` geht die Anfrage nur an Anbieter, die die Websuche selbst ausführen. Bedient keiner davon das Modell, führt Phaseo stattdessen seine Standard-Engine aus und rechnet sie als verwaltete Suche ab, sodass eine native Anfrage verwaltete Zähler zeigen kann.
 
-- angeforderte native Websuche-Tools
-- Websuche-Ergebnisse
-- Quellenangaben
+## Anfragen vergleichen
 
-Daran erkennst du am schnellsten, ob die Anfrage tatsächlich die Suche verwendet hat.
-
-## 4. Abschnitt mit Suchergebnissen prüfen
-
-Öffne bei erfolgreichen Anfragen den Dialog mit den Anfragedetails und suche nach dem Beobachtungsbereich für die Websuche.
-
-Dort siehst du:
-
-- ob die native Suche verwendet wurde
-- Anzahl normalisierter Ergebnisse
-- Anzahl normalisierter Quellenangaben
-- extrahierte Ergebniseinträge
-- extrahierte Quelleinträge
-
-Damit kannst du Anbieter vergleichen, ohne rohe Nutzdaten zu lesen.
-
-## 5. Diese Fälle getrennt behandeln
-
-Native Suche und die Prüfung der Anbieterfähigkeiten sind derzeit verfügbar. Die Planung eines Such-Fallbacks ist davon getrennt.
-
-Unterscheide beim Debugging diese Fälle:
-
-1. Die native Suchanfrage wurde angenommen und geroutet.
-2. Die Anfrage wurde angenommen, aber es blieb kein kompatibler Anbieter übrig.
-3. Die Anfrage war erfolgreich, lieferte aber schwache oder wenige Quellenangaben.
-
-Das sind unterschiedliche Probleme und sie sollten unterschiedlich untersucht werden.
-
-## 6. Was du bei falschen Ergebnissen vergleichen solltest
-
-Vergleiche zwischen Anfragen:
-
-- Modell-ID
-- tatsächlich ausgewählter Anbieter
-- Sucheinstellungen der Anfrage
-- Ergebnisanzahl
-- Anzahl der Quellenangaben
-- Routing-Details
-
-Unterscheidet sich die Ergebnisqualität je nach Anbieter, sollten die normalisierten Protokolle das trotzdem erkennen lassen.
-
-## Weiterführende Themen
-
-- [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx)
-- [Beispiele](../guides/examples.mdx)
-- [TypeScript SDK](../sdk-reference/typescript/overview.mdx)
+Wenn sich die Ergebnisse zwischen Läufen unterscheiden, vergleiche die Modell-ID, den gewählten Anbieter, die Suchparameter und die Anzahl der Ergebnisse und Zitate. Die Zahlen sind anbieterübergreifend normalisiert, sodass Unterschiede in der Suchqualität sichtbar werden, ohne rohe Payloads zu lesen. Für einen vollständigen fundierten Workflow siehe [Verwaltete Websuche in TypeScript](./sdk-typescript-managed-search); für eine bekannte URL verwende stattdessen [Web Fetch](./tool-grounding-with-web-fetch).

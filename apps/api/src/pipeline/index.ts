@@ -308,6 +308,8 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
             },
         });
         const beforeMsRaw = timing.timer.end("before_start");
+        // End of "before": the response timeline measures the hand-over to execute from here.
+        timing.timer.mark("before_end");
         const beforeMs = typeof beforeMsRaw === "number"
             ? Math.round(beforeMsRaw * 1000) / 1000
             : null;
@@ -332,6 +334,7 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
                 attemptKey: string;
                 // Absent when the primary failed before it was admitted.
                 rateLimitAdmissionId?: string;
+                byokAllowanceId?: string;
                 stage: "before" | "execute";
             },
             initialResponse: Response,
@@ -340,6 +343,7 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 			const attempts: ModelFallbackAttempt[] = [{ model: primary.model, status: response.status, stage: primary.stage }];
 			const attemptedModels = new Set([primary.attemptKey]);
 			let rateLimitAdmissionId = primary.rateLimitAdmissionId;
+			let byokAllowanceId = primary.byokAllowanceId;
 			for (const [fallbackIndex, fallbackModel] of fallbackPlan.models.entries()) {
 				const fallbackReq = requestForModelFallback(req, primary.retryRawBody) as unknown as typeof req;
 				const fallbackObservabilityReq = cloneRequestForEarlyObservability(fallbackReq);
@@ -369,6 +373,7 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 					},
 				);
 				const fallbackBeforeMsRaw = fallbackTiming.timer.end("before_start");
+				fallbackTiming.timer.mark("before_end");
 				if (!fallbackPre.ok) {
 					// A fallback that cannot serve this request (unsupported endpoint,
 					// parameter, policy) is recorded and skipped; it never replaces the
@@ -400,6 +405,9 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 				// One HTTP request is one admission against rate limit policies.
 				rateLimitAdmissionId ??= fallbackPre.ctx.billingRequestId;
 				fallbackPre.ctx.rateLimitAdmissionId = rateLimitAdmissionId;
+				// ...and one request against the monthly BYOK allowance.
+				byokAllowanceId ??= fallbackPre.ctx.billingRequestId;
+				fallbackPre.ctx.byokAllowanceId = byokAllowanceId;
 				fallbackPre.ctx.rateLimitConcurrency = concurrency;
 				fallbackPre.ctx.routingDiagnostics = {
 					...(fallbackPre.ctx.routingDiagnostics ?? {}),
@@ -487,6 +495,7 @@ export function makeEndpointHandler(opts: { endpoint: Endpoint; schema: any; }) 
 					routingDiagnostics: pre.ctx.routingDiagnostics,
 					attemptKey: modelFallbackAttemptKey(pre.ctx),
 					rateLimitAdmissionId: pre.ctx.rateLimitAdmissionId ?? pre.ctx.billingRequestId,
+					byokAllowanceId: pre.ctx.byokAllowanceId ?? pre.ctx.billingRequestId,
 					stage: "execute",
 				},
 				response,

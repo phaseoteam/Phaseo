@@ -37,16 +37,19 @@ jobs:
     windows:
         runs-on: windows-latest
         timeout-minutes: 30
+        env:
+            PUBLIC_POSTHOG_KEY: ${{ secrets.NEXT_PUBLIC_POSTHOG_KEY || vars.NEXT_PUBLIC_POSTHOG_KEY }}
+            PUBLIC_POSTHOG_HOST: ${{ vars.PUBLIC_POSTHOG_HOST }}
         steps:
             - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
               with:
                   persist-credentials: false
-            - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413
+            - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115
               with:
                   version: 10.33.0
                   run_install: false
                   standalone: true
-            - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+            - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1
               with:
                   node-version: "24"
                   package-manager-cache: false
@@ -56,6 +59,9 @@ jobs:
               run: npm install --global @openai/codex@0.160.0
             - name: Build desktop and agent SDK
               run: pnpm --filter @phaseo/desktop build
+            # No timing, so it never flakes: packages loaded before the window, startup bytes, compile cache, loading logo.
+            - name: Startup budgets
+              run: pnpm --filter @phaseo/desktop perf:budgets
             - name: Lint
               run: pnpm --filter @phaseo/desktop lint
             - name: Typecheck
@@ -248,7 +254,7 @@ jobs:
               run: pnpm --filter @phaseo/desktop exec electron scripts/git-hunks-smoke.mjs --app-entry=out/Phaseo-win32-x64/resources/app.asar/dist/main/index.mjs
             - name: Upload desktop evidence
               if: always()
-              uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+              uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9
               with:
                   name: desktop-workspace-evidence
                   path: |

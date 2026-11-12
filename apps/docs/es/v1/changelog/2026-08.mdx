@@ -13,7 +13,8 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <p className="changelog-category">Producto</p>
 
-- BYOK incluye ahora 250.000 solicitudes por espacio de trabajo cada mes UTC sin comisión de Phaseo y después cobra el 2,5 % del coste equivalente del proveedor; los metadatos de cada solicitud BYOK se conservan 90 días ([#2056](https://github.com/phaseoteam/Phaseo/pull/2056)).
+- BYOK incluye ahora 250.000 solicitudes por espacio de trabajo cada mes UTC sin comisión de Phaseo y después cobra el 2,5 % del coste equivalente del proveedor ([#2056](https://github.com/phaseoteam/Phaseo/pull/2056)).
+- Los metadatos de cada solicitud BYOK se conservan 90 días, y 365 días a partir de noviembre de 2026 ([#2056](https://github.com/phaseoteam/Phaseo/pull/2056)).
 
 </div>
 
@@ -152,7 +153,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - [z.AI: GLM 5.3 Flash](https://phaseo.app/models/z-ai/glm-5.3-flash)
 - [Qwen: Qwen 3.8 Flash](https://phaseo.app/models/qwen/qwen3.8-flash)
-- [Stealth: Ox Alpha](https://phaseo.app/models/stealth/ox-alpha) se retiró al confirmarse que era Z.AI GLM-5.3-Flash.
+- [Stealth: Ox Alpha](https://phaseo.app/models/stealth/ox-alpha) se revela como [z.AI: GLM 5.3 Flash](https://phaseo.app/models/z-ai/glm-5.3-flash).
 
 </div>
 
@@ -205,7 +206,7 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 - Las solicitudes pueden clasificar una app con el encabezado `X-App-Categories`, que también admite el SDK de TypeScript; consulta [Atribución de aplicaciones](../guides/app-attribution.mdx) ([#1799](https://github.com/phaseoteam/Phaseo/pull/1799)).
 - Los sufijos de modelo `:nitro`, `:cheap` y `:fast` fijan ahora el modo de enrutamiento aunque los campos de la solicitud, los presets o los valores del espacio de trabajo pidan otro; consulta [Enrutamiento y alternativas](../guides/routing-and-fallbacks.mdx) ([#1814](https://github.com/phaseoteam/Phaseo/pull/1814)).
-- `provider.quantizations` limita ahora el enrutamiento a las ofertas con una cuantización coincidente y devuelve diagnósticos cuando ninguna coincide; consulta [Cómo elegir una estrategia de cuantización](../guides/quantization-selection.mdx) ([#1810](https://github.com/phaseoteam/Phaseo/pull/1810)).
+- `provider.quantizations` limita ahora el enrutamiento a las ofertas con una cuantización coincidente y devuelve diagnósticos cuando ninguna coincide; consulta [Cómo elegir una estrategia de cuantización](../guides/quantization.mdx) ([#1810](https://github.com/phaseoteam/Phaseo/pull/1810)).
 
 </div>
 

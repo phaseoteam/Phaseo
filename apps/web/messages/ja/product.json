@@ -1175,6 +1175,8 @@
 		"speechDefaults": "音声のデフォルト",
 		"voice": "音声",
 		"selectVoice": "音声を選択",
+		"customVoiceId": "カスタム音声 ID",
+		"customVoiceIdPlaceholder": "音声ライブラリの音声 ID を貼り付けてください",
 		"format": "形式",
 		"speed": "速度",
 		"transcriptionDefaults": "文字起こしのデフォルト",

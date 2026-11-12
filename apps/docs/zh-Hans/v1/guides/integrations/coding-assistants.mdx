@@ -4,223 +4,111 @@ icon: "compass"
 description: "通过 CLI 或手动提供商设置将编程智能体连接到 Phaseo。"
 ---
 
-本指南介绍如何将编程智能体连接到 Phaseo。需要托管凭据和配置时选择 Phaseo CLI；希望在智能体内部设置时，使用手动提供商值。
-
-## 选择设置方式
-
-| 目标… | 使用 |
-| --- | --- |
-| 使用隔离的临时设置启动 Cline、Kilo Code、oh-my-pi、Muse Code 或 MiniMax Code | `phaseo cline`、`phaseo kilo`、`phaseo omp`、`phaseo muse` 或 `phaseo minimax` |
-| 配置已安装的智能体并保留其设置 | `phaseo <integration>` |
-| 不使用 Phaseo CLI 配置智能体 | 按照专用指南中的手动提供商步骤操作 |
-
-## 使用 Phaseo CLI 设置
-
-登录一次，然后配置编程环境：
+先运行 `phaseo login`，再运行 `phaseo <agent>`，即可让编程智能体使用自己的 API 密钥连接 Phaseo。如果不想使用 CLI，请在智能体设置中填写[手动提供商值](#enter-the-provider-values-yourself)。
 
 ```bash
 phaseo login
 phaseo codex
 ```
 
-此命令会检查编程环境是否已安装。如果在交互式终端中未安装，Phaseo 会显示受支持的安装命令，并在运行前征求确认。随后，Phaseo 会为该环境创建专用密钥并写入配置。非交互式运行会提供可执行的安装指导，但不会擅自更改系统。OpenCode、fx、DeepSeek Harness、Pi、Prime Agent 和 OpenClaw 也会获得所有兼容 Chat Completions 的活跃文本模型。需要缩小操作范围时，请使用 `--skip-install`、`--catalog default` 或 `--dry-run`。
+## 找到适合你的智能体的命令
 
-所有持久集成都使用以产品命名的命令：
+CLI 用以下三种方式之一设置每个智能体：
 
-```bash
-phaseo codex
-```
+- **已配置**：CLI 写入智能体的配置文件。启动智能体并选择一个 Phaseo 模型即可。
+- **仅密钥**：智能体把密钥保存在自己的应用存储中，所以 CLI 只创建密钥，并输出需要填写的字段。
+- **会话**：CLI 使用临时设置启动智能体，智能体退出时这些设置会被删除。你平时的配置不会被改动。
 
-支持的集成名称为 `codex`、`claude-code`、`opencode`、`fx`、`deepseek-harness`、`pi`、`openclaw`、`hermes`、`aider`、`cline`、`roo-code`、`kilo-code`、`continue`、`cursor` 和 `zed`。隔离的 CLI 启动器为 `cline`、`kilo`、`omp`、`muse` 和 `minimax`。
+| 智能体 | 命令 | 设置方式 | 指南 |
+| --- | --- | --- | --- |
+| Claude Code | `phaseo claude-code` | 已配置 | [Claude Code](./claude-code.mdx) |
+| Codex | `phaseo codex` | 已配置 | [Codex](./codex.mdx) |
+| OpenCode | `phaseo opencode` | 已配置 | [OpenCode](./opencode.mdx) |
+| fx | `phaseo fx` | 已配置 | [fx](./fx.mdx) |
+| DeepSeek Harness | `phaseo deepseek-harness` | 已配置 | [DeepSeek Harness](./deepseek-harness.mdx) |
+| Pi | `phaseo pi` | 已配置 | [Pi](./pi.mdx) |
+| Prime Agent | `phaseo prime-agent` | 已配置 | [Prime Agent](./prime-agent.mdx) |
+| OpenClaw | `phaseo openclaw` | 已配置 | [OpenClaw](./openclaw.mdx) |
+| Hermes Agent | `phaseo hermes` | 已配置 | [Hermes Agent](./hermes.mdx) |
+| Aider | `phaseo aider` | 已配置 | [Aider](./aider.mdx) |
+| Continue | `phaseo continue` | 已配置 | [Continue](./continue.mdx) |
+| Zed | `phaseo zed` | 已配置，然后在 Zed 中粘贴密钥 | [Zed](./zed.mdx) |
+| Cursor | `phaseo cursor` | 仅密钥 | [Cursor](./cursor.mdx) |
+| Roo Code | `phaseo roo-code` | 仅密钥 | [Roo Code](./roo-code.mdx) |
+| Kilo Code | `phaseo kilo-code`（扩展）或 `phaseo kilo`（CLI） | 仅密钥或会话 | [Kilo Code](./kilo-code.mdx) |
+| Cline | `phaseo setup cline`（扩展）或 `phaseo cline`（CLI） | 仅密钥或会话 | [Cline](./cline.mdx) |
+| oh-my-pi | `phaseo omp` | 会话 | [oh-my-pi](./oh-my-pi.mdx) |
+| Muse Code | `phaseo muse` | 会话 | [Muse Code](./muse-code.mdx) |
+| MiniMax Code | `phaseo minimax` | 会话 | [MiniMax Code](./minimax-code.mdx) |
 
-CLI 会为该助手创建一个以其命名的独立 API 密钥，该密钥 90 天后过期，每月支出上限为 $100。在全新安装中，它会自动配置 Aider 和 Continue，并自动写入 Zed 的提供商/模型设置。对于只能在编辑器 UI 中保存密钥的助手，它会显示需要填写的字段、链接到专用指南，并允许你仅复制该助手的密钥：
+`phaseo cline` 和 `phaseo kilo` 会启动会话；要为 VS Code 扩展创建密钥，请使用 `phaseo setup cline` 和 `phaseo kilo-code`。`phaseo run <cline|kilo|omp|muse|minimax>` 是会话命令的完整形式。安装 CLI 请参阅 [Phaseo CLI 指南](./phaseo-cli.mdx)。
 
-```bash
-phaseo integrations credential codex
-```
+## CLI 会创建什么
 
-设置前预览所有文件更改，并可在之后干净地断开连接：
+每个智能体都有自己的 API 密钥，以智能体命名（例如 `Phaseo CLI: Codex API Key`），每月支出上限为 $100，90 天后过期。每个新密钥都由你在 CLI 打开的控制台页面中批准，之后 CLI 只取回一次；参见[在浏览器中批准密钥](./phaseo-cli.mdx#approve-the-key-in-your-browser)。再次运行 setup 命令即可替换已过期的密钥，在控制台的 **设置 → API 密钥** 中更改上限。
 
-```bash
-phaseo codex --dry-run
-phaseo integrations remove codex
-```
+如果没有安装 Claude Code、Codex、OpenCode、fx、DeepSeek Harness、Pi、Prime Agent、OpenClaw 或 Hermes Agent，CLI 会显示官方安装命令，并在运行前征求你的确认。在非交互式终端中，它会输出安装命令后停止。OpenCode、fx、DeepSeek Harness、Pi、Prime Agent 和 OpenClaw 还会获得所有支持 Chat Completions 的活跃 Phaseo 文本模型。
 
-移除操作会删除 Phaseo 管理的配置并撤销该助手的密钥，不会删除无关设置。
+| 参数或命令 | 作用 |
+| --- | --- |
+| `--model <id>` | 设置默认模型。Claude Code 不支持。 |
+| `--catalog default` | 只添加所选模型，而不是整个模型目录。 |
+| `--skip-install` | 跳过安装检查，适用于你自己管理的智能体。 |
+| `--dry-run` | 显示将要进行的文件更改，但不实际执行。 |
+| `--key <key>` | 使用你在控制台中创建的密钥，而不是请求新密钥。`--key-stdin` 从标准输入读取该密钥。 |
+| `phaseo integrations credential <agent>` | 输出该智能体的密钥，适用于需要你手动粘贴密钥的智能体。 |
+| `phaseo integrations remove <agent>` | 删除 Phaseo 写入的配置并吊销密钥。你的其他设置保持不变。 |
 
-## 手动提供商设置
+<span id="enter-the-provider-values-yourself"></span>
+## 自己填写提供商值
 
-除非工具要求使用其他字段名，否则请使用以下值：
+在任何带有 OpenAI 兼容提供商的智能体中使用这些值。字段名称因工具而异。
 
-| 设置项 | 值 |
+| 设置 | 值 |
 | --- | --- |
 | 提供商类型 | OpenAI Compatible |
-| 基础 URL | `https://api.phaseo.app/v1` |
-| API 密钥 | 你的 Phaseo API 密钥 |
-| 模型 | 例如 `openai/gpt-5-nano` 这样的 Phaseo 模型 ID |
+| Base URL | `https://api.phaseo.app/v1` |
+| API 密钥 | 一个 Phaseo API 密钥 |
+| 模型 | 一个 Phaseo 模型 ID，例如 `openai/gpt-6-astra` |
 
-对于兼容 Anthropic 的工具，请使用：
+对于使用 Anthropic Messages API 的智能体：
 
-| 设置项 | 值 |
+| 设置 | 值 |
 | --- | --- |
-| 基础 URL | `https://api.phaseo.app` |
-| 身份验证令牌 | 你的 Phaseo API 密钥 |
-| 模型 | 例如 `anthropic/claude-sonnet-4.5` 这样的 Phaseo 模型 ID |
+| Base URL | `https://api.phaseo.app`（客户端会自动加上 `/v1/messages`） |
+| 认证令牌 | 一个 Phaseo API 密钥 |
+| 模型 | 一个 Phaseo 模型 ID，例如 `anthropic/claude-sonnet-5.5` |
 
-## Cursor
+有些智能体不接受包含 `/` 的模型 ID。如果你的智能体是这样，并且支持别名，请创建一个映射到 Phaseo 模型 ID 的本地别名。
 
-Cursor 可通过 OpenAI API 密钥设置添加自定义的 OpenAI 兼容端点。
+## 没有单独指南的智能体
 
-1. 打开 `Cursor Settings`。
-2. 进入 `Models`。
-3. 启用或添加 `OpenAI API Key` 项。
-4. 粘贴你的 Phaseo API 密钥。
-5. 启用 `Override OpenAI Base URL`。
-6. 将基础 URL 设置为 `https://api.phaseo.app/v1`。
-7. 使用 Phaseo 模型 ID 添加自定义模型，例如 `openai/gpt-5-nano`。
-8. 启用该模型，并在 Cursor 模型选择器中确认。
+### VS Code
 
-如果 Cursor 拒绝包含 `/` 的模型 ID，请创建 UI 允许的最接近的本地别名；如果客户端支持别名，再在自己的配置中将其路由到 Phaseo 模型。
+当你的 VS Code 版本包含 OpenAI 兼容提供商时，可以在其 Language Models 编辑器中添加模型。
 
-## VS Code
+1. 打开命令面板，运行 `Chat: Manage Language Models`。
+2. 选择 `OpenAI Compatible` 或 `OAI Compatible`。
+3. 输入你的 Phaseo API 密钥，并将端点设置为 `https://api.phaseo.app/v1`。
+4. 添加一个 Phaseo 模型 ID，例如 `openai/gpt-6-astra`，并在聊天模型选择器中选中它。
 
-如果你的 VS Code 或 Insiders 版本提供 OpenAI 兼容提供商，可以通过 VS Code 的 Language Models 编辑器添加模型。
+如果你的版本没有 OpenAI 兼容提供商，请使用支持自定义提供商的扩展：[Continue](./continue.mdx)、[Cline](./cline.mdx)、[Roo Code](./roo-code.mdx) 或 [Kilo Code](./kilo-code.mdx)。
 
-1. 打开命令面板（Command Palette）。
-2. 运行 `Chat: Manage Language Models`。
-3. 选择 `OpenAI Compatible` 或 `OAI Compatible`。
-4. 输入你的 Phaseo API 密钥。
-5. 将端点或基础 URL 设置为 `https://api.phaseo.app/v1`。
-6. 添加 Phaseo 模型 ID，例如 `openai/gpt-5-nano`。
-7. 在聊天模型选择器中选择新模型。
+### Claude Desktop
 
-如果你的 VS Code 版本没有显示 OpenAI 兼容提供商，请使用支持自定义提供商的扩展，例如 Continue、Cline、Roo Code 或 Kilo Code。
+Claude Desktop 无法使用自定义模型提供商。添加 [Docs MCP](./docs-mcp.mdx) 可以让它读取 Phaseo 文档；需要把 Phaseo 用作模型网关时，请使用 [Claude Code](./claude-code.mdx)。
 
-## Continue
+### Deep Agents CLI 和其他 LangChain 工具
 
-Continue 可通过其 OpenAI 提供商使用 Phaseo，并配置自定义 API 基础地址。
-
-```yaml
-name: Phaseo
-version: 0.0.1
-schema: v1
-
-models:
-  - name: Phaseo GPT-5 Nano
-    provider: openai
-    model: openai/gpt-5-nano
-    apiKey: ${{ secrets.PHASEO_API_KEY }}
-    apiBase: https://api.phaseo.app/v1
-    roles:
-      - chat
-      - edit
-      - apply
-```
-
-如果 Continue 默认使用 Responses，但你的工作流需要兼容 Chat Completions，请设置 `useResponsesApi: false`。
-
-## Cline、Roo Code 和 Kilo Code
-
-这些工具提供类似的提供商设置。
-
-1. 打开扩展设置。
-2. 选择 `OpenAI Compatible` 作为提供商。
-3. 将基础 URL 设置为 `https://api.phaseo.app/v1`。
-4. 粘贴你的 Phaseo API 密钥。
-5. 输入 Phaseo 模型 ID。
-6. 使用文件编辑工具前，先保存并发送一个简短的聊天请求。
-
-## Aider
-
-设置 OpenAI 兼容环境变量，并在启动时传入模型：
-
-```bash
-export OPENAI_API_BASE="https://api.phaseo.app/v1"
-export OPENAI_API_KEY="your_phaseo_api_key"
-aider --model openai/openai/gpt-5-nano
-```
-
-Aider 通常要求 OpenAI 兼容的自定义模型带有 `openai/` 前缀。由于 Phaseo 模型 ID 已包含提供商前缀，Aider 的完整模型字符串可能类似 `openai/openai/gpt-5-nano`。
-
-## Pi、Prime Agent、OpenClaw 和 Hermes Agent
-
-`phaseo pi` 会添加专用提供商扩展，并在运行时从 Phaseo CLI 获取密钥。`phaseo prime-agent` 会将命令支持的提供商写入 `~/.prime/agent/models.json`。二者都会获得兼容的 Phaseo 模型目录。`phaseo openclaw` 会注册兼容模型目录和基于 exec 的 SecretRef，但不会将 API 密钥写入 `openclaw.json`。
-
-如果 Hermes 尚未安装，`phaseo hermes` 会提示运行 Nous Research 官方安装程序，随后配置已安装的智能体。它会保存 Hermes 原有模型设置，将 Phaseo 配置为自定义端点，并将专用密钥作为 `OPENAI_API_KEY` 写入 Hermes 的 `.env` 文件，放在以 `# >>> phaseo managed (do not edit)` 标记的区块内，因此密钥绝不会通过命令行传递，你的其他行也保持不变。Phaseo 会询问 Hermes 该文件的位置：通常是 `~/.hermes/.env`，原生 Windows 上是 `%LOCALAPPDATA%\hermes\.env`，或 `HERMES_HOME` 中的 `.env`。它还会将 Hermes 的 `model.key_env` 设为 `OPENAI_API_KEY`，以便 Hermes 把密钥发送给 Phaseo；如果你的 Hermes 版本不支持 `model.key_env`，请先运行 `hermes update`。Hermes 有意使用此纯文本文件存储提供商凭证；请像保护其他 API 密钥文件一样保护它。移除时会恢复之前的模型设置、删除 `OPENAI_API_KEY` 和 Phaseo 恢复状态，并撤销密钥。
-
-## MiniMax Code
-
-`mcode` CLI 请参阅专用的 [MiniMax Code 指南](./minimax-code.mdx)。`phaseo minimax` 使用 Phaseo 的 OpenAI 兼容端点创建临时 MiniMax 提供商、启动 CLI，并在会话结束时删除临时数据目录。编辑器或宿主直接使用 ACP 时，MiniMax Code 也支持通过 `mcode acp` 使用 ACP。
-
-## Zed
-
-运行 `phaseo zed`，然后按照显示的步骤在 Zed 设置中添加 OpenAI 兼容提供商。生成的密钥仅用于 Zed 的凭证输入框。
-
-## Codex
-
-Codex CLI、Codex App 和 Codex IDE 扩展请参阅专用的 [Codex 指南](./codex.mdx)。简要配置如下：
-
-```toml
-model = "openai/gpt-5.5"
-model_provider = "phaseo"
-
-[model_providers.phaseo]
-name = "Phaseo"
-base_url = "https://api.phaseo.app/v1"
-env_key = "PHASEO_API_KEY"
-wire_api = "responses"
-```
-
-Codex 自定义提供商使用 Responses 线路协议。
-
-## OpenCode
-
-如果你希望 OpenCode 通过自定义 OpenAI 兼容提供商调用 Phaseo，请参阅专用的 [OpenCode 指南](./opencode.mdx)。
-
-## fx
-
-如果你希望在 Vercel Labs 的 fx 编程智能体中将 Phaseo 添加为自定义模型连接，请参阅专用的 [fx 指南](./fx.mdx)。
-
-## Claude Code
-
-请参阅专用的 [Claude Code 指南](./claude-code.mdx)。Claude Code 使用兼容 Anthropic 的网关环境变量：
-
-```bash
-export ANTHROPIC_BASE_URL="https://api.phaseo.app"
-export ANTHROPIC_AUTH_TOKEN="your_phaseo_api_key"
-export ANTHROPIC_API_KEY=""
-```
-
-然后在同一 shell 中启动 Claude Code：
-
-```bash
-claude
-```
-
-## Claude Desktop
-
-Claude Desktop 支持 MCP 服务器，但不提供 Cursor、Codex 或 Claude Code 等编程智能体所具备的同类自定义模型提供商设置。使用 [Docs MCP](./docs-mcp.mdx) 可将 Phaseo 文档上下文添加到 Claude Desktop。如果需要 Phaseo 作为模型网关，请使用 Claude Code。
-
-## Deep Agents CLI 和 LangChain 工具
-
-使用与 [LangChain](./langchain.mdx) 相同的基础 URL 和 API 密钥。如果工具读取 OpenAI 环境变量，请设置：
+使用 [LangChain](./langchain.mdx) 中的 Base URL 和密钥。如果工具读取 OpenAI 环境变量，请设置以下变量，并在其模型字段中填写 Phaseo 模型 ID：
 
 ```bash
 export OPENAI_API_KEY="your_phaseo_api_key"
 export OPENAI_BASE_URL="https://api.phaseo.app/v1"
 ```
 
-然后在工具的模型字段中填写 Phaseo 模型 ID。
+## 已知限制
 
-## 注意事项
-
-- 不同编程智能体对模型 ID 中斜杠的处理方式不同。如果 UI 拒绝 `openai/gpt-5-nano`，且工具支持别名，请创建本地别名。
-- 仔细测试文件编辑工作流。`phaseo:apply_patch` 仅支持 Responses。
-- 如果希望助手在会话期间读取 Phaseo 文档，请添加 [Docs MCP](./docs-mcp.mdx)。
-- 对于较旧的编程工具，优先使用 Chat Completions，除非该工具明确支持 Responses 事件和服务器工具。
-
-## 相关内容
-
-- [服务器工具](../server-tools/index.mdx)
-- [Responses](../../api-reference/endpoint/responses.mdx)
-- [Chat Completions](../../api-reference/endpoint/chat-completions.mdx)
+- 服务器工具只有在智能体发送它们时才会生效：`phaseo:apply_patch` 仅在 [Responses](../../api-reference/endpoint/responses.mdx) 上可用。对于无法处理 Responses 事件或[服务器工具](../server-tools/index.mdx)的旧版智能体，使用 [Chat Completions](../../api-reference/endpoint/chat-completions.mdx) 更稳妥。
+- 在让智能体编辑文件之前，先发送一个简短的聊天请求；做智能体工作时，请选择支持工具调用的模型。
+- 如果希望智能体在会话中读取 Phaseo 文档，请添加 [Docs MCP](./docs-mcp.mdx)。

@@ -174,3 +174,31 @@ export async function uninstallSlackApp(args: { credentials: SlackAppCredentials
 		return false;
 	}
 }
+
+export type SlackUserProfile = { id: string; handle: string | null; realName: string | null; displayName: string | null };
+
+/** A Slack user's names (users.info, with the bot's users:read scope), or null when Slack doesn't say. */
+export async function slackUserProfile(args: { botToken: string; userId: string }): Promise<SlackUserProfile | null> {
+	try {
+		const response = await fetch(`${SLACK_API_ORIGIN}/users.info`, {
+			method: "POST",
+			headers: {
+				Authorization: `Bearer ${args.botToken}`,
+				"Content-Type": "application/x-www-form-urlencoded",
+			},
+			body: new URLSearchParams({ user: args.userId }).toString(),
+			signal: AbortSignal.timeout(SLACK_TIMEOUT_MS),
+		});
+		const payload = await response.json().catch(() => null) as { ok?: unknown; user?: Record<string, any> } | null;
+		if (!response.ok || payload?.ok !== true || !payload.user || payload.user.id !== args.userId) return null;
+		const profile = payload.user.profile && typeof payload.user.profile === "object" ? payload.user.profile as Record<string, unknown> : {};
+		return {
+			id: args.userId,
+			handle: displayName(payload.user.name),
+			realName: displayName(profile.real_name ?? payload.user.real_name),
+			displayName: displayName(profile.display_name),
+		};
+	} catch {
+		return null;
+	}
+}

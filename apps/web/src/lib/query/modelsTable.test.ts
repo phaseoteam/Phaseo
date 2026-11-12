@@ -1,3 +1,4 @@
+import { describe, it, expect, afterEach, vi } from "vitest";
 import type { MonitorModelTableRow } from "@/lib/fetchers/models/table-view/types";
 import {
 	fetchModelsTableData,
@@ -40,7 +41,7 @@ describe("fetchModelsTableData", () => {
 	});
 
 	it("combines table pages and preserves compact filter facets", async () => {
-		const fetchMock = jest
+		const fetchMock = vi
 			.fn()
 			.mockResolvedValueOnce(new Response(JSON.stringify({
 				models: [row("one")], facets, catalogue_version: "v1", shape: "table",
@@ -63,7 +64,7 @@ describe("fetchModelsTableData", () => {
 	});
 
 	it("loads and validates the dedicated V2 table response", async () => {
-		global.fetch = jest.fn().mockResolvedValue(new Response(JSON.stringify({
+		global.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({
 			models: [row("v2")], facets, catalogue_version: "v2", shape: "table",
 			total: 1, limit: 10000, offset: 0,
 		})));
@@ -76,7 +77,7 @@ describe("fetchModelsTableData", () => {
 	});
 
 	it("rejects a non-table response for the table cache key", async () => {
-		global.fetch = jest.fn().mockResolvedValue(new Response(JSON.stringify({
+		global.fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({
 			models: [], facets, catalogue_version: "v2", shape: "page",
 			total: 0, limit: 10000, offset: 0,
 		})));
@@ -87,7 +88,7 @@ describe("fetchModelsTableData", () => {
 	});
 
 	it("rejects a later page from a different catalogue version", async () => {
-		global.fetch = jest
+		global.fetch = vi
 			.fn()
 			.mockResolvedValueOnce(new Response(JSON.stringify({
 				models: [row("one")], facets, catalogue_version: "v2", shape: "table",

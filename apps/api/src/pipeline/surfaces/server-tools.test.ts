@@ -1319,11 +1319,12 @@ describe("buildServerToolContinuation", () => {
 			model: "openai/gpt-image-2",
 			imageUrl: "https://example.com/generated.png",
 			mimeType: "image/png",
-			usage: {
-				inputTokens: 12,
-				outputTokens: 0,
-				totalTokens: 12,
-				_ext: { outputImageTokens: 1 },
+			pricing: {
+				component: "image_generation",
+				model: "openai/gpt-image-2",
+				provider: "openai",
+				total_nanos: 24_720_000,
+				lines: [{ dimension: "output_image_tokens", quantity: 824, line_nanos: 24_720_000, component: "image_generation" }],
 			},
 		}));
 
@@ -1379,18 +1380,113 @@ describe("buildServerToolContinuation", () => {
 			moderation: undefined,
 		});
 		expect(continuation?.usage.imageGenerationRequests).toBe(1);
-		expect(continuation?.imageGenerationUsage).toEqual({
-			inputTokens: 12,
-			outputTokens: 0,
-			totalTokens: 12,
-			_ext: { outputImageTokens: 1 },
-		});
+		// The image is priced on its own card; the chat request adds the charge, not image tokens.
+		expect(continuation?.imageGenerationPricing).toEqual([
+			expect.objectContaining({ component: "image_generation", model: "openai/gpt-image-2", total_nanos: 24_720_000 }),
+		]);
+		expect(continuation).not.toHaveProperty("imageGenerationUsage");
 		expect(JSON.parse(String(continuation?.toolResults[0]?.content))).toEqual({
 			status: "ok",
 			model: "openai/gpt-image-2",
 			imageUrl: "https://example.com/generated.png",
 			mime_type: "image/png",
+			note: expect.stringContaining("shown to the user"),
 		});
+		expect(JSON.parse(String(continuation?.toolResults[0]?.clientOutput))).toEqual({
+			status: "ok",
+			model: "openai/gpt-image-2",
+			imageUrl: "https://example.com/generated.png",
+			mime_type: "image/png",
+		});
+	});
+
+	it("keeps base64 images out of the model's tool result and lets Chat settings win", async () => {
+		const executeImageGeneration = vi.fn(async () => ({
+			ok: true as const,
+			model: "openai/gpt-image-2.6-flare",
+			b64Json: "R0lGODlh",
+			mimeType: "image/gif",
+		}));
+		const continuation = await buildServerToolContinuation(
+			{
+				choices: [{
+					message: {
+						role: "assistant",
+						content: [],
+						toolCalls: [{ id: "call_gif", name: "phaseo_image_generation", arguments: JSON.stringify({ prompt: "A ball", output_format: "png", complexity: "high" }) }],
+					},
+					finishReason: "tool_calls",
+				}],
+			} as any,
+			{
+				enabled: true,
+				datetimeDefaultTimezones: ["UTC"],
+				webSearchEnabled: false,
+				webSearchMaxResults: 5,
+				webSearchIncludeText: false,
+				webSearchIncludeHighlights: true,
+				webFetchEnabled: false,
+				webFetchMaxChars: 12000,
+				imageGenerationEnabled: true,
+				imageGeneration: { model: "openai/gpt-image-2.6-flare", outputFormat: "gif", complexity: "low", frameCount: 2 },
+			},
+			{ executeImageGeneration },
+		);
+
+		expect(executeImageGeneration).toHaveBeenCalledWith(expect.objectContaining({ outputFormat: "gif", complexity: "low", frameCount: 2 }));
+		expect(continuation?.toolResults[0]?.content).not.toContain("R0lGODlh");
+		expect(JSON.parse(String(continuation?.toolResults[0]?.clientOutput))).toMatchObject({ b64_json: "R0lGODlh", mime_type: "image/gif" });
+	});
+
+	it("passes GPT Image 2.6 options from the tool definition and the call", async () => {
+		const executeImageGeneration = vi.fn(async () => ({
+			ok: true as const,
+			model: "openai/gpt-image-2.6-flare",
+			b64Json: "PHN2Zz48L3N2Zz4=",
+			mimeType: "image/svg+xml",
+		}));
+
+		await buildServerToolContinuation(
+			{
+				choices: [
+					{
+						message: {
+							role: "assistant",
+							content: [],
+							toolCalls: [
+								{
+									id: "call_svg",
+									name: "phaseo_image_generation",
+									arguments: JSON.stringify({ prompt: "An apple icon", output_format: "svg", complexity: "low" }),
+								},
+							],
+						},
+						finishReason: "tool_calls",
+					},
+				],
+			} as any,
+			{
+				enabled: true,
+				datetimeDefaultTimezones: ["UTC"],
+				webSearchEnabled: false,
+				webSearchMaxResults: 5,
+				webSearchIncludeText: false,
+				webSearchIncludeHighlights: true,
+				webFetchEnabled: false,
+				webFetchMaxChars: 12000,
+				imageGenerationEnabled: true,
+				imageGeneration: { model: "openai/gpt-image-2.6-flare", svgModel: "openai/gpt-5-nano", frameCount: 4 },
+			},
+			{ executeImageGeneration },
+		);
+
+		expect(executeImageGeneration).toHaveBeenCalledWith(expect.objectContaining({
+			model: "openai/gpt-image-2.6-flare",
+			outputFormat: "svg",
+			complexity: "low",
+			svgModel: "openai/gpt-5-nano",
+			frameCount: 4,
+		}));
 	});
 
 	it("uses the default image model and accepts description as the image prompt", async () => {
@@ -2042,6 +2138,8 @@ describe("buildServerToolContinuation", () => {
 				webSearchResults: 0,
 				webSearchExtraResults: 0,
 				webFetchRequests: 1,
+				// A direct fetch costs Phaseo nothing, so it is not billed.
+				billableWebFetchRequests: 0,
 				advisorRequests: 0,
 				subagentRequests: 0,
 				fusionRequests: 0,

@@ -1,14 +1,17 @@
 ---
 title: "संगीत जनरेशन प्राप्त करें"
 sidebarTitle: "संगीत जनरेशन प्राप्त करें"
-badge: "Beta"
+badge: "बीटा"
 openapi: "/hi/openapi/v1/openapi.localized.yaml GET /music/generate/{music_id}"
 description: "Phaseo अनुरोध ID का उपयोग करके संगीत जनरेशन प्राप्त करें।"
 ---
 
-`POST /music/generate` से बनाया गया संगीत परिणाम प्राप्त करें。 प्रदाता का काम पूरा होने पर यह एंडपॉइंट संग्रहीत सामान्यीकृत परिणाम लौटाता है; जॉब अब भी एसिंक्रोनस होने पर अपस्ट्रीम प्रदाता की जाँच करता है।
+[`POST /v1/music/generate`](./music-generate.mdx) से लौटाया गया `id` दें, उसका `nativeResponseId` नहीं। जनरेशन पूरा होने पर Phaseo संग्रहीत परिणाम लौटाता है, और जब तक वह चल रहा हो, आपकी ओर से प्रदाता को पोल करता है।
 
-## प्रतिक्रिया का स्वरूप
+```bash
+curl https://api.phaseo.app/v1/music/generate/req_01JY6MUSIC123 \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
 
 ```json
 {
@@ -37,10 +40,4 @@ description: "Phaseo अनुरोध ID का उपयोग करके �
 }
 ```
 
-## नोट्स
-
-- `status` इनमें से हो सकता है: `queued`, `in_progress`, `completed`, `failed`।
-- जनरेशन पूरा होने पर `usage` शामिल होता है।
-- `nativeResponseId` के बजाय `POST /music/generate` द्वारा लौटाया गया Phaseo `id` दें।
-- प्रदाता-विशिष्ट स्थिति और पुनर्प्राप्ति API इस एंडपॉइंट के पीछे संभाली जाती हैं।
-
+`status` का मान `queued`, `in_progress`, `completed` या `failed` होता है। जनरेशन पूरा होने के बाद `usage` शामिल किया जाता है।

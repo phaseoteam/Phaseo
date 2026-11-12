@@ -12,6 +12,10 @@ const rows = async (sql, params = []) => (await db.query(sql, params)).rows;
 const migration = (name) => readFile(new URL(`../migrations/${name}`, import.meta.url), 'utf8');
 const schema = (path) => readFile(new URL(`../schemas/${path}`, import.meta.url), 'utf8');
 const alertsMigration = await migration('20261017155708_rate_limit_throttle_alerts.sql');
+// Rate guardrails replaced the policies (same ids) and redefined the function to name them.
+const rateGuardrailsName = (await readdir(new URL('../migrations/', import.meta.url))).find((name) => name.endsWith('_rate_guardrails.sql'));
+const rateGuardrailsMigration = await migration(rateGuardrailsName);
+const latestEnqueue = rateGuardrailsMigration.slice(rateGuardrailsMigration.indexOf('CREATE OR REPLACE FUNCTION public.enqueue_rate_limit_throttle_alerts'));
 
 try {
   // Minimal pre-existing objects the migrations depend on (production shapes, trimmed).
@@ -56,8 +60,10 @@ try {
   `);
   await db.exec(await migration('20261016165752_rate_limit_throttle_rollups.sql'));
   await db.exec(alertsMigration);
+  await db.exec('create table public.workspace_guardrails (id uuid primary key, workspace_id uuid not null, name text not null)');
+  await db.exec(latestEnqueue);
 
-  assert.ok(alertsMigration.includes(await schema('public/functions/enqueue_rate_limit_throttle_alerts.sql')), 'enqueue function matches the declarative definition');
+  assert.ok(rateGuardrailsMigration.includes(await schema('public/functions/enqueue_rate_limit_throttle_alerts.sql')), 'enqueue function matches the declarative definition');
   // The route setter and event kind constraint were last redefined by the Broadcast
   // destination alerts migration, whose test checks them against the declarative schema.
 
@@ -75,7 +81,9 @@ try {
   await assert.rejects(rows(`select public.set_notification_event_destinations($1, 'bogus', array[]::uuid[])`, [ws(1)]), /invalid_notification_event_kind/);
   await assert.rejects(db.query(`insert into public.notification_event_destinations values ($1, 'bogus', $2)`, [ws(1), destination(1)]), /event_kind_check/);
 
-  await db.query(`insert into public.workspace_rate_limit_policies values ($1, $2, 'Batch keys'), ($3, $2, 'Members')`, [policy(1), ws(1), policy(2)]);
+  // A rate guardrail has the id of the policy it replaced, and its name wins.
+  await db.query(`insert into public.workspace_rate_limit_policies values ($1, $2, 'Old name'), ($3, $2, 'Members')`, [policy(1), ws(1), policy(2)]);
+  await db.query(`insert into public.workspace_guardrails values ($1, $2, 'Batch keys')`, [policy(1), ws(1)]);
   const throttle = (workspace, minutesAgo, policyId, scope, count) => db.query(
     `insert into public.workspace_rate_limit_throttles_minute (bucket_start, workspace_id, policy_id, limit_scope, key_id, throttled_requests)
      values (date_trunc('minute', now()) - make_interval(mins => $2), $1, $3, $4, null, $5)`,

@@ -1,65 +1,65 @@
 ---
 title: "Connecter des déploiements de modèles dédiés"
 sidebarTitle: "Déploiements de modèles dédiés"
-description: "Ajoutez un endpoint privé compatible avec OpenAI au catalogue de modèles de votre espace de travail."
+description: "Ajoutez un endpoint privé compatible OpenAI au catalogue de modèles de votre espace de travail."
 icon: "lock-keyhole"
 ---
 
-Les modèles privés permettent à votre équipe d’appeler un déploiement dédié ou auto-hébergé via l’API Phaseo habituelle. Le modèle apparaît uniquement aux membres authentifiés de l’espace de travail et peut être utilisé partout où vous utiliseriez un identifiant de modèle public.
+Ajoutez un déploiement dédié ou auto-hébergé à votre espace de travail : votre équipe l’appelle via l’API Phaseo habituelle avec un identifiant de modèle tel que `acme/legal-assistant`. Seul votre espace de travail peut le voir ou l’appeler, et il fonctionne partout où un identifiant de modèle public fonctionne.
 
-Les sources courantes incluent des déploiements dédiés sur Baseten, Modal, RunPod, Fireworks ou Together, ainsi que des services exécutant vLLM ou un autre serveur compatible avec OpenAI.
+Les sources typiques sont les déploiements dédiés sur Baseten, Modal, RunPod, Fireworks ou Together, et les serveurs exécutant vLLM ou un autre serveur compatible OpenAI.
 
 ## Avant de commencer
 
 Votre déploiement doit fournir :
 
 - une URL de base HTTPS publique ;
-- un endpoint `/chat/completions` compatible avec OpenAI ;
+- un endpoint `/chat/completions` compatible OpenAI ;
 - une authentification par jeton Bearer ; et
-- un identifiant de modèle ou de déploiement du fournisseur accepté par cet endpoint.
+- un identifiant de modèle ou de déploiement amont accepté par cet endpoint.
 
-La prise en charge de `/responses` est facultative. Laissez-la désactivée sauf si le déploiement implémente explicitement cet endpoint.
+La prise en charge de `/responses` est facultative. Laissez-la désactivée, sauf si le déploiement implémente explicitement cet endpoint.
 
 <Warning>
-Les modèles privés n’adaptent pas les protocoles propres aux fournisseurs ni les schémas d’authentification personnalisés. Placez une couche compatible avec OpenAI devant ces déploiements ou utilisez une intégration de fournisseur prise en charge par Phaseo.
+Les modèles privés n’adaptent pas les protocoles propres à un fournisseur ni les schémas d’authentification personnalisés. Placez une couche compatible OpenAI devant ces déploiements ou utilisez une intégration de fournisseur prise en charge par Phaseo.
 </Warning>
 
 ## Connecter un déploiement
 
 <Steps>
-<Step title="Ouvrir les modèles privés">
+<Step title="Ouvrir Modèles privés">
 
-Ouvrez **Tableau de bord → Paramètres → Espace de travail → Modèles privés**, puis sélectionnez **Ajouter un modèle**. Vous devez être propriétaire ou administrateur de l’espace de travail. Depuis la CLI, lancez `phaseo private-models create` avec les mêmes champs et transmettez l’identifiant avec `--credential-stdin`.
+Ouvrez **Tableau de bord → Paramètres → Espace de travail → Modèles privés**, puis sélectionnez **Ajouter un modèle**. Vous devez être propriétaire ou administrateur de l’espace de travail. Pour l’automatiser, appelez `POST /v1/private-models` avec les mêmes champs et une clé de gestion.
 
 </Step>
 
 <Step title="Nommer le modèle">
 
-Choisissez un modèle existant du catalogue pour ajouter ce déploiement à sa liste de fournisseurs, ou saisissez un identifiant court tel que `legal-assistant`. Si aucun modèle du catalogue ne possède cet identifiant unique, Phaseo le combine avec l’espace de noms de confiance de l’espace de travail :
+Choisissez un modèle existant du catalogue pour ajouter ce déploiement à sa liste de fournisseurs, ou saisissez un slug de modèle court tel que `legal-assistant`. Si aucun modèle du catalogue n’a ce slug unique, Phaseo le combine avec l’espace de noms de confiance de l’espace de travail :
 
 ```text
 acme/legal-assistant
 ```
 
-Vous ne pouvez pas choisir ni remplacer l’espace de noms de l’espace de travail. Les identifiants exacts du catalogue se rattachent à ce modèle sans modifier son identité publique.
+Vous ne pouvez ni choisir ni remplacer l’espace de noms de l’espace de travail. Les identifiants exacts du catalogue se rattachent à ce modèle sans changer son identité publique.
 
 </Step>
 
 <Step title="Configurer l’endpoint">
 
-Saisissez l’URL de base sans le chemin d’inférence. Par exemple :
+Saisissez l’URL de base, avant le chemin d’inférence. Par exemple :
 
 ```text
 https://model.example.com/v1
 ```
 
-N’incluez pas `/chat/completions` ni `/responses`. Saisissez séparément l’identifiant exact du modèle ou du déploiement du fournisseur ; Phaseo le substitue lors du transfert des requêtes.
+N’incluez pas `/chat/completions` ni `/responses`. Saisissez séparément l’identifiant exact du modèle ou du déploiement amont ; Phaseo le substitue lors du transfert des requêtes.
 
 </Step>
 
 <Step title="Enregistrer l’identifiant">
 
-Saisissez la clé API du déploiement. Phaseo chiffre cet identifiant et ne le renvoie jamais après l’enregistrement. Vous pouvez le remplacer ultérieurement dans les paramètres du modèle.
+Saisissez la clé API du déploiement. Phaseo chiffre l’identifiant et ne le renvoie jamais après l’enregistrement. Vous pouvez le remplacer plus tard depuis la page de paramètres du modèle.
 
 </Step>
 
@@ -77,43 +77,51 @@ curl https://api.phaseo.app/v1/chat/completions \
   }'
 ```
 
-La clé API utilisée doit appartenir au même espace de travail que le modèle privé.
+La clé API appelante doit appartenir au même espace de travail que le modèle privé.
 
 </Step>
 </Steps>
 
 ## Fonctionnement du routage
 
-Les modèles privés utilisent la même interface de requête Phaseo que les modèles du catalogue. Un modèle autonome d’espace de travail est routé uniquement vers son endpoint configuré. Un endpoint rattaché à un modèle du catalogue rejoint sa liste de fournisseurs selon la politique **Préféré**, **Groupe normal** ou **Secours uniquement**. Phaseo envoie l’identifiant enregistré comme jeton Bearer et substitue l’identifiant de modèle du fournisseur configuré.
+Un modèle autonome d’espace de travail n’est routé que vers son endpoint configuré. Un endpoint rattaché à un modèle du catalogue rejoint la liste de fournisseurs de ce modèle selon sa politique de routage :
 
-Un modèle privé ne devient pas une route publique de fournisseur et n’est pas visible dans les autres espaces de travail. Les modèles privés activés sont inclus dans le catalogue authentifié et apparaissent sous le filtre **Privés**.
+| Tableau de bord | `routing_policy` de l’API | Effet |
+| --- | --- | --- |
+| **Préféré** (par défaut) | `preferred` | Votre déploiement est essayé avant les fournisseurs publics du modèle. |
+| **Groupe normal** | `balanced` | Votre déploiement est classé avec les fournisseurs publics. |
+| **Repli uniquement** | `fallback` | Votre déploiement n’est essayé qu’après les fournisseurs publics. |
+
+Phaseo envoie l’identifiant enregistré comme jeton Bearer et substitue l’identifiant de modèle amont configuré.
+
+Un modèle privé ne devient jamais une route de fournisseur publique et n’est pas visible par les autres espaces de travail. Les modèles privés activés figurent dans le catalogue de modèles authentifié et apparaissent sous le filtre **Privé**.
 
 <Note>
-Après avoir ajouté ou activé un déploiement privé sur un modèle existant du catalogue, attendez 5 à 10 secondes pour que le changement se propage dans la couche API avant de tester son routage. Pendant ce délai, les requêtes peuvent continuer à utiliser les fournisseurs publics existants du modèle. Les requêtes déjà en cours ne sont pas reroutées.
+Après avoir ajouté, modifié ou activé un déploiement privé, attendez jusqu’à une minute avant de tester son routage. D’ici là, certaines requêtes peuvent encore utiliser la configuration précédente, par exemple les fournisseurs publics du modèle. Les requêtes déjà en cours ne sont pas réacheminées.
 </Note>
 
-## Exemples de fournisseurs
+## Exemples par fournisseur
 
-| Déploiement | Valeurs à saisir |
+| Déploiement | À saisir |
 | --- | --- |
-| Endpoint dédié Baseten | Son URL de base compatible avec OpenAI, l’identifiant du modèle déployé et la clé API |
-| Endpoint web Modal | Un endpoint HTTPS public implémentant le contrat OpenAI Chat Completions |
-| Endpoint sans serveur RunPod | Une URL de proxy compatible avec OpenAI et un identifiant Bearer |
-| Déploiement dédié Fireworks ou Together | L’URL dédiée compatible avec OpenAI et l’identifiant du modèle du fournisseur |
+| Endpoint dédié Baseten | Son URL de base compatible OpenAI, l’identifiant de modèle du déploiement et la clé API |
+| Endpoint web Modal | Un endpoint HTTPS public qui implémente le contrat OpenAI Chat Completions |
+| Endpoint serverless RunPod | Une URL de proxy compatible OpenAI et un identifiant Bearer |
+| Déploiement dédié Fireworks ou Together | L’URL dédiée compatible OpenAI et l’identifiant de modèle du fournisseur |
 | vLLM | L’URL publique se terminant par `/v1` et le nom du modèle servi par vLLM |
 
-Les produits des fournisseurs et les formats d’URL peuvent changer. Vérifiez l’URL de base, l’identifiant du modèle, la méthode d’authentification et les endpoints pris en charge dans la documentation de déploiement actuelle du fournisseur.
+Les produits et formats d’URL des fournisseurs peuvent changer. Vérifiez l’URL de base, l’identifiant de modèle, la méthode d’authentification et les endpoints pris en charge dans la documentation de déploiement actuelle du fournisseur.
 
 ## Gérer les modèles privés via l’API
 
-L’administration côté serveur peut utiliser l’[API des modèles privés](../api-reference/endpoint/private-models-list) avec une clé de gestion disposant de `private_models:read`, `private_models:write` ou `private_models:delete`, selon les besoins.
+L’administration côté serveur peut utiliser l’[API Private Models](../api-reference/endpoint/private-models-list) avec une clé de gestion portant `private_models:read`, `private_models:write` ou `private_models:delete` selon les besoins.
 
-Les requêtes de création et de mise à jour acceptent `model_reference`, soit un identifiant exact du catalogue, soit un identifiant court. Phaseo déduit `model_id` ; les clients ne peuvent pas le transmettre directement. Utilisez `host_provider_id` pour un fournisseur Phaseo existant, ou `custom_provider_name` et éventuellement `custom_provider_url` pour un autre opérateur.
+Les requêtes de création et de mise à jour acceptent `model_reference`, soit un identifiant exact de modèle du catalogue, soit un slug court. Phaseo dérive `model_id` ; les clients ne peuvent pas l’envoyer directement. Utilisez `host_provider_id` pour un fournisseur Phaseo existant, ou `custom_provider_name` et éventuellement `custom_provider_url` pour un autre opérateur.
 
 ## Dépannage
 
-- **404 du fournisseur :** Vérifiez que l’URL de base s’arrête avant le chemin d’inférence.
-- **Modèle inconnu :** Copiez l’identifiant de déploiement du fournisseur dans **Identifiant du modèle du fournisseur**. N’utilisez pas l’identifiant de modèle de l’espace de travail Phaseo à cet endroit.
-- **Requête non autorisée chez le fournisseur :** Remplacez l’identifiant enregistré et confirmez que le fournisseur accepte l’authentification Bearer.
-- **Chat fonctionne mais Responses échoue :** Désactivez **Responses API** sauf si le fournisseur implémente `/responses` nativement.
-- **Modèle absent du catalogue :** Confirmez que le modèle est activé et que l’appelant est authentifié dans le même espace de travail.
+- **404 du fournisseur :** vérifiez que l’URL de base s’arrête avant le chemin d’inférence.
+- **Modèle inconnu :** copiez l’identifiant de déploiement amont du fournisseur dans **Identifiant du modèle amont**. N’y mettez pas l’identifiant de modèle de l’espace de travail Phaseo.
+- **Requête amont non autorisée :** remplacez l’identifiant enregistré et vérifiez que le fournisseur accepte l’authentification Bearer.
+- **Chat fonctionne mais Responses échoue :** désactivez **Responses API**, sauf si le fournisseur implémente `/responses` nativement.
+- **Modèle absent du catalogue :** vérifiez que le modèle est activé et que l’appelant est authentifié dans le même espace de travail.

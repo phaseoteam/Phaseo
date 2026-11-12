@@ -1,10 +1,18 @@
-"use client";
-
-import Link from "next/link";
+import Link from "@/components/link";
 import type { ReactNode } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { cn } from "@/lib/utils";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import {
+	HoverCard,
+	HoverCardContent,
+	HoverCardHeader,
+	HoverCardLinks,
+	HoverCardNote,
+	HoverCardRows,
+	HoverCardTrigger,
+} from "@/components/ui/hover-card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { TAP_TARGET_24 } from "@/lib/tapTargets";
 import {
 	CircleHelp,
 	MapPin,
@@ -39,7 +47,7 @@ import { normalizeQuantizationScheme } from "@/lib/quantization";
 import { getLocalizedDocsHref } from "@/lib/docs";
 
 const QUANTIZATION_DOCS_URL =
-	"https://phaseo.app/docs/v1/guides/model-quantization";
+	"https://phaseo.app/docs/v1/guides/quantization";
 
 function uniqueDefined(values: Array<string | null | undefined>): string[] {
 	return Array.from(
@@ -196,13 +204,6 @@ function getDataPolicyTierState(
 	return unique.length === 1 ? unique[0] : "mixed";
 }
 
-function getZeroDataRetentionDetailKey(state: ZeroDataRetentionMode | "mixed"): string | null {
-	if (state === true) return "zdrDetails.true";
-	if (state === false) return "zdrDetails.false";
-	if (state === "mixed") return "zdrDetails.mixed";
-	return null;
-}
-
 function getDataPolicyIcon(state: ProviderDataPolicyTier | "mixed") {
 	switch (state) {
 		case "private":
@@ -249,32 +250,62 @@ function getZeroDataRetentionState(
 	return unique.length === 1 ? unique[0] : "mixed";
 }
 
+const TRAINING_KEYS: Record<ProviderPromptTrainingPolicy, string> = {
+	unknown: "unknown",
+	may_train: "yes",
+	no_train: "no",
+	opt_out_available: "optOut",
+	enterprise_no_train: "enterpriseNo",
+};
+
+const CONTRACT_KEYS: Record<ProviderDataPolicyContractMode, string> = {
+	none: "none",
+	customer_agreement: "customer",
+	enterprise_agreement: "enterprise",
+};
+
+/** The one value every entry shares, "mixed" when they differ, or the fallback when there are none. */
+function singleOrMixed<T extends string>(values: T[], fallback: T): T | "mixed" {
+	const unique = Array.from(new Set(values));
+	if (unique.length === 0) return fallback;
+	return unique.length === 1 ? unique[0] : "mixed";
+}
+
+/** A stored code such as "hashed_only" as "Hashed only". */
+function humanizeCode(value: string): string {
+	const text = value.replace(/[_-]+/g, " ").trim();
+	return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
 function IconHover({
 	ariaLabel,
 	children,
 	content,
 	triggerClassName,
+	contentClassName,
 }: {
 	ariaLabel: string;
 	children: ReactNode;
 	content: ReactNode;
 	triggerClassName?: string;
+	contentClassName?: string;
 }) {
 	return (
-		<HoverCard openDelay={150} closeDelay={120}>
+		<HoverCard>
 			<HoverCardTrigger asChild>
 				<button
 					type="button"
 					aria-label={ariaLabel}
 					className={cn(
 						"inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/60 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40",
+						TAP_TARGET_24,
 						triggerClassName,
 					)}
 				>
 					{children}
 				</button>
 			</HoverCardTrigger>
-			<HoverCardContent align="start" className="w-96 max-w-[calc(100vw-2rem)] p-3 text-xs">
+			<HoverCardContent align="start" className={cn("w-72 max-w-[calc(100vw-2rem)] space-y-2.5", contentClassName)}>
 				{content}
 			</HoverCardContent>
 		</HoverCard>
@@ -291,44 +322,7 @@ function getFirstDefined(values: Array<string | null | undefined>): string | nul
 }
 
 function summarizePricingNote(note: string): string {
-	const normalized = note.replace(/\s+/g, " ").trim();
-	if (
-		/july 1,\s*2026/i.test(normalized) &&
-		/non-global endpoint pricing/i.test(normalized) &&
-		/global endpoint pricing applies to non-global endpoints/i.test(normalized)
-	) {
-		return "Global pricing applies until 1 Jul 2026. Non-global pricing starts after that.";
-	}
-	return normalized;
-}
-
-function InfoBlock({
-	title,
-	value,
-	meta,
-	tone = "default",
-}: {
-	title: string;
-	value: string;
-	meta?: string | null;
-	tone?: "default" | "pricing" | "risk";
-}) {
-	const toneClass =
-		tone === "pricing"
-			? "border-amber-200/80 bg-amber-50/60 dark:border-amber-900/60 dark:bg-amber-950/20"
-			: tone === "risk"
-				? "border-red-200/80 bg-red-50/50 dark:border-red-900/60 dark:bg-red-950/20"
-			: "border-zinc-200/80 dark:border-zinc-800";
-
-	return (
-		<div className={cn("rounded-md border p-2", toneClass)}>
-			<p className="font-medium text-foreground">{title}</p>
-			<p className="mt-1 text-sm font-medium text-foreground">{value}</p>
-			{meta ? (
-				<p className="mt-1 leading-relaxed text-muted-foreground">{meta}</p>
-			) : null}
-		</div>
-	);
+	return note.replace(/\s+/g, " ").trim();
 }
 
 export default function ProviderInfoHoverIcons({
@@ -359,6 +353,7 @@ export default function ProviderInfoHoverIcons({
 	className?: string;
 }) {
 	const t = useTranslations("Catalogue.modelDetail.providerInfo");
+	const tCard = useTranslations("Catalogue.hoverCards");
 	const locale = useLocale();
 	const slugs = uniqueDefined(providerModelSlugs);
 	const modelIds = uniqueDefined(apiModelIds);
@@ -374,8 +369,6 @@ export default function ProviderInfoHoverIcons({
 	const dataPolicySummary = t(`policySummaries.${dataPolicyTierState}` as never);
 	const residencyModeState = getResidencyModeState(residencyEntries);
 	const zeroDataRetentionState = getZeroDataRetentionState(residencyEntries);
-	const zeroDataRetentionDetailKey = getZeroDataRetentionDetailKey(zeroDataRetentionState);
-	const zeroDataRetentionDetail = zeroDataRetentionDetailKey ? t(zeroDataRetentionDetailKey as never) : null;
 	const dataPolicySourceUrls = uniqueDefined(
 		dataPolicyEntries.map((entry) => entry.sourceUrl),
 	);
@@ -406,11 +399,17 @@ export default function ProviderInfoHoverIcons({
 	const pricingSourceUrls = uniqueDefined([
 		pricingPolicy?.sourceUrl ?? null,
 	]);
-	const allSourceUrls = uniqueDefined([
-		...dataPolicySourceUrls,
-		...residencySourceUrls,
-		...pricingSourceUrls,
-	]);
+	// One link per kind of source, labelled by what it documents; a URL shared
+	// by several kinds is shown once, under the first kind.
+	const sourceLinks: Array<{ url: string; labelKey: "policySource" | "residencySource" | "pricingSource" }> = [];
+	for (const [urls, labelKey] of [
+		[dataPolicySourceUrls, "policySource"],
+		[residencySourceUrls, "residencySource"],
+		[pricingSourceUrls, "pricingSource"],
+	] as const) {
+		const url = urls.find((candidate) => !sourceLinks.some((link) => link.url === candidate));
+		if (url) sourceLinks.push({ url, labelKey });
+	}
 	const regionalPricingHint = getRegionalPricingHint({
 		regionalPricingMode: pricingPolicy?.regionalPricingMode ?? null,
 		regionalPricingUpliftPercent:
@@ -452,87 +451,87 @@ export default function ProviderInfoHoverIcons({
 
 	if (!hasQuantization && !hasModelMapping && !hasResidency && !hasDataPolicy) return null;
 
+	const trainingPolicies = promptTrainingEntries.length > 0
+		? promptTrainingEntries.map((entry) => entry.policy)
+		: dataPolicy.map((entry) => normalizeProviderPromptTrainingPolicy(entry.promptTrainingPolicy));
+	const trainingState = singleOrMixed(trainingPolicies, "unknown" as const);
+	const trainingValue = trainingState === "mixed"
+		? t("policyTiers.mixed")
+		: tCard(`training.${TRAINING_KEYS[trainingState]}` as never);
+	const confidenceState = singleOrMixed(dataPolicyEntries.map((entry) => entry.confidence), "unknown" as const);
+	const contractState = singleOrMixed(dataPolicyEntries.map((entry) => entry.contractMode), "none" as const);
+	const contractNotes = getFirstDefined(dataPolicyEntries.map((entry) => entry.contractNotes));
+	const userIdentifierPolicy = getFirstDefined(promptTrainingEntries.map((entry) => entry.userIdentifierPolicy));
+	const policyNote = getFirstDefined([
+		...dataPolicyEntries.map((entry) => entry.notes),
+		...promptTrainingEntries.map((entry) => entry.notes),
+	]);
+	const policyUrl = promptTrainingSourceUrls[0] ?? dataPolicySourceUrls[0] ?? null;
+	const privacyUrl = promptTrainingPrivacyPolicyUrls[0] ?? null;
+	const termsUrl = promptTrainingTermsUrls[0] ?? null;
+	const zeroDataRetentionValue =
+		zeroDataRetentionState === true ? t("zdrValues.true")
+			: zeroDataRetentionState === false ? t("zdrValues.false")
+			: zeroDataRetentionState === "mixed" ? t("zdrValues.mixed") : t("zdrValues.unknown");
+	const residencyModeLabel = residencyModeState !== "unknown"
+		? t(`residencyModes.${residencyModeState === "provider_managed" ? "providerManaged" : residencyModeState === "customer_selectable" ? "customerSelectable" : residencyModeState === "account_selected" ? "accountSelected" : residencyModeState}` as never)
+		: null;
+	const regionalPricingValue = hasPricingPolicy
+		? derivedPricingLabel ??
+			((pricingPolicy?.regionalPricingMode ?? "unknown") !== "unknown"
+				? t(`pricingModes.${pricingPolicy?.regionalPricingMode === "same_as_global" ? "sameAsGlobal" : pricingPolicy?.regionalPricingMode === "source_region_rates" ? "sourceRegionRates" : pricingPolicy?.regionalPricingMode === "offer_specific" ? "offerSpecific" : pricingPolicy?.regionalPricingMode}` as never)
+				: t("varies"))
+		: null;
+	const residencyNote = residencyNotes[0] ?? (hasPricingPolicy ? summarizePricingNote(pricingNotes[0] ?? regionalPricingHint ?? "") : "") ?? "";
+	const sourceLinkLabels = { policySource: tCard("linkPolicy"), residencySource: tCard("linkResidency"), pricingSource: tCard("linkPricing") } as const;
+
 	return (
 		<div className={cn("flex items-center gap-1.5", className)}>
 			{hasDataPolicy ? (
 				<IconHover
 					ariaLabel={t("dataPolicy")}
+					contentClassName="w-80"
 					content={
-						<div className="space-y-2">
-							<InfoBlock
+						<>
+							<HoverCardHeader
+								icon={getDataPolicyIcon(dataPolicyTierState)}
 								title={t("dataPolicy")}
-								value={t(`policyTiers.${dataPolicyTierState}` as never)}
-								meta={dataPolicySummary}
-								tone={dataPolicyTierState === "trains" ? "risk" : "default"}
+								meta={[
+									t(`policyTiers.${dataPolicyTierState}` as never),
+									confidenceState === "mixed" ? null : tCard(`confidence.${confidenceState}` as never),
+								]}
 							/>
-							<InfoBlock
-								title={t("zeroDataRetention")}
-								value={
-									zeroDataRetentionState === true ? t("zdrValues.true")
-										: zeroDataRetentionState === false ? t("zdrValues.false")
-										: zeroDataRetentionState === "mixed" ? t("zdrValues.mixed") : t("zdrValues.unknown")
-								}
-								meta={zeroDataRetentionDetail}
+							<HoverCardRows
+								rows={[
+									{ key: "training", label: tCard("rowPromptTraining"), value: trainingValue },
+									{ key: "zdr", label: tCard("rowZdr"), value: zeroDataRetentionValue },
+									{
+										key: "contract",
+										label: tCard("rowContract"),
+										value: contractState === "mixed" ? t("policyTiers.mixed") : tCard(`contract.${CONTRACT_KEYS[contractState]}` as never),
+									},
+									{
+										key: "userIds",
+										label: tCard("rowUserIds"),
+										value: userIdentifierPolicy ? humanizeCode(userIdentifierPolicy) : t("unknown"),
+									},
+								]}
 							/>
-							{promptTrainingSourceUrls.length > 0 ? (
-								<div className="flex flex-col items-start gap-1">
-									{promptTrainingSourceUrls.slice(0, 2).map((url) => (
-										<Link
-											key={url}
-											href={url}
-											target="_blank"
-											rel="noopener noreferrer"
-											className="text-primary underline decoration-transparent hover:decoration-current"
-										>
-											{t("viewPolicySource")}
-										</Link>
-									))}
-								</div>
-							) : null}
-							{promptTrainingSourceUrls.length === 0 &&
-							dataPolicySourceUrls.length > 0 ? (
-								<div className="flex flex-col items-start gap-1">
-									{dataPolicySourceUrls.slice(0, 2).map((url) => (
-										<Link
-											key={url}
-											href={url}
-											target="_blank"
-											rel="noopener noreferrer"
-											className="text-primary underline decoration-transparent hover:decoration-current"
-										>
-											{t("viewPolicySource")}
-										</Link>
-									))}
-								</div>
-							) : null}
-							{promptTrainingPrivacyPolicyUrls.length > 0 ||
-							promptTrainingTermsUrls.length > 0 ? (
-								<div className="flex flex-col items-start gap-1">
-									{promptTrainingPrivacyPolicyUrls.slice(0, 1).map((url) => (
-										<Link
-											key={url}
-											href={url}
-											target="_blank"
-											rel="noopener noreferrer"
-											className="text-primary underline decoration-transparent hover:decoration-current"
-										>
-											{t("viewPrivacyPolicy")}
-										</Link>
-									))}
-									{promptTrainingTermsUrls.slice(0, 1).map((url) => (
-										<Link
-											key={url}
-											href={url}
-											target="_blank"
-											rel="noopener noreferrer"
-											className="text-primary underline decoration-transparent hover:decoration-current"
-										>
-											{t("viewTerms")}
-										</Link>
-									))}
-								</div>
-							) : null}
-						</div>
+							{dataPolicyTierState === "trains" ? (
+								<Alert variant="destructive" className="rounded-md px-3 py-2 text-xs">
+									<ShieldAlert />
+									<AlertDescription className="text-xs">{dataPolicySummary}</AlertDescription>
+								</Alert>
+							) : (
+								<HoverCardNote>{policyNote ?? dataPolicySummary}</HoverCardNote>
+							)}
+							{contractNotes ? <HoverCardNote>{contractNotes}</HoverCardNote> : null}
+							<HoverCardLinks>
+								{policyUrl ? <Link key="policy" href={policyUrl} target="_blank" rel="noopener noreferrer">{tCard("linkPolicy")}</Link> : null}
+								{privacyUrl ? <Link key="privacy" href={privacyUrl} target="_blank" rel="noopener noreferrer">{tCard("linkPrivacy")}</Link> : null}
+								{termsUrl ? <Link key="terms" href={termsUrl} target="_blank" rel="noopener noreferrer">{tCard("linkTerms")}</Link> : null}
+							</HoverCardLinks>
+						</>
 					}
 				>
 					{getDataPolicyIcon(dataPolicyTierState)}
@@ -544,19 +543,15 @@ export default function ProviderInfoHoverIcons({
 					ariaLabel={t("quantizationDetails")}
 					triggerClassName="w-auto min-w-7 max-w-[108px] px-2"
 					content={
-						<div className="space-y-2">
-							<p className="leading-relaxed text-muted-foreground">
-								{t("quantizationDescription", { scheme: quantization ?? "" })}
-							</p>
-							<Link
-				href={getLocalizedDocsHref(locale, QUANTIZATION_DOCS_URL)}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="text-primary underline decoration-transparent hover:decoration-current"
-							>
-								{t("readQuantizationDocs")}
-							</Link>
-						</div>
+						<>
+							<HoverCardHeader title={t("quantizationDetails")} meta={[quantization]} />
+							<HoverCardNote>{t("quantizationDescription", { scheme: quantization ?? "" })}</HoverCardNote>
+							<HoverCardLinks>
+								<Link href={getLocalizedDocsHref(locale, QUANTIZATION_DOCS_URL)} target="_blank" rel="noopener noreferrer">
+									{t("readQuantizationDocs")}
+								</Link>
+							</HoverCardLinks>
+						</>
 					}
 				>
 					<span className="max-w-[90px] truncate text-[10px] font-semibold leading-none tracking-[0.02em] text-foreground">
@@ -569,69 +564,32 @@ export default function ProviderInfoHoverIcons({
 				<IconHover
 					ariaLabel={t("processingAndDataLocations")}
 					content={
-						<div className="space-y-2">
-							<InfoBlock
-								title={t("processingLocation")}
-								value={
-									residencyExecutionRegions.length > 0
-										? formatResidencyRegionList(residencyExecutionRegions)
-										: t("unknown")
-								}
-								meta={
-									residencyModeState !== "unknown"
-									? t(`residencyModes.${residencyModeState === "provider_managed" ? "providerManaged" : residencyModeState === "customer_selectable" ? "customerSelectable" : residencyModeState === "account_selected" ? "accountSelected" : residencyModeState}` as never)
-										: null
-								}
+						<>
+							<HoverCardHeader icon={<MapPin />} title={tCard("locationsTitle")} meta={[residencyModeLabel]} />
+							<HoverCardRows
+								rows={[
+									{
+										key: "processing",
+										label: tCard("rowProcessing"),
+										value: residencyExecutionRegions.length > 0 ? formatResidencyRegionList(residencyExecutionRegions) : t("unknown"),
+									},
+									{
+										key: "stored",
+										label: tCard("rowDataStored"),
+										value: residencyDataRegions.length > 0 ? formatResidencyRegionList(residencyDataRegions) : t("unknown"),
+									},
+									regionalPricingValue ? { key: "pricing", label: tCard("rowRegionalPricing"), value: regionalPricingValue } : null,
+								]}
 							/>
-							<InfoBlock
-								title={t("dataCentreLocation")}
-								value={
-									residencyDataRegions.length > 0
-										? formatResidencyRegionList(residencyDataRegions)
-										: t("unknown")
-								}
-							/>
-							{hasPricingPolicy ? (
-								<InfoBlock
-									title={t("pricing")}
-									value={
-										derivedPricingLabel ??
-										((pricingPolicy?.regionalPricingMode ?? "unknown") !==
-										"unknown"
-											? t(`pricingModes.${pricingPolicy?.regionalPricingMode === "same_as_global" ? "sameAsGlobal" : pricingPolicy?.regionalPricingMode === "source_region_rates" ? "sourceRegionRates" : pricingPolicy?.regionalPricingMode === "offer_specific" ? "offerSpecific" : pricingPolicy?.regionalPricingMode}` as never)
-											: t("varies"))
-									}
-									meta={
-										summarizePricingNote(pricingNotes[0] ?? regionalPricingHint ?? "")
-									}
-									tone="pricing"
-								/>
-							) : null}
-							{(residencyNotes.length > 0 || allSourceUrls.length > 0) ? (
-								<div className="rounded-md border border-zinc-200/80 p-2 dark:border-zinc-800">
-									{residencyNotes.length > 0 ? (
-										<p className="leading-relaxed text-muted-foreground">
-											{residencyNotes[0]}
-										</p>
-									) : null}
-									{allSourceUrls.length > 0 ? (
-										<div className={cn(residencyNotes.length > 0 ? "mt-2" : "", "flex flex-wrap items-center gap-x-3 gap-y-1")}>
-											{allSourceUrls.slice(0, 2).map((url, index) => (
-												<Link
-													key={url}
-													href={url}
-													target="_blank"
-													rel="noopener noreferrer"
-													className="text-primary underline decoration-transparent hover:decoration-current"
-												>
-											{index === 0 ? t("policySource") : t("pricingSource")}
-												</Link>
-											))}
-										</div>
-									) : null}
-								</div>
-							) : null}
-						</div>
+							{residencyNote ? <HoverCardNote>{residencyNote}</HoverCardNote> : null}
+							<HoverCardLinks>
+								{sourceLinks.map(({ url, labelKey }) => (
+									<Link key={url} href={url} target="_blank" rel="noopener noreferrer">
+										{sourceLinkLabels[labelKey]}
+									</Link>
+								))}
+							</HoverCardLinks>
+						</>
 					}
 				>
 					<MapPin className="h-3.5 w-3.5" />
@@ -642,27 +600,23 @@ export default function ProviderInfoHoverIcons({
 				<IconHover
 					ariaLabel={t("providerLabel")}
 					content={
-						<div className="space-y-2">
-							<p className="leading-relaxed text-muted-foreground">
-								{t("providerMappingIntro")}
-							</p>
+						<>
+							<HoverCardHeader icon={<Tag />} title={t("providerLabel")} />
+							<HoverCardNote>{t("providerMappingIntro")}</HoverCardNote>
 							<div className="flex flex-col items-start gap-1">
 								{displayModelIds.map((modelId) => (
 									<code
 										key={`model:${modelId}`}
-										className="inline-flex max-w-full overflow-x-auto whitespace-nowrap rounded bg-muted px-1 py-0.5 text-foreground"
+										className="inline-flex max-w-full overflow-x-auto whitespace-nowrap rounded bg-muted px-1 py-0.5 text-xs text-foreground"
 									>
 										{modelId}
 									</code>
 								))}
 							</div>
-							<Link
-								href={`/api-providers/${providerId}`}
-								className="text-primary underline decoration-transparent hover:decoration-current"
-							>
-								{t("viewProviderPage")}
-							</Link>
-						</div>
+							<HoverCardLinks>
+								<Link href={`/api-providers/${providerId}`}>{t("viewProviderPage")}</Link>
+							</HoverCardLinks>
+						</>
 					}
 				>
 					<Tag className="h-3.5 w-3.5" />

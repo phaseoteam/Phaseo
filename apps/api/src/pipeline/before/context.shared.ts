@@ -15,6 +15,16 @@ const CREDIT_TTL_MAX = 7200; // 2 hours
 const BALANCE_TTL_CAP_USD = 250;
 const MIN_TTL_SECONDS = 60; // Cloudflare KV minimum
 const MAX_TTL_SECONDS = 7200; // 2 hours
+// Dynamic entries of keys without caps hold no usage the gateway enforces and no balance
+// (credit is cached and invalidated on its own). The rest (key state, workspace settings,
+// billing mode) is refreshed by key and workspace version bumps, which every write now
+// triggers (see *_gateway_key_cache_publication.sql), so these entries can live for a day.
+const REFRESHED_DYNAMIC_TTL_SECONDS = 86_400;
+
+/** Like clampTtl, but allows the day-long lifetime of version-refreshed dynamic entries. */
+export function clampDynamicTtl(value: number): number {
+	return Math.max(MIN_TTL_SECONDS, Math.min(REFRESHED_DYNAMIC_TTL_SECONDS, Math.floor(value)));
+}
 
 /**
  * Clamp TTL to valid range for Cloudflare Workers KV
@@ -124,6 +134,8 @@ export function computeCreditSnapshotTtlForContext(context: GatewayContextData):
 
 export function hasConfiguredKeyLimits(keyLimit: GatewayContextData["keyLimit"]): boolean {
 	if ((keyLimit?.budgets?.length ?? 0) > 0) return true;
+	// Department budgets change with every request of the department's keys, like key caps.
+	if ((keyLimit?.departmentBudgets?.length ?? 0) > 0) return true;
 	const buckets = keyLimit?.buckets ?? null;
 	return [buckets?.daily, buckets?.weekly, buckets?.monthly].some((bucket) =>
 		Boolean(
@@ -152,6 +164,13 @@ export function computeAdaptiveTtlForDynamic(context: GatewayContextData): numbe
 	// for the ordinary 2-10 minute dynamic-context lifetime.
 	if (hasConfiguredKeyLimits(context.keyLimit)) {
 		return clampTtl(60);
+	}
+
+	// The data-contribution Statsig gate is evaluated when the entry is built, and no write
+	// signals that it changed. Opted-in workspaces keep the short lifetime below so turning
+	// the gate off stops their contributions within minutes.
+	if (context.teamSettings?.dataContributionEnabled !== true) {
+		return REFRESHED_DYNAMIC_TTL_SECONDS;
 	}
 
 	// Credit balance curve: high balances can tolerate longer cache windows,
@@ -341,6 +360,9 @@ export function cloneGatewayContextData(value: GatewayContextData): GatewayConte
 			? {
 					...value.keyLimit,
 					budgets: value.keyLimit.budgets?.map((budget) => ({ ...budget })) ?? value.keyLimit.budgets ?? null,
+					...(value.keyLimit.departmentBudgets
+						? { departmentBudgets: value.keyLimit.departmentBudgets.map((budget) => ({ ...budget })) }
+						: {}),
 					buckets: value.keyLimit.buckets
 						? {
 								daily: value.keyLimit.buckets.daily
@@ -422,11 +444,11 @@ export function normalizeProviderStatus(value: unknown): ProviderRolloutStatus {
 export function normalizeRoutingStatus(value: unknown): RoutingStatus {
 	const status = String(value ?? "").trim().toLowerCase();
 	if (status === "active") return "active";
-	if (status === "deranked" || status === "deranked_lvl1" || status === "deranked-lvl1") {
-		return "deranked_lvl1";
+	// The catalogue stores a deranked route or capability as `degraded`; the former three
+	// levels are read as the single last-resort level.
+	if (status === "degraded" || status === "deranked" || /^deranked[-_]lvl[-_]?[123]$/.test(status)) {
+		return "deranked";
 	}
-	if (status === "deranked_lvl2" || status === "deranked-lvl2") return "deranked_lvl2";
-	if (status === "deranked_lvl3" || status === "deranked-lvl3") return "deranked_lvl3";
 	if (status === "disabled") return "disabled";
 	if (status === "notready" || status === "not_ready" || status === "not ready") {
 		return "disabled";
@@ -451,6 +473,7 @@ export function normalizeCapabilityStatus(value: unknown): CapabilityRoutingStat
 
 export const ROUTABLE_CAPABILITY_STATUSES = [
 	"active",
+	"degraded",
 	"deranked",
 	"deranked_lvl1",
 	"deranked_lvl2",

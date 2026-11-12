@@ -15,9 +15,6 @@ export function toggleValue(list: string[], value: string) {
   return list.includes(value) ? list.filter((entry) => entry !== value) : [...list, value];
 }
 
-/** Bumped by Home's search box: the Models search field focuses when this changes. */
-export const searchFocusStore = createStore(0);
-
 /** Models picked for comparison, in the order they were added. */
 export const compareStore = createStore<string[]>([]);
 

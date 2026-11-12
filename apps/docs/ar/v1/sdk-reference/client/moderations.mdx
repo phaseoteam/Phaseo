@@ -1,0 +1,149 @@
+---
+icon: "shield-check"
+title: "الإشراف على المحتوى"
+description: "صنّف النصوص والصور من حيث السلامة باستخدام POST /v1/moderations من أي حزمة Phaseo SDK."
+---
+
+أرسل نصوصًا أو صورًا إلى `POST /v1/moderations` لتعرف ما إذا كانت مُعلَّمة، وبأي فئات. تستخدم الأمثلة `client` مُنشأً كما في [التثبيت](./installation).
+
+<CodeGroup>
+
+```typescript TypeScript
+const moderation = await client.generateModeration({
+  model: "openai/omni-moderation",
+  input: "Text to classify",
+});
+
+console.log(moderation.results[0].flagged);
+```
+
+```python Python
+moderation = client.generate_moderation({
+    "model": "openai/omni-moderation",
+    "input": "Text to classify",
+})
+
+print(moderation["results"][0]["flagged"])
+```
+
+```go Go
+resp, err := client.GenerateModeration(context.Background(), map[string]interface{}{
+  "model": "openai/omni-moderation",
+  "input": "Text to classify",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp["results"])
+```
+
+```csharp C#
+var response = await client.GenerateModeration(new Dictionary<string, object>
+{
+    ["model"] = "openai/omni-moderation",
+    ["input"] = "Text to classify",
+});
+```
+
+```php PHP
+$response = $client->generateModeration([
+    'model' => 'openai/omni-moderation',
+    'input' => 'Text to classify',
+]);
+```
+
+```ruby Ruby
+response = client.generate_moderation(
+  model: 'openai/omni-moderation',
+  input: 'Text to classify'
+)
+```
+
+```java Java
+String body = """
+{
+  "model": "openai/omni-moderation",
+  "input": "Text to classify"
+}
+""";
+
+Object response = client.createModeration(new com.fasterxml.jackson.databind.ObjectMapper().readTree(body));
+System.out.println(String.valueOf(response));
+```
+
+```rust Rust
+// لا توجد دالة للإشراف على المحتوى بعد: ترسل post() بيانات JSON إلى أي مسار في Phaseo.
+let response = client.post("/moderations", &json!({
+    "model": "openai/omni-moderation",
+    "input": "Text to classify"
+}))?;
+
+println!("{}", response.body["results"][0]["flagged"]);
+```
+
+</CodeGroup>
+
+| اللغة | الدالة | القيمة المُعادة |
+| --- | --- | --- |
+| TypeScript | `client.generateModeration(request)` | `ModerationsResponse` |
+| Python | `client.generate_moderation(request)` أو `client.moderations.create(request)` | قاموس (dict) |
+| Go | `client.GenerateModeration(ctx, req)`، والاسم البديل `CreateModeration` | `map[string]interface{}` |
+| C# | `client.GenerateModeration(request)`، والاسم البديل `CreateModeration` | `Dictionary<string, object>?` |
+| PHP | `$client->generateModeration($request)`، والاسم البديل `createModeration()` | مصفوفة |
+| Ruby | `client.generate_moderation(...)`، والاسم البديل `create_moderation` | Hash |
+| Java | `client.createModeration(jsonNode)` | `Object` |
+| Rust | `client.post("/moderations", &request)` | `PhaseoResponse`، وبيانات JSON في `body` |
+
+## المعاملات
+
+أسماء الحقول في كل حزمة SDK هي حقول جسم JSON.
+
+| الحقل | ملاحظات |
+| --- | --- |
+| `input` | مطلوب. سلسلة نصية، أو مصفوفة من السلاسل، أو مصفوفة من أجزاء `text` و`image_url`. |
+| `model` | معرّف نموذج إشراف. القيمة الافتراضية `openai/omni-moderation`. |
+| `metadata` | بيانات المفتاح والقيمة الخاصة بك. |
+| `provider` | تفضيلات توجيه المزوّد. |
+| `meta` | عيّنه إلى `true` لتضمين كتلة `meta` الخاصة بالبوابة. |
+
+المخطط الكامل موجود في [مرجع Moderations API](/ar/v1/api-reference/endpoint/moderations).
+
+## الاستجابة
+
+`ModerationsResponse`. تحتوي كل نتيجة على `flagged`، وخريطة `categories` من القيم المنطقية، وخريطة `category_scores` من الدرجات:
+
+```json
+{
+  "results": [
+    {
+      "flagged": false,
+      "categories": {
+        "hate": false,
+        "hate/threatening": false,
+        "harassment": false,
+        "harassment/threatening": false,
+        "self-harm": false,
+        "self-harm/intent": false,
+        "self-harm/instructions": false,
+        "sexual": false,
+        "sexual/minors": false,
+        "violence": false,
+        "violence/graphic": false
+      },
+      "category_scores": {
+        "hate": 0.01,
+        "hate/threatening": 0.0,
+        "harassment": 0.02,
+        "harassment/threatening": 0.0,
+        "self-harm": 0.0,
+        "self-harm/intent": 0.0,
+        "self-harm/instructions": 0.0,
+        "sexual": 0.05,
+        "sexual/minors": 0.0,
+        "violence": 0.01,
+        "violence/graphic": 0.0
+      }
+    }
+  ]
+}
+```

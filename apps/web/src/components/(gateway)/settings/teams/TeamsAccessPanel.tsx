@@ -1,14 +1,12 @@
-"use client";
-
 import React from "react";
 import { Check, ExternalLink, Infinity, X } from "lucide-react";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { toast } from "sonner";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 import TeamInviteDialog from "./TeamInviteDialog";
-import { approveJoinRequest, rejectJoinRequest } from "@/app/(dashboard)/settings/teams/actions";
+import { approveJoinRequest, rejectJoinRequest } from "@/features/settings/teams/actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -131,13 +129,13 @@ export default function TeamsAccessPanel({
 		setBusyRequestId(requestId);
 		try {
 			if (action === "approve") {
-				await toast.promise(approveJoinRequest(requestId).then(() => router.refresh()), {
+				await toast.promise(approveJoinRequest({ data: requestId }).then(() => router.refresh()), {
 					loading: t("teams.approvingRequest"),
 					success: t("teams.requestApproved"),
 					error: () => t("teams.requestActionFailed"),
 				});
 			} else {
-				await toast.promise(rejectJoinRequest(requestId).then(() => router.refresh()), {
+				await toast.promise(rejectJoinRequest({ data: requestId }).then(() => router.refresh()), {
 					loading: t("teams.rejectingRequest"),
 					success: t("teams.requestRejected"),
 					error: () => t("teams.requestActionFailed"),

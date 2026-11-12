@@ -1009,7 +1009,240 @@
 		"rules": "regras",
 		"flag": "Sinalizar",
 		"redact": "Ocultar",
-		"block": "Bloquear"
+		"block": "Bloquear",
+		"workspaceBaseline": "Proteção base do espaço de trabalho",
+		"workspaceBaselineDescription": "Vale para todas as chaves do espaço de trabalho. Edite em Privacidade.",
+		"wholeWorkspace": "Todo o espaço de trabalho"
+	},
+	"guardrailAssignments": {
+		"tabGuardrails": "Guardrails",
+		"tabAssignments": "Atribuições",
+		"keysView": "Chaves de API",
+		"membersView": "Membros",
+		"search": "Pesquisar nomes e guardrails",
+		"columnKey": "Chave de API",
+		"columnMember": "Membro",
+		"columnGuardrails": "Guardrails",
+		"columnAccess": "Acesso",
+		"none": "Nenhum",
+		"off": "Desativado",
+		"offHint": "Este guardrail está desativado, então o gateway o ignora.",
+		"viaMember": "via {name}",
+		"inheritedHint": "Aplica-se pela atribuição de membro de {name}. Altere-a na visualização Membros.",
+		"formerMember": "um ex-membro",
+		"formerMemberHint": "Aplica-se pela atribuição de membro de quem criou esta chave e saiu do workspace. O gateway continua aplicando. Desmarque aqui para removê-la.",
+		"noLimits": "Sem limites",
+		"zdrOnly": "Somente ZDR",
+		"providersAllowed": "{count, plural, one {# provedor permitido} other {# provedores permitidos}}",
+		"providersBlocked": "{count, plural, one {# provedor bloqueado} other {# provedores bloqueados}}",
+		"modelsAllowed": "{count, plural, one {# modelo permitido} other {# modelos permitidos}}",
+		"modelsBlocked": "{count, plural, one {# modelo bloqueado} other {# modelos bloqueados}}",
+		"noProvidersAllowed": "Nenhum provedor permitido",
+		"noModelsAllowed": "Nenhum modelo permitido",
+		"editGuardrails": "Editar guardrails de {name}",
+		"selectRow": "Selecionar {name}",
+		"selectAll": "Selecionar tudo",
+		"selectedCount": "{count} selecionados",
+		"addGuardrail": "Adicionar guardrail",
+		"removeGuardrail": "Remover guardrail",
+		"clearSelection": "Limpar",
+		"saved": "Atribuições atualizadas",
+		"saveFailed": "Não foi possível atualizar as atribuições",
+		"savedPartly": "{done} de {count} atualizadas. O restante não foi alterado.",
+		"emptyTitle": "Nenhum guardrail para atribuir",
+		"emptyBody": "Crie um guardrail primeiro e depois atribua-o aqui a chaves de API ou membros.",
+		"noKeys": "Este espaço de trabalho não tem chaves de API.",
+		"noMembers": "Este espaço de trabalho não tem membros.",
+		"noMatches": "Nada corresponde à sua pesquisa.",
+		"readOnly": "Somente proprietários e administradores do espaço de trabalho podem alterar as atribuições.",
+		"workspaceView": "Espaço de trabalho",
+		"departmentsView": "Departamentos",
+		"columnWorkspace": "Espaço de trabalho",
+		"columnDepartment": "Departamento",
+		"columnSafety": "Segurança",
+		"wholeWorkspace": "Todo o espaço de trabalho",
+		"wholeWorkspaceDetail": "Todas as chaves de API e todos os membros",
+		"departmentReach": "{members, plural, one {# membro} other {# membros}} · {keys, plural, one {# chave} other {# chaves}}",
+		"noDepartments": "Este espaço de trabalho ainda não tem departamentos.",
+		"fromWorkspace": "Espaço de trabalho",
+		"workspaceHint": "Aplica-se a todo o espaço de trabalho. Altere na visualização Espaço de trabalho.",
+		"departmentHint": "Aplica-se pelo departamento {name}. Altere na visualização Departamentos.",
+		"baselineHint": "O guardrail base do espaço de trabalho vale para todas as chaves de API e membros. Edite em Privacidade.",
+		"fromGuardrails": "De {names}",
+		"promptInjectionPart": "Injeção de prompt: {action}",
+		"sensitiveInfoPart": "{count, plural, one {# regra de informação sensível} other {# regras de informação sensível}}",
+		"footnoteLevels": "Cada linha mostra todos os guardrails que chegam a ela: os próprios e os do membro, dos departamentos e de todo o espaço de trabalho. Quando vários se aplicam, vale a regra mais rígida.",
+		"noTraining": "Sem treinamento",
+		"noPaidTraining": "Sem treinamento em endpoints pagos",
+		"noFreeTraining": "Sem treinamento em endpoints gratuitos",
+		"noLogging": "Sem endpoints que registram",
+		"columnRate": "Taxa",
+		"rateRequests": "{count, plural, one {# solicitação} other {# solicitações}} por minuto",
+		"rateTokens": "{count, plural, one {# token} other {# tokens}} por minuto",
+		"rateConcurrent": "{count, plural, other {# ao mesmo tempo}}",
+		"columnSpend": "Gastos",
+		"spend": {
+			"daily": "{amount} por dia",
+			"weekly": "{amount} por semana",
+			"monthly": "{amount} por mês"
+		},
+		"spendBlocks": "Bloqueia",
+		"spendNotifies": "Só alertas"
+	},
+	"guardrailWizard": {
+		"title": "Novo guardrail",
+		"subtitle": "Escolha o que ele verifica, configure e depois escolha a quem se aplica.",
+		"stepsLabel": "Etapas de configuração do guardrail",
+		"step": {
+			"start": "O que faz",
+			"configure": "Configurar",
+			"assign": "Atribuir",
+			"review": "Revisar"
+		},
+		"cancel": "Cancelar",
+		"back": "Voltar",
+		"continue": "Continuar",
+		"create": "Criar guardrail",
+		"creating": "Criando…",
+		"issue": {
+			"nameRequired": "Adicione um nome para continuar.",
+			"chooseSection": "Escolha um modelo pronto ou pelo menos uma verificação para continuar.",
+			"accessEmpty": "Ative pelo menos uma regra de acesso ou privacidade, ou remova esta verificação.",
+			"providerAllowlistEmpty": "Escolha pelo menos um provedor permitido. Uma lista vazia bloqueia todos os provedores.",
+			"modelAllowlistEmpty": "Escolha pelo menos um modelo permitido. Uma lista vazia bloqueia todos os modelos.",
+			"promptInjectionOff": "Escolha como tratar injeção de prompt, ou remova esta verificação.",
+			"sensitiveInfoOff": "Ative pelo menos um padrão de informação sensível, ou remova esta verificação.",
+			"rateLimitEmpty": "Defina pelo menos um limite para continuar.",
+			"rateLimitInvalid": "Os limites devem ser números inteiros maiores que 0.",
+			"rateCountingRequired": "Escolha como os limites contam para continuar.",
+			"spendLimitEmpty": "Defina um limite para continuar.",
+			"spendLimitInvalid": "Insira um valor acima de $0.00 com até 2 casas decimais.",
+			"spendPeriodRequired": "Escolha um período para continuar.",
+			"spendActionRequired": "Escolha o que acontece no limite para continuar.",
+			"spendCountingRequired": "Escolha como o limite conta para continuar."
+		},
+		"nameLabel": "Nome",
+		"namePlaceholder": "ex.: Política para terceirizados",
+		"descriptionLabel": "Descrição (opcional)",
+		"descriptionPlaceholder": "Para quem é?",
+		"templatesTitle": "Começar com um modelo pronto",
+		"templatesBody": "Um modelo pronto preenche as configurações. Você pode mudar tudo na próxima etapa.",
+		"templateZdr": {
+			"name": "Retenção zero de dados",
+			"body": "Rotear só para endpoints que não guardam prompts nem respostas."
+		},
+		"templateNoTraining": {
+			"name": "Sem treino com prompts",
+			"body": "Ignorar endpoints que podem treinar com seus prompts ou publicá-los."
+		},
+		"templateApprovedProviders": {
+			"name": "Só provedores aprovados",
+			"body": "Permitir só os provedores que você escolher."
+		},
+		"templateApprovedModels": {
+			"name": "Só modelos aprovados",
+			"body": "Permitir só os modelos que você escolher."
+		},
+		"templateBlockPromptInjection": {
+			"name": "Bloquear injeção de prompt",
+			"body": "Barrar solicitações que parecem injeção de prompt antes que cheguem ao modelo."
+		},
+		"templateRedactPersonalInfo": {
+			"name": "Ocultar dados pessoais",
+			"body": "Substituir e-mails, telefones, SSNs e números de cartão antes que as solicitações saiam da Phaseo."
+		},
+		"sectionsTitle": "Verificações",
+		"sectionsBody": "Escolha uma ou mais. Um modelo pronto marca estas para você.",
+		"sectionAccess": {
+			"name": "Acesso e privacidade",
+			"body": "Retenção de dados, treino e quais provedores e modelos podem ser usados."
+		},
+		"sectionPromptInjection": {
+			"name": "Injeção de prompt",
+			"body": "Analisar solicitações em busca de injeção de prompt e sinalizar, ocultar ou bloquear."
+		},
+		"sectionSensitiveInfo": {
+			"name": "Informações sensíveis",
+			"body": "Encontrar dados pessoais e segredos nas solicitações e sinalizar, ocultar ou bloquear."
+		},
+		"addCheck": "Adicionar verificação:",
+		"assignTitle": "A quem “{name}” deve se aplicar?",
+		"assignBody": "Escolha todo o espaço de trabalho, ou departamentos, membros e chaves de API. Cada linha mostra o resultado dos guardrails agora e com este. Você pode pular e atribuir depois.",
+		"columnNow": "Agora",
+		"columnAfter": "Com este guardrail",
+		"assignMemberHint": "Os guardrails de um membro também se aplicam às chaves de API que ele cria.",
+		"notApplied": "Não aplicado",
+		"coveredVia": "Por meio de {name}",
+		"noTighter": "Sem mudança: os guardrails atuais já cobrem isso.",
+		"promptInjectionPart": "Injeção de prompt: {action}",
+		"sensitiveInfoPart": "{count, plural, one {# regra de informação sensível} other {# regras de informação sensível}}",
+		"reviewWhat": "O que faz",
+		"reviewModels": "Modelos",
+		"reviewWho": "Aplica-se a",
+		"change": "Alterar",
+		"modelsAvailable": "{available} de {total} modelos continuam disponíveis.",
+		"blocksEverything": "Estas regras bloqueiam todos os modelos, então as solicitações das chaves afetadas vão falhar.",
+		"appliesToNothing": "Nada ainda. Você pode atribuir depois na aba Atribuições.",
+		"turnOnNow": "Ativar agora",
+		"turnOnNowBody": "Desativado, ele fica salvo, mas o gateway o ignora.",
+		"summaryZdr": "Roteia só para endpoints com retenção zero de dados",
+		"summaryNoPaidTraining": "Ignora endpoints pagos que podem treinar com prompts",
+		"summaryNoFreeTraining": "Ignora endpoints gratuitos que podem treinar com prompts",
+		"summaryNoPublishing": "Ignora endpoints gratuitos que podem publicar prompts",
+		"summaryNoLogging": "Ignora endpoints que registram prompts e respostas",
+		"summaryProvidersAllowed": "Permite só {count, plural, one {# provedor} other {# provedores}}",
+		"summaryProvidersBlocked": "Bloqueia {count, plural, one {# provedor} other {# provedores}}",
+		"summaryModelsAllowed": "Permite só {count, plural, one {# modelo} other {# modelos}}",
+		"summaryModelsBlocked": "Bloqueia {count, plural, one {# modelo} other {# modelos}}",
+		"summaryPromptInjection": "Injeção de prompt: {action}",
+		"summarySensitiveInfo": "Verifica {count, plural, one {# padrão de informação sensível} other {# padrões de informação sensível}}",
+		"wholeWorkspaceTitle": "Todo o espaço de trabalho",
+		"wholeWorkspaceBody": "Vale para todas as chaves de API e membros, inclusive os adicionados depois.",
+		"wholeWorkspaceOn": "Vale para todo o espaço de trabalho, então todas as linhas abaixo recebem.",
+		"coveredByWorkspace": "Coberto por todo o espaço de trabalho",
+		"coveredByDepartment": "Coberto por meio de {name}",
+		"levelWorkspace": "Todo o espaço de trabalho",
+		"levelDepartments": "{count, plural, one {# departamento} other {# departamentos}}",
+		"levelMembers": "{count, plural, one {# membro} other {# membros}}",
+		"levelKeys": "{count, plural, one {# chave de API} other {# chaves de API}}",
+		"templateRateLimit": {
+			"name": "Limite de taxa",
+			"body": "Limite solicitações ou tokens por minuto, ou solicitações simultâneas."
+		},
+		"sectionRate": {
+			"name": "Limites de taxa",
+			"body": "Solicitações e tokens por minuto, e solicitações simultâneas. Uma proteção de taxa não tem outras verificações."
+		},
+		"summaryRateRequests": "{count, plural, one {# solicitação} other {# solicitações}} por minuto",
+		"summaryRateTokens": "{count, plural, one {# token} other {# tokens}} por minuto",
+		"summaryRateConcurrent": "{count, plural, one {# solicitação} other {# solicitações}} ao mesmo tempo",
+		"summaryRateCounting": {
+			"shared": "Compartilhado por tudo a que está atribuído",
+			"each_key": "Separado para cada chave",
+			"each_end_user": "Separado para cada usuário final"
+		},
+		"summaryRateFailClosed": "Recusa solicitações quando os limites não podem ser verificados",
+		"templateSpendLimit": {
+			"name": "Limite de gastos",
+			"body": "Limite os gastos por dia, semana ou mês, com alertas."
+		},
+		"sectionSpend": {
+			"name": "Limite de gastos",
+			"body": "Um limite em dólares por dia, semana ou mês. Um guardrail de gastos não tem outras verificações."
+		},
+		"summarySpendLimit": {
+			"daily": "Até {amount} por dia",
+			"weekly": "Até {amount} por semana",
+			"monthly": "Até {amount} por mês"
+		},
+		"summarySpendAction": {
+			"notify": "Alerta em 80% e 100%, sem bloquear",
+			"block": "Bloqueia solicitações com chave de API no limite"
+		},
+		"summarySpendCounting": {
+			"shared": "Compartilhado por tudo a que está atribuído",
+			"each_key": "Separado para cada chave"
+		}
 	},
 	"broadcastControls": {
 		"optional": "(opcional)",
@@ -1412,7 +1645,9 @@
 			"selectWorkspace": "Selecione um espaço de trabalho para gerenciar as proteções.",
 			"notFound": "Proteção não encontrada.",
 			"back": "Voltar para as proteções",
-			"permissions": "Somente proprietários e administradores do espaço de trabalho podem alterar as proteções. As políticas atribuídas são aplicadas automaticamente aos membros."
+			"permissions": "Somente proprietários e administradores do espaço de trabalho podem alterar as proteções. As políticas atribuídas são aplicadas automaticamente aos membros.",
+			"workspaceBaseline": "Esta é a proteção base do espaço de trabalho. Ela guarda as regras de Configurações, Privacidade e vale para todo o espaço de trabalho, então não pode ser excluída, desativada nem atribuída a chaves ou membros específicos.",
+			"openPrivacy": "Editar em Privacidade"
 		},
 		"keyDelete": {
 			"permanent": "Esta ação é permanente.",
@@ -1916,7 +2151,7 @@
 		"Plugin execution": "Execução do plug-in",
 		"Changed:": "Alterado:",
 		"Attempted:": "Tentado:",
-		"Healed:": "Corrigido:",
+		"Healed:": "Reparado:",
 		"Mode:": "Modo:",
 		"Failure reason:": "Motivo da falha:",
 		"Execution reason:": "Motivo da execução:",
@@ -1947,6 +2182,8 @@
 		"Completion": "Resposta",
 		"phraseNoIOPayloadIsAvailableForThisRequest": "Não há dados de entrada e saída disponíveis para esta solicitação.",
 		"Technical Details": "Detalhes técnicos",
+		"SVG author": "Autor do SVG",
+		"Image tool": "Ferramenta de imagem",
 		"Pricing": "Preços",
 		"Direct HTTP": "Solicitação HTTP direta",
 		"Data policy": "Política de dados",
@@ -5824,6 +6061,12 @@
 		"voiceProfile": "{language} · {style} · {gender}",
 		"english": "Inglês",
 		"portuguese": "Português",
+		"voiceProfileShort": "{language} · {gender}",
+		"french": "Francês",
+		"german": "Alemão",
+		"hindi": "Hindi",
+		"japanese": "Japonês",
+		"korean": "Coreano",
 		"filipino": "Influência filipina",
 		"brazilian": "Influência brasileira",
 		"southernUs": "Influência do sul dos EUA",
@@ -6989,7 +7232,7 @@
 			"period": "Período",
 			"createTitle": "Adicionar um orçamento de departamento",
 			"editTitle": "Editar orçamento de departamento",
-			"limitHelp": "Quando o gasto do departamento no período chega a este valor, suas solicitações com chave de API são recusadas até o período ser redefinido. Solicitações em lote, em tempo real e OAuth não são bloqueadas. Se a verificação do orçamento ficar indisponível por um instante, as solicitações são permitidas em vez de recusadas. Proprietários e administradores são avisados em cerca de 80% e 100%.",
+			"limitHelp": "Quando o gasto do departamento no período chega a este valor, suas solicitações com chave de API são recusadas até o período ser redefinido. Se a verificação do orçamento ficar indisponível por um instante, as solicitações são permitidas em vez de recusadas. Proprietários e administradores são avisados em cerca de 80% e 100%.",
 			"saved": "Orçamento de departamento salvo",
 			"deleted": "Orçamento de departamento excluído",
 			"deleteTitle": "Excluir este orçamento de departamento?",
@@ -7186,6 +7429,12 @@
 			"copyRedirectUrl": "Copiar URL de redirecionamento",
 			"scopes": "Escopos do token de bot",
 			"copyScopes": "Copiar escopos",
+			"requestUrls": "URLs de solicitação",
+			"requestUrlsHelp": "As URLs de solicitação próprias deste app. Cole cada uma na configuração correspondente do manifesto do seu app do Slack.",
+			"eventsUrl": "URL de solicitação de Event Subscriptions",
+			"interactionsUrl": "URL de solicitação de Interactivity",
+			"copyEventsUrl": "Copiar a URL de solicitação de Event Subscriptions",
+			"copyInteractionsUrl": "Copiar a URL de solicitação de Interactivity",
 			"appId": "ID do app",
 			"clientId": "ID do cliente",
 			"clientSecret": "Segredo do cliente",
@@ -7450,8 +7699,11 @@
 		"link": {
 			"metaTitle": "Conectar Slack",
 			"title": "Conecte sua conta do Slack",
-			"description": "Isso vincula a conta do Slack que abriu esta página à sua conta da Phaseo, para que o agente da Phaseo saiba quem você é.",
-			"warning": "Continue somente se você abriu este link pela mensagem do agente da Phaseo no Slack.",
+			"description": "Isso vincula a conta do Slack abaixo à sua conta da Phaseo, para que o agente da Phaseo saiba quem você é.",
+			"account": "Conta do Slack: {name} ({id}) em {team}",
+			"accountUnnamed": "Conta do Slack: {id} em {team}",
+			"unknownTeam": "um espaço de trabalho do Slack cujo nome o Slack não informou",
+			"warning": "Continue somente se esta for a sua própria conta do Slack. Se alguém enviou este link para você, não o use: essa conta do Slack agiria como você.",
 			"confirm": "Conectar conta",
 			"confirming": "Conectando…",
 			"missingToken": "Falta o código deste link. Abra-o de novo pela mensagem do agente da Phaseo no Slack.",
@@ -7462,6 +7714,7 @@
 			"close": "Você pode fechar esta página e voltar ao Slack.",
 			"errors": {
 				"expired": "Este link expirou. Peça um novo ao agente da Phaseo no Slack.",
+				"used": "Este link já foi usado. Peça um novo ao agente da Phaseo no Slack.",
 				"invalid": "Este link não é válido. Peça um novo ao agente da Phaseo no Slack.",
 				"notInstalled": "O agente da Phaseo não está mais instalado nesse workspace do Slack.",
 				"wrongWorkspace": "Entre com uma conta do workspace da Phaseo que adicionou o agente ao Slack.",
@@ -7854,5 +8107,144 @@
 		"expiredBody": "Ninguém respondeu em 30 minutos, então nada foi cobrado. O agente é instruído a não tentar de novo; ele pode iniciar uma nova solicitação quando alguém estiver disponível.",
 		"resume": "Concluir a verificação do cartão",
 		"resumeNotice": "Esta recarga foi confirmada, mas a verificação do cartão pelo banco não foi concluída. Conclua-a para finalizar o pagamento."
+	},
+	"keyRequests": {
+		"title": "Aprovar chave de API",
+		"description": "Um app em que você está conectado pediu uma nova chave de API. Nada é criado até você aprovar aqui.",
+		"requestedBy": "Solicitada por",
+		"workspace": "Workspace",
+		"keyName": "Nome da chave",
+		"dailyLimit": "Limite de gastos diário",
+		"monthlyLimit": "Limite de gastos mensal",
+		"noLimit": "Sem limite",
+		"keyExpires": "A chave expira",
+		"keyLifetime": "{days, plural, one {# dia} other {# dias}} após a aprovação",
+		"requestedAt": "Solicitada",
+		"requestExpires": "Aprovar até",
+		"phaseoAppTitle": "Aprove somente se foi você quem iniciou",
+		"phaseoAppBody": "Aprove somente se você acabou de executar um comando de configuração da CLI da Phaseo. A nova chave vai uma única vez para esse terminal e nunca é exibida aqui.",
+		"otherAppTitle": "Solicitada por {app}, não pela CLI da Phaseo",
+		"otherAppBody": "{app} é um app que usa Entrar com a Phaseo. Aprove somente se você mesmo pediu uma chave a ele. Ele recebe a nova chave uma única vez.",
+		"approve": "Aprovar e criar chave",
+		"approving": "Criando a chave…",
+		"deny": "Recusar",
+		"approvedTitle": "Chave aprovada",
+		"approvedBody": "Volte ao seu terminal: a configuração recebe a chave e é concluída. Você pode alterar os limites ou excluí-la em Configurações, Chaves de API.",
+		"approvingTitle": "Criando a chave",
+		"approvingBody": "Recarregue a página em instantes.",
+		"deniedTitle": "Solicitação recusada",
+		"deniedBody": "Nenhuma chave foi criada. A configuração no seu terminal para de esperar.",
+		"expiredTitle": "Solicitação expirada",
+		"expiredBody": "Nada foi criado. Execute o comando de configuração de novo para pedir uma nova chave.",
+		"forbiddenTitle": "Você não pode criar chaves de API neste workspace",
+		"forbiddenBody": "Somente proprietários e administradores do workspace podem criar chaves de API. Peça uma chave a um deles e passe-a para a configuração com --key.",
+		"notFoundTitle": "Solicitação de chave não encontrada",
+		"notFoundBody": "Entre com a conta que você usou na CLI e abra o link completo que a configuração mostrou.",
+		"errorTitle": "Não foi possível concluir",
+		"keyLimitReached": "Este workspace atingiu o limite de chaves de API. Exclua uma chave que você não usa mais e aprove de novo.",
+		"requestChanged": "Esta solicitação mudou. Recarregue a página e revise de novo.",
+		"notPending": "Esta solicitação já foi respondida ou expirou. Recarregue a página.",
+		"genericError": "Algo deu errado. Tente de novo."
+	},
+	"rateGuardrail": {
+		"title": "Limites de taxa",
+		"description": "Limite solicitações e tokens por minuto, e quantas solicitações rodam ao mesmo tempo.",
+		"limitsTitle": "Limites",
+		"limitsBody": "Defina pelo menos um. Deixe um limite em branco para não limitá-lo.",
+		"noLimit": "Sem limite",
+		"invalidLimit": "Digite um número inteiro maior que 0.",
+		"requests": {
+			"label": "Solicitações por minuto",
+			"help": "Contadas em um minuto móvel."
+		},
+		"tokens": {
+			"label": "Tokens por minuto",
+			"help": "Tokens de entrada e saída, contados quando cada solicitação termina."
+		},
+		"concurrent": {
+			"label": "Solicitações simultâneas",
+			"help": "Solicitações em andamento ao mesmo tempo."
+		},
+		"countingTitle": "Como conta",
+		"countingBody": "Escolha quem compartilha cada cota. Não há padrão.",
+		"legacyCounting": "Foi criado pela API de limites de taxa, então conta por chave, membro ou departamento a que está atribuído, e por usuário final no espaço de trabalho inteiro. Escolha uma opção para mudar isso.",
+		"countingLegacy": "Por atribuição",
+		"counting": {
+			"shared": {
+				"name": "Compartilhado",
+				"body": "Uma cota para tudo a que está atribuído. Em um departamento, o departamento inteiro a compartilha."
+			},
+			"each_key": {
+				"name": "Por chave",
+				"body": "Cada chave de API coberta tem sua própria cota. Solicitações OAuth contam por pessoa."
+			},
+			"each_end_user": {
+				"name": "Por usuário final",
+				"body": "Cada usuário final tem sua própria cota, pelo campo user da solicitação ou pelo cabeçalho X-Phaseo-User-Id. Solicitações sem usuário final não são limitadas por ela."
+			}
+		},
+		"failClosedTitle": "Recusar solicitações quando os limites não puderem ser verificados",
+		"failClosedBody": "Espera o contador em cada solicitação, o que adiciona um pouco de latência. Desativado, as solicitações passam se o contador não responder.",
+		"issue": {
+			"rateLimitEmpty": "Defina pelo menos um limite para continuar.",
+			"rateLimitInvalid": "Os limites devem ser números inteiros maiores que 0.",
+			"rateCountingRequired": "Escolha como os limites contam para continuar."
+		}
+	},
+	"spendGuardrail": {
+		"title": "Limite de gastos",
+		"description": "Limite o que as chaves cobertas gastam por dia, semana ou mês.",
+		"limitTitle": "Limite",
+		"limitBody": "O máximo que as chaves cobertas podem gastar em cada período, em dólares americanos.",
+		"limitLabel": "Valor",
+		"limitHelp": "Até 2 casas decimais, por exemplo 25.00.",
+		"invalidLimit": "Insira um valor acima de $0.00 com até 2 casas decimais.",
+		"periodTitle": "Período",
+		"periodBody": "Os períodos são dias corridos em UTC, semanas a partir de segunda-feira e meses. Não há padrão.",
+		"period": {
+			"daily": {
+				"name": "Diário",
+				"body": "Reinicia todos os dias às 00:00 UTC."
+			},
+			"weekly": {
+				"name": "Semanal",
+				"body": "Reinicia toda segunda-feira às 00:00 UTC."
+			},
+			"monthly": {
+				"name": "Mensal",
+				"body": "Reinicia no dia 1 de cada mês às 00:00 UTC."
+			}
+		},
+		"actionTitle": "No limite",
+		"actionBody": "O que acontece quando os gastos chegam ao limite. Proprietários e administradores recebem um push em 80% e em 100% de qualquer forma. Não há padrão.",
+		"action": {
+			"notify": {
+				"name": "Notificar",
+				"body": "Enviar apenas os alertas. As solicitações continuam passando."
+			},
+			"block": {
+				"name": "Bloquear",
+				"body": "Recusar as solicitações com chave de API cobertas até o período reiniciar. Jobs em lote, sessões em tempo real e solicitações OAuth não são bloqueados."
+			}
+		},
+		"countingTitle": "Como conta",
+		"countingBody": "Escolha quem compartilha o limite. Não há padrão.",
+		"counting": {
+			"shared": {
+				"name": "Compartilhado",
+				"body": "Um limite para tudo a que está atribuído. Em um departamento, todas as chaves do departamento o compartilham."
+			},
+			"each_key": {
+				"name": "Cada chave",
+				"body": "Cada chave de API coberta tem seu próprio limite."
+			}
+		},
+		"issue": {
+			"spendLimitEmpty": "Defina um limite para continuar.",
+			"spendLimitInvalid": "Insira um valor acima de $0.00 com até 2 casas decimais.",
+			"spendPeriodRequired": "Escolha um período para continuar.",
+			"spendActionRequired": "Escolha o que acontece no limite para continuar.",
+			"spendCountingRequired": "Escolha como o limite conta para continuar."
+		}
 	}
 }

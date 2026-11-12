@@ -1,12 +1,11 @@
-"use client";
-
-import Link from "next/link";
+import Link from "@/components/link";
 import {
 	ArrowUpDown,
 	Binary,
 	Captions,
 	Headphones,
 	ImageIcon,
+	Scale,
 	Speech,
 	Type as TypeIcon,
 	Video,
@@ -14,7 +13,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 type RankingsModalityItem = {
 	id: string;
@@ -37,6 +36,7 @@ const ITEMS: RankingsModalityItem[] = [
 		href: "/rankings/transcription",
 		icon: Captions,
 	},
+	{ id: "decisions", label: "decisions", href: "/rankings/decisions", icon: Scale },
 ];
 
 export function RankingsModalityTabs({

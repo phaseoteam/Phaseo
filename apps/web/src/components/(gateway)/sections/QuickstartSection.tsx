@@ -1,5 +1,3 @@
-"use client";
-
 import React, {
 	useCallback,
 	useEffect,
@@ -7,7 +5,7 @@ import React, {
 	useRef,
 	useState,
 } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import { ChevronDown, Copy, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -85,9 +83,20 @@ type EndpointConfig = {
 	body: (model: string) => Record<string, unknown>;
 };
 
-function resolveSpeechVoiceForModel(model: string): string {
+/** Speech fields that depend on the model: Gemini and MiMo only return WAV (or PCM), and MiMo VoiceDesign is described in instructions instead of a voice. */
+function speechExampleOptions(model: string): Record<string, string> {
 	const provider = model.split("/")[0]?.toLowerCase();
-	if (provider === "xiaomi") return "mimo_default";
+	const wavOnly = provider === "google" || provider === "google-ai-studio" || provider === "xiaomi";
+	return {
+		response_format: wavOnly ? "wav" : "mp3",
+		...(/voicedesign/i.test(model) ? { instructions: "A warm, calm voice with a steady pace." } : {}),
+	};
+}
+
+/** The example voice for a speech model; MiMo VoiceDesign takes none (the instructions describe it). */
+function resolveSpeechVoiceForModel(model: string): string | undefined {
+	const provider = model.split("/")[0]?.toLowerCase();
+	if (provider === "xiaomi") return /voicedesign/i.test(model) ? undefined : "mimo_default";
 	if (provider === "google" || provider === "google-ai-studio") return "Kore";
 	if (provider === "elevenlabs" || provider === "eleven-labs") return "rachel";
 	return "alloy";
@@ -179,9 +188,9 @@ const ENDPOINT_CONFIGS: EndpointConfig[] = [
 		path: "/audio/speech",
 		body: (model) => ({
 			model,
-			voice: resolveSpeechVoiceForModel(model),
+			...(resolveSpeechVoiceForModel(model) ? { voice: resolveSpeechVoiceForModel(model) } : {}),
 			input: "Welcome to the Phaseo Gateway where latency, uptime, and pricing are always in your control.",
-			response_format: "mp3",
+			...speechExampleOptions(model),
 		}),
 	},
 	{

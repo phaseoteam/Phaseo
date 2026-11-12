@@ -4,11 +4,11 @@ import type { PullRequestAction, PullRequestView } from "../../../shared/pullReq
 import { Select } from "../../components/Select";
 import { Button } from "../../components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "../../components/ui/popover";
-import { Textarea } from "../../components/ui/textarea";
 import { ToggleGroup, ToggleGroupItem } from "../../components/ui/toggle-group";
 import { PullRequestGlyph, Tip } from "./presentation";
 import { pullRequestReviewKey, reviewDrafts, usePendingReviewComments, useReviewDrafts } from "./pullRequestReviewStore";
 import { segmentedGroup, segmentedItem } from "./segmented";
+import { MarkdownTextarea } from "../../components/MarkdownTextarea";
 
 type Verdict = Extract<PullRequestAction, { type: "review" }>["event"];
 const verdicts: { value: Verdict; label: string; icon: ReactNode }[] = [
@@ -85,7 +85,7 @@ export function Composer({ view, projectId, pending, onAction, openReviewRequest
 			</div>
 			{mode === "comment" ? <div className="space-y-2">
 				{/* Locked while posting: the box is cleared on success, which would throw away a draft typed meanwhile. */}
-				<Textarea ref={commentRef} value={comment} disabled={busy} rows={3} onChange={event => reviewDrafts.setComment(key, event.target.value)} placeholder="Leave a comment" aria-label="Comment on this pull request" className="min-h-20 text-xs"
+				<MarkdownTextarea ui ref={commentRef} value={comment} disabled={busy} rows={3} onChange={event => reviewDrafts.setComment(key, event.target.value)} placeholder="Leave a comment" aria-label="Comment on this pull request" className="min-h-20 text-xs"
 					onKeyDown={event => { if (event.nativeEvent.isComposing) return; if (event.key === "Enter" && (event.metaKey || event.ctrlKey) && !event.shiftKey && !event.altKey) { event.preventDefault(); event.stopPropagation(); if (!event.repeat) void submitComment(); } }} />
 				<div className="flex flex-wrap justify-end gap-2">
 					{followUp && <Button size="xs" variant={followUp === "close" ? "destructive" : "outline"} disabled={!comment.trim() || busy} onClick={() => void submitComment(followUp)}>
@@ -95,7 +95,7 @@ export function Composer({ view, projectId, pending, onAction, openReviewRequest
 					<Button size="xs" variant="outline" disabled={!comment.trim() || busy} onClick={() => void submitComment()}><Send className="size-3.5" />{submitting === "comment" ? "Posting…" : "Comment"}</Button>
 				</div>
 			</div> : <div className="space-y-2">
-				<Textarea ref={reviewRef} value={summary} rows={3} onChange={event => reviewDrafts.setSummary(key, event.target.value)} placeholder={reviewPlaceholder(verdict, comments.length)} aria-label="Review summary" className="min-h-20 text-xs" />
+				<MarkdownTextarea ui ref={reviewRef} value={summary} rows={3} onChange={event => reviewDrafts.setSummary(key, event.target.value)} placeholder={reviewPlaceholder(verdict, comments.length)} aria-label="Review summary" className="min-h-20 text-xs" />
 				<div className="flex items-center justify-end gap-2">
 					{offered.length > 1 && <span className="mr-auto"><Select label="Review verdict" value={verdict} disabled={submitting === "review"} onValueChange={value => setVerdict(value as Verdict)} options={offered} /></span>}
 					<Button size="xs" disabled={busy || !canSubmitReview(verdict, summary, comments.length)} onClick={() => void submitReview()}>{submitting === "review" ? "Submitting…" : "Submit review"}</Button>

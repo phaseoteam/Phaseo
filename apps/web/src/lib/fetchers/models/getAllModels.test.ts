@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import type { MonitorModelData } from "@/lib/fetchers/models/table-view/getMonitorModels";
 import { mapRawToModelCard, summarizeMonitorRowsForModel } from "./getAllModels";
 
@@ -88,7 +89,7 @@ describe("summarizeMonitorRowsForModel", () => {
 					executionRegions: ["us"],
 				},
 				endpoint: "text.generate",
-				gatewayStatus: "deranked_lvl1",
+				gatewayStatus: "deranked",
 				inputModalities: ["text"],
 				outputModalities: ["text"],
 				context: 128_000,

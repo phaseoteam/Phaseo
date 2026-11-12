@@ -36,6 +36,7 @@ try {
   await db.exec(await read('../migrations/20261015111200_gateway_model_successor_redirect.sql'));
   await db.exec(await read('../migrations/20261015111300_workspace_model_successor_overrides.sql'));
   await db.exec(await read('../migrations/20261023210737_model_successor_price_comparison.sql'));
+  await db.exec(await read('../migrations/20261104121315_successor_price_ratio_enabled_routes.sql'));
   assert.deepEqual((await db.query(`select model_successor_redirect_enabled e, model_successor_price_policy p, model_successor_max_price_increase_percent m from public.workspace_settings`)).rows,
     [{ e: false, p: 'never', m: 0 }]);
   await rejects(db.query(`update public.workspace_settings set model_successor_price_policy='sometimes'`), /price_policy_check/);
@@ -118,6 +119,22 @@ try {
   result = await resolve('lab/old');
   assert.deepEqual([result.target, result.price_ratio, result.price_comparable], ['lab/new', null, false]);
   await db.exec(`delete from public.v2_pricing_sku_meters where sku_id='new-sku' and meter_key='requests'`);
+  assert.equal((await resolve('lab/old')).price_comparable, true);
+
+  // A catalogue-only reseller route listing a zero price for the old model is
+  // ignored once the old model has a route it actually routed to.
+  const ratio = async (from, to) => (await db.query('select public.v2_model_successor_price_ratio($1,$2) as value', [from, to])).rows[0].value;
+  await db.exec(`insert into public.v2_model_provider_routes(provider_model_id, model_slug, provider_slug, routing_enabled) values ('old-reseller', 'lab/old', 'host', false);
+    insert into public.v2_pricing_skus(sku_id, provider_model_id, sku_code) values ('old-reseller-sku', 'old-reseller', 'tokens');
+    insert into public.v2_pricing_sku_meters(sku_id, meter_key, unit_quantity, price_nanos) values
+      ('old-reseller-sku', 'input_tokens', 1000000, 0), ('old-reseller-sku', 'output_tokens', 1000000, 4000000000)`);
+  // With no enabled route, every listed route still counts.
+  assert.deepEqual(await ratio('lab/old', 'lab/new'), { comparable: false, ratio: null, skipped_meters: null });
+  await db.exec(`update public.v2_model_provider_routes set routing_enabled=true where provider_model_id='old-host'`);
+  assert.deepEqual([(await ratio('lab/old', 'lab/new')).comparable, Number((await ratio('lab/old', 'lab/new')).ratio)], [true, 1.25]);
+  await db.exec(`update public.v2_model_provider_routes set routing_enabled=false where provider_model_id='old-host';
+    delete from public.v2_pricing_sku_meters where sku_id='old-reseller-sku'; delete from public.v2_pricing_skus where sku_id='old-reseller-sku';
+    delete from public.v2_model_provider_routes where provider_model_id='old-reseller'`);
   assert.equal((await resolve('lab/old')).price_comparable, true);
 
   // Successor-only meters a redirected request cannot incur are skipped: cached

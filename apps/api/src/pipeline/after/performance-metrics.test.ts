@@ -73,26 +73,39 @@ describe("calculateOutputPerformanceMetrics", () => {
 		expect(metrics.effectiveThroughputTps).toBeCloseTo(85 / 1.378);
 	});
 
-	it("records no output speed when the answer arrived in one burst", () => {
-		// Typical of a provider that sends the whole answer in one chunk: 467 tokens in 1 ms.
+	it("records no output speed when the whole answer arrived in one network read", () => {
+		// A provider that held the answer and sent it at once: 467 tokens, 1 ms apart, one read.
 		const metrics = calculateOutputPerformanceMetrics({
 			outputTokens: 467,
 			providerDurationMs: 2_001,
 			providerTtftMs: 2_000,
 			gatewayE2eMs: 2_050,
+			outputArrivals: 1,
 		});
 		expect(metrics.outputSpeedTps).toBeNull();
 		expect(metrics.tpotMs).toBeNull();
+		// Throughput over the whole provider time is still recorded.
 		expect(metrics.effectiveThroughputTps).toBeCloseTo(467 / 2.001);
 	});
 
-	it("records no output speed above what any model can stream", () => {
-		// 5,029 tokens over 588 ms is 8,500 tokens per second.
+	it("keeps a very fast speed when the output really streamed", () => {
+		// No speed limit: 5,029 tokens across 40 reads in 588 ms is recorded as about 8,550 tokens per second.
 		const metrics = calculateOutputPerformanceMetrics({
 			outputTokens: 5_029,
 			providerDurationMs: 10_588,
 			providerTtftMs: 10_000,
 			gatewayE2eMs: 10_650,
+			outputArrivals: 40,
+		});
+		expect(metrics.outputSpeedTps).toBeCloseTo(5_028 / 0.588);
+	});
+
+	it("records no output speed when no time passed after the first token", () => {
+		const metrics = calculateOutputPerformanceMetrics({
+			outputTokens: 467,
+			providerDurationMs: 2_000,
+			providerTtftMs: 2_000,
+			gatewayE2eMs: 2_050,
 		});
 		expect(metrics.outputSpeedTps).toBeNull();
 		expect(metrics.tpotMs).toBeNull();

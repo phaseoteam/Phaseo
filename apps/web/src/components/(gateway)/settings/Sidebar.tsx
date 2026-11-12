@@ -1,6 +1,4 @@
-"use client";
-
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Link, usePathname } from "@/i18n/navigation";
 import { Building2, ChevronRight, ExternalLink, PanelLeftClose, PanelLeftOpen, UserRound } from "lucide-react";
 import { useEffect, useState, type ReactNode } from "react";
@@ -30,40 +28,15 @@ import {
 	useSidebar,
 } from "@/components/ui/sidebar";
 
-import type { NavGroup, NavItem, SettingsScope } from "./Sidebar.config";
+import type { NavGroup, NavItem, SettingsScope, SettingsNavigationOptions } from "./Sidebar.config";
 import { getSettingsSidebar, isSettingsNavChildActive } from "./Sidebar.config";
 import { cn } from "@/lib/utils";
 import { SETTINGS_LABEL_KEYS as LABEL_KEYS, SETTINGS_NEW_LABEL_KEYS } from "./Sidebar.labels";
 import { getSettingsMessages } from "@/i18n/settings";
 import { isPublicLocale, type PublicLocale } from "@/i18n/routing";
 
-export default function SettingsSidebar({
-	children,
-	showBroadcast = true,
-	showWebhooks = true,
-	showEnterprise = false,
-	showAutoRouting = false,
-	showClassifiers = false,
-	showWorkloadIdentity = false,
-	showSlackAgent = false,
-	showInternal = false,
-	providerMode = false,
-}: {
-	/**
-	 * Optional slot for lightweight, non-blocking sidebar adornments (e.g. alert counts).
-	 * This is rendered next to the "Usage" item label.
-	 */
-	children?: ReactNode;
-	showBroadcast?: boolean;
-	showWebhooks?: boolean;
-	showEnterprise?: boolean;
-	showAutoRouting?: boolean;
-	showClassifiers?: boolean;
-	showWorkloadIdentity?: boolean;
-	showSlackAgent?: boolean;
-	showInternal?: boolean;
-	providerMode?: boolean;
-}) {
+export default function SettingsSidebar({ children, workspaceName, ...options }: SettingsNavigationOptions & { children?: ReactNode; workspaceName?: string | null }) {
+	const providerMode = options.providerMode === true;
 	const locale = useLocale();
 	const tNew = useTranslations("SettingsUI.sidebarNew");
 	const settingsMessages = getSettingsMessages((isPublicLocale(locale) ? locale : "en-GB") as PublicLocale);
@@ -86,7 +59,7 @@ export default function SettingsSidebar({
 	const isCollapsed = state === "collapsed" && !isMobile;
 	const [search, setSearch] = useState("");
 	const isSearching = search.trim().length > 0 && !isCollapsed;
-	const navGroups = getSettingsSidebar({ showBroadcast, showWebhooks, showEnterprise, showAutoRouting, showClassifiers, showWorkloadIdentity, showSlackAgent, showInternal, providerMode });
+	const navGroups = getSettingsSidebar(options);
 
 	function matchScore(item: NavItem) {
 		const path = pathname ?? "";
@@ -164,7 +137,7 @@ export default function SettingsSidebar({
 		const heading = (group.heading ?? "").trim();
 		return (
 			<SidebarGroup className={cn("py-0", !first && "group-data-[collapsible=icon]:pt-2")}>
-				{isSearching ? <p className="px-2 pb-1 pt-3 text-xs font-medium text-muted-foreground">{group.scope === "personal" ? settingsMessages.sidebar.scope.account : settingsMessages.sidebar.scope.workspace}</p> : null}
+				{heading ? <p className="px-2 pb-1 pt-3 text-xs font-medium text-muted-foreground group-data-[collapsible=icon]:hidden">{settingsMessages.sidebar.headings[heading.toLowerCase() as keyof typeof settingsMessages.sidebar.headings] ?? heading}</p> : null}
 				<SidebarGroupContent>
 					<SidebarMenu>
 						{group.items.map((item) =>
@@ -349,6 +322,7 @@ export default function SettingsSidebar({
 				</div>
 			</SidebarHeader>
 			<div className="shrink-0 group-data-[collapsible=icon]:hidden">
+				{selectedScope === "workspace" && workspaceName ? <p className="truncate px-4 pt-3 text-sm font-medium" title={workspaceName}>{workspaceName}</p> : null}
 				<div className="px-2 pt-3">
 					<Input type="search" aria-label={tNew("search")} placeholder={tNew("searchPlaceholder")} value={search} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === "Escape") { event.stopPropagation(); setSearch(""); } }} className="h-8 text-sm" />
 				</div>

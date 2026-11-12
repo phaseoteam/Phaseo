@@ -899,6 +899,30 @@ describe("passthroughWithPricing", () => {
 		expect(ctx.meta.reasoningStreamed).toBe(expected);
 	});
 
+	it.each([
+		["in one network read", false, 1],
+		["across separate reads", true, 3],
+	])("counts output that arrived %s", async (_label, delayed, expected) => {
+		const ctx = baseCtx({
+			endpoint: "chat.completions",
+			protocol: "openai.chat.completions",
+			meta: { startedAtMs: Date.now() - 80, upstreamStartMs: Date.now() - 40 },
+		});
+		const frames = ["one", " two", " three"].map((content) => ({
+			data: { object: "chat.completion.chunk", choices: [{ index: 0, delta: { content }, finish_reason: null }] },
+		}));
+		frames.push({
+			data: {
+				object: "chat.completion",
+				choices: [{ index: 0, message: { role: "assistant", content: "one two three" }, finish_reason: "stop" }],
+			} as any,
+		});
+		const upstream = delayed ? makeDelayedSseResponse(frames, 5).response : makeSseResponse(frames);
+		const response = await passthroughWithPricing({ upstream, ctx, provider: "openai", priceCard: null });
+		await drain(response);
+		expect(ctx.meta.outputArrivals).toBe(expected);
+	});
+
 	it("records first-token latency, dispatch-to-terminal generation, and gateway end-to-end separately", async () => {
 		const ctx = baseCtx({
 			endpoint: "chat.completions",

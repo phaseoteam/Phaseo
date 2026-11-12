@@ -1,4 +1,4 @@
-import { mkdtemp, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import { mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { git } from "./gitProcess";
@@ -8,6 +8,7 @@ import { codeHostProvider } from "./codeHosts";
 import type { CodeHostProvider } from "./codeHosts/common";
 import { ghFailure, runGh } from "./projectPullRequestView";
 import { parsePullRequestReference, pullRequestUrl } from "../shared/pullRequestView";
+import { preferenceLines } from "../shared/sourceControlPreferences";
 
 export type CreatedPullRequest = { repository: string; number: number; url: string; status: "created" | "opened_existing"; /** The model that wrote the title and description; absent when they came from the commits. */ writtenBy?: string };
 type Gh = (root: string, args: string[]) => Promise<string>;
@@ -27,12 +28,12 @@ const parseUrl = (text: string) => {
  * GitHub CLI, titled and described from its commits. A branch that already has an open pull request gets that one
  * back instead ("opened_existing"), so the caller links it either way.
  */
-export async function createPullRequest(root: string, gh: Gh = runGh, describe?: DescribePullRequest): Promise<CreatedPullRequest> {
+export async function createPullRequest(root: string, gh: Gh = runGh, describe?: DescribePullRequest, { followTemplate = true }: { followTemplate?: boolean } = {}): Promise<CreatedPullRequest> {
 	const branch = (await git(root, ["branch", "--show-current"])).trim();
 	if (!branch) throw new Error("Switch to a branch before creating a pull request.");
 	const remote = await git(root, ["remote", "get-url", "origin"]).catch(() => { throw new Error("Choose a Git repository with an origin remote."); });
 	const other = await codeHostProvider(root, remote);
-	if (other) return createOnOtherHost(root, branch, other, describe);
+	if (other) return createOnOtherHost(root, branch, other, describe, followTemplate);
 	const repo = `github.com/${githubRepository(remote)}`;
 	const base = await defaultBranch(root);
 	if (base && branch === base) throw new Error(`This is ${base}, the repository's default branch. Create a feature branch first.`);
@@ -50,7 +51,7 @@ export async function createPullRequest(root: string, gh: Gh = runGh, describe?:
 	}
 	if (!upstream || ahead > 0) await gitCommand(root, { type: "push" });
 	// A writer that fails leaves the pull request to its commits rather than blocking it.
-	const written = describe ? await describe(await pullRequestContext(root, branch, base)).catch(() => undefined) : undefined;
+	const written = describe ? await describe(await pullRequestContext(root, branch, base, followTemplate)).catch(() => undefined) : undefined;
 	const folder = written ? await mkdtemp(path.join(tmpdir(), "phaseo-pr-")) : undefined;
 	let output: string;
 	try {
@@ -64,23 +65,74 @@ export async function createPullRequest(root: string, gh: Gh = runGh, describe?:
 	return { ...created, status: "created", ...written?.model ? { writtenBy: written.model } : {} };
 }
 
-const templatePaths = [".github/pull_request_template.md", ".github/PULL_REQUEST_TEMPLATE.md", "pull_request_template.md", "PULL_REQUEST_TEMPLATE.md", "docs/pull_request_template.md", "docs/PULL_REQUEST_TEMPLATE.md"];
+/** Template names in each place GitHub looks, in order: .github, the repository root, then docs. Matched without regard to case. */
+const templateNames = ["pull_request_template.md", "PULL_REQUEST_TEMPLATE.md", "pull_request_template.txt", "PULL_REQUEST_TEMPLATE.txt"];
+const templateLocations = [".github/", "", "docs/"];
+const templateLimit = 8_000;
+export type TemplateEntry = { path: string; type: string; mode: string; object: string };
+/** One place to look: a single template file, or a folder of templates (used only when it holds exactly one). */
+export type TemplateCandidate = { file: TemplateEntry } | { folder: TemplateEntry[] };
 
-/** The repository's pull request template, where GitHub looks for one; with several in a folder, the first by name. */
-export async function pullRequestTemplate(root: string) {
-	for (const relative of templatePaths) { try { const text = await readFile(path.join(root, relative), "utf8"); if (text.trim()) return text; } catch { /* Not here. */ } }
+/** Parses `git ls-tree -z` output, keeping each entry's path under `prefix`. */
+export function parseTreeEntries(output: string, prefix = ""): TemplateEntry[] {
+	return output.split("\0").flatMap(record => {
+		const tab = record.indexOf("\t"); if (tab < 0) return [];
+		const [mode, type, object] = record.slice(0, tab).split(" ");
+		return mode && type && object && /^[0-9a-f]{40,64}$/.test(object) ? [{ mode, type, object, path: `${prefix}${record.slice(tab + 1)}` }] : [];
+	});
+}
+
+/**
+ * Where a pull request template can be, in the order GitHub uses: the named files in .github, the root and docs (the
+ * exact spelling before other cases), then the PULL_REQUEST_TEMPLATE folders in the same order. Only regular files
+ * count, never links.
+ */
+export function templateCandidates(entries: readonly TemplateEntry[]): TemplateCandidate[] {
+	const files = entries.filter(entry => entry.type === "blob" && (entry.mode === "100644" || entry.mode === "100755"));
+	const parent = (value: string) => value.slice(0, value.lastIndexOf("/") + 1).toLowerCase();
+	const name = (value: string) => value.slice(value.lastIndexOf("/") + 1);
+	const found: TemplateCandidate[] = [];
+	for (const location of templateLocations) {
+		const here = files.filter(entry => parent(entry.path) === location);
+		const exact = templateNames.flatMap(wanted => here.filter(entry => name(entry.path) === wanted));
+		const other = here.filter(entry => !exact.includes(entry) && templateNames.some(wanted => wanted.toLowerCase() === name(entry.path).toLowerCase()));
+		found.push(...[...exact, ...other].map(file => ({ file })));
+	}
+	for (const location of templateLocations) {
+		const folder = files.filter(entry => parent(entry.path) === `${location}pull_request_template/` && /\.(?:md|txt)$/i.test(entry.path));
+		if (folder.length) found.push({ folder });
+	}
+	return found;
+}
+
+/**
+ * The repository's pull request template as committed at `treeish` (the base branch, as GitHub reads it), or undefined.
+ * Reads committed blobs rather than files, so a link in the checkout can't point it elsewhere. A folder with several
+ * templates is ambiguous, so none is used.
+ */
+export async function pullRequestTemplate(root: string, treeish = "HEAD") {
 	try {
-		const folder = path.join(root, ".github", "PULL_REQUEST_TEMPLATE");
-		const first = (await readdir(folder)).filter(name => name.toLowerCase().endsWith(".md")).sort()[0];
-		if (first) return await readFile(path.join(folder, first), "utf8");
-	} catch { /* No template folder. */ }
+		const list = async (tree: string, prefix: string) => parseTreeEntries(await git(root, ["ls-tree", "-z", "--full-tree", tree]), prefix);
+		const top = await list(treeish, "");
+		const entries = [...top];
+		const folders = async (within: readonly TemplateEntry[]) => { for (const entry of within) if (entry.type === "tree" && /^(?:|\.github\/|docs\/)pull_request_template$/i.test(entry.path)) entries.push(...await list(entry.object, `${entry.path.replace(/[^/]+$/, "").toLowerCase()}pull_request_template/`)); };
+		await folders(top);
+		for (const entry of top) if (entry.type === "tree" && /^(?:\.github|docs)$/i.test(entry.path)) { const inside = await list(entry.object, `${entry.path.toLowerCase()}/`); entries.push(...inside); await folders(inside); }
+		const read = async (entry: TemplateEntry) => { const text = (await git(root, ["cat-file", "blob", entry.object])).trim(); return text ? text.length > templateLimit ? `${text.slice(0, templateLimit)}\n\n[truncated]` : text : undefined; };
+		for (const candidate of templateCandidates(entries)) {
+			if ("file" in candidate) { const text = await read(candidate.file); if (text) return text; continue; }
+			const texts = (await Promise.all(candidate.folder.map(read))).filter(Boolean);
+			if (texts.length === 1) return texts[0];
+			if (texts.length > 1) return undefined;
+		}
+	} catch { /* No such commit, or Git failed: write without a template. */ }
 	return undefined;
 }
 
-async function pullRequestContext(root: string, branch: string, base?: string): Promise<PullRequestContext> {
+async function pullRequestContext(root: string, branch: string, base: string | undefined, followTemplate: boolean): Promise<PullRequestContext> {
 	const range = base ? `origin/${base}...HEAD` : "HEAD~20..HEAD";
 	const read = (args: string[]) => git(root, args).catch(() => "");
-	const [commits, summary, patch, template] = await Promise.all([read(["log", "--no-merges", "--format=%s%n%b", "-n", "50", base ? `origin/${base}..HEAD` : "HEAD"]), read(["diff", "--stat", range]), read(["diff", "--no-ext-diff", range]), pullRequestTemplate(root)]);
+	const [commits, summary, patch, template] = await Promise.all([read(["log", "--no-merges", "--format=%s%n%b", "-n", "50", base ? `origin/${base}..HEAD` : "HEAD"]), read(["diff", "--stat", range]), read(["diff", "--no-ext-diff", range]), followTemplate ? pullRequestTemplate(root, base ? `origin/${base}` : "HEAD") : undefined]);
 	return { branch, base, commits, summary, patch, ...template ? { template } : {} };
 }
 
@@ -88,9 +140,10 @@ const limit = (text: string, size: number) => text.length > size ? `${text.slice
 
 /**
  * The writer's prompt. The chat's work (what was asked, the commands the agent ran and its last reply) lets the
- * description say what was checked; the model is told not to claim checks the chat does not show.
+ * description say what was checked; the model is told not to claim checks the chat does not show. The person's commit
+ * and pull request instructions (Settings → Source control) come last.
  */
-export function pullRequestPrompt(context: PullRequestContext, thread?: string) {
+export function pullRequestPrompt(context: PullRequestContext, thread?: string, instructions?: string) {
 	return {
 		system: [
 			"You write GitHub pull request titles and descriptions.",
@@ -101,6 +154,7 @@ export function pullRequestPrompt(context: PullRequestContext, thread?: string) 
 			"- without a template, write a short summary, then the main changes as bullet points",
 			"- mention tests or checks only when the work log shows they ran, with their result; never invent results",
 			"- do not mention the assistant, the model or this prompt",
+			...preferenceLines(instructions, "Follow them unless they conflict with the reply format above or the rule against inventing results."),
 		].join("\n"),
 		user: [
 			`Branch: ${context.branch}${context.base ? ` into ${context.base}` : ""}`, "", "Commits:", limit(context.commits.trim() || "(none)", 6_000), "",
@@ -140,7 +194,7 @@ export async function fillFromCommits(root: string, base: string, branch: string
 }
 
 /** The same steps on GitLab, Forgejo, Bitbucket or Azure DevOps: reuse an open request for the branch, push, then create. */
-async function createOnOtherHost(root: string, branch: string, host: CodeHostProvider, describe?: DescribePullRequest): Promise<CreatedPullRequest> {
+async function createOnOtherHost(root: string, branch: string, host: CodeHostProvider, describe: DescribePullRequest | undefined, followTemplate: boolean): Promise<CreatedPullRequest> {
 	const base = await defaultBranch(root);
 	if (!base) throw new Error("Phaseo can't tell origin's default branch. Run git remote set-head origin --auto, then try again.");
 	if (branch === base) throw new Error(`This is ${base}, the repository's default branch. Create a feature branch first.`);
@@ -152,7 +206,7 @@ async function createOnOtherHost(root: string, branch: string, host: CodeHostPro
 	let upstream = true, ahead = 0;
 	try { await git(root, ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"]); ahead = Number((await git(root, ["rev-list", "--count", "@{upstream}..HEAD"])).trim()) || 0; } catch { upstream = false; }
 	if (!upstream || ahead > 0) await gitCommand(root, { type: "push" });
-	const written = describe ? await describe(await pullRequestContext(root, branch, base)).catch(() => undefined) : undefined;
+	const written = describe ? await describe(await pullRequestContext(root, branch, base, followTemplate)).catch(() => undefined) : undefined;
 	const created = await host.create({ head: branch, base, ...written ? { title: written.title, body: written.body } : await fillFromCommits(root, base, branch) });
 	return { repository: host.remote.repository, ...created, status: "created", ...written?.model ? { writtenBy: written.model } : {} };
 }

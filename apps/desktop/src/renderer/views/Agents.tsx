@@ -3,7 +3,11 @@ import { ArgumentFields } from "../components/ArgumentFields";
 import { useEffect, useRef, useState } from "react";
 import type { AgentStatus, HarnessInstallation } from "../../shared/workspace";
 import { emptyOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
-import { useBackgroundRefresh } from "../lib/useBackgroundRefresh";
+import { providerHealthMs } from "../lib/providerHealth";
+import { useWorkspacePreferences } from "../lib/workspacePreferences";
+import { usePreferences } from "../settings/GeneralSettings";
+import { Select } from "../components/Select";
+import { providerHealthOptions } from "../../shared/threadPreferences";
 import { Bot, RotateCw } from "lucide-react";
 import { cn } from "../lib/utils";
 import { HarnessLogo } from "../components/HarnessLogo";
@@ -59,7 +63,10 @@ export function Agents() {
 		if (!api || installationPending.current || updatePending.current) return;
 		installationPending.current = true; setRefreshing(true); setInstallationRequest(value => value + 1);
 	}
-	useBackgroundRefresh(refreshInstallations);
+	// Re-checked as often as Health checks below says; never while the window is hidden.
+	const healthMs = providerHealthMs(useWorkspacePreferences()), refreshLatest = useRef(refreshInstallations);
+	useEffect(() => { refreshLatest.current = refreshInstallations; });
+	useEffect(() => { if (!healthMs) return; const timer = setInterval(() => { if (document.visibilityState === "visible") refreshLatest.current(); }, healthMs); return () => clearInterval(timer); }, [healthMs]);
 	async function updateHarness(harness: "codex" | "claude" | "pi") {
 		if (!api || updatePending.current || installationPending.current || updating) return;
 		updatePending.current = true; setUpdating(harness); setUpdateFeedback(undefined);
@@ -97,7 +104,7 @@ export function Agents() {
 				{installed.length > 0 && <ul className="harness-list flex flex-col divide-y divide-border">{installed.map(value => <li key={value.harness}>
 					<SettingsRow icon={<HarnessLogo harness={value.harness} />}
 						title={<span className="flex items-center gap-2"><strong className="font-semibold">{harnessNames[value.harness] ?? value.harness}</strong><span className={cn("rounded-full px-1.5 text-[10.5px] font-semibold", value.installed ? "bg-success/15 text-success" : "bg-muted text-muted-foreground")}>{value.installed ? "Installed" : "Unavailable"}</span></span>}
-						description={value.version ? `${value.version}${value.maintenance && value.maintenance.method !== "manual" ? ` · ${value.maintenance.method === "npm" ? "npm" : "Native installer"}` : ""}` : value.installed ? "Version unknown" : "Not found on this computer"}
+						description={value.version ? `${value.version}${value.maintenance && value.maintenance.method !== "manual" ? ` · ${value.maintenance.method === "npm" ? "npm" : "Native installer"}` : ""}${value.latestVersion ? ` · ${value.latestVersion} available` : ""}` : value.installed ? "Version unknown" : "Not found on this computer"}
 						control={value.maintenance?.canUpdate ? <SettingsButton disabled={refreshing || Boolean(updating)} onClick={() => { if (value.harness === "codex" || value.harness === "claude" || value.harness === "pi") void updateHarness(value.harness); }}>{updating === value.harness ? "Updating…" : "Update"}</SettingsButton>
 							: value.maintenance ? <span className="text-xs text-muted-foreground">Update with your installer</span> : undefined}>
 						{!value.installed && value.error && <details className="-mt-1.5 ml-11 text-xs text-muted-foreground"><summary className="w-fit hover:text-foreground">Installation details</summary><p data-selectable className="mt-1.5 ml-5 font-normal leading-relaxed whitespace-pre-wrap text-foreground/80">{value.error}</p></details>}
@@ -105,6 +112,7 @@ export function Agents() {
 				</li>)}</ul>}
 			</div>
 		</section>
+		<HealthChecks />
 		<SettingsSection title="ACP agents" description="Connect an installed agent that supports the Agent Client Protocol." label="ACP agents"
 			action={<SettingsButton variant="ghost" disabled={busy} onClick={() => { setShowArchived(value => !value); reset(); }}>{showArchived ? "Active agents" : "Archived agents"}</SettingsButton>}>
 			{visibleAgents.map(agent => <article key={agent.id}>
@@ -141,4 +149,16 @@ export function Agents() {
 			</form>
 		</SettingsSection>
 	</SettingsPageLayout>;
+}
+
+/** How often Phaseo re-checks agent CLIs: installed version, sign-in and models. */
+function HealthChecks() {
+	const { preferences, busy, error, save, ready } = usePreferences();
+	const minutes = preferences.threads.providerHealthMinutes;
+	return <SettingsSection title="Health checks" label="Health checks">
+		<SettingsRow title="Check agents" description="How often Phaseo re-checks each installed agent's version, sign-in and models while it is open. Each check runs the agent's command briefly, so checking less often saves battery. Check again works any time."
+			control={<Select label="Check agents" disabled={!ready || busy} value={String(minutes ?? "never")} onValueChange={value => void save({ ...preferences, threads: { ...preferences.threads, providerHealthMinutes: value === "never" ? null : Number(value) } })}
+				options={[...[...new Set([...providerHealthOptions, ...minutes === null ? [] : [minutes]])].sort((a, b) => a - b).map(value => ({ value: String(value), label: value === 1 ? "Every minute" : value === 60 ? "Every hour" : `Every ${value} minutes` })), { value: "never", label: "Only when asked" }]} />} />
+		{error && <SettingsNote tone="error" role="alert">{error}</SettingsNote>}
+	</SettingsSection>;
 }

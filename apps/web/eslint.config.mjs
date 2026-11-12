@@ -1,35 +1,57 @@
 // apps/web/eslint.config.mjs
 import path from "node:path";
-import next from "eslint-config-next";
+import react from "eslint-plugin-react";
+import reactHooks from "eslint-plugin-react-hooks";
 import tseslint from "typescript-eslint";
 
+const cachedFetcherRule = (name, cachedName) => ({
+	name: `@/lib/fetchers/models/${name}`,
+	importNames: ["default", name],
+	message: `Use ${cachedName} in public model surfaces.`,
+});
+
 export default [
-	...next,
-	...tseslint.configs.recommended,
 	{
-		settings: {
-			react: {
-				version: "19.2",
-			},
-		},
 		ignores: [
-			".next/**",
 			"dist/**",
-			"build/**",
+			".tanstack/**",
+			".wrangler/**",
 			"node_modules/**",
 			"coverage/**",
+			"src/routeTree.gen.ts",
 			"eslint.config.mjs",
 			"playwright.config.ts",
 		],
+	},
+	...tseslint.configs.recommended,
+	// rules-of-hooks fails the lint; the React Compiler checks (set-state-in-effect,
+	// refs, purity, ...) and exhaustive-deps warn.
+	{
+		...reactHooks.configs.flat.recommended,
+		rules: {
+			...Object.fromEntries(Object.keys(reactHooks.configs.flat.recommended.rules).map((rule) => [rule, "warn"])),
+			"react-hooks/rules-of-hooks": "error",
+		},
+	},
+	{
+		files: ["**/*.{ts,tsx}"],
+		plugins: { react },
+		settings: { react: { version: "detect" } },
+		rules: {
+			"react/jsx-key": "warn",
+			"react/no-unescaped-entities": "warn",
+		},
 	},
 	{
 		files: ["**/*.{ts,tsx}"],
 		languageOptions: {
 			parserOptions: {
-				project: [path.resolve(import.meta.dirname, "./tsconfig.json")],
+				// Includes tests, which the typecheck tsconfig leaves out.
+				project: [path.resolve(import.meta.dirname, "./tsconfig.eslint.json")],
 				tsconfigRootDir: path.resolve(import.meta.dirname),
 				ecmaVersion: "latest",
 				sourceType: "module",
+				ecmaFeatures: { jsx: true },
 			},
 		},
 		rules: {
@@ -42,25 +64,19 @@ export default [
 				"warn",
 				{ argsIgnorePattern: "^_", varsIgnorePattern: "^_" },
 			],
-			"react/display-name": "off",
-			"react/no-unescaped-entities": "warn",
 			"no-case-declarations": "off",
 			"no-console": "warn",
 			"no-mixed-spaces-and-tabs": "warn",
-			"@next/next/no-img-element": "warn",
-			"react-hooks/rules-of-hooks": "warn",
-			"react-hooks/set-state-in-effect": "warn",
-			"react-hooks/immutability": "warn",
-			"react-hooks/static-components": "warn",
-			"react-hooks/purity": "warn",
-			"react-hooks/error-boundaries": "warn",
-			"react-hooks/preserve-manual-memoization": "warn",
 		},
 	},
 	{
 		files: [
-			"src/app/[locale]/(dashboard)/models/**/*.{ts,tsx}",
-			"src/app/[locale]/(dashboard)/families/**/*.{ts,tsx}",
+			"src/routes/*/_dashboard/models/**/*.{ts,tsx}",
+			"src/routes/*/_dashboard/families/**/*.{ts,tsx}",
+			"src/views/**/models/**/*.{ts,tsx}",
+			"src/views/**/families/**/*.{ts,tsx}",
+			"src/features/models/**/*.{ts,tsx}",
+			"src/features/families/**/*.{ts,tsx}",
 			"src/components/(data)/model/**/*.{ts,tsx}",
 		],
 		rules: {
@@ -74,42 +90,12 @@ export default [
 							message:
 								"Use getModelCached/getModelOverviewCached in public model surfaces.",
 						},
-						{
-							name: "@/lib/fetchers/models/getFamilyModels",
-							importNames: ["default", "getFamilyModels"],
-							message:
-								"Use getFamilyModelsCached in public model surfaces.",
-						},
-						{
-							name: "@/lib/fetchers/models/getModelPricing",
-							importNames: ["default", "getModelPricing"],
-							message:
-								"Use getModelPricingCached in public model surfaces.",
-						},
-						{
-							name: "@/lib/fetchers/models/getModelGatewayMetadata",
-							importNames: ["default", "getModelGatewayMetadata"],
-							message:
-								"Use getModelGatewayMetadataCached in public model surfaces.",
-						},
-						{
-							name: "@/lib/fetchers/models/getModelSubscriptionPlans",
-							importNames: ["default", "getModelSubscriptionPlans"],
-							message:
-								"Use getModelSubscriptionPlansCached in public model surfaces.",
-						},
-						{
-							name: "@/lib/fetchers/models/getModelTimeline",
-							importNames: ["default", "getModelTimeline"],
-							message:
-								"Use getModelTimelineCached in public model surfaces.",
-						},
-						{
-							name: "@/lib/fetchers/models/getModelAvailability",
-							importNames: ["default", "getModelAvailability"],
-							message:
-								"Use getModelAvailabilityCached in public model surfaces.",
-						},
+						cachedFetcherRule("getFamilyModels", "getFamilyModelsCached"),
+						cachedFetcherRule("getModelPricing", "getModelPricingCached"),
+						cachedFetcherRule("getModelGatewayMetadata", "getModelGatewayMetadataCached"),
+						cachedFetcherRule("getModelSubscriptionPlans", "getModelSubscriptionPlansCached"),
+						cachedFetcherRule("getModelTimeline", "getModelTimelineCached"),
+						cachedFetcherRule("getModelAvailability", "getModelAvailabilityCached"),
 					],
 				},
 			],

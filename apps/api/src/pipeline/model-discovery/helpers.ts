@@ -1170,16 +1170,60 @@ export function diffModelIds(previousIds: string[], currentIds: string[]): { add
 	return { added, removed };
 }
 
+/**
+ * How long a model must stay missing from a provider's /models list before its removal is announced.
+ * Some providers serve that list through a CDN whose edges hold different cached copies, so a model can
+ * drop out of one sweep and return in the next (Inception's Mercury 2 and 2.5 did, for hours at a time).
+ * Measured flaps lasted up to 255 minutes; six hours covers them while a genuine removal is still
+ * reported the same day. 0 restores the old behaviour: confirm on the second missed sweep.
+ */
+export const DEFAULT_REMOVAL_CONFIRM_MINUTES = 360;
+/** Rows are pruned by last_seen_at after the retention window, so a longer wait could drop a removal unreported. */
+export const MAX_REMOVAL_CONFIRM_MINUTES = 24 * 60;
+
+export function removalConfirmAfterMs(raw: string | null | undefined): number {
+	const minutes = raw === null || raw === undefined || raw.trim() === "" ? Number.NaN : Number(raw);
+	const normalized = Number.isFinite(minutes) && minutes >= 0 ? minutes : DEFAULT_REMOVAL_CONFIRM_MINUTES;
+	return Math.min(normalized, MAX_REMOVAL_CONFIRM_MINUTES) * 60_000;
+}
+
+export type ModelRemovalDecision = {
+	/** Missing continuously for the whole window: announce and delete. */
+	confirmed: string[];
+	/** Newly missing (or missing with no usable timestamp): mark pending, which starts the clock. */
+	provisional: string[];
+	/** Pending but not yet missing for the whole window: leave untouched so the clock keeps running. */
+	waiting: string[];
+};
+
+/**
+ * Splits the models absent from a provider's latest list. `pendingSinceMs` holds, for every row already
+ * pending removal, when it was first seen missing (`last_seen_at` is stamped when a row is marked pending
+ * and is rewritten with the current time if the model returns, which also clears the pending flag, so
+ * an uninterrupted absence is exactly the span since that stamp).
+ */
 export function confirmModelRemovals(
 	removedIds: string[],
-	pendingRemovalIds: ReadonlySet<string>,
-): { confirmed: string[]; provisional: string[] } {
+	pendingSinceMs: ReadonlyMap<string, number | null>,
+	policy: { nowMs: number; confirmAfterMs: number },
+): ModelRemovalDecision {
 	const confirmed: string[] = [];
 	const provisional: string[] = [];
+	const waiting: string[] = [];
 	for (const modelId of removedIds) {
-		(pendingRemovalIds.has(modelId) ? confirmed : provisional).push(modelId);
+		if (!pendingSinceMs.has(modelId)) {
+			provisional.push(modelId);
+			continue;
+		}
+		const since = pendingSinceMs.get(modelId);
+		if (since === null || since === undefined || !Number.isFinite(since)) {
+			// Heals a pending row whose timestamp is unusable instead of waiting on it forever.
+			provisional.push(modelId);
+			continue;
+		}
+		(policy.nowMs - since >= policy.confirmAfterMs ? confirmed : waiting).push(modelId);
 	}
-	return { confirmed, provisional };
+	return { confirmed, provisional, waiting };
 }
 
 export function assertSafeDiscoverySnapshot(

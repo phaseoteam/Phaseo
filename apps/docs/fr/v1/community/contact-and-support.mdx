@@ -5,18 +5,19 @@ sidebarTitle: "Contact et assistance"
 icon: "messages-square"
 ---
 
-## Signaler un bug
+Commencez par le [centre d’aide Phaseo](https://phaseo.app/help) pour les questions de compte, de facturation, d’API et vos retours ; l’équipe transmet chaque demande au bon interlocuteur.
 
-Utilisez le centre d’aide Phaseo en indiquant des étapes de reproduction précises, les identifiants des requêtes et tout journal utile :
+| Vous voulez | Allez sur |
+| --- | --- |
+| Obtenir de l’aide pour votre compte, votre facturation ou une requête en échec | [Centre d’aide](https://phaseo.app/help) |
+| Signaler un bug | [Centre d’aide](https://phaseo.app/help), ou un [rapport de bug](https://github.com/phaseoteam/Phaseo/issues/new?template=bug.yml) sur GitHub |
+| Corriger des données du catalogue | [Contribuer](../contributing/overview) |
+| Signaler une vulnérabilité de sécurité | Un signalement privé via **Security -> Report a vulnerability** sur le [dépôt GitHub](https://github.com/phaseoteam/Phaseo), ou `security@phaseo.app`. Ne la publiez pas. |
+| Poser une question à la communauté | [Discord](https://discord.gg/aQyywCvgZ5) |
 
-- https://phaseo.app/help
+## À inclure dans un rapport de bug
 
-## Demander de l’aide
-
-Pour les questions de compte, de facturation ou de dépannage de l’API, commencez par le centre d’aide Phaseo :
-
-- https://phaseo.app/help
-
-## Envoyer un retour
-
-Si vous ne savez pas où envoyer votre retour, utilisez le centre d’aide Phaseo. L’équipe le transmettra au bon interlocuteur.
+- L’identifiant de la requête : l’`id` de la réponse (`G-...`), le `generation_id` de l’erreur ou l’en-tête de réponse `x-request-id`.
+- Ce que vous avez envoyé, sans la clé API, et ce que vous attendiez.
+- Le code et le message d’erreur du corps de la réponse. La [référence des erreurs](../api-reference/errors) explique chaque code.
+- Les journaux utiles, sans identifiants ni données client.

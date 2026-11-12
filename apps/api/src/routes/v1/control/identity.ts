@@ -5,13 +5,13 @@ import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { json, withRuntime } from "@/routes/utils";
-import { isResponse, requireCapability, requireJsonBody, requireOAuthWorkspaceRole, rejectThirdPartyOAuthSpendingChange } from "./route-helpers";
+import { isResponse, requireCapability, requireJsonBody, requireOAuthWorkspaceRole, requireWorkspaceOwner, rejectThirdPartyOAuthSpendingChange } from "./route-helpers";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 const SSO_DOMAIN_PATTERN = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,63}$/i;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-async function authorize(req: Request, write: boolean) {
+async function authorize(req: Request, write: boolean, ownerOnly = false) {
 	const auth = await guardManagementAuth(req, { useKvCache: false });
 	if (!auth.ok) return { response: (auth as GuardErr).response };
 	const capability = requireCapability(auth.value, write ? CAPABILITIES.SETTINGS_WRITE : CAPABILITIES.SETTINGS_READ);
@@ -21,6 +21,12 @@ async function authorize(req: Request, write: boolean) {
 	if (appError) return { response: appError };
 	const role = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, write ? ["owner", "admin"] : ["owner", "admin"]);
 	if (role) return { response: role };
+	// A SCIM token can add people to directory groups that grant the admin role, so the SCIM endpoint and
+	// its tokens are the owner's, like other role changes.
+	if (ownerOnly) {
+		const ownerError = await requireWorkspaceOwner(auth.value, { id: auth.value.workspaceId }, "Only the workspace owner can change single sign-on, SCIM provisioning and SCIM tokens.");
+		if (ownerError) return { response: ownerError };
+	}
 	return { auth: auth.value };
 }
 
@@ -85,12 +91,16 @@ async function getSso(req: Request) {
 }
 
 async function updateSso(req: Request) {
-	const access = await authorize(req, true); if ("response" in access) return access.response;
+	// Sign-ins through the workspace's identity provider are linked to its directory users, who can hold
+	// the admin role, so choosing which provider to trust is the owner's call.
+	const access = await authorize(req, true, true); if ("response" in access) return access.response;
 	const body = await requireJsonBody(req); if (isResponse(body)) return body;
 	const normalized = normalizeSso(body); if ("error" in normalized) return json({ error: "bad_request", message: normalized.error }, 400, NO_STORE);
 	if (normalized.value.sso_enabled && !(await hasIdentityAddon(access.auth.workspaceId))) return json({ error: "identity_addon_required" }, 402, NO_STORE);
 	const payload = { workspace_id: access.auth.workspaceId, ...normalized.value, updated_at: new Date().toISOString() };
 	const { error } = await getSupabaseAdmin().from("workspace_settings").upsert(payload, { onConflict: "workspace_id" });
+	// One workspace per identity provider: sign-ins through a provider are matched to its workspace.
+	if (error?.code === "23505") return json({ error: "sso_provider_in_use", message: "This identity provider is already connected to another workspace. Contact Phaseo support if it belongs to your organization." }, 409, NO_STORE);
 	if (error) return json({ error: "settings_unavailable" }, 503, NO_STORE);
 	await audit(access.auth, "identity.sso.updated", "workspace_sso", access.auth.workspaceId, { enabled: normalized.value.sso_enabled, mode: normalized.value.sso_mode, domain_count: normalized.value.sso_domains.length });
 	return json({ data: publicSso(payload) }, 200, NO_STORE);
@@ -113,7 +123,7 @@ async function getScim(req: Request) {
 }
 
 async function updateScim(req: Request) {
-	const access = await authorize(req, true); if ("response" in access) return access.response;
+	const access = await authorize(req, true, true); if ("response" in access) return access.response;
 	const body = await requireJsonBody(req); if (isResponse(body)) return body;
 	if (typeof body.enabled !== "boolean") return json({ error: "bad_request", message: "enabled must be a boolean" }, 400, NO_STORE);
 	if (body.enabled && !(await hasIdentityAddon(access.auth.workspaceId))) return json({ error: "identity_addon_required" }, 402, NO_STORE);
@@ -124,7 +134,7 @@ async function updateScim(req: Request) {
 }
 
 async function createScimToken(req: Request) {
-	const access = await authorize(req, true); if ("response" in access) return access.response;
+	const access = await authorize(req, true, true); if ("response" in access) return access.response;
 	if (!(await hasIdentityAddon(access.auth.workspaceId))) return json({ error: "identity_addon_required" }, 402, NO_STORE);
 	const body = await requireJsonBody(req); if (isResponse(body)) return body;
 	const label = String(body.label ?? "Provisioning token").trim().slice(0, 100); if (!label) return json({ error: "bad_request", message: "label is required" }, 400, NO_STORE);
@@ -143,7 +153,7 @@ async function createScimToken(req: Request) {
 }
 
 async function revokeScimToken(req: Request) {
-	const access = await authorize(req, true); if ("response" in access) return access.response;
+	const access = await authorize(req, true, true); if ("response" in access) return access.response;
 	const tokenId = new URL(req.url).pathname.split("/").filter(Boolean).at(-1) ?? "";
 	const client = getSupabaseAdmin();
 	const endpoint = await client.from("scim_endpoints").select("id").eq("workspace_id", access.auth.workspaceId).maybeSingle();

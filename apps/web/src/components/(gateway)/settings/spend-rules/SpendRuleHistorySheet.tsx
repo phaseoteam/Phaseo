@@ -1,7 +1,5 @@
-"use client";
-
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	ProviderInspectorSheet,
 	ProviderInspectorSheetContent,
@@ -13,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
-import { spendRuleHistory } from "@/app/(dashboard)/settings/notifications/spend-rules-actions";
+import { spendRuleHistory } from "@/features/settings/notifications/spend-rules-actions";
 import { useSpendPercent, useSpendUsd } from "./spendAlertsUi";
 import type { SpendRule, SpendRuleHistory } from "./spendRules";
 
@@ -42,7 +40,7 @@ function HistoryBody({ rule }: { rule: SpendRule }) {
 
 	useEffect(() => {
 		let cancelled = false;
-		void spendRuleHistory(rule.id, { limit: PAGE, offset: 0 }).then((result) => {
+		void spendRuleHistory({ data: { id: rule.id, page: { limit: PAGE, offset: 0 } } }).then((result) => {
 			if (cancelled) return;
 			setState(result.ok ? { status: "ready", history: result.history, loadingMore: false } : { status: "failed" });
 		});
@@ -52,7 +50,7 @@ function HistoryBody({ rule }: { rule: SpendRule }) {
 	async function loadMore() {
 		if (state.status !== "ready") return;
 		setState({ ...state, loadingMore: true });
-		const result = await spendRuleHistory(rule.id, { limit: PAGE, offset: state.history.events.length });
+		const result = await spendRuleHistory({ data: { id: rule.id, page: { limit: PAGE, offset: state.history.events.length } } });
 		if (!result.ok) {
 			setState({ ...state, loadingMore: false });
 			return;

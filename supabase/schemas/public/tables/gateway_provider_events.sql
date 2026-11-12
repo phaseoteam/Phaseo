@@ -48,6 +48,6 @@ CREATE POLICY "gateway_provider_events_update_service" ON "public"."gateway_prov
   USING (true)
   WITH CHECK (true);
 
-GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_provider_events" TO "anon", "authenticated", "service_role";
+GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."gateway_provider_events" TO "service_role";
 
 COMMENT ON TABLE "public"."gateway_provider_events" IS 'Webhook/provider event dedupe + processing audit trail for long-running operations.';

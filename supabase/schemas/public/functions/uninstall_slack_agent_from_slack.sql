@@ -48,7 +48,9 @@ begin
     delete from public.key_guardrails
     where key_id = v_installation.key_id and guardrail_id = v_installation.guardrail_id;
     if not exists (select 1 from public.key_guardrails link where link.guardrail_id = v_installation.guardrail_id)
-      and not exists (select 1 from public.workspace_member_guardrails member where member.guardrail_id = v_installation.guardrail_id) then
+      and not exists (select 1 from public.workspace_member_guardrails member where member.guardrail_id = v_installation.guardrail_id)
+      -- Workspace and department assignments only live here; deleting would cascade them away.
+      and not exists (select 1 from public.workspace_guardrail_assignments assignment where assignment.guardrail_id = v_installation.guardrail_id) then
       delete from public.workspace_guardrails
       where id = v_installation.guardrail_id and workspace_id = v_installation.workspace_id;
     end if;

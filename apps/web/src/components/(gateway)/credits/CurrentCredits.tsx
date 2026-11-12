@@ -1,14 +1,11 @@
-"use client";
-
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
-import { RefreshCredits } from "@/app/(dashboard)/settings/credits/actions";
+import { refreshServerData } from "@/lib/start/refresh";
 import { toast } from "sonner";
 import { CreditAmount } from "./CreditAmount";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { CreditRunway } from "@/lib/gateway/usage/creditRunway";
 
@@ -46,7 +43,6 @@ export default function CurrentCredits({
 	})();
 	title ??= t("currentBalance");
 	refreshAriaLabel ??= t("refreshBalance");
-	const router = useRouter();
 	const [refreshing, setRefreshing] = useState(false);
 
 	async function handleRefresh() {
@@ -55,14 +51,12 @@ export default function CurrentCredits({
 		setRefreshing(true);
 		const start = Date.now();
 		try {
-			// Call the API route which triggers server revalidation
-			await toast.promise(RefreshCredits(), {
+			// Re-read the route loaders and cached queries behind the balance.
+			await toast.promise(refreshServerData(), {
 					loading: t("refreshing"),
 					success: t("refreshed"),
 					error: () => t("refreshFailed"),
 			});
-			// Pull fresh server component data for the current route.
-			router.refresh();
 		} catch {
 			// Errors are handled by toast.promise's error handler
 		} finally {

@@ -1,17 +1,18 @@
 ---
 icon: "radio"
-title: "Text-Streaming (AI SDK)"
-description: "Textgenerierung im Streaming mit dem Vercel AI SDK und Phaseo."
+title: "Text streamen (AI SDK)"
+sidebarTitle: "Text streamen"
+description: "Textgenerierung mit Streaming in Vercel AI SDK und Phaseo."
 ---
 
-Verwende `streamText`, wenn du Tokens direkt nach ihrem Eintreffen erhalten möchtest.
+Rufe `streamText` mit `phaseo(modelId)` auf und lies `textStream`, um Text zu erhalten, sobald er eintrifft. `streamText` kehrt sofort zurück; lies `providerMetadata`, nachdem der Stream beendet ist.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { streamText } from "ai";
 
 const result = streamText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   prompt: "Explain SSE streaming in plain language.",
 });
 
@@ -22,14 +23,14 @@ for await (const chunk of result.textStream) {
 console.log(await result.providerMetadata);
 ```
 
-## Streaming mit Nachrichten
+## Aus einem Chatverlauf streamen
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { streamText } from "ai";
 
 const result = streamText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   messages: [
     { role: "user", content: "Write a five-step rollout plan for a gateway migration." },
   ],
@@ -44,8 +45,19 @@ console.log(text);
 console.log(await result.providerMetadata);
 ```
 
-## Tipps für den Produktionseinsatz
+## Einen verlassenen Stream stoppen
 
-- Bevorzuge Streaming für lange Antworten und interaktive Oberflächen.
-- Behandle Abbruch und Timeouts in deiner Laufzeitumgebung für nicht mehr genutzte Streams.
-- Halte Modell-IDs über `/v1/models` aktuell, damit keine veralteten Aliase verwendet werden.
+Übergib ein `abortSignal` an `streamText` und brich es ab, wenn der Nutzer die Seite verlässt oder ein Timeout abläuft, damit die Anfrage nicht weiterläuft:
+
+```ts
+const controller = new AbortController();
+setTimeout(() => controller.abort(), 60_000);
+
+const result = streamText({
+  model: phaseo("openai/gpt-6-astra"),
+  prompt: "Write a long report.",
+  abortSignal: controller.signal,
+});
+```
+
+Lies Modell-IDs aus `/v1/models`, statt sie fest einzutragen; siehe [Modellentdeckung](/de/v1/sdk-reference/sdk/get-models).

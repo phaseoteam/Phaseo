@@ -4,22 +4,25 @@ sidebarTitle: "Récupérer une génération"
 badge: "Beta"
 openapi: "/fr/openapi/v1/openapi.localized.yaml GET /generations"
 ---
-Récupère l’enregistrement d’audit stocké pour un `request_id` associé à votre équipe.
 
-Les nouvelles requêtes reçoivent un ID de génération `G-` créé par le serveur, renvoyé dans l’en-tête de réponse `x-request-id` et dans la réponse de génération. Utilisez-le pour les journaux, les recherches et le support. Un `x-request-id` fourni par le client ne remplace pas cet ID. Les anciens ID UUID restent valides pour les recherches.
+Appelez `GET /v1/generations?id=<request_id>` pour récupérer l’enregistrement d’audit stocké d’une requête de votre espace de travail. Il faut le scope `generations:read` ; un `id` manquant renvoie `400` `missing_id`.
 
-Utilisez :
-- `GET /v1/generations?id=<request_id>`
+Les nouvelles requêtes reçoivent un ID de génération `G-` créé par le serveur, renvoyé dans l’en-tête de réponse `x-request-id` et dans la réponse de génération. Utilisez cet ID pour les journaux de requêtes, la recherche de générations et le support. Un `x-request-id` fourni par l’appelant ne remplace pas l’ID de génération. Les anciens ID de journal au format UUID restent valides pour la recherche.
 
-Si la passerelle a enregistré tous les détails de la requête de cette génération, la réponse inclut également :
+## Rejouer une requête
 
-- `replay_supported` : indique si une charge utile prête à être rejouée est disponible
-- `replay_request` : le corps de requête stocké que vous pouvez renvoyer au point de terminaison d’origine pour une nouvelle exécution contrôlée
+Chaque réponse contient `replay_supported`. Lorsque la journalisation des entrées/sorties a stocké le corps de la requête et que vous avez le droit de lire les contenus stockés, `replay_supported` vaut `true` et `replay_request` contient le corps à renvoyer pour une nouvelle exécution contrôlée :
 
-Procédure habituelle de rejeu :
+<Steps>
+  <Step title="Lire la génération">
+    Appelez `GET /v1/generations?id=<request_id>`.
+  </Step>
+  <Step title="Vérifier qu’elle peut être rejouée">
+    Ne continuez que si `replay_supported` vaut `true`.
+  </Step>
+  <Step title="La renvoyer">
+    Envoyez `replay_request` à l’endpoint indiqué dans `endpoint`, par exemple `/v1/chat/completions` ou `/v1/responses`.
+  </Step>
+</Steps>
 
-1. Lisez l’enregistrement de génération avec `GET /v1/generations?id=<request_id>`.
-2. Vérifiez que `replay_supported === true`.
-3. Renvoyez `replay_request` au point de terminaison d’origine indiqué par `endpoint`, par exemple `/v1/chat/completions` ou `/v1/responses`.
-
-
+Un espace de travail peut réserver les contenus stockés aux propriétaires et aux administrateurs. Les autres appelants, y compris les clés API créées par des membres, reçoivent alors `replay_request: null` et les détails de la requête sans leur contenu.

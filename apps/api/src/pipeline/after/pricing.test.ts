@@ -197,6 +197,24 @@ function activateDeepSeekV4ProPeakWindows(card: PriceCard): PriceCard {
 }
 
 describe("after/pricing calculatePricing", () => {
+	it("settles a transcription with keywords at the catalogue's keyterm rate", () => {
+		const rule = { meter: "input_audio_seconds", unit: "second", unit_size: 3600, currency: "USD", pricing_plan: "standard", note: null, priority: 100 };
+		const card = {
+			...TTS_CARD,
+			provider: "elevenlabs",
+			model: "eleven-labs/scribe-v3",
+			endpoint: "audio.transcription",
+			rules: [
+				{ ...rule, price_per_unit: "0.2", match: [] },
+				{ ...rule, price_per_unit: "0.25", match: [{ op: "eq", path: "keyterms", value: true }] },
+			],
+		} as PriceCard;
+		const usage = { requests: 1, input_audio_seconds: 3600 };
+		expect(calculatePricing(usage, card, { model: "eleven-labs/scribe-v3" }).totalNanos).toBe(200_000_000);
+		expect(calculatePricing(usage, card, { model: "eleven-labs/scribe-v3", keywords: [] }).totalNanos).toBe(200_000_000);
+		expect(calculatePricing(usage, card, { model: "eleven-labs/scribe-v3", keywords: ["Phaseo"] }).totalNanos).toBe(250_000_000);
+	});
+
 	it("fails closed when paid usage produces no pricing line", () => {
 		expect(() => calculatePricing(
 			{ input_tokens: 11, output_tokens: 7, total_tokens: 18 },
@@ -323,6 +341,40 @@ describe("after/pricing calculatePricing", () => {
 		expect(result.totalNanos).toBe(36_000_000);
 		expect(result.pricedUsage?.pricing?.lines?.[0]).toMatchObject({ dimension: "output_image", pricing_fallback: "base_rate" });
 		expect(result.pricedUsage?.pricing?.base_rate_fallback).toEqual([{ meter: "output_image", quantity: 1, rule_id: null }]);
+	});
+
+	describe("promotional price limited to one calling app", () => {
+		const rule = (price: string, priority: number, match: PriceRule["match"] = []): PriceRule => ({
+			meter: "input_text_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: price, currency: "USD",
+			pricing_plan: "standard", note: null, match, priority,
+		});
+		const card: PriceCard = {
+			provider: "anthropic", model: "anthropic/example", endpoint: "text.generate",
+			effective_from: null, effective_to: null, currency: "USD", version: null,
+			rules: [
+				rule("8", 100),
+				rule("6", 200, [{ path: "client_id", op: "eq", value: "claude-code" } as PriceRule["match"][number]]),
+			],
+		};
+		const meta = (clientId: string | null) => ({
+			startedAtMs: Date.parse("2026-11-09T12:00:00Z"),
+			clientSource: clientId ? { id: clientId, name: clientId, kind: "coding_agent", version: null, detection: "user_agent" } : null,
+		}) as unknown as Parameters<typeof calculatePricing>[4];
+
+		it("bills the promotional rate to the matching app", () => {
+			const result = calculatePricing({ input_text_tokens: 1_000_000 }, card, {}, null, meta("claude-code"));
+			expect(result.totalNanos).toBe(6_000_000_000);
+		});
+
+		it("bills the list rate to every other app and to requests with no detected app", () => {
+			expect(calculatePricing({ input_text_tokens: 1_000_000 }, card, {}, null, meta("codex")).totalNanos).toBe(8_000_000_000);
+			expect(calculatePricing({ input_text_tokens: 1_000_000 }, card, {}, null, meta(null)).totalNanos).toBe(8_000_000_000);
+		});
+
+		it("ignores a client_id sent in the request body", () => {
+			const result = calculatePricing({ input_text_tokens: 1_000_000 }, card, { client_id: "claude-code" }, null, meta(null));
+			expect(result.totalNanos).toBe(8_000_000_000);
+		});
 	});
 
 	describe("Gemini 3 Pro Image (AI Studio) chat output", () => {

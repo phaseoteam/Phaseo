@@ -1,5 +1,3 @@
-"use client";
-
 import type { ReactNode } from "react";
 import type { VirtualItem } from "@tanstack/react-virtual";
 import type { ChatThread } from "@/lib/indexeddb/chats";

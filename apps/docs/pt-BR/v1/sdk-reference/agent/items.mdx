@@ -1,0 +1,246 @@
+---
+icon: "layers"
+title: "Itens do Agent SDK"
+sidebarTitle: "Itens"
+description: "Renderize a linha do tempo de um agente com texto, raciocínio, chamadas de ferramenta e resultados, ao vivo ou depois da execução."
+---
+
+Use um switch no tipo de cada evento ou item transmitido para renderizar texto, raciocínio, chamadas de ferramenta e progresso conforme chegam, e depois reconstrua a mesma linha do tempo a partir do resultado da execução salvo. O TypeScript produz uma união tipada de itens; as outras linguagens produzem os eventos brutos como mapas, dicts ou hashes.
+
+## Renderize uma linha do tempo transmitida
+
+<CodeGroup>
+
+```typescript TypeScript
+const stream = agent.stream({ input, client });
+
+for await (const item of stream.getItemsStream()) {
+  switch (item.type) {
+    case "message":
+      renderAssistantMessage(item.content);
+      break;
+    case "reasoning":
+      renderReasoning(item.text);
+      break;
+    case "tool_call":
+      renderToolCall(item.toolCallId, item.name, item.input);
+      break;
+    case "tool_result":
+      renderToolResult(item.toolCallId, item.output);
+      break;
+    case "error":
+      renderError(item.message);
+      break;
+    case "output":
+      renderFinalOutput(item.value);
+      break;
+  }
+}
+```
+
+```python Python
+for item in stream.item_stream():
+    item_type = item.get("type")
+    render_timeline_item(item_type, item)
+```
+
+```go Go
+stream := agent.Stream(ctx, phaseoagent.RunOptions{Input: prompt, Client: client})
+
+for event := range stream.Events() {
+  switch event.Type {
+  case "response.output_text.delta":
+    fmt.Print(event.Details["delta"])
+  case "response.reasoning.delta":
+    renderReasoning(event.Details["delta"])
+  case "response.item":
+    renderItem(event.Details["item"])
+  case "tool.preliminary_result":
+    renderProgress(event.Details["tool_call_id"], event.Details["result"])
+  default:
+    // Mantenha um fallback: novos tipos de evento podem aparecer.
+  }
+}
+
+result, err := stream.Result()
+```
+
+```csharp C#
+var stream = agent.Stream(new RunOptions { Input = prompt, Client = client });
+
+await foreach (var item in stream.FullStream())
+{
+    switch (item.Type)
+    {
+        case "response.output_text.delta":
+            Console.Write(item.Details?["delta"]);
+            break;
+        case "response.reasoning.delta":
+            RenderReasoning(item.Details?["delta"]);
+            break;
+        case "response.item":
+            RenderItem(item.Details?["item"]);
+            break;
+        case "tool.preliminary_result":
+            RenderProgress(item.Details?["tool_call_id"], item.Details?["result"]);
+            break;
+        default:
+            break; // Mantenha um fallback: novos tipos de evento podem aparecer.
+    }
+}
+
+var result = await stream.GetResult();
+```
+
+```php PHP
+$stream = $agent->stream(input: $prompt, client: $client);
+
+foreach ($stream->fullStream() as $event) {
+    match ($event["type"]) {
+        "response.output_text.delta" => print($event["delta"]),
+        "response.reasoning.delta" => renderReasoning($event["delta"]),
+        "response.item" => renderItem($event["item"]),
+        "tool.preliminary_result" => renderProgress($event["tool_call_id"], $event["result"]),
+        default => null, // Mantenha um fallback: novos tipos de evento podem aparecer.
+    };
+}
+
+$result = $stream->getResult();
+```
+
+```ruby Ruby
+stream = agent.stream(input: prompt, client: client)
+
+stream.full_stream.each do |event|
+  case event[:type]
+  when "response.output_text.delta" then print event[:delta]
+  when "response.reasoning.delta" then render_reasoning(event[:delta])
+  when "response.item" then render_item(event[:item])
+  when "tool.preliminary_result" then render_progress(event[:tool_call_id], event[:result])
+  else nil # Mantenha um fallback: novos tipos de evento podem aparecer.
+  end
+end
+
+result = stream.result
+```
+
+```java Java
+// Trate os eventos ao vivo em um consumidor onEvent, ou percorra stream.fullStream() depois da execução.
+Consumer<AgentSdk.AgentEvent> render = event -> {
+    switch (event.type()) {
+        case "response.output_text.delta" -> System.out.print(event.details().get("delta"));
+        case "response.reasoning.delta" -> renderReasoning(event.details().get("delta"));
+        case "response.item" -> renderItem(event.details().get("item"));
+        case "tool.preliminary_result" -> renderProgress(event.details().get("tool_call_id"), event.details().get("result"));
+        default -> { } // Mantenha um fallback: novos tipos de evento podem aparecer.
+    }
+};
+
+var stream = agent.stream(new AgentSdk.RunOptions(
+    prompt, client, null, null, null, null, null, null, render, null));
+var result = stream.getResult();
+```
+
+</CodeGroup>
+
+O Rust não tem streaming; monte a linha do tempo a partir da execução concluída, como mostrado abaixo.
+
+## Tipos de item no TypeScript
+
+`AgentItem<TOutput>` é uma união discriminada, e o TypeScript restringe o tipo de cada item a partir do seu `type`:
+
+| `type` | Campos importantes | Representa |
+| --- | --- | --- |
+| `message` | `role` (sempre `assistant`), `content` | Texto do assistente |
+| `reasoning` | `text` | Raciocínio fornecido pelo modelo |
+| `tool_call` | `toolCallId`, `name`, `input` | Uma invocação de ferramenta proposta |
+| `tool_result` | `toolCallId`, `name`, `output` | Uma invocação de ferramenta concluída |
+| `error` | `message`, detalhes opcionais da ferramenta | Um erro do provedor ou da ferramenta |
+| `output` | `value` | A saída final do agente, já interpretada |
+
+Os itens criados a partir da saída do provedor também guardam o payload original em `rawProviderItem`, para o campo raro que os tipos portáveis não trazem. Construa a lógica do produto sobre os campos portáveis, porque `rawProviderItem` varia por provedor.
+
+## Tipos de evento nas outras linguagens
+
+Go, C#, PHP, Ruby e Java entregam os mesmos tipos de evento. O `item_stream()` do Python produz itens do provedor e do runtime como dicts com uma chave `type`.
+
+| Tipo de evento | Campos |
+| --- | --- |
+| `response.output_text.delta` | `delta` (string) |
+| `response.reasoning.delta` | `delta` (string) |
+| `response.item` | `item` (o item de saída do provedor, sem tipo) |
+| `tool.started`, `tool.completed`, `tool.failed`, `tool.preliminary_result` | `tool_call_id`, `tool_name`, mais `output`, `error` ou `result` |
+
+Onde os campos ficam varia por linguagem:
+
+| Linguagem | Formato do evento |
+| --- | --- |
+| Python | Dicts; leia `item.get("type")` |
+| Go | `AgentEvent` com `Type` e um `Details map[string]any` |
+| C# | `AgentEvent` com `Type` e um dicionário `Details` de valores `object?` |
+| PHP | Arrays planos. Os eventos do ciclo de vida trazem `type`, `run_id`, `agent_id`, `timestamp` e `status`; os eventos do modelo trazem `type` e os campos acima no nível superior. |
+| Ruby | Hashes planos com chaves símbolo (`:type`, `:delta` e assim por diante), organizados como os arrays do PHP |
+| Java | `AgentEvent` com `type()` e um mapa `details()` de valores `Object` |
+
+Nenhum deles é uma união tipada, então valide os campos que sua interface usa, mantenha o parsing específico de cada provedor atrás de um único adaptador e mantenha um fallback para tipos desconhecidos. No Go, no C# e no Java, os eventos do stream do modelo trazem o ID de execução `"stream"`; use os eventos do ciclo de vida para obter o ID real da execução. A lista completa de eventos do ciclo de vida está em [Hooks do ciclo de vida](./lifecycle-hooks).
+
+## Reconstrua uma linha do tempo depois da execução
+
+O histórico de eventos continua legível depois que a execução termina, então um consumidor pode renderizar enquanto outro persiste os eventos, sem uma segunda requisição ao modelo. Para uma linha do tempo durável, guarde o resultado da execução concluída:
+
+<Tabs>
+<Tab title="TypeScript">
+
+O resultado concluído tem os mesmos itens ordenados do stream, em `items`:
+
+```typescript
+const completed = await stream.getResult();
+
+for (const item of completed.items) {
+  saveTimelineItem(completed.run.id, item);
+}
+```
+
+</Tab>
+<Tab title="Python">
+
+| Campo | Conteúdo |
+| --- | --- |
+| `run` | Estado durável: `id`, `status`, `input`, `context`, `pause`, `stop_reason`, `error`, `usage` e `next_turn_params` |
+| `steps` | Um `AgentStepRecord` por turno do modelo, com `request_id`, `native_response_id`, `provider`, `model`, `model_attempts`, `usage`, `finish_reason`, `warnings` e `tool_calls` |
+| `messages` | A conversa inteira, incluindo os resultados das ferramentas |
+| `output` | A saída final, depois de `parse_output` e `output_schema` |
+| `usage` | Totais em um `AgentUsageSummary`: tokens de entrada, de saída, em cache e totais, e o custo |
+
+</Tab>
+<Tab title="Go">
+
+`result.Messages` guarda todas as mensagens do modelo e das ferramentas, e `result.Steps` guarda as chamadas de ferramenta, o ID da requisição, o provedor, o modelo e o uso de cada turno.
+
+</Tab>
+<Tab title="C#">
+
+`result.Messages` guarda todas as mensagens do modelo e das ferramentas, e `result.Steps` guarda as chamadas de ferramenta, o ID da requisição, o provedor, o modelo, o motivo de término, os avisos e o uso de cada turno.
+
+</Tab>
+<Tab title="PHP">
+
+`$result->messages` guarda todas as mensagens do modelo e das ferramentas, e `$result->steps` guarda as chamadas de ferramenta, o ID da requisição, o provedor, o modelo, o motivo de término, os avisos e o uso de cada turno.
+
+</Tab>
+<Tab title="Ruby">
+
+`result.messages` guarda todas as mensagens do modelo e das ferramentas, e `result.steps` guarda as chamadas de ferramenta, o ID da requisição, o provedor, o modelo, o motivo de término, os avisos e o uso de cada turno.
+
+</Tab>
+<Tab title="Java">
+
+`fullStream()` retorna o histórico completo de eventos quando a execução termina. `messages()` guarda todas as mensagens do modelo e das ferramentas, e `steps()` guarda as chamadas de ferramenta, o ID da requisição, o provedor, o modelo, o motivo de término, os avisos e o uso de cada turno.
+
+</Tab>
+<Tab title="Rust">
+
+`RunResult` tem `run` (status, IDs, modelo efetivo, limite de etapas, contexto e estado de pausa), `steps` (o ID da requisição, o provedor, o modelo, o motivo de término, as chamadas de ferramenta e o uso de cada turno do modelo), `messages` (o histórico completo de mensagens do modelo e das ferramentas), `output` e `usage`.
+
+</Tab>
+</Tabs>

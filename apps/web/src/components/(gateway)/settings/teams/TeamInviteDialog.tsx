@@ -1,13 +1,11 @@
 // TeamInviteDialog.tsx (client) — unchanged except for minor tidy comments
-"use client";
-
 import React, { useMemo, useState } from "react";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import {
 	revealTeamInviteAction,
 	revokeTeamInviteAction,
-} from "@/app/(dashboard)/settings/teams/actions";
+} from "@/features/settings/teams/actions";
 
 import {
 	Dialog,
@@ -181,7 +179,7 @@ export default function TeamInviteDialog({
 		setRevealError(null);
 		setRevealing(true);
 		try {
-			const result = await revealTeamInviteAction(invite.id);
+			const result = await revealTeamInviteAction({ data: invite.id });
 			if (!result?.token) {
 				setRevealError(t("teams.revealFailed"));
 				return;
@@ -351,7 +349,7 @@ export default function TeamInviteDialog({
 												(await (async () => {
 													const res =
 														await revealTeamInviteAction(
-															invite.id
+															{ data: invite.id }
 														);
 													if (!res?.token) throw new Error();
 													return res.token;
@@ -454,7 +452,7 @@ export default function TeamInviteDialog({
 														setRevoking(true);
 														try {
 															await revokeTeamInviteAction(
-																invite.id
+																{ data: invite.id }
 															);
 															setConfirmOpen(
 																false

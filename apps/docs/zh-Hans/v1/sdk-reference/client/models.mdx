@@ -1,0 +1,199 @@
+---
+icon: "brain-circuit"
+title: "模型"
+description: "在任意 Phaseo SDK 中列出和检查模型。"
+---
+
+调用 SDK 的列表方法，从 `GET /v1/models` 读取模型目录，并可选择添加筛选条件。
+
+<CodeGroup>
+
+```typescript TypeScript
+const models = await client.getModels({
+  provider: ["anthropic"],
+  provider_status: ["beta", "not_ready"],
+  provider_availability_reason: ["preview_only", "provider_not_ready"],
+  capability_status: ["coming_soon", "internal_testing"],
+  availability: "all",
+});
+```
+
+```python Python
+models = client.get_models({
+    "provider": ["anthropic"],
+    "provider_status": ["beta", "not_ready"],
+    "provider_availability_reason": ["preview_only", "provider_not_ready"],
+    "capability_status": ["coming_soon", "internal_testing"],
+    "availability": "all",
+})
+```
+
+```go Go
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  panic(err)
+}
+
+models, err := client.GetModels(context.Background(), map[string]string{
+  "provider":                     "anthropic",
+  "provider_status":              "beta,not_ready",
+  "provider_availability_reason": "preview_only,provider_not_ready",
+  "capability_status":            "coming_soon,internal_testing",
+  "availability":                 "all",
+  "limit":                        "10",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(models["models"])
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+
+var models = await client.ListModels(new Dictionary<string, string>
+{
+    ["provider"] = "anthropic",
+    ["provider_status"] = "beta,not_ready",
+    ["provider_availability_reason"] = "preview_only,provider_not_ready",
+    ["capability_status"] = "coming_soon,internal_testing",
+    ["availability"] = "all",
+    ["limit"] = "10",
+});
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo();
+
+$models = $client->listModels([
+    'provider' => 'anthropic',
+    'provider_status' => 'beta,not_ready',
+    'provider_availability_reason' => 'preview_only,provider_not_ready',
+    'capability_status' => 'coming_soon,internal_testing',
+    'availability' => 'all',
+    'limit' => 5,
+]);
+
+echo "Found " . count($models['models'] ?? []) . " models\n";
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+
+models = client.list_models(
+  provider: 'anthropic',
+  provider_status: 'beta,not_ready',
+  provider_availability_reason: 'preview_only,provider_not_ready',
+  capability_status: 'coming_soon,internal_testing',
+  availability: 'all',
+  limit: 10
+)
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import java.util.HashMap;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+Map<String, String> query = new HashMap<>();
+query.put("limit", "10");
+query.put("provider", "anthropic");
+query.put("provider_status", "beta,not_ready");
+query.put("provider_availability_reason", "preview_only,provider_not_ready");
+query.put("capability_status", "coming_soon,internal_testing");
+query.put("availability", "all");
+
+var models = client.listModels(query);
+System.out.println(models);
+```
+
+</CodeGroup>
+
+| 语言 | 方法 | 多值筛选条件 |
+| --- | --- | --- |
+| TypeScript | `client.getModels(filters)` 或 `client.models.list(filters)` | 数组 |
+| Python | `client.get_models(filters)` 或 `client.models.list(filters)` | list |
+| Go | `client.GetModels(ctx, query)`，传入 `map[string]string` | 逗号分隔的字符串 |
+| C# | `client.ListModels(query)`，传入 `Dictionary<string, string>` | 逗号分隔的字符串 |
+| PHP | `$client->listModels($params)` | 逗号分隔的字符串 |
+| Ruby | `client.list_models(...)` | 逗号分隔的字符串 |
+| Java | `client.listModels(query)`，传入 `Map<String, String>` | 逗号分隔的字符串 |
+| Rust | 没有辅助方法；请调用 `client.request("GET", "/models?<filters>", None, &RequestOptions::default())` | 查询字符串中逗号分隔的字符串 |
+
+## 筛选列表
+
+所有筛选条件都是可选的，在每个 SDK 中名称相同：它们就是查询参数。
+
+| 筛选条件 | 筛选依据 |
+| --- | --- |
+| `provider`、`organisation` | 提供商或模型所属组织 |
+| `endpoints`、`input_types`、`output_types`、`params` | 支持的端点、模态和请求参数 |
+| `status`、`provider_status`、`provider_routing_status`、`model_routing_status`、`capability_status`、`provider_availability_status`、`provider_availability_reason` | 生命周期和路由状态 |
+| `availability` | 设为 `all` 可包含无法路由的模型 |
+| `limit`、`offset` | 分页 |
+
+默认情况下，列表只包含可路由的模型。把 `availability` 设为 `all` 可包含其余模型，然后再缩小范围：
+
+- `provider_availability_reason` 选择发布状态，例如 `preview_only`、`provider_not_ready`、`gated`、`access_limited`、`region_limited`、`project_limited`、`paused` 或 `soft_blocked`。
+- `capability_status` 选择尚不可路由的端点映射，例如 `coming_soon` 或 `internal_testing`。
+
+<span id="check-one-model"></span>
+## 检查单个模型
+
+`checkParameters` 及其在其他语言中的对应方法会读取实时的提供商路由元数据，把每个参数标记为 `supported`、`partial`、`unsupported` 或 `unknown`，检查公布的取值和范围，并返回接受整组参数的提供商路由。`preflight` 对整个请求正文做同样的检查，并加上模型生命周期检查，给出总体结果 `ok`。
+
+| 语言 | 能力 | 检查参数 | 预检 | 生命周期 |
+| --- | --- | --- | --- | --- |
+| TypeScript | `models.capabilities(modelId)` | `models.checkParameters(modelId, values, { endpoint, provider })` | `models.preflight(request, { endpoint, provider })` | `models.validate(modelId)` 返回 `{ ok, info, reason }`；`models.getDeprecationInfo(modelId)` |
+| Python | `models.capabilities(model_id)` | `models.check_parameters(model_id, values, endpoint=..., provider=...)` | `models.preflight(request, endpoint=..., provider=...)` | `models.validate(model_id)`、`models.get_deprecation_info(model_id)` |
+| Go（下个版本） | `GetModelEndpointCapabilities` | `CheckModelParameters` | `PreflightRequest` | `ValidateModel`、`GetModelDeprecationInfo`（已发布） |
+| C#（下个版本） | `GetModelEndpointCapabilities(modelId)` | `CheckModelParameters(modelId, values)` | `PreflightRequest` | `ValidateModel`、`GetModelDeprecationInfo`（已发布） |
+| PHP（下个版本） | `getModelEndpointCapabilities` | `checkModelParameters(...)` | `preflightRequest` | `validateModel`、`getModelDeprecationInfo`（已发布） |
+| Ruby（下个版本） | `model_endpoint_capabilities` | `check_model_parameters(model_id, values)` | `preflight_request` | `validate_model`、`get_model_deprecation_info`（已发布） |
+| Java（源码构建） | `getModelEndpointCapabilities(modelId, query)` | `checkModelParameters(modelId, values, options)` | `preflightRequest(request, options)` | `validateModel`、`getModelDeprecationInfo` |
+| Rust（`0.2.0` 中没有） | `Phaseo::model_endpoint_capabilities(...)` | `Phaseo::check_model_parameters(...)` | 无 | 无 |
+
+“下个版本”表示该方法已在 SDK 源码中，但尚未进入已发布的包；参见[查看每个包包含的内容](./overview#check-what-each-package-ships)。弃用信息方法返回模型的状态（`active`、`deprecated` 或 `retired`）、弃用和退役日期，以及替代模型 ID。
+
+## 响应
+
+`ModelListResponse`：
+
+```json
+{
+  "ok": true,
+  "limit": 50,
+  "offset": 0,
+  "total": 123,
+  "models": [
+    {
+      "model_id": "openai/gpt-4o-mini",
+      "name": "GPT-4o Mini",
+      "release_date": "2024-07-18",
+      "status": "active",
+      "organisation_id": "openai",
+      "aliases": ["gpt-4o-mini"],
+      "endpoints": ["chat/completions", "responses"],
+      "input_types": ["text"],
+      "output_types": ["text"],
+      "providers": [
+        {
+          "api_provider_id": "openai",
+          "params": ["temperature", "max_tokens"]
+        }
+      ]
+    }
+  ]
+}
+```

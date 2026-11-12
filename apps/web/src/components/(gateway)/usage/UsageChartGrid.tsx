@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState, useEffect } from "react";
 import { useQueryState } from "nuqs";
 import RequestsChart from "./RequestsChart";
@@ -9,7 +7,7 @@ import ChartDetailDialog from "./ChartDetailDialog";
 import {
 	fetchChartData,
 	ChartDataResult,
-} from "@/app/(dashboard)/gateway/usage/server-actions";
+} from "@/features/gateway/usage/server-actions";
 
 interface UsageChartGridProps {
 	timeRange: { from: string; to: string };
@@ -39,11 +37,11 @@ export default function UsageChartGrid({
 		const fetchData = async () => {
 			setLoading(true);
 			try {
-				const data = await fetchChartData({
+				const data = await fetchChartData({ data: {
 					timeRange,
 					range,
 					keyFilter: keyFilter || null,
-				});
+				} });
 				setChartData(data as any);
 			} catch (error) {
 				console.error("Error fetching chart data:", error);

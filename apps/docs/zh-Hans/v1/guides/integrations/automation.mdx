@@ -4,13 +4,11 @@ icon: "workflow"
 description: "通过 Zapier、n8n、Pipedream 等自动化平台使用 Phaseo。"
 ---
 
-目前，能够发送经过身份验证的 HTTP 请求的自动化产品已可使用 Phaseo。以后可通过原生市场应用提供更简化的体验。
+任何能发送带身份验证的 HTTP 请求的自动化平台都可以调用 Phaseo：添加一个 HTTP 步骤，向 `https://api.phaseo.app/v1/responses` 发送 POST 请求，并把你的密钥作为 Bearer 令牌。Phaseo 没有原生的 Zapier、n8n 或 Pipedream 应用。
 
-## 通用请求
+## 构建请求
 
-在 HTTP、webhook 或代码操作中使用以下设置：
-
-| 设置项 | 值 |
+| 设置 | 值 |
 | --- | --- |
 | 方法 | `POST` |
 | URL | `https://api.phaseo.app/v1/responses` |
@@ -19,45 +17,37 @@ description: "通过 Zapier、n8n、Pipedream 等自动化平台使用 Phaseo。
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "input": "Summarise the supplied workflow data in one paragraph."
 }
 ```
 
-请将 Phaseo API 密钥存放在平台的凭据或密钥库中。不要将密钥直接写入共享工作流定义。
+把密钥保存在平台的凭据或密钥存储中，不要放在共享的工作流定义里。所有请求字段请参阅 [Responses](../../api-reference/endpoint/responses.mdx)。
 
 ## Zapier
 
 使用 **Webhooks by Zapier → Custom Request**：
 
-1. 选择 `POST`。
-2. 输入 `https://api.phaseo.app/v1/responses`。
-3. 添加 bearer 和 content-type 请求头。
-4. 将 Zap 前序步骤中的字段映射到 `input`。
-5. 使用非敏感数据测试 Zap。
-
-原生 Phaseo Zapier 应用可提供模型选择、结构化输出操作和 Phaseo 专用身份验证，但需要通过 Zapier 开发者平台发布。
+1. 选择 `POST`，并输入 `https://api.phaseo.app/v1/responses`。
+2. 添加 Bearer 和 Content-Type 请求头。
+3. 把前面 Zap 步骤中的字段映射到 `input`。
+4. 用不敏感的数据测试 Zap。
 
 ## n8n
 
-使用带 bearer 身份验证和 JSON 请求体的 **HTTP Request** 节点。对于结构化工作流数据，可使用 n8n 表达式将上游项目映射到 `input` 字段。
-
-以后，n8n 官方社区节点可提供 Generate Response、List Models、Get Model Pricing 和 Create Embedding 等操作，无需手动设置 HTTP。
+使用 **HTTP Request** 节点，配置 Bearer 身份验证和 JSON 请求体。用 n8n 表达式把传入的项映射到 `input`。
 
 ## Pipedream
 
-使用 HTTP 请求步骤或 Node.js 代码步骤。将 `PHASEO_API_KEY` 存为 Pipedream 密钥，并从步骤环境中读取。
+使用 HTTP 请求步骤或 Node.js 代码步骤。把 `PHASEO_API_KEY` 保存为 Pipedream 密钥，并从步骤环境中读取它。
 
-## 生产环境建议
+## 检查是否可用
 
-- 为每个自动化使用的 Gateway API 密钥设置支出限额。
-- 为每个自动化分配独立密钥，以隔离用量和撤销操作。
-- 下游步骤需要机器可读字段时，请使用结构化输出。
-- 为 `429` 和可恢复的 `5xx` 响应添加重试处理。
-- 不要仅因模型步骤重试，就重复执行非幂等的外部操作。
+运行一次该步骤。返回带有 `output` 数组的 `200` 响应，就说明密钥和 URL 可用，请求也会出现在 **设置 → 使用情况 → 日志** 中。
 
-## 相关内容
+## 安全地运行自动化
 
-- [响应](../../api-reference/endpoint/responses.mdx)
-- [结构化输出](../structured-outputs.mdx)
-- [错误处理](../../api-reference/errors.mdx)
+- 为每个自动化提供单独的、带支出上限的密钥，以便单独跟踪和撤销。
+- 当后续步骤需要机器可读的字段时，请使用[结构化输出](../structured-outputs.mdx)。
+- 遇到 `429` 和可恢复的 `5xx` 响应时重试；请参阅[错误](../../api-reference/errors.mdx)。
+- 不要仅仅因为模型步骤重试了，就重复执行不具备幂等性的外部操作。

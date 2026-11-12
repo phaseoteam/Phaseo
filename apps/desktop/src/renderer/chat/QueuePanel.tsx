@@ -6,6 +6,7 @@ import { shortcut } from "../lib/keybindings";
 import { mentionPlainText } from "../lib/mentions";
 import { cn } from "../lib/utils";
 import { harnessNames } from "./ModelPicker";
+import { BannerRoot, BannerSlot } from "./ComposerBanner";
 
 /** Harnesses whose adapters take a message mid-turn (`steer` in main/*Adapter.ts). The rest wait for the turn to end. */
 const steerable: ReadonlySet<Harness> = new Set(["codex", "cursor", "opencode", "phaseo", "pi"]);
@@ -29,7 +30,7 @@ function RowButton({ label, onClick, disabled, children }: { label: string; onCl
 }
 
 /**
- * The queue above the composer: queued follow-ups can be edited in the composer, reordered, removed, or sent into
+ * The queue, a drawer above the composer: queued follow-ups can be edited in the composer, reordered, removed, or sent into
  * the running turn now. Instructions sent mid-turn that the agent refused or never confirmed wait here for a decision.
  */
 export function QueuePanel({ task, editingId, onEdit, onSteer }: { task: Task; editingId?: string; onEdit: (id: string) => void; onSteer: (id: string) => void }) {
@@ -38,7 +39,7 @@ export function QueuePanel({ task, editingId, onEdit, onSteer }: { task: Task; e
 	const chatTitle = (id: string) => overview.tasks.find(value => value.id === id)?.title;
 	if (!queue.length && !steering.length) return null;
 	const blocker = steerBlocker(task), steerKey = shortcut("composer.steer"), firstOwn = ownQueue(task)[0];
-	return <section aria-label={`${queue.length} queued message${queue.length === 1 ? "" : "s"}`} className="mb-2 flex flex-col gap-0.5 px-1">
+	return <BannerSlot><BannerRoot><section aria-label={`${queue.length} queued message${queue.length === 1 ? "" : "s"}`} className="flex flex-col gap-0.5 px-1.5 text-[13px]">
 		{steering.map(message => <div key={message.id} className="flex items-center gap-2 py-0.5 text-[13px]">
 			{message.status === "sending" ? <LoaderCircle aria-hidden className="size-3.5 shrink-0 animate-spin text-muted-foreground" /> : <CornerDownRight aria-hidden className="size-3.5 shrink-0 text-warning" />}
 			<span className="min-w-0 flex-1 truncate" title={mentionPlainText(message.text)}>{mentionPlainText(message.text)}</span>
@@ -48,8 +49,8 @@ export function QueuePanel({ task, editingId, onEdit, onSteer }: { task: Task; e
 				<button type="button" onClick={() => void command({ type: "steer-discard", id: task.id, messageId: message.id })} className="shrink-0 rounded-md px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground">Discard</button>
 			</>}
 		</div>)}
-		{queue.length > 0 && <p className="text-[11px] text-muted-foreground">{blocker && live(task) ? `Queued · ${blocker}` : "Queued · sends when the current turn finishes"}</p>}
-		<ol className="flex flex-col">{queue.map((message, index) => {
+		{queue.length > 0 && <p className="pt-0.5 text-[11px] text-muted-foreground">{blocker && live(task) ? `Queued · ${blocker}` : "Queued · sends when the current turn finishes"}</p>}
+		<ol className="flex max-h-40 flex-col overflow-y-auto overscroll-contain">{queue.map((message, index) => {
 			const editing = message.id === editingId, sender = queueSender(message, chatTitle), text = message.notice?.summary ?? mentionPlainText(message.text);
 			// Updates and other agents' results are the app's to deliver as they are; only the person's own can be edited or sent now.
 			const own = !message.notice && !message.sourceTaskId;
@@ -65,5 +66,5 @@ export function QueuePanel({ task, editingId, onEdit, onSteer }: { task: Task; e
 				</span>}
 			</li>;
 		})}</ol>
-	</section>;
+	</section></BannerRoot></BannerSlot>;
 }

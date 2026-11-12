@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { capabilityPrivacyDecision } from "./capabilityPrivacyDecision";
 
 const flags = { privacyZdrOnly: true, privacyEnableInputOutputLogging: true, privacyEnablePaidMayTrain: true, privacyEnableFreeMayTrain: true };

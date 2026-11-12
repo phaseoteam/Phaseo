@@ -4,32 +4,35 @@ icon: "/icons/brands/aider.png"
 description: "Conecta Aider a Phaseo con una configuración administrada automáticamente."
 ---
 
-Usa Phaseo CLI para crear una clave dedicada y una configuración administrada de Aider, o copia los mismos valores del proveedor en tu configuración existente de Aider.
+Ejecuta `phaseo aider` para escribir una configuración de Aider que apunte a Phaseo, o añade tres líneas a tu `.aider.conf.yml` existente.
 
-## Configura con Phaseo CLI
+## Configurar con Phaseo CLI
 
 ```bash
 phaseo login
-phaseo aider --model anthropic/claude-sonnet-4.6
+phaseo aider --model anthropic/claude-sonnet-5.5
 ```
 
-Si `~/.aider.conf.yml` no existe, la configuración crea un archivo administrado por Phaseo que contiene:
+Si `~/.aider.conf.yml` no existe, la configuración crea una `Phaseo CLI: Aider API Key` (caduca en 90 días, límite de gasto mensual de $100) y escribe este archivo. Sin `--model`, usa `anthropic/claude-sonnet-4.6`.
 
-```yaml
-model: openai/anthropic/claude-sonnet-4.6
+```yaml ~/.aider.conf.yml
+# Managed by Phaseo CLI
+model: openai/anthropic/claude-sonnet-5.5
 openai-api-base: https://api.phaseo.app/v1
-openai-api-key: <dedicated Phaseo key>
+openai-api-key: "<dedicated Phaseo key>"
 ```
 
-Aider necesita el prefijo `openai/` para dirigir un modelo personalizado a través de su adaptador compatible con OpenAI. El modelo que se envía a Phaseo sigue siendo `anthropic/claude-sonnet-4.6`.
+Aider necesita el prefijo `openai/` para enviar un modelo personalizado a través de su adaptador compatible con OpenAI. El modelo que se envía a Phaseo sigue siendo `anthropic/claude-sonnet-5.5`.
 
 <Warning>
-La clave de API se guarda en texto sin formato porque `.aider.conf.yml` es una de las ubicaciones de credenciales documentadas por Aider. Protege el archivo con los permisos habituales de tu cuenta de usuario y no lo confirmes en el repositorio.
+La clave se guarda en texto plano, porque `.aider.conf.yml` es una de las ubicaciones de claves documentadas de Aider. Haz que solo tu cuenta de usuario pueda leer el archivo y no lo confirmes nunca en el repositorio.
 </Warning>
 
-Si ya tienes una configuración de Aider, la CLI se detiene sin modificarla. Combina los tres valores anteriores en la configuración que quieras que cargue Aider. Aider comprueba el directorio principal, la raíz del repositorio y el directorio actual; los archivos posteriores tienen prioridad.
+## Configurar Aider manualmente
 
-## Verificar
+Si ya tienes una configuración de Aider, la CLI se detiene sin cambiarla. Copia los tres ajustes anteriores en la configuración que quieres que cargue Aider, usando `phaseo integrations credential aider` o cualquier clave de API de Phaseo para `openai-api-key`. Aider lee `.aider.conf.yml` de tu directorio personal, de la raíz del repositorio y del directorio actual, y los archivos posteriores prevalecen. Consulta la documentación de Aider sobre la [configuración YAML](https://aider.chat/docs/config/aider_conf.html) y la [API compatible con OpenAI](https://aider.chat/docs/llms/openai-compat.html).
+
+## Comprobar que funciona
 
 Abre un repositorio e inicia Aider:
 
@@ -37,35 +40,28 @@ Abre un repositorio e inicia Aider:
 aider
 ```
 
-Confirma que el resultado de inicio muestra `openai/anthropic/claude-sonnet-4.6` y luego pídele que responda `PHASEO_AIDER_OK`. La solicitud también debería aparecer en la actividad de Phaseo.
+Comprueba que la salida de inicio nombra `openai/anthropic/claude-sonnet-5.5`, pídele que responda con `PHASEO_AIDER_OK` y confirma que la solicitud aparece en **Ajustes → Uso → Registros**.
 
-Una advertencia de modelo desconocido no impide el envío de solicitudes. Añade metadatos del modelo a Aider solo si necesitas estimaciones precisas de límites de tokens o costos.
+Una advertencia de modelo desconocido no detiene las solicitudes. Añade metadatos de modelo de Aider solo si necesitas estimaciones precisas del límite de tokens o del coste.
 
-## Eliminar
+## Quitar Phaseo
 
 ```bash
 phaseo integrations remove aider
 ```
 
-La eliminación revoca la clave dedicada y borra `~/.aider.conf.yml` solo si el archivo aún conserva el marcador de propiedad de Phaseo CLI. Si añadiste Phaseo manualmente a un archivo existente, elimina tú mismo los tres valores de Phaseo.
+Esto revoca la clave y elimina `~/.aider.conf.yml` solo si el archivo sigue empezando con el marcador de Phaseo CLI. Si combinaste los ajustes en tu propio archivo, quita tú mismo las tres líneas.
 
-## Solución de problemas
+## Resolver problemas comunes
 
-### Aider usa otro endpoint o modelo
+### Aider usa otro endpoint u otro modelo
 
-Busca archivos `.aider.conf.yml` en la raíz del repositorio y en el directorio actual. Esos archivos anulan la configuración del directorio principal. Las variables de entorno y las opciones de la línea de comandos también pueden reemplazar los valores guardados.
+Un `.aider.conf.yml` en la raíz del repositorio o en el directorio actual sustituye al de tu directorio personal. Las variables de entorno y las opciones de la línea de comandos sustituyen a todos ellos.
 
-### Falla la autenticación
+### La autenticación falla
 
-Ejecuta `phaseo integrations credential aider` y compara el resultado con `openai-api-key`. Mantén `openai-api-base` exactamente en `https://api.phaseo.app/v1`.
+Compara `openai-api-key` con la salida de `phaseo integrations credential aider` y mantén `openai-api-base` exactamente como `https://api.phaseo.app/v1`.
 
 ### No se puede resolver el modelo
 
-Conserva el prefijo `openai/` exclusivo de Aider. Por ejemplo, el modelo de Phaseo `openai/gpt-5.6-terra` se convierte en `openai/openai/gpt-5.6-terra` en Aider.
-
-## Relacionado
-
-- [Documentación de Aider para la API compatible con OpenAI](https://aider.chat/docs/llms/openai-compat.html)
-- [Configuración YAML de Aider](https://aider.chat/docs/config/aider_conf.html)
-- [Agentes de programación](./coding-assistants.mdx)
-- [Modelos](../../api-reference/endpoint/models.mdx)
+Mantén el prefijo `openai/` de Aider. El modelo de Phaseo `openai/gpt-6-astra` se convierte en `openai/openai/gpt-6-astra` en Aider.

@@ -24,7 +24,7 @@ Use this skill to make high-confidence Phaseo integration changes with minimal d
 - Auth header: `Authorization: Bearer <PHASEO_API_KEY>`
 - Optional attribution headers: `x-title` and `http-referer`
 - Discover model IDs from `GET /v1/models` rather than hard-coding stale IDs
-- No key yet: run `phaseo login` (or `phaseo login --device-code` in a headless shell), then `phaseo keys create --name <name> --json`. Never guess a key. A person approves the sign-in.
+- No key yet: ask the person to create one in the dashboard under **Settings -> API Keys**, or create it with `POST /v1/keys` and a management key. A CLI sign-in can't create keys. Never guess a key.
 
 4. Validate quickly:
 - `GET /v1/health` for gateway reachability

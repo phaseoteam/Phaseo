@@ -1,19 +1,62 @@
 ---
 icon: "list-filter"
-title: "Ferramenta de servidor para buscar modelos"
-sidebarTitle: "Busca de modelos do servidor"
-description: "Permita que um modelo encontre opções adequadas no catálogo atualizado da Phaseo."
+title: "Ferramenta de servidor Search Models"
+description: "Deixe um modelo encontrar modelos adequados no catálogo atual do Phaseo."
 ---
 
-Use `phaseo:search_models` quando o modelo que faz a chamada precisar selecionar ou recomendar um modelo com base nos metadados atuais do catálogo.
+Adicione `phaseo:search_models` para que o modelo possa escolher ou recomendar um modelo usando o catálogo atual do Phaseo: modalidades, provedores, parâmetros aceitos e preços atualizados.
 
 ```json
 {
+  "model": "openai/gpt-6-astra",
+  "messages": [
+    { "role": "user", "content": "Which models can transcribe audio and return JSON?" }
+  ],
   "tools": [{ "type": "phaseo:search_models", "parameters": { "max_results": 5 } }],
   "max_tool_calls": 10
 }
 ```
 
-A chamada da ferramenta pode filtrar por `query`, `input_modalities`, `output_modalities`, `series`, `provider`, e `required_params`. Os resultados incluem IDs dos modelos, modalidades, provedores, parâmetros compatíveis e metadados de preço.
+## Parâmetros
 
-O uso é informado em `usage.server_tool_use.search_models_requests`.
+| Parâmetro | Tipo | Padrão | Descrição |
+| --- | --- | --- | --- |
+| `max_results` | integer | `5` | Modelos retornados por pesquisa, até `20`. |
+
+## O que o modelo envia
+
+Qualquer um destes filtros. Só os modelos ativos são pesquisados, e um modelo precisa atender a todos os filtros enviados.
+
+| Argumento | Encontra |
+| --- | --- |
+| `query` | Texto no ID, no nome ou na descrição do modelo |
+| `series` | Texto no ID, no nome ou na descrição do modelo |
+| `input_modalities` | Modelos que aceitam todas estas entradas |
+| `output_modalities` | Modelos que produzem todas estas saídas |
+| `provider` | Um ID ou nome de provedor |
+| `required_params` | Modelos que aceitam todos estes parâmetros de solicitação |
+
+## O que a ferramenta retorna
+
+```json
+{
+  "models": [
+    {
+      "id": "openai/gpt-4o-mini-transcribe",
+      "name": "...",
+      "description": "...",
+      "input_modalities": ["audio"],
+      "output_modalities": ["text"],
+      "providers": ["openai"],
+      "supported_params": ["..."],
+      "pricing": {}
+    }
+  ],
+  "total_results": 4,
+  "showing": 4
+}
+```
+
+## Uso e preços
+
+Cada pesquisa soma 1 a `usage.server_tool_use.search_models_requests` e pode ser cobrada com `server_tool_search_models_requests`.

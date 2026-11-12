@@ -1,0 +1,100 @@
+---
+icon: "chart-spline"
+title: "DevTools"
+description: "डेवलपमेंट के दौरान हर एजेंट रन और continuation को एक स्थानीय फ़ाइल में रिकॉर्ड करें।"
+---
+
+डेवलपमेंट के दौरान किसी रन या continuation को DevTools config दें, ताकि हर रन के लिए एक JSON लाइन किसी स्थानीय डायरेक्टरी में `generations.jsonl` में जोड़ी जाए। हर लाइन में रन का इनपुट, स्टेप, टूल गतिविधि, आउटपुट, उपयोग और gateway अनुरोध ID होते हैं। जब तक आप इसे चालू नहीं करते, कुछ भी कैप्चर नहीं होता।
+
+<CodeGroup>
+
+```typescript TypeScript
+import { createAgentDevtools } from "@phaseo/agent-sdk";
+
+const result = await agent.run({
+  input,
+  client,
+  devtools: createAgentDevtools(),
+});
+```
+
+```python Python
+from phaseo_agent import create_agent_devtools
+
+result = agent.run(input="Summarise this ticket", client=client, devtools=create_agent_devtools())
+```
+
+```go Go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{
+  Input:    prompt,
+  Client:   client,
+  Devtools: phaseoagent.CreateAgentDevtools(".phaseo-devtools"),
+})
+```
+
+```csharp C#
+var result = await agent.Run(new RunOptions
+{
+    Input = prompt,
+    Client = client,
+    Devtools = AgentSdk.CreateAgentDevtools(".phaseo-devtools"),
+});
+```
+
+```php PHP
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    devtools: AgentSdk::createAgentDevtools(".phaseo-devtools")
+);
+```
+
+```ruby Ruby
+result = agent.run(
+  input: prompt,
+  client: client,
+  devtools: PhaseoAgentSdk.create_agent_devtools(directory: ".phaseo-devtools")
+)
+```
+
+```java Java
+var result = agent.run(new AgentSdk.RunOptions(
+    prompt, client, null, null, null, null, null, null, null,
+    AgentSdk.createAgentDevtools(".phaseo-devtools")));
+```
+
+</CodeGroup>
+
+<Note>
+Rust `0.2` में DevTools कैप्चर नहीं है। `run_with_events` के साथ [लाइफ़साइकल हुक](./lifecycle-hooks) का उपयोग करें और इवेंट ख़ुद लिखें।
+</Note>
+
+| भाषा | config बनाएँ | इसे इस रूप में दें | डायरेक्टरी चुनें |
+| --- | --- | --- | --- |
+| TypeScript | `createAgentDevtools()` | run और continue विकल्पों पर `devtools` | `createAgentDevtools({ directory: ".local/agent-runs" })` |
+| Python | `create_agent_devtools()` | `run()`, `stream()` या किसी continuation पर `devtools=` | `create_agent_devtools(directory=".local/agent-runs")` |
+| Go | `CreateAgentDevtools(directory)` | `RunOptions` या `ContinueOptions` पर `Devtools` | `directory` argument |
+| C# | `AgentSdk.CreateAgentDevtools(directory)` | `RunOptions` या `ContinueOptions` पर `Devtools` | `directory` argument (डिफ़ॉल्ट `.phaseo-devtools`) |
+| PHP | `AgentSdk::createAgentDevtools($directory)` | `run()` या `continueRun()` पर `devtools:` | `$directory` argument (डिफ़ॉल्ट `.phaseo-devtools`) |
+| Ruby | `PhaseoAgentSdk.create_agent_devtools(directory:, enabled:)` | `run` या `continue_run` पर `devtools:` | `directory:` (डिफ़ॉल्ट `.phaseo-devtools`) |
+| Java | `AgentSdk.createAgentDevtools(directory)` | `RunOptions` या `ContinueOptions` का `devtools` argument | `directory` argument |
+
+## एनवायरनमेंट से कैप्चर चालू करें
+
+DevTools config के बिना, `PHASEO_DEVTOOLS=true` होने पर कैप्चर चालू हो जाता है। फ़ाइलें `PHASEO_DEVTOOLS_DIR` में जाती हैं, या अगर वह सेट नहीं है तो वर्किंग डायरेक्टरी में `.phaseo-devtools` में। यह DevTools वाली हर भाषा में एक जैसा काम करता है।
+
+## क्या लिखा जाता है
+
+| फ़ाइल | सामग्री |
+| --- | --- |
+| `generations.jsonl` | हर रन के लिए एक एंट्री और हर continuation के लिए एक |
+| `metadata.json` | सत्र ID, शुरू होने का समय और SDK का नाम (`"sdk": "typescript"`, `"python"`, `"go"`, `"csharp"`, `"php"`, `"ruby"` या `"java"`), एक बार लिखा जाता है |
+| `assets/images`, `assets/audio`, `assets/video` | DevTools viewer के लिए ख़ाली बनाए जाते हैं |
+
+हर एंट्री का `type` रन के लिए `agent.run` और continuation के लिए `agent.continue` होता है। `agent.continue` एक एंट्री टाइप है, method का नाम नहीं: यह वह है जो `continueRun()` (TypeScript, PHP, Java), `continue_run()` (Python, Ruby), `Continue` (Go) या `ContinueRun` (C#) की कॉल लिखती है।
+
+एक एंट्री में रन और एजेंट ID, टूल की संख्या और पूरा रन नतीजा होता है: स्टेटस, मैसेज, मॉडल, प्रदाता और gateway अनुरोध ID वाले स्टेप, टूल गतिविधि, उपयोग और आउटपुट। विफल होने वाले रन को त्रुटि के साथ एक एंट्री मिलती है (Go और Java में `error.message`; TypeScript में संरचित विफलता विवरण)। Java में लिखने की त्रुटियाँ अनदेखी की जाती हैं, इसलिए कैप्चर कभी रन को विफल नहीं करता।
+
+<Warning>
+एंट्री में प्रॉम्प्ट, मैसेज, ऐप्लिकेशन संदर्भ, टूल इनपुट और टूल आउटपुट सादे टेक्स्ट में होते हैं। डायरेक्टरी को सोर्स कंट्रोल और प्रोडक्शन इमेज से बाहर रखें, और इसे ऑडिट स्टोर की तरह उपयोग न करें। प्रोडक्शन टेलीमेट्री के लिए [लाइफ़साइकल हुक](./lifecycle-hooks) का उपयोग करें।
+</Warning>

@@ -1,179 +1,248 @@
 ---
 title: "प्रॉम्प्ट कैशिंग"
-description: "Chat Completions, Responses और Anthropic Messages अनुरोधों में स्थिर प्रॉम्प्ट संदर्भ को दोबारा उपयोग करें।"
+description: "Chat Completions, Responses और Anthropic Messages अनुरोधों में स्थिर प्रॉम्प्ट कॉन्टेक्स्ट दोबारा उपयोग करें।"
 icon: "database-zap"
 ---
 
-जब कई अनुरोधों में वही बड़ा संदर्भ आता है, तब प्रॉम्प्ट कैशिंग उपयोग करें। स्थिर निर्देशों, दस्तावेज़ों, उदाहरणों, टूल आउटपुट या टूल परिभाषाओं को कैश करने योग्य चिह्नित करें, ताकि समर्थित प्रदाता बाद की कॉल में उस संदर्भ को दोबारा उपयोग कर सकें।
+अनुरोधों में अपने प्रॉम्प्ट की शुरुआत एक जैसी रखें, और प्रदाता उसे दोबारा प्रोसेस करने के बजाय अपने कैश से पढ़ता है: उन टोकन का बिल कैश-रीड दर पर बनता है और पहला टोकन जल्दी आता है। ज़्यादातर प्रदाता दोहराए गए प्रीफ़िक्स को अपने आप कैश करते हैं। Claude सिर्फ़ वही कैश करता है जिसे आप `cache_control` से चिह्नित करते हैं।
 
-प्रॉम्प्ट कैशिंग, [प्रतिक्रिया कैशिंग](../cookbook/response-caching-with-presets.mdx) से अलग है। प्रॉम्प्ट कैशिंग में इन्फ़रेंस फिर भी चलता है, लेकिन बार-बार इनपुट प्रोसेस करने की लागत और लेटेंसी कम हो सकती है। प्रतिक्रिया कैशिंग एक जैसे अनुरोध के लिए पहले से जनरेट किया गया उत्तर लौटाती है।
+```mermaid
+flowchart LR
+  first["अनुरोध 1: स्थिर प्रीफ़िक्स + सवाल"] -->|"प्रदाता प्रीफ़िक्स को अपने कैश में लिखता है"| pin["Phaseo बातचीत को उस प्रदाता पर पिन करता है"]
+  pin --> second["अनुरोध 2: वही प्रीफ़िक्स + नया सवाल"]
+  second -->|"वही प्रदाता"| hit["प्रीफ़िक्स का बिल कैश-रीड दर पर"]
+```
+
+प्रॉम्प्ट कैशिंग फिर भी हर अनुरोध पर इन्फ़रेंस चलाती है। यह एक जैसे अनुरोध पर पहले वाला जवाब नहीं लौटाती।
+
+## प्रॉम्प्ट कैश करें
+
+स्थिर हिस्से के आखिरी ब्लॉक को चिह्नित करें। उस ब्लॉक तक और उसे मिलाकर सब कुछ कैश होता है।
+
+<CodeGroup>
+```bash Chat Completions
+curl https://api.phaseo.app/v1/chat/completions \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-5.5",
+    "messages": [
+      {
+        "role": "system",
+        "content": [
+          {
+            "type": "text",
+            "text": "You are a support assistant. Follow the company policy exactly.",
+            "cache_control": { "type": "ephemeral", "ttl": "1h" }
+          }
+        ]
+      },
+      { "role": "user", "content": "Summarise the latest ticket." }
+    ]
+  }'
+```
+
+```bash Responses
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-5.5",
+    "input": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "input_text",
+            "text": "Reference document: Refunds are available for 30 days when...",
+            "cache_control": { "type": "ephemeral", "ttl": "5m" }
+          },
+          {
+            "type": "input_text",
+            "text": "Answer this customer: Can I return an item after 20 days?"
+          }
+        ]
+      }
+    ]
+  }'
+```
+
+```bash Anthropic Messages
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-5.5",
+    "max_tokens": 512,
+    "system": [
+      {
+        "type": "text",
+        "text": "You are a careful support assistant. Use the policy below.",
+        "cache_control": { "type": "ephemeral", "ttl": "1h" }
+      }
+    ],
+    "messages": [
+      {
+        "role": "user",
+        "content": [
+          {
+            "type": "text",
+            "text": "Policy: refunds are available for 30 days when...",
+            "cache_control": { "type": "ephemeral", "ttl": "5m" }
+          },
+          { "type": "text", "text": "Can this customer return an item after 20 days?" }
+        ]
+      }
+    ],
+    "tools": [
+      {
+        "name": "lookup_order",
+        "description": "Look up order status.",
+        "input_schema": {
+          "type": "object",
+          "properties": { "order_id": { "type": "string" } },
+          "required": ["order_id"]
+        },
+        "cache_control": { "type": "ephemeral", "ttl": "5m" }
+      }
+    ]
+  }'
+```
+</CodeGroup>
+
+फिर जाँचें कि यह काम किया:
+
+1. कैश लिखने के लिए अनुरोध एक बार भेजें।
+2. उसी कैश होने योग्य कंटेंट के साथ उसे फिर से भेजें।
+3. प्रतिक्रिया के उपयोग में `cached_tokens` और `cache_write_tokens` ([उपयोग और प्राइसिंग फ़ील्ड](#usage-and-pricing-fields) देखें), और अनुरोध विवरण में कैश मीटर जाँचें।
+4. सिर्फ़ पहली कॉल नहीं, कई कॉल में लेटेंसी और लागत की तुलना करें।
+
+वह कंटेंट कैश करें जो अनुरोधों में एक जैसा रहता है: लंबे सिस्टम निर्देश, दोबारा उपयोग होने वाले दस्तावेज़, फ़्यू-शॉट उदाहरण, टूल परिभाषाएँ, और बड़े टूल परिणाम जिन्हें अगला टर्न फिर से भेजता है। हर अनुरोध पर बदलने वाले कंटेंट, छोटे एक-बार के इनपुट, या ऐसे डेटा को चिह्नित न करें जिसे आपकी नीति प्रदाता को सेव करने की अनुमति नहीं देती।
 
 <Note>
-प्रॉम्प्ट कैशिंग प्रदाता और मॉडल के अनुसार बदलती है। Phaseo हर प्रदाता को केवल वही कैश नियंत्रण भेजता है जिन्हें वह प्रदाता अपने दस्तावेज़ों में बताता है, और बाकी हटा देता है। कैश नियंत्रण के कारण कोई प्रदाता रूटिंग से कभी बाहर नहीं होता। अगर कोई प्रदाता ऐसे रूट पर कैश्ड टोकन रिपोर्ट करता है जिसकी कैश कीमत अभी तय नहीं है, तो Phaseo कैश से पढ़ने का शुल्क रूट की सामान्य इनपुट दर पर लेता है, और कैश में लिखने का शुल्क इनपुट दर को प्रदाता के प्रकाशित लेखन गुणक से गुणा करके लेता है। कैश से पढ़ने/उसमें लिखने की दरों के लिए मॉडल पेज की मूल्य तालिका देखें।
+Phaseo हर प्रदाता को सिर्फ़ वही कैश नियंत्रण भेजता है जिन्हें वह दस्तावेज़ में बताता है, और बाकी हटा देता है। कैश नियंत्रण कभी किसी प्रदाता को रूटिंग से बाहर नहीं करते। हर मॉडल पेज उसकी कैश रीड और राइट कीमतें दिखाता है।
 </Note>
 
-## कौन-सी सामग्री कैश करें
-
-ऐसी सामग्री कैश करें जो अनुरोधों के बीच स्थिर रहती है:
-
-- लंबे सिस्टम निर्देश
-- दोबारा उपयोग किए जाने वाले RAG दस्तावेज़
-- फ़्यू-शॉट उदाहरण
-- टूल की परिभाषाएँ
-- बड़े टूल परिणाम, जिन्हें अगले टर्न में दोबारा उपयोग किया जाता है
-
-हर अनुरोध में बदलने वाली सामग्री, उपयोगकर्ता का छोटा और एक बार का इनपुट, या ऐसा संवेदनशील डेटा कैश न करें जिसे चुने गए प्रदाता पर संग्रहीत करने की अनुमति आपकी नीति नहीं देती।
-
-## स्वचालित और ऑप्ट-इन कैशिंग
-
-ज़्यादातर प्रदाता दोहराए गए प्रॉम्प्ट प्रीफ़िक्स को अपने-आप कैश करते हैं। Claude के लिए स्पष्ट रूप से ऑप्ट-इन करना पड़ता है।
+## कौन-से प्रदाता अपने आप कैश करते हैं
 
 | प्रदाता | कैशिंग | Phaseo क्या भेजता है |
 | --- | --- | --- |
-| [OpenAI](https://developers.openai.com/api/docs/guides/prompt-caching), [Azure OpenAI](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/prompt-caching) | 1,024 या उससे ज़्यादा टोकन वाले प्रॉम्प्ट के लिए स्वचालित | `prompt_cache_key`; GPT-5.6 और बाद के मॉडलों पर ब्रेकपॉइंट और `prompt_cache_options`; पुराने मॉडलों पर `prompt_cache_retention` |
-| Anthropic, Claude on AWS, Amazon Bedrock और Google Vertex AI पर [Anthropic Claude](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) | ऑप्ट-इन | `cache_control` ब्रेकपॉइंट, हर अनुरोध में अधिकतम चार |
-| Google AI Studio और [Vertex AI](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/context-cache/context-cache-overview) पर [Google Gemini](https://ai.google.dev/gemini-api/docs/caching) | Gemini 2.5 और बाद के मॉडलों पर स्वचालित | आपके बनाए स्पष्ट कैश के लिए `cached_content` |
-| [xAI](https://docs.x.ai/developers/advanced-api-usage/prompt-caching/maximizing-cache-hits) | स्वचालित | `prompt_cache_key` और `x-grok-conv-id` हेडर |
-| [DeepSeek](https://api-docs.deepseek.com/guides/kv_cache) | स्वचालित | कुछ और नहीं |
-| [Moonshot AI](https://platform.kimi.ai/docs/guide/context-caching) | स्वचालित, 5 मिनट के TTL के साथ; Kimi K3 पर 1 घंटे का TTL ऑप्ट-इन है | `prompt_cache_key` और `prompt_cache_options` |
-| [Groq](https://console.groq.com/docs/prompt-caching) | Groq द्वारा सूचीबद्ध मॉडलों पर स्वचालित | कुछ और नहीं |
-| [Fireworks](https://docs.fireworks.ai/guides/prompt-caching) | स्वचालित | `prompt_cache_key`, साथ में `x-session-affinity` हेडर और `user` |
-| [Cerebras](https://inference-docs.cerebras.ai/capabilities/prompt-caching) | स्वचालित | `prompt_cache_key` |
-| [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/features/prompt-caching) | चुनिंदा मॉडलों पर स्वचालित | `x-session-affinity` हेडर |
-| [Together AI](https://docs.together.ai/docs/inference/chat/prompt-caching), [Mistral](https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching) | स्वचालित; `prompt_cache_key` से हिट दर बढ़ती है | `prompt_cache_key` |
-| [Alibaba Model Studio](https://www.alibabacloud.com/help/en/model-studio/context-cache) | स्वचालित (अंतर्निहित); स्पष्ट कैश ऑप्ट-इन हैं | ब्लॉक-स्तरीय `cache_control` |
-| [Venice](https://docs.venice.ai/overview/guides/prompt-caching) | स्वचालित; Venice Claude ब्रेकपॉइंट ख़ुद जोड़ता है | ब्लॉक-स्तरीय `cache_control` |
-| [DeepInfra](https://docs.deepinfra.com/chat/prompt-cache-retention) | स्वचालित; प्रतिधारण अवधि ऑप्ट-इन है | `prompt_cache_key`, `prompt_cache_breakpoint` और `prompt_cache_options` |
-| [Inference.net](https://inference.net/models/claude-opus-5/) | स्वचालित; Claude और Gemini 2.5 मॉडलों पर स्पष्ट कैशिंग | Claude और Gemini 2.5 मॉडलों पर ब्लॉक `cache_control`, बिना `ttl` के |
-| [Baseten](https://docs.baseten.co/inference/model-apis/pricing-and-limits) | स्वचालित | `prompt_cache_key` और `x-session-affinity` हेडर |
-| [Morph](https://docs.morphllm.com/sdk/components/caching) | स्वचालित | `prompt_cache_key` और `x-session-id` हेडर |
+| [OpenAI](https://developers.openai.com/api/docs/guides/prompt-caching), [Azure OpenAI](https://learn.microsoft.com/en-us/azure/foundry/openai/how-to/prompt-caching) | 1,024 या ज़्यादा टोकन वाले प्रॉम्प्ट के लिए अपने आप | `prompt_cache_key`; GPT-5.6 और बाद के मॉडलों पर ब्रेकपॉइंट और `prompt_cache_options`; पहले के मॉडलों पर `prompt_cache_retention` |
+| Anthropic पर [Anthropic Claude](https://platform.claude.com/docs/en/build-with-claude/prompt-caching), Claude on AWS, Amazon Bedrock और Google Vertex AI | ऑप्ट-इन | `cache_control` ब्रेकपॉइंट, प्रति अनुरोध अधिकतम चार |
+| Google AI Studio और [Vertex AI](https://docs.cloud.google.com/vertex-ai/generative-ai/docs/context-cache/context-cache-overview) पर [Google Gemini](https://ai.google.dev/gemini-api/docs/caching) | Gemini 2.5 और बाद के मॉडलों पर अपने आप | आपके बनाए स्पष्ट कैश के लिए `cached_content` |
+| [xAI](https://docs.x.ai/developers/advanced-api-usage/prompt-caching/maximizing-cache-hits) | अपने आप | `prompt_cache_key` और `x-grok-conv-id` हेडर |
+| [DeepSeek](https://api-docs.deepseek.com/guides/kv_cache) | अपने आप | कुछ अतिरिक्त नहीं |
+| [Moonshot AI](https://platform.kimi.ai/docs/guide/context-caching) | अपने आप, 5 मिनट के TTL के साथ; Kimi K3 पर 1 घंटे का TTL ऑप्ट-इन है | `prompt_cache_key` और `prompt_cache_options` |
+| [Groq](https://console.groq.com/docs/prompt-caching) | Groq द्वारा सूचीबद्ध मॉडलों पर अपने आप | कुछ अतिरिक्त नहीं |
+| [Fireworks](https://docs.fireworks.ai/guides/prompt-caching) | अपने आप | `prompt_cache_key`, साथ में `x-session-affinity` हेडर और `user` |
+| [Cerebras](https://inference-docs.cerebras.ai/capabilities/prompt-caching) | अपने आप | `prompt_cache_key` |
+| [Cloudflare Workers AI](https://developers.cloudflare.com/workers-ai/features/prompt-caching) | चुने हुए मॉडलों पर अपने आप | `x-session-affinity` हेडर |
+| [Together AI](https://docs.together.ai/docs/inference/chat/prompt-caching), [Mistral](https://docs.mistral.ai/studio-api/conversations/advanced/prompt-caching) | अपने आप; `prompt_cache_key` हिट दर बेहतर करता है | `prompt_cache_key` |
+| [Alibaba Model Studio](https://www.alibabacloud.com/help/en/model-studio/context-cache) | अपने आप (अंतर्निहित); स्पष्ट कैश ऑप्ट-इन हैं | ब्लॉक `cache_control` |
+| [Venice](https://docs.venice.ai/overview/guides/prompt-caching) | अपने आप; Venice Claude ब्रेकपॉइंट खुद जोड़ता है | ब्लॉक `cache_control` |
+| [DeepInfra](https://docs.deepinfra.com/chat/prompt-cache-retention) | अपने आप; रिटेंशन अवधि ऑप्ट-इन है | `prompt_cache_key`, `prompt_cache_breakpoint` और `prompt_cache_options` |
+| [Inference.net](https://inference.net/models/claude-opus-5/) | अपने आप; Claude और Gemini 2.5 मॉडलों पर स्पष्ट कैशिंग | Claude और Gemini 2.5 मॉडलों पर ब्लॉक `cache_control`, बिना `ttl` के |
+| [Baseten](https://docs.baseten.co/inference/model-apis/pricing-and-limits) | अपने आप | `prompt_cache_key` और `x-session-affinity` हेडर |
+| [Morph](https://docs.morphllm.com/sdk/components/caching) | अपने आप | `prompt_cache_key` और `x-session-id` हेडर |
 
-अन्य OpenAI-संगत प्रदाताओं को `prompt_cache_key` तभी मिलता है जब उनका API उसे स्वीकार करता हो, और कोई अन्य कैश नियंत्रण नहीं मिलता। Phaseo हमेशा कुंजी के बजाय आपके वर्कस्पेस और कुंजी का हैश भेजता है। [प्रदाता से जुड़ाव](#provider-affinity) देखें।
+दूसरे OpenAI-संगत प्रदाताओं को `prompt_cache_key` तब मिलता है जब उनका API उसे स्वीकार करता है, और कोई दूसरा कैश नियंत्रण नहीं। Phaseo हमेशा कुंजी के बजाय आपके वर्कस्पेस और कुंजी का हैश भेजता है; [प्रदाता अफ़िनिटी](#provider-affinity) देखें।
 
 <span id="cache-controls"></span>
 ## कैश नियंत्रण
 
-### Claude के लिए डिफ़ॉल्ट नीति
+### Phaseo को Claude ब्रेकपॉइंट लगाने दें
 
-Phaseo, Chat Completions, Responses और Anthropic Messages अनुरोधों के शीर्ष स्तर पर `cache_control` स्वीकार करता है:
+Chat Completions, Responses या Anthropic Messages पर टॉप-लेवल `cache_control` Claude रूट के लिए कैशिंग चालू करता है, और Phaseo आपके लिए ब्रेकपॉइंट लगाता है। दूसरे प्रदाता इसे अनदेखा करते हैं।
 
 ```json
 {
-  "cache_control": {
-    "type": "ephemeral",
-    "ttl": "5m"
-  }
+  "cache_control": { "type": "ephemeral", "ttl": "5m" }
 }
 ```
 
-यह Claude रूट के लिए डिफ़ॉल्ट कैश नीति सेट करता है: Phaseo आपके लिए कैश ब्रेकपॉइंट लगाता है। कम समय तक रहने वाले साझा संदर्भ के लिए `ttl: "5m"` (डिफ़ॉल्ट) चुनें, और जब मॉडल लंबे समय तक रहने वाली प्रॉम्प्ट कैश प्रविष्टियों का समर्थन करे, तब `ttl: "1h"` चुनें। दूसरे प्रदाता इसे अनदेखा करते हैं। शीर्ष-स्तरीय `cache_control` बातचीत को एक ही प्रदाता पर भी बनाए रखता है; [प्रदाता से जुड़ाव](#provider-affinity) देखें।
+कम समय तक रहने वाले साझा कॉन्टेक्स्ट के लिए `ttl: "5m"` (डिफ़ॉल्ट) का उपयोग करें, और जब मॉडल लंबे समय तक रहने वाली कैश एंट्री सपोर्ट करता हो तो `ttl: "1h"` का। टॉप-लेवल `cache_control` बातचीत को एक प्रदाता पर भी रखता है; [प्रदाता अफ़िनिटी](#provider-affinity) देखें।
 
-`provider_options.anthropic.cache_control` वही सेटिंग है। जब कोई अनुरोध दोनों भेजता है, तो `provider_options` वाला मान लागू होता है:
+`provider_options.anthropic.cache_control` वही सेटिंग है, और यह `scope` भी लेती है। जब कोई अनुरोध दोनों भेजता है, तो `provider_options` वाला मान लागू होता है:
 
 ```json
 {
   "provider_options": {
     "anthropic": {
-      "cache_control": {
-        "type": "ephemeral",
-        "ttl": "5m",
-        "scope": "last_user_message"
-      }
+      "cache_control": { "type": "ephemeral", "ttl": "5m", "scope": "agent" }
     }
   }
 }
 ```
 
-`scope` के समर्थित मान:
-
-| स्कोप | व्यवहार |
+| `scope` | Phaseo ब्रेकपॉइंट कहाँ लगाता है |
 | --- | --- |
-| `all_text` | डिफ़ॉल्ट। सिस्टम टेक्स्ट में और टेक्स्ट या इमेज वाले उपयोगकर्ता के तीन सबसे नए संदेशों में कैश नियंत्रण जोड़ें। |
-| `last_user_message` | केवल उपयोगकर्ता के सबसे नए संदेश में कैश नियंत्रण जोड़ें। |
-| `agent` | टूल लूप के लिए। अंतिम टूल परिभाषा, सिस्टम टेक्स्ट, अंतिम संदेश (टूल परिणामों सहित) और पिछले चरण के संदेश में कैश नियंत्रण जोड़ें। `conversation` इसका उपनाम है। |
-| `none` | डिफ़ॉल्ट कैश नीति लागू न करें। |
+| `all_text` (डिफ़ॉल्ट) | सिस्टम टेक्स्ट और टेक्स्ट या इमेज वाले तीन सबसे हाल के उपयोगकर्ता संदेश। |
+| `last_user_message` | सिर्फ़ सबसे हाल का उपयोगकर्ता संदेश। |
+| `agent` | टूल लूप के लिए: आखिरी टूल परिभाषा, सिस्टम टेक्स्ट, अंतिम संदेश (टूल परिणामों सहित), और पिछले चरण का संदेश। `conversation` इसका उपनाम है। |
+| `none` | कहीं नहीं। |
 
-किसी ब्लॉक पर सीधे रखा गया `cache_control` डिफ़ॉल्ट नीति पर प्राथमिकता पाता है।
+कई चरणों वाले टूल लूप के लिए `agent` का उपयोग करें। `all_text` और `last_user_message` सिर्फ़ टूल परिणाम वाले संदेशों को चिह्नित नहीं करते, इसलिए कैश किया गया प्रीफ़िक्स बढ़ना बंद हो जाता है। पहचाने न गए `scope` मान `agent` माने जाते हैं।
 
-Anthropic हर अनुरोध में अधिकतम चार कैश ब्रेकपॉइंट स्वीकार करता है। डिफ़ॉल्ट नीतियाँ आपके द्वारा स्वयं सेट किए गए `cache_control` को भी गिनती हैं और चार पर रुक जाती हैं। अपरिचित `scope` मानों को `agent` माना जाता है। बहु-चरण टूल लूप के लिए `agent` उपयोग करें: `all_text` और `last_user_message` उन संदेशों को चिह्नित नहीं करते जिनमें केवल टूल परिणाम होते हैं, इसलिए कैश किया गया प्रीफ़िक्स आगे नहीं बढ़ता।
-
-अगर आपके अपने ब्लॉक पर चार से ज़्यादा चिह्न हों, तो Phaseo पहला और सबसे नए तीन चिह्न रखता है और बाकी हटा देता है, ताकि अनुरोध अस्वीकार न हो।
+आप ब्लॉक पर खुद जो ब्रेकपॉइंट लगाते हैं, वे डिफ़ॉल्ट नीति पर प्राथमिकता रखते हैं, और Anthropic की प्रति अनुरोध चार की सीमा में गिने जाते हैं: डिफ़ॉल्ट नीति चार पर चिह्न जोड़ना बंद कर देती है। अगर आपके अपने ब्लॉक पर चार से ज़्यादा चिह्न हैं, तो Phaseo पहला और सबसे हाल के तीन रखता है और बाकी हटा देता है, ताकि अनुरोध अस्वीकार न हो।
 
 ### ब्लॉक पर कैश ब्रेकपॉइंट
 
-किसी कंटेंट ब्लॉक पर कैश चिह्न लगाएँ, ताकि उस ब्लॉक तक (उसे मिलाकर) सब कुछ कैश हो जाए। Phaseo दो रूप स्वीकार करता है:
+किसी कंटेंट ब्लॉक पर कैश चिह्न उस ब्लॉक तक और उसे मिलाकर सब कुछ कैश करता है। Phaseo दो रूप स्वीकार करता है:
 
-- `cache_control`: `{"type": "ephemeral"}`, जिसमें वैकल्पिक `ttl` का मान `5m` या `1h` हो सकता है।
-- `prompt_cache_breakpoint`: OpenAI का `{"mode": "explicit"}`, जिसमें `30m` या `12h` वाला `ttl` वैकल्पिक रूप से दिया जा सकता है ([OpenAI पर 12 घंटे का कैश](#12-hour-cache-on-openai) देखें)। जब किसी ब्लॉक पर दोनों हों, तो `prompt_cache_breakpoint` लागू होता है।
+- `cache_control`: `{"type": "ephemeral"}`, `5m` या `1h` के वैकल्पिक `ttl` के साथ।
+- `prompt_cache_breakpoint`: OpenAI का `{"mode": "explicit"}`, `30m` या `12h` के वैकल्पिक `ttl` के साथ ([OpenAI पर 12 घंटे का कैश](#12-hour-cache-on-openai) देखें)। जब किसी ब्लॉक पर दोनों हों, तो `prompt_cache_breakpoint` लागू होता है।
 
-```json
-{
-  "type": "text",
-  "text": "Large stable reference text...",
-  "cache_control": {
-    "type": "ephemeral",
-    "ttl": "1h"
-  }
-}
-```
-
-Chat Completions और Responses में टेक्स्ट और इमेज भागों, फ़ंक्शन टूल परिभाषाओं, और उन टूल परिणामों पर चिह्न स्वीकार किए जाते हैं जिनका कंटेंट टेक्स्ट भागों का array हो। Anthropic Messages हर उस जगह `cache_control` स्वीकार करता है जहाँ Anthropic उसे स्वीकार करता है।
+Chat Completions और Responses पर चिह्न टेक्स्ट और इमेज हिस्सों पर, फ़ंक्शन टूल परिभाषाओं पर, और उन टूल परिणामों पर स्वीकार किए जाते हैं जिनका कंटेंट टेक्स्ट हिस्सों का ऐरे हो। Anthropic Messages `cache_control` को हर उस जगह स्वीकार करता है जहाँ Anthropic करता है: `system` टेक्स्ट ब्लॉक, संदेश के टेक्स्ट और इमेज ब्लॉक, टूल परिणाम ब्लॉक, और टूल परिभाषाएँ। जब एक अनुरोध में कई TTL हों, तो Anthropic को `1h` ब्रेकपॉइंट `5m` वालों से पहले चाहिए।
 
 हर प्रदाता को चिह्न उसके अपने रूप में मिलता है:
 
-| प्रदाता | ब्लॉक-स्तरीय `cache_control` | `prompt_cache_breakpoint` |
+| प्रदाता | ब्लॉक `cache_control` | `prompt_cache_breakpoint` |
 | --- | --- | --- |
-| Anthropic, Claude on AWS, Amazon Bedrock और Google Vertex AI पर Claude | आपके `ttl` के साथ `{"type": "ephemeral"}` के रूप में भेजा जाता है | `cache_control: {"type": "ephemeral"}` के रूप में भेजा जाता है |
-| OpenAI, GPT-5.6 और बाद के मॉडल | `prompt_cache_breakpoint: {"mode": "explicit"}` के रूप में भेजा जाता है; `ttl` हटा दिया जाता है | अपने `ttl` के साथ भेजा जाता है |
-| Azure OpenAI, GPT-5.6 और बाद के मॉडल | `prompt_cache_breakpoint: {"mode": "explicit"}` के रूप में भेजा जाता है; `ttl` हटा दिया जाता है | बिना `ttl` के भेजा जाता है |
-| OpenAI और Azure OpenAI, पुराने मॉडल | हटाया जाता है | हटाया जाता है |
-| DeepInfra | हटाया जाता है | भेजा जाता है |
-| Alibaba Model Studio और Venice | भेजा जाता है | हटाया जाता है |
-| Inference.net, Claude और Gemini 2.5 मॉडल | बिना `ttl` के भेजा जाता है | हटाया जाता है |
-| अन्य प्रदाता | हटाया जाता है | हटाया जाता है |
+| Anthropic पर Claude, Claude on AWS, Amazon Bedrock और Google Vertex AI | आपके `ttl` के साथ `{"type": "ephemeral"}` के रूप में भेजा जाता है | `cache_control: {"type": "ephemeral"}` के रूप में भेजा जाता है |
+| OpenAI, GPT-5.6 और बाद के | `prompt_cache_breakpoint: {"mode": "explicit"}` के रूप में भेजा जाता है; `ttl` हटा दिया जाता है | अपने `ttl` के साथ भेजा जाता है |
+| Azure OpenAI, GPT-5.6 और बाद के | `prompt_cache_breakpoint: {"mode": "explicit"}` के रूप में भेजा जाता है; `ttl` हटा दिया जाता है | बिना `ttl` के भेजा जाता है |
+| OpenAI और Azure OpenAI, पहले के मॉडल | हटा दिया जाता है | हटा दिया जाता है |
+| DeepInfra | हटा दिया जाता है | बिना `ttl` के भेजा जाता है |
+| Alibaba Model Studio और Venice | भेजा जाता है | हटा दिया जाता है |
+| Inference.net, Claude और Gemini 2.5 मॉडल | बिना `ttl` के भेजा जाता है | हटा दिया जाता है |
+| दूसरे प्रदाता | हटा दिया जाता है | हटा दिया जाता है |
 
-टूल परिभाषाओं पर लगे चिह्न केवल Claude रूट, Alibaba Model Studio, Venice और Inference.net के Claude और Gemini 2.5 मॉडलों तक पहुँचते हैं; OpenAI टूल पर ब्रेकपॉइंट स्वीकार नहीं करता। चिह्न हटाने से प्रॉम्प्ट का बाकी हिस्सा नहीं बदलता, इसलिए कैश किया गया प्रीफ़िक्स बिना चिह्न वाले अनुरोध जैसा ही रहता है।
+टूल परिभाषाओं पर चिह्न सिर्फ़ Claude रूट, Alibaba Model Studio, Venice, और Inference.net के Claude और Gemini 2.5 मॉडलों तक पहुँचते हैं; OpenAI टूल पर ब्रेकपॉइंट स्वीकार नहीं करता। चिह्न हटाने से प्रॉम्प्ट का बाकी हिस्सा नहीं बदलता, इसलिए कैश किया गया प्रीफ़िक्स बिना चिह्न वाले अनुरोध से मेल खाता है।
 
-Amazon Bedrock और Google Vertex AI, Claude 3.7 Sonnet, 3.5 Sonnet और 3 Opus को केवल 5 मिनट के लिए कैश करते हैं, और Bedrock इन मॉडलों पर `ttl` अस्वीकार कर सकता है। इन रूट पर Phaseo आपके ब्रेकपॉइंट बिना `ttl` के भेजता है, इसलिए वे 5 मिनट के लिए कैश होते हैं, और हटाए गए `1h` को `X-Phaseo-Dropped-Params` हेडर और `meta.routing.dropped_params` में `cache_control.ttl` के रूप में रिपोर्ट करता है। Inference.net ब्रेकपॉइंट को बिना `ttl` के दस्तावेज़ करता है, इसलिए Phaseo वहाँ भी `ttl` को इसी तरह हटाता और रिपोर्ट करता है, और लिखे गए टोकन का बिल 5 मिनट वाले लेखन के रूप में बनता है।
+Amazon Bedrock और Google Vertex AI, Claude 3.7 Sonnet, 3.5 Sonnet और 3 Opus को सिर्फ़ 5 मिनट के लिए कैश करते हैं, और Bedrock इन मॉडलों पर `ttl` अस्वीकार कर सकता है। इन रूट पर Phaseo आपके ब्रेकपॉइंट बिना `ttl` के भेजता है, इसलिए वे 5 मिनट के लिए कैश होते हैं, और हटाए गए `1h` को `X-Phaseo-Dropped-Params` हेडर और `meta.routing.dropped_params` में `cache_control.ttl` के रूप में रिपोर्ट करता है। Inference.net ब्रेकपॉइंट को बिना `ttl` के दस्तावेज़ में बताता है, इसलिए Phaseo वहाँ भी `ttl` को इसी तरह हटाता और रिपोर्ट करता है, और राइट का बिल 5-मिनट राइट के रूप में बनता है।
 
 <span id="openai-retention-and-options"></span>
-### OpenAI प्रतिधारण और विकल्प
+### OpenAI रिटेंशन और विकल्प
 
-OpenAI के कैश नियंत्रण मॉडल की पीढ़ी पर निर्भर करते हैं। Phaseo हर नियंत्रण वहीं भेजता है जहाँ OpenAI उसे स्वीकार करता है:
+OpenAI के कैश नियंत्रण मॉडल पीढ़ी पर निर्भर करते हैं। Phaseo हर एक को सिर्फ़ वहीं भेजता है जहाँ वह स्वीकार किया जाता है:
 
 | फ़ील्ड | मान | किसे भेजा जाता है |
 | --- | --- | --- |
-| `prompt_cache_options` | `mode`: `implicit` या `explicit`; `ttl`: `30m` या `12h` | GPT-5.6 और बाद के OpenAI मॉडल |
-| `prompt_cache_options` | `mode`: `implicit` या `explicit`; `ttl`: `30m` | GPT-5.6 और बाद के Azure OpenAI मॉडल |
+| `prompt_cache_options` | `mode`: `implicit` या `explicit`; `ttl`: `30m` (डिफ़ॉल्ट) या `12h` | OpenAI GPT-5.6 और बाद के |
+| `prompt_cache_options` | `mode`: `implicit` या `explicit`; `ttl`: `30m` | Azure OpenAI GPT-5.6 और बाद के |
 | `prompt_cache_options` | `mode`: `explicit`; `ttl`: `5m` या `1h` | DeepInfra |
-| `prompt_cache_options` | `mode`: `implicit`; `ttl`: `5m`, या Kimi K3 पर `1h` | Moonshot AI |
+| `prompt_cache_options` | `mode`: `implicit`; `ttl`: `5m` (डिफ़ॉल्ट), या Kimi K3 पर `1h` | Moonshot AI |
 | `prompt_cache_retention` | `in_memory` या `24h` | GPT-5.6 से पहले के OpenAI और Azure OpenAI मॉडल |
 
-GPT-5.6 और बाद के मॉडलों पर OpenAI `30m` (डिफ़ॉल्ट) या `12h` वाला `ttl` स्वीकार करता है, और Azure OpenAI केवल `30m`। `explicit` मोड में केवल वही ब्रेकपॉइंट कैश होते हैं जो आप लगाते हैं। DeepInfra वही ऑब्जेक्ट `5m` या `1h` वाले `ttl` के साथ उपयोग करता है, और सत्र के हर अनुरोध में `prompt_cache_key` चाहिए। Moonshot AI `mode: "implicit"` और `5m` (डिफ़ॉल्ट) या `1h` वाला `ttl` लेता है। Phaseo `1h` केवल उन Kimi K3 रूट को भेजता है जिनकी 1 घंटे के लेखन की कीमत है, ताकि उन लेखनों का बिल उसी कीमत पर बने; बाकी जगह वह `ttl` हटाता है और उसे `X-Phaseo-Dropped-Params` हेडर में `prompt_cache_options.ttl` के रूप में रिपोर्ट करता है। अन्य प्रदाताओं को इनमें से कोई फ़ील्ड नहीं मिलता।
+`explicit` मोड सिर्फ़ आपके लगाए ब्रेकपॉइंट कैश करता है। DeepInfra को सत्र के हर अनुरोध पर `prompt_cache_key` भी चाहिए। Phaseo Moonshot AI का `1h` सिर्फ़ उन Kimi K3 रूट को भेजता है जिनकी 1-घंटे की राइट कीमत है, इसलिए उन राइट का बिल उसी कीमत पर बनता है; बाकी जगह यह `ttl` हटा देता है और उसे `X-Phaseo-Dropped-Params` हेडर में `prompt_cache_options.ttl` के रूप में रिपोर्ट करता है। दूसरे प्रदाताओं को इनमें से कोई फ़ील्ड नहीं मिलता।
 
-दोनों में से कोई भी फ़ील्ड शीर्ष स्तर पर या `provider_options.openai` के अंतर्गत भेजें। दोनों मौजूद हों, तो शीर्ष-स्तरीय मान लागू होता है:
-
-```json
-{
-  "prompt_cache_retention": "24h"
-}
-```
+कोई भी फ़ील्ड टॉप-लेवल पर या `provider_options.openai` के तहत भेजें। जब दोनों मौजूद हों, तो टॉप-लेवल मान लागू होता है:
 
 ```json
 {
+  "prompt_cache_retention": "24h",
   "provider_options": {
-    "openai": {
-      "prompt_cache_retention": "24h"
-    }
+    "openai": { "prompt_cache_retention": "in_memory" }
   }
 }
 ```
 
-<span id="12-hour-cache-on-openai"></span>
+यहाँ अनुरोध `24h` उपयोग करता है।
 
+<span id="12-hour-cache-on-openai"></span>
 ### OpenAI पर 12 घंटे का कैश
 
-GPT-5.6 और बाद के मॉडलों पर, जब आप `ttl: "12h"` सेट करते हैं, तो OpenAI कैश एंट्री को कम से कम 12 घंटे रखता है। इसे पूरे अनुरोध के लिए `prompt_cache_options` में या किसी एक ब्रेकपॉइंट के लिए `prompt_cache_breakpoint` में सेट करें। जिस ब्रेकपॉइंट का अपना `ttl` नहीं है, वह अनुरोध का `ttl` उपयोग करता है। OpenAI 12 घंटे वाले कैश लेखन पर इनपुट दर का 2.5× और 30 मिनट वाले पर 1.25× शुल्क लेता है; कैश से पढ़ने की कीमत दोनों के लिए समान है।
+GPT-5.6 और बाद के मॉडलों पर, जब आप `ttl: "12h"` सेट करते हैं, तो OpenAI कैश एंट्री को कम से कम 12 घंटे रखता है, चाहे पूरे अनुरोध के लिए `prompt_cache_options` में हो या एक ब्रेकपॉइंट के लिए `prompt_cache_breakpoint` में। अपने `ttl` के बिना ब्रेकपॉइंट अनुरोध वाला उपयोग करता है। OpenAI 12 घंटे की राइट का बिल इनपुट दर के 2.5× पर और 30 मिनट की राइट का 1.25× पर बनाता है; कैश रीड की कीमत दोनों के लिए एक जैसी है।
 
 ```json
 {
@@ -195,255 +264,119 @@ GPT-5.6 और बाद के मॉडलों पर, जब आप `ttl: "
 }
 ```
 
-- OpenAI 12 घंटे की अवधि केवल अपने Responses API पर दस्तावेज़ करता है। इसे माँगने वाला Chat Completions अनुरोध OpenAI के Responses API पर चलता है, और जवाब Chat Completions फ़ॉर्मैट में ही रहता है।
-- जो रूट 12 घंटे का कैश स्वीकार करते हैं (OpenAI का ग्लोबल API), उन्हें पहले आज़माया जाता है। किसी भी अन्य रूट, जैसे Azure OpenAI, किसी अन्य प्रदाता या GPT-5.6 से पहले के मॉडल, को अनुरोध इसके बिना मिलता है, इसलिए 30 मिनट का डिफ़ॉल्ट लागू होता है। अनुरोध फिर भी चलता है, और हटाया गया फ़ील्ड `prompt_cache_options.ttl` या `prompt_cache_breakpoint.ttl` के रूप में `X-Phaseo-Dropped-Params` हेडर और `meta.routing.dropped_params` में बताया जाता है।
+- OpenAI 12 घंटे की अवधि सिर्फ़ अपने Responses API पर दस्तावेज़ में बताता है। इसे माँगने वाला Chat Completions अनुरोध OpenAI के Responses API पर चलता है, और प्रतिक्रिया Chat Completions फ़ॉर्मैट में ही रहती है।
+- 12 घंटे का कैश लेने वाले रूट पहले आज़माए जाते हैं: OpenAI का अपना API (`openai` और `openai-eu`), ऐसे GPT-5.6 या बाद के मॉडल पर जिसके प्राइस कार्ड में 12 घंटे की राइट कीमत हो। कोई भी दूसरा रूट, जैसे Azure OpenAI, कोई दूसरा प्रदाता, या GPT-5.6 से पहले का मॉडल, अनुरोध इसके बिना पाता है, इसलिए 30 मिनट का डिफ़ॉल्ट लागू होता है। अनुरोध फिर भी चलता है, और हटाया गया फ़ील्ड `X-Phaseo-Dropped-Params` हेडर और `meta.routing.dropped_params` में `prompt_cache_options.ttl` या `prompt_cache_breakpoint.ttl` के रूप में रिपोर्ट किया जाता है।
 
-### Google Gemini
+### स्पष्ट Gemini कैश का उपयोग करें
 
-Gemini 2.5 और बाद के मॉडल अपने-आप अंतर्निहित कैशिंग करते हैं, आपको कुछ भेजने की ज़रूरत नहीं। Google के कैशिंग API से बनाया गया स्पष्ट कैश उपयोग करने के लिए, उसका नाम `provider_options.google.cached_content` में दें:
+Gemini 2.5 और बाद के मॉडल बिना कुछ भेजे अंतर्निहित रूप से कैश करते हैं। Google के कैशिंग API से बनाए गए स्पष्ट कैश का उपयोग करने के लिए, उसका नाम `provider_options.google.cached_content` में दें:
 
 ```json
 {
   "provider_options": {
-    "google": {
-      "cached_content": "cachedContents/abc123"
-    }
+    "google": { "cached_content": "cachedContents/abc123" }
   }
 }
 ```
 
-- Google AI Studio पर `cached_content` केवल आपकी अपनी Google API कुंजी (BYOK) के साथ काम करता है। Phaseo की कुंजी के साथ अनुरोध 400 लौटाता है, क्योंकि कैश उसी खाते का होता है जिसने उसे बनाया।
-- Vertex AI पर `cached_content` केवल आपकी अपनी Vertex AI क्रेडेंशियल के साथ काम करता है; Phaseo की क्रेडेंशियल के साथ अनुरोध 400 लौटाता है। कैश का पूरा नाम, `projects/{project}/locations/{location}/cachedContents/{id}`, भेजें, तो Phaseo अनुरोध उसी प्रोजेक्ट और लोकेशन पर भेजता है। `cachedContents/abc123` जैसा छोटा नाम आपके सर्विस अकाउंट JSON के `project_id` और `region` का उपयोग करता है, और इनमें से कोई एक न हो तो 400 लौटाता है।
-- Google, Gemini 4 Argon और बाद के मॉडलों पर स्पष्ट कैश का समर्थन नहीं करता।
+- Google AI Studio पर `cached_content` सिर्फ़ आपकी अपनी Google API कुंजी (BYOK) के साथ काम करता है। Phaseo की कुंजी के साथ अनुरोध `400` लौटाता है, क्योंकि कैश उसे बनाने वाले खाते का होता है।
+- Vertex AI पर `cached_content` सिर्फ़ आपके अपने Vertex AI क्रेडेंशियल के साथ काम करता है; Phaseo के क्रेडेंशियल के साथ अनुरोध `400` लौटाता है। कैश का पूरा नाम `projects/{project}/locations/{location}/cachedContents/{id}` भेजें, और Phaseo अनुरोध को उस प्रोजेक्ट और लोकेशन पर भेजता है। `cachedContents/abc123` जैसा छोटा नाम आपके सर्विस-अकाउंट JSON के `project_id` और `region` का उपयोग करता है, और इनमें से कोई भी गायब हो तो `400` लौटाता है।
+- Google, Gemini 4 Argon और बाद के मॉडलों पर स्पष्ट कैश सपोर्ट नहीं करता।
 
-`provider_options.google.cache_control` और `provider_options.google.cache_ttl` स्वीकार किए जाते हैं, लेकिन Google को नहीं भेजे जाते।
+`provider_options.google.cache_control` और `provider_options.google.cache_ttl` स्वीकार किए जाते हैं लेकिन Google को नहीं भेजे जाते।
 
-## Chat Completions
+### Responses: पूरी बातचीत भेजें
 
-OpenAI-संगत चैट क्लाइंट उपयोग करते समय `/v1/chat/completions` उपयोग करें।
-
-```bash
-curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer $PHASEO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "anthropic/claude-sonnet-4",
-    "messages": [
-      {
-        "role": "system",
-        "content": [
-          {
-            "type": "text",
-            "text": "You are a support assistant. Follow the company policy exactly.",
-            "cache_control": { "type": "ephemeral", "ttl": "1h" }
-          }
-        ]
-      },
-      {
-        "role": "user",
-        "content": "Summarise the latest ticket."
-      }
-    ]
-  }'
-```
-
-## Responses
-
-नए OpenAI-संगत टेक्स्ट इंटीग्रेशन और एजेंट फ़्लो के लिए `/v1/responses` उपयोग करें।
-
-```bash
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer $PHASEO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "anthropic/claude-sonnet-4",
-    "input": [
-      {
-        "role": "user",
-        "content": [
-          {
-            "type": "input_text",
-            "text": "Reference document: Refunds are available for 30 days when...",
-            "cache_control": { "type": "ephemeral", "ttl": "5m" }
-          },
-          {
-            "type": "input_text",
-            "text": "Answer this customer: Can I return an item after 20 days?"
-          }
-        ]
-      }
-    ]
-  }'
-```
-
-Phaseo जवाबों को संग्रहीत नहीं करता। जिन अनुरोधों में `previous_response_id` या `conversation` सेट हो, वे 400 `unsupported_param` लौटाते हैं, इसलिए हर चरण में पूरी बातचीत `input` में भेजें। उसकी स्थिर शुरुआत ही वह प्रीफ़िक्स है जो कैश होता है। टूल लूप में `reasoning` आउटपुट आइटम भी वापस भेजें; [टूल लूप में रीज़निंग](../api-reference/endpoint/responses.mdx) देखें।
-
-## Anthropic Messages
-
-अगर आपका क्लाइंट Anthropic-संगत है, तो `/v1/messages` उपयोग करें।
-
-```bash
-curl https://api.phaseo.app/v1/messages \
-  -H "Authorization: Bearer $PHASEO_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "anthropic/claude-sonnet-4",
-    "max_tokens": 512,
-    "system": [
-      {
-        "type": "text",
-        "text": "You are a careful support assistant. Use the policy below.",
-        "cache_control": { "type": "ephemeral", "ttl": "1h" }
-      }
-    ],
-    "messages": [
-      {
-        "role": "user",
-        "content": [
-          {
-            "type": "text",
-            "text": "Policy: refunds are available for 30 days when...",
-            "cache_control": { "type": "ephemeral", "ttl": "5m" }
-          },
-          {
-            "type": "text",
-            "text": "Can this customer return an item after 20 days?"
-          }
-        ]
-      }
-    ],
-    "tools": [
-      {
-        "name": "lookup_order",
-        "description": "Look up order status.",
-        "input_schema": {
-          "type": "object",
-          "properties": {
-            "order_id": { "type": "string" }
-          },
-          "required": ["order_id"]
-        },
-        "cache_control": { "type": "ephemeral", "ttl": "5m" }
-      }
-    ]
-  }'
-```
-
-Anthropic Messages में इन पर कैश नियंत्रण समर्थित है:
-
-- `system` के टेक्स्ट ब्लॉक
-- संदेश के टेक्स्ट और इमेज ब्लॉक
-- टूल परिणाम ब्लॉक
-- टूल की परिभाषाएँ
-
-जब एक अनुरोध में कई TTL हों, तो Anthropic के अनुसार `1h` वाले ब्रेकपॉइंट `5m` वाले ब्रेकपॉइंट से पहले आने चाहिए।
+Phaseo प्रतिक्रियाएँ सेव नहीं करता। `previous_response_id` या `conversation` सेट करने वाले अनुरोध `400` `unsupported_param` लौटाते हैं, इसलिए हर चरण पर पूरी बातचीत `input` में भेजें। इसकी स्थिर शुरुआत ही वह प्रीफ़िक्स है जो कैश होता है। टूल लूप में `reasoning` आउटपुट आइटम भी वापस भेजें; [टूल लूप में रीज़निंग](../api-reference/endpoint/responses.mdx#reasoning-in-tool-loops) देखें।
 
 <span id="usage-and-pricing-fields"></span>
-## उपयोग और मूल्य निर्धारण के फ़ील्ड
+## उपयोग और प्राइसिंग फ़ील्ड
 
-उपयोग आँकड़े हर टेक्स्ट एंडपॉइंट पर कैश से पढ़ने और कैश में लिखने की जानकारी देते हैं। Chat Completions और Responses, OpenAI के अर्थ का पालन करते हैं: इनपुट की गिनती में कैश से पढ़ना और कैश में लिखना शामिल होता है। Anthropic Messages, Anthropic के अर्थ का पालन करता है: `input_tokens` में ये शामिल नहीं होते।
+हर टेक्स्ट एंडपॉइंट कैश रीड और राइट रिपोर्ट करता है। Chat Completions और Responses OpenAI के अर्थ का पालन करते हैं: इनपुट गिनती में कैश रीड और राइट शामिल होते हैं। Anthropic Messages, Anthropic के अर्थ का पालन करता है: `input_tokens` में ये शामिल नहीं होते।
 
-| एंडपॉइंट | कुल इनपुट | कैश से पढ़ना | कैश में लिखना |
+| एंडपॉइंट | कुल इनपुट | कैश रीड | कैश राइट |
 | --- | --- | --- | --- |
-| Chat Completions | `prompt_tokens`, पढ़ने और लिखने सहित | `prompt_tokens_details.cached_tokens` | `prompt_tokens_details.cache_write_tokens` |
-| Responses | `input_tokens`, पढ़ने और लिखने सहित | `input_tokens_details.cached_tokens` | `input_tokens_details.cache_write_tokens`; GPT-5.6 और बाद के OpenAI मॉडलों पर अवधि के अनुसार `input_tokens_details.cache_write_tokens_details.ttl_30m_tokens` और `ttl_12h_tokens` में बँटा हुआ |
-| Anthropic Messages | `input_tokens` + `cache_read_input_tokens` + `cache_creation_input_tokens` | `cache_read_input_tokens` | `cache_creation_input_tokens`, जिसे TTL के अनुसार `cache_creation.ephemeral_5m_input_tokens` और `cache_creation.ephemeral_1h_input_tokens` में बाँटा जाता है |
+| Chat Completions | `prompt_tokens`, रीड और राइट सहित | `prompt_tokens_details.cached_tokens` | `prompt_tokens_details.cache_write_tokens` |
+| Responses | `input_tokens`, रीड और राइट सहित | `input_tokens_details.cached_tokens` | `input_tokens_details.cache_write_tokens`, OpenAI GPT-5.6 और बाद के मॉडलों पर अवधि के अनुसार `input_tokens_details.cache_write_tokens_details.ttl_30m_tokens` और `ttl_12h_tokens` में बँटा हुआ |
+| Anthropic Messages | `input_tokens` + `cache_read_input_tokens` + `cache_creation_input_tokens` | `cache_read_input_tokens` | `cache_creation_input_tokens`, TTL के अनुसार `cache_creation.ephemeral_5m_input_tokens` और `cache_creation.ephemeral_1h_input_tokens` में बँटा हुआ |
 
-Chat Completions और Responses में बिना कैश वाला इनपुट, कुल इनपुट में से कैश से पढ़ना और कैश में लिखना घटाने पर मिलता है। स्ट्रीम किए गए Anthropic Messages जवाबों में कैश फ़ील्ड `message_delta` में आते हैं। Chat Completions के उपयोग में लेखन अवधि के अनुसार नहीं बँटता, क्योंकि OpenAI वहाँ इसके लिए कोई फ़ील्ड दस्तावेज़ नहीं करता; अनुरोध विवरण में यह बँटवारा फिर भी दर्ज होता है।
+Chat Completions और Responses पर, बिना कैश वाला इनपुट कुल इनपुट में से कैश रीड और कैश राइट घटाकर निकलता है। स्ट्रीम की गई Anthropic Messages प्रतिक्रियाओं में कैश फ़ील्ड `message_delta` पर होते हैं। Chat Completions उपयोग में अवधि के अनुसार बँटवारा नहीं होता, क्योंकि OpenAI वहाँ कोई बँटवारा दस्तावेज़ में नहीं बताता; अनुरोध विवरण फिर भी इसे दर्ज करते हैं।
 
 <Note>
-पहले के जवाब कैश में लिखने की जानकारी `output_tokens_details.cached_tokens` (Chat Completions पर `completion_tokens_details.cached_tokens`) में देते थे, और Claude रूट Chat Completions और Responses पर कैश से पढ़ने और लिखने को `input_tokens` में शामिल नहीं करते थे। अब ये दोनों बातें लागू नहीं होतीं: कैश में लिखने की जानकारी `cache_write_tokens` से पढ़ें। बिना स्ट्रीमिंग वाले Anthropic Messages जवाब पहले `cache_creation_input_tokens: null` लौटाते थे; अब वे असली मान लौटाते हैं।
+पहले की प्रतिक्रियाएँ कैश राइट को `output_tokens_details.cached_tokens` (Chat Completions पर `completion_tokens_details.cached_tokens`) के रूप में रिपोर्ट करती थीं, और Claude रूट Chat Completions और Responses पर कैश रीड और राइट को `input_tokens` से बाहर रखते थे। अब इनमें से कुछ भी लागू नहीं है: राइट `cache_write_tokens` से पढ़ें। बिना स्ट्रीम वाली Anthropic Messages प्रतिक्रियाएँ पहले `cache_creation_input_tokens: null` लौटाती थीं; अब वे असली गिनती लौटाती हैं।
 </Note>
 
-अनुरोध विवरण और मूल्य विवरण ये मीटर उपयोग करते हैं:
+अनुरोध विवरण और प्राइसिंग ब्रेकडाउन ये मीटर उपयोग करते हैं:
 
-| फ़ील्ड | अर्थ |
+| मीटर | क्या गिनता है |
 | --- | --- |
-| `cached_read_text_tokens` | कैश से पढ़ने का मूल्य निर्धारण मीटर। यह प्रदाता के कैश से दोबारा उपयोग किया गया कैश्ड इनपुट टेक्स्ट है। |
-| `cached_write_text_tokens` | जब प्रदाता के पास कैश में लिखने की एक ही कीमत हो, तब कैश में लिखने का मूल्य निर्धारण मीटर। |
-| `cached_write_text_tokens_5m` | जब प्रदाता TTL के अनुसार अलग-अलग लेखन रिपोर्ट करे, तब 5 मिनट के TTL के लिए कैश में लिखे गए टोकन। |
-| `cached_write_text_tokens_1h` | जब प्रदाता TTL के अनुसार अलग-अलग लेखन रिपोर्ट करे, तब 1 घंटे के TTL के लिए कैश में लिखे गए टोकन। |
-| `cached_write_text_tokens_30m` | 30 मिनट की अवधि वाले OpenAI कैश में लिखे गए टोकन। |
-| `cached_write_text_tokens_12h` | 12 घंटे की अवधि वाले OpenAI कैश में लिखे गए टोकन। |
+| `cached_read_text_tokens` | कैश रीड। |
+| `cached_write_text_tokens` | कैश राइट, जब प्रदाता की एक ही कैश-राइट कीमत हो। |
+| `cached_write_text_tokens_5m`, `cached_write_text_tokens_1h` | 5 मिनट या 1 घंटे के TTL वाले Claude कैश राइट, जब प्रदाता उन्हें अलग से रिपोर्ट करता है। |
+| `cached_write_text_tokens_30m`, `cached_write_text_tokens_12h` | 30 मिनट या 12 घंटे की अवधि वाले OpenAI कैश राइट। |
 
-### कैश्ड टोकन की कीमत कैसे तय होती है
+### कैश किए गए टोकन की कीमत कैसे तय होती है
 
-Phaseo हर इनपुट टोकन का शुल्क केवल एक बार, केवल एक दर पर लेता है:
+Phaseo हर इनपुट टोकन का बिल एक बार, एक दर पर बनाता है: बिना कैश वाला इनपुट इनपुट दर पर, कैश रीड कैश-रीड दर पर, और कैश राइट कैश-राइट दर पर, या जब प्रदाता उनकी अलग कीमत रखता है तो 5 मिनट और 1 घंटे की दरों (Claude) या 30 मिनट और 12 घंटे की दरों (OpenAI) पर। कुछ प्रदाता कैश राइट को इनपुट कुल के अंदर गिनते हैं और कुछ उसके ऊपर रिपोर्ट करते हैं; दोनों तरह से, लिखे गए टोकन का बिल कभी सामान्य इनपुट के रूप में भी नहीं बनता।
 
-- बिना कैश वाला इनपुट, इनपुट दर पर
-- कैश से पढ़ना, कैश-पठन दर पर
-- कैश में लिखना, कैश-लेखन दर पर, या जब प्रदाता 5 मिनट और 1 घंटे (Claude) या 30 मिनट और 12 घंटे (OpenAI) की कीमतें अलग रखता हो, तो उन दरों पर
+उदाहरण के लिए, $5.00 प्रति 1M इनपुट टोकन, कैश रीड के लिए $0.50, 30-मिनट कैश राइट के लिए $6.25 और आउटपुट के लिए $30.00 की उदाहरणात्मक दरों पर, 53,100 इनपुट टोकन वाला अनुरोध, जिनमें से 48,000 कैश रीड और 3,000 कैश राइट हैं, साथ में 850 आउटपुट टोकन, की लागत:
 
-कुछ प्रदाता कैश में लिखने को कुल इनपुट में गिनते हैं और कुछ उसे अलग से रिपोर्ट करते हैं। Phaseo दोनों का शुल्क एक जैसे लेता है, इसलिए लिखे गए टोकन का शुल्क सामान्य इनपुट के रूप में दोबारा कभी नहीं लिया जाता।
-
-उदाहरण के लिए, GPT-5.6 Sol के एक अनुरोध में 53,100 इनपुट टोकन हों, जिनमें 48,000 कैश से पढ़े गए और 3,000 कैश में लिखे गए हों, साथ में 850 आउटपुट टोकन हों, तो लागत यह होगी:
-
-| टोकन | प्रति 10 लाख दर | लागत |
+| टोकन | प्रति 1M दर | लागत |
 | --- | ---: | ---: |
 | 2,100 बिना कैश वाला इनपुट | $5.00 | $0.01050 |
-| 48,000 कैश से पढ़े गए | $0.50 | $0.02400 |
-| 3,000 कैश में लिखे गए | $6.25 | $0.01875 |
+| 48,000 कैश रीड | $0.50 | $0.02400 |
+| 3,000 कैश राइट | $6.25 | $0.01875 |
 | 850 आउटपुट | $30.00 | $0.02550 |
 | कुल | | $0.07875 |
 
-अगर इनमें से 2,000 लेखन 12 घंटे की अवधि वाले होते, तो उनकी कीमत $6.25 के बजाय $12.50 प्रति 10 लाख होती, और अनुरोध की लागत $0.09125 होती।
+अगर उनमें से 2,000 राइट की अवधि 12 घंटे होती, तो उनकी लागत $6.25 के बजाय $12.50 प्रति 1M होती, और अनुरोध की लागत $0.09125 होती।
 
-अगर कोई प्रदाता ऐसे रूट पर कैश्ड टोकन रिपोर्ट करता है जिसकी कैश कीमत अभी कैटलॉग में नहीं है, तो Phaseo अनुरोध को विफल नहीं करता:
+कुछ प्रदाता कुछ मॉडलों पर कैश किए गए टोकन पर छूट नहीं देते। उनके मॉडल पेज इनपुट और कैश रीड के लिए एक जैसी कीमत दिखाते हैं।
 
-- कैश से पढ़ने का शुल्क रूट की इनपुट दर पर लिया जाता है।
-- कैश में लिखने का शुल्क इनपुट दर को प्रदाता के प्रकाशित लेखन गुणक से गुणा करके लिया जाता है: Claude के 5 मिनट वाले लेखन पर 1.25×, 1 घंटे वाले पर 2×; OpenAI, Azure OpenAI और Alibaba पर 1.25×; Kimi K3 के 5 मिनट वाले लेखन पर 1×, 1 घंटे वाले पर 2×; किसी भी रूट पर OpenAI के 12 घंटे वाले लेखन पर 2.5×; अन्य प्रदाताओं पर 1×।
-- मूल्य पंक्ति पर `pricing_fallback: "input_rate"` चिह्न होता है।
+### जब किसी रूट की अभी कोई कैश कीमत न हो
 
-जिस Claude रूट के कैटलॉग में कैश लेखन की केवल एक कीमत है, वहाँ वह कीमत 5 मिनट वाले लेखन की दर है। प्रदाता जिन लेखन को 1 घंटे वाले लेखन के रूप में रिपोर्ट करता है, उनका शुल्क इनपुट दर के 2× पर लिया जाता है, `pricing_fallback: "input_rate"` चिह्न वाली `cached_write_text_tokens_1h` पंक्ति में।
+अगर कोई प्रदाता ऐसे रूट पर कैश किए गए टोकन रिपोर्ट करता है जिसकी कैटलॉग में अभी कोई कैश कीमत नहीं है, तो अनुरोध विफल नहीं होता:
 
-स्ट्रीम किए गए Claude रिस्पॉन्स का अंतिम `message_delta` कैश लेखन का संचयी कुल TTL के अनुसार बँटवारे के बिना रिपोर्ट करता है। बँटवारे से अधिक लेखन का शुल्क 5 मिनट वाले लेखन के रूप में लिया जाता है, क्योंकि अनुरोध के 1 घंटा माँगने पर भी सर्वर टूल के लेखन 5 मिनट का उपयोग कर सकते हैं।
+- कैश रीड का बिल रूट की इनपुट दर पर बनता है।
+- कैश राइट का बिल इनपुट दर गुणा प्रदाता के दस्तावेज़ में बताए गए राइट गुणक पर बनता है।
+- प्राइसिंग लाइन `pricing_fallback: "input_rate"` से चिह्नित होती है।
 
-कुछ प्रदाता कुछ मॉडलों पर कैश्ड टोकन पर छूट नहीं देते। उन मॉडलों के पेज पर इनपुट और कैश से पढ़ने की कीमत एक जैसी दिखती है।
+| राइट | इनपुट दर का गुणक |
+| --- | --- |
+| Claude, कोई भी प्लेटफ़ॉर्म | 5-मिनट राइट के लिए 1.25×, 1-घंटे राइट के लिए 2× |
+| OpenAI 30-मिनट राइट, कोई भी रूट | 1.25× |
+| OpenAI 12-घंटे राइट, कोई भी रूट | 2.5× |
+| OpenAI, Azure OpenAI और Alibaba, अन्य राइट | 1.25× |
+| Moonshot AI और Kimi K3 | 5-मिनट राइट के लिए 1×, 1-घंटे राइट के लिए 2× |
+| दूसरे प्रदाता | 1× |
 
-## व्यावहारिक जाँच
+जिस Claude रूट के कैटलॉग में एक ही कैश-राइट कीमत है, वहाँ वह कीमत 5-मिनट दर होती है। प्रदाता जिन राइट को 1-घंटे राइट के रूप में रिपोर्ट करता है, उनका बिल इनपुट दर के 2× पर, `pricing_fallback: "input_rate"` से चिह्नित `cached_write_text_tokens_1h` लाइन पर बनता है।
 
-प्रॉम्प्ट कैशिंग जोड़ने के बाद:
-
-1. कैश बनाने या उसे वार्म करने के लिए एक अनुरोध भेजें।
-2. उसी कैश करने योग्य सामग्री के साथ दूसरा अनुरोध भेजें।
-3. जवाब के उपयोग आँकड़ों में `cached_tokens` और `cache_write_tokens` देखें, और अनुरोध विवरण में कैश मीटर देखें।
-4. केवल पहली कॉल नहीं, बल्कि बार-बार की गई कॉल में लेटेंसी और लागत की तुलना करें।
+स्ट्रीम की गई Claude प्रतिक्रिया का अंतिम `message_delta` कुल कैश राइट को TTL बँटवारे के बिना रिपोर्ट करता है। बँटवारे से आगे के राइट का बिल 5-मिनट राइट के रूप में बनता है, क्योंकि सर्वर-टूल राइट 5 मिनट उपयोग कर सकते हैं, तब भी जब अनुरोध 1 घंटा माँगता है।
 
 <span id="provider-affinity"></span>
-## प्रदाता से जुड़ाव
+## प्रदाता अफ़िनिटी
 
-प्रॉम्प्ट कैश किसी एक प्रदाता के पास रहता है, और अक्सर उस प्रदाता के किसी एक क्षेत्र या डिप्लॉयमेंट में। Phaseo संबंधित अनुरोधों को उसी प्रदाता और रूट पर रखता है जिसने उन्हें पूरा किया था, ताकि एजेंट लूप को किसी दूसरे प्रदाता पर अपना कैश दोबारा बनाने का भुगतान न करना पड़े।
+प्रॉम्प्ट कैश एक प्रदाता के पास रहता है, और अक्सर उस प्रदाता के एक क्षेत्र या डिप्लॉयमेंट के पास। Phaseo संबंधित अनुरोधों को उसी प्रदाता और रूट पर रखता है जिसने उन्हें सर्व किया, ताकि एजेंट लूप को कहीं और अपना कैश दोबारा बनाने की कीमत न चुकानी पड़े।
 
-किसी बातचीत को पिन करने के लिए `prompt_cache_key` या `session_id` भेजें, या `cache_control` (शीर्ष स्तर पर, `provider_options.anthropic.cache_control`, या किसी संदेश ब्लॉक या टूल पर `cache_control` या `prompt_cache_breakpoint` चिह्न) से कैशिंग में ऑप्ट-इन करें। Phaseo उसे उस प्रदाता और रूट पर पिन करता है जिसने पहला सफल अनुरोध पूरा किया था, और उसी कुंजी वाले बाद के अनुरोध भी वहीं जाते हैं। पिन हर वर्कस्पेस के लिए अलग रखे जाते हैं।
+बातचीत को पिन करने के लिए `prompt_cache_key` या `session_id` भेजें, या `cache_control` से कैशिंग में ऑप्ट इन करें (टॉप-लेवल, `provider_options.anthropic.cache_control`, या किसी संदेश ब्लॉक या टूल पर `cache_control` या `prompt_cache_breakpoint` चिह्न)। Phaseo इसे उस प्रदाता और रूट पर पिन करता है जिसने पहला सफल अनुरोध सर्व किया, और उसी कुंजी वाले बाद के अनुरोध भी वहीं जाते हैं। पिन हर वर्कस्पेस, एंडपॉइंट और मॉडल के लिए अलग रखे जाते हैं।
 
-पिन कितनी देर रहता है, यह प्रदाता के कैश प्रतिधारण पर निर्भर करता है:
+पिन कितनी देर रहता है, यह प्रदाता के कैश रिटेंशन पर निर्भर करता है:
 
 | अनुरोध | पिन की अवधि |
 | --- | --- |
-| `session_id` | 24 घंटे, सत्र सक्रिय रहने तक बढ़ते रहते हैं |
+| `session_id` | 24 घंटे, सत्र के सक्रिय रहने तक रीफ़्रेश होता है |
 | `ttl: "1h"` के साथ Anthropic `cache_control` | 90 मिनट |
 | `prompt_cache_retention: "24h"` के साथ OpenAI या Azure OpenAI | 24 घंटे |
-| इन-मेमोरी प्रतिधारण (डिफ़ॉल्ट) के साथ OpenAI या Azure OpenAI | 90 मिनट |
-| `prompt_cache_options` में या किसी ब्रेकपॉइंट पर `ttl: "12h"` के साथ OpenAI, या रिपोर्ट किया गया 12 घंटे वाला कैश लेखन | 18 घंटे |
+| इन-मेमोरी रिटेंशन (डिफ़ॉल्ट) के साथ OpenAI या Azure OpenAI | 90 मिनट |
+| `prompt_cache_options` में या किसी ब्रेकपॉइंट पर `ttl: "12h"` के साथ OpenAI, या रिपोर्ट की गई 12-घंटे की राइट | 18 घंटे |
 | `prompt_cache_options.ttl: "30m"` के साथ OpenAI या Azure OpenAI | 45 मिनट |
 | बाकी सब | 15 मिनट |
 
-पिन तभी बदलता है जब उसका प्रदाता विफल हो (सर्किट ब्रेकर खुला हो या हाल की त्रुटि दर ऊँची हो), जब उस प्रदाता पर Phaseo का प्रबंधित कोटा खत्म हो जाए, या जब सक्रिय रूट, प्रीसेट, गार्डरेल या अनुरोध नीति उसे अनुमति न दे। तब अनुरोध फ़ेलओवर करता है, और पिन उस प्रदाता पर चला जाता है जिसने उसे पूरा किया। अनुरोध विवरण इसे रूटिंग डायग्नोस्टिक्स में `sticky_routing.demotionReason` के रूप में दर्ज करते हैं। पिन किए गए अनुरोधों का उपयोग ठीक हो रहे प्रदाताओं को जाँचने के लिए नहीं किया जाता।
+पिन सिर्फ़ तब बदलता है जब उसका प्रदाता विफल हो (खुला सर्किट ब्रेकर या हाल की ऊँची त्रुटि दर), जब उस प्रदाता पर Phaseo का प्रबंधित कोटा खत्म हो जाए, या जब सक्रिय रूट, प्रीसेट, गार्डरेल या अनुरोध नीति अब उसकी अनुमति न दे। तब अनुरोध फ़ेलओवर करता है, और पिन उस प्रदाता पर चला जाता है जिसने उसे सर्व किया। अनुरोध विवरण इसे रूटिंग डायग्नोस्टिक्स में `sticky_routing.demotionReason` के रूप में दर्ज करते हैं। पिन किए गए अनुरोध रिकवर हो रहे प्रदाताओं को जाँचने के लिए उपयोग नहीं किए जाते।
 
-कुंजी, `session_id` या कैश चिह्न के बिना भी, Phaseo शुरुआती संदर्भ को 15 मिनट तक उस प्रदाता पर पिन करता है जिसने उसके लिए कैश read या write रिपोर्ट किया था, बशर्ते उस प्रदाता का कैश्ड इनपुट उसके सामान्य इनपुट से सस्ता हो।
+कुंजी, `session_id` या कैश चिह्न के बिना भी, Phaseo शुरुआती कॉन्टेक्स्ट को 15 मिनट के लिए उस प्रदाता पर पिन करता है जिसने उसके लिए कैश रीड या कैश राइट रिपोर्ट की हो, बशर्ते उस प्रदाता का कैश किया गया इनपुट उसके सामान्य इनपुट से सस्ता हो।
 
-Phaseo प्रदाताओं को आपके वर्कस्पेस और `prompt_cache_key` का हैश भेजता है, कच्ची कुंजी कभी नहीं, इसलिए दो वर्कस्पेस में एक ही कुंजी कभी प्रदाता का कैश साझा नहीं करती। केवल `session_id` होने पर Phaseo, OpenAI, xAI, Fireworks और Cerebras के लिए सत्र से यह हैश बनाता है। Fireworks, Cloudflare Workers AI और Baseten को यह `x-session-affinity` हेडर में भी मिलता है, Morph को `x-session-id` हेडर में, और xAI को यह `x-grok-conv-id` के रूप में मिलता है, जब तक आप `provider_options.xai.conversation_id` सेट न करें। जवाबों में अब भी आपका अपना `prompt_cache_key` लौटता है।
+Phaseo प्रदाताओं को आपके वर्कस्पेस और `prompt_cache_key` का हैश भेजता है, कभी मूल कुंजी नहीं, इसलिए दो वर्कस्पेस में एक ही कुंजी कभी प्रदाता कैश साझा नहीं करती। सिर्फ़ `session_id` होने पर, Phaseo OpenAI, xAI, Fireworks और Cerebras के लिए वह हैश सत्र से निकालता है। Fireworks, Cloudflare Workers AI और Baseten को यह `x-session-affinity` हेडर में भी मिलता है, Morph को `x-session-id` हेडर में, और xAI को `x-grok-conv-id` के रूप में, जब तक आप `provider_options.xai.conversation_id` सेट न करें। प्रतिक्रियाएँ फिर भी आपका अपना `prompt_cache_key` लौटाती हैं।
 
-किसी एक अनुरोध के लिए इसे बंद करने हेतु `provider.cache_aware_routing` को `false` सेट करें। जब
-अनुरोध में `session_id` हो, लेकिन उसे केवल सामान्य संदर्भ-आधारित रूटिंग उपयोग करनी हो, तो
-`routing.session_affinity` को `false` सेट करें। तब Phaseo सत्र से प्रदाता कैश कुंजी भी नहीं बनाता।
-
-## संबंधित पेज
-
-- [Chat Completions](../api-reference/endpoint/chat-completions.mdx)
-- [Responses](../api-reference/endpoint/responses.mdx)
-- [Anthropic Messages](../api-reference/endpoint/anthropic-messages.mdx)
-- [पैरामीटर](../api-reference/parameters.mdx)
-- [रूटिंग और फ़ॉलबैक](./routing-and-fallbacks.mdx)
-- [संदर्भ और टोकन बजट](./context-and-token-budgeting.mdx)
-- [प्रीसेट के साथ प्रतिक्रिया कैशिंग उपयोग करें](../cookbook/response-caching-with-presets.mdx)
+एक अनुरोध के लिए ऑप्ट आउट करने के लिए `provider.cache_aware_routing` को `false` पर सेट करें। जब अनुरोध में `session_id` हो लेकिन उसे सिर्फ़ सामान्य कॉन्टेक्स्ट-आधारित रूटिंग उपयोग करनी हो, तो `routing.session_affinity` को `false` पर सेट करें; तब Phaseo सत्र से प्रदाता कैश कुंजी निकालना भी बंद कर देता है। अफ़िनिटी प्रदाता क्रम और फ़ॉलबैक के साथ कैसे मेल खाती है, यह जानने के लिए [रूटिंग और फ़ॉलबैक](./routing-and-fallbacks.mdx) देखें। हर कैश फ़ील्ड [पैरामीटर संदर्भ](../api-reference/parameters.mdx) में भी सूचीबद्ध है।

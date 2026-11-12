@@ -4,3 +4,5 @@ badge: "Beta"
 openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml PUT /identity/scim"
 ---
 <Note>身份管理需要所有者或管理员身份。启用 SSO 或 SCIM，以及创建预配令牌，都需要身份扩展。</Note>
+
+只有工作区所有者可以更改 SCIM 预配，以及创建和撤销其令牌。SCIM 请求只接受当前工作区所有者创建的令牌；如果你的令牌是由管理员或前任所有者创建的，所有者必须创建一个新令牌。

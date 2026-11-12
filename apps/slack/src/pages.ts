@@ -417,7 +417,7 @@ export function publishPageTool(options: PublishPageOptions): AgentTool<any, any
  * allowed. Its pages go to the installation's store. `searched`: whether the
  * answer has searched Slack, so it may publish nothing.
  */
-export async function turnPageTools(deps: { env: Env; db: Db; now: () => number }, turn: Pick<TurnRef, "eventId" | "slackUserId" | "external">, installation: Installation, notes: string[], searched: SearchedThisAnswer): Promise<AgentTool<any, any>[]> {
+export async function turnPageTools(deps: { env: Env; db: Db; now: () => number }, turn: Pick<TurnRef, "eventId" | "slackUserId" | "external">, installation: Installation, notes: string[], searched: SearchedThisAnswer, onPublished?: (page: { title: string; url: string }) => void): Promise<AgentTool<any, any>[]> {
 	if (!installation.pages_enabled || turn.external || !UUID_PATTERN.test(installation.id)) return [];
 	const origin = pagesOrigin(deps.env);
 	if (!origin) return [];
@@ -437,6 +437,7 @@ export async function turnPageTools(deps: { env: Env; db: Db; now: () => number 
 		publish: async (page) => {
 			const result: PublishResult = await store.publish({ ...page, installationId: installation.id, eventId: turn.eventId, createdBy: turn.slackUserId, now: deps.now() });
 			console.log("[slack-agent] page publish", { installationId: installation.id, eventId: turn.eventId, status: result.status, access: page.access, bytes: utf8Bytes(page.html) });
+			if (result.status === "published") onPublished?.({ title: page.title, url: pageUrl(origin, storeKey, result.id) });
 			return result;
 		},
 	})];

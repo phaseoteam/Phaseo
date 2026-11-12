@@ -1,17 +1,16 @@
-"use client";
-
 import { useEffect, useMemo, useState, type FormEventHandler } from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { useFormStatus } from "react-dom";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { handleEmailSignup } from "@/app/(auth)/sign-up/actions";
+import { handleEmailSignup } from "@/features/sign-up/actions";
 import { Check, Eye, EyeOff, X } from "lucide-react";
 import { captureProductEvent } from "@/lib/productAnalytics";
 import { defaultLocale, type PublicLocale } from "@/i18n/routing";
 import { buildLocalizedAuthPath } from "@/lib/auth/localized-paths";
+import { openAuthDialog } from "../dialog/authDialogStore";
 
 const SYMBOL_REGEX = /[!@#$%^&*()_+\-=[\]{};':"|<>?,./`~]/;
 const LAST_AUTH_PROVIDER_STORAGE_KEY = "phaseo:last-auth-provider";
@@ -27,6 +26,8 @@ type EmailPasswordProps = {
 	onEmailFlowChange?: (active: boolean) => void;
 	returnUrl?: string;
 	locale?: PublicLocale;
+	/** In the sign-up dialog "check your email" is shown in place instead of loading /sign-in. */
+	surface?: "page" | "dialog";
 };
 
 function SubmitButton({ disabled }: { disabled: boolean }) {
@@ -44,6 +45,7 @@ export default function EmailPassword({
 	onEmailFlowChange,
 	returnUrl,
 	locale = defaultLocale,
+	surface = "page",
 }: EmailPasswordProps) {
 	const shared = useTranslations("Auth.shared");
 	const t = useTranslations("Auth.signUp");
@@ -106,7 +108,7 @@ export default function EmailPassword({
 		ok ? "text-emerald-600" : "text-muted-foreground";
 
 	return (
-		<div className="grid gap-4">
+		<div className="grid gap-3.5">
 			<div className="flex items-center gap-2">
 				<div className="flex-1 border-t border-border" />
 				<span
@@ -121,15 +123,21 @@ export default function EmailPassword({
 			</div>
 
 			<form
-				action={handleEmailSignup}
+				action={async (formData) => {
+					const result = await handleEmailSignup({ data: formData });
+					if (result?.notice) {
+						openAuthDialog({ step: "sign-in", returnUrl: returnUrl ?? "/", notice: result.notice });
+					}
+				}}
 				onSubmit={handleSubmit}
-				className="grid gap-3"
+				className="grid gap-3.5"
 			>
 				<input type="hidden" name="locale" value={locale} />
+				{surface === "dialog" ? <input type="hidden" name="surface" value="dialog" /> : null}
 				{returnUrl ? (
 					<input type="hidden" name="returnUrl" value={returnUrl} />
 				) : null}
-				<div className="grid gap-3">
+				<div className="grid gap-1.5">
 					<Label htmlFor="email">{shared("email")}</Label>
 					<Input
 						id="email"
@@ -146,7 +154,7 @@ export default function EmailPassword({
 					/>
 				</div>
 
-				<div className="grid gap-3">
+				<div className="grid gap-1.5">
 					<div className="flex items-center">
 						<Label htmlFor="password">{shared("password")}</Label>
 					</div>

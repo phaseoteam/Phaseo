@@ -4,99 +4,68 @@ description: "Qué debes saber para usar GPT-5.6 Sol, Terra o Luna en cargas de 
 icon: "/icons/brands/openai.svg"
 ---
 
-# OpenAI GPT-5.6
+Elige el nivel de GPT-5.6 que se ajuste a la carga de trabajo, cambia solo el ID de modelo y vuelve a probar el esfuerzo de razonamiento, las herramientas, la latencia y el coste. Mantén tu modelo GPT-5 anterior como respaldo hasta que pasen tus evaluaciones.
 
-Usa esta guía para incorporar de forma segura la familia GPT-5.6 a producción.
-
-GPT-5.6 es la familia GPT actual de OpenAI para flujos de trabajo de producción complejos. En Phaseo, los ID de nivel fijos corresponden a los ID de modelo de OpenAI `gpt-5.6-sol`, `gpt-5.6-terra` y `gpt-5.6-luna`.
-
-## Inicio rápido de la migración
-
-1. Elige el modelo fijo Sol, Terra o Luna que corresponda a la carga de trabajo.
-2. Cambia solo el ID del modelo y mantén estable el resto de la solicitud.
-3. Vuelve a probar el esfuerzo de razonamiento, las salidas estructuradas, las herramientas, la latencia y el coste por tarea.
-4. Prueba la nueva ruta con tráfico canario y conserva el modelo GPT-5 anterior como alternativa de respaldo.
-
-## Elige un modelo
+## Elige un nivel
 
 | Modelo | Úsalo para | Esfuerzo de razonamiento |
 | --- | --- | --- |
 | `openai/gpt-5.6-sol` | Razonamiento de máxima capacidad, programación con agentes, análisis científico y trabajo profesional complejo | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
-| `openai/gpt-5.6-terra` | Razonamiento, programación y flujos de asistente equilibrados para el trabajo diario | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
-| `openai/gpt-5.6-luna` | Cargas de trabajo de GPT-5.6 sensibles a la latencia y al coste | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
+| `openai/gpt-5.6-terra` | Razonamiento equilibrado para el día a día, programación y trabajo de asistente | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
+| `openai/gpt-5.6-luna` | Trabajo de menor latencia y sensible al coste | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
 
-El alias `gpt-5.6` de OpenAI dirige al modelo `gpt-5.6-sol`. En Phaseo, usa `openai/gpt-5.6` o `openai/gpt-sol-latest` si quieres ese valor predeterminado del nivel Sol, y usa los ID de nivel fijos para controlar el enrutamiento.
+Los tres tienen una ventana de contexto de 1.050.000 tokens y 128K tokens de salida. Cada uno tiene además un ID Pro (`openai/gpt-5.6-sol-pro`, `-terra-pro`, `-luna-pro`), que envía `reasoning.mode: "pro"` por ti.
 
-Phaseo también registra alias de nivel para el modelo más reciente de cada uno: `openai/gpt-sol-latest`, `openai/gpt-terra-latest` y `openai/gpt-luna-latest`. Usa los ID fijos de GPT-5.6 para migraciones controladas y los alias de nivel solo si quieres deliberadamente que futuras versiones de Sol, Terra o Luna avancen por la misma ruta.
+El alias propio de OpenAI `gpt-5.6` apunta a `gpt-5.6-sol`; en Phaseo, llama directamente a los ID de nivel. Los alias de nivel `openai/gpt-sol-latest`, `openai/gpt-terra-latest` y `openai/gpt-luna-latest` siguen al modelo más reciente de cada nivel, y `openai/gpt-sol-latest` ya apunta más allá de GPT-5.6. Úsalos solo cuando quieras que las versiones futuras se adopten automáticamente.
 
-## Novedades
+## Actualiza la solicitud
 
-- GPT-5.6 introduce la nueva división Sol/Terra/Luna en lugar de una sola ruta GPT predeterminada.
-- Los tres niveles de GPT-5.6 admiten `reasoning.effort: "max"` para usar el mayor presupuesto de razonamiento.
-- GPT-5.6 admite `reasoning.mode: "pro"` sin cambiar a un slug de modelo Pro independiente.
-- GPT-5.6 añade controles de razonamiento persistentes mediante `reasoning.context`.
-- GPT-5.6 añade compatibilidad beta con varios agentes y Programmatic Tool Calling para flujos de trabajo con muchas herramientas que cumplan los requisitos.
-- La caché de prompts tiene tarifas separadas para entrada sin caché, lectura de caché, escritura de caché y salida.
-- La caché de prompts explícita está disponible mediante puntos de corte de caché y `prompt_cache_options`. En GPT-5.6, `prompt_cache_options.ttl` sustituye a `prompt_cache_retention`, que Phaseo no envía a los modelos GPT-5.6.
+GPT-5.6 añade `max`, el mayor presupuesto de razonamiento, en todos los niveles. Úsalo solo donde la latencia y el coste adicionales compensen.
 
-## Actualiza tu solicitud
-
-Empieza por cambiar solo el ID del modelo y mantener estable el resto de la solicitud.
-
-Los primeros ejemplos usan la estructura `input` al estilo de Responses API. Si estás migrando tráfico de Chat Completions, sigue usando `messages` y el campo plano `reasoning_effort` cuando la ruta lo admita.
-
-```json
-{
-  "model": "openai/gpt-5.6-terra",
-  "input": "Summarize the rollout risks in this migration plan.",
-  "reasoning": {
-    "effort": "medium"
-  }
-}
-```
-
-Usa el nivel `max` solo en rutas donde el presupuesto adicional de razonamiento compense la latencia y el coste.
-
-```json
+<CodeGroup>
+```json Responses
 {
   "model": "openai/gpt-5.6-sol",
   "input": "Review this multi-service incident report and propose a rollback plan.",
-  "reasoning": {
-    "effort": "max"
-  }
+  "reasoning": { "effort": "max" }
 }
 ```
 
-Si tu integración aún envía el campo plano compatible con OpenAI, Phaseo también acepta `reasoning_effort` en las rutas que lo admiten:
-
-```json
+```json Chat Completions
 {
-  "model": "openai/gpt-5.6-sol",
+  "model": "openai/gpt-5.6-terra",
   "messages": [
-    {
-      "role": "user",
-      "content": "Design a test plan for this agent workflow."
-    }
+    { "role": "user", "content": "Design a test plan for this agent workflow." }
   ],
-  "reasoning_effort": "max"
+  "reasoning_effort": "medium"
 }
 ```
+</CodeGroup>
 
-## Revisar los precios
+GPT-5.6 también añade:
 
-El catálogo registra los precios de GPT-5.6 por cada millón de tokens.
+- **`reasoning.mode: "pro"`** para tareas más difíciles, sin cambiar de modelo;
+- **`reasoning.context`** (`auto`, `current_turn` o `all_turns`) para controlar qué razonamiento se conserva;
+- compatibilidad multiagente en beta y Programmatic Tool Calling para flujos con mucho uso de herramientas;
+- almacenamiento explícito en caché de prompts con `prompt_cache_options` y puntos de corte de caché. En GPT-5.6, `prompt_cache_options.ttl` sustituye a `prompt_cache_retention`, que Phaseo no envía a los modelos GPT-5.6.
 
-| Modelo | Entrada | Lectura de caché | Escritura de caché | Salida |
-| --- | ---: | ---: | ---: | ---: |
-| Sol | $5.00 | $0.50 | $6.25 | $30.00 |
-| Terra | $2.50 | $0.25 | $3.125 | $15.00 |
-| Luna | $1.00 | $0.10 | $1.25 | $6.00 |
+## Revisa los precios
 
-Las lecturas de caché se cobran por separado de las escrituras. En el catálogo actual, las lecturas tienen un descuento del 90 % respecto a la entrada sin caché, mientras que las escrituras cuestan 1,25 veces el precio de la entrada sin caché. Cada token de entrada se factura a una sola de las tres tarifas. El uso cuenta las lecturas y escrituras de caché dentro de `input_tokens` (`prompt_tokens` en Chat Completions) e informa de las escrituras en `cache_write_tokens`; consulta [campos de uso y precios](../guides/prompt-caching.mdx#usage-and-pricing-fields).
+Precios por 1M de tokens en el nivel estándar de OpenAI, para solicitudes de hasta 272K tokens de entrada:
 
-## Usa la caché de prompts de forma deliberada
+| Modelo | Entrada | Lectura de caché | Escritura de caché (30 min) | Escritura de caché (12 h) | Salida |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Sol | $5.00 | $0.50 | $6.25 | $12.50 | $30.00 |
+| Terra | $2.00 | $0.20 | $2.50 | $5.00 | $12.00 |
+| Luna | $0.20 | $0.02 | $0.25 | $0.50 | $1.20 |
 
-Si el contexto se repite, mantén la parte estable del prompt en bloques que puedan guardarse en caché y deja sin caché el texto específico de cada solicitud.
+Las solicitudes de más de 272K tokens de entrada cuestan más: Sol $10.00 de entrada y $45.00 de salida, Terra $4.00 y $18.00, Luna $0.40 y $1.80, con los precios de caché escalados de la misma forma. Hasta el 30 de noviembre de 2026 se aplica el precio promocional de Sol de OpenAI: $4.00 de entrada y $20.00 de salida hasta 272K tokens. Consulta la página del modelo para ver los precios actuales de otros niveles y proveedores.
+
+Una lectura de caché cuesta el 10 % de la tarifa de entrada, una escritura de 30 minutos 1.25× y una escritura de 12 horas 2.5×. Cada token de entrada se factura exactamente a una de estas tarifas. El uso cuenta las lecturas y escrituras de caché dentro de `input_tokens` (`prompt_tokens` en Chat Completions) e indica las escrituras en `cache_write_tokens`; consulta los [campos de uso y precios](../guides/prompt-caching.mdx#usage-and-pricing-fields).
+
+## Almacena en caché el contexto repetido
+
+Pon la parte estable del prompt en un bloque que se pueda almacenar en caché y deja después el texto específico de la solicitud:
 
 ```json
 {
@@ -108,9 +77,7 @@ Si el contexto se repite, mantén la parte estable del prompt en bloques que pue
         {
           "type": "input_text",
           "text": "Stable policy document...",
-          "prompt_cache_breakpoint": {
-            "mode": "explicit"
-          }
+          "prompt_cache_breakpoint": { "mode": "explicit" }
         },
         {
           "type": "input_text",
@@ -119,42 +86,29 @@ Si el contexto se repite, mantén la parte estable del prompt en bloques que pue
       ]
     }
   ],
-  "prompt_cache_options": {
-    "mode": "explicit",
-    "ttl": "30m"
-  }
+  "prompt_cache_options": { "mode": "explicit", "ttl": "30m" }
 }
 ```
 
-`prompt_cache_breakpoint` almacena en caché todo lo anterior, incluido su bloque. También funciona un `cache_control` en el bloque, como `{"type": "ephemeral"}`, y Phaseo lo envía a GPT-5.6 como `prompt_cache_breakpoint`. Cualquiera de las dos marcas llega a Claude como punto de corte de caché, así que un failover a Claude también usa la caché. En modo `explicit`, OpenAI solo almacena en caché los puntos de corte que colocas. El `ttl` es `30m` (el predeterminado) o `12h`; OpenAI solo acepta `12h` en su API Responses, consulta [Caché de 12 horas en OpenAI](../guides/prompt-caching.mdx#12-hour-cache-on-openai). Phaseo no envía `prompt_cache_retention` a GPT-5.6. Consulta [Caché de prompts](../guides/prompt-caching.mdx#openai-retention-and-options).
+- `prompt_cache_breakpoint` almacena en caché todo hasta su bloque, incluido. En el modo `explicit`, OpenAI solo almacena en caché los puntos de corte que colocas.
+- Un `cache_control` de bloque como `{"type": "ephemeral"}` también funciona; Phaseo lo envía a GPT-5.6 como `prompt_cache_breakpoint`. Cualquiera de las dos marcas llega a Claude como punto de corte de caché, así que un respaldo a Claude también usa la caché.
+- `ttl` es `30m` (el predeterminado) o `12h`. Consulta [Caché de 12 horas en OpenAI](../guides/prompt-caching.mdx#12-hour-cache-on-openai) para saber qué rutas lo admiten, y [Retención y opciones de OpenAI](../guides/prompt-caching.mdx#openai-retention-and-options) para los demás campos.
 
 ## Qué probar
 
-### Razonamiento y calidad de salida
+- **Razonamiento y calidad de la salida:** cada nivel con los esfuerzos que vayas a exponer, incluido `max` donde la calidad es lo primero; modo estándar frente a `reasoning.mode: "pro"` en tareas difíciles; tasa de validación del esquema y calidad de las llamadas a herramientas en cada nivel.
+- **Coste y latencia:** latencia en cada esfuerzo, aumento de los tokens de salida frente a tu referencia actual, la proporción de lecturas y escrituras de caché en prompts repetidos y el coste por tarea completada con éxito en lugar del precio por token.
 
-- Sol, Terra y Luna con los niveles de esfuerzo que piensas ofrecer a los usuarios, incluido `max` cuando se justifique priorizar la calidad
-- el modo standard frente a `reasoning.mode: "pro"` en tareas difíciles donde la calidad importa más que la latencia
-- las salidas estructuradas y la tasa de cumplimiento del esquema en cada nivel de esfuerzo
-- la selección de llamadas a herramientas y la calidad de sus argumentos
+## Despliega
 
-### Coste y latencia
-
-- la latencia en cada nivel de esfuerzo de razonamiento
-- el aumento de tokens de salida respecto a la referencia actual de producción
-- la proporción de lecturas y escrituras de caché en prompts repetidos
-- el coste por tarea completada correctamente, no solo el precio por token
-
-### Reversión
-
-- conserva disponible la ruta anterior de GPT-5.x como alternativa
-- mantén `max` detrás de una opción de configuración o preset hasta validarlo con prompts similares a los de producción
-- supervisa por separado el volumen de escrituras y lecturas de caché
-- incorpora GPT-5.6 al enrutamiento predeterminado solo después de que tus propias evaluaciones confirmen el éxito de las tareas, el coste y la latencia
+1. Mantén tu modelo GPT-5 anterior como respaldo en `models`.
+2. Mantén `max` detrás de una marca de configuración o de un [preset](../guides/presets) hasta que se demuestre con prompts similares a producción.
+3. Supervisa el volumen de escrituras de caché por separado de las lecturas.
+4. Haz de GPT-5.6 el modelo predeterminado solo cuando tus evaluaciones confirmen el éxito de las tareas, el coste y la latencia.
 
 ## Fuentes
 
 - [Anuncio de la vista previa de OpenAI GPT-5.6](https://openai.com/index/previewing-gpt-5-6-sol/)
-- [Guía de modelos GPT-5.6 de OpenAI](https://developers.openai.com/api/docs/guides/latest-model)
-- [OpenAI model catalog](https://developers.openai.com/api/docs/models)
-- [Ficha de seguridad de la vista previa de GPT-5.6](https://deploymentsafety.openai.com/gpt-5-6-preview)
-- [Guía de Phaseo sobre el almacenamiento en caché de prompts](../guides/prompt-caching.mdx)
+- [Indicaciones de OpenAI para el modelo GPT-5.6](https://developers.openai.com/api/docs/guides/latest-model)
+- [Catálogo de modelos de OpenAI](https://developers.openai.com/api/docs/models)
+- [Tarjeta del sistema de la vista previa de GPT-5.6](https://deploymentsafety.openai.com/gpt-5-6-preview)

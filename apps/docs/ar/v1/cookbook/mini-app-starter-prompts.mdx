@@ -1,231 +1,227 @@
 ---
-title: "موجّهات بدء التطبيقات المصغرة"
+title: "مطالبات لبدء تطبيقات صغيرة"
 icon: "code"
-description: "موجّهات قابلة للنسخ تساعد وكلاء البرمجة على إنشاء تطبيقات Phaseo صغيرة باستخدام HTTP الخام أو SDK أو بيئات تشغيل الوكلاء."
+description: "مطالبات قابلة للنسخ تجعل وكلاء البرمجة ينشئون تطبيقات Phaseo صغيرة باستخدام HTTP مباشر أو حزم SDK أو بيئات تشغيل الوكلاء."
 ---
 
-استخدم هذه الصفحة عندما تريد تزويد وكيل برمجة بموجّه واضح ينشئ تطبيقًا صغيرًا يعمل بدلًا من خطة تكامل مبهمة.
+الصق إحدى هذه المطالبات في Cursor أو Claude Code أو Codex أو وكيل برمجة مشابه، وسينشئ تطبيق Phaseo صغيرًا يعمل، ثم يبلغك بما شغّله وما لم يستطع التحقق منه. تحدد كل مطالبة واجهة التكامل وقواعد الأمان والتحقق الذي تتوقعه.
 
-<Tip>
-صيغت هذه الموجّهات للتركيز على النتائج وتحديد تفاصيل التنفيذ كي تعمل بشكل أفضل في Cursor وClaude Code وCodex والأدوات المشابهة.
-</Tip>
+التطبيقات الناتجة نقاط بداية: راجع الشيفرة، وخاصة طريقة التعامل مع الأسرار والتحقق من مدخلات الأدوات، قبل نشرها.
 
-## كيفية استخدام هذه الموجّهات
+## استخدم مطالبة
 
 <Steps>
   <Step title="اختر واجهة التكامل">
-    اختر الموجّه الذي يناسب طريقة استدعاء التطبيق لـPhaseo:
-
-    - HTTP الخام
-    - SDK رسمي واحد
-    - Vercel AI SDK
-    - SDK الوكلاء
+    | المطالبة | تستدعي Phaseo باستخدام |
+    | --- | --- |
+    | HTTP مباشر | `fetch` إلى `https://api.phaseo.app/v1` |
+    | TypeScript SDK | `@phaseo/sdk` |
+    | Python SDK | `phaseo` |
+    | Vercel AI SDK | `@phaseo/ai-sdk-provider` |
+    | Agent SDK | `@phaseo/agent-sdk` أو `phaseo-agent-sdk` أو Agent SDK الخاص بلغتك |
   </Step>
   <Step title="استبدل المتغيرات بين الأقواس المعقوفة">
-    املأ قيمًا مثل `[فكرة التطبيق]` و`[إطار العمل]` و`[النموذج]` و`[LANGUAGE]` قبل لصق الموجّه في وكيل البرمجة.
+    املأ قيمًا مثل `[APP IDEA]` و`[FRAMEWORK]` و`[MODEL]` و`[LANGUAGE]` قبل أن تلصق المطالبة في وكيل البرمجة.
   </Step>
-  <Step title="اطلب التحقق، لا الرمز فقط">
-    أبقِ أسطر التحقق في الموجّه، فهي تلزم الوكيل بذكر ما نفذه فعليًا وما افترضه وما يتطلب إعدادًا يدويًا.
+  <Step title="اطلب التحقق، لا الشيفرة فقط">
+    أبقِ أسطر التحقق في المطالبة. فهي تُلزم الوكيل بالإبلاغ عمّا شغّله فعلًا، وما افترضه، وما لا يزال يحتاج إلى إعداد يدوي.
   </Step>
 </Steps>
 
-## حزم الموجّهات
+## حزم المطالبات
 
 <AccordionGroup>
-  <Accordion title="تطبيق مصغر باستخدام HTTP الخام" icon="globe">
+  <Accordion title="تطبيق صغير عبر HTTP مباشر" icon="globe">
     <Prompt
-      description="أنشئ تطبيقًا صغيرًا يستخدم **HTTP الخام** مع Phaseo بدلًا من SDK."
+      description="أنشئ تطبيقًا صغيرًا يستخدم **HTTP مباشرًا** مع Phaseo بدلًا من SDK."
       icon="globe"
       actions={["copy", "cursor"]}
     >
-{`أنت تنفذ تطبيقًا تجريبيًا صغيرًا بطابع إنتاجي باستخدام Phaseo Gateway.
+{`You are implementing a small production-style demo app with Phaseo Gateway.
 
-أنشئ تطبيقًا مصغرًا باستخدام [إطار العمل] لفكرة [فكرة التطبيق].
+Build a [FRAMEWORK] mini app for [APP IDEA].
 
-المتطلبات:
-- استخدم طلبات HTTP الخام، وليس SDK من Phaseo.
-- استخدم نقطة نهاية Phaseo [ENDPOINT].
-- استخدم النموذج [النموذج].
-- اقرأ مفتاح API من متغير البيئة PHASEO_API_KEY.
-- أبقِ التطبيق صغيرًا عمدًا: صفحة رئيسية واحدة ومسار خادم أو معالج واحد وتنسيق بسيط.
-- اعرض إدخال المستخدم وحالة إرسال الطلب ومخرجات النموذج وأي حالة خطأ في البوابة.
-- أضف مثالًا لحمولة الطلب في التعليقات أو الوثائق لتسهيل مراجعة التكامل لاحقًا.
+Requirements:
+- Use raw HTTP requests, not a Phaseo SDK.
+- Use the base URL https://api.phaseo.app/v1 and the Phaseo endpoint [ENDPOINT].
+- Use model [MODEL].
+- Read the API key from an environment variable named PHASEO_API_KEY and send it as Authorization: Bearer.
+- Keep the app intentionally small: one main page, one server route or handler, and minimal styling.
+- Show the user input, the request submission state, the model output, and any gateway error state.
+- Add one example request payload in comments or docs so the integration is easy to audit later.
 
-تفاصيل التنفيذ:
-- استخدم fetch.
-- أبقِ نص الطلب واضحًا بدلًا من إخفاء الحقول خلف طبقات تجريد.
-- أضف تحققًا أساسيًا من الإدخال الفارغ قبل إرسال طلب API.
-- تعامل جيدًا مع الاستجابات غير 200 واعرض نص الاستجابة عند الحاجة.
-- أبقِ الأسرار على جانب الخادم فقط.
+Implementation details:
+- Use fetch.
+- Keep the request body explicit instead of hiding fields behind abstractions.
+- Add basic validation for empty input before making the API request.
+- Handle non-200 responses cleanly and surface the response body when useful.
+- Keep secrets server-side only.
 
-المخرجات:
-- رمز التطبيق.
-- قسم قصير في README يشرح كيفية تشغيله.
-- إدخال PHASEO_API_KEY في ملف .env.example.
+Deliverables:
+- The app code.
+- A short README section explaining how to run it.
+- A .env.example entry for PHASEO_API_KEY.
 
-التحقق:
-- شغّل التطبيق محليًا إن أمكن.
-- تحقق من مسار طلب ناجح واحد.
-- اذكر بدقة ما تحقق منه وما تعذر التحقق منه والافتراضات المتبقية.`}
+Verification:
+- Run the local app if possible.
+- Verify one successful request path.
+- Report exactly what you verified, what you could not verify, and any remaining assumptions.`}
     </Prompt>
   </Accordion>
 
-  <Accordion title="تطبيق مصغر باستخدام SDK TypeScript" icon="file-code-2">
+  <Accordion title="تطبيق صغير باستخدام TypeScript SDK" icon="file-code-2">
     <Prompt
-      description="أنشئ تطبيقًا مصغرًا باستخدام **SDK TypeScript** مع تكامل صغير يسهل فحصه."
+      description="أنشئ تطبيقًا صغيرًا على **TypeScript SDK** بتكامل صغير وسهل الفحص."
       icon="file-code-2"
       actions={["copy", "cursor"]}
     >
-{`أنت تنشئ تطبيقًا صغيرًا باستخدام SDK TypeScript من Phaseo.
+{`You are building a small app on top of the Phaseo TypeScript SDK.
 
-أنشئ تطبيقًا مصغرًا باستخدام [إطار العمل] لفكرة [فكرة التطبيق].
+Create a [FRAMEWORK] mini app for [APP IDEA].
 
-المتطلبات:
-- استخدم @phaseo/sdk.
-- استخدم النموذج [النموذج].
-- فضّل Responses API ما لم يوجد سبب قوي لاستخدام نقطة نهاية أخرى.
-- اقرأ مفتاح API من PHASEO_API_KEY.
-- أبقِ الرمز موجزًا وسهل الفهم للتكامل الأول.
-- اعرض حالات التحميل والنجاح والفشل في الواجهة.
+Requirements:
+- Use @phaseo/sdk.
+- Use model [MODEL].
+- Prefer the responses API unless there is a strong reason to use another endpoint.
+- Read the API key from PHASEO_API_KEY.
+- Keep the code compact and understandable for a first integration.
+- Show loading, success, and failure states in the UI.
 
-تفاصيل التنفيذ:
-- استخدم نقطة تكامل واحدة على جانب الخادم بدل توزيع استدعاءات SDK على ملفات متعددة.
-- أبقِ بنية الطلب واضحة، بما يشمل النموذج والمدخلات والخيارات المهمة.
-- أضف مثالًا لتحليل الاستجابة يستخرج النص النهائي للمساعد بأمان.
-- أضف أقل قدر من التعليقات، وفقط عندما تكون بنية استجابة SDK غير واضحة.
+Implementation details:
+- Use one server-side integration boundary instead of scattering SDK calls across many files.
+- Keep the request shape explicit, including model, input, and any important options.
+- Include one example of response parsing that extracts the final assistant text safely.
+- Add minimal comments only where the SDK response shape would otherwise be unclear.
 
-المخرجات:
-- رمز التطبيق العامل.
-- تعليمات إعداد موجزة.
-- شرح موجز لسبب ملاءمة SDK TypeScript لهذا التطبيق المصغر أكثر من HTTP الخام.
+Deliverables:
+- Working app code.
+- Short setup instructions.
+- One short explanation of why the TypeScript SDK path is better than raw HTTP for this mini app.
 
-التحقق:
-- شغّل التطبيق إن أمكن.
-- نفّذ طلبًا واحدًا من البداية إلى النهاية.
-- اذكر الملفات التي تغيرت بدقة وأي إعدادات متبقية على المستخدم تنفيذها.`}
+Verification:
+- Run the app if possible.
+- Exercise one end-to-end request.
+- Report the exact files changed and any remaining setup the user must do.`}
     </Prompt>
   </Accordion>
 
-  <Accordion title="تطبيق مصغر باستخدام SDK Python" icon="snake">
+  <Accordion title="تطبيق صغير باستخدام Python SDK" icon="snake">
     <Prompt
-      description="أنشئ تطبيقًا أو خدمة Python صغيرة باستخدام **SDK Python الرسمي**."
+      description="أنشئ تطبيقًا أو خدمة صغيرة بلغة Python باستخدام **Python SDK الرسمي**."
       icon="snake"
       actions={["copy", "cursor"]}
     >
-{`أنت تنفذ تطبيق Python صغيرًا مدعومًا بالذكاء الاصطناعي باستخدام Phaseo Gateway.
+{`You are implementing a small AI-powered Python app with Phaseo Gateway.
 
-أنشئ تطبيقًا من نوع [إطار عمل Python أو نوع التطبيق] لفكرة [فكرة التطبيق].
+Build a [PYTHON FRAMEWORK OR APP TYPE] app for [APP IDEA].
 
-المتطلبات:
-- استخدم SDK Python الرسمي phaseo.
-- استخدم النموذج [النموذج].
-- اقرأ بيانات الاعتماد من PHASEO_API_KEY.
-- أبقِ الرمز موجزًا بما يكفي ليفهمه عضو جديد في الفريق بسرعة.
-- أضف مسارًا واحدًا لإدخال المستخدم وآخر لمخرجات النموذج.
-- أضف معالجة واضحة للأخطاء الناتجة عن الإدخال غير الصالح وإخفاقات البوابة في المنبع.
+Requirements:
+- Use the official Python SDK phaseo.
+- Use model [MODEL].
+- Read credentials from PHASEO_API_KEY.
+- Keep the code small enough for a new team member to understand quickly.
+- Include one user input path and one model output path.
+- Include clean error handling for invalid input and upstream gateway failures.
 
-تفاصيل التنفيذ:
-- فضّل استخدام وحدة تكامل واحدة تتولى إنشاء عميل Phaseo.
-- استخدم بنية استجابة SDK مباشرة بدل تغليفها بطبقات تجريد غير ضرورية.
-- إذا كان الإخراج المنظم مفيدًا للتطبيق، فاستخدمه وتحقق من بنية البيانات المُعادة.
-- أضف قسمًا موجزًا في README يشرح خطوات التثبيت والتشغيل.
+Implementation details:
+- Prefer one integration module that owns the Phaseo client creation.
+- Use the SDK response shape directly rather than wrapping it in unnecessary abstractions.
+- If structured output is useful for the app, use it and validate the returned shape.
+- Add a short README section with install and run steps.
 
-المخرجات:
-- رمز التطبيق.
-- أي تحديثات للتبعيات.
-- تعليمات استخدام موجزة.
+Deliverables:
+- App code.
+- Any dependency updates.
+- Short usage instructions.
 
-التحقق:
-- شغّل الأمر المناسب إن أمكن.
-- تحقق من مسار طلب ناجح أو اشرح سبب تعذر ذلك.
-- اذكر متغيرات البيئة أو الخدمات المحلية التي ما زال على المستخدم إعدادها.`}
+Verification:
+- Run the relevant command if possible.
+- Verify one successful request path or explain why you could not.
+- Call out any environment variables or local services the user still needs.`}
     </Prompt>
   </Accordion>
 
-  <Accordion title="تطبيق مصغر باستخدام Vercel AI SDK" icon="code">
+  <Accordion title="تطبيق صغير باستخدام Vercel AI SDK" icon="code">
     <Prompt
       description="أنشئ تطبيقًا صغيرًا يستخدم **Phaseo عبر Vercel AI SDK**."
       icon="code"
       actions={["copy", "cursor"]}
     >
-{`أنت تنشئ تطبيقًا مصغرًا يستخدم Phaseo عبر مزود Vercel AI SDK.
+{`You are building a mini app that uses Phaseo through the Vercel AI SDK provider.
 
-أنشئ تطبيقًا باستخدام [إطار العمل] لفكرة [فكرة التطبيق].
+Create a [FRAMEWORK] app for [APP IDEA].
 
-المتطلبات:
-- استخدم مزود Vercel AI SDK من Phaseo.
-- استخدم النموذج [النموذج].
-- اقرأ مفتاح API الخاص بـPhaseo من PHASEO_API_KEY.
-- أبقِ تجربة المستخدم بسيطة ومركزة على مهمة واحدة واضحة.
-- ادعم الإخراج المتدفق إذا كان التطبيق شبيهًا بالمحادثة؛ وإلا فاشرح سبب بساطة عدم استخدام البث هنا.
+Requirements:
+- Use the Phaseo Vercel AI SDK provider, @phaseo/ai-sdk-provider.
+- Use model [MODEL].
+- Call the provider only from server code; never ship PHASEO_API_KEY to the browser.
+- Read the Phaseo API key from PHASEO_API_KEY.
+- Keep the UX lightweight and oriented around one clear user task.
+- Support streamed output if the app is chat-like; otherwise explain why non-streaming is simpler here.
 
-تفاصيل التنفيذ:
-- أبقِ توصيل المزود واضحًا.
-- استخدم عناصر AI SDK الأساسية بطريقة معيارية ومناسبة لإطار العمل.
-- تجنب إدارة الحالة الإضافية غير الضرورية في الإصدار الأول.
-- أضف شرحًا موجزًا لكيفية اختيار معرّف نموذج المزود.
+Implementation details:
+- Keep the provider wiring explicit.
+- Use the AI SDK primitives in a standard, framework-appropriate way.
+- Avoid unnecessary extra state management for the first version.
+- Add one short explanation of how the provider model id is chosen.
 
-المخرجات:
-- رمز التطبيق.
-- خطوات الإعداد.
-- ملاحظة موجزة حول كيفية التبديل إلى نموذج آخر لاحقًا.
+Deliverables:
+- App code.
+- Setup steps.
+- A brief note on how to switch to a different model later.
 
-التحقق:
-- شغّل التطبيق إن أمكن.
-- تحقق من تدفق المستخدم الأساسي.
-- اذكر الأجزاء التي لم يتم التحقق منها بشكل منفصل.`}
+Verification:
+- Run the app if possible.
+- Verify the main user flow.
+- Report any unverified parts separately.`}
     </Prompt>
   </Accordion>
 
-  <Accordion title="تطبيق مصغر باستخدام Agent SDK" icon="bot">
+  <Accordion title="تطبيق صغير باستخدام Agent SDK" icon="bot">
     <Prompt
-      description="أنشئ تطبيقًا صغيرًا باستخدام **Phaseo Agent SDK** وحلقة أدوات محدودة."
+      description="أنشئ تطبيقًا صغيرًا باستخدام **Phaseo Agent SDK** وحلقة أدوات محدودة واحدة."
       icon="bot"
       actions={["copy", "cursor"]}
     >
-{`أنت تنشئ تطبيقًا صغيرًا يعتمد على الوكلاء فوق Phaseo Gateway.
+{`You are building a small agentic app on top of Phaseo Gateway.
 
-أنشئ تطبيقًا مصغرًا بلغة [LANGUAGE] لفكرة [فكرة التطبيق] باستخدام Phaseo Agent SDK.
+Create a [LANGUAGE] mini app for [APP IDEA] using the Phaseo Agent SDK.
 
-المتطلبات:
-- استخدم Phaseo Agent SDK للغة [LANGUAGE].
-- استخدم النموذج [النموذج].
-- أضف أداة محلية حتمية واحدة أو اثنتين فقط.
-- اجعل حلقة الأدوات محدودة وسهلة التصحيح.
-- اقرأ مفتاح API من PHASEO_API_KEY.
-- اعرض المخرجات النهائية، ونشاط الأدوات أو حالة الاستدلال الوسيطة عند الاقتضاء.
+Requirements:
+- Use the Phaseo Agent SDK for [LANGUAGE] (@phaseo/agent-sdk for TypeScript, phaseo-agent-sdk for Python).
+- Use model [MODEL].
+- Include one or two deterministic local tools only.
+- Give every tool a JSON Schema for its parameters and validate the model's arguments before running it.
+- Require human approval for any tool that writes, deletes, sends or spends.
+- Keep the tool loop bounded with a step limit and easy to debug.
+- Read the API key from PHASEO_API_KEY.
+- Show the final output and, where appropriate, the tool activity or intermediate reasoning state.
 
-تفاصيل التنفيذ:
-- أبقِ تعريف الوكيل في مكان واحد.
-- أبقِ تعريفات الأدوات صغيرة وحتمية.
-- تجنب إنشاء إطار عمل ضخم وعام للوكلاء في الإصدار الأول.
-- أضف ملاحظة حول مكان حفظ حالة التشغيل إذا أصبح التطبيق قابلًا للاستئناف لاحقًا.
+Implementation details:
+- Keep the agent definition in one place.
+- Keep tool definitions small and deterministic.
+- Avoid a giant general-purpose agent framework for the first version.
+- Add a note about where run state would be persisted if the app later becomes resumable.
 
-المخرجات:
-- رمز التطبيق.
-- تعليمات الإعداد.
-- شرح موجز لسبب ملاءمة Agent SDK لهذا التدفق أكثر من إكمال واحد.
+Deliverables:
+- App code.
+- Setup instructions.
+- A short explanation of why the Agent SDK is better than a one-shot completion for this workflow.
 
-التحقق:
-- شغّل المسار الأساسي إن أمكن.
-- تحقق من تشغيل واحد للوكيل من البداية إلى النهاية.
-- اذكر الافتراضات المتبقية، خصوصًا ما يتعلق بإعداد البيئة أو اعتماديات الأدوات المحلية.`}
+Verification:
+- Run the main path if possible.
+- Verify one end-to-end agent run.
+- Report any remaining assumptions, especially around environment setup or local tool dependencies.`}
     </Prompt>
   </Accordion>
 </AccordionGroup>
 
-## كيفية تحسين هذه الموجّهات
+## كيف تجعل المطالبات تعمل بشكل أفضل
 
-- استبدل `[فكرة التطبيق]` بمهمة واحدة محددة للمستخدم، لا بوصف عام للمنتج.
-- استبدل `[النموذج]` بمعرّف النموذج الدقيق الذي تريد من الوكيل استخدامه.
-- حدد ما إذا كانت المخرجات نصًا حرًا أو JSON صارمًا أو محادثة أو عنصرًا مولدًا واحدًا.
-- اذكر إطار واجهة المستخدم ووجهة النشر إن كنت تعرفهما.
-- أضف قيدًا أو اثنين مهمين، مثل `مزودو الاتحاد الأوروبي فقط` أو `استخدم البث` أو `أبقِ جميع الأسرار على الخادم`.
+- استبدل `[APP IDEA]` بمهمة مستخدم واحدة محددة، لا بفكرة منتج واسعة.
+- استبدل `[MODEL]` بمعرّف النموذج الدقيق الذي تريد أن يستخدمه الوكيل.
+- حدّد ما إذا كان الناتج نصًا حرًا، أو JSON صارمًا، أو محادثة، أو أصلًا مُنشأً واحدًا.
+- اذكر إطار واجهة المستخدم ووجهة النشر عندما تعرفهما.
+- أضف قيدًا أو قيدين مهمّين، مثل `EU-only providers` أو `use streaming` أو `keep all secrets server-side`.
 
-## أدلة ذات صلة
-
-- [البدء السريع](../quickstart.mdx)
-- [أمثلة](../guides/examples.mdx)
-- [نظرة عامة على SDK TypeScript](../sdk-reference/typescript/overview.mdx)
-- [نظرة عامة على SDK Python](../sdk-reference/python/overview.mdx)
-- [نظرة عامة على Agent SDK](../sdk-reference/agent-sdk/overview.mdx)
+تسرد المراجع الخاصة بـ [TypeScript وPython SDK](../sdk-reference/client/overview) و[Agent SDK](../sdk-reference/agent/overview) ما تقدّمه كل حزمة، لتتمكن من مطابقة شيفرة الوكيل معها.

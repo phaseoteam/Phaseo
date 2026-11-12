@@ -10,7 +10,7 @@ const env = {
 
 afterEach(() => vi.unstubAllGlobals());
 
-function stubPreviewData({ role = "admin", matched = false, includeOtherProvider = false }: { role?: string; matched?: boolean; includeOtherProvider?: boolean } = {}) {
+function stubPreviewData({ role = "admin", matched = false, includeOtherProvider = false, routes = [] }: { role?: string; matched?: boolean; includeOtherProvider?: boolean; routes?: Record<string, unknown>[] } = {}) {
 	const modelMatch = matched
 		? { canonical_model_slug: "openai/model-a", match_type: "exact" }
 		: { canonical_model_slug: null, match_type: "new_model" };
@@ -30,6 +30,7 @@ function stubPreviewData({ role = "admin", matched = false, includeOtherProvider
 			...(includeOtherProvider ? [{ run_id: "run-other", provider_slug: "other-provider", model_slug: "other/model-b", ...modelMatch, provider_model_slug: "model-b", name: "Other Model B", description: "Should stay private", input_modalities: ["text"], output_modalities: ["text"], context_length: 16_000, max_output_tokens: 2_000, availability: "ready", available_from: null, deprecated_at: null, shutdown_at: null, decision: "pending", route_projection_status: "not_projected", created_at: "2026-09-09T11:00:00Z" }] : []),
 		]), { status: 200 });
 		if (url.includes("provider_catalog_sync_model_capabilities")) return new Response(JSON.stringify([{ run_id: "run-synthetic", model_slug: "synthetic/model-a", capability_id: "responses", parameters: ["temperature", "max_tokens"] }]), { status: 200 });
+		if (url.includes("v2_model_provider_routes")) return new Response(JSON.stringify(routes), { status: 200 });
 		if (url.includes("v2_providers")) return new Response(JSON.stringify([
 			{ provider_slug: "synthetic", name: "Synthetic", status: "active" },
 			...(includeOtherProvider ? [{ provider_slug: "other-provider", name: "Other Provider", status: "active" }] : []),
@@ -101,6 +102,38 @@ describe("authenticated provider catalog previews", () => {
 					match_type: "exact",
 				}),
 			],
+		});
+	});
+
+	it("hides a feed offer already served by a current route on another model", async () => {
+		stubPreviewData({ routes: [{
+			provider_slug: "synthetic", model_slug: "openai/model-a", provider_model_slug: "model-a",
+			status: "active", provider_availability_status: "available", phaseo_status: "enabled", access_scope: "public", effective_to: null,
+		}] });
+		const response = await app.request(
+			"https://phaseo.app/api/account/settings/provider-onboarding/catalogue-previews",
+			{ headers: { authorization: "Bearer session-token" } },
+			env,
+		);
+
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toMatchObject({ models: [] });
+	});
+
+	it("keeps a feed offer when the only matching route on another model is retired", async () => {
+		stubPreviewData({ routes: [
+			{ provider_slug: "synthetic", model_slug: "openai/model-a", provider_model_slug: "model-a", status: "retired", phaseo_status: "disabled", access_scope: "public", effective_to: null },
+			{ provider_slug: "synthetic", model_slug: "openai/model-a", provider_model_slug: "model-a", status: "active", phaseo_status: "enabled", access_scope: "public", effective_to: "2026-01-01T00:00:00Z" },
+		] });
+		const response = await app.request(
+			"https://phaseo.app/api/account/settings/provider-onboarding/catalogue-previews",
+			{ headers: { authorization: "Bearer session-token" } },
+			env,
+		);
+
+		expect(response.status).toBe(200);
+		await expect(response.json()).resolves.toMatchObject({
+			models: [expect.objectContaining({ model_id: "synthetic/model-a" })],
 		});
 	});
 

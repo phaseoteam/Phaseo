@@ -1,14 +1,10 @@
 ---
 title: "الأخطاء وتصحيحها"
-description: "افهم أخطاء Phaseo وأصلح مشكلات الطلب والمزوّد والتوجيه الشائعة بسرعة أكبر."
+description: "افهم استجابات الأخطاء في Phaseo وأصلح مشكلات الطلب والمزوّد والتوجيه الشائعة بسرعة أكبر."
 icon: "bug"
 ---
 
-استخدم هذه الصفحة لفهم معنى خطأ Phaseo وما ينبغي فعله بعد ذلك.
-
-تتبع جميع استجابات الأخطاء تنسيق JSON واحدًا، ما يتيح لتطبيقك معالجة الإخفاقات باتساق عبر النماذج والمزوّدين. الحقل `error` كائن يحتوي على `code` و`message` و`type`، وهو الشكل الذي تقرؤه حزم SDK المتوافقة مع OpenAI، لذا تتضمن استثناءاتها رسالة البوابة.
-
-## مثال على استجابة خطأ
+اعتمد في منطقك على `error.code` وحالة HTTP، لا على نص الرسالة. لكل أخطاء Phaseo جسم JSON واحد في جميع نقاط النهاية، وكائن `error` فيه (`code` و`message` و`type` و`param`) هو الشكل الذي تقرؤه حزم SDK المتوافقة مع OpenAI، لذا تحمل استثناءاتها رسالة Phaseo.
 
 ```json
 {
@@ -68,129 +64,128 @@ icon: "bug"
 }
 ```
 
-## الحقول التي ستتلقاها دائمًا
+## الحقول الموجودة في كل خطأ
 
-- `generation_id`: معرّف طلب ثابت يمكنك مشاركته مع فريق الدعم.
-- `status_code`: يطابق رمز حالة HTTP.
-- `error`: كائن يصف الإخفاق:
-  - `error.code`: رمز خطأ قابل للقراءة آليًا، مثل `validation_error`.
-  - `error.message`: شرح واضح لما حدث.
-  - `error.type`: نوع الخطأ (راجع قسم أنواع الأخطاء أدناه).
-  - `error.param`: معامل الطلب الذي تسبّب في الخطأ إذا كانت البوابة تعرفه، وإلا فالقيمة `null`.
-  - `error.metadata` (اختياري): تفاصيل منظّمة مثل المزوّد الذي أخفق والسبب الفرعي والحالات التي أخفقت أو `retry_after_seconds`. تُرجع القيم نفسها أيضًا على المستوى الأعلى.
-- `code`: الرمز نفسه الموجود في `error.code`. كانت الاستجابات السابقة تُرجع هذا الرمز كسلسلة في `error`؛ اقرأ `code` إذا كان عميلك يتوقع سلسلة هناك.
-- `message`: النص نفسه الموجود في `error.message`.
-- `error_type`: فئة عامة، تكون عادةً `user` أو `system`.
-- `error_origin`: يوضح ما إذا كان السبب الأساسي هو المتصل أو Phaseo أو مزوّد أساسي.
-- `description`: شرح مبسط لما حدث.
-- `details` (اختياري): تفاصيل تحقق منظمة عندما يكون الخطأ متعلقًا بالتحقق من صحة الطلب.
+| الحقل | المحتوى |
+| --- | --- |
+| `error.code` | رمز قابل للقراءة آليًا، مثل `validation_error`. راجع [رموز الأخطاء](#error-codes). |
+| `error.message` | شرح بلغة واضحة. |
+| `error.type` | فئة الخطأ، وتُحدَّد من حالة HTTP. راجع [أنواع الأخطاء](#error-types). |
+| `error.param` | حقل الطلب الذي سبّب الخطأ إن عرفه Phaseo، وإلا فالقيمة `null`. |
+| `error.metadata` | اختياري. تفاصيل منظّمة مثل `reason` أو `failed_providers` أو `failed_statuses` أو `retry_after_seconds`. وتوجد القيم نفسها أيضًا في المستوى الأعلى. |
+| `code` | مثل `error.code`. كانت الاستجابات القديمة تُرجع هذه السلسلة في `error`؛ اقرأ `code` إذا كان عميلك يتوقع سلسلة هناك. |
+| `message` و`description` | النص نفسه الموجود في `error.message`. |
+| `generation_id` | معرّف الطلب الذي تسجّله وتشاركه مع الدعم. |
+| `status_code` | حالة HTTP. |
+| `error_type` | `user` أو `system`. |
+| `error_origin` | مصدر المشكلة: المتصل (`user`) أو Phaseo (`gateway`) أو مزوّد (`upstream`). |
+| `details` | اختياري. تفاصيل التحقق عندما يكون جسم الطلب غير صالح. |
 
-## حقول إضافية قد تظهر
+تضيف بعض الأخطاء سياقًا إضافيًا:
 
-تتضمن بعض الأخطاء تفاصيل أكثر لمساعدتك على حل المشكلة بسرعة:
+| الحقل | متى يظهر |
+| --- | --- |
+| `reason` | سبب فرعي محدد، مثل `all_candidates_failed` أو `no_provider_pricing`. |
+| `provider_failure_diagnostics` | وصل الطلب إلى مزوّد وفشل. راجع [عندما يفشل مزوّد](#when-a-provider-fails). |
+| `upstream_error` و`failure_sample` | ملخص بأفضل جهد لأول إخفاق لدى مزوّد. |
+| `failed_providers` و`failed_statuses` و`attempt_count` | المزوّدون الذين جُرّبوا وما أعادوه. |
+| `provider_candidate_diagnostics` و`provider_enablement` و`routing_diagnostics` | لم يتمكن أي مزوّد من خدمة النموذج على نقطة النهاية هذه. راجع [عندما لا يتوفر نموذج أو نقطة نهاية](#when-a-model-or-endpoint-is-not-available). |
 
-- `reason`: سبب فرعي أدق، مثل `all_candidates_failed` أو `pricing_not_configured`.
-- `provider_candidate_diagnostics` و`provider_enablement`: يوضحان سبب تعذر استخدام النموذج مع نقطة النهاية المطلوبة.
-- `routing_diagnostics`: تفاصيل إضافية عن كيفية تضييق خيارات الطلب عبر فحوصات التوجيه أو التوفر.
-- `provider_failure_diagnostics`: تلميحات بشأن بيانات الاعتماد المفقودة أو غياب الوصول أو القيود الإقليمية أو حدود المعدل وإخفاقات المزوّد المماثلة.
-- `upstream_error` و`failure_sample`: ملخص بأفضل جهد لإخفاق المزوّد الأول إذا وصل الطلب إلى مزوّد.
-- `failed_providers` و`failed_statuses` و`attempt_count`: سياق إضافي حول إعادة المحاولة والتحويل الاحتياطي.
-
+<span id="error-types"></span>
 ## أنواع الأخطاء
 
 يتبع `error.type` [أنواع الأخطاء الموثّقة لدى OpenAI](https://platform.openai.com/docs/guides/error-codes) ويُحدَّد من حالة HTTP:
 
 | الحالة | `error.type` |
 | --- | --- |
-| `400`, `409`, `410`, `413`, `422` ورموز 4xx الأخرى | `invalid_request_error` |
 | `401` | `authentication_error` |
 | `402` | `insufficient_quota` |
 | `403` | `permission_error` |
 | `404` | `not_found_error` |
 | `429` | `rate_limit_error` |
+| `408` و`500` و`502` ورموز 5xx الأخرى | `server_error` |
 | `503` | `service_unavailable` |
 | `529` | `overloaded` |
-| `500`, `502` ورموز 5xx الأخرى | `server_error` |
+| `400` و`409` و`410` و`413` و`422` ورموز 4xx الأخرى | `invalid_request_error` |
 
 تستخدم أخطاء `/v1/messages` الجسم نفسه، لذا تجد حزم SDK من Anthropic أيضًا `error.type` و`error.message`.
 
-## إرشادات فئات الحالة
+<span id="error-codes"></span>
+## رموز الأخطاء
 
-| الحالة | المعنى | الإجراء الموصى به |
-| --- | --- | --- |
-| `400-499` | مشكلة في الطلب أو المصادقة أو الأذونات | أصلح الطلب أو بيانات الاعتماد قبل إعادة المحاولة. |
-| `429` | تقييد للمعدل من المزوّد أو المسار | أعد المحاولة مع تراجع تدريجي والتزم بـ `Retry-After`. |
-| `500-599` | إخفاق في Phaseo أو مزوّد أساسي | أعد المحاولة بتراجع يتضمن تفاوتًا عشوائيًا وسجّل معرّف الطلب. |
-
-## رموز الأخطاء الشائعة
-
-| `error.code` | حالة HTTP | `error.type` | الوصف |
+| `error.code` | الحالة | المعنى | ما الذي تفعله |
 | --- | --- | --- | --- |
-| `unauthorised` | `401` | `authentication_error` | مفتاح API مفقود أو غير صالح. |
-| `guardrail_blocked` | `403` | `permission_error` | حظرت إحدى ضوابط الحماية أو سياسات الوصول في مساحة العمل الطلب. |
-| `not_found` | `404` | `not_found_error` | تعذر العثور على نقطة النهاية أو المورد. |
-| `model_retired` | `410` | `invalid_request_error` | النموذج متوقف ولم يعد أي مزوّد يقدّمه. انتقل إلى `replacement_model`. |
-| `insufficient_funds` | `402` | `insufficient_quota` | لا تملك مساحة العمل رصيدًا كافيًا للطلب. |
-| `key_limit_exceeded` | `429` | `rate_limit_error` | بلغ مفتاح API أحد حدوده. |
-| `phaseo_free_model_limit_exceeded` | `429` | `rate_limit_error` | تم استنفاد الحصة اليومية المشتركة للنماذج المجانية في Phaseo (1,500 طلب افتراضيًا). التزم بـ `Retry-After`، أو انتظر إعادة التعيين عند 00:00 UTC، أو اختر نموذجًا مدفوعًا. |
-| `rate_limit_exceeded` | `429` | `rate_limit_error` | استُنفدت إحدى [سياسات حدود المعدل](./limits.mdx) في مساحة العمل. يحدّدها `policy_id` و`limit_scope`. التزم بـ `Retry-After`، أو اطلب من أحد مسؤولي مساحة العمل تغيير السياسة. |
-| `validation_error` | `400` | `invalid_request_error` | معلمات أو جسم طلب غير صالح. يذكر `error.param` أول حقل غير صالح. |
-| `upstream_error` | `429` | `rate_limit_error` | فرض كل مزوّد جُرّب للطلب حدًّا للمعدل عليه. التزم بـ `Retry-After`؛ وتحمل طلبات BYOK أيضًا الترويسات `X-Phaseo-Upstream-RateLimit-*`. |
-| `upstream_error` | `502` | `server_error` | لم يستجب مزوّد النموذج الأساسي بطريقة صحيحة. |
-| `upstream_stream_failure` | `502` | `server_error` | طلب غير متدفق أخفق مزوّده بعد أن بدأ التوليد. لا يُعاد أي إخراج جزئي ولا تُفرض رسوم على الطلب. |
-| `gateway_error` | `500` | `server_error` | حدثت مشكلة غير متوقعة داخل Phaseo. |
+| `validation_error` | `400` | معامل أو جسم الطلب غير صالح. يسمّي `error.param` أول حقل غير صالح. | أصلح الطلب. |
+| `invalid_json` | `400` | الجسم ليس JSON صالحًا. | أصلح الطلب. |
+| `model_required` | `400` | لا يتضمن الطلب `model`. | أضف `model`. |
+| `unsupported_model_or_endpoint` | `400` | لا يستطيع أي مزوّد خدمة هذا النموذج على نقطة النهاية هذه. | راجع [القسم أدناه](#when-a-model-or-endpoint-is-not-available). |
+| `unsupported_modalities` | `400` | لا يقبل أي مسار أنواع الإدخال أو الإخراج الموجودة في الطلب. | غيّر النموذج أو المدخلات. |
+| `byok_credentials_required` | `400` | لا يعمل المسار إلا بمفتاح المزوّد الخاص بك. | أضف [مفتاح مزوّد](./endpoint/provider-credentials-create.mdx) مؤهّلًا. |
+| `upstream_error` | `400` أو `413` أو `422` | رفض كل المزوّدين الطلب بالحالة نفسها (السبب `upstream_rejected_request`). | أصلح الطلب؛ لن تفيد إعادة المحاولة. |
+| `unauthorised` | `401` | المفتاح مفقود أو غير صالح. يوضح `reason` السبب. | تحقق من الترويسة `Authorization`. |
+| `insufficient_funds` | `402` | لا تملك مساحة العمل رصيدًا كافيًا. | أضف رصيدًا. |
+| `pricing_not_configured` | `402` | لا يوجد مزوّد لهذا النموذج لديه تسعير (السبب `no_provider_pricing`). | اختر نموذجًا آخر. |
+| `guardrail_blocked` | `403` | حظر حاجز حماية أو سياسة وصول الطلب. | غيّر الطلب أو حاجز الحماية. |
+| `model_region_unavailable` | `403` | لا يخدم أي مزوّد النموذج في المنطقة المطلوبة، أو من موقع المتصل. | خفّف شرط المنطقة أو اختر نموذجًا آخر. |
+| `not_found` | `404` | نقطة النهاية أو المورد غير موجود. | تحقق من المسار والمعرّف. |
+| `not_ready` | `409` | نتائج المهمة غير جاهزة بعد. | استطلع حالة المهمة. |
+| `model_retired` | `410` | النموذج متقاعد ولا يخدمه أي مزوّد. | انتقل إلى `replacement_model`. راجع [القسم أدناه](#when-a-model-is-retired). |
+| `payload_too_large` | `413` | الجسم أكبر مما تقبله نقطة النهاية. يعطي `max_bytes` الحد. | أرسل جسمًا أصغر أو ارفع ملفًا. |
+| `key_limit_exceeded` | `429` | بلغ الطلب حدًا للمفتاح أو ميزانية أو حد الـ Gateway في الدقيقة. | راجع [حدود المعدل](./limits.mdx#key-limits-and-budgets). |
+| `phaseo_free_model_limit_exceeded` | `429` | استُهلكت الحصة اليومية للنماذج المجانية (1,500 طلب افتراضيًا). | التزم بـ `Retry-After`، أو انتظر إعادة الضبط عند 00:00 UTC، أو استخدم نموذجًا مدفوعًا. |
+| `rate_limit_exceeded` | `429` | استُنفدت [سياسة حد معدل](./limits.mdx#rate-limit-policies) لمساحة العمل. يحددها `policy_id` و`limit_scope`. | التزم بـ `Retry-After`، أو اطلب من مسؤول تغيير السياسة. |
+| `spend_rule_blocked` | `429` | توجد [قاعدة إنفاق](../guides/spend-alerts.mdx) مضبوطة على الحظر ونشطة. | التزم بـ `Retry-After`، أو اطلب من مالك أو مسؤول رفع الحظر. |
+| `upstream_error` | `429` | فرض كل مزوّد جُرّب حد معدل على الطلب. | التزم بـ `Retry-After`. تحمل طلبات BYOK أيضًا ترويسات `X-Phaseo-Upstream-RateLimit-*`. |
+| `provider_capacity_exhausted` | `429` | كل مزوّد مؤهّل بلغ سعته القصوى (السبب `all_candidates_rate_limited`). | التزم بـ `Retry-After` عند وجوده، وإلا فتراجع قبل إعادة المحاولة. |
+| `gateway_error` | `500` | فشل شيء داخل Phaseo. | أعد المحاولة مع تراجع تدريجي. |
+| `not_implemented_yet` | `501` | العملية غير متاحة بعد. | لا تُعد المحاولة. |
+| `upstream_error` | `502` | لم يستجب المزوّد استجابة صحيحة. | أعد المحاولة مع تراجع تدريجي. |
+| `upstream_stream_failure` | `502` | طلب غير متدفق فشل مزوّده بعد أن بدأ التوليد. لا يُعاد أي إخراج جزئي ولا يُحتسب الطلب. | أعد المحاولة. |
+| `provider_payment_required` | `502` | يحتاج حساب Phaseo لدى المزوّد إلى معالجة. | أعد المحاولة لاحقًا أو أبلغ عن المشكلة. |
 
-## عند إخفاق مزوّد
+## أعد المحاولة للأخطاء الصحيحة
 
-إذا وصلت Phaseo إلى مزوّد لكن الطلب أخفق رغم ذلك، فقد ترى:
+| الحالة | إعادة المحاولة؟ |
+| --- | --- |
+| `400`–`499` باستثناء `429` | لا. أصلح الطلب أو المفتاح أو الوصول أولًا. |
+| `429` | نعم. انتظر `Retry-After` (بالثواني أو تاريخ HTTP)، وإلا فاستخدم تراجعًا أُسّيًا مع تذبذب عشوائي. خطأ `key_limit_exceeded` بلا `Retry-After` لا يُعاد ضبطه من تلقاء نفسه، فلا تُعد المحاولة. |
+| `500`–`599` | فقط عندما يكون تكرار العملية آمنًا. قد يكون إرسال غامض النتيجة قد أنشأ مهمة أو رسومًا بالفعل؛ ابحث عن المهمة المقبولة بدلًا من إرسالها مجددًا. |
 
-- `provider_failure_diagnostics.category`
-- `provider_failure_diagnostics.hint`
-- `provider_failure_diagnostics.provider`
+حدّد عددًا أقصى للمحاولات ومهلة إجمالية. راجع [حدود المعدل](./limits.mdx) لمعرفة ترويسات حدود المعدل.
 
-تشمل الفئات الحالية:
+<span id="when-a-provider-fails"></span>
+## عندما يفشل مزوّد
 
-- `credentials_not_configured`
-- `credentials_invalid_or_forbidden`
-- `provider_access_missing`
-- `region_or_project_restriction`
-- `model_unavailable_for_endpoint`
-- `rate_limited`
-- `server_error`
+عندما يصل Phaseo إلى مزوّد ويفشل الطلب مع ذلك، يحتوي `provider_failure_diagnostics` على `category` و`hint` و`provider`. الفئات:
 
-تهدف هذه الحقول إلى مساعدتك في حل المشكلة دون تشغيل وضع التصحيح الكامل.
+| `category` | المعنى |
+| --- | --- |
+| `credentials_not_configured` | لم تُعدّ بيانات اعتماد لهذا المسار. |
+| `credentials_invalid_or_forbidden` | رُفضت بيانات الاعتماد. |
+| `provider_access_missing` | لا يملك حساب المزوّد وصولًا إلى النموذج أو الميزة. |
+| `region_or_project_restriction` | رفض المزوّد بسبب المنطقة أو المشروع. |
+| `model_unavailable_for_endpoint` | لا يتيح المزوّد النموذج على نقطة النهاية هذه. |
+| `rate_limited` | فرض المزوّد حد معدل على الطلب. |
+| `server_error` | فشل المزوّد أو انتهت مهلته. |
 
-## عند عدم توفر نموذج أو نقطة نهاية
+<span id="when-a-model-or-endpoint-is-not-available"></span>
+## عندما لا يتوفر نموذج أو نقطة نهاية
 
-قد تتضمن استجابات `unsupported_model_or_endpoint` ما يلي:
+يمكن أن تتضمن أخطاء `unsupported_model_or_endpoint` الحقول `provider_candidate_diagnostics` و`provider_enablement` و`missing_pricing_providers` و`routing_diagnostics`. وتميّز معًا بين نموذج لم يُفعَّل بعد، ونموذج لا يدعم نقطة النهاية، وتسعير مفقود، وقيود الإطلاق التدريجي.
 
-- `provider_candidate_diagnostics`
-- `provider_enablement`
-- `missing_pricing_providers`
-- `routing_diagnostics`
-
-يساعدك ذلك على التمييز بين:
-
-- نموذج معروف لم يُفعّل بعد
-- نموذج لا يدعم نقطة النهاية المطلوبة
-- بيانات أسعار مفقودة
-- قيود الطرح أو التوفر الداخلي
-
-حقول شائعة:
-
-- `provider_candidate_diagnostics.totalProviders`: عدد المزوّدين المعروفين للنموذج قبل التصفية حسب نقطة النهاية.
-- `provider_candidate_diagnostics.supportsEndpointCount`: عدد المزوّدين الذين يدعمون نقطة النهاية المطلوبة.
-- `provider_candidate_diagnostics.candidateCount`: عدد المزوّدين المتبقين بعد فحوصات المحوّل.
-- `provider_candidate_diagnostics.droppedUnsupportedEndpoint`: المزوّدون المستبعدون لعدم دعم نقطة النهاية.
-- `provider_candidate_diagnostics.droppedMissingAdapter`: أزواج المزوّد ونقطة النهاية المستبعدة لعدم وجود محوّل Gateway لهذه النقطة بعد.
-- `provider_enablement.capability`: بوابة الإمكانية قيد التنفيذ، مثل `video_generation`.
-- `provider_enablement.providersBefore` / `provider_enablement.providersAfter`: المزوّدون قبل التصفية حسب الإمكانية أو التفعيل وبعدها.
-- `provider_enablement.dropped[].reason`: أسباب قابلة للقراءة آليًا، مثل `pricing_missing`.
-- `routing_diagnostics.filterStages[].stage`: مرحلة التوجيه، مثل التصفية حسب الإمكانية أو الطرح أو حالة التوجيه.
-- `routing_diagnostics.filterStages[].beforeCount` / `routing_diagnostics.filterStages[].afterCount`: عدد المزوّدين قبل كل مرحلة وبعدها.
-- `routing_diagnostics.filterStages[].droppedProviders[].reason`: أسباب قابلة للقراءة آليًا، مثل قيود الطرح أو التوجيه.
-
-### مثال
+| الحقل | المعنى |
+| --- | --- |
+| `provider_candidate_diagnostics.totalProviders` | المزوّدون المعروفون للنموذج قبل تصفية نقاط النهاية. |
+| `provider_candidate_diagnostics.supportsEndpointCount` | المزوّدون الذين يدعمون نقطة النهاية المطلوبة. |
+| `provider_candidate_diagnostics.candidateCount` | المزوّدون المتبقون بعد فحوص المحوّلات. |
+| `provider_candidate_diagnostics.droppedUnsupportedEndpoint` | المزوّدون المستبعدون لأنهم لا يدعمون نقطة النهاية. |
+| `provider_candidate_diagnostics.droppedMissingAdapter` | أزواج المزوّد ونقطة النهاية المستبعدة لأن Phaseo لا يملك محوّلًا لنقطة النهاية تلك بعد. |
+| `provider_enablement.capability` | القدرة المفروضة، مثل `video_generation`. |
+| `provider_enablement.providersBefore` و`providersAfter` | المزوّدون قبل تصفية القدرات وبعدها. |
+| `provider_enablement.dropped[].reason` | سبب استبعاد مزوّد، مثل `pricing_missing`. |
+| `routing_diagnostics.filterStages[].stage` | مرحلة توجيه، مثل تصفية القدرات أو الإطلاق التدريجي أو حالة التوجيه. |
+| `routing_diagnostics.filterStages[].beforeCount` و`afterCount` | المزوّدون قبل تلك المرحلة وبعدها. |
+| `routing_diagnostics.filterStages[].droppedProviders[].reason` | سبب استبعاد مزوّد في تلك المرحلة. |
 
 ```json
 {
@@ -246,10 +241,9 @@ icon: "bug"
 ```
 
 <span id="when-a-model-is-retired"></span>
+## عندما يتقاعد نموذج
 
-## عند إيقاف نموذج
-
-يظل النموذج المتوقف متاحًا ما دام أي مزوّد يقدّمه. وبمجرد ألا يقدّمه أي مزوّد، تفشل الطلبات الموجهة إليه مع `410` والخطأ `model_retired`:
+يظل النموذج المتقاعد متاحًا ما دام أي مزوّد يخدمه. وعندما لا يخدمه أي مزوّد، تفشل الطلبات بالحالة `410` والرمز `model_retired`:
 
 ```json
 {
@@ -274,15 +268,42 @@ icon: "bug"
 }
 ```
 
-- `model`: النموذج الذي طلبته.
-- `retired_at`: وقت إيقاف النموذج، أو `null` إذا لم يُسجَّل أي تاريخ.
-- `replacement_model`: البديل المقترح، أو `null` إذا لم يوجد بديل.
+`model` هو النموذج الذي طلبته، و`retired_at` هو وقت تقاعده (أو `null`)، و`replacement_model` هو البديل المقترح (أو `null`).
 
-لا تفيد إعادة المحاولة. حدّث معرّف النموذج في طلبك. ولمواصلة خدمة هذه الطلبات أثناء الانتقال، أضف البديل إلى قائمة `models` في طلبك أو فعّل توجيه النماذج المتوقفة لمساحة العمل. راجع [إهمال النماذج وإيقافها](../guides/model-retirement.mdx).
+لا تفيد إعادة المحاولة؛ غيّر معرّف النموذج. لإبقاء هذه الطلبات تعمل أثناء الترحيل، أضف البديل إلى قائمة `models` في الطلب أو فعّل توجيه النماذج المتقاعدة لمساحة العمل. راجع [إيقاف النماذج وتقاعدها](../guides/model-retirement.mdx).
 
-## وضع تصحيح اختياري
+## الأخطاء أثناء البث
 
-تدعم معظم مخططات الطلبات كائن `debug` لتصحيح المشكلات ضمن ضوابط محددة:
+إذا فشل الطلب قبل بدء البث، تتلقى جسم خطأ JSON الموضح أعلاه. وإذا فشل في منتصف البث، ينتهي البث بحدث الإخفاق الخاص بنقطة النهاية بدلًا من الإنهاء العادي:
+
+| نقطة النهاية | حدث الإخفاق |
+| --- | --- |
+| Chat Completions | إطار `error` |
+| Responses | `response.failed` (أو `error`) |
+| Messages | حدث `error` |
+
+تعامل مع الإخراج الجزئي على أنه غير مكتمل واعرض إعادة المحاولة. يحمل إطار `error` في Chat Completions كائن الخطأ نفسه، مع ضبط `error.type` بناءً على الرمز:
+
+```json
+{
+  "object": "error",
+  "message": "The upstream stream ended before the response completed.",
+  "code": "upstream_stream_failure",
+  "error": {
+    "code": "upstream_stream_failure",
+    "message": "The upstream stream ended before the response completed.",
+    "type": "server_error",
+    "param": null
+  }
+}
+```
+
+الطلب غير المتدفق الذي يفشل مزوّده في منتصف العمل يُرجع `502` مع `upstream_stream_failure`، لا استجابة جزئية. راجع [البث](../guides/streaming.mdx).
+
+<span id="debug-a-request"></span>
+## تصحيح طلب
+
+أرسل كائن `debug` للحصول على تتبعات التوجيه والحمولات المتبادلة مع المزوّد:
 
 ```json
 {
@@ -296,86 +317,18 @@ icon: "bug"
 }
 ```
 
-الحقول المتاحة:
+قيمة `trace_level` هي `summary` أو `full`. قد تحتوي حمولات التصحيح على محتوى طلبك، لذا استخدمها فقط في التطوير أو في بيئات خاضعة لرقابة مشددة. راجع [`debug`](./parameters.mdx#parameter-debug).
 
-- `enabled`
-- `return_upstream_request`
-- `return_upstream_response`
-- `trace`
-- `trace_level` (`summary` أو `full`)
-
-استخدم وضع التصحيح في التطوير أو البيئات الخاضعة لرقابة صارمة فقط.
-
-## استراتيجية إعادة المحاولة
-
-- **أخطاء الفئة 400 باستثناء 429:** صحّح الطلب أو بيانات الاعتماد أو سياسة الوصول قبل إعادة المحاولة.
-- **429:** طبّق تراجعًا أسيًا والتزم بترويسة `Retry-After`.
-- **أخطاء الفئة 500:** استخدم إعادة المحاولة ضمن حدود فقط عندما يكون تكرار العملية آمنًا. قد يكون الإرسال ذو النتيجة غير المؤكدة قد أنشأ مهمة أو تسبب في رسوم بالفعل؛ استرجع المهمة المقبولة بدلًا من إرسالها مجددًا.
-
-حدّد سقفًا لعدد المحاولات ومهلة إجمالية، وأضف تباينًا عشوائيًا إلى فترات الانتظار. راجع [حدود الطلبات](./limits.mdx) لترويسات الاستجابة وآلية التعامل مع إعادة المحاولة.
-
-## ملاحظات خاصة بالبث
-
-- إذا أخفق الطلب قبل بدء البث، فستتلقى حمولة خطأ JSON قياسية.
-- إذا أخفق أثناء البث، فينتهي التدفق بحدث الإخفاق الخاص بنقطة النهاية بدلًا من الإنهاء المعتاد: إطار `error` في Chat Completions، و`response.failed` (أو `error`) في Responses، وحدث `error` في Messages. تعامل مع التدفق الجزئي على أنه غير مكتمل واعرض خيار إعادة المحاولة.
-- يحمل إطار `error` في Chat Completions كائن الخطأ نفسه، ويُحدَّد `error.type` من الرمز:
-
-  ```json
-  {
-    "object": "error",
-    "message": "The upstream stream ended before the response completed.",
-    "code": "upstream_stream_failure",
-    "error": {
-      "code": "upstream_stream_failure",
-      "message": "The upstream stream ended before the response completed.",
-      "type": "server_error",
-      "param": null
-    }
-  }
-  ```
-- يُرجع الطلب غير المتدفق الذي يخفق مزوّده في منتصف العملية الرمز `502` مع `upstream_stream_failure`، لا استجابة جزئية.
-- سجّل دائمًا `generation_id` وبيانات نقطة النهاية والنموذج الوصفية.
-
-## نصائح لاستكشاف المشكلات
-
-- تحقّق من [صفحة حالة Gateway](https://status.phaseo.app) للاطلاع على الحوادث الجارية.
-- راجع حمولة الطلب مقابل توثيق نقطة النهاية.
-- شارك `generation_id` عند التواصل مع الدعم.
-
-## موارد ذات صلة
-
-<Columns cols={2}>
-	<Card
-		title="المصادقة"
-		icon="key"
-		href="../developers/authentication.mdx"
-	>
-		صادِق باستخدام مفاتيح API من نوع Bearer.
-	</Card>
-	<Card
-		title="الحدود"
-		icon="gauge"
-		href="./limits.mdx"
-	>
-		تعامل مع تقييد المعدل وإعادة المحاولة اللذين يفرضهما المزوّد.
-	</Card>
-	<Card
-		title="البث"
-		icon="radio"
-		href="../guides/streaming.mdx"
-	>
-		استخدم SSE بأمان في تدفقات الإنتاج.
-	</Card>
-</Columns>
+عندما يفشل طلب، تحقق من [صفحة الحالة](https://status.phaseo.app) بحثًا عن حوادث، وقارن حمولتك بصفحة المرجع الخاصة بنقطة النهاية، وسجّل `generation_id` مع نقطة النهاية والنموذج. أرفق `generation_id` عند التواصل مع [الدعم](https://phaseo.app/help).
 
 <Visibility for="agents">
-قواعد معالجة الأخطاء للوكلاء، ملخصًا لهذه الصفحة:
+قواعد معالجة الأخطاء للوكلاء، تلخّص هذه الصفحة:
 
-- اتخذ القرار بناءً على `error.code` (الذي يُرجع أيضًا في `code` على المستوى الأعلى) و`error.type` و`status_code`، لا على نص الرسالة. سجّل `generation_id` مع كل إخفاق.
-- `400` و`401` و`403` و`404`: أصلح الطلب أو المفتاح أو الصلاحية أولًا، ولا تُعِد إرسال الطلب نفسه دون تغيير.
-- `410` مع `model_retired`: انتقل إلى `replacement_model` إذا لم تكن قيمته `null`؛ وإلا فاختر نموذجًا جديدًا من `GET /v1/models`.
-- `429`: إذا وُجد `Retry-After` (ثوانٍ أو تاريخ HTTP)، فانتظر تلك المدة قبل إعادة المحاولة؛ وإلا فاستخدم تراجعًا أسيًا مع تذبذب عشوائي. خطأ `key_limit_exceeded` الذي لا يتضمن `Retry-After` لا يُعاد ضبطه تلقائيًا، فلا تُعِد المحاولة.
-- من `500` إلى `599`: أعِد المحاولة فقط عندما يكون تكرار الاستدعاء آمنًا، مع حد لعدد المحاولات ومهلة إجمالية وتراجع أسي مع تذبذب عشوائي. في المهام غير المتزامنة، استعلم عن المهمة المقبولة بدل إرسالها من جديد.
-- تعامل مع حمولات التصحيح على أنها حساسة، وأخفِ محتواها قبل كتابتها في سجلات دائمة.
-- لأنماط مُجرّبة لإعادة المحاولة وتحليل الأخطاء، ثبّت مهارة `phaseo-gateway`: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`.
+- اعتمد على `error.code` (يُرجع أيضًا في `code` على المستوى الأعلى) و`error.type` و`status_code`، لا على نص الرسالة. سجّل `generation_id` مع كل إخفاق.
+- `400` و`401` و`403` و`404`: أصلح الطلب أو المفتاح أو الوصول أولًا. لا تُعد الطلب نفسه دون تغيير.
+- `410` مع `model_retired`: انتقل إلى `replacement_model` إذا لم يكن `null`؛ وإلا فاختر نموذجًا جديدًا من `GET /v1/models`.
+- `429`: عند وجود `Retry-After` (بالثواني أو تاريخ HTTP)، انتظر تلك المدة قبل إعادة المحاولة؛ وإلا فاستخدم تراجعًا أُسّيًا مع تذبذب عشوائي. خطأ `key_limit_exceeded` بلا `Retry-After` لا يُعاد ضبطه من تلقاء نفسه، فلا تُعد المحاولة.
+- `500` إلى `599`: أعد المحاولة فقط عندما يكون تكرار الاستدعاء آمنًا، مع حد للمحاولات ومهلة إجمالية وتراجع أُسّي مع تذبذب عشوائي. في المهام غير المتزامنة، ابحث عن المهمة المقبولة بدلًا من إرسالها مجددًا.
+- تعامل مع حمولات التصحيح على أنها حساسة، وأخفِ بياناتها قبل كتابة سجلات دائمة.
+- لأنماط مُختبرة لإعادة المحاولة وتحليل الأخطاء، ثبّت مهارة `phaseo-gateway`: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`.
 </Visibility>

@@ -1,0 +1,79 @@
+---
+title: "Hermes Agent"
+icon: "/icons/brands/hermes.svg"
+description: "وجّه Hermes Agent إلى Phaseo Gateway كنقطة نهاية مخصّصة متوافقة مع OpenAI."
+---
+
+شغّل `phaseo hermes` لتعيين Phaseo كنقطة النهاية المخصّصة في Hermes Agent بمفتاح خاص به، أو اضبط إعدادات Hermes الأربعة نفسها وسطرًا واحدًا في `.env` بنفسك.
+
+## الإعداد باستخدام Phaseo CLI
+
+```bash
+phaseo login
+phaseo hermes --model openai/gpt-6-astra
+```
+
+إذا لم يكن Hermes مثبتًا، تعرض CLI أمر المثبّت الرسمي من Nous Research وتطلب موافقتك قبل تشغيله. على macOS وLinux، يحتاج المثبّت إلى `sh` و`bash` و`curl`. ثم يقوم الإعداد بما يلي:
+
+1. يحفظ قيمك الحالية لـ `model.provider` و`model.base_url` و`model.default` و`model.key_env`، حتى تتمكن الإزالة من استعادتها.
+2. ينشئ مفتاحًا باسم `Phaseo CLI: Hermes Agent API Key` تنتهي صلاحيته بعد 90 يومًا وله حد إنفاق شهري قدره $100.
+3. يكتب المفتاح في ملف `.env` الخاص بـ Hermes باسم `OPENAI_API_KEY`، داخل كتلة تبدأ بـ `# >>> phaseo managed (do not edit)` وتنتهي بـ `# <<< phaseo managed`. تبقى أسطرك الأخرى كما هي، ولا يظهر المفتاح أبدًا في سطر الأوامر.
+4. يشغّل `hermes config set` لتوجيه Hermes إلى Phaseo:
+
+| الإعداد | القيمة |
+| --- | --- |
+| `model.provider` | `custom` |
+| `model.base_url` | `https://api.phaseo.app/v1` |
+| `model.default` | قيمة `--model`، أو `anthropic/claude-sonnet-4.6` بدونها |
+| `model.key_env` | `OPENAI_API_KEY` |
+
+يخبر `model.key_env` ‏Hermes بإرسال `OPENAI_API_KEY` إلى نقطة النهاية المخصّصة. بدونه، يرسل Hermes هذا المفتاح إلى خوادم OpenAI فقط، وتصل الطلبات إلى Phaseo دون مفتاح.
+
+يسأل Phaseo ‏Hermes عن موقع ملف `.env` (`hermes config env-path`)، وهذا يغطي ملفات التعريف والتجاوزات الأخرى. إذا لم يستطع Hermes تحديده، تستخدم CLI ملف `.env` في `HERMES_HOME`، أو `~/.hermes/.env` (`%LOCALAPPDATA%\hermes\.env` على Windows الأصلي). يحتفظ Hermes بمفاتيح المزوّدين في هذا الملف كنص صريح، لذا احمه كأي ملف مفاتيح آخر.
+
+شغّل `phaseo hermes` مرة أخرى لاستبدال مفتاح منتهي الصلاحية أو تغيير النموذج. يحتفظ بالإعدادات المحفوظة في التشغيل الأول.
+
+<span id="configure-hermes-manually"></span>
+## إعداد Hermes يدويًا
+
+أضف مفتاح API من Phaseo إلى ملف `.env` الخاص بـ Hermes:
+
+```bash .env
+OPENAI_API_KEY=your_phaseo_api_key
+```
+
+ثم وجّه Hermes إلى Phaseo:
+
+```bash
+hermes config set model.provider custom
+hermes config set model.base_url https://api.phaseo.app/v1
+hermes config set model.default openai/gpt-6-astra
+hermes config set model.key_env OPENAI_API_KEY
+```
+
+شغّل `hermes config env-path` لمعرفة ملف `.env` الذي يقرؤه Hermes.
+
+## التحقق من أنه يعمل
+
+أعد تشغيل جلسات Hermes النشطة حتى تستخدم نقطة نهاية Phaseo ومفتاحه. شغّل `hermes config get model.base_url --json` للتأكد من أنه يعيد `https://api.phaseo.app/v1`، ثم أرسل موجّهًا قصيرًا وتأكد من ظهور الطلب في **الإعدادات → الاستخدام → السجلات**.
+
+## إزالة Phaseo
+
+```bash
+phaseo integrations remove hermes
+```
+
+يستعيد هذا الأمر إعدادات النموذج الأربعة المحفوظة أثناء الإعداد (أو يلغي تعيين ما لم يكن معيّنًا منها)، ويزيل كتلة Phaseo من `.env`، ويحذف الحالة المحفوظة لـ CLI في `~/.config/phaseo/integrations/hermes.json`، ويلغي المفتاح. أعد تشغيل جلسات Hermes النشطة حتى تعيد تحميل الإعداد المستعاد.
+
+## إصلاح المشكلات الشائعة
+
+| المشكلة | الحل |
+| --- | --- |
+| `Hermes already defines OPENAI_API_KEY` | لن يستبدل الإعداد مفتاحًا عيّنته بنفسك. احذف سطر `OPENAI_API_KEY` هذا من ملف `.env` الخاص بـ Hermes، ثم شغّل `phaseo hermes` مرة أخرى. |
+| `Phaseo will not edit <path>` | لا تعدّل CLI إلا ملف `.env` يكون كل سطر فيه فارغًا، أو تعليقًا كاملًا، أو `NAME=VALUE` في سطر واحد بأحرف ASCII عادية دون شرطات مائلة عكسية. بسّط السطر الذي تذكره، أو اتبع [الإعداد اليدوي](#configure-hermes-manually). |
+| `Hermes could not set model.key_env` | إصدار Hermes لديك لا يدعم `model.key_env`. شغّل `hermes update`، ثم `phaseo hermes` مرة أخرى. |
+| `Refusing to write <path>` | ملف `.env` أو مجلده رابط رمزي أو ليس ملفًا عاديًا. وجّه Hermes إلى ملف حقيقي، أو استخدم الإعداد اليدوي. |
+| `Hermes Agent is not installed or is not on PATH` | ثبّت Hermes أو أضفه إلى `PATH`، ثم أعد تشغيل الإعداد. |
+| يُرفض نموذج | تحقق من المعرّف الدقيق باستخدام [نقطة نهاية النماذج](../../api-reference/endpoint/models.mdx). |
+
+للوكلاء الأخرى وقيم المزوّد التي يحتاجها كل وكيل، راجع [وكلاء البرمجة](./coding-assistants.mdx).

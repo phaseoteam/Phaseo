@@ -1,5 +1,6 @@
 import type { GatewaySupportedModel } from "@/lib/fetchers/gateway/getGatewaySupportedModelIds";
-import { fetchFrontendGatewayModels } from "@/lib/fetchers/frontend/fetchFrontendGatewayModels";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { landingGatewayModelsQuery } from "@/components/landingPage/landing.queries";
 import HomeGatewaySectionClient, {
 	type HomeGatewayModelOption,
 } from "./HomeGatewaySectionClient";
@@ -133,17 +134,16 @@ function buildModelOptions(models: GatewaySupportedModel[]): HomeGatewayModelOpt
 	return options;
 }
 
-export default async function HomeGatewaySection() {
+export default function HomeGatewaySection() {
 	let modelOptions = FALLBACK_MODEL_OPTIONS;
 
-	try {
-		const models = await fetchFrontendGatewayModels();
+	// `null` when the catalogue failed to load (the query logs the error).
+	const { data: models } = useSuspenseQuery(landingGatewayModelsQuery());
+	if (models) {
 		const liveOptions = buildModelOptions(models);
 		if (liveOptions.length > 0) {
 			modelOptions = liveOptions;
 		}
-	} catch (error) {
-		console.warn("[HomeGatewaySection] failed to load gateway models", error);
 	}
 
 	return <HomeGatewaySectionClient modelOptions={modelOptions} />;

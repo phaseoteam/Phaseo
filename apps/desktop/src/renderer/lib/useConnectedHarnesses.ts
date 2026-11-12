@@ -1,32 +1,31 @@
 import { useEffect, useState } from "react";
 import useSWR from "swr";
+import { connectedHarnesses } from "../../shared/rememberedModels";
 import type { Harness } from "../../shared/workspace";
-import { emptyOverview } from "../../shared/workspaceOverview";
+import { emptyOverview, type WorkspaceOverview } from "../../shared/workspaceOverview";
 import { BACKGROUND_REFRESH_MS } from "./useBackgroundRefresh";
+import { providerHealthMs } from "./providerHealth";
 
+/** The agents a chat can run on now, by the same rule phones use (shared/rememberedModels.ts's connectedHarnesses). */
 export function useConnectedHarnesses() {
+	return useConnectedHarnessesState().harnesses;
+}
+
+/** As useConnectedHarnesses, plus whether both answers have arrived; until then an empty set means "not known yet". */
+export function useConnectedHarnessesState() {
 	const api = window.phaseoDesktop?.workspace;
 	const [overview, setOverview] = useState(emptyOverview);
+	const [overviewLoaded, setOverviewLoaded] = useState(!api);
 	useEffect(() => {
 		if (!api) return;
 		let active = true;
-		void api.overview().then(value => { if (active) setOverview(value); }, () => {});
-		const unsubscribe = api.onOverviewChange(setOverview);
+		const loaded = (value: WorkspaceOverview) => { setOverview(value); setOverviewLoaded(true); };
+		void api.overview().then(value => { if (active) loaded(value); }, () => { if (active) setOverviewLoaded(true); });
+		const unsubscribe = api.onOverviewChange(loaded);
 		return () => { active = false; unsubscribe(); };
 	}, [api]);
-	const { data = [] } = useSWR<Harness[]>(api ? "connected-local-harnesses" : null, async () => {
-		const installed = await api!.installations();
-		const results = await Promise.all(installed.filter(value => value.installed).map(async ({ harness }): Promise<Harness | undefined> => {
-			try {
-				if (harness === "codex" || harness === "claude" || harness === "grok") return (await api!.accountStatus(harness)).authenticated === true ? harness : undefined;
-				if (harness === "opencode" || harness === "pi") return (await api!.models(harness)).length ? harness : undefined;
-			} catch { /* An unavailable local login is not a connected runtime. */ }
-			return undefined;
-		}));
-		return results.filter((value): value is Harness => !!value);
-	}, { dedupingInterval: BACKGROUND_REFRESH_MS, refreshInterval: BACKGROUND_REFRESH_MS, revalidateOnFocus: false });
-	const connected = new Set<Harness>(data);
-	for (const account of overview.accounts) if (account.configured && !account.archived && (!account.oauthExpiresAt || Date.parse(account.oauthExpiresAt) > Date.now())) connected.add(account.harness);
-	if (overview.agents.some(agent => !agent.archived)) connected.add("acp");
-	return connected;
+	// Main checks the local agents once for the window and phones, and keeps the answer for a minute. Re-checked as
+	// often as Settings → Agents → Health checks says.
+	const { data, error } = useSWR<Harness[]>(api ? "connected-local-harnesses" : null, () => api!.connectedHarnesses(), { dedupingInterval: providerHealthMs() || BACKGROUND_REFRESH_MS, refreshInterval: providerHealthMs(), revalidateOnFocus: false });
+	return { harnesses: connectedHarnesses(data ?? [], overview), loaded: overviewLoaded && (!api || data !== undefined || error !== undefined) };
 }

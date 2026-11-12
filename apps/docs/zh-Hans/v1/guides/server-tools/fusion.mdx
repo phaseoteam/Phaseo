@@ -1,22 +1,19 @@
 ---
 icon: "workflow"
 title: "Fusion 服务器工具"
-description: "运行多个分析模型并综合其结果。"
+description: "运行多个分析模型并综合它们的结论。"
 ---
 
-当回答需要多个独立模型的视角时，请使用 `phaseo:fusion`。Phaseo 会并行运行分析模型，然后让选定的分析模型综合结果并返回给调用模型。
+当答案需要多个独立观点时（例如规划决策、研究综述或设计评审），请添加 `phaseo:fusion`。主模型调用它时，Phaseo 会把问题并行发送给每个分析模型，再让一个分析师模型合并它们的结论，并返回这份综合结果。它会增加延迟，所以如果一轮评审就够了，请使用单个 [Advisor](./advisor)。
 
-## 在 Playground 中配置
-
-在 Playground 的服务器工具菜单中，Fusion 可让你选择：
-
-- 独立分析请求的模型
-- 一个可选的评审模型，用于比较分析结果
-- Fusion 顾问工具的最大调用次数
-
-主模型会在同一工具循环中看到这些具名顾问，并可在撰写最终响应前使用其结果。
-
-## API 结构
+```mermaid
+flowchart LR
+  main["主模型调用 phaseo:fusion"] --> a1["分析模型 1"]
+  main --> a2["分析模型 2"]
+  a1 --> syn["分析师模型进行综合"]
+  a2 --> syn
+  syn -->|"工具结果"| main
+```
 
 ```json
 {
@@ -35,35 +32,34 @@ description: "运行多个分析模型并综合其结果。"
 }
 ```
 
-## 何时使用 Fusion
+在 Playground 中，服务器工具菜单可以设置同样的内容：分析模型、可选的评判（分析师）模型和调用次数上限。
 
-适合在以下场景使用 Fusion：
+## 参数
 
-- 第二或第三个模型可能发现遗漏假设的规划决策
-- 模型可能以不同方式权衡证据的研究综合
-- 需要独立审查意见的代码或架构评审
-- 可以接受略微增加延迟的重要响应
+| 参数 | 类型 | 默认值 | 说明 |
+| --- | --- | --- | --- |
+| `analysis_models` | string[] | 必填 | 至少 2 个模型。少于 2 个会拒绝请求。 |
+| `model` | string | 请求的模型 | 撰写综合结果的分析师模型。 |
+| `instructions` | string | 无 | 同时用于分析调用和分析师调用的指令。 |
+| `max_uses` | integer | `1` | 每个请求中的 Fusion 调用次数，最多 `4`。 |
+| `max_completion_tokens` | integer | `1400` | 每次分析和综合的输出 token 数，最多 `32000`。 |
 
-如果只需要一轮评审，请改用单个 Advisor。
+## 模型发送的内容
 
-## 用量与定价
+一个 `prompt`：需要多种视角的问题。
 
-每次调用 Fusion 都会增加：
+## 工具返回的内容
 
 ```json
 {
-  "usage": {
-    "server_tool_use": {
-      "fusion_requests": 1
-    }
-  }
+  "status": "ok",
+  "analyses": 2,
+  "analysis": "Both reviewers flag the cutover order..."
 }
 ```
 
-顾问模型的 token 会计入总用量，并可按所选模型各自的费率计费。服务器工具也可使用 `server_tool_advisor_requests` 计量项定价。
+`analyses` 是作出回答的分析模型数量。如果有些失败，综合结果会使用其余的分析。错误结果有 `fusion_invalid_request`（没有 prompt）、`fusion_max_uses_exceeded`、`fusion_panel_failed`（所有分析模型都失败）和 `fusion_request_failed`（分析师失败）。
 
-## 相关内容
+## 用量和价格
 
-- [Advisor](./advisor.mdx)
-- [子代理](./subagent.mdx)
-- [服务器工具](./index.mdx)
+每次调用会使 `usage.server_tool_use.fusion_requests` 加 1，并可通过 `server_tool_fusion_requests` 计费。每次分析和分析师调用都按其模型的费率计费，作为请求账单中的单独一项，其 token 不会计入调用模型的 token 数。即使调用模型免费，使用付费模型也需要账户有余额。

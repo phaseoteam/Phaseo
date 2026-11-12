@@ -19,6 +19,8 @@ import { mentionToken, parseMentions } from "../lib/mentions";
 import { ModelStack } from "./ModelPicker";
 import { draftContent, draftText, mentionContent, type ComposerEditor } from "./composerEditor";
 import type { ComposerAction } from "./composerActions";
+import { BannerRoot } from "./ComposerBanner";
+import { activeMenuKey, stepMenuKey } from "./composerMenuHighlight";
 
 const nativeHarnesses: Harness[] = ["opencode", "pi", "claude", "codex", "phaseo"];
 const takesArguments = (template: string) => /\$(ARGUMENTS|\d+)/.test(template);
@@ -64,7 +66,8 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 		return () => { editor.off("transaction", bump); editor.off("focus", bump); };
 	}, [editor]);
 	const [dismissed, setDismissed] = useState<string>();
-	const [active, setActive] = useState(0);
+	// The row the person moved to, and the query it was chosen under (composerMenuHighlight).
+	const [active, setActive] = useState<{ key?: string; query?: string }>({});
 	const [commands, setCommands] = useState<PromptCommand[]>([]);
 	const [nativeActions, setNativeActions] = useState<NativeActionEntry[]>([]);
 	const [prompts, setPrompts] = useState<McpPromptEntry[]>([]);
@@ -153,7 +156,7 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 	const guard = (run: () => Promise<void> | void) => async () => { try { await run(); } catch (reason) { setError(errorText(reason)); } };
 	/** Actions clear the typed `/name` before they run, so it never lingers in the draft. */
 	const runAction = (action: ComposerAction) => {
-		if (action.options) { setSubmenu(action); setActive(0); return; }
+		if (action.options) { setSubmenu(action); setActive({}); return; }
 		if (action.insert !== undefined) { setSubmenu(undefined); replace(action.insert); return; }
 		if (editor && trigger) editor.chain().focus().deleteRange({ from: trigger.from, to: trigger.to }).run();
 		setSubmenu(undefined);
@@ -221,16 +224,18 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 		];
 	}, [open, triggerKey, trigger?.query, commands, nativeActions, actions, submenu, prompts, files, pulls, githubSearch, projectId, overview.tasks, taskId, editor]);
 
-	useEffect(() => { setActive(0); setSubmenu(undefined); }, [triggerKey, trigger?.query]);
-	const selected = Math.min(active, Math.max(0, items.length - 1));
+	useEffect(() => { setSubmenu(undefined); }, [triggerKey, trigger?.query]);
+	const keys = items.map(item => item.key), searchKey = `${triggerKey}|${trigger?.query}|${submenu?.id ?? ""}`;
+	const activeKey = activeMenuKey({ keys, highlighted: active.key, query: searchKey, highlightedQuery: active.query });
+	const selected = Math.max(0, activeKey === undefined ? 0 : keys.indexOf(activeKey));
 	useEffect(() => { document.getElementById(`${listId}-${selected}`)?.scrollIntoView({ block: "nearest" }); }, [selected, listId]);
 
 	/** Runs before the composer's own keys: the menu takes arrows, Enter, Tab and Escape while open. */
 	const onKeyDown = (event: KeyboardEvent): boolean => {
 		if (!open || form || event.isComposing) return false;
-		if (event.key === "Escape") { event.preventDefault(); if (submenu) { setSubmenu(undefined); setActive(0); } else setDismissed(triggerKey); return true; }
+		if (event.key === "Escape") { event.preventDefault(); if (submenu) { setSubmenu(undefined); setActive({}); } else setDismissed(triggerKey); return true; }
 		if (!items.length) return false;
-		if (event.key === "ArrowDown" || event.key === "ArrowUp") { event.preventDefault(); setActive((selected + (event.key === "ArrowDown" ? 1 : -1) + items.length) % items.length); return true; }
+		if (event.key === "ArrowDown" || event.key === "ArrowUp") { event.preventDefault(); setActive({ key: stepMenuKey(keys, activeKey, event.key === "ArrowDown" ? 1 : -1), query: searchKey }); return true; }
 		if ((event.key === "Enter" && !event.shiftKey) || event.key === "Tab") { event.preventDefault(); void items[selected].run(); return true; }
 		return false;
 	};
@@ -248,7 +253,7 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 
 	const empty = trigger?.kind === "slash" ? (loading ? "" : "No commands match.") : trigger?.kind === "pull-request" ? (!projectId ? "Issues and pull requests are only available in a project." : pullsLoading || searching ? "Searching issues and pull requests…" : "No issues or pull requests match.") : projectId ? "No chats or files match." : "No chats match.";
 	let previous = "";
-	const menu = open ? <div role="dialog" aria-label={trigger?.kind === "slash" ? "Commands" : trigger?.kind === "pull-request" ? "Mention an issue or pull request" : "Mention a chat or file"} className="absolute inset-x-0 bottom-full z-30 mb-2 overflow-hidden rounded-xl border border-border bg-popover text-popover-foreground shadow-lg">
+	const menu = open ? <BannerRoot role="dialog" data-composer-command-drawer aria-label={trigger?.kind === "slash" ? "Commands" : trigger?.kind === "pull-request" ? "Mention an issue or pull request" : "Mention a chat or file"} className="flex min-h-0 flex-col overflow-hidden px-0 pt-0 text-popover-foreground">
 		{form ? <form className="flex flex-col gap-2 p-3" onSubmit={event => { event.preventDefault(); void guard(() => insertPrompt(form.prompt, form.values))(); }}>
 			<p className="text-[13px] font-semibold">{form.prompt.name} <span className="font-normal text-muted-foreground">· {form.prompt.server}</span></p>
 			{form.prompt.arguments.map((argument, index) => <label key={argument.name} className="flex flex-col gap-1 text-xs text-muted-foreground">
@@ -262,19 +267,19 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 				<button type="submit" className="h-7 rounded-md bg-primary px-2.5 text-xs font-medium text-primary-foreground hover:bg-primary/85">Insert</button>
 			</div>
 		</form> : <ScrollArea className="max-h-72" viewportClassName="max-h-72">
-			<div id={listId} role="listbox" aria-label={trigger?.kind === "slash" ? "Commands" : trigger?.kind === "pull-request" ? "Issues and pull requests" : "Chats and files"} className="py-1.5 pr-3.5 pl-1.5">
+			<div id={listId} role="listbox" aria-label={trigger?.kind === "slash" ? "Commands" : trigger?.kind === "pull-request" ? "Issues and pull requests" : "Chats and files"} className="p-1.5">
 				{items.map((item, index) => {
 					const heading = item.group !== previous ? item.group : undefined; previous = item.group;
 					return <div key={item.key}>
 						{heading && (submenu
-							? <button type="button" onMouseDown={event => event.preventDefault()} onClick={() => { setSubmenu(undefined); setActive(0); }} className="flex items-center gap-1 px-1 pt-1.5 pb-1 text-xs font-bold text-foreground/70 hover:text-foreground"><ChevronLeft className="size-3.5" />{heading}</button>
-							: <p className="px-2 pt-1.5 pb-1 text-xs font-bold text-foreground/70">{heading}</p>)}
-						<div id={`${listId}-${index}`} role="option" aria-selected={index === selected} onMouseMove={() => { if (index !== selected) setActive(index); }}
+							? <button type="button" onMouseDown={event => event.preventDefault()} onClick={() => { setSubmenu(undefined); setActive({}); }} className="flex items-center gap-1 px-1 pt-1.5 pb-1 text-xs font-medium text-muted-foreground hover:text-foreground"><ChevronLeft className="size-3.5" />{heading}</button>
+							: <p className="px-2 pt-1.5 pb-1 text-xs font-medium text-muted-foreground">{heading}</p>)}
+						<div id={`${listId}-${index}`} role="option" aria-selected={index === selected} data-composer-item={item.key} onMouseMove={() => { if (index !== selected) setActive({ key: item.key, query: searchKey }); }}
 							onMouseDown={event => event.preventDefault()} onClick={() => void item.run()}
-							className={cn("flex h-8 cursor-default items-center gap-2 rounded-md px-2 text-[13px] [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-muted-foreground", index === selected && "bg-muted")}>
+							className={cn("flex h-8 cursor-default items-center gap-2 rounded-md px-2 text-xs [&>svg]:size-4 [&>svg]:shrink-0 [&>svg]:text-muted-foreground", index === selected && "bg-muted text-foreground")}>
 							{item.icon}
-							<span className="shrink-0 truncate font-medium">{item.label}</span>
-							{item.detail && <span className="min-w-0 truncate text-xs text-muted-foreground">{item.detail}</span>}
+							<span className="max-w-[45%] min-w-0 shrink-0 truncate font-medium">{item.label}</span>
+							{item.detail && <span className="min-w-0 flex-1 truncate text-muted-foreground">{item.detail}</span>}
 							{item.hint && <span className="ml-auto max-w-40 shrink-0 truncate pl-2 text-[11px] text-muted-foreground">{item.hint}</span>}
 							{item.checked && <Check className={cn("size-4 shrink-0 text-foreground/70", !item.hint && "ml-auto")} />}
 							{item.more && <ChevronRight className={cn("size-3.5 shrink-0 text-muted-foreground", !item.hint && !item.checked && "ml-auto")} />}
@@ -284,7 +289,7 @@ export function useComposerMenu({ editor: composer, taskId, harness, accountId, 
 				{!items.length && (loading ? <p className="flex items-center gap-2 px-2 py-2 text-xs text-muted-foreground"><LoaderCircle className="size-3.5 animate-spin" />Loading commands…</p> : <p className="px-2 py-2 text-xs text-muted-foreground">{empty}</p>)}
 			</div>
 		</ScrollArea>}
-	</div> : null;
+	</BannerRoot> : null;
 
 	return { menu, onKeyDown, prepare, expanded: open && !form && items.length > 0, activeId: open && !form && items.length ? `${listId}-${selected}` : undefined, listId };
 }

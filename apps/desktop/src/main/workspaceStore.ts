@@ -1,5 +1,6 @@
 import { updateNativeActionText } from "../shared/nativeActions";
 import { messageRange, TaskEntries, taskEntriesSchema, type EntryOffsets } from "./taskEntries";
+import { textPrefilter } from "./textPrefilter";
 import { existsSync, renameSync } from "node:fs";
 import { BrowserDownloadStore } from "./browserDownloadStore";
 import { settleBlocker, snoozeBlocker } from "../shared/threadLifecycle";
@@ -18,6 +19,7 @@ import { publicMcpConnection, type McpConnection } from "../shared/mcp";
 import { defaultPreferences, validatePreferences } from "../shared/preferences";
 import type { WorkspacePreferences } from "../shared/preferences";
 import { agentLimitMessage } from "../shared/orchestration";
+import { assertForkCheckoutSafe } from "./factory/agents";
 import { bringBackBlocker, bringBackText, isSideChat, sideChatOwnMessages, sideChatTitle } from "../shared/sideChats";
 import { MissionStore } from "./missionStore";
 import { validateTaskHistoryQuery, type TaskHistoryPage } from "../shared/taskHistory";
@@ -268,9 +270,11 @@ export class WorkspaceStore {
 			if (existing) { this.db.exec("COMMIT"); return this.getTask(existing.id as string); }
 			const parent = this.getTask(parentId), source = this.getTask(sourceId);
 			if (source.projectId !== parent.projectId || parent.archived || source.archived || parent.status === "interrupted") throw new Error("Handoff requires an available source in the parent's project.");
+			assertForkCheckoutSafe(parent, target.harness);
 			this.assertAgentCapacity(maxActive);
 			const child = this.apply({ type: "handoff", id: sourceId, ...target, projectId: parent.projectId, mode: parent.mode, permissionMode: parent.permissionMode });
 			child.delegation = { parentTaskId: parentId, requestId, kind: "handoff", sourceTaskId: sourceId };
+			if (parent.forkCheckout) child.forkCheckout = true;
 			this.saveTask(child); this.db.exec("COMMIT"); return child;
 		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
 	}
@@ -281,10 +285,13 @@ export class WorkspaceStore {
 			if (existing) { this.db.exec("COMMIT"); return this.getTask(existing.id as string); }
 			const parent = this.getTask(parentId), source = this.getTask(sourceId);
 			if (parent.projectId !== source.projectId || source.archived || parent.archived || parent.status === "interrupted") throw new Error("Forks require an available source in the parent's project.");
+			assertForkCheckoutSafe(parent, source.harness);
 			this.assertAgentCapacity(maxActive);
 			const fork = this.apply({ type: "fork", id: sourceId, messageId });
 			fork.delegation = { parentTaskId: parentId, requestId, kind: "fork", sourceTaskId: sourceId, sourceMessageId: messageId };
 			fork.permissionMode = parent.permissionMode; fork.mode = parent.mode;
+			if (parent.untrustedCheckout) fork.untrustedCheckout = true;
+			if (parent.forkCheckout) fork.forkCheckout = true;
 			this.saveTask(fork); this.db.exec("COMMIT"); return fork;
 		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
 	}
@@ -331,10 +338,14 @@ export class WorkspaceStore {
 		try {
 			const existing = this.statement("SELECT id FROM tasks WHERE json_extract(data, '$.delegation.parentTaskId') = ? AND json_extract(data, '$.delegation.requestId') = ? LIMIT 1").get(delegation.parentTaskId, delegation.requestId);
 			if (existing) { this.db.exec("COMMIT"); return this.getTask(existing.id as string); }
+			const parent = this.getTask(delegation.parentTaskId);
+			assertForkCheckoutSafe(parent, command.harness);
 			this.assertAgentCapacity(maxActive);
 			const child = this.apply(command);
 			child.parentId = delegation.parentTaskId; child.delegation = delegation; child.title = title;
-			const parent = this.getTask(delegation.parentTaskId);
+			// A thread delegated from one working on someone else's checkout works on the same code.
+			if (parent.untrustedCheckout) child.untrustedCheckout = true;
+			if (parent.forkCheckout) child.forkCheckout = true;
 			if (parent.autopilot && this.getPreferences().autopilot && child.permissionMode === "full-access" && child.mode !== "chat") child.autopilot = { capNanos: null, since: new Date().toISOString(), inherited: true };
 			child.queue.push({ id: randomUUID(), text: prompt, createdAt: new Date().toISOString() });
 			this.saveTask(child); this.db.exec("COMMIT"); return child;
@@ -350,8 +361,14 @@ export class WorkspaceStore {
 		try {
 			const existing = this.findLaunchedTask(launch.byTaskId, launch.requestId);
 			if (existing) { this.db.exec("COMMIT"); return existing; }
+			let launcher: Task | undefined;
+			try { launcher = this.getHead(launch.byTaskId).task; } catch { /* The launcher is gone. */ }
+			if (launcher) assertForkCheckoutSafe(launcher, command.harness);
 			this.assertAgentCapacity(maxActive);
 			const task = this.apply(command); task.launch = launch; task.title = title;
+			// A chat launched by one working on someone else's checkout may work on the same code.
+			if (launcher?.untrustedCheckout) task.untrustedCheckout = true;
+			if (launcher?.forkCheckout) task.forkCheckout = true;
 			task.queue.push({ id: randomUUID(), text: prompt, ...(notice ? { notice } : {}), createdAt: new Date().toISOString() });
 			this.saveTask(task); this.db.exec("COMMIT"); return task;
 		} catch (error) { this.db.exec("ROLLBACK"); throw error; }
@@ -403,17 +420,17 @@ export class WorkspaceStore {
 	 * the text around the match. Summed and cut in SQL, so a large history never crosses to JavaScript.
 	 */
 	searchMessages(value: unknown): MessageSearchHit[] {
-		const { query, limit } = validateMessageSearchQuery(value);
+		const { query, limit } = validateMessageSearchQuery(value), prefilter = textPrefilter("data", "pattern", query);
 		const rows = this.statement(`SELECT task_id, title, project_id, message_id, role, created_at, matches,
 			replace(replace((CASE WHEN at > 61 THEN '…' ELSE '' END) || substr(text, max(1, at - 60), 180) || (CASE WHEN length(text) >= max(1, at - 60) + 180 THEN '…' ELSE '' END), char(10), ' '), char(13), ' ') AS snippet
 		FROM (
 			SELECT tasks.id AS task_id, json_extract(tasks.data, '$.title') AS title, json_extract(tasks.data, '$.projectId') AS project_id, json_extract(tasks.data, '$.updatedAt') AS updated_at,
 				m.id AS message_id, m.role AS role, m.text AS text, json_extract(m.data, '$.createdAt') AS created_at, instr(history_lower(m.text), $needle) AS at,
 				row_number() OVER (PARTITION BY m.task_key ORDER BY m.rowid DESC) AS place, count(*) OVER (PARTITION BY m.task_key) AS matches
-			FROM (SELECT rowid, task_key, id, role, data, json_extract(data, '$.text') AS text FROM task_entries WHERE kind = 0 AND role IN ('user', 'assistant')) AS m
+			FROM (SELECT rowid, task_key, id, role, data, json_extract(data, '$.text') AS text FROM task_entries WHERE kind = 0 AND role IN ('user', 'assistant') AND ${prefilter.sql}) AS m
 			JOIN tasks ON tasks.key = m.task_key
 			WHERE json_extract(tasks.data, '$.delegation') IS NULL AND instr(history_lower(m.text), $needle) > 0
-		) WHERE place = 1 ORDER BY updated_at DESC LIMIT $limit`).all({ needle: query.toLowerCase(), limit }) as { task_id: string; title: string; project_id: string | null; message_id: string; role: "user" | "assistant"; created_at: string | null; matches: number; snippet: string }[];
+		) WHERE place = 1 ORDER BY updated_at DESC LIMIT $limit`).all({ needle: query.toLowerCase(), limit, ...prefilter.params }) as { task_id: string; title: string; project_id: string | null; message_id: string; role: "user" | "assistant"; created_at: string | null; matches: number; snippet: string }[];
 		return rows.map(row => ({ taskId: row.task_id, title: row.title, ...(row.project_id ? { projectId: row.project_id } : {}), messageId: row.message_id, role: row.role, snippet: row.snippet, ...(row.created_at ? { createdAt: row.created_at } : {}), matches: row.matches }));
 	}
 	/** Records what GitHub last said about a pull request on every chat linking it. True when anything changed. */
@@ -725,21 +742,21 @@ export class WorkspaceStore {
 		return { version: 1, projects: this.getProjects(), accounts: this.getAccounts(), agents: this.getAgents(), mcpConnections: this.getMcpConnections().map(publicMcpConnection), tasks: tasks.sort(overviewOrder) };
 	}
 	taskHistory(value: unknown): TaskHistoryPage {
-		const { query, archived, offset, limit, projectId } = validateTaskHistoryQuery(value);
+		const { query, archived, offset, limit, projectId } = validateTaskHistoryQuery(value), prefilter = textPrefilter("message.data", "pattern", query);
 		const rows = this.statement(`SELECT json_object(
 			'id', id, 'title', json_extract(data, '$.title'), 'projectId', json_extract(data, '$.projectId'),
 			'harness', json_extract(data, '$.harness'), 'model', json_extract(data, '$.model'), 'status', json_extract(data, '$.status'),
 			'pinned', coalesce(json_extract(data, '$.pinned'), 0), 'updatedAt', json_extract(data, '$.updatedAt')
 		) AS summary FROM tasks
-		WHERE coalesce(json_extract(data, '$.archived'), 0) = ?
+		WHERE coalesce(json_extract(data, '$.archived'), 0) = $archived
 		AND json_extract(data, '$.delegation') IS NULL
-		AND (? = 0 OR (? IS NULL AND json_extract(data, '$.projectId') IS NULL) OR json_extract(data, '$.projectId') = ?)
-		AND (? = '' OR instr(history_lower(json_extract(data, '$.title')), history_lower(?)) > 0
-			OR EXISTS (SELECT 1 FROM task_entries AS message WHERE message.${messageRange("tasks.key")}
-				AND instr(history_lower(json_extract(message.data, '$.text')), history_lower(?)) > 0))
+		AND ($scoped = 0 OR ($project IS NULL AND json_extract(data, '$.projectId') IS NULL) OR json_extract(data, '$.projectId') = $project)
+		AND ($query = '' OR instr(history_lower(json_extract(data, '$.title')), $query) > 0
+			OR EXISTS (SELECT 1 FROM task_entries AS message WHERE message.${messageRange("tasks.key")} AND ${prefilter.sql}
+				AND instr(history_lower(json_extract(message.data, '$.text')), $query) > 0))
 		ORDER BY coalesce(json_extract(data, '$.pinned'), 0) DESC,
-			json_extract(data, '$.updatedAt') DESC, id DESC LIMIT ? OFFSET ?
-		`).all(Number(archived), Number(projectId !== undefined), projectId ?? null, projectId ?? null, query, query, query, limit + 1, offset);
+			json_extract(data, '$.updatedAt') DESC, id DESC LIMIT $limit OFFSET $offset
+		`).all({ archived: Number(archived), scoped: Number(projectId !== undefined), project: projectId ?? null, query: query.toLowerCase(), limit: limit + 1, offset, ...prefilter.params });
 		return { tasks: rows.slice(0, limit).map(row => { const summary = JSON.parse(row.summary as string); return { ...summary, projectId: summary.projectId ?? undefined, pinned: Boolean(summary.pinned) }; }), hasMore: rows.length > limit };
 	}
 	/** A run rebuilt for continuing; earlier steps lack their tool output and `items` only the resumed step's (see AgentRuns). */
@@ -856,8 +873,11 @@ export class WorkspaceStore {
 		if (command.type === "handoff") {
 			const source = this.getTask(command.id);
 			if (source.status === "running" || source.status === "waiting") throw new Error("Stop this task before handing it off.");
+			assertForkCheckoutSafe(source, command.harness);
 			const destination = this.apply({ ...command, type: "create-task" }, initialModels);
 			destination.title = `${source.title} (handoff)`; destination.parentId = source.id; destination.handoffFrom = source.harness;
+			if (source.untrustedCheckout) destination.untrustedCheckout = true;
+			if (source.forkCheckout) destination.forkCheckout = true;
 			destination.messages = source.messages; this.saveTask(destination); return destination;
 		}
 		if (command.type === "create-task") {
@@ -872,6 +892,8 @@ export class WorkspaceStore {
 			if (command.harness === "acp" && !this.getAgents().some(agent => agent.id === command.agentId && !agent.archived)) throw new Error("Choose an active connected ACP agent.");
 			const now = new Date().toISOString();
 			const task: Task = { id: randomUUID(), title: "New task", projectId: command.projectId, harness: command.harness, accountId: command.accountId, agentId: command.agentId, model: command.model, mode: command.mode, permissionMode: command.permissionMode, reasoningEffort: command.reasoningEffort, serviceTier: command.serviceTier, modelOptions: command.modelOptions, nativeModels: initialModels, status: "idle", messages: [], queue: [], pinned: false, archived: false, createdAt: now, updatedAt: now };
+			if (command.untrustedCheckout) task.untrustedCheckout = true;
+			if (command.forkCheckout) { assertForkCheckoutSafe(command, command.harness); task.forkCheckout = true; }
 			if (command.autopilot) { this.assertAutopilotAllowed(); if (command.mode === "chat") throw new Error("Autopilot runs Code and Plan chats."); task.permissionMode = "full-access"; task.autopilot = { capNanos: command.autopilot.capNanos, since: now }; }
 			this.saveTask(task); return task;
 		}

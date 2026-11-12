@@ -1,10 +1,10 @@
 ---
 title: "Mastra"
 icon: "workflow"
-description: "MastraのエージェントやワークフローでPhaseoのモデルを使います。"
+description: "Mastra のエージェントとワークフローで Phaseo のモデルを使います。"
 ---
 
-MastraはAI SDKプロバイダーに対応しているため、Phaseoを指すOpenAI互換プロバイダーを作るのが最も簡単です。
+Phaseo のキーと `baseURL: "https://api.phaseo.app/v1"` で AI SDK の OpenAI プロバイダーを作成し、そのモデルを Mastra のエージェントとワークフローに渡します。
 
 ## インストール
 
@@ -12,7 +12,7 @@ MastraはAI SDKプロバイダーに対応しているため、Phaseoを指すOp
 npm install @mastra/core @ai-sdk/openai ai
 ```
 
-## エージェントを設定する
+## Mastra エージェントを Phaseo に向ける
 
 ```ts
 import { Agent } from "@mastra/core/agent";
@@ -27,18 +27,13 @@ const phaseo = createOpenAI({
 export const agent = new Agent({
 	name: "support-agent",
 	instructions: "Answer in two short paragraphs.",
-	model: phaseo("openai/gpt-5-nano"),
+	model: phaseo("openai/gpt-6-astra"),
 });
 ```
 
-## 注意事項
+`/chat/completions` や `/responses` を付けずに、Base URL だけを使います。短いプロンプトでエージェントを一度実行し、**設定 → 利用状況 → ログ**にリクエストが表示されることを確認します。
 
-- `/chat/completions`や`/responses`を付けず、Base URLだけを指定します。
-- Mastraエージェントの動作はAI SDKプロバイダーパスに依存します。本番前にツールとストリーミングをテストしてください。
-- プロバイダーの優先設定が必要な場合は、リクエスト単位またはpreset経由でPhaseoのルーティング制御を使います。
+## 既知の制限
 
-## 関連項目
-
-- [AI SDK](./ai-sdk.mdx)
-- [プリセット](../presets.mdx)
-- [ツール呼び出し](../tool-calling.mdx)
+- Mastra エージェントの動作は AI SDK プロバイダーに依存します。本番環境の前に[ツール呼び出し](../tool-calling.mdx)とストリーミングをテストしてください。
+- 特定のプロバイダーを優先するには、リクエストまたは[プリセット](../presets.mdx)で Phaseo のルーティング設定を指定します。

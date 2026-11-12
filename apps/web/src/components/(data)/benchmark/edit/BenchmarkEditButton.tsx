@@ -1,24 +1,22 @@
 import { Pencil } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "@/i18n/react";
 import { CatalogIssueButton } from "@/components/(data)/CatalogIssueButton";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { fetchInternalAuthStatus } from "@/lib/fetchers/internal/fetchInternalAuthStatus";
+import Link from "@/components/link";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { catalogueInternalAuthStatusQuery } from "@/components/(data)/catalogueViewer.functions";
 
 interface BenchmarkEditButtonProps {
   benchmarkId: string;
   compactMobile?: boolean;
 }
 
-export default async function BenchmarkEditButton({
+export default function BenchmarkEditButton({
   benchmarkId,
   compactMobile,
 }: BenchmarkEditButtonProps) {
-	const t = await getTranslations("Catalogue.benchmarks");
-  const authStatus = await fetchInternalAuthStatus().catch(() => ({
-    isAdmin: false,
-    signedIn: false,
-  }));
+	const t = useTranslations("Catalogue.benchmarks");
+  const { data: authStatus } = useSuspenseQuery(catalogueInternalAuthStatusQuery());
 
   if (!authStatus.isAdmin) {
     return <CatalogIssueButton entity="Benchmark" id={benchmarkId} compactMobile={compactMobile} />;

@@ -1,6 +1,6 @@
 ---
 title: "November"
-description: "November 2026 - Phaseo"
+description: "Produkt-Updates und Modellveröffentlichungen bei Phaseo im November 2026."
 rss: true
 ---
 
@@ -8,11 +8,139 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"Produkt","api":"API & SDKs","models":"Modelle"}} clearLabel="Zurücksetzen" />
 
+<Update label="11. November 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- **Beta:** Echtzeit-Sprache ist jetzt für alle Nutzer in [Chat → Realtime](https://phaseo.app/chat/realtime) verfügbar, mit Sprachmodellen von OpenAI, Google, xAI und ElevenLabs; siehe [Echtzeit-Sprache in Chat](https://phaseo.app/blog/realtime-voice-in-chat) ([#3675](https://github.com/phaseoteam/Phaseo/pull/3675)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- `POST /v1/decisions` akzeptiert bei `google/gemini-decision-1` bis zu 1000 Fragen; andere Modelle haben standardmäßig 128 und einige akzeptieren weniger, und eine Anfrage über dem Limit des Modells gibt `400` zurück; siehe [Eine Entscheidung treffen](./api-reference/endpoint/decisions.mdx) ([#3682](https://github.com/phaseoteam/Phaseo/pull/3682)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelle</p>
+
+- [Google: Gemini Decision 1](https://phaseo.app/models/google/gemini-decision-1)
+
+</div>
+
+</Update>
+
+<Update label="10. November 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelle</p>
+
+![Gemini 4 Carbon](/images/model-releases/2026-11-10--google--gemini-4-carbon.png)
+
+- [Google: Gemini 4 Carbon](https://phaseo.app/models/google/gemini-4-carbon)
+- [MiniMax: MiniMax H3-Image](https://phaseo.app/models/minimax/minimax-h3-image)
+- [MiniMax: MiniMax H3-Image Highspeed](https://phaseo.app/models/minimax/minimax-h3-image-highspeed)
+
+</div>
+
+</Update>
+
+<Update label="9. November 2026">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelle</p>
+
+![Claude Fable 5.2](/images/model-releases/2026-11-09--anthropic--claude-fable-5.2.png)
+
+- [Anthropic: Claude Fable 5.2](https://phaseo.app/models/anthropic/claude-fable-5.2)
+- [Parallel: Decisions Fast](https://phaseo.app/models/parallel/decisions-fast)
+
+</div>
+
+</Update>
+
+<Update label="5. November 2026">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Anfragen an GPT Image 2.6 akzeptieren `complexity`, animierte GIF-Ausgabe, SVG-Ausgabe, die das in `svg.model` angegebene OpenAI-Modell schreibt, und per `markup` gesteuerte Bearbeitungen; siehe [Bild generieren](./api-reference/endpoint/images-generations.mdx) ([#3571](https://github.com/phaseoteam/Phaseo/pull/3571)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelle</p>
+
+![Inkling 2 Small](/images/model-releases/2026-11-05--thinking-machines--inkling-2-small.png)
+
+- [Thinking Machines: Inkling 2 Small](https://phaseo.app/models/thinking-machines/inkling-2-small)
+
+</div>
+
+</Update>
+
+<Update label="4. November 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Die Ranglisten haben eine neue Seite [Entscheidungen](https://phaseo.app/rankings/decisions), die Entscheidungsmodelle nach Token-Volumen ordnet; Text-Ranglisten zählen Entscheidungsanfragen nicht mehr mit ([#3527](https://github.com/phaseoteam/Phaseo/pull/3527)).
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Modelle</p>
+
+![GPT Image 2.6](/images/model-releases/2026-11-04--openai--gpt-image-2.6.png)
+
+- [OpenAI: GPT Image 2.6 Flare](https://phaseo.app/models/openai/gpt-image-2.6-flare)
+- [OpenAI: GPT Image 2.6 Sunburst](https://phaseo.app/models/openai/gpt-image-2.6-sunburst)
+- [Ricursive Intelligence: Ripple 65B Preview](https://phaseo.app/models/ricursive/ripple-65b-preview)
+
+</div>
+
+</Update>
+
+<Update label="3. November 2026">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">Produkt</p>
+
+- Modellseiten zählen den Erfolg von Tool-Aufrufen und strukturierten Ausgaben nur bei Antworten, die Phaseo geprüft hat; vorher zählten fehlgeschlagene Anfragen als gültiges JSON und Stunden ohne Daten erschienen mit 100 % ([#3475](https://github.com/phaseoteam/Phaseo/pull/3475)).
+- Die Ausgabegeschwindigkeit auf Modellseiten lässt verborgenes Reasoning vor der Antwort weg und zeigt keinen Wert, wenn die Antwort in einem Stück ankommt; siehe [Preise und Leistung messen](./exploring/pricing-performance.mdx) ([#3465](https://github.com/phaseoteam/Phaseo/pull/3465), [#3476](https://github.com/phaseoteam/Phaseo/pull/3476)).
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- Gestreamte Anfragen über Google AI Studio an die Textmodelle Gemini 2.5, 3 und 3.1, an Gemini 3.5 bis 3.8 Flash und an Gemma 4 kommen jetzt Token für Token an, nicht mehr alle auf einmal ([#3483](https://github.com/phaseoteam/Phaseo/pull/3483)).
+
+</div>
+
+</Update>
+
 <Update label="2. November 2026">
 
 <div data-changelog-category="models">
 
 <p className="changelog-category">Modelle</p>
+
+![GLM 5.3 FlashX Legal](/images/model-releases/2026-11-02--z-ai--glm-5.3-flashx-legal.png)
 
 - [z.AI: GLM 5.3 FlashX Legal](https://phaseo.app/models/z-ai/glm-5.3-flashx-legal)
 

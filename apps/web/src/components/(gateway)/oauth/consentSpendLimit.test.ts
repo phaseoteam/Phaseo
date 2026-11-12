@@ -1,3 +1,4 @@
+import { describe, expect, it } from "vitest";
 import {
 	DEFAULT_CONSENT_SPEND_LIMIT_USD,
 	checkConsentSpendLimit,

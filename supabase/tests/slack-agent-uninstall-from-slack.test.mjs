@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { readFile, readdir } from 'node:fs/promises';
 const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
 
 const db = new PGlite();
@@ -9,6 +9,13 @@ const billing = await read('../migrations/20261021203244_slack_agent_billing.sql
 const guardrailRule = await read('../migrations/20261026223103_slack_agent_guardrail_allows_logging_providers.sql');
 const migration = await read('../migrations/20261022113514_slack_agent_uninstall_from_slack.sql');
 const schemaFile = await read('../schemas/public/functions/uninstall_slack_agent_from_slack.sql');
+// The function is redefined by later migrations; the newest definition must match the schema file.
+const normalize = (sql) => sql.replace(/\r\n/g, '\n').trim();
+let latest = migration;
+for (const name of (await readdir(new URL('../migrations/', import.meta.url))).filter((name) => name.endsWith('.sql')).sort()) {
+  const text = await read(`../migrations/${name}`);
+  if (name > '20261022113514' && text.includes('FUNCTION public.uninstall_slack_agent_from_slack')) latest = text;
+}
 const WORKSPACE = '10000000-0000-4000-8000-000000000001';
 const SHARED_WORKSPACE = '10000000-0000-4000-8000-000000000002';
 const KEY = '20000000-0000-4000-8000-000000000001';
@@ -16,6 +23,9 @@ const SHARED_KEY = '20000000-0000-4000-8000-000000000002';
 const OTHER_KEY = '20000000-0000-4000-8000-000000000003';
 const GUARDRAIL = '30000000-0000-4000-8000-000000000001';
 const SHARED_GUARDRAIL = '30000000-0000-4000-8000-000000000002';
+const LEVEL_WORKSPACE = '10000000-0000-4000-8000-000000000003';
+const LEVEL_KEY = '20000000-0000-4000-8000-000000000004';
+const LEVEL_GUARDRAIL = '30000000-0000-4000-8000-000000000003';
 const INSTALLED_AT = '2026-10-20T09:00:00Z';
 
 try {
@@ -35,6 +45,8 @@ try {
       guardrail_id uuid not null references public.workspace_guardrails(id) on delete cascade, primary key (key_id, guardrail_id));
     create table public.workspace_member_guardrails (workspace_id uuid not null, user_id uuid not null,
       guardrail_id uuid not null references public.workspace_guardrails(id) on delete cascade, primary key (workspace_id, user_id, guardrail_id));
+    create table public.workspace_guardrail_assignments (id uuid primary key default gen_random_uuid(), workspace_id uuid not null,
+      guardrail_id uuid not null references public.workspace_guardrails(id) on delete cascade, target_type text not null, target_id uuid);
     create table public.workspace_audit_events (id uuid primary key default gen_random_uuid(), workspace_id uuid not null,
       actor_user_id uuid, action text not null, target_type text not null, target_id text not null, target_name text,
       metadata jsonb not null default '{}'::jsonb, created_at timestamptz not null default now());
@@ -45,18 +57,23 @@ try {
       before_balance_nanos bigint not null, after_balance_nanos bigint not null, ref_type text not null,
       ref_id text not null, created_at timestamptz not null default now(), status text, source_ref_type text, source_ref_id text);
     create function public.set_updated_at_if_changed() returns trigger language plpgsql as $$ begin return NEW; end $$;
-    insert into public.workspaces values ('${WORKSPACE}'), ('${SHARED_WORKSPACE}');
+    insert into public.workspaces values ('${WORKSPACE}'), ('${SHARED_WORKSPACE}'), ('${LEVEL_WORKSPACE}');
     insert into public.keys (id, workspace_id, hash) values ('${KEY}', '${WORKSPACE}', 'hash-1'),
-      ('${SHARED_KEY}', '${SHARED_WORKSPACE}', 'hash-2'), ('${OTHER_KEY}', '${SHARED_WORKSPACE}', 'hash-3');
+      ('${SHARED_KEY}', '${SHARED_WORKSPACE}', 'hash-2'), ('${OTHER_KEY}', '${SHARED_WORKSPACE}', 'hash-3'),
+      ('${LEVEL_KEY}', '${LEVEL_WORKSPACE}', 'hash-4');
     insert into public.workspace_guardrails (id, workspace_id, privacy_enable_paid_may_train, privacy_enable_free_may_train,
       privacy_enable_free_may_publish_prompts, privacy_enable_input_output_logging)
-      values ('${GUARDRAIL}', '${WORKSPACE}', false, false, false, true), ('${SHARED_GUARDRAIL}', '${SHARED_WORKSPACE}', false, false, false, true);
-    insert into public.key_guardrails values ('${KEY}', '${GUARDRAIL}'), ('${SHARED_KEY}', '${SHARED_GUARDRAIL}'), ('${OTHER_KEY}', '${SHARED_GUARDRAIL}');
+      values ('${GUARDRAIL}', '${WORKSPACE}', false, false, false, true), ('${SHARED_GUARDRAIL}', '${SHARED_WORKSPACE}', false, false, false, true),
+      ('${LEVEL_GUARDRAIL}', '${LEVEL_WORKSPACE}', false, false, false, true);
+    insert into public.key_guardrails values ('${KEY}', '${GUARDRAIL}'), ('${SHARED_KEY}', '${SHARED_GUARDRAIL}'), ('${OTHER_KEY}', '${SHARED_GUARDRAIL}'), ('${LEVEL_KEY}', '${LEVEL_GUARDRAIL}');
+    -- An admin also applied the agent's guardrail to the whole workspace.
+    insert into public.workspace_guardrail_assignments (workspace_id, guardrail_id, target_type) values ('${LEVEL_WORKSPACE}', '${LEVEL_GUARDRAIL}', 'workspace');
   `);
   await db.exec(billing);
   await db.exec(guardrailRule);
   await db.exec(migration);
-  assert.ok(migration.includes(schemaFile), 'the migration matches the declarative definition');
+  assert.ok(normalize(latest).includes(normalize(schemaFile)), 'the newest migration matches the declarative definition');
+  if (latest !== migration) await db.exec(schemaFile);
 
   const install = async (workspaceId, teamId, keyId, guardrailId) => (await rows(
     `insert into public.slack_installations (workspace_id, team_id, team_name, bot_user_id, secrets_ciphertext, monthly_cap_nanos, key_id, guardrail_id, installed_at)
@@ -65,6 +82,7 @@ try {
   ))[0].id;
   const installationId = await install(WORKSPACE, 'T0TEAM0001', KEY, GUARDRAIL);
   const sharedId = await install(SHARED_WORKSPACE, 'T0TEAM0002', SHARED_KEY, SHARED_GUARDRAIL);
+  const levelId = await install(LEVEL_WORKSPACE, 'T0TEAM0003', LEVEL_KEY, LEVEL_GUARDRAIL);
 
   // Clients can't call it.
   for (const role of ['anon', 'authenticated']) {
@@ -122,6 +140,13 @@ try {
   assert.deepEqual((await rows('select key_id from public.key_guardrails where guardrail_id = $1', [SHARED_GUARDRAIL])).map((row) => row.key_id), [OTHER_KEY]);
   assert.equal((await rows('select status from public.keys where id = $1', [OTHER_KEY]))[0].status, 'active');
   assert.equal((await rows('select count(*)::int as n from public.workspace_audit_events')).at(0).n, 2);
+
+  // A guardrail an admin also applied at workspace (or department) level stays, with that assignment.
+  await db.exec('set role service_role');
+  assert.equal(await uninstall(levelId, 'app_uninstalled', '2026-10-21T12:00:00Z'), true);
+  await db.exec('reset role');
+  assert.equal((await rows('select count(*)::int as n from public.workspace_guardrails where id = $1', [LEVEL_GUARDRAIL]))[0].n, 1);
+  assert.equal((await rows('select count(*)::int as n from public.workspace_guardrail_assignments where guardrail_id = $1', [LEVEL_GUARDRAIL]))[0].n, 1);
 
   console.log('slack-agent-uninstall-from-slack: all assertions passed');
 } finally {

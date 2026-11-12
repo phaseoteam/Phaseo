@@ -1,0 +1,79 @@
+---
+title: "Hermes Agent"
+icon: "/icons/brands/hermes.svg"
+description: "Hermes Agent を、カスタムの OpenAI 互換エンドポイントとして Phaseo Gateway に向けます。"
+---
+
+`phaseo hermes` を実行して、専用のキーとともに Phaseo を Hermes Agent のカスタムエンドポイントに設定するか、同じ 4 つの Hermes の設定と `.env` の 1 行を自分で設定します。
+
+## Phaseo CLI で設定する
+
+```bash
+phaseo login
+phaseo hermes --model openai/gpt-6-astra
+```
+
+Hermes がインストールされていない場合、CLI は Nous Research の公式インストーラーのコマンドを表示し、実行する前に確認します。macOS と Linux では、インストーラーに `sh`、`bash`、`curl` が必要です。その後、セットアップは次の処理を行います。
+
+1. 削除時に元に戻せるよう、`model.provider`、`model.base_url`、`model.default`、`model.key_env` の現在の値を保存します。
+2. 有効期限が 90 日で月額 $100 の利用上限が付いた `Phaseo CLI: Hermes Agent API Key` を作成します。
+3. キーを `OPENAI_API_KEY` として Hermes の `.env` ファイルに書き込みます。書き込み先は `# >>> phaseo managed (do not edit)` で始まり `# <<< phaseo managed` で終わるブロックの中です。その他の行はそのまま残り、キーがコマンドラインに表示されることはありません。
+4. `hermes config set` を実行して、Hermes を Phaseo に向けます。
+
+| 設定 | 値 |
+| --- | --- |
+| `model.provider` | `custom` |
+| `model.base_url` | `https://api.phaseo.app/v1` |
+| `model.default` | `--model` の値。指定しない場合は `anthropic/claude-sonnet-4.6` |
+| `model.key_env` | `OPENAI_API_KEY` |
+
+`model.key_env` は、`OPENAI_API_KEY` をカスタムエンドポイントに送信するよう Hermes に指示します。これがないと、Hermes はこのキーを OpenAI 自身のホストにしか送信せず、リクエストはキーなしで Phaseo に届きます。
+
+Phaseo は Hermes に `.env` ファイルの場所を問い合わせる（`hermes config env-path`）ため、プロファイルやその他の上書き設定にも対応します。Hermes が場所を返せない場合、CLI は `HERMES_HOME` の `.env`、または `~/.hermes/.env`（ネイティブ Windows では `%LOCALAPPDATA%\hermes\.env`）を使います。Hermes はプロバイダーのキーをこの平文のファイルに保存するため、他のキーファイルと同様に保護してください。
+
+期限切れのキーを置き換えたりモデルを変更したりするには、`phaseo hermes` を再実行します。初回の実行時に保存された設定は保持されます。
+
+<span id="configure-hermes-manually"></span>
+## Hermes を手動で設定する
+
+Phaseo の API キーを Hermes の `.env` ファイルに追加します。
+
+```bash .env
+OPENAI_API_KEY=your_phaseo_api_key
+```
+
+次に、Hermes を Phaseo に向けます。
+
+```bash
+hermes config set model.provider custom
+hermes config set model.base_url https://api.phaseo.app/v1
+hermes config set model.default openai/gpt-6-astra
+hermes config set model.key_env OPENAI_API_KEY
+```
+
+Hermes が読み込む `.env` ファイルの場所を確認するには、`hermes config env-path` を実行します。
+
+## 動作を確認する
+
+実行中の Hermes セッションを再起動して、Phaseo のエンドポイントとキーを使うようにします。`hermes config get model.base_url --json` を実行して `https://api.phaseo.app/v1` が返ることを確認してから、短いプロンプトを送信し、**設定 → 利用状況 → ログ**にリクエストが表示されることを確認します。
+
+## Phaseo を削除する
+
+```bash
+phaseo integrations remove hermes
+```
+
+これにより、セットアップ時に保存した 4 つのモデル設定が復元され（設定されていなかったものは未設定に戻ります）、`.env` から Phaseo のブロックが削除され、`~/.config/phaseo/integrations/hermes.json` にある CLI の保存状態が削除され、キーが失効します。実行中の Hermes セッションを再起動して、復元された設定を読み込み直してください。
+
+## よくある問題を解決する
+
+| 問題 | 対処 |
+| --- | --- |
+| `Hermes already defines OPENAI_API_KEY` | セットアップは、自分で設定したキーを上書きしません。Hermes の `.env` からその `OPENAI_API_KEY` の行を削除してから、`phaseo hermes` を再実行します。 |
+| `Phaseo will not edit <path>` | CLI が編集するのは、すべての行が空行、行全体のコメント、またはバックスラッシュを含まないプレーン ASCII の 1 行の `NAME=VALUE` である `.env` だけです。表示された行を簡単にするか、[手動での設定](#configure-hermes-manually)に従ってください。 |
+| `Hermes could not set model.key_env` | お使いの Hermes のバージョンは `model.key_env` に対応していません。`hermes update` を実行してから、`phaseo hermes` を再実行します。 |
+| `Refusing to write <path>` | `.env` ファイルまたはそのフォルダーがシンボリックリンクか、通常のファイルではありません。Hermes を実在するファイルに向けるか、手動で設定します。 |
+| `Hermes Agent is not installed or is not on PATH` | Hermes をインストールするか `PATH` に追加してから、セットアップを再実行します。 |
+| モデルが拒否される | [Models エンドポイント](../../api-reference/endpoint/models.mdx)で正確な ID を確認します。 |
+
+その他のエージェントや、すべてのエージェントに必要なプロバイダーの値については、[コーディングエージェント](./coding-assistants.mdx)を参照してください。

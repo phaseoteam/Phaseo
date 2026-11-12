@@ -5,8 +5,28 @@ import type { AccountStatus } from "./workspace";
  * Usage-limit recovery. A Claude or Codex turn that stops on a plan limit leaves the chat "limited" with when it
  * stopped, when the limit resets (from the account's limits, else the error text) and, once asked, when it resumes.
  */
-export type UsageLimitState = { at: string; resetsAt?: string; resumeAt?: string };
+export type UsageLimitState = { at: string; resetsAt?: string; resumeAt?: string; /** The resume was set by Resume after usage limits, not asked for in the chat. */ autoResume?: true; /** The person cancelled the resume, so the setting leaves this limit alone. */ resumeCancelled?: true; /** Snoozed by Snooze until limits reset. */ snoozed?: true };
 export const usageLimitHarnesses = ["claude", "codex"] as const;
+
+type LimitedChat = { status: string; archived?: boolean; settledOverride?: string; snoozedUntil?: string; usageLimit?: UsageLimitState };
+/** A limit that reset more than a day ago is left for the person: resuming it on its own would surprise them. */
+const staleLimitMs = 86_400_000;
+
+/**
+ * What Settings → Threads' usage limit switches do for a limited chat now: when to resume it (a minute after the reset, on
+ * the same agent and login; never anywhere else) and until when to snooze it. Nothing when the reset is unknown or stale.
+ */
+export function limitRecoveryPlan(task: LimitedChat, preferences: { autoResumeLimited: boolean; snoozeLimited: boolean }, now = Date.now()): { resumeAt?: string; snoozeUntil?: string } {
+	const limit = task.usageLimit, reset = limit?.resetsAt ? Date.parse(limit.resetsAt) : NaN;
+	// A reset no later than the stop is an old window reported with a fresh failure; resuming on it would loop.
+	if (task.status !== "limited" || !limit || task.archived || !Number.isFinite(reset) || reset <= Date.parse(limit.at) || now - reset > staleLimitMs) return {};
+	const snoozed = task.snoozedUntil ? Date.parse(task.snoozedUntil) : 0;
+	const plan: { resumeAt?: string; snoozeUntil?: string } = {};
+	// A chat the person snoozed past the reset resumes when it wakes, so the work does not come back early.
+	if (preferences.autoResumeLimited && !limit.resumeAt && !limit.resumeCancelled) plan.resumeAt = new Date(Math.max(reset, now, snoozed) + 60_000).toISOString();
+	if (preferences.snoozeLimited && !limit.snoozed && reset > now && task.settledOverride !== "settled" && snoozed < reset) plan.snoozeUntil = new Date(reset).toISOString();
+	return plan;
+}
 
 const limitPattern = /usage[ _-]?limit|hit your (?:usage )?limit|limit reached|rate[ _-]?limit(?:ed)?|out of (?:usage|credits)|quota exceeded|\b429\b/i;
 

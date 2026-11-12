@@ -13,6 +13,7 @@ import type { Endpoint } from "@core/types";
 import type { IRChatRequest, IREmbeddingsRequest } from "@core/ir";
 import type { GatewayBindings } from "@/runtime/env";
 import { installLoopbackOnlyFetchGuard } from "../helpers/network-guard";
+import { interactionSseEvents } from "../helpers/google-interactions-sse";
 import { mountNativeMediaFixtures } from "./native-media-fixtures";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -327,6 +328,12 @@ function createGoogleInteractionsMount(): Mountable {
                 },
             };
             journal?.add({ method: req.method, path: req.url ?? pathname, headers, body, service: "chat", response: { status: 200, fixture: null } });
+            // Like Google, a streamed request gets server-sent events, not a JSON body.
+            if (body.stream === true) {
+                res.writeHead(200, { "Content-Type": "text/event-stream" });
+                res.end(interactionSseEvents({ ...payload, status: tool ? "requires_action" : "completed" }).join(""));
+                return true;
+            }
             res.writeHead(200, { "Content-Type": "application/json" });
             res.end(JSON.stringify(payload));
             return true;

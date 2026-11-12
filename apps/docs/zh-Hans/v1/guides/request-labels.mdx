@@ -1,16 +1,10 @@
 ---
 title: "请求标签"
-description: "将网关请求归属到代码定义的团队、功能或环境，并按标签拆分支出。"
+description: "将 Gateway 请求归属到代码中定义的团队、功能或环境，并按标签拆分支出。"
 icon: "tags"
 ---
 
-当应用代码需要比 API 密钥或应用更细致且稳定的成本维度时，请使用请求标签。标签会随请求审计记录，并可在分析中筛选，而不会改变模型请求。
-
-如需根据内容自动为请求打标签，请使用[请求分类器](./request-classifiers.mdx)。它们的答案会作为请求标签保存，并以相同方式筛选。
-
-## 发送标签
-
-将 `X-Phaseo-Metadata` 设置为包含最多 32 个唯一键值标签的 JSON 对象：
+发送 `X-Phaseo-Metadata` 请求头，用 `team=support` 这样的键值对标签标记请求，然后按这些标签筛选支出和日志。当你需要比 API 密钥或应用更细的成本维度时，就使用标签。标签不会改变模型请求，也不会转发给提供商。
 
 ```bash
 curl https://api.phaseo.app/v1/responses \
@@ -18,27 +12,35 @@ curl https://api.phaseo.app/v1/responses \
   -H "Content-Type: application/json" \
   -H 'X-Phaseo-Metadata: {"labels":[{"key":"team","value":"support"},{"key":"environment","value":"production"}]}' \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "input": "Summarize this ticket."
   }'
 ```
 
-TypeScript 和 Python SDK 支持自定义标头，因此可以在客户端配置相同的标头。标签不会转发给供应商。
+TypeScript 和 Python SDK 接受自定义请求头，因此你可以在客户端上一次性设置同一个请求头。
 
-## 拆分支出
+要根据请求内容自动打标签，请使用[请求分类器](/zh-Hans/v1/guides/request-classifiers)。它们的回答会作为请求标签保存，筛选方式相同。
 
-使用分析端点时同时提供 `label_key` 和 `label_value`：
+## 标签规则
+
+| 规则 | 限制 |
+| --- | --- |
+| 每个请求的标签数 | 最多 32 个，每个的键都必须唯一 |
+| 键 | 1 到 64 个字符：字母、数字、`_`、`.`、`:`、`-` |
+| 值 | 字符串，1 到 256 个字符，不能包含控制字符 |
+| 请求头大小 | 最多 8 KiB |
+| 保留键 | `phaseo.classifier` 只由 Phaseo 的分类器调用设置 |
+
+键和值会去除首尾空白。格式错误的请求头、重复的键或违反这些规则的标签，都会让请求在调用任何模型之前失败，返回 `400 validation_error`，原因为 `invalid_request_metadata`。
+
+不要在标签中放入提示词、机密信息、电子邮件地址或其他个人数据。
+
+## 按标签筛选支出
+
+向分析端点同时传入 `label_key` 和 `label_value`：
 
 ```text
 GET /v1/analytics?label_key=team&label_value=support
 ```
 
-响应使用与未筛选分析相同的分组支出格式，但仅包含带有这组确切标签的请求。
-
-## 约定
-
-- 键只能包含字母、数字、`_`、`.`、`:` 或 `-`，长度最多为 64 个字符。
-- 值为字符串，最多 256 个字符。
-- 每个请求最多可包含 32 个标签，标头大小上限为 8 KiB。
-- 重复键或格式错误的元数据会被拒绝，并返回 `400 invalid_request`。
-- 不要在标签中放入提示词、机密信息、电子邮件地址或其他个人数据。
+响应与未筛选的分析数据使用相同的分组支出格式，但只统计带有该确切标签对的请求。只发送两个参数中的一个会返回 `400 invalid_request`。

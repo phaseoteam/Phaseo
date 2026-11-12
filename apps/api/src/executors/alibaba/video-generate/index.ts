@@ -18,6 +18,8 @@ import type { ProviderExecutor } from "../../types";
 const DEFAULT_BASE_URL = "https://dashscope-intl.aliyuncs.com";
 const DASHSCOPE_TASK_PREFIX = "dscope_";
 const WAN30_MAX_REFERENCE_VIDEO_SECONDS = 15;
+// Longest Wan 3.0 output (input + output may not exceed this either).
+const WAN30_MAX_OUTPUT_SECONDS = 30;
 
 function encodeDashscopeTaskId(taskId: string): string {
 	const b64 = btoa(taskId).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
@@ -407,7 +409,7 @@ function wan30Request(
 	ir: IRVideoGenerationRequest,
 	model: string,
 	config: Record<string, any>,
-): { request: Record<string, unknown>; seconds: number; resolution: "480P" | "720P" | "1080P"; inputVideoSeconds?: number } {
+): { request: Record<string, unknown>; seconds: number; resolution: "480P" | "720P" | "1080P"; inputVideoSeconds?: number; autoDuration: boolean } {
 	const inputImage = normalizeInputSource(
 		config.img_url ?? config.image_url ?? ir.inputReference ?? ir.inputImage ?? ir.input?.image,
 	);
@@ -434,8 +436,20 @@ function wan30Request(
 	}
 
 	const requestedSeconds = toDurationSeconds(ir);
-	const seconds = requestedSeconds ?? 5;
-	if (!Number.isInteger(seconds) || seconds < 2 || seconds > 30) {
+	// Smart duration (DashScope duration -1): the model picks the length. It is asked for with
+	// provider_params.smart_duration, because duration itself is blocked in provider_params.
+	// We hold credits for the longest possible output and bill the length DashScope reports
+	// (usage.output_video_duration) when the job finishes.
+	const smartDuration = config.smart_duration;
+	if (smartDuration != null && typeof smartDuration !== "boolean") {
+		throw new InvalidAlibabaVideoRequestError("Wan 3.0 smart_duration must be true or false.");
+	}
+	const autoDuration = smartDuration === true;
+	if (autoDuration && requestedSeconds != null) {
+		throw new InvalidAlibabaVideoRequestError("Send either duration or smart_duration for Wan 3.0, not both.");
+	}
+	const seconds = autoDuration ? WAN30_MAX_OUTPUT_SECONDS : requestedSeconds ?? 5;
+	if (!Number.isInteger(seconds) || seconds < 2 || seconds > WAN30_MAX_OUTPUT_SECONDS) {
 		throw new InvalidAlibabaVideoRequestError("Wan 3.0 duration must be an integer from 2 to 30 seconds.");
 	}
 	const resolutionInput = config.resolution ?? ir.resolution ?? ir.size;
@@ -444,7 +458,8 @@ function wan30Request(
 		throw new InvalidAlibabaVideoRequestError("Wan 3.0 resolution must be 480P, 720P, or 1080P.");
 	}
 	const ratio = toNonEmptyString(config.ratio) ?? ir.aspectRatio ?? ir.ratio;
-	const allowedRatios = new Set(["adaptive", "16:9", "4:3", "1:1", "3:4", "9:16"]);
+	// Documented values (Wan 3.0 API reference, checked 2026-11-05). Price does not depend on ratio.
+	const allowedRatios = new Set(["adaptive", "21:9", "16:9", "4:3", "1:1", "3:4", "9:16"]);
 	if (ratio && !allowedRatios.has(ratio)) {
 		throw new InvalidAlibabaVideoRequestError(`Unsupported Wan 3.0 aspect ratio: ${ratio}.`);
 	}
@@ -453,7 +468,8 @@ function wan30Request(
 		if (requestedInputVideoSeconds == null || !Number.isFinite(requestedInputVideoSeconds) || requestedInputVideoSeconds <= 0 || requestedInputVideoSeconds > WAN30_MAX_REFERENCE_VIDEO_SECONDS) {
 			throw new InvalidAlibabaVideoRequestError("input_video_duration is required for Wan 3.0 reference video input and must be at most 15 seconds.");
 		}
-		if (requestedInputVideoSeconds + seconds > 30) {
+		// With smart duration the model keeps input + output within 30 seconds itself.
+		if (!autoDuration && requestedInputVideoSeconds + seconds > WAN30_MAX_OUTPUT_SECONDS) {
 			throw new InvalidAlibabaVideoRequestError("Wan 3.0 input and output video duration cannot exceed 30 seconds in total.");
 		}
 	}
@@ -475,6 +491,7 @@ function wan30Request(
 	return {
 		seconds,
 		resolution,
+		autoDuration,
 		...(inputVideoSeconds != null ? { inputVideoSeconds } : {}),
 		request: {
 			model,
@@ -485,7 +502,7 @@ function wan30Request(
 			parameters: {
 				resolution,
 				...(ratio ? { ratio } : {}),
-				duration: seconds,
+				duration: autoDuration ? -1 : seconds,
 				...(typeof audio === "boolean" ? { audio } : {}),
 				...(typeof promptExtend === "boolean" ? { prompt_extend: promptExtend } : {}),
 				...(typeof watermark === "boolean" ? { watermark } : {}),
@@ -639,6 +656,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	let happyHorse: ReturnType<typeof happyHorseRequest> | null = null;
 	let wan30: ReturnType<typeof wan30Request> | null = null;
 	try {
+		if (!isWan30Model(model) && extractAlibabaConfig((ir.rawRequest ?? {}) as Record<string, any>, ir.providerParams).smart_duration != null) {
+			throw new InvalidAlibabaVideoRequestError("smart_duration is only available on Wan 3.0.");
+		}
 		if (happyHorseFamily(model)) {
 			happyHorse = happyHorseRequest(
 				ir,
@@ -871,7 +891,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	irResponse.usage = {
 		...(irResponse.usage ?? { inputTokens: 0, outputTokens: 0, totalTokens: 0 }),
 		requests: 1,
-		...(requestedSeconds != null ? { output_video_seconds: requestedSeconds } : {}),
+		// With smart duration the length is only known when the job finishes.
+		...(requestedSeconds != null && !wan30?.autoDuration ? { output_video_seconds: requestedSeconds } : {}),
 		...(inputImageCount > 0 ? { input_image_count: inputImageCount } : {}),
 		...(inputVideoCount > 0 ? { input_video_count: inputVideoCount } : {}),
 		...(inputVideoSeconds != null ? { input_video_seconds: inputVideoSeconds } : {}),
@@ -915,7 +936,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				sessionId: args.meta.sessionId ?? null,
 				appId: args.meta.appId ?? null,
 				model: ir.model,
+				// For smart duration this is the 30 s maximum; completion bills DashScope's reported length.
 				seconds: requestedSeconds,
+				...(wan30?.autoDuration ? { autoDuration: true } : {}),
 				resolution: size ?? null,
 				quality,
 				inputImageCount,

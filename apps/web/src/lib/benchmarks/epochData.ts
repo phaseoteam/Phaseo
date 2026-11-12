@@ -1,4 +1,3 @@
-import "server-only";
 
 const EPOCH_ECI_DATA_URL = "https://epoch.ai/data/eci_scores.csv";
 
@@ -25,9 +24,24 @@ function parseCsv(input: string) {
 	return rows;
 }
 
-export async function fetchEpochConfidenceIntervals() {
+type EpochIntervals = Record<string, { low: number; high: number }>;
+
+// Every model page needs these intervals, and parsing the CSV took about a sixth of a model page's
+// render CPU. Next cached this for hours; keep the parsed result per isolate the same way. Only a
+// settled value is kept (never an in-flight promise, which another request's I/O would hang on).
+const INTERVALS_TTL_MS = 6 * 60 * 60 * 1000;
+let cachedIntervals: { at: number; value: EpochIntervals } | null = null;
+
+export async function fetchEpochConfidenceIntervals(): Promise<EpochIntervals> {
+	if (cachedIntervals && Date.now() - cachedIntervals.at < INTERVALS_TTL_MS) return cachedIntervals.value;
+	const value = await loadEpochConfidenceIntervals();
+	if (Object.keys(value).length) cachedIntervals = { at: Date.now(), value };
+	return value;
+}
+
+async function loadEpochConfidenceIntervals(): Promise<EpochIntervals> {
 	try {
-		const response = await fetch(EPOCH_ECI_DATA_URL, { next: { revalidate: 86_400 }, headers: { "user-agent": "Phaseo benchmark display (https://phaseo.app)" } });
+		const response = await fetch(EPOCH_ECI_DATA_URL, { cf: { cacheTtl: 86_400, cacheEverything: true }, headers: { "user-agent": "Phaseo benchmark display (https://phaseo.app)" } });
 		if (!response.ok) return {};
 		const [headers = [], ...rows] = parseCsv(await response.text());
 		const nameIndex = headers.indexOf("Display name");

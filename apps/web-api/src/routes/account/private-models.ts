@@ -19,12 +19,12 @@ const ADMIN_CATALOG_COLUMNS = `${SAFE_COLUMNS},workspace_id`;
 async function resolveModelIdentity(client: any, workspaceSlug: string, reference: unknown) {
 	const value = String(reference ?? "").trim().toLowerCase();
 	if (value.includes("/")) {
-		const result = await client.from("models").select("model_id,name").eq("model_id", value).maybeSingle();
+		const result = await client.from("v2_models").select("model_id:model_slug,name").eq("model_slug", value).maybeSingle();
 		if (result.error || !result.data) throw new Error("Select an existing catalogue model or enter a short model slug.");
 		return { model_id: value, catalog_model_id: value, local_slug: value.split("/").at(-1) };
 	}
 	if (!MODEL_SLUG.test(value)) throw new Error("Model slug contains unsupported characters.");
-	const matches = await client.from("models").select("model_id,name").like("model_id", `%/${value}`).limit(2);
+	const matches = await client.from("v2_models").select("model_id:model_slug,name").like("model_slug", `%/${value}`).limit(2);
 	if (!matches.error && matches.data?.length === 1) return { model_id: matches.data[0].model_id, catalog_model_id: matches.data[0].model_id, local_slug: value };
 	return { model_id: `${workspaceSlug.toLowerCase()}/${value}`, catalog_model_id: null, local_slug: value };
 }

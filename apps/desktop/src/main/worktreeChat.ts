@@ -1,12 +1,12 @@
 import type { ProjectScript } from "../shared/projectSettings";
-import { branchFromMessage, generatedBranchName, uniqueBranchName, type WorktreeSetup, type WorktreeSetupStageId, type WorktreeSetupStatus } from "../shared/worktreeChat";
+import { branchFromMessage, defaultBranchNaming, generatedBranchName, uniqueBranchName, type BranchNamingOptions, type WorktreeSetup, type WorktreeSetupStageId, type WorktreeSetupStatus } from "../shared/worktreeChat";
 
 /** What a new worktree chat's setup needs from the runtime. */
 export type WorktreeSetupHost = {
 	/** Local branch names in the worktree's repository. */
 	branches: () => Promise<string[]>;
 	renameBranch: (from: string, to: string) => Promise<void>;
-	/** The title model's branch fragment for the message, or undefined without a title model. */
+	/** The Git text model's branch name for the message, or undefined without a model. */
 	nameBranch: (text: string) => Promise<string | undefined>;
 	setupScripts: () => ProjectScript[];
 	/** Runs a setup action in a terminal of the chat; resolves with its exit code, or undefined if it was stopped. */
@@ -27,13 +27,13 @@ export const stage = (setup: WorktreeSetup, id: WorktreeSetupStageId, status: Wo
  * setup actions one at a time, waiting for each. Resolves true when the agent may start. A failed rename keeps the
  * temporary branch; a failed setup action stops the chat until the person resumes it.
  */
-export async function runWorktreeSetup(host: WorktreeSetupHost, temporary: string, text: string) {
+export async function runWorktreeSetup(host: WorktreeSetupHost, temporary: string, text: string, naming: BranchNamingOptions = defaultBranchNaming) {
 	host.update(setup => stage(setup, "branch", "running"));
 	try {
 		const fragment = text.trim() ? await host.nameBranch(text).catch(() => undefined) : undefined;
 		if (!text.trim()) host.update(setup => stage(setup, "branch", "skipped", "No message to name it from"));
 		else {
-			const branch = uniqueBranchName((await host.branches()).filter(name => name !== temporary), fragment ? generatedBranchName(fragment) : branchFromMessage(text));
+			const branch = uniqueBranchName((await host.branches()).filter(name => name !== temporary), fragment ? generatedBranchName(fragment, naming) : branchFromMessage(text, naming));
 			await host.renameBranch(temporary, branch);
 			host.update(setup => { setup.branch = branch; stage(setup, "branch", "done", branch); });
 		}

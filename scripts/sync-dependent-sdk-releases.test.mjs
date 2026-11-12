@@ -81,7 +81,7 @@ test("release synchronization updates real manifests, dependencies, attribution 
   for (const file of [
     "packages/sdk/sdk-go/realtime/realtime.go", "packages/sdk/sdk-go/README.md",
     "apps/docs/v1/quickstart.mdx", "apps/docs/de/v1/quickstart.mdx",
-    "apps/docs/v1/sdk-reference/go/agent-sdk-installation.mdx", "apps/docs/de/v1/sdk-reference/go/agent-sdk-installation.mdx",
+    "apps/docs/v1/sdk-reference/agent/installation.mdx", "apps/docs/de/v1/sdk-reference/agent/installation.mdx",
     "apps/web/src/lib/chat/sdkExport.ts", "apps/web/src/components/(chat)/RoomSdkExport.tsx",
   ]) {
     const content = await read(file);

@@ -1,6 +1,6 @@
 ---
 title: "十一月"
-description: "十一月 2026 - Phaseo"
+description: "Phaseo 2026 年 11 月的产品更新和模型发布。"
 rss: true
 ---
 
@@ -8,11 +8,139 @@ import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
 <ChangelogFilters labels={{"product":"产品","api":"API 与 SDK","models":"模型"}} clearLabel="清除" />
 
+<Update label="2026年11月11日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- **测试版：** 实时语音现已向所有用户开放，可在 [Chat → Realtime](https://phaseo.app/chat/realtime) 中使用 OpenAI、Google、xAI 和 ElevenLabs 的语音模型；请参阅 [Chat 中的实时语音](https://phaseo.app/blog/realtime-voice-in-chat) ([#3675](https://github.com/phaseoteam/Phaseo/pull/3675))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- `POST /v1/decisions` 在 `google/gemini-decision-1` 上最多可接受 1,000 个问题；其他模型默认接受 128 个，部分模型更少，超出模型上限的请求会返回 `400`；请参阅[作出决策](./api-reference/endpoint/decisions.mdx) ([#3682](https://github.com/phaseoteam/Phaseo/pull/3682))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+- [Google: Gemini Decision 1](https://phaseo.app/models/google/gemini-decision-1)
+
+</div>
+
+</Update>
+
+<Update label="2026年11月10日">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+![Gemini 4 Carbon](/images/model-releases/2026-11-10--google--gemini-4-carbon.png)
+
+- [Google: Gemini 4 Carbon](https://phaseo.app/models/google/gemini-4-carbon)
+- [MiniMax: MiniMax H3-Image](https://phaseo.app/models/minimax/minimax-h3-image)
+- [MiniMax: MiniMax H3-Image Highspeed](https://phaseo.app/models/minimax/minimax-h3-image-highspeed)
+
+</div>
+
+</Update>
+
+<Update label="2026年11月9日">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+![Claude Fable 5.2](/images/model-releases/2026-11-09--anthropic--claude-fable-5.2.png)
+
+- [Anthropic: Claude Fable 5.2](https://phaseo.app/models/anthropic/claude-fable-5.2)
+- [Parallel: Decisions Fast](https://phaseo.app/models/parallel/decisions-fast)
+
+</div>
+
+</Update>
+
+<Update label="2026年11月5日">
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- GPT Image 2.6 请求现支持 `complexity`、动画 GIF 输出、由 `svg.model` 指定的 OpenAI 模型编写的 SVG 输出，以及 `markup` 引导的编辑；请参阅[生成图像](./api-reference/endpoint/images-generations.mdx) ([#3571](https://github.com/phaseoteam/Phaseo/pull/3571))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+![Inkling 2 Small](/images/model-releases/2026-11-05--thinking-machines--inkling-2-small.png)
+
+- [Thinking Machines: Inkling 2 Small](https://phaseo.app/models/thinking-machines/inkling-2-small)
+
+</div>
+
+</Update>
+
+<Update label="2026年11月4日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 排行榜新增[决策](https://phaseo.app/rankings/decisions)页面，按 token 量为决策模型排名；文本排行榜不再统计决策请求 ([#3527](https://github.com/phaseoteam/Phaseo/pull/3527))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+![GPT Image 2.6](/images/model-releases/2026-11-04--openai--gpt-image-2.6.png)
+
+- [OpenAI: GPT Image 2.6 Flare](https://phaseo.app/models/openai/gpt-image-2.6-flare)
+- [OpenAI: GPT Image 2.6 Sunburst](https://phaseo.app/models/openai/gpt-image-2.6-sunburst)
+- [Ricursive Intelligence: Ripple 65B Preview](https://phaseo.app/models/ricursive/ripple-65b-preview)
+
+</div>
+
+</Update>
+
+<Update label="2026年11月3日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型页面的工具调用和结构化输出成功率只统计 Phaseo 实际校验过的响应；此前，失败的请求被算作有效 JSON，没有数据的时段显示为 100% ([#3475](https://github.com/phaseoteam/Phaseo/pull/3475))。
+- 模型页面的输出速度不计入回答前的隐藏推理，回答一次性送达时不显示数值；请参阅[衡量价格与性能](./exploring/pricing-performance.mdx) ([#3465](https://github.com/phaseoteam/Phaseo/pull/3465), [#3476](https://github.com/phaseoteam/Phaseo/pull/3476))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 通过 Google AI Studio 对 Gemini 2.5、3 和 3.1 文本模型、Gemini 3.5 至 3.8 Flash 以及 Gemma 4 发起的流式请求现在逐个 token 送达；此前要等生成结束，整段回答才一次性送达 ([#3483](https://github.com/phaseoteam/Phaseo/pull/3483))。
+
+</div>
+
+</Update>
+
 <Update label="2026年11月2日">
 
 <div data-changelog-category="models">
 
 <p className="changelog-category">模型</p>
+
+![GLM 5.3 FlashX Legal](/images/model-releases/2026-11-02--z-ai--glm-5.3-flashx-legal.png)
 
 - [z.AI: GLM 5.3 FlashX Legal](https://phaseo.app/models/z-ai/glm-5.3-flashx-legal)
 

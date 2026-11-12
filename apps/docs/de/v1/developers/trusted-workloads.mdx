@@ -8,26 +8,25 @@ icon: "fingerprint-pattern"
 Vertrauenswürdige Workloads sind in der Beta und werden schrittweise für Workspaces freigeschaltet. Wenn **Einstellungen → API-Schlüssel → Vertrauenswürdige Workloads** in deinem Dashboard nicht erscheint, hat dein Workspace die Funktion noch nicht.
 </Note>
 
-Viele Plattformen geben jedem Deployment, Job oder Workload ein signiertes Token, das angibt, wer er ist, zum Beispiel „das ist das Produktions-Deployment des Projekts `website`“ oder „das ist ein Job im GitLab-Projekt `4815162`“. Das Token läuft innerhalb weniger Stunden ab. Mit vertrauenswürdigen Workloads legst du fest, welchen dieser Workloads Phaseo vertraut, und sie senden dieses Token statt eines API-Schlüssels. In deinen Projekteinstellungen oder CI-Secrets muss nichts Langlebiges gespeichert werden.
+Sende das kurzlebige OIDC-Token deiner Plattform statt eines Phaseo-API-Schlüssels als Bearer-Token, dann muss nichts Langlebiges in deinen Projekteinstellungen oder CI-Secrets liegen. Plattformen geben jedem Deployment, Job oder Workload ein signiertes Token, das angibt, wer er ist, etwa „das Produktions-Deployment des Projekts `website`“ oder „ein Job im GitLab-Projekt `4815162`“, und das Token läuft innerhalb weniger Stunden ab. Du legst fest, welchen Workloads Phaseo vertraut.
 
-Phaseo vertraut Tokens von Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI und AWS sowie von einem OIDC-Issuer, den du selbst betreibst, etwa einem Kubernetes-Cluster, Bitbucket Pipelines oder selbst gehostetem GitLab.
-
-API-Schlüssel funktionieren weiterhin. Nutze vertrauenswürdige Workloads für Code, der auf diesen Plattformen läuft, und behalte API-Schlüssel für alles andere, etwa lokale Skripte und mobile Apps.
-
----
+Phaseo vertraut Tokens von Vercel, GitHub Actions, GitLab, Google Cloud, Buildkite, CircleCI und AWS sowie von einem OIDC-Issuer, den du selbst betreibst, etwa einem Kubernetes-Cluster, Bitbucket Pipelines oder selbst verwaltetem GitLab. Nutze für alles andere weiterhin API-Schlüssel, etwa für lokale Skripte und mobile Apps.
 
 ## So funktioniert es
 
-1. Ein Workspace-Inhaber oder -Admin erstellt unter **Einstellungen → API-Schlüssel → Vertrauenswürdige Workloads** eine **Vertrauensrichtlinie**. Die Richtlinie nennt die Plattform, den Inhaber, dem sie vertraut, etwa einen GitHub-Inhaber, ein GitLab-Projekt oder eine AWS-Rolle, sowie optionale Bedingungen wie ein Projekt, ein Repository, einen Branch oder eine Umgebung.
-2. Dein Code fordert bei der Plattform ein Token für die Audience `https://api.phaseo.app` an und sendet es als `Authorization: Bearer <token>`.
-3. Phaseo prüft Signatur und Ablauf des Tokens und sucht dann genau eine aktive Richtlinie, die dazu passt.
-4. Die Anfrage läuft mit dem Schlüssel dieser Richtlinie. Sie erhält dieselben Ratenlimits, Budgets, Logs und dieselbe Abrechnung wie eine Anfrage mit einem API-Schlüssel.
+```mermaid
+flowchart LR
+  job["Dein Workload"] -->|"1. Token für https://api.phaseo.app anfordern"| platform["Plattform"]
+  platform -->|"2. Signiertes Token"| job
+  job -->|"3. Authorization: Bearer token"| phaseo["Phaseo"]
+  phaseo --> check{{"Signatur, Ablauf und Audience gültig, und passt genau eine aktive Richtlinie?"}}
+  check -->|"Ja"| run["Läuft mit dem Schlüssel der Richtlinie"]
+  check -->|"Nein"| refuse["401"]
+```
 
-### Warum die Audience wichtig ist
+Ein Workspace-Inhaber oder -Admin erstellt eine **Vertrauensrichtlinie**, die die Plattform, den vertrauenswürdigen Inhaber (etwa einen GitHub-Inhaber, ein GitLab-Projekt oder eine AWS-Rolle) und optionale Bedingungen nennt, etwa ein Projekt, ein Repository, einen Branch oder eine Umgebung. Eine passende Anfrage läuft mit dem Schlüssel der Richtlinie, mit denselben Ratenlimits, Budgets, Logs und derselben Abrechnung wie eine Anfrage mit einem API-Schlüssel.
 
-Tokens müssen für die Audience `https://api.phaseo.app` ausgestellt sein. Standardmäßig stellen die meisten Plattformen Tokens für eine Audience aus, die alle Dienste teilen, die dein Workload aufruft. Würde Phaseo sie akzeptieren, könnte ein Token, das du an einen anderen Dienst geschickt hast, für Aufrufe an Phaseo wiederverwendet werden. Phaseo lehnt Tokens mit jeder anderen Audience ab.
-
----
+Tokens müssen für die Audience `https://api.phaseo.app` ausgestellt sein; Phaseo lehnt jede andere Audience ab. Die meisten Plattformen verwenden standardmäßig eine Audience, die alle Dienste teilen, die dein Workload aufruft. Würde Phaseo diese akzeptieren, könnte ein Token, das du an einen anderen Dienst gesendet hast, gegen Phaseo wiederverwendet werden.
 
 ## Vertrauensrichtlinie erstellen
 
@@ -55,11 +54,9 @@ Beide IDs bekommst du mit der GitHub CLI:
 ```bash
 gh api repos/OWNER/REPO --jq '.id, .owner.id'
 ```
-
-Phaseo nutzt numerische IDs, weil Namen umbenannt oder von jemand anderem übernommen werden können.
 </Tab>
 <Tab title="GitLab">
-Für Projekte auf GitLab.com. Für selbst gehostetes GitLab wählst du **Eigener OIDC-Issuer**.
+Für Projekte auf GitLab.com. Für selbst verwaltetes GitLab wählst du **Eigener OIDC-Issuer**.
 
 - **Projekt-ID**: die numerische ID auf der Übersichtsseite des Projekts. Sie bleibt gleich, wenn das Projekt umbenannt oder in eine andere Gruppe verschoben wird. Deshalb bindet Phaseo sie und nicht die Gruppe.
 - **Branch oder Tag** (optional): der Name des Branches oder Tags, etwa `main`.
@@ -70,12 +67,12 @@ Lass beide Bedingungen leer, um jeden Job im Projekt zu akzeptieren.
 <Tab title="Google Cloud">
 Für Tokens vom Metadatenserver auf Cloud Run, Compute Engine, GKE, Cloud Run functions, App Engine und Cloud Build.
 
-- **Eindeutige ID des Dienstkontos**: die numerische eindeutige ID auf der Detailseite des Dienstkontos in der Google Cloud Console. Alle Google-Konten teilen denselben Issuer, daher unterscheidet erst diese ID deinen Workload. Nutze nicht die E-Mail-Adresse: Wird das Dienstkonto gelöscht, kann jemand ein neues mit derselben E-Mail-Adresse anlegen.
+- **Eindeutige ID des Dienstkontos**: die numerische eindeutige ID auf der Detailseite des Dienstkontos in der Google Cloud Console. Alle Google-Konten teilen denselben Issuer, daher unterscheidet diese ID deinen Workload. Nutze nicht stattdessen die E-Mail-Adresse: Wird das Dienstkonto gelöscht, kann jemand ein neues mit derselben E-Mail-Adresse anlegen.
 - **E-Mail des Dienstkontos** (optional): eine zusätzliche Prüfung. Tokens enthalten die E-Mail-Adresse nur, wenn der Workload sie mit `format=full` anfordert.
 </Tab>
 <Tab title="Buildkite">
 - **Organisations-ID**: die UUID der Organisation. Jedes Buildkite-Token trägt sie im Claim `organization_id`, du kannst sie also aus einem Token auslesen, das eine deiner Pipelines anfordert. Anders als der Slug der Organisation ändert sie sich nie.
-- **Pipeline-Slug** (optional): ohne ihn wird jeder Pipeline der Organisation vertraut.
+- **Pipeline-Slug** (optional): Ohne ihn wird jeder Pipeline der Organisation vertraut.
 </Tab>
 <Tab title="CircleCI">
 - **Organisations-ID**: findest du unter **Organization Settings → Overview**. Jede CircleCI-Organisation hat einen eigenen Issuer, `https://oidc.circleci.com/org/<organisation ID>`, und Phaseo bildet ihn aus dieser ID.
@@ -97,15 +94,15 @@ Nutze diese Option für jeden anderen OIDC-Issuer, der alle diese Bedingungen er
 
 Fülle aus:
 
-- **Issuer-URL**: kopiere sie genau so, wie sie im Claim `iss` des Tokens steht, einschließlich eines abschließenden Schrägstrichs.
+- **Issuer-URL**: Kopiere sie genau so, wie sie im Claim `iss` des Tokens steht, einschließlich eines abschließenden Schrägstrichs.
 - **Inhaber-Claim** und **Inhaber-Wert**: der Claim, den jedes Token tragen muss, und der genaue Wert, den er haben muss. Wähle einen Claim, den niemand sonst wiederverwenden kann, etwa eine numerische ID, und keinen Namen, der umbenannt oder neu registriert werden kann.
-- **Zusätzlicher Claim** und **Erforderlicher Wert** (optional): ein weiterer Claim, der zum Token passen muss.
+- **Zusätzlicher Claim** und **Erforderlicher Wert** (optional): ein weiterer Claim, zu dem das Token passen muss.
 
-Bedingungen gelten nur für Claims der obersten Ebene. Verschachtelte Claims, etwa das Objekt `kubernetes.io` von Kubernetes, sind nicht möglich.
+Bedingungen gelten nur für Claims der obersten Ebene. Verschachtelte Claims, etwa das Objekt `kubernetes.io` von Kubernetes, können nicht verwendet werden.
 
 **Kubernetes (EKS, GKE, AKS)**: Jeder Cluster hat einen eigenen Issuer. Führe auf EKS `aws eks describe-cluster --name <cluster> --query cluster.identity.oidc.issuer` aus. Schalte auf AKS den OIDC-Issuer ein und führe `az aks show -n <cluster> -g <resource-group> --query oidcIssuerProfile.issuerUrl` aus. Auf GKE ist der Issuer `https://container.googleapis.com/v1/projects/<project>/locations/<location>/clusters/<cluster>`. Nutze `sub` als Inhaber-Claim mit dem Wert `system:serviceaccount:<namespace>:<service-account>`.
 
-Selbst betriebene Kubernetes-Cluster, deren Discovery-Endpunkt nicht öffentlich ist, funktionieren nicht. Phaseo muss das Discovery-Dokument und die Schlüssel ohne Zugangsdaten aus dem Internet abrufen, und die meisten Cluster erlauben das standardmäßig nicht.
+Selbst verwaltete Kubernetes-Cluster, deren Discovery-Endpunkt nicht öffentlich ist, funktionieren nicht. Phaseo muss das Discovery-Dokument und die Schlüssel ohne Zugangsdaten aus dem Internet abrufen, und die meisten Cluster erlauben das standardmäßig nicht.
 
 **Bitbucket Pipelines**: Der Issuer ist `https://api.bitbucket.org/2.0/workspaces/<workspace>/pipelines-config/identity/oidc`. Nutze `workspaceUuid` als Inhaber-Claim, mit dem Wert einschließlich seiner geschweiften Klammern, etwa `{a1b2c3d4-...}`. Fordere die Phaseo-Audience im Step an:
 
@@ -116,22 +113,20 @@ Selbst betriebene Kubernetes-Cluster, deren Discovery-Endpunkt nicht öffentlich
         - https://api.phaseo.app
 ```
 
-**Selbst gehostetes GitLab**: Der Issuer ist deine GitLab-URL, etwa `https://gitlab.example.com`. Nutze `project_id` als Inhaber-Claim, mit der numerischen ID des Projekts. Deine Instanz muss aus dem Internet erreichbar sein.
+**Selbst verwaltetes GitLab**: Der Issuer ist deine GitLab-URL, etwa `https://gitlab.example.com`. Nutze `project_id` als Inhaber-Claim, mit der numerischen ID des Projekts. Deine Instanz muss aus dem Internet erreichbar sein.
 </Tab>
 </Tabs>
 </Step>
 <Step title="Längstes akzeptiertes Token festlegen">
-Gib unter **Längstes akzeptiertes Token (Stunden)** die längste Laufzeit an, die du akzeptierst. Tokens, die länger gültig ausgestellt wurden, werden abgelehnt. Das Maximum sind 12 Stunden, was auch Vercel-Entwicklungstokens abdeckt.
+Gib unter **Längstes akzeptiertes Token (Stunden)** die längste Laufzeit an, die du akzeptierst. Tokens, die länger gültig ausgestellt wurden, werden abgelehnt. Das Maximum und der Standardwert sind 12 Stunden, was auch Vercel-Entwicklungstokens abdeckt.
 </Step>
 </Steps>
 
-Richtlinien greifen innerhalb von etwa einer Minute. Wenn du eine Richtlinie ausschaltest oder löschst, funktionieren ihre Tokens in derselben Zeit nicht mehr.
-
----
+Richtlinien greifen innerhalb von etwa einer Minute. Wenn du eine Richtlinie ausschaltest oder löschst, funktionieren ihre Tokens innerhalb derselben Zeit nicht mehr.
 
 ## Richtlinien mit Terraform oder der API verwalten
 
-Du kannst Richtlinien auch als Code verwalten, mit einem [Management-Key](./management-api-keys.mdx), der die Berechtigungen `keys:read`, `keys:write` und `keys:delete` hat. Das geht nur in Workspaces, die Trusted Workloads schon haben.
+Verwalte Richtlinien als Code mit einem [Management-Schlüssel](./management-api-keys.mdx), der die Funktionen `keys:read`, `keys:write` und `keys:delete` hat. Nur Workspaces mit vertrauenswürdigen Workloads können diese Routen nutzen.
 
 Verwende in Terraform die Ressource `phaseo_trusted_workload`:
 
@@ -158,7 +153,7 @@ resource "phaseo_trusted_workload" "deploy" {
 | `google_cloud` | Standard: `https://accounts.google.com` | `sub` (eindeutige ID des Dienstkontos) |
 | `buildkite` | Standard: `https://agent.buildkite.com` | `organization_id` |
 | `circleci` | Erforderlich: `https://oidc.circleci.com/org/<organisation ID>` | `oidc.circleci.com/org-id` |
-| `aws` | Erforderlich: der Issuer deines Kontos | `sub` (IAM-Rollen-ARN) |
+| `aws` | Erforderlich: der Issuer deines Kontos | `sub` (ARN der IAM-Rolle) |
 | `custom` | Erforderlich: deine Issuer-URL | Der Claim, den du in `owner_claim` setzt |
 
 Setze für einen eigenen Issuer zusätzlich `owner_claim`:
@@ -173,7 +168,15 @@ resource "phaseo_trusted_workload" "cluster" {
 }
 ```
 
-Wenn du Plattform, Issuer, Inhaber-Claim oder Owner änderst, wird die Richtlinie ersetzt. Eine Richtlinie hat kein Secret, deshalb landet nichts Vertrauliches im Terraform-State.
+Weitere Felder:
+
+| Feld | Werte |
+| --- | --- |
+| `claim_conditions` | Claim-Name zu erlaubten Werten; jeder Claim muss zu einem seiner Werte passen. Bis zu 15 Claims neben dem Inhaber-Claim und 20 Werte pro Claim. `iss`, `aud`, `exp`, `iat`, `nbf`, `jti` und der Inhaber-Claim können nicht verwendet werden. |
+| `max_token_lifetime_seconds` | Längste akzeptierte Token-Laufzeit, `60` bis `43200` (12 Stunden). Standard ist `43200`. |
+| `enabled` (Terraform) oder `status` (API: `active` oder `disabled`) | Ob passende Tokens akzeptiert werden. |
+
+Wenn du Plattform, Issuer, Inhaber-Claim oder Inhaber änderst, wird die Richtlinie ersetzt. Eine Richtlinie hat kein Geheimnis, daher wird nichts Vertrauliches im Terraform-State gespeichert.
 
 Sende über die API dieselben Felder an `/v1/workload-identity/policies`. In der API heißt die Plattform `provider`:
 
@@ -193,13 +196,11 @@ curl https://api.phaseo.app/v1/workload-identity/policies \
   -d '{"name":"Production cluster","provider":"custom","issuer":"https://oidc.eks.us-east-1.amazonaws.com/id/EXAMPLED539D4633E53DE1B71EXAMPLE","owner_claim":"sub","owner_id":"system:serviceaccount:prod:api"}'
 ```
 
-Die [API-Referenz](../api-reference/endpoint/trusted-workloads-create.mdx) beschreibt alle Felder und Antworten.
-
----
+Die [API-Referenz](../api-reference/endpoint/trusted-workloads-create.mdx) listet alle Felder und Antworten auf.
 
 ## Phaseo mit einem Token aufrufen
 
-Jedes Phaseo SDK akzeptiert statt des API-Schlüssels eine Funktion und ruft sie vor jeder Anfrage und jedem erneuten Versuch auf, sodass jede Anfrage ein aktuelles Token verwendet. Jedes SDK außer C++ enthält eine Hilfsfunktion für GitHub Actions und für Vercel. Sie holt ein für `https://api.phaseo.app` ausgestelltes Token und verwendet es wieder, bis es in einer Minute abläuft:
+Jedes Phaseo-SDK akzeptiert statt des API-Schlüssels eine Funktion und ruft sie vor jeder Anfrage und jedem erneuten Versuch auf, sodass jede Anfrage ein aktuelles Token verwendet. Jedes SDK außer C++ enthält eine Hilfsfunktion für GitHub Actions und Vercel. Sie holt ein für `https://api.phaseo.app` ausgestelltes Token und verwendet es wieder, bis eine Minute vor seinem Ablauf:
 
 | SDK | GitHub Actions | Vercel |
 | --- | --- | --- |
@@ -213,7 +214,7 @@ Jedes Phaseo SDK akzeptiert statt des API-Schlüssels eine Funktion und ruft sie
 | Rust | `phaseo::auth::github_actions_token()` | `phaseo::auth::vercel_token()` |
 | C++ | Übergib eine eigene Funktion an `set_api_key_provider` | Übergib eine eigene Funktion an `set_api_key_provider` |
 
-Die Hilfsfunktionen benötigen das nächste Release des jeweiligen SDK. Auf Vercel tauscht die Hilfsfunktion das Token des Deployments aus `VERCEL_OIDC_TOKEN_FILE` oder `VERCEL_OIDC_TOKEN`. In Vercel Functions kommt das Token mit jeder Anfrage im Header `x-vercel-oidc-token`; übergib es der Hilfsfunktion als Token-Quelle.
+Die Hilfsfunktionen benötigen das nächste Release des jeweiligen SDK. Auf Vercel tauscht die Hilfsfunktion das Token des Deployments aus `VERCEL_OIDC_TOKEN_FILE` oder `VERCEL_OIDC_TOKEN` um. In Vercel Functions kommt das Token mit jeder Anfrage im Header `x-vercel-oidc-token`; übergib es der Hilfsfunktion als Token-Quelle.
 
 Auf anderen Plattformen übergibst du eine eigene Funktion, die das Token zurückgibt, etwa eine, die die Variable des GitLab-Jobs liest oder den Metadatenserver von Google Cloud aufruft:
 
@@ -235,7 +236,7 @@ const client = new Phaseo({
 <Tab title="Vercel">
 Nutze `getVercelOidcToken` aus dem Server-Einstiegspunkt von `@vercel/oidc` 4.x. Wenn du `audience` übergibst, wird das Token des Deployments gegen eines getauscht, das für Phaseo ausgestellt ist.
 
-Mit dem [TypeScript-SDK](../sdk-reference/typescript/overview.mdx) übergibst du eine Funktion als `apiKey`. Das SDK ruft sie vor jeder Anfrage auf, sodass jede Anfrage ein aktuelles Token verwendet:
+Mit dem [TypeScript-SDK](../sdk-reference/client/overview.mdx) übergibst du es als `apiKey`-Funktion:
 
 ```ts
 import Phaseo from "@phaseo/sdk";
@@ -246,7 +247,7 @@ const client = new Phaseo({
 });
 
 const response = await client.responses.create({
-	model: "openai/gpt-5-mini",
+	model: "openai/gpt-6-astra",
 	input: "Hello from a trusted workload",
 });
 ```
@@ -267,7 +268,7 @@ const response = await fetch("https://api.phaseo.app/v1/chat/completions", {
 		"Content-Type": "application/json",
 	},
 	body: JSON.stringify({
-		model: "openai/gpt-5-mini",
+		model: "openai/gpt-6-astra",
 		messages: [{ role: "user", content: "Hello from a trusted workload" }],
 	}),
 });
@@ -298,7 +299,7 @@ jobs:
                 "Content-Type": "application/json",
               },
               body: JSON.stringify({
-                model: "openai/gpt-5-mini",
+                model: "openai/gpt-6-astra",
                 messages: [{ role: "user", content: "Hello from GitHub Actions" }],
               }),
             });
@@ -314,7 +315,7 @@ TOKEN=$(curl -sS -H "Authorization: bearer $ACTIONS_ID_TOKEN_REQUEST_TOKEN" \
 curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello"}]}'
+  -d '{"model":"openai/gpt-6-astra","messages":[{"role":"user","content":"Hello"}]}'
 ```
 
 GitHub-Actions-Tokens sind kurzlebig, fordere bei langen Jobs also ein neues an.
@@ -332,7 +333,7 @@ evals:
       curl https://api.phaseo.app/v1/chat/completions
       -H "Authorization: Bearer $PHASEO_TOKEN"
       -H "Content-Type: application/json"
-      -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from GitLab"}]}'
+      -d '{"model":"openai/gpt-6-astra","messages":[{"role":"user","content":"Hello from GitLab"}]}'
 ```
 
 Das Token gilt so lange wie das Timeout des Jobs.
@@ -347,7 +348,7 @@ TOKEN=$(curl -sS -H "Metadata-Flavor: Google" \
 curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from Google Cloud"}]}'
+  -d '{"model":"openai/gpt-6-astra","messages":[{"role":"user","content":"Hello from Google Cloud"}]}'
 ```
 
 Hänge `&format=full` an die URL an, wenn deine Richtlinie die E-Mail des Dienstkontos prüft. Tokens gelten 1 Stunde.
@@ -361,7 +362,7 @@ TOKEN=$(buildkite-agent oidc request-token --audience https://api.phaseo.app)
 curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from Buildkite"}]}'
+  -d '{"model":"openai/gpt-6-astra","messages":[{"role":"user","content":"Hello from Buildkite"}]}'
 ```
 
 Tokens gelten standardmäßig 5 Minuten. Fordere bei längeren Steps ein neues an oder übergib `--lifetime` in Sekunden.
@@ -375,7 +376,7 @@ TOKEN=$(circleci run oidc get --claims '{"aud":"https://api.phaseo.app"}')
 curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from CircleCI"}]}'
+  -d '{"model":"openai/gpt-6-astra","messages":[{"role":"user","content":"Hello from CircleCI"}]}'
 ```
 
 Tokens gelten 1 Stunde.
@@ -384,20 +385,20 @@ Tokens gelten 1 Stunde.
 Schalte die ausgehende Identitätsföderation einmal pro AWS-Konto ein und fordere dann als IAM-Rolle ein Token an. Die Rolle braucht die Berechtigung für `sts:GetWebIdentityToken`.
 
 ```bash
-# Once per account
+# Einmal pro Konto
 aws iam enable-outbound-web-identity-federation
 
-# In the workload
+# Im Workload
 TOKEN=$(aws sts get-web-identity-token --audience https://api.phaseo.app \
   --signing-algorithm ES384 --query WebIdentityToken --output text)
 
 curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \
-  -d '{"model":"openai/gpt-5-mini","messages":[{"role":"user","content":"Hello from AWS"}]}'
+  -d '{"model":"openai/gpt-6-astra","messages":[{"role":"user","content":"Hello from AWS"}]}'
 ```
 
-Phaseo akzeptiert `ES384` und `RS256`. Tokens gelten standardmäßig 5 Minuten; mit `--duration-seconds` bis zu 1 Stunde.
+Phaseo akzeptiert `ES384` und `RS256`. Tokens gelten standardmäßig 5 Minuten; übergib `--duration-seconds` für bis zu 1 Stunde.
 </Tab>
 <Tab title="Eigener OIDC-Issuer">
 Binde auf Kubernetes ein projiziertes Service-Account-Token ein, das für die Phaseo-Audience ausgestellt ist:
@@ -426,32 +427,33 @@ In Bitbucket Pipelines erhält ein Step mit gesetzten `oidc`-Audiences das Token
 </Tab>
 </Tabs>
 
----
-
 ## Verhalten und Limits
 
 - **Dieselben Kontrollen wie bei einem Schlüssel.** Anfragen laufen mit dem Schlüssel der Richtlinie, daher gelten Ratenlimits des Schlüssels, Budgets, Abteilungszuordnungen, IP-Allowlists, Logging-Einstellungen und Abrechnung wie gewohnt.
 - **Nur Modellaufrufe.** Workload-Tokens funktionieren überall dort, wo ein Gateway-API-Schlüssel funktioniert. Management-APIs lehnen sie ab.
-- **Genau eine passende Richtlinie.** Wenn zwei Workspaces demselben Workload vertrauen, kann Phaseo nicht erkennen, welchen du meinst, und lehnt die Anfrage ab. Sende die Workspace-ID im Header `x-phaseo-workspace`, um einen auszuwählen.
+- **Genau eine passende Richtlinie.** Ein Token, das zu mehr als einer aktiven Richtlinie passt, wird abgelehnt. Liegen die Richtlinien in verschiedenen Workspaces, sende die Workspace-ID im Header `x-phaseo-workspace`, um einen auszuwählen. Liegen sie im selben Workspace, grenze ihre Bedingungen so ein, dass nur eine passt.
 - **Token-Laufzeit.** Tokens, die länger gültig ausgestellt wurden als das **Längste akzeptierte Token** der Richtlinie, werden abgelehnt, und Phaseo akzeptiert nie Tokens, die für mehr als 12 Stunden ausgestellt wurden. Buildkite- und AWS-Tokens gelten standardmäßig 5 Minuten, Google-Cloud- und CircleCI-Tokens 1 Stunde. GitLab-Tokens gelten so lange wie das Timeout des Jobs, daher erhält ein Job mit einem Timeout über 12 Stunden ein Token, das Phaseo ablehnt. AKS kann Tokens für bis zu 24 Stunden ausstellen, setze also ein kürzeres `expirationSeconds`.
 - **Azure wird noch nicht unterstützt.** Verwaltete Identitäten in Azure können keine Tokens für die Phaseo-Audience anfordern. Pods auf AKS können trotzdem ein Kubernetes-Service-Account-Token über einen eigenen Issuer nutzen.
 - **API-Schlüssel bleiben unverändert.** Vertrauenswürdige Workloads ergänzen eine zweite Art der Authentifizierung; sie ändern oder deaktivieren keine API-Schlüssel.
 
----
+## Abgelehntes Token beheben
 
-## Fehlerbehebung
+Ein abgelehntes Token gibt `401` mit dem Fehlercode `unauthorised` und einem dieser `reason`-Werte zurück:
 
-Ein abgelehntes Token gibt `401` mit einer dieser Meldungen zurück:
-
-| Meldung | Bedeutung | Was du tun kannst |
+| `reason` | Bedeutung | Was du tun kannst |
 | --- | --- | --- |
 | `workload_token_wrong_audience` | Das Token wurde nicht für `https://api.phaseo.app` ausgestellt. | Fordere das Token mit dieser Audience an. |
+| `workload_token_malformed` | Das Token ist kein wohlgeformtes OIDC-Token: Es hat keine Schlüssel-ID, keinen Issuer oder keine gültigen Zeit-Claims. | Sende das Token unverändert, genau so, wie die Plattform es ausgestellt hat. |
 | `workload_issuer_not_trusted` | Keine aktive Richtlinie nutzt den Issuer dieses Tokens. | Prüfe, ob die Richtlinie eingeschaltet ist und ob ihr Issuer genau mit dem Claim `iss` des Tokens übereinstimmt, einschließlich Vercel-Team-Slug oder Issuer-Modus und eines abschließenden Schrägstrichs bei einem eigenen Issuer. |
-| `workload_identity_no_matching_policy` | Das Token ist gültig, aber keine aktive Richtlinie passt dazu. | Prüfe die Inhaber-ID, die Bedingungen für Projekt, Repository, Pipeline, Branch, Tag oder Umgebung und ob das Token länger gültig ist als das **Längste akzeptierte Token** der Richtlinie. |
-| `workload_identity_ambiguous` | Mehr als ein Workspace vertraut diesem Workload. | Sende `x-phaseo-workspace: <workspace id>`. |
+| `workload_identity_no_matching_policy` | Das Token ist gültig, aber keine aktive Richtlinie passt dazu. | Prüfe die Inhaber-ID, die Bedingungen für Projekt, Repository, Pipeline, Branch, Tag oder Umgebung und dass das Token nicht länger gilt als das **Längste akzeptierte Token** der Richtlinie. |
+| `workload_identity_ambiguous` | Mehr als eine aktive Richtlinie passt zu diesem Token. | Sende über Workspaces hinweg `x-phaseo-workspace: <workspace id>`. Grenze innerhalb eines Workspace die Bedingungen der Richtlinien ein. |
 | `workload_identity_not_enabled` | Vertrauenswürdige Workloads sind für diesen Workspace noch nicht verfügbar. | Nutze vorerst einen API-Schlüssel. |
 | `workload_token_expired` | Das Token ist abgelaufen. | Fordere für jede Anfrage oder jeden Job-Schritt ein neues Token an. |
+| `workload_token_not_yet_valid` | Die `nbf`-Zeit des Tokens liegt mehr als eine Minute in der Zukunft. | Prüfe die Uhr auf dem Rechner, der die Tokens ausstellt. |
 | `workload_token_lifetime_too_long` | Das Token wurde für mehr als 12 Stunden ausgestellt, das Maximum, das Phaseo akzeptiert. | Fordere ein kürzer gültiges Token an, etwa mit einem kürzeren `expirationSeconds` auf Kubernetes oder einem kürzeren Job-Timeout auf GitLab. |
-| `workload_token_unsupported_alg` | Das Token ist nicht mit RS256, ES256 oder ES384 signiert. | Stelle den Issuer auf einen dieser Algorithmen um. |
+| `workload_token_too_many_claims` | Das Token eines eigenen Issuers enthält mehr als 100 verschiedene Claim-Werte auf oberster Ebene. | Konfiguriere den Issuer so, dass er weniger Claims sendet, oder verschiebe zusätzliche Werte in ein verschachteltes Objekt. |
+| `workload_token_unsupported_alg` | Das Token ist nicht mit RS256, ES256 oder ES384 signiert. | Konfiguriere den Issuer für einen dieser Algorithmen. |
 | `workload_token_invalid_signature` | Die Signatur des Tokens passt nicht zu den Schlüsseln der Plattform. | Sende das Token unverändert, genau so, wie die Plattform es ausgestellt hat. |
+| `workload_token_key_not_found` | Die veröffentlichten Schlüssel des Issuers enthalten nicht den Schlüssel, mit dem das Token signiert wurde. | Versuche es nach kurzer Wartezeit erneut. Prüfe bei einem eigenen Issuer, ob seine `jwks_uri` den aktuellen Signaturschlüssel bereitstellt. |
+| `key_ip_not_allowed` | Der Schlüssel der Richtlinie hat eine IP-Allowlist, die den Aufrufer nicht enthält. | Füge die IP-Adressen des Workloads zur Allowlist des Schlüssels hinzu. |
 | `workload_jwks_unavailable` | Phaseo konnte die Signaturschlüssel der Plattform nicht abrufen. | Versuche es nach kurzer Wartezeit erneut. Prüfe bei einem eigenen Issuer, ob `<issuer>/.well-known/openid-configuration` ohne Zugangsdaten aus dem öffentlichen Internet lädt und ob seine `jwks_uri` auf demselben Host liegt. |

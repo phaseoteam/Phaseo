@@ -8,7 +8,6 @@ import type {
 	ProviderCandidate,
 	SensitiveInfoAction,
 	SensitiveInfoRule,
-	TeamSettings,
 	WorkspacePolicy,
 } from "./types";
 import { normalizeDynamicRouteConfig, type DynamicRoutePolicy } from "./dynamic-routes";
@@ -66,6 +65,127 @@ type GuardrailRow = {
 	sensitive_info_rules?: unknown;
 };
 
+const RESOLVE_KEY_GUARDRAILS_RPC = "resolve_key_guardrails";
+
+/** PostgREST (PGRST202) or Postgres (42883) saying resolve_key_guardrails does not exist yet. */
+function isMissingResolveKeyGuardrails(error: unknown): boolean {
+	if (!error || typeof error !== "object") return false;
+	const record = error as Record<string, unknown>;
+	const code = String(record.code ?? "").trim().toUpperCase();
+	const message = String(record.message ?? "").toLowerCase();
+	return (code === "PGRST202" || code === "42883") && message.includes(RESOLVE_KEY_GUARDRAILS_RPC);
+}
+
+function guardrailIdsFrom(rows: unknown): string[] {
+	return Array.isArray(rows)
+		? rows.map((row: any) => String(row?.guardrail_id ?? "").trim()).filter(Boolean)
+		: [];
+}
+
+const RESOLVE_PAGE_SIZE = 1000;
+const GUARDRAIL_ID_BATCH = 200;
+
+/**
+ * Every guardrail id resolve_key_guardrails returns for the key. It returns one row per guardrail
+ * and level, and PostgREST caps a response at 1,000 rows, so this pages until a short page.
+ */
+async function fetchResolvedGuardrailIds(
+	supabase: ReturnType<typeof getSupabaseAdmin>,
+	rpcArgs: Record<string, unknown>,
+): Promise<{ data: string[]; error: null } | { data: null; error: { code?: string; message: string } }> {
+	const ids: string[] = [];
+	for (let from = 0; ; from += RESOLVE_PAGE_SIZE) {
+		const result = await supabase
+			.rpc(RESOLVE_KEY_GUARDRAILS_RPC, rpcArgs)
+			.order("guardrail_id")
+			.order("source_type")
+			.order("source_id")
+			.range(from, from + RESOLVE_PAGE_SIZE - 1);
+		if (result.error) return { data: null, error: result.error };
+		const page = Array.isArray(result.data) ? result.data : [];
+		ids.push(...guardrailIdsFrom(page));
+		if (page.length < RESOLVE_PAGE_SIZE) return { data: ids, error: null };
+	}
+}
+
+const WORKSPACE_RESTRICTION_COLUMNS =
+	"privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,model_restriction_model_ids";
+
+/**
+ * The guardrails that apply to a key, and where the workspace-wide privacy and restriction rules
+ * come from. Once the workspace baseline migration has run, those rules are the workspace baseline
+ * guardrail, which resolve_key_guardrails returns with the rest (`workspaceSettings` is null). The
+ * three-argument call only exists from that migration on, so while it is missing (code deployed
+ * first) the rules are still read from workspace_settings as before, and the guardrails come from
+ * the two-argument call, or the join tables before guardrail levels. A failed read throws, so the
+ * request is refused rather than routed without the workspace's rules.
+ */
+async function fetchKeyGuardrailSources(
+	supabase: ReturnType<typeof getSupabaseAdmin>,
+	args: { workspaceId: string; apiKeyId: string; principalUserId: () => Promise<string> },
+): Promise<{ guardrailIds: string[]; workspaceSettings: WorkspaceSettingsRow | null }> {
+	const withBaseline = await fetchResolvedGuardrailIds(supabase, {
+		p_workspace_id: args.workspaceId,
+		p_key_id: args.apiKeyId,
+		p_include_workspace_baseline: true,
+	});
+	if (!withBaseline.error) return { guardrailIds: withBaseline.data, workspaceSettings: null };
+	if (!isMissingResolveKeyGuardrails(withBaseline.error)) {
+		throw new Error(`key_guardrails_lookup_failed:${withBaseline.error.message}`);
+	}
+
+	const [settingsResult, levelsResult] = await Promise.all([
+		supabase
+			.from("workspace_settings")
+			.select(WORKSPACE_RESTRICTION_COLUMNS)
+			.eq("workspace_id", args.workspaceId)
+			.maybeSingle(),
+		fetchResolvedGuardrailIds(supabase, { p_workspace_id: args.workspaceId, p_key_id: args.apiKeyId }),
+	]);
+	if (settingsResult.error) {
+		throw new Error(`workspace_settings_lookup_failed:${settingsResult.error.message}`);
+	}
+	if (levelsResult.error && !isMissingResolveKeyGuardrails(levelsResult.error)) {
+		throw new Error(`key_guardrails_lookup_failed:${levelsResult.error.message}`);
+	}
+	const guardrailIds = levelsResult.error
+		? await fetchLegacyKeyGuardrailIds(supabase, {
+			workspaceId: args.workspaceId,
+			apiKeyId: args.apiKeyId,
+			principalUserId: await args.principalUserId(),
+		})
+		: levelsResult.data;
+	return { guardrailIds, workspaceSettings: (settingsResult.data ?? null) as WorkspaceSettingsRow | null };
+}
+
+/**
+ * The key and principal-member guardrails, read from the join tables that
+ * resolve_key_guardrails replaces. Only used while that function is not deployed
+ * yet (code released before its migration); remove with the join tables.
+ */
+async function fetchLegacyKeyGuardrailIds(
+	supabase: ReturnType<typeof getSupabaseAdmin>,
+	args: { workspaceId: string; apiKeyId: string; principalUserId: string },
+): Promise<string[]> {
+	const [keyGuardrailsResult, memberGuardrailsResult] = await Promise.all([
+		supabase.from("key_guardrails").select("guardrail_id").eq("key_id", args.apiKeyId),
+		args.principalUserId
+			? supabase
+				.from("workspace_member_guardrails")
+				.select("guardrail_id")
+				.eq("workspace_id", args.workspaceId)
+				.eq("user_id", args.principalUserId)
+			: Promise.resolve({ data: [], error: null }),
+	]);
+	if (keyGuardrailsResult.error) {
+		throw new Error(`key_guardrails_lookup_failed:${keyGuardrailsResult.error.message}`);
+	}
+	if (memberGuardrailsResult.error) {
+		throw new Error(`workspace_member_guardrails_lookup_failed:${memberGuardrailsResult.error.message}`);
+	}
+	return [...guardrailIdsFrom(keyGuardrailsResult.data), ...guardrailIdsFrom(memberGuardrailsResult.data)];
+}
+
 type ProviderHintSet = {
 	only: string[];
 	ignore: string[];
@@ -74,7 +194,9 @@ type ProviderHintSet = {
 const WORKSPACE_POLICY_L1_TTL_MS = 30_000;
 const WORKSPACE_POLICY_L1_MAX_ENTRIES = 2_000;
 const WORKSPACE_POLICY_KV_PREFIX = "gateway:workspace-policy:v2";
-const WORKSPACE_POLICY_KV_TTL_SECONDS = 60;
+// The cache key embeds the workspace and key versions, and every source table bumps one of
+// them (control routes or the publication triggers), so a policy can live for a day.
+const WORKSPACE_POLICY_KV_TTL_SECONDS = 86_400;
 const WORKSPACE_POLICY_VERSION_PREFIX = "gateway:workspace-policy-version";
 // Capped by the shared copy's absolute expiry (see shared-version-cache).
 const WORKSPACE_POLICY_VERSION_L1_TTL_MS = SHARED_VERSION_TTL_MS;
@@ -167,8 +289,11 @@ function writeWorkspacePolicyVersionL1(workspaceId: string, value: number, expir
  * Workspace-wide cache version. Also embedded in request-context cache keys,
  * so a single bump (control routes or the publication outbox drain)
  * invalidates every cached context of the workspace.
+ *
+ * Returns null when the counter cannot be read. Callers must then skip their
+ * caches: entries stored under a guessed version could ignore earlier bumps.
  */
-export async function getWorkspacePolicyVersionToken(workspaceId: string): Promise<string> {
+export async function getWorkspacePolicyVersionToken(workspaceId: string): Promise<string | null> {
 	const cached = readWorkspacePolicyVersionL1(workspaceId);
 	if (cached !== null) return `v${cached}`;
 
@@ -178,7 +303,7 @@ export async function getWorkspacePolicyVersionToken(workspaceId: string): Promi
 		writeWorkspacePolicyVersionL1(workspaceId, shared.value, shared.expiresAt);
 		return `v${shared.value}`;
 	} catch {
-		return "v0";
+		return null;
 	}
 }
 
@@ -191,7 +316,10 @@ export async function bumpWorkspacePolicyVersion(workspaceId: string): Promise<n
 	} catch {
 		current = 0;
 	}
-	const next = current + 1;
+	// The read above can be up to a minute stale, so two bumps from different
+	// locations could both write current + 1 and the second change would never
+	// invalidate anything. A clock-based counter keeps each bump distinct.
+	const next = Math.max(current + 1, Date.now());
 	await getCache().put(workspacePolicyVersionKey(workspaceId), String(next));
 	writeWorkspacePolicyVersionL1(workspaceId, next);
 	rememberSharedVersion(workspacePolicyVersionKey(workspaceId), next);
@@ -533,6 +661,65 @@ export function buildWorkspacePolicy(args: {
 	};
 }
 
+const GUARDRAIL_POLICY_COLUMNS =
+	"id,privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,allowed_api_model_ids,prompt_injection_enabled,prompt_injection_action,sensitive_info_enabled,sensitive_info_default_action,sensitive_info_rules";
+
+/** The enabled guardrails with these ids. PostgREST returns at most 1,000 rows and long id lists overflow the URL, so this reads in batches. */
+async function fetchEnabledGuardrails(
+	supabase: ReturnType<typeof getSupabaseAdmin>,
+	workspaceId: string,
+	ids: string[],
+): Promise<GuardrailRow[]> {
+	const guardrailIds = [...new Set(ids)];
+	const guardrails: GuardrailRow[] = [];
+	for (let index = 0; index < guardrailIds.length; index += GUARDRAIL_ID_BATCH) {
+		const guardrailsResult = await supabase
+			.from("workspace_guardrails")
+			.select(GUARDRAIL_POLICY_COLUMNS)
+			.eq("workspace_id", workspaceId)
+			.eq("enabled", true)
+			.in("id", guardrailIds.slice(index, index + GUARDRAIL_ID_BATCH));
+
+		if (guardrailsResult.error) {
+			throw new Error(`workspace_guardrails_lookup_failed:${guardrailsResult.error.message}`);
+		}
+
+		guardrails.push(...((guardrailsResult.data ?? []) as GuardrailRow[]));
+	}
+	return guardrails;
+}
+
+const RESOLVE_MEMBER_GUARDRAILS_RPC = "resolve_member_guardrails";
+
+/**
+ * The rules a key this member creates with no department of its own (their Chat key) would get, before that key
+ * exists: the workspace (including the baseline, which holds Settings, Privacy), the member's departments and the
+ * member (resolve_member_guardrails). For the web's model access check when the member has no Chat key yet; once
+ * they do, fetchWorkspacePolicy with that key is used, which also counts guardrails assigned to the key itself.
+ * Not cached: it is read once per check, and a failed read throws rather than reporting no rules.
+ */
+export async function fetchMemberWorkspacePolicy(args: {
+	workspaceId: string;
+	userId: string;
+}): Promise<WorkspacePolicy> {
+	const supabase = getSupabaseAdmin();
+	const ids: string[] = [];
+	for (let from = 0; ; from += RESOLVE_PAGE_SIZE) {
+		const result = await supabase
+			.rpc(RESOLVE_MEMBER_GUARDRAILS_RPC, { p_workspace_id: args.workspaceId, p_user_id: args.userId })
+			.order("guardrail_id")
+			.order("source_type")
+			.order("source_id")
+			.range(from, from + RESOLVE_PAGE_SIZE - 1);
+		if (result.error) throw new Error(`member_guardrails_lookup_failed:${result.error.message}`);
+		const page = Array.isArray(result.data) ? result.data : [];
+		ids.push(...guardrailIdsFrom(page));
+		if (page.length < RESOLVE_PAGE_SIZE) break;
+	}
+	const guardrails = await fetchEnabledGuardrails(supabase, args.workspaceId, ids);
+	return buildWorkspacePolicy({ globalSettings: null, guardrails, dynamicRoute: null, neverStoreContent: false });
+}
+
 export async function fetchWorkspacePolicy(args: {
 	workspaceId: string;
 	apiKeyId: string;
@@ -541,46 +728,59 @@ export async function fetchWorkspacePolicy(args: {
 		getWorkspacePolicyVersionToken(args.workspaceId),
 		keyVersionToken("id", args.apiKeyId, { useL1Cache: true, l1TtlMs: SHARED_VERSION_TTL_MS }),
 	]);
-	const versionToken = `${workspaceVersionToken}:${apiKeyVersionToken}`;
-	const cached = readWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken);
+	// Without both counters a cached policy could predate a change, so read the source of truth.
+	const versionToken = workspaceVersionToken && apiKeyVersionToken
+		? `${workspaceVersionToken}:${apiKeyVersionToken}`
+		: null;
+	const cached = versionToken ? readWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken) : null;
 	if (cached) return cached;
 
-	const kvKey = workspacePolicyKvKey(args.workspaceId, args.apiKeyId, versionToken);
+	const kvKey = versionToken ? workspacePolicyKvKey(args.workspaceId, args.apiKeyId, versionToken) : null;
 	// The key embeds both version tokens, so a shared copy can never outlive a change.
 	// A fresh isolate reads the location copy (~1-5 ms) before KV (5-300 ms).
-	for (const layer of ["location", "kv"] as const) {
-		try {
-			const raw = layer === "location" ? await readLocationCache(kvKey) : await getCache().get(kvKey, "text");
-			if (!raw) continue;
-			const parsed = JSON.parse(raw);
-			if (!isWorkspacePolicyLike(parsed)) continue;
-			writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken, parsed);
-			if (layer === "kv") writeLocationCache(kvKey, raw, WORKSPACE_POLICY_KV_TTL_SECONDS);
-			return cloneWorkspacePolicy(parsed);
-		} catch {
-			// Ignore cache read failures and use the next layer or the source of truth.
+	if (versionToken && kvKey) {
+		for (const layer of ["location", "kv"] as const) {
+			try {
+				const raw = layer === "location" ? await readLocationCache(kvKey) : await getCache().get(kvKey, "text");
+				if (!raw) continue;
+				const parsed = JSON.parse(raw);
+				if (!isWorkspacePolicyLike(parsed)) continue;
+				writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken, parsed);
+				if (layer === "kv") writeLocationCache(kvKey, raw, WORKSPACE_POLICY_KV_TTL_SECONDS);
+				return cloneWorkspacePolicy(parsed);
+			} catch {
+				// Ignore cache read failures and use the next layer or the source of truth.
+			}
 		}
 	}
 
 	const supabase = getSupabaseAdmin();
-	const [settingsResult, keyResult, keyGuardrailsResult, routeLinkResult] = await Promise.all([
-		supabase
-			.from("workspace_settings")
-			.select(
-				"privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,model_restriction_model_ids",
-			)
-			.eq("workspace_id", args.workspaceId)
-			.maybeSingle(),
-		supabase
-			.from("keys")
-			.select("created_by,oauth_user_id,never_store_content")
-			.eq("id", args.apiKeyId)
-			.eq("workspace_id", args.workspaceId)
-			.maybeSingle(),
-		supabase
-			.from("key_guardrails")
-			.select("guardrail_id")
-			.eq("key_id", args.apiKeyId),
+	// resolve_key_guardrails returns the enabled guardrails assigned to the workspace (including the
+	// workspace baseline, which holds the Settings, Privacy rules), the key's departments, its
+	// principal member (oauth_user_id, else created_by, even after they leave) and the key itself.
+	// Assignment, guardrail and department membership changes queue a workspace publication
+	// (database triggers), whose drain bumps the workspace version token above.
+	const keyLookup = Promise.resolve(supabase
+		.from("keys")
+		.select("created_by,oauth_user_id,never_store_content")
+		.eq("id", args.apiKeyId)
+		.eq("workspace_id", args.workspaceId)
+		.maybeSingle());
+	const keyRow = async () => {
+		const result = await keyLookup;
+		if (result.error) throw new Error(`key_principal_lookup_failed:${result.error.message}`);
+		return result.data;
+	};
+	const [keyData, sources, routeLinkResult] = await Promise.all([
+		keyRow(),
+		fetchKeyGuardrailSources(supabase, {
+			workspaceId: args.workspaceId,
+			apiKeyId: args.apiKeyId,
+			principalUserId: async () => {
+				const key = await keyRow();
+				return String(key?.oauth_user_id ?? key?.created_by ?? "").trim();
+			},
+		}),
 		supabase
 			.from("gateway_dynamic_route_keys")
 			.select("route_id")
@@ -588,15 +788,6 @@ export async function fetchWorkspacePolicy(args: {
 			.maybeSingle(),
 	]);
 
-	if (settingsResult.error) {
-		throw new Error(`workspace_settings_lookup_failed:${settingsResult.error.message}`);
-	}
-	if (keyResult.error) {
-		throw new Error(`key_principal_lookup_failed:${keyResult.error.message}`);
-	}
-	if (keyGuardrailsResult.error) {
-		throw new Error(`key_guardrails_lookup_failed:${keyGuardrailsResult.error.message}`);
-	}
 	if (routeLinkResult.error) {
 		if (isOptionalDynamicRouteSchemaUnavailable(routeLinkResult.error)) {
 			console.warn("[fetchWorkspacePolicy] dynamic_route_schema_unavailable", {
@@ -608,43 +799,7 @@ export async function fetchWorkspacePolicy(args: {
 		}
 	}
 
-	const principalUserId = String(keyResult.data?.oauth_user_id ?? keyResult.data?.created_by ?? "").trim();
-	let memberGuardrailIds: string[] = [];
-	if (principalUserId) {
-		const memberGuardrailsResult = await supabase
-			.from("workspace_member_guardrails")
-			.select("guardrail_id")
-			.eq("workspace_id", args.workspaceId)
-			.eq("user_id", principalUserId);
-		if (memberGuardrailsResult.error) {
-			throw new Error(`workspace_member_guardrails_lookup_failed:${memberGuardrailsResult.error.message}`);
-		}
-		memberGuardrailIds = (memberGuardrailsResult.data ?? [])
-			.map((row: any) => String(row?.guardrail_id ?? "").trim())
-			.filter(Boolean);
-	}
-
-	const guardrailIds = [...new Set([...(keyGuardrailsResult.data ?? [])
-		.map((row: any) => String(row?.guardrail_id ?? "").trim())
-		.filter(Boolean), ...memberGuardrailIds])];
-
-	let guardrails: GuardrailRow[] = [];
-	if (guardrailIds.length > 0) {
-		const guardrailsResult = await supabase
-			.from("workspace_guardrails")
-			.select(
-				"id,privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_input_output_logging,privacy_zdr_only,provider_restriction_mode,provider_restriction_provider_ids,provider_restriction_enforce_allowed,model_restriction_mode,allowed_api_model_ids,prompt_injection_enabled,prompt_injection_action,sensitive_info_enabled,sensitive_info_default_action,sensitive_info_rules",
-			)
-			.eq("workspace_id", args.workspaceId)
-			.eq("enabled", true)
-			.in("id", guardrailIds);
-
-		if (guardrailsResult.error) {
-			throw new Error(`workspace_guardrails_lookup_failed:${guardrailsResult.error.message}`);
-		}
-
-		guardrails = (guardrailsResult.data ?? []) as GuardrailRow[];
-	}
+	const guardrails = await fetchEnabledGuardrails(supabase, args.workspaceId, sources.guardrailIds);
 
 	let dynamicRoute: DynamicRoutePolicy | null = null;
 	const routeId = String(routeLinkResult.data?.route_id ?? "").trim();
@@ -676,15 +831,18 @@ export async function fetchWorkspacePolicy(args: {
 	}
 
 	const policy = buildWorkspacePolicy({
-		globalSettings: (settingsResult.data ?? null) as WorkspaceSettingsRow | null,
+		// Only set before the workspace baseline migration; afterwards the baseline is in `guardrails`.
+		globalSettings: sources.workspaceSettings,
 		guardrails,
 		dynamicRoute,
-		neverStoreContent: keyResult.data?.never_store_content === true,
+		neverStoreContent: keyData?.never_store_content === true,
 	});
-	writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken, policy);
-	const raw = JSON.stringify(policy);
-	writeLocationCache(kvKey, raw, WORKSPACE_POLICY_KV_TTL_SECONDS);
-	dispatchBackground(getCache().put(kvKey, raw, { expirationTtl: WORKSPACE_POLICY_KV_TTL_SECONDS }));
+	if (versionToken && kvKey) {
+		writeWorkspacePolicyL1(args.workspaceId, args.apiKeyId, versionToken, policy);
+		const raw = JSON.stringify(policy);
+		writeLocationCache(kvKey, raw, WORKSPACE_POLICY_KV_TTL_SECONDS);
+		dispatchBackground(getCache().put(kvKey, raw, { expirationTtl: WORKSPACE_POLICY_KV_TTL_SECONDS }));
+	}
 	return policy;
 }
 
@@ -693,7 +851,6 @@ export function applyWorkspacePolicy(args: {
 	resolvedModel: string;
 	body: any;
 	workspacePolicy: WorkspacePolicy | null;
-	teamSettings?: TeamSettings | null;
 }):
 	| {
 			ok: true;
@@ -707,18 +864,13 @@ export function applyWorkspacePolicy(args: {
 	  } {
 	const workspacePolicy = args.workspacePolicy;
 	const hints = extractProviderHints(args.body);
+	// The workspace-wide rules are in workspacePolicy (the workspace baseline guardrail, or the
+	// workspace_settings seed before its migration), combined with the key's other guardrails.
 	const effectivePrivacy = {
-		privacyEnablePaidMayTrain:
-			args.teamSettings?.privacyEnablePaidMayTrain !== false &&
-			workspacePolicy?.privacyEnablePaidMayTrain !== false,
-		privacyEnableFreeMayTrain:
-			args.teamSettings?.privacyEnableFreeMayTrain !== false &&
-			workspacePolicy?.privacyEnableFreeMayTrain !== false,
-		privacyEnableInputOutputLogging:
-			args.teamSettings?.privacyEnableInputOutputLogging !== false &&
-			workspacePolicy?.privacyEnableInputOutputLogging !== false,
-		privacyZdrOnly:
-			Boolean(args.teamSettings?.privacyZdrOnly) || Boolean(workspacePolicy?.privacyZdrOnly),
+		privacyEnablePaidMayTrain: workspacePolicy?.privacyEnablePaidMayTrain !== false,
+		privacyEnableFreeMayTrain: workspacePolicy?.privacyEnableFreeMayTrain !== false,
+		privacyEnableInputOutputLogging: workspacePolicy?.privacyEnableInputOutputLogging !== false,
+		privacyZdrOnly: Boolean(workspacePolicy?.privacyZdrOnly),
 	};
 	const diagnostics: WorkspacePolicyDiagnostics = {
 		resolvedModel: args.resolvedModel,

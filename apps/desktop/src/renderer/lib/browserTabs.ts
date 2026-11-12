@@ -1,11 +1,13 @@
 import { useSyncExternalStore } from "react";
-import { agentBrowserCloseConfirmation, browserColorScheme, browserTabLimit, browserUrl, browserViewport, browserZoom, type BrowserAgentTabOpened, type BrowserColorScheme, type BrowserOpenTab, type BrowserState, type BrowserViewport } from "../../shared/browser";
+import { agentBrowserCloseConfirmation, browserColorScheme, browserTabLimit, browserUrl, browserViewport, browserZoom, type BrowserAgentTabOpened, type BrowserColorScheme, type BrowserCommand, type BrowserOpenTab, type BrowserState, type BrowserViewport } from "../../shared/browser";
+import { defaultBrowserProfileId, validBrowserProfileId } from "../../shared/browserPreferences";
 import { miniPlayerFor } from "./browserMiniPlayer";
 import { answerAgentRecordings } from "./browserRecording";
 import { dispatchKeybinding } from "./keybindings";
+import { readWorkspacePreferences } from "./workspacePreferences";
 
-/** A saved browser tab. name is the person's own title; title is the page's. */
-export type BrowserTab = { id: string; title: string; url: string; viewport: BrowserViewport; zoom?: number; colorScheme?: BrowserColorScheme; name?: string };
+/** A saved browser tab. name is the person's own title; title is the page's. profile is its browser profile; absent is the built-in Default, as for tabs saved before profiles. */
+export type BrowserTab = { id: string; title: string; url: string; viewport: BrowserViewport; zoom?: number; colorScheme?: BrowserColorScheme; name?: string; profile?: string };
 export type BrowserTabs = { active: string; tabs: BrowserTab[] };
 /** What a pane tab shows for a browser tab. */
 export type BrowserTabInfo = BrowserTab & { context: string; label: string; favicon?: string; loading: boolean; audible: boolean; muted: boolean; active: boolean; controller?: BrowserState["controller"]; poppedOut: boolean };
@@ -26,6 +28,7 @@ export function browserTabs(value: unknown, context: string): BrowserTabs {
 		try { if (item.zoom !== undefined && item.zoom !== 1) tab.zoom = browserZoom(item.zoom); } catch { /* Invalid zoom resets to 100%. */ }
 		try { if (item.colorScheme !== undefined && item.colorScheme !== "system") tab.colorScheme = browserColorScheme(item.colorScheme); } catch { /* Invalid scheme follows the system. */ }
 		if (typeof item.name === "string" && item.name.trim()) tab.name = item.name.trim().slice(0, 120);
+		if (validBrowserProfileId(item.profile) && item.profile !== defaultBrowserProfileId) tab.profile = item.profile;
 		tabs.push(tab);
 	}
 	return { tabs, active: "active" in value && tabs.some(tab => tab.id === value.active) ? String(value.active) : tabs[0]?.id ?? "" };
@@ -44,8 +47,9 @@ export function updateBrowserTab(group: BrowserTabs, state: BrowserState): Brows
 export function openBrowserTab(group: BrowserTabs, request: BrowserOpenTab, id: string): BrowserTabs {
 	if (!group.tabs.some(tab => tab.id === request.sourceId)) return group;
 	if (group.tabs.length >= browserTabLimit) throw new Error("Close a browser tab before opening another.");
-	const url = browserUrl(request.url);
-	return { active: request.background ? group.active : id, tabs: [...group.tabs, { id, title: "", url, viewport: { mode: "fill" } }] };
+	const url = browserUrl(request.url), profile = group.tabs.find(tab => tab.id === request.sourceId)?.profile;
+	// A page's new tab stays in its profile, so the site keeps its login.
+	return { active: request.background ? group.active : id, tabs: [...group.tabs, { id, title: "", url, viewport: { mode: "fill" }, ...profileField(profile) }] };
 }
 
 /** A tab an agent opened a page in: selected, and added when the chat does not list it yet. Only the chat's own tab ids are taken. */
@@ -53,8 +57,11 @@ export function adoptBrowserTab(group: BrowserTabs, opened: BrowserAgentTabOpene
 	if (opened.id !== opened.context && !opened.id.startsWith(opened.context + ":")) throw new Error("That browser tab belongs to another chat.");
 	if (group.tabs.some(tab => tab.id === opened.id)) return { ...group, active: opened.id };
 	if (group.tabs.length >= browserTabLimit) throw new Error("Close a browser tab before opening another.");
-	return { active: opened.id, tabs: [...group.tabs, { id: opened.id, title: "", url: browserUrl(opened.url), viewport: { mode: "fill" } }] };
+	return { active: opened.id, tabs: [...group.tabs, { id: opened.id, title: "", url: browserUrl(opened.url), viewport: { mode: "fill" }, ...profileField(opened.profile) }] };
 }
+const profileField = (profile: string | undefined) => validBrowserProfileId(profile) && profile !== defaultBrowserProfileId ? { profile } : {};
+/** A tab's browser profile, the built-in Default when it has none. */
+export const browserTabProfile = (tab: Pick<BrowserTab, "profile"> | undefined) => tab?.profile ?? defaultBrowserProfileId;
 
 /** A live native surface keeps its own viewport; a fresh one takes the saved one. */
 export function browserViewportToRestore(state: Pick<BrowserState, "viewport" | "configured">, saved: BrowserViewport): BrowserViewport { return state.configured ? state.viewport : saved; }
@@ -142,15 +149,16 @@ export function onBrowserTabOpened(listener: (tab: { context: string; id: string
 /** The last tab problem in a chat, such as reaching the tab limit. */
 export const browserTabError = (context: string) => errors.get(context) ?? "";
 
-/** Adds a tab, optionally opening an address; returns its id. Throws at the tab limit. */
-export function createBrowserTab(context: string, options: { url?: string; background?: boolean } = {}): string {
+/** Adds a tab, optionally opening an address, in the given profile or the default one from Settings → Browser; returns its id. Throws at the tab limit. */
+export function createBrowserTab(context: string, options: { url?: string; background?: boolean; profile?: string } = {}): string {
 	start();
 	const current = group(context);
 	if (current.tabs.length >= browserTabLimit) throw new Error("Close a browser tab before opening another.");
 	const id = newId(context, current.tabs);
 	const url = options.url ? browserUrl(options.url) : "";
 	errors.delete(context);
-	commit(context, { active: options.background && current.active ? current.active : id, tabs: [...current.tabs, { id, title: "", url, viewport: { mode: "fill" } }] });
+	const profile = options.profile ?? readWorkspacePreferences().browser.defaultProfile;
+	commit(context, { active: options.background && current.active ? current.active : id, tabs: [...current.tabs, { id, title: "", url, viewport: { mode: "fill" }, ...profileField(profile) }] });
 	return id;
 }
 /** The chat's selected tab, creating one when it has none. */
@@ -179,6 +187,22 @@ export function revealBrowserTab(context: string, id: string) {
 export function confirmCloseBrowserTabs(context: string, ids: string[]): boolean {
 	const message = agentBrowserCloseConfirmation(listBrowserTabs(context).filter(tab => ids.includes(tab.id) && tab.controller === "agent").length);
 	return !message || window.confirm(message);
+}
+/**
+ * Moves a tab to another browser profile: the page reloads there with that profile's cookies and logins.
+ * Its history stays behind with the old page.
+ */
+export async function setBrowserTabProfile(context: string, id: string, profile: string) {
+	const current = group(context);
+	if (!current.tabs.some(tab => tab.id === id)) return;
+	commit(context, { ...current, tabs: current.tabs.map(tab => { if (tab.id !== id) return tab; const rest: BrowserTab = { ...tab }; delete rest.profile; return { ...rest, ...profileField(profile) }; }) });
+	const state = await window.phaseoDesktop?.browser({ type: "profile", id, profile });
+	if (state) recordBrowserState(state);
+}
+/** A command with the tab's browser profile, which a page that does not exist yet is created in. */
+export function withBrowserProfile<T extends BrowserCommand>(command: T): T {
+	const context = contextOf(command.id);
+	return { ...command, profile: browserTabProfile(context ? group(context).tabs.find(tab => tab.id === command.id) : undefined) };
 }
 export async function setBrowserTabMuted(id: string, muted: boolean) { await window.phaseoDesktop?.browser({ type: "mute", id, muted }); }
 

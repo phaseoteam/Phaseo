@@ -12,6 +12,7 @@ import { accumulateStreamUsage } from "@core/usage-normalization";
 import { SseParser } from "@core/sse-parser";
 import { createStreamReasoningStateCollector } from "./stream-reasoning-state";
 import { UpstreamStreamError } from "@core/stream-errors";
+import { isBillableToolCall } from "../after/response-output";
 
 export type ServerToolTraceItem = {
 	id: string;
@@ -802,12 +803,16 @@ function applyUnifiedEventToAccumulators(args: {
 				: (eventToolCallId ?? `tool_${index}_${accumulator.toolCallOrder.length}`));
 		let toolCall = accumulator.toolCallsByKey.get(key);
 		if (!toolCall) {
-			if (!eventToolName || eventToolName === "tool_call") {
+			const name = eventToolName && eventToolName !== "tool_call" ? eventToolName : "";
+			const firstArguments = typeof event.arguments === "string" ? event.arguments : (event.argumentsDelta ?? "");
+			// Kept once it names a tool or carries arguments, as a buffered response's tool call is
+			// (isBillableToolCall): a nameless call with arguments is output; an empty placeholder is not.
+			if (!isBillableToolCall({ name, arguments: firstArguments })) {
 				return;
 			}
 			toolCall = {
 				id: eventToolCallId ?? eventToolKey ?? `${requestId}_${key}`,
-				name: eventToolName,
+				name,
 				arguments: "",
 			};
 			accumulator.toolCallsByKey.set(key, toolCall);

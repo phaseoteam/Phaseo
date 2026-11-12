@@ -1,10 +1,10 @@
 ---
 title: "LlamaIndex"
 icon: "database"
-description: "Verwende Phaseo in LlamaIndex-RAG-Abläufen."
+description: "Nutze Phaseo in RAG-Workflows mit LlamaIndex."
 ---
 
-Verwende diese Anleitung, wenn deine LlamaIndex-Anwendung Generierung oder Embeddings über Phaseo leiten soll.
+Erstelle ein `OpenAILike`-LLM mit deinem Phaseo-Schlüssel und `api_base="https://api.phaseo.app/v1"` und lege es als Standard von LlamaIndex fest, damit die Generierung in deinen RAG-Workflows über Phaseo läuft.
 
 ## Installieren
 
@@ -12,14 +12,14 @@ Verwende diese Anleitung, wenn deine LlamaIndex-Anwendung Generierung oder Embed
 pip install llama-index llama-index-llms-openai-like llama-index-embeddings-openai-like
 ```
 
-## Ein OpenAI-kompatibles LLM konfigurieren
+## LlamaIndex auf Phaseo richten
 
 ```python
 import os
 from llama_index.llms.openai_like import OpenAILike
 
 llm = OpenAILike(
-    model="openai/gpt-5-nano",
+    model="openai/gpt-6-astra",
     api_key=os.environ["PHASEO_API_KEY"],
     api_base="https://api.phaseo.app/v1",
     is_chat_model=True,
@@ -29,6 +29,8 @@ response = llm.complete("Write one sentence about retrieval quality.")
 print(response)
 ```
 
+Wird ein Satz ausgegeben, funktioniert die Einrichtung. `OpenAILike` ist die Klasse von LlamaIndex für OpenAI-kompatible APIs von Drittanbietern.
+
 ## In einem Index verwenden
 
 ```python
@@ -37,16 +39,9 @@ from llama_index.core import Settings
 Settings.llm = llm
 ```
 
-Erstelle oder durchsuche anschließend wie gewohnt deinen Index.
+Baue oder befrage deinen Index dann wie gewohnt.
 
-## Hinweise
+## Bekannte Einschränkungen
 
-- Verwende `OpenAILike` für OpenAI-kompatible APIs von Drittanbietern.
-- Gib IDs für Generierungs- und Embedding-Modelle explizit an. Gehe nicht davon aus, dass LlamaIndex-Standardwerte auf Phaseo verweisen.
-- Wenn du Phaseo-Embeddings verwendest, lege das Embedding-Modell mit einer Phaseo-Modell-ID und derselben Basis-URL fest.
-
-## Weiterführende Themen
-
-- [Embeddings](../../api-reference/endpoint/embeddings.mdx)
-- [Modelle](../../api-reference/endpoint/models.mdx)
-- [OpenAI SDK](./openai-sdk.mdx)
+- Die Standardeinstellungen von LlamaIndex zeigen nicht auf Phaseo. Lege Generierungs- und Embedding-Modell ausdrücklich fest.
+- Für Phaseo-[Embeddings](../../api-reference/endpoint/embeddings.mdx) konfigurierst du das Embedding-Modell mit einer Phaseo-Modell-ID und derselben Base URL.

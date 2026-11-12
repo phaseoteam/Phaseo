@@ -1,11 +1,12 @@
+import { describe, it, expect, vi } from "vitest";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import settingsMessages from "../../../../messages/en-GB/settings-ui.json";
 import RequestLabelBadges from "./RequestLabelBadges";
 import type { RequestClassifierSummary } from "./requestClassifierLabels";
 
-jest.mock("next/navigation", () => ({
+vi.mock("@/lib/navigation", () => ({
 	useSearchParams: () => new URLSearchParams("usage_preset=last_7d&req=G-1&request=G-2&label_op=is_not"),
 }));
 
@@ -14,9 +15,9 @@ const classifiers: RequestClassifierSummary[] = [
 ];
 
 const render = (labels: unknown, max?: number) => renderToStaticMarkup(
-	<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages }}>
+	<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: settingsMessages }}>
 		<RequestLabelBadges labels={labels} classifiers={classifiers} max={max} />
-	</NextIntlClientProvider>,
+	</AppIntlProvider>,
 );
 
 describe("RequestLabelBadges", () => {

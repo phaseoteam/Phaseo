@@ -1,9 +1,7 @@
-"use client";
-
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import Link from "@/components/link";
+import { useRouter } from "@/lib/navigation";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import {
@@ -30,6 +28,7 @@ import {
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SettingsFormActions } from "../SettingsFormActions";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -47,11 +46,11 @@ import {
 } from "@/components/ui/select";
 import {
 	createBroadcastDestinationAction,
-} from "@/app/(dashboard)/settings/broadcast/actions";
+} from "@/features/settings/broadcast/actions";
 import { getBrowserAccessToken } from "@/lib/fetchers/internal/accountAuthClient";
 import { fetchAccountWebApi } from "@/lib/web-api/client";
 import type { DestinationDefinition } from "@/components/(gateway)/settings/observability/destinationCatalog";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 type KeyOption = {
@@ -305,7 +304,7 @@ function KeyMultiCombobox(props: {
 						<ChevronsUpDown className="h-4 w-4 text-muted-foreground" />
 					</Button>
 				</PopoverTrigger>
-				<PopoverContent initialFocus={false} align="start" className="w-(--anchor-width) min-w-[360px] rounded-md p-0">
+				<PopoverContent initialFocus={false} align="start" className="w-(--anchor-width) min-w-0 max-w-[calc(100vw-2.5rem)] rounded-md p-0">
 					<Command className="rounded-md">
 						<CommandInput ref={searchInputRef} placeholder={t("broadcastControls.searchApiKeys")} value={query} onValueChange={setQuery} />
 						<ScrollArea
@@ -410,7 +409,7 @@ export default function BroadcastDestinationCreateClient(props: {
 		if (!canSave || isSaving) return;
 		setIsSaving(true);
 		try {
-			await write(createBroadcastDestinationAction({
+			await write(createBroadcastDestinationAction({ data: {
 				destinationId: destination.id,
 				name: destinationName.trim(),
 				config,
@@ -431,7 +430,7 @@ export default function BroadcastDestinationCreateClient(props: {
 						value: rule.value,
 					})),
 				})),
-			}));
+			} }));
 			toast.success(t("credits.Destination saved" as never));
 			router.push("/settings/broadcast");
 			router.refresh();
@@ -517,7 +516,7 @@ export default function BroadcastDestinationCreateClient(props: {
 	}
 
 	return (
-		<div className="space-y-8 [&_[data-slot=button]]:rounded-md [&_[data-slot=input]]:rounded-md [&_[data-slot=select-trigger]]:rounded-md">
+		<div className="min-w-0 w-full max-w-4xl space-y-8">
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div className="space-y-1">
 					<Link
@@ -528,7 +527,7 @@ export default function BroadcastDestinationCreateClient(props: {
 						<ArrowLeft className="h-3.5 w-3.5" />
 						{t("settingsPageCopy.backToDestinations" as never)}
 					</Link>
-					<div className="flex items-center gap-2">
+					<div className="flex max-w-full flex-wrap items-center gap-2">
 						{destination.id === "webhook" ? (
 							<div className="flex h-5 w-5 items-center justify-center rounded bg-muted/60 text-muted-foreground">
 								<Webhook className="h-3.5 w-3.5" />
@@ -542,26 +541,20 @@ export default function BroadcastDestinationCreateClient(props: {
 								className="h-5 w-5 object-contain"
 							/>
 						) : null}
-						<h2 className="text-base font-semibold tracking-tight">
-							{t("settingsPageCopy.newDestinationFallbackTitle" as never, { destination: destination.label } as never)}
-						</h2>
+						<h1 className="text-2xl font-semibold tracking-tight">
+							{t("settingsPageCopy.newDestinationTitle", { destination: destination.label })}
+						</h1>
 					</div>
-				</div>
-				<div className="flex items-center gap-2">
-					<Button disabled={!canSave || isSaving} onClick={handleSave}>
-						<Save className="mr-2 h-4 w-4" />
-						{isSaving ? t("broadcastControls.saving") : t("broadcastControls.save")}
-					</Button>
 				</div>
 			</div>
 
-			<section className="space-y-4">
+			<section className="space-y-5 border-t border-border/60 pt-8">
 				<div className="flex flex-wrap items-center justify-between gap-3">
 					<div className="flex items-center gap-2">
 						<Plug className="h-4 w-4" />
 						<h3 className="text-sm font-semibold">{t("credits.Connection" as never)}</h3>
 					</div>
-					<div className="flex items-center gap-2">
+					<div className="flex flex-wrap items-center gap-2">
 						<Button variant="outline" onClick={handleTestConnection} disabled={isTestingConnection || !hasAllRequiredConnectionValues}>
 							<FlaskConical className="mr-2 h-4 w-4" />
 							{isTestingConnection ? t("broadcastControls.testing") : t("broadcastControls.test")}
@@ -619,7 +612,7 @@ export default function BroadcastDestinationCreateClient(props: {
 				</div>
 			</section>
 
-			<section className="grid gap-4 border-y border-border/60 py-5 md:grid-cols-[220px_minmax(0,1fr)] md:gap-6">
+			<section className="space-y-5 border-t border-border/60 pt-8">
 				<div className="space-y-2">
 					<div className="inline-flex items-center gap-2">
 						<Sparkles className="h-4 w-4 text-muted-foreground" />
@@ -627,14 +620,14 @@ export default function BroadcastDestinationCreateClient(props: {
 					</div>
 						<p className="text-xs text-muted-foreground">{t("strings.phraseChooseWhichStructuredContextAccompaniesEachTrace" as never)}</p>
 				</div>
-				<div className="divide-y divide-border/50 rounded-md border border-border/60">
+				<div className="divide-y divide-border/60">
 					{[
 										{ label: t("broadcastControls.generationMetadata"), description: t("broadcastControls.generationMetadataDescription"), icon: Sparkles, checked: includeGenerationMetadata, change: setIncludeGenerationMetadata },
 										{ label: t("broadcastControls.cost"), description: t("broadcastControls.costDescription"), icon: CircleDollarSign, checked: includeCostMetadata, change: setIncludeCostMetadata },
 										{ label: t("broadcastControls.identity"), description: t("broadcastControls.identityDescription"), icon: Fingerprint, checked: includeIdentityMetadata, change: setIncludeIdentityMetadata },
 										{ label: t("broadcastControls.requestContext"), description: t("broadcastControls.requestContextDescription"), icon: Route, checked: includeRequestContext, change: setIncludeRequestContext },
 					].map((option) => (
-						<label key={option.label} className="flex items-center gap-3 px-3 py-2.5">
+						<label key={option.label} className="flex items-center gap-3 py-5">
 							<option.icon className="h-4 w-4 shrink-0 text-muted-foreground" />
 							<span className="min-w-0 flex-1">
 								<span className="block text-sm font-medium">{option.label}</span>
@@ -646,8 +639,8 @@ export default function BroadcastDestinationCreateClient(props: {
 				</div>
 			</section>
 
-			<div className="divide-y divide-border/60 border-b border-border/60">
-				<section className="grid gap-4 py-5 md:grid-cols-[220px_minmax(0,1fr)] md:gap-6">
+			<div className="divide-y divide-border/60 border-y border-border/60">
+				<section className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:gap-8">
 					<div className="space-y-2">
 						<div className="inline-flex items-center gap-2">
 							<Shield className="h-4 w-4 text-muted-foreground" />
@@ -659,7 +652,7 @@ export default function BroadcastDestinationCreateClient(props: {
 					</div>
 					<div className="space-y-2">
 						<Label className="text-xs font-medium">{t("broadcastControls.privacyMode")}</Label>
-						<label className="flex items-start gap-2 rounded-md border border-border/60 px-3 py-2 text-sm">
+						<label className="flex items-start gap-2 text-sm">
 							<Checkbox
 								checked={excludePromptsAndOutputs}
 								onCheckedChange={(checked) => setExcludePromptsAndOutputs(Boolean(checked))}
@@ -672,7 +665,7 @@ export default function BroadcastDestinationCreateClient(props: {
 					</div>
 				</section>
 
-				<section className="grid gap-4 py-5 md:grid-cols-[220px_minmax(0,1fr)] md:gap-6">
+				<section className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:gap-8">
 					<div className="space-y-2">
 						<div className="inline-flex items-center gap-2">
 							<Gauge className="h-4 w-4 text-muted-foreground" />
@@ -699,7 +692,7 @@ export default function BroadcastDestinationCreateClient(props: {
 					</div>
 				</section>
 
-				<section className="grid gap-4 py-5 md:grid-cols-[220px_minmax(0,1fr)] md:gap-6">
+				<section className="grid gap-3 py-4 sm:grid-cols-[minmax(0,20rem)_minmax(0,1fr)] sm:gap-8">
 					<div className="space-y-2">
 						<div className="inline-flex items-center gap-2">
 							<KeyRound className="h-4 w-4 text-muted-foreground" />
@@ -731,7 +724,7 @@ export default function BroadcastDestinationCreateClient(props: {
 							{t("broadcastControls.filterRulesDescription")}
 						</p>
 					</div>
-					<div className="flex items-center gap-2">
+					<div className="flex max-w-full flex-wrap items-center gap-2">
 										<Label className="text-xs text-muted-foreground">{t("broadcastControls.betweenGroups")}</Label>
 						<Select value={groupJoin} onValueChange={(value) => setGroupJoin(value as GroupLogic)}>
 							<SelectTrigger className="h-8 w-[220px] rounded-md">
@@ -755,8 +748,8 @@ export default function BroadcastDestinationCreateClient(props: {
 						<div key={group.id} className="space-y-3 rounded-md border border-border/60 p-3">
 							<div className="space-y-3">
 							<div className="flex flex-wrap items-center justify-between gap-2">
-								<div className="flex min-w-0 flex-1 items-center gap-2">
-									<p className="min-w-[140px] text-sm font-medium text-foreground/90">
+								<div className="flex min-w-0 flex-1 flex-wrap items-center gap-2">
+									<p className="min-w-0 text-sm font-medium text-foreground/90 sm:min-w-[140px]">
 																{t("broadcastControls.ruleGroup", { index: String(groupIndex + 1) })}
 									</p>
 									<Select
@@ -765,7 +758,7 @@ export default function BroadcastDestinationCreateClient(props: {
 											patchRuleGroup(group.id, { match: value as GroupLogic })
 										}
 									>
-										<SelectTrigger className="h-8 w-[240px] rounded-md">
+										<SelectTrigger className="h-8 w-full min-w-0 rounded-md sm:w-[240px]">
 																	<SelectValue>{group.match === "and" ? t("broadcastControls.allRules") : t("broadcastControls.anyRule")}</SelectValue>
 										</SelectTrigger>
 										<SelectContent>
@@ -901,6 +894,13 @@ export default function BroadcastDestinationCreateClient(props: {
 													{t("broadcastControls.addRuleGroup")}
 				</Button>
 			</section>
+			<SettingsFormActions>
+				<Button asChild variant="outline"><Link href="/settings/broadcast">{t("strings.Cancel")}</Link></Button>
+				<Button disabled={!canSave || isSaving} onClick={handleSave}>
+					<Save className="size-4" />
+					{isSaving ? t("broadcastControls.saving") : t("broadcastControls.save")}
+				</Button>
+			</SettingsFormActions>
 		</div>
 	);
 }

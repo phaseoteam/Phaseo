@@ -1,11 +1,12 @@
 ---
 icon: "binary"
 title: "Embeddings (AI SDK)"
+sidebarTitle: "Embeddings"
 description: "Create embeddings with Phaseo provider models in Vercel AI SDK."
 "og:image": "https://phaseo.app/og/dynamic?title=Embeddings%20%28AI%20SDK%29&description=Create%20embeddings%20with%20Phaseo%20provider%20models%20in%20Vercel%20AI%20SDK.&pathname=/docs/v1/sdk-reference/sdk/embeddings"
 ---
 
-Use `phaseo.textEmbeddingModel(...)` (or `embeddingModel`) with `embed` and `embedMany`.
+Pass `phaseo.embeddingModel(modelId)` (or its alias `textEmbeddingModel`) to `embed` for one value or `embedMany` for a list. Requests go to the Gateway's `/v1/embeddings` endpoint.
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
@@ -26,8 +27,8 @@ const batch = await embedMany({
 console.log(batch.embeddings.length);
 ```
 
-## Notes
+## Keep vectors comparable
 
-- Keep query and corpus embeddings on the same model version.
+- Embed queries and the corpus with the same model version.
 - Normalize vectors consistently before similarity scoring.
 - Cache stable embeddings for repeated content.

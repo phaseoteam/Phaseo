@@ -15,9 +15,14 @@ function chain(result: () => { data: any[]; error: null }) {
 	return query;
 }
 
+// The management key acts as its creator, an admin of the workspace.
+function membership() { const membership: any = { select: () => membership, eq: () => membership, maybeSingle: async () => ({ data: { role: "admin" }, error: null }) }; return membership; }
+
 vi.mock("@/runtime/env", () => ({
 	getSupabaseAdmin: () => ({
-		from: (table: string) => table === "workspace_audit_events"
+		from: (table: string) => table === "workspace_members"
+			? membership()
+			: table === "workspace_audit_events"
 			? chain(() => ({ data: state.events, error: null }))
 			: chain(() => ({ data: state.actors, error: null })),
 	}),
@@ -31,7 +36,7 @@ vi.mock("@/routes/utils", () => ({
 
 describe("management audit events", () => {
 	beforeEach(() => {
-		state.auth = { ok: true, value: { workspaceId: "ws_1", authMethod: "api_key", scopes: ["activity:read"] } };
+		state.auth = { ok: true, value: { workspaceId: "ws_1", authMethod: "api_key", userId: "user_admin", scopes: ["activity:read"] } };
 		state.events = [{ id: "00000000-0000-4000-8000-000000000001", workspace_id: "ws_1", actor_user_id: "user_1", action: "api_key.created", target_type: "api_key", target_id: "key_1", target_name: "Production", metadata: {}, request_id: null, created_at: "2026-08-30T10:00:00Z" }];
 		state.actors = [{ user_id: "user_1", display_name: "Ada", email: "ada@example.com" }];
 		vi.resetModules();

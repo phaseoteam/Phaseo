@@ -33,7 +33,25 @@ type Rate = {
 export type CardPricingSummary =
 	| { kind: "free" }
 	| { kind: "tokens"; from: boolean; input: number | null; output: number | null; unit: "1M tokens" }
-	| { kind: "usage"; from: boolean; price: number; unit: string };
+	// `per_image` is set only when the headline is an image-token rate and the
+	// provider documents how many tokens one standard image uses.
+	| { kind: "usage"; from: boolean; price: number; unit: string; per_image?: number }
+	// Billed at whatever the upstream provider charges, with no list price.
+	| { kind: "provider_cost" };
+
+// Output tokens Google bills for one standard 1K (1024x1024) image, from
+// https://ai.google.dev/gemini-api/docs/pricing (checked 2026-11-05). OpenAI
+// does not publish one figure for GPT Image: its per-image cost varies about
+// 35-fold with quality, so those models show the token rate alone.
+const TOKENS_PER_STANDARD_IMAGE: Record<string, number> = {
+	"google/gemini-2.5-flash-image": 1290,
+	"google/gemini-3-pro-image": 1120,
+	"google/gemini-3-pro-image-preview": 1120,
+	"google/gemini-3.1-flash-image": 1120,
+	"google/gemini-3.1-flash-image-preview": 1120,
+	"google/gemini-3.1-flash-lite-image": 1120,
+	"google/gemini-nano-banana-2.1": 1120,
+};
 
 const MEDIA = ["image", "video", "audio"];
 
@@ -178,22 +196,27 @@ function isPassThrough(unit: string): boolean {
 	return /^(?:\d+\s*)?usd$/i.test(unit);
 }
 
+/** Decimal places in the shortest form of a number ("0.01875" → 5, "4.2e-7" → 8). */
+function decimalPlaces(value: number): number {
+	const [mantissa, exponent] = String(value).toLowerCase().split("e");
+	const fraction = mantissa.split(".")[1]?.length ?? 0;
+	return Math.max(0, fraction - Number(exponent ?? 0));
+}
+
 /**
- * Formats a USD amount for display. Amounts of a cent or more get cents
- * ("$0.50", "$2.50") with up to three decimals ("$0.035"); integers stay bare
- * ("$15"); sub-cent amounts keep three significant digits so a small rate never
- * looks free.
+ * Formats a USD amount for display with every digit it was published with, so a
+ * price is never rounded up against the customer and a small rate never looks
+ * free: "$15", "$2.50", "$0.035", "$0.01875", "$0.0004255". Binary noise from
+ * per-million arithmetic is trimmed at 15 significant digits first.
  */
 export function formatUsd(price: number): string {
 	if (price === 0) return "$0";
-	if (price >= 0.01) {
-		const integer = Number.isInteger(price) || Math.abs(price - Math.round(price)) < 1e-9;
-		return `$${price.toLocaleString("en-US", {
-			minimumFractionDigits: integer ? 0 : 2,
-			maximumFractionDigits: integer ? 0 : 3,
-		})}`;
-	}
-	return `$${price.toLocaleString("en-US", { maximumSignificantDigits: 3 })}`;
+	const value = Number(price.toPrecision(15));
+	const decimals = Math.min(100, decimalPlaces(value));
+	return `$${value.toLocaleString("en-US", {
+		minimumFractionDigits: decimals === 0 ? 0 : 2,
+		maximumFractionDigits: Math.max(2, decimals),
+	})}`;
 }
 
 function min(rates: Rate[]): number {
@@ -279,8 +302,13 @@ function summarise(model: Row, rates: Rate[]): { summary: CardPricingSummary | n
 	// output; for text-and-media models the text rates stay the headline and
 	// the media token rates are listed in the hover card.
 	const mediaOutputs = preferredTier(base.filter(isMediaOutput));
+	// A model that generates images is compared by its image price even when it
+	// also returns text, so the card never shows its text rate as the cost.
 	const media = mediaOutputs.some((item) => item.unit !== "1M tokens")
-		|| (outputs.some((item) => /image|video|audio/.test(item)) && !outputs.includes("text"));
+		|| (outputs.some((item) => /image|video|audio/.test(item)) && !outputs.includes("text"))
+		// A $0 image meter is a placeholder, not the image price, so it never
+		// replaces paid text rates or makes the model look free.
+		|| (outputs.includes("image") && mediaOutputs.some((item) => item.modality === "image" && item.price > 0));
 
 	// Token rates are chosen in their own best tier, so a standard-tier tool
 	// fee cannot displace input/output pricing offered only in other tiers.
@@ -329,6 +357,8 @@ function summarise(model: Row, rates: Rate[]): { summary: CardPricingSummary | n
 	const byUnit = [...groupBy(primary, (item) => item.unit).entries()]
 		.sort(([a, aRates], [b, bRates]) => mediaUnitRank(a) - mediaUnitRank(b) || bRates.length - aRates.length || a.localeCompare(b));
 	const [unit, unitRates] = byUnit[0];
+	const imageTokens = unit === "1M tokens" && unitRates.every((item) => item.modality === "image" && item.side === "output");
+	const tokensPerImage = TOKENS_PER_STANDARD_IMAGE[String(model.model_id ?? "").trim().toLowerCase()];
 	// Only alternative headline rates qualify the price; input meters on a
 	// media model are in the hover card, not a reason to say "From".
 	return {
@@ -336,7 +366,9 @@ function summarise(model: Row, rates: Rate[]): { summary: CardPricingSummary | n
 			kind: "usage",
 			from: varies(unitRates) || byUnit.length > 1,
 			price: min(unitRates),
-			unit,
+			// Says which tokens the rate is for, so it is not read as a text rate.
+			unit: imageTokens ? "1M image tokens" : unit,
+			...(imageTokens && tokensPerImage ? { per_image: (min(unitRates) * tokensPerImage) / 1_000_000 } : {}),
 		},
 		headline: unitRates,
 	};
@@ -355,7 +387,7 @@ function detailTierRates(rates: Rate[], headline: Rate[]): Rate[] {
 	return rates.filter((item) => tiers.has(item.tier));
 }
 
-const SUMMARY_ORDER: Record<CardPricingSummary["kind"], number> = { free: 0, tokens: 1, usage: 2 };
+const SUMMARY_ORDER: Record<CardPricingSummary["kind"], number> = { free: 0, tokens: 1, usage: 2, provider_cost: 3 };
 
 /**
  * Orders offers cheapest first; offers of different kinds are not comparable
@@ -376,6 +408,11 @@ function compareOffers(a: CardPricingSummary, b: CardPricingSummary, outputPrice
 			|| (a.input ?? 0) - (b.input ?? 0);
 	}
 	if (a.kind === "usage" && b.kind === "usage") {
+		// Per-image prices and image-token rates with a documented image size
+		// compare on the cost of one image.
+		const perImage = (offer: typeof a) => offer.unit === "image" ? offer.price : offer.per_image ?? null;
+		const [aImage, bImage] = [perImage(a), perImage(b)];
+		if (aImage !== null && bImage !== null) return aImage - bImage;
 		return mediaUnitRank(a.unit) - mediaUnitRank(b.unit) || a.unit.localeCompare(b.unit) || a.price - b.price;
 	}
 	return 0;
@@ -436,14 +473,23 @@ export function normalizeModelsPagePricing(model: Row): Row {
 	const freeUsage = (offer: { summary: CardPricingSummary; headline: Rate[] }) =>
 		offer.summary.kind === "free" && tokenSides(offer.headline) === 0
 		&& offer.headline.some((item) => !TOOL_METER.test(item.key));
+	// For a model that generates images, a provider that prices the image beats
+	// one that lists only text rates.
+	const pricesImage = (headline: Rate[]) => outputs.includes("image")
+		&& headline.some((item) => item.side === "output" && item.modality === "image");
 	const priced = offers
 		.filter((offer): offer is typeof offer & { summary: CardPricingSummary } => offer.summary !== null)
 		.sort((a, b) => Number(coversBilledSide(b.headline)) - Number(coversBilledSide(a.headline))
 			|| Number(freeUsage(b)) - Number(freeUsage(a))
+			|| Number(pricesImage(b.headline)) - Number(pricesImage(a.headline))
 			|| (outputPriced ? tokenSides(b.headline) - tokenSides(a.headline) : 0)
 			|| compareOffers(a.summary, b.summary, outputPriced));
 	const chosen = priced[0] ?? { rates: allRates, summary: null, headline: [] };
-	const { rates, summary, headline: headlineRates } = chosen;
+	const { rates, headline: headlineRates } = chosen;
+	// A model whose only prices pass the provider charge through still says
+	// how it is billed rather than showing no price at all.
+	const summary: CardPricingSummary | null = chosen.summary
+		?? (allRates.some((item) => isPassThrough(item.unit) && item.price === 1) ? { kind: "provider_cost" } : null);
 
 	// Prices per meter, taken from the tier the headline used for that meter
 	// (otherwise the preferred tier). Text tokens show the provider's base rate
@@ -496,6 +542,8 @@ export function normalizeModelsPagePricing(model: Row): Row {
 		// count as output, the price of producing the result.
 		if (summary?.kind === "usage") {
 			const shown = headlineRates.filter((item) => (item.side || "output") === side);
+			// Sort image models by the cost of one image when it is known.
+			if (shown.length && summary.per_image !== undefined) return { price: summary.per_image, unit: "image" };
 			return shown.length ? { price: min(shown), unit: summary.unit } : null;
 		}
 		const matches = headline.filter((item) => item.side === side);
@@ -514,7 +562,7 @@ export function normalizeModelsPagePricing(model: Row): Row {
 		.sort((a, b) => a.price - b.price)[0] ?? null;
 	// The provider whose prices the card shows, so the hover card can name it.
 	// Stealth routes send no slug and stay anonymous.
-	const pricingProvider = summary ? rates.find((item) => item.providerId)?.providerId ?? null : null;
+	const pricingProvider = chosen.summary ? rates.find((item) => item.providerId)?.providerId ?? null : null;
 
 	// Text-and-Decisions models already carry per-operation prices, and their
 	// `lowest_*` fields hold the text-generation rates; the detail rows mix

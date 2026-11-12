@@ -1,0 +1,123 @@
+---
+icon: "binary"
+title: "嵌入"
+description: "在任意 Phaseo SDK 中使用 POST /v1/embeddings 把文本和其他输入转换为向量。"
+---
+
+把文本发送到 `POST /v1/embeddings`，每个输入都会返回一个向量。示例中的 `client` 按[安装](./installation)中的方式创建。
+
+<CodeGroup>
+
+```typescript TypeScript
+const embedding = await client.generateEmbedding({
+  model: "openai/text-embedding-3-large",
+  input: "Sample text",
+});
+```
+
+```python Python
+embedding = client.generate_embedding({
+    "model": "openai/text-embedding-3-large",
+    "input": "Sample text",
+})
+```
+
+```go Go
+resp, err := client.GenerateEmbedding(context.Background(), map[string]interface{}{
+  "model": "openai/text-embedding-3-large",
+  "input": "Sample text",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp["data"])
+```
+
+```csharp C#
+var response = await client.CreateEmbedding(new Dictionary<string, object>
+{
+    ["model"] = "openai/text-embedding-3-large",
+    ["input"] = "Sample text",
+});
+```
+
+```php PHP
+$response = $client->generateEmbedding([
+    'model' => 'openai/text-embedding-3-large',
+    'input' => 'Sample text',
+]);
+```
+
+```ruby Ruby
+response = client.generate_embedding(
+  model: 'openai/text-embedding-3-large',
+  input: 'Sample text'
+)
+```
+
+```java Java
+String body = """
+{
+  "model": "openai/text-embedding-3-large",
+  "input": "Sample text"
+}
+""";
+
+Object response = client.createEmbedding(new com.fasterxml.jackson.databind.ObjectMapper().readTree(body));
+System.out.println(String.valueOf(response));
+```
+
+```rust Rust
+// 目前还没有 embeddings 方法：post() 可以向任意 Phaseo 路径发送 JSON。
+let response = client.post("/embeddings", &json!({
+    "model": "openai/text-embedding-3-large",
+    "input": "Sample text"
+}))?;
+```
+
+</CodeGroup>
+
+| 语言 | 方法 | 返回值 |
+| --- | --- | --- |
+| TypeScript | `client.generateEmbedding(request)` | 带类型的响应 |
+| Python | `client.generate_embedding(request)` 或 `client.embeddings.create(request)` | dict |
+| Go | `client.GenerateEmbedding(ctx, req)`，别名 `CreateEmbedding` | `map[string]interface{}` |
+| C# | `client.CreateEmbedding(request)` | `Dictionary<string, object>?` |
+| PHP | `$client->generateEmbedding($request)`，别名 `createEmbedding()` | 数组 |
+| Ruby | `client.generate_embedding(...)`，别名 `create_embedding` | Hash |
+| Java | `client.createEmbedding(jsonNode)` | `Object` |
+| Rust | `client.post("/embeddings", &request)` | `PhaseoResponse`，JSON 位于 `body` 中 |
+
+## 参数
+
+在每个 SDK 中，字段名都是 JSON 正文字段。
+
+| 字段 | 说明 |
+| --- | --- |
+| `model` | 必填。嵌入模型 ID。 |
+| `input` | 必填。一个字符串、一个字符串数组，或者对支持多模态的模型传入多模态内容片段（文本、图片、音频、视频）。 |
+| `encoding_format` | `float`（默认）、`base64`、`base64_int8` 或 `base64_binary`。 |
+| `dimensions` | 一个正整数，用于缩短每个向量，仅在支持的模型上生效。 |
+| `provider_options` | 提供商设置，例如 Google 的 `task_type` 和 `title`，或 Mistral 的 `output_dtype`。 |
+| `user` | 终端用户标签。 |
+
+完整的 schema 见 [Embeddings API 参考](/zh-Hans/v1/api-reference/endpoint/embeddings)。
+
+## 响应
+
+```json
+{
+  "data": [
+    {
+      "embedding": [0.1, 0.2, 0.3],
+      "index": 0
+    }
+  ],
+  "usage": {
+    "input_tokens": 5,
+    "output_tokens": 0,
+    "total_tokens": 5,
+    "embedding_tokens": 5
+  }
+}
+```

@@ -1,43 +1,34 @@
 ---
 title: "从 LiteLLM 迁移"
 sidebarTitle: "LiteLLM"
-description: "将 LiteLLM 代理替换为 Phaseo，同时保留应用当前使用的 OpenAI 兼容请求路径。"
+description: "用 Phaseo 替换 LiteLLM 代理，同时保留应用已在使用的 OpenAI 兼容请求路径。"
 icon: "blocks"
 ---
 
-如果应用通过兼容 OpenAI 的客户端调用 LiteLLM 代理，请使用本指南。先切换代理边界，再明确映射别名、路由规则和共享默认值。
+把调用 LiteLLM 代理的客户端指向 `https://api.phaseo.app/v1` 并使用 Phaseo 密钥，然后逐一明确映射每个 `model_name` 别名和每项代理设置。如果想保留 LiteLLM 并把 Phaseo 作为其上游，请参见 [LiteLLM 集成](../guides/integrations/litellm)。
 
-## 变更内容
-
-| 设置 | 之前 | 之后 |
+| 设置 | LiteLLM 代理 | Phaseo |
 | --- | --- | --- |
-| 基础 URL | 你的 LiteLLM 代理 | `https://api.phaseo.app/v1` |
-| API 密钥 | LiteLLM 代理密钥 | `PHASEO_API_KEY` |
-| 模型别名 | LiteLLM 配置 | Phaseo 模型 ID 或应用别名 |
-| 路由默认值 | LiteLLM 配置 | Phaseo 预设和路由设置 |
+| Base URL | 你的代理，通常是 `http://localhost:4000` | `https://api.phaseo.app/v1` |
+| API 密钥 | `LITELLM_MASTER_KEY` 或虚拟密钥 | `PHASEO_API_KEY` |
+| 模型 | `config.yaml` 中的 `model_name` 别名 | Phaseo 模型 ID、预设（`"model": "@slug"`）或一个映射函数 |
+| 路由和默认设置 | `router_settings`、`litellm_settings` | [预设](../guides/presets)和[路由与回退](../guides/routing-and-fallbacks) |
 
-<Steps>
-<Step title="梳理代理配置">
-
-列出当前 LiteLLM 部署使用的所有模型别名、回退项、提供商规则、重试策略、预算、回调和环境变量。区分哪些设置属于共享策略，哪些只适用于单个应用。
-
-</Step>
-
-<Step title="替换代理端点">
-
-保留兼容 OpenAI 的请求代码，只更改基础 URL 和密钥。
+## 切换客户端
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// 之前：
+// new OpenAI({ apiKey: process.env.LITELLM_API_KEY, baseURL: process.env.LITELLM_BASE_URL });
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
 });
 
 const response = await client.chat.completions.create({
-  model: "openai/gpt-4.1-mini",
+  model: "openai/gpt-6-astra",
   messages: [{ role: "user", content: "Reply with: migration ready" }],
 });
 ```
@@ -57,40 +48,41 @@ curl https://api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-4.1-mini",
+    "model": "openai/gpt-6-astra",
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+每个别名都需要明确映射到 `GET /v1/models?format=openai` 中的某个 ID。如果调用方使用内部别名，请在客户端边界用一个函数统一转换，而不是逐个修改请求。
 
-<Step title="映射别名和路由规则">
+## 映射代理配置
 
-通过 `GET /v1/models` 验证每个生产模型。如果调用方依赖内部别名，请在应用的一个边界处统一转换，而不是逐个修改请求。
+移除代理之前，先清点回调、预算和重试：代理一旦移除，它们会悄无声息地停止工作。
 
-将可复用的提示词、参数和提供商限制移到[预设](../guides/presets.mdx)中。通过[路由和回退](../guides/routing-and-fallbacks.mdx)配置提供商排序和回退项。
+| LiteLLM | 在 Phaseo 上 |
+| --- | --- |
+| `fallbacks` | `models` 数组或动态路由回退，在 `429`、`500`、`502`、`503` 和 `504` 时尝试，请求错误时从不触发。 |
+| `context_window_fallbacks`、`content_policy_fallbacks` | 没有对应项：Phaseo 从不在 `400` 时回退。请在应用中处理。 |
+| `routing_strategy` | 工作区路由模式或 `provider.sort`（`price`、`latency`、`throughput`）。 |
+| 按部署选择提供商 | `provider.order`、`provider.only`、`provider.ignore`，或[带提供商限定的 ID](../guides/provider-qualified-models)（例如 `provider:org/model`），后者不会跨提供商回退。 |
+| 自托管部署（vLLM 等） | [私有模型](../guides/private-models)，需要一个使用 bearer 身份验证、可公开访问的 HTTPS OpenAI 兼容 `/chat/completions` 接口。 |
+| 响应缓存（`litellm_settings.cache`） | 没有响应缓存。如有需要请在应用中缓存；[提示词缓存](../guides/prompt-caching)仍然可以降低输入成本。 |
+| 虚拟密钥（`max_budget`、`rpm_limit`、`tpm_limit`、`max_parallel_requests`、`models`） | 带支出限制和允许模型的 API 密钥、预算，以及针对每分钟请求数、每分钟 token 数和并发请求数的速率限制策略。参见[限制](../api-reference/limits)。 |
+| 团队预算、`metadata.tags` | 部门预算和 `X-Phaseo-Metadata` [标签](../guides/request-labels)。终端用户预算只能映射为终端用户速率限制策略；没有终端用户支出上限。 |
+| `guardrails`（Presidio、Lakera 等） | 密钥护栏会扫描请求中的提示词注入和 PII。响应不会被扫描。 |
+| 回调（`success_callback`、Langfuse、Datadog、OpenTelemetry） | [可观测性目标](../guides/integrations/observability)或客户端追踪。请求体 `metadata` 会导出为 `phaseo.metadata.<key>`。 |
+| 配置中的提供商 API 密钥 | BYOK（**设置 → BYOK** 或 `POST /v1/byok`），或 Phaseo 额度。用 **设置 → BYOK** 设置 `byok_fallback_enabled`，即可回退到额度。 |
 
-</Step>
+代理会让整个团队的流量通过同一个密钥所有者发送，因此共享该用户的每分钟请求数额度，新工作区为 10。请查看[网关限制](../api-reference/limits#gateway-limits)，并在切换前申请更高的限制。
 
-<Step title="验证生产工作流">
+## 测试并上线
 
-测试流式传输、工具、结构化输出、重试、错误映射，以及 LiteLLM 部署原先通过回调处理的可观测性。逐步切换流量前，比较延迟、输出、token 用量和费用。
+测试流式传输、工具、结构化输出、重试、错误映射，以及代理原来处理的任何回调驱动的遥测。在逐步迁移流量之前比较延迟、输出、token 用量和成本。切换前确认：
 
-</Step>
-</Steps>
-
-## 迁移检查清单
-
-- 已梳理 LiteLLM 的 URL、密钥和部署依赖项。
-- 每个生产模型和别名都已明确映射到 Phaseo。
-- 共享默认值已移至预设或应用的单一边界。
-- 在使用这些功能的情况下，流式传输、工具和结构化输出已在预发布环境通过。
-- 必需的回调和遥测数据已有明确的替代方案。
-- 回滚仍只需更改端点和密钥配置。
-
-## 后续步骤
-
-- [预设](../guides/presets.mdx)
-- [路由和回退](../guides/routing-and-fallbacks.mdx)
-- [可观测性](../guides/integrations/observability.mdx)
+- 已找出每个 LiteLLM URL、密钥和 `LITELLM_*` 变量；
+- 每个生产别名都有明确的 Phaseo 映射；
+- 共享的默认设置放在预设或一个边界函数中；
+- 必需的回调和遥测都有替代方案；
+- 已决定以 LiteLLM、Phaseo 还是两者作为支出记录；
+- 回退仍然只需更改 base URL 和密钥。

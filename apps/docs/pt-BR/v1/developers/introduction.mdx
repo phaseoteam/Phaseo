@@ -4,29 +4,34 @@ description: "Entenda modelos, provedores, roteamento e cobrança antes de integ
 icon: "terminal"
 ---
 
-O Phaseo roteia solicitações de modelos do aplicativo aos provedores por uma API. O aplicativo escolhe modelo e endpoint; as configurações do espaço de trabalho e os controles da solicitação determinam quais provedores podem atendê-la.
+Envie um ID de modelo para um único endpoint do Phaseo, e o Phaseo roteia a solicitação para um provedor que hospeda esse modelo. O seu aplicativo escolhe o modelo e o endpoint; as configurações do seu espaço de trabalho e os controles de roteamento da solicitação decidem quais provedores podem atendê-la.
+
+```mermaid
+flowchart LR
+  app["Seu aplicativo"] -->|"modelo + endpoint"| gw["Phaseo Gateway"]
+  gw --> rules{{"Configurações do espaço de trabalho e controles de roteamento da solicitação"}}
+  rules --> p1["Provedor A"]
+  rules -.->|"fallback"| p2["Provedor B"]
+```
 
 ## Modelos e provedores
 
-O modelo é o sistema que gera a saída. O provedor hospeda o modelo e determina disponibilidade, parâmetros compatíveis, preços e desempenho. O mesmo modelo pode ter várias ofertas de provedores.
+Um modelo é o sistema que gera a saída. Um provedor hospeda o modelo e define a disponibilidade, os parâmetros suportados, os preços e o desempenho dele. Um modelo pode ter várias ofertas de provedores.
 
-O catálogo público também inclui modelos indisponíveis atualmente no Gateway. Confira a [disponibilidade do modelo](../exploring/models.mdx) antes de usar um ID na solicitação.
+O catálogo público também lista modelos que ainda não estão disponíveis pelo Gateway. Confira a [disponibilidade do modelo](../exploring/models.mdx) antes de usar um ID em uma solicitação.
 
 ## Solicitações e roteamento
 
-Use [Responses, Chat Completions ou Messages](../api-reference/introduction.mdx) conforme o protocolo do aplicativo. As capacidades variam por provedor; um endpoint comum não significa que todo modelo aceite todo parâmetro.
+Use [Responses, Chat Completions ou Messages](../api-reference/introduction.mdx), o que corresponder ao protocolo do seu aplicativo. Um endpoint compartilhado não significa que todos os modelos suportam todos os parâmetros; os recursos dos provedores continuam variando.
 
-Os [controles de roteamento](../guides/routing-and-fallbacks.mdx) permitem restringir provedores e escolher sua classificação. As alternativas continuam sujeitas às restrições e capacidade disponível; não garantem sucesso.
+Os [controles de roteamento](../guides/routing-and-fallbacks.mdx) restringem quais provedores podem atender uma solicitação e como eles são classificados. Os fallbacks ficam dentro dessas restrições e dependem da capacidade disponível, então não garantem sucesso.
 
 ## Cobrança e acesso
 
-Solicitações gerenciadas usam o saldo do espaço de trabalho Phaseo. Modelos `:free` funcionam sem créditos depositados. Com credenciais do provedor (BYOK), valem a cobrança e os limites da conta do provedor; revise [preços e cobrança](../pricing/tiers.mdx) antes do lançamento.
+As solicitações gerenciadas usam o saldo do seu espaço de trabalho no Phaseo, e os modelos `:free` funcionam sem créditos depositados. Com as suas próprias credenciais de provedor (BYOK), valem a cobrança e os limites de conta do provedor. Revise [preços e cobrança](../pricing/tiers.mdx) antes da implantação.
 
-As [tarefas de vídeo e lotes](../guides/async-video-and-batch.mdx) retornam uma tarefa antes de concluir o processamento. O acesso de prévia é gerenciado por espaço de trabalho. Consulte o status ou receba atualizações por webhook e baixe o resultado.
+Os [trabalhos de vídeo e batch](../guides/async-video-and-batch.mdx) retornam um trabalho antes de o processamento terminar; o acesso de prévia a eles é gerenciado por espaço de trabalho. Consulte o status ou receba um webhook e depois baixe o resultado.
 
-## Crie sua integração
+## Próximos passos
 
-- [Início rápido](../quickstart.mdx): faça sua primeira solicitação.
-- [Integre o Gateway](./integrating-with-the-gateway.mdx): mantenha credenciais no backend e configure o aplicativo.
-- [Confiabilidade e status](./reliability-and-status.mdx): investigue disponibilidade e solicitações com falha.
-- [Logs e observabilidade](../guides/integrations/observability.mdx): examine uso, latência, custo e erros.
+Faça a sua primeira solicitação com o [Início rápido](../quickstart.mdx) e depois [integre o Gateway](./integrating-with-the-gateway.mdx) ao seu aplicativo, mantendo a chave no seu backend. Quando algo falhar, [Confiabilidade e status](./reliability-and-status.mdx) mostra como investigar, e os [registros de solicitações](../guides/integrations/observability.mdx) mostram uso, latência, custo e erros de cada solicitação.

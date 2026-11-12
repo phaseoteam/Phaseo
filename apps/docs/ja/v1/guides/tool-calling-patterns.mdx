@@ -1,23 +1,19 @@
 ---
 icon: "waypoints"
 title: "ツール呼び出しのパターン"
-description: "Chat CompletionsおよびResponsesエンドポイント向けの、信頼性の高いツール呼び出しループです。"
+description: "Chat Completions と Responses のエンドポイントで、信頼できるツール呼び出しのループを組みます。"
 ---
 
-これらのパターンを使うと、ツール呼び出しループを決定的に保ち、デバッグしやすくできます。
+モデルがツールを呼び出したら、会話、モデルの呼び出し、ツールの結果を繰り返し含めた続きのリクエストを送ります。するとモデルは回答を書くか、別のツールを呼び出すので、その場合は同じことを繰り返します。アプリがすでに使っているメッセージ形式のエンドポイントを使ってください。OpenAI 形式のメッセージループなら `/v1/chat/completions`、Responses API なら `/v1/responses`、Anthropic ネイティブのアプリなら `/v1/messages` です。
 
-## パターン1：Chat Completionsループ
+<Tabs>
+<Tab title="Chat Completions">
 
-1. ユーザーメッセージとツール定義を送信します。
-2. `finish_reason`が`tool_calls`の場合は、各ツール呼び出しを実行します。
-3. ツールの結果を`role: "tool"`のメッセージとして返します。
-4. アシスタントの最終回答を読み取ります。
-
-### リクエスト（続き）
+`finish_reason` が `tool_calls` のときは各呼び出しを実行し、アシスタントメッセージをそのまま送り、その後に呼び出しごとに 1 つずつ、`tool_call_id` で対応付けた `role: "tool"` メッセージを送ります。`tools` も再度送ってください。
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "messages": [
     { "role": "user", "content": "What is the weather in Seattle?" },
     {
@@ -56,16 +52,14 @@ description: "Chat CompletionsおよびResponsesエンドポイント向けの�
 }
 ```
 
-## パターン2：Responsesループ
+</Tab>
+<Tab title="Responses">
 
-`/v1/responses`では、モデルのツール呼び出しは`function_call`型の出力アイテムとして表示されます。
-続けて、`function_call_output`入力アイテムを含むフォローアップリクエストを送信します。
-
-### リクエスト（フォローアップ）
+呼び出しは `function_call` タイプの出力アイテムとして届きます。呼び出しのアイテムを入力として送り返し、その後に同じ `call_id` を持つ `function_call_output` アイテムを続けます。
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "input": [
     {
       "type": "message",
@@ -87,9 +81,7 @@ description: "Chat CompletionsおよびResponsesエンドポイント向けの�
 }
 ```
 
-## エンドポイントを選ぶ
+</Tab>
+</Tabs>
 
-- OpenAI形式のメッセージループをすでに使っている場合は、`/v1/chat/completions`を選びます。
-- アプリケーションがResponses APIに統一されている場合は、`/v1/responses`を選びます。
-- アプリケーションがAnthropic中心の場合は、`/v1/messages`を使います。
-
+呼び出しを実行する前に、その引数を検証してください。[ツール呼び出しの安全性](./tool-calling-safety)を参照してください。

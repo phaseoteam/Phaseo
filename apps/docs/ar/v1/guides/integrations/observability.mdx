@@ -1,12 +1,20 @@
 ---
-title: "قابلية الرصد"
+title: "المراقبة"
 icon: "activity"
 description: "تتبّع طلبات Phaseo باستخدام Langfuse وLangSmith وOpenTelemetry والأدوات المشابهة."
 ---
 
-تعمل معظم أدوات قابلية الرصد فوق عميل النموذج. احتفظ بإعداد التتبّع كما هو، ووجّه عميل OpenAI أو Anthropic الأساسي إلى Phaseo.
+تتبّع طلبات Phaseo بطريقتين: فعّل [البث](../broadcast.mdx) ليرسل Phaseo تتبّعًا لكل طلب إلى Langfuse أو LangSmith أو أي أداة OpenTelemetry دون تغيير في الكود، أو أبقِ مكتبة التتبّع في تطبيقك ووجّه عميل النموذج فيها إلى Phaseo.
+
+| | البث | التتبّع في تطبيقك |
+| --- | --- | --- |
+| مصدر التتبّعات | Phaseo، لكل طلب | عميل النموذج في تطبيقك |
+| تغيير الكود | لا شيء؛ يُعدّ في **الإعدادات → البث** | غلّف العميل، ثم غيّر Base URL الخاص به |
+| محتوى التتبّع | النموذج والمزوّد وكل محاولة لدى المزوّد والتوكنات والتكلفة والتوقيت، و(اختياريًا) الموجّه والمخرجات | كل ما تسجّله مكتبتك، إضافةً إلى سياق تطبيقك |
 
 ## Langfuse مع OpenAI SDK
+
+أبقِ غلاف OpenAI الخاص بـ Langfuse وزوّد العميل المغلّف بـ Base URL الخاص بـ Phaseo:
 
 ```bash
 pip install langfuse openai
@@ -22,14 +30,14 @@ client = openai.OpenAI(
 )
 
 response = client.responses.create(
-    model="openai/gpt-5-nano",
+    model="openai/gpt-6-astra",
     input="Reply with only: ok",
 )
 ```
 
 ## LangSmith مع LangChain
 
-استخدم إعداد [LangChain](./langchain.mdx) وفعّل LangSmith عبر متغيرات بيئة LangChain المعتادة:
+استخدم إعداد `ChatOpenAI` من [LangChain](./langchain.mdx) وفعّل LangSmith بمتغيرات البيئة المعتادة في LangChain:
 
 ```bash
 export LANGSMITH_TRACING=true
@@ -39,21 +47,11 @@ export PHASEO_API_KEY="your_phaseo_key"
 
 ## OpenTelemetry
 
-إذا كان إطار العمل لديك يصدر مقاطع OpenTelemetry، فلا تتطلب Phaseo مُصدّرًا خاصًا. أضف سياق الطلب المفيد بنفسك:
+إذا كان إطار العمل لديك يُصدر مقاطع OpenTelemetry بالفعل، فلا تحتاج إلى مُصدِّر خاص. أضف سياق الطلب هذا إلى مقاطعك بنفسك:
 
-- معرّف النموذج
-- نقطة النهاية، مثل `responses` أو `chat.completions`
-- معرّف طلب Phaseo من بيانات الاستجابة الوصفية أو السجلات
-- المزوّد المحدد عند تفعيل بيانات الاستجابة الوصفية
+- معرّف النموذج؛
+- نقطة النهاية، مثل `responses` أو `chat.completions`؛
+- معرّف طلب Phaseo، من بيانات الاستجابة الوصفية أو من [السجلات](../../api-reference/endpoint/activity.mdx)؛
+- المزوّد الذي خدم الطلب، عندما تكون بيانات الاستجابة الوصفية مفعّلة.
 
-## ملاحظات
-
-- لا ترسل مفاتيح API الخاصة بـ Phaseo إلى أدوات قابلية الرصد كسمات.
-- إذا كانت مكتبة قابلية الرصد تغلّف OpenAI SDK، فأعد إعداد العميل المغلّف باستخدام `base_url: "https://api.phaseo.app/v1"`.
-- لتتبعات LangChain، اربط callback التتبّع بإعداد Phaseo لـ `ChatOpenAI`.
-
-## صفحات ذات صلة
-
-- [OpenAI SDK](./openai-sdk.mdx)
-- [LangChain](./langchain.mdx)
-- [النشاط](../../api-reference/endpoint/activity.mdx)
+لا تسجّل أبدًا مفاتيح API من Phaseo كسمات للمقاطع.

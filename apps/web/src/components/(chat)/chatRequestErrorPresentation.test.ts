@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { getChatRequestErrorPresentation } from "./chatRequestErrorPresentation";
 
 function error(status: number | null, errorCode: string | null = null) {

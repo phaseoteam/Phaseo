@@ -2,23 +2,7 @@ import { isAnalyticsCaptureAllowed } from "@/lib/clientErrorReporting";
 
 export const PRODUCT_ANALYTICS_EVENT = "phaseo:product-analytics";
 
-type ModelsLayoutProperties = {
-	experiment: string;
-	variant: "cards" | "list";
-	in_experiment: boolean;
-	model_id?: string;
-	control?: string;
-	metric?: string;
-	value?: number;
-	rating?: string;
-};
-
 export type ProductAnalyticsEventMap = {
-	models_layout_first_rows: ModelsLayoutProperties;
-	models_layout_model_opened: ModelsLayoutProperties;
-	models_layout_model_id_copied: ModelsLayoutProperties;
-	models_layout_filter_changed: ModelsLayoutProperties;
-	models_layout_web_vital: ModelsLayoutProperties;
 	account_signup_started: { method: "email" | "github" | "gitlab" | "google" };
 	api_key_created: {
 		preset: "ci" | "development" | "production" | "sandbox";
@@ -67,6 +51,12 @@ export type ProductAnalyticsEventMap = {
 	onboarding_finished: {
 		completed_step_count: number;
 		outcome: "completed" | "skipped";
+	};
+	chart_shared: {
+		campaign: "model_chart" | "rankings_chart";
+		chart_id: string;
+		channel: "x" | "linkedin" | "copy_link" | "native" | "download" | "copy_image";
+		page_path: string;
 	};
 	quickstart_opened: {
 		model_id: string;
