@@ -657,7 +657,7 @@ describe("in an answer", () => {
 		}
 	}
 
-	async function answerWith(script: (request: AgentTurnRequest) => Promise<string>, external = false) {
+	async function answerWith(script: (request: AgentTurnRequest) => Promise<string>, external = false, stopReason: string | null = null) {
 		const threadKey = `${INSTALLATION_ID}:C0CHANNEL1:1792600000.000100`;
 		const coordinator = world.threads.get(world.threads.idFromName(threadKey));
 		let started: TurnRef | null = null;
@@ -672,7 +672,7 @@ describe("in an answer", () => {
 				requests.push(request);
 				await hooks.onText(await script(request));
 				await hooks.onStep({ costUsd: 0.01 });
-				return { costUsd: 0.01, model: "openai/gpt-test", stopReason: null } satisfies AgentTurnOutput;
+				return { costUsd: 0.01, model: "openai/gpt-test", stopReason } satisfies AgentTurnOutput;
 			},
 			ask: async () => { throw new Error("unexpected ask"); },
 		};
@@ -697,6 +697,30 @@ describe("in an answer", () => {
 		expect(world.slack.of("chat.startStream")[0].args.markdown_text).toContain(url);
 		// The thread's working memory notes the tool, not the page.
 		expect(coordinator.workingMemory().filter((entry) => entry.kind === "tool").map((entry) => entry.text)).toEqual(["publish_page"]);
+	});
+
+	it("links a page the model published but ended without writing about", async () => {
+		let url = "";
+		await answerWith(async (request) => {
+			const tool = request.tools.find((entry) => entry.id === "publish_page")!;
+			url = String((await execute(tool, { title: "Our October spend", html: HTML })).url);
+			return "";
+		});
+		expect(url).toMatch(URL_PATTERN);
+		expect(world.slack.of("chat.startStream")[0].args.markdown_text).toBe(`Our October spend: ${url}`);
+		expect(world.slack.of("chat.stopStream").at(-1)?.args.blocks).toBeDefined();
+	});
+
+	it("still links the page, before the limit notice, when a step limit stopped the run", async () => {
+		let url = "";
+		await answerWith(async (request) => {
+			const tool = request.tools.find((entry) => entry.id === "publish_page")!;
+			url = String((await execute(tool, { title: "Our October spend", html: HTML })).url);
+			return "";
+		}, false, "step_count");
+		const sent = world.slack.calls.map((call) => String(call.args.markdown_text ?? "")).join("");
+		expect(sent).toContain(`Our October spend: ${url}`);
+		expect(sent.indexOf(url)).toBeLessThan(sent.indexOf("I stopped after"));
 	});
 
 	it("isn't offered to someone from another organisation", async () => {

@@ -188,7 +188,8 @@ export function footerText(footer: Footer, format: "mrkdwn" | "markdown" = "mrkd
 
 /** The whole reply as one message: blocks aren't allowed with markdown_text, so the footer is italic text. */
 function wholeReply(text: string, footer: Footer | null): string {
-	const footerLine = footer ? `\n\n_${footerText(footer, "markdown")}_` : "";
+	// A reply that is only the footer (an answer that was a chart or an image) starts with it.
+	const footerLine = footer ? `${text ? "\n\n" : ""}_${footerText(footer, "markdown")}_` : "";
 	return `${truncateMarkdown(text, MAX_MARKDOWN_CHARS - footerLine.length)}${footerLine}`;
 }
 
@@ -225,9 +226,10 @@ export async function finishReply(slack: SlackClient, args: { channel: string; t
  * first, since Slack won't edit a message that is still streaming. Throws so the
  * step retries; safe to repeat. Returns whether the stream was stopped here.
  */
-export async function replaceReply(slack: SlackClient, args: { channel: string; ts: string; text: string; footer: Footer | null }): Promise<boolean> {
+export async function replaceReply(slack: SlackClient, args: { channel: string; ts: string; text: string; footer: Footer | null; footerOnly?: boolean }): Promise<boolean> {
 	const stopped = await slack.call("chat.stopStream", { channel: args.channel, ts: args.ts });
-	if (args.text) await updateReply(slack, args);
+	// footerOnly: the answer was only what it posted, so the message becomes just its footer.
+	if (args.text || (args.footerOnly && args.footer)) await updateReply(slack, { channel: args.channel, ts: args.ts, text: args.text, footer: args.footer });
 	return stopped.ok;
 }
 
