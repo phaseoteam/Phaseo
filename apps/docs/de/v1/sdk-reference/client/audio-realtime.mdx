@@ -1,0 +1,470 @@
+---
+icon: "phone"
+title: "Echtzeit-Sprache"
+description: "Führe mit jedem Phaseo-SDK einen Echtzeit-Sprachanruf über das Phaseo-Relay und erhalte am Ende die endgültige Abrechnung."
+---
+
+<Note>
+Echtzeit-Sprache ist in der Beta, und der Zugriff wird pro Workspace freigeschaltet. Die Echtzeit-Clients stehen im Quellcode der SDKs, aber nicht in den veröffentlichten Paketen (`3.0.0`, Rust `0.2.0`); sie erscheinen mit dem nächsten Release jedes SDK außer C++.
+</Note>
+
+Verbinde dich, um die Sitzung zu erstellen (`POST /v1/audio/realtime/sessions`), den Relay-WebSocket zu öffnen und auf `relay.connected` zu warten. Streame dann PCM16-Audio hinein, lies Anbieter-Events aus und beende den Anruf, um seine endgültige Abrechnung zu erhalten. Das Relay-Protokoll, die Warnungen und die Reason-Codes sind unter [Echtzeit-Sprachsitzungen](/de/v1/guides/realtime-voice) beschrieben.
+
+## Installieren, was deine Sprache braucht
+
+<Tabs>
+<Tab title="TypeScript">
+
+`client.realtime.connect()` sendet deinen API-Schlüssel, rufe es also nur auf deinem Server auf. Node.js 22 oder neuer hat einen globalen `WebSocket`; auf älteren Laufzeiten installierst du das Paket `ws` oder übergibst deinen eigenen Konstruktor als `webSocket`.
+
+Für einen Anruf, der im Browser läuft, erstellst du die Sitzung auf deinem Server und öffnest den Socket im Browser mit `connectRealtimeSession()`. Es nimmt die Sitzung entgegen, die dein Server erstellt hat, einschließlich ihres `client_secret`, das nur für diese eine Sitzung gilt, und braucht nie den API-Schlüssel. [Anrufe im Browser](#browser-calls) zeigt beide Hälften.
+
+</Tab>
+<Tab title="Python">
+
+Den Echtzeit-Client gibt es nur auf `AsyncPhaseo`, und er braucht das optionale Paket `websockets`:
+
+```bash
+pip install "phaseo[realtime]"
+```
+
+Ohne das Paket löst `connect()` einen `ImportError` mit diesem Installationsbefehl aus.
+
+</Tab>
+<Tab title="Go">
+
+Importiere das separate Paket `realtime`, `github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3/realtime`. Es öffnet den Socket mit `github.com/coder/websocket`, das nur kompiliert wird, wenn du das Paket importierst.
+
+</Tab>
+<Tab title="C#">
+
+`client.Realtime.ConnectAsync()` verwendet `System.Net.WebSockets.ClientWebSocket`. Du musst nichts zusätzlich installieren.
+
+</Tab>
+<Tab title="PHP">
+
+`$client->realtime()->connect()` braucht das optionale Paket `phrity/websocket`:
+
+```bash
+composer require phrity/websocket
+```
+
+PHP ist single-threaded, daher werden Events nur gelesen, wenn du `receive()` aufrufst, über `events()` iterierst oder `end()` aufrufst. Deine Listener laufen, sobald das jeweilige Event gelesen wird.
+
+</Tab>
+<Tab title="Ruby">
+
+`client.realtime.connect()` braucht das optionale Gem `websocket`: `gem install websocket`, oder füge `gem "websocket"` zu deinem Gemfile hinzu.
+
+</Tab>
+<Tab title="Java">
+
+`client.realtime.connect()` verwendet `java.net.http.WebSocket` aus dem JDK. Du musst nichts zusätzlich installieren.
+
+</Tab>
+<Tab title="Rust">
+
+Aktiviere das Feature `realtime`, das `tungstenite` hinzufügt:
+
+```toml
+phaseo = { version = "...", features = ["realtime"] }
+```
+
+</Tab>
+</Tabs>
+
+## Anruf führen
+
+<CodeGroup>
+
+```typescript TypeScript
+import { Phaseo, RealtimeSessionClosedError } from "@phaseo/sdk";
+
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY });
+
+const session = await client.realtime.connect({
+  model: "openai/gpt-realtime-2",
+  voice: "marin",
+  instructions: "Answer in one sentence.",
+});
+
+session.onWarning((warning) => console.warn(warning.code, warning.message));
+session.on("response.output_audio.delta", (event) => play(event.delta as string));
+
+// PCM16-Mikrofonaudio: 24 kHz für OpenAI und xAI, 16 kHz für Google.
+session.sendAudio(pcm16Chunk);
+
+try {
+  const ended = await session.end({ reason: "caller hung up" });
+  console.log(ended.reason, ended.duration_seconds, ended.cost.total_usd, ended.billing_status);
+} catch (error) {
+  if (error instanceof RealtimeSessionClosedError) {
+    // Der Anruf wird trotzdem abgerechnet. Die endgültigen Kosten später mit error.finalBill.path abrufen.
+    console.error(error.message);
+  } else {
+    throw error;
+  }
+}
+```
+
+```python Python
+import asyncio
+from phaseo import AsyncPhaseo, RealtimeSessionClosedError
+
+async def main(pcm16_chunk: bytes) -> None:
+    client = AsyncPhaseo()  # liest PHASEO_API_KEY
+    session = await client.realtime.connect(
+        "openai/gpt-realtime-2", voice="marin", instructions="Answer in one sentence."
+    )
+    session.on_warning(lambda warning: print("warning", warning["code"]))
+
+    # PCM16-Mikrofonaudio: 24 kHz für OpenAI und xAI, 16 kHz für Google.
+    await session.send_audio(pcm16_chunk)
+
+    try:
+        ended = await session.end(reason="caller hung up")
+        print(ended["reason"], ended["duration_seconds"], ended["cost"]["total_usd"], ended["billing_status"])
+    except RealtimeSessionClosedError as error:
+        # Der Anruf wird trotzdem abgerechnet. Die endgültigen Kosten später mit error.final_bill["path"] abrufen.
+        print(error)
+    finally:
+        await client.close()
+```
+
+```go Go
+import (
+  "context"
+  "errors"
+  "log"
+
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+  "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3/realtime"
+)
+
+ctx := context.Background()
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  return err
+}
+
+session, err := realtime.Connect(ctx, client, realtime.Options{
+  Model:        "openai/gpt-realtime-2",
+  Voice:        "marin",
+  Instructions: "Answer in one sentence.",
+})
+if err != nil {
+  return err
+}
+
+session.OnWarning(func(w realtime.Warning) { log.Println(w.Code, w.Message) })
+
+// PCM16-Mikrofonaudio: 24 kHz für OpenAI und xAI, 16 kHz für Google.
+_ = session.SendAudio(ctx, pcm16Chunk)
+
+ended, err := session.End(ctx, realtime.EndOptions{Reason: "caller hung up"})
+var closed *realtime.ClosedError
+if errors.As(err, &closed) {
+  // Der Anruf wird trotzdem abgerechnet. Die endgültigen Kosten später mit closed.FinalBill.Path abrufen.
+  log.Println(closed)
+} else if err != nil {
+  return err
+} else {
+  log.Println(ended.Reason, ended.DurationSeconds, ended.Cost.TotalUSD, ended.BillingStatus)
+}
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+
+var session = await client.Realtime.ConnectAsync(new RealtimeConnectOptions
+{
+    Model = "openai/gpt-realtime-2",
+    Voice = "marin",
+    Instructions = "Answer in one sentence.",
+});
+
+using var warnings = session.OnWarning(warning => Console.WriteLine(warning.GetProperty("code").GetString()));
+
+// PCM16-Mikrofonaudio: 24 kHz für OpenAI und xAI, 16 kHz für Google.
+await session.SendAudioAsync(pcm16Chunk);
+
+try
+{
+    var ended = await session.EndAsync(reason: "caller hung up");
+    Console.WriteLine(ended.GetProperty("billing_status").GetString());
+}
+catch (RealtimeSessionClosedException error)
+{
+    // Der Anruf wird trotzdem abgerechnet. Die endgültigen Kosten später mit error.FinalBillPath abrufen.
+    Console.Error.WriteLine(error.Message);
+}
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+use Phaseo\Sdk\RealtimeSessionClosedException;
+
+$client = new Phaseo();
+
+$session = $client->realtime()->connect([
+    'model' => 'openai/gpt-realtime-2',
+    'voice' => 'marin',
+    'instructions' => 'Answer in one sentence.',
+]);
+
+$session->onWarning(fn (array $warning) => error_log($warning['code']));
+
+// PCM16-Mikrofonaudio: 24 kHz für OpenAI und xAI, 16 kHz für Google.
+$session->sendAudio($pcm16Chunk);
+
+try {
+    $ended = $session->end(reason: 'caller hung up');
+    echo $ended['reason'], ' ', $ended['cost']['total_usd'], ' ', $ended['billing_status'], PHP_EOL;
+} catch (RealtimeSessionClosedException $error) {
+    // Der Anruf wird trotzdem abgerechnet. Die endgültigen Kosten später mit $error->getFinalBillPath() abrufen.
+    error_log($error->getMessage());
+}
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+
+session = client.realtime.connect(
+  model: 'openai/gpt-realtime-2',
+  voice: 'marin',
+  instructions: 'Answer in one sentence.'
+)
+
+session.on_warning { |warning| warn warning['code'] }
+
+# PCM16-Mikrofonaudio: 24 kHz für OpenAI und xAI, 16 kHz für Google.
+session.send_audio(pcm16_chunk)
+
+begin
+  ended = session.end(reason: 'caller hung up')
+  puts ended['reason'], ended['cost']['total_usd'], ended['billing_status']
+rescue PhaseoSdk::RealtimeSessionClosedError => error
+  # Der Anruf wird trotzdem abgerechnet. Die endgültigen Kosten später mit error.final_bill_path abrufen.
+  warn error.message
+end
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import app.phaseo.sdk.RealtimeSession;
+import app.phaseo.sdk.RealtimeSessionClosedException;
+import com.fasterxml.jackson.databind.JsonNode;
+import java.time.Duration;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+RealtimeSession session = client.realtime.connect(Map.of(
+    "model", "openai/gpt-realtime-2",
+    "voice", "marin",
+    "instructions", "Answer in one sentence."));
+
+session.onWarning(warning -> System.out.println(warning.path("code").asText()));
+session.on("response.output_audio.delta", event -> play(event.path("delta").asText()));
+
+// PCM16-Mikrofonaudio: 24 kHz für OpenAI und xAI, 16 kHz für Google.
+session.sendAudio(pcm16Chunk);
+
+try {
+    JsonNode ended = session.end("caller hung up", null, Duration.ofSeconds(60));
+    System.out.println(ended.path("billing_status").asText());
+} catch (RealtimeSessionClosedException error) {
+    // Der Anruf wird trotzdem abgerechnet. Die endgültigen Kosten später mit error.finalBillPath() abrufen.
+    System.err.println(error.getMessage());
+}
+```
+
+```rust Rust
+use phaseo::Phaseo;
+use phaseo::realtime::{EndOptions, RealtimeError, RealtimeOptions};
+
+fn talk(pcm16_chunk: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+
+    let session = client.realtime().connect(
+        RealtimeOptions::new("openai/gpt-realtime-2")
+            .voice("marin")
+            .instructions("Answer in one sentence."),
+    )?;
+
+    session.on_warning(|warning| eprintln!("{}", warning["code"]));
+
+    // PCM16-Mikrofonaudio: 24 kHz für OpenAI und xAI, 16 kHz für Google.
+    session.send_audio(pcm16_chunk)?;
+
+    match session.end(EndOptions { reason: Some("caller hung up".into()), ..EndOptions::default() }) {
+        Ok(ended) => println!("{} {}", ended["cost"]["total_usd"], ended["billing_status"]),
+        // Der Anruf wird trotzdem abgerechnet. Die endgültigen Kosten später mit final_bill_path abrufen.
+        Err(RealtimeError::Closed { final_bill_path, .. }) => eprintln!("bill later: GET {final_bill_path}"),
+        Err(error) => return Err(error.into()),
+    }
+    Ok(())
+}
+```
+
+</CodeGroup>
+
+## Jedes Event lesen
+
+Iteriere über die Sitzung, statt jeden Eventtyp einzeln zu abonnieren. Die Iteration endet, wenn sich der Socket schließt. In Python erhält der erste Iterator auch die Events, die seit der Rückkehr von `connect()` eingegangen sind, beginnend mit `relay.connected`.
+
+<CodeGroup>
+
+```typescript TypeScript
+for await (const event of session) {
+  if (event.type === "session.ended") console.log("bill", event.cost);
+}
+```
+
+```python Python
+async for event in session:
+    if event["type"] == "response.output_audio.delta":
+        play(event["delta"])
+```
+
+```go Go
+for event := range session.Events() {
+  if event.Type() == "response.output_audio.delta" {
+    play(event["delta"].(string))
+  }
+}
+```
+
+```csharp C#
+await foreach (var item in session.EventsAsync())
+{
+    if (item.GetProperty("type").GetString() == "response.output_audio.delta")
+        Play(item.GetProperty("delta").GetString()!);
+}
+```
+
+```php PHP
+foreach ($session->events() as $event) {
+    if ($event['type'] === 'response.output_audio.delta') {
+        play($event['delta']);
+    }
+}
+```
+
+```ruby Ruby
+session.each_event do |event|
+  play(event['delta']) if event['type'] == 'response.output_audio.delta'
+end
+```
+
+```java Java
+for (JsonNode event : session.events()) {
+    if (event.path("type").asText().equals("response.output_audio.delta")) {
+        play(event.path("delta").asText());
+    }
+}
+```
+
+```rust Rust
+// events() puffert jedes Event, auch Audio-Deltas, bis du es empfängst.
+// Leere den Puffer in einem eigenen Thread oder verwirf ihn, sobald du fertig bist.
+let events = session.events();
+let reader = std::thread::spawn(move || {
+    for event in events {
+        println!("{}", event["type"]);
+    }
+});
+```
+
+</CodeGroup>
+
+**Python:** `async with session:` beendet den Anruf mit `end()`, wenn der Block verlassen wird, sofern er nicht schon beendet ist.
+
+<span id="browser-calls"></span>
+## Anrufe im Browser
+
+Nur TypeScript. Lege nie einen Phaseo-API-Schlüssel in Browsercode ab. Erstelle die Sitzung auf deinem Server mit `client.realtime.createSession()`, das dieselben Optionen `model`, `voice`, `instructions`, `provider` und `metadata` wie `connect()` annimmt, und gib die Antwort an deine Seite zurück:
+
+```typescript TypeScript
+// Serverroute, zum Beispiel POST /api/voice-session
+const info = await client.realtime.createSession({ model: "openai/gpt-realtime-2", voice: "marin" });
+return Response.json(info);
+```
+
+Im Browser trittst du der Sitzung mit `connectRealtimeSession()` bei. Es öffnet das Relay mit dem `client_secret` der Sitzung und gibt dasselbe Sitzungsobjekt wie `connect()` zurück:
+
+```typescript TypeScript
+import { connectRealtimeSession } from "@phaseo/sdk";
+
+const info = await fetch("/api/voice-session", { method: "POST" }).then((response) => response.json());
+const session = await connectRealtimeSession(info);
+session.sendAudio(pcm16Chunk);
+```
+
+`connectRealtimeSession(info, options)` akzeptiert wie `connect()` die Optionen `webSocket` und `connectTimeoutMs`, dazu `baseUrl` (Standard `https://api.phaseo.app/v1`), falls du einen regionalen Endpunkt nutzt.
+
+## Verbindungsoptionen
+
+Jedes SDK sendet `model` (erforderlich, zum Beispiel `openai/gpt-realtime-2`) und die optionalen Felder `voice`, `instructions`, `provider` und `metadata` an die Anfrage zum Erstellen der Sitzung und wartet standardmäßig 30 Sekunden auf `relay.connected`.
+
+| Sprache | Verbindungsaufruf | Timeout | Eigener Socket |
+| --- | --- | --- | --- |
+| TypeScript | `client.realtime.connect({ model, voice, ... })` | `connectTimeoutMs` | `webSocket`: ein WebSocket-Konstruktor, der statt des globalen verwendet wird |
+| Python | `await client.realtime.connect(model, voice=..., ...)` auf `AsyncPhaseo` | `connect_timeout`, in Sekunden | `websocket_connect`: ein asynchrones Callable `(url, subprotocols)`, das einen verbundenen Socket zurückgibt |
+| Go | `realtime.Connect(ctx, client, realtime.Options{Model: ..., ...})` | `ConnectTimeout`, eine `time.Duration` | `realtime.ConnectWithDialer(ctx, client, options, dial)` |
+| C# | `await client.Realtime.ConnectAsync(new RealtimeConnectOptions { Model = ..., ... })` | `ConnectTimeout`, ein `TimeSpan` | Keiner |
+| PHP | `$client->realtime()->connect(['model' => ..., ...], $connectTimeout)` | Zweites Argument, in Sekunden | Keiner |
+| Ruby | `client.realtime.connect(model: ..., voice: ..., ...)` | `connect_timeout:`, in Sekunden | `transport:` |
+| Java | `client.realtime.connect(model)` oder `connect(Map params, Duration connectTimeout)` | `Duration`-Argument | Keiner |
+| Rust | `client.realtime().connect(RealtimeOptions::new(model).voice(...).instructions(...))` | Feld `connect_timeout`, eine `Duration` | Keiner |
+
+## Sitzung
+
+TypeScript und Python:
+
+| TypeScript | Python | Beschreibung |
+| --- | --- | --- |
+| `id`, `info` | `id`, `info` | Die Sitzungs-ID und die Antwort auf das Erstellen der Sitzung, ohne `client_secret`. |
+| `sendAudio(pcm16)` | `await send_audio(pcm16)` | Sendet PCM16-Audio als `client.audio` (TypeScript: ein `Uint8Array` oder `ArrayBuffer`; Python: `bytes`). Das SDK kodiert es in Base64. |
+| `send(event)` | `await send(event)` | Sendet ein beliebiges Event als JSON, für anbieterspezifische Nachrichten. |
+| `on(type, listener)` | `on(type, listener)` | Abonniert einen Eventtyp oder mit `"*"` jedes Event. Gibt eine Funktion zum Abbestellen zurück. Anbieter-Events kommen unverändert an (in Python als Dicts). |
+| `onWarning(listener)`, `onEnded(listener)` | `on_warning(listener)`, `on_ended(listener)` | Helfer für `session.warning` und `session.ended`. |
+| `[Symbol.asyncIterator]` | `async for event in session` | Liefert jedes Event ab Beginn der Iteration, bis sich der Socket schließt. |
+| `end({ reason?, cancelResponse?, timeoutMs? })` | `await end(reason=None, cancel_response=None, timeout=60)` | Sendet `session.end` und gibt `session.ended` zurück: `reason`, `initiated_by`, `duration_seconds`, `usage`, `cost`, `billing_status` und, falls noch nicht abgerechnet, `final_bill`. Standard-Timeout 60 Sekunden. |
+| `ended` | `ended` | Ein Promise (Python: ein Future) für `session.ended`, egal wie der Anruf endet, auch wenn der Anbieter oder das Gateway das Ende ausgelöst hat. |
+| `close()` | `await close()` | Schließt den Socket, ohne auf die Abrechnung zu warten. Der Anruf wird trotzdem abgerechnet. |
+
+Die anderen SDKs bieten dieselben Operationen. Audio sind PCM16-Bytes, die für dich in Base64 kodiert werden; Anbieter-Events kommen unverändert im JSON-Typ der jeweiligen Sprache an; `end` hat standardmäßig ein Timeout von 60 Sekunden.
+
+| Sprache | Audio senden, Event senden | Abonnieren | Jedes Event | Beenden, warten, schließen | Eventtyp |
+| --- | --- | --- | --- | --- | --- |
+| Go | `SendAudio(ctx, pcm16)`, `Send(ctx, event)` | `On(type, fn)`, `OnWarning`, `OnEnded`; jede gibt eine Funktion zum Abbestellen zurück | `Events()`, ein Channel | `End(ctx, realtime.EndOptions{...})` gibt `*realtime.Ended` zurück; `Done()` und `Result()`; `Close()` | `realtime.Event` (eine Map) |
+| C# | `SendAudioAsync(pcm16)`, `SendAsync(event)` | `On(type, fn)`, `OnWarning`, `OnEnded`; jede gibt ein `IDisposable` zurück | `await foreach (var e in session.EventsAsync())` | `EndAsync(reason, cancelResponse, timeout)`; der Task `Ended`; `CloseAsync()` | `JsonElement` |
+| PHP | `sendAudio($pcm16)`, `send($event)` | `on($type, $fn)`, `onWarning`, `onEnded`; jede gibt eine Closure zum Abbestellen zurück | Generator `events()` oder `receive($timeout)` für ein einzelnes Event | `end(reason:, cancelResponse:, timeout:)`; `close()` | Array |
+| Ruby | `send_audio(pcm16)`, `send_event(event)` | `on(type) { }`, `on_warning { }`, `on_ended { }` | `each_event`, mit einem Block | `end(reason:, cancel_response:, timeout:)`; `wait(timeout:)`; `close` | Hash |
+| Java | `sendAudio(byte[])`, `send(event)` | `on(type, fn)`, `onWarning`, `onEnded`; jede gibt ein `Runnable` zurück, das abbestellt | `events()`, ein `Iterable` | `end()` oder `end(reason, cancelResponse, timeout)`; Future `ended()`; `close()` | `JsonNode` |
+| Rust | `send_audio(&pcm16)`, `send(&event)` | `on(type, fn)`, `on_warning`, `on_ended`; jede gibt eine ID für `off(id)` zurück | `events()`, ein `Receiver`, der jedes Event puffert, bis es gelesen wird | `end(EndOptions { ... })`; `wait(timeout)`; `close()` | `serde_json::Value` |
+
+## Fehler
+
+Wenn sich der Socket ohne `session.ended` schließt oder `end()` in ein Timeout läuft, schlägt das Beenden des Anrufs mit einem Fehler für eine geschlossene Sitzung fehl. Der Anruf wird trotzdem abgerechnet. Der Fehler enthält den Pfad zur endgültigen Abrechnung, `GET /v1/generations?id=realtime%3A<session_id>`, der die endgültigen Kosten zurückgibt, sobald sie feststehen.
+
+| Sprache | Fehler | Pfad zur endgültigen Abrechnung |
+| --- | --- | --- |
+| TypeScript | `RealtimeSessionClosedError` mit `sessionId`, `closeCode`, `closeReason` | `error.finalBill.path` oder `realtimeFinalBill(sessionId)` |
+| Python | `RealtimeSessionClosedError` mit `session_id`, `close_code`, `close_reason` | `error.final_bill["path"]` oder `realtime_final_bill(session_id)` |
+| Go | `*realtime.ClosedError` mit `SessionID`, `CloseCode` | `FinalBill.Path` oder `realtime.FinalBillFor(sessionID)` |
+| C# | `RealtimeSessionClosedException` mit `SessionId`, `CloseCode`, `CloseReason` | `FinalBillPath` |
+| PHP | `RealtimeSessionClosedException` mit `getSessionId()`, `getCloseCode()` | `getFinalBillPath()` |
+| Ruby | `PhaseoSdk::RealtimeSessionClosedError` mit `session_id`, `close_code`, `close_reason` | `final_bill_path` |
+| Java | `RealtimeSessionClosedException` mit `sessionId()`, `closeCode()`, `closeReason()` | `finalBillPath()` |
+| Rust | `RealtimeError::Closed { session_id, close_code, .. }` | `final_bill_path` |
+
+`connect()` schlägt fehl, wenn das Relay die Sitzung beendet, bevor die Verbindung steht, oder wenn `relay.connected` nicht rechtzeitig ankommt (Python löst `TimeoutError` aus; Rust gibt `RealtimeError::EndedBeforeConnecting` oder `RealtimeError::ConnectTimeout` zurück).

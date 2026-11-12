@@ -1,47 +1,34 @@
 ---
-title: "SKILL.md से कोडिंग एजेंट सेट अप करें"
+title: "SKILL.md के साथ कोडिंग एजेंट सेट अप करें"
 icon: "file-code"
-description: "SDK के साथ SKILL.md फ़ाइल जोड़ें, ताकि स्थानीय कोडिंग एजेंट आपकी Phaseo इंटीग्रेशन का एक जैसा उपयोग करें।"
+description: "SDK के साथ एक SKILL.md फ़ाइल जोड़ें ताकि लोकल कोडिंग एजेंट आपके Phaseo इंटीग्रेशन का एक जैसा उपयोग करें।"
 ---
 
-यह गाइड उन टीमों के लिए है जो Gateway SDK के आधार पर आंतरिक टूल, CLI या कोडिंग-एजेंट वर्कफ़्लो बनाती हैं।
+अपनी रिपॉज़िटरी में एक `SKILL.md` जोड़ें ताकि कोडिंग एजेंट Phaseo को उसी तरह कॉल करें जैसा आपका प्रोजेक्ट चाहता है: वही बेस URL, कुंजी वेरिएबल, एंडपॉइंट, मंज़ूर मॉडल और लॉगिंग। अंत में आपके पास सार्वजनिक Phaseo स्किल इंस्टॉल होंगी, उनके ऊपर एक प्रोजेक्ट स्किल होगी, और एक साझा क्लाइंट मॉड्यूल होगा जिसकी ओर स्किल इशारा करती है।
+
+नीचे दी गई स्किल और मॉड्यूल, मॉडल ID और प्रीसेट नामों को अपने नामों से बदलने के बाद प्रोडक्शन के लिए तैयार हैं।
+
+<Steps>
+<Step title="सार्वजनिक Phaseo स्किल इंस्टॉल करें">
 
 <Visibility for="humans">
-<Note>
-अगर हर skill को शुरू से लिखने के बजाय दोबारा इस्तेमाल किया जा सकने वाला शुरुआती सेटअप चाहिए, तो [phaseoteam/skills](https://github.com/phaseoteam/skills) से Phaseo की सार्वजनिक skills इंस्टॉल करें:
-
-```bash
-npx skills add phaseoteam/skills --agent codex --skill '*'
-```
-
-इसके बाद, प्रोजेक्ट-विशिष्ट निर्देश अपनी स्थानीय `SKILL.md` फ़ाइल में रखें।
-</Note>
+सार्वजनिक स्किल Gateway, SDK, प्रीसेट, रूटिंग और माइग्रेशन को कवर करती हैं। उन्हें [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json) से इंस्टॉल करें:
 </Visibility>
 
 <Visibility for="agents">
-<Note>
-दोबारा इस्तेमाल की जा सकने वाली Phaseo skills [phaseoteam/skills](https://github.com/phaseoteam/skills) में हैं। पहले इन्हें इस कमांड से इंस्टॉल करें:
-
-```bash
-npx skills add phaseoteam/skills --agent codex --skill '*'
-```
-
-फिर, प्रोजेक्ट-विशिष्ट निर्देश repository की `SKILL.md` फ़ाइल में जोड़ें।
-</Note>
+प्रोजेक्ट-लोकल निर्देश लिखने से पहले [`phaseo.app/docs`](https://phaseo.app/docs/.well-known/agent-skills/index.json) से सार्वजनिक Phaseo स्किल इंस्टॉल करें:
 </Visibility>
 
-मुख्य विचार सरल है:
+```bash
+npx skills add https://phaseo.app/docs --agent codex --skill '*'
+```
 
-- SDK सेटअप repository में रखें
-- ऐसी `SKILL.md` फ़ाइल जोड़ें जो एजेंट को बताए कि प्रोजेक्ट अनुरोध कैसे भेजने की अपेक्षा करता है
-- सेटअप के दौरान एजेंट को उस फ़ाइल की ओर निर्देशित करें, ताकि अनुरोधों का तरीका एक जैसा रहे
+`--agent` को उस एजेंट में बदलें जिसे आपकी टीम इस्तेमाल करती है। अपनी `SKILL.md` में सिर्फ़ प्रोजेक्ट-विशेष नियम रखें।
 
-## 1. SDK इंस्टॉल करें
-
-अगर आप TypeScript या JavaScript उपयोग कर रहे हैं:
+</Step>
+<Step title="SDK इंस्टॉल करें">
 
 <CodeGroup>
-
 ```bash npm
 npm install @phaseo/sdk
 ```
@@ -58,34 +45,17 @@ yarn add @phaseo/sdk
 bun add @phaseo/sdk
 ```
 
-</CodeGroup>
-
-अगर आप Python उपयोग कर रहे हैं:
-
-```bash
+```bash Python
 pip install phaseo
 ```
+</CodeGroup>
 
-## 2. प्रोजेक्ट की स्थानीय skill फ़ाइल जोड़ें
+</Step>
+<Step title="एक साझा क्लाइंट जोड़ें">
 
-Repository के root में या आपकी टीम द्वारा इस्तेमाल किए जाने वाले agent skill स्थान पर `SKILL.md` बनाएँ।
+एजेंट बड़े रैपर की तुलना में छोटे, साफ़ हेल्पर का ज़्यादा भरोसेमंद ढंग से दोबारा उपयोग करते हैं। क्लाइंट को एक मॉड्यूल में रखें और हर जगह उसी को इंपोर्ट करें:
 
-```md
-# Phaseo Gateway
-
-- Use `https://api.phaseo.app/v1` as the gateway base URL.
-- Read the API key from `PHASEO_API_KEY`.
-- Prefer the Responses API for new text integrations.
-- Use preset slugs when the repository defines shared request defaults.
-- Log request ids and model ids for debugging.
-- For async video jobs, store the returned id and poll status until terminal.
-```
-
-## 3. पहली इंटीग्रेशन छोटी रखें
-
-कोडिंग एजेंट के लिए बड़े wrappers की तुलना में छोटे request helpers को दोबारा इस्तेमाल करना आसान होता है।
-
-```ts
+```ts src/lib/phaseo.ts
 import Phaseo from "@phaseo/sdk";
 
 export const gateway = new Phaseo({
@@ -93,35 +63,48 @@ export const gateway = new Phaseo({
 });
 ```
 
-इसके बाद, हर surface के लिए एक स्पष्ट call path रखें:
+आप जिस भी सरफ़ेस का उपयोग करते हैं, जैसे टेक्स्ट जनरेशन, एम्बेडिंग, इमेज जनरेशन या एसिंक वीडियो, हर एक के लिए एक ही कॉल पाथ रखें।
 
-- टेक्स्ट जनरेशन
-- एसिंक्रोनस वीडियो
-- embeddings
-- इमेज जनरेशन
+</Step>
+<Step title="प्रोजेक्ट स्किल लिखें">
 
-## 4. Skill में क्या दर्ज होना चाहिए
+रिपॉज़िटरी रूट पर या उस स्किल फ़ोल्डर में `SKILL.md` बनाएँ जिसे आपका एजेंट पढ़ता है (उदाहरण के लिए `.agents/skills/phaseo-project/SKILL.md`)। एजेंट `name` और `description` फ़्रंटमैटर पढ़कर तय करता है कि स्किल कब लोड करनी है:
 
-आपकी `SKILL.md` को उन सवालों के जवाब देने चाहिए जिनमें एजेंट का सबसे अधिक समय जाता है:
+```md SKILL.md
+---
+name: phaseo-project
+description: "How this repository calls Phaseo Gateway: client module, endpoint, approved models and presets, logging and async jobs. Use when adding or changing any Phaseo call in this repo."
+---
 
-- किस endpoint family को प्राथमिकता देनी है
-- क्रेडेंशियल किस environment variable में हैं
-- कौन से model ID या preset slug स्वीकृत हैं
-- request ID को कैसे लॉग करना है
-- async jobs को कैसे ट्रैक करना है
+# Phaseo in this repository
 
-## 5. Repository के लिए सुझाया गया पैटर्न
+- Import the client from `src/lib/phaseo.ts`. Never create another one.
+- The base URL is `https://api.phaseo.app/v1`. The key is in `PHASEO_API_KEY`; never hard-code it or send it to the browser.
+- Use the Responses API (`POST /v1/responses`) for new text features.
+- Approved models: `openai/gpt-6-astra` for drafts, `anthropic/claude-sonnet-5.5` for reviews. Ask before adding another.
+- Prefer the `@support-triage` preset for support features; pass it as `model`.
+- Log the response `id` and `model` on every call, and `generation_id` from error bodies.
+- For async video jobs, store the returned ID and poll status until it is terminal.
+- Validate any model-generated tool arguments before acting on them.
+```
 
-- SDK helpers के लिए एक साझा module
-- integration code के पास या repository root में `SKILL.md`
-- हर मुख्य endpoint के लिए एक छोटा उदाहरण
-- request logging और error handling पर एक नोट
+</Step>
+</Steps>
 
-इससे लोगों और कोडिंग एजेंटों, दोनों को एक ही संचालन प्रवेश-बिंदु मिलता है।
+## जाँचें कि यह काम कर गया
 
-## संबंधित गाइड
+अपने एजेंट से कोई छोटी Phaseo सुविधा जोड़ने को कहें, जैसे "summarise a ticket with Phaseo"। बदलाव में `src/lib/phaseo.ts` इंपोर्ट होना चाहिए, `PHASEO_API_KEY` पढ़ा जाना चाहिए, कोई मंज़ूर मॉडल या प्रीसेट इस्तेमाल होना चाहिए, और प्रतिक्रिया ID लॉग होना चाहिए। अगर ऐसा नहीं होता, तो शायद स्किल का `description` अनुरोध से मेल नहीं खाता: उसमें वे काम वाले शब्द लिखें जिन्हें आपकी टीम इस्तेमाल करती है।
 
-- [Codex](../guides/integrations/codex.mdx)
-- [AI SDK इंटीग्रेशन](../guides/integrations/ai-sdk.mdx)
-- [उदाहरण](../guides/examples.mdx)
+## स्किल में क्या रखें
 
+उन सवालों के जवाब दें जिनमें एजेंट का सबसे ज़्यादा समय लगता है, और कुछ नहीं:
+
+| सवाल | उदाहरण जवाब |
+| --- | --- |
+| कौन सा एंडपॉइंट परिवार? | टेक्स्ट के लिए Responses, खोज के लिए Embeddings |
+| क्रेडेंशियल कहाँ हैं? | `PHASEO_API_KEY`, सिर्फ़ सर्वर-साइड |
+| कौन से मॉडल ID या प्रीसेट मंज़ूर हैं? | `org/model` रूप में एक छोटी सूची |
+| क्या लॉग होता है? | प्रतिक्रिया का `id`, `model`, और त्रुटियों पर `generation_id` |
+| एसिंक जॉब कैसे ट्रैक होते हैं? | ID सहेजें, अंतिम स्थिति तक पोल करें |
+
+[Codex](../guides/integrations/codex), [Vercel AI SDK](../guides/integrations/ai-sdk) और [उदाहरण](../guides/examples) हर टूल में यही परंपराएँ दिखाते हैं।

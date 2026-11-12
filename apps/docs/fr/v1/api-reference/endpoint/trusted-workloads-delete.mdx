@@ -1,0 +1,12 @@
+---
+title: "Supprimer une règle de workload de confiance"
+sidebarTitle: "Supprimer une règle de workload de confiance"
+badge: "Bêta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml DELETE /workload-identity/policies/{id}"
+description: "Supprime une règle de workload de confiance et révoque sa clé."
+---
+<Note>Nécessite `keys:delete` sur une clé de gestion ou un jeton OAuth, ou un propriétaire ou un administrateur de l’espace de travail. Les workloads de confiance sont en bêta ; les espaces de travail qui n’y ont pas accès reçoivent `404`.</Note>
+
+Les jetons correspondants sont refusés en moins d’une minute. Les requêtes passées conservent leur clé dans les journaux et l’utilisation.
+
+Consultez [Workloads de confiance](../../developers/trusted-workloads.mdx) pour comprendre le fonctionnement des règles et les gérer avec Terraform.

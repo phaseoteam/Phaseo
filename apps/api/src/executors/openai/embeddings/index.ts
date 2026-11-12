@@ -9,6 +9,7 @@ import { encodeOpenAIEmbeddingsRequest } from "@protocols/openai-embeddings/enco
 import { decodeOpenAIEmbeddingsResponse } from "@protocols/openai-embeddings/decode";
 import { resolveOpenAITransport } from "@providers/shared/openai-transport";
 import { upstreamTestHeaders } from "@providers/shared/testing";
+import { encodeEmbeddingValues } from "@executors/google/shared/embeddings";
 import type { ProviderExecutor } from "../../types";
 
 function isVoyageProvider(providerId: string): boolean {
@@ -45,6 +46,19 @@ function unsupportedParameterResult(parameter: string, message: string): Executo
 		keySource: "gateway",
 		rawResponse,
 	};
+}
+
+/**
+ * Providers whose embeddings API has no encoding_format, so it is never sent.
+ * For "base64" the gateway encodes the returned floats itself (little-endian
+ * float32, as OpenAI and the Google executors do). Quantised formats
+ * (base64_int8, base64_binary) cannot be made from floats the same way the
+ * provider would, so they are rejected.
+ */
+const LOCAL_ENCODING_PROVIDERS = new Map([["fireworks", "Fireworks"], ["together", "Together"]]);
+
+function encodeLocally(providerId: string): boolean {
+	return LOCAL_ENCODING_PROVIDERS.has(providerId);
 }
 
 function normalizeModelName(model?: string | null): string {
@@ -114,11 +128,17 @@ function isDataUrl(value: string): boolean {
 	return value.startsWith("data:");
 }
 
-function extractBase64Payload(value: string): string {
-	const trimmed = value.trim();
-	const match = /^data:[^,]*;base64,(.*)$/i.exec(trimmed);
-	if (match && match[1]) return match[1];
-	return trimmed;
+// Voyage documents `image_base64` and `video_base64` as full data URLs
+// (`data:image/jpeg;base64,...`), so the prefix is kept. The IR encoder wraps
+// `source: "data"` parts in a default prefix, which can double one the client
+// already sent; keep only the innermost data URL.
+function normaliseVoyageDataUrl(value: string): string {
+	let current = value.trim();
+	for (;;) {
+		const nested = /^data:[^,]*;base64,(data:[\s\S]*)$/i.exec(current);
+		if (!nested?.[1]) return current;
+		current = nested[1].trim();
+	}
 }
 
 function extractUrlString(value: unknown): string | undefined {
@@ -143,7 +163,7 @@ function toVoyageMultimodalPart(part: any): Record<string, string> | null {
 				: extractUrlString(part?.image_url ?? part?.url);
 		if (!imageValue) return null;
 		return isDataUrl(imageValue)
-			? { type: "image_base64", image_base64: extractBase64Payload(imageValue) }
+			? { type: "image_base64", image_base64: normaliseVoyageDataUrl(imageValue) }
 			: { type: "image_url", image_url: imageValue };
 	}
 	if (type === "input_video" || type === "video_url" || type === "video") {
@@ -153,7 +173,7 @@ function toVoyageMultimodalPart(part: any): Record<string, string> | null {
 				: extractUrlString(part?.video_url ?? part?.url);
 		if (!videoValue) return null;
 		return isDataUrl(videoValue)
-			? { type: "video_base64", video_base64: extractBase64Payload(videoValue) }
+			? { type: "video_base64", video_base64: normaliseVoyageDataUrl(videoValue) }
 			: { type: "video_url", video_url: videoValue };
 	}
 	if (typeof part === "string") {
@@ -289,6 +309,10 @@ function buildRequestBody(ir: IREmbeddingsRequest, args: ExecutorExecuteArgs): R
 	}
 
 	if (args.providerId === "fireworks") {
+		// Fireworks' request schema has no encoding_format and sets
+		// additionalProperties: false, so sending it fails. Base64 is encoded
+		// from the returned floats instead (see encodeLocally).
+		delete encoded.encoding_format;
 		const fireworksOptions = ir.providerOptions?.fireworks;
 		if (fireworksOptions?.promptTemplate !== undefined) {
 			encoded.prompt_template = fireworksOptions.promptTemplate;
@@ -404,6 +428,13 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		);
 	}
 
+	if (encodeLocally(args.providerId) && ir.encodingFormat && ir.encodingFormat !== "float" && ir.encodingFormat !== "base64") {
+		return unsupportedParameterResult(
+			"encoding_format",
+			`${LOCAL_ENCODING_PROVIDERS.get(args.providerId)} returns float embeddings only; use encoding_format "float" or "base64", not "${ir.encodingFormat}".`,
+		);
+	}
+
 	const requestBody = buildRequestBody(ir, args);
 
 	const captureRequest = Boolean(args.meta.returnUpstreamRequest || args.meta.echoUpstreamRequest);
@@ -457,6 +488,12 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			model: ir.model,
 			data: [],
 		} as IREmbeddingsResponse;
+
+	if (encodeLocally(args.providerId) && ir.encodingFormat === "base64") {
+		responseIr.data = responseIr.data.map((entry) => Array.isArray(entry.embedding)
+			? { ...entry, embedding: encodeEmbeddingValues(entry.embedding, "base64") }
+			: entry);
+	}
 
 	responseIr.rawResponse = json ?? null;
 	ir.rawRequest = requestBody;

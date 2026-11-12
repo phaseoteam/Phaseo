@@ -52,10 +52,11 @@ type ProvidersResponse = {
 const PROVIDER_ALIASES: Record<string, string> = {
     arcee: "arcee-ai",
     "arcee-ai": "arcee-ai",
-    xai: "x-ai",
-    "x-ai": "x-ai",
-    novita: "novitaai",
-    "novita-ai": "novitaai",
+    xai: "xai",
+    "x-ai": "xai",
+    novita: "novita",
+    novitaai: "novita",
+    "novita-ai": "novita",
 };
 
 function parseCsv(value: string | undefined): string[] {
@@ -354,7 +355,7 @@ function printUsage() {
     console.log("  pnpm --filter @phaseo/gateway-api test:live:provider -- --providers openai,anthropic");
     console.log("  pnpm --filter @phaseo/gateway-api test:live:provider -- --all-providers");
     console.log("  pnpm --filter @phaseo/gateway-api test:live:provider -- --all-api-providers");
-    console.log("  pnpm --filter @phaseo/gateway-api test:live:provider -- --provider x-ai --scenario chat_stream_hi");
+    console.log("  pnpm --filter @phaseo/gateway-api test:live:provider -- --provider xai --scenario chat_stream_hi");
     console.log("  pnpm --filter @phaseo/gateway-api test:live:provider -- --provider baseten");
     console.log("  pnpm --filter @phaseo/gateway-api test:live:provider -- --provider cohere --scenarios chat_nonstream_hi,chat_stream_hi,chat_nonstream_tool,chat_nonstream_structured,messages_nonstream_hi,messages_nonstream_tool,messages_nonstream_structured");
     console.log("  pnpm --filter @phaseo/gateway-api test:live:provider -- --provider together --scenarios chat_nonstream_hi,chat_stream_hi,chat_nonstream_tool,chat_nonstream_structured,messages_nonstream_hi,messages_nonstream_tool,messages_nonstream_structured");

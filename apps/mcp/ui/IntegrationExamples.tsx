@@ -1,7 +1,8 @@
 import { useState } from "react";
 import type { Model } from "./model";
 import { integrationExample } from "./workflows";
-import { SelectField } from "./Select";
+
+const LANGUAGES = ["TypeScript", "Python", "curl"];
 
 export function IntegrationExamples({ model }: { model: Model }) {
   const [language, setLanguage] = useState("TypeScript");
@@ -19,20 +20,23 @@ export function IntegrationExamples({ model }: { model: Model }) {
       </p>
     );
   return (
-    <section className="workflow-panel">
-      <h3>Integrate this model</h3>
-      <label>
-        Language
-        <SelectField
-          label="Language"
-          value={language}
-          onValueChange={setLanguage}
-          options={["TypeScript", "Python", "curl"].map((value) => ({
-            value,
-            label: value,
-          }))}
-        />
-      </label>
+    <section className="section">
+      <h2>Use this model</h2>
+      <div className="segmented" role="group" aria-label="Language">
+        {LANGUAGES.map((value) => (
+          <button
+            key={value}
+            type="button"
+            aria-pressed={language === value}
+            onClick={() => setLanguage(value)}
+          >
+            {value}
+          </button>
+        ))}
+      </div>
+      <pre tabIndex={0} className="code">
+        <code>{integrationExample(model, language)}</code>
+      </pre>
       <p className="note">
         Set PHASEO_API_KEY in your environment.{" "}
         {language === "TypeScript"
@@ -40,11 +44,8 @@ export function IntegrationExamples({ model }: { model: Model }) {
           : language === "Python"
             ? "Install the openai Python package."
             : "Example uses a POSIX shell."}{" "}
-        This example makes a billable request when run.
+        Running it makes a billable request.
       </p>
-      <pre tabIndex={0}>
-        <code>{integrationExample(model, language)}</code>
-      </pre>
     </section>
   );
 }

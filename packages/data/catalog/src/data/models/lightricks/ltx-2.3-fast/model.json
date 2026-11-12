@@ -1,9 +1,0 @@
-{
-  "model_id": "lightricks/ltx-2.3-fast", "organisation_id": "lightricks", "name": "LTX-2.3 Fast", "status": "Available", "previous_model_id": null,
-  "description": "LTX-2.3 Fast generates portrait or landscape video with synchronized audio at up to 4K.", "announced_date": null, "release_date": null, "deprecation_date": null, "retirement_date": null,
-  "license": "Open weights", "input_types": "text,image", "output_types": "video,audio", "api_model_id": "ltx-2-3-fast", "family_id": null,
-  "links": [{ "title": "LTX-2.3", "kind": "documentation", "url": "https://docs.ltx.io/models/ltx-2-3" }, { "title": "API pricing", "kind": "pricing", "url": "https://docs.ltx.io/pricing" }],
-  "details": [{ "name": "max_resolution", "value": "3840x2160" }], "benchmarks": [], "page_notice": null, "model_type": "video", "knowledge_cutoff": null,
-  "limits": { "context": null, "input": null, "output": null }, "modalities": { "input": ["text","image/*"], "output": ["video/*","audio/*"] }, "reasoning": { "supported": false, "options": [] }, "capabilities": { "attachment": true, "tool_call": false, "structured_output": false, "temperature": null, "streaming": false, "web_search": false },
-  "open_weights": true, "sources": [{ "kind": "documentation", "url": "https://docs.ltx.io/models/ltx-2-3", "accessed_at": "2026-08-11T00:00:00Z" }], "verification": { "status": "verified", "checked_at": "2026-08-11T00:00:00Z" }, "last_updated": "2026-08-11T00:00:00Z", "removal_date": null, "replacement_model_id": "lightricks/ltx-2.5-fast", "license_url": null
-}

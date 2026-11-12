@@ -76,6 +76,7 @@ describe("AIMock provider matrix", () => {
                 const { result, encoded, testId } = await executeTextProtocol({
                     providerId,
                     protocol: "openai.chat.completions",
+                    ...(providerId === "scaledown" ? { providerModelSlug: "summarize-1" } : {}),
                     body: {
                         model: providerId === "google-ai-studio" ? "gemini-2.5-flash" : "aimock-openai-model",
                         messages: [{ role: "user", content: "[aimock-chat] hello" }],

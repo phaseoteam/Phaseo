@@ -1,6 +1,167 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createUpstreamTimingTracker } from "./upstream";
+import {
+	createUpstreamTimingTracker,
+	isStreamingProviderRequest,
+	fetchUpstream,
+	resolveUpstreamHeadersTimeoutMs,
+	UpstreamHeadersTimeoutError,
+} from "./upstream";
 import { GatewayTimingTrace } from "@pipeline/telemetry/gateway-trace";
+
+const bindingsState = vi.hoisted(() => ({ value: null as Record<string, unknown> | null }));
+vi.mock("@/runtime/env", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("@/runtime/env")>();
+	return { ...actual, getBindingsIfConfigured: () => bindingsState.value };
+});
+
+function hangingFetch() {
+	return vi.spyOn(globalThis, "fetch").mockImplementation((_input, init) => new Promise<Response>((_resolve, reject) => {
+		const signal = init?.signal;
+		signal?.addEventListener("abort", () => {
+			reject(signal.reason ?? new DOMException("aborted", "AbortError"));
+		});
+	}));
+}
+
+const streaming = { applyHeadersDeadline: true };
+const STREAM_URL = "https://provider.test/v1beta/models/m:streamGenerateContent?alt=sse";
+
+describe("upstream headers deadline", () => {
+	afterEach(() => {
+		bindingsState.value = null;
+		vi.restoreAllMocks();
+	});
+
+	it.each([undefined, "", "0", "-5", "abc"])("is off when GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS is %j", async (value) => {
+		bindingsState.value = value === undefined ? {} : { GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS: value };
+		expect(resolveUpstreamHeadersTimeoutMs()).toBe(0);
+		const init = { method: "POST" };
+		const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response("ok"));
+		await createUpstreamTimingTracker(undefined, streaming).timing.fetch(STREAM_URL, init);
+		// The caller's init is passed through untouched (no injected signal).
+		expect(fetchSpy).toHaveBeenCalledWith(STREAM_URL, init);
+	});
+
+	it("fails a stalled provider with a provider transport failure", async () => {
+		bindingsState.value = { GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS: "25" };
+		hangingFetch();
+		const tracker = createUpstreamTimingTracker(undefined, streaming);
+		const error = await tracker.timing.fetch("https://provider.test/v1/messages", { method: "POST", body: JSON.stringify({ model: "m", stream: true }) }).catch((err) => err);
+		expect(error).toBeInstanceOf(UpstreamHeadersTimeoutError);
+		expect(error).toMatchObject({ name: "UpstreamHeadersTimeoutError", code: "upstream_headers_timeout", timeoutMs: 25 });
+		expect(tracker.isProviderTransportFailure(error)).toBe(true);
+		expect(tracker.snapshot().upstreamRequestCount).toBe(1);
+	});
+
+	it("allows a longer queue deadline without losing caller cancellation", async () => {
+		bindingsState.value = { GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS: "5" };
+		hangingFetch();
+		const caller = new AbortController();
+		const tracker = createUpstreamTimingTracker(undefined, { ...streaming, minimumHeadersTimeoutMs: 1000 });
+		const pending = tracker.timing.fetch(STREAM_URL, { signal: caller.signal }).catch((error) => error);
+		await new Promise((resolve) => setTimeout(resolve, 25));
+		caller.abort(new DOMException("cancelled", "AbortError"));
+		const error = await pending;
+		expect(error).toMatchObject({ name: "AbortError" });
+		expect(tracker.isProviderTransportFailure(error)).toBe(false);
+	});
+
+	it.each([
+		["a non-streaming tracker", () => createUpstreamTimingTracker().timing.fetch("https://provider.test")],
+		["fetchUpstream without a tracker", () => fetchUpstream({} as any, "https://provider.test")],
+	])("does not apply to %s, whose headers can wait for the whole generation", async (_label, call) => {
+		bindingsState.value = { GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS: "5" };
+		const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 30));
+			return new Response("complete non-streaming body");
+		});
+		const response = await call();
+		expect(await response.text()).toBe("complete non-streaming body");
+		expect(fetchSpy.mock.calls[0][1]).toBeUndefined();
+	});
+
+	it.each(["auth", "poll", "media", "preflight"] as const)("does not apply to %s requests", async (phase) => {
+		bindingsState.value = { GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS: "5" };
+		const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 30));
+			return new Response("late but fine");
+		});
+		const response = await createUpstreamTimingTracker(undefined, streaming).timing.fetch(STREAM_URL, undefined, phase);
+		expect(await response.text()).toBe("late but fine");
+		expect(fetchSpy.mock.calls[0][1]).toBeUndefined();
+	});
+
+	it("does not apply to a non-streaming provider call made for a streaming client", async () => {
+		// e.g. Google Interactions or synthetic image streams: a completed upstream call, re-streamed locally.
+		bindingsState.value = { GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS: "5" };
+		vi.spyOn(globalThis, "fetch").mockImplementation(async () => {
+			await new Promise((resolve) => setTimeout(resolve, 30));
+			return new Response("completed generation");
+		});
+		const response = await createUpstreamTimingTracker(undefined, streaming).timing.fetch(
+			"https://provider.test/v1beta/models/m:generateContent",
+			{ method: "POST", body: JSON.stringify({ contents: [] }) },
+		);
+		expect(await response.text()).toBe("completed generation");
+	});
+
+	it.each([
+		["a streamGenerateContent URL", "https://g.test/v1beta/models/m:streamGenerateContent?alt=sse", undefined, true],
+		["an SSE Accept header", "https://p.test/v1/x", { headers: { accept: "text/event-stream" } }, true],
+		["a JSON body with stream true", "https://p.test/v1/chat/completions", { body: '{"model":"m","stream": true}' }, true],
+		["a JSON body with stream false", "https://p.test/v1/chat/completions", { body: '{"model":"m","stream":false}' }, false],
+		["a generateContent URL", "https://g.test/v1beta/models/m:generateContent", { body: "{}" }, false],
+		["a binary body", "https://p.test/v1/audio", { body: new Uint8Array([1, 2]) }, false],
+	] as const)("detects streaming provider requests: %s", (_label, url, init, expected) => {
+		expect(isStreamingProviderRequest(url, init as RequestInit | undefined)).toBe(expected);
+	});
+
+	it("keeps caller cancellation a neutral AbortError", async () => {
+		bindingsState.value = { GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS: "1000" };
+		hangingFetch();
+		const caller = new AbortController();
+		const tracker = createUpstreamTimingTracker(undefined, streaming);
+		const pending = tracker.timing.fetch(STREAM_URL, { signal: caller.signal }).catch((err) => err);
+		caller.abort(new DOMException("client went away", "AbortError"));
+		const error = await pending;
+		expect(error).not.toBeInstanceOf(UpstreamHeadersTimeoutError);
+		expect(error.name).toBe("AbortError");
+		expect(tracker.isProviderTransportFailure(error)).toBe(false);
+	});
+
+	it("clears the deadline once headers arrive so slow bodies still stream", async () => {
+		bindingsState.value = { GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS: "20" };
+		let bodySignal: AbortSignal | undefined;
+		vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) => {
+			bodySignal = init?.signal ?? undefined;
+			const encoder = new TextEncoder();
+			return new Response(new ReadableStream<Uint8Array>({
+				async start(controller) {
+					controller.enqueue(encoder.encode("data: a\n\n"));
+					await new Promise((resolve) => setTimeout(resolve, 60));
+					controller.enqueue(encoder.encode("data: b\n\n"));
+					controller.close();
+				},
+			}));
+		});
+		const response = await createUpstreamTimingTracker(undefined, streaming).timing.fetch(STREAM_URL);
+		expect(await response.text()).toBe("data: a\n\ndata: b\n\n");
+		expect(bodySignal?.aborted).toBe(false);
+	});
+
+	it("forwards caller aborts that happen after headers to the request signal", async () => {
+		bindingsState.value = { GATEWAY_UPSTREAM_HEADERS_TIMEOUT_MS: "1000" };
+		let requestSignal: AbortSignal | undefined;
+		vi.spyOn(globalThis, "fetch").mockImplementation(async (_input, init) => {
+			requestSignal = init?.signal ?? undefined;
+			return new Response("ok");
+		});
+		const caller = new AbortController();
+		await createUpstreamTimingTracker(undefined, streaming).timing.fetch(STREAM_URL, { signal: caller.signal });
+		caller.abort();
+		expect(requestSignal?.aborted).toBe(true);
+	});
+});
 
 describe("upstream timing tracker", () => {
 	afterEach(() => vi.restoreAllMocks());

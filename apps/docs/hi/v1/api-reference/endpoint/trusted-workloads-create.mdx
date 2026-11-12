@@ -1,0 +1,10 @@
+---
+title: "भरोसेमंद वर्कलोड पॉलिसी बनाएँ"
+sidebarTitle: "भरोसेमंद वर्कलोड पॉलिसी बनाएँ"
+badge: "बीटा"
+openapi: "/hi/openapi/v1/openapi.localized.yaml POST /workload-identity/policies"
+description: "एक ट्रस्ट पॉलिसी बनाता है ताकि Vercel डिप्लॉयमेंट या GitHub Actions वर्कफ़्लो API कुंजी के बजाय अपने OIDC टोकन से Phaseo को कॉल कर सके।"
+---
+<Note>इसके लिए प्रबंधन कुंजी या OAuth टोकन पर `keys:write`, या वर्कस्पेस का मालिक या एडमिन आवश्यक है। भरोसेमंद वर्कलोड बीटा में है; जिन वर्कस्पेस के पास यह सुविधा नहीं है, उन्हें `404` मिलता है।</Note>
+
+पॉलिसी कैसे काम करती हैं और Terraform से उन्हें कैसे प्रबंधित करें, यह जानने के लिए [भरोसेमंद वर्कलोड](../../developers/trusted-workloads.mdx) देखें।

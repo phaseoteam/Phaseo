@@ -87,7 +87,7 @@ export function ModelsPageSkeleton({ title }: { title: string }) {
 	return (
 		<div className="flex w-full flex-1">
 			<aside className="hidden lg:block w-[20rem] shrink-0 border-r border-border/70 bg-background/95">
-				<div className="sticky top-16 flex h-[calc(100dvh-4rem)] min-h-0 flex-col">
+				<div className="sticky top-[calc(var(--site-notice-height,0px)+4rem)] flex h-[calc(100dvh-var(--site-notice-height,0px)-4rem)] min-h-0 flex-col">
 					<div className="min-h-0 flex-1 overflow-hidden">
 						<SidebarSkeleton />
 					</div>

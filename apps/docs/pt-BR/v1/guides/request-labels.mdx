@@ -1,14 +1,10 @@
 ---
 title: "Rótulos de solicitação"
-description: "Associe solicitações do gateway a equipes, recursos ou ambientes definidos no código e divida os gastos por rótulo."
+description: "Atribua solicitações do gateway a equipes, recursos ou ambientes definidos no código e divida os gastos por rótulo."
 icon: "tags"
 ---
 
-Use rótulos de solicitação quando o código da aplicação precisar de uma dimensão de custo estável e mais específica que uma chave de API ou aplicação. Os rótulos são registrados na auditoria da solicitação e podem ser filtrados nas análises sem alterar a solicitação ao modelo.
-
-## Enviar rótulos
-
-Defina `X-Phaseo-Metadata` como um objeto JSON com até 32 pares exclusivos de chave e valor:
+Envie um cabeçalho `X-Phaseo-Metadata` para marcar uma solicitação com rótulos de chave/valor, como `team=support`, e depois filtre os gastos e os registros por esses rótulos. Use rótulos quando precisar de uma dimensão de custo mais detalhada que uma chave de API ou um aplicativo. Eles não alteram a solicitação ao modelo e não são repassados aos provedores.
 
 ```bash
 curl https://api.phaseo.app/v1/responses \
@@ -16,27 +12,35 @@ curl https://api.phaseo.app/v1/responses \
   -H "Content-Type: application/json" \
   -H 'X-Phaseo-Metadata: {"labels":[{"key":"team","value":"support"},{"key":"environment","value":"production"}]}' \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "input": "Summarize this ticket."
   }'
 ```
 
-Os SDKs de TypeScript e Python aceitam cabeçalhos personalizados, então o mesmo cabeçalho pode ser configurado no cliente. Os rótulos não são encaminhados aos provedores.
+Os SDKs de TypeScript e Python aceitam cabeçalhos personalizados, então você pode definir o mesmo cabeçalho uma única vez no cliente.
 
-## Dividir os gastos
+Para rotular solicitações automaticamente pelo conteúdo, use os [classificadores de solicitações](/pt-BR/v1/guides/request-classifiers). As respostas deles são armazenadas como rótulos de solicitação e são filtradas da mesma forma.
 
-Use o endpoint de análise com `label_key` e `label_value`:
+## Regras dos rótulos
+
+| Regra | Limite |
+| --- | --- |
+| Rótulos por solicitação | Até 32, cada um com uma chave única |
+| Chave | De 1 a 64 caracteres: letras, números, `_`, `.`, `:`, `-` |
+| Valor | String, de 1 a 256 caracteres, sem caracteres de controle |
+| Tamanho do cabeçalho | Até 8 KiB |
+| Chave reservada | `phaseo.classifier` só é definida pelas chamadas de classificador do Phaseo |
+
+As chaves e os valores têm os espaços das extremidades removidos. Um cabeçalho malformado, uma chave duplicada ou um rótulo que viole essas regras faz a solicitação falhar com `400 validation_error`, motivo `invalid_request_metadata`, antes de qualquer modelo ser chamado.
+
+Não coloque prompts, segredos, endereços de e-mail nem outros dados pessoais nos rótulos.
+
+## Filtrar gastos por rótulo
+
+Passe `label_key` e `label_value` para o endpoint de análises:
 
 ```text
 GET /v1/analytics?label_key=team&label_value=support
 ```
 
-A resposta usa o mesmo formato de gastos agrupados das análises sem filtros, mas inclui apenas solicitações com esse par exato de rótulos.
-
-## Regras
-
-- As chaves aceitam letras, números, `_`, `.`, `:` ou `-` e têm limite de 64 caracteres.
-- Os valores são strings com até 256 caracteres.
-- Uma solicitação pode conter até 32 rótulos e o cabeçalho tem limite de 8 KiB.
-- Chaves duplicadas ou metadados malformados são rejeitados com `400 invalid_request`.
-- Não inclua prompts, segredos, endereços de e-mail ou outros dados pessoais nos rótulos.
+A resposta tem o mesmo formato de gastos agrupados das análises sem filtro, mas conta apenas as solicitações que têm exatamente esse par de rótulo. Enviar apenas um dos dois parâmetros retorna `400 invalid_request`.

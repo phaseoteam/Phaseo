@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { chmod, mkdtemp, writeFile, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { clearSession, credentialHelperPath, preferredSessionBackend, readSession, writeSession } from "../src/session.ts";
+import { clearSession, credentialHelperPath, preferredSessionBackend, readSession, runCommand, writeSession } from "../src/session.ts";
 
 test("prefers OS-backed storage on supported platforms", () => {
 	assert.equal(preferredSessionBackend({} as NodeJS.ProcessEnv, "win32"), "dpapi-file");
@@ -122,4 +122,12 @@ test("round-trips a Windows session through DPAPI", { skip: process.platform !==
 		else process.env.PHASEO_SESSION_BACKEND = previousBackend;
 		await rm(directory, { recursive: true, force: true });
 	}
+});
+
+test("credential helpers that exit before reading stdin fail cleanly instead of crashing", async () => {
+	// Several megabytes guarantees the write outlives the child, so stdin raises EPIPE.
+	await assert.rejects(
+		runCommand(process.execPath, ["-e", "process.exit(3)"], "x".repeat(8 * 1024 * 1024)),
+		/exited with code 3/,
+	);
 });

@@ -1,9 +1,9 @@
 import { Logo } from "@/components/Logo";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { Card, CardContent } from "@/components/ui/card";
 import TimeDisplay from "@/components/updates/TimeDisplay";
 import type { EventType, ModelEvent } from "@/lib/fetchers/updates/types";
-import Link from "next/link";
+import Link from "@/components/link";
 import type React from "react";
 
 export interface EventTypeOption {

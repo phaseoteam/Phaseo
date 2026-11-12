@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
 	estimateProviderTokenReservation,
 	parseProviderRateLimitConfig,
@@ -6,6 +6,34 @@ import {
 } from "./provider-rate-limits";
 
 describe("provider rate-limit configuration", () => {
+	it("reserves repeated extraction passes without requiring output tokens", () => {
+		expect(estimateProviderTokenReservation({ capability: "extraction.extract", body: { fields: { total: { type: "number" }, po: { type: "text" } } } })).toBe(131072);
+		expect(estimateProviderTokenReservation({ capability: "extraction.extract", body: { fields: {} } })).toBeNull();
+	});
+	it("reserves every request in a provider fan-out before dispatch", () => {
+		const nowMs = Date.UTC(2026, 8, 3, 12, 30);
+		const config = { providerId: "together", requestsPerMinute: 10, requestsPerDay: 100,
+			tokensPerMinute: null, tokensPerDay: null, headroomBps: 0 };
+		const counters = { minuteWindow: Math.floor(nowMs / 60000), dayWindow: Math.floor(nowMs / 86400000),
+			minuteRequests: 5, dayRequests: 5, minuteTokens: 0, dayTokens: 0 };
+		expect(resolveProviderRateLimitDenial(config, counters, nowMs, 0, 6)?.reason).toBe("requests_per_minute");
+		expect(resolveProviderRateLimitDenial(config, counters, nowMs, 0, 5)).toBeNull();
+	});
+	it("reserves legacy OpenAI questions as one batch while retaining legacy provider reservations", () => {
+		const args = { capability: "decisions.make", providerMaxInputTokens: 1000, providerMaxOutputTokens: 100,
+			body: { state: "Evidence", images: ["data:image/png;base64,AQID"], questions: {
+				first: { type: "noul", instructions: "Red?" }, second: { type: "noul", instructions: "Blue?" },
+			} } };
+		expect(estimateProviderTokenReservation({ ...args, providerId: "openai" })).toBe(1100);
+		expect(estimateProviderTokenReservation({ ...args, providerId: "typesafe" })).toBe(2 * (1000 + 192 + 100));
+	});
+	it("reserves one native Decisions call including inline images", () => {
+		const body = { input: [{ role: "user", content: [{ type: "input_image", image_url: "data:image/png;base64,AQID" }] }],
+			questions: [{ type: "predicate", instructions: "Red?" }, { type: "predicate", instructions: "Blue?" }] };
+		expect(estimateProviderTokenReservation({
+			capability: "decisions.make", body, providerMaxInputTokens: 1000, providerMaxOutputTokens: 100,
+		})).toBe(1100);
+	});
 	it("normalizes an enabled database row", () => {
 		expect(parseProviderRateLimitConfig({
 			provider_id: "openai",
@@ -17,6 +45,7 @@ describe("provider rate-limit configuration", () => {
 			enabled: true,
 		})).toEqual({
 			providerId: "openai",
+			modelSlug: "*",
 			requestsPerMinute: 500,
 			requestsPerDay: null,
 			tokensPerMinute: 100000,
@@ -53,6 +82,7 @@ describe("provider rate-limit configuration", () => {
 			reason: "requests_per_day",
 			retryAfterSeconds: 41_400,
 			reservation: null,
+			overage: 1.1,
 		});
 	});
 
@@ -81,6 +111,8 @@ describe("provider rate-limit configuration", () => {
 			reason: "tokens_per_minute",
 			retryAfterSeconds: 60,
 			reservation: null,
+			// Refused by the 5% headroom while still under the provider's own limit.
+			overage: 0.951,
 		});
 	});
 
@@ -130,5 +162,20 @@ describe("provider rate-limit configuration", () => {
 			providerMaxInputTokens: 10_000,
 			providerMaxOutputTokens: 1_000,
 		})).toBeNull();
+	});
+
+	it("uses a known body byte length and measures each body only once", () => {
+		const body = { model: "openai/test", messages: [{ role: "user", content: "héllo" }] };
+		const args = { capability: "text.generate", body, requestedMaxOutputTokens: 100, providerMaxInputTokens: 10_000, providerMaxOutputTokens: 4_096 };
+		expect(estimateProviderTokenReservation({ ...args, bodyBytes: 1_000 })).toBe(1_000 + 16 + 100);
+		const stringify = vi.spyOn(JSON, "stringify");
+		let first: number | null, second: number | null;
+		try {
+			first = estimateProviderTokenReservation(args);
+			second = estimateProviderTokenReservation(args);
+			expect(stringify.mock.calls.filter(([value]) => value === body)).toHaveLength(1);
+		} finally { stringify.mockRestore(); }
+		expect(first).toBe(new TextEncoder().encode(JSON.stringify(body)).byteLength + 16 + 100);
+		expect(second).toBe(first);
 	});
 });

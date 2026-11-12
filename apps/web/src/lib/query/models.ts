@@ -7,6 +7,7 @@ import { getCatalogPricingSummariesCached } from "@/lib/fetchers/models/getCatal
 import { withMissingCatalogPricing } from "@/lib/models/withMissingCatalogPricing";
 import { publicFetcher } from "@/lib/query/publicFetcher";
 import { fetchAuthenticatedPrivateModels } from "@/lib/query/privateModels";
+import { fetchAdminStagedModels } from "@/lib/query/stagedModels";
 import {
 	hasAuthenticatedAccountQueryScope,
 	type AccountQueryScope,
@@ -174,7 +175,7 @@ async function fetchModelsPageDataForVersion(
 	const canReadAccountData = hasAuthenticatedAccountQueryScope(
 		options.accountQueryScope,
 	);
-	const [privateModels, providerPreviews] = await Promise.all([
+	const [privateModels, providerPreviews, stagedModels] = await Promise.all([
 		canReadAccountData
 			? fetchAuthenticatedPrivateModels<ModelsPageModel>("page", {
 					signal: options.signal,
@@ -188,6 +189,9 @@ async function fetchModelsPageDataForVersion(
 				: fetchAuthenticatedProviderCatalogPreviews(undefined, false, {
 						signal: options.signal,
 					})
+			: Promise.resolve([]),
+		canReadAccountData
+			? fetchAdminStagedModels({ signal: options.signal, accessToken: options.accessToken })
 			: Promise.resolve([]),
 	]);
 	if (privateModels.length > 0) {
@@ -226,6 +230,16 @@ async function fetchModelsPageDataForVersion(
 		models = mergeProviderCatalogPreviews(models, providerPreviews);
 	}
 
+	const existingIds = new Set(models.map((model) => model.model_id));
+	const staged = stagedModels.filter((model) => !existingIds.has(model.model_id));
+	firstPage.facets.statusCounts.coming_soon += staged.length;
+	for (const model of staged) {
+		const creator = model.organisation_name ?? model.organisation_id;
+		const option = firstPage.facets.creatorOptions.find((entry) => entry.value === creator);
+		if (option) option.count += 1;
+		else firstPage.facets.creatorOptions.push({ value: creator, count: 1 });
+	}
+	models = [...staged, ...models];
 	return { models, facets: firstPage.facets };
 }
 

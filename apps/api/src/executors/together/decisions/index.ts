@@ -196,6 +196,9 @@ async function executeQuestion(
 
 export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult> {
 	const ir = args.ir as IRDecisionsRequest;
+	if (ir.decisionContext) {
+		return validationFailure(args, "Tev returns only a selected label and cannot provide the probabilities required by the OpenAI Decisions format. Use the legacy state/question-map format.");
+	}
 	const requestedProviderModel = args.providerModelSlug?.trim();
 	const normalizedProviderModel = requestedProviderModel?.toLowerCase();
 	if (

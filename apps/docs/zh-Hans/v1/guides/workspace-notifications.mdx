@@ -1,49 +1,133 @@
 ---
 title: "工作区通知"
-description: "通过电子邮件、聊天频道或 HTTPS webhook 发送工作区提醒。"
+description: "通过电子邮件、聊天频道或 HTTPS Webhook 发送工作区提醒。"
 icon: "bell-ring"
 ---
 
-使用通知目标将工作区已启用的提醒发送到团队日常监控的工具。通知目标由整个工作区共享，可先进行测试，再用于接收重要运维提醒。
+在 **设置 → 通知** 中添加通知目标，即可把工作区的提醒发送到电子邮件、Slack、Discord、Microsoft Teams 或你自己的 HTTPS Webhook。通知目标属于整个工作区，你可以先发送测试，再依赖它接收提醒。
+
+| 通知目标 | 你需要提供 | 提及 |
+| --- | --- | --- |
+| 电子邮件 | 邮箱地址或通讯组列表 | 无 |
+| Slack | 传入 Webhook URL | 用户 ID 和用户组 ID |
+| Discord | 频道和机器人令牌，或 Webhook URL | 用户 ID 和角色 ID |
+| Microsoft Teams | 工作流 URL | Microsoft 365 电子邮件地址或 Entra 对象 ID |
+| 自定义 Webhook | HTTPS URL | 无；投递会[签名](#verify-webhook-signatures) |
+
+凭据和 Webhook URL 在存储前会加密。请将频道凭据限制为仅用于发送通知；如果凭据泄露，请及时轮换。
 
 ## 添加通知目标
 
-1. 打开 **Gateway → 设置 → 通知**。
-2. 选择**添加通知目标**。
-3. 输入名称并选择一个或多个频道。
-4. 填写目标详情，并按需添加提及对象。
-5. 为每个已配置的频道选择**发送测试**。
-6. 所有测试均成功后，再创建通知目标。
+<Steps>
+<Step title="创建通知目标">
+打开 **设置 → 通知**，选择 **添加目的地**，输入名称，并选择一个或多个频道。填写目标详情，并按需添加提及对象。
+</Step>
+<Step title="测试每个频道">
+为每个频道选择 **发送测试**，所有测试都成功后再创建通知目标。
+</Step>
+<Step title="保存签名密钥">
+自定义 Webhook 在创建时会获得签名密钥。请从弹出的对话框中复制；它只显示一次。
+</Step>
+</Steps>
 
-Phaseo 支持：
+如需通过脚本操作，请使用管理密钥：用 `POST /v1/notifications/destinations` 创建目标，用 `POST /v1/notifications/destinations/{id}/test` 检查它，然后用 `PUT /v1/notifications/routes/{eventKind}` 选择它接收哪些提醒。
 
-- 电子邮件地址和通讯组列表
-- 通过机器人令牌连接的 Discord 频道
-- Discord webhook
-- Slack 传入 webhook
-- Microsoft Teams 工作流 URL
-- 自定义 HTTPS webhook
+请谨慎使用提及：把高频提醒发送到有人监控的频道，而不是通知范围过大的群组。
 
-凭据和 webhook URL 在存储前会加密。请将频道凭据限制为仅用于发送通知；如果凭据泄露，请及时轮换。
-
+<span id="enable-product-alerts"></span>
 ## 启用产品提醒
 
-通知页面会列出工作区可用的提醒类型。启用**模型弃用提醒**，即可在工作区使用的模型退役前收到通知。
+通知页面会列出工作区可用的提醒类型。除了控制台中显示的内置收件方之外，通知目标也会收到提醒。
 
-提醒会发送到已配置的通知目标，也会发送到控制台中显示的内置收件方。
+**模型弃用警报** 会在工作区使用的模型停用之前发出通知。
 
-## 提及
+**替代模型通知** 会在[已停用模型的路由](./model-retirement.mdx#route-requests-to-a-replacement-automatically)已开启，且某个模型已不再有任何提供商提供、工作区对它的请求改由替代模型回答时发送。每个模型与替代模型的组合只发送一次通知，即替代模型首次成功回答时。工作区所有者始终会收到电子邮件；选择通知目标即可同时把通知发送给你的团队。
 
-可选的提及字段可以让提醒通知特定收件人：
+<span id="spend-reports"></span>
+## 支出报告
 
-- Discord 支持用户 ID 和角色 ID。
-- Slack 支持用户 ID 和用户组 ID。
-- Microsoft Teams 支持 Microsoft 365 电子邮件地址或 Entra 对象 ID。
+工作区所有者每周一 09:00（按工作区计费时区）会收到一封支出报告邮件，内容为上一个周一至周日的支出。可在通知页面的 **支出警报 → 工作区支出设置** 中更改：每天（09:00 发送前一天的报告）、每周、每月（每月 1 日发送上个月的报告）或关闭，并选择是否同时发送给管理员。没有支出的周期会被跳过。
 
-请谨慎使用提及。工作区的高频提醒通常应发送到有人监控的频道，而不是通知范围过大的群组。
+每份报告包含支出及与上一周期相比的变化、支出最多的密钥、模型、成员和部门、本月预测、余额可用天数，以及该周期内的支出警报和拦截。收到报告的任何人都可以通过邮件中的链接退订；这只会停止其本人收到的该工作区报告。路由到 **支出报告** 的通知目标每份报告收到一条摘要。
 
-## 测试和移除通知目标
+相同的设置在[通知设置 API](../api-reference/endpoint/notifications-settings-update.mdx)中为 `spend.report_cadence` 和 `spend.report_include_admins`。
 
-轮换凭据或更改频道配置后，可在现有通知目标旁选择**发送测试**。请移除不再监控的目标，避免提醒看似发送到了已弃用的频道。
+如需针对支出、预算、预测、激增和低余额的提醒，以及在支出超过限额后拦截请求，请参阅[支出警报](./spend-alerts.mdx)。
 
-自定义 webhook 必须使用 HTTPS，并在处理前验证请求。请及时返回成功响应，并将耗时任务移至后台作业。
+<Note>支出报告邮件正在逐步推出。开启之前，你的选择会被保存，但不会发送任何报告。</Note>
+
+## 保持通知目标正常工作
+
+轮换凭据或更改频道后，在现有通知目标旁选择 **发送测试**。移除没人监控的通知目标，以免提醒落入被弃用的频道，看起来却像已送达。
+
+自定义 Webhook 接收端应在处理每个请求之前先验证它，及时返回成功响应，并把较慢的工作移到后台作业。
+
+<span id="verify-webhook-signatures"></span>
+## 验证 Webhook 签名
+
+Phaseo 会为每次自定义 Webhook 投递（包括从已保存目标发送的测试）签名，方式与[视频和批处理 Webhook](./async-video-and-batch.mdx#receive-updates) 相同。每个请求都带有以下请求头：
+
+```http
+POST /your/endpoint HTTP/1.1
+content-type: application/json
+user-agent: Phaseo-Notifications/1.0
+x-phaseo-event-id: 6f1c0f5e-3f0b-4a39-9a51-2f4f2c1d9e10
+x-phaseo-event-type: rate_limit_throttled
+x-phaseo-timestamp: 1792569600
+x-phaseo-signature: 5d2a…e41f
+```
+
+`x-phaseo-signature` 是以目标的签名密钥（`whsec_…`）为密钥，对 `x-phaseo-timestamp` 的值、一个英文句点（`.`）和**未经修改的请求体**计算出的十六进制 HMAC-SHA256。`x-phaseo-timestamp` 以 Unix 秒为单位。
+
+验证投递的步骤：
+
+1. 在解析 JSON 之前读取原始请求体。
+2. 重新计算签名，并以恒定时间进行比较。
+3. 拒绝与你的时钟相差超过五分钟的时间戳。
+4. 按 `x-phaseo-event-id` 去重。失败的投递会重试，每次尝试都会使用新的时间戳重新签名。
+
+<CodeGroup>
+```js Node.js
+import crypto from "node:crypto";
+
+// rawBody 是按原样接收的请求体字符串。
+export function verifyPhaseoSignature(rawBody, headers, secret, toleranceSeconds = 300) {
+  const timestamp = headers["x-phaseo-timestamp"];
+  const signature = headers["x-phaseo-signature"];
+  if (!timestamp || !signature) return false;
+  if (Math.abs(Date.now() / 1000 - Number(timestamp)) > toleranceSeconds) return false;
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(`${timestamp}.${rawBody}`)
+    .digest("hex");
+  const a = Buffer.from(expected, "hex");
+  const b = Buffer.from(signature, "hex");
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+```
+
+```python Python
+import hashlib
+import hmac
+import time
+
+# raw_body 是按原样接收的请求体字节。
+def verify_phaseo_signature(raw_body: bytes, headers, secret: str, tolerance_seconds: int = 300) -> bool:
+    timestamp = headers.get("x-phaseo-timestamp", "")
+    signature = headers.get("x-phaseo-signature", "")
+    if not timestamp.isdigit() or not signature:
+        return False
+    if abs(time.time() - int(timestamp)) > tolerance_seconds:
+        return False
+    expected = hmac.new(secret.encode(), timestamp.encode() + b"." + raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature)
+```
+</CodeGroup>
+
+### 生成或轮换密钥
+
+密钥只在创建目标时显示一次。要替换它，请在 **设置 → 通知** 中选择目标旁的 **轮换密钥**，或调用 [`POST /v1/notifications/destinations/{id}/rotate-secret`](/zh-Hans/v1/api-reference/endpoint/notifications-destination-rotate-secret)。下一次投递将使用新密钥签名，旧密钥随即失效，因此请立即更新接收端。
+
+在签名功能推出前创建的自定义 Webhook 没有密钥，仍以未签名方式投递。它们在设置中显示为 **未签名**。选择 **生成密钥**，将密钥添加到接收端，然后发送测试以检查验证。在保存目标之前，从 **添加目的地** 面板发送的测试不会签名，因为此时还没有密钥。
+
+电子邮件、Slack、Discord 和 Microsoft Teams 目标不签名：这些服务会自行验证 Webhook URL 或机器人令牌。

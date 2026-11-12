@@ -1,14 +1,10 @@
 ---
 title: "Libellés de requête"
-description: "Attribuez les requêtes de la passerelle à des équipes, fonctionnalités ou environnements définis dans le code, puis ventilez les dépenses par libellé."
+description: "Attribuez les requêtes du Gateway à des équipes, fonctionnalités ou environnements définis dans le code, puis ventilez les dépenses par libellé."
 icon: "tags"
 ---
 
-Utilisez des libellés de requête lorsque le code de l’application a besoin d’une dimension de coût stable, plus précise qu’une clé API ou qu’une application. Les libellés sont enregistrés avec l’audit de la requête et peuvent être filtrés dans les analyses sans modifier la requête au modèle.
-
-## Envoyer des libellés
-
-Définissez `X-Phaseo-Metadata` comme un objet JSON contenant jusqu’à 32 paires clé-valeur uniques :
+Envoyez un en-tête `X-Phaseo-Metadata` pour étiqueter une requête avec des libellés clé/valeur tels que `team=support`, puis filtrez les dépenses et les journaux selon ces libellés. Utilisez les libellés lorsque vous avez besoin d’une dimension de coût plus fine qu’une clé API ou qu’une application. Ils ne modifient pas la requête au modèle et ne sont pas transmis aux fournisseurs.
 
 ```bash
 curl https://api.phaseo.app/v1/responses \
@@ -16,27 +12,35 @@ curl https://api.phaseo.app/v1/responses \
   -H "Content-Type: application/json" \
   -H 'X-Phaseo-Metadata: {"labels":[{"key":"team","value":"support"},{"key":"environment","value":"production"}]}' \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "input": "Summarize this ticket."
   }'
 ```
 
-Les SDK TypeScript et Python acceptent les en-têtes personnalisés ; vous pouvez donc configurer le même en-tête sur le client. Les libellés ne sont pas transmis aux fournisseurs.
+Les SDK TypeScript et Python acceptent les en-têtes personnalisés : vous pouvez donc définir le même en-tête une seule fois sur le client.
 
-## Ventiler les dépenses
+Pour étiqueter automatiquement les requêtes selon leur contenu, utilisez les [classificateurs de requêtes](/fr/v1/guides/request-classifiers). Leurs réponses sont enregistrées comme libellés de requête et se filtrent de la même façon.
 
-Utilisez le point de terminaison des analyses avec `label_key` et `label_value` :
+## Règles des libellés
+
+| Règle | Limite |
+| --- | --- |
+| Libellés par requête | Jusqu’à 32, chacun avec une clé unique |
+| Clé | 1 à 64 caractères : lettres, chiffres, `_`, `.`, `:`, `-` |
+| Valeur | Chaîne de 1 à 256 caractères, sans caractères de contrôle |
+| Taille de l’en-tête | Jusqu’à 8 Kio |
+| Clé réservée | `phaseo.classifier` n’est définie que par les appels de classificateur de Phaseo |
+
+Les espaces en début et en fin des clés et des valeurs sont supprimés. Un en-tête mal formé, une clé en double ou un libellé qui enfreint ces règles fait échouer la requête avec `400 validation_error`, motif `invalid_request_metadata`, avant l’appel d’un modèle.
+
+Ne placez pas de prompts, de secrets, d’adresses e-mail ni d’autres données personnelles dans les libellés.
+
+## Filtrer les dépenses par libellé
+
+Passez à la fois `label_key` et `label_value` à l’endpoint d’analyse :
 
 ```text
 GET /v1/analytics?label_key=team&label_value=support
 ```
 
-La réponse conserve le même format de dépenses regroupées que les analyses non filtrées, mais n’inclut que les requêtes portant exactement cette paire de libellés.
-
-## Règles
-
-- Les clés ne peuvent contenir que des lettres, des chiffres, `_`, `.`, `:` ou `-`, et sont limitées à 64 caractères.
-- Les valeurs sont des chaînes limitées à 256 caractères.
-- Une requête peut contenir jusqu’à 32 libellés et l’en-tête est limité à 8 Kio.
-- Les clés en double ou les métadonnées mal formées sont rejetées avec `400 invalid_request`.
-- Ne placez pas de prompts, de secrets, d’adresses e-mail ni d’autres données personnelles dans les libellés.
+La réponse a le même format de dépenses regroupées que les analyses non filtrées, mais ne compte que les requêtes portant exactement cette paire de libellés. N’envoyer qu’un seul des deux paramètres renvoie `400 invalid_request`.

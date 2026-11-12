@@ -1,78 +1,41 @@
 ---
 title: "SpaceXAI Grok 4.20"
-description: "Grok 4.20 अपनाने के लिए reasoning और multi-agent effort controls की जानकारी।"
+description: "Grok 4.20 अपनाते समय क्या जानना ज़रूरी है, जिसमें रीज़निंग और मल्टी-एजेंट effort नियंत्रण शामिल हैं।"
 icon: "/icons/brands/grok.svg"
 ---
 
-# SpaceXAI Grok 4.20
+मॉडल ID बदलें और अपना सत्यापन सेट दोबारा चलाएं; अनुरोध और प्रतिक्रिया आकार वही रहते हैं। एकमात्र नया नियंत्रण यह है कि मल्टी-एजेंट संस्करण कितनी गहराई से काम करता है।
 
-Phaseo Gateway के ज़रिए Grok 4.20 को सुरक्षित रूप से अपनाने के लिए यह गाइड इस्तेमाल करें।
+| मॉडल | Phaseo मॉडल ID | रीज़निंग नियंत्रण |
+| --- | --- | --- |
+| Grok 4.20 | `spacex-ai/grok-4.20` | `reasoning.enabled`: चालू या बंद |
+| Grok 4.20 Multi-Agent (बीटा) | `spacex-ai/grok-4.20-multi-agent-beta` | `reasoning.effort`: `low`, `medium` या `high` |
 
-Catalog का मुख्य route:
+## Grok 4.20 पर रीज़निंग चालू-बंद करें
 
-- `spacex-ai/grok-4-20-2026-02-17`
-
-Provider model ID से उपलब्ध वैकल्पिक multi-agent route:
-
-- `spacex-ai/grok-4.20-multi-agent-beta-0309`
-
-## माइग्रेशन quickstart
-
-ज़्यादातर integrations में model ID अपडेट करके सामान्य validation फिर चलाना ही काफ़ी है।
-
-मौजूदा request और response patterns वैसे ही रह सकते हैं।
-
-## नया क्या है
-
-बेस Grok 4.20 route के लिए Phaseo Gateway में व्यवहार बदलने की ज़रूरत नहीं है।
-
-व्यावहारिक बदलाव multi-agent variant को tune करने का तरीका है।
-
-Phaseo Gateway में:
-
-- बेस Grok 4.20 के reasoning को सामान्य रूप से `reasoning.enabled` से toggle किया जा सकता है।
-- multi-agent Grok 4.20 को `reasoning.effort` से tune करें।
-- `low`, `medium`, `high` और `extra high` इस्तेमाल करें।
-- SpaceXAI guidance के अनुसार `low` और `medium` में 4 agents होते हैं; `high` और `extra high` बड़े multi-agent configurations इस्तेमाल करते हैं।
-
-Gateway requests में `agent_count` सीधे इस्तेमाल नहीं होता।
-
-### तर्क टॉगल के साथ Grok 4.20 का मूल संस्करण
-
-बेस model इस्तेमाल करें और `reasoning.enabled` सीधे सेट करें:
+मॉडल का रीज़निंग संस्करण उपयोग करने के लिए `reasoning.enabled: true` सेट करें। इसके बिना, या `false` के साथ, Phaseo नॉन-रीज़निंग संस्करण कॉल करता है।
 
 ```json
 {
-  "model": "spacex-ai/grok-4-20-2026-02-17",
+  "model": "spacex-ai/grok-4.20",
   "input": "Explain this architecture",
-  "reasoning": {
-    "enabled": true
-  }
+  "reasoning": { "enabled": true }
 }
 ```
 
-### प्रयास नियंत्रण के साथ मल्टी-एजेंट Grok 4.20
+## मल्टी-एजेंट मॉडल पर गहराई सेट करें
 
-Multi-agent model इस्तेमाल करें और `reasoning.effort` से depth नियंत्रित करें:
+गहराई `reasoning.effort` से नियंत्रित करें। गेटवे अनुरोध xAI का `agent_count` नहीं लेते; xAI के अनुसार, `low` और `medium` 4 एजेंट चलाते हैं और `high` एक बड़ा कॉन्फ़िगरेशन चलाता है।
 
 ```json
 {
-  "model": "spacex-ai/grok-4.20-multi-agent-beta-0309",
+  "model": "spacex-ai/grok-4.20-multi-agent-beta",
   "input": "Evaluate three rollout options with tradeoffs",
-  "reasoning": {
-    "effort": "medium"
-  }
+  "reasoning": { "effort": "medium" }
 }
 ```
-
-Reasoning effort levels:
-
-- `low`
-- `medium`
-- `high`
-- `extra high`
 
 ## स्रोत
 
-- [SpaceXAI multi-agent क्षमताएँ](https://docs.x.ai/developers/model-capabilities/text/multi-agent)
-- [SpaceXAI के नए models पर माइग्रेशन](https://docs.x.ai/docs/guides/migrating-to-new-models)
+- [SpaceXAI मल्टी-एजेंट क्षमताएं](https://docs.x.ai/developers/model-capabilities/text/multi-agent)
+- [SpaceXAI: नए मॉडल पर माइग्रेट करना](https://docs.x.ai/docs/guides/migrating-to-new-models)

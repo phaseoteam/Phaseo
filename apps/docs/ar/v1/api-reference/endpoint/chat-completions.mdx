@@ -2,41 +2,30 @@
 title: "إنشاء إكمال محادثة"
 sidebarTitle: "إنشاء إكمال محادثة"
 openapi: "/ar/openapi/v1/openapi.localized.yaml POST /chat/completions"
-description: "أنشئ إكمالات المحادثة باستخدام نقطة النهاية المتوافقة مع OpenAI."
+description: "ولّد إكمالات محادثة باستخدام نقطة نهاية الدردشة المتوافقة مع OpenAI."
 ---
-## أدوات الخادم
 
-تدعم `/v1/chat/completions` أدوات الدوال العادية وأدوات الخادم التالية التي يديرها Gateway:
+## استخدم أدوات الخادم
 
-- `gateway:datetime`
-- `phaseo:web_search`
-- `phaseo:web_fetch`
-- `phaseo:advisor`
-- `phaseo:image_generation`
-
-### مثال التاريخ والوقت
+أضف أداة `phaseo:` إلى `tools` بجانب أدوات الدوال الخاصة بك، وسيشغّلها Phaseo عندما يستدعيها النموذج. تقبل `/v1/chat/completions` كل أدوات الخادم باستثناء `phaseo:apply_patch`؛ ويسردها دليل [أدوات الخادم](../../guides/server-tools).
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
-    "stream": false,
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "What is the current datetime in Europe/London?" }
     ],
     "tools": [
-      {
-        "type": "gateway:datetime",
-        "parameters": { "timezone": "Europe/London" }
-      }
+      { "type": "phaseo:datetime", "parameters": { "timezones": ["Europe/London"] } }
     ],
     "tool_choice": "auto"
   }'
 ```
 
-عند استخدام أداة خادم، تتضمن بيانات الاستخدام ما يلي:
+يُحتسب كل استدعاء لأداة خادم في `usage.server_tool_use`:
 
 ```json
 {
@@ -51,8 +40,30 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-تضيف `phaseo:web_search` الحقول `server_tool_use.web_search_requests` و`server_tool_use.web_search_results` و`server_tool_use.web_search_extra_results`. وتضيف `phaseo:web_fetch` الحقل `server_tool_use.web_fetch_requests`.
+تضيف `phaseo:web_search` الحقول `web_search_requests` و`web_search_results` و`web_search_extra_results`؛ وتضيف `phaseo:web_fetch` الحقل `web_fetch_requests`. ولا يزال النوع الأقدم `gateway:datetime` يعمل.
 
-## ملاحظة حول البث
+مع `stream: true`، يشغّل Phaseo أدوار الأدوات بنفسه، ثم يبث إليك الإجابة المستكملة في بث واحد.
 
-يدعم `stream: true` أيضًا. وبالنسبة إلى أدوات الخادم التي يديرها Gateway، قد يعالج Phaseo دور استدعاء الأداة لدى المزوّد، ثم يواصل الحلقة ويعيد إصدار تدفق اصطناعي.
+## الاستدلال في حلقات الأدوات
+
+تُرجع نماذج الاستدلال استدلالها في رسالة المساعد ضمن حقلين:
+
+- `reasoning_content`: نص الاستدلال، إن أعاد المزوّد أيًا منه.
+- `reasoning_details`: مصفوفة من كتل الاستدلال. لكل إدخال `type` قيمته `reasoning.text` أو `reasoning.summary` أو `reasoning.encrypted`، و`index`، و`format` يسمّي عائلة المزوّد، مثل `anthropic-claude-v1` أو `google-gemini-v1`.
+
+قد تحمل الإدخالات حالة خاصة بالمزوّد يحتاجها النموذج في الخطوة التالية من حلقة الأدوات:
+
+| حالة المزوّد | أين توجد |
+| --- | --- |
+| تواقيع التفكير في Claude | `signature` في إدخالات `reasoning.text` |
+| التفكير المحجوب في Claude، والاستدلال المشفّر في OpenAI | `data` في إدخالات `reasoning.encrypted` |
+| تواقيع الأفكار في Gemini | `data` في إدخالات `reasoning.encrypted` التي يكون `id` فيها هو استدعاء الأداة الذي تنتمي إليه |
+| مستوى الجهد الذي عمل به رد Claude | `data` في آخر إدخال `reasoning.encrypted`، وهو إدخال لا يحتوي على نص |
+
+عند البث، يصل فرق `reasoning_details` بمجرد اكتمال كل كتلة استدلال.
+
+<Warning>
+أعد إرسال كل رسالة مساعد مع `reasoning_details` دون تغيير، في كل طلب، وليس في حلقات الأدوات فقط. لا تُسقط الإدخالات أو تعدّلها أو تغيّر ترتيبها أبدًا، سواء كانت مشفّرة أم لا، بما في ذلك الإدخالات التي لا تحتوي على نص.
+</Warning>
+
+قيم `signature` و`data` معتمة، وتسجّل المزوّد والنموذج اللذين أنتجاها. لا يرسلها Phaseo إلا إلى عائلة المزوّد تلك والنموذج نفسه، لذا فإن الرجوع إلى مزوّد آخر يُسقطها بدلًا من أن يفشل. ومن دونها، تشغّل نماذج Claude في وضع التفكير اليدوي الخطوة التالية من حلقة الأدوات بلا تفكير، ويؤدي تغيير `reasoning_effort` إلى إعادة تشغيل ذاكرة Claude المؤقتة للموجّهات؛ راجع [غيّر جهد الاستدلال في منتصف المحادثة](../../guides/reasoning-effort).

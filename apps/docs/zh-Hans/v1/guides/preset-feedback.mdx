@@ -4,25 +4,15 @@ description: "在 Phaseo 控制台中记录回答评分并比较预设质量。"
 icon: "message-square-more"
 ---
 
-Preset Feedback 可将应用中的评分关联到生成回答的预设。利用真实用户信号比较提示词和路由变更，而非只依赖延迟和成本。
+把每条用户评分连同请求 ID 和给出回答的[预设](./presets.mdx)一起发送到 `POST /v1/feedback`，然后按回答获得好评的频率来比较预设，而不只是比较延迟和成本。
 
 <Note>
-Preset Feedback 目前处于 Alpha 阶段。我们会根据团队评估生产环境 AI 回答的方式持续改进 API 和控制台。请通过 [Preset Feedback 页面](https://phaseo.app/settings/presets/experiments)上的 **Feedback** 按钮告诉我们如何让它更实用。
+Preset Feedback 目前处于 Alpha 阶段，API 和控制台仍可能变化。请使用 [Preset Feedback 页面](https://phaseo.app/settings/presets/experiments)上的 **反馈** 按钮告诉我们怎样让它更有用。
 </Note>
 
-## 开始之前
+## 记录一条评分
 
-你需要：
-
-- 具有 `feedback:write` 能力的 Phaseo API 密钥
-- Phaseo 返回的请求 ID
-- 要分析预设的 UUID
-
-记录反馈时请包含预设 ID，这样事件才会显示在预设比较和群组分析中。
-
-## 记录评分
-
-用户为回答评分后，或应用确定结果后，发送反馈。
+你需要一个具有 `feedback:write` 能力的 API 密钥、Phaseo 返回的请求 ID，以及预设的 UUID。有了预设 ID，事件才会进入预设比较和群组分析。
 
 ```bash cURL
 curl https://api.phaseo.app/v1/feedback \
@@ -42,57 +32,49 @@ curl https://api.phaseo.app/v1/feedback \
   }'
 ```
 
-反馈事件必须至少关联一个请求、会话、预设或测试运行。分数为可选项，范围必须是 `0` 到 `1`。
+一个反馈事件必须至少指向一个请求、会话、预设或测试运行。`score` 是可选的，取值必须在 `0` 到 `1` 之间。
+
+把套餐、部署、语言区域或应用界面这类基数较低的值放在 `metadataDimensions` 中，这样就可以按它们筛选。任意的或基数较高的上下文则放在 `metadata` 中。
 
 ## 选择评分
 
-选择能描述实际收集到的信号的评分：
+| 信号 | `rating` |
+| --- | --- |
+| 简单的用户反应 | `thumbs_up`、`thumbs_down` |
+| 经过评估的回答 | `correct`、`partly_correct`、`incorrect` |
+| 运行问题 | `bad_format`、`too_slow`、`too_expensive` |
+| 安全结果 | `unsafe`、`refused_incorrectly` |
+| 其他情况 | `not_helpful`、`other` |
 
-- 简单的用户反馈使用 `thumbs_up` 或 `thumbs_down`
-- 已评估回答使用 `correct`、`partly_correct` 或 `incorrect`
-- 运行问题使用 `bad_format`、`too_slow` 或 `too_expensive`
-- 安全结果使用 `unsafe` 或 `refused_incorrectly`
-- 其他值不适用时使用 `not_helpful` 或 `other`
-
-不要将所有信号都转换成数字分数。明确的评分更便于解释控制台中的比较结果。
+优先使用明确的评分，而不是只给一个数值分数：预设比较基于评分构建，分数只作为辅助信息显示。
 
 ## 比较预设
 
-打开 [设置 → 预设 → 反馈](https://phaseo.app/settings/presets/experiments)以：
+打开[设置 → 预设 → 反馈](https://phaseo.app/settings/presets/experiments)，你可以：
 
-- 比较正面、部分正面和负面评分的比例
-- 选择基准预设
+- 比较正面、部分正确和负面的比例
+- 选择一个基准预设
 - 按日期、评分和元数据维度筛选
-- 查看事件关联的请求、会话、评论和标签
+- 查看某个事件背后的请求、会话、评论和标签
 
-将套餐、部署、区域设置或应用界面等低基数值添加到 `metadataDimensions`。任意或高基数上下文应放在 `metadata` 中。
+控制台在所选时间范围内最多分析最近 10,000 条匹配的反馈记录。
 
 ## 通过 API 读取反馈
 
-列出最近事件：
+读取需要 `feedback:read`。结果仅限于已认证的工作区以及调用方可见的预设。
+
+列出最近的事件：
 
 ```bash
 curl "https://api.phaseo.app/v1/feedback?preset_id=PRESET_UUID&limit=100" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-请求服务器端汇总：
+获取在服务器端计算的汇总：
 
 ```bash
 curl "https://api.phaseo.app/v1/feedback/summary?group_by=preset&since=2026-08-01T00:00:00Z" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-读取操作需要 `feedback:read`。结果仅限于已认证工作区以及调用者可见的预设。
-
-## 当前 Alpha 限制
-
-控制台在所选时间范围内最多分析最近 10,000 条匹配的反馈记录。
-预设比较使用明确评分；数字分数仅作为补充信息显示。
-测试运行和自定义结果事件 API 已可用，但控制台工作流仍在完善。
-
-## 相关指南
-
-- [预设](./presets.mdx)
-- [上线预设并调试路由](../cookbook/preset-rollout-and-routing-debug.mdx)
-- [应用归因](./app-attribution.mdx)
+测试运行和自定义结果事件的 API 已经可用，但它们的控制台视图仍在调整。要逐步发布预设变更，请参见[发布预设并调试路由](../cookbook/preset-rollout-and-routing-debug)。

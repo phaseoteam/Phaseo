@@ -2,6 +2,23 @@ import { describe, expect, it } from "vitest";
 import { googleUsageMetadataToIRUsage, normalizeGoogleUsage } from "./usage";
 
 describe("googleUsageMetadataToIRUsage", () => {
+	it.each([
+		[{ serviceTier: "standard" }, "standard"],
+		[{ serviceTier: "flex" }, "flex"],
+		[{ service_tier: "priority" }, "priority"],
+		[{ trafficType: "ON_DEMAND_PRIORITY" }, "priority"],
+		[{ trafficType: "ON_DEMAND_FLEX" }, "flex"],
+		[{ trafficType: "ON_DEMAND" }, "standard"],
+	])("preserves the provider's reported tier %j", (metadata, tier) => {
+		expect(googleUsageMetadataToIRUsage({ promptTokenCount: 5, candidatesTokenCount: 2, ...metadata })?.serviceTier).toBe(tier);
+	});
+
+	it("prefers a reported downgrade over the response header and ignores unknown tiers", () => {
+		expect(googleUsageMetadataToIRUsage({ serviceTier: "standard" }, "priority")?.serviceTier).toBe("standard");
+		expect(googleUsageMetadataToIRUsage({}, "flex")?.serviceTier).toBe("flex");
+		expect(googleUsageMetadataToIRUsage({ serviceTier: "unknown" })?.serviceTier).toBeUndefined();
+	});
+
 	it("maps multimodal candidates token details into IR _ext usage fields", () => {
 		const usage = googleUsageMetadataToIRUsage({
 			promptTokenCount: 66,
@@ -13,7 +30,8 @@ describe("googleUsageMetadataToIRUsage", () => {
 		});
 
 		expect(usage?.inputTokens).toBe(66);
-		expect(usage?.outputTokens).toBe(1536);
+		// candidatesTokenCount excludes thoughts: 66 + 1536 + 425 = totalTokenCount.
+		expect(usage?.outputTokens).toBe(1961);
 		expect(usage?.totalTokens).toBe(2027);
 		expect(usage?.reasoningTokens).toBe(425);
 		expect(usage?._ext?.outputImageTokens).toBe(1120);
@@ -72,6 +90,43 @@ describe("googleUsageMetadataToIRUsage", () => {
 		expect(usage?.cachedInputTokens).toBe(30);
 		expect(usage?.cachedReadTokensAreSubsetOfInput).toBe(true);
 	});
+
+	it("counts thoughts as output and tool-use prompt tokens as input, as totalTokenCount does", () => {
+		const usage = googleUsageMetadataToIRUsage({
+			promptTokenCount: 100_003,
+			cachedContentTokenCount: 20_011,
+			candidatesTokenCount: 3_894,
+			thoughtsTokenCount: 1_109,
+			toolUsePromptTokenCount: 401,
+			totalTokenCount: 105_407,
+			promptTokensDetails: [
+				{ modality: "TEXT", tokenCount: 99_485 },
+				{ modality: "IMAGE", tokenCount: 307 },
+				{ modality: "AUDIO", tokenCount: 211 },
+			],
+		});
+
+		expect(usage).toMatchObject({
+			inputTokens: 100_404,
+			outputTokens: 5_003,
+			totalTokens: 105_407,
+			reasoningTokens: 1_109,
+			cachedInputTokens: 20_011,
+			_ext: { inputImageTokens: 307, inputAudioTokens: 211 },
+		});
+		expect(usage!.inputTokens + usage!.outputTokens).toBe(usage!.totalTokens);
+	});
+
+	it("reads the legacy thoughtTokenCount spelling and tool-use details without coarse counts", () => {
+		const usage = googleUsageMetadataToIRUsage({
+			promptTokenCount: 10,
+			candidatesTokenCount: 4,
+			thoughtTokenCount: 6,
+			toolUsePromptTokensDetails: [{ modality: "TEXT", tokenCount: 3 }],
+		});
+
+		expect(usage).toMatchObject({ inputTokens: 13, outputTokens: 10, totalTokens: 23, reasoningTokens: 6 });
+	});
 });
 
 describe("normalizeGoogleUsage", () => {
@@ -114,5 +169,16 @@ describe("normalizeGoogleUsage", () => {
 		});
 
 		expect(usage?.cached_read_image_tokens).toBe(7);
+	});
+
+	it("bills thoughts on the output text meter and keeps them as reasoning tokens", () => {
+		const usage = normalizeGoogleUsage({
+			promptTokenCount: 50,
+			candidatesTokenCount: 1_536,
+			thoughtsTokenCount: 425,
+			candidatesTokensDetails: [{ modality: "IMAGE", tokenCount: 1_120 }],
+		});
+
+		expect(usage).toMatchObject({ output_image_tokens: 1_120, output_text_tokens: 416 + 425, reasoning_tokens: 425 });
 	});
 });

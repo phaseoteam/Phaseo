@@ -15,13 +15,32 @@ const oauthCleanupRpcMock = vi.fn();
 const runGatewayIoRetentionBillingJobMock = vi.fn();
 const pruneExpiredDataContributionsMock = vi.fn();
 const runPaymentMethodExpiryNotificationJobMock = vi.fn();
+const enqueueFeedbackRequestEmailsMock = vi.fn(async () => 0);
+const runMobilePushJobMock = vi.fn();
+const runMobilePushDigestJobMock = vi.fn();
+const runSpendLimitWarningSweepMock = vi.fn();
+const runSpendRulesSweepMock = vi.fn();
+const runDepartmentBudgetAlertSweepMock = vi.fn();
+const runSpendGuardrailAlertSweepMock = vi.fn();
+const runSpendReportsQueueMock = vi.fn();
+const runLowBalanceEmailSweepMock = vi.fn();
+const publishSweepSpendBlockEntriesMock = vi.fn();
+const reconcileSpendBlockEntriesMock = vi.fn();
 const runNotificationDeliveryJobMock = vi.fn();
 const enqueueModelDeprecationNotificationsMock = vi.fn();
 const runAccountDeletionPurgeJobMock = vi.fn();
 const pruneExpiredGatewayIoLogsMock = vi.fn();
-const publishConfiguredPublicCatalogMock = vi.fn();
-vi.mock("./public-catalog", () => ({
-	publishConfiguredPublicCatalog: (...args: unknown[]) => publishConfiguredPublicCatalogMock(...args),
+const publishCatalogueRevisionMock = vi.fn();
+const drainWorkspacePublicationsMock = vi.fn(async () => ({ claimed: 0, completed: 0, failed: 0 }));
+vi.mock("./workspace-publications", () => ({
+	drainWorkspacePublications: () => drainWorkspacePublicationsMock(),
+}));
+const publishCustomerRateLimitTiersMock = vi.fn();
+vi.mock("@core/customer-rate-limit-tiers", () => ({
+	publishCustomerRateLimitTiers: (...args: unknown[]) => publishCustomerRateLimitTiersMock(...args),
+}));
+vi.mock("@core/catalogue-revision", () => ({
+	publishCatalogueRevision: (...args: unknown[]) => publishCatalogueRevisionMock(...args),
 }));
 
 vi.mock("@/runtime/env", () => ({
@@ -68,6 +87,46 @@ vi.mock("@/pipeline/notifications/billing-alerts", () => ({
 		runPaymentMethodExpiryNotificationJobMock(...args),
 }));
 
+vi.mock("@/pipeline/notifications/feedback-request", () => ({
+	enqueueFeedbackRequestEmails: () => enqueueFeedbackRequestEmailsMock(),
+}));
+
+vi.mock("@/pipeline/notifications/mobile-push", () => ({
+	runMobilePushJob: (...args: unknown[]) => runMobilePushJobMock(...args),
+	hasMobilePushActivity: (summary: Record<string, unknown>) => Object.values(summary).some((value) => Number(value) > 0),
+}));
+
+vi.mock("@/pipeline/notifications/mobile-push-digest", () => ({
+	runMobilePushDigestJob: (...args: unknown[]) => runMobilePushDigestJobMock(...args),
+	hasMobilePushDigestActivity: (summary: Record<string, unknown> | undefined) => Object.values(summary ?? {}).some((value) => Number(value) > 0),
+}));
+
+vi.mock("@/pipeline/notifications/spend-limit-alerts", () => ({
+	runSpendLimitWarningSweep: (...args: unknown[]) => runSpendLimitWarningSweepMock(...args),
+	runDepartmentBudgetAlertSweep: (...args: unknown[]) => runDepartmentBudgetAlertSweepMock(...args),
+	runSpendGuardrailAlertSweep: (...args: unknown[]) => runSpendGuardrailAlertSweepMock(...args),
+}));
+
+vi.mock("@/pipeline/notifications/spend-rules", () => ({
+	runSpendRulesSweep: (...args: unknown[]) => runSpendRulesSweepMock(...args),
+	hasSpendRuleSweepActivity: (summary: Record<string, unknown>) => Object.entries(summary).some(([key, value]) => key !== "events" && key !== "publish" && (value === true || Number(value) > 0 || (Array.isArray(value) && value.length > 0))),
+	publishSweepSpendBlockEntries: (...args: unknown[]) => publishSweepSpendBlockEntriesMock(...args),
+}));
+
+vi.mock("@/pipeline/notifications/spend-reports", () => ({
+	runSpendReportsQueue: (...args: unknown[]) => runSpendReportsQueueMock(...args),
+	hasSpendReportActivity: (summary: Record<string, unknown>) => Number(summary.due) > 0 || Number(summary.queued) > 0 || summary.skippedLocked === true,
+}));
+
+vi.mock("@/pipeline/notifications/low-balance", () => ({
+	runLowBalanceEmailSweep: (...args: unknown[]) => runLowBalanceEmailSweepMock(...args),
+	hasLowBalanceEmailActivity: (summary: Record<string, unknown>) => Number(summary.emailed) > 0 || Number(summary.dropped) > 0,
+}));
+
+vi.mock("@core/spend-blocks", () => ({
+	reconcileSpendBlockEntries: (...args: unknown[]) => reconcileSpendBlockEntriesMock(...args),
+}));
+
 vi.mock("@/pipeline/notifications/notification-delivery", () => ({
 	runNotificationDeliveryJob: (...args: unknown[]) => runNotificationDeliveryJobMock(...args),
 	enqueueModelDeprecationNotifications: (...args: unknown[]) => enqueueModelDeprecationNotificationsMock(...args),
@@ -112,7 +171,8 @@ function scheduledEventAt(iso: string): ScheduledController {
 
 describe("handleScheduledEvent", () => {
 	beforeEach(() => {
-		publishConfiguredPublicCatalogMock.mockReset().mockResolvedValue({ targets: 1, published: 1, failed: 0, skipped: 0 });
+		publishCatalogueRevisionMock.mockReset().mockResolvedValue({ revision: "1", changed: false });
+		publishCustomerRateLimitTiersMock.mockReset().mockResolvedValue({ workspaces: 0, complete: true });
 		clearRuntimeMock.mockReset();
 		configureRuntimeMock.mockReset();
 		runAsyncWebhookRetriesJobMock.mockReset();
@@ -128,7 +188,18 @@ describe("handleScheduledEvent", () => {
 		runGatewayIoRetentionBillingJobMock.mockReset();
 		pruneExpiredDataContributionsMock.mockReset();
 		runPaymentMethodExpiryNotificationJobMock.mockReset();
+		enqueueFeedbackRequestEmailsMock.mockClear();
+		runMobilePushJobMock.mockReset().mockResolvedValue({ captured: 0, sent: 0 });
+		runMobilePushDigestJobMock.mockReset().mockResolvedValue({ built: 0, sent: 0 });
+		runSpendLimitWarningSweepMock.mockReset().mockResolvedValue({ budgets: 0, limitedKeys: 0, warned: 0 });
+		runDepartmentBudgetAlertSweepMock.mockReset().mockResolvedValue({ budgets: 0, alerted: 0 });
+		runSpendGuardrailAlertSweepMock.mockReset().mockResolvedValue({ workspaces: 0, alerted: 0 });
 		runNotificationDeliveryJobMock.mockReset().mockResolvedValue({ queued: 0, sent: 0, failed: 0 });
+		runSpendRulesSweepMock.mockReset().mockResolvedValue({ dirty: 0, rollover: 0, periodic: 0, evaluated: 0, rules: 0, fired: 0, stateRows: 0, skippedLocked: false, events: [], blocks: [], publish: [] });
+		runSpendReportsQueueMock.mockReset().mockResolvedValue({ skippedLocked: false, due: 0, quiet: 0, zeroSpend: 0, queued: 0, emails: 0, reports: [] });
+		runLowBalanceEmailSweepMock.mockReset().mockResolvedValue({ skipped: false, watched: 0, firstSeen: 0, dropped: 0, rearmed: 0, coveredByTopUp: 0, waiting: 0, emailed: 0, emails: [], automationSent: 0, automationFailed: 0 });
+		publishSweepSpendBlockEntriesMock.mockReset().mockResolvedValue({ published: 0, failed: 0 });
+		reconcileSpendBlockEntriesMock.mockReset().mockResolvedValue({ workspaces: 0, published: 0, failed: 0, truncated: false });
 		enqueueModelDeprecationNotificationsMock.mockReset().mockResolvedValue({ workspaces: 0, enqueued: 0 });
 		runAccountDeletionPurgeJobMock.mockReset().mockResolvedValue({
 			claimed: 0,
@@ -186,9 +257,12 @@ describe("handleScheduledEvent", () => {
 		expect(configureRuntimeMock).toHaveBeenCalledWith(env);
 		expect(clearRuntimeMock).toHaveBeenCalled();
 		expect(oauthCleanupRpcMock).toHaveBeenCalledWith("cleanup_expired_oauth_artifacts");
+		// Uncollected key request secrets are wiped on every 5-minute tick, whether or not anyone polls.
+		expect(oauthCleanupRpcMock).toHaveBeenCalledWith("wipe_expired_api_key_request_secrets");
 		expect(oauthCleanupRpcMock).toHaveBeenCalledWith("process_v2_analytics_outbox", {
 			p_limit: 250,
 		});
+		expect(oauthCleanupRpcMock).toHaveBeenCalledWith("prune_otel_export_outbox", { p_limit: 5000 });
 		expect(runModelDiscoveryJobMock).not.toHaveBeenCalled();
 		expect(pruneExpiredDataContributionsMock).toHaveBeenCalledWith(1000);
 		expect(pruneExpiredGatewayIoLogsMock).toHaveBeenCalledWith({
@@ -196,6 +270,23 @@ describe("handleScheduledEvent", () => {
 			limit: 250,
 		});
 		expect(runAccountDeletionPurgeJobMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("publishes customer rate-limit tiers on core ticks only when its own switch is on", async () => {
+		const tick = scheduledEventAt("2026-06-10T00:05:00.000Z");
+		await handleScheduledEvent(tick, { ENV: "prod", CUSTOMER_RATE_LIMIT_LADDER_ENABLED: "true" } as any);
+		expect(publishCustomerRateLimitTiersMock).not.toHaveBeenCalled();
+		const env = { ENV: "prod", CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED: "true", CUSTOMER_RATE_LIMIT_LADDER: "{}" } as any;
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:06:00.000Z"), env);
+		expect(publishCustomerRateLimitTiersMock).not.toHaveBeenCalled();
+		// Runs with the ladder itself still disabled, so the backfill precedes enforcement.
+		await handleScheduledEvent(tick, env);
+		expect(publishCustomerRateLimitTiersMock).toHaveBeenCalledWith({ ladderRaw: "{}" });
+		publishCustomerRateLimitTiersMock.mockRejectedValueOnce(new Error("db down"));
+		const error = vi.spyOn(console, "error").mockImplementation(() => {});
+		await expect(handleScheduledEvent(tick, env)).resolves.toBeUndefined();
+		expect(error).toHaveBeenCalledWith("customer_rate_limit_tiers_scheduled_failed", expect.anything());
+		error.mockRestore();
 	});
 
 	it("does not let staging claim the shared account-deletion queue", async () => {
@@ -214,6 +305,15 @@ describe("handleScheduledEvent", () => {
 		);
 
 		expect(runAccountDeletionPurgeJobMock).not.toHaveBeenCalled();
+	});
+
+	it("prunes the Broadcast export outbox only on core ticks, even with export disabled", async () => {
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:06:00.000Z"), {} as any);
+		expect(oauthCleanupRpcMock).not.toHaveBeenCalledWith("prune_otel_export_outbox", expect.anything());
+		oauthCleanupRpcMock.mockClear();
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:05:00.000Z"), { OTEL_EXPORT_ENABLED: "false" } as any);
+		expect(oauthCleanupRpcMock).toHaveBeenCalledWith("prune_otel_export_outbox", { p_limit: 5000 });
+		expect(oauthCleanupRpcMock).not.toHaveBeenCalledWith("claim_otel_export_outbox", expect.anything());
 	});
 
 	it("allows the v2 analytics outbox batch size to be configured", async () => {
@@ -301,14 +401,20 @@ describe("handleScheduledEvent", () => {
 		});
 	});
 
-	it("publishes configured catalogs every two minutes independently of core jobs", async () => {
-		const env = { GATEWAY_CONTEXT_BUNDLE_ENABLED: "true", GATEWAY_PUBLIC_CATALOG_TARGETS: "[]" } as any;
+	it("publishes the catalogue revision every minute when the context bundle is enabled", async () => {
+		const env = { GATEWAY_CONTEXT_BUNDLE_ENABLED: "true" } as any;
 		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:01:00.000Z"), env);
-		expect(publishConfiguredPublicCatalogMock).not.toHaveBeenCalled();
 		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:02:00.000Z"), env);
-		expect(publishConfiguredPublicCatalogMock).toHaveBeenCalledOnce();
+		expect(publishCatalogueRevisionMock).toHaveBeenCalledTimes(2);
 		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:04:00.000Z"), {} as any);
-		expect(publishConfiguredPublicCatalogMock).toHaveBeenCalledOnce();
+		expect(publishCatalogueRevisionMock).toHaveBeenCalledTimes(2);
+	});
+
+	it("keeps running core jobs when the catalogue revision publication fails", async () => {
+		publishCatalogueRevisionMock.mockRejectedValueOnce(new Error("rpc down"));
+		const env = { GATEWAY_CONTEXT_BUNDLE_ENABLED: "true" } as any;
+		await expect(handleScheduledEvent(scheduledEventAt("2026-06-10T00:01:00.000Z"), env)).resolves.toBeUndefined();
+		expect(clearRuntimeMock).toHaveBeenCalled();
 	});
 
 	it("runs I/O retention billing on the daily billing tick", async () => {
@@ -337,5 +443,291 @@ describe("handleScheduledEvent", () => {
 		await handleScheduledEvent(scheduledEventAt("2026-06-10T00:20:00.000Z"), env);
 
 		expect(runPaymentMethodExpiryNotificationJobMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("queues feedback request emails once a day only when explicitly enabled with a sender", async () => {
+		const enabled = {
+			FEEDBACK_REQUEST_EMAILS_ENABLED: "true",
+			FEEDBACK_REQUEST_FROM_EMAIL: "Daniel <daniel@example.com>",
+			RESEND_API_KEY: "re_test",
+		} as any;
+
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), { ...enabled, FEEDBACK_REQUEST_EMAILS_ENABLED: "false" });
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), { ...enabled, FEEDBACK_REQUEST_FROM_EMAIL: "" });
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), { ...enabled, FEEDBACK_REQUEST_EMAILS_ENABLED: undefined });
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T10:10:00.000Z"), enabled);
+		expect(enqueueFeedbackRequestEmailsMock).not.toHaveBeenCalled();
+
+		await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), enabled);
+		expect(enqueueFeedbackRequestEmailsMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("sweeps for budget warnings every 15 minutes before sending pushes, only where mobile push runs", async () => {
+		const log = vi.spyOn(console, "log").mockImplementation(() => {});
+		try {
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:15:00.000Z"), {} as any);
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:20:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
+			expect(runSpendLimitWarningSweepMock).not.toHaveBeenCalled();
+			expect(runDepartmentBudgetAlertSweepMock).not.toHaveBeenCalled();
+
+			runMobilePushJobMock.mockClear();
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:15:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
+			expect(runSpendLimitWarningSweepMock).toHaveBeenCalledTimes(1);
+			expect(runDepartmentBudgetAlertSweepMock).toHaveBeenCalledTimes(1);
+			expect(runSpendGuardrailAlertSweepMock).toHaveBeenCalledTimes(1);
+			expect(runSpendGuardrailAlertSweepMock.mock.invocationCallOrder[0]).toBeLessThan(runMobilePushJobMock.mock.invocationCallOrder[0]);
+			expect(runSpendLimitWarningSweepMock.mock.invocationCallOrder[0]).toBeLessThan(runMobilePushJobMock.mock.invocationCallOrder[0]);
+			expect(runDepartmentBudgetAlertSweepMock.mock.invocationCallOrder[0]).toBeLessThan(runMobilePushJobMock.mock.invocationCallOrder[0]);
+			expect(log).not.toHaveBeenCalledWith("spend_limit_warnings_swept", expect.anything());
+			expect(log).not.toHaveBeenCalledWith("department_budget_alerts_swept", expect.anything());
+
+			runSpendLimitWarningSweepMock.mockResolvedValueOnce({ budgets: 1, limitedKeys: 3, warned: 2 });
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:30:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
+			expect(log).toHaveBeenCalledWith("spend_limit_warnings_swept", { budgets: 1, limitedKeys: 3, warned: 2 });
+
+			runDepartmentBudgetAlertSweepMock.mockResolvedValueOnce({ budgets: 2, alerted: 1 });
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:00:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
+			expect(log).toHaveBeenCalledWith("department_budget_alerts_swept", { budgets: 2, alerted: 1 });
+
+			// A failed sweep does not stop the pushes.
+			runMobilePushJobMock.mockClear();
+			runSpendLimitWarningSweepMock.mockRejectedValueOnce(new Error("timeout"));
+			const error = vi.spyOn(console, "error").mockImplementation(() => {});
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:45:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
+			expect(error).toHaveBeenCalledWith("spend_limit_sweep_scheduled_failed", expect.anything());
+			expect(runMobilePushJobMock).toHaveBeenCalledTimes(1);
+
+			// Nor does it hold back the other sweep's alerts.
+			error.mockClear();
+			runSpendLimitWarningSweepMock.mockResolvedValueOnce({ budgets: 1, limitedKeys: 3, warned: 1 });
+			runDepartmentBudgetAlertSweepMock.mockRejectedValueOnce(new Error("department timeout"));
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T11:00:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
+			expect(log).toHaveBeenCalledWith("spend_limit_warnings_swept", { budgets: 1, limitedKeys: 3, warned: 1 });
+			expect(error).toHaveBeenCalledWith("spend_limit_sweep_scheduled_failed", expect.anything());
+			error.mockRestore();
+		} finally {
+			log.mockRestore();
+		}
+	});
+
+	it("exports every spend sweep outcome even when several sweeps fail", async () => {
+		const sent: string[] = [];
+		const fetch = vi.spyOn(globalThis, "fetch").mockImplementation(async (_url, init) => {
+			sent.push(String(init?.body));
+			return Response.json({});
+		});
+		const error = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			runSpendLimitWarningSweepMock.mockRejectedValueOnce(new Error("private warning error", { cause: { code: "57014" } }));
+			runDepartmentBudgetAlertSweepMock.mockRejectedValueOnce(new Error("private department error", { cause: { code: "PGRST202" } }));
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:45:00.000Z"), {
+				MOBILE_PUSH_ENABLED: "true", ENV: "staging", CF_VERSION_METADATA: { id: "fixture-version" },
+				PLATFORM_TELEMETRY_ENABLED: "true", GRAFANA_OTLP_ENDPOINT: "https://otlp-gateway-prod-eu-west-0.grafana.net/otlp",
+				GRAFANA_OTLP_AUTHORIZATION: "Basic dGVzdA==",
+			});
+			const records = sent.flatMap(body => JSON.parse(body).resourceLogs[0].scopeLogs[0].logRecords)
+				.map((record: { body: { stringValue: string } }) => JSON.parse(record.body.stringValue));
+			expect(records).toEqual(expect.arrayContaining([
+				expect.objectContaining({ job: "spend_limit_warnings", outcome: "error", error_code: "57014", release: "fixture-version" }),
+				expect.objectContaining({ job: "department_budget_alerts", outcome: "error", error_code: "PGRST202" }),
+				expect.objectContaining({ job: "spend_guardrail_alerts", outcome: "completed" }),
+				expect.objectContaining({ job: "spend_limit_sweep", outcome: "error" }),
+			]));
+			expect(sent.join()).not.toContain("private warning error");
+			expect(sent.join()).not.toContain("private department error");
+			expect(runMobilePushJobMock).toHaveBeenCalledTimes(1);
+		} finally {
+			fetch.mockRestore();
+			error.mockRestore();
+		}
+	});
+
+	it("starts blocks and republishes gateway entries only with SPEND_RULE_BLOCKS_ENABLED, reconciling every quarter hour", async () => {
+		const log = vi.spyOn(console, "log").mockImplementation(() => {});
+		try {
+			const env = { SPEND_RULES_ENABLED: "true", SPEND_RULE_BLOCKS_ENABLED: "true" } as any;
+			const changes = [
+				{ workspaceId: "ws_1", blockId: "b1", ruleId: "r1", state: "started", reason: null, eventId: "e1" },
+				{ workspaceId: "ws_2", blockId: "b2", ruleId: "r2", state: "lifted", reason: "period_reset", eventId: "e2" },
+			];
+			runSpendRulesSweepMock.mockResolvedValueOnce({ dirty: 1, rollover: 1, periodic: 0, evaluated: 2, rules: 2, fired: 0, stateRows: 0, skippedLocked: false, events: [], blocks: changes, publish: ["ws_1"] });
+			publishSweepSpendBlockEntriesMock.mockResolvedValueOnce({ published: 2, failed: 0 });
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), env);
+			expect(runSpendRulesSweepMock).toHaveBeenCalledWith({ blocks: true });
+			expect(publishSweepSpendBlockEntriesMock).toHaveBeenCalledTimes(1);
+			expect(log).toHaveBeenCalledWith("spend_rules_swept", expect.objectContaining({ blocks_started: 1, blocks_lifted: 1, entries_published: 2, entries_failed: 0 }));
+			expect(reconcileSpendBlockEntriesMock).not.toHaveBeenCalled();
+
+			reconcileSpendBlockEntriesMock.mockResolvedValueOnce({ workspaces: 3, published: 3, failed: 0, truncated: false });
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:15:00.000Z"), env);
+			expect(reconcileSpendBlockEntriesMock).toHaveBeenCalledTimes(1);
+			expect(log).toHaveBeenCalledWith("spend_block_entries_reconciled", { workspaces: 3, published: 3, failed: 0, truncated: false });
+
+			reconcileSpendBlockEntriesMock.mockClear();
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:30:00.000Z"), { SPEND_RULES_ENABLED: "true", SPEND_RULE_BLOCKS_ENABLED: "false" } as any);
+			expect(reconcileSpendBlockEntriesMock).not.toHaveBeenCalled();
+		} finally {
+			log.mockRestore();
+		}
+	});
+
+	it("sweeps spend rules every five minutes only when enabled, before deliveries, logging only real work", async () => {
+		const log = vi.spyOn(console, "log").mockImplementation(() => {});
+		try {
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), {} as any);
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), { SPEND_RULES_ENABLED: "false" } as any);
+			expect(runSpendRulesSweepMock).not.toHaveBeenCalled();
+
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:06:00.000Z"), { SPEND_RULES_ENABLED: "true" } as any);
+			expect(runSpendRulesSweepMock).not.toHaveBeenCalled();
+
+			runNotificationDeliveryJobMock.mockClear();
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:10:00.000Z"), { SPEND_RULES_ENABLED: "true" } as any);
+			expect(runSpendRulesSweepMock).toHaveBeenCalledTimes(1);
+			expect(runSpendRulesSweepMock.mock.invocationCallOrder[0]).toBeLessThan(runNotificationDeliveryJobMock.mock.invocationCallOrder[0]);
+			expect(log).not.toHaveBeenCalledWith("spend_rules_swept", expect.anything());
+
+			runSpendRulesSweepMock.mockResolvedValueOnce({ dirty: 2, rollover: 0, periodic: 1, evaluated: 3, rules: 7, fired: 1, stateRows: 1, skippedLocked: false, events: [{ workspaceId: "ws_1" }], blocks: [], publish: [] });
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:15:00.000Z"), { SPEND_RULES_ENABLED: "true" } as any);
+			expect(log).toHaveBeenCalledWith("spend_rules_swept", {
+				dirty: 2, rollover: 0, periodic: 1, evaluated: 3, rules: 7, fired: 1, stateRows: 1, skippedLocked: false, events: 1,
+				blocks_started: 0, blocks_lifted: 0, entries_published: 0, entries_failed: 0,
+			});
+			// Blocks stay off (and nothing is published) unless SPEND_RULE_BLOCKS_ENABLED is on.
+			expect(runSpendRulesSweepMock).toHaveBeenLastCalledWith({ blocks: false });
+			expect(publishSweepSpendBlockEntriesMock).not.toHaveBeenCalled();
+
+			// A failed sweep does not stop the deliveries.
+			runNotificationDeliveryJobMock.mockClear();
+			runSpendRulesSweepMock.mockRejectedValueOnce(new Error("timeout"));
+			const error = vi.spyOn(console, "error").mockImplementation(() => {});
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:20:00.000Z"), { SPEND_RULES_ENABLED: "true" } as any);
+			expect(error).toHaveBeenCalledWith("spend_rules_scheduled_failed", expect.anything());
+			expect(runNotificationDeliveryJobMock).toHaveBeenCalledTimes(1);
+			error.mockRestore();
+		} finally {
+			log.mockRestore();
+		}
+	});
+
+	it("queues spend reports every five minutes only with SPEND_REPORTS_ENABLED, after spend rules and before the outbox drain", async () => {
+		const log = vi.spyOn(console, "log").mockImplementation(() => {});
+		try {
+			// Off unless the flag is exactly "true": nothing is queued, so no report email can go out.
+			for (const env of [{}, { SPEND_REPORTS_ENABLED: "false" }, { SPEND_REPORTS_ENABLED: "1" }, { SPEND_RULES_ENABLED: "true" }]) {
+				await handleScheduledEvent(scheduledEventAt("2026-10-19T08:30:00.000Z"), env as any);
+			}
+			expect(runSpendReportsQueueMock).not.toHaveBeenCalled();
+
+			await handleScheduledEvent(scheduledEventAt("2026-10-19T08:31:00.000Z"), { SPEND_REPORTS_ENABLED: "true" } as any);
+			expect(runSpendReportsQueueMock).not.toHaveBeenCalled();
+
+			drainEmailOutboxMock.mockReset().mockResolvedValue({ processed: 0, failed: 0 });
+			runNotificationDeliveryJobMock.mockClear();
+			runSpendReportsQueueMock.mockResolvedValueOnce({ skippedLocked: false, due: 3, quiet: 1, zeroSpend: 1, queued: 1, emails: 2, reports: [{ workspaceId: "ws_1" }] });
+			await handleScheduledEvent(scheduledEventAt("2026-10-19T08:35:00.000Z"), { SPEND_REPORTS_ENABLED: "true", SPEND_RULES_ENABLED: "true", RESEND_API_KEY: "re_test" } as any);
+			expect(runSpendReportsQueueMock).toHaveBeenCalledTimes(1);
+			expect(runSpendReportsQueueMock).toHaveBeenCalledWith();
+			expect(runSpendRulesSweepMock.mock.invocationCallOrder[0]).toBeLessThan(runSpendReportsQueueMock.mock.invocationCallOrder[0]);
+			expect(runSpendReportsQueueMock.mock.invocationCallOrder[0]).toBeLessThan(drainEmailOutboxMock.mock.invocationCallOrder[0]);
+			expect(runSpendReportsQueueMock.mock.invocationCallOrder[0]).toBeLessThan(runNotificationDeliveryJobMock.mock.invocationCallOrder[0]);
+			expect(log).toHaveBeenCalledWith("spend_reports_queued", { skippedLocked: false, due: 3, quiet: 1, zeroSpend: 1, queued: 1, emails: 2, workspaces: ["ws_1"] });
+
+			// An idle run logs nothing; a failed one is logged and does not stop the deliveries.
+			log.mockClear();
+			await handleScheduledEvent(scheduledEventAt("2026-10-19T08:40:00.000Z"), { SPEND_REPORTS_ENABLED: "true" } as any);
+			expect(log).not.toHaveBeenCalledWith("spend_reports_queued", expect.anything());
+			runNotificationDeliveryJobMock.mockClear();
+			runSpendReportsQueueMock.mockRejectedValueOnce(new Error("timeout"));
+			const error = vi.spyOn(console, "error").mockImplementation(() => {});
+			await handleScheduledEvent(scheduledEventAt("2026-10-19T08:45:00.000Z"), { SPEND_REPORTS_ENABLED: "true" } as any);
+			expect(error).toHaveBeenCalledWith("spend_reports_scheduled_failed", expect.anything());
+			expect(runNotificationDeliveryJobMock).toHaveBeenCalledTimes(1);
+			error.mockRestore();
+		} finally {
+			log.mockRestore();
+		}
+	});
+
+	it("sweeps low-balance emails every five minutes whatever SPEND_RULES_ENABLED says, before the outbox drain", async () => {
+		const log = vi.spyOn(console, "log").mockImplementation(() => {});
+		try {
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:06:00.000Z"), {} as any);
+			expect(runLowBalanceEmailSweepMock).not.toHaveBeenCalled();
+
+			drainEmailOutboxMock.mockReset().mockResolvedValue({ processed: 0, failed: 0 });
+			runNotificationDeliveryJobMock.mockClear();
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), { SPEND_RULES_ENABLED: "false", RESEND_API_KEY: "re_test" } as any);
+			expect(runLowBalanceEmailSweepMock).toHaveBeenCalledTimes(1);
+			expect(runSpendRulesSweepMock).not.toHaveBeenCalled();
+			expect(runLowBalanceEmailSweepMock.mock.invocationCallOrder[0]).toBeLessThan(drainEmailOutboxMock.mock.invocationCallOrder[0]);
+			expect(runLowBalanceEmailSweepMock.mock.invocationCallOrder[0]).toBeLessThan(runNotificationDeliveryJobMock.mock.invocationCallOrder[0]);
+			expect(log).not.toHaveBeenCalledWith("low_balance_emails_swept", expect.anything());
+
+			runLowBalanceEmailSweepMock.mockResolvedValueOnce({ skipped: false, watched: 4, firstSeen: 0, dropped: 1, rearmed: 0, coveredByTopUp: 0, waiting: 0, emailed: 1, emails: [{ id: "e1" }], automationSent: 1, automationFailed: 0 });
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:10:00.000Z"), {} as any);
+			expect(log).toHaveBeenCalledWith("low_balance_emails_swept", {
+				skipped: false, watched: 4, firstSeen: 0, dropped: 1, rearmed: 0, coveredByTopUp: 0, waiting: 0, emailed: 1, emails: 1, automationSent: 1, automationFailed: 0,
+			});
+
+			// A failed sweep does not stop the deliveries.
+			runNotificationDeliveryJobMock.mockClear();
+			runLowBalanceEmailSweepMock.mockRejectedValueOnce(new Error("timeout"));
+			const error = vi.spyOn(console, "error").mockImplementation(() => {});
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:15:00.000Z"), {} as any);
+			expect(error).toHaveBeenCalledWith("low_balance_emails_scheduled_failed", expect.anything());
+			expect(runNotificationDeliveryJobMock).toHaveBeenCalledTimes(1);
+			error.mockRestore();
+		} finally {
+			log.mockRestore();
+		}
+	});
+
+	it("runs mobile push every five minutes only when explicitly enabled, logging only real work", async () => {
+		const log = vi.spyOn(console, "log").mockImplementation(() => {});
+		try {
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), {} as any);
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), { MOBILE_PUSH_ENABLED: "false" } as any);
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:06:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
+			expect(runMobilePushJobMock).not.toHaveBeenCalled();
+
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), { MOBILE_PUSH_ENABLED: "true", EXPO_ACCESS_TOKEN: "expo-token" } as any);
+			expect(runMobilePushJobMock).toHaveBeenCalledWith({ accessToken: "expo-token" });
+			expect(log).not.toHaveBeenCalledWith("mobile_push_completed", expect.anything());
+
+			runMobilePushJobMock.mockResolvedValueOnce({ captured: 1, sent: 2 });
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:10:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
+			expect(log).toHaveBeenCalledWith("mobile_push_completed", { captured: 1, sent: 2 });
+		} finally {
+			log.mockRestore();
+		}
+	});
+
+	it("runs the weekly digest with mobile push, before it, and never lets it stop catalogue pushes", async () => {
+		const log = vi.spyOn(console, "log").mockImplementation(() => {});
+		const errors = vi.spyOn(console, "error").mockImplementation(() => {});
+		try {
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), { MOBILE_PUSH_ENABLED: "false" } as any);
+			expect(runMobilePushDigestJobMock).not.toHaveBeenCalled();
+
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:05:00.000Z"), { MOBILE_PUSH_ENABLED: "true", EXPO_ACCESS_TOKEN: "expo-token" } as any);
+			expect(runMobilePushDigestJobMock).toHaveBeenCalledWith({ accessToken: "expo-token" });
+			expect(runMobilePushDigestJobMock.mock.invocationCallOrder[0]).toBeLessThan(runMobilePushJobMock.mock.invocationCallOrder[0]);
+			expect(log).not.toHaveBeenCalledWith("mobile_push_digest_completed", expect.anything());
+
+			runMobilePushDigestJobMock.mockResolvedValueOnce({ built: 1, sent: 2 });
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:10:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
+			expect(log).toHaveBeenCalledWith("mobile_push_digest_completed", { built: 1, sent: 2 });
+
+			runMobilePushJobMock.mockClear();
+			runMobilePushDigestJobMock.mockRejectedValueOnce(new Error("mobile_push_digest_claim_failed:boom"));
+			await handleScheduledEvent(scheduledEventAt("2026-06-10T10:15:00.000Z"), { MOBILE_PUSH_ENABLED: "true" } as any);
+			expect(errors).toHaveBeenCalledWith("mobile_push_digest_failed", expect.anything());
+			expect(runMobilePushJobMock).toHaveBeenCalledTimes(1);
+		} finally {
+			log.mockRestore();
+			errors.mockRestore();
+		}
 	});
 });

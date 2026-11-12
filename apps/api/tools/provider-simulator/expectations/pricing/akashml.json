@@ -1,0 +1,97 @@
+{
+	"provider": "akashml",
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from the catalogue database (v2_pricing_skus, v2_pricing_sku_meters)",
+	"clock": "2026-10-29T14:36:00.000Z",
+	"legend": { "rules": "[id (<sku_code>@v<version>#<meter_key>), plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"cards": [
+		{
+			"key": "akashml:meta/llama-3.3-70b:text.generate",
+			"routes": ["akashml:meta/llama-3.3-70b"],
+			"skus": ["offer-29f290f6e75704e83c52@v1"],
+			"rules": [
+				["offer-29f290f6e75704e83c52@v1#implicit_cached_input_text_tokens","standard","implicit_cached_input_text_tokens","0.1/1000000 token",100,null,null,null],
+				["offer-29f290f6e75704e83c52@v1#input_text_tokens","standard","input_text_tokens","0.2/1000000 token",100,null,null,null],
+				["offer-29f290f6e75704e83c52@v1#output_text_tokens","standard","output_text_tokens","0.52/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":650560,"lines":[["cached_read_text_tokens",1024,"offer-29f290f6e75704e83c52@v1#implicit_cached_input_text_tokens","implicit_cached_input_text_tokens",102400,"cache read at the implicit-cache price"],["input_text_tokens",1576,"offer-29f290f6e75704e83c52@v1#input_text_tokens","input_text_tokens",315200],["output_text_tokens",448,"offer-29f290f6e75704e83c52@v1#output_text_tokens","output_text_tokens",232960]]}},
+				{"id":"rule.standard.implicit_cached_input_text_tokens","kind":"rule","targets":["offer-29f290f6e75704e83c52@v1#implicit_cached_input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"implicit_cached_input_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":4723740,"lines":[["implicit_cached_input_text_tokens",4567,"offer-29f290f6e75704e83c52@v1#implicit_cached_input_text_tokens","implicit_cached_input_text_tokens",456700],["input_text_tokens",12347,"offer-29f290f6e75704e83c52@v1#input_text_tokens","input_text_tokens",2469400],["output_text_tokens",3457,"offer-29f290f6e75704e83c52@v1#output_text_tokens","output_text_tokens",1797640]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-29f290f6e75704e83c52@v1#input_text_tokens","offer-29f290f6e75704e83c52@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":4267040,"lines":[["input_text_tokens",12347,"offer-29f290f6e75704e83c52@v1#input_text_tokens","input_text_tokens",2469400],["output_text_tokens",3457,"offer-29f290f6e75704e83c52@v1#output_text_tokens","output_text_tokens",1797640]]}}
+			]
+		},
+		{
+			"key": "akashml:openai/gpt-oss-120b:text.generate",
+			"routes": ["akashml:openai/gpt-oss-120b"],
+			"skus": ["official-20260929@v4"],
+			"rules": [
+				["official-20260929@v4#implicit_cached_input_text_tokens","standard","implicit_cached_input_text_tokens","0.037/1000000 token",100,null,null,null],
+				["official-20260929@v4#input_text_tokens","standard","input_text_tokens","0.037/1000000 token",100,null,null,null],
+				["official-20260929@v4#output_text_tokens","standard","output_text_tokens","0.187/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":179976,"lines":[["cached_read_text_tokens",1024,"official-20260929@v4#implicit_cached_input_text_tokens","implicit_cached_input_text_tokens",37888,"cache read at the implicit-cache price"],["input_text_tokens",1576,"official-20260929@v4#input_text_tokens","input_text_tokens",58312],["output_text_tokens",448,"official-20260929@v4#output_text_tokens","output_text_tokens",83776]]}},
+				{"id":"rule.standard.implicit_cached_input_text_tokens","kind":"rule","targets":["official-20260929@v4#implicit_cached_input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"implicit_cached_input_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":1272277,"lines":[["implicit_cached_input_text_tokens",4567,"official-20260929@v4#implicit_cached_input_text_tokens","implicit_cached_input_text_tokens",168979],["input_text_tokens",12347,"official-20260929@v4#input_text_tokens","input_text_tokens",456839],["output_text_tokens",3457,"official-20260929@v4#output_text_tokens","output_text_tokens",646459]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["official-20260929@v4#input_text_tokens","official-20260929@v4#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":1103298,"lines":[["input_text_tokens",12347,"official-20260929@v4#input_text_tokens","input_text_tokens",456839],["output_text_tokens",3457,"official-20260929@v4#output_text_tokens","output_text_tokens",646459]]}}
+			]
+		},
+		{
+			"key": "akashml:openai/gpt-oss-20b:text.generate",
+			"routes": ["akashml:openai/gpt-oss-20b"],
+			"skus": ["official-20260929@v2"],
+			"rules": [
+				["official-20260929@v2#input_text_tokens","standard","input_text_tokens","0.02/1000000 token",100,null,null,null],
+				["official-20260929@v2#output_text_tokens","standard","output_text_tokens","0.1/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":96800,"lines":[["input_text_tokens",2600,"official-20260929@v2#input_text_tokens","input_text_tokens",52000],["output_text_tokens",448,"official-20260929@v2#output_text_tokens","output_text_tokens",44800]]}},
+				{"id":"fallback.cache-read.no-rule","kind":"fallback","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":96800,"lines":[["cached_read_text_tokens",1024,"official-20260929@v2#input_text_tokens","input_text_tokens",20480,"cache read at the input price"],["input_text_tokens",1576,"official-20260929@v2#input_text_tokens","input_text_tokens",31520],["output_text_tokens",448,"official-20260929@v2#output_text_tokens","output_text_tokens",44800]]},"source":{"kind":"spec","spec":"akashml","path":"usage schema"}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["official-20260929@v2#input_text_tokens","official-20260929@v2#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":592640,"lines":[["input_text_tokens",12347,"official-20260929@v2#input_text_tokens","input_text_tokens",246940],["output_text_tokens",3457,"official-20260929@v2#output_text_tokens","output_text_tokens",345700]]}}
+			]
+		},
+		{
+			"key": "akashml:qwen/qwen3.6-35b-a3b:text.generate",
+			"routes": ["akashml:qwen/qwen3.6-35b-a3b"],
+			"skus": ["offer-995de6c4f07bd6c0321b@v1"],
+			"rules": [
+				["offer-995de6c4f07bd6c0321b@v1#implicit_cached_input_text_tokens","standard","implicit_cached_input_text_tokens","0.05/1000000 token",100,null,null,null],
+				["offer-995de6c4f07bd6c0321b@v1#input_text_tokens","standard","input_text_tokens","0.1/1000000 token",100,null,null,null],
+				["offer-995de6c4f07bd6c0321b@v1#output_text_tokens","standard","output_text_tokens","0.9/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"output_reasoning_tokens":192,"input_tokens":2600,"output_tokens":640,"total_tokens":3240},"ir":{"inputTokens":2600,"outputTokens":640,"totalTokens":3240,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true,"reasoningTokens":192},"expected":{"nanos":784800,"lines":[["cached_read_text_tokens",1024,"offer-995de6c4f07bd6c0321b@v1#implicit_cached_input_text_tokens","implicit_cached_input_text_tokens",51200,"cache read at the implicit-cache price"],["input_text_tokens",1576,"offer-995de6c4f07bd6c0321b@v1#input_text_tokens","input_text_tokens",157600],["output_reasoning_tokens",192,"offer-995de6c4f07bd6c0321b@v1#output_text_tokens","output_text_tokens",172800,"reasoning at the output price"],["output_text_tokens",448,"offer-995de6c4f07bd6c0321b@v1#output_text_tokens","output_text_tokens",403200]]}},
+				{"id":"rule.standard.implicit_cached_input_text_tokens","kind":"rule","targets":["offer-995de6c4f07bd6c0321b@v1#implicit_cached_input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"implicit_cached_input_text_tokens":4567,"input_tokens":16914,"output_tokens":4246,"total_tokens":21160},"expected":{"nanos":5284450,"lines":[["implicit_cached_input_text_tokens",4567,"offer-995de6c4f07bd6c0321b@v1#implicit_cached_input_text_tokens","implicit_cached_input_text_tokens",228350],["input_text_tokens",12347,"offer-995de6c4f07bd6c0321b@v1#input_text_tokens","input_text_tokens",1234700],["output_reasoning_tokens",789,"offer-995de6c4f07bd6c0321b@v1#output_text_tokens","output_text_tokens",710100,"reasoning at the output price"],["output_text_tokens",3457,"offer-995de6c4f07bd6c0321b@v1#output_text_tokens","output_text_tokens",3111300]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-995de6c4f07bd6c0321b@v1#input_text_tokens","offer-995de6c4f07bd6c0321b@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"output_reasoning_tokens":789,"input_tokens":12347,"output_tokens":4246,"total_tokens":16593},"expected":{"nanos":5056100,"lines":[["input_text_tokens",12347,"offer-995de6c4f07bd6c0321b@v1#input_text_tokens","input_text_tokens",1234700],["output_reasoning_tokens",789,"offer-995de6c4f07bd6c0321b@v1#output_text_tokens","output_text_tokens",710100,"reasoning at the output price"],["output_text_tokens",3457,"offer-995de6c4f07bd6c0321b@v1#output_text_tokens","output_text_tokens",3111300]]}}
+			]
+		},
+		{
+			"key": "akashml:qwen/qwen3.8-27b:text.generate",
+			"routes": ["akashml:qwen/qwen3.8-27b"],
+			"skus": ["official-20260929@v4"],
+			"rules": [
+				["official-20260929@v4#implicit_cached_input_text_tokens","standard","implicit_cached_input_text_tokens","0.05/1000000 token",100,null,null,null],
+				["official-20260929@v4#input_text_tokens","standard","input_text_tokens","0.225/1000000 token",100,null,null,null],
+				["official-20260929@v4#output_text_tokens","standard","output_text_tokens","1.98/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1292840,"lines":[["cached_read_text_tokens",1024,"official-20260929@v4#implicit_cached_input_text_tokens","implicit_cached_input_text_tokens",51200,"cache read at the implicit-cache price"],["input_text_tokens",1576,"official-20260929@v4#input_text_tokens","input_text_tokens",354600],["output_text_tokens",448,"official-20260929@v4#output_text_tokens","output_text_tokens",887040]]}},
+				{"id":"rule.standard.implicit_cached_input_text_tokens","kind":"rule","targets":["official-20260929@v4#implicit_cached_input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"implicit_cached_input_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":9851285,"lines":[["implicit_cached_input_text_tokens",4567,"official-20260929@v4#implicit_cached_input_text_tokens","implicit_cached_input_text_tokens",228350],["input_text_tokens",12347,"official-20260929@v4#input_text_tokens","input_text_tokens",2778075],["output_text_tokens",3457,"official-20260929@v4#output_text_tokens","output_text_tokens",6844860]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["official-20260929@v4#input_text_tokens","official-20260929@v4#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":9622935,"lines":[["input_text_tokens",12347,"official-20260929@v4#input_text_tokens","input_text_tokens",2778075],["output_text_tokens",3457,"official-20260929@v4#output_text_tokens","output_text_tokens",6844860]]}}
+			]
+		},
+		{
+			"key": "akashml:z-ai/glm-5.3:text.generate",
+			"routes": ["akashml:z-ai/glm-5.3"],
+			"skus": ["official-20260929@v4"],
+			"rules": [
+				["official-20260929@v4#implicit_cached_input_text_tokens","standard","implicit_cached_input_text_tokens","0.19/1000000 token",100,null,null,null],
+				["official-20260929@v4#input_text_tokens","standard","input_text_tokens","0.19/1000000 token",100,null,null,null],
+				["official-20260929@v4#output_text_tokens","standard","output_text_tokens","4.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":2465200,"lines":[["cached_read_text_tokens",1024,"official-20260929@v4#implicit_cached_input_text_tokens","implicit_cached_input_text_tokens",194560,"cache read at the implicit-cache price"],["input_text_tokens",1576,"official-20260929@v4#input_text_tokens","input_text_tokens",299440],["output_text_tokens",448,"official-20260929@v4#output_text_tokens","output_text_tokens",1971200]]}},
+				{"id":"rule.standard.implicit_cached_input_text_tokens","kind":"rule","targets":["official-20260929@v4#implicit_cached_input_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"implicit_cached_input_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":18424460,"lines":[["implicit_cached_input_text_tokens",4567,"official-20260929@v4#implicit_cached_input_text_tokens","implicit_cached_input_text_tokens",867730],["input_text_tokens",12347,"official-20260929@v4#input_text_tokens","input_text_tokens",2345930],["output_text_tokens",3457,"official-20260929@v4#output_text_tokens","output_text_tokens",15210800]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["official-20260929@v4#input_text_tokens","official-20260929@v4#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":17556730,"lines":[["input_text_tokens",12347,"official-20260929@v4#input_text_tokens","input_text_tokens",2345930],["output_text_tokens",3457,"official-20260929@v4#output_text_tokens","output_text_tokens",15210800]]}}
+			]
+		}
+	]
+}

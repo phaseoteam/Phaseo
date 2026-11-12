@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import { groupConsentScopes } from "./consentScopeGroups";
 
 describe("groupConsentScopes", () => {
@@ -22,6 +23,10 @@ describe("groupConsentScopes", () => {
 			"keys:read",
 			"keys:delete",
 		]);
+	});
+
+	it("puts billing:write in its own billing group", () => {
+		expect(groupConsentScopes(["credits:read", "billing:write"]).map((group) => group.key)).toEqual(["data", "billing"]);
 	});
 
 	it("deduplicates scopes and keeps unknown resources visible", () => {

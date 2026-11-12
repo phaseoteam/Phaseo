@@ -1,12 +1,11 @@
-"use client";
-
+import { formatLatency } from "@phaseo/app-kit/format";
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import * as React from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import ConfigurableLogTable from "./ConfigurableLogTable";
 import { JOB_COLUMNS } from "./logColumns";
-import dynamic from "next/dynamic";
+import dynamic from "@/lib/dynamic";
 import {
         fetchAppMetadata,
 	fetchAsyncJobDetail,
@@ -21,7 +20,7 @@ import {
 	type InvestigateGenerationResult,
 	type ProviderMetadataEntry,
 	type RequestRow,
-} from "@/app/(dashboard)/gateway/usage/server-actions";
+} from "@/features/gateway/usage/server-actions";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -41,11 +40,6 @@ import {
 import { CopyButton } from "@/components/ui/copy-button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-	HoverCard,
-	HoverCardContent,
-	HoverCardTrigger,
-} from "@/components/ui/hover-card";
-import {
 	Table,
 	TableBody,
 	TableCell,
@@ -63,13 +57,10 @@ import {
 	Video,
 } from "lucide-react";
 import { Logo } from "@/components/Logo";
-import { formatRelativeToNow } from "@/lib/formatRelative";
+import { TimestampHoverCard } from "@/components/display/TimestampHoverCard";
 import { registerUsageViewRefresher } from "@/lib/gateway/usage/refreshBus";
 import { usePrivateUsageRefresh } from "./PrivateUsageQuery";
-import {
-	formatDateTime,
-	formatWordyDateTime,
-} from "@/lib/gateway/usage/timeFormatting";
+import { formatWordyDateTime } from "@/lib/gateway/usage/timeFormatting";
 import { formatAsyncJobFailureSummary } from "@/lib/gateway/usage/asyncJobFailureSummary";
 import { formatRoomError, type RoomErrorTranslator } from "@/lib/chat/formatRoomError";
 import {
@@ -78,12 +69,13 @@ import {
 	getModelMetadataEntry,
 	type ModelMetadataMap,
 } from "./model-display";
-import Link from "next/link";
+import Link from "@/components/link";
 import {
         DetailKeyValueGrid,
         DetailMetricTile,
         DetailSection,
 } from "./DetailDialogPrimitives";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 const RequestDetailDialog = dynamic(() => import("./RequestDetailDialog"));
 
@@ -228,16 +220,14 @@ function formatMoneyFromNanos(value: number | null | undefined, locale: string):
 	return formatMoneyFromUsd(value / 1e9, locale);
 }
 
-function formatMoneyFromUsd(value: number | null | undefined, locale: string): string {
+function formatMoneyFromUsd(value: number | null | undefined, _locale: string): string {
 	if (value == null || !Number.isFinite(value)) return "-";
 	const digits = value !== 0 && Math.abs(value) < 0.00001 ? 9 : 5;
-	return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
+	return new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
 }
 
 function formatMilliseconds(value: number | null | undefined, locale: string): string {
-	if (value == null || !Number.isFinite(value)) return "-";
-	if (value < 1000) return new Intl.NumberFormat(locale, { style: "unit", unit: "millisecond", unitDisplay: "short", maximumFractionDigits: 0 }).format(value);
-	return new Intl.NumberFormat(locale, { style: "unit", unit: "second", unitDisplay: "short", minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(value / 1000);
+	return formatLatency(value, locale) ?? "-";
 }
 
 function formatSettledCost(job: AsyncJobRow | AsyncJobDetailRow, locale: string): string {
@@ -1761,10 +1751,6 @@ export default function AsyncJobsPanel({
 	const resolvedTitle = title ?? s("Async job webhooks");
 	const resolvedDescription = description ?? s("phraseRecentVideoAndBatchJobsWithWebhookDeliveryHistoryPendingRetriesAndFailures");
 	const resolvedEmptyMessage = emptyMessage ?? s("phraseNoAsyncJobsWithWebhookActivityYet");
-	const userTimeZone =
-		typeof Intl !== "undefined"
-			? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
-			: "UTC";
 	const [jobs, setJobs] = React.useState(initialJobs);
 	const privateQuery = usePrivateUsageRefresh();
 	const [resolvedProviderNames, setResolvedProviderNames] = React.useState(
@@ -1791,7 +1777,6 @@ export default function AsyncJobsPanel({
 	const [isRefreshing, setIsRefreshing] = React.useState(false);
 	const [isLoadingDetail, startLoadingDetail] = React.useTransition();
 	const [isLoadingRequestDetail, startLoadingRequestDetail] = React.useTransition();
-	const [relativeNowMs, setRelativeNowMs] = React.useState<number | null>(null);
 	const detailCacheRef = React.useRef(
 		new Map<string, AsyncJobDetailRow>(),
 	);
@@ -1817,26 +1802,19 @@ export default function AsyncJobsPanel({
 		setResolvedAppMetadata(new Map(appMetadata ?? []));
 	}, [appMetadata]);
 
-	React.useEffect(() => {
-		const updateNow = () => setRelativeNowMs(Date.now());
-		updateNow();
-		const interval = setInterval(updateNow, 60_000);
-		return () => clearInterval(interval);
-	}, []);
-
 	const refresh = React.useCallback(() => {
 		if (privateQuery) return privateQuery.refresh();
 		return (async () => {
 			setIsRefreshing(true);
 			try {
-				const next = await fetchRecentAsyncJobs({
+				const next = await fetchRecentAsyncJobs({ data: {
 					limit: refreshLimit,
 					includeWithoutWebhook,
 					timeRange,
 					kind: kindFilter,
 					status: statusFilter,
 					provider: providerFilter,
-				});
+				} });
 				setJobs(next);
 
 				const missingProviderIds = collectJobProviderIds(next).filter(
@@ -1850,13 +1828,13 @@ export default function AsyncJobsPanel({
 				);
 				const [nextProviderNames, nextModelMetadata, nextAppMetadata] = await Promise.all([
 					missingProviderIds.length > 0
-						? fetchProviderNames(missingProviderIds)
+						? fetchProviderNames({ data: missingProviderIds })
 						: Promise.resolve(new Map<string, string>()),
 					missingModelIds.length > 0
-						? fetchModelMetadata(missingModelIds)
+						? fetchModelMetadata({ data: missingModelIds })
 						: Promise.resolve(new Map<string, { organisationId: string; organisationName: string; modelName?: string }>()),
 					missingAppIds.length > 0
-						? fetchAppMetadata(missingAppIds)
+						? fetchAppMetadata({ data: missingAppIds })
 						: Promise.resolve(new Map<string, AppMetadata>()),
 				]);
 				if (nextProviderNames.size > 0) {
@@ -1901,10 +1879,10 @@ export default function AsyncJobsPanel({
 		}
 		setSelectedJob(null);
 		startLoadingDetail(async () => {
-			const detail = await fetchAsyncJobDetail({
+			const detail = await fetchAsyncJobDetail({ data: {
 				kind: job.kind,
 				internalId: job.internal_id,
-			});
+			} });
 			if (detail) {
 				detailCacheRef.current.set(cacheKey, detail);
 			}
@@ -1932,7 +1910,7 @@ export default function AsyncJobsPanel({
 		setRequestDetailProviderNames(new Map());
 		setRequestDetailProviderMetadata(new Map());
 		startLoadingRequestDetail(async () => {
-			const response = await investigateGeneration(trimmedRequestId);
+			const response = await investigateGeneration({ data: trimmedRequestId });
 			if (!response.success || !response.data) {
 				setRequestDetailOpen(false);
 				return;
@@ -1989,51 +1967,12 @@ export default function AsyncJobsPanel({
 							return (
 								<>
 									{timestamp ? (
-										<HoverCard>
-											<HoverCardTrigger asChild>
-												<span className="cursor-help underline underline-offset-2 decoration-dotted">
-													{formatTimestamp(timestamp)}
-												</span>
-											</HoverCardTrigger>
-											<HoverCardContent align="start" className="w-auto">
-												{(() => {
-													const date = new Date(timestamp);
-													const unixSeconds = Math.floor(date.getTime() / 1000);
-													return (
-														<div className="grid gap-2 text-xs">
-															<div className="grid grid-cols-[120px_1fr] gap-2">
-																<div className="text-muted-foreground">
-																	{userTimeZone}
-																</div>
-																<div className="font-mono">
-																	{formatDateTime(date, userTimeZone)}
-																</div>
-															</div>
-															<div className="grid grid-cols-[120px_1fr] gap-2">
-																<div className="text-muted-foreground">UTC</div>
-																<div className="font-mono">
-																	{formatDateTime(date, "UTC")}
-																</div>
-															</div>
-															<div className="grid grid-cols-[120px_1fr] gap-2">
-																<div className="text-muted-foreground">
-																	{t("usageGaps.copyRelative")}</div>
-																<div className="font-mono">
-																	{relativeNowMs
-																		? formatRelativeToNow(date, relativeNowMs, locale)
-																		: "-"}
-																</div>
-															</div>
-															<div className="grid grid-cols-[120px_1fr] gap-2">
-																<div className="text-muted-foreground">
-																	{t("usageGaps.copyTimestamp")}</div>
-																<div className="font-mono">{unixSeconds}</div>
-															</div>
-														</div>
-													);
-												})()}
-											</HoverCardContent>
-										</HoverCard>
+										// updated_at also moves on webhook retries and other
+										// metadata-only writes, so it is not a completion time; show
+										// the creation time without a duration.
+										<TimestampHoverCard value={timestamp}>
+											{formatTimestamp(timestamp)}
+										</TimestampHoverCard>
 									) : (
 										"-"
 									)}

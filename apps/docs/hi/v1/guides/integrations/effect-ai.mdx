@@ -1,14 +1,10 @@
 ---
 title: "Effect AI SDK"
 icon: "square-function"
-description: "Effect वाली TypeScript applications से Phaseo उपयोग करें।"
+description: "Effect TypeScript ऐप्लिकेशन से Phaseo इस्तेमाल करें।"
 ---
 
-आपका app पहले से Effect उपयोग करता हो और Effect service या workflow से Phaseo चाहिए, तो यह गाइड उपयोग करें।
-
-## स्थिति
-
-Phaseo OpenAI-संगत HTTP endpoints देता है। Effect के first-party provider packages तब उपयोगी हैं जब वे आवश्यक provider को सीधे support करते हों; installed Effect OpenAI package में Base URL option न हो, तो Effect HTTP client से Phaseo call करें या [OpenAI SDK](./openai-sdk.mdx) को अपनी Effect layer में wrap करें।
+Effect के HTTP क्लाइंट से Phaseo के OpenAI-संगत एंडपॉइंट कॉल करें, या [OpenAI SDK](./openai-sdk.mdx) को Effect लेयर में लपेटें। Effect का अपना OpenAI प्रदाता पैकेज तभी इस्तेमाल करें जब आपका इंस्टॉल किया गया वर्ज़न कस्टम base URL स्वीकार करता हो।
 
 ## इंस्टॉल करें
 
@@ -16,7 +12,7 @@ Phaseo OpenAI-संगत HTTP endpoints देता है। Effect के f
 npm install effect @effect/platform
 ```
 
-## Effect HTTP से Phaseo को कॉल करें
+## Effect HTTP से Phaseo कॉल करें
 
 ```ts
 import { FetchHttpClient, HttpClient, HttpClientRequest } from "@effect/platform";
@@ -31,7 +27,7 @@ const generate = Effect.gen(function* () {
 	).pipe(
 		HttpClientRequest.bearerToken(Redacted.value(apiKey)),
 		HttpClientRequest.jsonBody({
-			model: "openai/gpt-5-nano",
+			model: "openai/gpt-6-astra",
 			messages: [{ role: "user", content: "Reply with only: ok" }],
 		}),
 	);
@@ -44,9 +40,11 @@ const generate = Effect.gen(function* () {
 const runnable = generate.pipe(Effect.provide(FetchHttpClient.layer));
 ```
 
-## OpenAI SDK को Effect सेवा में लपेटें
+इसे चलाने पर एक Chat Completions प्रतिक्रिया मिलती है जिसका मैसेज `ok` कहता है।
 
-कहीं और official OpenAI SDK उपयोग करते हों, तो Phaseo configuration एक ही layer में रखें:
+## OpenAI SDK को Effect लेयर में लपेटें
+
+अगर आप पहले से OpenAI SDK इस्तेमाल करते हैं, तो Phaseo कॉन्फ़िगरेशन एक ही जगह रखें:
 
 ```ts
 import OpenAI from "openai";
@@ -62,15 +60,9 @@ const makeClient = Effect.gen(function* () {
 });
 ```
 
-## नोट्स
+जब आपको पूरे ऐप में प्रदाता-शैली का एब्स्ट्रैक्शन चाहिए, तो इसके ऊपर एक कस्टम लेयर बनाएँ।
 
-- OpenAI-संगत calls के लिए `https://api.phaseo.app/v1` उपयोग करें।
-- Model IDs को Phaseo format में रखें, जैसे `openai/gpt-5-nano`।
-- पूरे app में साझा provider abstraction चाहिए, तो custom Effect layer उपयोग करें।
-- उत्पादन में लागू करने से पहले, अपने Effect पैकेज के सटीक संस्करणों के साथ स्ट्रीमिंग और टूल कॉल की जाँच करें।
+## ज्ञात सीमाएँ
 
-## संबंधित विषय
-
-- [OpenAI SDK](./openai-sdk.mdx)
-- [AI SDK](./ai-sdk.mdx)
-- [स्ट्रीमिंग](../streaming.mdx)
+- मॉडल ID Phaseo फ़ॉर्मेट में रखें, जैसे `openai/gpt-6-astra`।
+- प्रोडक्शन से पहले अपने सटीक Effect पैकेज वर्ज़न के साथ [स्ट्रीमिंग](../streaming.mdx) और टूल कॉल की जाँच करें।

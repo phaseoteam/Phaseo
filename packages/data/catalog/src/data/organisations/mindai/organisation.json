@@ -1,9 +1,0 @@
-{
-  "organisation_id":"mindai",
-  "name":"Mind Lab",
-  "country_code":"SG",
-  "description":"Mind Lab develops the Macaron V1 family of model-specialist systems and has its registered address / HQ in Singapore.",
-  "colour":"#6366F1",
-  "organisation_links":[{"platform":"website","url":"https://macaron.im/mindlab"}],
-  "status":"active","routable":null,"sources":[{"kind":"website","url":"https://macaron.im/mindlab","accessed_at":"2026-07-25T00:00:00Z","notes":"Official Mind Lab site identifies the organisation behind the Macaron model family."},{"kind":"terms","url":"https://mint-doc.macaron.im/en/enterprise/support/terms","accessed_at":"2026-07-25T00:00:00Z","notes":"Official Mind Lab Toolkit terms identify MINDAI PTE. LTD. as incorporated in Singapore."},{"kind":"official_privacy_notice","url":"https://mint-doc.macaron.im/en/enterprise/support/privacy","accessed_at":"2026-08-09T00:00:00Z","notes":"Mind Lab's official privacy notice identifies Singapore as Mindai HQ and lists MINDAI PTE. LTD.'s address at 152 Beach Road, Singapore."}],"verification":{"status":"verified","checked_at":"2026-08-09T00:00:00Z","notes":"Organisation identity and Singapore headquarters verified from Mind Lab's official site, terms and privacy notice."}
-}

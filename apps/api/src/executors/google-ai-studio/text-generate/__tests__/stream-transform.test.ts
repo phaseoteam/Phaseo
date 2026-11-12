@@ -44,6 +44,112 @@ function baseArgs(overrides?: Record<string, any>): any {
 }
 
 describe("google-ai-studio stream transform", () => {
+	it("delivers argument fragments before completion and cancels the upstream reader", async () => {
+		let source!: ReadableStreamDefaultController<Uint8Array>;
+		let cancelled = false;
+		const upstream = new ReadableStream<Uint8Array>({
+			start(controller) { source = controller; },
+			cancel() { cancelled = true; },
+		});
+		const reader = transformStream(upstream, baseArgs()).getReader();
+		for (const functionCall of [
+			{ name: "write_file", willContinue: true },
+			{ partialArgs: [{ jsonPath: "$.body", stringValue: "early fragment", willContinue: true }], willContinue: true },
+		]) source.enqueue(new TextEncoder().encode(`data: ${JSON.stringify({ candidates: [{ content: { parts: [{ functionCall }] } }] })}\n\n`));
+		await reader.read();
+		const chunk = await reader.read();
+		expect(new TextDecoder().decode(chunk.value)).toContain("early fragment");
+		await reader.cancel();
+		expect(cancelled).toBe(true);
+	});
+
+	it.each(["openai.chat.completions", "openai.responses"])("preserves typed argument fragments and repeated same-name calls on %s", async (protocol) => {
+		const call = (functionCall: Record<string, unknown>) => ({ candidates: [{ index: 0, content: { parts: [{ functionCall }] } }] });
+		const upstream = makeGoogleSseStream([
+			call({ name: "write_file", willContinue: true }),
+			call({ partialArgs: [{ jsonPath: "$.body", stringValue: "first", willContinue: true }], willContinue: true }),
+			call({ partialArgs: [{ jsonPath: "$.body", stringValue: " file" }], willContinue: true }),
+			call({}),
+			call({ name: "write_file", willContinue: true }),
+			call({ partialArgs: [{ jsonPath: "$.body", stringValue: "second" }], willContinue: true }),
+			call({}),
+			{ candidates: [{ index: 0, finishReason: "STOP", content: { parts: [] } }] },
+		]);
+		const output = await readStreamText(transformStream(upstream, baseArgs({ protocol })));
+		if (protocol === "openai.chat.completions") {
+			const chunks = output.split("\n\n").filter((frame) => frame.startsWith("data: {")).map((frame) => JSON.parse(frame.slice(6)));
+			const tools = new Map<number, { id?: string; name?: string; arguments: string }>();
+			for (const chunk of chunks) for (const tool of chunk.choices?.[0]?.delta?.tool_calls ?? []) {
+				const state = tools.get(tool.index) ?? { arguments: "" };
+				state.id ??= tool.id;
+				state.name ??= tool.function?.name;
+				state.arguments += tool.function?.arguments ?? "";
+				tools.set(tool.index, state);
+			}
+			expect([...tools.values()].map((tool) => JSON.parse(tool.arguments))).toEqual([{ body: "first file" }, { body: "second" }]);
+			expect(new Set([...tools.values()].map((tool) => tool.id)).size).toBe(2);
+			expect(chunks.at(-1).choices[0].finish_reason).toBe("tool_calls");
+		} else {
+			const done = parseSseEvents(output).filter((event) => event.event === "response.function_call_arguments.done");
+			expect(done.map((event) => JSON.parse(event.data.arguments))).toEqual([{ body: "first file" }, { body: "second" }]);
+		}
+	});
+
+	it.each(["openai.chat.completions", "openai.responses", "anthropic.messages"])("fails a truncated typed tool call without successful completion on %s", async (protocol) => {
+		const upstream = makeGoogleSseStream([
+			{ candidates: [{ content: { parts: [{ functionCall: { name: "write_file", willContinue: true, partialArgs: [{ jsonPath: "$.body", stringValue: "unfinished", willContinue: true }] } }] } }] },
+			{ candidates: [{ finishReason: "STOP", content: { parts: [] } }] },
+		]);
+		const output = await readStreamText(transformStream(upstream, baseArgs({ protocol })));
+		expect(output).toContain("Google returned incomplete or invalid tool arguments.");
+		expect(output).not.toContain("event: response.completed");
+		expect(output).not.toContain("event: message_stop");
+		expect(output).not.toContain('"finish_reason":"tool_calls"');
+	});
+
+	it.each(["openai.chat.completions", "openai.responses", "anthropic.messages"])("reports malformed quoted paths as a protocol error on %s", async (protocol) => {
+		for (const jsonPath of ['$["a\\x"]', '$["a\nname"]']) {
+			const upstream = makeGoogleSseStream([{ candidates: [{ content: { parts: [{ functionCall: { name: "lookup", partialArgs: [{ jsonPath, stringValue: "x" }] } }] } }] }]);
+			const output = await readStreamText(transformStream(upstream, baseArgs({ protocol })));
+			expect(output).toContain("Google returned incomplete or invalid tool arguments.");
+			expect(output).not.toContain("event: response.completed");
+			expect(output).not.toContain("event: message_stop");
+		}
+	});
+
+	it("preserves full arguments when a complete call explicitly sets willContinue=false", async () => {
+		const upstream = makeGoogleSseStream([{
+			candidates: [{ content: { parts: [{ functionCall: { id: "complete-call", name: "lookup", args: { city: "London" }, willContinue: false } }] }, finishReason: "STOP" }],
+		}]);
+		const output = await readStreamText(transformStream(upstream, baseArgs()));
+		const chunks = output.split("\n\n").filter((frame) => frame.startsWith("data: {")).map((frame) => JSON.parse(frame.slice(6)));
+		expect(JSON.parse(chunks[0].choices[0].delta.tool_calls[0].function.arguments)).toEqual({ city: "London" });
+	});
+
+	it.each(["openai.chat.completions", "openai.responses", "anthropic.messages"])("rejects Interactions tool calls that end before completion on %s", async (protocol) => {
+		const upstream = makeGoogleSseStream([
+			{ event_type: "step.start", index: 0, step: { type: "function_call", id: "call_1", name: "lookup" } },
+			{ event_type: "step.delta", index: 0, delta: { type: "arguments", partial_arguments: '{"city":' } },
+		]);
+		const output = await readStreamText(transformStream(upstream, baseArgs({ protocol })));
+		expect(output).toContain("Google returned incomplete or invalid tool arguments.");
+		expect(output).not.toContain("event: response.completed");
+		expect(output).not.toContain("event: message_stop");
+	});
+
+	it("supports the Interactions arguments/partial_arguments event shape", async () => {
+		const upstream = makeGoogleSseStream([
+			{ event_type: "step.start", index: 0, step: { type: "function_call", id: "call_1", name: "lookup" } },
+			{ event_type: "step.delta", index: 0, delta: { type: "arguments", partial_arguments: '{"city":' } },
+			{ event_type: "step.delta", index: 0, delta: { type: "arguments", partial_arguments: '"London"}' } },
+			{ event_type: "interaction.completed", interaction: { status: "requires_action" } },
+		]);
+		const output = await readStreamText(transformStream(upstream, baseArgs({ protocol: "openai.responses" })));
+		const done = parseSseEvents(output).find((event) => event.event === "response.function_call_arguments.done");
+		expect(JSON.parse(done!.data.arguments)).toEqual({ city: "London" });
+	});
+
+
 	it.each([
 		["MAX_TOKENS", "length"],
 		["STOP", "stop"],
@@ -64,6 +170,41 @@ describe("google-ai-studio stream transform", () => {
 		expect(choices.some((choice) => Boolean(choice.delta?.content))).toBe(false);
 		expect(output).not.toContain("response.failed");
 		expect(output.match(/data: \[DONE\]/g)).toHaveLength(1);
+	});
+
+	it.each([
+		"SAFETY",
+		"PROHIBITED_CONTENT",
+		"RECITATION",
+		"SPII",
+		"BLOCKLIST",
+		"LANGUAGE",
+		"MODEL_ARMOR",
+		"ESCALATION",
+		"IMAGE_SAFETY",
+		"IMAGE_PROHIBITED_CONTENT",
+		"IMAGE_RECITATION",
+	])("ends a stream blocked with %s as content_filter, not as an error", async (providerFinishReason) => {
+		const upstream = makeGoogleSseStream([{
+			candidates: [{ index: 0, content: { role: "model", parts: [] }, finishReason: providerFinishReason }],
+			usageMetadata: { promptTokenCount: 5, candidatesTokenCount: 0, totalTokenCount: 5 },
+		}]);
+		const output = await readStreamText(transformStream(upstream, baseArgs()));
+		const chunks = output.split("\n").filter((line) => line.startsWith("data: {")).map((line) => JSON.parse(line.slice(6)));
+		expect(chunks.flatMap((chunk) => chunk.choices).some((choice) => choice.finish_reason === "content_filter")).toBe(true);
+		expect(output).not.toContain("response.failed");
+		expect(output).not.toContain("google_empty_response");
+	});
+
+	it("ends a stream whose prompt was blocked as content_filter", async () => {
+		const upstream = makeGoogleSseStream([{
+			promptFeedback: { blockReason: "SAFETY" },
+			usageMetadata: { promptTokenCount: 5, totalTokenCount: 5 },
+		}]);
+		const output = await readStreamText(transformStream(upstream, baseArgs()));
+		const chunks = output.split("\n").filter((line) => line.startsWith("data: {")).map((line) => JSON.parse(line.slice(6)));
+		expect(chunks.flatMap((chunk) => chunk.choices).some((choice) => choice.finish_reason === "content_filter")).toBe(true);
+		expect(output).not.toContain("google_empty_response");
 	});
 
 	it("emits a structured error instead of a blank successful stream", async () => {
@@ -282,6 +423,49 @@ describe("google-ai-studio stream transform", () => {
 		expect(output).toContain("\"reasoning_content\":\"thinking trace\"");
 	});
 
+	it("counts Interactions thought tokens as output and leaves tool-use tokens out of input", async () => {
+		// Google's documented accounting: total = input + output + thoughts; tool-use tokens are
+		// not added (function-calling example: input 100, output 25, tool use 50, total 125).
+		const upstream = makeGoogleSseStream([
+			{ index: 0, step: { type: "model_output" }, event_type: "step.start" },
+			{ index: 0, delta: { type: "text", text: "done" }, event_type: "step.delta" },
+			{
+				interaction: {
+					id: "v1_test",
+					status: "completed",
+					usage: {
+						total_input_tokens: 100,
+						total_cached_tokens: 40,
+						total_output_tokens: 30,
+						total_thought_tokens: 20,
+						total_tool_use_tokens: 7,
+						total_tokens: 150,
+						input_tokens_by_modality: [{ modality: "text", tokens: 90 }, { modality: "image", tokens: 10 }],
+						cached_tokens_by_modality: [{ modality: "text", tokens: 36 }, { modality: "image", tokens: 4 }],
+					},
+				},
+				event_type: "interaction.completed",
+			},
+		]);
+		const seen: any[] = [];
+
+		const stream = transformStream(upstream, baseArgs(), undefined, { onUsage: (usage) => seen.push(usage) });
+		const output = await readStreamText(stream);
+
+		expect(output).toContain("\"prompt_tokens\":100");
+		expect(output).toContain("\"completion_tokens\":50");
+		expect(output).toContain("\"reasoning_tokens\":20");
+		expect(seen.at(-1)).toMatchObject({
+			inputTokens: 100,
+			outputTokens: 50,
+			totalTokens: 150,
+			reasoningTokens: 20,
+			cachedInputTokens: 40,
+			// The 4 cached image tokens are billed through cachedInputTokens, not again as image input.
+			_ext: { inputImageTokens: 6 },
+		});
+	});
+
 	it("emits image deltas when Interactions stream returns image content", async () => {
 		const upstream = makeGoogleSseStream([
 			{
@@ -365,5 +549,104 @@ describe("google-ai-studio stream transform", () => {
 		expect(output).toContain("data:audio/wav;base64,UklGRlIAAABXQVZFZm10");
 		expect(output).toContain("\"output_tokens_details\"");
 		expect(output).toContain("\"output_audio\":22");
+	});
+
+	function functionCallFrame(functionCall: Record<string, unknown>, last = false) {
+		return {
+			candidates: [{
+				index: 0,
+				content: { role: "model", parts: [{ functionCall, thoughtSignature: `sig-${String(functionCall.id ?? functionCall.name)}` }] },
+				...(last ? { finishReason: "STOP" } : {}),
+			}],
+			usageMetadata: last
+				? { promptTokenCount: 10, candidatesTokenCount: 4, totalTokenCount: 14 }
+				: { promptTokenCount: 10 },
+		};
+	}
+
+	function chatToolCallDeltas(output: string): any[] {
+		return output
+			.split("\n")
+			.filter((line) => line.startsWith("data: {"))
+			.map((line) => JSON.parse(line.slice(6)))
+			.flatMap((chunk) => chunk.choices ?? [])
+			.flatMap((choice: any) => choice.delta?.tool_calls ?? []);
+	}
+
+	it("gives parallel function calls in separate frames their own index and keeps upstream ids", async () => {
+		const upstream = makeGoogleSseStream([
+			functionCallFrame({ id: "call_up_1", name: "get_weather", args: { city: "Lyon" } }),
+			functionCallFrame({ id: "call_up_2", name: "search", args: { query: "lyon" } }, true),
+		]);
+
+		const deltas = chatToolCallDeltas(await readStreamText(transformStream(upstream, baseArgs())));
+
+		expect(deltas.map((delta) => [delta.index, delta.id, delta.function?.name])).toEqual([
+			[0, "call_up_1", "get_weather"],
+			[1, "call_up_2", "search"],
+		]);
+		expect(deltas.map((delta) => delta.function?.arguments)).toEqual([
+			"{\"city\":\"Lyon\"}",
+			"{\"query\":\"lyon\"}",
+		]);
+	});
+
+	it("numbers reasoning_details entries across chunks so each signature keeps its own index", async () => {
+		const upstream = makeGoogleSseStream([
+			{
+				candidates: [{ index: 0, content: { role: "model", parts: [{ text: "Plan.", thought: true, thoughtSignature: "sig-thought" }] } }],
+				usageMetadata: { promptTokenCount: 10 },
+			},
+			functionCallFrame({ id: "call_up_1", name: "get_weather", args: { city: "Lyon" } }),
+			functionCallFrame({ id: "call_up_2", name: "search", args: { query: "lyon" } }, true),
+		]);
+
+		const details = (await readStreamText(transformStream(upstream, baseArgs())))
+			.split("\n")
+			.filter((line) => line.startsWith("data: {"))
+			.map((line) => JSON.parse(line.slice(6)))
+			.flatMap((chunk) => chunk.choices ?? [])
+			.flatMap((choice: any) => choice.delta?.reasoning_details ?? []);
+
+		expect(details.length).toBeGreaterThanOrEqual(3);
+		expect(details.map((detail: any) => detail.index)).toEqual(details.map((_: unknown, index: number) => index));
+		expect(details.filter((detail: any) => detail.id === "call_up_1" || detail.id === "call_up_2").map((detail: any) => detail.id))
+			.toEqual(["call_up_1", "call_up_2"]);
+	});
+
+	it("keeps two same-name calls without upstream ids apart and an identical re-send as one call", async () => {
+		const upstream = makeGoogleSseStream([
+			functionCallFrame({ name: "get_weather", args: { city: "Lyon" } }),
+			functionCallFrame({ name: "get_weather", args: { city: "Lyon" } }),
+			functionCallFrame({ name: "get_weather", args: { city: "Paris" } }, true),
+		]);
+
+		const deltas = chatToolCallDeltas(await readStreamText(transformStream(upstream, baseArgs())));
+
+		expect(deltas.map((delta) => [delta.index, delta.function?.arguments])).toEqual([
+			[0, "{\"city\":\"Lyon\"}"],
+			[1, "{\"city\":\"Paris\"}"],
+		]);
+		expect(new Set(deltas.map((delta) => delta.id)).size).toBe(2);
+	});
+
+	it("emits one Responses function_call item per parallel Gemini call", async () => {
+		const upstream = makeGoogleSseStream([
+			functionCallFrame({ id: "call_up_1", name: "get_weather", args: { city: "Lyon" } }),
+			functionCallFrame({ id: "call_up_2", name: "search", args: { query: "lyon" } }, true),
+		]);
+
+		const output = await readStreamText(transformStream(upstream, baseArgs({
+			endpoint: "responses",
+			protocol: "openai.responses",
+		})));
+		const done = parseSseEvents(output)
+			.filter((event) => event.event === "response.output_item.done" && event.data.item?.type === "function_call")
+			.map((event) => event.data.item);
+
+		expect(done.map((item) => [item.call_id, item.name, item.arguments])).toEqual([
+			["call_up_1", "get_weather", "{\"city\":\"Lyon\"}"],
+			["call_up_2", "search", "{\"query\":\"lyon\"}"],
+		]);
 	});
 });

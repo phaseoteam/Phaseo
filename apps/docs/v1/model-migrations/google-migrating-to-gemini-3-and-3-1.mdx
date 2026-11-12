@@ -1,77 +1,65 @@
 ---
 title: "Google Gemini 3.1"
 description: "What to know when adopting Gemini 3.1, including reasoning controls, multimodal handling, and thought signatures."
+"og:image": "https://phaseo.app/og/dynamic?title=Google%20Gemini%203.1&description=What%20to%20know%20when%20adopting%20Gemini%203.1%2C%20including%20reasoning%20controls%2C%20multimodal%20handling%2C%20and%20thought%20signatures.&pathname=/docs/v1/model-migrations/google-migrating-to-gemini-3-and-3-1"
 icon: "/icons/brands/google.svg"
 ---
 
-# Google Gemini 3.1
+Set reasoning depth with `reasoning.effort`, which Phaseo sends to Gemini 3 as `thinking_level`, and send assistant tool-call turns back as Phaseo returned them so thought signatures survive. Treat Gemini 3 and Gemini 3.1 Pro as two separate migrations.
 
-Use this guide to adopt the Gemini 3.1 family safely in production:
+| Phaseo model ID | Status |
+| --- | --- |
+| `google/gemini-3.1-pro-preview` | Available |
+| `google/gemini-3-flash-preview` | Available |
+| `google/gemini-3.1-flash-lite` | Deprecated; retires May 7, 2027 |
+| `google/gemini-3-pro-preview` | Retired March 9, 2026; requests route to `google/gemini-3.1-pro-preview` |
+| `google/gemini-3.1-flash-lite-preview` | Retired May 25, 2026; requests route to `google/gemini-3.1-flash-lite` |
 
-- `google/gemini-3-pro-preview`
-- `google/gemini-3-flash-preview`
-- `google/gemini-3.1-pro-preview`
-- `google/gemini-3.1-flash-lite-preview`
+Retired IDs keep working only through automatic replacement; see [Model Deprecation and Retirement](../guides/model-retirement). Call the current ID directly.
 
-Gemini 3 introduced real API-level changes around reasoning control and multimodal handling. Gemini 3.1 then raised the baseline again, especially for more complex reasoning-heavy tasks.
+## Set reasoning depth
 
-## What's new
+Gemini 3 replaced thinking budgets with `thinking_level`. Phaseo maps `reasoning.effort` (or the flat `reasoning_effort`) to it:
 
-- Gemini 3 introduced `thinking_level` as the main control for reasoning depth
-- Gemini 3 added `media_resolution` for multimodal vision handling
-- Gemini 3 uses Thought Signatures to preserve reasoning context across calls
-- in stricter workflows, missing Thought Signatures can produce degraded quality or `400` errors
-- Gemini 3.1 Pro is positioned as the stronger reasoning upgrade for complex tasks and agentic workflows
+| `reasoning.effort` | Gemini 3 Flash | Gemini 3.1 Pro |
+| --- | --- | --- |
+| `minimal` | `MINIMAL` | `LOW` (3.1 Pro has no `MINIMAL`) |
+| `low` | `LOW` | `LOW` |
+| `medium` | `MEDIUM` | `MEDIUM` |
+| `high`, `xhigh`, `max` | `HIGH` | `HIGH` |
 
-## Migration quickstart
+```json
+{
+  "model": "google/gemini-3.1-pro-preview",
+  "messages": [{ "role": "user", "content": "Compare these three architecture options." }],
+  "reasoning": { "effort": "medium" }
+}
+```
 
-### 1. Re-map reasoning controls
+The levels don't behave like other providers' effort settings one for one, so re-test latency and quality at each level you expose.
 
-If your app exposes a generic reasoning knob, map it carefully for Gemini 3 routes. In OpenAI-compatible flows, `reasoning_effort` maps conceptually to Gemini `thinking_level`, but the behavior is not one-to-one and needs retesting.
+## Keep thought signatures
 
-### 2. Handle Thought Signatures correctly
+Gemini 3 returns thought signatures that carry reasoning context across calls, and in function calling a missing signature can lower quality or return `400`. Send each assistant turn, including its tool calls, back exactly as Phaseo returned it. Phaseo replays a signature to the model that issued it; when one is missing or came from a different model, it sends Google's skip placeholder so the request doesn't fail.
 
-If you use the official Gemini SDKs and standard chat history, signatures are usually handled for you. If you build lower-level request flows, especially around function calling or image generation and editing, make sure the returned signatures are preserved and sent back exactly as required.
+## Revisit prompts and media
 
-### 3. Revisit prompt style
+Google's Gemini 3 guidance favors direct prompts and parameter-driven control over long prompt scaffolding. If your prompts compensate for older model behavior, simplify them and re-evaluate.
 
-Gemini 3 guidance favors more direct prompts and parameter-driven control rather than longer prompt scaffolding. If your current prompts are heavily compensating for older model behavior, simplify them and re-evaluate.
-
-### 4. Tune multimodal settings
-
-If your routes include images, documents, or mixed media, re-test `media_resolution` settings instead of assuming older defaults still fit.
+Gemini 3 also added `media_resolution` for images and documents. Phaseo doesn't expose it, so Google's default applies; re-test image, document, and mixed-media routes rather than assuming older results hold.
 
 ## What to test
 
-### Prompt and reasoning behavior
+- **Reasoning:** concise versus scaffolded prompts, step-by-step tasks, long-context synthesis, and agent workflows that depend on reasoning continuity.
+- **Responses:** signatures across turns, function-calling success rate, schema pass rate, and empty, partial, or malformed outputs after changing effort.
+- **Production metrics:** latency at each level, token use and cost, multimodal routes, and task success on Gemini 3 versus Gemini 3.1 Pro.
 
-- concise prompts versus heavily scaffolded prompts
-- step-by-step reasoning tasks
-- long-context synthesis
-- agent-style workflows that depend on maintaining reasoning continuity
+## Roll out
 
-### Response handling
-
-- signature preservation across turns
-- function-calling success rate
-- schema pass rate
-- empty, partial, or malformed outputs after changing thinking controls
-
-### Production metrics
-
-- latency at each `thinking_level`
-- token usage and cost
-- multimodal route performance under different `media_resolution` settings
-- task success when comparing Gemini 3 versus Gemini 3.1 Pro
-
-## Rollout advice
-
-Treat Gemini 3 and Gemini 3.1 as separate migrations.
-
-1. First migrate the request shape and signature handling.
-2. Then re-run prompt and schema evaluations on Gemini 3.
+1. Migrate the request shape and signature handling first.
+2. Re-run prompt and schema evaluations on Gemini 3.
 3. Promote Gemini 3.1 Pro separately for the routes that need deeper reasoning.
-4. Keep a simpler or cheaper fallback path for high-volume workloads.
+4. Keep a cheaper fallback for high-volume workloads.
 
 ## Sources
 

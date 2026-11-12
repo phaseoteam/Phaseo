@@ -1,10 +1,7 @@
-"use client";
-
+import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import * as React from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { CheckCircle2, KeyRound, XCircle } from "lucide-react";
-
-import type { ProviderMetadataEntry } from "@/app/(dashboard)/gateway/usage/server-actions";
 
 import ConfigurableLogTable from "./ConfigurableLogTable";
 import { UPSTREAM_COLUMNS } from "./logColumns";
@@ -32,14 +29,11 @@ import {
 } from "@/components/ui/table";
 import type { UsageUpstreamRequestRow } from "@/lib/fetchers/internal/settingsTypes";
 import { formatWordyDateTime } from "@/lib/gateway/usage/timeFormatting";
-import {
-	PROVIDER_PROMPT_TRAINING_POLICY_LABELS,
-	normalizeProviderPromptTrainingPolicy,
-} from "@/lib/providers/promptTrainingPolicy";
 import { cn } from "@/lib/utils";
 import { extractUsageMeters } from "./usageMeters";
 import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
-import UsageEntityHoverCard from "./UsageEntityHoverCard";
+import UsageEntityLink from "./UsageEntityLink";
+import { TimestampHoverCard } from "@/components/display/TimestampHoverCard";
 
 type KeyMetadata = { id: string; name: string | null; prefix: string | null };
 
@@ -54,10 +48,8 @@ function maskedKeyPrefix(prefix: string | null | undefined, hiddenLabel: string)
 	return value ? `${value}••••••••` : hiddenLabel;
 }
 
-function formatMilliseconds(value: number | null, locale: string): string {
-	return typeof value === "number" && Number.isFinite(value)
-		? new Intl.NumberFormat(locale, { style: "unit", unit: "millisecond", unitDisplay: "short", maximumFractionDigits: 0 }).format(value)
-		: "—";
+function formatSeconds(value: number | null, locale: string): string {
+	return formatLatency(value, locale) ?? "—";
 }
 
 function metadataNumber(value: unknown, key: string): number | null {
@@ -86,7 +78,7 @@ function formatThroughput(row: UsageUpstreamRequestRow, locale: string): string 
 	const value = throughputForRow(row);
 	return value === null
 		? "—"
-		: new Intl.NumberFormat(locale, { maximumFractionDigits: value >= 100 ? 0 : 1 }).format(value) + " tok/s";
+		: formatTps(value, locale) ?? "—";
 }
 
 function attemptLabel(
@@ -168,7 +160,6 @@ export default function UpstreamRequestsTable({
 	rows,
 	modelMetadata,
 	providerNames,
-	providerMetadata,
 	keys,
 	settingsTargetId,
 }: {
@@ -176,7 +167,6 @@ export default function UpstreamRequestsTable({
 	rows: UsageUpstreamRequestRow[];
 	modelMetadata: ModelMetadataMap;
 	providerNames: Map<string, string>;
-	providerMetadata: Map<string, ProviderMetadataEntry>;
 	keys: Map<string, KeyMetadata>;
 }) {
 	const t = useTranslations("SettingsUI");
@@ -203,16 +193,6 @@ export default function UpstreamRequestsTable({
 				renderCell={(row, column) => {
 					const modelLabel = getModelDisplayName(row.model_id, modelMetadata);
 					const model = modelMetadata.get(row.model_id);
-					const provider = row.provider
-						? providerMetadata.get(row.provider)
-						: null;
-					const providerPolicy = provider
-						? PROVIDER_PROMPT_TRAINING_POLICY_LABELS[
-								normalizeProviderPromptTrainingPolicy(
-									provider.promptTrainingPolicy,
-								)
-							]
-						: null;
 					const providerLabel = row.provider
 						? (providerNames.get(row.provider) ?? row.provider)
 						: "—";
@@ -220,68 +200,33 @@ export default function UpstreamRequestsTable({
 					switch (column) {
 						case "date":
 							return (
-								<>
+								<TimestampHoverCard value={row.created_at}>
 									{formatWordyDateTime(row.created_at, { includeTime: true, locale })}
-								</>
+								</TimestampHoverCard>
 							);
 						case "model":
 							return (
 								<>
-									<UsageEntityHoverCard
-										title={modelLabel}
-										subtitle={model?.organisationName}
-										href={getModelDetailsHref(row.model_id)}
-										visual={
-											model?.organisationId ? (
-												<Logo
-													id={model.organisationId}
-													width={18}
-													height={18}
-												/>
-											) : null
-										}
-										rows={[
-											{
-												label: t("strings.Model ID" as never),
-												value: (
-													<code className="font-mono text-[11px]">
-														{row.model_id}
-													</code>
-												),
-											},
-										]}
-									>
-										<span className="flex max-w-[230px] items-center gap-2">
-											{model?.organisationId ? (
-												<Logo
-													id={model.organisationId}
-													width={15}
-													height={15}
-												/>
-											) : null}
-											<span className="truncate" title={modelLabel}>
-												{modelLabel}
-											</span>
-										</span>
-									</UsageEntityHoverCard>
+									<UsageEntityLink href={getModelDetailsHref(row.model_id)} className="max-w-[230px]">
+										{model?.organisationId ? (
+											<Logo
+												id={model.organisationId}
+												width={15}
+												height={15}
+											/>
+										) : null}
+										<span className="truncate">{modelLabel}</span>
+									</UsageEntityLink>
 								</>
 							);
 						case "provider":
 							return (
 								<>
 									{row.provider ? (
-										<UsageEntityHoverCard
-											title={providerLabel}
-											subtitle={providerPolicy}
-											href={`/api-providers/${encodeURIComponent(row.provider)}`}
-											visual={<Logo id={row.provider} width={18} height={18} />}
-											rows={[]}
-										>
-											<span className="inline-flex items-center gap-2">
-												<Logo id={row.provider} width={15} height={15} />
-												{providerLabel}
-											</span>
-										</UsageEntityHoverCard>
+										<UsageEntityLink href={`/api-providers/${encodeURIComponent(row.provider)}`}>
+											<Logo id={row.provider} width={15} height={15} />
+											{providerLabel}
+										</UsageEntityLink>
 									) : (
 										providerLabel
 									)}
@@ -313,7 +258,7 @@ export default function UpstreamRequestsTable({
 						case "attempts":
 							return row.totalAttempts;
 						case "latency":
-							return formatMilliseconds(row.request_latency_ms ?? null, locale);
+							return formatSeconds(row.request_latency_ms ?? null, locale);
 					}
 				}}
 			/>
@@ -395,14 +340,14 @@ export default function UpstreamRequestsTable({
 									/>
 									<DetailField
 										label={t("strings.Latency" as never)}
-										value={formatMilliseconds(
+										value={formatSeconds(
 											inspected.latency_ms ?? inspected.duration_ms,
 											locale,
 										)}
 									/>
 									<DetailField
 										label={t("strings.upstreamTotalTime" as never)}
-										value={formatMilliseconds(inspected.total_ms, locale)}
+										value={formatSeconds(inspected.total_ms, locale)}
 									/>
 									<DetailField label={t("strings.Outcome" as never)} value={inspected.outcome} />
 									<DetailField
@@ -449,7 +394,7 @@ export default function UpstreamRequestsTable({
 														{attempt.status_code ?? attempt.outcome}
 													</TableCell>
 													<TableCell>
-														{formatMilliseconds(
+														{formatSeconds(
 															attempt.latency_ms ?? attempt.duration_ms, locale,
 														)}
 													</TableCell>

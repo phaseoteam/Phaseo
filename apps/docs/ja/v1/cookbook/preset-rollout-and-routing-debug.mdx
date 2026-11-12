@@ -1,111 +1,104 @@
 ---
 title: "プリセットを展開してルーティングをデバッグする"
 icon: "route"
-description: "プリセットでプロンプトとルーティングの既定値を統一し、リクエストの詳細から Phaseo のルーティング理由を確認します。"
+description: "プリセットでプロンプトとルーティングの既定値を統一し、リクエストの詳細から Phaseo がそのようにルーティングした理由を確認します。"
 ---
 
-同じプロンプト、モデル、ルーティング設定を各所に複製せず、複数のサービスでプリセットを再利用したい場合に使います。
+複数のサービスを 1 つのプリセットに移行してプロンプト、モデル、プロバイダーのルールを共有させ、リクエストのログで各リクエストの行き先を説明できるようにします。完成すると、呼び出し元は `"model": "@release-summary"` と入力だけを送り、ポリシーの変更を呼び出し元ごとに 1 つずつ展開できるようになります。
 
-## 目的
+このリクエストの形は本番環境で使えます。プリセットの設定がリクエストとどう統合されるかは[プリセット](../guides/presets)で説明しています。このレシピでは展開を扱います。
 
-- プロンプトとパラメーターの既定値を統一する。
-- 展開時やコンプライアンス要件に合わせて、使用可能なプロバイダーを制限する。
-- リクエストがそのようにルーティングされた理由を説明できるだけの情報を保持する。
+## 呼び出し元をプリセットに移行する
 
-## 1. プリセットを作成する
+<Steps>
+<Step title="プリセットを作成する">
 
-**ダッシュボード -> 設定 -> プリセット**で、次の内容を含むプリセットを作成します。
+**設定 → プリセット** で、システムプロンプト、承認済みのモデル、プロバイダーの優先設定、`temperature` などの既定のパラメーターを持つ `release-summary` を作成します。管理キーを使って作成することもできます。
 
-- 分かりやすい名前と slug
-- システムプロンプト
-- 承認済みモデル
-- プロバイダーの優先設定
-- `temperature` などのパラメーター既定値
+```bash
+curl https://api.phaseo.app/v1/presets \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"@release-summary","config":{"model":"anthropic/claude-sonnet-5.5"}}'
+```
 
-呼び出しコードでプリセットの slug を指定すると、環境をまたいで同じリクエストポリシーを再利用できます。
+</Step>
+<Step title="名前で呼び出す">
 
-## 2. リクエスト本文を小さく保つ
-
-プリセットの主な利点は、呼び出し元が各リクエストで同じルーティングやプロンプトの既定値を繰り返す必要がなくなることです。
+プリセットを `model` として送ります。別の `preset` フィールドはありません。
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-sonnet-4-5",
+    "model": "@release-summary",
     "input": "Generate a release summary for the last 24 hours.",
-    "preset": "release-summary"
+    "meta": true
   }'
 ```
 
-```typescript TypeScript SDK
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "anthropic/claude-sonnet-4-5",
+  model: "@release-summary",
   input: "Generate a release summary for the last 24 hours.",
-  preset: "release-summary",
+  meta: true,
 });
 
-console.log(response.output_text);
+console.log(response.model, response.meta?.routing);
 ```
 
-```python Python SDK
+```python Python
+import os
+
 from phaseo import Phaseo
 
-client = Phaseo(api_key="YOUR_API_KEY")
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
 response = client.generate_response(
     {
-        "model": "anthropic/claude-sonnet-4-5",
+        "model": "@release-summary",
         "input": "Generate a release summary for the last 24 hours.",
-        "preset": "release-summary",
+        "meta": True,
     }
 )
 
-print(response.get("output_text"))
+print(response.get("model"), response["meta"]["routing"]["selected_provider"])
 ```
 </CodeGroup>
 
-## 3. プリセットによる変更を理解する
+レスポンスの `model` は応答したモデル、`meta.routing.selected_provider` はプロバイダーです。
 
-プリセットはプロバイダーのルーティング前に適用されます。
+</Step>
+<Step title="プリセットが適用した内容を確認する">
 
-- リクエストにないパラメーターはプリセットから補完される
-- プリセットのプロンプトがシステム層の先頭に追加される
-- プロバイダーの優先設定により、順位付けの前に利用可能なプロバイダーを絞り込みます
-- モデル制限は早い段階で確認され、通知なく別の経路へ切り替わることはない
+**設定 → 使用量 → ログ** でリクエストを開きます。どのプリセットの既定値が適用されたかが表示されます。プリセットで許可されていないモデルは、別のモデルに振り替えられるのではなく、`validation_error`（キーワード `preset_model_not_allowed`）で失敗します。
 
-## 4. ルーティング結果をデバッグする
+</Step>
+</Steps>
 
-リクエストが想定どおりにルーティングされない場合は、**Gateway -> Usage** で開き、次を確認します。
+## ルーティングの判断を説明する
 
-- 検討されたプロバイダー
-- 順位付けされた候補
-- 各候補に紐付いたルーティング要因
-- ワークスペースポリシーやガードレールによるブロック
+リクエストが想定どおりにルーティングされなかった場合は、**設定 → 使用量 → ログ** でリクエストの **ルーティングの可観測性** を展開します。次の 3 つの疑問に答えられます。
 
-次の点をすばやく確認できます。
+| 疑問 | 確認する箇所 |
+| --- | --- |
+| プロバイダーがスキップされたのはなぜか | 順位付けの前に除外されたプロバイダーとその理由、およびロールアウトやルーティングのステータスによって順位を下げられたプロバイダー |
+| リクエストがブロックされたのはなぜか | リクエストに対するワークスペースポリシーやガードレールによるブロック |
+| このプロバイダーが選ばれたのはなぜか | 順位付けされた各プロバイダーの最終スコアと、その根拠となる要素 |
 
-- プロバイダーが除外された理由
-- リクエストがブロックされた理由
-- より低コストまたは低レイテンシの候補が選ばれた理由
+各フィールドの説明は[ルーティングの判断を説明する](../guides/routing-and-fallbacks#explain-a-routing-decision)を参照してください。
 
-## 5. 運用パターン
+## ポリシーの変更を展開する
 
-ルーティング動作を変更するときは、次の手順で展開します。
+1. 変更をプリセットの新しいバージョンとして公開します。ポリシーが大きく異なる場合は、新しいスラッグを作成します。
+2. リスクの低い呼び出し元を 1 つ移行します。たとえば、`@release-summary@v4` や `canary` ラベルを指すようにします。
+3. そのリクエストの詳細と使用量の推移を、他の呼び出し元と比較します。
+4. ルーティングが想定どおりになったら、残りの呼び出し元を移行します。ロールバックするには、ラベルを以前のバージョンに向けます。
 
-1. 新しいポリシー用のプリセット slug を作成します。
-2. リスクの低い呼び出し元を新しいプリセットに切り替えます。
-3. リクエストの詳細とアクティビティの傾向を確認します。
-4. ルーティング結果が想定どおりであることを確認してから展開を広げます。
-
-## 関連ガイド
-
-- [プリセット](../guides/presets.mdx)
-- [ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)
-- [エラー処理](../api-reference/errors.mdx)
+バージョンとラベルについては[バージョン管理とロールバック](../guides/presets#version-and-roll-back)で説明しています。プリセットに含めるべきでないリクエスト単位の上書きについては、[プロバイダーを固定または除外する](./pin-or-ignore-providers-per-request)を参照してください。

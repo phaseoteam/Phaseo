@@ -5,140 +5,55 @@ sidebarTitle: "Benchmarks"
 icon: "chart-no-axes-column"
 ---
 
-Os benchmarks são fundamentais para medir a qualidade e a evolução dos modelos no Phaseo.
-Eles fornecem **métricas objetivas e reproduzíveis** para comparar o desempenho dos modelos em diferentes tarefas, domínios e provedores, de raciocínio e programação a compreensão de linguagem e reconhecimento de imagens.
+Abra um benchmark em [Benchmarks](https://phaseo.app/benchmarks) para classificar os modelos pela pontuação neles, ou abra a página de um modelo para ver todas as pontuações dele. O Phaseo não executa benchmarks; ele reúne pontuações publicadas e vincula cada uma à sua fonte.
 
----
+## O que cada pontuação registra
 
-## O que são benchmarks?
+| Campo | O que ele informa |
+| --- | --- |
+| Pontuação | O valor como foi publicado, na escala do próprio benchmark. |
+| Variante | A configuração, quando difere do padrão, como o número de exemplos few-shot ou o esforço de raciocínio. |
+| Fonte | Um link para o artigo, o model card ou a página de resultados de onde a pontuação veio. |
+| Informado pelo próprio | Marcado quando quem desenvolveu o modelo publicou a pontuação. É uma informação de transparência, não uma rejeição. |
 
-Um **benchmark** é um conjunto de dados ou uma avaliação criada para testar o desempenho de um modelo em uma tarefa específica.
-Ao executar vários modelos no mesmo conjunto de dados, podemos medir seus pontos fortes e fracos relativos.
+Cada benchmark também tem uma categoria e uma direção de ordenação. O Phaseo classifica benchmarks em que menor é melhor, como taxas de erro, com a menor pontuação primeiro.
 
-Exemplos comuns:
+## Como comparar pontuações
 
--   🧠 **MMLU (Massive Multitask Language Understanding)** — avalia conhecimentos gerais e raciocínio.
--   🔢 **GSM8K** — avalia raciocínio matemático e resolução de problemas.
--   💬 **HellaSwag** — avalia bom senso e compreensão contextual.
--   🧮 **ARC-Challenge** — mede raciocínio científico e lógica.
--   💡 **HumanEval** — avalia habilidades de programação e geração de código.
+O Phaseo não converte os benchmarks em uma pontuação comum, então compare modelos no mesmo benchmark e na mesma variante, não entre benchmarks diferentes. Verifique a variante e a marcação de informado pelo próprio antes de tratar dois números como equivalentes: uma pontuação informada pelo provedor e uma medida de forma independente podem diferir para o mesmo modelo.
 
----
+A pontuação de um benchmark é só um dos fatores. Custo, latência, confiabilidade e o desempenho de um modelo com os seus próprios prompts importam tanto quanto; [Preços e desempenho](./pricing-performance.mdx) trata desses pontos.
 
-## Como o Phaseo lida com benchmarks
+## O que a página de um benchmark mostra
 
-O Phaseo coleta dados de benchmarks de **várias fontes públicas** e **relatórios oficiais** e os padroniza em um formato consistente.
+| Seção | O que ela informa |
+| --- | --- |
+| **Resumo** | O que o benchmark mede, com um link para ele. |
+| **Progresso** | Como as pontuações no benchmark mudaram ao longo do tempo. |
+| **Resultados de modelos** | A pontuação de cada modelo, classificada na direção de ordenação do benchmark. |
 
-A seção de benchmarks de cada modelo inclui:
-
--   **Valor da pontuação** — normalmente expresso como porcentagem ou em uma escala padronizada.
--   **Fonte do conjunto de dados** — por exemplo, MMLU, GSM8K etc.
--   **Método de avaliação** — indica como a pontuação foi calculada (relatório oficial, avaliação de terceiros ou contribuição da comunidade).
--   **Última atualização** — mostra quando os dados do benchmark foram atualizados pela última vez.
-
----
-
-## Exemplo de página de benchmark
-
----
+Índices compostos, como o Artificial Analysis Intelligence Index e o Epoch Capabilities Index, têm páginas próprias com as classificações e as versões de quem os publica.
 
 ## Categorias de benchmarks
 
-Os benchmarks são agrupados em categorias que representam a habilidade testada:
+| Categoria | Exemplos |
+| --- | --- |
+| Geral | Artificial Analysis Intelligence Index, Epoch Capabilities Index |
+| Agentes | BrowseComp, BFCL-v3, Toolathlon |
+| Código | SWE-Bench, Aider-Polyglot |
+| Matemática | AIME 2025, MathVision |
+| Raciocínio | HellaSwag, Hallusion Bench |
+| Linguagem | BIG-Bench Hard, Winogrande |
+| Multimodal | CharXiv-R, MMBench-V1.1 |
+| Contexto longo | AA-LCR, OpenAI-MRCR |
 
-| Categoria                   | Exemplos               | Descrição                                                           |
-| -------------------------- | ---------------------- | --------------------------------------------------------------------- |
-| **Raciocínio**              | MMLU, GSM8K, ARC       | Avalia lógica geral, raciocínio em várias etapas e resolução de problemas.       |
-| **Compreensão de linguagem** | HellaSwag, BoolQ, PIQA | Mede compreensão de leitura, bom senso e capacidade linguística. |
-| **Geração de código**        | HumanEval, MBPP        | Avalia a programação e a precisão na síntese de código.                    |
-| **Matemática e ciências**         | GSM8K, MATH, SciQ      | Tem foco no raciocínio numérico e científico.                        |
-| **Multimodal**             | MathVista, MMMU        | Combina tarefas de compreensão de texto e imagens.                         |
+Outras categorias incluem áudio, embeddings, saúde, planejamento e criatividade.
 
----
+## De onde vêm as pontuações
 
-## Como interpretar as pontuações
+- Model cards, relatórios técnicos e artigos de quem desenvolveu o modelo.
+- Páginas de resultados dos próprios organizadores dos benchmarks.
+- Importações programadas da Artificial Analysis e da Epoch AI.
+- Relatos da comunidade por meio de issues no GitHub, revisados antes da publicação.
 
-| Faixa de valores | Interpretação                                                    |
-| ----------- | ----------------------------------------------------------------- |
-| **90-100%** | Excepcional — desempenho próximo ao estado da arte.                  |
-| **80-89%**  | Excelente — adequado para a maioria dos casos de uso em produção.                |
-| **60-79%**  | Bom — confiável para tarefas gerais, mas pode ter dificuldades em casos extremos. |
-| **< 60%**   | Em desenvolvimento — mais indicado para cenários experimentais ou de pesquisa.         |
-
-Lembre-se de que alguns benchmarks usam **sistemas de pontuação diferentes**.
-O Phaseo os padroniza sempre que possível para tornar as comparações mais úteis.
-
----
-
-## Visualizando benchmarks no Phaseo
-
-Os resultados dos benchmarks são visualizados com:
-
--   📊 **Gráficos de barras** para comparar modelos no mesmo conjunto de dados.
--   📈 **Gráficos de tendência** que mostram a evolução dos modelos ao longo do tempo.
--   🧮 **Pontuações agregadas** para resumir o desempenho em vários conjuntos de dados.
-
-Cada conjunto de dados de benchmark no Phaseo inclui filtros para:
-
--   Tipo de modelo (chat, código, embeddings etc.)
--   Provedor
--   Ano de lançamento
--   Categoria do conjunto de dados
-
-Isso permite identificar padrões rapidamente, como quais famílias se destacam em tarefas de raciocínio ou programação.
-
----
-
-## Fontes de dados e metodologia
-
-O Phaseo reúne dados de benchmarks provenientes de:
-
--   Artigos de pesquisa e relatórios oficiais de modelos.
--   Páginas de avaliação de provedores (OpenAI Evals, Anthropic Reports etc.).
--   Conjuntos de dados abertos da comunidade (por exemplo, rankings do Hugging Face).
--   Envios diretos de usuários pelo GitHub.
-
-Todos os dados são padronizados e verificados antes da publicação.
-Consulte [Pesquisa e metodologia → Metodologia de benchmarks](../research/benchmark-methodology.mdx) para ver todos os detalhes.
-
----
-
-## Exemplos de uso
-
-| Objetivo                                 | Exemplo                                                              |
-| ------------------------------------ | -------------------------------------------------------------------- |
-| Comparar modelos de raciocínio             | “Qual modelo tem a maior pontuação no GSM8K?”                               |
-| Avaliar o equilíbrio entre custo e desempenho | “O GPT-4o justifica o custo mais alto em comparação com o Claude 3.5 Sonnet?” |
-| Acompanhar o progresso anual                | “Quanto a precisão no MMLU melhorou desde 2022?”                    |
-| Pesquisar benchmarks por categoria      | “Quais modelos lideram em raciocínio multimodal?”                         |
-
----
-
-## Contribuir com dados de benchmarks
-
-Abra uma issue no GitHub com evidências de resultados de benchmarks novos ou corrigidos.
-Cada envio é revisado antes da inclusão para garantir consistência e precisão.
-
-<Card
-	title="Contribuir com dados de benchmarks"
-	icon="github"
-	href="../research/submitting-scores.mdx"
-	horizontal
->
-	Saiba quais evidências incluir em uma issue de benchmark.
-</Card>
-
----
-
-## Próximas etapas
-
-Depois de entender como os dados de benchmarks funcionam, você pode explorar os **provedores de API** que disponibilizam esses modelos por meio de programação.
-
-<Card
-	title="Explorar provedores de API"
-	icon="network"
-	href="./api-providers.mdx"
-	horizontal
->
-	Veja onde e como os modelos são hospedados, precificados e acessados.
-</Card>
+A [metodologia de benchmarks](../research/benchmark-methodology.mdx) traz as regras completas. Para adicionar ou corrigir uma pontuação, consulte [Envie pontuações de benchmarks](../research/submitting-scores.mdx).

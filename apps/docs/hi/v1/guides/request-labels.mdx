@@ -1,14 +1,10 @@
 ---
 title: "अनुरोध लेबल"
-description: "Gateway requests को code-defined teams, features या environments से जोड़ें और label के अनुसार खर्च देखें।"
+description: "Gateway अनुरोधों को कोड में तय की गई टीमों, फ़ीचर या एनवायरनमेंट से जोड़ें और लेबल के हिसाब से खर्च देखें।"
 icon: "tags"
 ---
 
-जब application code को API key या application से अधिक specific और स्थिर cost dimension चाहिए, तब request labels उपयोग करें। Labels request audit में दर्ज होते हैं और model request बदले बिना analytics में filter किए जा सकते हैं।
-
-## लेबल भेजें
-
-`X-Phaseo-Metadata` को अधिकतम 32 unique key/value labels वाले JSON object पर सेट करें:
+किसी अनुरोध को `team=support` जैसे की/वैल्यू लेबल से टैग करने के लिए `X-Phaseo-Metadata` हेडर भेजें, फिर उन लेबल से खर्च और लॉग फ़िल्टर करें। जब आपको API कुंजी या ऐप से ज़्यादा बारीक लागत आयाम चाहिए, तब लेबल का उपयोग करें। ये मॉडल अनुरोध को नहीं बदलते और प्रदाताओं को फ़ॉरवर्ड नहीं किए जाते।
 
 ```bash
 curl https://api.phaseo.app/v1/responses \
@@ -16,27 +12,35 @@ curl https://api.phaseo.app/v1/responses \
   -H "Content-Type: application/json" \
   -H 'X-Phaseo-Metadata: {"labels":[{"key":"team","value":"support"},{"key":"environment","value":"production"}]}' \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "input": "Summarize this ticket."
   }'
 ```
 
-TypeScript और Python SDKs custom headers लेते हैं, इसलिए वही header client पर configure किया जा सकता है। Labels providers को forward नहीं होते।
+TypeScript और Python SDK कस्टम हेडर स्वीकार करते हैं, इसलिए आप यही हेडर क्लाइंट पर एक बार सेट कर सकते हैं।
 
-## खर्च का विश्लेषण करें
+अनुरोधों को उनके कंटेंट के आधार पर अपने आप लेबल करने के लिए [अनुरोध क्लासिफ़ायर](/hi/v1/guides/request-classifiers) का उपयोग करें। उनके जवाब अनुरोध लेबल के रूप में सेव होते हैं और उसी तरह फ़िल्टर होते हैं।
 
-`label_key` और `label_value` के साथ analytics endpoint उपयोग करें:
+## लेबल के नियम
+
+| नियम | सीमा |
+| --- | --- |
+| प्रति अनुरोध लेबल | अधिकतम 32, हर एक की की अलग हो |
+| की | 1 से 64 अक्षर: अक्षर, अंक, `_`, `.`, `:`, `-` |
+| वैल्यू | स्ट्रिंग, 1 से 256 अक्षर, कोई कंट्रोल कैरेक्टर नहीं |
+| हेडर का आकार | अधिकतम 8 KiB |
+| आरक्षित की | `phaseo.classifier` सिर्फ़ Phaseo के क्लासिफ़ायर कॉल सेट करते हैं |
+
+की और वैल्यू के आगे-पीछे की खाली जगह हटा दी जाती है। गलत बना हेडर, दोहराई गई की, या इन नियमों को तोड़ने वाला लेबल किसी भी मॉडल को कॉल करने से पहले अनुरोध को `400 validation_error`, कारण `invalid_request_metadata`, के साथ विफल कर देता है।
+
+लेबल में प्रॉम्प्ट, सीक्रेट, ईमेल पते या अन्य व्यक्तिगत डेटा न रखें।
+
+## लेबल से खर्च फ़िल्टर करें
+
+एनालिटिक्स एंडपॉइंट को `label_key` और `label_value` दोनों भेजें:
 
 ```text
 GET /v1/analytics?label_key=team&label_value=support
 ```
 
-Response में unfiltered analytics जैसा grouped-spend format होता है, लेकिन केवल वही requests शामिल होते हैं जिन पर यही सटीक label pair लगा हो।
-
-## नियम
-
-- Keys में केवल letters, numbers, `_`, `.`, `:` या `-` का उपयोग कर सकते हैं; अधिकतम लंबाई 64 characters है।
-- Values 256 characters तक की strings होते हैं।
-- एक request में अधिकतम 32 labels हो सकते हैं और header की सीमा 8 KiB है।
-- Duplicate keys या गलत format वाला metadata `400 invalid_request` के साथ reject होता है।
-- Labels में prompts, secrets, email addresses या अन्य personal data न डालें।
+प्रतिक्रिया का फ़ॉर्मैट बिना फ़िल्टर वाले एनालिटिक्स जैसा ही समूहबद्ध खर्च होता है, लेकिन इसमें सिर्फ़ वे अनुरोध गिने जाते हैं जिन पर ठीक वही लेबल जोड़ी हो। दोनों में से सिर्फ़ एक पैरामीटर भेजने पर `400 invalid_request` मिलता है।

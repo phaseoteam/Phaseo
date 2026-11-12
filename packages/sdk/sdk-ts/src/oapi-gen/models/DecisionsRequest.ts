@@ -1,3 +1,6 @@
+/**
+ * Legacy SDK model name retained for compatibility. New callers should use OpenAIDecisionsRequest.
+ */
 export interface DecisionsRequest {
   debug?: {
     enabled?: boolean;
@@ -19,6 +22,7 @@ export interface DecisionsRequest {
     [key: string]: unknown;
   };
   model: string;
+  models?: string[];
   provider?: {
     allow_fallbacks?: boolean | null;
     data_collection?: "allow" | "deny" | null;
@@ -55,6 +59,11 @@ export interface DecisionsRequest {
           [key: string]: unknown;
         };
     zdr?: boolean | null;
+  };
+  provider_options?: {
+    typesafe?: {
+      long_context?: boolean;
+    };
   };
   questions: {
     [key: string]:
@@ -93,6 +102,15 @@ export interface DecisionsRequest {
               }
             | unknown[];
           type: "score";
+        }
+      | {
+          instructions:
+            | string
+            | {
+                [key: string]: unknown;
+              }
+            | unknown[];
+          type: "box";
         };
   };
   routing?: {

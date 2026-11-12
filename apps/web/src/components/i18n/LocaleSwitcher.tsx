@@ -1,7 +1,5 @@
-"use client";
-
 import { useEffect, useRef, type ComponentProps } from "react";
-import Image from "next/image";
+import Image from "@/components/image";
 import { Check, ChevronDown } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Link } from "@/i18n/navigation";
@@ -22,7 +20,6 @@ export type LocaleSwitcherProps = {
 
 const localeFlagCodes = {
 	"en-GB": "gb",
-	"en-US": "us",
 	"zh-Hans": "cn",
 	hi: "in",
 	"es-ES": "es",
@@ -49,7 +46,7 @@ function LocaleFlag({ locale }: { locale: PublicLocale }) {
 
 /**
  * A progressively enhanced locale switcher. Explicit locale links keep the
- * control usable without client JavaScript and let next-intl generate the
+ * control usable without client JavaScript and let the locale Link generate the
  * canonical locale-prefixed URL for the supplied locale-independent path.
  */
 export function LocaleSwitcher({

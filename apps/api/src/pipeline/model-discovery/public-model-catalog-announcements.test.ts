@@ -47,12 +47,14 @@ type ModelRow = {
 	hidden: boolean;
 	status: string;
 	catalogue_status?: string | null;
+	lab?: { name: string; metadata: { colour: string } };
 };
 
 type StateRow = {
 	model_slug: string;
 	status: string;
 	attempt_count: number;
+	first_seen_at?: string;
 	catalogue_status_snapshot?: string | null;
 	public_visibility_snapshot?: boolean | null;
 };
@@ -85,12 +87,24 @@ function buildClient(
 			query.eq = vi.fn(async () => ({ error: null }));
 			return query;
 		}),
-		rpc: vi.fn(async () => ({ data: claimedRows, error: null })),
+		rpc: vi.fn(async (name: string) => ({ data: name === "catalog_model_is_public" ? true : claimedRows, error: null })),
 	};
 	return { client, upserts, updates };
 }
 
 describe("runPublicModelAnnouncementCheck", () => {
+	it("checks authoritative visibility after claiming and skips a newly private model", async () => {
+		const model = { model_slug: "private/model", name: "Private", lab_slug: "private", hidden: false, status: "active", catalogue_status: "available" };
+		const supabase = buildClient([model], [{ model_slug: "old/model", status: "announced", attempt_count: 0 }], [{ model_slug: model.model_slug, status: "pending", attempt_count: 0 }]);
+		supabase.client.rpc.mockImplementation(async name => ({ data: name === "catalog_model_is_public" ? false : [{ model_slug: model.model_slug, status: "pending", attempt_count: 0 }] as any, error: null }));
+		mocks.getSupabaseAdmin.mockReturnValue(supabase.client);
+		mocks.bindings.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC = "https://discord.test/webhook";
+		expect(await runPublicModelAnnouncementCheck({ runId: "private-run", notify: true })).toMatchObject({ notified: 0, pending: 0, skipped: 1, error: null });
+		expect(supabase.client.rpc).toHaveBeenCalledWith("catalog_model_is_public", { p_model_slug: model.model_slug });
+		expect(mocks.sendDiscordWebhookPayload).not.toHaveBeenCalled();
+		// "skipped" is not an allowed status; the claim goes back to baseline as not public.
+		expect(supabase.updates.at(-1)?.values).toMatchObject({ status: "baseline", public_visibility_snapshot: false, claim_run_id: null });
+	});
 	beforeEach(() => {
 		mocks.bindings = {};
 		mocks.getSupabaseAdmin.mockReset();
@@ -169,6 +183,10 @@ describe("runPublicModelAnnouncementCheck", () => {
 
 		expect(summary).toMatchObject({ detected: 1, notified: 2, pending: 0, error: null });
 		expect(mocks.sendDiscordWebhookPayload).toHaveBeenCalledTimes(1);
+		const announcedModels = mocks.buildPublicModelAnnouncementPayload.mock.calls[0]?.[0] as Array<Record<string, unknown>>;
+		for (const model of announcedModels) {
+			expect(model).not.toHaveProperty("changeSummaryLines");
+		}
 		const buildRoleId = mocks.buildPublicModelAnnouncementPayload.mock.calls[0]?.[1];
 		const buildOptions = mocks.buildPublicModelAnnouncementPayload.mock.calls[0]?.[2] as {
 			includeMentions?: boolean;
@@ -198,10 +216,10 @@ describe("runPublicModelAnnouncementCheck", () => {
 		]);
 	});
 
-	it("promotes a baseline model when it becomes available", async () => {
+	it.each(["available", "preview"])("promotes a baseline model when it becomes %s", async (catalogueStatus) => {
 		const supabase = buildClient(
 			[
-				{ model_slug: "openai/gpt-promoted", name: "GPT Promoted", lab_slug: "openai", hidden: false, status: "active", catalogue_status: "available" },
+				{ model_slug: "openai/gpt-promoted", name: "GPT Promoted", lab_slug: "openai", hidden: false, status: "active", catalogue_status: catalogueStatus },
 			],
 			[
 				{ model_slug: "openai/gpt-promoted", status: "baseline", attempt_count: 0 },
@@ -219,7 +237,64 @@ describe("runPublicModelAnnouncementCheck", () => {
 		expect(supabase.upserts).toHaveLength(0);
 		expect(supabase.updates.map((entry) => entry.values)).toEqual([
 			expect.objectContaining({ status: "pending", last_run_id: "run-3" }),
-			expect.objectContaining({ status: "announced", claim_run_id: null }),
+			expect.objectContaining({ status: "announced", catalogue_status_snapshot: catalogueStatus, claim_run_id: null }),
 		]);
+	});
+
+	it.each(["preview", "available"])("recovers a legacy preview baseline now marked %s", async (catalogueStatus) => {
+		const model = { model_slug: "mistral/mistral-large-4.0", name: "Mistral Large 4", lab_slug: "mistral", hidden: false, status: "active", catalogue_status: catalogueStatus };
+		const supabase = buildClient([model], [
+			{ model_slug: "openai/existing", status: "baseline", attempt_count: 0, first_seen_at: "2026-09-17T00:00:00Z" },
+			{ model_slug: model.model_slug, status: "baseline", attempt_count: 0, first_seen_at: "2026-10-06T00:00:00Z", catalogue_status_snapshot: "preview", public_visibility_snapshot: true },
+		], [{ model_slug: model.model_slug, status: "pending", attempt_count: 0 }]);
+		mocks.getSupabaseAdmin.mockReturnValue(supabase.client);
+		mocks.bindings.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC = "https://discord.test/webhook";
+		expect(await runPublicModelAnnouncementCheck({ runId: "recover-run", notify: true })).toMatchObject({ detected: 1, notified: 1, pending: 0 });
+	});
+
+	it("preserves previews from the original baseline", async () => {
+		const supabase = buildClient([
+			{ model_slug: "mistral/existing", name: "Existing", lab_slug: "mistral", hidden: false, status: "active", catalogue_status: "preview" },
+		], [{ model_slug: "mistral/existing", status: "baseline", attempt_count: 0, first_seen_at: "2026-09-17T00:00:00Z", catalogue_status_snapshot: "preview", public_visibility_snapshot: true }]);
+		mocks.getSupabaseAdmin.mockReturnValue(supabase.client);
+		expect(await runPublicModelAnnouncementCheck({ runId: "baseline-run", notify: true })).toMatchObject({ detected: 0, notified: 0, pending: 0 });
+	});
+
+	it.each(["new", "pending"])("announces a %s preview release", async (state) => {
+		const model = { model_slug: "mistral/mistral-large-4.0", name: "Mistral Large 4", lab_slug: "mistral", hidden: false, status: "active", catalogue_status: "preview", lab: { name: "Mistral AI", metadata: { colour: "#e97a35" } } };
+		const supabase = buildClient([model], [
+			{ model_slug: "openai/existing", status: "baseline", attempt_count: 0 },
+			...(state === "pending" ? [{ model_slug: model.model_slug, status: "pending", attempt_count: 0 }] : []),
+		], [{ model_slug: model.model_slug, status: "pending", attempt_count: 0 }]);
+		mocks.getSupabaseAdmin.mockReturnValue(supabase.client);
+		mocks.bindings.DISCORD_WEBHOOK_NEW_MODELS_PUBLIC = "https://discord.test/webhook";
+		expect(await runPublicModelAnnouncementCheck({ runId: "preview-run", notify: true })).toMatchObject({ notified: 1, pending: 0, error: null });
+		expect(supabase.updates.at(-1)?.values).toMatchObject({ status: "announced", catalogue_status_snapshot: "preview" });
+		expect(mocks.buildPublicModelAnnouncementPayload.mock.calls[0]?.[0]).toEqual([
+			expect.objectContaining({ creatorName: "Mistral AI", creatorColor: "#e97a35" }),
+		]);
+	});
+
+	it.each([
+		{ hidden: true, status: "active", catalogue_status: "preview" },
+		{ hidden: false, status: "draft", catalogue_status: "preview" },
+		{ hidden: false, status: "active", catalogue_status: "announced" },
+		{ hidden: false, status: "active", catalogue_status: "rumoured" },
+	])("does not announce an unreleased or private model: %j", async (lifecycle) => {
+		const supabase = buildClient([{ model_slug: "mistral/test", name: "Test", lab_slug: "mistral", ...lifecycle }], [
+			{ model_slug: "openai/existing", status: "baseline", attempt_count: 0 },
+		]);
+		mocks.getSupabaseAdmin.mockReturnValue(supabase.client);
+		expect(await runPublicModelAnnouncementCheck({ runId: "skip-run", notify: true })).toMatchObject({ detected: 0, notified: 0, pending: 0 });
+		expect(mocks.sendDiscordWebhookPayload).not.toHaveBeenCalled();
+	});
+
+	it.each(["preview", "available"])("does not repeat an announced preview when its lifecycle is %s", async (catalogueStatus) => {
+		const supabase = buildClient([
+			{ model_slug: "mistral/mistral-large-4.0", name: "Mistral Large 4", lab_slug: "mistral", hidden: false, status: "active", catalogue_status: catalogueStatus },
+		], [{ model_slug: "mistral/mistral-large-4.0", status: "announced", attempt_count: 0, catalogue_status_snapshot: "preview", public_visibility_snapshot: true }]);
+		mocks.getSupabaseAdmin.mockReturnValue(supabase.client);
+		expect(await runPublicModelAnnouncementCheck({ runId: "repeat-run", notify: true })).toMatchObject({ detected: 0, notified: 0, pending: 0 });
+		expect(mocks.sendDiscordWebhookPayload).not.toHaveBeenCalled();
 	});
 });

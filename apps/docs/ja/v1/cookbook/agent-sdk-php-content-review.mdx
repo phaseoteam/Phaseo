@@ -1,67 +1,97 @@
 ---
-title: "PHP Agent SDKでCMSコンテンツをレビューする"
+title: "PHP Agent SDK で CMS コンテンツをレビューする"
+sidebarTitle: "PHP で CMS コンテンツをレビューする"
 icon: "file-check"
-description: "PHP Agent SDKを使って、ローカルのコンテンツ検索ツールを範囲の決まったレビューループに組み込みます。"
+description: "PHP Agent SDK を使い、1 つのローカルなコンテンツ取得ツールを範囲を限定したレビューループにまとめます。"
 ---
 
-オーケストレーションを別のシステムに任せず、PHPアプリや管理画面でコンテンツをすばやくレビューしたい場合に、このレシピを使います。
+ローカルツールで CMS の下書きを読み込み、編集上の改善案を出す PHP エージェントを、コンテンツをすでに管理しているアプリや管理バックエンドの中で実行します。完成すると、ホームページの下書きに対する見出しの提案を出力するスクリプトが 1 つできます。
 
-## 1. SDKを準備する
+ツールは固定のサンプルデータを返すため、このスクリプトは例示用です。実際には CMS からの取得に置き換えてください。1 つか 2 つのローカルツールで足りる PHP アプリに適しています。
 
-<Note type="warning">PHP Agent SDKパッケージはまだPackagistで公開されていません。[ソースからのインストール手順](../sdk-reference/php/agent-sdk-installation.mdx)に従ってください。</Note>
+## 作成する
 
-## 2. コンテンツ検索ツールを定義する
+<Steps>
+<Step title="インストールする">
 
-```php
+```bash
+composer require phaseo/agent-sdk
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+`phaseo/agent-sdk` をインストールすると `phaseo/sdk` も一緒にインストールされます。PHP 8.1 以降が必要です。[PHP Agent SDK のインストール](../sdk-reference/agent/installation)をご覧ください。
+
+</Step>
+<Step title="エージェントを書く">
+
+```php review.php
 <?php
+require 'vendor/autoload.php';
+
+use Phaseo\AgentSdk\AgentDefinition;
 use Phaseo\AgentSdk\AgentSdk;
 use Phaseo\AgentSdk\Tool;
 
+const ALLOWED_SLUGS = ['homepage', 'pricing', 'about'];
+
 $loadDraft = AgentSdk::defineTool(new Tool(
-    id: "load-draft",
-    description: "Load one CMS draft by slug.",
+    id: 'load-draft',
+    description: 'Load one CMS draft by slug.',
     parameters: [
-        "type" => "object",
-        "properties" => [
-            "slug" => ["type" => "string"],
+        'type' => 'object',
+        'properties' => [
+            'slug' => ['type' => 'string', 'enum' => ALLOWED_SLUGS],
         ],
-        "required" => ["slug"],
+        'required' => ['slug'],
+        'additionalProperties' => false,
     ],
-    execute: static fn (mixed $input, $context) => [
-        "slug" => $input["slug"] ?? "homepage",
-        "headline" => "Phaseo makes gateway routing visible.",
-    ]
+    // 引数はモデルから来ます。既知のスラッグだけが execute に届きます。
+    inputSchema: static function (mixed $input): array {
+        if (!is_array($input) || !in_array($input['slug'] ?? null, ALLOWED_SLUGS, true)) {
+            throw new InvalidArgumentException('slug must be one of ' . implode(', ', ALLOWED_SLUGS));
+        }
+        return $input;
+    },
+    execute: static fn (array $input, $context) => [
+        'slug' => $input['slug'],
+        'headline' => 'Phaseo makes gateway routing visible.',
+    ],
 ));
-```
-
-## 3. エージェントを作成して実行する
-
-```php
-<?php
-use Phaseo\AgentSdk\AgentDefinition;
 
 $agent = AgentSdk::createAgent(new AgentDefinition(
-    id: "content-review-agent",
-    model: "openai/gpt-5.4-nano",
-    instructions: "Use tools when helpful and return concise editorial feedback.",
-    tools: [$loadDraft]
+    id: 'content-review-agent',
+    model: 'openai/gpt-6-astra',
+    instructions: 'Use tools when helpful and return concise editorial feedback.',
+    tools: [$loadDraft],
+    maxSteps: 4,
 ));
 
+// PHASEO_API_KEY を環境変数から読み取ります。
 $result = $agent->run(
-    input: "Review the homepage draft and suggest one headline improvement.",
-    client: AgentSdk::createGatewayAgentClient()
+    input: 'Review the homepage draft and suggest one headline improvement.',
+    client: AgentSdk::createGatewayAgentClient(),
 );
 
+echo $result->run->status . PHP_EOL;
 echo $result->output . PHP_EOL;
 ```
 
-## このレシピが適する場面
+</Step>
+<Step title="実行する">
 
-- PHPアプリがすでにコンテンツのデータソースを管理している
-- ローカルツールが1つか2つあれば十分
-- 大規模なオーケストレーション基盤ではなく、範囲を絞ったループを使いたい
+```bash
+php review.php
+```
 
-## 関連項目
+</Step>
+</Steps>
 
-- [PHP Agent SDK](../sdk-reference/php/agent-sdk.mdx)
-- [不正な構造化JSONを修復する](./response-healing-for-structured-json.mdx)
+## 動作を確認する
+
+- スクリプトは `completed` を出力し、続いて見出しの提案を 1 つ出力します。
+- **設定 → 利用状況 → ログ** では、最初のモデルターンに `{"slug": "homepage"}` を指定した `load-draft` の呼び出しが表示されます。
+- `PHASEO_API_KEY` がない場合、`createGatewayAgentClient()` は `PHASEO_API_KEY is required` をスローします。
+
+## 本番環境の前に
+
+ツールは読み取り専用にしてください。コンテンツを公開または編集するツールを追加する場合は、そのツールに `requireApproval: true` を設定し、実行が編集者の判断を待って一時停止するようにしてください。CMS に保存できる JSON としてフィードバックを受け取るには、スキーマを指定し、ほぼ正しい出力を[レスポンス修復](./response-healing-for-structured-json)で修復してください。状態、承認、ストリーミングについては [PHP Agent SDK リファレンス](../sdk-reference/agent/usage)で説明しています。

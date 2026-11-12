@@ -1,604 +1,455 @@
 ---
 title: "パラメーター"
-description: "Phaseoのテキスト、ルーティング、デバッグ用リクエストパラメーターを項目ごとに解説します。"
+description: "Phaseo のテキスト、ルーティング、デバッグの制御に関するリクエストパラメーターを、フィールドごとに説明するリファレンスです。"
 icon: "sliders-horizontal"
 ---
 
-このページでは、Phaseoが提供するリクエストパラメーターを項目ごとに説明します。
+Chat Completions（`/v1/chat/completions`）、Responses（`/v1/responses`）、Anthropic Messages（`/v1/messages`）のリクエストフィールドについて、型、受け付ける値、デフォルトを確認できます。対応状況はモデルとプロバイダーによって異なります。各モデルページのクイックスタートの表で、有効なプロバイダーがエンドポイントごとにどのパラメーターに対応しているかを確認できます。調整のヒントについては[推論パラメーター](/ja/v1/guides/inference-parameters)を参照してください。
 
-次の情報を確認するときに使用してください:
+| パラメーター | 型 | 値 | 用途 |
+| --- | --- | --- | --- |
+| [`model`](#parameter-model) | `string` | モデル ID、エイリアス、またはプリセット | 実行するモデル。必須。 |
+| [`models`](#parameter-models) | `string[]` | 1〜25 個のモデル ID | `model` の後に試すフォールバックモデル。 |
+| [`stream`](#parameter-stream) | `boolean` | デフォルト `false` | 1 つのレスポンス本文の代わりに Server-Sent Events を使う。 |
+| [`temperature`](#parameter-temperature) | `number` | `0`–`2`（Messages では `0`–`1`） | ランダム性。 |
+| [`top_p`](#parameter-top_p) | `number` | `0`–`1` | Nucleus サンプリング。 |
+| [`top_k`](#parameter-top_k) | `integer` | `-1` 以上 | 上位 k 個のトークンからのサンプリング。 |
+| [`min_p`](#parameter-min_p) | `number` | `0`–`1` | 可能性の低いトークンの除外。 |
+| [`max_tokens`](#parameter-max_tokens) | `integer` | `1` 以上 | Chat Completions と Messages の出力長。 |
+| [`max_output_tokens`](#parameter-max_output_tokens) | `integer` | `1` 以上 | Responses の出力長。 |
+| [`max_completion_tokens`](#parameter-max_completion_tokens) | `integer` | `1` 以上 | Chat Completions の出力長。 |
+| [`frequency_penalty`](#parameter-frequency_penalty) | `number` | `-2`–`2` | 出現回数に応じたトークンへのペナルティ。 |
+| [`presence_penalty`](#parameter-presence_penalty) | `number` | `-2`–`2` | 一度でも出現したトークンへのペナルティ。 |
+| [`repetition_penalty`](#parameter-repetition_penalty) | `number` | `0` より大きい値 | プロバイダー固有の繰り返し抑制。 |
+| [`logit_bias`](#parameter-logit_bias) | `object` | トークン ID からバイアスへの対応 | 特定のトークンを出やすく、または出にくくする。 |
+| [`seed`](#parameter-seed) | `integer` | 任意の整数 | 再現可能なサンプリング。 |
+| [`stop`](#parameter-stop) | `string` または `string[]` | | 停止シーケンス。 |
+| [`logprobs`](#parameter-logprobs) / [`top_logprobs`](#parameter-top_logprobs) | `boolean` / `integer` | `top_logprobs`: `0`–`20` | トークンの確率。 |
+| [`tools`](#parameter-tools)、[`tool_choice`](#parameter-tool_choice) | `array`、`string`、または `object` | `none`、`auto`、`required` | ツール呼び出し。 |
+| [`parallel_tool_calls`](#parameter-parallel_tool_calls) | `boolean` | | 1 ターンでの複数のツール呼び出しを許可する。 |
+| [`max_tool_calls`](#parameter-max_tool_calls) | `integer` | `1` 以上 | ツール呼び出し数の上限。 |
+| [`response_format`](#parameter-response_format) | `string` または `object` | | テキスト、JSON、またはスキーマに沿った出力。 |
+| [`json_schema`](#parameter-json_schema) | `object` | | 構造化出力のスキーマ。 |
+| [`structured_outputs`](#parameter-structured_outputs) | `boolean` | | モデルページの機能フラグで、リクエストフィールドではありません。 |
+| [`reasoning`](#parameter-reasoning) | `object` | | 推論の労力、予算、要約。 |
+| [`reasoning_effort`](#parameter-reasoning_effort) | `string` | `none` から `max` | Chat Completions での推論の労力。 |
+| [`reasoning_tokens`](#parameter-reasoning_tokens) | `integer` | | モデルページの機能フラグで、リクエストフィールドではありません。 |
+| [`include_reasoning`](#parameter-include_reasoning) | `boolean` | | 互換性のために受け付けますが、効果はありません。 |
+| [`service_tier`](#parameter-service_tier) | `string` | `standard`、`fast`、`ultrafast`、`priority`、`flex` | 速度と料金のティア。 |
+| [`prompt_cache_key`](#parameter-prompt_cache_key) | `string` | | 関連するリクエストを、キャッシュを保持するプロバイダーに留める。 |
+| [`prompt_cache_options`](#parameter-prompt_cache_options) | `object` | `mode`、`ttl` | OpenAI GPT-5.6 以降でのプロンプトキャッシュのモードと有効期間。 |
+| [`cache_control`](#parameter-cache_control) | `object` | `type`、`ttl`、`scope` | Claude のキャッシュポリシーとキャッシュブレークポイント。 |
+| [`prompt_cache_retention`](#parameter-prompt_cache_retention) | `string` | `in_memory`、`24h` | GPT-5.6 より前の OpenAI モデルでのプロンプトキャッシュの保持期間。 |
+| [`provider`](#parameter-provider) | `object` | | ルーティングルールとプロバイダーの選択。 |
+| [`provider_options`](#parameter-provider_options) | `object` | | プロバイダー固有の設定。 |
+| [`meta`](#parameter-meta) / [`usage`](#parameter-usage) | `boolean` | | レスポンスに含める追加のメタデータまたは使用量の集計。 |
+| [`debug`](#parameter-debug) | `object` | | ルーティングのトレースと上流のペイロード。 |
 
-- パラメーターの役割
-- 期待される型
-- 一般的な範囲または受け付ける値
-- 品質、コスト、レイテンシ、ルーティングに影響するか
+<span id="unsupported-parameters"></span>
+## サポートされていないパラメーター
 
-フィールド定義ではなく調整のヒントが必要な場合は、[推論パラメーター](../guides/inference-parameters.mdx)と[サンプリングとデコード](../guides/sampling-and-decoding.mdx)を参照してください。
+リクエストを処理するプロバイダーが任意のサンプリングパラメーターのいずれかに対応していない場合、Phaseo はそのパラメーターを除外します。上流には送信されず、リクエストも拒否されないため、常に OpenAI のデフォルト値を送信するクライアントもそのまま動作します。
 
-パラメーターのサポート状況は、エンドポイント、モデル、プロバイダーによって異なります。モデルのクイックスタート表には、特定のルートで現在有効なプロバイダーの対応状況が集約されています。
+Phaseo はプロバイダーごとに判断し、まずプロバイダープロファイルを、次にルートのカタログのパラメーターを確認します。ルートがパラメーターを宣言していない場合はカタログの確認だけが省略され、プロバイダープロファイルが非対応としているパラメーター（Cohere の `top_k` や Reflection の `stop` など）は引き続き除外されます。
 
-## クイック参照
+| 除外されることがあるもの | 除外されないもの |
+| --- | --- |
+| `temperature`、`top_p`、`top_k`、`min_p`、`repetition_penalty`、`frequency_penalty`、`presence_penalty`、`logit_bias`、`logprobs`、`top_logprobs`、`seed`、`stop`（`/v1/messages` では `stop_sequences`）、`parallel_tool_calls`、`max_tool_calls`、`image_config`、および Anthropic 以外のプロバイダーでの `/v1/messages` の `context_management` | メッセージ、`tools`、`tool_choice`、`response_format`、推論の設定、出力の上限 |
 
-| パラメーター | 型 | 用途 |
-| --- | --- | --- |
-| [`model`](#model) | `string` | 実行するゲートウェイモデルIDを選択します。 |
-| [`stream`](#stream) | `boolean` | 最終ペイロード一括ではなく、SSE出力を逐次返します。 |
-| [`temperature`](#temperature) | `number` | ランダム性を高めたり抑えたりします。 |
-| [`top_p`](#top_p) | `number` | nucleus samplingの候補範囲を狭めたり広げたりします。 |
-| [`top_k`](#top_k) | `integer` | サンプリングを上位k個の候補トークンに制限します。 |
-| [`max_tokens`](#max_tokens) | `integer` |このフィールド名を使うルートで出力長を制限します。 |
-| [`max_output_tokens`](#max_output_tokens) | `integer` | 新しいフィールド名を使うルートで出力長を制限します。 |
-| [`max_completion_tokens`](#max_completion_tokens) | `integer` | 新しいOpenAI形式のテキストAPIで出力長を制限します。 |
-| [`frequency_penalty`](#frequency_penalty) | `number` | トークンやフレーズの繰り返しを抑えます。 |
-| [`presence_penalty`](#presence_penalty) | `number` | 話題や語彙の変化を促します。 |
-| [`repetition_penalty`](#repetition_penalty) | `number` | プロバイダー固有の反復抑制制御。 |
-| [`seed`](#seed) | `integer` | 上流プロバイダーが対応している場合に再現性を高めます。 |
-| [`stop`](#stop) | `string` or `string[]` | 明示的な停止シーケンスを指定します。 |
-| [`logprobs`](#logprobs) / [`top_logprobs`](#top_logprobs) | `boolean` / `integer` | トークンの確率データを要求します。 |
-| [`tools`](#tools), [`tool_choice`](#tool_choice) | `array`, `string`, `object` | ツール呼び出しと関数実行を制御します。 |
-| [`parallel_tool_calls`](#parallel_tool_calls) | `boolean` | ツールの逐次実行を許可または強制します。 |
-| [`response_format`](#response_format) | `string` or `object` | プレーンテキスト、JSON、またはスキーマ制約付きの出力。 |
-| [`json_schema`](#json_schema) | `object` | 構造化出力ワークフローのスキーマを定義します。 |
-| [`structured_outputs`](#structured_outputs) | `boolean` | スキーマ制約付き出力の信頼性を示す機能シグナル。 |
-| [`reasoning`](#reasoning) | `object` | プロバイダー固有の推論設定。 |
-| [`reasoning_effort`](#reasoning_effort) | `string` | 推論予算を減らしたり増やしたりします。 |
-| [`reasoning_tokens`](#reasoning_tokens) | `integer` | 推論用トークン制限または使用量集計フィールド。 |
-| [`include_reasoning`](#include_reasoning) | `boolean` | 対応時に推論内容または要約を返します。 |
-| [`service_tier`](#service_tier) | `string` | `fast`、`ultrafast`、`flex`などの対応するリクエスト階層を選択する。 |
-| [`prompt_cache_key`](#prompt_cache_key) | `string` | 関連リクエストでキャッシュを考慮したルーティングを固定します。 |
-| [`prompt_cache_options`](#prompt_cache_options) | `object` | OpenAIのプロンプトキャッシュモードとTTLを設定する。 |
-| [`cache_control`](#cache_control) | `object` | プロバイダーに依存しないプロンプトキャッシュのヒントや区切りを適用します。 |
-| [`prompt_cache_retention`](#prompt_cache_retention) | `string` | OpenAI互換のプロンプトキャッシュ保持期間を設定します。 |
-| [`provider`](#provider) | `object` | ルーティングとプロバイダー選択に影響します。 |
-| [`provider_options`](#provider_options) | `object` | プロバイダーネイティブの設定をゲートウェイ経由で渡します。 |
-| [`meta`](#meta) / [`usage`](#usage) | `boolean` | レスポンスに追加メタデータまたは使用量情報を返します。 |
-| [`debug`](#debug) | `object` | ルーティングトレースと診断ペイロードを要求します。 |
+OpenAI の 12 時間キャッシュを使えないルートでは、プロンプトキャッシュの `ttl` が `12h` の場合も除外され、`prompt_cache_options.ttl` または `prompt_cache_breakpoint.ttl` として報告されます。[プロンプトキャッシュ](../guides/prompt-caching.mdx#12-hour-cache-on-openai)を参照してください。
 
-## エンドポイントに関する注意
+成功したレスポンスには、リクエスト本文で送信されたうち除外されたパラメーターが示されます。
 
-`service_tier`は、主なテキストリクエストのインターフェースでサポートされています:
+- `X-Phaseo-Dropped-Params` ヘッダー（例: `X-Phaseo-Dropped-Params: top_k, min_p`）
+- リクエストで `meta: true` を設定した場合は `meta.routing.dropped_params`（例: `[{"param": "top_k", "reason": "unsupported_by_provider"}]`）
 
-- [Anthropic Messages](./endpoint/anthropic-messages.mdx)
-- [Chat Completions](./endpoint/chat-completions.mdx)
-- [Responses](./endpoint/responses.mdx)
+リクエスト本文ではなくプリセットやデフォルトから来たパラメーターは、どちらにも表示されずに除外されることがあります。その場合も、リクエストと一緒に保存されるルーティング診断には記録されます。
 
-選択したモデルとプロバイダーの組み合わせが対応している場合にのみ、`ultrafast`、`fast`（対応していれば`priority`）、`flex`を使います。`Ultrafast`は対応する最高速階層を選び、`fast`と`priority`は同じFastのルーティングと料金を使います。`service_tier`を省略すると`standard`になります。
-
-`Batch`は`service_tier`の値ではありません。Batchリクエストには別のBatch APIを使用します。
-
-Anthropic互換のMessagesリクエストでは、Anthropicのネイティブな上流値は`auto`と`standard_only`です。Phaseoはこれらの値をプロバイダー間で正規化またはマッピングし、`/v1/messages`でAnthropic互換の動作を維持する場合があります。
-
-Phaseoを指すカスタムベースURLでAnthropic公式SDKを使用する場合は、`/v1/messages`でAnthropicネイティブの値を優先してください。`ultrafast`, `priority`や`flex`などのプロバイダー間で正規化されたティア制御や、OpenAIの別名`fast`には、生のHTTPリクエスト、またはゲートウェイネイティブ／OpenAI形式のテキストAPIを使用してください。
-
-## パラメーターリファレンス
+## モデルを選ぶ
 
 <span id="model"></span>
 <h3 id="parameter-model"><code>model</code></h3>
 
-リクエストに使用するゲートウェイのモデルIDを選択します。
+実行する Phaseo のモデル ID（例: `openai/gpt-6-astra`）。必須です。モデルページのクイックスタートに表示される ID を使ってください。自動化や長期間使う連携では、これが最も安全です。`@support-triage` のような[プリセット](../guides/presets.mdx)名も指定できます。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `string` |
-| 必須 | はい |
-| 例 | `openai/gpt-5-nano` |
+<span id="models"></span>
+<h3 id="parameter-models"><code>models</code></h3>
 
-意図的に対応エイリアスを使う場合を除き、各モデルページのクイックスタートに記載された正規モデルIDを使用してください。正規IDは、例、自動化、長期的な統合で最も安全な選択です。
+`model` の後に順番に試すフォールバックモデルです。`model` は引き続き必須で、常に最初に実行されます。次のエントリーは、試行が `429`、`500`、`502`、`503`、`504` で失敗した場合にのみ試されます。
+
+**型** `string[]` · **エントリー** 1〜25 個。重複と `model` と同じエントリーは無視されます · **例** `["anthropic/claude-sonnet-5.5", "google/gemini-4-argon"]`
+
+- 各試行は、それぞれ独立したリクエストとして検証、記録、課金されます。レスポンスの `model` フィールドとルーティングのトレースに、応答したモデルが表示されます。
+- ストリーミングリクエストは最初のバイトの前にのみフォールバックし、動画と音楽のジョブは送信時にのみフォールバックします。
+- 付加された動的ルートのフォールバックが優先されます。エントリーにはプリセットも指定できます。`phaseo/auto` は `models` と組み合わせられません。
+- バッチ、リアルタイム、カウンシルのリクエストは、`models` を `400` で拒否します。
+- マルチパートのエンドポイントは、繰り返しの `models` フィールド、`models[]` フィールド、または 1 つの JSON 配列を受け付けます。
+
+[リクエスト単位のモデルフォールバック](../guides/routing-and-fallbacks#request-level-model-fallbacks)を参照してください。
 
 <span id="stream"></span>
 <h3 id="parameter-stream"><code>stream</code></h3>
 
-最終レスポンス本文を待たずに、Server-Sent Eventsで出力を逐次返します。
+1 つのレスポンス本文の代わりに、生成された出力を Server-Sent Events で順次返します。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `boolean` |
-| デフォルト | `false` |
-| 一般的な値 | `true`, `false` |
+**型** `boolean` · **デフォルト** `false`
 
-チャットUI、トークン単位の表示、または早い段階で出力されると使いやすい長いレスポンスに対して有効にします。完全なJSONレスポンス、簡単な再試行、または構造化データの解析しやすさを優先する場合は無効にします。
+チャット UI や長いレスポンスに使います。再試行や解析がしやすい 1 つの JSON レスポンスが必要な場合はオフのままにしてください。ツール呼び出しと構造化出力のストリーミング方法はプロバイダーによって異なります。[ストリーミング](../guides/streaming.mdx)を参照してください。
 
-注意:
-
-ストリーミングの対応状況はエンドポイントによって異なります。
-ストリーミングは通常、品質制御ではなく転送方法の選択です。
-ツール呼び出しや構造化出力のフローでは、プロバイダーによってストリーミングの動作が異なる場合があります。
+## サンプリング
 
 <span id="temperature"></span>
 <h3 id="parameter-temperature"><code>temperature</code></h3>
 
-トークン選択のランダムさを制御します。
+トークン選択のランダムさです。値を低くすると控えめで再現性の高い出力に、高くすると多様性は増しますが、一貫性とスキーマへの準拠は下がります。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `number` |
-| 一般的な範囲 | 対応している場合は`0.0`～`2.0` |
-| デフォルト | プロバイダーとモデルによって異なります |
-| 適切な開始値 | `0.2` to `0.7` |
+**型** `number` · **範囲** Chat Completions と Responses では `0`–`2`、Messages では `0`–`1` · **デフォルト** プロバイダーの値（未設定の場合、Phaseo は何も送信しません）
 
-低い値では出力が保守的で再現しやすくなります。高い値では多様性が増し、ブレインストーミングや創作に役立つ一方、一貫性やスキーマへの準拠が低下することもあります。
-
-適した用途:
-
-- 情報抽出
-- 分類
-- JSONまたはスキーマ出力
-- クリエイティブな生成
-
-実用上の指針:
-
-構造化タスクでは低い値から始めてください。
-`temperature`と`top_p`は、まずどちらか一方だけ変更してください。
-高いtemperatureと強い量子化を組み合わせると、不安定さが増すことがあります。
+まずは `0.2`–`0.7` から始め、抽出、分類、JSON では低くしてください。`temperature` と `top_p` は同時にではなく、どちらか一方を調整します。量子化の強いモデルで temperature を高くすると、出力が不安定になることがあります。
 
 <span id="top_p"></span>
 <h3 id="parameter-top_p"><code>top_p</code></h3>
 
-累積確率が`top_p`に達する最小のトークン集合に候補を絞る、nucleus samplingを適用します。
+Nucleus サンプリングです。モデルは、合計確率が `top_p` に達する最小のトークン集合から選びます。値を低くすると、より狭く焦点の絞られた出力になります。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `number` |
-| 一般的な範囲 | 対応している場合は`0.0`～`1.0` |
-| デフォルト | プロバイダーとモデルによって異なります |
-| 適切な開始値 | `0.9` to `1.0` |
+**型** `number` · **範囲** `0`–`1` · **デフォルト** プロバイダーの値
 
-値を下げると、モデルが選択する確率分布の範囲が狭まり、通常はより安全で焦点の合った出力になります。値を上げると、より多くのトークンを検討します。
-
-注意:
-
-temperatureを直接変えずに探索範囲を狭めたり広げたりするには、`top_p`を調整します。
-多くの用途では、中程度の`temperature`と1.0に近い`top_p`が妥当な初期値です。
+`0.9`–`1.0` と中程度の `temperature` の組み合わせが、妥当な基準です。
 
 <span id="top_k"></span>
 <h3 id="parameter-top_k"><code>top_k</code></h3>
 
-対応プロバイダーでは、各ステップの上位k個の候補トークンにサンプリングを制限します。
+各ステップで、最も可能性の高い k 個のトークンにサンプリングを限定します。値を低くすると出力が予測しやすくなります。すべてのプロバイダーが対応しているわけではありません。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `integer` |
-| 一般的な範囲 | `>= 1` に対応している場合 |
-| デフォルト | プロバイダーとモデルによって異なります |
+**型** `integer` · **範囲** Chat Completions では `-1` 以上、Messages では `0` 以上 · **デフォルト** プロバイダーの値
 
-`top_k`を低くするとモデルの選択肢が絞られ、出力が予測しやすくなります。値を高くすると候補の範囲が広がります。
+<span id="min_p"></span>
+<h3 id="parameter-min_p"><code>min_p</code></h3>
 
-注意:
+最小確率のしきい値を下回るトークンを除外して、サンプリングを絞り込みます。
 
-`top_k`はすべてのプロバイダーで利用できるわけではありません。
-`top_p`より明示的に候補トークン数を制限する方法として使います。
-
-<span id="max_tokens"></span>
-<h3 id="parameter-max_tokens"><code>max_tokens</code></h3>
-
-`max_tokens`フィールド名を引き続き使用するエンドポイントとプロバイダーで、出力長を制限します。
-
-| 項目 | 値 |
-| --- | --- |
-| 型 | `integer` |
-| 一般的な範囲 | `>= 1` |
-| デフォルト | プロバイダーとモデルによって異なります |
-
-コスト、レイテンシ、出力が途中で切れるリスクの制御に使います。値が小さすぎると、モデルが正しく動作していても出力が不完全に見えることがあります。
-
-<span id="max_output_tokens"></span>
-<h3 id="parameter-max_output_tokens"><code>max_output_tokens</code></h3>
-
-`max_tokens`ではなく`max_output_tokens`を使用するルートで出力長を制限します。
-
-| 項目 | 値 |
-| --- | --- |
-| 型 | `integer` |
-| 一般的な範囲 | `>= 1` |
-| デフォルト | プロバイダーとモデルによって異なります |
-
-意味上は`max_tokens`と同じ制御ですが、選択したエンドポイントまたはSDKインターフェースが期待するフィールド名を送信してください。
-
-<span id="max_completion_tokens"></span>
-<h3 id="parameter-max_completion_tokens"><code>max_completion_tokens</code></h3>
-
-`max_completion_tokens`を使用する新しいOpenAI形式のテキストAPIで、出力長を制限します。
-
-| 項目 | 値 |
-| --- | --- |
-| 型 | `integer` |
-| 一般的な範囲 | `>= 1` |
-| デフォルト | プロバイダーとモデルによって異なります |
-
-これは出力トークン上限を指定する別のフィールドです。同じリクエスト内で出力長の別名を混在させず、エンドポイントが期待する名前を使用してください。
+**型** `number` · **範囲** `0`–`1` · **デフォルト** プロバイダーの値
 
 <span id="frequency_penalty"></span>
 <h3 id="parameter-frequency_penalty"><code>frequency_penalty</code></h3>
 
-トークンがすでに出現した回数に応じて、繰り返しを抑制します。
+すでに出現した回数に比例して、トークンにペナルティを課します。モデルがループしたり、同じ表現を繰り返したりする場合は値を上げてください。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `number` |
-| 一般的な範囲 | 一般的には対応時に`-2.0`～`2.0` |
-| デフォルト | 通常は`0` |
-
-モデルがループしたり、フレーズを繰り返したり、同じ表現を使いすぎたりする場合は値を上げます。
+**型** `number` · **範囲** `-2`–`2` · **デフォルト** プロバイダーの値（通常は `0`）
 
 <span id="presence_penalty"></span>
 <h3 id="parameter-presence_penalty"><code>presence_penalty</code></h3>
 
-一度でも出現したトークンの再利用を抑え、モデルが新しい話題や表現を試しやすくします。
+すでに出現したトークンすべてにペナルティを課し、モデルを新しい話題や言い回しへ促します。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `number` |
-| 一般的な範囲 | 一般的には対応時に`-2.0`～`2.0` |
-| デフォルト | 通常は`0` |
-
-`frequency_penalty`と比べると、繰り返し回数ではなく、より広い意味で新規性を制御します。
+**型** `number` · **範囲** `-2`–`2` · **デフォルト** プロバイダーの値（通常は `0`）
 
 <span id="repetition_penalty"></span>
 <h3 id="parameter-repetition_penalty"><code>repetition_penalty</code></h3>
 
-従来のOpenAI形式のペナルティフィールドとは異なる、プロバイダー固有の反復抑制を適用します。
+上記の 2 つのペナルティとは別の、プロバイダー固有の繰り返し抑制の制御です。正確な効果はプロバイダーによって大きく異なります。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `number` |
-| 一般的な範囲 | プロバイダーとモデルによって異なり、多くの場合`0.0`～`2.0`です |
-| デフォルト | プロバイダーとモデルによって異なります |
+**型** `number` · **範囲** `0` より大きい値。プロバイダーは多くの場合 `2` まで受け付けます · **デフォルト** プロバイダーの値
 
-`frequency_penalty`や`presence_penalty`と似た目的ですが、意味はプロバイダーによって大きく異なります。共通の制御ではなく、プロバイダー固有の動作として扱ってください。
+<span id="logit_bias"></span>
+<h3 id="parameter-logit_bias"><code>logit_bias</code></h3>
+
+特定のトークンを出やすく、または出にくくします。キーはモデルのトークナイザーのトークン ID、値は加算するバイアスです。
+
+**型** `object`（トークン ID から数値への対応） · **デフォルト** 未設定
 
 <span id="seed"></span>
 <h3 id="parameter-seed"><code>seed</code></h3>
 
-上流プロバイダーがseed生成に対応している場合、決定論的なサンプリングを要求します。
+デバッグや回帰テストのために、シード付きのサンプリングを要求します。プロバイダー間や、プロバイダーのインフラ変更をまたいで同一の出力が得られる保証はありません。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `integer` |
-| デフォルト | 未設定 |
+**型** `integer` · **デフォルト** 未設定
 
-デバッグ、回帰テスト、上流プラットフォームが許す範囲での挙動再現に使用します。seed付き生成は再現性を高めますが、すべてのプロバイダーやインフラ変更をまたいだ完全な決定性は保証されません。
+<span id="output-length-and-stopping"></span>
+## 出力の長さと停止
+
+<span id="max_tokens"></span>
+<h3 id="parameter-max_tokens"><code>max_tokens</code></h3>
+
+Chat Completions の出力トークン数の上限で、Messages では必須です。コストとレイテンシーの制御に使います。値が小さすぎると出力が途中で切れます。
+
+**型** `integer` · **範囲** `1` 以上（Messages では `0` 以上） · **デフォルト** Chat Completions ではプロバイダーの値
+
+<span id="max_output_tokens"></span>
+<h3 id="parameter-max_output_tokens"><code>max_output_tokens</code></h3>
+
+Responses の出力トークン数の上限です。目的は `max_tokens` と同じなので、使用するエンドポイントの名前で送信してください。
+
+**型** `integer` · **範囲** `1` 以上 · **デフォルト** プロバイダーの値
+
+<span id="max_completion_tokens"></span>
+<h3 id="parameter-max_completion_tokens"><code>max_completion_tokens</code></h3>
+
+Chat Completions の出力トークン数の上限で、`max_tokens` の新しい OpenAI での名前です。1 つのリクエストで両方を混在させないでください。
+
+**型** `integer` · **範囲** `1` 以上 · **デフォルト** プロバイダーの値
 
 <span id="stop"></span>
 <h3 id="parameter-stop"><code>stop</code></h3>
 
-生成を途中で終了する1つ以上のシーケンスを定義します。
+テンプレートの終わりやプロトコルのマーカーなど、生成を終了させる 1 つ以上のシーケンスです。Messages ではフィールド名が `stop_sequences` で、配列を受け付けます。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `string` or `string[]` |
-| デフォルト | 未設定 |
-| 一般的な用途 | パーサーの境界、テンプレートの終端、プロトコルマーカー |
+**型** `string` または `string[]` · **デフォルト** 未設定
 
-フッター、ツール区切り、次の生成セクションの前で停止するなど、出力に明確な境界が必要な場合に便利です。
+## トークンの確率
 
 <span id="logprobs"></span>
 <h3 id="parameter-logprobs"><code>logprobs</code></h3>
 
-利用可能な場合にトークン単位の確率メタデータを要求します。
+評価、ランキング、信頼度スコアリングのために、各出力トークンの対数確率を返します。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `boolean` |
-| デフォルト | `false` |
-
-主に分析、評価、ランキング、デバッグ、信頼度に関するワークフローで役立ちます。通常の製品レスポンスでは必要ありません。
+**型** `boolean` · **デフォルト** `false`
 
 <span id="top_logprobs"></span>
 <h3 id="parameter-top_logprobs"><code>top_logprobs</code></h3>
 
-各出力位置の上位代替候補トークンと、その対数確率を要求します。
+各位置で最も可能性の高い代替トークンを、その対数確率とともに返します。`logprobs: true` が必要です。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `integer` |
-| 一般的な範囲 | プロバイダー固有。通常は`0`～`20` |
-| 必要条件 | `logprobs: true` |
+**型** `integer` · **範囲** `0`–`20`
 
-選択された出力トークンだけでなく、代替トークン候補も調べたい場合に使用します。
+## ツール
 
 <span id="tools"></span>
 <h3 id="parameter-tools"><code>tools</code></h3>
 
-ツールを使うモデルワークフローで呼び出せるツールや関数を宣言します。
+モデルが呼び出せるツールです。エンドポイントのリファレンスに別の記載がない限り、OpenAI のツールスキーマを使います。Messages は Anthropic のスキーマを受け付けます。ツールを宣言しても、モデルにその呼び出しが強制されるわけではありません。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `array` |
-| デフォルト | 未設定 |
-
-エンドポイントのドキュメントに別の指定がない限り、OpenAI形式のツールスキーマを使用します。ツール宣言はモデルが呼び出せるものを示し、呼び出しを必須にはしません。
+**型** `array` · **デフォルト** 未設定
 
 <span id="tool_choice"></span>
 <h3 id="parameter-tool_choice"><code>tool_choice</code></h3>
 
-モデルがツールを自動で呼び出せるか、呼び出しを禁止するか、特定のツールを使う必要があるかを制御します。
+モデルがツールを呼び出せるかどうかを指定します。テキストのみなら `none`、モデルに判断させるなら `auto`、呼び出しを強制するなら `required`、または 1 つのツールを指定するオブジェクトを使います。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `string` or `object` |
-| よく使う値 | `none`, `auto`, `required` |
-
-コンテンツのみを返す場合は`none`、モデルに判断させる場合は`auto`を使い、後続のオーケストレーションでツール呼び出しが必要なら、より厳しい値を指定します。
+**型** `string` または `object`
 
 <span id="parallel_tool_calls"></span>
 <h3 id="parameter-parallel_tool_calls"><code>parallel_tool_calls</code></h3>
 
-対応APIでツール呼び出しを並行して実行するかどうかを指定します。
+1 ターンで複数のツール呼び出しを許可します。順序のある副作用を持つツールなど、ツールを 1 つずつ実行する必要がある場合は `false` に設定します。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `boolean` |
-| デフォルト | エンドポイントとプロバイダーによって異なります |
+**型** `boolean` · **デフォルト** プロバイダーの値（未設定の場合、Phaseo は何も送信しません）
 
-後続システムが厳密な逐次実行、順序付きの副作用、または簡潔なエージェントトレースを必要とする場合は無効にします。
+<span id="max_tool_calls"></span>
+<h3 id="parameter-max_tool_calls"><code>max_tool_calls</code></h3>
+
+そのリクエストでモデルが行うツール呼び出しの回数の上限です。
+
+**型** `integer` · **範囲** `1` 以上 · **デフォルト** 未設定
+
+## 構造化出力
 
 <span id="response_format"></span>
 <h3 id="parameter-response_format"><code>response_format</code></h3>
 
-プレーンテキスト、JSON、スキーマ制約付きレスポンスなど、特定の出力形式を要求します。
+プレーンテキスト、JSON、または JSON スキーマに一致する出力を要求します。受け付ける形式はエンドポイントとプロバイダーによって異なります。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `string` or `object` |
-| デフォルト | エンドポイントとプロバイダーによって異なります |
-
-受け付けられる形式はエンドポイントとプロバイダーアダプターによって異なります。自由形式のテキスト以外、特にJSONレスポンスや構造化抽出フローが必要な場合に使用します。
-
-<span id="structured_outputs"></span>
-<h3 id="parameter-structured_outputs"><code>structured_outputs</code></h3>
-
-選択したルートとプロバイダー構成で、信頼できる構造化レスポンスやスキーマ制約付きレスポンスに対応しているかを示します。
-
-| 項目 | 値 |
-| --- | --- |
-| 型 | `boolean` |
-| 意味 | 直接調整する項目ではなく、対応状況を示すものです。 |
-
-クイックスタート表では、選択したエンドポイントと有効なプロバイダーが構造化出力ワークフローを安定してサポートできるかを確認できます。サポート状況のメタデータとして解釈してください。
+**型** `string` または `object` · **デフォルト** エンドポイントとプロバイダーの値
 
 <span id="json_schema"></span>
 <h3 id="parameter-json_schema"><code>json_schema</code></h3>
 
-対応するモデルとエンドポイントで構造化出力を強制するためのJSONスキーマを指定します。
+出力が一致すべき JSON スキーマで、`response_format` の中に設定します（`{"type": "json_schema", "json_schema": {...}}`）。準拠しやすくするため、スキーマは狭くタスクに特化したものにしてください。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `object` |
-| 併用するもの | 構造化出力またはスキーマ制約付きレスポンスのフロー |
+**型** `object`
 
-必須フィールド、型付き抽出、厳格なレスポンス契約が必要な場合に使用します。準拠率を高めるため、スキーマは小さくタスク固有にしてください。
+<span id="structured_outputs"></span>
+<h3 id="parameter-structured_outputs"><code>structured_outputs</code></h3>
+
+リクエストフィールドではありません。モデルページでは、有効なプロバイダーがスキーマに沿った出力に対応しているエンドポイントを示します。要求するには [`response_format`](#parameter-response_format) を使ってください。
+
+## 推論
 
 <span id="reasoning"></span>
 <h3 id="parameter-reasoning"><code>reasoning</code></h3>
 
-推論に対応するAPI向けの、プロバイダー固有の推論設定を含みます。
+推論に対応したモデルで推論を設定します。
 
-| 項目 | 値 |
+| フィールド | 値 |
 | --- | --- |
-| 型 | `object` |
-| デフォルト | 未設定 |
+| `effort` | `none`、`instant`、`minimal`、`low`、`medium`、`high`、`xhigh`、`max`（Messages には `instant` はありません） |
+| `enabled` | `true` または `false` |
+| `max_tokens` | 推論トークンの予算。`0` 以上 |
+| `summary` | `auto`、`concise`、`detailed` |
+| `mode` | `standard`、`pro`（Chat Completions と Responses） |
+| `context` | `auto`、`current_turn`、`all_turns`（Responses） |
 
-ルートに応じて、有効化、推論レベル、トークン予算、詳細度、推論内容を返すかどうかを含みます。
+未設定のフィールドでは、モデルのデフォルトがそのまま使われます。労力を高くすると難しい問題に効果がありますが、レイテンシーとトークンが増えます。
 
 <span id="reasoning_effort"></span>
 <h3 id="parameter-reasoning_effort"><code>reasoning_effort</code></h3>
 
-エンドポイントとモデルが制御に対応している場合に、推論予算の引き下げや引き上げを要求します。
+`reasoning.effort` の Chat Completions での短縮形です。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `string` |
-| よく使う値 | プロバイダー固有です。`minimal`、`low`、`medium`、`high`、`none`などの値が一般的です。 |
-| デフォルト | プロバイダーとモデルによって異なります |
-
-推論レベルを上げると難しい推論タスクの性能が向上する場合がありますが、レイテンシとトークン使用量が増えます。低めの設定は、速度とコストを重視するリクエストに適しています。
+**型** `string` · **値** `none`、`instant`、`minimal`、`low`、`medium`、`high`、`xhigh`、`max` · **デフォルト** モデルの値
 
 <span id="reasoning_tokens"></span>
 <h3 id="parameter-reasoning_tokens"><code>reasoning_tokens</code></h3>
 
-対応時に推論専用のトークンフィールドを表します。
-
-| 項目 | 値 |
-| --- | --- |
-| 型 | `integer` |
-| デフォルト | プロバイダーとモデルによって異なります |
-
-ルートによっては、一般的なリクエストパラメーターではなく、リクエスト設定、上限、またはレスポンスの使用量フィールドを表します。
+リクエストフィールドではありません。モデルページでは、推論トークンを報告するルート、または推論の予算を受け付けるルートを示します。予算は `reasoning.max_tokens` で設定します。
 
 <span id="include_reasoning"></span>
 <h3 id="parameter-include_reasoning"><code>include_reasoning</code></h3>
 
-対応時にレスポンスへ推論内容または要約を含めるよう要求します。
+互換性のために Chat Completions で受け付けますが、効果はありません。推論の内容と要約は、モデルが生成した場合は常に返されます。推論の出力は大きくなることがあり、すべてのモデルが返すわけではありません。減らすには、`reasoning.effort` を下げるか、`reasoning.enabled` を `false` に設定します。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `boolean` |
-| デフォルト | `false` |
+**型** `boolean`
 
-慎重に使用してください。推論ペイロードは大きくなる場合があり、すべてのモデルで使えるとは限りません。追加の診断情報が不要な本番レスポンスには適さないことがあります。
+## サービスティアとプロンプトキャッシュ
 
 <span id="service_tier"></span>
 <h3 id="parameter-service_tier"><code>service_tier</code></h3>
 
-対応するテキストAPIでサポートされるルーティングまたは料金ティアを選択します。
+モデルとプロバイダーが対応している場合に、Chat Completions、Responses、Messages で速度と料金のティアを選びます。Phaseo は各値をプロバイダー独自の制御に対応付けます。
 
-| 項目 | 値 |
+**型** `string` · **デフォルト** `standard`
+
+| 値 | ティア |
 | --- | --- |
-| 型 | `string` |
-| 対応値 | `standard`, `fast`, `ultrafast`, `priority`, `flex` |
-| デフォルト | `standard` |
+| `standard`（または省略） | 標準。 |
+| `fast`、`priority` | 高速なルーティングと料金。両者は同じです。 |
+| `ultrafast` | 対応している最速のティア。 |
+| `flex` | Flex。 |
+| `auto` または `null` | 特定のティアなし。省略として扱われます。 |
+| `default`、`scale` | OpenAI の値で、`standard` として扱われます。 |
+| `standard_only` | `/v1/messages` での Anthropic の値で、`standard` として扱われます。 |
 
-選択したモデルとプロバイダーの組み合わせが対応している場合にのみ、`ultrafast`、`fast`（対応していれば`priority`）、`flex`を使います。`Ultrafast`は対応する最高速階層を選び、`fast`と`priority`は同じFastのルーティングと料金を使います。標準階層を使う場合はフィールドを省略します。
-
-Phaseoは、ゲートウェイで正規化されたティア値を内部でプロバイダー固有の制御に変換するため、対応するテキストインターフェースで同じ`service_tier`値を使用できます。
-
-注意:
-
-`Batch`は独立したAPIフローであり、サービスティアの値ではありません。
-対応状況はエンドポイントとプロバイダーによって異なります。
+`batch` はティアではないため拒否されます。[Batch API](./endpoint/batches-create.mdx) を使ってください。公式の Anthropic SDK を Phaseo に向けて使う場合、`/v1/messages` では Anthropic の `auto` と `standard_only` を使うことをお勧めします。`ultrafast`、`priority`、`flex`、`fast` を使うには、生の HTTP、または Chat Completions と Responses を使ってください。[サービスティア](../guides/service-tiers.mdx)を参照してください。
 
 <span id="prompt_cache_key"></span>
 <h3 id="parameter-prompt_cache_key"><code>prompt_cache_key</code></h3>
 
-プロンプトキャッシュを考慮したルーティング用に、安定したキャッシュ親和性キーを指定します。
+エージェントループの各ステップなど、プロンプトのプレフィックスを共有するリクエストを、そのキャッシュを保持するプロバイダーに留めます。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `string` |
-| 用途 | 関連するキャッシュ済みプロンプトでルーティングを固定します。 |
+**型** `string` · **デフォルト** 未設定 · **エンドポイント** Chat Completions、Responses、Messages
 
-複数のリクエストで安定したプロンプトの接頭辞を共有し、可能なら同じ上流プロバイダーまたはリージョンを優先する場合に使用します。Phaseoはリクエストコンテキストからキャッシュ親和性を導出することもできますが、長時間の会話、エージェントセッション、反復ワークフローでは明示的なキーが適しています。
+Phaseo は、最初に成功したリクエストを処理したプロバイダーとルート（デプロイメントまたはリージョン）にキーを固定し、同じキーを持つ後続のリクエストを、そのプロバイダーが失敗するか、そのプロバイダーでの Phaseo のマネージドクォータがなくなるか、ルーティングポリシーで許可されなくなるまで、そこに留めます。固定はワークスペースごとで、プロバイダーのキャッシュ保持期間と同じだけ続きます。[プロバイダーアフィニティ](../guides/prompt-caching.mdx#provider-affinity)を参照してください。
+
+Phaseo は生のキーではなく、ワークスペース ID とキーのハッシュを上流に送信するため、同じキーを選んだ 2 つのワークスペースがプロバイダーのキャッシュを共有することはありません。レスポンスには送信したキーがそのまま返されます。API がこのフィールドを拒否するプロバイダーには送信されず、このフィールドを送信してもプロバイダーがルーティングから除外されることはありません。キーがない場合、Phaseo はリクエストからアフィニティを導き出しますが、長い会話やエージェントのセッションでは明示的なキーのほうが効果的です。
 
 <span id="prompt_cache_options"></span>
 <h3 id="parameter-prompt_cache_options"><code>prompt_cache_options</code></h3>
 
-対応するOpenAIルートにOpenAIのプロンプトキャッシュ設定を渡します。
+OpenAI と Azure OpenAI の GPT-5.6 以降（GPT-6 Astra を含む）、DeepInfra、Moonshot AI でのプロンプトキャッシュのモードと有効期間です。
 
-| フィールド | 値 |
+**型** `object` · **フィールド** `mode`（`implicit` または `explicit`）、`ttl`
+
+| プロバイダー | `ttl` |
 | --- | --- |
-| 型 | `object` |
-| 主なフィールド | `mode`, `ttl` |
-| Astra TTL | `30m` |
+| OpenAI | `30m`（デフォルト）、または Responses API では `12h`。[OpenAI の 12 時間キャッシュ](../guides/prompt-caching.mdx#12-hour-cache-on-openai)を参照してください。 |
+| Azure OpenAI | `30m` |
+| DeepInfra | `5m` または `1h`。セッション内のすべてのリクエストに `prompt_cache_key` が必要です。 |
+| Moonshot AI | `5m`、または Kimi K3 では `1h`。`mode: "implicit"` を受け付けます。 |
 
-GPT-6 Astraで明示的なプロンプトキャッシュを使う場合は、`{"mode":"explicit","ttl":"30m"}`を指定します。Phaseoはリクエストの正規化中もこのオブジェクトを保持し、そのままOpenAIに送信します。
+OpenAI に、配置したブレークポイントのみをキャッシュさせるには `{"mode": "explicit", "ttl": "30m"}` を使います。Azure OpenAI での `12h` や、1 時間の料金がない Moonshot AI モデルでの `1h` など、ルートが受け付けない有効期間は除外され、`X-Phaseo-Dropped-Params` に示されます。その他のプロバイダーと GPT-5.6 より前の OpenAI モデルには `prompt_cache_options` は送信されません。これらの OpenAI モデルは [`prompt_cache_retention`](#parameter-prompt_cache_retention) を使います。`provider_options.openai.prompt_cache_options` も受け付けますが、トップレベルの値が優先されます。
 
 <span id="cache_control"></span>
 <h3 id="parameter-cache_control"><code>cache_control</code></h3>
 
-対応するテキストリクエストのインターフェースで、プロバイダーに依存しないプロンプトキャッシュポリシーを適用します。
+トップレベルでは、Claude のプロンプトキャッシュのポリシーを設定します。コンテンツブロック、ツール定義、ツール結果では、キャッシュブレークポイントを示します。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `object` |
-| 共通フィールド | `type`, `ttl`, `scope` |
-| 用途 | プロンプトの自動キャッシュと明示的なキャッシュ境界 |
+**型** `object` · **フィールド** `type`、`ttl`、`scope`
 
-同じキャッシュヒントをゲートウェイ共通スキーマ経由で渡すには、Chat Completions、Responses、Anthropic Messagesリクエストのトップレベルで`cache_control`を使用します。明示的なキャッシュ境界が必要な場合は、対応するコンテンツブロックにも配置できます。
+**トップレベル。** Chat Completions、Responses、Messages で受け付けます。Anthropic の Claude、AWS の Claude、Amazon Bedrock、Google Vertex AI に適用され、Phaseo は `scope`（`all_text`、`last_user_message`、`agent`、`none`）に従って最大 4 つのブレークポイントを配置します。その他のプロバイダーは無視します。`provider_options.anthropic.cache_control` は同じ設定で、両方が送信された場合はこちらが優先されます。
 
-一般的なTTL値は`5m`と`1h`ですが、プロバイダーとモデルの対応状況によります。ネイティブ統合では`provider_options.anthropic.cache_control`や`provider_options.google.cache_control`などのプロバイダー固有の別名も引き続き使用できます。
+**ブロック上。** Phaseo はブレークポイントを Claude のルート、Alibaba Model Studio、Venice に送信し、OpenAI と Azure OpenAI の GPT-5.6 以降では `prompt_cache_breakpoint` に変換し、その他のプロバイダーでは除外します。OpenAI 独自の `prompt_cache_breakpoint: {"mode": "explicit"}` も同じブロックで受け付け、ブロックに両方がある場合はこちらが優先されます。
+
+`type: "ephemeral"` と、`5m`（デフォルト）または `1h` の `ttl` を使います。Anthropic が受け付けるブレークポイントは 1 リクエストあたり最大 4 つです。それより多く指定した場合、Phaseo は最初の 1 つと最新の 3 つを残します。[プロンプトキャッシュ](../guides/prompt-caching.mdx#cache-controls)を参照してください。
 
 <span id="prompt_cache_retention"></span>
 <h3 id="parameter-prompt_cache_retention"><code>prompt_cache_retention</code></h3>
 
-OpenAIルートの対応リクエストで、OpenAI互換のプロンプトキャッシュ保持ポリシーを設定します。
+GPT-5.6 より前の OpenAI と Azure OpenAI のモデルでの、プロンプトキャッシュの保持期間です。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `string` |
-| 例 | `24h` |
-| 用途 | OpenAIプロンプトキャッシュの保持 |
+**型** `string` · **値** `in_memory`、`24h`
 
-OpenAIのキャッシュ保持オプションをプロバイダー固有のオプションに入れずに渡す場合に使用します。プロバイダー固有の別名`provider_options.openai.prompt_cache_retention`も引き続き使用できます。両方が指定された場合はトップレベルの`prompt_cache_retention`が優先されます。
+Phaseo はこれらのモデルにのみ送信し、`24h` を受け付けるのは OpenAI が掲載しているモデルだけです。GPT-5.6 以降は [`prompt_cache_options.ttl`](#parameter-prompt_cache_options) を使い、その他のプロバイダーにはこのフィールドは送信されません。`provider_options.openai.prompt_cache_retention` も受け付けますが、トップレベルの値が優先されます。
+
+## ルーティングとプロバイダーの設定
 
 <span id="provider"></span>
 <h3 id="parameter-provider"><code>provider</code></h3>
 
-ルーティング制約とプロバイダーの優先設定を含みます。
+リクエストを処理できるプロバイダーと、その順位付けの方法を制限します。エイリアスとして `routing` も受け付けます。[ルーティングとフォールバック](../guides/routing-and-fallbacks.mdx)を参照してください。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `object` |
-| 用途 | ルーティング規則、プロバイダー選択、コンプライアンス要件 |
-
-リクエストを実行できる上流プロバイダー、優先順位、満たすべきコンプライアンス要件を指定する場合に使用します。
-
-主なフィールド:
-
-| 項目 | 型 | 目的 |
+| フィールド | 型 | 効果 |
 | --- | --- | --- |
-| `order` | `string[]` | プロバイダーの優先順序。 |
-| `only` | `string[]` | 特定のプロバイダーにルーティングを限定します。 |
-| `ignore` | `string[]` | 特定のプロバイダーを除外します。 |
-| `include_alpha` | `boolean` | ルーティングの判断でalphaプロバイダーを許可します。 |
-| `sort` | `string` or `object` | 通常は`price`、`latency`、`throughput`などに基づいてプロバイダーを並べ替えます。 |
-| `required_execution_region` | `string` | 実行を指定リージョンに限定します。 |
-| `required_data_region` | `string` | データ処理を指定リージョンに限定します。 |
-| `require_zero_data_retention` | `boolean` | ゼロデータ保持の要件を満たすプロバイダーを必須にします。 |
-| `max_price` | `object` | プロンプト、生成、画像、音声、リクエストの費用上限を設定します。 |
-| `quantizations` | `string[]` | カタログ上の量子化方式が指定値のいずれかに一致する適格なオファーを必須にします。 |
+| `order` | `string[]` | 優先するプロバイダーの順序。 |
+| `only` | `string[]` | これらのプロバイダーのみ。 |
+| `ignore` | `string[]` | これらのプロバイダーは使わない。 |
+| `include_alpha` | `boolean` | アルファ版のプロバイダーを許可する。 |
+| `sort` | `string` または `object` | `price`、`latency`、`throughput` などでプロバイダーを順位付けする。 |
+| `required_execution_region` | `string` | このリージョンでのみ実行する。 |
+| `required_data_region` | `string` | このリージョンでのみデータを扱う。 |
+| `require_zero_data_retention` | `boolean` | データ保持ゼロを満たすプロバイダーのみ。 |
+| `max_price` | `object` | `prompt`、`completion`、`image`、`audio`、`request` のコストの上限。 |
+| `quantizations` | `string[]` | カタログの量子化がこれらのいずれかに一致する提供内容のみ。 |
 
-`quantizations`はOpenRouter互換のプロバイダールーティング用語に従い、`provider`と`routing`のどちらでも指定できます。照合では大文字と小文字を区別せず、空白、ハイフン、アンダースコアを無視します。`float8`/`FP8`や`bfloat16`/`BF16`のように意味が明確な名前は別名として扱われます。このフィルターを指定すると、量子化メタデータのないオファーは除外されます。一致する適格なオファーがない場合、Gatewayは別のバリアントへ黙ってルーティングせず、要求値と現在利用可能な量子化方式を含むエラーを返します。
+`quantizations` の照合では、大文字と小文字、スペース、ハイフン、アンダースコアは区別されず、`float8` と `FP8`、`bfloat16` と `BF16` のように曖昧さのない名前はエイリアスとして扱われます。このフィルターを設定すると、量子化データのない提供内容は除外されます。一致する提供内容がない場合、リクエストは別のバリアントにルーティングされるのではなく、要求された量子化と利用可能な量子化を示すエラーで失敗します。
 
 <span id="provider_options"></span>
 <h3 id="parameter-provider_options"><code>provider_options</code></h3>
 
-ゲートウェイ共通のリクエスト形式に正規化せず、そのまま渡すプロバイダー固有の設定を含みます。
+Phaseo がそのまま渡すプロバイダー固有の設定で、プロバイダーごとにキーを指定します。リクエストの残りの部分は共通スキーマのままです。
 
-| 項目 | 値 |
+**型** `object`
+
+| キー | 効果 |
 | --- | --- |
-| 型 | `object` |
-| 用途 | プロバイダー固有の制御 |
+| `openai.context_management` | OpenAI のコンパクション（`type: "compaction"`、任意の `compact_threshold`）。 |
+| `openai.prompt_cache_retention`、`openai.prompt_cache_options` | トップレベルのフィールドと同じ。トップレベルの値が優先されます。 |
+| `anthropic.cache_control` | トップレベルの `cache_control` と同じ。こちらが優先されます。 |
+| `google.cached_content` | 明示的な Gemini キャッシュ（下記を参照）。 |
+| `xai.conversation_id` | xAI の会話 ID。 |
 
-例:
+`google.cached_content` は明示的な Gemini キャッシュを指定し、自分の認証情報（Google AI Studio では Google API キー、Vertex AI では Vertex AI の認証情報）でのみ動作します。Vertex AI では、Phaseo はキャッシュの完全な名前（`projects/{project}/locations/{location}/cachedContents/{id}`）に含まれるプロジェクトとロケーションにリクエストを送信します。短い名前の場合は、サービスアカウント JSON の `project_id` と `region` を使います。Phaseo の認証情報を使うと、リクエストは `400` を返します。`google.cache_control` と `google.cache_ttl` は受け付けますが、Google には送信されません。
 
-- `openai.context_management`
-- `openai.prompt_cache_retention`
-- `anthropic.cache_control`
-- `google.cache_control`
-- `google.cached_content`
+Claude ではトップレベルの `cache_control`、OpenAI GPT-5.6 以降では `prompt_cache_options`、それより前の OpenAI モデルでは `prompt_cache_retention` を使うことをお勧めします。[プロンプトキャッシュ](../guides/prompt-caching.mdx)を参照してください。
 
-プロバイダー固有の機能を使いつつ、リクエストの残りをゲートウェイ共通スキーマで扱いたい場合に使用します。一般的なキャッシュヒントにはトップレベルの`cache_control`、OpenAI互換の保持設定にはトップレベルの`prompt_cache_retention`を使用してください。
-
-Chat Completions、Responses、Anthropic Messagesでのプロバイダー別プロンプトキャッシュ例は、[プロンプトキャッシュ](../guides/prompt-caching.mdx)を参照してください。
+## レスポンスの追加情報とデバッグ
 
 <span id="meta"></span>
 <h3 id="parameter-meta"><code>meta</code></h3>
 
-対応時にレスポンスの追加メタデータを要求します。
+`meta.routing.dropped_params` などのルーティングの詳細を含む `meta` オブジェクトをレスポンスに追加します。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `boolean` |
-| デフォルト | エンドポイントによって異なります |
-
-デバッグ、分析、後続処理での確認に使う、必須ではないレスポンスメタデータが必要な場合に使用します。
+**型** `boolean` · **デフォルト** `false`
 
 <span id="usage"></span>
 <h3 id="parameter-usage"><code>usage</code></h3>
 
-対応時に使用量の集計情報を要求します。
+ヘッダーやダッシュボードに頼らず、レスポンス本文で使用量の集計を要求します。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `boolean` |
-| デフォルト | エンドポイントによって異なります |
-
-ヘッダーやダッシュボードだけに頼らず、レスポンス本文にトークン数や使用量の情報を含めたい場合に便利です。
+**型** `boolean` · **デフォルト** 未設定
 
 <span id="debug"></span>
 <h3 id="parameter-debug"><code>debug</code></h3>
 
-リクエストとルーティングの診断情報を制御して有効にします。
+ルーティングのトレースと上流のペイロードを返します。デバッグ出力にはリクエストの内容が含まれることがあるため、開発環境か、厳密に管理された環境でのみ使ってください。[リクエストをデバッグする](./errors.mdx#debug-a-request)を参照してください。
 
-| 項目 | 値 |
-| --- | --- |
-| 型 | `object` |
-| 用途 | 開発とトラブルシューティングのみ |
-
-対応するデバッグフィールド:
-
-| 項目 | 型 | 目的 |
+| フィールド | 型 | 効果 |
 | --- | --- | --- |
-| `enabled` | `boolean` | リクエストのデバッグモードを有効にします。 |
-| `return_upstream_request` | `boolean` | 変換後の上流リクエストペイロードを含めます。 |
-| `return_upstream_response` | `boolean` | 利用可能な場合に上流レスポンスペイロードを含めます。 |
-| `trace` | `boolean` | ルーティングまたはデバッグのトレースを返します。 |
-| `trace_level` | `summary` or `full` | トレースの詳細度を制御します。 |
+| `enabled` | `boolean` | デバッグモードを有効にします。 |
+| `return_upstream_request` | `boolean` | Phaseo が上流に送信したリクエストを含めます。 |
+| `return_upstream_response` | `boolean` | 利用可能な場合、上流のレスポンスを含めます。 |
+| `trace` | `boolean` | ルーティングのトレースを返します。 |
+| `trace_level` | `summary` または `full` | トレースの詳細度。 |
 
-デバッグペイロードには機密性の高いリクエストコンテキストが含まれる場合があります。開発環境または厳格に管理された環境でのみ使用してください。
-
-## リクエスト例
+## リクエストの例
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-5.6-luna",
   "input": "Summarize this changelog.",
   "stream": false,
-  "temperature": 0.3,
   "max_output_tokens": 300,
   "provider": {
-    "order": ["openai", "anthropic"],
-    "ignore": ["some-provider"],
+    "order": ["openai", "azure"],
     "sort": "latency",
     "required_execution_region": "eu",
     "require_zero_data_retention": true
@@ -611,25 +462,11 @@ Chat Completions、Responses、Anthropic Messagesでのプロバイダー別プ�
 }
 ```
 
-## 詳しい解説
-
-フィールドリファレンスではなく、具体的な調整方法を知りたい場合は、次のページを参照してください。
-
-- [推論パラメーター](../guides/inference-parameters.mdx): temperature、top_p、top_k、トークン上限、停止シーケンス、調整手順に関する実践的な説明
-- [サンプリングとデコード](../guides/sampling-and-decoding.mdx) ランダム性、ペナルティ、デコード設定がモデルの動作に与える影響について
-
-## 関連ページ
-
-- [推論パラメーター](../guides/inference-parameters.mdx)
-- [サンプリングとデコード](../guides/sampling-and-decoding.mdx)
-- [ストリーミング](../guides/streaming.mdx)
-- [制限](./limits.mdx)
-- [エラーとデバッグ](./errors.mdx)
-
 <Visibility for="agents">
-エージェントとしてパラメーター処理を実装する場合:
+エージェント向けのパラメーター処理ルール:
 
-- スキーマ検証とリクエスト構造の確認には、リポジトリのスキルを使用してください
-- 許可されている場合、パススルーフローでは未知のプロバイダー固有キーを保持してください
-- tools、ストリーミング、debugオプションなどの高度なフィールドを併用する前に、エンドポイントとの互換性を確認してください
+- フィールド名を推測せず、https://phaseo.app/docs/openapi/v1/openapi.yaml の API コントラクトに照らしてリクエスト本文を検証します。
+- ツール、ストリーミング、デバッグオプションなどの高度なフィールドを組み合わせる前に、エンドポイントの API リファレンスページを確認します。
+- エンドポイントが許可している場合、パススルーのフローでは未知のプロバイダー固有のキーを保持します。
+- 検証済みのリクエスト形式のパターンを使うには、`phaseo-gateway` スキルをインストールします: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`。
 </Visibility>

@@ -1,6 +1,4 @@
-"use client";
-
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "@/i18n/navigation";
 import { Pencil } from "lucide-react";
@@ -8,7 +6,7 @@ import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { updateApiKeyAction } from "@/app/(dashboard)/settings/keys/actions";
+import { updateApiKeyAction } from "@/features/settings/keys/actions";
 import { keyDetailHref } from "./keyDetailHref";
 import type { KeyDetailData } from "@/lib/fetchers/internal/fetchSettingsKeyDetail";
 
@@ -27,7 +25,7 @@ export function KeyNameHeading({ k, canManage }: { k: KeyDetailData["key"]; canM
 		if (trimmed === k.name) { setEditing(false); return; }
 		setSaving(true);
 		try {
-			await updateApiKeyAction(k.id, { name: trimmed });
+			await updateApiKeyAction({ data: { id: k.id, updates: { name: trimmed } } });
 			toast.success(t("keyDetail.renamed"));
 			setEditing(false);
 			router.replace(keyDetailHref({ ...k, name: trimmed }));

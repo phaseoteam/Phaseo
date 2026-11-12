@@ -1,22 +1,20 @@
 ---
 title: "CLI और MCP"
-description: "टर्मिनल ऑटोमेशन के लिए Phaseo CLI इस्तेमाल करें या प्रमाणित MCP सर्वर को AI clients से जोड़कर Phaseo का live data केवल पढ़ने के लिए उपलब्ध कराएँ।"
+description: "टर्मिनल ऑटोमेशन के लिए Phaseo CLI इस्तेमाल करें या प्रमाणीकृत MCP सर्वर को AI क्लाइंट से जोड़कर Phaseo का लाइव डेटा पाएँ और, आपकी अनुमति हो तो, अपना खाता प्रबंधित करें।"
 icon: "square-terminal"
 ---
 
-# CLI और MCP
+टर्मिनल या स्क्रिप्ट से Phaseo में बदलाव करने के लिए CLI का उपयोग करें, या किसी AI क्लाइंट को लाइव Phaseo डेटा देने के लिए उसे Phaseo MCP सर्वर से जोड़ें। दोनों Phaseo OAuth से साइन इन करते हैं।
 
-टर्मिनल से Phaseo इस्तेमाल करने के लिए CLI चलाएँ या MCP के ज़रिए AI client जोड़ें। दोनों Phaseo OAuth इस्तेमाल करते हैं, लेकिन इनके काम अलग हैं।
-
-| इंटरफ़ेस | किसके लिए उपयुक्त | पहुँच |
+| इंटरफ़ेस | इसका उपयोग करें | एक्सेस |
 | --- | --- | --- |
-| Phaseo CLI | टर्मिनल वर्कफ़्लो, CI, प्रशासन और ऑटोमेशन | आपके scopes और workspace role के अनुसार सीमित पढ़ने और लिखने की अनुमति |
-| Phaseo MCP | Codex, Claude, ChatGPT और अन्य MCP clients में Phaseo का live data | प्रमाणित और केवल पढ़ने के लिए |
-| Docs MCP | कोडिंग के समय Phaseo के वर्तमान दस्तावेज़ देखना | केवल दस्तावेज़, केवल पढ़ने के लिए |
+| [Phaseo CLI](#phaseo-cli) | शेल या CI से कुंजियाँ बनाने, सेटिंग्स बदलने, वर्कस्पेस प्रबंधित करने और एडमिन काम ऑटोमेट करने के लिए | पढ़ना और लिखना, आपके स्कोप और वर्कस्पेस भूमिका तक सीमित |
+| [Phaseo MCP](#phaseo-mcp) | Codex, Claude, ChatGPT और दूसरे MCP क्लाइंट को लाइव Phaseo डेटा देने के लिए, और चाहें तो उन्हें आपका खाता प्रबंधित करने देने के लिए | सिर्फ़ पढ़ना, जब तक आप खाता प्रबंधन के साथ कनेक्ट न करें |
+| [Docs MCP](#docs-mcp) | कोडिंग असिस्टेंट को Phaseo का मौजूदा दस्तावेज़ देने के लिए | सिर्फ़ दस्तावेज़, कोई खाता एक्सेस नहीं |
+| [Phaseo प्लगइन](#phaseo-plugin) | Claude Code या Codex में दोनों MCP सर्वर और Phaseo स्किल एक साथ इंस्टॉल करने के लिए | हर MCP सर्वर जैसा ही |
 
+<span id="phaseo-cli"></span>
 ## Phaseo CLI
-
-Phaseo resources बनाने या बदलने, workflow script करने या shell से अकाउंट डेटा देखने के लिए CLI इस्तेमाल करें।
 
 ### इंस्टॉल करें और साइन इन करें
 
@@ -26,7 +24,7 @@ phaseo login
 phaseo whoami
 ```
 
-इंटरैक्टिव टर्मिनल में डिफ़ॉल्ट रूप से browser OAuth इस्तेमाल होता है। SSH, CI और headless वातावरण के लिए device authorization इस्तेमाल करें:
+इंटरैक्टिव टर्मिनल डिफ़ॉल्ट रूप से ब्राउज़र OAuth का उपयोग करते हैं। SSH, CI और हेडलेस एनवायरनमेंट के लिए, डिवाइस ऑथराइज़ेशन का उपयोग करें:
 
 ```bash
 phaseo login --device-code
@@ -39,64 +37,159 @@ phaseo models list --limit 20
 phaseo pricing models
 phaseo credits get
 phaseo workspaces list
-phaseo keys create --name "Local development"
+phaseo keys list
 phaseo logs list --since 1h --status error --json
 ```
 
-जब किसी दूसरे टूल या script को structured output चाहिए, तब `--json` इस्तेमाल करें। Secret values केवल वही commands दिखाती हैं जो उन्हें स्पष्ट रूप से बनाती या दिखाती हैं।
+जब किसी दूसरे टूल या स्क्रिप्ट को संरचित आउटपुट चाहिए, तो `--json` का उपयोग करें। सीक्रेट मान सिर्फ़ वही कमांड दिखाती हैं जो उन्हें स्पष्ट रूप से बनाती या प्रकट करती हैं।
 
-<Card title="Phaseo CLI गाइड" icon="terminal" href="../guides/integrations/phaseo-cli.mdx">
-	Authentication विकल्प, key प्रबंधन, workspaces, guardrails और पूरा command workflow देखें।
+<Card title="Phaseo CLI गाइड" icon="terminal" href="../guides/integrations/phaseo-cli">
+	प्रमाणीकरण विकल्प, कुंजी प्रबंधन, वर्कस्पेस, गार्डरेल और पूरा कमांड वर्कफ़्लो देखें।
 </Card>
 
+<span id="phaseo-mcp"></span>
 ## Phaseo MCP
 
-जब आप चाहते हैं कि AI client मॉडल, कीमत, प्रोवाइडर, उपयोग और workspace के live data से सवालों का जवाब दे, तब Phaseo MCP server जोड़ें।
+सर्वर URL `https://mcp.phaseo.app/mcp` है। इससे जुड़ा AI क्लाइंट लाइव मॉडल, मूल्य, प्रदाता, उपयोग और वर्कस्पेस डेटा से सवालों के जवाब दे सकता है।
 
-### सर्वर URL
+### अपना क्लाइंट कनेक्ट करें
 
-`https://mcp.phaseo.app/mcp`
+एक क्लिक में इंस्टॉल करें: [Cursor में जोड़ें](cursor://anysphere.cursor-deeplink/mcp/install?name=phaseo&config=eyJ1cmwiOiJodHRwczovL21jcC5waGFzZW8uYXBwL21jcCJ9) · [VS Code में जोड़ें](vscode:mcp/install?%7B%22name%22%3A%22phaseo%22%2C%22type%22%3A%22http%22%2C%22url%22%3A%22https%3A%2F%2Fmcp.phaseo.app%2Fmcp%22%7D)। जब क्लाइंट साइन इन करने को कहे, तो आपके ब्राउज़र में Phaseo OAuth खुलता है। एक workspace चुनें और माँगे गए read scopes को स्वीकृत करें।
 
-### Codex से कनेक्ट करें
+<Tabs>
+<Tab title="Claude Code">
+```bash
+claude mcp add --transport http phaseo https://mcp.phaseo.app/mcp
+```
 
+फिर `/mcp` चलाएँ, `phaseo` चुनें और **Authenticate** चुनें। इसे हर प्रोजेक्ट में उपलब्ध कराने के लिए `--scope user` जोड़ें।
+</Tab>
+<Tab title="Codex">
 ```bash
 codex mcp add phaseo --url https://mcp.phaseo.app/mcp
 codex mcp login phaseo
-```
-
-Login command Phaseo OAuth खोलता है। Workspace चुनें, माँगे गए read scopes को मंज़ूरी दें और connection की पुष्टि करें:
-
-```bash
 codex mcp list
 ```
 
-दूसरे MCP client में यही URL remote Streamable HTTP server के रूप में जोड़ें। Client को OAuth discovery, S256 PKCE वाला authorization code और MCP `resource` parameter सपोर्ट करना चाहिए।
+लॉगिन कमांड Phaseo OAuth खोलता है। `codex mcp list` कनेक्शन की पुष्टि करता है।
+</Tab>
+<Tab title="Cursor">
+```json ~/.cursor/mcp.json
+{
+  "mcpServers": {
+    "phaseo": {
+      "url": "https://mcp.phaseo.app/mcp"
+    }
+  }
+}
+```
+
+ऊपर दिए **Cursor में जोड़ें** का उपयोग करें, या सर्वर को `~/.cursor/mcp.json` में जोड़ें, फिर Cursor की MCP सेटिंग्स से साइन इन करें।
+</Tab>
+<Tab title="VS Code">
+```json .vscode/mcp.json
+{
+  "servers": {
+    "phaseo": {
+      "type": "http",
+      "url": "https://mcp.phaseo.app/mcp"
+    }
+  }
+}
+```
+
+ऊपर दिए **VS Code में जोड़ें** का उपयोग करें, या सर्वर को `.vscode/mcp.json` में जोड़ें। MCP व्यू से इसे शुरू करें और VS Code के पूछने पर साइन इन करें।
+</Tab>
+<Tab title="Claude">
+Claude में **Settings → Connectors** खोलें, **Add custom connector** चुनें, `Phaseo` और सर्वर URL डालें, फिर **Connect** चुनें। अगर यह विकल्प नहीं दिखता, तो आपके Claude संगठन के owner को custom connectors की अनुमति देनी होगी।
+</Tab>
+<Tab title="OpenCode">
+```json opencode.json
+{
+  "$schema": "https://opencode.ai/config.json",
+  "mcp": {
+    "phaseo": {
+      "type": "remote",
+      "url": "https://mcp.phaseo.app/mcp"
+    }
+  }
+}
+```
+
+सर्वर को `opencode.json` में जोड़ें, फिर साइन इन करने के लिए `opencode mcp auth phaseo` चलाएँ।
+</Tab>
+</Tabs>
+
+किसी दूसरे MCP क्लाइंट के लिए, वही URL रिमोट Streamable HTTP सर्वर के रूप में जोड़ें। क्लाइंट को OAuth डिस्कवरी, S256 PKCE के साथ ऑथराइज़ेशन कोड, और MCP `resource` पैरामीटर सपोर्ट करना चाहिए।
 
 ### MCP क्या पढ़ सकता है
 
-- मॉडल, प्रोवाइडर, संगठन, endpoint परिवार और कीमत
-- क्रेडिट, गतिविधि, analytics, अनुरोध logs और generation metadata
-- workspaces, सदस्य, presets, settings और guardrails
-- गुप्त मानों को शामिल किए बिना API कुंजियों, प्रबंधन कुंजियों, OAuth ऐप्लिकेशन और वेबहुक का मेटाडेटा
+सिर्फ़ पढ़ने वाले टूल मॉडल, प्रदाता, बेंचमार्क रैंकिंग, मूल्य और लागत अनुमान, साथ ही क्रेडिट, गतिविधि, एनालिटिक्स, अनुरोध लॉग और जनरेशन मेटाडेटा कवर करते हैं। वे कभी प्रॉम्प्ट, प्रतिक्रियाएँ या सीक्रेट मान नहीं लौटाते।
 
-MCP billable inference नहीं चलाता, secret values नहीं लौटाता और Phaseo resources नहीं बदलता। इन कामों के लिए dashboard, CLI या Management API इस्तेमाल करें।
+### अपना खाता प्रबंधित करें (वैकल्पिक)
 
+किसी एजेंट को अपने Phaseo वर्कस्पेस में बदलाव करने देने के लिए, इसके बजाय manage URL से कनेक्ट करें:
+
+`https://mcp.phaseo.app/mcp?access=manage`
+
+```bash
+codex mcp add phaseo --url "https://mcp.phaseo.app/mcp?access=manage"
+codex mcp login phaseo
+```
+
+साइन इन करते समय, सहमति स्क्रीन कनेक्शन की माँगी गई हर अनुमति सूचीबद्ध करती है, जैसे API कुंजियाँ प्रबंधित करना या बजट मिटाना, और उसे **पढ़ें**, **लिखें** या **हटाएँ** के रूप में चिह्नित करती है। जो नहीं चाहिए, उसका निशान हटा दें। एजेंट को सिर्फ़ उन्हीं अनुमतियों के टूल मिलते हैं जिनकी आप अनुमति देते हैं, और Phaseo हर बदलाव पर फिर भी आपकी वर्कस्पेस भूमिका जाँचता है, इसलिए जो सदस्य मालिक या एडमिन नहीं है, वह इस तरह सिर्फ़-एडमिन सेटिंग्स नहीं बदल सकता।
+
+अगर आप पहले ही सिर्फ़-पढ़ने वाले URL से कनेक्ट कर चुके हैं, तो क्लाइंट को manage URL पर बदलें और फिर से साइन इन करें। सिर्फ़-पढ़ने वाले एक्सेस पर लौटने के लिए, सादे URL से फिर से कनेक्ट करें या **सेटिंग्स → कनेक्टेड ऐप्स** में ऐप रद्द करें।
+
+| क्षेत्र | टूल | अनुमतियाँ |
+| --- | --- | --- |
+| API कुंजियाँ | `api_keys_list`, `api_key_get`, `api_key_create`, `api_key_update`, `api_key_rotate`, `api_key_delete` | `keys:read`, `keys:write`, `keys:delete` |
+| बजट | `budgets_list`, `budget_create`, `budget_update`, `budget_delete` | `budgets:read`, `budgets:write`, `budgets:delete` |
+| खर्च नियम | `spend_rules_list`, `spend_rule_create`, `spend_rule_update`, `spend_rule_delete` | `spend_rules:read`, `spend_rules:write`, `spend_rules:delete` |
+| प्रदाता कुंजियाँ (BYOK) | `provider_keys_list`, `provider_key_create`, `provider_key_update`, `provider_key_delete` | `provider_credentials:read`, `provider_credentials:write`, `provider_credentials:delete` |
+| गार्डरेल | `guardrails_list`, `guardrail_get`, `guardrail_create`, `guardrail_update`, `guardrail_delete`, `guardrail_keys_set` | `guardrails:read`, `guardrails:write`, `guardrails:delete` |
+| प्रीसेट | `presets_list`, `preset_get`, `preset_create`, `preset_update`, `preset_version_publish` | `presets:read`, `presets:write` |
+| सेटिंग्स | `settings_get`, `settings_update` (रूटिंग मोड, गोपनीयता और ZDR, लॉगिंग, प्रदाता प्रतिबंध) | `settings:read`, `settings:write` |
+| वेबहुक | `webhooks_list`, `webhook_create`, `webhook_delete` | `settings:read`, `settings:write` |
+| ऑब्ज़र्वेबिलिटी डेस्टिनेशन | `observability_destinations_list`, `observability_destination_create`, `observability_destination_delete` | `settings:read`, `settings:write` |
+
+जो टूल कुछ बदलते या मिटाते हैं, उन पर ऐसा चिह्न लगा होता है, इसलिए जो MCP क्लाइंट इसे सपोर्ट करते हैं वे हर कॉल से पहले आपसे पूछते हैं। नई API कुंजी या वेबहुक साइनिंग सीक्रेट टूल के नतीजे में एक बार दिखता है और दोबारा नहीं दिखाया जा सकता। सहेजी गई प्रदाता कुंजियाँ और डेस्टिनेशन क्रेडेंशियल कभी नहीं लौटाए जाते।
+
+MCP में बिलिंग, भुगतान, वर्कस्पेस, सदस्य, मैनेजमेंट-कुंजी या OAuth-ऐप के टूल नहीं हैं। उनके लिए डैशबोर्ड, CLI या Management API का उपयोग करें।
+
+<span id="docs-mcp"></span>
 ## Docs MCP
 
-Docs MCP Phaseo दस्तावेज़ खोजने और पढ़ने का अलग endpoint है। यह आपके अकाउंट या workspace तक पहुँच नहीं करता।
+Docs MCP, Phaseo दस्तावेज़ खोजने और पढ़ने के लिए एक अलग एंडपॉइंट है। यह आपके खाते या वर्कस्पेस तक नहीं पहुँचता।
 
 ```bash
 codex mcp add phaseoDocs --url https://phaseo.app/docs/mcp
 ```
 
-जब coding assistant को वर्तमान API examples, इंटीग्रेशन मार्गदर्शन या फ़ीचर दस्तावेज़ चाहिए हों, तब इसका इस्तेमाल करें।
-
-<Card title="Docs MCP गाइड" icon="book-open" href="../guides/integrations/docs-mcp.mdx">
+<Card title="Docs MCP गाइड" icon="book-open" href="../guides/integrations/docs-mcp">
 	दस्तावेज़ सर्वर को Codex, Claude Code, Cursor, OpenCode या VS Code से जोड़ें।
 </Card>
 
-## सही इंटरफ़ेस चुनें
+<span id="phaseo-plugin"></span>
+## Phaseo प्लगइन
 
-- Keys बनाने, settings बदलने, workspaces सँभालने या प्रशासनिक काम ऑटोमेट करने के लिए **CLI** इस्तेमाल करें।
-- AI client को Phaseo के live data तक सुरक्षित पहुँच देने के लिए **Phaseo MCP** इस्तेमाल करें।
-- अकाउंट एक्सेस दिए बिना coding assistant को Phaseo के वर्तमान दस्तावेज़ देने के लिए **Docs MCP** इस्तेमाल करें।
+Phaseo प्लगइन में Phaseo MCP, Docs MCP, और इंटीग्रेशन, माइग्रेशन, मॉडल चयन, उपयोग निगरानी, SDK और CLI के लिए Phaseo एजेंट स्किल एक साथ आते हैं। हर हिस्से को खुद जोड़ने के बजाय इसे एक बार इंस्टॉल करें।
+
+### Claude Code
+
+```bash
+claude plugin marketplace add phaseoteam/skills
+claude plugin install phaseo@phaseo
+```
+
+`/mcp` चलाएँ और अपना Phaseo खाता जोड़ने के लिए `plugin:phaseo:phaseo` में साइन इन करें। जब कोई अनुरोध स्किल से मेल खाता है तो वे लोड होती हैं, या आप किसी एक को सीधे चला सकते हैं, जैसे `/phaseo:phaseo-gateway`।
+
+### Codex
+
+```bash
+codex plugin marketplace add phaseoteam/skills
+codex plugin add phaseo@phaseo
+codex mcp login phaseo
+```
+
+आखिरी कमांड Phaseo MCP के लिए Phaseo OAuth खोलती है। जब कोई अनुरोध स्किल से मेल खाता है तो वे लोड होती हैं।

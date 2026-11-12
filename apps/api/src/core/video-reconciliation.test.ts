@@ -23,7 +23,7 @@ vi.mock("@providers/openai-compatible/config", () => ({
 	isOpenAICompatProvider: (...args: unknown[]) => isOpenAICompatProviderMock(...args),
 }));
 
-import { fetchVideoProviderStatus } from "./video-reconciliation";
+import { fetchVideoProviderStatus, resolveDashscopeAutoDurationSeconds } from "./video-reconciliation";
 
 function encodePrefixedId(prefix: string, value: string): string {
 	const b64 = Buffer.from(value, "utf8")
@@ -273,6 +273,34 @@ describe("video-reconciliation provider polling", () => {
 		);
 	});
 
+	it("bills a Wan 3.0 smart-duration job from DashScope's reported output length", async () => {
+		const job = makeBaseJob({
+			videoId: "req_video_wan30_auto",
+			nativeId: null,
+			provider: "alibaba-cloud",
+			model: "qwen/wan3.0-video",
+			meta: { provider: "alibaba-cloud", providerTaskId: "wan30-auto", keySource: "gateway", resolution: "720P", seconds: 30, autoDuration: true, inputVideoSeconds: 15 },
+		});
+		const respond = (body: unknown) => vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, json: async () => body }));
+
+		// usage.duration counts the reference video too, so only output_video_duration is billed.
+		respond({ output: { task_status: "SUCCEEDED" }, usage: { duration: 19, input_video_duration: 7, output_video_duration: 12 } });
+		expect((await fetchVideoProviderStatus(job))?.seconds).toBe(12);
+
+		// Capped at the reserved maximum.
+		respond({ output: { task_status: "SUCCEEDED" }, usage: { output_video_duration: 31 } });
+		expect((await fetchVideoProviderStatus(job))?.seconds).toBe(30);
+
+		// Not reported yet: the reserved maximum stands, never zero.
+		respond({ output: { task_status: "RUNNING" } });
+		expect((await fetchVideoProviderStatus(job))?.seconds).toBe(30);
+	});
+
+	it("keeps fixed-duration Alibaba jobs on their existing seconds", () => {
+		expect(resolveDashscopeAutoDurationSeconds({ usage: { output_video_duration: 4.9 } }, { seconds: 5 })).toBeUndefined();
+		expect(resolveDashscopeAutoDurationSeconds({ usage: { output_video_duration: 0 } }, { seconds: 30, autoDuration: true })).toBeUndefined();
+	});
+
 	it("uses BytePlus completion tokens and persisted aspect ratio for settlement", async () => {
 		const taskId = "seedance-task-25";
 		const job = makeBaseJob({
@@ -380,19 +408,20 @@ describe("video-reconciliation provider polling", () => {
 		);
 	});
 
-	it("polls Novita's native task-result endpoint", async () => {
+	it.each(["novita/seedance-1", "kling-v3.0-std-t2v", "kling-v3.0-pro-i2v"])("polls Novita's native task-result endpoint for %s", async model => {
 		const nativeId = "novita-job-789";
 		const job = makeBaseJob({
 			videoId: "vid_compat_1",
 			nativeId,
 			provider: "novita",
-			model: "novita/seedance-1",
+			model,
 			meta: {
 				seconds: 6,
 				provider: "novita",
 				keySource: "gateway",
 				resolution: "720p",
 				quality: "standard",
+				audio: true,
 			},
 		});
 
@@ -421,8 +450,9 @@ describe("video-reconciliation provider polling", () => {
 			expect.objectContaining({
 				status: "completed",
 				providerId: "novita",
-				model: "novita/seedance-1",
+				model,
 				seconds: 6,
+				requestOptions: expect.objectContaining({ audio: true }),
 			}),
 		);
 	});

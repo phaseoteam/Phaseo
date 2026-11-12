@@ -6,17 +6,25 @@ import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { deliverNotificationTest, type NotificationTestKind } from "@/pipeline/notifications/notification-delivery";
 import { json, withRuntime } from "@/routes/utils";
-import { isResponse, requireCapability, requireJsonBody, requireOAuthWorkspaceRole } from "./route-helpers";
-import { encryptNotificationTarget, notificationTargetPreview, NOTIFICATION_DESTINATION_TYPES, validateNotificationTarget, type NotificationDestinationType } from "./notification-target";
+import { parseIanaTimeZone } from "@/lib/time-zones";
+import { publishRateLimitPlan } from "@core/rate-limit-policies";
+import { isResponse, rejectThirdPartyOAuthSpendingChange, requireCapability, requireJsonBody, requireOAuthWorkspaceRole } from "./route-helpers";
+import { encryptNotificationTarget, isSignedNotificationDestinationType, issueNotificationSigningSecret, notificationTargetPreview, NOTIFICATION_DESTINATION_TYPES, toPublicNotificationDestination, validateNotificationTarget, type NotificationDestinationType } from "./notification-target";
 
 const NO_STORE = { "Cache-Control": "no-store" };
-const EVENT_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation"] as const;
+/** Routable notification kinds; matches notification_event_destinations_event_kind_check. */
+export const EVENT_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled", "broadcast_destination_failing", "spend_alert", "spend_blocked", "spend_report"] as const;
+export function isNotificationEventKind(value: unknown): value is (typeof EVENT_KINDS)[number] { return typeof value === "string" && (EVENT_KINDS as readonly string[]).includes(value); }
 const NOTIFICATION_TEST_KINDS = ["notification_test", "model_deprecation"] as const;
+// Destinations and routes decide where workspace events are sent, so an app that signs in with Phaseo must not
+// change any notification setting, whatever scopes the person consented to.
+const NOTIFICATION_APP_REFUSAL = "Apps that use Sign in with Phaseo can't change notification settings, destinations or routes, because they decide where workspace events are sent. The person can change them under Settings, Notifications.";
 
 async function authorize(req: Request, write: boolean) {
 	const auth = await guardManagementAuth(req, { useKvCache: false }); if (!auth.ok) return { response: (auth as GuardErr).response };
 	const capability = requireCapability(auth.value, write ? CAPABILITIES.SETTINGS_WRITE : CAPABILITIES.SETTINGS_READ); if (capability) return { response: capability };
 	const role = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]); if (role) return { response: role };
+	const appError = write ? rejectThirdPartyOAuthSpendingChange(auth.value, NOTIFICATION_APP_REFUSAL) : null; if (appError) return { response: appError };
 	return { auth: auth.value };
 }
 async function audit(auth: any, action: string, targetType: string, targetId: string, metadata?: Record<string, unknown>) { await recordWorkspaceAuditEvent(getSupabaseAdmin(), { workspaceId: auth.workspaceId, actorUserId: auth.userId, action, targetType, targetId, metadata, requestId: auth.requestId }); }
@@ -24,6 +32,22 @@ function lastPath(req: Request) { return decodeURIComponent(new URL(req.url).pat
 function nanosToUsd(value: unknown) { const nanos = Number(value ?? 0); return Number.isFinite(nanos) ? nanos / 1_000_000_000 : 0; }
 function parseNotificationTestKind(value: unknown): NotificationTestKind | null { const kind = String(value ?? "notification_test"); return (NOTIFICATION_TEST_KINDS as readonly string[]).includes(kind) ? kind as NotificationTestKind : null; }
 export function usdToNanos(value: unknown): number | null { const usd = Number(value); const nanos = Math.round(usd * 1_000_000_000); const cents = Math.abs(usd * 100 - Math.round(usd * 100)) < 1e-8; return Number.isFinite(usd) && usd >= 0 && cents && Number.isSafeInteger(nanos) ? nanos : null; }
+/** How spend rules attribute a person's spend to departments; null when the value is neither. */
+export function parseDepartmentSpendAttribution(value: unknown): "all" | "primary" | null { return value === "all" || value === "primary" ? value : null; }
+export const SPEND_REPORT_CADENCES = ["off", "daily", "weekly", "monthly"] as const;
+export type SpendReportCadence = typeof SPEND_REPORT_CADENCES[number];
+/** How often owners (and opted-in admins) get the spend report email; null when the value is none of them. */
+export function parseSpendReportCadence(value: unknown): SpendReportCadence | null { return typeof value === "string" && (SPEND_REPORT_CADENCES as readonly string[]).includes(value) ? value as SpendReportCadence : null; }
+/** The spend settings update: department attribution, billing time zone and the spend report settings, each validated. */
+export function parseSpendSettingsUpdate(spend: Record<string, unknown>): { update: Record<string, string | boolean> } | { error: string } {
+	const update: Record<string, string | boolean> = {};
+	if (spend.department_attribution !== undefined) { const attribution = parseDepartmentSpendAttribution(spend.department_attribution); if (!attribution) return { error: "spend.department_attribution must be all or primary" }; update.department_spend_attribution = attribution; }
+	if (spend.billing_time_zone !== undefined) { const zone = parseIanaTimeZone(spend.billing_time_zone); if (!zone) return { error: "spend.billing_time_zone must be an IANA time zone such as Europe/London" }; update.billing_time_zone = zone; }
+	if (spend.report_cadence !== undefined) { const cadence = parseSpendReportCadence(spend.report_cadence); if (!cadence) return { error: "spend.report_cadence must be off, daily, weekly or monthly" }; update.spend_report_cadence = cadence; }
+	if (spend.report_include_admins !== undefined) { if (typeof spend.report_include_admins !== "boolean") return { error: "spend.report_include_admins must be a boolean" }; update.spend_report_include_admins = spend.report_include_admins; }
+	if (!Object.keys(update).length) return { error: "spend needs department_attribution, billing_time_zone, report_cadence or report_include_admins" };
+	return { update };
+}
 export function hasVerifiedTotpFactor(factors: unknown): boolean {
 	return Array.isArray(factors) && factors.some((factor) =>
 		factor && typeof factor === "object" &&
@@ -44,25 +68,34 @@ async function getSettings(req: Request) {
 	const access = await authorize(req, false); if ("response" in access) return access.response; const client = getSupabaseAdmin();
 	const [wallet, settings] = await Promise.all([
 		client.from("wallets").select("auto_top_up_enabled,low_balance_threshold,auto_top_up_amount,auto_top_up_account_id").eq("workspace_id", access.auth.workspaceId).maybeSingle(),
-		client.from("workspace_settings").select("low_balance_email_enabled,low_balance_email_threshold_nanos,auto_top_up_failure_email_enabled,payment_method_expiring_email_enabled,model_deprecation_alerts_enabled").eq("workspace_id", access.auth.workspaceId).maybeSingle(),
+		client.from("workspace_settings").select("low_balance_email_enabled,low_balance_email_threshold_nanos,auto_top_up_failure_email_enabled,payment_method_expiring_email_enabled,model_deprecation_alerts_enabled,department_spend_attribution,billing_time_zone,spend_report_cadence,spend_report_include_admins").eq("workspace_id", access.auth.workspaceId).maybeSingle(),
 	]);
 	if (wallet.error || settings.error) return json({ error: "notification_settings_unavailable" }, 503, NO_STORE);
-	return json({ data: { auto_top_up: { enabled: Boolean(wallet.data?.auto_top_up_enabled), balance_threshold_nanos: Number(wallet.data?.low_balance_threshold ?? 0), amount_nanos: Number(wallet.data?.auto_top_up_amount ?? 0), payment_method_id: wallet.data?.auto_top_up_account_id ?? null }, low_balance_email: { enabled: Boolean(settings.data?.low_balance_email_enabled), threshold_usd: nanosToUsd(settings.data?.low_balance_email_threshold_nanos) }, email_preferences: { auto_top_up_failure: settings.data?.auto_top_up_failure_email_enabled !== false, payment_method_expiring: settings.data?.payment_method_expiring_email_enabled !== false, model_deprecation: Boolean(settings.data?.model_deprecation_alerts_enabled) } } }, 200, NO_STORE);
+	return json({ data: { auto_top_up: { enabled: Boolean(wallet.data?.auto_top_up_enabled), balance_threshold_nanos: Number(wallet.data?.low_balance_threshold ?? 0), amount_nanos: Number(wallet.data?.auto_top_up_amount ?? 0), payment_method_id: wallet.data?.auto_top_up_account_id ?? null }, low_balance_email: { enabled: Boolean(settings.data?.low_balance_email_enabled), threshold_usd: nanosToUsd(settings.data?.low_balance_email_threshold_nanos) }, email_preferences: { auto_top_up_failure: settings.data?.auto_top_up_failure_email_enabled !== false, payment_method_expiring: settings.data?.payment_method_expiring_email_enabled !== false, model_deprecation: Boolean(settings.data?.model_deprecation_alerts_enabled) }, spend: { department_attribution: parseDepartmentSpendAttribution(settings.data?.department_spend_attribution) ?? "all", billing_time_zone: parseIanaTimeZone(settings.data?.billing_time_zone) ?? "UTC", report_cadence: parseSpendReportCadence(settings.data?.spend_report_cadence) ?? "weekly", report_include_admins: settings.data?.spend_report_include_admins === true } } }, 200, NO_STORE);
 }
 
 async function updateSettings(req: Request) {
 	const access = await authorize(req, true); if ("response" in access) return access.response; const body = await requireJsonBody(req); if (isResponse(body)) return body; const client = getSupabaseAdmin(); const changed: string[] = []; let autoTopUpUpdate: Record<string, unknown> | null = null; let mfaEnabled = false;
 	if (body.auto_top_up && typeof body.auto_top_up === "object" && !Array.isArray(body.auto_top_up)) {
 		const value = body.auto_top_up as Record<string, unknown>; if (typeof value.enabled !== "boolean") return json({ error: "bad_request", message: "auto_top_up.enabled is required" }, 400, NO_STORE);
+		// Auto top-up charges the saved card, so turning it on or changing its amount, threshold or card is
+		// a billing change (turning it off is not): it needs billing:write, and apps can't make it.
+		if (value.enabled) {
+			const billingScope = requireCapability(access.auth, CAPABILITIES.BILLING_WRITE, { requireExplicitNonOAuthScope: true }); if (billingScope) return billingScope;
+			const appError = rejectThirdPartyOAuthSpendingChange(access.auth, "Apps that use Sign in with Phaseo can't turn on or change auto top-up. The person can change it under Settings, Credits."); if (appError) return appError;
+		}
+		// Enabling it without two-factor authentication is a risk the person accepts themselves in Settings.
+		if (value.mfa_bypass_acknowledged === true || (typeof value.mfa_bypass_phrase === "string" && value.mfa_bypass_phrase.trim())) return json({ error: "bad_request", message: "The two-factor bypass can only be accepted in Settings, Credits. Enable two-factor authentication to turn on auto top-up from the API." }, 400, NO_STORE);
 		if (value.enabled) { const mfa = await getMfaStatusForAutoTopUp(access.auth); if (isResponse(mfa)) return mfa; mfaEnabled = mfa; }
 		const amount = Number(value.amount_nanos ?? 0); const threshold = Number(value.balance_threshold_nanos ?? 0);
-		if (value.enabled && (!Number.isSafeInteger(amount) || amount < 1_000_000_000 || !Number.isSafeInteger(threshold) || threshold < 0 || !String(value.payment_method_id ?? "").trim())) return json({ error: "bad_request", message: "Enabled auto top-up requires a payment method, non-negative threshold, and amount of at least one credit" }, 400, NO_STORE);
-		autoTopUpUpdate = { enabled: value.enabled, balanceThreshold: value.enabled ? threshold : 0, amount: value.enabled ? amount : 0, paymentMethodId: value.enabled ? String(value.payment_method_id).trim() : null, bypassAcknowledged: value.mfa_bypass_acknowledged === true, bypassPhrase: typeof value.mfa_bypass_phrase === "string" ? value.mfa_bypass_phrase : null };
+		if (value.enabled && (!Number.isSafeInteger(amount) || amount < 5_000_000_000 || amount > 1_000_000_000_000_000 || !Number.isSafeInteger(threshold) || threshold < 0 || !String(value.payment_method_id ?? "").trim())) return json({ error: "bad_request", message: "Enabled auto top-up requires a payment method, non-negative threshold, and an amount from 5 to 1,000,000 credits" }, 400, NO_STORE);
+		autoTopUpUpdate = { enabled: value.enabled, balanceThreshold: value.enabled ? threshold : 0, amount: value.enabled ? amount : 0, paymentMethodId: value.enabled ? String(value.payment_method_id).trim() : null };
 		changed.push("auto_top_up");
 	}
 	const settingsUpdate: Record<string, unknown> = { workspace_id: access.auth.workspaceId, updated_at: new Date().toISOString() };
 	if (body.low_balance_email && typeof body.low_balance_email === "object" && !Array.isArray(body.low_balance_email)) { const value = body.low_balance_email as Record<string, unknown>; if (typeof value.enabled !== "boolean") return json({ error: "bad_request", message: "low_balance_email.enabled is required" }, 400, NO_STORE); const nanos = usdToNanos(value.threshold_usd); if (value.enabled && nanos === null) return json({ error: "bad_request", message: "threshold_usd must be non-negative with at most two decimal places" }, 400, NO_STORE); settingsUpdate.low_balance_email_enabled = value.enabled; settingsUpdate.low_balance_email_threshold_nanos = value.enabled ? nanos : 0; changed.push("low_balance_email"); }
 	if (body.email_preferences && typeof body.email_preferences === "object" && !Array.isArray(body.email_preferences)) { const value = body.email_preferences as Record<string, unknown>; const before = Object.keys(settingsUpdate).length; if (typeof value.auto_top_up_failure === "boolean") settingsUpdate.auto_top_up_failure_email_enabled = value.auto_top_up_failure; if (typeof value.payment_method_expiring === "boolean") settingsUpdate.payment_method_expiring_email_enabled = value.payment_method_expiring; if (typeof value.model_deprecation === "boolean") settingsUpdate.model_deprecation_alerts_enabled = value.model_deprecation; if (Object.keys(settingsUpdate).length > before) changed.push("email_preferences"); }
+	if (body.spend && typeof body.spend === "object" && !Array.isArray(body.spend)) { const spend = parseSpendSettingsUpdate(body.spend as Record<string, unknown>); if ("error" in spend) return json({ error: "bad_request", message: spend.error }, 400, NO_STORE); Object.assign(settingsUpdate, spend.update); changed.push("spend"); }
 	if (!changed.length) return json({ error: "bad_request", message: "No notification settings supplied" }, 400, NO_STORE);
 	if (autoTopUpUpdate) {
 		const result = await client.rpc("update_workspace_auto_top_up", {
@@ -72,8 +105,8 @@ async function updateSettings(req: Request) {
 			p_amount_nanos: autoTopUpUpdate.amount,
 			p_payment_method_id: autoTopUpUpdate.paymentMethodId,
 			p_mfa_enabled: mfaEnabled,
-			p_mfa_bypass_acknowledged: autoTopUpUpdate.bypassAcknowledged,
-			p_mfa_bypass_phrase: autoTopUpUpdate.bypassPhrase,
+			p_mfa_bypass_acknowledged: false,
+			p_mfa_bypass_phrase: null,
 			p_actor_user_id: access.auth.userId ?? null,
 			p_request_id: access.auth.requestId ?? null,
 		});
@@ -82,28 +115,52 @@ async function updateSettings(req: Request) {
 			return json({ error: "notification_settings_update_failed" }, 503, NO_STORE);
 		}
 	}
-	if (Object.keys(settingsUpdate).length > 2) { const result = await client.from("workspace_settings").upsert(settingsUpdate, { onConflict: "workspace_id" }); if (result.error) return json({ error: "notification_settings_update_failed" }, 503, NO_STORE); }
+	if (Object.keys(settingsUpdate).length > 2) { const result = await client.from("workspace_settings").upsert(settingsUpdate, { onConflict: "workspace_id" }); if (result.error) return result.error.message?.includes("invalid_time_zone") ? json({ error: "bad_request", message: "spend.billing_time_zone must be an IANA time zone such as Europe/London" }, 400, NO_STORE) : json({ error: "notification_settings_update_failed" }, 503, NO_STORE); }
+	// Department rate limits read the attribution from the published plan.
+	if ("department_spend_attribution" in settingsUpdate) await publishRateLimitPlan(access.auth.workspaceId);
 	await audit(access.auth, "notifications.settings.updated", "workspace_notification_settings", access.auth.workspaceId, { sections: changed }); return getSettings(req);
 }
 
-async function listDestinations(req: Request) { const access = await authorize(req, false); if ("response" in access) return access.response; const { data, error } = await getSupabaseAdmin().from("notification_destinations").select("id,name,type,status,target_preview,created_at,updated_at").eq("workspace_id", access.auth.workspaceId).eq("is_ephemeral", false).neq("status", "deleted").order("created_at", { ascending: false }); return error ? json({ error: "notification_destinations_unavailable" }, 503, NO_STORE) : json({ data: data ?? [] }, 200, NO_STORE); }
+const DESTINATION_PUBLIC_COLUMNS = "id,name,type,status,target_preview,signing_secret_ciphertext,signing_secret_rotated_at,created_at,updated_at";
+async function listDestinations(req: Request) { const access = await authorize(req, false); if ("response" in access) return access.response; const { data, error } = await getSupabaseAdmin().from("notification_destinations").select(DESTINATION_PUBLIC_COLUMNS).eq("workspace_id", access.auth.workspaceId).eq("is_ephemeral", false).neq("status", "deleted").order("created_at", { ascending: false }); return error ? json({ error: "notification_destinations_unavailable" }, 503, NO_STORE) : json({ data: (data ?? []).map((row) => toPublicNotificationDestination(row as Record<string, unknown>)) }, 200, NO_STORE); }
 
 async function createDestination(req: Request) {
 	const access = await authorize(req, true); if ("response" in access) return access.response; const body = await requireJsonBody(req); if (isResponse(body)) return body;
 	const type = String(body.type ?? "") as NotificationDestinationType; const name = String(body.name ?? "").trim(); if (!NOTIFICATION_DESTINATION_TYPES.includes(type) || !name || name.length > 100) return json({ error: "bad_request", message: "Invalid destination" }, 400, NO_STORE);
-	try { const target = validateNotificationTarget(type, body.target); const encrypted = await encryptNotificationTarget(target); const { data, error } = await getSupabaseAdmin().from("notification_destinations").insert({ workspace_id: access.auth.workspaceId, name, type, status: "active", target_preview: notificationTargetPreview(type, target), ...encrypted, created_by: access.auth.userId }).select("id,name,type,target_preview,status,created_at,updated_at").single(); if (error) return json({ error: error.code === "23505" ? "destination_exists" : "notification_destination_write_failed" }, error.code === "23505" ? 409 : 503, NO_STORE); await audit(access.auth, "notifications.destination.created", "notification_destination", String(data.id), { name, type }); return json({ data }, 201, NO_STORE); } catch (error: any) { return json({ error: "bad_request", message: error.message }, 400, NO_STORE); }
+	try { const target = validateNotificationTarget(type, body.target); const encrypted = await encryptNotificationTarget(target); const signing = isSignedNotificationDestinationType(type) ? await issueNotificationSigningSecret() : null; const { data, error } = await getSupabaseAdmin().from("notification_destinations").insert({ workspace_id: access.auth.workspaceId, name, type, status: "active", target_preview: notificationTargetPreview(type, target), ...encrypted, ...signing?.columns, created_by: access.auth.userId }).select(DESTINATION_PUBLIC_COLUMNS).single(); if (error) return json({ error: error.code === "23505" ? "destination_exists" : "notification_destination_write_failed" }, error.code === "23505" ? 409 : 503, NO_STORE); await audit(access.auth, "notifications.destination.created", "notification_destination", String(data.id), { name, type, signed: Boolean(signing) }); return json({ data: { ...toPublicNotificationDestination(data as Record<string, unknown>), ...(signing ? { signing_secret: signing.secret } : {}) } }, 201, NO_STORE); } catch (error: any) { return json({ error: "bad_request", message: error.message }, 400, NO_STORE); }
 }
 
 async function deleteDestination(req: Request) { const access = await authorize(req, true); if ("response" in access) return access.response; const id = lastPath(req); const client = getSupabaseAdmin(); const { data, error } = await client.from("notification_destinations").update({ status: "deleted", deleted_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", id).eq("workspace_id", access.auth.workspaceId).neq("status", "deleted").select("id,name,type").maybeSingle(); if (error) return json({ error: "notification_destination_delete_failed" }, 503, NO_STORE); if (!data) return json({ error: "not_found" }, 404, NO_STORE); const routes = await client.from("notification_event_destinations").delete().eq("workspace_id", access.auth.workspaceId).eq("destination_id", id); if (routes.error) return json({ error: "notification_destination_delete_failed" }, 503, NO_STORE); await audit(access.auth, "notifications.destination.deleted", "notification_destination", id, { name: data.name, type: data.type }); return json({ deleted: true }, 200, NO_STORE); }
+
+// Generates a signing secret for a custom webhook destination, or replaces the current one.
+// Destinations created before signing existed get their first secret here. The secret is
+// returned once; the next delivery is signed with it and the old one is discarded.
+async function rotateDestinationSecret(req: Request) {
+	const access = await authorize(req, true); if ("response" in access) return access.response;
+	const parts = new URL(req.url).pathname.split("/").filter(Boolean); const id = decodeURIComponent(parts.at(-2) ?? "").trim();
+	if (!/^[0-9a-f-]{36}$/i.test(id)) return json({ error: "not_found" }, 404, NO_STORE);
+	const client = getSupabaseAdmin();
+	const existing = await client.from("notification_destinations").select("id,type").eq("id", id).eq("workspace_id", access.auth.workspaceId).eq("is_ephemeral", false).neq("status", "deleted").maybeSingle();
+	if (existing.error) return json({ error: "notification_destination_write_failed" }, 503, NO_STORE);
+	if (!existing.data) return json({ error: "not_found" }, 404, NO_STORE);
+	if (!isSignedNotificationDestinationType(String(existing.data.type))) return json({ error: "bad_request", message: "Only custom webhook destinations are signed" }, 400, NO_STORE);
+	let signing: Awaited<ReturnType<typeof issueNotificationSigningSecret>>;
+	try { signing = await issueNotificationSigningSecret(); } catch { return json({ error: "notification_destination_write_failed" }, 503, NO_STORE); }
+	const { data, error } = await client.from("notification_destinations").update({ ...signing.columns, updated_at: new Date().toISOString() }).eq("id", id).eq("workspace_id", access.auth.workspaceId).eq("type", "custom_webhook").neq("status", "deleted").select(DESTINATION_PUBLIC_COLUMNS).maybeSingle();
+	if (error) return json({ error: "notification_destination_write_failed" }, 503, NO_STORE);
+	if (!data) return json({ error: "not_found" }, 404, NO_STORE);
+	await audit(access.auth, "notifications.destination.secret_rotated", "notification_destination", id, { name: (data as Record<string, unknown>).name, type: "custom_webhook" });
+	return json({ data: { ...toPublicNotificationDestination(data as Record<string, unknown>), signing_secret: signing.secret } }, 200, NO_STORE);
+}
 
 async function testDestinationConfig(req: Request) { const access = await authorize(req, true); if ("response" in access) return access.response; const body = await requireJsonBody(req); if (isResponse(body)) return body; const type = String(body.type ?? "") as NotificationDestinationType; if (!NOTIFICATION_DESTINATION_TYPES.includes(type)) return json({ error: "bad_request" }, 400, NO_STORE); const kind = parseNotificationTestKind(body.kind); if (!kind) return json({ error: "bad_request", message: "Unsupported notification test kind" }, 400, NO_STORE); try { const target = validateNotificationTarget(type, body.target); const status = await deliverNotificationTest({ workspaceId: access.auth.workspaceId, type, target, kind }); return json({ data: { delivered: true, status } }, 200, NO_STORE); } catch (error: any) { return json({ error: "notification_test_failed", message: error.message }, 502, NO_STORE); } }
 async function testSavedDestination(req: Request) { const access = await authorize(req, true); if ("response" in access) return access.response; const parts = new URL(req.url).pathname.split("/").filter(Boolean); const id = decodeURIComponent(parts.at(-2) ?? "").trim(); const body = await req.json().catch(() => ({})); if (!body || typeof body !== "object" || Array.isArray(body)) return json({ error: "bad_request", message: "Invalid notification test body" }, 400, NO_STORE); const kind = parseNotificationTestKind(body.kind); if (!kind) return json({ error: "bad_request", message: "Unsupported notification test kind" }, 400, NO_STORE); try { const status = await deliverNotificationTest({ workspaceId: access.auth.workspaceId, destinationId: id, kind }); return json({ data: { delivered: true, status } }, 200, NO_STORE); } catch (error: any) { return json({ error: error.message === "notification_destination_not_found" ? "not_found" : "notification_test_failed", message: error.message }, error.message === "notification_destination_not_found" ? 404 : 502, NO_STORE); } }
 
 async function listRoutes(req: Request) { const access = await authorize(req, false); if ("response" in access) return access.response; const client = getSupabaseAdmin(); const [links, destinations] = await Promise.all([client.from("notification_event_destinations").select("event_kind,destination_id").eq("workspace_id", access.auth.workspaceId), client.from("notification_destinations").select("id").eq("workspace_id", access.auth.workspaceId).eq("status", "active")]); if (links.error || destinations.error) return json({ error: "notification_routes_unavailable" }, 503, NO_STORE); const activeIds = new Set((destinations.data ?? []).map((row: any) => String(row.id))); const routes = Object.fromEntries(EVENT_KINDS.map((kind) => [kind, (links.data ?? []).filter((row: any) => row.event_kind === kind && activeIds.has(String(row.destination_id))).map((row: any) => row.destination_id)])); return json({ data: routes }, 200, NO_STORE); }
-async function updateRoute(req: Request) { const access = await authorize(req, true); if ("response" in access) return access.response; const body = await requireJsonBody(req); if (isResponse(body)) return body; const kind = lastPath(req); if (!Array.isArray(body.destination_ids)) return json({ error: "bad_request", message: "destination_ids must be an array" }, 400, NO_STORE); const ids = [...new Set(body.destination_ids.map(String))]; if (!EVENT_KINDS.includes(kind as any) || ids.length > 50 || ids.some((id) => !/^[0-9a-f-]{36}$/i.test(id))) return json({ error: "bad_request", message: "Invalid notification route" }, 400, NO_STORE); const result = await getSupabaseAdmin().rpc("set_notification_event_destinations", { p_workspace_id: access.auth.workspaceId, p_event_kind: kind, p_destination_ids: ids }); if (result.error) return json({ error: result.error.message.includes("notification_destination_not_found") ? "not_found" : "notification_route_update_failed" }, result.error.message.includes("notification_destination_not_found") ? 404 : 503, NO_STORE); await audit(access.auth, "notifications.route.updated", "notification_route", kind, { destination_ids: ids }); return json({ data: { event_kind: kind, destination_ids: ids } }, 200, NO_STORE); }
+async function updateRoute(req: Request) { const access = await authorize(req, true); if ("response" in access) return access.response; const body = await requireJsonBody(req); if (isResponse(body)) return body; const kind = lastPath(req); if (!Array.isArray(body.destination_ids)) return json({ error: "bad_request", message: "destination_ids must be an array" }, 400, NO_STORE); const ids = [...new Set(body.destination_ids.map(String))]; if (!isNotificationEventKind(kind) || ids.length > 50 || ids.some((id) => !/^[0-9a-f-]{36}$/i.test(id))) return json({ error: "bad_request", message: "Invalid notification route" }, 400, NO_STORE); const result = await getSupabaseAdmin().rpc("set_notification_event_destinations", { p_workspace_id: access.auth.workspaceId, p_event_kind: kind, p_destination_ids: ids }); if (result.error) return json({ error: result.error.message.includes("notification_destination_not_found") ? "not_found" : "notification_route_update_failed" }, result.error.message.includes("notification_destination_not_found") ? 404 : 503, NO_STORE); await audit(access.auth, "notifications.route.updated", "notification_route", kind, { destination_ids: ids }); return json({ data: { event_kind: kind, destination_ids: ids } }, 200, NO_STORE); }
 
 export const notificationRoutes = new Hono<Env>();
 notificationRoutes.get("/settings", withRuntime(getSettings)); notificationRoutes.patch("/settings", withRuntime(updateSettings));
 notificationRoutes.get("/destinations", withRuntime(listDestinations)); notificationRoutes.post("/destinations", withRuntime(createDestination)); notificationRoutes.delete("/destinations/:id", withRuntime(deleteDestination));
-notificationRoutes.post("/destinations/test", withRuntime(testDestinationConfig)); notificationRoutes.post("/destinations/:id/test", withRuntime(testSavedDestination));
+notificationRoutes.post("/destinations/test", withRuntime(testDestinationConfig)); notificationRoutes.post("/destinations/:id/test", withRuntime(testSavedDestination)); notificationRoutes.post("/destinations/:id/rotate-secret", withRuntime(rotateDestinationSecret));
 notificationRoutes.get("/routes", withRuntime(listRoutes)); notificationRoutes.put("/routes/:eventKind", withRuntime(updateRoute));

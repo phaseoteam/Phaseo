@@ -55,5 +55,7 @@ if (error instanceof JobFailedError) {
 }
 `;
 for (const extension of ["mts", "cts"]) await writeFile(path.join(consumer, `consumer.${extension}`), imports.join("\n") + failureTypes);
-run(process.execPath, [require.resolve("typescript/bin/tsc"), "--noEmit", "--module", "NodeNext", "--moduleResolution", "NodeNext", "--target", "ES2022", "--strict", "--skipLibCheck", "--types", "node", "--typeRoots", path.join(root, "node_modules/@types"), "consumer.mts", "consumer.cts"], consumer);
+// Typecheck with TypeScript 7 (`@typescript/native`; see pnpm-workspace.yaml).
+const tsc = path.join(path.dirname(require.resolve("@typescript/native/package.json")), "bin/tsc");
+run(process.execPath, [tsc, "--noEmit", "--module", "NodeNext", "--moduleResolution", "NodeNext", "--target", "ES2022", "--strict", "--skipLibCheck", "--types", "node", "--typeRoots", path.join(root, "node_modules/@types"), "consumer.mts", "consumer.cts"], consumer);
 console.log("Packed SDK: all ESM and CommonJS entrypoints load and typecheck from an offline consumer install.");

@@ -1,0 +1,200 @@
+---
+icon: "triangle-alert"
+title: "Eventos e erros"
+description: "Veja como uma execução de agente com falha aparece, quais eventos são disparados e como se recuperar de erros do modelo, das ferramentas e da continuação."
+---
+
+Uma execução com falha lança ou retorna um erro a partir da chamada de run ou de continuação. Uma pausa (`waiting_for_human`) ou uma condição de parada (`stopped`) não é um erro: as duas retornam um resultado normal. Quais falhas também enviam um evento `run.failed` varia por linguagem, então não dependa só do evento para detectar uma falha.
+
+## Como uma execução com falha aparece
+
+| Linguagem | Em caso de falha | Estado salvo |
+| --- | --- | --- |
+| TypeScript | Lança uma exceção. Falhas do gateway são `AgentGatewayError`. Cancelar por `signal` não lança: a execução retorna com o status `cancelled`. | A execução com falha (status `failed`, com `error` e `errorDetails`) é salva por `state` antes de o erro ser lançado |
+| Python | Lança a partir de `run()`, `continue_run()` ou `stream.result()` | Nenhum `AgentRunResult`, e o acessor `state` não é chamado |
+| Go | Retorna um `error` não nulo e um `RunResult` vazio | Nenhum |
+| C# | Lança a partir de `Run` ou `ContinueRun`; nenhum `RunResult` | Nenhum |
+| PHP | Lança uma `RuntimeException` a partir de `run()` ou `continueRun()`; nenhum `RunResult` | Nenhum |
+| Ruby | Lança a partir de `run` ou `continue_run`; nenhum `RunResult` | Nenhum |
+| Java | Lança a partir de `run` ou `continueRun`; nenhum `RunResult` | Nenhum |
+| Rust | Retorna `Err(AgentError)` | Nenhum |
+
+<CodeGroup>
+
+```typescript TypeScript
+import { AgentGatewayError, AgentSchemaValidationError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error(error.status, error.requestId, error.reason);
+  } else if (error instanceof AgentSchemaValidationError) {
+    console.error(error.target, error.message);
+  }
+  throw error;
+}
+```
+
+```python Python
+import phaseo
+
+try:
+    result = agent.run(input="Summarise this ticket", client=client)
+except phaseo.PhaseoHTTPError as error:
+    print(error.status, error.code, error.request_id)
+    raise
+```
+
+```go Go
+ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+defer cancel()
+
+result, err := agent.Run(ctx, options)
+if errors.Is(err, context.DeadlineExceeded) {
+  // Salve estado suficiente do aplicativo para repetir ou relatar o timeout.
+}
+```
+
+```csharp C#
+using Phaseo.Gen;
+
+try
+{
+    var result = await agent.Run(options);
+}
+catch (ApiErrorException error)
+{
+    Console.Error.WriteLine($"{error.StatusCode} {error.Code} {error.RequestId}");
+    throw;
+}
+```
+
+```php PHP
+use Phaseo\Gen\RequestException;
+
+try {
+    $result = $agent->run(input: "Summarise this ticket", client: $client);
+} catch (RequestException $error) {
+    error_log($error->getStatusCode() . " " . $error->getErrorCode() . " " . $error->getRequestId());
+    throw $error;
+}
+```
+
+```ruby Ruby
+begin
+  result = agent.run(input: "Summarise this ticket", client: client)
+rescue Phaseo::Gen::RequestError => error
+  warn [error.status_code, error.code, error.request_id].join(" ")
+  raise
+end
+```
+
+```java Java
+import app.phaseo.gen.Client.ApiException;
+
+try {
+    var result = agent.run(options);
+} catch (ApiException error) {
+    System.err.println(error.getStatusCode() + " " + error.getCode() + " " + error.getRequestId());
+    throw error;
+}
+```
+
+```rust Rust
+match agent.run(&mut client, options) {
+    Ok(result) => println!("{}", result.output),
+    Err(error) => eprintln!("Agent failed: {}", error.message()),
+}
+```
+
+</CodeGroup>
+
+<span id="which-events-fire-when-something-fails"></span>
+## Quais eventos são disparados quando algo falha
+
+| Linguagem | `run.failed` é enviado quando | `tool.failed` é enviado quando | Limite de etapas atingido |
+| --- | --- | --- | --- |
+| TypeScript | Qualquer falha, exceto cancelamento, depois de `step.failed`. O cancelamento envia `step.cancelled` e `run.cancelled`. | Uma ferramenta falha | Lança `Max steps exceeded (N)` e envia `run.failed` |
+| Python | Só quando `max_steps` se esgota. Os outros erros, incluindo o cancelamento, são lançados sem evento. | Uma ferramenta falha | Lança `RuntimeError("Max steps exceeded (N)")` |
+| Go | Um erro do modelo (depois das novas tentativas) ou o limite de etapas encerrou a execução | Uma ferramenta deu erro ou excedeu o timeout | Retorna `Max steps exceeded (N)` e envia `run.failed` |
+| C# | Só quando a execução atinge `MaxSteps`. Erros do modelo, exceções de ferramentas, validação e cancelamento lançam sem ele. | Uma ferramenta lançou uma exceção e seu `OnError` é `return-to-model` | Lança `Max steps exceeded (N)` |
+| PHP | Só quando a execução atinge `maxSteps`. Erros do modelo, exceções de ferramentas e validação lançam sem ele. | Uma ferramenta lançou uma exceção ou excedeu o timeout | Lança `Max steps exceeded (N)` |
+| Ruby | Só quando a execução atinge `max_steps`. Erros do modelo, exceções de ferramentas e validação lançam sem ele. | Uma ferramenta lançou uma exceção e seu `on_error` é `return-to-model`. Uma chamada aprovada executada por `continue_run` o envia sempre que lança uma exceção. | Lança `Max steps exceeded (N)` |
+| Java | Só quando a execução atinge `maxSteps`. Erros do modelo, exceções de ferramentas, validação e cancelamento lançam sem ele. | Uma ferramenta lançou uma exceção e seu `onError` é `return-to-model` | Lança `Max steps exceeded (N)` |
+| Rust | Nunca; o Rust não tem eventos de falha | Nunca; um erro de ferramenta é enviado como `tool.completed` com `is_error: true` | Não é um erro: a execução retorna com o status `stopped`, `stop_reason` `max_steps:<limit>` e um evento `run.stopped` |
+
+[Hooks do ciclo de vida](./lifecycle-hooks) lista todos os eventos.
+
+## Encontre a causa de um erro
+
+| Causa | Erro | Diferenças entre linguagens |
+| --- | --- | --- |
+| Sem chave de API | `PHASEO_API_KEY is required` | Python: `ValueError`. Ruby: `ArgumentError: Missing API key. Pass api_key or set PHASEO_API_KEY.` |
+| O gateway recusou uma requisição ao modelo | O erro do gateway, relançado depois que a política de novas tentativas se esgota | TypeScript: `AgentGatewayError`. Python: `phaseo.PhaseoHTTPError` com `status`, `code` e `request_id`. Rust: convertido em `AgentError`, sem o status e o corpo do gateway. |
+| O modelo continuou chamando ferramentas | `Max steps exceeded (N)` | O Rust interrompe a execução (veja acima) |
+| O modelo chamou uma ferramenta que o agente não tem | `Unknown tool '<name>'` | Go: `unknown tool "name"`. TypeScript com `return-to-model`: a resposta vai para o modelo. |
+| Um validador rejeitou a entrada da ferramenta, a saída da ferramenta, um evento de progresso ou a saída final | `Invalid tool input: ...`, `Invalid tool output: ...`, `Invalid agent output: ...` | TypeScript: `AgentSchemaValidationError`. Python e Ruby: `ValueError` / `ArgumentError`. Go: `invalid ...` em minúsculas. O Rust não tem validadores. |
+| Uma ferramenta passou do timeout | Um erro de timeout | Python: `TimeoutError`. Go: `tool <id> timed out: ...`. C# e Java: `TimeoutException`. PHP: `Tool <name> timed out after <n>ms`. Ruby: `Timeout::Error`. O Rust não tem timeouts de ferramenta. |
+| Uma continuação não respondeu a todas as chamadas pendentes | `Missing approval decision for tool call <id>`, `Missing output for tool call <id>` | Go: `missing ...` em minúsculas. Python: `ValueError`. Veja [Estado e aprovação](./state-and-approval). |
+| Uma pausa de revisão foi continuada sem entrada humana | `Run <id> is waiting for human input` | Go: `run <id> ...`. Java: `Run is waiting for human input`. |
+| A execução pertence a outro ID de agente | `Run <id> belongs to agent <agent>` | Go: `run <id> ...`. Java: `Run belongs to <agent>`. |
+| Uma continuação não tinha execução para continuar | `A run or state accessor with runId is required` | C# e Java. Ruby: `... with run_id is required`. `continueRunById()` do PHP: `Run <id> not found`. |
+| O stream foi cancelado | Um erro de cancelamento | Python: `InterruptedError`. PHP: `Agent stream cancelled`. C#: `OperationCanceledException`. Go: o erro do contexto. TypeScript: nenhum erro; status `cancelled`. |
+
+### Tipos de erro do TypeScript
+
+`AgentGatewayError` tem `status`, `statusText`, `headers`, `body`, `requestId`, `generationId`, `reason`, `errorType`, `errorOrigin`, `failedProviders`, `failedStatuses` e diagnósticos de roteamento. Execuções e etapas com falha guardam os mesmos detalhes em `errorDetails`. Uma falha no meio de uma resposta transmitida é um `AgentStreamError`, uma subclasse com `code` e `retryable`.
+
+`AgentSchemaValidationError` tem um `target` igual a `tool_input`, `tool_output`, `tool_event` ou `agent_output`, e `details` com o erro do validador. Trate esses casos como falhas de contrato, não como falhas transitórias do modelo.
+
+Para classificar qualquer erro, por exemplo em `modelRetry.retryOn`, use `agentErrorIsRetryable(error)`, `agentRetryAfterMs(error)` e `agentErrorIsContextOverflow(error)`.
+
+### Tipo de erro do Rust
+
+Toda falha do runtime é um `AgentError`; leia-o com `message()`. Os valores `PhaseoError` do gateway são convertidos em `AgentError`, então, se você precisar do status e do corpo originais do gateway, chame o cliente `phaseo` diretamente ou implemente um `ModelClient` personalizado que os preserve.
+
+## Recupere-se de erros de ferramenta
+
+Por padrão, um erro de ferramenta faz a execução falhar. Defina a política de erro da ferramenta como `return-to-model` quando o modelo puder razoavelmente tentar outra coisa: o erro vira o resultado da ferramenta `{"error": "..."}` e a execução continua. Mantenha o padrão, `fail-run`, para falhas inseguras ou irrecuperáveis.
+
+| Linguagem | Configuração | Timeouts com `return-to-model` |
+| --- | --- | --- |
+| TypeScript | `onError` na ferramenta, ou `toolExecution.onError` para todas as ferramentas | Tratados como erro de ferramenta e devolvidos ao modelo |
+| Python | `on_error` | Sempre fazem a execução falhar |
+| Go | `OnError` | Devolvidos ao modelo |
+| C# | `OnError` | Devolvidos ao modelo (a mensagem da exceção) |
+| PHP | `onError` | Devolvidos ao modelo |
+| Ruby | `on_error` | Devolvidos ao modelo |
+| Java | `onError` | Devolvidos ao modelo (a mensagem da exceção) |
+| Rust | Nenhuma | O Rust não tem timeouts. Um `AgentError` de um executor local sempre é devolvido ao modelo como mensagem de erro de ferramenta. |
+
+## Trate cancelamentos e timeouts
+
+Um timeout ou cancelamento de ferramenta nem sempre interrompe o trabalho da própria ferramenta. Dê prazos próprios às chamadas HTTP, de banco de dados e de processos dentro das ferramentas, e trate uma execução cancelada ou com timeout como encerrada, a menos que seu aplicativo inicie uma nova.
+
+| Linguagem | Cancelar uma execução | O que acontece com as ferramentas em execução |
+| --- | --- | --- |
+| TypeScript | Passe `signal` ou chame `cancel()` em um stream | Um timeout de ferramenta aborta `context.signal`; passe-o às suas próprias chamadas |
+| Python | `cancel()` em um stream; a execução lança `InterruptedError` | As threads das ferramentas não são interrompidas por timeouts nem por cancelamento |
+| Go | Cancele o `ctx` passado a `Run`, `Continue` ou `Stream`, ou chame `Cancel()` em um stream | As ferramentas em execução falham com um erro de timeout, mas `Execute` não recebe o contexto, então o trabalho delas continua rodando |
+| C# | Passe um `CancellationToken` em `RunOptions` ou `ContinueOptions`, ou chame `Cancel()` em um stream; a execução lança `OperationCanceledException` | As ferramentas recebem `runtime.CancellationToken`; passe-o às suas próprias chamadas |
+| PHP | `cancel()` em um stream | As ferramentas rodam de forma síncrona e não podem ser interrompidas: `timeoutMs` só faz a chamada falhar depois que ela retorna. Atenção ao `max_execution_time` do PHP em requisições web. |
+| Ruby | `cancel` em um stream encerra a thread de trabalho | `timeout_ms` usa `Timeout.timeout`, que interrompe a thread da ferramenta em um ponto arbitrário e pode deixar arquivos, sockets ou transações pela metade |
+| Java | `cancel()` em um stream interrompe a thread de trabalho | Um `timeout` de ferramenta roda o executor na própria thread e a interrompe; só o código que responde à interrupção para |
+| Rust | Sem suporte; as execuções são síncronas | Rode o agente em uma thread de trabalho se ele não puder bloquear um handler de requisição |
+
+## Recupere uma execução do TypeScript interrompida
+
+Se uma execução travou ou foi cancelada no meio de uma etapa, o histórico dela pode conter chamadas de ferramenta sem resultado, que os provedores rejeitam. O `continueRun()` do TypeScript as responde como não executadas e envia `history.repaired`. Chame `repairToolHistory(messages)` você mesmo se reutilizar as mensagens em outro lugar.
+
+## Verifique isto primeiro
+
+- `PHASEO_API_KEY` chega ao processo e é passada ao cliente de gateway.
+- Cada ferramenta tem um ID único e estável.
+- Aprovações, rejeições e saídas de ferramentas usam os IDs exatos das chamadas de ferramenta, e uma mensagem de entrada humana nunca substitui uma saída de ferramenta.
+- O resultado inteiro da execução é salvo antes de você mostrar uma interface de aprovação ou passar o controle para outra requisição ou worker.
+- Os validadores são determinísticos e sem efeitos colaterais, então uma verificação que falhou pode ser repetida com segurança.
+- As novas tentativas do modelo são limitadas; falhas de validação e de aprovação não devem ser repetidas às cegas.
+
+Para ver qual etapa falhou, registre `step.started`, `model.requested` e `tool.failed` com os [hooks do ciclo de vida](./lifecycle-hooks), e veja em [Observabilidade](./observability) os IDs que ligam uma etapa aos logs do gateway.

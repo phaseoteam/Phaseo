@@ -1,89 +1,55 @@
 ---
 title: "Anthropic Claude Opus 4.7"
-description: "ما ينبغي معرفته لاعتماد Claude Opus 4.7، بما في ذلك التفكير التكيفي وضوابط أخذ العينات واستهلاك الرموز."
+description: "ما ينبغي معرفته عند اعتماد Claude Opus 4.7، بما في ذلك التفكير التكيفي وضوابط أخذ العينات واستخدام الرموز."
 icon: "/icons/brands/anthropic.svg"
 ---
 
-# Anthropic Claude Opus 4.7
+غيّر النموذج إلى `anthropic/claude-opus-4.7`، وأسقط معاملات أخذ العينات وميزانيات التفكير، وحدد العمق بمستوى جهد. الطلبات التي لا تزال تحمل حقول Opus 4.6 لا تفشل على Phaseo؛ إذ تعيد البوابة كتابتها كما هو موضح أدناه.
 
-استخدم هذا الدليل لاعتماد `anthropic/claude-opus-4.7` بأمان في الإنتاج.
+| طلب Opus 4.6 | ما يرسله Phaseo إلى Opus 4.7 |
+| --- | --- |
+| `temperature` و`top_p` و`top_k` | تُحذف. كانت Anthropic ستعيد `400` للقيم غير الافتراضية. |
+| `thinking: {"type": "enabled", "budget_tokens": …}` | `thinking: {"type": "adaptive", "display": "summarized"}`؛ ولا تُمرَّر الميزانية. |
+| `reasoning.effort` | `output_config.effort`، بما في ذلك `xhigh`. |
+| `reasoning.effort: "none"` أو `reasoning.enabled: false` | `thinking: {"type": "disabled"}`. |
+| لا يوجد إعداد استدلال | لا يوجد حقل `thinking`، لذا لا يفكر Opus 4.7. |
 
-يُدخل Claude Opus 4.7 تغييرات على تنسيق الطلب؛ وقد تفشل أنماط 4.6 القديمة بالكامل إذا لم تُحدّث.
+يخفي Opus 4.7 أيضًا محتوى التفكير ما لم تختر إظهاره؛ ويطلب Phaseo العرض الملخّص كلما فعّل التفكير. وقد ينتج مقسّم الرموز فيه رموزًا أكثر من Opus 4.6 للنص نفسه.
 
-## الجديد
+## تحديث الطلب
 
-- مستوى جهد جديد: `xhigh` (واجهة Messages).
-- أُزيلت ميزانيات التفكير الموسّع في Opus 4.7؛ وأصبح `thinking: { type: "enabled", budget_tokens: ... }` يفشل.
-- لم تعد معلمات أخذ العينات غير الافتراضية مدعومة لهذا النموذج: `temperature` و`top_p` و`top_k`.
-- يُحذف محتوى التفكير افتراضيًا ما لم تفعّله صراحةً.
-- قد يزيد مرمّز الرموز المحدّث استهلاك الرموز مقارنةً بـ Opus 4.6.
+1. اضبط معرّف النموذج على `anthropic/claude-opus-4.7`.
+2. أزل `temperature` و`top_p` و`top_k`، واضبط السلوك بالتعليمات بدلًا منها.
+3. استبدل ميزانيات التفكير بالتفكير التكيفي ومستوى جهد:
 
-## سلوك التوافق في Phaseo Gateway
+```json
+{
+  "model": "anthropic/claude-opus-4.7",
+  "messages": [{ "role": "user", "content": "Refactor this module and explain the risks." }],
+  "reasoning": { "effort": "xhigh" }
+}
+```
 
-لتقليل مشكلات الترحيل، يقبل Phaseo حقول Opus 4.6 القديمة مع Opus 4.7 ويوحّدها قبل إرسالها إلى المزوّد:
+ابدأ بـ `high` واستخدم `xhigh` لأصعب مسارات البرمجة والوكلاء. على `/v1/messages`، أرسل `thinking: {"type": "adaptive"}` مع `output_config.effort` بدلًا من ذلك.
 
-- تُقبل `temperature` و`top_p` و`top_k` ثم تُحذف.
-- لا تُمرر ميزانيات التفكير القديمة.
-- يُرسل تفكير Opus 4.7 دائمًا بهذه الصيغة: `thinking: { "type": "adaptive", "display": "summarized" }`.
-- يظل `reasoning.effort` مدعومًا ويُحوّل إلى `output_config.effort`، مع دعم `xhigh`.
+4. لأن مقسّم الرموز تغيّر، راجع `max_tokens` و`max_output_tokens` وميزانيات المهلة وتنبيهات التكلفة.
 
-## البدء السريع للترحيل
+## ما الذي يجب اختباره
 
-### 1. حدّث معرّف النموذج
+- معدل نجاح المخطط على مطالبات الإنتاج لديك؛
+- مسارات عمل الأدوات طويلة التشغيل: عدد استدعاءات الأدوات ومعدل الإنجاز وزمن الاستجابة؛
+- الجودة عند `high` مقارنة بـ `xhigh`؛
+- تكلفة الرموز لفئات المطالبات الأعلى حجمًا لديك.
 
-عيّن المعرّف إلى `anthropic/claude-opus-4.7`.
+## النشر
 
-### 2. استخدم التفكير التكيفي مع عرض الملخص
-
-في Opus 4.7، استخدم:
-
-- `thinking: { "type": "adaptive", "display": "summarized" }`
-
-تجنّب ميزانيات التفكير الموسّع القديمة.
-
-### 3. أزل ضوابط أخذ العينات
-
-لا ترسل:
-
-- `temperature`
-- `top_p`
-- `top_k`
-
-اضبط المطالبات والتعليمات بدلًا منها.
-
-### 4. أعد ضبط مستويات الجهد
-
-إذا كنت تستخدم ضوابط الاستدلال، فأعد الاختبار بالقيم التالية:
-
-- `output_config.effort = "high"` كخط أساس.
-- `output_config.effort = "xhigh"` لأصعب مسارات البرمجة والوكلاء.
-
-عند استدعاء Phaseo بحمولة بأسلوب OpenAI، يُحوّل `reasoning.effort` إلى قيمة `output_config.effort` نفسها في Opus 4.7.
-
-### 5. أعد التحقق من حدود الرموز
-
-بسبب تغيير الترميز، راجع:
-
-- `max_tokens` / `max_output_tokens`
-- ميزانيات المهلة
-- ضوابط التكلفة والتنبيهات
-
-## ما ينبغي اختباره
-
-- معدل اجتياز إخراج المخططات الصارمة بمطالبات الإنتاج.
-- تدفقات الأدوات طويلة الأمد: عدد الاستدعاءات ومعدل الإكمال وزمن الاستجابة.
-- فروق جودة المخرجات بين `high` و`xhigh`.
-- فروق تكلفة الرموز في فئات المطالبات الأعلى استخدامًا.
-
-## طرح آمن
-
-1. انشر تغييرات تنسيق الطلب قبل تحويل حركة المرور.
-2. شغّل Opus 4.7 على مجموعة تقييم الإنتاج بالتوازي.
-3. اختبر تدريجيًا مع إبقاء التراجع إلى Opus 4.6 ممكنًا.
-4. وسّع الطرح عندما تقع فروق الجودة وزمن الاستجابة والتكلفة ضمن الأهداف.
+1. انشر تغييرات شكل الطلب قبل نقل الحركة.
+2. شغّل Opus 4.7 في وضع الظل على مجموعة تقييم الإنتاج لديك.
+3. انشر تجريبيًا (canary) مع Opus 4.6 كنموذج احتياطي في `models`.
+4. رقِّ النموذج بعد أن تصبح تغييرات الجودة وزمن الاستجابة والتكلفة ضمن الهدف.
 
 ## المصادر
 
-- [الجديد في Claude Opus 4.7](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-7)
-- [دليل ترحيل Anthropic](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
+- [ما الجديد في Claude Opus 4.7](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-7)
+- [دليل الترحيل من Anthropic](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
 - [بطاقة نظام Claude Opus 4.7 (PDF)](https://cdn.sanity.io/files/4zrzovbb/website/037f06850df7fbe871e206dad004c3db5fd50340.pdf)

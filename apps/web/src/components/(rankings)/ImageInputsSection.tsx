@@ -1,22 +1,17 @@
-import Link from "next/link";
+import Link from "@/components/link";
 import { EmptyChartPreview } from "@/components/(rankings)/EmptyChartPreview";
 import { UsageStackedBar } from "@/components/(rankings)/UsageStackedBar";
-import {
-	fetchFrontendModelLeaderboardMetaByIds,
-} from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { fetchFrontendRankingImageInputs } from "@/lib/fetchers/frontend/fetchRankingSections";
 import { formatModelDisplayName } from "@/lib/models/displayName";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "@/i18n/react";
 import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { rankingImageInputsSectionQuery } from "@/components/(rankings)/rankingSections.queries";
 
-export async function ImageInputsSection() {
-	const t = await getTranslations("Catalogue.rankings");
-	const result = await fetchFrontendRankingImageInputs("year", 20).catch(() => null);
-	if (!result) return <RankingUnavailable id="image-inputs" title={t("imageInputs")} />;
-	const modelIds = [...new Set(result.data.map((row) => row.model_id).filter(Boolean))];
-	const metaMap = await fetchFrontendModelLeaderboardMetaByIds(modelIds).catch(
-		(): Awaited<ReturnType<typeof fetchFrontendModelLeaderboardMetaByIds>> => ({}),
-	);
+export function ImageInputsSection() {
+	const t = useTranslations("Catalogue.rankings");
+	const { data: section } = useSuspenseQuery(rankingImageInputsSectionQuery());
+	if (!section) return <RankingUnavailable id="image-inputs" title={t("imageInputs")} />;
+	const { result, modelIds, metaMap } = section;
 	const nameMap = Object.fromEntries(modelIds.map((id) => [id, formatModelDisplayName(metaMap[id]?.name, id)]));
 	const logoIdMap = Object.fromEntries(modelIds.map((id) => [id, metaMap[id]?.organisation_id ?? id]));
 	const organisationNameMap = Object.fromEntries(modelIds.flatMap((id) => {
@@ -42,6 +37,7 @@ export async function ImageInputsSection() {
 			</div>
 			{result.data.length ? (
 				<UsageStackedBar
+				leaderboardMetric={"image_inputs"}
 					data={result.data}
 					metric="tokens"
 					nameMap={nameMap}
@@ -50,6 +46,7 @@ export async function ImageInputsSection() {
 					leaderboardTitle={t("imageInputLeaderboardTitle")}
 					leaderboardDescription={t("imageInputLeaderboardDescription")}
 					valueUnit={t("usageImagesUnit")}
+					share={{ section: "image-inputs", chartId: "image-inputs", title: t("imageInputs") }}
 				/>
 			) : (
 				<EmptyChartPreview

@@ -144,4 +144,30 @@ describe("mergePresetWithBody", () => {
 			max_price: { prompt: 0.1 },
 		});
 	});
+
+	const systemPreset = { id: "preset_sys", name: "@sys", slug: "sys", description: null, visibility: "team" as const, config: { systemPrompt: "Be concise", defaultParams: { temperature: 0.37 } } };
+
+	it("puts the preset prompt in top-level system on Messages requests without one", () => {
+		const merged = mergePresetWithBody({ model: "anthropic/claude-sonnet-5", max_tokens: 64, messages: [{ role: "user", content: "Hello" }] }, systemPreset, "messages");
+		expect(merged.system).toBe("Be concise");
+		expect(merged.messages).toEqual([{ role: "user", content: "Hello" }]);
+	});
+
+	it("prepends the preset prompt to an existing Messages system prompt", () => {
+		const stringSystem = mergePresetWithBody({ system: "Use JSON", messages: [{ role: "user", content: "Hello" }] }, systemPreset, "messages");
+		expect(stringSystem.system).toBe("Be concise\n\nUse JSON");
+		const arraySystem = mergePresetWithBody({ system: [{ type: "text", text: "Use JSON" }], messages: [{ role: "user", content: "Hello" }] }, systemPreset, "messages");
+		expect(arraySystem.system).toEqual([{ type: "text", text: "Be concise\n\n" }, { type: "text", text: "Use JSON" }]);
+	});
+
+	it("keeps adding a system message on Chat requests", () => {
+		const merged = mergePresetWithBody({ messages: [{ role: "user", content: "Hello" }] }, systemPreset, "chat.completions");
+		expect(merged.messages[0]).toEqual({ role: "system", content: "Be concise" });
+		expect(merged.system).toBeUndefined();
+	});
+
+	it("fills a preset temperature only when the request has none", () => {
+		expect(mergePresetWithBody({ messages: [{ role: "user", content: "Hello" }] }, systemPreset, "chat.completions").temperature).toBe(0.37);
+		expect(mergePresetWithBody({ messages: [{ role: "user", content: "Hello" }], temperature: 0.9 }, systemPreset, "chat.completions").temperature).toBe(0.9);
+	});
 });

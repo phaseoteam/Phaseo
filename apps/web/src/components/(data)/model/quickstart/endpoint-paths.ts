@@ -1,4 +1,6 @@
 const ENDPOINT_PATHS: Record<string, string> = {
+	"extraction.extract": "/extractions",
+	extractions: "/extractions",
     "chat.completions": "/chat/completions",
     "text.completions": "/chat/completions",
     messages: "/messages",

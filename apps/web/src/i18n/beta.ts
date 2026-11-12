@@ -9,7 +9,7 @@ import pt from "../../messages/pt-BR/beta.json";
 import ja from "../../messages/ja/beta.json";
 import ar from "../../messages/ar-SA/beta.json";
 import { mergeCatalogMessages } from "./message-overlays";
-import type { PublicLocale } from "./routing";
+import type { PublicLocale, ShippedLocale } from "./routing";
 export type BetaMessages = typeof en;
-const catalogs: Record<PublicLocale, BetaMessages> = { "en-GB": en, "en-US": mergeCatalogMessages(en, enUsOverlay), "zh-Hans": zhHans as BetaMessages, hi: hi as BetaMessages, "es-ES": es as BetaMessages, "fr-FR": fr as BetaMessages, "de-DE": de, "pt-BR": pt as BetaMessages, ja: ja as BetaMessages, "ar-SA": ar as BetaMessages };
+const catalogs: Record<ShippedLocale, BetaMessages> = { "en-GB": en, "en-US": mergeCatalogMessages(en, enUsOverlay), "zh-Hans": zhHans as BetaMessages, hi: hi as BetaMessages, "es-ES": es as BetaMessages, "fr-FR": fr as BetaMessages, "de-DE": de, "pt-BR": pt as BetaMessages, ja: ja as BetaMessages, "ar-SA": ar as BetaMessages };
 export function getBetaMessages(locale: PublicLocale): BetaMessages { return catalogs[locale]; }

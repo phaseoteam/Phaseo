@@ -3,19 +3,31 @@ icon: "clapperboard"
 title: "Video and batch jobs"
 badge: "Beta"
 description: "Track asynchronous jobs, receive webhooks, and pass provider-specific video options."
+"og:image": "https://phaseo.app/og/dynamic?title=Video%20and%20batch%20jobs&description=Track%20asynchronous%20jobs%2C%20receive%20webhooks%2C%20and%20pass%20provider-specific%20video%20options.&pathname=/docs/v1/guides/async-video-and-batch"
 ---
 
 <Note>
 The Video API and Batch API are invite-only beta previews for selected workspaces. Check **Settings → Feature Preview** for availability. Access is managed per workspace; enabling a personal web preference does not grant API access. Normal model usage charges apply.
 </Note>
 
-Video generation and batch processing return a job before the work finishes. Persist its `id` and use the returned `polling_url` to recover its latest state. A successful create response does not mean generation or batch processing has completed.
+Creating a video or a batch returns a job before the work is done. Store its `id` and `polling_url`, then wait for a webhook or poll until the job reaches a terminal state: `completed`, `failed`, `cancelled`, or `expired`. A successful create response only means the job was accepted.
 
-During the beta, start with small requests and an API key spending limit. Provider and model capabilities vary; reference inputs, cancellation and output retention depend on the selected provider. Keep your own copy of completed outputs before they expire.
+```mermaid
+flowchart TD
+  newJob["Create a video or batch job"] --> store["Store id and polling_url"]
+  store --> waiting["Wait for an update"]
+  waiting -->|"Webhook event"| terminal{{"Terminal state?"}}
+  waiting -->|"Poll polling_url"| terminal
+  terminal -->|"No"| waiting
+  terminal -->|"completed"| fetchOut["Fetch the outputs or results"]
+  terminal -->|"failed / cancelled / expired"| outcome["Handle the outcome"]
+```
+
+Keep the polling path even when you use webhooks. During the beta, start with small requests and an API key spending limit. Reference inputs, cancellation and output retention depend on the provider and model. Save your own copy of completed outputs before they expire.
 
 ## Receive updates
 
-Attach a webhook endpoint belonging to your workspace when creating either kind of job:
+Attach a webhook endpoint belonging to your workspace when you create either kind of job:
 
 ```json
 {
@@ -26,17 +38,24 @@ Attach a webhook endpoint belonging to your workspace when creating either kind 
 }
 ```
 
-Phaseo reconciles provider status and sends customer notifications. Providers that require polling, including Anthropic message batches, can still produce customer webhooks. A webhook delivery failure is separate from a generation or batch failure.
+Phaseo reconciles provider status and sends the notifications, so providers that only support polling, such as Anthropic message batches, still produce webhooks. A failed webhook delivery doesn't mean the job failed.
 
-Endpoint subscriptions can target Batch and Video events independently. Use namespaced event types such as `batch.completed` or `video.failed`; generic `job.*` event types remain supported and subscribe to the matching phase for both job types.
+Subscribe to Batch and Video events separately with namespaced event types such as `batch.completed` or `video.failed`. Generic `job.*` event types still work and subscribe to the matching phase for both job types.
 
-Verify `x-phaseo-signature` using the endpoint secret: the signature is the hexadecimal HMAC-SHA256 of `x-phaseo-timestamp`, a literal period, and the **unmodified request body**. Check timestamp freshness, deduplicate `x-phaseo-event-id`, and acknowledge accepted deliveries with a successful HTTP response. Deliveries can be retried or arrive out of order; retrieve the job before applying a conflicting state change.
+### Verify and acknowledge deliveries
 
-After saving an endpoint, use **Send test event** in Settings to deliver a signed `webhook.test` payload. Test deliveries make one attempt and are not retried or added to job delivery history.
+Verify `x-phaseo-signature` with the endpoint secret: it is the hexadecimal HMAC-SHA256 of `x-phaseo-timestamp`, a literal period, and the **unmodified request body**. Check that the timestamp is fresh, deduplicate on `x-phaseo-event-id`, and acknowledge accepted deliveries with a 2xx response. Deliveries can be retried or arrive out of order, so retrieve the job before applying a conflicting state change.
 
-Treat `completed`, `failed`, `cancelled`, and `expired` lifecycle states as terminal. Keep a polling recovery path even when using webhooks.
+| Attempt | When |
+| --- | --- |
+| 1 | As soon as the event happens |
+| 2 | About 1 minute after a failed attempt |
+| 3 | About 5 minutes later |
+| 4 | About 15 minutes later; if it fails, delivery is marked permanently failed |
 
-For each event, Phaseo makes one initial delivery attempt. A successful 2xx response ends delivery; no retries are needed. Failed deliveries receive up to three retries, scheduled after 1, 5, and 15 minutes. Background sweeps process eligible retries, so actual delivery can be later than the scheduled time. Each attempt records its number, time, HTTP status, error and next retry time. After the fourth unsuccessful attempt, delivery is marked permanently failed. Receivers must still deduplicate events: a lost acknowledgement or worker interruption can make delivery uncertain.
+A 2xx response ends delivery. Background sweeps send the retries, so a retry can arrive later than scheduled. Each attempt records its number, time, HTTP status, error and next retry time. Deduplicate even so: a lost acknowledgement or an interrupted worker can make a delivery uncertain.
+
+After saving an endpoint, use **Send test event** in Settings to deliver a signed `webhook.test` payload. A test delivery is tried once, isn't retried, and isn't added to job delivery history.
 
 ## View job and request logs
 
@@ -44,15 +63,15 @@ In **Settings → Usage → Logs**, use **Requests** for inference request detai
 
 Video submission reserves credit before contacting the provider. A timeout with no task ID retains the reservation for reconciliation; it is not evidence of a failed generation. If a paid Video or Batch reservation unexpectedly prices at zero after successful work, billing remains open with `unexpected_zero_cost` for investigation. A zero-cost create response alone is normal for asynchronous generation.
 
-## Video inputs
-
-### Understand video pricing
+## Estimate what a video costs
 
 Video prices depend on the provider and model. A price per second must be multiplied by the billable duration; a price per clip applies only to its specified duration and resolution. Multiple outputs and chargeable reference inputs can increase the total.
 
 LTX text/image generation bills output seconds, while audio-to-video bills input-audio seconds. BytePlus Seedance uses video tokens, with different rates when a reference video is present. MiniMax Hailuo V1 uses fixed-duration clip prices; H3 uses seconds and can charge for reference inputs. Check the selected provider's pricing dimensions rather than interpreting a headline price as the cost of a whole request.
 
 Reservations are estimates held before submission. Final billing uses the job's billable usage; unused reserved credit is released after reconciliation. A provider's supported resolution or option does not guarantee that it is available in the beta.
+
+## Set duration, frames and references
 
 Use `seconds` or `duration` for output duration. If both are present, they must agree. Use `resolution` with `aspect_ratio`, or a pixel `size` such as `1280x720`.
 
@@ -81,7 +100,7 @@ Reference URLs must use HTTPS. Specify `role: "reference"` explicitly for refere
 
 Video and audio references use `type: "video_url"` or `"audio_url"` and `media_url: { "url": "https://..." }`. Models and providers support different combinations. Where reference duration affects pricing, supply `input_video_duration` and `input_audio_duration` in seconds.
 
-## Provider options
+## Pass provider-specific video options
 
 Keep model, duration, resolution, audio generation, input media, and output count in canonical fields. Pass provider-specific extensions under the canonical provider ID:
 
@@ -107,11 +126,15 @@ AtlasCloud Seedance uses native `resolution`, `ratio`, and `last_image` fields. 
 
 MiniMax H3 uses V2: 4–15 whole seconds at `768P` or `2K`. H3 Max supports 5–15 whole seconds at `480P` or `768P`, with text or frame images. H3 supports reference images, video and audio; references cannot be mixed with first/last frames. Both models produce one video per request and do not support V1 prompt optimization options. Use canonical `aspect_ratio`; frame inputs determine their own ratio. Reference-video reservations cover the provider's 15-second input limit, with actual usage settled on completion. See the [MiniMax V2 contract](https://platform.minimax.io/docs/api-reference/video-generation-v2-create).
 
-## Batch providers
+## Check what each batch provider supports
 
 Batch requests also accept `provider_options`: OpenAI supports `output_expires_after`, and Mistral supports `metadata`. Use canonical provider IDs and do not duplicate these fields at the top level. For example, `provider_options: { "openai": { "output_expires_after": { "anchor": "created_at", "seconds": 86400 } } }` sets OpenAI output retention. Row inputs, models, endpoints, and webhook destinations cannot be overridden through options.
 
 Mistral already has a native batch adapter. Anthropic message batches are polled; other providers may combine polling with native completion notifications. Availability depends on the provider's supported endpoints and the deployment's batch allowlist. Check the batch capability response before submitting a file or inline requests.
+
+Vertex Gemini batches accept inline `requests` with `/v1/generateContent`, or `model` and `prompts`. Select `provider: "google-vertex"` to use Vertex. Successful rows are charged at Batch rates. This adapter requires managed credentials; BYOK, uploaded Files, embeddings and `google-vertex-eu` batches are unavailable. Input is limited to 20 MB and 10,000 requests. Stored input and output expire after 30 days.
+
+Vertex results use `custom_id` to identify each submitted row, with a successful generation in `response.body` or a per-request `error`. Output order can differ from input order. A submission with an uncertain provider outcome remains under manual review with its credit hold retained; avoid creating a replacement until its outcome is confirmed.
 
 Batch completion can include failed rows. Inspect each result using its custom ID instead of assuming that every row succeeded. Keep the original input and job ID until results and billing are reconciled. An uncertain submission must be investigated before resubmitting, because a provider may have accepted the original request.
 

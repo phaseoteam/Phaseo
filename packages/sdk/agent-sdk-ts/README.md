@@ -38,6 +38,27 @@ The SDK does not store runs in any Phaseo-hosted service.
 
 If your application wants resumability across requests, workers, or process restarts, persist that returned value directly or pass a `state` accessor with `load()` and `save()` methods.
 
+Pass `messages` to `run()` or `stream()` when starting from an existing conversation. These messages replace the default user message derived from `input`; `input` remains the application-owned run input. The SDK clones the messages before saving them, and continuations retain the saved history.
+
+```ts
+const result = await agent.run({
+  input: "Review the attachment",
+  messages: [
+    { role: "user", content: "Earlier question" },
+    { role: "assistant", content: "Earlier answer" },
+    { role: "user", content: [
+      { type: "text", text: "Describe this image" },
+      { type: "image_url", image_url: { url: imageDataUrl } },
+    ] },
+  ],
+  client,
+});
+```
+
+User messages accept text or text/image parts. The gateway adapter maps image parts to Responses `input_image` items. Other model clients must support the supplied content parts. Persisted run history includes these parts, so use your application's normal storage and retention controls for attachment data.
+
+For a structured follow-up, pass `humanMessages` to `continueRun()` or `continueStream()`. It replaces `humanInput`, is cloned, and is appended after pending tool results so the conversation preserves tool-call ordering. Omit it when continuing only to approve or reject a tool.
+
 ## Install
 
 ```bash
@@ -141,6 +162,8 @@ The adapter can carry gateway-native controls such as:
 
 That lets the surrounding app keep routing, search, structured outputs, and plugin defaults in one place.
 
+The client the adapter builds skips `@phaseo/sdk`'s `GET /models` lookup before each new model, because the gateway refuses retired models itself. Set `clientOptions.modelLifecycleChecks: true` to turn the lookup back on. Gateway HTTP failures reach you as `AgentGatewayError`, whether the turn streams or not.
+
 ### Application-owned continuation
 
 If a workflow pauses for review, or if you want to continue it later, persist the returned `AgentRunResult` in your own application and pass it back to `continueRun()`.
@@ -241,6 +264,30 @@ const agent = createAgent({
 });
 ```
 
+Attempts back off exponentially from `backoffMs` with full jitter, up to `maxBackoffMs` (8 s by default), unless the gateway sends `Retry-After`. Only errors that `agentErrorIsRetryable` accepts are retried: rate limits, server errors, dropped connections and stalled streams. Pass `retryOn` to decide yourself. An attempt that has already streamed output is never repeated, and each wait emits a `model.retrying` event.
+
+With `createGatewayAgentClient`, error events, failed or incomplete responses, connections that drop and streams that end early all fail the step with an `AgentStreamError` instead of completing it with partial text. Set `streamIdleTimeoutMs` to abandon a stream that sends nothing for that long.
+
+### Keeping long runs healthy
+
+```ts
+const agent = createAgent({
+  id: "coding-agent",
+  maxSteps: 100, // per run or continue call
+  toolExecution: { onError: "return-to-model", maxOutputChars: 40_000 },
+  activeTools: ({ context }) => context.loadedTools,
+  prepareMessages: async (messages, info) => tooLong(messages) || info.reason === "overflow" ? await compact(messages) : undefined,
+});
+```
+
+- With `onError: "return-to-model"`, a failing tool, an unknown tool name and unreadable arguments all come back to the model as error results it can correct.
+- Continuing a failed or cancelled run first answers any tool call the failure left unanswered (`history.repaired`), because providers reject a history with orphaned calls. `repairToolHistory` does the same for histories you build yourself.
+- `maxOutputChars` keeps the start and end of long tool output, with a notice of what was left out.
+- `activeTools` offers a subset of the registered tools on each step. Calls to the others still resolve.
+- `prepareMessages` runs before each request and can replace the history, for example with a summary. After a context-overflow error (`agentErrorIsContextOverflow`) it runs once more with `reason: "overflow"`, and the step is retried.
+- Pass `takeMessages` to `run` or `continueRun` to add messages, such as a person steering, before the next step.
+- Tools marked `parallelSafe` run side by side when a step calls only such tools.
+
 ### Concurrent local tools
 
 If one model turn can safely call several independent local tools, set `toolExecution.toolConcurrency`:
@@ -255,7 +302,13 @@ const agent = createAgent({
 });
 ```
 
-The runtime still persists tool-result messages in tool-call order.
+Tools run serially by default, including approved tools resumed from a pause. Context updates from each serial tool are available to the next tool. Before resuming, the runtime validates all required approval decisions and manual outputs, so an incomplete response cannot start an earlier approved tool.
+
+When a state store is configured, serial approved/manual continuations save a start marker before each action and checkpoint each confirmed result. Failed or cancelled continuations retain completed results, remaining calls, context, and deferred human messages. Resume requires fresh decisions for the remaining calls. An `executionStartedAt` marker means an interrupted action may already have had effects; inspect those effects before approving it again. This journal does not guarantee exactly-once external effects or cover partial parallel batches or automatic tool execution.
+
+Cancellation propagates even when a tool uses `onError: "return-to-model"`; interrupted actions are not consumed as confirmed error results.
+
+With explicit concurrency, tools may finish in any order. The runtime still persists tool-result messages in tool-call order.
 
 ### Typed item streams
 

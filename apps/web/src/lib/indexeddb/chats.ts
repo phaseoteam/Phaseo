@@ -7,6 +7,7 @@ export type ChatMessageVariant = {
     createdAt: string;
     usage?: Record<string, unknown> | null;
     meta?: Record<string, unknown> | null;
+    openuiState?: Record<string, unknown>;
 };
 
 export type ChatMessage = {
@@ -116,9 +117,16 @@ export type ChatImageGenerationServerToolConfig = {
     size?: string;
     aspectRatio?: string;
     background?: "auto" | "transparent" | "opaque";
-    outputFormat?: "auto" | "png" | "jpeg" | "webp";
+    outputFormat?: "auto" | "png" | "jpeg" | "webp" | "gif" | "svg";
     outputCompression?: number | null;
     moderation?: "auto" | "low" | "standard";
+    /** GPT Image 2.6: planning effort before rendering. */
+    complexity?: "auto" | "low" | "medium" | "high";
+    /** GIF output: number of frames and milliseconds per frame. */
+    frameCount?: number | null;
+    frameDurationMs?: number | null;
+    /** SVG output: the OpenAI text model that writes the SVG. */
+    svgModel?: string;
 };
 
 export type ChatServerToolConfigs = {
@@ -160,6 +168,7 @@ export type ChatModelSettings = {
 };
 
 export type ChatSettings = ChatModelSettings & {
+    interactiveAnswers?: boolean;
     compareMode?: boolean;
     compareModelIds?: string[];
     modelOverridesById?: Record<string, Partial<ChatModelSettings>>;
@@ -178,6 +187,25 @@ export type ChatThread = {
     messages: ChatMessage[];
     settings: ChatSettings;
     tags?: ChatTag[];
+    /** Set when the chat was opened from a logged gateway request. */
+    replay?: ChatThreadReplay;
+};
+
+export type ChatThreadReplay = {
+    source: {
+        requestId: string;
+        workspaceId: string | null;
+        endpoint: string;
+        loggedAt?: string | null;
+    };
+    /**
+     * The original Responses input items for each imported message. They are sent
+     * in place of the message's text while its content is unchanged, so tool calls,
+     * tool results and attachments survive the next turn.
+     */
+    messages: Record<string, { content: string; items: unknown[] }>;
+    /** Function tool definitions from the logged request, in Responses form. */
+    functionTools?: Array<Record<string, unknown>>;
 };
 
 const DB_NAME = "phaseo-chat";

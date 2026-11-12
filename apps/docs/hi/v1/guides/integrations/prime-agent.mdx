@@ -1,43 +1,44 @@
 ---
 title: "Prime Agent"
 icon: "/icons/brands/prime-agent.svg"
-description: "इंस्टॉल किए गए Prime Agent model catalog को Phaseo से जोड़ें।"
+description: "इंस्टॉल किए गए Prime Agent मॉडल कैटलॉग को Phaseo से जोड़ें।"
 ---
 
-## Phaseo CLI से सेटअप करें
+हर संगत Phaseo मॉडल वाला Phaseo प्रदाता Prime Agent में जोड़ने के लिए `phaseo prime-agent` चलाएँ। Prime Agent macOS और Linux पर चलता है; Windows पर इसे WSL के अंदर इंस्टॉल करें और सेटअप वहीं चलाएँ।
 
-इन उत्पादन-तैयार कमांडों के लिए Phaseo खाते की ज़रूरत है। CLI में लॉग इन और सेटअप करते समय गेटवे का अलग क्रेडेंशियल बनाया जाता है।
+## Phaseo CLI से सेट अप करें
 
 ```bash
 phaseo login
 phaseo prime-agent
 ```
 
-पहले Prime Agent का आधिकारिक release install करें। Setup `~/.prime/agent/models.json` में managed `phaseo` provider लिखता है। यह Chat Completions-संगत सभी active Phaseo text models उपलब्ध कराता है और हर request के समय Phaseo CLI से dedicated API key प्राप्त करता है।
+अगर Prime Agent इंस्टॉल नहीं है, तो CLI आधिकारिक इंस्टॉलर कमांड दिखाता है और उसे चलाने से पहले पूछता है। इसके बाद सेटअप एक `Phaseo CLI: Prime Agent API Key` (90 दिन में समाप्ति, $100 मासिक खर्च सीमा) बनाता है और `~/.prime/agent/models.json` में एक `phaseo` प्रदाता लिखता है। प्रदाता Chat Completions के साथ काम करने वाले हर सक्रिय Phaseo टेक्स्ट मॉडल की सूची रखता है।
 
-Prime Agent अभी macOS और Linux support करता है। Windows पर executable install करने के बाद WSL के अंदर setup चलाएँ।
+| फ़्लैग | असर |
+| --- | --- |
+| `--model <id>` | शुरुआती मॉडल सेट करता है। डिफ़ॉल्ट `anthropic/claude-sonnet-4.6` है। |
+| `--catalog default` | सिर्फ़ चुना गया मॉडल जोड़ता है। |
+| `--dry-run` | फ़ाइल बदलाव किए बिना उन्हें दिखाता है। |
 
-शुरुआती catalog entry चुनें या ज़रूरत पड़ने पर सिर्फ़ एक model configure करें:
-
-```bash
-phaseo prime-agent --model anthropic/claude-sonnet-4.6
-phaseo prime-agent --catalog default
-```
-
-## शुरू करें और जाँचें
-
-```bash
-prime-agent
-```
-
-`/model` खोलें, `phaseo` provider चुनें और एक छोटा prompt भेजें। बनाया गया provider, Prime Agent के समर्थित command-backed key format का उपयोग करता है:
+प्रदाता Prime Agent के कमांड-आधारित कुंजी फ़ॉर्मेट से अनुरोध के समय कुंजी लेता है, इसलिए फ़ाइल में कोई सादा-टेक्स्ट कुंजी नहीं लिखी जाती:
 
 ```text
 !phaseo integrations credential prime-agent
 ```
 
-केवल Phaseo-managed provider हटाकर उसकी dedicated key revoke करने के लिए यह चलाएँ:
+## जाँचें कि यह काम करता है
+
+```bash
+prime-agent
+```
+
+`/model` खोलें, `phaseo` प्रदाता चुनें, और एक छोटा प्रॉम्प्ट भेजें। पुष्टि करें कि अनुरोध **सेटिंग्स → उपयोग → लॉग्स** में दिखता है।
+
+## Phaseo हटाएँ
 
 ```bash
 phaseo integrations remove prime-agent
 ```
+
+यह सिर्फ़ Phaseo प्रदाता हटाता है और कुंजी रद्द करता है।

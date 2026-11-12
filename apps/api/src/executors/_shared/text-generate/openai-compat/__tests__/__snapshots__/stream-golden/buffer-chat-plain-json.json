@@ -1,0 +1,56 @@
+{
+  "ir": {
+    "id": "req_golden",
+    "nativeId": "chatcmpl-2",
+    "created": 1700000000,
+    "model": "test-model",
+    "provider": "deepseek",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": [
+            {
+              "type": "text",
+              "text": "plain"
+            }
+          ]
+        },
+        "finishReason": "stop"
+      }
+    ],
+    "usage": {
+      "inputTokens": 1,
+      "outputTokens": 1,
+      "totalTokens": 2,
+      "_ext": {}
+    }
+  },
+  "usage": {
+    "prompt_tokens": 1,
+    "completion_tokens": 1,
+    "total_tokens": 2
+  },
+  "rawResponse": {
+    "id": "chatcmpl-2",
+    "object": "chat.completion",
+    "created": 1700000000,
+    "model": "gpt-x",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "plain"
+        },
+        "finish_reason": "stop"
+      }
+    ],
+    "usage": {
+      "prompt_tokens": 1,
+      "completion_tokens": 1,
+      "total_tokens": 2
+    }
+  }
+}

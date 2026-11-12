@@ -1,6 +1,7 @@
 ---
 name: phaseo-guardrails
-description: Configure and debug Phaseo guardrails for API keys. Use when a repository or rollout needs workspace guardrails, model/provider restrictions, budget limits, prompt-injection handling, sensitive-info detection, preview testing, or verification through activity/log views.
+description: "Configures and debugs Phaseo guardrails on API keys: model and provider restrictions, budget limits, prompt-injection handling, sensitive-information detection, preview testing and verification in activity and request logs. Use when a rollout needs to limit what a key can call or spend, or a request was blocked by a guardrail. Not for routing or fallbacks (use phaseo-routing-presets) or reviewing spend after the fact (phaseo-usage-monitoring)."
+license: MIT
 ---
 
 # Phaseo Guardrails
@@ -16,8 +17,8 @@ Use this skill when the work is specifically about configuring or validating gat
 
 2. Apply guardrails in the right order:
 - create or update the workspace guardrail
-- attach it to the target API key
-- verify the key-level surface reflects the attachment
+- attach it to the target API key, or to a member so it covers every key that member owns
+- verify on Settings → Guardrails → Assignments, which shows each key's direct and member-inherited guardrails and what they add up to
 
 3. Prefer low-risk rollout defaults:
 - start with one key

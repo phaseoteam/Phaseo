@@ -1,0 +1,207 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+const { PGlite } = await import(process.env.PGLITE_MODULE ?? '@electric-sql/pglite');
+const read = path => readFile(new URL(path, import.meta.url), 'utf8');
+const tables = ['v2_private_usage_daily', 'v2_public_usage_daily', 'v2_public_usage_hourly'];
+
+async function fixture(current) {
+  const db = new PGlite();
+  await db.exec(await read('./fixtures/staged-reporting-before.sql'));
+  await db.exec("set timezone='UTC';");
+  // Use the deployed visibility rules, and real correction writers.
+  await db.exec(await read('../migrations/20261009114400_exclude_staged_models_from_public_reporting.sql'));
+  for (const name of ['enqueue_v2_analytics_correction', 'enqueue_v2_analytics_fact_correction', 'enqueue_v2_analytics_meter_correction']) {
+    await db.exec(await read(`../schemas/private/functions/${name}.sql`));
+  }
+  // The fixture predates the usage overview's 15-minute rollups; workspaces have no identity table here.
+  if (current) {
+    for (const table of ['v2_private_usage_15m', 'v2_private_usage_labels_15m']) {
+      await db.exec((await read(`../schemas/public/tables/${table}.sql`)).replace(new RegExp(`,\\r?\\n  CONSTRAINT "${table}_workspace_id_fkey"[^\\r\\n]*`), ''));
+    }
+    // The fixture has no keys table; the view reads a key's creator for spend attribution.
+    await db.exec('create table public.keys (id uuid primary key, workspace_id uuid, created_by uuid, oauth_user_id uuid);');
+    await db.exec(await read('../schemas/private/views/v2_usage_overview_requests.sql'));
+    // The processor marks rebuilt workspaces that have an enabled spend rule. Only the columns it reads.
+    await db.exec(`create table public.workspace_spend_rules (id uuid primary key default gen_random_uuid(), workspace_id uuid not null,
+        enabled boolean not null default true, deleted_at timestamptz);
+      create index on public.workspace_spend_rules (workspace_id, id) where deleted_at is null;
+      insert into public.workspace_spend_rules (workspace_id) values (md5('workspace')::uuid);
+      insert into public.workspace_spend_rules (workspace_id, enabled) values (md5('other-workspace')::uuid, false);`);
+    await db.exec(await read('../schemas/public/tables/workspace_spend_rule_dirty.sql'));
+  }
+  await db.exec(await read(current ? '../schemas/public/functions/process_v2_analytics_outbox.sql' : './fixtures/analytics-outbox-before.sql'));
+  if (current) await db.exec(await read('../schemas/public/functions/refresh_v2_analytics_range.sql'));
+  for (const table of tables) {
+    await db.exec(`alter table ${table}_meters add foreign key (rollup_id) references ${table}(rollup_id) on delete cascade`);
+  }
+  await db.exec(`
+    create index test_usage_request_idx on v2_request_usage(request_event_id);
+    create index test_attempt_request_idx on v2_request_attempts(request_event_id);
+    create unique index previous_grain_identity on private.v2_analytics_previous_grains
+      (workspace_id,occurred_at,app_id,model_slug,provider_model_id,cloudflare_colo) nulls not distinct;
+    alter table private.v2_analytics_previous_grains alter queued_at set default clock_timestamp();
+    alter table private.v2_analytics_previous_grains alter transaction_id set default txid_current();
+    create trigger fact_correction after update or delete on v2_request_facts
+      for each row execute function private.enqueue_v2_analytics_fact_correction();
+    create trigger meter_correction after insert or update or delete on v2_request_usage
+      for each row execute function private.enqueue_v2_analytics_meter_correction();
+    insert into v2_models(model_slug,hidden,status) values ('model-a',false,'active'),('model-b',false,'active');
+    insert into v2_model_provider_routes(provider_model_id,model_slug,provider_slug,access_scope,phaseo_status,routing_enabled,status,is_stealth,provider_availability_status)
+      values ('route-a','model-a','provider','public','enabled',true,'active',false,'available'),
+        ('route-b','model-b','provider','public','enabled',true,'active',false,'available');
+    insert into v2_request_facts (request_event_id,workspace_id,request_id,occurred_at,routed_model_slug,provider_model_id,
+      success,status_code,latency_ms,throughput,generation_ms,cost_nanos,public_reporting_allowed)
+    select md5(i::text)::uuid, md5('workspace')::uuid, 'request-'||i,
+      date_trunc('day',now())-interval '1 day'+make_interval(secs=>i%1800), 'model-a', 'route-a', i%5<>0,
+      case when i%5=0 then 429 else 200 end, case when i%7=0 then null else i end,
+      case when i%11=0 then null else i/2.0 end,i*2,i*100,i%13<>0
+    from generate_series(1,3000) i;
+    update v2_request_facts set safe_metadata='{"testing_mode":true}'
+      where substring(request_id from 9)::integer%13=0;
+    update v2_request_facts set safe_metadata=coalesce(safe_metadata,'{}')||'{"labels":[{"key":"team","value":"search"}]}'
+      where substring(request_id from 9)::integer%7=0;
+    insert into v2_request_usage(request_event_id,meter_key,modality,unit,quantity)
+      select request_event_id,'input_tokens','text','token',3 from v2_request_facts;
+    insert into v2_analytics_outbox(request_event_id,workspace_id,occurred_at,status,available_at,updated_at)
+      select request_event_id,workspace_id,occurred_at,'pending',now(),now() from v2_request_facts
+      on conflict(request_event_id) do update set available_at=now();
+    -- Same public hour but another workspace is not covered privately.
+    insert into v2_request_facts(request_event_id,workspace_id,request_id,occurred_at,routed_model_slug,provider_model_id,success,public_reporting_allowed)
+      values (md5('other')::uuid,md5('other-workspace')::uuid,'other',date_trunc('day',now())-interval '1 day'+interval '55 minutes','model-a','route-a',true,true);
+    insert into v2_analytics_outbox(request_event_id,workspace_id,occurred_at,status,available_at)
+      select request_event_id,workspace_id,occurred_at,'pending',now() from v2_request_facts where request_id='other';
+    -- Not ready to acknowledge, even though the aggregate sees its fact.
+    insert into v2_request_facts(request_event_id,workspace_id,request_id,occurred_at,routed_model_slug,provider_model_id,success,public_reporting_allowed)
+      values (md5('future')::uuid,md5('workspace')::uuid,'future',date_trunc('day',now())-interval '1 day','model-a','route-a',true,true);
+    insert into v2_analytics_outbox(request_event_id,workspace_id,occurred_at,status,available_at)
+      select request_event_id,workspace_id,occurred_at,'pending',now()+interval '1 day' from v2_request_facts where request_id='future';
+  `);
+  return db;
+}
+
+async function drain(db, current, checkInitial = false) {
+  let calls = 0;
+  let grains = 0;
+  while (calls++ < 30) {
+    const result = (await db.query('select process_v2_analytics_outbox(250) result')).rows[0].result;
+    if (!result.selected) return { calls: calls-1, grains };
+    grains += result.private_grains + result.public_daily_grains + result.public_hourly_grains;
+    if (calls === 1 && current && checkInitial) {
+      assert.equal(result.selected,250);
+      assert.equal(result.coalesced,1750);
+      assert.equal(Number((await db.query("select count(*) n from v2_analytics_outbox where status='complete'")).rows[0].n),2000);
+      assert.equal((await db.query("select status from v2_analytics_outbox where request_event_id=md5('other')::uuid")).rows[0].status,'pending');
+      assert.equal((await db.query("select status from v2_analytics_outbox where request_event_id=md5('future')::uuid")).rows[0].status,'pending');
+      const freshness = (await db.query(`select
+        (select source_watermark from v2_rollup_refresh_state where rollup_name='public_hourly') watermark,
+        (select max(occurred_at) from v2_analytics_outbox where status='complete') acknowledged`)).rows[0];
+      assert.equal(freshness.watermark.getTime(),freshness.acknowledged.getTime(),'Freshness includes covered events beyond the seed batch');
+    }
+  }
+  assert.fail('Worker failed to drain ready events');
+}
+
+/** The 15-minute rollup's totals against the requests themselves, per workspace. */
+async function assertOverviewRollupExact(db, message) {
+  const rows = (await db.query(`select f.workspace_id, count(*)::int facts,
+      (select coalesce(sum(r.requests), 0)::int from v2_private_usage_15m r where r.workspace_id = f.workspace_id) rolled,
+      (select coalesce(sum(u.quantity), 0)::int from v2_request_usage u join v2_request_facts g using(request_event_id)
+        where g.workspace_id = f.workspace_id and u.meter_key = 'input_tokens') input_tokens,
+      (select coalesce(sum(r.input_tokens), 0)::int from v2_private_usage_15m r where r.workspace_id = f.workspace_id) rolled_input_tokens
+    from v2_request_facts f group by f.workspace_id order by 1`)).rows;
+  for (const row of rows) {
+    assert.equal(row.rolled, row.facts, message);
+    assert.equal(row.rolled_input_tokens, row.input_tokens, message);
+  }
+  const labels = (await db.query(`select
+      (select count(*)::int from v2_request_facts where safe_metadata @> '{"labels":[{"key":"team","value":"search"}]}') facts,
+      (select coalesce(sum(requests), 0)::int from v2_private_usage_labels_15m where label_key = 'team' and label_value = 'search') rolled`)).rows[0];
+  assert.equal(labels.rolled, labels.facts, message);
+}
+
+async function output(db) {
+  const data = {};
+  for (const table of tables) {
+    data[table] = (await db.query(`select to_jsonb(r)-'rollup_id'-'created_at'-'updated_at' as row from ${table} r order by (to_jsonb(r)-'rollup_id'-'created_at'-'updated_at')::text`)).rows;
+    data[`${table}_meters`] = (await db.query(`select to_jsonb(r)-'rollup_id'-'created_at'-'updated_at' as grain,
+      m.meter_key,m.modality,m.unit,m.quantity from ${table} r join ${table}_meters m using(rollup_id)
+      order by (to_jsonb(r)-'rollup_id'-'created_at'-'updated_at')::text,m.meter_key,m.modality,m.unit`)).rows;
+  }
+  return data;
+}
+
+let before;
+let after;
+try {
+  before = await fixture(false);
+  after = await fixture(true);
+  const oldWork = await drain(before, false);
+  const newWork = await drain(after, true, true);
+  assert.deepEqual(await output(after), await output(before), 'Every rollup and meter is equivalent after draining');
+  // Includes the event that isn't ready yet: the rollup rebuilds from every request in the hour.
+  await assertOverviewRollupExact(after, 'The 15-minute rollup counts every request once');
+  assert.equal(Number((await after.query("select count(distinct bucket_start) n from v2_private_usage_15m where workspace_id=md5('workspace')::uuid")).rows[0].n), 2);
+  assert(newWork.grains < oldWork.grains / 2, 'Already covered events remove repeated summary rebuilds');
+  // Spend rules: the workspace with an enabled rule is marked once; one with only a disabled rule is not.
+  assert.deepEqual((await after.query('select workspace_id from public.workspace_spend_rule_dirty')).rows.map(row => row.workspace_id), [(await after.query("select md5('workspace')::uuid id")).rows[0].id]);
+  await after.exec("update public.workspace_spend_rules set enabled = true where workspace_id = md5('other-workspace')::uuid; update public.workspace_spend_rules set deleted_at = now() where workspace_id = md5('workspace')::uuid; delete from public.workspace_spend_rule_dirty");
+  const publicCount = Number((await after.query('select sum(requests) n from v2_public_usage_daily')).rows[0].n);
+  assert.equal(publicCount,3002-Math.floor(3000/13));
+  // A correction arriving during a rebuild must not be acknowledged as covered.
+  await after.exec(`create function test_correct_during_rebuild() returns trigger language plpgsql as $$ begin
+      if current_setting('test.correct',true)='on' then
+        perform set_config('test.correct','off',false);
+        update public.v2_request_usage set quantity=13 where request_event_id=md5('1')::uuid;
+      end if;
+      return new;
+    end $$;
+    create trigger correct_during_rebuild before insert on v2_private_usage_daily
+      for each row execute function test_correct_during_rebuild();
+    update v2_analytics_outbox set status='pending',available_at=now() where request_event_id=md5('1')::uuid;
+    set test.correct='on';`);
+  await after.query('select process_v2_analytics_outbox(250)');
+  assert.equal((await after.query("select status from v2_analytics_outbox where request_event_id=md5('1')::uuid")).rows[0].status,'pending');
+  await drain(after, true);
+  assert.equal(Number((await after.query("select sum(quantity) n from v2_private_usage_daily_meters where meter_key='input_tokens'")).rows[0].n),9010);
+  assert.equal(Number((await after.query('select count(*) n from public.workspace_spend_rule_dirty')).rows[0].n), 0, 'a deleted rule does not mark its workspace');
+  // Moving an event requires rebuilding both the former and new identities.
+  await after.exec("update v2_request_facts set routed_model_slug='model-b',provider_model_id='route-b',occurred_at=occurred_at+interval '1 day',cloudflare_colo='LHR' where request_event_id=md5('1')::uuid");
+  await drain(after, true);
+  assert.equal(Number((await after.query('select count(*) n from private.v2_analytics_previous_grains')).rows[0].n),0);
+  assert.equal(Number((await after.query("select sum(requests) n from v2_private_usage_daily where model_slug='model-b'")).rows[0].n),1);
+  await assertOverviewRollupExact(after, 'A moved request leaves its former hour and joins its new one');
+  assert.equal(Number((await after.query("select sum(requests) n from v2_private_usage_15m where model_id='model-b'")).rows[0].n),1);
+  const corrected = await output(after);
+  assert.equal((await after.query('select process_v2_analytics_outbox(250) result')).rows[0].result.selected,0);
+  assert.deepEqual(await output(after),corrected,'Empty runs do not change rollups');
+  const privileges = (await after.query("select has_function_privilege('anon','public.process_v2_analytics_outbox(integer)','execute') anon,has_function_privilege('service_role','public.process_v2_analytics_outbox(integer)','execute') backend")).rows[0];
+  assert.deepEqual(privileges,{anon:false,backend:true});
+  await after.exec('begin');
+  await after.query('select process_v2_analytics_outbox(250)');
+  assert.equal((await after.query(`select exists(select 1 from pg_locks where locktype='advisory'
+    and pid=pg_backend_pid() and granted and objsubid=1
+    and classid::bigint=(hashtextextended('public.process_v2_analytics_outbox',0)>>32 & 4294967295)
+    and objid::bigint=(hashtextextended('public.process_v2_analytics_outbox',0) & 4294967295)) held`)).rows[0].held,true);
+  await after.exec('rollback');
+  const beforeRefresh = await output(after);
+  await after.query("select refresh_v2_analytics_range(current_date-interval '1 day',current_date,md5('workspace')::uuid)");
+  assert.deepEqual(await output(after),beforeRefresh,'Synchronous range refresh retains exact totals');
+  await assertOverviewRollupExact(after, 'A range refresh keeps the 15-minute rollup exact');
+  assert.equal(Number((await after.query("select count(*) n from v2_analytics_outbox where status in ('pending','processing','failed')")).rows[0].n),0);
+  // A request that only names its input model still leaves its former hour when moved or deleted.
+  await after.exec("update v2_request_facts set routed_model_slug=null,requested_model_input='custom/input-only' where request_event_id=md5('2')::uuid");
+  await drain(after, true);
+  await after.exec("update v2_request_facts set occurred_at=occurred_at+interval '2 hours' where request_event_id=md5('2')::uuid");
+  await drain(after, true);
+  await assertOverviewRollupExact(after, 'A request without a model slug leaves its former hour when moved');
+  await after.exec("delete from v2_request_usage where request_event_id=md5('2')::uuid; delete from v2_request_facts where request_event_id=md5('2')::uuid");
+  await drain(after, true);
+  await assertOverviewRollupExact(after, 'A deleted request without a model slug leaves the rollup');
+  console.log(JSON.stringify({ oldWork,newWork,checks:'All aggregate fields/meters, coalescing cap, workspace boundaries, readiness, public visibility, correction re-enqueue, moved grains, idempotency and grants passed' },null,2));
+} catch (error) {
+  console.error(error.message, error.detail ?? '', error.where?.split('\n')[0] ?? '');
+  process.exitCode = 1;
+} finally {
+  await before?.close();
+  await after?.close();
+}

@@ -1,0 +1,19 @@
+interface:
+  display_name: "Phaseo Usage Monitoring"
+  short_description: "Track Phaseo credits, spend and request costs"
+  brand_color: "#0069A8"
+  default_prompt: "Use $phaseo-usage-monitoring to explain where this workspace's Phaseo credits went and why a request cost what it did."
+policy:
+  allow_implicit_invocation: true
+dependencies:
+  tools:
+    - type: "mcp"
+      value: "phaseo-docs"
+      description: "Phaseo documentation search"
+      transport: "streamable_http"
+      url: "https://phaseo.app/docs/mcp"
+    - type: "mcp"
+      value: "phaseo"
+      description: "Phaseo models, pricing and usage"
+      transport: "streamable_http"
+      url: "https://mcp.phaseo.app/mcp"

@@ -1,0 +1,152 @@
+{
+  "source": "ElevenLabs GET /v1/convai/conversations/{id} for the recorded 2026-10-22 call elevenlabs-2.jsonl (eleven_realtime_v1_mini, header auth, two responses, client close at 35.1 s). The capture kept status and metadata; transcript and agent fields are omitted.",
+  "conversation": {
+    "conversation_id": "conv_4101m5hp9pdze1bajbw3gjssccra",
+    "status": "done",
+    "metadata": {
+      "start_time_unix_secs": 1792668916,
+      "call_duration_secs": 35,
+      "cost": 473,
+      "cost_fiat": 0.04713074131017228,
+      "charging": {
+        "dev_discount": false,
+        "is_burst": false,
+        "tier": "free",
+        "llm_usage": {
+          "irreversible_generation": {
+            "model_usage": {
+              "eleven_realtime_v1_mini": {
+                "input": {
+                  "tokens": 1174,
+                  "price": 0.00023480000000000002
+                },
+                "input_cache_read": {
+                  "tokens": 0,
+                  "price": 0
+                },
+                "input_cache_write": {
+                  "tokens": 0,
+                  "price": 0
+                },
+                "output_total": {
+                  "tokens": 17,
+                  "price": 0.000102
+                }
+              }
+            },
+            "detailed_model_usage": [
+              {
+                "config": {
+                  "model": "eleven_realtime_v1_mini",
+                  "service_tier": "standard"
+                },
+                "usage": {
+                  "input": {
+                    "tokens": 1174,
+                    "price": 0.00023480000000000002
+                  },
+                  "input_cache_read": {
+                    "tokens": 0,
+                    "price": 0
+                  },
+                  "input_cache_write": {
+                    "tokens": 0,
+                    "price": 0
+                  },
+                  "output_total": {
+                    "tokens": 17,
+                    "price": 0.000102
+                  }
+                }
+              }
+            ]
+          },
+          "initiated_generation": {
+            "model_usage": {
+              "eleven_realtime_v1_mini": {
+                "input": {
+                  "tokens": 1174,
+                  "price": 0.00023480000000000002
+                },
+                "input_cache_read": {
+                  "tokens": 0,
+                  "price": 0
+                },
+                "input_cache_write": {
+                  "tokens": 0,
+                  "price": 0
+                },
+                "output_total": {
+                  "tokens": 17,
+                  "price": 0.000102
+                }
+              }
+            },
+            "detailed_model_usage": [
+              {
+                "config": {
+                  "model": "eleven_realtime_v1_mini",
+                  "service_tier": "standard"
+                },
+                "usage": {
+                  "input": {
+                    "tokens": 1174,
+                    "price": 0.00023480000000000002
+                  },
+                  "input_cache_read": {
+                    "tokens": 0,
+                    "price": 0
+                  },
+                  "input_cache_write": {
+                    "tokens": 0,
+                    "price": 0
+                  },
+                  "output_total": {
+                    "tokens": 17,
+                    "price": 0.000102
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "llm_price": 0.0003368,
+        "llm_charge": 3,
+        "call_charge": 470,
+        "platform_charge": 470,
+        "platform_usage": {
+          "category_usage": {
+            "realtime_audio": {
+              "credits": 470,
+              "price": 0.04679394131017228,
+              "quantity": 0.5874242663771535
+            }
+          }
+        },
+        "platform_price": 0.04679394131017228,
+        "free_minutes_consumed": 0,
+        "free_llm_dollars_consumed": 0,
+        "tts_usage": {
+          "primary_tts_model": "eleven_v4_turbo",
+          "total_audio_output_seconds": 4.32,
+          "total_characters": 63,
+          "per_voice_usage": [
+            {
+              "voice_id": "nPczCjzI2devNBz1zQrb",
+              "audio_output_seconds": 4.32
+            }
+          ]
+        },
+        "asr_usage": {
+          "asr_model": "scribe_realtime",
+          "total_transcription_calls": 0,
+          "total_audio_input_seconds": 0
+        },
+        "analysis": null,
+        "subagent_charge": 0,
+        "voice_surcharge_charge": null
+      },
+      "termination_reason": "Client disconnected: 1000"
+    }
+  }
+}

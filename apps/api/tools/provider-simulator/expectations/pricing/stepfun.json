@@ -1,0 +1,152 @@
+{
+	"provider": "stepfun",
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from the catalogue database (v2_pricing_skus, v2_pricing_sku_meters)",
+	"clock": "2026-10-29T14:36:00.000Z",
+	"legend": { "rules": "[id (<sku_code>@v<version>#<meter_key>), plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"cards": [
+		{
+			"key": "stepfun:stepfun/step-1o-audio:text.generate",
+			"routes": ["stepfun:stepfun/step-1o-audio"],
+			"skus": ["offer-1fd8e531d9d548777712@v2"],
+			"rules": [
+				["offer-1fd8e531d9d548777712@v2#cached_read_text_tokens","standard","cached_read_text_tokens","0.71/1000000 token",100,null,null,null],
+				["offer-1fd8e531d9d548777712@v2#input_text_tokens","standard","input_text_tokens","3.57/1000000 token",100,null,null,null],
+				["offer-1fd8e531d9d548777712@v2#output_text_tokens","standard","output_text_tokens","8.57/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":10192720,"lines":[["cached_read_text_tokens",1024,"offer-1fd8e531d9d548777712@v2#cached_read_text_tokens","cached_read_text_tokens",727040],["input_text_tokens",1576,"offer-1fd8e531d9d548777712@v2#input_text_tokens","input_text_tokens",5626320],["output_text_tokens",448,"offer-1fd8e531d9d548777712@v2#output_text_tokens","output_text_tokens",3839360]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-1fd8e531d9d548777712@v2#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":76947850,"lines":[["cached_read_text_tokens",4567,"offer-1fd8e531d9d548777712@v2#cached_read_text_tokens","cached_read_text_tokens",3242570],["input_text_tokens",12347,"offer-1fd8e531d9d548777712@v2#input_text_tokens","input_text_tokens",44078790],["output_text_tokens",3457,"offer-1fd8e531d9d548777712@v2#output_text_tokens","output_text_tokens",29626490]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-1fd8e531d9d548777712@v2#input_text_tokens","offer-1fd8e531d9d548777712@v2#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":73705280,"lines":[["input_text_tokens",12347,"offer-1fd8e531d9d548777712@v2#input_text_tokens","input_text_tokens",44078790],["output_text_tokens",3457,"offer-1fd8e531d9d548777712@v2#output_text_tokens","output_text_tokens",29626490]]}}
+			]
+		},
+		{
+			"key": "stepfun:stepfun/step-1o-turbo-vision:text.generate",
+			"routes": ["stepfun:stepfun/step-1o-turbo-vision"],
+			"skus": ["offer-1b25560aa41ffb8b9f0e@v2"],
+			"rules": [
+				["offer-1b25560aa41ffb8b9f0e@v2#cached_read_text_tokens","standard","cached_read_text_tokens","0.07/1000000 token",100,null,null,null],
+				["offer-1b25560aa41ffb8b9f0e@v2#input_text_tokens","standard","input_text_tokens","0.36/1000000 token",100,null,null,null],
+				["offer-1b25560aa41ffb8b9f0e@v2#output_text_tokens","standard","output_text_tokens","1.15/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1154240,"lines":[["cached_read_text_tokens",1024,"offer-1b25560aa41ffb8b9f0e@v2#cached_read_text_tokens","cached_read_text_tokens",71680],["input_text_tokens",1576,"offer-1b25560aa41ffb8b9f0e@v2#input_text_tokens","input_text_tokens",567360],["output_text_tokens",448,"offer-1b25560aa41ffb8b9f0e@v2#output_text_tokens","output_text_tokens",515200]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-1b25560aa41ffb8b9f0e@v2#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":8740160,"lines":[["cached_read_text_tokens",4567,"offer-1b25560aa41ffb8b9f0e@v2#cached_read_text_tokens","cached_read_text_tokens",319690],["input_text_tokens",12347,"offer-1b25560aa41ffb8b9f0e@v2#input_text_tokens","input_text_tokens",4444920],["output_text_tokens",3457,"offer-1b25560aa41ffb8b9f0e@v2#output_text_tokens","output_text_tokens",3975550]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-1b25560aa41ffb8b9f0e@v2#input_text_tokens","offer-1b25560aa41ffb8b9f0e@v2#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":8420470,"lines":[["input_text_tokens",12347,"offer-1b25560aa41ffb8b9f0e@v2#input_text_tokens","input_text_tokens",4444920],["output_text_tokens",3457,"offer-1b25560aa41ffb8b9f0e@v2#output_text_tokens","output_text_tokens",3975550]]}}
+			]
+		},
+		{
+			"key": "stepfun:stepfun/step-3.5-flash:text.generate",
+			"routes": ["stepfun:stepfun/step-3.5-flash"],
+			"skus": ["offer-1b403b702f3bee4afdfd@v2"],
+			"rules": [
+				["offer-1b403b702f3bee4afdfd@v2#cached_read_text_tokens","standard","cached_read_text_tokens","0.02/1000000 token",100,null,null,null],
+				["offer-1b403b702f3bee4afdfd@v2#input_text_tokens","standard","input_text_tokens","0.1/1000000 token",100,null,null,null],
+				["offer-1b403b702f3bee4afdfd@v2#output_text_tokens","standard","output_text_tokens","0.3/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":312480,"lines":[["cached_read_text_tokens",1024,"offer-1b403b702f3bee4afdfd@v2#cached_read_text_tokens","cached_read_text_tokens",20480],["input_text_tokens",1576,"offer-1b403b702f3bee4afdfd@v2#input_text_tokens","input_text_tokens",157600],["output_text_tokens",448,"offer-1b403b702f3bee4afdfd@v2#output_text_tokens","output_text_tokens",134400]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-1b403b702f3bee4afdfd@v2#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":2363140,"lines":[["cached_read_text_tokens",4567,"offer-1b403b702f3bee4afdfd@v2#cached_read_text_tokens","cached_read_text_tokens",91340],["input_text_tokens",12347,"offer-1b403b702f3bee4afdfd@v2#input_text_tokens","input_text_tokens",1234700],["output_text_tokens",3457,"offer-1b403b702f3bee4afdfd@v2#output_text_tokens","output_text_tokens",1037100]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-1b403b702f3bee4afdfd@v2#input_text_tokens","offer-1b403b702f3bee4afdfd@v2#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2271800,"lines":[["input_text_tokens",12347,"offer-1b403b702f3bee4afdfd@v2#input_text_tokens","input_text_tokens",1234700],["output_text_tokens",3457,"offer-1b403b702f3bee4afdfd@v2#output_text_tokens","output_text_tokens",1037100]]}}
+			]
+		},
+		{
+			"key": "stepfun:stepfun/step-asr-1.1-stream:audio.transcription",
+			"routes": ["stepfun:stepfun/step-asr-1.1-stream"],
+			"skus": ["offer-f7e825edacbf846c6acd@v2"],
+			"rules": [
+				["offer-f7e825edacbf846c6acd@v2#input_audio_seconds","standard","input_audio_seconds","0.37/3600 second",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_audio_seconds":60},"expected":{"nanos":6166667,"lines":[["input_audio_seconds",60,"offer-f7e825edacbf846c6acd@v2#input_audio_seconds","input_audio_seconds",6166667]]}},
+				{"id":"rule.standard.input_audio_seconds","kind":"rule","targets":["offer-f7e825edacbf846c6acd@v2#input_audio_seconds"],"plan":"standard","usage":{"requests":1,"input_audio_seconds":61},"expected":{"nanos":6269444,"lines":[["input_audio_seconds",61,"offer-f7e825edacbf846c6acd@v2#input_audio_seconds","input_audio_seconds",6269444]]}}
+			]
+		},
+		{
+			"key": "stepfun:stepfun/step-asr:audio.transcription",
+			"routes": ["stepfun:stepfun/step-asr"],
+			"skus": ["offer-e161a4801b175515fe79@v2"],
+			"rules": [
+				["offer-e161a4801b175515fe79@v2#input_audio_seconds","standard","input_audio_seconds","0.13/3600 second",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_audio_seconds":60},"expected":{"nanos":2166667,"lines":[["input_audio_seconds",60,"offer-e161a4801b175515fe79@v2#input_audio_seconds","input_audio_seconds",2166667]]}},
+				{"id":"rule.standard.input_audio_seconds","kind":"rule","targets":["offer-e161a4801b175515fe79@v2#input_audio_seconds"],"plan":"standard","usage":{"requests":1,"input_audio_seconds":61},"expected":{"nanos":2202778,"lines":[["input_audio_seconds",61,"offer-e161a4801b175515fe79@v2#input_audio_seconds","input_audio_seconds",2202778]]}}
+			]
+		},
+		{
+			"key": "stepfun:stepfun/step-audio-2:text.generate",
+			"routes": ["stepfun:stepfun/step-audio-2"],
+			"skus": ["offer-2afc5332d50522ee7e79@v2"],
+			"rules": [
+				["offer-2afc5332d50522ee7e79@v2#cached_read_text_tokens","standard","cached_read_text_tokens","0.29/1000000 token",100,null,null,null],
+				["offer-2afc5332d50522ee7e79@v2#input_text_tokens","standard","input_text_tokens","1.43/1000000 token",100,null,null,null],
+				["offer-2afc5332d50522ee7e79@v2#output_text_tokens","standard","output_text_tokens","10/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":7030640,"lines":[["cached_read_text_tokens",1024,"offer-2afc5332d50522ee7e79@v2#cached_read_text_tokens","cached_read_text_tokens",296960],["input_text_tokens",1576,"offer-2afc5332d50522ee7e79@v2#input_text_tokens","input_text_tokens",2253680],["output_text_tokens",448,"offer-2afc5332d50522ee7e79@v2#output_text_tokens","output_text_tokens",4480000]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-2afc5332d50522ee7e79@v2#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":53550640,"lines":[["cached_read_text_tokens",4567,"offer-2afc5332d50522ee7e79@v2#cached_read_text_tokens","cached_read_text_tokens",1324430],["input_text_tokens",12347,"offer-2afc5332d50522ee7e79@v2#input_text_tokens","input_text_tokens",17656210],["output_text_tokens",3457,"offer-2afc5332d50522ee7e79@v2#output_text_tokens","output_text_tokens",34570000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-2afc5332d50522ee7e79@v2#input_text_tokens","offer-2afc5332d50522ee7e79@v2#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":52226210,"lines":[["input_text_tokens",12347,"offer-2afc5332d50522ee7e79@v2#input_text_tokens","input_text_tokens",17656210],["output_text_tokens",3457,"offer-2afc5332d50522ee7e79@v2#output_text_tokens","output_text_tokens",34570000]]}}
+			]
+		},
+		{
+			"key": "stepfun:stepfun/step-tts-2:audio.speech",
+			"routes": ["stepfun:stepfun/step-tts-2"],
+			"skus": ["offer-f5648d00058f4548b967@v2"],
+			"rules": [
+				["offer-f5648d00058f4548b967@v2#input_characters","standard","input_characters","0.4/10000 character",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_characters":1000},"expected":{"nanos":40000000,"lines":[["input_characters",1000,"offer-f5648d00058f4548b967@v2#input_characters","input_characters",40000000]]}},
+				{"id":"rule.standard.input_characters","kind":"rule","targets":["offer-f5648d00058f4548b967@v2#input_characters"],"plan":"standard","usage":{"requests":1,"input_characters":1234},"expected":{"nanos":49360000,"lines":[["input_characters",1234,"offer-f5648d00058f4548b967@v2#input_characters","input_characters",49360000]]}}
+			]
+		},
+		{
+			"key": "stepfun:stepfun/step-tts-mini:audio.speech",
+			"routes": ["stepfun:stepfun/step-tts-mini"],
+			"skus": ["offer-b1345f999d116a6d849e@v2"],
+			"rules": [
+				["offer-b1345f999d116a6d849e@v2#input_characters","standard","input_characters","0.13/10000 character",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_characters":1000},"expected":{"nanos":13000000,"lines":[["input_characters",1000,"offer-b1345f999d116a6d849e@v2#input_characters","input_characters",13000000]]}},
+				{"id":"rule.standard.input_characters","kind":"rule","targets":["offer-b1345f999d116a6d849e@v2#input_characters"],"plan":"standard","usage":{"requests":1,"input_characters":1234},"expected":{"nanos":16042000,"lines":[["input_characters",1234,"offer-b1345f999d116a6d849e@v2#input_characters","input_characters",16042000]]}}
+			]
+		},
+		{
+			"key": "stepfun:stepfun/stepaudio-2-asr-pro:audio.transcription",
+			"routes": ["stepfun:stepfun/stepaudio-2-asr-pro"],
+			"skus": ["offer-87f3159c7267ad27d54a@v2"],
+			"rules": [
+				["offer-87f3159c7267ad27d54a@v2#input_audio_seconds","standard","input_audio_seconds","0.29/3600 second",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_audio_seconds":60},"expected":{"nanos":4833333,"lines":[["input_audio_seconds",60,"offer-87f3159c7267ad27d54a@v2#input_audio_seconds","input_audio_seconds",4833333]]}},
+				{"id":"rule.standard.input_audio_seconds","kind":"rule","targets":["offer-87f3159c7267ad27d54a@v2#input_audio_seconds"],"plan":"standard","usage":{"requests":1,"input_audio_seconds":61},"expected":{"nanos":4913889,"lines":[["input_audio_seconds",61,"offer-87f3159c7267ad27d54a@v2#input_audio_seconds","input_audio_seconds",4913889]]}}
+			]
+		},
+		{
+			"key": "stepfun:stepfun/stepaudio-2.5-asr:audio.transcription",
+			"routes": ["stepfun:stepfun/stepaudio-2.5-asr"],
+			"skus": ["offer-db8506671737d89f32f7@v2"],
+			"rules": [
+				["offer-db8506671737d89f32f7@v2#input_audio_seconds","standard","input_audio_seconds","0.022/3600 second",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_audio_seconds":60},"expected":{"nanos":366667,"lines":[["input_audio_seconds",60,"offer-db8506671737d89f32f7@v2#input_audio_seconds","input_audio_seconds",366667]]}},
+				{"id":"rule.standard.input_audio_seconds","kind":"rule","targets":["offer-db8506671737d89f32f7@v2#input_audio_seconds"],"plan":"standard","usage":{"requests":1,"input_audio_seconds":61},"expected":{"nanos":372778,"lines":[["input_audio_seconds",61,"offer-db8506671737d89f32f7@v2#input_audio_seconds","input_audio_seconds",372778]]}}
+			]
+		},
+		{
+			"key": "stepfun:stepfun/stepaudio-2.5-tts:audio.speech",
+			"routes": ["stepfun:stepfun/stepaudio-2.5-tts"],
+			"skus": ["offer-20eb99bf45fc493efa2f@v2"],
+			"rules": [
+				["offer-20eb99bf45fc493efa2f@v2#input_characters","standard","input_characters","0.85/10000 character",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_characters":1000},"expected":{"nanos":85000000,"lines":[["input_characters",1000,"offer-20eb99bf45fc493efa2f@v2#input_characters","input_characters",85000000]]}},
+				{"id":"rule.standard.input_characters","kind":"rule","targets":["offer-20eb99bf45fc493efa2f@v2#input_characters"],"plan":"standard","usage":{"requests":1,"input_characters":1234},"expected":{"nanos":104890000,"lines":[["input_characters",1234,"offer-20eb99bf45fc493efa2f@v2#input_characters","input_characters",104890000]]}}
+			]
+		}
+	]
+}

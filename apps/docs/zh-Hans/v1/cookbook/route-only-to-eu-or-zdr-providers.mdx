@@ -1,126 +1,110 @@
 ---
-title: "仅路由到欧盟或支持 ZDR 的提供方"
+title: "仅路由到欧盟或支持 ZDR 的提供商"
+sidebarTitle: "路由到欧盟或 ZDR 提供商"
 icon: "globe"
-description: "在单个请求中设置数据驻留和零数据保留要求，使请求只路由到符合条件的提供方。"
+description: "应用请求级的数据驻留和零数据保留要求，使模型只路由到合规的提供商服务。"
 ---
 
-如果某个请求需要出于合规或数据处理原因筛选提供方，但你不想更改整个工作区的策略，请使用此方案。
+在单个请求的 `provider` 对象中添加数据驻留和 <Tooltip tip="零数据保留：提供商不保留提示或输出。">ZDR</Tooltip> 要求，Phaseo 会在对其余提供商排序之前，移除所有不满足要求的提供商服务。完成后，一个工作流只会在欧盟或支持 ZDR 的提供商上运行，而无需更改整个工作区的策略。
 
-## 目标
+该请求可直接用于生产环境。如果该模型没有任何提供商满足全部要求，请求会在调用任何提供商之前失败，因此请先检查可用性。
 
-- 要求在欧盟执行。
-- 要求数据驻留在欧盟。
-- 要求提供方支持零数据保留。
+| 字段 | 只保留满足以下条件的提供商 |
+| --- | --- |
+| `required_execution_region: "eu"` | 在欧盟运行模型 |
+| `required_data_region: "eu"` | 在欧盟处理提示和补全数据 |
+| `require_zero_data_retention: true` | 满足零数据保留要求 |
 
-## 1. 在请求中添加数据驻留要求
+## 发送受限请求
 
-直接在请求正文中设置提供方要求。
+<Steps>
+<Step title="确认有符合条件的提供商">
+
+在模型页面上，提供商卡片会显示区域服务（例如 **OpenAI EU** 或 **Google Vertex EU**）、ZDR 支持情况，以及每个提供商的数据政策说明和来源。对于欧盟，你还可以列出欧盟网关提供的模型：
+
+```bash
+curl https://eu.api.phaseo.app/v1/models \
+  -H "Authorization: Bearer $PHASEO_API_KEY"
+```
+
+</Step>
+<Step title="只添加你需要的要求">
+
+每项要求都会缩小候选范围，因此请求可能会路由到价格更高的区域服务，或者根本没有可用的提供商。只发送你的策略要求的内容：
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "google/gemini-3.1-flash-lite",
+    "model": "openai/gpt-5.6-luna",
     "input": "Summarize the ticket in one line.",
     "provider": {
       "required_execution_region": "eu",
-      "required_data_region": "eu",
-      "require_zero_data_retention": true
-    }
+      "required_data_region": "eu"
+    },
+    "meta": true
   }'
 ```
 
-```typescript TypeScript SDK
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "google/gemini-3.1-flash-lite",
+  model: "openai/gpt-5.6-luna",
   input: "Summarize the ticket in one line.",
   provider: {
     required_execution_region: "eu",
     required_data_region: "eu",
-    require_zero_data_retention: true,
   },
+  meta: true,
 });
 
-console.log(response.output_text);
+console.log(response.meta?.routing);
 ```
 
-```python Python SDK
+```python Python
+import os
+
 from phaseo import Phaseo
 
-client = Phaseo(api_key="YOUR_API_KEY")
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
 response = client.generate_response(
     {
-        "model": "google/gemini-3.1-flash-lite",
+        "model": "openai/gpt-5.6-luna",
         "input": "Summarize the ticket in one line.",
         "provider": {
             "required_execution_region": "eu",
             "required_data_region": "eu",
-            "require_zero_data_retention": True,
         },
+        "meta": True,
     }
 )
 
-print(response.get("output_text"))
+print(response["meta"]["routing"]["selected_provider"])
 ```
 </CodeGroup>
 
-此流程支持的请求级筛选条件：
+如果还要求 ZDR，请添加 `"require_zero_data_retention": true`。三项同时设置时，模型至少需要一个同时满足 ZDR 的欧盟提供商。
 
-- `required_execution_region`
-- `required_data_region`
-- `require_zero_data_retention`
+</Step>
+<Step title="查看它在哪里运行">
 
-## 2. 仅使用满足策略所需的规则
+`meta.routing.selected_provider` 给出处理该请求的提供商，例如 `openai-eu`。**设置 → 用量 → 日志**中的该请求会记录要求的区域和选中的提供商。
 
-只要求工作负载真正需要的条件。
+</Step>
+</Steps>
 
-例如：
+## 选择请求字段、欧盟网关还是工作区设置
 
-- 仅限制执行地点：
-  - `required_execution_region: "eu"`
-- 仅限制数据地点：
-  - `required_data_region: "eu"`
-- 仅选择支持 ZDR 的提供方：
-  - `require_zero_data_retention: true`
+| 使用 | 适用情况 |
+| --- | --- |
+| `api.phaseo.app` 上的这些请求字段 | 规则只适用于一个工作流、客户或请求。所有端点和功能仍然可用。 |
+| [`eu.api.phaseo.app`](../guides/regional-routing) | 某个服务的所有文本请求都必须留在欧盟。该主机名会强制执行区域限制，并拒绝媒体输入、Phaseo 服务器工具和提供商托管的工具。在那里发送指向其他区域的 `required_execution_region` 或 `required_data_region`，会返回 `400 validation_error`，原因为 `deployment_region_conflict`。 |
+| **设置 → 隐私** | 规则适用于工作区中的每个请求。 |
 
-## 3. 预期候选提供方会减少
-
-这些筛选条件会在提供方排序前应用，因此可能会完全排除某些提供方。
-
-这意味着：
-
-- 请求可能会路由到价格更高的区域性方案。
-- 提供方列表可能会大幅缩小。
-- 如果该模型没有提供方满足要求，请求可能会失败。
-
-## 4. 如有条件，提前检查模型页面
-
-正式部署请求前，请在模型页面的提供方卡片中检查：
-
-- 区域性方案，例如 `OpenAI EU` 或 `Google Vertex EU`
-- 是否支持 ZDR
-- 提供方数据策略的说明和来源
-
-这样可以先确认至少有一个符合条件的提供方，再将要求应用到生产流量。
-
-## 5. 使用工作区隐私设置作为默认值
-
-如果策略应适用于工作区的所有请求，请在**设置 -> 隐私**中配置，而不是在每个请求中重复相同的筛选条件。
-
-以下情况适合使用请求字段：
-
-- 按工作流设置
-- 按客户设置
-- 按请求设置
-
-## 相关指南
-
-- [路由与故障回退](../guides/routing-and-fallbacks.mdx)
-- [预设](../guides/presets.mdx)
+区域路由限制的是由哪些提供商处理模型调用。它目前还不是端到端的数据驻留保证；[哪些内容会留在区域之外](../guides/regional-routing#what-stays-outside-the-region)列出了共享系统。如果只想限制提供商而不设数据驻留规则，请参见[固定或忽略提供商](./pin-or-ignore-providers-per-request)。

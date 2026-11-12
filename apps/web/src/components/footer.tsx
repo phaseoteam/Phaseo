@@ -1,6 +1,7 @@
-import Image from "next/image";
+import { useTranslations, useLocale } from "@/i18n/react";
+import Image from "@/components/image";
 import { Link } from "@/i18n/navigation";
-import { getLocale, getTranslations } from "next-intl/server";
+import { IntentLink } from "@/components/navigation/IntentLink";
 import { FooterStatusIndicator } from "@/components/FooterStatusIndicator";
 import { ThemeSelector } from "@/components/theme-toggle";
 import { Logo } from "@/components/Logo";
@@ -125,7 +126,7 @@ const FOOTER_LABEL_KEYS = {
 
 type FooterLabel = keyof typeof FOOTER_LABEL_KEYS;
 
-async function FooterLinkList({
+function FooterLinkList({
 	title,
 	links,
 	titleKey,
@@ -134,7 +135,8 @@ async function FooterLinkList({
 	links: FooterLink[];
 	titleKey: "explore" | "build" | "resources" | "company" | "community";
 }) {
-	const [t, locale] = await Promise.all([getTranslations("Common.footer"), getLocale()]);
+	const t = useTranslations("Common.footer");
+	const locale = useLocale();
 	return (
 		<div className="flex min-w-0 flex-col gap-2">
 			<h3 className="text-sm font-semibold text-zinc-700 dark:text-zinc-300">
@@ -145,7 +147,7 @@ async function FooterLinkList({
 					<li key={`${title}-${link.href}`}>
 						<Link
 							href={link.docs ? getLocalizedDocsHref(locale, link.href) : link.href}
-							prefetch={link.external ? undefined : false}
+							prefetch={false}
 							target={link.external ? "_blank" : undefined}
 							rel={link.external ? "noopener noreferrer" : undefined}
 							className={`group inline-flex min-h-7 max-w-full items-center break-words py-0.5 text-sm text-zinc-600 hover:text-zinc-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400/70 lg:min-h-0 lg:py-0 dark:text-zinc-400 dark:hover:text-zinc-50 ${link.logoId ? "lg:w-28" : ""}`}
@@ -173,15 +175,15 @@ async function FooterLinkList({
 	);
 }
 
-export default async function Footer() {
-	const t = await getTranslations("Common.footer");
+export default function Footer() {
+	const t = useTranslations("Common.footer");
 	return (
 		<footer className="mt-auto w-full overflow-x-clip border-t border-zinc-200/80 bg-white dark:border-zinc-800 dark:bg-zinc-950">
 			<div className="mx-auto flex w-full max-w-[1280px] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
 				<div className="grid grid-cols-2 items-start gap-x-4 gap-y-6 sm:gap-x-6 lg:grid-cols-5 xl:grid-cols-[minmax(0,1.25fr)_repeat(5,minmax(0,0.8fr))]">
 					<div className="col-span-2 min-w-0 lg:col-span-5 xl:col-span-1">
 						<div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
-							<Link href="/" className="inline-flex w-fit max-w-full items-center">
+							<IntentLink href="/" className="inline-flex w-fit max-w-full items-center">
 								<Image
 									src="/wordmark_light.svg"
 									alt="Phaseo"
@@ -196,7 +198,7 @@ export default async function Footer() {
 									height={40}
 									className="hidden h-7 w-[108px] dark:block"
 								/>
-							</Link>
+							</IntentLink>
 							<div className="relative order-3 top-px w-full max-w-full md:order-none md:w-auto">
 								<FooterStatusIndicator />
 							</div>
@@ -249,12 +251,12 @@ export default async function Footer() {
 											{t("issue")}
 						</Link>
 						<span aria-hidden="true">·</span>
-						<Link
+						<IntentLink
 							href="/contact"
 							className="text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50"
 						>
 											{t("support")}
-						</Link>
+						</IntentLink>
 					</p>
 					<p className="inline-flex flex-wrap items-center gap-x-1.5 gap-y-1 sm:max-md:hidden">
 						<span>{t("needHelp")}</span>
@@ -267,12 +269,12 @@ export default async function Footer() {
 											{t("openIssue")}
 						</Link>
 						<span>{t("or")}</span>
-						<Link
+						<IntentLink
 							href="/contact"
 							className="text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-zinc-50"
 						>
 											{t("contactSupport")}
-						</Link>
+						</IntentLink>
 					</p>
 				</div>
 			</div>

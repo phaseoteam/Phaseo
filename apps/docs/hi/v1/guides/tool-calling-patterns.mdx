@@ -1,23 +1,19 @@
 ---
 icon: "waypoints"
 title: "टूल कॉलिंग पैटर्न"
-description: "Chat completions और responses endpoints के लिए भरोसेमंद tool-calling loops।"
+description: "Chat Completions और Responses एंडपॉइंट के लिए भरोसेमंद टूल-कॉलिंग लूप।"
 ---
 
-Tool-calling loops को deterministic और debug करने योग्य रखने के लिए ये patterns अपनाएँ।
+मॉडल के किसी टूल को कॉल करने के बाद, एक अगला अनुरोध भेजें जिसमें बातचीत, मॉडल की कॉल और आपके टूल का नतीजा दोहराया गया हो। फिर मॉडल अपना जवाब लिखता है, या कोई दूसरा टूल कॉल करता है और आप यही दोहराते हैं। वह एंडपॉइंट इस्तेमाल करें जिसका मैसेज फ़ॉर्मेट आपका ऐप पहले से इस्तेमाल करता है: OpenAI-शैली के मैसेज लूप के लिए `/v1/chat/completions`, Responses API के लिए `/v1/responses`, और Anthropic-नेटिव ऐप्स के लिए `/v1/messages`।
 
-## पैटर्न 1: Chat Completions चक्र
+<Tabs>
+<Tab title="Chat Completions">
 
-1. User message और tool definitions भेजें।
-2. अगर `finish_reason` `tool_calls` हो, तो हर tool call execute करें।
-3. Tool outputs को `role: "tool"` messages के रूप में वापस भेजें।
-4. Assistant का final answer पढ़ें।
-
-### अनुरोध (आगे की कड़ी)
+जब `finish_reason` `tool_calls` हो, तो हर कॉल चलाएँ, फिर assistant मैसेज बिना बदले भेजें और उसके बाद हर कॉल के लिए एक `role: "tool"` मैसेज, जो `tool_call_id` से मेल खाता हो। `tools` फिर से भेजें।
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "messages": [
     { "role": "user", "content": "What is the weather in Seattle?" },
     {
@@ -56,16 +52,14 @@ Tool-calling loops को deterministic और debug करने योग्�
 }
 ```
 
-## पैटर्न 2: Responses चक्र
+</Tab>
+<Tab title="Responses">
 
-`/v1/responses` में model tool calls `function_call` type के output items के रूप में दिखते हैं।
-फिर `function_call_output` input items के साथ follow-up request भेजें।
-
-### अनुरोध (अनुवर्ती)
+कॉल `function_call` प्रकार के आउटपुट आइटम के रूप में आती हैं। कॉल आइटम को इनपुट के रूप में वापस भेजें, उसके बाद उसी `call_id` वाला एक `function_call_output` आइटम।
 
 ```json
 {
-  "model": "openai/gpt-5-nano",
+  "model": "openai/gpt-6-astra",
   "input": [
     {
       "type": "message",
@@ -87,8 +81,7 @@ Tool-calling loops को deterministic और debug करने योग्�
 }
 ```
 
-## एंडपॉइंट चुनें
+</Tab>
+</Tabs>
 
-- OpenAI-style message loops पहले से हों, तो `/v1/chat/completions` को प्राथमिकता दें।
-- App Responses API पर standardized हो, तो `/v1/responses` चुनें।
-- App Anthropic-native हो, तो `/v1/messages` उपयोग करें।
+कोई कॉल चलाने से पहले उसके आर्ग्युमेंट सत्यापित करें; [टूल कॉलिंग की सुरक्षा](./tool-calling-safety) देखें।

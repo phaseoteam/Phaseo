@@ -4,6 +4,7 @@
 
 import type { PriceCard } from "@pipeline/pricing/types";
 import { applyByokServiceFee } from "@pipeline/pricing/byok-fee";
+import { keyIdIsOAuthClientId } from "@core/request-key";
 import { reserveWalletCredits } from "@core/wallet-reservations";
 import { buildVideoPricingRequestOptions } from "@core/video-request-options";
 import { computeVideoPricedUsage } from "@core/video-pricing";
@@ -14,7 +15,8 @@ export type VideoReservationDenial = { status: number; code: string; reason: str
 
 function reservationDenial(reason: string): VideoReservationDenial | null {
 	if (isInsufficientVideoReservationStatus(reason)) return { status: 402, code: "insufficient_funds", reason };
-	if (/^(daily|weekly|monthly)_(cost|request)_limit_reached$/.test(reason) || reason === "key_limit_soft_blocked") {
+	if (/^(daily|weekly|monthly)_(cost|request)_limit_reached$/.test(reason) || reason === "key_limit_soft_blocked" ||
+		/^department_(daily|weekly|monthly)_cost_budget_reached$/.test(reason)) {
 		return { status: 429, code: "key_limit_exceeded", reason };
 	}
 	if (/^workspace_(daily|weekly|monthly|lifetime)_cost_budget_reached$/.test(reason)) {
@@ -119,7 +121,8 @@ function hasPositiveVideoPricingRule(card: PriceCard): boolean {
 export async function reserveVideoGenerationCredits(args: {
 	workspaceId: string;
 	keyId?: string | null;
-	authMethod?: "api_key" | "oauth";
+	/** The request's key reference; an OAuth access token's (`oauth_…`) key ID is its client ID. */
+	apiKeyRef?: string | null;
 	onReservationDenied?: (denial: VideoReservationDenial) => void;
 	videoId: string;
 	providerId: string;
@@ -127,11 +130,14 @@ export async function reserveVideoGenerationCredits(args: {
 	seconds?: number | null;
 	pricingCard?: PriceCard | null;
 	requestOptions?: Record<string, unknown>;
+	/** Estimated token meters for a model billed by tokens; see computeVideoPricedUsage. */
+	providerUsageMeters?: Record<string, number> | null;
 	isByok?: boolean;
 }): Promise<VideoReservationResult> {
 	const reservationId = `${VIDEO_RESERVATION_PREFIX}${args.videoId}`;
-	const keyId = args.authMethod === "oauth" ? null : args.keyId;
-	if (!keyId && args.authMethod !== "oauth") throw new Error("video_reservation_key_required");
+	const keyIsOAuthClient = keyIdIsOAuthClientId(args.apiKeyRef);
+	const keyId = keyIsOAuthClient ? null : args.keyId;
+	if (!keyId && !keyIsOAuthClient) throw new Error("video_reservation_key_required");
 	const seconds = toPositiveNumber(args.seconds);
 	if (!seconds || !args.pricingCard) {
 		return {
@@ -146,6 +152,7 @@ export async function reserveVideoGenerationCredits(args: {
 		seconds,
 		card: args.pricingCard,
 		model: args.model,
+		providerUsageMeters: args.providerUsageMeters,
 		requestOptions: {
 			...(args.requestOptions ?? {}),
 			...buildVideoPricingRequestOptions({

@@ -1,100 +1,83 @@
 ---
-title: "Implementar guardrails en claves de API"
+title: "Despliega guardrails en las claves de API"
 icon: "shield-check"
-description: "Aplica guardrails a claves de API, prueba su aplicación antes del despliegue y verifica bloqueos, redacciones y alertas en la actividad."
+description: "Aplica guardrails a las claves de API, prueba su aplicación antes del despliegue y verifica bloqueos, ocultaciones y marcas en las vistas de actividad."
 ---
 
-Usa esta guía cuando necesites proteger una o varias claves de API con límites de presupuesto, restricciones de enrutamiento, comprobaciones de inyección de prompts o controles de información sensible.
+Crea un guardrail en **Configuración → Guardrails**, asígnalo a una clave de API de bajo riesgo y amplíalo solo cuando los registros muestren que se comporta bien. Al terminar, esa clave solo podrá llegar a los proveedores y modelos que permitas, y sus prompts se analizarán en busca de inyección de prompts y datos sensibles antes de llegar a un modelo.
 
-## 1. Crea el guardrail en el espacio de trabajo
+Este es un procedimiento del panel; la misma política se puede automatizar con la [API de guardrails](../api-reference/endpoint/guardrails-create).
 
-Crea primero los guardrails en el nivel del espacio de trabajo para poder reutilizar la misma política en varias claves.
+```mermaid
+flowchart LR
+  ws["Reglas de privacidad del espacio de trabajo"] --> gr["Guardrail: manejo de datos"]
+  gr --> prov["Lista de proveedores permitidos o bloqueados"]
+  prov --> mdl["Lista de modelos permitidos"]
+  mdl --> scan["Análisis de inyección de prompts e información sensible"]
+  scan -->|"marcar, ocultar o bloquear"| route["Enruta la solicitud"]
+```
 
-Para empezar:
+Las reglas de privacidad del espacio de trabajo se aplican primero; un guardrail solo puede restringirlas más. Los guardrails no limitan el gasto: para eso, fija un límite en la clave o un [presupuesto del espacio de trabajo](../api-reference/limits#key-limits-and-budgets).
 
-- añade restricciones de modelos y proveedores antes de las comprobaciones de contenido
-- limita el primer despliegue a una sola clave o entorno
-- asigna al guardrail un nombre que describa el resultado de la política, no el nombre del equipo
+## Despliégalo
 
-## 2. Asócialo a una clave de API
+<Steps>
+<Step title="Crea el guardrail">
 
-En la página de ajustes de la clave de API, asocia el guardrail a la clave que deba aplicar la política.
+Abre **Configuración → Guardrails → Nuevo guardrail**. Ponle un nombre según lo que aplica, como `eu-models-pii-redact`, no según un equipo, para poder reutilizarlo en varias claves.
 
-Sigue este orden:
+Configura el acceso a rutas antes que las comprobaciones de contenido:
 
-1. empieza con una clave de pruebas o de bajo riesgo
-2. cuando sea posible, asocia un solo guardrail cada vez
-3. confirma que el cuadro de detalles de la clave muestra el guardrail aplicado
+| Ajuste | Opciones |
+| --- | --- |
+| **Modo de proveedores** | Permitir a todos los proveedores, Permitir solo proveedores seleccionados o Permitir todos excepto los proveedores seleccionados |
+| **Modo de modelos** | Permitir todos los modelos o Solo permitir modelos seleccionados (se aplica después del filtrado de proveedores) |
+| **Manejo de datos** | Sólo ZDR, y si siguen siendo elegibles los endpoints gratuitos o de pago que pueden entrenar con las entradas |
 
-## 3. Configura la política de presupuesto y las restricciones de enrutamiento
+Una primera política habitual bloquea los proveedores de poca confianza y permite solo los modelos de producción exactos a los que debe llegar la clave. Usa la vista previa para comprobar qué proveedores y modelos siguen siendo enrutables, y si **Solo permitir** es más restrictivo de lo que querías.
 
-Una combinación habitual incluye:
+</Step>
+<Step title="Añade comprobaciones de contenido">
 
-- un límite de coste diario
-- una lista de proveedores bloqueados para proveedores de poca confianza
-- una lista de modelos permitidos con los modelos de producción exactos que deben seguir disponibles para el enrutamiento
+**Inyección de prompts** analiza el contenido que aporta el usuario en busca de patrones de inyección habituales. **Información sensible** detecta datos antes de que la solicitud salga de Phaseo:
 
-Usa la vista previa en tiempo real del editor de guardrails para comprobar:
+| Detector | Se oculta como | Añade latencia |
+| --- | --- | --- |
+| Dirección de correo electrónico | `[EMAIL]` | No |
+| Número de teléfono | `[PHONE]` | No |
+| Número de la Seguridad Social de EE. UU. | `[SSN]` | No |
+| Número de tarjeta de crédito | `[CREDIT_CARD]` | No |
+| Dirección IP (IPv4) | `[IP_ADDRESS]` | No |
+| Nombre de persona | `[PERSON_NAME]` | Sí |
+| Dirección postal | `[ADDRESS]` | Sí |
 
-- qué proveedores siguen permitidos
-- qué modelos quedan bloqueados
-- si `Only allow` restringe más de lo previsto
+Cada comprobación tiene una acción: **Marcar**, **Ocultar** o **Bloquear**. Empieza la inyección de prompts en **Marcar** u **Ocultar**, y pasa a **Bloquear** solo después de revisar los falsos positivos. Usa primero los detectores rápidos. Añade patrones personalizados como reglas regex explícitas.
 
-## 4. Añade reglas contra la inyección de prompts y para la información sensible
+</Step>
+<Step title="Pruébalo en la vista previa">
 
-Para un despliegue práctico:
+Antes de guardar, pasa tres entradas por la vista previa: una inofensiva, una que claramente deba detenerse y un prompt realista de producción. Comprueba el texto de ocultación, el resultado de bloqueo o permiso, y que no coincida nada que no tenga relación.
 
-- empieza con `flag` o `redact` para la inyección de prompts
-- usa `block` solo después de revisar los falsos positivos
-- empieza por reglas deterministas para información sensible:
-  - correo electrónico
-  - teléfono
-  - número de la Seguridad Social
-  - tarjeta de crédito
-  - dirección IP
+</Step>
+<Step title="Asígnalo a una clave">
 
-Si necesitas patrones personalizados, añádelos como reglas regex explícitas y pruébalos en la entrada de vista previa antes de guardar.
+En **Aplicar a claves**, elige una clave de staging o de bajo riesgo. Puedes asignar el guardrail mientras lo creas. **Aplicar a miembros** lo aplica en cambio a las claves de API que creen esos miembros. Los miembros no pueden editar ni quitar un guardrail que haya asignado un propietario o un administrador del espacio de trabajo.
 
-## 5. Prueba la política antes de ampliarla
+</Step>
+<Step title="Comprueba que se aplica">
 
-Usa la vista previa del guardrail con:
+Envía solicitudes reales con la clave y después comprueba:
 
-- una entrada inocua
-- una entrada claramente prohibida
-- un prompt realista, parecido a los de producción
+- **Configuración → Uso → Guardrails** para ver los recuentos de bloqueos, ocultaciones y marcas.
+- La sección **Aplicación de guardrails** de una solicitud en **Configuración → Uso → Registros**, para ver qué guardrail y qué detector se activaron.
+- La columna **Guardrails** de **Configuración → Claves de API**, para confirmar a qué claves está asignado.
 
-Comprueba que haya:
+</Step>
+<Step title="Amplía el despliegue">
 
-- texto de redacción correcto
-- comportamiento correcto de bloqueo y permiso
-- ninguna coincidencia accidental con contenido no relacionado
+Asigna el mismo guardrail a más claves, endurece las acciones de **Marcar** a **Ocultar** o **Bloquear**, y añade los detectores de nombre de persona y dirección solo donde su latencia sea aceptable.
 
-## 6. Verifica la aplicación en la actividad y los registros
+</Step>
+</Steps>
 
-Después de enviar solicitudes reales con la clave protegida, revisa:
-
-- el panel **Aplicación de guardrails** en la página de actividad
-- los cuadros de detalles de solicitudes bloqueadas o redactadas
-- el cuadro de detalles de la clave de API para ver la actividad de guardrails por clave
-
-Deberías ver:
-
-- el número de solicitudes bloqueadas
-- el número de solicitudes redactadas
-- el número de solicitudes marcadas
-- los detalles del guardrail y del detector concretos cuando se aplicó la política
-
-## 7. Amplía el despliegue de forma segura
-
-Cuando la primera clave funcione correctamente:
-
-1. asocia el mismo guardrail a más claves
-2. intensifica las acciones de `flag` a `redact` o `block`
-3. añade detección de nombres y direcciones de mayor latencia solo cuando el coste en latencia sea aceptable
-
-## Relacionado
-
-- [Preajustes](../guides/presets.mdx)
-- [Guía de inicio rápido](../quickstart.mdx)
-- [Agentes de programación con `SKILL.md`](./coding-agents-skill-md.mdx)
-
+Un guardrail desactivado conserva su configuración, pero no se aplica. Para compartir reglas de enrutamiento entre llamantes en lugar de aplicarlas a claves, usa un [preajuste](../guides/presets).

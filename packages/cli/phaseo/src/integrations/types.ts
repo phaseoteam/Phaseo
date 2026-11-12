@@ -2,6 +2,7 @@ export type IntegrationId =
 	| "codex"
 	| "claude-code"
 	| "opencode"
+	| "fx"
 	| "deepseek-harness"
 	| "pi"
 	| "prime-agent"
@@ -56,6 +57,8 @@ export interface IntegrationAdapter {
 	planRemove(options: IntegrationOptions): Promise<FileChange[]>;
 	planCredential?(options: IntegrationOptions, credential: string): Promise<FileChange[]>;
 	setupInstructions?(options: IntegrationOptions): string[];
+	/** Optional extras shown after a successful setup (not steps needed to finish it). */
+	setupTips?(options: IntegrationOptions): string[];
 	removeInstructions?(options: IntegrationOptions): string[];
 	applySetup?(options: IntegrationOptions): Promise<void>;
 	applyRemove?(options: IntegrationOptions): Promise<void>;

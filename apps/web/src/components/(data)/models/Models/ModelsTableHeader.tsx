@@ -1,7 +1,5 @@
-"use client";
-
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Link from "@/components/link";
+import { usePathname } from "@/lib/navigation";
 import { debounce, useQueryState } from "nuqs";
 import { Input } from "@/components/ui/input";
 import {
@@ -25,8 +23,9 @@ import {
 } from "@/components/ui/tooltip";
 import { featureLabels } from "@/lib/config/featureLabels";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
+import { parseCatalogueTierFilters } from "@/lib/models/catalogueTierFilters";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 interface ModelsTableHeaderProps {
 	allEndpoints: string[];
@@ -78,6 +77,8 @@ export default function ModelsTableHeader({
 		embeddings: tDetail("sections.embeddings"),
 		file: t("filtersUi.modalityFile"),
 		rerank: t("filtersUi.modalityRerank"),
+		documents: t("filtersUi.modalityDocuments"),
+		translation: t("filtersUi.modalityTranslation"),
 	};
 	const featureTranslationKeys: Record<string, string> = {
 		reasoning: t("filtersUi.featureReasoning"),
@@ -92,6 +93,7 @@ export default function ModelsTableHeader({
 		free: t("filtersUi.tierFree"),
 		flex: t("filtersUi.tierFlex"),
 		priority: t("filtersUi.tierPriority"),
+		fast: t("filtersUi.tierPriority"),
 	};
 	const formatStatus = (value: string) => {
 		const normalized = value.trim().toLowerCase().replace(/[\s-]+/g, "_");
@@ -100,9 +102,7 @@ export default function ModelsTableHeader({
 			coming_soon: t("filtersUi.comingSoon"),
 			inactive: t("filtersUi.notActive"),
 			not_active: t("filtersUi.notActive"),
-			deranked_lvl1: t("filtersUi.statusDeranked1"),
-			deranked_lvl2: t("filtersUi.statusDeranked2"),
-			deranked_lvl3: t("filtersUi.statusDeranked3"),
+			deranked: t("filtersUi.statusDeranked"),
 			disabled: t("filtersUi.statusDisabled"),
 		};
 		return statusLabels[normalized] ?? value;
@@ -152,7 +152,7 @@ export default function ModelsTableHeader({
 
 	const [selectedTiers, setSelectedTiers] = useQueryState("tiers", {
 		defaultValue: ["standard"],
-		parse: (value) => (value ? value.split(",") : ["standard"]),
+		parse: (value) => (value ? parseCatalogueTierFilters(value) : ["standard"]),
 		serialize: (value) => value.join(","),
 	});
 	const isDefaultTiers =

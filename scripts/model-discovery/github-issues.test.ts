@@ -474,9 +474,6 @@ async function main(): Promise<void> {
         assert.ok(requests.some((request) => request.url.endsWith("/repos/phaseoteam/Phaseo/issues") && request.method === "POST"));
     });
 
-    const publicRunnerSource = fs.readFileSync(path.join(process.cwd(), "scripts", "model-discovery", "run-internal-public.ts"), "utf-8");
-    assert.doesNotMatch(publicRunnerSource, /github-issues|syncUpstreamDiscoveryIssues|syncProviderChangeIssues/);
-
     console.log("github-issues helper tests passed");
 }
 

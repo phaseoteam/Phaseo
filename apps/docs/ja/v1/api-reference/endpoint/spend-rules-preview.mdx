@@ -1,0 +1,9 @@
+---
+title: "支出ルールをプレビュー"
+sidebarTitle: "ルールをプレビュー"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml GET /spend-rules/{id}/preview"
+description: "支出ルールの現在の値、ベース、次のしきい値を確認します。"
+---
+
+`spend_rules:read` が必要です。何も送信・記録されません。予測、急増、残高のルールには、それぞれ `forecast`、`spike`、`balance` オブジェクトが含まれます。

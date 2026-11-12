@@ -1217,7 +1217,7 @@
 					"id": "optionalDataContribution",
 					"state": "available",
 					"title": "Contribuição opcional de dados",
-					"description": "A adesão é opcional. Prompts e conclusões elegíveis podem ser redigidos e mantidos por até 30 dias. Revogar o consentimento impede novas capturas e coloca as anteriores na fila de exclusão."
+					"description": "A adesão é opcional. Prompts e conclusões elegíveis podem ser ocultados e mantidos por até 30 dias. Revogar o consentimento impede novas capturas e coloca as anteriores na fila de exclusão."
 				},
 				{
 					"id": "providerRetentionTraining",
@@ -1831,7 +1831,7 @@
 				"region-privacy-routing": "Sim, quando houver ofertas de provedores compatíveis. As solicitações podem exigir regiões de execução e dados ou suporte a retenção zero de dados. A Phaseo retorna um erro em vez de usar silenciosamente uma rota que não atenda aos requisitos.",
 				"model-pricing-changes": "A Phaseo acompanha o ciclo de vida dos modelos e a disponibilidade dos provedores no catálogo. O preço atual do catálogo vale quando a solicitação é atendida. Para migrações controladas entre versões, use IDs exatos de modelo, dados de disponibilidade e predefinições de fallback.",
 				"openai-anthropic-migration": "Sim. A Phaseo oferece as APIs Chat Completions e Responses compatíveis com OpenAI, uma API Messages compatível com Anthropic, compatibilidade com SDKs e guias de migração. A maioria das integrações começa com a troca da URL base, da chave de API e do ID do modelo.",
-				"tools-structured-output": "Chamadas de ferramentas, esquemas de saída estruturada, ferramentas de servidor e correção opcional de respostas estão disponíveis quando o modelo e o endpoint selecionados oferecem suporte. Os recursos dos modelos aparecem no catálogo e na Data API.",
+				"tools-structured-output": "Chamadas de ferramentas, esquemas de saída estruturada, ferramentas de servidor e reparo opcional de respostas estão disponíveis quando o modelo e o endpoint selecionados oferecem suporte. Os recursos dos modelos aparecem no catálogo e na Data API.",
 				"multimodal-endpoints": "A Phaseo oferece texto, imagem, vídeo, áudio, fala, transcrição, música, embeddings, moderação, reranking, OCR e fluxos em tempo real nos modelos e provedores compatíveis. Disponibilidade e unidades de cobrança variam por modelo.",
 				"training-data": "Não. A Phaseo não usa prompts nem respostas do gateway para treinar seus próprios modelos. As solicitações são enviadas ao provedor que as atende, e as políticas de dados e treinamento dele continuam valendo, a menos que seus requisitos de roteamento o excluam.",
 				"request-logging": "A Phaseo armazena metadados operacionais e de faturamento, como modelo, provedor, contagem de tokens, latência e erros. Por padrão, prompts e respostas brutos não são armazenados de forma persistente. Se o registro de E/S do espaço estiver ativo, a retenção de dados segue as configurações de privacidade e retenção do espaço.",
@@ -1878,8 +1878,8 @@
 				"preferred-provider-selection": "Seleção de provedor preferencial",
 				"routing-presets-fallbacks-and-service-tiers": "Predefinições de roteamento, alternativas e níveis de serviço",
 				"routing-is-limited-to-supported-free-model-routes": "O roteamento se limita a rotas de modelos gratuitos compatíveis.",
-				"response-healing": "Correção de respostas",
-				"repairs-supported-structured-responses": "Corrige respostas estruturadas compatíveis.",
+				"response-healing": "Reparo de respostas",
+				"repairs-supported-structured-responses": "Repara respostas estruturadas compatíveis.",
 				"guardrails": "Proteções",
 				"any-underlying-model-usage-is-billed-normally": "O uso de qualquer modelo subjacente é cobrado normalmente.",
 				"asynchronous-jobs": "Tarefas assíncronas",
@@ -2004,7 +2004,7 @@
 				"provider-dependent": "Depende do provedor",
 				"provider-performance-data": "Dados de desempenho do provedor",
 				"public-guardrails-include-budgets-allowlists-zdr-prompt-injection-and-sensitive-data-policies": "Os guardrails públicos incluem orçamentos, listas de permissões, ZDR, proteção contra injeção de prompt e políticas para dados sensíveis.",
-				"repairs-malformed-structured-json-on-supported-non-streaming-requests": "Corrige JSON estruturado malformado em solicitações compatíveis sem streaming.",
+				"repairs-malformed-structured-json-on-supported-non-streaming-requests": "Repara JSON estruturado malformado em solicitações compatíveis sem streaming.",
 				"speech-and-transcription-are-publicly-documented": "Geração de fala e transcrição têm documentação pública.",
 				"speech-generation-is-publicly-documented": "Geração de fala tem documentação pública.",
 				"supported-through-the-ai-sdk-video-generation-interface": "Disponível pela interface de geração de vídeo do AI SDK.",
@@ -2329,7 +2329,7 @@
 			],
 			"cookieControl": "Você pode controlar cookies nas configurações do navegador. Bloquear alguns tipos pode afetar sua experiência ou impedir o funcionamento de certos recursos.",
 			"analyticsIntro": "Podemos usar ferramentas terceirizadas de análise e rastreamento de erros, como Google Analytics, PostHog ou serviços semelhantes, para entender como as pessoas usam o Phaseo e onde podemos melhorar o produto.",
-			"analyticsDetails": "Essas ferramentas coletam informações como páginas visitadas, ações realizadas, dados do dispositivo e do navegador e localização aproximada, como país. Nós as configuramos para que não armazenem prompts brutos, Outputs ou outros conteúdos altamente sensíveis enviados pelo Gateway.",
+			"analyticsDetails": "Essas ferramentas coletam informações como páginas visitadas, ações realizadas, dados do dispositivo e do navegador e localização aproximada, como país. Nós as configuramos para que não armazenem prompts brutos, Outputs ou outros conteúdos altamente sensíveis enviados pelo Gateway. Se você estiver conectado e tiver aceitado os cookies de análise, vinculamos esses eventos, gravações de sessão e respostas a pesquisas aos IDs da sua conta e do seu espaço de trabalho no Phaseo, mas não ao seu nome nem ao seu endereço de e-mail. As gravações de sessão mascaram campos de formulário e ocultam chaves de API e outros segredos exibidos na tela.",
 			"legalBasesIntro": "Usamos dados pessoais para as finalidades abaixo, com base nas seguintes hipóteses legais (para usuários do Reino Unido e da UE):",
 			"legalBasesItems": [
 				{
@@ -2358,6 +2358,11 @@
 					"basis": "Base legal: interesses legítimos e obrigações legais."
 				},
 				{
+					"label": "Detectar, prevenir e denunciar material de abuso sexual infantil",
+					"text": "por exemplo, comparando automaticamente imagens com hashes de material de abuso sexual infantil já identificado e, quando encontramos material aparente de abuso, preservando as informações de conta e de solicitação relacionadas e denunciando-o às autoridades competentes.",
+					"basis": "Base legal: obrigações legais; interesses legítimos (proteção de crianças e do Serviço)."
+				},
+				{
 					"label": "Cumprir obrigações legais",
 					"text": "como manter registros fiscais e contábeis ou responder a solicitações legítimas de autoridades.",
 					"basis": "Base legal: obrigações legais."
@@ -2380,11 +2385,15 @@
 				},
 				{
 					"label": "Dados públicos que você decide compartilhar",
-					"text": "Se você ativar páginas públicas de uso, compartilhar integrações ou optar por publicar informações pelo AI Stats, nós as exibiremos conforme suas configurações."
+					"text": "Se você ativar páginas públicas de uso, compartilhar integrações ou optar por publicar informações pelo Phaseo, nós as exibiremos conforme suas configurações."
 				},
 				{
 					"label": "Motivos legais e de segurança",
 					"text": "Podemos divulgar dados se acreditarmos razoavelmente que isso é necessário para cumprir uma lei, ordem judicial ou outra solicitação legal, ou para proteger nossos direitos, bens ou segurança, ou os de nossos usuários e outras pessoas."
+				},
+				{
+					"label": "Denúncias de proteção infantil",
+					"text": "Se encontrarmos material aparente de abuso sexual infantil, nós o denunciamos, junto com as informações de conta e de solicitação relacionadas, ao National Center for Missing & Exploited Children (NCMEC), à Internet Watch Foundation, à National Crime Agency ou a outras autoridades policiais, conforme exigido por lei."
 				},
 				{
 					"label": "Transferências empresariais",
@@ -2404,7 +2413,7 @@
 			],
 			"retentionIntro": "Mantemos dados pessoais pelo tempo razoavelmente necessário para cumprir as finalidades descritas nesta Política, incluindo:",
 			"retentionReasons": [
-				"Os metadados por solicitação de chamadas BYOK pelo Gateway são mantidos por até 90 dias. Totais agregados de uso, sem conteúdo, podem ser mantidos por mais tempo para cobrança, confiabilidade e fins estatísticos.",
+				"Os metadados por solicitação de chamadas BYOK pelo Gateway são mantidos por até 365 dias. Totais agregados de uso, sem conteúdo, podem ser mantidos por mais tempo para cobrança, confiabilidade e fins estatísticos.",
 				"operar e manter sua conta e quaisquer recursos pagos;",
 				"cumprir obrigações legais e regulatórias, como manter registros fiscais e contábeis; e",
 				"resolver disputas e fazer valer nossos contratos."
@@ -2415,6 +2424,7 @@
 				"Outputs de modelos elegíveis mantidos em cache ficam armazenados por cinco minutos por padrão e por, no máximo, 24 horas conforme a política de cache configurada.",
 				"Quando habilitados, os registros privados de I/O são configurados para 90, 180 ou 365 dias.",
 				"Contribuições de dados brutos autorizadas por você são mantidas por até 30 dias; estatísticas agregadas de classificação podem ser mantidas por mais tempo.",
+				"As informações preservadas por causa de material aparente de abuso sexual infantil são mantidas com segurança e acesso restrito por até um ano, ou por mais tempo quando a lei exigir.",
 				"Provedores de IA e destinos configurados por clientes aplicam seus próprios termos de retenção."
 			],
 			"retentionSchedule": "Ainda não consolidamos todas as categorias de conta, metadados de solicitações, cobrança, suporte, backups e registros operacionais em um único cronograma fixo de retenção. Consulte o <security>documento técnico de segurança</security> para ver os períodos de tratamento de conteúdo verificados atualmente e suas limitações.",
@@ -2452,7 +2462,7 @@
 			],
 			"rightsExercise": "Você pode exercer muitos desses direitos entrando na sua conta (configurações, perfil e chaves de API) ou entrando em contato pelo endereço <email>privacy@phaseo.app</email>. Podemos pedir que você confirme sua identidade antes de responder.",
 			"emailOptOut": "Você pode cancelar o recebimento de e-mails não essenciais pelo link de descadastramento da mensagem ou entrando em contato conosco. Ainda poderemos enviar mensagens administrativas sobre sua conta ou mudanças importantes no Serviço.",
-			"children": "O Serviço é destinado a pessoas com 13 anos ou mais. Não coletamos conscientemente dados pessoais de crianças menores de 13 anos. Se você acredita que uma criança nos forneceu dados pessoais sem o consentimento adequado, entre em contato conosco e tomaremos medidas para excluí-los.",
+			"children": "O Serviço é destinado exclusivamente a adultos com 18 anos ou mais. Não coletamos intencionalmente dados pessoais de menores de 18 anos. Se você acredita que uma pessoa com menos de 18 anos nos forneceu dados pessoais, entre em contato e tomaremos medidas para excluí-los.",
 			"securityMeasures": "Usamos medidas técnicas, organizacionais e administrativas para proteger dados pessoais, incluindo criptografia em trânsito, controles de acesso baseados em função e monitoramento de atividades incomuns.",
 			"securityLimits": "No entanto, nenhum serviço online é totalmente seguro. Você é responsável por manter sua senha, chaves de API e outras credenciais em sigilo e por trocar as chaves se suspeitar de comprometimento. Se acreditar que sua conta foi comprometida, entre em contato imediatamente pelo endereço <email>support@phaseo.app</email>.",
 			"thirdParties": "O Serviço pode conter links para sites ou integrações de terceiros, incluindo provedores de modelos de IA, documentação, pagamentos, análise e ferramentas para desenvolvedores. Não somos responsáveis pelas práticas de privacidade desses terceiros. Recomendamos que você leia as políticas de privacidade deles antes de fornecer dados pessoais.",
@@ -2473,7 +2483,7 @@
 			],
 			"availability": "Podemos adicionar, alterar ou remover modelos, provedores, endpoints ou outros recursos a qualquer momento. A disponibilidade de modelos ou provedores específicos depende desses terceiros e não é garantida.",
 			"changeNotice": "Sempre que razoavelmente possível, avisaremos com antecedência sobre mudanças relevantes no Serviço, inclusive a remoção de modelos ou provedores do diretório ou do gateway. Às vezes, porém, precisaremos fazer alterações imediatas por motivos de segurança, legais ou relacionados a provedores, e não podemos garantir disponibilidade ininterrupta.",
-			"accountAge": "Você precisa ter pelo menos 13 anos para usar o Serviço. Se tiver menos de 18 anos, use o Serviço somente com a permissão de um dos pais ou responsável legal.",
+			"accountAge": "Você precisa ter pelo menos 18 anos para usar o Serviço.",
 			"accountBusiness": "Se você usar o Serviço em nome de uma empresa ou organização, confirma que tem autorização para vinculá-la a estes Termos.",
 			"accountRegistration": "Armazenamos e usamos essas informações conforme descrito em nossa <privacy>Política de Privacidade</privacy>.",
 			"accountResponsibilitiesIntro": "Você é responsável por:",
@@ -2523,9 +2533,11 @@
 				"tem todos os direitos, permissões e consentimentos necessários para enviar os Inputs e usar os Outputs; e",
 				"seus Inputs e o uso do Serviço não infringirão direitos de propriedade intelectual, privacidade ou outros, nem farão com que violemos qualquer lei ou termo de terceiros."
 			],
-			"contentModeration": "Não somos obrigados a monitorar User Content. No entanto, podemos removê-lo ou restringir o acesso se acreditarmos razoavelmente que ele viola estes Termos ou a lei aplicável.",
+			"contentModeration": "Em geral, não monitoramos User Content. No entanto, podemos usar ferramentas automatizadas, incluindo a comparação com hashes de material de abuso sexual infantil já identificado, para detectar conteúdo que viole estes Termos ou a lei, e podemos removê-lo ou restringir o acesso a ele.",
+			"childSafety": "Temos tolerância zero com material de abuso sexual infantil. Se tomarmos conhecimento de material aparente de abuso sexual infantil, vamos removê-lo, suspender as contas envolvidas sem aviso prévio ou reembolso, preservar as informações relacionadas que mantemos conforme exigido por lei e denunciá-lo às autoridades competentes, que podem incluir o National Center for Missing & Exploited Children (NCMEC), a Internet Watch Foundation e a National Crime Agency. Essas obrigações se aplicam independentemente de qualquer outro compromisso destes Termos, incluindo nosso tratamento de conteúdo, os registros de I/O e as configurações de retenção zero de dados (zero data retention).",
 			"prohibitedIntro": "Você não pode:",
 			"prohibitedActions": [
+				"enviar, gerar, solicitar, armazenar ou distribuir material de abuso sexual infantil ou qualquer conteúdo que sexualize menores, ou usar o Serviço para criar ou operar ferramentas projetadas para produzir esse tipo de material;",
 				"usar o Serviço de forma ilegal ou em violação à lei, regulamentação ou termos aplicáveis de provedores terceiros;",
 				"usar o Serviço para gerar ou distribuir conteúdo nocivo, abusivo, discriminatório, fraudulento ou impróprio;",
 				"interferir ou interromper o Serviço, inclusive introduzindo malware, sobrecarregando nossa infraestrutura ou tentando contornar limites de taxa ou controles de segurança;",
@@ -2587,6 +2599,7 @@
 			"assignment": "Você não pode ceder ou transferir seus direitos ou obrigações nestes Termos sem nossa autorização prévia por escrito. Podemos transferir nossos direitos e obrigações para outra organização em caso de reorganização ou venda empresarial.",
 			"waiver": "Se não fizermos valer algum direito ou disposição destes Termos, isso não será considerado renúncia a esse direito.",
 			"survival": "Quando seu acesso ao Serviço terminar, as Seções 2, 3, 4, 5 e 8–15 continuarão em vigor.",
+			"languageVersion": "Podemos disponibilizar estes Termos em outros idiomas além do inglês por conveniência. Se uma tradução divergir da versão em inglês, prevalece a versão em inglês, salvo se a lei de defesa do consumidor do local onde você mora dispuser de outra forma.",
 			"contactQuestions": "Se tiver dúvidas sobre estes Termos, entre em contato:",
 			"contactEmailLabel": "E-mail",
 			"operatorDetails": "O Serviço é oferecido por <person>Daniel Butler</person>, que atua como <brand>Phaseo</brand>.",
@@ -2617,7 +2630,7 @@
 		"description": "Entre em contato com o suporte da Phaseo para dúvidas sobre conta, cobrança e produto, com respostas diretas do fundador, documentação, recursos da comunidade e disponibilidade atual do suporte."
 	},
 	"landingGaps": {
-		"copy001": "Roteando agora entre fornecedores verificados.",
+		"copy001": "Roteando agora entre provedores verificados.",
 		"copy002": "Acesse um catálogo crescente de modelos selecionados assim que entrar no Phaseo Gateway.",
 		"copy003": "O Gateway substitui o Conduit?",
 		"copy004": "Sim. Phaseo Gateway é o novo nome e posicionamento do Conduit, com foco em uma única API para todos os modelos, mantendo os compromissos de compatibilidade.",
@@ -2631,19 +2644,19 @@
 		"copy012": "Respostas para equipes que estão migrando agora.",
 		"copy013": "Orientações claras sobre lançamentos em produção, compatibilidade e governança.",
 		"copy014": "Qualquer modelo, uma interface.",
-		"copy015": "Mantenha uma integração ao trocar fornecedores, adicionar modelos e ampliar modalidades sem reescrever os clientes.",
+		"copy015": "Mantenha uma integração ao trocar provedores, adicionar modelos e ampliar modalidades sem reescrever os clientes.",
 		"copy016": "OpenAI, Anthropic, Google e mais de 50 outros.",
 		"copy017": "Texto, visão, áudio, vídeo, embeddings",
 		"copy018": "Esquemas de resposta consistentes.",
 		"copy019": "API unificada",
 		"copy020": "Confiabilidade desde o projeto.",
-		"copy021": "Roteamento por integridade, failover automático e proteções que preservam o tráfego de produção quando um fornecedor se degrada.",
+		"copy021": "Roteamento por integridade, failover automático e proteções que preservam o tráfego de produção quando um provedor se degrada.",
 		"copy022": "Monitoramento de integridade em tempo real",
 		"copy023": "Roteamento com failover automático",
 		"copy024": "Padrões de circuit breaker",
 		"copy025": "Disponibilidade",
 		"copy026": "Roteamento inteligente",
-		"copy027": "Roteie por latência, preço, localização, capacidade ou suas regras. Aplique um comportamento consistente a todos os fornecedores.",
+		"copy027": "Roteie por latência, preço, localização, capacidade ou suas regras. Aplique um comportamento consistente a todos os provedores.",
 		"copy028": "Roteamento otimizado por latência",
 		"copy029": "Balanceamento de carga por custo",
 		"copy030": "Políticas de roteamento personalizadas",
@@ -2666,9 +2679,9 @@
 		"copy047": "Logs completos de auditoria de requisições",
 		"copy048": "Suporte BYOK criptografado",
 		"copy049": "Segurança",
-		"copy050": "Um plano de controle para um mercado de fornecedores que muda toda semana.",
-		"copy051": "O gateway foi criado para equipes que valorizam portabilidade de modelos, qualidade de roteamento e disciplina operacional mais que números de fornecedores em uma apresentação.",
-		"copy052": "Com roteamento por integridade, fornecedores degradados deixam de virar incidentes à meia-noite.",
+		"copy050": "Um plano de controle para um mercado de provedores que muda toda semana.",
+		"copy051": "O gateway foi criado para equipes que valorizam portabilidade de modelos, qualidade de roteamento e disciplina operacional mais que números de provedores em uma apresentação.",
+		"copy052": "Com roteamento por integridade, provedores degradados deixam de virar incidentes à meia-noite.",
 		"copy053": "Troque modelos e nuvens sem reescrever integrações do produto.",
 		"copy054": "Mantenha políticas, controles de gastos e auditabilidade no mesmo lugar que a execução.",
 		"copy055": "Ver documentação",
@@ -2686,10 +2699,10 @@
 		"copy067": "Obter chave de API",
 		"copy068": "Guia de migração",
 		"copy069": "Informações sobre modelos sem ruído",
-		"copy070": "Veja benchmarks, preços, cobertura de fornecedores e novidades de lançamentos em uma visão mais clara antes de investir tempo de engenharia.",
+		"copy070": "Veja benchmarks, preços, cobertura de provedores e novidades de lançamentos em uma visão mais clara antes de investir tempo de engenharia.",
 		"copy071": "Explorar o banco de dados",
 		"copy072": "Controle do gateway que permanece claro",
-		"copy073": "Implemente por uma interface compatível com OpenAI e mantenha flexíveis as decisões de roteamento, fallback e BYOK conforme os fornecedores mudam.",
+		"copy073": "Implemente por uma interface compatível com OpenAI e mantenha flexíveis as decisões de roteamento, fallback e BYOK conforme os provedores mudam.",
 		"copy074": "Ver visão geral da plataforma",
 		"copy075": "Rota do gateway",
 		"copy076": "saudável",

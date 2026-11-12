@@ -1,16 +1,16 @@
-"use client";
-
+import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import { settingsStringKey } from "@/i18n/settings-string-keys";
 
 import React from "react";
-import dynamic from "next/dynamic";
-import { useTraceViewEnabled } from "./TraceViewGate";
-import { useLocale, useTranslations } from "next-intl";
+import dynamic from "@/lib/dynamic";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import Link from "@/components/link";
+import { useSearchParams } from "@/lib/navigation";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
-import { AppWindow, Bot, Braces, Copy, Database, GraduationCap, Info, ListFilter, LoaderCircle, Package, ShieldCheck, ShieldQuestion, Terminal, XCircle } from "lucide-react";
+import { Bot, Braces, Copy, Database, GraduationCap, Info, ListFilter, LoaderCircle, MessageSquare, Package, ShieldCheck, ShieldQuestion, Terminal, Wrench, XCircle } from "lucide-react";
+import { buttonVariants } from "@/components/ui/button";
+import { buildOpenRequestInChatHref, canOpenRequestInChat } from "@/components/(chat)/chatMessageMetadata";
 import {
 	Dialog,
 	DialogContent,
@@ -34,15 +34,20 @@ import {
 } from "@/components/ui/tooltip";
 import {
 	HoverCard,
+	HoverCardBody,
 	HoverCardContent,
+	HoverCardFacts,
+	HoverCardHeadline,
+	HoverCardTitle,
 	HoverCardTrigger,
+	joinMeta,
 } from "@/components/ui/hover-card";
 import { Logo } from "@/components/Logo";
 import {
 	RequestRow,
 	type GatewayIoLog,
 	type ProviderMetadataEntry,
-} from "@/app/(dashboard)/gateway/usage/server-actions";
+} from "@/features/gateway/usage/server-actions";
 import { cn } from "@/lib/utils";
 import {
 	buildUsageFromNormalizedRequestFields,
@@ -58,8 +63,11 @@ import {
 	normalizeProviderPromptTrainingPolicy,
 } from "@/lib/providers/promptTrainingPolicy";
 import { formatRoomError, type RoomErrorTranslator } from "@/lib/chat/formatRoomError";
-import UsageEntityHoverCard from "./UsageEntityHoverCard";
+import UsageEntityLink from "./UsageEntityLink";
 import { providerAttemptTimelineDuration, responseTimelineTiming } from "./responseTimeline";
+import { readLifecycleJournal } from "./OrderedLifecycleEvents";
+import RequestClassificationsSection from "./RequestClassificationsSection";
+import type { RequestClassifierSummary } from "./requestClassifierLabels";
 import {
 	ProviderInspectorSheet,
 	ProviderInspectorSheetContent,
@@ -81,13 +89,16 @@ interface RequestDetailDialogProps {
 	presentation?: "dialog" | "sheet";
 	disablePointerDismissal?: boolean;
 	loading?: boolean;
+	/** Names for the request's classifier labels; ids are shown without them. */
+	classifiers?: RequestClassifierSummary[];
 }
 
 type ProviderAttemptRow = RequestRow["provider_attempts"][number];
 
-function formatRequestPricingLine(
+export function formatRequestPricingLine(
 	line: RequestRow["pricing_lines"][number],
 	formatNumber: (value: number) => string,
+	labels: { svgAuthor: string; imageTool: string } = { svgAuthor: "SVG author", imageTool: "Image tool" },
 ): string {
 	if (line == null) return "null";
 	if (
@@ -109,28 +120,53 @@ function formatRequestPricingLine(
 		typeof line.dimension === "string" && line.dimension.trim().length > 0
 			? line.dimension.trim()
 			: null;
+	// Gateway request lines store quantity, line_cost_usd and line_nanos; older
+	// line shapes use units, cost_usd and cost_nanos.
+	const rawUnits = line.units ?? line.quantity;
 	const units =
-		typeof line.units === "number"
-			? line.units
-			: typeof line.units === "string" && line.units.trim().length > 0
-				? line.units.trim()
+		typeof rawUnits === "number"
+			? formatNumber(rawUnits)
+			: typeof rawUnits === "string" && rawUnits.trim().length > 0
+				? rawUnits.trim()
 				: null;
+	const rawCostUsd = line.cost_usd ?? line.line_cost_usd;
 	const costUsd =
-		typeof line.cost_usd === "number"
-			? line.cost_usd.toFixed(6)
-			: typeof line.cost_usd === "string" && line.cost_usd.trim().length > 0
-				? line.cost_usd.trim()
+		typeof rawCostUsd === "number"
+			? rawCostUsd.toFixed(6)
+			: typeof rawCostUsd === "string" && rawCostUsd.trim().length > 0
+				? rawCostUsd.trim()
 				: null;
+	const rawCostNanos = line.cost_nanos ?? line.line_nanos;
 	const costNanos =
-		typeof line.cost_nanos === "number"
-			? formatNumber(line.cost_nanos)
-			: typeof line.cost_nanos === "string" && line.cost_nanos.trim().length > 0
-				? line.cost_nanos.trim()
+		typeof rawCostNanos === "number"
+			? formatNumber(rawCostNanos)
+			: typeof rawCostNanos === "string" && rawCostNanos.trim().length > 0
+				? rawCostNanos.trim()
 				: null;
+	// Lines priced for another model in the same request, such as the model that
+	// writes GPT Image SVG output, name that model.
+	const lineModel =
+		typeof line.model === "string" && line.model.trim().length > 0
+			? line.model.trim()
+			: null;
+	// Components name the model a line was priced for: "svg_author", "image_generation"
+	// (Chat's image tool) or a tool component and its own part, such as "image_generation.svg_author".
+	const componentLabels: Record<string, string> = {
+		svg_author: labels.svgAuthor,
+		image_generation: labels.imageTool,
+	};
+	const rawComponent = typeof line.component === "string" ? line.component.trim() : "";
+	const componentLabel = rawComponent
+		? rawComponent.split(".").map((part) => componentLabels[part] ?? part).join(" · ")
+		: "";
+	const component = componentLabel
+		? `${componentLabel}${lineModel ? ` (${lineModel})` : ""}`
+		: null;
 
 	const parts = [
 		provider,
 		endpoint,
+		component,
 		dimension ? `${dimension}${units != null ? `=${units}` : ""}` : null,
 		costUsd ? `$${costUsd}` : null,
 		costNanos ? `${costNanos} nanos` : null,
@@ -588,9 +624,7 @@ function formatCost(nanos: number | null | undefined): string {
 
 function formatThroughput(value: number | string | null | undefined): string {
 	if (value === null || value === undefined) return "-";
-	const n = Number(value);
-	if (!Number.isFinite(n)) return "-";
-	return `${Math.round(n * 100) / 100} tok/s`;
+	return formatTps(Number(value)) ?? "-";
 }
 
 function formatScoreValue(value: number | null | undefined): string {
@@ -694,23 +728,6 @@ function getAttemptStatusTone(
 	};
 }
 
-function getAttemptStatusDescription(attempt: ProviderAttemptRow): string | null {
-	const parts = [
-		typeof attempt.status_text === "string" ? attempt.status_text : null,
-		typeof attempt.upstream_error_code === "string"
-			? attempt.upstream_error_code
-			: null,
-		typeof attempt.upstream_error_message === "string"
-			? attempt.upstream_error_message
-			: typeof attempt.upstream_error_description === "string"
-				? attempt.upstream_error_description
-				: null,
-	].filter(Boolean);
-
-	if (parts.length === 0) return null;
-	return parts.join(" · ");
-}
-
 function getModelDetailsHref(modelId: string | null | undefined): string | null {
 	if (!modelId) return null;
 	const [organisationId, ...modelParts] = modelId.split("/");
@@ -767,21 +784,21 @@ function buildUsageSummary(usage: any): {
 function RequestHeader({
 	request,
 	headerNavigation,
+	actions,
 }: {
 	request: RequestRow;
 	headerNavigation?: React.ReactNode;
+	actions?: React.ReactNode;
 }) {
 	const t = useTranslations("SettingsUI");
 	const locale = useLocale();
 	const format = useDisplayFormatters();
 	const timestamp = format.dateTime(request.created_at);
 	return (
-		<div className="relative">
-			{headerNavigation ? (
-				<div className="absolute right-14 top-4 z-10">{headerNavigation}</div>
-			) : null}
-			<div className="px-5 py-4 sm:px-6 sm:py-5">
-				<div className={cn("pr-10", headerNavigation && "pr-36")}>
+		<div>
+			{/* pr-14 keeps the actions clear of the dialog's close button. */}
+			<div className="flex items-start gap-3 px-5 py-4 pr-14 sm:px-6 sm:py-5 sm:pr-14">
+				<div className="min-w-0 flex-1">
 					<DialogTitle className="text-base font-semibold">{t("strings.Job details")}</DialogTitle>
 					<div className="mt-2 flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
 						<span>{timestamp}</span>
@@ -789,6 +806,12 @@ function RequestHeader({
 						<CopyableText value={request.request_id} ariaLabel={t("strings.Copy generation id" as never)} />
 					</div>
 				</div>
+				{actions || headerNavigation ? (
+					<div className="flex shrink-0 items-center gap-2">
+						{actions}
+						{headerNavigation}
+					</div>
+				) : null}
 			</div>
 			<Separator />
 		</div>
@@ -810,17 +833,19 @@ export default function RequestDetailDialog({
 	presentation = "dialog",
 	disablePointerDismissal = false,
 	loading = false,
+	classifiers,
 }: RequestDetailDialogProps) {
 	const t = useTranslations("SettingsUI");
 	const roomErrorT = useTranslations("Product.chatRooms");
 	const roomErrorTranslator = roomErrorT as unknown as RoomErrorTranslator;
+	const tUi = useTranslations("Common.ui");
+	const tCards = useTranslations("Common.ui.hoverCards");
 	const locale = useLocale();
 	const s = (key: string) => t(settingsStringKey(key) as never);
 	const m = (key: string, values: Record<string, string | number>) =>
 		t(settingsStringKey(key) as never, values as never);
 	const format = useDisplayFormatters();
 	const searchParams = useSearchParams();
-	const traceEnabled = useTraceViewEnabled();
 
 	if (!request) return null;
 	const providerName = resolveProviderDisplayName({ providerId: request.provider, providerName: suppliedProviderName ?? request.provider ?? "" });
@@ -847,7 +872,7 @@ export default function RequestDetailDialog({
 					onOpenChange={onOpenChange}
 					disablePointerDismissal={disablePointerDismissal}
 				>
-					<ProviderInspectorSheetContent className={traceEnabled ? "!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[72vw] lg:!w-[68vw] xl:!w-[64vw] 2xl:!w-[60vw] data-[side=right]:sm:max-w-none" : "!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[58vw] lg:!w-[54vw] xl:!w-[50vw] 2xl:!w-[46vw] data-[side=right]:sm:max-w-none"}>
+					<ProviderInspectorSheetContent className={"!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[72vw] lg:!w-[68vw] xl:!w-[64vw] 2xl:!w-[60vw] data-[side=right]:sm:max-w-none"}>
 						{loadingContent}
 					</ProviderInspectorSheetContent>
 				</ProviderInspectorSheet>
@@ -921,15 +946,30 @@ export default function RequestDetailDialog({
 						attemptProviderId ||
 						t("usageGaps.attemptNumber", { number: index + 1 });
 					const statusTone = getAttemptStatusTone(attempt, t("usageGaps.copyOK"));
-					const statusDescription = getAttemptStatusDescription(attempt);
+					const attemptNumber = index + 1;
+					const attemptSucceeded =
+						(typeof attempt.status === "number" && attempt.status >= 200 && attempt.status < 300) ||
+						attempt.outcome === "success";
+					const attemptFailed = !attemptSucceeded;
+					const attemptStatusText =
+						(typeof attempt.status_text === "string" && attempt.status_text.trim()) ||
+						(typeof attempt.outcome === "string" && attempt.outcome !== String(attempt.status ?? "") ? attempt.outcome : null);
+					const attemptErrorCode =
+						typeof attempt.upstream_error_code === "string" && attempt.upstream_error_code.trim()
+							? attempt.upstream_error_code.trim()
+							: null;
+					const attemptErrorMessage =
+						(typeof attempt.upstream_error_message === "string" && attempt.upstream_error_message.trim()) ||
+						(typeof attempt.upstream_error_description === "string" && attempt.upstream_error_description.trim()) ||
+						null;
 					const durationMs = providerAttemptTimelineDuration(attempt, request.detail_metadata?.response_timeline);
 					const attemptFinishReason =
 						attempt.provider_finish_reason ?? attempt.finish_reason ?? null;
 					const attemptCostNanos = Number(attempt.cost_nanos ?? 0) || 0;
-					const attemptModelParts = getConcreteModelParts({
-						apiModelId: attempt.api_model_id,
-						providerModelSlug: attempt.provider_model_slug,
-					});
+					// Attempts record only the upstream model id, and a fallback attempt can
+					// target another model, so only the attempt that served the request
+					// can be labelled with its Phaseo model id.
+					const attemptPhaseoModelId = finalSuccessAttempt === attempt ? routedModelId : null;
 					const providerRow = {
 						key: `provider-${attempt.attempt_number ?? index}`,
 						label: (
@@ -948,66 +988,56 @@ export default function RequestDetailDialog({
 								<HoverCard openDelay={100} closeDelay={100}>
 									<HoverCardTrigger asChild>
 									<span
+										tabIndex={0}
+										aria-label={tCards("attemptOf", { number: attemptNumber, total: attempts.length })}
 										className={cn(
-											"inline-flex shrink-0 cursor-default items-center justify-center rounded-sm border px-1.5 py-0.5 font-mono text-[10px] font-medium",
+											"inline-flex shrink-0 cursor-help items-center justify-center rounded-sm border px-1.5 py-0.5 font-mono text-[10px] font-medium outline-none focus-visible:ring-2 focus-visible:ring-ring/50",
 											statusTone.badgeClass,
 										)}
 									>
 										{statusTone.label}
 									</span>
 									</HoverCardTrigger>
-									<HoverCardContent
-										align="start"
-										sideOffset={8}
-										className="w-72 rounded-md border border-border/70 p-0 shadow-xl"
-									>
-										<div className="border-b border-border/70 px-3 py-2.5">
-											<div className="flex items-center justify-between gap-3">
-										<span className="text-sm font-semibold">{s("Provider response")}</span>
-												<span className={cn("rounded-sm border px-1.5 py-0.5 font-mono text-[10px] font-medium", statusTone.badgeClass)}>
-													{statusTone.label}
-												</span>
-											</div>
-											{statusDescription ? (
-												<p className="mt-1 text-xs text-muted-foreground">{statusDescription}</p>
-											) : null}
-										</div>
-										<dl className="grid grid-cols-[88px_minmax(0,1fr)] gap-x-3 gap-y-2 px-3 py-2.5 text-xs">
-											<dt className="text-muted-foreground">{s("Provider")}</dt>
-											<dd className="min-w-0 truncate text-right font-medium">
-												{attemptProviderId ? (
-													<Link
-														href={`/api-providers/${encodeURIComponent(attemptProviderId)}`}
-														className="text-foreground underline decoration-transparent transition-colors hover:decoration-foreground/70"
-													>
-														{attemptProviderName}
-													</Link>
-												) : attemptProviderName}
-											</dd>
-											{attemptModelParts.length > 0 ? (
-												<>
-													<dt className="text-muted-foreground">{s("Model")}</dt>
-													<dd
-														className="min-w-0 truncate text-right font-mono text-[11px]"
-														title={attemptModelParts[0]}
-													>
-														{attemptModelParts[0]}
-													</dd>
-												</>
-											) : null}
-											{attemptFinishReason ? (
-												<>
-													<dt className="text-muted-foreground">{s("Finish Reason")}</dt>
-													<dd className="text-right font-medium">{attemptFinishReason}</dd>
-												</>
-											) : null}
-											{attemptCostNanos > 0 ? (
-												<>
-													<dt className="text-muted-foreground">{s("Cost")}</dt>
-													<dd className="text-right font-mono">{formatCost(attemptCostNanos)}</dd>
-												</>
-											) : null}
-										</dl>
+									<HoverCardContent align="start" sideOffset={8} className="w-72">
+										<HoverCardBody>
+											<HoverCardTitle
+												icon={attemptProviderId ? <Logo id={attemptProviderId} width={16} height={16} /> : null}
+												title={attemptProviderName}
+												meta={joinMeta([
+													tCards("attemptOf", { number: attemptNumber, total: attempts.length }),
+													s("Provider response"),
+												])}
+											/>
+											<HoverCardHeadline label={attemptStatusText}>
+												{typeof attempt.status === "number" ? attempt.status : statusTone.label}
+											</HoverCardHeadline>
+											<HoverCardFacts
+												rows={[
+													attemptPhaseoModelId
+														? {
+																key: "model",
+																label: s("Model"),
+																value: <code className="break-all font-mono text-[11px]">{attemptPhaseoModelId}</code>,
+															}
+														: null,
+													durationMs !== null && durationMs !== undefined
+														? { key: "duration", label: tCards("duration"), value: <span className="tabular-nums">{format.latency(durationMs) ?? "-"}</span> }
+														: null,
+													attemptFinishReason
+														? { key: "finish", label: s("Finish Reason"), value: attemptFinishReason }
+														: null,
+													attemptCostNanos > 0
+														? { key: "cost", label: s("Cost"), value: <span className="font-mono">{formatCost(attemptCostNanos)}</span> }
+														: null,
+													attemptFailed && attemptErrorCode
+														? { key: "error-code", label: tCards("errorCode"), value: <code className="break-all font-mono text-[11px]">{attemptErrorCode}</code> }
+														: null,
+													attemptFailed && attemptErrorMessage
+														? { key: "error-message", label: tCards("errorMessage"), value: <span className="line-clamp-4">{attemptErrorMessage}</span> }
+														: null,
+												]}
+											/>
+										</HoverCardBody>
 									</HoverCardContent>
 								</HoverCard>
 							</div>
@@ -1082,9 +1112,36 @@ export default function RequestDetailDialog({
 						  ]
 						: []),
 			  ];
+	const lifecycleJournal = readLifecycleJournal(request.detail_metadata?.lifecycle_events);
+	const firstModelStartMs = lifecycleJournal?.events.find((event) => event.type === "provider.started")?.elapsed_ms ?? 0;
+	const executionTimelineItems = lifecycleJournal?.events
+		.filter((event) => event.type === "provider.started" || event.type === "tool.started")
+		.map((event) => {
+			const completion = lifecycleJournal.events.find((candidate) => candidate.sequence > event.sequence && candidate.span_id === event.span_id && candidate.type === (event.type === "tool.started" ? "tool.completed" : "provider.completed"));
+			const isTool = event.type === "tool.started";
+			const callLabel = t((event.call_kind === "continuation" ? "trace.modelContinuation" : event.call_kind === "nested" ? "trace.nestedModelCall" : event.call_kind === "retry" ? "trace.modelRetry" : "trace.modelCall") as never);
+			return {
+				key: `execution-${event.sequence}`,
+				startMs: (timelineTiming.routingMs ?? 0) + Math.max(0, event.elapsed_ms - firstModelStartMs),
+				label: (
+					<div className="flex min-w-0 items-center gap-2" title={isTool ? t("trace.toolStarted" as never) : callLabel}>
+						{isTool ? <Wrench size={14} className="shrink-0 text-muted-foreground" aria-hidden="true" /> : event.provider ? <Logo id={event.provider} alt="" width={14} height={14} className="shrink-0" /> : <Bot size={14} className="shrink-0 text-muted-foreground" aria-hidden="true" />}
+						<div className="min-w-0">
+							{isTool ? <span className="block truncate font-medium">{event.tool_name?.replace(/^gateway_/, "") ?? t("trace.toolStarted" as never)}</span> : <>
+								{event.provider ? <Link href={event.provider === "private-model" ? "/settings/workspaces/private-models" : `/api-providers/${encodeURIComponent(event.provider)}`} className="block truncate font-medium underline decoration-transparent transition-colors hover:decoration-foreground/70">{providerNames?.get(event.provider) ?? event.provider}</Link> : <span className="block truncate font-medium">{s("Provider")}</span>}
+								{event.call_kind && event.call_kind !== "initial" ? <span className="block truncate text-[10px] text-muted-foreground">{callLabel}</span> : null}
+							</>}
+						</div>
+					</div>
+				),
+				duration: completion ? Math.max(0, completion.elapsed_ms - event.elapsed_ms) : null,
+				colorClass: isTool ? "bg-amber-500" : "bg-emerald-500",
+			};
+		});
 	const responseTimelineItems = [
 		{
 			key: "phaseo-routing",
+			...(executionTimelineItems?.length ? { startMs: 0 } : {}),
 			label: (
 				<div className="flex min-w-0 items-center gap-2" title={t("usageGaps.requestPreparation")}>
 					<Logo id="phaseo" alt="" width={14} height={14} className="shrink-0" />
@@ -1094,7 +1151,7 @@ export default function RequestDetailDialog({
 			duration: timelineTiming.routingMs,
 			colorClass: "bg-violet-500",
 		},
-		...providerTimelineItems,
+		...(executionTimelineItems?.length ? executionTimelineItems : providerTimelineItems),
 	];
 	const sessionFilterHref = request.session_id
 		? buildUsageLogsFilterHref({
@@ -1150,125 +1207,30 @@ export default function RequestDetailDialog({
 		{
 			label: s("Routed model"),
 			description: s("phraseTheCanonicalPhaseoModelSelectedAfterAliasesPresetsAndRouterExpansionAreResolved"),
-			value: modelHref ? (
-				<UsageEntityHoverCard
-					title={modelName || routedModelId || "-"}
-					subtitle={modelMeta?.organisationName ?? null}
-					href={modelHref}
-					visual={
-						modelMeta ? (
-							<Logo
-								id={modelMeta.organisationId}
-								width={16}
-								height={16}
-								className="flex-shrink-0"
-							/>
-						) : null
-					}
-					rows={[
-						{
-							label: s("Model ID"),
-							value: (
-								<code className="font-mono text-[11px]">
-									{routedModelId ?? "-"}
-								</code>
-							),
-						},
-						...(modelMeta?.organisationName
-							? [
-									{
-									label: s("Organisation"),
-										value: modelMeta.organisationName,
-									},
-							  ]
-							: []),
-					]}
-				>
-					<div className="flex items-center gap-2">
-						{modelMeta ? (
-							<Logo
-								id={modelMeta.organisationId}
-								width={16}
-								height={16}
-								className="flex-shrink-0"
-							/>
-						) : null}
-						<Link
-							href={modelHref}
-							className="min-w-0 break-words text-foreground underline decoration-transparent transition-colors duration-200 hover:text-foreground hover:decoration-foreground/70 sm:truncate"
-						>
-							{modelName || routedModelId || "-"}
-						</Link>
-					</div>
-				</UsageEntityHoverCard>
-			) : (
-				<UsageEntityHoverCard
-					title={modelName || routedModelId || "-"}
-					subtitle={modelMeta?.organisationName ?? null}
-					visual={
-						modelMeta ? (
-							<Logo
-								id={modelMeta.organisationId}
-								width={16}
-								height={16}
-								className="flex-shrink-0"
-							/>
-						) : null
-					}
-					rows={[
-						{
-											label: s("Model ID"),
-							value: (
-								<code className="font-mono text-[11px]">
-									{routedModelId ?? "-"}
-								</code>
-							),
-						},
-						...(modelMeta?.organisationName
-							? [
-									{
-									label: s("Organisation"),
-										value: modelMeta.organisationName,
-									},
-							  ]
-							: []),
-					]}
-				>
-					<div className="flex items-center gap-2">
-						{modelMeta ? (
-							<Logo
-								id={modelMeta.organisationId}
-								width={16}
-								height={16}
-								className="flex-shrink-0"
-							/>
-						) : null}
-						<span className="min-w-0 break-words sm:truncate">
-							{modelName || routedModelId || "-"}
-						</span>
-					</div>
-				</UsageEntityHoverCard>
+			value: (
+				<UsageEntityLink href={modelHref}>
+					{modelMeta ? (
+						<Logo
+							id={modelMeta.organisationId}
+							width={16}
+							height={16}
+							className="flex-shrink-0"
+						/>
+					) : null}
+					<span className="min-w-0 break-words sm:truncate">
+						{modelName || routedModelId || "-"}
+					</span>
+				</UsageEntityLink>
 			),
 		},
 		{
 			label: s("Requested model"),
 			description: s("phraseTheExactModelIDOrAliasSuppliedByTheClientInTheOriginalRequest"),
 			value: requestedModelId ? (
-				<UsageEntityHoverCard
-					title={requestedModelName || requestedModelId}
-					href={requestedModelHref ?? undefined}
-					visual={requestedModelMeta ? <Logo id={requestedModelMeta.organisationId} width={16} height={16} className="shrink-0" /> : null}
-					rows={[{ label: s("Model ID"), value: <code className="font-mono text-[11px]">{requestedModelId}</code> }]}
-				>
-					{requestedModelHref ? (
-						<Link href={requestedModelHref} className="inline-flex min-w-0 items-center gap-2 text-foreground underline decoration-transparent transition-colors hover:decoration-foreground/70 sm:justify-end">
-							{requestedModelMeta ? <Logo id={requestedModelMeta.organisationId} width={16} height={16} className="shrink-0" /> : null}
-							<span className="min-w-0 break-words sm:truncate">{requestedModelName || requestedModelId}</span>
-						</Link>
-					) : (
-						<span className="min-w-0 break-words sm:truncate">{requestedModelName || requestedModelId}</span>
-					)}
-				</UsageEntityHoverCard>
+				<UsageEntityLink href={requestedModelHref} className="sm:justify-end">
+					{requestedModelMeta ? <Logo id={requestedModelMeta.organisationId} width={16} height={16} className="shrink-0" /> : null}
+					<span className="min-w-0 break-words sm:truncate">{requestedModelName || requestedModelId}</span>
+				</UsageEntityLink>
 			) : (
 				"-"
 			),
@@ -1292,49 +1254,15 @@ export default function RequestDetailDialog({
 		{
 			label: s("Provider"),
 			value: request.provider ? (
-				<UsageEntityHoverCard
-					title={providerName ?? request.provider}
-				href={request.provider === "private-model" ? "/settings/workspaces/private-models" : `/api-providers/${encodeURIComponent(request.provider)}`}
-					visual={
-						<Logo
-							id={request.provider}
-							width={16}
-							height={16}
-							className="flex-shrink-0"
-						/>
-					}
-					rows={[
-						{
-							label: s("Provider ID"),
-							value: (
-								<code className="font-mono text-[11px]">
-									{request.provider}
-								</code>
-							),
-						},
-						...(providerPolicyLabel
-							? [
-									{
-									label: s("Data policy"),
-										value: providerPolicyLabel,
-									},
-							  ]
-							: []),
-					]}
-				>
-					<Link
-					href={request.provider === "private-model" ? "/settings/workspaces/private-models" : `/api-providers/${encodeURIComponent(request.provider)}`}
-					className="inline-flex items-center gap-2 text-foreground underline decoration-transparent transition-colors duration-200 hover:text-foreground hover:decoration-foreground/70"
-					>
-						<Logo
-							id={request.provider}
-							width={16}
-							height={16}
-							className="flex-shrink-0"
-						/>
-						<span>{providerName ?? request.provider}</span>
-					</Link>
-				</UsageEntityHoverCard>
+				<UsageEntityLink href={request.provider === "private-model" ? "/settings/workspaces/private-models" : `/api-providers/${encodeURIComponent(request.provider)}`}>
+					<Logo
+						id={request.provider}
+						width={16}
+						height={16}
+						className="flex-shrink-0"
+					/>
+					<span>{providerName ?? request.provider}</span>
+				</UsageEntityLink>
 			) : (
 				"-"
 			),
@@ -1381,32 +1309,9 @@ export default function RequestDetailDialog({
 			label: s("App where used"),
 			value:
 				request.app_id && appName ? (
-					<UsageEntityHoverCard
-						title={appName}
-						href={`/apps/${encodeURIComponent(request.app_id)}`}
-						visual={<AppWindow className="h-4 w-4 text-muted-foreground" />}
-						rows={[
-							{
-								label: s("App ID"),
-								value: (
-									<code className="font-mono text-[11px]">
-										{request.app_id}
-									</code>
-								),
-							},
-							{
-								label: s("Type"),
-								value: s("Workspace app"),
-							},
-						]}
-					>
-						<Link
-							href={`/apps/${encodeURIComponent(request.app_id)}`}
-							className="text-foreground underline decoration-transparent transition-colors duration-200 hover:text-foreground hover:decoration-foreground/70"
-						>
-							{appName}
-						</Link>
-					</UsageEntityHoverCard>
+					<UsageEntityLink href={`/apps/${encodeURIComponent(request.app_id)}`}>
+						{appName}
+					</UsageEntityLink>
 				) : (
 					appName ?? request.app_id ?? "-"
 				),
@@ -1481,6 +1386,8 @@ export default function RequestDetailDialog({
 		"App where used",
 	]);
 	const trainingPolicyItem = requestDetailItems.find((item) => item.label === s("Data policy"));
+	// Zero data retention kept this request out of the I/O log, from the workspace, a key guardrail or the request itself.
+	const ioLogSkippedForZeroDataRetention = ioLog?.reason === "zero_data_retention";
 	const dataPolicyItems = [
 		...(trainingPolicyItem
 			? [{
@@ -1499,7 +1406,9 @@ export default function RequestDetailDialog({
 						? m("Retained until", {
 								date: format.dateTime(ioLog.retention_until),
 							})
-						: s("No Retained Payload")}
+						: ioLogSkippedForZeroDataRetention
+							? t("trace.skippedZeroDataRetention" as never)
+							: s("No Retained Payload")}
 				</span>
 			),
 		},
@@ -1540,7 +1449,22 @@ export default function RequestDetailDialog({
 
 	const detailContent = (
 		<>
-				<RequestHeader request={request} headerNavigation={headerNavigation} />
+				<RequestHeader
+					request={request}
+					headerNavigation={headerNavigation}
+					actions={
+						canOpenRequestInChat({ endpoint: request.endpoint, ioLogStatus: ioLog?.status }) ? (
+							<Link
+								href={buildOpenRequestInChatHref(request.request_id, searchParams.get("workspaceId"))}
+								className={buttonVariants({ variant: "outline", size: "sm" })}
+								title={tUi("actions.openInChat")}
+							>
+								<MessageSquare />
+								<span className="sr-only sm:not-sr-only">{tUi("actions.openInChat")}</span>
+							</Link>
+						) : null
+					}
+				/>
 				{loading ? (
 					<div className="flex items-center gap-2 border-b border-border/70 px-5 py-2 text-xs text-muted-foreground sm:px-6">
 						<LoaderCircle className="size-3.5 animate-spin" />
@@ -1548,29 +1472,29 @@ export default function RequestDetailDialog({
 					</div>
 				) : null}
 				{headerActions ? (
-					<div className="border-b bg-muted/20 px-5 py-2 sm:px-6">
+					<div className="flex flex-wrap items-center gap-2 border-b bg-muted/20 px-5 py-2 sm:px-6">
 						{headerActions}
 					</div>
 				) : null}
 
 				<Tabs
-					key={`${request.request_id}:${traceEnabled}`}
+					key={request.request_id}
 					defaultValue="overview"
 					className="min-h-0 flex-1 gap-0"
 				>
-					{traceEnabled ? <TabsList
+					<TabsList
 						variant="line"
 						className="w-full shrink-0 justify-start rounded-none border-b border-border/70 px-5 sm:px-6"
 					>
 						<TabsTrigger value="overview">{t("strings.Overview" as never)}</TabsTrigger>
 						<TabsTrigger value="trace">{t("trace.trace" as never)}</TabsTrigger>
-					</TabsList> : null}
+					</TabsList>
 					<TabsContent value="overview" className="flex min-h-0 flex-1 flex-col overflow-hidden">
 						<ScrollArea
 							className={cn(
 								presentation === "sheet"
 									? "min-h-0 flex-1"
-									: traceEnabled ? "max-h-[calc(90vh-150px)]" : "max-h-[calc(90vh-110px)]",
+									: "max-h-[calc(90vh-150px)]",
 							)}
 							viewportClassName="px-5 py-3 sm:px-6"
 						>
@@ -2675,8 +2599,8 @@ export default function RequestDetailDialog({
 							<DetailKeyValueGrid
 								columns={3}
 								items={[
-									{ label: timelineTiming.generationMs !== null ? s("Provider latency") : s("Provider duration"), value: <span className="font-mono">{timelineTiming.providerMs !== null ? `${timingLatency} ms` : "-"}</span> },
-									{ label: s("Generation time"), value: <span className="font-mono">{timelineTiming.generationMs !== null ? `${timingGeneration} ms` : "-"}</span> },
+									{ label: timelineTiming.generationMs !== null ? s("Provider latency") : s("Provider duration"), value: <span className="font-mono">{timelineTiming.providerMs !== null ? formatLatency(timingLatency) : "-"}</span> },
+									{ label: s("Generation time"), value: <span className="font-mono">{timelineTiming.generationMs !== null ? formatLatency(timingGeneration) : "-"}</span> },
 									{ label: s("Throughput"), value: <span className="font-mono">{formatThroughput(request.throughput)}</span> },
 									{ label: s("Cost"), value: <span className="font-mono">{formatCost(request.cost_nanos)}</span> },
 									{ label: s("Tokens"), value: <span className="font-mono">{usageSummary.input != null || usageSummary.output != null ? `${formatUsageNumber(usageSummary.input ?? 0, format.number)} → ${formatUsageNumber(usageSummary.output ?? 0, format.number)}` : "-"}</span> },
@@ -2707,6 +2631,8 @@ export default function RequestDetailDialog({
 							)}
 						</GenerationSection>
 
+						<RequestClassificationsSection detailMetadata={request.detail_metadata} classifiers={classifiers} modelName={(id) => getModelDisplayName(id, metadata)} />
+
 						<GenerationSection title={s("Data Policy")}>
 							<DetailRows items={dataPolicyItems} />
 						</GenerationSection>
@@ -2724,7 +2650,7 @@ export default function RequestDetailDialog({
 											<div className="min-w-0"><p className="mb-2 font-medium">{s("Prompt")}</p><pre className="max-h-96 overflow-auto rounded-md border bg-muted/30 p-3 text-xs leading-5 whitespace-pre-wrap break-words">{JSON.stringify(ioLog.payload.request_payload ?? ioLog.payload.provider_request ?? null, null, 2)}</pre></div>
 											<div className="min-w-0"><p className="mb-2 font-medium">{s("Completion")}</p><pre className="max-h-96 overflow-auto rounded-md border bg-muted/30 p-3 text-xs leading-5 whitespace-pre-wrap break-words">{JSON.stringify(ioLog.payload.gateway_response ?? ioLog.payload.provider_response ?? null, null, 2)}</pre></div>
 										</div>
-									) : <p className="text-muted-foreground">{ioLog.error ?? s("phraseNoIOPayloadIsAvailableForThisRequest")}</p>}
+									) : <p className="text-muted-foreground">{ioLog.status === "restricted" ? tUi("privacy.contentsRestricted") : ioLogSkippedForZeroDataRetention ? t("trace.skippedZeroDataRetention" as never) : ioLog.error ?? s("phraseNoIOPayloadIsAvailableForThisRequest")}</p>}
 								</div>
 							</GenerationSection>
 						) : null}
@@ -2742,7 +2668,7 @@ export default function RequestDetailDialog({
 											className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2"
 										>
 											<code className="whitespace-pre-wrap break-words font-mono text-xs">
-												{formatRequestPricingLine(line, (value) => format.number(value, { notation: "standard" }))}
+												{formatRequestPricingLine(line, (value) => format.number(value, { notation: "standard" }), { svgAuthor: s("SVG author"), imageTool: s("Image tool") })}
 											</code>
 										</div>
 									))}
@@ -2752,7 +2678,7 @@ export default function RequestDetailDialog({
 						</div>
 						</ScrollArea>
 					</TabsContent>
-					{traceEnabled ? <TabsContent value="trace" className="flex min-h-0 flex-1 flex-col overflow-hidden">
+					<TabsContent value="trace" className="flex min-h-0 flex-1 flex-col overflow-hidden">
 						<ScrollArea
 							className="h-full min-h-0"
 							viewportClassName="px-5 py-3 sm:px-6"
@@ -2764,7 +2690,7 @@ export default function RequestDetailDialog({
 								providerNames={providerNames}
 							/>
 						</ScrollArea>
-					</TabsContent> : null}
+					</TabsContent>
 				</Tabs>
 		</>
 	);
@@ -2777,7 +2703,7 @@ export default function RequestDetailDialog({
 				disablePointerDismissal={disablePointerDismissal}
 			>
 				<ProviderInspectorSheetContent
-					className={traceEnabled ? "!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[72vw] lg:!w-[68vw] xl:!w-[64vw] 2xl:!w-[60vw] data-[side=right]:sm:max-w-none" : "!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[58vw] lg:!w-[54vw] xl:!w-[50vw] 2xl:!w-[46vw] data-[side=right]:sm:max-w-none"}
+					className={"!w-full max-w-none gap-0 overflow-hidden p-0 sm:max-w-none md:!w-[72vw] lg:!w-[68vw] xl:!w-[64vw] 2xl:!w-[60vw] data-[side=right]:sm:max-w-none"}
 				>
 					{detailContent}
 				</ProviderInspectorSheetContent>

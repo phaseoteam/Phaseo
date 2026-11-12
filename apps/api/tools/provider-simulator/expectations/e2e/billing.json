@@ -1,0 +1,439 @@
+{
+	"group": "billing",
+	"description": "Billing end to end for text: one provider per upstream dialect x the three text surfaces x streaming/buffered, fed a usage object with every field the provider documents. Expected cost = catalogue price card applied to the documented usage semantics.",
+	"entries": [
+		{
+			"id": "billing-deepinfra",
+			"cases": "re:^billing.deepinfra.(chat|responses|messages).(stream|buffered)$",
+			"description": "Charged cost for deepinfra's documented usage, identical on every surface and mode.",
+			"checks": [
+				{
+					"path": "client.status",
+					"op": "equals",
+					"value": 200,
+					"kind": "error_mapping",
+					"source": {
+						"kind": "assumed",
+						"reason": "The provider returned a complete, successful response; the client must receive it."
+					}
+				},
+				{
+					"path": "billing.chargeCount",
+					"op": "equals",
+					"value": 1,
+					"source": {
+						"kind": "assumed",
+						"reason": "Every successful managed request is charged exactly once."
+					},
+					"kind": "billing_under"
+				},
+				{
+					"path": "billing",
+					"op": "billing",
+					"value": {
+						"meters": {
+							"input_text_tokens": 100003,
+							"output_text_tokens": 5003
+						}
+					},
+					"source": {
+						"kind": "docs",
+						"url": "https://deepinfra.com/docs/openai_api",
+						"note": "OpenAI-compatible usage: prompt_tokens and completion_tokens; DeepInfra's spec documents no detail objects, so none are sent."
+					}
+				}
+			]
+		},
+		{
+			"id": "billing-openai",
+			"cases": "re:^billing.openai.(chat|responses|messages).(stream|buffered)$",
+			"description": "Charged cost for openai's documented usage, identical on every surface and mode.",
+			"checks": [
+				{
+					"path": "client.status",
+					"op": "equals",
+					"value": 200,
+					"kind": "error_mapping",
+					"source": {
+						"kind": "assumed",
+						"reason": "The provider returned a complete, successful response; the client must receive it."
+					}
+				},
+				{
+					"path": "billing.chargeCount",
+					"op": "equals",
+					"value": 1,
+					"source": {
+						"kind": "assumed",
+						"reason": "Every successful managed request is charged exactly once."
+					},
+					"kind": "billing_under"
+				},
+				{
+					"path": "billing",
+					"op": "billing",
+					"value": {
+						"meters": {
+							"input_text_tokens": 79992,
+							"cached_read_text_tokens": 20011,
+							"output_text_tokens": 5003
+						}
+					},
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/responses/object",
+						"note": "usage.input_tokens includes input_tokens_details.cached_tokens (100,003 = 79,992 uncached + 20,011 cached); output_tokens includes reasoning_tokens."
+					}
+				}
+			]
+		},
+		{
+			"id": "billing-anthropic",
+			"cases": "re:^billing.anthropic.(chat|responses|messages).(stream|buffered)$",
+			"description": "Charged cost for anthropic's documented usage, identical on every surface and mode.",
+			"checks": [
+				{
+					"path": "client.status",
+					"op": "equals",
+					"value": 200,
+					"kind": "error_mapping",
+					"source": {
+						"kind": "assumed",
+						"reason": "The provider returned a complete, successful response; the client must receive it."
+					}
+				},
+				{
+					"path": "billing.chargeCount",
+					"op": "equals",
+					"value": 1,
+					"source": {
+						"kind": "assumed",
+						"reason": "Every successful managed request is charged exactly once."
+					},
+					"kind": "billing_under"
+				},
+				{
+					"path": "billing",
+					"op": "billing",
+					"value": {
+						"meters": {
+							"input_text_tokens": 100003,
+							"cached_read_text_tokens": 20011,
+							"cached_write_text_tokens_5m": 1013,
+							"cached_write_text_tokens_1h": 2006,
+							"output_text_tokens": 5003,
+							"native_web_search_requests": 2
+						}
+					},
+					"source": {
+						"kind": "docs",
+						"url": "https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching",
+						"note": "input_tokens excludes cache_read_input_tokens and cache_creation_input_tokens; cache_creation splits into ephemeral_5m/1h; output_tokens includes thinking; server_tool_use.web_search_requests is billed per search."
+					}
+				}
+			]
+		},
+		{
+			"id": "billing-google-vertex",
+			"cases": "re:^billing.google-vertex.(chat|responses|messages).(stream|buffered)$",
+			"description": "Charged cost for google-vertex's documented usage, identical on every surface and mode.",
+			"checks": [
+				{
+					"path": "client.status",
+					"op": "equals",
+					"value": 200,
+					"kind": "error_mapping",
+					"source": {
+						"kind": "assumed",
+						"reason": "The provider returned a complete, successful response; the client must receive it."
+					}
+				},
+				{
+					"path": "billing.chargeCount",
+					"op": "equals",
+					"value": 1,
+					"source": {
+						"kind": "assumed",
+						"reason": "Every successful managed request is charged exactly once."
+					},
+					"kind": "billing_under"
+				},
+				{
+					"path": "billing",
+					"op": "billing",
+					"value": {
+						"meters": {
+							"input_text_tokens": 79875,
+							"input_image_tokens": 307,
+							"input_audio_tokens": 211,
+							"cached_read_text_tokens": 20011,
+							"output_text_tokens": 5003
+						},
+						"params": {
+							"input_tokens": 100404
+						}
+					},
+					"source": {
+						"kind": "docs",
+						"url": "https://ai.google.dev/api/generate-content#UsageMetadata",
+						"note": "promptTokenCount (100,003; TEXT 99,485 + IMAGE 307 + AUDIO 211) includes cachedContentTokenCount (TEXT 20,011); toolUsePromptTokenCount (401) is extra input; thoughtsTokenCount (1,109) is billed as output with candidatesTokenCount (3,894), per https://cloud.google.com/vertex-ai/generative-ai/pricing."
+					}
+				}
+			]
+		},
+		{
+			"id": "billing-client-cached-openai-chat",
+			"cases": "billing.openai.chat.buffered",
+			"checks": [
+				{
+					"path": "client.body.usage.prompt_tokens_details.cached_tokens",
+					"op": "equals",
+					"value": 20011,
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/chat/object",
+						"note": "Cached prompt tokens are reported to the client in the surface's own usage field."
+					}
+				}
+			]
+		},
+		{
+			"id": "billing-client-cached-openai-responses",
+			"cases": "billing.openai.responses.buffered",
+			"checks": [
+				{
+					"path": "client.body.usage.input_tokens_details.cached_tokens",
+					"op": "equals",
+					"value": 20011,
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/responses/object",
+						"note": "Cached prompt tokens are reported to the client in the surface's own usage field."
+					}
+				}
+			]
+		},
+		{
+			"id": "billing-client-cached-openai-messages",
+			"cases": "billing.openai.messages.buffered",
+			"checks": [
+				{
+					"path": "client.body.usage.cache_read_input_tokens",
+					"op": "equals",
+					"value": 20011,
+					"source": {
+						"kind": "docs",
+						"url": "https://docs.anthropic.com/en/api/messages",
+						"note": "Cached prompt tokens are reported to the client in the surface's own usage field."
+					}
+				}
+			]
+		},
+		{
+			"id": "billing-client-cached-anthropic-chat",
+			"cases": "billing.anthropic.chat.buffered",
+			"checks": [
+				{
+					"path": "client.body.usage.prompt_tokens_details.cached_tokens",
+					"op": "equals",
+					"value": 20011,
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/chat/object",
+						"note": "Cached prompt tokens are reported to the client in the surface's own usage field."
+					}
+				}
+			]
+		},
+		{
+			"id": "billing-client-cached-anthropic-responses",
+			"cases": "billing.anthropic.responses.buffered",
+			"checks": [
+				{
+					"path": "client.body.usage.input_tokens_details.cached_tokens",
+					"op": "equals",
+					"value": 20011,
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/responses/object",
+						"note": "Cached prompt tokens are reported to the client in the surface's own usage field."
+					}
+				}
+			]
+		},
+		{
+			"id": "billing-client-cached-anthropic-messages",
+			"cases": "billing.anthropic.messages.buffered",
+			"checks": [
+				{
+					"path": "client.body.usage.cache_read_input_tokens",
+					"op": "equals",
+					"value": 20011,
+					"source": {
+						"kind": "docs",
+						"url": "https://docs.anthropic.com/en/api/messages",
+						"note": "Cached prompt tokens are reported to the client in the surface's own usage field."
+					}
+				}
+			]
+		},
+		{
+			"id": "billing-client-cached-google-vertex-chat",
+			"cases": "billing.google-vertex.chat.buffered",
+			"checks": [
+				{
+					"path": "client.body.usage.prompt_tokens_details.cached_tokens",
+					"op": "equals",
+					"value": 20011,
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/chat/object",
+						"note": "Cached prompt tokens are reported to the client in the surface's own usage field."
+					}
+				}
+			]
+		},
+		{
+			"id": "billing-client-cached-google-vertex-responses",
+			"cases": "billing.google-vertex.responses.buffered",
+			"checks": [
+				{
+					"path": "client.body.usage.input_tokens_details.cached_tokens",
+					"op": "equals",
+					"value": 20011,
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/responses/object",
+						"note": "Cached prompt tokens are reported to the client in the surface's own usage field."
+					}
+				}
+			]
+		},
+		{
+			"id": "billing-client-cached-google-vertex-messages",
+			"cases": "billing.google-vertex.messages.buffered",
+			"checks": [
+				{
+					"path": "client.body.usage.cache_read_input_tokens",
+					"op": "equals",
+					"value": 20011,
+					"source": {
+						"kind": "docs",
+						"url": "https://docs.anthropic.com/en/api/messages",
+						"note": "Cached prompt tokens are reported to the client in the surface's own usage field."
+					}
+				}
+			]
+		},
+		{
+			"id": "billing-client-output-openai",
+			"cases": "billing.openai.chat.buffered",
+			"checks": [
+				{
+					"path": "client.body.usage.completion_tokens",
+					"op": "equals",
+					"value": 5003,
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/chat/object",
+						"note": "completion_tokens includes reasoning tokens (completion_tokens_details.reasoning_tokens is a subset)."
+					}
+				}
+			]
+		},
+		{
+			"id": "billing-client-output-anthropic",
+			"cases": "billing.anthropic.chat.buffered",
+			"checks": [
+				{
+					"path": "client.body.usage.completion_tokens",
+					"op": "equals",
+					"value": 5003,
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/chat/object",
+						"note": "completion_tokens includes reasoning tokens (completion_tokens_details.reasoning_tokens is a subset)."
+					}
+				}
+			]
+		},
+		{
+			"id": "billing-client-output-google-vertex",
+			"cases": "billing.google-vertex.chat.buffered",
+			"checks": [
+				{
+					"path": "client.body.usage.completion_tokens",
+					"op": "equals",
+					"value": 5003,
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/chat/object",
+						"note": "completion_tokens includes reasoning tokens (completion_tokens_details.reasoning_tokens is a subset)."
+					}
+				}
+			]
+		},
+		{
+			"id": "billing-client-output-deepinfra",
+			"cases": "billing.deepinfra.chat.buffered",
+			"checks": [
+				{
+					"path": "client.body.usage.completion_tokens",
+					"op": "equals",
+					"value": 5003,
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/chat/object",
+						"note": "completion_tokens includes reasoning tokens (completion_tokens_details.reasoning_tokens is a subset)."
+					}
+				}
+			]
+		},
+		{
+			"id": "billing-unpriced-cache-field",
+			"cases": "re:^billing.deepinfra.chat.(stream|buffered).unpriced-cache-field$",
+			"description": "A cached-token count the card does not price must still bill the prompt at the input price, never fail accounting.",
+			"checks": [
+				{
+					"path": "client.status",
+					"op": "equals",
+					"value": 200,
+					"kind": "error_mapping",
+					"source": {
+						"kind": "assumed",
+						"reason": "The provider returned a successful completion; a missing price rule for a sub-meter is a Phaseo catalogue gap, not a client error."
+					}
+				},
+				{
+					"path": "billing.chargeCount",
+					"op": "equals",
+					"value": 1,
+					"source": {
+						"kind": "assumed",
+						"reason": "Every successful managed request is charged exactly once."
+					},
+					"kind": "billing_under"
+				},
+				{
+					"path": "billing",
+					"op": "billing",
+					"value": {
+						"meters": {
+							"input_text_tokens": 79992,
+							"cached_read_text_tokens": 20011,
+							"output_text_tokens": 5003
+						},
+						"foldUnpriced": {
+							"cached_read_text_tokens": "input_text_tokens"
+						}
+					},
+					"source": {
+						"kind": "docs",
+						"url": "https://platform.openai.com/docs/api-reference/chat/object",
+						"note": "prompt_tokens includes prompt_tokens_details.cached_tokens; with no cached-read rule the cached part is billed at the input price."
+					}
+				}
+			]
+		}
+	]
+}

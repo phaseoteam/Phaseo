@@ -7,22 +7,29 @@ import { dispatchBackground, getSupabaseAdmin, getCache } from "@/runtime/env";
 import { getProviderResidencyMetadata } from "@/lib/config/providerResidency";
 import { parseRouteAvailabilityPolicy } from "@/lib/config/routeAvailability";
 import { getTextMany, keyVersionToken } from "@/core/kv";
+import { tieredRead } from "@/core/tiered-cache";
 import { gatewayCreditCacheKey } from "@/core/gateway-credit-cache";
 import { isDataContributionAccessEnabled } from "@/core/feature-flags";
 import { normalizePrivateModelBaseUrl } from "@/core/private-models";
+import { routeOutputTokenLimit } from "@core/route-token-limits";
 import { loadPrivateRouteRow } from "./privateModelCache";
-import { contextBundleEnabled, loadTextContextBundle, type ContextBundle } from "./contextBundle";
+import { getWorkspacePolicyVersionToken } from "./workspacePolicy";
+import { contextBundleEnabled, loadTextContextBundle, parseWorkspaceBundle, type ContextBundle, type WorkspaceBundle } from "./contextBundle";
 import { bytesToString, decryptBYOK } from "@pipeline/byok/decrypt";
 import { BYOK_KEYS_PER_PROVIDER_LIMIT, isByokKeyEligible } from "@/core/byok";
 import { contextSchema } from "./schemas";
+import { parsePresetReference } from "./presetReference";
 import { loadPriceCard } from "@pipeline/pricing";
+import { isFreePriceCard } from "@pipeline/pricing/free";
 import { getContextCapabilityCandidates } from "./context.capability-aliases";
 import {
 	applyNebiusRegionalModelAllowlist,
 	splitProviderScopedModel,
 } from "./context.nebius";
 import { applyExplicitProviderModelRouting } from "./context.provider-offers";
+import { awaitShared } from "@core/shared-wait";
 import {
+	clampDynamicTtl,
 	clampTtl,
 	cloneGatewayContextData,
 	computeAdaptiveTtlForDynamic,
@@ -69,15 +76,32 @@ const CONTEXT_CACHE_PREFIX = "gateway:context";
 // Multi-tier caching constants (respecting Cloudflare KV 60s minimum)
 // Bump when the static context payload changes or a catalogue/pricing repair
 // must invalidate previously cached provider cards across Worker isolates.
-const STATIC_CACHE_PREFIX = "gateway:static:v5";
+const STATIC_CACHE_PREFIX = "gateway:static:v6";
 const DYNAMIC_CACHE_PREFIX = "gateway:dynamic";
 // Preset payloads include provider/pricing snapshots too, so invalidate them
 // with the static context when catalogue or pricing data changes.
-const PRESET_CACHE_PREFIX = "gateway:preset:v4";
+const PRESET_CACHE_PREFIX = "gateway:preset:v5";
+
+// The bundle RPC's model-independent part (BYOK metadata, settings, billing mode), per workspace,
+// key and version token. Bump with a change to WorkspaceBundle.
+const WORKSPACE_BUNDLE_CACHE_PREFIX = "gateway:workspace-bundle:v1";
+// No longer than the shortest static TTL, so BYOK metadata is never older than it can be today.
+const WORKSPACE_BUNDLE_TTL_S = 300;
+
+type DynamicContextEntry = Parameters<typeof mergeCachedContext>[0]["dynamic"];
+
+/** A cached workspace bundle for this workspace with at least a minute (the KV minimum TTL) left. */
+function usableWorkspaceBundle(value: unknown, workspaceId: string): WorkspaceBundle | null {
+	const bundle = parseWorkspaceBundle(value);
+	if (!bundle || bundle.workspaceId !== workspaceId) return null;
+	const ageS = (Date.now() - bundle.at) / 1000;
+	return ageS >= 0 && ageS <= WORKSPACE_BUNDLE_TTL_S - 60 ? bundle : null;
+}
 
 const PRESET_TTL = 120;      // 2 minutes
 const CONTEXT_INFLIGHT_MAX_ENTRIES = 512;
-const CONTEXT_KEY_VERSION_L1_TTL_MS = 5_000;
+// Capped by the shared copy's absolute expiry (see shared-version-cache).
+const CONTEXT_KEY_VERSION_L1_TTL_MS = 30_000;
 const FREE_ROUTER_MODEL_ID = "phaseo/free";
 const MIN_INFERENCE_CREDIT_NANOS = 100_000_000;
 const MIN_ASYNC_CREDIT_NANOS = 1_000_000_000;
@@ -89,28 +113,54 @@ function minimumCreditNanos(endpoint: string): number {
 }
 
 const contextInflight = new Map<string, Promise<GatewayContextData>>();
+// A concurrent miss joins another request's context load for at most this long, then loads itself.
+const CONTEXT_SHARED_WAIT_MS = 2_000;
 
-async function assertPresetAccess(args: {
+type PresetAccess = "allowed" | "api_key_not_authorized" | "preset_not_found";
+
+async function lookupPresetAccess(args: {
+	workspaceId: string;
+	apiKeyId: string;
+	slug: string;
+}): Promise<PresetAccess> {
+	const supabase = getSupabaseAdmin();
+	const [{ data: key, error: keyError }, { data: preset, error: presetError }] =
+		await Promise.all([
+			supabase.from("keys").select("created_by,workspace_id,status").eq("id", args.apiKeyId).maybeSingle(),
+			supabase.from("presets").select("created_by,visibility").eq("workspace_id", args.workspaceId).eq("slug", args.slug).is("archived_at", null).maybeSingle(),
+		]);
+	if (keyError || presetError) throw new Error("preset_access_lookup_failed");
+	if (!key || key.workspace_id !== args.workspaceId || key.status !== "active") return "api_key_not_authorized";
+	if (!preset) return "preset_not_found";
+	if (preset.visibility === "private" && preset.created_by !== key.created_by) return "preset_not_found";
+	return "allowed";
+}
+
+export async function assertPresetAccess(args: {
 	workspaceId: string;
 	apiKeyId: string;
 	model: string;
 }): Promise<void> {
-	if (!args.model.startsWith("@")) return;
-	const supabase = getSupabaseAdmin();
-	const slug = args.model.slice(1);
-	const [{ data: key, error: keyError }, { data: preset, error: presetError }] =
-		await Promise.all([
-			supabase.from("keys").select("created_by,workspace_id,status").eq("id", args.apiKeyId).maybeSingle(),
-			supabase.from("presets").select("created_by,visibility").eq("workspace_id", args.workspaceId).eq("slug", slug).is("archived_at", null).maybeSingle(),
-		]);
-	if (keyError || presetError) throw new Error("preset_access_lookup_failed");
-	if (!key || key.workspace_id !== args.workspaceId || key.status !== "active") {
-		throw new Error("api_key_not_authorized");
-	}
-	if (!preset) throw new Error("preset_not_found");
-	if (preset.visibility === "private" && preset.created_by !== key.created_by) {
-		throw new Error("preset_not_found");
-	}
+	const reference = parsePresetReference(args.model);
+	if (!reference) return;
+	// "@handle/slug" names another workspace's public preset. The context RPC
+	// resolves those globally and only when public, so this workspace-local
+	// check does not apply (it would never find the preset here).
+	if (reference.publisher !== null) return;
+	// A pinned "@slug@ref" needs the same access as "@slug"; the RPC checks the
+	// pinned version itself.
+	const slug = reference.slug;
+	// Isolate-only and short-lived: an access decision, so visibility or key
+	// changes apply within 30 s and stale answers are never used past 60 s.
+	const access = await tieredRead<PresetAccess>({
+		key: `preset-access:${JSON.stringify([args.workspaceId, args.apiKeyId, slug])}`,
+		loader: () => lookupPresetAccess({ workspaceId: args.workspaceId, apiKeyId: args.apiKeyId, slug }),
+		l1FreshMs: 30_000,
+		maxStaleMs: 60_000,
+		l2: false,
+		l3: false,
+	});
+	if (access !== "allowed") throw new Error(access ?? "preset_access_lookup_failed");
 }
 
 type CreditContextSnapshot = Pick<
@@ -483,8 +533,10 @@ function mergeGatewayContextVariants(
                         : provider.capabilityParams,
                 maxInputTokens:
                     existing.maxInputTokens ?? provider.maxInputTokens ?? null,
+                // A stored 0 is unknown, so it must not hide the other row's real limit.
                 maxOutputTokens:
-                    existing.maxOutputTokens ?? provider.maxOutputTokens ?? null,
+                    routeOutputTokenLimit(existing.maxOutputTokens) ??
+                    routeOutputTokenLimit(provider.maxOutputTokens),
             };
         }
     }
@@ -685,7 +737,7 @@ async function resolveProviderScopedModelToApiModel(args: {
         args.model,
     );
     const { data: capabilityRows, error: capabilityError } = await supabase
-        .from("v2_route_capabilities")
+        .from("v2_effective_route_capabilities")
         .select("provider_api_model_id:provider_model_id")
         .in("capability_id", capabilityCandidates)
         .in("status", [...ROUTABLE_CAPABILITY_STATUSES])
@@ -734,7 +786,7 @@ async function fetchTestingProviderSnapshots(args: {
     const byApiModelResult = await supabase
         .from("v2_model_provider_routes")
         .select(
-            "provider_api_model_id:provider_model_id,provider_id:provider_slug,provider_model_slug,is_active_gateway:routing_enabled,routing_status:status,provider_availability_status,phaseo_status,access_scope,effective_from,effective_to,input_modalities,output_modalities,metadata"
+            "provider_api_model_id:provider_model_id,provider_id:provider_slug,model_slug,provider_model_slug,is_active_gateway:routing_enabled,routing_status:status,provider_availability_status,phaseo_status,access_scope,effective_from,effective_to,input_modalities,output_modalities,metadata"
         )
         .in("model_slug", modelCandidates)
         .eq("access_scope", "internal")
@@ -776,7 +828,7 @@ async function fetchTestingProviderSnapshots(args: {
     if (!providerModelIds.length) return [];
 
     const { data: capabilityRows, error: capabilityError } = await supabase
-        .from("v2_route_capabilities")
+        .from("v2_effective_route_capabilities")
         .select(
             "provider_api_model_id:provider_model_id,params,max_input_tokens,max_output_tokens,status,updated_at,created_at"
         )
@@ -859,10 +911,12 @@ async function fetchTestingProviderSnapshots(args: {
         const providerId = row?.provider_id;
         if (typeof providerApiModelId !== "string" || typeof providerId !== "string") continue;
         const cap = latestCapabilityByProviderModel.get(providerApiModelId);
+        const inputModalities = parseModalities(row?.input_modalities);
+        const outputModalities = parseModalities(row?.output_modalities);
         const inferredSupport = supportsEndpointViaModalities({
             endpoint: args.endpoint,
-            inputModalities: parseModalities(row?.input_modalities),
-            outputModalities: parseModalities(row?.output_modalities),
+            inputModalities,
+            outputModalities,
         });
         if (!cap && !inferredSupport) continue;
         const providerModelSlug =
@@ -877,7 +931,10 @@ async function fetchTestingProviderSnapshots(args: {
             providerModelSlug,
         });
         testingProviders.push({
+            accessScope: "internal",
             providerId,
+            apiModelId: row.model_slug,
+            pricingKey: getProviderPricingKey(providerId, row.model_slug, providerModelSlug),
             providerStatus: "active",
             providerRoutingStatus: "active",
             modelRoutingStatus: normalizeRoutingStatus(row?.routing_status),
@@ -891,6 +948,8 @@ async function fetchTestingProviderSnapshots(args: {
             baseWeight: 1,
             byokMeta: byokByProvider.get(providerId) ?? [],
             providerModelSlug,
+            inputModalities: setToArrayOrNull(inputModalities),
+            outputModalities: setToArrayOrNull(outputModalities),
             quantizationScheme:
 				typeof row?.metadata?.quantization_scheme === "string"
 					? row.metadata.quantization_scheme
@@ -965,7 +1024,7 @@ async function fetchFreeRouterProviderPool(args: {
     );
     const capabilityId = getContextCapabilityCandidates(args.endpoint, FREE_ROUTER_MODEL_ID)[0] ?? args.endpoint;
     const { data: capabilityRows, error: capabilityError } = await supabase
-        .from("v2_route_capabilities")
+        .from("v2_effective_route_capabilities")
         .select("provider_api_model_id:provider_model_id,params,max_input_tokens,max_output_tokens,status,updated_at,created_at")
         .eq("capability_id", capabilityId)
         .in("status", [...ROUTABLE_CAPABILITY_STATUSES])
@@ -1017,12 +1076,20 @@ async function fetchFreeRouterProviderPool(args: {
             row.provider_model_slug === null || row.provider_model_slug === undefined
                 ? null
                 : String(row.provider_model_slug);
+        // The router must never incur cost: pool only routes whose card bills
+        // nothing. A `:free` slug is not proof. A route whose free window has
+        // expired, or whose card also carries paid rules, is left out rather
+        // than letting it block (or bill) every phaseo/free request.
+        const card = await loadPriceCard(providerId, apiModelId, args.endpoint, providerModelSlug);
+        if (!isFreePriceCard(card)) continue;
+
         const providerStatus = providerStatusById.get(providerId);
         const residency = getProviderResidencyMetadata({
             providerId,
             providerModelSlug,
         });
 		const pricingKey = getProviderPricingKey(providerId, apiModelId, providerModelSlug);
+        pricing[pricingKey] = card;
         providers.push({
             providerId,
             providerStatus: providerStatus?.status ?? "not_ready",
@@ -1054,11 +1121,6 @@ async function fetchFreeRouterProviderPool(args: {
                     ? null
                     : Number(capability.max_output_tokens),
         });
-
-        const card = await loadPriceCard(providerId, apiModelId, args.endpoint, providerModelSlug);
-        if (card) {
-            pricing[pricingKey] = card;
-        }
     }
 
     return { providers, pricing };
@@ -1070,6 +1132,7 @@ export async function fetchGatewayContext(args: {
     endpoint: string;
     apiKeyId: string;
     includeTestingMode?: boolean;
+    internalOnly?: boolean;
     disableCache?: boolean;
     onCreditCacheWrite?: (write: Promise<void>) => void;
 }): Promise<GatewayContextData> {
@@ -1112,7 +1175,7 @@ export async function fetchGatewayContext(args: {
         if (privateResult.ok === false) throw privateResult.error;
         const privateModel = privateResult.value;
         const startedAt = performance.now();
-		if (privateModel) {
+		if (privateModel && !args.internalOnly) {
 			value = {
 				...value,
 				resolvedModel: args.model,
@@ -1143,24 +1206,41 @@ export async function fetchGatewayContext(args: {
     const isPreset = args.model.startsWith("@");
     const useContextBundle = !isPreset && !args.includeTestingMode && !isFreeRouterModel(args.model) &&
         ["responses", "chat.completions", "messages", "text.generate"].includes(args.endpoint) && contextBundleEnabled();
-    const shouldUseCache = !args.disableCache;
-    const needsVersionToken = shouldUseCache;
+    let shouldUseCache = !args.disableCache;
     let versionToken = "v0";
-    if (needsVersionToken) {
+    if (shouldUseCache) {
         const keyVersionStartedAt = performance.now();
-        versionToken = await keyVersionToken("id", args.apiKeyId, {
-            useL1Cache: true,
-            l1TtlMs: CONTEXT_KEY_VERSION_L1_TTL_MS,
-        });
+        // Key version and workspace version invalidate independently; both are
+        // isolate-cached for a few seconds and read in parallel.
+        const [keyVersion, workspaceVersion] = await Promise.all([
+            keyVersionToken("id", args.apiKeyId, {
+                useL1Cache: true,
+                l1TtlMs: CONTEXT_KEY_VERSION_L1_TTL_MS,
+            }),
+            getWorkspacePolicyVersionToken(args.workspaceId),
+        ]);
         telemetry.keyVersionMs = round3(performance.now() - keyVersionStartedAt);
+        if (keyVersion && workspaceVersion) {
+            versionToken = `${keyVersion}.w${workspaceVersion.replace(/^v/, "")}`;
+        } else {
+            // A counter could not be read, so any cached entry may predate a change.
+            shouldUseCache = false;
+        }
     }
-    const testingModeCacheSegment = args.includeTestingMode ? "testing" : "default";
+    const testingModeCacheSegment = args.internalOnly ? "internal" : args.includeTestingMode ? "testing" : "default";
     const dynamicCacheKey = `${DYNAMIC_CACHE_PREFIX}:${testingModeCacheSegment}:${args.workspaceId}:${args.apiKeyId}:${versionToken}`;
     const creditCacheKey = gatewayCreditCacheKey(args.workspaceId);
     const staticCacheKey = isPreset
         ? `${PRESET_CACHE_PREFIX}:${testingModeCacheSegment}:${args.workspaceId}:${args.apiKeyId}:${versionToken}:${args.model}:${args.endpoint}`
         : `${STATIC_CACHE_PREFIX}:${testingModeCacheSegment}:${args.workspaceId}:${versionToken}:${args.endpoint}:${args.model}`;
     const compositionCacheKey = `${CONTEXT_CACHE_PREFIX}:compose:${testingModeCacheSegment}:${args.workspaceId}:${args.apiKeyId}:${versionToken}:${args.endpoint}:${args.model}`;
+    // The model-independent part of the bundle RPC (BYOK metadata, settings, billing mode), so a
+    // model this key has not used yet needs only the shared public catalogue, not the RPC. Keyed
+    // like the dynamic entry: any key or workspace version bump replaces it, and like every
+    // other context entry it is neither read nor written when a version cannot be read.
+    const workspaceBundleCacheKey = `${WORKSPACE_BUNDLE_CACHE_PREFIX}:${testingModeCacheSegment}:${args.workspaceId}:${args.apiKeyId}:${versionToken}`;
+    // Set when the workspace and key data are cached but this model's routes and prices are not.
+    let modelMiss: { dynamic: DynamicContextEntry; credit: CreditContextSnapshot; workspace: WorkspaceBundle } | null = null;
 
     // Try split cache first (parallel read of dynamic and static segments).
     if (shouldUseCache) {
@@ -1170,74 +1250,81 @@ export async function fetchGatewayContext(args: {
                 dynamicCacheKey,
                 staticCacheKey,
                 creditCacheKey,
+                ...(useContextBundle && !args.internalOnly ? [workspaceBundleCacheKey] : []),
             ]);
             const dynamicCachedRaw = cachedValues[dynamicCacheKey] ?? null;
             const staticCachedRaw = cachedValues[staticCacheKey] ?? null;
             const creditCachedRaw = cachedValues[creditCacheKey] ?? null;
+            const workspaceBundleRaw = cachedValues[workspaceBundleCacheKey] ?? null;
             telemetry.cacheReadMs = round3(performance.now() - cacheReadStartedAt);
-            if (dynamicCachedRaw && staticCachedRaw) {
-                const dynamicParsed = JSON.parse(dynamicCachedRaw);
-                const staticParsed = JSON.parse(staticCachedRaw);
-                if (
-					isDynamicContextLike(dynamicParsed) &&
-                    dynamicParsed.workspaceId === args.workspaceId && staticParsed.workspaceId === args.workspaceId &&
-					isStaticContextLike(staticParsed) &&
-					!hasConfiguredKeyLimits(dynamicParsed.keyLimit)
-				) {
-					// Request/cost usage changes after every completion. A cached
-					// snapshot can admit subsequent requests past a configured cap,
-					// so only uncapped keys may use the dynamic context snapshot.
-					let cacheStatus: ContextFetchTelemetry["cacheStatus"] = "hit";
-					let creditContext: CreditContextSnapshot | null = null;
-					if (creditCachedRaw) {
-						try {
-							const creditParsed = JSON.parse(creditCachedRaw);
-							creditContext = isCreditContextLike(creditParsed) ? creditParsed : null;
-						} catch {
-							creditContext = null;
-						}
-					}
-					if (!creditContext) {
-						const creditRefreshStartedAt = performance.now();
-						creditContext = await fetchFreshCreditContext({
-							workspaceId: args.workspaceId,
-							endpoint: args.endpoint,
-							teamEnrichment: dynamicParsed.teamEnrichment ?? null,
-						});
-						telemetry.creditRefreshMs = round3(
-							performance.now() - creditRefreshStartedAt,
-						);
-						cacheStatus = "credit_refresh";
-						const creditOnlyContext = mergeCachedContext({
-							dynamic: dynamicParsed,
-							static: staticParsed,
-							credit: creditContext,
-							endpoint: args.endpoint,
-						});
-						const creditTtl = clampTtl(
-							computeCreditSnapshotTtlForContext(creditOnlyContext),
-						);
-						const creditWriteStartedAt = performance.now();
-                        await persistCredit(creditContext, creditTtl);
-						telemetry.cacheWriteMs = round3(performance.now() - creditWriteStartedAt);
-					}
-					creditContext = applyCreditMinimum(creditContext, args.endpoint);
-					telemetry.cacheStatus = cacheStatus;
+            const parseJson = (raw: string | null): unknown => {
+                if (!raw) return null;
+                try { return JSON.parse(raw); } catch { return null; }
+            };
+            const dynamicCandidate = parseJson(dynamicCachedRaw);
+            // Request/cost usage changes after every completion. A cached
+            // snapshot can admit subsequent requests past a configured cap,
+            // so only uncapped keys may use the dynamic context snapshot.
+            const dynamicParsed = isDynamicContextLike(dynamicCandidate) &&
+                dynamicCandidate.workspaceId === args.workspaceId &&
+                !hasConfiguredKeyLimits(dynamicCandidate.keyLimit)
+                ? dynamicCandidate
+                : null;
+            const staticCandidate = parseJson(staticCachedRaw);
+            const staticParsed = isStaticContextLike(staticCandidate) && staticCandidate.workspaceId === args.workspaceId
+                ? staticCandidate
+                : null;
+            const workspaceBundle = dynamicParsed && !staticParsed && useContextBundle && !args.internalOnly
+                ? usableWorkspaceBundle(parseJson(workspaceBundleRaw), args.workspaceId)
+                : null;
+            if (dynamicParsed && (staticParsed || workspaceBundle)) {
+                let cacheStatus: ContextFetchTelemetry["cacheStatus"] = staticParsed ? "hit" : "model_miss";
+                let creditContext: CreditContextSnapshot | null = null;
+                const creditParsed = parseJson(creditCachedRaw);
+                creditContext = isCreditContextLike(creditParsed) ? creditParsed : null;
+                if (!creditContext) {
+                    const creditRefreshStartedAt = performance.now();
+                    creditContext = await fetchFreshCreditContext({
+                        workspaceId: args.workspaceId,
+                        endpoint: args.endpoint,
+                        teamEnrichment: dynamicParsed.teamEnrichment ?? null,
+                    });
+                    telemetry.creditRefreshMs = round3(
+                        performance.now() - creditRefreshStartedAt,
+                    );
+                    if (staticParsed) cacheStatus = "credit_refresh";
+                    const creditOnlyContext = mergeCachedContext({
+                        dynamic: dynamicParsed,
+                        static: staticParsed ?? { workspaceId: args.workspaceId, providers: [], pricing: {} },
+                        credit: creditContext,
+                        endpoint: args.endpoint,
+                    });
+                    const creditTtl = clampTtl(
+                        computeCreditSnapshotTtlForContext(creditOnlyContext),
+                    );
+                    const creditWriteStartedAt = performance.now();
+                    await persistCredit(creditContext, creditTtl);
+                    telemetry.cacheWriteMs = round3(performance.now() - creditWriteStartedAt);
+                }
+                creditContext = applyCreditMinimum(creditContext, args.endpoint);
+                telemetry.cacheStatus = cacheStatus;
+                if (staticParsed) {
                     const merged = mergeCachedContext({
                         dynamic: dynamicParsed,
                         static: staticParsed,
                         credit: creditContext,
                         endpoint: args.endpoint,
                     });
-					return finishContext({
+                    return finishContext({
                         ...merged,
                         contextTelemetry: {
                             ...telemetry,
                             cacheStatus,
                             totalMs: round3(performance.now() - fetchStartedAt),
                         },
-					});
+                    });
                 }
+                modelMiss = { dynamic: dynamicParsed, credit: creditContext, workspace: workspaceBundle! };
             }
         } catch {
             telemetry.cacheReadMs = round3(performance.now() - cacheReadStartedAt);
@@ -1251,9 +1338,9 @@ export async function fetchGatewayContext(args: {
     if (inflightKey) {
 		const inflight = contextInflight.get(inflightKey);
 		if (inflight) {
-			return inflight.then((value) =>
-				finishContext(cloneGatewayContextData(value)),
-			);
+			// The load may belong to another request; never wait on it unboundedly.
+			const shared = await awaitShared(inflight, CONTEXT_SHARED_WAIT_MS);
+			if (shared.settled) return finishContext(cloneGatewayContextData(shared.value));
         }
     }
 
@@ -1303,7 +1390,7 @@ export async function fetchGatewayContext(args: {
         let contextBundle: ContextBundle | null = null;
         if (textContextCapabilities) {
             if (useContextBundle) {
-                contextBundle = await loadTextContextBundle(args);
+                contextBundle = await loadTextContextBundle({ ...args, workspace: modelMiss?.workspace ?? null });
                 rpcTotalMs += contextBundle.rpcMs;
                 telemetry.catalogReadMs = round3(contextBundle.catalogReadMs);
                 telemetry.catalogCacheStatus = contextBundle.cacheStatus;
@@ -1352,7 +1439,9 @@ export async function fetchGatewayContext(args: {
                 }
             }
         }
-        if (contextBundle) parsed.publicCatalogExpiresAt = contextBundle.catalog.expiresAt;
+        // Catalogue snapshots are served stale-while-revalidate, so only the next
+        // scheduled boundary (not the snapshot's soft expiry) invalidates them.
+        if (contextBundle?.catalog.boundaryAt != null) parsed.publicCatalogExpiresAt = contextBundle.catalog.boundaryAt;
 
         // Fallback path for provider-scoped model slugs (e.g. mistral/mistral-medium-2508):
         // if RPC returned no providers and did not resolve the model, remap via provider_model_slug.
@@ -1432,6 +1521,8 @@ export async function fetchGatewayContext(args: {
                                 providerId,
                                 resolvedModelForPricing,
                                 capabilityCandidate,
+                                null,
+                                args.internalOnly === true,
                             );
                             if (card) {
                                 pricingByProvider[providerId] = card;
@@ -1460,12 +1551,15 @@ export async function fetchGatewayContext(args: {
                     model: parsed.resolvedModel ?? args.model,
                     requestedModel: args.model,
                     endpoint: args.endpoint,
-                    existingProviders: parsed.providers ?? [],
+                    existingProviders: args.internalOnly ? [] : parsed.providers ?? [],
                 });
-                if (testingProviders.length) {
+                if (args.internalOnly) {
+                    parsed.providers = testingProviders;
+                } else if (testingProviders.length) {
                     parsed.providers = [...(parsed.providers ?? []), ...testingProviders];
                 }
             } catch {
+                if (args.internalOnly) parsed.providers = [];
                 // Keep public provider list if testing-mode enrichment fails.
             }
         }
@@ -1504,6 +1598,8 @@ export async function fetchGatewayContext(args: {
                                 providerId,
                                 resolvedModelForPricing,
                                 capabilityCandidate,
+                                null,
+                                args.internalOnly === true,
                             );
                             if (card) {
                                 pricingByProvider[providerId] = card;
@@ -1532,10 +1628,6 @@ export async function fetchGatewayContext(args: {
             betaChannelEnabled: false,
             alphaChannelEnabled: false,
             cacheAwareRoutingEnabled: null,
-            privacyZdrOnly: true,
-            privacyEnablePaidMayTrain: false,
-            privacyEnableFreeMayTrain: false,
-            privacyEnableInputOutputLogging: false,
             ioLoggingEnabled: false,
             ioLoggingIncludeProviderPayloads: false,
             dataContributionEnabled: false,
@@ -1574,7 +1666,7 @@ export async function fetchGatewayContext(args: {
 
             const settingsQuery = (async () => {
                 if (contextBundle) return { data: contextBundle.settings, error: null };
-                const columns = "routing_mode,byok_fallback_enabled,beta_channel_enabled,alpha_channel_enabled,privacy_zdr_only,privacy_enable_paid_may_train,privacy_enable_free_may_train,privacy_enable_input_output_logging,io_logging_enabled,io_logging_include_provider_payloads,data_contribution_enabled,data_contribution_policy_version,data_contribution_sample_rate_bps,data_contribution_classifier_sample_rate_bps,data_contribution_discount_bps,response_healing_enabled,response_healing_locked,response_healing_mode";
+                const columns = "routing_mode,byok_fallback_enabled,beta_channel_enabled,alpha_channel_enabled,io_logging_enabled,io_logging_include_provider_payloads,data_contribution_enabled,data_contribution_policy_version,data_contribution_sample_rate_bps,data_contribution_classifier_sample_rate_bps,data_contribution_discount_bps,response_healing_enabled,response_healing_locked,response_healing_mode";
                 const withCacheAwareRouting = await supabase
                     .from("workspace_settings")
                     .select(`${columns},cache_aware_routing_enabled`)
@@ -1650,13 +1742,6 @@ export async function fetchGatewayContext(args: {
                     typeof cacheAwareRoutingEnabled === "boolean"
                         ? cacheAwareRoutingEnabled
                         : null,
-                privacyZdrOnly: settingsResult.data.privacy_zdr_only === true,
-                privacyEnablePaidMayTrain:
-                    settingsResult.data.privacy_enable_paid_may_train === true,
-                privacyEnableFreeMayTrain:
-                    settingsResult.data.privacy_enable_free_may_train === true,
-                privacyEnableInputOutputLogging:
-                    settingsResult.data.privacy_enable_input_output_logging === true,
                 ioLoggingEnabled: settingsResult.data.io_logging_enabled === true,
                 ioLoggingIncludeProviderPayloads:
                     settingsResult.data.io_logging_include_provider_payloads === true,
@@ -1944,12 +2029,39 @@ export async function fetchGatewayContext(args: {
 		parsed.credit = creditSnapshot.credit;
 		parsed.teamEnrichment = creditSnapshot.teamEnrichment;
 
+        // Model miss: the account fields above are placeholders. Keep only this model's routes
+        // and prices, and take everything else from the cached copies, exactly as a cache hit does.
+        if (modelMiss) {
+            const staticPart = splitContextForCache(parsed).static;
+            if (shouldUseCache) {
+                const cacheWriteStartedAt = performance.now();
+                const pricingAwareStaticTtl = computeStaticTtl(parsed);
+                // Never let the routes outlive the workspace data (BYOK metadata) they were built from.
+                const workspaceRemainingS = Math.floor(WORKSPACE_BUNDLE_TTL_S - (Date.now() - modelMiss.workspace.at) / 1000);
+                if (pricingAwareStaticTtl !== null && workspaceRemainingS >= 60) {
+                    dispatchBackground(cache.put(staticCacheKey, JSON.stringify(staticPart), {
+                        expirationTtl: clampTtl(Math.min(pricingAwareStaticTtl, workspaceRemainingS)),
+                    }).catch(() => undefined));
+                }
+                telemetry.cacheWriteMs = round3(performance.now() - cacheWriteStartedAt);
+            }
+            const merged = mergeCachedContext({
+                dynamic: modelMiss.dynamic,
+                static: staticPart,
+                credit: modelMiss.credit,
+                endpoint: args.endpoint,
+            });
+            telemetry.cacheStatus = "model_miss";
+            telemetry.totalMs = round3(performance.now() - fetchStartedAt);
+            return { ...merged, contextTelemetry: telemetry };
+        }
+
         // Compute adaptive TTLs and write split cache entries.
         if (shouldUseCache) {
             const cacheWriteStartedAt = performance.now();
             try {
                 const split = splitContextForCache(parsed);
-                const dynamicTtl = clampTtl(computeAdaptiveTtlForDynamic(parsed));
+                const dynamicTtl = clampDynamicTtl(computeAdaptiveTtlForDynamic(parsed));
                 const pricingAwareStaticTtl = computeStaticTtl(parsed);
                 const staticTtl = pricingAwareStaticTtl === null
                     ? null
@@ -1964,6 +2076,12 @@ export async function fetchGatewayContext(args: {
                 if (staticTtl !== null) {
                     backgroundCacheWrites.push(
                         cache.put(staticCacheKey, JSON.stringify(split.static), { expirationTtl: staticTtl }),
+                    );
+                }
+                // Only alongside a dynamic entry: a capped key never uses the model-miss path.
+                if (contextBundle && !contextBundle.workspaceFromCache && !args.internalOnly && !hasConfiguredKeyLimits(parsed.keyLimit)) {
+                    backgroundCacheWrites.push(
+                        cache.put(workspaceBundleCacheKey, JSON.stringify(contextBundle.workspace), { expirationTtl: WORKSPACE_BUNDLE_TTL_S }),
                     );
                 }
                 if (backgroundCacheWrites.length > 0) {

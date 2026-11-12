@@ -1,0 +1,157 @@
+---
+icon: "image"
+title: "Génération d’images"
+description: "Générez des images avec /images/generations depuis n’importe quel SDK Phaseo."
+---
+
+Appelez la méthode d’image du SDK avec un modèle et un prompt pour envoyer `POST /v1/images/generations`. Chaque image générée revient sous forme d’entrée `url` ou `b64_json` dans `data`.
+
+<CodeGroup>
+
+```typescript TypeScript
+const image = await client.generateImage({
+  model: "openai/gpt-image-1",
+  prompt: "A lighthouse at golden hour",
+  size: "1024x1024",
+  n: 1,
+});
+```
+
+```python Python
+image = client.generate_image({
+    "model": "openai/gpt-image-1",
+    "prompt": "A lighthouse at golden hour",
+    "size": "1024x1024",
+    "n": 1,
+})
+```
+
+```go Go
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  panic(err)
+}
+
+resp, err := client.CreateImage(context.Background(), map[string]interface{}{
+  "model":  "openai/gpt-image-1",
+  "prompt": "A lighthouse at golden hour",
+  "size":   "1024x1024",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp["data"])
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+
+var response = await client.GenerateImage(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-image-1",
+    ["prompt"] = "A lighthouse at golden hour",
+    ["size"] = "1024x1024",
+    ["n"] = 1,
+});
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo();
+
+$response = $client->generateImage([
+    'model' => 'openai/gpt-image-1',
+    'prompt' => 'A lighthouse at golden hour',
+    'size' => '1024x1024',
+    'n' => 1,
+]);
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+
+response = client.generate_image(
+  model: 'openai/gpt-image-1',
+  prompt: 'A lighthouse at golden hour',
+  size: '1024x1024',
+  n: 1
+)
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+var response = client.createImage(Map.of(
+    "model", "openai/gpt-image-1",
+    "prompt", "A lighthouse at golden hour"
+));
+System.out.println(response);
+```
+
+```rust Rust
+let response = client.post("/images/generations", &json!({
+    "model": "openai/gpt-image-1",
+    "prompt": "A lighthouse at golden hour",
+    "size": "1024x1024"
+}))?;
+```
+
+</CodeGroup>
+
+| Langage | Méthode | Remarques |
+| --- | --- | --- |
+| TypeScript | `client.generateImage(request)` | `client.streamImage()` envoie la même requête avec `stream: true` et produit des événements d’images partielles. |
+| Python | `client.generate_image(request)` | `client.images.generate(request)` fait la même chose. Pas d’assistant de streaming d’images. |
+| Go | `client.CreateImage(ctx, req)` | Renvoie un `map[string]interface{}`. |
+| C# | `client.GenerateImage(request)`, alias `CreateImage` | Renvoie un `Dictionary<string, object>?`. |
+| PHP | `$client->generateImage($request)`, alias `createImage()` | Renvoie un tableau. |
+| Ruby | `client.generate_image(...)`, alias `create_image` | Renvoie un Hash. |
+| Java | `client.createImage(request)` | Accepte une `Map` ou un `JsonNode` Jackson ; renvoie un `JsonNode`. |
+| Rust | Pas d’assistant d’image | `client.post("/images/generations", &request)` envoie le corps JSON et renvoie un `PhaseoResponse`. |
+
+## Paramètres
+
+Les noms de champs sont ceux du corps JSON, dans tous les SDK.
+
+| Champ | Remarques |
+| --- | --- |
+| `model`, `prompt` | Obligatoires. Les prompts GPT Image peuvent atteindre 32 000 caractères. |
+| `n` | Nombre d’images, de `1` à `10`. |
+| `size` | Par exemple `1024x1024`, `1024x1792` ou `1792x1024` ; les tailles prises en charge dépendent du modèle. |
+| `aspect_ratio`, `width`, `height` | Alternatives à `size`, selon le modèle. |
+| `quality` | Selon le modèle : `standard` ou `hd` sur `dall-e-3` ; `auto`, `low`, `medium` ou `high` sur les modèles GPT Image. |
+| `output_format`, `output_compression` | `png`, `jpeg` ou `webp` ; la compression (`0` à `100`) nécessite `jpeg` ou `webp`. |
+| `background` | `transparent`, `opaque` ou `auto`. Un fond transparent nécessite `png` ou `webp`. |
+| `response_format` | `url` ou `b64_json`. Les modèles GPT Image rejettent ce champ. |
+| `style` | Selon le modèle, comme `vivid` ou `natural` sur `dall-e-3`. Les modèles GPT Image rejettent ce champ. |
+| `stream`, `partial_images` | Diffuse jusqu’à `3` images partielles, avec `streamImage()` en TypeScript. |
+| `user` | Étiquette de l’utilisateur final pour le suivi des abus. |
+
+Le schéma complet se trouve dans la [référence de l’API de génération d’images](../../api-reference/endpoint/images-generations).
+
+## Réponse
+
+`ImagesGenerationResponse` :
+
+```json
+{
+  "data": [
+    {
+      "url": "https://example.com/generated_image.png"
+    }
+  ]
+}
+```
+
+Les modèles qui renvoient les octets de l’image les placent dans `b64_json` au lieu de `url`.

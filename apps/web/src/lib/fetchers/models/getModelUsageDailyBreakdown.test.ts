@@ -1,11 +1,12 @@
-const mockFetchPublicWebApi = jest.fn();
+import { describe, it, expect, beforeEach, vi } from "vitest";
+const mockFetchPublicWebApi = vi.fn();
 
-jest.mock("@/lib/web-api/client", () => ({
+vi.mock("@/lib/web-api/client", () => ({
 	fetchPublicWebApi: (...args: unknown[]) => mockFetchPublicWebApi(...args),
 }));
 
 describe("getModelUsageDailyBreakdown", () => {
-	beforeEach(() => jest.clearAllMocks());
+	beforeEach(() => vi.clearAllMocks());
 
 	it("uses the cached Worker endpoint with bounded filter query parameters", async () => {
 		mockFetchPublicWebApi.mockResolvedValue({ rows: [{

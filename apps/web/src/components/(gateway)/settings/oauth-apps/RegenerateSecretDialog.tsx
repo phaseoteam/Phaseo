@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from "react";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import {
@@ -16,7 +14,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card } from "@/components/ui/card";
 import { AlertTriangle, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 interface RegenerateSecretDialogProps {
@@ -42,10 +40,10 @@ export default function RegenerateSecretDialog({
 
 		try {
 			const { regenerateClientSecretAction } = await import(
-				"@/app/(dashboard)/settings/oauth-apps/actions"
+				"@/features/settings/oauth-apps/actions"
 			);
 
-			const result = await write(regenerateClientSecretAction(clientId));
+			const result = await write(regenerateClientSecretAction({ data: clientId }));
 
 			if (result.error) {
 				setError(localizedSettingsError(result.error, t, "Failed to regenerate secret"));
@@ -107,7 +105,7 @@ export default function RegenerateSecretDialog({
 						<label className="text-sm font-medium">{t("credits.New Client Secret" as never)}</label>
 						<Card className="p-3 mt-1 bg-yellow-50 dark:bg-yellow-950 border-yellow-200 dark:border-yellow-800">
 							<div className="flex items-center justify-between gap-2">
-								<code className="text-xs break-all flex-1">{newSecret}</code>
+								<code className="ph-no-capture text-xs break-all flex-1">{newSecret}</code>
 								<Button
 									size="sm"
 									variant="outline"

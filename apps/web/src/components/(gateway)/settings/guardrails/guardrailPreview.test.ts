@@ -1,3 +1,4 @@
+import { describe, test, expect } from "vitest";
 import {
 	buildGuardrailRestrictionPreview,
 	describeProviderRestrictionMode,
@@ -81,7 +82,8 @@ describe("buildGuardrailRestrictionPreview", () => {
 			blockedProviderIds: ["xai"],
 			reachableProviderIds: ["anthropic", "openai"],
 			reachableModelIds: ["claude-haiku", "claude-sonnet", "gpt-4.1"],
-			blockedModelIds: [],
+			// Blocked models are every model the rules leave unreachable, including by provider.
+			blockedModelIds: ["grok-4"],
 			activeRouteCount: 4,
 			filteredRouteCount: 3,
 		});
@@ -102,7 +104,7 @@ describe("buildGuardrailRestrictionPreview", () => {
 			blockedProviderIds: ["xai"],
 			reachableProviderIds: ["anthropic", "openai"],
 			reachableModelIds: ["claude-sonnet", "gpt-4.1"],
-			blockedModelIds: ["claude-haiku"],
+			blockedModelIds: ["claude-haiku", "grok-4"],
 			activeRouteCount: 4,
 			filteredRouteCount: 2,
 		});

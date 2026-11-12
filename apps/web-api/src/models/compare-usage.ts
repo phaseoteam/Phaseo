@@ -19,6 +19,14 @@ function average(values: Array<number | null>): number | null {
 	return present.length ? present.reduce((sum, value) => sum + value, 0) / present.length : null;
 }
 
+export type UsageWindow = "30m" | "24h" | "5d";
+
+/** The first value present, with the window it describes. */
+function firstWithWindow(candidates: Array<[number | null, UsageWindow]>): { value: number | null; window: UsageWindow | null } {
+	for (const [value, window] of candidates) if (value !== null) return { value, window };
+	return { value: null, window: null };
+}
+
 export function composeCompareUsage(sourceRows: Row[]) {
 	return Object.fromEntries(sourceRows.flatMap((source) => {
 		const modelId = String(source.model_id ?? "").trim();
@@ -34,14 +42,20 @@ export function composeCompareUsage(sourceRows: Row[]) {
 			date: String(point.date ?? ""),
 			value: number(point.tokens) ?? 0,
 		}));
-		const latencyFallback = number(summary?.avg_latency_ms)
-			?? average(hourly.map((item) => number(item.avg_latency_ms)))
-			?? average(timeOfDay.map((item) => number(item.avg_latency_ms)))
-			?? average(providers.map((item) => number(item.avg_latency_ms)));
-		const throughputFallback = number(summary?.avg_throughput)
-			?? average(hourly.map((item) => number(item.avg_throughput)))
-			?? average(timeOfDay.map((item) => number(item.avg_throughput)))
-			?? average(providers.map((item) => number(item.avg_throughput)));
+		const latency = firstWithWindow([
+			[number(source.realtime_latency_p50), "30m"],
+			[number(summary?.avg_latency_ms), "24h"],
+			[average(hourly.map((item) => number(item.avg_latency_ms))), "24h"],
+			[average(timeOfDay.map((item) => number(item.avg_latency_ms))), "5d"],
+			[average(providers.map((item) => number(item.avg_latency_ms))), "24h"],
+		]);
+		const throughput = firstWithWindow([
+			[number(source.realtime_throughput_p50), "30m"],
+			[number(summary?.avg_throughput), "24h"],
+			[average(hourly.map((item) => number(item.avg_throughput))), "24h"],
+			[average(timeOfDay.map((item) => number(item.avg_throughput))), "5d"],
+			[average(providers.map((item) => number(item.avg_throughput))), "24h"],
+		]);
 		return [[modelId, {
 			periodDays: 30,
 			tokens30d: points30d.reduce((sum, point) => sum + point.value, 0),
@@ -49,10 +63,41 @@ export function composeCompareUsage(sourceRows: Row[]) {
 			points30d,
 			totalRequests: number(summary?.total_requests) ?? 0,
 			requests30m: number(source.realtime_requests) ?? 0,
-			latencyP50Ms30m: number(source.realtime_latency_p50) ?? latencyFallback,
-			throughputP50TokPerSec30m: number(source.realtime_throughput_p50) ?? throughputFallback,
+			latencyP50Ms30m: latency.value,
+			throughputP50TokPerSec30m: throughput.value,
+			// The fields keep their old names; these say which window each value covers.
+			latencyWindow: latency.window,
+			throughputWindow: throughput.window,
 			cumulativeTokens: number(cumulative?.total_tokens),
 			requestPoints24h: hourly.map((point) => ({ date: String(point.bucket ?? ""), value: number(point.requests) ?? 0 })),
 		}]];
 	}));
+}
+
+export type CompareActivityDay = { date: string; requests: number; input: number; output: number; reasoning: number };
+
+/**
+ * Each model's last `days` days of Phaseo traffic, oldest first, with quiet
+ * days filled in so every chart shares one axis. The database sums the rows
+ * (`get_compare_usage_daily`); this only lays them out. Reported output
+ * includes reasoning, so `output` here is the rest of it and the three kinds
+ * add up to the day's tokens, as on the model page's chart.
+ */
+export function composeCompareActivity(dailyRows: Row[], modelIds: string[], today: Date, days = 30): Record<string, CompareActivityDay[]> {
+	const dates = Array.from({ length: days }, (_, index) => {
+		const date = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - (days - 1 - index)));
+		return date.toISOString().slice(0, 10);
+	});
+	const byKey = new Map(dailyRows.map((source) => [`${source.model_id}|${String(source.day_bucket ?? "").slice(0, 10)}`, source]));
+	return Object.fromEntries(modelIds.map((modelId) => [modelId, dates.map((date) => {
+		const source = byKey.get(`${modelId}|${date}`);
+		const reasoning = Math.max(0, number(source?.reasoning_tokens) ?? 0);
+		return {
+			date,
+			requests: number(source?.requests) ?? 0,
+			input: number(source?.input_tokens) ?? 0,
+			output: Math.max(0, (number(source?.output_tokens) ?? 0) - reasoning),
+			reasoning,
+		};
+	})]));
 }

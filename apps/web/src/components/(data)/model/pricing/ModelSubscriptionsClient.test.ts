@@ -1,6 +1,9 @@
+import { describe, test, expect } from "vitest";
 import {
 	dedupeSubscriptionPlanPrices,
 	sortSubscriptionPlanPricesForDisplay,
+	getStartingPriceText,
+	resolveSubscriptionOrganisationName,
 	type SubscriptionPrice,
 } from "./ModelSubscriptionsClient";
 
@@ -29,5 +32,30 @@ describe("subscription price normalization", () => {
 			prices[2],
 			prices[3],
 		]);
+	});
+	test("keeps unknown offers visible but excludes them from starting price ranking", () => {
+		const unknown: SubscriptionPrice = { frequency: "monthly", currency: "USD", price: null, components: [{ component_key: "base", amount: null, pricing_type: "unknown", charge_basis: "account" }] };
+		const known: SubscriptionPrice = { frequency: "monthly", currency: "USD", price: 20 };
+		expect(sortSubscriptionPlanPricesForDisplay([unknown, known])).toEqual([known, unknown]);
+		const labels = { other: "Other", monthly: "monthly", quarterly: "quarterly", yearly: "yearly", weekly: "weekly", daily: "daily", usageBased: "Usage", customPricing: "Custom" };
+		const plan = { prices: [unknown, known] } as Parameters<typeof getStartingPriceText>[0][number];
+		expect(getStartingPriceText([plan], (value) => `$${value}`, labels)).toBe("$20 monthly");
+		expect(getStartingPriceText([{ ...plan, prices: [unknown] }], (value) => `$${value}`, labels)).toBeNull();
+	});
+	test("does not deduplicate unknown prices with a free offer", () => {
+		const unknown: SubscriptionPrice = { frequency: "monthly", currency: "USD", price: null };
+		const free: SubscriptionPrice = { ...unknown, price: 0 };
+		expect(dedupeSubscriptionPlanPrices([unknown, free])).toEqual([unknown, free]);
+	});
+});
+
+describe("subscription organisation names", () => {
+	test("keeps a real name that only differs from the id in case", () => {
+		expect(resolveSubscriptionOrganisationName("OpenAI", "openai")).toBe("OpenAI");
+	});
+
+	test("generates a label when the name is missing or just the id", () => {
+		expect(resolveSubscriptionOrganisationName("openai", "openai")).not.toBe("openai");
+		expect(resolveSubscriptionOrganisationName(null, "openai")).toBeTruthy();
 	});
 });

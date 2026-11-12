@@ -5,13 +5,14 @@ import type { Env } from "@/runtime/types";
 const mocks = vi.hoisted(() => ({ authenticate: vi.fn(), quota: vi.fn(), configure: vi.fn(), clear: vi.fn(), handler: vi.fn() }));
 vi.mock("@pipeline/before/auth", () => ({ prepareAuthentication: mocks.authenticate }));
 vi.mock("@core/customer-rate-limits", () => ({ guardCustomerQuota: mocks.quota }));
-vi.mock("@/runtime/env", () => ({ configureRuntime: mocks.configure, clearRuntime: mocks.clear }));
+vi.mock("@/runtime/env", () => ({ configureRuntime: mocks.configure, clearRuntime: mocks.clear,
+	getBindings: () => ({ CUSTOMER_RATE_LIMITS_ENABLED: "true" }) }));
 
-import { customerQuotaMiddleware } from "./customer-quota";
+import { admitCustomerRequest, customerQuotaMiddleware } from "./customer-quota";
 
 beforeEach(() => {
 	mocks.authenticate.mockReset().mockResolvedValue({ ok: true, workspaceId: "workspace", userId: "owner" });
-	mocks.quota.mockReset().mockResolvedValue(null);
+	mocks.quota.mockReset().mockReturnValue(null);
 	mocks.configure.mockReset();
 	mocks.clear.mockReset();
 	mocks.handler.mockReset();
@@ -31,6 +32,15 @@ function app() {
 const env = { CUSTOMER_RATE_LIMITS_ENABLED: "true" } as Env["Bindings"];
 
 describe("inference quota admission", () => {
+	it("guards direct nested handler requests and deduplicates only the same Request", async () => {
+		mocks.quota.mockReturnValue(new Response(null, { status: 429 }));
+		const req = new Request("https://phaseo.local/v1/responses", { method: "POST" });
+		expect((await admitCustomerRequest(req))?.status).toBe(429);
+		await admitCustomerRequest(req);
+		expect(mocks.quota).toHaveBeenCalledTimes(1);
+		await admitCustomerRequest(new Request(req));
+		expect(mocks.quota).toHaveBeenCalledTimes(2);
+	});
 	it("admits a collection request once and uses a server-owned admission ID", async () => {
 		const response = await app().request("http://localhost/files", { method: "POST", headers: { "x-request-id": "reused" } }, env);
 		expect(response.status).toBe(200);
@@ -41,7 +51,7 @@ describe("inference quota admission", () => {
 	});
 
 	it("blocks polling before its route handler and does not affect management routes", async () => {
-		mocks.quota.mockResolvedValue(new Response(null, { status: 429 }));
+		mocks.quota.mockReturnValue(new Response(null, { status: 429 }));
 		const router = app();
 		expect((await router.request("http://localhost/files/abc", {}, env)).status).toBe(429);
 		expect(mocks.handler).not.toHaveBeenCalled();

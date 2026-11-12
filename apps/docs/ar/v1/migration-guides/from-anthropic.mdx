@@ -1,43 +1,35 @@
 ---
 title: "الترحيل من Anthropic SDK"
 sidebarTitle: "Anthropic SDK"
-description: "انقل تكامل Anthropic SDK إلى Phaseo مع الحفاظ على سير العمل المألوف لواجهة Messages API."
+description: "انقل تكامل Anthropic SDK إلى Phaseo مع الحفاظ على سير عمل Messages API المألوف."
 icon: "/icons/brands/anthropic.svg"
 ---
 
-استخدم هذا الدليل للحفاظ على سير العمل باستخدام Anthropic SDK مع تمرير الطلبات عبر Phaseo. غيّر إعداد العميل أولًا، ثم تحقّق من معرّفات النماذج والسلوكيات الخاصة بـ Anthropic التي يعتمد عليها تطبيقك.
+احتفظ بـ Anthropic SDK واستدعاء Messages. وجّه العميل إلى `https://api.phaseo.app`، ومرّر مفتاح Phaseo بوصفه `authToken`، وامنح كل نموذج معرّفه في Phaseo.
 
-## ما الذي سيتغير
-
-| الإعداد | قبل | بعد |
+| الإعداد | Anthropic | Phaseo |
 | --- | --- | --- |
-| عنوان URL الأساسي | القيمة الافتراضية لـ Anthropic | `https://api.phaseo.app/v1` |
-| مفتاح API | مفتاح Anthropic | `PHASEO_API_KEY` |
-| النموذج | اسم نموذج Anthropic | معرّف نموذج Phaseo الذي يعيده `GET /v1/models` |
-| استدعاء Messages | استدعاء SDK الحالي | لا يتغير عادةً |
+| عنوان URL الأساسي | القيمة الافتراضية في SDK (`https://api.anthropic.com`) | `https://api.phaseo.app` (يضيف SDK المسار `/v1/messages`) |
+| مفتاح API | `ANTHROPIC_API_KEY`، يُرسل بوصفه `x-api-key` | `PHASEO_API_KEY` بوصفه `authToken` / `auth_token`، يُرسل بوصفه `Authorization: Bearer` |
+| النموذج | `claude-sonnet-5-5` | `anthropic/claude-sonnet-5.5`، أو أي معرّف من `GET /v1/models` |
+| استدعاء Messages | `messages.create` | دون تغيير |
 
-<Steps>
-<Step title="أنشئ مفتاح API لـ Phaseo">
+## تبديل العميل
 
-أنشئ مفتاحًا في [مفاتيح Gateway](https://phaseo.app/gateway/keys) واجعله متاحًا لتطبيقك باسم `PHASEO_API_KEY`.
-
-</Step>
-
-<Step title="حدّث عميل Anthropic">
-
-وجّه SDK إلى عنوان URL الأساسي لـ Phaseo واستخدم مفتاح Phaseo.
+أنشئ مفتاحًا في [مفاتيح API](https://phaseo.app/settings/keys)، واجعله متاحًا للتطبيق بوصفه `PHASEO_API_KEY`.
 
 <CodeGroup>
 ```typescript TypeScript
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "https://api.phaseo.app/v1",
+  apiKey: null,
+  authToken: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app",
 });
 
 const response = await client.messages.create({
-  model: "anthropic/claude-sonnet-4.6",
+  model: "anthropic/claude-sonnet-5.5",
   max_tokens: 256,
   messages: [{ role: "user", content: "Reply with: migration ready" }],
 });
@@ -48,12 +40,12 @@ import os
 import anthropic
 
 client = anthropic.Anthropic(
-    api_key=os.environ["PHASEO_API_KEY"],
-    base_url="https://api.phaseo.app/v1",
+    auth_token=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app",
 )
 
 response = client.messages.create(
-    model="anthropic/claude-sonnet-4.6",
+    model="anthropic/claude-sonnet-5.5",
     max_tokens=256,
     messages=[{"role": "user", "content": "Reply with: migration ready"}],
 )
@@ -64,39 +56,47 @@ curl https://api.phaseo.app/v1/messages \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-sonnet-4.6",
+    "model": "anthropic/claude-sonnet-5.5",
     "max_tokens": 256,
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+ثلاث تفاصيل تُفشل هذه الخطوة في أغلب الأحيان:
 
-<Step title="تحقّق من السلوكيات الخاصة بـ Anthropic">
+- **استخدم المضيف الجذر.** يؤدي `baseURL: "https://api.phaseo.app/v1"` إلى `/v1/v1/messages`. أما عملاء OpenAI المتوافقون في المستودع نفسه فيظلون يستخدمون `/v1`.
+- **أرسل المفتاح كرمز bearer.** لا تقرأ البوابة إلا `Authorization: Bearer`؛ وتحصل ترويسة `x-api-key` على `401` `missing_or_invalid_authorization_header`. يرسل `authToken` ترويسة Bearer في كل إصدارات SDK. أما `apiKey` فلا يفعل ذلك إلا بدءًا من `@anthropic-ai/sdk` 1.0 و`anthropic` 2.0.
+- **أزل `ANTHROPIC_API_KEY`** من البيئات التي تستدعي Phaseo الآن. يمنع `apiKey: null` إصدارات TypeScript SDK الأقدم من قراءته، وتقرؤه إصدارات Python SDK السابقة لـ 0.98 حتى عند ضبط `auth_token`.
 
-اختبر مطالبات النظام والبث واستخدام الأدوات وخيارات الاستدلال والمخرجات المنظّمة باستخدام النماذج نفسها التي يستخدمها تطبيقك. أزل رؤوس الإصدار التجريبي أو حقول الطلب القديمة بدلًا من نقلها إلى المسار الجديد دون تحقق.
+تستخدم الأدوات التي تُضبط عبر متغيرات البيئة، مثل Claude Code، القيمة `ANTHROPIC_BASE_URL=https://api.phaseo.app`، و`ANTHROPIC_AUTH_TOKEN` مضبوطًا على مفتاح Phaseo، و`ANTHROPIC_API_KEY` فارغًا.
 
-</Step>
+## مطابقة معرّفات النماذج
 
-<Step title="أطلق التغيير تدريجيًا">
+تحقّق من كل نموذج إنتاجي مقابل `data[].id` من `GET /v1/models?format=openai`. تستخدم معرّفات Phaseo النقاط في الإصدار: يصبح `claude-sonnet-5-5` هو `anthropic/claude-sonnet-5.5`. إذا كان النموذج يتغير أيضًا، فاقرأ [دليل ترحيل النموذج](../model-migrations) الخاص به.
 
-قارن مجموعة مطالبات تمثيلية بين الإعدادين. تحقّق من شكل المخرجات وزمن الاستجابة واستخدام الرموز والأخطاء والتكلفة قبل تحويل حركة مرور الإنتاج.
+## ما الذي يعمل بشكل مختلف
 
-</Step>
-</Steps>
+| ميزة Anthropic | على Phaseo |
+| --- | --- |
+| ترويسة `anthropic-version` | تُقبل أي قيمة؛ يستدعي Phaseo نماذج Claude بإصداره الخاص. |
+| ترويسات `anthropic-beta` | لا تُمرَّر. يضيف Phaseo الميزات التجريبية التي تحتاجها ميزاته المدعومة؛ وتعيد حقول الجسم التجريبية فقط مثل `mcp_servers` الخطأ `400`. |
+| `temperature` و`top_p` و`top_k` | تُحذف حيث لا يقبلها النموذج أو المسار، وتُدرج في `X-Phaseo-Dropped-Params`. |
+| `speed: "fast"` | يعيد `400`. استخدم `service_tier: "fast"`. |
+| أدوات البحث على الويب والجلب الأصلية | مقبولة حيث يشغّلها المزوّد، أو استخدم أداة الخادم `phaseo:web_search` من Phaseo. |
+| `cache_control` | مدعوم في المستوى الأعلى أو لكل كتلة. راجع [التخزين المؤقت للمطالبات](../guides/prompt-caching). |
+| `metadata.user_id` | لا يُستخدم كمعرّف للمستخدم النهائي. أرسل `user` أو ترويسة `X-Phaseo-User-Id` لسياسات حدود المعدّل الخاصة بالمستخدم النهائي. |
+| Message Batches (`/v1/messages/batches`) | لا يوجد هذا المسار. يقبل `/v1/batches` صفوف `/v1/messages` بشكل مختلف. |
+| عدّ الرموز (`/v1/messages/count_tokens`) | لا يوجد مقابل. أبقِه على Anthropic أو قدّره في جهة العميل. |
+| Files API (`client.beta.files`) | لا يوجد مقابل. أرسل المستندات مضمّنة. |
+| عميلا `AnthropicBedrock` و`AnthropicVertex` | استبدلهما بعميل `Anthropic` العادي؛ لا تنطبق إعدادات المصادقة السحابية والمنطقة. |
 
-## قائمة التحقق من الترحيل
+## الاختبار والنشر
 
-- تم إعداد مفتاح Phaseo في كل بيئة نشر.
-- يشير عميل Anthropic إلى `https://api.phaseo.app/v1`.
-- تم التحقق من كل معرّف نموذج إنتاج باستخدام `GET /v1/models`.
-- تنجح مسارات البث واستخدام الأدوات في بيئة التجهيز.
-- تمت مراجعة رؤوس الإصدار التجريبي والمعلمات الخاصة بـ Anthropic.
-- يظل التراجع مقتصرًا على تغيير المفتاح ونقطة النهاية في الإعدادات.
+اختبر مطالبات النظام والبث واستخدام الأدوات والتفكير والمخرجات المنظّمة باستخدام معرّفات النماذج نفسها التي يستخدمها التطبيق. ثم قارن مجموعة مطالبات تمثيلية عبر الإعدادين من حيث شكل المخرجات وزمن الاستجابة واستخدام الرموز والأخطاء والتكلفة. قبل نقل الحركة، تأكد من أن:
 
-## الخطوات التالية
-
-- [عمليات ترحيل نماذج Anthropic](../model-migrations/index.mdx)
-- [النماذج](../exploring/models.mdx)
-- [استدعاء الأدوات](../guides/tool-calling.mdx)
+- مفتاح Phaseo مضبوط في كل بيئة نشر؛
+- كل معرّف نموذج إنتاجي موجود في `GET /v1/models?format=openai`؛
+- مسارات البث واستخدام الأدوات تنجح في بيئة الاختبار المرحلية؛
+- كل ترويسة `anthropic-beta` وكل حقل تجريبي فقط قد أُزيل أو استُبدل؛
+- التراجع لا يزال مجرد تغيير لعنوان URL الأساسي والمفتاح.

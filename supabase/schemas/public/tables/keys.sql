@@ -1,0 +1,148 @@
+CREATE TABLE "public"."keys" (
+  "id"                       uuid                     NOT NULL DEFAULT gen_random_uuid(),
+  "workspace_id"             uuid                     NOT NULL,
+  "name"                     text                     NOT NULL,
+  "hash"                     text                     NOT NULL,
+  "prefix"                   text                     NOT NULL,
+  "status"                   text                     NOT NULL DEFAULT 'active'::text,
+  "scopes"                   text                     NOT NULL,
+  "created_at"               timestamp with time zone NOT NULL DEFAULT (now() AT TIME ZONE 'utc'::text),
+  "last_used_at"             timestamp with time zone DEFAULT (now() AT TIME ZONE 'utc'::text),
+  "kid"                      text,
+  "soft_blocked"             boolean                  NOT NULL DEFAULT false,
+  "daily_limit_requests"     bigint                   NOT NULL DEFAULT 0,
+  "weekly_limit_requests"    bigint                   NOT NULL DEFAULT 0,
+  "monthly_limit_requests"   bigint                   NOT NULL DEFAULT 0,
+  "daily_limit_cost_nanos"   bigint                   NOT NULL DEFAULT 0,
+  "weekly_limit_cost_nanos"  bigint                   NOT NULL DEFAULT 0,
+  "monthly_limit_cost_nanos" bigint                   NOT NULL DEFAULT 0,
+  "expires_at"               timestamp with time zone,
+  "revoked_at"               timestamp with time zone,
+  "revoked_reason"           text,
+  "key_kind"                 text                     NOT NULL DEFAULT 'standard'::text,
+  "oauth_client_id"          text,
+  "oauth_user_id"            uuid,
+  "oauth_scopes"             text[],
+  "issued_via"               text                     NOT NULL DEFAULT 'dashboard'::text,
+  "oauth_resource"           text,
+  "updated_at"               timestamp with time zone NOT NULL DEFAULT now(),
+  "ip_allowlist"             jsonb                    NOT NULL DEFAULT '[]'::jsonb,
+  CONSTRAINT "keys_active_oauth_delegated_gateway_scope_check"
+    CHECK (((key_kind <> 'oauth_delegated'::text) OR (status <> 'active'::text) OR ((NULLIF(btrim(oauth_resource), ''::text) IS
+    NOT NULL) AND (NOT COALESCE((btrim(oauth_resource) ~* '^https://api\.phaseo\.app(?::443)?/v1/*$'::text), false))) OR
+    (COALESCE(oauth_scopes, ARRAY[]::text[]) @> ARRAY['gateway:access'::text]))),
+  CONSTRAINT "keys_hash_key" UNIQUE (hash),
+  CONSTRAINT "keys_id_workspace_id_key" UNIQUE (id, workspace_id),
+  CONSTRAINT "keys_issued_via_check" CHECK ((issued_via = ANY (ARRAY['dashboard'::text, 'oauth_pkce'::text, 'cli'::text, 'workload_identity'::text, 'desktop'::text]))),
+  CONSTRAINT "keys_key_kind_check" CHECK ((key_kind = ANY (ARRAY['standard'::text, 'oauth_delegated'::text, 'workload_identity'::text]))),
+  CONSTRAINT "keys_oauth_user_id_fkey" FOREIGN KEY (oauth_user_id) REFERENCES auth.users(id) ON DELETE SET NULL,
+  CONSTRAINT "keys_pkey" PRIMARY KEY (id),
+  CONSTRAINT "keys_workspace_id_fkey" FOREIGN KEY (workspace_id) REFERENCES public.workspaces(id) ON DELETE CASCADE,
+  "created_by"               uuid                     NOT NULL DEFAULT auth.uid(),
+  CONSTRAINT "keys_created_by_fkey" FOREIGN KEY (created_by) REFERENCES public.users(user_id) ON DELETE CASCADE,
+  CONSTRAINT "keys_ip_allowlist_valid" CHECK (public.valid_key_ip_allowlist(ip_allowlist)),
+  "department_id"            uuid,
+  CONSTRAINT "keys_department_fkey" FOREIGN KEY (department_id, workspace_id) REFERENCES public.workspace_departments(id, workspace_id) ON DELETE SET NULL (department_id),
+  "never_store_content"      boolean                  NOT NULL DEFAULT false,
+  "storage_locations"        text[]                   NOT NULL DEFAULT '{}'::text[],
+  CONSTRAINT "keys_storage_locations_valid" CHECK (public.valid_key_storage_locations(storage_locations))
+);
+
+ALTER TABLE "public"."keys"
+  ENABLE ROW LEVEL SECURITY;
+
+CREATE INDEX keys_expires_at_idx ON public.keys USING btree (expires_at)
+  WHERE (expires_at IS NOT NULL);
+
+CREATE UNIQUE INDEX keys_kid_uidx ON public.keys USING btree (kid);
+
+CREATE UNIQUE INDEX keys_oauth_delegated_active_idx ON public.keys USING btree (oauth_user_id, workspace_id, oauth_client_id)
+  WHERE ((key_kind = 'oauth_delegated'::text) AND (status = 'active'::text) AND (issued_via <> 'desktop'::text));
+
+CREATE INDEX keys_workspace_id_idx ON public.keys USING btree (workspace_id)
+  WHERE (workspace_id IS NOT NULL);
+
+CREATE TRIGGER gateway_workspace_publication
+  AFTER UPDATE OR DELETE ON public.keys
+  FOR EACH ROW
+  EXECUTE FUNCTION private.capture_gateway_workspace_publication();
+
+CREATE TRIGGER keys_set_updated_at
+  BEFORE UPDATE ON public.keys
+  FOR EACH ROW
+  EXECUTE FUNCTION public.update_key_updated_at();
+
+CREATE TRIGGER protect_key_created_by
+  BEFORE INSERT OR UPDATE OF created_by ON public.keys
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_key_created_by();
+
+CREATE TRIGGER protect_key_identity_columns
+  BEFORE INSERT OR UPDATE ON public.keys
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_key_identity_columns();
+
+CREATE TRIGGER protect_key_never_store_content
+  BEFORE UPDATE OF never_store_content ON public.keys
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_key_never_store_content();
+
+CREATE TRIGGER protect_revoked_key_status
+  BEFORE UPDATE OF status ON public.keys
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_revoked_key_status();
+
+CREATE TRIGGER revoke_oauth_refresh_tokens_for_inactive_key
+  AFTER UPDATE OF status ON public.keys
+  FOR EACH ROW
+  WHEN (((old.status = 'active'::text) AND (new.status IS DISTINCT FROM 'active'::text) AND (new.key_kind = 'oauth_delegated'::text)))
+  EXECUTE FUNCTION public.revoke_oauth_refresh_tokens_for_inactive_key();
+
+CREATE POLICY "keys_delete_own_team" ON "public"."keys"
+  FOR DELETE
+  TO "authenticated"
+  USING (public.is_workspace_admin(workspace_id));
+
+CREATE POLICY "keys_insert_own_team" ON "public"."keys"
+  FOR INSERT
+  TO "authenticated"
+  WITH CHECK (public.is_workspace_admin(workspace_id));
+
+CREATE POLICY "keys_select_own_team" ON "public"."keys"
+  FOR SELECT
+  TO "authenticated"
+  USING (public.is_workspace_member(workspace_id));
+
+CREATE POLICY "keys_update_own_team" ON "public"."keys"
+  FOR UPDATE
+  TO "authenticated"
+  USING (public.is_workspace_admin(workspace_id))
+  WITH CHECK (public.is_workspace_admin(workspace_id));
+
+CREATE POLICY "mfa_required_when_enrolled" ON "public"."keys"
+  AS RESTRICTIVE
+  FOR ALL
+  TO "authenticated"
+  USING (( SELECT public.mfa_satisfied() AS mfa_satisfied))
+  WITH CHECK (( SELECT public.mfa_satisfied() AS mfa_satisfied));
+
+GRANT DELETE, INSERT, MAINTAIN, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE ON TABLE "public"."keys" TO "service_role";
+
+GRANT SELECT ("created_at", "created_by", "daily_limit_cost_nanos", "daily_limit_requests", "department_id", "expires_at", "id", "ip_allowlist", "issued_via", "key_kind", "kid", "last_used_at", "monthly_limit_cost_nanos", "monthly_limit_requests", "name", "never_store_content", "oauth_client_id", "oauth_resource", "oauth_scopes", "oauth_user_id", "prefix", "revoked_at", "revoked_reason", "scopes", "soft_blocked", "status", "storage_locations", "updated_at", "weekly_limit_cost_nanos", "weekly_limit_requests", "workspace_id") ON TABLE "public"."keys" TO "authenticated";
+
+CREATE INDEX keys_created_by_idx ON public.keys USING btree (created_by)
+  WHERE (created_by IS NOT NULL);
+
+CREATE INDEX keys_department_id_idx ON public.keys USING btree (department_id, workspace_id)
+  WHERE (department_id IS NOT NULL);
+
+COMMENT ON COLUMN "public"."keys"."department_id" IS 'Department whose limits and budgets this key counts toward. NULL means the key counts only toward workspace-wide limits. Requests made with OAuth use the user''s department instead.';
+
+COMMENT ON COLUMN "public"."keys"."ip_allowlist" IS 'Labeled IPv4/IPv6 addresses or CIDRs allowed to use this key. Empty permits any IP.';
+
+COMMENT ON COLUMN "public"."keys"."never_store_content" IS 'When true, Phaseo never keeps or forwards this key''s request and response content: no I/O log, cached response, detailed telemetry or observability destination content, whatever the workspace settings. Cannot be turned off once on.';
+
+COMMENT ON COLUMN "public"."keys"."storage_locations" IS 'Location ids (packages/shared/key-storage-locations) where the workspace says this key is stored, such as railway or github. Empty when not given. Used to find every key kept in a platform that reports a breach.';
+
+CREATE INDEX keys_storage_locations_idx ON public.keys USING gin (storage_locations)
+  WHERE (cardinality(storage_locations) > 0);

@@ -1,3 +1,3 @@
 // Generated from ../package.json
 export const CLI_PACKAGE_NAME = "@phaseo/cli";
-export const CLI_VERSION = "0.2.3";
+export const CLI_VERSION = "0.3.0";

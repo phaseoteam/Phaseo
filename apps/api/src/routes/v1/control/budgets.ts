@@ -10,14 +10,23 @@ import {
 	internalServerError,
 	isResponse,
 	parsePathId,
+	rejectThirdPartyOAuthSpendingChange,
 	requireCapability,
 	requireJsonBody,
 	requireOAuthWorkspaceRole,
 } from "./route-helpers";
+// Validation is shared with the settings API and page (packages/shared/workspace-budgets).
+import {
+	BUDGET_INTERVAL_ERROR,
+	BUDGET_LIMIT_ERROR,
+	budgetNanosToUsd,
+	budgetUsdToNanos,
+	parseBudgetInterval,
+	parseBudgetLimitUsd,
+	type BudgetInterval,
+} from "@/core/workspace-budgets";
 
 const BUDGET_COLUMNS = "id,workspace_id,interval,limit_nanos,created_by,created_at,updated_at";
-const BUDGET_INTERVALS = ["daily", "weekly", "monthly", "lifetime"] as const;
-type BudgetInterval = (typeof BUDGET_INTERVALS)[number];
 
 type BudgetRow = {
 	id: string;
@@ -37,25 +46,6 @@ type BudgetStatusRow = BudgetRow & {
 	window_start?: string | null;
 	reset_at?: string | null;
 };
-
-function parseInterval(value: unknown): BudgetInterval | null {
-	const interval = String(value ?? "").trim().toLowerCase();
-	return BUDGET_INTERVALS.includes(interval as BudgetInterval) ? interval as BudgetInterval : null;
-}
-
-function parseUsd(value: unknown): number | null {
-	const amount = Number(value);
-	const nanos = Math.round(amount * 1_000_000_000);
-	return Number.isFinite(amount) && amount > 0 && nanos > 0 && Number.isSafeInteger(nanos) ? amount : null;
-}
-
-function usdToNanos(value: number): number {
-	return Math.round(value * 1_000_000_000);
-}
-
-function nanosToUsd(value: unknown): number {
-	return Number(value ?? 0) / 1_000_000_000;
-}
 
 function actorUserId(auth: { userId?: string | null }): string | null {
 	return auth.userId?.trim() || null;
@@ -88,11 +78,11 @@ function formatBudget(row: BudgetRow, status?: BudgetStatusRow) {
 		id: row.id,
 		workspace_id: row.workspace_id,
 		interval: row.interval,
-		limit: nanosToUsd(limitNanos),
+		limit: budgetNanosToUsd(limitNanos),
 		limit_nanos: limitNanos,
-		usage: nanosToUsd(usageNanos),
+		usage: budgetNanosToUsd(usageNanos),
 		usage_nanos: usageNanos,
-		remaining: nanosToUsd(Math.max(limitNanos - usageNanos, 0)),
+		remaining: budgetNanosToUsd(Math.max(limitNanos - usageNanos, 0)),
 		remaining_nanos: Math.max(limitNanos - usageNanos, 0),
 		exceeded: usageNanos >= limitNanos,
 		window_start: status?.window_start ?? null,
@@ -108,6 +98,9 @@ async function authorize(req: Request, capability: string) {
 	if (!auth.ok) return { response: (auth as GuardErr).response } as const;
 	const scopeError = requireCapability(auth.value, capability);
 	if (scopeError) return { response: scopeError } as const;
+	// Budgets cap the workspace's spending: apps can read them but not change them.
+	const appError = capability === CAPABILITIES.BUDGETS_READ ? null : rejectThirdPartyOAuthSpendingChange(auth.value, "Apps that use Sign in with Phaseo can't change budgets. The person can change them under Settings, Budgets.");
+	if (appError) return { response: appError } as const;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return { response: roleError } as const;
 	return { auth: auth.value } as const;
@@ -135,16 +128,16 @@ async function handleCreateBudget(req: Request) {
 	if ("response" in authorization) return authorization.response;
 	const body = await requireJsonBody(req);
 	if (isResponse(body)) return body;
-	const interval = parseInterval(body.interval);
-	const limit = parseUsd(body.limit);
-	if (!interval) return json({ error: "bad_request", message: "interval must be daily, weekly, monthly, or lifetime" }, 400, { "Cache-Control": "no-store" });
-	if (limit === null) return json({ error: "bad_request", message: "limit must be a positive USD amount" }, 400, { "Cache-Control": "no-store" });
+	const interval = parseBudgetInterval(body.interval);
+	const limit = parseBudgetLimitUsd(body.limit);
+	if (!interval) return json({ error: "bad_request", message: BUDGET_INTERVAL_ERROR }, 400, { "Cache-Control": "no-store" });
+	if (limit === null) return json({ error: "bad_request", message: BUDGET_LIMIT_ERROR }, 400, { "Cache-Control": "no-store" });
 	try {
 		const supabase = getSupabaseAdmin();
 		const { data, error } = await supabase.from("workspace_budgets").insert({
 			workspace_id: authorization.auth.workspaceId,
 			interval,
-			limit_nanos: usdToNanos(limit),
+			limit_nanos: budgetUsdToNanos(limit),
 			created_by: actorUserId(authorization.auth),
 		}).select(BUDGET_COLUMNS).maybeSingle();
 		if (error) {
@@ -196,16 +189,16 @@ async function handleUpdateBudget(req: Request) {
 	if (!id) return json({ error: "bad_request", message: "Budget id is required" }, 400, { "Cache-Control": "no-store" });
 	const body = await requireJsonBody(req);
 	if (isResponse(body)) return body;
-	const interval = body.interval === undefined ? undefined : parseInterval(body.interval);
-	const limit = body.limit === undefined ? undefined : parseUsd(body.limit);
-	if (body.interval !== undefined && !interval) return json({ error: "bad_request", message: "interval must be daily, weekly, monthly, or lifetime" }, 400, { "Cache-Control": "no-store" });
-	if (body.limit !== undefined && limit === null) return json({ error: "bad_request", message: "limit must be a positive USD amount" }, 400, { "Cache-Control": "no-store" });
+	const interval = body.interval === undefined ? undefined : parseBudgetInterval(body.interval);
+	const limit = body.limit === undefined ? undefined : parseBudgetLimitUsd(body.limit);
+	if (body.interval !== undefined && !interval) return json({ error: "bad_request", message: BUDGET_INTERVAL_ERROR }, 400, { "Cache-Control": "no-store" });
+	if (body.limit !== undefined && limit === null) return json({ error: "bad_request", message: BUDGET_LIMIT_ERROR }, 400, { "Cache-Control": "no-store" });
 	if (interval === undefined && limit === undefined) return json({ error: "bad_request", message: "Provide interval or limit" }, 400, { "Cache-Control": "no-store" });
 	try {
 		const supabase = getSupabaseAdmin();
 		const payload = {
 			...(interval ? { interval } : {}),
-			...(limit !== undefined && limit !== null ? { limit_nanos: usdToNanos(limit) } : {}),
+			...(limit !== undefined && limit !== null ? { limit_nanos: budgetUsdToNanos(limit) } : {}),
 			updated_at: new Date().toISOString(),
 		};
 		const { data, error } = await supabase.from("workspace_budgets").update(payload)

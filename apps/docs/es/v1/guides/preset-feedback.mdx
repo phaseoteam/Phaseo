@@ -1,28 +1,18 @@
 ---
-title: "Recopilar comentarios sobre ajustes preestablecidos"
-description: "Registra valoraciones de respuestas y compara la calidad de los ajustes preestablecidos en el panel de Phaseo."
+title: "Recopilar comentarios sobre preajustes"
+description: "Registra valoraciones de respuestas y compara la calidad de los preajustes en el panel de Phaseo."
 icon: "message-square-more"
 ---
 
-Preset Feedback te permite asociar las valoraciones de tu aplicación con el ajuste preestablecido que generó una respuesta. Úsalo para comparar cambios en prompts y enrutamiento con señales reales de los usuarios, en lugar de basarte solo en la latencia y el coste.
+Envía cada valoración de usuario a `POST /v1/feedback` con el ID de la solicitud y el [preajuste](./presets.mdx) que respondió. Después compara los preajustes según la frecuencia con la que sus respuestas recibieron buenas valoraciones, no solo por latencia y coste.
 
 <Note>
-Preset Feedback está en fase Alfa. Estamos perfeccionando la API y el panel según la forma en que los equipos evalúan respuestas de IA en producción. Usa el botón **Comentarios** en la [página de Preset Feedback](https://phaseo.app/settings/presets/experiments) para contarnos cómo podemos mejorarlo.
+Preset Feedback está en fase Alfa, y la API y el panel aún pueden cambiar. Usa el botón **Comentarios** de la [página de Preset Feedback](https://phaseo.app/settings/presets/experiments) para contarnos qué lo haría más útil.
 </Note>
 
-## Antes de empezar
+## Registra una valoración
 
-Necesitas:
-
-- Una clave de API de Phaseo con la capacidad `feedback:write`
-- El ID de solicitud que devuelve Phaseo
-- El UUID del ajuste preestablecido que quieres analizar
-
-Incluye el ID del ajuste preestablecido al registrar comentarios. Así, el evento aparecerá en las comparaciones de presets y en el análisis por cohortes.
-
-## Registrar una valoración
-
-Envía comentarios cuando un usuario valore una respuesta o cuando tu aplicación determine un resultado.
+Necesitas una clave de API con la capacidad `feedback:write`, el ID de solicitud que devolvió Phaseo y el UUID del preajuste. El ID del preajuste es lo que incluye el evento en las comparaciones de preajustes y en el análisis por cohortes.
 
 ```bash cURL
 curl https://api.phaseo.app/v1/feedback \
@@ -42,32 +32,36 @@ curl https://api.phaseo.app/v1/feedback \
   }'
 ```
 
-El evento de comentarios debe referirse al menos a una solicitud, sesión, ajuste preestablecido o ejecución de prueba. La puntuación es opcional y debe estar entre `0` y `1`.
+Un evento de comentario debe apuntar al menos a una solicitud, sesión, preajuste o ejecución de prueba. `score` es opcional y debe estar entre `0` y `1`.
+
+Pon en `metadataDimensions` los valores de baja cardinalidad, como el plan, el despliegue, la configuración regional o la superficie de la aplicación, para poder filtrar por ellos. El contexto arbitrario o de alta cardinalidad va en `metadata`.
 
 ## Elige una valoración
 
-Elige una valoración que describa la señal que realmente recopilaste:
+| Señal | `rating` |
+| --- | --- |
+| Una reacción simple del usuario | `thumbs_up`, `thumbs_down` |
+| Una respuesta evaluada | `correct`, `partly_correct`, `incorrect` |
+| Un problema operativo | `bad_format`, `too_slow`, `too_expensive` |
+| Un resultado de seguridad | `unsafe`, `refused_incorrectly` |
+| Cualquier otra cosa | `not_helpful`, `other` |
 
-- `thumbs_up` o `thumbs_down` para reacciones sencillas de usuarios
-- `correct`, `partly_correct` o `incorrect` para respuestas evaluadas
-- `bad_format`, `too_slow` o `too_expensive` para problemas operativos
-- `unsafe` o `refused_incorrectly` para resultados de seguridad
-- `not_helpful` u `other` cuando no encajen las demás opciones
+Es preferible una valoración explícita a una puntuación numérica sola: las comparaciones de preajustes se basan en las valoraciones, y las puntuaciones se muestran como detalle complementario.
 
-No conviertas todas las señales en puntuaciones numéricas. Las valoraciones explícitas facilitan explicar las comparaciones en el panel.
+## Compara preajustes
 
-## Comparar ajustes preestablecidos
+Abre [Ajustes → Presets → Comentarios](https://phaseo.app/settings/presets/experiments) para:
 
-Abre [Configuración → Ajustes preestablecidos → Comentarios](https://phaseo.app/settings/presets/experiments) para:
+- comparar los porcentajes de valoraciones positivas, parciales y negativas
+- seleccionar un preajuste de referencia
+- filtrar por fecha, valoración y dimensiones de metadatos
+- revisar la solicitud, la sesión, los comentarios y las etiquetas que hay detrás de un evento
 
-- Comparar las tasas de valoraciones positivas, parciales y negativas
-- Seleccionar un ajuste preestablecido de referencia
-- Filtrar por fecha, valoración y dimensiones de metadatos
-- Consultar la solicitud, sesión, comentarios y etiquetas asociados al evento
+El panel analiza como máximo las 10.000 filas de comentarios coincidentes más recientes del periodo seleccionado.
 
-Añade valores de baja cardinalidad, como el plan, el despliegue, el idioma o la superficie de la aplicación, a `metadataDimensions`. Guarda el contexto arbitrario o de alta cardinalidad en `metadata`.
+## Lee los comentarios con la API
 
-## Leer comentarios mediante la API
+Para leer se necesita `feedback:read`. Los resultados se limitan al espacio de trabajo autenticado y a los preajustes que puede ver quien hace la llamada.
 
 Lista los eventos recientes:
 
@@ -76,23 +70,11 @@ curl "https://api.phaseo.app/v1/feedback?preset_id=PRESET_UUID&limit=100" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-Solicita un resumen del servidor:
+Obtén un resumen calculado en el servidor:
 
 ```bash
 curl "https://api.phaseo.app/v1/feedback/summary?group_by=preset&since=2026-08-01T00:00:00Z" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-Las operaciones de lectura requieren `feedback:read`. Los resultados se limitan al espacio de trabajo autenticado y a los ajustes preestablecidos visibles para quien realiza la solicitud.
-
-## Límites actuales de Alpha
-
-- El panel analiza como máximo las 10.000 filas de comentarios coincidentes más recientes del periodo seleccionado.
-- Las comparaciones de ajustes preestablecidos usan valoraciones explícitas; las puntuaciones numéricas se muestran como información complementaria.
-- Las API para ejecuciones de prueba y eventos de resultados personalizados están disponibles, pero sus flujos en el panel siguen evolucionando.
-
-## Guías relacionadas
-
-- [Ajustes preestablecidos](./presets.mdx)
-- [Desplegar ajustes preestablecidos y depurar el enrutamiento](../cookbook/preset-rollout-and-routing-debug.mdx)
-- [Atribución de aplicaciones](./app-attribution.mdx)
+Las API de ejecuciones de prueba y de eventos de resultados personalizados están disponibles, pero sus vistas del panel aún están cambiando. Para desplegar un cambio de preajuste de forma gradual, consulta [Desplegar preajustes y depurar el enrutamiento](../cookbook/preset-rollout-and-routing-debug).

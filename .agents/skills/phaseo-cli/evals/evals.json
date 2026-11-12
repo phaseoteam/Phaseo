@@ -1,0 +1,37 @@
+[
+	{
+		"id": "login-and-keys",
+		"query": "Log in to Phaseo from the terminal and list my API keys.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Checks the CLI is installed and the identity with the CLI before acting",
+			"Uses a dedicated subcommand with --json"
+		]
+	},
+	{
+		"id": "request-by-id",
+		"query": "Look up what happened to request req_123 with the Phaseo CLI.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Uses the request lookup command rather than a raw API call",
+			"Summarises the result without dumping secrets"
+		]
+	},
+	{
+		"id": "mutation-safety",
+		"query": "Revoke the Phaseo key called staging-old.",
+		"should_trigger": true,
+		"expected_behavior": [
+			"Inspects the key and workspace first",
+			"Verifies the result after the change"
+		]
+	},
+	{
+		"id": "not-for-app-code",
+		"query": "Call Phaseo from our React Native app's backend.",
+		"should_trigger": false,
+		"expected_behavior": [
+			"Uses the gateway or an SDK skill rather than the CLI"
+		]
+	}
+]

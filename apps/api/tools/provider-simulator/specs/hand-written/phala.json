@@ -1,0 +1,37 @@
+{
+	"id": "phala",
+	"source": {
+		"url": null,
+		"docs": "https://docs.phala.com/phala-cloud/confidential-ai/confidential-model/api-reference/chat-completions",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. tool_choice auto|none|specific. Receipt headers x-receipt-id, x-aci-identity, x-aci-keyset-digest. Responses and Messages pages also exist (not reviewed)."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"temperature": {},
+					"max_tokens": {},
+					"max_completion_tokens": {},
+					"tools": {},
+					"tool_choice": {},
+					"response_format": {},
+					"provider": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

@@ -1,43 +1,34 @@
 ---
 title: "DeepSeek Harness"
 icon: "/icons/brands/deepseek.svg"
-description: "在 DeepSeek Harness 中将 Phaseo 添加为自定义 OpenAI 兼容供应商。"
+description: "在 DeepSeek Harness 中将 Phaseo 添加为自定义 OpenAI 兼容提供商。"
 ---
 
-将 DeepSeek Harness 连接到 Phaseo，即可通过 Harness 网页界面使用 Phaseo 模型和路由。无需自定义适配器：Harness 可直接向 Phaseo 发送兼容 OpenAI 的 Chat Completions 请求。
-
-**结果：** Phaseo 会显示在 Harness 模型选择器中，新建会话可使用由 Phaseo 提供的模型。
-
-## 前提条件
-
-- Phaseo CLI、Phaseo 帐户和已安装的 DeepSeek Harness 版本
-
-本指南中的实际请求会使用供应商凭据，并可能产生模型使用费用。
+运行 `phaseo deepseek-harness` 把 Phaseo 添加到 DeepSeek Harness 的模型选择器中，或者在 Harness 界面或 `settings.yaml` 中添加自定义提供商。Harness 会直接向 Phaseo 发送 OpenAI 兼容的 Chat Completions 请求，因此不需要适配器。
 
 ## 使用 Phaseo CLI 设置
 
-使用一条命令配置供应商、Base URL、协议、模型目录和默认模型：
-
 ```bash
 phaseo login
-phaseo dsh
+phaseo deepseek-harness
 ```
 
-CLI 会保留 `$DSH_HOME/cordis.patch.yml` 中与 Phaseo 无关的条目，并标记 Phaseo 区块，以便只更新或移除其管理的设置。它会同步所有兼容 Chat Completions 的有效 Phaseo 文本模型。如需指定其他默认模型：
+如果没有安装 Harness，CLI 会显示官方安装命令，并在运行前征求你的确认。随后 setup 会：
+
+- 把提供商、Base URL、协议、模型目录和默认模型写入 `$DSH_HOME/cordis.patch.yml`（`DSH_HOME` 默认为 `~/.dsh`）中的一个带标记的块内，以便之后只更新或删除它自己的设置；
+- 添加所有支持 Chat Completions 的活跃 Phaseo 文本模型。使用 `--catalog default` 可以只添加默认模型；
+- 创建一个 `Phaseo CLI: DeepSeek Harness API Key`，它 90 天后过期，每月支出上限为 $100，并写入 Harness 受保护的 `$DSH_HOME/.credentials.yaml`。再次运行 `phaseo deepseek-harness` 即可替换已过期的密钥。
+
+默认模型是 `anthropic/claude-sonnet-4.6`。要选择其他模型：
 
 ```bash
-phaseo dsh --model YOUR_PHASEO_MODEL_ID
+phaseo deepseek-harness --model YOUR_PHASEO_MODEL_ID
 ```
 
-设置过程还会创建一个名为 `Phaseo CLI: DeepSeek Harness API Key` 的永不过期 Gateway 密钥，并将其直接写入 Harness 受保护的 `$DSH_HOME/.credentials.yaml` 存储。使用 `--catalog default` 可仅配置选定模型。
+## 在 Harness 界面中添加 Phaseo
 
-运行 `phaseo integrations remove deepseek-harness` 移除集成时，只会删除 Phaseo 管理的配置并撤销 CLI 创建的密钥。
-
-## 在 Harness 界面中手动添加 Phaseo
-
-1. 在 DeepSeek Harness 中打开 **Settings > Models**。
-2. 选择 **Add a custom provider**。
-3. 输入以下值：
+1. 打开 **Settings > Models**，选择 **Add a custom provider**。
+2. 填写：
 
 | 字段 | 值 |
 | --- | --- |
@@ -45,19 +36,19 @@ phaseo dsh --model YOUR_PHASEO_MODEL_ID
 | Display name | `Phaseo` |
 | Base URL | `https://api.phaseo.app/v1` |
 | API protocol | `OpenAI Completions` |
-| API key | 你的 Phaseo API 密钥 |
+| API key | 一个 Phaseo API 密钥 |
 
-4. 在 **Model catalog** 下选择 **Fetch available models**。
-5. 选择支持工具的 Chat Completions 模型，例如 `anthropic/claude-sonnet-4.6`，然后保存供应商。
-6. 返回编辑区，选择 Phaseo 模型并开始新会话。
+3. 在 **Model catalog** 下，选择 **Fetch available models**。
+4. 选择一个支持工具的 Chat Completions 模型，例如 `anthropic/claude-sonnet-5.5`，然后保存提供商。
+5. 在输入框中选择 Phaseo 模型，并开始一个新会话。
 
-Harness 会在已保存会话和凭据引用中保留供应商 ID，因此请将 `phaseo` 视为固定值。显示名称、URL、凭据和模型列表以后仍可编辑。
+已保存的会话和凭据引用会记住提供商 ID，因此请把 `phaseo` 视为固定不变的值。显示名称、URL、密钥和模型列表之后都可以修改。
 
-## 使用 YAML 配置 Phaseo
+## 在 settings.yaml 中配置 Phaseo
 
-也可以直接在 `$DSH_HOME/settings.yaml` 中配置同一供应商。不要将 API 密钥写入此文件；`apiKeyEnv` 用于指定 Harness 应解析的凭据。
+你也可以在 `$DSH_HOME/settings.yaml` 中设置同样的提供商。不要把密钥写进这个文件：`apiKeyEnv` 指定 Harness 从哪个环境变量读取密钥。
 
-```yaml
+```yaml $DSH_HOME/settings.yaml
 llm-pi-ai:
   providers:
     phaseo:
@@ -69,40 +60,34 @@ llm-pi-ai:
         - id: YOUR_PHASEO_MODEL_ID
 ```
 
-在启动 Harness 的环境中提供 `PHASEO_API_KEY`，或在 Models 页面保存同一凭据。将 `YOUR_PHASEO_MODEL_ID` 替换为 Phaseo 模型发现返回的准确 ID。编码 Agent 工作流可先使用 `anthropic/claude-sonnet-4.6`。
+在启动 Harness 的环境中设置 `PHASEO_API_KEY`，或者在 Models 页面中保存密钥。把 `YOUR_PHASEO_MODEL_ID` 替换为 Phaseo 中的准确 ID；用于编程智能体时，可以先从 `anthropic/claude-sonnet-5.5` 开始。`models` 列表是一份保存下来的目录，而不是实时查询，所以想在 Harness 中使用更多 Phaseo 模型时，请更新它。
 
-<Note>
-  `settings.yaml` 中的 `models` 列表是已保存的目录，并非实时查询。要在 Harness 中展示更多 Phaseo 模型时，请更新此列表。
-</Note>
+## 确认可以正常使用
 
-## 验证连接
-
-测试 Harness 前，请分别确认凭据和模型发现路由：
+先检查密钥和模型发现：
 
 ```bash
 curl https://api.phaseo.app/v1/models \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-然后，在新的 Harness 会话中选择 Phaseo 模型并发送：
+然后在新的 Harness 会话中选择一个 Phaseo 模型，发送 `Reply with exactly: Phaseo is connected.`。收到回复即说明从 Harness 经过 Phaseo 到模型提供商的整条路径都已打通。该请求也会出现在 **设置 → 用量 → 日志** 中。实时请求按正常用量计费。
 
-```text
-Reply with exactly: Phaseo is connected.
+## 移除 Phaseo
+
+```bash
+phaseo integrations remove deepseek-harness
 ```
 
-成功响应可验证从 Harness 经 Phaseo 到所选模型供应商的完整链路。
+此命令只删除 Phaseo 所拥有的配置，并吊销密钥。
 
-## 故障排查
+## 解决常见问题
 
-- **模型获取返回 `401`** - 检查 Phaseo API 密钥是否有效，以及 Base URL 是否包含 `/v1`。
-- **模型未出现在选择器中** - 重新获取目录，或在 `$DSH_HOME/settings.yaml` 的 `models` 下添加准确的 Phaseo 模型 ID。
-- **Harness 报告 `MISSING_CREDENTIAL`** - 在 Models 页面保存密钥，或让 Harness 进程能够读取 `PHASEO_API_KEY`。
-- **请求使用了错误的端点** - 选择 `OpenAI Completions` / `openai-completions`。此 Harness 集成使用 Phaseo 的兼容路由 `/v1/chat/completions`。
-- **启用推理后模型拒绝函数工具** - 选择支持 Chat Completions 工具的模型。需要通过 Responses API 才能结合工具进行推理的模型与此 Harness 供应商协议不兼容。
-- **现有会话仍使用旧模型** - 开始新会话。Harness 会在已发送请求的会话中记录所选供应商和模型。
-
-## 相关指南
-
-- [快速入门](../../quickstart.mdx)
-- [构建 Node REST 冒烟测试应用](../../cookbook/build-a-node-rest-smoke-app.mdx)
-- [路由与回退](../routing-and-fallbacks.mdx)
+| 问题 | 解决方法 |
+| --- | --- |
+| 获取模型时返回 `401` | 检查密钥是否有效，以及 Base URL 是否包含 `/v1`。 |
+| 选择器中没有该模型 | 重新获取目录，或在 `settings.yaml` 的 `models` 下添加准确的模型 ID。 |
+| Harness 报告 `MISSING_CREDENTIAL` | 在 Models 页面中保存密钥，或让 Harness 进程能够读取 `PHASEO_API_KEY`。 |
+| 请求发往了错误的端点 | 选择 `OpenAI Completions`（`openai-completions`）。此提供商使用 Phaseo 的 `/v1/chat/completions`。 |
+| 开启推理时模型拒绝函数工具 | 选择在 Chat Completions 上支持工具的模型。需要通过 Responses API 才能同时使用推理和工具的模型无法使用此协议。 |
+| 会话一直使用旧模型 | 开始一个新会话。Harness 会把提供商和模型保存在已经发送过请求的会话中。 |

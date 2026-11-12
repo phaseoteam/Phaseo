@@ -1,10 +1,11 @@
 import React from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { Users } from "lucide-react";
-import { fetchFrontendAPIProviderTopApps } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { getLocale, getTranslations } from "next-intl/server";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { apiProviderTopAppsQuery } from "../apiProvider.queries";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { DisplayNumber } from "@/components/display/DisplayValue";
+import { DisplayCount } from "@/components/display/DisplayValue";
 import {
 	Empty,
 	EmptyDescription,
@@ -13,7 +14,7 @@ import {
 	EmptyTitle,
 } from "@/components/ui/empty";
 
-export default async function TopApps({
+export default function TopApps({
 	count = 20,
 	apiProviderId,
 	period = "day",
@@ -22,15 +23,13 @@ export default async function TopApps({
 	apiProviderId: string;
 	period?: "day" | "week" | "month";
 }) {
-	const [t, locale] = await Promise.all([
-		getTranslations("Catalogue.providers"),
-		getLocale(),
-	]);
-	const topApps = await fetchFrontendAPIProviderTopApps(
+	const t = useTranslations("Catalogue.providers");
+	const locale = useLocale();
+	const { data: topApps } = useSuspenseQuery(apiProviderTopAppsQuery(
 		apiProviderId,
 		period,
 		count,
-	);
+	));
 
 	return (
 		<section className="space-y-4">
@@ -80,7 +79,7 @@ export default async function TopApps({
 										</div>
 									</td>
 									<td className="py-2 px-2 text-right tabular-nums">
-										<DisplayNumber value={app.total_tokens} />
+										<DisplayCount value={app.total_tokens} />
 									</td>
 									<td className="py-2 px-2 text-right">
 										{app.url && app.url !== "about:blank" ? (

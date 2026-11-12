@@ -1,64 +1,92 @@
 ---
-title: "Résumer des notes internes avec le SDK Agent Ruby"
+title: "Résumer des notes internes avec l’Agent SDK Ruby"
+sidebarTitle: "Résumer des notes internes en Ruby"
 icon: "notebook-tabs"
-description: "Utilisez le SDK Agent Ruby pour interroger des notes locales et renvoyer un résumé limité via Phaseo Gateway."
+description: "Utilisez l’Agent SDK Ruby pour interroger des notes locales et renvoyer un résumé limité via Phaseo Gateway."
 ---
 
-Utilisez cette recette lorsqu’un service Ruby a besoin d’un petit assistant pour ses notes internes, sans déléguer l’orchestration à un autre système.
+Exécutez un agent Ruby qui recherche une note interne avec un outil local et répond en un court paragraphe, sans confier l’orchestration à un autre système. À la fin, vous avez un script qui résume votre note sur les préréglages.
 
-## 1. Préparer les SDK
+L’outil renvoie des données d’exemple fixes : le script est donc illustratif ; remplacez-le par une recherche dans votre propre stockage de notes. Il convient à une application Ruby qui possède déjà les données et dont les entrées d’outils sont simples et déterministes.
 
-<Note type="warning">Le package Ruby Agent SDK n’est pas encore disponible sur RubyGems. Suivez les [instructions d’installation depuis les sources](../sdk-reference/ruby/agent-sdk-installation.mdx).</Note>
+## Le construire
 
-## 2. Définir un outil de recherche de notes
+<Steps>
+<Step title="Installer">
 
-```ruby
+```bash
+gem install phaseo_agent_sdk
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+Ou ajoutez `gem "phaseo_agent_sdk"` à votre `Gemfile`. Il installe `phaseo_sdk` avec lui et nécessite Ruby 3.2 ou une version plus récente. Consultez [Installation de l’Agent SDK Ruby](../sdk-reference/agent/installation).
+
+</Step>
+<Step title="Écrire l’agent">
+
+```ruby notes.rb
+require "phaseo_agent_sdk"
+
+TOPICS = %w[presets routing guardrails].freeze
+
 lookup_note = PhaseoAgentSdk.define_tool(
   PhaseoAgentSdk::Tool.new(
     id: "lookup-note",
     description: "Look up one internal note by topic.",
     parameters: {
       type: "object",
-      properties: {
-        topic: { type: "string" },
-      },
+      properties: { topic: { type: "string", enum: TOPICS } },
       required: ["topic"],
+      additionalProperties: false
     },
+    # Les arguments viennent du modèle : seuls les sujets connus atteignent execute.
+    input_schema: lambda do |input|
+      raise ArgumentError, "topic must be one of #{TOPICS.join(', ')}" unless input.is_a?(Hash) && TOPICS.include?(input["topic"])
+
+      input
+    end,
     execute: lambda do |input, _context|
       {
         topic: input["topic"],
-        summary: "Presets centralize routing defaults so app code stays smaller.",
+        summary: "Presets centralize routing defaults so app code stays smaller."
       }
     end
   )
 )
-```
 
-## 3. Créer et exécuter l’agent
-
-```ruby
 agent = PhaseoAgentSdk.create_agent(
   id: "notes-agent",
-  model: "openai/gpt-5.4-nano",
+  model: "openai/gpt-6-astra",
   instructions: "Use tools when helpful and answer in one short paragraph.",
-  tools: [lookup_note]
+  tools: [lookup_note],
+  max_steps: 4
 )
 
+# Lit PHASEO_API_KEY depuis l’environnement.
 result = agent.run(
   input: "Summarize our note about presets.",
   client: PhaseoAgentSdk.create_gateway_agent_client
 )
 
+puts result.run.status
 puts result.output
 ```
 
-## Quand utiliser cette recette
+</Step>
+<Step title="L’exécuter">
 
-- les entrées de l’outil sont simples et déterministes
-- l’application Ruby gère déjà la source de données
-- vous souhaitez un modèle pratique d’outils locaux pour un workflow limité
+```bash
+ruby notes.rb
+```
 
-## À lire aussi
+</Step>
+</Steps>
 
-- [SDK Agent Ruby](../sdk-reference/ruby/agent-sdk.mdx)
-- [Créer une boucle d’agent durable](./agent-sdk-durable-loop.mdx)
+## Vérifier que ça fonctionne
+
+- Le script affiche `completed`, puis un paragraphe sur les préréglages.
+- Dans **Paramètres → Utilisation → Journaux**, le premier tour du modèle affiche un appel `lookup-note` avec `{"topic": "presets"}`.
+
+## Avant la production
+
+Gardez l’outil en lecture seule et `max_steps` aussi bas que la tâche le permet (la valeur par défaut est `12`). Si votre stockage de notes est volumineux, renvoyez uniquement le passage correspondant plutôt que des documents entiers, pour que chaque tour du modèle reste léger. Pour enregistrer des exécutions et les reprendre plus tard, consultez la [boucle durable](./agent-sdk-durable-loop) ; l’option `state:` du SDK Ruby fonctionne de la même façon. La [référence de l’Agent SDK Ruby](../sdk-reference/agent/usage) couvre l’état, l’approbation et le streaming.

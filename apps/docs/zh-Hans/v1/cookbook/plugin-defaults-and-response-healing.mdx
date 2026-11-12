@@ -1,173 +1,79 @@
 ---
 title: "为结构化 JSON 工作流设置插件默认值"
+sidebarTitle: "JSON 插件默认值"
 icon: "puzzle"
-description: "使用工作区、预设和请求级插件策略，确保响应修复行为一致。"
+description: "使用工作区、预设和请求级的插件策略，让响应修复保持一致。"
 ---
 
-如果结构化输出请求需要统一的插件策略，而不是为每个请求单独设置，请使用本指南。
+为整个工作区或某个预设一次性开启[响应修复](./response-healing-for-structured-json)，而不必在每个请求中开启。完成后，每个使用结构化输出的调用方都会采用相同的修复策略，你还可以锁定它，让任何预设或请求都无法将其关闭。
 
-## 1. 了解优先级
+这是一个仪表板操作流程；末尾的请求示例可直接用于生产环境。
 
-Gateway 插件策略按以下顺序解析：
+## 各层如何组合
 
-1. 工作区默认值
-2. 预设默认值
-3. 请求级插件
+Phaseo 从三层构建每个请求的插件列表。对于同一个插件，后面的层会替换前面层的设置，除非前面的层已被锁定：
 
-除非工作区默认值已明确锁定，否则低优先级层可以覆盖高优先级层。
+```mermaid
+flowchart LR
+  ws["工作区默认值"] --> pr["预设插件"]
+  pr --> rq["请求插件"]
+  rq --> eff["实际运行的插件"]
+  lock["工作区锁定已开启"] -.->|"后面的层无法更改 response-healing"| pr
+```
 
-## 2. 设置工作区默认值
+| 层 | 设置位置 | 覆盖 |
+| --- | --- | --- |
+| 工作区 | **设置 → 路由 → 响应修复** | 无 |
+| 预设 | **设置 → 预设 →（预设）→ 响应修复** | 工作区设置，除非已锁定 |
+| 请求 | 请求体中的 `plugins` | 预设和工作区设置，除非工作区已锁定 |
 
-如果要让某个工作区默认对结构化 JSON 请求启用响应修复，请在路由设置中配置工作区默认值。
+## 进行设置
 
-适合在此处配置：
+<Steps>
+<Step title="开启工作区默认值">
 
-- 通用运行默认值
-- 共享的 API 密钥行为
-- 避免不同服务之间出现偏差
+在**设置 → 路由 → 响应修复**中，开启**默认启用**并选择一种**修复模式**：`safe` 用于有限度的语法修复，`strict` 只解包本来就有效的 JSON。工作区内所有 API 密钥共享的通用默认值就在这里设置。
 
-## 3. 策略不可协商时将其锁定
+</Step>
+<Step title="如果不容更改，就锁定它">
 
-如果某个工作区必须始终启用响应修复，请锁定该默认值。
+开启**锁定工作区策略**。之后预设和请求既不能关闭修复，也不能更改其模式。日志仍会显示它是已应用还是已跳过。
 
-锁定工作区默认值后：
+</Step>
+<Step title="为某个工作流设置预设默认值">
 
-- 预设无法将其禁用
-- 请求正文无法将其禁用
-- 日志仍会显示插件是已应用、已跳过还是失败
+当某一类请求需要同时带上结构化输出格式和修复时，在预设编辑器中开启**响应修复**并选择其模式。之后该预设的调用方只需发送输入。
 
-## 4. 使用预设设置工作流专属默认值
+</Step>
+</Steps>
 
-如果一组请求需要同时包含以下内容，预设是合适的配置层：
+## 为单个请求覆盖设置
 
-- 结构化输出设置
-- 响应修复插件默认值
+当工作区未锁定时，请求可以自行设置该插件。`"enabled": false` 会为该请求关闭它：
 
-这一层还可以选择响应修复模式：
-
-- `safe`用于范围受限的语法清理
-- `strict`用于仅移除外层包装的行为
-
-这样可以缩短请求正文，也更容易在不同服务间复用路由和输出行为。
-
-## 5. 仅在工作区允许时按请求覆盖
-
-如果工作区默认值未锁定，请求仍可直接覆盖插件配置：
-
-## 请求示例
-<CodeGroup>
-```bash cURL
-curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "phaseo/free",
-    "input": "Return valid JSON",
-    "response_format": {
+```json
+{
+  "model": "openai/gpt-6-astra",
+  "input": "Return the summary as JSON.",
+  "text": {
+    "format": {
       "type": "json_schema",
-      "json_schema": {
-        "name": "answer",
-        "schema": {
-          "type": "object",
-          "properties": {
-            "summary": { "type": "string" }
-          },
-          "required": ["summary"],
-          "additionalProperties": false
-        }
+      "name": "answer",
+      "schema": {
+        "type": "object",
+        "properties": { "summary": { "type": "string" } },
+        "required": ["summary"],
+        "additionalProperties": false
       }
-    },
-    "plugins": [
-      { "id": "response-healing", "enabled": true }
-    ]
-  }'
-```
-
-```typescript TypeScript SDK
-import Phaseo from "@phaseo/sdk";
-
-const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
-
-const response = await client.generateResponse({
-  model: "phaseo/free",
-  input: "Return valid JSON",
-  response_format: {
-    type: "json_schema",
-    json_schema: {
-      name: "answer",
-      schema: {
-        type: "object",
-        properties: {
-          summary: { type: "string" },
-        },
-        required: ["summary"],
-        additionalProperties: false,
-      },
-    },
-  },
-  plugins: [{ id: "response-healing", enabled: true }],
-});
-
-console.log(response.output_text);
-```
-
-```python Python SDK
-from phaseo import Phaseo
-
-client = Phaseo(api_key="YOUR_API_KEY")
-
-response = client.generate_response(
-    {
-        "model": "phaseo/free",
-        "input": "Return valid JSON",
-        "response_format": {
-            "type": "json_schema",
-            "json_schema": {
-                "name": "answer",
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "summary": {"type": "string"}
-                    },
-                    "required": ["summary"],
-                    "additionalProperties": False,
-                },
-            },
-        },
-        "plugins": [
-            {"id": "response-healing", "enabled": True}
-        ],
     }
-)
-
-print(response.get("output_text"))
+  },
+  "plugins": [{ "id": "response-healing", "enabled": true, "mode": "strict" }],
+  "meta": true
+}
 ```
-</CodeGroup>
-## 6. 在日志中验证行为
 
-发送一次请求后，检查请求详情并确认：
+## 查看实际运行的策略
 
-- `plugin_executions`包含`response-healing`
-- 状态为以下之一：
-  - `applied`
-  - `skipped`
-  - `failed`
-- 可以查看最终生效的插件模式
-- 架构验证拒绝修复后的候选内容时，会显示验证错误
+在**设置 → 用量 → 日志**中打开该请求；如果你发送了 `meta: true`，也可以读取 `meta.plugin_executions`。其中显示状态（`applied`、`skipped` 或 `failed`）、实际运行的模式，以及修复后的候选结果不符合 schema 时的 `validation_errors`。
 
-## 7. 服务间行为不一致时的处理方法
-
-如果两个服务的行为不同，请比较：
-
-- 工作区路由设置
-- 预设插件默认值
-- 请求级`plugins`
-- 工作区默认值是否已锁定
-
-确认这些策略层一致后，再排查模型质量问题。
-
-## 相关内容
-
-- [修复格式错误的结构化 JSON](./response-healing-for-structured-json.mdx)
-- [使用预设配置响应缓存](./response-caching-with-presets.mdx)
-- [TypeScript Agent SDK](../sdk-reference/typescript/agent-sdk.mdx)
+如果两个服务的表现不同，在把它当作模型问题之前，先比较工作区设置及其锁定状态、预设的插件，以及每个请求的 `plugins`。

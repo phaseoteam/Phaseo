@@ -1,4 +1,13 @@
 export interface GatewayModelsResponse {
+  access?: {
+    hidden_model_count: number;
+    hidden_models: {
+      id: string;
+      name: string;
+    }[];
+    limited_model_count: number;
+    restricted: boolean;
+  };
   availability_mode: "active" | "all";
   limit: number;
   models: {
@@ -16,6 +25,96 @@ export interface GatewayModelsResponse {
       parameter_details: {
         [key: string]: {
           [key: string]: unknown;
+        };
+      };
+      parameter_specs?: {
+        [key: string]: {
+          alias_of?: string;
+          aliases?: string[];
+          always_on?: boolean;
+          default?: string | number | boolean;
+          dimensions?: {
+            aspect_ratios?: string[];
+            max?: number;
+            max_aspect_ratio?: string;
+            max_height?: number;
+            max_pixels?: number;
+            max_width?: number;
+            min?: number;
+            min_pixels?: number;
+            multiple_of?: number;
+          };
+          extra?: {
+            [key: string]: unknown;
+          };
+          format?: string;
+          formats?: string[];
+          item_types?: string[];
+          max?: number;
+          max_file_size_bytes?: number;
+          max_items?: number;
+          max_length?: number;
+          max_tokens?: number;
+          media?: "image" | "audio" | "video";
+          min?: number;
+          min_items?: number;
+          min_length?: number;
+          multiple_of?: number;
+          notes?: string;
+          open?: boolean;
+          options?: {
+            description?: string;
+            label?: string;
+            value: string | number | boolean;
+            [key: string]: unknown;
+          }[];
+          properties?: {
+            [key: string]: {
+              [key: string]: unknown;
+            };
+          };
+          provider_default?: string | number | boolean;
+          required?: boolean;
+          requires?: string[];
+          source?: {
+            url?: string;
+            verified_at?: string;
+          };
+          step?: number;
+          support_level?: string;
+          supported: boolean;
+          type?:
+            | "string"
+            | "integer"
+            | "number"
+            | "boolean"
+            | "array"
+            | "object"
+            | "file"
+            | (
+                | "string"
+                | "integer"
+                | "number"
+                | "boolean"
+                | "array"
+                | "object"
+                | "file"
+              )[];
+          upstream_name?: string;
+          upstream_values?: (string | number | boolean)[];
+          values?: (string | number | boolean)[];
+          when?: {
+            default?: string | number | boolean;
+            if: {
+              [key: string]: (string | number | boolean)[];
+            };
+            max?: number;
+            message?: string;
+            min?: number;
+            step?: number;
+            supported?: boolean;
+            values?: (string | number | boolean)[];
+          }[];
         };
       };
       parameters: string[];
@@ -45,6 +144,96 @@ export interface GatewayModelsResponse {
         parameter_details: {
           [key: string]: {
             [key: string]: unknown;
+          };
+        };
+        parameter_specs?: {
+          [key: string]: {
+            alias_of?: string;
+            aliases?: string[];
+            always_on?: boolean;
+            default?: string | number | boolean;
+            dimensions?: {
+              aspect_ratios?: string[];
+              max?: number;
+              max_aspect_ratio?: string;
+              max_height?: number;
+              max_pixels?: number;
+              max_width?: number;
+              min?: number;
+              min_pixels?: number;
+              multiple_of?: number;
+            };
+            extra?: {
+              [key: string]: unknown;
+            };
+            format?: string;
+            formats?: string[];
+            item_types?: string[];
+            max?: number;
+            max_file_size_bytes?: number;
+            max_items?: number;
+            max_length?: number;
+            max_tokens?: number;
+            media?: "image" | "audio" | "video";
+            min?: number;
+            min_items?: number;
+            min_length?: number;
+            multiple_of?: number;
+            notes?: string;
+            open?: boolean;
+            options?: {
+              description?: string;
+              label?: string;
+              value: string | number | boolean;
+              [key: string]: unknown;
+            }[];
+            properties?: {
+              [key: string]: {
+                [key: string]: unknown;
+              };
+            };
+            provider_default?: string | number | boolean;
+            required?: boolean;
+            requires?: string[];
+            source?: {
+              url?: string;
+              verified_at?: string;
+            };
+            step?: number;
+            support_level?: string;
+            supported: boolean;
+            type?:
+              | "string"
+              | "integer"
+              | "number"
+              | "boolean"
+              | "array"
+              | "object"
+              | "file"
+              | (
+                  | "string"
+                  | "integer"
+                  | "number"
+                  | "boolean"
+                  | "array"
+                  | "object"
+                  | "file"
+                )[];
+            upstream_name?: string;
+            upstream_values?: (string | number | boolean)[];
+            values?: (string | number | boolean)[];
+            when?: {
+              default?: string | number | boolean;
+              if: {
+                [key: string]: (string | number | boolean)[];
+              };
+              max?: number;
+              message?: string;
+              min?: number;
+              step?: number;
+              supported?: boolean;
+              values?: (string | number | boolean)[];
+            }[];
           };
         };
         parameters: string[];
@@ -80,6 +269,7 @@ export interface GatewayModelsResponse {
         capability:
           | "active"
           | "coming_soon"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"
@@ -87,17 +277,20 @@ export interface GatewayModelsResponse {
           | "internal_testing";
         model:
           | "active"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"
           | "disabled";
         provider:
           | "active"
+          | "deranked"
           | "deranked_lvl1"
           | "deranked_lvl2"
           | "deranked_lvl3"
           | "disabled";
       };
+      service_tiers?: ("flex" | "priority" | "standard" | "ultrafast")[];
       status: "active" | "coming_soon" | "inactive";
       status_reason:
         | "active"
@@ -108,6 +301,7 @@ export interface GatewayModelsResponse {
         | "project_limited"
         | "paused"
         | "soft_blocked"
+        | "deranked"
         | "deranked_lvl1"
         | "deranked_lvl2"
         | "deranked_lvl3"

@@ -14,6 +14,78 @@ const CONTACT_ID = "22222222-2222-4222-8222-222222222222";
 describe("provider application review API", () => {
 	afterEach(() => vi.unstubAllGlobals());
 
+	it.each([["user", false], ["admin", false], ["admin", true]] as const)("restricts privacy approval to Phaseo admins (%s), purge throws=%s", async (role, purgeThrows) => {
+		let saved: any = null;
+		const purge = vi.fn(async () => { if (purgeThrows) throw new Error("purge unavailable"); return { success: true }; });
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const url = input instanceof Request ? input.url : String(input);
+			if (url.includes("/auth/v1/user")) return Response.json({ id: ADMIN_ID });
+			if (url.includes("/rest/v1/users")) return Response.json([{ role }]);
+			if (url.includes("provider_catalog_sources")) return Response.json({ catalog_url: "https://provider.example/catalog", management_mode: "remote" });
+			if (url.includes("provider_catalog_policy_approvals")) { saved = JSON.parse(String(init?.body)); return Response.json([]); }
+			throw new Error("Unexpected privacy approval request");
+		}));
+		const response = await app.request("https://phaseo.app/api/internal/provider-catalog/providers/sample/data-policy-approval", {
+			method: "PUT", headers: { authorization: "Bearer test", "content-type": "application/json" },
+			body: JSON.stringify({ enabled: true, privacy_policy_url: "https://provider.example/privacy" }),
+		}, env, { waitUntil() {}, passThroughOnException() {}, cache: { purge } } as never);
+		expect(response.status).toBe(role === "admin" ? 200 : 401);
+		if (role === "admin") expect(saved).toMatchObject({ provider_slug: "sample", approved_by: ADMIN_ID, catalog_url: "https://provider.example/catalog", enabled: true });
+		else expect(saved).toBeNull();
+		if (role === "admin") {
+			expect(purge).toHaveBeenCalledWith({ tags: expect.arrayContaining(["web-api-compare", "web-api-model-pricing", "web-api-model-details"]) });
+			expect(await response.json()).toMatchObject({ success: true, enabled: true, cache: { success: !purgeThrows } });
+		} else expect(purge).not.toHaveBeenCalled();
+	});
+
+	it("preserves submitted service tiers when approving a model revision", async () => {
+		const tiers = [{ serviceTier: "standard", providerModelSlug: "base", pricing: [] }, { serviceTier: "fast", providerModelSlug: "fast", pricing: [] }];
+		let staged: Record<string, unknown> | null = null;
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const url = input instanceof Request ? input.url : String(input);
+			const method = input instanceof Request ? input.method : init?.method ?? "GET";
+			if (url.includes("/auth/v1/user")) return Response.json({ id: ADMIN_ID });
+			if (url.includes("/rest/v1/users")) return Response.json([{ role: "admin" }]);
+			if (url.includes("provider_catalog_route_candidates")) { staged = JSON.parse(String(init?.body)); return Response.json([]); }
+			if (url.includes("provider_catalog_sync_model_capabilities")) return Response.json([{ capability_id: "text.generate", parameters: [] }]);
+			if (url.includes("provider_catalog_sync_models") && method === "GET") {
+				return Response.json([{ run_id: CONTACT_ID, provider_slug: "sample", model_slug: "sample/model", provider_model_slug: "base", canonical_model_slug: "sample/model", metadata: { pricing: [], serviceTiers: tiers }, decision: "approved" }]);
+			}
+			if (url.includes("provider_catalog_sync_models") && method === "PATCH") return Response.json({ run_id: CONTACT_ID, model_slug: "sample/model", decision: "approved" });
+			if (url.includes("provider_catalog_review_events") || url.includes("provider_account_links") || url.includes("provider_catalog_sync_runs")) return Response.json([]);
+			throw new Error("Unexpected model approval request");
+		}));
+		const response = await app.request(`https://phaseo.app/api/internal/provider-catalog/reviews/${CONTACT_ID}/models/sample%2Fmodel`, { method: "PATCH", headers: { authorization: "Bearer test", "content-type": "application/json" }, body: JSON.stringify({ decision: "approved" }) }, env);
+		expect(response.status).toBe(200);
+		expect(staged).toMatchObject({ service_tiers: tiers });
+	});
+
+	it("restricts new-model review to admins", async () => {
+		vi.stubGlobal("fetch",vi.fn(async(input:RequestInfo|URL)=>{
+			const url=String(input);
+			if(url.includes("/auth/v1/user"))return Response.json({id:CONTACT_ID});
+			if(url.includes("/rest/v1/users"))return Response.json([{role:"user"}]);
+			throw new Error("Unauthorized review reached the database");
+		}));
+		const response=await app.request("https://phaseo.app/api/internal/provider-catalog/model-requests",{headers:{authorization:"Bearer test"}},env);
+		expect(response.status).toBe(403);
+	});
+	it("reviews the displayed model revision through the atomic RPC",async()=>{
+		let rpcBody:Record<string,unknown>|null=null;
+		vi.stubGlobal("fetch",vi.fn(async(input:RequestInfo|URL,init?:RequestInit)=>{
+			const url=input instanceof Request?input.url:String(input);
+			if(url.includes("/auth/v1/user"))return Response.json({id:ADMIN_ID});
+			if(url.includes("/rest/v1/users"))return Response.json([{role:"admin"}]);
+			if(url.includes("/rpc/review_provider_catalog_model_request")){rpcBody=JSON.parse(String(init?.body));return Response.json("sample");}
+			if(url.includes("/rpc/claim_provider_catalog_sync_lease"))return Response.json(false);
+			if(url.includes("/rest/v1/provider_catalog_sources"))return Response.json([]);
+			throw new Error("Unexpected test request");
+		}));
+		const response=await app.request(`https://phaseo.app/api/internal/provider-catalog/model-requests/${CONTACT_ID}`,{method:"PATCH",headers:{authorization:"Bearer test","content-type":"application/json"},body:JSON.stringify({decision:"approved",expectedUpdatedAt:"2026-10-06T00:00:00Z"})},env,{waitUntil:vi.fn()} as never);
+		expect(response.status).toBe(200);
+		expect(rpcBody).toMatchObject({p_request_id:CONTACT_ID,p_reviewed_by:ADMIN_ID,p_expected_updated_at:"2026-10-06T00:00:00Z"});
+	});
+
 	it("shows a submitted application and allows identity approval before route setup is ready", async () => {
 		let reviewRpcBody: Record<string, unknown> | null = null;
 		const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -70,7 +142,7 @@ describe("provider application review API", () => {
 				application_type: "new",
 				review_status: "awaiting_approval",
 				technical_ready: false,
-				route_blockers: ["endpoint", "adapter", "credentials", "probe"],
+				route_blockers: ["endpoint", "adapter", "credentials"],
 			}],
 		});
 
@@ -78,7 +150,7 @@ describe("provider application review API", () => {
 			method: "PATCH",
 			headers: { authorization: "Bearer admin-session", "content-type": "application/json" },
 			body: JSON.stringify({ decision: "approved" }),
-		}, env);
+		}, env, { waitUntil: vi.fn(), passThroughOnException: vi.fn() } as ExecutionContext);
 		expect(decisionResponse.status).toBe(200);
 		expect(reviewRpcBody).toMatchObject({
 			p_provider_slug: "new-provider",
@@ -90,7 +162,7 @@ describe("provider application review API", () => {
 			const url = input instanceof Request ? input.url : String(input);
 			return url.includes("/rest/v1/provider_catalog_route_candidates");
 		}).length;
-		expect(routeCandidateReadCount).toBe(1);
+		expect(routeCandidateReadCount).toBe(0);
 	});
 
 	it("includes legacy provider claims and shows their staged profile in the review queue", async () => {

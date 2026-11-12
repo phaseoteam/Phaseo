@@ -4,46 +4,130 @@ description: "Envía alertas del espacio de trabajo por correo electrónico, can
 icon: "bell-ring"
 ---
 
-Usa los destinos de notificación para enviar las alertas habilitadas del espacio de trabajo a las herramientas que tu equipo ya supervisa. Los destinos se comparten en todo el espacio de trabajo y puedes probarlos antes de confiarles alertas operativas.
+Añade un destino en **Ajustes → Notificaciones** para enviar las alertas de tu espacio de trabajo por correo electrónico, Slack, Discord, Microsoft Teams o tu propio webhook HTTPS. Los destinos pertenecen al espacio de trabajo, y puedes enviar una prueba antes de confiar en uno.
 
-## Añadir un destino
-
-1. Abre **Gateway → Configuración → Notificaciones**.
-2. Selecciona **Añadir destino**.
-3. Introduce un nombre y elige uno o varios canales.
-4. Añade los datos del destino y, si quieres, las menciones.
-5. Selecciona **Enviar prueba** para cada canal configurado.
-6. Crea los destinos cuando todas las pruebas se hayan completado correctamente.
-
-Phaseo admite:
-
-- direcciones de correo electrónico y listas de distribución
-- canales de Discord mediante un token de bot
-- webhooks de Discord
-- webhooks entrantes de Slack
-- URL de flujos de trabajo de Microsoft Teams
-- webhooks HTTPS personalizados
+| Destino | Qué proporcionas | Menciones |
+| --- | --- | --- |
+| Correo electrónico | Direcciones o listas de distribución | Ninguna |
+| Slack | Una URL de webhook entrante | ID de usuario e ID de grupos de usuarios |
+| Discord | Un canal y un token de bot, o una URL de webhook | ID de usuario e ID de rol |
+| Microsoft Teams | Una URL de flujo de trabajo | Direcciones de correo de Microsoft 365 o ID de objeto de Entra |
+| Webhook personalizado | Una URL HTTPS | Ninguna; las entregas van [firmadas](#verify-webhook-signatures) |
 
 Las credenciales y las URL de los webhooks se cifran antes de guardarse. Limita las credenciales de canal al envío de notificaciones y rótalas si quedan expuestas.
 
+## Añadir un destino
+
+<Steps>
+<Step title="Créalo">
+Abre **Ajustes → Notificaciones**, selecciona **Añadir destino**, introduce un nombre y elige uno o varios canales. Añade los datos del destino y las menciones que quieras.
+</Step>
+<Step title="Prueba cada canal">
+Selecciona **Enviar prueba** para cada canal y crea los destinos cuando todas las pruebas se completen correctamente.
+</Step>
+<Step title="Guarda el secreto de firma">
+Un webhook personalizado recibe un secreto de firma al crearlo. Cópialo desde el cuadro de diálogo que se abre; solo se muestra una vez.
+</Step>
+</Steps>
+
+Para automatizarlo, crea el destino con `POST /v1/notifications/destinations`, compruébalo con `POST /v1/notifications/destinations/{id}/test` y elige qué alertas recibe con `PUT /v1/notifications/routes/{eventKind}`, usando una clave de administración.
+
+Usa las menciones con moderación: envía las alertas frecuentes a un canal supervisado en lugar de avisar a un grupo amplio.
+
+<span id="enable-product-alerts"></span>
 ## Activar alertas de producto
 
-La página de notificaciones muestra los tipos de alertas disponibles para tu espacio de trabajo. Activa **Alertas de retirada de modelos** para recibir un aviso antes de que se retire un modelo usado por el espacio de trabajo.
+La página de notificaciones muestra los tipos de alertas disponibles para tu espacio de trabajo. Los destinos reciben una alerta además de los destinatarios integrados que se muestran en el panel.
 
-Además de los destinatarios integrados que se muestren en el panel, las alertas se envían a los destinos configurados.
+Las **Alertas de obsolescencia del modelo** avisan antes de que se retire un modelo que usa el espacio de trabajo.
 
-## Menciones
+Los **Avisos de modelo sustituto** se envían cuando el [enrutamiento de modelos retirados](./model-retirement.mdx#route-requests-to-a-replacement-automatically) está activado y un modelo sustituto responde a las solicitudes del espacio de trabajo para un modelo que ya no sirve ningún proveedor. Se envía un aviso por cada modelo y sustituto, la primera vez que un sustituto responde correctamente. Siempre se envía un correo electrónico al propietario del espacio de trabajo; elige destinos para enviar el aviso también a tu equipo.
 
-Los campos de mención opcionales permiten que una alerta avise a destinatarios específicos:
+<span id="spend-reports"></span>
+## Informes de gasto
 
-- Discord acepta ID de usuario e ID de rol.
-- Slack acepta ID de usuario e ID de grupos de usuarios.
-- Microsoft Teams acepta direcciones de correo de Microsoft 365 o ID de objeto de Entra.
+Los propietarios del espacio de trabajo reciben cada lunes a las 09:00, en la zona horaria de facturación del espacio de trabajo, un correo con el informe de gasto de la semana anterior, de lunes a domingo. Cámbialo en **Alertas de gasto → Ajustes de gasto del espacio de trabajo** en la página de notificaciones: diario (a las 09:00, del día anterior), semanal, mensual (el día 1, del mes anterior) o desactivado, y si también lo reciben los administradores. Los periodos sin gasto se omiten.
 
-Usa las menciones con moderación. Las alertas frecuentes del espacio de trabajo suelen enviarse a un canal supervisado, en lugar de avisar a un grupo amplio.
+Cada informe muestra el gasto y el cambio respecto al periodo anterior, las claves, modelos, miembros y departamentos principales, la previsión de este mes, la autonomía del saldo y las alertas y bloqueos de gasto del periodo. Quien lo recibe puede darse de baja desde el enlace del correo; eso solo detiene su copia del informe de ese espacio de trabajo. Los destinos asignados a **Informes de gasto** reciben un resumen por informe.
 
-## Probar y eliminar destinos
+Los mismos ajustes son `spend.report_cadence` y `spend.report_include_admins` en la [API de ajustes de notificaciones](../api-reference/endpoint/notifications-settings-update.mdx).
 
-Usa **Enviar prueba** junto a un destino existente después de rotar las credenciales o cambiar la configuración del canal. Elimina los destinos que ya no se supervisen para que las alertas no parezcan enviarse a un canal abandonado.
+Para recibir alertas sobre gasto, presupuestos, previsiones, picos y saldo bajo, y para bloquear solicitudes cuando el gasto supera un límite, consulta [Alertas de gasto](./spend-alerts.mdx).
 
-Los webhooks personalizados deben usar HTTPS y validar la solicitud antes de procesarla. Devuelve una respuesta correcta sin demora y traslada las tareas más lentas a un proceso en segundo plano.
+<Note>Los correos con informes de gasto se están activando poco a poco. Hasta que se activen, tu elección se guarda, pero no se envía ningún informe.</Note>
+
+## Mantener los destinos en funcionamiento
+
+Usa **Enviar prueba** junto a un destino existente después de rotar las credenciales o cambiar su canal. Elimina los destinos que nadie supervisa, para que las alertas no parezcan entregadas cuando llegan a un canal abandonado.
+
+Un receptor de webhook personalizado debe verificar cada solicitud antes de procesarla, devolver una respuesta correcta sin demora y trasladar las tareas más lentas a un proceso en segundo plano.
+
+<span id="verify-webhook-signatures"></span>
+## Verificar las firmas de los webhooks
+
+Phaseo firma cada entrega de webhook personalizado, incluidas las pruebas enviadas desde un destino guardado, con el mismo esquema que los [webhooks de vídeo y lotes](./async-video-and-batch.mdx#receive-updates). Cada solicitud incluye estos encabezados:
+
+```http
+POST /your/endpoint HTTP/1.1
+content-type: application/json
+user-agent: Phaseo-Notifications/1.0
+x-phaseo-event-id: 6f1c0f5e-3f0b-4a39-9a51-2f4f2c1d9e10
+x-phaseo-event-type: rate_limit_throttled
+x-phaseo-timestamp: 1792569600
+x-phaseo-signature: 5d2a…e41f
+```
+
+`x-phaseo-signature` es el HMAC-SHA256 en hexadecimal del valor de `x-phaseo-timestamp`, un punto literal (`.`) y el **cuerpo de la solicitud sin modificar**, con el secreto de firma del destino (`whsec_…`) como clave. `x-phaseo-timestamp` está en segundos Unix.
+
+Para verificar una entrega:
+
+1. Lee el cuerpo sin procesar antes de analizarlo como JSON.
+2. Vuelve a calcular la firma y compárala en tiempo constante.
+3. Rechaza marcas de tiempo que difieran más de cinco minutos de tu reloj.
+4. Elimina duplicados por `x-phaseo-event-id`. Las entregas fallidas se reintentan y cada intento se vuelve a firmar con una nueva marca de tiempo.
+
+<CodeGroup>
+```js Node.js
+import crypto from "node:crypto";
+
+// rawBody es el cuerpo de la solicitud tal como se recibió, como cadena.
+export function verifyPhaseoSignature(rawBody, headers, secret, toleranceSeconds = 300) {
+  const timestamp = headers["x-phaseo-timestamp"];
+  const signature = headers["x-phaseo-signature"];
+  if (!timestamp || !signature) return false;
+  if (Math.abs(Date.now() / 1000 - Number(timestamp)) > toleranceSeconds) return false;
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(`${timestamp}.${rawBody}`)
+    .digest("hex");
+  const a = Buffer.from(expected, "hex");
+  const b = Buffer.from(signature, "hex");
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+```
+
+```python Python
+import hashlib
+import hmac
+import time
+
+# raw_body es el cuerpo de la solicitud tal como se recibió, en bytes.
+def verify_phaseo_signature(raw_body: bytes, headers, secret: str, tolerance_seconds: int = 300) -> bool:
+    timestamp = headers.get("x-phaseo-timestamp", "")
+    signature = headers.get("x-phaseo-signature", "")
+    if not timestamp.isdigit() or not signature:
+        return False
+    if abs(time.time() - int(timestamp)) > tolerance_seconds:
+        return False
+    expected = hmac.new(secret.encode(), timestamp.encode() + b"." + raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature)
+```
+</CodeGroup>
+
+### Generar o rotar un secreto
+
+El secreto se muestra una sola vez, al crear el destino. Para sustituirlo, selecciona **Rotar secreto** junto al destino en **Ajustes → Notificaciones**, o llama a [`POST /v1/notifications/destinations/{id}/rotate-secret`](/es/v1/api-reference/endpoint/notifications-destination-rotate-secret). La siguiente entrega se firma con el nuevo secreto y el anterior deja de funcionar, así que actualiza tu receptor enseguida.
+
+Los webhooks personalizados creados antes de que existiera la firma no tienen secreto y se siguen entregando sin firmar. En Ajustes aparecen como **Sin firmar**. Selecciona **Generar secreto**, añade el secreto a tu receptor y envía una prueba para comprobar la verificación. Las pruebas enviadas desde el panel **Añadir destino**, antes de guardar el destino, no van firmadas porque aún no existe ningún secreto.
+
+Los destinos de correo electrónico, Slack, Discord y Microsoft Teams no se firman: esos servicios autentican por sí mismos la URL del webhook o el token del bot.

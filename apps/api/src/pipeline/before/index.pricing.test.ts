@@ -62,6 +62,17 @@ vi.mock("./workspacePolicy", () => ({
 	applyWorkspacePolicy: (...args: any[]) => applyWorkspacePolicyMock(...args),
 }));
 
+// Only openai/gpt-5-nano has a text price in these tests.
+vi.mock("@providers/openai/endpoints/images-svg", async (importOriginal) => {
+	const actual = await importOriginal<typeof import("@providers/openai/endpoints/images-svg")>();
+	return {
+		...actual,
+		resolveSvgAuthor: async (model: string) => actual.normalizeSvgAuthorModel(model) === "openai/gpt-5-nano"
+			? { model: "openai/gpt-5-nano", upstreamModel: "gpt-5-nano", card: { rules: [] } }
+			: null,
+	};
+});
+
 vi.mock("./promptInjection", () => ({
 	applyPromptInjectionGuardrails: (...args: any[]) =>
 		applyPromptInjectionGuardrailsMock(...args),
@@ -212,7 +223,7 @@ describe("beforeRequest pricing loss-prevention", () => {
 		}));
 	});
 
-	it.each([false, true])("preserves pricing and carries the credit barrier only for streaming text (stream=%s)", async stream => {
+	it.each([false, true])("preserves pricing and defers the credit cache fill behind the charge barrier for text (stream=%s)", async stream => {
 		guardModelMock.mockReturnValue({ ok: true, value: {
 			body: { model: "openai/gpt-4.1-mini", stream }, model: "openai/gpt-4.1-mini", stream,
 		} });
@@ -247,11 +258,12 @@ describe("beforeRequest pricing loss-prevention", () => {
 		const result = await beforeRequest(req, "responses", new Timer(), null);
 		expect(result.ok).toBe(true);
 		const register = guardContextMock.mock.calls[0][0].onCreditCacheWrite;
-		if (stream && result.ok) {
+		expect(register).toBeTypeOf("function");
+		if (result.ok) {
 			const write = Promise.resolve();
 			register(write);
 			expect(result.ctx.creditCacheWrites).toEqual([write]);
-		} else expect(register).toBeUndefined();
+		}
 	});
 
 	it("captures parsed model metadata before a context guard failure", async () => {
@@ -283,10 +295,13 @@ describe("beforeRequest pricing loss-prevention", () => {
 		});
 
 		expect(result.ok).toBe(false);
+		// The authenticated key comes too, so the failure still applies its data policy.
 		expect(snapshots.at(-1)).toEqual({
 			requestPayload: { model: "openai/gpt-5-nano", input: "private prompt" },
 			requestedModel: "openai/gpt-5-nano",
 			model: "openai/gpt-5-nano",
+			workspaceId: "team_123",
+			apiKeyId: "key_123",
 		});
 	});
 
@@ -390,7 +405,8 @@ describe("beforeRequest pricing loss-prevention", () => {
 		expect(serverTiming).toContain("context_cache_read;dur=21.750");
 	});
 
-	it("rejects request when pricing card has zero rules", async () => {
+	it.each([false, true])("requires pricing unless authorized testing is enabled (%s)", async (testingMode) => {
+		resolveTestingModeMock.mockResolvedValue({ enabled: testingMode, reason: testingMode ? "admin" : "not_requested" });
 		const provider = providerWithPricingRules(0);
 		guardContextMock.mockResolvedValue({
 			ok: true,
@@ -422,11 +438,11 @@ describe("beforeRequest pricing loss-prevention", () => {
 		});
 		const timer = new Timer();
 		const result = await beforeRequest(req, "responses", timer, null);
-		expect(result.ok).toBe(false);
+		expect(result.ok).toBe(testingMode);
 		if (result.ok) return;
 		expect(result.response.status).toBe(400);
 		const payload = await result.response.json();
-		expect(payload.error).toBe("unsupported_model_or_endpoint");
+		expect(payload.code).toBe("unsupported_model_or_endpoint");
 		expect(payload.reason).toBe("pricing_not_configured");
 		expect(payload.provider_candidate_diagnostics).toEqual({
 			totalProviders: 1,
@@ -443,6 +459,24 @@ describe("beforeRequest pricing loss-prevention", () => {
 		});
 		expect(payload.missing_pricing_providers).toEqual(["openai"]);
 		expect(timer.attachTo(new Response()).headers.get("Server-Timing")).toContain("context_total;dur=12.500");
+	});
+
+	it.each([
+		[false, [{ testingMode: false, internalOnly: false }]],
+		// Testing mode was granted after the context load started: reload with testing flags.
+		[true, [{ testingMode: false, internalOnly: false }, { testingMode: true, internalOnly: true }]],
+	])("loads context alongside the testing-mode check (admin internal route: %s)", async (granted, expectedLoads) => {
+		resolveTestingModeMock.mockResolvedValue({ enabled: granted, reason: granted ? "admin" : "not_requested" });
+		guardContextMock.mockResolvedValue({ ok: false, response: new Response("stop", { status: 418 }) });
+		const req = new Request("https://gateway.local/v1/responses", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ model: "openai/gpt-4.1-mini" }),
+		});
+		const result = await beforeRequest(req, "responses", new Timer(), null);
+		expect(result.ok).toBe(false);
+		expect(guardContextMock.mock.calls.map(([args]) => ({ testingMode: args.testingMode, internalOnly: args.internalOnly })))
+			.toEqual(expectedLoads);
 	});
 
 	it("rejects request when workspace policy blocks the resolved model", async () => {
@@ -494,10 +528,156 @@ describe("beforeRequest pricing loss-prevention", () => {
 		if (result.ok) return;
 		expect(result.response.status).toBe(403);
 		const payload = await result.response.json();
-		expect(payload.error).toBe("guardrail_blocked");
+		expect(payload.code).toBe("guardrail_blocked");
 		expect(payload.reason).toBe("model_restricted_by_policy");
 		expect(payload.details?.[0]?.keyword).toBe("model_restricted_by_policy");
 		expect(payload.guardrail).toMatchObject({ type: "route_access", scope: "workspace" });
+	});
+
+	it("rejects a GPT Image SVG request whose svg.model the workspace policy blocks", async () => {
+		const provider = providerWithPricingRules(1);
+		const body = { model: "openai/gpt-image-2.6-flare", prompt: "An apple icon", output_format: "svg", svg: { model: "gpt-5-nano" } };
+		guardJsonMock.mockResolvedValue({ ok: true, value: body });
+		guardZodMock.mockReturnValue({ ok: true, value: body });
+		guardModelMock.mockReturnValue({ ok: true, value: { body, model: body.model, stream: false } });
+		resolveCapabilityFromEndpointMock.mockReturnValue("image.generate");
+		guardContextMock.mockResolvedValue({
+			ok: true,
+			value: {
+				context: {
+					pricing: { openai: provider.pricingCard },
+					key: { ok: true, reason: null, resetAt: null },
+					keyLimit: { ok: true, reason: null, resetAt: null },
+					credit: { ok: true, reason: null, resetAt: null },
+					teamSettings: { billingMode: "wallet" },
+				},
+				providers: [provider],
+				resolvedModel: "openai/gpt-image-2.6-flare",
+				candidateDiagnostics: {
+					totalProviders: 1,
+					supportsEndpointCount: 1,
+					droppedUnsupportedEndpoint: [],
+					droppedMissingAdapter: [],
+					candidateCount: 1,
+				},
+			},
+		});
+		applyWorkspacePolicyMock.mockImplementation((args: any) => {
+			const diagnostics = {
+				resolvedModel: args.resolvedModel,
+				allowedApiModels: ["openai/gpt-image-2.6-flare"],
+				providerAllowlist: [],
+				providerBlocklist: [],
+				requestProviderOnly: [],
+				requestProviderIgnore: [],
+				activeGuardrailIds: ["gr_images_only"],
+				beforeCount: args.providers.length,
+				afterCount: 0,
+			};
+			return args.resolvedModel === "openai/gpt-5-nano"
+				? { ok: false, reason: "model_not_allowed", diagnostics }
+				: { ok: true, providers: args.providers, diagnostics: { ...diagnostics, afterCount: args.providers.length } };
+		});
+
+		const req = new Request("https://gateway.local/v1/images/generations", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify(body),
+		});
+		const result = await beforeRequest(req, "images.generations", new Timer(), null);
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(403);
+		const payload = await result.response.json();
+		expect(payload.reason).toBe("model_restricted_by_policy");
+		expect(payload.details?.[0]?.path).toEqual(["svg", "model"]);
+		const authorCall = applyWorkspacePolicyMock.mock.calls.find(([args]) => args.resolvedModel === "openai/gpt-5-nano")?.[0];
+		expect(authorCall.providers.map((candidate: any) => candidate.apiModelId)).toEqual(["openai/gpt-5-nano"]);
+		expect(authorCall.body.model).toBe("openai/gpt-5-nano");
+	});
+
+	it.each(["openai/not-a-real-model", "anthropic/claude-haiku-5-5"])(
+		"rejects an SVG author without an OpenAI text price (%s) as a validation error",
+		async (author) => {
+			const provider = providerWithPricingRules(1);
+			const body = { model: "openai/gpt-image-2.6-flare", prompt: "An apple icon", output_format: "svg", svg: { model: author } };
+			guardJsonMock.mockResolvedValue({ ok: true, value: body });
+			guardZodMock.mockReturnValue({ ok: true, value: body });
+			guardModelMock.mockReturnValue({ ok: true, value: { body, model: body.model, stream: false } });
+			resolveCapabilityFromEndpointMock.mockReturnValue("image.generate");
+			guardContextMock.mockResolvedValue({
+				ok: true,
+				value: {
+					context: {
+						pricing: { openai: provider.pricingCard },
+						key: { ok: true, reason: null, resetAt: null },
+						keyLimit: { ok: true, reason: null, resetAt: null },
+						credit: { ok: true, reason: null, resetAt: null },
+						teamSettings: { billingMode: "wallet" },
+					},
+					providers: [provider],
+					resolvedModel: "openai/gpt-image-2.6-flare",
+					candidateDiagnostics: { totalProviders: 1, supportsEndpointCount: 1, droppedUnsupportedEndpoint: [], droppedMissingAdapter: [], candidateCount: 1 },
+				},
+			});
+
+			const req = new Request("https://gateway.local/v1/images/generations", {
+				method: "POST",
+				headers: { "content-type": "application/json" },
+				body: JSON.stringify(body),
+			});
+			const result = await beforeRequest(req, "images.generations", new Timer(), null);
+			expect(result.ok).toBe(false);
+			if (result.ok) return;
+			expect(result.response.status).toBe(400);
+			const payload = await result.response.json();
+			expect(payload.code).toBe("validation_error");
+			expect(payload.reason).toBe("invalid_svg_model");
+			expect(payload.error_origin).toBe("user");
+			expect(payload.details?.[0]?.path).toEqual(["svg", "model"]);
+			expect(JSON.stringify(payload)).not.toContain("provider rejected");
+		},
+	);
+
+	it("reports an invalid svg.model before a policy block on the image model", async () => {
+		const provider = providerWithPricingRules(1);
+		const body = { model: "openai/gpt-image-2.6-flare", prompt: "An apple icon", output_format: "svg", svg: { model: "openai/not-a-real-model" } };
+		guardJsonMock.mockResolvedValue({ ok: true, value: body });
+		guardZodMock.mockReturnValue({ ok: true, value: body });
+		guardModelMock.mockReturnValue({ ok: true, value: { body, model: body.model, stream: false } });
+		resolveCapabilityFromEndpointMock.mockReturnValue("image.generate");
+		guardContextMock.mockResolvedValue({
+			ok: true,
+			value: {
+				context: {
+					pricing: { openai: provider.pricingCard },
+					key: { ok: true, reason: null, resetAt: null },
+					keyLimit: { ok: true, reason: null, resetAt: null },
+					credit: { ok: true, reason: null, resetAt: null },
+					teamSettings: { billingMode: "wallet" },
+				},
+				providers: [provider],
+				resolvedModel: "openai/gpt-image-2.6-flare",
+				candidateDiagnostics: { totalProviders: 1, supportsEndpointCount: 1, droppedUnsupportedEndpoint: [], droppedMissingAdapter: [], candidateCount: 1 },
+			},
+		});
+		applyWorkspacePolicyMock.mockReturnValue({
+			ok: false,
+			reason: "model_not_allowed",
+			diagnostics: { resolvedModel: body.model, allowedApiModels: [], providerAllowlist: [], providerBlocklist: [], requestProviderOnly: [], requestProviderIgnore: [], activeGuardrailIds: ["gr_block"], beforeCount: 1, afterCount: 0 },
+		});
+
+		const req = new Request("https://gateway.local/v1/images/generations", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify(body),
+		});
+		const result = await beforeRequest(req, "images.generations", new Timer(), null);
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(400);
+		expect((await result.response.json()).reason).toBe("invalid_svg_model");
+		expect(applyWorkspacePolicyMock).not.toHaveBeenCalled();
 	});
 
 	it("rejects request when workspace policy filters out all providers", async () => {
@@ -549,7 +729,7 @@ describe("beforeRequest pricing loss-prevention", () => {
 		if (result.ok) return;
 		expect(result.response.status).toBe(403);
 		const payload = await result.response.json();
-		expect(payload.error).toBe("guardrail_blocked");
+		expect(payload.code).toBe("guardrail_blocked");
 		expect(payload.reason).toBe("provider_restricted_by_policy");
 		expect(payload.details?.[0]?.keyword).toBe("no_providers_after_route_access_policy");
 		expect(payload.guardrail).toMatchObject({ type: "route_access", scope: "workspace" });
@@ -601,7 +781,7 @@ describe("beforeRequest pricing loss-prevention", () => {
 		expect(result.response.status).toBe(403);
 		const payload = await result.response.json();
 		expect(payload).toMatchObject({
-			error: "guardrail_blocked",
+			code: "guardrail_blocked",
 			reason: "data_handling_policy_no_routes",
 			guardrail: { type: "data_handling", scope: "workspace" },
 		});
@@ -776,7 +956,7 @@ describe("beforeRequest pricing loss-prevention", () => {
 		if (result.ok) return;
 		expect(result.response.status).toBe(400);
 		const payload = await result.response.json();
-		expect(payload.error).toBe("validation_error");
+		expect(payload.code).toBe("validation_error");
 		expect(payload.details?.[0]?.keyword).toBe("unknown_gateway_plugin");
 		expect(payload.details?.[0]?.params?.pluginIds).toEqual(["nonexistent-plugin"]);
 	});
@@ -858,5 +1038,125 @@ describe("beforeRequest pricing loss-prevention", () => {
 		expect((result.ctx.body as any).messages?.[0]?.content).toBe("[EMAIL]");
 		expect((result.ctx.rawBody as any).messages?.[0]?.content).toBe("[EMAIL]");
 		expect((result.ctx as any).guardrailEnforcement?.source).toBe("sensitive_info");
+	});
+
+	function mockRequest(body: any, providers: any[]) {
+		guardJsonMock.mockResolvedValue({ ok: true, value: body });
+		guardZodMock.mockReturnValue({ ok: true, value: body });
+		guardContextMock.mockResolvedValue({
+			ok: true,
+			value: {
+				context: {
+					pricing: Object.fromEntries(providers.map((provider) => [provider.providerId, provider.pricingCard])),
+					key: { ok: true, reason: null, resetAt: null },
+					keyLimit: { ok: true, reason: null, resetAt: null },
+					credit: { ok: true, reason: null, resetAt: null },
+					teamSettings: { billingMode: "wallet" },
+				},
+				providers,
+				resolvedModel: body.model,
+				candidateDiagnostics: {
+					totalProviders: providers.length,
+					supportsEndpointCount: providers.length,
+					droppedUnsupportedEndpoint: [],
+					droppedMissingAdapter: [],
+					candidateCount: providers.length,
+				},
+			},
+		});
+		return new Request("https://gateway.local/v1/responses", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify(body),
+		});
+	}
+
+	function providerNamed(providerId: string): any {
+		return { ...providerWithPricingRules(1), providerId };
+	}
+
+	it("turns the web plugin into a phaseo:web_search tool before routing", async () => {
+		const req = mockRequest({
+			model: "openai/gpt-4.1-mini",
+			input: "news?",
+			plugins: [{ id: "web", max_results: 3, include_domains: ["example.com"] }],
+		}, [providerNamed("anthropic")]);
+		const result = await beforeRequest(req, "responses", new Timer(), null);
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect((result.ctx.body as any).tools).toEqual([
+			{ type: "phaseo:web_search", parameters: { max_results: 3, allowed_domains: ["example.com"] } },
+		]);
+		expect(validateCapabilitiesMock.mock.calls[0][0].requiredParams).toContain("tools");
+		expect(result.ctx.plugins.map((plugin) => plugin.id)).toEqual(["web"]);
+	});
+
+	it("rejects an invalid web plugin option before routing", async () => {
+		const req = mockRequest({
+			model: "openai/gpt-4.1-mini",
+			input: "news?",
+			plugins: [{ id: "web", engine: "bing" }],
+		}, [providerNamed("anthropic")]);
+		const result = await beforeRequest(req, "responses", new Timer(), null);
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(400);
+		const payload = await result.response.json();
+		expect(payload.details?.[0]?.keyword).toBe("invalid_gateway_plugin_config");
+		expect(payload.details?.[0]?.path).toEqual(["plugins", "engine"]);
+	});
+
+	it("runs hosted web search as phaseo:web_search when no candidate runs it natively", async () => {
+		const req = mockRequest({
+			model: "openai/gpt-4.1-mini",
+			input: "news?",
+			tools: [{ type: "web_search", search_context_size: "low", filters: { allowed_domains: ["example.com"] } }],
+			tool_choice: { type: "web_search" },
+		}, [providerNamed("anthropic"), providerNamed("google-ai-studio")]);
+		const result = await beforeRequest(req, "responses", new Timer(), null);
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect((result.ctx.body as any).tools).toEqual([
+			{ type: "phaseo:web_search", parameters: { search_context_size: "low", allowed_domains: ["example.com"] } },
+		]);
+		expect((result.ctx.body as any).tool_choice).toBe("phaseo:web_search");
+		expect(result.ctx.providers.map((provider) => provider.providerId)).toEqual(["anthropic", "google-ai-studio"]);
+	});
+
+	it("keeps hosted web search native and routes only to candidates that run it", async () => {
+		const tools = [{ type: "web_search_preview" }];
+		const req = mockRequest({ model: "openai/gpt-4.1-mini", input: "news?", tools }, [
+			providerNamed("anthropic"),
+			providerNamed("openai"),
+		]);
+		const result = await beforeRequest(req, "responses", new Timer(), null);
+		expect(result.ok).toBe(true);
+		if (!result.ok) return;
+		expect((result.ctx.body as any).tools).toEqual(tools);
+		expect(result.ctx.providers.map((provider) => provider.providerId)).toEqual(["openai"]);
+		expect(result.ctx.providerEnablementDiagnostics?.dropped).toContainEqual({
+			providerId: "anthropic",
+			reason: "hosted_tool_unsupported",
+		});
+	});
+
+	it("rejects a hosted tool no candidate can run, naming it", async () => {
+		const req = mockRequest({
+			model: "openai/gpt-4.1-mini",
+			input: "run it",
+			tools: [{ type: "web_search" }, { type: "code_interpreter", container: { type: "auto" } }],
+		}, [providerNamed("anthropic")]);
+		const result = await beforeRequest(req, "responses", new Timer(), null);
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(400);
+		const payload = await result.response.json();
+		expect(payload.reason).toBe("unsupported_hosted_tool");
+		expect(payload.description).toContain("code_interpreter");
+		expect(payload.details).toEqual([expect.objectContaining({
+			path: ["tools", 1],
+			keyword: "unsupported_hosted_tool",
+			params: { tool: "code_interpreter", model: "openai/gpt-4.1-mini" },
+		})]);
 	});
 });

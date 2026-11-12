@@ -5,7 +5,7 @@ order: 2
 updated: 2026-07-11
 ---
 
-Activa MFA desde `Settings -> Account` para proteger tus claves API y acciones de facturación.
+Activa MFA desde `Ajustes -> Cuenta` para proteger tus claves API y acciones de facturación.
 
 Configuración recomendada:
 

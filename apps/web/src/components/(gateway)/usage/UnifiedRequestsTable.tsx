@@ -1,15 +1,15 @@
-"use client";
-
+import { formatLatency, formatTps } from "@phaseo/app-kit/format";
 import React, { useState, useEffect, useCallback } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { privateUsageOptions } from "@/lib/query/privateUsage";
 import { fetchPrivateUsageOperation, fetchPrivateUsageRequest } from "@/lib/query/fetchPrivateUsage";
 import { usePrivateUsageRefresh } from "./PrivateUsageQuery";
-import dynamic from "next/dynamic";
+import dynamic from "@/lib/dynamic";
 import { useQueryState } from "nuqs";
-import { useLocale, useTranslations } from "next-intl";
-import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useLocale, useTranslations } from "@/i18n/react";
+import { useRouter, useSearchParams } from "@/lib/navigation";
+import { buildOpenRequestInChatHref } from "@/components/(chat)/chatMessageMetadata";
+import { normalizeLogReplayEndpoint } from "@/lib/chat/logReplay";
 import {
 	Table,
 	TableBody,
@@ -34,11 +34,6 @@ import {
 	TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
-	HoverCard,
-	HoverCardContent,
-	HoverCardTrigger,
-} from "@/components/ui/hover-card";
-import {
 	ContextMenu,
 	ContextMenuContent,
 	ContextMenuItem,
@@ -54,6 +49,7 @@ import {
 	AppWindow,
 	Loader2,
 	Copy,
+	MessageSquare,
 	PanelRightOpen,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -65,16 +61,13 @@ import {
 	type InvestigateGenerationResult,
 	type ProviderMetadataEntry,
 	RequestRow,
-} from "@/app/(dashboard)/gateway/usage/server-actions";
+} from "@/features/gateway/usage/server-actions";
 import { exportToCSV, exportToPDF } from "./export-utils";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/Logo";
-import { formatRelativeToNow } from "@/lib/formatRelative";
-import UsageEntityHoverCard from "./UsageEntityHoverCard";
-import {
-	formatDateTime,
-	formatWordyDateTime,
-} from "@/lib/gateway/usage/timeFormatting";
+import UsageEntityLink from "./UsageEntityLink";
+import { TimestampHoverCard } from "@/components/display/TimestampHoverCard";
+import { formatWordyDateTime } from "@/lib/gateway/usage/timeFormatting";
 import { registerUsageViewRefresher } from "@/lib/gateway/usage/refreshBus";
 import {
 	buildUsageDisplay,
@@ -83,21 +76,21 @@ import {
 	formatUsageNumber,
 } from "./usageMeters";
 import { getModelDisplayName, type ModelMetadataMap } from "./model-display";
-import {
-	PROVIDER_PROMPT_TRAINING_POLICY_LABELS,
-	normalizeProviderPromptTrainingPolicy,
-} from "@/lib/providers/promptTrainingPolicy";
 import { resolveProviderDisplayName } from "@/lib/providers/providerOffers";
 
 import {
 	REQUEST_COLUMNS,
 	defaultRequestColumns,
-	formatRequestMetric,
+	formatRequestMetric, requestMetricNumber,
 	orderRequestColumns,
 	type RequestTableDensity,
 	type RequestColumnId,
 	type RequestColumnPreference,
 } from "./requestColumns";
+
+import RequestLabelBadges from "./RequestLabelBadges";
+import type { RequestClassifierSummary } from "./requestClassifierLabels";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 const RequestDetailDialog = dynamic(() => import("./RequestDetailDialog"));
 
@@ -118,6 +111,8 @@ interface UnifiedRequestsTableProps {
 	initialNextCursor: { createdAt: string; id: string } | null;
 	initialPageSize: number;
 	detailBasePath?: string;
+	/** Names for classifier labels in the table and request sheet. */
+	requestClassifiers?: RequestClassifierSummary[];
 	onExportRef?: React.MutableRefObject<
 		((format: "csv" | "pdf") => void) | null
 	>;
@@ -133,11 +128,16 @@ function RequestRowContextMenu({
 	onInspect: () => void;
 }) {
 	const tUi = useTranslations("Common.ui");
+	const router = useRouter();
+	const searchParams = useSearchParams();
 	const requestId = row.request_id?.trim() || null;
 	const sessionId = row.session_id?.trim() || null;
 	const nativeResponseId = row.native_response_id?.trim() || null;
 	const resolvedModelId = modelId?.trim() || null;
 	const canInspect = Boolean(requestId && !row.is_sample);
+	// Whether the content was stored is only known from the detail; Chat explains
+	// when it wasn't.
+	const canOpenInChat = canInspect && normalizeLogReplayEndpoint(row.endpoint) !== null;
 	const hasCopyAction = Boolean(
 		requestId || sessionId || nativeResponseId || resolvedModelId,
 	);
@@ -156,6 +156,15 @@ function RequestRowContextMenu({
 				<ContextMenuItem className="rounded-md" onClick={onInspect}>
 					<PanelRightOpen />
 					{tUi("actions.openRequestDetails")}
+				</ContextMenuItem>
+			) : null}
+			{canOpenInChat && requestId ? (
+				<ContextMenuItem
+					className="rounded-md"
+					onClick={() => router.push(buildOpenRequestInChatHref(requestId, searchParams.get("workspaceId")))}
+				>
+					<MessageSquare />
+					{tUi("actions.openInChat")}
 				</ContextMenuItem>
 			) : null}
 			{canInspect && hasCopyAction ? <ContextMenuSeparator /> : null}
@@ -210,9 +219,9 @@ function isInteractiveRowTarget(target: EventTarget | null): boolean {
 	);
 }
 
-function formatCost(nanos: number | null | undefined, locale: string): string {
+function formatCost(nanos: number | null | undefined, _locale: string): string {
 	const dollars = Number(nanos ?? 0) / 1e9;
-	return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", minimumFractionDigits: 5, maximumFractionDigits: 5 }).format(dollars);
+	return new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", minimumFractionDigits: 5, maximumFractionDigits: 5 }).format(dollars);
 }
 
 function getModelDetailsHref(modelId: string | null): string | null {
@@ -259,10 +268,6 @@ function isPhaseoChatApp(row: RequestRow): boolean {
 	const key = normalizeNonEmpty(row.app_key)?.toLowerCase();
 	if (!key) return false;
 	return PHASEO_CHAT_APP_KEYS.has(key);
-}
-
-function stopRowClick(event: React.MouseEvent<HTMLElement>) {
-	event.stopPropagation();
 }
 
 function getClientSource(row: RequestRow, directHttp: string) {
@@ -325,10 +330,12 @@ export default function UnifiedRequestsTable({
 	initialNextCursor,
 	initialPageSize,
 	detailBasePath,
+	requestClassifiers = [],
 	onExportRef,
 }: UnifiedRequestsTableProps) {
 	const tUi = useTranslations("Common.ui");
 	const t = useTranslations("SettingsUI");
+	const tCards = useTranslations("Common.ui.hoverCards");
 	const locale = useLocale();
 	const queryClient = useQueryClient();
 	const privateQuery = usePrivateUsageRefresh();
@@ -379,10 +386,6 @@ export default function UnifiedRequestsTable({
 			},
 		};
 	};
-	const userTimeZone =
-		typeof Intl !== "undefined"
-			? Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
-			: "UTC";
 	// Cursor pagination is deliberately ordered newest-first. Supporting arbitrary
 	// sort columns would require a distinct stable cursor and index for each sort.
 	const [page, setPage] = useQueryState("page", {
@@ -398,15 +401,6 @@ export default function UnifiedRequestsTable({
 		},
 		serialize: (value) => String(value),
 	});
-
-	const [relativeNowMs, setRelativeNowMs] = useState<number | null>(null);
-
-	useEffect(() => {
-		const updateNow = () => setRelativeNowMs(Date.now());
-		updateNow();
-		const interval = setInterval(updateNow, 60_000);
-		return () => clearInterval(interval);
-	}, []);
 
 	// Filters from URL
 	const [modelFilter] = useQueryState("model");
@@ -424,6 +418,7 @@ export default function UnifiedRequestsTable({
 	const [sourceFilter] = useQueryState("source");
 	const [labelKey] = useQueryState("label_key");
 	const [labelValue] = useQueryState("label_value");
+	const [labelOperator] = useQueryState("label_op");
 	const [inputTokensFilter] = useQueryState("input_tokens");
 	const [inputTokensMax] = useQueryState("input_tokens_max");
 	const [inputTokensOperator] = useQueryState("input_tokens_op");
@@ -495,7 +490,7 @@ export default function UnifiedRequestsTable({
 	const [dialogOpen, setDialogOpen] = useState(false);
 	// Build cache key from filters
 	const getCacheKey = useCallback(() => {
-		return `${timeRange.from}-${timeRange.to}-${pageSize}-${modelFilter}-${providerFilter}-${appFilter}-${endpointFilter}-${finishReasonFilter}-${streamFilter}-${errorCodeFilter}-${statusCodeFilter}-${keyFilter}-${statusFilter}-${requestFilter}-${sessionFilter}-${sourceFilter}-${labelKey}-${labelValue}-${inputTokensFilter}-${inputTokensMax}-${inputTokensOperator}-${outputTokensFilter}-${outputTokensMax}-${outputTokensOperator}-${totalTokensFilter}-${totalTokensMax}-${totalTokensOperator}-${JSON.stringify(filterOperators)}`;
+		return `${timeRange.from}-${timeRange.to}-${pageSize}-${modelFilter}-${providerFilter}-${appFilter}-${endpointFilter}-${finishReasonFilter}-${streamFilter}-${errorCodeFilter}-${statusCodeFilter}-${keyFilter}-${statusFilter}-${requestFilter}-${sessionFilter}-${sourceFilter}-${labelKey}-${labelValue}-${labelOperator}-${inputTokensFilter}-${inputTokensMax}-${inputTokensOperator}-${outputTokensFilter}-${outputTokensMax}-${outputTokensOperator}-${totalTokensFilter}-${totalTokensMax}-${totalTokensOperator}-${JSON.stringify(filterOperators)}`;
 	}, [
 		timeRange,
 		pageSize,
@@ -514,6 +509,7 @@ export default function UnifiedRequestsTable({
 		sourceFilter,
 		labelKey,
 		labelValue,
+		labelOperator,
 		inputTokensFilter,
 		inputTokensMax,
 		inputTokensOperator,
@@ -574,6 +570,7 @@ export default function UnifiedRequestsTable({
 					sourceFilter: sourceFilter || null,
 					labelKey: labelKey || null,
 					labelValue: labelValue || null,
+					labelOperator: labelOperator || null,
 					filterOperators,
 					inputTokensFilter: inputTokensFilter || null,
 					inputTokensMax: inputTokensMax || null,
@@ -593,7 +590,7 @@ export default function UnifiedRequestsTable({
 				const result = scope ? await queryClient.fetchQuery({
 					...privateUsageOptions(scope, "request-page", { params: JSON.stringify(params), snapshot: String(snapshotUpdatedAt) }, live),
 					queryFn: ({ signal }) => fetchPrivateUsageOperation<Awaited<ReturnType<typeof fetchPaginatedRequests>>>("paginatedRequests", [params], scope, signal),
-				}) : await fetchPaginatedRequests(params);
+				}) : await fetchPaginatedRequests({ data: params });
 				if (generation !== requestGeneration.current) return null;
 				const pageModelIds = Array.from(
 					new Set(
@@ -612,7 +609,7 @@ export default function UnifiedRequestsTable({
 					(modelId) => !resolvedModelMetadata.has(modelId),
 				);
 				if (missingModelIds.length > 0) {
-					const liveMetadata = await fetchModelMetadata(missingModelIds);
+					const liveMetadata = await fetchModelMetadata({ data: missingModelIds });
 					if (generation !== requestGeneration.current) return null;
 					setResolvedModelMetadata((prev) => {
 						const merged = new Map(prev);
@@ -674,6 +671,7 @@ export default function UnifiedRequestsTable({
 			sourceFilter,
 			labelKey,
 			labelValue,
+			labelOperator,
 			pageCursors,
 			filterOperators,
 			inputTokensFilter,
@@ -797,7 +795,7 @@ export default function UnifiedRequestsTable({
 		const detailPromise = scope ? queryClient.fetchQuery({
 			...privateUsageOptions(scope, "request-detail", { request: detailRequestId, snapshot: String(snapshotUpdatedAt) }, live),
 			queryFn: ({ signal }) => fetchPrivateUsageRequest(detailRequestId, scope, signal),
-		}) : fetchGenerationLog(detailRequestId);
+		}) : fetchGenerationLog({ data: detailRequestId });
 		void detailPromise
 			.then((result) => {
 				if (cancelled || !result.success || !result.data) return;
@@ -1082,14 +1080,6 @@ export default function UnifiedRequestsTable({
 											routedModelId,
 											resolvedModelMetadata,
 										);
-										const providerPolicyLabel =
-											providerMeta?.promptTrainingPolicy
-												? PROVIDER_PROMPT_TRAINING_POLICY_LABELS[
-														normalizeProviderPromptTrainingPolicy(
-															providerMeta.promptTrainingPolicy,
-														)
-													]
-												: null;
 
 										const normalizedUsage =
 											buildUsageFromNormalizedRequestFields(row.usage, row);
@@ -1124,64 +1114,12 @@ export default function UnifiedRequestsTable({
 															/>
 														)}
 													</span>
-													<HoverCard>
-														<HoverCardTrigger asChild>
-															<span className="cursor-help underline underline-offset-2 decoration-dotted">
-																{formatWordyDateTime(row.created_at, {
-																	includeTime: true,
-												locale,
-																})}
-															</span>
-														</HoverCardTrigger>
-														<HoverCardContent align="start" className="w-auto">
-															<div className="grid gap-2 text-xs">
-																<div className="grid grid-cols-[120px_1fr] gap-2">
-																	<div className="text-muted-foreground">
-																		{userTimeZone}
-																	</div>
-																	<div className="font-mono">
-																		{formatDateTime(
-																			new Date(row.created_at),
-																			userTimeZone,
-																		)}
-																	</div>
-																</div>
-																<div className="grid grid-cols-[120px_1fr] gap-2">
-																	<div className="text-muted-foreground">
-																		UTC
-																	</div>
-																	<div className="font-mono">
-																		{formatDateTime(
-																			new Date(row.created_at),
-																			"UTC",
-																		)}
-																	</div>
-																</div>
-																<div className="grid grid-cols-[120px_1fr] gap-2">
-																	<div className="text-muted-foreground">
-																		{tUi("time.relative")}
-																	</div>
-																	<div className="font-mono">
-																		{relativeNowMs
-																			? formatRelativeToNow(
-																					new Date(row.created_at),
-																					relativeNowMs, locale,
-																				)
-																			: "-"}
-																	</div>
-																</div>
-																<div className="grid grid-cols-[120px_1fr] gap-2">
-																	<div className="text-muted-foreground">
-																		{t("usageGaps.copyTimestamp")}</div>
-																	<div className="font-mono">
-																		{Math.floor(
-																			new Date(row.created_at).getTime() / 1000,
-																		)}
-																	</div>
-																</div>
-															</div>
-														</HoverCardContent>
-													</HoverCard>
+													<TimestampHoverCard value={row.created_at}>
+														{formatWordyDateTime(row.created_at, {
+															includeTime: true,
+															locale,
+														})}
+													</TimestampHoverCard>
 												</TableCell>
 											),
 											models: (
@@ -1199,93 +1137,18 @@ export default function UnifiedRequestsTable({
 																	className="flex-shrink-0"
 																/>
 															) : null}
-															{routedModelHref ? (
-																<UsageEntityHoverCard
-																	title={routedModelLabel}
-																	subtitle={
-																		routedModelMeta?.organisationName ?? null
-																	}
-																	href={routedModelHref}
-																	visual={
-																		routedModelMeta ? (
-																			<Logo
-																				id={routedModelMeta.organisationId}
-																				width={16}
-																				height={16}
-																			/>
-																		) : null
-																	}
-																	rows={[
-																		{
-																			label: t("usageGaps.copyModelID"),
-																			value: (
-																				<code className="font-mono text-[11px]">
-																					{routedModelId}
-																				</code>
-																			),
-																		},
-																		...(routedModelMeta?.organisationName
-																			? [
-																					{
-																						label: t("usageGaps.copyOrganisation"),
-																						value:
-																							routedModelMeta.organisationName,
-																					},
-																				]
-																			: []),
-																	]}
-																>
-																	<Link
-																		href={routedModelHref}
-																		className="truncate font-medium text-foreground underline decoration-transparent underline-offset-4 transition-[text-decoration-color] duration-200 hover:decoration-foreground"
-																		onClick={stopRowClick}
-																	>
-																		{routedModelLabel}
-																	</Link>
-																</UsageEntityHoverCard>
-															) : (
-																<UsageEntityHoverCard
-																	title={routedModelLabel}
-																	subtitle={
-																		routedModelMeta?.organisationName ?? null
-																	}
-																	visual={
-																		routedModelMeta ? (
-																			<Logo
-																				id={routedModelMeta.organisationId}
-																				width={16}
-																				height={16}
-																			/>
-																		) : null
-																	}
-																	rows={[
-																		{
-																			label: t("usageGaps.copyModelID"),
-																			value: (
-																				<code className="font-mono text-[11px]">
-																					{routedModelId}
-																				</code>
-																			),
-																		},
-																		...(routedModelMeta?.organisationName
-																			? [
-																					{
-																						label: t("usageGaps.copyOrganisation"),
-																						value:
-																							routedModelMeta.organisationName,
-																					},
-																				]
-																			: []),
-																	]}
-																>
-																	<span
-																		className="truncate"
-																		title={routedModelId ?? undefined}
-																	>
-																		{routedModelLabel}
-																	</span>
-																</UsageEntityHoverCard>
-															)}
+															<div className="min-w-0">
+																<UsageEntityLink href={routedModelHref} className="max-w-full font-medium">
+																	<span className="truncate">{routedModelLabel}</span>
+																</UsageEntityLink>
+																{/* Workspace-specific, so it stays in the cell: the site-wide model card only describes the routed model. */}
+																{requestedModelId && routedModelId && requestedModelId !== routedModelId ? (
+																	<p className="truncate text-[11px] font-normal text-muted-foreground">
+																		{tCards("requestedAs")}{" "}
+																		<code className="font-mono">{requestedModelId}</code>
+																	</p>
+																) : null}
+															</div>
 														</div>
 													) : (
 														"-"
@@ -1296,59 +1159,24 @@ export default function UnifiedRequestsTable({
 												<TableCell key="provider" className="py-2">
 													<div className="flex min-h-5 items-center">
 														{row.provider ? (
-															<UsageEntityHoverCard
-																title={providerLabel ?? row.provider}
+															<UsageEntityLink
 																href={
 																	row.provider === "private-model"
 																		? "/settings/workspaces/private-models"
 																		: `/api-providers/${encodeURIComponent(row.provider)}`
 																}
-																visual={
-																	<Logo
-																		id={row.provider}
-																		width={16}
-																		height={16}
-																	/>
-																}
-																rows={[
-																	{
-																		label: t("usageGaps.copyProviderID"),
-																		value: (
-																			<code className="font-mono text-[11px]">
-																				{row.provider}
-																			</code>
-																		),
-																	},
-																	...(providerPolicyLabel
-																		? [
-																				{
-																					label: t("usageGaps.copyDataPolicy"),
-																					value: providerPolicyLabel,
-																				},
-																			]
-																		: []),
-																]}
+																className="max-w-[180px] font-medium"
 															>
-																<Link
-																	href={
-																		row.provider === "private-model"
-																			? "/settings/workspaces/private-models"
-																			: `/api-providers/${encodeURIComponent(row.provider)}`
-																	}
-																	className="inline-flex min-w-0 max-w-[180px] items-center gap-2 font-medium text-foreground underline decoration-transparent underline-offset-4 transition-[text-decoration-color] duration-200 hover:decoration-foreground"
-																	onClick={stopRowClick}
-																>
-																	<Logo
-																		id={row.provider}
-																		width={14}
-																		height={14}
-																		className="flex-shrink-0"
-																	/>
-																	<span className="truncate">
-																		{providerLabel}
-																	</span>
-																</Link>
-															</UsageEntityHoverCard>
+																<Logo
+																	id={row.provider}
+																	width={14}
+																	height={14}
+																	className="flex-shrink-0"
+																/>
+																<span className="truncate">
+																	{providerLabel}
+																</span>
+															</UsageEntityLink>
 														) : (
 															<span className="text-muted-foreground">-</span>
 														)}
@@ -1359,73 +1187,30 @@ export default function UnifiedRequestsTable({
 												<TableCell key="app" className="py-2">
 													<div className="flex min-h-5 items-center">
 														{row.app_id ? (
-															<UsageEntityHoverCard
-																title={appLabel ?? t("usageGaps.unknownApp")}
-																href={appHref}
-																visual={
-																	isPhaseoChatApp(row) ? (
-																		<Logo id="phaseo" width={16} height={16} />
-																	) : (
-																		<Avatar className="h-4 w-4 rounded-[4px] border border-border/60">
-																			{row.app_image_url ? (
-																				<AvatarImage
-																					src={row.app_image_url}
-																					alt={appLabel ?? t("usageGaps.copyApp")}
-																					className="object-cover"
-																				/>
-																			) : null}
-																			<AvatarFallback className="rounded-[4px] bg-transparent text-muted-foreground">
-																				<AppWindow className="h-3 w-3" />
-																			</AvatarFallback>
-																		</Avatar>
-																	)
-																}
-																rows={[
-																	{
-																		label: t("usageGaps.copyAppID"),
-																		value: (
-																			<code className="font-mono text-[11px]">
-																				{row.app_id}
-																			</code>
-																		),
-																	},
-																	{
-																		label: t("usageGaps.copyType"),
-																		value: isPhaseoChatApp(row)
-																			? "Phaseo Chat"
-																			: t("usageGaps.workspaceApp"),
-																	},
-																]}
-															>
-																<Link
-																	href={appHref!}
-																	className="inline-flex min-w-0 max-w-[180px] items-center gap-2 font-medium text-foreground underline decoration-transparent underline-offset-4 transition-[text-decoration-color] duration-200 hover:decoration-foreground"
-																	onClick={stopRowClick}
-																>
-																	{isPhaseoChatApp(row) ? (
-																		<Logo
-																			id="phaseo"
-																			width={14}
-																			height={14}
-																			className="flex-shrink-0"
-																		/>
-																	) : (
-																		<Avatar className="h-4 w-4 rounded-[4px] border border-border/60">
-																			{row.app_image_url ? (
-																				<AvatarImage
-																					src={row.app_image_url}
-																					alt={appLabel ?? t("usageGaps.copyApp")}
-																					className="object-cover"
-																				/>
-																			) : null}
-																			<AvatarFallback className="rounded-[4px] bg-transparent text-muted-foreground">
-																				<AppWindow className="h-3 w-3" />
-																			</AvatarFallback>
-																		</Avatar>
-																	)}
-																	<span className="truncate">{appLabel}</span>
-																</Link>
-															</UsageEntityHoverCard>
+															<UsageEntityLink href={appHref} className="max-w-[180px] font-medium">
+																{isPhaseoChatApp(row) ? (
+																	<Logo
+																		id="phaseo"
+																		width={14}
+																		height={14}
+																		className="flex-shrink-0"
+																	/>
+																) : (
+																	<Avatar className="h-4 w-4 rounded-[4px] border border-border/60">
+																		{row.app_image_url ? (
+																			<AvatarImage
+																				src={row.app_image_url}
+																				alt={appLabel ?? t("usageGaps.copyApp")}
+																				className="object-cover"
+																			/>
+																		) : null}
+																		<AvatarFallback className="rounded-[4px] bg-transparent text-muted-foreground">
+																			<AppWindow className="h-3 w-3" />
+																		</AvatarFallback>
+																	</Avatar>
+																)}
+																<span className="truncate">{appLabel}</span>
+															</UsageEntityLink>
 														) : (
 															<span className="text-muted-foreground">-</span>
 														)}
@@ -1477,7 +1262,7 @@ export default function UnifiedRequestsTable({
 													key="speed"
 													className="py-2 text-right font-mono text-xs tabular-nums"
 												>
-													{formatRequestMetric(row.throughput, " tok/s")}
+													{formatTps(requestMetricNumber(row.throughput), "en-US") ?? "—"}
 												</TableCell>
 											),
 											overhead: (
@@ -1498,10 +1283,15 @@ export default function UnifiedRequestsTable({
 													key="ttft"
 													className="py-2 text-right font-mono text-xs tabular-nums"
 												>
-													{formatRequestMetric(
-														row.stream === true ? row.latency_ms : null,
-														" ms",
-													)}
+													{formatLatency(
+														requestMetricNumber(row.stream === true ? row.latency_ms : null),
+														"en-US",
+													) ?? "—"}
+												</TableCell>
+											),
+											labels: (
+												<TableCell key="labels" className="max-w-[18rem] py-2">
+													<RequestLabelBadges labels={row.labels} classifiers={requestClassifiers} />
 												</TableCell>
 											),
 											finish: (
@@ -1652,6 +1442,7 @@ export default function UnifiedRequestsTable({
 
 			{/* Detail Dialog */}
 			<RequestDetailDialog
+				classifiers={requestClassifiers}
 				open={dialogOpen}
 				loading={detailLoading}
 				presentation={detailBasePath ? "sheet" : undefined}

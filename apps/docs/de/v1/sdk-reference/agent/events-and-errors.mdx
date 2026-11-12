@@ -1,0 +1,200 @@
+---
+icon: "triangle-alert"
+title: "Events und Fehler"
+description: "Herausfinden, wie ein fehlgeschlagener Agentenlauf sichtbar wird, welche Events ausgelöst werden und wie du dich von Modell-, Tool- und Fortsetzungsfehlern erholst."
+---
+
+Ein fehlgeschlagener Lauf wirft einen Fehler aus dem Run- oder Continue-Aufruf oder gibt ihn zurück. Eine Pause (`waiting_for_human`) oder eine Stoppbedingung (`stopped`) ist kein Fehler: Beide geben ein normales Ergebnis zurück. Welche Fehler zusätzlich ein `run.failed`-Event senden, unterscheidet sich je nach Sprache. Verlass dich daher nicht allein auf das Event, um einen Fehler zu erkennen.
+
+## Wie ein fehlgeschlagener Lauf sichtbar wird
+
+| Sprache | Bei Fehlschlag | Gespeicherter Status |
+| --- | --- | --- |
+| TypeScript | Wirft. Gateway-Fehler sind `AgentGatewayError`. Ein Abbruch über `signal` wirft nicht: Der Lauf kehrt mit dem Status `cancelled` zurück. | Der fehlgeschlagene Lauf (Status `failed`, mit `error` und `errorDetails`) wird über `state` gespeichert, bevor der Fehler geworfen wird |
+| Python | Löst aus `run()`, `continue_run()` oder `stream.result()` aus | Kein `AgentRunResult`, und der `state`-Accessor wird nicht aufgerufen |
+| Go | Gibt einen `error` ungleich nil und ein leeres `RunResult` zurück | Keiner |
+| C# | Wirft aus `Run` oder `ContinueRun`; kein `RunResult` | Keiner |
+| PHP | Wirft eine `RuntimeException` aus `run()` oder `continueRun()`; kein `RunResult` | Keiner |
+| Ruby | Löst aus `run` oder `continue_run` aus; kein `RunResult` | Keiner |
+| Java | Wirft aus `run` oder `continueRun`; kein `RunResult` | Keiner |
+| Rust | Gibt `Err(AgentError)` zurück | Keiner |
+
+<CodeGroup>
+
+```typescript TypeScript
+import { AgentGatewayError, AgentSchemaValidationError } from "@phaseo/agent-sdk";
+
+try {
+  await agent.run({ input, client });
+} catch (error) {
+  if (error instanceof AgentGatewayError) {
+    console.error(error.status, error.requestId, error.reason);
+  } else if (error instanceof AgentSchemaValidationError) {
+    console.error(error.target, error.message);
+  }
+  throw error;
+}
+```
+
+```python Python
+import phaseo
+
+try:
+    result = agent.run(input="Summarise this ticket", client=client)
+except phaseo.PhaseoHTTPError as error:
+    print(error.status, error.code, error.request_id)
+    raise
+```
+
+```go Go
+ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+defer cancel()
+
+result, err := agent.Run(ctx, options)
+if errors.Is(err, context.DeadlineExceeded) {
+  // Genug Anwendungsstatus speichern, um es erneut zu versuchen oder das Timeout zu melden.
+}
+```
+
+```csharp C#
+using Phaseo.Gen;
+
+try
+{
+    var result = await agent.Run(options);
+}
+catch (ApiErrorException error)
+{
+    Console.Error.WriteLine($"{error.StatusCode} {error.Code} {error.RequestId}");
+    throw;
+}
+```
+
+```php PHP
+use Phaseo\Gen\RequestException;
+
+try {
+    $result = $agent->run(input: "Summarise this ticket", client: $client);
+} catch (RequestException $error) {
+    error_log($error->getStatusCode() . " " . $error->getErrorCode() . " " . $error->getRequestId());
+    throw $error;
+}
+```
+
+```ruby Ruby
+begin
+  result = agent.run(input: "Summarise this ticket", client: client)
+rescue Phaseo::Gen::RequestError => error
+  warn [error.status_code, error.code, error.request_id].join(" ")
+  raise
+end
+```
+
+```java Java
+import app.phaseo.gen.Client.ApiException;
+
+try {
+    var result = agent.run(options);
+} catch (ApiException error) {
+    System.err.println(error.getStatusCode() + " " + error.getCode() + " " + error.getRequestId());
+    throw error;
+}
+```
+
+```rust Rust
+match agent.run(&mut client, options) {
+    Ok(result) => println!("{}", result.output),
+    Err(error) => eprintln!("Agent failed: {}", error.message()),
+}
+```
+
+</CodeGroup>
+
+<span id="which-events-fire-when-something-fails"></span>
+## Welche Events bei einem Fehler ausgelöst werden
+
+| Sprache | `run.failed` wird gesendet, wenn | `tool.failed` wird gesendet, wenn | Schrittlimit erreicht |
+| --- | --- | --- | --- |
+| TypeScript | Bei jedem Fehler außer einem Abbruch, nach `step.failed`. Ein Abbruch sendet stattdessen `step.cancelled` und `run.cancelled`. | Ein Tool fehlschlägt | Wirft `Max steps exceeded (N)` und sendet `run.failed` |
+| Python | Nur wenn `max_steps` ausgeschöpft ist. Andere Fehler, einschließlich Abbrüchen, werden ohne Event ausgelöst. | Ein Tool fehlschlägt | Löst `RuntimeError("Max steps exceeded (N)")` aus |
+| Go | Ein Modellfehler (nach Wiederholungen) oder das Schrittlimit hat den Lauf beendet | Ein Tool einen Fehler hatte oder ein Timeout überschritten hat | Gibt `Max steps exceeded (N)` zurück und sendet `run.failed` |
+| C# | Nur wenn der Lauf `MaxSteps` erreicht. Modellfehler, Tool-Ausnahmen, Validierung und Abbruch werfen ohne dieses Event. | Ein Tool geworfen hat und sein `OnError` `return-to-model` ist | Wirft `Max steps exceeded (N)` |
+| PHP | Nur wenn der Lauf `maxSteps` erreicht. Modellfehler, Tool-Ausnahmen und Validierung werfen ohne dieses Event. | Ein Tool geworfen oder ein Timeout überschritten hat | Wirft `Max steps exceeded (N)` |
+| Ruby | Nur wenn der Lauf `max_steps` erreicht. Modellfehler, Tool-Ausnahmen und Validierung lösen ohne dieses Event aus. | Ein Tool eine Ausnahme ausgelöst hat und sein `on_error` `return-to-model` ist. Ein freigegebener Aufruf, den `continue_run` ausführt, sendet es bei jeder Ausnahme. | Löst `Max steps exceeded (N)` aus |
+| Java | Nur wenn der Lauf `maxSteps` erreicht. Modellfehler, Tool-Ausnahmen, Validierung und Abbruch werfen ohne dieses Event. | Ein Tool geworfen hat und sein `onError` `return-to-model` ist | Wirft `Max steps exceeded (N)` |
+| Rust | Nie; Rust hat keine Fehler-Events | Nie; ein Tool-Fehler wird als `tool.completed` mit `is_error: true` gesendet | Kein Fehler: Der Lauf kehrt mit dem Status `stopped`, `stop_reason` `max_steps:<limit>` und einem `run.stopped`-Event zurück |
+
+Unter [Lifecycle-Hooks](./lifecycle-hooks) ist jedes Event aufgeführt.
+
+## Die Ursache eines Fehlers finden
+
+| Ursache | Fehler | Unterschiede je Sprache |
+| --- | --- | --- |
+| Kein API-Schlüssel | `PHASEO_API_KEY is required` | Python: `ValueError`. Ruby: `ArgumentError: Missing API key. Pass api_key or set PHASEO_API_KEY.` |
+| Das Gateway hat eine Modellanfrage abgelehnt | Der Fehler des Gateways, erneut geworfen, nachdem die Wiederholungsrichtlinie ausgeschöpft ist | TypeScript: `AgentGatewayError`. Python: `phaseo.PhaseoHTTPError` mit `status`, `code` und `request_id`. Rust: in `AgentError` umgewandelt, ohne Gateway-Status und -Body. |
+| Das Modell hat immer weiter Tools aufgerufen | `Max steps exceeded (N)` | Rust stoppt den Lauf stattdessen (siehe oben) |
+| Das Modell hat ein Tool aufgerufen, das der Agent nicht hat | `Unknown tool '<name>'` | Go: `unknown tool "name"`. TypeScript mit `return-to-model`: wird stattdessen an das Modell zurückgegeben. |
+| Ein Validator hat Tool-Eingabe, Tool-Ausgabe, ein Fortschritts-Event oder die endgültige Ausgabe abgelehnt | `Invalid tool input: ...`, `Invalid tool output: ...`, `Invalid agent output: ...` | TypeScript: `AgentSchemaValidationError`. Python und Ruby: `ValueError` / `ArgumentError`. Go: kleingeschriebenes `invalid ...`. Rust hat keine Validatoren. |
+| Ein Tool hat sein Timeout überschritten | Ein Timeout-Fehler | Python: `TimeoutError`. Go: `tool <id> timed out: ...`. C# und Java: `TimeoutException`. PHP: `Tool <name> timed out after <n>ms`. Ruby: `Timeout::Error`. Rust hat keine Tool-Timeouts. |
+| Eine Fortsetzung hat nicht jeden ausstehenden Aufruf beantwortet | `Missing approval decision for tool call <id>`, `Missing output for tool call <id>` | Go: kleingeschriebenes `missing ...`. Python: `ValueError`. Siehe [Status und Freigabe](./state-and-approval). |
+| Eine Prüfpause wurde ohne menschliche Eingabe fortgesetzt | `Run <id> is waiting for human input` | Go: `run <id> ...`. Java: `Run is waiting for human input`. |
+| Der Lauf gehört zu einer anderen Agenten-ID | `Run <id> belongs to agent <agent>` | Go: `run <id> ...`. Java: `Run belongs to <agent>`. |
+| Eine Fortsetzung hatte keinen Lauf zum Fortsetzen | `A run or state accessor with runId is required` | C# und Java. Ruby: `... with run_id is required`. PHP `continueRunById()`: `Run <id> not found`. |
+| Der Stream wurde abgebrochen | Ein Abbruchfehler | Python: `InterruptedError`. PHP: `Agent stream cancelled`. C#: `OperationCanceledException`. Go: der Fehler des Context. TypeScript: kein Fehler; Status `cancelled`. |
+
+### Fehlertypen in TypeScript
+
+`AgentGatewayError` hat `status`, `statusText`, `headers`, `body`, `requestId`, `generationId`, `reason`, `errorType`, `errorOrigin`, `failedProviders`, `failedStatuses` und Routing-Diagnosen. Fehlgeschlagene Läufe und Schritte behalten dieselben Details in `errorDetails`. Ein Fehler mitten in einer gestreamten Antwort ist ein `AgentStreamError`, eine Unterklasse mit `code` und `retryable`.
+
+`AgentSchemaValidationError` hat ein `target` mit `tool_input`, `tool_output`, `tool_event` oder `agent_output` sowie `details` mit dem Fehler des Validators. Behandle diese als Vertragsfehler, nicht als vorübergehende Modellfehler.
+
+Um einen beliebigen Fehler einzuordnen, zum Beispiel in `modelRetry.retryOn`, verwendest du `agentErrorIsRetryable(error)`, `agentRetryAfterMs(error)` und `agentErrorIsContextOverflow(error)`.
+
+### Fehlertyp in Rust
+
+Jeder Laufzeitfehler ist ein `AgentError`; lies ihn mit `message()`. Gateway-Werte vom Typ `PhaseoError` werden in `AgentError` umgewandelt. Wenn du den ursprünglichen Gateway-Status und -Body brauchst, rufe den Client `phaseo` direkt auf oder implementiere einen eigenen `ModelClient`, der sie behält.
+
+## Tool-Fehler abfangen
+
+Standardmäßig lässt ein Tool-Fehler den Lauf fehlschlagen. Setze die Fehlerrichtlinie des Tools auf `return-to-model`, wenn das Modell sinnvoll etwas anderes versuchen kann: Der Fehler wird zum Tool-Ergebnis `{"error": "..."}`, und der Lauf geht weiter. Behalte den Standard `fail-run` für unsichere oder nicht behebbare Fehler bei.
+
+| Sprache | Einstellung | Timeouts mit `return-to-model` |
+| --- | --- | --- |
+| TypeScript | `onError` am Tool oder `toolExecution.onError` für jedes Tool | Als Tool-Fehler behandelt und an das Modell zurückgegeben |
+| Python | `on_error` | Lassen den Lauf immer fehlschlagen |
+| Go | `OnError` | An das Modell zurückgegeben |
+| C# | `OnError` | An das Modell zurückgegeben (die Ausnahmemeldung) |
+| PHP | `onError` | An das Modell zurückgegeben |
+| Ruby | `on_error` | An das Modell zurückgegeben |
+| Java | `onError` | An das Modell zurückgegeben (die Ausnahmemeldung) |
+| Rust | Keine | Rust hat keine Timeouts. Ein `AgentError` aus einem lokalen Executor wird immer als Tool-Fehlermeldung an das Modell zurückgegeben. |
+
+## Abbrüche und Timeouts behandeln
+
+Ein Tool-Timeout oder ein Abbruch stoppt nicht immer die Arbeit des Tools selbst. Gib HTTP-, Datenbank- und Prozessaufrufen innerhalb von Tools eigene Fristen und behandle einen abgebrochenen oder abgelaufenen Lauf als beendet, sofern deine Anwendung keinen neuen startet.
+
+| Sprache | Einen Lauf abbrechen | Was mit laufenden Tools passiert |
+| --- | --- | --- |
+| TypeScript | `signal` übergeben oder `cancel()` an einem Stream aufrufen | Ein Tool-Timeout bricht `context.signal` ab; übergib es an deine eigenen Aufrufe |
+| Python | `cancel()` an einem Stream; der Lauf löst `InterruptedError` aus | Tool-Threads werden weder durch Timeouts noch durch Abbrüche gestoppt |
+| Go | Den an `Run`, `Continue` oder `Stream` übergebenen `ctx` abbrechen oder `Cancel()` an einem Stream aufrufen | Laufende Tools schlagen mit einem Timeout-Fehler fehl, aber `Execute` erhält den Context nicht, daher läuft ihre Arbeit weiter |
+| C# | Ein `CancellationToken` in `RunOptions` oder `ContinueOptions` übergeben oder `Cancel()` an einem Stream aufrufen; der Lauf wirft `OperationCanceledException` | Tools erhalten `runtime.CancellationToken`; übergib es an deine eigenen Aufrufe |
+| PHP | `cancel()` an einem Stream | Tools laufen synchron und lassen sich nicht stoppen: `timeoutMs` lässt den Aufruf erst nach seiner Rückkehr fehlschlagen. Achte bei Web-Anfragen auf `max_execution_time` von PHP. |
+| Ruby | `cancel` an einem Stream beendet den Worker-Thread | `timeout_ms` verwendet `Timeout.timeout`, das den Thread des Tools an einer beliebigen Stelle unterbricht und Dateien, Sockets oder Transaktionen halb erledigt zurücklassen kann |
+| Java | `cancel()` an einem Stream unterbricht den Worker-Thread | Ein Tool-`timeout` führt den Executor in einem eigenen Thread aus und unterbricht ihn; nur Code, der auf Unterbrechung reagiert, stoppt |
+| Rust | Nicht unterstützt; Läufe sind synchron | Führe den Agenten auf einem Worker-Thread aus, wenn er keinen Request-Handler blockieren darf |
+
+## Einen unterbrochenen TypeScript-Lauf wiederherstellen
+
+Wenn ein Lauf mitten in einem Schritt abgestürzt ist oder abgebrochen wurde, kann sein Verlauf Tool-Aufrufe ohne Ergebnisse enthalten, die Anbieter ablehnen. `continueRun()` in TypeScript beantwortet sie als nicht ausgeführt und sendet `history.repaired`. Rufe `repairToolHistory(messages)` selbst auf, wenn du die Nachrichten anderswo wiederverwendest.
+
+## Zuerst das hier prüfen
+
+- `PHASEO_API_KEY` erreicht den Prozess und wird an den Gateway-Client übergeben.
+- Jedes Tool hat eine eindeutige, stabile ID.
+- Freigaben, Ablehnungen und Tool-Ausgaben verwenden exakte Tool-Call-IDs, und eine menschliche Eingabenachricht ersetzt nie eine Tool-Ausgabe.
+- Das gesamte Laufergebnis wird gespeichert, bevor du eine Freigabe-Oberfläche anzeigst oder die Kontrolle an eine andere Anfrage oder einen anderen Worker übergibst.
+- Validatoren sind deterministisch und frei von Nebeneffekten, sodass eine fehlgeschlagene Prüfung sicher wiederholt werden kann.
+- Modellwiederholungen sind begrenzt; Validierungs- und Freigabefehler sollten nicht blind wiederholt werden.
+
+Um zu sehen, welcher Schritt fehlgeschlagen ist, zeichne `step.started`, `model.requested` und `tool.failed` mit [Lifecycle-Hooks](./lifecycle-hooks) auf, und unter [Beobachtbarkeit](./observability) findest du die IDs, die einen Schritt mit den Gateway-Logs verknüpfen.

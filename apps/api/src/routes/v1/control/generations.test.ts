@@ -43,7 +43,17 @@ function buildSupabaseMock(options: {
 	requestError?: { message: string } | null;
 	ioLogData?: Record<string, unknown> | null;
 	ioLogError?: { message: string } | null;
+	contentsAccess?: "members" | "admins";
+	settingsError?: { code?: string; message: string } | null;
+	memberRole?: string | null;
+	ownerUserId?: string | null;
 }) {
+	const single = (result: { data: unknown; error: unknown }) => {
+		const query: Record<string, unknown> = {};
+		query.eq = vi.fn(() => query);
+		query.maybeSingle = vi.fn(async () => result);
+		return { select: vi.fn(() => query) };
+	};
 	return {
 		from: vi.fn((table: string) => {
 			if (table === "gateway_requests") {
@@ -74,6 +84,19 @@ function buildSupabaseMock(options: {
 						})),
 					})),
 				};
+			}
+
+			if (table === "workspace_settings") {
+				return single({
+					data: { io_logging_contents_access: options.contentsAccess ?? "members" },
+					error: options.settingsError ?? null,
+				});
+			}
+			if (table === "workspace_members") {
+				return single({ data: options.memberRole ? { role: options.memberRole } : null, error: null });
+			}
+			if (table === "workspaces") {
+				return single({ data: { owner_user_id: options.ownerUserId ?? "user_owner" }, error: null });
 			}
 
 			throw new Error(`unexpected table: ${table}`);
@@ -116,6 +139,19 @@ describe("generationsRoutes", () => {
 		expect(body.replay_request).toBeNull();
 		expect(readGatewayIoLogObjectMock).not.toHaveBeenCalled();
 		expect(isGatewayIoLoggingFeatureEnabledMock).not.toHaveBeenCalled();
+	});
+
+	it("keeps the internal wallet charge key out of the generation", async () => {
+		getSupabaseAdminMock.mockReturnValue(buildSupabaseMock({
+			requestData: { request_id: "gen_123", status_code: 200, cost_nanos: 12_345, billing_request_id: "bill_internal" },
+		}));
+
+		const response = await generationsRoutes.request("https://example.com/?id=gen_123");
+		const body = await response.json() as Record<string, unknown>;
+
+		expect(response.status).toBe(200);
+		expect(body).toMatchObject({ request_id: "gen_123", cost_nanos: 12_345 });
+		expect(body).not.toHaveProperty("billing_request_id");
 	});
 
 	it("does not expose raw generation payloads to activity-only credentials", async () => {
@@ -196,6 +232,79 @@ describe("generationsRoutes", () => {
 		expect(readGatewayIoLogObjectMock).toHaveBeenCalledWith("private/ws_test/gen_123.json");
 	});
 
+	describe("when contents are limited to owners and admins", () => {
+		const storedLog = {
+			requestData: { request_id: "gen_123", status_code: 200 },
+			ioLogData: { io_log_status: "stored", io_log_object_key: "private/ws_test/gen_123.json" },
+			contentsAccess: "admins" as const,
+		};
+
+		beforeEach(() => {
+			readGatewayIoLogObjectMock.mockResolvedValue({ request_payload: { model: "m" }, gateway_response: { output_text: "hi" } });
+		});
+
+		function authAs(userId: string | null) {
+			authenticateMock.mockResolvedValue({
+				ok: true,
+				workspaceId: "ws_test",
+				apiKeyId: "key_test",
+				apiKeyRef: "key_test",
+				apiKeyKid: "kid_test",
+				scopes: ["generations:read"],
+				userId,
+			});
+		}
+
+		it("hides contents from keys created by members", async () => {
+			authAs("user_member");
+			getSupabaseAdminMock.mockReturnValue(buildSupabaseMock({ ...storedLog, memberRole: "member" }));
+
+			const body = await (await generationsRoutes.request("https://example.com/?id=gen_123")).json() as any;
+
+			expect(body.io_log.status).toBe("restricted");
+			expect(body.io_log.payload).toBeNull();
+			expect(body.replay_request).toBeNull();
+			expect(readGatewayIoLogObjectMock).not.toHaveBeenCalled();
+		});
+
+		it("hides contents from keys with no creator", async () => {
+			authAs(null);
+			getSupabaseAdminMock.mockReturnValue(buildSupabaseMock(storedLog));
+
+			const body = await (await generationsRoutes.request("https://example.com/?id=gen_123")).json() as any;
+
+			expect(body.io_log.status).toBe("restricted");
+			expect(readGatewayIoLogObjectMock).not.toHaveBeenCalled();
+		});
+
+		it("returns contents to keys created by admins and the owner", async () => {
+			authAs("user_admin");
+			getSupabaseAdminMock.mockReturnValue(buildSupabaseMock({ ...storedLog, memberRole: "admin" }));
+			const admin = await (await generationsRoutes.request("https://example.com/?id=gen_123")).json() as any;
+			expect(admin.io_log.payload.gateway_response.output_text).toBe("hi");
+
+			authAs("user_owner");
+			getSupabaseAdminMock.mockReturnValue(buildSupabaseMock({ ...storedLog, ownerUserId: "user_owner" }));
+			const owner = await (await generationsRoutes.request("https://example.com/?id=gen_123")).json() as any;
+			expect(owner.io_log.status).toBe("stored");
+			expect(owner.io_log.payload.gateway_response.output_text).toBe("hi");
+		});
+
+		it("hides contents when the setting can't be read", async () => {
+			authAs("user_admin");
+			getSupabaseAdminMock.mockReturnValue(buildSupabaseMock({
+				...storedLog,
+				memberRole: "admin",
+				settingsError: { code: "57014", message: "canceling statement due to statement timeout" },
+			}));
+
+			const body = await (await generationsRoutes.request("https://example.com/?id=gen_123")).json() as any;
+
+			expect(body.io_log.status).toBe("restricted");
+			expect(readGatewayIoLogObjectMock).not.toHaveBeenCalled();
+		});
+	});
+
 	it("does not expose replay data when no R2 I/O object exists", async () => {
 		getSupabaseAdminMock.mockReturnValue(
 			buildSupabaseMock({
@@ -246,6 +355,61 @@ describe("generationsRoutes", () => {
 				replay_request: null,
 			}),
 		);
+	});
+
+	describe("search and fetch details when contents are limited to owners and admins", () => {
+		const detailMetadata = {
+			labels: { team: "a" },
+			search_observability: {
+				usedManagedWebSearch: true, resultCount: 1, citationCount: 1,
+				results: [{ title: "Secret result", url: "https://secret.example/r" }],
+				citations: [{ url: "https://secret.example/c", text: "quote" }],
+				nativeSearches: [{ query: "acquisition target", status: "done" }],
+				managedSearches: [{ query: "acquisition target", resultCount: 1 }],
+			},
+			web_fetch_observability: {
+				requestCount: 1,
+				fetches: [{ url: "https://secret.example/page", finalUrl: "https://secret.example/page", title: "Secret page", status: 200, returnedChars: 10 }],
+			},
+		};
+
+		it("hides queries, results and URLs from a member's key and keeps counts", async () => {
+			authenticateMock.mockResolvedValue({ ok: true, workspaceId: "ws_test", apiKeyId: "key_test", scopes: [], userId: "user_member" });
+			getSupabaseAdminMock.mockReturnValue(buildSupabaseMock({
+				requestData: { request_id: "gen_123", detail_metadata: detailMetadata },
+				ioLogData: null, contentsAccess: "admins", memberRole: "member",
+			}));
+			const response = await generationsRoutes.request("https://example.com/?id=gen_123");
+			const body = await response.json() as any;
+			expect(response.status).toBe(200);
+			expect(JSON.stringify(body)).not.toContain("secret.example");
+			expect(JSON.stringify(body)).not.toContain("acquisition target");
+			expect(body.detail_metadata).toEqual({
+				labels: { team: "a" },
+				search_observability: { usedManagedWebSearch: true, resultCount: 1, citationCount: 1, results: [], citations: [], nativeSearches: [], managedSearches: [] },
+				web_fetch_observability: { requestCount: 1, fetches: [{ url: null, finalUrl: null, title: null, status: 200, returnedChars: 10 }] },
+			});
+		});
+
+		it("keeps them for an admin's key", async () => {
+			authenticateMock.mockResolvedValue({ ok: true, workspaceId: "ws_test", apiKeyId: "key_test", scopes: [], userId: "user_admin" });
+			getSupabaseAdminMock.mockReturnValue(buildSupabaseMock({
+				requestData: { request_id: "gen_123", detail_metadata: detailMetadata },
+				ioLogData: null, contentsAccess: "admins", memberRole: "admin",
+			}));
+			const body = await (await generationsRoutes.request("https://example.com/?id=gen_123")).json() as any;
+			expect(body.detail_metadata).toEqual(detailMetadata);
+		});
+
+		it("keeps them for members when contents are open to members", async () => {
+			authenticateMock.mockResolvedValue({ ok: true, workspaceId: "ws_test", apiKeyId: "key_test", scopes: [], userId: "user_member" });
+			getSupabaseAdminMock.mockReturnValue(buildSupabaseMock({
+				requestData: { request_id: "gen_123", detail_metadata: detailMetadata },
+				ioLogData: null, contentsAccess: "members", memberRole: "member",
+			}));
+			const body = await (await generationsRoutes.request("https://example.com/?id=gen_123")).json() as any;
+			expect(body.detail_metadata).toEqual(detailMetadata);
+		});
 	});
 
 	it("returns 401 when authentication fails", async () => {

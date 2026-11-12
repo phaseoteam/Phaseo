@@ -1,63 +1,68 @@
 ---
 title: "Recueil de recettes"
 icon: "chef-hat"
-description: "Des recettes pratiques et adaptées à des scénarios concrets pour créer avec Phaseo."
+description: "Des recettes pratiques, organisées par scénario, pour créer avec Phaseo."
 ---
 
-Utilisez ce recueil lorsque vous savez ce que vous voulez créer et avez besoin d’un parcours fonctionnel, de la configuration à la vérification.
+Choisissez une recette selon ce que vous voulez créer. Chacune commence par le résultat final, puis donne les étapes, le code complet, la façon de le lancer et la façon de vérifier qu’il fonctionne. Chaque recette indique si son code est prêt pour la production ou s’il s’agit d’un point de départ à compléter.
 
-## Commencez par une requête fonctionnelle
+Tous les exemples utilisent `https://api.phaseo.app/v1` et lisent votre clé depuis `PHASEO_API_KEY`.
+
+## Envoyer votre première requête
 
 <Columns cols={2}>
-	<Card title="Lancer avec le routeur gratuit" icon="route" href="./free-router-first-deploy.mdx">
-		Envoyez une requête réelle sans devoir d’abord choisir ou financer un modèle précis.
+	<Card title="Démarrer avec le routeur gratuit" icon="route" href="./free-router-first-deploy">
+		Envoyez une requête réelle à `phaseo/free` avant de choisir ou de payer un modèle.
 	</Card>
-	<Card title="Créer une application de chat web avec Next.js" icon="message-square" href="./build-a-nextjs-web-chat-app.mdx">
-		Créez une interface de chat dans le navigateur tout en gardant la clé API Phaseo sur le serveur.
-	</Card>
-	<Card title="Créer une application de test REST avec Node" icon="terminal" href="./build-a-node-rest-smoke-app.mdx">
-		Utilisez HTTP directement pour vérifier une intégration backend avec l’exemple pratique le plus simple.
-	</Card>
-	<Card title="Créer une CLI de passerelle en Python" icon="terminal-square" href="./build-a-python-gateway-cli.mdx">
-		Créez un workflow en ligne de commande avec le SDK Python.
+	<Card title="Prompts de démarrage pour mini-applications" icon="square-terminal" href="./mini-app-starter-prompts">
+		Collez un prompt dans un agent de codage et obtenez une petite application qui fonctionne.
 	</Card>
 </Columns>
 
-<Tip>
-  Vous voulez qu’un agent de programmation crée la structure initiale du projet ? Commencez par les [prompts de démarrage pour mini-applications](./mini-app-starter-prompts.mdx).
-</Tip>
+## Créer une application
 
-## Choisissez une recette selon le résultat souhaité
+| Recette | Vous obtenez | Appelle Phaseo avec |
+| --- | --- | --- |
+| [Application de chat web Next.js](./build-a-nextjs-web-chat-app) | Une interface de chat dans le navigateur avec un sélecteur de modèle | `fetch` côté serveur |
+| [Atelier OAuth Next.js](./build-an-oauth-nextjs-workbench) | Connexion, un proxy qui renouvelle les jetons, un chat et un testeur d’endpoints | `fetch` côté serveur avec des jetons OAuth |
+| [Application de test REST Node](./build-a-node-rest-smoke-app) | Un script de test rapide sans dépendance | `fetch` direct |
+| [CLI de gateway en Python](./build-a-python-gateway-cli) | Une CLI en bibliothèque standard pour de nombreux endpoints | `urllib` |
 
-<Columns cols={2}>
-	<Card title="Créer une application" icon="layout-template" href="./build-a-nextjs-web-chat-app.mdx">
-		Suivez des guides complets pour les applications web, les espaces de travail authentifiés, les scripts backend et les CLI.
-	</Card>
-	<Card title="Contrôler le routage et les règles" icon="route" href="./preset-rollout-and-routing-debug.mdx">
-		Déployez des presets, choisissez des fournisseurs, appliquez les exigences de résidence et contrôlez les clés API.
-	</Card>
-	<Card title="Rechercher et renvoyer des données structurées" icon="search-check" href="./sdk-typescript-managed-search.mdx">
-		Enrichissez les requêtes avec une recherche web ou une récupération, puis validez et corrigez la sortie structurée.
-	</Card>
-	<Card title="Commencer avec un Agent SDK" icon="bot" href="./agent-sdk-durable-loop.mdx">
-		Créez une boucle d’outils encadrée en TypeScript, Python, Go, C#, Java, PHP ou Ruby.
-	</Card>
-	<Card title="Créer des workflows avancés pour agents" icon="workflow" href="./agent-sdk-research-brief.mdx">
-		Ajoutez la recherche, la validation humaine, les outils parallèles, les sorties structurées et les workflows de programmation.
-	</Card>
-</Columns>
+## Contrôler le routage et les règles
 
-## Recettes populaires
+| Recette | Pour |
+| --- | --- |
+| [Déployer un préréglage](./preset-rollout-and-routing-debug) | Faire passer les appelants sur un préréglage et expliquer où chaque requête est allée |
+| [Trier les fournisseurs](./sort-providers-by-price-latency-or-throughput) | Classer les fournisseurs d’un modèle par prix, latence ou débit |
+| [Épingler ou ignorer des fournisseurs](./pin-or-ignore-providers-per-request) | Préférer, autoriser ou ignorer des fournisseurs pour une requête |
+| [Router uniquement vers des fournisseurs UE ou ZDR](./route-only-to-eu-or-zdr-providers) | Ajouter des règles de résidence et de conservation zéro des données à une requête |
+| [Garde-fous pour les clés API](./guardrails-for-api-keys) | Restreindre les modèles et fournisseurs et analyser les prompts pour une clé |
 
-- [Trier les fournisseurs par prix, latence ou débit](./sort-providers-by-price-latency-or-throughput.mdx)
-- [Router uniquement vers des fournisseurs de l’UE ou ZDR](./route-only-to-eu-or-zdr-providers.mdx)
-- [Réparer un JSON structuré mal formé](./response-healing-for-structured-json.mdx)
-- [Mener des recherches avec la recherche web pilotée par agent](./agent-sdk-research-brief.mdx)
-- [Exécuter simultanément des outils d’agent locaux](./agent-sdk-parallel-tools.mdx)
+## Rechercher, récupérer et renvoyer des données structurées
 
-## Guides associés
+| Recette | Pour |
+| --- | --- |
+| [JSON structuré depuis Python](./sdk-python-presets-and-json) | Appeler un préréglage avec un JSON Schema et journaliser les détails du routage |
+| [Recherche web gérée depuis TypeScript](./sdk-typescript-managed-search) | Ancrer une réponse avec `phaseo:web_search` et renvoyer du JSON |
+| [Déboguer la recherche web](./web-search-debugging) | Savoir si une recherche a eu lieu et ce qu’elle a renvoyé |
+| [Ancrer une extraction avec web fetch](./tool-grounding-with-web-fetch) | Lire une URL connue avec `phaseo:web_fetch` avant d’extraire |
+| [Récupérer un JSON mal formé](./response-healing-for-structured-json) | Réparer un JSON presque valide avec le plugin `response-healing` |
+| [Définir les valeurs par défaut des plugins](./plugin-defaults-and-response-healing) | Activer la réparation de réponse pour un espace de travail ou un préréglage, et la verrouiller |
 
-- [Démarrage rapide](../quickstart.mdx)
-- [Exemples](../guides/examples.mdx)
-- [Routage et solutions de repli](../guides/routing-and-fallbacks.mdx)
-- [Présentation de l’Agent SDK](../sdk-reference/agent-sdk/overview.mdx)
+## Créer des agents
+
+Les Agent SDK exécutent une boucle d’outils dans votre processus et envoient chaque tour du modèle via Phaseo. Consultez la [présentation des Agent SDK](../sdk-reference/agent/overview) pour l’installation dans chaque langage.
+
+| Recette | Langage | Montre |
+| --- | --- | --- |
+| [Boucle d’agent durable](./agent-sdk-durable-loop) | TypeScript | Enregistrer l’état de l’exécution après chaque étape et reprendre après un plantage |
+| [Outils en parallèle](./agent-sdk-parallel-tools) | TypeScript | Exécuter en même temps des outils indépendants en lecture seule |
+| [Note de recherche](./agent-sdk-research-brief) | TypeScript | Recherche web et note au format JSON strict |
+| [Tri du support](./agent-sdk-support-triage) | TypeScript | Un préréglage, une relecture humaine et des erreurs gateway que vous pouvez déboguer |
+| [Revue de code](./agent-sdk-coding-review) | TypeScript | JSON strict et une pause pour approbation |
+| [Extraction structurée](./agent-sdk-python-structured-extraction) | Python | Un outil et un JSON Schema |
+| [Runbook d’exploitation](./agent-sdk-go-ops-runbook) | Go | Un outil d’état dans une boucle bornée |
+| [Tri des tickets](./agent-sdk-csharp-ticket-triage) | C# | Un outil de recherche dans un service .NET |
+| [Revue de contenu](./agent-sdk-php-content-review) | PHP | Un outil de recherche dans le CMS |
+| [Notes internes](./agent-sdk-ruby-rag-notes) | Ruby | Un outil de recherche dans les notes |
+| [Agents de codage avec SKILL.md](./coding-agents-skill-md) | Tous | Apprendre à un agent de codage comment votre dépôt appelle Phaseo |

@@ -1,40 +1,40 @@
 ---
 title: "Modèles et services OpenAI obsolètes"
-description: "Dates d’obsolescence des modèles et plateformes OpenAI suivies dans le catalogue AI Stats."
+description: "Dépréciations des modèles et de la plateforme OpenAI suivies dans le catalogue Phaseo."
 icon: "/icons/brands/openai.svg"
 ---
 
-# Modèles et services OpenAI obsolètes
+Trouvez le modèle ou le produit OpenAI que vous utilisez, passez au remplaçant avant la date d’arrêt et validez-le sur vos prompts, outils, latence et coûts de production. Les dates proviennent de la [page des dépréciations de l’API](https://developers.openai.com/api/docs/deprecations) d’OpenAI.
 
-OpenAI publie les dates d’obsolescence et les remplacements recommandés sur sa [page consacrée aux obsolescences de l’API](https://developers.openai.com/api/docs/deprecations). Utilisez cette page comme liste de migration, puis validez le remplacement avec vos prompts, outils, objectifs de latence et budgets de production.
+## Dépréciations de modèles
 
-## Modèles obsolètes
-
-| Famille de modèles | Date d’obsolescence | Date d’arrêt | Remplacement recommandé |
+| Famille de modèles dépréciée | Date de dépréciation | Date d’arrêt | Remplaçant recommandé |
 | --- | --- | --- | --- |
 | `whisper-1`, `gpt-4o-transcribe`, `gpt-4o-mini-transcribe`, `gpt-4o-transcribe-diarize` | 26 août 2026 | 26 février 2027 | `openai/gpt-transcribe` ou `openai/gpt-live-transcribe` |
-| `gpt-realtime`, `gpt-audio`, `gpt-4o-audio`, `gpt-4o-realtime`, `gpt-realtime-mini`, `gpt-audio-mini`, `gpt-4o-mini-realtime`, `gpt-4o-mini-audio` | 20 juillet 2026 | 20 janvier 2027 | `openai/gpt-realtime-2.1`, `openai/gpt-realtime-2.1-mini`, ou `openai/gpt-audio-1.5` |
+| `gpt-realtime`, `gpt-audio`, `gpt-4o-audio`, `gpt-4o-realtime`, `gpt-realtime-mini`, `gpt-audio-mini`, `gpt-4o-mini-realtime`, `gpt-4o-mini-audio` | 20 juillet 2026 | 20 janvier 2027 | `openai/gpt-realtime-2.1`, `openai/gpt-realtime-2.1-mini` ou `openai/gpt-audio-1.5` |
 | `gpt-4o-mini-transcribe-2025-03-20` | 20 juillet 2026 | 20 janvier 2027 | `openai/gpt-4o-mini-transcribe` |
-| Versions datées de GPT-5 et o3 | 11 juin 2026 | 11 décembre 2026 | `openai/gpt-5.6-sol`, `openai/gpt-5.6-terra` ou `openai/gpt-5.6-luna` |
+| Instantanés datés de GPT-5 et o3 | 11 juin 2026 | 11 décembre 2026 | `openai/gpt-5.6-sol`, `openai/gpt-5.6-terra` ou `openai/gpt-5.6-luna` |
 | `gpt-image-1-mini`, `gpt-image-1.5`, `chatgpt-image-latest` | 2 juin 2026 | 1er décembre 2026 | `openai/gpt-image-2` |
-| Anciennes versions de GPT-3.5, GPT-4, GPT-4.1 nano, GPT-4o, o1, o3-mini et o4-mini | 22 avril 2026 | 23 octobre 2026 | Consultez les recommandations par modèle sur la page d’obsolescence d’OpenAI |
-| Modèles Sora 2 | 24 mars 2026 | 24 septembre 2026 | Aucun remplacement annoncé |
+| Anciens instantanés GPT-3.5, GPT-4, GPT-4.1 nano, GPT-4o, o1, o3-mini et o4-mini | 22 avril 2026 | 23 octobre 2026 | Voir les recommandations par modèle sur la page des dépréciations d’OpenAI |
+| Modèles Sora 2 | 24 mars 2026 | 24 septembre 2026 | Aucun remplaçant annoncé |
 
-Le catalogue consigne ces dates de cycle de vie dans les fiches des modèles OpenAI concernés et indique les nouveaux identifiants lorsqu’OpenAI en fournit. Les dates s’appliquent aux versions du fournisseur citées par OpenAI ; le catalogue peut les exposer sous un identifiant de modèle canonique.
+Le catalogue enregistre ces dates sur les fiches des modèles concernés, avec un identifiant de modèle de remplacement lorsqu’il en existe un. Les dates s’appliquent aux instantanés nommés par OpenAI ; Phaseo peut servir un instantané sous un identifiant de modèle canonique. La page d’un modèle indique ses dates et le remplaçant suggéré, et Phaseo continue de servir un modèle retiré tant qu’un fournisseur le propose. Consultez [Dépréciation et retrait des modèles](../guides/model-retirement) pour les alertes et le remplacement automatique.
 
-## Obsolescences de plateforme
+## Dépréciations de la plateforme
 
-OpenAI publie aussi des migrations de produits qui ne correspondent pas à des modèles :
+OpenAI retire aussi des produits qui ne sont pas des modèles :
 
-- Les prompts réutilisables seront arrêtés le 30 novembre 2026. Transférez leur contenu dans le code de l’application.
-- La plateforme Evals passera en lecture seule le 31 octobre 2026, puis fermera le 30 novembre 2026. OpenAI recommande de migrer vers Promptfoo.
-- Agent Builder fermera le 30 novembre 2026. Migrez vers Agents SDK ou ChatGPT Workspace Agents.
+| Produit | Date | Passer à |
+| --- | --- | --- |
+| Prompts réutilisables | Arrêt le 30 novembre 2026 | Code de l’application, ou un préréglage Phaseo avec des [modèles de prompt](../guides/prompt-templates) |
+| Plateforme Evals | Lecture seule le 31 octobre 2026 ; arrêt le 30 novembre 2026 | OpenAI recommande Promptfoo |
+| Agent Builder | Arrêt le 30 novembre 2026 | L’Agents SDK ou ChatGPT Workspace Agents |
 
-## Liste de contrôle de migration
+## Migrer
 
-1. Remplacez le modèle ou le produit obsolète dans un environnement de test.
-2. Relancez des évaluations représentatives, notamment pour les sorties structurées, les appels d’outils, la qualité audio et les tâches à long contexte.
+1. Remplacez le modèle ou le produit déprécié en préproduction.
+2. Relancez des évaluations représentatives, en particulier les sorties structurées, les appels d’outils, la qualité audio et les tâches à long contexte.
 3. Comparez la latence et les dépenses avec une concurrence proche de la production.
-4. Déployez progressivement le remplacement et définissez une route de retour arrière explicite avant la date d’arrêt.
+4. Lancez un canary du remplaçant avec une route de retour arrière explicite avant la date d’arrêt.
 
-Pour les dates de référence, la correspondance complète des versions et les consignes propres à chaque endpoint, consultez la [documentation OpenAI sur les obsolescences de l’API](https://developers.openai.com/api/docs/deprecations).
+Pour les correspondances complètes des instantanés et les recommandations propres à chaque endpoint, consultez la [documentation des dépréciations de l’API OpenAI](https://developers.openai.com/api/docs/deprecations).

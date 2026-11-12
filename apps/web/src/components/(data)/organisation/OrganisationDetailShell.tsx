@@ -1,11 +1,12 @@
 import { ReactNode } from "react";
-import { getLocale, getTranslations } from "next-intl/server";
-import Image from "next/image";
-import Link from "next/link";
+import { useLocale, useTranslations } from "@/i18n/react";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import Image from "@/components/image";
+import Link from "@/components/link";
 import { List, MapPin, PanelsTopLeft } from "lucide-react";
 
-import { fetchFrontendOrganisationHeader } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { notFound } from "next/navigation";
+import { organisationHeaderQuery } from "./OrganisationDetailShell.queries";
+import { notFound } from "@/lib/navigation";
 import { Logo } from "@/components/Logo";
 import EntityStickyHeader from "@/components/(data)/EntityStickyHeader";
 import ModelPageToc, { type ModelPageTocItem } from "@/components/(data)/model/ModelPageToc";
@@ -20,15 +21,15 @@ interface OrganisationDetailShellProps {
 	tab?: "overview" | "models";
 }
 
-export default async function OrganisationDetailShell({
+export default function OrganisationDetailShell({
 	organisationId,
 	children,
 	tocItems = [],
 	tab = "overview",
 }: OrganisationDetailShellProps) {
-	const locale = await getLocale();
-	const t = await getTranslations("Catalogue.organisations");
-	const header = await fetchFrontendOrganisationHeader(organisationId).catch(() => null);
+	const locale = useLocale();
+	const t = useTranslations("Catalogue.organisations");
+	const { data: header } = useSuspenseQuery(organisationHeaderQuery(organisationId));
 
 	if (!header) {
 		notFound();

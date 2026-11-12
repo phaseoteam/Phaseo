@@ -9,19 +9,29 @@ Maven coordinates:
 
 ## Installation
 
+Requires Java 17+, Maven 3.8+, and Git. Build the current SDK from source to get
+retry controls, response metadata, and parameter checks:
+
+```bash
+git clone https://github.com/phaseoteam/Phaseo.git
+cd Phaseo
+git checkout 1ff1119f41ceb3ac2c85ed605f6e1c4beca6e011
+mvn -f packages/sdk/sdk-java/pom.xml -DskipTests install
+```
+
+Then add the locally installed artifact to your application's `pom.xml`:
+
 ```xml
 <dependency>
   <groupId>app.phaseo</groupId>
   <artifactId>phaseo-sdk</artifactId>
-  <version>2.0.5</version>
+  <version>3.0.0</version>
 </dependency>
 ```
 
-If you are building from this repository instead:
-
-```bash
-pnpm --filter @phaseo/java-sdk run build
-```
+The older `app.phaseo:phaseo-sdk:3.0.0` artifact is available on Maven Central,
+but lacks the current retry, metadata, and parameter-checking APIs. The source
+installation above includes Jackson and uses the same Maven coordinates.
 
 ## Quick start
 
@@ -52,7 +62,34 @@ public class Main {
 }
 ```
 
+## Trusted workloads (OIDC tokens instead of an API key)
+
+Workspaces in the trusted workloads beta can let GitHub Actions jobs and Vercel deployments call Phaseo with their short-lived OIDC token instead of an API key. Set up a trust policy in Settings → API Keys → Trusted workloads, then pass an `ApiKeyProvider` instead of a key. It is called before every request and retry, so each request uses a current token. Tokens must be issued for the audience `https://api.phaseo.app`.
+
+`WorkloadTokens` has providers for both platforms. They reuse a token until a minute before it expires.
+
+```java
+import app.phaseo.sdk.Phaseo;
+import app.phaseo.sdk.WorkloadTokens;
+
+// GitHub Actions: the job needs `permissions: id-token: write`.
+Phaseo client = Phaseo.withApiKeyProvider(WorkloadTokens.gitHubActions());
+```
+
+```java
+// Vercel: reads VERCEL_OIDC_TOKEN_FILE or VERCEL_OIDC_TOKEN and exchanges it for a Phaseo-audience token.
+Phaseo client = Phaseo.withApiKeyProvider(WorkloadTokens.vercel());
+
+// Or exchange the token from the request's x-vercel-oidc-token header.
+Phaseo perRequest = Phaseo.withApiKeyProvider(WorkloadTokens.vercel(request.getHeader("x-vercel-oidc-token"), WorkloadTokens.DEFAULT_AUDIENCE));
+```
+
+Any lambda that returns a credential works too, for example `Phaseo.withApiKeyProvider(() -> secrets.currentKey())`. A blank credential fails the request before it is sent, and a request that sets its own `Authorization` header keeps it.
+
 ## Common methods
+
+Pass a `Map` or `JsonNode` to JSON request helpers. A Java `String` is serialized
+as a JSON string; use `new ObjectMapper().readTree(body)` for existing JSON text.
 
 - `createResponse(request)`
 - `createChatCompletion(request)`
@@ -112,10 +149,46 @@ System.out.println(genericSocketUrl);
 System.out.println(resourceSocketUrl);
 ```
 
+## Realtime voice (beta)
+
+`client.realtime.connect(...)` creates a realtime session and opens the relay WebSocket with the JDK's `java.net.http.WebSocket`; there is no extra dependency. Provider events pass through unchanged as `JsonNode`s.
+
+```java
+RealtimeSession session = client.realtime.connect(Map.of("model", "openai/gpt-realtime-2", "voice", "marin"));
+session.onWarning(warning -> System.out.println(warning.path("code").asText()));
+session.on("response.output_audio.delta", event -> play(event.path("delta").asText()));
+session.sendAudio(pcm16Chunk); // PCM16 bytes; base64 is handled for you
+JsonNode ended = session.end("caller hung up", null, Duration.ofSeconds(60)); // session.ended: reason, usage, cost, billing_status
+```
+
+`session.events()` iterates every event until the socket closes. If the socket closes without `session.ended`, `end` throws `RealtimeSessionClosedException`, whose `finalBillPath()` is the `GET /v1/generations?id=realtime%3A<session_id>` lookup for the final cost.
+
 ## Free and paid models
 
 - Models with `:free` in the model ID can be called with zero deposited credits.
 - Paid models require available wallet balance.
+
+## Streaming and errors
+
+`streamResponse(payload)` returns raw SSE lines. For chat, use
+`rawClient().requestLines("POST", "/chat/completions", null, null, jsonBody)`
+with `stream: true` in the JSON body. Both streams deliver lines incrementally;
+handle SSE event/data framing and completion markers in your application, and
+close the stream with try-with-resources.
+
+Retries default to zero. `setMaxRetries(n)` retries safe GET/HEAD requests;
+writes and streaming calls are not replayed. `Client.ApiException` preserves
+HTTP status, response body, headers, and request ID.
+
+The `createSpeech` wrapper expects JSON and cannot decode binary audio. Use
+`rawClient().requestBytes("POST", "/audio/speech", null, null, jsonBody)` instead.
+
+The JSON helpers `uploadFile`, `createTranscription`, `createTranslation`, and
+`createImageEdit` do not encode multipart file uploads. Use Java's standard HTTP
+client for file bytes, following the [multipart upload example](https://phaseo.app/docs/v1/sdk-reference/client/files).
+
+See the [Java SDK guide](https://phaseo.app/docs/v1/sdk-reference/client/overview)
+for complete examples.
 
 ## Environment variables
 

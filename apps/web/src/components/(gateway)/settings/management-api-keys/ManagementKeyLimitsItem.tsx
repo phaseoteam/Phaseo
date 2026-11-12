@@ -1,4 +1,3 @@
-"use client";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 import React, { useState } from "react";
@@ -19,10 +18,10 @@ import { toast } from "sonner";
 import {
 	updateManagementKeyLimitsAction,
 	ManagementKeyLimitPayload,
-} from "@/app/(dashboard)/settings/management-api-keys/actions";
+} from "@/features/settings/management-api-keys/actions";
 type KeyLimitPayload = ManagementKeyLimitPayload;
 import { Label } from "@/components/ui/label";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 export default function ManagementKeyLimitsItem({ k }: any) {
 	const t = useTranslations("SettingsUI");
@@ -48,7 +47,7 @@ export default function ManagementKeyLimitsItem({ k }: any) {
 			monthlyRequests: monthlyRequests ? parseInt(monthlyRequests, 10) : null,
 		};
 
-		const promise = updateManagementKeyLimitsAction(k.id, payload);
+		const promise = updateManagementKeyLimitsAction({ data: { id: k.id, payload } });
 		try {
 			await toast.promise(promise, {
 					loading: t("strings.phraseSavingLimits" as never),

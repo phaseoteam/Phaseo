@@ -1,47 +1,44 @@
 ---
 title: "Pi"
 icon: "/icons/brands/pi.svg"
-description: "इंस्टॉल किए गए Pi model catalog को Phaseo Gateway से जोड़ें।"
+description: "इंस्टॉल किए गए Pi मॉडल कैटलॉग को Phaseo Gateway से जोड़ें।"
 ---
 
-## Phaseo CLI से सेटअप करें
+हर संगत Phaseo मॉडल के साथ Pi में Phaseo प्रदाता एक्सटेंशन जोड़ने के लिए `phaseo pi` चलाएँ।
 
-इन उत्पादन-तैयार कमांडों के लिए Phaseo खाते की ज़रूरत है। CLI में लॉग इन और सेटअप करते समय गेटवे का अलग क्रेडेंशियल बनाया जाता है।
+## Phaseo CLI से सेट अप करें
 
 ```bash
 phaseo login
 phaseo pi
 ```
 
-पहले Pi का आधिकारिक release install करें। Setup `~/.pi/agent/extensions/phaseo.ts` में managed provider extension लिखता है। यह Chat Completions-संगत सभी active Phaseo text models उपलब्ध कराता है और हर request के समय Phaseo CLI से dedicated API key प्राप्त करता है।
+अगर Pi इंस्टॉल नहीं है, तो CLI आधिकारिक इंस्टॉल कमांड दिखाता है और उसे चलाने से पहले पूछता है। इसके बाद सेटअप एक `Phaseo CLI: Pi API Key` (90 दिन में समाप्ति, $100 मासिक खर्च सीमा) बनाता है और `~/.pi/agent/extensions/phaseo.ts` में एक प्रदाता एक्सटेंशन लिखता है। एक्सटेंशन Chat Completions के साथ काम करने वाले हर सक्रिय Phaseo टेक्स्ट मॉडल की सूची रखता है।
 
-शुरुआती model चुनें या ज़रूरत पड़ने पर सिर्फ़ एक model configure करें:
+| फ़्लैग | असर |
+| --- | --- |
+| `--model <id>` | शुरुआती मॉडल सेट करता है। डिफ़ॉल्ट `anthropic/claude-sonnet-4.6` है। |
+| `--catalog default` | सिर्फ़ चुना गया मॉडल जोड़ता है। |
+| `--dry-run` | फ़ाइल बदलाव किए बिना उन्हें दिखाता है। |
 
-```bash
-phaseo pi --model anthropic/claude-sonnet-4.6
-phaseo pi --catalog default
-```
-
-File changes का preview देखने के लिए `--dry-run` उपयोग करें।
-
-## शुरू करें और जाँचें
-
-```bash
-pi
-```
-
-`/model` खोलें, `phaseo` provider चुनें और एक छोटा prompt भेजें। केवल managed extension हटाकर उसकी dedicated key revoke करने के लिए यह चलाएँ:
-
-```bash
-phaseo integrations remove pi
-```
-
-## क्रेडेंशियल को मैन्युअल रूप से ऐक्सेस करें
-
-बनाया गया extension, Pi के command-backed key syntax का उपयोग करता है:
+एक्सटेंशन Pi के कमांड-आधारित कुंजी सिंटैक्स से अनुरोध के समय कुंजी लेता है, इसलिए फ़ाइल में कोई सादा-टेक्स्ट कुंजी नहीं लिखी जाती:
 
 ```text
 !phaseo integrations credential pi
 ```
 
-Extension में कोई plaintext key नहीं लिखी जाती।
+## जाँचें कि यह काम करता है
+
+```bash
+pi
+```
+
+`/model` खोलें, `phaseo` प्रदाता चुनें, और एक छोटा प्रॉम्प्ट भेजें। पुष्टि करें कि अनुरोध **सेटिंग्स → उपयोग → लॉग्स** में दिखता है।
+
+## Phaseo हटाएँ
+
+```bash
+phaseo integrations remove pi
+```
+
+यह सिर्फ़ Phaseo एक्सटेंशन हटाता है और कुंजी रद्द करता है।

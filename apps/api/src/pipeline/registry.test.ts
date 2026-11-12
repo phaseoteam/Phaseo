@@ -5,6 +5,7 @@ import { runEmbeddingsPipeline } from "./surfaces/embeddings";
 import { runModerationsPipeline } from "./surfaces/moderations";
 import { runRerankPipeline } from "./surfaces/rerank";
 import { runDecisionsPipeline } from "./surfaces/decisions";
+import { runExtractionsPipeline } from "./surfaces/extractions";
 import { runVideoGeneratePipeline } from "./surfaces/video-generate";
 import { runNotImplementedPipeline } from "./surfaces/not-implemented";
 import { runNonTextPipeline } from "./surfaces/non-text";
@@ -18,6 +19,7 @@ describe("resolvePipeline", () => {
 		expect(resolvePipeline("moderations")).toBe(runModerationsPipeline);
 		expect(resolvePipeline("rerank")).toBe(runRerankPipeline);
 		expect(resolvePipeline("decisions")).toBe(runDecisionsPipeline);
+		expect(resolvePipeline("extractions")).toBe(runExtractionsPipeline);
 	});
 
 	it("routes non-text generation endpoints to non-text IR surface", () => {

@@ -82,7 +82,7 @@ export async function fetchModelPricingSources(
 			.or(`effective_to.is.null,effective_to.gte.${new Date(pricingWindow.startMs).toISOString()}`);
 	}
 	const [capabilitiesResult, providersResult, skusResult] = await Promise.all([
-		routeIds.length ? client.from("v2_route_capabilities").select("provider_model_id,capability_id,params,max_input_tokens,max_output_tokens,status,effective_from,effective_to,metadata").in("provider_model_id", routeIds) : Promise.resolve({ data: [], error: null }),
+		routeIds.length ? client.from("v2_effective_route_capabilities").select("provider_model_id,capability_id,params,max_input_tokens,max_output_tokens,status,effective_from,effective_to,metadata").in("provider_model_id", routeIds) : Promise.resolve({ data: [], error: null }),
 		providerIds.length ? client.from("v2_providers").select("provider_slug,name,provider_family_slug,offer_label,offer_scope,country_code,status,routing_enabled,residency_mode,default_execution_regions,default_data_regions,zero_data_retention,data_retention_days,prompt_training_policy,data_policy_tier,data_policy_confidence,data_policy_contract_mode,metadata").in("provider_slug", providerIds) : Promise.resolve({ data: [], error: null }),
 		routeIds.length ? skusQuery : Promise.resolve({ data: [], error: null }),
 	]);
@@ -187,8 +187,10 @@ export async function fetchModelPricingSources(
 		const meterMetadata = asRow(meter.metadata) ?? {};
 		return [{
 			rule_id: meter.sku_meter_id,
+			provider_model_id: publicProviderModelId(route),
 			model_key: `${id(route.provider_slug)}:${id(route.model_slug)}:${id(sku.operation) || "inference"}`,
 			capability_id: sku.operation,
+			sku_status: sku.status,
 			pricing_plan: sku.service_tier_slug ?? "standard",
 			meter: meter.meter_key,
 			modality: meter.modality,

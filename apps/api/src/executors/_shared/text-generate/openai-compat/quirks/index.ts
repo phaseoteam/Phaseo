@@ -22,6 +22,7 @@ import { fireworksQuirks } from "../providers/fireworks/quirks";
 import { novitaQuirks } from "../providers/novitaai/quirks";
 import { perplexityQuirks } from "../providers/perplexity/quirks";
 import { openAIQuirks } from "../providers/openai/quirks";
+import { metaQuirks } from "../providers/meta/quirks";
 import { basetenQuirks } from "../providers/baseten/quirks";
 import { cohereQuirks } from "../providers/cohere/quirks";
 import { togetherQuirks } from "../providers/together/quirks";
@@ -54,6 +55,7 @@ import { sambaNovaQuirks } from "../providers/sambanova/quirks";
 import { scalewayQuirks } from "../providers/scaleway/quirks";
 import { weightsAndBiasesQuirks } from "../providers/weights-and-biases/quirks";
 import { defaultQuirks } from "./default";
+import { reflectionQuirks } from "../providers/reflection/quirks";
 
 /**
  * Provider quirks registry
@@ -69,6 +71,7 @@ const PROVIDER_QUIRKS: Record<string, ProviderQuirks> = {
 	"z-ai": zaiQuirks,
 	zai: zaiQuirks,
 	deepseek: deepseekQuirks,
+	reflection: reflectionQuirks,
 	mistral: mistralQuirks,
 	"mistral-eu": mistralQuirks,
 	"moonshot-ai": moonshotQuirks,
@@ -89,6 +92,8 @@ const PROVIDER_QUIRKS: Record<string, ProviderQuirks> = {
 	"novita-ai": novitaQuirks,
 	perplexity: perplexityQuirks,
 	openai: openAIQuirks,
+	meta: metaQuirks,
+	"meta-contributor": metaQuirks,
 	baseten: basetenQuirks,
 	cohere: cohereQuirks,
 	together: togetherQuirks,
@@ -97,6 +102,8 @@ const PROVIDER_QUIRKS: Record<string, ProviderQuirks> = {
 	"venice-e2ee": veniceQuirks,
 	sakana: sakanaQuirks,
 	wafer: waferQuirks,
+	"wafer-us": waferQuirks,
+	"wafer-zdr": waferQuirks,
 	ambient: ambientQuirks,
 	baidu: baiduQuirks,
 	chutes: chutesQuirks,

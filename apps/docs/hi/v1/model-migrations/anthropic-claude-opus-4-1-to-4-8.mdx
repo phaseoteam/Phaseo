@@ -1,83 +1,65 @@
 ---
 title: "Anthropic Claude Opus 4.8"
-description: "Claude Opus 4.8 अपनाने के लिए adaptive thinking, sampling controls और लंबे context की जानकारी।"
+description: "Claude Opus 4.8 अपनाते समय क्या जानना ज़रूरी है, जिसमें एडैप्टिव थिंकिंग, सैंपलिंग नियंत्रण और लंबा कॉन्टेक्स्ट शामिल हैं।"
 icon: "/icons/brands/anthropic.svg"
 ---
 
-# Anthropic Claude Opus 4.8
+Claude Opus 4.1 ट्रैफ़िक को `anthropic/claude-opus-4.8` पर ले जाएं: मॉडल ID बदलें, सैंपलिंग पैरामीटर हटाएं, और थिंकिंग बजट की जगह effort लेवल दें।
 
-Production में `anthropic/claude-opus-4.8` सुरक्षित रूप से अपनाने के लिए यह गाइड इस्तेमाल करें।
+Anthropic ने Opus 4.1 को 5 जून, 2026 को डेप्रिकेट किया और 5 अगस्त, 2026 को रिटायर किया। जब तक कोई प्रदाता `anthropic/claude-opus-4.1` सर्व करता है, Phaseo उसे सर्व करता रहता है, और जब कोई नहीं करता, तो वह उन अनुरोधों को Opus 4.8 पर रूट करता है (देखें [मॉडल डेप्रिकेशन और रिटायरमेंट](../guides/model-retirement))। ऐसा होने से पहले माइग्रेट करें, ताकि बदलाव अपने आप होने के बजाय टेस्ट किया हुआ हो।
 
-Anthropic ने 5 जून 2026 को Claude Opus 4.1 को deprecated किया और 5 अगस्त 2026 को retirement तय की। Migration guidance चरणबद्ध है: पहले Opus 4.7 के request-format बदलाव लागू करें, फिर Opus 4.8 के व्यवहार में बदलाव देखें।
+Anthropic का मार्गदर्शन संचयी है: Opus 4.7 के अनुरोध-आकार बदलाव लागू करें, फिर Opus 4.8 के व्यवहार बदलावों की समीक्षा करें।
 
-## नया क्या है
+| | Claude Opus 4.1 | Claude Opus 4.8 |
+| --- | --- | --- |
+| Phaseo मॉडल ID | `anthropic/claude-opus-4.1` | `anthropic/claude-opus-4.8` |
+| कॉन्टेक्स्ट विंडो | 200K टोकन | 1M टोकन |
+| अधिकतम आउटपुट | 32K टोकन | 128K टोकन |
+| `temperature`, `top_p`, `top_k` | भेजे जाते हैं | Phaseo इन्हें छोड़ देता है |
+| थिंकिंग | `budget_tokens` | एडैप्टिव, effort से नियंत्रित (डिफ़ॉल्ट `high`) |
+| बातचीत के बीच सिस्टम संदेश | नहीं | हां |
 
-- Phaseo model ID `anthropic/claude-opus-4.8` है।
-- Opus 4.7 और बाद के models `temperature`, `top_p` और `top_k` जैसे non-default sampling params अस्वीकार करते हैं।
-- Opus 4.7 और बाद के models manual extended-thinking budgets अस्वीकार करते हैं; adaptive thinking इस्तेमाल करें।
-- Opus 4.8 में `output_config.effort` default रूप से `high` है।
-- Opus 4.8 बातचीत के बीच में system messages जोड़ने देता है।
-- Claude API, AWS पर Claude Platform, Amazon Bedrock और Vertex AI के लिए Opus 4.8 आधारभूत सीमाओं को 1M टोकन संदर्भ और अधिकतम 128K आउटपुट टोकन तक बढ़ाता है।
+## अनुरोध अपडेट करें
 
-## माइग्रेशन quickstart
+**1. मॉडल ID बदलें** `anthropic/claude-opus-4.8` पर।
 
-### 1. Model ID अपडेट करें
+**2. सैंपलिंग पैरामीटर हटाएं।** Anthropic, Opus 4.7 और बाद के मॉडल पर गैर-डिफ़ॉल्ट `temperature`, `top_p` और `top_k` को `400` के साथ अस्वीकार करता है। Phaseo विफल होने के बजाय इन्हें छोड़ देता है, इसलिए अब इनका कोई असर नहीं होता; इसके बजाय निर्देशों से ट्यून करें।
 
-Model ID को `anthropic/claude-opus-4.8` सेट करें।
+**3. थिंकिंग बजट की जगह effort लेवल दें।** Phaseo, Opus 4.8 को `budget_tokens` आगे नहीं भेजता। कोई भी रीज़निंग सेटिंग `thinking: {"type": "adaptive", "display": "summarized"}` के रूप में भेजी जाती है, और `reasoning.effort` (या `/v1/messages` पर `output_config.effort`) गहराई तय करता है:
 
-### 2. Non-default sampling parameters हटाएँ
+```json
+{
+  "model": "anthropic/claude-opus-4.8",
+  "max_tokens": 4096,
+  "thinking": { "type": "adaptive" },
+  "output_config": { "effort": "high" },
+  "messages": [{ "role": "user", "content": "Plan the schema migration." }]
+}
+```
 
-अगर Opus 4.1 requests अभी इनमें से कोई value सेट करती हैं, तो rollout से पहले हटाएँ:
+कोई रीज़निंग सेटिंग न हो, तो Opus 4.8 थिंक नहीं करता। `reasoning.effort: "none"` `thinking: {"type": "disabled"}` भेजता है।
 
-- `temperature`
-- `top_p`
-- `top_k`
+**4. effort और लंबे कॉन्टेक्स्ट की नई बेसलाइन बनाएं।** Opus 4.8 का डिफ़ॉल्ट effort `high` है और इसकी कॉन्टेक्स्ट विंडो Opus 4.1 से बहुत बड़ी है। लेटेंसी बजट, टोकन उपयोग, प्रॉम्प्ट कैशिंग, और लंबे दस्तावेज़ों व लंबे एजेंट ट्रेस दोबारा टेस्ट करें। Microsoft Foundry पर, Anthropic ने लॉन्च के समय Opus 4.8 के लिए 200K कॉन्टेक्स्ट विंडो दर्ज की है।
 
-Opus 4.7 और बाद में इन fields की non-default values `400` लौटाती हैं।
+**5. लंबी बातचीत में निर्देश अपडेट सरल बनाएं।** Opus 4.8 बातचीत के बीच `role: "system"` संदेश स्वीकार करता है। अगर आपका एजेंट लूप हर टर्न पर पूरा सिस्टम प्रॉम्प्ट दोबारा लिखता है, तो इसके बजाय एक सिस्टम संदेश जोड़ें और ज़्यादा कैश हिट पाएं।
 
-### 3. Manual thinking budgets को adaptive thinking से बदलें
+## क्या टेस्ट करें
 
-अगर पुराने thinking payloads भेजते हैं, जैसे:
+- वे अनुरोध जो अब भी `temperature`, `top_p` या `top_k` भेजते हैं, क्योंकि अब इनका असर खत्म हो गया है;
+- वे थिंकिंग रूट जो `budget_tokens` पर निर्भर थे;
+- लंबी अवधि के एजेंट और टूल वर्कफ़्लो;
+- हर `effort` लेवल पर स्कीमा-संवेदनशील आउटपुट;
+- आपकी सबसे ज़्यादा मात्रा वाली Opus 4.1 प्रॉम्प्ट श्रेणियों पर टोकन लागत और लेटेंसी।
 
-- `thinking: { "type": "enabled", "budget_tokens": 32000 }`
+## रोलआउट करें
 
-तो इनके बजाय इस्तेमाल करें:
-
-- `thinking: { "type": "adaptive" }`
-- शुरुआती baseline के रूप में `output_config.effort = "high"`
-
-### 4. Effort और long-context expectations फिर तय करें
-
-Opus 4.8 default रूप से `high` effort रखता है और Anthropic-operated API surfaces पर Opus 4.1 से बड़ा context window सपोर्ट करता है। फिर जाँचें:
-
-- latency budgets
-- token usage
-- prompt-cache behavior
-- लंबे documents और agent traces
-
-Microsoft Foundry पर लॉन्च के समय 1M context window उपलब्ध मानकर न चलें; Anthropic वहाँ Opus 4.8 के लिए 200K context window बताता है।
-
-### 5. लंबी बातचीत में instruction updates फिर जाँचें
-
-Opus 4.8 बातचीत के बीच system messages सपोर्ट करता है। अगर agent loop हर turn पर पूरा system prompt फिर लिखता है, तो flow सरल बनाकर अधिक cache hits बचाए जा सकते हैं।
-
-## क्या जाँचें
-
-- वे requests जो अब भी `temperature`, `top_p` या `top_k` भेजती हैं।
-- `budget_tokens` पर निर्भर thinking-enabled routes।
-- लंबे agent और tool workflows।
-- स्पष्ट `effort` levels वाली schema-sensitive outputs।
-- सबसे अधिक उपयोग होने वाली Opus 4.1 prompt classes पर token cost और latency का अंतर।
-
-## सुरक्षित rollout
-
-1. Traffic बदलने से पहले sampling params और पुराने thinking budgets हटाएँ।
-2. Production-जैसे prompts और tool flows पर Opus 4.8 को shadow करें।
-3. 5 अगस्त 2026 से पहले की overlap window में fallback route रखते हुए canary करें।
-4. Latency, cost और task completion का अंतर लक्ष्य में हो तभी rollout बढ़ाएँ।
+1. ट्रैफ़िक बदलने से पहले सैंपलिंग पैरामीटर और थिंकिंग बजट हटाएं।
+2. प्रोडक्शन जैसे प्रॉम्प्ट और टूल फ़्लो पर Opus 4.8 को शैडो करें।
+3. जब तक प्रदाता Opus 4.1 सर्व करते हैं, उसे `models` में फ़ॉलबैक रखकर कैनरी चलाएं।
+4. लेटेंसी, लागत और कार्य-पूर्णता में बदलाव लक्ष्य के भीतर होने पर प्रमोट करें।
 
 ## स्रोत
 
-- [Anthropic मॉडल हटाने की जानकारी](https://platform.claude.com/docs/en/about-claude/model-deprecations)
+- [Anthropic मॉडल डेप्रिकेशन](https://platform.claude.com/docs/en/about-claude/model-deprecations)
 - [Anthropic माइग्रेशन गाइड](https://platform.claude.com/docs/en/about-claude/models/migration-guide)
 - [Claude Opus 4.8 में नया क्या है](https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-8)

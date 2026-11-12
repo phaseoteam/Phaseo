@@ -1,16 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ExternalLink, Activity, Zap } from "lucide-react";
-import { fetchFrontendAppDetails } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { getLocale, getTranslations } from "next-intl/server";
-import { DisplayDate, DisplayNumber } from "@/components/display/DisplayValue";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { appDetailsQuery } from "./app.queries";
+import { useTranslations } from "@/i18n/react";
+import { DisplayCount, DisplayDate, DisplayNumber } from "@/components/display/DisplayValue";
 
-export default async function AppHeader({ appId }: { appId: string }) {
-	const locale = await getLocale();
-	const [app, t] = await Promise.all([
-		fetchFrontendAppDetails(appId),
-		getTranslations({ locale, namespace: "Catalogue.appDetail" }),
-	]);
+export default function AppHeader({ appId }: { appId: string }) {
+	const t = useTranslations("Catalogue.appDetail");
+	const { data: app } = useSuspenseQuery(appDetailsQuery(appId));
 
 	if (!app) {
 		return (
@@ -87,7 +85,7 @@ export default async function AppHeader({ appId }: { appId: string }) {
 				</CardHeader>
 				<CardContent>
 					<div className="text-2xl font-bold">
-						<DisplayNumber value={app.total_tokens} />
+						<DisplayCount value={app.total_tokens} />
 					</div>
 					<p className="text-xs text-muted-foreground mt-1">
 						{t("tokensConsumedAcrossRequests")}

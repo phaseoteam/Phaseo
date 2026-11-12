@@ -2,6 +2,7 @@
 // Why: Webhooks are not guaranteed for every provider/state transition.
 // How: Reads pending jobs and checks provider-native status APIs.
 
+import { normalizeGoogleInteractionVideoPayload } from "@providers/google-video/interactions";
 import { getBindings } from "@/runtime/env";
 import {
 	isOpenAICompatProvider,
@@ -22,7 +23,7 @@ import {
 	resolveGoogleVideoAuth,
 } from "@providers/google-video/shared";
 import { resolveVertexAccessToken, resolveVertexApiBase } from "@providers/google-vertex/auth";
-import type { VideoJobRecord } from "@core/video-jobs";
+import type { VideoJobMeta, VideoJobRecord } from "@core/video-jobs";
 import { buildVideoPricingRequestOptions } from "@core/video-request-options";
 import { bflVideoPricingOptions, trustedBflPollingUrl } from "@providers/black-forest-labs/video";
 
@@ -492,7 +493,8 @@ async function fetchGoogleAiStudioVideoStatus(job: VideoJobRecord): Promise<Vide
 		}
 		return null;
 	}
-	const json = await res.json().catch(() => null);
+	// Gemini Omni jobs are Interactions; read them as operations.
+	const json = normalizeGoogleInteractionVideoPayload(await res.json().catch(() => null));
 	if (!json || typeof json !== "object") return null;
 
 	const done = Boolean((json as any).done);
@@ -550,6 +552,7 @@ async function fetchGoogleAiStudioVideoStatus(job: VideoJobRecord): Promise<Vide
 			googleOperationName: operationName,
 			...(generatedVideoUri ? { googleVideoUri: generatedVideoUri } : {}),
 			...(generatedVideoMimeType ? { googleVideoMimeType: generatedVideoMimeType } : {}),
+			...((json as any)?.usageMeters ? { googleUsageMeters: (json as any).usageMeters } : {}),
 		},
 		raw: json,
 	};
@@ -636,6 +639,24 @@ async function fetchGoogleVertexVideoStatus(job: VideoJobRecord): Promise<VideoP
 	};
 }
 
+/**
+ * Billed output seconds for a DashScope job whose length the model picked (Wan 3.0 smart
+ * duration, meta.autoDuration). DashScope reports it in usage.output_video_duration;
+ * usage.duration is not used because it also counts reference-video input. The value is
+ * capped at the seconds we reserved. Returns undefined for other jobs, or before the length
+ * is reported, so callers fall back to the stored (reserved maximum) seconds, never zero.
+ */
+export function resolveDashscopeAutoDurationSeconds(
+	json: unknown,
+	meta: Pick<VideoJobMeta, "autoDuration" | "seconds"> | null | undefined,
+): number | undefined {
+	if (!meta?.autoDuration) return undefined;
+	const reported = toPositiveNumber((json as any)?.usage?.output_video_duration);
+	if (reported == null) return undefined;
+	const reserved = toPositiveNumber(meta.seconds);
+	return reserved != null ? Math.min(reported, reserved) : reported;
+}
+
 async function fetchAlibabaVideoStatus(job: VideoJobRecord): Promise<VideoProviderStatusResult | null> {
 	const taskId = resolveStoredProviderTaskId(job, (value) => decodePrefixedBase64Id(value, DASHSCOPE_TASK_PREFIX));
 	if (!taskId) return null;
@@ -671,16 +692,18 @@ async function fetchAlibabaVideoStatus(job: VideoJobRecord): Promise<VideoProvid
 				? "failed"
 				: "in_progress";
 
+	const seconds = resolveDashscopeAutoDurationSeconds(json, job.meta) ?? toPositiveNumber(
+		(json as any)?.output?.duration ??
+		(json as any)?.output?.video_duration ??
+		(json as any)?.usage?.output_video_seconds ??
+		job.meta?.seconds,
+	);
+
 	return {
 		status,
 		providerId,
 		model: String((json as any)?.output?.model ?? (json as any)?.model ?? job.model ?? "").trim() || undefined,
-		seconds: toPositiveNumber(
-			(json as any)?.output?.duration ??
-			(json as any)?.output?.video_duration ??
-			(json as any)?.usage?.output_video_seconds ??
-			job.meta?.seconds,
-		),
+		seconds,
 		requestOptions: buildVideoPricingRequestOptions({
 			resolution: (json as any)?.output?.resolution ?? (json as any)?.output?.size ?? job.meta?.resolution,
 			quality: (json as any)?.output?.quality ?? job.meta?.quality,

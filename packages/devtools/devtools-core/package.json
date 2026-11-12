@@ -27,12 +27,13 @@
     "test": "vitest"
   },
   "dependencies": {
-    "zod": "^4.4.3"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@types/node": "^26.1.2",
+    "@typescript/native": "catalog:",
     "rimraf": "^6.0.0",
-    "typescript": "^6.0.3",
+    "typescript": "catalog:",
     "vitest": "^4.1.7"
   },
   "repository": {

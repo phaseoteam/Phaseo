@@ -2,9 +2,10 @@
 title: "Cursor"
 icon: "/icons/brands/cursor.svg"
 description: "Connect Cursor to Phaseo through its OpenAI API key and Base URL override settings."
+"og:image": "https://phaseo.app/og/dynamic?title=Cursor&description=Connect%20Cursor%20to%20Phaseo%20through%20its%20OpenAI%20API%20key%20and%20Base%20URL%20override%20settings.&pathname=/docs/v1/guides/integrations/cursor"
 ---
 
-Use this guide to route supported Cursor chat models through Phaseo. Use the Phaseo CLI to create and revoke a dedicated key, then finish setup in Cursor, or provide your own Phaseo key and follow the same manual settings.
+Run `phaseo cursor` to create a key, then turn on Cursor's OpenAI API key and **Override OpenAI Base URL** settings. This routes Cursor's chat models through Phaseo; features that use Cursor's own models, such as tab completion, may keep using Cursor's infrastructure.
 
 ## Set up with the Phaseo CLI
 
@@ -13,75 +14,51 @@ phaseo login
 phaseo cursor --model openai/gpt-5.6-terra
 ```
 
-Setup creates a non-expiring `Phaseo CLI: Cursor API Key` and prints the settings below. It does not edit Cursor's private credential store.
+The CLI creates a `Phaseo CLI: Cursor API Key` that expires after 90 days and has a $100 monthly spend limit, and prints the settings below. Run `phaseo cursor` again for a new key after it expires. The CLI doesn't edit Cursor's credential store.
 
 ## Configure Cursor
 
-1. Open **Cursor Settings**.
-2. Select **Models**.
-3. Find the **OpenAI API Key** section and enable it.
-4. Copy the dedicated key:
-
-```bash
-phaseo integrations credential cursor
-```
-
-5. Paste the key into Cursor's OpenAI API key field.
-6. Enable **Override OpenAI Base URL**.
-7. Enter `https://api.phaseo.app/v1` without a trailing slash.
-8. Add or enable the Phaseo model you want to use.
+1. Open **Cursor Settings → Models**.
+2. Find the **OpenAI API Key** section and enable it.
+3. Paste the key from `phaseo integrations credential cursor`, or any Phaseo API key.
+4. Enable **Override OpenAI Base URL** and enter `https://api.phaseo.app/v1`, with no trailing slash.
+5. Add or enable the Phaseo model you want.
 
 | Cursor field | Value |
 | --- | --- |
 | OpenAI API Key | Output of `phaseo integrations credential cursor` |
 | Override OpenAI Base URL | `https://api.phaseo.app/v1` |
-| Model | A Phaseo model ID supported by the Cursor field |
+| Model | A Phaseo model ID that Cursor accepts |
 
-Cursor's current custom-provider controls are global rather than provider-specific. The model name is forwarded to the configured endpoint, while the enabled API key and Base URL determine where the request is sent.
+Cursor's key and Base URL settings are global, not per provider: the enabled key and Base URL decide where every OpenAI-family request goes, and the model name is forwarded as is. Some releases save the key without a **Verify** button; test with a new chat instead. See Cursor's [API key docs](https://docs.cursor.com/settings/api-keys).
 
-<Warning>
-Cursor currently applies the OpenAI Base URL override broadly. Turn the override off before switching back to Cursor-hosted models if those models fail while Phaseo is enabled. Cursor may also reject custom IDs that collide with built-in model names or do not fit its OpenAI-family routing.
-</Warning>
+## Check it works
 
-## Verify
+1. Keep the key and Base URL override enabled.
+2. Select the model in Cursor's model picker and start a new chat.
+3. Ask it to reply with `PHASEO_CURSOR_OK`.
+4. Confirm the request appears in **Settings → Usage → Logs**.
 
-1. Keep the Phaseo key and Base URL override enabled.
-2. Select the configured model in Cursor's model picker.
-3. Start a new chat and ask it to reply with `PHASEO_CURSOR_OK`.
-4. Confirm the request appears in Phaseo activity or logs.
+## Remove Phaseo
 
-Cursor's standard chat path is the relevant compatibility target. Features that use Cursor-specialized models, including tab completion, may continue to use Cursor's own infrastructure.
-
-## Remove
-
-First disable the OpenAI API key and Base URL override in **Cursor Settings → Models**. Then revoke the dedicated Phaseo key:
+Disable the OpenAI API key and Base URL override in **Cursor Settings → Models**, then revoke the key:
 
 ```bash
 phaseo integrations remove cursor
 ```
 
-Removal cannot clear Cursor's secure credential storage automatically. If the key remains visible as configured, delete it from Cursor's Models settings.
+The CLI can't clear Cursor's credential storage. If the key still shows as configured, delete it in Cursor's Models settings.
 
-## Troubleshooting
+## Fix common problems
 
 ### Cursor-hosted models stop working
 
-Disable **Override OpenAI Base URL** before selecting a Cursor-hosted model. Cursor currently does not isolate a custom Base URL per model.
+Cursor applies the Base URL override to every OpenAI-family model. Turn **Override OpenAI Base URL** off before you switch back to a Cursor-hosted model.
 
 ### The model is rejected
 
-Try a Phaseo model that Cursor accepts as an OpenAI-family custom model. Cursor can reject IDs that collide with its built-in catalog, and model IDs containing provider prefixes may not be accepted in every release.
-
-### No Verify button appears
-
-Some Cursor releases save the key without a separate Verify action. Enter the key and Base URL, then test them with a new chat.
+Cursor can reject IDs that collide with its built-in catalog or don't fit its OpenAI-family routing, and some releases reject IDs with a provider prefix. Try another Phaseo model that Cursor accepts as an OpenAI-family custom model.
 
 ### Authentication fails
 
-Run `phaseo integrations credential cursor` again, replace the value stored in Cursor, and ensure the Base URL is exactly `https://api.phaseo.app/v1`.
-
-## Related
-
-- [Cursor API key documentation](https://docs.cursor.com/settings/api-keys)
-- [Coding Agents](./coding-assistants.mdx)
-- [Models](../../api-reference/endpoint/models.mdx)
+Run `phaseo integrations credential cursor` again, replace the key in Cursor, and check that the Base URL is exactly `https://api.phaseo.app/v1`.

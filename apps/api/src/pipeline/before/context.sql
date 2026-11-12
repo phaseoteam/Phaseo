@@ -238,7 +238,7 @@ begin
   where gr.key_id  = gateway_fetch_request_context.api_key_id
     and gr.workspace_id = gateway_fetch_request_context.workspace_id
     and gr.success is true
-    and gr.created_at >= month_start;
+    and gr.created_at >= least(week_start, month_start);
 
   if v_soft_blocked then
     within_limits := false;
@@ -508,7 +508,7 @@ begin
       and (dm.status is null or lower(dm.status) in ('active', 'available', 'deprecated'))
       and (dm.retirement_date is null or dm.retirement_date > now() at time zone 'utc')
       and c.capability_id = gateway_fetch_request_context.endpoint
-      and c.status in ('active', 'deranked', 'deranked_lvl1', 'deranked_lvl2', 'deranked_lvl3')
+      and c.status in ('active', 'degraded', 'deranked', 'deranked_lvl1', 'deranked_lvl2', 'deranked_lvl3')
       and m.is_active_gateway
       and (
         p.status <> 'external'

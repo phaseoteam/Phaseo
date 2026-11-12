@@ -38,11 +38,11 @@ describe("handleModels", () => {
 		});
 	});
 
-	it("forwards documented model filters into fetchCatalogue", async () => {
+	it.each(["json", "openai"])("forwards documented model filters in %s format", async (format) => {
 		const response = await handleModels(
 			new Request(
 				"https://api.example.com/v1/control/models" +
-					"?provider=openai" +
+					`?format=${format}&provider=openai` +
 					"&provider_status=beta" +
 					"&provider_routing_status=disabled" +
 					"&model_routing_status=deranked_lvl1" +
@@ -57,6 +57,7 @@ describe("handleModels", () => {
 
 		expect(response.status).toBe(200);
 		expect(fetchCatalogueMock).toHaveBeenCalledWith({
+			modelIds: [],
 			availability: "all",
 			endpoints: [],
 			providerIds: ["openai"],

@@ -1,4 +1,3 @@
-"use client";
 import { Link } from "@/i18n/navigation";
 import { Logo } from "@/components/Logo";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -6,7 +5,7 @@ import { HoverCard, HoverCardTrigger } from "@/components/ui/hover-card";
 import { IntelligenceValueHoverCard } from "./IntelligenceValueHoverCard";
 import { artificialAnalysisChartColour, artificialAnalysisValueKey, artificialAnalysisValueLabel, formatArtificialAnalysisValue } from "@/lib/benchmarks/artificialAnalysis";
 import type { PublicIntelligenceValueEntry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { localizedBenchmarkConfiguration } from "@/i18n/benchmark-display";
 
 export function IntelligenceValueBars({ entries, total = entries.length }: { entries: PublicIntelligenceValueEntry[]; total?: number }) {

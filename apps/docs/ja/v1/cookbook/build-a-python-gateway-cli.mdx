@@ -4,114 +4,124 @@ icon: "terminal"
 description: "Python クイックスタートのサンプルを使って、Python を中心とした CLI やバックエンド連携を一通り作成します。"
 ---
 
-最初の Phaseo 連携を Python で実装し、CLI、ワーカー、バックエンドサービスの実用的な出発点が必要な場合に、このページを利用してください。
+標準ライブラリだけで動く Python CLI を実行し、Phaseo のエンドポイントを 1 コマンドずつ呼び出します。完成すると、health、models、Responses、Chat Completions に対して `python quickstart.py <command>` が動作し、さらにワーカーやバックエンドにコピーできる embeddings、モデレーション、画像、OCR、動画、音楽のコマンドもそろいます。
 
-**目標:** 小さな Python コマンドラインアプリケーションから Phaseo の制御ルートと生成ルートを実行します。
+この CLI は説明用です。パッケージ化されたツールではなく、リクエストの形を確認するための参考実装です。メディア系コマンドの既定のモデル ID のいくつかはすでに提供されていないため、それらには `--model` を渡してください（[メディア系コマンドのモデルを選ぶ](#pick-models-for-the-media-commands)を参照）。
 
-**成果:** ワーカー、スクリプト、バックエンド連携に応じて変更できる、依存関係の少ない CLI を作成します。
+同様の CLI をコーディングエージェントにゼロから作らせるには、次のプロンプトを貼り付けます。
 
 <Prompt
   description="Phaseo のルートを使う **Python ゲートウェイ CLI** を作成します。"
   icon="terminal-square"
   actions={["copy", "cursor"]}
 >
-{`Phaseo Gateway 用の Python 製 CLI またはサーバー側の連携機能を作成します。
+{`You are building a Python-first CLI or backend integration for Phaseo Gateway.
 
-次の機能を備えた小さな Python アプリを作成してください。
-- 環境変数から PHASEO_API_KEY を読み込む
-- 制御ルートの簡易テストモードを備える
-- テキスト生成コマンドを備える
-- 依存関係を最小限にする
+Create a small Python app that:
+- reads PHASEO_API_KEY from the environment and sends it as Authorization: Bearer
+- uses https://api.phaseo.app/v1 as the base URL
+- supports one control-route smoke mode (GET /health, GET /models)
+- supports one text-generation command (POST /responses)
+- keeps the implementation dependency-light
 
-要件:
-- 特別な理由がない限り、Python 標準ライブラリを優先してください。
-- リクエストの内容を明示してください。
-- 成功と失敗がはっきり分かるメッセージを表示してください。
-- 汎用的で大規模な CLI ではなく、役立つコマンドを 1、2 個用意してください。
-- 例を含む簡潔な README を追加してください。
+Requirements:
+- Prefer the Python standard library unless there is a strong reason not to.
+- Keep the request payloads explicit.
+- Print clear success and failure output, and exit non-zero on a failed call.
+- Include one or two useful commands instead of a huge general CLI.
+- Add a short README with examples.
 
-成果物:
-- Python アプリのコード
-- 簡単な使い方のコマンド
-- .env.example ファイル、または同等の環境変数の説明
+Deliverables:
+- Python app code
+- simple usage commands
+- .env.example or equivalent env documentation
 
-確認項目:
-- 可能であれば、ルートの簡易テストを実行してください。
-- 可能であれば、テキスト生成が成功することを確認してください。
-- 確認できたことと、未確認のままのことを正確に記載してください。`}
+Verification:
+- run the smoke path if possible
+- run one successful generation path if possible
+- report exactly what you verified and what remains unverified.`}
 </Prompt>
 
-## サンプルプロジェクト
+## CLI でできること
 
-- GitHub: [examples/gateway-python-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-python-quickstart)
-- リポジトリ内のパス: `examples/gateway-python-quickstart`
+サンプルは [examples/gateway-python-quickstart](https://github.com/phaseoteam/Phaseo/tree/main/examples/gateway-python-quickstart) です。`urllib`、`json`、`argparse` だけを使う `quickstart.py` 1 ファイルで構成されています。
 
-## このアプリでできること
+| コマンド | 呼び出し |
+| --- | --- |
+| `smoke` | `GET /v1/health`、`GET /v1/models`、`GET /v1/providers`、および `POST /v1/responses` を 1 回 |
+| `health`、`models`、`providers` | 対応する `GET` ルート |
+| `responses --prompt` | `POST /v1/responses` |
+| `chat --prompt` | `POST /v1/chat/completions` |
+| `embeddings --text` | `POST /v1/embeddings` |
+| `moderations --text` | `POST /v1/moderations` |
+| `image --prompt` | `POST /v1/images/generations` |
+| `ocr --image-url` | `POST /v1/ocr` |
+| `video-create`、`video-status`、`video-cancel`、`video-download-url` | `POST /v1/videos`、`GET /v1/videos/{video_id}`、`POST /v1/videos/{video_id}/cancel`、`POST /v1/videos/{video_id}/download_url` |
+| `music-create`、`music-status` | `POST /v1/music/generate`、`GET /v1/music/generate/{music_id}` |
 
-- 次のような制御ルートを実行します。
-  - `GET /v1/health`
-  - `GET /v1/models`
-  - `GET /v1/providers`
-- 次のような生成ルートを実行します。
-  - `POST /v1/responses`
-  - `POST /v1/chat/completions`
-  - `POST /v1/embeddings`
-  - その他の複数のエンドポイント
+どのリクエストも、`429`、`5xx`、ネットワークエラーのときに 1 秒、2 秒と待って 2 回まで再試行し、45 秒でタイムアウトします。各コマンドは呼び出しが `2xx` でない場合に `1` で終了するため、スクリプトの中で使えます。
 
-## このサンプルが役立つ理由
+## 実行する
 
-次の内容を確認できます。
+Python 3 と Phaseo の API キーが必要です。
 
-- サードパーティ依存のない Python 中心の実装例
-- 明示的なリクエストペイロードとレスポンス処理
-- ワーカー、スクリプト、内部ツールに応用できる実践的なパターン
+<Steps>
+<Step title=".env.local を作成する">
 
-## 前提条件
+スクリプトは、実行したフォルダーにある `.env.local` を読み込みます。サンプルには `.env.example` がないため、ファイルを作成します。
 
-- Python 3
-- Phaseo API キー
+```bash .env.local
+PHASEO_API_KEY=phaseo_v1_sk_...
+# 任意
+PHASEO_MODEL=openai/gpt-6-astra
+PHASEO_BASE_URL=https://api.phaseo.app/v1
+PHASEO_APP_TITLE=My Python CLI
+PHASEO_HTTP_REFERER=https://myapp.example
+```
 
-## サンプルを実行する
+シェルですでに設定されている変数は、ファイルの値より優先されます。`PHASEO_MODEL` がない場合、テキスト系コマンドは `openai/gpt-5.6-sol` を使います。
+
+</Step>
+<Step title="スモークチェックを実行する">
 
 ```bash
 cd examples/gateway-python-quickstart
-cp .env.example .env.local
+python quickstart.py smoke
 ```
 
-次の値を設定します。
+`smoke` は短い Responses リクエストも 1 件送るため、クレジットを少し消費します。
 
-- `PHASEO_API_KEY`
-
-続けて、次を実行します。
+</Step>
+<Step title="リクエストを 1 件送る">
 
 ```bash
-python quickstart.py smoke
 python quickstart.py responses --prompt "Return exactly: integration_ok"
 python quickstart.py --help
 ```
 
+</Step>
+</Steps>
+
 ## 動作を確認する
 
-- スモークテストモードで API に接続できることを確認します。
-- Responses コマンドが `integration_ok` を出力します。
-- `--help` でリクエストを送信せずに使用可能なコマンドを確認できます。
-- 認証エラーや API エラーが端末にわかりやすく表示されます。
+- `smoke` はすべてのブロックで `HTTP 200` を表示し、`0` で終了します。
+- `responses` コマンドの出力に `integration_ok` が含まれます。
+- `--help` はリクエストを送らずにコマンドの一覧を表示します。
+- キーがない場合、スクリプトは `Missing PHASEO_API_KEY` を表示して `1` で終了します。
+- リクエストは **設定 → 使用量 → ログ** に表示されます。
 
-## コードで確認すること
+<span id="pick-models-for-the-media-commands"></span>
+## メディア系コマンドのモデルを選ぶ
 
-- 環境変数の読み込み方法
-- CLI でコマンドを振り分ける方法
-- 各リクエストのペイロードを組み立てる方法
-- 非同期の動画・音楽ルートと、1回の応答で完了するテキストルートを分けて処理する方法
+`quickstart.py` の次の既定値は、提供終了しているか、有効なプロバイダーがありません。`--model` で現在のモデルを渡してください。モデルは[モデルページ](https://phaseo.app/models)または `python quickstart.py models` から選べます。
 
-## サンプルを自分用に変更する
+| コマンド | サンプルの既定値 | 状態 |
+| --- | --- | --- |
+| `moderations` | `openai/omni-moderation-latest` | カタログの ID ではありません。`openai/omni-moderation` を使ってください |
+| `ocr` | `mistral/mistral-ocr` | 提供終了。`mistral/ocr-4.1` を試してください |
+| `video-create` | `openai/sora-2` | 提供終了 |
+| `music-create` | `suno/suno-v4` | 有効なプロバイダーなし |
 
-- サービスで使わないエンドポイントを削除します。
-- ヘッダーをあちこちに重複して記述せず、共通のリクエストヘルパーを使います。
-- より高水準のクライアントが必要になったら、Python SDK に切り替えます。
+`embeddings`（`google/gemini-embedding-2`）と `image`（`openai/gpt-image-2`）の既定値は提供中です。動画と音楽のジョブは非同期です。返された ID を保存して、ステータス確認のコマンドでポーリングしてください。ジョブのライフサイクルは[非同期の動画とバッチ](../guides/async-video-and-batch)で説明しています。
 
-## 関連ガイド
-
-- [ミニアプリの開始プロンプト](./mini-app-starter-prompts.mdx)
-- [Python で構造化 JSON を返す](./sdk-python-presets-and-json.mdx)
-- [サンプル](../guides/examples.mdx)
+ファイルはサービスに必要なコマンドだけに絞り込み、共通の `gateway_request()` ヘルパーは 1 つ残します。型付きのリクエストを使いたい場合は、[Python SDK](../sdk-reference/client/overview) に切り替えてください。

@@ -2,6 +2,23 @@ import { describe, expect, it } from "vitest";
 import { enrichSuccessPayload, extractFinishReason, formatClientPayload } from "./payload";
 
 describe("enrichSuccessPayload model selection", () => {
+	it("keeps native Decisions answer arrays and usage details in the final payload", () => {
+		const answers = [{ type: "predicate", name: null, probability: 0.8 }];
+		const payload = formatClientPayload({
+			ctx: { endpoint: "decisions", body: { questions: [] }, requestId: "req_native", meta: {} } as any,
+			result: { provider: "openai" } as any,
+			includeMeta: false,
+			payload: {
+			model: "openai/gpt-6-luna", answers,
+			usage: { input_tokens: 10, output_tokens: 2, total_tokens: 12,
+				input_tokens_details: { cached_tokens: 3, cache_write_tokens: 4 },
+				output_tokens_details: { reasoning_tokens: 1 } },
+			},
+		});
+		expect(payload.answers).toEqual(answers);
+		expect(payload.usage.input_tokens_details).toMatchObject({ cached_tokens: 3, cache_write_tokens: 4 });
+		expect(payload.usage.output_tokens_details.reasoning_tokens).toBe(1);
+	});
 	it("backfills assistant phase from IR when raw output message omits it", async () => {
 		const ctx: any = {
 			endpoint: "responses",
@@ -480,6 +497,26 @@ describe("enrichSuccessPayload model selection", () => {
 
 		expect(body.provider).toBe("minimax");
 		expect(body.provider_id).toBe("minimax");
+	});
+
+	it("keeps the message refusal and annotations on chat completions payloads", () => {
+		const annotations = [{ type: "url_citation", url_citation: { url: "https://example.com/a", title: "A", start_index: 0, end_index: 2 } }];
+		const body = formatClientPayload({
+			ctx: { endpoint: "chat.completions", protocol: "openai.chat.completions", requestId: "req_chat_refusal", model: "openai/gpt-5", body: {}, meta: {} } as any,
+			result: { provider: "openai", ir: { choices: [] } } as any,
+			payload: {
+				id: "req_chat_refusal",
+				model: "openai/gpt-5",
+				choices: [
+					{ index: 0, message: { role: "assistant", content: "OK", annotations }, finish_reason: "stop" },
+					{ index: 1, message: { role: "assistant", content: "", refusal: "I can't help with that." }, finish_reason: "stop" },
+				],
+			},
+			includeMeta: false,
+		});
+
+		expect(body.choices[0].message).toMatchObject({ annotations, refusal: null });
+		expect(body.choices[1].message).toMatchObject({ annotations: [], refusal: "I can't help with that." });
 	});
 
 	it("returns the observed Standard tier after a Priority fallback", () => {

@@ -1,22 +1,45 @@
 ---
 icon: "scroll-text"
 title: "वर्कस्पेस ऑडिट लॉग"
-description: "सुरक्षा-संवेदनशील workspace प्रशासन बदलावों की समीक्षा करें।"
+description: "वर्कस्पेस प्रशासन के सुरक्षा-संवेदनशील बदलावों की समीक्षा करें।"
 ---
 
-Workspace owners और admins **सेटिंग्स → वर्कस्पेस → गतिविधि** में key lifecycle बदलाव देख सकते हैं। Events मौजूदा workspace तक सीमित होते हैं और नए से पुराने क्रम में दिखते हैं।
+सक्रिय वर्कस्पेस में किसने कोई कुंजी, सदस्य या दूसरा प्रशासनिक नियंत्रण कब बदला, यह देखने के लिए **सेटिंग्स → वर्कस्पेस → गतिविधि** खोलें। इवेंट सबसे नए पहले दिखते हैं। केवल वर्कस्पेस के मालिक और एडमिन लॉग पढ़ सकते हैं।
 
-पहले release में ये operations दर्ज होते हैं:
+अनुरोध और जनरेशन लॉग दिखाते हैं कि कौन-सा ट्रैफ़िक चला। ऑडिट लॉग दिखाता है कि उसके आसपास के नियंत्रण किसने बदले।
 
-- API key बनाना, नाम बदलना, रोकना, फिर शुरू करना, limits बदलना, rotate करना और हटाना
-- Management keys बनाना और हटाना; नाम बदलना, रोकना, फिर शुरू करना, access templates, limits और expiry बदलना
+## क्या दर्ज होता है
 
-हर event में actor, action, target, timestamp और बदलाव का थोड़ा सुरक्षित metadata होता है। Audit events केवल append किए जा सकते हैं। Phaseo इस log में plaintext keys, credential hashes, authorization headers, पूरी scope lists या request bodies नहीं रखता।
+| क्षेत्र | उदाहरण कार्रवाइयाँ |
+| --- | --- |
+| API कुंजियाँ | `api_key.created`, `api_key.updated`, `api_key.paused`, `api_key.resumed`, `api_key.rotated`, `api_key.deleted` |
+| प्रबंधन कुंजियाँ | `management_key.created`, `management_key.updated`, `management_key.deleted` |
+| सदस्य और आमंत्रण | `workspace.member.added`, `workspace.member.role_updated`, `workspace.member.removed`, `workspace.invite.created` |
+| प्रदाता कुंजियाँ (BYOK) | `provider_credential.created`, `provider_credential.updated`, `provider_credential.reordered`, `provider_credential.deleted` |
+| रूटिंग और प्रीसेट | `routing.policy.updated`, `routing.dynamic_route.deployed`, `preset.version.published` |
+| बजट और खर्च | `workspace_budget.updated`, `spend_block.lifted`, `rate_limit_raise.requested` |
+| गार्डरेल | `guardrail.created`, `guardrail.updated`, `guardrail.keys.added` |
+| पहचान | `identity.sso.updated`, `identity.scim_token.created`, `identity.group_mapping.updated` |
+| इंटीग्रेशन | `observability.destination.created`, `notifications.destination.created`, `webhook_endpoint.secret_rotated`, `oauth_authorization.revoked` |
 
-Audit log का access केवल workspace owners और admins को है। सामान्य members events नहीं पढ़ सकते, और underlying table authenticated database clients के लिए उपलब्ध नहीं है।
+हर इवेंट में कर्ता, कार्रवाई, लक्ष्य का प्रकार, लक्ष्य की ID और नाम, टाइमस्टैम्प, अनुरोध ID, और बदलाव का थोड़ा मेटाडेटा होता है। इवेंट सिर्फ़ जोड़े जाते हैं, बदले नहीं जाते।
 
-Automation के लिए `activity:read` अनुमति वाली management key से `GET /v1/audit-events` call करें। Timestamp gaps के बिना पुराने events पाने के लिए लौटाए गए `next_cursor` का उपयोग करें।
+लॉग कभी सादी कुंजियाँ, क्रेडेंशियल हैश, ऑथराइज़ेशन हेडर, पूरी स्कोप सूचियाँ या अनुरोध बॉडी नहीं रखता। जिन मेटाडेटा फ़ील्ड के नाम में secret, token, hash, credential, scope या value का ज़िक्र हो, उन्हें इवेंट लिखने से पहले हटा दिया जाता है।
 
-<Note>
-  Request और generation logs बताते हैं कि कौन-सा traffic चला। Workspace audit log बताता है कि किसने कौन-सा प्रशासनिक नियंत्रण कब बदला।
-</Note>
+## API से इवेंट पढ़ें
+
+`activity:read` वाली [प्रबंधन कुंजी](../developers/management-api-keys.mdx) से `GET /v1/audit-events` कॉल करें। OAuth टोकन को भी `activity:read` चाहिए, और उसका यूज़र वर्कस्पेस का मालिक या एडमिन होना चाहिए।
+
+```bash
+curl "https://api.phaseo.app/v1/audit-events?limit=50" \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY"
+```
+
+| क्वेरी पैरामीटर | अर्थ |
+| --- | --- |
+| `limit` | हर पेज पर इवेंट, 1 से 100। डिफ़ॉल्ट `50`। |
+| `cursor` | पिछले पेज का `next_cursor`। कर्सर से पेजिंग कभी एक ही टाइमस्टैम्प वाले इवेंट नहीं छोड़ती। |
+| `action` | सिर्फ़ एक कार्रवाई लौटाएँ, जैसे `api_key.rotated`। |
+| `target_type` | सिर्फ़ एक लक्ष्य प्रकार लौटाएँ, जैसे `api_key`। |
+
+प्रतिक्रिया में `data`, `has_more` और `next_cursor` होते हैं। हर इवेंट में एक `actor` ऑब्जेक्ट होता है, जिसमें सदस्य का `display_name` और `email` होता है।

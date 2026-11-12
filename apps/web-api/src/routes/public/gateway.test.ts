@@ -4,6 +4,40 @@ const env = { ENV: "development" as const, SUPABASE_URL: "https://example.supaba
 afterEach(() => vi.unstubAllGlobals());
 
 describe("public gateway catalogue", () => {
+	it.each([[false, false], [true, false], [false, true], [true, true]])("prefers canonical Luna unless it starts in the future (future=%s, modern IDs=%s)", async (future, modern) => {
+		const alias = modern ? "openai:openai/gpt-6-luna:chat-latest" : "openai:openai/chat-latest";
+		const canonical = modern ? "openai:openai/gpt-6-luna:gpt-6-luna" : "openai:openai/gpt-6-luna";
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("v2_model_provider_routes")) return Response.json([alias, canonical].map(id => ({
+				provider_api_model_id: id, provider_id: "openai", api_model_id: "openai/gpt-6-luna", model_id: "openai/gpt-6-luna",
+				provider_model_slug: id === canonical ? "gpt-6-luna" : "chat-latest",
+				is_active_gateway: true, effective_from: id === canonical && future ? "2099-01-01T00:00:00Z" : null,
+			})));
+			if (url.includes("v2_route_capabilities")) return Response.json([
+				{ provider_api_model_id: alias, capability_id: "text.generate", status: "active" },
+				{ provider_api_model_id: canonical, capability_id: "text.generate", status: "active" },
+				{ provider_api_model_id: canonical, capability_id: "decisions.make", status: "active", params: { input: true } },
+			]);
+			if (url.includes("v2_pricing_skus")) return Response.json([alias, canonical].map(id => ({
+				sku_id: id, provider_model_id: id, operation: "text.generate", service_tier_slug: "standard", status: "active",
+			})));
+			if (url.includes("v2_pricing_sku_meters")) return Response.json([alias, canonical].map(id => ({
+				sku_id: id, meter_key: "input_text_tokens", unit_quantity: 1_000_000, price_nanos: id === canonical ? 100_000_000 : 5_000_000_000,
+			})));
+			if (url.includes("v2_providers")) return Response.json([{ api_provider_id: "openai", api_provider_name: "OpenAI" }]);
+			if (url.includes("v2_labs")) return Response.json([{ lab_slug: "openai", name: "OpenAI" }]);
+			return Response.json([{ model_id: "openai/gpt-6-luna", name: "GPT-6 Luna", status: "active", organisation_id: "openai" }]);
+		}));
+		const response = await app.request("https://phaseo.app/api/_web/gateway/models?available_only=true", {}, env);
+		expect(response.status).toBe(200);
+		const { models } = await response.json() as { models: Array<Record<string, unknown>> };
+		expect(models).toHaveLength(1);
+		expect(models[0]).toMatchObject({ modelId: "openai/gpt-6-luna", inputPricePerMillion: future ? 5 : 0.1,
+			capabilities: future ? ["text.generate"] : ["text.generate", "decisions.make"],
+		});
+		if (!future) expect(models[0].capabilityParamsById).toMatchObject({ "decisions.make": { input: true } });
+	});
 	it("composes available provider models and capabilities", async () => {
 		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => { const url = String(input);
 			if (url.includes("v2_route_capabilities")) return new Response(JSON.stringify([
@@ -36,7 +70,7 @@ describe("public gateway catalogue", () => {
 		expect(response.status).toBe(200);
 		const catalogue = await response.clone().json() as { models: Array<{ serviceTiers: string[] }> };
 		expect(catalogue.models[0].serviceTiers).toEqual(["flex", "priority", "standard"]);
-		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=900, stale-while-revalidate=900, stale-if-error=3600");
+		expect(response.headers.get("cloudflare-cdn-cache-control")).toBe("public, max-age=300");
 		expect(response.headers.get("cache-control")).toBe("public, max-age=0");
 		expect(response.headers.get("cache-tag")).toBe("web-api-models,web-api-gateway-models");
 		await expect(response.json()).resolves.toMatchObject({ models: [{ modelId: "gpt-test", internalModelId: "openai/gpt-test", providerId: "openai", capabilities: ["responses", "rerank"], capabilityParamsById: { responses: { response_format: true }, rerank: { top_n: true } }, inputModalities: ["text", "image"], outputModalities: ["text"], organisationId: "openai", organisationName: "OpenAI", inputPricePerMillion: 2, outputPricePerMillion: 8, isAvailable: true }] });
@@ -61,6 +95,35 @@ describe("public gateway catalogue", () => {
 		await expect(availableOnly.json()).resolves.toEqual({ models: [] });
 		expect(allModels.status).toBe(200);
 		await expect(allModels.json()).resolves.toMatchObject({ models: [{ modelId: "gpt-test", isAvailable: false }] });
+	});
+
+	it("returns only the requested models when ids are given", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("v2_route_capabilities")) return new Response(JSON.stringify([
+				{ provider_api_model_id: "pm-1", capability_id: "responses", status: "active" },
+				{ provider_api_model_id: "pm-2", capability_id: "responses", status: "active" },
+			]), { status: 200 });
+			if (url.includes("v2_model_provider_routes")) return new Response(JSON.stringify([
+				{ provider_api_model_id: "pm-1", provider_id: "openai", api_model_id: "gpt-test", model_id: "openai/gpt-test", is_active_gateway: true },
+				{ provider_api_model_id: "pm-2", provider_id: "openai", api_model_id: "gpt-other", model_id: "openai/gpt-other", is_active_gateway: true },
+			]), { status: 200 });
+			if (url.includes("v2_providers")) return new Response(JSON.stringify([{ api_provider_id: "openai", api_provider_name: "OpenAI" }]), { status: 200 });
+			if (url.includes("v2_labs")) return new Response(JSON.stringify([{ lab_slug: "openai", name: "OpenAI" }]), { status: 200 });
+			return new Response(JSON.stringify([
+				{ model_id: "openai/gpt-test", name: "GPT Test", status: "Available", organisation_id: "openai" },
+				{ model_id: "openai/gpt-other", name: "GPT Other", status: "Available", organisation_id: "openai" },
+			]), { status: 200 });
+		}));
+		const modelIds = async (query: string) => {
+			const response = await app.request(`https://phaseo.app/api/_web/gateway/models${query}`, {}, env);
+			expect(response.status).toBe(200);
+			return ((await response.json()) as { models: Array<{ modelId: string }> }).models.map((model) => model.modelId);
+		};
+
+		expect(await modelIds("?available_only=true")).toEqual(["gpt-other", "gpt-test"]);
+		expect(await modelIds("?available_only=true&ids=gpt-other,missing")).toEqual(["gpt-other"]);
+		expect(await modelIds("?ids=")).toEqual([]);
 	});
 
 	it("keeps deprecated models discoverable until their retirement date", async () => {

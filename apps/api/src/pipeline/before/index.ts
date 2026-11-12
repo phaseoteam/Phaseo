@@ -3,14 +3,22 @@
 // Why: Keeps pre-execution logic centralized and consistent.
 // How: Orchestrates auth, validation, and context loading to build PipelineContext.
 
-import { z } from "zod";
+import * as z from "zod";
 import { getBindings } from "@/runtime/env";
-import { getAutoRoutingFeatureGateName, isAutoRoutingAccessEnabled } from "@core/feature-flags";
+import { getAutoRoutingFeatureGateName, isAutoRoutingAccessEnabled, isModelSuccessorRedirectAccessEnabled } from "@core/feature-flags";
+import { keyIdIsOAuthClientId } from "@core/request-key";
 import { schemaFor } from "@core/schemas";
 import type { Endpoint, RequestBetaOptions, RequestMeta } from "@core/types";
-import type { PipelineContext } from "./types";
+import type { PipelineContext, WorkspacePolicy } from "./types";
 import { guardAuth, guardJson, guardZod, guardModel, guardContext, makeMeta, normalizeReturnFlag } from "./guards";
+import { createSpendLimitSlot, releaseSpend, slotAdmission, type SpendLimitSlot } from "@core/spend-limits";
 import { err } from "./http";
+import {
+    MAX_REQUEST_MODEL_FALLBACKS,
+    REQUEST_MODEL_FALLBACKS_FIELD,
+    parseRequestModelFallbacks,
+    withoutRequestModelFallbacks,
+} from "./requestModelFallbacks";
 import { reviewedMcpRunMatches } from "./mcp-inference";
 import { Timer } from "../telemetry/timer";
 import { resolveCapabilityFromEndpoint } from "@/lib/config/capabilityToEndpoints";
@@ -27,7 +35,12 @@ import {
 } from "./testingMode";
 import { normalizeGatewayPlugins, resolveGatewayPlugins } from "@/plugins/normalize";
 import { findUnknownGatewayPluginIds } from "@/plugins/registry";
+import { applyServerToolPlugins } from "@/plugins/server-tool-plugins";
+import { resolveHostedTools } from "./hostedTools";
 import { validateSynchronousTextServiceTierRequest } from "./serviceTierValidation";
+import { withoutNullTextParams } from "./textParamPolicy";
+import { applyPresetPromptTemplate, capabilityViewOfTemplatedRequest, collectTemplateVariableTargets, extractPromptReference, withoutMessagesPlaceholder, type PromptTemplateApplication } from "./promptTemplate";
+import { normalizeLegacySpeedModel } from "./legacySpeedModels";
 import {
 	applyProviderQualifiedModelConstraint,
 	canonicalizeProviderQualifiedModelRequest,
@@ -36,11 +49,23 @@ import {
 	collectUnsupportedRoutingFields,
 	getEffectiveRoutingHints,
 	normalizeRequestRoutingBody,
+	requestDataLimits,
 	validateProviderQualifiedModelProvider,
 } from "../requestRouting";
-import { fetchWorkspacePolicy, applyWorkspacePolicy } from "./workspacePolicy";
+import { fetchWorkspacePolicy, applyWorkspacePolicy, providerPermittedByPolicy } from "./workspacePolicy";
+import { normalizeSvgAuthorModel, resolveSvgAuthor } from "@providers/openai/endpoints/images-svg";
+import {
+    findModelSuccessor,
+    findWorkspaceModelSuccessor,
+    loadSuccessorRedirectPolicy,
+    successorRedirectEnabled,
+    successorRedirectTarget,
+    workspaceSuccessorOverride,
+    type ModelSubstitution,
+} from "./modelSuccessor";
 import { getWebhookEndpointSigningConfig } from "@core/webhook-endpoints";
 import { parseRequestLabels } from "./request-labels";
+import { isClassifierSubrequest } from "../classification/request-classifiers";
 import { generatePublicId } from "./genId";
 import { applyDeploymentRegionPolicy, validateRegionalTextRequest } from "./deployment-region";
 import {
@@ -51,6 +76,10 @@ import {
     type DynamicRouteEvaluation,
 } from "./dynamic-routes";
 import {
+	AUTO_ROUTER_RESIDENCY_REJECTION,
+	autoRouterNeedsZeroDataRetention,
+	autoRouterResidencyRequirement,
+	autoRouterUnmetResidency,
 	buildAutoRouterCandidateEvidence,
 	applyAutoRouterHardRequirements,
 	deterministicAutoRouterClassification,
@@ -58,7 +87,10 @@ import {
 	loadAutoRouterBenchmarks,
 	loadManagedAutoRouterCandidates,
 	loadWorkspaceAutoRouterConfig,
+	providersMeetingResidency,
 	selectAutoRouterModel,
+	unmetResidencyKeys,
+	type AutoRouterResidencyKey,
 	type AutoRouterClassification,
 	type AutoRouterEvaluation,
 } from "./auto-router";
@@ -90,6 +122,11 @@ function resolveRequestRoutingModeOverride(
     return fallback;
 }
 
+/** Captures a promise's outcome so a result that is never awaited cannot become an unhandled rejection. */
+function settle<T>(promise: Promise<T>): Promise<{ value: T } | { error: unknown }> {
+	return promise.then((value) => ({ value }), (error: unknown) => ({ error }));
+}
+
 function objectOrEmpty(value: unknown): Record<string, unknown> {
     return value && typeof value === "object" && !Array.isArray(value)
         ? { ...(value as Record<string, unknown>) }
@@ -102,11 +139,15 @@ function requiredExecutionParams(endpoint: Endpoint): string[] {
 		: [];
 }
 
+/**
+ * Asks routing for zero data retention when the key's policy requires it: the workspace baseline
+ * guardrail or one of the key's guardrails (the auto router uses the same rule).
+ */
 function applyWorkspacePrivacyRoutingDefaults(
     body: any,
-    teamSettings: PipelineContext["teamSettings"] | null | undefined,
+    workspacePolicy: Pick<WorkspacePolicy, "privacyZdrOnly"> | null | undefined,
 ): any {
-    if (!teamSettings?.privacyZdrOnly) return body;
+    if (!workspacePolicy?.privacyZdrOnly) return body;
     return {
         ...body,
         routing: {
@@ -210,34 +251,100 @@ function classifyWorkspaceProviderFilterFailure(diagnostics: {
  * - Credit / key checks via RPC
  * - Build PipelineContext (single source of truth for downstream)
  */
+/**
+ * Returned with a before-stage failure when the requested model has no
+ * provider and the request lists its own fallback models: the caller tries
+ * those models in order instead of returning the failure straight away.
+ */
+export type UnservedModelFallback = {
+    model: string;
+    requestId: string;
+    retryRawBody: unknown;
+    models: string[];
+};
+
 export type BeforeRequestObservabilitySnapshot = {
     requestPayload: unknown;
     requestedModel: string | null;
     model?: string | null;
+    /** The authenticated key, so failures before the context exists still apply its data policy. */
+    workspaceId?: string | null;
+    apiKeyId?: string | null;
+    /**
+     * The request's preset requires zero data retention, which the raw payload doesn't show,
+     * so failures before the context exists still keep the request's content out.
+     */
+    zeroDataRetention?: boolean;
 };
+
+type BeforeRequestOptions = {
+    dynamicRouteModelOverride?: string | null;
+	/** Replaces the request `model` for a request-level `models` fallback attempt. */
+	requestModelOverride?: string | null;
+	/**
+	 * Whether an unserved model may be redirected to its approved successor.
+	 * Defaults to true unless the request lists fallback models: the
+	 * customer's own list is tried first, and the successor only applies to
+	 * the last model in it.
+	 */
+	allowModelSuccessor?: boolean;
+	autoRouterModelOverride?: string | null;
+	autoRouterClassificationOverride?: AutoRouterClassification | null;
+	classifyAutoRouterRequest?: (args: {
+		endpoint: Endpoint;
+		body: unknown;
+	}) => Promise<AutoRouterClassification | null>;
+    onObservabilitySnapshot?: (snapshot: BeforeRequestObservabilitySnapshot) => void;
+};
+type BeforeRequestResult =
+    | { ok: true; ctx: PipelineContext }
+    | { ok: false; response: Response; unservedModelFallback?: UnservedModelFallback };
 
 export async function beforeRequest(
     req: Request,
     endpoint: Endpoint,
     timer: Timer,
     zodSchema: z.ZodTypeAny | null = schemaFor(endpoint),
-    options?: {
-        dynamicRouteModelOverride?: string | null;
-		autoRouterModelOverride?: string | null;
-		autoRouterClassificationOverride?: AutoRouterClassification | null;
-		classifyAutoRouterRequest?: (args: {
-			endpoint: Endpoint;
-			body: unknown;
-		}) => Promise<AutoRouterClassification | null>;
-        onObservabilitySnapshot?: (snapshot: BeforeRequestObservabilitySnapshot) => void;
-    },
-): Promise<{ ok: true; ctx: PipelineContext } | { ok: false; response: Response }> {
+    options?: BeforeRequestOptions,
+): Promise<BeforeRequestResult> {
+    // Enforce mode: the request's spend-limit admission, decided at most once by guardContext.
+    // It rides on the context when the request proceeds and is released when it stops here.
+    const spendLimit = createSpendLimitSlot();
+    let result: BeforeRequestResult;
+    try {
+        result = await runBeforeRequest(req, endpoint, timer, zodSchema, options, spendLimit);
+    } catch (error) {
+        releaseSpend(await slotAdmission(spendLimit));
+        throw error;
+    }
+    if (!spendLimit.decision) return result;
+    const admission = await slotAdmission(spendLimit);
+    if (result.ok) result.ctx.spendAdmission = admission;
+    else releaseSpend(admission);
+    return result;
+}
+
+async function runBeforeRequest(
+    req: Request,
+    endpoint: Endpoint,
+    timer: Timer,
+    zodSchema: z.ZodTypeAny | null,
+    options: BeforeRequestOptions | undefined,
+    spendLimit: SpendLimitSlot,
+): Promise<BeforeRequestResult> {
     const requestStartedAtMs = timer.startedAtMs();
 
     // 1) Auth
     const a = await timer.span("guardAuth", () => guardAuth(req));
     if (!a.ok) return a as { ok: false; response: Response };
     const { requestId, workspaceId, apiKeyId, apiKeyRef, apiKeyKid, userId, internal } = a.value;
+    // Each report adds to the last, so a later model never drops an earlier ZDR flag.
+    let observabilitySnapshot: BeforeRequestObservabilitySnapshot = { requestPayload: null, requestedModel: null, workspaceId, apiKeyId };
+    const reportObservability = (snapshot: Partial<Omit<BeforeRequestObservabilitySnapshot, "workspaceId" | "apiKeyId">>) => {
+        observabilitySnapshot = { ...observabilitySnapshot, ...snapshot };
+        options?.onObservabilitySnapshot?.(observabilitySnapshot);
+    };
+    reportObservability({ requestPayload: null, requestedModel: null });
 	const bindings = getBindings();
 	const perfGatewayAccess = resolvePerfGatewayAccess({
 		environment: bindings.ENV,
@@ -275,8 +382,9 @@ export async function beforeRequest(
         guardJson(req, workspaceId, requestId, { endpoint }),
     );
     if (!j.ok) return j as { ok: false; response: Response };
-    let rawBody = j.value;
-    const requestLabels = parseRequestLabels(req);
+    // Optional text parameters sent as null count as unset from here on.
+    let rawBody = withoutNullTextParams(endpoint, j.value);
+    const requestLabels = parseRequestLabels(req, { allowClassifierLabel: isClassifierSubrequest(req) });
     if (requestLabels.ok === false) {
         return {
             ok: false,
@@ -288,10 +396,79 @@ export async function beforeRequest(
             }),
         };
     }
+    let requestModelFallbacks: { requested: string[]; models: string[] } | null = null;
+    if (options?.requestModelOverride) {
+        rawBody = { ...withoutRequestModelFallbacks(rawBody), model: options.requestModelOverride };
+    } else {
+        const parsedModelFallbacks = parseRequestModelFallbacks(rawBody);
+        if (parsedModelFallbacks.ok === false) {
+            return {
+                ok: false,
+                response: err("validation_error", {
+                    reason: parsedModelFallbacks.reason,
+                    description: parsedModelFallbacks.message,
+                    error_type: "user",
+                    error_origin: "user",
+                    details: [{
+                        message: parsedModelFallbacks.message,
+                        path: [REQUEST_MODEL_FALLBACKS_FIELD],
+                        keyword: parsedModelFallbacks.reason,
+                        params: { max_items: MAX_REQUEST_MODEL_FALLBACKS },
+                    }],
+                    request_id: requestId,
+                    workspace_id: workspaceId,
+                }),
+            };
+        }
+        if (parsedModelFallbacks.requested) {
+            requestModelFallbacks = {
+                requested: parsedModelFallbacks.requested,
+                models: parsedModelFallbacks.fallbacks,
+            };
+        }
+        rawBody = withoutRequestModelFallbacks(rawBody);
+    }
+    // A prompt template reference names the preset; it fills `model` when absent.
+    const promptReferenceResult = extractPromptReference(rawBody, endpoint);
+    if (promptReferenceResult.ok === false) {
+        const { issue } = promptReferenceResult;
+        return {
+            ok: false,
+            response: err("validation_error", {
+                reason: issue.reason,
+                description: issue.message,
+                error_type: "user",
+                error_origin: "user",
+                details: [{ message: issue.message, path: issue.path, keyword: issue.reason }],
+                request_id: requestId,
+                workspace_id: workspaceId,
+            }),
+        };
+    }
+    rawBody = promptReferenceResult.rawBody;
+    const promptReference = promptReferenceResult.reference;
+    if (promptReference && requestModelFallbacks) {
+        // Fallback attempts replace `model`, which is how the template is found.
+        const message = "\"models\" fallbacks cannot be combined with a prompt template yet; list fallback models in the preset instead";
+        return {
+            ok: false,
+            response: err("validation_error", {
+                reason: "prompt_model_fallbacks_unsupported",
+                description: message,
+                error_type: "user",
+                error_origin: "user",
+                details: [{ message, path: [REQUEST_MODEL_FALLBACKS_FIELD], keyword: "prompt_model_fallbacks_unsupported" }],
+                request_id: requestId,
+                workspace_id: workspaceId,
+            }),
+        };
+    }
+    // Guardrails replace rawBody with redacted clones; fallbacks re-send this original.
+    const retryRawBody = rawBody;
     const requestedModel = typeof rawBody?.model === "string" && rawBody.model.trim()
         ? rawBody.model.trim()
         : null;
-    options?.onObservabilitySnapshot?.({
+    reportObservability({
         requestPayload: rawBody,
         requestedModel,
     });
@@ -312,7 +489,7 @@ export async function beforeRequest(
     // 3) Zod (route schema: shape depends on request path)
     const v = await timer.span("guardZod", () => guardZod(zodSchema, rawBody, workspaceId, requestId));
     if (!v.ok) return v as { ok: false; response: Response };
-    let body = v.value;
+    let body = promptReference ? withoutMessagesPlaceholder(v.value) : v.value;
     const providerQualifiedModelRequest =
         canonicalizeProviderQualifiedModelRequest(body);
     if (providerQualifiedModelRequest.syntaxError) {
@@ -368,7 +545,11 @@ export async function beforeRequest(
             }),
         };
     }
-    body = providerQualifiedModelRequest.body;
+    try {
+        body = await normalizeLegacySpeedModel(providerQualifiedModelRequest.body, endpoint);
+    } catch {
+        return { ok: false, response: err("gateway_error", { reason: "legacy_speed_model_resolution_failed", request_id: requestId, workspace_id: workspaceId }) };
+    }
 
 	if (endpoint === "video.generation" && body?.webhook?.endpointId) {
 		const webhookEndpoint = await timer.span("validateVideoWebhookEndpoint", () =>
@@ -416,20 +597,63 @@ export async function beforeRequest(
 			}),
 		};
 	}
-    options?.onObservabilitySnapshot?.({
+    reportObservability({
         requestPayload: rawBody,
         requestedModel,
         model,
     });
 
-    const testingMode = await timer.span("resolveTestingMode", () =>
+    // 5) RPC + gating + providers (choose viable providers for this model/endpoint)
+    const capability = normalizeCapability(resolveCapabilityFromEndpoint(endpoint));
+    // Text requests (streamed or not) have no wallet reservation before provider
+    // dispatch. Their cache fill may overlap inference, but must finish before
+    // final charging invalidates that cache (charge awaits creditCacheWrites).
+    // Media/async reservation paths remain ordered.
+    const creditCacheWrites: Promise<void>[] = [];
+    const onCreditCacheWrite = ["responses", "chat.completions", "messages"].includes(endpoint)
+        ? (write: Promise<void>) => { creditCacheWrites.push(write); }
+        : undefined;
+	const contextForModel = (candidateModel: string, flags: { testingMode: boolean; internalOnly: boolean }) => guardContext({
+		workspaceId,
+		apiKeyId,
+		endpoint,
+		capability,
+		model: candidateModel,
+		requestId,
+		internal,
+		shadowSpendLimit: !keyIdIsOAuthClientId(apiKeyRef),
+		spendLimit: keyIdIsOAuthClientId(apiKeyRef) ? null : spendLimit,
+		testingMode: flags.testingMode,
+		internalOnly: flags.internalOnly,
+		disableCache: debugEnabled,
+		onCreditCacheWrite,
+	});
+
+    // Policy and request context depend on the authenticated workspace/key but
+    // not on one another. Overlap their cache/source reads, and the testing-mode
+    // check, while retaining the same fail-closed enforcement after all complete.
+    const workspacePolicyPromise = timer.span("fetchWorkspacePolicy", () =>
+        fetchWorkspacePolicy({ workspaceId, apiKeyId })
+    ).then(
+        (value) => ({ ok: true as const, value }),
+        (error: unknown) => ({ ok: false as const, error }),
+    );
+    const testingModePromise = timer.span("resolveTestingMode", () =>
         resolveTestingMode({
             requested: testingModeRequested,
             workspaceId,
             userId,
             internal,
+            model,
         })
     );
+    // An ordinary request almost never enters testing mode (only an admin's request
+    // to an internal route does), so load its context alongside the check and
+    // reload only in that rare case. Explicit testing requests wait for the check.
+    const speculativeContext = !testingModeRequested && !isAutoRouterModel(model)
+        ? settle(timer.span("guardContext", () => contextForModel(model, { testingMode: false, internalOnly: false })))
+        : null;
+    const testingMode = await testingModePromise;
     if (testingModeRequested && !testingMode.enabled) {
         return {
             ok: false,
@@ -442,43 +666,13 @@ export async function beforeRequest(
     }
     const testingModeEnabled = testingMode.enabled;
 
-    // Policy and request context depend on the authenticated workspace/key but
-    // not on one another. Overlap their cache/source reads while retaining the
-    // same fail-closed enforcement after both have completed.
-    const workspacePolicyPromise = timer.span("fetchWorkspacePolicy", () =>
-        fetchWorkspacePolicy({ workspaceId, apiKeyId })
-    ).then(
-        (value) => ({ ok: true as const, value }),
-        (error: unknown) => ({ ok: false as const, error }),
-    );
-
-    // 5) RPC + gating + providers (choose viable providers for this model/endpoint)
-    const capability = normalizeCapability(resolveCapabilityFromEndpoint(endpoint));
-    // Streamed text has no wallet reservation before provider dispatch. Its
-    // cache fill may overlap inference, but must finish before final charging
-    // invalidates that cache. Media/async reservation paths remain ordered.
-    const creditCacheWrites: Promise<void>[] = [];
-    const onCreditCacheWrite = stream && ["responses", "chat.completions", "messages"].includes(endpoint)
-        ? (write: Promise<void>) => { creditCacheWrites.push(write); }
-        : undefined;
     let autoRouterEvaluation: AutoRouterEvaluation | null = null;
     let workspacePolicyLoad: Awaited<typeof workspacePolicyPromise> | null = null;
     const loadWorkspacePolicy = async () => {
 		workspacePolicyLoad ??= await workspacePolicyPromise;
 		return workspacePolicyLoad;
 	};
-	const contextForModel = (candidateModel: string) => guardContext({
-		workspaceId,
-		apiKeyId,
-		endpoint,
-		capability,
-		model: candidateModel,
-		requestId,
-		internal,
-		testingMode: testingModeEnabled,
-		disableCache: debugEnabled,
-		onCreditCacheWrite,
-	});
+	const testingContextFlags = { testingMode: testingModeEnabled, internalOnly: testingMode.reason === "admin" };
 
 	let c: Awaited<ReturnType<typeof guardContext>>;
 	if (isAutoRouterModel(model)) {
@@ -486,9 +680,10 @@ export async function beforeRequest(
 			body,
 			bindings.GATEWAY_ROUTING_REGION,
 		);
-		const autoRouterBody = regionalAutoRouterBody.ok
+		// Routing limits under `routing` count as under `provider`, as they do once a model is chosen.
+		const autoRouterBody = normalizeRequestRoutingBody(regionalAutoRouterBody.ok
 			? regionalAutoRouterBody.body
-			: body;
+			: body);
 		if (body?.routing?.auto != null || body?.provider?.auto != null) {
 			return {
 				ok: false,
@@ -506,9 +701,11 @@ export async function beforeRequest(
 			};
 		}
 		const deterministicClassification = deterministicAutoRouterClassification(autoRouterBody);
+		// A request with routing limits the gateway can't honour is refused below
+		// (collectUnsupportedRoutingFields), so its text never goes to the classifier.
 		const classifierPromise = options?.autoRouterClassificationOverride
 			? Promise.resolve(options.autoRouterClassificationOverride)
-			: options?.classifyAutoRouterRequest && !options?.autoRouterModelOverride
+			: options?.classifyAutoRouterRequest && !options?.autoRouterModelOverride && !collectUnsupportedRoutingFields(autoRouterBody).length
 				? timer.span("classifyAutoRouterRequest", () => options.classifyAutoRouterRequest!({ endpoint, body: autoRouterBody }))
 					.catch((error) => {
 						console.warn("[beforeRequest] auto_router_classifier_failed", {
@@ -531,9 +728,31 @@ export async function beforeRequest(
 			return { ok: false, response: err("gateway_error", { reason: "auto_router_config_fetch_failed", request_id: requestId, workspace_id: workspaceId }) };
 		}
 		const classification = applyAutoRouterHardRequirements(autoRouterBody, await classifierPromise ?? deterministicClassification);
+		const policyLoad = await loadWorkspacePolicy();
+		if ("error" in policyLoad) {
+			console.error("[beforeRequest] workspace_policy_fetch_failed", {
+				workspaceId,
+				requestId,
+				error: policyLoad.error instanceof Error ? policyLoad.error.message : String(policyLoad.error),
+			});
+			return { ok: false, response: err("gateway_error", { reason: "workspace_policy_fetch_failed", request_id: requestId, workspace_id: workspaceId }) };
+		}
+		// A request that needs zero data retention (or a workspace or key that only
+		// allows it) picks only among models with a route that offers it.
+		const needsZeroDataRetention = autoRouterNeedsZeroDataRetention(autoRouterBody, policyLoad.value);
+		const residencyRequirement = autoRouterResidencyRequirement(autoRouterBody);
+		// The request's residency requirements, with zero data retention when the workspace or key needs it too.
+		const shortlistResidency = { ...residencyRequirement, requireZeroDataRetention: needsZeroDataRetention };
+		// Which requirements each candidate's providers left unmet, for the error when none qualifies.
+		const unmetByModel = new Map<string, AutoRouterResidencyKey[]>();
 		let candidateUniverse: Awaited<ReturnType<typeof loadManagedAutoRouterCandidates>>;
 		try {
-			candidateUniverse = await timer.span("loadManagedAutoRouterCandidates", () => loadManagedAutoRouterCandidates(config, autoRouterBody, classification));
+			candidateUniverse = await timer.span("loadManagedAutoRouterCandidates", () => loadManagedAutoRouterCandidates(
+				config,
+				autoRouterBody,
+				classification,
+				{ endpoint, residency: shortlistResidency, providerAllowed: providerPermittedByPolicy(autoRouterBody, policyLoad.value) },
+			));
 		} catch (error) {
 			console.error("[beforeRequest] auto_router_candidates_fetch_failed", {
 				workspaceId,
@@ -547,15 +766,6 @@ export async function beforeRequest(
 			allowedModels: candidateUniverse.models,
 			candidateUniverseSize: candidateUniverse.totalEligible,
 		};
-		const policyLoad = await loadWorkspacePolicy();
-		if ("error" in policyLoad) {
-			console.error("[beforeRequest] workspace_policy_fetch_failed", {
-				workspaceId,
-				requestId,
-				error: policyLoad.error instanceof Error ? policyLoad.error.message : String(policyLoad.error),
-			});
-			return { ok: false, response: err("gateway_error", { reason: "workspace_policy_fetch_failed", request_id: requestId, workspace_id: workspaceId }) };
-		}
 		const selection = await timer.span("selectAutoRouterModel", () => selectAutoRouterModel({
 			endpoint,
 			body: autoRouterBody,
@@ -564,7 +774,7 @@ export async function beforeRequest(
 			modelOverride: options?.autoRouterModelOverride,
 			loadBenchmarks: loadAutoRouterBenchmarks,
 			loadCandidate: async (candidateModel) => {
-				const candidateContext = await contextForModel(candidateModel);
+				const candidateContext = await contextForModel(candidateModel, testingContextFlags);
 				if (!candidateContext.ok) return { ok: false as const, reason: "model_or_endpoint_unavailable" };
 				const candidateResolvedModel = candidateContext.value.resolvedModel || candidateModel;
 				const policyResult = applyWorkspacePolicy({
@@ -572,7 +782,6 @@ export async function beforeRequest(
 					resolvedModel: candidateResolvedModel,
 					body: autoRouterBody,
 					workspacePolicy: policyLoad.value,
-					teamSettings: candidateContext.value.context.teamSettings ?? null,
 				});
 				if (policyResult.ok === false) {
 					return { ok: false as const, reason: policyResult.reason === "model_not_allowed" ? "model_restricted_by_policy" : "no_policy_compliant_providers" };
@@ -584,13 +793,20 @@ export async function beforeRequest(
 				if (!executableProviders.length) {
 					return { ok: false as const, reason: "no_executable_providers" };
 				}
+				// The request's own zero data retention and regions, which the routing
+				// gate would otherwise only apply after this model was chosen.
+				const residentProviders = providersMeetingResidency(executableProviders, residencyRequirement);
+				if (!residentProviders.length) {
+					unmetByModel.set(candidateModel, unmetResidencyKeys(executableProviders, residencyRequirement));
+					return { ok: false as const, reason: AUTO_ROUTER_RESIDENCY_REJECTION };
+				}
 				const capabilityResult = await validateCapabilities({
 					endpoint,
 					rawBody,
 					body: autoRouterBody,
 					requestId,
 					workspaceId,
-					providers: executableProviders,
+					providers: residentProviders,
 					model: candidateResolvedModel,
 					requiredParams: requiredExecutionParams(endpoint),
 				});
@@ -619,6 +835,31 @@ export async function beforeRequest(
 			},
 		}));
 		if (selection.ok === false) {
+			const unmetRequirements = selection.reason === "no_eligible_models"
+				? autoRouterUnmetResidency({
+					requirement: shortlistResidency,
+					rejected: selection.candidates.map((candidate) => ({ reason: candidate.reason, unmet: unmetByModel.get(candidate.model) })),
+					droppedForResidency: candidateUniverse.droppedForResidency,
+					unmetByDropped: candidateUniverse.unmetByDropped,
+				})
+				: null;
+			if (unmetRequirements) {
+				// The same error a chosen model gets from the routing gate, so callers
+				// can tell a residency requirement apart from no model at all.
+				return {
+					ok: false,
+					response: err("model_region_unavailable", {
+						model,
+						reason: "no_provider_meets_residency_requirements",
+						description: unmetRequirements.description,
+						action: "Relax the residency requirements, or choose a model that meets them.",
+						unmet_requirements: unmetRequirements.unmet,
+						routing_diagnostics: { autoRouter: { candidates: selection.candidates } },
+						request_id: requestId,
+						workspace_id: workspaceId,
+					}),
+				};
+			}
 			return {
 				ok: false,
 				response: err("unsupported_model_or_endpoint", {
@@ -635,12 +876,66 @@ export async function beforeRequest(
 		}
 		autoRouterEvaluation = selection.evaluation;
 		c = selection.selected.contextResult as Awaited<ReturnType<typeof guardContext>>;
-		options?.onObservabilitySnapshot?.({ requestPayload: rawBody, requestedModel, model: selection.selected.resolvedModel });
+		reportObservability({ requestPayload: rawBody, requestedModel, model: selection.selected.resolvedModel });
 	} else {
-		c = await timer.span("guardContext", () => contextForModel(model));
+		const speculative = speculativeContext && !testingModeEnabled ? await speculativeContext : null;
+		if (speculative && "error" in speculative) throw speculative.error;
+		c = speculative && "value" in speculative
+			? speculative.value
+			: await timer.span("guardContext", () => contextForModel(model, testingContextFlags));
 	}
-    if (!c.ok) return c as { ok: false; response: Response };
+    let modelSubstitution: ModelSubstitution | null = null;
+    if (!c.ok) {
+        const failure = c as { ok: false; response: Response; unservedModel?: string };
+        const unservedModel = failure.unservedModel;
+        const successorAllowed = Boolean(unservedModel) &&
+            !autoRouterEvaluation &&
+            !providerQualifiedModelRequest.selection &&
+            (options?.allowModelSuccessor ?? !requestModelFallbacks?.models.length);
+        const redirected = successorAllowed && successorRedirectEnabled()
+            ? await timer.span("modelSuccessorRedirect", async () => {
+                const policy = await loadSuccessorRedirectPolicy(workspaceId);
+                if (!policy.enabled) return null;
+                // Checked only once the workspace turned redirects on, so other traffic never waits on Statsig.
+                if (!(await isModelSuccessorRedirectAccessEnabled({ workspaceId }))) return null;
+                const override = workspaceSuccessorOverride(policy, unservedModel!);
+                if (override === null) return null;
+                const resolution = override
+                    ? await findWorkspaceModelSuccessor(unservedModel!, override)
+                    : await findModelSuccessor(unservedModel!);
+                const substitution = successorRedirectTarget(resolution, policy, body);
+                if (!substitution) return null;
+                const successorContext = await contextForModel(substitution.to, testingContextFlags);
+                return successorContext.ok ? { successorContext, substitution } : null;
+            })
+            : null;
+        if (!redirected) {
+            if (unservedModel && requestModelFallbacks?.models.length) {
+                return {
+                    ok: false,
+                    response: failure.response,
+                    unservedModelFallback: { model, requestId, retryRawBody, models: requestModelFallbacks.models },
+                };
+            }
+            return { ok: false, response: failure.response };
+        }
+        c = redirected.successorContext;
+        modelSubstitution = redirected.substitution;
+        // Downstream decoding reads the model from the body, not the context.
+        body = { ...body, model: modelSubstitution.to };
+        reportObservability({ requestPayload: rawBody, requestedModel, model: modelSubstitution.to });
+    }
     let { context, providers, resolvedModel, candidateDiagnostics } = c.value;
+    // A preset's require_zero_data_retention is only in the merged body, so report it now:
+    // a failure from here until the context exists (a preset filter leaving no provider,
+    // say) must keep the request's content out of telemetry and the I/O log too. The merge
+    // decides, as for ctx.zeroDataRetention, since the request's own setting wins.
+    if (context.preset?.config?.provider?.requireZeroDataRetention === true) {
+        const { mergePresetWithBody } = await import("./presetMerge");
+        if (getEffectiveRoutingHints(mergePresetWithBody(body, context.preset, endpoint)).requireZeroDataRetention === true) {
+            reportObservability({ zeroDataRetention: true });
+        }
+    }
     const contextTelemetry = context.contextTelemetry ?? null;
     const contextTimingSpans = {
         context_total: contextTelemetry?.totalMs,
@@ -654,6 +949,7 @@ export async function beforeRequest(
         context_rpc: contextTelemetry?.rpcMs,
         context_enrich: contextTelemetry?.enrichMs,
         context_cache_write: contextTelemetry?.cacheWriteMs,
+        context_spend_limit: contextTelemetry?.spendLimitMs,
     };
     for (const [name, durationMs] of Object.entries(contextTimingSpans)) {
         if (typeof durationMs === "number") timer.record(name, durationMs);
@@ -677,6 +973,7 @@ export async function beforeRequest(
         };
     }
     const workspacePolicy = workspacePolicyLoad.value;
+    let pricingInternalOnly = testingMode.reason === "admin";
     let dynamicRouteEvaluation: DynamicRouteEvaluation | null = null;
     if (workspacePolicy.dynamicRoute) {
         dynamicRouteEvaluation = evaluateDynamicRoute({
@@ -720,6 +1017,8 @@ export async function beforeRequest(
                     onCreditCacheWrite,
                     requestId,
                     internal,
+                    shadowSpendLimit: !keyIdIsOAuthClientId(apiKeyRef),
+                    spendLimit: keyIdIsOAuthClientId(apiKeyRef) ? null : spendLimit,
                     testingMode: testingModeEnabled,
                     disableCache: debugEnabled,
                 })
@@ -729,6 +1028,7 @@ export async function beforeRequest(
                 continue;
             }
             ({ context, providers, resolvedModel, candidateDiagnostics } = routedContext.value);
+            pricingInternalOnly = false;
             dynamicRouteEvaluation = {
                 ...dynamicRouteEvaluation,
                 action: { ...dynamicRouteEvaluation.action, model: resolvedModel || routedModel },
@@ -750,7 +1050,8 @@ export async function beforeRequest(
     let mergedBody = body;
     let presetFilteredProviders = providers;
     let resolvedRoutingMode = context.teamSettings?.routingMode ?? null;
-    let presetInfo: { id: string; name: string; slug?: string | null; config: any } | null = null;
+    let presetInfo: { id: string; name: string; slug?: string | null; config: any; versionId?: string | null; versionLabel?: string | null; ref?: string | null } | null = null;
+    let promptTemplateApplication: PromptTemplateApplication | null = null;
 
     if (context.preset) {
         const {
@@ -761,8 +1062,34 @@ export async function beforeRequest(
             validatePresetModel,
         } = await import("./presetMerge");
 
-        // Merge preset config with request body
-        mergedBody = mergePresetWithBody(body, context.preset);
+        // Render the preset prompt template, then merge preset config with the request body
+        const templateResult = applyPresetPromptTemplate({
+            body,
+            preset: context.preset,
+            reference: promptReference,
+            endpoint,
+        });
+        if (templateResult.ok === false) {
+            return {
+                ok: false,
+                response: err("validation_error", {
+                    reason: templateResult.issues[0]?.keyword ?? "template_invalid",
+                    description: templateResult.issues.map((issue) => issue.message).join("; "),
+                    error_type: "user",
+                    error_origin: "user",
+                    details: templateResult.issues.map((issue) => ({
+                        message: issue.message,
+                        path: issue.path,
+                        keyword: issue.keyword,
+                        ...(issue.params ? { params: issue.params } : {}),
+                    })),
+                    request_id: requestId,
+                    workspace_id: workspaceId,
+                }),
+            };
+        }
+        promptTemplateApplication = templateResult.application;
+        mergedBody = mergePresetWithBody(templateResult.body, context.preset, endpoint);
         const presetModelValidationError = validatePresetModel(
             resolvedModel || model,
             context.preset.config,
@@ -802,6 +1129,9 @@ export async function beforeRequest(
             name: context.preset.name,
             slug: context.preset.slug ?? null,
             config: context.preset.config,
+            versionId: context.preset.versionId ?? null,
+            versionLabel: context.preset.versionLabel ?? null,
+            ref: context.preset.ref ?? null,
         };
 
         if (!presetFilteredProviders.length) {
@@ -850,9 +1180,35 @@ export async function beforeRequest(
             }),
         };
     }
+    // The web and web-fetch plugins become server tools here, so routing and
+    // execution treat them as the client's own phaseo:web_search / phaseo:web_fetch.
+    const serverToolPlugins = applyServerToolPlugins({
+        endpoint,
+        body: mergedBody,
+        plugins: resolvedPlugins,
+    });
+    if (serverToolPlugins.ok === false) {
+        return {
+            ok: false,
+            response: err("validation_error", {
+                details: [{
+                    message: `Invalid ${serverToolPlugins.pluginId} plugin option: ${serverToolPlugins.message}`,
+                    path: ["plugins", serverToolPlugins.field],
+                    keyword: "invalid_gateway_plugin_config",
+                    params: {
+                        pluginId: serverToolPlugins.pluginId,
+                        field: serverToolPlugins.field,
+                    },
+                }],
+                request_id: requestId,
+                workspace_id: workspaceId,
+            }),
+        };
+    }
+    mergedBody = serverToolPlugins.body;
     mergedBody = applyWorkspacePrivacyRoutingDefaults(
         mergedBody,
-        context.teamSettings,
+        workspacePolicy,
     );
     const unsupportedRoutingFields = collectUnsupportedRoutingFields(mergedBody);
     if (unsupportedRoutingFields.length > 0) {
@@ -953,6 +1309,9 @@ export async function beforeRequest(
 	}
 	mergedBody = deploymentRegionResult.body;
 
+    // Read before the pin below, which is a routing choice rather than a limit on where the content may go.
+    const contentDataLimits = requestDataLimits(mergedBody);
+
     // Keep this as the final request-level provider constraint before workspace
     // policy enforcement. A provider-qualified model is an exact pair, not a
     // provider preference that presets or other routing hints may widen.
@@ -1024,12 +1383,37 @@ export async function beforeRequest(
     }
     presetFilteredProviders = providerQualifiedCandidates.providers;
 
+    const requestedSvgAuthor = endpoint === "images.generations" && mergedBody?.output_format === "svg" && typeof mergedBody?.svg?.model === "string"
+        ? mergedBody.svg.model as string
+        : null;
+    const svgAuthorModel = requestedSvgAuthor ? normalizeSvgAuthorModel(requestedSvgAuthor) : null;
+    // The author must be an OpenAI text model with a Phaseo price, or its tokens could not be billed.
+    // Checked here so the caller gets a plain validation error, not a provider failure.
+    if (requestedSvgAuthor && (!svgAuthorModel || !(await resolveSvgAuthor(requestedSvgAuthor)))) {
+        const description = `svg.model "${requestedSvgAuthor}" is not an OpenAI text model with Phaseo pricing. Use an OpenAI model id such as openai/gpt-5-nano.`;
+        return {
+            ok: false,
+            response: err("validation_error", {
+                reason: "invalid_svg_model",
+                description,
+                error_type: "user",
+                error_origin: "user",
+                details: [{
+                    message: description,
+                    path: ["svg", "model"],
+                    keyword: "invalid_svg_model",
+                    params: { model: requestedSvgAuthor },
+                }],
+                request_id: requestId,
+                workspace_id: workspaceId,
+            }),
+        };
+    }
     const workspacePolicyResult = applyWorkspacePolicy({
         providers: presetFilteredProviders,
         resolvedModel: resolvedModel || model,
         body: mergedBody,
         workspacePolicy,
-        teamSettings: context.teamSettings ?? null,
     });
     if (!workspacePolicyResult.ok) {
         const workspacePolicyFailure = workspacePolicyResult as Extract<
@@ -1042,7 +1426,10 @@ export async function beforeRequest(
                 response: err("guardrail_blocked", {
                     model: resolvedModel || model,
 					reason: "model_restricted_by_policy",
-					description: `Model "${resolvedModel || model}" is blocked by a workspace policy or guardrail`,
+					description: modelSubstitution
+						? `Model "${modelSubstitution.from}" has no provider, and its replacement "${resolvedModel || model}" is blocked by a workspace policy or guardrail`
+						: `Model "${resolvedModel || model}" is blocked by a workspace policy or guardrail`,
+					...(modelSubstitution ? { requested_model: modelSubstitution.from, replacement_model: modelSubstitution.to } : {}),
 					error_operational_kind: "model_restricted_by_policy",
 					guardrail: {
 						type: "route_access",
@@ -1096,6 +1483,45 @@ export async function beforeRequest(
     }
     presetFilteredProviders = workspacePolicyResult.providers;
 
+    // GPT Image SVG output also runs, and bills, the text model named in svg.model. Hold it to
+    // the same workspace and key model rules as the image model, on the OpenAI routes that run it.
+    if (svgAuthorModel) {
+        const authorPolicy = applyWorkspacePolicy({
+            providers: presetFilteredProviders
+                .filter((candidate) => candidate.providerId === "openai")
+                .map((candidate) => ({ ...candidate, apiModelId: svgAuthorModel })),
+            resolvedModel: svgAuthorModel,
+            body: { ...mergedBody, model: svgAuthorModel },
+            workspacePolicy,
+        });
+        if (!authorPolicy.ok) {
+            const description = `SVG author model "${svgAuthorModel}" is blocked by a workspace policy or guardrail`;
+            return {
+                ok: false,
+                response: err("guardrail_blocked", {
+                    model: resolvedModel || model,
+                    reason: "model_restricted_by_policy",
+                    description,
+                    error_operational_kind: "model_restricted_by_policy",
+                    guardrail: {
+                        type: "route_access",
+                        scope: "workspace",
+                        active_guardrail_ids: authorPolicy.diagnostics.activeGuardrailIds,
+                    },
+                    details: [{
+                        message: description,
+                        path: ["svg", "model"],
+                        keyword: "model_restricted_by_policy",
+                        params: authorPolicy.diagnostics,
+                    }],
+                    routing_diagnostics: { workspacePolicy: authorPolicy.diagnostics },
+                    request_id: requestId,
+                    workspace_id: workspaceId,
+                }),
+            };
+        }
+    }
+
     const { applyPromptInjectionGuardrails } = await import("./promptInjection");
     const promptInjectionResult = applyPromptInjectionGuardrails({
         body: mergedBody,
@@ -1104,6 +1530,9 @@ export async function beforeRequest(
         workspacePolicy,
         requestId,
         workspaceId,
+        templateVariables: promptTemplateApplication
+            ? collectTemplateVariableTargets(rawBody?.prompt?.variables)
+            : undefined,
     });
     if (!promptInjectionResult.ok) {
         return promptInjectionResult as { ok: false; response: Response };
@@ -1120,6 +1549,9 @@ export async function beforeRequest(
         requestId,
         workspaceId,
         existingEnforcement: promptInjectionResult.enforcement,
+        templateVariables: promptTemplateApplication
+            ? collectTemplateVariableTargets(rawBody?.prompt?.variables)
+            : undefined,
     });
     if (!sensitiveInfoResult.ok) {
         return sensitiveInfoResult as { ok: false; response: Response };
@@ -1135,13 +1567,17 @@ export async function beforeRequest(
     const capabilityValidation = await timer.span("validateCapabilities", () =>
         validateCapabilities({
             endpoint,
-            rawBody,
+            rawBody: promptReference ? capabilityViewOfTemplatedRequest(rawBody, mergedBody) : rawBody,
             body: mergedBody,
             requestId,
             workspaceId,
             providers: presetFilteredProviders,
             model: resolvedModel || model,
-			requiredParams: requiredExecutionParams(endpoint),
+			requiredParams: [
+				...requiredExecutionParams(endpoint),
+				// Plugin server tools are model function tools: prefer providers that take tools.
+				...(serverToolPlugins.addedTools.length > 0 ? ["tools"] : []),
+			],
         })
     );
     if (!capabilityValidation.ok) return capabilityValidation as { ok: false; response: Response };
@@ -1154,6 +1590,7 @@ export async function beforeRequest(
         "moderations",
         "rerank",
         "decisions.make",
+        "extraction.extract",
         "systemone",
         "image.generate",
         "image.edit",
@@ -1206,7 +1643,6 @@ export async function beforeRequest(
 				resolvedModel: candidate.apiModelId ?? resolvedModel ?? model,
 				body: mergedBody,
 				workspacePolicy,
-				teamSettings: context.teamSettings ?? null,
 			}).ok,
         })
     );
@@ -1226,7 +1662,7 @@ export async function beforeRequest(
             provider.pricingCard.rules.length === 0
         )
         .map((provider) => provider.providerId);
-    if (missingPricingProviders.length) {
+    if (missingPricingProviders.length && !testingModeEnabled) {
         for (const providerId of missingPricingProviders) {
             providerEnablementDropped.push({
                 providerId,
@@ -1278,6 +1714,39 @@ export async function beforeRequest(
 		};
 	}
 	enabledProviders = quantizationCandidates.providers;
+	if (enabledProviders.length > 0) {
+		const hostedTools = resolveHostedTools({
+			endpoint,
+			body: mergedBody,
+			providers: enabledProviders,
+			model: resolvedModel || model,
+		});
+		if (hostedTools.ok === false) {
+			const names = hostedTools.unsupportedTools.map((tool) => tool.type);
+			return {
+				ok: false,
+				response: err("validation_error", {
+					reason: "unsupported_hosted_tool",
+					description: `Model "${resolvedModel || model}" has no provider that can run the hosted tool${names.length > 1 ? "s" : ""} ${names.join(", ")}. Remove ${names.length > 1 ? "them" : "it"}, or choose a model served on OpenAI's Responses API.`,
+					error_type: "user",
+					error_origin: "user",
+					details: hostedTools.unsupportedTools.map((tool) => ({
+						message: `Hosted tool "${tool.type}" cannot run on the providers serving this model.`,
+						path: ["tools", tool.index],
+						keyword: "unsupported_hosted_tool",
+						params: { tool: tool.type, model: resolvedModel || model },
+					})),
+					request_id: requestId,
+					workspace_id: workspaceId,
+				}),
+			};
+		}
+		for (const providerId of hostedTools.droppedProviderIds) {
+			providerEnablementDropped.push({ providerId, reason: "hosted_tool_unsupported" });
+		}
+		enabledProviders = hostedTools.providers;
+		mergedBody = hostedTools.body;
+	}
     const providerEnablementDiagnostics: ProviderEnablementDiagnostics = {
         capability: normalizedCapability,
         providersBefore: filteredProviders.map((provider) => provider.providerId),
@@ -1366,9 +1835,11 @@ export async function beforeRequest(
         stream,
         req,
         rawBody: rawBody && typeof rawBody === "object" ? (rawBody as Record<string, unknown>) : null,
-        authMethod: apiKeyRef?.startsWith("oauth_") ? "oauth" : "api_key",
-        oauthClientId: apiKeyRef?.startsWith("oauth_") ? (apiKeyKid ?? null) : null,
-        oauthUserId: apiKeyRef?.startsWith("oauth_") ? (userId ?? null) : null,
+        // Delegated OAuth keys authenticate as `kid_…` but belong to an OAuth app, so their
+        // requests are attributed to the app and its user like OAuth access tokens are.
+        authMethod: a.value.authMethod === "oauth" ? "oauth" : "api_key",
+        oauthClientId: a.value.authMethod === "oauth" ? (a.value.oauthClientId ?? null) : null,
+        oauthUserId: a.value.authMethod === "oauth" ? (userId ?? null) : null,
         returnMeta,
         returnRoutingDiagnostics,
         debug,
@@ -1390,6 +1861,14 @@ export async function beforeRequest(
 
     const ctx: PipelineContext = {
 		quotaUserId: userId ?? null,
+		activeGuardrailIds: workspacePolicy.activeGuardrailIds ?? [],
+		neverStoreContent: workspacePolicy.neverStoreContent === true,
+		// The workspace setting or one of the key's guardrails, or the request's own (or its
+		// preset's) require_zero_data_retention.
+		zeroDataRetention:
+			workspacePolicyResult.diagnostics.privacyZdrOnly === true ||
+			getEffectiveRoutingHints(mergedBody).requireZeroDataRetention === true,
+		contentDataLimits,
         endpoint,
         capability,
         requestId,
@@ -1417,6 +1896,9 @@ export async function beforeRequest(
             credit: context.credit,
         },
         preset: presetInfo,
+        promptTemplate: promptTemplateApplication && presetInfo
+            ? { presetId: presetInfo.id, presetSlug: presetInfo.slug ?? null, versionLabel: presetInfo.versionLabel ?? null, ref: presetInfo.ref ?? null, ...promptTemplateApplication }
+            : null,
         internal,
         // Enrichment data for observability (wide events)
         teamEnrichment: context.teamEnrichment ?? null,
@@ -1429,9 +1911,16 @@ export async function beforeRequest(
             workspacePolicy: workspacePolicyResult.diagnostics,
             dynamicRoute: dynamicRouteEvaluation,
 			autoRouter: autoRouterEvaluation,
+			...(requestModelFallbacks ? { requestModelFallbacks } : {}),
+			...(modelSubstitution ? { modelSubstitution } : {}),
         },
         guardrailEnforcement: sensitiveInfoResult.enforcement,
+        // Billing eligibility is server-owned, never a request body flag.
+        billableInternalTesting: testingMode.reason === "admin",
+        pricingInternalOnly,
     };
+
+    Object.defineProperty(ctx, "retryRawBody", { value: retryRawBody, enumerable: false });
 
     // console.log(`[DEBUG] beforeRequest: final ctx.model: ${ctx.model}`);
 

@@ -69,6 +69,15 @@ describe("response-cache fingerprinting", () => {
 		expect(stableStringify(payload)).not.toContain("\"debug\"");
 	});
 
+	it("separates pinned preset versions without changing unpinned fingerprints", () => {
+		const base = { workspaceId: "ws_123", endpoint: "responses" as const, model: "openai/gpt-5.4-nano", body: { input: "hello" }, presetId: "preset_1", presetSlug: "triage" };
+		const unpinned = buildResponseCacheFingerprintPayload(base);
+		expect(unpinned.preset).toEqual({ id: "preset_1", slug: "triage" });
+		expect(buildResponseCacheFingerprintPayload({ ...base, presetVersionId: null })).toEqual(unpinned);
+		const pinned = buildResponseCacheFingerprintPayload({ ...base, presetVersionId: "version_2" });
+		expect(pinned.preset).toEqual({ id: "preset_1", slug: "triage", version_id: "version_2" });
+	});
+
 	it("builds versioned Redis cache keys", () => {
 		expect(buildResponseCacheKey("ws_123", "abc123")).toBe(
 			"gateway:response-cache:v1:ws_123:abc123",
@@ -98,6 +107,33 @@ describe("response-cache fingerprinting", () => {
 			eligible: false,
 			reason: "tools_present",
 		});
+	});
+
+	it("never caches responses for a key that never stores content", () => {
+		expect(
+			isResponseCacheEligible({
+				endpoint: "responses",
+				stream: false,
+				hasTools: false,
+				serverToolsEnabled: false,
+				neverStoreContent: true,
+			}),
+		).toEqual({
+			eligible: false,
+			reason: "content_storage_disabled",
+		});
+	});
+
+	it("never stores or serves a response under zero data retention", () => {
+		const request = { endpoint: "responses" as const, stream: false, hasTools: false, serverToolsEnabled: false };
+		expect(isResponseCacheEligible({ ...request, zeroDataRetention: true })).toEqual({
+			eligible: false,
+			reason: "zero_data_retention",
+		});
+		// Never-store keeps its own reason when both apply.
+		expect(isResponseCacheEligible({ ...request, zeroDataRetention: true, neverStoreContent: true }).reason)
+			.toBe("content_storage_disabled");
+		expect(isResponseCacheEligible({ ...request, zeroDataRetention: false })).toEqual({ eligible: true, reason: "eligible" });
 	});
 });
 
@@ -158,5 +194,25 @@ describe("response-cache policy", () => {
 		expect(record.createdAt).toBe("2026-05-09T12:00:00.000Z");
 		expect(record.expiresAt).toBe("2026-05-09T12:02:00.000Z");
 		expect(record.providerId).toBe("openai");
+	});
+
+	it("keeps the parameters dropped for the provider with the cache record", () => {
+		const base = {
+			key: "gateway:response-cache:v1:ws_123:abc123",
+			fingerprint: "abc123",
+			endpoint: "responses" as const,
+			model: "openai/gpt-5.4-nano",
+			statusCode: 200,
+			responseBody: { id: "resp_123" },
+			providerId: "openai",
+			ttlSeconds: 120,
+		};
+		const droppedParams = {
+			provider: "openai",
+			params: [{ param: "top_k", reason: "unsupported_by_provider" as const, source: "catalogue" as const, client_sent: true }],
+		};
+
+		expect(buildCachedResponseRecord({ ...base, droppedParams }).droppedParams).toEqual(droppedParams);
+		expect(buildCachedResponseRecord(base).droppedParams).toBeNull();
 	});
 });

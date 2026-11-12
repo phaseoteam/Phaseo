@@ -4,6 +4,7 @@
 
 import type { PipelineContext } from "./before/types";
 import { safeJsonStringify } from "@/lib/safe-json";
+import { withErrorObject } from "@core/error-object";
 
 export function buildPipelineExecutionErrorResponse(
 	error: unknown,
@@ -22,7 +23,7 @@ export function buildPipelineExecutionErrorResponse(
 	// diagnostics elsewhere, but implementation errors remain server-only.
 	void error;
 
-	return new Response(safeJsonStringify(payload), {
+	return new Response(safeJsonStringify(withErrorObject(payload, 500)), {
 		status: 500,
 		headers: { "Content-Type": "application/json" },
 	});

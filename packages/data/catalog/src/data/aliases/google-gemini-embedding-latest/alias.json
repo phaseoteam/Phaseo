@@ -1,8 +1,0 @@
-{
-  "alias_slug": "google/gemini-embedding-latest",
-  "resolved_api_model_id": "google/gemini-embedding-2",
-  "resolved_model_id": "google/gemini-embedding-2",
-  "channel": "stable",
-  "is_enabled": true,
-  "notes": null
-}

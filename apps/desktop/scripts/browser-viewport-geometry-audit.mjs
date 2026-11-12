@@ -1,0 +1,11 @@
+import electron from 'electron';
+import { build } from 'vite';
+import { builtinModules } from 'node:module';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { spawnSync } from 'node:child_process';
+import path from 'node:path';
+const directory=mkdtempSync(path.join(tmpdir(),'phaseo-native-viewport-'));
+await build({configFile:false,logLevel:'silent',build:{target:'node24',outDir:directory,emptyOutDir:false,lib:{entry:path.resolve('src/main/browserHost.ts'),formats:['es'],fileName:()=> 'host.mjs'},rolldownOptions:{external:['electron',...builtinModules,...builtinModules.map(name=>'node:'+name)]}}});
+const result=spawnSync(electron,['scripts/browser-viewport-geometry-smoke.mjs','--host='+path.join(directory,'host.mjs'),'--profile='+directory],{stdio:'inherit',timeout:45000});
+if(result.error||result.status!==0)throw result.error??Error('Native viewport geometry audit failed');

@@ -1,0 +1,9 @@
+---
+title: "Eliminar una regla de gasto"
+sidebarTitle: "Eliminar regla"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml DELETE /spend-rules/{id}"
+description: "Elimina una regla de gasto y levanta cualquier bloqueo que haya iniciado."
+---
+
+Requiere `spend_rules:delete`. La regla deja de evaluarse y ya no cuenta para el límite de 50 reglas. Su bloqueo activo, si lo hay, se levanta.

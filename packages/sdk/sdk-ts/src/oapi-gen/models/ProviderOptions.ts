@@ -25,6 +25,14 @@ export interface ProviderOptions {
       compact_threshold?: number;
       type: "compaction";
     };
+    prompt_cache_options?: {
+      mode?: "implicit" | "explicit";
+      ttl?: string;
+      [key: string]: unknown;
+    };
     prompt_cache_retention?: string;
+  };
+  xai?: {
+    conversation_id?: string;
   };
 }

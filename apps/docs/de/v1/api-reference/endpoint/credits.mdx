@@ -3,8 +3,23 @@ title: "Guthaben abrufen"
 sidebarTitle: "Guthaben abrufen"
 badge: "Beta"
 openapi: "/de/openapi/v1/openapi.localized.yaml GET /credits"
-description: "So erfasst und berechnet das Gateway Anfragen."
+description: "Rufe das verbleibende Guthaben und die Nutzung des authentifizierten Workspace ab."
 ---
 <Note>
-Für diesen Endpunkt ist ein Management-API-Schlüssel erforderlich. Standardmäßige Gateway-API-Schlüssel werden nicht akzeptiert.
+Für diesen Endpunkt ist ein Verwaltungs-API-Schlüssel erforderlich. Normale Gateway-API-Schlüssel werden nicht akzeptiert.
 </Note>
+
+## Guthaben über CLI oder API aufladen
+
+Agents und Skripte können eine Aufladung mit `POST /v1/credits/topups` oder der CLI starten. Die Belastung genehmigt immer ein Mensch.
+
+```bash
+phaseo login --scopes billing:write
+phaseo credits add --amount 20
+```
+
+- Das Token braucht den Scope `billing:write`. Er wird nie standardmäßig vergeben: Füge ihn mit `phaseo login --scopes billing:write` hinzu oder trage ihn bei einem Verwaltungsschlüssel ein.
+- Aufladungen über API oder CLI betragen $5 bis $500; größere Aufladungen erfolgen im Dashboard. Ein Workspace kann 5 wartende Aufladungen gleichzeitig haben (eine sechste gibt `429` `too_many_pending_topups` zurück), und jede läuft nach 30 Minuten ab.
+- **Noch keine gespeicherte Karte:** Die Antwort enthält eine `checkout_url`. Ein Owner oder Admin des Workspace öffnet sie und bezahlt mit einer neuen Karte, die für spätere Aufladungen gespeichert wird.
+- **Gespeicherte Karte:** Jeder Owner und Admin erhält eine E-Mail mit einem einmalig nutzbaren Link. Einer von ihnen öffnet ihn, meldet sich an und wählt **Bestätigen** oder **Ablehnen**. Beim Bestätigen wird die Karte belastet, mit Bankprüfung, falls die Bank sie verlangt.
+- Frage `GET /v1/credits/topups/{id}` (oder `phaseo credits topups get <id>`) ab, bis `final` den Wert `true` hat. Das Guthaben wird gutgeschrieben, wenn der Status `paid` ist. `declined`, `expired` und `failed` enthalten einen `reason`-Code: Versuche sie nicht automatisch erneut, sondern frage einen Menschen.

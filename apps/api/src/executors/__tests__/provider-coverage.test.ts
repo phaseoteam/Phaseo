@@ -1,129 +1,70 @@
-import { existsSync, readFileSync, readdirSync } from "node:fs";
-import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import { resolveProviderExecutor } from "../index";
 
-const EXCLUDED_NON_TEXT_OR_NOT_YET_SUPPORTED = new Map<string, string>([
-	["black-forest-labs", "image-only provider"],
-	["suno", "audio/music-only provider"],
-	["elevenlabs", "audio/music-only provider"],
-]);
+// Snapshot of the providers that served active text.generate routes when the
+// catalogue still lived in the repo (2026-10-28). Prod Supabase is now the source
+// of truth; this list guards the executor registry against regressions.
+const TEXT_GENERATE_PROVIDERS = [
+	"aion-labs", "akashml", "alibaba-cloud", "amazon-bedrock", "ambient", "anthropic",
+	"anthropic-aws", "anthropic-aws-us", "anthropic-us", "arcee-ai", "atlascloud", "avian",
+	"azure", "baidu", "baseten", "byteplus", "canopy-wave", "cerebras",
+	"cloudflare", "cohere", "deepinfra", "deepseek", "fireworks", "friendli",
+	"gmicloud", "google-ai-studio", "google-vertex", "google-vertex-eu", "groq", "inception",
+	"inflection", "io-net", "ionrouter", "longcat", "meta", "minimax",
+	"minimax-lightning", "mistral", "mistral-eu", "modelscope", "moonshotai", "morph",
+	"morpheus", "nebius-token-factory", "novita", "openai", "openai-eu", "ovhcloud",
+	"parasail", "poolside", "reka", "relace", "sail-research", "sakana",
+	"sambanova", "siliconflow", "spacex-ai", "stepfun", "streamlake", "tensorix",
+	"together", "upstage", "venice", "wafer", "weights-and-biases", "xiaomi",
+	"z-ai",
+];
 
-const MEDIA_CAPABILITIES = new Set([
-	"image.generate",
-	"image.edit",
-	"images.generations",
-	"images.edits",
-	"audio.speech",
-	"audio.transcription",
-	"audio.translations",
-	"audio.transcribe",
-	"video.generate",
-	"video.edit",
-	"music.generate",
-	"embeddings",
-	"text.embed",
-	"rerank",
-	"text.rerank",
-	"moderations",
-	"text.moderate",
-	"ocr",
-	"parse",
-]);
+// Snapshot of the active non-text gateway capabilities per provider (2026-10-28).
+const MEDIA_CAPABILITIES_BY_PROVIDER: Array<[string, string[]]> = [
+	["alibaba-cloud", ["image.edit", "image.generate", "text.embed", "video.generate"]],
+	["baidu", ["embeddings", "image.generate", "rerank"]],
+	["black-forest-labs", ["video.generate"]],
+	["byteplus", ["images.edits", "images.generations"]],
+	["cloudflare", ["audio.transcribe", "text.embed"]],
+	["cohere", ["embeddings", "parse", "rerank"]],
+	["deepinfra", ["audio.speech", "audio.transcription", "image.edit", "image.generate", "text.embed", "video.generate"]],
+	["elevenlabs", ["audio.speech", "audio.transcription", "music.generate"]],
+	["fireworks", ["image.generate", "rerank", "text.embed"]],
+	["friendli", ["audio.transcription"]],
+	["gmicloud", ["audio.speech", "image.edit", "image.generate", "music.generate"]],
+	["google-ai-studio", ["audio.speech", "audio.transcription", "images.generations", "music.generate", "text.embed", "video.generate"]],
+	["google-vertex", ["audio.transcription", "text.embed", "video.generate"]],
+	["groq", ["audio.transcription", "audio.translations"]],
+	["ltx", ["video.generate"]],
+	["meta", ["audio.transcription", "image.edit", "image.generate"]],
+	["minimax", ["audio.speech", "image.edit", "image.generate", "music.generate", "video.generate"]],
+	["mistral", ["audio.transcribe", "ocr", "text.embed", "text.moderate"]],
+	["modelscope", ["image.edit", "image.generate"]],
+	["morpheus", ["text.embed"]],
+	["nebius-token-factory", ["embeddings"]],
+	["novita", ["embeddings", "rerank", "video.generate"]],
+	["openai", ["audio.speech", "audio.transcription", "audio.translations", "image.edit", "image.generate", "text.embed", "text.moderate", "video.generate"]],
+	["ovhcloud", ["audio.speech", "image.generate"]],
+	["parasail", ["embeddings"]],
+	["perplexity", ["embeddings"]],
+	["relace", ["text.rerank"]],
+	["spacex-ai", ["audio.speech", "audio.transcription", "image.edit", "image.generate", "video.edit", "video.generate"]],
+	["stepfun", ["audio.speech", "audio.transcription", "image.edit", "image.generate"]],
+	["tensorix", ["text.embed"]],
+	["together", ["audio.transcription", "audio.translations", "image.generate"]],
+	["upstage", ["ocr", "text.embed"]],
+	["voyage", ["rerank", "text.embed"]],
+	["xiaomi", ["audio.speech", "audio.transcription"]],
+];
 
-function readDataProviders(): string[] {
-	const root = resolve(
-		process.cwd(),
-		"../../packages/data/catalog/src/data/api_providers",
-	);
-	return readdirSync(root, { withFileTypes: true })
-		.filter((entry) => entry.isDirectory())
-	.map((entry) => entry.name)
-	.sort();
-}
-
-function hasActiveTextGenerateModel(provider: string): boolean {
-	const apiProviderPath = resolve(
-		process.cwd(),
-		"../../packages/data/catalog/src/data/api_providers",
-		provider,
-		"models.json",
-	);
-	if (!existsSync(apiProviderPath)) return false;
-	const models = JSON.parse(readFileSync(apiProviderPath, "utf8")) as Array<{
-		is_active_gateway?: boolean;
-		capabilities?: Array<{ capability_id?: string; status?: string }>;
-	}>;
-	return models.some((model) =>
-		model?.is_active_gateway === true &&
-		Array.isArray(model.capabilities) &&
-		model.capabilities.some(
-			(capability) =>
-				capability?.capability_id === "text.generate" &&
-				capability?.status === "active",
-		),
-	);
-}
-
-function getActiveGatewayMediaCapabilities(provider: string): Array<{
-	modelId: string;
-	capabilityId: string;
-}> {
-	const apiProviderPath = resolve(
-		process.cwd(),
-		"../../packages/data/catalog/src/data/api_providers",
-		provider,
-		"models.json",
-	);
-	if (!existsSync(apiProviderPath)) return [];
-
-	const models = JSON.parse(readFileSync(apiProviderPath, "utf8")) as Array<{
-		api_model_id?: string;
-		is_active_gateway?: boolean;
-		capabilities?: Array<{ capability_id?: string; status?: string }>;
-	}>;
-
-	return models.flatMap((model) => {
-		if (model.is_active_gateway !== true) return [];
-		return (model.capabilities ?? []).flatMap((capability) => {
-			if (
-				capability.status !== "active" ||
-				!capability.capability_id ||
-				!MEDIA_CAPABILITIES.has(capability.capability_id)
-			) {
-				return [];
-			}
-			return [{
-				modelId: model.api_model_id ?? "unknown-model",
-				capabilityId: capability.capability_id,
-			}];
-		});
-	});
-}
-
-describe("data provider executor coverage", () => {
-	it("resolves a text executor for each supported api provider in data", () => {
-		const providers = readDataProviders();
-		for (const provider of providers) {
-			if (EXCLUDED_NON_TEXT_OR_NOT_YET_SUPPORTED.has(provider)) continue;
-			if (!hasActiveTextGenerateModel(provider)) {
-				continue;
-			}
-			const executor = resolveProviderExecutor(provider, "text.generate");
-			expect(executor, `${provider} should resolve text.generate executor`).toBeTruthy();
-		}
+describe("provider executor coverage", () => {
+	it.each(TEXT_GENERATE_PROVIDERS)("resolves a text.generate executor for %s", (provider) => {
+		expect(resolveProviderExecutor(provider, "text.generate"), `${provider} should resolve text.generate executor`).toBeTruthy();
 	});
 
-	it("resolves an executor for every active gateway non-text capability in data", () => {
-		const providers = readDataProviders();
-		for (const provider of providers) {
-			for (const { modelId, capabilityId } of getActiveGatewayMediaCapabilities(provider)) {
-				const executor = resolveProviderExecutor(provider, capabilityId);
-				expect(
-					executor,
-					`${provider}/${modelId} should resolve ${capabilityId}`,
-				).toBeTruthy();
-			}
+	it.each(MEDIA_CAPABILITIES_BY_PROVIDER)("resolves every active non-text capability for %s", (provider, capabilities) => {
+		for (const capabilityId of capabilities) {
+			expect(resolveProviderExecutor(provider, capabilityId), `${provider} should resolve ${capabilityId}`).toBeTruthy();
 		}
 	});
 });

@@ -14,10 +14,11 @@ describe("internal Worker boundaries", () => {
 		expect(response.headers.get("cache-control")).toBe("private, no-store");
 	});
 
-	it("keeps model discovery review decisions admin-only", async () => {
-		const response = await app.request("https://phaseo.app/api/internal/model-discovery/reviews", {}, { ENV: "development" });
-		expect(response.status).toBe(403);
-		expect(response.headers.get("cache-control")).toBe("private, no-store");
+	it("does not expose the retired discovery review API", async () => {
+		for (const [path, method] of [["/reviews", "GET"], ["/reviews/retired-item", "PATCH"]]) {
+			const response = await app.request(`https://phaseo.app/api/internal/model-discovery${path}`, { method }, { ENV: "development" });
+			expect(response.status).toBe(404);
+		}
 	});
 
 	it("keeps provider probes and promotions admin-only", async () => {

@@ -1,6 +1,7 @@
-import Link from "next/link";
-import { connection } from "next/server";
+import type { UseSuspenseQueryOptions } from "@tanstack/react-query";
+import Link from "@/components/link";
 import { Suspense, type ReactNode } from "react";
+import { useQueryClient, useSuspenseQueries } from "@tanstack/react-query";
 import {
 	ALargeSmall,
 	ArrowLeft,
@@ -20,8 +21,7 @@ import ModelPricing from "@/components/(data)/model/pricing/ModelPricing";
 import ModelSubscriptions from "@/components/(data)/model/pricing/ModelSubscriptions";
 import ModelPricingInsightsSection from "@/components/(data)/model/pricing/ModelPricingInsightsSection";
 import ModelPerformanceDashboard from "@/components/(data)/models/ModelPerformanceDashboard";
-import { getLocale, getTranslations } from "next-intl/server";
-import { fetchFrontendModelPerformanceColos } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { useLocale, useTranslations } from "@/i18n/react";
 import ModelUptimeDashboard from "@/components/(data)/models/ModelUptimeDashboard";
 import ModelActivityChart from "@/components/(data)/model/overview/ModelActivityChart";
 import Quickstart from "@/components/(data)/model/quickstart/Quickstart";
@@ -30,34 +30,33 @@ import ModelBenchmarks from "@/components/(data)/model/benchmarks/ModelBenchmark
 import KeyDates from "@/components/(data)/model/overview/KeyDates";
 import OtherInfo from "@/components/(data)/model/overview/OtherInfo";
 import ModelLinks, { hasModelLinks } from "@/components/(data)/model/overview/ModelLinks";
-import { DisplayNumber } from "@/components/display/DisplayValue";
-import { isAdminViewer } from "@/lib/auth/getViewerRole";
+import { DisplayCount } from "@/components/display/DisplayValue";
 import type { ModelOverviewPage } from "@/lib/fetchers/models/getModel";
 import type { AuthenticatedProviderCatalogPreview } from "@/lib/query/providerCatalogPreviews";
-import {
-	getModelGatewayMetadataCached,
-	type ModelGatewayMetadata,
-} from "@/lib/fetchers/models/getModelGatewayMetadata";
+import type { ModelGatewayMetadata } from "@/lib/fetchers/models/getModelGatewayMetadata";
 import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerformance";
 import {
-	fetchFrontendBenchmark,
-	fetchFrontendModelApps,
-	fetchFrontendModelBenchmarkHighlights,
-	fetchFrontendModelBenchmarkResults,
-	fetchFrontendModelGatewayMetadata,
-	fetchFrontendModelHeader,
-	fetchFrontendModelOverview,
-	fetchFrontendModelPendingApiReleaseState,
-	fetchFrontendModelPerformance,
-	fetchFrontendModelTimeline,
-	fetchFrontendModelUsageDailyBreakdown,
-	fetchFrontendOrganisations,
-	fetchFrontendOrganisationModels,
-} from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { applyArtificialAnalysisOrganisationColours } from "@/lib/benchmarks/artificialAnalysis";
+	modelOverviewQuery,
+	modelPendingApiReleaseSectionQuery,
+	modelQuickstartGatewayMetadataQuery,
+} from "@/components/(data)/model/modelData.queries";
+import {
+	epochConfidenceIntervalsSectionQuery,
+	modelActivitySectionQuery,
+	modelAppsSectionQuery,
+	modelBenchmarkHighlightsSectionQuery,
+	modelBenchmarkIdentitySectionQuery,
+	modelBenchmarkRanksSectionQuery,
+	modelBenchmarkResultsSectionQuery,
+	modelCreatorModelsSectionQuery,
+	modelHiddenQuickstartMetadataSectionQuery,
+	modelLineageSectionQuery,
+	modelPerformanceColosSectionQuery,
+	modelPerformanceSectionQuery,
+} from "./ModelOverviewSections.queries";
+import { artificialAnalysisRankSummaries } from "@/lib/benchmarks/artificialAnalysis";
 import { isEpochConfidenceIntervalForScore } from "@/lib/benchmarks/epoch";
-import { epochModelKey, fetchEpochConfidenceIntervals } from "@/lib/benchmarks/epochData";
-import { fetchFrontendRankingBenchmarks } from "@/lib/fetchers/frontend/fetchRankingSections";
+import { epochModelKey } from "@/lib/benchmarks/epochData";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import {
@@ -77,11 +76,7 @@ import ModelPendingApiReleaseBanner from "@/components/(data)/model/overview/Mod
 import { DisplayCalendarDate } from "@/components/display/DisplayValue";
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
-import {
-	getModelLicenseUrl,
-	getModelLineageLinks,
-	resolveModelLineageNames,
-} from "@/components/(data)/model/overview/modelOverviewMetadata";
+import { getModelLicenseUrl } from "@/components/(data)/model/overview/modelOverviewMetadata";
 import ModelVerificationSection, {
 	supportsProvenanceVerification,
 } from "@/components/(data)/model/overview/ModelVerificationSection";
@@ -93,6 +88,7 @@ type ModelOverviewSectionsProps = {
 	includeHidden: boolean;
 	showBenchmarks?: boolean;
 	showSubscriptions?: boolean;
+	subscriptionOnly?: boolean;
 	showProviders?: boolean;
 	status?: string | null;
 	isGatewayActive?: boolean;
@@ -109,36 +105,17 @@ export type ModelSectionSharedProps = {
 };
 type ModelSectionSurface = "overview" | "page";
 type ModelPerformancePromiseProps = {
+	/**
+	 * Optional. Without it the sections read the public 24 h metrics
+	 * (modelPerformanceQuery). Pass it only for data the public query cannot
+	 * provide (private models); it is cached per model under its own key.
+	 */
 	performancePromise?: Promise<ModelPerformanceMetrics | null>;
 };
 
-const OPTIONAL_MODEL_SECTION_TIMEOUT_MS = 2_500;
-
-function withOptionalSectionTimeout<T>(
-	promise: Promise<T>,
-	fallback: T,
-	label: string
-): Promise<T> {
-	let timeout: ReturnType<typeof setTimeout> | null = null;
-	const timeoutPromise = new Promise<T>((resolve) => {
-		timeout = setTimeout(() => {
-			console.warn(`[ModelOverviewSections] ${label} timed out; using fallback.`);
-			resolve(fallback);
-		}, OPTIONAL_MODEL_SECTION_TIMEOUT_MS);
-	});
-
-	return Promise.race([promise, timeoutPromise])
-		.catch((error) => {
-			console.warn(
-				`[ModelOverviewSections] ${label} failed; using fallback.`,
-				error
-			);
-			return fallback;
-		})
-		.finally(() => {
-			if (timeout) clearTimeout(timeout);
-		});
-}
+// Conditional query tuples; each result is read with its own cast.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type SuspenseQueryList = UseSuspenseQueryOptions<any, Error, any, any>[];
 
 function Section({
 	id,
@@ -228,7 +205,7 @@ function formatTypeLabel(value: string, translateModality: (key: string) => stri
 	return key ? translateModality(key) : value;
 }
 
-export async function ModelProvidersSection({
+export function ModelProvidersSection({
 	modelId,
 	includeHidden,
 	modelStatus,
@@ -239,7 +216,6 @@ export async function ModelProvidersSection({
 	description = "API providers, route pricing, availability, and recent reliability signals.",
 	providersOverride,
 }: ModelSectionSharedProps & { modelStatus?: string | null; modelName?: string | null; creatorOrganisationId?: string | null; creatorOrganisationName?: string | null; previewOffers?: AuthenticatedProviderCatalogPreview[]; description?: string | null; providersOverride?: ProviderPricing[] }) {
-	await connection();
 	return (
 		<ModelPricing
 			modelId={modelId}
@@ -256,7 +232,7 @@ export async function ModelProvidersSection({
 	);
 }
 
-export async function ModelPricingInsightsOverviewSection({
+export function ModelPricingInsightsOverviewSection({
 	modelId,
 	includeHidden,
 	previewOffers = [],
@@ -322,18 +298,21 @@ function getAppSubtitle(app: { url: string | null }): string | null {
 	return null;
 }
 
-export async function ModelSubscriptionsSection({
+export function ModelSubscriptionsSection({
 	modelId,
+	includeHidden = false,
 	ownerOrganisationId,
 	ownerOrganisationName,
 }: {
 	modelId: string;
+	includeHidden?: boolean;
 	ownerOrganisationId?: string | null;
 	ownerOrganisationName?: string | null;
 }) {
 	return (
 		<ModelSubscriptions
 			modelId={modelId}
+			includeHidden={includeHidden}
 			ownerOrganisationId={ownerOrganisationId}
 			ownerOrganisationName={ownerOrganisationName}
 			showHeader={false}
@@ -341,7 +320,7 @@ export async function ModelSubscriptionsSection({
 	);
 }
 
-export async function ModelPerformanceSection({
+export function ModelPerformanceSection({
 	modelId,
 	includeHidden,
 	performancePromise,
@@ -349,26 +328,20 @@ export async function ModelPerformanceSection({
 	ModelPerformancePromiseProps & {
 		description?: string;
 	}) {
-	const t = await getTranslations("Catalogue.models.detail");
+	const t = useTranslations("Catalogue.models.detail");
 	const description = t("sections.performanceDescription");
-	const [performanceMetrics, pendingApiRelease, performanceColos] =
-		await Promise.all([
-		withOptionalSectionTimeout(
-			performancePromise ?? fetchFrontendModelPerformance(modelId, 24),
-			null,
-			"model performance"
-		),
-		withOptionalSectionTimeout(
-			fetchFrontendModelPendingApiReleaseState(modelId, includeHidden),
-			null,
-			"pending API release state"
-		),
-		withOptionalSectionTimeout(
-			fetchFrontendModelPerformanceColos(modelId),
-			[],
-			"performance execution regions"
-		),
-	]);
+	const queryClient = useQueryClient();
+	const [
+		{ data: performanceMetrics },
+		{ data: pendingApiRelease },
+		{ data: performanceColos },
+	] = useSuspenseQueries({
+		queries: [
+			modelPerformanceSectionQuery(queryClient, modelId, performancePromise),
+			modelPendingApiReleaseSectionQuery(modelId, includeHidden),
+			modelPerformanceColosSectionQuery(modelId),
+		],
+	});
 	const shouldShowPendingApiBanner =
 		!performanceMetrics && pendingApiRelease?.isPendingApiRelease;
 	if (!performanceMetrics && !shouldShowPendingApiBanner) return null;
@@ -397,15 +370,14 @@ export async function ModelPerformanceSection({
 	);
 }
 
-export async function ModelUptimeSection({
+export function ModelUptimeSection({
 	modelId,
 	performancePromise,
 }: Pick<ModelSectionSharedProps, "modelId"> & ModelPerformancePromiseProps) {
-	const performanceMetrics = await withOptionalSectionTimeout(
-		performancePromise ?? fetchFrontendModelPerformance(modelId, 24),
-		null,
-		"uptime performance"
-	);
+	const queryClient = useQueryClient();
+	const [{ data: performanceMetrics }] = useSuspenseQueries({
+		queries: [modelPerformanceSectionQuery(queryClient, modelId, performancePromise)],
+	});
 	return (
 		<ModelUptimeDashboard
 			modelId={modelId}
@@ -414,17 +386,15 @@ export async function ModelUptimeSection({
 	);
 }
 
-export async function ModelAppsSection({
+export function ModelAppsSection({
 	modelId,
 	includeHidden: _includeHidden,
 }: ModelSectionSharedProps) {
-	const t = await getTranslations("Catalogue.models.detail");
-	const tApps = await getTranslations("Common.ui.apps");
-	const modelApps = await withOptionalSectionTimeout(
-		fetchFrontendModelApps(modelId),
-		[],
-		"model apps"
-	);
+	const t = useTranslations("Catalogue.models.detail");
+	const tApps = useTranslations("Common.ui.apps");
+	const [{ data: modelApps }] = useSuspenseQueries({
+		queries: [modelAppsSectionQuery(modelId)],
+	});
 	const topApps = modelApps.slice(0, 10);
 	if (topApps.length === 0) return null;
 	const appColumns = [topApps.slice(0, 5), topApps.slice(5, 10)].filter(
@@ -455,8 +425,7 @@ export async function ModelAppsSection({
 										</span>
 										<span className="flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted/45">
 											{logoUrl ? (
-												// eslint-disable-next-line @next/next/no-img-element
-												<img
+																								<img
 													src={logoUrl}
 													alt={app.title}
 													className="size-full object-contain"
@@ -481,7 +450,7 @@ export async function ModelAppsSection({
 											) : null}
 										</div>
 										<div className="whitespace-nowrap text-right text-sm tabular-nums text-muted-foreground">
-											<DisplayNumber value={app.totalTokens} options={{ maximumFractionDigits: 2 }} /> {tApps("tokens")}
+											<DisplayCount value={app.totalTokens} /> {tApps("tokens")}
 										</div>
 									</Link>
 								);
@@ -493,22 +462,17 @@ export async function ModelAppsSection({
 	);
 }
 
-export async function ModelActivitySection({
+export function ModelActivitySection({
 	modelId,
 	includeHidden: _includeHidden,
 	showHeading = true,
 }: ModelSectionSharedProps & {
 	showHeading?: boolean;
 }) {
-	const t = await getTranslations("Catalogue.models.detail");
-	const usageRows = await withOptionalSectionTimeout(
-		fetchFrontendModelUsageDailyBreakdown({
-			modelId,
-			days: 30,
-		}),
-		[],
-		"model activity"
-	);
+	const t = useTranslations("Catalogue.models.detail");
+	const [{ data: usageRows }] = useSuspenseQueries({
+		queries: [modelActivitySectionQuery(modelId)],
+	});
 	return (
 		<ModelActivityChart
 			modelId={modelId}
@@ -519,7 +483,7 @@ export async function ModelActivitySection({
 	);
 }
 
-export async function ModelQuickstartSection({
+export function ModelQuickstartSection({
 	modelId,
 	includeHidden,
 	isGatewayActive = true,
@@ -532,9 +496,22 @@ export async function ModelQuickstartSection({
 	surface?: ModelSectionSurface;
 	quickstartRequestContext?: QuickstartRequestContext;
 }) {
-	const emptyStateT = await getTranslations("Catalogue.models.detail.emptyStates");
+	const emptyStateT = useTranslations("Catalogue.models.detail.emptyStates");
+	const showsMetadataOnly = !isGatewayActive && !includeHidden;
+	// Public metadata is the shell's (already loaded) query; hidden models ask
+	// the server, which includes internal providers for admins.
+	const metadataQueries = useSuspenseQueries({
+		queries:
+			(showsMetadataOnly || prefetchedGatewayMetadata !== undefined
+				? []
+				: [
+						includeHidden
+							? modelHiddenQuickstartMetadataSectionQuery(modelId)
+							: modelQuickstartGatewayMetadataQuery(modelId),
+					]) as SuspenseQueryList,
+	});
 
-	if (!isGatewayActive) {
+	if (showsMetadataOnly) {
 		return (
 			<Quickstart
 				mode="model-metadata"
@@ -545,29 +522,9 @@ export async function ModelQuickstartSection({
 		);
 	}
 
-	const gatewayMetadata = prefetchedGatewayMetadata !== undefined
+	const gatewayMetadata: ModelGatewayMetadata | null = prefetchedGatewayMetadata !== undefined
 		? prefetchedGatewayMetadata
-		: await (async () => {
-			if (!includeHidden) {
-				return withOptionalSectionTimeout(
-					fetchFrontendModelGatewayMetadata(modelId),
-					null,
-					"quickstart metadata",
-				);
-			}
-		const includeInternalProviders = await withOptionalSectionTimeout(
-			isAdminViewer(),
-			false,
-			"quickstart admin viewer check"
-		);
-		return withOptionalSectionTimeout(
-			includeInternalProviders
-				? getModelGatewayMetadataCached(modelId, includeHidden)
-				: fetchFrontendModelGatewayMetadata(modelId),
-			null,
-			"quickstart metadata"
-		);
-		})();
+		: ((metadataQueries[0]?.data as ModelGatewayMetadata | null | undefined) ?? null);
 
 	const quickstartEndpoint =
 		gatewayMetadata?.activeProviders.find((p) => p.endpoint)?.endpoint ??
@@ -615,75 +572,45 @@ export async function ModelQuickstartSection({
 	);
 }
 
-export async function ModelBenchmarksSection({
+export function ModelBenchmarksSection({
 	modelId,
 	includeHidden,
 	hideWhenEmpty = false,
 }: ModelSectionSharedProps & { hideWhenEmpty?: boolean }) {
-	const emptyStateT = await getTranslations("Catalogue.models.detail.emptyStates");
-	const t = await getTranslations("Catalogue.models.detail");
-	const [benchmarkHighlights, benchmarkResults, benchmarkRankings, organisations, pendingApiRelease, epochBenchmark, epochConfidenceIntervals, modelHeader] = await Promise.all([
-		withOptionalSectionTimeout(
-			fetchFrontendModelBenchmarkHighlights(modelId),
-			[],
-			"benchmark highlights"
-		),
-		withOptionalSectionTimeout(
-			fetchFrontendModelBenchmarkResults(modelId),
-			[],
-			"benchmark results"
-		),
-		withOptionalSectionTimeout(
-			fetchFrontendRankingBenchmarks().then((payload) => payload.benchmarks),
-			[],
-			"benchmark rankings"
-		),
-		withOptionalSectionTimeout(
-			fetchFrontendOrganisations(),
-			[],
-			"organisation colours"
-		),
-		withOptionalSectionTimeout(
-			fetchFrontendModelPendingApiReleaseState(modelId, includeHidden),
-			null,
-			"benchmark pending API release state"
-		),
-		withOptionalSectionTimeout(fetchFrontendBenchmark("epoch-capabilities-index"), null, "Epoch benchmark leaderboard"),
-		withOptionalSectionTimeout(fetchEpochConfidenceIntervals(), {}, "Epoch confidence intervals"),
-		withOptionalSectionTimeout(fetchFrontendModelHeader(modelId), null, "benchmark model identity"),
-	]);
-	const organisationColours = new Map(organisations.map((organisation) => [organisation.organisation_id, organisation.colour]));
-	const epochRanking = epochBenchmark ? {
-		benchmark_id: epochBenchmark.id,
-		name: epochBenchmark.name ?? "Epoch Capabilities Index",
-		category: epochBenchmark.category,
-		benchmark_type: epochBenchmark.type ?? null,
-		lower_is_better: epochBenchmark.ascending_order === false,
-		total_models: epochBenchmark.total_models,
-		entries: epochBenchmark.results.flatMap((result) => result.model && result.score !== null && Number.isFinite(Number(result.score)) ? [{
-			model_id: result.model_id,
-			model_name: result.model.name ?? result.model_id,
-			organisation_id: result.model.organisation?.organisation_id ?? null,
-			organisation_name: result.model.organisation?.name ?? null,
-			organisation_colour: result.model.organisation?.colour ?? null,
-			release_date: result.model.release_date ?? null,
-			score: Number(result.score),
-			rank: result.rank ?? 0,
+	const emptyStateT = useTranslations("Catalogue.models.detail.emptyStates");
+	const t = useTranslations("Catalogue.models.detail");
+	const queryClient = useQueryClient();
+	const [
+		{ data: benchmarkHighlights },
+		{ data: benchmarkResults },
+		{ data: benchmarkRanks },
+		{ data: pendingApiRelease },
+		{ data: epochConfidenceIntervals },
+		{ data: modelHeader },
+	] = useSuspenseQueries({
+		queries: [
+			modelBenchmarkHighlightsSectionQuery(modelId, includeHidden),
+			modelBenchmarkResultsSectionQuery(modelId, includeHidden),
+			// This model's place on the leaderboards (~10 KB), not every leaderboard (~1 MB).
+			modelBenchmarkRanksSectionQuery(modelId),
+			modelPendingApiReleaseSectionQuery(modelId, includeHidden),
+			epochConfidenceIntervalsSectionQuery(),
+			modelBenchmarkIdentitySectionQuery(queryClient, modelId, includeHidden),
+		],
+	});
+	const epochRanking = benchmarkRanks?.epoch ? {
+		...benchmarkRanks.epoch,
+		entries: benchmarkRanks.epoch.entries.map((entry) => ({
+			...entry,
 			other_info: (() => {
-				const base = typeof result.other_info === "string" ? result.other_info : "";
-				const interval = epochConfidenceIntervals[epochModelKey(result.model.name ?? result.model_id)];
-				return isEpochConfidenceIntervalForScore(interval, result.score)
+				const base = typeof entry.other_info === "string" ? entry.other_info : "";
+				const interval = epochConfidenceIntervals[epochModelKey(entry.model_name)];
+				return isEpochConfidenceIntervalForScore(interval, entry.score)
 					? `${base}${base ? "; " : ""}95% CI ${interval.low}–${interval.high}`
 					: base || null;
 			})(),
-			source_link: result.source_link ?? null,
-			updated_at: result.updated_at ?? null,
-		}] : []),
+		})),
 	} : null;
-	const allBenchmarkRankings = epochRanking && !benchmarkRankings.some((item) => item.benchmark_id === epochRanking.benchmark_id)
-		? [...benchmarkRankings, epochRanking]
-		: benchmarkRankings;
-	const enrichedBenchmarkRankings = applyArtificialAnalysisOrganisationColours(allBenchmarkRankings, organisationColours);
 	const shouldShowPendingApiBanner =
 		benchmarkHighlights.length === 0 && pendingApiRelease?.isPendingApiRelease;
 	if (hideWhenEmpty && benchmarkHighlights.length === 0 && !shouldShowPendingApiBanner) {
@@ -696,7 +623,8 @@ export async function ModelBenchmarksSection({
 				<ModelBenchmarks
 					highlightCards={benchmarkHighlights}
 					benchmarkResults={benchmarkResults}
-					benchmarkRankings={enrichedBenchmarkRankings}
+					rankSummaries={benchmarkRanks ? artificialAnalysisRankSummaries(benchmarkRanks.artificial_analysis) : undefined}
+					epochRanking={epochRanking}
 					modelId={modelId}
 					modelName={modelHeader?.name}
 					mode="summary"
@@ -723,34 +651,30 @@ export async function ModelBenchmarksSection({
 	);
 }
 
-export async function ModelLineageSection({
+export function ModelLineageSection({
 	modelId,
 	includeHidden: _includeHidden,
 	model,
 }: ModelSectionSharedProps & { model?: ModelOverviewPage | null }) {
-	const t = await getTranslations("Catalogue.models.detail.lineage");
-	const overview = model ?? (await fetchFrontendModelOverview(modelId));
-	const timeline = overview?.previous_model_id
-		? await withOptionalSectionTimeout(
-				fetchFrontendModelTimeline(modelId),
-				null,
-				"model lineage",
-			)
-		: null;
+	const t = useTranslations("Catalogue.models.detail.lineage");
+	const queryClient = useQueryClient();
+	const overviewQueries = useSuspenseQueries({
+		queries: (model ? [] : [modelOverviewQuery(modelId)]) as SuspenseQueryList,
+	});
+	const overview = model ?? (overviewQueries[0]?.data as ModelOverviewPage | null | undefined) ?? null;
+	const lineageQueries = useSuspenseQueries({
+		queries: (overview
+			? [
+					modelLineageSectionQuery(queryClient, {
+						modelId,
+						previousModelId: overview.previous_model_id,
+						includeTimeline: Boolean(overview.previous_model_id),
+					}),
+				]
+			: []) as SuspenseQueryList,
+	});
 	const previousLineage = overview
-		? (
-				await resolveModelLineageNames(
-					getModelLineageLinks(timeline?.events, overview.previous_model_id),
-					async (lineageModelId) =>
-						(
-							await withOptionalSectionTimeout(
-								fetchFrontendModelHeader(lineageModelId),
-								null,
-								"lineage model name",
-							)
-						)?.name,
-				)
-			).previous
+		? lineageQueries[0]?.data.previous ?? null
 		: null;
 
 	return (
@@ -809,14 +733,24 @@ export async function ModelLineageSection({
 	);
 }
 
-export async function ModelAboutSection({
+export function ModelAboutSection({
 	model,
 }: {
 	model: ModelOverviewPage;
 }) {
-	const t = await getTranslations("Catalogue.models.detail");
-	const tMetadata = await getTranslations("Catalogue.modelDetail.metadata");
-	const tModalities = await getTranslations("Common.ui.modelCreation.modalities");
+	const t = useTranslations("Catalogue.models.detail");
+	const tMetadata = useTranslations("Catalogue.modelDetail.metadata");
+	const tModalities = useTranslations("Common.ui.modelCreation.modalities");
+	const queryClient = useQueryClient();
+	const [{ data: lineage }] = useSuspenseQueries({
+		queries: [
+			modelLineageSectionQuery(queryClient, {
+				modelId: model.model_id,
+				previousModelId: model.previous_model_id,
+				includeTimeline: true,
+			}),
+		],
+	});
 	const inputTypes = parseTypes(model.input_types);
 	const outputTypes = parseTypes(model.output_types);
 	const inputTypeSet = new Set(inputTypes);
@@ -826,22 +760,6 @@ export async function ModelAboutSection({
 	);
 	const extraOutputTypes = outputTypes.filter(
 		(type) => !KNOWN_MODALITY_META.some((m) => m.key === type),
-	);
-	const timeline = await withOptionalSectionTimeout(
-		fetchFrontendModelTimeline(model.model_id),
-		null,
-		"model lineage",
-	);
-	const lineage = await resolveModelLineageNames(
-		getModelLineageLinks(timeline?.events, model.previous_model_id),
-		async (lineageModelId) =>
-			(
-				await withOptionalSectionTimeout(
-					fetchFrontendModelHeader(lineageModelId),
-					null,
-					"lineage model name",
-				)
-			)?.name,
 	);
 	const hasLineage = Boolean(lineage.previous || lineage.next || model.family_id);
 	const hasDirectionalLineage = Boolean(lineage.previous || lineage.next);
@@ -980,19 +898,18 @@ export async function ModelAboutSection({
 	);
 }
 
-export async function ModelCreatorModelsSection({
+export function ModelCreatorModelsSection({
 	modelId,
 	includeHidden: _includeHidden,
 	model,
 }: ModelSectionSharedProps & { model: ModelOverviewPage }) {
-	const t = await getTranslations("Catalogue.models.detail");
-	const locale = await getLocale();
+	const t = useTranslations("Catalogue.models.detail");
+	const locale = useLocale();
 	const creatorName = model.organisation?.name ?? t("sections.thisCreator");
-	const creatorModels = await withOptionalSectionTimeout(
-		fetchFrontendOrganisationModels(model.organisation_id),
-		[],
-		"creator models"
-	);
+	// Nine others are shown; ten newest always include them, with or without this model.
+	const [{ data: creatorModels }] = useSuspenseQueries({
+		queries: [modelCreatorModelsSectionQuery(model.organisation_id)],
+	});
 	const otherModels = creatorModels
 		.filter((creatorModel) => creatorModel.model_id !== modelId)
 		.sort(
@@ -1290,8 +1207,8 @@ export function ModelCreatorModelsSkeleton() {
 	);
 }
 
-export async function ModelOverviewSectionsSkeleton() {
-	const t = await getTranslations("Catalogue.models.detail");
+export function ModelOverviewSectionsSkeleton() {
+	const t = useTranslations("Catalogue.models.detail");
 	return (
 		<div className={MODEL_SECTION_STACK_CLASSNAME}>
 			<Section id="providers">
@@ -1358,12 +1275,13 @@ export async function ModelOverviewSectionsSkeleton() {
 	);
 }
 
-export default async function ModelOverviewSections({
+export default function ModelOverviewSections({
 	modelId,
 	model,
 	includeHidden,
 	showBenchmarks = true,
 	showSubscriptions = true,
+	subscriptionOnly = false,
 	showProviders = true,
 	status,
 	isGatewayActive = true,
@@ -1373,8 +1291,8 @@ export default async function ModelOverviewSections({
 	previewOffers = [],
 	showPreviewDetails = Boolean(model),
 }: ModelOverviewSectionsProps) {
-	const t = await getTranslations("Catalogue.models.detail");
-	const tOverview = await getTranslations("Catalogue.modelDetail.overview");
+	const t = useTranslations("Catalogue.models.detail");
+	const tOverview = useTranslations("Catalogue.modelDetail.overview");
 	const hasInternalModelData = Boolean(model);
 	const isRetired = status === "Retired";
 	const showVerification = supportsProvenanceVerification(model?.output_types);
@@ -1428,6 +1346,7 @@ export default async function ModelOverviewSections({
 								/>
 								<Suspense fallback={<SubscriptionsSectionSkeleton />}>
 									<ModelSubscriptionsSection
+										includeHidden={includeHidden}
 										modelId={modelId}
 										ownerOrganisationId={model?.organisation_id}
 										ownerOrganisationName={model?.organisation?.name}
@@ -1441,9 +1360,25 @@ export default async function ModelOverviewSections({
 		);
 	}
 
-	if (!isGatewayActive) {
+	if (subscriptionOnly || (!isGatewayActive && !includeHidden)) {
 		return (
 			<div className={MODEL_SECTION_STACK_CLASSNAME}>
+				{subscriptionOnly ? (
+					<Section id="subscriptions">
+						<SectionHeader
+							title={t("navigation.subscriptions")}
+							description={t("sections.subscriptionsDescription")}
+						/>
+						<Suspense fallback={<SubscriptionsSectionSkeleton />}>
+							<ModelSubscriptionsSection
+								includeHidden={includeHidden}
+								modelId={modelId}
+								ownerOrganisationId={model?.organisation_id}
+								ownerOrganisationName={model?.organisation?.name}
+							/>
+						</Suspense>
+					</Section>
+				) : null}
 				{showProviders ? (
 					<Section id="providers">
 						<Suspense fallback={<ProvidersSectionSkeleton />}>
@@ -1497,7 +1432,7 @@ export default async function ModelOverviewSections({
 								<ProviderCatalogPreviewDetailsSection previews={previewOffers} />
 							</Section>
 						) : null}
-						{showSubscriptions ? (
+						{showSubscriptions && !subscriptionOnly ? (
 							<Section id="subscriptions">
 								<SectionHeader
 									title={t("navigation.subscriptions")}
@@ -1505,6 +1440,7 @@ export default async function ModelOverviewSections({
 								/>
 								<Suspense fallback={<SubscriptionsSectionSkeleton />}>
 									<ModelSubscriptionsSection
+										includeHidden={includeHidden}
 										modelId={modelId}
 										ownerOrganisationId={model?.organisation_id}
 										ownerOrganisationName={model?.organisation?.name}
@@ -1642,6 +1578,7 @@ export default async function ModelOverviewSections({
 							/>
 							<Suspense fallback={<SubscriptionsSectionSkeleton />}>
 								<ModelSubscriptionsSection
+									includeHidden={includeHidden}
 									modelId={modelId}
 									ownerOrganisationId={model?.organisation_id}
 									ownerOrganisationName={model?.organisation?.name}

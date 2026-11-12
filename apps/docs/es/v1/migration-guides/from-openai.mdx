@@ -5,36 +5,24 @@ description: "Migra una integración existente del SDK de OpenAI a Phaseo cambia
 icon: "/icons/brands/openai.svg"
 ---
 
-Usa esta guía para migrar una integración existente del SDK de OpenAI a Phaseo sin reescribir el resto de la aplicación. Empieza por la URL base y la clave de API, conserva la solicitud tal como está y verifica cada modelo y endpoint antes de trasladar el tráfico de producción.
+Conserva el SDK de OpenAI y cambia dos cosas: la URL base y la clave de API. Después usa el ID de Phaseo de cada modelo, que añade el prefijo `openai/`.
 
-## Qué cambia
-
-| Ajuste | Antes | Después |
+| Ajuste | OpenAI | Phaseo |
 | --- | --- | --- |
-| URL base | Predeterminada de OpenAI | `https://api.phaseo.app/v1` |
-| Clave de API | Clave de OpenAI | `PHASEO_API_KEY` |
-| Modelo | Nombre del modelo de OpenAI | Un ID de modelo devuelto por `GET /v1/models` |
-| Código de la solicitud | Llamada existente al SDK | Normalmente no cambia |
+| URL base | Predeterminada del SDK (`https://api.openai.com/v1`) | `https://api.phaseo.app/v1` |
+| Clave de API | `OPENAI_API_KEY` | `PHASEO_API_KEY`, enviada como `Authorization: Bearer` |
+| Modelo | `gpt-4.1-mini` | `openai/gpt-4.1-mini`, o cualquier ID de `GET /v1/models` |
+| Código de la solicitud | `chat.completions.create`, `responses.create` | Sin cambios |
 
-<Steps>
-<Step title="Crea una clave de API de Phaseo">
+## Cambia el cliente
 
-Crea una clave en [Claves de Gateway](https://phaseo.app/gateway/keys) y añádela a cada entorno donde se ejecute tu aplicación.
-
-```bash
-PHASEO_API_KEY=phaseo_v1_sk_...
-```
-
-</Step>
-
-<Step title="Conecta el cliente con Phaseo">
-
-Conserva el SDK de OpenAI y, al principio, cambia solo las credenciales y la URL base.
+Crea una clave en [Claves de API](https://phaseo.app/settings/keys) y añádela a cada entorno donde se ejecute la aplicación. Después pásala, junto con la URL base, al cliente existente:
 
 <CodeGroup>
 ```typescript TypeScript
 import OpenAI from "openai";
 
+// Antes: const client = new OpenAI();
 const client = new OpenAI({
   apiKey: process.env.PHASEO_API_KEY,
   baseURL: "https://api.phaseo.app/v1",
@@ -50,6 +38,7 @@ const response = await client.chat.completions.create({
 import os
 from openai import OpenAI
 
+# Antes: client = OpenAI()
 client = OpenAI(
     api_key=os.environ["PHASEO_API_KEY"],
     base_url="https://api.phaseo.app/v1",
@@ -72,39 +61,39 @@ curl https://api.phaseo.app/v1/chat/completions \
 ```
 </CodeGroup>
 
-</Step>
+Usa un nombre de variable nuevo en lugar de poner la clave de Phaseo en `OPENAI_API_KEY`, y elimina los valores antiguos de `OPENAI_BASE_URL` para que ningún otro cliente del repositorio siga llamando a OpenAI. Los clientes `AzureOpenAI` pasan al cliente `OpenAI` normal; los nombres de despliegue de Azure se asignan a ID de modelo de Phaseo de la misma forma.
 
-<Step title="Verifica los ID de modelo y la cobertura de endpoints">
+## Asigna los ID de modelos
 
-En lugar de dar por hecho que todos los alias anteriores siguen funcionando, consulta la lista de modelos disponibles en Phaseo.
+Lista los ID que sirve Phaseo en el formato de lista de OpenAI y comprueba cada modelo de producción con `data[].id`:
 
 ```bash
-curl https://api.phaseo.app/v1/models \
+curl "https://api.phaseo.app/v1/models?format=openai" \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-Comprueba todos los flujos de producción que uses, incluidos streaming, herramientas, salidas estructuradas, imágenes, audio, archivos o lotes. Consulta la [Referencia de la API](../api-reference/introduction.mdx) para confirmar el endpoint correspondiente.
+Sin `format=openai`, la respuesta es la lista paginada `models` de Phaseo y no tiene matriz `data`. Lo mismo ocurre con `client.models.list()`: pasa `{ query: { format: "openai" } }` en Node o `extra_query={"format": "openai"}` en Python. La lista predeterminada solo contiene los modelos que puedes llamar ahora; añade `availability=all` para incluir los inactivos y los que llegarán pronto.
 
-</Step>
+## Qué funciona de otra forma
 
-<Step title="Prueba y despliega">
+| Función de OpenAI | En Phaseo |
+| --- | --- |
+| Chat Completions, Responses | Las mismas estructuras de solicitud en `/v1/chat/completions` y `/v1/responses`. Un campo de nivel superior desconocido devuelve `400` `unknown_param`. |
+| `previous_response_id`, `conversation` | Devuelven `400`: Phaseo no almacena respuestas. Envía el historial completo en `input` en cada solicitud. |
+| Embeddings, moderaciones, imágenes, voz, transcripción | `/v1/embeddings`, `/v1/moderations`, `/v1/images/*`, `/v1/audio/*`. Comprueba que el modelo admite la operación. |
+| Batch API | `/v1/files` y `/v1/batches`. `/v1/files` solo guarda entradas de lotes; no puede proporcionar entradas `file_id` a otras solicitudes. |
+| Realtime | `POST /v1/audio/realtime/sessions` y después un WebSocket a la `connect.url` devuelta. Consulta [Voz en tiempo real](../guides/realtime-voice). |
+| Prompts almacenados (`prompt: { id: "pmpt_…" }`) | Recrea el prompt como preset y llámalo con `prompt: { id: "@slug", version, variables }`. Consulta [Plantillas de prompts](../guides/prompt-templates). |
+| `organization`, `project`, encabezado `OpenAI-Organization` | Sin equivalente. Elimínalos; usa espacios de trabajo y claves de Phaseo. |
+| Assistants, Threads, almacenes vectoriales, ajuste fino, el antiguo `/v1/completions` | Sin endpoint en Phaseo. Mantenlos en OpenAI o pórtalos a `/v1/responses`. |
 
-Ejecuta prompts representativos con las configuraciones antigua y nueva. Compara el formato de salida, la latencia, el uso de tokens, los errores y el coste antes de trasladar el tráfico gradualmente.
+## Prueba y despliega
 
-</Step>
-</Steps>
+Ejecuta los mismos prompts representativos con la configuración antigua y la nueva y compara estructura de la salida, latencia, uso de tokens, errores y coste. Antes de mover tráfico, comprueba que:
 
-## Lista de comprobación de la migración
+- la clave de Phaseo está definida en desarrollo, staging y producción;
+- cada ID de modelo de producción aparece en `GET /v1/models?format=openai`;
+- una solicitud sin streaming y otra con streaming funcionan en staging, además de las llamadas a herramientas y las salidas estructuradas si la aplicación las usa;
+- la reversión sigue siendo solo un cambio de URL base y clave.
 
-- La clave de Phaseo está configurada en desarrollo, staging y producción.
-- La URL base del cliente es `https://api.phaseo.app/v1`.
-- Todos los ID de modelos de producción aparecen en `GET /v1/models`.
-- Las solicitudes con y sin streaming funcionan en staging.
-- Las llamadas a herramientas y las salidas estructuradas funcionan si la aplicación las usa.
-- La reversión sigue limitándose a cambiar la clave y el endpoint en la configuración.
-
-## Próximos pasos
-
-- [Enrutamiento y alternativas](../guides/routing-and-fallbacks.mdx)
-- [Modelos](../exploring/models.mdx)
-- [Gestión de errores](../api-reference/errors.mdx)
+Después mueve el tráfico de forma gradual. [Enrutamiento y respaldos](../guides/routing-and-fallbacks) explica los modelos de respaldo, y [Gestión de errores](../api-reference/errors.mdx) enumera los cuerpos de error que tu aplicación puede recibir ahora.

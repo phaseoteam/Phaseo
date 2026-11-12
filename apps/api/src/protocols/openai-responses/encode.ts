@@ -6,6 +6,16 @@
 // Transforms IR -> OpenAI Responses Response
 
 import type { IRChatResponse, IRUsage, IRContentPart } from "@core/ir";
+import { irUsageToOpenAIStyle, openAICacheWriteTtlDetails } from "@core/cache-usage";
+import { responsesStatusFor } from "@core/finish-reason";
+import {
+	encodeResponsesEffortItem,
+	encodeResponsesReasoningItem,
+	encodeResponsesToolSignatureItem,
+	sealReasoningPart,
+	type ResponsesReasoningItem,
+} from "../shared/reasoning";
+import { toResponsesAnnotations } from "../shared/citations";
 
 /**
  * OpenAI Responses response type
@@ -33,6 +43,7 @@ export type OpenAIResponsesResponse = {
 		input_tokens_details?: {
 			cached_tokens?: number;
 			cache_write_tokens?: number;
+			cache_write_tokens_details?: { ttl_30m_tokens: number; ttl_12h_tokens: number };
 		};
 		output_tokens_details?: {
 			reasoning_tokens?: number;
@@ -49,6 +60,7 @@ export type OpenAIResponsesResponse = {
 		};
 	};
 	status: "completed" | "failed" | "incomplete";
+	incomplete_details?: { reason: "max_output_tokens" | "content_filter" } | null;
 	status_details?: {
 		type: string;
 		reason: string;
@@ -69,7 +81,7 @@ export type OpenAIResponseOutputItem =
 	}
 	| { type: "function_call"; call_id: string; name: string; arguments: string }
 	| { type: "custom_tool_call"; call_id: string; name: string; input: string }
-	| { type: "reasoning"; content: Array<{ type: "output_text"; text: string; annotations?: any[] }> };
+	| ResponsesReasoningItem;
 
 /**
  * Encode IR response to OpenAI Responses format
@@ -88,18 +100,59 @@ export function encodeOpenAIResponsesResponse(
 ): OpenAIResponsesResponse {
 	const outputItems: OpenAIResponseOutputItem[] = [];
 
+	const origin = { provider: ir.provider, model: ir.model };
+	const responseId = requestId ?? ir.id;
 	for (const choice of ir.choices) {
 		const hasToolCalls = (choice.message.toolCalls?.length ?? 0) > 0;
-		const { textParts, reasoningParts, imageParts, audioParts } = splitContentParts(choice.message.content as IRContentPart[]);
-
-		for (const reasoningText of reasoningParts) {
-			outputItems.push({
-				type: "reasoning",
-				content: [{ type: "output_text", text: reasoningText, annotations: [] }],
-			});
+		const { textParts, imageParts, audioParts } = splitContentParts(choice.message.content as IRContentPart[]);
+		// Reasoning generated between tool calls is placed before the call it
+		// preceded, so the item order matches the provider's output order.
+		const anchoredReasoning = new Map<string, OpenAIResponseOutputItem[]>();
+		let reasoningIndex = 0;
+		// Text written before a later reasoning block goes out as its own message
+		// item ahead of it: Claude's thinking signatures record everything before them.
+		let pendingText: Array<Extract<IRContentPart, { type: "text" }>> = [];
+		const emittedText = new Set<IRContentPart>();
+		for (const part of choice.message.content as IRContentPart[] ?? []) {
+			if (part.type === "text") {
+				pendingText.push(part);
+				continue;
+			}
+			let item: OpenAIResponseOutputItem | null = null;
+			let anchor: string | undefined;
+			if (part.type === "reasoning_text") {
+				if (!part.text && !sealReasoningPart(part, origin)) continue;
+				item = encodeResponsesReasoningItem(part, `rs_${responseId}_${choice.index}_${reasoningIndex}`, origin);
+				anchor = hasToolCalls ? part.beforeToolCallId : undefined;
+			} else if (part.type === "provider_block" && part.block?.type === "thinking" && typeof part.block.thinking === "string" && part.block.thinking) {
+				item = {
+					type: "reasoning",
+					id: `rs_${responseId}_${choice.index}_${reasoningIndex}`,
+					summary: [],
+					content: [{ type: "reasoning_text", text: part.block.thinking }],
+				};
+			}
+			if (!item) continue;
+			reasoningIndex += 1;
+			if (anchor && choice.message.toolCalls?.some((call) => call.id === anchor)) {
+				anchoredReasoning.set(anchor, [...(anchoredReasoning.get(anchor) ?? []), item]);
+			} else {
+				if (pendingText.length > 0) {
+					outputItems.push({
+						type: "message",
+						role: "assistant",
+						content: pendingText.map((text) => ({ type: "output_text", text: text.text, annotations: toResponsesAnnotations(text.annotations) })),
+						phase: choice.message.phase,
+					});
+					for (const text of pendingText) emittedText.add(text);
+					pendingText = [];
+				}
+				outputItems.push(item);
+			}
 		}
+		const remainingText = textParts.filter((part) => !emittedText.has(part));
 
-		const hasText = textParts.length > 0;
+		const hasText = remainingText.length > 0;
 		const hasImages = imageParts.length > 0;
 		const hasAudios = audioParts.length > 0;
 		const shouldEmitMessage =
@@ -109,12 +162,12 @@ export function encodeOpenAIResponsesResponse(
 
 		if (shouldEmitMessage) {
 			const content: any[] = [];
-			if (textParts.length > 0) {
-				for (const part of textParts) {
+			if (remainingText.length > 0) {
+				for (const part of remainingText) {
 					content.push({
 						type: "output_text",
 						text: part.text,
-						annotations: part.annotations ?? [],
+						annotations: toResponsesAnnotations(part.annotations),
 					});
 				}
 			}
@@ -178,6 +231,11 @@ export function encodeOpenAIResponsesResponse(
 
 		if (hasToolCalls) {
 			for (const toolCall of choice.message.toolCalls ?? []) {
+				outputItems.push(...(anchoredReasoning.get(toolCall.id) ?? []));
+				// A Gemini function-call signature travels in its own reasoning
+				// item, just before the call it belongs to.
+				const signatureItem = encodeResponsesToolSignatureItem(toolCall, origin);
+				if (signatureItem) outputItems.push(signatureItem);
 				outputItems.push(toolCall.type === "custom"
 					? {
 						type: "custom_tool_call",
@@ -196,12 +254,12 @@ export function encodeOpenAIResponsesResponse(
 	}
 
 	const mainChoice = ir.choices[0];
-	let status: "completed" | "failed" | "incomplete" = "completed";
-	if (mainChoice?.finishReason === "error") {
-		status = "failed";
-	} else if (mainChoice?.finishReason === "length") {
-		status = "incomplete";
+	// A Claude reply's effort record goes last, after its message and calls.
+	if (mainChoice?.message.effortRecord) {
+		outputItems.push(encodeResponsesEffortItem(mainChoice.message.effortRecord, `rs_effort_${responseId}`, origin));
 	}
+	// length and content_filter are incomplete, with the documented reason.
+	const { status, incompleteDetails } = responsesStatusFor(mainChoice?.finishReason);
 
 	return {
 		id: requestId ?? ir.id, // Gateway request ID as primary
@@ -211,7 +269,9 @@ export function encodeOpenAIResponsesResponse(
 		model: ir.model,
 		output: outputItems,
 		usage: encodeUsage(ir.usage),
+		...(ir.usage?.serviceTier || ir.serviceTier ? { service_tier: ir.usage?.serviceTier ?? ir.serviceTier } : {}),
 		status,
+		...(incompleteDetails ? { incomplete_details: incompleteDetails } : {}),
 		...(ir.citations ? { citations: ir.citations } : {}),
 		...(ir.searchResults ? { search_results: ir.searchResults } : {}),
 		...(ir.images ? { images: ir.images } : {}),
@@ -230,8 +290,11 @@ function splitContentParts(parts: IRContentPart[]): {
 	const textParts = parts
 		.filter((part): part is Extract<IRContentPart, { type: "text" }> => part.type === "text");
 	const reasoningParts = parts
-		.filter((part) => part.type === "reasoning_text")
-		.map((part) => part.text);
+		.flatMap((part) => {
+			if (part.type === "reasoning_text") return [part.text];
+			if (part.type === "provider_block" && part.block?.type === "thinking" && typeof part.block.thinking === "string" && part.block.thinking) return [part.block.thinking];
+			return [];
+		});
 	const imageParts = parts.filter((part) => part.type === "image") as Array<Extract<IRContentPart, { type: "image" }>>;
 	const audioParts = parts.filter((part) => part.type === "audio") as Array<Extract<IRContentPart, { type: "audio" }>>;
 	return { textParts, reasoningParts, imageParts, audioParts };
@@ -247,27 +310,37 @@ function encodeUsage(usage?: IRUsage): OpenAIResponsesResponse["usage"] | undefi
 	if (promptTokens == null && completionTokens == null && totalTokens == null) {
 		return undefined;
 	}
+	// OpenAI semantics: input_tokens includes cache reads and writes.
+	const cache = irUsageToOpenAIStyle({ ...usage, inputTokens: promptTokens ?? 0, outputTokens: completionTokens ?? 0, totalTokens });
 
 	return {
-		input_tokens: promptTokens ?? 0,
+		input_tokens: cache.inputTokens,
 		output_tokens: completionTokens ?? 0,
-		total_tokens: totalTokens ?? 0,
+		total_tokens: totalTokens == null ? cache.inputTokens + (completionTokens ?? 0) : cache.totalTokens,
+		...(usage.serviceTier ? { service_tier: usage.serviceTier } : {}),
 		...(typeof usage._ext?.citationTokens === "number" ? { citation_tokens: usage._ext.citationTokens } : {}),
 		...(typeof usage._ext?.numSearchQueries === "number" ? { num_search_queries: usage._ext.numSearchQueries } : {}),
 		...(typeof usage._ext?.searchContextSize === "string" ? { search_context_size: usage._ext.searchContextSize } : {}),
 		...(usage._ext?.providerCost ? { cost: usage._ext.providerCost } : {}),
 		input_tokens_details:
-			typeof usage.cachedInputTokens === "number" ||
-			typeof usage._ext?.cachedWriteTokens === "number"
+			typeof cache.readTokens === "number" ||
+			typeof cache.writeTokens === "number"
 				? {
-					...(typeof usage.cachedInputTokens === "number"
-						? { cached_tokens: usage.cachedInputTokens }
+					...(typeof cache.readTokens === "number"
+						? { cached_tokens: cache.readTokens }
 						: {}),
-					...(typeof usage._ext?.cachedWriteTokens === "number"
-						? { cache_write_tokens: usage._ext.cachedWriteTokens }
+					...(typeof cache.writeTokens === "number"
+						? { cache_write_tokens: cache.writeTokens }
+						: {}),
+					...(openAICacheWriteTtlDetails(cache)
+						? { cache_write_tokens_details: openAICacheWriteTtlDetails(cache) }
 						: {}),
 				}
 				: undefined,
+		...(typeof cache.write5mTokens === "number" ? { cached_write_text_tokens_5m: cache.write5mTokens } : {}),
+		...(typeof cache.write1hTokens === "number" ? { cached_write_text_tokens_1h: cache.write1hTokens } : {}),
+		...(typeof cache.write30mTokens === "number" ? { cached_write_text_tokens_30m: cache.write30mTokens } : {}),
+		...(typeof cache.write12hTokens === "number" ? { cached_write_text_tokens_12h: cache.write12hTokens } : {}),
 		output_tokens_details:
 			typeof usage.reasoningTokens === "number"
 				? { reasoning_tokens: usage.reasoningTokens }

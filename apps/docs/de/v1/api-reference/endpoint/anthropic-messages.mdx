@@ -1,44 +1,76 @@
 ---
 title: "Eine Nachricht erstellen"
-sidebarTitle: "Eine Nachricht erstellen"
+sidebarTitle: "Nachricht erstellen (Anthropic)"
 openapi: "/de/openapi/v1/openapi.localized.yaml POST /messages"
-description: "Anthropic-kompatibler Messages-Endpunkt unter `/v1/messages`."
+description: "Anthropic-kompatibler Messages-Endpunkt unter /v1/messages."
 ---
-`/v1/messages` akzeptiert Request-Payloads der Anthropic Messages API und gibt Antworten im Anthropic-Format zurück.
 
-## Datenstrom
+Sende eine Payload der Anthropic Messages API an `/v1/messages` und erhalte eine Antwort im Anthropic-Format zurück, für jedes Modell, das Phaseo routet. Anthropic-Felder für Tool-Nutzung werden unterstützt, und der Header `X-Phaseo-Strictness` steuert, wie nicht unterstützte Parameter behandelt werden.
 
-Setze `stream: true`, um Server-Sent Events im Anthropic-Format (`message_start`, `content_block_*`, `message_delta`, `message_stop`) zu erhalten.
+Setze `stream: true`, um Server-Sent Events im Anthropic-Format zu erhalten (`message_start`, `content_block_*`, `message_delta`, `message_stop`). Streaming funktioniert auch in Tool-Schleifen.
 
-## Hinweise
+## Systemnachrichten mitten in der Unterhaltung
 
-- Anthropic-Felder zur Tool-Nutzung werden unterstützt.
-- `stream: true` funktioniert auch mit Tool-Schleifen. Bei vom Gateway verwalteten Servertools kann Phaseo den Upstream-Zug materialisieren, die Schleife fortsetzen und einen synthetischen Stream erneut ausgeben.
-- Das native Format des Anthropic-Websuche-Tools wird auch direkt in `tools` akzeptiert, zum Beispiel `type: "web_search_20250305"`.
-- Der Header `X-Phaseo-Strictness` steuert den Umgang mit nicht unterstützten Parametern.
-
-## Servertools
-
-`/v1/messages` unterstützt außerdem diese vom Gateway verwalteten Servertools:
-
-- `gateway:datetime`
-- `phaseo:web_search`
-- `phaseo:web_fetch`
-- `phaseo:advisor`
-- `phaseo:image_generation`
-
-Phaseo wandelt diese Tools für den Upstream-Anbieter in ein Anthropic-kompatibles Format um, führt sie serverseitig aus und setzt die Tool-Schleife fort.
-
-## Native Websuche des Anbieters
-
-Wenn ein kompatibles Anthropic-Modell-/Anbieter-Paar native Websuche unterstützt, kannst du die native Tool-Definition direkt übergeben:
+Füge `messages` eine Nachricht mit `role: "system"` hinzu, wenn eine Anweisung ab diesem Punkt der Unterhaltung gelten soll. Das Feld `system` auf oberster Ebene bleibt gleich, sodass ein gecachtes Präfix weiterhin trifft.
 
 ```bash
 curl https://api.phaseo.app/v1/messages \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-sonnet-4",
+    "model": "anthropic/claude-opus-5.5",
+    "max_tokens": 512,
+    "system": "You are a code review assistant.",
+    "messages": [
+      { "role": "user", "content": "Review process() in utils.py." },
+      { "role": "assistant", "content": "The loop is fine; the regex is compiled on every call." },
+      { "role": "user", "content": "Now review the code that calls it." },
+      { "role": "system", "content": "From now on, include type annotations in every suggestion." }
+    ]
+  }'
+```
+
+Eine Systemnachricht nimmt einen String oder Textblöcke. Sie muss direkt auf einen Benutzerzug folgen (oder auf einen Assistentenzug, der mit einem Server-Tool-Ergebnis endet) und entweder die letzte Nachricht sein oder von einem Assistentenzug gefolgt werden. Andere Positionen geben `400` zurück. `clear_at`, `output_config` sowie `tool_addition`- oder `tool_removal`-Blöcke werden nicht unterstützt.
+
+| Modell | Wie es die Systemnachricht erhält |
+| --- | --- |
+| Claude Fable 5 und 5.1, Mythos 5 und 5.1, Opus 4.8, Opus 5 und 5.5, Sonnet 5.5, Haiku 5.5 | An Ort und Stelle |
+| Andere Claude-Modelle, einschließlich Sonnet 5, und jedes Claude-Modell auf Microsoft Foundry | Zusammengeführt mit dem System-Prompt auf oberster Ebene |
+| Modelle anderer Anbieter | Als Systemnachricht, genauso wie bei Chat Completions |
+
+## Server-Tools verwenden
+
+Füge `tools` ein `phaseo:`-Tool hinzu, und Phaseo führt es aus, wenn das Modell es aufruft. Upstream wird es in das Tool-Format von Anthropic umgeschrieben, und die Tool-Schleife läuft serverseitig weiter. `/v1/messages` akzeptiert jedes Server-Tool außer `phaseo:apply_patch`; der Leitfaden [Server-Tools](../../guides/server-tools) listet sie auf.
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-5.5",
+    "max_tokens": 512,
+    "messages": [
+      { "role": "user", "content": "What time is it in America/New_York right now?" }
+    ],
+    "tools": [
+      { "type": "phaseo:datetime", "parameters": { "timezones": ["America/New_York"] } }
+    ],
+    "tool_choice": { "type": "auto" }
+  }'
+```
+
+Server-Tool-Aufrufe werden in `usage.server_tool_use` gezählt. Der ältere Typ `gateway:datetime` funktioniert weiterhin. Mit `stream: true` führt Phaseo die Tool-Züge selbst aus und streamt dir dann die fortgesetzte Antwort als einen einzigen Stream.
+
+## Die native Websuche von Anthropic verwenden
+
+Wenn das geroutete Anthropic-Modell und der Anbieter native Websuche unterstützen, übergib die Tool-Definition von Anthropic direkt, zum Beispiel `type: "web_search_20250305"`. Das Anbieter-Routing filtert vor der Ausführung trotzdem nach Unterstützung für `web_search_options`.
+
+```bash
+curl https://api.phaseo.app/v1/messages \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "anthropic/claude-sonnet-5.5",
     "max_tokens": 512,
     "messages": [
       { "role": "user", "content": "Find the latest Anthropic web search guidance." }
@@ -51,33 +83,6 @@ curl https://api.phaseo.app/v1/messages \
         "allowed_domains": ["docs.anthropic.com"]
       }
     ],
-    "tool_choice": { "type": "tool", "name": "web_search" }
-  }'
-```
-
-Das Provider-Routing prüft vor der Ausführung weiterhin die Unterstützung von `web_search_options`.
-
-### Beispiel für Datum und Uhrzeit
-
-```bash
-curl https://api.phaseo.app/v1/messages \
-  -H "Authorization: Bearer YOUR_API_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "model": "anthropic/claude-sonnet-4",
-    "max_tokens": 512,
-    "stream": false,
-    "messages": [
-      { "role": "user", "content": "What time is it in America/New_York right now?" }
-    ],
-    "tools": [
-      {
-        "type": "gateway:datetime",
-        "parameters": { "timezone": "America/New_York" }
-      }
-    ],
     "tool_choice": { "type": "auto" }
   }'
 ```
-
-Bei Verwendung geben die `usage.server_tool_use.*`-Zähler die Aufrufe der Servertools an.

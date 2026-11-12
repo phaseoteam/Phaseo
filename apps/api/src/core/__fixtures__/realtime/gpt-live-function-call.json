@@ -1,0 +1,24 @@
+{
+  "source": "GPT Live recording from 2026-10-22 (gptlive-a.jsonl: gpt-live-1 delegating to gpt-5.6-luna with one function tool, no audio sent). Response objects are trimmed to the fields the relay reads; IDs, usage, ordering and the close are as recorded.",
+  "events": [
+    { "t_ms": 611, "event": { "type": "session.started", "session": { "id": "live_u0_Ebjbqp3oNERudHu6xCJKgOlbq8FVKjmJ", "expires_at": 1792669366, "model": "gpt-live-1", "status": "active" } } },
+    { "t_ms": 861, "event": { "type": "session.delegation.created", "offset_ms": 0, "delegation": { "id": "item_EbjbrpmuC1qGZ65O4PrhD", "type": "delegation", "response_id": "resp_09615bc6994a5f58006ad9da97812c87d1ae586822c1ec608b", "target": "responses" }, "client_event_id": "evt_resp_1" } },
+    { "t_ms": 864, "event": { "type": "response.event", "delegation_id": "item_EbjbrpmuC1qGZ65O4PrhD", "event": { "type": "response.created", "response": { "id": "resp_09615bc6994a5f58006ad9da97812c87d1ae586822c1ec608b", "status": "in_progress", "model": "gpt-5.6-luna", "output": [] } } } },
+    { "t_ms": 1848, "event": { "type": "response.event", "delegation_id": "item_EbjbrpmuC1qGZ65O4PrhD", "event": { "type": "response.output_item.added", "item": { "id": "fc_09615bc6994a5f58006ad9da9895f087d1afc2ba4887856a54", "type": "function_call", "status": "in_progress", "arguments": "", "call_id": "call_63hZ5USZAvkMvXYxqNFqbqsM", "name": "get_time" }, "output_index": 0, "sequence_number": 2 } } },
+    { "t_ms": 1889, "event": { "type": "response.event", "delegation_id": "item_EbjbrpmuC1qGZ65O4PrhD", "event": { "type": "response.function_call_arguments.done", "arguments": "{}", "item_id": "fc_09615bc6994a5f58006ad9da9895f087d1afc2ba4887856a54", "output_index": 0, "sequence_number": 4 } } },
+    { "t_ms": 1892, "event": { "type": "response.event", "delegation_id": "item_EbjbrpmuC1qGZ65O4PrhD", "event": { "type": "response.output_item.done", "item": { "id": "fc_09615bc6994a5f58006ad9da9895f087d1afc2ba4887856a54", "type": "function_call", "status": "completed", "arguments": "{}", "call_id": "call_63hZ5USZAvkMvXYxqNFqbqsM", "name": "get_time" }, "output_index": 0, "sequence_number": 5 } } }
+  ],
+  "client_tool_result": [
+    { "t_ms": 1897, "event": { "type": "response.item.create", "event_id": "evt_tool_out_1", "item": { "type": "function_call_output", "call_id": "call_63hZ5USZAvkMvXYxqNFqbqsM", "output": "{\"utc\":\"2026-10-22T09:42:48.660Z\"}" } } },
+    { "t_ms": 1898, "event": { "type": "response.create", "event_id": "evt_resp_2" } }
+  ],
+  "after_tool_result": [
+    { "t_ms": 2050, "event": { "type": "response.event", "delegation_id": "item_EbjbrpmuC1qGZ65O4PrhD", "event": { "type": "response.completed", "response": { "id": "resp_09615bc6994a5f58006ad9da97812c87d1ae586822c1ec608b", "status": "completed", "model": "gpt-5.6-luna", "service_tier": "default", "output": [], "usage": { "input_tokens": 749, "input_tokens_details": { "cache_write_tokens": 0, "cached_tokens": 0 }, "output_tokens": 14, "output_tokens_details": { "reasoning_tokens": 0 }, "total_tokens": 763 } } } } },
+    { "t_ms": 2164, "event": { "type": "response.event", "delegation_id": "item_EbjbrpmuC1qGZ65O4PrhD", "event": { "type": "response.created", "response": { "id": "resp_09615bc6994a5f58006ad9da98d63887d1aea690ca39319644", "status": "in_progress", "model": "gpt-5.6-luna", "output": [] } } } },
+    { "t_ms": 2844, "event": { "type": "response.event", "delegation_id": "item_EbjbrpmuC1qGZ65O4PrhD", "event": { "type": "response.output_text.done", "content_index": 0, "item_id": "msg_09615bc6994a5f58006ad9da99775087d190c248d81c3a0723", "output_index": 0, "sequence_number": 13, "text": "It’s 9:42 AM UTC." } } },
+    { "t_ms": 2991, "event": { "type": "response.event", "delegation_id": "item_EbjbrpmuC1qGZ65O4PrhD", "event": { "type": "response.completed", "response": { "id": "resp_09615bc6994a5f58006ad9da98d63887d1aea690ca39319644", "status": "completed", "model": "gpt-5.6-luna", "service_tier": "default", "output": [], "usage": { "input_tokens": 793, "input_tokens_details": { "cache_write_tokens": 0, "cached_tokens": 0 }, "output_tokens": 13, "output_tokens_details": { "reasoning_tokens": 0 }, "total_tokens": 806 } } } } },
+    { "t_ms": 15451, "event": { "type": "session.usage.updated", "usage": { "seconds": 0 } } },
+    { "t_ms": 30459, "event": { "type": "session.closed", "reason": "expired", "usage": { "seconds": 0 } } }
+  ],
+  "close": { "t_ms": 32613, "code": 1000, "reason": "", "wasClean": true }
+}

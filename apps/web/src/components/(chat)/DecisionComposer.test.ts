@@ -1,21 +1,32 @@
+import { describe, it, expect } from "vitest";
 import { createElement, type ReactNode } from "react";
 import { renderToStaticMarkup as renderMarkup } from "react-dom/server";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import { englishSettingsUiMessages } from "@/i18n/default-messages";
 import { nestDottedMessageKeys } from "@/i18n/message-overlays";
 import {
 	DecisionComposer,
 	createDefaultDecisionDraft,
 	serializeDecisionDraft,
+	serializeDecisionDraftForModel,
 	validateDecisionDraft,
 } from "./DecisionComposer";
 
 function renderToStaticMarkup(children: ReactNode) {
 	const providerProps = { locale: "en-GB" as const, timeZone: "UTC", messages: { SettingsUI: nestDottedMessageKeys(englishSettingsUiMessages) }, children };
-	return renderMarkup(createElement(NextIntlClientProvider, providerProps));
+	return renderMarkup(createElement(AppIntlProvider, providerProps));
 }
 
 describe("DecisionComposer draft helpers", () => {
+	it("preserves Tev's legacy label-only contract", () => {
+		const draft = createDefaultDecisionDraft("choice");
+		draft.prompt = "Choose a department";
+		draft.choices = [{ id: "a", value: "Billing" }, { id: "b", value: "Other" }];
+		expect(serializeDecisionDraftForModel(draft, "together/tev1-4b-experimental")).toEqual({
+			state: { input: "Choose a department" },
+			questions: { decision: { type: "choice", instructions: "Choose a department", criteria: { billing: "Billing", other: "Other" } } },
+		});
+	});
 	it("starts score mode with one empty level numbered from zero", () => {
 		const draft = createDefaultDecisionDraft("score");
 
@@ -43,13 +54,14 @@ describe("DecisionComposer draft helpers", () => {
 		];
 
 		expect(validateDecisionDraft(draft)).toBeNull();
-		expect(serializeDecisionDraft(draft).questions).toEqual({
-			decision: {
+		expect(serializeDecisionDraft(draft).questions).toEqual([
+			{
 				type: "score",
+				name: "decision",
 				instructions: "How strong is the evidence?",
-				criteria: ["No evidence", "Early signal"],
+				levels: [{ label: "No evidence" }, { label: "Early signal" }],
 			},
-		});
+		]);
 	});
 
 	it("keeps long decision questions vertically scrollable", () => {

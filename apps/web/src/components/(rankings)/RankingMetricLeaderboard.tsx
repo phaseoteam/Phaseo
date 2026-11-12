@@ -1,7 +1,5 @@
-"use client";
-
 import { Link } from "@/i18n/navigation";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { formatRoundedCount } from "@/lib/formatRoundedCount";
 import { Logo } from "@/components/Logo";
 import type { ModalityLeaderboardEntry } from "@/components/(rankings)/ModalityLeaderboards";
@@ -34,10 +32,10 @@ export function RankingMetricLeaderboard({
 			return `${format.number(entry.value, { maximumFractionDigits: 1 })} ${tUnits("second")}`;
 		}
 		if (metricId === "text-throughput") {
-			return `${format.number(entry.value, { maximumFractionDigits: 1 })} tok/s`;
+			return format.tps(entry.value) ?? "-";
 		}
 		if (metricId === "text-latency") {
-			return `${format.number(entry.value, { maximumFractionDigits: 0 })} ms`;
+			return format.latency(entry.value) ?? "-";
 		}
 		const unit = metricId.includes("image") ? tUnits("image") : tUnits("token");
 		return `${metricId.includes("image") ? format.number(entry.value, { maximumFractionDigits: 1 }) : formatRoundedCount(entry.value, locale)} ${unit}`;

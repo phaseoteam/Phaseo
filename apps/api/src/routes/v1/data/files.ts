@@ -8,6 +8,7 @@ import { withRuntime } from "../../utils";
 import { authenticate } from "@pipeline/before/auth";
 import type { AuthFailure, AuthSuccess } from "@pipeline/before/auth";
 import { err } from "@pipeline/before/http";
+import { withGatewayErrorObject } from "@core/error-object";
 import { generatePublicId } from "@pipeline/before/genId";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { getBatchFileMeta, saveBatchFileMeta } from "@core/batch-jobs";
@@ -78,16 +79,60 @@ function toText(value: unknown): string | null {
 	return batchText(value);
 }
 
-function proxyResponse(upstream: Response): Response {
+// Batch input and output files are JSONL; anything else is served as opaque bytes.
+const FILE_CONTENT_TYPES = new Set([
+	"application/jsonl",
+	"application/x-ndjson",
+	"application/json",
+	"text/plain",
+	"text/csv",
+	"application/octet-stream",
+]);
+
+function attachmentFilename(disposition: string | null): string | null {
+	const match = disposition?.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
+	const name = match?.[1] ? decodeURIComponentSafe(match[1]).split(/[\\/]/).pop() ?? "" : "";
+	return /^[A-Za-z0-9][A-Za-z0-9._-]{0,199}$/.test(name) ? name : null;
+}
+
+function decodeURIComponentSafe(value: string): string {
+	try { return decodeURIComponent(value); } catch { return value; }
+}
+
+/**
+ * The provider's response with only the headers a client needs. Provider headers such as
+ * openai-organization, openai-project, Set-Cookie or request ids never pass through.
+ * File content is always a download with a safe type, so a provider-chosen type such as
+ * text/html is never rendered.
+ */
+function proxyResponse(upstream: Response, kind: "metadata" | "content" = "metadata"): Response {
+	const headers = new Headers({
+		"Cache-Control": "private, no-store",
+		"X-Content-Type-Options": "nosniff",
+	});
+	// fetch already decoded a compressed body, so its length no longer applies.
+	const length = upstream.headers.get("content-length");
+	if (length && /^\d+$/.test(length) && !upstream.headers.get("content-encoding")) headers.set("Content-Length", length);
+	const type = (upstream.headers.get("content-type") ?? "").split(";")[0]!.trim().toLowerCase();
+	if (kind === "content" && upstream.ok) {
+		headers.set("Content-Type", FILE_CONTENT_TYPES.has(type) ? type : "application/octet-stream");
+		const filename = attachmentFilename(upstream.headers.get("content-disposition"));
+		headers.set("Content-Disposition", filename ? `attachment; filename="${filename}"` : "attachment");
+	} else {
+		headers.set("Content-Type", type.includes("json") ? "application/json" : "text/plain; charset=utf-8");
+	}
 	return new Response(upstream.body, {
 		status: upstream.status,
 		statusText: upstream.statusText,
-		headers: upstream.headers,
+		headers,
 	});
 }
 
 function jsonPayload(payload: unknown, status = 200): Response {
-	return new Response(JSON.stringify(payload), {
+	const body = status >= 400 && payload && typeof payload === "object" && !Array.isArray(payload)
+		? withGatewayErrorObject(payload as Record<string, unknown>, status)
+		: payload;
+	return new Response(JSON.stringify(body), {
 		status,
 		headers: {
 			"Content-Type": "application/json",
@@ -236,19 +281,19 @@ async function handleUpload(req: Request) {
 				: MAX_BATCH_FILE_UPLOAD_BYTES;
 	const declaredLength = Number(req.headers.get("content-length") ?? 0);
 	if (Number.isFinite(declaredLength) && declaredLength > maxUploadBytes) {
-		return jsonPayload({ error: { type: "validation_error", reason: "batch_file_too_large" } }, 413);
+		return jsonPayload({ error: { type: "validation_error", reason: "batch_file_too_large", message: `The batch file exceeds the ${maxUploadBytes}-byte upload limit for this provider.` } }, 413);
 	}
 	let uploadBody: ArrayBuffer;
 	try {
 		uploadBody = await readRequestBodyWithLimit(req.body, maxUploadBytes);
 	} catch (error) {
 		if (error instanceof BatchFileTooLargeError) {
-			return jsonPayload({ error: { type: "validation_error", reason: "batch_file_too_large" } }, 413);
+			return jsonPayload({ error: { type: "validation_error", reason: "batch_file_too_large", message: `The batch file exceeds the ${maxUploadBytes}-byte upload limit for this provider.` } }, 413);
 		}
 		throw error;
 	}
 	if (uploadBody.byteLength <= 0) {
-		return jsonPayload({ error: { type: "validation_error", reason: "batch_file_empty" } }, 400);
+		return jsonPayload({ error: { type: "validation_error", reason: "batch_file_empty", message: "The batch file is empty." } }, 400);
 	}
 	if (providerId === "moonshotai") {
 		try {
@@ -260,7 +305,7 @@ async function handleUpload(req: Request) {
 			if (file.size === 0) throw new Error("empty_file");
 			if (form.get("purpose") !== "batch") throw new Error("batch_purpose_required");
 		} catch {
-			return jsonPayload({ error: { type: "validation_error", reason: "moonshot_batch_file_invalid" } }, 400);
+			return jsonPayload({ error: { type: "validation_error", reason: "moonshot_batch_file_invalid", message: "Kimi batch files must be a multipart upload of one non-empty .jsonl file with purpose \"batch\"." } }, 400);
 		}
 	}
 	const claim = await getSupabaseAdmin().rpc("gateway_claim_batch_file_upload", {
@@ -295,13 +340,13 @@ async function handleUpload(req: Request) {
 	}
 	if (!payload) {
 		await finishUploadClaim({ workspaceId: auth.workspaceId, uploadId: requestId, status: "failed" });
-		return jsonPayload({ error: { type: "upstream_error", reason: "batch_file_upload_invalid_response" } }, 502);
+		return jsonPayload({ error: { type: "upstream_error", reason: "batch_file_upload_invalid_response", message: "The provider returned an unreadable response to the batch file upload." } }, 502);
 	}
 	if (upstream.ok && payload) {
 		const fileId = toText(payload?.id);
 		if (!fileId) {
 			await finishUploadClaim({ workspaceId: auth.workspaceId, uploadId: requestId, status: "failed" });
-			return jsonPayload({ error: { type: "upstream_error", reason: "batch_file_upload_missing_id" } }, 502);
+			return jsonPayload({ error: { type: "upstream_error", reason: "batch_file_upload_missing_id", message: "The provider did not return an ID for the uploaded batch file." } }, 502);
 		}
 		try {
 			await saveBatchFileMeta(auth.workspaceId, fileId, {
@@ -461,7 +506,7 @@ async function handleRetrieveContent(req: Request, id: string) {
 		keySource: owned.keySource,
 		byokKeyId: owned.byokKeyId,
 	});
-	return proxyResponse(upstream);
+	return proxyResponse(upstream, "content");
 }
 
 export const filesRoutes = new Hono<Env>();

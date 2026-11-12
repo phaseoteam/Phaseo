@@ -1,5 +1,3 @@
-"use client";
-
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import type { DisplayDateValue } from "@/lib/displayPreferences";
 
@@ -46,4 +44,9 @@ export function DisplayNumber({
 }) {
 	const format = useDisplayFormatters();
 	return <>{format.number(value, options)}</>;
+}
+
+export function DisplayCount({ value }: { value: number }) {
+	const format = useDisplayFormatters();
+	return <>{format.count(value)}</>;
 }

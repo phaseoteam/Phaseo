@@ -1,0 +1,9 @@
+---
+title: "Créer une règle de dépenses"
+sidebarTitle: "Créer une règle"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml POST /spend-rules"
+description: "Crée une alerte de dépenses, éventuellement une qui bloque les requêtes au-delà d'une limite."
+---
+
+Nécessite `spend_rules:write`. Les appelants OAuth doivent être propriétaires ou administrateurs de l'espace de travail. Envoyez chaque montant en USD (`*_usd`) ou en nanodollars (`*_nanos`), pas les deux. Un espace de travail peut avoir 50 règles de dépenses. Consultez le [guide des alertes de dépenses](../../guides/spend-alerts.mdx) pour les métriques, bases, portées et périodes.

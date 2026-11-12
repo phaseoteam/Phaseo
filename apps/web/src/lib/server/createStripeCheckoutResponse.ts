@@ -1,4 +1,3 @@
-import { NextResponse } from "next/server";
 import {
 	deriveFirstName,
 	sendCheckoutStartedEvent,
@@ -14,6 +13,7 @@ import { requireActiveWorkspaceStripeCustomer } from "@/lib/server/activeTeamStr
 import { createAdminClient } from "@/utils/supabase/admin";
 import { normaliseCountryCode } from "@/lib/countryCodes";
 import { isValidTopUpAmountPence, TOP_UP_CURRENCY } from "@/lib/server/topUpValidation";
+import { CREDIT_TOPUP_METADATA } from "@/lib/server/creditTopups";
 
 type CheckoutKind = "oneoff" | "pay_and_save" | "save_only";
 type CheckoutStartedNotificationKind =
@@ -27,7 +27,28 @@ type CreateStripeCheckoutResponseArgs = {
 	originHeader: string | null;
 	refererHeader: string | null;
 	requestedWorkspaceId?: string;
+	/**
+	 * A top-up request from the API or CLI (credit_topup_requests). Bills that request's
+	 * workspace instead of the active one, tags the PaymentIntent so the webhook can mark the
+	 * request paid, shows the saved-card terms, and expires the session with the request.
+	 * The session is created with the request id as the Stripe idempotency key and params that
+	 * depend only on the request, so concurrent or repeated clicks get one session, never two.
+	 */
+	topUpRequest?: {
+		id: string;
+		workspaceId: string;
+		createdAt: string;
+		expiresAt: string;
+		onSessionCreated: (sessionId: string) => Promise<void>;
+	};
 };
+
+// Terms shown when an API or CLI top-up saves the card for later top-ups.
+const TOP_UP_REQUEST_MANDATE =
+	"By paying, you allow Phaseo to save this card and charge it for later credit top-ups. Each top-up requested through the Phaseo API or CLI is charged only after a workspace owner or admin confirms it from an email. You can remove the card at any time in Settings.";
+// Stripe needs a session to last at least 30 minutes from its creation; counting from the
+// request's own expiry keeps expires_at stable across repeated creates for the same request.
+const TOP_UP_REQUEST_SESSION_SECONDS = 31 * 60;
 
 async function sendCheckoutStartedNotifications(args: {
 	checkoutSessionId: string;
@@ -69,7 +90,7 @@ async function sendCheckoutStartedNotifications(args: {
 
 export async function createStripeCheckoutResponse(
 	args: CreateStripeCheckoutResponseArgs,
-): Promise<NextResponse> {
+): Promise<Response> {
 	const {
 		amountPence,
 		countryCode: countryValue,
@@ -78,10 +99,11 @@ export async function createStripeCheckoutResponse(
 		originHeader,
 		refererHeader,
 		requestedWorkspaceId,
+		topUpRequest,
 	} = args;
 	const configuredBaseUrl = resolveConfiguredStripeCheckoutBaseUrl(process.env);
 	if (process.env.NODE_ENV === "production" && !configuredBaseUrl) {
-		return NextResponse.json({ error: "Checkout redirect base URL is not configured" }, { status: 503 });
+		return Response.json({ error: "Checkout redirect base URL is not configured" }, { status: 503 });
 	}
 	const allowRequestHeaderFallback = process.env.NODE_ENV !== "production";
 	const {
@@ -92,6 +114,7 @@ export async function createStripeCheckoutResponse(
 		userDisplayName,
 	} = await requireActiveWorkspaceStripeCustomer({
 		createIfMissing: true,
+		...(topUpRequest ? { workspaceId: topUpRequest.workspaceId } : {}),
 	});
 	const firstName = deriveFirstName(userDisplayName);
 	const rateLimit = await createAdminClient().rpc("consume_checkout_rate_limit", {
@@ -100,21 +123,21 @@ export async function createStripeCheckoutResponse(
 		p_limit: 10,
 	});
 	if (rateLimit.error) {
-		return NextResponse.json({ error: "Checkout is temporarily unavailable" }, { status: 503 });
+		return Response.json({ error: "Checkout is temporarily unavailable" }, { status: 503 });
 	}
 	if (rateLimit.data !== true) {
-		return NextResponse.json({ error: "Too many checkout attempts" }, {
+		return Response.json({ error: "Too many checkout attempts" }, {
 			status: 429,
 			headers: { "Retry-After": "60" },
 		});
 	}
 	const countryCode = normaliseCountryCode(countryValue);
 	if (kind !== "save_only" && !countryCode) {
-		return NextResponse.json({ error: "Country is required before purchasing credits" }, { status: 400 });
+		return Response.json({ error: "Country is required before purchasing credits" }, { status: 400 });
 	}
 
 	if (requestedWorkspaceId && requestedWorkspaceId !== workspaceId) {
-		return NextResponse.json({ error: "Workspace mismatch" }, { status: 403 });
+		return Response.json({ error: "Workspace mismatch" }, { status: 403 });
 	}
 	if (countryCode) {
 		const { error } = await createAdminClient()
@@ -122,7 +145,7 @@ export async function createStripeCheckoutResponse(
 			.update({ declared_country_code: countryCode, country_declared_at: new Date().toISOString() })
 			.eq("user_id", userId);
 		if (error) {
-			return NextResponse.json({ error: "Could not confirm purchase location" }, { status: 503 });
+			return Response.json({ error: "Could not confirm purchase location" }, { status: 503 });
 		}
 	}
 
@@ -135,10 +158,16 @@ export async function createStripeCheckoutResponse(
 	});
 
 	const stripe = getStripe();
+	const topUpRequestMetadata: Record<string, string> = topUpRequest
+		? { [CREDIT_TOPUP_METADATA.requestId]: topUpRequest.id, [CREDIT_TOPUP_METADATA.flow]: "checkout" }
+		: {};
+	if (topUpRequest && kind !== "pay_and_save") {
+		return Response.json({ error: "Top-up requests use pay_and_save checkout" }, { status: 400 });
+	}
 
 	if (kind === "oneoff") {
 		if (!isValidTopUpAmountPence(amountPence)) {
-			return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+			return Response.json({ error: "Invalid amount" }, { status: 400 });
 		}
 
 		const paymentAttempt = Date.now();
@@ -214,15 +243,15 @@ export async function createStripeCheckoutResponse(
 			},
 		});
 
-		return NextResponse.json({ url: session.url });
+		return Response.json({ url: session.url });
 	}
 
 	if (kind === "pay_and_save") {
 		if (!isValidTopUpAmountPence(amountPence)) {
-			return NextResponse.json({ error: "Invalid amount" }, { status: 400 });
+			return Response.json({ error: "Invalid amount" }, { status: 400 });
 		}
 
-		const paymentAttempt = Date.now();
+		const paymentAttempt = topUpRequest ? Date.parse(topUpRequest.createdAt) : Date.now();
 		const { successUrl: paymentSuccessUrl } = buildStripeCheckoutRedirectUrls({
 			configuredBaseUrl,
 			originHeader,
@@ -255,6 +284,7 @@ export async function createStripeCheckoutResponse(
 					purpose: "top_up",
 					country_code: countryCode!,
 					...(workspaceId ? { workspace_id: workspaceId } : {}),
+					...topUpRequestMetadata,
 				},
 			},
 			success_url: paymentSuccessUrl,
@@ -265,8 +295,16 @@ export async function createStripeCheckoutResponse(
 				purpose: "top_up",
 				country_code: countryCode!,
 				...(workspaceId ? { workspace_id: workspaceId } : {}),
+				...topUpRequestMetadata,
 			},
-		});
+			...(topUpRequest
+				? {
+						custom_text: { submit: { message: TOP_UP_REQUEST_MANDATE } },
+						expires_at: Math.floor(Date.parse(topUpRequest.expiresAt) / 1000) + TOP_UP_REQUEST_SESSION_SECONDS,
+					}
+				: {}),
+		}, topUpRequest ? { idempotencyKey: `credit-topup-checkout:${topUpRequest.id}` } : undefined);
+		if (topUpRequest) await topUpRequest.onSessionCreated(session.id);
 
 		const startedAtIso = new Date().toISOString();
 		const checkoutKindForNotifications =
@@ -293,7 +331,7 @@ export async function createStripeCheckoutResponse(
 			},
 		});
 
-		return NextResponse.json({ url: session.url });
+		return Response.json({ url: session.url });
 	}
 
 	if (kind === "save_only") {
@@ -313,8 +351,8 @@ export async function createStripeCheckoutResponse(
 			},
 		});
 
-		return NextResponse.json({ url: session.url });
+		return Response.json({ url: session.url });
 	}
 
-	return NextResponse.json({ error: "Unknown kind" }, { status: 400 });
+	return Response.json({ error: "Unknown kind" }, { status: 400 });
 }

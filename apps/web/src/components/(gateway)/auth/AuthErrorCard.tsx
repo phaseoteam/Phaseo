@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/link";
 import type { ReactNode } from "react";
 import { defaultLocale, type PublicLocale } from "@/i18n/routing";
 import { localizeAuthPath } from "@/lib/auth/localized-paths";

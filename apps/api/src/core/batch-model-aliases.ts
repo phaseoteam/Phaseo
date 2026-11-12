@@ -22,6 +22,7 @@ function stripProviderPrefix(providerId: string, model: string): string {
 		openai: ["openai/"],
 		anthropic: ["anthropic/"],
 		"google-ai-studio": ["google/", "gemini/"],
+		"google-vertex": ["google/", "gemini/"],
 		mistral: ["mistral/"],
 		moonshotai: ["moonshotai/", "moonshot-ai/"],
 		"x-ai": ["x-ai/", "xai/", "spacex-ai/"],
@@ -37,7 +38,7 @@ function stripProviderPrefix(providerId: string, model: string): string {
 
 export function normalizeOpenAIProBatchModel(model: string): { model: string; proMode: boolean } {
 	const tail = stripProviderPrefix("openai", model.trim());
-	const match = tail.match(/^(gpt-5\.6-(?:sol|terra|luna)|gpt-6-astra|gpt-6\.1-sol)-pro$/iu);
+	const match = tail.match(/^(gpt-5\.6-(?:sol|terra|luna)|gpt-6-astra|gpt-6\.1-(?:sol|terra))-pro$/iu);
 	if (!match) return { model: tail, proMode: false };
 	return { model: match[1]!.toLowerCase(), proMode: true };
 }
@@ -97,7 +98,7 @@ export function resolveBatchPricingModelCandidates(providerId: string, model: un
 
 	add(trimmed);
 	if (!trimmed.includes("/")) add(`${providerId}/${trimmed}`);
-	if (providerId === "google-ai-studio") {
+	if (providerId === "google-ai-studio" || providerId === "google-vertex") {
 		add(`google/${stripProviderPrefix(providerId, trimmed)}`);
 	}
 	if (providerId === "x-ai") {

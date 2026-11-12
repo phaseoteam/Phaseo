@@ -1,91 +1,98 @@
 ---
 title: "Ground follow-up extraction with web fetch"
+sidebarTitle: "Ground extraction with web fetch"
 icon: "file-search"
 description: "Use `phaseo:web_fetch` to pull bounded page text into the tool loop for deterministic follow-up extraction and review."
+"og:image": "https://phaseo.app/og/dynamic?title=Ground%20follow-up%20extraction%20with%20web%20fetch&description=Use%20%60phaseo%3Aweb_fetch%60%20to%20pull%20bounded%20page%20text%20into%20the%20tool%20loop%20for%20deterministic%20follow-up%20extraction%20and%20review.&pathname=/docs/v1/cookbook/tool-grounding-with-web-fetch"
 ---
 
-Use this recipe when a workflow needs one page fetched and turned into bounded text before the model performs extraction, summarization, or classification.
+Give the model `phaseo:web_fetch` and a URL you already know, and Phaseo fetches the page, trims it to a size limit and hands the text back before the model extracts, summarises or classifies it. When you're done you have one request that reads a single page and returns fields from it, and you can confirm in the log which page it actually read.
 
-## 1. Use `phaseo:web_fetch` for one-page grounding
+The request is production-ready with the domain limit shown. Fetched pages are untrusted input: the model may see instructions in them, so validate what it returns. Use [web search](../guides/server-tools/web-search) instead when you don't know the URL.
 
-`phaseo:web_fetch` is a gateway-managed server tool.
+## Send a grounded request
 
-Use it when you need:
+<CodeGroup>
+```bash cURL
+curl https://api.phaseo.app/v1/responses \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "model": "openai/gpt-6-astra",
+    "input": "Fetch https://phaseo.app/docs/v1/guides/tool-calling and list the section headings. Use only the fetched text.",
+    "tools": [
+      {
+        "type": "phaseo:web_fetch",
+        "parameters": {
+          "allowed_domains": ["phaseo.app"],
+          "max_chars": 8000,
+          "max_uses": 1
+        }
+      }
+    ],
+    "tool_choice": "phaseo:web_fetch"
+  }'
+```
 
-- one URL fetched directly by the gateway
-- bounded text returned to the tool loop
-- request-level usage tracking
-- fetched-page visibility in request logs
+```typescript TypeScript
+import Phaseo from "@phaseo/sdk";
 
-This is a better fit than broad search when you already know the URL.
+const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
-## 2. Keep the request explicit
+const response = await client.generateResponse({
+  model: "openai/gpt-6-astra",
+  input:
+    "Fetch https://phaseo.app/docs/v1/guides/tool-calling and list the section headings. Use only the fetched text.",
+  tools: [
+    {
+      type: "phaseo:web_fetch",
+      parameters: {
+        allowed_domains: ["phaseo.app"],
+        max_chars: 8000,
+        max_uses: 1,
+      },
+    },
+  ],
+  tool_choice: "phaseo:web_fetch",
+});
 
-Typical pattern:
+console.log(JSON.stringify(response.output, null, 2));
+console.log(response.usage?.server_tool_use);
+```
+</CodeGroup>
 
-1. ask the model to call `phaseo:web_fetch`
-2. let the gateway fetch and normalize the page
-3. let the model continue with extraction against the returned text
+Keep the prompt explicit about the job after the fetch: extract these fields, summarise this section, classify the document, or check one claim.
 
-Keep the prompt explicit about the final task after fetch:
+| Parameter | Default | Use |
+| --- | --- | --- |
+| `allowed_domains` | None | Fetch only from these domains. The model can narrow the list, never widen it. |
+| `max_chars` | `12000` | Characters of page text returned, up to `100000`. Lower for a title or summary, higher for field extraction. |
+| `max_uses` | `10` | Fetch calls per request, up to `100`. |
 
-- extract fields
-- summarize one section
-- classify the document
-- validate one claim
+The [web fetch guide](../guides/server-tools/web-fetch#parameters) lists the rest, including `blocked_domains` and the engines.
 
-## 3. Bound fetch size intentionally
+## Check what it read
 
-Use `max_chars` when the default bound is too large or too small for the task.
+The tool result, which the request log shows, says exactly which page the model grounded on:
 
-Recommended pattern:
+```json
+{
+  "url": "https://phaseo.app/docs/v1/guides/tool-calling",
+  "final_url": "https://phaseo.app/docs/v1/guides/tool-calling",
+  "status": 200,
+  "content_type": "text/html",
+  "title": "Tool Calling",
+  "truncated": false,
+  "returned_chars": 8000
+}
+```
 
-- smaller bounds for title/summary extraction
-- larger bounds for structured field extraction
+Check `final_url` after redirects and `truncated` before you trust that the model saw the whole page. Each fetch adds 1 to `usage.server_tool_use.web_fetch_requests`.
 
-If the page is very large, prefer a narrower extraction task instead of unbounded fetch size.
+## Know the limits
 
-## 4. Validate logs, not just the final answer
+With the default `direct` engine, Phaseo fetches the page itself and reduces HTML to plain text. It refuses `localhost` and private addresses, follows at most 5 redirects, and checks each redirect against your domain lists; a redirect outside them returns `redirect_blocked_by_domain_policy` to the model.
 
-The request details should show:
+Web fetch suits HTML pages, plain text, and small JSON or XML responses. It isn't for binary files, crawling many pages, or checking how a page renders with JavaScript; use a browser workflow for that. If the page is very large, narrow the extraction task rather than raising `max_chars`.
 
-- fetched URL
-- final URL after redirects
-- page title when available
-- HTTP status
-- content type
-- returned character count
-- truncation flag
-
-Use that view to confirm the model grounded on the page you expected.
-
-## 5. Know the tool limits
-
-`phaseo:web_fetch` is intentionally bounded.
-
-It is good for:
-
-- HTML pages
-- plain text
-- light JSON or XML responses
-
-It is not the right tool for:
-
-- binary files
-- large crawls
-- JavaScript-only rendering checks
-
-For browser-rendered verification, use a browser workflow instead of relying on fetched text alone.
-
-## 6. Recommended rollout pattern
-
-1. start with one preset or one endpoint path
-2. inspect request logs for fetch metadata and truncation
-3. tighten prompt scope if the fetched content is too broad
-4. widen only after the grounded extraction path is stable
-
-## Related
-
-- [Debug web search requests](./web-search-debugging.mdx)
-- [Tool calling](../guides/tool-calling.mdx)
-- [Use response healing for structured JSON](./response-healing-for-structured-json.mdx)
+Start with one preset or endpoint, read the fetch details and truncation in the logs, and tighten the prompt if the fetched text is too broad before you widen use.

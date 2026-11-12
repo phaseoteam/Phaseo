@@ -22,13 +22,15 @@ import { INFERENCE_NET_API_KEY_ENVS } from "../inference-net/config";
 import { DOUBLEWORD_API_KEY_ENVS } from "../doubleword/config";
 import { LIQUID_AI_API_KEY_ENVS } from "../liquid-ai/config";
 import { MISTRAL_API_KEY_ENVS } from "../mistral/config";
+import { empirioLabsModelSupportsResponses } from "../empiriolabs/config";
 import { MOONSHOT_API_KEY_ENVS } from "../moonshotai/config";
 import { normalizeProviderId } from "@/lib/config/providerAliases";
 import { deepInfraMediaUrl } from "../deepinfra/config";
 
 function normalizeCompatProviderId(providerId: string): string {
 	const normalized = normalizeProviderId(providerId);
-	return normalized === "wafer-zdr" ? "wafer" : normalized;
+	// Wafer (ZDR) and Wafer US are offers on the same Wafer account and endpoint.
+	return normalized === "wafer-zdr" || normalized === "wafer-us" ? "wafer" : normalized;
 }
 
 function configError(code: string): Error & { code: string } {
@@ -250,7 +252,6 @@ export function openAICompatHeaders(
 				Object.entries(extraHeaders).filter(([, value]) => typeof value === "string" && value.length > 0),
 			)
 			: {}),
-		...(providerId.trim().toLowerCase() === "wafer-zdr" ? { "Wafer-ZDR": "required" } : {}),
 	};
 }
 
@@ -335,10 +336,15 @@ function normalizeOpenAIModelName(model?: string | null): string {
 	return parts[parts.length - 1] || value;
 }
 
+const SAMBANOVA_RESPONSES_MODELS = new Set(["gpt-oss-120b", "minimax-m3", "gemma-4-31b-it"]);
+
 export function resolveOpenAICompatRoute(providerId: string, model?: string | null): OpenAICompatRoute {
 	const canonicalProviderId = normalizeCompatProviderId(providerId);
 	const config = resolveOpenAICompatConfig(canonicalProviderId);
 	const normalized = normalizeOpenAIModelName(model);
+	if (canonicalProviderId === "empiriolabs") {
+		return empirioLabsModelSupportsResponses(model) ? "responses" : "chat";
+	}
 	// StepFun currently exposes Responses only for step-3.7-flash; its other
 	// text and multimodal models remain on Chat Completions.
 	if (canonicalProviderId === "stepfun") {
@@ -362,6 +368,22 @@ export function resolveOpenAICompatRoute(providerId: string, model?: string | nu
 		return CLOUDFLARE_RESPONSES_MODELS.has(normalized) ? "responses" : "chat";
 	}
 
+	// Venice's beta /responses serves only its openai-* models natively (not
+	// openai-gpt-oss-120b); every other model is translated with `text.format` ignored
+	// and most venice_parameters dropped. Venice: "For non-OpenAI models,
+	// /chat/completions is still the most complete option."
+	// https://docs.venice.ai/guides/features/responses-api
+	// SambaNova lists gpt-oss-120b, MiniMax-M3 and gemma-4-31B-it for /v1/responses; its
+	// other models use Chat Completions (https://docs.sambanova.ai/docs/en/features/responses).
+	if (canonicalProviderId === "sambanova") {
+		return SAMBANOVA_RESPONSES_MODELS.has(normalized.toLowerCase()) ? "responses" : "chat";
+	}
+
+	if (canonicalProviderId === "venice") {
+		const veniceModel = normalized.toLowerCase();
+		return veniceModel.startsWith("openai-") && veniceModel !== "openai-gpt-oss-120b" ? "responses" : "chat";
+	}
+
 	if (canonicalProviderId === "openai") {
 		if (OPENAI_LEGACY_COMPLETIONS_MODELS.has(model ?? "") || OPENAI_LEGACY_COMPLETIONS_MODELS.has(normalized)) {
 			return "chat";
@@ -380,6 +402,7 @@ export function resolveOpenAICompatRoute(providerId: string, model?: string | nu
 
 export function supportsOpenAICompatResponses(providerId: string, model?: string | null): boolean {
 	const canonicalProviderId = normalizeCompatProviderId(providerId);
+	if (canonicalProviderId === "empiriolabs") return empirioLabsModelSupportsResponses(model);
 	if (canonicalProviderId === "deepseek") return resolveOpenAICompatRoute(canonicalProviderId, model) === "responses";
 	const config = resolveOpenAICompatConfig(canonicalProviderId);
 	if (typeof config.supportsResponses === "boolean") return config.supportsResponses;

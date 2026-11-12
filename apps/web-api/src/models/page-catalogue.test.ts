@@ -2,6 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
 	attachModelsPageVariants,
 	fetchModelsPageCatalogue,
+	fetchPublicModelWeeklyMetrics,
 	buildModelsPageFacets,
 	mergeModelWeeklyMetrics,
 	normalizeModelsPagePricing,
@@ -16,6 +17,61 @@ const env = {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("fetchModelsPageCatalogue", () => {
+	it("counts a text-and-Decisions model in both filters while preserving its output modalities", () => {
+		const luna = { gateway_output_modalities: ["text"], gateway_endpoints: ["text.generate", "decisions.make"] };
+		expect(buildModelsPageFacets([luna]).outputModalityOptions).toEqual([{ value: "text", count: 1 }, { value: "decisions", count: 1 }]);
+		expect(luna.gateway_output_modalities).toEqual(["text"]);
+		expect(buildModelsPageFacets([luna, { gateway_output_modalities: [" Decisions ", "decisions"], gateway_endpoints: ["decisions.make"] }]).outputModalityOptions)
+			.toEqual([{ value: "text", count: 1 }, { value: "decisions", count: 2 }]);
+	});
+	it("rejects failed standalone metrics instead of caching an empty success", async () => {
+		vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({
+			code: "57014", message: "statement timeout",
+		}), { status: 500, headers: { "Content-Type": "application/json" } })));
+		await expect(fetchPublicModelWeeklyMetrics(env)).rejects.toMatchObject({ code: "57014" });
+	});
+	it("returns the catalogue without querying deferred weekly metrics", async () => {
+		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+			if (String(input).includes("get_v2_public_model_weekly_metrics")) throw new Error("slow metrics must not be requested");
+			return new Response(JSON.stringify([{ model_id: "test/model", name: "Model" }]));
+		});
+		vi.stubGlobal("fetch", fetchMock);
+		const result = await fetchModelsPageCatalogue(env, { includeMetrics: false });
+		expect(result.models.map((row) => row.model_id)).toEqual(["test/model"]);
+		expect(fetchMock).toHaveBeenCalledTimes(1);
+	});
+
+	it("excludes hidden model identities from the standalone metrics response", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			if (String(input).includes("get_v2_public_model_weekly_metrics")) return new Response(JSON.stringify([
+				{ model_slug: "public/model", weekly_usage_quantity: 10 },
+				{ model_slug: "hidden/model", weekly_usage_quantity: 99 },
+			]));
+			const url = new URL(String(input));
+			expect(url.searchParams.get("hidden")).toBe("eq.false");
+			expect(url.searchParams.get("status")).toBe("neq.disabled");
+			return new Response(JSON.stringify([{ model_slug: "public/model" }]));
+		}));
+		expect(await fetchPublicModelWeeklyMetrics(env)).toEqual([{ model_slug: "public/model", weekly_usage_quantity: 10 }]);
+	});
+	it("keeps dual-capability models visible with unknown prices if pricing enrichment fails", async () => {
+		const row = { model_id: "openai/gpt-6-luna", name: "GPT-6 Luna",
+			gateway_endpoints: ["text.generate", "decisions.make"], lowest_input_price: 0.1, lowest_output_price: 0 };
+		const errorLog = vi.spyOn(console, "error").mockImplementation(() => {});
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("get_public_models_page_payload")) return Response.json([row]);
+			if (url.includes("get_v2_public_model_weekly_metrics")) return Response.json([]);
+			return Response.json({ message: "Pricing unavailable" }, { status: 400 });
+		}));
+		try {
+			const result = await fetchModelsPageCatalogue(env);
+			expect(result.models).toHaveLength(1);
+			expect(result.models[0].gateway_endpoints).toEqual(row.gateway_endpoints);
+			expect(result.models[0].lowest_input_price).toBeNull();
+			expect(result.models[0].operation_pricing).toEqual([]);
+		} finally { errorLog.mockRestore(); }
+	});
 	it("loads more than 1,000 models with one catalogue RPC", async () => {
 		const rows = Array.from({ length: 2001 }, (_, index) => ({
 			model_id: `test/model-${index}`, name: `Model ${index}`,
@@ -104,6 +160,56 @@ describe("fetchModelsPageCatalogue", () => {
 	});
 });
 
+describe("shared models page rows", () => {
+	function stubCatalogue(revision: () => Response) {
+		const store = new Map<string, string>();
+		vi.stubGlobal("caches", { default: {
+			match: async (key: string) => store.has(key) ? new Response(store.get(key)) : undefined,
+			put: async (key: string, response: Response) => { store.set(key, await response.text()); },
+		} });
+		const payloadCalls: URL[] = [];
+		const payloadBodies: string[] = [];
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+			const url = new URL(String(input));
+			if (url.pathname.endsWith("/gateway_catalogue_revision")) return revision();
+			payloadCalls.push(url);
+			payloadBodies.push(String(init?.body ?? ""));
+			return new Response(JSON.stringify([
+				{ model_id: "lab-a/model", name: "A", organisation_id: "lab-a" },
+				{ model_id: "lab-b/model", name: "B", organisation_id: "lab-b" },
+			]));
+		}));
+		return { store, payloadCalls, payloadBodies };
+	}
+
+	it("builds the payload once per catalogue revision for every page and organisation", async () => {
+		const { store, payloadCalls } = stubCatalogue(() => new Response("42"));
+		const all = await fetchModelsPageCatalogue(env, { includeMetrics: false });
+		const lab = await fetchModelsPageCatalogue(env, { organisationId: "lab-b", includeMetrics: false });
+		expect(all.models.map((row) => row.model_id)).toEqual(["lab-a/model", "lab-b/model"]);
+		expect(lab.models.map((row) => row.model_id)).toEqual(["lab-b/model"]);
+		expect(payloadCalls).toHaveLength(1);
+		expect([...store.keys()]).toEqual(["https://web-api.internal/models-page-rows/v2/42/"]);
+	});
+
+	it("rebuilds when the catalogue revision changes", async () => {
+		let revision = "42";
+		const { payloadCalls } = stubCatalogue(() => new Response(revision));
+		await fetchModelsPageCatalogue(env, { includeMetrics: false });
+		revision = "43";
+		await fetchModelsPageCatalogue(env, { includeMetrics: false });
+		expect(payloadCalls).toHaveLength(2);
+	});
+
+	it("loads only the organisation without caching when the revision is unavailable", async () => {
+		const { store, payloadCalls, payloadBodies } = stubCatalogue(() => Response.json({ message: "permission denied" }, { status: 403 }));
+		await fetchModelsPageCatalogue(env, { organisationId: "lab-a", includeMetrics: false });
+		expect(store.size).toBe(0);
+		expect(payloadCalls[0].pathname).toMatch(/get_public_models_page_payload$/);
+		expect(JSON.parse(payloadBodies[0])).toMatchObject({ p_organisation_id: "lab-a" });
+	});
+});
+
 describe("buildModelsPageFacets", () => {
 	it("keeps deprecated and retired models out of the not-active bucket", () => {
 		const rows = attachModelsPageVariants([
@@ -151,6 +257,25 @@ describe("buildModelsPageFacets", () => {
 
 		expect(facets.outputModalityOptions).toEqual([
 			{ value: "audio_stt", count: 1 },
+		]);
+	});
+
+	it("counts licences under one label per licence and skips unknown ones", () => {
+		const facets = buildModelsPageFacets([
+			{ license: "Apache 2.0" },
+			{ license: "Apache-2.0" },
+			{ license: "Apache License 2.0" },
+			{ license: "proprietary" },
+			{ license: "MIT" },
+			{ license: "Unknown" },
+			{ license: null },
+			{},
+		]);
+
+		expect(facets.licenseOptions).toEqual([
+			{ value: "Apache 2.0", count: 3 },
+			{ value: "MIT", count: 1 },
+			{ value: "Proprietary", count: 1 },
 		]);
 	});
 });
@@ -207,6 +332,23 @@ describe("attachModelsPageVariants", () => {
 				},
 			}),
 		]);
+	});
+
+	it("normalises licences and gives variants without one the base model's licence", () => {
+		const rows = attachModelsPageVariants([
+			{ model_id: "poolside/laguna-s-2.1", name: "Laguna S 2.1", license: " Apache-2.0 " },
+			{
+				model_id: "poolside/laguna-s-2.1:free",
+				name: "Laguna S 2.1 (Free)",
+				variant_kind: "free",
+				base_model_id: "poolside/laguna-s-2.1",
+				license: null,
+			},
+			{ model_id: "catalogue/unlicensed", name: "Unlicensed", license: "" },
+		]);
+
+		expect(rows.map((row) => row.license)).toEqual(["Apache 2.0", "Apache 2.0", undefined]);
+		expect(JSON.parse(JSON.stringify(rows[2]))).not.toHaveProperty("license");
 	});
 });
 
@@ -274,9 +416,10 @@ describe("normalizeModelsPagePricing", () => {
 			lowest_standard_output_price_label: "Output",
 			lowest_standard_output_price_unit: "1M tokens",
 			lowest_from_price_unit: "1M tokens",
+			pricing_summary: { kind: "tokens", from: false, input: 0.3, output: 1.5, unit: "1M tokens" },
 			pricing_detail_rows: [
-				{ label: "Input Text Tokens", value: "$0.3 / 1M tokens" },
-				{ label: "Output Text Tokens", value: "$1.5 / 1M tokens" },
+				{ label: "Input Text Tokens", value: "$0.30 / 1M tokens" },
+				{ label: "Output Text Tokens", value: "$1.50 / 1M tokens" },
 			],
 		});
 	});

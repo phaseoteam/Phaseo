@@ -1,4 +1,3 @@
-"use client";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import { useMemo, useRef, useState, useTransition } from "react";
@@ -6,10 +5,11 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { useQuery } from "@tanstack/react-query";
 import { Check, ChevronDown, DollarSign, Gauge, Layers3, Loader2, Plus, ShieldCheck, Sparkles, Trash2, Zap } from "lucide-react";
 import { toast } from "sonner";
-import { updateAutoRoutingSettings } from "@/app/(dashboard)/settings/routing/actions";
+import { updateAutoRoutingSettings } from "@/features/settings/routing/actions";
 import { Logo } from "@/components/Logo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { SettingsFormActions } from "../SettingsFormActions";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -21,7 +21,7 @@ import { fetchJsonQuery } from "@/lib/query/fetchers";
 import { WEB_QUERY_POLICIES } from "@/lib/query/policies";
 import { webQueryKeys } from "@/lib/query/queryKeys";
 import { cn } from "@/lib/utils";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 
 type ModelOption = { id: string; label: string; organisationId: string; organisationName: string; releaseDate: string | null; releaseTimestamp: number | null; providerCount: number; inputPrice: number | null; outputPrice: number | null };
 const TEXT_CAPABILITIES = new Set(["responses", "chat/completions", "chat.completions", "messages", "text.generate"]);
@@ -163,7 +163,7 @@ export default function AutoRoutingSettingsClient({ initialData }: { initialData
 		if (!validCustomLimits) { toast.error(s("enterBothPriceLimits")); return; }
 		if (!modelCatalogLoading && !modelCatalogError && !eligibleModels.length) { toast.error(s("noEligibleTextModels")); return; }
 		startTransition(async () => {
-			const result = await updateAutoRoutingSettings(current);
+			const result = await updateAutoRoutingSettings({ data: current });
 			if (!result.ok) {
 				toast.error(
 					result.error.code === "serviceRejected"
@@ -213,7 +213,10 @@ export default function AutoRoutingSettingsClient({ initialData }: { initialData
 				</div>
 			</section>
 
-			<section className="grid gap-6 pt-2 lg:grid-cols-[1fr_320px] lg:items-start"><div className="text-xs leading-5 text-muted-foreground"><p>{revision ? <>{s("revision")} <span className="font-mono text-foreground">{revision.slice(0, 8)}</span></> : s("usingWorkspaceDefaults")}{updatedAt ? <> · {m("updatedAt", { date: new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(updatedAt)) })}</> : null}</p>{!initialData.canManage ? <p className="mt-1">{s("ownersAdminsOnly")}</p> : null}</div><div className="space-y-3"><div className="rounded-lg border bg-zinc-950 p-4 text-zinc-100"><div className="flex items-center gap-2 text-xs font-medium text-zinc-300"><ShieldCheck className="size-3.5" />{s("requestContract")}</div><pre className="mt-3 overflow-x-auto font-mono text-[11px] leading-5 text-zinc-300"><code>{`{\n  "model": "phaseo/auto",\n  "input": "Your prompt"\n}`}</code></pre></div><Button className="w-full" onClick={save} disabled={!initialData.canManage || !dirty || !valid || isPending}>{isPending ? <Loader2 className="size-4 animate-spin" /> : null}{isPending ? s("saving") : s("saveConfiguration")}</Button></div></section>
+			<section className="grid gap-6 pt-2 lg:grid-cols-[1fr_320px] lg:items-start"><div className="text-xs leading-5 text-muted-foreground"><p>{revision ? <>{s("revision")} <span className="font-mono text-foreground">{revision.slice(0, 8)}</span></> : s("usingWorkspaceDefaults")}{updatedAt ? <> · {m("updatedAt", { date: new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(new Date(updatedAt)) })}</> : null}</p>{!initialData.canManage ? <p className="mt-1">{s("ownersAdminsOnly")}</p> : null}</div><div className="rounded-lg border bg-zinc-950 p-4 text-zinc-100"><div className="flex items-center gap-2 text-xs font-medium text-zinc-300"><ShieldCheck className="size-3.5" />{s("requestContract")}</div><pre className="mt-3 overflow-x-auto font-mono text-[11px] leading-5 text-zinc-300"><code>{`{\n  "model": "phaseo/auto",\n  "input": "Your prompt"\n}`}</code></pre></div></section>
+			<SettingsFormActions active={dirty || isPending}>
+				<Button onClick={save} disabled={!initialData.canManage || !dirty || !valid || isPending}>{isPending ? <Loader2 className="size-4 animate-spin" /> : null}{isPending ? s("saving") : s("saveConfiguration")}</Button>
+			</SettingsFormActions>
 		</div>
 	);
 }

@@ -1,10 +1,9 @@
-"use client";
-
-import Image from "next/image";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import Image from "@/components/image";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import Link from "@/components/link";
+import { usePathname } from "@/lib/navigation";
 import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { debounce, parseAsArrayOf, parseAsString, useQueryState } from "nuqs";
 import {
 	Activity,
@@ -71,6 +70,7 @@ import type {
 	ProviderModalityKey,
 } from "@/lib/fetchers/api-providers/providerDataTypes";
 import { formatLocation } from "@/lib/locations";
+import { useStickyToolbarOffsets } from "@/components/layout/useStickyToolbarOffsets";
 
 interface APIProvidersDisplayProps {
 	providers: APIProviderCardType[];
@@ -246,7 +246,7 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 		false: t("no"),
 		unknown: t("unknown"),
 	}), [t]);
-	const formatTokens = (value: number) => new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(value || 0);
+	const formatTokens = useDisplayFormatters().count;
 	const countryLabel = useCallback((code: string) => {
 		if (!code) return t("unknown");
 		try {
@@ -453,31 +453,7 @@ export default function APIProvidersDisplay({ providers, showPrimaryHeader = tru
 	const toolbarRef = useRef<HTMLDivElement | null>(null);
 	const tableContainerRef = useRef<HTMLDivElement | null>(null);
 	const tableHeaderTrackRef = useRef<HTMLDivElement | null>(null);
-	const [stickyOffsets, setStickyOffsets] = useState({ toolbarTop: 60, tableHeaderTop: 60 });
-
-	useEffect(() => {
-		const toolbar = toolbarRef.current;
-		if (!toolbar || typeof window === "undefined") return;
-		const siteHeader = document.querySelector<HTMLElement>("#dashboard-shell > header");
-		const mediumViewport = window.matchMedia("(min-width: 768px)");
-		const updateOffsets = () => {
-			const toolbarTop = Math.ceil(siteHeader?.getBoundingClientRect().height ?? 60);
-			const toolbarHeight = mediumViewport.matches ? Math.ceil(toolbar.getBoundingClientRect().height) : 0;
-			const tableHeaderTop = toolbarTop + toolbarHeight;
-			setStickyOffsets((current) => current.toolbarTop === toolbarTop && current.tableHeaderTop === tableHeaderTop ? current : { toolbarTop, tableHeaderTop });
-		};
-		updateOffsets();
-		const resizeObserver = new ResizeObserver(updateOffsets);
-		resizeObserver.observe(toolbar);
-		if (siteHeader) resizeObserver.observe(siteHeader);
-		mediumViewport.addEventListener("change", updateOffsets);
-		window.addEventListener("resize", updateOffsets);
-		return () => {
-			resizeObserver.disconnect();
-			mediumViewport.removeEventListener("change", updateOffsets);
-			window.removeEventListener("resize", updateOffsets);
-		};
-	}, []);
+	const stickyOffsets = useStickyToolbarOffsets(toolbarRef);
 
 	useEffect(() => {
 		const tableContainer = tableContainerRef.current;

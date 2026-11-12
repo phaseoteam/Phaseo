@@ -1,0 +1,57 @@
+---
+title: "eve"
+icon: "bot"
+description: "شغّل وكلاء eve على نماذج Phaseo باستخدام مزوّد Phaseo لـ AI SDK."
+---
+
+مرّر نموذجًا من [مزوّد Phaseo لـ AI SDK](./ai-sdk.mdx) إلى وكيل [eve](https://eve.dev)، فيمر كل استدعاء للنموذج عبر Phaseo مع التوجيه والمفاتيح والميزانيات والسجلات الخاصة بك. يقبل eve أي نموذج لغوي من AI SDK.
+
+## التثبيت
+
+يستخدم eve الإصدار AI SDK 7، لذا ثبّت `@phaseo/ai-sdk-provider` بالإصدار 2.0.1 أو أحدث:
+
+```bash
+npm install @phaseo/ai-sdk-provider
+```
+
+اضبط `PHASEO_API_KEY` في `.env.local` لـ `eve dev`، وفي بيئة الخادم لكل نشر. لا يعمل اتصال `/login` في eve إلا على جهازك.
+
+## توجيه وكيل eve إلى Phaseo
+
+```ts agent/agent.ts
+import { defineAgent } from "eve";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+
+export default defineAgent({
+	model: phaseo("openai/gpt-6-astra"),
+	modelContextWindowTokens: 922_000,
+	reasoning: "low",
+});
+```
+
+مرّر كائن نموذج مثل `phaseo("openai/gpt-6-astra")`؛ فسلسلة معرّف النموذج العادية لا تُرسل إلى Phaseo. اضبط `modelContextWindowTokens` على قيمة `limits.input_tokens` للنموذج من [نقطة نهاية النماذج](../../api-reference/endpoint/models.mdx). لا يستطيع eve معرفة نافذة السياق لكائن النموذج، ويستخدم هذا الرقم ليقرر متى يضغط المحادثة.
+
+شغّل الوكيل مرة واحدة وتأكد من ظهور الطلب في **الإعدادات → الاستخدام → السجلات**.
+
+## اختيار نموذج لكل دور
+
+تعمل `defineDynamic` قبل كل استدعاء للنموذج. أعِد كائن اختيار حتى يحتفظ كل نموذج بنافذة السياق الخاصة به:
+
+```ts agent/agent.ts
+import { defineAgent } from "eve";
+import { defineDynamic } from "eve/models";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+
+export default defineAgent({
+	model: defineDynamic((ctx) =>
+		ctx.session.auth.initiator?.attributes.plan === "enterprise"
+			? { model: phaseo("openai/gpt-6-sol"), modelContextWindowTokens: 1_050_000 }
+			: { model: phaseo("openai/gpt-6-luna"), modelContextWindowTokens: 1_050_000 },
+	),
+});
+```
+
+## القيود المعروفة
+
+- تعمل الأدوات والبث والاستدلال والضغط والتخزين المؤقت للموجّهات عبر Phaseo. تظهر قراءات ذاكرة الموجّهات المؤقتة في أحداث الاستخدام في eve وفي سجلات Phaseo.
+- يترك eve تكلفة كل تشغيل فارغة لكائنات النماذج. اطّلع على التكلفة في صفحة **الاستخدام** في Phaseo أو في **السجلات**.

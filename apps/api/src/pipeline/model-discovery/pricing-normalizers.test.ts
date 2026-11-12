@@ -190,7 +190,7 @@ describe("normalizeProviderModelPricing", () => {
 	});
 
 	it("normalizes public aggregator feeds", () => {
-		expect(normalizeProviderModelPricing("pioneer", {
+		expect(normalizeProviderModelPricing("fastino", {
 			input_price_per_million: 1.5,
 			cache_read_price_per_million: 0.15,
 			output_price_per_million: 9,

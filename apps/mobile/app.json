@@ -2,6 +2,7 @@
   "expo": {
     "name": "Phaseo",
     "slug": "phaseo",
+    "owner": "danielphaseo",
     "scheme": "phaseo",
     "version": "0.1.0",
     "platforms": [
@@ -10,27 +11,95 @@
     ],
     "orientation": "default",
     "userInterfaceStyle": "automatic",
+    "icon": "./assets/phaseo-icon.png",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.phaseo.client"
+      "bundleIdentifier": "app.phaseo.client",
+      "infoPlist": {
+        "CADisableMinimumFrameDurationOnPhone": true
+      }
     },
     "android": {
       "package": "app.phaseo.client",
       "adaptiveIcon": {
-        "backgroundColor": "#ffffff"
-      }
+        "foregroundImage": "./assets/phaseo-icon.png",
+        "backgroundColor": "#ffffff",
+        "monochromeImage": "./assets/phaseo-icon.png"
+      },
+      "softwareKeyboardLayoutMode": "resize"
     },
     "plugins": [
       "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#ffffff",
+          "image": "./assets/phaseo-wordmark-dark.png",
+          "imageWidth": 240,
+          "dark": {
+            "backgroundColor": "#09090b",
+            "image": "./assets/phaseo-wordmark-light.png"
+          }
+        }
+      ],
       "expo-secure-store",
-      "expo-font"
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Phaseo uses the camera to scan the code that pairs it with Phaseo on your computer.",
+          "recordAudioAndroid": false
+        }
+      ],
+      "expo-sqlite",
+      [
+        "expo-font",
+        {
+          "android": {
+            "fonts": [
+              {
+                "fontFamily": "Montserrat",
+                "fontDefinitions": [
+                  { "path": "./assets/Montserrat-Regular.ttf", "weight": 400 },
+                  { "path": "./assets/Montserrat-SemiBold.ttf", "weight": 600 },
+                  { "path": "./assets/Montserrat-Bold.ttf", "weight": 700 }
+                ]
+              }
+            ]
+          },
+          "ios": {
+            "fonts": [
+              "./assets/Montserrat-Regular.ttf",
+              "./assets/Montserrat-SemiBold.ttf",
+              "./assets/Montserrat-Bold.ttf"
+            ]
+          }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#2563eb",
+          "defaultChannel": "new-models"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Phaseo uses your photos when you attach them to a chat.",
+          "cameraPermission": "Phaseo uses the camera when you take a photo to attach to a chat."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
     },
     "extra": {
       "phaseoOrigin": "https://phaseo.app",
-      "phaseoApiOrigin": "https://api.phaseo.app/v1"
+      "phaseoApiOrigin": "https://api.phaseo.app",
+      "eas": {
+        "projectId": "85d872c7-e3e1-4409-a75c-ff51e158341b"
+      }
     }
   }
 }

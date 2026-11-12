@@ -211,6 +211,8 @@ function getPath(value: unknown, path: string | null): unknown {
 
 function headerValue(headers: Headers | Record<string, string> | undefined, name: string | null): string | null {
 	if (!headers || !name) return null;
+	if (/authorization|cookie|secret|password|token|api[-_]?key/i.test(name) ||
+		/^(?:x-(?:phaseo|aistats|control|internal)-|cf-access-)/i.test(name)) return null;
 	if (headers instanceof Headers) return headers.get(name);
 	const target = name.toLowerCase();
 	const match = Object.entries(headers).find(([key]) => key.toLowerCase() === target);

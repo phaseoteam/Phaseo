@@ -1,0 +1,38 @@
+import { describe, it, expect, vi } from "vitest";
+import { renderToStaticMarkup } from "react-dom/server";
+import { AppIntlProvider } from "@/i18n/react";
+import catalogue from "../../../../messages/en-GB/catalogue.json";
+import ModelStickyHeader from "./ModelStickyHeader";
+
+vi.mock("./UseModelSheet", () => ({ UseModelSheet: () => <button>Use API</button> }));
+vi.mock("@/components/Logo", () => ({ Logo: () => null }));
+vi.mock("@/components/link", async (importOriginal) => ({
+	...(await importOriginal<typeof import("@/components/link")>()), default: ({ href, children, ...props }: any) => <a href={href} {...props}>{children}</a>,
+}));
+
+function render(endpoints: string[], decisions: boolean) {
+	return renderToStaticMarkup(<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ Catalogue: catalogue }}>
+		<ModelStickyHeader modelId="openai/gpt-6-luna" organisationId="openai" organisationName="OpenAI"
+			modelName="GPT-6 Luna" observeId="header" isDecisionsModel={decisions}
+			gatewayMetadata={{ activeProviders: endpoints.map(endpoint => ({ endpoint })) } as any} />
+	</AppIntlProvider>);
+}
+describe("model detail playground actions", () => {
+	it("preserves Chat and API actions while adding Decisions for a dual-capability model", () => {
+		const html = render(["text.generate", "decisions.make"], true);
+		expect(html).toContain('href="/chat?model=openai%2Fgpt-6-luna"');
+		expect(html).toContain('href="/chat/decisions?model=openai%2Fgpt-6-luna"');
+		expect(html).toContain("Use API");
+	});
+	it("does not introduce Chat for a Decisions-only model", () => {
+		const html = render(["decisions.make"], true);
+		expect(html).not.toContain('href="/chat?');
+		expect(html).toContain('href="/chat/decisions?');
+		expect(html).not.toContain("Use API");
+	});
+	it("keeps a text-only model unchanged", () => {
+		const html = render(["text.generate"], false);
+		expect(html).toContain('href="/chat?');
+		expect(html).not.toContain('href="/chat/decisions?');
+	});
+});

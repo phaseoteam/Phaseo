@@ -134,20 +134,17 @@ begin
   end if;
 
   if position(
-    'cardinality(activated_ids) > 0'
+    'routing_enabled = true'
     in pg_get_functiondef('public.set_self_serve_provider_review(text,text,text,uuid)'::regprocedure)
-  ) = 0 then
-    raise exception 'Provider approval can enable routing without an activated route';
+  ) > 0 then
+    raise exception 'Provider approval must sync the current snapshot instead of enabling old routes';
   end if;
 
   if position(
-    'stealth_route.model_slug = route.model_slug'
-    in pg_get_functiondef('public.set_self_serve_provider_review(text,text,text,uuid)'::regprocedure)
-  ) = 0 or position(
-    'and stealth_route.is_stealth'
+    'refresh_requested = p_decision = ''approved'''
     in pg_get_functiondef('public.set_self_serve_provider_review(text,text,text,uuid)'::regprocedure)
   ) = 0 then
-    raise exception 'Provider approval can activate a route hidden by another provider’s stealth route';
+    raise exception 'Provider approval does not request a fresh catalog sync';
   end if;
 
   if position(

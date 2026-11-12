@@ -1,9 +1,7 @@
-"use client";
-
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent, DragEvent } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { usePathname, useSearchParams } from "@/lib/navigation";
+import { useTranslations } from "@/i18n/react";
 import { MessageScroller } from "@shadcn/react/message-scroller";
 import { ChatConversationComposer } from "@/components/(chat)/ChatConversationComposer";
 import { ChatConversationMessages } from "@/components/(chat)/ChatConversationMessages";
@@ -79,6 +77,7 @@ function formatRecordingFilename(date = new Date()) {
 }
 
 type ChatConversationProps = {
+	onOpenUIStateChange?: (messageId: string, variantId: string, state: Record<string, unknown>) => void;
 	activeThread: ChatThread | null;
 	isSending: boolean;
 	isAuthenticated: boolean;
@@ -131,6 +130,7 @@ function shouldFocusComposerAfterThreadChange() {
 }
 
 export function ChatConversation({
+	onOpenUIStateChange,
 	activeThread,
 	isSending,
 	isAuthenticated,
@@ -903,6 +903,16 @@ export function ChatConversation({
 	]);
 	const effectiveSendGateType =
 		isAuthenticated && sendGateType === "auth" ? null : sendGateType;
+	const openUISendPending = useRef(false);
+	const handleOpenUISubmit = useCallback(async (content: string) => {
+		if (isSending || openUISendPending.current) return false;
+		openUISendPending.current = true;
+		try {
+			return await onSend({ content, attachments: [], webSearchEnabled, apiServerToolsEnabled, serverTools, serverToolConfigs });
+		} finally {
+			openUISendPending.current = false;
+		}
+	}, [isSending, onSend, webSearchEnabled, apiServerToolsEnabled, serverTools, serverToolConfigs]);
 	const hasNoMessages = (activeThread?.messages.length ?? 0) === 0;
 	const promptHistory = useMemo(
 		() =>
@@ -977,6 +987,9 @@ export function ChatConversation({
 							className={`mx-auto flex min-w-0 w-full max-w-5xl flex-col gap-4 px-4 py-6 md:px-8 ${hasNoMessages ? "min-h-full" : ""}`}
 						>
 							<ChatConversationMessages
+								onOpenUIStateChange={onOpenUIStateChange}
+								interactiveActionsDisabled={isSending || !isAuthenticated}
+								onOpenUISubmit={handleOpenUISubmit}
 								activeThread={activeThread}
 								isSending={isSending}
 								lastMessageId={lastMessageId}

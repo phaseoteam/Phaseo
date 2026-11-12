@@ -57,6 +57,9 @@ function decodeTrackedText(contents) {
 const violations = [];
 
 for (const path of trackedFiles) {
+	// This immutable replay snapshot preserves production's old identifiers.
+	// Active schema definitions and forward migrations remain subject to this check.
+	if (path === "supabase/baseline/schema.sql") continue;
 	const text = decodeTrackedText(readFileSync(path));
 	if (text === null) continue;
 

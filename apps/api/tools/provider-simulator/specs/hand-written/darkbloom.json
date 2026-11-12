@@ -1,0 +1,35 @@
+{
+	"id": "darkbloom",
+	"source": {
+		"url": null,
+		"docs": "https://docs.darkbloom.dev/reference/chat-completions",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. Claims full OpenAI compatibility but documents no tools or response_format. max_tokens defaults to 8192 if omitted. /v1/responses is an alias auto-detected by input vs messages. Attestation response headers (X-Provider-*)."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"max_tokens": {},
+					"temperature": {},
+					"top_p": {},
+					"stop": {},
+					"seed": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

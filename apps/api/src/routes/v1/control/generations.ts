@@ -12,11 +12,37 @@ import { isGatewayIoLoggingFeatureEnabled } from "@core/feature-flags";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { json, withRuntime } from "../../utils";
 import { requireCapability } from "./route-helpers";
+import { detailMetadataWithoutContent } from "@/core/request-content-details";
 
 function canReadGenerationIoLog(auth: AuthSuccess): boolean {
 	if (auth.internal) return true;
 	const scopes = new Set([...(auth.scopes ?? []), ...(auth.oauthScopes ?? [])]);
 	return scopes.has(CAPABILITIES.GENERATIONS_READ);
+}
+
+// Workspaces can limit stored contents to owners and admins. API keys then act
+// with their creator's role; a failed lookup hides the contents.
+async function canReadWorkspaceIoLogContents(
+	supabase: ReturnType<typeof getSupabaseAdmin>,
+	auth: AuthSuccess,
+): Promise<boolean> {
+	if (auth.internal) return true;
+	const settings = await supabase
+		.from("workspace_settings")
+		.select("io_logging_contents_access")
+		.eq("workspace_id", auth.workspaceId)
+		.maybeSingle();
+	if (settings.error) return String(settings.error.code ?? "") === "42703";
+	if (settings.data?.io_logging_contents_access !== "admins") return true;
+	const userId = String(auth.userId ?? "").trim();
+	if (!userId) return false;
+	const [membership, workspace] = await Promise.all([
+		supabase.from("workspace_members").select("role").eq("workspace_id", auth.workspaceId).eq("user_id", userId).maybeSingle(),
+		supabase.from("workspaces").select("owner_user_id").eq("id", auth.workspaceId).maybeSingle(),
+	]);
+	if (membership.error || workspace.error) return false;
+	if (workspace.data?.owner_user_id === userId) return true;
+	return ["owner", "admin"].includes(String(membership.data?.role ?? "").toLowerCase());
 }
 
 function resolveReplayRequest(value: unknown): Record<string, unknown> | null {
@@ -92,8 +118,11 @@ async function handleGeneration(req: Request) {
     }
 
     const ioLog = ioLogData as Record<string, any> | null;
+    // Also covers the search queries and fetched URLs kept in detail_metadata.
+    const mayReadContents = await canReadWorkspaceIoLogContents(supabase, auth);
+    const contentsReadable = ioLog?.io_log_status === "stored" && mayReadContents;
     let ioLogPayload: Record<string, unknown> | null = null;
-    if (ioLog?.io_log_status === "stored" && typeof ioLog.io_log_object_key === "string") {
+    if (contentsReadable && typeof ioLog?.io_log_object_key === "string") {
         try {
             ioLogPayload = await readGatewayIoLogObject(ioLog.io_log_object_key);
         } catch {
@@ -101,14 +130,17 @@ async function handleGeneration(req: Request) {
         }
     }
     const replayRequest = resolveReplayRequest(ioLogPayload?.request_payload);
+    // The internal wallet charge key is for reconciliation, not part of the public generation.
+    const { billing_request_id: _billingRequestId, ...generation } = data as Record<string, unknown>;
 
     return json(
         {
-            ...data,
+            ...generation,
+            detail_metadata: mayReadContents ? generation.detail_metadata : detailMetadataWithoutContent(generation.detail_metadata),
             replay_supported: Boolean(replayRequest),
             replay_request: replayRequest,
 			io_log: ioLog ? {
-				status: ioLog.io_log_status ?? "not_enabled",
+				status: ioLog.io_log_status === "stored" && !contentsReadable ? "restricted" : ioLog.io_log_status ?? "not_enabled",
 				storage_provider: ioLog.io_log_storage_provider ?? null,
 				bucket: ioLog.io_log_bucket ?? null,
 				object_key: ioLog.io_log_object_key ?? null,

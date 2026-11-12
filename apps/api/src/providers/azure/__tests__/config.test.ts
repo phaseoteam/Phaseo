@@ -1,5 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import {
+	azureAnthropicHeaders,
+	azureAnthropicUrl,
 	azureDeployment,
 	azureHeaders,
 	azureOpenAIV1Url,
@@ -22,6 +24,28 @@ afterAll(() => {
 });
 
 describe("azure config", () => {
+	it.each([
+		"https://phaseo-resource.openai.azure.com/openai/v1/",
+		"https://phaseo-resource.openai.azure.com/openai/v1?api-version=preview#fragment",
+		"https://phaseo-resource.services.ai.azure.com",
+		"https://phaseo-resource.services.ai.azure.com/anthropic/v1/",
+	])("uses the Claude Messages endpoint for %s", (baseUrl) => {
+		expect(azureAnthropicUrl(baseUrl)).toBe("https://phaseo-resource.services.ai.azure.com/anthropic/v1/messages");
+	});
+
+	it("preserves explicitly configured sovereign and proxy hosts", () => {
+		expect(azureAnthropicUrl("https://resource.openai.azure.us/anthropic"))
+			.toBe("https://resource.openai.azure.us/anthropic/v1/messages");
+		expect(azureAnthropicUrl("https://proxy.example/resource/openai/v1"))
+			.toBe("https://proxy.example/resource/anthropic/v1/messages");
+	});
+
+	it("uses Claude's x-api-key without changing Azure OpenAI authentication", () => {
+		expect(azureAnthropicHeaders("claude-key")).toEqual({ "x-api-key": "claude-key", "Content-Type": "application/json" });
+		expect(azureHeaders("openai-key")).toEqual({ "api-key": "openai-key", "Content-Type": "application/json" });
+		expect(azureAnthropicHeaders("entra-token", "entra"))
+			.toEqual({ Authorization: "Bearer entra-token", "Content-Type": "application/json" });
+	});
 	it("builds Azure OpenAI chat URL from resource endpoint + deployment", () => {
 		teardownTestRuntime();
 		setupRuntimeFromEnv({

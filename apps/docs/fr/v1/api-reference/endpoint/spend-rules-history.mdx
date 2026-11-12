@@ -1,0 +1,9 @@
+---
+title: "Lister l'historique d'une règle de dépenses"
+sidebarTitle: "Historique de la règle"
+badge: "Beta"
+openapi: "/fr/openapi/v1/openapi.localized.yaml GET /spend-rules/{id}/history"
+description: "Liste les alertes et les événements de blocage envoyés par une règle de dépenses."
+---
+
+Nécessite `spend_rules:read`. Parcourez les événements avec `limit` (de 1 à 100) et `offset`. `periods` indique les seuils déjà envoyés pour chaque période.

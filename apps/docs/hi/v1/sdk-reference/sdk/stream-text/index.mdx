@@ -1,17 +1,18 @@
 ---
 icon: "radio"
-title: "streamText() (AI SDK): टेक्स्ट स्ट्रीमिंग"
-description: "Vercel AI SDK और Phaseo से text stream करें।"
+title: "टेक्स्ट स्ट्रीम करें (AI SDK)"
+sidebarTitle: "टेक्स्ट स्ट्रीम करें"
+description: "Vercel AI SDK और Phaseo के साथ स्ट्रीमिंग टेक्स्ट जनरेशन।"
 ---
 
-Partial tokens आते ही पाने के लिए `streamText` का उपयोग करें।
+आते ही टेक्स्ट पाने के लिए `phaseo(modelId)` के साथ `streamText` कॉल करें और `textStream` पढ़ें। `streamText` तुरंत लौट आता है; स्ट्रीम ख़त्म होने के बाद `providerMetadata` पढ़ें।
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { streamText } from "ai";
 
 const result = streamText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   prompt: "Explain SSE streaming in plain language.",
 });
 
@@ -22,14 +23,14 @@ for await (const chunk of result.textStream) {
 console.log(await result.providerMetadata);
 ```
 
-## संदेशों के साथ स्ट्रीमिंग
+## चैट इतिहास से स्ट्रीम करें
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { streamText } from "ai";
 
 const result = streamText({
-  model: phaseo("openai/gpt-5-nano"),
+  model: phaseo("openai/gpt-6-astra"),
   messages: [
     { role: "user", content: "Write a five-step rollout plan for a gateway migration." },
   ],
@@ -44,8 +45,19 @@ console.log(text);
 console.log(await result.providerMetadata);
 ```
 
-## प्रोडक्शन के सुझाव
+## छोड़ी गई स्ट्रीम रोकें
 
-- Long responses और interactive UI के लिए streaming को प्राथमिकता दें।
-- छोड़ी गई streams के लिए runtime में cancellation और timeout संभालें।
-- पुराने aliases से बचने के लिए `/v1/models` से model IDs up-to-date रखें।
+`streamText` में `abortSignal` पास करें और जब उपयोगकर्ता चला जाए या timeout बीत जाए, तब उसे abort करें, ताकि अनुरोध चलता न रहे:
+
+```ts
+const controller = new AbortController();
+setTimeout(() => controller.abort(), 60_000);
+
+const result = streamText({
+  model: phaseo("openai/gpt-6-astra"),
+  prompt: "Write a long report.",
+  abortSignal: controller.signal,
+});
+```
+
+मॉडल IDs को hard-code करने के बजाय `/v1/models` से पढ़ें; [मॉडल खोज](/hi/v1/sdk-reference/sdk/get-models) देखें।

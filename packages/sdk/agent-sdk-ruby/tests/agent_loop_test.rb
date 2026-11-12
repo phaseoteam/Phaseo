@@ -1,5 +1,6 @@
 require "minitest/autorun"
 require "tmpdir"
+require "socket"
 require_relative "../lib/phaseo_agent_sdk"
 
 class FakeClient
@@ -118,6 +119,45 @@ class AgentLoopTest < Minitest::Test
     state=Class.new{attr_reader :value;def save(value)=@value=value;def load(_id)=@value}.new
     stream=PhaseoAgentSdk.create_agent(id:"stream").stream(input:"run",client:client,state:state)
     assert_equal "hello",stream.text_stream.to_a.join;assert_equal "hello",stream.text_stream.to_a.join;assert_equal "hello",stream.result.output;refute_nil state.value
+  end
+end
+
+class CredentialProviderTest < Minitest::Test
+  def test_api_key_callable_reaches_the_core_client
+    server = TCPServer.new("127.0.0.1", 0)
+    seen = []
+    thread = Thread.new do
+      loop do
+        socket = server.accept
+        head = +""
+        while (line = socket.gets)
+          head << line
+          break if line == "\r\n"
+        end
+        length = head[/Content-Length:\s*(\d+)/i, 1].to_i
+        socket.read(length) if length.positive?
+        seen << [head[/\A\S+ (\S+)/, 1], head[/^Authorization:\s*(.+?)\r$/i, 1]]
+        json = JSON.generate({ id: "req_provider", output: [{ type: "message", role: "assistant", content: [{ type: "output_text", text: "ok" }] }] })
+        socket.write("HTTP/1.1 200 OK\r\nContent-Type: application/json\r\nContent-Length: #{json.bytesize}\r\nConnection: close\r\n\r\n#{json}")
+        socket.close
+      end
+    rescue IOError, Errno::EBADF
+      nil
+    end
+    calls = 0
+    client = PhaseoAgentSdk.create_gateway_agent_client(
+      api_key: -> { calls += 1; "workload-token" },
+      base_url: "http://127.0.0.1:#{server.addr[1]}/v1",
+      model: "openai/gpt-5-nano"
+    )
+    response = client.generate(PhaseoAgentSdk::ModelRequest.new(agent_id: "provider", messages: [PhaseoAgentSdk::Message.new(role: "user", content: "hi")], tools: []))
+    assert_equal "ok", response.message.content
+    assert_equal [["/v1/responses", "Bearer workload-token"]], seen.select { |path, _| path == "/v1/responses" }
+    assert_operator calls, :>=, 1
+  ensure
+    server&.close
+    thread&.join(2)
+    thread&.kill
   end
 end
 

@@ -1,20 +1,20 @@
-"use client";
-
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
-import { RefreshCredits } from "@/app/(dashboard)/settings/credits/actions";
+import { refreshServerData } from "@/lib/start/refresh";
 import { toast } from "sonner";
 import { CreditAmount } from "./CreditAmount";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import type { CreditRunway } from "@/lib/gateway/usage/creditRunway";
 
 interface Props {
 	balance: number;
 	title?: string;
 	subtitle?: string | null;
 	refreshAriaLabel?: string;
+	runway?: CreditRunway | null;
 }
 
 export default function CurrentCredits({
@@ -22,11 +22,27 @@ export default function CurrentCredits({
 	title,
 	subtitle = null,
 	refreshAriaLabel,
+	runway = null,
 }: Props) {
 	const t = useTranslations("SettingsUI.credits");
+	const format = useDisplayFormatters();
+	const runwayText = (() => {
+		if (!runway) return null;
+		const amount = format.number(runway.dailyUsd, {
+			style: "currency",
+			currency: "USD",
+			minimumFractionDigits: 2,
+			maximumFractionDigits: 2,
+			notation: "standard",
+		});
+		if (runway.kind === "beyond") return t("runwayBeyond", { days: runway.days, amount });
+		const date = format.dateParts(runway.at, { month: "short", day: "numeric" });
+		return runway.kind === "auto_top_up"
+			? t("runwayAutoTopUp", { date, amount })
+			: t("runwayRunsOut", { date, amount });
+	})();
 	title ??= t("currentBalance");
 	refreshAriaLabel ??= t("refreshBalance");
-	const router = useRouter();
 	const [refreshing, setRefreshing] = useState(false);
 
 	async function handleRefresh() {
@@ -35,14 +51,12 @@ export default function CurrentCredits({
 		setRefreshing(true);
 		const start = Date.now();
 		try {
-			// Call the API route which triggers server revalidation
-			await toast.promise(RefreshCredits(), {
+			// Re-read the route loaders and cached queries behind the balance.
+			await toast.promise(refreshServerData(), {
 					loading: t("refreshing"),
 					success: t("refreshed"),
 					error: () => t("refreshFailed"),
 			});
-			// Pull fresh server component data for the current route.
-			router.refresh();
 		} catch {
 			// Errors are handled by toast.promise's error handler
 		} finally {
@@ -92,6 +106,9 @@ export default function CurrentCredits({
 							}`}
 						/>
 					</div>
+					{runwayText ? (
+						<p className="mt-1.5 text-sm tabular-nums text-muted-foreground">{runwayText}</p>
+					) : null}
 				</CardContent>
 			</Card>
 		</div>

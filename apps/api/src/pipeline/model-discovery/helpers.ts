@@ -1,5 +1,6 @@
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { resolveVertexAccessToken } from "@providers/google-vertex/auth";
+import { isOpenAICompatProvider, resolveOpenAICompatKey } from "@providers/openai-compatible/config";
 import {
 	extractProviderApiModelSnapshot,
 	hasProviderApiSnapshotValue,
@@ -642,6 +643,24 @@ export function readBindingEnv(names: string[]): string | null {
 	return null;
 }
 
+/**
+ * Resolves the key discovery sends to a provider. Falls back to the gateway's own
+ * resolver because the gateway accepts binding aliases that a provider's primary
+ * apiKeyEnv does not list (prod stores MISTRAL_AI_API_KEY and META_MODEL_API_KEY),
+ * and a key the gateway can route with must never leave the provider unwatched.
+ */
+export function resolveDiscoveryApiKey(provider: Pick<ProviderConfig, "providerId" | "apiKeyEnv">): string | null {
+	const configured = provider.apiKeyEnv ? readBindingEnv(provider.apiKeyEnv) : null;
+	if (configured || !isOpenAICompatProvider(provider.providerId)) return configured;
+	try {
+		const { key } = resolveOpenAICompatKey({ providerId: provider.providerId, byokMeta: [], forceGatewayKey: true });
+		const trimmed = key.trim();
+		return trimmed && !isPlaceholderValue(trimmed) ? trimmed : null;
+	} catch {
+		return null;
+	}
+}
+
 export function toBool(value: string | undefined | null, fallback = false): boolean {
 	if (value === undefined || value === null) return fallback;
 	const normalized = value.trim().toLowerCase();
@@ -788,6 +807,14 @@ export function hasAtlascloudLlmCategory(row: Record<string, unknown>): boolean 
 			.some((value) => value === "llm");
 	}
 
+	// AtlasCloud's /models stopped sending categories (seen 2026-10-17) and now
+	// describes models by modality, so a text-output model is the LLM signal.
+	if (row.categories === undefined || row.categories === null) {
+		return asArray(row.output_modalities).some(
+			(value) => typeof value === "string" && value.trim().toLowerCase() === "text",
+		);
+	}
+
 	return false;
 }
 
@@ -801,14 +828,15 @@ export function shouldIncludeDiscoveredModel(providerId: string, row: Record<str
 	return true;
 }
 
-export function extractDiscoveredModels(providerId: string, payload: unknown): DiscoveredModel[] {
+/** The arrays in a /models payload that can hold model entries, in extraction order. */
+function modelListCollections(providerId: string, payload: unknown): unknown[][] {
 	const root = asRecord(payload);
 	if (!root && !Array.isArray(payload)) return [];
 	const nestedProviderModels = providerId === "weights-and-biases" && root
 		? Object.values(root).flatMap((provider) => Object.values(asRecord(asRecord(provider)?.models) ?? {}))
 		: [];
 
-	const candidateCollections: unknown[] = [
+	return [
 		payload,
 		root?.data,
 		root?.models,
@@ -816,13 +844,30 @@ export function extractDiscoveredModels(providerId: string, payload: unknown): D
 		root?.result,
 		asRecord(root?.result)?.data,
 		asRecord(root?.result)?.models,
-		nestedProviderModels,
-	];
+		nestedProviderModels.length > 0 ? nestedProviderModels : undefined,
+	].filter((collection): collection is unknown[] => Array.isArray(collection));
+}
 
+/**
+ * Extracts a provider's models, failing when an empty result is not an explicitly empty list. An
+ * unrecognised payload, or entries a filter dropped (how AtlasCloud's category change went unnoticed),
+ * must not pass as a provider that lists no models.
+ */
+export function extractListedModels(providerId: string, payload: unknown): DiscoveredModel[] {
+	const models = extractDiscoveredModels(providerId, payload);
+	if (models.length > 0) return models;
+	const collections = modelListCollections(providerId, payload);
+	if (collections.length === 0) throw new Error(`${providerId} response has no recognisable model list`);
+	const listed = collections.reduce((total, collection) => total + collection.length, 0);
+	if (listed > 0) throw new Error(`${providerId} listed ${listed} entries but none were usable models`);
+	return models;
+}
+
+export function extractDiscoveredModels(providerId: string, payload: unknown): DiscoveredModel[] {
 	const output = new Map<string, DiscoveredModel>();
 
-	for (const collection of candidateCollections) {
-		for (const item of asArray(collection)) {
+	for (const collection of modelListCollections(providerId, payload)) {
+		for (const item of collection) {
 			const row = asRecord(item);
 			if (!row) continue;
 			if (!shouldIncludeDiscoveredModel(providerId, row)) continue;
@@ -934,7 +979,75 @@ function extractProviderResponseErrorMessage(payload: unknown): string | null {
 	return message ? `status_code ${statusCode}: ${message}` : `status_code ${statusCode}`;
 }
 
-export async function fetchProviderModels(provider: ProviderConfig, apiKey?: string | null): Promise<DiscoveredModel[]> {
+/** A fetched /models response: a fingerprint of its bytes and a payload parsed only when asked for. */
+export type ProviderModelsResponse = {
+	/** SHA-256 of the response body; null when the payload is assembled from several requests. */
+	fingerprint: string | null;
+	payload: () => unknown;
+};
+
+export type ProviderModelsPayloadFetcher = (provider: ProviderConfig, apiKey?: string | null) => Promise<ProviderModelsResponse>;
+
+export async function fetchProviderModels(
+	provider: ProviderConfig,
+	apiKey?: string | null,
+	fetchPayload: ProviderModelsPayloadFetcher = fetchProviderModelsPayload,
+): Promise<DiscoveredModel[]> {
+	return extractProviderModels(provider, await fetchPayload(provider, apiKey));
+}
+
+export function extractProviderModels(provider: ProviderConfig, response: ProviderModelsResponse): DiscoveredModel[] {
+	const payload = response.payload();
+	if (provider.authStyle !== "google_vertex") {
+		const providerResponseErrorMessage = extractProviderResponseErrorMessage(payload);
+		if (providerResponseErrorMessage) {
+			throw new Error(`${provider.providerName} (${provider.providerId}) response error: ${providerResponseErrorMessage}`);
+		}
+	}
+	return extractListedModels(provider.providerId, payload);
+}
+
+/**
+ * Identifies the upstream request behind a provider entry. Entries such as anthropic/anthropic-us or
+ * venice/venice-e2ee resolve to the same URL and key, so one sweep can share a single request.
+ */
+export function providerModelsRequestKey(provider: ProviderConfig, apiKey?: string | null): string {
+	const authStyle = provider.authStyle ?? "bearer";
+	const endpoint = authStyle === "google_vertex" ? "google_vertex_publishers" : resolveProviderModelsEndpoint(provider);
+	return JSON.stringify([authStyle, endpoint, apiKey ?? ""]);
+}
+
+/** Returns a fetcher that makes each distinct upstream request once per sweep. */
+export function createSharedProviderModelsFetcher(
+	fetchPayload: ProviderModelsPayloadFetcher = fetchProviderModelsPayload,
+): ProviderModelsPayloadFetcher {
+	const requests = new Map<string, Promise<ProviderModelsResponse>>();
+	return (provider, apiKey) => {
+		let key: string;
+		try {
+			key = providerModelsRequestKey(provider, apiKey);
+		} catch {
+			// Let the provider's own fetch report its configuration error.
+			return fetchPayload(provider, apiKey);
+		}
+		let request = requests.get(key);
+		if (!request) {
+			request = fetchPayload(provider, apiKey);
+			requests.set(key, request);
+		}
+		return request;
+	};
+}
+
+function toHex(buffer: ArrayBuffer): string {
+	return Array.from(new Uint8Array(buffer), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+/**
+ * Fetches a provider's raw /models response; extraction is per provider entry. The body is hashed before
+ * it is decoded, so a sweep can skip parsing a list that has not changed since it was last processed.
+ */
+export async function fetchProviderModelsPayload(provider: ProviderConfig, apiKey?: string | null): Promise<ProviderModelsResponse> {
 	const controller = new AbortController();
 	const timeout = setTimeout(() => controller.abort(), DISCOVERY_TIMEOUT_MS);
 
@@ -983,9 +1096,8 @@ export async function fetchProviderModels(provider: ProviderConfig, apiKey?: str
 					return rows;
 				}),
 			);
-			return extractDiscoveredModels(provider.providerId, {
-				publisherModels: publisherModels.flat(),
-			});
+			const payload = { publisherModels: publisherModels.flat() };
+			return { fingerprint: null, payload: () => payload };
 		}
 
 		const headers: Record<string, string> = {};
@@ -1038,12 +1150,13 @@ export async function fetchProviderModels(provider: ProviderConfig, apiKey?: str
 			throw new Error(`HTTP ${response.status}${body ? `: ${body.slice(0, 200)}` : ""}`);
 		}
 
-		const payload = await response.json();
-		const providerResponseErrorMessage = extractProviderResponseErrorMessage(payload);
-		if (providerResponseErrorMessage) {
-			throw new Error(`${provider.providerName} (${provider.providerId}) response error: ${providerResponseErrorMessage}`);
-		}
-		return extractDiscoveredModels(provider.providerId, payload);
+		const body = await response.arrayBuffer();
+		const fingerprint = toHex(await crypto.subtle.digest("SHA-256", body));
+		let parsed: { value: unknown } | null = null;
+		return {
+			fingerprint,
+			payload: () => (parsed ??= { value: JSON.parse(new TextDecoder().decode(body)) }).value,
+		};
 	} finally {
 		clearTimeout(timeout);
 	}
@@ -1057,16 +1170,60 @@ export function diffModelIds(previousIds: string[], currentIds: string[]): { add
 	return { added, removed };
 }
 
+/**
+ * How long a model must stay missing from a provider's /models list before its removal is announced.
+ * Some providers serve that list through a CDN whose edges hold different cached copies, so a model can
+ * drop out of one sweep and return in the next (Inception's Mercury 2 and 2.5 did, for hours at a time).
+ * Measured flaps lasted up to 255 minutes; six hours covers them while a genuine removal is still
+ * reported the same day. 0 restores the old behaviour: confirm on the second missed sweep.
+ */
+export const DEFAULT_REMOVAL_CONFIRM_MINUTES = 360;
+/** Rows are pruned by last_seen_at after the retention window, so a longer wait could drop a removal unreported. */
+export const MAX_REMOVAL_CONFIRM_MINUTES = 24 * 60;
+
+export function removalConfirmAfterMs(raw: string | null | undefined): number {
+	const minutes = raw === null || raw === undefined || raw.trim() === "" ? Number.NaN : Number(raw);
+	const normalized = Number.isFinite(minutes) && minutes >= 0 ? minutes : DEFAULT_REMOVAL_CONFIRM_MINUTES;
+	return Math.min(normalized, MAX_REMOVAL_CONFIRM_MINUTES) * 60_000;
+}
+
+export type ModelRemovalDecision = {
+	/** Missing continuously for the whole window: announce and delete. */
+	confirmed: string[];
+	/** Newly missing (or missing with no usable timestamp): mark pending, which starts the clock. */
+	provisional: string[];
+	/** Pending but not yet missing for the whole window: leave untouched so the clock keeps running. */
+	waiting: string[];
+};
+
+/**
+ * Splits the models absent from a provider's latest list. `pendingSinceMs` holds, for every row already
+ * pending removal, when it was first seen missing (`last_seen_at` is stamped when a row is marked pending
+ * and is rewritten with the current time if the model returns, which also clears the pending flag, so
+ * an uninterrupted absence is exactly the span since that stamp).
+ */
 export function confirmModelRemovals(
 	removedIds: string[],
-	pendingRemovalIds: ReadonlySet<string>,
-): { confirmed: string[]; provisional: string[] } {
+	pendingSinceMs: ReadonlyMap<string, number | null>,
+	policy: { nowMs: number; confirmAfterMs: number },
+): ModelRemovalDecision {
 	const confirmed: string[] = [];
 	const provisional: string[] = [];
+	const waiting: string[] = [];
 	for (const modelId of removedIds) {
-		(pendingRemovalIds.has(modelId) ? confirmed : provisional).push(modelId);
+		if (!pendingSinceMs.has(modelId)) {
+			provisional.push(modelId);
+			continue;
+		}
+		const since = pendingSinceMs.get(modelId);
+		if (since === null || since === undefined || !Number.isFinite(since)) {
+			// Heals a pending row whose timestamp is unusable instead of waiting on it forever.
+			provisional.push(modelId);
+			continue;
+		}
+		(policy.nowMs - since >= policy.confirmAfterMs ? confirmed : waiting).push(modelId);
 	}
-	return { confirmed, provisional };
+	return { confirmed, provisional, waiting };
 }
 
 export function assertSafeDiscoverySnapshot(
@@ -1075,7 +1232,9 @@ export function assertSafeDiscoverySnapshot(
 	currentIds: string[],
 	minimumRetainedRatio = 0.25,
 ): void {
-	if (currentIds.length === 0) {
+	// An empty list only threatens state when there is a previous snapshot to lose;
+	// a provider that has never listed models (AI21's /models is empty) is just empty.
+	if (currentIds.length === 0 && previousIds.length > 0) {
 		throw new Error(`${providerId} returned zero models; refusing to replace the previous snapshot`);
 	}
 	if (previousIds.length < 5) return;
@@ -1193,12 +1352,21 @@ export async function loadLatestConfiguredCoverageState(source?: string): Promis
 	return null;
 }
 
+export async function saveDiscordNotificationFingerprint(runId: string, fingerprint: string): Promise<void> {
+	const { error } = await getSupabaseAdmin()
+		.from("model_discovery_runs")
+		.update({ summary: { notificationFingerprint: fingerprint } })
+		.eq("id", runId);
+	if (error) throw new Error(error.message || "Failed to persist Discord delivery fingerprint");
+}
+
 export async function loadLatestDiscordNotificationFingerprint(source?: string): Promise<string | null> {
 	const supabase = getSupabaseAdmin();
 	let query = supabase
 		.from("model_discovery_runs")
 		.select("summary,status,started_at")
-		.in("status", ["completed", "completed_with_errors"])
+		// A delivered notification remains delivered even if subsequent state writes fail.
+		.in("status", ["running", "failed", "completed", "completed_with_errors"])
 		.order("started_at", { ascending: false });
 	const sourceValue = typeof source === "string" ? source.trim() : "";
 	if (sourceValue) query = query.eq("source", sourceValue);

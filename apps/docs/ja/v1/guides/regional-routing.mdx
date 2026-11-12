@@ -1,28 +1,22 @@
 ---
 icon: "globe"
-title: "地域別にテキストリクエストをルーティングする"
-description: "Phaseoのテキスト生成をEUまたは米国のプロバイダールートに制限します。"
+title: "テキストリクエストをリージョンでルーティングする"
+description: "Phaseo のテキスト生成を EU または US のプロバイダールートに限定します。"
 ---
 
-Phaseoの地域別エンドポイントを使うと、プロバイダーの実行とデータ処理を、Phaseoが文書化したEUまたは米国のルート内に制限できます。モデルIDやAPIキーを変更せずに、Chat Completions、Responses、Messagesで地域別ルーティングを利用できます。
+テキストリクエストを `eu.api.phaseo.app` または `us.api.phaseo.app` に送ると、そのリージョンでモデルを実行し、プロンプトと補完のデータを処理するプロバイダールートだけが使われます。モデル ID と API キーは変わりません。Chat Completions、Responses、Messages に対応しています。
+
+| リージョン | ベース URL | 使われるプロバイダールート |
+| --- | --- | --- |
+| 欧州連合 | `https://eu.api.phaseo.app/v1` | EU での実行と EU でのデータ処理を宣言したルートのみ |
+| 米国 | `https://us.api.phaseo.app/v1` | US での実行と US でのデータ処理を宣言したルートのみ |
+| グローバル | `https://api.phaseo.app/v1` | 標準のグローバルなルーティングポリシー |
 
 <Warning>
-地域別ルーティングは、現時点ではエンドツーエンドのデータ所在地を保証しません。Phaseoはプロバイダー選択を制限し、選択地域の近くにCloudflareの配置ヒントを設定しますが、共有のアカウント、請求、キャッシュ、運用システムは地域外でデータを処理する場合があります。
+リージョンルーティングは、まだエンドツーエンドのデータ所在地の保証ではありません。Phaseo はプロバイダーの選択を制限し、Gateway をリージョンの近くに配置しますが、共有のアカウント、請求、キャッシュ、運用のシステムがリージョン外でデータを処理することがあります。[リージョン外に残るもの](#what-stays-outside-the-region)を参照してください。
 </Warning>
 
-## エンドポイントを選ぶ
-
-| 地域 | ベースURL | 動作 |
-| --- | --- | --- |
-| 欧州連合 | `https://eu.api.phaseo.app/v1` | 実行地域とデータ地域がEUのプロバイダールートを必須とします |
-| 米国 | `https://us.api.phaseo.app/v1` | 実行地域とデータ地域が米国のプロバイダールートを必須とします |
-| グローバル | `https://api.phaseo.app/v1` | 標準のグローバルルーティングポリシーを使います |
-
-地域別ホスト名がポリシーの境界になります。リクエストで矛盾する`required_execution_region`または`required_data_region`の値を指定しても、この境界を上書きできません。
-
-## Phaseo SDKを使う
-
-クライアント作成時に`region`を設定します。そのクライアントが行う対応リクエストはすべて、該当する地域別ベースURLを使います。
+## リージョン指定のリクエストを送る
 
 <CodeGroup>
 ```ts TypeScript
@@ -34,7 +28,7 @@ const phaseo = new Phaseo({
 });
 
 const response = await phaseo.responses.create({
-  model: "openai/gpt-5-mini",
+  model: "openai/gpt-5.6-luna",
   input: "Summarize this note in one sentence.",
 });
 
@@ -51,93 +45,77 @@ phaseo = Phaseo(
 )
 
 response = phaseo.responses.create({
-    "model": "openai/gpt-5-mini",
+    "model": "openai/gpt-5.6-luna",
     "input": "Summarize this note in one sentence.",
 })
 
 print(response.get("output_text"))
 ```
-</CodeGroup>
 
-米国ルーティングには`"us"`を使います。グローバルルーティングでは`region`を省略するか、`"global"`を使います。`region`とカスタムの`baseUrl`または`base_url`を組み合わせると、異なるホストを選択する競合が生じるため、SDKはその設定を拒否します。
-
-## Chat Completionsを使う
-
-```bash
+```bash Chat Completions
 curl https://eu.api.phaseo.app/v1/chat/completions \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-mini",
+    "model": "openai/gpt-5.6-luna",
     "messages": [
       {"role": "user", "content": "Write a two-line status update."}
     ]
   }'
 ```
 
-## Responsesを使う
-
-```bash
+```bash Responses
 curl https://eu.api.phaseo.app/v1/responses \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-mini",
+    "model": "openai/gpt-5.6-luna",
     "input": "Extract the three most important actions from this note."
   }'
 ```
 
-## Messagesを使う
-
-MessagesエンドポイントはAnthropicのリクエスト形式に対応し、同じ地域別プロバイダー制限を維持します。
-
-```bash
+```bash Messages
 curl https://us.api.phaseo.app/v1/messages \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -H "anthropic-version: 2023-06-01" \
   -d '{
-    "model": "anthropic/claude-sonnet-4.6",
+    "model": "anthropic/claude-sonnet-5.5",
     "max_tokens": 256,
     "messages": [
       {"role": "user", "content": "Summarize this incident report."}
     ]
   }'
 ```
+</CodeGroup>
 
-## 対応するリクエスト機能
+SDK では `region` を `"eu"` または `"us"` に設定します。グローバルなルーティングを使う場合は省略するか `"global"` を使います。`region` とカスタムの `baseUrl`（Python では `base_url`）の両方を設定すると、それぞれ別のホストを選ぶため、SDK は例外を投げます。
 
-地域別ルーティングは現在、次の機能に対応しています。
+ホスト名がそのままポリシーになります。リクエストやプリセット内の `required_execution_region` または `required_data_region` が別のリージョンを指定している場合は、`400 validation_error`（理由 `deployment_region_conflict`）で失敗します。プリセットと動的ルーティングのルールが先に適用され、リージョンのルールは最後に適用されるため、それらがリージョンのルールを弱めることはできません。Phaseo がリージョン外のプロバイダーで再試行することはありません。
 
-- テキスト入力とテキスト出力
-- ストリーミングと非ストリーミングの応答
-- システム指示と開発者指示
-- クライアント定義の関数ツールとカスタムツール
-- テキストを含むツール結果
-- モデルが対応する場合の構造化テキストとJSON出力
-- 地域ポリシーと矛盾しないプリセット、プロバイダー順序、フォールバック、料金上限
+## リージョン指定のリクエストに含められるもの
 
-地域別エンドポイントは次を拒否します。
+| 対応 | 拒否 |
+| --- | --- |
+| テキストの入力とテキストの出力 | 画像、音声、動画、ドキュメント、ファイル、添付 |
+| ストリーミングと非ストリーミング | テキスト以外の出力モダリティ |
+| system と developer の指示 | Web 検索、ファイル検索、コード実行、コンピューター操作、画像生成などのプロバイダーがホストするツール、および `web_search_options` |
+| 自分の `function` と `custom` のツール、テキストのツール結果 | Phaseo の[サーバーツール](./server-tools)（`phaseo:` の型） |
+| モデルが対応している場合の構造化テキストと JSON の出力 | 画像、音声、動画、埋め込み、モデレーション、バッチ、ファイル、Webhook、リアルタイムのエンドポイント |
+| リージョンと矛盾しないプリセット、プロバイダーの順序、フォールバック、価格の上限 | |
 
-- 画像、音声、動画、ドキュメント、ファイル、添付ファイル
-- テキスト以外の出力モダリティ
-- Web検索、ファイル検索、コード実行、コンピューター操作、画像生成などのプロバイダー側でホストされるツール
-- 画像、音声、動画、埋め込み、モデレーション、バッチ、ファイル、Webhook、リアルタイムのエンドポイント
+自分のツールはアプリケーション内で実行されるため許可されます。ホスト型ツールとサーバーツールは、リージョンのルールが制御できない場所で実行されます。
 
-関数ツールは自分のアプリケーションで実行されるため許可されます。プロバイダー側でホストされるツールは、実行場所が地域ポリシーと一致しない可能性があるためブロックされます。
+## リージョンで利用できるモデルを調べる
 
-## 地域で利用できるモデルを調べる
-
-生成に使うものと同じ地域別ホスト名で`/v1/models`を呼び出します。
+リクエストを送るのと同じホスト名で `/v1/models` を呼び出します。利用できるモデルは EU、US、グローバルのエンドポイントで異なります。
 
 ```bash
 curl https://eu.api.phaseo.app/v1/models \
   -H "Authorization: Bearer $PHASEO_API_KEY"
 ```
 
-応答に含まれるのは、宣言された実行地域とデータ地域の両方に選択地域を含む、有効なプロバイダールートを持つモデルだけです。テキスト入出力のChat Completions、Responses、Messagesだけが提示されます。
-
-各オファーには地域メタデータが含まれます。
+一覧には、宣言された実行リージョンとデータリージョンの両方にそのリージョンが含まれる、有効なプロバイダールートを持つモデルだけが含まれ、テキストの入出力による Chat Completions、Responses、Messages だけが示されます。各オファーにはリージョンが表示されます。
 
 ```json
 {
@@ -149,59 +127,32 @@ curl https://eu.api.phaseo.app/v1/models \
 }
 ```
 
-利用できるモデルはEU、米国、グローバルの各エンドポイントで異なる場合があります。必ずアプリケーションが呼び出すエンドポイントでモデルを調べてください。
+## どの Gateway がリクエストを処理したか確認する
 
-## 選択されたゲートウェイを確認する
+リージョン指定のレスポンスには `X-Phaseo-Gateway-Region: eu`（または `us`）が付きます。このヘッダーはリクエストを処理したリージョンのポリシーを示すもので、Cloudflare がどこで実行したかの証明ではありません。リクエスト詳細には、必要な実行リージョンとデータリージョン、選択されたプロバイダー、そのプロバイダーが宣言したリージョンも記録されます。
 
-地域別応答には次が含まれます。
+## エラー
 
-```http
-X-Phaseo-Gateway-Region: eu
-```
+リージョンのルールに違反すると、次のいずれかの `reason` とともに `400 not_supported` が返ります。
 
-このヘッダーで、リクエストが想定したPhaseoデプロイに到達したことを確認します。リクエスト詳細には、必須の実行地域、必須のデータ地域、選択されたプロバイダー、そのプロバイダーが宣言した地域メタデータが記録されます。
-
-<Note>
-このヘッダーは、リクエストを処理したPhaseoの地域ポリシーを示します。Cloudflareの実行所在地が保証されている証拠ではありません。
-</Note>
-
-## 失敗時の動作
-
-地域別ルーティングは、ポリシーを満たせない場合に処理を停止します。Phaseoがホスト名の地域外にあるプロバイダーへリクエストを黙って再試行することはありません。
-
-| エラー | 意味 | 対処方法 |
+| `reason` | 原因 | 対処 |
 | --- | --- | --- |
-| `regional_endpoint_not_supported` | 地域別Workersではそのパスを利用できません | 対応する3つのテキストエンドポイントのいずれか、またはグローバルAPIを使います |
-| `regional_non_text_content` | リクエストにメディア、ファイル、添付ファイルが含まれています | テキスト以外の内容を削除するか、グローバルAPIを使います |
-| `regional_non_text_output` | テキスト以外の応答が要求されています | テキスト出力を要求するか、グローバルAPIを使います |
-| `regional_hosted_tool_not_supported` | プロバイダー側でホストされるツールが要求されています | クライアント定義の関数ツールまたはグローバルAPIを使います |
-| `deployment_region_conflict` | リクエストまたはプリセットが別の地域を指定しています | 競合する設定を削除します |
-| 利用できるプロバイダールートがありません | モデルと地域ポリシーを満たす正常なプロバイダーがありません | 地域別`/v1/models`エンドポイントで返される別のモデルを選びます |
+| `regional_endpoint_not_supported` | そのパスはリージョン指定で利用できません | Chat Completions、Responses、Messages、またはグローバル API を使います |
+| `regional_non_text_content` | リクエストにメディア、ファイル、添付があります | それを取り除くか、グローバル API を使います |
+| `regional_non_text_output` | テキスト以外の出力モダリティが要求されました | テキストを要求するか、グローバル API を使います |
+| `regional_hosted_tool_not_supported` | `function` と `custom` 以外のツールがあります | 自分の関数ツールか、グローバル API を使います |
 
-## 地域別ルーティングの対象範囲
+理由 `deployment_region_conflict` の `400 validation_error` は、リクエストまたはプリセットが別のリージョンを指定していることを意味します。その設定を取り除いてください。モデルとリージョンの両方を満たす正常なプロバイダールートがない場合、リクエストはプロバイダーを呼び出す前に停止します。リージョンの `/v1/models` に表示されるモデルを選んでください。
 
-受け付けられた生成リクエストについて、Phaseoは選択されたプロバイダールートに次の両方の宣言を求めます。
+<span id="what-stays-outside-the-region"></span>
+## リージョン外に残るもの
 
-1. 選択地域でのモデル実行
-2. 選択地域でのプロンプトと応答データの処理
+リージョンのルールが対象とするのは、どのプロバイダーがモデルを実行し、プロンプトと補完のデータを処理するかです。リクエストのライフサイクル全体はまだ対象になっていません。
 
-Phaseoはプリセットと動的ルーティングルールの統合後にこれらの要件を適用するため、それらの機能でホスト名のポリシーを弱めることはできません。該当するプロバイダーがなければ、上流でモデルを実行する前にリクエストを停止します。
+- Cloudflare の配置によって Gateway はリージョンの近くに置かれますが、それはコンプライアンス上の境界ではありません。
+- アカウント、認証、請求、リクエストのメタデータは、共有の Supabase インフラにあります。
+- Cloudflare KV と Worker の呼び出しログは、リージョンに限定されません。
+- プロバイダーへの呼び出しは、Cloudflare が Gateway をどこに配置したかにかかわらず、そのプロバイダーのリージョンのエンドポイントに送られます。
+- サポートと運用のスタッフはリージョン内に限定されていません。
 
-## 現在の制限
-
-この初期リリースでは、リクエストのライフサイクル全体が選択地域内に留まることは保証されません。
-
-- Cloudflare Workersの配置ヒントは設定されたクラウド地域の近くを選びますが、コンプライアンス上の境界を作りません。
-- Phaseoのアカウント、認証、請求、リクエストメタデータは共有のSupabase基盤を使います。
-- Cloudflare KVとWorker呼び出しログは特定地域に限定されません。
-- プロバイダーへのサブリクエストは、Cloudflareの配置設定ではなく選択されたプロバイダーエンドポイントで制限されます。
-- サポートと運用のアクセスは選択地域の担当者に限定されません。
-
-Phaseoがこの機能をエンドツーエンドのデータ所在地と説明するのは、ゲートウェイ、ストレージ、ログ、プロバイダー、運用経路のすべてが強制可能な地域制御で保護されてからです。
-
-## 関連ガイド
-
-- [ルーティングとフォールバック](./routing-and-fallbacks.mdx)
-- [プロバイダーを指定したモデル](./provider-qualified-models.mdx)
-- [プリセット](./presets.mdx)
-- [ツール呼び出し](./tool-calling.mdx)
+Phaseo がこれをエンドツーエンドのデータ所在地と呼ぶのは、Gateway、ストレージ、ログ、プロバイダー、運用のすべての経路に、強制力のあるリージョンの制御が備わってからです。

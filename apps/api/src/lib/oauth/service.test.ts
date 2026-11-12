@@ -3,6 +3,7 @@ import { clearRuntime, configureRuntime } from "@/runtime/env";
 import { CAPABILITIES, IDENTITY_SCOPES } from "@/lib/authz/capabilities";
 import {
 	assertRedirectAllowed,
+	isOAuthClientUsable,
 	CLI_DEFAULT_SCOPES,
 	createUserCode,
 	filterAllowedScopes,
@@ -10,6 +11,7 @@ import {
 	hashOAuthSecret,
 	normalizeScopes,
 	normalizeUserCode,
+	refreshedScopes,
 	verifyPkce,
 	verifyClientSecret,
 } from "./service";
@@ -28,6 +30,42 @@ function replaceRuntime(bindings: Record<string, unknown>) {
 }
 
 describe("OAuth service helpers", () => {
+	it("grants billing:write only to the first-party CLI, whatever a client lists", () => {
+		const cli = { id: "phaseo_cli", is_first_party: true, allowed_scopes: ["me:read", "billing:write"] } as any;
+		const partner = { id: "partner_app", is_first_party: false, allowed_scopes: ["me:read", "billing:write"] } as any;
+		const impostor = { id: "phaseo_cli", is_first_party: false, allowed_scopes: ["billing:write"] } as any;
+		expect(filterAllowedScopes(cli, ["me:read", "billing:write"])).toEqual(["me:read", "billing:write"]);
+		expect(filterAllowedScopes(partner, ["me:read", "billing:write"])).toEqual(["me:read"]);
+		expect(filterAllowedScopes(impostor, ["billing:write"])).toEqual([]);
+	});
+
+	it("never widens a session on refresh", () => {
+		const authorization = ["openid", "credits:read", "billing:write"];
+		// An older session without billing:write stays without it after another login opts in.
+		expect(refreshedScopes(authorization, ["openid", "credits:read"])).toEqual(["openid", "credits:read"]);
+		// A session keeps billing:write only while the authorization still grants it.
+		expect(refreshedScopes(authorization, ["openid", "billing:write"])).toEqual(["openid", "billing:write"]);
+		expect(refreshedScopes(["openid"], ["openid", "billing:write"])).toEqual(["openid"]);
+		// Only a token with no stored scope list (null) is legacy: authorization minus opt-in scopes.
+		expect(refreshedScopes(authorization, null)).toEqual(["openid", "credits:read"]);
+		// An empty list is not legacy: nothing in common stays empty (and the refresh is refused).
+		expect(refreshedScopes(authorization, [])).toEqual([]);
+		expect(refreshedScopes(["keys:delete"], ["models:read"])).toEqual([]);
+	});
+
+	it("restricts desktop callbacks to its registered public loopback client", () => {
+		const client = { id: "phaseo_desktop", is_first_party: true, registration_source: "first_party", client_type: "public", redirect_uris: ["http://127.0.0.1/callback"] } as any;
+		expect(assertRedirectAllowed(client, "http://127.0.0.1:54321/callback")).toBe(true);
+		for (const redirect of ["http://localhost:54321/callback", "https://127.0.0.1:54321/callback", "http://127.0.0.1:54321/other", "http://user@127.0.0.1:54321/callback", "http://127.0.0.1:54321/callback?x=1", "http://127.0.0.1:54321/callback#x", "https://example.com/callback"]) expect(assertRedirectAllowed(client, redirect)).toBe(false);
+		for (const override of [{ id: "another-client" }, { is_first_party: false }, { registration_source: "database" }, { client_type: "confidential" }, { redirect_uris: [] }]) expect(assertRedirectAllowed({ ...client, ...override }, "http://127.0.0.1:54321/callback")).toBe(false);
+	});
+
+	it("keeps official desktop login available while third-party OAuth is disabled", () => {
+		replaceRuntime({ ...baseBindings, PHASEO_THIRD_PARTY_OAUTH_ENABLED: "false" });
+		expect(isOAuthClientUsable("phaseo_desktop")).toBe(true);
+		expect(isOAuthClientUsable("other-desktop")).toBe(false);
+		replaceRuntime(baseBindings);
+	});
 	beforeAll(() => {
 		configureRuntime(baseBindings as any);
 	});
@@ -102,12 +140,23 @@ describe("OAuth service helpers", () => {
 	it("grants the first-party CLI its supported control-plane scopes by default", () => {
 		const expectedScopes = [
 			...IDENTITY_SCOPES,
-			...Object.values(CAPABILITIES).filter((scope) => scope !== "feedback:read" && scope !== "feedback:write"),
+			...Object.values(CAPABILITIES).filter((scope) => scope !== "feedback:read" && scope !== "feedback:write" && scope !== "billing:write"),
 		];
 		expect(CLI_DEFAULT_SCOPES).toEqual(expectedScopes);
+		// billing:write starts credit purchases, so CLI users opt in with --scopes billing:write.
+		expect(CLI_DEFAULT_SCOPES).not.toContain("billing:write");
 		expect(CLI_DEFAULT_SCOPES).toContain("budgets:read");
 		expect(CLI_DEFAULT_SCOPES).toContain("budgets:write");
 		expect(CLI_DEFAULT_SCOPES).toContain("budgets:delete");
+		expect(CLI_DEFAULT_SCOPES).toContain("rate_limits:read");
+		expect(CLI_DEFAULT_SCOPES).toContain("rate_limits:write");
+		expect(CLI_DEFAULT_SCOPES).toContain("rate_limits:delete");
+		expect(CLI_DEFAULT_SCOPES).toContain("classifiers:read");
+		expect(CLI_DEFAULT_SCOPES).toContain("classifiers:write");
+		expect(CLI_DEFAULT_SCOPES).toContain("classifiers:delete");
+		expect(CLI_DEFAULT_SCOPES).toContain("spend_rules:read");
+		expect(CLI_DEFAULT_SCOPES).toContain("spend_rules:write");
+		expect(CLI_DEFAULT_SCOPES).toContain("spend_rules:delete");
 		expect(CLI_DEFAULT_SCOPES).toContain("keys:write");
 		expect(CLI_DEFAULT_SCOPES).toContain("keys:delete");
 		expect(CLI_DEFAULT_SCOPES).toContain("workspaces:write");

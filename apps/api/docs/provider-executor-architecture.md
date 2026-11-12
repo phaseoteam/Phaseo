@@ -139,3 +139,37 @@ Entries can also set `apiVersion`. An entry specifying a different `baseUrl` mus
 OpenAI protocol routes cover chat/Responses, embeddings, image generation/editing, speech, transcription and translation. Claude models use the Foundry Anthropic Messages endpoint. Model-specific availability and pricing still determine catalog activation; a registered endpoint does not imply that every Azure model implements that protocol.
 
 Selecting a resource does not establish data residency by itself. Configure a regional deployment type in Azure when regional processing is required; Global and DataZone deployment types have different processing boundaries.
+
+## Azure decisions
+
+Microsoft Decision uses the existing decisions IR, response validation, and billing pipeline. It calls the Foundry resource's `/providers/microsoft/v1/systemone` endpoint. The catalog route's provider model slug is the Azure deployment name; the existing `AZURE_OPENAI_DEPLOYMENTS` mapping can override it using either that slug or the full canonical model ID:
+
+```json
+{
+  "microsoft/microsoft-decision-1": { "deployment": "my-decision-deployment" }
+}
+```
+
+This entry inherits the default resource and credentials. A mapping with a different `baseUrl` requires its own `apiKey` or `authToken`. Both API-key and Entra bearer authentication are supported; Entra tokens require the `https://cognitiveservices.azure.com/.default` scope. The decision endpoint does not use `AZURE_OPENAI_API_VERSION`.
+
+The executor accepts text and JSON evidence and rejects media, streaming, tools, `safety_identifier`, `service_tier`, and generation controls such as `temperature`, `top_p`, token-generation limits, and reasoning options. Shared System One completion validates typed answers and actual token usage. Capability and pricing records use `decisions.make`; a zero output meter represents free output. Executor registration does not enable catalog routing.
+
+Contract source: [Deploy and use Microsoft-Decision-1](https://learn.microsoft.com/azure/foundry/foundry-models/how-to/use-foundry-models-microsoft-decision).
+
+## Novita media contracts
+
+Novita's dedicated executors implement Kling 3.0 Standard/Pro/4K video, unified
+Kling 2.5 Turbo Pro/2.1 Master video, Fish Audio S1 and MiniMax Speech 2.8 HD/Turbo
+speech, and Ming Image 0.1 Design generation. Catalogue availability is independent
+of executor registration. Only reviewed model IDs and controls are accepted.
+
+Video uses the existing durable job, reservation and reconciliation flow, including
+the caller's authentication context. Ming uses the OpenAI image generations wire
+contract and bounded token-usage responses. MiniMax speech converts bounded
+synchronous hex responses to binary audio and bills the reported character count.
+Uncertain media submissions prevent automatic replay or provider fallback.
+
+Official contracts: [unified video](https://docs.novita.ai/api-reference/reference-unified-video-generation),
+[Ming Image](https://docs.novita.ai/api-reference/model-apis-ming-image-txt2img),
+[Fish speech](https://docs.novita.ai/api-reference/model-apis-fish-audio-text-to-speech),
+and [MiniMax Speech](https://docs.novita.ai/api-reference/model-apis-minimax-speech-2.8-hd).

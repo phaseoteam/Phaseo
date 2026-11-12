@@ -1,6 +1,4 @@
-"use client";
-
-import Link from "next/link";
+import Link from "@/components/link";
 import type { ReactNode } from "react";
 import { useEffect, useMemo, useState } from "react";
 import { Logo } from "@/components/Logo";
@@ -36,20 +34,19 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Shield } from "lucide-react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 import {
 	type PromptInjectionAction,
 	type ProviderRestrictionMode,
 	type SensitiveInfoRulePayload,
-} from "@/app/(dashboard)/settings/guardrails/actions";
+} from "@/features/settings/guardrails/actions";
 import { describeProviderRestrictionMode } from "./guardrailPreview";
 import {
 	getDefaultSensitiveInfoRules,
 	getSensitiveInfoRuleDefinitions,
 } from "./sensitiveInfoPreview";
-
-const NANOS_PER_USD = 1_000_000_000;
+import { formatUsd } from "./guardrailWizard";
 
 type ProviderOption = { id: string; name: string };
 type ActiveProviderModel = {
@@ -61,6 +58,7 @@ type KeyOption = { id: string; name: string; prefix: string; status: string };
 
 type GuardrailRow = {
 	id: string;
+	is_workspace_baseline?: boolean | null;
 	enabled?: boolean | null;
 	name?: string | null;
 	description?: string | null;
@@ -79,12 +77,16 @@ type GuardrailRow = {
 	sensitive_info_enabled?: boolean | null;
 	sensitive_info_default_action?: string | null;
 	sensitive_info_rules?: SensitiveInfoRulePayload[] | null;
-	daily_limit_requests?: number | null;
-	weekly_limit_requests?: number | null;
-	monthly_limit_requests?: number | null;
-	daily_limit_cost_nanos?: number | null;
-	weekly_limit_cost_nanos?: number | null;
-	monthly_limit_cost_nanos?: number | null;
+	kind?: string | null;
+	rate_requests_per_minute?: number | null;
+	rate_tokens_per_minute?: number | null;
+	rate_concurrent_requests?: number | null;
+	rate_fail_closed?: boolean | null;
+	rate_counting?: string | null;
+	spend_limit_nanos?: number | null;
+	spend_period?: string | null;
+	spend_action?: string | null;
+	spend_counting?: string | null;
 };
 
 function normalizeMode(value: unknown): ProviderRestrictionMode {
@@ -300,26 +302,6 @@ function SelectionDialog(props: {
 	);
 }
 
-function formatUsdFromNanos(nanos: number): string {
-	if (!Number.isFinite(nanos) || nanos <= 0) return "";
-	const usd = nanos / NANOS_PER_USD;
-	return String(usd);
-}
-
-function parseUsdToNanos(value: string): number | null | undefined {
-	if (!value || value.trim().length === 0) return null;
-	const parsed = Number(value);
-	if (!Number.isFinite(parsed) || parsed < 0) return undefined;
-	return Math.round(parsed * NANOS_PER_USD);
-}
-
-function parseInteger(value: string): number | null | undefined {
-	if (!value || value.trim().length === 0) return null;
-	const parsed = Number(value);
-	if (!Number.isFinite(parsed) || parsed < 0) return undefined;
-	return Math.floor(parsed);
-}
-
 function GuardrailsSection(props: {
 	canManageGuardrails: boolean;
 	providers: ProviderOption[];
@@ -336,7 +318,7 @@ function GuardrailsSection(props: {
 			{props.guardrails.length ? (
 				<div className="overflow-hidden rounded-xl border bg-background">
 					<div className="divide-y">
-						{props.guardrails.map((g) => (
+						{[...props.guardrails].sort((a, b) => Number(Boolean(b.is_workspace_baseline)) - Number(Boolean(a.is_workspace_baseline))).map((g) => (
 							<GuardrailCard
 								key={g.id}
 								guardrail={g}
@@ -395,16 +377,29 @@ function GuardrailCard(props: {
 					2,
 				);
 
+	// The workspace baseline holds the Settings, Privacy rules and is edited there; it applies to
+	// the whole workspace and cannot be deleted.
+	const baseline = props.guardrail.is_workspace_baseline === true;
+	const rate = props.guardrail.kind === "rate";
+	const spend = props.guardrail.kind === "spend";
+	const spendAmount = spend && props.guardrail.spend_limit_nanos != null && props.guardrail.spend_period
+		? t(`guardrailAssignments.spend.${props.guardrail.spend_period}` as never, { amount: formatUsd(Number(props.guardrail.spend_limit_nanos)) } as never)
+		: null;
+	const rateParts = [
+		props.guardrail.rate_requests_per_minute != null ? t("guardrailAssignments.rateRequests", { count: Number(props.guardrail.rate_requests_per_minute) }) : null,
+		props.guardrail.rate_tokens_per_minute != null ? t("guardrailAssignments.rateTokens", { count: Number(props.guardrail.rate_tokens_per_minute) }) : null,
+		props.guardrail.rate_concurrent_requests != null ? t("guardrailAssignments.rateConcurrent", { count: Number(props.guardrail.rate_concurrent_requests) }) : null,
+	].filter((part): part is string => Boolean(part));
 	return (
 		<Link
-			href={`/settings/guardrails/${props.guardrail.id}`}
+			href={baseline ? "/settings/privacy" : `/settings/guardrails/${props.guardrail.id}`}
 			className="block px-4 py-4 hover:bg-muted/20 transition-colors"
 		>
 			<div className="flex flex-wrap items-start justify-between gap-3">
 				<div className="min-w-0 space-y-1">
 					<div className="flex flex-wrap items-center gap-2">
 						<p className="truncate text-base font-semibold">
-							{props.guardrail.name ?? t("guardrailsControls.untitled")}
+							{baseline ? t("guardrailsControls.workspaceBaseline") : props.guardrail.name ?? t("guardrailsControls.untitled")}
 						</p>
 						{props.guardrail.enabled ? (
 							<Badge variant="secondary">{t("labels.enabled")}</Badge>
@@ -425,7 +420,11 @@ function GuardrailCard(props: {
 							</Badge>
 						) : null}
 					</div>
-					{props.guardrail.description ? (
+					{baseline ? (
+						<p className="text-sm text-muted-foreground">
+							{t("guardrailsControls.workspaceBaselineDescription")}
+						</p>
+					) : props.guardrail.description ? (
 						<p className="text-sm text-muted-foreground">
 							{props.guardrail.description}
 						</p>
@@ -436,6 +435,11 @@ function GuardrailCard(props: {
 					)}
 
 					<div className="mt-3 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+						{baseline ? (
+							<span className="inline-flex items-center gap-2 rounded-md border bg-background px-2 py-1">
+								<span className="font-medium text-foreground">{t("guardrailsControls.wholeWorkspace")}</span>
+							</span>
+						) : <>
 						<span className="inline-flex items-center gap-2 rounded-md border bg-background px-2 py-1">
 							<span className="font-medium text-foreground">{t("guardrailsControls.members")}</span>
 							<span>{props.memberIds.length}</span>
@@ -447,7 +451,35 @@ function GuardrailCard(props: {
 							</span>
 							<span>{props.keyIds.length}</span>
 						</span>
+						</>}
 
+						{spend ? <>
+						<span className="inline-flex items-center gap-2 rounded-md border bg-background px-2 py-1">
+							<span className="font-medium text-foreground">{t("spendGuardrail.title")}</span>
+							<span>{spendAmount ?? "—"}</span>
+						</span>
+						{props.guardrail.spend_action ? (
+							<span className="inline-flex items-center gap-2 rounded-md border bg-background px-2 py-1">
+								<span className="font-medium text-foreground">{t("spendGuardrail.actionTitle")}</span>
+								<span>{t(`spendGuardrail.action.${props.guardrail.spend_action}.name` as never)}</span>
+							</span>
+						) : null}
+						{props.guardrail.spend_counting ? (
+							<span className="inline-flex items-center gap-2 rounded-md border bg-background px-2 py-1">
+								<span className="font-medium text-foreground">{t("spendGuardrail.countingTitle")}</span>
+								<span>{t(`spendGuardrail.counting.${props.guardrail.spend_counting}.name` as never)}</span>
+							</span>
+						) : null}
+						</> : rate ? <>
+						<span className="inline-flex items-center gap-2 rounded-md border bg-background px-2 py-1">
+							<span className="font-medium text-foreground">{t("rateGuardrail.title")}</span>
+							<span>{rateParts.join(" · ")}</span>
+						</span>
+						<span className="inline-flex items-center gap-2 rounded-md border bg-background px-2 py-1">
+							<span className="font-medium text-foreground">{t("rateGuardrail.countingTitle")}</span>
+							<span>{props.guardrail.rate_counting ? t(`rateGuardrail.counting.${props.guardrail.rate_counting}.name` as never) : t("rateGuardrail.countingLegacy")}</span>
+						</span>
+						</> : <>
 						<span className="inline-flex items-center gap-2 rounded-md border bg-background px-2 py-1">
 							<span className="font-medium text-foreground">
 								{t("guardrailsControls.providers")}
@@ -490,9 +522,10 @@ function GuardrailCard(props: {
 											: t("guardrailsControls.blocklist")}
 							</span>
 						</span>
+						</>}
 					</div>
 
-					{mode !== "none" ? (
+					{mode !== "none" && !rate && !spend ? (
 						<p className="mt-2 text-xs text-muted-foreground">
 							{providerRuleDetail}
 						</p>

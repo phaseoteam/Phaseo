@@ -1,4 +1,7 @@
-// Purpose: Executor for LTX async text-to-video and image-to-video generation.
+// Purpose: Executor for LTX async text-to-video, image-to-video and audio-to-video generation.
+// Why: LTX's v2 API has per-model limits (duration, fps, audio length) that we check before
+//      holding credits, so callers get a plain error instead of a provider 400.
+// How: Map the IR to one of the /v2 endpoints, reserve credits for the billed seconds, submit.
 
 import type { IRVideoGenerationRequest, IRVideoGenerationResponse } from "@core/ir";
 import { asyncVideoJobPersistenceFailureResult } from "@executors/_shared/async-job-persistence";
@@ -50,6 +53,27 @@ function inputAudio(ir: IRVideoGenerationRequest, config: Record<string, any>): 
 	return toString(references[0]?.url ?? references[0]?.raw);
 }
 
+const HIGH_RESOLUTIONS = new Set(["2560x1440", "1440x2560", "3840x2160", "2160x3840"]);
+// The sizes Phaseo has prices for (720p to 4K, landscape and portrait). LTX also documents
+// square and 3:2 sizes; they stay refused until they are priced.
+const SUPPORTED_RESOLUTIONS = new Set(["1280x720", "720x1280", "1920x1080", "1080x1920", ...HIGH_RESOLUTIONS]);
+
+// Longest input audio LTX accepts for audio-to-video (docs.ltx.io audio-to-video
+// reference, checked 2026-11-05): LTX-2.5 Pro takes 10 s at every resolution;
+// LTX-2.5 Fast and LTX-2.3 Pro take 20 s at 720p/1080p and 10 s at 1440p/4K.
+function maxInputAudioSeconds(model: string, resolution: string): number {
+	if (model === "ltx-2-5-pro") return 10;
+	return HIGH_RESOLUTIONS.has(resolution) ? 10 : 20;
+}
+
+// generate_audio is a validated top-level field; provider_params cannot carry it.
+function generateAudioSetting(ir: IRVideoGenerationRequest, config: Record<string, any>): boolean | undefined {
+	const value = ir.generateAudio ?? config.generate_audio ?? config.generateAudio;
+	if (value == null) return undefined;
+	if (typeof value !== "boolean") throw new InvalidLtxVideoRequestError("generate_audio must be true or false.");
+	return value;
+}
+
 function buildRequest(ir: IRVideoGenerationRequest, model: string) {
 	if (!LTX_MODELS.has(model)) throw new InvalidLtxVideoRequestError(`Unsupported LTX model: ${model}.`);
 	const config = providerConfig(ir);
@@ -57,14 +81,25 @@ function buildRequest(ir: IRVideoGenerationRequest, model: string) {
 	const audio = inputAudio(ir, config);
 	const lastFrame = toString(config.last_frame_uri ?? config.lastFrameUri ?? ir.lastFrame ?? ir.input?.lastFrame);
 	const resolution = resolveVideoSize({ size: ir.size, resolution: ir.resolution }) ?? "1920x1080";
+	if (!SUPPORTED_RESOLUTIONS.has(resolution)) {
+		throw new InvalidLtxVideoRequestError(`LTX resolution must be one of ${[...SUPPORTED_RESOLUTIONS].join(", ")}.`);
+	}
+	const generateAudio = generateAudioSetting(ir, config);
 	if (audio) {
 		if (!["ltx-2-5-fast", "ltx-2-5-pro", "ltx-2-3-pro", "ltx-2-pro"].includes(model)) {
 			throw new InvalidLtxVideoRequestError(`${model} does not support LTX audio-to-video.`);
 		}
 		if (lastFrame) throw new InvalidLtxVideoRequestError("LTX audio-to-video does not support last-frame conditioning.");
+		// The soundtrack is the caller's audio, so there is nothing to switch off.
+		if (generateAudio === false) {
+			throw new InvalidLtxVideoRequestError("generate_audio: false does not apply to LTX audio-to-video; the video uses the audio you send.");
+		}
 		const inputAudioSeconds = Number(ir.inputAudioDurationSeconds ?? config.input_audio_duration ?? config.inputAudioDuration);
-		if (!Number.isFinite(inputAudioSeconds) || inputAudioSeconds < 2 || inputAudioSeconds > 20) {
-			throw new InvalidLtxVideoRequestError("input_audio_duration is required and must be between 2 and 20 seconds.");
+		const maxAudioSeconds = maxInputAudioSeconds(model, resolution);
+		if (!Number.isFinite(inputAudioSeconds) || inputAudioSeconds < 2 || inputAudioSeconds > maxAudioSeconds) {
+			throw new InvalidLtxVideoRequestError(
+				`input_audio_duration is required and must be between 2 and ${maxAudioSeconds} seconds for ${model} at ${resolution}.`,
+			);
 		}
 		const guidanceScale = config.guidance_scale ?? config.guidanceScale;
 		if (guidanceScale != null && (!Number.isFinite(Number(guidanceScale)) || Number(guidanceScale) < 1 || Number(guidanceScale) > 50)) {
@@ -81,27 +116,28 @@ function buildRequest(ir: IRVideoGenerationRequest, model: string) {
 		};
 	}
 	const durationValue = ir.durationSeconds ?? ir.duration ?? ir.seconds ?? config.duration;
-	const duration = durationValue === null ? null : Number(durationValue ?? 8);
-	if (duration !== null && (!Number.isInteger(duration) || duration < 6 || duration > 20 || duration % 2 !== 0)) {
-		throw new InvalidLtxVideoRequestError("LTX duration must be null or an even number from 6 to 20 seconds.");
+	// LTX-2.5's automatic duration (duration: null) is not offered: LTX bills the length it
+	// picks, but its job result does not report that length, so we could only bill a guess.
+	if (durationValue === null) {
+		throw new InvalidLtxVideoRequestError("Automatic LTX duration is not available. Send duration as an even number of seconds.");
 	}
-	if (duration === null && !model.startsWith("ltx-2-5-")) {
-		throw new InvalidLtxVideoRequestError("Automatic duration is only supported by LTX-2.5 models.");
+	const duration = Number(durationValue ?? 8);
+	if (!Number.isInteger(duration) || duration < 6 || duration > 20 || duration % 2 !== 0) {
+		throw new InvalidLtxVideoRequestError("LTX duration must be an even number from 6 to 20 seconds.");
 	}
-	if (duration === null && lastFrame) throw new InvalidLtxVideoRequestError("Automatic duration cannot be combined with a last frame.");
 	const legacyModel = model === "ltx-2-fast" || model === "ltx-2-pro";
 	const fps = Number(config.fps ?? config.frame_rate ?? config.frameRate ?? ir.fps ?? (legacyModel ? 25 : 24));
 	if (![24, 25, 48, 50].includes(fps)) throw new InvalidLtxVideoRequestError("LTX fps must be 24, 25, 48, or 50.");
 	const isFast = model.endsWith("-fast");
 	const isLegacy = legacyModel;
-	const isHighResolution = ["2560x1440", "1440x2560", "3840x2160", "2160x3840"].includes(resolution);
+	const isHighResolution = HIGH_RESOLUTIONS.has(resolution);
 	if (isLegacy && !["1920x1080", "2560x1440", "3840x2160"].includes(resolution)) throw new InvalidLtxVideoRequestError("Deprecated LTX-2 models support landscape output only.");
 	if (isLegacy && ![25, 50].includes(fps)) throw new InvalidLtxVideoRequestError("Deprecated LTX-2 models require 25 or 50 fps.");
 	if (isLegacy && lastFrame) throw new InvalidLtxVideoRequestError("Deprecated LTX-2 models do not support last-frame conditioning.");
-	if (model === "ltx-2-5-pro" && isHighResolution) throw new InvalidLtxVideoRequestError("LTX-2.5 Pro supports resolutions up to 1080p.");
-	if (model === "ltx-2-5-pro" && fps === 48) throw new InvalidLtxVideoRequestError("LTX-2.5 Pro supports 24, 25, or 50 fps.");
-	if (!isFast && duration !== null && duration > 10) throw new InvalidLtxVideoRequestError("LTX Pro duration must be 6, 8, or 10 seconds.");
-	if (isFast && duration !== null && duration > 10 && (isHighResolution || fps === 48 || fps === 50)) {
+	// LTX-2.5 Pro takes 1440p, 4K and 48 fps as well (docs.ltx.video, checked 2026-11-05);
+	// every resolution is priced.
+	if (!isFast && duration > 10) throw new InvalidLtxVideoRequestError("LTX Pro duration must be 6, 8, or 10 seconds.");
+	if (isFast && duration > 10 && (isHighResolution || fps === 48 || fps === 50)) {
 		throw new InvalidLtxVideoRequestError("LTX Fast durations above 10 seconds require 720p or 1080p at 24 or 25 fps.");
 	}
 	const cameraMotion = toString(config.camera_motion ?? config.cameraMotion);
@@ -113,7 +149,8 @@ function buildRequest(ir: IRVideoGenerationRequest, model: string) {
 		duration,
 		resolution,
 		fps,
-		generate_audio: config.generate_audio ?? config.generateAudio ?? true,
+		// LTX defaults to true; false gives a silent video at the same per-second price.
+		generate_audio: generateAudio ?? true,
 		...(cameraMotion ? { camera_motion: cameraMotion } : {}),
 	};
 	if (image) body.image_uri = image;
@@ -150,7 +187,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	try {
 		const reserved = await reserveVideoGenerationCredits({
 			keyId: args.apiKeyId,
-			authMethod: args.meta.authMethod,
+			apiKeyRef: args.meta.apiKeyRef,
 			onReservationDenied: args.onReservationDenied,
 			workspaceId: args.workspaceId, videoId: args.requestId, providerId: args.providerId, model,
 			seconds: mapped.seconds, pricingCard: args.pricingCard,

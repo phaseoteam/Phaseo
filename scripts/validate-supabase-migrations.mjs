@@ -10,6 +10,13 @@ const MIGRATION_NAME = /^(\d{8}|\d{14})_[a-z0-9][a-z0-9_]*\.sql$/;
 const NEW_MIGRATION_NAME = /^(\d{14})_[a-z0-9][a-z0-9_]*\.sql$/;
 const DESTRUCTIVE_APPROVAL = /^\s*--\s*phaseo:allow-destructive-migration\s+reason:\s*(.+)$/im;
 const HISTORY_BACKFILL_APPROVAL = /^\s*--\s*phaseo:allow-production-history-backfill\s+reason:\s*(.+)$/im;
+// Merged migrations are immutable. The one exception is a migration that never applied in any environment (for
+// example it failed and rolled back in production db push), which can be rewritten in place so the next push
+// applies the fixed SQL. The changed file must carry this marker with a specific reason, and reviewers must confirm
+// the version is absent from production's supabase_migrations.schema_migrations before approving.
+const UNAPPLIED_REWRITE_APPROVAL = /^\s*--\s*phaseo:rewrite-unapplied-migration\s+reason:\s*(.+)$/im;
+// The shortest reason any approval marker accepts; anything shorter is too vague to review.
+const MIN_REASON_LENGTH = 12;
 const DESTRUCTIVE_PATTERNS = [
 	["DROP TABLE", /\bdrop\s+table\b/i],
 	["DROP SCHEMA", /\bdrop\s+schema\b/i],
@@ -56,6 +63,8 @@ function getMigrationChanges(baseSha) {
 			`${baseSha}...HEAD`,
 			"--",
 			"supabase/migrations",
+			"supabase/baseline/schema.sql",
+			"supabase/baseline/history.sha256",
 		],
 		{ cwd: REPOSITORY_ROOT, encoding: "utf8" },
 	).trim();
@@ -108,7 +117,7 @@ export function validateMigrationOrder(
 		if (version && version <= latestBaseVersion) {
 			const approval = readMigration(path).match(HISTORY_BACKFILL_APPROVAL);
 			const reason = approval?.[1]?.trim() ?? "";
-			if (reason.length >= 12) continue;
+			if (reason.length >= MIN_REASON_LENGTH) continue;
 			errors.push(
 				`${path}: migration version ${version} must be newer than the base branch's latest version ${latestBaseVersion}. ` +
 				"Rebase onto the current target branch and create a new migration with `supabase migration new`. " +
@@ -180,7 +189,7 @@ function validateAddedMigration(path, files) {
 
 	const approval = sql.match(DESTRUCTIVE_APPROVAL);
 	const reason = approval?.[1]?.trim() ?? "";
-	if (reason.length < 12) {
+	if (reason.length < MIN_REASON_LENGTH) {
 		errors.push(
 			`${path}: destructive SQL detected (${dangerous.join(", ")}). ` +
 			"Add '-- phaseo:allow-destructive-migration reason: <specific justification>' " +
@@ -191,28 +200,66 @@ function validateAddedMigration(path, files) {
 	return errors;
 }
 
-export function validateSupabaseMigrations(baseSha = "") {
+/**
+ * Migrations an added one must sort after: the diff base plus, when given, the target
+ * branch's current tip. A pull request's base SHA can predate migrations merged since,
+ * so checking the tip catches a stale branch before merge instead of on main.
+ */
+export function orderBaseMigrationFiles(baseSha, targetRef = "", list = listBaseMigrationFiles) {
+	return [...list(baseSha), ...(targetRef ? list(targetRef) : [])];
+}
+
+/**
+ * Errors for a change to an existing migration or the replay baseline. Only an in-place modification of a single
+ * migration file is ever allowed, and only when the changed file carries the unapplied-rewrite marker with a
+ * specific reason. The same rule applies to a pull request (base SHA to its head) and to main CI (previous main
+ * commit to the new one), since both diff the base against HEAD.
+ */
+export function existingMigrationChangeErrors(
+	change,
+	readMigration = (path) => readFileSync(resolve(REPOSITORY_ROOT, path), "utf8"),
+) {
+	const [path] = change.paths;
+	const rewrite = /^M\d*$/.test(change.status) && change.paths.length === 1 && /^supabase\/migrations\/[^/]+\.sql$/.test(path);
+	if (rewrite) {
+		const reason = readMigration(path).match(UNAPPLIED_REWRITE_APPROVAL)?.[1]?.trim() ?? "";
+		if (reason.length >= MIN_REASON_LENGTH) return [];
+	}
+	return [
+		`${change.paths.join(" -> ")}: existing migrations and replay baseline are immutable; ` +
+		"add a new migration instead of modifying, deleting, or renaming one" +
+		(rewrite
+			? ". To rewrite a migration that never applied in any environment, add " +
+				"'-- phaseo:rewrite-unapplied-migration reason: <specific justification>' and confirm in review that its " +
+				"version is absent from production's supabase_migrations.schema_migrations"
+			: ""),
+	];
+}
+
+export function validateSupabaseMigrations(baseSha = "", targetRef = "") {
 	const files = listMigrationFiles();
 	const errors = validateNames(files);
 	const changes = getMigrationChanges(baseSha);
 	const added = [];
+	const rewritten = [];
 
 	for (const change of changes) {
+		if (change.status === "A" && change.paths.length === 1 && change.paths[0].startsWith("supabase/baseline/")) continue;
 		if (change.status === "A" && change.paths.length === 1) {
 			added.push(change.paths[0]);
 			continue;
 		}
 
-		errors.push(
-			`${change.paths.join(" -> ")}: existing migrations are immutable; ` +
-			"add a new migration instead of modifying, deleting, or renaming one",
-		);
+		const changeErrors = existingMigrationChangeErrors(change);
+		if (changeErrors.length === 0) rewritten.push(change.paths[0]);
+		errors.push(...changeErrors);
 	}
 
-	for (const path of added) {
+	// A rewritten migration gets the same file, naming and destructive-SQL checks as a new one.
+	for (const path of [...added, ...rewritten]) {
 		errors.push(...validateAddedMigration(path, files));
 	}
-	errors.push(...validateMigrationOrder(listBaseMigrationFiles(baseSha), added));
+	errors.push(...validateMigrationOrder(orderBaseMigrationFiles(baseSha, targetRef), added));
 
 	if (errors.length > 0) {
 		throw new Error(`Invalid Supabase migrations:\n- ${errors.join("\n- ")}`);
@@ -225,7 +272,7 @@ const isDirectRun =
 	process.argv[1] && fileURLToPath(import.meta.url) === resolve(process.argv[1]);
 
 if (isDirectRun) {
-	const { total, added } = validateSupabaseMigrations(process.argv[2]);
+	const { total, added } = validateSupabaseMigrations(process.argv[2], process.argv[3]);
 	console.log(
 		`Supabase migration history is valid (${total} total, ${added} added in this change).`,
 	);

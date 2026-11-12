@@ -19,6 +19,7 @@ type PublicModelRow = {
 	hidden: boolean | null;
 	status: string | null;
 	catalogue_status: string | null;
+	lab?: { name?: string | null; metadata?: { colour?: string | null } | null } | null;
 };
 
 type AnnouncementStateRow = {
@@ -33,8 +34,11 @@ type AnnouncementStateRow = {
 
 type PendingAnnouncement = {
 	modelSlug: string;
+	catalogueStatus: string;
 	modelName: string;
 	labSlug: string;
+	creatorName: string;
+	creatorColor?: string;
 	modelUrl: string;
 	imageUrl: string;
 	stateAttemptCount: number;
@@ -91,20 +95,27 @@ function isPublicModel(row: PublicModelRow): boolean {
 	return !status || !["draft", "disabled", "retired"].includes(status);
 }
 
-function isAvailableCatalogueStatus(value: string | null | undefined): boolean {
-	return value?.trim().toLowerCase() === "available";
+function isReleasedCatalogueStatus(value: string | null | undefined): boolean {
+	return ["available", "preview"].includes(value?.trim().toLowerCase() ?? "");
 }
 
 function isNewlyAvailable(
 	model: PublicModelRow,
 	state: AnnouncementStateRow,
+	baselineAt?: number,
 ): boolean {
 	if (state.status !== "baseline" && state.status !== "announced") return false;
 	return isPublicModel(model)
-		&& isAvailableCatalogueStatus(model.catalogue_status)
+		&& isReleasedCatalogueStatus(model.catalogue_status)
 		&& (
-			!isAvailableCatalogueStatus(state.catalogue_status_snapshot)
+			!isReleasedCatalogueStatus(state.catalogue_status_snapshot)
 			|| state.public_visibility_snapshot === false
+			// The old scanner baselined previews added after initialization.
+			// Preserve the initial baseline, but recover later skipped releases.
+			|| (state.status === "baseline"
+				&& state.catalogue_status_snapshot === "preview"
+				&& baselineAt !== undefined
+				&& Date.parse(state.first_seen_at ?? "") > baselineAt)
 		);
 }
 
@@ -132,7 +143,7 @@ async function loadPublicModels(): Promise<PublicModelRow[]> {
 	for (let offset = 0; ; offset += PUBLIC_ANNOUNCEMENT_PAGE_SIZE) {
 		const { data, error } = await supabase
 			.from("v2_models")
-			.select("model_slug,name,lab_slug,hidden,status,catalogue_status")
+			.select("model_slug,name,lab_slug,hidden,status,catalogue_status,lab:v2_labs!v2_models_lab_slug_fkey(name,metadata)")
 			.order("model_slug", { ascending: true })
 			.range(offset, offset + PUBLIC_ANNOUNCEMENT_PAGE_SIZE - 1);
 		if (error) throw new Error(error.message || "Failed to load public model catalog");
@@ -179,7 +190,7 @@ async function insertNewAnnouncementState(
 		if (!modelSlug) return [];
 		return [{
 			model_slug: modelSlug,
-			status: baseline || !isPublicModel(model) || !isAvailableCatalogueStatus(model.catalogue_status)
+			status: baseline || !isPublicModel(model) || !isReleasedCatalogueStatus(model.catalogue_status)
 				? "baseline"
 				: "pending",
 			catalogue_status_snapshot: model.catalogue_status,
@@ -221,7 +232,6 @@ async function promoteAvailableAnnouncementState(
 			.from("model_discovery_public_announcements")
 			.update({
 				status: "pending",
-				catalogue_status_snapshot: "available",
 				public_visibility_snapshot: true,
 				last_run_id: runId,
 				last_error: null,
@@ -319,22 +329,26 @@ async function markAnnounced(
 ): Promise<void> {
 	if (models.length === 0) return;
 	const supabase = getSupabaseAdmin();
-	const { error } = await supabase
-		.from("model_discovery_public_announcements")
-		.update({
-			status: "announced",
-			catalogue_status_snapshot: "available",
-			last_run_id: runId,
-			announced_at: nowIso,
-			last_attempt_at: nowIso,
-			last_error: null,
-			claim_run_id: null,
-			claim_expires_at: null,
-			updated_at: nowIso,
-		})
-		.in("model_slug", models.map((model) => model.modelSlug))
-		.eq("claim_run_id", runId);
-	if (error) throw new Error(error.message || "Failed to mark public model announcements delivered");
+	for (const catalogueStatus of ["available", "preview"]) {
+		const modelSlugs = models.filter((model) => model.catalogueStatus === catalogueStatus).map((model) => model.modelSlug);
+		if (modelSlugs.length === 0) continue;
+		const { error } = await supabase
+			.from("model_discovery_public_announcements")
+			.update({
+				status: "announced",
+				catalogue_status_snapshot: catalogueStatus,
+				last_run_id: runId,
+				announced_at: nowIso,
+				last_attempt_at: nowIso,
+				last_error: null,
+				claim_run_id: null,
+				claim_expires_at: null,
+				updated_at: nowIso,
+			})
+			.in("model_slug", modelSlugs)
+			.eq("claim_run_id", runId);
+		if (error) throw new Error(error.message || "Failed to mark public model announcements delivered");
+	}
 }
 
 async function markAttemptFailed(
@@ -366,12 +380,15 @@ async function markAttemptFailed(
 
 function toNotification(model: PublicModelRow, stateAttemptCount: number): PendingAnnouncement | null {
 	const modelSlug = normalizeSlug(model.model_slug);
-	if (!modelSlug || !isPublicModel(model) || !isAvailableCatalogueStatus(model.catalogue_status)) return null;
+	if (!modelSlug || !isPublicModel(model) || !isReleasedCatalogueStatus(model.catalogue_status)) return null;
 	const labSlug = normalizeSlug(model.lab_slug) ?? modelSlug.split("/")[0] ?? "phaseo";
 	return {
 		modelSlug,
+		catalogueStatus: model.catalogue_status?.trim().toLowerCase() ?? "",
 		modelName: normalizeName(model.name, modelSlug),
 		labSlug,
+		creatorName: model.lab?.name?.trim() || displayLabName(labSlug),
+		creatorColor: model.lab?.metadata?.colour?.trim() || undefined,
 		modelUrl: modelUrl(modelSlug),
 		imageUrl: modelImageUrl(modelSlug),
 		stateAttemptCount,
@@ -409,19 +426,21 @@ export async function runPublicModelAnnouncementCheck(args: {
 		}
 
 		const nowIso = new Date().toISOString();
+		const firstSeenTimes = stateRows.map((row) => Date.parse(row.first_seen_at ?? "")).filter(Number.isFinite);
+		const baselineAt = firstSeenTimes.length > 0 ? Math.min(...firstSeenTimes) : undefined;
 		const newModels: PublicModelRow[] = [];
 		const newlyAvailableModels: PublicModelRow[] = [];
 		const skippedModels: PublicModelRow[] = [];
 		for (const model of models) {
 			const modelSlug = normalizeSlug(model.model_slug);
 			if (!modelSlug || stateBySlug.has(modelSlug)) continue;
-			if (isPublicModel(model) && isAvailableCatalogueStatus(model.catalogue_status)) newModels.push(model);
+			if (isPublicModel(model) && isReleasedCatalogueStatus(model.catalogue_status)) newModels.push(model);
 			else skippedModels.push(model);
 		}
 		for (const model of models) {
 			const modelSlug = normalizeSlug(model.model_slug);
 			const state = modelSlug ? stateBySlug.get(modelSlug) : undefined;
-			if (state && isNewlyAvailable(model, state)) newlyAvailableModels.push(model);
+			if (state && isNewlyAvailable(model, state, baselineAt)) newlyAvailableModels.push(model);
 		}
 
 		summary.detected = newModels.length + newlyAvailableModels.length;
@@ -436,15 +455,9 @@ export async function runPublicModelAnnouncementCheck(args: {
 				return modelSlug ? [modelSlug] : [];
 			}),
 		);
-		const newlyAvailableModelSlugs = new Set(
-			newlyAvailableModels.flatMap((model) => {
-				const modelSlug = normalizeSlug(model.model_slug);
-				return modelSlug ? [modelSlug] : [];
-			}),
-		);
 		const pendingModels = models.flatMap((model) => {
 			const modelSlug = normalizeSlug(model.model_slug);
-			if (!modelSlug || !isPublicModel(model) || !isAvailableCatalogueStatus(model.catalogue_status)) return [];
+			if (!modelSlug || !isPublicModel(model) || !isReleasedCatalogueStatus(model.catalogue_status)) return [];
 			const state = stateBySlug.get(modelSlug);
 			if (state?.status !== "pending" && !newModelSlugs.has(modelSlug)) {
 				return [];
@@ -470,9 +483,29 @@ export async function runPublicModelAnnouncementCheck(args: {
 
 		const claimedModels = await markPendingRun(args.runId, pendingModels, new Date().toISOString(), ensureRun);
 		if (claimedModels.length === 0) return summary;
+		let recheckSkipped = 0;
 		for (let index = 0; index < claimedModels.length; index += PUBLIC_ANNOUNCEMENT_BATCH_SIZE) {
-			const batch = claimedModels.slice(index, index + PUBLIC_ANNOUNCEMENT_BATCH_SIZE);
+			let batch = claimedModels.slice(index, index + PUBLIC_ANNOUNCEMENT_BATCH_SIZE);
 			try {
+				// Recheck the authoritative public-catalog policy immediately before disclosure.
+				const visibility = await Promise.all(batch.map(async model => {
+					const { data, error } = await getSupabaseAdmin().rpc("catalog_model_is_public", { p_model_slug: model.modelSlug });
+					if (error) throw new Error("Public model visibility check failed");
+					return data === true;
+				}));
+				const privateModels = batch.filter((_, position) => !visibility[position]);
+				if (privateModels.length > 0) {
+					// Back to baseline as not public (the status CHECK has no "skipped"), so the model is
+					// announced once it really becomes public.
+					const { error } = await getSupabaseAdmin().from("model_discovery_public_announcements")
+						.update({ status: "baseline", public_visibility_snapshot: false, claim_run_id: null, claim_expires_at: null, updated_at: new Date().toISOString() })
+						.in("model_slug", privateModels.map(model => model.modelSlug)).eq("claim_run_id", args.runId);
+					if (error) throw new Error("Failed to release private model announcement claims");
+					summary.skipped += privateModels.length;
+					recheckSkipped += privateModels.length;
+				}
+				batch = batch.filter((_, position) => visibility[position]);
+				if (batch.length === 0) continue;
 				const payload = buildPublicModelAnnouncementPayload(
 					batch.map((model) => ({
 						modelId: model.modelSlug,
@@ -480,12 +513,8 @@ export async function runPublicModelAnnouncementCheck(args: {
 						modelUrl: model.modelUrl,
 						imageUrl: model.imageUrl,
 						creatorId: model.labSlug,
-						creatorName: displayLabName(model.labSlug),
-						changeSummaryLines: [
-							newlyAvailableModelSlugs.has(model.modelSlug)
-								? "Now available in the public Phaseo model catalog."
-								: "Added to the public Phaseo model catalog.",
-						],
+						creatorName: model.creatorName,
+						creatorColor: model.creatorColor,
 					})),
 					readBindingEnv(["DISCORD_ROLE_ID"]),
 					{
@@ -512,7 +541,7 @@ export async function runPublicModelAnnouncementCheck(args: {
 			}
 		}
 
-		summary.pending = Math.max(0, pendingModels.length - summary.notified);
+		summary.pending = Math.max(0, pendingModels.length - summary.notified - recheckSkipped);
 		return summary;
 	} catch (error) {
 		summary.error = error instanceof Error ? error.message : String(error);

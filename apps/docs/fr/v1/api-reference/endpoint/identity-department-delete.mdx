@@ -1,6 +1,9 @@
 ---
 title: "Supprimer un département de l’espace de travail"
+sidebarTitle: "Supprimer un département"
 badge: "Beta"
 openapi: "/fr/openapi/v1/openapi.localized.yaml DELETE /identity/departments/{id}"
 ---
 <Note>L’administration de l’annuaire d’entreprise nécessite l’extension d’identité, une identité propriétaire ou administrateur et le périmètre de paramètres correspondant.</Note>
+
+Si des correspondances de groupes de l’annuaire utilisent le département, seul le propriétaire de l’espace de travail peut le supprimer, car sa suppression supprime aussi ces correspondances et les rôles qu’elles accordent.

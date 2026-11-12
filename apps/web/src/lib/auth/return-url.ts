@@ -37,5 +37,9 @@ export function sanitizeReturnUrl(
 	if (lower.startsWith("/auth/callback")) return fallback;
 	// URLSearchParams already removes the query-value encoding. Preserve path
 	// segment escapes so encoded slashes in names never become route separators.
-	return (raw.startsWith("/") ? raw : decoded).replace(/\\/g, "/");
+	const safe = (raw.startsWith("/") ? raw : decoded).replace(/\\/g, "/");
+	// Credit top-up review links carry a single-use token in the query: never carry it
+	// through sign-in. The emailed link still works when opened again.
+	if (lower.startsWith("/settings/credits/topups/")) return safe.split("?")[0];
+	return safe;
 }

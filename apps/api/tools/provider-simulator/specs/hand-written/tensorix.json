@@ -1,0 +1,39 @@
+{
+	"id": "tensorix",
+	"source": {
+		"url": null,
+		"docs": "https://docs.tensorx.ai/api-reference/chat-completions",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. Only json_object response_format shown; tool_choice not documented; reasoning params on a separate page; reasoning appears in reasoning_content."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"max_tokens": {},
+					"temperature": {},
+					"top_p": {},
+					"top_k": {},
+					"stop": {},
+					"presence_penalty": {},
+					"frequency_penalty": {},
+					"response_format": {},
+					"tools": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

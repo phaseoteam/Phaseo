@@ -2,9 +2,10 @@
 icon: "package"
 title: "AI SDK (Vercel)"
 description: "Generate text, stream responses, and use tools with the Phaseo provider for AI SDK 7."
+"og:image": "https://phaseo.app/og/dynamic?title=AI%20SDK%20%28Vercel%29&description=Generate%20text%2C%20stream%20responses%2C%20and%20use%20tools%20with%20the%20Phaseo%20provider%20for%20AI%20SDK%207.&pathname=/docs/v1/sdk-reference/sdk/ai-sdk"
 ---
 
-Use the official Phaseo provider to call Phaseo models through Vercel AI SDK 7. Start here when your application already uses `generateText`, `streamText`, or another AI SDK function.
+Install `@phaseo/ai-sdk-provider` and pass `phaseo(modelId)` as the `model` to `generateText`, `streamText`, or any other Vercel AI SDK 7 function. Text requests go to the Gateway's `/v1/chat/completions` endpoint.
 
 ## Install
 
@@ -28,9 +29,9 @@ bun add @phaseo/ai-sdk-provider
 
 </CodeGroup>
 
-The unversioned Phaseo package follows npm's `latest` tag and selects the active AI SDK 7-compatible provider line. It declares AI SDK 7 as a peer dependency, so package managers with peer auto-installation enabled install the compatible runtime automatically.
+The unversioned package installs npm's `latest` tag, which is the AI SDK 7 line. It declares `ai@^7` as a peer dependency, so package managers that auto-install peers add it for you.
 
-Set `PHASEO_API_KEY` in your server environment, then make your first request:
+Set `PHASEO_API_KEY` in your server environment, then make your first request. The default `phaseo` export throws if `PHASEO_API_KEY` isn't set.
 
 ```typescript
 import { phaseo } from "@phaseo/ai-sdk-provider";
@@ -65,9 +66,9 @@ for await (const chunk of result.textStream) {
 console.log(await result.providerMetadata);
 ```
 
-## Add application attribution
+## Configure a provider instance
 
-Create a provider instance when you want Phaseo request details to identify your application:
+Call `createPhaseo()` to set `apiKey`, `baseURL`, `headers` or a custom `fetch`. Use it to identify your application in Phaseo request details:
 
 ```typescript
 import { createPhaseo } from "@phaseo/ai-sdk-provider";
@@ -83,6 +84,19 @@ const phaseo = createPhaseo({
 
 `PHASEO_BASE_URL` is optional and defaults to `https://api.phaseo.app/v1`.
 
+## Pick a model type
+
+| Provider method | AI SDK function |
+| --- | --- |
+| `phaseo(modelId)` or `phaseo.languageModel(modelId)` | `generateText`, `streamText` |
+| `phaseo.embeddingModel(modelId)` (alias `textEmbeddingModel`) | `embed`, `embedMany` |
+| `phaseo.imageModel(modelId)` | `generateImage` |
+| `phaseo.transcriptionModel(modelId)` | `transcribe` |
+| `phaseo.speechModel(modelId)` | `generateSpeech` |
+| `phaseo.rerankingModel(modelId)` | `rerank` |
+
+Every method except `rerankingModel` accepts optional per-model settings as a second argument: `temperature`, `topP`, `topK`, `maxTokens`, `frequencyPenalty`, `presencePenalty`, `seed`, `user`, `headers` and `fetch`.
+
 ## Supported AI SDK 7 features
 
 - Text generation and streaming
@@ -96,21 +110,16 @@ const phaseo = createPhaseo({
 - Transcription and speech generation
 - Provider metadata, usage, abort signals, and raw stream chunks
 
-Reranking is supported through `rerank()` with `phaseo.rerankingModel(modelId)`. Model and provider capabilities still vary. Managed file references, skills, and provider-executed tool definitions, results, or approval responses are not currently advertised by the provider. Application-executed function tools can use the AI SDK's normal execution and approval flow.
+What a call can do still depends on the model and provider. The provider doesn't advertise managed file references, skills, or provider-executed tools (their definitions, results, or approval responses). Function tools that your application executes use the AI SDK's normal execution and approval flow.
 
-## Earlier AI SDK versions
+## Use an earlier AI SDK version
 
-- AI SDK 6: install `@phaseo/ai-sdk-provider@ai-sdk-v6`.
-- AI SDK 5: install `@phaseo/ai-sdk-provider@ai-sdk-v5`.
+| AI SDK | Install |
+| --- | --- |
+| 7 | `@phaseo/ai-sdk-provider` (`latest`) |
+| 6 | `@phaseo/ai-sdk-provider@ai-sdk-v6` |
+| 5 | `@phaseo/ai-sdk-provider@ai-sdk-v5` |
 
-If peer auto-installation is disabled, install the matching `ai` major (`ai@^7`, `ai@^6`, or `ai@^5`) separately.
+If peer auto-installation is off, install the matching `ai` major (`ai@^7`, `ai@^6`, or `ai@^5`) yourself.
 
-## Related guides
-
-- [Generate Text](/v1/sdk-reference/sdk/generate-text)
-- [Stream Text](/v1/sdk-reference/sdk/stream-text)
-- [Tool Calling](/v1/sdk-reference/sdk/tool-calling)
-- [Structured Output](/v1/sdk-reference/sdk/structured-output)
-- [Embeddings](/v1/sdk-reference/sdk/embeddings)
-- [Images](/v1/sdk-reference/sdk/images)
-- [Audio](/v1/sdk-reference/sdk/audio)
+The pages in this section show each function: [generate text](/v1/sdk-reference/sdk/generate-text), [stream text](/v1/sdk-reference/sdk/stream-text), [tool calling](/v1/sdk-reference/sdk/tool-calling), [structured output](/v1/sdk-reference/sdk/structured-output), [embeddings](/v1/sdk-reference/sdk/embeddings), [images](/v1/sdk-reference/sdk/images) and [audio](/v1/sdk-reference/sdk/audio).

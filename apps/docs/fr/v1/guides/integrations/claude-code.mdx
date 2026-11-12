@@ -1,14 +1,12 @@
 ---
 title: "Claude Code"
 icon: "/icons/brands/claude-code.svg"
-description: "Connectez Claude Code à Phaseo Gateway via l’API compatible avec Anthropic."
+description: "Connectez Claude Code au Gateway Phaseo via l’API compatible avec Anthropic."
 ---
 
-Claude Code prend en charge les passerelles LLM tierces via des variables d’environnement. Phaseo expose une interface compatible avec Anthropic sur `/v1/messages` ; vous pouvez donc connecter Claude Code à Phaseo sans modifier vos prompts.
+Lancez `phaseo claude-code` pour faire passer les requêtes de Claude Code par Phaseo, ou définissez vous-même trois variables d’environnement. Claude Code appelle `/v1/messages` au format Anthropic, que Phaseo sert comme [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx) : vos prompts ne changent donc pas.
 
-Si vous souhaitez que Claude Code consulte la documentation Phaseo à jour pendant une session, ajoutez aussi le serveur [Docs MCP](./docs-mcp.mdx).
-
-## Configurer avec Phaseo CLI
+## Configurer avec la CLI Phaseo
 
 ```bash
 phaseo login
@@ -16,39 +14,48 @@ phaseo claude-code
 claude
 ```
 
-Installez d’abord la version officielle de Claude Code. La configuration crée une `Phaseo CLI: Claude Code API Key` sans expiration, la stocke dans le trousseau du système et configure la passerelle et l’assistant de clé API de Claude Code. Aucune clé en clair n’est écrite dans les paramètres de Claude Code.
+Si Claude Code est absent, la CLI affiche la commande d’installation officielle et demande avant de l’exécuter. La configuration ensuite :
 
-## Configuration manuelle
+- crée une `Phaseo CLI: Claude Code API Key` qui expire après 90 jours et a une limite de dépenses mensuelle de $100, et la conserve dans le magasin d’identifiants du système d’exploitation ;
+- définit `ANTHROPIC_BASE_URL` et un `apiKeyHelper` dans `~/.claude/settings.json`. Le helper récupère la clé depuis la CLI et en crée une nouvelle quand l’ancienne expire : aucune clé en texte brut n’est donc écrite dans les paramètres de Claude Code.
 
-```bash
+La configuration s’arrête sans rien modifier si `settings.json` contient déjà un autre `ANTHROPIC_BASE_URL`, un autre `apiKeyHelper`, ou un `ANTHROPIC_API_KEY` ou `ANTHROPIC_AUTH_TOKEN` non vide. `--model` n’est pas pris en charge pour Claude Code ; définissez plutôt `ANTHROPIC_MODEL` (voir ci-dessous).
+
+## Configurer Claude Code manuellement
+
+Définissez ces variables dans le shell depuis lequel vous démarrez Claude Code :
+
+<CodeGroup>
+
+```bash bash
 export ANTHROPIC_BASE_URL="https://api.phaseo.app"
 export ANTHROPIC_AUTH_TOKEN="your_phaseo_api_key"
 export ANTHROPIC_API_KEY=""
 ```
 
-```powershell
+```powershell PowerShell
 $env:ANTHROPIC_BASE_URL = "https://api.phaseo.app"
 $env:ANTHROPIC_AUTH_TOKEN = "your_phaseo_api_key"
 $env:ANTHROPIC_API_KEY = ""
 ```
 
-## Choisir un modèle (facultatif)
+</CodeGroup>
 
-Définissez `ANTHROPIC_MODEL` pour choisir une valeur par défaut fixe. Utilisez les identifiants répertoriés dans [Modèles](../../api-reference/endpoint/models.mdx).
+Claude Code envoie `ANTHROPIC_AUTH_TOKEN` dans un en-tête `Authorization`, que Phaseo accepte. Pour fixer un modèle par défaut, définissez `ANTHROPIC_MODEL` sur un ID de modèle Phaseo issu de [Models](../../api-reference/endpoint/models.mdx).
 
-## Lancer Claude Code
+## Vérifier que tout fonctionne
+
+Lancez `claude`, envoyez un prompt court et vérifiez que la requête apparaît dans **Paramètres → Utilisation → Journaux**.
+
+## Retirer Phaseo
 
 ```bash
-claude
+phaseo integrations remove claude-code
 ```
 
-## Correspondance des endpoints
+Cette commande retire l’URL de base, le helper de clé et les variables d’identifiants vides que Phaseo a ajoutés à `settings.json`, puis révoque la clé. Pour une configuration manuelle, supprimez les trois variables d’environnement.
 
-- Claude Code appelle des endpoints de type Anthropic (`/v1/messages`).
-- Phaseo traite ces requêtes via [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx).
+## Limites connues
 
-## Notes de compatibilité
-
-- `ANTHROPIC_AUTH_TOKEN` est envoyé dans l’en-tête `Authorization`, accepté par Phaseo.
-- Vous pouvez aussi définir `ANTHROPIC_MODEL` avec l’identifiant d’un modèle Phaseo pour que Claude Code utilise toujours le même modèle par défaut.
-- Limite actuelle : le streaming avec outils sur Anthropic Messages peut renvoyer `400 invalid_request`. Si votre flux dépend de boucles d’outils en streaming, testez ce parcours avant un déploiement à grande échelle.
+- Testez les boucles d’outils diffusées avec votre workflow avant d’y faire passer une équipe.
+- Ajoutez le serveur [Docs MCP](./docs-mcp.mdx) si vous voulez que Claude Code lise la documentation Phaseo pendant une session.

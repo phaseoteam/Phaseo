@@ -2,21 +2,19 @@
 icon: "workflow"
 title: "Fusion Server Tool"
 description: "Run several analysis models and synthesize their findings."
+"og:image": "https://phaseo.app/og/dynamic?title=Fusion%20Server%20Tool&description=Run%20several%20analysis%20models%20and%20synthesize%20their%20findings.&pathname=/docs/v1/guides/server-tools/fusion"
 ---
 
-Use `phaseo:fusion` when one answer benefits from several independent model perspectives. Phaseo runs the analysis models in parallel, then asks the selected analyst model to synthesize their findings for the calling model.
+Add `phaseo:fusion` when an answer benefits from several independent opinions, such as a planning decision, a research synthesis, or a design review. When the main model calls it, Phaseo sends the question to every analysis model in parallel, asks an analyst model to merge their findings, and returns that synthesis. It adds latency, so use a single [Advisor](./advisor) when one review pass is enough.
 
-## Playground setup
-
-In the Playground server-tools menu, Fusion lets you choose:
-
-- analysis models that independently inspect the request
-- an optional judge model that compares the analysis outputs
-- a max tool-call limit for the Fusion advisor tools
-
-The main model sees those named advisors during the same tool loop and can use their outputs before writing the final response.
-
-## API shape
+```mermaid
+flowchart LR
+  main["Main model calls phaseo:fusion"] --> a1["Analysis model 1"]
+  main --> a2["Analysis model 2"]
+  a1 --> syn["Analyst model synthesizes"]
+  a2 --> syn
+  syn -->|"Tool result"| main
+```
 
 ```json
 {
@@ -35,35 +33,34 @@ The main model sees those named advisors during the same tool loop and can use t
 }
 ```
 
-## When to use Fusion
+In the Playground, the server-tools menu sets the same things: the analysis models, an optional judge (analyst) model, and a call limit.
 
-Use Fusion for:
+## Parameters
 
-- planning decisions where a second or third model may catch missing assumptions
-- research synthesis where models may weigh evidence differently
-- code or architecture reviews where you want independent critique
-- high-value responses where a little extra latency is acceptable
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `analysis_models` | string[] | Required | At least 2 models. Fewer rejects the request. |
+| `model` | string | The request's model | The analyst model that writes the synthesis. |
+| `instructions` | string | None | Instructions for both the analysis and analyst calls. |
+| `max_uses` | integer | `1` | Fusion calls per request, up to `4`. |
+| `max_completion_tokens` | integer | `1400` | Output tokens for each analysis and the synthesis, up to `32000`. |
 
-Use a single Advisor instead when you only need one review pass.
+## What the model sends
 
-## Usage and pricing
+A `prompt`: the question that needs several perspectives.
 
-Each Fusion invocation increments:
+## What the tool returns
 
 ```json
 {
-  "usage": {
-    "server_tool_use": {
-      "fusion_requests": 1
-    }
-  }
+  "status": "ok",
+  "analyses": 2,
+  "analysis": "Both reviewers flag the cutover order..."
 }
 ```
 
-The advisor models' tokens are included in total usage and can be priced at each selected advisor model's rates. Server-tool pricing can also use `server_tool_advisor_requests`.
+`analyses` counts the analysis models that answered. If some fail, the synthesis uses the rest. Error results are `fusion_invalid_request` (no prompt), `fusion_max_uses_exceeded`, `fusion_panel_failed` (every analysis model failed), and `fusion_request_failed` (the analyst failed).
 
-## Related
+## Usage and pricing
 
-- [Advisor](./advisor)
-- [Subagent](./subagent)
-- [Server Tools](./index)
+Each call adds 1 to `usage.server_tool_use.fusion_requests` and can be billed with `server_tool_fusion_requests`. Every analysis and analyst call is billed at that model's own rates, as a separate line on the request's bill; its tokens are not added to the calling model's token counts. Paid models need credits even when the calling model is free.

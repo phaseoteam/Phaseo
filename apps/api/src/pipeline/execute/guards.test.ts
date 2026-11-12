@@ -177,6 +177,156 @@ describe("guardAllFailed", () => {
 		expect(JSON.stringify(payload)).not.toContain("upstream_rate_limit_headers");
 	});
 
+	it("returns 429 with the final Retry-After when every dispatched provider throttled the request", async () => {
+		const ctx: any = {
+			model: "openai/gpt-oss-120b",
+			endpoint: "chat.completions",
+			requestId: "req_all_429",
+			attemptErrors: [
+				{ provider: "deepinfra", type: "upstream_non_2xx", status: 429, upstream_rate_limit_headers: { "Retry-After": "5" } },
+				// A breaker-blocked candidate was never called and does not change the outcome.
+				{ provider: "together", type: "blocked" },
+				{ provider: "groq", type: "upstream_non_2xx", status: 429, upstream_rate_limit_headers: { "Retry-After": "11" } },
+			],
+		};
+
+		const result = await guardAllFailed(ctx, makeTiming());
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+
+		expect(result.response.status).toBe(429);
+		expect(result.response.headers.get("Retry-After")).toBe("11");
+		expect(await result.response.json()).toMatchObject({
+			error: "upstream_error",
+			reason: "all_candidates_failed",
+			failed_statuses: [429],
+		});
+	});
+
+	it("keeps 502 when a throttled provider is mixed with another failure", async () => {
+		const ctx: any = {
+			model: "openai/gpt-oss-120b",
+			endpoint: "chat.completions",
+			requestId: "req_mixed_429",
+			attemptErrors: [
+				{ provider: "deepinfra", type: "upstream_non_2xx", status: 503 },
+				{ provider: "groq", type: "upstream_non_2xx", status: 429, upstream_rate_limit_headers: { "Retry-After": "11" } },
+				{ provider: "together", type: "error", message: "socket hang up" },
+			],
+		};
+
+		const result = await guardAllFailed(ctx, makeTiming());
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+
+		expect(result.response.status).toBe(502);
+		expect(result.response.headers.get("Retry-After")).toBe("11");
+	});
+
+	it("returns the provider's 400 when every attempt rejected the request with it", async () => {
+		const message = "Invalid type for 'input': expected one of a string, array of strings, array of integers, or array of integer arrays, but got an object instead.";
+		const ctx: any = {
+			model: "openai/text-embedding-3-small",
+			endpoint: "embeddings",
+			requestId: "req_rejected_400",
+			attemptErrors: [
+				{ provider: "openai", type: "upstream_non_2xx", status: 400, upstream_error_code: "invalid_type", upstream_error_message: message, upstream_error_param: "input" },
+				{ provider: "azure", type: "upstream_non_2xx", status: 400, upstream_error_message: message },
+				// Never dispatched: says nothing about the request.
+				{ provider: "other", type: "breaker_open" },
+			],
+		};
+
+		const result = await guardAllFailed(ctx, makeTiming());
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(400);
+		const payload = await result.response.json();
+		expect(payload).toMatchObject({
+			error: "upstream_error",
+			reason: "upstream_rejected_request",
+			failed_statuses: [400],
+		});
+		expect(String(payload.description).startsWith("The provider rejected the request (HTTP 400): Invalid type for 'input'")).toBe(true);
+		expect(payload.failure_sample[0]).toMatchObject({ upstream_error_param: "input", upstream_error_message: message });
+	});
+
+	it.each([413, 422])("returns %s when every attempt rejected the request with it", async (status) => {
+		const ctx: any = {
+			model: "openai/text-embedding-3-small",
+			endpoint: "embeddings",
+			requestId: "req_rejected_" + status,
+			attemptErrors: [{ provider: "openai", type: "upstream_non_2xx", status }],
+		};
+		const result = await guardAllFailed(ctx, makeTiming());
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(status);
+		expect(String((await result.response.json()).description)).toContain("The provider rejected the request (HTTP " + status + ").");
+	});
+
+	it.each([
+		["a 400 mixed with a 5xx", [400, 503]],
+		["different client errors", [400, 422]],
+		["a 404 (the provider may not serve the model)", [404]],
+		["a 401", [401]],
+	])("keeps 502 for %s", async (_label, statuses) => {
+		const ctx: any = {
+			model: "openai/text-embedding-3-small",
+			endpoint: "embeddings",
+			requestId: "req_mixed",
+			attemptErrors: (statuses as number[]).map((status, index) => ({ provider: "p" + index, type: "upstream_non_2xx", status })),
+		};
+		const result = await guardAllFailed(ctx, makeTiming());
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(502);
+		expect((await result.response.json()).reason).toBe("all_candidates_failed");
+	});
+
+	it("keeps 502 when a provider threw instead of answering", async () => {
+		const ctx: any = {
+			model: "openai/text-embedding-3-small",
+			endpoint: "embeddings",
+			requestId: "req_threw",
+			attemptErrors: [
+				{ provider: "openai", type: "upstream_non_2xx", status: 400 },
+				{ provider: "azure", type: "error", message: "socket hang up" },
+			],
+		};
+		const result = await guardAllFailed(ctx, makeTiming());
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(502);
+	});
+
+	it("never returns a JavaScript stack trace to the client", async () => {
+		const stack = "TypeError: Cannot read properties of undefined (reading 'choices')\n    at mapResponse (index.js:1234:56)\n    at async execute (index.js:99:1)";
+		const ctx: any = {
+			model: "openai/gpt-5-mini",
+			endpoint: "responses",
+			requestId: "req_stack",
+			attemptErrors: [{
+				provider: "openai",
+				type: "error",
+				upstream_error_message: "Cannot read properties of undefined (reading 'choices')",
+				upstream_error_description: stack,
+				message: stack,
+			}],
+		};
+		const result = await guardAllFailed(ctx, makeTiming());
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		const payload = await result.response.json();
+		const text = JSON.stringify(payload);
+		expect(text).not.toContain("index.js");
+		expect(text).not.toMatch(/\bat mapResponse\b/);
+		expect(payload.failure_sample[0]).toMatchObject({
+			provider: "openai",
+			upstream_error_message: "Cannot read properties of undefined (reading 'choices')",
+		});
+	});
+
 	it("summarizes multi-provider failures in the description", async () => {
 		const ctx: any = {
 			model: "xiaomi/mimo-v2-tts:free",
@@ -507,6 +657,88 @@ describe("guardAllFailed", () => {
 			reason: "all_routes_unavailable_in_request_country",
 			request_country: "CN",
 		});
+	});
+
+	it.each([
+		[{ requiredExecutionRegion: "us", requiredDataRegion: "us" }, "no_provider_in_required_region", "US region"],
+		[{ requiredExecutionRegion: null, requiredDataRegion: null }, "no_provider_meets_residency_requirements", "data residency"],
+	])("returns a 403, not a provider failure, when residency removes every route (%j)", async (requestedRouting, reason, phrase) => {
+		const ctx: any = {
+			model: "openai/gpt-6-luna",
+			endpoint: "chat.completions",
+			requestId: "req_residency_blocked",
+			meta: {},
+			attemptErrors: [],
+			routingDiagnostics: {
+				requestedRouting,
+				filterStages: [{
+					stage: "residency_gate",
+					beforeCount: 2,
+					afterCount: 0,
+					droppedProviders: [{ providerId: "openai", reason: "execution_region_mismatch" }],
+				}],
+			},
+		};
+
+		const result = await guardAllFailed(ctx, makeTiming());
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+
+		expect(result.response.status).toBe(403);
+		const payload = await result.response.json();
+		expect(payload).toMatchObject({ error: "model_region_unavailable", reason });
+		// No upstream evidence, so the error handler attributes it to the user, not a provider.
+		expect(payload.failed_providers ?? null).toBeNull();
+		expect(String(payload.description)).toContain(phrase);
+	});
+
+	it("names the constraint that removed the routes, not every requested one", async () => {
+		const ctx: any = {
+			model: "mistral/large",
+			endpoint: "chat.completions",
+			requestId: "req_residency_data_region",
+			meta: {},
+			attemptErrors: [],
+			routingDiagnostics: {
+				requestedRouting: { requiredExecutionRegion: "eu", requiredDataRegion: "de" },
+				filterStages: [{
+					stage: "residency_gate",
+					beforeCount: 2,
+					afterCount: 0,
+					droppedProviders: [
+						{ providerId: "a", reason: "data_region_mismatch" },
+						{ providerId: "b", reason: "data_region_mismatch" },
+					],
+				}],
+			},
+		};
+		const result = await guardAllFailed(ctx, makeTiming());
+		if (result.ok) throw new Error("expected failure");
+		const payload = await result.response.json();
+		expect(payload).toMatchObject({
+			error: "model_region_unavailable",
+			reason: "no_provider_meets_residency_requirements",
+			unmet_requirements: { data_region: "de" },
+		});
+		expect(payload.description).toBe("This model has no provider that stores data in the DE region.");
+		expect(payload.description).not.toContain("EU");
+	});
+
+	it("still reports real provider failures after the residency gate kept some routes", async () => {
+		const ctx: any = {
+			model: "anthropic/claude-haiku-5.5",
+			endpoint: "chat.completions",
+			requestId: "req_residency_kept",
+			meta: {},
+			attemptErrors: [{ provider: "anthropic", status: 500, type: "upstream_error" }],
+			routingDiagnostics: {
+				requestedRouting: { requiredExecutionRegion: "us" },
+				filterStages: [{ stage: "residency_gate", beforeCount: 2, afterCount: 1, droppedProviders: [] }],
+			},
+		};
+		const result = await guardAllFailed(ctx, makeTiming());
+		if (result.ok) throw new Error("expected failure");
+		expect((await result.response.json()).error).not.toBe("model_region_unavailable");
 	});
 
 	it("hides route diagnostics when a stealth model is region unavailable", async () => {

@@ -1,15 +1,13 @@
-"use client";
-
-import Link from "next/link";
+import Link from "@/components/link";
 import {
-	useEffect,
 	useMemo,
 	useRef,
 	useState,
 	type ReactNode,
 } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { OutputModalityChipRow } from "./OutputModalityChipRow";
+import { usePathname, useSearchParams } from "@/lib/navigation";
+import { useTranslations } from "@/i18n/react";
 import { debounce, useQueryState } from "nuqs";
 import { Input } from "@/components/ui/input";
 import {
@@ -23,26 +21,18 @@ import {
 	ArrowUpDown,
 	Ban,
 	Binary,
-	Captions,
 	CheckCircle2,
-	CircleDot,
 	Clock3,
-	FileText,
 	Globe2,
-	Headphones,
-	Music4,
-	Radio,
 	Route,
 	Sparkles,
-	Speech,
 	Type as TypeIcon,
-	ImageIcon,
 	Layers3,
-	Video,
 	CalendarDays,
 	XCircle,
 	LockKeyhole,
-	Scale,
+	ScrollText,
+	PackageOpen,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -73,16 +63,35 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
+import { getModalityIcon } from "@/lib/models/modalityIcons";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
+import { parseCatalogueTierFilters } from "@/lib/models/catalogueTierFilters";
 import type { MonitorModelTableRow } from "@/lib/fetchers/models/table-view/types";
-import { MonitorTableClient } from "@/components/monitor/MonitorTableClient";
+import { MonitorTableClient, toModelTableData } from "@/components/monitor/MonitorTableClient";
+import type { ModelData } from "@/components/monitor/modelTableGrouping";
+import {
+	countModelsByFilterValue,
+	filterModelTableRowsBySearch,
+	NO_MODEL_TABLE_FILTERS,
+	type ModelTableFilters,
+} from "@/components/monitor/modelTableFilters";
+import { formatExecutionRegionLabel } from "@/lib/providers/executionRegions";
 import { MODEL_TABLE_COLUMNS } from "@/components/monitor/MonitorDataTable";
 import { Logo } from "@/components/Logo";
 import { ActiveModelFilters, type ActiveModelFilter } from "./ActiveModelFilters";
+import { LicenseFilterList, useLicenseGroupLabel, useWeightsLabel } from "./LicenseFilterList";
+import {
+	MODEL_WEIGHTS,
+	mergeWeights,
+	readLicenseTypeParam,
+	parseModelWeights,
+	type LicenseSelection,
+} from "@/lib/models/licenseFilter";
 import { resolveDefaultGatewayStatuses } from "@/lib/models/defaultGatewayStatuses";
 import { Slider } from "@/components/ui/slider";
 import TableSettings from "@/components/(gateway)/usage/TableSettings";
 import { useTablePreferences } from "@/components/(gateway)/usage/useTablePreferences";
+import { useStickyToolbarOffsets } from "@/components/layout/useStickyToolbarOffsets";
 
 type OptionCount = {
 	value: string;
@@ -138,22 +147,21 @@ const MODALITY_FILTER_DISPLAY_ORDER = [
 	"image",
 	"video",
 	"audio",
-	"audio_tts",
-	"realtime",
-	"audio_stt",
-	"audio_music",
-	"file",
-	"moderations",
-	"rerank",
 	"embeddings",
 	"decisions",
+	"moderations",
+	"rerank",
+	"documents",
+	"audio_tts",
+	"audio_stt",
+	"translation",
+	"realtime",
+	"audio_music",
 ] as const;
 
 const STATUS_FILTER_DISPLAY_ORDER = [
 	"active",
-	"deranked_lvl1",
-	"deranked_lvl2",
-	"deranked_lvl3",
+	"deranked",
 	"coming_soon",
 	"inactive",
 	"disabled",
@@ -167,17 +175,9 @@ const STATUS_FILTER_META: Record<
 		icon: CheckCircle2,
 		iconClassName: "text-green-600 dark:text-green-400",
 	},
-	deranked_lvl1: {
-		icon: AlertTriangle,
-		iconClassName: "text-amber-500 dark:text-amber-400",
-	},
-	deranked_lvl2: {
+	deranked: {
 		icon: AlertTriangle,
 		iconClassName: "text-amber-600 dark:text-amber-400",
-	},
-	deranked_lvl3: {
-		icon: AlertTriangle,
-		iconClassName: "text-red-500 dark:text-red-400",
 	},
 	coming_soon: {
 		icon: Clock3,
@@ -218,18 +218,6 @@ function getClosestStopIndex(value: number): number {
 	return index === -1 ? CONTEXT_LENGTH_STOPS.length - 1 : index;
 }
 
-function formatRegionLabel(value: string): string {
-	const normalized = String(value ?? "")
-		.trim()
-		.toLowerCase();
-	if (normalized === "us") return "US";
-	if (normalized === "eu") return "EU";
-	if (normalized === "apac") return "APAC";
-	if (normalized === "jp") return "Japan";
-	if (normalized === "au") return "Australia";
-	return normalized ? normalized.toUpperCase() : value;
-}
-
 function parseCsvParam(value: string | null): string[] {
 	if (!value) return [];
 	return value
@@ -247,6 +235,10 @@ function normalizeModalityFilterValue(value: string): string {
 	if (normalized.includes("realtime") || normalized.includes("real time")) {
 		return "realtime";
 	}
+	if (/\bocr\b/.test(normalized) || /\bpars(e|ing)\b/.test(normalized)) {
+		return "documents";
+	}
+	if (normalized.includes("translat")) return "translation";
 	if (normalized.includes("image")) return "image";
 	if (normalized.includes("video")) return "video";
 	if (normalized.includes("music")) return "audio_music";
@@ -293,12 +285,8 @@ function normalizeStatusFilterValue(value: string): string {
 		.replace(/[\s-]+/g, "_");
 	if (!normalized) return "";
 	if (normalized === "not_active") return "inactive";
-	if (normalized === "deranked" || normalized === "de_ranked") {
-		return "deranked_lvl1";
-	}
-	if (normalized === "deranked_lvl_1") return "deranked_lvl1";
-	if (normalized === "deranked_lvl_2") return "deranked_lvl2";
-	if (normalized === "deranked_lvl_3") return "deranked_lvl3";
+	// The catalogue stores a deranked route as `degraded`; the former levels are one level now.
+	if (normalized === "degraded" || normalized === "de_ranked" || /^deranked(_lvl_?[123])?$/.test(normalized)) return "deranked";
 	return normalized;
 }
 
@@ -340,10 +328,12 @@ function toTitleCase(value: string): string {
 	if (normalized === "decisions.make" || normalized === "systemone" || normalized === "system.one" || normalized === "typed.decisions" || normalized === "decisions") {
 		return "Decisions";
 	}
-	if (normalized === "realtime") return "Real-time";
+	if (normalized === "realtime") return "Realtime";
 	if (normalized === "audio_stt") return "Transcription";
 	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";
+	if (normalized === "documents") return "Documents";
+	if (normalized === "translation") return "Translation";
 	return value
 		.replace(/([a-z0-9])([A-Z])/g, "$1 $2")
 		.replace(/[._/-]+/g, " ")
@@ -355,39 +345,6 @@ function toTitleCase(value: string): string {
 				: word,
 		)
 		.join(" ");
-}
-
-function getModalityIcon(modality: string): LucideIcon {
-	const normalized = modality.toLowerCase().replace(/[._/-]+/g, " ");
-	if (normalized.includes("decision")) return Scale;
-	if (normalized.includes("realtime") || normalized.includes("real time")) {
-		return Radio;
-	}
-	if (normalized.includes("rerank") || normalized.includes("re rank")) {
-		return ArrowUpDown;
-	}
-	if (normalized.includes("image")) return ImageIcon;
-	if (normalized.includes("video")) return Video;
-	if (normalized.includes("music")) return Music4;
-	if (
-		normalized.includes("transcri") ||
-		normalized.includes("speech to text") ||
-		normalized.includes("stt")
-	) {
-		return Captions;
-	}
-	if (
-		normalized.includes("text to speech") ||
-		normalized.includes("audio speech") ||
-		normalized.includes("speech synth") ||
-		normalized.includes("tts")
-	) {
-		return Speech;
-	}
-	if (normalized.includes("audio")) return Headphones;
-	if (normalized.includes("file")) return FileText;
-	if (normalized.includes("text")) return TypeIcon;
-	return CircleDot;
 }
 
 function FilterCheckboxList({
@@ -509,13 +466,16 @@ function FilterCheckboxList({
 	);
 }
 
+// Options come from every model in the catalogue; counts reflect the other
+// active filters, as on the cards page.
 function getOptionCounts(
 	values: string[],
+	availableMap: Map<string, number>,
 	countsMap: Map<string, number>,
 ): OptionCount[] {
 	return values
-		.map((value) => ({ value, count: countsMap.get(value) ?? 0 }))
-		.filter((option) => option.count > 0);
+		.filter((value) => (availableMap.get(value) ?? 0) > 0)
+		.map((value) => ({ value, count: countsMap.get(value) ?? 0 }));
 }
 
 function FilterLogo({ value }: { value: string }) {
@@ -533,13 +493,11 @@ function FilterLogo({ value }: { value: string }) {
 }
 
 function getModalityOptions(
+	availableMap: Map<string, number>,
 	countsMap: Map<string, number>,
 	values: string[],
 ): OptionCount[] {
-	const canonical = MODALITY_FILTER_DISPLAY_ORDER.map((value) => ({
-		value,
-		count: countsMap.get(value) ?? 0,
-	})).filter((option) => option.count > 0);
+	const canonical = getOptionCounts([...MODALITY_FILTER_DISPLAY_ORDER], availableMap, countsMap);
 
 	const known = new Set<string>(MODALITY_FILTER_DISPLAY_ORDER);
 	const normalizedValues = Array.from(
@@ -549,120 +507,35 @@ function getModalityOptions(
 				.filter(Boolean),
 		),
 	);
+	const available = (value: string) => availableMap.get(value) ?? 0;
 	const additional = normalizedValues
-		.filter((value) => !known.has(value))
-		.map((value) => ({ value, count: countsMap.get(value) ?? 0 }))
-		.filter((option) => option.count > 0)
-		.sort((a, b) => {
-			if (a.count !== b.count) return b.count - a.count;
-			return a.value.localeCompare(b.value);
-		});
+		.filter((value) => !known.has(value) && available(value) > 0)
+		.sort((a, b) => available(b) - available(a) || a.localeCompare(b))
+		.map((value) => ({ value, count: countsMap.get(value) ?? 0 }));
 
 	return [...canonical, ...additional];
 }
 
-function OutputModalityButtonRow({
-	options,
-	selected,
-	onToggle,
-	labelForValue,
-}: {
-	options: OptionCount[];
-	selected: string[];
-	onToggle: (value: string) => void;
-	labelForValue: (value: string) => string;
-}) {
-	const viewportRef = useRef<HTMLDivElement | null>(null);
-	const contentRef = useRef<HTMLDivElement | null>(null);
-	const [hasHorizontalOverflow, setHasHorizontalOverflow] = useState(false);
-
-	useEffect(() => {
-		const viewport = viewportRef.current;
-		if (!viewport) return;
-
-		const updateOverflow = () => {
-			setHasHorizontalOverflow(viewport.scrollWidth > viewport.clientWidth + 1);
-		};
-
-		updateOverflow();
-		const resizeObserver = new ResizeObserver(updateOverflow);
-		resizeObserver.observe(viewport);
-		if (contentRef.current) resizeObserver.observe(contentRef.current);
-		window.addEventListener("resize", updateOverflow);
-
-		return () => {
-			resizeObserver.disconnect();
-			window.removeEventListener("resize", updateOverflow);
-		};
-	}, [options]);
-
-	if (options.length === 0) return null;
-
-	const buttons = options.map((option) => {
-		const checked = selected.includes(option.value);
-		const Icon = getModalityIcon(option.value);
-		const tone = getModalityTone(option.value);
-
-		return (
-			<Button
-				key={option.value}
-				type="button"
-				variant="ghost"
-				size="sm"
-				onClick={() => onToggle(option.value)}
-				aria-pressed={checked}
-				className={cn(
-					"group h-9 shrink-0 rounded-md px-2 text-sm shadow-none transition-colors",
-					checked
-						? cn(
-								"bg-muted text-foreground hover:bg-muted",
-								tone.badgeClassName,
-								"border-0 hover:border-0",
-							)
-						: "text-muted-foreground hover:text-foreground",
-				)}
-			>
-				<span
-					className={cn(
-						"inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-sm",
-						checked
-							? tone.iconClassName
-							: cn(
-									"bg-transparent text-muted-foreground transition-colors",
-									tone.ghostIconHoverClassName,
-								),
-					)}
-				>
-					<Icon className="h-3.5 w-3.5" />
-				</span>
-				<span>{labelForValue(option.value)}</span>
-				<span
-					className={cn(
-						"inline-flex min-w-5 items-center justify-center px-1 text-[11px] font-medium leading-none tabular-nums",
-						checked ? "text-current" : "text-muted-foreground",
-					)}
-				>
-					{option.count}
-				</span>
-			</Button>
-		);
-	});
-
-	return (
-		<ScrollArea
-			className="w-full [&>[data-orientation=horizontal]]:opacity-100 [&>[data-orientation=horizontal]]:transition-none"
-			scrollBarOrientation="horizontal"
-			viewportClassName={hasHorizontalOverflow ? "pb-2" : "pb-0"}
-			viewportRef={viewportRef}
-		>
-			<div
-				ref={contentRef}
-				className="flex min-w-max items-center gap-1.5 pr-4"
-			>
-				{buttons}
-			</div>
-		</ScrollArea>
-	);
+function countModelTableFacets(rows: ModelData[], filters: ModelTableFilters) {
+	const count = (
+		dimension: Parameters<typeof countModelsByFilterValue>[2],
+		normalize?: (value: string) => string,
+	) => countModelsByFilterValue(rows, filters, dimension, normalize);
+	return {
+		inputMap: count("inputModalities", normalizeModalityFilterValue),
+		outputMap: count("outputModalities", normalizeModalityFilterValue),
+		featureMap: count("features"),
+		supportedParameterMap: count("supportedParameters"),
+		providerMap: count("providers"),
+		regionMap: count("regions"),
+		creatorMap: count("creators"),
+		licenseMap: count("licenses"),
+		weightsMap: count("weights"),
+		endpointMap: count("endpoints"),
+		statusMap: count("statuses"),
+		tierMap: count("tiers"),
+		yearMap: count("year"),
+	};
 }
 
 export default function ModelsTableDisplay({
@@ -674,6 +547,8 @@ export default function ModelsTableDisplay({
 	const t = useTranslations("Catalogue.models");
 	const tCountry = useTranslations("Catalogue.countryDetail");
 	const tFilters = useTranslations("Catalogue.models.filtersUi");
+	const licenseGroupLabel = useLicenseGroupLabel();
+	const weightsLabel = useWeightsLabel();
 	const tMetadata = useTranslations("Catalogue.modelDetail.metadata");
 	const tQuickstart = useTranslations("Catalogue.models.detail.quickstart");
 	const translateModality = (value: string) => {
@@ -690,10 +565,18 @@ export default function ModelsTableDisplay({
 			realtime: "modalityRealtime",
 			file: "modalityFile",
 			rerank: "modalityRerank",
+			documents: "modalityDocuments",
+			translation: "modalityTranslation",
 		};
 		const key = keys[String(value ?? "").trim().toLowerCase()];
 		if (!key) return toTitleCase(value);
-		return ["modalityRealtime", "modalityFile", "modalityRerank"].includes(key)
+		return [
+			"modalityRealtime",
+			"modalityFile",
+			"modalityRerank",
+			"modalityDocuments",
+			"modalityTranslation",
+		].includes(key)
 			? tFilters(key as never)
 			: tMetadata(key as never);
 	};
@@ -705,7 +588,7 @@ export default function ModelsTableDisplay({
 		const normalized = String(value ?? "").trim().toLowerCase();
 		return keys[normalized]
 			? tFilters(keys[normalized] as never)
-			: formatRegionLabel(value);
+			: formatExecutionRegionLabel(value);
 	};
 	const translateTier = (value: string) => {
 		const keys: Record<string, string> = {
@@ -714,6 +597,7 @@ export default function ModelsTableDisplay({
 			batch: "tierBatch",
 			flex: "tierFlex",
 			priority: "tierFast",
+			fast: "tierFast",
 		};
 		const key = keys[String(value ?? "").trim().toLowerCase()];
 		return key ? tQuickstart(key as never) : toTitleCase(value);
@@ -735,9 +619,7 @@ export default function ModelsTableDisplay({
 			coming_soon: "comingSoon",
 			inactive: "notActive",
 			not_active: "notActive",
-			deranked_lvl1: "statusDeranked1",
-			deranked_lvl2: "statusDeranked2",
-			deranked_lvl3: "statusDeranked3",
+			deranked: "statusDeranked",
 			disabled: "statusDisabled",
 		};
 		const key = keys[String(value ?? "").trim().toLowerCase()];
@@ -745,6 +627,8 @@ export default function ModelsTableDisplay({
 	};
 	const translateEndpoint = (value: string) => {
 		const keys: Record<string, string> = {
+			"text.generate": "capabilityTextGeneration",
+			"decisions.make": "modalityDecisions",
 			responses: "endpointResponses",
 			"chat/completions": "endpointChatCompletions",
 			messages: "endpointMessages",
@@ -776,48 +660,7 @@ export default function ModelsTableDisplay({
 	});
 	const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 	const toolbarRef = useRef<HTMLDivElement | null>(null);
-	const [stickyOffsets, setStickyOffsets] = useState({
-		toolbarTop: 60,
-		tableHeaderTop: 60,
-	});
-
-	useEffect(() => {
-		const toolbar = toolbarRef.current;
-		if (!toolbar || typeof window === "undefined") return;
-
-		const siteHeader = document.querySelector<HTMLElement>(
-			"#dashboard-shell > header",
-		);
-		const mediumViewport = window.matchMedia("(min-width: 768px)");
-		const updateOffsets = () => {
-			const toolbarTop = Math.ceil(
-				siteHeader?.getBoundingClientRect().height ?? 60,
-			);
-			const toolbarHeight = mediumViewport.matches
-				? Math.ceil(toolbar.getBoundingClientRect().height)
-				: 0;
-			const tableHeaderTop = toolbarTop + toolbarHeight;
-			setStickyOffsets((current) =>
-				current.toolbarTop === toolbarTop &&
-				current.tableHeaderTop === tableHeaderTop
-					? current
-					: { toolbarTop, tableHeaderTop },
-			);
-		};
-
-		updateOffsets();
-		const resizeObserver = new ResizeObserver(updateOffsets);
-		resizeObserver.observe(toolbar);
-		if (siteHeader) resizeObserver.observe(siteHeader);
-		mediumViewport.addEventListener("change", updateOffsets);
-		window.addEventListener("resize", updateOffsets);
-
-		return () => {
-			resizeObserver.disconnect();
-			mediumViewport.removeEventListener("change", updateOffsets);
-			window.removeEventListener("resize", updateOffsets);
-		};
-	}, []);
+	const stickyOffsets = useStickyToolbarOffsets(toolbarRef);
 
 	const [selectedStatuses, setSelectedStatuses] = useQueryState("statuses", {
 		defaultValue: [] as string[],
@@ -873,7 +716,7 @@ export default function ModelsTableDisplay({
 	});
 	const [selectedTiers, setSelectedTiers] = useQueryState("tiers", {
 		defaultValue: [] as string[],
-		parse: parseCsvParam,
+		parse: parseCatalogueTierFilters,
 		serialize: serializeCsvParam,
 		shallow: true,
 		clearOnDefault: true,
@@ -912,6 +755,53 @@ export default function ModelsTableDisplay({
 		shallow: true,
 		clearOnDefault: true,
 	});
+	const [selectedLicenses, setSelectedLicenses] = useQueryState("licenses", {
+		defaultValue: [] as string[],
+		parse: parseCsvParam,
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	const [licenseTypeParam, setLicenseTypeParam] = useQueryState("licenseType", {
+		defaultValue: [] as string[],
+		parse: parseCsvParam,
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	const [weightsParam, setWeightsParam] = useQueryState("weights", {
+		defaultValue: [] as string[],
+		parse: (value) => parseModelWeights(parseCsvParam(value)),
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	// Old links use licenseType=open|closed for weights; read them as weights
+	// and move them to `weights` the next time either filter changes.
+	const { groups: selectedLicenseTypes, legacyWeights } = useMemo(
+		() => readLicenseTypeParam(licenseTypeParam),
+		[licenseTypeParam],
+	);
+	const selectedWeights = useMemo(
+		() => mergeWeights(weightsParam, legacyWeights),
+		[weightsParam, legacyWeights],
+	);
+	const setSelectedLicenseTypes = (groups: string[]) => {
+		void setLicenseTypeParam(groups);
+		if (legacyWeights.length > 0) void setWeightsParam(selectedWeights);
+	};
+	const setSelectedWeights = (weights: string[]) => {
+		void setWeightsParam(weights);
+		if (legacyWeights.length > 0) void setLicenseTypeParam(selectedLicenseTypes);
+	};
+	const licenseSelection = useMemo(
+		() => ({ groups: selectedLicenseTypes, licenses: selectedLicenses }),
+		[selectedLicenseTypes, selectedLicenses],
+	);
+	const setLicenseSelection = (selection: LicenseSelection) => {
+		void setSelectedLicenseTypes(selection.groups);
+		void setSelectedLicenses(selection.licenses);
+	};
 	const [selectedContextMin, setSelectedContextMin] = useQueryState(
 		"contextMin",
 		{
@@ -965,144 +855,129 @@ export default function ModelsTableDisplay({
 
 	const selectedContextStopIndex = getClosestStopIndex(selectedContextMin);
 
-	const counts = useMemo(() => {
-		const inputMap = new Map<string, number>();
-		const outputMap = new Map<string, number>();
-		const featureMap = new Map<string, number>();
-		const supportedParameterMap = new Map<string, number>();
-		const providerMap = new Map<string, number>();
-		const regionMap = new Map<string, number>();
-		const creatorMap = new Map<string, number>();
-		const endpointMap = new Map<string, number>();
-		const statusMap = new Map<string, number>();
-		const tierMap = new Map<string, number>();
-		const yearMap = new Map<string, number>();
-
-		for (const item of initialModelData) {
-			for (const modality of item.inputModalities ?? []) {
-				const key = normalizeModalityFilterValue(String(modality ?? ""));
-				if (!key) continue;
-				inputMap.set(key, (inputMap.get(key) ?? 0) + 1);
-			}
-			for (const modality of item.outputModalities ?? []) {
-				const key = normalizeModalityFilterValue(String(modality ?? ""));
-				if (!key) continue;
-				outputMap.set(key, (outputMap.get(key) ?? 0) + 1);
-			}
-			for (const feature of item.provider.features ?? []) {
-				const key = String(feature ?? "").trim();
-				if (!key) continue;
-				featureMap.set(key, (featureMap.get(key) ?? 0) + 1);
-			}
-			for (const parameter of item.supportedParameters ?? []) {
-				const key = String(parameter ?? "").trim();
-				if (!key) continue;
-				supportedParameterMap.set(
-					key,
-					(supportedParameterMap.get(key) ?? 0) + 1,
-				);
-			}
-			const providerId = String(item.provider.id ?? "").trim();
-			if (providerId) {
-				providerMap.set(providerId, (providerMap.get(providerId) ?? 0) + 1);
-			}
-			for (const region of item.provider.executionRegions ?? []) {
-				const key = String(region ?? "")
-					.trim()
-					.toLowerCase();
-				if (!key) continue;
-				regionMap.set(key, (regionMap.get(key) ?? 0) + 1);
-			}
-			const creatorId = String(item.organisationId ?? "").trim();
-			if (creatorId) {
-				creatorMap.set(creatorId, (creatorMap.get(creatorId) ?? 0) + 1);
-			}
-			const endpoint = String(item.endpoint ?? "").trim();
-			if (endpoint)
-				endpointMap.set(endpoint, (endpointMap.get(endpoint) ?? 0) + 1);
-
-			const status = String(item.gatewayStatus ?? "").trim();
-			const statusKey = normalizeStatusFilterValue(status);
-			if (statusKey) {
-				statusMap.set(statusKey, (statusMap.get(statusKey) ?? 0) + 1);
-			}
-
-			const tier = String(item.tier ?? "standard")
-				.trim()
-				.toLowerCase();
-			if (tier) tierMap.set(tier, (tierMap.get(tier) ?? 0) + 1);
-
-			if (item.added) {
-				const year = String(new Date(item.added).getFullYear());
-				if (year !== "NaN") yearMap.set(year, (yearMap.get(year) ?? 0) + 1);
-			}
-		}
-
-		return {
-			inputMap,
-			outputMap,
-			featureMap,
-			supportedParameterMap,
-			providerMap,
-			regionMap,
-			creatorMap,
-			endpointMap,
-			statusMap,
-			tierMap,
-			yearMap,
-		};
-	}, [initialModelData]);
+	const tableRows = useMemo(
+		() => initialModelData.map(toModelTableData),
+		[initialModelData],
+	);
+	const tableFilters = useMemo<ModelTableFilters>(() => ({
+		search: "",
+		year: yearSelected,
+		inputModalities: selectedInputModalities,
+		outputModalities: selectedOutputModalities,
+		features: selectedFeatures,
+		tiers: selectedTiers,
+		supportedParameters: selectedSupportedParameters,
+		providers: selectedProviders,
+		regions: selectedRegions,
+		creators: selectedCreators,
+		licenses: selectedLicenses,
+		licenseTypes: selectedLicenseTypes,
+		weights: selectedWeights,
+		contextMin: selectedContextMin,
+		endpoints: selectedEndpoints,
+		statuses: effectiveSelectedStatuses,
+	}), [
+		yearSelected,
+		selectedInputModalities,
+		selectedOutputModalities,
+		selectedFeatures,
+		selectedTiers,
+		selectedSupportedParameters,
+		selectedProviders,
+		selectedRegions,
+		selectedCreators,
+		selectedLicenses,
+		selectedLicenseTypes,
+		selectedWeights,
+		selectedContextMin,
+		selectedEndpoints,
+		effectiveSelectedStatuses,
+	]);
+	const searchedTableRows = useMemo(
+		() => filterModelTableRowsBySearch(tableRows, search),
+		[tableRows, search],
+	);
+	// Facets count distinct models, as the cards page and the table's
+	// one-row-per-model layout do, rather than provider routes.
+	const available = useMemo(
+		() => countModelTableFacets(tableRows, NO_MODEL_TABLE_FILTERS),
+		[tableRows],
+	);
+	const counts = useMemo(
+		() => countModelTableFacets(searchedTableRows, tableFilters),
+		[searchedTableRows, tableFilters],
+	);
 
 	const inputModalityOptions = useMemo(
 		() =>
-			getModalityOptions(counts.inputMap, allModalities).filter((option) => {
+			getModalityOptions(available.inputMap, counts.inputMap, allModalities).filter((option) => {
 				const modality = normalizeModalityFilterValue(option.value);
 				return modality !== "file" && modality !== "document";
 			}),
-		[allModalities, counts.inputMap],
+		[allModalities, available.inputMap, counts.inputMap],
 	);
 	const outputModalityOptions = useMemo(
 		() =>
-			getModalityOptions(counts.outputMap, allModalities).filter(
-				(option) => normalizeModalityFilterValue(option.value) !== "action",
-			),
-		[allModalities, counts.outputMap],
+			getModalityOptions(available.outputMap, counts.outputMap, allModalities).filter((option) => {
+				const modality = normalizeModalityFilterValue(option.value);
+				return modality !== "action" && modality !== "file";
+			}),
+		[allModalities, available.outputMap, counts.outputMap],
 	);
 	const featureOptions = useMemo(
-		() => getOptionCounts(allFeatures, counts.featureMap),
-		[allFeatures, counts.featureMap],
+		() => getOptionCounts(allFeatures, available.featureMap, counts.featureMap),
+		[allFeatures, available.featureMap, counts.featureMap],
 	);
 	const supportedParameterOptions = useMemo(
 		() =>
 			getOptionCounts(
-				Array.from(counts.supportedParameterMap.keys()).sort((a, b) =>
+				Array.from(available.supportedParameterMap.keys()).sort((a, b) =>
 					toTitleCase(a).localeCompare(toTitleCase(b)),
 				),
+				available.supportedParameterMap,
 				counts.supportedParameterMap,
 			),
-		[counts.supportedParameterMap],
+		[available.supportedParameterMap, counts.supportedParameterMap],
 	);
 	const providerOptions = useMemo(
 		() =>
 			getOptionCounts(
-				Array.from(counts.providerMap.keys()),
+				Array.from(available.providerMap.keys()),
+				available.providerMap,
 				counts.providerMap,
 			),
-		[counts.providerMap],
+		[available.providerMap, counts.providerMap],
 	);
 	const regionOptions = useMemo(
 		() =>
-			getOptionCounts(Array.from(counts.regionMap.keys()), counts.regionMap),
-		[counts.regionMap],
+			getOptionCounts(Array.from(available.regionMap.keys()), available.regionMap, counts.regionMap),
+		[available.regionMap, counts.regionMap],
 	);
 	const creatorOptions = useMemo(
 		() =>
-			getOptionCounts(Array.from(counts.creatorMap.keys()), counts.creatorMap),
-		[counts.creatorMap],
+			getOptionCounts(Array.from(available.creatorMap.keys()), available.creatorMap, counts.creatorMap),
+		[available.creatorMap, counts.creatorMap],
+	);
+	const licenseOptions = useMemo(
+		() =>
+			getOptionCounts(
+				Array.from(available.licenseMap.keys()).sort(
+					(a, b) =>
+						(available.licenseMap.get(b) ?? 0) - (available.licenseMap.get(a) ?? 0) ||
+						a.localeCompare(b),
+				),
+				available.licenseMap,
+				counts.licenseMap,
+			),
+		[available.licenseMap, counts.licenseMap],
+	);
+	const weightsOptions = useMemo(
+		() => getOptionCounts([...MODEL_WEIGHTS], available.weightsMap, counts.weightsMap),
+		[available.weightsMap, counts.weightsMap],
 	);
 	const endpointOptions = useMemo(
-		() => getOptionCounts(allEndpoints, counts.endpointMap),
-		[allEndpoints, counts.endpointMap],
+		() => getOptionCounts(allEndpoints, available.endpointMap, counts.endpointMap),
+		[allEndpoints, available.endpointMap, counts.endpointMap],
 	);
 	const statusOptions = useMemo(
 		() =>
@@ -1114,7 +989,7 @@ export default function ModelsTableDisplay({
 	);
 	const tierOptions = useMemo(() => {
 		const preferredOrder = ["standard", "batch", "free"];
-		const values = Array.from(counts.tierMap.keys()).sort((a, b) => {
+		const values = Array.from(available.tierMap.keys()).sort((a, b) => {
 			const aIndex = preferredOrder.indexOf(a);
 			const bIndex = preferredOrder.indexOf(b);
 			if (aIndex !== -1 || bIndex !== -1) {
@@ -1124,8 +999,8 @@ export default function ModelsTableDisplay({
 			}
 			return a.localeCompare(b);
 		});
-		return getOptionCounts(values, counts.tierMap);
-	}, [counts.tierMap]);
+		return getOptionCounts(values, available.tierMap, counts.tierMap);
+	}, [available.tierMap, counts.tierMap]);
 	const providerLabels = useMemo(
 		() =>
 			new Map(
@@ -1147,10 +1022,12 @@ export default function ModelsTableDisplay({
 	);
 	const yearOptions = useMemo(
 		() =>
-			Array.from(counts.yearMap.entries())
-				.map(([value, count]) => ({ value, count }))
-				.sort((a, b) => Number(b.value) - Number(a.value)),
-		[counts.yearMap],
+			getOptionCounts(
+				Array.from(available.yearMap.keys()).sort((a, b) => Number(b) - Number(a)),
+				available.yearMap,
+				counts.yearMap,
+			),
+		[available.yearMap, counts.yearMap],
 	);
 
 	const activeFilterCount =
@@ -1164,6 +1041,9 @@ export default function ModelsTableDisplay({
 		selectedProviders.length +
 		selectedRegions.length +
 		selectedCreators.length +
+		selectedLicenseTypes.length +
+		selectedLicenses.length +
+		selectedWeights.length +
 		(selectedContextMin > 0 ? 1 : 0) +
 		(yearSelected > 0 ? 1 : 0);
 
@@ -1179,6 +1059,9 @@ export default function ModelsTableDisplay({
 		setSelectedProviders([]);
 		setSelectedRegions([]);
 		setSelectedCreators([]);
+		setSelectedLicenses([]);
+		setSelectedLicenseTypes([]);
+		setSelectedWeights([]);
 		setSelectedContextMin(0);
 		setYearSelected(0);
 	};
@@ -1204,6 +1087,9 @@ export default function ModelsTableDisplay({
 		...selectedProviders.map((value) => ({ key: `provider-${value}`, label: tFilters("filterProvider", { value: providerLabels.get(value) ?? value }), onRemove: () => setSelectedProviders(without(selectedProviders, value)) })),
 		...selectedRegions.map((value) => ({ key: `region-${value}`, label: tFilters("filterRegion", { value: translateRegion(value) }), onRemove: () => setSelectedRegions(without(selectedRegions, value)) })),
 		...selectedCreators.map((value) => ({ key: `creator-${value}`, label: tFilters("filterCreator", { value: creatorLabels.get(value) ?? value }), onRemove: () => setSelectedCreators(without(selectedCreators, value)) })),
+		...selectedWeights.map((value) => ({ key: `weights-${value}`, label: tFilters("filterWeights", { value: weightsLabel(value) }), onRemove: () => setSelectedWeights(without(selectedWeights, value)) })),
+		...selectedLicenseTypes.map((value) => ({ key: `license-type-${value}`, label: tFilters("filterLicense", { value: licenseGroupLabel(value) }), onRemove: () => setSelectedLicenseTypes(without(selectedLicenseTypes, value)) })),
+		...selectedLicenses.map((value) => ({ key: `license-${value}`, label: tFilters("filterLicense", { value }), onRemove: () => setSelectedLicenses(without(selectedLicenses, value)) })),
 		...selectedFeatures.map((value) => ({ key: `feature-${value}`, label: translateFeature(value), onRemove: () => setSelectedFeatures(without(selectedFeatures, value)) })),
 		...selectedEndpoints.map((value) => ({ key: `endpoint-${value}`, label: tFilters("filterEndpoint", { value: translateEndpoint(value) }), onRemove: () => setSelectedEndpoints(without(selectedEndpoints, value)) })),
 		...(yearSelected > 0 ? [{ key: "year", label: tFilters("filterYear", { value: yearSelected }), onRemove: () => setYearSelected(0) }] : []),
@@ -1633,6 +1519,41 @@ export default function ModelsTableDisplay({
 				</AccordionContent>
 			</AccordionItem>
 
+			<AccordionItem value="weights" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<PackageOpen className="h-4 w-4 text-muted-foreground" />
+						{tFilters("weights")}
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<FilterCheckboxList
+						options={weightsOptions}
+						selected={selectedWeights}
+						onToggle={(value) =>
+							setSelectedWeights(toggleInList(selectedWeights, value))
+						}
+						labelForValue={weightsLabel}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="licenses" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<ScrollText className="h-4 w-4 text-muted-foreground" />
+						{tFilters("license")}
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<LicenseFilterList
+						options={licenseOptions}
+						selection={licenseSelection}
+						onChange={setLicenseSelection}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
 			<AccordionItem value="features" className="border-border/70">
 				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
 					<span className="flex items-center gap-2">
@@ -1698,7 +1619,7 @@ export default function ModelsTableDisplay({
 	return (
 		<div className="flex w-full flex-1">
 			<aside className="hidden lg:block w-[20rem] shrink-0 border-r border-border/70 bg-background/95 [&_[data-slot=separator]]:-mx-4">
-				<div className="sticky top-16 flex h-[calc(100dvh-4rem)] min-h-0 flex-col">
+				<div className="sticky top-[calc(var(--site-notice-height,0px)+4rem)] flex h-[calc(100dvh-var(--site-notice-height,0px)-4rem)] min-h-0 flex-col">
 					<ScrollArea className="min-h-0 flex-1 overscroll-y-contain [&>[data-orientation=vertical]]:opacity-0 [&>[data-orientation=vertical]]:transition-opacity [&>[data-orientation=vertical]]:duration-150 hover:[&>[data-orientation=vertical]]:opacity-100 focus-within:[&>[data-orientation=vertical]]:opacity-100">
 						<div className="space-y-4 px-4 py-2 pb-6">{filtersContent}</div>
 					</ScrollArea>
@@ -1805,15 +1726,12 @@ export default function ModelsTableDisplay({
 					</div>
 
 					<div className="mt-1.5">
-						<OutputModalityButtonRow
+						<OutputModalityChipRow
 							options={outputModalityOptions}
 							selected={selectedOutputModalities}
-							onToggle={(value) =>
-								setSelectedOutputModalities(
-									toggleInList(selectedOutputModalities, value),
-								)
-							}
+							onChange={setSelectedOutputModalities}
 							labelForValue={translateModality}
+							iconForValue={getModalityIcon}
 						/>
 					</div>
 					<ActiveModelFilters filters={activeFilters} onClear={resetFilters} />

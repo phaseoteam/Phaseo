@@ -1,4 +1,9 @@
 import { z } from "zod";
+import { isPrivateOrLocalhostHost } from "@/lib/public-endpoint-url";
+import { catalogDeclarationsJsonSchema, type CatalogDeclarations } from "./provider-catalog-declarations";
+import { catalogDataPolicyJsonSchema } from "./provider-catalog-data-policy";
+import { normalizeTieredProviderCatalog, type ProviderCatalogTier } from "./provider-catalog-tiers";
+import { normalizeProviderRateLimits, rateLimitJsonSchema, rateLimitsJsonSchema, upstreamModelSlugs, type ProviderCatalogRateLimit } from "./provider-catalog-rate-limits";
 
 const MAX_MODELS = 1_000;
 const MAX_PREVIEW_MODELS = 100;
@@ -19,6 +24,9 @@ export type ProviderCatalogPriceCondition = {
 };
 
 export type ProviderCatalogModelPreview = {
+	serviceTiers?: ProviderCatalogTier[];
+	catalogVersion?: "1.2";
+	declarations?: CatalogDeclarations;
 	id: string;
 	name: string;
 	description: string | null;
@@ -42,19 +50,22 @@ export const providerCatalogJsonSchema = {
 	$schema: "https://json-schema.org/draft/2020-12/schema",
 	$id: "https://phaseo.app/schemas/provider-catalog.v1.json",
 	title: "Phaseo provider catalog",
-	description: "Serve this Phaseo-specific JSON document from any public HTTPS URL, including URLs with query parameters. Conditional prices are retained for review and cannot be promoted automatically into routing.",
+	description: "Version 1 of the Phaseo provider catalog. Approved providers update existing model offers automatically. New canonical models require administrator approval. price_nanos is the effective price to bill, including any promotion. Publish a new snapshot when that price changes. Conditional prices are not supported by V1 billing. Optional rate_limits declare the request and token limits your platform imposes on Phaseo; they apply without review and only rank your offers lower once reached.",
 	type: "object",
 	required: ["data"],
 	additionalProperties: false,
 	properties: {
-		data: { type: "array", minItems: 1, maxItems: MAX_MODELS, items: { $ref: "#/$defs/model" } },
+		schema_version: { const: "1.0" },
+		data: { type: "array", minItems: 0, maxItems: MAX_MODELS, items: { $ref: "#/$defs/model" } },
+		rate_limits: rateLimitsJsonSchema,
 	},
 	$defs: {
+		rateLimit: rateLimitJsonSchema,
 		capability: { oneOf: [{ type: "string" }, { type: "object", required: ["id"], additionalProperties: false, properties: { id: { type: "string" }, parameters: { type: "array", items: { type: "string" } } } }] },
 		model: {
 			type: "object", required: ["id", "capabilities"], additionalProperties: false,
 			properties: {
-				id: { type: "string", maxLength: MAX_STRING_LENGTH, pattern: MODEL_ID.source }, name: { type: "string", maxLength: MAX_STRING_LENGTH }, description: { type: ["string", "null"], maxLength: MAX_STRING_LENGTH },
+				id: { type: "string", maxLength: MAX_STRING_LENGTH, pattern: MODEL_ID.source, description: "Use an existing public canonical model ID, or your provider's own namespace for a new model." }, name: { type: "string", maxLength: MAX_STRING_LENGTH }, description: { type: ["string", "null"], maxLength: MAX_STRING_LENGTH },
 				provider_model_slug: { type: "string", maxLength: MAX_STRING_LENGTH }, input_modalities: { type: "array", maxItems: 32, items: { type: "string" } }, output_modalities: { type: "array", maxItems: 32, items: { type: "string" } },
 				context_length: { type: ["integer", "null"], minimum: 1 }, max_output_tokens: { type: ["integer", "null"], minimum: 1 },
 				availability: { enum: ["ready", "not_ready", "degraded", "deprecated", "retired"] }, available_from: { type: ["string", "null"], format: "date-time", description: "RFC 3339 timestamp with an explicit timezone offset." }, deprecated_at: { type: ["string", "null"], format: "date-time" }, shutdown_at: { type: ["string", "null"], format: "date-time" },
@@ -64,11 +75,11 @@ export const providerCatalogJsonSchema = {
 						type: "object", additionalProperties: false,
 						required: ["meter_key", "modality", "unit", "unit_quantity", "price_nanos", "display_label", "display_unit"],
 						properties: {
-							meter_key: { type: "string" }, modality: { type: "string" }, direction: { type: "string" }, unit: { type: "string" },
+							meter_key: { type: "string" }, modality: { type: "string" }, direction: { type: ["string", "null"] }, unit: { type: "string" },
 							unit_quantity: { type: "number", exclusiveMinimum: 0 }, price_nanos: { type: "number", minimum: 0 },
 							display_label: { type: "string" }, display_unit: { type: "string" },
-							conditions: {
-								type: "array", maxItems: 8,
+								conditions: {
+									type: "array", maxItems: 0,
 								items: {
 									type: "object", additionalProperties: false, required: ["path", "op", "value"],
 									properties: {
@@ -87,26 +98,78 @@ export const providerCatalogJsonSchema = {
 	},
 } as const;
 
+const { pricing: tierPricingSchema, provider_model_slug: upstreamModelSchema, ...tieredModelProperties } = providerCatalogJsonSchema.$defs.model.properties;
+export const providerCatalogV11JsonSchema = {
+	...providerCatalogJsonSchema,
+	$id: "https://phaseo.app/schemas/provider-catalog.v1.1.json",
+	description: "Version 1.1. Publish normalized standard, fast, ultrafast, flex and batch offers with independent effective prices. Batch uses the separate Batch API. Optional rate_limits may name the upstream model ID of any tier.",
+	required: ["schema_version", "data"],
+	properties: { ...providerCatalogJsonSchema.properties, schema_version: { const: "1.1" } },
+	$defs: {
+		...providerCatalogJsonSchema.$defs,
+		model: { ...providerCatalogJsonSchema.$defs.model, required: ["id", "capabilities", "service_tiers"], properties: {
+			...tieredModelProperties, service_tiers: { type: "array", minItems: 1, maxItems: 5, items: { $ref: "#/$defs/serviceTier" },
+				contains: { type: "object", required: ["service_tier"], properties: { service_tier: { const: "standard" } } }, minContains: 1, maxContains: 1,
+				allOf: ["fast", "ultrafast", "flex", "batch"].map((name) => ({ contains: { type: "object", required: ["service_tier"], properties: { service_tier: { const: name } } }, minContains: 0, maxContains: 1 })),
+			},
+		}, allOf: [{
+			if: { properties: { service_tiers: { contains: { type: "object", required: ["service_tier"], properties: { service_tier: { const: "batch" } } } } } },
+			then: { properties: { capabilities: { contains: { anyOf: [{ enum: ["batch", "batch.create"] }, { type: "object", required: ["id"], properties: { id: { enum: ["batch", "batch.create"] } } }] } } } },
+		}] },
+		serviceTier: { type: "object", additionalProperties: false, required: ["service_tier", "provider_model_slug", "pricing"], properties: {
+			service_tier: { enum: ["standard", "fast", "ultrafast", "flex", "batch"] },
+			provider_model_slug: { ...upstreamModelSchema, minLength: 1 },
+			upstream_service_tier: { type: ["string", "null"], enum: [null, "standard", "default", "fast", "priority", "ultrafast", "flex", "batch"] },
+			availability: providerCatalogJsonSchema.$defs.model.properties.availability,
+			pricing: { ...tierPricingSchema, minItems: 1 },
+		}, allOf: ["standard", "fast", "ultrafast", "flex", "batch"].map((name) => ({
+			if: { properties: { service_tier: { const: name } } },
+			then: { properties: { upstream_service_tier: { enum: [null, ...(name === "batch" ? [] : name === "standard" ? ["default", "standard"] : name === "fast" ? ["fast", "priority"] : [name])] } } },
+		})) },
+	},
+} as const;
+
+export const providerCatalogV12JsonSchema = {
+ ...providerCatalogV11JsonSchema,
+ $id: "https://phaseo.app/schemas/provider-catalog.v1.2.json",
+ description: "Version 1.2. Typed model/media, parameter, pricing, capacity and deployment declarations, plus capability-scoped privacy policy. Claims stored for review do not enable execution or billing. Phaseo owns privacy approval.",
+ properties: { ...providerCatalogV11JsonSchema.properties, schema_version: { const: "1.2" } },
+ $defs: { ...providerCatalogV11JsonSchema.$defs,
+ catalogDeclarations: catalogDeclarationsJsonSchema,
+ model: { ...providerCatalogV11JsonSchema.$defs.model, properties: { ...providerCatalogV11JsonSchema.$defs.model.properties, declarations: { $ref: "#/$defs/catalogDeclarations" } } },
+ serviceTier: {
+  ...providerCatalogV11JsonSchema.$defs.serviceTier,
+  properties: { ...providerCatalogV11JsonSchema.$defs.serviceTier.properties, data_policy: catalogDataPolicyJsonSchema, declarations: { $ref: "#/$defs/catalogDeclarations" } },
+ } },
+} as const;
+
 export type ProviderCatalogPreview = {
+	warnings?: ProviderCatalogIssue[];
 	valid: boolean;
 	modelCount: number;
 	models: ProviderCatalogModelPreview[];
 	allModels: ProviderCatalogModelPreview[];
 	issues: ProviderCatalogIssue[];
 	truncated: boolean;
+	/** Declared rate limits, or null when the catalog does not declare any. */
+	rateLimits?: ProviderCatalogRateLimit[] | null;
 };
 
 export async function validateProviderCatalogPricingMeters(client: any, preview: ProviderCatalogPreview): Promise<ProviderCatalogPreview> {
-	const submittedKeys = Array.from(new Set(preview.allModels.flatMap((model) => model.pricing.map((price) => price.meterKey))));
+	const pricingGroups = preview.allModels.flatMap((model, modelIndex) => model.serviceTiers
+		? model.serviceTiers.map((tier, tierIndex) => ({ prices: tier.pricing, path: `data[${modelIndex}].service_tiers[${tierIndex}]` }))
+		: [{ prices: model.pricing, path: `data[${modelIndex}]` }]);
+	const submittedKeys = Array.from(new Set(pricingGroups.flatMap((group) => group.prices.map((price) => price.meterKey))));
 	if (!submittedKeys.length) return preview;
 	const definitions = await client.from("v2_meter_definitions").select("meter_key").in("meter_key", submittedKeys).neq("status", "disabled");
 	if (definitions.error) throw definitions.error;
 	const allowed = new Set((definitions.data ?? []).map((row: { meter_key: string }) => String(row.meter_key)));
 	const issues = [...preview.issues];
-	for (const [modelIndex, model] of preview.allModels.entries()) {
+	for (const group of pricingGroups) {
 		const seen = new Set<string>();
-		for (const [priceIndex, price] of model.pricing.entries()) {
-			const path = `data[${modelIndex}].pricing[${priceIndex}].meter_key`;
+		for (const [priceIndex, price] of group.prices.entries()) {
+			if (price.conditions.length) issues.push({ path: `${group.path}.pricing[${priceIndex}].conditions`, message: "Conditional prices are not supported by V1 billing. Provide an effective unconditional price." });
+			const path = `${group.path}.pricing[${priceIndex}].meter_key`;
 			const identity = JSON.stringify([price.meterKey, price.conditions]);
 			if (seen.has(identity)) issues.push({ path, message: `Duplicate pricing meter: ${price.meterKey}.` });
 			else if (!allowed.has(price.meterKey)) issues.push({ path, message: `Unknown pricing meter: ${price.meterKey}.` });
@@ -187,15 +250,8 @@ function timestamp(value: unknown): string | null {
 
 function isPrivateHostname(hostname: string): boolean {
 	const host = hostname.trim().toLowerCase().replace(/[\[\]]/g, "");
-	if (host.startsWith("::ffff:")) return isPrivateHostname(host.slice(7));
-	if (!host || host === "localhost" || host.endsWith(".localhost") || host.endsWith(".local") || host.endsWith(".internal")) return true;
-	if (host === "::" || host === "::1" || host === "0.0.0.0" || host === "169.254.169.254" || host.startsWith("fc") || host.startsWith("fd") || host.startsWith("fe8") || host.startsWith("fe9") || host.startsWith("fea") || host.startsWith("feb") || host.startsWith("::ffff:127.") || host.startsWith("::ffff:10.") || host.startsWith("::ffff:192.168.")) return true;
-	const octets = host.split(".").map(Number);
-	if (octets.length === 4 && octets.every((octet) => Number.isInteger(octet) && octet >= 0 && octet <= 255)) {
-		const [a, b] = octets;
-		return a === 10 || a === 127 || (a === 172 && b >= 16 && b <= 31) || (a === 192 && b === 168) || (a === 169 && b === 254);
-	}
-	return false;
+	if (host.endsWith(".local") || host.endsWith(".internal")) return true;
+	return isPrivateOrLocalhostHost(host);
 }
 
 async function assertPublicDns(hostname: string): Promise<void> {
@@ -251,13 +307,18 @@ function parametersForCapability(value: Record<string, unknown>): string[] {
 }
 
 export function normalizeProviderCatalog(payload: unknown): ProviderCatalogPreview {
+	const versioned = asRecord(payload);
+	if (["1.1", "1.2"].includes(String(versioned?.schema_version))) return normalizeTieredProviderCatalog(versioned!, normalizeProviderCatalog);
+	if (versioned?.schema_version === "1.0") { const { schema_version: _version, ...legacy } = versioned; return normalizeProviderCatalog(legacy); }
+	if (versioned?.schema_version !== undefined) return { valid: false, modelCount: 0, models: [], allModels: [], issues: [{ path: "schema_version", message: "Unsupported catalog version. Use 1.0, 1.1 or 1.2." }], truncated: false };
 	const entries = modelEntries(payload);
 	const issues: ProviderCatalogIssue[] = [];
 	const body = asRecord(payload);
-	if (!body || Object.keys(body).some((key) => key !== "data")) issues.push({ path: "$", message: "Catalog must be an object containing only the data array." });
+	if (!body || Object.keys(body).some((key) => key !== "data" && key !== "rate_limits")) issues.push({ path: "$", message: "Catalog must be an object containing only the data array and optional rate_limits." });
 	if (entries.length === 0) {
-		issues.push({ path: "data", message: "Expected a non-empty data array of models." });
-		return { valid: false, modelCount: 0, models: [], allModels: [], issues, truncated: false };
+		if (!Array.isArray(body?.data)) issues.push({ path: "data", message: "Expected a data array of models." });
+		const rateLimits = catalogRateLimits(body, [], issues);
+		return { valid: issues.length === 0, modelCount: 0, models: [], allModels: [], issues, truncated: false, rateLimits };
 	}
 	if (entries.length > MAX_MODELS) {
 		issues.push({ path: "data", message: `Catalog contains ${entries.length} models; the limit is ${MAX_MODELS}.` });
@@ -327,12 +388,15 @@ export function normalizeProviderCatalog(payload: unknown): ProviderCatalogPrevi
 		if (issues.some((issue) => issue.path.startsWith(`data[${index}].`) && issue.message.includes("timestamp"))) continue;
 		const pricing = Array.isArray(model.pricing) ? model.pricing.flatMap((rawPrice, priceIndex) => {
 			const price = asRecord(rawPrice);
+			const pricePath = `data[${index}].pricing[${priceIndex}]`;
 			const allowed = ["meter_key", "modality", "direction", "unit", "unit_quantity", "price_nanos", "display_label", "display_unit", "conditions"];
-			if (!price || Object.keys(price).some((key) => !allowed.includes(key))) { issues.push({ path: `data[${index}].pricing[${priceIndex}]`, message: "Invalid pricing meter." }); return []; }
-			const unitQuantity = Number(price.unit_quantity);
-			const priceNanos = Number(price.price_nanos);
+			if (!price || Object.keys(price).some((key) => !allowed.includes(key))) { issues.push({ path: pricePath, message: "Invalid pricing meter." }); return []; }
+			const unitQuantity = price.unit_quantity;
+			const priceNanos = price.price_nanos;
 			const meterKey = stringValue(price.meter_key).toLowerCase();
-			if (!/^[a-z0-9][a-z0-9._:-]*$/.test(meterKey) || !Number.isFinite(unitQuantity) || unitQuantity <= 0 || !Number.isFinite(priceNanos) || priceNanos < 0 || !["modality", "unit", "display_label", "display_unit"].every((key) => typeof price[key] === "string" && String(price[key]).trim())) { issues.push({ path: `data[${index}].pricing[${priceIndex}]`, message: "Pricing meter fields are invalid." }); return []; }
+			if (typeof unitQuantity !== "number" || !Number.isFinite(unitQuantity) || unitQuantity <= 0) { issues.push({ path: `${pricePath}.unit_quantity`, message: "Expected a positive JSON number." }); return []; }
+			if (typeof priceNanos !== "number" || !Number.isFinite(priceNanos) || priceNanos < 0) { issues.push({ path: `${pricePath}.price_nanos`, message: "Expected a non-negative JSON number in nanodollars." }); return []; }
+			if (!/^[a-z0-9][a-z0-9._:-]*$/.test(meterKey) || !["modality", "unit", "display_label", "display_unit"].every((key) => typeof price[key] === "string" && String(price[key]).trim())) { issues.push({ path: pricePath, message: "Pricing meter fields are invalid." }); return []; }
 			const conditions = priceConditions(price.conditions, `data[${index}].pricing[${priceIndex}].conditions`, issues);
 			if (!conditions) return [];
 			return [{ meterKey, modality: stringValue(price.modality), direction: stringValue(price.direction) || null, unit: stringValue(price.unit), unitQuantity, priceNanos, displayLabel: stringValue(price.display_label), displayUnit: stringValue(price.display_unit), conditions }];
@@ -352,6 +416,7 @@ export function normalizeProviderCatalog(payload: unknown): ProviderCatalogPrevi
 			capabilities,
 		});
 	}
+	const rateLimits = catalogRateLimits(body, models, issues);
 
 	return {
 		valid: issues.length === 0 && models.length > 0,
@@ -360,7 +425,16 @@ export function normalizeProviderCatalog(payload: unknown): ProviderCatalogPrevi
 		allModels: models,
 		issues: issues.slice(0, 100),
 		truncated: models.length > MAX_PREVIEW_MODELS,
+		rateLimits,
 	};
+}
+
+/** Validates the optional `rate_limits` section against the catalog's own upstream model slugs. */
+export function catalogRateLimits(body: Record<string, unknown> | null, models: ProviderCatalogModelPreview[], issues: ProviderCatalogIssue[]): ProviderCatalogRateLimit[] | null {
+	if (!body || body.rate_limits === undefined) return null;
+	const result = normalizeProviderRateLimits(body.rate_limits, upstreamModelSlugs(models));
+	issues.push(...result.issues);
+	return result.issues.length ? null : result.limits;
 }
 
 export function validateCatalogUrl(value: unknown): { ok: true; url: string } | { ok: false; message: string } {

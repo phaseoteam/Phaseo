@@ -2,19 +2,24 @@ import { Hono } from "hono";
 import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { withPublicCache } from "@/http/cache";
+import { PUBLIC_LIVE_DATA_CACHE } from "@/cache/publicLiveData";
+import { sharedPayload } from "@/cache/sharedPayload";
+import { benchmarkRankInputs, loadEpochLeaderboard, modelBenchmarkRanks } from "@/benchmarks/model-ranks";
 import { indexVersion, latestIndexVersion, intelligenceValueResults } from "./artificialAnalysis";
 
-const LIVE_CACHE = { edgeTtlSeconds: 5 * 60, staleWhileRevalidateSeconds: 5 * 60, cacheTags: ["web-api-rankings"] } as const;
+const LIVE_CACHE = { ...PUBLIC_LIVE_DATA_CACHE, cacheTags: ["web-api-rankings"] } as const;
 const META_CACHE = { edgeTtlSeconds: 60 * 60, staleWhileRevalidateSeconds: 24 * 60 * 60, cacheTags: ["web-api-ranking-metadata"] } as const;
 
 const RANKING_BENCHMARK_FAMILIES = ["aa-intelligence-index-v", "aa-coding-index-v", "aa-agentic-index-v", "aa-intelligence-index-cost-v"] as const;
-const RANKING_BENCHMARK_IDS = RANKING_BENCHMARK_FAMILIES.flatMap((family) => [`${family}5`, `${family}4`]);
+/** AA's version-independent capability scale; listed after the four index metrics. */
+const PROGRESS_INDEX_ID = "aa-progress-index-v1";
+const RANKING_BENCHMARK_IDS = [...RANKING_BENCHMARK_FAMILIES.flatMap((family) => [`${family}5`, `${family}4`]), PROGRESS_INDEX_ID];
 
 function activeRankingBenchmarkIds(scores: Array<{ benchmark_id: string }>) {
 	const withScores = new Set(scores.map((row) => row.benchmark_id));
-	return RANKING_BENCHMARK_FAMILIES.map((family) =>
+	return [...RANKING_BENCHMARK_FAMILIES.map((family) =>
 		RANKING_BENCHMARK_IDS.find((id) => id.startsWith(family) && withScores.has(id)) ?? `${family}4`,
-	);
+	), ...(withScores.has(PROGRESS_INDEX_ID) ? [PROGRESS_INDEX_ID] : [])];
 }
 
 function bounded(value: string | undefined, fallback: number, max: number) {
@@ -32,6 +37,47 @@ function csv(value: string | undefined, max = 500) {
 }
 
 export const publicRankingsRouter = new Hono<{ Bindings: Env }>();
+
+// Every value the ranking RPCs understand. Each distinct URL misses the edge cache, so
+// free text in time_range or bucket_size would run the aggregates uncached at will.
+const RANKING_TIME_RANGES = new Set(["today", "24h", "week", "4w", "month", "year", "all"]);
+const RANKING_BUCKET_SIZES = new Set(["15m", "hour", "day", "week", "month"]);
+
+publicRankingsRouter.use("/rankings/*", async (c, next) => {
+	const timeRange = c.req.query("time_range");
+	const bucketSize = c.req.query("bucket_size");
+	if (timeRange !== undefined && timeRange !== "" && !RANKING_TIME_RANGES.has(timeRange)) {
+		return c.json({ error: "invalid_ranking_period" }, 400);
+	}
+	if (bucketSize !== undefined && bucketSize !== "" && !RANKING_BUCKET_SIZES.has(bucketSize)) {
+		return c.json({ error: "invalid_ranking_bucket" }, 400);
+	}
+	await next();
+});
+
+const PERIOD_METRICS = ["text_tokens", "image_inputs", "image_outputs", "audio_tokens", "audio_seconds", "speech_seconds", "transcription_seconds", "video_tokens", "video_seconds", "cached_tokens", "embedding_tokens", "rerank_quad_tokens", "decision_tokens", "tool_calls", "users"];
+
+publicRankingsRouter.get("/rankings/period-leaderboard", async (c) => {
+	const metric = c.req.query("metric") || "text_tokens";
+	const days = Number(c.req.query("days") || 7);
+	if (!PERIOD_METRICS.includes(metric) || ![1, 7, 30].includes(days)) {
+		return c.json({ error: "invalid_ranking_period" }, 400);
+	}
+	try {
+		const asOf = new Date();
+		const dayMs = 24 * 60 * 60 * 1000;
+		const { data, error } = await getDataClient(c.env).rpc("get_public_period_leaderboard", { p_metric: metric, p_days: days, p_as_of: asOf.toISOString() });
+		if (error) throw error;
+		return withPublicCache(c.json({ data: data ?? [], period: {
+			start: new Date(asOf.getTime() - days * dayMs).toISOString(),
+			end: asOf.toISOString(),
+			previousStart: new Date(asOf.getTime() - 2 * days * dayMs).toISOString(),
+		} }), LIVE_CACHE);
+	} catch (error) {
+		console.error("[web-api/rankings] period leaderboard failed", error);
+		return c.json({ error: "ranking_period_unavailable" }, 503);
+	}
+});
 
 publicRankingsRouter.get("/rankings/performance", async (c) => {
 	try { const { data, error } = await getDataClient(c.env).rpc("get_public_model_performance", { p_hours: bounded(c.req.query("hours"), 24, 24 * 30) }); if (error) throw error; return withPublicCache(c.json({ data: data ?? [] }), LIVE_CACHE); }
@@ -54,7 +100,9 @@ publicRankingsRouter.get("/rankings/fastest-models", async (c) => {
 
 publicRankingsRouter.get("/rankings/market-share", async (c) => {
 	const dimension = c.req.query("dimension") === "provider" ? "provider" : "organization";
-	try { const { data, error } = await getDataClient(c.env).rpc("get_public_market_share", { p_dimension: dimension, p_time_range: c.req.query("time_range") || "week" }); if (error) throw error; return withPublicCache(c.json({ data: data ?? [] }), LIVE_CACHE); }
+	const timeRange = c.req.query("time_range") || "week";
+	if (!["today", "24h", "week", "4w", "month", "year"].includes(timeRange)) return c.json({ error: "invalid_ranking_period" }, 400);
+	try { const { data, error } = await getDataClient(c.env).rpc("get_public_market_share_rolling", { p_dimension: dimension, p_time_range: timeRange, p_as_of: new Date().toISOString() }); if (error) throw error; return withPublicCache(c.json({ data: data ?? [] }), LIVE_CACHE); }
 	catch (error) { console.error("[web-api/rankings] market share failed", error); return c.json({ error: "market_share_unavailable" }, 503); }
 });
 
@@ -76,7 +124,7 @@ publicRankingsRouter.get("/rankings/multimodal", async (c) => {
 
 publicRankingsRouter.get("/rankings/modality-timeseries", async (c) => {
 	const metric = c.req.query("metric") || "text_tokens";
-	if (!["text_tokens", "image_inputs", "image_outputs", "audio_tokens", "audio_seconds", "speech_seconds", "transcription_seconds", "video_tokens", "video_seconds", "cached_tokens", "embedding_tokens", "rerank_quad_tokens"].includes(metric)) {
+	if (!["text_tokens", "image_inputs", "image_outputs", "audio_tokens", "audio_seconds", "speech_seconds", "transcription_seconds", "video_tokens", "video_seconds", "cached_tokens", "embedding_tokens", "rerank_quad_tokens", "decision_tokens"].includes(metric)) {
 		return c.json({ error: "invalid_ranking_metric" }, 400);
 	}
 	try { const { data, error } = await getDataClient(c.env).rpc("get_public_modality_usage_timeseries", { p_metric: metric, p_time_range: c.req.query("time_range") || "year", p_top_n: 20 }); if (error) throw error; return withPublicCache(c.json({ data: data ?? [] }), LIVE_CACHE); }
@@ -180,93 +228,124 @@ publicRankingsRouter.get("/rankings/tool-calls", async (c) => {
 	}
 });
 
+/** Every model's evaluated configurations on the current Artificial Analysis indexes. */
+export async function loadBenchmarkRankings(env: Env) {
+	const client = getDataClient(env);
+	const benchmarkResult = await client.from("v2_benchmarks")
+		.select("benchmark_id,name,category,ascending_order,benchmark_type,total_models")
+		.in("benchmark_id", RANKING_BENCHMARK_IDS);
+	if (benchmarkResult.error) throw benchmarkResult.error;
+	const scores: Array<{ benchmark_id: string; model_slug: string; score_numeric: number | null; other_info: string | null; source_link: string | null; updated_at: string | null; variant: string | null; result_key: string | null }> = [];
+	for (let offset = 0; ; offset += 500) {
+		const page = await client.from("v2_benchmark_results")
+			.select("benchmark_id,model_slug,score_numeric,other_info,source_link,updated_at,variant,result_key")
+			.or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
+			.in("benchmark_id", RANKING_BENCHMARK_IDS).not("score_numeric", "is", null)
+			.order("result_id").range(offset, offset + 499);
+		if (page.error) throw page.error;
+		scores.push(...(page.data ?? []));
+		if ((page.data ?? []).length < 500) break;
+	}
+	const modelIds = [...new Set(scores.map((row) => row.model_slug))];
+	const models = new Map<string, { model_name: string; organisation_id: string | null; organisation_name: string | null; organisation_colour: string | null; release_date: string | null }>();
+	for (let offset = 0; offset < modelIds.length; offset += 200) {
+		const result = await client.from("v2_models")
+			.select("model_slug,name,lab_slug,release_date:released_at,lab:v2_labs!v2_models_lab_slug_fkey(name,colour)")
+			.in("model_slug", modelIds.slice(offset, offset + 200)).eq("hidden", false);
+		if (result.error) throw result.error;
+		for (const row of result.data ?? []) {
+			const lab = Array.isArray(row.lab) ? row.lab[0] : row.lab;
+			models.set(row.model_slug, { model_name: row.name ?? row.model_slug, organisation_id: row.lab_slug ?? null, organisation_name: lab?.name ?? row.lab_slug ?? null, organisation_colour: lab?.colour ?? null, release_date: row.release_date ?? null });
+		}
+	}
+	const activeIds = activeRankingBenchmarkIds(scores.filter((row) => models.has(row.model_slug)));
+	const order = new Map(activeIds.map((id, index) => [id, index]));
+	const visibleScores = scores.filter((row) => models.has(row.model_slug));
+	const benchmarks = (benchmarkResult.data ?? [])
+		.filter((benchmark) => activeIds.includes(benchmark.benchmark_id))
+		.sort((left, right) => (order.get(left.benchmark_id) ?? 99) - (order.get(right.benchmark_id) ?? 99))
+		.map((benchmark) => {
+			const lowerIsBetter = benchmark.ascending_order === false;
+			const versionOf = indexVersion;
+			const benchmarkScores = scores.filter((row) => row.benchmark_id === benchmark.benchmark_id && models.has(row.model_slug));
+			const latestVersion = latestIndexVersion(benchmarkScores);
+			const bestByModel = new Map<string, { score: number; other_info: string | null; source_link: string | null; updated_at: string | null }>();
+			const configurationsByModel = new Map<string, Array<{ variant: string | null; result_key: string | null; score: number; other_info: string | null; source_link: string | null; updated_at: string | null }>>();
+			for (const row of benchmarkScores) {
+				// Preserve historical records, but never rank different index versions together.
+				if (latestVersion && versionOf(row.other_info) !== latestVersion) continue;
+				if (row.benchmark_id !== benchmark.benchmark_id || !models.has(row.model_slug)) continue;
+				const score = Number(row.score_numeric);
+				if (!Number.isFinite(score)) continue;
+				const configurations = configurationsByModel.get(row.model_slug) ?? [];
+				configurations.push({ variant: row.variant, result_key: row.result_key, score, other_info: row.other_info, source_link: row.source_link, updated_at: row.updated_at });
+				configurationsByModel.set(row.model_slug, configurations);
+				const previous = bestByModel.get(row.model_slug);
+				if (!previous || (lowerIsBetter ? score < previous.score : score > previous.score)) {
+					bestByModel.set(row.model_slug, { score, other_info: row.other_info, source_link: row.source_link, updated_at: row.updated_at });
+				}
+			}
+			const entries = [...bestByModel.entries()]
+				.map(([modelId, result]) => ({ model_id: modelId, ...models.get(modelId), ...result, configurations: (configurationsByModel.get(modelId) ?? []).sort((left, right) => lowerIsBetter ? left.score - right.score : right.score - left.score) }))
+				.sort((left, right) => lowerIsBetter ? left.score - right.score : right.score - left.score)
+				.map((entry, index, sorted) => ({ ...entry, rank: index > 0 && sorted[index - 1].score === entry.score ? sorted.findIndex((item) => item.score === entry.score) + 1 : index + 1 }));
+			return {
+				benchmark_id: benchmark.benchmark_id,
+				name: benchmark.name,
+				category: benchmark.category,
+				benchmark_type: benchmark.benchmark_type,
+				lower_is_better: lowerIsBetter,
+				total_models: entries.length,
+				entries,
+			};
+		});
+	const values = intelligenceValueResults(visibleScores, activeIds[0], activeIds[3]);
+	const bestValueByModel = new Map<string, (typeof values)[number]>();
+	for (const value of values) {
+		const previous = bestValueByModel.get(value.model_slug);
+		if (!previous || value.score_numeric < previous.score_numeric || (value.score_numeric === previous.score_numeric && value.intelligence_score > previous.intelligence_score)) bestValueByModel.set(value.model_slug, value);
+	}
+	const valueEntries = [...bestValueByModel.values()].sort((a, b) => a.score_numeric - b.score_numeric || b.intelligence_score - a.intelligence_score).map((row, _index, sorted) => ({
+		model_id: row.model_slug, ...models.get(row.model_slug), score: row.score_numeric,
+		intelligence_score: row.intelligence_score, evaluation_cost: row.evaluation_cost,
+		other_info: row.other_info, source_link: row.source_link, updated_at: row.updated_at,
+		rank: sorted.findIndex((other) => other.score_numeric === row.score_numeric) + 1,
+	}));
+	return { benchmarks, intelligence_value: { benchmark_id: activeIds[0], entries: valueEntries } };
+}
+
 publicRankingsRouter.get("/rankings/benchmarks", async (c) => {
 	try {
-		const client = getDataClient(c.env);
-		const benchmarkResult = await client.from("v2_benchmarks")
-			.select("benchmark_id,name,category,ascending_order,benchmark_type,total_models")
-			.in("benchmark_id", RANKING_BENCHMARK_IDS);
-		if (benchmarkResult.error) throw benchmarkResult.error;
-		const scores: Array<{ benchmark_id: string; model_slug: string; score_numeric: number | null; other_info: string | null; source_link: string | null; updated_at: string | null; variant: string | null; result_key: string | null }> = [];
-		for (let offset = 0; ; offset += 500) {
-			const page = await client.from("v2_benchmark_results")
-				.select("benchmark_id,model_slug,score_numeric,other_info,source_link,updated_at,variant,result_key")
-				.or(`effective_to.is.null,effective_to.gt.${new Date().toISOString()}`)
-				.in("benchmark_id", RANKING_BENCHMARK_IDS).not("score_numeric", "is", null)
-				.order("result_id").range(offset, offset + 499);
-			if (page.error) throw page.error;
-			scores.push(...(page.data ?? []));
-			if ((page.data ?? []).length < 500) break;
-		}
-		const modelIds = [...new Set(scores.map((row) => row.model_slug))];
-		const models = new Map<string, { model_name: string; organisation_id: string | null; organisation_name: string | null; organisation_colour: string | null; release_date: string | null }>();
-		for (let offset = 0; offset < modelIds.length; offset += 200) {
-			const result = await client.from("v2_models")
-				.select("model_slug,name,lab_slug,release_date:released_at,lab:v2_labs!v2_models_lab_slug_fkey(name,colour)")
-				.in("model_slug", modelIds.slice(offset, offset + 200)).eq("hidden", false);
-			if (result.error) throw result.error;
-			for (const row of result.data ?? []) {
-				const lab = Array.isArray(row.lab) ? row.lab[0] : row.lab;
-				models.set(row.model_slug, { model_name: row.name ?? row.model_slug, organisation_id: row.lab_slug ?? null, organisation_name: lab?.name ?? row.lab_slug ?? null, organisation_colour: lab?.colour ?? null, release_date: row.release_date ?? null });
-			}
-		}
-		const activeIds = activeRankingBenchmarkIds(scores.filter((row) => models.has(row.model_slug)));
-		const order = new Map(activeIds.map((id, index) => [id, index]));
-		const visibleScores = scores.filter((row) => models.has(row.model_slug));
-		const benchmarks = (benchmarkResult.data ?? [])
-			.filter((benchmark) => activeIds.includes(benchmark.benchmark_id))
-			.sort((left, right) => (order.get(left.benchmark_id) ?? 99) - (order.get(right.benchmark_id) ?? 99))
-			.map((benchmark) => {
-				const lowerIsBetter = benchmark.ascending_order === false;
-				const versionOf = indexVersion;
-				const benchmarkScores = scores.filter((row) => row.benchmark_id === benchmark.benchmark_id && models.has(row.model_slug));
-				const latestVersion = latestIndexVersion(benchmarkScores);
-				const bestByModel = new Map<string, { score: number; other_info: string | null; source_link: string | null; updated_at: string | null }>();
-				const configurationsByModel = new Map<string, Array<{ variant: string | null; result_key: string | null; score: number; other_info: string | null; source_link: string | null; updated_at: string | null }>>();
-				for (const row of benchmarkScores) {
-					// Preserve historical records, but never rank different index versions together.
-					if (latestVersion && versionOf(row.other_info) !== latestVersion) continue;
-					if (row.benchmark_id !== benchmark.benchmark_id || !models.has(row.model_slug)) continue;
-					const score = Number(row.score_numeric);
-					if (!Number.isFinite(score)) continue;
-					const configurations = configurationsByModel.get(row.model_slug) ?? [];
-					configurations.push({ variant: row.variant, result_key: row.result_key, score, other_info: row.other_info, source_link: row.source_link, updated_at: row.updated_at });
-					configurationsByModel.set(row.model_slug, configurations);
-					const previous = bestByModel.get(row.model_slug);
-					if (!previous || (lowerIsBetter ? score < previous.score : score > previous.score)) {
-						bestByModel.set(row.model_slug, { score, other_info: row.other_info, source_link: row.source_link, updated_at: row.updated_at });
-					}
-				}
-				const entries = [...bestByModel.entries()]
-					.map(([modelId, result]) => ({ model_id: modelId, ...models.get(modelId), ...result, configurations: (configurationsByModel.get(modelId) ?? []).sort((left, right) => lowerIsBetter ? left.score - right.score : right.score - left.score) }))
-					.sort((left, right) => lowerIsBetter ? left.score - right.score : right.score - left.score)
-					.map((entry, index, sorted) => ({ ...entry, rank: index > 0 && sorted[index - 1].score === entry.score ? sorted.findIndex((item) => item.score === entry.score) + 1 : index + 1 }));
-				return {
-					benchmark_id: benchmark.benchmark_id,
-					name: benchmark.name,
-					category: benchmark.category,
-					benchmark_type: benchmark.benchmark_type,
-					lower_is_better: lowerIsBetter,
-					total_models: entries.length,
-					entries,
-				};
-			});
-		const values = intelligenceValueResults(visibleScores, activeIds[0], activeIds[3]);
-		const bestValueByModel = new Map<string, (typeof values)[number]>();
-		for (const value of values) {
-			const previous = bestValueByModel.get(value.model_slug);
-			if (!previous || value.score_numeric < previous.score_numeric || (value.score_numeric === previous.score_numeric && value.intelligence_score > previous.intelligence_score)) bestValueByModel.set(value.model_slug, value);
-		}
-		const valueEntries = [...bestValueByModel.values()].sort((a, b) => a.score_numeric - b.score_numeric || b.intelligence_score - a.intelligence_score).map((row, _index, sorted) => ({
-			model_id: row.model_slug, ...models.get(row.model_slug), score: row.score_numeric,
-			intelligence_score: row.intelligence_score, evaluation_cost: row.evaluation_cost,
-			other_info: row.other_info, source_link: row.source_link, updated_at: row.updated_at,
-			rank: sorted.findIndex((other) => other.score_numeric === row.score_numeric) + 1,
-		}));
-		return withPublicCache(c.json({ benchmarks, intelligence_value: { benchmark_id: activeIds[0], entries: valueEntries } }), { ...LIVE_CACHE, cacheTags: ["web-api-ranking-metadata"] });
+		return withPublicCache(c.json(await loadBenchmarkRankings(c.env)), { ...LIVE_CACHE, cacheTags: ["web-api-ranking-metadata"] });
 	} catch (error) {
 		console.error("[web-api/rankings] benchmarks failed", error);
 		return c.json({ error: "ranking_benchmarks_unavailable" }, 503);
+	}
+});
+
+/** Ranks move whenever any model's scores do, so purge them with the leaderboards. */
+const MODEL_BENCHMARK_RANKS_CACHE = {
+	...LIVE_CACHE,
+	cacheTags: ["web-api-ranking-metadata", "web-api-benchmarks", "web-api-model-benchmarks"],
+} as const;
+const BENCHMARK_RANK_INPUTS_TTL_SECONDS = 15 * 60;
+
+/**
+ * One model's place on the benchmark leaderboards. Model pages need this
+ * instead of every leaderboard: a few kilobytes rather than about a megabyte.
+ */
+publicRankingsRouter.get("/rankings/benchmarks/:modelId", async (c) => {
+	const modelId = c.req.param("modelId").trim();
+	if (!modelId || modelId.length > 200) return c.json({ error: "invalid_model_id" }, 400);
+	try {
+		const inputs = await sharedPayload("benchmark-rank-inputs/v1", BENCHMARK_RANK_INPUTS_TTL_SECONDS, async () => {
+			const [rankings, epoch] = await Promise.all([loadBenchmarkRankings(c.env), loadEpochLeaderboard(c.env)]);
+			return benchmarkRankInputs(rankings.benchmarks, epoch);
+		});
+		return withPublicCache(c.json(modelBenchmarkRanks(inputs, modelId)), MODEL_BENCHMARK_RANKS_CACHE);
+	} catch (error) {
+		console.error("[web-api/rankings] model benchmark ranks failed", { modelId, error });
+		return c.json({ error: "model_benchmark_ranks_unavailable" }, 503);
 	}
 });
 
@@ -344,12 +423,14 @@ publicRankingsRouter.get("/rankings/context-lengths", async (c) => {
 
 publicRankingsRouter.get("/rankings/top-apps", async (c) => {
 	const timeRange = c.req.query("time_range")?.trim() || "week";
+	if (!["today", "24h", "week", "4w", "month", "year"].includes(timeRange)) return c.json({ error: "invalid_ranking_period" }, 400);
 	const limit = bounded(c.req.query("limit"), 20, 100);
 	try {
 		const client = getDataClient(c.env);
-		const { data, error } = await client.rpc("get_public_top_apps", {
+		const { data, error } = await client.rpc("get_public_top_apps_rolling", {
 			p_time_range: timeRange,
 			p_limit: limit,
+			p_as_of: new Date().toISOString(),
 		});
 		if (error) throw error;
 		const rows = (data ?? []) as Array<Record<string, unknown>>;
@@ -381,10 +462,12 @@ publicRankingsRouter.get("/rankings/top-apps", async (c) => {
 });
 
 publicRankingsRouter.get("/rankings/models", async (c) => {
+	const metric = c.req.query("metric") || "tokens";
+	if (!["tokens", "requests", "cost"].includes(metric)) return c.json({ error: "invalid_ranking_metric" }, 400);
 	try {
 		const client = getDataClient(c.env);
 		const [rankings, trending, summary] = await Promise.all([
-			client.rpc("get_public_model_rankings", { p_time_range: c.req.query("time_range") || "week", p_metric: c.req.query("metric") || "tokens", p_limit: bounded(c.req.query("limit"), 50, 250) }),
+			client.rpc("get_public_model_rankings", { p_time_range: c.req.query("time_range") || "week", p_metric: metric, p_limit: bounded(c.req.query("limit"), 50, 250) }),
 			client.rpc("get_public_trending_models", { p_limit: 20 }),
 			client.rpc("get_public_summary_stats"),
 		]);

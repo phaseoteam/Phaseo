@@ -11,7 +11,7 @@ type WeeklyUsageSource = Pick<
 
 export type WeeklyUsageDisplay = {
 	label: string;
-	quantity: number;
+	quantity: number | null;
 	unitSuffix: string;
 };
 
@@ -31,12 +31,12 @@ export function resolveWeeklyUsageDisplay(model: WeeklyUsageSource): WeeklyUsage
 	const metric = String(model.weekly_usage_metric ?? "").trim().toLowerCase();
 	const weeklyQuantity = finiteQuantity(model.weekly_usage_quantity);
 	const legacyTokenQuantity = finiteQuantity(model.popularity_tokens_week);
-	const quantity = metric ? (weeklyQuantity ?? 0) : (legacyTokenQuantity ?? 0);
+	const quantity = metric ? weeklyQuantity : legacyTokenQuantity;
 
 	if (metric === "video_seconds") {
 		return {
 			label: "Video hours generated",
-			quantity: quantity / 3_600,
+			quantity: quantity === null ? null : quantity / 3_600,
 			unitSuffix: "h",
 		};
 	}

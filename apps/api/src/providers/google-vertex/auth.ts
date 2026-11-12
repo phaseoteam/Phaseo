@@ -79,15 +79,100 @@ function isVertexServiceAccount(payload: Record<string, unknown>): payload is Ve
 	);
 }
 
+const VERTEX_OAUTH_SCOPE = "https://www.googleapis.com/auth/cloud-platform";
+/** Treat cached tokens as expired this long before Google's expires_in. */
+const VERTEX_TOKEN_REFRESH_MARGIN_MS = 5 * 60_000;
+const VERTEX_TOKEN_CACHE_MAX_ENTRIES = 256;
+/**
+ * Concurrent requests share one in-flight mint. Bound the wait so a request
+ * never hangs on another request's mint (Workers may cancel I/O when the
+ * originating request ends); after this it mints its own token.
+ */
+const VERTEX_TOKEN_INFLIGHT_WAIT_MS = 5_000;
+
+type CachedVertexToken = { accessToken: string; refreshAtMs: number };
+
+// Isolate-local only: tokens are never written to KV, logs, or errors.
+const vertexTokenCache = new Map<string, CachedVertexToken>();
+const vertexTokenInflight = new Map<string, Promise<CachedVertexToken | null>>();
+
+/** Test hook: drop cached and in-flight service-account tokens. */
+export function clearVertexAccessTokenCache(): void {
+	vertexTokenCache.clear();
+	vertexTokenInflight.clear();
+}
+
+async function vertexTokenCacheKey(sa: VertexServiceAccount, tokenUri: string): Promise<string> {
+	const material = JSON.stringify([sa.client_email, sa.private_key, tokenUri, VERTEX_OAUTH_SCOPE]);
+	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(material));
+	return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function rememberVertexToken(key: string, token: CachedVertexToken): void {
+	vertexTokenCache.delete(key);
+	vertexTokenCache.set(key, token);
+	while (vertexTokenCache.size > VERTEX_TOKEN_CACHE_MAX_ENTRIES) {
+		const oldest = vertexTokenCache.keys().next().value;
+		if (oldest === undefined) break;
+		vertexTokenCache.delete(oldest);
+	}
+}
+
+async function waitForInflight<T>(promise: Promise<T>, ms: number): Promise<T | undefined> {
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	try {
+		return await Promise.race([
+			promise,
+			new Promise<undefined>((resolve) => {
+				timer = setTimeout(() => resolve(undefined), ms);
+			}),
+		]);
+	} finally {
+		if (timer) clearTimeout(timer);
+	}
+}
+
 async function mintServiceAccountAccessToken(sa: VertexServiceAccount, upstreamTiming?: ExecutorUpstreamTiming): Promise<string> {
 	const tokenUri = resolveGoogleOAuthTokenUri(sa.token_uri);
-	const now = Math.floor(Date.now() / 1000);
+	const key = await vertexTokenCacheKey(sa, tokenUri);
+	const cached = vertexTokenCache.get(key);
+	if (cached && Date.now() < cached.refreshAtMs) return cached.accessToken;
+	if (cached) vertexTokenCache.delete(key);
+
+	const inflight = vertexTokenInflight.get(key);
+	if (inflight) {
+		// Errors are not shared: a failed mint is retried by each waiter.
+		const shared = await waitForInflight(inflight.catch(() => null), VERTEX_TOKEN_INFLIGHT_WAIT_MS);
+		if (shared && Date.now() < shared.refreshAtMs) return shared.accessToken;
+		return (await requestServiceAccountAccessToken(sa, tokenUri, upstreamTiming)).accessToken;
+	}
+
+	const minted = requestServiceAccountAccessToken(sa, tokenUri, upstreamTiming);
+	const tracked = minted.then(
+		(token) => {
+			if (token.refreshAtMs > Date.now()) rememberVertexToken(key, token);
+			return token;
+		},
+	).finally(() => {
+		if (vertexTokenInflight.get(key) === tracked) vertexTokenInflight.delete(key);
+	});
+	vertexTokenInflight.set(key, tracked);
+	return (await tracked).accessToken;
+}
+
+async function requestServiceAccountAccessToken(
+	sa: VertexServiceAccount,
+	tokenUri: string,
+	upstreamTiming?: ExecutorUpstreamTiming,
+): Promise<CachedVertexToken> {
+	const requestedAtMs = Date.now();
+	const now = Math.floor(requestedAtMs / 1000);
 	const header = { alg: "RS256", typ: "JWT" };
 	const claimSet = {
 		iss: sa.client_email,
 		sub: sa.client_email,
 		aud: tokenUri,
-		scope: "https://www.googleapis.com/auth/cloud-platform",
+		scope: VERTEX_OAUTH_SCOPE,
 		iat: now,
 		exp: now + 3600,
 	};
@@ -109,11 +194,17 @@ async function mintServiceAccountAccessToken(sa: VertexServiceAccount, upstreamT
 	if (!res.ok) {
 		throw vertexError(`google-vertex_oauth_error_${res.status}`);
 	}
-	const json = await res.json() as { access_token?: string };
+	const json = await res.json() as { access_token?: string; expires_in?: unknown };
 	if (!json?.access_token) {
 		throw vertexError("google-vertex_oauth_access_token_missing");
 	}
-	return json.access_token;
+	// Measure the lifetime from when the token was requested; a missing or
+	// invalid expires_in leaves refreshAtMs in the past, i.e. not cached.
+	const expiresInSeconds = Number(json.expires_in);
+	const refreshAtMs = Number.isFinite(expiresInSeconds) && expiresInSeconds > 0
+		? requestedAtMs + expiresInSeconds * 1000 - VERTEX_TOKEN_REFRESH_MARGIN_MS
+		: 0;
+	return { accessToken: json.access_token, refreshAtMs };
 }
 
 async function signJwtRs256(unsignedJwt: string, privateKeyPem: string): Promise<string> {

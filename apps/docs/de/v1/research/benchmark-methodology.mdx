@@ -4,58 +4,42 @@ description: "Erfahre, wie Phaseo Benchmark-Ergebnisse sammelt, vereinheitlicht 
 icon: "clipboard-check"
 ---
 
-Benchmarks bilden die Grundlage für Vergleiche zwischen Modellen und Anbietern. Diese Seite erklärt, wie Daten in die Plattform gelangen und wie wir für einheitliche Angaben sorgen.
+Phaseo veröffentlicht Benchmark-Ergebnisse, die andere gemessen haben, jeweils mit einem Link zur Herkunft. Phaseo führt selbst keine Benchmarks durch und fasst sie nicht zu einem Gesamtwert zusammen.
 
----
+```mermaid
+flowchart LR
+  src["Veröffentlichtes Ergebnis<br/>(Paper, Model Card,<br/>Ergebnisseite)"] --> review{{"Quelle und Setup<br/>geprüft"}}
+  imp["Geplante Importe<br/>(Artificial Analysis, Epoch AI)"] --> db["Phaseo-Datenbank"]
+  review --> db
+  db --> page["Modell- und<br/>Benchmark-Seiten"]
+```
 
-## Datenquellen
+## Woher Ergebnisse stammen
 
-- **Offizielle Veröffentlichungen** — Ankündigungen von Anbietern, technische Blogs und Presseinformationen.
-- **Wissenschaftliche Arbeiten** — Peer-reviewte Veröffentlichungen und arXiv-Preprints mit reproduzierbaren Ergebnissen.
-- **Beiträge aus der Community** — Verifizierte Beiträge aus der Phaseo-Community und von Partnern.
-
-Jeder Score muss vor der Annahme eine öffentliche Quelle oder eine reproduzierbare Evaluierung enthalten.
-
----
-
-## Normalisierung
-
-Wir vereinheitlichen Benchmark-Namen, Metriken und Splits, damit Vergleiche zwischen Modellen aussagekräftig sind:
-
-1. Ordne jeden Beitrag einer internen Benchmark-ID zu.
-2. Überführe gemeldete Metriken in eine einheitliche Skala (zum Beispiel Prozentwerte).
-3. Vermerke Abweichungen wie Few-Shot-Varianten oder benutzerdefinierte Evaluierungs-Harnesses.
-4. Führe eine automatische Validierung aus, um Felder und Wertebereiche auf Plausibilität zu prüfen.
-
----
-
-## Aktualisierungsrhythmus
-
-- Wöchentlich für verbreitete Suites wie MMLU, GSM8K und HumanEval.
-- Monatlich für Nischen- oder neue Benchmarks.
-- Bei Bedarf, wenn Anbieter oder Community-Mitglieder hochwertige Evaluierungen einreichen.
-
-Größere Aktualisierungen führen zu Changelog-Einträgen, damit du historische Änderungen nachvollziehen kannst.
-
----
-
-## Transparenz und Reproduzierbarkeit
-
-| Praxis | Ergebnis |
+| Quelle | Wie sie hinzukommen |
 | --- | --- |
-| Auf Primärquellen verlinken | Nutzer können Scores schnell überprüfen. |
-| `last_updated`-Zeitpunkte erfassen | Zeigt, wann ein Benchmark überprüft werden sollte. |
-| Evaluierungskonfiguration dokumentieren | Erläutert Prompt-Format, Kontextfenster und Sampling. |
-| Menschlich überprüfte Scores kennzeichnen | Unterscheidet manuelle Prüfung von automatisierten Abläufen. |
+| Paper, Model Cards und Ankündigungen der Modellentwickler | Von Maintainern hinzugefügt, als **selbst gemeldet** gekennzeichnet |
+| Ergebnisseiten der Benchmark-Organisatoren | Von Maintainern hinzugefügt |
+| Indizes von Artificial Analysis und Epoch AI | Geplante Importe, stündlich geprüft |
+| Meldungen aus der Community | GitHub-Issues, veröffentlicht, nachdem ein Maintainer die Belege geprüft hat |
 
----
+Jedes Ergebnis braucht vor der Veröffentlichung eine öffentliche Quelle oder ein reproduzierbares Evaluierungsprotokoll.
 
-## Feedbackschleife
+## Was Vereinheitlichung bedeutet
 
-Wenn dir Abweichungen oder fehlende Daten auffallen:
+Phaseo belässt jeden Benchmark auf seiner eigenen Skala. Vereinheitlicht wird der Datensatz rund um das Ergebnis, nicht das Ergebnis selbst:
 
-1.  Erstelle ein Issue mit den unter [Benchmark-Ergebnisse einreichen](./submitting-scores.mdx) beschriebenen Belegen.
-2.  Beantworte Rückfragen im Issue. Verifizierte Korrekturen werden im Datenbankeditor veröffentlicht.
-3.  Stimme größere Forschungseinreichungen über Discord ab.
+1. Jedes Ergebnis wird genau einer Benchmark-ID zugeordnet, sodass derselbe Benchmark unter verschiedenen Namen zusammengefasst wird.
+2. Weicht das Setup ab, etwa bei der Anzahl der Few-Shot-Beispiele, dem Harness oder dem Reasoning-Effort, wird es als Variante geführt, statt mit dem Standard zusammengelegt zu werden.
+3. Jeder Benchmark hat eine Sortierrichtung. Bei Benchmarks, bei denen niedriger besser ist, etwa Fehlerraten, steht das niedrigste Ergebnis oben.
+4. Der Quellenlink und die Kennzeichnung „selbst gemeldet“ bleiben beim Ergebnis.
 
-Wir prüfen jeden Bericht und halten dich mit Statusmeldungen auf dem Laufenden, während der Benchmark überprüft wird.
+Die Kennzeichnung „selbst gemeldet“ ist ein Hinweis, keine Ablehnung. Ein Ergebnis ohne ausreichenden Kontext kann mit Quellennotizen gespeichert werden; betrachte es nicht als gleichwertig mit einem vollständig geprüften Eintrag in einer Bestenliste.
+
+## Eine Abweichung melden
+
+1. Eröffne ein Issue mit den Belegen, die unter [Benchmark-Ergebnisse einreichen](./submitting-scores.mdx) aufgeführt sind.
+2. Beantworte Rückfragen im Issue. Maintainer veröffentlichen geprüfte Korrekturen über den Datenbank-Editor.
+3. Stimme größere Forschungsbeiträge auf [Discord](https://discord.gg/aQyywCvgZ5) ab.
+
+Die öffentliche Seite zur [Vereinheitlichung von Benchmarks](https://phaseo.app/how-phaseo-normalises-ai-benchmarks) beschreibt dieselben Regeln für Leser des Katalogs.

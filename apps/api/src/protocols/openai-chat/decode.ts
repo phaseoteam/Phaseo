@@ -15,13 +15,15 @@ import type {
 	IRTool,
 } from "@core/ir";
 import { extractToolNameOrType, isOpenAINativeWebSearchTool } from "@core/nativeTools";
-import { normalizeOpenAIContent } from "../shared/normalizeContent";
+import { normalizeOpenAIContent, normalizePartCacheControl, normalizeToolResultContent } from "../shared/normalizeContent";
+import { applyToolCallSignatures, decodeChatReasoningDetails } from "../shared/reasoning";
 import {
 	normalizeImageConfig,
 	normalizeModalities,
 	normalizeThinkingConfig,
 	normalizeOpenAIToolChoice,
 	normalizeProviderGeoPreferences,
+	resolveAllowedTools,
 	normalizeResponseFormat,
 	resolveTextServiceTier,
 	normalizeProviderCacheOptions,
@@ -41,11 +43,10 @@ import {
  */
 export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequest {
 	const reqAny = req as any;
-	const metadataFromRequest = req.metadata ? { ...req.metadata } : undefined;
+	// `user` stays in `userId`; folding it into metadata sent an unknown
+	// `metadata.user` key upstream (Anthropic rejects anything but user_id).
+	const metadata = req.metadata ? { ...req.metadata } : undefined;
 	const providerCacheOptions = normalizeProviderCacheOptions(req as any);
-	const metadata = req.user
-		? { ...(metadataFromRequest ?? {}), user: req.user }
-		: metadataFromRequest;
 	const messages: IRMessage[] = [];
 
 	const systemPrompt = reqAny.system ?? reqAny.system_prompt;
@@ -63,26 +64,45 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 			messages.push({
 				role: normalizedRole,
 				content: normalizeOpenAIContent(msgAny.content),
+				...(typeof msgAny.name === "string" && msgAny.name.length > 0 ? { name: msgAny.name } : {}),
 			});
 		} else if (normalizedRole === "assistant") {
 			const assistantContent = normalizeOpenAIContent(msgAny.content || "");
-			const reasoningContent = typeof msgAny.reasoning_content === "string" ? msgAny.reasoning_content : "";
-			const content: IRContentPart[] = reasoningContent
-				? [{ type: "reasoning_text", text: reasoningContent } as const, ...assistantContent]
-				: assistantContent;
+			const toolCalls: IRToolCall[] | undefined = Array.isArray(msgAny.tool_calls) ? msgAny.tool_calls.map(decodeToolCall) : undefined;
+			// reasoning_details carries provider state (signatures, encrypted
+			// reasoning) and wins over the plain reasoning_content text.
+			const decodedDetails = decodeChatReasoningDetails(
+				msgAny.reasoning_details,
+				new Set((toolCalls ?? []).map((call) => call.id)),
+			);
+			applyToolCallSignatures(toolCalls, decodedDetails.toolSignatures);
+			const reasoningContent = typeof msgAny.reasoning_content === "string"
+				? msgAny.reasoning_content
+				: typeof msgAny.reasoning === "string" ? msgAny.reasoning : "";
+			const reasoningParts: IRContentPart[] = decodedDetails.parts.length > 0
+				? decodedDetails.parts
+				: reasoningContent ? [{ type: "reasoning_text", text: reasoningContent }] : [];
+			const content: IRContentPart[] = interleaveReasoning(reasoningParts, assistantContent, decodedDetails.textOffsets);
+			const audioId = typeof msgAny.audio?.id === "string" && msgAny.audio.id.length > 0 ? msgAny.audio.id : undefined;
 
 			messages.push({
 				role: "assistant",
 				content,
-				toolCalls: Array.isArray(msgAny.tool_calls) ? msgAny.tool_calls.map(decodeToolCall) : undefined,
+				toolCalls,
+				...(typeof msgAny.name === "string" && msgAny.name.length > 0 ? { name: msgAny.name } : {}),
+				...(audioId ? { audio: { id: audioId } } : {}),
+				...(decodedDetails.effortRecord ? { effortRecord: decodedDetails.effortRecord } : {}),
 			});
 		} else if (normalizedRole === "tool") {
+			const toolResult = normalizeToolResultContent(msgAny.content);
 			messages.push({
 				role: "tool",
 				toolResults: [
 					{
 						toolCallId: msgAny.tool_call_id,
-						content: typeof msgAny.content === "string" ? msgAny.content : JSON.stringify(msgAny.content),
+						content: toolResult.content,
+						...(toolResult.cacheControl ? { cacheControl: toolResult.cacheControl } : {}),
+						...(toolResult.parts ? { parts: toolResult.parts } : {}),
 					},
 				],
 			});
@@ -92,6 +112,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 	const tools: IRTool[] | undefined = req.tools?.map(decodeOpenAITool);
 
 	const toolChoice = normalizeOpenAIToolChoice(req.tool_choice);
+	const allowedTools = resolveAllowedTools(req.tool_choice, tools);
 	const rawOpenAIToolChoice = req.tool_choice
 		&& typeof req.tool_choice === "object"
 		&& !Array.isArray(req.tool_choice)
@@ -99,13 +120,14 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 			? { ...(req.tool_choice as Record<string, any>) }
 			: undefined;
 
+	// A null field means "not set", like an absent one.
 	const reasoningFromRequest = req.reasoning
 		? {
-			effort: req.reasoning.effort,
-			mode: req.reasoning.mode,
-			summary: req.reasoning.summary as any,
-			enabled: req.reasoning.enabled,
-			maxTokens: req.reasoning.max_tokens,
+			effort: req.reasoning.effort ?? undefined,
+			mode: req.reasoning.mode ?? undefined,
+			summary: (req.reasoning.summary ?? undefined) as any,
+			enabled: req.reasoning.enabled ?? undefined,
+			maxTokens: req.reasoning.max_tokens ?? undefined,
 		}
 		: undefined;
 	const reasoningEffortAlias =
@@ -254,6 +276,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		seed: req.seed,
 		tools,
 		toolChoice,
+		...(allowedTools ? { allowedToolNames: allowedTools.names } : {}),
 		webSearchOptions: reqAny.web_search_options ?? reqAny.webSearchOptions,
 		parallelToolCalls: req.parallel_tool_calls,
 		maxToolCalls: (req as any).max_tool_calls,
@@ -272,6 +295,7 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		topLogprobs: req.top_logprobs,
 		stop: reqAny.stop,
 		streamOptions: req.stream_options,
+		store: req.store,
 		background: (req as any).background,
 		serviceTier: resolveTextServiceTier({
 			service_tier: (req as any).service_tier,
@@ -286,7 +310,8 @@ export function decodeOpenAIChatRequest(req: ChatCompletionsRequest): IRChatRequ
 		anthropicCacheControl: providerCacheOptions.anthropicCacheControl,
 		googleCachedContent: providerCacheOptions.googleCachedContent,
 		xaiConversationId: providerCacheOptions.xaiConversationId,
-		safetyIdentifier: (req as any).safety_identifier,
+		// The schema fills an absent value with null; null is never sent upstream.
+		safetyIdentifier: typeof (req as any).safety_identifier === "string" ? (req as any).safety_identifier : undefined,
 		vendor,
 		userId: req.user_id ?? req.user,
 		metadata,
@@ -305,6 +330,7 @@ function decodeOpenAITool(tool: any): IRTool {
 					: undefined,
 			parameters: {},
 			async: typeof tool.async === "boolean" ? tool.async : undefined,
+			cacheControl: normalizePartCacheControl(tool),
 			raw: { ...tool },
 		};
 	}
@@ -315,6 +341,7 @@ function decodeOpenAITool(tool: any): IRTool {
 		parameters: tool.function?.parameters || tool.parameters || {},
 		strict: tool.function?.strict ?? tool.strict,
 		async: typeof tool.async === "boolean" ? tool.async : undefined,
+		cacheControl: normalizePartCacheControl(tool) ?? normalizePartCacheControl(tool.function),
 	};
 }
 
@@ -341,4 +368,27 @@ function decodeToolCall(tc: any): IRToolCall {
 		name: tc.function?.name || tc.name,
 		arguments: tc.function?.arguments || tc.arguments || "{}",
 	};
+}
+
+/**
+ * Chat joins a reply's text into one string. A Claude thinking block written after
+ * some of that text records how many characters came before it, and goes back at
+ * that point: each thinking signature records everything before it in the reply.
+ */
+function interleaveReasoning(reasoning: IRContentPart[], content: IRContentPart[], offsets: Map<IRContentPart, number>): IRContentPart[] {
+	const only = content.length === 1 && content[0].type === "text" ? content[0] : null;
+	if (offsets.size === 0 || !only || only.type !== "text") return [...reasoning, ...content];
+	const text = only.text;
+	const out: IRContentPart[] = [];
+	let cursor = 0;
+	for (const part of reasoning) {
+		const offset = Math.min(offsets.get(part) ?? 0, text.length);
+		if (offset > cursor) {
+			out.push({ type: "text", text: text.slice(cursor, offset) });
+			cursor = offset;
+		}
+		out.push(part);
+	}
+	if (cursor < text.length) out.push({ ...only, text: text.slice(cursor) });
+	return out;
 }

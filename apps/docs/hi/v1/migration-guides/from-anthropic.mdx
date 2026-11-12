@@ -1,43 +1,35 @@
 ---
-title: "Anthropic SDK से माइग्रेट करें"
+title: "Anthropic SDK से माइग्रेट करना"
 sidebarTitle: "Anthropic SDK"
-description: "Messages API का परिचित वर्कफ़्लो बनाए रखते हुए Anthropic SDK इंटीग्रेशन को Phaseo पर माइग्रेट करें।"
+description: "Messages API वर्कफ़्लो को जाना-पहचाना रखते हुए Anthropic SDK इंटीग्रेशन को Phaseo पर ले जाएं।"
 icon: "/icons/brands/anthropic.svg"
 ---
 
-Phaseo के ज़रिए अनुरोध भेजते हुए Anthropic SDK वर्कफ़्लो बनाए रखने के लिए इस गाइड का उपयोग करें। पहले क्लाइंट कॉन्फ़िगरेशन बदलें, फिर मॉडल ID और उन Anthropic-विशिष्ट व्यवहारों की जांच करें जिन पर आपका ऐप निर्भर है।
+Anthropic SDK और Messages कॉल वैसे ही रखें। क्लाइंट को `https://api.phaseo.app` पर पॉइंट करें, अपनी Phaseo कुंजी `authToken` के रूप में दें, और हर मॉडल को उसकी Phaseo ID दें।
 
-## क्या बदलेगा
-
-| सेटिंग | पहले | बाद में |
+| सेटिंग | Anthropic | Phaseo |
 | --- | --- | --- |
-| बेस URL | Anthropic का डिफ़ॉल्ट | `https://api.phaseo.app/v1` |
-| API कुंजी | Anthropic कुंजी | `PHASEO_API_KEY` |
-| मॉडल | Anthropic मॉडल का नाम | `GET /v1/models` से मिला Phaseo मॉडल ID |
-| Messages कॉल | मौजूदा SDK कॉल | आमतौर पर अपरिवर्तित |
+| बेस URL | SDK डिफ़ॉल्ट (`https://api.anthropic.com`) | `https://api.phaseo.app` (SDK `/v1/messages` जोड़ता है) |
+| API कुंजी | `ANTHROPIC_API_KEY`, `x-api-key` के रूप में भेजी जाती है | `PHASEO_API_KEY`, `authToken` / `auth_token` के रूप में, `Authorization: Bearer` से भेजी जाती है |
+| मॉडल | `claude-sonnet-5-5` | `anthropic/claude-sonnet-5.5`, या `GET /v1/models` की कोई भी ID |
+| Messages कॉल | `messages.create` | अपरिवर्तित |
 
-<Steps>
-<Step title="Phaseo API कुंजी बनाएं">
+## क्लाइंट बदलें
 
-[Gateway Keys](https://phaseo.app/gateway/keys) में एक कुंजी बनाएं और इसे अपने ऐप में `PHASEO_API_KEY` के रूप में उपलब्ध कराएं।
-
-</Step>
-
-<Step title="Anthropic क्लाइंट अपडेट करें">
-
-SDK को Phaseo बेस URL पर सेट करें और अपनी Phaseo कुंजी का उपयोग करें।
+[API कुंजियाँ](https://phaseo.app/settings/keys) में कुंजी बनाएं, और उसे ऐप को `PHASEO_API_KEY` के रूप में उपलब्ध कराएं।
 
 <CodeGroup>
 ```typescript TypeScript
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "https://api.phaseo.app/v1",
+  apiKey: null,
+  authToken: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app",
 });
 
 const response = await client.messages.create({
-  model: "anthropic/claude-sonnet-4.6",
+  model: "anthropic/claude-sonnet-5.5",
   max_tokens: 256,
   messages: [{ role: "user", content: "Reply with: migration ready" }],
 });
@@ -48,12 +40,12 @@ import os
 import anthropic
 
 client = anthropic.Anthropic(
-    api_key=os.environ["PHASEO_API_KEY"],
-    base_url="https://api.phaseo.app/v1",
+    auth_token=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app",
 )
 
 response = client.messages.create(
-    model="anthropic/claude-sonnet-4.6",
+    model="anthropic/claude-sonnet-5.5",
     max_tokens=256,
     messages=[{"role": "user", "content": "Reply with: migration ready"}],
 )
@@ -64,39 +56,47 @@ curl https://api.phaseo.app/v1/messages \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-sonnet-4.6",
+    "model": "anthropic/claude-sonnet-5.5",
     "max_tokens": 256,
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+यह कदम सबसे ज़्यादा इन तीन बातों से टूटता है:
 
-<Step title="Anthropic-विशिष्ट व्यवहार की जांच करें">
+- **रूट होस्ट उपयोग करें।** `baseURL: "https://api.phaseo.app/v1"` से `/v1/v1/messages` बनता है। उसी रिपॉज़िटरी के OpenAI-संगत क्लाइंट फिर भी `/v1` उपयोग करते हैं।
+- **कुंजी bearer टोकन के रूप में भेजें।** गेटवे सिर्फ़ `Authorization: Bearer` पढ़ता है; `x-api-key` हेडर पर `401` `missing_or_invalid_authorization_header` मिलता है। `authToken` हर SDK संस्करण पर Bearer भेजता है। `apiKey` ऐसा सिर्फ़ `@anthropic-ai/sdk` 1.0 और `anthropic` 2.0 से आगे करता है।
+- **`ANTHROPIC_API_KEY` हटाएं** उन एनवायरनमेंट से जो अब Phaseo को कॉल करते हैं। `apiKey: null` पुराने TypeScript SDK को इसे पढ़ने से रोकता है, और 0.98 से पहले के Python SDK `auth_token` सेट होने पर भी इसे पढ़ते हैं।
 
-अपने ऐप में उपयोग किए जाने वाले सटीक मॉडल के साथ सिस्टम प्रॉम्प्ट, स्ट्रीमिंग, टूल उपयोग, रीजनिंग विकल्प और संरचित आउटपुट का परीक्षण करें। पुराने beta हेडर या अनुरोध फ़ील्ड को बिना जांचे नए पथ में ले जाने के बजाय हटाएं।
+एनवायरनमेंट वेरिएबल से कॉन्फ़िगर होने वाले टूल, जैसे Claude Code, `ANTHROPIC_BASE_URL=https://api.phaseo.app`, Phaseo कुंजी पर सेट `ANTHROPIC_AUTH_TOKEN`, और खाली `ANTHROPIC_API_KEY` उपयोग करते हैं।
 
-</Step>
+## मॉडल ID मैप करें
 
-<Step title="धीरे-धीरे रोल आउट करें">
+हर प्रोडक्शन मॉडल को `GET /v1/models?format=openai` के `data[].id` से जांचें। Phaseo ID संस्करण में बिंदु उपयोग करती हैं: `claude-sonnet-5-5` बन जाता है `anthropic/claude-sonnet-5.5`। अगर मॉडल भी बदल रहा है, तो उसकी [मॉडल माइग्रेशन गाइड](../model-migrations) पढ़ें।
 
-दोनों कॉन्फ़िगरेशन में प्रतिनिधि प्रॉम्प्ट सेट की तुलना करें। प्रोडक्शन ट्रैफ़िक बदलने से पहले आउटपुट का प्रारूप, विलंबता, टोकन उपयोग, त्रुटियां और लागत जांचें।
+## क्या अलग तरह से काम करता है
 
-</Step>
-</Steps>
+| Anthropic सुविधा | Phaseo पर |
+| --- | --- |
+| `anthropic-version` हेडर | कोई भी मान स्वीकार है; Phaseo Claude को अपने संस्करण से कॉल करता है। |
+| `anthropic-beta` हेडर | आगे नहीं भेजे जाते। Phaseo अपनी समर्थित सुविधाओं के लिए ज़रूरी बीटा खुद जोड़ता है; `mcp_servers` जैसे सिर्फ़-बीटा बॉडी फ़ील्ड `400` लौटाते हैं। |
+| `temperature`, `top_p`, `top_k` | जहां मॉडल या रूट इन्हें नहीं लेता, वहां हटा दिए जाते हैं और `X-Phaseo-Dropped-Params` में सूचीबद्ध होते हैं। |
+| `speed: "fast"` | `400` लौटाता है। `service_tier: "fast"` उपयोग करें। |
+| मूल वेब खोज और वेब फ़ेच टूल | जहां प्रदाता इन्हें चलाता है वहां स्वीकार होते हैं, या Phaseo का `phaseo:web_search` सर्वर टूल उपयोग करें। |
+| `cache_control` | शीर्ष स्तर पर या प्रति ब्लॉक समर्थित। देखें [प्रॉम्प्ट कैशिंग](../guides/prompt-caching)। |
+| `metadata.user_id` | अंतिम-उपयोगकर्ता ID के रूप में उपयोग नहीं होता। अंतिम-उपयोगकर्ता दर सीमा नीतियों के लिए `user` या `X-Phaseo-User-Id` हेडर भेजें। |
+| Message Batches (`/v1/messages/batches`) | ऐसा कोई पथ नहीं है। `/v1/batches` अलग आकार में `/v1/messages` पंक्तियां स्वीकार करता है। |
+| टोकन गिनती (`/v1/messages/count_tokens`) | कोई समकक्ष नहीं। इसे Anthropic पर रखें या क्लाइंट की तरफ़ अनुमान लगाएं। |
+| Files API (`client.beta.files`) | कोई समकक्ष नहीं। दस्तावेज़ इनलाइन भेजें। |
+| `AnthropicBedrock`, `AnthropicVertex` क्लाइंट | सादे `Anthropic` क्लाइंट से बदलें; क्लाउड प्रमाणीकरण और क्षेत्र सेटिंग लागू नहीं होतीं। |
 
-## माइग्रेशन चेकलिस्ट
+## टेस्ट करें और रोलआउट करें
 
-- हर डिप्लॉयमेंट वातावरण में Phaseo कुंजी कॉन्फ़िगर है।
-- Anthropic क्लाइंट `https://api.phaseo.app/v1` का उपयोग करता है।
-- हर प्रोडक्शन मॉडल ID को `GET /v1/models` से सत्यापित किया गया है।
-- स्टेजिंग में स्ट्रीमिंग और टूल उपयोग के फ़्लो सफल होते हैं।
-- Anthropic-विशिष्ट beta हेडर और पैरामीटर की समीक्षा की गई है।
-- रोलबैक अब भी केवल कुंजी और एंडपॉइंट कॉन्फ़िगरेशन बदलने तक सीमित है।
+ऐप जिन सटीक मॉडल ID को उपयोग करता है, उनके साथ सिस्टम प्रॉम्प्ट, स्ट्रीमिंग, टूल उपयोग, थिंकिंग और संरचित आउटपुट टेस्ट करें। फिर दोनों कॉन्फ़िगरेशन पर प्रतिनिधि प्रॉम्प्ट सेट की तुलना आउटपुट आकार, लेटेंसी, टोकन उपयोग, त्रुटियों और लागत के लिए करें। ट्रैफ़िक बदलने से पहले:
 
-## अगले चरण
-
-- [Anthropic मॉडल माइग्रेशन](../model-migrations/index.mdx)
-- [मॉडल](../exploring/models.mdx)
-- [टूल कॉलिंग](../guides/tool-calling.mdx)
+- Phaseo कुंजी हर डिप्लॉयमेंट एनवायरनमेंट में सेट है;
+- हर प्रोडक्शन मॉडल ID `GET /v1/models?format=openai` में है;
+- स्टेजिंग में स्ट्रीमिंग और टूल-उपयोग फ़्लो पास होते हैं;
+- हर `anthropic-beta` हेडर और सिर्फ़-बीटा फ़ील्ड हटा दिया गया है या बदल दिया गया है;
+- रोलबैक अब भी सिर्फ़ बेस URL और कुंजी का बदलाव है।

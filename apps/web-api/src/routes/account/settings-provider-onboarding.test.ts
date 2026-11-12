@@ -61,6 +61,8 @@ describe("provider onboarding account status", () => {
 
 		const changesRequested = await readAccount();
 		expect(changesRequested.status).toBe(200);
+		const historyUrl = fetchMock.mock.calls.map(([input]) => new URL(input instanceof Request ? input.url : String(input))).find(url => url.pathname.endsWith("/provider_catalog_sync_runs") && url.searchParams.get("select")?.includes("review_summary"));
+		expect(historyUrl?.searchParams.get("status")).toBe("neq.not_modified");
 		await expect(changesRequested.json()).resolves.toMatchObject({
 			submissions: [{ website_url: "https://provider.test", logo_url: null, application_type: "claim", catalog_mode: "managed", provider_review_status: "needs_changes", provider_review_reason: "Please clarify model ownership." }],
 			catalogProviders: [{ provider_review_status: "needs_changes", canManageCatalog: false, operatingStatus: "Changes requested" }],

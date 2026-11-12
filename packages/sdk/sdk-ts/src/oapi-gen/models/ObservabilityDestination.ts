@@ -45,7 +45,31 @@ export interface ObservabilityDestination {
     }[];
   }[];
   sampling_rate: number;
-  type: "otel_collector" | "webhook";
+  type:
+    | "arize"
+    | "axiom"
+    | "bigquery"
+    | "braintrust"
+    | "clickhouse"
+    | "comet_opik"
+    | "datadog"
+    | "dynatrace"
+    | "elastic"
+    | "gcs"
+    | "grafana_cloud"
+    | "honeycomb"
+    | "langfuse"
+    | "langsmith"
+    | "new_relic"
+    | "otel_collector"
+    | "posthog"
+    | "r2"
+    | "respan"
+    | "s3"
+    | "sentry"
+    | "snowflake"
+    | "wandb_weave"
+    | "webhook";
   updated_at?: string | null;
   workspace_id: string;
 }

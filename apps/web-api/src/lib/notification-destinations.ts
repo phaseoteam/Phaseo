@@ -1,7 +1,20 @@
 import type { Env } from "@/env";
+import { isPrivateOrLocalhostHost } from "@/lib/public-endpoint-url";
 
 export const NOTIFICATION_DESTINATION_TYPES = ["email", "discord", "discord_webhook", "slack", "microsoft_teams", "custom_webhook"] as const;
 export type NotificationDestinationType = typeof NOTIFICATION_DESTINATION_TYPES[number];
+/** Routable notification kinds; matches notification_event_destinations_event_kind_check. */
+export const NOTIFICATION_EVENT_KINDS = ["low_balance", "auto_top_up_failed", "payment_method_expiring", "model_deprecation", "model_substitution", "rate_limit_throttled", "broadcast_destination_failing", "spend_alert", "spend_blocked", "spend_report"] as const;
+export function isNotificationEventKind(value: unknown): value is typeof NOTIFICATION_EVENT_KINDS[number] { return typeof value === "string" && (NOTIFICATION_EVENT_KINDS as readonly string[]).includes(value); }
+
+const IANA_TIME_ZONE = /^[A-Za-z][A-Za-z0-9_+-]*(?:\/[A-Za-z0-9_+-]+){0,2}$/;
+/** An IANA time zone such as Europe/London, trimmed; null otherwise. The database re-checks it against pg_timezone_names. */
+export function parseIanaTimeZone(value: unknown): string | null {
+	if (typeof value !== "string") return null;
+	const zone = value.trim();
+	if (!zone || zone.length > 64 || !IANA_TIME_ZONE.test(zone)) return null;
+	try { new Intl.DateTimeFormat("en-US", { timeZone: zone }); return zone; } catch { return null; }
+}
 
 function text(value: unknown): string | null {
 	const normalized = typeof value === "string" ? value.trim() : "";
@@ -79,7 +92,7 @@ export function validateNotificationTarget(type: NotificationDestinationType, ra
 	try { url = new URL(target); } catch { throw new Error("Enter a valid HTTPS URL"); }
 	if (url.protocol !== "https:" || url.username || url.password) throw new Error("Destination URL must use HTTPS");
 	const hostname = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
-	if (!hostname || hostname === "localhost" || hostname.endsWith(".localhost") || /^(0|10|127|169\.254|192\.168)\./.test(hostname) || /^172\.(1[6-9]|2\d|3[01])\./.test(hostname) || hostname === "::" || hostname === "::1" || /^(fc|fd|fe8|fe9|fea|feb|ff)/.test(hostname)) throw new Error("Destination must not target a private network");
+	if (isPrivateOrLocalhostHost(hostname)) throw new Error("Destination must not target a private network");
 	if ((type === "discord_webhook" && hostname !== "discord.com" && hostname !== "discordapp.com") || (type === "slack" && hostname !== "hooks.slack.com")) throw new Error(`Enter a valid ${type === "slack" ? "Slack" : "Discord"} webhook URL`);
 	url.hash = "";
 	return url.toString();
@@ -90,6 +103,37 @@ export function targetPreview(type: NotificationDestinationType, target: string)
 	if (type === "discord") { const row = JSON.parse(target) as { channelId: string }; return `Channel ••••${row.channelId.slice(-4)}`; }
 	const url = new URL((type === "discord_webhook" || type === "slack" || type === "microsoft_teams") && target.startsWith("{") ? String((JSON.parse(target) as { url: string }).url) : target);
 	return `${url.hostname}/••••${url.pathname.slice(-4)}`;
+}
+
+/** Destination types whose deliveries are signed with a per-destination secret. */
+export function isSignedNotificationDestinationType(type: string): boolean { return type === "custom_webhook"; }
+
+async function encryptValue(env: Env, value: string) {
+	const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(material(env)));
+	const key = await crypto.subtle.importKey("raw", digest, "AES-GCM", false, ["encrypt"]);
+	const iv = crypto.getRandomValues(new Uint8Array(12));
+	const ciphertext = await crypto.subtle.encrypt({ name: "AES-GCM", iv: bytes(iv) }, key, new TextEncoder().encode(value));
+	return { ciphertext: base64(new Uint8Array(ciphertext)), iv: base64(iv), keyVersion: env.ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY_VERSION?.trim() || "v1" };
+}
+
+/**
+ * A new webhook signing secret (`whsec_…`, the format the gateway uses for batch and
+ * video webhooks) and its encrypted columns. The gateway decrypts it with the same key
+ * material and signs each delivery with x-phaseo-timestamp and x-phaseo-signature.
+ */
+export async function issueNotificationSigningSecret(env: Env, now: Date = new Date()) {
+	const random = crypto.getRandomValues(new Uint8Array(32));
+	const secret = `whsec_${base64(random).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "")}`;
+	const encrypted = await encryptValue(env, secret);
+	return {
+		secret,
+		columns: {
+			signing_secret_ciphertext: encrypted.ciphertext,
+			signing_secret_iv: encrypted.iv,
+			signing_secret_key_version: encrypted.keyVersion,
+			signing_secret_rotated_at: now.toISOString(),
+		},
+	};
 }
 
 export async function encryptNotificationTarget(env: Env, target: string) {
@@ -106,4 +150,11 @@ export async function encryptNotificationTarget(env: Env, target: string) {
 		target_hash: [...hash].map((byte) => byte.toString(16).padStart(2, "0")).join(""),
 		target_key_version: env.ASYNC_WEBHOOK_SECRET_ENCRYPTION_KEY_VERSION?.trim() || "v1",
 	};
+}
+
+/** How often owners (and opted-in admins) get the spend report email (workspace_settings.spend_report_cadence). */
+export const SPEND_REPORT_CADENCES = ["off", "daily", "weekly", "monthly"] as const;
+export type SpendReportCadence = typeof SPEND_REPORT_CADENCES[number];
+export function isSpendReportCadence(value: unknown): value is SpendReportCadence {
+	return typeof value === "string" && (SPEND_REPORT_CADENCES as readonly string[]).includes(value);
 }

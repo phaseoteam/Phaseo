@@ -19,6 +19,7 @@ function isPersistablePinnedItem(item: PaletteItem): boolean {
 
 function isRecentableItem(item: PaletteItem): boolean {
 	if (item.workspaceId) return Boolean(item.href?.startsWith("/"));
+	if (item.persistable === false) return false;
 	return Boolean(
 		item.href?.startsWith("/") &&
 		!item.external &&
@@ -104,10 +105,10 @@ export function readRecentItems(): PaletteItem[] {
 		const rawValue = window.localStorage.getItem(RECENT_STORAGE_KEY);
 		const parsed = rawValue ? (JSON.parse(rawValue) as unknown) : [];
 		recentCache = normalizeRecentItems(
-			Array.isArray(parsed) ? parsed.filter(isPaletteItem) : [],
+			Array.isArray(parsed) ? parsed.filter(isPaletteItem).filter(isPersistablePinnedItem) : [],
 		);
 		if (JSON.stringify(parsed) !== JSON.stringify(recentCache)) {
-			window.localStorage.setItem(RECENT_STORAGE_KEY, JSON.stringify(recentCache));
+			window.localStorage.setItem(RECENT_STORAGE_KEY, JSON.stringify(recentCache.filter(isPersistablePinnedItem)));
 		}
 	} catch {
 		recentCache = [];
@@ -128,7 +129,7 @@ export function writeRecentItems(items: readonly PaletteItem[]): PaletteItem[] {
 	recentCache = normalizeRecentItems(items);
 	if (typeof window !== "undefined") {
 		try {
-			window.localStorage.setItem(RECENT_STORAGE_KEY, JSON.stringify(recentCache));
+			window.localStorage.setItem(RECENT_STORAGE_KEY, JSON.stringify(recentCache.filter(isPersistablePinnedItem)));
 		} catch {
 			// Search remains usable when storage is unavailable or full.
 		}

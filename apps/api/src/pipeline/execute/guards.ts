@@ -9,7 +9,9 @@ import { applyDownstreamRateLimitHeaders } from "../upstream-rate-limit-headers"
 import type { PipelineTiming } from "./index";
 import type { ProviderCandidate } from "../before/types";
 import { err, json } from "./http";
+import { everyAttemptRateLimited, sharedRequestRejectionStatus } from "./attempt-outcomes";
 import { captureTimingSnapshot } from "./utils";
+import { withoutStackFrames } from "@/lib/safe-json";
 
 export type ExecuteGuardOk<T> = { ok: true; value: T };
 export type ExecuteGuardErr = { ok: false; response: Response };
@@ -27,6 +29,22 @@ export type ProviderFailureDiagnostics = {
     hint: string;
     provider: string | null;
 };
+
+const ATTEMPT_TEXT_FIELDS = ["upstream_error_message", "upstream_error_description", "message"] as const;
+
+function withoutAttemptStackFrames(entry: Record<string, unknown>): Record<string, unknown> {
+    if (!entry || typeof entry !== "object") return entry;
+    let cleaned: Record<string, unknown> | null = null;
+    for (const field of ATTEMPT_TEXT_FIELDS) {
+        const value = entry[field];
+        if (typeof value !== "string") continue;
+        const kept = withoutStackFrames(value);
+        if (kept === value) continue;
+        cleaned ??= { ...entry };
+        cleaned[field] = kept || null;
+    }
+    return cleaned ?? entry;
+}
 
 function normalizeText(value: unknown, max = 180): string | null {
     if (typeof value !== "string") return null;
@@ -353,6 +371,24 @@ function buildAllCandidatesFailedDescription(args: {
     return lines.join(" ");
 }
 
+// Leads with the provider's own message so the client reads why its request was
+// rejected first, then keeps the per-attempt summary.
+function buildRejectedRequestDescription(
+    attemptErrors: Array<Record<string, unknown>>,
+    status: number,
+    diagnostics: string,
+): string {
+    const primary = attemptErrors.find((entry) => entry?.type === "upstream_non_2xx") ?? null;
+    const message =
+        normalizeText(primary?.upstream_error_message, 500) ??
+        normalizeText(primary?.upstream_error_description, 500) ??
+        normalizeText(primary?.message, 500);
+    const lead = message
+        ? `The provider rejected the request (HTTP ${status}): ${message}${/[.!?]$/.test(message) ? "" : "."}`
+        : `The provider rejected the request (HTTP ${status}).`;
+    return `${lead} ${diagnostics}`;
+}
+
 export async function guardCandidates(
     ctx: PipelineContext,
     timing: PipelineTiming
@@ -406,8 +442,10 @@ export async function guardAllFailed(
         timing.timer.between("adapter_roundtrip_ms", "adapter_start");
     }
 
+    // Everything below reaches the client (description, failure_sample) and async job
+    // webhooks, so error text loses any JavaScript stack frames first.
     const attemptErrors: Array<Record<string, unknown>> = Array.isArray((ctx as any)?.attemptErrors)
-        ? ((ctx as any).attemptErrors as Array<Record<string, unknown>>)
+        ? ((ctx as any).attemptErrors as Array<Record<string, unknown>>).map(withoutAttemptStackFrames)
         : [];
     const failedProviders = Array.from(
         new Set(
@@ -458,6 +496,16 @@ export async function guardAllFailed(
     const geographicAvailabilityStage = Array.isArray(routingDiagnostics?.filterStages)
         ? routingDiagnostics.filterStages.find((stage: any) =>
             stage?.stage === "geographic_availability_gate" &&
+            Number(stage?.beforeCount ?? 0) > 0 &&
+            Number(stage?.afterCount ?? 0) === 0
+        )
+        : null;
+    // Regional gateways (eu./us.api) and residency hints only allow providers that process
+    // data in the required region. When none remains, nothing was attempted: this is a
+    // property of the model and region, not a provider failure.
+    const residencyStage = attemptErrors.length === 0 && Array.isArray(routingDiagnostics?.filterStages)
+        ? routingDiagnostics.filterStages.find((stage: any) =>
+            stage?.stage === "residency_gate" &&
             Number(stage?.beforeCount ?? 0) > 0 &&
             Number(stage?.afterCount ?? 0) === 0
         )
@@ -517,6 +565,70 @@ export async function guardAllFailed(
             }),
         };
     }
+    if (residencyStage) {
+        captureTimingSnapshot(ctx, timing);
+        // Report the constraints that actually removed routes, not every requested one.
+        const requested = routingDiagnostics?.requestedRouting ?? {};
+        const dropReasons = new Set<string>(
+            (Array.isArray(residencyStage.droppedProviders) ? residencyStage.droppedProviders : [])
+                .map((entry: any) => String(entry?.reason ?? "")),
+        );
+        const executionRegion = dropReasons.has("execution_region_mismatch") && typeof requested.requiredExecutionRegion === "string"
+            ? requested.requiredExecutionRegion : null;
+        const dataRegion = dropReasons.has("data_region_mismatch") && typeof requested.requiredDataRegion === "string"
+            ? requested.requiredDataRegion : null;
+        const zeroDataRetention = dropReasons.has("zero_data_retention_unsupported");
+        const unmet = [
+            executionRegion ? `processes requests in the ${executionRegion.toUpperCase()} region` : null,
+            dataRegion ? `stores data in the ${dataRegion.toUpperCase()} region` : null,
+            zeroDataRetention ? "offers zero data retention" : null,
+        ].filter((part): part is string => part !== null);
+        const onlyExecutionRegion = executionRegion !== null && unmet.length === 1;
+        const description = unmet.length === 1
+            ? `This model has no provider that ${unmet[0]}.`
+            : unmet.length > 1
+                ? `No provider for this model meets this request's residency requirements: one that ${unmet.join(", one that ")}.`
+                : "This model has no provider that meets the request's data residency requirements.";
+        const action = onlyExecutionRegion
+            ? "Choose a model available in this region, or use https://api.phaseo.app for global routing."
+            : "Relax the residency requirements or choose another model.";
+        const unmetRequirements = {
+            ...(executionRegion ? { execution_region: executionRegion } : {}),
+            ...(dataRegion ? { data_region: dataRegion } : {}),
+            ...(zeroDataRetention ? { zero_data_retention: true } : {}),
+        };
+        if (isStealthRequest(ctx)) {
+            return {
+                ok: false,
+                response: json({
+                    error: "model_region_unavailable",
+                    status_code: 403,
+                    error_origin: "gateway",
+                    responsibility: "user",
+                    retryable: false,
+                    description,
+                    action,
+                    request_id: ctx.requestId,
+                    model: ctx.model,
+                    endpoint: ctx.endpoint,
+                    unmet_requirements: unmetRequirements,
+                }, 403),
+            };
+        }
+        return {
+            ok: false,
+            response: err("model_region_unavailable", {
+                reason: onlyExecutionRegion ? "no_provider_in_required_region" : "no_provider_meets_residency_requirements",
+                description,
+                action,
+                model: ctx.model,
+                endpoint: ctx.endpoint,
+                request_id: ctx.requestId,
+                unmet_requirements: unmetRequirements,
+                routing_diagnostics: routingDiagnostics,
+            }),
+        };
+    }
     const hasUpstreamPaymentRequired = failedStatuses.includes(402);
     const paymentRequiredProvider = hasUpstreamPaymentRequired
         ? (attemptErrors.find((entry) => Number(entry?.status ?? NaN) === 402)?.provider ?? null)
@@ -554,11 +666,25 @@ export async function guardAllFailed(
             response,
         };
     }
+    // When every provider throttled the request the client gets the throttling
+    // status (with the provider's Retry-After below), not a generic 502, so
+    // SDKs back off instead of treating it as a gateway failure.
+    const allRateLimited = !hasUpstreamPaymentRequired && everyAttemptRateLimited(attemptErrors);
+    // When every provider rejected the request itself with the same 400, 413 or
+    // 422 (malformed input, oversized payload), the client gets that status and
+    // the provider's message, not a 502 that SDKs would retry. Mixed or 5xx
+    // failures stay 502. 404 is left out: there it usually means the provider
+    // does not serve the model, which is a routing problem, not the caller's.
+    const rejectedStatus = hasUpstreamPaymentRequired ? null : sharedRequestRejectionStatus(attemptErrors);
     const res = err(hasUpstreamPaymentRequired ? "provider_payment_required" : "upstream_error", {
         reason: hasUpstreamPaymentRequired
             ? "upstream_provider_payment_required"
-            : "all_candidates_failed",
-        description: paymentRequiredDescription,
+            : rejectedStatus != null
+                ? "upstream_rejected_request"
+                : "all_candidates_failed",
+        description: rejectedStatus != null
+            ? buildRejectedRequestDescription(attemptErrors, rejectedStatus, paymentRequiredDescription)
+            : paymentRequiredDescription,
         model: ctx.model,
         endpoint: ctx.endpoint,
         request_id: ctx.requestId,
@@ -575,7 +701,7 @@ export async function guardAllFailed(
         provider_enablement: providerEnablement,
         provider_candidate_diagnostics: candidateBuild,
         provider_failure_diagnostics: providerFailureDiagnostics,
-    });
+    }, allRateLimited ? 429 : rejectedStatus ?? undefined);
 	const finalRateLimitHeaders = [...attemptErrors]
 		.reverse()
 		.map((entry) => entry?.upstream_rate_limit_headers)

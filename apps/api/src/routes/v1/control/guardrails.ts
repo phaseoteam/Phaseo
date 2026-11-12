@@ -13,6 +13,7 @@ import {
 	parsePathId,
 	parsePositiveInt,
 	requireJsonBody,
+	rejectThirdPartyOAuthSpendingChange,
 	requireCapability,
 	requireOAuthWorkspaceRole,
 } from "./route-helpers";
@@ -22,6 +23,30 @@ type GuardrailRow = Record<string, unknown> & {
 	workspace_id: string;
 	name?: string | null;
 };
+
+// While the Slack agent is installed, a database trigger keeps its guardrail
+// from being deleted, loosened or detached from its key.
+function guardrailWriteFailed(scope: string, error: unknown): Response {
+	if (String((error as { message?: unknown } | null)?.message ?? "").includes("slack_agent_guardrail_protected")) {
+		return json({
+			error: "guardrail_protected",
+			message: "This guardrail keeps Slack data out of training and logs. Uninstall the Slack agent to change or remove it.",
+		}, 409, { "Cache-Control": "no-store" });
+	}
+	// The workspace baseline (the Settings, Privacy rules) stays an enabled access guardrail on the
+	// whole workspace; a database trigger refuses anything else.
+	if (String((error as { message?: unknown } | null)?.message ?? "").includes("workspace_baseline_guardrail_protected")) {
+		return json({
+			error: "guardrail_protected",
+			message: "This is the workspace baseline, which holds the rules set under Settings, Privacy. It applies to the whole workspace and can't be deleted, turned off or assigned elsewhere. Change its rules with PATCH /v1/control/settings.",
+		}, 409, { "Cache-Control": "no-store" });
+	}
+	return internalServerError(scope, error);
+}
+
+// Guardrails carry cost and request limits for the keys and members they hold, so apps that sign in
+// with Phaseo can read them but not create, change, detach or delete them.
+const GUARDRAIL_APP_REFUSAL = "Apps that use Sign in with Phaseo can't change guardrails. The person can change them under Settings, Guardrails.";
 
 const DEFAULT_LIMIT = 100;
 const MAX_LIMIT = 250;
@@ -78,27 +103,14 @@ const WRITABLE_FIELDS = new Set([
 	"sensitive_info_enabled",
 	"sensitive_info_default_action",
 	"sensitive_info_rules",
-	"daily_limit_requests",
-	"weekly_limit_requests",
-	"monthly_limit_requests",
-	"daily_limit_cost_nanos",
-	"weekly_limit_cost_nanos",
-	"monthly_limit_cost_nanos",
 ]);
 
-function normalizeGuardrailPatch(body: Record<string, unknown>): Record<string, unknown> {
+// Fields outside WRITABLE_FIELDS are ignored, not rejected. That includes the removed guardrail
+// request and spend limits (the `budgets` object and the *_limit_requests / *_limit_cost_nanos
+// fields), which older clients may still send. Use key limits or workspace budgets instead.
+export function normalizeGuardrailPatch(body: Record<string, unknown>): Record<string, unknown> {
 	const patch: Record<string, unknown> = {};
 	for (const [rawKey, value] of Object.entries(body)) {
-		if (rawKey === "budgets" && value && typeof value === "object" && !Array.isArray(value)) {
-			const budgets = value as Record<string, unknown>;
-			if (budgets.dailyRequests !== undefined) patch.daily_limit_requests = budgets.dailyRequests;
-			if (budgets.weeklyRequests !== undefined) patch.weekly_limit_requests = budgets.weeklyRequests;
-			if (budgets.monthlyRequests !== undefined) patch.monthly_limit_requests = budgets.monthlyRequests;
-			if (budgets.dailyCostNanos !== undefined) patch.daily_limit_cost_nanos = budgets.dailyCostNanos;
-			if (budgets.weeklyCostNanos !== undefined) patch.weekly_limit_cost_nanos = budgets.weeklyCostNanos;
-			if (budgets.monthlyCostNanos !== undefined) patch.monthly_limit_cost_nanos = budgets.monthlyCostNanos;
-			continue;
-		}
 		const key = FIELD_MAP[rawKey] ?? rawKey;
 		if (WRITABLE_FIELDS.has(key)) patch[key] = value;
 	}
@@ -129,12 +141,6 @@ function selectColumns(): string {
 		"sensitive_info_enabled",
 		"sensitive_info_default_action",
 		"sensitive_info_rules",
-		"daily_limit_requests",
-		"weekly_limit_requests",
-		"monthly_limit_requests",
-		"daily_limit_cost_nanos",
-		"weekly_limit_cost_nanos",
-		"monthly_limit_cost_nanos",
 		"created_at",
 		"updated_at",
 	].join(", ");
@@ -164,6 +170,8 @@ async function findGuardrail(workspaceId: string, id: string): Promise<Guardrail
 		.select(selectColumns())
 		.eq("workspace_id", workspaceId)
 		.eq("id", id)
+		// Rate guardrails are managed through /v1/rate-limits; spend guardrails are not in this API yet.
+		.in("kind", ["access", "safety"])
 		.maybeSingle();
 	if (error) throw new Error(error.message || "Failed to fetch guardrail");
 	return (data as unknown as GuardrailRow | null) ?? null;
@@ -295,6 +303,8 @@ async function handleListGuardrails(req: Request) {
 			.from("workspace_guardrails")
 			.select(selectColumns(), { count: "exact" })
 			.eq("workspace_id", auth.value.workspaceId)
+			// Rate guardrails are managed through /v1/rate-limits; spend guardrails are not in this API yet.
+			.in("kind", ["access", "safety"])
 			.order("created_at", { ascending: false })
 			.range(offset, offset + limit - 1);
 		if (error) throw new Error(error.message || "Failed to list guardrails");
@@ -309,6 +319,8 @@ async function handleCreateGuardrail(req: Request) {
 	if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.GUARDRAILS_WRITE);
 	if (scopeError) return scopeError;
+	const appError = rejectThirdPartyOAuthSpendingChange(auth.value, GUARDRAIL_APP_REFUSAL);
+	if (appError) return appError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
 
@@ -367,6 +379,8 @@ async function handleUpdateGuardrail(req: Request) {
 	if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.GUARDRAILS_WRITE);
 	if (scopeError) return scopeError;
+	const appError = rejectThirdPartyOAuthSpendingChange(auth.value, GUARDRAIL_APP_REFUSAL);
+	if (appError) return appError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
 
@@ -385,6 +399,7 @@ async function handleUpdateGuardrail(req: Request) {
 			.update({ ...patch, updated_at: new Date().toISOString() })
 			.eq("workspace_id", auth.value.workspaceId)
 			.eq("id", id)
+			.in("kind", ["access", "safety"])
 			.select(selectColumns())
 			.maybeSingle();
 		if (error) throw new Error(error.message || "Failed to update guardrail");
@@ -393,7 +408,7 @@ async function handleUpdateGuardrail(req: Request) {
 		await auditGuardrail(auth.value, "guardrail.updated", data as unknown as GuardrailRow, { changed_fields: Object.keys(patch) });
 		return json({ data }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return internalServerError("guardrails.update", error);
+		return guardrailWriteFailed("guardrails.update", error);
 	}
 }
 
@@ -402,6 +417,8 @@ async function handleDeleteGuardrail(req: Request) {
 	if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.GUARDRAILS_DELETE);
 	if (scopeError) return scopeError;
+	const appError = rejectThirdPartyOAuthSpendingChange(auth.value, GUARDRAIL_APP_REFUSAL);
+	if (appError) return appError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
 
@@ -428,7 +445,7 @@ async function handleDeleteGuardrail(req: Request) {
 		await auditGuardrail(auth.value, "guardrail.deleted", guardrail);
 		return json({ deleted: true }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return internalServerError("guardrails.delete", error);
+		return guardrailWriteFailed("guardrails.delete", error);
 	}
 }
 
@@ -437,6 +454,8 @@ async function handleSetGuardrailKeys(req: Request) {
 	if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.GUARDRAILS_WRITE);
 	if (scopeError) return scopeError;
+	const appError = rejectThirdPartyOAuthSpendingChange(auth.value, GUARDRAIL_APP_REFUSAL);
+	if (appError) return appError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
 	const id = parseGuardrailResourceId(new URL(req.url));
@@ -461,7 +480,8 @@ async function handleSetGuardrailKeys(req: Request) {
 				return json({ error: "bad_request", message: "One or more keys do not belong to this workspace" }, 400, { "Cache-Control": "no-store" });
 			}
 		}
-		await getSupabaseAdmin().from("key_guardrails").delete().eq("guardrail_id", id);
+		const { error: clearError } = await getSupabaseAdmin().from("key_guardrails").delete().eq("guardrail_id", id);
+		if (clearError) throw new Error(clearError.message || "Failed to clear guardrail key assignments");
 		if (keyIds.length) {
 			const { error } = await getSupabaseAdmin()
 				.from("key_guardrails")
@@ -472,7 +492,7 @@ async function handleSetGuardrailKeys(req: Request) {
 		await auditGuardrail(auth.value, "guardrail.keys.replaced", guardrail, { key_count: keyIds.length });
 		return json({ data: { guardrail_id: id, key_ids: keyIds } }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return internalServerError("guardrails.keys.add", error);
+		return guardrailWriteFailed("guardrails.keys.add", error);
 	}
 }
 
@@ -502,6 +522,8 @@ async function handleAddGuardrailKeys(req: Request) {
 	if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.GUARDRAILS_WRITE);
 	if (scopeError) return scopeError;
+	const appError = rejectThirdPartyOAuthSpendingChange(auth.value, GUARDRAIL_APP_REFUSAL);
+	if (appError) return appError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
 
@@ -557,6 +579,8 @@ async function handleRemoveGuardrailKeys(req: Request) {
 	if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.GUARDRAILS_WRITE);
 	if (scopeError) return scopeError;
+	const appError = rejectThirdPartyOAuthSpendingChange(auth.value, GUARDRAIL_APP_REFUSAL);
+	if (appError) return appError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
 
@@ -586,7 +610,7 @@ async function handleRemoveGuardrailKeys(req: Request) {
 		await auditGuardrail(auth.value, "guardrail.keys.removed", guardrail, { key_count: count ?? 0 });
 		return json({ removed_count: count ?? 0 }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
-		return internalServerError("guardrails.keys.remove", error);
+		return guardrailWriteFailed("guardrails.keys.remove", error);
 	}
 }
 
@@ -616,6 +640,8 @@ async function handleAddGuardrailMembers(req: Request) {
 	if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.GUARDRAILS_WRITE);
 	if (scopeError) return scopeError;
+	const appError = rejectThirdPartyOAuthSpendingChange(auth.value, GUARDRAIL_APP_REFUSAL);
+	if (appError) return appError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
 
@@ -672,6 +698,8 @@ async function handleRemoveGuardrailMembers(req: Request) {
 	if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.GUARDRAILS_WRITE);
 	if (scopeError) return scopeError;
+	const appError = rejectThirdPartyOAuthSpendingChange(auth.value, GUARDRAIL_APP_REFUSAL);
+	if (appError) return appError;
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return roleError;
 

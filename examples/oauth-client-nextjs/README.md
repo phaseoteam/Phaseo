@@ -95,7 +95,7 @@ The chat app flow in this example is:
 1. Fetch models from `/api/gateway/models`
 2. Let user choose model
 3. Send prompt to `/api/gateway/responses`
-4. Reuse `previous_response_id` for conversational continuity
+4. Resend the whole conversation in `input` on each turn (the gateway does not store responses, so `previous_response_id` is rejected)
 5. Render `output_text` (or fallback-parsed output content)
 
 ## SDK Guidance (Published and Unpublished)

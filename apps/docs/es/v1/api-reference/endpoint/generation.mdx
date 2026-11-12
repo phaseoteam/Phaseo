@@ -4,20 +4,25 @@ sidebarTitle: "Obtener una generación"
 badge: "Beta"
 openapi: "/es/openapi/v1/openapi.localized.yaml GET /generations"
 ---
-Recupera el registro de auditoría almacenado para un `request_id` de tu equipo.
 
-Usa:
-- `GET /v1/generations?id=<request_id>`
+Llama a `GET /v1/generations?id=<request_id>` para obtener el registro de auditoría guardado de una solicitud de tu espacio de trabajo. Necesita el scope `generations:read`; si falta `id`, devuelve `400` `missing_id`.
 
-Si la pasarela capturó todos los detalles de la solicitud de esa generación, la respuesta también incluye:
+Las solicitudes nuevas reciben un ID de generación `G-` generado por el servidor, que se devuelve en el encabezado de respuesta `x-request-id` y en la respuesta de la generación. Usa ese ID para los registros de solicitudes, la consulta de generaciones y el soporte. Un `x-request-id` enviado por quien llama no sustituye el ID de generación. Los IDs de registro UUID antiguos siguen funcionando para las consultas.
 
-- `replay_supported`: indica si hay disponible una carga útil lista para reproducir
-- `replay_request`: el cuerpo de la solicitud guardado que puedes volver a enviar al endpoint original para repetirla de forma controlada
+## Repite una solicitud
 
-Flujo habitual para repetir una solicitud:
+Todas las respuestas incluyen `replay_supported`. Cuando el registro de E/S guardó el cuerpo de la solicitud y tienes permiso para leer el contenido guardado, `replay_supported` es `true` y `replay_request` contiene el cuerpo que debes reenviar para una repetición controlada:
 
-1. Lee el registro de generación con `GET /v1/generations?id=<request_id>`.
-2. Comprueba que `replay_supported === true`.
-3. Vuelve a enviar `replay_request` al endpoint original indicado por `endpoint`, como `/v1/chat/completions` o `/v1/responses`.
+<Steps>
+  <Step title="Lee la generación">
+    Llama a `GET /v1/generations?id=<request_id>`.
+  </Step>
+  <Step title="Comprueba que se puede repetir">
+    Continúa solo si `replay_supported` es `true`.
+  </Step>
+  <Step title="Envíala de nuevo">
+    Envía `replay_request` al endpoint indicado en `endpoint`, como `/v1/chat/completions` o `/v1/responses`.
+  </Step>
+</Steps>
 
-
+Un espacio de trabajo puede limitar el contenido guardado a propietarios y administradores. Los demás, incluidas las claves de API creadas por miembros, reciben entonces `replay_request: null` y los detalles de la solicitud sin su contenido.

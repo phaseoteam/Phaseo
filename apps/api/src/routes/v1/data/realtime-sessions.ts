@@ -3,7 +3,7 @@
 // How: Authenticates gateway keys, creates/extends/finalizes realtime sessions.
 
 import { Hono } from "hono";
-import { z } from "zod";
+import * as z from "zod";
 import { getBindings } from "@/runtime/env";
 import type { Env } from "@/runtime/types";
 import { guardAuth, guardContext, guardJson } from "@pipeline/before/guards";
@@ -11,6 +11,8 @@ import { parseW3cTraceContext } from "@observability/trace-context";
 import { guardFreeRouteQuota } from "@core/customer-rate-limits";
 import { generatePublicId } from "@pipeline/before/genId";
 import { err, json } from "@pipeline/before/http";
+import { readRealtimeMaintenance, realtimeMaintenanceResponse } from "@core/realtime-maintenance";
+import { hasRequestModelFallbacksField } from "@pipeline/before/requestModelFallbacks";
 import { applyWorkspacePolicy, fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
 import { getRealtimeVoiceFeatureGateName, isRealtimeVoiceAccessEnabled } from "@core/feature-flags";
 import { withRuntime } from "../../utils";
@@ -127,7 +129,7 @@ export const realtimeSessionsRoutes = new Hono<Env>();
 export const liveSessionsRoutes = new Hono<Env>();
 export const createLiveSessionSchema = realtimeSessionBaseSchema.omit({ thinking_level: true }).extend({
 	type: z.literal("live").optional(), model: z.literal(LIVE_MODEL), provider: z.literal("openai"),
-	voice: z.enum(LIVE_VOICES).default("marin"), source: z.literal("chat"),
+	voice: z.enum(LIVE_VOICES).default("marin"), source: z.enum(["api", "chat"]).optional(),
 	backend_model: z.enum(LIVE_BACKENDS).default(LIVE_BACKENDS[0]),
 	backend_settings: liveBackendSettingsSchema.optional(),
 }).strict();
@@ -202,7 +204,7 @@ function errorMessage(error: unknown): string {
 	return String(error);
 }
 
-function responseForError(error: unknown, requestId?: string, workspaceId?: string): Response {
+export function responseForError(error: unknown, requestId?: string, workspaceId?: string): Response {
 	const message = errorMessage(error);
 	if (message.includes("realtime_billing_review_required")) {
 		return err("key_limit_exceeded", { reason: "realtime_billing_review_required",
@@ -223,6 +225,10 @@ function responseForError(error: unknown, requestId?: string, workspaceId?: stri
 			workspace_id: workspaceId,
 		});
 	}
+	const budget = /(?:workspace|department)_(?:daily|weekly|monthly|lifetime)_cost_budget_reached/.exec(message);
+	if (budget) {
+		return err("key_limit_exceeded", { reason: budget[0], request_id: requestId, workspace_id: workspaceId });
+	}
 	if (message.includes("insufficient_funds") || message.includes("insufficient_balance")) {
 		return err("insufficient_funds", {
 			reason: "realtime_credit_hold_failed",
@@ -235,6 +241,14 @@ function responseForError(error: unknown, requestId?: string, workspaceId?: stri
 		return err("unsupported_model_or_endpoint", {
 			reason: "realtime_price_card_missing",
 			endpoint: "audio.realtime",
+			request_id: requestId,
+			workspace_id: workspaceId,
+		});
+	}
+	if (message === "realtime_transcription_option_not_supported") {
+		return err("validation_error", {
+			reason: message,
+			description: "Streaming transcription sessions don't speak back; remove voice and instructions",
 			request_id: requestId,
 			workspace_id: workspaceId,
 		});
@@ -297,6 +311,8 @@ function normalizedProvider(value: string): string {
 	const provider = value.trim().toLowerCase();
 	if (provider === "xai" || provider === "x-ai") return "spacex-ai";
 	if (provider === "google") return "google-ai-studio";
+	if (provider === "eleven-labs") return "elevenlabs";
+	if (provider === "mistralai") return "mistral";
 	return provider;
 }
 
@@ -304,7 +320,9 @@ function providerFromModel(model: string): string | null {
 	const prefix = model.trim().toLowerCase().split("/", 1)[0];
 	if (prefix === "xai" || prefix === "x-ai") return "spacex-ai";
 	if (prefix === "google") return "google-ai-studio";
-	return ["openai", "spacex-ai", "google-ai-studio"].includes(prefix) ? prefix : null;
+	if (prefix === "eleven-labs") return "elevenlabs";
+	if (prefix === "mistralai") return "mistral";
+	return ["openai", "spacex-ai", "google-ai-studio", "elevenlabs", "mistral"].includes(prefix) ? prefix : null;
 }
 
 export async function authorizeRealtimeSource(args: {
@@ -342,8 +360,23 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 			workspace_id: auth.value.workspaceId,
 		});
 	}
+	// During a maintenance window no new call starts; calls already running carry on.
+	const maintenance = await readRealtimeMaintenance();
+	if (maintenance) {
+		return realtimeMaintenanceResponse(maintenance, { requestId: auth.value.requestId, workspaceId: auth.value.workspaceId });
+	}
 	const body = await guardJson(req, auth.value.workspaceId, auth.value.requestId);
 	if (body.ok !== true) return body.response;
+	if (hasRequestModelFallbacksField(body.value)) {
+		// A session binds one model for its lifetime; there is no request to retry.
+		return err("validation_error", {
+			reason: "models_not_supported_for_endpoint",
+			description: "Realtime sessions use a single model; remove models and choose one model",
+			details: [{ message: "models is not supported for realtime sessions", path: ["models"], keyword: "models_not_supported_for_endpoint" }],
+			request_id: auth.value.requestId,
+			workspace_id: auth.value.workspaceId,
+		});
+	}
 	const parsed = (live ? createLiveSessionSchema : createRealtimeSessionSchema).safeParse(body.value);
 	if (!parsed.success) {
 		return err("validation_error", {
@@ -359,7 +392,11 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 			workspace_id: auth.value.workspaceId,
 		});
 	}
-	if (!live && isLiveModel(parsed.data.model)) return err("unsupported_model_or_endpoint", { reason: "live_playground_only" });
+	if (!live && isLiveModel(parsed.data.model)) {
+		return err("unsupported_model_or_endpoint", { reason: "live_sessions_endpoint_required",
+			message: "GPT Live sessions are created with POST /v1/live/sessions.",
+			request_id: auth.value.requestId, workspace_id: auth.value.workspaceId });
+	}
 	const backendModel = "backend_model" in parsed.data ? String(parsed.data.backend_model) : undefined;
 	const context = await guardContext({
 		workspaceId: auth.value.workspaceId,
@@ -386,10 +423,10 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 		ok: true,
 		...auth.value,
 		userId: trustedUserId,
-	})) {
+	}, undefined, source)) {
 		return err("unauthorised", {
 			reason: "realtime_voice_feature_flag_disabled",
-			feature_gate: getRealtimeVoiceFeatureGateName(),
+			feature_gate: getRealtimeVoiceFeatureGateName(undefined, source),
 			request_id: auth.value.requestId,
 			workspace_id: auth.value.workspaceId,
 		});
@@ -418,7 +455,6 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 			...(requestedProvider ? { provider: requestedProvider } : {}),
 		},
 		workspacePolicy,
-		teamSettings: context.value.context.teamSettings ?? null,
 	});
 	if (policyResult.ok === false) {
 		return err("guardrail_blocked", {
@@ -430,8 +466,7 @@ async function createSessionRequest(req: Request, live = false): Promise<Respons
 		});
 	}
 	if (live && !applyWorkspacePolicy({ providers: livePolicyCandidates(context.value.providers), resolvedModel: LIVE_MODEL,
-		body: { model: LIVE_MODEL, provider: "openai" }, workspacePolicy,
-		teamSettings: context.value.context.teamSettings ?? null }).ok) {
+		body: { model: LIVE_MODEL, provider: "openai" }, workspacePolicy }).ok) {
 		return err("guardrail_blocked", { reason: "workspace_model_not_allowed" });
 	}
 	const selectedProvider = requestedProvider ?? policyResult.providers[0]?.providerId ?? null;

@@ -5,18 +5,19 @@ sidebarTitle: "Contacto y soporte"
 icon: "messages-square"
 ---
 
-## Informar de un error
+Empieza en el [centro de ayuda de Phaseo](https://phaseo.app/help) para dudas sobre la cuenta, la facturación, la API o para enviar comentarios; el equipo remite cada solicitud al lugar adecuado.
 
-Usa el centro de ayuda de Phaseo e incluye pasos claros para reproducir el problema, los ID de solicitud y los registros pertinentes:
+| Quieres | Ve a |
+| --- | --- |
+| Obtener ayuda con tu cuenta, la facturación o una solicitud que falla | [Centro de ayuda](https://phaseo.app/help) |
+| Informar de un error | [Centro de ayuda](https://phaseo.app/help) o un [informe de error](https://github.com/phaseoteam/Phaseo/issues/new?template=bug.yml) en GitHub |
+| Corregir datos del catálogo | [Contribuir](../contributing/overview) |
+| Informar de una vulnerabilidad de seguridad | Un informe privado en **Security -> Report a vulnerability** del [repositorio de GitHub](https://github.com/phaseoteam/Phaseo), o `security@phaseo.app`. No lo publiques. |
+| Preguntar a la comunidad | [Discord](https://discord.gg/aQyywCvgZ5) |
 
-- https://phaseo.app/help
+## Qué incluir en un informe de error
 
-## Pedir ayuda
-
-Empieza en el centro de ayuda de Phaseo para resolver dudas sobre la cuenta, la facturación y la API:
-
-- https://phaseo.app/help
-
-## Enviar comentarios
-
-Si no sabes dónde enviar tus comentarios, usa el centro de ayuda de Phaseo. El equipo los remitirá al lugar adecuado.
+- El ID de solicitud: el `id` de la respuesta (`G-...`), el `generation_id` del error o la cabecera de respuesta `x-request-id`.
+- Lo que enviaste, sin la clave de API, y lo que esperabas.
+- El código y el mensaje de error del cuerpo de la respuesta. La [referencia de errores](../api-reference/errors) explica cada código.
+- Los registros pertinentes, sin credenciales ni datos de clientes.

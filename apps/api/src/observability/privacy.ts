@@ -11,6 +11,8 @@ const PROMPT_COMPLETION_KEYS = new Set([
 	"prompt",
 	"prompts",
 	"instructions",
+	"state",
+	"definition",
 	"input_text",
 	"output_text",
 	"reasoning_content",

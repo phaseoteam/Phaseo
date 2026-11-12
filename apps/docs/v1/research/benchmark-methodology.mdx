@@ -1,61 +1,46 @@
 ---
 title: "Benchmark Methodology"
 description: "Learn how Phaseo collects, normalises, and publishes benchmark results."
+"og:image": "https://phaseo.app/og/dynamic?title=Benchmark%20Methodology&description=Learn%20how%20Phaseo%20collects%2C%20normalises%2C%20and%20publishes%20benchmark%20results.&pathname=/docs/v1/research/benchmark-methodology"
 icon: "clipboard-check"
 ---
 
-Benchmarks provide the foundation for comparisons across models and providers. This page explains how data enters the platform and how we maintain consistency.
+Phaseo publishes benchmark scores that others have measured, each with a link to where it came from. It doesn't run benchmarks or merge them into one score.
 
----
+```mermaid
+flowchart LR
+  src["Published score<br/>(paper, model card,<br/>results page)"] --> review{{"Source and setup<br/>checked"}}
+  imp["Scheduled imports<br/>(Artificial Analysis, Epoch AI)"] --> db["Phaseo database"]
+  review --> db
+  db --> page["Model and<br/>benchmark pages"]
+```
 
-## Data sources
+## Where scores come from
 
--   **Official releases** — Provider announcements, technical blogs, and press materials.
--   **Academic papers** — Peer-reviewed publications and arXiv preprints with reproducible results.
--   **Community submissions** — Verified contributions from the Phaseo community and partners.
+| Source | How it arrives |
+| --- | --- |
+| Model developers' papers, model cards and announcements | Added by maintainers, marked **self-reported** |
+| Benchmark organisers' results pages | Added by maintainers |
+| Artificial Analysis and Epoch AI indexes | Scheduled imports, checked every hour |
+| Community reports | GitHub issues, published after a maintainer checks the evidence |
 
-Every score must include a public citation or reproducible evaluation before it is accepted.
+Every score needs a public source or a reproducible evaluation log before it is published.
 
----
+## What normalisation means
 
-## Normalisation
+Phaseo keeps each benchmark on its own scale. It normalises the record around the score, not the score itself:
 
-We standardise benchmark names, metrics, and splits to make cross-model comparisons accurate:
+1. Each result is mapped to one benchmark ID, so the same benchmark under different names is grouped together.
+2. The setup is kept as a variant when it differs, such as few-shot count, harness or reasoning effort, instead of being merged into the default.
+3. Each benchmark has a sort direction. Lower-is-better benchmarks, such as error rates, rank the lowest score first.
+4. The source link and the self-reported flag stay with the score.
 
-1.  Map each submission to an internal benchmark ID.
-2.  Convert reported metrics to a canonical scale (for example percentages).
-3.  Note any deviations, such as few-shot variants or custom evaluation harnesses.
-4.  Run automated validation to ensure fields and ranges are sensible.
+A self-reported flag is a disclosure, not a rejection. A score without enough context may be stored with source notes; don't read it as equal to a fully verified leaderboard row.
 
----
+## Report a discrepancy
 
-## Update cadence
+1. Open an issue with the evidence listed in [Submit benchmark scores](./submitting-scores.mdx).
+2. Answer review questions in the issue. Maintainers publish verified corrections through the database editor.
+3. For larger research submissions, coordinate in [Discord](https://discord.gg/aQyywCvgZ5).
 
--   **Weekly** for popular suites such as MMLU, GSM8K, and HumanEval.
--   **Monthly** for niche or emerging benchmarks.
--   **On-demand** when providers or community members submit high-quality evaluations.
-
-Large updates trigger changelog entries so you can audit historical movements.
-
----
-
-## Transparency and reproducibility
-
-| Practice                    | Outcome                                                        |
-| --------------------------- | --------------------------------------------------------------- |
-| Link to primary sources     | Users can verify scores quickly.                               |
-| Track `last_updated` dates  | Highlights when a benchmark may need review.                   |
-| Document evaluation setup   | Clarifies prompt format, context windows, and sampling.        |
-| Flag human-reviewed scores  | Distinguishes manual validation from automated pipelines.      |
-
----
-
-## Feedback loop
-
-If you notice discrepancies or missing data:
-
-1.  Open an issue with the evidence described in [Submit benchmark scores](./submitting-scores.mdx).
-2.  Respond to review questions in the issue. Maintainers publish verified corrections through the database editor.
-3.  Reach out in Discord to coordinate larger research submissions.
-
-We review every report and provide status updates as the benchmark is verified.
+The public [benchmark normalisation](https://phaseo.app/how-phaseo-normalises-ai-benchmarks) page covers the same rules for catalog readers.

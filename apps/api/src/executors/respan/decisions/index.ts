@@ -160,7 +160,11 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	if (!model) {
 		return validationFailure(args, "Respan Decisions supports only respan/span-01:free and respan/span-01.");
 	}
-	const span = prepareSpan(ir.state);
+	let state = ir.state;
+	if (ir.decisionContext && typeof state === "string") {
+		try { state = JSON.parse(state); } catch { /* prepareSpan returns the documented span validation error. */ }
+	}
+	const span = prepareSpan(state);
 	if (typeof span === "string") return validationFailure(args, span);
 	const behaviors = prepareBehaviors(ir.questions);
 	if (typeof behaviors === "string") return validationFailure(args, behaviors);

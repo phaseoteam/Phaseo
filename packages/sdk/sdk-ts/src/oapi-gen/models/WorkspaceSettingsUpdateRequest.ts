@@ -4,6 +4,9 @@ export interface WorkspaceSettingsUpdateRequest {
   byok_fallback_enabled?: boolean;
   io_logging_enabled?: boolean;
   io_logging_include_provider_payloads?: boolean;
+  model_successor_max_price_increase_percent?: number;
+  model_successor_price_policy?: "never" | "limit" | "any";
+  model_successor_redirect_enabled?: boolean;
   privacy_enable_free_may_publish_prompts?: boolean;
   privacy_enable_free_may_train?: boolean;
   privacy_enable_input_output_logging?: boolean;

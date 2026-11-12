@@ -1,10 +1,32 @@
-const mockFetchPublicWebApi = jest.fn();
-jest.mock("@/lib/web-api/client", () => ({
-	fetchOptionalPublicWebApi: jest.fn(),
+import { describe, it, test, expect, beforeEach, vi } from "vitest";
+const mockFetchPublicWebApi = vi.fn();
+vi.mock("@/lib/web-api/client", () => ({
+	fetchOptionalPublicWebApi: vi.fn(),
 	fetchPublicWebApi: (...args: unknown[]) => mockFetchPublicWebApi(...args),
 }));
 
-import { fetchFrontendFamilies, fetchFrontendAPIProviders } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { fetchFrontendFamilies, fetchFrontendAPIProviders, fetchFrontendModelSubscriptionPlans } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+
+describe("subscription access lookup", () => {
+	beforeEach(() => {
+		mockFetchPublicWebApi.mockReset();
+	});
+
+	it("preserves a successful empty response", async () => {
+		mockFetchPublicWebApi.mockResolvedValueOnce({ subscription_plans: [] });
+		await expect(fetchFrontendModelSubscriptionPlans("meta/muse-wonder-full")).resolves.toEqual([]);
+	});
+
+	it("propagates request failures instead of inventing an empty response", async () => {
+		mockFetchPublicWebApi.mockRejectedValueOnce(new Error("Request timed out"));
+		await expect(fetchFrontendModelSubscriptionPlans("meta/muse-wonder-full")).rejects.toThrow("Request timed out");
+	});
+
+	it("rejects incomplete payloads", async () => {
+		mockFetchPublicWebApi.mockResolvedValueOnce({});
+		await expect(fetchFrontendModelSubscriptionPlans("meta/muse-wonder-full")).rejects.toThrow("Invalid subscription plans response");
+	});
+});
 
 test("keeps regional routes distinct in the provider catalogue used by cards, comparison and BYOK", async () => {
 	mockFetchPublicWebApi.mockResolvedValueOnce({ providers: [

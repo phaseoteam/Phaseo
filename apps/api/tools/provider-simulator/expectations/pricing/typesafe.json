@@ -1,0 +1,34 @@
+{
+	"provider": "typesafe",
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from the catalogue database (v2_pricing_skus, v2_pricing_sku_meters)",
+	"clock": "2026-10-29T14:36:00.000Z",
+	"legend": { "rules": "[id (<sku_code>@v<version>#<meter_key>), plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"cards": [
+		{
+			"key": "typesafe:typesafe/jev-1.13.0:decisions.make",
+			"routes": ["typesafe:typesafe/jev:systemone"],
+			"skus": ["typesafe-jev-systemone@v1"],
+			"rules": [
+				["typesafe-jev-systemone@v1#output_tokens","standard","output_tokens","0/1000000 token",110,null,null,null],
+				["typesafe-jev-systemone@v1#input_tokens","standard","input_tokens","0.042/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_tokens":0,"output_tokens":0,"total_tokens":0},"expected":{"nanos":0,"lines":[]}},
+				{"id":"rule.standard.output_tokens","kind":"rule","targets":["typesafe-jev-systemone@v1#output_tokens","typesafe-jev-systemone@v1#input_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":518574,"lines":[["input_tokens",12347,"typesafe-jev-systemone@v1#input_tokens","input_tokens",518574],["output_tokens",3457,"typesafe-jev-systemone@v1#output_tokens","output_tokens",0]]}}
+			]
+		},
+		{
+			"key": "typesafe:typesafe/jev-1.14.0:decisions.make",
+			"routes": ["typesafe:typesafe/jev-1.14.0:systemone"],
+			"skus": ["typesafe-jev-1.14.0-systemone@v1"],
+			"rules": [
+				["typesafe-jev-1.14.0-systemone@v1#output_tokens","standard","output_tokens","0/1000000 token",110,null,null,null],
+				["typesafe-jev-1.14.0-systemone@v1#input_tokens","standard","input_tokens","0.042/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_tokens":0,"output_tokens":0,"total_tokens":0},"expected":{"nanos":0,"lines":[]}},
+				{"id":"rule.standard.output_tokens","kind":"rule","targets":["typesafe-jev-1.14.0-systemone@v1#output_tokens","typesafe-jev-1.14.0-systemone@v1#input_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":518574,"lines":[["input_tokens",12347,"typesafe-jev-1.14.0-systemone@v1#input_tokens","input_tokens",518574],["output_tokens",3457,"typesafe-jev-1.14.0-systemone@v1#output_tokens","output_tokens",0]]}}
+			]
+		}
+	]
+}

@@ -332,7 +332,10 @@ function renderOperations(operations: IROperation[]): string {
 
 function renderOperation(operation: IROperation): string {
 	const successResponse = selectSuccessResponse(operation);
-	const returnType = csType(successResponse.schema ?? { kind: "unknown" });
+	const responseSchema = successResponse.schema ?? { kind: "unknown" };
+	const returnType = operation.method === "get" && responseSchema.kind === "union" &&
+		responseSchema.variants.length > 0 && responseSchema.variants.every((variant) => variant.kind === "object")
+		? "Dictionary<string, object>" : csType(responseSchema);
 	const pathParams = operation.params.filter((param) => param.in === "path");
 	const pathTemplate = renderPathTemplate(operation.path, pathParams);
 	return [
@@ -344,6 +347,7 @@ function renderOperation(operation: IROperation): string {
 		"\t\tobject? body = null",
 		"\t)",
 		"\t{",
+		...pathParams.map((param, index) => `\t\tif (path != null && path.TryGetValue(${JSON.stringify(param.name)}, out var segment${index}) && (segment${index} == "." || segment${index} == "..")) throw new ArgumentException("Dot segments are not valid path parameters");`),
 		`\t\tvar resolvedPath = ${pathTemplate};`,
 		(successResponse.kind === "text"
 			? `\t\treturn client.SendTextAsync(\"${operation.method.toUpperCase()}\", resolvedPath, query, headers, body);`

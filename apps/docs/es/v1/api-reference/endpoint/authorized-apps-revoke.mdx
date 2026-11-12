@@ -1,0 +1,8 @@
+---
+title: "Revocar una aplicación autorizada"
+sidebarTitle: "Revocar aplicación"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml DELETE /me/authorized-apps/{id}"
+description: "Revoca el acceso de una aplicación para que sus tokens dejen de funcionar."
+---
+<Note>Este endpoint requiere un token de acceso OAuth con `oauth_clients:delete`. Revocar la autorización de la propia aplicación que llama cierra su sesión.</Note>

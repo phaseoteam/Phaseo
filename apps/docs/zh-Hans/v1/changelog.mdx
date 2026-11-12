@@ -1,112 +1,149 @@
 ---
-title: "九月"
-description: "2026年9月的 Phaseo 产品更新和模型发布。"
+title: "十一月"
+description: "Phaseo 2026 年 11 月的产品更新和模型发布。"
 rss: true
 ---
 
-## 2026年9月28日
+import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>新模型</p>
+<ChangelogFilters labels={{"product":"产品","api":"API 与 SDK","models":"模型"}} clearLabel="清除" />
 
-![Claude Sonnet 5.5 模型发布图片](/images/model-releases/2026-09-28--anthropic--claude-sonnet-5.5.png)
+<Update label="2026年11月11日">
 
-- [Claude Sonnet 5.5](https://phaseo.app/models/anthropic/claude-sonnet-5.5) 已添加 Anthropic、Claude Platform on AWS、Amazon Bedrock 和 Google Vertex 路由。Anthropic 公布的标准价格为每百万输入令牌 $2、每百万输出令牌 $10。
+<div data-changelog-category="product">
 
-***
+<p className="changelog-category">产品</p>
 
-## 2026年9月13日
+- **测试版：** 实时语音现已向所有用户开放，可在 [Chat → Realtime](https://phaseo.app/chat/realtime) 中使用 OpenAI、Google、xAI 和 ElevenLabs 的语音模型；请参阅 [Chat 中的实时语音](https://phaseo.app/blog/realtime-voice-in-chat) ([#3675](https://github.com/phaseoteam/Phaseo/pull/3675))。
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>产品</p>
+</div>
 
-- 聊天室现在支持为每个请求选择 Priority 或 Flex 服务层级 ([#2357](https://github.com/phaseoteam/Phaseo/pull/2357)).
-- 模型页面现在包含交互式提供商每小时性能视图 ([#2361](https://github.com/phaseoteam/Phaseo/pull/2361)).
+<div data-changelog-category="api">
 
-***
+<p className="changelog-category">API 与 SDK</p>
 
-## 2026年9月11日
+- `POST /v1/decisions` 在 `google/gemini-decision-1` 上最多可接受 1,000 个问题；其他模型默认接受 128 个，部分模型更少，超出模型上限的请求会返回 `400`；请参阅[作出决策](./api-reference/endpoint/decisions.mdx) ([#3682](https://github.com/phaseoteam/Phaseo/pull/3682))。
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>产品</p>
+</div>
 
-![GPT Live 1 模型发布图片](/images/model-releases/2026-09-14--openai--gpt-live-1.png)
+<div data-changelog-category="models">
 
-- [GPT Live 1](https://phaseo.app/models/openai/gpt-live-1) 现已在 Realtime 聊天室提供，包含内置语音选择、可配置的 Responses 委派和可选网页搜索 ([#2338](https://github.com/phaseoteam/Phaseo/pull/2338)).
+<p className="changelog-category">模型</p>
 
-***
+- [Google: Gemini Decision 1](https://phaseo.app/models/google/gemini-decision-1)
 
-## 2026年9月10日
-
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>产品</p>
-
-- Phaseo CLI 现在包含编程智能体集成和启动器，包括安全的 OpenCode 设置和管理 ([#2325](https://github.com/phaseoteam/Phaseo/pull/2325)).
-
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>新模型</p>
-
-- [DeepSeek V4.1 Flash](https://phaseo.app/models/deepseek/deepseek-v4.1-flash)
-
-***
-
-<Update label="2026年9月9日" tags={["模型发布"]}>
-
-### 模型发布
-
-![Suno V6 模型发布图片](/images/model-releases/2026-09-09--suno--suno-v6.png)
-
-- [Suno V6](https://phaseo.app/models/suno/suno-v6)
-- [Suno V6 Wild](https://phaseo.app/models/suno/suno-v6-wild)
-- [Suno V6 Mini](https://phaseo.app/models/suno/suno-v6-mini)
+</div>
 
 </Update>
 
-<Update label="2026年9月8日" tags={["模型发布"]}>
+<Update label="2026年11月10日">
 
-### 模型发布
+<div data-changelog-category="models">
 
-![GPT Image 2.5 模型发布图片](/images/model-releases/2026-09-08-08--openai--gpt-image-2.5.png)
+<p className="changelog-category">模型</p>
 
-- [GPT Image 2.5 Flare](https://phaseo.app/models/openai/gpt-image-2.5-flare)
-- [GPT Image 2.5 Sunburst](https://phaseo.app/models/openai/gpt-image-2.5-sunburst)
-- [DeepSeek V4.1 Flash Preview](https://phaseo.app/models/deepseek/deepseek-v4.1-flash-preview)
-- [Mercury 2.5](https://phaseo.app/models/inception/mercury-2.5)
-- [Nex N2.5 Max](https://phaseo.app/models/nex-agi/nex-n2.5-max)
-- [Nex N2.5 Mini](https://phaseo.app/models/nex-agi/nex-n2.5-mini)
-- [Nex N2.5 Pro](https://phaseo.app/models/nex-agi/nex-n2.5-pro)
+![Gemini 4 Carbon](/images/model-releases/2026-11-10--google--gemini-4-carbon.png)
 
-</Update>
+- [Google: Gemini 4 Carbon](https://phaseo.app/models/google/gemini-4-carbon)
+- [MiniMax: MiniMax H3-Image](https://phaseo.app/models/minimax/minimax-h3-image)
+- [MiniMax: MiniMax H3-Image Highspeed](https://phaseo.app/models/minimax/minimax-h3-image-highspeed)
 
-<Update label="2026年9月3日" tags={["模型发布"]}>
-
-### 模型发布
-
-![GPT-6 Astra 模型发布图片](/images/model-releases/2026-09-03--openai--gpt-6-astra.png)
-
-- [GPT-6 Astra](https://phaseo.app/models/openai/gpt-6-astra)
-- [GPT-6 Astra Pro](https://phaseo.app/models/openai/gpt-6-astra-pro)
-
-- [Ling 3.0 Flash Sante](https://phaseo.app/models/inclusionai/ling-3.0-flash-sante)
-- [Ling 3.0 Flash VL](https://phaseo.app/models/inclusionai/ling-3.0-flash-vl)
+</div>
 
 </Update>
 
-<Update label="2026年9月2日" tags={["模型发布"]}>
+<Update label="2026年11月9日">
 
-### 模型发布
+<div data-changelog-category="models">
 
-![Gemini 3.8 Flash 模型发布图片](/images/model-releases/2026-09-02--google--gemini-3.8-flash.png)
+<p className="changelog-category">模型</p>
 
-- [Gemini 3.8 Flash](https://phaseo.app/models/google/gemini-3.8-flash)
-- [Muse Spark 1.3](https://phaseo.app/models/meta/muse-spark-1.3)
-- [Muse Spark 1.3 Contributor](https://phaseo.app/models/meta/muse-spark-1.3-contributor)
-- [Qwen 3.8 Max 0902](https://phaseo.app/models/qwen/qwen3.8-max-0902)
+![Claude Fable 5.2](/images/model-releases/2026-11-09--anthropic--claude-fable-5.2.png)
+
+- [Anthropic: Claude Fable 5.2](https://phaseo.app/models/anthropic/claude-fable-5.2)
+- [Parallel: Decisions Fast](https://phaseo.app/models/parallel/decisions-fast)
+
+</div>
 
 </Update>
 
-<Update label="2026年9月1日" tags={["模型发布"]}>
+<Update label="2026年11月5日">
 
-### 模型发布
+<div data-changelog-category="api">
 
-![Claude Fable 5.1 模型发布图片](/images/model-releases/2026-09-01--anthropic--claude-fable-5.1.png)
+<p className="changelog-category">API 与 SDK</p>
 
-- [Claude Fable 5.1](https://phaseo.app/models/anthropic/claude-fable-5.1)
-- [Muse Voice Transcribe 1.0](https://phaseo.app/models/meta/muse-voice-transcribe-1.0)
+- GPT Image 2.6 请求现支持 `complexity`、动画 GIF 输出、由 `svg.model` 指定的 OpenAI 模型编写的 SVG 输出，以及 `markup` 引导的编辑；请参阅[生成图像](./api-reference/endpoint/images-generations.mdx) ([#3571](https://github.com/phaseoteam/Phaseo/pull/3571))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+![Inkling 2 Small](/images/model-releases/2026-11-05--thinking-machines--inkling-2-small.png)
+
+- [Thinking Machines: Inkling 2 Small](https://phaseo.app/models/thinking-machines/inkling-2-small)
+
+</div>
+
+</Update>
+
+<Update label="2026年11月4日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 排行榜新增[决策](https://phaseo.app/rankings/decisions)页面，按 token 量为决策模型排名；文本排行榜不再统计决策请求 ([#3527](https://github.com/phaseoteam/Phaseo/pull/3527))。
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+![GPT Image 2.6](/images/model-releases/2026-11-04--openai--gpt-image-2.6.png)
+
+- [OpenAI: GPT Image 2.6 Flare](https://phaseo.app/models/openai/gpt-image-2.6-flare)
+- [OpenAI: GPT Image 2.6 Sunburst](https://phaseo.app/models/openai/gpt-image-2.6-sunburst)
+- [Ricursive Intelligence: Ripple 65B Preview](https://phaseo.app/models/ricursive/ripple-65b-preview)
+
+</div>
+
+</Update>
+
+<Update label="2026年11月3日">
+
+<div data-changelog-category="product">
+
+<p className="changelog-category">产品</p>
+
+- 模型页面的工具调用和结构化输出成功率只统计 Phaseo 实际校验过的响应；此前，失败的请求被算作有效 JSON，没有数据的时段显示为 100% ([#3475](https://github.com/phaseoteam/Phaseo/pull/3475))。
+- 模型页面的输出速度不计入回答前的隐藏推理，回答一次性送达时不显示数值；请参阅[衡量价格与性能](./exploring/pricing-performance.mdx) ([#3465](https://github.com/phaseoteam/Phaseo/pull/3465), [#3476](https://github.com/phaseoteam/Phaseo/pull/3476))。
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API 与 SDK</p>
+
+- 通过 Google AI Studio 对 Gemini 2.5、3 和 3.1 文本模型、Gemini 3.5 至 3.8 Flash 以及 Gemma 4 发起的流式请求现在逐个 token 送达；此前要等生成结束，整段回答才一次性送达 ([#3483](https://github.com/phaseoteam/Phaseo/pull/3483))。
+
+</div>
+
+</Update>
+
+<Update label="2026年11月2日">
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">模型</p>
+
+![GLM 5.3 FlashX Legal](/images/model-releases/2026-11-02--z-ai--glm-5.3-flashx-legal.png)
+
+- [z.AI: GLM 5.3 FlashX Legal](https://phaseo.app/models/z-ai/glm-5.3-flashx-legal)
+
+</div>
 
 </Update>

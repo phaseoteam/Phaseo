@@ -1,6 +1,8 @@
 import type { BenchmarkPage, BenchmarkResult } from "@/lib/fetchers/benchmarks/types";
 import type { PublicBenchmarkRanking, PublicBenchmarkRankingEntry, PublicIntelligenceValue, PublicIntelligenceValueEntry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import type { ModelBenchmarkRanks } from "@/lib/fetchers/frontend/fetchRankingSections";
 import { parseBenchmarkScore } from "@/lib/benchmarks/scoreFormat";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 export const artificialAnalysisMetrics = [
   { id: "aa-intelligence-index-v4", key: "intelligence", label: "Intelligence", description: "Overall model capability" },
@@ -21,6 +23,13 @@ const artificialAnalysisBenchmarkPattern = /^aa-(?:intelligence|coding|agentic)-
 
 export function isArtificialAnalysisBenchmark(id: string) {
   return artificialAnalysisBenchmarkPattern.test(id);
+}
+
+/** AA's version-independent capability scale, shown beside (not among) the index metrics. */
+export const artificialAnalysisProgressIndexId = "aa-progress-index-v1";
+
+export function isArtificialAnalysisProgressIndex(id: string) {
+  return id === artificialAnalysisProgressIndexId;
 }
 
 export function isArtificialAnalysisCostBenchmark(id: string) {
@@ -47,12 +56,16 @@ export function artificialAnalysisChartColour(
 }
 
 export function formatArtificialAnalysisScore(id: string, score: number, locale = "en-US") {
-  return new Intl.NumberFormat(locale, isArtificialAnalysisCostBenchmark(id)
+  return new Intl.NumberFormat(isArtificialAnalysisCostBenchmark(id) ? MONEY_LOCALE : locale, isArtificialAnalysisCostBenchmark(id)
     ? { style: "currency", currency: "USD", maximumFractionDigits: 2 }
     : { maximumFractionDigits: 2 }).format(score);
 }
-export function formatArtificialAnalysisValue(value: number, locale = "en-US") {
-	return new Intl.NumberFormat(locale, { style: "currency", currency: "USD", maximumSignificantDigits: 3 }).format(value);
+export function formatArtificialAnalysisValue(value: number, _locale = "en-US") {
+	// Cents from a dollar up ($2.50); three significant digits below it ($0.00123).
+	const options: Intl.NumberFormatOptions = Math.abs(value) >= 1
+		? { minimumFractionDigits: 2, maximumFractionDigits: 2 }
+		: { maximumSignificantDigits: 3 };
+	return new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD", ...options }).format(value);
 }
 export function artificialAnalysisValueKey(entry: PublicIntelligenceValueEntry) {
 	return entry.configuration_id ?? JSON.stringify([entry.model_id, entry.variant, entry.other_info, entry.updated_at]);
@@ -98,6 +111,40 @@ export function buildArtificialAnalysisValue(benchmarks: PublicBenchmarkRanking[
 	entries.sort((a, b) => a.score - b.score || b.intelligence_score - a.intelligence_score);
 	entries.forEach((entry) => { entry.rank = entries.findIndex((other) => other.score === entry.score) + 1; });
 	return { benchmark_id: intelligence?.benchmark_id ?? "aa-intelligence-index-v4", entries };
+}
+
+export type ArtificialAnalysisRankSummary = {
+	lowerIsBetter: boolean;
+	/** `modelId` is null for other models' scores pooled by the web API. */
+	entries: Array<{ modelId: string | null; version: string | null; scores: number[] }>;
+};
+
+/** Rank summaries from the web API's per-model view; ranks match the full leaderboards'. */
+export function artificialAnalysisRankSummaries(ranks: ModelBenchmarkRanks["artificial_analysis"]): Record<string, ArtificialAnalysisRankSummary> {
+	return Object.fromEntries(Object.entries(ranks).map(([benchmarkId, summary]) => [benchmarkId, {
+		lowerIsBetter: summary.lower_is_better,
+		entries: summary.entries.map((entry) => ({ modelId: entry.model_id, version: entry.version, scores: entry.scores })),
+	} satisfies ArtificialAnalysisRankSummary]));
+}
+
+export function summarizeArtificialAnalysisRankings(rankings: PublicBenchmarkRanking[]) {
+	return Object.fromEntries(rankings.filter((ranking) => isArtificialAnalysisBenchmark(ranking.benchmark_id)).map((ranking) => [ranking.benchmark_id, {
+		lowerIsBetter: ranking.lower_is_better,
+		entries: ranking.entries.map((entry) => ({
+			modelId: entry.model_id,
+			version: artificialAnalysisVersion(entry.other_info),
+			scores: entry.configurations?.length ? entry.configurations.map((configuration) => configuration.score) : [entry.score],
+		})),
+	} satisfies ArtificialAnalysisRankSummary]));
+}
+
+export function artificialAnalysisSummaryRank(summary: ArtificialAnalysisRankSummary, score: number, modelId: string | undefined, version: string | null, localScores: number[]) {
+	const entries = summary.entries.filter((entry) => !version || !entry.version || entry.version === version);
+	const others = entries.filter((entry) => entry.modelId !== modelId);
+	if (!others.length) return null;
+	const current = modelId ? localScores.length ? localScores : entries.find((entry) => entry.modelId === modelId)?.scores ?? [score] : [];
+	const scores = [...others.flatMap((entry) => entry.scores), ...current];
+	return { rank: 1 + scores.filter((value) => summary.lowerIsBetter ? value < score : value > score).length, total: scores.length };
 }
 
 /** Rank the evaluated configurations, including ties, rather than one best score per model. */
@@ -148,6 +195,7 @@ export function buildArtificialAnalysisRanking(benchmark: BenchmarkPage): Public
   const lowerIsBetter = isArtificialAnalysisCostBenchmark(benchmark.id);
   const latestVersion = latestArtificialAnalysisVersion(benchmark.results);
   const bestByModel = new Map<string, PublicBenchmarkRankingEntry>();
+  const configurations = new Map<string, NonNullable<PublicBenchmarkRankingEntry["configurations"]>>();
 
   for (const result of benchmark.results) {
     if (latestVersion && artificialAnalysisVersion(typeof result.other_info === "string" ? result.other_info : null) !== latestVersion) continue;
@@ -155,6 +203,10 @@ export function buildArtificialAnalysisRanking(benchmark: BenchmarkPage): Public
     if (score == null) continue;
 
     const candidate = candidateFromResult(result, score);
+    const modelConfigurations = configurations.get(result.model_id) ?? [];
+    modelConfigurations.push({ variant: result.variant ?? null, result_key: result.result_key ?? result.id, score,
+      other_info: candidate.other_info ?? null, source_link: candidate.source_link ?? null, updated_at: candidate.updated_at ?? null });
+    configurations.set(result.model_id, modelConfigurations);
     const current = bestByModel.get(result.model_id);
     if (!current || (lowerIsBetter ? candidate.score < current.score : candidate.score > current.score)) bestByModel.set(result.model_id, candidate);
   }
@@ -163,6 +215,7 @@ export function buildArtificialAnalysisRanking(benchmark: BenchmarkPage): Public
   let previousScore: number | null = null;
   let previousRank = 0;
   entries.forEach((entry, index) => {
+    entry.configurations = configurations.get(entry.model_id);
     if (previousScore !== entry.score) {
       previousRank = index + 1;
       previousScore = entry.score;

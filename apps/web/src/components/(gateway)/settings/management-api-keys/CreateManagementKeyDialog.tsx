@@ -1,4 +1,3 @@
-"use client";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 import React, { useState } from "react";
 import {
@@ -14,7 +13,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Plus, ShieldAlert } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { createManagementKeyAction } from "@/app/(dashboard)/settings/management-api-keys/actions";
+import { createManagementKeyAction } from "@/features/settings/management-api-keys/actions";
 import {
 	DropdownMenu,
 	DropdownMenuTrigger,
@@ -24,7 +23,7 @@ import {
 import { ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { SecretRevealActions } from "../keys/SecretRevealActions";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 const KEY_TEMPLATES = [
@@ -119,13 +118,13 @@ export default function CreateManagementKeyDialog({
 		}
 		try {
 			setLoading(true);
-			const res: any = await createManagementKeyAction({
+			const res: any = await createManagementKeyAction({ data: {
 				name,
 				creatorUserId: currentUserId as string,
 				workspaceId: selectedWorkspaceId,
 				template,
 				expiresAt,
-			});
+			} });
 			setPlainKey(res?.plaintext ?? null);
 			void invalidateSettings();
 		} catch (err: unknown) {
@@ -181,7 +180,7 @@ export default function CreateManagementKeyDialog({
 						{t("strings.phraseChooseTheMinimumAccessThisManagementAPIKeyNeeds" as never)}
 					</DialogDescription>
 					<p className="rounded-md bg-amber-500/10 px-3 py-2 text-sm leading-5 text-amber-700 dark:text-amber-400">
-						{t("keys.keyShownOnce")} <strong>{t("credits.once" as never)}</strong>{" "}
+						<strong>{t("keys.keyShownOnce")}</strong>{" "}
 						{t("strings.phraseAndGrantsElevatedPrivilegesStoreItSecurely" as never)}
 					</p>
 				</DialogHeader>
@@ -282,7 +281,7 @@ export default function CreateManagementKeyDialog({
 					</form>
 				) : (
 					<div className="space-y-5">
-						<div className="select-all break-all rounded-lg border border-amber-300 bg-amber-100/70 p-3 font-mono text-xs leading-5 dark:border-amber-700 dark:bg-amber-900/30 sm:text-sm">
+						<div className="ph-no-capture select-all break-all rounded-lg border border-amber-300 bg-amber-100/70 p-3 font-mono text-xs leading-5 dark:border-amber-700 dark:bg-amber-900/30 sm:text-sm">
 							{plainKey}
 						</div>
 						<p className="text-sm leading-5 text-amber-700 dark:text-amber-400">

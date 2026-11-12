@@ -174,3 +174,55 @@ describe("bufferStreamToIR", () => {
 		expect(text).toContain("\"completion_tokens\":5");
 	});
 });
+
+// https://docs.mistral.ai/capabilities/reasoning: streamed delta.content is a list of
+// ThinkChunks and TextChunks until the transition, then a plain string.
+describe("bufferStreamToIR with Mistral chunk-list deltas", () => {
+	const frame = (content: unknown, finishReason: string | null = null) => `data: ${JSON.stringify({
+		id: "mistral_buffer_1",
+		object: "chat.completion.chunk",
+		created: 1710000000,
+		model: "zai-glm-5-3",
+		choices: [{ index: 0, delta: { content }, finish_reason: finishReason }],
+	})}\n\n`;
+
+	it("keeps the reasoning and the whole answer", async () => {
+		const buffered = await bufferStreamToIR(
+			sseResponse([
+				frame([{ type: "thinking", thinking: [{ type: "text", text: "Add 5 and 3." }] }]),
+				frame([{ type: "thinking", thinking: [{ type: "text", text: " It is 8." }], signature: "sig-abc" }, { type: "text", text: "The answer " }]),
+				frame("is 8.", "stop"),
+				"data: [DONE]\n\n",
+			]),
+			{ ...buildArgs(), providerId: "mistral", providerModelSlug: "zai-glm-5-3" },
+			"chat",
+			Date.now(),
+		);
+
+		expect(buffered.ir.choices[0].message.content).toEqual([
+			{
+				type: "reasoning_text",
+				text: "Add 5 and 3. It is 8.",
+				thoughtSignature: "sig-abc",
+				reasoningFormat: "mistral-v1",
+				reasoningModel: "openai/gpt-5.4-nano",
+				reasoningProvider: "mistral",
+			},
+			{ type: "text", text: "The answer is 8." },
+		]);
+	});
+
+	it("returns a thinking-only reply as reasoning instead of empty output", async () => {
+		const buffered = await bufferStreamToIR(
+			sseResponse([
+				frame([{ type: "thinking", thinking: [{ type: "text", text: "Still thinking" }] }], "length"),
+				"data: [DONE]\n\n",
+			]),
+			{ ...buildArgs(), providerId: "mistral", providerModelSlug: "mistral-small-latest" },
+			"chat",
+			Date.now(),
+		);
+
+		expect(buffered.ir.choices[0].message.content).toEqual([{ type: "reasoning_text", text: "Still thinking" }]);
+	});
+});

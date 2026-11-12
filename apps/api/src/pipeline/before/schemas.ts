@@ -2,9 +2,10 @@
 // Why: Keeps stage-specific logic isolated and testable.
 // How: Exposes helpers used by before/execute/after orchestration.
 
-import { z } from "zod";
+import * as z from "zod";
 import type { PriceCard } from "../pricing";
 import type { PriceRule, PricingDimensionKey, PricingTimestampBasis, PricingTimeWindow } from "../pricing/types";
+import { canonicalPricingPlan } from "../pricing/service-tiers";
 import type {
     GateCheck,
     ByokKeyMeta,
@@ -55,6 +56,28 @@ const workspaceBudgetStatusSchema = z.object({
     resetAt: budget.reset_at ?? null,
 }));
 
+const departmentBudgetStatusSchema = z.object({
+    id: z.string(),
+    department_id: z.string(),
+    department_name: z.string().nullable().optional(),
+    interval: z.enum(["daily", "weekly", "monthly"]),
+    limit_nanos: z.coerce.number(),
+    usage_nanos: z.coerce.number(),
+    exceeded: z.boolean(),
+    window_start: z.string().nullable().optional(),
+    reset_at: z.string().nullable().optional(),
+}).transform((budget) => ({
+    id: budget.id,
+    departmentId: budget.department_id,
+    departmentName: budget.department_name ?? null,
+    interval: budget.interval,
+    limitNanos: budget.limit_nanos,
+    usageNanos: budget.usage_nanos,
+    exceeded: budget.exceeded,
+    windowStart: budget.window_start ?? null,
+    resetAt: budget.reset_at ?? null,
+}));
+
 const gateCheckSchema = z
     .union([
         z.boolean(),
@@ -68,6 +91,8 @@ const gateCheckSchema = z
             limit_metric: z.enum(["requests", "cost", "soft_blocked"]).nullable().optional(),
             current_value: z.coerce.number().nullable().optional(),
             limit_value: z.coerce.number().nullable().optional(),
+            department_id: z.string().nullable().optional(),
+            department_name: z.string().nullable().optional(),
             buckets: z
                 .object({
                     daily: bucketSchema.optional(),
@@ -77,6 +102,8 @@ const gateCheckSchema = z
                 .nullable()
                 .optional(),
             budgets: z.array(workspaceBudgetStatusSchema).nullable().optional(),
+            // Entries are read one by one so a malformed one never fails the whole context.
+            department_budgets: z.array(z.unknown()).nullable().optional(),
         }),
     ])
     .transform<GateCheck>((value) => {
@@ -93,8 +120,17 @@ const gateCheckSchema = z
             limitMetric: value.limit_metric ?? null,
             currentValue: value.current_value ?? null,
             limitValue: value.limit_value ?? null,
+            ...(value.department_id ? { departmentId: value.department_id, departmentName: value.department_name ?? null } : {}),
             buckets: value.buckets ?? null,
             budgets: value.budgets ?? null,
+            ...(value.department_budgets?.length
+                ? {
+                    departmentBudgets: value.department_budgets.flatMap((budget) => {
+                        const parsed = departmentBudgetStatusSchema.safeParse(budget);
+                        return parsed.success ? [parsed.data] : [];
+                    }),
+                }
+                : {}),
         };
     });
 
@@ -133,7 +169,8 @@ const priceRuleSchema = z
         id: z.string().optional(),
     })
     .transform<PriceRule>((rule) => ({
-        pricing_plan: rule.pricing_plan,
+        // The RPC returns the stored service tier slug; `fast` SKUs are priced as `priority`.
+        pricing_plan: canonicalPricingPlan(rule.pricing_plan),
         meter: rule.meter as PricingDimensionKey,
         unit: rule.unit,
         unit_size: rule.unit_size,
@@ -228,7 +265,15 @@ const capabilityParamDescriptorSchema = z
 const capabilityParamsSchema = z
     .union([
         z.record(z.string(), z.any()),
-        z.array(z.union([z.string().trim().min(1), capabilityParamDescriptorSchema])),
+        z.array(
+            z.union([
+                z.string().trim().min(1),
+                capabilityParamDescriptorSchema,
+                // The context RPC appends `{data_policy}` (or `{}` once nulls
+                // are stripped) to list-shaped params; it is not a parameter.
+                z.object({ data_policy: z.any().optional() }).strict(),
+            ]),
+        ),
     ])
     .transform<Record<string, any>>((value) => {
         if (!Array.isArray(value)) return value;
@@ -237,6 +282,10 @@ const capabilityParamsSchema = z
         for (const entry of value) {
             if (typeof entry === "string") {
                 params[entry] = {};
+                continue;
+            }
+            if (!("param_id" in entry)) {
+                if (entry.data_policy !== undefined) params.data_policy = entry.data_policy;
                 continue;
             }
             const { param_id: paramId, ...config } = entry;
@@ -445,8 +494,12 @@ const presetConfigSchema = z
             .nullable()
             .optional(),
         reasoning: z.record(z.string(), z.any()).nullable().optional(),
+        // Validated when rendered (core/prompt-templates), so one bad template
+        // fails its own requests with a clear error rather than the context load.
+        prompt: z.unknown().nullable().optional(),
     })
     .transform<PresetConfig>((config) => ({
+        ...(config.prompt != null ? { prompt: config.prompt } : {}),
         ...(() => {
             const provider = config.provider;
             const maxPrice = provider?.maxPrice ?? provider?.max_price ?? null;
@@ -545,6 +598,9 @@ const presetDataSchema = z
         description: z.string().nullable().optional(),
         config: presetConfigSchema,
         visibility: z.enum(["private", "team", "public"]),
+        version_id: z.string().nullable().optional(),
+        version_label: z.string().nullable().optional(),
+        ref: z.string().nullable().optional(),
     })
     .transform<PresetData>((preset) => ({
         id: preset.id,
@@ -553,6 +609,9 @@ const presetDataSchema = z
         description: preset.description ?? null,
         config: preset.config,
         visibility: preset.visibility,
+        versionId: preset.version_id ?? null,
+        versionLabel: preset.version_label ?? null,
+        ref: preset.ref ?? null,
     }));
 
 const teamEnrichmentSchema = z
@@ -563,17 +622,17 @@ const teamEnrichmentSchema = z
         balance_nanos: z.coerce.number(),
         balance_usd: z.coerce.number(),
         balance_is_low: z.boolean(),
-        total_requests: z.coerce.number(),
-        total_spend_nanos: z.coerce.number(),
-        total_spend_usd: z.coerce.number(),
-        spend_24h_nanos: z.coerce.number(),
-        spend_24h_usd: z.coerce.number(),
-        spend_7d_nanos: z.coerce.number(),
-        spend_7d_usd: z.coerce.number(),
-        spend_30d_nanos: z.coerce.number(),
-        spend_30d_usd: z.coerce.number(),
-        requests_1h: z.coerce.number(),
-        requests_24h: z.coerce.number(),
+        total_requests: z.coerce.number().nullable(),
+        total_spend_nanos: z.coerce.number().nullable(),
+        total_spend_usd: z.coerce.number().nullable(),
+        spend_24h_nanos: z.coerce.number().nullable(),
+        spend_24h_usd: z.coerce.number().nullable(),
+        spend_7d_nanos: z.coerce.number().nullable(),
+        spend_7d_usd: z.coerce.number().nullable(),
+        spend_30d_nanos: z.coerce.number().nullable(),
+        spend_30d_usd: z.coerce.number().nullable(),
+        requests_1h: z.coerce.number().nullable(),
+        requests_24h: z.coerce.number().nullable(),
     })
     .transform<TeamEnrichment>((data) => ({
         tier: data.tier,
@@ -600,12 +659,12 @@ const keyEnrichmentSchema = z
         name: z.string().nullable(),
         created_at: z.string(),
         key_age_days: z.coerce.number(),
-        total_requests: z.coerce.number(),
-        total_spend_nanos: z.coerce.number(),
-        total_spend_usd: z.coerce.number(),
-        requests_today: z.coerce.number(),
-        spend_today_nanos: z.coerce.number(),
-        spend_today_usd: z.coerce.number(),
+        total_requests: z.coerce.number().nullable(),
+        total_spend_nanos: z.coerce.number().nullable(),
+        total_spend_usd: z.coerce.number().nullable(),
+        requests_today: z.coerce.number().nullable(),
+        spend_today_nanos: z.coerce.number().nullable(),
+        spend_today_usd: z.coerce.number().nullable(),
         daily_limit_pct: z.coerce.number().nullable(),
     })
     .transform<KeyEnrichment>((data) => ({

@@ -4,6 +4,42 @@ import httpx
 from phaseo import Phaseo
 
 
+def test_omni_media_preserves_native_decisions_contract():
+    body = {"model": "cloudflare/clef-omni", "input": [{"role": "user", "content": [
+        {"type": "input_audio", "input_audio": {"data": "AQID", "format": "wav"}},
+        {"type": "input_video", "video_url": {"url": "https://media.example/clip.mp4"}},
+    ]}], "questions": [{"type": "predicate", "instructions": "Safe?"}]}
+
+    def handler(request):
+        assert str(request.url) == "https://example.test/v1/decisions"
+        assert json.loads(request.content) == body
+        return httpx.Response(200, json={"model": body["model"], "answers": [
+            {"type": "predicate", "name": None, "probability": 0.9}],
+            "usage": {"input_tokens": 1000, "output_tokens": 0, "total_tokens": 1000}})
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as transport:
+        client = Phaseo(api_key="sk_test_123", base_url="https://example.test/v1", http_client=transport,
+                        enable_deprecation_warnings=False)
+        assert client.decisions.create(body)["answers"][0]["probability"] == 0.9
+
+
+def test_openai_decisions_preserve_typed_choices_and_inline_images():
+    body = {"model": "openai/gpt-6-luna",
+            "input": [{"role": "user", "content": [{"type": "input_image", "image_url": "data:image/png;base64,AQID", "detail": "original"}]}],
+            "questions": [{"type": "choice", "instructions": "Eligible?", "choices": [{"value": True}, {"value": "true"}]}]}
+
+    def handler(request):
+        assert str(request.url) == "https://example.test/v1/decisions"
+        assert json.loads(request.content) == body
+        return httpx.Response(200, json={"model": body["model"], "answers": [{"type": "choice", "name": None, "choice": True,
+            "confidence": 0.8, "probabilities": [{"value": True, "probability": 0.9}, {"value": "true", "probability": 0.1}]}],
+            "usage": {"input_tokens": 10, "output_tokens": 0, "total_tokens": 10}})
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as transport:
+        client = Phaseo(api_key="sk_test_123", base_url="https://example.test/v1", http_client=transport, enable_deprecation_warnings=False)
+        assert client.decisions.create(body)["answers"][0]["choice"] is True
+
+
 def test_clef_images_are_serialized_to_decisions_endpoint():
     images = ["data:image/png;base64,AQID", {"content_type": "image/webp", "base64": "AQID"}]
 
@@ -64,3 +100,22 @@ def test_decisions_resource_calls_structured_endpoint(monkeypatch):
             },
         }
     ]
+
+
+def test_jev_box_and_long_context_preserve_native_contract():
+    body = {"model": "typesafe/jev-1.14.0", "input": [{"role": "user", "content": [
+        {"type": "input_image", "image_url": "data:image/png;base64,AQID"},
+    ]}], "questions": [{"type": "box", "name": "mug", "instructions": "The mug"}],
+        "provider_options": {"typesafe": {"long_context": True}}}
+    box = {"top": 0.1, "bottom": 0.8, "left": 0.2, "right": 0.9}
+
+    def handler(request):
+        assert str(request.url) == "https://example.test/v1/decisions"
+        assert json.loads(request.content) == body
+        return httpx.Response(200, json={"model": body["model"], "answers": [
+            {"type": "box", "name": "mug", "box": box, "confidence": 0.9}]})
+
+    with httpx.Client(transport=httpx.MockTransport(handler)) as transport:
+        client = Phaseo(api_key="sk_test_123", base_url="https://example.test/v1", http_client=transport,
+                        enable_deprecation_warnings=False)
+        assert client.decisions.create(body)["answers"][0]["box"] == box

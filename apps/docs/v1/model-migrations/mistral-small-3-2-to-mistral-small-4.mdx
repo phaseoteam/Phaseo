@@ -1,67 +1,44 @@
 ---
 title: "Mistral Small 4"
 description: "What to know when adopting Mistral Small 4, including reasoning controls and normalized response fields."
+"og:image": "https://phaseo.app/og/dynamic?title=Mistral%20Small%204&description=What%20to%20know%20when%20adopting%20Mistral%20Small%204%2C%20including%20reasoning%20controls%20and%20normalized%20response%20fields.&pathname=/docs/v1/model-migrations/mistral-small-3-2-to-mistral-small-4"
 icon: "/icons/brands/mistral.svg"
 ---
 
-# Mistral Small 4
-
-Use this guide to adopt Mistral Small 4 safely through the Phaseo Gateway:
-
-- `mistral/mistral-small-4-2026-03-16`
-
-## What's new
-
-- Mistral Small 4 exposes a reasoning mode control via `reasoning_effort`.
-- Gateway sends only two upstream values for this model route:
-  - `none` (reasoning off)
-  - `high` (reasoning on)
-- Gateway normalizes Mistral thinking blocks back into standard response fields:
-  - `message.content` for assistant-visible text
-  - `message.reasoning_content` and `message.reasoning_details` for reasoning text
-
-## Migration quickstart
-
-Reasoning defaults to off for this route.
-
-Gateway mapping rules:
-
-- if you omit reasoning controls, Gateway sends `reasoning_effort: "none"`
-- if you pass `reasoning.enabled: true`, Gateway sends `reasoning_effort: "high"`
-- if you pass `reasoning.effort: "none"`, Gateway sends `reasoning_effort: "none"`
-- if you pass any other `reasoning.effort` value, Gateway sends `reasoning_effort: "high"`
-
-Recommended usage:
-
-- use `reasoning.effort: "none"` for lightweight behavior
-- use `reasoning.effort: "high"` for deep reasoning
-
-Example:
+Change the model to `mistral/mistral-small-4` and decide per route whether reasoning is on. Mistral Small 4 has two reasoning modes, off and high, and Phaseo maps every effort value onto one of them.
 
 ```json
 {
-  "model": "mistral/mistral-small-4-2026-03-16",
+  "model": "mistral/mistral-small-4",
   "messages": [
     { "role": "user", "content": "Why is fast inference important?" }
   ],
-  "reasoning": {
-    "effort": "high"
-  }
+  "reasoning": { "effort": "high" }
 }
 ```
 
-## Response handling notes
+## Turn reasoning on or off
 
-Mistral may return mixed assistant content blocks (for example `thinking` + `text`). Gateway maps that into a stable shape so you can consume:
+Reasoning is off unless the request asks for it. On Mistral's own API, Phaseo sends `reasoning_effort` as follows:
 
-- final user-visible answer from `choices[0].message.content`
-- reasoning text from `choices[0].message.reasoning_content`
+| Request | Sent to Mistral |
+| --- | --- |
+| No reasoning setting | `reasoning_effort: "none"` |
+| `reasoning.effort: "none"` or `reasoning.enabled: false` | `reasoning_effort: "none"` |
+| Any other `reasoning.effort`, or `reasoning.enabled: true` | `reasoning_effort: "high"` |
 
-This lets you preserve downstream behavior that expects OpenAI-style chat completion fields.
+A flat `reasoning_effort` in the request takes precedence over `reasoning.effort`. Use `none` for lightweight routes and `high` for deep reasoning; `low` and `medium` behave exactly like `high`.
 
-## Rollout checklist
+## Read the answer and the reasoning
 
-1. Update model ID to `mistral/mistral-small-4-2026-03-16`.
-2. Validate reasoning controls using only `none` and `high`.
-3. Re-run output quality and schema tests on your high-effort routes.
-4. Compare latency/cost for `none` vs `high` before full cutover.
+Mistral can return mixed content blocks, such as `thinking` followed by `text`. Phaseo splits them into OpenAI-style fields, so downstream code that reads Chat Completions keeps working:
+
+- the answer is in `choices[0].message.content`;
+- the reasoning text is in `choices[0].message.reasoning_content` and `reasoning_details`.
+
+## Roll out
+
+1. Change the model ID from Mistral Small 3.2 to `mistral/mistral-small-4`.
+2. Test reasoning with only `none` and `high`.
+3. Re-run output quality and schema tests on the routes that use `high`.
+4. Compare latency and cost for `none` and `high` before full cutover.

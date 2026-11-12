@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "swe-bench-multilingual",
-  "benchmark_name": "SWE Bench Multilingual",
-  "category": "code",
-  "ascending_order": null,
-  "type": "percentage",
-  "link": null,
-  "total_models": 25
-}

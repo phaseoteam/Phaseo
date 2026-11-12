@@ -156,6 +156,28 @@ type PreviewTestBlockedReason =
 	| "provider_credentials_missing"
 	| "route_not_staged";
 
+/**
+ * A feed offer is already covered when Phaseo manages a current route for the
+ * same upstream ID under a different model (for example a hand-made route on
+ * the canonical model when the feed uses its own ID). Listing it again would
+ * show a duplicate "Coming soon" card.
+ */
+function providerCatalogPreviewCoveredByRoute(model: any, routes: any[], now: number): boolean {
+	const providerModelSlug = String(model?.provider_model_slug ?? "").trim();
+	if (!providerModelSlug) return false;
+	const ownSlugs = new Set([model?.model_slug, model?.canonical_model_slug]
+		.map((value) => String(value ?? "").trim())
+		.filter(Boolean));
+	return routes.some((route) => {
+		if (String(route?.provider_model_slug ?? "").trim() !== providerModelSlug) return false;
+		const routeModelSlug = String(route?.model_slug ?? "").trim();
+		if (!routeModelSlug || ownSlugs.has(routeModelSlug)) return false;
+		if (String(route?.status ?? "").trim().toLowerCase() === "retired") return false;
+		const effectiveTo = Date.parse(String(route?.effective_to ?? ""));
+		return !(Number.isFinite(effectiveTo) && effectiveTo <= now);
+	});
+}
+
 function providerCatalogPreviewRouteMatches(model: any, route: any): boolean {
 	if (String(route?.provider_slug ?? "").trim() !== String(model?.provider_slug ?? "").trim()) return false;
 	const modelCandidates = new Set([
@@ -221,7 +243,7 @@ async function providerCatalogPreviewPayload(client: any, providerSlugs: string[
 			.select("provider_slug,name,status,base_url,metadata")
 			.in("provider_slug", runs.map((run) => String(run.provider_slug))),
 		client.from("v2_model_provider_routes")
-			.select("provider_slug,model_slug,provider_model_slug,status,provider_availability_status,phaseo_status,access_scope")
+			.select("provider_slug,model_slug,provider_model_slug,status,provider_availability_status,phaseo_status,access_scope,effective_to")
 			.in("provider_slug", runs.map((run) => String(run.provider_slug))),
 	]);
 	if (modelsResult.error || capabilitiesResult.error || providersResult.error) throw new Error("provider_catalog_preview_unavailable");
@@ -242,6 +264,11 @@ async function providerCatalogPreviewPayload(client: any, providerSlugs: string[
 		.filter((model: any) => allowedProviderSlugs.has(String(model.provider_slug ?? "").trim().toLowerCase()))
 		.filter((model: any) => String(model.decision ?? "pending") !== "rejected")
 		.filter((model: any) => String(model.route_projection_status ?? "not_projected") !== "enabled")
+		.filter((model: any) => !providerCatalogPreviewCoveredByRoute(
+			model,
+			routesByProvider.get(String(model.provider_slug ?? "").trim()) ?? [],
+			now,
+		))
 		.map((model: any) => {
 			const providerSlug = String(model.provider_slug ?? "").trim();
 			const modelId = String(model.model_slug ?? "").trim();
@@ -376,7 +403,7 @@ accountSettingsProviderOnboardingRouter.get("/provider-onboarding", async (c) =>
 			? client.from("provider_catalog_sources").select("provider_slug,status,delivery_mode,management_mode,catalog_url,last_success_at,last_polled_at,last_catalog_sha256,consecutive_failures,last_error,etag,last_modified,next_poll_at,webhook_secret_hash").in("provider_slug", catalogSlugs)
 			: Promise.resolve({ data: [], error: null }),
 		catalogSlugs.length
-			? client.from("provider_onboarding_submissions").select("provider_slug,application_type,catalog_mode,provider_review_status,provider_review_reason,submitted_by,created_at").in("provider_slug", catalogSlugs).order("created_at", { ascending: false })
+			? client.from("provider_onboarding_submissions").select("provider_slug,website_url,application_type,catalog_mode,provider_review_status,provider_review_reason,submitted_by,created_at").in("provider_slug", catalogSlugs).order("created_at", { ascending: false })
 			: Promise.resolve({ data: [], error: null }),
 	]);
 	if (providers.error || catalogApplications.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
@@ -397,7 +424,7 @@ accountSettingsProviderOnboardingRouter.get("/provider-onboarding", async (c) =>
 		};
 	});
 	const reviewRuns = catalogSlugs.length
-		? await client.from("provider_catalog_sync_runs").select("id,provider_slug,trigger,status,review_status,review_summary,model_count,error_message,created_at,completed_at").in("provider_slug", catalogSlugs).order("created_at", { ascending: false }).limit(20)
+		? await client.from("provider_catalog_sync_runs").select("id,provider_slug,trigger,status,review_status,review_summary,model_count,error_message,created_at,completed_at").in("provider_slug", catalogSlugs).neq("status", "not_modified").order("created_at", { ascending: false }).limit(20)
 		: { data: [], error: null };
 	if (reviewRuns.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	const reviewRunIds = (reviewRuns.data ?? []).map((run) => String(run.id));
@@ -425,7 +452,9 @@ accountSettingsProviderOnboardingRouter.get("/provider-onboarding", async (c) =>
 			return {
 				provider_slug: slug,
 				name: providerState?.name ?? provider.provider_slug,
+				website_url: providerState?.metadata?.website_url ?? providerState?.metadata?.link ?? application?.website_url ?? catalogApplicationsByProvider.get(slug)?.find((row) => row.application_type === "create")?.website_url ?? null,
 				provider_review_status: reviewStatus,
+				provider_approval_status: typeof selfServe?.provider_review_status === "string" ? selfServe.provider_review_status : reviewStatus,
 				canManageCatalog: isAdmin || !isProviderAccessBlockedByReview({
 					application,
 					fallbackReviewStatus: typeof selfServe?.provider_review_status === "string" ? selfServe.provider_review_status : null,

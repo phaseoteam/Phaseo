@@ -70,9 +70,10 @@
       "POST",
       "PUT",
       "ms",
-      "302 ms",
+      "0.30 s",
       "tok/s",
-      "t/s"
+      "t/s",
+      "tps"
     ]
   },
   {
@@ -101,12 +102,15 @@
   },
   {
     "files": [
-      "src/app/[locale]/(auth)/activate/page.tsx"
+      "src/features/activate/ActivatePage.tsx"
+    ],
+    "attributes": [
+      "placeholder"
     ],
     "texts": [
-      "?user_code=XXXX-XXXX"
+      "XXXX-XXXX"
     ],
-    "reason": "OAuth device-flow query string example."
+    "reason": "OAuth device-flow user code format hint for the code input, the same in every language."
   },
   {
     "files": [
@@ -169,7 +173,7 @@
   },
   {
     "files": [
-      "src/app/[locale]/(dashboard)/internal/data/models/edit/[...modelId]/ModelLegacyEditor.tsx"
+      "src/features/internal/data/models/edit/modelId/ModelLegacyEditor.tsx"
     ],
     "texts": [
       "openai/model-latest"
@@ -178,7 +182,7 @@
   },
   {
     "files": [
-      "src/app/[locale]/(dashboard)/internal/data/models/new/NewModelForm.tsx"
+      "src/features/internal/data/models/new/NewModelForm.tsx"
     ],
     "texts": [
       "starter-monthly",
@@ -192,7 +196,7 @@
   },
   {
     "files": [
-      "src/app/[locale]/(dashboard)/internal/credits/page.tsx",
+      "src/features/internal/credits/InternalCreditsPage.tsx",
       "src/components/(gateway)/credits/RedeemCreditCodeCard.tsx"
     ],
     "texts": [
@@ -202,7 +206,7 @@
   },
   {
     "files": [
-      "src/app/[locale]/(dashboard)/internal/gateway-benchmark/GatewayBenchmarkClient.tsx"
+      "src/features/internal/gateway-benchmark/GatewayBenchmarkClient.tsx"
     ],
     "texts": [
       "ms |",
@@ -248,6 +252,15 @@
       "Capabilities Index"
     ],
     "reason": "Short form of the branded Epoch Capabilities Index dataset name."
+  },
+  {
+    "files": [
+      "src/components/(gateway)/settings/spend-rules/SpendRuleEditorSheet.tsx"
+    ],
+    "texts": [
+      "openai/gpt-5"
+    ],
+    "reason": "Canonical model ID example for the spend alert model scope."
   },
   {
     "files": [
@@ -349,7 +362,7 @@
   },
   {
     "files": [
-      "src/app/[locale]/(dashboard)/tools/latency-comparison/LatencyComparisonClient.tsx"
+      "src/features/tools/latency-comparison/LatencyComparisonClient.tsx"
     ],
     "texts": [
       "sk-..."
@@ -369,5 +382,70 @@
       "2xl"
     ],
     "reason": "Developer breakpoint indicator values, matching Tailwind code identifiers."
+  },
+  {
+    "files": [
+      "src/components/(data)/benchmark/ArtificialAnalysisDashboardInspection.tsx"
+    ],
+    "kinds": [
+      "jsx-text"
+    ],
+    "texts": [
+      "Artificial Analysis ↗"
+    ],
+    "reason": "Official benchmark publisher name followed by an external-link indicator; the brand remains in its official spelling."
+  },
+  {
+    "files": [
+      "src/components/(gateway)/settings/presets/PresetPromptTemplateEditor.tsx"
+    ],
+    "attributes": [
+      "placeholder"
+    ],
+    "texts": [
+      "[{\"type\":\"function\",\"function\":{\"name\":\"assign\",\"parameters\":{\"type\":\"object\"}}}]",
+      "{\"type\":\"json_schema\",\"json_schema\":{\"name\":\"result\",\"schema\":{\"type\":\"object\"}}}"
+    ],
+    "reason": "JSON examples in the template tools and response format inputs; they are API values, not copy."
+  },
+  {
+    "files": [
+      "src/components/(gateway)/settings/slack/SlackAgentSettingsClient.tsx"
+    ],
+    "attributes": [
+      "placeholder"
+    ],
+    "texts": [
+      "C0123ABCD, C0456EFGH"
+    ],
+    "reason": "Example Slack channel IDs in the usage-data channel input; they are Slack identifiers in their exact format, not copy."
+  },
+  {
+    "files": [
+      "src/components/(gateway)/settings/trusted-workloads/TrustedWorkloadsSettingsClient.tsx"
+    ],
+    "attributes": [
+      "placeholder"
+    ],
+    "texts": [
+      "acme",
+      "team_…",
+      "prj_…",
+      "refs/heads/main",
+      "production"
+    ],
+    "reason": "Example Vercel team slug, Team ID and Project ID prefixes, a Git ref and a GitHub environment name in the trust policy inputs; they are identifiers in the format the platforms issue, not copy."
+  },
+  {
+    "reason": "Example preset label value. Labels are lowercase identifiers sent in API requests (prompt.version or @slug@label), so the example stays in English.",
+    "files": [
+      "src/components/(gateway)/settings/presets/PresetVersionLabels.tsx"
+    ],
+    "attributes": [
+      "placeholder"
+    ],
+    "texts": [
+      "production"
+    ]
   }
 ]

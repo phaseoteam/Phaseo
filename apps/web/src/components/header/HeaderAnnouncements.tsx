@@ -1,6 +1,4 @@
-"use client";
-
-import Link from "next/link";
+import Link from "@/components/link";
 import { ArrowUpRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
@@ -22,8 +20,6 @@ export function HeaderAnnouncements({
 	tertiaryLabel?: string;
 	tertiaryHref?: string;
 }) {
-	if (!message) return null;
-
 	const slides = useMemo(
 		() =>
 			[
@@ -59,6 +55,8 @@ export function HeaderAnnouncements({
 			clearInterval(interval);
 		};
 	}, [slides.length]);
+
+	if (!message) return null;
 
 	const mobileSlide = slides[mobileIndex] ?? slides[0];
 

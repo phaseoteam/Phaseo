@@ -6,7 +6,7 @@ import type { ProviderExecuteArgs, AdapterResult } from "../../types";
 import { EmbeddingsSchema, type EmbeddingsRequest } from "@core/schemas";
 import { sanitizePayload } from "../../utils";
 import { computeBill } from "@pipeline/pricing/engine";
-import { azureDeployment, azureHeaders, azureUrl, resolveAzureConfig, resolveAzureKey } from "../config";
+import { azureDeployment, azureHeaders, azureUrl, resolveAzureConfig, resolveAzureCredential } from "../config";
 
 function mapGatewayToAzureEmbeddings(body: EmbeddingsRequest) {
     return {
@@ -28,20 +28,20 @@ function mapAzureToGatewayEmbeddings(json: any): any {
 }
 
 export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
-    const keyInfo = await resolveAzureKey(args);
+    const keyInfo = resolveAzureCredential(args);
     const sanitizedBody = sanitizePayload(EmbeddingsSchema, args.body);
     const modifiedBody: EmbeddingsRequest = {
         ...sanitizedBody,
         model: args.providerModelSlug || args.model,
     };
     const req = mapGatewayToAzureEmbeddings(modifiedBody);
-    const config = resolveAzureConfig();
-    const deployment = azureDeployment(args);
+    const config = resolveAzureConfig(args);
+    const deployment = config.deployment ? encodeURIComponent(config.deployment) : azureDeployment(args);
     const url = azureUrl(`openai/deployments/${deployment}/embeddings`, config.apiVersion, config.baseUrl);
 
     const res = await fetch(url, {
         method: "POST",
-        headers: azureHeaders(keyInfo.key),
+        headers: azureHeaders(keyInfo.key, keyInfo.authType),
         body: JSON.stringify(req),
     });
 

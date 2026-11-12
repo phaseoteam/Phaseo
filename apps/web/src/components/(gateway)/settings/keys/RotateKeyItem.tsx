@@ -1,4 +1,3 @@
-"use client";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
 import React, { useMemo, useState } from "react";
@@ -24,11 +23,11 @@ import {
 } from "@/components/ui/select";
 import { RefreshCw } from "lucide-react";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
-import { useLocale } from "next-intl";
+import { useLocale } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
-import { rotateApiKeyAction } from "@/app/(dashboard)/settings/keys/actions";
+import { rotateApiKeyAction } from "@/features/settings/keys/actions";
 import { SecretRevealActions } from "./SecretRevealActions";
 
 type ExpiryMode = "immediate" | "1h" | "24h" | "7d" | "custom" | "never";
@@ -111,11 +110,11 @@ export default function RotateKeyItem({
 		setLoading(true);
 		const toastId = toast.loading(t("keys.rotating"));
 		try {
-			const result = await rotateApiKeyAction({
+			const result = await rotateApiKeyAction({ data: {
 				id: String(k.id),
 				newName: newName.trim(),
 				previousKeyExpiresAt: expiresAtIso,
-			});
+			} });
 			setNewPlaintext(result?.plaintext ?? null);
 			void invalidateSettings();
 			setOldExpiryApplied(result?.previousKeyExpiresAt ?? expiresAtIso);
@@ -217,7 +216,7 @@ export default function RotateKeyItem({
 					</form>
 				) : (
 					<div className="space-y-4">
-						<div className="font-mono break-all select-all rounded-lg p-4 bg-gray-100 dark:bg-gray-800">
+						<div className="ph-no-capture font-mono break-all select-all rounded-lg p-4 bg-gray-100 dark:bg-gray-800">
 							{newPlaintext}
 						</div>
 						<div className="text-sm text-muted-foreground">

@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "mmlu-redux",
-  "benchmark_name": "MMLU Redux",
-  "category": null,
-  "ascending_order": null,
-  "type": "percentage",
-  "link": null,
-  "total_models": 67
-}

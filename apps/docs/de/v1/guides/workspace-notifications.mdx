@@ -4,46 +4,130 @@ description: "Sende Workspace-Alarme per E-Mail, in Chat-Kanäle oder an einen H
 icon: "bell-ring"
 ---
 
-Nutze Benachrichtigungsziele, um aktivierte Workspace-Alarme an die Tools zu senden, die dein Team bereits überwacht. Die Ziele werden im gesamten Workspace gemeinsam genutzt und können getestet werden, bevor du ihnen wichtige Betriebsalarme anvertraust.
+Füge unter **Einstellungen → Benachrichtigungen** ein Ziel hinzu, um die Alarme deines Workspace per E-Mail, an Slack, Discord, Microsoft Teams oder an deinen eigenen HTTPS-Webhook zu senden. Ziele gehören zum Workspace, und du kannst einen Test senden, bevor du dich auf eines verlässt.
 
-## Ziel hinzufügen
-
-1. Öffne **Gateway → Einstellungen → Benachrichtigungen**.
-2. Wähle **Ziel hinzufügen** aus.
-3. Gib einen Namen ein und wähle einen oder mehrere Kanäle aus.
-4. Füge die Zieldetails und bei Bedarf Erwähnungen hinzu.
-5. Wähle für jeden eingerichteten Kanal **Test senden** aus.
-6. Erstelle die Ziele, sobald alle Tests erfolgreich waren.
-
-Phaseo unterstützt:
-
-- E-Mail-Adressen und Verteilerlisten
-- Discord-Kanäle über ein Bot-Token
-- Discord-Webhooks
-- eingehende Slack-Webhooks
-- URLs von Microsoft-Teams-Workflows
-- eigene HTTPS-Webhooks
+| Ziel | Was du angibst | Erwähnungen |
+| --- | --- | --- |
+| E-Mail | Adressen oder Verteilerlisten | Keine |
+| Slack | Eine URL für eingehende Webhooks | Benutzer-IDs und Benutzergruppen-IDs |
+| Discord | Einen Kanal und ein Bot-Token oder eine Webhook-URL | Benutzer-IDs und Rollen-IDs |
+| Microsoft Teams | Eine Workflow-URL | Microsoft-365-E-Mail-Adressen oder Entra-Objekt-IDs |
+| Eigener Webhook | Eine HTTPS-URL | Keine; Zustellungen sind [signiert](#verify-webhook-signatures) |
 
 Zugangsdaten und Webhook-URLs werden vor dem Speichern verschlüsselt. Beschränke Kanalzugangsdaten auf den Benachrichtigungsversand und rotiere sie, falls sie offengelegt wurden.
 
+## Ein Ziel hinzufügen
+
+<Steps>
+<Step title="Ziel anlegen">
+Öffne **Einstellungen → Benachrichtigungen**, wähle **Ziel hinzufügen**, gib einen Namen ein und wähle einen oder mehrere Kanäle. Füge die Zieldetails und bei Bedarf Erwähnungen hinzu.
+</Step>
+<Step title="Jeden Kanal testen">
+Wähle für jeden Kanal **Test senden** und lege die Ziele an, sobald alle Tests erfolgreich waren.
+</Step>
+<Step title="Das Signaturgeheimnis speichern">
+Ein eigener Webhook bekommt beim Anlegen ein Signaturgeheimnis. Kopiere es aus dem Dialog, der sich öffnet; es wird nur einmal angezeigt.
+</Step>
+</Steps>
+
+In Skripten erstellst du ein Ziel mit `POST /v1/notifications/destinations`, prüfst es mit `POST /v1/notifications/destinations/{id}/test` und legst mit `PUT /v1/notifications/routes/{eventKind}` fest, welche Alarme es erhält, jeweils mit einem Management-Schlüssel.
+
+Verwende Erwähnungen sparsam: Schick häufige Alarme an einen überwachten Kanal, statt eine große Gruppe direkt zu alarmieren.
+
+<span id="enable-product-alerts"></span>
 ## Produktalarme aktivieren
 
-Auf der Benachrichtigungsseite werden die für deinen Workspace verfügbaren Alarmtypen angezeigt. Aktiviere **Alarme zur Modellabkündigung**, um vor der Abschaltung eines im Workspace verwendeten Modells benachrichtigt zu werden.
+Die Benachrichtigungsseite listet die Alarmtypen, die für deinen Workspace verfügbar sind. Ziele erhalten einen Alarm zusätzlich zu den integrierten Empfängern, die im Dashboard angezeigt werden.
 
-Zusätzlich zu den im Dashboard angezeigten integrierten Empfängern werden Alarme auch an die eingerichteten Ziele gesendet.
+**Warnungen zur Modellablösung** kündigen an, bevor ein Modell, das der Workspace nutzt, eingestellt wird.
 
-## Erwähnungen
+**Hinweise zu Ersatzmodellen** werden gesendet, wenn das [Routing für eingestellte Modelle](./model-retirement.mdx#route-requests-to-a-replacement-automatically) aktiviert ist und ein Ersatzmodell die Anfragen des Workspace für ein Modell beantwortet, das kein Anbieter mehr bereitstellt. Pro Modell und Ersatzmodell wird ein Hinweis gesendet, wenn ein Ersatzmodell zum ersten Mal erfolgreich antwortet. Der Workspace-Inhaber erhält immer eine E-Mail; wähle Ziele aus, um den Hinweis auch an dein Team zu senden.
 
-Mit optionalen Erwähnungsfeldern kann ein Alarm bestimmte Empfänger benachrichtigen:
+<span id="spend-reports"></span>
+## Ausgabenberichte
 
-- Discord unterstützt Benutzer- und Rollen-IDs.
-- Slack unterstützt Benutzer- und Benutzergruppen-IDs.
-- Microsoft Teams unterstützt Microsoft-365-E-Mail-Adressen oder Entra-Objekt-IDs.
+Workspace-Inhaber erhalten jeden Montag um 09:00 Uhr in der Abrechnungszeitzone des Workspace eine E-Mail mit dem Ausgabenbericht für die Vorwoche von Montag bis Sonntag. Du änderst das auf der Benachrichtigungsseite unter **Ausgabenwarnungen → Ausgabeneinstellungen des Arbeitsbereichs**: täglich (um 09:00 Uhr für den Vortag), wöchentlich, monatlich (am 1. für den Vormonat) oder aus, und ob auch Administratoren ihn erhalten. Zeiträume ohne Ausgaben werden übersprungen.
 
-Verwende Erwähnungen sparsam. Häufige Workspace-Alarme sollten normalerweise an einen überwachten Kanal gehen, statt eine große Gruppe direkt zu alarmieren.
+Jeder Bericht zeigt die Ausgaben und die Veränderung zum vorherigen Zeitraum, die wichtigsten Schlüssel, Modelle, Mitglieder und Abteilungen, die Prognose für diesen Monat, die Reichweite des Guthabens sowie die Ausgabenwarnungen und Sperren des Zeitraums. Wer ihn erhält, kann sich über den Link in der E-Mail abmelden; das stoppt nur die eigene Kopie des Berichts dieses Workspace. Ziele, die an **Ausgabenberichte** weitergeleitet werden, erhalten pro Bericht eine Zusammenfassung.
 
-## Ziele testen und entfernen
+Dieselben Einstellungen heißen in der [API für Benachrichtigungseinstellungen](../api-reference/endpoint/notifications-settings-update.mdx) `spend.report_cadence` und `spend.report_include_admins`.
 
-Wähle neben einem vorhandenen Ziel **Test senden**, nachdem du Zugangsdaten rotiert oder die Kanaleinstellungen geändert hast. Entferne nicht mehr überwachte Ziele, damit Alarme nicht scheinbar an einen aufgegebenen Kanal gesendet werden.
+Für Warnungen zu Ausgaben, Budgets, Prognosen, Ausgabenspitzen und niedrigem Guthaben sowie zum Sperren von Anfragen, sobald die Ausgaben ein Limit überschreiten, siehe [Ausgabenwarnungen](./spend-alerts.mdx).
 
-Eigene Webhooks müssen HTTPS verwenden und die Anfrage vor der Verarbeitung prüfen. Gib zeitnah eine erfolgreiche Antwort zurück und verlagere langsamere Aufgaben in einen Hintergrundprozess.
+<Note>Ausgabenberichte per E-Mail werden schrittweise eingeführt. Bis sie aktiviert sind, wird deine Auswahl gespeichert, aber kein Bericht verschickt.</Note>
+
+## Ziele funktionsfähig halten
+
+Wähle neben einem vorhandenen Ziel **Test senden**, nachdem du Zugangsdaten rotiert oder seinen Kanal geändert hast. Entferne Ziele, die niemand überwacht, damit Alarme nicht als zugestellt erscheinen, obwohl sie in einem verwaisten Kanal landen.
+
+Ein eigener Webhook-Empfänger sollte jede Anfrage prüfen, bevor er sie verarbeitet, zügig eine erfolgreiche Antwort zurückgeben und langsamere Arbeit in einen Hintergrundjob verlagern.
+
+<span id="verify-webhook-signatures"></span>
+## Webhook-Signaturen prüfen
+
+Phaseo signiert jede Zustellung an eigene Webhooks, auch Tests von einem gespeicherten Ziel, nach demselben Schema wie [Video- und Batch-Webhooks](./async-video-and-batch.mdx#receive-updates). Jede Anfrage enthält diese Header:
+
+```http
+POST /your/endpoint HTTP/1.1
+content-type: application/json
+user-agent: Phaseo-Notifications/1.0
+x-phaseo-event-id: 6f1c0f5e-3f0b-4a39-9a51-2f4f2c1d9e10
+x-phaseo-event-type: rate_limit_throttled
+x-phaseo-timestamp: 1792569600
+x-phaseo-signature: 5d2a…e41f
+```
+
+`x-phaseo-signature` ist der hexadezimale HMAC-SHA256 aus dem Wert von `x-phaseo-timestamp`, einem Punkt (`.`) und dem **unveränderten Request-Body**, berechnet mit dem Signaturgeheimnis des Ziels (`whsec_…`). `x-phaseo-timestamp` ist in Unix-Sekunden angegeben.
+
+So prüfst du eine Zustellung:
+
+1. Lies den unveränderten Body, bevor du ihn als JSON parst.
+2. Berechne die Signatur neu und vergleiche sie in konstanter Zeit.
+3. Lehne Zeitstempel ab, die mehr als fünf Minuten von deiner Uhr abweichen.
+4. Dedupliziere anhand von `x-phaseo-event-id`. Fehlgeschlagene Zustellungen werden wiederholt, und jeder Versuch wird mit einem neuen Zeitstempel erneut signiert.
+
+<CodeGroup>
+```js Node.js
+import crypto from "node:crypto";
+
+// rawBody ist der Request-Body genau wie empfangen, als String.
+export function verifyPhaseoSignature(rawBody, headers, secret, toleranceSeconds = 300) {
+  const timestamp = headers["x-phaseo-timestamp"];
+  const signature = headers["x-phaseo-signature"];
+  if (!timestamp || !signature) return false;
+  if (Math.abs(Date.now() / 1000 - Number(timestamp)) > toleranceSeconds) return false;
+  const expected = crypto
+    .createHmac("sha256", secret)
+    .update(`${timestamp}.${rawBody}`)
+    .digest("hex");
+  const a = Buffer.from(expected, "hex");
+  const b = Buffer.from(signature, "hex");
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+```
+
+```python Python
+import hashlib
+import hmac
+import time
+
+# raw_body ist der Request-Body genau wie empfangen, als Bytes.
+def verify_phaseo_signature(raw_body: bytes, headers, secret: str, tolerance_seconds: int = 300) -> bool:
+    timestamp = headers.get("x-phaseo-timestamp", "")
+    signature = headers.get("x-phaseo-signature", "")
+    if not timestamp.isdigit() or not signature:
+        return False
+    if abs(time.time() - int(timestamp)) > tolerance_seconds:
+        return False
+    expected = hmac.new(secret.encode(), timestamp.encode() + b"." + raw_body, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, signature)
+```
+</CodeGroup>
+
+### Ein Geheimnis erzeugen oder rotieren
+
+Das Geheimnis wird nur einmal angezeigt, beim Anlegen des Ziels. Um es zu ersetzen, wähle **Geheimnis rotieren** neben dem Ziel unter **Einstellungen → Benachrichtigungen** oder rufe [`POST /v1/notifications/destinations/{id}/rotate-secret`](/de/v1/api-reference/endpoint/notifications-destination-rotate-secret) auf. Die nächste Zustellung wird mit dem neuen Geheimnis signiert, und das alte funktioniert nicht mehr; aktualisiere deinen Empfänger also sofort.
+
+Eigene Webhooks, die vor Einführung der Signierung angelegt wurden, haben kein Geheimnis und werden weiterhin unsigniert zugestellt. In den Einstellungen sind sie als **Unsigniert** markiert. Wähle **Geheimnis erzeugen**, hinterlege das Geheimnis in deinem Empfänger und sende dann einen Test, um die Prüfung zu kontrollieren. Tests aus dem Bereich **Ziel hinzufügen**, bevor das Ziel gespeichert ist, sind unsigniert, weil noch kein Geheimnis existiert.
+
+E-Mail-, Slack-, Discord- und Microsoft-Teams-Ziele werden nicht signiert: Diese Dienste authentifizieren die Webhook-URL oder das Bot-Token selbst.

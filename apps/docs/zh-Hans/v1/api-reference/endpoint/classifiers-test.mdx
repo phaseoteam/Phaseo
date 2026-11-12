@@ -1,0 +1,8 @@
+---
+title: "测试请求分类器"
+sidebarTitle: "测试分类器"
+badge: "Beta"
+openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /classifiers/test"
+description: "在示例提示词和回复上运行一次已保存或草稿分类器。"
+---
+<Note>此端点会使用你自己的凭据发起计费的模型请求，因此需要同时具有 `classifiers:write` 和 `gateway:access` 的 OAuth 令牌。不接受管理密钥。</Note>

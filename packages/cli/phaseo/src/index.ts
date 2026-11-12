@@ -4,27 +4,39 @@ import { spawn } from "node:child_process";
 import { createServer, type IncomingMessage, type ServerResponse } from "node:http";
 import { clearScreenDown, cursorTo, moveCursor } from "node:readline";
 import { createInterface } from "node:readline/promises";
-import { stdin as input, stdout as output, platform } from "node:process";
+import { stdin as input, stdout as output } from "node:process";
 import {
 	apiFetch,
+	assertApiRootAllowed,
 	authorizeUrl,
 	exchangeAuthorizationCode,
 	getSessionAccessToken,
+	isCustomApiRoot,
+	isTrustedBrowserUrl,
 	normalizeApiRoot,
+	oauthUrl,
 	parseScopeArgument,
 	pollDeviceToken,
 	revokeRefreshToken,
 	startDeviceLogin,
 } from "./api.js";
+import { PHASEO_MCP_URL, createMcpTokenSource, exchangeCliTokenForMcp, mcpEndpoint, mcpScopes, runMcpBridge } from "./mcp.js";
 import { clearSession, readSession, writeSession } from "./session.js";
+import { openUrl, prefersDeviceCodeByEnvironment } from "./browser.js";
 import { printError, printJson, sanitizeTerminalText, terminalUi, type TerminalOptions } from "./output.js";
 import { CLI_VERSION } from "./generated/meta.js";
-import { createDoctorReport, detectInstalledPackageManager, type DoctorReport } from "./installation.js";
+import { createDoctorReport, detectInstalledPackageManager, type DoctorReport, type PackageManager } from "./installation.js";
 import { getVersionInfo, removeCommandFor, updateCommandFor, updateInvocationFor } from "./release.js";
 import { runCurie } from "./curie.js";
+import { appendQuery, compact, flagBool, flagNumber, flagString, parseCsvFlag, parseJsonFlag, resolveWorkspaceFlag } from "./flags.js";
+import { managementHelpEntries, runManagementCommand } from "./management.js";
+import { parityHelpEntries, parseIpAllowlist, runParityCommand } from "./parity.js";
 import { isIntegrationSetupName, runIntegrationCommand } from "./integrations/index.js";
 import { isRunnerName, runRunnerCommand } from "./integrations/runners.js";
-import { revokeIntegrationGatewayCredential } from "./integrations/credential.js";
+import { integrationCredentialsForNewLogin, revokeIntegrationGatewayCredential } from "./integrations/credential.js";
+import { findPackageManagerExecutable, packageManagerChildEnv, packageManagerChildInvocation, windowsCommandInterpreter } from "./integrations/installer.js";
+
+export { prefersDeviceCodeByEnvironment, windowsBrowserOpenArgs } from "./browser.js";
 
 type ParsedArgs = {
 	command: string[];
@@ -104,23 +116,6 @@ export function parseArgs(argv: string[]): ParsedArgs {
 	return passthrough ? { command, flags, passthrough } : { command, flags };
 }
 
-function flagString(flags: Record<string, string | boolean>, key: string): string | undefined {
-	const value = flags[key];
-	return typeof value === "string" ? value : undefined;
-}
-
-function flagBool(flags: Record<string, string | boolean>, key: string): boolean {
-	return flags[key] === true || flags[key] === "true" || flags[key] === "1";
-}
-
-function flagNumber(flags: Record<string, string | boolean>, key: string): number | undefined {
-	const value = flagString(flags, key);
-	if (value === undefined) return undefined;
-	const parsed = Number(value);
-	if (!Number.isFinite(parsed)) throw new Error(`--${key} must be a number`);
-	return parsed;
-}
-
 function sleep(ms: number) {
 	return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -137,38 +132,6 @@ function sha256Base64Url(value: string): string {
 	return base64Url(createHash("sha256").update(value).digest());
 }
 
-function appendQuery(path: string, params: Record<string, string | number | boolean | undefined>): string {
-	const [base, existingQuery] = path.split("?", 2);
-	const query = new URLSearchParams(existingQuery ?? "");
-	for (const [key, value] of Object.entries(params)) {
-		if (value === undefined || value === "") continue;
-		query.set(key, String(value));
-	}
-	const text = query.toString();
-	return text ? `${base}?${text}` : base;
-}
-
-function parseJsonFlag(flags: Record<string, string | boolean>, key: string, fallback: Record<string, unknown> = {}): Record<string, unknown> {
-	const raw = flagString(flags, key);
-	if (!raw) return fallback;
-	const parsed = JSON.parse(raw);
-	if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-		throw new Error(`--${key} must be a JSON object`);
-	}
-	return parsed as Record<string, unknown>;
-}
-
-function compact(value: Record<string, unknown>): Record<string, unknown> {
-	return Object.fromEntries(Object.entries(value).filter(([, entry]) => entry !== undefined));
-}
-
-function parseCsvFlag(flags: Record<string, string | boolean>, key: string): string[] {
-	return (flagString(flags, key) ?? "")
-		.split(",")
-		.map((value) => value.trim())
-		.filter(Boolean);
-}
-
 function formatMoneyFromNanos(nanos: unknown): string {
 	const value = Number(nanos ?? 0);
 	if (!Number.isFinite(value)) return "$0.000000";
@@ -179,14 +142,15 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	root: {
 		description: "Phaseo CLI",
 		usage: [
-			"phaseo login [--api-url <url>] [--method browser|device] [--browser] [--device-code] [--scopes <csv>] [--json]",
-			"phaseo <codex|claude-code|hermes|opencode|pi|prime-agent|deepseek-harness|openclaw|aider|roo-code|kilo-code|continue|cursor|zed> [--model <id>] [--catalog all|default] [--dry-run] [--json]",
-			"phaseo <cline|kilo|omp|muse|minimax> [--model <id>] [--catalog all|default] [--dry-run] [--skip-install] -- [harness args]",
+			"phaseo login [--api-url <url> [--allow-custom-api-url]] [--method browser|device] [--browser] [--device-code] [--scopes <csv>] [--json]",
+			"phaseo <codex|claude-code|hermes|opencode|fx|pi|prime-agent|deepseek-harness|openclaw|aider|roo-code|kilo-code|continue|cursor|zed> [--model <id>] [--catalog all|default] [--key <key>|--key-stdin] [--dry-run] [--json]",
+			"phaseo <cline|kilo|omp|muse|minimax> [--model <id>] [--catalog all|default] [--key <key>|--key-stdin] [--dry-run] [--skip-install] -- [harness args]",
 			"phaseo logout [--json]",
 			"phaseo whoami [--json]",
 			"phaseo version | v [--json]",
 			"phaseo update [--check] [--json]",
 			"phaseo doctor [--json]",
+			"phaseo mcp [--manage]",
 			"",
 			"phaseo keys --help",
 			"phaseo workspaces --help",
@@ -208,27 +172,56 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 			"phaseo curie --help",
 			"phaseo integrations --help",
 			"phaseo webhooks --help",
+			"phaseo byok --help",
+			"phaseo budgets --help",
+			"phaseo department-budgets --help",
+			"phaseo spend-rules --help",
+			"phaseo spend-blocks --help",
+			"phaseo rate-limits --help",
+			"phaseo observability --help",
+			"phaseo notifications --help",
+			"phaseo routing --help",
+			"phaseo private-models --help",
+			"phaseo classifiers --help",
+			"phaseo data-contribution --help",
+			"phaseo identity --help",
+			"phaseo workload-identity --help",
+			"phaseo audit-events --help",
+			"phaseo apps --help",
+			"phaseo feedback --help",
+			"phaseo preset-test-runs --help",
+			"phaseo events --help",
+			"phaseo invites --help",
+			"phaseo authorized-apps --help",
+			"phaseo profile --help",
 			"phaseo api --help",
 			"",
 			"Login scopes:",
 			"  Default login requests full first-party CLI access across the control plane.",
 			"  Use --scopes workspaces:read,keys:write,... when a narrower token is preferred.",
+			"  Use --scopes billing:write to also allow credit top-ups (phaseo credits add).",
+			"  feedback, events and preset-test-runs need feedback:read,feedback:write, which are not requested by default.",
+			"  byok and private-models work with the default scopes; sessions from before they were allowed need phaseo login again.",
+			"",
+			"Confirmation:",
+			"  Commands that show [--yes] ask before they delete, revoke, lift, rotate, or merge. Agents and scripts pass --yes.",
 			"",
 			"Environment:",
 			"  PHASEO_API_URL  Override API root, defaults to https://api.phaseo.app",
+			"  PHASEO_ALLOW_CUSTOM_API_URL=1  Allow login to an API root other than api.phaseo.app or loopback (same as --allow-custom-api-url)",
 		],
 	},
 	setup: {
-		description: "Configure an installed coding harness with a dedicated Phaseo key and compatible model catalog.",
-		usage: ["phaseo setup <integration> [--model <id>] [--catalog all|default] [--dry-run] [--json]"],
+		description: "Configure an installed coding harness with a dedicated Phaseo key and compatible model catalog. The first setup opens a dashboard page where you approve the key (name, spending limit and expiry); the CLI then picks it up once. --key uses a key you made in the dashboard instead.",
+		usage: ["phaseo setup <integration> [--model <id>] [--catalog all|default] [--key <key>|--key-stdin] [--dry-run] [--json]"],
 	},
 	run: {
 		description: "Launch Cline, Kilo Code, oh-my-pi, Muse Code, or MiniMax Code against the Phaseo gateway without changing persistent harness configuration.",
-		usage: ["phaseo run <cline|kilo|omp|muse|minimax> [--model <id>] [--catalog all|default] [--dry-run] [--skip-install] -- [harness args]"],
+		usage: ["phaseo run <cline|kilo|omp|muse|minimax> [--model <id>] [--catalog all|default] [--key <key>|--key-stdin] [--dry-run] [--skip-install] -- [harness args]"],
 	},
 	login: {
 		usage: [
-			"phaseo login [--api-url <url>] [--method browser|device] [--browser] [--device-code] [--scopes <csv>] [--json]",
+			"phaseo login [--api-url <url> [--allow-custom-api-url]] [--method browser|device] [--browser] [--device-code] [--scopes <csv>] [--json]",
 		],
 	},
 	version: {
@@ -251,7 +244,7 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	},
 	"curie run": { usage: ["phaseo curie run <config.json> [--repeats <n>] [--report <path>] [--base-url <url> --allow-custom-base-url --api-key-env PHASEO_CURIE_API_KEY] [--dry-run] [--json]"] },
 	integrations: {
-		description: "Configure coding agents to use the Phaseo gateway without writing credentials to their configuration.",
+		description: "Configure coding agents to use the Phaseo gateway with a dedicated key per integration. Codex, Claude Code, Pi, Prime Agent and OpenClaw fetch it on demand through phaseo integrations credential; Aider, Continue, Hermes, OpenCode and DeepSeek Harness store it in their own config or credential files. You approve each new key in the browser, where the dashboard shows its name, $100 monthly spend limit and 90-day expiry; setup asks for a new one when a key expires. --key uses a key you made in the dashboard instead. To rotate a key, run phaseo integrations remove <integration>, then phaseo setup <integration>.",
 		usage: [
 			"phaseo integrations list [integration] [--json]",
 			"phaseo integrations status [integration] [--json]",
@@ -261,26 +254,31 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	},
 	"integrations list": { usage: ["phaseo integrations list [integration] [--json]"] },
 	"integrations status": { usage: ["phaseo integrations status [integration] [--json]"] },
-	"integrations setup": { usage: ["phaseo integrations setup <integration> [--model <id>] [--catalog all|default] [--dry-run] [--json]"] },
+	"integrations setup": { usage: ["phaseo integrations setup <integration> [--model <id>] [--catalog all|default] [--key <key>|--key-stdin] [--dry-run] [--json]"] },
 	"integrations remove": { usage: ["phaseo integrations remove <integration> [--dry-run] [--json]"] },
+	mcp: {
+		description: "Run the Phaseo MCP over stdio for a local agent, signed in with your phaseo login (no second sign-in). Read-only unless you pass --manage, which adds the account management tools your login allows; your agent must still confirm each change with you. It never runs paid model calls. Add it with: claude mcp add phaseo -- phaseo mcp, or codex mcp add phaseo -- phaseo mcp. Each MCP token lasts 15 minutes; after phaseo logout it stops when the current one runs out.",
+		usage: ["phaseo mcp [--manage]"],
+	},
 	logout: { usage: ["phaseo logout [--json]"] },
 	whoami: { usage: ["phaseo whoami [--json]"] },
 	keys: {
+		description: "Manage API keys. They belong to the workspace you chose at phaseo login unless you pass --workspace <id-or-slug>, which names another workspace where you are an owner or admin (phaseo whoami lists yours). --workspace needs a phaseo login session; API keys and management keys can only manage their own workspace.",
 		usage: [
 			"phaseo keys current [--json]",
-			"phaseo keys list [--limit <n>] [--offset <n>] [--include-disabled] [--json]",
-			"phaseo keys create --name <name> [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]",
-			"phaseo keys get <id-or-hash> [--json]",
-			"phaseo keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--json]",
-			"phaseo keys delete <id-or-hash> [--json]",
+			"phaseo keys list [--workspace <id-or-slug>] [--limit <n>] [--offset <n>] [--include-disabled] [--json]",
+			"phaseo keys create --name <name> [--workspace <id-or-slug>] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]",
+			"phaseo keys get <id-or-hash> [--workspace <id-or-slug>] [--json]",
+			"phaseo keys update <id-or-hash> [--workspace <id-or-slug>] [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--ip-allowlist <label=address,...>|none] [--json]",
+			"phaseo keys delete <id-or-hash> [--workspace <id-or-slug>] [--json]",
 		],
 	},
 	"keys current": { usage: ["phaseo keys current [--json]"] },
-	"keys list": { usage: ["phaseo keys list [--limit <n>] [--offset <n>] [--include-disabled] [--json]"] },
-	"keys create": { usage: ["phaseo keys create --name <name> [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]"] },
-	"keys get": { usage: ["phaseo keys get <id-or-hash> [--json]"] },
-	"keys update": { usage: ["phaseo keys update <id-or-hash> [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--json]"] },
-	"keys delete": { usage: ["phaseo keys delete <id-or-hash> [--json]"] },
+	"keys list": { usage: ["phaseo keys list [--workspace <id-or-slug>] [--limit <n>] [--offset <n>] [--include-disabled] [--json]"] },
+	"keys create": { usage: ["phaseo keys create --name <name> [--workspace <id-or-slug>] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--expires-at <iso>] [--show-secret] [--json]"] },
+	"keys get": { usage: ["phaseo keys get <id-or-hash> [--workspace <id-or-slug>] [--json]"] },
+	"keys update": { usage: ["phaseo keys update <id-or-hash> [--workspace <id-or-slug>] [--name <name>] [--disabled true|false] [--limit <usd>] [--limit-reset daily|weekly|monthly] [--ip-allowlist <label=address,...>|none] [--json]"] },
+	"keys delete": { usage: ["phaseo keys delete <id-or-hash> [--workspace <id-or-slug>] [--json]"] },
 	workspaces: {
 		usage: [
 			"phaseo workspaces list [--json]",
@@ -401,8 +399,25 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	},
 	"pricing models": { usage: ["phaseo pricing models [--json]"] },
 	"pricing calculate": { usage: ["phaseo pricing calculate --provider <provider> --model <model> --endpoint <endpoint> --usage-json <json>"] },
-	credits: { usage: ["phaseo credits get [--json]"] },
+	credits: {
+		usage: [
+			"phaseo credits get [--json]",
+			"phaseo credits add --amount <usd> [--workspace <id>] [--idempotency-key <key>] [--open] [--no-wait] [--json]",
+			"phaseo credits topups get <id> [--json]",
+			"",
+			"Top-ups:",
+			"  Needs the opt-in billing:write scope: phaseo login --scopes billing:write",
+			"  $5 to $500 per top-up. With a saved card, workspace owners and admins get an email and one of them",
+			"  confirms the charge; otherwise the command prints a checkout link for a person to pay with a new card.",
+			"  Declined, expired and failed top-ups end with a reason code; do not retry them automatically.",
+		],
+	},
 	"credits get": { usage: ["phaseo credits get [--json]"] },
+	"credits add": {
+		description: "Add credits. Nothing is charged until a workspace owner or admin confirms by email, or pays at the printed checkout link.",
+		usage: ["phaseo credits add --amount <usd> [--workspace <id>] [--idempotency-key <key>] [--open] [--no-wait] [--json]"],
+	},
+	"credits topups": { usage: ["phaseo credits topups get <id> [--json]"] },
 	activity: { usage: ["phaseo activity list [--days <n>] [--limit <n>] [--offset <n>] [--json]"] },
 	"activity list": { usage: ["phaseo activity list [--days <n>] [--limit <n>] [--offset <n>] [--json]"] },
 	logs: {
@@ -450,13 +465,41 @@ const HELP_ENTRIES: Record<string, HelpEntry> = {
 	"api delete": { usage: ["phaseo api delete <v1-path> [--json]"] },
 };
 
+const DATA_CONTRIBUTION_USAGE: Record<string, string> = {
+	"data-contribution get": "phaseo data-contribution get [--json]",
+	"data-contribution enable": "phaseo data-contribution enable [--reason <text>] [--json]",
+	"data-contribution disable": "phaseo data-contribution disable [--reason <text>] [--json]",
+	"data-contribution classifiers create": "phaseo data-contribution classifiers create --name <name> [--body-json <json>] [--json]",
+	"data-contribution classifiers update": "phaseo data-contribution classifiers update <id> --body-json <json> [--json]",
+	"data-contribution classifiers delete": "phaseo data-contribution classifiers delete <id> [--json]",
+};
+
+for (const [key, usage] of Object.entries(DATA_CONTRIBUTION_USAGE)) {
+	HELP_ENTRIES[key] = { usage: [usage] };
+	const words = key.split(" ");
+	for (let length = 1; length < words.length; length++) {
+		const prefix = words.slice(0, length).join(" ");
+		HELP_ENTRIES[prefix] ??= { usage: [] };
+		HELP_ENTRIES[prefix].usage.push(usage);
+	}
+}
+
+for (const [key, entry] of [...Object.entries(managementHelpEntries()), ...Object.entries(parityHelpEntries())]) {
+	const existing = HELP_ENTRIES[key];
+	if (!existing) {
+		HELP_ENTRIES[key] = entry;
+		continue;
+	}
+	for (const line of entry.usage) if (!existing.usage.includes(line)) existing.usage.push(line);
+	if (!existing.description && entry.description) existing.description = entry.description;
+}
+
 export function helpKeyForCommand(command: string[]): string {
 	if (command[0]?.toLowerCase() === "v") return "version";
-	if (command.length >= 2) {
-		const twoPart = `${command[0]} ${command[1]}`;
-		if (twoPart in HELP_ENTRIES) return twoPart;
+	for (let length = Math.min(command.length, 4); length >= 1; length--) {
+		const key = command.slice(0, length).join(" ");
+		if (key in HELP_ENTRIES) return key;
 	}
-	if (command.length >= 1 && command[0] in HELP_ENTRIES) return command[0];
 	return "root";
 }
 
@@ -557,6 +600,19 @@ async function doctor(flags: Record<string, string | boolean>) {
 	process.stdout.write(renderDoctorText(report));
 }
 
+/** Resolves the package manager to an absolute path and runs it without a shell. */
+export async function updateChildInvocation(
+	manager: PackageManager,
+	env: NodeJS.ProcessEnv = process.env,
+	platform: NodeJS.Platform = process.platform,
+	commandInterpreter = windowsCommandInterpreter(env),
+) {
+	const executable = await findPackageManagerExecutable(manager, env, platform);
+	if (!executable) throw new Error(`Could not find ${manager} on PATH. Run: ${updateCommandFor(manager)}`);
+	const invocation = updateInvocationFor(manager, platform);
+	return packageManagerChildInvocation({ command: manager, executable, args: invocation.args }, platform, commandInterpreter);
+}
+
 async function updateCli(flags: Record<string, string | boolean>) {
 	if (flagBool(flags, "check")) {
 		await printVersion({ ...flags, "refresh-version": true });
@@ -566,15 +622,16 @@ async function updateCli(flags: Record<string, string | boolean>) {
 	if (!manager) {
 		throw new Error("Could not determine how this Phaseo CLI was installed. Run `phaseo doctor` for installation details.");
 	}
-	const invocation = updateInvocationFor(manager);
+	const childInvocation = await updateChildInvocation(manager);
 	const json = flagBool(flags, "json");
 	if (!json) process.stdout.write(`Updating with ${updateCommandFor(manager)}\n`);
 	await new Promise<void>((resolve, reject) => {
-		const useCommandShell = process.platform === "win32";
-		const child = spawn(useCommandShell ? updateCommandFor(manager) : invocation.command, useCommandShell ? [] : invocation.args, {
+		const child = spawn(childInvocation.command, childInvocation.args, {
+			env: packageManagerChildEnv(),
 			stdio: json ? "ignore" : "inherit",
-			shell: useCommandShell,
+			shell: false,
 			windowsHide: true,
+			windowsVerbatimArguments: childInvocation.windowsVerbatimArguments,
 		});
 		child.once("error", reject);
 		child.once("exit", (code) => {
@@ -599,7 +656,9 @@ async function maybePrintUpdateNotice(json: boolean) {
 }
 
 export function shouldPrintUpdateNoticeForCommand(command: string[]): boolean {
-	return !(command[0] === "integrations" && command[1] === "credential");
+	// Commands whose stdout is data (a credential, a CSV export) must not get a trailing notice.
+	if (command[0] === "integrations" && command[1] === "credential") return false;
+	return !(command[0] === "analytics" && command[1] === "export");
 }
 
 async function request(path: string, options: { method?: HttpMethod; body?: Record<string, unknown> } = {}) {
@@ -611,8 +670,46 @@ async function request(path: string, options: { method?: HttpMethod; body?: Reco
 	});
 }
 
+async function readAllStdin(): Promise<string> {
+	if (input.isTTY) process.stderr.write("Reading from stdin. Paste the value, then press Ctrl+D (Ctrl+Z then Enter on Windows).\n");
+	const chunks: Buffer[] = [];
+	for await (const chunk of input) chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+	return Buffer.concat(chunks).toString("utf8");
+}
+
+async function askYesNo(question: string): Promise<boolean> {
+	const prompt = createInterface({ input, output });
+	try {
+		return /^y(es)?$/i.test((await prompt.question(question)).trim());
+	} finally {
+		prompt.close();
+	}
+}
+
+function managementDeps() {
+	return {
+		request: (path: string, options: { method: HttpMethod; body?: Record<string, unknown> }) => request(path, options),
+		readStdin: readAllStdin,
+		env: process.env,
+		confirm: askYesNo,
+		interactive: isInteractiveTerminal(),
+		write: (text: string) => {
+			process.stdout.write(text);
+		},
+	};
+}
+
+/** Writes human output that interpolates server strings, with terminal control characters removed. */
+function writeServerText(text: string): void {
+	process.stdout.write(sanitizeTerminalText(text));
+}
+
+export function renderList(items: any[], render: (item: any) => string): string {
+	return items.map((item) => `${sanitizeTerminalText(render(item))}\n`).join("");
+}
+
 function printList(items: any[], render: (item: any) => string): void {
-	for (const item of items) process.stdout.write(`${render(item)}\n`);
+	process.stdout.write(renderList(items, render));
 }
 
 function countRenderedLines(text: string): number {
@@ -636,21 +733,6 @@ function repaintBlock(text: string, previousLineCount: number): number {
 
 function isInteractiveTerminal(): boolean {
 	return Boolean(input.isTTY && output.isTTY);
-}
-
-export function prefersDeviceCodeByEnvironment(
-	env: NodeJS.ProcessEnv = process.env,
-): boolean {
-	return Boolean(
-		env.SSH_CONNECTION ||
-			env.SSH_CLIENT ||
-			env.SSH_TTY ||
-			env.CI,
-	);
-}
-
-export function windowsBrowserOpenArgs(url: string): string[] {
-	return ["url.dll,FileProtocolHandler", url];
 }
 
 export function renderOneTimeClientSecret(secret: unknown, showSecret: boolean): string {
@@ -820,30 +902,6 @@ export function callbackListenHost(redirectUri: string): string {
 	return hostname === "[::1]" ? "::1" : hostname;
 }
 
-function openUrl(url: string): boolean {
-	if (prefersDeviceCodeByEnvironment()) {
-		return false;
-	}
-	try {
-		if (platform === "win32") {
-			// Pass the authorization URL as data, never through a command interpreter.
-			spawn("rundll32.exe", windowsBrowserOpenArgs(url), {
-				detached: true,
-				stdio: "ignore",
-			}).unref();
-			return true;
-		}
-		if (platform === "darwin") {
-			spawn("open", [url], { detached: true, stdio: "ignore" }).unref();
-			return true;
-		}
-		spawn("xdg-open", [url], { detached: true, stdio: "ignore" }).unref();
-		return true;
-	} catch {
-		return false;
-	}
-}
-
 function resolveLoginMethod(flags: Record<string, string | boolean>, json: boolean): LoginMethod {
 	if (flagBool(flags, "browser")) return "browser";
 	if (flagBool(flags, "device-code")) return "device";
@@ -1009,13 +1067,18 @@ async function completeLogin(apiRoot: string, tokens: {
 	expires_in: number;
 	scope?: string;
 }, json: boolean) {
+	const { carried, revokeFailures } = await integrationCredentialsForNewLogin(await readSession(), { apiUrl: apiRoot, accessToken: tokens.access_token });
 	await writeSession({
 		accessToken: tokens.access_token,
 		refreshToken: tokens.refresh_token,
 		expiresAt: Date.now() + Number(tokens.expires_in ?? 900) * 1000,
 		apiUrl: apiRoot,
 		scope: tokens.scope,
+		...carried,
 	});
+	if (revokeFailures.length > 0) {
+		process.stderr.write(`${terminalUi({ isTTY: Boolean(process.stderr.isTTY) }).warning(`Could not revoke ${revokeFailures.length} integration key(s) from the previous session: ${revokeFailures.map((id) => sanitizeTerminalText(id)).join(", ")}. Delete them with phaseo keys delete <id>.`)}\n`);
+	}
 	if (json) {
 		printJson({ ok: true, logged_in: true, api_url: apiRoot, scope: tokens.scope ?? null });
 	} else {
@@ -1040,8 +1103,8 @@ async function loginWithDeviceCode(apiRoot: string, flags: Record<string, string
 		});
 	} else {
 		process.stdout.write("Authorize Phaseo CLI\n\n");
-		process.stdout.write(`Open: ${device.verification_uri_complete}\n`);
-		process.stdout.write(`Code: ${device.user_code}\n\n`);
+		process.stdout.write(`Open: ${sanitizeTerminalText(String(device.verification_uri_complete))}\n`);
+		process.stdout.write(`Code: ${sanitizeTerminalText(String(device.user_code))}\n\n`);
 		process.stdout.write("Waiting for approval...\n");
 	}
 
@@ -1109,6 +1172,10 @@ async function loginWithBrowser(apiRoot: string, flags: Record<string, string | 
 
 async function login(flags: Record<string, string | boolean>) {
 	const apiRoot = normalizeApiRoot(flagString(flags, "api-url"));
+	const customHost = assertApiRootAllowed(apiRoot, { allowCustom: flagBool(flags, "allow-custom-api-url") });
+	if (customHost) {
+		process.stderr.write(`${terminalUi({ isTTY: Boolean(process.stderr.isTTY) }).warning(`Signing in to a custom Phaseo API host: ${sanitizeTerminalText(customHost)}. Your session and later commands will use this host.`)}\n`);
+	}
 	const json = flagBool(flags, "json");
 	const method = await chooseLoginMethod(flags, json);
 	if (json && method === "browser") {
@@ -1150,23 +1217,41 @@ async function logout(flags: Record<string, string | boolean>) {
 	}
 }
 
-async function whoami(flags: Record<string, string | boolean>) {
-	const body = await request("/me");
-	if (flagBool(flags, "json")) return printJson(body);
-	const data = body.data;
-	process.stdout.write(`${data.user.email ?? data.user.id}\n`);
-	process.stdout.write(`Current workspace: ${data.current_workspace_id}\n`);
+export function renderWhoami(body: any, apiUrl: string): string {
+	const data = body?.data ?? {};
+	const lines = [terminalValue(data.user?.email ?? data.user?.id)];
+	if (isCustomApiRoot(apiUrl)) lines.push(`API host: ${terminalValue(new URL(apiUrl).host)} (not the default Phaseo API)`);
+	lines.push(`Current workspace: ${terminalValue(data.current_workspace_id)}`);
 	if (Array.isArray(data.workspaces) && data.workspaces.length) {
-		process.stdout.write("\nWorkspaces:\n");
+		lines.push("", "Workspaces:");
 		for (const workspace of data.workspaces) {
 			const marker = workspace.current ? "*" : " ";
-			process.stdout.write(`${marker} ${workspace.name ?? workspace.id} (${workspace.role}) ${workspace.id}\n`);
+			lines.push(`${marker} ${terminalValue(workspace.name ?? workspace.id)} (${terminalValue(workspace.role)}) ${terminalValue(workspace.id)}`);
 		}
 	}
+	return `${lines.join("\n")}\n`;
+}
+
+async function whoami(flags: Record<string, string | boolean>) {
+	const session = await getSessionAccessToken();
+	const body = await request("/me");
+	if (flagBool(flags, "json")) {
+		return printJson(isCustomApiRoot(session.apiUrl) && body && typeof body === "object" ? { ...body, api_url: session.apiUrl } : body);
+	}
+	process.stdout.write(renderWhoami(body, session.apiUrl));
+}
+
+// --workspace on the keys commands: another workspace where the signed-in person is an owner or admin.
+function keysWorkspaceId(flags: Record<string, string | boolean>) {
+	return resolveWorkspaceFlag(flags, async () => {
+		const body = await request("/me");
+		return Array.isArray(body?.data?.workspaces) ? body.data.workspaces : [];
+	});
 }
 
 async function listKeys(flags: Record<string, string | boolean>) {
 	const body = await request(appendQuery("/keys", {
+		workspace_id: await keysWorkspaceId(flags),
 		limit: flagString(flags, "limit"),
 		offset: flagString(flags, "offset"),
 		include_disabled: flagBool(flags, "include-disabled") || undefined,
@@ -1178,11 +1263,12 @@ async function listKeys(flags: Record<string, string | boolean>) {
 async function createKey(flags: Record<string, string | boolean>) {
 	const name = flagString(flags, "name");
 	if (!name) throw new Error("`--name` is required");
+	const workspaceId = await keysWorkspaceId(flags);
 	const body = await request("/keys", {
 		method: "POST",
 		body: compact({
 			name,
-			workspace_id: flagString(flags, "workspace"),
+			workspace_id: workspaceId,
 			limit: flagNumber(flags, "limit"),
 			limit_reset: flagString(flags, "limit-reset"),
 			expires_at: flagString(flags, "expires-at"),
@@ -1191,24 +1277,24 @@ async function createKey(flags: Record<string, string | boolean>) {
 	});
 	if (flagBool(flags, "json")) return printJson(body);
 	const key = body.data;
-	process.stdout.write(`Created API key: ${key.name ?? name}\n`);
-	process.stdout.write(`ID: ${key.id}\n`);
-	process.stdout.write(`Prefix: ${key.prefix ?? "unknown"}\n`);
-	if (flagBool(flags, "show-secret")) process.stdout.write(`Key: ${key.key}\n`);
+	writeServerText(`Created API key: ${key.name ?? name}\n`);
+	writeServerText(`ID: ${key.id}\n`);
+	writeServerText(`Prefix: ${key.prefix ?? "unknown"}\n`);
+	if (flagBool(flags, "show-secret")) writeServerText(`Key: ${key.key}\n`);
 	else process.stdout.write("Secret hidden. Re-run with --json or --show-secret if an agent needs to capture it.\n");
 }
 
 async function getKey(id: string | undefined, flags: Record<string, string | boolean>) {
 	if (!id) throw new Error("Key id or hash is required");
-	const body = await request(`/keys/${encodeURIComponent(id)}`);
+	const body = await request(appendQuery(`/keys/${encodeURIComponent(id)}`, { workspace_id: await keysWorkspaceId(flags) }));
 	if (flagBool(flags, "json")) return printJson(body);
 	const key = body.data;
-	process.stdout.write(`${key.name ?? key.id}\nStatus: ${key.disabled ? "disabled" : "active"}\nID: ${key.id}\nPrefix: ${key.prefix ?? "unknown"}\n`);
+	writeServerText(`${key.name ?? key.id}\nStatus: ${key.disabled ? "disabled" : "active"}\nID: ${key.id}\nPrefix: ${key.prefix ?? "unknown"}\n`);
 }
 
 async function updateKey(id: string | undefined, flags: Record<string, string | boolean>) {
 	if (!id) throw new Error("Key id or hash is required");
-	const body = await request(`/keys/${encodeURIComponent(id)}`, {
+	const body = await request(appendQuery(`/keys/${encodeURIComponent(id)}`, { workspace_id: await keysWorkspaceId(flags) }), {
 		method: "PATCH",
 		body: compact({
 			name: flagString(flags, "name"),
@@ -1216,15 +1302,16 @@ async function updateKey(id: string | undefined, flags: Record<string, string | 
 			limit: flagNumber(flags, "limit"),
 			limit_reset: flagString(flags, "limit-reset"),
 			expires_at: flagString(flags, "expires-at"),
+			ip_allowlist: flagString(flags, "ip-allowlist") === undefined ? undefined : parseIpAllowlist(flagString(flags, "ip-allowlist")!),
 		}),
 	});
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Updated API key: ${body.data.name ?? body.data.id}\n`);
+	writeServerText(`Updated API key:${body.data.name ?? body.data.id}\n`);
 }
 
 async function deleteKey(id: string | undefined, flags: Record<string, string | boolean>) {
 	if (!id) throw new Error("Key id or hash is required");
-	const body = await request(`/keys/${encodeURIComponent(id)}`, { method: "DELETE" });
+	const body = await request(appendQuery(`/keys/${encodeURIComponent(id)}`, { workspace_id: await keysWorkspaceId(flags) }), { method: "DELETE" });
 	if (flagBool(flags, "json")) return printJson(body);
 	process.stdout.write("Deleted API key.\n");
 }
@@ -1232,11 +1319,11 @@ async function deleteKey(id: string | undefined, flags: Record<string, string | 
 async function currentKey(flags: Record<string, string | boolean>) {
 	const body = await request("/key");
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`${body.data.name ?? body.data.prefix ?? body.data.id}\n`);
-	process.stdout.write(`ID: ${body.data.id}\n`);
-	process.stdout.write(`Workspace: ${body.data.workspace_id}\n`);
-	process.stdout.write(`Status: ${body.data.status}\n`);
-	process.stdout.write(`Expires: ${body.data.expires_at ?? "never"}\n`);
+	writeServerText(`${body.data.name ?? body.data.prefix ?? body.data.id}\n`);
+	writeServerText(`ID: ${body.data.id}\n`);
+	writeServerText(`Workspace: ${body.data.workspace_id}\n`);
+	writeServerText(`Status: ${body.data.status}\n`);
+	writeServerText(`Expires: ${body.data.expires_at ?? "never"}\n`);
 }
 
 async function listWorkspaces(flags: Record<string, string | boolean>) {
@@ -1250,14 +1337,14 @@ async function createWorkspace(flags: Record<string, string | boolean>) {
 	if (!name) throw new Error("`--name` is required");
 	const body = await request("/workspaces", { method: "POST", body: compact({ name, slug: flagString(flags, "slug") }) });
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Created workspace: ${body.data.name} (${body.data.id})\n`);
+	writeServerText(`Created workspace: ${body.data.name} (${body.data.id})\n`);
 }
 
 async function getWorkspace(id: string | undefined, flags: Record<string, string | boolean>) {
 	if (!id) throw new Error("Workspace id or slug is required");
 	const body = await request(`/workspaces/${encodeURIComponent(id)}`);
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`${body.data.name ?? body.data.id}\nSlug: ${body.data.slug ?? ""}\nID: ${body.data.id}\n`);
+	writeServerText(`${body.data.name ?? body.data.id}\nSlug: ${body.data.slug ?? ""}\nID: ${body.data.id}\n`);
 }
 
 async function updateWorkspace(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1267,7 +1354,7 @@ async function updateWorkspace(id: string | undefined, flags: Record<string, str
 		body: compact({ name: flagString(flags, "name"), slug: flagString(flags, "slug") }),
 	});
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Updated workspace: ${body.data.name ?? body.data.id}\n`);
+	writeServerText(`Updated workspace: ${body.data.name ?? body.data.id}\n`);
 }
 
 async function deleteWorkspace(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1299,7 +1386,7 @@ async function addWorkspaceMembers(id: string | undefined, flags: Record<string,
 		}),
 	});
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Added ${body.added_count ?? userIds.length} member(s) to workspace.\n`);
+	writeServerText(`Added ${body.added_count ?? userIds.length} member(s) to workspace.\n`);
 }
 
 async function removeWorkspaceMembers(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1314,7 +1401,7 @@ async function removeWorkspaceMembers(id: string | undefined, flags: Record<stri
 		body: { user_ids: userIds },
 	});
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Removed ${body.removed_count ?? 0} member(s) from workspace.\n`);
+	writeServerText(`Removed ${body.removed_count ?? 0} member(s) from workspace.\n`);
 }
 
 function buildPresetConfig(flags: Record<string, string | boolean>): Record<string, unknown> {
@@ -1348,14 +1435,14 @@ async function createPreset(flags: Record<string, string | boolean>) {
 		}),
 	});
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Created preset: ${body.data.name} (${body.data.id})\n`);
+	writeServerText(`Created preset: ${body.data.name} (${body.data.id})\n`);
 }
 
 async function getPreset(id: string | undefined, flags: Record<string, string | boolean>) {
 	if (!id) throw new Error("Preset id, slug, or name is required");
 	const body = await request(`/presets/${encodeURIComponent(id)}`);
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`${body.data.name ?? body.data.id}\nVisibility: ${body.data.visibility}\nID: ${body.data.id}\n`);
+	writeServerText(`${body.data.name ?? body.data.id}\nVisibility: ${body.data.visibility}\nID: ${body.data.id}\n`);
 }
 
 async function updatePreset(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1371,7 +1458,7 @@ async function updatePreset(id: string | undefined, flags: Record<string, string
 		}),
 	});
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Updated preset: ${body.data.name ?? body.data.id}\n`);
+	writeServerText(`Updated preset: ${body.data.name ?? body.data.id}\n`);
 }
 
 async function deletePreset(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1385,11 +1472,11 @@ async function settingsGet(flags: Record<string, string | boolean>) {
 	const body = await request("/settings");
 	if (flagBool(flags, "json")) return printJson(body);
 	const settings = body.data ?? {};
-	process.stdout.write(`Routing: ${settings.routing_mode ?? "balanced"}\n`);
-	process.stdout.write(`Beta channel: ${Boolean(settings.beta_channel_enabled)}\n`);
-	process.stdout.write(`Alpha channel: ${Boolean(settings.alpha_channel_enabled)}\n`);
-	process.stdout.write(`Response healing: ${Boolean(settings.response_healing_enabled)}\n`);
-	process.stdout.write(`BYOK fallback: ${Boolean(settings.byok_fallback_enabled)}\n`);
+	writeServerText(`Routing: ${settings.routing_mode ?? "balanced"}\n`);
+	writeServerText(`Beta channel: ${Boolean(settings.beta_channel_enabled)}\n`);
+	writeServerText(`Alpha channel: ${Boolean(settings.alpha_channel_enabled)}\n`);
+	writeServerText(`Response healing: ${Boolean(settings.response_healing_enabled)}\n`);
+	writeServerText(`BYOK fallback: ${Boolean(settings.byok_fallback_enabled)}\n`);
 }
 
 async function settingsUpdate(flags: Record<string, string | boolean>) {
@@ -1410,16 +1497,16 @@ async function dataContributionGet(flags: Record<string, string | boolean>) {
 	const body = await request("/data-contribution");
 	if (flagBool(flags, "json")) return printJson(body);
 	const data = body.data ?? {};
-	process.stdout.write(`Contribution: ${data.enabled ? "enabled" : "disabled"}\n`);
-	process.stdout.write(`Discount: ${Number(data.discountBps ?? 0) / 100}%\n`);
-	process.stdout.write(`Redacted I/O retention: ${Number(data.sampleRateBps ?? 0) / 100}%\n`);
-	process.stdout.write(`Classifier submission: ${Number(data.classifierSampleRateBps ?? 0) / 100}%\n`);
-	process.stdout.write(`Contributions (30d): ${Number(data.last30Days?.contributions ?? 0)}\n`);
-	process.stdout.write(`Discount earned (30d): ${formatMoneyFromNanos(data.last30Days?.discountNanos)}\n`);
+	writeServerText(`Contribution: ${data.enabled ? "enabled" : "disabled"}\n`);
+	writeServerText(`Discount: ${Number(data.discountBps ?? 0) / 100}%\n`);
+	writeServerText(`Redacted I/O retention: ${Number(data.sampleRateBps ?? 0) / 100}%\n`);
+	writeServerText(`Classifier submission: ${Number(data.classifierSampleRateBps ?? 0) / 100}%\n`);
+	writeServerText(`Contributions (30d): ${Number(data.last30Days?.contributions ?? 0)}\n`);
+	writeServerText(`Discount earned (30d): ${formatMoneyFromNanos(data.last30Days?.discountNanos)}\n`);
 	const classifiers = Array.isArray(data.classifiers) ? data.classifiers : [];
-	process.stdout.write(`Classifiers: ${classifiers.length}\n`);
+	writeServerText(`Classifiers: ${classifiers.length}\n`);
 	for (const classifier of classifiers) {
-		process.stdout.write(`  ${classifier.enabled ? "on" : "off"} ${classifier.name} (${classifier.slug}) ${classifier.id}\n`);
+		writeServerText(`  ${classifier.enabled ? "on" : "off"} ${classifier.name} (${classifier.slug}) ${classifier.id}\n`);
 	}
 }
 
@@ -1441,7 +1528,7 @@ async function createDataClassifier(flags: Record<string, string | boolean>) {
 	payload.name = name;
 	const body = await request("/data-contribution/classifiers", { method: "POST", body: payload });
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Created classifier: ${body.data.name} (${body.data.id})\n`);
+	writeServerText(`Created classifier: ${body.data.name} (${body.data.id})\n`);
 }
 
 async function updateDataClassifier(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1449,7 +1536,7 @@ async function updateDataClassifier(id: string | undefined, flags: Record<string
 	const payload = parseJsonFlag(flags, "body-json");
 	const body = await request(`/data-contribution/classifiers/${encodeURIComponent(id)}`, { method: "PATCH", body: payload });
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Updated classifier: ${body.data.name} (${body.data.id})\n`);
+	writeServerText(`Updated classifier: ${body.data.name} (${body.data.id})\n`);
 }
 
 async function deleteDataClassifier(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1473,14 +1560,14 @@ async function createGuardrail(flags: Record<string, string | boolean>) {
 	if (flagString(flags, "description")) payload.description = flagString(flags, "description");
 	const body = await request("/guardrails", { method: "POST", body: payload });
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Created guardrail: ${body.data.name ?? body.data.id} (${body.data.id})\n`);
+	writeServerText(`Created guardrail: ${body.data.name ?? body.data.id} (${body.data.id})\n`);
 }
 
 async function getGuardrail(id: string | undefined, flags: Record<string, string | boolean>) {
 	if (!id) throw new Error("Guardrail id is required");
 	const body = await request(`/guardrails/${encodeURIComponent(id)}`);
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`${body.data.name ?? body.data.id}\nEnabled: ${body.data.enabled !== false}\nID: ${body.data.id}\nKeys: ${(body.data.key_ids ?? []).join(", ")}\n`);
+	writeServerText(`${body.data.name ?? body.data.id}\nEnabled: ${body.data.enabled !== false}\nID: ${body.data.id}\nKeys: ${(body.data.key_ids ?? []).join(", ")}\n`);
 }
 
 async function updateGuardrail(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1491,7 +1578,7 @@ async function updateGuardrail(id: string | undefined, flags: Record<string, str
 	if (Object.keys(payload).length === 0) throw new Error("Provide --body-json or a supported flag");
 	const body = await request(`/guardrails/${encodeURIComponent(id)}`, { method: "PATCH", body: payload });
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Updated guardrail: ${body.data.name ?? body.data.id}\n`);
+	writeServerText(`Updated guardrail: ${body.data.name ?? body.data.id}\n`);
 }
 
 async function deleteGuardrail(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1509,7 +1596,7 @@ async function setGuardrailKeys(id: string | undefined, flags: Record<string, st
 		.filter(Boolean);
 	const body = await request(`/guardrails/${encodeURIComponent(id)}/keys`, { method: "PUT", body: { key_ids: keyIds } });
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Assigned ${keyIds.length} key(s) to guardrail.\n`);
+	writeServerText(`Assigned ${keyIds.length} key(s) to guardrail.\n`);
 }
 
 async function listGuardrailKeys(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1531,7 +1618,7 @@ async function addGuardrailKeys(id: string | undefined, flags: Record<string, st
 		body: { key_ids: keyIds },
 	});
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Added ${body.added_count ?? keyIds.length} key assignment(s).\n`);
+	writeServerText(`Added ${body.added_count ?? keyIds.length} key assignment(s).\n`);
 }
 
 async function removeGuardrailKeys(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1546,7 +1633,7 @@ async function removeGuardrailKeys(id: string | undefined, flags: Record<string,
 		body: { key_ids: keyIds },
 	});
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Removed ${body.removed_count ?? 0} key assignment(s).\n`);
+	writeServerText(`Removed ${body.removed_count ?? 0} key assignment(s).\n`);
 }
 
 async function listGuardrailMembers(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1565,7 +1652,7 @@ async function addGuardrailMembers(id: string | undefined, flags: Record<string,
 		body: { user_ids: userIds },
 	});
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Added ${body.added_count ?? userIds.length} member assignment(s).\n`);
+	writeServerText(`Added ${body.added_count ?? userIds.length} member assignment(s).\n`);
 }
 
 async function removeGuardrailMembers(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1577,7 +1664,7 @@ async function removeGuardrailMembers(id: string | undefined, flags: Record<stri
 		body: { user_ids: userIds },
 	});
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Removed ${body.removed_count ?? 0} member assignment(s).\n`);
+	writeServerText(`Removed ${body.removed_count ?? 0} member assignment(s).\n`);
 }
 
 function buildOauthClientPayload(flags: Record<string, string | boolean>) {
@@ -1614,7 +1701,7 @@ async function createOauthClient(flags: Record<string, string | boolean>) {
 	}
 	const body = await request("/oauth-clients", { method: "POST", body: payload });
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Created OAuth client: ${body.name ?? payload.name}\nClient ID: ${body.client_id}\n`);
+	writeServerText(`Created OAuth client: ${body.name ?? payload.name}\nClient ID: ${body.client_id}\n`);
 	process.stdout.write(renderOneTimeClientSecret(body.client_secret, flagBool(flags, "show-secret")));
 }
 
@@ -1622,7 +1709,7 @@ async function getOauthClient(id: string | undefined, flags: Record<string, stri
 	if (!id) throw new Error("OAuth client id is required");
 	const body = await request(`/oauth-clients/${encodeURIComponent(id)}`);
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`${body.name ?? body.client_id}\nClient ID: ${body.client_id}\nRedirect URIs: ${(body.redirect_uris ?? []).join(", ")}\n`);
+	writeServerText(`${body.name ?? body.client_id}\nClient ID: ${body.client_id}\nRedirect URIs: ${(body.redirect_uris ?? []).join(", ")}\n`);
 }
 
 async function updateOauthClient(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1631,21 +1718,21 @@ async function updateOauthClient(id: string | undefined, flags: Record<string, s
 	if (Object.keys(payload).length === 0) throw new Error("Provide at least one field to update");
 	const body = await request(`/oauth-clients/${encodeURIComponent(id)}`, { method: "PATCH", body: payload });
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Updated OAuth client: ${body.name ?? body.client_id}\n`);
+	writeServerText(`Updated OAuth client: ${body.name ?? body.client_id}\n`);
 }
 
 async function deleteOauthClient(id: string | undefined, flags: Record<string, string | boolean>) {
 	if (!id) throw new Error("OAuth client id is required");
 	const body = await request(`/oauth-clients/${encodeURIComponent(id)}`, { method: "DELETE" });
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`${body.message ?? "Deleted OAuth client."}\n`);
+	writeServerText(`${body.message ?? "Deleted OAuth client."}\n`);
 }
 
 async function regenerateOauthClientSecret(id: string | undefined, flags: Record<string, string | boolean>) {
 	if (!id) throw new Error("OAuth client id is required");
 	const body = await request(`/oauth-clients/${encodeURIComponent(id)}/regenerate-secret`, { method: "POST" });
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Regenerated secret for ${body.client_id}\n`);
+	writeServerText(`Regenerated secret for ${body.client_id}\n`);
 	process.stdout.write(renderOneTimeClientSecret(body.client_secret, flagBool(flags, "show-secret")));
 }
 
@@ -1669,8 +1756,8 @@ async function createManagementKey(flags: Record<string, string | boolean>) {
 		}),
 	});
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Created management key: ${body.data.name ?? name}\nID: ${body.data.id}\nPrefix: ${body.data.prefix ?? "unknown"}\n`);
-	if (flagBool(flags, "show-secret")) process.stdout.write(`Key: ${body.data.key}\n`);
+	writeServerText(`Created management key: ${body.data.name ?? name}\nID: ${body.data.id}\nPrefix: ${body.data.prefix ?? "unknown"}\n`);
+	if (flagBool(flags, "show-secret")) writeServerText(`Key: ${body.data.key}\n`);
 	else process.stdout.write("Secret hidden. Re-run with --json or --show-secret if an agent needs to capture it.\n");
 }
 
@@ -1678,7 +1765,7 @@ async function getManagementKey(id: string | undefined, flags: Record<string, st
 	if (!id) throw new Error("Management key id is required");
 	const body = await request(`/management-keys/${encodeURIComponent(id)}`);
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`${body.data.name ?? body.data.id}\nStatus: ${body.data.status}\nID: ${body.data.id}\nPrefix: ${body.data.prefix ?? "unknown"}\n`);
+	writeServerText(`${body.data.name ?? body.data.id}\nStatus: ${body.data.status}\nID: ${body.data.id}\nPrefix: ${body.data.prefix ?? "unknown"}\n`);
 }
 
 async function updateManagementKey(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1692,7 +1779,7 @@ async function updateManagementKey(id: string | undefined, flags: Record<string,
 	if (Object.keys(payload).length === 0) throw new Error("Provide a supported flag or --body-json");
 	const body = await request(`/management-keys/${encodeURIComponent(id)}`, { method: "PATCH", body: payload });
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Updated management key: ${body.data.name ?? body.data.id}\n`);
+	writeServerText(`Updated management key: ${body.data.name ?? body.data.id}\n`);
 }
 
 async function deleteManagementKey(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1804,7 +1891,130 @@ async function pricingCalculate(flags: Record<string, string | boolean>) {
 async function creditsGet(flags: Record<string, string | boolean>) {
 	const body = await request(appendQuery("/credits", { workspace_id: flagString(flags, "workspace") }));
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Available: ${formatMoneyFromNanos(body.credits?.available_nanos)}\nReserved: ${formatMoneyFromNanos(body.credits?.reserved_nanos)}\n30d requests: ${body.credits?.thirty_day_requests ?? 0}\n`);
+	writeServerText(`Available: ${formatMoneyFromNanos(body.credits?.available_nanos)}\nReserved: ${formatMoneyFromNanos(body.credits?.reserved_nanos)}\n30d requests: ${body.credits?.thirty_day_requests ?? 0}\n`);
+}
+
+const TOPUP_POLL_INTERVAL_MS = 5_000;
+// Requests expire after 30 minutes; a confirmed card payment can take a little longer.
+const TOPUP_WAIT_GRACE_MS = 5 * 60_000;
+
+export function parseTopupAmountFlag(raw: string | undefined): number {
+	if (!raw) throw new Error("--amount <usd> is required, for example --amount 20");
+	const amount = Number(raw.replace(/^\$/, ""));
+	if (!Number.isFinite(amount) || amount <= 0) throw new Error("--amount must be a positive number of US dollars, for example 20 or 12.50");
+	return amount;
+}
+
+function formatUsd(value: unknown): string {
+	const amount = Number(value);
+	return (Number.isFinite(amount) ? amount : 0).toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+export function renderTopup(topup: any): string {
+	const lines = [
+		`Top-up ${terminalValue(topup?.id)}: ${formatUsd(topup?.amount_usd)} (${terminalValue(topup?.status)}${topup?.reason ? `, ${terminalValue(topup.reason)}` : ""})`,
+	];
+	if (topup?.payment_method?.last4) lines.push(`Card: ${terminalValue(topup.payment_method.brand, "card")} ending ${terminalValue(topup.payment_method.last4)}`);
+	if (topup?.checkout_url) lines.push(`Checkout: ${terminalValue(topup.checkout_url)}`);
+	if (topup?.message) lines.push(terminalValue(topup.message, ""));
+	if (topup?.status === "pending" && topup?.expires_at) lines.push(`Expires: ${terminalValue(topup.expires_at)}`);
+	return `${lines.join("\n")}\n`;
+}
+
+async function shouldOpenCheckout(flags: Record<string, string | boolean>, json: boolean): Promise<boolean> {
+	if (flagBool(flags, "open")) return true;
+	if (json || !input.isTTY || !output.isTTY) return false;
+	const prompt = createInterface({ input, output });
+	try {
+		const answer = (await prompt.question("Open the checkout link in your browser? [Y/n] ")).trim().toLowerCase();
+		return answer === "" || answer === "y" || answer === "yes";
+	} finally {
+		prompt.close();
+	}
+}
+
+/** Polls a top-up until it is final (paid, declined, expired or failed) or the wait runs out. */
+export async function waitForTopup(
+	id: string,
+	initial: any,
+	options: { fetchTopup: (id: string) => Promise<any>; intervalMs?: number; now?: () => number; sleepFn?: (ms: number) => Promise<unknown>; onUpdate?: (topup: any) => void },
+): Promise<{ topup: any; timedOut: boolean }> {
+	const now = options.now ?? Date.now;
+	const pause = options.sleepFn ?? sleep;
+	const expiresAt = Date.parse(String(initial?.expires_at ?? ""));
+	const deadline = (Number.isFinite(expiresAt) ? Math.max(expiresAt, now()) : now() + 30 * 60_000) + TOPUP_WAIT_GRACE_MS;
+	let topup = initial;
+	while (!topup?.final) {
+		if (now() >= deadline) return { topup, timedOut: true };
+		await pause(options.intervalMs ?? TOPUP_POLL_INTERVAL_MS);
+		const next = await options.fetchTopup(id);
+		if (next?.status !== topup?.status) options.onUpdate?.(next);
+		topup = next;
+	}
+	return { topup, timedOut: false };
+}
+
+/**
+ * Whether credits add should poll. Not when asked not to, when the top-up is already final, or
+ * under --json when a person must open checkout_url first: an agent then gets the pending
+ * top-up (with the link) at once instead of a silent wait.
+ */
+export function shouldWaitForTopup(created: any, options: { json: boolean; noWait: boolean }): boolean {
+	if (options.noWait || created?.final) return false;
+	if (options.json && created?.next_action === "open_checkout_url") return false;
+	return true;
+}
+
+async function creditsAdd(flags: Record<string, string | boolean>) {
+	const json = flagBool(flags, "json");
+	const amount = parseTopupAmountFlag(flagString(flags, "amount"));
+	const body = await request("/credits/topups", {
+		method: "POST",
+		body: compact({
+			amount_usd: amount,
+			workspace_id: flagString(flags, "workspace"),
+			idempotency_key: flagString(flags, "idempotency-key"),
+		}),
+	});
+	const created = body.topup;
+	const ui = terminalUi();
+	if (!json) {
+		process.stdout.write(renderTopup(created));
+		if (created?.next_action === "await_email_confirmation") {
+			process.stderr.write(`${ui.info(`Awaiting confirmation: emailed ${created.confirmation_recipients ?? "the"} workspace owner(s) and admin(s).`)}\n`);
+		}
+	}
+	if (created?.checkout_url && !isTrustedBrowserUrl(created.checkout_url)) {
+		if (!json) process.stderr.write(`${ui.warning("Not opening the checkout link because it is not an https://phaseo.app link. Check it before opening it yourself.")}\n`);
+	} else if (created?.checkout_url && await shouldOpenCheckout(flags, json) && !openUrl(created.checkout_url) && !json) {
+		process.stderr.write(`${ui.warning("Could not open a browser. Open the checkout link above.")}\n`);
+	}
+	if (!shouldWaitForTopup(created, { json, noWait: flagBool(flags, "no-wait") })) {
+		if (json) printJson(body);
+		if (created?.final && created?.status !== "paid") process.exitCode = 1;
+		return;
+	}
+
+	if (!json) process.stderr.write(`${ui.progress("Waiting for the top-up (Ctrl+C stops waiting; the request stays open).")}\n`);
+	const { topup, timedOut } = await waitForTopup(String(created.id), created, {
+		fetchTopup: async (id) => (await request(`/credits/topups/${encodeURIComponent(id)}`)).topup,
+		onUpdate: json ? undefined : (next) => process.stderr.write(`${ui.info(`Status: ${terminalValue(next?.status)}`)}\n`),
+	});
+	if (json) {
+		printJson({ ok: topup?.status === "paid", timed_out: timedOut, topup });
+	} else if (timedOut) {
+		writeServerText(`Still ${terminalValue(topup?.status)}. Check later with: phaseo credits topups get ${terminalValue(topup?.id)}\n`);
+	} else {
+		process.stdout.write(renderTopup(topup));
+	}
+	if (timedOut || topup?.status !== "paid") process.exitCode = 1;
+}
+
+async function creditsTopupGet(id: string | undefined, flags: Record<string, string | boolean>) {
+	if (!id) throw new Error("Usage: phaseo credits topups get <id> [--json]");
+	const body = await request(`/credits/topups/${encodeURIComponent(id)}`);
+	if (flagBool(flags, "json")) return printJson(body);
+	process.stdout.write(renderTopup(body.topup));
 }
 
 async function activityList(flags: Record<string, string | boolean>) {
@@ -1854,7 +2064,7 @@ async function logsGet(id: string | undefined, flags: Record<string, string | bo
 	if (flagBool(flags, "json")) return printJson(body);
 	const item = body.data ?? {};
 	const errorMessage = item.error_message ? ` - ${sanitizeTerminalText(String(item.error_message))}` : "";
-	process.stdout.write(`${item.request_id ?? id}\nStatus: ${item.status_code ?? (item.success ? "success" : "error")}\nModel: ${item.model_id ?? "unknown"}\nProvider: ${item.provider ?? "unknown"}\nEndpoint: ${item.endpoint ?? "unknown"}\nLatency: ${item.latency_ms ?? 0}ms\nError: ${item.error_code ?? "none"}${errorMessage}\n`);
+	writeServerText(`${item.request_id ?? id}\nStatus: ${item.status_code ?? (item.success ? "success" : "error")}\nModel: ${item.model_id ?? "unknown"}\nProvider: ${item.provider ?? "unknown"}\nEndpoint: ${item.endpoint ?? "unknown"}\nLatency: ${item.latency_ms ?? 0}ms\nError: ${item.error_code ?? "none"}${errorMessage}\n`);
 }
 
 async function analyticsGet(flags: Record<string, string | boolean>) {
@@ -1868,7 +2078,7 @@ async function generationGet(flags: Record<string, string | boolean>) {
 	if (!id) throw new Error("--id is required");
 	const body = await request(appendQuery("/generations", { id }));
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`${body.request_id ?? id}\nModel: ${body.model_id ?? body.model ?? "unknown"}\nProvider: ${body.provider ?? "unknown"}\nCost: ${formatMoneyFromNanos(body.cost_nanos)}\nReplay supported: ${Boolean(body.replay_supported)}\n`);
+	writeServerText(`${body.request_id ?? id}\nModel: ${body.model_id ?? body.model ?? "unknown"}\nProvider: ${body.provider ?? "unknown"}\nCost: ${formatMoneyFromNanos(body.cost_nanos)}\nReplay supported: ${Boolean(body.replay_supported)}\n`);
 }
 
 async function listWebhooks(flags: Record<string, string | boolean>) {
@@ -1900,7 +2110,7 @@ async function createWebhook(flags: Record<string, string | boolean>) {
 		}),
 	});
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Created webhook endpoint: ${body.name ?? body.id}\nID: ${body.id}\n`);
+	writeServerText(`Created webhook endpoint: ${body.name ?? body.id}\nID: ${body.id}\n`);
 	process.stdout.write(renderWebhookSecret(body.signing_secret, flagBool(flags, "show-secret")));
 }
 
@@ -1908,7 +2118,7 @@ async function getWebhook(id: string | undefined, flags: Record<string, string |
 	if (!id) throw new Error("Webhook endpoint id is required");
 	const body = await request(`/webhook-endpoints/${encodeURIComponent(id)}`);
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`${body.name ?? body.id}\nStatus: ${body.status ?? "unknown"}\nURL: ${body.url ?? "unknown"}\nID: ${body.id}\n`);
+	writeServerText(`${body.name ?? body.id}\nStatus: ${body.status ?? "unknown"}\nURL: ${body.url ?? "unknown"}\nID: ${body.id}\n`);
 }
 
 async function updateWebhook(id: string | undefined, flags: Record<string, string | boolean>) {
@@ -1922,14 +2132,14 @@ async function updateWebhook(id: string | undefined, flags: Record<string, strin
 	if (Object.keys(payload).length === 0) throw new Error("Provide --name, --url, --events, or --status");
 	const body = await request(`/webhook-endpoints/${encodeURIComponent(id)}`, { method: "PATCH", body: payload });
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Updated webhook endpoint: ${body.name ?? body.id}\n`);
+	writeServerText(`Updated webhook endpoint: ${body.name ?? body.id}\n`);
 }
 
 async function rotateWebhookSecret(id: string | undefined, flags: Record<string, string | boolean>) {
 	if (!id) throw new Error("Webhook endpoint id is required");
 	const body = await request(`/webhook-endpoints/${encodeURIComponent(id)}/rotate-secret`, { method: "POST", body: {} });
 	if (flagBool(flags, "json")) return printJson(body);
-	process.stdout.write(`Rotated webhook signing secret: ${body.name ?? body.id}\n`);
+	writeServerText(`Rotated webhook signing secret: ${body.name ?? body.id}\n`);
 	process.stdout.write(renderWebhookSecret(body.signing_secret, flagBool(flags, "show-secret")));
 }
 
@@ -1946,6 +2156,37 @@ async function rawApi(method: HttpMethod, path: string | undefined, flags: Recor
 	const body = method === "GET" || method === "DELETE" ? undefined : parseJsonFlag(flags, "body-json");
 	const response = await request(normalizedPath, { method, body });
 	printJson(response);
+}
+
+async function serveMcp(flags: Record<string, string | boolean>) {
+	const manage = flagBool(flags, "manage");
+	const session = await getSessionAccessToken().catch(() => null);
+	if (!session) throw new Error("Not logged in. Run `phaseo login` first, then restart your agent.");
+	// The MCP accepts tokens for its canonical address only; a custom API is for development.
+	const mcpUrl = flagString(flags, "mcp-url") ?? PHASEO_MCP_URL;
+	if (mcpUrl !== PHASEO_MCP_URL && !isCustomApiRoot(session.apiUrl)) {
+		throw new Error("--mcp-url is only for development against a custom --api-url login");
+	}
+	const scopes = mcpScopes(manage);
+	const tokens = createMcpTokenSource(async () => {
+		const current = await getSessionAccessToken();
+		return exchangeCliTokenForMcp({
+			tokenUrl: oauthUrl(current.apiUrl, "/token"),
+			subjectToken: current.accessToken,
+			resource: mcpUrl,
+			scopes,
+		});
+	});
+	// Fail before the agent's first message when the login can't reach the MCP at all.
+	await tokens.get();
+	process.stderr.write(`Phaseo MCP ready (${manage ? "read and account management" : "read-only"}) via ${mcpUrl}\n`);
+	await runMcpBridge({
+		endpoint: mcpEndpoint(mcpUrl, manage),
+		tokens,
+		input: process.stdin,
+		output: process.stdout,
+		log: (line) => process.stderr.write(`${sanitizeTerminalText(line)}\n`),
+	});
 }
 
 async function main() {
@@ -1981,6 +2222,12 @@ async function main() {
 		if (first === "doctor") {
 			if (second) throw new Error(unknownCommandMessage(parsed.command));
 			await doctor(parsed.flags);
+			return;
+		}
+		if (first === "mcp") {
+			// Stdout belongs to the MCP client: no update notice, and errors go to stderr only.
+			if (second) throw new Error(unknownCommandMessage(parsed.command));
+			await serveMcp(parsed.flags);
 			return;
 		}
 		if (parsed.command.length === 1 && isCommandGroup(first)) {
@@ -2050,6 +2297,8 @@ async function main() {
 		else if (first === "pricing" && second === "models") action = pricingModels(parsed.flags);
 		else if (first === "pricing" && second === "calculate") action = pricingCalculate(parsed.flags);
 		else if (first === "credits" && second === "get") action = creditsGet(parsed.flags);
+		else if (first === "credits" && second === "add") action = creditsAdd(parsed.flags);
+		else if (first === "credits" && second === "topups" && third === "get") action = creditsTopupGet(fourth, parsed.flags);
 		else if (first === "activity" && second === "list") action = activityList(parsed.flags);
 		else if (first === "logs" && second === "list") action = logsList(parsed.flags);
 		else if (first === "logs" && second === "get") action = logsGet(third, parsed.flags);
@@ -2078,6 +2327,16 @@ async function main() {
 		else if (first === "api" && second === "put") action = rawApi("PUT", third, parsed.flags);
 		else if (first === "api" && second === "patch") action = rawApi("PATCH", third, parsed.flags);
 		else if (first === "api" && second === "delete") action = rawApi("DELETE", third, parsed.flags);
+		if (!action && isCommandGroup(parsed.command.join(" "))) {
+			printHelp(parsed.command);
+			return;
+		}
+		if (!action && await runManagementCommand(parsed.command, parsed.flags, managementDeps())) {
+			action = Promise.resolve();
+		}
+		if (!action && await runParityCommand(parsed.command, parsed.flags, managementDeps())) {
+			action = Promise.resolve();
+		}
 		if (action) {
 			await action;
 			if (shouldPrintUpdateNoticeForCommand(parsed.command)) {

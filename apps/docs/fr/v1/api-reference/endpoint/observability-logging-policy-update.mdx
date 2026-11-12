@@ -1,11 +1,11 @@
 ---
 title: "Mettre à jour la politique de journalisation de l’observabilité"
-sidebarTitle: "Mettre à jour la politique de journalisation"
+sidebarTitle: "Modifier la politique"
 badge: "Beta"
 openapi: "/fr/openapi/v1/openapi.localized.yaml PATCH /observability/logging-policy"
 description: "Configurer le stockage et la durée de conservation des journaux d’entrée et de sortie de l’espace de travail."
 ---
 <Note>Ce point de terminaison nécessite une clé API de gestion avec `settings:write`.</Note>
 
-La durée de conservation doit être comprise entre 90 et 365 jours. La désactivation de la journalisation désactive également le contrôle de confidentialité des journaux d’entrée et de sortie de l’espace de travail.
+La durée de conservation est de 90 jours ; `retention_days` doit valoir 90. La désactivation de la journalisation désactive également le contrôle de confidentialité des journaux d’entrée et de sortie de l’espace de travail.
 

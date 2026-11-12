@@ -1,12 +1,18 @@
 import { getDataClient } from "@/data/supabase";
+import { PUBLIC_MODEL_CATALOGUE_CACHE_TAGS } from "@/cache/catalogue";
+import { purgeWorkerCacheTags } from "@/http/invalidation";
 import type { Env } from "@/env";
+import { notifyPendingProviderModels } from "@/lib/provider-model-notifications";
+import { applyCatalogOverrides, normalizedCatalogDocument, type CatalogOverrides } from "./provider-catalog-overrides";
 import {
 	fetchAndValidateProviderCatalog,
 	normalizeProviderCatalog,
 	type ProviderCatalogPreview,
 	validateProviderCatalogPricingMeters,
 } from "./provider-catalog";
-import { reconcileProviderCatalogClaims } from "./provider-catalog-reconciliation";
+import type { ProviderCatalogRateLimit } from "./provider-catalog-rate-limits";
+import { isProviderCatalogBlockedByReview } from "./provider-review-access";
+import { applyEmpirioLabsCatalogOverrides } from "./provider-catalog-empiriolabs";
 
 export type ProviderCatalogSyncTrigger = "webhook" | "poll" | "manual";
 
@@ -15,6 +21,8 @@ type ProviderCatalogSource = {
 	catalog_url: string | null;
 	management_mode: "remote" | "managed";
 	managed_catalog: unknown;
+	catalog_overrides?: CatalogOverrides;
+	updated_at: string;
 	status: string;
 	poll_interval_seconds: number;
 	consecutive_failures: number;
@@ -24,9 +32,10 @@ type ProviderCatalogSource = {
 	etag: string | null;
 	last_modified: string | null;
 	refresh_requested: boolean;
+	created_by: string | null;
 };
 
-const SOURCE_SELECT = "provider_slug,catalog_url,management_mode,managed_catalog,status,poll_interval_seconds,consecutive_failures,webhook_secret_ciphertext,webhook_secret_iv,webhook_secret_hash,etag,last_modified,refresh_requested";
+const SOURCE_SELECT = "provider_slug,catalog_url,management_mode,managed_catalog,catalog_overrides,updated_at,status,poll_interval_seconds,consecutive_failures,webhook_secret_ciphertext,webhook_secret_iv,webhook_secret_hash,etag,last_modified,refresh_requested,created_by";
 const MAX_WEBHOOK_SKEW_SECONDS = 300;
 
 function bytes(value: Uint8Array): ArrayBuffer {
@@ -110,7 +119,22 @@ function nextPollAt(intervalSeconds: number, failures: number): string {
 }
 
 function publicPreview(preview: ProviderCatalogPreview) {
-	return { valid: preview.valid, modelCount: preview.modelCount, truncated: preview.truncated, issues: preview.issues, models: preview.models };
+	return { valid: preview.valid, modelCount: preview.modelCount, truncated: preview.truncated, issues: preview.issues, warnings: preview.warnings ?? [], models: preview.models };
+}
+
+/**
+ * Replaces the provider's limits with those its feed declares. Limits skip catalog review and
+ * releases but wait for the provider application to be approved; approval forces a fresh sync.
+ */
+async function applyDeclaredRateLimits(client: any, source: ProviderCatalogSource, limits: ProviderCatalogRateLimit[]): Promise<void> {
+	const link = await client.from("provider_account_links").select("status,linked_by").eq("provider_slug", source.provider_slug).in("status", ["pending", "active"]).order("status", { ascending: true }).limit(1).maybeSingle();
+	if (link.error) throw link.error;
+	if (await isProviderCatalogBlockedByReview(client, source.provider_slug, { status: link.data?.status ?? "pending", linkedBy: link.data?.linked_by ?? source.created_by })) return;
+	const saved = await client.rpc("save_provider_rate_limits", { p_provider_slug: source.provider_slug, p_actor_id: null, p_actor_kind: "provider", p_expected_version: null, p_limits: limits, p_check_version: false });
+	if (saved.error) {
+		console.error("provider_rate_limits_apply_failed", { providerSlug: source.provider_slug, errorCode: saved.error.code });
+		throw new Error("The declared rate limits could not be applied. Existing limits remain unchanged.");
+	}
 }
 
 async function notifyProviderOwners(client: any, providerSlug: string, runId: string, title: string, message: string) {
@@ -119,7 +143,7 @@ async function notifyProviderOwners(client: any, providerSlug: string, runId: st
 	await client.from("provider_catalog_events").insert(links.data.map((row: any) => ({ provider_slug: providerSlug, run_id: runId, workspace_id: row.workspace_id, event_type: "catalog_needs_changes", title, message })));
 }
 
-export async function syncProviderCatalog(env: Env, providerSlug: string, trigger: ProviderCatalogSyncTrigger, externalEventId?: string): Promise<{ status: string; runId?: string; modelCount?: number }> {
+export async function syncProviderCatalog(env: Env, providerSlug: string, trigger: ProviderCatalogSyncTrigger, externalEventId?: string, executionCtx: object = {}): Promise<{ status: string; runId?: string; modelCount?: number }> {
 	const client = getDataClient(env);
 	const sourceResult = await client.from("provider_catalog_sources").select(SOURCE_SELECT).eq("provider_slug", providerSlug).maybeSingle();
 	if (sourceResult.error) throw sourceResult.error;
@@ -150,16 +174,33 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 		status: "processing",
 		catalog_url: source.catalog_url,
 	}).select("id").single();
+	let runId: string;
 	if (runResult.error) {
-		if (externalEventId && runResult.error.code === "23505") return { status: "duplicate" };
-		throw runResult.error;
-	}
-	const runId = String(runResult.data.id);
+		if (!externalEventId || runResult.error.code !== "23505") throw runResult.error;
+		const existing = await client.from("provider_catalog_sync_runs").select("id,status,created_at")
+			.eq("provider_slug", providerSlug).eq("external_event_id", externalEventId).maybeSingle();
+		if (existing.error) throw existing.error;
+		if (!existing.data || !["failed", "processing"].includes(existing.data.status)) return { status: "duplicate" };
+		const newer = await client.from("provider_catalog_sync_runs").select("id")
+			.eq("provider_slug", providerSlug).eq("status", "applied")
+			.gt("created_at", existing.data.created_at).limit(1).maybeSingle();
+		if (newer.error) throw newer.error;
+		if (newer.data) return { status: "duplicate" };
+		// The provider lease is already held, so another active sync cannot be
+		// reclaimed here. Recover interrupted receipts; completed deliveries stay deduplicated.
+		const resumed = await client.from("provider_catalog_sync_runs").update({
+			status: "processing", review_status: "pending", started_at: new Date().toISOString(),
+			completed_at: null, error_message: null,
+		}).eq("id", existing.data.id).eq("status", existing.data.status).select("id").maybeSingle();
+		if (resumed.error) throw resumed.error;
+		if (!resumed.data) return { status: "duplicate" };
+		runId = String(resumed.data.id);
+	} else runId = String(runResult.data.id);
 
 	try {
 		// Consume before reading the document, under the sync lease. Edits arriving
 		// after this point retain their refresh flag for the next pass.
-		const started = await client.rpc("begin_provider_catalog_refresh", { p_provider_slug: providerSlug });
+		const started = await client.rpc("consume_provider_catalog_refresh", { p_provider_slug: providerSlug });
 		if (started.error) throw started.error;
 		const fresh = await client.from("provider_catalog_sources").select(SOURCE_SELECT).eq("provider_slug", providerSlug).single();
 		if (fresh.error) throw fresh.error;
@@ -172,16 +213,23 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 				lastModified: null,
 				notModified: false as const,
 			}
-			: await fetchAndValidateProviderCatalog(source.catalog_url ?? "", fetch, trigger === "poll" ? { etag: source.etag, lastModified: source.last_modified } : undefined);
+			: await fetchAndValidateProviderCatalog(source.catalog_url ?? "", fetch, trigger === "poll" && started.data !== true ? { etag: source.etag, lastModified: source.last_modified } : undefined);
 		if (!("preview" in catalog)) {
 			const now = new Date().toISOString();
-			const refresh = await client.rpc("consume_provider_catalog_refresh", { p_provider_slug: providerSlug });
 			await client.from("provider_catalog_sync_runs").update({ status: "not_modified", completed_at: now }).eq("id", runId);
-			await client.from("provider_catalog_sources").update({ last_polled_at: now, consecutive_failures: 0, next_poll_at: refresh.data === true ? now : nextPollAt(source.poll_interval_seconds, 0), etag: catalog.etag, last_modified: catalog.lastModified, updated_at: now }).eq("provider_slug", providerSlug);
+			await client.from("provider_catalog_sources").update({ last_polled_at: now, last_success_at: now, consecutive_failures: 0, last_error: null, etag: catalog.etag, last_modified: catalog.lastModified, updated_at: now }).eq("provider_slug", providerSlug);
+			// A review or edit arriving during the fetch keeps its refresh flag and due time.
+			await client.from("provider_catalog_sources").update({ next_poll_at: nextPollAt(source.poll_interval_seconds, 0) }).eq("provider_slug", providerSlug).eq("refresh_requested", false);
 			return { status: "not_modified", runId };
 		}
 		await renewLease(true);
-		const preview = await validateProviderCatalogPricingMeters(client, catalog.preview);
+		const feedModels = catalog.preview.allModels;
+		const effectivePreview = source.management_mode === "remote" && catalog.preview.valid
+			? normalizeProviderCatalog(normalizedCatalogDocument(providerSlug === "empiriolabs"
+				? applyEmpirioLabsCatalogOverrides(feedModels, source.catalog_overrides ?? {})
+				: applyCatalogOverrides(feedModels, source.catalog_overrides ?? {})))
+			: catalog.preview;
+		const preview = await validateProviderCatalogPricingMeters(client, effectivePreview);
 		if (!preview.valid) {
 			await renewLease(true);
 			await client.from("provider_catalog_sync_runs").update({ status: "rejected", review_status: "needs_changes", model_count: preview.modelCount, model_preview: publicPreview(preview), validation_summary: { valid: false, issues: preview.issues }, completed_at: new Date().toISOString(), error_message: "Catalog validation failed." }).eq("id", runId);
@@ -190,15 +238,52 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 			return { status: "rejected", runId, modelCount: preview.modelCount };
 		}
 
-		const applied = await client.rpc("apply_provider_catalog_snapshot", { p_provider_slug: providerSlug, p_run_id: runId, p_models: preview.allModels });
-		if (applied.error) throw applied.error;
+		// Lease renewals also advance updated_at. Re-read after the heartbeat, but
+		// never accept a document/configuration edit made while this feed was fetched.
 		await renewLease(true);
-		await reconcileProviderCatalogClaims(client, { providerSlug, runId, models: preview.allModels, renewLease });
+		const current = await client.from("provider_catalog_sources").select(SOURCE_SELECT).eq("provider_slug", providerSlug).single();
+		if (current.error) throw current.error;
+		const currentSource = current.data as ProviderCatalogSource;
+		const unchanged = (["catalog_url", "management_mode", "managed_catalog", "catalog_overrides", "status"] as const)
+			.every((field) => JSON.stringify(source[field] ?? null) === JSON.stringify(currentSource[field] ?? null));
+		const applied = !unchanged
+			? { data: null, error: { message: "provider_catalog_version_conflict", code: "40001", details: "", hint: "" } }
+			: source.management_mode === "remote"
+			? await client.rpc("apply_provider_catalog_feed_snapshot", { p_provider_slug: providerSlug, p_run_id: runId, p_feed_models: feedModels, p_models: preview.allModels, p_expected_version: currentSource.updated_at })
+			: await client.rpc("apply_provider_catalog_snapshot", { p_provider_slug: providerSlug, p_run_id: runId, p_models: preview.allModels });
+		if (applied.error) {
+			if (applied.error.message.includes("provider_catalog_version_conflict")) {
+				// An edit won the race. Preserve it and retry promptly without sending
+				// a misleading failure notification for normal concurrent activity.
+				await client.from("provider_catalog_sync_runs").update({ status: "not_modified", completed_at: new Date().toISOString(), validation_summary: { reason: "catalog_changed_during_import" } }).eq("id", runId);
+				await client.from("provider_catalog_sources").update({ refresh_requested: true, next_poll_at: new Date(Date.now() + 60_000).toISOString() }).eq("provider_slug", providerSlug);
+				return { status: "not_modified", runId };
+			}
+			console.error("provider_catalog_apply_failed", { providerSlug, errorCode: applied.error.code });
+			if (applied.error.message.includes("provider_catalog_model_unavailable")) throw new Error("A catalog model ID refers to a hidden or unavailable model. Use a public canonical model ID.");
+			if (applied.error.message.includes("provider_catalog_namespace_not_owned")) throw new Error("Unknown model ID outside your provider namespace. Use an existing canonical model ID or your own provider namespace.");
+			if (applied.error.message.includes("provider_catalog_conditional_pricing_not_supported")) throw new Error("Conditional prices are not supported by V1 billing. Provide an effective unconditional price.");
+			throw new Error("The catalog could not be applied. Existing offers and prices remain unchanged.");
+		}
+		// Limits follow only an applied snapshot, so a rejected or conflicting one changes nothing.
+		// A failed save leaves the snapshot applied and requests a prompt full refetch to retry.
+		// A feed without rate_limits leaves limits managed in provider settings untouched.
+		let rateLimitsError: string | null = null;
+		if (catalog.preview.rateLimits) {
+			try { await applyDeclaredRateLimits(client, source, catalog.preview.rateLimits); }
+			catch (error) { rateLimitsError = error instanceof Error ? error.message : "The declared rate limits could not be applied."; }
+		}
 		await renewLease(true);
 		const now = new Date().toISOString();
-		await client.from("provider_catalog_sync_runs").update({ status: "applied", catalog_sha256: catalog.sha256, model_count: preview.modelCount, model_preview: publicPreview(preview), validation_summary: { valid: true, issues: [], checked_at: now }, completed_at: now }).eq("id", runId);
-		await client.from("provider_catalog_sources").update({ last_success_at: now, last_polled_at: trigger === "poll" ? now : undefined, last_catalog_sha256: catalog.sha256, etag: catalog.etag, last_modified: catalog.lastModified, consecutive_failures: 0, last_error: null, updated_at: now }).eq("provider_slug", providerSlug);
-		if (source.management_mode === "remote") await client.from("provider_catalog_sources").update({ next_poll_at: nextPollAt(source.poll_interval_seconds, 0) }).eq("provider_slug", providerSlug).eq("refresh_requested", false);
+		await client.from("provider_catalog_sync_runs").update({ status: "applied", catalog_sha256: catalog.sha256, model_count: preview.modelCount, model_preview: publicPreview(preview), validation_summary: { valid: true, issues: [], warnings: preview.warnings ?? [], checked_at: now }, completed_at: now }).eq("id", runId);
+		await client.from("provider_catalog_sources").update({ last_success_at: now, last_polled_at: trigger === "poll" ? now : undefined, last_catalog_sha256: catalog.sha256, etag: catalog.etag, last_modified: catalog.lastModified, consecutive_failures: 0, last_error: rateLimitsError, ...(rateLimitsError ? { refresh_requested: true, next_poll_at: new Date(Date.now() + 5 * 60_000).toISOString() } : {}), updated_at: now }).eq("provider_slug", providerSlug);
+		await client.from("provider_catalog_sources").update({ next_poll_at: nextPollAt(source.poll_interval_seconds, 0) }).eq("provider_slug", providerSlug).eq("refresh_requested", false);
+		// Include legacy snapshots: dropping v1.2 policy is itself a withdrawal.
+		// Persistence already succeeded; a purge failure must not report a failed import.
+		try {
+			await purgeWorkerCacheTags(executionCtx, [...PUBLIC_MODEL_CATALOGUE_CACHE_TAGS, "web-api-model-pricing", "web-api-model-details", "web-api-compare"]);
+		} catch { console.error("provider_catalog_cache_purge_failed", { providerSlug }); }
+		await notifyPendingProviderModels(env).catch(() => { console.error("provider_model_notification_failed"); });
 		return { status: "applied", runId, modelCount: Number(applied.data ?? preview.modelCount) };
 	} catch (error) {
 		const message = error instanceof Error ? error.message : "Provider catalog sync failed.";
@@ -213,16 +298,16 @@ export async function syncProviderCatalog(env: Env, providerSlug: string, trigge
 	}
 }
 
-export async function runProviderCatalogPollingJob(env: Env, limit = 20): Promise<{ attempted: number; applied: number; failed: number }> {
+export async function runProviderCatalogPollingJob(env: Env, limit = 20, executionCtx: object = {}): Promise<{ attempted: number; applied: number; failed: number }> {
 	const client = getDataClient(env);
 	const now = new Date().toISOString();
-	const sources = await client.from("provider_catalog_sources").select("provider_slug").eq("status", "active").or(`next_poll_at.lte.${now},and(refresh_requested.eq.true,next_poll_at.is.null)`).or("management_mode.eq.remote,refresh_requested.eq.true").order("next_poll_at", { ascending: true, nullsFirst: true }).limit(limit);
+	const sources = await client.from("provider_catalog_sources").select("provider_slug").eq("status", "active").or(`next_poll_at.lte.${now},and(refresh_requested.eq.true,next_poll_at.is.null)`).order("next_poll_at", { ascending: true, nullsFirst: true }).limit(limit);
 	if (sources.error) throw sources.error;
 	let applied = 0;
 	let failed = 0;
 	for (const source of sources.data ?? []) {
 		try {
-			const result = await syncProviderCatalog(env, String(source.provider_slug), "poll");
+			const result = await syncProviderCatalog(env, String(source.provider_slug), "poll", undefined, executionCtx);
 			if (result.status === "applied") applied += 1;
 		} catch {
 			failed += 1;

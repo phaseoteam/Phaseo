@@ -4,6 +4,7 @@ import { fileURLToPath } from "node:url";
 import {
 	isArgumentElement,
 	isDateElement,
+	isLiteralElement,
 	isNumberElement,
 	isPluralElement,
 	isSelectElement,
@@ -19,6 +20,7 @@ import {
 	getLocaleDefinition,
 	publicLocales,
 	translationLocales,
+	type CatalogLocale,
 } from "../src/i18n/routing";
 import { getProfileMessages } from "../src/i18n/profile";
 
@@ -83,6 +85,104 @@ function collectIcuArguments(
 		}
 	}
 	return result;
+}
+
+function collectLiteralText(elements: MessageFormatElement[], result: string[] = []): string[] {
+	for (const element of elements) {
+		if (isLiteralElement(element)) {
+			result.push(element.value);
+		} else if (isSelectElement(element) || isPluralElement(element)) {
+			for (const option of Object.values(element.options)) {
+				collectLiteralText(option.value, result);
+			}
+		} else if (isTagElement(element)) {
+			collectLiteralText(element.children, result);
+		}
+	}
+	return result;
+}
+
+// Machine translation once left HTML-escaped quotes, padded protected terms ("Phaseox",
+// "Bedrockxx"), mangled English ("Reeem", "Irror") and other languages' text in catalogs.
+const HTML_ENTITY = /&(?:quot|apos|amp|lt|gt|nbsp|#\d+|#x[\da-f]+);/i;
+// Latin-script words translations may add although the English text does not use them
+// (zh-Hans writes LLM tokens as "token"). Acronyms such as SSO, OS or US$ are always allowed.
+const ADDED_LATIN_TERMS = new Set(["phaseo", "token", "web"]);
+// Simplified Chinese forms that Japanese writes differently (们/們, 设/設, 关/関, 试/試 ...).
+const SIMPLIFIED_CHINESE_ONLY =
+	/[们这过获试删选择况仪码级关闭开页设认证计让说请读从对时间发现动头东车门问题应该实际网络线统资务构链显输单费额账户钥键态败错误导处复报览浏载传储滤样么吗还为无专业优价标签册历纪录钟则规图层达适运营产质细节击确总结组织档权测评购订阅销扫见观视频语话记忆虑]/u;
+
+function latinTerms(elements: MessageFormatElement[], skipAcronyms = false): Set<string> {
+	const words = collectLiteralText(elements).join(" ").match(/[A-Za-z]{2,}/g) ?? [];
+	return new Set(
+		words
+			.filter((word) => !skipAcronyms || /[a-z]/.test(word))
+			.map((word) => word.toLowerCase().replace(/(?<=\w{2})(?:ing|s)$/, "")),
+	);
+}
+
+function translationDamage(
+	locale: CatalogLocale,
+	sourceMessage: string,
+	message: string,
+	sourceElements: MessageFormatElement[],
+	elements: MessageFormatElement[],
+): string | null {
+	if (HTML_ENTITY.test(message) && !HTML_ENTITY.test(sourceMessage)) {
+		return "contains an HTML entity; write the character itself";
+	}
+	const script = getLocaleDefinition(locale).script;
+	if (script === "Jpan" && SIMPLIFIED_CHINESE_ONLY.test(message)) {
+		return "contains Simplified Chinese characters";
+	}
+	if (script === "Latn") return null;
+	const sourceTerms = latinTerms(sourceElements);
+	const foreign = [...latinTerms(elements, true)].filter(
+		(term) => !sourceTerms.has(term) && !ADDED_LATIN_TERMS.has(term),
+	);
+	return foreign.length > 0
+		? `contains Latin-script words that are not in the English source (${foreign.join(", ")})`
+		: null;
+}
+
+// Catalogs and translated content address the reader as the docs do: du in German and 你 in
+// Simplified Chinese. Mid-sentence, a capitalised Sie, Ihnen or Ihr… can only be the formal
+// "you"; at the start of a sentence it can also mean "they", so that position is not checked.
+const GERMAN_FORMAL_YOU = /(?<=[\p{L}\p{N},)][^\S\r\n]+)(?:Sie|Ihnen|Ihr(?:e|en|em|er|es)?)(?!\p{L})/u;
+const TRANSLATED_CONTENT_DIRECTORIES = [
+	"../src/content/help/locales/",
+	"../src/content/announcements/locales/",
+	"../src/lib/content/migration-locales/",
+];
+
+function formalAddress(locale: CatalogLocale, message: string): string | null {
+	if (locale === "de-DE" && GERMAN_FORMAL_YOU.test(message)) {
+		return "addresses the reader as Sie; use du, as the docs do";
+	}
+	if (locale === "zh-Hans" && message.includes("您")) {
+		return "addresses the reader as 您; use 你, as the docs do";
+	}
+	return null;
+}
+
+function validateTranslatedContentAddress(): string[] {
+	const issues: string[] = [];
+	for (const directory of TRANSLATED_CONTENT_DIRECTORIES) {
+		for (const locale of ["de-DE", "zh-Hans"] as const) {
+			const root = fileURLToPath(new URL(`${directory}${locale}/`, import.meta.url));
+			const files = readdirSync(root, { encoding: "utf8", recursive: true }).filter((file) =>
+				/\.(?:md|mdx|ts)$/.test(file),
+			);
+			for (const file of files) {
+				const lines = readFileSync(join(root, file), "utf8").split("\n");
+				const line = lines.findIndex((text) => formalAddress(locale, text));
+				if (line >= 0) {
+					issues.push(`${directory.slice(3)}${locale}/${file}:${line + 1}: ${formalAddress(locale, lines[line])}`);
+				}
+			}
+		}
+	}
+	return issues;
 }
 
 function readMessageFile(path: string): Map<string, unknown> {
@@ -165,12 +265,20 @@ function validateFullLocaleCatalogs(): string[] {
 				if (NON_MESSAGE_CATALOG_ENTRIES.has(`${filename}:${key}`)) continue;
 
 				try {
-					const sourceArguments = collectIcuArguments(
-						parse(sourceMessage, { ignoreTag: true }),
+					const sourceElements = parse(sourceMessage, { ignoreTag: true });
+					const translatedElements = parse(message, { ignoreTag: true });
+					const damage = translationDamage(
+						locale,
+						sourceMessage,
+						message,
+						sourceElements,
+						translatedElements,
 					);
-					const translatedArguments = collectIcuArguments(
-						parse(message, { ignoreTag: true }),
-					);
+					if (damage) issues.push(`${locale}/${filename}:${key}: ${damage}`);
+					const address = formalAddress(locale, message);
+					if (address) issues.push(`${locale}/${filename}:${key}: ${address}`);
+					const sourceArguments = collectIcuArguments(sourceElements);
+					const translatedArguments = collectIcuArguments(translatedElements);
 					const missingArguments = [...sourceArguments].filter(
 						(argument) =>
 							!translatedArguments.has(argument) &&
@@ -202,6 +310,11 @@ assertValidCatalogs();
 const fullCatalogIssues = validateFullLocaleCatalogs();
 if (fullCatalogIssues.length > 0) {
 	throw new Error(`Invalid full locale catalogs:\n- ${fullCatalogIssues.join("\n- ")}`);
+}
+
+const contentAddressIssues = validateTranslatedContentAddress();
+if (contentAddressIssues.length > 0) {
+	throw new Error(`Invalid translated content:\n- ${contentAddressIssues.join("\n- ")}`);
 }
 
 const profileSource = getProfileMessages("en-GB");
@@ -242,5 +355,6 @@ process.stdout.write(
 	`Localisation catalogs valid: ${catalogLocales.join(", ")}\n` +
 	`Full message catalogs valid: ${translationLocales.length} locales, ${sourceFilesCount} files each\n` +
 		`Profile catalogs valid: ${publicLocales.length} locales\n` +
+		`Translated help, announcement and migration content uses du and 你\n` +
 		`Apple App Store matrix coverage: ${appleCatalogCount}/${appleAppStoreLocales.length} locales\n`,
 );

@@ -1,9 +1,10 @@
 import React from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { Trophy } from "lucide-react";
-import { fetchFrontendAPIProviderTopModels } from "@/lib/fetchers/frontend/fetchPublicCatalog";
-import { getLocale, getTranslations } from "next-intl/server";
-import { DisplayNumber } from "@/components/display/DisplayValue";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { apiProviderTopModelsQuery } from "../apiProvider.queries";
+import { useLocale, useTranslations } from "@/i18n/react";
+import { DisplayCount } from "@/components/display/DisplayValue";
 import {
 	Empty,
 	EmptyDescription,
@@ -12,21 +13,19 @@ import {
 	EmptyTitle,
 } from "@/components/ui/empty";
 
-export default async function TopModels({
+export default function TopModels({
 	count = 6,
 	apiProviderId,
 }: {
 	count?: number;
 	apiProviderId: string;
 }) {
-	const [t, locale] = await Promise.all([
-		getTranslations("Catalogue.providers"),
-		getLocale(),
-	]);
-	const topModels = await fetchFrontendAPIProviderTopModels(
+	const t = useTranslations("Catalogue.providers");
+	const locale = useLocale();
+	const { data: topModels } = useSuspenseQuery(apiProviderTopModelsQuery(
 		apiProviderId,
 		count,
-	);
+	));
 
 	return (
 		<section className="space-y-4">
@@ -68,7 +67,7 @@ export default async function TopModels({
 											</div>
 										</td>
 										<td className="py-2 px-2 text-right tabular-nums">
-											<DisplayNumber value={model.total_tokens ?? model.request_count} />
+											<DisplayCount value={model.total_tokens ?? model.request_count} />
 										</td>
 										<td className="py-2 px-2 text-right tabular-nums">
 											{model.median_latency_ms != null

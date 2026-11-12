@@ -1,7 +1,5 @@
-"use client";
-
 import { useRef, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import ModelPerformanceCards, { selectProviderTrendData } from "@/components/(data)/models/ModelPerformanceCards";
 import { Activity, CalendarDays, CircleAlert, Globe2, Loader2 } from "lucide-react";
 import type { ModelPerformanceMetrics } from "@/lib/fetchers/models/getModelPerformance";
@@ -34,6 +32,8 @@ import { Badge } from "@/components/ui/badge";
 import {
 	HoverCard,
 	HoverCardContent,
+	HoverCardHeader,
+	HoverCardNote,
 	HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import {
@@ -86,6 +86,12 @@ export function filterPerformanceRange<T extends { bucket?: string; day?: string
 	});
 }
 
+/** Whole days since the sample, for the stale card (rendered only while it is open). */
+function sampleAgeDays(value: string): number {
+	const age = Date.now() - new Date(value).getTime();
+	return Number.isFinite(age) ? Math.max(1, Math.floor(age / 86_400_000)) : 1;
+}
+
 function formatSampleTime(value: string | null, locale: string): string {
 	if (!value) return "";
 	return new Intl.DateTimeFormat(locale, {
@@ -108,6 +114,7 @@ export default function ModelPerformanceDashboard({
 }: ModelPerformanceDashboardProps) {
 	const t = useTranslations("Catalogue.modelDetail.performance");
 	const tx = useTranslations();
+	const tCard = useTranslations("Catalogue.hoverCards");
 	const locale = useLocale();
 	const [initialSelection] = useState<{
 		colo: string | null;
@@ -253,9 +260,9 @@ export default function ModelPerformanceDashboard({
 					<div className="flex flex-wrap items-center gap-2">
 						<h2 className="text-xl font-semibold tracking-tight">{t("title")}</h2>
 						{isStale ? (
-							<HoverCard openDelay={150} closeDelay={100}>
+							<HoverCard>
 								<HoverCardTrigger asChild>
-									<button type="button" aria-label={t("aboutStaleData")}>
+									<button type="button" aria-label={t("aboutStaleData")} className="rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/40">
 										<Badge
 											variant="outline"
 											className="border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300"
@@ -265,11 +272,16 @@ export default function ModelPerformanceDashboard({
 										</Badge>
 									</button>
 								</HoverCardTrigger>
-								<HoverCardContent align="start" className="w-72 rounded-lg p-3">
-									<p className="font-medium text-foreground">{t("performanceDataOld")}</p>
-									<p className="mt-1 text-xs text-muted-foreground">
-										{t("staleDescription", { date: formatSampleTime(latestSampleAt, locale) })}
-									</p>
+								<HoverCardContent align="start" className="w-72 space-y-2.5">
+									<HoverCardHeader
+										icon={<CircleAlert className="text-amber-600 dark:text-amber-400" />}
+										title={t("performanceDataOld")}
+										meta={[
+											latestSampleAt ? tCard("lastSample", { date: formatSampleTime(latestSampleAt, locale) }) : null,
+											latestSampleAt ? tCard("daysOld", { count: sampleAgeDays(latestSampleAt) }) : null,
+										]}
+									/>
+									<HoverCardNote>{tCard("staleNote")}</HoverCardNote>
 								</HoverCardContent>
 							</HoverCard>
 						) : null}
@@ -401,9 +413,17 @@ export default function ModelPerformanceDashboard({
 						<EmptyMedia variant="icon">
 							<Activity className="size-5" />
 						</EmptyMedia>
-						<EmptyTitle>{t("noTelemetry")}</EmptyTitle>
+						{/* All-traffic views publish at any volume, so an empty one had no requests;
+						    a location view is also empty below its privacy minimum. */}
+						<EmptyTitle>
+							{activeMetrics.cloudflareColo
+								? t("noFilteredTelemetry", { location: formatCloudflareColo(activeMetrics.cloudflareColo) })
+								: t("noTelemetry")}
+						</EmptyTitle>
 						<EmptyDescription>
-							{t("telemetryHint")}
+							{activeMetrics.cloudflareColo
+								? t("filteredTelemetryHint")
+								: t("telemetryHint")}
 						</EmptyDescription>
 					</EmptyHeader>
 				</Empty>

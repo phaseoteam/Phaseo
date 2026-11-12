@@ -57,7 +57,7 @@ export function getCatalogMessages(locale: CatalogLocale): AuthMessages {
 export function getTypedCatalogMessages(
 	locale: CatalogLocale,
 ): SourceAuthMessages {
-	// The source literals preserve next-intl's ICU argument inference. Catalog
+	// The source literals preserve use-intl's ICU argument inference. Catalog
 	// validation proves runtime values have the same key and argument contract.
 	return catalogMessages[locale] as SourceAuthMessages;
 }

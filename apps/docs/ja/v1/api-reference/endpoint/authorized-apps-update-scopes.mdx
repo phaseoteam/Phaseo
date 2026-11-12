@@ -1,0 +1,8 @@
+---
+title: "承認済みアプリからスコープを削除"
+sidebarTitle: "アプリのスコープを減らす"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml PATCH /me/authorized-apps/{id}"
+description: "承認済みアプリのアクセスをより少ないスコープに絞ります。"
+---
+<Note>このエンドポイントには `oauth_clients:write` を持つ OAuth アクセストークンが必要です。スコープは削除のみ可能です。追加するには、ブラウザーでアプリを再承認してください。</Note>

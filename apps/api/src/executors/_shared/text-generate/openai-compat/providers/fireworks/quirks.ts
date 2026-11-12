@@ -70,6 +70,12 @@ export const fireworksQuirks: ProviderQuirks = {
 		// Fireworks Responses endpoint follows OpenAI field names.
 		// Normalize only responses-shaped payloads and keep Chat payloads untouched.
 		const isResponsesRequest = request.input_items != null || request.input != null;
+		// Fireworks keeps a prompt cache per replica and routes on `user` or
+		// x-session-affinity. Without a client user, use the workspace-namespaced cache key.
+		// https://docs.fireworks.ai/guides/prompt-caching
+		if (request.user == null && typeof ir.promptCacheKey === "string" && ir.promptCacheKey.length > 0) {
+			request.user = ir.promptCacheKey;
+		}
 		if (!isResponsesRequest) {
 			const options = ir.vendor?.fireworks;
 			if (options && typeof options === "object") {
@@ -97,6 +103,13 @@ export const fireworksQuirks: ProviderQuirks = {
 			request.input = request.input_items;
 			delete request.input_items;
 		}
+
+		// Fireworks Responses stores responses unless store is false. Keep the gateway
+		// default (no storage) unless the client asked for it.
+		if (ir.store !== true) request.store = false;
+		// prompt_cache_key is not in the Fireworks Responses schema; affinity goes via
+		// `user` and the x-session-affinity header instead.
+		delete request.prompt_cache_key;
 
 		if (Array.isArray(request.tools)) {
 			request.tools = request.tools.map(normalizeResponsesTool);

@@ -1,0 +1,53 @@
+{
+	"provider": "avian",
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from the catalogue database (v2_pricing_skus, v2_pricing_sku_meters)",
+	"clock": "2026-10-29T14:36:00.000Z",
+	"legend": { "rules": "[id (<sku_code>@v<version>#<meter_key>), plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"cards": [
+		{
+			"key": "avian:deepseek/deepseek-v4-flash:text.generate",
+			"routes": ["avian:deepseek/deepseek-v4-flash"],
+			"skus": ["offer-8d6027c093e2f823dfcf@v2"],
+			"rules": [
+				["offer-8d6027c093e2f823dfcf@v2#cached_read_text_tokens","standard","cached_read_text_tokens","0.0028/1000000 token",100,null,null,null],
+				["offer-8d6027c093e2f823dfcf@v2#input_text_tokens","standard","input_text_tokens","0.14/1000000 token",100,null,null,null],
+				["offer-8d6027c093e2f823dfcf@v2#output_text_tokens","standard","output_text_tokens","0.28/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":348947,"lines":[["cached_read_text_tokens",1024,"offer-8d6027c093e2f823dfcf@v2#cached_read_text_tokens","cached_read_text_tokens",2867],["input_text_tokens",1576,"offer-8d6027c093e2f823dfcf@v2#input_text_tokens","input_text_tokens",220640],["output_text_tokens",448,"offer-8d6027c093e2f823dfcf@v2#output_text_tokens","output_text_tokens",125440]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-8d6027c093e2f823dfcf@v2#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":2709328,"lines":[["cached_read_text_tokens",4567,"offer-8d6027c093e2f823dfcf@v2#cached_read_text_tokens","cached_read_text_tokens",12788],["input_text_tokens",12347,"offer-8d6027c093e2f823dfcf@v2#input_text_tokens","input_text_tokens",1728580],["output_text_tokens",3457,"offer-8d6027c093e2f823dfcf@v2#output_text_tokens","output_text_tokens",967960]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-8d6027c093e2f823dfcf@v2#input_text_tokens","offer-8d6027c093e2f823dfcf@v2#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2696540,"lines":[["input_text_tokens",12347,"offer-8d6027c093e2f823dfcf@v2#input_text_tokens","input_text_tokens",1728580],["output_text_tokens",3457,"offer-8d6027c093e2f823dfcf@v2#output_text_tokens","output_text_tokens",967960]]}}
+			]
+		},
+		{
+			"key": "avian:deepseek/deepseek-v4-pro-0813:text.generate",
+			"routes": ["avian:deepseek/deepseek-v4-pro-0813"],
+			"skus": ["offer-6dedf95edba6a786e72a@v2"],
+			"rules": [
+				["offer-6dedf95edba6a786e72a@v2#cached_read_text_tokens","standard","cached_read_text_tokens","0.0187/1000000 token",100,null,null,null],
+				["offer-6dedf95edba6a786e72a@v2#input_text_tokens","standard","input_text_tokens","0.561/1000000 token",100,null,null,null],
+				["offer-6dedf95edba6a786e72a@v2#output_text_tokens","standard","output_text_tokens","1.683/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":1657269,"lines":[["cached_read_text_tokens",1024,"offer-6dedf95edba6a786e72a@v2#cached_read_text_tokens","cached_read_text_tokens",19149],["input_text_tokens",1576,"offer-6dedf95edba6a786e72a@v2#input_text_tokens","input_text_tokens",884136],["output_text_tokens",448,"offer-6dedf95edba6a786e72a@v2#output_text_tokens","output_text_tokens",753984]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-6dedf95edba6a786e72a@v2#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":12830201,"lines":[["cached_read_text_tokens",4567,"offer-6dedf95edba6a786e72a@v2#cached_read_text_tokens","cached_read_text_tokens",85403],["input_text_tokens",12347,"offer-6dedf95edba6a786e72a@v2#input_text_tokens","input_text_tokens",6926667],["output_text_tokens",3457,"offer-6dedf95edba6a786e72a@v2#output_text_tokens","output_text_tokens",5818131]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-6dedf95edba6a786e72a@v2#input_text_tokens","offer-6dedf95edba6a786e72a@v2#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":12744798,"lines":[["input_text_tokens",12347,"offer-6dedf95edba6a786e72a@v2#input_text_tokens","input_text_tokens",6926667],["output_text_tokens",3457,"offer-6dedf95edba6a786e72a@v2#output_text_tokens","output_text_tokens",5818131]]}}
+			]
+		},
+		{
+			"key": "avian:xiaomi/mimo-v2.5-pro:text.generate",
+			"routes": ["avian:xiaomi/mimo-v2.5-pro"],
+			"skus": ["offer-832b3264861bf05e7ebc@v2"],
+			"rules": [
+				["offer-832b3264861bf05e7ebc@v2#cached_read_text_tokens","standard","cached_read_text_tokens","0.00306/1000000 token",100,null,null,null],
+				["offer-832b3264861bf05e7ebc@v2#input_text_tokens","standard","input_text_tokens","0.36975/1000000 token",100,null,null,null],
+				["offer-832b3264861bf05e7ebc@v2#output_text_tokens","standard","output_text_tokens","0.7395/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":917155,"lines":[["cached_read_text_tokens",1024,"offer-832b3264861bf05e7ebc@v2#cached_read_text_tokens","cached_read_text_tokens",3133],["input_text_tokens",1576,"offer-832b3264861bf05e7ebc@v2#input_text_tokens","input_text_tokens",582726],["output_text_tokens",448,"offer-832b3264861bf05e7ebc@v2#output_text_tokens","output_text_tokens",331296]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["offer-832b3264861bf05e7ebc@v2#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":7135730,"lines":[["cached_read_text_tokens",4567,"offer-832b3264861bf05e7ebc@v2#cached_read_text_tokens","cached_read_text_tokens",13975],["input_text_tokens",12347,"offer-832b3264861bf05e7ebc@v2#input_text_tokens","input_text_tokens",4565303],["output_text_tokens",3457,"offer-832b3264861bf05e7ebc@v2#output_text_tokens","output_text_tokens",2556452]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-832b3264861bf05e7ebc@v2#input_text_tokens","offer-832b3264861bf05e7ebc@v2#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":7121755,"lines":[["input_text_tokens",12347,"offer-832b3264861bf05e7ebc@v2#input_text_tokens","input_text_tokens",4565303],["output_text_tokens",3457,"offer-832b3264861bf05e7ebc@v2#output_text_tokens","output_text_tokens",2556452]]}}
+			]
+		}
+	]
+}

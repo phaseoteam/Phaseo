@@ -36,7 +36,7 @@ CI workflow: `.github/workflows/ci.yml` publish job.
 - `changeset:version` now also runs:
   - `sdk-py:sync-version`
   - `sdk:sync-language-manifests`
-- OpenAPI generation now runs `openapi:sync-enums` before normalize/codegen so model-id enums stay aligned to `packages/data/catalog/src/data/manifest.json`.
+- Model, organisation and benchmark ID enums (`KnownModelId`, `OrganisationId`, `BenchmarkId`) are maintained in `apps/docs/openapi/v1/openapi.yaml`; codegen reads them from there.
 
 Version manifest sync script:
 

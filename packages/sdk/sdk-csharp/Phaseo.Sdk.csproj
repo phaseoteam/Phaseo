@@ -22,9 +22,11 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Auth.cs" />
     <Compile Include="Client.cs" />
     <Compile Include="Devtools.cs" />
     <Compile Include="ParameterSupport.cs" />
+    <Compile Include="Realtime.cs" />
     <Compile Include="Workflows.cs" />
     <Compile Include="src\gen\**\*.cs" />
   </ItemGroup>

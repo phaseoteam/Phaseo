@@ -1,15 +1,17 @@
+import { generatePublicId } from "@/pipeline/before/genId";
+
 const requestIds = new WeakMap<Request, string>();
 
-function validSuppliedRequestId(request: Request): string | null {
-	const supplied = request.headers.get("x-request-id")?.trim();
-	if (supplied && supplied.length <= 128 && /^[a-zA-Z0-9._:-]+$/.test(supplied)) return supplied;
-	return null;
+export function inheritRequestId(source: Request, target: Request): void {
+	requestIds.set(target, requestIdFor(source));
 }
 
 export function requestIdFor(request: Request): string {
 	const existing = requestIds.get(request);
 	if (existing) return existing;
-	const requestId = validSuppliedRequestId(request) ?? crypto.randomUUID();
+	// Public generation identity is always server-owned, including when callers
+	// supply an x-request-id. Reused caller IDs cannot alias separate generations.
+	const requestId = generatePublicId();
 	requestIds.set(request, requestId);
 	return requestId;
 }

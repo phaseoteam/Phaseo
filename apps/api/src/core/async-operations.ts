@@ -500,6 +500,7 @@ export async function listTeamAsyncOperations(args: {
 	ascending?: boolean;
 	statuses?: Array<string | null>;
 	after?: { createdAt: string; internalId: string };
+	excludeBatchFiles?: boolean;
 }): Promise<AsyncOperationRecord[]> {
 	const workspaceId = normalizeText(args.workspaceId);
 	if (!workspaceId) return [];
@@ -518,6 +519,9 @@ export async function listTeamAsyncOperations(args: {
 		.order(orderBy, { ascending });
 	if (orderBy === "created_at") {
 		query = query.order("internal_id", { ascending });
+	}
+	if (args.kind === "batch" && args.excludeBatchFiles) {
+		query = query.not("internal_id", "like", "\\_\\_file\\_\\_:%");
 	}
 
 	if (args.after && orderBy === "created_at") {

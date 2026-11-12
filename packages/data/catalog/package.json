@@ -1,9 +1,0 @@
-{
-  "name": "@phaseo/data-catalog",
-  "version": "0.1.0",
-  "private": true,
-  "files": [
-    "src/data",
-    "schema"
-  ]
-}

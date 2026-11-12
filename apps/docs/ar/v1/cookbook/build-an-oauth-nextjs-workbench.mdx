@@ -1,193 +1,160 @@
 ---
-title: "أنشئ مساحة عمل OAuth باستخدام Next.js"
+title: "أنشئ منصة عمل Next.js مع OAuth"
 icon: "key-round"
-description: "استخدم مثال OAuth الكامل مع Next.js كدليل لتطبيق Gateway يتطلب تسجيل الدخول ويستخدم وكيلًا موحدًا."
+description: "استخدم مثال OAuth الكامل مع Next.js كدليل عملي لتطبيق Gateway يتطلب تسجيل الدخول ويستخدم وكيلًا موحّدًا."
 ---
 
-استخدم هذه الصفحة إذا كان منتجك يحتاج إلى تسجيل دخول ووصول إلى Gateway عبر الجلسة وأكثر من مسار دردشة واحد.
+اسمح للمستخدمين بتسجيل الدخول باستخدام Phaseo وإنفاق أرصدتهم الخاصة في تطبيقك: يمنح OAuth 2.1 مع PKCE خادمك رمز وصول، ويُرفقه وكيل واحد من جهة الخادم بكل استدعاء للـ Gateway. في النهاية يصبح لديك تطبيق محلي فيه تسجيل دخول، ورموز محفوظة في الجلسة تتجدد، واكتشاف للنماذج، وتدفق محادثة عبر `/responses`، وأداة لاختبار نقاط النهاية الأخرى.
 
-**الهدف:** شغّل مساحة العمل المسجّلة وأرسل طلبات Phaseo عبر وكيل واحد محمي على الخادم.
+العينة توضيحية. لا يزال الملف `lib/oauth.ts` يستدعي نقطة نهاية قديمة لتسجيل الدخول، وتصلحها الخطوة 3 من [شغّله](#run-it)، كما أن قائمة السماح في الوكيل أوسع مما يحتاجه منتج حقيقي.
 
-**النتيجة:** تطبيق محلي يتضمن تسجيل الدخول عبر OAuth ورموزًا مرتبطة بالجلسة واكتشاف النماذج والدردشة واختبار نقاط النهاية.
+لتجعل وكيل برمجة ينشئ التطبيق نفسه من الصفر، الصق هذه المطالبة:
 
 <Prompt
-  description="أنشئ **مساحة عمل Next.js تتطلب تسجيل الدخول** مع OAuth ووكيل Phaseo موحد."
+  description="أنشئ **منصة عمل Next.js تتطلب تسجيل الدخول** مع OAuth ووكيل Phaseo موحّد."
   icon="shield-user"
   actions={["copy", "cursor"]}
 >
-{`أنت بصدد إنشاء تطبيق Next.js يتطلب تسجيل الدخول ويعتمد على Phaseo Gateway.
+{`You are building a signed-in Next.js app on top of Phaseo Gateway.
 
-أنشئ تطبيقًا بأسلوب مساحة العمل يتضمن:
-- تسجيل الدخول باستخدام OAuth 2.1 + PKCE
-- تخزين الرموز المرتبط بالجلسة
-- مسار وكيل موحد واحد لـ Gateway على الخادم
-- اكتشاف النماذج
-- مسار دردشة واحد يستخدم Responses API
-- اختبار عام واحد لنقاط نهاية Phaseo الإضافية
+Create a workbench-style app with:
+- OAuth 2.1 + PKCE sign-in against https://api.phaseo.app/oauth/authorize and https://api.phaseo.app/oauth/token (discover them from https://api.phaseo.app/.well-known/oauth-authorization-server), requesting the gateway:access scope
+- session-backed token storage in an encrypted, httpOnly cookie
+- one unified gateway proxy route on the server that calls https://api.phaseo.app/v1
+- model discovery
+- one chat flow using the Responses API, sending the whole conversation in input on every turn
+- one generic endpoint tester for additional Phaseo endpoints
 
-المتطلبات:
-- أبقِ بيانات اعتماد Gateway ورموز الوصول على الخادم.
-- استخدم قائمة سماح للوكيل لتعزيز الأمان.
-- ادعم تحديث الرموز.
-- أبقِ مساحة العمل مفهومة وتجنب تعقيدها دون حاجة.
-- أضف README موجزًا يشرح الإعداد ومتغيرات البيئة وخطوات التشغيل.
+Requirements:
+- Keep gateway credentials and access tokens server-side.
+- Use a proxy allowlist of exact paths for safety.
+- Support token refresh. Store the new refresh token from every refresh and drop the old one.
+- Sign out by sending the refresh token to https://api.phaseo.app/oauth/revoke.
+- Keep the workbench understandable rather than over-engineered.
+- Add a short README with setup, env vars, and run steps.
 
-التحقق:
-- شغّل التطبيق إن أمكن
-- تحقّق من تدفق تسجيل الدخول بقدر ما تسمح به الإعدادات المحلية
-- تحقّق من مسار طلب واحد على الأقل إلى Gateway عبر الوكيل
-- أبلغ بدقة عما تحققت منه وما لا يزال يعتمد على إعداد OAuth خارجي.`}
+Verification:
+- run the app if possible
+- verify sign-in flow as far as local setup allows
+- verify at least one proxied gateway request path
+- report exactly what you verified and what remains dependent on external OAuth configuration.`}
 </Prompt>
 
-## المشروع النموذجي
+## كيف بُنيت العينة
 
-- GitHub: [examples/oauth-client-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/oauth-client-nextjs)
-- مسار المشروع داخل المستودع: `examples/oauth-client-nextjs`
+```mermaid
+flowchart LR
+  browser["المتصفح"] -->|"تسجيل الدخول"| start["app/api/auth/start"]
+  start -->|"إعادة توجيه مع تحدي PKCE"| authz["تسجيل الدخول والموافقة في Phaseo"]
+  authz -->|"الرمز"| cb["app/auth callback"]
+  cb -->|"تبادل الرمز"| sess["lib/session.ts: جلسة مشفّرة"]
+  browser -->|"/api/gateway/..."| proxy["app/api/gateway/[...surface]/route.ts"]
+  proxy -->|"قائمة السماح، رمز Bearer، التجديد عند الانتهاء"| gw["api.phaseo.app/v1"]
+```
 
-## ما الذي يغطيه هذا التطبيق
+توجد العينة في [examples/oauth-client-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/oauth-client-nextjs):
 
-- تسجيل الدخول باستخدام OAuth 2.1 + PKCE
-- تخزين الرموز المرتبط بالجلسة وتحديثها
-- وكيل موحد لمسارات التحكم والإنشاء
-- اكتشاف النماذج
-- مسار دردشة عبر `/responses`
-- اختبار عام لمسارات Gateway الأخرى
+| الملف | ما يفعله |
+| --- | --- |
+| `app/page.tsx` | صفحة الدخول لتسجيل الدخول |
+| `app/dashboard/page.tsx` | الهيكل المحمي |
+| `app/dashboard/GatewayWorkbench.tsx` | يحمّل مسارات التحكم، ويعرض معرّفات النماذج، ويشغّل المحادثة عبر `POST /responses`، ويختبر نقاط النهاية الأخرى |
+| `app/api/gateway/[...surface]/route.ts` | وكيل شامل: يتحقق من قائمة السماح، ويضيف رمز Bearer، ويجدّده عند انتهاء صلاحيته، ويمرّر المحتوى والحالة |
+| `lib/oauth.ts` | PKCE وتبادل الرمز والتجديد |
+| `lib/session.ts` | تخزين الجلسة المشفّرة |
 
-## متى تبدأ بهذا المثال
+فصل تسجيل الدخول عن استدعاءات الـ Gateway يعني أن مشكلة في تسجيل الدخول لن تبدو أبدًا كمشكلة في النموذج، وأن جميع نقاط النهاية تشترك في مكان واحد يتعامل مع الرموز.
 
-استخدمه عندما:
+<span id="run-it"></span>
+## شغّله
 
-- يحتاج المستخدمون النهائيون إلى تسجيل الدخول بصلاحيات مفوضة
-- تحتاج إلى أكثر من صفحة دردشة بسيطة
-- تريد مسار خادم آمنًا واحدًا لعدة نقاط نهاية من Phaseo
+تحتاج إلى Node.js، وتطبيق OAuth يتضمن `http://localhost:3000/auth/callback` (أو عنوان الاستدعاء الخاص بك) كعنوان إعادة توجيه، وسرّ جلسة عشوائي طويل. أنشئ تطبيق OAuth من **الإعدادات → تطبيقات OAuth** أو باستخدام [OAuth clients API](../api-reference/endpoint/oauth-clients-create).
 
-لا تبدأ هنا إذا:
+<Steps>
+<Step title="التثبيت">
 
-- تحتاج فقط إلى واجهة دردشة بسيطة بمفتاح API
-- تريد البدء بسكربت أو CLI
-
-## الملفات الرئيسية
-
-- `app/page.tsx`
-- `app/dashboard/page.tsx`
-- `app/dashboard/GatewayWorkbench.tsx`
-- `app/api/gateway/[...surface]/route.ts`
-- `lib/oauth.ts`
-- `lib/session.ts`
-
-## لماذا بُني المثال بهذه الطريقة
-
-### 1. يبقى OAuth منفصلًا عن منطق Gateway
-
-يعزل التطبيق ما يلي:
-
-- منطق بدء المصادقة وcallback
-- معالجة الجلسة المشفرة
-- تحديث الرموز
-
-يُبقي ذلك شيفرة تكامل الذكاء الاصطناعي أبسط ويسهّل تصحيح مشكلات تسجيل الدخول.
-
-### 2. يتولى مسار وكيل واحد استدعاءات Gateway
-
-يتولى مسار الوكيل الشامل ما يلي:
-
-- يتحقق من قائمة سماح نقاط النهاية
-- يضيف رمز bearer الحالي
-- يحدّث الرموز عند الحاجة
-- يمرر أجسام الطلبات والردود
-
-هذا نمط مناسب لاستخدام عدة نقاط نهاية من Phaseo دون نسخ منطق المصادقة في كل مسار.
-
-### 3. تعمل لوحة التحكم أيضًا كمساحة عمل داخلية
-
-لا تقتصر صفحة مساحة العمل على الدردشة:
-
-- يكتشف النماذج
-- يختبر `/responses`
-- ويمكنه اختبار نقاط نهاية غير خاصة بالدردشة
-
-وهذا يجعله مفيدًا للإعداد وضمان الجودة وتصحيح الأخطاء داخليًا قبل إنشاء واجهة أكثر اكتمالًا للمستخدمين.
-
-## المتطلبات المسبقة
-
-- - Node.js ومدير حزم مدعوم
-- - عميل OAuth مُعدّ بعنوان callback المحلي
-- - سر جلسة قوي
-
-## تشغيل المثال
-
-<CodeGroup>
-```bash npm
+```bash
 cd examples/oauth-client-nextjs
 npm install
-cp .env.example .env.local
 ```
 
-```bash pnpm
-cd examples/oauth-client-nextjs
-pnpm install
-cp .env.example .env.local
+</Step>
+<Step title="أنشئ .env.local">
+
+لا تحتوي العينة على `.env.example`. أنشئ `.env.local` بالأسماء التي تقرؤها الشيفرة:
+
+```bash .env.local
+NEXT_PUBLIC_OAUTH_CLIENT_ID=your_client_id
+OAUTH_CLIENT_SECRET=your_client_secret
+# The sample reads this name for the OAuth server's base URL.
+NEXT_PUBLIC_AISTATS_URL=https://api.phaseo.app
+NEXT_PUBLIC_REDIRECT_URI=http://localhost:3000/auth/callback
+SESSION_SECRET=a-long-random-string
+NEXT_PUBLIC_GATEWAY_URL=https://api.phaseo.app
 ```
 
-```bash yarn
-cd examples/oauth-client-nextjs
-yarn install
-cp .env.example .env.local
-```
+لا تضع أبدًا `OAUTH_CLIENT_SECRET` أو `SESSION_SECRET` في متغير يبدأ بـ `NEXT_PUBLIC_`.
 
-```bash bun
-cd examples/oauth-client-nextjs
-bun install
-cp .env.example .env.local
-```
-</CodeGroup>
+</Step>
+<Step title="وجّه العينة إلى نقاط نهاية OAuth الحالية">
 
-عيّن:
+يبني `lib/oauth.ts` العنوانين `${NEXT_PUBLIC_AISTATS_URL}/auth/v1/oauth/authorize` و`/auth/v1/token` ويطلب `openid email profile`. ينشر خادم OAuth الخاص بـ Phaseo نقاط نهايته على `https://api.phaseo.app/.well-known/oauth-authorization-server`:
 
-- `NEXT_PUBLIC_OAUTH_CLIENT_ID`
-- `OAUTH_CLIENT_SECRET`
-- `NEXT_PUBLIC_PHASEO_URL`
-- `NEXT_PUBLIC_REDIRECT_URI`
-- `SESSION_SECRET`
-- `NEXT_PUBLIC_GATEWAY_URL`
+| الاستخدام | العنوان |
+| --- | --- |
+| التفويض | `https://api.phaseo.app/oauth/authorize` |
+| الرمز | `https://api.phaseo.app/oauth/token` |
+| الإلغاء | `https://api.phaseo.app/oauth/revoke` |
 
-ثم شغّل:
+غيّر العناوين الثلاثة في `lib/oauth.ts` إلى هذه، وأضف `gateway:access` إلى `scope` ليتمكن الرمز من استدعاء الـ Gateway.
 
-<CodeGroup>
-```bash npm
+</Step>
+<Step title="شغّل خادم التطوير">
+
+```bash
 npm run dev
 ```
 
-```bash pnpm
-pnpm dev
-```
+افتح `http://localhost:3000`، وسجّل الدخول، ثم افتح لوحة التحكم.
 
-```bash yarn
-yarn dev
-```
+</Step>
+</Steps>
 
-```bash bun
-bun run dev
-```
-</CodeGroup>
+## تحقّق من نجاحه
 
-افتح `http://localhost:3000`.
+- يعود تسجيل الدخول إلى عنوان الاستدعاء الخاص بك وينشئ جلسة.
+- تعرض لوحة التحكم النماذج عبر `/api/gateway/models`.
+- تحصل جولة محادثة عبر `/api/gateway/responses` على إجابة، ولا يحمل أي طلب من المتصفح رمز الوصول.
+- يُرفض أي مسار خارج قائمة السماح في الوكيل.
 
-## تحقق من النتيجة
+## مدد صلاحية الرموز
 
-- يعيد تسجيل الدخول المستخدم إلى callback المُعدّ وينشئ جلسة.
-- يمكن للوحة التحكم اكتشاف النماذج عبر الوكيل.
-- يكتمل طلب واحد إلى Responses API دون كشف رمز الوصول للمتصفح.
-- يُرفض أي endpoint غير مدرج في قائمة سماح الوكيل.
+تعيد نقطة نهاية الرمز رمزين:
 
-## كيفية تخصيص المثال
+| الرمز | مدة الصلاحية | الاستخدام |
+| --- | --- | --- |
+| `access_token` | 7 أيام (`expires_in`) | أرسله كـ `Authorization: Bearer` في طلبات الـ Gateway. يُنفق الأرصدة في مساحة العمل التي اختارها المستخدم. |
+| `refresh_token` | 90 يومًا من آخر استخدام له | أرسله مع `grant_type=refresh_token` للحصول على زوج جديد. |
 
-- - اختصر قائمة سماح الوكيل لتشمل نقاط النهاية التي يحتاجها منتجك فقط
-- - أبقِ مساحة العمل داخلية أثناء إنشاء واجهة أوضح للمستخدمين
-- - استبدل الاختبار العام بتدفقات مخصصة للمنتج بعد استقرار التكامل
+- **دوّر الرموز عند كل تجديد.** يعيد كل تجديد رمز وصول جديدًا ورمز تجديد جديدًا. احفظ الاثنين وتخلّص من القديمين: يتوقف رمز الوصول القديم عن العمل فورًا، ولا يمكن استخدام رمز التجديد القديم مرة أخرى.
+- **جدّد بعد انتهاء الصلاحية.** يمكنك التجديد بعد انتهاء صلاحية رمز الوصول، ما دامت صلاحية رمز التجديد لم تنتهِ.
+- **لا تُعِد استخدام رمز تجديد أبدًا.** استخدامه مرة ثانية يُنهي تسجيل الدخول. يعامله Phaseo كرمز مسرّب ويلغي رمز الوصول وكل رموز التجديد الصادرة من تسجيل الدخول ذاك، فيضطر المستخدم إلى تسجيل الدخول مجددًا.
+- **النطاقات تتقلص فقط.** لا يضيف التجديد نطاقات أبدًا. يحتفظ بالنطاقات التي وافق عليها المستخدم، مطروحًا منها ما أزاله لاحقًا.
+- **عند فشل التجديد.** يفشل التجديد بمجرد أن يلغي المستخدم تطبيقك، أو يلغي مفتاحه أو يعطّله، أو يزيل نطاقًا يحتاجه المفتاح (مثل `gateway:access`)، أو يغادر مساحة العمل. إزالة `gateway:access` تلغي المفتاح أيضًا، فيتوقف رمز الوصول عن العمل فورًا. ومنح النطاق مجددًا لا يعيد رمز التجديد. أعِد المستخدم إلى تسجيل الدخول.
+- **تسجيل الدخول مجددًا يجدّد المفتاح.** يجدّد المفتاح نفسه بدلًا من إضافة مفتاح جديد، سواء أرسلت `resource=https://api.phaseo.app/v1` أم لا. تحصل على رمز وصول ورمز تجديد جديدين، ويتوقف السابقان عن العمل، ويحتفظ المفتاح بإنفاق هذا الشهر. ويصبح حد الإنفاق الشهري للمفتاح هو الحد الذي وافق عليه المستخدم للتو. أما رمز التجديد من تسجيل دخول سابق فيُرفض فقط، وإرساله إلى نقطة نهاية الرمز أو الإلغاء لا يُنهي تسجيل الدخول الجديد.
+- **المفتاح الموقوف مؤقتًا يمنع تسجيل الدخول.** إذا كان أي من مفاتيح تطبيقك لذلك المستخدم ومساحة العمل موقوفًا مؤقتًا، أيًّا كان موردُه، تعيد نقطة نهاية الرمز `invalid_grant` حتى يعيد أحدهم تشغيل المفتاح من **الإعدادات → مفاتيح API**. لا يعمل التجديد إلا ما دام المفتاح غير ملغى: بعد تسجيل الخروج أو أي إلغاء آخر، يصدر تسجيل الدخول مفتاحًا جديدًا، وتبدأ حدوده وإنفاقه من جديد.
+- **سجّل الخروج بالإلغاء.** أرسل رمز التجديد إلى `https://api.phaseo.app/oauth/revoke`. يلغي ذلك المفتاح وكل رموز التجديد الصادرة من تسجيل الدخول، بما فيها رمز أصدره تجديد قبل لحظات.
 
-## أدلة ذات صلة
+## حدود الإنفاق
 
-- [أنشئ تطبيق دردشة ويب باستخدام Next.js](./build-a-nextjs-web-chat-app.mdx)
-- [مطالبات بدء تطبيق صغير](./mini-app-starter-prompts.mdx)
-- [الأمثلة](../guides/examples.mdx)
+في شاشة الموافقة يحدد المستخدم حد إنفاق شهريًا لتطبيقك: $20.00 افتراضيًا، أو مبلغًا آخر، أو بلا حد. بمجرد أن ينفق المفتاح هذا المبلغ خلال شهر تقويمي، تعيد طلبات الـ Gateway الرمز `429` مع `key_limit_exceeded` حتى الشهر التالي أو حتى يرفع المستخدم الحد من **الإعدادات → مفاتيح API**.
+
+أيًّا كانت النطاقات التي يملكها، لا يستطيع تطبيقك رفع هذا الحد أو الالتفاف عليه عبر API. كل ما يمكنه هو إعادة تسمية مفاتيح API أو حذفها. لا يمكنه إنشاء مفاتيح أو تدويرها، ولا تغيير حدود مفتاح أو حالته أو تاريخ انتهائه، ولا إنشاء مفاتيح إدارة أو أحمال عمل موثوقة، ولا إضافة أعضاء، ولا تغيير الميزانيات أو ضوابط الحماية أو حدود المعدل أو قواعد الإنفاق، ولا تغيير حدود الأسعار في مساحة العمل للتوجيه أو الرجوع من BYOK إلى الأرصدة.
+
+## قبل أن تطلقه
+
+- **قلّص قائمة السماح.** يسمح `lib/gateway.ts` بمسارات محددة إضافةً إلى كل مسار تحت `videos/` و`music/generate/` و`control/` و`internal/`. احتفظ فقط بالمسارات المحددة التي يستدعيها منتجك.
+- **أرسل المحادثة كاملة.** لا يخزّن الـ Gateway الردود ويرفض `previous_response_id`، لذا أعِد إرسال الجولات السابقة في `input`.
+- **استبدل أداة الاختبار.** احتفظ بمنصة العمل لضمان الجودة داخليًا، وابنِ تدفقات مخصصة للمستخدمين النهائيين.
+
+لتطبيق يعتمد على مفتاح API دون تسجيل دخول، ابدأ من [تطبيق المحادثة على الويب باستخدام Next.js](./build-a-nextjs-web-chat-app).

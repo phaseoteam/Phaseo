@@ -1,0 +1,131 @@
+---
+icon: "search-check"
+title: "生成の照会"
+description: "どの Phaseo SDK からでも /generations で過去の生成を取得します。"
+---
+
+リクエスト ID（`G-01ABC...` など）を SDK の生成メソッドに渡すと、`GET /v1/generations?id=<id>` からそのリクエストの保存済みレコードを取得できます。
+
+<CodeGroup>
+
+```typescript TypeScript
+const record = await client.getGeneration("G-01ABC...");
+```
+
+```python Python
+record = client.get_generation("G-01ABC...")
+
+print(record["model_id"], record["cost_nanos"])
+```
+
+```go Go
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  panic(err)
+}
+
+record, err := client.GetGeneration(context.Background(), "G-01ABC...")
+if err != nil {
+  panic(err)
+}
+fmt.Println(record["status_code"], record["cost_nanos"])
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+var record = await client.GetGeneration("G-01ABC...");
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo();
+$record = $client->getGeneration('G-01ABC...');
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+record = client.get_generation('G-01ABC...')
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+var record = client.getGeneration("G-01ABC...");
+System.out.println(record);
+```
+
+</CodeGroup>
+
+| 言語 | メソッド | 戻り値 |
+| --- | --- | --- |
+| TypeScript | `client.getGeneration(id)` | レコードのオブジェクト |
+| Python | `client.get_generation(id)` | `APIResponse` の dict |
+| Go | `client.GetGeneration(ctx, id)` | `map[string]interface{}` |
+| C# | `client.GetGeneration(id)` | `Dictionary<string, object>?` |
+| PHP | `$client->getGeneration($id)` | 配列 |
+| Ruby | `client.get_generation(id)` | Hash |
+| Java | `client.getGeneration(id)` | Jackson の `JsonNode` |
+| Rust | ヘルパーはありません。`client.request("GET", "/generations?id=<id>", None, &RequestOptions::default())` を呼び出します | `PhaseoResponse`。レコードは `body`（`serde_json::Value`）にあります |
+
+照会の範囲はあなたのワークスペースに限られます。`id` がない場合は `400`（`missing_id`）が、ワークスペースにない ID の場合は `404`（`not_found`）が返ります。
+
+## 保存済みのリクエストを再実行する
+
+Gateway がリクエスト全体を保存している場合、レコードの `replay_supported` は true になり、`replay_request` が含まれます。これを元のエンドポイントに送り直すと、管理された形で再実行できます。
+
+## タイミングのフィールドを読む
+
+- `latency_ms`：最初のトークン、または最初の出力バイトやフレームまでの時間（計測している場合）。
+- `generation_ms`：その時点以降の生成時間（計測している場合）。
+
+## レスポンス
+
+```json
+{
+  "created_at": "2026-05-05T12:00:00.000Z",
+  "request_id": "G-01ABC123",
+  "team_id": "team-123",
+  "app_id": "app-123",
+  "endpoint": "chat/completions",
+  "model_id": "openai/gpt-6-astra",
+  "provider": "openai",
+  "native_response_id": "chatcmpl-123",
+  "stream": false,
+  "byok": false,
+  "status_code": 200,
+  "success": true,
+  "error_code": null,
+  "error_message": null,
+  "latency_ms": 1500,
+  "generation_ms": 1400,
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 9,
+    "total_tokens": 18
+  },
+  "cost_nanos": 1000000,
+  "currency": "USD",
+  "pricing_lines": [],
+  "key_id": "key-123",
+  "throughput": null,
+  "replay_supported": true,
+  "replay_request": {
+    "model": "openai/gpt-6-astra",
+    "messages": [
+      { "role": "user", "content": "Say hello" }
+    ]
+  }
+}
+```
+
+すべてのフィールドは[生成の照会](../../api-reference/endpoint/generation)にあります。

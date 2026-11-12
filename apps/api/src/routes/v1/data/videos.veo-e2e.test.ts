@@ -1,5 +1,3 @@
-import fs from "node:fs";
-import path from "node:path";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { IRVideoGenerationRequest } from "@core/ir";
 import type { ExecutorExecuteArgs } from "@executors/types";
@@ -91,6 +89,13 @@ function videoPricingRows() {
 	];
 }
 
+const VEO_LITE_SKU = {
+	sku_id: "sku-veo-lite", provider_model_id: "pm-veo-lite", service_tier_slug: "standard",
+	operation: "video.generate", status: "active", currency: "USD",
+	effective_from: "2026-01-01T00:00:00Z", effective_to: null, metadata: {}, updated_at: "2026-06-10T00:00:00Z",
+	meters: [{ sku_meter_id: "meter-veo-lite", sku_id: "sku-veo-lite", meter_key: "output_video_seconds", unit: "second", unit_quantity: "1", price_nanos: "30000000", meter_order: 1, metadata: {}, updated_at: "2026-06-10T00:00:00Z" }],
+};
+
 function buildSupabaseAdminMock() {
 	return {
 		from(table: string) {
@@ -101,11 +106,18 @@ function buildSupabaseAdminMock() {
 					provider_model_slug: "veo-3.1-lite-generate-preview",
 				}];
 				return {
-					select() {
+					select(columns?: string) {
+						// The price-card loader roots its query at the route and embeds SKUs and meters.
+						const data = String(columns ?? "").includes("skus:")
+							? [{ provider_model_id: "pm-veo-lite", skus: [VEO_LITE_SKU] }]
+							: rows;
 						const builder: any = {
 							eq() { return builder; },
 							in() { return builder; },
-							then(resolve: (value: unknown) => unknown) { return Promise.resolve({ data: rows, error: null }).then(resolve); },
+							lte() { return builder; },
+							or() { return builder; },
+							order() { return builder; },
+							then(resolve: (value: unknown) => unknown) { return Promise.resolve({ data, error: null }).then(resolve); },
 						};
 						return builder;
 					},
@@ -434,13 +446,51 @@ import { runVideoReconciliationJob } from "../../../pipeline/video-reconciliatio
 import { getVideoByIdHandler } from "./videos.get-by-id";
 import { getVideoContentHandler } from "./videos.get-content";
 
+// Copied from the google-vertex google/veo-3.1-lite-preview video.generate catalogue price card.
+const VEO_LITE_PRICING_CARD = {
+	key: "google-vertex:google/veo-3.1-lite-preview:video.generate",
+	api_provider_id: "google-vertex",
+	provider_slug: "google-vertex",
+	api_model_id: "google/veo-3.1-lite-preview",
+	capability_id: "video.generate",
+	rules: [
+		{
+			meter: "output_video_seconds", unit: "second", unit_size: 1, price_per_unit: 0.05, currency: "USD", pricing_plan: "standard",
+			match: [
+				{ path: "video_params.resolution", op: "eq", or_group: 1, and_index: 1, value: "720p" },
+				{ path: "video_params.audio", op: "eq", or_group: 1, and_index: 2, value: true },
+			],
+			priority: 100, effective_from: "2026-03-31T00:00:00Z",
+		},
+		{
+			meter: "output_video_seconds", unit: "second", unit_size: 1, price_per_unit: 0.08, currency: "USD", pricing_plan: "standard",
+			match: [
+				{ path: "video_params.resolution", op: "eq", or_group: 1, and_index: 1, value: "1080p" },
+				{ path: "video_params.audio", op: "eq", or_group: 1, and_index: 2, value: true },
+			],
+			priority: 100, effective_from: "2026-03-31T00:00:00Z",
+		},
+		{
+			meter: "output_video_seconds", unit: "second", unit_size: 1, price_per_unit: 0.03, currency: "USD", pricing_plan: "standard",
+			match: [
+				{ path: "video_params.resolution", op: "eq", or_group: 1, and_index: 1, value: "720p" },
+				{ path: "video_params.audio", op: "eq", or_group: 1, and_index: 2, value: false },
+			],
+			priority: 100, effective_from: "2026-03-31T00:00:00Z",
+		},
+		{
+			meter: "output_video_seconds", unit: "second", unit_size: 1, price_per_unit: 0.05, currency: "USD", pricing_plan: "standard",
+			match: [
+				{ path: "video_params.resolution", op: "eq", or_group: 1, and_index: 1, value: "1080p" },
+				{ path: "video_params.audio", op: "eq", or_group: 1, and_index: 2, value: false },
+			],
+			priority: 100, effective_from: "2026-03-31T00:00:00Z",
+		},
+	],
+};
+
 function loadVeoLitePricingCard() {
-	const filePath = path.resolve(
-		process.cwd(),
-		"../..",
-		"packages/data/catalog/src/data/pricing/google-vertex/google-veo-3.1-lite-generate-preview/video.generate/pricing.json",
-	);
-	return JSON.parse(fs.readFileSync(filePath, "utf8"));
+	return structuredClone(VEO_LITE_PRICING_CARD);
 }
 
 function buildExecutorArgs(
@@ -815,7 +865,7 @@ describe("video Veo 3.1 Lite lifecycle end-to-end", () => {
 		expect(statusResponse.status).toBe(502);
 		const statusBody = await statusResponse.json();
 		expect(statusBody).toMatchObject({
-			error: "upstream_error",
+			code: "upstream_error",
 			reason: "google_vertex_operation_fetch_failed",
 			request_id: "req_auth_video_e2e",
 			workspace_id: "ws_video_e2e",

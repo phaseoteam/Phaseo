@@ -1,0 +1,10 @@
+---
+title: "Definir etiqueta del preajuste"
+sidebarTitle: "Definir etiqueta"
+badge: "Beta"
+openapi: "/es/openapi/v1/openapi.localized.yaml PUT /presets/{id}/labels/{label}"
+description: "Apunta una etiqueta a una versión publicada del preajuste, o devuélvela para revertir."
+---
+<Note>Este endpoint requiere una clave de API de gestión con `presets:write` y una identidad de usuario asociada. Quien creó el preajuste puede cambiar sus etiquetas, y también los propietarios y administradores del espacio de trabajo cuando el preajuste está compartido.</Note>
+
+Las solicitudes que fijan la etiqueta, como `@support-triage@production` o `prompt.version: "production"`, usan la nueva versión en unos dos minutos. Consulta [Plantillas de prompt](../../guides/prompt-templates.mdx).

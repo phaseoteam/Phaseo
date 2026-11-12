@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="120 100 188 218">
+  <title>EmpirioLabs AI symbol</title>
+  <defs>
+    <linearGradient id="symbol" x1="210" y1="110" x2="210" y2="311" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#82dce7"/>
+      <stop offset=".45" stop-color="#25b4e5"/>
+      <stop offset=".8" stop-color="#0069e4"/>
+      <stop offset="1" stop-color="#003789"/>
+    </linearGradient>
+  </defs>
+  <path fill="url(#symbol)" fill-rule="evenodd" d="M126 159L211 107L302 161L152 254L201 284L201 245L217 236L217 288L280 249L295 261L215 311L126 258ZM159 162L214 195L267 163L211 129ZM143 171L143 239L199 205Z"/>
+</svg>

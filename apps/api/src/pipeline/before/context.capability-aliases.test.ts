@@ -97,17 +97,13 @@ describe("getContextCapabilityCandidates", () => {
 		expect(getContextCapabilityCandidates("audio.speech")).toEqual([
 			"audio.speech",
 			"audio/speech",
-			"audio.generate",
 		]);
 		expect(getContextCapabilityCandidates("audio/speech")).toEqual([
 			"audio/speech",
 			"audio.speech",
-			"audio.generate",
 		]);
 		expect(getContextCapabilityCandidates("audio.generate")).toEqual([
 			"audio.generate",
-			"audio.speech",
-			"audio/speech",
 		]);
 	});
 
@@ -115,10 +111,18 @@ describe("getContextCapabilityCandidates", () => {
 		expect(getContextCapabilityCandidates("audio")).toEqual(["audio"]);
 	});
 
-	it("keeps unrelated capabilities unchanged", () => {
+	it("looks up canonical media records while retaining endpoint aliases", () => {
 		expect(getContextCapabilityCandidates("video.generate")).toEqual([
 			"video.generate",
+			"video.generation",
+			"video.generations",
 		]);
+		expect(getContextCapabilityCandidates("audio.transcribe")).toEqual([
+			"audio.transcription", "audio.transcribe", "audio.transcriptions",
+		]);
+		expect(getContextCapabilityCandidates("realtime")).toEqual(["audio.realtime", "realtime"]);
+		expect(getContextCapabilityCandidates("images.edits")).toEqual(["image.edit", "images.edits"]);
+		expect(getContextCapabilityCandidates("unknown.task")).toEqual(["unknown.task"]);
 	});
 
 	it("adds text.generate fallback for google image generation models", () => {

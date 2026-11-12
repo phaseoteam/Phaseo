@@ -1,8 +1,6 @@
-"use client";
-
 import { chatLocalStorage } from "@/lib/chat/userStorage";
-import Link from "next/link";
-import { useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { localizedWorkspacePolicyReason } from "@/i18n/workspace-policy-messages";
 
 import {
@@ -113,6 +111,7 @@ import {
 	Database,
 	PanelLeftClose,
 	PanelLeftOpen,
+	PanelsTopLeft,
 	Keyboard,
 	List,
 	MessageCircleDashed,
@@ -302,6 +301,8 @@ type ChatHeaderProps = {
 	onUpdateModel: (modelId: string) => void;
 	temporaryMode: boolean;
 	onToggleTemporaryMode: () => void;
+	onInteractiveAnswersChange?: (enabled: boolean) => void;
+	interactiveAnswersDisabled?: boolean;
 	onOpenModelSettings: () => void;
 	settingsOpen: boolean;
 	onSettingsOpenChange: (open: boolean) => void;
@@ -352,6 +353,8 @@ export function ChatHeader({
 	onUpdateModel,
 	temporaryMode,
 	onToggleTemporaryMode,
+	onInteractiveAnswersChange,
+	interactiveAnswersDisabled = false,
 	onOpenModelSettings,
 	settingsOpen,
 	onSettingsOpenChange,
@@ -1750,6 +1753,23 @@ export function ChatHeader({
 					</DropdownMenu>
 				) : null}
 				<RoomSdkExport request={sdkRequest} />
+				{onInteractiveAnswersChange && (
+					<Tooltip>
+						<TooltipTrigger asChild>
+							<Button
+								variant={activeThread?.settings.interactiveAnswers ? "secondary" : "ghost"}
+								size="icon"
+								disabled={!activeThread || interactiveAnswersDisabled}
+								onClick={() => onInteractiveAnswersChange(!activeThread?.settings.interactiveAnswers)}
+								aria-label={tUi("openui.title")}
+								aria-pressed={activeThread?.settings.interactiveAnswers ?? false}
+							>
+								<PanelsTopLeft className="h-4 w-4" />
+							</Button>
+						</TooltipTrigger>
+						<TooltipContent>{tUi("openui.experimentLabel")}</TooltipContent>
+					</Tooltip>
+				)}
 				<Tooltip>
 					<TooltipTrigger asChild>
 						<Button

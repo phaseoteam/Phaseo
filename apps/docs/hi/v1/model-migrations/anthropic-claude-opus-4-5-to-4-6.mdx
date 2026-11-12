@@ -1,75 +1,56 @@
 ---
 title: "Anthropic Claude Opus 4.6"
-description: "Claude Opus 4.6 अपनाने के लिए structured output, adaptive thinking और prefills की जानकारी।"
+description: "Claude Opus 4.6 अपनाते समय क्या जानना ज़रूरी है, जिसमें संरचित आउटपुट, एडैप्टिव थिंकिंग और प्रीफ़िल शामिल हैं।"
 icon: "/icons/brands/anthropic.svg"
 ---
 
-# Anthropic Claude Opus 4.6
+मॉडल को `anthropic/claude-opus-4.6` में बदलें, असिस्टेंट प्रीफ़िल हटाएं, और संरचित आउटपुट को `output_config.format` पर ले जाएं। ये अनुरोध-आकार के बदलाव हैं: पुराने Opus 4.5 पैटर्न छोड़ दिए जाएं तो `400` के साथ विफल होते हैं।
 
-Production में `anthropic/claude-opus-4.6` सुरक्षित रूप से अपनाने के लिए यह गाइड इस्तेमाल करें।
+| | Claude Opus 4.5 | Claude Opus 4.6 |
+| --- | --- | --- |
+| Phaseo मॉडल ID | `anthropic/claude-opus-4.5` | `anthropic/claude-opus-4.6` |
+| कॉन्टेक्स्ट विंडो | 200K टोकन | 1M टोकन |
+| अधिकतम आउटपुट | 64K टोकन | 128K टोकन |
+| असिस्टेंट प्रीफ़िल | समर्थित | `400` लौटाता है |
+| संरचित आउटपुट | `output_format` | `output_config.format` |
+| थिंकिंग | `budget_tokens` | एडैप्टिव, `output_config.effort` से नियंत्रित |
+| `interleaved-thinking-2025-05-14` बीटा | ज़रूरी | ज़रूरी नहीं |
 
-Claude Opus 4.6 migration सिर्फ़ model ID बदलना नहीं है। Anthropic के निर्देशों में request changes, हटाए गए beta flags और prefills के लिए सख्त व्यवहार शामिल हैं।
+## अनुरोध अपडेट करें
 
-## नया क्या है
+**1. असिस्टेंट प्रीफ़िल हटाएं।** अगर आप JSON या कोई प्रीफ़िक्स ज़बरदस्ती लाने के लिए असिस्टेंट टर्न पहले से भरते हैं, तो Opus 4.6 `400` लौटाता है। इसके बजाय ज़्यादा स्पष्ट सिस्टम निर्देश, प्रॉम्प्ट में उदाहरण, या संरचित आउटपुट उपयोग करें।
 
-- Claude 4.6 models अब assistant prefills सपोर्ट नहीं करते और `400` लौटाते हैं।
-- Structured output अब `output_format` के बजाय `output_config.format` इस्तेमाल करता है।
-- Adaptive thinking अब `output_config.effort` से सेट होती है।
-- पुराने beta headers हटाएँ।
-- Opus 4.6 को `interleaved-thinking-2025-05-14` beta header की ज़रूरत नहीं है।
-- Opus 4.6 beta में 1M-token context window जोड़ता है और लंबे coding व agent tasks बेहतर करता है।
+**2. संरचित आउटपुट ले जाएं** `output_format` से `output_config.format` पर, और अपने स्कीमा और पार्सर टेस्ट दोबारा चलाएं:
 
-## माइग्रेशन quickstart
+```json
+{
+  "model": "anthropic/claude-opus-4.6",
+  "max_tokens": 1024,
+  "messages": [{ "role": "user", "content": "Extract the invoice fields." }],
+  "output_config": {
+    "format": { "type": "json_schema", "schema": { "type": "object", "properties": { "total": { "type": "number" } } } }
+  }
+}
+```
 
-### 1. Assistant prefills हटाएँ
+`/v1/chat/completions` और `/v1/responses` पर `response_format` ही उपयोग करते रहें।
 
-अगर assistant turn का कुछ हिस्सा पहले से भरकर JSON या response prefix लागू करते थे, तो यह तरीका 4.6 पर विफल होगा। इसके बजाय नियंत्रण यहाँ ले जाएँ:
+**3. थिंकिंग को एडैप्टिव पर बदलें।** जब तक अनुरोध न मांगे, Opus 4.6 थिंक नहीं करता। Phaseo पर, टोकन बजट के बिना `reasoning.effort` या `reasoning.enabled: true` एडैप्टिव थिंकिंग चालू करता है, और effort `output_config.effort` बन जाता है। Opus 4.6 `xhigh` को छोड़कर हर effort लेवल लेता है; `xhigh` को Phaseo `max` के रूप में भेजता है। थिंकिंग चालू रहने पर Phaseo `temperature` और `top_k` को, और 0.95 से कम `top_p` को छोड़ देता है।
 
-- स्पष्ट system instructions
-- user या system prompt में examples
-- `output_config.format` के ज़रिए structured output
+**4. पुराने बीटा हेडर हटाएं** SDK रैपर, मिडलवेयर और प्रीसेट से। Phaseo `anthropic-beta` हेडर आगे नहीं भेजता, इसलिए अब इनका कोई असर नहीं होता।
 
-### 2. Structured output माइग्रेट करें
+## क्या टेस्ट करें
 
-अगर अभी `output_format` भेजते हैं, तो request body को `output_config.format` पर अपडेट करें।
+- **प्रॉम्प्ट:** लंबे कोडिंग और रीफ़ैक्टर प्रॉम्प्ट, बहु-चरणीय रिसर्च और दस्तावेज़ वर्कफ़्लो, प्रीफ़िल पर निर्भर प्रॉम्प्ट, और अगर आप 1M विंडो उपयोग करेंगे तो लंबे कॉन्टेक्स्ट वाले कार्य।
+- **अनुबंध और टूल:** `output_config.format` पर जाने के बाद स्कीमा पास दर, बहु-चरणीय एजेंट कार्यों पर टूल-कॉल आर्गुमेंट, मॉडल के मना करने या आउटपुट का फ़ॉर्मेट बदलने पर पुनः प्रयास, और कोड-रिव्यू व डीबगिंग वर्कफ़्लो।
+- **संचालन:** थिंकिंग चालू होने पर माध्य और p95 लेटेंसी, लंबे रन पर टोकन उपयोग, बड़े कॉन्टेक्स्ट वाले कार्यों पर टाइमआउट दर, और आपके मूल्यांकन सेट पर Opus 4.5 के मुकाबले सफलता दर।
 
-### 3. Thinking config की समीक्षा करें
+## रोलआउट करें
 
-पुराने thinking betas पर निर्भर होने पर `output_config` के मौजूदा `effort` setting पर माइग्रेट करें और latency-sensitive routes फिर जाँचें।
-
-### 4. पुराने beta flags हटाएँ
-
-SDK wrappers, middleware और Gateway presets में hard-coded beta headers की जाँच करें। पुराने flags rollout में अनावश्यक errors पैदा करते हैं।
-
-## क्या जाँचें
-
-### प्रॉम्प्ट का व्यवहार
-
-- लंबे coding और refactor prompts।
-- कई चरण वाले research या document workflows।
-- वे prompts जो पहले assistant prefills पर निर्भर थे।
-- 1M-token beta window इस्तेमाल करनी हो तो long-context tasks।
-
-### कॉन्ट्रैक्ट और टूल
-
-- `output_config.format` पर जाने के बाद schema pass rate।
-- multi-step agent tasks में tool arguments की गुणवत्ता।
-- model के मना करने या output reformat करने पर retry behavior।
-- code review और debugging workflows में regressions का प्रबंधन।
-
-### संचालन
-
-- नई thinking settings पर median और p95 latency।
-- लंबे runs में token consumption।
-- बड़े context वाले tasks पर timeout rate।
-- production eval set में Opus 4.5 की तुलना में success rate।
-
-## सुरक्षित rollout
-
-1. ट्रैफ़िक बदलने से पहले प्रीफ़िल हटाएँ और संरचित-आउटपुट कॉन्फ़िगरेशन माइग्रेट करें।
-2. ज़रूरी प्रोडक्शन प्रॉम्प्ट पर Opus 4.6 को छाया-मोड में चलाएँ।
-3. Opus 4.5 को फ़ॉलबैक रखते हुए ट्रैफ़िक को चरणबद्ध रूप से आज़माएँ।
-4. Schema pass rate, latency और task completion स्थिर होने पर ही traffic बढ़ाएँ।
+1. कोई भी ट्रैफ़िक बदलने से पहले प्रीफ़िल हटाएं और संरचित आउटपुट माइग्रेट करें।
+2. आपके लिए अहम प्रोडक्शन प्रॉम्प्ट पर Opus 4.6 को शैडो करें।
+3. Opus 4.5 को `models` में फ़ॉलबैक रखकर कैनरी चलाएं।
+4. स्कीमा पास दर, लेटेंसी और कार्य-पूर्णता बनी रहने पर प्रमोट करें।
 
 ## स्रोत
 

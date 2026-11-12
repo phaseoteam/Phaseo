@@ -1,0 +1,9 @@
+---
+title: "支出ブロックを解除"
+sidebarTitle: "ブロックを解除"
+badge: "Beta"
+openapi: "/ja/openapi/v1/openapi.localized.yaml POST /spend-blocks/{id}/lift"
+description: "支出ブロックのスコープにあるリクエストを再び通します。"
+---
+
+`spend_rules:write` が必要です。OAuth の呼び出し元はワークスペースのオーナーまたは管理者である必要があります。同じ期間中（ローリングのルールでは 1 ウィンドウの間）はブロックが再開されず、**支出ブロック** の通知が送信されます。変更は約 1 分以内にリクエストに反映されます。

@@ -5,122 +5,47 @@ sidebarTitle: "Descripción general de la plataforma"
 icon: "telescope"
 ---
 
-La **plataforma Phaseo** ofrece una visión completa del panorama mundial de la IA: desde los modelos y proveedores más recientes hasta benchmarks de rendimiento, precios e información sobre el uso en situaciones reales.
+Busca cualquier modelo en [phaseo.app](https://phaseo.app/models) para ver quién lo creó, qué proveedores lo sirven, cuánto cuesta y qué puntuaciones obtiene, y después llámalo a través del Gateway cuando tenga una ruta activa.
 
-Tanto si eres desarrollador y eliges un modelo para tu nuevo producto, como si eres investigador y analizas resultados de benchmarks o colaboras ampliando la base de datos, esta sección te ayudará a aprovechar Phaseo al máximo.
+```mermaid
+flowchart LR
+  org["Organización<br/>crea el modelo"] --> model["Modelo"]
+  model --> bench["Resultados de benchmarks"]
+  model --> route["Rutas de proveedor<br/>(proveedores de API)"]
+  route --> price["Precios y<br/>rendimiento"]
+  route -->|"Activo en Gateway"| gw["Se puede llamar a través de<br/>api.phaseo.app/v1"]
+```
 
----
+## Qué contiene el catálogo
 
-## Qué puedes hacer
+| Registro | Qué es | Dónde consultarlo |
+| --- | --- | --- |
+| [Organizaciones](./organisations.mdx) | Empresas y laboratorios de investigación que crean y publican modelos. | [Organizaciones](https://phaseo.app/organisations) |
+| [Modelos](./models.mdx) | Cada modelo lanzado, agrupado en familias de modelos relacionados. | [Modelos](https://phaseo.app/models) |
+| [Benchmarks](./benchmarks.mdx) | Evaluaciones y las puntuaciones que obtienen los modelos en ellas. | [Benchmarks](https://phaseo.app/benchmarks) |
+| [Proveedores de API](./api-providers.mdx) | Plataformas que sirven modelos a través de una API. | [Proveedores de API](https://phaseo.app/api-providers) |
+| [Precios y rendimiento](./pricing-performance.mdx) | El precio de cada proveedor por token, imagen, segundo o solicitud, y la velocidad medida en Gateway. | Páginas de modelos, [Comparar](https://phaseo.app/compare) |
+| [Planes de suscripción](./subscription-plans.mdx) | Los planes de Phaseo y las suscripciones que venden los proveedores. | [Planes de suscripción](https://phaseo.app/subscription-plans) |
 
-<Columns cols={2}>
-	<Card
-		title="Descubrir organizaciones"
-		icon="building"
-		href="./organisations.mdx"
-	>
-		Consulta los modelos que ofrecen las organizaciones, sus lanzamientos más recientes
-		y compara su rendimiento.
-	</Card>
-	<Card title="Explorar modelos" icon="brain" href="./models.mdx">
-		Consulta las páginas detalladas de los modelos y su información clave, como capacidades,
-		precios, resultados de benchmarks y métricas de rendimiento real.
-	</Card>
-	<Card
-		title="Comparar benchmarks"
-		icon="chart-no-axes-column"
-		href="./benchmarks.mdx"
-	>
-		Compara el rendimiento de los modelos en conjuntos de datos y tareas de benchmark habituales.
-	</Card>
-	<Card
-		title="Analizar precios y rendimiento"
-		icon="scale"
-		href="./pricing-performance.mdx"
-	>
-		Compara los costes de los modelos y la eficiencia de tokens para encontrar el equilibrio adecuado para
-		tu caso de uso.
-	</Card>
-</Columns>
+Que un registro esté en el catálogo no significa que puedas llamar al modelo. Solo los modelos marcados como **Activo en Gateway** tienen una ruta; `GET /v1/models` devuelve únicamente esos.
 
----
+## Cómo interpretar los datos
 
-## Estructura de los datos
+- **Los precios** están en USD, por cada millón de tokens para texto, o en la unidad propia del proveedor (por imagen, por segundo, por solicitud) para contenido multimedia.
+- **Las fechas** son días UTC, que en inglés se muestran como `01 Jan 2026`.
+- **Las puntuaciones de benchmarks** mantienen la escala y el sentido propios del benchmark. Phaseo no las convierte a una puntuación común; consulta [Benchmarks](./benchmarks.mdx).
+- **Las familias** agrupan modelos relacionados, como los tamaños y las versiones de una misma línea de modelos.
 
-Phaseo recopila y organiza datos en varias categorías clave:
+## Cómo se mantienen actualizados los datos
 
-| Categoría                                                   | Descripción                                                                   |
-| ---------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| **[Organizaciones](./organisations.mdx)**           | Las empresas o laboratorios de investigación que desarrollan y publican modelos.               |
-| **[Modelos](./models.mdx)**                         | Los modelos concretos que publican las organizaciones.                 |
-| **[Benchmarks](./benchmarks.mdx)**                 | Las pruebas estandarizadas que usan las organizaciones para evaluar el rendimiento de los modelos.  |
-| **[Proveedores de API](./api-providers.mdx)**           | Las plataformas que ofrecen acceso programático a los modelos.                       |
-| **[Precios](./pricing-performance.mdx)**           | Desglose detallado del coste por modelo, calculado por token, imagen o generación. |
-| **[Planes de suscripción](./subscription-plans.mdx)** | Información sobre los distintos niveles de precios y las funciones o límites que incluyen. |
+Los trabajos de sincronización con proveedores proponen precios nuevos, que un administrador revisa antes de publicarlos. Las importaciones de benchmarks y los trabajos del ciclo de vida de los modelos actualizan la base de datos de forma programada. Cualquiera puede informar de una corrección o de un registro que falta mediante un issue de GitHub; los responsables revisan las pruebas y aplican los cambios aprobados. Consulta [Contribuir](../contributing/overview.mdx).
 
-La documentación explica cada categoría para ayudarte a navegar por estas páginas y aprovechar los datos al máximo.
+## Preguntas de ejemplo
 
----
-
-## Cómo recopila y actualiza Phaseo los datos
-
-Phaseo funciona gracias a una amplia base de datos completamente abierta, creada y mantenida mediante automatización y el extraordinario trabajo de la comunidad.
-Aunque usamos sistemas automáticos para seguir las actualizaciones de proveedores y modelos, las contribuciones humanas son la base del proyecto y permiten que funcione correctamente.
-
-Cuando hay actualizaciones:
-
--   🧩 Añadimos rápidamente los modelos nuevos y documentamos todos los detalles posibles.
--   🔄 Supervisamos continuamente los cambios de proveedores, desde los precios hasta los ajustes de endpoints, y los revisamos.
--   Los informes de la comunidad sobre el catálogo se revisan en incidencias de GitHub. Los mantenedores aplican los cambios aprobados mediante el editor de la base de datos.
-
-Tú también puedes enviar correcciones o añadir información. Consulta la [guía para contribuir](../contributing/overview.mdx) para obtener más información.
-La solidez de Phaseo depende de su comunidad. Juntos estamos creando el registro del progreso de la IA más preciso y transparente del mundo.
-
----
-
-## Cómo interpretar los datos de Phaseo
-
-Todos los datos de Phaseo se han normalizado para mantener la coherencia:
-
--   Las **fechas** siempre deben usar el formato `DD MMM YYYY` (por ejemplo, `01 Jan 2022`).
--   Los **precios** se muestran en USD de forma predeterminada y, cuando corresponde, se normalizan por cada millón de tokens o en unidades adecuadas.
--   Los **resultados de rendimiento** se convierten a una escala común siempre que sea posible.
--   Las **familias de modelos** agrupan modelos relacionados (por ejemplo, GPT-5, Claude 4, Gemini 2.5, etc.).
-
----
-
-## Ejemplos de uso
-
-Algunos ejemplos de cómo puedes usar Phaseo:
-
-| Objetivo                               | Ejemplo                                                          |
-| ---------------------------------- | ---------------------------------------------------------------- |
-| Comparar dos modelos                 | «¿Cuál rinde mejor en GPQA: Claude 4.5 Sonnet o GPT-5?»    |
-| Encontrar el modelo más barato para una tarea | «¿Qué modelo ofrece el mejor coste para resumir?»        |
-| Analizar las tendencias de los benchmarks           | «¿Cómo han mejorado los modelos de razonamiento en GPQA durante el último año?» |
-| Explorar el acceso a la API                 | «¿Qué proveedores admiten actualmente el modo JSON?»                   |
-| Detectar oportunidades de contribución     | «¿A qué modelos les faltan benchmarks o metadatos importantes?»           |
-
----
-
-## Siguientes pasos
-
-<Columns cols={2}>
-	<Card
-		title="Explorar modelos"
-		icon="brain"
-		href="https://phaseo.app/models"
-	>
-		Explora los modelos más recientes de la base de datos y descubre en detalle cómo
-		rinde cada uno.
-	</Card>
-	<Card
-		title="Conocer los benchmarks"
-		icon="chart-column-increasing"
-		href="./benchmarks.mdx"
-	>
-		Descubre qué miden los benchmarks y cómo interpretar sus resultados.
-	</Card>
-</Columns>
-
----
+| Objetivo | Dónde encontrar la respuesta |
+| --- | --- |
+| Comparar dos modelos en un benchmark | [Comparar](https://phaseo.app/compare) o la página del benchmark |
+| Encontrar el modelo más barato para una tarea | La lista de [Modelos](https://phaseo.app/models) ordenada por precio y, después, la [calculadora de precios](https://phaseo.app/tools/pricing-calculator) |
+| Ver cómo ha evolucionado un benchmark con el tiempo | El gráfico **Progreso** del benchmark |
+| Encontrar proveedores que admitan una función | La sección **Proveedores** de la página del modelo, o `GET /v1/models/{author}/{slug}/endpoints` |
+| Encontrar registros a los que contribuir | Páginas de modelos a las que les faltan benchmarks o metadatos; consulta [Contribuir](../contributing/overview.mdx) |

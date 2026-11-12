@@ -26,7 +26,7 @@ function normalizeText(value: unknown): string | null {
 }
 
 export function markdownToPlainText(value: string | null | undefined): string | null {
-	const normalized = normalizeText(value);
+	const normalized = value?.trim();
 	if (!normalized) return null;
 
 	return normalizeText(
@@ -40,17 +40,9 @@ export function markdownToPlainText(value: string | null | undefined): string | 
 			.replace(/_([^_]+)_/g, "$1")
 			.replace(/^#{1,6}\s+/gm, "")
 			.replace(/^\s*>\s*/gm, "")
+			.replace(/^\s*[-*+]\s+/gm, "")
 			.replace(/\n+/g, " "),
 	);
-}
-
-function getDetailValue(
-	model: Pick<ModelDescriptionSource, "model_details">,
-	detailName: string,
-): string | null {
-	const detail = model.model_details?.find((item) => item.detail_name === detailName);
-	if (!detail) return null;
-	return normalizeText(detail.detail_value == null ? null : String(detail.detail_value));
 }
 
 function normalizeModality(value: string): string {
@@ -180,7 +172,10 @@ function buildModalitySentence(model: ModelDescriptionSource): string | null {
 export function getExplicitModelDescription(
 	model: Pick<ModelDescriptionSource, "description" | "model_details">,
 ): string | null {
-	return normalizeText(model.description) ?? getDetailValue(model, "description");
+	const description = model.description?.trim();
+	if (description) return description;
+	const detail = model.model_details?.find((item) => item.detail_name === "description");
+	return detail?.detail_value == null ? null : String(detail.detail_value).trim() || null;
 }
 
 export function buildGeneratedModelDescription(
@@ -238,12 +233,6 @@ type ModelMetadataTitleTranslate = (
 	values?: Record<string, string | number>,
 ) => string;
 
-function formatContextLength(value: number): string {
-	if (value >= 1_000_000) return `${Math.round(value / 1_000_000)}M`;
-	if (value >= 1_000) return `${Math.round(value / 1_000)}K`;
-	return String(Math.round(value));
-}
-
 export function countModelMetadataProviders(
 	providers: ReadonlyArray<{ api_provider_id: string }> = [],
 ): number {
@@ -266,9 +255,10 @@ export function buildModelOverviewMetadataTitle(
 		const values = {
 			model: normalizedName,
 			count: providerCount,
-			context: formatContextLength(signals.contextLength ?? 0),
+			context: formatTokenCountShort(signals.contextLength ?? 0),
 		};
-		const fullKey = signals.hasPricing && providerCount > 0
+		// "Compare {count} Providers" only reads right for two or more.
+		const fullKey = signals.hasPricing && providerCount > 1
 			? "pricingWithProviders"
 			: signals.hasPricing
 				? "pricing"
@@ -306,7 +296,7 @@ export function buildModelOverviewMetadataTitle(
 					: benchmarkCount > 0
 						? "Benchmarks"
 						: signals.contextLength && signals.contextLength > 0
-							? `${formatContextLength(signals.contextLength)} Context`
+							? `${formatTokenCountShort(signals.contextLength)} Context`
 							: "AI Model";
 			const title = `${normalizedName} ${descriptor} | Phaseo`;
 			if (title.length <= 60) return title;
@@ -363,4 +353,5 @@ export function buildModelOverviewMetadataDescription(args: {
 		});
 	}
 	return `Compare ${modelName} pricing, providers, benchmark results, latency, and availability. Review specifications and API compatibility${creatorText} on Phaseo.`;
-}
+}import { formatTokenCountShort } from "@phaseo/app-kit/format";
+

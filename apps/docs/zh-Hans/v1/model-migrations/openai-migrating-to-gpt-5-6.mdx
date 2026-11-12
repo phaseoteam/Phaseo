@@ -1,102 +1,71 @@
 ---
 title: "OpenAI GPT-5.6"
-description: "在生产工作负载中采用 GPT-5.6 Sol、Terra 或 Luna 时需要了解的内容"
+description: "为生产工作负载采用 GPT-5.6 Sol、Terra 或 Luna 时需要了解的内容。"
 icon: "/icons/brands/openai.svg"
 ---
 
-# OpenAI GPT-5.6
+选择适合工作负载的 GPT-5.6 层级，只替换模型 ID，然后重新测试推理 effort、工具、延迟和成本。在评估通过之前，保留之前的 GPT-5 模型作为回退。
 
-使用本指南在生产环境中安全采用 GPT-5.6 系列。
+## 选择层级
 
-GPT-5.6 是 OpenAI 当前面向复杂生产工作流的 GPT 系列。在 AI Stats 中，固定档位 ID 对应 OpenAI 模型 ID：`gpt-5.6-sol`、`gpt-5.6-terra` 和 `gpt-5.6-luna`。
-
-## 迁移快速入门
-
-1. 选择与工作负载相匹配的固定模型 Sol、Terra 或 Luna。
-2. 只替换模型 ID，其余请求内容保持不变。
-3. 重新测试推理强度、结构化输出、工具、延迟和任务成本。
-4. 将新路由以金丝雀方式发布，同时保留之前的 GPT-5 模型作为回退。
-
-## 选择模型
-
-| 模型 | 用途 | 推理强度 |
+| 模型 | 适用于 | 推理 effort |
 | --- | --- | --- |
-| `openai/gpt-5.6-sol` | 最高能力推理、代理式编程、科学分析和复杂专业工作 | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
-| `openai/gpt-5.6-terra` | 覆盖推理、编程和助手工作流的均衡日常任务 | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
-| `openai/gpt-5.6-luna` | 对延迟和成本敏感的 GPT-5.6 工作负载 | `none`, `low`, `medium`, `high`, `xhigh`, `max` |
+| `openai/gpt-5.6-sol` | 能力最强的推理、智能体编码、科学分析和复杂的专业工作 | `none`、`low`、`medium`、`high`、`xhigh`、`max` |
+| `openai/gpt-5.6-terra` | 均衡的日常推理、编码和助手工作 | `none`、`low`、`medium`、`high`、`xhigh`、`max` |
+| `openai/gpt-5.6-luna` | 延迟更低、对成本敏感的工作 | `none`、`low`、`medium`、`high`、`xhigh`、`max` |
 
-OpenAI 的 `gpt-5.6` 别名会路由到 `gpt-5.6-sol`。在 AI Stats 中，如果要使用 Sol 档位作为默认值，请使用 `openai/gpt-5.6` 或 `openai/gpt-sol-latest`；如需控制路由，则使用固定档位 ID。
+三者的上下文窗口都是 1,050,000 token，输出上限为 128K token。每个层级还有一个 Pro ID（`openai/gpt-5.6-sol-pro`、`-terra-pro`、`-luna-pro`），它会替你发送 `reasoning.mode: "pro"`。
 
-AI Stats 还会跟踪每个档位最新模型的档位别名：`openai/gpt-sol-latest`、`openai/gpt-terra-latest` 和 `openai/gpt-luna-latest`。受控迁移请使用固定 GPT-5.6 ID；只有在你明确希望未来的 Sol、Terra 或 Luna 版本沿用同一路由时，才使用档位别名。
-
-## 新增内容
-
-- GPT-5.6 新增 Sol/Terra/Luna 档位划分，不再只有一个默认 GPT 路由。
-- GPT-5.6 的三个档位均支持 `reasoning.effort: "max"`，用于最高推理预算。
-- GPT-5.6 支持 `reasoning.mode: "pro"`，无需切换到单独的 Pro 模型标识。
-- GPT-5.6 通过 `reasoning.context` 增加了持久化推理控制。
-- GPT-5.6 为符合条件且大量使用工具的工作流新增了多代理支持和 Programmatic Tool Calling（测试版）。
-- 提示缓存分别计算未缓存输入、缓存读取、缓存写入和输出的费用。
-- 显式提示缓存通过 `prompt_cache_options` 支持；OpenAI 目前建议使用 `prompt_cache_options.ttl`，而不是 `prompt_cache_retention`。
+OpenAI 自己的 `gpt-5.6` 别名指向 `gpt-5.6-sol`；在 Phaseo 上，请直接调用各层级的 ID。层级别名 `openai/gpt-sol-latest`、`openai/gpt-terra-latest` 和 `openai/gpt-luna-latest` 会跟随各层级的最新模型，而 `openai/gpt-sol-latest` 已经指向比 GPT-5.6 更新的模型。只有在你希望未来版本自动前滚时才使用它们。
 
 ## 更新请求
 
-首先只替换模型 ID，其余请求内容保持不变。
+GPT-5.6 在每个层级都新增了最高推理预算 `max`。只在额外的延迟和成本值得时使用它。
 
-前面的示例使用 Responses API 风格的 `input` 结构。如果要迁移 Chat Completions 流量，请在路由支持的情况下继续使用 `messages` 和扁平的 `reasoning_effort` 字段。
-
-```json
-{
-  "model": "openai/gpt-5.6-terra",
-  "input": "Summarize the rollout risks in this migration plan.",
-  "reasoning": {
-    "effort": "medium"
-  }
-}
-```
-
-仅在额外推理预算带来的收益足以抵消延迟和成本时，才在路由中使用 `max`。
-
-```json
+<CodeGroup>
+```json Responses
 {
   "model": "openai/gpt-5.6-sol",
   "input": "Review this multi-service incident report and propose a rollback plan.",
-  "reasoning": {
-    "effort": "max"
-  }
+  "reasoning": { "effort": "max" }
 }
 ```
 
-如果集成仍发送 OpenAI 兼容的扁平字段，AI Stats 也会在路由支持时接受 `reasoning_effort`：
-
-```json
+```json Chat Completions
 {
-  "model": "openai/gpt-5.6-sol",
+  "model": "openai/gpt-5.6-terra",
   "messages": [
-    {
-      "role": "user",
-      "content": "Design a test plan for this agent workflow."
-    }
+    { "role": "user", "content": "Design a test plan for this agent workflow." }
   ],
-  "reasoning_effort": "max"
+  "reasoning_effort": "medium"
 }
 ```
+</CodeGroup>
+
+GPT-5.6 还新增了：
+
+- **`reasoning.mode: "pro"`**，用于更难的任务，无需更换模型；
+- **`reasoning.context`**（`auto`、`current_turn` 或 `all_turns`），用于控制保留哪些推理内容；
+- 面向大量使用工具的工作流的 beta 多智能体支持和 Programmatic Tool Calling；
+- 通过 `prompt_cache_options` 和缓存断点实现的显式提示词缓存。在 GPT-5.6 上，`prompt_cache_options.ttl` 取代了 `prompt_cache_retention`，Phaseo 不会把后者发送给 GPT-5.6 模型。
 
 ## 查看价格
 
-目录中的 GPT-5.6 价格按每百万令牌统计。
+OpenAI 标准层级的每 1M token 价格，适用于输入不超过 272K token 的请求：
 
-| 模型 | 输入 | 缓存读取 | 缓存写入 | 输出 |
-| --- | ---: | ---: | ---: | ---: |
-| Sol | $5.00 | $0.50 | $6.25 | $30.00 |
-| Terra | $2.50 | $0.25 | $3.125 | $15.00 |
-| Luna | $1.00 | $0.10 | $1.25 | $6.00 |
+| 模型 | 输入 | 缓存读取 | 缓存写入（30 分钟） | 缓存写入（12 小时） | 输出 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Sol | $5.00 | $0.50 | $6.25 | $12.50 | $30.00 |
+| Terra | $2.00 | $0.20 | $2.50 | $5.00 | $12.00 |
+| Luna | $0.20 | $0.02 | $0.25 | $0.50 | $1.20 |
 
-缓存读取与缓存写入分别计费。在当前目录中，缓存读取比未缓存输入便宜 90%，而缓存写入的价格是未缓存输入的 1.25 倍。
+输入超过 272K token 的请求价格更高：Sol 输入 $10.00、输出 $45.00，Terra 为 $4.00 和 $18.00，Luna 为 $0.40 和 $1.80，缓存价格按相同比例调整。在 2026 年 11 月 30 日之前，适用 OpenAI 的 Sol 促销价：272K token 以内输入 $4.00、输出 $20.00。其他层级和提供商的当前价格请查看模型页面。
 
-## 有意识地使用提示缓存
+缓存读取按输入价格的 10% 计费，30 分钟写入按 1.25 倍，12 小时写入按 2.5 倍。每个输入 token 只按其中一种价格计费。用量把缓存读取和写入计入 `input_tokens`（在 Chat Completions 上为 `prompt_tokens`），并在 `cache_write_tokens` 中报告写入；参见[用量和价格字段](../guides/prompt-caching.mdx#usage-and-pricing-fields)。
 
-对于重复使用的上下文，将提示中的稳定部分放入可缓存块，并让请求专属文本不进入缓存。
+## 缓存重复的上下文
+
+把提示词中稳定的部分放进可缓存的块，并把请求特有的文本放在它后面：
 
 ```json
 {
@@ -108,10 +77,7 @@ AI Stats 还会跟踪每个档位最新模型的档位别名：`openai/gpt-sol-l
         {
           "type": "input_text",
           "text": "Stable policy document...",
-          "cache_control": {
-            "type": "ephemeral",
-            "ttl": "1h"
-          }
+          "prompt_cache_breakpoint": { "mode": "explicit" }
         },
         {
           "type": "input_text",
@@ -120,42 +86,29 @@ AI Stats 还会跟踪每个档位最新模型的档位别名：`openai/gpt-sol-l
       ]
     }
   ],
-  "prompt_cache_options": {
-    "mode": "explicit",
-    "ttl": "24h"
-  }
+  "prompt_cache_options": { "mode": "explicit", "ttl": "30m" }
 }
 ```
 
-如果需要与提供商无关的缓存提示或显式缓存断点，请使用 `cache_control`。如果需要直接传递 OpenAI 缓存模式和 TTL 选项，请使用 `prompt_cache_options`。
+- `prompt_cache_breakpoint` 会缓存到其所在块为止（含该块）的全部内容。在 `explicit` 模式下，OpenAI 只缓存你设置的断点。
+- 块级 `cache_control`（例如 `{"type": "ephemeral"}`）同样有效；Phaseo 会把它作为 `prompt_cache_breakpoint` 发送给 GPT-5.6。两种标记都会作为缓存断点传给 Claude，因此回退到 Claude 时仍然会缓存。
+- `ttl` 为 `30m`（默认）或 `12h`。哪些路由接受它，请参见 [OpenAI 上的 12 小时缓存](../guides/prompt-caching.mdx#12-hour-cache-on-openai)；其他字段请参见 [OpenAI 保留时长和选项](../guides/prompt-caching.mdx#openai-retention-and-options)。
 
-## 测试内容
+## 要测试的内容
 
-### 推理和输出质量
+- **推理和输出质量：** 每个层级在你将开放的 effort 级别下的表现，包括质量优先场景下的 `max`；困难任务上标准模式与 `reasoning.mode: "pro"` 的对比；各级别下的 schema 通过率和工具调用质量。
+- **成本和延迟：** 各 effort 下的延迟、相对当前基线的输出 token 增长、重复提示词的缓存读写比例，以及每个成功任务的成本，而不是每 token 价格。
 
-- 按计划向用户开放的强度测试 Sol、Terra 和 Luna；质量优先的工作流可包括 `max`
-- 在质量比延迟更重要的复杂任务上，对比 standard 模式与 `reasoning.mode: "pro"`
-- 各强度下的结构化输出和 schema 通过率
-- 工具调用选择和参数质量
+## 上线
 
-### 成本和延迟
-
-- 各推理强度下的延迟
-- 相较当前生产基准的输出 token 增长
-- 重复 prompt 的缓存读写比例
-- 每项成功任务的成本，而不只是 token 单价
-
-### 回滚
-
-- 保留之前的 GPT-5.x 路由作为备用方案
-- 在通过接近生产环境的 prompt 验证之前，将 `max` 保留在配置标志或预设之后
-- 分别监控缓存写入量和读取量
-- 只有在自己的评测确认任务成功率、成本和延迟后，才将 GPT-5.6 加入默认路由
+1. 保留之前的 GPT-5 模型作为 `models` 中的回退。
+2. 在 `max` 于类似生产的提示词上得到验证之前，把它放在配置开关或[预设](../guides/presets)之后。
+3. 把缓存写入量与缓存读取分开监控。
+4. 只有在评估确认了任务成功率、成本和延迟之后，才把 GPT-5.6 设为默认模型。
 
 ## 来源
 
 - [OpenAI GPT-5.6 预览公告](https://openai.com/index/previewing-gpt-5-6-sol/)
 - [OpenAI GPT-5.6 模型指南](https://developers.openai.com/api/docs/guides/latest-model)
-- [OpenAI model catalog](https://developers.openai.com/api/docs/models)
-- [GPT-5.6 预览系统卡](https://deploymentsafety.openai.com/gpt-5-6-preview)
-- [AI Stats 提示缓存指南](../guides/prompt-caching.mdx)
+- [OpenAI 模型目录](https://developers.openai.com/api/docs/models)
+- [GPT-5.6 预览版系统卡](https://deploymentsafety.openai.com/gpt-5-6-preview)

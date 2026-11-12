@@ -1,5 +1,11 @@
 import { DevToolsWriter, type DevToolsEntry, type EndpointType, type DevToolsConfig } from "./core.js";
 import { randomUUID } from "crypto";
+import { SDK_VERSION } from "../version.js";
+
+// Workers and browsers may have no `process` global at all.
+function nodeProcess(): NodeJS.Process | undefined {
+  return typeof process === "undefined" ? undefined : process;
+}
 
 /**
  * Telemetry capture for TypeScript SDK
@@ -15,13 +21,14 @@ export class TelemetryCapture {
   private readonly sdkVersion: string;
 
 
-  constructor(config?: Partial<DevToolsConfig>, sdkVersion: string = "3.0.0") {
+  constructor(config?: Partial<DevToolsConfig>, sdkVersion: string = SDK_VERSION) {
 
     // Check if devtools is enabled via env var or config
+    const env = nodeProcess()?.env;
     if (config?.enabled !== undefined) {
       this.enabled = config.enabled;
-    } else if (process.env.PHASEO_DEVTOOLS !== undefined) {
-      this.enabled = process.env.PHASEO_DEVTOOLS === "true";
+    } else if (env?.PHASEO_DEVTOOLS !== undefined) {
+      this.enabled = env.PHASEO_DEVTOOLS === "true";
     } else {
       // Opt-in only. Auto-enabling in local/dev keeps the process alive via timers.
       this.enabled = false;
@@ -35,7 +42,7 @@ export class TelemetryCapture {
       return;
     }
 
-    const directory = config?.directory ?? process.env.PHASEO_DEVTOOLS_DIR ?? ".phaseo-devtools";
+    const directory = config?.directory ?? env?.PHASEO_DEVTOOLS_DIR ?? ".phaseo-devtools";
     this.writer = new DevToolsWriter(directory);
     this.flushIntervalMs = config?.flushIntervalMs ?? 1000;
     this.maxQueueSize = config?.maxQueueSize ?? 1000;
@@ -49,8 +56,8 @@ export class TelemetryCapture {
       started_at: Date.now(),
       sdk: "typescript",
       sdk_version: this.sdkVersion,
-      platform: process.platform,
-      node_version: process.version
+      platform: nodeProcess()?.platform,
+      node_version: nodeProcess()?.version
     });
 
     // Start flush interval
@@ -223,15 +230,17 @@ export class TelemetryCapture {
     }, this.flushIntervalMs);
     this.flushTimer.unref?.();
 
-    // Ensure flush on process exit
-    process.on("exit", () => this.flushSync());
-    process.on("SIGINT", () => {
+    // Ensure flush on process exit. Workers and browsers have no exit or signal events.
+    const host = nodeProcess();
+    if (!host || typeof host.on !== "function") return;
+    host.on("exit", () => this.flushSync());
+    host.on("SIGINT", () => {
       this.flushSync();
-      process.exit(0);
+      host.exit(0);
     });
-    process.on("SIGTERM", () => {
+    host.on("SIGTERM", () => {
       this.flushSync();
-      process.exit(0);
+      host.exit(0);
     });
   }
 

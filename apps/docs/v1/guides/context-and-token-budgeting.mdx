@@ -2,52 +2,39 @@
 icon: "calculator"
 title: "Context and Token Budgeting"
 description: "How to allocate prompt and output tokens for quality, speed, and cost."
+"og:image": "https://phaseo.app/og/dynamic?title=Context%20and%20Token%20Budgeting&description=How%20to%20allocate%20prompt%20and%20output%20tokens%20for%20quality%2C%20speed%2C%20and%20cost.&pathname=/docs/v1/guides/context-and-token-budgeting"
 ---
 
-Token budgeting is a core production skill. It directly affects latency, spend, and reliability.
+Give each kind of request an input target and an output limit, then check real usage against them. Every token you send or receive adds latency and cost, and an output limit that is too small cuts answers off.
 
-## Token budget components
+## What counts towards a request
 
-Total request footprint usually includes:
+| Part | Counts as | Watch for |
+| --- | --- | --- |
+| System and developer instructions | Input | Long instructions repeated on every request. Cache them with [prompt caching](./prompt-caching.mdx). |
+| User input | Input | Unbounded pastes and uploads. |
+| Retrieved context (documents, search results, tool output) | Input | Low-relevance passages that add tokens and dilute the answer. |
+| Tool schemas and function definitions | Input | Declared tools count as input whether or not the model calls them. |
+| Reasoning | Output | Reasoning models spend part of the output limit before they answer. |
+| The answer | Output | Limits that truncate answers or structured output. |
 
-- System/developer instructions
-- User prompt/input
-- Retrieved context (RAG, docs, tools)
-- Tool schemas/function definitions
-- Model output tokens
+## When reasoning uses up the output limit
 
-## Why budgets matter
+A reasoning model can spend the whole output limit before it produces an answer. The response is still HTTP `200` and contains the reasoning that was produced, with no invented answer:
 
-- Larger prompts increase latency and cost.
-- Overlong prompts can degrade relevance if context quality is low.
-- Tiny output budgets can cause truncation and invalid structured outputs.
+| Endpoint | What you get |
+| --- | --- |
+| Chat Completions | `reasoning_content`, with `finish_reason: "length"` |
+| Responses | The reasoning output item, with `status: "incomplete"` |
 
-Reasoning can consume the output budget before a model produces an answer. These
-responses return HTTP 200 with the reasoning that was produced, without a fabricated
-answer. Chat completions retain `reasoning_content` and `finish_reason: "length"`
-when the output limit is reached. Responses retain the reasoning output item and
-report `status: "incomplete"`. A normal provider stop remains `stop` or `completed`.
+A normal stop is still `stop` (Chat Completions) or `completed` (Responses). Raise the output limit or lower the reasoning effort if you see these often.
 
-## Budgeting strategy
+## Set a budget per route
 
-1. Set max input target per route.
-2. Reserve output headroom for worst-case responses.
-3. Trim low-value context aggressively.
-4. Monitor real token usage distributions over time.
+1. Set a maximum input size for each kind of request, such as a search answer or a long-form draft. Don't copy one limit across every endpoint.
+2. Leave output room for the longest answer that kind of request should produce.
+3. Trim or summarise large context before sending it, starting with the passages least likely to matter.
+4. Check outputs for truncation, such as `finish_reason: "length"` or partial JSON, and retry with more room when it happens.
+5. Track the token counts in each response's `usage` over time, and adjust the limits as your prompts change.
 
-## Practical guardrails
-
-- Enforce hard caps for input and output tokens.
-- Add preflight truncation/summarization rules for large context.
-- Use route-specific limits (search answer vs long-form generation).
-- Validate outputs for truncation markers or partial JSON.
-
-## Common mistakes
-
-- Copying one token limit across all endpoints.
-- Keeping verbose system prompts for every request class.
-- Ignoring tool schema token overhead.
-
-## Recommendation
-
-Treat token budgets as configuration with continuous monitoring, not one-time setup.
+For how output limits and sampling interact, see [Inference Parameters](./inference-parameters.mdx).

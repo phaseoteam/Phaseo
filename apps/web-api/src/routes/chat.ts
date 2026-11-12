@@ -10,13 +10,22 @@ import {
 } from "@/chat/proxy";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
-import { requireUser } from "@/auth/requireUser";
+import { oauthClientWriteRefused } from "@/auth/oauthClientWrites";
+import { hasOAuthClientToken, requireUser } from "@/auth/requireUser";
 import { getDataClient } from "@/data/supabase";
 
 type AudioAction = "speech" | "transcription" | "translation" | "music";
 const AUDIO_PATHS: Record<AudioAction, string> = { speech: "/audio/speech", transcription: "/audio/transcriptions", translation: "/audio/translations", music: "/music/generations" };
 const POST_PATHS = { text: "/responses", playground: "/responses", "chat-completions": "/chat/completions", messages: "/messages", embeddings: "/embeddings", image: "/images/generations", moderation: "/moderations", decisions: "/decisions", ocr: "/ocr", rerank: "/rerank" } as const;
 export const chatRouter = new Hono<{ Bindings: Env }>();
+
+// Chat is the person's own browser (web, desktop and mobile use their sessions). Every route here, GETs
+// included, can create the person's managed chat key in the workspace chat resolves, so a token issued to an
+// app (the CLI and desktop app too) is refused on all of them.
+chatRouter.use("*", async (c, next) => {
+	if (hasOAuthClientToken(c.req.raw)) return oauthClientWriteRefused(c);
+	await next();
+});
 
 const waitUntil = (c: any) => (promise: Promise<unknown>) => c.executionCtx.waitUntil(promise);
 
@@ -46,19 +55,18 @@ function realtimeWebSocketUrl(baseUrl: string, path: string): string {
 	return url.toString();
 }
 
-function normalizeRealtimeProvider(value: string): "openai" | "spacex-ai" | "google-ai-studio" | null {
-	if (value === "openai") return "openai";
+// Any catalogue provider id passes through; the gateway rejects providers its relay can't serve.
+function normalizeRealtimeProvider(value: string): string | null {
 	if (value === "xai" || value === "x-ai" || value === "spacex-ai") return "spacex-ai";
 	if (value === "google" || value === "google-ai-studio") return "google-ai-studio";
-	return null;
+	return /^[a-z0-9][a-z0-9-]{0,63}$/.test(value) ? value : null;
 }
 
 function normalizeRealtimeModel(provider: string, model: string): string {
 	if (provider === "spacex-ai") return model.includes("/") ? model.replace(/^(xai|x-ai)\//, "spacex-ai/") : `spacex-ai/${model}`;
 	if (model.includes("/")) return model;
-	if (provider === "openai") return `openai/${model}`;
-	if (provider === "x-ai") return `x-ai/${model}`;
-	return `google/${model}`;
+	if (provider === "google-ai-studio") return `google/${model}`;
+	return `${provider}/${model}`;
 }
 
 for (const [route, path] of Object.entries(POST_PATHS)) {

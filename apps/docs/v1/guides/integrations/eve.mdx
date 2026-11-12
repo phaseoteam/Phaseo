@@ -1,0 +1,58 @@
+---
+title: "eve"
+icon: "bot"
+description: "Run eve agents on Phaseo models with the Phaseo AI SDK provider."
+"og:image": "https://phaseo.app/og/dynamic?title=eve&description=Run%20eve%20agents%20on%20Phaseo%20models%20with%20the%20Phaseo%20AI%20SDK%20provider.&pathname=/docs/v1/guides/integrations/eve"
+---
+
+Pass a model from the [Phaseo AI SDK provider](./ai-sdk.mdx) to your [eve](https://eve.dev) agent, and every model call goes through Phaseo with your routing, keys, budgets, and logs. eve accepts any AI SDK language model.
+
+## Install
+
+eve uses AI SDK 7, so install `@phaseo/ai-sdk-provider` 2.0.1 or later:
+
+```bash
+npm install @phaseo/ai-sdk-provider
+```
+
+Set `PHASEO_API_KEY` in `.env.local` for `eve dev`, and in the server environment of every deployment. eve's `/login` connection only works on your machine.
+
+## Point an eve agent at Phaseo
+
+```ts agent/agent.ts
+import { defineAgent } from "eve";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+
+export default defineAgent({
+	model: phaseo("openai/gpt-6-astra"),
+	modelContextWindowTokens: 922_000,
+	reasoning: "low",
+});
+```
+
+Pass a model object such as `phaseo("openai/gpt-6-astra")`; a plain model ID string isn't sent to Phaseo. Set `modelContextWindowTokens` to the model's `limits.input_tokens` from the [Models endpoint](../../api-reference/endpoint/models.mdx). eve can't look up a model object's context window, and it uses this number to decide when to compact the conversation.
+
+Run the agent once and confirm the request appears in **Settings → Usage → Logs**.
+
+## Pick a model per turn
+
+`defineDynamic` runs before each model call. Return a selection object so each model keeps its own context window:
+
+```ts agent/agent.ts
+import { defineAgent } from "eve";
+import { defineDynamic } from "eve/models";
+import { phaseo } from "@phaseo/ai-sdk-provider";
+
+export default defineAgent({
+	model: defineDynamic((ctx) =>
+		ctx.session.auth.initiator?.attributes.plan === "enterprise"
+			? { model: phaseo("openai/gpt-6-sol"), modelContextWindowTokens: 1_050_000 }
+			: { model: phaseo("openai/gpt-6-luna"), modelContextWindowTokens: 1_050_000 },
+	),
+});
+```
+
+## Known limits
+
+- Tools, streaming, reasoning, compaction, and prompt caching work through Phaseo. Prompt cache reads appear in eve's usage events and in Phaseo logs.
+- eve leaves the cost of each run empty for model objects. See the cost on the Phaseo **Usage** page or in **Logs**.

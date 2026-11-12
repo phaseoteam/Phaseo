@@ -1,6 +1,15 @@
 import type { Endpoint } from "./types";
 
 export type NormalizedTextServiceTier = "standard" | "fast" | "ultrafast" | "priority" | "flex" | "batch";
+
+export function readProviderCatalogTier(params: Record<string, unknown> | null | undefined): { name: string; upstream: string | null } | null {
+	const descriptor = params?.service_tier;
+	const value = descriptor && typeof descriptor === "object" ? (descriptor as Record<string, unknown>).provider_catalog : null;
+	if (!value || typeof value !== "object") return null;
+	const tier = value as Record<string, unknown>;
+	if (!["standard", "fast", "ultrafast", "flex", "batch"].includes(String(tier.name))) return null;
+	return { name: String(tier.name), upstream: typeof tier.upstream === "string" ? tier.upstream : null };
+}
 export type TextServiceTierValidation =
 	| { ok: true; tier?: NormalizedTextServiceTier; field?: "service_tier" | "serviceTier" }
 	| {
@@ -47,7 +56,8 @@ export function normalizeTextServiceTier(value: unknown): NormalizedTextServiceT
 	if (typeof value !== "string") return undefined;
 	const tier = value.trim().toLowerCase();
 	if (!tier) return undefined;
-	if (tier === "standard" || tier === "default") return "standard";
+	// Anthropic's "standard_only" is the standard tier.
+	if (tier === "standard" || tier === "default" || tier === "standard_only") return "standard";
 	if (tier === "fast") return "fast";
 	if (tier === "ultrafast") return "ultrafast";
 	if (tier === "priority") return "priority";
@@ -66,6 +76,10 @@ export function validateTextServiceTier(value: unknown, field?: "service_tier" |
 	const raw = value.trim();
 	if (!raw) return { ok: true };
 	const tier = raw.toLowerCase();
+	// Anthropic's and OpenAI's "auto" asks for no particular tier: the request
+	// is routed as if service_tier were unset. The route schemas decide which
+	// endpoints accept the value.
+	if (tier === "auto") return { ok: true };
 
 	const normalized = normalizeTextServiceTier(raw);
 	if (!normalized) {

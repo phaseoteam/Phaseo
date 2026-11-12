@@ -4,6 +4,10 @@
     "phaseo": {
       "type": "streamable-http",
       "url": "https://mcp.phaseo.app/mcp"
+    },
+    "phaseo-docs": {
+      "type": "streamable-http",
+      "url": "https://phaseo.app/docs/mcp"
     }
   }
 }

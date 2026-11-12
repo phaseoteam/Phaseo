@@ -1,78 +1,46 @@
 ---
 title: "Exploring API Providers"
 description: "Understand what API providers do and how to evaluate them for reliability, performance, and cost."
+"og:image": "https://phaseo.app/og/dynamic?title=Exploring%20API%20Providers&description=Understand%20what%20API%20providers%20do%20and%20how%20to%20evaluate%20them%20for%20reliability%2C%20performance%2C%20and%20cost.&pathname=/docs/v1/exploring/api-providers"
 sidebarTitle: "API Providers"
 icon: "server"
 ---
 
-API providers are the platforms that host and serve model APIs.
+Open a provider on [API providers](https://phaseo.app/api-providers) to see which models it serves through Phaseo and how fast it has been, or [compare providers](https://phaseo.app/api-providers/compare) side by side. An API provider hosts models behind an API; the [organisation](./organisations.mdx) that built a model is often a different company.
 
-Model organizations train models. Providers expose those models through production endpoints, authentication, usage controls, and operational tooling.
-
-## What an API provider typically handles
-
-- Authentication and key management
-- Request routing and availability management
-- Usage metering and billing surfaces
-- API and SDK ergonomics
-- Regional hosting and compliance controls
-
-## Provider vs organization
-
-| Aspect | Organization | API Provider |
+| | Organisation | API provider |
 | --- | --- | --- |
-| Primary role | Builds and trains models | Hosts and serves model APIs |
-| Focus | Research and model quality | Reliability, access, and operations |
-| Distribution | Usually own model family | May expose models from multiple organizations |
+| **Does** | Builds and trains models | Hosts and serves model APIs |
+| **Focus** | Research and model quality | Reliability, access, regions and pricing |
+| **Models** | Usually its own families | Often models from many organisations |
 
-Many companies are both, depending on the product surface.
+Many companies are both.
 
-## What you can inspect in Phaseo provider pages
+## What a provider page shows
 
 | Section | What it tells you |
 | --- | --- |
-| Overview | Provider identity, docs links, and supported capabilities |
-| Models | Which models and variants are available |
-| Pricing | Provider pricing normalization and meters |
-| Limits | Request and throughput limits when available |
-| Features | Streaming, tools, structured output, and modality support |
+| **Performance** | Hourly latency and throughput on Gateway traffic over the past seven days. |
+| **Token usage** | Tokens Phaseo has sent to the provider over time. |
+| **Top models** and **Top apps** | The models and public apps with the most traffic on this provider. |
+| **Models** | Every model the provider serves, with tabs for text, image, audio, video, embedding and moderation models. |
 
-## Phaseo Gateway as a provider layer
+Each model's page then shows the provider's price, context length, status and data policy for that model; [Provider statuses](../guides/provider-statuses) explains the status icons.
 
-Phaseo Gateway acts as a unified provider layer across many backends.
+## How the Gateway uses providers
 
-Benefits:
+When a model has several providers, the Gateway picks one per request and falls back to another if it fails. You send one request format and get one bill and one usage log, whichever provider serves it. To bill your own provider account instead, add a provider key ([BYOK](../guides/routing-and-fallbacks#byok-considerations)).
 
-- Unified request and response shape across providers
-- Provider-aware routing and fallback behavior
-- Unified SDK usage for multi-provider integrations
-- Centralized usage and cost observability
-- Optional BYOK support for provider-native keys
+[Routing and fallbacks](../guides/routing-and-fallbacks) shows how to rank, pin or exclude providers.
 
-## Choosing a provider
+## Choose a provider
 
-When evaluating providers, focus on:
+| If you care about | Check |
+| --- | --- |
+| A specific model | The model page's **Providers** section, or `GET /v1/models/{author}/{slug}/endpoints` |
+| Latency in your region | The provider's **Performance** section and its regions on the model page |
+| Cost at your volume | The model's **Pricing** section and the [pricing calculator](https://phaseo.app/tools/pricing-calculator) |
+| Tools, streaming or structured output | The route's supported parameters on the model page or the endpoints API |
+| Data handling and compliance | The route's data policy and processing locations on the model page |
 
-- Model availability for your use case
-- Reliability and latency in your target region
-- Cost profile at your expected traffic level
-- Feature parity for tools, streaming, and structured outputs
-- Compliance and data handling requirements
-
-## Example evaluation questions
-
-- Which providers expose the model family I need?
-- Which provider gives better latency for my region?
-- What is the lowest-cost option at my token volume?
-- Which provider supports my required endpoint features?
-
-## Next steps
-
-<Card
-	title="Explore Pricing and Performance"
-	icon="scale"
-	href="./pricing-performance.mdx"
-	horizontal
->
-	Compare costs, speeds, and efficiency metrics across providers.
-</Card>
+[Pricing and performance](./pricing-performance.mdx) explains how to read the cost and speed numbers.

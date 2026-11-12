@@ -1,0 +1,17 @@
+{
+  "source": "ElevenLabs Realtime recording from 2026-10-22 (elevenlabs-2.jsonl, model eleven_realtime_v1_mini, xi-api-key header auth). Events are as recorded with response objects trimmed and audio replaced by short silence; the session.update that triggered the error asked for max_duration_seconds 20. session_updated is not in the recording (that update was refused); its shape follows session.created.",
+  "events": [
+    { "t_ms": 46, "event": { "type": "session.created", "session": { "type": "realtime", "model": "eleven_realtime_v1_mini", "output_modalities": ["audio"], "audio": { "output": { "format": { "type": "audio/pcm" }, "voice": "brian" } }, "max_duration_seconds": 600, "id": "conv_4101m5hp9pdze1bajbw3gjssccra", "object": "realtime.session", "expires_at": null }, "event_id": "evt_conv_4101m5hp9pdze1bajbw3gjssccra_000001" } },
+    { "t_ms": 62, "event": { "type": "conversation.created", "conversation": { "id": "conv_4101m5hp9pdze1bajbw3gjssccra", "object": "realtime.conversation" }, "event_id": "evt_conv_4101m5hp9pdze1bajbw3gjssccra_000002" } },
+    { "t_ms": 174, "event": { "type": "error", "event_id": "evt_conv_4101m5hp9pdze1bajbw3gjssccra_000003", "error": { "type": "invalid_request_error", "code": "integer_below_min_value", "message": "Invalid value for 'session.max_duration_seconds': Input should be greater than or equal to 60.", "param": "session.max_duration_seconds", "event_id": null } } }
+  ],
+  "session_updated": { "type": "session.updated", "session": { "type": "realtime", "model": "eleven_realtime_v1_mini", "max_duration_seconds": 600, "id": "conv_4101m5hp9pdze1bajbw3gjssccra" } },
+  "response": [
+    { "t_ms": 1622, "event": { "type": "response.created", "response": { "id": "resp_7201m5hp9q0afxga0yd9pj303hzh", "object": "realtime.response", "status": "in_progress", "conversation_id": "conv_4101m5hp9pdze1bajbw3gjssccra", "output": [], "usage": null } } },
+    { "t_ms": 1700, "event": { "type": "response.output_audio.delta", "response_id": "resp_7201m5hp9q0afxga0yd9pj303hzh", "delta": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" } },
+    { "t_ms": 3299, "event": { "type": "response.done", "response": { "id": "resp_7201m5hp9q0afxga0yd9pj303hzh", "object": "realtime.response", "status": "completed", "conversation_id": "conv_4101m5hp9pdze1bajbw3gjssccra", "usage": null } } }
+  ],
+  "cancelled_response_done": { "t_ms": 8075, "event": { "type": "response.done", "response": { "id": "resp_9001m5hp9we1fhdrk03zd99pvkgb", "object": "realtime.response", "status": "cancelled", "conversation_id": "conv_4101m5hp9pdze1bajbw3gjssccra", "usage": null } } },
+  "client_close_sent_ms": 35127,
+  "close_after_client_close": { "t_ms": 35247, "code": 1006, "reason": "", "wasClean": false, "preceded_by": "error" }
+}

@@ -5,6 +5,8 @@
 // Unit tests for Chat Completions transformations
 import { describe, expect, it } from "vitest";
 import { irToOpenAIChat, openAIChatToIR } from "../transform-chat";
+import { encodeOpenAIChatResponse } from "@protocols/openai-chat/encode";
+import { decodeChatReasoningDetails } from "@protocols/shared/reasoning";
 
 describe("openAIChatToIR", () => {
 	it("preserves Mistral's observed Priority Tier response", () => {
@@ -264,6 +266,42 @@ describe("openAIChatToIR", () => {
 			expect(ir.usage?._ext?.inputImageTokens).toBe(4);
 			expect(ir.usage?._ext?.outputImageTokens).toBe(2);
 			expect(ir.usage?._ext?.cachedWriteTokens).toBe(13);
+		});
+
+		it("keeps TTL-split cache writes and derives the aggregate write count", () => {
+			const choices = [{ index: 0, message: { role: "assistant", content: "ok" }, finish_reason: "stop" }];
+			const anthropicShaped = openAIChatToIR({
+				id: "chatcmpl_ttl_writes",
+				created: 1234567890,
+				model: "claude-sonnet",
+				choices,
+				usage: {
+					prompt_tokens: 50,
+					completion_tokens: 5,
+					total_tokens: 55,
+					cache_creation: { ephemeral_5m_input_tokens: 30, ephemeral_1h_input_tokens: 20 },
+				},
+			}, "req_ttl_1", "claude-sonnet", "anthropic");
+			expect(anthropicShaped.usage?._ext?.cachedWriteTokens5m).toBe(30);
+			expect(anthropicShaped.usage?._ext?.cachedWriteTokens1h).toBe(20);
+			expect(anthropicShaped.usage?._ext?.cachedWriteTokens).toBe(50);
+			expect(anthropicShaped.usage?.cachedWriteTokensAreSubsetOfInput).toBe(false);
+
+			const meterShaped = openAIChatToIR({
+				id: "chatcmpl_ttl_meters",
+				created: 1234567890,
+				model: "claude-sonnet",
+				choices,
+				usage: {
+					prompt_tokens: 50,
+					completion_tokens: 5,
+					total_tokens: 55,
+					cached_write_text_tokens_1h: 12,
+				},
+			}, "req_ttl_2", "claude-sonnet", "anthropic");
+			expect(meterShaped.usage?._ext?.cachedWriteTokens5m).toBeUndefined();
+			expect(meterShaped.usage?._ext?.cachedWriteTokens1h).toBe(12);
+			expect(meterShaped.usage?._ext?.cachedWriteTokens).toBe(12);
 		});
 
 		it("maps server-side web search usage into IR usage", () => {
@@ -779,7 +817,7 @@ describe("Moonshot chat extensions", () => {
 });
 
 describe("irToOpenAIChat", () => {
-	it("passes current OpenAI Chat audio, cache, verbosity, and prompt breakpoint fields", () => {
+	it("passes current OpenAI Chat audio and verbosity fields, and drops GPT-5.6 cache controls on older models", () => {
 		const request = irToOpenAIChat({
 			model: "openai/gpt-4o-audio-preview",
 			messages: [{
@@ -798,8 +836,28 @@ describe("irToOpenAIChat", () => {
 		} as any, "gpt-4o-audio-preview", "openai-eu");
 
 		expect(request.audio).toEqual({ format: "wav", voice: "alloy" });
-		expect(request.prompt_cache_options).toEqual({ mode: "explicit", ttl: "30m" });
 		expect(request.verbosity).toBe("low");
+		// OpenAI documents explicit breakpoints and prompt_cache_options for GPT-5.6+ only.
+		expect(request.prompt_cache_options).toBeUndefined();
+		expect(request.messages[0].content).toBe("Say hello");
+	});
+
+	it("passes prompt_cache_options and breakpoints to GPT-5.6", () => {
+		const request = irToOpenAIChat({
+			model: "openai/gpt-5.6-terra",
+			messages: [{
+				role: "user",
+				content: [{
+					type: "text",
+					text: "Say hello",
+					cacheControl: { type: "prompt_cache_breakpoint", mode: "explicit" },
+				}],
+			}],
+			stream: false,
+			promptCacheOptions: { mode: "explicit", ttl: "30m" },
+		} as any, "gpt-5.6-terra", "openai-eu");
+
+		expect(request.prompt_cache_options).toEqual({ mode: "explicit", ttl: "30m" });
 		expect(request.messages[0].content[0].prompt_cache_breakpoint).toEqual({ mode: "explicit" });
 	});
 	it("preserves cache_control markers for explicit cache providers", () => {
@@ -1226,5 +1284,177 @@ describe("irToOpenAIChat", () => {
 		expect(request.max_tokens).toBeUndefined();
 		expect(request.response_format.type).toBe("json_schema");
 		expect(request.response_format.json_schema.strict).toBe(true);
+	});
+});
+
+// https://docs.mistral.ai/capabilities/reasoning: message.content is a list of
+// ThinkChunks and TextChunks; zai-glm models always answer this way.
+describe("Mistral reasoning chunk lists", () => {
+	const reply = (content: unknown) => ({
+		id: "chatcmpl_mistral_reasoning",
+		object: "chat.completion",
+		created: 1234567890,
+		model: "zai-glm-5-3",
+		choices: [{ index: 0, message: { role: "assistant", content }, finish_reason: "stop" }],
+		usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 },
+	});
+
+	it.each(["mistral", "mistral-eu"])("splits ThinkChunks into reasoning and TextChunks into the answer (%s)", (provider) => {
+		const ir = openAIChatToIR(reply([
+			{ type: "thinking", thinking: [{ type: "text", text: "Add 5 and 3. " }, { type: "text", text: "That is 8." }] },
+			{ type: "text", text: "The answer is 8." },
+		]), "req_mistral", "z-ai/glm-5.3", provider);
+
+		expect(ir.choices[0].message.content).toEqual([
+			{ type: "reasoning_text", text: "Add 5 and 3. That is 8." },
+			{ type: "text", text: "The answer is 8." },
+		]);
+	});
+
+	it("keeps a thinking-only reply as reasoning", () => {
+		const ir = openAIChatToIR(reply([
+			{ type: "thinking", thinking: [{ type: "text", text: "Still thinking" }] },
+		]), "req_mistral", "mistral/mistral-small-4", "mistral");
+
+		expect(ir.choices[0].message.content).toEqual([{ type: "reasoning_text", text: "Still thinking" }]);
+	});
+
+	it("leaves plain string replies unchanged", () => {
+		const ir = openAIChatToIR(reply("Paris"), "req_mistral", "mistral/mistral-small-4", "mistral");
+
+		expect(ir.choices[0].message.content).toEqual([{ type: "text", text: "Paris" }]);
+	});
+
+	// ThinkChunk.signature: "Signature to replay some reasoning blocks across turns."
+	it("keeps the ThinkChunk signature and replays it to the same Mistral model", () => {
+		const ir = openAIChatToIR(reply([
+			{ type: "thinking", thinking: [{ type: "text", text: "Add 5 and 3." }], signature: "sig-abc" },
+			{ type: "text", text: "8" },
+		]), "req_mistral", "mistral/mistral-large-4", "mistral");
+
+		expect(ir.choices[0].message.content[0]).toMatchObject({
+			type: "reasoning_text",
+			text: "Add 5 and 3.",
+			thoughtSignature: "sig-abc",
+			reasoningFormat: "mistral-v1",
+			reasoningModel: "mistral/mistral-large-4",
+		});
+
+		// Round trip through a Chat client: reasoning_details carry the sealed signature.
+		const encoded = encodeOpenAIChatResponse({ ...ir, model: "mistral/mistral-large-4", provider: "mistral" } as any, "req_mistral");
+		const details = (encoded.choices[0].message as any).reasoning_details;
+		expect(details[0].signature).toMatch(/^phx1\./);
+		const decoded = decodeChatReasoningDetails(details, new Set());
+		const history = {
+			model: "mistral/mistral-large-4",
+			stream: false,
+			messages: [
+				{ role: "user", content: [{ type: "text", text: "5 + 3?" }] },
+				{ role: "assistant", content: [...decoded.parts, { type: "text", text: "8" }] },
+				{ role: "user", content: [{ type: "text", text: "Times 2?" }] },
+			],
+		} as any;
+
+		expect(irToOpenAIChat(history, "mistral-large-2610", "mistral").messages[1].content).toEqual([
+			{ type: "thinking", thinking: [{ type: "text", text: "Add 5 and 3." }], signature: "sig-abc" },
+			{ type: "text", text: "8" },
+		]);
+		// Another model gets the reasoning text without the signature.
+		expect(irToOpenAIChat({ ...history, model: "mistral/mistral-small-4" }, "mistral-small-2603", "mistral").messages[1].content).toEqual([
+			{ type: "thinking", thinking: [{ type: "text", text: "Add 5 and 3." }] },
+			{ type: "text", text: "8" },
+		]);
+		// Other providers never see the Mistral signature.
+		expect(JSON.stringify(irToOpenAIChat(history, "deepseek-chat", "deepseek").messages)).not.toContain("sig-abc");
+	});
+
+	it("replays plain reasoning as a ThinkChunk and drops signed reasoning from other families", () => {
+		const request = irToOpenAIChat({
+			model: "mistral/mistral-small-4",
+			stream: false,
+			messages: [
+				{ role: "user", content: [{ type: "text", text: "Hi" }] },
+				{ role: "assistant", content: [{ type: "reasoning_text", text: "Greet back." }, { type: "text", text: "Hello" }] },
+				{
+					role: "assistant",
+					content: [
+						{ type: "reasoning_text", text: "signed", reasoningFormat: "anthropic-claude-v1", thoughtSignature: "claude-sig" },
+						{ type: "text", text: "Done" },
+					],
+				},
+			],
+		} as any, "mistral-small-2603", "mistral");
+
+		expect(request.messages[1].content).toEqual([
+			{ type: "thinking", thinking: [{ type: "text", text: "Greet back." }] },
+			{ type: "text", text: "Hello" },
+		]);
+		expect(request.messages[2].content).toBe("Done");
+	});
+});
+
+describe("Reflection assistant reasoning_content", () => {
+	// https://developers.reflection.ai/reasoning: every assistant message needs a
+	// non-empty reasoning_content, or the request fails with 400.
+	it("fills reasoning_content on assistant turns that have no plain reasoning", () => {
+		const request = irToOpenAIChat({
+			model: "reflection/beam-501b-a23b",
+			messages: [
+				{ role: "user", content: [{ type: "text", text: "Example question" }] },
+				{ role: "assistant", content: [{ type: "text", text: "Example answer" }] },
+				{ role: "user", content: [{ type: "text", text: "Look it up" }] },
+				{
+					role: "assistant",
+					content: [{ type: "reasoning_text", text: "signed", reasoningFormat: "anthropic-claude-v1", thoughtSignature: "sig" }],
+					toolCalls: [{ id: "call_1", name: "lookup", arguments: "{}" }],
+				},
+				{ role: "tool", toolResults: [{ toolCallId: "call_1", content: "found" }] },
+				{
+					role: "assistant",
+					content: [{ type: "reasoning_text", text: "I should answer." }, { type: "text", text: "Done" }],
+				},
+				{ role: "user", content: [{ type: "text", text: "Thanks" }] },
+			],
+			stream: false,
+		} as any, "Beam-1.0-501B-A23B", "reflection");
+
+		const assistants = request.messages.filter((message: any) => message.role === "assistant");
+		expect(assistants.map((message: any) => message.reasoning_content)).toEqual(["…", "…", "I should answer."]);
+	});
+});
+
+describe("Alibaba glm-5.3 reasoning effort", () => {
+	// https://www.alibabacloud.com/help/en/model-studio/qwen-api-via-openai-chat-completions:
+	// glm-5.3 takes max, high or low, and enable_thinking false fails the request.
+	it.each([
+		["minimal", "low"],
+		["low", "low"],
+		["medium", "high"],
+		["high", "high"],
+		["xhigh", "max"],
+		["max", "max"],
+		["none", "low"],
+	])("maps %s to %s", (effort, expected) => {
+		const request = irToOpenAIChat({
+			model: "glm-5.3",
+			messages: [{ role: "user", content: [{ type: "text", text: "Plan the migration." }] }],
+			stream: false,
+			reasoning: { effort },
+		} as any, "glm-5.3", "alibaba-cloud");
+
+		expect(request.reasoning_effort).toBe(expected);
+		expect(request.enable_thinking).toBeUndefined();
+	});
+
+	it("does not send enable_thinking false when thinking is disabled", () => {
+		const request = irToOpenAIChat({
+			model: "glm-5.3",
+			messages: [{ role: "user", content: [{ type: "text", text: "Hello." }] }],
+			stream: false,
+			reasoning: { enabled: false },
+		} as any, "glm-5.3", "alibaba-cloud");
+
+		expect(request.enable_thinking).toBeUndefined();
+		expect(request.reasoning_effort).toBe("low");
 	});
 });

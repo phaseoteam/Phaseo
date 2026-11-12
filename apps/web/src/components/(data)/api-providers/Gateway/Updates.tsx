@@ -1,9 +1,10 @@
-import Link from "next/link";
+import Link from "@/components/link";
 import { Calendar, Sparkles, TrendingUp, Check } from "lucide-react";
-import { fetchFrontendAPIProviderUpdates } from "@/lib/fetchers/frontend/fetchPublicCatalog";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { apiProviderUpdatesQuery } from "../apiProvider.queries";
 import type { APIProviderRecentModel } from "@/lib/fetchers/api-providers/providerDataTypes";
-import { getLocale, getTranslations } from "next-intl/server";
-import { DisplayCalendarDate, DisplayNumber } from "@/components/display/DisplayValue";
+import { useLocale, useTranslations } from "@/i18n/react";
+import { DisplayCalendarDate, DisplayCount, DisplayNumber } from "@/components/display/DisplayValue";
 import {
 	Empty,
 	EmptyDescription,
@@ -38,17 +39,15 @@ function getLifecycleDateInfo(model: APIProviderRecentModel): LifecycleDateInfo 
 	return { date: null, label: null };
 }
 
-export default async function Updates({
+export default function Updates({
 	apiProviderId,
 }: {
 	apiProviderId: string;
 }) {
-	const [t, locale] = await Promise.all([
-		getTranslations("Catalogue.providers"),
-		getLocale(),
-	]);
-	const { recentModels, newModels, recentTokens } =
-		await fetchFrontendAPIProviderUpdates(apiProviderId);
+	const t = useTranslations("Catalogue.providers");
+	const locale = useLocale();
+	const { data: { recentModels, newModels, recentTokens } } =
+		useSuspenseQuery(apiProviderUpdatesQuery(apiProviderId));
 
 	const latestModelDisplay =
 		recentModels.length > 0
@@ -161,7 +160,7 @@ export default async function Updates({
 					{/* Token count */}
 					<div className="text-center p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
 						<div className="text-3xl font-bold mb-1">
-							<DisplayNumber value={recentTokens} />
+							<DisplayCount value={recentTokens} />
 						</div>
 						<p className="text-sm text-muted-foreground flex items-center justify-center gap-1">
 							<TrendingUp className="h-3 w-3" />

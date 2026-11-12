@@ -14,8 +14,13 @@ import { resolveActiveKeyPepper } from "@/lib/security/keyPepper";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
 import { recordWorkspaceAuditEvent } from "@/lib/audit/workspaceAudit";
 import { loadOAuthClient } from "@/lib/oauth/service";
-import { internalServerError, requireCapability, type ManagementRouteAuth } from "./route-helpers";
-import { CHAT_MANAGED_KEY_NAME, enforceWorkspaceKeyLimit, isUsableWorkspaceKey } from "./management-helpers";
+import { canTargetOtherWorkspace, internalServerError, rejectThirdPartyOAuthAppChange, requireCapability, type ManagementRouteAuth } from "./route-helpers";
+import { MANAGED_KEY_NAMES_FILTER, enforceWorkspaceKeyLimit, isManagedKeyName, isUsableWorkspaceKey } from "./management-helpers";
+
+const RESERVED_KEY_NAME = { error: "bad_request", message: "This key name is reserved for keys Phaseo manages" } as const;
+import { copyKeyRateLimitAssignment, publishRateLimitPlan } from "@core/rate-limit-policies";
+import { parseKeyStorageLocations } from "@core/key-storage-locations";
+import { keyIpAllowlistSchema } from "@core/key-ip-allowlist";
 
 type KeyRow = {
 	id: string;
@@ -38,6 +43,9 @@ type KeyRow = {
 	weekly_limit_requests?: number | null;
 	monthly_limit_requests?: number | null;
 	scopes?: string | null;
+	department_id?: string | null;
+	storage_locations?: string[] | null;
+	ip_allowlist?: Array<{ label: string; address: string }> | null;
 };
 
 type KeyUsageRow = {
@@ -53,7 +61,8 @@ type KeyUsageRow = {
 	last_used_at?: string | null;
 };
 
-const KEY_COLUMNS = "id, hash, workspace_id, name, prefix, status, scopes, created_by, created_at, updated_at, last_used_at, soft_blocked, expires_at, daily_limit_requests, weekly_limit_requests, monthly_limit_requests, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos";
+// Never `hash` (the HMAC that checks a key's secret) or `kid`: these columns feed key responses.
+const KEY_COLUMNS = "id, workspace_id, name, prefix, status, scopes, created_by, created_at, updated_at, last_used_at, soft_blocked, expires_at, daily_limit_requests, weekly_limit_requests, monthly_limit_requests, daily_limit_cost_nanos, weekly_limit_cost_nanos, monthly_limit_cost_nanos, department_id, storage_locations, ip_allowlist";
 const KEY_WITH_KID_COLUMNS = `${KEY_COLUMNS}, kid`;
 
 const DEFAULT_LIMIT = 100;
@@ -91,6 +100,11 @@ function parsePathId(url: URL): string | null {
 	return decodeURIComponent(candidate).trim() || null;
 }
 
+/**
+ * Keys are looked up by id. A hash is still accepted for lookups, because older responses returned it and
+ * clients (the CLI's `keys get|update|delete <id-or-hash>`, the MCP key tools) may have kept it; no
+ * response returns it any more.
+ */
 function resolveKeyLookupColumn(identifier: string): "id" | "hash" {
 	return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(identifier)
 		? "id"
@@ -150,6 +164,26 @@ function parseLimitNumber(raw: unknown): { ok: true; value: number | null | unde
 		return { ok: false, message: "limit must be a non-negative number or null" };
 	}
 	return { ok: true, value: parsed };
+}
+
+function parseDepartmentId(raw: unknown): { ok: true; value: string | null | undefined } | { ok: false; message: string } {
+	if (raw === undefined) return { ok: true, value: undefined };
+	if (raw === null || raw === "") return { ok: true, value: null };
+	if (typeof raw === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(raw.trim())) {
+		return { ok: true, value: raw.trim().toLowerCase() };
+	}
+	return { ok: false, message: "department_id must be a department id or null" };
+}
+
+async function departmentExists(workspaceId: string, departmentId: string): Promise<boolean> {
+	const { data, error } = await getSupabaseAdmin()
+		.from("workspace_departments")
+		.select("id")
+		.eq("workspace_id", workspaceId)
+		.eq("id", departmentId)
+		.maybeSingle();
+	if (error) throw new Error(error.message || "Failed to look up department");
+	return Boolean(data);
 }
 
 function parseLimitReset(raw: unknown): { ok: true; value: "daily" | "weekly" | "monthly" | undefined } | { ok: false; message: string } {
@@ -223,7 +257,6 @@ function formatApiKey(row: KeyRow, usage?: KeyUsageRow) {
 	const selectedUsage = limitReset === "daily" ? dailyCostNanos : limitReset === "weekly" ? weeklyCostNanos : monthlyCostNanos;
 	return {
 		id: row.id,
-		hash: row.hash ?? row.id,
 		workspace_id: row.workspace_id,
 		name: row.name ?? null,
 		label: row.name ?? null,
@@ -257,6 +290,9 @@ function formatApiKey(row: KeyRow, usage?: KeyUsageRow) {
 		updated_at: row.updated_at ?? null,
 		last_used_at: usage?.last_used_at ?? row.last_used_at ?? null,
 		expires_at: row.expires_at ?? null,
+		department_id: row.department_id ?? null,
+		storage_locations: row.storage_locations ?? [],
+		ip_allowlist: row.ip_allowlist ?? [],
 	};
 }
 
@@ -288,16 +324,21 @@ async function auditApiKey(
 	});
 }
 
-function resolveScopedWorkspaceId(args: {
-	authWorkspaceId: string;
-	requestedWorkspaceId: string | null;
-	internal?: boolean;
-}): { ok: true; workspaceId: string } | { ok: false; response: Response } {
-	const requested = args.requestedWorkspaceId?.trim();
-	if (!requested) {
-		return { ok: true, workspaceId: args.authWorkspaceId };
+/**
+ * The workspace a keys request acts on: the token's own, or the one named by `workspace_id`. Internal
+ * callers may name any workspace. Phaseo's CLI and desktop app may name another workspace of the signed-in
+ * person, who must be an owner or admin there: every caller of this runs requireOAuthWorkspaceAdmin on the
+ * result next. Everything else gets the 403 below.
+ */
+function resolveScopedWorkspaceId(
+	auth: ManagementRouteAuth & { workspaceId: string; internal?: boolean },
+	requestedWorkspaceId: string | null,
+): { ok: true; workspaceId: string } | { ok: false; response: Response } {
+	const requested = requestedWorkspaceId?.trim();
+	if (!requested || requested === auth.workspaceId) {
+		return { ok: true, workspaceId: auth.workspaceId };
 	}
-	if (!args.internal && requested !== args.authWorkspaceId) {
+	if (!auth.internal && !canTargetOtherWorkspace(auth)) {
 		return {
 			ok: false,
 			response: json(
@@ -409,7 +450,6 @@ async function handleGetCurrentKey(req: Request) {
 				{
 					data: {
 						id: client.id,
-						hash: client.id,
 						workspace_id: auth.value.workspaceId,
 						name: client.name ?? "OAuth session",
 						label: client.name ?? "OAuth session",
@@ -474,11 +514,7 @@ async function handleListKeys(req: Request) {
 	if (scopeError) return scopeError;
 
 	const url = new URL(req.url);
-	const workspaceScope = resolveScopedWorkspaceId({
-		authWorkspaceId: auth.value.workspaceId,
-		requestedWorkspaceId: url.searchParams.get("workspace_id"),
-		internal: auth.value.internal,
-	});
+	const workspaceScope = resolveScopedWorkspaceId(auth.value, url.searchParams.get("workspace_id"));
 	if (workspaceScope.ok === false) return workspaceScope.response;
 	const roleError = await requireOAuthWorkspaceAdmin(auth.value, workspaceScope.workspaceId);
 	if (roleError) return roleError;
@@ -493,7 +529,7 @@ async function handleListKeys(req: Request) {
 			.from("keys")
 			.select(KEY_COLUMNS)
 			.eq("workspace_id", workspaceScope.workspaceId)
-			.neq("name", CHAT_MANAGED_KEY_NAME)
+			.not("name", "in", MANAGED_KEY_NAMES_FILTER)
 			.order("created_at", { ascending: false })
 			.range(offset, offset + limit - 1);
 		if (!includeDisabled) {
@@ -509,7 +545,7 @@ async function handleListKeys(req: Request) {
 			.from("keys")
 			.select("id", { count: "exact", head: true })
 			.eq("workspace_id", workspaceScope.workspaceId)
-			.neq("name", CHAT_MANAGED_KEY_NAME);
+			.not("name", "in", MANAGED_KEY_NAMES_FILTER);
 		if (!includeDisabled) {
 			countQuery = countQuery.eq("status", "active").eq("soft_blocked", false);
 		}
@@ -557,13 +593,17 @@ async function handleCreateKey(req: Request) {
 	}
 	const scopeError = requireCapability(auth.value, CAPABILITIES.KEYS_WRITE);
 	if (scopeError) return scopeError;
+	const appError = rejectThirdPartyOAuthAppChange(
+		auth.value,
+		"Apps that use Sign in with Phaseo can't create API keys. The person can create one under Settings, API Keys.",
+	);
+	if (appError) return appError;
 
 	const url = new URL(req.url);
-	const workspaceScope = resolveScopedWorkspaceId({
-		authWorkspaceId: auth.value.workspaceId,
-		requestedWorkspaceId: typeof body.workspace_id === "string" ? body.workspace_id : url.searchParams.get("workspace_id"),
-		internal: auth.value.internal,
-	});
+	const workspaceScope = resolveScopedWorkspaceId(
+		auth.value,
+		typeof body.workspace_id === "string" ? body.workspace_id : url.searchParams.get("workspace_id"),
+	);
 	if (workspaceScope.ok === false) return workspaceScope.response;
 	const roleError = await requireOAuthWorkspaceAdmin(auth.value, workspaceScope.workspaceId);
 	if (roleError) return roleError;
@@ -572,6 +612,7 @@ async function handleCreateKey(req: Request) {
 	if (!name) {
 		return json({ error: "bad_request", message: "name is required" }, 400, { "Cache-Control": "no-store" });
 	}
+	if (isManagedKeyName(name)) return json(RESERVED_KEY_NAME, 400, { "Cache-Control": "no-store" });
 	const scopesError = rejectApiKeyScopes(body);
 	if (scopesError) return scopesError;
 	const limit = parseLimitNumber(body.limit);
@@ -586,13 +627,23 @@ async function handleCreateKey(req: Request) {
 	if (expiresAt.ok === false) {
 		return json({ error: "bad_request", message: expiresAt.message }, 400, { "Cache-Control": "no-store" });
 	}
+	const departmentId = parseDepartmentId(body.department_id);
+	if (departmentId.ok === false) {
+		return json({ error: "bad_request", message: departmentId.message }, 400, { "Cache-Control": "no-store" });
+	}
+	const storageLocations = parseKeyStorageLocations(body.storage_locations ?? []);
+	if (storageLocations.ok === false) {
+		return json({ error: "bad_request", message: storageLocations.message }, 400, { "Cache-Control": "no-store" });
+	}
 
 	try {
+		if (departmentId.value && !(await departmentExists(workspaceScope.workspaceId, departmentId.value))) {
+			return json({ error: "bad_request", message: "department_id does not match a department in this workspace" }, 400, { "Cache-Control": "no-store" });
+		}
 		await enforceWorkspaceKeyLimit(workspaceScope.workspaceId, "api");
-		const creatorUserId =
-			auth.value.authMethod === "oauth" && auth.value.userId
-				? auth.value.userId
-				: await resolveWorkspaceOwnerUserId(workspaceScope.workspaceId);
+		// A key minted with a management key belongs to that key's creator, so it is revoked with
+		// their membership; only credentials with no person behind them fall back to the owner.
+		const creatorUserId = auth.value.userId ?? await resolveWorkspaceOwnerUserId(workspaceScope.workspaceId);
 		const pepper = resolveActiveKeyPepper(getBindings());
 		if (!pepper) {
 			return json(
@@ -622,7 +673,9 @@ async function handleCreateKey(req: Request) {
 			weekly_limit_cost_nanos: 0,
 			monthly_limit_cost_nanos: 0,
 			soft_blocked: softBlocked,
+			storage_locations: storageLocations.value,
 			...(expiresAt.value !== undefined ? { expires_at: expiresAt.value } : {}),
+			...(departmentId.value ? { department_id: departmentId.value } : {}),
 		};
 		applyCostLimitFields(insertPayload, {
 			limit: limit.value,
@@ -643,10 +696,15 @@ async function handleCreateKey(req: Request) {
 			throw new Error(error.message || "Failed to create API key");
 		}
 		if (!data) throw new Error("Failed to create API key");
-		await auditApiKey(auth.value, "api_key.created", data as KeyRow);
+		// A key linked to a department counts toward that department's rate limit.
+		if (departmentId.value) await publishRateLimitPlan(workspaceScope.workspaceId);
+		await auditApiKey({ ...auth.value, workspaceId: workspaceScope.workspaceId }, "api_key.created", data as KeyRow);
 
+		// The secret is shown once. Return it at the top level, where key-creation clients
+		// read it, and keep data.key for existing callers.
 		return json(
 			{
+				key: generated.plaintext,
 				data: {
 					...formatApiKey(data as KeyRow),
 					key: generated.plaintext,
@@ -673,7 +731,10 @@ async function handleGetKey(req: Request) {
 	if (!keyId) {
 		return json({ error: "bad_request", message: "Key id is required" }, 400, { "Cache-Control": "no-store" });
 	}
-	const roleError = await requireOAuthWorkspaceAdmin(auth.value, auth.value.workspaceId);
+	const workspaceScope = resolveScopedWorkspaceId(auth.value, url.searchParams.get("workspace_id"));
+	if (workspaceScope.ok === false) return workspaceScope.response;
+	const { workspaceId } = workspaceScope;
+	const roleError = await requireOAuthWorkspaceAdmin(auth.value, workspaceId);
 	if (roleError) return roleError;
 
 	try {
@@ -682,8 +743,8 @@ async function handleGetKey(req: Request) {
 		const { data, error } = await supabase
 			.from("keys")
 			.select(KEY_COLUMNS)
-			.eq("workspace_id", auth.value.workspaceId)
-			.neq("name", CHAT_MANAGED_KEY_NAME)
+			.eq("workspace_id", workspaceId)
+			.not("name", "in", MANAGED_KEY_NAMES_FILTER)
 			.eq(lookupColumn, keyId)
 			.maybeSingle();
 		if (error) {
@@ -692,7 +753,7 @@ async function handleGetKey(req: Request) {
 		if (!data) {
 			return json({ error: "not_found", message: "API key not found" }, 404, { "Cache-Control": "no-store" });
 		}
-		const usage = await loadKeyUsage(auth.value.workspaceId, [data.id]);
+		const usage = await loadKeyUsage(workspaceId, [data.id]);
 		return json({ data: formatApiKey(data as KeyRow, usage.get(data.id)) }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
 		return internalServerError("keys.get", error);
@@ -737,7 +798,14 @@ async function handleUpdateKey(req: Request) {
 	}
 	const scopesError = rejectApiKeyScopes(body);
 	if (scopesError) return scopesError;
-	const roleError = await requireOAuthWorkspaceAdmin(auth.value, auth.value.workspaceId);
+	const departmentId = parseDepartmentId(body.department_id);
+	if (departmentId.ok === false) {
+		return json({ error: "bad_request", message: departmentId.message }, 400, { "Cache-Control": "no-store" });
+	}
+	const workspaceScope = resolveScopedWorkspaceId(auth.value, url.searchParams.get("workspace_id"));
+	if (workspaceScope.ok === false) return workspaceScope.response;
+	const { workspaceId } = workspaceScope;
+	const roleError = await requireOAuthWorkspaceAdmin(auth.value, workspaceId);
 	if (roleError) return roleError;
 
 	try {
@@ -746,8 +814,8 @@ async function handleUpdateKey(req: Request) {
 		const { data: existing, error: fetchError } = await supabase
 			.from("keys")
 			.select(KEY_WITH_KID_COLUMNS)
-			.eq("workspace_id", auth.value.workspaceId)
-			.neq("name", CHAT_MANAGED_KEY_NAME)
+			.eq("workspace_id", workspaceId)
+			.not("name", "in", MANAGED_KEY_NAMES_FILTER)
 			.eq(lookupColumn, keyId)
 			.maybeSingle();
 		if (fetchError) {
@@ -763,16 +831,44 @@ async function handleUpdateKey(req: Request) {
 			if (!nextName) {
 				return json({ error: "bad_request", message: "name cannot be empty" }, 400, { "Cache-Control": "no-store" });
 			}
+			if (isManagedKeyName(nextName)) return json(RESERVED_KEY_NAME, 400, { "Cache-Control": "no-store" });
 			updatePayload.name = nextName;
 		}
-		if (typeof body.disabled === "boolean") {
+		// Revoked keys may be exposed; they stay revoked (protect_revoked_key_status).
+		// disabled: true already holds for them, so only turning them on is refused.
+		const revoked = ["revoked", "compromised"].includes(String(existing.status ?? "").toLowerCase());
+		if (body.disabled === false && revoked) {
+			return json({ error: "key_revoked", message: "This key was revoked and cannot be turned back on. Rotate it or create a new key." }, 409, { "Cache-Control": "no-store" });
+		}
+		if (typeof body.disabled === "boolean" && !revoked) {
 			updatePayload.status = body.disabled ? "paused" : "active";
 		}
 		if (typeof body.soft_blocked === "boolean") {
 			updatePayload.soft_blocked = body.soft_blocked;
 		}
+		if (body.storage_locations !== undefined) {
+			const storageLocations = parseKeyStorageLocations(body.storage_locations, existing.storage_locations ?? []);
+			if (storageLocations.ok === false) {
+				return json({ error: "bad_request", message: storageLocations.message }, 400, { "Cache-Control": "no-store" });
+			}
+			updatePayload.storage_locations = storageLocations.value;
+		}
+		// The dashboard's rules: labelled IPv4/IPv6 addresses or CIDR ranges, at most 100; [] allows any address.
+		if (body.ip_allowlist !== undefined) {
+			const ipAllowlist = keyIpAllowlistSchema.safeParse(body.ip_allowlist);
+			if (!ipAllowlist.success) {
+				return json({ error: "invalid_ip_allowlist", message: "ip_allowlist entries need a label and a valid IPv4, IPv6, or CIDR address (maximum 100 entries)" }, 400, { "Cache-Control": "no-store" });
+			}
+			updatePayload.ip_allowlist = ipAllowlist.data;
+		}
 		if (expiresAt.value !== undefined) {
 			updatePayload.expires_at = expiresAt.value;
+		}
+		if (departmentId.value !== undefined) {
+			if (departmentId.value && !(await departmentExists(workspaceId, departmentId.value))) {
+				return json({ error: "bad_request", message: "department_id does not match a department in this workspace" }, 400, { "Cache-Control": "no-store" });
+			}
+			updatePayload.department_id = departmentId.value;
 		}
 		applyCostLimitFields(updatePayload, {
 			limit:
@@ -785,32 +881,48 @@ async function handleUpdateKey(req: Request) {
 		if (detailedLimits.ok === false) {
 			return json({ error: "bad_request", message: detailedLimits.message }, 400, { "Cache-Control": "no-store" });
 		}
+		// On any key, an app may only rename it: limits, pausing and resuming, expiry, department, IP allowlist
+		// and storage locations are the person's, so an app can't lift what holds its own key or another one.
+		if (Object.keys(updatePayload).some((field) => field !== "name")) {
+			const appError = rejectThirdPartyOAuthAppChange(
+				auth.value,
+				"Apps that use Sign in with Phaseo can only rename API keys. The person can change a key's limits, status and expiry under Settings, API Keys.",
+			);
+			if (appError) return appError;
+		}
 		const keyStateChanged = ["status", "soft_blocked", "expires_at"].some((field) => field in updatePayload);
 		if (keyStateChanged && isUsableWorkspaceKey({ ...existing, ...updatePayload })) {
-			await enforceWorkspaceKeyLimit(auth.value.workspaceId, "api", existing.id);
+			await enforceWorkspaceKeyLimit(workspaceId, "api", existing.id);
 		}
 
 		const { error: updateError } = await supabase
 			.from("keys")
 			.update(updatePayload)
 			.eq("id", existing.id)
-			.eq("workspace_id", auth.value.workspaceId);
+			.eq("workspace_id", workspaceId);
 		if (updateError) {
 			throw new Error(updateError.message || "Failed to update API key");
 		}
 		await invalidateKeyCache({ id: existing.id, kid: existing.kid ?? null });
+		if (departmentId.value !== undefined && departmentId.value !== (existing.department_id ?? null)) {
+			await publishRateLimitPlan(workspaceId);
+		}
 
 		const { data: updated, error: refetchError } = await supabase
 			.from("keys")
 			.select(KEY_COLUMNS)
-			.eq("workspace_id", auth.value.workspaceId)
+			.eq("workspace_id", workspaceId)
 			.eq("id", existing.id)
 			.maybeSingle();
 		if (refetchError) {
 			throw new Error(refetchError.message || "Failed to fetch updated API key");
 		}
 		if (!updated) throw new Error("Failed to fetch updated API key");
-		await auditApiKey(auth.value, "api_key.updated", updated as KeyRow, { changed_fields: Object.keys(updatePayload) });
+		// Pausing and resuming are recorded as such, as the dashboard does, but only when the status
+		// changes: a retried request is an update, not another pause.
+		const statusChanged = typeof updatePayload.status === "string" && updatePayload.status !== String(existing.status ?? "");
+		const action = statusChanged ? (updatePayload.status === "paused" ? "api_key.paused" : "api_key.resumed") : "api_key.updated";
+		await auditApiKey({ ...auth.value, workspaceId }, action, updated as KeyRow, { changed_fields: Object.keys(updatePayload) });
 
 		return json({ data: formatApiKey(updated as KeyRow) }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
@@ -836,7 +948,10 @@ async function handleDeleteKey(req: Request) {
 	if (!keyId) {
 		return json({ error: "bad_request", message: "Key id is required" }, 400, { "Cache-Control": "no-store" });
 	}
-	const roleError = await requireOAuthWorkspaceAdmin(auth.value, auth.value.workspaceId);
+	const workspaceScope = resolveScopedWorkspaceId(auth.value, url.searchParams.get("workspace_id"));
+	if (workspaceScope.ok === false) return workspaceScope.response;
+	const { workspaceId } = workspaceScope;
+	const roleError = await requireOAuthWorkspaceAdmin(auth.value, workspaceId);
 	if (roleError) return roleError;
 
 	try {
@@ -845,8 +960,8 @@ async function handleDeleteKey(req: Request) {
 		const { data: existing, error: fetchError } = await supabase
 			.from("keys")
 			.select("id, workspace_id, kid, name, status")
-			.eq("workspace_id", auth.value.workspaceId)
-			.neq("name", CHAT_MANAGED_KEY_NAME)
+			.eq("workspace_id", workspaceId)
+			.not("name", "in", MANAGED_KEY_NAMES_FILTER)
 			.eq(lookupColumn, keyId)
 			.maybeSingle();
 		if (fetchError) {
@@ -872,14 +987,26 @@ async function handleDeleteKey(req: Request) {
 				hash: tombstoneHash,
 			})
 			.eq("id", existing.id)
-			.eq("workspace_id", auth.value.workspaceId);
+			.eq("workspace_id", workspaceId);
 		if (updateError) {
 			throw new Error(updateError.message || "Failed to delete API key");
+		}
+		// Bump again now the row is written: a request between the first bump and
+		// the update could have cached the still-active row under the new version.
+		// The row is already deleted, so a failure here must not skip the cleanup and
+		// audit below; the database trigger on keys still refreshes the gateway.
+		try {
+			await invalidateKeyCache({ id: existing.id, kid: existing.kid ?? null });
+		} catch (error) {
+			console.warn("gateway_key_invalidation_after_delete_failed", {
+				keyId: existing.id,
+				error: error instanceof Error ? error.message : String(error),
+			});
 		}
 
 		await supabase.from("key_guardrails").delete().eq("key_id", existing.id);
 		await supabase.from("broadcast_destination_keys").delete().eq("key_id", existing.id);
-		await auditApiKey(auth.value, "api_key.deleted", existing as KeyRow);
+		await auditApiKey({ ...auth.value, workspaceId }, "api_key.deleted", existing as KeyRow);
 
 		return json({ deleted: true }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) {
@@ -892,10 +1019,20 @@ async function handleRotateKey(req: Request) {
 	if (!auth.ok) return (auth as GuardErr).response;
 	const scopeError = requireCapability(auth.value, CAPABILITIES.KEYS_WRITE);
 	if (scopeError) return scopeError;
-	const segments = new URL(req.url).pathname.split("/").filter(Boolean);
+	const url = new URL(req.url);
+	const segments = url.pathname.split("/").filter(Boolean);
 	const keyId = segments.at(-2)?.trim();
 	if (!keyId) return json({ error: "bad_request", message: "Key id is required" }, 400, { "Cache-Control": "no-store" });
-	const roleError = await requireOAuthWorkspaceAdmin(auth.value, auth.value.workspaceId);
+	// A rotation mints a replacement key, which would start its own month with no consent limit behind it.
+	const appError = rejectThirdPartyOAuthAppChange(
+		auth.value,
+		"Apps that use Sign in with Phaseo can't rotate or replace API keys. The person can rotate a key under Settings, API Keys.",
+	);
+	if (appError) return appError;
+	const workspaceScope = resolveScopedWorkspaceId(auth.value, url.searchParams.get("workspace_id"));
+	if (workspaceScope.ok === false) return workspaceScope.response;
+	const { workspaceId } = workspaceScope;
+	const roleError = await requireOAuthWorkspaceAdmin(auth.value, workspaceId);
 	if (roleError) return roleError;
 	let body: Record<string, unknown> = {};
 	const rawBody = await req.text();
@@ -915,45 +1052,64 @@ async function handleRotateKey(req: Request) {
 		const supabase = getSupabaseAdmin();
 		const lookupColumn = resolveKeyLookupColumn(keyId);
 		const { data: existing, error: fetchError } = await supabase.from("keys")
-			.select("id,workspace_id,kid,name,prefix,status,scopes,created_by,soft_blocked,ip_allowlist,expires_at,daily_limit_requests,weekly_limit_requests,monthly_limit_requests,daily_limit_cost_nanos,weekly_limit_cost_nanos,monthly_limit_cost_nanos")
-			.eq("workspace_id", auth.value.workspaceId).neq("name", CHAT_MANAGED_KEY_NAME).eq(lookupColumn, keyId).maybeSingle();
+			.select("id,workspace_id,kid,name,prefix,status,scopes,created_by,soft_blocked,ip_allowlist,storage_locations,expires_at,daily_limit_requests,weekly_limit_requests,monthly_limit_requests,daily_limit_cost_nanos,weekly_limit_cost_nanos,monthly_limit_cost_nanos,department_id,key_kind")
+			.eq("workspace_id", workspaceId).not("name", "in", MANAGED_KEY_NAMES_FILTER).eq(lookupColumn, keyId).maybeSingle();
 		if (fetchError) throw new Error(fetchError.message || "Failed to fetch API key");
 		if (!existing || String(existing.status ?? "").toLowerCase() === "deleted") return json({ error: "not_found", message: "API key not found" }, 404, { "Cache-Control": "no-store" });
-		await enforceWorkspaceKeyLimit(auth.value.workspaceId, "api", existing.id);
+		// Rotating would mint a secret that acts as the workload policy's key.
+		if (existing.key_kind === "workload_identity") return json({ error: "key_not_rotatable", message: "Workload identity keys have no secret to rotate." }, 409, { "Cache-Control": "no-store" });
+		await enforceWorkspaceKeyLimit(workspaceId, "api", existing.id);
 		const pepper = resolveActiveKeyPepper(getBindings());
 		if (!pepper) return json({ error: "server_misconfig_missing_pepper", message: "KEY_PEPPER_ACTIVE is not configured" }, 503, { "Cache-Control": "no-store" });
 		const generated = generateGatewayKey();
 		const name = typeof body.name === "string" && body.name.trim() ? body.name.trim() : `${existing.name} (rotated)`;
-		const creatorUserId = auth.value.userId ?? await resolveWorkspaceOwnerUserId(auth.value.workspaceId);
+		if (isManagedKeyName(name)) return json(RESERVED_KEY_NAME, 400, { "Cache-Control": "no-store" });
+		const creatorUserId = auth.value.userId ?? await resolveWorkspaceOwnerUserId(workspaceId);
 		const { data: replacement, error: insertError } = await supabase.from("keys").insert({
-			workspace_id: auth.value.workspaceId, name, kid: generated.kid,
+			workspace_id: workspaceId, name, kid: generated.kid,
 			hash: await hmacSecret(generated.secret, pepper), prefix: generated.prefix,
 			status: "active", scopes: existing.scopes ?? "[]", created_by: creatorUserId,
 			soft_blocked: Boolean(existing.soft_blocked),
 			ip_allowlist: existing.ip_allowlist ?? [],
+			storage_locations: existing.storage_locations ?? [],
 			daily_limit_requests: existing.daily_limit_requests ?? 0,
 			weekly_limit_requests: existing.weekly_limit_requests ?? 0,
 			monthly_limit_requests: existing.monthly_limit_requests ?? 0,
 			daily_limit_cost_nanos: existing.daily_limit_cost_nanos ?? 0,
 			weekly_limit_cost_nanos: existing.weekly_limit_cost_nanos ?? 0,
 			monthly_limit_cost_nanos: existing.monthly_limit_cost_nanos ?? 0,
+			department_id: existing.department_id ?? null,
 		}).select(KEY_COLUMNS).maybeSingle();
 		if (insertError || !replacement) throw new Error(insertError?.message || "Failed to rotate API key");
+		// The replacement keeps the old key's rate limit policy. Without it, rotating
+		// would lift the limit, so a failed copy undoes the rotation (deleting the
+		// replacement also removes any copied assignment).
+		let rateLimitCopied = false;
+		try {
+			rateLimitCopied = await copyKeyRateLimitAssignment({
+				workspaceId: workspaceId, fromKeyId: existing.id, toKeyId: replacement.id, createdBy: auth.value.userId ?? null,
+			});
+		} catch (copyError) {
+			await supabase.from("keys").delete().eq("id", replacement.id);
+			throw copyError;
+		}
 		if (previousExpiry.value !== undefined) {
-			const { error: expiryError } = await supabase.from("keys").update({ expires_at: previousExpiry.value }).eq("id", existing.id).eq("workspace_id", auth.value.workspaceId);
+			const { error: expiryError } = await supabase.from("keys").update({ expires_at: previousExpiry.value }).eq("id", existing.id).eq("workspace_id", workspaceId);
 			if (expiryError) { await supabase.from("keys").delete().eq("id", replacement.id); throw new Error(expiryError.message || "Failed to expire previous API key"); }
 			try {
 				await invalidateKeyCache({ id: existing.id, kid: existing.kid ?? null });
 			} catch (invalidationError) {
 				const [deleteReplacement, restorePrevious] = await Promise.all([
 					supabase.from("keys").delete().eq("id", replacement.id),
-					supabase.from("keys").update({ expires_at: existing.expires_at ?? null }).eq("id", existing.id).eq("workspace_id", auth.value.workspaceId),
+					supabase.from("keys").update({ expires_at: existing.expires_at ?? null }).eq("id", existing.id).eq("workspace_id", workspaceId),
 				]);
 				if (deleteReplacement.error || restorePrevious.error) throw new Error("API key rotation rollback failed after cache invalidation error");
 				throw invalidationError;
 			}
 		}
-		await auditApiKey(auth.value, "api_key.rotated", existing as KeyRow, { replacement_key_id: replacement.id, replacement_key_name: name, previous_key_expires_at: previousExpiry.value ?? null });
+		// The replacement also keeps the old key's department link.
+		if (rateLimitCopied || existing.department_id) await publishRateLimitPlan(workspaceId);
+		await auditApiKey({ ...auth.value, workspaceId }, "api_key.rotated", existing as KeyRow, { replacement_key_id: replacement.id, replacement_key_name: name, previous_key_expires_at: previousExpiry.value ?? null });
 		return json({ data: { ...formatApiKey(replacement as KeyRow), key: generated.plaintext }, previous_key_expires_at: previousExpiry.value ?? null }, 200, { "Cache-Control": "no-store" });
 	} catch (error: any) { return internalServerError("keys.rotate", error); }
 }
@@ -1017,7 +1173,9 @@ async function handleInvalidateKey(req: Request) {
 		}
 
 		await invalidateKeyCache({ id: data.id, kid: data.kid ?? null });
-		await invalidatePrivateRoutes(data.workspace_id);
+		// Key-level: drop this isolate's copy only. Private-model edits bump the workspace version through
+		// the trigger on workspace_private_models, and a bump here would clear every cached context.
+		await invalidatePrivateRoutes(data.workspace_id, { bumpVersion: false });
 		if (auth.ok) await auditApiKey(auth.value, "api_key.cache_invalidated", { id: data.id, name: null, prefix: null });
 
 		return json(
@@ -1025,7 +1183,6 @@ async function handleInvalidateKey(req: Request) {
 				ok: true,
 				key: {
 					id: data.id,
-					kid: data.kid ?? null,
 					workspace_id: data.workspace_id,
 					status: data.status,
 				},

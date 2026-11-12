@@ -139,11 +139,11 @@ describe("provider capability profiles", () => {
 		expect(supportsAdapterBackedCapability(provider, "video.generate")).toBe(true);
 	});
 
-	it("does not route Novita's native media APIs through OpenAI media adapters", () => {
+	it("exposes Novita media capabilities with dedicated executors", () => {
 		for (const provider of ["novita", "novitaai", "novita-ai"]) {
-			expect(supportsAdapterBackedCapability(provider, "image.generate")).toBe(false);
+			expect(supportsAdapterBackedCapability(provider, "image.generate")).toBe(true);
 			expect(supportsAdapterBackedCapability(provider, "image.edit")).toBe(false);
-			expect(supportsAdapterBackedCapability(provider, "audio.speech")).toBe(false);
+			expect(supportsAdapterBackedCapability(provider, "audio.speech")).toBe(true);
 			expect(supportsAdapterBackedCapability(provider, "audio.transcription")).toBe(false);
 			expect(supportsAdapterBackedCapability(provider, "audio.translations")).toBe(false);
 			expect(supportsAdapterBackedCapability(provider, "video.generate")).toBe(true);

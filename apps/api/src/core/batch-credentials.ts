@@ -97,6 +97,10 @@ function managedCredential(providerId: string): BatchProviderCredential | null {
 			const key = bindings.GOOGLE_AI_STUDIO_API_KEY || bindings.GEMINI_API_KEY;
 			return key ? { key, source: "gateway", byokKeyId: null } : null;
 		}
+		if (providerId === "google-vertex") {
+			const key = bindings.GOOGLE_VERTEX_ACCESS_TOKEN || bindings.GOOGLE_VERTEX_API_KEY;
+			return key ? { key, source: "gateway", byokKeyId: null } : null;
+		}
 		const resolved = resolveOpenAICompatKey({ providerId, byokMeta: [], forceGatewayKey: true } as any);
 		return { key: resolved.key, source: "gateway", byokKeyId: null };
 	} catch (error) {

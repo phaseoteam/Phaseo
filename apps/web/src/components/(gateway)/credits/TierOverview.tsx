@@ -3,10 +3,11 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { TrendingUp, TrendingDown, ExternalLink, Sparkles } from "lucide-react";
-import { fetchCreditsTierSummary } from "@/lib/fetchers/internal/fetchCreditsTierSummary";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { creditsTierSummaryQuery } from "./creditsTierSummary.functions";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
-import { getTranslations } from "next-intl/server";
+import Link from "@/components/link";
+import { useTranslations } from "@/i18n/react";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 
 const HIDE_ENTERPRISE_REFERENCES = true;
@@ -30,21 +31,18 @@ interface Props {
 	workspaceId?: string;
 }
 
-export default async function TierOverview({ workspaceId }: Props) {
-	const t = await getTranslations("SettingsUI.credits");
+export default function TierOverview({ workspaceId }: Props) {
+	const t = useTranslations("SettingsUI.credits");
 	let lastMonthCents = 0;
 	let mtdCents = 0;
 	let teamTier: "basic" | "enterprise" = "basic";
 
-	if (workspaceId) {
-		try {
-			const summary = await fetchCreditsTierSummary(workspaceId);
-			lastMonthCents = summary.lastMonthCents;
-			mtdCents = summary.mtdCents;
-			teamTier = summary.teamTier;
-		} catch {
-			// Keep the tier cards renderable with empty spend values.
-		}
+	// null without a workspace or when the summary failed: keep the tier cards renderable with empty spend values.
+	const { data: summary } = useSuspenseQuery(creditsTierSummaryQuery(workspaceId));
+	if (summary) {
+		lastMonthCents = summary.lastMonthCents;
+		mtdCents = summary.mtdCents;
+		teamTier = summary.teamTier;
 	}
 
 	const lastMonth = lastMonthCents / 1_000_000_000;
@@ -180,16 +178,18 @@ export default async function TierOverview({ workspaceId }: Props) {
 									<>
 										<TrendingUp className="h-3 w-3 text-emerald-600" />
 										<span className="text-emerald-600 dark:text-emerald-400">
-											+{(((mtd - lastMonth) / lastMonth) * 100).toFixed(0)}%
-											{t("vsLastMonth")}
+											{t("changeVsLastMonth", {
+												change: `+${(((mtd - lastMonth) / lastMonth) * 100).toFixed(0)}%`,
+											})}
 										</span>
 									</>
 								) : mtd < lastMonth ? (
 									<>
 										<TrendingDown className="h-3 w-3 text-orange-600" />
 										<span className="text-orange-600 dark:text-orange-400">
-											{(((mtd - lastMonth) / lastMonth) * 100).toFixed(0)}%
-											{t("vsLastMonth")}
+											{t("changeVsLastMonth", {
+												change: `${(((mtd - lastMonth) / lastMonth) * 100).toFixed(0)}%`,
+											})}
 										</span>
 									</>
 								) : (

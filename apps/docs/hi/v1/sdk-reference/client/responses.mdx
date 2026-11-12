@@ -1,0 +1,350 @@
+---
+icon: "message-square"
+title: "Responses"
+description: "किसी भी Phaseo SDK से Responses API कॉल करें।"
+---
+
+`POST /v1/responses` भेजने और एक पूरी प्रतिक्रिया पाने के लिए SDK का responses मेथड कॉल करें।
+
+<CodeGroup>
+
+```typescript TypeScript
+const resp = await client.generateResponse({
+  model: "openai/gpt-6-astra",
+  input: [{ role: "user", content: [{ type: "input_text", text: "Summarise this text" }] }],
+});
+```
+
+```python Python
+resp = client.generate_response({
+    "model": "openai/gpt-6-astra",
+    "input": [{"role": "user", "content": [{"type": "input_text", "text": "Summarise this text"}]}],
+})
+
+print(resp.output_text)
+```
+
+```go Go
+import (
+  "context"
+  "fmt"
+
+  phaseo "github.com/phaseoteam/Phaseo/packages/sdk/sdk-go/v3"
+)
+
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  panic(err)
+}
+
+resp, err := client.GenerateResponse(context.Background(), phaseo.ResponsesRequest{
+  Model: "openai/gpt-6-astra",
+  Input: "Reply with: responses endpoint works",
+})
+if err != nil {
+  panic(err)
+}
+fmt.Println(resp)
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+
+var response = await client.GenerateResponse(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-6-astra",
+    ["input"] = "Summarise this text",
+});
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo();
+
+$response = $client->createResponse([
+    'model' => 'openai/gpt-6-astra',
+    'input' => [
+        [
+            'role' => 'user',
+            'content' => [
+                ['type' => 'input_text', 'text' => 'Summarise this text'],
+            ],
+        ],
+    ],
+]);
+
+echo $response['output'][0]['content'][0]['text'];
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+
+resp = client.create_response(
+  model: 'openai/gpt-6-astra',
+  input: [
+    { role: 'user', content: [{ type: 'input_text', text: 'Summarise this text' }] }
+  ]
+)
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+var response = client.createResponse(Map.of(
+    "model", "openai/gpt-6-astra",
+    "input", "Reply with: responses endpoint works"
+));
+System.out.println(response);
+```
+
+```rust Rust
+use phaseo::Phaseo;
+use serde_json::json;
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let client = Phaseo::from_env()?;
+    let response = client.responses(&json!({
+        "model": "openai/gpt-6-astra",
+        "input": "Give three concise benefits of model routing.",
+        "max_output_tokens": 200
+    }))?;
+
+    println!("status: {}", response.status);
+    println!("request ID: {:?}", response.request_id);
+    println!("{}", serde_json::to_string_pretty(&response.body)?);
+    Ok(())
+}
+```
+
+</CodeGroup>
+
+| भाषा | मेथड | नोट |
+| --- | --- | --- |
+| TypeScript | `client.generateResponse(request)` | `client.responses.create(request)` भी यही करता है और `stream` true होने पर स्ट्रीमिंग पर चला जाता है। `client.responses.parse(request, schema)` पूरी JSON प्रतिक्रिया को Zod-संगत पार्सर से वैलिडेट करता है। |
+| Python | `client.generate_response(request)` | TypeScript जैसे ही `responses.create` और `responses.parse`; `parse` एक Pydantic मॉडल लेता है। |
+| Go | `client.GenerateResponse(ctx, req)`, उपनाम `CreateResponse` | `phaseo.ResponsesRequest` लेता है। `Input` एक `interface{}` है: एक स्ट्रिंग, या इनपुट आइटम की slice, जैसे `[]map[string]interface{}{{"role": "user", "content": "..."}}`। |
+| C# | `client.GenerateResponse(request)`, उपनाम `CreateResponse` | |
+| PHP | `$client->generateResponse($request)`, उपनाम `createResponse()` | |
+| Ruby | `client.generate_response(...)`, उपनाम `create_response` | |
+| Java | `client.createResponse(request)` | `Map` या Jackson `JsonNode` लेता है। `input` एक स्ट्रिंग या इनपुट आइटम की सूची लेता है, जैसे `List.of(Map.of("role", "user", "content", "..."))`। |
+| Rust | `client.responses(&request)` | `&serde_json::Value` लेता है। |
+
+<span id="stream-the-response"></span>
+## प्रतिक्रिया स्ट्रीम करें
+
+<CodeGroup>
+
+```typescript TypeScript
+for await (const chunk of client.streamResponses({
+  model: "openai/gpt-6-astra",
+  input: [{ role: "user", content: [{ type: "input_text", text: "Stream this" }] }],
+})) {
+  if (chunk.text) process.stdout.write(chunk.text);
+}
+```
+
+```python Python
+for chunk in client.stream_responses({
+    "model": "openai/gpt-6-astra",
+    "input": [{"role": "user", "content": [{"type": "input_text", "text": "Stream this"}]}],
+}):
+    if chunk.get("text"):
+        print(chunk["text"], end="", flush=True)
+```
+
+```csharp C#
+await foreach (var line in client.StreamResponse(new Dictionary<string, object>
+{
+    ["model"] = "openai/gpt-6-astra",
+    ["input"] = "Write a haiku about lighthouses",
+}))
+{
+    if (line.StartsWith("data:")) Console.WriteLine(line[5..].Trim());
+}
+```
+
+```php PHP
+foreach ($client->streamResponse(['model' => 'openai/gpt-6-astra', 'input' => 'Write a haiku']) as $line) {
+    if (str_starts_with($line, 'data:')) {
+        echo trim(substr($line, 5)), PHP_EOL;
+    }
+}
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+import java.util.Map;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+var payload = Map.of("model", "openai/gpt-6-astra", "input", "Hello");
+try (var lines = client.streamResponse(payload)) {
+    lines.forEach(System.out::println);
+}
+```
+
+</CodeGroup>
+
+| भाषा | स्ट्रीम मेथड | आपको क्या मिलता है |
+| --- | --- | --- |
+| TypeScript | `client.streamResponses(request)` | पार्स किए गए इवेंट। रद्द करने के लिए दूसरे आर्गुमेंट के रूप में `{ signal }` दें। `client.streamResponse()` इसके बजाय कच्ची SSE लाइनें देता है। |
+| Python | `client.stream_responses(request)` | पार्स किए गए इवेंट। `AsyncPhaseo` पर रोकने के लिए asyncio task रद्द करें। `client.stream_response()` इसके बजाय कच्ची SSE लाइनें देता है। |
+| Go | कोई नहीं | रैपर में स्ट्रीमिंग का कोई हेल्पर नहीं है; `stream` सेट न करें। |
+| C# | `client.StreamResponse(request)` | कच्ची SSE लाइनें। जल्दी रोकने के लिए दूसरे आर्गुमेंट के रूप में `CancellationToken` दें। |
+| PHP | `$client->streamResponse($request)` | कच्ची SSE लाइनें। |
+| Ruby | `client.stream_response(request)` | कच्ची SSE लाइनें, `Enumerator` के रूप में लौटाई जाती हैं। |
+| Java | `client.streamResponse(request)` | आते ही कच्ची SSE लाइनें, जो `rawClient().requestLines` से भी मिलती हैं। स्ट्रीम को try-with-resources से बंद करें। |
+| Rust | कोई नहीं | क्लाइंट में स्ट्रीमिंग का कोई हेल्पर या async ट्रांसपोर्ट नहीं है। स्ट्रीमिंग चाहिए तो HTTP API सीधे कॉल करें। |
+
+हर पार्स किया गया इवेंट (TypeScript और Python) अपने मूल फ़ील्ड (`type`, `delta`, …) रखता है और `text`, `usage` और reasoning tokens (`reasoningTokens` / `reasoning_tokens`) जोड़ता है। `text` में सिर्फ़ नया टेक्स्ट होता है: `.done` इवेंट और `response.completed` पर यह ख़ाली होता है, क्योंकि ये वही टेक्स्ट दोहराते हैं जो आपके पास पहले से है, और `.done` इवेंट का पूरा टेक्स्ट `fullText` / `full_text` में होता है।
+
+कच्ची SSE लाइनों (C#, PHP, Ruby, Java) के साथ, हर `data:` लाइन को JSON के रूप में पार्स करें और इवेंट नाम, `response.output_text.delta` और `response.completed` जैसे इवेंट टाइप, और पूरा होने के मार्कर ख़ुद संभालें। स्ट्रीमिंग मेथड आपके लिए `stream: true` सेट करते हैं, इसलिए इसे अनुरोध में सेट न करें।
+
+## आउटपुट टेक्स्ट पढ़ें
+
+आउटपुट आइटम का एक array है। टेक्स्ट `message` टाइप वाले `output` आइटम में होता है, फ़ंक्शन कॉल `function_call` टाइप वाले आइटम में, और token गिनती `usage` में। Python का `resp.output_text` आपके लिए टेक्स्ट जोड़ देता है।
+
+<CodeGroup>
+
+```python Python
+print(resp.output_text)
+```
+
+```php PHP
+echo $response['output'][0]['content'][0]['text'];
+```
+
+```rust Rust
+use serde_json::Value;
+
+let text = response.body
+    .get("output")
+    .and_then(Value::as_array)
+    .into_iter()
+    .flatten()
+    .filter(|item| item.get("type").and_then(Value::as_str) == Some("message"))
+    .flat_map(|item| {
+        item.get("content")
+            .and_then(Value::as_array)
+            .into_iter()
+            .flatten()
+    })
+    .find_map(|part| {
+        (part.get("type").and_then(Value::as_str) == Some("output_text"))
+            .then(|| part.get("text").and_then(Value::as_str))
+            .flatten()
+    });
+```
+
+</CodeGroup>
+
+जब कोई अनुरोध कई संदेश, reasoning आइटम, टूल कॉल या प्रदाता मेटाडेटा लौटा सकता है, तो पूरी प्रतिक्रिया रखें।
+
+| भाषा | रिटर्न टाइप |
+| --- | --- |
+| TypeScript | `ResponsesResponse` |
+| Python | `output_text`, `request_id` और `trace_url` वाला `APIResponse` dict |
+| Go | `gen.ResponsesResponse`: टेक्स्ट `message` टाइप वाली `OutputItems` एंट्री में, token गिनती `Usage` में |
+| C# | `Dictionary<string, object>?` |
+| PHP | Array |
+| Ruby | Hash |
+| Java | Jackson `JsonNode` |
+| Rust | `PhaseoResponse`; JSON `body` में होता है, साथ में `status` और `request_id` |
+
+## फ़ंक्शन टूल भेजें
+
+हर SDK में अनुरोध बॉडी एक जैसी है। Rust में:
+
+```rust Rust
+let response = client.responses(&json!({
+    "model": "openai/gpt-6-astra",
+    "input": "Check the weather in London.",
+    "tools": [{
+        "type": "function",
+        "name": "get_weather",
+        "description": "Get the current weather for a city.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "city": { "type": "string" }
+            },
+            "required": ["city"]
+        }
+    }]
+}))?;
+```
+
+अनुमोदन और दोबारा शुरू की जा सकने वाली स्थिति के साथ लोकल टूल लूप के लिए [Agent SDK](../agent/overview) इस्तेमाल करें।
+
+## पैरामीटर
+
+हर SDK में फ़ील्ड के नाम JSON बॉडी के फ़ील्ड ही हैं। Go का टाइप किया हुआ `phaseo.ResponsesRequest` PascalCase struct फ़ील्ड (`Model`, `Input`) इस्तेमाल करता है।
+
+| समूह | फ़ील्ड |
+| --- | --- |
+| ज़रूरी | `model`; `input` एक स्ट्रिंग या इनपुट आइटम (संदेश, टूल कॉल, टूल आउटपुट) के array के रूप में |
+| निर्देश और स्थिति | `instructions`, `previous_response_id`, `store`, `background`, `include`, `truncation` |
+| सैंपलिंग | `temperature` (0–2), `top_p` (0–1), जहाँ मॉडल इन्हें सपोर्ट करता है |
+| लंबाई | `max_output_tokens` |
+| टूल | `tools`, `tool_choice`, `parallel_tool_calls` |
+| रीज़निंग | `reasoning` (`effort`, `summary`, `max_tokens`) |
+| आउटपुट | `text` (संरचित आउटपुट के लिए `text.format` समेत), `stream`, `service_tier`, `metadata` (स्ट्रिंग वैल्यू) |
+| गेटवे | `provider` रूटिंग, `usage` (usage शामिल करें), `meta` (गेटवे का meta ब्लॉक शामिल करें) |
+
+[पैरामीटर](/hi/v1/api-reference/parameters) हर फ़ील्ड समझाता है, और [Responses API संदर्भ](../../api-reference/endpoint/responses) में पूरा स्कीमा है।
+
+## प्रतिक्रिया
+
+`ResponsesResponse`:
+
+```json
+{
+  "id": "resp_123",
+  "object": "response",
+  "created_at": 1677652288,
+  "status": "completed",
+  "model": "openai/gpt-6-astra",
+  "output": [
+    {
+      "type": "message",
+      "id": "msg_123",
+      "status": "completed",
+      "role": "assistant",
+      "content": [
+        {
+          "type": "output_text",
+          "text": "Hello there, how may I assist you today?"
+        }
+      ]
+    }
+  ],
+  "usage": {
+    "input_tokens": 9,
+    "output_tokens": 12,
+    "total_tokens": 21
+  }
+}
+```
+
+`stream: true` के साथ, एंडपॉइंट टाइप किए गए SSE इवेंट भेजता है। टेक्स्ट `response.output_text.delta` इवेंट में आता है, और आख़िरी `response.completed` इवेंट usage के साथ पूरी प्रतिक्रिया लाता है:
+
+```
+event: response.created
+data: {"type":"response.created","response":{"id":"resp_123","status":"in_progress","model":"openai/gpt-6-astra","output":[]}}
+
+event: response.output_text.delta
+data: {"type":"response.output_text.delta","item_id":"msg_123","output_index":0,"content_index":0,"delta":"Hello"}
+
+event: response.completed
+data: {"type":"response.completed","response":{"id":"resp_123","status":"completed","model":"openai/gpt-6-astra","output":[...],"usage":{"input_tokens":9,"output_tokens":12,"total_tokens":21}}}
+```

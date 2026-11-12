@@ -11,7 +11,13 @@ describe("buildPipelineExecutionErrorResponse", () => {
 
 		expect(response.status).toBe(500);
 		expect(payload).toEqual({
-			error: "pipeline_execution_error",
+			error: {
+				code: "pipeline_execution_error",
+				message: "Internal pipeline execution error.",
+				type: "server_error",
+				param: null,
+			},
+			code: "pipeline_execution_error",
 			description: "Internal pipeline execution error.",
 		});
 	});

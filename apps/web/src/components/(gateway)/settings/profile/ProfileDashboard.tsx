@@ -1,5 +1,3 @@
-"use client"
-
 import { useMemo, useRef, useState, type ChangeEvent, type ReactNode } from "react"
 import { Link } from "@/i18n/navigation"
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery"
@@ -140,6 +138,7 @@ function useProfileFormatters() {
 	const format = useDisplayFormatters()
 	const calendarValue = (date: string) => `${date}T00:00:00.000Z`
 	return {
+		formatTokenAxisTick: format.countAxisTick,
 		formatShortDate: (date: string) => format.calendarDate(calendarValue(date)),
 		formatLongDate: (date: string) => format.calendarDate(calendarValue(date)),
 		formatWeekday: (date: string) => format.dateParts(calendarValue(date), {
@@ -151,6 +150,7 @@ function useProfileFormatters() {
 			timeZone: "UTC",
 		}),
 		formatMetricValue: (metric: Metric, value: number, compact = true) => {
+			if (metric === "tokens" && compact) return format.count(value)
 			if (metric === "spend") {
 				return format.number(value, {
 					style: "currency",
@@ -457,7 +457,7 @@ export default function ProfileDashboard({
 	actions,
 }: Props) {
 	const rangeLabels = useMemo<Record<TimeRange, string>>(() => ({ today: labels.periodToday, "7d": labels.period7d, "30d": labels.period30d, "1y": labels.period1y, all: labels.periodAll }), [labels])
-	const { formatLongDate, formatMetricValue, formatShortDate } = useProfileFormatters()
+	const { formatLongDate, formatMetricValue, formatShortDate, formatTokenAxisTick } = useProfileFormatters()
 	const router = useRouter()
 	const avatarInputRef = useRef<HTMLInputElement>(null)
 	const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl)
@@ -595,7 +595,7 @@ export default function ProfileDashboard({
 						)}
 					</div>
 					<div className="min-w-0">
-						<h1 className="text-base font-semibold text-foreground">
+						<h1 className="break-words text-2xl font-semibold tracking-tight text-foreground">
 							{profile.displayName}
 						</h1>
 						{publicView ? (
@@ -697,7 +697,7 @@ export default function ProfileDashboard({
 									tickLine={false}
 									axisLine={false}
 									width={52}
-									tickFormatter={(value) => formatMetricValue(metric, Number(value))}
+									tickFormatter={(value) => metric === "tokens" ? formatTokenAxisTick(Number(value)) : formatMetricValue(metric, Number(value))}
 								/>
 								<ChartTooltip
 									cursor={{ fill: "rgba(24,24,27,0.06)" }}
@@ -707,7 +707,7 @@ export default function ProfileDashboard({
 											labelFormatter={(label) => formatLongDate(String(label))}
 											formatter={(value) => (
 												<span className="font-mono font-semibold tabular-nums text-foreground">
-											{formatMetricValue(metric, Number(value), false)}
+											{formatMetricValue(metric, Number(value), metric === "tokens")}
 												</span>
 											)}
 										/>

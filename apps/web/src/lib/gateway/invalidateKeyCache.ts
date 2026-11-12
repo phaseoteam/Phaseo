@@ -1,5 +1,3 @@
-"use server";
-
 const DEFAULT_API_URL = "http://localhost:8787";
 
 function firstConfiguredEnv(names: string[]): string | null {
@@ -33,7 +31,7 @@ export async function invalidateGatewayKeyCache(keyId: string): Promise<void> {
         return;
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_API_URL ?? DEFAULT_API_URL;
+    const baseUrl = process.env.PUBLIC_API_URL ?? DEFAULT_API_URL;
     const url = `${baseUrl}/v1/keys/${encodeURIComponent(keyId)}/invalidate`;
 
     try {

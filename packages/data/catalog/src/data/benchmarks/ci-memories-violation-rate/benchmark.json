@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "ci-memories-violation-rate",
-  "benchmark_name": "CI Memories Violation Rate",
-  "category": "safety",
-  "ascending_order": false,
-  "type": "percentage",
-  "link": "https://research.meta.ai/static/muse-glimmer-methodology",
-  "total_models": 1
-}

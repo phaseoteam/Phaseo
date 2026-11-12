@@ -22,7 +22,8 @@ function buildSchemaInstruction(schema: JsonSchema): string | null {
 	].join(" ");
 }
 
-function appendTextToMessageContent(message: any, text: string) {
+// Chat message parts are `text`; Responses input items take `input_text` and have no `text` part.
+function appendTextToMessageContent(message: any, text: string, partType: "text" | "input_text" = "text") {
 	if (!message || typeof message !== "object") return;
 	const content = message.content;
 
@@ -32,12 +33,12 @@ function appendTextToMessageContent(message: any, text: string) {
 	}
 
 	if (Array.isArray(content)) {
-		const textPart = content.find((part: any) => part?.type === "text" && typeof part.text === "string");
+		const textPart = content.find((part: any) => part?.type === partType && typeof part.text === "string");
 		if (textPart) {
 			textPart.text = textPart.text ? `${textPart.text}\n\n${text}` : text;
 			return;
 		}
-		content.unshift({ type: "text", text });
+		content.unshift({ type: partType, text });
 		return;
 	}
 
@@ -68,7 +69,7 @@ function injectInstructionIntoInputItems(request: any, instruction: string): boo
 			(item: any) => item?.type === "message" && item?.role === "system",
 		);
 		if (systemItem) {
-			appendTextToMessageContent(systemItem, instruction);
+			appendTextToMessageContent(systemItem, instruction, "input_text");
 			return true;
 		}
 		request.input.unshift({
@@ -83,7 +84,7 @@ function injectInstructionIntoInputItems(request: any, instruction: string): boo
 			(item: any) => item?.type === "message" && item?.role === "system",
 		);
 		if (systemItem) {
-			appendTextToMessageContent(systemItem, instruction);
+			appendTextToMessageContent(systemItem, instruction, "input_text");
 			return true;
 		}
 		request.input_items.unshift({

@@ -1,39 +1,134 @@
 ---
-title: "Limites de requêtes"
-description: "Gérez la limitation des requêtes, les quotas des fournisseurs et les tentatives limitées."
+title: "Limites de débit"
+description: "Gérez la limitation des requêtes, les quotas des fournisseurs et les nouvelles tentatives bornées."
 icon: "gauge"
 ---
 
-Une requête peut être limitée par le fournisseur sélectionné ou par une politique applicable à l’espace de travail ou à la clé. Le routage et les solutions de repli peuvent réduire les échecs des fournisseurs, mais une requête peut toujours renvoyer `429`.
+Lisez le code d’erreur et le `reason` d’un `429` pour savoir quelle limite a arrêté la requête, puis attendez `Retry-After` ou modifiez la limite. Le routage et les fallbacks réduisent les échecs des fournisseurs, mais une requête peut toujours être limitée par un fournisseur ou par une politique de l’espace de travail ou de la clé.
 
-## Limites du gateway
+| Limite | Code d’erreur | `reason` | Se réinitialise seule |
+| --- | --- | --- | --- |
+| [Requêtes par minute](#gateway-limits) | `key_limit_exceeded` | `customer_requests_per_minute` | Oui, `Retry-After` en secondes |
+| [Requêtes de modèles gratuits par jour](#gateway-limits) | `phaseo_free_model_limit_exceeded` | `free_requests_per_day` | Oui, à 00:00 UTC |
+| [Limite de clé ou budget de l’espace de travail](#key-limits-and-budgets) | `key_limit_exceeded` | La limite atteinte ; `limit_window` et `reset_at` | Seulement si `Retry-After` est présent |
+| [Budget de département](#department-budgets) | `key_limit_exceeded` | `department_daily_cost_budget_reached` (ou `weekly`, `monthly`) | Oui, à `reset_at` |
+| [Règle de dépenses réglée sur le blocage](#key-limits-and-budgets) | `spend_rule_blocked` | | À `reset_at` si le blocage en a un, ou lorsqu’un propriétaire ou un administrateur le lève |
+| [Politique de limite de débit](#rate-limit-policies) | `rate_limit_exceeded` | `policy_requests_per_minute`, `policy_tokens_per_minute`, `policy_concurrent_requests` ou `policy_unavailable` | Oui, `Retry-After` en secondes |
+| [Fournisseur](#provider-limits) | `upstream_error` ou `provider_capacity_exhausted` | | Suivez le `Retry-After` du fournisseur |
 
-Le quota par défaut est de **25 requêtes par minute glissante** pour chaque utilisateur dans chaque espace de travail. Les clés API créées par le même utilisateur partagent ce quota. Les requêtes OAuth utilisent l'utilisateur authentifié. Les clés sans propriétaire partagent un quota au niveau de l'espace de travail.
+Tous renvoient `429`. Si l’application des quotas de la passerelle est brièvement indisponible, la passerelle renvoie `503` avec des indications pour réessayer.
 
-Les routes de modèles gratuits disposent également de **1500 requêtes par jour UTC**, partagées entre tous les modèles gratuits du même utilisateur et espace de travail. Les requêtes aux modèles payants ne consomment pas ce quota quotidien. Une requête gratuite admise compte même si le fournisseur échoue ensuite ; les fallbacks au sein de cette requête comptent une seule fois.
+<span id="gateway-limits"></span>
+## Limites de la passerelle
 
-Ces limites s'appliquent à toutes les régions du gateway et peuvent être augmentées pour un utilisateur et un espace de travail précis. Les opérations sur les fichiers et les consultations du statut des tâches consomment le quota par minute ; les endpoints d'administration ne le consomment pas.
+Chaque utilisateur de chaque espace de travail dispose d’un quota de requêtes par minute, mesuré sur une minute glissante. Les clés API créées par un même utilisateur le partagent. Les requêtes OAuth sont comptées pour l’utilisateur connecté, et les clés sans propriétaire partagent un quota unique de l’espace de travail.
 
-Un quota du gateway épuisé entraîne une réponse `429` avec `Retry-After` en secondes. Le motif de l'erreur est `customer_requests_per_minute` ou `free_requests_per_day`. Attendez ce délai avant de réessayer. Si la vérification des quotas est temporairement indisponible, le gateway renvoie `503` avec des indications pour réessayer.
+Le quota augmente automatiquement à mesure que l’espace de travail s’établit. Un espace de travail obtient la ligne la plus élevée à laquelle il a droit, et les changements prennent effet en quelques minutes :
 
+| Espace de travail | Requêtes par minute |
+| --- | --- |
+| Nouvel espace de travail | 10 |
+| Au moins 7 jours d’ancienneté, ou une recharge payante effectuée | 25 |
+| Au moins 30 jours d’ancienneté et au moins $50 de recharges payantes, remboursements déduits | 60 |
+| Facturation sur facture | 120 |
+
+Les modèles gratuits disposent aussi par défaut d’un quota de **1 500 requêtes par jour UTC**. Il est partagé entre tous les modèles gratuits et entre tous les espaces de travail dans lesquels le même utilisateur envoie des requêtes. Les requêtes vers des modèles payants ne l’utilisent pas. Une requête gratuite admise compte même si le fournisseur échoue ensuite, et les fallbacks de fournisseurs au sein d’une même requête comptent une seule fois.
+
+Les deux limites s’appliquent à toutes les régions de la passerelle et peuvent être relevées pour un utilisateur et un espace de travail donnés. Les opérations sur les fichiers et l’interrogation de l’état des tâches utilisent le quota par minute ; les endpoints de gestion ne l’utilisent pas.
+
+Une requête refusée renvoie `429` avec `Retry-After` en secondes. Attendez ce délai avant de réessayer.
+
+<span id="key-limits-and-budgets"></span>
+## Limites de clés et budgets
+
+Les limites quotidiennes, hebdomadaires ou mensuelles de requêtes et de dépenses d’une clé API, ainsi que les [budgets](./endpoint/budgets-list.mdx) de l’espace de travail, renvoient `429` avec `key_limit_exceeded` une fois atteints. Les champs `reason`, `limit_window` et `reset_at` du corps indiquent de quelle limite il s’agit et quand sa fenêtre se réinitialise, et `Retry-After` donne le nombre de secondes d’ici là.
+
+`Retry-After` est absent lorsque la limite ne se réinitialise pas seule, comme un budget sur toute la durée ou une clé bloquée de manière souple. Ne réessayez pas : relevez le budget de l’espace de travail, relevez la limite de la clé ou utilisez une autre clé.
+
+Les propriétaires et administrateurs de l’espace de travail gèrent les budgets avec une clé de gestion via `/v1/budgets` ou dans [Paramètres → Budgets](https://phaseo.app/settings/budgets), qui affiche pour chaque budget les dépenses à ce jour, la part utilisée, une projection pour la période et le moment de la réinitialisation. Les budgets quotidiens, hebdomadaires et mensuels se réinitialisent sur des limites UTC : minuit, le lundi à 00:00 et le 1er du mois.
+
+Les [alertes de dépenses](../guides/spend-alerts.mdx) peuvent prévenir avant que ces limites soient atteintes. Une règle de dépenses réglée sur le blocage renvoie `429` avec `spend_rule_blocked`. Elle fonctionne au mieux et démarre quelques minutes après le dépassement de sa limite : utilisez donc les limites de clés et les budgets pour des plafonds exacts. Un en-tête `x-phaseo-spend-warning` signifie qu’un blocage peut suivre.
+
+<span id="department-budgets"></span>
+### Budgets de département
+
+Les propriétaires et administrateurs gèrent les budgets de département avec `phaseo department-budgets`, l’API `/v1/department-budgets`, dans [Paramètres → Budgets](https://phaseo.app/settings/budgets), ou avec la ressource `phaseo_department_budget` du fournisseur Terraform. Les dépenses d’un département comptent les mêmes clés et requêtes OAuth que les [limites de débit des départements](#rate-limit-policies).
+
+Une fois qu’un département a utilisé son budget quotidien, hebdomadaire ou mensuel, les requêtes par clé API qui comptent pour lui renvoient `429` avec `key_limit_exceeded` et le motif `department_daily_cost_budget_reached`, `department_weekly_cost_budget_reached` ou `department_monthly_cost_budget_reached`. Les champs `department_id` et `department_name` du corps identifient le département, et `reset_at` et `Retry-After` indiquent quand son budget se réinitialise.
+
+- Si la vérification du budget est brièvement indisponible, les requêtes sont autorisées : un département peut donc dépasser son budget pendant un court instant.
+- Les propriétaires et administrateurs reçoivent une notification push mobile vers 80 % puis à 100 % d’un budget. Pour ces alertes, les budgets sont vérifiés toutes les 15 minutes : des requêtes peuvent donc être refusées avant l’arrivée de l’alerte à 100 %.
+
+<span id="rate-limit-policies"></span>
+## Politiques de limite de débit
+
+Les administrateurs de l’espace de travail peuvent créer des politiques nommées qui définissent `requests_per_minute`, `tokens_per_minute` et `concurrent_requests`, et les affecter à des clés, des membres, des départements ou des utilisateurs finaux. Gérez-les avec `phaseo rate-limits policies` et `phaseo rate-limits assignments`, l’API `/v1/rate-limits`, dans [Paramètres → Limites de débit](https://phaseo.app/settings/rate-limits), ou avec les ressources `phaseo_rate_limit_policy` et `phaseo_rate_limit_assignment` du fournisseur Terraform.
+
+| Affectée à | Ce qui partage un même quota |
+| --- | --- |
+| Clé (`key`) | Les requêtes de cette clé. |
+| Membre (`member`) | Les clés et requêtes OAuth du membre. |
+| Département (`department`) | Tout ce qui compte pour le département (voir ci-dessous). |
+| Valeur par défaut des utilisateurs finaux (`end_user`) | Chaque utilisateur final a son propre quota, identifié par le champ `user` de la requête ou l’en-tête `X-Phaseo-User-Id`. Les requêtes sans ID d’utilisateur final ne sont pas limitées. |
+
+**Ce qui compte pour un département.** Une clé liée à un département ne compte que pour ce département. Toute autre clé compte pour tous les départements auxquels appartient la personne qui l’a créée, et les requêtes OAuth comptent pour tous les départements de leur utilisateur. Un membre avec un département de remplacement ne compte que pour ce département. Pour que ces clés et requêtes OAuth ne comptent que pour le département principal de la personne, réglez l’attribution par département sur primary dans [Paramètres → Notifications](https://phaseo.app/settings/notifications), ou avec `spend.department_attribution` dans `PATCH /v1/notifications/settings` et une clé de gestion. Les budgets de département et les règles de dépenses utilisent le même réglage.
+
+Lorsque plusieurs politiques s’appliquent, chacune est comptée et la première épuisée refuse la requête. Les politiques s’ajoutent aux [limites de la passerelle](#gateway-limits). Les modifications de politiques prennent effet en une minute environ ; les changements d’appartenance à un département effectués dans le tableau de bord ou via SCIM peuvent prendre jusqu’à cinq minutes environ.
+
+### Requêtes et tokens par minute
+
+Les deux sont mesurés sur une minute glissante. `tokens_per_minute` compte les tokens d’entrée et de sortie de chaque requête une fois celle-ci terminée, y compris les requêtes en streaming et les requêtes en échec qui ont consommé des tokens. Une requête est refusée dès que l’utilisation sur la dernière minute atteint la limite : les requêtes déjà en cours peuvent donc la faire dépasser. Les fallbacks de fournisseurs au sein d’une même requête comptent une seule fois, et les réponses servies depuis le cache ne sont pas comptées.
+
+Une requête refusée renvoie `429` avec `rate_limit_exceeded`, le motif `policy_requests_per_minute` ou `policy_tokens_per_minute`, le `policy_id`, le `limit_scope` (`key`, `member`, `department`, `workspace` ou `end_user`) et `Retry-After` en secondes.
+
+Les réponses aux requêtes couvertes par une politique portent les en-têtes de la limite la plus restrictive :
+
+| En-tête | Exemple |
+| --- | --- |
+| `x-ratelimit-limit-requests`, `x-ratelimit-remaining-requests` | `60`, `42` |
+| `x-ratelimit-reset-requests` | `60s` |
+| `x-ratelimit-limit-tokens`, `x-ratelimit-remaining-tokens`, `x-ratelimit-reset-tokens` | Idem, pour la limite de tokens |
+
+Une requête refusée ne porte que les en-têtes de la limite qui l’a refusée. Le comptage se fait en arrière-plan : `remaining` est donc approximatif, et les en-têtes de tokens n’incluent pas encore l’utilisation de la requête en cours.
+
+### Requêtes simultanées
+
+`concurrent_requests` plafonne le nombre de requêtes en cours en même temps. Une requête occupe un emplacement depuis son admission jusqu’à l’envoi complet de sa réponse, y compris l’intégralité d’une réponse en streaming ; les fallbacks de fournisseurs et de modèles au sein de la requête partagent cet emplacement. Lorsque tous les emplacements sont occupés, la requête est refusée avec le motif `policy_concurrent_requests` et `Retry-After: 1`.
+
+La vérification d’une limite de simultanéité attend le compteur de la politique, ce qui ajoute un peu de latence. Un emplacement dont la libération est perdue se libère seul au bout de 15 minutes. Les lots et les sessions en temps réel ne sont pas limités, et une génération vidéo n’occupe un emplacement que pendant la requête qui la lance.
+
+### Politiques strictes
+
+Par défaut, une politique est permissive en cas d’échec : si ses limites ne peuvent pas être vérifiées, la requête est autorisée. Définissez `fail_closed` pour la rendre stricte. Une politique stricte vérifie les limites de requêtes et de tokens avant l’envoi de la requête plutôt qu’en arrière-plan, ce qui les rend exactes mais ajoute de la latence. Si elles ne peuvent pas être vérifiées en deux secondes, la requête est refusée avec le motif `policy_unavailable`.
+
+Les refus pour simultanéité et `policy_unavailable` ne portent aucun en-tête `x-ratelimit-*`.
+
+<span id="provider-limits"></span>
 ## Limites des fournisseurs
 
-Les requêtes BYOK utilisent les limites de votre compte fournisseur. Les requêtes gérées utilisent une capacité fournisseur partagée ; cette capacité n’est pas un quota propre à chaque espace de travail.
+Les requêtes BYOK utilisent les limites de votre compte chez le fournisseur. Les requêtes gérées utilisent la capacité partagée des fournisseurs, qui n’est pas un quota propre à votre espace de travail.
 
-Phaseo transmet une valeur `Retry-After` validée lorsque le fournisseur vers lequel la requête est routée en fournit une. Les réponses BYOK peuvent aussi inclure des en-têtes `X-Phaseo-Upstream-RateLimit-*`. Ces en-têtes de quota sont omis pour les requêtes gérées, car ils décrivent une capacité fournisseur partagée. Les autres en-têtes en amont ne sont pas transmis.
+Phaseo transmet un `Retry-After` validé lorsque le fournisseur en envoie un. Les réponses BYOK peuvent aussi contenir des en-têtes `X-Phaseo-Upstream-RateLimit-*` ; les requêtes gérées les omettent, car ils décrivent une capacité partagée. Les autres en-têtes du fournisseur ne sont pas transmis. Consultez [Codes d’erreur](./errors.mdx#error-codes) pour les codes `429` des fournisseurs.
 
 ## Gérer une requête limitée
 
-1. Examinez le [code d’erreur](./errors.mdx) pour distinguer une limitation temporaire du fournisseur d’une restriction de politique ou de budget nécessitant des modifications de configuration.
-2. Respectez `Retry-After` lorsqu’il est présent. Il peut s’agir d’un délai en secondes ou d’une date HTTP ; validez la valeur avant de programmer une nouvelle tentative.
-3. Sinon, utilisez un délai exponentiel avec une variation aléatoire et un délai maximal.
-4. Limitez les nouvelles tentatives à la fois par leur nombre et par une échéance globale. Annulez le travail abandonné et libérez le corps de chaque réponse en échec avant de réessayer.
-5. Réduisez la concurrence si la limitation persiste.
+1. Lisez le [code d’erreur](./errors.mdx) pour distinguer une limitation temporaire d’une limite, d’un budget ou d’une politique qui nécessite un changement de configuration.
+2. Respectez `Retry-After` lorsqu’il est présent. Il peut s’agir de secondes ou d’une date HTTP ; validez-le avant de planifier une nouvelle tentative.
+3. Sinon, utilisez un backoff exponentiel avec gigue et un délai maximal.
+4. Bornez les nouvelles tentatives par un nombre d’essais et une échéance globale. Annulez le travail abandonné et libérez le corps de chaque réponse en échec avant de réessayer.
+5. Réduisez la simultanéité si la limitation persiste.
 
-Ne réessayez pas automatiquement une soumission de tâche dont le résultat est incertain et ne répétez pas des actions d’outils déjà terminées. Une requête peut avoir atteint le fournisseur même si le client a perdu sa réponse ; les nouvelles tentatives peuvent dupliquer le travail et les frais. Pour une tâche vidéo ou par lots acceptée, utilisez son endpoint de statut au lieu de la soumettre à nouveau.
+Ne réessayez pas automatiquement une soumission de tâche ambiguë et ne rejouez pas des actions d’outils déjà terminées. Une requête peut avoir atteint le fournisseur même si le client a perdu la réponse : une nouvelle tentative peut donc dupliquer le travail et les frais. Pour une tâche vidéo ou par lots acceptée, utilisez son endpoint d’état au lieu de la soumettre à nouveau.
 
-## Surveiller la limitation des requêtes
+Pour surveiller la limitation, suivez les taux de `429` par endpoint et par modèle, et vérifiez la fréquence des fallbacks dans les journaux de requêtes. Comparez-les à vos [paramètres de routage](../guides/routing-and-fallbacks.mdx) et, pour le trafic BYOK, aux quotas de votre compte chez le fournisseur. Les [garde-fous](./endpoint/guardrails.mdx) déterminent quelles clés peuvent utiliser quels modèles et fournisseurs.
 
-Suivez la fréquence des `429` par endpoint et modèle, et examinez la fréquence des replis dans les journaux de requêtes. Comparez les journaux de votre application avec les [paramètres de routage](../guides/routing-and-fallbacks.mdx) et les quotas du compte fournisseur pour le trafic BYOK.
+<Visibility for="agents">
+Règles de limite de débit pour les agents, résumant cette page :
 
-Consultez les [budgets](./endpoint/budgets-list.mdx) et les [garde-fous](./endpoint/guardrails.mdx) pour les contrôles des dépenses et des accès de l’espace de travail.
+- Les quotas de la passerelle renvoient `429` avec le motif `customer_requests_per_minute` (code `key_limit_exceeded`) ou `free_requests_per_day` (code `phaseo_free_model_limit_exceeded`) ; attendez `Retry-After` secondes. Si l’application des quotas est indisponible, la passerelle renvoie `503` avec des indications pour réessayer.
+- Les limites de clés et les budgets renvoient `429` avec `key_limit_exceeded` et un `reset_at`. Sans `Retry-After`, la limite ne se réinitialise pas seule : relevez la limite ou utilisez une autre clé au lieu de réessayer.
+- Un budget de département épuisé renvoie `429` avec `key_limit_exceeded`, le motif `department_<interval>_cost_budget_reached`, `department_id`, `department_name` et `reset_at` ; attendez `Retry-After` secondes ou relevez le budget. Si la vérification du budget est indisponible, la requête est autorisée.
+- Les règles de dépenses qui bloquent renvoient `429` avec `spend_rule_blocked` ; attendez `Retry-After`, ou demandez à un propriétaire ou à un administrateur de lever le blocage. `x-phaseo-spend-warning` signifie qu’un blocage peut suivre.
+- Les politiques de limite de débit de l’espace de travail renvoient `429` avec `rate_limit_exceeded`, `policy_id` et `limit_scope`. `x-ratelimit-remaining-requests` est approximatif.
+- `Retry-After` peut être en secondes ou une date HTTP ; validez-le avant de planifier une nouvelle tentative. Ne soumettez jamais à nouveau une tâche vidéo ou par lots ambiguë ; vérifiez plutôt son état.
+</Visibility>

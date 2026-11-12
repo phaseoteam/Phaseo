@@ -4,11 +4,7 @@ description: "Ordne Gateway-Anfragen codebasierten Teams, Funktionen oder Umgebu
 icon: "tags"
 ---
 
-Verwende Request-Labels, wenn der Anwendungscode eine stabile Kostenkategorie benötigt, die genauer ist als ein API-Schlüssel oder eine Anwendung. Labels werden mit dem Anfrage-Audit erfasst und lassen sich in Analysen filtern, ohne die Modellanfrage zu ändern.
-
-## Labels senden
-
-Setze `X-Phaseo-Metadata` auf ein JSON-Objekt mit bis zu 32 eindeutigen Schlüssel-Wert-Labels:
+Sende einen `X-Phaseo-Metadata`-Header, um eine Anfrage mit Schlüssel-Wert-Labels wie `team=support` zu kennzeichnen, und filtere dann Ausgaben und Protokolle nach diesen Labels. Verwende Labels, wenn du eine Kostendimension brauchst, die feiner ist als ein API-Schlüssel oder eine App. Sie ändern die Modellanfrage nicht und werden nicht an Anbieter weitergeleitet.
 
 ```bash
 curl https://api.phaseo.app/v1/responses \
@@ -16,27 +12,35 @@ curl https://api.phaseo.app/v1/responses \
   -H "Content-Type: application/json" \
   -H 'X-Phaseo-Metadata: {"labels":[{"key":"team","value":"support"},{"key":"environment","value":"production"}]}' \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "input": "Summarize this ticket."
   }'
 ```
 
-Die TypeScript- und Python-SDKs akzeptieren benutzerdefinierte Header, sodass derselbe Header am Client konfiguriert werden kann. Labels werden nicht an Provider weitergeleitet.
+Die TypeScript- und Python-SDKs akzeptieren benutzerdefinierte Header, sodass du denselben Header einmal am Client setzen kannst.
 
-## Ausgaben aufschlüsseln
+Um Anfragen automatisch anhand ihres Inhalts zu kennzeichnen, verwende [Anfrage-Klassifikatoren](/de/v1/guides/request-classifiers). Ihre Antworten werden als Anfragekennzeichnungen gespeichert und lassen sich genauso filtern.
 
-Verwende den Analytics-Endpunkt mit `label_key` und `label_value`:
+## Regeln für Labels
+
+| Regel | Grenze |
+| --- | --- |
+| Labels pro Anfrage | Bis zu 32, jedes mit einem eindeutigen Schlüssel |
+| Schlüssel | 1 bis 64 Zeichen: Buchstaben, Ziffern, `_`, `.`, `:`, `-` |
+| Wert | String, 1 bis 256 Zeichen, keine Steuerzeichen |
+| Header-Größe | Bis zu 8 KiB |
+| Reservierter Schlüssel | `phaseo.classifier` wird nur von Phaseos Klassifikator-Aufrufen gesetzt |
+
+Schlüssel und Werte werden getrimmt. Ein fehlerhafter Header, ein doppelter Schlüssel oder ein Label, das gegen diese Regeln verstößt, lässt die Anfrage mit `400 validation_error` und dem Grund `invalid_request_metadata` fehlschlagen, bevor ein Modell aufgerufen wird.
+
+Speichere keine Prompts, Geheimnisse, E-Mail-Adressen oder andere personenbezogene Daten in Labels.
+
+## Ausgaben nach Label filtern
+
+Übergib sowohl `label_key` als auch `label_value` an den Analytics-Endpunkt:
 
 ```text
 GET /v1/analytics?label_key=team&label_value=support
 ```
 
-Die Antwort verwendet dasselbe gruppierte Ausgabenformat wie ungefilterte Analysen, enthält aber nur Anfragen mit genau diesem Label-Paar.
-
-## Regeln
-
-- Schlüssel dürfen Buchstaben, Zahlen, `_`, `.`, `:` oder `-` enthalten und höchstens 64 Zeichen lang sein.
-- Werte sind Strings mit höchstens 256 Zeichen.
-- Eine Anfrage kann bis zu 32 Labels enthalten; der Header ist auf 8 KiB begrenzt.
-- Doppelte Schlüssel oder fehlerhafte Metadaten werden mit `400 invalid_request` abgelehnt.
-- Speichere keine Prompts, Geheimnisse, E-Mail-Adressen oder andere personenbezogene Daten in Labels.
+Die Antwort hat dasselbe gruppierte Ausgabenformat wie ungefilterte Analysen, zählt aber nur Anfragen mit genau diesem Label-Paar. Wird nur einer der beiden Parameter gesendet, kommt `400 invalid_request` zurück.

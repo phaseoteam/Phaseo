@@ -43,6 +43,7 @@ import * as openaiAudioTranslation from "@providers/openai/endpoints/audio-trans
 import * as openaiVideo from "@providers/openai/endpoints/video";
 import * as mistralOcr from "@providers/mistral/endpoints/ocr";
 import * as cohereParse from "@providers/cohere/endpoints/parse";
+import * as mistralAudioSpeech from "@providers/mistral/endpoints/audio-speech";
 import * as mistralAudioTranscription from "@providers/mistral/endpoints/audio-transcription";
 import * as elevenLabsAudioSpeech from "@providers/elevenlabs/endpoints/audio-speech";
 import * as elevenLabsAudioTranscription from "@providers/elevenlabs/endpoints/audio-transcription";
@@ -61,6 +62,7 @@ import * as deepinfraAudioSpeech from "@providers/deepinfra/endpoints/audio-spee
 import * as friendliAudioTranscription from "@providers/friendli/audio-transcription";
 import * as stepfunAudioSpeech from "@providers/stepfun/audio-speech";
 import * as stepfunImages from "@providers/stepfun/images";
+import * as fireworksImages from "@providers/fireworks/images";
 import * as stepfunAudioTranscription from "@providers/stepfun/audio-transcription";
 
 type NonTextEndpoint =
@@ -197,6 +199,10 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 				output_compression: request.outputCompression,
 				background: request.background,
 				moderation: request.moderation,
+				complexity: raw.complexity,
+				frame_count: raw.frame_count,
+				frame_duration_ms: raw.frame_duration_ms,
+				svg: raw.svg,
 				style: request.style,
 				user: request.userId,
 				aspect_ratio: raw.aspect_ratio,
@@ -204,6 +210,9 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 				height: raw.height,
 				seed: raw.seed,
 				prompt_optimizer: raw.prompt_optimizer,
+				// MiniMax H3-Image sizing and prompt-enhancement switches.
+				area: raw.area,
+				disable_prompt_enhanced: raw.disable_prompt_enhanced,
 				steps: raw.steps,
 				cfg_scale: raw.cfg_scale,
 				text_mode: raw.text_mode,
@@ -229,6 +238,8 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 				negative_prompt: raw.negative_prompt,
 				provider_params: raw.provider_params,
 				mask: request.mask ?? raw.mask,
+				markup: raw.markup,
+				complexity: raw.complexity,
 				prompt: request.prompt,
 				size: request.size,
 				resolution: raw.resolution,
@@ -248,6 +259,8 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 				height: raw.height,
 				seed: raw.seed,
 				prompt_optimizer: raw.prompt_optimizer,
+				area: raw.area,
+				disable_prompt_enhanced: raw.disable_prompt_enhanced,
 				subject_reference: raw.subject_reference,
 			};
 		}
@@ -270,6 +283,9 @@ function irToAdapterBody(endpoint: NonTextEndpoint, ir: ExecutorExecuteArgs["ir"
 					stepfun: raw.config?.stepfun,
 					elevenlabs: (request.vendor as any)?.elevenlabs,
 					minimax: (request.vendor as any)?.minimax ?? raw.config?.minimax,
+					// xAI language (config.xai.language, also spelled config["x-ai"]).
+					...(raw.config?.xai ? { xai: raw.config.xai } : {}),
+					...(raw.config?.["x-ai"] ? { "x-ai": raw.config["x-ai"] } : {}),
 				},
 				user: request.userId,
 			};
@@ -418,6 +434,16 @@ async function adapterResultToIR(
 		case "images.edits": {
 			const payload = normalized ?? {};
 			const created = Number(payload?.created);
+			// Token-billed image models (GPT Image, MiniMax H3-Image) move their output
+			// tokens into output_image_tokens, so the generic count would read 0.
+			const outputImageTokens = numberOrUndefined((usage as any)?.output_image_tokens);
+			if (usage && !usage.outputTokens && outputImageTokens) {
+				usage.outputTokens = outputImageTokens;
+				const inputTokens = usage.inputTokens ?? 0;
+				if (!usage.totalTokens || usage.totalTokens < inputTokens + outputImageTokens) {
+					usage.totalTokens = inputTokens + outputImageTokens;
+				}
+			}
 			return {
 				id: requestId,
 				nativeId: payload?.id ?? payload?.nativeResponseId ?? undefined,
@@ -436,6 +462,8 @@ async function adapterResultToIR(
 					}))
 					: [],
 				usage,
+				...(payload?.svg_usage && typeof payload.svg_usage === "object" ? { svgUsage: payload.svg_usage } : {}),
+				...(Array.isArray(payload?.errors) && payload.errors.length ? { errors: payload.errors } : {}),
 				rawResponse: payload,
 			};
 		}
@@ -628,6 +656,7 @@ async function executeProviderEndpoint(
 	switch (endpoint) {
 		case "images.generations":
 			if (providerId === "stepfun") return stepfunImages.exec(providerArgs);
+			if (providerId === "fireworks") return fireworksImages.exec(providerArgs);
 			if (providerId === "minimax" || providerId === "minimax-lightning") {
 				return minimaxImages.exec(providerArgs);
 			}
@@ -666,6 +695,9 @@ async function executeProviderEndpoint(
 			}
 			if (providerId === "elevenlabs") {
 				return elevenLabsAudioSpeech.exec(providerArgs);
+			}
+			if (providerId === "mistral") {
+				return mistralAudioSpeech.exec(providerArgs);
 			}
 			if (providerId === "xiaomi") {
 				return xiaomiAudioSpeech.exec(providerArgs);
@@ -766,7 +798,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		try {
 			const reserved = await reserveVideoGenerationCredits({
 				keyId: args.apiKeyId,
-				authMethod: args.meta.authMethod,
+				apiKeyRef: args.meta.apiKeyRef,
 				onReservationDenied: args.onReservationDenied,
 				workspaceId: args.workspaceId,
 				videoId: args.requestId,
@@ -916,6 +948,8 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		return {
 			kind: "completed",
 			ir: undefined,
+			// Adapters for non-idempotent upstreams mark uncertain outcomes terminal.
+			...(adapterResult.terminal ? { terminal: true } : {}),
 			bill: adapterResult.bill,
 			upstream: adapterResult.upstream,
 			keySource,

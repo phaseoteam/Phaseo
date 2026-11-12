@@ -36,14 +36,15 @@ export const PRICING_TABLE_SOURCES: PricingTableSource[] = [
 	{ providerId: "deepseek", providerName: "DeepSeek", sourceUrl: "https://api-docs.deepseek.com/quick_start/pricing" },
 	{ providerId: "fireworks", providerName: "Fireworks", sourceUrl: "https://docs.fireworks.ai/serverless/pricing" },
 	{ providerId: "google-ai-studio", providerName: "Google AI Studio", sourceUrl: "https://ai.google.dev/gemini-api/docs/pricing" },
-	{ providerId: "mistral", providerName: "Mistral", sourceUrl: "https://mistral.ai/pricing/", extraction: "price-content" },
+	{ providerId: "mistral", providerName: "Mistral", sourceUrl: "https://docs.mistral.ai/inference/pricing" },
 	{ providerId: "moonshotai", providerName: "Moonshot AI", sourceUrl: "https://platform.kimi.ai/docs/pricing/chat-k26.md", extraction: "mdx" },
 	{ providerId: "openai", providerName: "OpenAI", sourceUrl: "https://developers.openai.com/api/docs/pricing" },
 	{ providerId: "perplexity", providerName: "Perplexity", sourceUrl: "https://docs.perplexity.ai/docs/getting-started/pricing" },
 	{ providerId: "stepfun", providerName: "StepFun", sourceUrl: "https://platform.stepfun.com/docs/zh/guides/pricing/details" },
 	{ providerId: "voyage", providerName: "Voyage", sourceUrl: "https://docs.voyageai.com/docs/pricing" },
-	{ providerId: "weights-and-biases", providerName: "Weights & Biases", sourceUrl: "https://wandb.ai/site/pricing/tokens/" },
-	{ providerId: "xiaomi", providerName: "Xiaomi MiMo", sourceUrl: "https://mimo.mi.com/docs/en-US/pricing", extraction: "price-content" },
+	// W&B's page now redirects to CoreWeave without price tables; its /models API is price-watched instead.
+	// Xiaomi's docs page renders client-side; the static Markdown behind it carries the HTML price tables.
+	{ providerId: "xiaomi", providerName: "Xiaomi MiMo", sourceUrl: "https://mimo.mi.com/static/docs/price/pay-as-you-go.md" },
 	{ providerId: "z-ai", providerName: "Z.AI", sourceUrl: "https://docs.z.ai/guides/overview/pricing" },
 ];
 
@@ -56,6 +57,14 @@ const MDX_TABLE_PATTERN = /<DocTable\b[\s\S]*?\n\s*\/>/gi;
 const MAX_PRICING_SAMPLES = 6;
 const MAX_STORED_CONTENT_LINES = 120;
 const MAX_STORED_CONTENT_LINE_CHARS = 240;
+
+export function hasPricingSourceChanged(
+	previous: { source_url: string; fingerprint: string } | undefined,
+	current: { sourceUrl: string; fingerprint: string },
+): boolean {
+	// A replacement source needs its own baseline; unrelated pages are not a pricing diff.
+	return Boolean(previous && previous.source_url === current.sourceUrl && previous.fingerprint !== current.fingerprint);
+}
 
 export function pricingContentLines(text: string): string[] {
 	return text

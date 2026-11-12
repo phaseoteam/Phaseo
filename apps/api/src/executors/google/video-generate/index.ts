@@ -1,6 +1,8 @@
 // Purpose: Executor for google / video-generate.
-// Why: Runs Veo video generation through IR -> Gemini Video API -> IR conversion.
-// How: Submits a long-running operation and returns normalized queued response state.
+// Why: Runs Veo and Gemini Omni video generation on Google AI Studio.
+// How: Veo submits a predictLongRunning operation; Omni submits a background
+//      Interaction (POST /v1beta/interactions). Both return a queued response
+//      whose operation name the video routes poll at GET /v1beta/{name}.
 
 import type { IRVideoGenerationRequest, IRVideoGenerationResponse } from "@core/ir";
 import type { ExecutorExecuteArgs, ExecutorResult } from "@executors/types";
@@ -17,9 +19,91 @@ import {
 	normalizeGoogleVeoRequest,
 	type NormalizedGoogleVeoRequest,
 } from "@providers/google-video/request";
+import {
+	buildGoogleOmniInteractionRequest,
+	estimateGoogleOmniUsageMeters,
+	isGoogleOmniVideoModel,
+	normalizeGoogleInteractionVideoPayload,
+	normalizeGoogleOmniRequest,
+	type NormalizedGoogleOmniRequest,
+	type OmniInlineMedia,
+} from "@providers/google-video/interactions";
+import {
+	fetchRemoteMediaInline,
+	isHttpUrl,
+	mediaInputErrorResult,
+	parseBase64DataUrl,
+	shortMediaUrl,
+} from "@executors/_shared/media/remote-media";
 import type { ProviderExecutor } from "../../types";
 
 const GOOGLE_VIDEO_BASE = "https://generativelanguage.googleapis.com";
+// Google gives no input size limit for Omni; inline media over these is refused,
+// per file and for the whole request (it is all held in memory as base64).
+const OMNI_MAX_INLINE_MEDIA_BYTES = 20 * 1024 * 1024;
+const OMNI_MAX_TOTAL_INLINE_MEDIA_BYTES = 24 * 1024 * 1024;
+
+type OmniMediaResolution = { ok: true; media: OmniInlineMedia[] } | { ok: false; result: ExecutorResult };
+
+/**
+ * Omni takes media as inline base64: Google refuses arbitrary https URLs
+ * (INVALID_ARGUMENT), so the gateway downloads them first.
+ */
+async function resolveOmniInlineMedia(args: ExecutorExecuteArgs, request: NormalizedGoogleOmniRequest): Promise<OmniMediaResolution> {
+	const media: OmniInlineMedia[] = [];
+	let totalBase64Length = 0;
+	const overTotal = (data: string) => {
+		totalBase64Length += data.length;
+		return totalBase64Length * 0.75 > OMNI_MAX_TOTAL_INLINE_MEDIA_BYTES;
+	};
+	const tooLargeTotal = () => ({
+		ok: false as const,
+		result: mediaInputErrorResult("media_too_large", "Gemini Omni media inputs must total 24 MB or less.", args.requestId),
+	});
+	for (const item of request.media) {
+		const fallbackMimeType = item.kind === "video" ? "video/mp4" : "image/png";
+		const raw = item.source;
+		const record = raw && typeof raw === "object" && !Array.isArray(raw) ? raw as Record<string, unknown> : null;
+		const recordData = record?.data ?? record?.imageBytes ?? record?.image_bytes ?? record?.bytesBase64Encoded;
+		const inlineData = typeof recordData === "string" && recordData.trim() ? recordData.trim() : null;
+		const value = typeof raw === "string"
+			? raw.trim()
+			: String(record?.url ?? record?.uri ?? record?.image_url ?? "").trim();
+		const recordMimeType = String(record?.mimeType ?? record?.mime_type ?? "").trim();
+		const dataUrl = inlineData ? null : value ? parseBase64DataUrl(value) : null;
+		if (inlineData || dataUrl) {
+			const data = inlineData ?? dataUrl!.data;
+			if (data.length * 0.75 > OMNI_MAX_INLINE_MEDIA_BYTES) {
+				return { ok: false, result: mediaInputErrorResult("media_too_large", `Gemini Omni ${item.kind} inputs must be 20 MB or smaller.`, args.requestId) };
+			}
+			if (overTotal(data)) return tooLargeTotal();
+			media.push({ kind: item.kind, mimeType: inlineData ? (recordMimeType || fallbackMimeType) : dataUrl!.mimeType, data });
+			continue;
+		}
+		if (!value || !isHttpUrl(value)) {
+			return { ok: false, result: mediaInputErrorResult("unsupported_media_source", `Gemini Omni ${item.kind} inputs must be an https URL or base64 data.`, args.requestId) };
+		}
+		const fetched = await fetchRemoteMediaInline(value, {
+			fallbackMimeType,
+			maxBytes: OMNI_MAX_INLINE_MEDIA_BYTES,
+			upstreamTiming: args.upstreamTiming,
+		});
+		if (fetched.ok === false) {
+			return {
+				ok: false,
+				result: fetched.reason === "too_large"
+					? mediaInputErrorResult("media_too_large", `Gemini Omni ${item.kind} inputs must be 20 MB or smaller: ${shortMediaUrl(value)}`, args.requestId)
+					: mediaInputErrorResult("media_fetch_failed", `Could not download the ${item.kind} input: ${shortMediaUrl(value)}`, args.requestId),
+			};
+		}
+		if (!fetched.mimeType.startsWith(`${item.kind}/`)) {
+			return { ok: false, result: mediaInputErrorResult("unsupported_media_type", `Expected ${item.kind === "image" ? "an image" : "a video"} but got ${fetched.mimeType}: ${shortMediaUrl(value)}`, args.requestId) };
+		}
+		if (overTotal(fetched.data)) return tooLargeTotal();
+		media.push({ kind: item.kind, mimeType: fetched.mimeType, data: fetched.data });
+	}
+	return { ok: true, media };
+}
 
 function encodeGoogleOperationId(operationName: string): string {
 	const b64 = btoa(operationName).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
@@ -201,9 +285,10 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	const rawModel = args.providerModelSlug || ir.model || "veo-3.1-generate-preview";
 	const model = normalizeGoogleModelName(rawModel);
 	const modelForMeta = typeof ir.model === "string" && ir.model.trim().length > 0 ? ir.model.trim() : model;
-	let normalizedRequest: NormalizedGoogleVeoRequest;
+	const isOmni = isGoogleOmniVideoModel(model);
+	let normalizedRequest: NormalizedGoogleVeoRequest | NormalizedGoogleOmniRequest;
 	try {
-		normalizedRequest = normalizeGoogleVeoRequest(ir, model);
+		normalizedRequest = isOmni ? normalizeGoogleOmniRequest(ir, model) :normalizeGoogleVeoRequest(ir, model);
 	} catch (error) {
 		if (!(error instanceof InvalidGoogleVideoRequestError)) throw error;
 		return {
@@ -223,7 +308,24 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		() => bindings.GOOGLE_AI_STUDIO_API_KEY,
 	);
 
-	const requestBodyObject = irToGoogleVideoRequest(ir, normalizedRequest);
+	let requestBodyObject: Record<string, unknown>;
+	if (isOmni) {
+		const omniRequest = normalizedRequest as NormalizedGoogleOmniRequest;
+		const resolvedMedia = await resolveOmniInlineMedia(args, omniRequest);
+		if (resolvedMedia.ok === false) return resolvedMedia.result;
+		requestBodyObject = buildGoogleOmniInteractionRequest({
+			model,
+			prompt: ir.prompt,
+			request: omniRequest,
+			media: resolvedMedia.media,
+			seed: typeof ir.seed === "number" ? ir.seed : undefined,
+		});
+	} else {
+		requestBodyObject = irToGoogleVideoRequest(ir, normalizedRequest as NormalizedGoogleVeoRequest);
+	}
+	// Omni is billed by tokens: hold for the tokens the requested length and
+	// resolution produce, then charge what Google reports.
+	const providerUsageMeters = isOmni ? estimateGoogleOmniUsageMeters(normalizedRequest as NormalizedGoogleOmniRequest) : null;
 	const requestBody = JSON.stringify(requestBodyObject);
 	const mappedRequest = (args.meta.echoUpstreamRequest || args.meta.returnUpstreamRequest)
 		? requestBody
@@ -241,7 +343,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	try {
 		const reserved = await reserveVideoGenerationCredits({
 			keyId: args.apiKeyId,
-			authMethod: args.meta.authMethod,
+			apiKeyRef: args.meta.apiKeyRef,
 			onReservationDenied: args.onReservationDenied,
 			workspaceId: args.workspaceId,
 			videoId: args.requestId,
@@ -258,6 +360,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				input_video_count: normalizedRequest.sourceVideo ? 1 : undefined,
 				input_video_seconds: normalizedRequest.inputVideoDurationSeconds,
 			}),
+			providerUsageMeters,
 			isByok: keyInfo.source === "byok",
 		});
 		reservationId = reserved.reservationId;
@@ -373,7 +476,9 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 	try {
 		res = await fetchUpstream(
 			args,
-			`${GOOGLE_VIDEO_BASE}/v1beta/models/${encodeURIComponent(model)}:predictLongRunning`,
+			isOmni
+				? `${GOOGLE_VIDEO_BASE}/v1beta/interactions`
+				: `${GOOGLE_VIDEO_BASE}/v1beta/models/${encodeURIComponent(model)}:predictLongRunning`,
 			{
 				method: "POST",
 				headers: {
@@ -411,7 +516,14 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		};
 	}
 
-	const json = await res.json().catch(() => ({}));
+	const rawJson = await res.json().catch(() => ({}));
+	// An Interaction is read as an Operation named interactions/{id}; one without
+	// an id has no name, so it fails below like an operation without a name.
+	const json: any = isOmni
+		? (typeof (rawJson as any)?.id === "string" && (rawJson as any).id.trim()
+			? normalizeGoogleInteractionVideoPayload(rawJson)
+			: {})
+		: rawJson;
 	console.info("google_video_create_response", {
 		requestId: args.requestId,
 		workspaceId: args.workspaceId,
@@ -454,7 +566,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 			keySource: keyInfo.source,
 			byokKeyId: keyInfo.byokId,
 			mappedRequest,
-			rawResponse: json,
+			rawResponse: rawJson,
 		};
 	}
 	if (irResponse.nativeId) {
@@ -485,6 +597,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				reservationStatus,
 				keySource: keyInfo.source,
 				byokKeyId: keyInfo.byokId,
+				...(providerUsageMeters ? { googleUsageMeters: providerUsageMeters } : {}),
 				providerDispatchedAtMs:
 					args.upstreamTiming?.timingFor(res)?.dispatchAtMs ?? Date.now(),
 			}, operationName, irResponse.status);
@@ -507,7 +620,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 				keySource: keyInfo.source,
 				byokKeyId: keyInfo.byokId,
 				mappedRequest,
-				rawResponse: json,
+				rawResponse: rawJson,
 			});
 		}
 	}
@@ -520,7 +633,7 @@ export async function execute(args: ExecutorExecuteArgs): Promise<ExecutorResult
 		keySource: keyInfo.source,
 		byokKeyId: keyInfo.byokId,
 		mappedRequest,
-		rawResponse: json,
+		rawResponse: rawJson,
 	};
 }
 

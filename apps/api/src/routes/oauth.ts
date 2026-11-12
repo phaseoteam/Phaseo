@@ -2,30 +2,43 @@ import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
 import { getBindings, getSupabaseAdmin } from "@/runtime/env";
 import { ALL_SUPPORTED_SCOPES, GATEWAY_ACCESS_SCOPE } from "@/lib/authz/capabilities";
+import {
+	MCP_MANAGEMENT_SCOPES,
+	PHASEO_MCP_RESOURCE,
+	RESOURCE_BOUND_MCP_SCOPES,
+	isMcpManagementChangeScope,
+	violatesMcpManagementBinding,
+} from "@/lib/oauth/mcpScopes";
 import { checkOAuthRateLimit } from "@/lib/oauth/rateLimit";
 import { authenticateManagement } from "@/pipeline/before/auth";
 import { json, withRuntime } from "@/routes/utils";
 import {
 	CLI_CLIENT_ID,
 	CLI_DEFAULT_SCOPES,
+	DESKTOP_CLIENT_ID,
 	assertRedirectAllowed,
 	authorizationConsentUrl,
 	bearerToken,
 	createOpaqueCode,
 	createUserCode,
+	desktopKeyWorkspace,
 	defaultDeviceIntervalSeconds,
 	deviceExpiresInSeconds,
 	filterAllowedScopes,
 	getApiBaseUrl,
+	getGatewayOAuthResource,
 	getIssuer,
+	getActiveOAuthWorkspaceScopes,
 	getLocalJwks,
 	getSupabaseActor,
 	hashOAuthSecret,
 	hashOAuthSecretCandidates,
 	hasActiveOAuthWorkspaceAccess,
+	issueDesktopSessionKey,
 	issueTokenPairForGrant,
 	issueOAuthManagedKeyForAuthorizationCode,
 	issueMcpUpstreamToken,
+	issueCliMcpAccessToken,
 	isGatewayOAuthResource,
 	isValidPkceChallenge,
 	isFirstPartyCliClient,
@@ -37,8 +50,11 @@ import {
 	normalizeScopes,
 	normalizeUserCode,
 	parseTokenRequestBody,
+	renewDesktopKey,
 	revokeToken,
 	rotateRefreshToken,
+	validateCliMcpAccessToken,
+	validateLocalAccessToken,
 	verificationUriFor,
 	verifyPkce,
 	ensureGrant,
@@ -93,17 +109,26 @@ const DYNAMIC_MCP_DEFAULT_SCOPES = [
 	"oauth_clients:read",
 ] as const;
 const DYNAMIC_MCP_SCOPE_SET = new Set<string>(DYNAMIC_MCP_SCOPES);
-const RESOURCE_BOUND_MCP_SCOPES = [
-	"models:read",
-	"providers:read",
-	"pricing:read",
-	"credits:read",
-	"activity:read",
-	"analytics:read",
-	"generations:read",
-] as const;
 const RESOURCE_BOUND_MCP_SCOPE_SET = new Set<string>(RESOURCE_BOUND_MCP_SCOPES);
+const MCP_STEP_UP_SCOPE_SET = new Set<string>([GATEWAY_ACCESS_SCOPE, ...MCP_MANAGEMENT_SCOPES]);
 const MCP_RESOURCE_SERVER_CLIENT_ID = "phaseo_mcp_resource_server";
+const TOKEN_EXCHANGE_GRANT_TYPE = "urn:ietf:params:oauth:grant-type:token-exchange";
+const ACCESS_TOKEN_TYPE = "urn:ietf:params:oauth:token-type:access_token";
+// What `phaseo mcp` may carry to the MCP: the MCP's read and management scopes, never gateway:access.
+const CLI_MCP_SCOPE_SET = new Set<string>([...RESOURCE_BOUND_MCP_SCOPES, ...MCP_MANAGEMENT_SCOPES]);
+
+/** The scopes a CLI token may take to the MCP: what it holds, still consented, used by the MCP, and asked for. */
+export function cliMcpExchangeScopes(
+	tokenScope: unknown,
+	activeAuthorizationScopes: readonly string[],
+	requested: readonly string[] | null,
+): string[] {
+	const tokenScopes = typeof tokenScope === "string" ? tokenScope.split(/\s+/).filter(Boolean) : [];
+	return [...new Set(tokenScopes)].filter((scope) =>
+		activeAuthorizationScopes.includes(scope)
+		&& CLI_MCP_SCOPE_SET.has(scope)
+		&& (requested === null || requested.includes(scope)));
+}
 
 class OAuthRequestBodyTooLarge extends Error {}
 
@@ -174,6 +199,17 @@ function oauthError(error: string, description: string, status = 400, headers: R
 
 function rateLimitError(error = "temporarily_unavailable") {
 	return oauthError(error, "Too many OAuth requests; retry later", error === "slow_down" ? 400 : 429, { "Retry-After": "60" });
+}
+
+// The consent screen's monthly spending limit for a third-party app's key, in nanodollars.
+// 0 means no limit; a consent that sends none (an older consent page) gets the default.
+const DEFAULT_CONSENT_MONTHLY_LIMIT_NANOS = 20_000_000_000;
+const MAX_CONSENT_MONTHLY_LIMIT_NANOS = 1_000_000 * 1_000_000_000;
+
+function parseConsentMonthlyLimit(raw: unknown): number | null {
+	if (raw === undefined || raw === null) return DEFAULT_CONSENT_MONTHLY_LIMIT_NANOS;
+	if (typeof raw !== "number" || !Number.isSafeInteger(raw) || raw < 0 || raw > MAX_CONSENT_MONTHLY_LIMIT_NANOS) return null;
+	return raw;
 }
 
 function normalizeWorkspaceIds(raw: unknown): string[] {
@@ -282,20 +318,29 @@ function requiresGatewayAccessScope(clientId: string, resource: string, scopes: 
 		&& !scopes.includes(GATEWAY_ACCESS_SCOPE);
 }
 
-// Permit explicit inference consent for an existing dynamic Phaseo MCP client.
-// This changes neither its stored allowlist nor any existing authorization grant.
+// Permit explicit inference or account-management consent for an existing
+// dynamic Phaseo MCP client. The request must name only MCP scopes; broader
+// catalogues are still narrowed or rejected. This changes neither the client's
+// stored allowlist nor any existing authorization grant.
 export function filterMcpAuthorizationScopes(
 	client: Parameters<typeof filterAllowedScopes>[0],
 	requested: string[],
 	resource: string,
 ): string[] {
 	const explicitStepUp = client.registration_source === "dynamic"
-		&& resource === "https://mcp.phaseo.app/mcp"
-		&& requested.includes(GATEWAY_ACCESS_SCOPE)
-		&& requested.every((scope) => scope === GATEWAY_ACCESS_SCOPE || RESOURCE_BOUND_MCP_SCOPE_SET.has(scope));
-	return filterAllowedScopes(explicitStepUp
-		? { ...client, allowed_scopes: [...client.allowed_scopes, GATEWAY_ACCESS_SCOPE] }
+		&& resource === PHASEO_MCP_RESOURCE
+		&& requested.some((scope) => MCP_STEP_UP_SCOPE_SET.has(scope))
+		&& requested.every((scope) => MCP_STEP_UP_SCOPE_SET.has(scope) || RESOURCE_BOUND_MCP_SCOPE_SET.has(scope));
+	const scopes = filterAllowedScopes(explicitStepUp
+		? {
+			...client,
+			allowed_scopes: [...client.allowed_scopes, ...requested.filter((scope) => MCP_STEP_UP_SCOPE_SET.has(scope))],
+		}
 		: client, requested);
+	// Management changes stay bound to the MCP resource whatever the stored allowlist says.
+	return violatesMcpManagementBinding(client.registration_source, resource, scopes)
+		? scopes.filter((scope) => !isMcpManagementChangeScope(scope))
+		: scopes;
 }
 
 function canNarrowResourceBoundMcpScopes(
@@ -458,6 +503,8 @@ oauthRouter.post(
 		// scope list. Never grant that broader request. When it also contains the
 		// canonical resource-bound MCP scopes, safely negotiate it down to that
 		// exact read-only set and return the narrowed scope in the response.
+		// Registration has no resource, so management write and delete scopes are
+		// never stored here; they are granted per authorization for the MCP resource.
 		const grantedScopes = includesUnsupportedScopes
 			? requestedScopes.filter((scope) => RESOURCE_BOUND_MCP_SCOPE_SET.has(scope))
 			: requestedScopes;
@@ -488,9 +535,9 @@ oauthRouter.post(
 			application_type: applicationType,
 			redirect_uris: safeRedirectUris,
 			response_types: ["code"],
-			// Dynamic clients receive resource-bound delegated access keys rather
-			// than refresh-token families, so register only the grant we issue.
-			grant_types: ["authorization_code"],
+			// Dynamic clients receive resource-bound delegated access keys with a
+			// refresh token that renews the same key.
+			grant_types: ["authorization_code", "refresh_token"],
 			token_endpoint_auth_method: "none",
 			scope: grantedScopes.join(" "),
 		}, 201, { "Cache-Control": "no-store" });
@@ -628,6 +675,10 @@ oauthRouter.post(
 		const actor = await requireSupabaseActor(req);
 		if (!actor) return oauthError("access_denied", "User session is required", 401);
 		if (!(await checkOAuthRateLimit(req, "token", `authorize-approve:${actor.userId}`))) return rateLimitError();
+		// Same rule as device approval: an MFA account must approve from an AAL2 session.
+		if (actor.mfaRequired && actor.assuranceLevel !== "aal2") {
+			return oauthError("access_denied", "Complete two-factor verification before authorizing this application", 403);
+		}
 
 		let body: Record<string, unknown>;
 		try {
@@ -656,6 +707,10 @@ oauthRouter.post(
 		}
 		if (resource && !isProtectedResourceAllowed(resource)) {
 			return oauthError("invalid_target", "resource must be an HTTPS or loopback protected resource URL");
+		}
+		const monthlyLimitNanos = parseConsentMonthlyLimit(body.monthly_limit_cost_nanos);
+		if (monthlyLimitNanos === null) {
+			return oauthError("invalid_request", "monthly_limit_cost_nanos must be a whole number from 0 (no limit) to 1000000000000000");
 		}
 
 		const client = await loadOAuthClient(clientId);
@@ -712,6 +767,10 @@ oauthRouter.post(
 			code_challenge: codeChallenge,
 			code_challenge_method: codeChallengeMethod,
 			...(resource ? { resource } : {}),
+			// A third-party app's key spends the active workspace's credits. The limit chosen on this
+			// consent travels with this code, and its exchange makes it the key's monthly cost limit,
+			// so another approval in flight for the same app can't swap in its amount.
+			...(client.is_first_party ? {} : { key_monthly_limit_cost_nanos: monthlyLimitNanos }),
 			expires_at: makeAuthCodeExpiry(),
 		});
 		if (insert.error) return oauthStorageError("oauth.authorization_code.insert", insert.error);
@@ -788,6 +847,9 @@ oauthRouter.post(
 		}
 		if (action !== "approve" || !workspaceId) {
 			return oauthError("invalid_request", "action must be lookup, approve, or deny");
+		}
+		if (actor.mfaRequired && actor.assuranceLevel !== "aal2") {
+			return oauthError("access_denied", "Complete two-factor verification before approving this device", 403);
 		}
 
 		const membership = await supabase
@@ -963,16 +1025,32 @@ oauthRouter.post(
 			if (requiresGatewayAccessScope(client.id, grantedResource, tokenInput.scopes)) {
 				return oauthError("invalid_scope", `${GATEWAY_ACCESS_SCOPE} consent is required for a delegated key`);
 			}
+			if (violatesMcpManagementBinding(client.registration_source, grantedResource, tokenInput.scopes)) {
+				return oauthError("invalid_scope", "Management scopes are only available on tokens bound to the Phaseo MCP");
+			}
 			// The CLI retains refreshable sessions for `login`, logout, and token
-			// renewal. Third-party PKCE clients receive durable user-funded keys.
-			const tokens = isFirstPartyCliClient(client.id)
-				? await issueTokenPairForGrant(
+			// renewal. Third-party PKCE clients receive a user-funded delegated key
+			// and a refresh token that renews that same key.
+			if (isFirstPartyCliClient(client.id)) {
+				const tokens = await issueTokenPairForGrant(
 					{ type: "authorization_code", id: String(data.id) },
 					tokenInput,
-				)
-				: await issueOAuthManagedKeyForAuthorizationCode(String(data.id), tokenInput);
-			if (!tokens) return oauthError("invalid_grant", "Authorization code is invalid or expired");
-			return json(tokens, 200, { "Cache-Control": "no-store" });
+				);
+				if (!tokens) return oauthError("invalid_grant", "Authorization code is invalid or expired");
+				return json(tokens, 200, { "Cache-Control": "no-store" });
+			}
+			const grant = await issueOAuthManagedKeyForAuthorizationCode(String(data.id), tokenInput, { clientName: client.name ?? null });
+			if (grant.ok === false) {
+				if (grant.reason === "key_inactive") {
+					// Signing in again never turns a key an owner or admin paused back on.
+					return oauthError(
+						"invalid_grant",
+						"This app's API key in the workspace is paused. Turn it back on in Settings > API Keys, then sign in again.",
+					);
+				}
+				return oauthError("invalid_grant", "Authorization code is invalid or expired");
+			}
+			return json(grant.tokens, 200, { "Cache-Control": "no-store" });
 		}
 
 		if (grantType === "refresh_token") {
@@ -991,6 +1069,63 @@ oauthRouter.post(
 				return oauthError("invalid_client", "OAuth client authentication failed", 401);
 			}
 			return oauthError("invalid_grant", "Refresh token is invalid or expired", 401);
+		}
+
+		// `phaseo mcp`: the CLI swaps its own access token for a short-lived one that only the Phaseo
+		// MCP accepts, so one `phaseo login` also signs in the local MCP without a second consent.
+		// Only first-party CLI tokens qualify, only for the MCP resource, never for more than the
+		// session already holds, and never with gateway:access.
+		if (grantType === TOKEN_EXCHANGE_GRANT_TYPE) {
+			const subjectToken = String(body.subject_token ?? "").trim();
+			const subjectTokenType = String(body.subject_token_type ?? "").trim();
+			const resource = String(body.resource ?? "").trim();
+			if (!subjectToken || subjectTokenType !== ACCESS_TOKEN_TYPE) {
+				return oauthError("invalid_request", "subject_token and an access_token subject_token_type are required");
+			}
+			if (body.actor_token !== undefined || (body.requested_token_type !== undefined && String(body.requested_token_type) !== ACCESS_TOKEN_TYPE)) {
+				return oauthError("invalid_request", "Only access tokens can be requested, without an actor token");
+			}
+			if (resource !== PHASEO_MCP_RESOURCE) {
+				return oauthError("invalid_target", "Token exchange is only available for the Phaseo MCP");
+			}
+			const validation = await validateLocalAccessToken(subjectToken).catch(() => ({ valid: false, claims: undefined }));
+			const claims = validation.valid ? validation.claims : undefined;
+			if (!claims) return oauthError("invalid_grant", "subject_token is invalid or expired");
+			const clientId = String(claims.client_id);
+			if (!isFirstPartyCliClient(clientId)) {
+				return oauthError("invalid_grant", "Token exchange is only available to the Phaseo CLI");
+			}
+			const requestedClientId = String(body.client_id ?? "").trim();
+			if (requestedClientId && requestedClientId !== clientId) {
+				return oauthError("invalid_client", "client_id does not match the subject token", 401);
+			}
+			const activeScopes = await getActiveOAuthWorkspaceScopes({
+				userId: String(claims.user_id),
+				workspaceId: String(claims.workspace_id),
+				clientId,
+			});
+			if (activeScopes === null) return oauthError("invalid_grant", "OAuth workspace access is no longer active");
+			const requested = body.scope === undefined ? null : normalizeScopes(body.scope, []);
+			const scopes = cliMcpExchangeScopes(claims.scope, activeScopes, requested);
+			if (scopes.length === 0) {
+				return oauthError("invalid_scope", "The CLI session holds none of the requested Phaseo MCP scopes");
+			}
+			try {
+				const tokens = await issueCliMcpAccessToken({
+					userId: String(claims.user_id),
+					workspaceId: String(claims.workspace_id),
+					clientId,
+					scopes,
+					resource,
+				});
+				return json(tokens, 200, { "Cache-Control": "no-store" });
+			} catch (error) {
+				console.error("oauth_cli_mcp_token_issue_failed", {
+					clientId,
+					message: error instanceof Error ? error.message : String(error),
+				});
+				return oauthError("server_error", "Failed to issue OAuth token", 500);
+			}
 		}
 
 		return oauthError("unsupported_grant_type", "Unsupported grant_type");
@@ -1026,6 +1161,35 @@ oauthRouter.post(
 		const resource = String(body.resource ?? "").trim();
 		if (!subjectToken || !resource || !isProtectedResourceAllowed(resource)) {
 			return oauthError("invalid_request", "subject_token and a valid protected resource are required");
+		}
+		// A `phaseo mcp` token (see the token-exchange grant) is a JWT whose only audience is the MCP.
+		const cliClaims = await validateCliMcpAccessToken(subjectToken, resource).catch(() => null);
+		if (cliClaims) {
+			const activeScopes = await getActiveOAuthWorkspaceScopes({
+				userId: String(cliClaims.user_id),
+				workspaceId: String(cliClaims.workspace_id),
+				clientId: String(cliClaims.client_id),
+			});
+			// Revoked consent, a removed membership or withdrawn scopes take effect at once, not at expiry.
+			const scopes = activeScopes === null ? [] : cliMcpExchangeScopes(cliClaims.scope, activeScopes, null);
+			if (scopes.length === 0) return json({ active: false }, 200, { "Cache-Control": "no-store" });
+			const upstream = await issueMcpUpstreamToken({
+				userId: String(cliClaims.user_id),
+				workspaceId: String(cliClaims.workspace_id),
+				clientId: String(cliClaims.client_id),
+				scopes,
+			});
+			return json({
+				active: true,
+				resource,
+				user_id: cliClaims.user_id,
+				client_id: cliClaims.client_id,
+				workspace_id: cliClaims.workspace_id,
+				scope: scopes.join(" "),
+				upstream_access_token: upstream.access_token,
+				token_type: upstream.token_type,
+				expires_in: upstream.expires_in,
+			}, 200, { "Cache-Control": "no-store" });
 		}
 		const tokenRequest = new Request(req.url, {
 			headers: { Authorization: `Bearer ${subjectToken}` },
@@ -1064,6 +1228,63 @@ oauthRouter.post(
 	}),
 );
 
+// The desktop app's key for model calls, for the person signed in to it with their Phaseo login (a Supabase session,
+// like the website's and the mobile app's); see issueDesktopSessionKey. An account with two-factor sign-in must have
+// used it in this session, as the website's API requires.
+oauthRouter.post(
+	"/desktop/key",
+	withRuntime(async (req) => {
+		const actor = await requireSupabaseActor(req);
+		if (!actor) return oauthError("invalid_token", "A Phaseo login is required", 401);
+		if (actor.mfaRequired && actor.assuranceLevel !== "aal2") {
+			return oauthError("insufficient_user_authentication", "Finish two-factor sign-in first", 401);
+		}
+		if (!(await checkOAuthRateLimit(req, "token", `desktop-key:${actor.userId}`))) return rateLimitError();
+
+		let body: Record<string, unknown>;
+		try {
+			body = await readBody(req);
+		} catch (error) {
+			return invalidBodyError(error);
+		}
+		const requested = typeof body.workspace_id === "string" ? body.workspace_id.trim() : "";
+		if ((body.workspace_id !== undefined && body.workspace_id !== null && typeof body.workspace_id !== "string") || (requested && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(requested))) {
+			return oauthError("invalid_request", "workspace_id must be a workspace id");
+		}
+		const workspaceId = await desktopKeyWorkspace(actor.userId, requested || null);
+		const issued = workspaceId ? await issueDesktopSessionKey({ userId: actor.userId, workspaceId }) : null;
+		if (!workspaceId || !issued) return oauthError("access_denied", "You aren't a member of that workspace", 403);
+		return json({
+			access_token: issued.key,
+			token_type: "Bearer",
+			workspace_id: workspaceId,
+			scope: issued.scopes.join(" "),
+			resource: getGatewayOAuthResource(),
+			expires_at: issued.expiresAt,
+			expires_in: Math.max(0, Math.floor((Date.parse(issued.expiresAt) - Date.now()) / 1000)),
+		}, 200, { "Cache-Control": "no-store" });
+	}),
+);
+
+// The desktop app renews its own delegated key while it is used (see renewDesktopKey), authenticated by that key. A
+// session token or another app's key can't: those have their own lifetimes.
+oauthRouter.post(
+	"/desktop/renew",
+	withRuntime(async (req) => {
+		if (!(await checkOAuthRateLimit(req, "token", "desktop-renew"))) return rateLimitError();
+		const auth = await authenticateManagement(req, { useKvCache: false });
+		if (!auth.ok || auth.authMethod !== "oauth" || auth.oauthClientId !== DESKTOP_CLIENT_ID || !auth.apiKeyRef?.startsWith("kid_") || !auth.apiKeyId) {
+			return oauthError("invalid_token", "A Phaseo desktop key is required", 401);
+		}
+		const renewed = await renewDesktopKey(auth.apiKeyId);
+		if (!renewed) return oauthError("invalid_token", "This key can no longer be renewed; sign in again", 401);
+		return json({
+			expires_at: renewed.expiresAt,
+			expires_in: Math.max(0, Math.floor((Date.parse(renewed.expiresAt) - Date.now()) / 1000)),
+		}, 200, { "Cache-Control": "no-store" });
+	}),
+);
+
 oauthRouter.post(
 	"/revoke",
 	withRuntime(async (req) => {
@@ -1075,7 +1296,14 @@ oauthRouter.post(
 			return invalidBodyError(error);
 		}
 		const token = String(body.token ?? "").trim();
-		if (token) await revokeToken(token);
+		if (token) {
+			try {
+				await revokeToken(token);
+			} catch (error) {
+				// Never report a revocation that may not have happened as done.
+				return oauthStorageError("oauth.revoke", error);
+			}
+		}
 		return new Response(null, noStore(200));
 	}),
 );
@@ -1094,20 +1322,36 @@ oauthRouter.get(
 		if (!scopes.includes("openid")) {
 			return oauthError("insufficient_scope", "Token requires openid", 403);
 		}
-		const { data } = await getSupabaseAdmin().auth.admin.getUserById(auth.userId);
+		const profile = scopes.includes("profile");
+		const supabase = getSupabaseAdmin();
+		const [{ data }, account] = await Promise.all([
+			supabase.auth.admin.getUserById(auth.userId),
+			// The name set on the profile page wins over the sign-in provider's, as in the site's header.
+			profile
+				? supabase.from("users").select("display_name").eq("user_id", auth.userId).maybeSingle()
+				: Promise.resolve({ data: null }),
+		]);
 		const user = data?.user;
 		const metadata = (user?.user_metadata ?? {}) as Record<string, unknown>;
-		const name =
-			typeof metadata.full_name === "string"
-				? metadata.full_name
-				: typeof metadata.name === "string"
-					? metadata.name
-					: null;
+		const metadataString = (keys: string[]) => {
+			for (const key of keys) {
+				const value = metadata[key];
+				if (typeof value === "string" && value.trim()) return value.trim();
+			}
+			return null;
+		};
+		const displayName = typeof account.data?.display_name === "string" ? account.data.display_name.trim() : "";
+		const name = displayName || metadataString(["full_name", "name"]);
+		// A first name for greetings: the display name's first word, as the profile's name is its owner's choice.
+		const givenName = (displayName ? null : metadataString(["given_name", "first_name"])) ?? name?.split(/\s+/)[0] ?? null;
+		const picture = metadataString(["avatar_url", "picture", "picture_url"]);
 		return json(
 			{
 				sub: auth.userId,
 				email: scopes.includes("email") ? user?.email ?? null : undefined,
-				name: scopes.includes("profile") ? name : undefined,
+				name: profile ? name : undefined,
+				given_name: profile ? givenName : undefined,
+				picture: profile ? picture : undefined,
 				workspace_id: auth.workspaceId,
 				client_id: auth.oauthClientId,
 				resource: auth.oauthResource ?? undefined,

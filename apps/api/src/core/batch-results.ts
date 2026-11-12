@@ -1,4 +1,6 @@
 import { JSONParser, TokenType } from "@streamparser/json";
+import { reloadBatchCredential } from "@core/batch-credentials";
+import { vertexBatchOutputs } from "@providers/google-vertex/batch";
 import type { BatchJobMeta } from "@core/batch-jobs";
 import {
 	ANTHROPIC_BATCH_PROVIDER_ID, GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID, MISTRAL_BATCH_PROVIDER_ID,
@@ -16,7 +18,7 @@ export const BATCH_RESULTS_IDLE_TIMEOUT_MS = 30_000;
 export const BATCH_RESULTS_TOTAL_TIMEOUT_MS = 10 * 60_000;
 
 export function supportsBatchResults(provider: string): boolean {
-	return FILE_BACKED_JSONL_BATCH_PROVIDERS.has(provider) ||
+	return provider === "google-vertex" || FILE_BACKED_JSONL_BATCH_PROVIDERS.has(provider) ||
 		[ANTHROPIC_BATCH_PROVIDER_ID, GOOGLE_AI_STUDIO_BATCH_PROVIDER_ID, MISTRAL_BATCH_PROVIDER_ID, X_AI_BATCH_PROVIDER_ID].includes(provider);
 }
 
@@ -35,7 +37,7 @@ class DownloadContext {
 	private readonly open = new Set<Cancellable>();
 	private readonly totalTimer: ReturnType<typeof setTimeout>;
 	private timeoutReason: string | null = null;
-	constructor(private readonly credentialContext?: BatchCredentialContext) {
+	constructor(readonly credentialContext?: BatchCredentialContext) {
 		this.totalTimer = setTimeout(() => this.abortForTimeout("provider_stream_total_timeout"), BATCH_RESULTS_TOTAL_TIMEOUT_MS);
 	}
 	private abortForTimeout(reason: string): void {
@@ -192,6 +194,14 @@ function storedFiles(meta: BatchJobMeta): string[] {
 
 async function* resultChunks(context: DownloadContext, meta: BatchJobMeta): AsyncGenerator<Uint8Array> {
 	const provider = meta.provider;
+	if (provider === "google-vertex") {
+		if (!context.credentialContext) throw new BatchResultsError("vertex_batch_workspace_required");
+		const credential = await reloadBatchCredential({ providerId: provider, ...context.credentialContext });
+		for await (const entry of vertexBatchOutputs({ storage: meta.vertexStorage, workspaceId: context.credentialContext.workspaceId, credential, signal: context.abort.signal })) {
+			yield encoder.encode(JSON.stringify(entry) + "\n");
+		}
+		return;
+	}
 	const files = storedFiles(meta);
 	if (files.length) {
 		yield* context.files(provider, files);

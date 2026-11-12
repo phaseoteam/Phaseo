@@ -2,41 +2,30 @@
 title: "创建聊天补全"
 sidebarTitle: "创建聊天补全"
 openapi: "/zh-Hans/openapi/v1/openapi.localized.yaml POST /chat/completions"
-description: "使用兼容 OpenAI API 的聊天端点生成聊天补全。"
+description: "使用兼容 OpenAI 的聊天端点生成聊天补全。"
 ---
-## 服务器工具
 
-`/v1/chat/completions` 支持常规函数工具，以及以下由 Gateway 管理的服务器工具：
+## 使用服务器工具
 
-- `gateway:datetime`
-- `phaseo:web_search`
-- `phaseo:web_fetch`
-- `phaseo:advisor`
-- `phaseo:image_generation`
-
-### 日期和时间示例
+在 `tools` 中、你自己的函数工具旁添加一个 `phaseo:` 工具，模型调用它时由 Phaseo 运行。`/v1/chat/completions` 接受除 `phaseo:apply_patch` 以外的所有服务器工具；[服务器工具](../../guides/server-tools)指南列出了这些工具。
 
 ```bash
 curl https://api.phaseo.app/v1/chat/completions \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
-    "stream": false,
+    "model": "openai/gpt-6-astra",
     "messages": [
       { "role": "user", "content": "What is the current datetime in Europe/London?" }
     ],
     "tools": [
-      {
-        "type": "gateway:datetime",
-        "parameters": { "timezone": "Europe/London" }
-      }
+      { "type": "phaseo:datetime", "parameters": { "timezones": ["Europe/London"] } }
     ],
     "tool_choice": "auto"
   }'
 ```
 
-使用服务器工具时，usage 中会包含：
+每次服务器工具调用都会计入 `usage.server_tool_use`：
 
 ```json
 {
@@ -51,8 +40,30 @@ curl https://api.phaseo.app/v1/chat/completions \
 }
 ```
 
-`phaseo:web_search` 会添加 `server_tool_use.web_search_requests`、`server_tool_use.web_search_results` 和 `server_tool_use.web_search_extra_results`。`phaseo:web_fetch` 会添加 `server_tool_use.web_fetch_requests`。
+`phaseo:web_search` 会添加 `web_search_requests`、`web_search_results` 和 `web_search_extra_results`；`phaseo:web_fetch` 会添加 `web_fetch_requests`。旧的 `gateway:datetime` 类型仍然可用。
 
-## 流式传输说明
+设置 `stream: true` 时，Phaseo 会自行运行工具轮次，然后将后续回答作为单个流发送给你。
 
-同样支持 `stream: true`。对于 Gateway 管理的服务器工具，Phaseo 可能会先处理上游工具调用轮次、继续循环，再重新发出合成流。
+## 工具循环中的推理
+
+推理模型会在助手消息的两个字段中返回推理内容：
+
+- `reasoning_content`：推理文本（如果提供商返回了推理文本）。
+- `reasoning_details`：推理块数组。每个条目都有一个 `type`（`reasoning.text`、`reasoning.summary` 或 `reasoning.encrypted`）、一个 `index`，以及一个指明提供商系列的 `format`，例如 `anthropic-claude-v1` 或 `google-gemini-v1`。
+
+条目中可能带有模型在工具循环下一步需要的提供商状态：
+
+| 提供商状态 | 所在位置 |
+| --- | --- |
+| Claude 思考签名 | `reasoning.text` 条目上的 `signature` |
+| Claude 已编辑的思考、OpenAI 加密推理 | `reasoning.encrypted` 条目上的 `data` |
+| Gemini 思维签名 | `reasoning.encrypted` 条目上的 `data`，其 `id` 是它所属的工具调用 |
+| Claude 回复运行时的强度级别 | 最后一个 `reasoning.encrypted` 条目上的 `data`，该条目没有文本 |
+
+流式传输时，每个推理块完成后会收到一个 `reasoning_details` 增量。
+
+<Warning>
+在每个请求中（而不仅是在工具循环中）都要将每条助手消息连同未修改的 `reasoning_details` 一起发回。切勿丢弃、编辑或重新排序任何条目，无论是否加密，也包括没有文本的条目。
+</Warning>
+
+`signature` 和 `data` 的值是不透明的，并记录了生成它们的提供商和模型。Phaseo 只会把它们发送给该提供商系列和模型，因此回退到其他提供商时会丢弃它们，而不会导致请求失败。缺少它们时，处于手动思考模式的 Claude 模型会在不思考的情况下运行工具循环的下一步，而更改 `reasoning_effort` 会重启 Claude 的提示词缓存；参见[在对话中途更改推理强度](../../guides/reasoning-effort)。

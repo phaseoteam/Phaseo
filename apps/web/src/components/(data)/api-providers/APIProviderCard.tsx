@@ -8,10 +8,11 @@ import {
 	Video,
 	type LucideIcon,
 } from "lucide-react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import Link from "@/components/link";
+import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
+import { useRouter } from "@/lib/navigation";
 import { type CSSProperties, type MouseEvent } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import { cn } from "@/lib/utils";
 import type { APIProviderCard as APIProviderCardType } from "@/lib/fetchers/api-providers/providerDataTypes";
 import { Logo } from "@/components/Logo";
@@ -42,30 +43,8 @@ const MODALITIES: ModalityMeta[] = [
 	{ key: "embedding", label: "Embedding", Icon: Binary },
 ];
 
-function formatTokens(value: number): string {
-	if (!Number.isFinite(value) || value <= 0) return "0";
-
-	const thresholds = [
-		{ value: 1_000_000_000_000_000, suffix: "Q" }, // Quadrillion
-		{ value: 1_000_000_000_000, suffix: "T" }, // Trillion
-		{ value: 1_000_000_000, suffix: "B" }, // Billion
-		{ value: 1_000_000, suffix: "M" }, // Million
-		{ value: 1_000, suffix: "K" }, // Thousand
-	] as const;
-
-	for (const threshold of thresholds) {
-		if (value >= threshold.value) {
-			const scaled = value / threshold.value;
-			const decimals = scaled >= 100 ? 0 : scaled >= 10 ? 1 : 2;
-			const compact = scaled.toFixed(decimals).replace(/\.?0+$/, "");
-			return `${compact}${threshold.suffix}`;
-		}
-	}
-
-	return Math.round(value).toLocaleString("en-US");
-}
-
 export default function APIProviderCard({ api_provider }: Props) {
+	const formatTokens = useDisplayFormatters().count;
 	const t = useTranslations("Catalogue.providers");
 	const id = api_provider.api_provider_id;
 	const name = api_provider.api_provider_name;
@@ -116,6 +95,7 @@ export default function APIProviderCard({ api_provider }: Props) {
 						<Link
 							href={href}
 							prefetch={false}
+							data-no-entity-card
 							className="block"
 						>
 							<div className="relative ml-1 flex size-10 items-center justify-center rounded-lg border bg-background md:ml-0">
@@ -132,13 +112,13 @@ export default function APIProviderCard({ api_provider }: Props) {
 					</div>
 					<div className="min-w-0 space-y-0.5 self-center">
 						<div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
-							<Link href={href} prefetch={false} className="line-clamp-1 text-sm font-semibold leading-[1.1] text-foreground transition-colors hover:underline underline-offset-4">{name}</Link>
+							<Link href={href} prefetch={false} data-no-entity-card className="line-clamp-1 text-sm font-semibold leading-[1.1] text-foreground transition-colors hover:underline underline-offset-4">{name}</Link>
 							{isExternal ? <span className="inline-flex shrink-0 items-center gap-1 rounded-md border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium leading-none text-violet-700 dark:border-violet-900/60 dark:bg-violet-950/40 dark:text-violet-300"><ArrowUpRight className="size-3" />{t("external")}</span> : null}
 						</div>
 						<div className="truncate font-mono text-xs leading-[1.15] text-muted-foreground">{id}</div>
 						{location ? <div className="truncate text-xs leading-[1.15] text-muted-foreground">{location}</div> : null}
 					</div>
-					<Button asChild size="icon" variant="ghost" className="h-8 w-8 shrink-0"><Link href={href} prefetch={false} aria-label={t("openPage", { name })} className="group/open"><ArrowUpRight className={cn("h-4 w-4 text-muted-foreground transition-colors", api_provider.colour ? "group-hover:text-[var(--provider-accent)]" : "group-hover:text-primary")} /></Link></Button>
+					<Button asChild size="icon" variant="ghost" className="h-8 w-8 shrink-0"><Link href={href} prefetch={false} data-no-entity-card aria-label={t("openPage", { name })} className="group/open"><ArrowUpRight className={cn("h-4 w-4 text-muted-foreground transition-colors", api_provider.colour ? "group-hover:text-[var(--provider-accent)]" : "group-hover:text-primary")} /></Link></Button>
 				</div>
 
 				<div className="flex flex-wrap items-center gap-1.5 text-[11px]">

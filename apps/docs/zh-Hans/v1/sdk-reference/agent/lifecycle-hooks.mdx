@@ -1,0 +1,166 @@
+---
+icon: "radio-tower"
+title: "生命周期钩子"
+description: "在智能体运行的每个节点接收事件，用于更新界面、写入审计记录或输送遥测数据。"
+---
+
+向运行或继续操作传入一个事件处理函数，即可在运行开始、每个模型轮次开始和结束、每个工具运行、运行暂停以及运行结束时收到事件。用它来更新你的界面、写入审计记录，或输送到你现有的遥测系统。
+
+<CodeGroup>
+
+```typescript TypeScript
+const result = await agent.run({
+  input,
+  client,
+  onEvent(event) {
+    console.log(event.type, event.runId);
+  },
+});
+```
+
+```python Python
+def on_event(event):
+    logger.info("%s %s", event["type"], event["run_id"])
+
+result = agent.run(input="Summarise this ticket", client=client, on_event=on_event)
+```
+
+```go Go
+result, err := agent.Run(ctx, phaseoagent.RunOptions{
+  Input:  prompt,
+  Client: client,
+  OnEvent: func(event phaseoagent.AgentEvent) {
+    logger.Info("agent event",
+      "type", event.Type,
+      "run_id", event.RunID,
+      "details", event.Details,
+    )
+  },
+})
+```
+
+```csharp C#
+var result = await agent.Run(new RunOptions
+{
+    Input = prompt,
+    Client = client,
+    OnEvent = value => logger.LogInformation(
+        "{EventType} {RunId} {Details}", value.Type, value.RunId, value.Details),
+});
+```
+
+```php PHP
+$result = $agent->run(
+    input: $prompt,
+    client: $client,
+    onEvent: function (array $event) use ($logger): void {
+        $logger->info("agent event", $event);
+    }
+);
+```
+
+```ruby Ruby
+result = agent.run(
+  input: prompt,
+  client: client,
+  on_event: ->(event) { logger.info("agent event #{event.inspect}") }
+)
+```
+
+```java Java
+var result = agent.run(new AgentSdk.RunOptions(
+    prompt, client, null, null, null, null, null, null,
+    event -> logger.info("{} {} {}", event.type(), event.runId(), event.details()),
+    null));
+```
+
+```rust Rust
+use phaseo_agent::{AgentEvent, RunOptions};
+
+let mut on_event = |event: &AgentEvent| {
+    println!("{} run={} details={}", event.event_type, event.run_id, event.details);
+};
+
+let result = agent.run_with_events(
+    &mut client,
+    RunOptions::new("Check project health"),
+    Some(&mut on_event),
+)?;
+```
+
+</CodeGroup>
+
+## 处理函数放在哪里，接收什么
+
+| 语言 | 处理函数 | 事件形态 |
+| --- | --- | --- |
+| TypeScript | 运行和继续选项上的 `onEvent` | 包含 `type`、`runId`、`agentId`、`timestamp` 的对象，以及 camelCase 形式的事件字段（`stepIndex`、`toolCallId`） |
+| Python | `run()`、`stream()` 或继续操作上的 `on_event` | 包含 `type`、`run_id`、`agent_id`、`timestamp`、`status` 的字典，以及事件键 |
+| Go | `RunOptions` 或 `ContinueOptions` 上的 `OnEvent` | 包含 `Type`、`RunID`、`AgentID`、`Timestamp`、`Status`、`Details` 的 `AgentEvent` |
+| C# | `RunOptions` 或 `ContinueOptions` 上的 `OnEvent` | 包含 `Type`、`RunId`、`AgentId`、`Timestamp`、`Status`、`Details` 的 `AgentEvent` |
+| PHP | `run()` 或 `continueRun()` 上的 `onEvent` 可调用对象 | 包含 `type`、`run_id`、`agent_id`、`timestamp`、`status` 的数组，事件键合并在顶层 |
+| Ruby | `run` 或 `continue_run` 上的 `on_event:` | 包含 `:type`、`:run_id`、`:agent_id`、`:timestamp`、`:status` 的 Hash，事件键以符号形式合并进来 |
+| Java | 作为 `RunOptions` 或 `ContinueOptions` 的 `onEvent` 参数的 `Consumer<AgentEvent>` | 包含 `type()`、`runId()`、`agentId()`、`timestamp()`、`status()`、`details()` 的 `AgentEvent` |
+| Rust | 传给 `run_with_events` 或 `continue_with_events` 的回调 | 包含 `event_type`、`run_id`、`agent_id`、`timestamp_ms`、`details`（JSON）的 `&AgentEvent` |
+
+## 运行时发出的事件
+
+下面的详情键以 snake_case 列出；TypeScript 使用 camelCase 形式。
+
+| 事件 | 时机 | 详情 | 语言 |
+| --- | --- | --- | --- |
+| `run.started` | 运行开始 | 无 | 全部 |
+| `run.resumed` | 继续操作开始 | `previous_status` | 全部 |
+| `step.started` | 一个模型轮次开始 | `step_index` | 除 Rust 外全部 |
+| `model.requested` | 每次模型尝试，包括重试 | `step_index`、`attempt`、`model` | 除 Rust 外全部 |
+| `model.retrying` | 重试之前 | | TypeScript |
+| `model.completed` | 模型已响应 | `step_index`、`attempt`、`request_id`、`model` | 除 Rust 外全部 |
+| `model.failed` | 模型请求失败 | | TypeScript |
+| `tool.started` | 工具开始运行 | `tool_call_id`、`tool_name` | 全部 |
+| `tool.preliminary_result` | 工具报告了进度 | `tool_call_id`、`tool_name`、`result` | 除 Rust 外全部 |
+| `tool.completed` | 工具已返回 | `tool_call_id`、`tool_name`、`output` | 全部 |
+| `tool.failed` | 工具失败（触发条件不同；参见[事件与错误](./events-and-errors#which-events-fire-when-something-fails)） | `tool_call_id`、`tool_name`、`error` | 除 Rust 外全部 |
+| `step.completed`、`step.failed`、`step.cancelled` | 一个步骤结束 | `step_index` | TypeScript |
+| `checkpoint.saved` | 一个步骤完成 | `step_index` | 除 Rust 外全部 |
+| `history.repaired` | 继续操作回应了缺少结果的工具调用 | | TypeScript |
+| `run.waiting_for_human` | 运行已暂停 | `step_index`、`pause` | 除 Rust 外全部 |
+| `run.completed` | 模型给出了最终回答 | `output` | 全部 |
+| `run.stopped` | 停止条件结束了运行（TypeScript），或达到了步数上限（Rust） | `stop_reason`（TypeScript）、`reason`（Rust） | TypeScript、Rust |
+| `run.cancelled` | 运行已取消 | | TypeScript |
+| `run.failed` | 运行失败（触发条件不同；参见[事件与错误](./events-and-errors#which-events-fire-when-something-fails)） | `error` | 除 Rust 外全部 |
+| `response.output_text.delta`、`response.reasoning.delta`、`response.item` 及其他 `response.*` 事件 | 仅限流式运行 | | 除 Rust 外全部 |
+
+Rust `0.2` 对部分事件使用自己的名称：
+
+| Rust 事件 | 对应事件 | 详情 |
+| --- | --- | --- |
+| `model.request.started` | `step.started` 和 `model.requested`，每个步骤发送一次，而不是每次尝试发送一次 | `step_index` |
+| `model.response.completed` | `model.completed` | `step_index`、`attempts` |
+| `tool.started`、`tool.completed` | 相同的事件 | `tool_call_id`、`name`；`tool.completed` 还增加了 `is_error` |
+| `run.paused` | `run.waiting_for_human` | 无 |
+| `run.stopped` | 在达到步数上限时发送 | `reason` |
+
+因[停止条件](./stop-conditions)而结束的运行，在 TypeScript 中会发送 `run.stopped`，在 Python、Go、C#、PHP、Ruby 或 Java 中不会发送终止事件；请改为读取运行的状态。在 TypeScript 中，`step.completed` 会在该步骤创建检查点之后发送，所以持久化和遥测消费者可以把它当作一个稳定的边界。
+
+## 流式事件
+
+使用流式传输时，同样的生命周期事件会与模型的 `response.*` 事件一起到达。在 TypeScript、Python、Go、C# 和 Java 中，处理函数会收到它们；在 PHP 和 Ruby 中，它们还会出现在 `fullStream()` / `full_stream` 中。Rust 没有流式传输。流的消费方式见[流式传输](./streaming)。
+
+## 让处理函数保持快速
+
+运行时会等待处理函数完成后再继续，所以请尽快返回，把缓慢的存储或网络操作移到队列中。在事件离开你的进程之前，请对敏感的工具输入和输出进行脱敏。
+
+| 语言 | 处理函数的运行方式 |
+| --- | --- |
+| TypeScript | 在运行继续之前被 await |
+| Python | 同步调用 |
+| Go | 内联运行；并发工具会从多个 goroutine 调用它，所以要保证它可以安全地并发使用 |
+| C# | 内联运行；并发工具会从多个任务调用它，所以要保证它是线程安全的 |
+| PHP | 内联运行 |
+| Ruby | 内联运行；并发工具会从各自的线程调用它，所以要保证它是线程安全的 |
+| Java | 内联运行；并发工具会从线程池线程调用它，所以要保证它是线程安全的 |
+| Rust | 在运行所在的线程上 |
+
+## 为产品界面选择事件
+
+用 `response.output_text.delta` 显示实时回答文本，用工具事件显示工具调用卡片和进度指示器，用 `run.waiting_for_human`（Rust：`run.paused`）显示审批或输入控件，用运行的终止事件结束加载状态。如果要在开发期间在本地记录完整的运行，请使用 [DevTools](./devtools)。

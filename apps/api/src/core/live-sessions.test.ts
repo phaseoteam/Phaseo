@@ -9,7 +9,7 @@ vi.mock("@pipeline/pricing/loader", () => ({ loadPriceCard: vi.fn(async () => nu
 
 const config: LiveConfig = { backendModel: "openai/gpt-5.6-luna", voiceCard: LIVE_PRICE_CARD,
 	backendCard: { ...LIVE_PRICE_CARD, model: "openai/gpt-5.6-luna", endpoint: "text.generate", rules: [
-		["input_text_tokens", "1"], ["cached_read_text_tokens", "0.1"], ["cached_write_text_tokens", "1.25"], ["output_text_tokens", "10"],
+		["input_text_tokens", "1"], ["cached_read_text_tokens", "0.1"], ["cached_write_text_tokens_30m", "1.25"], ["output_text_tokens", "10"],
 	].map(([meter, price]) => ({ ...LIVE_PRICE_CARD.rules[0], meter: meter as any, unit: "token", unit_size: 1_000_000, price_per_unit: price })) } };
 const terminal = (type = "response.completed", id = "resp_1") => ({ type: "response.event", event: { type, response: {
 	id, usage: { input_tokens: 1000, input_tokens_details: { cached_tokens: 400 }, output_tokens: 500,
@@ -57,7 +57,7 @@ describe("Live billing", () => {
 		const event = terminal();
 		(event.event.response.usage.input_tokens_details as any).cache_write_tokens = 200;
 		const usage = ingestLiveUsage({}, event);
-		expect(usage.live_responses?.[0].usage).toMatchObject({ input_text_tokens: 400, cached_read_text_tokens: 400, cached_write_text_tokens: 200 });
+		expect(usage.live_responses?.[0].usage).toMatchObject({ input_text_tokens: 400, cached_read_text_tokens: 400, cached_write_text_tokens_30m: 200 });
 		expect(priceLiveUsage(usage, config).live_backend_nanos).toBe(5_690_000);
 	});
 	it("retains the hold when final voice or backend usage is missing", () => {
@@ -82,10 +82,11 @@ describe("Live billing", () => {
 			audio: { format: { type: "audio/pcm", rate: 24000 } }, delegation: { type: "responses",
 				responses: { model: "gpt-5.6-luna", max_output_tokens: 4096, service_tier: "default", tools: [] } } });
 	});
-	it("rejects API source, arbitrary backends, tools and client price overrides", () => {
+	it("rejects arbitrary backends, top-level tools and client price overrides", () => {
 		const request = { model: "openai/gpt-live-1", provider: "openai", source: "chat" };
 		expect(createLiveSessionSchema.safeParse(request).success).toBe(true);
-		for (const extra of [{ source: "api" }, { backend_model: "openai/expensive" }, { tools: [] }, { voice: "invalid" }, { final_cost_nanos: 0 }]) {
+		expect(createLiveSessionSchema.safeParse({ ...request, source: "api" }).success).toBe(true);
+		for (const extra of [{ backend_model: "openai/expensive" }, { tools: [] }, { voice: "invalid" }, { final_cost_nanos: 0 }]) {
 			expect(createLiveSessionSchema.safeParse({ ...request, ...extra }).success).toBe(false);
 		}
 		expect(createRealtimeSessionSchema.safeParse({ ...request, backend_model: config.backendModel }).success).toBe(false);

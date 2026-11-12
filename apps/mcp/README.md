@@ -2,7 +2,7 @@
 
 The Phaseo MCP server provides authenticated model discovery, pricing, usage, request-health information, and reviewed text inference from its interactive explorer.
 
-It reuses Phaseo OAuth permissions rather than creating a second identity system. Administrative operations remain available through the dashboard, CLI, and Management API.
+It reuses Phaseo OAuth permissions rather than creating a second identity system. Billing, workspace and other administrative operations remain in the dashboard, CLI, and Management API.
 
 ## Public tool boundary
 
@@ -14,12 +14,47 @@ The MCP server supports:
 - model cost estimates;
 - credit balance and recent activity;
 - aggregated analytics;
-- privacy-minimized request and generation metadata.
+- privacy-minimized request and generation metadata;
+- opt-in account management (see below).
 
-Catalogue and account tools remain read-only and never expose historical prompts,
+Catalogue and usage tools remain read-only and never expose historical prompts,
 responses, credentials, or raw control-plane records. The app-only inference tools
 accept a new user prompt and return its generated text after explicit Run approval.
-Administrative writes remain outside the MCP.
+
+## Account management
+
+Connecting to `https://mcp.phaseo.app/mcp?access=manage` opts in to account
+management. Its OAuth challenge and protected-resource metadata also request
+`MCP_MANAGEMENT_SCOPES` (`src/management.ts`): read, write and delete for API keys,
+budgets, spend rules, provider keys (BYOK) and guardrails; read and write for
+presets and settings. The plain `/mcp` URL never requests them.
+
+The API grants these scopes to a dynamically registered client only when it names
+them itself for the `https://mcp.phaseo.app/mcp` resource and asks for nothing outside
+the MCP scope list (`violatesMcpManagementBinding` in `apps/api/src/lib/oauth/mcpScopes.ts`).
+Registration, which has no resource, never stores management write or delete scopes;
+authorize, consent and the code exchange all apply the rule, and refresh tokens can never
+carry these scopes. The resulting delegated key is bound to the MCP resource, so it is
+rejected on `/v1` directly and only works through the MCP's token exchange.
+Broader requests are still narrowed to read-only or rejected. The consent screen lists
+every scope with a Read, Write or Delete badge and a checkbox, so the user can allow
+only some of them. Metadata-document (CIMD) clients stay read-only for now.
+
+Each tool calls the existing `/v1` Management API route with the user's
+resource-bound upstream token, so route scope checks, workspace roles and audit
+events all apply. Management tools are registered only on the manage URL, and each only when its route
+scope was granted. The plain `/mcp` URL never lists them, whatever scopes the token holds. A read-only
+connection opened with the manage URL gets a 403 `insufficient_scope` challenge
+that asks the client to sign in again.
+
+Annotations: list and get tools are read-only; create tools are additive and not
+idempotent; update, rotate, set, publish and delete tools are destructive, so clients that
+honour annotations ask before calling them. New API key and webhook signing secrets
+come back once in `oneTimeSecret` and are stripped from `result`. Stored provider keys,
+destination credentials and encrypted fields are never returned. 5xx error details are
+redacted; 4xx messages are passed through with the HTTP status.
+
+There are no billing, payment, workspace, member, management-key or OAuth-app tools.
 
 Model rankings remain evidence-based and independent of Gateway availability. Tool results report whether a model is currently routable through the Phaseo Gateway and provide its Gateway model ID, but availability never changes benchmark order or price sorting.
 
@@ -108,14 +143,80 @@ For UI development without account access, run `pnpm --filter @phaseo/mcp dev:ui
 and open `http://127.0.0.1:4318`. This development-only host uses the official MCP
 Apps bridge with labeled fixture data. It is never included in the Worker bundle.
 
-## Plugin release
+## Plugin
 
-The `plugin/phaseo` directory contains the existing plugin's portable source,
-compatibility manifests, workflow skill, and Phaseo logos. Run
-`pnpm --filter @phaseo/mcp build:plugin` to create `dist/plugin/phaseo.tar.gz`.
+`plugin/phaseo` is one plugin for Codex, ChatGPT, Claude Code and Cursor. It bundles:
+
+- the Phaseo MCP (`https://mcp.phaseo.app/mcp`, OAuth) and the Phaseo Docs MCP
+  (`https://phaseo.app/docs/mcp`, no sign-in);
+- the `phaseo` skill, which covers the MCP tools and lives only here;
+- the public skills from `.agents/skills`, copied by `pnpm skills:sync` at the
+  repository root. Do not edit `plugin/phaseo/skills/<public-skill>` directly.
+
+Each host reads its own manifest, so keep them in step (`pnpm skills:validate`
+checks the versions and paths):
+
+| File | Read by |
+| --- | --- |
+| `plugin.json` | Portable Agent Plugins format; ChatGPT and Codex (`extensions.com.openai`) |
+| `.codex-plugin/plugin.json` | Codex compatibility layout, for hosts that do not read `plugin.json` |
+| `.claude-plugin/plugin.json` | Claude Code; declares the MCP servers with `type: "http"` |
+| `.cursor-plugin/plugin.json`, `.cursor-plugin/mcp.json` | Cursor; its schema rejects unknown keys, so keep these minimal |
+| `.mcp.json`, `mcp.json` | Codex and portable hosts (`streamable-http`) |
+| `README.md` | Directory listings and the mirror; required by Anthropic's plugin directory |
+| `../openai-submission.json` | Only the OpenAI directory package: review cases and release notes |
+| `../registry/*/server.json` | The official MCP Registry entries for the Phaseo MCP and the Docs MCP |
+
+The repository root has a marketplace for each host
+(`.claude-plugin/marketplace.json`, `.agents/plugins/marketplace.json` and
+`.cursor-plugin/marketplace.json`). Users
+install from the small `phaseoteam/skills` mirror rather than this repository:
+
+```bash
+# Claude Code
+/plugin marketplace add phaseoteam/skills
+/plugin install phaseo@phaseo
+
+# Codex
+codex plugin marketplace add phaseoteam/skills
+codex plugin add phaseo@phaseo
+```
+
+To test local changes, run `claude plugin validate apps/mcp/plugin/phaseo` and
+`claude --plugin-dir apps/mcp/plugin/phaseo`, or add the repository root as a
+Codex marketplace with a throwaway `CODEX_HOME`.
+
+### Release
+
+Bump `version` in all three manifests together. Run
+`pnpm --filter @phaseo/mcp build:plugin` to create:
+
+- `dist/plugin/phaseo.tar.gz`, the plugin directory as it is;
+- `dist/plugin/phaseo-openai-<version>.zip`, the package for OpenAI's plugin
+  directory (ChatGPT and Codex). That directory connects one MCP server per
+  plugin, so the ZIP keeps only the Phaseo MCP. It also merges in the review
+  cases, commerce answer and release notes from `plugin/openai-submission.json`.
+  Pass `--demo-url <url>` to include the demo recording, or add it in the
+  dashboard.
+
 Deploy the MCP Worker through the repository's PR release flow before uploading
-this package as an update to the existing private plugin. Then reconnect the
-plugin and verify the explorer in the target host with Phaseo OAuth.
+a package. Then reconnect the plugin and verify the explorer in the target host
+with Phaseo OAuth. Each directory upload is reviewed again, so update
+`publication.release_notes` for every version.
+
+Anthropic's plugin directory takes the plugin from the `phaseoteam/skills`
+mirror (`plugins/phaseo`), which the daily sync keeps up to date. The plugin
+README is required there, and `pnpm skills:validate` checks it and the
+OpenAI listing limits.
+
+Keep reviewer credentials out of every package. Enter them in the OpenAI
+dashboard under Review details.
+
+The **MCP Registry publish** workflow publishes `registry/<server>/server.json`
+under the DNS-verified `app.phaseo` namespace. Every other directory, with its
+requirements and listing copy, is in [docs/directory-listings.md](docs/directory-listings.md).
+Domain verification files are Worker secrets: `OPENAI_APPS_CHALLENGE_TOKEN` and
+`GOOGLE_CONNECTED_APPS_VERIFICATION`.
 
 ## Validation
 

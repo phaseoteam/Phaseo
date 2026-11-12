@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchFreeRouterOverview } from "@/models/free-router";
+import { buildFreeRouterCatalogueRow, fetchFreeRouterOverview } from "@/models/free-router";
 
 const env = {
 	ENV: "development" as const,
@@ -10,6 +10,23 @@ const env = {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("fetchFreeRouterOverview", () => {
+	it("loads router eligibility without waiting for usage on the initial catalogue", async () => {
+		vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+			const url = String(input);
+			if (url.includes("get_free_router_usage_summary")) throw new Error("usage must be deferred");
+			if (url.includes("v2_models?")) return new Response(JSON.stringify([
+				{ model_slug: "test/model:free", name: "Model", lab_slug: "test" },
+			]));
+			return new Response(JSON.stringify([
+				{ model_slug: "test/model:free", provider_slug: "provider", status: "active", routing_enabled: true },
+			]));
+		}));
+		const overview = await fetchFreeRouterOverview(env, false);
+		expect(overview.summary.eligibleModels).toBe(1);
+		expect(buildFreeRouterCatalogueRow(overview, false)).toMatchObject({
+			gateway_status: "active", router_requests_30d: null, router_spend_nanos_30d: null,
+		});
+	});
 	it("loads usage as a database aggregate instead of fetching request rows", async () => {
 		const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
 			const url = String(input);

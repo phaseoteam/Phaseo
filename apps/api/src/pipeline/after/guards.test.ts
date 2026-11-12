@@ -27,6 +27,24 @@ function makeResult(overrides?: Partial<any>): any {
 }
 
 describe("guardUpstreamStatus", () => {
+	it("keeps provider Decisions diagnostics in the audit and returns a gateway-owned description", async () => {
+		vi.mocked(handleFailureAudit).mockClear();
+		const body = { error: { code: "rate_limit_exceeded", message: "private provider account details" } };
+		const result = await guardUpstreamStatus(
+			makeCtx({ endpoint: "decisions", model: "openai/gpt-6-luna" }),
+			makeResult({ provider: "openai", rawResponse: body,
+				upstream: Response.json(body, { status: 429, headers: { "retry-after": "12" } }) }),
+		);
+		expect(result.ok).toBe(false);
+		if (result.ok) return;
+		expect(result.response.status).toBe(429);
+		expect(result.response.headers.get("Retry-After")).toBe("12");
+		const payload = await result.response.json();
+		expect(payload.description).toBe("The decision provider returned status 429.");
+		expect(JSON.stringify(payload)).not.toContain("private provider");
+		expect(payload.failure_sample).toBeUndefined();
+		expect(vi.mocked(handleFailureAudit).mock.calls[0][6]).toEqual(body);
+	});
 	it("returns only a Phaseo-owned error for stealth models while auditing the upstream failure", async () => {
 		vi.mocked(handleFailureAudit).mockClear();
 		const result = await guardUpstreamStatus(

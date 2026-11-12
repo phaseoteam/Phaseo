@@ -1,5 +1,3 @@
-"use client";
-
 import React, { useState } from "react";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,8 +12,8 @@ import {
 	AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
-import { deleteByokKeyAction } from "@/app/(dashboard)/settings/byok/actions";
+import { useTranslations } from "@/i18n/react";
+import { deleteByokKeyAction } from "@/features/settings/byok/actions";
 import { useSettingsWrite } from "../PrivateSettingsQuery";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
@@ -28,7 +26,7 @@ export default function DeleteKeyButton({ id }: { id: string }) {
 	async function onConfirmDelete() {
 		try {
 			setLoading(true);
-			await write(deleteByokKeyAction(id));
+			await write(deleteByokKeyAction({ data: id }));
 		toast.success(t("credits.Key deleted" as never));
 			setOpen(false);
 		} catch (err: any) {

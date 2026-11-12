@@ -4,24 +4,37 @@ icon: "message-square"
 description: "Utilisez des clients compatibles avec Anthropic avec Phaseo."
 ---
 
-Utilisez l’API compatible avec Anthropic lorsque votre application, agent ou outil de programmation attend des requêtes `/v1/messages` au format Claude.
+Faites pointer l’Anthropic SDK vers `https://api.phaseo.app` et passez votre clé Phaseo comme token d’authentification. Utilisez cette méthode pour les applications, agents et outils de programmation qui envoient des requêtes `/v1/messages` au format Claude ; Phaseo les sert comme [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx).
 
-## TypeScript
+## Installer
 
-```bash
+<CodeGroup>
+
+```bash TypeScript
 npm install @anthropic-ai/sdk
 ```
 
-```ts
+```bash Python
+pip install anthropic
+```
+
+</CodeGroup>
+
+## Faire pointer le client vers Phaseo
+
+<CodeGroup>
+
+```ts TypeScript
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-	apiKey: process.env.PHASEO_API_KEY,
+	apiKey: null,
+	authToken: process.env.PHASEO_API_KEY,
 	baseURL: "https://api.phaseo.app",
 });
 
 const message = await client.messages.create({
-	model: "anthropic/claude-sonnet-4.5",
+	model: "anthropic/claude-sonnet-5.5",
 	max_tokens: 512,
 	messages: [{ role: "user", content: "Reply with only: ok" }],
 });
@@ -29,23 +42,17 @@ const message = await client.messages.create({
 console.log(message.content);
 ```
 
-## Python
-
-```bash
-pip install anthropic
-```
-
-```python
+```python Python
 import os
 from anthropic import Anthropic
 
 client = Anthropic(
-    api_key=os.environ["PHASEO_API_KEY"],
+    auth_token=os.environ["PHASEO_API_KEY"],
     base_url="https://api.phaseo.app",
 )
 
 message = client.messages.create(
-    model="anthropic/claude-sonnet-4.5",
+    model="anthropic/claude-sonnet-5.5",
     max_tokens=512,
     messages=[{"role": "user", "content": "Reply with only: ok"}],
 )
@@ -53,15 +60,18 @@ message = client.messages.create(
 print(message.content)
 ```
 
-## Remarques
+</CodeGroup>
 
-- Utilisez l’hôte racine `https://api.phaseo.app` ; les clients Anthropic ajoutent `/v1/messages`.
-- Consultez [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx) pour les détails du endpoint.
-- Les structures d’outils natives d’Anthropic peuvent fonctionner lorsque Phaseo les prend en charge ; pour les outils serveur inter-fournisseurs, utilisez les noms d’outils Phaseo.
-- Si un workflow dépend de boucles d’outils en streaming, testez-le avant le déploiement en production, car les clients compatibles avec Anthropic sont plus stricts sur l’ordre des événements d’outil.
+Un bloc de texte contenant `ok` signifie que la configuration fonctionne.
 
-## À lire aussi
+| Réglage | Pourquoi |
+| --- | --- |
+| `baseURL: "https://api.phaseo.app"` | Utilisez l’hôte racine. Les clients Anthropic ajoutent eux-mêmes `/v1/messages`. |
+| `authToken` (`auth_token` en Python) | Envoie `Authorization: Bearer` avec toutes les versions du SDK. Phaseo n’accepte pas `x-api-key`, que `apiKey` envoie avant `@anthropic-ai/sdk` 1.0 et `anthropic` 2.0. |
+| `apiKey: null` | Empêche les anciens SDK TypeScript d’envoyer aussi votre `ANTHROPIC_API_KEY`. Les SDK Python antérieurs à 0.98 l’envoient dès qu’elle est définie : mettez à jour, ou retirez-la là où vous appelez Phaseo. |
 
-- [Claude Code](./claude-code.mdx)
-- [Anthropic Messages](../../api-reference/endpoint/anthropic-messages.mdx)
-- [Appels d’outils](../tool-calling.mdx)
+## Limites connues
+
+- Les formes d’outils natives d’Anthropic fonctionnent là où Phaseo les prend en charge. Les outils serveur qui fonctionnent avec tous les fournisseurs utilisent les noms d’outils Phaseo ; consultez [Appels d’outils](../tool-calling.mdx).
+- Les clients compatibles avec Anthropic sont stricts sur l’ordre des événements d’outils. Testez les boucles d’outils diffusées avant la production.
+- Pour [Claude Code](./claude-code.mdx), utilisez son guide dédié.

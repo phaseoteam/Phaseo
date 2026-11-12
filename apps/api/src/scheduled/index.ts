@@ -1,3 +1,4 @@
+import { createJobObserver } from "@/observability/jobs";
 // src/scheduled/index.ts
 // Purpose: Scheduled event handlers.
 // Why: Keep cron logic out of the main app routing entrypoint.
@@ -18,6 +19,14 @@ import { runAsyncWebhookRetriesJob } from "@/core/async-notifications";
 import { runBatchReconciliationJob } from "@/pipeline/batch-reconciliation";
 import { drainEmailOutbox } from "@/pipeline/notifications/email-outbox";
 import { runPaymentMethodExpiryNotificationJob } from "@/pipeline/notifications/billing-alerts";
+import { enqueueFeedbackRequestEmails } from "@/pipeline/notifications/feedback-request";
+import { hasLowBalanceEmailActivity, runLowBalanceEmailSweep } from "@/pipeline/notifications/low-balance";
+import { hasMobilePushActivity, runMobilePushJob } from "@/pipeline/notifications/mobile-push";
+import { hasMobilePushDigestActivity, runMobilePushDigestJob } from "@/pipeline/notifications/mobile-push-digest";
+import { runDepartmentBudgetAlertSweep, runSpendGuardrailAlertSweep, runSpendLimitWarningSweep } from "@/pipeline/notifications/spend-limit-alerts";
+import { hasSpendRuleSweepActivity, publishSweepSpendBlockEntries, runSpendRulesSweep } from "@/pipeline/notifications/spend-rules";
+import { hasSpendReportActivity, runSpendReportsQueue } from "@/pipeline/notifications/spend-reports";
+import { reconcileSpendBlockEntries } from "@core/spend-blocks";
 import { enqueueModelDeprecationNotifications, runNotificationDeliveryJob } from "@/pipeline/notifications/notification-delivery";
 import { runVideoReconciliationJob } from "@/pipeline/video-reconciliation";
 import { runGatewayIoRetentionBillingJob } from "@/pipeline/audit/io-retention-billing";
@@ -25,10 +34,15 @@ import { runBatchProviderWebhookReplayJob } from "@/routes/internal/batch-webhoo
 import { runRealtimeSessionReconciliationJob } from "@core/realtime-sessions";
 import { runDataContributionClassifierJob } from "@/pipeline/classification/classifier-worker";
 import { pruneExpiredDataContributions } from "@/pipeline/classification/data-contribution";
-import { drainGatewayOtlpOutbox } from "@/observability/otlp-export";
+import { drainGatewayOtlpOutbox, pruneBroadcastDeliveryHourly, pruneBroadcastEventReceipts, pruneGatewayOtlpOutbox } from "@/observability/otlp-export";
+import { pruneBroadcastSpill } from "@/observability/broadcast-event";
 import { runAccountDeletionPurgeJob } from "@/pipeline/privacy/account-deletion";
 import { pruneExpiredGatewayIoLogs } from "@/pipeline/audit/io-retention-expiry";
-import { publishConfiguredPublicCatalog } from "./public-catalog";
+import { publishCatalogueRevision } from "@core/catalogue-revision";
+import { drainWorkspacePublications } from "./workspace-publications";
+import { backfillRoutingArchives, pruneDeletedRoutingArchives } from "@/pipeline/audit/routing-archive-backfill";
+import { publishCustomerRateLimitTiers } from "@core/customer-rate-limit-tiers";
+import { reconcileRateLimitPlans } from "@core/rate-limit-policies";
 
 const MODEL_DISCOVERY_TICKS_PER_DAY = Array.from({ length: 24 }, (_value, hour) =>
 	60 / getModelDiscoveryStepMinutesUtc(hour),
@@ -106,6 +120,10 @@ function isCoreJobsTick(event: ScheduledController): boolean {
 	return getScheduledMinuteUtc(event) % 5 === 0;
 }
 
+function isQuarterHourTick(event: ScheduledController): boolean {
+	return getScheduledMinuteUtc(event) % 15 === 0;
+}
+
 function isModelDiscoveryTick(event: ScheduledController): boolean {
 	const scheduledAt = new Date(event.scheduledTime);
 	const hour = scheduledAt.getUTCHours();
@@ -121,6 +139,12 @@ function isDailyRetentionBillingTick(event: ScheduledController): boolean {
 function isDailyPaymentMethodExpiryTick(event: ScheduledController): boolean {
 	const scheduledAt = new Date(event.scheduledTime);
 	return scheduledAt.getUTCHours() === 0 && scheduledAt.getUTCMinutes() === 20;
+}
+
+// A personal email, so queue it mid-morning UK time rather than at midnight.
+function isDailyFeedbackRequestTick(event: ScheduledController): boolean {
+	const scheduledAt = new Date(event.scheduledTime);
+	return scheduledAt.getUTCHours() === 10 && scheduledAt.getUTCMinutes() === 5;
 }
 
 function getModelDiscoveryExecutionIndex(event: ScheduledController): number {
@@ -352,6 +376,60 @@ async function handleEmailOutboxScheduledEvent(_event: ScheduledController, env:
 	}
 }
 
+async function handleFeedbackRequestScheduledEvent(env: GatewayBindings): Promise<void> {
+	// Strictly opt-in: nothing is queued unless explicitly enabled with a real sender.
+	if (env.FEEDBACK_REQUEST_EMAILS_ENABLED !== "true") return;
+	if (!env.FEEDBACK_REQUEST_FROM_EMAIL?.trim() || !env.RESEND_API_KEY?.trim()) return;
+	configureRuntime(env);
+	try {
+		const queued = await enqueueFeedbackRequestEmails();
+		console.log("feedback_request_emails_queued", { queued });
+	} finally {
+		clearRuntime();
+	}
+}
+
+async function handleMobilePushScheduledEvent(env: GatewayBindings): Promise<void> {
+	// Off unless explicitly enabled; EXPO_ACCESS_TOKEN is only needed once Expo push security is on.
+	if (env.MOBILE_PUSH_ENABLED !== "true") return;
+	configureRuntime(env);
+	try {
+		// The weekly digest first, so its due pushes are claimed before the catalogue claim looks.
+		// It does nothing outside Sunday to Tuesday UTC, and never holds up catalogue pushes.
+		try {
+			const digest = await runMobilePushDigestJob({ accessToken: env.EXPO_ACCESS_TOKEN });
+			if (hasMobilePushDigestActivity(digest)) console.log("mobile_push_digest_completed", digest);
+		} catch (error) {
+			console.error("mobile_push_digest_failed", serializeError(error));
+		}
+		const summary = await runMobilePushJob({ accessToken: env.EXPO_ACCESS_TOKEN });
+		if (hasMobilePushActivity(summary)) console.log("mobile_push_completed", summary);
+	} finally {
+		clearRuntime();
+	}
+}
+
+// Budget warnings are push-only, so they are swept only where mobile push runs.
+async function handleSpendLimitSweepScheduledEvent(env: GatewayBindings, jobs: ReturnType<typeof createJobObserver>): Promise<void> {
+	if (env.MOBILE_PUSH_ENABLED !== "true") return;
+	configureRuntime(env);
+	try {
+		// Independent sweeps: one failing must not hold back the others' alerts.
+		const [spend, departments, guardrails] = await Promise.allSettled([
+			jobs.run("spend_limit_warnings", runSpendLimitWarningSweep),
+			jobs.run("department_budget_alerts", runDepartmentBudgetAlertSweep),
+			jobs.run("spend_guardrail_alerts", runSpendGuardrailAlertSweep),
+		]);
+		if (spend.status === "fulfilled" && spend.value.warned > 0) console.log("spend_limit_warnings_swept", spend.value);
+		if (departments.status === "fulfilled" && departments.value.alerted > 0) console.log("department_budget_alerts_swept", departments.value);
+		if (guardrails.status === "fulfilled" && guardrails.value.alerted > 0) console.log("spend_guardrail_alerts_swept", guardrails.value);
+		const failed = [spend, departments, guardrails].find((result): result is PromiseRejectedResult => result.status === "rejected");
+		if (failed) throw failed.reason;
+	} finally {
+		clearRuntime();
+	}
+}
+
 async function handlePaymentMethodExpiryScheduledEvent(env: GatewayBindings): Promise<void> {
 	if (!env.STRIPE_SECRET_KEY?.trim() && !env.TEST_STRIPE_SECRET_KEY?.trim()) return;
 	configureRuntime(env);
@@ -428,6 +506,10 @@ async function handleOAuthCleanupScheduledEvent(env: GatewayBindings): Promise<v
 	try {
 		const { error } = await getSupabaseAdmin().rpc("cleanup_expired_oauth_artifacts");
 		if (error) throw new Error(error.message || "Failed to clean up expired OAuth artifacts");
+		// Approved key requests hold the new key's encrypted secret until the CLI collects it. Runs every
+		// 5 minutes, so an uncollected secret is gone within 15 minutes of approval even if nobody polls.
+		const wiped = await getSupabaseAdmin().rpc("wipe_expired_api_key_request_secrets");
+		if (wiped.error) throw new Error(wiped.error.message || "Failed to wipe expired key request secrets");
 	} finally {
 		clearRuntime();
 	}
@@ -449,12 +531,153 @@ async function handleV2AnalyticsOutboxScheduledEvent(env: GatewayBindings): Prom
 	}
 }
 
+// Rebuilds the trailing hour of per-minute rate limit policy throttle counts.
+async function handleRateLimitThrottleRollupScheduledEvent(env: GatewayBindings): Promise<void> {
+	if (env.RATE_LIMIT_POLICIES_ENABLED !== "true") return;
+	configureRuntime(env);
+	try {
+		const { data, error } = await getSupabaseAdmin().rpc("refresh_rate_limit_throttle_rollups");
+		if (error) throw new Error(error.message || "Failed to refresh rate limit throttle rollups");
+		if (Number((data as any)?.rows ?? 0) > 0) console.log("rate_limit_throttle_rollups_refreshed", data);
+		// Queue alerts from the fresh rollups; the notification delivery job later in this tick sends them.
+		const alerts = await getSupabaseAdmin().rpc("enqueue_rate_limit_throttle_alerts");
+		if (alerts.error) throw new Error(alerts.error.message || "Failed to queue rate limit throttle alerts");
+		if (Number(alerts.data ?? 0) > 0) console.log("rate_limit_throttle_alerts_queued", { events: Number(alerts.data) });
+	} finally {
+		clearRuntime();
+	}
+}
+
+// Spend rule alerts: evaluates rules after the outbox has rebuilt the usage rollups and queues
+// spend_alert events for the notification delivery and mobile push jobs later in the tick.
+// With SPEND_RULE_BLOCKS_ENABLED, block rules also start blocks, and the gateway's KV entries
+// are republished for the workspaces the sweep evaluated or changed.
+async function handleSpendRulesScheduledEvent(env: GatewayBindings): Promise<void> {
+	if (env.SPEND_RULES_ENABLED !== "true") return;
+	const blocks = env.SPEND_RULE_BLOCKS_ENABLED === "true";
+	configureRuntime(env);
+	try {
+		const summary = await runSpendRulesSweep({ blocks });
+		const published = blocks ? await publishSweepSpendBlockEntries(summary) : { published: 0, failed: 0 };
+		if (hasSpendRuleSweepActivity(summary)) {
+			const { events, blocks: changes, publish, ...counts } = summary;
+			console.log("spend_rules_swept", {
+				...counts,
+				events: events.length,
+				blocks_started: changes.filter((change) => change.state === "started").length,
+				blocks_lifted: changes.filter((change) => change.state === "lifted").length,
+				entries_published: published.published,
+				entries_failed: published.failed,
+			});
+		}
+	} finally {
+		clearRuntime();
+	}
+}
+
+// Spend reports: queues the daily, weekly and monthly reports that are due (09:00 in each
+// workspace's billing time zone) after the spend rule sweep, so the report counts its alerts, and
+// before the email outbox drain and routed delivery, which send it in the same tick. Off unless
+// SPEND_REPORTS_ENABLED is "true": nothing is queued, so no report email can go out.
+async function handleSpendReportsScheduledEvent(env: GatewayBindings): Promise<void> {
+	if (env.SPEND_REPORTS_ENABLED !== "true") return;
+	configureRuntime(env);
+	try {
+		const summary = await runSpendReportsQueue();
+		if (hasSpendReportActivity(summary)) {
+			const { reports, ...counts } = summary;
+			console.log("spend_reports_queued", { ...counts, workspaces: reports.map((report) => report.workspaceId) });
+		}
+	} finally {
+		clearRuntime();
+	}
+}
+
+// Low-balance emails: the sweep that replaced the check after every charged request. It runs on
+// every 5-minute tick whatever SPEND_RULES_ENABLED says, because it is the existing email, before
+// the email outbox drain and routed delivery so a queued email goes out in the same tick.
+async function handleLowBalanceEmailScheduledEvent(env: GatewayBindings): Promise<void> {
+	configureRuntime(env);
+	try {
+		const summary = await runLowBalanceEmailSweep();
+		if (hasLowBalanceEmailActivity(summary)) {
+			const { emails, ...counts } = summary;
+			console.log("low_balance_emails_swept", { ...counts, emails: emails.length });
+		}
+	} finally {
+		clearRuntime();
+	}
+}
+
+// Backfills and repairs the KV entries the gateway enforces spend blocks from.
+async function handleSpendBlockReconcileScheduledEvent(env: GatewayBindings): Promise<void> {
+	if (env.SPEND_RULES_ENABLED !== "true" || env.SPEND_RULE_BLOCKS_ENABLED !== "true") return;
+	configureRuntime(env);
+	try {
+		const summary = await reconcileSpendBlockEntries();
+		if (summary.workspaces > 0) console.log("spend_block_entries_reconciled", summary);
+	} finally {
+		clearRuntime();
+	}
+}
+
+async function handleRoutingArchiveScheduledEvent(env: GatewayBindings): Promise<void> {
+	if (!env.GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF) return;
+	configureRuntime(env);
+	try {
+		const result = await backfillRoutingArchives();
+		if (result.archived > 0) console.log("routing_archive_backfill_completed", result);
+	} finally {
+		clearRuntime();
+	}
+}
+
+async function handleRoutingArchiveDeletionScheduledEvent(env: GatewayBindings): Promise<void> {
+	configureRuntime(env);
+	try {
+		const deleted = await pruneDeletedRoutingArchives();
+		if (deleted > 0) console.log("routing_archive_deletion_completed", { deleted });
+	} finally {
+		clearRuntime();
+	}
+}
+
 async function handleOtelExportScheduledEvent(env: GatewayBindings): Promise<void> {
 	if (!toBool(env.OTEL_EXPORT_ENABLED, true)) return;
 	configureRuntime(env);
 	try {
 		const summary = await drainGatewayOtlpOutbox(toInt(env.OTEL_EXPORT_OUTBOX_LIMIT, 100));
 		if (summary.claimed > 0 || summary.failed > 0) console.log("otel_export_outbox_completed", summary);
+	} finally {
+		clearRuntime();
+	}
+}
+
+// Queues alerts for failing Broadcast destinations; the notification delivery job
+// later in this tick sends them.
+async function handleBroadcastDestinationAlertsScheduledEvent(env: GatewayBindings): Promise<void> {
+	configureRuntime(env);
+	try {
+		const { data, error } = await getSupabaseAdmin().rpc("enqueue_broadcast_destination_alerts");
+		if (error) throw new Error(error.message || "Failed to queue Broadcast destination alerts");
+		if (Number(data ?? 0) > 0) console.log("broadcast_destination_alerts_queued", { events: Number(data) });
+	} finally {
+		clearRuntime();
+	}
+}
+
+async function handleOtelExportPruneScheduledEvent(env: GatewayBindings): Promise<void> {
+	configureRuntime(env);
+	try {
+		const deleted = await pruneGatewayOtlpOutbox();
+		if (deleted > 0) console.log("otel_export_outbox_pruned", { deleted });
+		const bucket = env.GATEWAY_IO_LOGS_BUCKET;
+		const spilled = bucket ? await pruneBroadcastSpill(bucket) : 0;
+		if (spilled > 0) console.log("broadcast_spill_pruned", { deleted: spilled });
+		const receipts = await pruneBroadcastEventReceipts();
+		if (receipts > 0) console.log("broadcast_event_receipts_pruned", { deleted: receipts });
+		const hourly = await pruneBroadcastDeliveryHourly();
+		if (hourly > 0) console.log("broadcast_delivery_hourly_pruned", { deleted: hourly });
 	} finally {
 		clearRuntime();
 	}
@@ -496,6 +719,31 @@ async function handleAccountDeletionScheduledEvent(env: GatewayBindings): Promis
 	}
 }
 
+// Gated separately from CUSTOMER_RATE_LIMIT_LADDER_ENABLED so the KV backfill
+// can complete (summary.complete) before the gateway starts enforcing tiers.
+async function handleCustomerRateLimitTierScheduledEvent(env: GatewayBindings): Promise<void> {
+	if (env.CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED !== "true") return;
+	configureRuntime(env);
+	try {
+		const summary = await publishCustomerRateLimitTiers({ ladderRaw: env.CUSTOMER_RATE_LIMIT_LADDER });
+		console.log("customer_rate_limit_tiers_published", summary);
+	} finally {
+		clearRuntime();
+	}
+}
+
+// Backfills and repairs the KV plans the gateway enforces rate limit policies from.
+async function handleRateLimitPlanReconcileScheduledEvent(env: GatewayBindings): Promise<void> {
+	if (env.RATE_LIMIT_POLICIES_ENABLED !== "true") return;
+	configureRuntime(env);
+	try {
+		const summary = await reconcileRateLimitPlans();
+		if (summary.workspaces > 0) console.log("rate_limit_plans_reconciled", summary);
+	} finally {
+		clearRuntime();
+	}
+}
+
 async function handleGatewayIoRetentionExpiryScheduledEvent(
 	event: ScheduledController,
 	env: GatewayBindings,
@@ -515,123 +763,214 @@ async function handleGatewayIoRetentionExpiryScheduledEvent(
 }
 
 export async function handleScheduledEvent(event: ScheduledController, env: GatewayBindings): Promise<void> {
-	// Run before maintenance jobs so their duration cannot delay publication.
-	// Only the primary deployment configures targets; regional Workers consume KV.
-	if (env.GATEWAY_CONTEXT_BUNDLE_ENABLED === "true" && env.GATEWAY_PUBLIC_CATALOG_TARGETS && getScheduledMinuteUtc(event) % 2 === 0) {
+	const jobs = createJobObserver(env, event.scheduledTime);
+	try {
+		// Run before maintenance jobs so their duration cannot delay publication.
+		// Cached catalogue snapshots revalidate in the background once this
+		// revision changes; regional Workers consume the same KV key.
+		if (env.GATEWAY_CONTEXT_BUNDLE_ENABLED === "true") {
+			configureRuntime(env);
+			try {
+				const { revision, changed } = await jobs.run("catalogue_revision", () => publishCatalogueRevision());
+				if (changed) console.log("catalogue_revision_published", { revision });
+			} catch (error) {
+				console.error("catalogue_revision_publication_failed", serializeError(error));
+			} finally {
+				clearRuntime();
+			}
+		}
+		// Leased and idempotent: cached contexts of workspaces changed outside the
+		// gateway control routes are invalidated within about a minute.
 		configureRuntime(env);
 		try {
-			const summary = await publishConfiguredPublicCatalog(env.GATEWAY_PUBLIC_CATALOG_TARGETS);
-			console.log("public_catalog_publication_completed", summary);
-		} catch {
-			console.error("public_catalog_publication_invalid_config");
+			const summary = await jobs.run("workspace_publications", () => drainWorkspacePublications());
+			if (summary.claimed) console.log("workspace_publications_drained", summary);
+		} catch (error) {
+			console.error("workspace_publication_drain_failed", serializeError(error));
 		} finally {
 			clearRuntime();
 		}
-	}
-	// Keep release notices independent from the slower provider discovery sweep.
-	try {
-		await handlePublicModelAnnouncementsScheduledEvent(env);
-	} catch (error) {
-		console.error("public_model_announcement_check_scheduled_failed", serializeError(error));
-	}
-	if (isDailyPaymentMethodExpiryTick(event)) {
+		// Keep release notices independent from the slower provider discovery sweep.
 		try {
-			await handlePaymentMethodExpiryScheduledEvent(env);
+			await jobs.run("public_model_announcements", () => handlePublicModelAnnouncementsScheduledEvent(env), true);
 		} catch (error) {
-			console.error("payment_method_expiry_notifications_scheduled_failed", serializeError(error));
+			console.error("public_model_announcement_check_scheduled_failed", serializeError(error));
 		}
-		try {
-			await handleModelDeprecationScheduledEvent(event, env);
-		} catch (error) {
-			console.error("model_deprecation_notifications_scheduled_failed", serializeError(error));
-		}
-	}
-	if (isDailyRetentionBillingTick(event)) {
-		try {
-			await handleGatewayIoRetentionBillingScheduledEvent(event, env);
-		} catch (error) {
-			console.error("gateway_io_retention_billing_scheduled_failed", serializeError(error));
-		}
-	}
-	if (isCoreJobsTick(event)) {
-		try {
-			await handleGatewayIoRetentionExpiryScheduledEvent(event, env);
-		} catch (error) {
-			console.error("gateway_io_retention_expiry_scheduled_failed", serializeError(error));
-		}
-		if (env.ENV === "prod" && env.ACCOUNT_DELETION_PURGE_ENABLED === "true") {
+		if (isDailyPaymentMethodExpiryTick(event)) {
 			try {
-				await handleAccountDeletionScheduledEvent(env);
+				await jobs.run("payment_method_expiry", () => handlePaymentMethodExpiryScheduledEvent(env), Boolean(env.STRIPE_SECRET_KEY?.trim() || env.TEST_STRIPE_SECRET_KEY?.trim()));
 			} catch (error) {
-				console.error("account_deletion_scheduled_failed", serializeError(error));
+				console.error("payment_method_expiry_notifications_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("model_deprecation", () => handleModelDeprecationScheduledEvent(event, env), true);
+			} catch (error) {
+				console.error("model_deprecation_notifications_scheduled_failed", serializeError(error));
+			}
+		}
+		if (isDailyFeedbackRequestTick(event)) {
+			try {
+				await jobs.run("feedback_request", () => handleFeedbackRequestScheduledEvent(env), env.FEEDBACK_REQUEST_EMAILS_ENABLED === "true" && Boolean(env.FEEDBACK_REQUEST_FROM_EMAIL?.trim() && env.RESEND_API_KEY?.trim()));
+			} catch (error) {
+				console.error("feedback_request_emails_scheduled_failed", serializeError(error));
+			}
+		}
+		if (isDailyRetentionBillingTick(event)) {
+			try {
+				await jobs.run("gateway_io_retention_billing", () => handleGatewayIoRetentionBillingScheduledEvent(event, env), toBool(env.GATEWAY_IO_RETENTION_BILLING_ENABLED, false));
+			} catch (error) {
+				console.error("gateway_io_retention_billing_scheduled_failed", serializeError(error));
 			}
 		}
 		try {
-			await handleDataContributionClassifierScheduledEvent(env);
+			await jobs.run("routing_archive", () => handleRoutingArchiveScheduledEvent(env), Boolean(env.GATEWAY_ROUTING_ARCHIVE_BACKFILL_CUTOFF));
 		} catch (error) {
-			console.error("data_contribution_classifier_scheduled_failed", serializeError(error));
+			console.error("routing_archive_backfill_failed", serializeError(error));
+		}
+		if (isCoreJobsTick(event)) {
+			try {
+				await jobs.run("routing_archive_deletion", () => handleRoutingArchiveDeletionScheduledEvent(env), true);
+			} catch (error) {
+				console.error("routing_archive_deletion_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("gateway_io_retention_expiry", () => handleGatewayIoRetentionExpiryScheduledEvent(event, env), true);
+			} catch (error) {
+				console.error("gateway_io_retention_expiry_scheduled_failed", serializeError(error));
+			}
+			if (env.ENV === "prod" && env.ACCOUNT_DELETION_PURGE_ENABLED === "true") {
+				try {
+					await jobs.run("account_deletion", () => handleAccountDeletionScheduledEvent(env), true);
+				} catch (error) {
+					console.error("account_deletion_scheduled_failed", serializeError(error));
+				}
+			}
+			try {
+				await jobs.run("data_contribution_classifier", () => handleDataContributionClassifierScheduledEvent(env), toBool(env.DATA_CONTRIBUTION_CLASSIFIER_ENABLED, false));
+			} catch (error) {
+				console.error("data_contribution_classifier_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("data_contribution_retention", () => handleDataContributionRetentionScheduledEvent(env), true);
+			} catch (error) {
+				console.error("data_contribution_retention_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("v2_analytics_outbox", () => handleV2AnalyticsOutboxScheduledEvent(env), toBool(env.V2_ANALYTICS_OUTBOX_ENABLED, true));
+			} catch (error) {
+				console.error("v2_analytics_outbox_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("rate_limit_throttle_rollup", () => handleRateLimitThrottleRollupScheduledEvent(env), env.RATE_LIMIT_POLICIES_ENABLED === "true");
+			} catch (error) {
+				console.error("rate_limit_throttle_rollups_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("spend_rules", () => handleSpendRulesScheduledEvent(env), env.SPEND_RULES_ENABLED === "true");
+			} catch (error) {
+				console.error("spend_rules_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("spend_reports", () => handleSpendReportsScheduledEvent(env), env.SPEND_REPORTS_ENABLED === "true");
+			} catch (error) {
+				console.error("spend_reports_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("low_balance_email", () => handleLowBalanceEmailScheduledEvent(env), true);
+			} catch (error) {
+				console.error("low_balance_emails_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("oauth_cleanup", () => handleOAuthCleanupScheduledEvent(env), true);
+			} catch (error) {
+				console.error("oauth_cleanup_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("otel_export_prune", () => handleOtelExportPruneScheduledEvent(env), true);
+			} catch (error) {
+				console.error("otel_export_prune_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("broadcast_destination_alerts", () => handleBroadcastDestinationAlertsScheduledEvent(env), true);
+			} catch (error) {
+				console.error("broadcast_destination_alerts_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("email_outbox", () => handleEmailOutboxScheduledEvent(event, env), toBool(env.EMAIL_OUTBOX_DRAIN_ENABLED, true) && Boolean(env.RESEND_API_KEY?.trim()));
+			} catch (error) {
+				console.error("email_outbox_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("notification_delivery", () => handleNotificationDeliveryScheduledEvent(env), true);
+			} catch (error) {
+				console.error("notification_delivery_scheduled_failed", serializeError(error));
+			}
+			if (isQuarterHourTick(event)) {
+				try {
+					await jobs.run("spend_limit_sweep", () => handleSpendLimitSweepScheduledEvent(env, jobs), env.MOBILE_PUSH_ENABLED === "true");
+				} catch (error) {
+					console.error("spend_limit_sweep_scheduled_failed", serializeError(error));
+				}
+				try {
+					await jobs.run("spend_block_reconcile", () => handleSpendBlockReconcileScheduledEvent(env), env.SPEND_RULES_ENABLED === "true" && env.SPEND_RULE_BLOCKS_ENABLED === "true");
+				} catch (error) {
+					console.error("spend_block_reconcile_scheduled_failed", serializeError(error));
+				}
+			}
+			try {
+				await jobs.run("mobile_push", () => handleMobilePushScheduledEvent(env), env.MOBILE_PUSH_ENABLED === "true");
+			} catch (error) {
+				console.error("mobile_push_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("async_webhook_retries", () => handleAsyncWebhookRetriesScheduledEvent(event, env), toBool(env.ASYNC_WEBHOOK_RETRIES_ENABLED, true));
+			} catch (error) {
+				console.error("async_webhook_retries_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("batch_provider_webhook_replay", () => handleBatchProviderWebhookReplayScheduledEvent(event, env), toBool(env.BATCH_PROVIDER_WEBHOOK_REPLAY_ENABLED, true));
+			} catch (error) {
+				console.error("batch_provider_webhook_replay_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("video_reconciliation", () => handleVideoReconciliationScheduledEvent(event, env), toBool(env.VIDEO_RECONCILIATION_ENABLED, true));
+			} catch (error) {
+				console.error("video_reconciliation_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("batch_reconciliation", () => handleBatchReconciliationScheduledEvent(event, env), toBool(env.BATCH_RECONCILIATION_ENABLED, true));
+			} catch (error) {
+				console.error("batch_reconciliation_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("realtime_session_reconciliation", () => handleRealtimeSessionReconciliationScheduledEvent(event, env), toBool(env.REALTIME_SESSION_RECONCILIATION_ENABLED, true));
+			} catch (error) {
+				console.error("realtime_session_reconciliation_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("customer_rate_limit_tier", () => handleCustomerRateLimitTierScheduledEvent(env), env.CUSTOMER_RATE_LIMIT_TIER_PUBLISHER_ENABLED === "true");
+			} catch (error) {
+				console.error("customer_rate_limit_tiers_scheduled_failed", serializeError(error));
+			}
+			try {
+				await jobs.run("rate_limit_plan_reconcile", () => handleRateLimitPlanReconcileScheduledEvent(env), env.RATE_LIMIT_POLICIES_ENABLED === "true");
+			} catch (error) {
+				console.error("rate_limit_plans_reconcile_scheduled_failed", serializeError(error));
+			}
+		}
+		if (isModelDiscoveryTick(event)) {
+			try {
+				await jobs.run("model_discovery", () => handleModelDiscoveryScheduledEvent(event, env), toBool(env.MODEL_DISCOVERY_ENABLED, true));
+			} catch (error) {
+				console.error("model_discovery_scheduled_failed", serializeError(error));
+			}
 		}
 		try {
-			await handleDataContributionRetentionScheduledEvent(env);
+			await jobs.run("otel_export", () => handleOtelExportScheduledEvent(env), toBool(env.OTEL_EXPORT_ENABLED, true));
 		} catch (error) {
-			console.error("data_contribution_retention_scheduled_failed", serializeError(error));
+			console.error("otel_export_scheduled_failed", serializeError(error));
 		}
-		try {
-			await handleV2AnalyticsOutboxScheduledEvent(env);
-		} catch (error) {
-			console.error("v2_analytics_outbox_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleOAuthCleanupScheduledEvent(env);
-		} catch (error) {
-			console.error("oauth_cleanup_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleEmailOutboxScheduledEvent(event, env);
-		} catch (error) {
-			console.error("email_outbox_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleNotificationDeliveryScheduledEvent(env);
-		} catch (error) {
-			console.error("notification_delivery_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleAsyncWebhookRetriesScheduledEvent(event, env);
-		} catch (error) {
-			console.error("async_webhook_retries_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleBatchProviderWebhookReplayScheduledEvent(event, env);
-		} catch (error) {
-			console.error("batch_provider_webhook_replay_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleVideoReconciliationScheduledEvent(event, env);
-		} catch (error) {
-			console.error("video_reconciliation_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleBatchReconciliationScheduledEvent(event, env);
-		} catch (error) {
-			console.error("batch_reconciliation_scheduled_failed", serializeError(error));
-		}
-		try {
-			await handleRealtimeSessionReconciliationScheduledEvent(event, env);
-		} catch (error) {
-			console.error("realtime_session_reconciliation_scheduled_failed", serializeError(error));
-		}
-	}
-	if (isModelDiscoveryTick(event)) {
-		try {
-			await handleModelDiscoveryScheduledEvent(event, env);
-		} catch (error) {
-			console.error("model_discovery_scheduled_failed", serializeError(error));
-		}
-	}
-	try {
-		await handleOtelExportScheduledEvent(env);
-	} catch (error) {
-		console.error("otel_export_scheduled_failed", serializeError(error));
+	} finally {
+		await jobs.flush();
 	}
 }

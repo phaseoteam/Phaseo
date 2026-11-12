@@ -4,119 +4,110 @@ description: "Connectez Phaseo aux SDK, frameworks, agents et outils d’observa
 icon: "compass"
 ---
 
-La plupart des intégrations consistent à configurer un client compatible avec OpenAI ou Anthropic pour qu’il utilise Phaseo et une clé API Phaseo. Commencez par le guide de l’outil que vous utilisez déjà.
+Dirigez un client compatible avec OpenAI ou avec Anthropic vers la Base URL de Phaseo, donnez-lui une clé API Phaseo et utilisez tels quels les ID de modèle Phaseo, comme `openai/gpt-6-astra`. Chaque guide configure d’abord l’outil, puis montre comment vérifier qu’il fonctionne et ce qui ne fonctionne pas.
 
-## URL de base
+| Type de client | Base URL | Emplacement de la clé |
+| --- | --- | --- |
+| Compatible avec OpenAI | `https://api.phaseo.app/v1` | Le champ de clé API, envoyé sous la forme `Authorization: Bearer` |
+| Compatible avec Anthropic (ajoute lui-même `/v1/messages`) | `https://api.phaseo.app` | Le champ de jeton d’authentification, envoyé sous la forme `Authorization: Bearer` |
 
-| Type de client | URL de base |
-| --- | --- |
-| Clients compatibles avec OpenAI | `https://api.phaseo.app/v1` |
-| Clients compatibles avec Anthropic | `https://api.phaseo.app` |
+Récupérez les ID de modèle depuis l’[endpoint Models](../../api-reference/endpoint/models.mdx). Pour les nouvelles applications de style OpenAI, utilisez [Responses](../../api-reference/endpoint/responses.mdx) ; les bibliothèques plus anciennes sont plus sûres sur [Chat Completions](../../api-reference/endpoint/chat-completions.mdx). Définissez `PHASEO_API_KEY` une fois et associez-la à la variable attendue par l’outil, puis testez le streaming et l’appel d’outils avant d’y basculer le trafic de vos agents.
 
-Utilisez les identifiants du [endpoint Models](../../api-reference/endpoint/models.mdx). Pour les nouvelles applications de style OpenAI, privilégiez [Responses](../../api-reference/endpoint/responses.mdx). Pour les anciennes bibliothèques, [Chat Completions](../../api-reference/endpoint/chat-completions.mdx) est généralement l’option la plus sûre.
+## Agents de code
+
+La plupart des agents de code se configurent avec une seule commande de la [CLI Phaseo](./phaseo-cli.mdx). [Agents de code](./coding-assistants.mdx) indique la commande de chacun.
+
+<Columns cols={3}>
+	<Card title="Claude Code" icon="/icons/brands/claude-code.svg" href="./claude-code" />
+	<Card title="Codex" icon="/icons/brands/codex.svg" href="./codex" />
+	<Card title="Cursor" icon="/icons/brands/cursor.svg" href="./cursor" />
+	<Card title="OpenCode" icon="/icons/brands/opencode.svg" href="./opencode" />
+	<Card title="Cline" icon="/icons/brands/cline.svg" href="./cline" />
+	<Card title="Roo Code" icon="/icons/brands/roo-code.svg" href="./roo-code" />
+	<Card title="Kilo Code" icon="/icons/brands/kilo.svg" href="./kilo-code" />
+	<Card title="Continue" icon="/icons/brands/continue.svg" href="./continue" />
+	<Card title="Aider" icon="/icons/brands/aider.png" href="./aider" />
+	<Card title="Zed" icon="/icons/brands/zed.svg" href="./zed" />
+	<Card title="fx" icon="/icons/brands/vercel.svg" href="./fx" />
+	<Card title="DeepSeek Harness" icon="/icons/brands/deepseek.svg" href="./deepseek-harness" />
+	<Card title="Pi" icon="/icons/brands/pi.svg" href="./pi" />
+	<Card title="oh-my-pi" icon="/icons/brands/oh-my-pi.svg" href="./oh-my-pi" />
+	<Card title="Prime Agent" icon="/icons/brands/prime-agent.svg" href="./prime-agent" />
+	<Card title="MiniMax Code" icon="/icons/brands/minimax.svg" href="./minimax-code" />
+	<Card title="Muse Code" icon="/icons/brands/meta.svg" href="./muse-code" />
+	<Card title="Tous les agents de code" icon="bot" href="./coding-assistants" />
+</Columns>
 
 ## SDK et clients directs
 
 <Columns cols={2}>
-	<Card title="SDK OpenAI" icon="code" href="./openai-sdk.mdx">
-		Utilisez les clients officiels OpenAI avec l’URL de base Phaseo.
+	<Card title="SDK OpenAI" icon="code" href="./openai-sdk">
+		Les clients OpenAI officiels avec la Base URL de Phaseo.
 	</Card>
-	<Card title="SDK Anthropic" icon="message-square" href="./anthropic-sdk.mdx">
-		Utilisez des clients compatibles avec Anthropic via `/v1/messages`.
+	<Card title="SDK Anthropic" icon="message-square" href="./anthropic-sdk">
+		Les clients compatibles avec Anthropic via `/v1/messages`.
 	</Card>
-	<Card title="AI SDK" icon="bolt" href="./ai-sdk.mdx">
-		Utilisez le fournisseur officiel Phaseo pour Vercel AI SDK.
+	<Card title="AI SDK" icon="bolt" href="./ai-sdk">
+		Le fournisseur Phaseo officiel pour le Vercel AI SDK.
 	</Card>
-	<Card title="LiteLLM" icon="route" href="./litellm.mdx">
-		Faites transiter le trafic LiteLLM par Phaseo ou exposez Phaseo derrière un proxy LiteLLM.
+	<Card title="LiteLLM" icon="route" href="./litellm">
+		Appelez Phaseo depuis LiteLLM, directement ou derrière son proxy.
 	</Card>
 </Columns>
 
-## Frameworks pour applications et agents
+## Frameworks d’applications et d’agents
 
 <Columns cols={2}>
-	<Card title="LangChain" icon="link" href="./langchain.mdx">
-		Utilisez LangChain Python avec `ChatOpenAI` et l’URL de base Phaseo.
+	<Card title="LangChain" icon="link" href="./langchain">
+		LangChain en Python avec `ChatOpenAI` et la Base URL de Phaseo.
 	</Card>
-	<Card title="LlamaIndex" icon="database" href="./llamaindex.mdx">
-		Utilisez Phaseo pour vos workflows RAG et d’indexation.
+	<Card title="LlamaIndex" icon="database" href="./llamaindex">
+		Les modèles Phaseo dans les workflows RAG et d’indexation.
 	</Card>
-	<Card title="PydanticAI" icon="braces" href="./pydanticai.mdx">
-		Créez des agents Python typés avec Phaseo.
+	<Card title="PydanticAI" icon="braces" href="./pydanticai">
+		Des agents Python typés sur les modèles Phaseo.
 	</Card>
-	<Card title="Mastra" icon="workflow" href="./mastra.mdx">
-		Utilisez Phaseo dans les agents et workflows Mastra.
+	<Card title="Mastra" icon="workflow" href="./mastra">
+		Les modèles Phaseo dans les agents et workflows Mastra.
 	</Card>
-	<Card title="TanStack AI" icon="layers" href="./tanstack-ai.mdx">
-		Connectez l’adaptateur TanStack AI compatible avec OpenAI.
+	<Card title="eve" icon="bot" href="./eve">
+		Les agents eve via le fournisseur AI SDK de Phaseo.
 	</Card>
-	<Card title="Effect AI SDK" icon="function-square" href="./effect-ai.mdx">
-		Utilisez Phaseo dans des applications TypeScript basées sur Effect.
+	<Card title="TanStack AI" icon="layers" href="./tanstack-ai">
+		L’adaptateur compatible avec OpenAI de TanStack AI.
+	</Card>
+	<Card title="Effect AI SDK" icon="square-function" href="./effect-ai">
+		Phaseo depuis des applications Effect en TypeScript.
 	</Card>
 </Columns>
 
 ## Plateformes et opérations
 
 <Columns cols={2}>
-	<Card title="LiveKit" icon="radio" href="./livekit.mdx">
-		Utilisez les modèles Phaseo dans LiveKit Agents et les applications vocales.
+	<Card title="LiveKit" icon="radio" href="./livekit">
+		Les modèles Phaseo dans LiveKit Agents et les applications vocales.
 	</Card>
-	<Card title="Replit" icon="box" href="./replit.mdx">
-		Créez et déployez des applications Replit avec Phaseo.
+	<Card title="Replit" icon="box" href="./replit">
+		Applications et déploiements Replit, avec la clé dans Replit Secrets.
 	</Card>
-	<Card title="Automatisation des workflows" icon="workflow" href="./automation.mdx">
-		Appelez Phaseo depuis Zapier, n8n, Pipedream et les plateformes similaires.
+	<Card title="Automatisation des workflows" icon="workflow" href="./automation">
+		Des étapes HTTP dans Zapier, n8n, Pipedream et les plateformes similaires.
 	</Card>
-	<Card title="Infisical" icon="key-round" href="./infisical.mdx">
-		Préparez une rotation des clés API Phaseo ciblée et sans interruption.
+	<Card title="Infisical" icon="key-round" href="./infisical">
+		Rotation des clés API sans interruption avec une clé de gestion à portée limitée.
+	</Card>
+	<Card title="Observabilité" icon="activity" href="./observability">
+		Tracez les requêtes avec Langfuse, LangSmith ou OpenTelemetry.
 	</Card>
 </Columns>
 
-## Agents de programmation et observabilité
+## Outils Phaseo
 
 <Columns cols={2}>
-	<Card title="Agents de programmation" icon="bot" href="./coding-assistants">
-		Utilisez la CLI Phaseo ou les réglages fournisseur manuels avec Cursor, VS Code, Continue, Aider, Cline, Roo Code, Kilo Code et les outils associés.
+	<Card title="CLI Phaseo" icon="terminal" href="./phaseo-cli">
+		Configurez des agents de code et gérez Phaseo depuis le terminal.
 	</Card>
-	<Card title="Claude Code" icon="/icons/brands/claude-code.svg" href="./claude-code">
-		Faites transiter les workflows de programmation compatibles avec Claude par Phaseo.
-	</Card>
-	<Card title="Codex" icon="/icons/brands/codex.svg" href="./codex">
-		Utilisez Phaseo comme fournisseur pour Codex.
-	</Card>
-	<Card title="DeepSeek Harness" icon="/icons/brands/deepseek.svg" href="./deepseek-harness">
-		Ajoutez Phaseo comme fournisseur personnalisé compatible avec OpenAI dans DeepSeek Harness.
-	</Card>
-	<Card title="OpenCode" icon="/icons/brands/opencode.svg" href="./opencode">
-		Configurez OpenCode avec un fournisseur Phaseo personnalisé.
-	</Card>
-	<Card title="Pi" icon="/icons/brands/pi.svg" href="./pi">
-		Installez Pi avec le catalogue complet des modèles Phaseo.
-	</Card>
-	<Card title="oh-my-pi" icon="/icons/brands/oh-my-pi.svg" href="./oh-my-pi">
-		Exécutez oh-my-pi via Phaseo avec un catalogue fournisseur isolé.
-	</Card>
-	<Card title="MiniMax Code" icon="/icons/brands/minimax.svg" href="./minimax-code">
-		Exécutez MiniMax Code via Phaseo avec une configuration fournisseur temporaire.
-	</Card>
-	<Card title="Muse Code" icon="/icons/brands/meta.svg" href="./muse-code">
-		Exécutez Muse Code via Phaseo avec une configuration fournisseur temporaire.
-	</Card>
-	<Card title="Prime Agent" icon="/icons/brands/prime-agent.svg" href="./prime-agent">
-		Configurez Prime Agent pour effectuer des tâches de longue durée via Phaseo.
-	</Card>
-	<Card title="Observabilité" icon="activity" href="./observability.mdx">
-		Faites transiter le trafic Phaseo par Langfuse, LangSmith, OpenTelemetry ou des outils similaires.
-	</Card>
-	<Card title="Docs MCP" icon="plug-zap" href="./docs-mcp.mdx">
-		Ajoutez la documentation Phaseo à jour aux agents de programmation.
+	<Card title="Docs MCP" icon="plug-zap" href="./docs-mcp">
+		Donnez aux agents de code la documentation Phaseo en direct.
 	</Card>
 </Columns>
-
-## Paramètres recommandés
-
-- Configurez `PHASEO_API_KEY` une seule fois et associez-la à la variable d’environnement attendue par le client.
-- Conservez l’identifiant du modèle tel quel, par exemple `openai/gpt-5-nano`.
-- Utilisez `https://api.phaseo.app/v1` pour les bibliothèques compatibles avec OpenAI, sauf si l’outil demande explicitement l’hôte racine.
-- Utilisez `https://api.phaseo.app` pour les SDK et outils compatibles avec Anthropic qui ajoutent `/v1/messages`.
-- Testez le streaming et les appels d’outils en préproduction avant de transférer le trafic des agents.

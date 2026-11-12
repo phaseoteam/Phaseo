@@ -107,7 +107,7 @@ describe("validateCapabilities", () => {
 		expect(result.ok).toBe(false);
 		if (!result.ok) {
 			const json = await result.response.json();
-			expect(json.error).toBe("validation_error");
+			expect(json.code).toBe("validation_error");
 			expect(JSON.stringify(json.details ?? [])).toContain("\"unknown_param\"");
 			expect(JSON.stringify(json.details ?? [])).toContain("\"foo\"");
 		}
@@ -419,7 +419,8 @@ describe("validateCapabilities", () => {
 			workspaceId: "team_test",
 			providers: [
 				provider("google-ai-studio", { image_config: {}, temperature: {} }, 4096),
-				provider("openai", { temperature: {} }, 4096),
+				// DeepInfra's profile says nothing about image_config, so its support is unknown.
+				provider("deepinfra", { temperature: {} }, 4096),
 			],
 			model: "google/gemini-2-5-flash-image",
 		});
@@ -427,7 +428,7 @@ describe("validateCapabilities", () => {
 		expect(result.ok).toBe(true);
 		if (result.ok) {
 			expect(result.requestedParams).toContain("image_config");
-			expect(result.providers.map((p: any) => p.providerId)).toEqual(["google-ai-studio", "openai"]);
+			expect(result.providers.map((p: any) => p.providerId)).toEqual(["google-ai-studio", "deepinfra"]);
 		}
 	});
 
@@ -796,6 +797,47 @@ describe("validateCapabilities", () => {
 		}
 	});
 
+	it("does not let require_parameters exclude providers for a hosted web search tool", () => {
+		const run = (extra: Record<string, unknown>) => {
+			const body = {
+				model: "openai/gpt-5",
+				messages: [{ role: "user", content: "news?" }],
+				tools: [{ type: "web_search" }],
+				routing: { require_parameters: true },
+				...extra,
+			};
+			return validateCapabilities({
+				endpoint: "chat.completions",
+				rawBody: body,
+				body,
+				requestId: "req_hosted_search",
+				workspaceId: "team_test",
+				providers: [
+					provider("openai", { web_search_options: {}, tools: {} }, 4096),
+					// The Reflection profile marks web_search_options unsupported.
+					provider("reflection", { tools: {} }, 4096),
+				],
+				model: "openai/gpt-5",
+			});
+		};
+
+		const hosted = run({});
+		expect(hosted.ok).toBe(true);
+		if (hosted.ok) {
+			// Native search is still preferred, but no longer required.
+			expect(hosted.requestedParams).toContain("web_search_options");
+			const stages = hosted.paramRoutingDiagnostics.filteringStages;
+			expect(stages.find((stage) => stage.stage === "param_support")?.droppedProviders).toEqual([]);
+			expect(stages.find((stage) => stage.stage === "param_preference")?.droppedProviders).toEqual(["reflection"]);
+		}
+
+		const explicit = run({ web_search_options: { search_context_size: "low" } });
+		expect(explicit.ok).toBe(true);
+		if (explicit.ok) {
+			expect(explicit.paramRoutingDiagnostics.filteringStages.find((stage) => stage.stage === "param_support")?.droppedProviders).toEqual(["reflection"]);
+		}
+	});
+
 	it("accepts the first-class routing object as a gateway field", () => {
 		const result = validateCapabilities({
 			endpoint: "responses",
@@ -901,5 +943,54 @@ describe("validateCapabilities", () => {
 		if (result.ok) {
 			expect(result.providers.map((p: any) => p.providerId)).toEqual(["openai", "anthropic"]);
 		}
+	});
+
+	describe("max_tokens against route output limits", () => {
+		const messagesRequest = (providers: any[]) => {
+			const body = {
+				model: "google/gemma-4-26b-a4b-it",
+				messages: [{ role: "user", content: "hello" }],
+				max_tokens: 777,
+			};
+			return validateCapabilities({
+				endpoint: "messages",
+				rawBody: body,
+				body,
+				requestId: "req_zero_limit",
+				workspaceId: "team_test",
+				providers,
+				model: "google/gemma-4-26b-a4b-it",
+			});
+		};
+
+		it.each([0, -1])("treats a stored max_output_tokens of %s as unknown, like null", (limit) => {
+			const result = messagesRequest([provider("parasail", { max_tokens: {} }, limit)]);
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.providers.map((p: any) => p.providerId)).toEqual(["parasail"]);
+			}
+		});
+
+		it("still rejects when every known limit is below max_tokens", () => {
+			const result = messagesRequest([provider("parasail", { max_tokens: {} }, 512)]);
+
+			expect(result.ok).toBe(false);
+			if (!result.ok) {
+				expect(result.response.status).toBe(400);
+			}
+		});
+
+		it("drops only the route whose known limit is too small", () => {
+			const result = messagesRequest([
+				provider("small", { max_tokens: {} }, 512),
+				provider("parasail", { max_tokens: {} }, 0),
+			]);
+
+			expect(result.ok).toBe(true);
+			if (result.ok) {
+				expect(result.providers.map((p: any) => p.providerId)).toEqual(["parasail"]);
+			}
+		});
 	});
 });

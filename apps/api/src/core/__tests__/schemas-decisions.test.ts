@@ -2,6 +2,61 @@ import { describe, expect, it } from "vitest";
 import { DecisionsSchema } from "../schemas";
 
 describe("DecisionsSchema", () => {
+	it("accepts Box with images and typed TypeSafe provider options in both formats", () => {
+		const provider_options = { typesafe: { long_context: true } };
+		const question = { type: "box", instructions: "The mug in the first image" };
+		const image = "data:image/png;base64,AQID";
+		expect(DecisionsSchema.safeParse({ model: "typesafe/jev-1.14.0", input: [{ role: "user", content: [
+			{ type: "input_image", image_url: image },
+		] }], questions: [question], provider_options }).success).toBe(true);
+		expect(DecisionsSchema.safeParse({ state: "Photo", images: [image], questions: { mug: question }, provider_options }).success).toBe(true);
+		expect(DecisionsSchema.safeParse({ state: "Photo", questions: { mug: question } }).success).toBe(false);
+		expect(DecisionsSchema.safeParse({ state: "Photo", images: [image], questions: { mug: { ...question, criteria: [] } } }).success).toBe(false);
+		expect(DecisionsSchema.safeParse({ state: "Text", questions: { yes: { type: "noul", instructions: "Yes?" } }, provider_options: { typesafe: { long_context: "true" } } }).success).toBe(false);
+	});
+	it("accepts OpenAI predicates, boolean choices, named score levels and safety identifiers", () => {
+		expect(DecisionsSchema.safeParse({
+			model: "openai/gpt-6-luna", input: [{ role: "user", type: "message", content: "Account" }], safety_identifier: "user-1",
+			questions: [
+				{ type: "predicate", instructions: "Eligible?" },
+				{ type: "choice", instructions: "Choose", choices: [{ value: true }, { value: "true" }] },
+				{ type: "score", instructions: "Rate", levels: [{ label: "Low" }, { label: "High", description: "High impact" }] },
+			],
+		}).success).toBe(true);
+	});
+	it("allows 128 native image parts across messages and rejects 129", () => {
+		const base = { model: "openai/gpt-6-luna", questions: [{ type: "predicate", instructions: "Visible?" }] };
+		const part = { type: "input_image", image_url: "data:image/png;base64,AQID", detail: "high" };
+		expect(DecisionsSchema.safeParse({ ...base, input: [{ role: "user", content: Array(128).fill(part) }] }).success).toBe(true);
+		expect(DecisionsSchema.safeParse({ ...base, input: [{ role: "user", content: Array(129).fill(part) }] }).success).toBe(false);
+	});
+	it("accepts up to 1,000 questions in either format and rejects 1,001", () => {
+		const nativeQuestions = (count: number) => Array.from({ length: count }, () => ({ type: "predicate", instructions: "Safe?" }));
+		const mapQuestions = (count: number) => Object.fromEntries(Array.from({ length: count }, (_, index) =>
+			[`q${index}`, { type: "noul", instructions: "Safe?" }]));
+		const native = (count: number) => DecisionsSchema.safeParse({ model: "google/gemini-decision-1", input: "Text", questions: nativeQuestions(count) });
+		const legacy = (count: number) => DecisionsSchema.safeParse({ model: "google/gemini-decision-1", state: "Text", questions: mapQuestions(count) });
+		for (const parse of [native, legacy]) {
+			expect(parse(129).success).toBe(true);
+			expect(parse(1000).success).toBe(true);
+			expect(parse(1001).success).toBe(false);
+		}
+		const tooMany = legacy(1001);
+		expect(!tooMany.success && JSON.stringify(tooMany.error.issues)).toContain("at most 1000 questions");
+	});
+	it("accepts hosted HTTPS image URLs in native input", () => {
+		expect(DecisionsSchema.safeParse({ model: "baselabs/joey-1", questions: [{ type: "predicate", instructions: "Visible?" }],
+			input: [{ role: "user", content: [{ type: "input_image", image_url: "https://bucket.s3.amazonaws.com/a.png" }] }] }).success).toBe(true);
+	});
+	it.each([
+		{ input: [{ role: "assistant", content: "Wrong role" }] },
+		{ input: [{ role: "user", content: [{ type: "input_image", image_url: "http://example.com/a.png" }] }] },
+		{ input: [{ role: "user", content: [{ type: "input_file", file_id: "file_1" }] }] },
+		{ state: "Mixed formats" },
+		{ questions: [{ type: "choice", instructions: "Choose", choices: [{ value: true }, { value: true }] }] },
+	])("rejects unsupported or ambiguous native fields: %j", override => {
+		expect(DecisionsSchema.safeParse({ model: "openai/gpt-6-luna", input: "Account", questions: [{ type: "predicate", instructions: "Eligible?" }], ...override }).success).toBe(false);
+	});
 	it("accepts embedded decision images and rejects URLs and unsupported formats", () => {
 		const base = { state: "Photo", questions: { visible: { type: "noul", instructions: "Visible?" } } };
 		expect(DecisionsSchema.safeParse({ ...base, images: ["data:image/png;base64,AQID", { content_type: "image/jpeg", base64: "AQID" }] }).success).toBe(true);

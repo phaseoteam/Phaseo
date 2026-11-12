@@ -26,6 +26,9 @@ dependencies = [
 	"python-dateutil>=2.9,<3.0",
 ]
 
+[project.optional-dependencies]
+realtime = ["websockets>=13.0"]
+
 [project.urls]
 Homepage = "https://phaseo.app"
 Documentation = "https://phaseo.app"
@@ -53,5 +56,5 @@ packages = [
 "SKILL.md" = "phaseo/SKILL.md"
 
 [tool.hatch.version]
-path = "src/phaseo/__init__.py"
+path = "src/phaseo/_version.py"
 

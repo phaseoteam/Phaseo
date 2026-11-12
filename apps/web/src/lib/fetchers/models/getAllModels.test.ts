@@ -1,3 +1,4 @@
+import { describe, it, expect } from "vitest";
 import type { MonitorModelData } from "@/lib/fetchers/models/table-view/getMonitorModels";
 import { mapRawToModelCard, summarizeMonitorRowsForModel } from "./getAllModels";
 
@@ -58,6 +59,17 @@ describe("mapRawToModelCard", () => {
 });
 
 describe("summarizeMonitorRowsForModel", () => {
+	it("uses chat prices for a dual-capability model's general price filters", () => {
+		const rows = [
+			{ endpoint: "text.generate", provider: { id: "openai", name: "OpenAI", inputPrice: 1, outputPrice: 2 } },
+			{ endpoint: "decisions.make", provider: { id: "openai", name: "OpenAI", inputPrice: 0.1, outputPrice: 0 } },
+		] as MonitorModelData[];
+		const summary = summarizeMonitorRowsForModel(rows);
+		expect(summary.gateway_provider_count).toBe(1);
+		expect(summary.gateway_endpoints).toEqual(["decisions.make", "text.generate"]);
+		expect(summary.lowest_input_price).toBe(1);
+		expect(summary.lowest_output_price).toBe(2);
+	});
 	it("builds card-ready provider, pricing, capability, and usage metadata", () => {
 		const rows = [
 			{
@@ -77,7 +89,7 @@ describe("summarizeMonitorRowsForModel", () => {
 					executionRegions: ["us"],
 				},
 				endpoint: "text.generate",
-				gatewayStatus: "deranked_lvl1",
+				gatewayStatus: "deranked",
 				inputModalities: ["text"],
 				outputModalities: ["text"],
 				context: 128_000,

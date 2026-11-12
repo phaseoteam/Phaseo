@@ -3,6 +3,7 @@ type Translator = { (key: never, values?: never): string; has(key: never): boole
 export const PRICING_DISPLAY_LABEL_KEYS: Record<string, string> = {
 	"all usage": "Catalogue.modelDetail.sections.allUsage",
 	"no cache": "Common.ui.pricingDisplayCopy.noCache",
+	"us-only inference": "Common.ui.pricingDisplayCopy.usOnlyInference",
 	"with audio": "Common.ui.pricingDisplayCopy.withAudio",
 	"no audio": "Common.ui.pricingDisplayCopy.noAudio",
 	"provider-reported cost": "Common.ui.pricingDisplayCopy.providerreportedCost",
@@ -63,6 +64,15 @@ export function localizedPricingDisplayLabel(value: string | null | undefined, l
 		const quantity = per[1] ? Number(per[1].replace(/,/g, "")) * (per[2]?.toLowerCase() === "m" ? 1_000_000 : per[2]?.toLowerCase() === "k" ? 1_000 : 1) : 1;
 		return t("Common.ui.providerCardCopy.perQuantityUnit" as never, ({ quantity: quantity.toLocaleString(locale, { notation: "compact", maximumFractionDigits: 1 }), unit: unitName(per[3], quantity, t) }) as never);
 	}
+	if (raw.includes(" · ")) return raw.split(" · ").map((part) => localizedPricingDisplayLabel(part, locale, t)).join(" · ");
+	// The app a promotional price is limited to (pricingHelpers: "In Claude Code").
+	const audience = raw.match(/^In (.+)$/);
+	if (audience) return t("Common.ui.pricingDisplayCopy.inAudience" as never, ({ audience: audience[1] }) as never);
+	// Prices for requests kept in one region other than the US (pricingHelpers: "EU-only inference").
+	const regionOnly = raw.match(/^([A-Z0-9-]+)-only inference$/);
+	if (regionOnly) return t("Common.ui.pricingDisplayCopy.regionOnlyInference" as never, ({ region: regionOnly[1] }) as never);
+	const inputRange = raw.match(/^(.+?) input tokens$/i);
+	if (inputRange) return `${inputRange[1]} ${localizedPricingDisplayLabel("input", locale, t)} ${localizedPricingDisplayLabel("tokens", locale, t)}`;
 	const ttl = raw.match(/^(.+?)\s+(?:cache\s+)?ttl$/i);
 	if (ttl) {
 		const duration = ttl[1].match(/^(\d+)\s*(m|min|mins|minutes?|h|hrs?|hours?|d|days?)$/i);
@@ -77,7 +87,6 @@ export function localizedPricingDisplayLabel(value: string | null | undefined, l
 	if (tokens) return t("Common.ui.pricingDisplayCopy.modalityTokens" as never, ({ modality: localizedPricingDisplayLabel(tokens[1], locale, t) }) as never);
 	const inputs = raw.match(/^(Text|Image|Audio|Video) Inputs$/i);
 	if (inputs) return t("Common.ui.pricingDisplayCopy.modalityInputs" as never, ({ modality: localizedPricingDisplayLabel(inputs[1], locale, t) }) as never);
-	if (raw.includes(" · ")) return raw.split(" · ").map((part) => localizedPricingDisplayLabel(part, locale, t)).join(" · ");
 	if (raw.includes(" - ")) return raw.split(" - ").map((part) => localizedPricingDisplayLabel(part, locale, t)).join(" - ");
 	const condition = raw.match(/^(quality|resolution|size)\s*=\s*(.+)$/i);
 	if (condition) return `${localizedPricingDisplayLabel(condition[1], locale, t)} = ${localizedPricingDisplayLabel(condition[2], locale, t)}`;

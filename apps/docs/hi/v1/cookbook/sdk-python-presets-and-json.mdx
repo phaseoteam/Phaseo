@@ -1,132 +1,125 @@
 ---
-title: "Python SDK से प्रीसेट-आधारित स्ट्रक्चर्ड JSON भेजें"
+title: "Python SDK से प्रीसेट-आधारित संरचित JSON शिप करें"
+sidebarTitle: "Python में प्रीसेट-आधारित JSON"
 icon: "braces"
-description: "कच्चे HTTP कॉल किए बिना आधिकारिक Python SDK, प्रीसेट, स्ट्रक्चर्ड आउटपुट और अनुरोध-स्तर की डीबगिंग इस्तेमाल करें।"
+description: "सीधे HTTP कॉल पर उतरे बिना, प्रीसेट, संरचित आउटपुट और अनुरोध-स्तर की डीबगिंग के साथ आधिकारिक Python SDK का उपयोग करें।"
 ---
 
-जब किसी Python सेवा को हर अनुरोध में prompt, रूटिंग और पैरामीटर कॉन्फ़िगरेशन दोहराने के बजाय डैशबोर्ड से मैनेज किए गए डिफ़ॉल्ट इस्तेमाल करने हों, तब यह तरीका अपनाएँ।
+Python से JSON Schema के साथ एक डैशबोर्ड प्रीसेट कॉल करें, फिर जवाब को वैलिडेट करें और डीबग करने के लिए ज़रूरी ID लॉग करें। अंत में आपके पास एक स्क्रिप्ट होगी जो `"model": "@release-summary"` भेजती है, `{"summary": ..., "risk_level": ...}` वापस पाती है, और उस अनुरोध के प्रदाता और प्लगइन विवरण प्रिंट करती है।
 
-## लक्ष्य
+प्रीसेट और स्कीमा को अपने से बदलने के बाद स्क्रिप्ट प्रोडक्शन के लिए तैयार है। वैलिडेशन वाला चरण रहने दें: हीलिंग सिंटैक्स ठीक करती है, कंटेंट नहीं।
 
-- Python कॉलर को छोटा रखना
-- कोड में मॉडल तय करने के बजाय प्रीसेट slug से रूट करना
-- सख्त स्ट्रक्चर्ड आउटपुट माँगना
-- रूटिंग या प्लगइन व्यवहार डीबग करने के लिए पर्याप्त रिस्पॉन्स मेटाडेटा रखना
+## इसे बनाएँ
 
-## 1. एक साझा क्लाइंट से शुरू करें
+<Steps>
+<Step title="प्रीसेट बनाएँ">
 
-```python
+**सेटिंग्स → प्रीसेट** में, `release-summary` बनाएँ, जिसमें सिस्टम प्रॉम्प्ट, मॉडल या मंज़ूर मॉडल, प्रदाता प्राथमिकताएँ, रीज़निंग सेटिंग्स और `temperature` हों जिन्हें हर कॉलर को साझा करना चाहिए। तब Python कोड सिर्फ़ वही भेजता है जो बदलता है। [प्रीसेट](../guides/presets) बताता है कि प्रीसेट अनुरोध के साथ कैसे मिलता है।
+
+</Step>
+<Step title="SDK इंस्टॉल करें">
+
+```bash
+pip install phaseo
+export PHASEO_API_KEY="phaseo_v1_sk_..."
+```
+
+</Step>
+<Step title="स्क्रिप्ट लिखें">
+
+```python release_summary.py
+import json
 import os
 
 from phaseo import Phaseo
 
+# Create one client and reuse it.
 gateway = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
-```
 
-हर अनुरोध के लिए नया क्लाइंट बनाने के बजाय एक क्लाइंट साझा रखें।
+SCHEMA = {
+    "type": "object",
+    "properties": {
+        "summary": {"type": "string"},
+        "risk_level": {"type": "string", "enum": ["low", "medium", "high"]},
+    },
+    "required": ["summary", "risk_level"],
+    "additionalProperties": False,
+}
 
-## 2. स्थिर डिफ़ॉल्ट प्रीसेट में रखें
 
-जब कई कॉलर के लिए ये चीज़ें स्थिर रखनी हों, तो **डैशबोर्ड -> सेटिंग -> प्रीसेट** में प्रीसेट बनाएँ:
+def output_text(response: dict) -> str:
+    return "".join(
+        part.get("text", "")
+        for item in response.get("output", [])
+        if item.get("type") == "message"
+        for part in item.get("content", [])
+        if part.get("type") == "output_text"
+    )
 
-- सिस्टम प्रॉम्प्ट
-- मॉडल या अनुमत मॉडल की सूची
-- प्रोवाइडर प्राथमिकताएँ
-- रीजनिंग कॉन्फ़िगरेशन
-- temperature और संबंधित जनरेशन पैरामीटर
-- नियतात्मक replay ज़रूरी होने पर रिस्पॉन्स कैशिंग नीति
 
-प्रीसेट बन जाने पर Python कॉलर का कोड छोटा रह सकता है।
+def validate(payload: dict) -> dict:
+    if set(payload) != {"summary", "risk_level"}:
+        raise ValueError(f"unexpected keys: {sorted(payload)}")
+    if not isinstance(payload["summary"], str) or not payload["summary"]:
+        raise ValueError("summary must be a non-empty string")
+    if payload["risk_level"] not in ("low", "medium", "high"):
+        raise ValueError("risk_level must be low, medium or high")
+    return payload
 
-## 3. एक सख्त JSON संरचना माँगें
 
-```python
 response = gateway.generate_response(
     {
-        "preset": "release-summary",
+        "model": "@release-summary",
         "input": "Summarize the last 24 hours of deployment activity.",
-        "response_format": {
-            "type": "json_schema",
-            "name": "release_summary",
-            "schema": {
-                "type": "object",
-                "required": ["summary", "risk_level"],
-                "properties": {
-                    "summary": {"type": "string"},
-                    "risk_level": {
-                        "type": "string",
-                        "enum": ["low", "medium", "high"],
-                    },
-                },
-                "additionalProperties": False,
-            },
+        "text": {
+            "format": {
+                "type": "json_schema",
+                "name": "release_summary",
+                "strict": True,
+                "schema": SCHEMA,
+            }
         },
         "plugins": [{"id": "response-healing"}],
         "meta": True,
     }
 )
-```
 
-यह संरचना क्यों उपयोगी है:
+if response.get("status") != "completed":
+    raise RuntimeError(f"response {response.get('id')} ended as {response.get('status')}")
 
-- `preset` रूटिंग और prompt डिफ़ॉल्ट को ऐप्लिकेशन कोड से बाहर रखता है
-- `response_format` कॉन्ट्रैक्ट को स्पष्ट रखता है
-- workflow अनुमति दे तो `plugins` लगभग सही लेकिन गलत फ़ॉर्मैट वाले JSON को सुधार सकता है
-- `meta` डीबगिंग के लिए रूटिंग और प्लगइन रन की जानकारी बचाए रखता है
-
-## 4. JSON पार्स करें और ऑपरेशनल ID लॉग करें
-
-```python
-import json
-
-message_text = ""
-for item in response.get("output", []):
-    if item.get("type") != "message":
-        continue
-    for part in item.get("content", []):
-        if part.get("type") == "output_text":
-            message_text = part.get("text", "")
-            break
-
-payload = json.loads(message_text)
+payload = validate(json.loads(output_text(response)))
+meta = response.get("meta", {})
 
 print("response_id:", response.get("id"))
-print("selected_provider:", response.get("meta", {}).get("routing", {}).get("selected_provider"))
-print("plugin_executions:", response.get("meta", {}).get("plugin_executions"))
+print("model:", response.get("model"))
+print("selected_provider:", meta.get("routing", {}).get("selected_provider"))
+print("plugin_executions:", meta.get("plugin_executions"))
 print(payload)
 ```
 
-Python workers के लिए, यह आम तौर पर ऐप्लिकेशन लॉग की एक पंक्ति को इन चीज़ों से जोड़ने के लिए पर्याप्त है:
+| फ़ील्ड | क्या करता है |
+| --- | --- |
+| `"model": "@release-summary"` | प्रीसेट का उपयोग करता है। कोई अलग `preset` फ़ील्ड नहीं है। |
+| `text.format` | यह JSON Schema माँगता है। Chat Completions पर यह `response_format` में जाता है; [संरचित आउटपुट](../guides/structured-outputs) देखें। |
+| `plugins` | लगभग-मान्य JSON ठीक करता है; [रिस्पॉन्स हीलिंग](./response-healing-for-structured-json) देखें। |
+| `meta: true` | प्रतिक्रिया में `meta.routing` और `meta.plugin_executions` जोड़ता है। |
 
-- डैशबोर्ड में अनुरोध का विवरण डायलॉग
-- रूटिंग डायग्नॉस्टिक्स
-- प्लगइन रन मेटाडेटा
+</Step>
+<Step title="इसे चलाएँ">
 
-## 5. Override जोड़ने से पहले डीबग करें
+```bash
+python release_summary.py
+```
 
-अगर किसी अनुरोध की रूटिंग आपकी अपेक्षा से अलग हो:
+</Step>
+</Steps>
 
-1. अनुरोध को **Gateway -> उपयोग** में खोलें
-2. रूटिंग डायग्नॉस्टिक्स और उम्मीदवार प्रोवाइडर देखें
-3. स्ट्रक्चर्ड JSON होने पर प्लगइन रन मेटाडेटा जाँचें
-4. लॉग में वास्तविक नतीजा देखने के बाद ही प्रीसेट बदलें
+## जाँचें कि यह काम कर गया
 
-एक खराब अनुरोध को ठीक करने के लिए कई inline overrides जोड़ने से बचें। ऐसा करने से प्रीसेट इस्तेमाल करने का उद्देश्य अक्सर खत्म हो जाता है।
+स्क्रिप्ट प्रतिक्रिया ID, जवाब देने वाला मॉडल और प्रदाता, प्लगइन रिकॉर्ड, और `summary` तथा `low`, `medium` या `high` में से एक वाली dict प्रिंट करती है। रूटिंग विवरण के साथ वही अनुरोध देखने के लिए **सेटिंग्स → उपयोग → लॉग्स** में प्रतिक्रिया ID खोजें।
 
-## 6. नतीजे दोबारा इस्तेमाल करने हों तो कैश के अनुकूल रहें
+प्रीसेट के मंज़ूर मॉडलों से बाहर का मॉडल `validation_error` (कीवर्ड `preset_model_not_allowed`) के साथ विफल होता है। `validate()` से आया `ValueError` का मतलब है कि JSON पार्स हो गया लेकिन कंटेंट गलत था: रीट्राई जोड़ने के बजाय स्कीमा या प्रॉम्प्ट को सख्त करें।
 
-अगर प्रीसेट रिस्पॉन्स कैशिंग चालू करता है:
+## ओवरराइड करने से पहले डीबग करें
 
-- prompt की भाषा स्थिर रखें
-- रिस्पॉन्स स्कीमा स्थिर रखें
-- प्रति अनुरोध अनावश्यक प्रोवाइडर overrides से बचें
-- बार-बार बदलने वाली टूल सूची से बचें
-
-अगर किसी कॉलर को वास्तव में अलग व्यवहार चाहिए, तो साझा workflow की कैश पुनःप्रयोग क्षमता घटाने के बजाय उसके लिए अलग प्रीसेट बनाएँ।
-
-## संबंधित गाइड
-
-- [प्रीसेट लागू करें और रूटिंग डीबग करें](./preset-rollout-and-routing-debug.mdx)
-- [प्रीसेट के साथ रिस्पॉन्स कैशिंग इस्तेमाल करें](./response-caching-with-presets.mdx)
-- [स्ट्रक्चर्ड JSON के लिए रिस्पॉन्स सुधारें](./response-healing-for-structured-json.mdx)
-- [Python SDK का परिचय](../sdk-reference/python/overview.mdx)
+अगर कोई अनुरोध आपकी उम्मीद से अलग रूट होता है, तो उसे लॉग में खोलें, **Routing observability** और प्लगइन रिकॉर्ड पढ़ें, और प्रीसेट तभी बदलें जब लॉग से पता चल जाए कि क्या हुआ। एक अनुरोध पर इनलाइन ओवरराइड का ढेर लगाने से प्रीसेट का मकसद ही खत्म हो जाता है; अगर किसी कॉलर को सच में अलग व्यवहार चाहिए, तो उसे उसका अपना प्रीसेट दें।

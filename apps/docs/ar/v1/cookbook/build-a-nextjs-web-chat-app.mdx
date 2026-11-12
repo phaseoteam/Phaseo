@@ -1,174 +1,136 @@
 ---
 title: "أنشئ تطبيق دردشة ويب باستخدام Next.js"
 icon: "messages-square"
-description: "استخدم تطبيق الدردشة التجريبي الحالي لـ Next.js كدليل كامل، مع مطالبة إنشاء قابلة للنسخ في الأعلى۔"
+description: "استخدم تطبيق الدردشة التجريبي الحالي المبني بـ Next.js كدليل كامل، مع مطالبة إنشاء قابلة للنسخ في الأعلى."
 ---
 
-استخدم هذه الصفحة إذا أردت تطبيق دردشة صغيرًا وعمليًا باستخدام Next.js مع إبقاء مفتاح Phaseo API على الخادم。
+شغّل تطبيق دردشة صغيرًا مبنيًا بـ Next.js لا يتحدث كود المتصفح فيه إلا إلى مسارات الخادم الخاصة بك، كي لا يصل مفتاح Phaseo API إلى المتصفح أبدًا. في النهاية تكون لديك صفحة دردشة محلية مع أداة اختيار نموذج تُملأ من `GET /v1/models`، وإجابات من `POST /v1/responses`.
 
-**الهدف:** تشغيل تطبيق دردشة في المتصفح يكتشف النماذج ويرسل الردود عبر مسارات من جهة الخادم。
+المثال توضيحي: مساراته بلا تسجيل دخول ولا حدّ للمعدل، لذا يستطيع أي شخص يصل إليها أن ينفق من مفتاحك. أضف الفحوصات الواردة في [قبل النشر](#before-you-deploy-it) أولًا.
 
-**النتيجة:** واجهة دردشة محلية تعمل دون كشف بيانات اعتماد Phaseo للمتصفح。
+لكي يبني وكيل برمجة التطبيق نفسه من الصفر، الصق هذه المطالبة:
 
 <Prompt
-  description="أنشئ **تطبيق دردشة ويب باستخدام Next.js** بالاعتماد على Phaseo Gateway。"
+  description="أنشئ **تطبيق دردشة ويب باستخدام Next.js** فوق Phaseo Gateway."
   icon="message-square"
   actions={["copy", "cursor"]}
 >
-{`أنت بصدد إنشاء تطبيق دردشة صغير بأسلوب قريب من تطبيقات الإنتاج باستخدام Phaseo Gateway。
+{`You are building a small production-style chat app with Phaseo Gateway.
 
-أنشئ تطبيق Next.js يتضمن:
-- واجهة دردشة
-- محدد نماذج يعتمد على GET /v1/models
-- مسار من جهة الخادم يستدعي POST /v1/responses
-- إدارة مفتاح API على الخادم باستخدام PHASEO_API_KEY
-- حالات التحميل والنجاح والخطأ
+Create a Next.js app with:
+- a chat UI
+- a model picker backed by GET https://api.phaseo.app/v1/models
+- a server-side route that calls POST https://api.phaseo.app/v1/responses
+- server-side API key handling using PHASEO_API_KEY (Authorization: Bearer)
+- loading, success, and error states
 
-أبقِ التطبيق صغيرًا عمدًا وسهل الفحص。
+Keep the app intentionally small and easy to inspect.
 
-متطلبات التنفيذ:
-- استخدم مسار API محليًا واحدًا لاكتشاف النماذج。
-- استخدم مسار API محليًا واحدًا لإنشاء الردود。
-- أبقِ الأسرار على الخادم فقط。
-- وضّح تدفق الطلب والاستجابة في الشيفرة بوضوح。
-- أضف README موجزًا يوضح خطوات الإعداد والتشغيل。
+Implementation requirements:
+- Use one local API route for model discovery.
+- Use one local API route for responses generation.
+- Keep secrets server-side only.
+- Send the whole conversation in input on every turn. The gateway rejects previous_response_id.
+- Only accept model IDs from an allowlist on the server, and cap the input length.
+- Show the request/response flow clearly in code.
+- Add a short README with setup and run steps.
 
-التحقق:
-- شغّل التطبيق إن أمكن。
-- تحقّق من نجاح جولة دردشة واحدة。
-- أبلغ عن الملفات التي تغيرت تحديدًا، وما تحققت منه، وأي افتراضات متبقية。`}
+Verification:
+- Run the app if possible.
+- Verify two successful chat turns in a row.
+- Report the exact files changed, what you verified, and any remaining assumptions.`}
 </Prompt>
 
-## المشروع النموذجي
+## كيف بُني المثال
 
-- GitHub: [examples/web-chat-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/web-chat-nextjs)
-- مسار المشروع داخل المستودع: `examples/web-chat-nextjs`
+```mermaid
+flowchart LR
+  ui["ChatClient.tsx في المتصفح"] -->|"GET /api/models"| models["app/api/models/route.ts"]
+  ui -->|"POST /api/responses"| resp["app/api/responses/route.ts"]
+  models --> lib["lib/gateway.ts يضيف مفتاح Bearer"]
+  resp --> lib
+  lib -->|"GET /v1/models, POST /v1/responses"| gw["Phaseo Gateway"]
+```
 
-## ما يفعله التطبيق
+يوجد المثال في [examples/web-chat-nextjs](https://github.com/phaseoteam/Phaseo/tree/main/examples/web-chat-nextjs):
 
-- - يجلب النماذج المتاحة باستخدام `GET /v1/models`
-- - يرسل رسائل الدردشة باستخدام `POST /v1/responses`
-- يحتفظ بمفتاح API على الخادم
-- يوفر نقطة بداية بسيطة لمنتج حقيقي دون تعقيدات OAuth
+| الملف | وظيفته |
+| --- | --- |
+| `app/components/ChatClient.tsx` | حقل الإدخال، وحالتا التحميل والخطأ، والرسائل المعروضة، وأداة اختيار النموذج |
+| `app/api/models/route.ts` | يُرجع معرّفات النماذج من `GET /v1/models` |
+| `app/api/responses/route.ts` | يتحقق من أن `model` و`input` سلسلتان نصيتان غير فارغتين (`400 missing_model`، `400 missing_input`)، ثم يستدعي `POST /v1/responses` |
+| `lib/gateway.ts` | يبني الرابط والترويسات: `Authorization: Bearer $PHASEO_API_KEY` و`x-title`، و`http-referer` عند ضبطه |
 
-## الملفات الرئيسية
+## شغّله
 
-- `app/api/models/route.ts`
-- `app/api/responses/route.ts`
-- `app/components/ChatClient.tsx`
-- `lib/gateway.ts`
+تحتاج إلى Node.js ومفتاح Phaseo API.
 
-## لماذا بُني المثال بهذه الطريقة
+<Steps>
+<Step title="التثبيت">
 
-### 1. المتصفح لا يستدعي Phaseo مباشرة
-
-تتصل الواجهة أولًا بمسارات Next.js الخاصة بك، ثم تستدعي هذه المسارات Phaseo على الخادم。
-
-وهذا يتيح لك:
-
-- إدارة الأسرار على الخادم
-- إدارة الترويسات ومحتوى الطلبات في مكان واحد
-- إضافة المصادقة أو حدود الطلبات أو السجلات لاحقًا بسهولة أكبر
-
-### 2. اكتشاف النماذج منفصل عن إنشاء الردود
-
-أبقِ مسارات قائمة النماذج وإنشاء الدردشة منفصلة حتى يبقى كل جزء سهل الفهم:
-
-- مسار لعرض قائمة النماذج
-- مسار لتنفيذ طلب الدردشة
-
-### 3. لا تدير الواجهة سوى حالة التفاعل
-
-يتولى عميل React إدارة:
-
-- حالة الإدخال
-- حالة التحميل
-- عرض الأخطاء
-- الرسائل المعروضة
-
-يتولى مسار الخادم استدعاء الذكاء الاصطناعي، بينما يدير المتصفح تجربة المستخدم فقط。
-
-## المتطلبات المسبقة
-
-- - Node.js ومدير حزم مدعوم
-- مفتاح Phaseo API
-
-## تشغيل المثال
-
-<CodeGroup>
-```bash npm
+```bash
 cd examples/web-chat-nextjs
 npm install
-cp .env.example .env.local
 ```
 
-```bash pnpm
-cd examples/web-chat-nextjs
-pnpm install
-cp .env.example .env.local
+يأتي المثال مع ملف `package-lock.json`، لذا يثبّت `npm` الإصدارات التي اختُبرت.
+
+</Step>
+<Step title="أنشئ .env.local">
+
+لا يحتوي المثال على `.env.example`. أنشئ `.env.local` بنفسك:
+
+```bash .env.local
+PHASEO_API_KEY=phaseo_v1_sk_...
+# اختياري. القيمة الافتراضية https://api.phaseo.app؛ ويُضاف /v1 تلقائيًا.
+NEXT_PUBLIC_GATEWAY_URL=https://api.phaseo.app
+# ترويسات اختيارية لنسب التطبيق.
+GATEWAY_APP_TITLE=My chat app
+GATEWAY_HTTP_REFERER=https://myapp.example
 ```
 
-```bash yarn
-cd examples/web-chat-nextjs
-yarn install
-cp .env.example .env.local
+لا يُقرأ `NEXT_PUBLIC_GATEWAY_URL` هنا إلا على الخادم، لكن البادئة `NEXT_PUBLIC_` قد تكشفه لكود المتصفح، لذا لا تضع فيه مفتاحًا أبدًا. تشرح صفحة [نسب التطبيق](../guides/app-attribution) الترويستين الاختياريتين.
+
+</Step>
+<Step title="أصلح دور الدردشة الثاني">
+
+يرسل `ChatClient.tsx` قيمة `id` للإجابة السابقة بوصفها `previous_response_id`. لا يخزّن الـ Gateway الاستجابات، لذا يرفض هذا الحقل بالخطأ `400 validation_error` (الكلمة المفتاحية `unsupported_param`) وتفشل الرسالة الثانية. في `app/api/responses/route.ts`، احذف الكتلة التي تنسخ `previous_response_id` إلى الحمولة:
+
+```ts app/api/responses/route.ts
+  // احذف هذه الأسطر:
+  if (typeof body.previous_response_id === 'string' && body.previous_response_id.trim()) {
+    payload.previous_response_id = body.previous_response_id.trim();
+  }
 ```
 
-```bash bun
-cd examples/web-chat-nextjs
-bun install
-cp .env.example .env.local
-```
-</CodeGroup>
+بعد ذلك يُجاب عن كل دور بمفرده. للحفاظ على السياق، أرسل الأدوار السابقة كمصفوفة رسائل في `input`.
 
-عيّن:
+</Step>
+<Step title="شغّل خادم التطوير">
 
-- `PHASEO_API_KEY`
-- `NEXT_PUBLIC_GATEWAY_URL`
-
-ثم شغّل:
-
-<CodeGroup>
-```bash npm
+```bash
 npm run dev
 ```
 
-```bash pnpm
-pnpm dev
-```
-
-```bash yarn
-yarn dev
-```
-
-```bash bun
-bun run dev
-```
-</CodeGroup>
-
 افتح `http://localhost:3000`.
 
-## التحقق من التطبيق
+</Step>
+</Steps>
 
-- يجلب محدد النماذج البيانات من مسار الخادم。
-- يؤدي إرسال رسالة إلى ظهور رد واحد من المساعد。
-- لا تكشف لوحة الشبكة في المتصفح عن `PHASEO_API_KEY`.
-- يظهر خطأ مفيد في الواجهة عند فشل طلب Gateway。
+## تحقّق من نجاحه
 
-## تخصيص التطبيق
+- تمتلئ أداة اختيار النموذج بمعرّفات النماذج.
+- تحصل رسالتان متتاليتان على إجابة لكل منهما.
+- في لوحة الشبكة في المتصفح، لا تذهب الطلبات إلا إلى `/api/models` و`/api/responses`، ولا يحمل أي طلب `PHASEO_API_KEY`.
+- يعرض معرّف النموذج الخاطئ رسالة الخطأ من الـ Gateway بدلًا من إجابة فارغة.
+- تظهر الطلبات في **الإعدادات → الاستخدام → السجلات** مع عنوان التطبيق الذي ضبطته.
 
-- غيّر النموذج الافتراضي إلى النموذج الذي اخترته للإنتاج
-- أضف البث إذا كانت تجربة الاستخدام تحتاج إلى عرض الرموز واحدًا تلو الآخر
-- أضف المصادقة لاحقًا إذا أصبح التطبيق متعدد المستخدمين
-- استبدل التنفيذ الداخلي لمسار الخادم بـ TypeScript SDK لاحقًا إذا أردت عميلًا بمستوى تجريد أعلى
+<span id="before-you-deploy-it"></span>
+## قبل النشر
 
-## متى تختار نقطة بداية أخرى
+- **صادِق على المسارات.** اشترط وجود مستخدم مسجّل الدخول على `/api/responses` و`/api/models`، أو استخدم [منضدة OAuth](./build-an-oauth-nextjs-workbench) كي ينفق كل مستخدم من أرصدته الخاصة.
+- **ضع قائمة سماح للنماذج.** يمرّر المسار أي سلسلة `model` تأتي من المتصفح. تحقّق منها مقابل قائمة ثابتة على الخادم.
+- **حدّ من المدخلات والمعدل.** قيّد طول المدخلات وعدد الطلبات لكل مستخدم، واضبط [حدّ إنفاق على المفتاح](../api-reference/limits#key-limits-and-budgets).
+- **استخدم البث إن احتجت إليه.** اضبط `stream: true` ومرّر الأحداث؛ توضح صفحة [البث](../guides/streaming) الحدث الذي يُنهي بث Responses.
 
-- استخدم البدء السريع لـ Node إذا كنت تريد سكربتًا أو اختبارًا للواجهة الخلفية بدلًا من واجهة
-- استخدم البدء السريع لـ Python إذا كان أول تكامل في عامل أو CLI أو خدمة خلفية
-
-## أدلة ذات صلة
-
-- [مطالبات بدء تطبيق صغير](./mini-app-starter-prompts.mdx)
-- [الأمثلة](../guides/examples.mdx)
-- [البدء السريع](../quickstart.mdx)
+لسكربت خلفي بدلًا من واجهة مستخدم، ابدأ من [تطبيق اختبار Node REST السريع](./build-a-node-rest-smoke-app) أو [أداة Python CLI للـ Gateway](./build-a-python-gateway-cli).

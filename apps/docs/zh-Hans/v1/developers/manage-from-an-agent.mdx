@@ -1,0 +1,140 @@
+---
+title: "通过智能体管理 Phaseo"
+description: "列出每项 Phaseo 账户任务对应的 CLI 命令、管理 API 路由和 MCP 工具，以及哪些更改需要控制台或管理密钥。"
+icon: "bot"
+---
+
+你可以使用 `phaseo` CLI、`/v1` 管理 API 或 Phaseo MCP 服务器完成日常的 Phaseo 账户任务。本页列出每项任务对应的命令、路由或工具。涉及支出、访问权限或工作区数据去向的更改，需要在控制台中或使用管理密钥完成。
+
+以下步骤仍需要由人在浏览器中完成：
+
+| 步骤 | 需要人做的事 |
+| --- | --- |
+| 注册 | 创建 Phaseo 账户。 |
+| 批准登录 | 批准 `phaseo login` 打开的页面，或输入 `phaseo login --device-code` 显示的代码。 |
+| 添加第一张卡 | 没有已保存的卡时，`phaseo credits add` 会返回一个结账链接。所有者或管理员打开链接并付款，卡就会被保存。 |
+| 确认每次充值 | 有已保存的卡时，所有者或管理员需要通过邮件中的链接确认每次 `phaseo credits add`。 |
+| 账户安全 | 管理密码、多重身份验证和通行密钥。 |
+
+<Visibility for="agents">
+管理 Phaseo 的智能体须遵守以下规则：
+
+- 对于任务对照表中的任务，不要让用户去控制台。请运行 CLI 命令、调用路由或使用 MCP 工具。对于“在控制台中或使用管理密钥完成的更改”中列出的更改，如果有管理密钥，就用它调用路由；否则请对方在控制台中完成更改。
+- 切勿生成或猜测 API 密钥。请对方在控制台中创建，或使用管理密钥调用 `POST /v1/keys` 创建，并在服务器端只保存一次密钥。
+- 每条 CLI 命令都使用 `--json`。只有当用户明确要求进行那项具体更改时，才对破坏性命令传入 `--yes`。
+- 只发起用户要求的额度充值。绝不要自行完成结账链接，也不要重试已被拒绝、已过期或已失败的充值。
+</Visibility>
+
+## 一次性设置
+
+```bash
+npm install -g @phaseo/cli
+phaseo login                 # opens a browser; a person approves it
+phaseo login --device-code   # SSH, CI and agent sandboxes: a person enters the code
+phaseo whoami --json
+```
+
+然后在控制台中或使用管理密钥调用 `POST /v1/keys`，为应用创建推理密钥；如果工作区没有额度，再充值：
+
+```bash
+phaseo credits get --json
+phaseo login --scopes billing:write   # opt in once before the first top-up; a person approves the sign-in
+phaseo credits add --amount 20 --json
+```
+
+`phaseo credits add` 需要 `billing:write` 作用域，默认情况下任何登录都不具备该作用域，而且它从不会自行扣款：
+
+- **有已保存的卡时**，Phaseo 会给工作区的每位所有者和管理员发送邮件，附上确认扣款的链接，命令会等待结果。
+- **没有已保存的卡时**，它会返回 `next_action: "open_checkout_url"` 和一个结账链接，由所有者或管理员在其中付款。这张卡会被保存以供以后充值使用，不会发送邮件。
+
+该路由参见[额度](../api-reference/endpoint/credits)。
+
+## 选择接口
+
+| 接口 | 适用情况 | 登录方式 |
+| --- | --- | --- |
+| [`phaseo` CLI](../guides/integrations/phaseo-cli) | 智能体可以运行 shell 命令 | `phaseo login` 或 `phaseo login --device-code` |
+| [管理 API](../api-reference/introduction) | 服务器代码、CI，或没有 CLI 的语言 | [管理密钥](./management-api-keys)（`phaseo_v1_mk_...`）或 OAuth 令牌 |
+| [Phaseo MCP](./cli-and-mcp#phaseo-mcp) | 智能体运行在 MCP 客户端中 | 连接 `https://mcp.phaseo.app/mcp?access=manage` 并批准你想授予的权限 |
+
+运行 `phaseo <group> --help` 查看你安装的 CLI 接受哪些参数。当某项任务没有专门的命令时，`phaseo api get|post|patch|put|delete /v1/<path>` 会使用你的会话调用该路由。
+
+## 任务对照表
+
+### 密钥与访问
+
+| 任务 | CLI | API 路由 | MCP 工具 |
+| --- | --- | --- | --- |
+| 列出、重命名或删除密钥 | `phaseo keys list`, `phaseo keys update <id> --name <name>`, `phaseo keys delete <id>` | `GET /v1/keys`, `PATCH /v1/keys/{id}`, `DELETE /v1/keys/{id}` | `api_keys_list`, `api_key_update`, `api_key_delete` |
+| 创建 API 密钥 | `phaseo keys create --name <name>` | `POST /v1/keys` | — |
+| 更改密钥的限额、状态或过期时间 | `phaseo keys update <id> --limit <usd>`, `phaseo keys update <id> --disabled true` | `PATCH /v1/keys/{id}` | — |
+| 轮换密钥 | — | `POST /v1/keys/{id}/rotate` | — |
+| 将密钥限制为特定 IP 地址 | — | `PATCH /v1/keys/{id}` | — |
+| 查看、缩小权限或撤销你授权的应用 | `phaseo authorized-apps list`、`phaseo authorized-apps update-scopes <id> --scopes <scope,...>`、`phaseo authorized-apps revoke <id> --yes` | `GET /v1/me/authorized-apps`、`PATCH /v1/me/authorized-apps/{id}`、`DELETE /v1/me/authorized-apps/{id}` | — |
+| 更新个人资料 | `phaseo profile update` | `PATCH /v1/me/profile` | — |
+
+### 额度、预算与限制
+
+| 任务 | CLI | API 路由 | MCP 工具 |
+| --- | --- | --- | --- |
+| 查看余额 | `phaseo credits get` | `GET /v1/credits` | 只读工具 |
+| 添加额度（需要人确认） | 先运行 `phaseo login --scopes billing:write`，再运行 `phaseo credits add --amount <usd>` | `POST /v1/credits/topups` | — |
+| 查看工作区的速率限制等级 | `phaseo rate-limits tier get` | `GET /v1/rate-limits/tier` | — |
+
+### 路由与提供商
+
+| 任务 | CLI | API 路由 | MCP 工具 |
+| --- | --- | --- | --- |
+| 设置路由模式，或加强隐私设置（开启 ZDR，关闭日志或训练） | `phaseo settings update` | `PATCH /v1/settings` | `settings_update` |
+| 配置 Auto Routing（支出配置和价格上限除外） | `phaseo routing auto update` | `PATCH /v1/routing/auto` | — |
+
+### 工作区与身份
+
+| 任务 | CLI | API 路由 | MCP 工具 |
+| --- | --- | --- | --- |
+| 创建工作区 | `phaseo workspaces create` | `POST /v1/workspaces` | — |
+| 接受邀请 | `phaseo invites accept <code>` | `POST /v1/invites/accept` | — |
+| 查看活动日志 | `phaseo audit-events list` | `GET /v1/audit-events` | — |
+
+### 用量、日志与通知
+
+| 任务 | CLI | API 路由 | MCP 工具 |
+| --- | --- | --- | --- |
+| 查看请求日志 | `phaseo logs list --since 1h` | `GET /v1/logs` | 只读工具 |
+| 将用量导出为 CSV | `phaseo analytics export` | `GET /v1/analytics/export` | — |
+
+## 在控制台中或使用管理密钥完成的更改
+
+这些更改涉及支出、访问权限或工作区数据的去向。无论拥有哪些权限范围，CLI 登录或 MCP 连接都不能进行这些更改：API 会返回 `403`，并提示使用控制台或管理密钥。请在 Phaseo 控制台中完成，或使用[管理密钥](./management-api-keys)调用路由。
+
+| 任务 | API 路由 |
+| --- | --- |
+| 创建管理密钥 | `POST /v1/management-keys` |
+| 开启自动充值或低余额邮件提醒 | `PATCH /v1/notifications/settings` |
+| 设置工作区预算 | `POST /v1/budgets`、`PATCH /v1/budgets/{id}` |
+| 设置部门预算 | `POST /v1/department-budgets` |
+| 对支出发出提醒或进行拦截 | `POST /v1/spend-rules`、`POST /v1/spend-blocks/{id}/lift` |
+| 速率限制策略 | `POST /v1/rate-limits/policies`、`POST /v1/rate-limits/assignments` |
+| 提升工作区的速率限制等级 | `POST /v1/rate-limits/tier/raise` |
+| 放宽隐私或 ZDR，或更改提供商限制或 BYOK 回退 | `PATCH /v1/settings` |
+| 添加你自己的提供商密钥（BYOK） | `POST /v1/byok` |
+| 设置 Auto Routing 的支出配置或价格上限 | `PATCH /v1/routing/auto` |
+| 创建并部署动态路由 | `POST /v1/routing/dynamic-routes`、`POST /v1/routing/dynamic-routes/{id}/versions/{version}/deploy` |
+| 为已停用的模型选择替代模型 | `PUT /v1/routing/successor/replacements` |
+| 添加私有模型 | `POST /v1/private-models` |
+| 创建或更新预设 | `POST /v1/presets`、`PATCH /v1/presets/{id}` |
+| 发布预设版本或移动标签 | `POST /v1/presets/{id}/versions`、`PUT /v1/presets/{id}/labels/{label}` |
+| 创建护栏并挂接密钥 | `POST /v1/guardrails`、`PUT /v1/guardrails/{id}/keys` |
+| 管理请求分类器 | `POST /v1/classifiers` |
+| 用样本测试分类器（需要具有 `gateway:access` 的凭据；目前 CLI 登录和管理密钥会得到 `403 gateway_access_required`） | `POST /v1/classifiers/test` |
+| 向工作区添加成员 | `POST /v1/workspaces/{id}/members/add` |
+| 邀请成员 | `POST /v1/workspaces/{id}/invites` |
+| SSO、SCIM、部门和目录 | `PUT /v1/identity/sso`、`PUT /v1/identity/scim`、`POST /v1/identity/departments`、`PUT /v1/identity/directory/members/{id}` |
+| 受信任的工作负载（OIDC） | `POST /v1/workload-identity/policies` |
+| 将追踪数据发送到可观测性工具 | `POST /v1/observability/destinations`、`POST /v1/observability/destinations/{id}/test` |
+| 提醒的邮件、Slack 或 webhook 目标 | `POST /v1/notifications/destinations`、`PUT /v1/notifications/routes/{eventKind}` |
+| 异步任务的 Webhook | `POST /v1/webhook-endpoints` |
+
+## 修复 403
+
+CLI 会话、管理密钥或 MCP 连接只能执行其作用域和你的工作区角色所允许的操作，仅限所有者和管理员的更改仍然需要所有者或管理员来完成。如果命令返回 `403`，请用 `phaseo whoami --json` 检查已授予的作用域；缺少某个作用域时，用 `phaseo login --scopes <scope,...>` 重新登录。`billing:write` 默认永远不会授予。 无论权限范围如何，CLI 登录和 MCP 连接都无法进行“在控制台中或使用管理密钥完成的更改”中列出的更改。

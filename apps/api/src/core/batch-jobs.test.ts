@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import {
 	getBatchFileMeta,
 	getBatchJobMeta,
+	getBatchJobRecord,
 	isBatchJobBilled,
 	listPendingBatchJobs,
 	listTeamBatchJobs,
@@ -41,6 +42,10 @@ vi.mock("@core/async-operations", () => ({
 }));
 
 describe("batch-jobs metadata", () => {
+	const vertexStorage = {
+		project: "test-project", location: "global", bucket: "test-batch-bucket",
+		inputObject: "inputs/team_1/batch_vertex.jsonl", outputPrefix: "outputs/team_1/batch_vertex/",
+	};
 	beforeEach(() => {
 		claimAsyncOperationsForReconciliationMock.mockReset();
 		getAsyncOperationMock.mockReset();
@@ -54,7 +59,7 @@ describe("batch-jobs metadata", () => {
 		markAsyncOperationBilledMock.mockResolvedValue(true);
 	});
 
-	it("applies visible-record offsets after filtering internal file rows", async () => {
+	it("pages visible records in one bounded database query", async () => {
 		const record = (internalId: string) => ({
 			workspaceId: "team_1", kind: "batch", internalId, requestId: null, sessionId: null, appId: null,
 			provider: "openai", nativeId: internalId, model: null, status: "completed", meta: {}, billedAt: null,
@@ -62,13 +67,14 @@ describe("batch-jobs metadata", () => {
 			lastReconcileError: null, createdAt: null, updatedAt: null,
 		});
 		listTeamAsyncOperationsMock.mockResolvedValueOnce([
-			record("__file__:input"), record("batch_1"), record("batch_2"), record("batch_3"),
+			record("batch_2"), record("batch_3"),
 		]);
 
 		const records = await listTeamBatchJobs({ workspaceId: "team_1", offset: 1, limit: 2 });
 
 		expect(records.map((item) => item.batchId)).toEqual(["batch_2", "batch_3"]);
-		expect(listTeamAsyncOperationsMock).toHaveBeenCalledWith(expect.objectContaining({ offset: 0, limit: 100 }));
+		expect(listTeamAsyncOperationsMock).toHaveBeenCalledTimes(1);
+		expect(listTeamAsyncOperationsMock).toHaveBeenCalledWith(expect.objectContaining({ offset: 1, limit: 2, excludeBatchFiles: true }));
 	});
 
 	it("stores batch meta with native batch id when provided", async () => {
@@ -94,6 +100,31 @@ describe("batch-jobs metadata", () => {
 			nativeBatchId: "b_native_1",
 			status: "in_progress",
 		}));
+	});
+	it("round-trips Vertex storage through job reads, listings and reconciliation claims", async () => {
+		await saveBatchJobMeta("team_1", "batch_vertex", {
+			provider: "google-vertex", nativeBatchId: "projects/123456789/locations/global/batchPredictionJobs/123",
+			status: "in_progress", vertexStorage,
+		});
+		const persisted = JSON.parse(JSON.stringify(upsertAsyncOperationMock.mock.calls[0][0]));
+		getAsyncOperationMock.mockResolvedValue(persisted);
+		listTeamAsyncOperationsMock.mockResolvedValue([persisted]);
+		claimAsyncOperationsForReconciliationMock.mockResolvedValue([persisted]);
+		expect((await getBatchJobMeta("team_1", "batch_vertex"))?.vertexStorage).toEqual(vertexStorage);
+		expect((await getBatchJobRecord("team_1", "batch_vertex"))?.meta?.vertexStorage).toEqual(vertexStorage);
+		expect((await listTeamBatchJobs({ workspaceId: "team_1", limit: 10 }))[0]?.meta?.vertexStorage).toEqual(vertexStorage);
+		expect((await listPendingBatchJobs({ limit: 10 }))[0]?.meta?.vertexStorage).toEqual(vertexStorage);
+	});
+
+	it.each([
+		null, [], { ...vertexStorage, project: "https://other.example" },
+		{ ...vertexStorage, bucket: 123 }, { ...vertexStorage, location: "../global" },
+		{ ...vertexStorage, inputObject: "inputs/../secret.jsonl" },
+		{ ...vertexStorage, outputPrefix: "outputs/team_2/batch_vertex/" },
+		{ ...vertexStorage, outputPrefix: "outputs/team_1/other_batch/" },
+	])("rejects malformed persisted Vertex storage: %j", async (storage) => {
+		getAsyncOperationMock.mockResolvedValue({ provider: "google-vertex", meta: { vertexStorage: storage } });
+		expect((await getBatchJobMeta("team_1", "batch_vertex"))?.vertexStorage).toBeUndefined();
 	});
 
 	it("stores and reads batch-owned file metadata via prefixed internal ids", async () => {

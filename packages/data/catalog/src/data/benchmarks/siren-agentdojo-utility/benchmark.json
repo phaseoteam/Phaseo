@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "siren-agentdojo-utility",
-  "benchmark_name": "Siren AgentDojo Utility",
-  "category": "safety",
-  "ascending_order": true,
-  "type": "percentage",
-  "link": "https://research.meta.ai/static/muse-glimmer-methodology",
-  "total_models": 1
-}

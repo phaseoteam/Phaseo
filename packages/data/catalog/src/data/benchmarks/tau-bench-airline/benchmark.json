@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "tau-bench-airline",
-  "benchmark_name": "Tau Bench (Airline)",
-  "category": null,
-  "ascending_order": null,
-  "type": "percentage",
-  "link": null,
-  "total_models": 27
-}

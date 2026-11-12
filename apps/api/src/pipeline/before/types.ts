@@ -10,6 +10,7 @@ import type { Timer } from "../telemetry/timer";
 import type { Endpoint, RequestMeta } from "@core/types";
 import type { PriceCard } from "../pricing";
 import type { ProviderAdapter } from "@providers/types";
+import type { ClassificationOutcome, ClassifierCall } from "../classification/request-classifiers";
 import type {
     GatewayPluginExecutionMetadata,
     NormalizedGatewayPluginConfig,
@@ -29,6 +30,14 @@ export type GateCheck = {
     limitMetric?: "requests" | "cost" | "soft_blocked" | null;
     currentValue?: number | null;
     limitValue?: number | null;
+    /** The department whose budget was reached (`department_*` reasons only). */
+    departmentId?: string | null;
+    departmentName?: string | null;
+    /** The spend guardrail whose limit was reached (`guardrail_*` reasons only). */
+    guardrailId?: string | null;
+    guardrailName?: string | null;
+    /** shared: one counter for everything the assignment covers; each_key: this key's own counter. */
+    guardrailCounting?: "shared" | "each_key" | null;
     buckets?: {
         daily?: {
             windowStart: string | null;
@@ -59,6 +68,18 @@ export type GateCheck = {
         usageNanos: number;
         remainingNanos: number;
         projectedUsageNanos: number;
+        exceeded: boolean;
+        windowStart: string | null;
+        resetAt: string | null;
+    }> | null;
+    /** Department budgets the key counts toward (gateway_department_budget_status), even below their limit. */
+    departmentBudgets?: Array<{
+        id: string;
+        departmentId: string;
+        departmentName: string | null;
+        interval: "daily" | "weekly" | "monthly";
+        limitNanos: number;
+        usageNanos: number;
         exceeded: boolean;
         windowStart: string | null;
         resetAt: string | null;
@@ -133,6 +154,8 @@ export type PresetConfig = {
         enabled?: boolean | null;
         ttlSeconds?: number | null;
     } | null;
+    /** Prompt template (messages with {{variables}}); see core/prompt-templates. */
+    prompt?: unknown;
 };
 
 /**
@@ -145,6 +168,11 @@ export type PresetData = {
     description: string | null;
     config: PresetConfig;
     visibility: "private" | "team" | "public";
+    /** The published version that served the request (null for presets saved before versions). */
+    versionId?: string | null;
+    versionLabel?: string | null;
+    /** The ref the request pinned ("v3", "production"), or null for the published version. */
+    ref?: string | null;
 };
 
 export type ProviderRolloutStatus =
@@ -160,11 +188,10 @@ export type ProviderRolloutStatus =
     | "paused"
     | "soft_blocked";
 
+/** `deranked`: routable only as a last resort, after every other healthy provider. */
 export type RoutingStatus =
     | "active"
-    | "deranked_lvl1"
-    | "deranked_lvl2"
-    | "deranked_lvl3"
+    | "deranked"
     | "disabled";
 
 export type CapabilityRoutingStatus = RoutingStatus | "internal_testing" | "coming_soon";
@@ -191,6 +218,7 @@ export type RouteAvailabilityPolicy = import("@/lib/config/routeAvailability").R
  * Returned from the RPC call for gateway context
  */
 export type GatewayProviderSnapshot = {
+    accessScope?: "public" | "internal";
     providerId: string;
 	credentialMode?: "managed_and_byok" | "byok_only";
     providerFamilyId?: string | null;
@@ -262,17 +290,17 @@ export type TeamEnrichment = {
     balance_nanos: number;
     balance_usd: number;
     balance_is_low: boolean;
-    total_requests: number;
-    total_spend_nanos: number;
-    total_spend_usd: number;
-    spend_24h_nanos: number;
-    spend_24h_usd: number;
-    spend_7d_nanos: number;
-    spend_7d_usd: number;
-    spend_30d_nanos: number;
-    spend_30d_usd: number;
-    requests_1h: number;
-    requests_24h: number;
+    total_requests: number | null;
+    total_spend_nanos: number | null;
+    total_spend_usd: number | null;
+    spend_24h_nanos: number | null;
+    spend_24h_usd: number | null;
+    spend_7d_nanos: number | null;
+    spend_7d_usd: number | null;
+    spend_30d_nanos: number | null;
+    spend_30d_usd: number | null;
+    requests_1h: number | null;
+    requests_24h: number | null;
 };
 
 export type TeamSettings = {
@@ -281,10 +309,6 @@ export type TeamSettings = {
     betaChannelEnabled: boolean | null;
     alphaChannelEnabled?: boolean | null;
     cacheAwareRoutingEnabled?: boolean | null;
-    privacyZdrOnly?: boolean | null;
-    privacyEnablePaidMayTrain?: boolean | null;
-    privacyEnableFreeMayTrain?: boolean | null;
-    privacyEnableInputOutputLogging?: boolean | null;
     /** Explicit consent to persist gateway request/response payloads. */
     ioLoggingEnabled?: boolean;
     ioLoggingIncludeProviderPayloads?: boolean;
@@ -305,12 +329,12 @@ export type KeyEnrichment = {
     name: string | null;
     created_at: string;
     key_age_days: number;
-    total_requests: number;
-    total_spend_nanos: number;
-    total_spend_usd: number;
-    requests_today: number;
-    spend_today_nanos: number;
-    spend_today_usd: number;
+    total_requests: number | null;
+    total_spend_nanos: number | null;
+    total_spend_usd: number | null;
+    requests_today: number | null;
+    spend_today_nanos: number | null;
+    spend_today_usd: number | null;
     daily_limit_pct: number | null;
 };
 
@@ -320,7 +344,8 @@ export type ContextFetchTelemetry = {
     presetAccessMs?: number | null;
     privateModelMs?: number | null;
     byokHydrationMs?: number | null;
-    cacheStatus: "hit" | "miss" | "bypass" | "credit_refresh";
+    /** model_miss: workspace and key data came from cache; only the model's routes and prices were loaded. */
+    cacheStatus: "hit" | "miss" | "bypass" | "credit_refresh" | "model_miss";
     totalMs: number;
     keyVersionMs?: number | null;
     cacheReadMs?: number | null;
@@ -328,6 +353,8 @@ export type ContextFetchTelemetry = {
     rpcMs?: number | null;
     enrichMs?: number | null;
     cacheWriteMs?: number | null;
+    /** Wait for the spend-limit coordinator's decision (enforce mode), set by guardContext. */
+    spendLimitMs?: number | null;
     fallbackRemap?: boolean;
 };
 
@@ -359,6 +386,7 @@ export type GatewayContextData = {
  * Includes the adapter, weight, BYOK metadata, and pricing info
  */
 export type ProviderCandidate = {
+    accessScope?: "public" | "internal";
     providerId: string;
 	credentialMode?: "managed_and_byok" | "byok_only";
     providerFamilyId?: string | null;
@@ -439,6 +467,7 @@ export type ParamRoutingDiagnostics = {
         stage:
             | "param_support"
             | "param_preference"
+            | "param_values"
             | "provider_docs"
             | "response_format"
             | "structured_outputs"
@@ -470,11 +499,13 @@ export type ProviderEnablementDiagnostics = {
             | "capability_disabled"
             | "adapter_missing"
             | "pricing_missing"
-            | "service_tier_unsupported";
+            | "service_tier_unsupported"
+            | "hosted_tool_unsupported";
     }>;
 };
 
 export type ProviderAttemptLog = {
+	lifecycle_span_id?: string;
     attempt_number: number;
     started_at_unix_ms?: number | null;
     provider: string;
@@ -518,6 +549,13 @@ export type ProviderAttemptLog = {
 	upstream_preflight_count?: number | null;
 	upstream_media_count?: number | null;
     retry_delay_ms?: number | null;
+    /**
+     * What this attempt says about the provider (see pipeline/execute/attempt-health.ts).
+     * Updated before audit when the served stream breaks or the output is empty.
+     */
+    health_class?: import("@pipeline/execute/attempt-health").AttemptHealthClass;
+    /** Why the attempt got its class (null for a plain success); see attempt-health.ts. */
+    health_reason?: import("@pipeline/execute/attempt-health").AttemptHealthReason | null;
 };
 
 export type WorkspacePolicy = {
@@ -533,6 +571,8 @@ export type WorkspacePolicy = {
 	privacyEnableFreeMayTrain?: boolean;
 	privacyEnableInputOutputLogging?: boolean;
 	privacyZdrOnly?: boolean;
+	/** The key's `never_store_content`: no request or response content is kept or forwarded. */
+	neverStoreContent?: boolean;
 	accountPolicyApplied?: boolean;
     enforceAllowed: boolean;
     activeGuardrailIds: string[];
@@ -669,12 +709,67 @@ export type WebFetchObservability = {
 };
 
 /**
+ * A model call a server tool made for the request (advisor, subagent, fusion panel), priced on the
+ * called model's own route rather than the main model's card. Image generation is priced by
+ * meta.serverToolPricing.
+ */
+export type ServerToolSubCallCharge = {
+    kind: "advisor";
+    model: string;
+    provider: string;
+    keySource: "gateway" | "byok";
+    totalNanos: number;
+    currency: string;
+    inputTokens?: number;
+    outputTokens?: number;
+};
+
+/**
  * The main context object passed through the entire pipeline
  * Contains all information needed for request processing
  */
 export type PipelineContext = {
+	/** Charges for model calls server tools made during this request, added to its bill. */
+	serverToolSubCallCharges?: ServerToolSubCallCharge[];
+	/**
+	 * Why uncollectedChargeNanos was not collected: the wallet refused the debit (a definite, known unpaid amount), or the debit's outcome
+	 * is unknown after every retry (a transport error or lost response).
+	 */
+	uncollectedChargeReason?: "wallet_refused" | "wallet_not_found" | "persistence_failed";
+	/** The round-by-round bill of a successful multi-round server-tool response, charged instead of the aggregate. */
+	serverToolRoundsBill?: import("../after/server-tool-charges").ServerToolRoundsBill | null;
+	/**
+	 * What a server-tool request that then failed was charged for its completed rounds. The
+	 * failure row carries it and counts it against spend limits instead of releasing them.
+	 */
+	serverToolPartialCharge?: {
+		costNanos: number;
+		currency: string;
+		usage: Record<string, unknown>;
+		pricingLines: unknown[];
+		/** Completed rounds that could not be priced, recorded for reconciliation. */
+		unpricedRounds?: unknown[];
+		/** What should have been charged when the wallet charge did not go through (costNanos is 0). */
+		expectedNanos?: number;
+		/** Set by the writer that persists the failure row; only it settles spend limits. */
+		persistedBy?: "failure_audit" | "error_handler";
+	} | null;
 	/** Authenticated key owner or OAuth user; never use caller attribution for quotas. */
 	quotaUserId?: string | null;
+	/** Guardrails active for this key or OAuth user; selects guardrail rate limit policies. */
+	activeGuardrailIds?: string[];
+	/**
+	 * Admission ID for rate limit policies when it differs from `billingRequestId`:
+	 * model fallbacks of one HTTP request reuse the primary attempt's admission.
+	 */
+	rateLimitAdmissionId?: string;
+	/**
+	 * Spend-limit coordinator admission (GATEWAY_SPEND_LIMIT_DO_MODE = "enforce" only). Recorded on
+	 * success, released on failure; one never settled stops holding allowance on its own.
+	 */
+	spendAdmission?: import("@core/spend-limits").SpendAdmission | null;
+	/** Concurrency slots this HTTP request holds; shared by its fallback attempts and released by the entrypoint. */
+	rateLimitConcurrency?: import("@core/customer-rate-limits").ConcurrencyLeases;
     /** Request-owned diagnostics; never cache or serialize. Not enabled by public headers. */
     gatewayTimingTrace?: import("../telemetry/gateway-trace").GatewayTimingTrace;
     /** Request-owned persistence barrier; never cache or serialize this field. */
@@ -683,11 +778,36 @@ export type PipelineContext = {
     capability: string;
     /** Server-owned idempotency key for this billable pipeline execution. */
     billingRequestId: string;
+    /**
+     * The bill a delivered request meant to charge when every charge attempt failed (one-off or a
+     * stepped request's final total). Its failure row records it as expected_cost_nanos; spend limits
+     * count it as if it had been charged.
+     */
+    uncollectedChargeNanos?: number;
+    /**
+     * What the database holds as charged for this request after those attempts failed (read back
+     * from gateway_request_charges: a debit can commit while every response is lost). The failure
+     * row records it as cost_nanos. Null when it could not be read.
+     */
+    confirmedChargeNanos?: number | null;
+    /** Where confirmedChargeNanos came from: the charge row, or the last checkpoint sent. */
+    confirmedChargeSource?: "database" | "last_checkpoint";
+    /**
+     * The HTTP request's position in the workspace's monthly BYOK allowance, shared by its model
+     * fallbacks (each has its own billingRequestId), so the request counts once and is free or
+     * pays the fee as one request.
+     */
+    byokAllowanceId?: string;
     requestId: string;
     protocol?: string;
     providerCapabilitiesBeta?: boolean;
     meta: RequestMeta;
     rawBody: any;
+    /**
+     * Request body before guardrail redaction, kept non-enumerable so it is never
+     * serialized. Model fallbacks re-send it so guardrails rerun per attempt.
+     */
+    readonly retryRawBody?: unknown;
     body: any;
     requestedModel: string;
     model: string;
@@ -713,8 +833,33 @@ export type PipelineContext = {
         name: string;
         slug?: string | null;
         config: PresetConfig;
+        versionId?: string | null;
+        versionLabel?: string | null;
+        ref?: string | null;
     } | null;
+    /** Set when the preset rendered a prompt template; variable values are not kept. */
+    promptTemplate?: ({ presetId: string; presetSlug: string | null; versionLabel: string | null; ref: string | null } & import("./promptTemplate").PromptTemplateApplication) | null;
     internal?: boolean;
+    /** The calling key never has its content stored: no I/O log, cached response, detailed telemetry or broadcast content. */
+    neverStoreContent?: boolean;
+    /**
+     * Zero data retention applies (the workspace setting, one of the key's guardrails, or the
+     * request's own `require_zero_data_retention`): no I/O log, cached response, data
+     * contribution sample or detailed telemetry content.
+     */
+    zeroDataRetention?: boolean;
+    /**
+     * The request's own limits on where its content may go (requestDataLimits),
+     * read before a provider-qualified model pins its provider, for other gateway
+     * requests that send the same content (request classifiers).
+     */
+    contentDataLimits?: Record<string, unknown> | null;
+    /** Classifies this request with the caller's credentials during the success audit. */
+    requestClassifierCall?: ClassifierCall;
+    /** Set on the in-process classifier call itself: never classified, not rate limited. */
+    classifierSubrequest?: boolean;
+    /** Per-classifier outcomes, kept in detail_metadata.classifications. */
+    requestClassifications?: ClassificationOutcome[] | null;
     timing?: Record<string, number>;
     timer?: Timer;
     routingDiagnostics?: Record<string, any> | null;
@@ -726,6 +871,7 @@ export type PipelineContext = {
         round: number;
         durationMs: number;
         calls: Array<{
+			spanId?: string;
             id: string;
             name: string;
             arguments?: string;
@@ -733,6 +879,10 @@ export type PipelineContext = {
             isError?: boolean;
         }>;
     }>;
+	/** Bounded ordered metadata; persisted only with opt-in retained I/O. */
+	lifecycle?: import("../lifecycle").RequestLifecycle;
+	lifecycleParentSpanId?: string;
+	lifecycleProviderSpanId?: string;
     responseCache?: ResponseCacheDiagnostics | null;
     attemptErrors?: Array<Record<string, unknown>>;
     providerAttempts?: ProviderAttemptLog[];
@@ -750,4 +900,8 @@ export type PipelineContext = {
     routingMode?: string | null;
     keyId?: string | null;
     testingMode?: boolean;
+    billableInternalTesting?: boolean;
+    /** Scope used to load the selected route's pricing context. */
+    pricingInternalOnly?: boolean;
+    internalPricingAvailable?: boolean;
 };

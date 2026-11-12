@@ -55,7 +55,7 @@ function normalizeRealtimeProvider(value: unknown): string | null {
   const provider = value.trim().toLowerCase();
   if (provider === "xai" || provider === "x-ai") return "spacex-ai";
   if (provider === "google") return "google-ai-studio";
-  return ["openai", "spacex-ai", "google-ai-studio"].includes(provider) ? provider : null;
+  return /^[a-z0-9][a-z0-9-]{0,63}$/.test(provider) ? provider : null;
 }
 
 function normalizeRealtimeModel(provider: string | null, value: unknown): string | null {

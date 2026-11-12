@@ -19,7 +19,7 @@ import ptSettingsUiMessages from "../../messages/pt-BR/settings-ui.json";
 import jaSettingsUiMessages from "../../messages/ja/settings-ui.json";
 import arSettingsUiMessages from "../../messages/ar-SA/settings-ui.json";
 import { mergeCatalogMessages, nestDottedMessageKeys } from "./message-overlays";
-import type { PublicLocale } from "./routing";
+import type { PublicLocale, ShippedLocale } from "./routing";
 
 export type SourceSettingsMessages = typeof englishSettingsMessages;
 export type SettingsMessages = SourceSettingsMessages;
@@ -27,7 +27,7 @@ export type SettingsUiMessages = Record<string, unknown>;
 export type SettingsSidebarItemKey = keyof SourceSettingsMessages["sidebar"]["items"];
 export type SettingsSidebarHeadingKey = keyof SourceSettingsMessages["sidebar"]["headings"];
 
-const settingsCatalogs: Record<PublicLocale, SettingsMessages> = {
+const settingsCatalogs: Record<ShippedLocale, SettingsMessages> = {
 	"en-GB": englishSettingsMessages,
 	"en-US": mergeCatalogMessages(englishSettingsMessages, enUsSettingsOverlay),
 	"zh-Hans": zhHansSettingsMessages as SettingsMessages,
@@ -40,7 +40,7 @@ const settingsCatalogs: Record<PublicLocale, SettingsMessages> = {
 	"ar-SA": arSettingsMessages as SettingsMessages,
 };
 
-const settingsUiCatalogs: Record<PublicLocale, SettingsUiMessages> = {
+const settingsUiCatalogs: Record<ShippedLocale, SettingsUiMessages> = {
 	"en-GB": englishSettingsUiMessages,
 	"en-US": mergeCatalogMessages(englishSettingsUiMessages, enUsSettingsUiOverlay),
 	"zh-Hans": zhHansSettingsUiMessages,

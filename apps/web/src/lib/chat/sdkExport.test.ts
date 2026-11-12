@@ -1,3 +1,4 @@
+import { test, expect } from "vitest";
 import { agentSdkSupportReason, convertTextProtocol, protocolSwitchSupportReason, sdkCode, sdkRequestFromChat } from "./sdkExport";
 
 test("exports the submitted body and selected endpoint without proxy credentials", () => {
@@ -23,6 +24,16 @@ test("live-preview, polling and unknown routes are not presented as generation e
   expect(sdkRequestFromChat("/api/chat/live/session", { method: "POST", body: '{"model":"openai/gpt-live-1"}' })).toBeNull();
   expect(sdkRequestFromChat("/api/chat/video?id=v1", { method: "GET" })).toBeNull();
   expect(sdkRequestFromChat("/api/chat/unknown", { method: "POST", body: '{"requestBody":{}}' })).toBeNull();
+});
+
+test("exports realtime sessions for providers beyond OpenAI, xAI and Google", () => {
+  expect(sdkRequestFromChat("/api/chat/realtime/session", {
+    method: "POST",
+    body: JSON.stringify({ provider: "elevenlabs", model: "eleven-labs/eleven-realtime-v1-mini", voice: "brian" }),
+  })).toEqual({
+    endpoint: "/audio/realtime/sessions",
+    body: { model: "eleven-labs/eleven-realtime-v1-mini", provider: "elevenlabs", voice: "brian" },
+  });
 });
 
 test("exports the public realtime session request instead of the private chat proxy", () => {

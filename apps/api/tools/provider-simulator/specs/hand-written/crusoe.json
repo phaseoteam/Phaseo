@@ -1,0 +1,32 @@
+{
+	"id": "crusoe",
+	"source": {
+		"url": null,
+		"docs": "https://docs.crusoecloud.com/quickstart/getting-started-with-managed-inference",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. Recorded from a web-search summary. vLLM-backed. The Intelligence Foundry swagger (https://api.intelligence.crusoecloud.com/v1/swagger.json, Swagger 2.0) covers files/batches/fine-tuning only, and docs.crusoe.ai/openapi.json is the cloud management API; neither has chat."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"max_tokens": {},
+					"chat_template_kwargs": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

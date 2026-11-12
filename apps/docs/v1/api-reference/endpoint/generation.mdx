@@ -1,22 +1,29 @@
 ---
 title: "Get a generation"
+"og:image": "https://phaseo.app/og/dynamic?title=Get%20a%20generation&pathname=/docs/v1/api-reference/endpoint/generation"
 sidebarTitle: "Get a generation"
 badge: "Beta"
-openapi: "GET /generations"
+openapi: "/openapi/v1/openapi.yaml GET /generations"
 ---
-Fetches the stored audit record for a given `request_id` that belongs to your team.
 
-Use:
-- `GET /v1/generations?id=<request_id>`
+Call `GET /v1/generations?id=<request_id>` to fetch the stored audit record for a request in your workspace. It needs the `generations:read` scope; a missing `id` returns `400` `missing_id`.
 
-When the gateway captured full request details for that generation, the response also includes:
+New requests receive a server-generated `G-` generation ID, returned in the `x-request-id` response header and in the generation response. Use that ID for request logs, generation lookup and support. A caller-supplied `x-request-id` does not replace the generation ID. Older UUID log IDs still work for lookup.
 
-- `replay_supported`: whether a replay-ready payload is available
-- `replay_request`: the stored request body you can send back to the original endpoint for a controlled rerun
+## Replay a request
 
-Typical replay flow:
+Every response includes `replay_supported`. When I/O logging stored the request body and you may read stored contents, `replay_supported` is `true` and `replay_request` holds the body to send back for a controlled rerun:
 
-1. Read the generation record with `GET /v1/generations?id=<request_id>`.
-2. Check `replay_supported === true`.
-3. Re-submit `replay_request` to the original endpoint named by `endpoint` such as `/v1/chat/completions` or `/v1/responses`.
+<Steps>
+  <Step title="Read the generation">
+    Call `GET /v1/generations?id=<request_id>`.
+  </Step>
+  <Step title="Check it can be replayed">
+    Continue only if `replay_supported` is `true`.
+  </Step>
+  <Step title="Send it again">
+    Send `replay_request` to the endpoint named in `endpoint`, such as `/v1/chat/completions` or `/v1/responses`.
+  </Step>
+</Steps>
 
+A workspace can limit stored contents to owners and admins. Other callers, including API keys created by members, then get `replay_request: null` and request details without their contents.

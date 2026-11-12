@@ -1,0 +1,49 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- macOS rounded-rect mask shape -->
+  <rect width="1024" height="1024" rx="228" fill="#111114"/>
+
+  <!-- Subtle inner border -->
+  <rect x="4" y="4" width="1016" height="1016" rx="226" fill="none" stroke="#27272a" stroke-width="2"/>
+
+  <!-- Bot body -->
+  <rect x="262" y="342" width="500" height="420" rx="52" fill="#1c1c21" stroke="#d4d4d8" stroke-width="10"/>
+
+  <!-- CRT screen face -->
+  <rect x="312" y="398" width="400" height="250" rx="24" fill="#09090b" stroke="#3f3f46" stroke-width="4"/>
+
+  <!-- Angry brows -->
+  <line x1="360" y1="440" x2="430" y2="462" stroke="#d4d4d8" stroke-width="12" stroke-linecap="round"/>
+  <line x1="664" y1="440" x2="594" y2="462" stroke="#d4d4d8" stroke-width="12" stroke-linecap="round"/>
+
+  <!-- Eyes -->
+  <rect x="375" y="482" width="56" height="44" rx="10" fill="#d4d4d8"/>
+  <rect x="593" y="482" width="56" height="44" rx="10" fill="#d4d4d8"/>
+
+  <!-- Smile -->
+  <path d="M420 580 Q512 620 604 580" stroke="#d4d4d8" stroke-width="10" fill="none" stroke-linecap="round"/>
+
+  <!-- Antenna -->
+  <line x1="512" y1="342" x2="512" y2="250" stroke="#3f3f46" stroke-width="12" stroke-linecap="round"/>
+  <circle cx="512" cy="222" r="30" fill="#d4d4d8" opacity="0.9"/>
+  <circle cx="512" cy="222" r="18" fill="#a1a1aa"/>
+
+  <!-- Arms -->
+  <rect x="186" y="434" width="76" height="130" rx="20" fill="#1c1c21" stroke="#d4d4d8" stroke-width="8"/>
+  <rect x="762" y="434" width="76" height="130" rx="20" fill="#1c1c21" stroke="#d4d4d8" stroke-width="8"/>
+
+  <!-- Hands -->
+  <rect x="166" y="570" width="80" height="40" rx="20" fill="#27272a" stroke="#d4d4d8" stroke-width="6"/>
+  <rect x="778" y="570" width="80" height="40" rx="20" fill="#27272a" stroke="#d4d4d8" stroke-width="6"/>
+
+  <!-- Legs -->
+  <rect x="370" y="762" width="84" height="100" rx="26" fill="#1c1c21" stroke="#d4d4d8" stroke-width="8"/>
+  <rect x="570" y="762" width="84" height="100" rx="26" fill="#1c1c21" stroke="#d4d4d8" stroke-width="8"/>
+
+  <!-- Feet -->
+  <rect x="340" y="840" width="144" height="50" rx="25" fill="#27272a" stroke="#d4d4d8" stroke-width="6"/>
+  <rect x="540" y="840" width="144" height="50" rx="25" fill="#27272a" stroke="#d4d4d8" stroke-width="6"/>
+
+  <!-- Belly button / center detail -->
+  <circle cx="512" cy="710" r="24" fill="none" stroke="#d4d4d8" stroke-width="5" opacity="0.3"/>
+  <circle cx="512" cy="710" r="10" fill="#d4d4d8" opacity="0.4"/>
+</svg>

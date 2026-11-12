@@ -5,7 +5,8 @@ export function privateSettingsOptions(scope: AccountQueryScope, path: string) {
 	return {
 		...WEB_QUERY_POLICIES.private,
 		queryKey: [...webQueryKeys.account.scope(scope), "settings", path] as const,
-		// Editors retain their draft while open. Refresh on return after expiry or after a save.
+		// Editors retain their draft while open. Writes invalidate; PrivateSettingsQuery
+		// revalidates stale data when the tab is shown again and offers the update.
 		refetchInterval: false as const,
 		refetchOnWindowFocus: false,
 		refetchOnReconnect: false,

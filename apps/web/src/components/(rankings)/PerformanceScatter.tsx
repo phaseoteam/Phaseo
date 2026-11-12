@@ -3,10 +3,9 @@
 // Why: Helps users visualize model efficiency
 // How: Uses Recharts ScatterChart with cost and latency/throughput axes
 
-"use client";
 
-import Link from "next/link";
-import { useLocale, useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import {
     ScatterChart,
@@ -22,6 +21,7 @@ import { Logo } from "@/components/Logo";
 import type { PerformanceData } from "@/lib/fetchers/rankings/getRankingsData";
 import { EmptyChartPreview } from "@/components/(rankings)/EmptyChartPreview";
 import { getModelDetailsHref } from "@/lib/models/modelHref";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 export type PerformanceMode = "throughput" | "latency";
 
@@ -225,7 +225,7 @@ export function PerformanceScatter({
                                     <div className="grid grid-cols-[auto_auto] gap-x-4 gap-y-1 border-t border-border/60 pt-2 text-xs">
                                         <span className="text-muted-foreground">{t("costLabel")}</span>
                                         <span className="text-right tabular-nums">
-                                            {t("costPerMillionTokensValue", { value: new Intl.NumberFormat(locale, { style: "currency", currency: "USD" }).format(point.cost) })}
+                                            {t("costPerMillionTokensValue", { value: new Intl.NumberFormat(MONEY_LOCALE, { style: "currency", currency: "USD" }).format(point.cost) })}
                                         </span>
                                         <span className="text-muted-foreground">
                                             {mode === "throughput" ? t("throughput") : t("latency")}

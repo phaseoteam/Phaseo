@@ -4,9 +4,11 @@ import { getAuthenticatedDataClient, getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { PRIVATE_NO_STORE_HEADERS } from "@/http/cache";
 import { requireAccountWorkspace } from "./context";
+import { invalidateGatewayKey } from "./settings-keys";
 import { getProviderAccountMode } from "./provider-account";
 import { workspaceHasAddon } from "@/billing/workspaceAddons";
 import { requestAwareAvatarUrl } from "./settings-profile-avatar";
+import { retryTransaction } from "@/data/retry-transaction";
 
 const emptyTeams = {
 	teams: [], membersByTeam: {}, invitesByTeam: {}, requestsByTeam: {},
@@ -82,6 +84,21 @@ async function inviteAesKey(env: Env) {
 	const bytes = base64ToBytes(env.INVITE_ENCRYPTION_KEY ?? "");
 	if (bytes.length !== 32) throw new Error("invite_encryption_unavailable");
 	return crypto.subtle.importKey("raw", bytesBuffer(bytes), { name: "AES-GCM" }, false, ["encrypt", "decrypt"]);
+}
+
+const INVITE_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789";
+
+/** A random invite code (12 characters, about 70 bits) without look-alike characters. */
+export function generateInviteCode(length = 12): string {
+	// 228 is the largest multiple of the alphabet size (57) below 256, so every character is equally likely.
+	const limit = Math.floor(256 / INVITE_CODE_ALPHABET.length) * INVITE_CODE_ALPHABET.length;
+	let out = "";
+	while (out.length < length) {
+		for (const byte of crypto.getRandomValues(new Uint8Array(length * 2))) {
+			if (byte < limit && out.length < length) out += INVITE_CODE_ALPHABET[byte % INVITE_CODE_ALPHABET.length];
+		}
+	}
+	return out;
 }
 
 async function encryptInviteToken(env: Env, token: string): Promise<string> {
@@ -227,7 +244,7 @@ accountSettingsTeamsRouter.post("/teams", async (c) => {
 	}
 	const workspaceId = created.data.id;
 	const [member, settings] = await Promise.all([
-		client.from("workspace_members").upsert({ workspace_id: workspaceId, user_id: user.id, role: "owner" }, { onConflict: "workspace_id,user_id", ignoreDuplicates: true }),
+		retryTransaction(() => client.from("workspace_members").upsert({ workspace_id: workspaceId, user_id: user.id, role: "owner" }, { onConflict: "workspace_id,user_id", ignoreDuplicates: true })),
 		client.from("workspace_settings").upsert({ workspace_id: workspaceId }, { onConflict: "workspace_id", ignoreDuplicates: true }),
 	]);
 	if (member.error || settings.error) {
@@ -277,10 +294,10 @@ accountSettingsTeamsRouter.delete("/teams/:workspaceId", async (c) => {
 	if (!workspace.data) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	if (workspace.data.owner_user_id !== user.id) return c.json({ error: "owner_required" }, 403, PRIVATE_NO_STORE_HEADERS);
 	for (const table of ["workspace_members", "workspace_invites", "workspace_join_requests"] as const) {
-		const result = await client.from(table).delete().eq("workspace_id", workspaceId);
+		const result = await retryTransaction(() => client.from(table).delete().eq("workspace_id", workspaceId));
 		if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	}
-	const removed = await client.from("workspaces").delete().eq("id", workspaceId);
+	const removed = await retryTransaction(() => client.from("workspaces").delete().eq("id", workspaceId));
 	if (removed.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	return c.json({ success: true }, 200, PRIVATE_NO_STORE_HEADERS);
 });
@@ -291,9 +308,11 @@ accountSettingsTeamsRouter.post("/teams/:workspaceId/invites", async (c) => {
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: c.req.param("workspaceId") });
 	if (!context || !["owner", "admin"].includes(context.role.toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const body: Record<string, unknown> = await c.req.json<Record<string, unknown>>().catch(() => ({}));
-	const token = String(body.token ?? "");
 	const role = ["admin", "member"].includes(String(body.role).toLowerCase()) ? String(body.role).toLowerCase() : "member";
-	if (token.length < 6) return c.json({ error: "invalid_token" }, 400, PRIVATE_NO_STORE_HEADERS);
+	// Like role changes, making someone an admin is the owner's call.
+	if (role === "admin" && !context.isOwner) return c.json({ error: "forbidden", message: "Only the workspace owner can invite admins." }, 403, PRIVATE_NO_STORE_HEADERS);
+	// The server picks the code, so its strength never depends on the client; any token sent is ignored.
+	const token = generateInviteCode();
 	try {
 		const result = await context.client.from("workspace_invites").insert({ workspace_id: context.workspaceId, creator_user_id: user.id, role, token_encrypted: await encryptInviteToken(c.env, token), token_fingerprint: await inviteFingerprint(c.env, token), token_preview: token.length >= 4 ? `${token.slice(0, 2)}...${token.slice(-2)}` : token, expires_at: new Date(Date.now() + Math.max(1, Number(body.expiresInDays) || 7) * 86_400_000).toISOString(), max_uses: typeof body.maxUses === "number" ? Math.max(0, Math.floor(body.maxUses)) : null, key_version: 1 }).select("id").maybeSingle();
 		if (result.error) throw result.error;
@@ -366,7 +385,9 @@ accountSettingsTeamsRouter.post("/teams/invites/accept", async (c) => {
 
 accountSettingsTeamsRouter.put("/teams/:workspaceId/sso", async (c) => {
 	const context = await requireAccountWorkspace({ request: c.req.raw, env: c.env, workspaceId: c.req.param("workspaceId") });
-	if (!context || !["owner", "admin"].includes(context.role.toLowerCase())) return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
+	// Sign-ins through the workspace's identity provider are linked to its directory users, who can hold the
+	// admin role, so only the owner (workspaces.owner_user_id) chooses which provider, domains and setting to trust.
+	if (!context?.isOwner) return c.json({ error: "owner_required" }, 403, PRIVATE_NO_STORE_HEADERS);
 	const body: Record<string, unknown> = await c.req.json<Record<string, unknown>>().catch(() => ({}));
 	const normalized = normalizeWorkspaceSsoUpdate(body);
 	if ("error" in normalized) return c.json({ error: normalized.error }, 400, PRIVATE_NO_STORE_HEADERS);
@@ -375,6 +396,8 @@ accountSettingsTeamsRouter.put("/teams/:workspaceId/sso", async (c) => {
 	}
 	const payload = { workspace_id: context.workspaceId, ...normalized.value, updated_at: new Date().toISOString() };
 	const result = await context.client.from("workspace_settings").upsert(payload, { onConflict: "workspace_id" });
+	// One workspace per identity provider: sign-ins through a provider are matched to its workspace.
+	if (result.error?.code === "23505") return c.json({ error: "sso_provider_in_use" }, 409, PRIVATE_NO_STORE_HEADERS);
 	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	return c.json({ success: true, workspaceId: context.workspaceId, settings: payload }, 200, PRIVATE_NO_STORE_HEADERS);
 });
@@ -393,7 +416,7 @@ accountSettingsTeamsRouter.put("/teams/:workspaceId/members/:userId", async (c) 
 	const existing = await context.client.from("workspace_members").select("user_id").eq("workspace_id", context.workspaceId).eq("user_id", targetUserId).maybeSingle();
 	if (existing.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if (!existing.data) return c.json({ error: "member_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
-	const result = await context.client.from("workspace_members").update({ role }).eq("workspace_id", context.workspaceId).eq("user_id", targetUserId).select("workspace_id,user_id,role").maybeSingle();
+	const result = await retryTransaction(() => context.client.from("workspace_members").update({ role }).eq("workspace_id", context.workspaceId).eq("user_id", targetUserId).select("workspace_id,user_id,role").maybeSingle());
 	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if (!result.data) return c.json({ error: "member_not_found" }, 404, PRIVATE_NO_STORE_HEADERS);
 	return c.json({ workspaceId: context.workspaceId, userId: targetUserId, role: result.data?.role ?? null, ok: true }, 200, PRIVATE_NO_STORE_HEADERS);
@@ -415,10 +438,15 @@ accountSettingsTeamsRouter.delete("/teams/:workspaceId/members/:userId", async (
 	if (workspace.error || target.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if (workspace.data?.owner_user_id === targetUserId) return c.json({ workspaceId, userId: targetUserId, ok: false, message: "You can't remove the workspace owner." }, 409, PRIVATE_NO_STORE_HEADERS);
 	if (!target.data) return c.json({ workspaceId, userId: targetUserId, ok: false, message: "Workspace member not found." }, 404, PRIVATE_NO_STORE_HEADERS);
-	const result = await context.client.from("workspace_members").delete().eq("workspace_id", workspaceId).eq("user_id", targetUserId).select("workspace_id,user_id").maybeSingle();
+	// The delete trigger revokes the API keys this member created here; note them first so the gateway
+	// drops its cached copies now rather than when they expire.
+	const memberKeys = await context.client.from("keys").select("id").eq("workspace_id", workspaceId).eq("created_by", targetUserId).not("status", "in", "(revoked,compromised,deleted)");
+	const result = await retryTransaction(() => context.client.from("workspace_members").delete().eq("workspace_id", workspaceId).eq("user_id", targetUserId).select("workspace_id,user_id").maybeSingle());
 	if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 	if (!result.data) return c.json({ workspaceId, userId: targetUserId, ok: false, message: "Workspace member not found." }, 404, PRIVATE_NO_STORE_HEADERS);
-	return c.json({ workspaceId, userId: targetUserId, ok: true }, 200, PRIVATE_NO_STORE_HEADERS);
+	const revokedKeyIds = (memberKeys.data ?? []).map((row: { id: string }) => String(row.id));
+	if (revokedKeyIds.length) c.executionCtx.waitUntil(Promise.all(revokedKeyIds.map((keyId) => invalidateGatewayKey(c.env, keyId))));
+	return c.json({ workspaceId, userId: targetUserId, ok: true, revokedKeys: revokedKeyIds.length }, 200, PRIVATE_NO_STORE_HEADERS);
 });
 
 for (const decision of ["approve", "reject"] as const) {
@@ -427,7 +455,9 @@ for (const decision of ["approve", "reject"] as const) {
 		if (!user) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
 		const userClient = getAuthenticatedDataClient(c.env, c.req.raw);
 		if (!userClient) return c.json({ error: "unauthorized" }, 401, PRIVATE_NO_STORE_HEADERS);
-		const result = await userClient.rpc(`${decision}_workspace_join_request`, { p_request_id: c.req.param("requestId") });
+		const result = await retryTransaction(() => userClient.rpc(`${decision}_workspace_join_request`, { p_request_id: c.req.param("requestId") }));
+		// 42501: not allowed, such as an admin approving an invite that makes someone an admin.
+		if (result.error?.code === "42501") return c.json({ error: "forbidden" }, 403, PRIVATE_NO_STORE_HEADERS);
 		if (result.error) return c.json({ error: "settings_unavailable" }, 503, PRIVATE_NO_STORE_HEADERS);
 		const row = Array.isArray(result.data) ? result.data[0] : result.data;
 		if (!row?.id) return c.json({ error: "not_found" }, 404, PRIVATE_NO_STORE_HEADERS);

@@ -17,6 +17,42 @@ const workspacePolicy = {
 };
 
 describe("sensitive info guardrails", () => {
+	it.each(["block", "redact"] as const)("enforces %s on extraction field instructions", (action) => {
+		const body = { input: "Invoice", fields: { "contact.email": { type: "text", instructions: "Contact test@example.com" } } };
+		const result = applySensitiveInfoGuardrails({ body, rawBody: structuredClone(body), endpoint: "extractions",
+			workspacePolicy: { ...workspacePolicy, sensitiveInfoRules: [{ id: "email_address", kind: "builtin", action }] },
+			requestId: "extraction", workspaceId: "ws_123" });
+		expect(result.ok).toBe(action === "redact");
+		if (result.ok) {
+			expect(result.body.fields["contact.email"].instructions).toBe("Contact [EMAIL]");
+			expect(result.rawBody.fields["contact.email"].instructions).toBe("Contact [EMAIL]");
+			expect(result.body.fields["contact.email"].type).toBe("text");
+		}
+	});
+	it.each([
+		"Contact test@example.com",
+		[{ role: "user", content: [{ type: "input_text", text: "Contact test@example.com" }] }],
+	])("enforces block and redact policies on native Decisions input: %j", (input) => {
+		for (const action of ["block", "redact"] as const) {
+			const body = { input, questions: [{ type: "predicate", instructions: "Support request?" }] };
+			const result = applySensitiveInfoGuardrails({ body, rawBody: structuredClone(body), endpoint: "decisions",
+				workspacePolicy: { ...workspacePolicy, sensitiveInfoRules: [{ id: "email_address", kind: "builtin", action }] },
+				requestId: "native_decisions", workspaceId: "ws_123" });
+			expect(result.ok).toBe(action === "redact");
+			if (result.ok) {
+				expect(JSON.stringify(result.body)).not.toContain("test@example.com");
+				expect(JSON.stringify(result.rawBody)).not.toContain("test@example.com");
+				expect(result.body.questions).toEqual(body.questions);
+			}
+		}
+	});
+	it("preserves harmless native Decisions input", () => {
+		const body = { input: "A support request", questions: [{ type: "predicate", instructions: "Support request?" }] };
+		const result = applySensitiveInfoGuardrails({ body, rawBody: structuredClone(body), endpoint: "decisions",
+			workspacePolicy, requestId: "safe_decisions", workspaceId: "ws_123" });
+		expect(result.ok).toBe(true);
+		if (result.ok) expect(result.body).toEqual(body);
+	});
 	it("redacts sensitive text inside Gemini contents", () => {
 		const body = { contents: [{ role: "user", parts: [{ text: "Reach me at test@example.com" }] }] };
 		const result = applySensitiveInfoGuardrails({
@@ -118,7 +154,7 @@ describe("sensitive info guardrails", () => {
 		if (result.ok) return;
 		expect(result.response.status).toBe(403);
 		const payload = await result.response.json();
-		expect(payload.error).toBe("guardrail_blocked");
+		expect(payload.code).toBe("guardrail_blocked");
 		expect(payload.reason).toBe("sensitive_info_detected");
 		expect(payload.guardrail_enforcement?.action).toBe("block");
 	});

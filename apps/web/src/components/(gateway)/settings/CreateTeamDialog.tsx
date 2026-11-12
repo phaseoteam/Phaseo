@@ -1,8 +1,7 @@
-"use client";
 import { useInvalidatePrivateSettings } from "./PrivateSettingsQuery";
 
 import React, { useState } from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	Dialog,
 	DialogTrigger,
@@ -25,7 +24,7 @@ import {
 import { toast } from "sonner";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import AcceptInviteDialog from "./AcceptInviteDialog";
-import { createTeamAction } from "@/app/(dashboard)/settings/teams/actions";
+import { createTeamAction } from "@/features/settings/teams/actions";
 
 export default function CreateTeamDialog({
 	currentUserId,
@@ -49,7 +48,7 @@ export default function CreateTeamDialog({
 		try {
 			setLoading(true);
 			// call server action
-			await createTeamAction(name, currentUserId);
+			await createTeamAction({ data: { name, userId: currentUserId } });
 			void invalidateSettings();
 			setOpen(false);
 			setName("");

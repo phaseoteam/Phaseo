@@ -4,12 +4,36 @@ import { normalizeProviderId } from "@/lib/config/providerAliases";
 import { OPENAI_COMPAT_CONFIG } from "@providers/openai-compatible/registry";
 
 describe("resolveProviderExecutor", () => {
+	it("does not route generic audio generation to a speech executor", () => {
+		expect(resolveProviderExecutor("deepinfra", "audio.speech")).toBeTruthy();
+		expect(resolveProviderExecutor("deepinfra", "audio.generate")).toBeNull();
+		expect(resolveProviderExecutor("openai", "audio")).toBeNull();
+	});
 	it("resolves the canonical Decisions capability and its System One alias", () => {
 		const executor = EXECUTORS_BY_PROVIDER.typesafe?.["decisions.make"];
 		expect(executor).toBeTruthy();
 		expect(resolveProviderExecutor("typesafe", "decisions.make")).toBe(executor);
 		expect(resolveProviderExecutor("typesafe", "systemone")).toBe(executor);
 		expect(resolveProviderExecutor("siliconflow", "decisions.make")).toBeTruthy();
+		expect(resolveProviderExecutor("inception", "decisions.make")).toBeTruthy();
+		expect(resolveProviderExecutor("baseten", "decisions.make")).toBeTruthy();
+		expect(resolveProviderExecutor("baseten", "decisions.make")).toBe(EXECUTORS_BY_PROVIDER.baseten["decisions.make"]);
+		expect(resolveProviderExecutor("baseten", "systemone")).toBe(EXECUTORS_BY_PROVIDER.baseten["decisions.make"]);
+	});
+
+	it("resolves Google AI Studio Decisions alongside its other capabilities", () => {
+		const executor = EXECUTORS_BY_PROVIDER["google-ai-studio"]?.["decisions.make"];
+		expect(executor).toBeTruthy();
+		expect(resolveProviderExecutor("google-ai-studio", "decisions.make")).toBe(executor);
+		expect(resolveProviderExecutor("google-ai-studio", "systemone")).toBe(executor);
+		expect(resolveProviderExecutor("google-ai-studio", "text.generate")).toBe(EXECUTORS_BY_PROVIDER["google-ai-studio"]["text.generate"]);
+	});
+
+	it("resolves Parallel only for Decisions", () => {
+		const executor = EXECUTORS_BY_PROVIDER.parallel?.["decisions.make"];
+		expect(executor).toBeTruthy();
+		expect(resolveProviderExecutor("parallel", "decisions.make")).toBe(executor);
+		expect(resolveProviderExecutor("parallel", "text.generate")).toBeNull();
 	});
 
 	it("resolves Respan Span-01 only for Decisions", () => {
@@ -245,6 +269,8 @@ describe("resolveProviderExecutor", () => {
 		for (const providerId of [
 			"ai21",
 			"akashml",
+			"primalabs",
+			"lg",
 			"arcee",
 			"arcee-ai",
 			"alibaba-cloud",

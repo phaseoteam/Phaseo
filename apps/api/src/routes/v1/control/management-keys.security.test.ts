@@ -15,10 +15,17 @@ function json(body: unknown, status = 200, headers: Record<string, string> = {})
 }
 
 vi.mock("@/runtime/env", () => ({
-	getSupabaseAdmin: () => {
-		state.dbTouched = true;
-		throw new Error("database should not be touched");
-	},
+	// Only the role check may read: the management key acts as its creator, an admin of the workspace.
+	getSupabaseAdmin: () => ({
+		from: (table: string) => {
+			if (table === "workspace_members") {
+				const membership: any = { select: () => membership, eq: () => membership, maybeSingle: async () => ({ data: { role: "admin" }, error: null }) };
+				return membership;
+			}
+			state.dbTouched = true;
+			throw new Error("database should not be touched");
+		},
+	}),
 	getBindings: () => ({ KEY_PEPPER_ACTIVE: "pepper" }),
 }));
 
@@ -29,6 +36,7 @@ vi.mock("@/pipeline/before/guards", () => ({
 			workspaceId: "ws_1",
 			apiKeyId: "mgmt_1",
 			authMethod: "api_key",
+			userId: "user_1",
 			scopes: ["management_keys:write"],
 		},
 	})),

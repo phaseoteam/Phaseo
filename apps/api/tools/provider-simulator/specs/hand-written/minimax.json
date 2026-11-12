@@ -1,0 +1,40 @@
+{
+	"id": "minimax",
+	"source": {
+		"url": null,
+		"docs": "https://platform.minimax.io/docs/api-reference/text-openai-api",
+		"fetchedAt": null,
+		"handWritten": true,
+		"notes": "Top-level request parameters listed on the provider's chat API reference (accessed 2026-10-17). Nested shapes are not modelled. temperature range [0,2], out-of-range errors. Thinking tokens count toward max_tokens. Only \"length\" finish_reason is mentioned."
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"required": [
+					"model",
+					"messages"
+				],
+				"properties": {
+					"model": {},
+					"messages": {},
+					"stream": {},
+					"stream_options": {},
+					"tools": {},
+					"temperature": {},
+					"top_p": {},
+					"max_tokens": {},
+					"max_completion_tokens": {},
+					"thinking": {},
+					"reasoning_effort": {},
+					"reasoning_split": {},
+					"service_tier": {}
+				},
+				"additionalProperties": false
+			}
+		}
+	},
+	"components": {
+		"schemas": {}
+	}
+}

@@ -1,0 +1,33 @@
+{
+  "source": "Gemini Live recordings from 2026-10-22 (gemini-3.1-flash-live-preview): google-goaway-hold2.jsonl, google-goaway-resume.jsonl and google-goaway-hold.jsonl. Resumption handles are replaced with placeholders and audio with short silence; usage, timing and close frames are as recorded.",
+  "first_connection": [
+    { "t_ms": 235, "event": { "setupComplete": {} } },
+    { "t_ms": 589, "event": { "serverContent": {} } },
+    { "t_ms": 900, "event": { "serverContent": { "modelTurn": { "parts": [{ "inlineData": { "mimeType": "audio/pcm;rate=24000", "data": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" } }] }, "outputTranscription": { "text": "Hello there, how are you?" } } } },
+    { "t_ms": 1435, "event": { "serverContent": { "generationComplete": true } } },
+    { "t_ms": 1472, "event": { "sessionResumptionUpdate": { "newHandle": "handle-first-a", "resumable": true } } },
+    { "t_ms": 2907, "event": { "serverContent": { "turnComplete": true }, "usageMetadata": { "promptTokenCount": 413, "responseTokenCount": 58, "totalTokenCount": 471, "promptTokensDetails": [{ "modality": "TEXT", "tokenCount": 134 }, { "modality": "AUDIO", "tokenCount": 259 }], "responseTokensDetails": [{ "modality": "AUDIO", "tokenCount": 58 }] } } },
+    { "t_ms": 3702, "event": { "sessionResumptionUpdate": { "newHandle": "handle-first-b", "resumable": true } } },
+    { "t_ms": 540237, "event": { "goAway": { "timeLeft": "50s" } } },
+    { "t_ms": 540277, "event": { "goAway": { "timeLeft": "50s" } } }
+  ],
+  "first_connection_close": { "t_ms": 590399, "code": 1008, "reason": "Connection aborted because the client failed to close the connection after receiving a GoAway signal once the session durat", "wasClean": true },
+  "resumed_connection": [
+    { "t_ms": 323, "event": { "setupComplete": {} } },
+    { "t_ms": 622, "event": { "serverContent": {} } },
+    { "t_ms": 811, "event": { "serverContent": { "modelTurn": { "parts": [{ "inlineData": { "mimeType": "audio/pcm;rate=24000", "data": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" } }] }, "outputTranscription": { "text": "Goodbye for now." } } } },
+    { "t_ms": 1202, "event": { "serverContent": { "generationComplete": true } } },
+    { "t_ms": 1499, "event": { "sessionResumptionUpdate": { "newHandle": "handle-resumed-a", "resumable": true } } },
+    { "t_ms": 2052, "event": { "serverContent": { "turnComplete": true }, "usageMetadata": { "promptTokenCount": 500, "responseTokenCount": 38, "totalTokenCount": 538, "promptTokensDetails": [{ "modality": "TEXT", "tokenCount": 147 }, { "modality": "AUDIO", "tokenCount": 317 }], "responseTokensDetails": [{ "modality": "AUDIO", "tokenCount": 38 }] } } }
+  ],
+  "idle_connection": [
+    { "t_ms": 232, "event": { "setupComplete": {} } }
+  ],
+  "idle_connection_close": { "t_ms": 150267, "code": 1008, "reason": "The operation was aborted.", "wasClean": true },
+  "notes": {
+    "silence_streamed_ms_before_goaway": 315200,
+    "silence_streamed_ms_total": 346700,
+    "silence_billed": "No usageMetadata was sent while silence streamed, and the resumed turn's audio prompt grew only by the previous reply (259 + 58 = 317), so the silence was neither billed nor kept in context.",
+    "prompt_tokens_without_modality": "promptTokenCount exceeds the sum of promptTokensDetails on every recorded turn (413 vs 393, 481 vs 449, 526 vs 482, 500 vs 464)."
+  }
+}

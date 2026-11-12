@@ -1,6 +1,7 @@
 -- Run after the catalogue payload migration. Read-only equivalence checks.
 begin;
 set local statement_timeout = '30s';
+set local work_mem = '1MB';
 
 do $test$
 declare
@@ -8,10 +9,17 @@ declare
   expected_payload jsonb;
   actual_payload jsonb;
 begin
+  if not exists (
+    select 1 from pg_proc
+    where oid = 'public.get_public_models_page_payload(text,text,text)'::regprocedure
+      and 'work_mem=16MB' = any(proconfig)
+  ) then
+    raise exception 'Catalogue work memory must be scoped to the payload RPC';
+  end if;
   with original as materialized (
     select payload from public.get_public_models_page_rows() payload
   ), wrapped as materialized (
-    select payload from jsonb_array_elements(public.get_public_models_page_payload()) payload
+    select payload - 'license' from jsonb_array_elements(public.get_public_models_page_payload()) payload
   )
   select count(*) into difference_count from (
     (select * from original except all select * from wrapped)
@@ -22,7 +30,7 @@ begin
 
   select coalesce(
     jsonb_agg(
-      payload order by
+      payload || jsonb_build_object('license', nullif(btrim(model.license), '')) order by
         nullif(payload->>'primary_timestamp', '')::numeric desc nulls last,
         model.created_at desc nulls last,
         position
@@ -34,6 +42,9 @@ begin
   left join public.v2_models model on model.model_slug = payload->>'model_id';
 
   select public.get_public_models_page_payload() into actual_payload;
+  if current_setting('work_mem') <> '1MB' then
+    raise exception 'Catalogue payload RPC changed the caller work memory';
+  end if;
   if actual_payload <> expected_payload then
     raise exception 'Catalogue payload is not ordered by lifecycle date and catalogue availability';
   end if;
@@ -41,7 +52,7 @@ begin
   with original as materialized (
     select payload from public.get_v2_public_models_page_rows('us', 'standard') payload
   ), wrapped as materialized (
-    select payload from jsonb_array_elements(public.get_public_models_page_payload('us', 'standard')) payload
+    select payload - 'license' from jsonb_array_elements(public.get_public_models_page_payload('us', 'standard')) payload
   )
   select count(*) into difference_count from (
     (select * from original except all select * from wrapped)
@@ -52,7 +63,7 @@ begin
 
   select coalesce(
     jsonb_agg(
-      payload order by
+      payload || jsonb_build_object('license', nullif(btrim(model.license), '')) order by
         nullif(payload->>'primary_timestamp', '')::numeric desc nulls last,
         model.created_at desc nulls last,
         position
@@ -72,7 +83,7 @@ begin
   with original as materialized (
     select to_jsonb(row) payload from public.get_monitor_model_rows(false) row
   ), wrapped as materialized (
-    select payload from jsonb_array_elements(public.get_public_monitor_rows_payload()) payload
+    select payload - 'model_license' from jsonb_array_elements(public.get_public_monitor_rows_payload()) payload
   )
   select count(*) into difference_count from (
     (select * from original except all select * from wrapped)

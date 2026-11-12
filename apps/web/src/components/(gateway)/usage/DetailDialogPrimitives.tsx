@@ -1,7 +1,5 @@
-"use client";
-
 import * as React from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
@@ -126,6 +124,7 @@ export function DetailTimingBar({
 		key: string;
 		label: React.ReactNode;
 		duration: number | null;
+		startMs?: number;
 		colorClass: string;
 	}>;
 }) {
@@ -159,7 +158,10 @@ export function DetailTimingBar({
 			duration: typeof item.duration === "number" && Number.isFinite(item.duration) && item.duration >= 0
 				? Math.round(item.duration) : null,
 		}));
-	const total = safeItems.reduce((sum, item) => sum + (item.duration ?? 0), 0);
+	const positioned = safeItems.some((item) => item.startMs !== undefined);
+	const total = positioned
+		? Math.max(0, ...safeItems.map((item) => (item.startMs ?? 0) + (item.duration ?? 0)))
+		: safeItems.reduce((sum, item) => sum + (item.duration ?? 0), 0);
 	const t = useTranslations("SettingsUI");
 
 	if (!safeItems.length) {
@@ -173,7 +175,7 @@ export function DetailTimingBar({
 		<div className="space-y-1">
 			<div className="grid gap-2">
 				{safeItems.map((item, index) => {
-					const consumedBefore = safeItems
+					const consumedBefore = positioned ? item.startMs ?? 0 : safeItems
 						.slice(0, index)
 						.reduce((sum, current) => sum + (current.duration ?? 0), 0);
 					const leftPct = total > 0 ? (consumedBefore / total) * 100 : 0;
@@ -193,6 +195,7 @@ export function DetailTimingBar({
 									style={{
 										marginLeft: `${leftPct}%`,
 										width: `${Math.min(widthPct, 100 - leftPct)}%`,
+										...(positioned && item.duration === 0 ? { minWidth: "2px", marginLeft: `clamp(0px, ${leftPct}%, calc(100% - 2px))` } : {}),
 									}}
 								/>
 							</div>

@@ -2,8 +2,10 @@
 // Why: Shared types/schemas/utilities used across modules.
 // How: Exposes reusable building blocks for the gateway.
 
-import { z } from "zod";
+import * as z from "zod";
+import { lazySchema } from "./lazy-schema";
 import type { Endpoint } from "./types";
+import { NativeDecisionsBodySchema, DecisionProviderOptionsSchema, DECISION_QUESTION_CEILING } from "./decisions";
 import { parseAsyncWebhookConfig } from "./async-notifications";
 import {
 	ANTHROPIC_NATIVE_ADVISOR_TOOL_TYPES,
@@ -11,8 +13,9 @@ import {
 	ANTHROPIC_NATIVE_WEB_SEARCH_TOOL_TYPES,
 	OPENAI_NATIVE_WEB_SEARCH_TOOL_TYPES,
 } from "./nativeTools";
+import { isAnthropicSystemMessagePlacementValid } from "./claudeModelCapabilities";
 
-const ProviderRoutingSchema = z.object({
+const ProviderRoutingSchema = lazySchema(() => z.object({
     // Existing gateway routing hints
     mode: z.string().nullable().optional(),
     order: z.array(z.string()).optional(),
@@ -59,9 +62,9 @@ const ProviderRoutingSchema = z.object({
     diagnostics: z.boolean().nullable().optional(),
     return_diagnostics: z.boolean().nullable().optional(),
     returnDiagnostics: z.boolean().nullable().optional(),
-}).passthrough().optional();
+}).passthrough().optional());
 
-const DebugOptionsSchema = z.object({
+const DebugOptionsSchema = lazySchema(() => z.object({
     enabled: z.boolean().optional(),
     echo_upstream_body: z.boolean().optional(),
     return_upstream_request: z.boolean().optional(),
@@ -71,20 +74,27 @@ const DebugOptionsSchema = z.object({
     trace: z.boolean().optional(),
     trace_level: z.enum(["summary", "full"]).optional(),
     traceLevel: z.enum(["summary", "full"]).optional(),
-}).optional();
+}).optional());
 
-const BetaOptionsSchema = z.object({
+const BetaOptionsSchema = lazySchema(() => z.object({
     openai_websocket_mode: z.boolean().optional(),
     openaiWebsocketMode: z.boolean().optional(),
     openai: z.object({
         websocket_mode: z.boolean().optional(),
         websocketMode: z.boolean().optional(),
     }).optional(),
-}).passthrough().optional();
+}).passthrough().optional());
 
-const ServiceTierSchema = z.enum(["standard", "default", "fast", "ultrafast", "priority", "flex", "batch"]);
+const ServiceTierSchema = lazySchema(() => z.enum(["standard", "default", "fast", "ultrafast", "priority", "flex", "batch"]));
 
-const ImageConfigSchema = z.object({
+// Chat and Responses also take OpenAI's own values
+// (https://platform.openai.com/docs/api-reference/chat/create#chat-create-service_tier).
+// "auto" asks for no particular tier and is routed and priced as if the field
+// were unset; "scale" is read as the standard tier, like "default".
+const OpenAIServiceTierSchema = lazySchema(() => z.union([ServiceTierSchema, z.enum(["auto", "scale"])])
+	.transform((tier) => (tier === "scale" ? "default" : tier)));
+
+const ImageConfigSchema = lazySchema(() => z.object({
     aspect_ratio: z.string().optional(),
     image_size: z.enum(["0.5K", "1K", "2K", "4K"]).optional(),
     font_inputs: z.array(
@@ -104,9 +114,9 @@ const ImageConfigSchema = z.object({
         z.array(z.any()),
         z.record(z.string(), z.any()),
     ]),
-).optional();
+).optional());
 
-const ResponseFormatSchema = z.union([
+const ResponseFormatSchema = lazySchema(() => z.union([
     z.string(),
     z.object({
         type: z.string(),
@@ -120,27 +130,27 @@ const ResponseFormatSchema = z.union([
             schema_: z.any().optional(),
         }).optional(),
 	}).passthrough(),
-]);
+]));
 
-const OpenAIContextManagementEntrySchema = z.object({
+const OpenAIContextManagementEntrySchema = lazySchema(() => z.object({
 	type: z.literal("compaction"),
 	compact_threshold: z.number().optional(),
-}).passthrough();
+}).passthrough());
 
-const OpenAIContextManagementSchema = z.array(OpenAIContextManagementEntrySchema);
+const OpenAIContextManagementSchema = lazySchema(() => z.array(OpenAIContextManagementEntrySchema));
 
-const OpenAIPromptCacheOptionsSchema = z.object({
+const OpenAIPromptCacheOptionsSchema = lazySchema(() => z.object({
 	mode: z.enum(["implicit", "explicit"]).optional(),
 	ttl: z.string().optional(),
-}).passthrough();
+}).passthrough());
 
-const CacheControlSchema = z.object({
+const CacheControlSchema = lazySchema(() => z.object({
     type: z.string().optional(),
     ttl: z.string().optional(),
     scope: z.string().optional(),
-}).passthrough();
+}).passthrough());
 
-const OpenAIProviderOptionsSchema = z.object({
+const OpenAIProviderOptionsSchema = lazySchema(() => z.object({
 	// Retain the historical object form for the gateway extension while the
 	// first-class OpenAI field follows the official array contract.
 	context_management: z.union([
@@ -149,28 +159,28 @@ const OpenAIProviderOptionsSchema = z.object({
 	]).optional(),
 	prompt_cache_retention: z.string().optional(),
 	prompt_cache_options: OpenAIPromptCacheOptionsSchema.optional(),
-}).passthrough();
+}).passthrough());
 
-const AnthropicProviderOptionsSchema = z.object({
+const AnthropicProviderOptionsSchema = lazySchema(() => z.object({
 	cache_control: CacheControlSchema.optional(),
-}).passthrough();
+}).passthrough());
 
-const GoogleProviderOptionsSchema = z.object({
+const GoogleProviderOptionsSchema = lazySchema(() => z.object({
 	cache_control: CacheControlSchema.optional(),
 	cached_content: z.string().optional(),
 	cache_ttl: z.string().optional(),
-}).passthrough();
+}).passthrough());
 
-const DeepInfraProviderOptionsSchema = z.object({
+const DeepInfraProviderOptionsSchema = lazySchema(() => z.object({
 	fail_fast: z.boolean().optional(),
 	min_p: z.number().min(0).max(1).optional(),
 	stop_token_ids: z.array(z.number().int()).max(16).optional(),
 	chat_template_kwargs: z.record(z.string(), z.any()).optional(),
 	continue_final_message: z.boolean().optional(),
 	ignore_eos: z.boolean().optional(),
-}).passthrough();
+}).passthrough());
 
-const FireworksProviderOptionsSchema = z.object({
+const FireworksProviderOptionsSchema = lazySchema(() => z.object({
 	min_p: z.number().min(0).max(1).optional(),
 	typical_p: z.number().min(0).max(1).optional(),
 	prompt_cache_isolation_key: z.string().optional(),
@@ -186,22 +196,22 @@ const FireworksProviderOptionsSchema = z.object({
 	return_token_ids: z.boolean().optional(),
 	prompt_truncate_len: z.number().int().positive().optional(),
 	safe_tokenization: z.boolean().optional(),
-}).passthrough();
+}).passthrough());
 
-const GMICloudProviderOptionsSchema = z.object({
+const GMICloudProviderOptionsSchema = lazySchema(() => z.object({
 	ignore_eos: z.boolean().optional(),
 	context_length_exceeded_behavior: z.enum(["truncate", "error"]).optional(),
-}).passthrough();
+}).passthrough());
 
 
-const ResponsesProviderOptionsSchema = z.object({
+const ResponsesProviderOptionsSchema = lazySchema(() => z.object({
 	openai: OpenAIProviderOptionsSchema.optional(),
 	anthropic: AnthropicProviderOptionsSchema.optional(),
 	google: GoogleProviderOptionsSchema.optional(),
 	deepinfra: DeepInfraProviderOptionsSchema.optional(),
 	fireworks: FireworksProviderOptionsSchema.optional(),
 	gmicloud: GMICloudProviderOptionsSchema.optional(),
-}).passthrough();
+}).passthrough());
 
 const OPENAI_ASSISTANT_PHASE_VALUES = new Set(["commentary", "final_answer"]);
 
@@ -244,17 +254,17 @@ function isFileLike(value: unknown): boolean {
     return typeof candidate.arrayBuffer === "function" && typeof candidate.stream === "function";
 }
 
-const UploadFileSchema = z.custom<File | Blob>(isFileLike, {
+const UploadFileSchema = lazySchema(() => z.custom<File | Blob>(isFileLike, {
     message: "file is required",
-});
+}));
 
 // Batch schema
-const BatchWebhookSchema = z.object({
+const BatchWebhookSchema = lazySchema(() => z.object({
     endpoint_id: z.string().min(1),
     events: z.array(z.string().min(1)).optional(),
-}).strict();
+}).strict());
 
-const BatchRequestItemSchema = z.object({
+const BatchRequestItemSchema = lazySchema(() => z.object({
     custom_id: z.string().min(1).optional(),
     customId: z.string().min(1).optional(),
     method: z.string().min(1).optional(),
@@ -263,9 +273,9 @@ const BatchRequestItemSchema = z.object({
     request: z.record(z.string(), z.any()).optional(),
 }).refine((value) => Boolean(value.body || value.request), {
     message: "batch request requires body or request",
-});
+}));
 
-export const BatchSchema = z.object({
+export const BatchSchema = lazySchema(() => z.object({
     input_file_id: z.string().min(1).optional(),
     requests: z.array(BatchRequestItemSchema).min(1).optional(),
     endpoint: z.string().min(1),
@@ -287,11 +297,11 @@ export const BatchSchema = z.object({
     routing: ProviderRoutingSchema,
 }).refine((value) => Boolean(value.input_file_id) !== Boolean(value.requests), {
     message: "Provide exactly one of input_file_id or requests.",
-});
+}));
 export type BatchRequest = z.infer<typeof BatchSchema>;
 
 // Responses schema (OAI Responses API)
-export const ResponsesSchema = z.object({
+export const ResponsesSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     input: z.union([z.string(), z.array(z.any()), z.record(z.string(), z.any())]),
     session_id: z.string().trim().min(1).max(256).optional(),
@@ -312,7 +322,7 @@ export const ResponsesSchema = z.object({
         max_tokens: z.number().int().nonnegative().nullable().optional(),
     }).optional(),
 
-    service_tier: ServiceTierSchema.optional(),
+    service_tier: OpenAIServiceTierSchema.optional(),
     store: z.boolean().optional(),
     stream: z.boolean().optional(),
     n: z.never().optional(),
@@ -349,16 +359,16 @@ export const ResponsesSchema = z.object({
         next.safety_identifier = null;
     }
     return next;
-});
+}));
 export type ResponsesRequest = z.infer<typeof ResponsesSchema>;
 
 // Embeddings schema
-const EmbeddingsInputTextPartSchema = z.object({
+const EmbeddingsInputTextPartSchema = lazySchema(() => z.object({
 	type: z.enum(["text", "input_text"]),
 	text: z.string(),
-}).passthrough();
+}).passthrough());
 
-const EmbeddingsInputImagePartSchema = z.object({
+const EmbeddingsInputImagePartSchema = lazySchema(() => z.object({
 	type: z.enum(["image_url", "input_image", "image"]),
 	image_url: z.union([
 		z.string().min(1),
@@ -374,9 +384,9 @@ const EmbeddingsInputImagePartSchema = z.object({
 	]).optional(),
 }).passthrough().refine((value) => value.image_url != null || value.url != null, {
 	message: "image input parts require image_url or url",
-});
+}));
 
-const EmbeddingsInputAudioPartSchema = z.object({
+const EmbeddingsInputAudioPartSchema = lazySchema(() => z.object({
 	type: z.literal("input_audio"),
 	input_audio: z.object({
 		data: z.string().optional(),
@@ -385,9 +395,9 @@ const EmbeddingsInputAudioPartSchema = z.object({
 	}).passthrough().refine((value) => value.data != null || value.url != null, {
 		message: "input_audio.data or input_audio.url is required",
 	}),
-}).passthrough();
+}).passthrough());
 
-const EmbeddingsInputVideoPartSchema = z.object({
+const EmbeddingsInputVideoPartSchema = lazySchema(() => z.object({
 	type: z.enum(["input_video", "video_url"]),
 	video_url: z.union([
 		z.string().min(1),
@@ -403,44 +413,63 @@ const EmbeddingsInputVideoPartSchema = z.object({
 	]).optional(),
 }).passthrough().refine((value) => value.video_url != null || value.url != null, {
 	message: "video input parts require video_url or url",
-});
+}));
 
-const EmbeddingsInputPartSchema = z.union([
+const EmbeddingsInputPartSchema = lazySchema(() => z.union([
 	EmbeddingsInputTextPartSchema,
 	EmbeddingsInputImagePartSchema,
 	EmbeddingsInputAudioPartSchema,
 	EmbeddingsInputVideoPartSchema,
-]);
+]));
 
-const EmbeddingsMultimodalContentSchema = z.array(EmbeddingsInputPartSchema).min(1);
+const EmbeddingsMultimodalContentSchema = lazySchema(() => z.array(EmbeddingsInputPartSchema).min(1));
 
-const EmbeddingsInputObjectSchema = z.object({
+const EmbeddingsInputObjectSchema = lazySchema(() => z.object({
 	content: EmbeddingsMultimodalContentSchema,
-}).passthrough();
-const EmbeddingsStructuredInputSchema = z.record(z.string(), z.any()).refine(
-	(value) => Object.keys(value).length > 0 && typeof value.type !== "string",
-	{ message: "structured embedding input must not be empty" },
-);
+}).passthrough());
+// Flat field objects such as `{ text: "..." }` that some providers fill into a
+// prompt template (Fireworks `prompt_template`). Values must be scalars: nested
+// objects and arrays are not a shape any embeddings provider accepts, so they
+// are rejected here with a 400 instead of reaching the provider and failing there.
+// Multimodal input uses `{ content: [...] }` (EmbeddingsInputObjectSchema).
+const isStructuredInputScalar = (value: unknown): boolean =>
+	typeof value === "string" || typeof value === "number" || typeof value === "boolean";
+const EmbeddingsStructuredInputSchema = lazySchema(() => z.record(z.string(), z.unknown()).superRefine((value, ctx) => {
+	const keys = Object.keys(value);
+	if (keys.length === 0 || typeof value.type === "string") {
+		ctx.addIssue({ code: "custom", message: "structured embedding input must not be empty" });
+		return;
+	}
+	for (const key of keys) {
+		if (!isStructuredInputScalar(value[key])) {
+			ctx.addIssue({
+				code: "custom",
+				path: [key],
+				message: "structured embedding input fields must be strings, numbers or booleans; use { content: [...] } for multimodal input",
+			});
+		}
+	}
+}));
 
-const EmbeddingsInputStringSchema = z.string().min(1);
-const EmbeddingsInputTokenArraySchema = z.array(z.number().int()).max(2048);
+const EmbeddingsInputStringSchema = lazySchema(() => z.string().min(1));
+const EmbeddingsInputTokenArraySchema = lazySchema(() => z.array(z.number().int()).max(2048));
 
-const EmbeddingsInputItemSchema = z.union([
+const EmbeddingsInputItemSchema = lazySchema(() => z.union([
 	EmbeddingsInputStringSchema,
 	EmbeddingsInputTokenArraySchema,
 	EmbeddingsInputObjectSchema,
 	EmbeddingsStructuredInputSchema,
-]);
+]));
 
-const EmbeddingsInputSchema = z.union([
+const EmbeddingsInputSchema = lazySchema(() => z.union([
 	EmbeddingsInputStringSchema,
 	EmbeddingsInputTokenArraySchema,
 	EmbeddingsInputObjectSchema,
 	EmbeddingsStructuredInputSchema,
 	z.array(EmbeddingsInputItemSchema).max(2048),
-]);
+]));
 
-const EmbeddingsProviderOptionsSchema = z.object({
+const EmbeddingsProviderOptionsSchema = lazySchema(() => z.object({
     google: z.object({
         task_type: z.string().regex(/^[A-Z_]+$/).optional(),
         title: z.string().optional(),
@@ -459,9 +488,9 @@ const EmbeddingsProviderOptionsSchema = z.object({
 		return_logits: z.array(z.number().int()).optional(),
 		normalize: z.boolean().optional(),
 	}).optional(),
-}).optional();
+}).optional());
 
-export const EmbeddingsSchema = z.object({
+export const EmbeddingsSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     input: EmbeddingsInputSchema,
     session_id: z.string().trim().min(1).max(256).optional(),
@@ -486,24 +515,39 @@ export const EmbeddingsSchema = z.object({
     };
     delete next.embedding_options;
     return next;
-});
+}));
 export type EmbeddingsRequest = z.infer<typeof EmbeddingsSchema>;
 
 // Chat Completions schema
-const TextPartSchema = z.object({
-    type: z.literal("text"),
-    text: z.string(),
+// Cache marks on Chat content blocks: OpenAI's prompt_cache_breakpoint and the
+// documented Anthropic-style cache_control. Without them the schema stripped
+// both before decoding.
+const PromptCacheBreakpointSchema = lazySchema(() => z.object({
+	mode: z.string().optional(),
+	ttl: z.string().optional(),
+}).passthrough());
+
+const ContentCacheMarkFields = () => ({
+	cache_control: CacheControlSchema.optional(),
+	prompt_cache_breakpoint: PromptCacheBreakpointSchema.optional(),
 });
 
-const ImageUrlPartSchema = z.object({
+const TextPartSchema = lazySchema(() => z.object({
+    type: z.literal("text"),
+    text: z.string(),
+    ...ContentCacheMarkFields(),
+}));
+
+const ImageUrlPartSchema = lazySchema(() => z.object({
     type: z.literal("image_url"),
     image_url: z.object({
         url: z.string().min(1),
 		detail: z.enum(["auto", "low", "high", "original"]).optional(),
     }),
-});
+    ...ContentCacheMarkFields(),
+}));
 
-const InputAudioPartSchema = z.object({
+const InputAudioPartSchema = lazySchema(() => z.object({
     type: z.literal("input_audio"),
     input_audio: z.object({
         data: z.string().optional(),
@@ -512,54 +556,70 @@ const InputAudioPartSchema = z.object({
     }).refine((value) => value.data != null || value.url != null, {
         message: "input_audio.data or input_audio.url is required",
     }),
-});
+}));
 
-const AudioUrlPartSchema = z.object({
+const AudioUrlPartSchema = lazySchema(() => z.object({
     type: z.literal("audio_url"),
     audio_url: z.object({
         url: z.string().min(1),
     }),
-});
+}));
 
-const InputVideoPartSchema = z.object({
+const InputVideoPartSchema = lazySchema(() => z.object({
     type: z.literal("input_video"),
     video_url: z.object({
         url: z.string().url(),
     }),
-});
+}));
 
-const VideoUrlPartSchema = z.object({
+const VideoUrlPartSchema = lazySchema(() => z.object({
     type: z.literal("video_url"),
     video_url: z.object({
         url: z.string().url(),
     }),
-});
+}));
 
-const ToolCallPartSchema = z.object({
+// OpenAI Chat file input: base64 `file_data` (a data URL) or an uploaded
+// `file_id`, with an optional `filename`.
+// https://platform.openai.com/docs/api-reference/chat/create
+const FilePartSchema = lazySchema(() => z.object({
+    type: z.literal("file"),
+    file: z.object({
+        file_data: z.string().min(1).optional(),
+        file_id: z.string().min(1).optional(),
+        filename: z.string().optional(),
+    }).passthrough().refine((value) => value.file_data != null || value.file_id != null, {
+        message: "file.file_data or file.file_id is required",
+    }),
+    ...ContentCacheMarkFields(),
+}));
+
+const ToolCallPartSchema = lazySchema(() => z.object({
     type: z.literal("tool_call"),
     id: z.string(),
     function: z.object({
         name: z.string(),
         arguments: z.string(),
     }),
-});
+}));
 
-const MessageContentPartSchema = z.union([
+const MessageContentPartSchema = lazySchema(() => z.union([
     TextPartSchema,
     ImageUrlPartSchema,
     InputAudioPartSchema,
     AudioUrlPartSchema,
     InputVideoPartSchema,
     VideoUrlPartSchema,
+    FilePartSchema,
     ToolCallPartSchema,
-]);
+]));
 
-const MessageContentSchema = z.union([
+const MessageContentSchema = lazySchema(() => z.union([
     z.string(),
     z.array(MessageContentPartSchema),
-]);
+]));
 
-const ToolCallSchema = z.object({
+const ToolCallSchema = lazySchema(() => z.object({
     id: z.string(),
     type: z.literal("function"),
     function: z.object({
@@ -568,20 +628,21 @@ const ToolCallSchema = z.object({
         description: z.string().optional(),
         parameters: z.any().optional(),
     }),
-});
+}));
 
-const FunctionToolSchema = z.object({
+const FunctionToolSchema = lazySchema(() => z.object({
 	type: z.literal("function"),
 	async: z.boolean().optional(),
+	cache_control: CacheControlSchema.optional(),
 	function: z.object({
 		name: z.string(),
 		description: z.string().optional(),
 		parameters: z.any().optional(),
 		strict: z.boolean().nullable().optional(),
 	}),
-});
+}));
 
-const OpenAICustomToolSchema = z.object({
+const OpenAICustomToolSchema = lazySchema(() => z.object({
 	type: z.literal("custom"),
 	async: z.boolean().optional(),
 	custom: z.object({
@@ -589,17 +650,17 @@ const OpenAICustomToolSchema = z.object({
 		description: z.string().optional(),
 		format: z.record(z.string(), z.any()).optional(),
 	}).passthrough(),
-}).passthrough();
+}).passthrough());
 
-const GatewayDatetimeToolSchema = z.object({
+const GatewayDatetimeToolSchema = lazySchema(() => z.object({
 	type: z.enum(["phaseo:datetime", "gateway:datetime"]),
 	parameters: z.object({
 		timezone: z.string().min(1).optional(),
 		timezones: z.array(z.string().min(1)).max(5).optional(),
 	}).optional(),
-});
+}));
 
-const GatewayWebSearchToolSchema = z.object({
+const GatewayWebSearchToolSchema = lazySchema(() => z.object({
 	type: z.enum(["phaseo:web_search", "gateway:web_search"]),
 	parameters: z.object({
 		engine: z.enum(["auto", "native", "exa", "firecrawl", "parallel", "perplexity", "tinyfish"]).optional(),
@@ -633,9 +694,9 @@ const GatewayWebSearchToolSchema = z.object({
 	user_location: z.record(z.string(), z.any()).optional(),
 	language: z.string().optional(),
 	page: z.number().int().min(0).max(10).optional(),
-});
+}));
 
-const GatewayWebFetchToolSchema = z.object({
+const GatewayWebFetchToolSchema = lazySchema(() => z.object({
 	type: z.enum(["phaseo:web_fetch", "gateway:web_fetch"]),
 	parameters: z.object({
 		engine: z.enum(["auto", "native", "direct", "exa", "firecrawl", "parallel"]).optional(),
@@ -654,9 +715,9 @@ const GatewayWebFetchToolSchema = z.object({
 	allowed_domains: z.array(z.string().min(1)).optional(),
 	blocked_domains: z.array(z.string().min(1)).optional(),
 	excluded_domains: z.array(z.string().min(1)).optional(),
-});
+}));
 
-const GatewayAdvisorToolSchema = z.object({
+const GatewayAdvisorToolSchema = lazySchema(() => z.object({
 	type: z.literal("phaseo:advisor"),
 	parameters: z.object({
 		name: z.string().trim().min(1).max(64).regex(/^[A-Za-z0-9 _-]+$/).optional(),
@@ -678,9 +739,9 @@ const GatewayAdvisorToolSchema = z.object({
 	max_completion_tokens: z.number().int().min(1024).optional(),
 	reasoning: z.record(z.string(), z.unknown()).optional(),
 	temperature: z.number().min(0).max(2).optional(),
-});
+}));
 
-const GatewaySubagentToolSchema = z.object({
+const GatewaySubagentToolSchema = lazySchema(() => z.object({
 	type: z.literal("phaseo:subagent"),
 	parameters: z.object({
 		model: z.string().min(1).optional(),
@@ -698,9 +759,9 @@ const GatewaySubagentToolSchema = z.object({
 	max_completion_tokens: z.number().int().min(1024).optional(),
 	reasoning: z.record(z.string(), z.unknown()).optional(),
 	temperature: z.number().min(0).max(2).optional(),
-});
+}));
 
-const GatewayFusionToolSchema = z.object({
+const GatewayFusionToolSchema = lazySchema(() => z.object({
 	type: z.literal("phaseo:fusion"),
 	parameters: z.object({
 		analysis_models: z.array(z.string().min(1)).min(2).max(8).optional(),
@@ -709,16 +770,16 @@ const GatewayFusionToolSchema = z.object({
 		max_uses: z.number().int().positive().max(4).optional(),
 		max_completion_tokens: z.number().int().min(1024).optional(),
 	}).optional(),
-});
+}));
 
-const GatewaySearchModelsToolSchema = z.object({
+const GatewaySearchModelsToolSchema = lazySchema(() => z.object({
 	type: z.literal("phaseo:search_models"),
 	parameters: z.object({
 		max_results: z.number().int().min(1).max(20).optional(),
 	}).optional(),
-});
+}));
 
-const GatewayImageGenerationToolSchema = z.object({
+const GatewayImageGenerationToolSchema = lazySchema(() => z.object({
 	type: z.literal("phaseo:image_generation"),
 	parameters: z.object({
 		prompt: z.string().min(1).optional(),
@@ -731,6 +792,11 @@ const GatewayImageGenerationToolSchema = z.object({
 		output_format: z.string().min(1).optional(),
 		output_compression: z.number().min(0).max(100).optional(),
 		moderation: z.string().min(1).optional(),
+		complexity: z.enum(["low", "medium", "high"]).optional(),
+		frame_count: z.number().int().min(2).max(64).optional(),
+		frame_duration_ms: z.number().int().min(20).max(2000).optional(),
+		svg: z.object({ model: z.string().trim().min(1) }).optional(),
+		svg_model: z.string().trim().min(1).optional(),
 	}).optional(),
 	model: z.string().min(1).optional(),
 	quality: z.string().min(1).optional(),
@@ -740,23 +806,28 @@ const GatewayImageGenerationToolSchema = z.object({
 	output_format: z.string().min(1).optional(),
 	output_compression: z.number().min(0).max(100).optional(),
 	moderation: z.string().min(1).optional(),
+	complexity: z.enum(["low", "medium", "high"]).optional(),
+	frame_count: z.number().int().min(2).max(64).optional(),
+	frame_duration_ms: z.number().int().min(20).max(2000).optional(),
+	svg: z.object({ model: z.string().trim().min(1) }).optional(),
+	svg_model: z.string().trim().min(1).optional(),
 	prompt: z.string().min(1).optional(),
 	description: z.string().min(1).optional(),
-});
+}));
 
-const GatewayApplyPatchToolSchema = z.object({
+const GatewayApplyPatchToolSchema = lazySchema(() => z.object({
 	type: z.literal("phaseo:apply_patch"),
 	parameters: z.object({
 		engine: z.enum(["auto", "native", "phaseo"]).optional(),
 	}).optional(),
 	engine: z.enum(["auto", "native", "phaseo"]).optional(),
-});
+}));
 
-const OpenAINativeWebSearchToolSchema = z.object({
+const OpenAINativeWebSearchToolSchema = lazySchema(() => z.object({
 	type: z.enum(OPENAI_NATIVE_WEB_SEARCH_TOOL_TYPES),
-}).passthrough();
+}).passthrough());
 
-const AnthropicNativeWebSearchToolSchema = z.object({
+const AnthropicNativeWebSearchToolSchema = lazySchema(() => z.object({
 	type: z.enum(ANTHROPIC_NATIVE_WEB_SEARCH_TOOL_TYPES),
 	name: z.string().optional(),
 	max_uses: z.number().int().positive().optional(),
@@ -769,18 +840,18 @@ const AnthropicNativeWebSearchToolSchema = z.object({
 		country: z.string().optional(),
 		timezone: z.string().optional(),
 	}).passthrough().optional(),
-}).passthrough();
+}).passthrough());
 
-const AnthropicNativeWebFetchToolSchema = z.object({
+const AnthropicNativeWebFetchToolSchema = lazySchema(() => z.object({
 	type: z.enum(ANTHROPIC_NATIVE_WEB_FETCH_TOOL_TYPES),
 	name: z.string().optional(),
 	max_uses: z.number().int().positive().optional(),
 	max_content_tokens: z.number().int().positive().optional(),
 	allowed_domains: z.array(z.string().min(1)).optional(),
 	blocked_domains: z.array(z.string().min(1)).optional(),
-}).passthrough();
+}).passthrough());
 
-const AnthropicNativeAdvisorToolSchema = z.object({
+const AnthropicNativeAdvisorToolSchema = lazySchema(() => z.object({
 	type: z.enum(ANTHROPIC_NATIVE_ADVISOR_TOOL_TYPES),
 	name: z.literal("advisor").optional(),
 	model: z.string().min(1),
@@ -790,9 +861,9 @@ const AnthropicNativeAdvisorToolSchema = z.object({
 		type: z.literal("ephemeral"),
 		ttl: z.enum(["5m", "1h"]),
 	}).optional(),
-}).passthrough();
+}).passthrough());
 
-export const ChatCompletionsSchema = z.object({
+export const ChatCompletionsSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     session_id: z.string().trim().min(1).max(256).optional(),
     messages: z.array(
@@ -814,10 +885,21 @@ export const ChatCompletionsSchema = z.object({
             }),
             z.object({
                 role: z.literal("assistant"),
-                content: MessageContentSchema.optional(),
+                // OpenAI SDKs send `content: null` on assistant tool-call messages.
+                content: MessageContentSchema.nullable().optional(),
                 name: z.string().optional(),
                 tool_calls: z.array(ToolCallSchema).optional(),
                 reasoning_content: z.string().optional(),
+                // OpenRouter-style alias for reasoning_content.
+                reasoning: z.string().optional(),
+                // Reasoning blocks with signatures or encrypted reasoning, sent
+                // back unchanged from an earlier response.
+                reasoning_details: z.array(z.record(z.string(), z.unknown())).optional(),
+                // An earlier audio response, referenced by its id
+                // (https://platform.openai.com/docs/api-reference/chat/create).
+                // The rest of a returned message.audio (data, expires_at,
+                // transcript) is not part of the request and is stripped.
+                audio: z.object({ id: z.string().min(1) }).nullable().optional(),
             }),
             z.object({
                 role: z.literal("tool"),
@@ -828,15 +910,24 @@ export const ChatCompletionsSchema = z.object({
         ])
     ).min(1),
     reasoning: z.object({
-        effort: z.enum(["none", "instant", "minimal", "low", "medium", "high", "xhigh", "max"]).optional().default("medium"),
-        mode: z.enum(["standard", "pro"]).optional(),
-        summary: z.enum(["auto", "concise", "detailed"]).optional().default("auto"),
-        enabled: z.boolean().optional(),
-        max_tokens: z.number().int().nonnegative().optional(),
+        // No default: an unset (or null) effort leaves max_tokens, enabled or
+        // the model's own default in charge instead of forcing medium.
+        effort: z.enum(["none", "instant", "minimal", "low", "medium", "high", "xhigh", "max"]).nullable().optional(),
+        mode: z.enum(["standard", "pro"]).nullable().optional(),
+        summary: z.enum(["auto", "concise", "detailed"]).nullable().optional().transform((summary) => summary ?? "auto"),
+        enabled: z.boolean().nullable().optional(),
+        max_tokens: z.number().int().nonnegative().nullable().optional(),
     }).optional(),
     reasoning_effort: z.enum(["none", "instant", "minimal", "low", "medium", "high", "xhigh", "max"]).optional(),
 	reasoning_summary: z.union([z.boolean(), z.enum(["auto", "concise", "detailed"])]).optional(),
 	reasoning_summary_wait: z.boolean().optional(),
+	// Accepted for compatibility: reasoning is returned whenever the model produces it.
+	include_reasoning: z.boolean().optional(),
+	// OpenAI predicted outputs (https://platform.openai.com/docs/guides/predicted-outputs).
+	prediction: z.object({
+		type: z.literal("content"),
+		content: z.union([z.string(), z.array(z.record(z.string(), z.any()))]),
+	}).passthrough().optional(),
 	diffusing: z.boolean().optional(),
 	realtime: z.boolean().optional(),
 
@@ -864,7 +955,9 @@ export const ChatCompletionsSchema = z.object({
             value: z.string(),
         }).strict()).optional(),
     }).strict()).optional(),
-    temperature: z.number().min(0).max(2).optional().default(1),
+    // No default: an unset temperature leaves the provider's (or a preset's)
+    // default in place instead of sending temperature 1 upstream.
+    temperature: z.number().min(0).max(2).optional(),
 
     // Tools
     tools: z.array(
@@ -884,11 +977,12 @@ export const ChatCompletionsSchema = z.object({
 	).optional(),
 
     max_tool_calls: z.number().int().positive().optional(),
-    parallel_tool_calls: z.boolean().optional().default(true),
+    // No default: an unset value is not sent upstream (the provider default applies).
+    parallel_tool_calls: z.boolean().optional(),
     tool_choice: z.union([z.string(), z.record(z.string(), z.any())]).optional(),
     web_search_options: z.record(z.string(), z.any()).optional(),
 
-    logprobs: z.boolean().optional().default(false),
+    logprobs: z.boolean().optional(),
     top_logprobs: z.number().int().min(0).max(20).optional(),
     top_p: z.number().min(0).max(1).optional(),
     top_k: z.number().int().min(-1).optional(),
@@ -902,7 +996,7 @@ export const ChatCompletionsSchema = z.object({
     user: z.string().optional(),
     user_id: z.string().optional(),
 
-    service_tier: ServiceTierSchema.optional(),
+    service_tier: OpenAIServiceTierSchema.optional(),
     prompt_cache_key: z.string().nullable().optional(),
 	prompt_cache_options: OpenAIPromptCacheOptionsSchema.optional(),
 	verbosity: z.enum(["low", "medium", "high"]).optional(),
@@ -919,56 +1013,59 @@ export const ChatCompletionsSchema = z.object({
     routing: ProviderRoutingSchema,
 }).passthrough().transform((obj) => {
     return obj;
-});
+}));
 
 export type ChatCompletionsRequest = z.infer<typeof ChatCompletionsSchema>;
 
 // Anthropic Messages schema
-const AnthropicTextContentSchema = z.object({
+const AnthropicTextContentSchema = lazySchema(() => z.object({
     type: z.literal("text"),
     text: z.string(),
     cache_control: CacheControlSchema.optional(),
-});
+}));
 
-const AnthropicImageContentSchema = z.object({
+const AnthropicImageContentSchema = lazySchema(() => z.object({
     type: z.literal("image"),
     cache_control: CacheControlSchema.optional(),
+    // `file` references an upload made through the Files API.
+    // https://platform.claude.com/docs/en/build-with-claude/files
     source: z.object({
-        type: z.enum(["base64", "url"]),
+        type: z.enum(["base64", "url", "file"]),
         media_type: z.string().optional(),
         data: z.string().optional(),
         url: z.string().optional(),
+        file_id: z.string().optional(),
     }),
-});
+}));
 
-const AnthropicToolUseContentSchema = z.object({
+const AnthropicToolUseContentSchema = lazySchema(() => z.object({
     type: z.literal("tool_use"),
     id: z.string(),
     name: z.string(),
     input: z.record(z.string(), z.any()),
-});
+}));
 
-const AnthropicToolResultContentSchema = z.object({
+const AnthropicToolResultContentSchema = lazySchema(() => z.object({
     type: z.literal("tool_result"),
     tool_use_id: z.string(),
     content: z.union([z.string(), z.array(z.any())]),
     cache_control: CacheControlSchema.optional(),
-});
+}));
 
-const AnthropicServerToolUseContentSchema = z.object({
+const AnthropicServerToolUseContentSchema = lazySchema(() => z.object({
     type: z.literal("server_tool_use"),
     id: z.string(),
     name: z.string(),
     input: z.record(z.string(), z.any()).optional(),
-});
+}));
 
-const AnthropicAdvisorToolResultContentSchema = z.object({
+const AnthropicAdvisorToolResultContentSchema = lazySchema(() => z.object({
     type: z.literal("advisor_tool_result"),
     tool_use_id: z.string(),
     content: z.union([z.string(), z.array(z.any())]).optional(),
-});
+}));
 
-const AnthropicContentBlockSchema = z.union([
+const AnthropicContentBlockSchema = lazySchema(() => z.union([
     AnthropicTextContentSchema,
     AnthropicImageContentSchema,
     AnthropicToolUseContentSchema,
@@ -978,43 +1075,95 @@ const AnthropicContentBlockSchema = z.union([
 	// Preserve current and future Anthropic-native blocks such as document,
 	// thinking, redacted_thinking, search results, and server-tool results.
 	z.object({ type: z.string().min(1) }).passthrough(),
-]);
+]));
 
-const AnthropicMessageContentSchema = z.union([
+const AnthropicMessageContentSchema = lazySchema(() => z.union([
     z.string(),
     z.array(AnthropicContentBlockSchema),
-]);
+]));
 
-const AnthropicToolSchema = z.object({
+const AnthropicToolSchema = lazySchema(() => z.object({
     name: z.string(),
     description: z.string().optional(),
     input_schema: z.record(z.string(), z.any()),
     cache_control: CacheControlSchema.optional(),
 	strict: z.boolean().optional(),
 	async: z.boolean().optional(),
-});
+}));
 
-const AnthropicNativeToolSchema = z.object({
+const AnthropicNativeToolSchema = lazySchema(() => z.object({
 	type: z.string().min(1),
 	name: z.string().optional(),
-}).passthrough();
+}).passthrough());
 
-const AnthropicToolChoiceSchema = z.union([
+const AnthropicToolChoiceSchema = lazySchema(() => z.union([
     z.object({ type: z.literal("auto") }),
     z.object({ type: z.literal("any") }),
 	z.object({ type: z.literal("none") }),
     z.object({ type: z.literal("tool"), name: z.string() }),
-]).and(z.object({ disable_parallel_tool_use: z.boolean().optional() }).passthrough());
+]).and(z.object({ disable_parallel_tool_use: z.boolean().optional() }).passthrough()));
 
-export const AnthropicMessagesSchema = z.object({
+// Mid-conversation system message
+// (https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages).
+// Strict, so the beta-only `clear_at` is refused rather than dropped;
+// `tool_addition` and `tool_removal` blocks fail the text schema.
+// With `output_config.effort` and empty content it is an effort-only message
+// (https://platform.claude.com/docs/en/build-with-claude/effort-per-message);
+// the gateway adds the beta header itself.
+const AnthropicSystemMessageSchema = lazySchema(() => z.object({
+    role: z.literal("system"),
+    content: z.union([z.string(), z.array(AnthropicTextContentSchema)]),
+    output_config: z.object({
+        effort: z.enum(["low", "medium", "high", "xhigh", "max"]),
+    }).strict().optional(),
+}).strict().superRefine((message, ctx) => {
+    const empty = message.content.length === 0;
+    if (message.output_config && !empty) {
+        ctx.addIssue({
+            code: "custom",
+            path: ["content"],
+            message: "A system message with output_config.effort must have empty content. Send instructions in a separate system message.",
+        });
+    } else if (!message.output_config && Array.isArray(message.content) && empty) {
+        ctx.addIssue({ code: "custom", path: ["content"], message: "A system message needs at least one text block." });
+    }
+}));
+
+function isAnthropicEffortOnlyMessage(message: { role: string; output_config?: unknown }): boolean {
+    return message.role === "system" && message.output_config !== undefined;
+}
+
+const AnthropicMessagesListSchema = lazySchema(() => z.array(z.discriminatedUnion("role", [
+    z.object({
+        role: z.enum(["user", "assistant"]),
+        content: AnthropicMessageContentSchema,
+    }),
+    AnthropicSystemMessageSchema,
+])).min(1).max(100000).superRefine((messages, ctx) => {
+    // Consecutive system messages are judged together, as Claude does. Effort-only
+    // messages may sit anywhere, so the rule looks past them.
+    const placed = messages
+        .map((message, index) => ({ message, index }))
+        .filter(({ message }) => !isAnthropicEffortOnlyMessage(message));
+    for (let start = 0; start < placed.length; start += 1) {
+        if (placed[start].message.role !== "system") continue;
+        let end = start;
+        while (placed[end + 1]?.message.role === "system") end += 1;
+        if (!isAnthropicSystemMessagePlacementValid(placed[start - 1]?.message, placed[end + 1]?.message)) {
+            ctx.addIssue({
+                code: "custom",
+                path: [placed[start].index],
+                message: "A system message must immediately follow a user turn (or an assistant turn ending in a server tool result) and be the last message or be followed by an assistant turn. Use the top-level `system` field for instructions that apply from the start.",
+            });
+        }
+        start = end;
+    }
+}));
+
+export const AnthropicMessagesSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     session_id: z.string().trim().min(1).max(256).optional(),
-    messages: z.array(
-        z.object({
-            role: z.enum(["user", "assistant"]),
-            content: AnthropicMessageContentSchema,
-        })
-    ).min(1).max(100000),
+    messages: AnthropicMessagesListSchema,
     system: z.union([z.string(), z.array(AnthropicTextContentSchema)]).optional(),
     max_tokens: z.number().int().nonnegative(),
     temperature: z.number().min(0).max(1).optional(),
@@ -1040,28 +1189,49 @@ export const AnthropicMessagesSchema = z.object({
     metadata: z.object({
         user_id: z.string().optional(),
     }).passthrough().optional(),
-    service_tier: ServiceTierSchema.optional(),
+    // Anthropic's own values ("auto", "standard_only") are accepted next to
+    // the gateway tiers so native Messages clients keep working.
+    service_tier: z.union([ServiceTierSchema, z.enum(["auto", "standard_only"])]).optional(),
 	thinking: z.discriminatedUnion("type", [
 		z.object({ type: z.literal("enabled"), budget_tokens: z.number().int().min(1024) }).passthrough(),
 		z.object({ type: z.literal("disabled") }).passthrough(),
+		// Claude Sonnet 5.5's lowest setting; it rejects `disabled`.
+		z.object({ type: z.literal("between_tools") }).passthrough(),
 		z.object({
 			type: z.literal("adaptive"),
 			display: z.enum(["summarized", "omitted"]).optional(),
 		}).passthrough(),
 	]).optional(),
+	// https://platform.claude.com/docs/en/api/messages/create
+	inference_geo: z.string().nullable().optional(),
 	output_config: z.object({
-		effort: z.enum(["low", "medium", "high", "max"]).optional(),
+		effort: z.enum(["low", "medium", "high", "xhigh", "max"]).optional(),
 		format: z.object({
 			type: z.literal("json_schema"),
 			schema: z.record(z.string(), z.any()),
 		}).nullable().optional(),
 	}).passthrough().optional(),
     reasoning: z.object({
-        effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).optional(),
-        enabled: z.boolean().optional(),
-        summary: z.enum(["auto", "concise", "detailed"]).optional(),
-        max_tokens: z.number().int().nonnegative().optional(),
+        effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).nullable().optional(),
+        enabled: z.boolean().nullable().optional(),
+        summary: z.enum(["auto", "concise", "detailed"]).nullable().optional(),
+        max_tokens: z.number().int().nonnegative().nullable().optional(),
     }).optional(),
+	// Anthropic context editing (https://platform.claude.com/docs/en/build-with-claude/context-editing),
+	// forwarded to Anthropic and dropped (and reported) for other providers.
+	// Compaction edits are refused: the gateway's responses do not carry the
+	// compaction blocks a client must send back, so the summary would be lost.
+	context_management: z.object({
+		edits: z.array(z.object({
+			type: z.string().min(1).refine((type) => !type.startsWith("compact_"), {
+				message: "Compaction edits are not supported; use clear_tool_uses or clear_thinking edits.",
+			}),
+		}).passthrough()).optional(),
+	}).passthrough().optional(),
+	// Same end-user identifier as Chat's `user`; sent to Anthropic as metadata.user_id.
+	user: z.string().optional(),
+	// Same cache affinity key as Chat and Responses.
+	prompt_cache_key: z.string().nullable().optional(),
 
     stop_sequences: z.array(z.string()).optional(),
     web_search_options: z.record(z.string(), z.any()).optional(),
@@ -1076,7 +1246,7 @@ export const AnthropicMessagesSchema = z.object({
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
     routing: ProviderRoutingSchema,
-}).passthrough();
+}).passthrough());
 
 export type AnthropicMessagesRequest = z.infer<typeof AnthropicMessagesSchema>;
 
@@ -1173,8 +1343,97 @@ function validateMiniMaxImageRequest(
     });
 }
 
+/** The GPT Image version in a model id (gpt-image-2.6-flare → [2, 6]), or null. */
+function gptImageVersion(model: string | undefined): [number, number] | null {
+    const match = model?.match(/^gpt-image-(\d+)(?:\.(\d+))?(?:$|-)/);
+    return match ? [Number(match[1]), Number(match[2] ?? 0)] : null;
+}
+
+/** GPT Image 2.5 and later, which add the xhigh and max quality levels. */
 function isGptImage25Model(model: string | undefined): boolean {
-    return model === "gpt-image-latest" || (model != null && /^gpt-image-2\.5(?:$|-)/.test(model));
+    if (model === "gpt-image-latest") return true;
+    const version = gptImageVersion(model);
+    return version != null && (version[0] > 2 || (version[0] === 2 && version[1] >= 5));
+}
+
+/**
+ * GPT Image 2.6 and later, which add complexity, SVG and GIF output. An id without a version
+ * (such as gpt-image-flare-latest) passes, and OpenAI rejects the field if the target lacks it.
+ */
+function supportsGptImage26Features(model: string | undefined): boolean {
+    const version = gptImageVersion(model);
+    return version == null || version[0] > 2 || (version[0] === 2 && version[1] >= 6);
+}
+
+const GptImageComplexitySchema = lazySchema(() => z.enum(["low", "medium", "high"]));
+
+/** The model that writes an SVG from GPT Image's reference image, and its reasoning effort. */
+const GptImageSvgOptionsSchema = lazySchema(() => z.object({
+    model: z.string().trim().min(1),
+    reasoning: z.object({
+        effort: z.enum(["none", "minimal", "low", "medium", "high", "xhigh", "max"]).nullable().optional(),
+    }).nullable().optional(),
+}));
+
+function validateGptImage26Generation(
+    request: {
+        n?: number;
+        size?: string;
+        stream?: boolean;
+        partial_images?: number;
+        output_format?: string;
+        complexity?: string;
+        frame_count?: number;
+        frame_duration_ms?: number;
+        svg?: { model: string } | null;
+    },
+    model: string,
+    ctx: z.RefinementCtx,
+): void {
+    const isSvg = request.output_format === "svg";
+    const isGif = request.output_format === "gif";
+    if (!supportsGptImage26Features(model)) {
+        for (const field of ["complexity", "frame_count", "frame_duration_ms", "svg"] as const) {
+            if (request[field] != null) {
+                ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: `${field} requires a GPT Image 2.6 model` });
+            }
+        }
+        if (isSvg || isGif) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["output_format"], message: `${request.output_format} output requires a GPT Image 2.6 model` });
+        }
+        return;
+    }
+    if (isSvg || isGif) {
+        if (request.stream === true) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["stream"], message: `${request.output_format} output does not support streaming` });
+        }
+        if (request.partial_images != null && request.partial_images > 0) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["partial_images"], message: `${request.output_format} output does not support partial_images` });
+        }
+    }
+    if (isSvg) {
+        if (!request.svg?.model) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["svg", "model"], message: "SVG output requires svg.model, the OpenAI model that writes the SVG (for example openai/gpt-5-nano)" });
+        }
+        if (request.n != null && request.n !== 1) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["n"], message: "SVG output requires n=1" });
+        }
+    } else if (request.svg != null) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["svg"], message: "svg requires output_format svg" });
+    }
+    if (!isGif) {
+        for (const field of ["frame_count", "frame_duration_ms"] as const) {
+            if (request[field] != null) {
+                ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: `${field} requires output_format gif` });
+            }
+        }
+    } else if (request.size && request.size !== "auto") {
+        // size is each GIF frame: positive multiples of 16, within the model's limits (checked by OpenAI).
+        const dimensions = /^(\d+)x(\d+)$/i.exec(request.size);
+        if (!dimensions || Number(dimensions[1]) % 16 !== 0 || Number(dimensions[2]) % 16 !== 0 || Number(dimensions[1]) === 0 || Number(dimensions[2]) === 0) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["size"], message: "GIF frame size must be auto or WIDTHxHEIGHT in multiples of 16" });
+        }
+    }
 }
 
 function validateGptImage2Size(
@@ -1182,7 +1441,9 @@ function validateGptImage2Size(
     model: string | undefined,
     ctx: z.RefinementCtx,
 ): void {
-    if (!model || (!/^gpt-image-2(?:\.5)?(?:$|-)/.test(model) && model !== "gpt-image-latest")) return;
+    // GPT Image 2 and later share the 2.x size rules.
+    const version = gptImageVersion(model);
+    if (!model || ((version == null || version[0] < 2) && model !== "gpt-image-latest")) return;
     if (!request.size || request.size === "auto") return;
     const dimensions = /^(\d+)x(\d+)$/i.exec(request.size);
     if (!dimensions) {
@@ -1204,7 +1465,7 @@ function validateGptImage2Size(
 }
 
 // Images Generation schema
-export const ImagesGenerationSchema = z.object({
+export const ImagesGenerationSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     prompt: z.string().min(1),
     size: z.string().optional(),
@@ -1214,10 +1475,15 @@ export const ImagesGenerationSchema = z.object({
     stream: z.boolean().optional(),
     partial_images: z.number().int().min(0).max(3).optional(),
     response_format: z.string().optional(),
-    output_format: z.enum(["png", "jpeg", "webp"]).optional(),
+    output_format: z.enum(["png", "jpeg", "webp", "gif", "svg"]).optional(),
     output_compression: z.number().int().min(0).max(100).optional(),
     background: z.enum(["transparent", "opaque", "auto"]).optional(),
     moderation: z.enum(["auto", "low"]).optional(),
+    complexity: GptImageComplexitySchema.optional(),
+    // OpenAI's guide allows 2–64 frames and 20–2000 ms; its API reference is narrower, so OpenAI has the last word.
+    frame_count: z.number().int().min(2).max(64).optional(),
+    frame_duration_ms: z.number().int().min(20).max(2000).optional(),
+    svg: GptImageSvgOptionsSchema.optional(),
     style: z.string().optional(),
     user: z.string().optional(),
     aspect_ratio: z.string().min(1).optional(),
@@ -1234,7 +1500,18 @@ export const ImagesGenerationSchema = z.object({
     validateMiniMaxImageRequest(request, ctx, { allowSubjectReference: false });
     const model = request.model.trim().toLowerCase().replace(/^openai\//, "");
     const isGptImage = model.startsWith("gpt-image-") || model === "chatgpt-image-latest";
-    if (!isGptImage) return;
+    if (!isGptImage) {
+        for (const field of ["complexity", "frame_count", "frame_duration_ms", "svg"] as const) {
+            if (request[field] != null) {
+                ctx.addIssue({ code: z.ZodIssueCode.custom, path: [field], message: `${field} is only supported by GPT Image 2.6 models` });
+            }
+        }
+        if (request.output_format === "gif" || request.output_format === "svg") {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["output_format"], message: `${request.output_format} output is only supported by GPT Image 2.6 models` });
+        }
+        return;
+    }
+    validateGptImage26Generation(request, model, ctx);
 
     if (request.prompt.length > 32_000) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["prompt"], message: "GPT Image prompts must be at most 32000 characters" });
@@ -1258,24 +1535,25 @@ export const ImagesGenerationSchema = z.object({
         ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["background"], message: "transparent backgrounds require png or webp output_format" });
     }
 
-    validateGptImage2Size(request, model, ctx);
-});
+    // GIF sizes are per frame, checked above against OpenAI's frame rules.
+    if (request.output_format !== "gif") validateGptImage2Size(request, model, ctx);
+}));
 export type ImagesGenerationRequest = z.infer<typeof ImagesGenerationSchema>;
 
 // Images Edit schema (OpenAI compatible)
-const ImageEditUploadSchema = z.custom<string | Blob>(
+const ImageEditUploadSchema = lazySchema(() => z.custom<string | Blob>(
     (value) => typeof value === "string"
         ? value.trim().length > 0
         : typeof Blob !== "undefined" && value instanceof Blob && value.size > 0,
     "Expected a non-empty image upload, URL, or base64 value",
-);
+));
 
 const ImageEditOptionalInteger = (minimum: number, maximum: number) => z.preprocess(
     (value) => value === null || value === "" || value === undefined ? undefined : value,
     z.coerce.number().int().min(minimum).max(maximum).optional(),
 );
 
-const ImageEditOptionalBoolean = z.preprocess(
+const ImageEditOptionalBoolean = lazySchema(() => z.preprocess(
     (value) => value === null || value === "" || value === undefined
         ? undefined
         : typeof value === "string"
@@ -1286,15 +1564,21 @@ const ImageEditOptionalBoolean = z.preprocess(
                     : value
             : value,
     z.boolean().optional(),
-);
+));
 
-export const ImagesEditSchema = z.object({
+export const ImagesEditSchema = lazySchema(() => z.object({
     model: z.string().min(1).optional().default("openai/gpt-image-1.5"),
     image: z.union([
         ImageEditUploadSchema,
         z.array(ImageEditUploadSchema).min(1).max(16),
     ]),
     mask: ImageEditUploadSchema.optional(),
+    // A transparent PNG annotation layer over the first image (GPT Image 2.5 and later).
+    markup: ImageEditUploadSchema.optional(),
+    complexity: z.preprocess(
+        (value) => value === null || value === "" ? undefined : value,
+        GptImageComplexitySchema.optional(),
+    ),
     prompt: z.string().min(1).max(32000),
     size: z.string().optional(),
     resolution: z.string().min(1).optional(),
@@ -1395,6 +1679,17 @@ export const ImagesEditSchema = z.object({
         });
     }
     validateGptImage2Size(body, model, ctx);
+    if (body.markup != null) {
+        if (!isGptImage || !(isGptImage25 || gptImageVersion(model) == null)) {
+            ctx.addIssue({ code: "custom", path: ["markup"], message: "markup requires a GPT Image 2.5 or 2.6 model" });
+        }
+        if (body.mask != null) {
+            ctx.addIssue({ code: "custom", path: ["markup"], message: "markup cannot be combined with mask" });
+        }
+    }
+    if (body.complexity != null && (!isGptImage || !supportsGptImage26Features(model))) {
+        ctx.addIssue({ code: "custom", path: ["complexity"], message: "complexity requires a GPT Image 2.6 model" });
+    }
     if (isGptImage && body.response_format != null) {
         ctx.addIssue({
             code: "custom",
@@ -1402,11 +1697,12 @@ export const ImagesEditSchema = z.object({
             message: "GPT Image models always return base64 images and do not accept response_format",
         });
     }
-    if (model === "gpt-image-1-mini" && body.input_fidelity != null) {
+    // OpenAI: gpt-image-1-mini supports only low (its default).
+    if (model === "gpt-image-1-mini" && body.input_fidelity === "high") {
         ctx.addIssue({
             code: "custom",
             path: ["input_fidelity"],
-            message: "gpt-image-1-mini does not support input_fidelity",
+            message: "gpt-image-1-mini supports only input_fidelity low",
         });
     }
     if (body.background === "transparent" && body.output_format === "jpeg") {
@@ -1430,11 +1726,11 @@ export const ImagesEditSchema = z.object({
             message: "partial_images requires stream=true",
         });
     }
-});
+}));
 export type ImagesEditRequest = z.infer<typeof ImagesEditSchema>;
 
 // Moderations schema
-export const ModerationsSchema = z.object({
+export const ModerationsSchema = lazySchema(() => z.object({
     // OpenAI makes `model` optional and defaults it to omni-moderation-latest.
     // Use the gateway's canonical model id so omitted-model requests can still
     // pass through model discovery before the executor maps the provider slug.
@@ -1480,16 +1776,16 @@ export const ModerationsSchema = z.object({
 			content: z.any(),
 		}).passthrough())),
     ]),
-});
+}));
 export type ModerationsRequest = z.infer<typeof ModerationsSchema>;
 
 // Rerank schema
-const RerankDocumentSchema = z.union([
+const RerankDocumentSchema = lazySchema(() => z.union([
     z.string(),
     z.record(z.string(), z.any()),
-]);
+]));
 
-export const RerankSchema = z.object({
+export const RerankSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     query: z.string().min(1),
     documents: z.array(RerankDocumentSchema).min(1),
@@ -1517,24 +1813,25 @@ export const RerankSchema = z.object({
         next.top_n = next.top_k;
     }
     return next;
-});
+}));
 export type RerankRequest = z.infer<typeof RerankSchema>;
 
 // Decisions evaluate typed questions against arbitrary state and return
 // structured answers with calibrated probabilities/confidence.
-const DecisionsStateSchema = z.union([
+const DecisionsStateSchema = lazySchema(() => z.union([
     z.string().min(1).max(1_000_000),
     z.record(z.string(), z.any()),
     z.array(z.any()),
-]);
+]));
 
-const DecisionInstructionsSchema = z.union([
+const DecisionInstructionsSchema = lazySchema(() => z.union([
     z.string().min(1).max(50_000),
     z.record(z.string(), z.any()),
     z.array(z.any()),
-]);
+]));
 
-const DecisionQuestionSchema = z.discriminatedUnion("type", [
+const DecisionQuestionSchema = lazySchema(() => z.discriminatedUnion("type", [
+    z.object({ type: z.literal("box"), instructions: DecisionInstructionsSchema }).strict(),
     z.object({
         type: z.literal("noul"),
         instructions: DecisionInstructionsSchema,
@@ -1556,9 +1853,10 @@ const DecisionQuestionSchema = z.discriminatedUnion("type", [
         instructions: DecisionInstructionsSchema,
         criteria: z.array(z.string().min(1)).min(2),
     }).passthrough(),
-]);
+]));
 
-export const DecisionsSchema = z.object({
+export const LegacyDecisionsSchema = lazySchema(() => z.object({
+    provider_options: DecisionProviderOptionsSchema.optional(),
     model: z.string().min(1).default("typesafe/jev-1.13.0"),
     state: DecisionsStateSchema,
     images: z.array(z.union([
@@ -1572,8 +1870,8 @@ export const DecisionsSchema = z.object({
         .refine((questions) => Object.keys(questions).length > 0, {
             message: "At least one decision question is required.",
         })
-        .refine((questions) => Object.keys(questions).length <= 128, {
-            message: "Decision requests support at most 128 questions.",
+        .refine((questions) => Object.keys(questions).length <= DECISION_QUESTION_CEILING, {
+            message: `Decision requests support at most ${DECISION_QUESTION_CEILING} questions.`,
         }),
     meta: z.boolean().optional().default(false),
     echo_upstream_request: z.boolean().optional(),
@@ -1582,11 +1880,32 @@ export const DecisionsSchema = z.object({
     provider: ProviderRoutingSchema,
     routing: ProviderRoutingSchema,
     metadata: z.record(z.string(), z.any()).nullable().optional(),
-}).passthrough();
+}).passthrough());
+export const OpenAIDecisionsSchema = lazySchema(() => NativeDecisionsBodySchema.safeExtend({
+    meta: z.boolean().optional().default(false),
+    echo_upstream_request: z.boolean().optional(),
+    debug: DebugOptionsSchema,
+    beta: BetaOptionsSchema,
+    provider: ProviderRoutingSchema,
+    routing: ProviderRoutingSchema,
+    metadata: z.record(z.string(), z.any()).nullable().optional(),
+}).passthrough());
+export const DecisionsSchema = lazySchema(() => z.union([OpenAIDecisionsSchema, LegacyDecisionsSchema]).superRefine((body, ctx) => {
+    if ("input" in body && ("state" in body || "images" in body)) {
+        ctx.addIssue({ code: "custom", path: ["input"], message: "Use either input with array questions or state with map questions; do not mix formats." });
+    }
+    const questions = Array.isArray(body.questions) ? body.questions : Object.values(body.questions);
+    const hasImages = Array.isArray(body.questions) ? typeof body.input !== "string" && Array.isArray(body.input) && body.input.some(message =>
+        typeof message.content !== "string" && message.content.some(part => part.type === "input_image"))
+        : Array.isArray(body.images) && body.images.length > 0;
+    if (questions.some(question => question.type === "box") && !hasImages) {
+        ctx.addIssue({ code: "custom", path: ["questions"], message: "Box questions require image input." });
+    }
+}));
 export type DecisionsRequest = z.infer<typeof DecisionsSchema>;
 
 // Audio Speech schema
-const ElevenLabsSpeechConfigSchema = z.object({
+const ElevenLabsSpeechConfigSchema = lazySchema(() => z.object({
     output_format: z.string().optional(),
     language_code: z.string().optional(),
     voice_settings: z.record(z.string(), z.any()).optional(),
@@ -1598,9 +1917,9 @@ const ElevenLabsSpeechConfigSchema = z.object({
     voiceId: z.string().optional(),
     voice_name: z.string().optional(),
     voiceName: z.string().optional(),
-}).passthrough();
+}).passthrough());
 
-export const AudioSpeechSchema = z.object({
+export const AudioSpeechSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     input: z.string().min(1).max(40000),
 	session_id: z.string().trim().min(1).max(256).optional(),
@@ -1653,11 +1972,11 @@ export const AudioSpeechSchema = z.object({
 	} else if (!isElevenLabs && !isMiniMax && !isXAi && body.input.length > 4096) {
 		ctx.addIssue({ code: "custom", path: ["input"], message: "Speech input must be at most 4096 characters for this provider" });
 	}
-});
+}));
 export type AudioSpeechRequest = z.infer<typeof AudioSpeechSchema>;
 
 // Audio Transcription schema
-export const AudioTranscriptionSchema = z.object({
+export const AudioTranscriptionSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     file: UploadFileSchema.optional(),
     file_url: z.string().url().max(2083).nullable().optional(),
@@ -1698,7 +2017,8 @@ export const AudioTranscriptionSchema = z.object({
 	),
 	output_content: z.string().optional(),
 	session_id: z.string().trim().min(1).max(256).optional(),
-    context_bias: z.array(z.string().min(1).regex(/^[^,\s]+$/, "context_bias entries cannot contain commas or whitespace")).max(100).optional(),
+    // Per-model rules live in the superRefine below (Voxtral 3 takes phrases).
+    context_bias: z.array(z.string().min(1)).optional(),
     include: z.array(z.string()).optional(),
     chunking_strategy: z.union([
         z.literal("auto"),
@@ -1726,7 +2046,10 @@ export const AudioTranscriptionSchema = z.object({
     const isStepTranscription = ["stepaudio-2.5-asr", "stepaudio-2-asr-pro", "step-asr-1.1-stream"].includes(model);
     const isDiarize = model === "gpt-4o-transcribe-diarize";
     const isMorpheusTranscription = body.model.toLowerCase().startsWith("morpheus/");
-	const isXAiTranscription = model === "grok-transcribe";
+	// Voxtral 3 changed context_bias: phrases with spaces and no fixed count.
+	const isVoxtral3 = isMistralTranscription && /^voxtral-(?:mini|small)-transcribe-3(?:$|[-.])/.test(model);
+	// xAI serves grok-transcribe and grok-voice-transcribe-2.0 from the same /v1/stt endpoint.
+	const isXAiTranscription = body.model.toLowerCase().startsWith("spacex-ai/") || model === "grok-transcribe" || model.startsWith("grok-voice-transcribe");
 	const isMetaTranscription = model === "muse-voice-transcribe-1.0";
 	const isElevenLabsTranscription = body.model.toLowerCase().startsWith("eleven-labs/") || model.startsWith("scribe-");
     const sources = [body.file, body.file_url, body.s3_presigned_url, body.file_id].filter(Boolean);
@@ -1739,10 +2062,15 @@ export const AudioTranscriptionSchema = z.object({
 	} else if (isMorpheusTranscription && sources.length !== 1) {
 		ctx.addIssue({ code: "custom", path: ["file"], message: "Morpheus transcription requires exactly one of file, file_url, or s3_presigned_url" });
     }
-	const isOvhWhisper = model === "whisper-large-v3" || model === "whisper-large-v3-turbo";
-	const maxFileBytes = isElevenLabsTranscription ? 5 * 1024 * 1024 * 1024 : isXAiTranscription ? 500 * 1024 * 1024 : isMetaTranscription ? 32 * 1024 * 1024 : isOvhWhisper ? 2048 * 1024 * 1024 : 25 * 1024 * 1024;
+	// This is only a ceiling: the largest upload any provider of the model takes.
+	// Open Whisper large-v3 models are served by several providers with different
+	// limits (OVHcloud 2048 MB, Together 80 MB, Groq 25 MB), so the per-provider
+	// limit comes from each route's stored max_file_size_bytes and the provider's
+	// adapter (see OPENAI_COMPAT_TRANSCRIPTION_MAX_BYTES).
+	const isOpenWhisperLargeV3 = model === "whisper-large-v3" || model === "whisper-large-v3-turbo";
+	const maxFileBytes = isElevenLabsTranscription ? 5 * 1024 * 1024 * 1024 : isXAiTranscription ? 500 * 1024 * 1024 : isMetaTranscription ? 32 * 1024 * 1024 : isOpenWhisperLargeV3 ? 2048 * 1024 * 1024 : 25 * 1024 * 1024;
     if (!isMistralTranscription && body.file && body.file.size > maxFileBytes) {
-		ctx.addIssue({ code: "custom", path: ["file"], message: `Transcription files must be ${isElevenLabsTranscription ? "5 GB" : isXAiTranscription ? "500 MB" : isMetaTranscription ? "32 MB" : isOvhWhisper ? "2048 MB" : "25 MB"} or smaller` });
+		ctx.addIssue({ code: "custom", path: ["file"], message: `Transcription files must be ${isElevenLabsTranscription ? "5 GB" : isXAiTranscription ? "500 MB" : isMetaTranscription ? "32 MB" : isOpenWhisperLargeV3 ? "2048 MB" : "25 MB"} or smaller` });
     }
     const file = body.file;
     const filename = file && typeof File !== "undefined" && file instanceof File ? file.name.toLowerCase() : "";
@@ -1780,8 +2108,22 @@ export const AudioTranscriptionSchema = z.object({
 		ctx.addIssue({ code: "custom", path: ["keywords"], message: "ElevenLabs supports at most 1000 keyterms" });
 	}
 	for (const [index, keyword] of (isElevenLabsTranscription ? body.keywords ?? [] : []).entries()) {
-		if (keyword.length >= 50 || keyword.trim().split(/\s+/).length > 5 || /[<>{}\[\]\\]/.test(keyword)) {
-			ctx.addIssue({ code: "custom", path: ["keywords", index], message: "ElevenLabs keyterms must be under 50 characters, at most 5 words, and exclude angle/square/curly brackets and backslashes" });
+		// ElevenLabs: "at most 50 characters", "at most 5 words".
+		if (keyword.length > 50 || keyword.trim().split(/\s+/).length > 5 || /[<>{}\[\]\\]/.test(keyword)) {
+			ctx.addIssue({ code: "custom", path: ["keywords", index], message: "ElevenLabs keyterms must be at most 50 characters and 5 words, without < > { } [ ] or backslashes" });
+		}
+	}
+	// Voxtral 3 accepts terms, multi-word names and descriptive sentences, with no
+	// fixed count (entries share the context window; Mistral returns 400 if they
+	// don't fit). Every other model keeps the earlier rule: up to 100 single terms.
+	if (!isVoxtral3) {
+		if ((body.context_bias?.length ?? 0) > 100) {
+			ctx.addIssue({ code: "custom", path: ["context_bias"], message: "context_bias takes at most 100 entries for this model" });
+		}
+		for (const [index, entry] of (body.context_bias ?? []).entries()) {
+			if (/[,\s]/.test(entry)) {
+				ctx.addIssue({ code: "custom", path: ["context_bias", index], message: `context_bias entries cannot contain commas or whitespace for this model${isMistralTranscription ? "; join words with underscores, or use a Voxtral 3 model for phrases" : ""}` });
+			}
 		}
 	}
     if ((body.known_speaker_names || body.known_speaker_references) && !isDiarize) {
@@ -1795,7 +2137,7 @@ export const AudioTranscriptionSchema = z.object({
             ctx.addIssue({ code: "custom", path: ["known_speaker_references", index], message: "Known speaker references must be base64 data URLs" });
         }
     }
-});
+}));
 export type AudioTranscriptionRequest = z.infer<typeof AudioTranscriptionSchema>;
 
 // Audio Translation schema
@@ -1819,7 +2161,7 @@ function hasSupportedOpenAITranslationFormat(file: File | Blob): boolean {
     );
 }
 
-export const AudioTranslationSchema = z.object({
+export const AudioTranslationSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     file: UploadFileSchema
         .refine((file) => file.size <= OPENAI_TRANSLATION_MAX_FILE_BYTES, {
@@ -1837,13 +2179,13 @@ export const AudioTranslationSchema = z.object({
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
     routing: ProviderRoutingSchema,
-});
+}));
 export type AudioTranslationRequest = z.infer<typeof AudioTranslationSchema>;
 
-const VideoReferenceTypeSchema = z.enum(["asset", "style", "character", "location", "generic"]).or(z.string());
-const VideoInputReferenceRoleSchema = z.enum(["first_frame", "last_frame", "reference", "source", "mask"]);
+const VideoReferenceTypeSchema = lazySchema(() => z.enum(["asset", "style", "character", "location", "generic"]).or(z.string()));
+const VideoInputReferenceRoleSchema = lazySchema(() => z.enum(["first_frame", "last_frame", "reference", "source", "mask"]));
 
-const VideoImageInputReferenceSchema = z.object({
+const VideoImageInputReferenceSchema = lazySchema(() => z.object({
 	type: z.literal("image_url"),
 	role: VideoInputReferenceRoleSchema.optional(),
 	reference_type: VideoReferenceTypeSchema.optional(),
@@ -1852,9 +2194,9 @@ const VideoImageInputReferenceSchema = z.object({
 			message: "video input references must use https",
 		}),
 	}),
-}).strict();
+}).strict());
 
-const VideoMediaInputReferenceSchema = z.object({
+const VideoMediaInputReferenceSchema = lazySchema(() => z.object({
 	type: z.enum(["video_url", "audio_url"]),
 	role: VideoInputReferenceRoleSchema.optional(),
 	reference_type: VideoReferenceTypeSchema.optional(),
@@ -1863,18 +2205,18 @@ const VideoMediaInputReferenceSchema = z.object({
 			message: "video input references must use https",
 		}),
 	}),
-}).strict();
+}).strict());
 
-const VideoInputReferenceSchema = z.union([VideoImageInputReferenceSchema, VideoMediaInputReferenceSchema]);
-const VideoFrameImageSchema = VideoImageInputReferenceSchema.omit({ role: true, reference_type: true }).extend({
+const VideoInputReferenceSchema = lazySchema(() => z.union([VideoImageInputReferenceSchema, VideoMediaInputReferenceSchema]));
+const VideoFrameImageSchema = lazySchema(() => VideoImageInputReferenceSchema.omit({ role: true, reference_type: true }).extend({
 	frame_type: z.enum(["first_frame", "last_frame"]),
-});
+}));
 
-const VideoOutputConfigSchema = z.object({
+const VideoOutputConfigSchema = lazySchema(() => z.object({
 	access: z.enum(["bytes", "signed_url", "both"]).default("both"),
-}).default({ access: "both" });
+}).default({ access: "both" }));
 
-const VideoWebhookSchema = z.object({
+const VideoWebhookSchema = lazySchema(() => z.object({
 	endpoint_id: z.string().min(1),
 	events: z.array(z.string().min(1)).optional(),
 }).strict().transform((value, ctx) => {
@@ -1887,7 +2229,7 @@ const VideoWebhookSchema = z.object({
 		return z.NEVER;
 	}
 	return parsed;
-});
+}));
 
 const VIDEO_PROVIDER_CONTROLLED_KEYS = new Set([
 	"imageurl", "imageurls", "videourl", "videourls", "audiourl", "audiourls",
@@ -1964,12 +2306,12 @@ function rejectVideoProviderControlledFields(
 	}
 }
 
-const VideoProviderParamsSchema = z.record(z.string(), z.any()).superRefine((value, ctx) => {
+const VideoProviderParamsSchema = lazySchema(() => z.record(z.string(), z.any()).superRefine((value, ctx) => {
 	rejectVideoProviderControlledFields(value, ctx);
-});
+}));
 
 // Video Generation schema
-export const VideoGenerationSchema = z.object({
+export const VideoGenerationSchema = lazySchema(() => z.object({
 	model: z.string().min(1).default("sora-2"),
 	prompt: z.string().max(32_000).default(""),
 	seconds: z.enum(["4", "8", "12", "16", "20"]).optional(),
@@ -1996,7 +2338,12 @@ export const VideoGenerationSchema = z.object({
 	negative_prompt: z.string().optional(),
 	generate_audio: z.boolean().optional(),
 	enhance_prompt: z.boolean().optional(),
-	compression_quality: z.number().int().min(0).max(100).optional(),
+	// Veo takes "optimized" or "lossless". The old 0-100 number stays valid here for
+	// compatible providers; the Vertex executor rejects it with a clear message.
+	compression_quality: z.union([
+		z.enum(["optimized", "lossless"]),
+		z.number().int().min(0).max(100),
+	]).optional(),
 	person_generation: z.string().optional(),
 	resize_mode: z.string().optional(),
 	input_references: z.array(VideoInputReferenceSchema).optional(),
@@ -2038,11 +2385,11 @@ export const VideoGenerationSchema = z.object({
 			path: ["size"],
 		});
 	}
-});
+}));
 export type VideoGenerationRequest = z.infer<typeof VideoGenerationSchema>;
 
 // OCR schema
-const MistralOcrAnnotationFormatSchema = z.object({
+const MistralOcrAnnotationFormatSchema = lazySchema(() => z.object({
     type: z.literal("json_schema"),
     json_schema: z.object({
         name: z.string().min(1),
@@ -2050,9 +2397,9 @@ const MistralOcrAnnotationFormatSchema = z.object({
         schema: z.record(z.string(), z.any()),
         strict: z.boolean().optional(),
     }).strict(),
-}).strict();
+}).strict());
 
-const MistralOcrDocumentSchema = z.discriminatedUnion("type", [
+const MistralOcrDocumentSchema = lazySchema(() => z.discriminatedUnion("type", [
     z.object({
         type: z.literal("file"),
         file_id: z.string().uuid(),
@@ -2072,9 +2419,9 @@ const MistralOcrDocumentSchema = z.discriminatedUnion("type", [
             }).strict(),
         ]),
     }).strict(),
-]);
+]));
 
-export const OcrSchema = z.object({
+export const OcrSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     // Legacy shorthand retained for compatibility; `document` mirrors Mistral's native API.
     image: z.string().min(1).optional(),
@@ -2111,15 +2458,15 @@ export const OcrSchema = z.object({
             message: "document_annotation_prompt requires document_annotation_format",
         });
     }
-});
+}));
 export type OcrRequest = z.infer<typeof OcrSchema>;
 
-const ParseImageUrlSchema = z.string().min(1).refine(
+const ParseImageUrlSchema = lazySchema(() => z.string().min(1).refine(
     (value) => /^https?:\/\//.test(value) || /^data:image\/[a-zA-Z0-9.+-]+;base64,/.test(value),
     { message: "image_url must be an http(s) URL or a base64 image data URI" },
-);
+));
 
-export const ParseSchema = z.object({
+export const ParseSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     document: z.object({
         type: z.literal("image_url"),
@@ -2131,11 +2478,11 @@ export const ParseSchema = z.object({
     beta: BetaOptionsSchema,
     provider: ProviderRoutingSchema,
     routing: ProviderRoutingSchema,
-}).strict();
+}).strict());
 export type ParseRequest = z.infer<typeof ParseSchema>;
 
 // Music Generate schema
-export const MusicGenerateSchema = z.object({
+export const MusicGenerateSchema = lazySchema(() => z.object({
     model: z.string().min(1),
     prompt: z.string().optional(),
     duration: z.number().int().positive().optional(),
@@ -2188,11 +2535,11 @@ export const MusicGenerateSchema = z.object({
     echo_upstream_request: z.boolean().optional(),
     debug: DebugOptionsSchema,
     beta: BetaOptionsSchema,
-});
+}));
 export type MusicGenerateRequest = z.infer<typeof MusicGenerateSchema>;
 
 // Generation response schema
-export const GenerationResponseSchema = z.object({
+export const GenerationResponseSchema = lazySchema(() => z.object({
     request_id: z.string(),
     workspace_id: z.string(),
     app_id: z.string().nullable(),
@@ -2218,7 +2565,7 @@ export const GenerationResponseSchema = z.object({
     pricing_lines: z.array(z.any()),
     key_id: z.string(),
     throughput: z.number().nullable(),
-});
+}));
 export type GenerationResponse = z.infer<typeof GenerationResponseSchema>;
 
 // Function to get schema for a given endpoint

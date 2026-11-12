@@ -1,5 +1,6 @@
 export interface ErrorResponse {
   attempt_count?: number;
+  code?: string;
   description?: string;
   details?: {
     [key: string]: unknown;
@@ -7,6 +8,22 @@ export interface ErrorResponse {
   error:
     | string
     | {
+        code: string;
+        message: string;
+        metadata?: {
+          [key: string]: unknown;
+        };
+        param?: string | null;
+        type:
+          | "invalid_request_error"
+          | "authentication_error"
+          | "permission_error"
+          | "not_found_error"
+          | "rate_limit_error"
+          | "insufficient_quota"
+          | "server_error"
+          | "service_unavailable"
+          | "overloaded";
         [key: string]: unknown;
       };
   error_origin?: "user" | "gateway" | "upstream";

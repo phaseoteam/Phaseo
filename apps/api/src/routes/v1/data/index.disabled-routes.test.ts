@@ -62,7 +62,7 @@ describe("inferenceRouter staged feature mounts", () => {
 
 		expect(musicResponse.status).toBe(401);
 		expect(await musicResponse.json()).not.toMatchObject({
-			error: "not_implemented",
+			code: "not_implemented",
 			feature: "music",
 		});
 	});

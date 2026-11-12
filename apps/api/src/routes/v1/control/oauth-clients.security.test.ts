@@ -44,6 +44,11 @@ vi.mock("@/runtime/env", () => ({
 					}),
 				};
 			}
+			// The management key acts as its creator, an admin of the workspace.
+			if (table === "workspace_members") {
+				const membership: any = { select: () => membership, eq: () => membership, maybeSingle: async () => ({ data: { role: "admin" }, error: null }) };
+				return membership;
+			}
 			if (table !== "oauth_app_metadata") throw new Error(`Unexpected table: ${table}`);
 			return {
 				insert: (payload: Record<string, unknown>) => {
@@ -165,6 +170,28 @@ describe("OAuth client management security", () => {
 		expect(response.status).toBe(201);
 		expect(state.insertPayloads).toHaveLength(1);
 		expect(state.insertPayloads[0]?.allowed_scopes).toContain("gateway:access");
+	});
+
+	it("refuses billing:write for third-party OAuth apps on create and update", async () => {
+		state.thirdPartyOAuthEnabled = true;
+		state.metadataRows.push({ client_id: "owned_client" });
+		const { default: oauthClientsRoutes } = await import("./oauth-clients");
+		const created = await oauthClientsRoutes.request("https://example.com/", {
+			method: "POST",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ name: "Partner App", redirect_uris: ["https://partner.example/callback"], allowed_scopes: ["me:read", "billing:write"] }),
+		});
+		expect(created.status).toBe(400);
+		expect((await created.json()).error).toContain("billing:write is only available to the Phaseo CLI");
+		const updated = await oauthClientsRoutes.request("https://example.com/owned_client", {
+			method: "PATCH",
+			headers: { "content-type": "application/json" },
+			body: JSON.stringify({ allowed_scopes: ["billing:write"] }),
+		});
+		expect(updated.status).toBe(400);
+		expect(state.createClient).not.toHaveBeenCalled();
+		expect(state.updateClient).not.toHaveBeenCalled();
+		expect(state.insertPayloads).toHaveLength(0);
 	});
 
 	it("revokes delegated authorizations before deleting an OAuth client", async () => {

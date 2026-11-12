@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "charxiv-reasoning",
-  "benchmark_name": "CharXiv-Reasoning",
-  "category": null,
-  "ascending_order": null,
-  "type": "percentage",
-  "link": null,
-  "total_models": 6
-}

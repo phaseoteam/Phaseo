@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { getProviderProfile } from "../providerProfiles";
+import { getTextProviderReasoningEffortFallback } from "../textProfiles";
 
 describe("providerProfiles", () => {
 	it("resolves alias entries to the canonical profile", () => {
@@ -8,6 +9,7 @@ describe("providerProfiles", () => {
 		expect(openai?.id).toBe("openai");
 		expect(azure?.id).toBe("openai");
 		expect(getProviderProfile("wafer-zdr")?.id).toBe("wafer");
+		expect(getProviderProfile("wafer-us")?.id).toBe("wafer");
 	});
 
 	it("contains text-only policy for known providers", () => {
@@ -32,7 +34,7 @@ describe("providerProfiles", () => {
 		expect(anthropic?.text?.normalize?.defaultMaxTokensWhenMissing).toBe(4096);
 		const cohere = getProviderProfile("cohere");
 		expect(cohere?.text?.normalize?.maxTemperature).toBe(1);
-		expect(cohere?.text?.normalize?.reasoningEffortFallback).toEqual(["high"]);
+		expect(cohere?.text?.normalize?.reasoningEffortFallback).toEqual(["none", "high"]);
 		const deepseek = getProviderProfile("deepseek");
 		expect(deepseek?.text?.normalize?.maxTemperature).toBe(2);
 		expect(deepseek?.text?.normalize?.reasoningEffortFallback).toEqual(["high", "max"]);
@@ -105,5 +107,18 @@ describe("providerProfiles", () => {
 		expect(wandb?.text?.paramPolicy?.supportedParams).toEqual(expect.arrayContaining([
 			"tools", "response_format", "reasoning.enabled",
 		]));
+	});
+});
+
+// The pipeline clamps OpenAI effort before the executor; it must match the model pages
+// (https://developers.openai.com/api/docs/models/gpt-5.5 and /gpt-5.5-pro).
+describe("OpenAI pipeline effort levels", () => {
+	it.each([
+		["gpt-5.5", ["none", "low", "medium", "high", "xhigh"]],
+		["gpt-5.5-pro", ["medium", "high", "xhigh"]],
+		["gpt-5.3-codex", ["low", "medium", "high", "xhigh"]],
+		["gpt-5-pro", ["high"]],
+	])("lists %s levels", (model, levels) => {
+		expect(getTextProviderReasoningEffortFallback({ providerId: "openai", model })).toEqual(levels);
 	});
 });

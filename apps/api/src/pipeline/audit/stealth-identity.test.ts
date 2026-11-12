@@ -17,7 +17,7 @@ describe("stealth audit identity", () => {
             providerRequest: { model: "oai-stealth-test-model-internal" },
             providerResponse: { provider: "openai" },
             serverToolTrace: [{ round: 1, calls: [{ output: { provider: "openai" } }] }],
-            extraJson: "opaque provider telemetry",
+			lifecycleEvents: { events: [{ provider: "openai" }] },
         });
 
         expect(result).toMatchObject({
@@ -29,7 +29,7 @@ describe("stealth audit identity", () => {
             providerRequest: null,
             providerResponse: null,
             serverToolTrace: null,
-            extraJson: null,
+			lifecycleEvents: null,
         });
     });
 

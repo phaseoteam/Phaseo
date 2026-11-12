@@ -3,7 +3,6 @@ import type { Env } from "@/runtime/types";
 import { getSupabaseAdmin } from "@/runtime/env";
 import { setKeyVersion } from "@/core/kv";
 import { isDataContributionAccessEnabled } from "@/core/feature-flags";
-import { getSupabaseActor } from "@/lib/oauth/service";
 import type { AuthSuccess } from "@/pipeline/before/auth";
 import { guardManagementAuth, type GuardErr } from "@/pipeline/before/guards";
 import { CAPABILITIES } from "@/lib/authz/capabilities";
@@ -15,16 +14,20 @@ import {
 import {
 	ALLOWED_CLASSIFIER_MODELS,
 	ensureStarterClassifier,
+	isClassifierLimitError,
+	MAX_ENABLED_CLASSIFIERS_PER_WORKSPACE,
 	STARTER_TASK_CATEGORIES,
 	STARTER_CLASSIFIER_SLUG,
 } from "@/pipeline/classification/classifier-worker";
 import {
 	isResponse,
 	internalServerError,
+	rejectThirdPartyOAuthSpendingChange,
 	requireCapability,
 	requireJsonBody,
 	requireOAuthWorkspaceRole,
 } from "./route-helpers";
+import { authenticateDashboardSession } from "./dashboard-session";
 
 const SAMPLE_RATE_BPS = 10000;
 const CLASSIFIER_SAMPLE_RATE_BPS = 1000;
@@ -75,12 +78,6 @@ async function auditConsentDenial(auth: {
 	}
 }
 
-function bearerToken(req: Request): string | null {
-	const authorization = req.headers.get("authorization")?.trim() ?? "";
-	if (!authorization.toLowerCase().startsWith("bearer ")) return null;
-	return authorization.slice(7).trim() || null;
-}
-
 async function requireAdminPreview(
 	auth: AuthSuccess,
 	auditConsentDenials: boolean,
@@ -116,40 +113,14 @@ export async function authenticateDashboardDataContribution(
 	req: Request,
 	auditConsentDenials: boolean,
 ): Promise<AuthSuccess | Response | null> {
-	const workspaceId = req.headers.get("x-phaseo-workspace-id")?.trim();
-	if (!workspaceId) return null;
-	const token = bearerToken(req);
-	const actor = token ? await getSupabaseActor(token) : null;
-	if (!actor) return json({ error: "unauthorized" }, 401, { "Cache-Control": "no-store" });
-	const client = getSupabaseAdmin();
-	const [membership, workspace] = await Promise.all([
-		client.from("workspace_members").select("role")
-			.eq("workspace_id", workspaceId).eq("user_id", actor.userId).maybeSingle(),
-		client.from("workspaces").select("owner_user_id").eq("id", workspaceId).maybeSingle(),
-	]);
-	if (membership.error || workspace.error || !workspace.data) {
+	const session = await authenticateDashboardSession(req, [CAPABILITIES.SETTINGS_READ, CAPABILITIES.SETTINGS_WRITE]);
+	if (session === null) return null;
+	if (session instanceof Response) return session;
+	if (!["owner", "admin"].includes(session.role)) {
+		if (auditConsentDenials) await auditConsentDenial(session.auth, "insufficient_workspace_role");
 		return json({ error: "forbidden" }, 403, { "Cache-Control": "no-store" });
 	}
-	const workspaceRole = workspace.data.owner_user_id === actor.userId
-		? "owner"
-		: String(membership.data?.role ?? "").toLowerCase();
-	const auth: AuthSuccess = {
-		ok: true,
-		workspaceId,
-		apiKeyId: `dashboard:${actor.userId}`,
-		apiKeyRef: "dashboard",
-		apiKeyKid: "dashboard",
-		userId: actor.userId,
-		internal: false,
-		authMethod: "oauth",
-		oauthScopes: [CAPABILITIES.SETTINGS_READ, CAPABILITIES.SETTINGS_WRITE],
-		scopes: [CAPABILITIES.SETTINGS_READ, CAPABILITIES.SETTINGS_WRITE],
-	};
-	if (!["owner", "admin"].includes(workspaceRole)) {
-		if (auditConsentDenials) await auditConsentDenial(auth, "insufficient_workspace_role");
-		return json({ error: "forbidden" }, 403, { "Cache-Control": "no-store" });
-	}
-	return requireAdminPreview(auth, auditConsentDenials);
+	return requireAdminPreview(session.auth, auditConsentDenials);
 }
 
 async function authenticate(req: Request, write = false, auditConsentDenials = false) {
@@ -173,6 +144,12 @@ async function authenticate(req: Request, write = false, auditConsentDenials = f
 	if (roleError) {
 		if (auditConsentDenials) await auditConsentDenial(auth.value, "insufficient_workspace_role");
 		return roleError;
+	}
+	// Data contribution shares request content, so an app that signs in with Phaseo must not turn it on or change it.
+	const appError = write ? rejectThirdPartyOAuthSpendingChange(auth.value, "Apps that use Sign in with Phaseo can't change data contribution, because it shares request content. The person can change it under Settings, Privacy.") : null;
+	if (appError) {
+		if (auditConsentDenials) await auditConsentDenial(auth.value, "third_party_app");
+		return appError;
 	}
 	return requireAdminPreview({ ok: true, ...auth.value }, auditConsentDenials);
 }
@@ -318,6 +295,14 @@ async function updateConsent(req: Request) {
 	}
 }
 
+function classifierLimitResponse(): Response {
+	return json({
+		error: "classifier_limit_reached",
+		message: `A workspace can have at most ${MAX_ENABLED_CLASSIFIERS_PER_WORKSPACE} enabled classifiers. Disable or delete one first.`,
+		max_enabled_classifiers: MAX_ENABLED_CLASSIFIERS_PER_WORKSPACE,
+	}, 409, { "Cache-Control": "no-store" });
+}
+
 async function createClassifier(req: Request) {
 	const auth = await authenticate(req, true);
 	if (auth instanceof Response) return auth;
@@ -327,13 +312,16 @@ async function createClassifier(req: Request) {
 		const name = String(body.name ?? "").trim();
 		const slugBase = String(body.slug ?? name).trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 64);
 		if (!slugBase || slugBase === STARTER_CLASSIFIER_SLUG) throw new Error("a unique custom slug is required");
+		const patch = classifierPatch(body, true);
 		const { data, error } = await getSupabaseAdmin().from("workspace_classifiers").insert({
 			workspace_id: auth.workspaceId,
 			slug: slugBase,
 			kind: "custom",
 			created_by: auth.userId ?? null,
-			...classifierPatch(body, true),
+			...patch,
 		}).select("*").maybeSingle();
+		// The database caps enabled classifiers atomically (enforce_workspace_classifier_limit).
+		if (isClassifierLimitError(error)) return classifierLimitResponse();
 		if (error) throw error;
 		if (!data) throw new Error("Failed to create classifier");
 		await auditDataContribution(auth, "data_contribution.classifier.created", "workspace_classifier", String(data.id), String(data.name ?? "") || null);
@@ -352,6 +340,7 @@ async function updateClassifier(req: Request, id: string) {
 		const patch = classifierPatch(body, false);
 		const { data, error } = await getSupabaseAdmin().from("workspace_classifiers").update(patch)
 			.eq("id", id).eq("workspace_id", auth.workspaceId).eq("kind", "custom").select("*").maybeSingle();
+		if (isClassifierLimitError(error)) return classifierLimitResponse();
 		if (error) throw error;
 		if (!data) return json({ error: "not_found" }, 404);
 		await auditDataContribution(auth, "data_contribution.classifier.updated", "workspace_classifier", String(data.id), String(data.name ?? "") || null, { changed_fields: Object.keys(patch).filter((field) => field !== "instructions") });

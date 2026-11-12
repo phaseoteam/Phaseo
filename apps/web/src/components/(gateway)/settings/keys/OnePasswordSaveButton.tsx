@@ -1,7 +1,5 @@
-"use client";
-
 import * as React from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -145,7 +143,7 @@ export function OnePasswordSaveButton({
 				</span>
 			) : null}
 			<div
-				className="pointer-events-none absolute -left-[10000px] top-0 h-px w-px overflow-hidden"
+				className="ph-no-capture pointer-events-none absolute -left-[10000px] top-0 h-px w-px overflow-hidden"
 				inert
 				aria-hidden="true"
 			>

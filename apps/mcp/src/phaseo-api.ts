@@ -2,6 +2,7 @@ export type PhaseoEnv = Omit<Cloudflare.Env, "INFERENCE_RUNS"> & {
 	INFERENCE_RUNS?: DurableObjectNamespace;
 	PHASEO_MCP_RESOURCE_SERVER_SECRET: string;
 	OPENAI_APPS_CHALLENGE_TOKEN?: string;
+	GOOGLE_CONNECTED_APPS_VERIFICATION?: string;
 	PHASEO_WEB_BASE_URL: string;
 };
 
@@ -147,6 +148,7 @@ export async function requestPhaseo<T>(
 		body: options.body === undefined ? undefined : JSON.stringify(options.body),
 	});
 	const response = env.PHASEO_API ? await env.PHASEO_API.fetch(request) : await fetch(request);
+	if (response.status === 204) return {} as T;
 	const payload = (await response.json().catch(() => null)) as T | null;
 	if (!response.ok || !payload) {
 		const details = payload && typeof payload === "object"
@@ -175,13 +177,20 @@ export type ModelSearchOptions = {
 	query?: string;
 	provider?: string;
 	modality?: "text" | "image" | "audio" | "video";
+	outputTypes?: string[];
+	parameters?: string[];
 	minimumContextTokens?: number;
 	maximumInputPricePerMillion?: number;
 	gatewayAvailableOnly?: boolean;
 	sortBy?: "relevance" | "input_price" | "output_price" | "context_length" | "provider_count";
 	sortOrder?: "asc" | "desc";
 	limit?: number;
+	offset?: number;
 };
+
+// The models API returns at most 250 models per page.
+const MODEL_PAGE_SIZE = 250;
+const MAX_MODEL_PAGES = 12;
 
 export async function listModels(env: PhaseoEnv, limit = 250, credentials?: PhaseoCredentials): Promise<GatewayModel[]> {
 	const payload = await requestPhaseo<ModelsResponse>(env, "/v1/models", { query: { limit }, credentials });
@@ -199,17 +208,53 @@ export async function searchModels(
 			search: options.query,
 			provider_search: options.provider,
 			input_modality: options.modality,
+			output_types: options.outputTypes?.length ? options.outputTypes.join(",") : undefined,
+			// The API keeps offers that support any listed parameter; models_list then requires all of them.
+			supported_parameters: options.parameters?.length ? options.parameters.join(",") : undefined,
 			minimum_context_tokens: options.minimumContextTokens,
 			maximum_input_price_per_million: options.maximumInputPricePerMillion,
 			gateway_available_only: options.gatewayAvailableOnly || undefined,
 			sort_by: options.sortBy,
 			sort_order: options.sortOrder,
 			limit: options.limit ?? 250,
+			offset: options.offset || undefined,
 		},
 		credentials,
 	});
 	if (!payload.ok || !payload.models) throw new PhaseoApiError(payload.message ?? "Phaseo could not load models.");
 	return payload.models;
+}
+
+// Every model matching the API-side filters, across pages. Used when the MCP filters further itself, so a match
+// beyond the first page is never reported as missing. Fails rather than returning a partial set.
+export async function searchAllModels(
+	env: PhaseoEnv,
+	options: Omit<ModelSearchOptions, "limit" | "offset">,
+	credentials?: PhaseoCredentials,
+): Promise<GatewayModel[]> {
+	const models: GatewayModel[] = [];
+	for (let page = 0; page < MAX_MODEL_PAGES; page += 1) {
+		const payload = await requestPhaseo<ModelsResponse>(env, "/v1/models", {
+			query: {
+				search: options.query,
+				provider_search: options.provider,
+				input_modality: options.modality,
+				output_types: options.outputTypes?.length ? options.outputTypes.join(",") : undefined,
+				supported_parameters: options.parameters?.length ? options.parameters.join(",") : undefined,
+				minimum_context_tokens: options.minimumContextTokens,
+				maximum_input_price_per_million: options.maximumInputPricePerMillion,
+				gateway_available_only: options.gatewayAvailableOnly || undefined,
+				limit: MODEL_PAGE_SIZE,
+				offset: page * MODEL_PAGE_SIZE || undefined,
+			},
+			credentials,
+		});
+		if (!payload.ok || !payload.models) throw new PhaseoApiError(payload.message ?? "Phaseo could not load models.");
+		models.push(...payload.models);
+		const total = payload.total ?? models.length;
+		if (payload.models.length < MODEL_PAGE_SIZE || models.length >= total) return models;
+	}
+	throw new PhaseoApiError("Too many models match these filters to check them all. Add a query, provider or modality to narrow the search.");
 }
 
 export async function getModelsByIds(

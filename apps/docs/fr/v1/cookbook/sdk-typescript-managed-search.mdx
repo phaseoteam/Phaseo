@@ -1,155 +1,136 @@
 ---
-title: "Ancrer un flux du SDK TypeScript avec la recherche Web gérée"
+title: "Ancrer un workflow du SDK TypeScript avec la recherche Web gérée"
+sidebarTitle: "Recherche Web gérée en TypeScript"
 icon: "search"
-description: "Utilisez le SDK TypeScript officiel avec des préréglages, la recherche Web gérée et les métadonnées de réponse pour obtenir un flux ancré et facile à déboguer."
+description: "Utilisez le SDK TypeScript officiel avec des préréglages, la recherche Web gérée et les métadonnées de réponse pour qu’un workflow reste ancré et facile à déboguer."
 ---
 
-Utilisez cette recette lorsqu’un service TypeScript ou JavaScript doit combiner :
+Donnez à une requête TypeScript l’outil `phaseo:web_search` et un JSON Schema : le modèle effectue une recherche avant de répondre et renvoie une note avec ses sources. À la fin, vous avez un script qui affiche un objet `{ summary, sources }` validé, ainsi que les ID et compteurs de recherche nécessaires pour le déboguer.
 
-- des valeurs de routage par défaut définies dans un préréglage
-- l’outil géré `phaseo:web_search`
-- une analyse stricte des réponses
-- des métadonnées au niveau de la requête pour le débogage
+Le script est prêt pour la production une fois le préréglage et le domaine remplacés par les vôtres. Les résultats de recherche sont du contenu Web non fiable : validez la sortie et ne suivez pas les instructions qu’elle contient.
 
-## Objectif
+## Le construire
 
-- conserver le client dans le SDK officiel
-- éviter de reconstruire manuellement des charges utiles de compatibilité brutes
-- conserver suffisamment de métadonnées pour déboguer les résultats de recherche, le routage et le comportement des plugins
+<Steps>
+<Step title="Créer un préréglage">
 
-## 1. Commencer avec un client partagé
+Créez `research-brief` dans **Paramètres → Préréglages** avec le modèle, les préférences de fournisseur, les réglages de raisonnement et le prompt système que tous les appelants doivent partager. Le modèle doit prendre en charge les outils et la sortie JSON Schema.
 
-```ts
-import Phaseo from "@phaseo/sdk";
+</Step>
+<Step title="Installer le SDK">
 
-export const gateway = new Phaseo({
-  apiKey: process.env.PHASEO_API_KEY!,
-});
+```bash
+npm install @phaseo/sdk zod
+export PHASEO_API_KEY="phaseo_v1_sk_..."
 ```
 
-## 2. Définir d’abord les valeurs par défaut stables dans un préréglage
+</Step>
+<Step title="Écrire le script">
 
-Créez un préréglage pour partager les éléments suivants entre plusieurs appelants :
+```ts research-brief.ts
+import Phaseo from "@phaseo/sdk";
+import { z } from "zod";
 
-- la politique de modèles
-- les préférences de fournisseur
-- les valeurs par défaut du raisonnement
-- le prompt système
-- le comportement déterministe de mise en cache
+const gateway = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
-Limitez ensuite la requête du SDK aux valeurs qui varient pour cet appel.
+const Brief = z
+  .object({
+    summary: z.string().min(1),
+    sources: z
+      .array(z.object({ title: z.string(), url: z.string().url() }).strict())
+      .min(1),
+  })
+  .strict();
 
-## 3. Demander une réponse ancrée avec l’outil de recherche gérée
-
-```ts
 const response = await gateway.generateResponse({
-  preset: "research-brief",
-  input: "Find the latest public changes to our webhook delivery behavior and summarize them.",
+  model: "@research-brief",
+  input: "Find the latest public changes to Phaseo webhook delivery behavior and summarize them.",
   tools: [
     {
       type: "phaseo:web_search",
       parameters: {
-        query: "site:phaseo.app webhook delivery retries",
+        allowed_domains: ["phaseo.app"],
         max_results: 5,
         include_highlights: true,
       },
     },
   ],
   tool_choice: "phaseo:web_search",
-  response_format: {
-    type: "json_schema",
-    name: "research_brief",
-    schema: {
-      type: "object",
-      required: ["summary", "sources"],
-      properties: {
-        summary: { type: "string" },
-        sources: {
-          type: "array",
-          minItems: 1,
-          items: {
-            type: "object",
-            required: ["title", "url"],
-            properties: {
-              title: { type: "string" },
-              url: { type: "string", format: "uri" },
+  text: {
+    format: {
+      type: "json_schema",
+      name: "research_brief",
+      strict: true,
+      schema: {
+        type: "object",
+        required: ["summary", "sources"],
+        properties: {
+          summary: { type: "string" },
+          sources: {
+            type: "array",
+            minItems: 1,
+            items: {
+              type: "object",
+              required: ["title", "url"],
+              properties: {
+                title: { type: "string" },
+                url: { type: "string", format: "uri" },
+              },
+              additionalProperties: false,
             },
-            additionalProperties: false,
           },
         },
+        additionalProperties: false,
       },
-      additionalProperties: false,
     },
   },
   plugins: [{ id: "response-healing" }],
   meta: true,
 });
-```
 
-Vous obtenez ainsi :
+const text = (response.output ?? [])
+  .filter((item) => item.type === "message")
+  .flatMap((item) => item.content ?? [])
+  .filter((part) => part.type === "output_text")
+  .map((part) => part.text ?? "")
+  .join("");
 
-- le routage et les prompts par défaut gérés par le préréglage
-- une recherche gérée par le serveur qui ne dépend pas de la prise en charge de la recherche native par le fournisseur
-- une sortie structurée qui facilite l’analyse prévisible en aval
-- les métadonnées nécessaires au débogage opérationnel
-
-## 4. Analyser la sortie et conserver les champs de débogage
-
-```ts
-const firstMessage = Array.isArray(response.output)
-  ? response.output.find((item) => item?.type === "message")
-  : null;
-
-const text = Array.isArray(firstMessage?.content)
-  ? firstMessage.content.find((part) => part?.type === "output_text")?.text ?? ""
-  : "";
-
-const payload = JSON.parse(text);
+const brief = Brief.parse(JSON.parse(text));
 
 console.log({
   responseId: response.id,
-  selectedProvider: response.meta?.routing?.selected_provider,
+  model: response.model,
+  routing: response.meta?.routing,
   pluginExecutions: response.meta?.plugin_executions,
   serverToolUse: response.usage?.server_tool_use,
 });
-
-console.log(payload);
+console.log(brief);
 ```
 
-Ces champs permettent de savoir facilement :
+| Champ | Effet |
+| --- | --- |
+| `tools` avec `phaseo:web_search` | Phaseo exécute la recherche, que le fournisseur ait ou non sa propre recherche. Le modèle rédige la requête de recherche. |
+| `allowed_domains` | Limite les résultats à vos propres sources. Tous les paramètres sont décrits dans le [guide de la recherche Web](../guides/server-tools/web-search#parameters). |
+| `tool_choice: "phaseo:web_search"` | Oblige le modèle à chercher au lieu de répondre de mémoire. |
+| `text.format` | Le JSON Schema de la réponse. |
+| `plugins` | Répare le JSON presque valide ; voir [réparation de réponse](./response-healing-for-structured-json). |
+| `meta: true` | Ajoute `meta.routing` et `meta.plugin_executions`. |
 
-- quel fournisseur a réellement traité la requête
-- si la recherche gérée s’est exécutée
-- si la réparation de réponse s’est exécutée
-- quelle requête examiner dans le tableau de bord
+</Step>
+<Step title="Le lancer">
 
-## 5. Vérifier les journaux de la requête ancrée
+```bash
+npx tsx research-brief.ts
+```
 
-Ouvrez la requête dans **Gateway -> Utilisation** et examinez :
+</Step>
+</Steps>
 
-- les résultats de recherche normalisés
-- les citations
-- la sélection du fournisseur
-- les métadonnées d’exécution du plugin
+## Vérifier que tout fonctionne
 
-Si le comportement ou le classement de la recherche vous semble incorrect, ajustez le préréglage ou les paramètres de l’outil en vous appuyant sur les journaux plutôt que d’ajouter des remplacements à l’aveugle.
+- `serverToolUse.web_search_requests` vaut au moins `1` : la recherche a donc eu lieu.
+- `brief.sources` liste des URL `phaseo.app`.
+- `routing.selected_provider` indique le fournisseur, et `pluginExecutions` montre si la réparation a modifié quelque chose.
+- Dans **Paramètres → Utilisation → Journaux**, la section **Observabilité de la recherche sur le Web** de la requête affiche les recherches gérées, les résultats et les citations.
 
-## 6. Séparer les flux exploratoires des flux déterministes
-
-Modèle recommandé :
-
-1. un préréglage pour les résultats de recherche structurés et déterministes
-2. un autre préréglage pour les requêtes exploratoires ou utilisant une température plus élevée
-
-Cela permet de garder :
-
-- un cache de réponses plus propre
-- un comportement de routage plus facile à comprendre
-- les flux gourmands en recherche séparés du trafic de génération généraliste
-
-## Guides associés
-
-- [Déboguer les requêtes de recherche Web](./web-search-debugging.mdx)
-- [Déployer des préréglages et déboguer le routage](./preset-rollout-and-routing-debug.mdx)
-- [Réparer les réponses JSON structurées](./response-healing-for-structured-json.mdx)
-- [Présentation du SDK TypeScript](../sdk-reference/typescript/overview.mdx)
+Si les résultats semblent incorrects, corrigez le préréglage ou les paramètres de l’outil d’après ce que montrent les journaux plutôt que d’ajouter des remplacements. [Déboguer la recherche Web](./web-search-debugging) liste les cas courants. Gardez la recherche exploratoire à température plus élevée dans un préréglage distinct de celui-ci, qui est déterministe, pour que leur routage reste facile à comparer.

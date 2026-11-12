@@ -1,126 +1,52 @@
 ---
 title: "Overview"
 description: "Learn how to explore models, benchmarks, providers, and pricing data across the AI ecosystem."
+"og:image": "https://phaseo.app/og/dynamic?title=Overview&description=Learn%20how%20to%20explore%20models%2C%20benchmarks%2C%20providers%2C%20and%20pricing%20data%20across%20the%20AI%20ecosystem.&pathname=/docs/v1/exploring/overview"
 sidebarTitle: "Platform Overview"
 icon: "telescope"
 ---
 
-The **Phaseo Platform** gives you a complete view of the global AI landscape - from the newest models and providers to performance benchmarks, pricing, and real world usage insights.
+Look up any model on [phaseo.app](https://phaseo.app/models) to see who built it, which providers serve it, what it costs, and how it scores, then call it through the Gateway when it has an active route.
 
-Whether you’re a developer choosing what model to use for your newest product, a researcher analysing benchmark results, or a contributor helping expand the database, this section will help you make the most of what Phaseo offers.
+```mermaid
+flowchart LR
+  org["Organisation<br/>builds the model"] --> model["Model"]
+  model --> bench["Benchmark results"]
+  model --> route["Provider routes<br/>(API providers)"]
+  route --> price["Prices and<br/>performance"]
+  route -->|"Active on Gateway"| gw["Callable through<br/>api.phaseo.app/v1"]
+```
 
----
+## What the catalog holds
 
-## What you can do
+| Record | What it is | Where to look |
+| --- | --- | --- |
+| [Organisations](./organisations.mdx) | Companies and research labs that build and publish models. | [Organisations](https://phaseo.app/organisations) |
+| [Models](./models.mdx) | Each released model, grouped into families of related models. | [Models](https://phaseo.app/models) |
+| [Benchmarks](./benchmarks.mdx) | Evaluations and the scores models get on them. | [Benchmarks](https://phaseo.app/benchmarks) |
+| [API providers](./api-providers.mdx) | Platforms that serve models through an API. | [API providers](https://phaseo.app/api-providers) |
+| [Pricing and performance](./pricing-performance.mdx) | Each provider's price per token, image, second or request, and measured Gateway speed. | Model pages, [Compare](https://phaseo.app/compare) |
+| [Subscription plans](./subscription-plans.mdx) | Phaseo plans, and subscriptions sold by providers. | [Subscription plans](https://phaseo.app/subscription-plans) |
 
-<Columns cols={2}>
-	<Card
-		title="Discover Organisations"
-		icon="building"
-		href="./organisations.mdx"
-	>
-		See what models are offered by organisations, as well as their latest
-		releases and how they stack up.
-	</Card>
-	<Card title="Explore Models" icon="brain" href="./models.mdx">
-		View detailed model pages with key information like capabilities,
-		pricing, benchmark results, and real world performance metrics.
-	</Card>
-	<Card
-		title="Compare Benchmarks"
-		icon="chart-no-axes-column"
-		href="./benchmarks.mdx"
-	>
-		See how models perform across common benchmark datasets and tasks.
-	</Card>
-	<Card
-		title="Analyse Pricing & Performance"
-		icon="scale"
-		href="./pricing-performance.mdx"
-	>
-		Compare model costs and token efficiency to find the right balance for
-		your use case.
-	</Card>
-</Columns>
+A catalog record doesn't mean you can call the model. Only models marked **Active on Gateway** have a route; `GET /v1/models` returns just those.
 
----
+## How to read the data
 
-## Data structure
+- **Prices** are in USD, per 1 million tokens for text, or in the provider's own unit (per image, per second, per request) for media.
+- **Dates** are UTC days, shown as `01 Jan 2026` in English.
+- **Benchmark scores** keep the benchmark's own scale and direction. Phaseo doesn't convert them to one common score; see [Benchmarks](./benchmarks.mdx).
+- **Families** group related models, such as the sizes and versions of one model line.
 
-Phaseo collects and organises data in several key categories:
+## How the data is kept current
 
-| Category                                                   | Description                                                                   |
-| ---------------------------------------------------------- | ----------------------------------------------------------------------------- |
-| **[Organisations](./organisations.mdx)**           | The companies or research labs that develop and publish models.               |
-| **[Models](./models.mdx)**                         | The individual models that are released by the organisations.                 |
-| **[Benchmarks](./benchmarks.mdx)**                 | The standardised tests that organisations use to evaluate model performance.  |
-| **[API Providers](./api-providers.mdx)**           | The platforms that offer programmatic access to models.                       |
-| **[Pricing](./pricing-performance.mdx)**           | Detailed cost breakdowns per model, measured per token, image, or generation. |
-| **[Subscription Plans](./subscription-plans.mdx)** | Information on different pricing tiers and their included features or limits. |
+Provider sync jobs propose new prices, which an admin reviews before publication. Benchmark imports and model lifecycle jobs update the database on a schedule. Anyone can report a correction or a missing record through a GitHub issue; maintainers review the evidence and apply approved changes. See [Contributing](../contributing/overview.mdx).
 
-Each of these categories is discussed in the documentation to help you navigate these pages and get the most out of the data.
+## Example questions
 
----
-
-## How Phaseo collects and updates data
-
-Phaseo is powered by a vast, fully open database - built and maintained through a mix of automation and incredible community effort.
-While we have automated systems that track updates across providers and models, human contribution is the back bone of the project and is what keeps it running smoothly.
-
-When updates do occur:
-
--   🧩 New models are added swiftly and documented with as much detail as possible.
--   🔄 Provider changes - from pricing to endpoint tweaks - are continuously monitored and reviewed.
--   Community catalog reports are reviewed through GitHub issues. Maintainers apply approved changes through the database editor.
-
-You can contribute corrections or additions yourself, check out the [Contributing guide](../contributing/overview.mdx) for details.
-Phaseo is only as strong as the community behind it - and together, we’re building the most accurate and transparent record of AI progress in the world.
-
----
-
-## Interpreting data on Phaseo
-
-All data on Phaseo has been normalised for consistency:
-
--   **Dates** should always be formatted as `DD MMM YYYY` (e.g. `01 Jan 2022`).
--   **Prices** are displayed in USD by default, normalised per 1 million tokens where applicable or appropriate units.
--   **Performance scores** are standardised to a common scale where possible.
--   **Model families** group together related models (e.g., GPT-5, Claude 4, Gemini 2.5, etc.).
-
----
-
-## Example use cases
-
-Here are some examples of how you might use Phaseo:
-
-| Goal                               | Example                                                          |
-| ---------------------------------- | ---------------------------------------------------------------- |
-| Compare two models                 | “Which performs better on GPQA - Claude 4.5 Sonnet or GPT-5?”    |
-| Find the cheapest model for a task | “What’s the most cost-efficient model for summarisation?”        |
-| Analyse benchmark trends           | “How have reasoning models improved on GPQA over the last year?” |
-| Explore API access                 | “Which providers currently support JSON mode?”                   |
-| Identify gaps for contribution     | “Which models are missing key benchmarks or metadata?”           |
-
----
-
-## Next steps
-
-<Columns cols={2}>
-	<Card
-		title="Explore Models"
-		icon="brain"
-		href="https://phaseo.app/models"
-	>
-		Explore the latest models in the database and dive deeper into how each
-		one performs.
-	</Card>
-	<Card
-		title="Learn About Benchmarks"
-		icon="chart-column-increasing"
-		href="./benchmarks.mdx"
-	>
-		Understand what benchmarks measure and how we can interpret results.
-	</Card>
-</Columns>
-
----
+| Goal | Where to answer it |
+| --- | --- |
+| Compare two models on a benchmark | [Compare](https://phaseo.app/compare) or the benchmark's page |
+| Find the cheapest model for a task | The [Models](https://phaseo.app/models) list sorted by price, then the [pricing calculator](https://phaseo.app/tools/pricing-calculator) |
+| See how a benchmark has moved over time | The benchmark's **Progress** chart |
+| Find providers that support a feature | Model page **Providers** section, or `GET /v1/models/{author}/{slug}/endpoints` |
+| Find records to contribute | Model pages with missing benchmarks or metadata; see [Contributing](../contributing/overview.mdx) |

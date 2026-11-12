@@ -22,7 +22,8 @@ beforeEach(() => {
     state.hold.mockReset().mockResolvedValue({ status: "held", applied: true });
     state.client = createClient("https://pricing.example.com", "test-key", {
         auth: { persistSession: false, autoRefreshToken: false },
-        global: { fetch: async () => Response.json(rows) },
+        // The loader queries the route and embeds its SKUs (see pricing/loader.ts).
+        global: { fetch: async () => Response.json([{ provider_model_id: rows[0].provider_model_id, skus: rows }]) },
     });
 });
 

@@ -53,15 +53,22 @@ function parseCapabilityOverride(params: Record<string, any> | null | undefined)
     const value = params?.data_policy;
     if (!value || typeof value !== "object" || Array.isArray(value)) return null;
     const raw = value as Record<string, unknown>;
+    // Cached snapshots cannot extend a catalog guarantee beyond its deadline.
+    if (raw.catalogManaged === true && (typeof raw.validUntil !== "string" || !Number.isFinite(Date.parse(raw.validUntil)) || Date.parse(raw.validUntil) <= Date.now())) {
+        return { tier: "unknown", confidence: "unknown", zdrEligibility: "ineligible", retentionMode: "unknown", retentionDays: null, reason: "Catalog policy expired." };
+    }
     const tier = ["unknown", "private", "logs", "trains"].includes(String(raw.tier))
         ? raw.tier as EffectiveDataPolicy["tier"]
         : undefined;
     const confidence = ["unknown", "confirmed", "maybe"].includes(String(raw.confidence))
         ? raw.confidence as EffectiveDataPolicy["confidence"]
         : undefined;
-    const zdrEligibility = ["unknown", "eligible", "ineligible", "conditional"].includes(String(raw.zdrEligibility))
+    const declaredEligibility = ["unknown", "eligible", "ineligible", "conditional"].includes(String(raw.zdrEligibility))
         ? raw.zdrEligibility as EffectiveDataPolicy["zdrEligibility"]
         : undefined;
+    const zdrEligibility = declaredEligibility === "ineligible" || raw.zeroDataRetention === false
+        ? "ineligible"
+        : raw.zeroDataRetention === true ? "eligible" : undefined;
     const retentionMode = ["unknown", "none", "transient", "fixed", "until_deleted"].includes(String(raw.retentionMode))
         ? raw.retentionMode as EffectiveDataPolicy["retentionMode"]
         : undefined;
@@ -118,6 +125,7 @@ export function resolveEffectiveDataPolicy(args: {
     return {
         ...inherited,
         ...override,
+        zdrEligibility: override.zdrEligibility ?? fallback?.zdrEligibility ?? inherited.zdrEligibility,
         retentionDays:
             override.retentionDays === undefined ? inherited.retentionDays : override.retentionDays,
         source: explicit ? "capability" : "capability_default",

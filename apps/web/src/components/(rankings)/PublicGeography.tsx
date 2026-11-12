@@ -1,11 +1,12 @@
 import { GeographyUsage } from "@/components/(gateway)/usage/GeographyUsage";
-import { fetchFrontendRankingGeography } from "@/lib/fetchers/frontend/fetchRankingSections";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "@/i18n/react";
 import { RankingUnavailable } from "@/components/(rankings)/RankingUnavailable";
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { rankingGeographySectionQuery } from "@/components/(rankings)/rankingSections.queries";
 
-export async function PublicGeography() {
-	const t = await getTranslations("Catalogue.rankings");
-	const result = await fetchFrontendRankingGeography(30).catch(() => null);
+export function PublicGeography() {
+	const t = useTranslations("Catalogue.rankings");
+	const { data: result } = useSuspenseQuery(rankingGeographySectionQuery(30));
 	if (!result) return <RankingUnavailable id="geography" title={t("countries")} />;
 	const rows = (result.data ?? []).map((row) => ({
 		countryCode: row.country_code,

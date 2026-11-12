@@ -1,9 +1,0 @@
-{
-  "benchmark_id": "ai2-sciarena",
-  "benchmark_name": "Ai2 SciArena",
-  "category": null,
-  "ascending_order": null,
-  "type": "numerical",
-  "link": "https://sciarena.allen.ai/",
-  "total_models": 16
-}

@@ -1,3 +1,4 @@
+import { describe, it, expect, vi } from "vitest";
 import {
 	createWorkspaceSearchItem,
 	fetchWorkspaceSearchItems,
@@ -21,7 +22,7 @@ describe("workspace search", () => {
 	});
 
 	it("fails open without blocking the rest of search", async () => {
-		const fetchMock = jest
+		const fetchMock = vi
 			.spyOn(global, "fetch")
 			.mockResolvedValue(new Response(null, { status: 503 }));
 

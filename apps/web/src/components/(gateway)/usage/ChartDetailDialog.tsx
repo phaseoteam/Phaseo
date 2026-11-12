@@ -1,7 +1,5 @@
-"use client";
-
 import React from "react";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 import {
 	Dialog,
 	DialogContent,
@@ -124,7 +122,7 @@ export default function ChartDetailDialog({
 											{format.number(row.requests)}
 										</TableCell>
 										<TableCell className="text-right font-mono">
-											{format.number(row.tokens)}
+											{format.count(row.tokens)}
 										</TableCell>
 										<TableCell className="text-right font-mono">${row.cost.toFixed(5)}</TableCell>
 									</TableRow>
@@ -135,7 +133,7 @@ export default function ChartDetailDialog({
 										{format.number(totals.requests)}
 									</TableCell>
 									<TableCell className="text-right font-mono">
-										{format.number(totals.tokens)}
+										{format.count(totals.tokens)}
 									</TableCell>
 									<TableCell className="text-right font-mono">
 										${totals.cost.toFixed(5)}

@@ -1,0 +1,241 @@
+---
+title: "设置 Slack 智能体"
+sidebarTitle: "设置"
+description: "把 Phaseo 智能体添加到 Slack，让你的团队向它提问，由你选择的模型回答。"
+icon: "messages-square"
+---
+
+在 **设置 → Slack** 中把 Phaseo 智能体添加到 Slack 后，你的团队就可以在频道中提及它或直接给它发消息，获得由你选择的模型给出的回答。它会在线程中回复，并在撰写时以流式方式显示回答。所有者和管理员选择谁可以使用它，并设置它的限制。你按当月使用过它的人数支付月费，模型 token 则像其他网关请求一样计费（请参阅[Slack 智能体管理和计费](/zh-Hans/v1/guides/slack-agent-admin)）。
+
+<Note>
+Slack 智能体正在逐步向各个工作区开放。如果你的设置中还没有出现 **设置 → Slack**，说明你的工作区暂时还不能使用它。
+</Note>
+
+| 它可以 | 章节 |
+| --- | --- |
+| 用你选择的模型或在消息中指定的模型回答，并比较 2 到 3 个模型 | [按消息选择模型](/zh-Hans/v1/guides/slack-agent-usage#choosing-a-model-per-message) |
+| 搜索网页和读取网页 | [在 Slack 中使用智能体](/zh-Hans/v1/guides/slack-agent-usage#use-the-agent-in-slack) |
+| 发布图表和图片，并读取你分享的图片和 PDF | [图表、图片和文件](/zh-Hans/v1/guides/slack-agent-usage#charts-images-and-files) |
+| 以提问者的身份搜索你的 Slack 工作区的公开频道 | [搜索 Slack](/zh-Hans/v1/guides/slack-agent-usage#searching-slack) |
+| 告诉已关联的成员 Phaseo 支出、额度、API 密钥用量和模型 | [询问用量](/zh-Hans/v1/guides/slack-agent-usage#ask-about-usage) |
+| 记住笔记并遵循已保存的技能 | [记忆和技能](/zh-Hans/v1/guides/slack-agent-usage#memory-and-skills) |
+| 按计划运行请求 | [计划任务](/zh-Hans/v1/guides/slack-agent-usage#scheduled-tasks) |
+| 把较长的回答发布为网页 | [共享页面](/zh-Hans/v1/guides/slack-agent-usage#shared-pages) |
+
+## 开始之前
+
+- 你需要是 Phaseo 工作区的所有者或管理员，并且有权在你的 Slack 工作区中添加应用。
+- 打开一次 **聊天**，检查工作区的隐私设置。Phaseo 会在首次安装前要求完成这一步。
+- 充值[额度](https://phaseo.app/settings/credits)。每月扣费和智能体的模型 token 都从额度中支付。
+
+## 把智能体添加到 Slack
+
+<Steps>
+<Step title="选择它的工作方式">
+
+打开 **设置 → Slack**。在 **添加到 Slack** 下，选择模型、谁可以使用智能体、它可以在哪里分享用量数据，以及它的[限制](/zh-Hans/v1/guides/slack-agent-admin#limits)。如果你的工作区可以使用自动路由，选择 **自动** 时，Phaseo 会为每个问题挑选合适的模型；否则请选择指定模型。这些都可以之后再改。
+
+</Step>
+
+<Step title="在 Slack 中批准">
+
+选择 **添加到 Slack**。Slack 会显示智能体请求的权限。批准后，Slack 会带你回到 **设置 → Slack**，页面上会显示这次安装。
+
+</Step>
+
+<Step title="向它提问">
+
+在 Slack 中，从你的应用里打开智能体并给它发消息。要在频道中使用它，先用 `/invite @Phaseo` 邀请它，然后提及它。[使用 Slack 智能体](/zh-Hans/v1/guides/slack-agent-usage)介绍了大家可以向它提出哪些请求。
+
+</Step>
+</Steps>
+
+安装会在你的 Phaseo 工作区中创建两样东西：
+
+- **一个供智能体使用的 API 密钥。** 它由 Phaseo 管理，所以不会出现在 **密钥** 页面上。智能体的模型 token 通过它计费。
+- **该密钥上一个名为 Slack agent 的护栏**，它让 Slack 消息不进入训练（请参阅[数据与隐私](/zh-Hans/v1/guides/slack-agent-admin#data-and-privacy)）。
+
+一个 Slack 工作区同一时间只能拥有来自一个 Phaseo 工作区的智能体。
+
+<span id="who-can-use-it"></span>
+## 谁可以使用
+
+在 **谁可以使用** 中选择：
+
+| 选项 | 谁能得到回答 |
+| --- | --- |
+| **Slack 中的所有人**（默认） | 你的 Slack 工作区中的任何人，在你设置的[限制](/zh-Hans/v1/guides/slack-agent-admin#limits)范围内。 |
+| **仅限已关联的账户** | 只有把 Slack 账户关联到这个 Phaseo 工作区成员的人。智能体会给其他人发送一个用于关联的链接。 |
+
+在 **限制** 中，**允许访客**（默认开启）让你的 Slack 工作区中的访客使用智能体，**允许其他公司的人**（默认关闭）让共享 Slack Connect 频道中来自其他组织的人使用它。同一个 Enterprise Grid 组织中其他工作区的人算作你自己的人。智能体从不回答机器人或其他应用。
+
+<span id="link-a-slack-account"></span>
+### 关联 Slack 账户
+
+智能体会私下向尚未关联的人发送 **Connect your Phaseo account** 按钮：
+
+- 使用 **仅限已关联的账户** 时，在对方给它发消息时发送。对方连接之前，它不会回答。
+- 使用 **Slack 中的所有人** 时，在允许[用量数据](/zh-Hans/v1/guides/slack-agent-usage#ask-about-usage)的地方，当对方询问用量时发送。它仍会回答能回答的部分，并且在每个线程中对每个人最多发送一次按钮。如需新的按钮，请在新的线程中提问。
+
+该按钮在 15 分钟内有效。
+
+1. 选择按钮。浏览器中会打开 Phaseo。
+2. 用一个属于安装了智能体的 Phaseo 工作区成员的账户登录。
+3. 选择 **连接账户**。
+
+关联账户后也可以询问用量。
+
+<span id="update-slack-permissions"></span>
+## 更新 Slack 权限
+
+图表和图片需要 Slack 的 `files:write` 权限，读取文件需要 `files:read`，[搜索 Slack](/zh-Hans/v1/guides/slack-agent-usage#searching-slack) 需要 `search:read.public` 和 `search:read.files`。如果智能体是在能做这些之前添加的，它还没有这些权限：它会告诉大家需要管理员更新它的权限，并且 **设置 → Slack** 会显示 **更新 Slack 权限**。
+
+1. 选择 **更新 Slack 权限**。Slack 会显示智能体请求的权限。
+2. 为同一个 Slack 工作区批准这些权限。Slack 会把你带回 **设置 → Slack**。
+
+更新会保留智能体的设置、API 密钥、护栏和历史记录。使用你自己的 Slack 应用时，请先把 **设置 → Slack** 列出的 scope 添加到它的[清单](#use-your-own-slack-app)中。
+
+<span id="use-your-own-slack-app"></span>
+## 使用你自己的 Slack 应用
+
+默认情况下，智能体会安装 Phaseo 的 Slack 应用。要使用你公司自己的 Slack 应用，例如使用你自己的名称和图标，请用 Phaseo 的清单创建一个。
+
+<Steps>
+<Step title="用清单创建应用">
+
+在 Slack 的应用设置（[api.slack.com/apps](https://api.slack.com/apps)）中，选择 **Create New App**，然后选择 **From a manifest**。选择你的 Slack 工作区，并粘贴下面的清单。你可以修改 `name`、`description`、`long_description` 和 `display_name`；其他内容保持不变。Slack 可能会提示请求 URL 尚未验证，这在第 3 步之前是正常的。
+
+</Step>
+
+<Step title="在 Phaseo 中保存应用">
+
+在 Slack 中该应用的 **Basic Information** 页面上，复制它的 **App ID**、**Client ID**、**Client Secret** 和 **Signing Secret**。在 Phaseo 中打开 **设置 → Slack**，在 **高级：使用你自己的 Slack 应用** 下填入这些信息，然后选择 **保存 Slack 应用**。
+
+</Step>
+
+<Step title="把请求 URL 指向你的应用">
+
+在 Phaseo 中，**设置 → Slack** 现在会显示你保存的应用的两个请求 URL。在 Slack 中打开该应用的 **App Manifest** 页面，用它们替换两个 `request_url` 值（第一个用于事件，第二个用于交互）。保存，并在 Slack 要求时验证请求 URL。
+
+</Step>
+
+<Step title="安装应用">
+
+在 **设置 → Slack** 中，在 **Slack 应用** 下选择 **你的 Slack 应用**，然后选择 **添加到 Slack**。
+
+</Step>
+</Steps>
+
+```json manifest.json
+{
+  "_metadata": {
+    "major_version": 2,
+    "minor_version": 1
+  },
+  "display_information": {
+    "name": "Phaseo",
+    "description": "Ask the Phaseo agent questions in Slack, answered by the model your team chooses.",
+    "background_color": "#0069a8",
+    "long_description": "The Phaseo agent answers questions in Slack. Mention it in a channel or send it a direct message, and it replies in the thread with the model your workspace chose in Phaseo. It can search the web and read web pages, and linked members of your Phaseo workspace can ask about spend, credits, API key usage and models. It can also search your Slack workspace's public channels for the person asking, finding only what they can see (searching by meaning needs a Business+ or Enterprise+ Slack plan). Phaseo's request logs never keep message content, requests never go to providers that train on prompts, and a thread's working memory is deleted 7 days after its last activity. Owners and admins choose who can use it, its limits and its monthly spending cap in Phaseo settings."
+  },
+  "features": {
+    "app_home": {
+      "home_tab_enabled": true,
+      "messages_tab_enabled": true,
+      "messages_tab_read_only_enabled": false
+    },
+    "bot_user": {
+      "display_name": "Phaseo",
+      "always_online": true
+    },
+    "agent_view": {
+      "agent_description": "Answers your team's questions with the model your Phaseo workspace chooses. It can search the web, and linked members can ask about Phaseo spend, credits, API key usage and models."
+    }
+  },
+  "oauth_config": {
+    "redirect_urls": [
+      "https://phaseo.app/api/account/settings/slack/oauth/callback",
+      "https://slack.phaseo.app/p/signin"
+    ],
+    "scopes": {
+      "bot": [
+        "app_mentions:read",
+        "assistant:write",
+        "chat:write",
+        "im:history",
+        "channels:history",
+        "groups:history",
+        "users:read",
+        "files:read",
+        "files:write",
+        "search:read.public",
+        "search:read.files"
+      ]
+    }
+  },
+  "settings": {
+    "event_subscriptions": {
+      "request_url": "https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/events",
+      "bot_events": [
+        "app_mention",
+        "message.im",
+        "agent_session_stopped",
+        "app_uninstalled",
+        "tokens_revoked",
+        "app_home_opened"
+      ]
+    },
+    "interactivity": {
+      "is_enabled": true,
+      "request_url": "https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/interactions"
+    },
+    "org_deploy_enabled": true,
+    "socket_mode_enabled": false,
+    "token_rotation_enabled": false
+  }
+}
+```
+
+| 设置 | 值 |
+| --- | --- |
+| 重定向 URL | `https://phaseo.app/api/account/settings/slack/oauth/callback` |
+| Event Subscriptions 请求 URL | `https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/events` |
+| Interactivity 请求 URL | `https://slack.phaseo.app/apps/FROM_PHASEO_SETTINGS/interactions` |
+| 机器人事件 | `app_mention`、`message.im`、`agent_session_stopped`、`app_uninstalled`、`tokens_revoked`、`app_home_opened` |
+
+安装时，Phaseo 会向 Slack 请求的正是以下机器人令牌权限范围，所以应用需要具备全部这些权限范围：
+
+| 权限范围 | 允许的操作 |
+| --- | --- |
+| `app_mentions:read` | 查看提及智能体的消息。 |
+| `assistant:write` | 在 Slack 中作为智能体工作，回答时显示状态和停止按钮。 |
+| `chat:write` | 发布回答并以流式方式显示。 |
+| `im:history` | 读取发给智能体的私信。 |
+| `channels:history`、`groups:history` | 在公开和私有频道中读取提及它的线程。 |
+| `users:read` | 检查某人是访客、机器人还是来自其他组织。 |
+| `files:read` | 读取分享给智能体的图片和 PDF。 |
+| `files:write` | 在线程中发布图表和图片。 |
+| `search:read.public` | 替提问者搜索公开频道。 |
+| `search:read.files` | 在这些搜索中包含公开频道中分享的文件。 |
+
+关于你自己的应用，有几条规则：
+
+- 像清单中那样保持令牌轮换关闭。一旦开启，Slack 就无法再关闭它。
+- 清单使用 Slack 的智能体消息体验（`agent_view`），这是 Slack 为新应用提供的唯一体验。
+- 清单中的 `home_tab_enabled: true` 和机器人事件 `app_home_opened` 为智能体提供 [Home 标签页](/zh-Hans/v1/guides/slack-agent-usage#check-the-home-tab)。如果你的应用是用较早的清单创建的，请在应用的 **App Manifest** 页面中添加这两项。
+- 一个 Slack 应用只能连接到一个 Phaseo 工作区，一个 Phaseo 工作区也只能保存一个 Slack 应用。
+- 当智能体通过你的应用安装时，你只能替换应用的密钥。要换成另一个应用，或换回 Phaseo 的应用，请先卸载。
+- 清单中的第二个重定向 URL `https://slack.phaseo.app/p/signin` 让人们可以用 Slack 登录，查看[与你的 Slack 工作区共享的页面](/zh-Hans/v1/guides/slack-agent-usage#shared-pages)。如果你的应用是用较早的清单创建的，请在应用的 **App Manifest** 页面中添加它。
+
+<span id="fix-setup-problems"></span>
+## 解决设置问题
+
+如果安装没有完成，**设置 → Slack** 会显示原因。最常见的原因是还没有完成隐私设置检查（打开一次 **聊天**），以及该 Slack 工作区已经安装了来自另一个 Phaseo 工作区的智能体（请先在那里卸载）。
+
+如果智能体完全没有回复：
+
+- 在频道中，确认它是该频道的成员，并在每条你希望它回答的消息中提及它。
+- 它不会回答已编辑的消息、机器人或其他应用。
+- 如果使用你自己的 Slack 应用，请检查请求 URL 是否为 **设置 → Slack** 为你保存的应用显示的地址，以及 Slack 是否显示它们已验证。
+
+当它私下回复说无法回答时，回复中会说明原因：请参阅[智能体无法回答时](/zh-Hans/v1/guides/slack-agent-admin#when-the-agent-cant-answer)。

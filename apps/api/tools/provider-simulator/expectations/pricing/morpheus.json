@@ -1,0 +1,34 @@
+{
+	"provider": "morpheus",
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from the catalogue database (v2_pricing_skus, v2_pricing_sku_meters)",
+	"clock": "2026-10-29T14:36:00.000Z",
+	"legend": { "rules": "[id (<sku_code>@v<version>#<meter_key>), plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"cards": [
+		{
+			"key": "morpheus:baai/bge-m3:text.embed",
+			"routes": ["morpheus:text-embedding-bge-m3"],
+			"skus": ["offer-8e99c32fee765205a209@v1"],
+			"rules": [
+				["offer-8e99c32fee765205a209@v1#input_text_tokens","standard","input_text_tokens","0.1/1000000 token",100,null,null,null],
+				["offer-8e99c32fee765205a209@v1#output_text_tokens","standard","output_text_tokens","0.5/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1000,"output_text_tokens":1000,"input_tokens":1000,"output_tokens":1000,"total_tokens":2000},"expected":{"nanos":600000,"lines":[["input_text_tokens",1000,"offer-8e99c32fee765205a209@v1#input_text_tokens","input_text_tokens",100000],["output_text_tokens",1000,"offer-8e99c32fee765205a209@v1#output_text_tokens","output_text_tokens",500000]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-8e99c32fee765205a209@v1#input_text_tokens","offer-8e99c32fee765205a209@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":2963200,"lines":[["input_text_tokens",12347,"offer-8e99c32fee765205a209@v1#input_text_tokens","input_text_tokens",1234700],["output_text_tokens",3457,"offer-8e99c32fee765205a209@v1#output_text_tokens","output_text_tokens",1728500]]}}
+			]
+		},
+		{
+			"key": "morpheus:z-ai/glm-5.2:text.generate",
+			"routes": ["morpheus:glm-5.2"],
+			"skus": ["offer-3c119cf282b6df1f1ca6@v1"],
+			"rules": [
+				["offer-3c119cf282b6df1f1ca6@v1#input_text_tokens","standard","input_text_tokens","1.25/1000000 token",100,null,null,null],
+				["offer-3c119cf282b6df1f1ca6@v1#output_text_tokens","standard","output_text_tokens","4.4/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":2600,"output_text_tokens":448,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048},"expected":{"nanos":5221200,"lines":[["input_text_tokens",2600,"offer-3c119cf282b6df1f1ca6@v1#input_text_tokens","input_text_tokens",3250000],["output_text_tokens",448,"offer-3c119cf282b6df1f1ca6@v1#output_text_tokens","output_text_tokens",1971200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["offer-3c119cf282b6df1f1ca6@v1#input_text_tokens","offer-3c119cf282b6df1f1ca6@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":30644550,"lines":[["input_text_tokens",12347,"offer-3c119cf282b6df1f1ca6@v1#input_text_tokens","input_text_tokens",15433750],["output_text_tokens",3457,"offer-3c119cf282b6df1f1ca6@v1#output_text_tokens","output_text_tokens",15210800]]}}
+			]
+		}
+	]
+}

@@ -5,7 +5,7 @@ order: 2
 updated: 2026-07-11
 ---
 
-从 `Settings -> Account` 启用 MFA，以保护你的 API 密钥和账单操作。
+从 `设置 -> 账户` 启用 MFA，以保护你的 API 密钥和账单操作。
 
 推荐的设置方式：
 

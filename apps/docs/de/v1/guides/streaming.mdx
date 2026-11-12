@@ -1,63 +1,66 @@
 ---
-title: "Datenstromübertragung"
+title: "Streaming"
 description: "Empfange schrittweise Ausgaben, verarbeite endpunktspezifische Ereignisse und behandle unterbrochene Streams."
 icon: "radio"
 ---
 
-Setze `stream: true`, um Ausgaben als Server-Sent Events (SSE) zu empfangen. Bewahre den Phaseo-API-Schlüssel auf deinem Server auf und leite die Ausgabe an die Oberfläche weiter.
+import { StreamEventsExplorer } from "/snippets/stream-events.jsx";
 
-## Streaming-Anfrage senden
+Setze `stream: true`, und das Gateway sendet die Ausgabe als Server-Sent Events (SSE), während das Modell sie schreibt. Ein Stream ist erst abgeschlossen, wenn sein erfolgreiches Abschlussereignis eintrifft. Drücke **Abspielen**, um einen Stream zu verfolgen, und wechsle dann zu **Bricht mittendrin ab**, um zu sehen, wie ein abgebrochener Stream endet.
+
+<StreamEventsExplorer locale="de" />
+
+## Eine Streaming-Anfrage senden
 
 ```bash
 curl --no-buffer https://api.phaseo.app/v1/responses \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "input": "Say hello in one sentence.",
     "stream": true
   }'
 ```
 
-Prüfe den HTTP-Status vor dem Lesen des Streams. Fehler vor Streaming-Beginn liefern die normale [JSON-Fehlerantwort](../api-reference/errors.mdx).
+Prüfe den HTTP-Status, bevor du den Body liest. Eine Anfrage, die vor Beginn des Streamings fehlschlägt, bekommt die normale [JSON-Fehlerantwort](../api-reference/errors.mdx), keinen Stream. Bewahre deinen Phaseo-API-Schlüssel auf deinem Server auf und leite den Text von dort an deine Oberfläche weiter.
 
-## Ereignisse lesen
+## Die Ereignisse lesen
 
-Nutze das Ereignisformat des aufgerufenen Endpunkts:
+Jeder Endpunkt hat sein eigenes Ereignisformat:
 
-| Endpunkt | Schrittweise Ausgabe | Abschluss |
-| --- | --- | --- |
-| [Responses](../api-reference/endpoint/responses.mdx) | Ereignisse wie `response.output_text.delta` | Prüfe das abschließende Antwortereignis und seinen Status |
-| [Chat Completions](../api-reference/endpoint/chat-completions.mdx) | `choices[].delta` | Prüfe `finish_reason`; `[DONE]` beendet den Stream |
-| [Messages](../api-reference/endpoint/anthropic-messages.mdx) | `message_start`, `content_block_delta`, und verwandte Ereignisse | `message_stop` |
+| Endpunkt | Text kommt in | Erfolgreiches Ende | Ende mit Fehler |
+| --- | --- | --- | --- |
+| [Responses](../api-reference/endpoint/responses.mdx) | `response.output_text.delta` | `response.completed` | `response.failed` oder `error` |
+| [Chat Completions](../api-reference/endpoint/chat-completions.mdx) | `choices[].delta` | ein `finish_reason`, dann `[DONE]` | ein `error`-Frame ohne `finish_reason` |
+| [Messages](../api-reference/endpoint/anthropic-messages.mdx) | `content_block_delta` | `message_stop` | ein `error`-Ereignis ohne `message_stop` |
 
-SSE-Ereignisse sind durch Leerzeilen getrennt. Ein Netzwerkfragment kann einen Teil eines Ereignisses oder mehrere Ereignisse enthalten; parse es nicht als eigenständiges JSON. Puffere unvollständige Frames oder nutze einen SDK-Streaminghelfer. Nicht jeder Endpunkt sendet `[DONE]`.
+Ereignisse sind durch Leerzeilen getrennt, aber ein Netzwerkfragment kann ein halbes Ereignis oder mehrere enthalten. Puffere, bis jedes Ereignis vollständig ist, bevor du es als JSON parst, oder nutze einen SDK-Helfer, der das für dich erledigt:
 
-Die SDK-Helfer übernehmen den Streamtransport:
+- TypeScript: `streamResponses()`, `streamChat()`, `streamMessages()`; Python: `stream_responses()`, `stream_chat()`, `stream_message()` ([Nutzungsanleitung](../sdk-reference/client/usage.mdx))
+- Vercel AI SDK: `streamText()` mit `@phaseo/ai-sdk-provider`
 
-- TypeScript: `streamResponses()`, `streamChat()`, `streamMessages()`.
-- Python: `stream_responses()`, `stream_chat()`, `stream_message()`.
-- Vercel AI SDK: `streamText()` mit `@phaseo/ai-sdk-provider`.
-
-Siehe die [TypeScript-Anleitung](../sdk-reference/typescript/usage.mdx) oder [Python-Anleitung](../sdk-reference/python/usage.mdx) zur Clienteinrichtung.
+Nur Chat Completions sendet `[DONE]`. Warte bei den anderen Endpunkten nicht darauf.
 
 ## Tool-Aufrufe streamen
 
-Das Gateway akzeptiert Streaming mit Tools; die Unterstützung hängt vom Modell und Anbieter ab. Sammle Argumentfragmente bis zum vollständigen Tool-Aufruf und parse, validiere und autorisiere sie vor der Ausführung. Führe niemals unvollständige Argumente aus.
+Tool-Aufrufe kommen genau wie Text als Argument-Deltas an. Ob ein Modell sie streamt, hängt vom Modell und vom Anbieter ab. Sammle die Deltas, bis der Aufruf vollständig ist, und parse, validiere und autorisiere dann die Argumente. Führe ein Tool nie mit unvollständigen Argumenten aus.
 
-Nutze [Tool-Aufrufmuster](./tool-calling-patterns.mdx) für Fortsetzungsanfragen und [Toolsicherheit](./tool-calling-safety.mdx) für Validierung und Freigabe.
+Siehe [Tool-Aufrufmuster](./tool-calling-patterns.mdx) zum Zurücksenden von Ergebnissen und [Toolsicherheit](./tool-calling-safety.mdx) zu Validierung und Freigabe.
 
-## Abbrechen und wiederherstellen
+## Einen Stream abbrechen
 
-Übergib dem serverseitigen HTTP-Client ein `AbortSignal` und brich ab, wenn der Nutzer stoppt oder die Verbindung trennt. Setze eine passende Frist. Ein Abbruch garantiert weder einen sofortigen Anbieterstop noch kostenlose generierte Ausgaben.
+Übergib ein `AbortSignal` (oder das Gegenstück deines HTTP-Clients) und brich ab, wenn die Person stoppt oder die Verbindung trennt. Setze eine Frist, die zur Arbeitslast passt. Ein Abbruch garantiert nicht, dass der Anbieter sofort aufhört oder dass bereits generierte Ausgabe kostenlos ist.
 
-Zeige Teiltexte schrittweise an, aber markiere eine Antwort erst nach dem erfolgreichen Abschlussereignis als vollständig. Eine geschlossene Verbindung allein belegt keinen Abschluss.
+## Einen unterbrochenen Stream wiederherstellen
 
-Wenn ein Stream nach Ausgabebeginn fehlschlägt:
+Schlägt ein Stream fehl, nachdem bereits Text angekommen ist, endet er mit dem Fehlerereignis aus der Tabelle oben statt mit dem erfolgreichen. Eine geschlossene Verbindung allein bedeutet nicht, dass die Antwort vollständig ist. Phaseo berechnet die Teilausgabe eines fehlgeschlagenen Streams nicht.
 
-1. Markiere die Teilantwort als unterbrochen.
-2. Speichere Anfrage- oder Generierungs-ID, Endpunkt und Modell in deinen Logs.
-3. Biete einen ausdrücklichen Wiederholungsversuch an. Eine neue Anfrage kann andere Ausgaben und zusätzliche Kosten erzeugen.
-4. Führe ausgeführte Tools nicht erneut aus und hänge Wiederholungsantworten nicht automatisch an die Teilausgabe an.
+Wenn das passiert:
 
-Begrenze Wiederholungsversuche bei Fehlern vor Ausgabebeginn und beachte [Rate-Limit-Header](../api-reference/limits.mdx). Muss deine Anwendung die gesamte Ausgabe vor dem Anzeigen validieren, nutze eine Anfrage ohne Streaming oder puffere das Ergebnis serverseitig.
+1. Lass den Teiltext sichtbar und markiere ihn als unterbrochen.
+2. Protokolliere die Anfrage- oder Generierungs-ID, den Endpunkt und das Modell.
+3. Biete einen erneuten Versuch an. Eine neue Anfrage kann anderen Text erzeugen und wird erneut berechnet.
+4. Führe bereits ausgeführte Tools nicht erneut aus und hänge die wiederholte Antwort nicht an die Teilantwort an.
+
+Bei Fehlern, bevor Text ankommt, versuche es mit Backoff erneut und beachte die [Rate-Limit-Header](../api-reference/limits.mdx). Musst du die gesamte Antwort validieren, bevor jemand sie sieht, nutze eine Anfrage ohne Streaming oder puffere den Stream auf deinem Server.

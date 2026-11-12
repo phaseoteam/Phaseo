@@ -1,7 +1,6 @@
-import { randomUUID } from "node:crypto";
 import { captureAgentRunDevtools } from "../devtools.js";
-import { AgentGatewayError, toAgentGatewayErrorDetails } from "../errors.js";
-import { agentItemKey, responseItems, toolResultItem } from "../items.js";
+import { AgentGatewayError, agentErrorIsContextOverflow, agentErrorIsRetryable, agentRetryAfterMs, toAgentGatewayErrorDetails } from "../errors.js";
+import { agentItemKey, isGatewayServerToolName, responseItems, toolResultItem } from "../items.js";
 import { parseAgentSchema } from "../schema.js";
 import type {
 	AgentContinueOptions, AgentDefinition, AgentDynamicValue, AgentEvent, AgentEventHandler, AgentItem,
@@ -36,10 +35,15 @@ type RuntimeOptions<TInput, TOutput, TContext> = {
 	rejections?: Array<string | AgentToolDecision>;
 	toolOutputs?: AgentToolOutput[];
 	humanInput?: string;
+	humanMessages?: AgentMessage[];
+	takeMessages?: () => AgentMessage[] | undefined;
 };
 
 const EMPTY_USAGE: AgentUsageSummary = { inputTokens: 0, outputTokens: 0, cachedTokens: 0, totalTokens: 0, cost: 0 };
 const DEFAULT_RETRY_BACKOFF = 250;
+const DEFAULT_MAX_RETRY_BACKOFF = 8_000;
+const MAX_RETRY_AFTER = 60_000;
+const NOT_RUN = "This tool call was not run because the turn that requested it ended first. Call it again if it is still needed.";
 
 function nowIso() { return new Date().toISOString(); }
 function errorMessage(error: unknown) { return error instanceof Error ? error.message : String(error); }
@@ -54,13 +58,22 @@ function usageNumber(usage: Record<string, unknown> | undefined, ...keys: string
 	return 0;
 }
 
+/** The Phaseo gateway prices each request in its usage: `pricing` on Chat Completions, `pricing_breakdown` on Responses. */
+function gatewayPrice(usage: Record<string, unknown> | undefined) {
+	for (const key of ["pricing_breakdown", "pricing"]) {
+		const nanos = (usage?.[key] as Record<string, unknown> | null | undefined)?.total_nanos;
+		if (typeof nanos === "number" && Number.isFinite(nanos) && nanos >= 0) return nanos / 1_000_000_000;
+	}
+	return undefined;
+}
+
 function normalizeUsage(response: AgentModelResponse): AgentUsageSummary {
 	const usage = response.usage;
 	const inputTokens = usageNumber(usage, "input_tokens", "prompt_tokens", "inputTokens", "promptTokens");
 	const outputTokens = usageNumber(usage, "output_tokens", "completion_tokens", "outputTokens", "completionTokens");
 	const cachedTokens = usageNumber(usage, "cached_tokens", "cache_read_input_tokens", "cachedTokens");
 	const explicitTotal = usageNumber(usage, "total_tokens", "totalTokens");
-	const cost = response.cost ?? usageNumber(usage, "cost", "total_cost", "totalCost");
+	const cost = response.cost ?? gatewayPrice(usage) ?? usageNumber(usage, "cost", "total_cost", "totalCost");
 	return { inputTokens, outputTokens, cachedTokens, totalTokens: explicitTotal || inputTokens + outputTokens, cost };
 }
 
@@ -95,7 +108,37 @@ async function sleep(ms: number, signal?: AbortSignal) {
 	});
 }
 
-function serializeToolOutput(value: unknown) { return typeof value === "string" ? value : JSON.stringify(value, null, 2); }
+/** Keeps the start and end of text longer than limit, with a notice of what was left out between them. */
+export function truncateToolOutput(text: string, limit: number | undefined) {
+	if (!limit || limit <= 0 || text.length <= limit) return text;
+	const head = Math.floor(limit * 0.6), tail = Math.floor(limit * 0.3);
+	return `${text.slice(0, head)}\n\n[… ${(text.length - head - tail).toLocaleString("en-GB")} characters omitted. Ask for a smaller part, for example a line range or a narrower search, to see them …]\n\n${text.slice(text.length - tail)}`;
+}
+
+function serializeToolOutput(value: unknown, limit?: number) { return truncateToolOutput(typeof value === "string" ? value : JSON.stringify(value) ?? "", limit); }
+
+function toolError(call: AgentToolCall, name: string, message: string): AgentMessage { return { role: "tool", name, toolCallId: call.id, content: JSON.stringify({ error: message }), isError: true }; }
+
+/**
+ * Providers reject a history in which a tool call has no result. A run that failed, was cancelled or crashed mid-step leaves
+ * such calls behind, so each one is answered as not run, and results that answer no call are dropped.
+ */
+export function repairToolHistory(messages: AgentMessage[]): { messages: AgentMessage[]; repaired: string[] } {
+	const result: AgentMessage[] = []; const repaired: string[] = [];
+	for (let index = 0; index < messages.length; index++) {
+		const message = messages[index];
+		if (message.role === "tool") continue;
+		result.push(message);
+		if (message.role !== "assistant" || !message.toolCalls?.length) continue;
+		const answered = new Set<string>();
+		while (messages[index + 1]?.role === "tool") {
+			const reply = messages[++index] as Extract<AgentMessage, { role: "tool" }>;
+			if (message.toolCalls.some((call) => call.id === reply.toolCallId) && !answered.has(reply.toolCallId)) { answered.add(reply.toolCallId); result.push(reply); }
+		}
+		for (const call of message.toolCalls) if (!answered.has(call.id)) { repaired.push(call.id); result.push(toolError(call, call.name, NOT_RUN)); }
+	}
+	return { messages: repaired.length || result.length !== messages.length ? result : messages, repaired };
+}
 
 function stepEventDetails(step: AgentStepRecord) {
 	return { attempt: step.modelAttempts, requestId: step.requestId, nativeResponseId: step.nativeResponseId ?? null, provider: step.provider, model: step.model, usage: step.usage, responseMeta: step.responseMeta };
@@ -158,7 +201,7 @@ async function consumeToolExecution<TOutput>(value: unknown, onProgress: (value:
 async function executeOneTool<TContext>(args: {
 	tool: AgentTool<any, any, TContext>; call: AgentToolCall; run: AgentRunRecord<any, TContext, any>;
 	stepIndex: number; context: TContext | undefined; signal?: AbortSignal; handler?: AgentEventHandler;
-	defaultErrorPolicy: "fail-run" | "return-to-model"; suppliedOutput?: unknown; useSuppliedOutput?: boolean; emitItems?: boolean;
+	defaultErrorPolicy: "fail-run" | "return-to-model"; suppliedOutput?: unknown; useSuppliedOutput?: boolean; emitItems?: boolean; maxOutputChars?: number;
 }): Promise<{ message: AgentMessage; result: AgentToolExecutionResult; nextTurnParams?: AgentNextTurnParams<TContext>; context?: TContext }> {
 	let currentContext = args.context;
 	const progress: unknown[] = [];
@@ -186,7 +229,7 @@ async function executeOneTool<TContext>(args: {
 		await emit(args.handler, { type: "tool.completed", runId: args.run.id, agentId: args.run.agentId, timestamp: nowIso(), status: args.run.status, stepIndex: args.stepIndex, toolCallId: args.call.id, toolName: args.call.name, output });
 		if (args.emitItems) await emit(args.handler, { type: "response.item", runId: args.run.id, agentId: args.run.agentId, timestamp: nowIso(), stepIndex: args.stepIndex, item: { type: "tool_result", toolCallId: args.call.id, name: args.tool.id, output } });
 		return {
-			message: { role: "tool", name: args.tool.id, toolCallId: args.call.id, content: serializeToolOutput(output) },
+			message: { role: "tool", name: args.tool.id, toolCallId: args.call.id, content: serializeToolOutput(output, args.maxOutputChars) },
 			result: { toolCallId: args.call.id, toolName: args.tool.id, result: output, preliminaryResults },
 			nextTurnParams: args.tool.nextTurnParams,
 			context: currentContext,
@@ -194,9 +237,10 @@ async function executeOneTool<TContext>(args: {
 	} catch (error) {
 		const message = errorMessage(error);
 		await emit(args.handler, { type: "tool.failed", runId: args.run.id, agentId: args.run.agentId, timestamp: nowIso(), status: args.run.status, stepIndex: args.stepIndex, toolCallId: args.call.id, toolName: args.call.name, error: message });
+		if (args.signal?.aborted) throw error;
 		if ((args.tool.onError ?? args.defaultErrorPolicy) === "return-to-model") {
 			if (args.emitItems) await emit(args.handler, { type: "response.item", runId: args.run.id, agentId: args.run.agentId, timestamp: nowIso(), stepIndex: args.stepIndex, item: { type: "error", message, toolCallId: args.call.id, toolName: args.tool.id } });
-			return { message: { role: "tool", name: args.tool.id, toolCallId: args.call.id, content: JSON.stringify({ error: message }), isError: true }, result: { toolCallId: args.call.id, toolName: args.tool.id, error: message }, context: currentContext };
+			return { message: toolError(args.call, args.tool.id, truncateToolOutput(message, args.maxOutputChars)), result: { toolCallId: args.call.id, toolName: args.tool.id, error: message }, context: currentContext };
 		}
 		throw error;
 	}
@@ -229,14 +273,19 @@ async function generateResponse<TContext>(args: {
 }): Promise<AgentModelResponse> {
 	const maxRetries = Math.max(0, Math.floor(args.retry?.maxRetries ?? 0));
 	const backoff = Math.max(0, Math.floor(args.retry?.backoffMs ?? DEFAULT_RETRY_BACKOFF));
+	const maxBackoff = Math.max(backoff, Math.floor(args.retry?.maxBackoffMs ?? DEFAULT_MAX_RETRY_BACKOFF));
+	const retryOn = args.retry?.retryOn ?? agentErrorIsRetryable;
 	for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
 		args.step.modelAttempts = attempt;
+		// Output already shown to the person cannot be taken back, so an attempt that streamed anything is never repeated.
+		let streamed = false;
 		await emit(args.handler, { type: "model.requested", runId: args.run.id, agentId: args.run.agentId, timestamp: nowIso(), status: args.run.status, stepIndex: args.step.index, attempt, model: args.request.model });
 		try {
 			let response: AgentModelResponse;
 			if (args.streaming && args.client.stream) {
 				let text = ""; let reasoning = ""; let completed: AgentModelResponse | undefined; const streamedItems: AgentItem[] = []; const streamedItemKeys = new Set<string>();
 				for await (const event of args.client.stream({ ...args.request, stream: true })) {
+					if (event.type !== "response.completed" && event.type !== "response.event") streamed = true;
 					if (event.type === "response.output_text.delta") { text += event.delta; await emit(args.handler, { type: event.type, runId: args.run.id, agentId: args.run.agentId, timestamp: nowIso(), stepIndex: args.step.index, delta: event.delta }); }
 					else if (event.type === "response.reasoning.delta") { reasoning += event.delta; await emit(args.handler, { type: event.type, runId: args.run.id, agentId: args.run.agentId, timestamp: nowIso(), stepIndex: args.step.index, delta: event.delta }); }
 					else if (event.type === "response.item") {
@@ -259,14 +308,30 @@ async function generateResponse<TContext>(args: {
 			}
 			return response;
 		} catch (error) {
-			if (attempt > maxRetries) {
+			if (attempt > maxRetries || streamed || args.request.signal?.aborted || !retryOn(error)) {
 				await emit(args.handler, { type: "model.failed", runId: args.run.id, agentId: args.run.agentId, timestamp: nowIso(), status: args.run.status, stepIndex: args.step.index, attempt, model: args.request.model, error: errorMessage(error), errorDetails: gatewayDetails(error) });
 				throw error;
 			}
-			await sleep(backoff * attempt, args.request.signal);
+			const requested = agentRetryAfterMs(error);
+			const delayMs = requested !== undefined ? Math.min(requested, MAX_RETRY_AFTER) : Math.round(Math.random() * Math.min(maxBackoff, backoff * 2 ** (attempt - 1)));
+			await emit(args.handler, { type: "model.retrying", runId: args.run.id, agentId: args.run.agentId, timestamp: nowIso(), status: args.run.status, stepIndex: args.step.index, attempt, delayMs, model: args.request.model, error: errorMessage(error), errorDetails: gatewayDetails(error) });
+			await sleep(delayMs, args.request.signal);
 		}
 	}
 	throw new Error("Unreachable model retry state");
+}
+
+/**
+ * Calls with no local tool that the gateway handles itself, so they are neither run here nor reported as missing:
+ * ones whose result came back in the same response (the gateway ran the server tool), and server-tool calls
+ * the gateway left unrun because the same turn also called a local tool.
+ */
+function gatewayToolCalls(response: AgentModelResponse, tools: AgentTool<any, any, any>[]): AgentToolCall[] {
+	const calls = response.message.toolCalls ?? [];
+	const isLocal = (call: AgentToolCall) => tools.some((tool) => tool.id === call.name);
+	const answered = new Set((response.items ?? []).flatMap((item) => (item.type === "tool_result" || item.type === "error") && item.toolCallId ? [item.toolCallId] : []));
+	const callsLocalTool = calls.some(isLocal);
+	return calls.filter((call) => !isLocal(call) && (answered.has(call.id) || (callsLocalTool && isGatewayServerToolName(call.name))));
 }
 
 async function stopReason(stopWhen: AgentStopWhen | undefined, context: Parameters<Exclude<AgentStopWhen, any[]>>[0]): Promise<string | undefined> {
@@ -288,37 +353,109 @@ async function executeLoop<TInput, TOutput, TContext>(definition: AgentDefinitio
 	const maxSteps = options.maxSteps ?? definition.maxSteps ?? 12;
 	const concurrency = Math.max(1, Math.floor(options.toolExecution?.toolConcurrency ?? definition.toolExecution?.toolConcurrency ?? 1));
 	const defaultErrorPolicy = options.toolExecution?.onError ?? definition.toolExecution?.onError ?? "fail-run";
+	const maxOutputChars = options.toolExecution?.maxOutputChars ?? definition.toolExecution?.maxOutputChars;
+	// With return-to-model, a call the run cannot carry out (an unknown tool, unreadable arguments) is answered with an error the model can correct.
+	const forgiving = defaultErrorPolicy === "return-to-model";
+	const unusable = (call: AgentToolCall, error: string) => { if (!forgiving) throw new Error(error); return toolError(call, call.name, error); };
+	const inputProblem = (call: AgentToolCall, tool: AgentTool<any, any, TContext> | undefined) => {
+		if (!tool) return forgiving ? `There is no tool called ${call.name}. Use one of the tools you were given.` : `Tool not found: ${call.name}`;
+		if (call.inputError && forgiving) return `The arguments for ${call.name} were not valid JSON (${call.inputError}). Send the call again with complete, valid JSON arguments.`;
+		try { call.input = parseAgentSchema(tool.inputSchema, call.input, "tool_input"); } catch (error) { if (!forgiving) throw error; return `The arguments for ${call.name} were invalid: ${errorMessage(error)}`; }
+		return undefined;
+	};
 
 	const save = async () => { run.context = currentContext; run.usage = stepResults.reduce((sum, step) => addUsage(sum, step.usage), { ...EMPTY_USAGE }); await persist(options.state, run, steps, stepResults); };
 	try {
 		if (resumed) {
 			const previousStatus = run.status;
-			if (run.status === "waiting_for_human" && run.pause?.pendingToolCalls?.length) {
+			let continuationMessages = options.humanMessages !== undefined ? structuredClone(options.humanMessages) : options.humanInput ? [{ role: "user" as const, content: options.humanInput }] : [];
+			if (run.pause?.pendingToolCalls?.length) {
 				const approved = asDecisionMap(options.approveToolCalls ?? options.approvals); const rejected = asDecisionMap(options.rejectToolCalls ?? options.rejections); const outputs = new Map((options.toolOutputs ?? []).map((entry) => [entry.toolCallId, entry.output]));
 				const pending = run.pause.pendingToolCalls;
-				const executions: Array<Promise<{ message: AgentMessage; result: AgentToolExecutionResult; nextTurnParams?: AgentNextTurnParams<TContext>; context?: TContext; call: AgentToolCall; input: unknown }>> = [];
-				for (const entry of pending) {
-					const tool = tools.find((candidate) => candidate.id === entry.call.name);
-					if (!tool) throw new Error(`Tool not found: ${entry.call.name}`);
-					if (rejected.has(entry.call.id)) {
-						const reason = rejected.get(entry.call.id)?.reason ?? "Tool call rejected by human";
-						run.messages.push({ role: "tool", name: tool.id, toolCallId: entry.call.id, content: JSON.stringify({ error: reason }), isError: true });
-						continue;
+				const originalPause = run.pause;
+				continuationMessages = [...(originalPause.continuationMessages ?? []), ...continuationMessages];
+				const originalMessages = [...run.messages];
+				// Persist the serial journal separately so tools and next-turn callbacks
+				// retain their existing view of the live message history.
+				const confirmedMessages: AgentMessage[] = [];
+				const confirmedResults: AgentToolExecutionResult[] = [];
+				const confirmedIds = new Set<string>();
+				const progressPause = () => {
+					const remaining = pending.filter((entry) => !confirmedIds.has(entry.call.id));
+					return remaining.length ? { ...originalPause, pendingToolCalls: remaining, payload: { toolCalls: remaining }, continuationMessages } : null;
+				};
+				const saveProgress = async () => {
+					const pause = progressPause();
+					await persist(options.state, {
+						...run, context: currentContext, status: pause ? "waiting_for_human" : "running", pause,
+						messages: [...originalMessages, ...confirmedMessages, ...(pause ? [] : continuationMessages)],
+					}, steps.map((step) => step.index === run.stepCount - 1 ? { ...step, toolResults: [...(step.toolResults ?? []), ...confirmedResults] } : step),
+					stepResults.map((step) => step.stepIndex === run.stepCount - 1 ? { ...step, toolResults: [...step.toolResults, ...confirmedResults] } : step));
+				};
+				const recordResults = () => {
+					const step = steps.find((item) => item.index === run.stepCount - 1); const result = stepResults.find((item) => item.stepIndex === run.stepCount - 1);
+					if (step) step.toolResults = [...(step.toolResults ?? []), ...confirmedResults];
+					if (result) result.toolResults = [...result.toolResults, ...confirmedResults];
+				};
+				const admitted = pending.map((entry) => {
+					const found = tools.find((candidate) => candidate.id === entry.call.name);
+					if (!found) unusable(entry.call, `Tool not found: ${entry.call.name}`);
+					// A tool that disappeared while the call waited, such as one from a disconnected MCP server, is answered as unavailable.
+					const tool = found ?? { id: entry.call.name };
+					const rejection = !found ? `The ${entry.call.name} tool is no longer available.` : rejected.has(entry.call.id) ? rejected.get(entry.call.id)?.reason ?? "Tool call rejected by human" : undefined;
+					if (rejection === undefined) {
+						if (entry.kind === "approval" && !approved.has(entry.call.id)) throw new Error(`Missing approval decision for tool call ${entry.call.id}`);
+						if ((entry.kind === "manual" || entry.kind === "hitl") && !outputs.has(entry.call.id)) throw new Error(`Missing output for tool call ${entry.call.id}`);
 					}
-					if (entry.kind === "approval" && !approved.has(entry.call.id)) throw new Error(`Missing approval decision for tool call ${entry.call.id}`);
-					if ((entry.kind === "manual" || entry.kind === "hitl") && !outputs.has(entry.call.id)) throw new Error(`Missing output for tool call ${entry.call.id}`);
-					executions.push(executeOneTool({ tool, call: entry.call, run, stepIndex: Math.max(0, run.stepCount - 1), context: currentContext, signal: options.signal, handler: options.onEvent, defaultErrorPolicy, suppliedOutput: outputs.get(entry.call.id), useSuppliedOutput: outputs.has(entry.call.id), emitItems: options.streaming }).then((result) => ({ ...result, call: entry.call, input: entry.call.input })));
+					return { entry, tool, rejection };
+				});
+				let executions; const startContext = currentContext;
+				try { executions = await mapConcurrent(admitted, concurrency, async ({ entry, tool, rejection }) => {
+					if (concurrency === 1) {
+						abortIfNeeded(options.signal);
+						if (rejection === undefined) entry.executionStartedAt = nowIso();
+						await saveProgress();
+						abortIfNeeded(options.signal);
+					}
+					const execution = rejection !== undefined
+						? { message: { role: "tool", name: tool.id, toolCallId: entry.call.id, content: JSON.stringify({ error: rejection }), isError: true } as AgentMessage, context: currentContext, nextTurnParams: undefined }
+						: await executeOneTool({ tool, call: entry.call, run, stepIndex: Math.max(0, run.stepCount - 1), context: currentContext, signal: options.signal, handler: options.onEvent, defaultErrorPolicy, suppliedOutput: outputs.get(entry.call.id), useSuppliedOutput: outputs.has(entry.call.id), emitItems: options.streaming, maxOutputChars });
+					if (concurrency === 1) {
+						currentContext = execution.context;
+						confirmedMessages.push(execution.message);
+						confirmedResults.push("result" in execution ? execution.result : { toolCallId: entry.call.id, toolName: tool.id, error: rejection });
+						confirmedIds.add(entry.call.id);
+						await saveProgress();
+					}
+					return { ...execution, rejection, call: entry.call, input: entry.call.input };
+				}); } catch (error) {
+					if (concurrency === 1) { recordResults(); run.messages = [...originalMessages, ...confirmedMessages]; run.pause = progressPause(); if (!run.pause) run.messages.push(...continuationMessages); }
+					throw error;
 				}
-				for (const execution of await Promise.all(executions)) { run.messages.push(execution.message); currentContext = execution.context; await applyNextTurnParams([{ config: execution.nextTurnParams, input: execution.input, call: execution.call }], nextTurn as any, { numberOfTurns: run.stepCount, stepIndex: Math.max(0, run.stepCount - 1), messages: run.messages, context: currentContext }); }
+				if (concurrency === 1) recordResults();
+				try {
+				for (const execution of executions) { run.messages.push(execution.message); if (execution.rejection === undefined && execution.context !== startContext) currentContext = execution.context; await applyNextTurnParams([{ config: execution.nextTurnParams, input: execution.input, call: execution.call }], nextTurn as any, { numberOfTurns: run.stepCount, stepIndex: Math.max(0, run.stepCount - 1), messages: run.messages, context: currentContext }); }
+				} catch (error) { run.messages = [...originalMessages, ...executions.map((execution) => execution.message), ...continuationMessages]; run.pause = null; throw error; }
 				run.pause = null;
-			} else if (run.status === "waiting_for_human" && !options.humanInput) throw new Error(`Run ${run.id} is waiting for human input`);
-			if (options.humanInput) run.messages.push({ role: "user", content: options.humanInput });
+			} else if (run.status === "waiting_for_human" && !(options.humanMessages !== undefined ? options.humanMessages.length : options.humanInput)) throw new Error(`Run ${run.id} is waiting for human input`);
+			// Every pending call now has its result, so any call still unanswered was left behind by a failure.
+			const repair = repairToolHistory(run.messages);
+			if (repair.messages !== run.messages) {
+				run.messages = repair.messages;
+				await emit(options.onEvent, { type: "history.repaired", runId: run.id, agentId: run.agentId, timestamp: nowIso(), status: run.status, toolCallIds: repair.repaired });
+			}
+			run.messages.push(...continuationMessages);
+			delete run.error; delete run.errorDetails; run.stopReason = null;
 			run.status = "running"; run.updatedAt = nowIso();
 			await emit(options.onEvent, { type: "run.resumed", runId: run.id, agentId: run.agentId, timestamp: nowIso(), status: run.status, previousStatus });
 		} else run.status = "running";
 
-		while (run.stepCount < maxSteps) {
+		// The budget belongs to this call, so a run that used it up can still be continued.
+		const firstStep = run.stepCount;
+		while (run.stepCount - firstStep < maxSteps) {
 			abortIfNeeded(options.signal);
+			const steering = options.takeMessages?.();
+			if (steering?.length) run.messages.push(...structuredClone(steering));
 			const stepIndex = run.stepCount;
 			const turn: AgentTurnContext<TContext> = { numberOfTurns: stepIndex + 1, stepIndex, messages: run.messages, context: currentContext };
 			dynamic.model = await resolveDynamic(options.model ?? definition.model, turn) ?? presetAlias(options.preset ?? definition.preset);
@@ -340,8 +477,26 @@ async function executeLoop<TInput, TOutput, TContext>(definition: AgentDefinitio
 			const step: AgentStepRecord = { runId: run.id, index: stepIndex, status: "executing_model", createdAt: nowIso(), updatedAt: nowIso() };
 			steps.push(step);
 			await emit(options.onEvent, { type: "step.started", runId: run.id, agentId: run.agentId, timestamp: nowIso(), status: run.status, stepIndex });
-			const request: AgentModelRequest<TContext> = { agentId: run.agentId, model: dynamic.model, instructions: dynamic.instructions, messages: structuredClone(run.messages), tools: tools.map((tool) => ({ id: tool.id, description: tool.description, parameters: toolParameters(tool) })), context: currentContext, signal: options.signal, temperature: dynamic.temperature, maxOutputTokens: dynamic.maxOutputTokens, topP: dynamic.topP, stream: options.streaming };
-			const response = await generateResponse({ client: options.client, request, retry: options.modelRetry ?? definition.modelRetry, run, step, handler: options.onEvent, streaming: options.streaming ?? false });
+			const prepare = async (reason: "step" | "overflow", error?: unknown) => {
+				const prepared = await definition.prepareMessages?.(run.messages, { stepIndex, context: currentContext, signal: options.signal, reason, error });
+				if (!prepared) return false;
+				run.messages = prepared; turn.messages = prepared; return true;
+			};
+			await prepare("step");
+			const active = await resolveDynamic(definition.activeTools, turn);
+			const offered = active ? tools.filter((tool) => active.includes(tool.id)) : tools;
+			const request = (): AgentModelRequest<TContext> => ({ agentId: run.agentId, model: dynamic.model, instructions: dynamic.instructions, messages: structuredClone(run.messages), tools: offered.map((tool) => ({ id: tool.id, description: tool.description, parameters: toolParameters(tool) })), context: currentContext, signal: options.signal, temperature: dynamic.temperature, maxOutputTokens: dynamic.maxOutputTokens, topP: dynamic.topP, stream: options.streaming });
+			const generate = () => generateResponse({ client: options.client, request: request(), retry: options.modelRetry ?? definition.modelRetry, run, step, handler: options.onEvent, streaming: options.streaming ?? false });
+			let response: AgentModelResponse;
+			// A conversation that outgrew the context window gets one chance to be compacted before the step fails.
+			try { response = await generate(); }
+			catch (error) { if (options.signal?.aborted || !agentErrorIsContextOverflow(error) || !await prepare("overflow", error)) throw error; response = await generate(); }
+			// Gateway-handled calls stay in response.items, but leave the history so the next request has no call without an output.
+			const gatewayCalls = gatewayToolCalls(response, tools);
+			if (gatewayCalls.length) {
+				const localCalls = (response.message.toolCalls ?? []).filter((call) => !gatewayCalls.includes(call));
+				if (localCalls.length) response.message.toolCalls = localCalls; else delete response.message.toolCalls;
+			}
 			run.messages.push(response.message); run.stepCount++; run.updatedAt = nowIso();
 			const normalized = normalizeUsage(response);
 			Object.assign(step, { requestId: response.requestId, nativeResponseId: response.nativeResponseId ?? null, provider: response.provider, model: response.model ?? dynamic.model, usage: response.usage, normalizedUsage: normalized, toolCalls: response.message.toolCalls ?? [], responseMeta: response.responseMeta, finishReason: response.finishReason, warnings: response.warnings });
@@ -352,10 +507,17 @@ async function executeLoop<TInput, TOutput, TContext>(definition: AgentDefinitio
 			const nextParams: Array<{ config?: AgentNextTurnParams<TContext>; input: unknown; call: AgentToolCall }> = [];
 			const autoCalls: Array<{ call: AgentToolCall; tool: AgentTool<any, any, TContext>; prefetched?: unknown }> = [];
 			const pending: AgentPendingToolCall[] = [];
+			const refused: AgentMessage[] = [];
 			for (const call of calls) {
 				const tool = tools.find((candidate) => candidate.id === call.name);
-				if (!tool) throw new Error(`Tool not found: ${call.name}`);
-				const parsedInput = parseAgentSchema(tool.inputSchema, call.input, "tool_input"); call.input = parsedInput;
+				const problem = inputProblem(call, tool);
+				if (problem !== undefined) {
+					refused.push(unusable(call, problem));
+					await emit(options.onEvent, { type: "tool.failed", runId: run.id, agentId: run.agentId, timestamp: nowIso(), status: run.status, stepIndex, toolCallId: call.id, toolName: call.name, error: problem });
+					continue;
+				}
+				const parsedInput = call.input;
+				if (!tool) continue;
 				const ctx = runtimeContext({ run, stepIndex, context: currentContext, call, signal: options.signal, emitProgress: async () => {}, setContext: (value) => { currentContext = value; } });
 				if (tool.onToolCalled) {
 					const result = await tool.onToolCalled(parsedInput, ctx);
@@ -370,10 +532,17 @@ async function executeLoop<TInput, TOutput, TContext>(definition: AgentDefinitio
 				else autoCalls.push({ call, tool });
 			}
 
+			for (const message of refused) { run.messages.push(message); toolResults.push({ toolCallId: (message as Extract<AgentMessage, { role: "tool" }>).toolCallId, toolName: (message as Extract<AgentMessage, { role: "tool" }>).name ?? "", error: message.content as string }); }
 			if (autoCalls.length) {
 				run.status = "waiting_for_tools"; step.status = "executing_tools";
-				const executed = await mapConcurrent(autoCalls, concurrency, async ({ call, tool }) => ({ ...(await executeOneTool({ tool, call, run, stepIndex, context: currentContext, signal: options.signal, handler: options.onEvent, defaultErrorPolicy, emitItems: options.streaming })), call, input: call.input }));
-				for (const item of executed) { run.messages.push(item.message); toolResults.push(item.result); currentContext = item.context; nextParams.push({ config: item.nextTurnParams, input: item.input, call: item.call }); }
+				// Reads that are safe side by side run together; anything else keeps the configured concurrency.
+				const width = autoCalls.every(({ tool }) => tool.parallelSafe) ? Math.max(concurrency, 8) : concurrency, startContext = currentContext;
+				const executed = await mapConcurrent(autoCalls, width, async ({ call, tool }) => {
+					const execution = await executeOneTool({ tool, call, run, stepIndex, context: currentContext, signal: options.signal, handler: options.onEvent, defaultErrorPolicy, emitItems: options.streaming, maxOutputChars });
+					if (width === 1) currentContext = execution.context;
+					return { ...execution, call, input: call.input };
+				});
+				for (const item of executed) { run.messages.push(item.message); toolResults.push(item.result); if (item.context !== startContext) currentContext = item.context; nextParams.push({ config: item.nextTurnParams, input: item.input, call: item.call }); }
 				await applyNextTurnParams(nextParams, nextTurn as any, { ...turn, messages: run.messages, context: currentContext });
 			}
 
@@ -440,20 +609,21 @@ async function executeLoop<TInput, TOutput, TContext>(definition: AgentDefinitio
 }
 
 export async function runAgent<TInput, TOutput, TContext>(definition: AgentDefinition<TInput, TOutput, TContext>, options: AgentRunOptions<TInput, TContext, TOutput> & { streaming?: boolean }): Promise<AgentRunResult<TOutput, TInput, TContext>> {
-	const startedAt = Date.now(); const createdAt = nowIso(); const runId = randomUUID();
+	const startedAt = Date.now(); const createdAt = nowIso(); const runId = globalThis.crypto.randomUUID();
 	const run: AgentRunRecord<TInput, TContext, TOutput> = { id: runId, agentId: definition.id, status: "queued", input: options.input, context: options.context, messages: [], pause: null, stopReason: null, usage: { ...EMPTY_USAGE }, createdAt, updatedAt: createdAt, stepCount: 0 };
 	const staticInstructions = typeof definition.instructions === "string" ? definition.instructions : undefined;
 	if (staticInstructions) run.messages.push({ role: "system", content: staticInstructions });
-	run.messages.push({ role: "user", content: toPromptText(options.input) });
+	if (options.messages !== undefined) run.messages.push(...structuredClone(options.messages));
+	else run.messages.push({ role: "user", content: toPromptText(options.input) });
 	const initial = buildResult(run, [], []);
 	await options.state?.save(initial);
 	await emit(options.onEvent, { type: "run.started", runId, agentId: definition.id, timestamp: nowIso(), status: run.status });
 	try {
 		const result = await executeLoop(definition, initial, options, false);
-		captureAgentRunDevtools({ type: "agent.run", definition: definition as any, options: options as any, startedAt, result, runId });
+		await captureAgentRunDevtools({ type: "agent.run", definition: definition as any, options: options as any, startedAt, result, runId });
 		return result;
 	} catch (error) {
-		captureAgentRunDevtools({ type: "agent.run", definition: definition as any, options: options as any, startedAt, error, runId });
+		await captureAgentRunDevtools({ type: "agent.run", definition: definition as any, options: options as any, startedAt, error, runId });
 		throw error;
 	}
 }
@@ -465,10 +635,10 @@ export async function continueAgent<TInput, TOutput, TContext>(definition: Agent
 	if (source.run.agentId !== definition.id) throw new Error(`Cannot continue run ${source.run.id} with agent ${definition.id}; it belongs to ${source.run.agentId}`);
 	try {
 		const result = await executeLoop(definition, structuredClone(source), options, true);
-		captureAgentRunDevtools({ type: "agent.continue", definition: definition as any, options: { input: source.run.input, ...options } as any, startedAt, result, runId: source.run.id });
+		await captureAgentRunDevtools({ type: "agent.continue", definition: definition as any, options: { input: source.run.input, ...options } as any, startedAt, result, runId: source.run.id });
 		return result;
 	} catch (error) {
-		captureAgentRunDevtools({ type: "agent.continue", definition: definition as any, options: { input: source.run.input, ...options } as any, startedAt, error, runId: source.run.id });
+		await captureAgentRunDevtools({ type: "agent.continue", definition: definition as any, options: { input: source.run.input, ...options } as any, startedAt, error, runId: source.run.id });
 		throw error;
 	}
 }

@@ -7,7 +7,7 @@ import { MusicGenerateSchema, type MusicGenerateRequest } from "@core/schemas";
 import { buildAdapterPayload } from "../../utils";
 import { resolveProviderKey } from "../../keys";
 import { getBindings } from "@/runtime/env";
-import { computeBill } from "@pipeline/pricing/engine";
+import { computeBillAfterProviderCharge } from "@pipeline/pricing/engine";
 
 function toSunoStatus(value: unknown): "queued" | "in_progress" | "completed" | "failed" {
 	const status = String(value ?? "").trim().toUpperCase();
@@ -177,7 +177,7 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 		...(requestedDurationSeconds != null ? { output_audio_seconds: requestedDurationSeconds } : {}),
 	};
 	if (args.pricingCard) {
-		const pricedUsage = computeBill(usageMeters, args.pricingCard, {
+		const pricedUsage = computeBillAfterProviderCharge(usageMeters, args.pricingCard, {
 			model: String(model ?? typedPayload.model ?? ""),
 		});
 		bill.cost_cents = pricedUsage.pricing.total_cents;

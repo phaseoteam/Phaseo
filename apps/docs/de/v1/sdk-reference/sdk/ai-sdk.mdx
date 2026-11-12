@@ -1,12 +1,12 @@
 ---
 icon: "package"
-title: "AI SDK von Vercel"
-description: "Erzeuge Text, übertrage Antworten als Stream und verwende Tools mit dem Phaseo-Provider für AI SDK 7."
+title: "AI SDK (Vercel)"
+description: "Erzeuge Text, streame Antworten und verwende Tools mit dem Phaseo-Provider für AI SDK 7."
 ---
 
-Verwende den offiziellen Phaseo-Provider, um Phaseo-Modelle über Vercel AI SDK 7 aufzurufen. Starte hier, wenn deine Anwendung bereits `generateText`, `streamText` oder eine andere AI-SDK-Funktion verwendet.
+Installiere `@phaseo/ai-sdk-provider` und übergib `phaseo(modelId)` als `model` an `generateText`, `streamText` oder eine andere Funktion von Vercel AI SDK 7. Textanfragen gehen an den Endpunkt `/v1/chat/completions` des Gateways.
 
-## Installation
+## Installieren
 
 <CodeGroup>
 
@@ -28,9 +28,9 @@ bun add @phaseo/ai-sdk-provider
 
 </CodeGroup>
 
-Das Phaseo-Paket ohne Versionsnummer folgt dem npm-Tag `latest` und wählt die aktive Provider-Version aus, die mit AI SDK 7 kompatibel ist. AI SDK 7 ist als Peer-Abhängigkeit angegeben. Paketmanager, die Peer-Abhängigkeiten automatisch installieren, installieren dadurch auch die passende Laufzeit.
+Das Paket ohne Versionsangabe installiert den npm-Tag `latest`, also die AI-SDK-7-Linie. Es deklariert `ai@^7` als Peer-Abhängigkeit, sodass Paketmanager, die Peers automatisch installieren, sie für dich hinzufügen.
 
-Lege `PHASEO_API_KEY` in der Serverumgebung fest und sende dann deine erste Anfrage:
+Setze `PHASEO_API_KEY` in deiner Serverumgebung und sende dann deine erste Anfrage. Der Standardexport `phaseo` wirft einen Fehler, wenn `PHASEO_API_KEY` nicht gesetzt ist.
 
 ```typescript
 import { phaseo } from "@phaseo/ai-sdk-provider";
@@ -45,7 +45,7 @@ console.log(result.text);
 console.log(result.providerMetadata);
 ```
 
-Verwende eine aktuelle Modell-ID vom [Models-Endpunkt](../../api-reference/endpoint/models.mdx).
+Verwende eine aktuelle Modell-ID aus dem [Models-Endpunkt](../../api-reference/endpoint/models.mdx).
 
 ## Text streamen
 
@@ -65,9 +65,9 @@ for await (const chunk of result.textStream) {
 console.log(await result.providerMetadata);
 ```
 
-## Anwendungszuordnung hinzufügen
+## Eine Provider-Instanz konfigurieren
 
-Erstelle eine Provider-Instanz, wenn die Anfrageangaben von Phaseo deine Anwendung ausweisen sollen:
+Rufe `createPhaseo()` auf, um `apiKey`, `baseURL`, `headers` oder ein eigenes `fetch` festzulegen. Damit kannst du deine Anwendung in den Phaseo-Anfragedetails kennzeichnen:
 
 ```typescript
 import { createPhaseo } from "@phaseo/ai-sdk-provider";
@@ -81,36 +81,44 @@ const phaseo = createPhaseo({
 });
 ```
 
-`PHASEO_BASE_URL` ist optional und hat standardmäßig den Wert `https://api.phaseo.app/v1`.
+`PHASEO_BASE_URL` ist optional und hat den Standardwert `https://api.phaseo.app/v1`.
 
-## Unterstützte Funktionen in AI SDK 7
+## Einen Modelltyp wählen
+
+| Provider-Methode | AI-SDK-Funktion |
+| --- | --- |
+| `phaseo(modelId)` oder `phaseo.languageModel(modelId)` | `generateText`, `streamText` |
+| `phaseo.embeddingModel(modelId)` (Alias `textEmbeddingModel`) | `embed`, `embedMany` |
+| `phaseo.imageModel(modelId)` | `generateImage` |
+| `phaseo.transcriptionModel(modelId)` | `transcribe` |
+| `phaseo.speechModel(modelId)` | `generateSpeech` |
+| `phaseo.rerankingModel(modelId)` | `rerank` |
+
+Alle Methoden außer `rerankingModel` akzeptieren als zweites Argument optionale Einstellungen pro Modell: `temperature`, `topP`, `topK`, `maxTokens`, `frequencyPenalty`, `presencePenalty`, `seed`, `user`, `headers` und `fetch`.
+
+## Unterstützte Funktionen von AI SDK 7
 
 - Textgenerierung und Streaming
-- Reasoning-Ausgabe und Einstellungen
+- Reasoning-Ausgabe und -Einstellungen
 - Funktions-Tools und gestreamte Tool-Eingaben
-- JSON- und JSON-Schema-Ausgabe
-- Text- und Bilddatei-Eingaben
-- URL-Quellen für Zitate
+- Ausgabe als JSON und nach JSON Schema
+- Text- und Bilddateien als Eingabe
+- URL-Zitationsquellen
 - Embeddings und Bildgenerierung
-- Neusortierung
-- Transkription und Sprachausgabe
-- Provider-Metadaten, Nutzungsdaten, Abbruchsignale und unbearbeitete Stream-Chunks
+- Reranking
+- Transkription und Sprachgenerierung
+- Provider-Metadaten, Nutzung, Abbruchsignale und rohe Stream-Chunks
 
-Die Neusortierung wird mit `rerank()` und `phaseo.rerankingModel(modelId)` unterstützt. Welche Funktionen verfügbar sind, hängt weiterhin vom Modell und Provider ab. Der Provider weist derzeit keine Unterstützung für verwaltete Dateireferenzen, Skills oder vom Provider ausgeführte Tool-Definitionen, -Ergebnisse und -Freigaben aus. Von der Anwendung ausgeführte Funktions-Tools können den üblichen Ausführungs- und Freigabeablauf von AI SDK verwenden.
+Was ein Aufruf tatsächlich kann, hängt weiterhin von Modell und Anbieter ab. Der Provider meldet keine verwalteten Dateireferenzen, Skills oder vom Anbieter ausgeführten Tools (weder deren Definitionen noch Ergebnisse oder Freigabeantworten). Funktions-Tools, die deine Anwendung ausführt, nutzen den normalen Ausführungs- und Freigabeablauf des AI SDK.
 
-## Ältere AI-SDK-Versionen
+## Eine ältere AI-SDK-Version verwenden
 
-- AI SDK 6: Installiere `@phaseo/ai-sdk-provider@ai-sdk-v6`.
-- AI SDK 5: Installiere `@phaseo/ai-sdk-provider@ai-sdk-v5`.
+| AI SDK | Installation |
+| --- | --- |
+| 7 | `@phaseo/ai-sdk-provider` (`latest`) |
+| 6 | `@phaseo/ai-sdk-provider@ai-sdk-v6` |
+| 5 | `@phaseo/ai-sdk-provider@ai-sdk-v5` |
 
-Wenn die automatische Installation von Peer-Abhängigkeiten deaktiviert ist, installiere die passende Hauptversion von `ai` separat (`ai@^7`, `ai@^6` oder `ai@^5`).
+Wenn die automatische Installation von Peers ausgeschaltet ist, installiere die passende Hauptversion von `ai` (`ai@^7`, `ai@^6` oder `ai@^5`) selbst.
 
-## Verwandte Anleitungen
-
-- [Text generieren](./generate-text/index.mdx)
-- [Text streamen](./stream-text/index.mdx)
-- [Tool-Aufrufe](./tool-calling/index.mdx)
-- [Strukturierte Ausgabe](./structured-output/index.mdx)
-- [Embeddings](./embeddings/index.mdx)
-- [Bilder](./images/index.mdx)
-- [Audio](./audio/index.mdx)
+Die Seiten in diesem Abschnitt zeigen jede Funktion: [Text generieren](/de/v1/sdk-reference/sdk/generate-text), [Text streamen](/de/v1/sdk-reference/sdk/stream-text), [Tool-Aufrufe](/de/v1/sdk-reference/sdk/tool-calling), [strukturierte Ausgabe](/de/v1/sdk-reference/sdk/structured-output), [Embeddings](/de/v1/sdk-reference/sdk/embeddings), [Bilder](/de/v1/sdk-reference/sdk/images) und [Audio](/de/v1/sdk-reference/sdk/audio).

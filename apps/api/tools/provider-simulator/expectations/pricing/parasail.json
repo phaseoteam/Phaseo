@@ -1,0 +1,23 @@
+{
+	"provider": "parasail",
+	"generatedBy": "tools/provider-simulator/pricing/pricing.sim.ts from the catalogue database (v2_pricing_skus, v2_pricing_sku_meters)",
+	"clock": "2026-10-29T14:36:00.000Z",
+	"legend": { "rules": "[id (<sku_code>@v<version>#<meter_key>), plan, meter, price/unit_size unit, priority, match, time_windows, included_quantity]", "expected.lines": "[meter, quantity, rule id, priced as meter, nanos, fallback?, window?]" },
+	"cards": [
+		{
+			"key": "parasail:minimax/minimax-m3.1-flash:text.generate",
+			"routes": ["parasail:minimax/minimax-m3.1-flash"],
+			"skus": ["m3.1-flash-standard-20261023@v1"],
+			"rules": [
+				["m3.1-flash-standard-20261023@v1#cached_read_text_tokens","standard","cached_read_text_tokens","0.015/1000000 token",100,null,null,null],
+				["m3.1-flash-standard-20261023@v1#input_text_tokens","standard","input_text_tokens","0.15/1000000 token",100,null,null,null],
+				["m3.1-flash-standard-20261023@v1#output_text_tokens","standard","output_text_tokens","0.6/1000000 token",100,null,null,null]
+			],
+			"cases": [
+				{"id":"documented","kind":"documented","plan":"standard","usage":{"requests":1,"input_text_tokens":1576,"output_text_tokens":448,"cached_read_text_tokens":1024,"input_tokens":2600,"output_tokens":448,"total_tokens":3048},"ir":{"inputTokens":2600,"outputTokens":448,"totalTokens":3048,"cachedInputTokens":1024,"cachedReadTokensAreSubsetOfInput":true},"expected":{"nanos":520560,"lines":[["cached_read_text_tokens",1024,"m3.1-flash-standard-20261023@v1#cached_read_text_tokens","cached_read_text_tokens",15360],["input_text_tokens",1576,"m3.1-flash-standard-20261023@v1#input_text_tokens","input_text_tokens",236400],["output_text_tokens",448,"m3.1-flash-standard-20261023@v1#output_text_tokens","output_text_tokens",268800]]}},
+				{"id":"rule.standard.cached_read_text_tokens","kind":"rule","targets":["m3.1-flash-standard-20261023@v1#cached_read_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"cached_read_text_tokens":4567,"input_tokens":16914,"output_tokens":3457,"total_tokens":20371},"expected":{"nanos":3994755,"lines":[["cached_read_text_tokens",4567,"m3.1-flash-standard-20261023@v1#cached_read_text_tokens","cached_read_text_tokens",68505],["input_text_tokens",12347,"m3.1-flash-standard-20261023@v1#input_text_tokens","input_text_tokens",1852050],["output_text_tokens",3457,"m3.1-flash-standard-20261023@v1#output_text_tokens","output_text_tokens",2074200]]}},
+				{"id":"rule.standard.input_text_tokens","kind":"rule","targets":["m3.1-flash-standard-20261023@v1#input_text_tokens","m3.1-flash-standard-20261023@v1#output_text_tokens"],"plan":"standard","usage":{"requests":1,"input_text_tokens":12347,"output_text_tokens":3457,"input_tokens":12347,"output_tokens":3457,"total_tokens":15804},"expected":{"nanos":3926250,"lines":[["input_text_tokens",12347,"m3.1-flash-standard-20261023@v1#input_text_tokens","input_text_tokens",1852050],["output_text_tokens",3457,"m3.1-flash-standard-20261023@v1#output_text_tokens","output_text_tokens",2074200]]}}
+			]
+		}
+	]
+}

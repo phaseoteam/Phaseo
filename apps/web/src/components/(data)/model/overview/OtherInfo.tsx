@@ -1,7 +1,7 @@
+import { useTranslations } from "@/i18n/react";
 import type { ReactNode } from "react";
-import Link from "next/link";
+import Link from "@/components/link";
 import { ExternalLink } from "lucide-react";
-import { getLocale, getTranslations } from "next-intl/server";
 import { DisplayNumber } from "@/components/display/DisplayValue";
 
 interface ModelDetail {
@@ -22,15 +22,14 @@ interface OtherInfoProps {
 	}>;
 }
 
-export default async function OtherInfo({
+export default function OtherInfo({
 	details,
 	showHeading = true,
 	showEmpty = false,
 	licenseUrl,
 	extraItems = [],
 }: OtherInfoProps) {
-	const locale = await getLocale();
-	const t = await getTranslations("Catalogue.modelDetail.metadata");
+	const t = useTranslations("Catalogue.modelDetail.metadata");
 	const detailsMap: Record<string, string> = {};
 	if (Array.isArray(details)) {
 		for (const d of details) {
@@ -58,10 +57,15 @@ export default async function OtherInfo({
 		if (value === "" || value == null || value === 0) return null;
 		const num = Number(value);
 		if (!Number.isFinite(num)) return null;
-		return <DisplayNumber value={num} />;
+		return (
+			<span className="capitalize">
+				<DisplayNumber value={num} options={{ notation: "compact", compactDisplay: "long", maximumFractionDigits: 2 }} />
+			</span>
+		);
 	};
 
 	const parameterCount = resolve("parameter_count");
+	const activeParameterCount = resolve("active_parameter_count");
 	const rawLicense = resolve("license");
 	const normalizedLicense = rawLicense?.trim().toLowerCase();
 	const license =
@@ -75,6 +79,11 @@ export default async function OtherInfo({
 			key: "parameters",
 			label: t("parameters"),
 			value: formatCount(parameterCount),
+		},
+		{
+			key: "active_parameters",
+			label: t("activeParameters"),
+			value: formatCount(activeParameterCount),
 		},
 		{
 			key: "license",
@@ -122,7 +131,7 @@ export default async function OtherInfo({
 	) => (
 		<div
 			className={[
-				"grid overflow-hidden rounded-lg border border-border/70 bg-card",
+				"grid gap-px overflow-hidden rounded-lg border border-border/70 bg-border/70",
 				gridClassName,
 			].join(" ")}
 		>
@@ -131,7 +140,7 @@ export default async function OtherInfo({
 				return (
 				<div
 					key={item.key}
-					className="min-w-0 border-b border-border/70 px-3 py-2.5 last:border-b-0 sm:border-r sm:border-b-0 sm:last:border-r-0"
+					className="min-w-0 bg-card px-3 py-2.5"
 				>
 					<p className="text-xs text-muted-foreground">{item.label}</p>
 					{typeof item.value === "string" || typeof item.value === "number" || item.value == null ? (
@@ -139,7 +148,7 @@ export default async function OtherInfo({
 							{item.value ?? t("notListed")}
 						</p>
 					) : (
-						item.value
+						<div className="mt-1 text-sm font-semibold">{item.value}</div>
 					)}
 				</div>
 				);
@@ -150,8 +159,8 @@ export default async function OtherInfo({
 	return (
 		<section className="space-y-2">
 			{showHeading ? <h3 className="text-base font-semibold">{t("otherInfo")}</h3> : null}
-			<div className="space-y-2 xl:grid xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] xl:gap-2 xl:space-y-0">
-				{renderGrid(primaryItems, "sm:grid-cols-3")}
+			<div className={secondaryItems.length > 0 ? "space-y-2 xl:grid xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] xl:gap-2 xl:space-y-0" : "space-y-2"}>
+				{renderGrid(primaryItems, primaryItems.length === 4 ? "sm:grid-cols-2 lg:grid-cols-4" : "sm:grid-cols-3")}
 				{secondaryItems.length > 0
 					? renderGrid(secondaryItems, "sm:grid-cols-2")
 					: null}

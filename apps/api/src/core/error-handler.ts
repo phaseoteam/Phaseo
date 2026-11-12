@@ -9,16 +9,22 @@ import {
     normalizeTextBodySessionId,
 } from "./session-id";
 import type { PipelineContext } from "@pipeline/before/types";
+import { finishStreamingProvider, retainedLifecycle } from "@pipeline/lifecycle";
 import { isDebugAllowed, logDebugEvent } from "@pipeline/debug";
 import { readAttributionHeaders } from "@pipeline/after/attribution";
 import { buildResponseTimeline } from "@pipeline/after/timing";
 import { getEdgeMeta } from "./edge";
-import { sanitizeForAxiom, stringifyForAxiom } from "@observability/privacy";
+import { withErrorObject } from "./error-object";
+import { sanitizeForAxiom } from "@observability/privacy";
 import { emitGatewayRequestEvent } from "@observability/events";
 import { emitGatewayTelemetryDeliveryFailure } from "@observability/axiom";
 import { runGatewayTelemetryPipelines } from "@observability/gateway-telemetry";
 import { enqueueGatewayOtlpExport } from "@observability/otlp-export";
-import { sanitizeUrlForLogging } from "@/lib/security/sanitizeUrl";
+import { metadataTraceContext, parseW3cTraceContext, requestMetadata as readRequestMetadata } from "@observability/trace-context";
+import { readDownstreamRateLimitHeaders, applyDownstreamRateLimitHeaders } from "@pipeline/upstream-rate-limit-headers";
+import { dispatchBackground, ensureRuntimeForBackground } from "@/runtime/env";
+import { claimFailureSpendSettlement, failureBudgetNanos, failureSpendSettled, recordsServerToolAccounting, serverToolReconciliation } from "@pipeline/after/server-tool-charges";
+import { pendingChargeFields, primaryRowWritten, settleRequestSpend } from "@pipeline/after/audit";
 
 const REDACT_ERROR_KEYS = new Set([
     "messages",
@@ -316,8 +322,29 @@ export function extractErrorDescription(body: any): string | null {
     return null;
 }
 
+/**
+ * A workspace rate limit policy rejection. Providers also return
+ * `rate_limit_exceeded`, so the code alone does not identify one.
+ */
+export function isRateLimitPolicyRejection(errorCode: string | null | undefined, body: any): boolean {
+    if (errorCode !== "rate_limit_exceeded") return false;
+    const reason = body?.reason ?? body?.error?.reason;
+    return reason === "policy_requests_per_minute" || reason === "policy_tokens_per_minute"
+        || reason === "policy_concurrent_requests" || reason === "policy_unavailable";
+}
+
+/** A workspace spend rule block (core/spend-blocks.ts): refused before any provider is called. */
+// Limits the gateway enforces itself, whose Retry-After is the real time until
+// the limit resets (a monthly key cap can be weeks away), never a provider value.
+const GATEWAY_LIMIT_ERROR_CODES = new Set(["key_limit_exceeded", "spend_rule_blocked"]);
+
+export function isSpendRuleBlockRejection(errorCode: string | null | undefined): boolean {
+    return errorCode === "spend_rule_blocked";
+}
+
 // Classify error attribution for error header
 export function classifyAttribution({ stage, status, errorCode, body }: { stage: "before" | "execute"; status?: number | null; errorCode?: string | null; body?: any }): "user" | "upstream" {
+    if (errorCode === "phaseo_free_model_limit_exceeded" || isRateLimitPolicyRejection(errorCode, body) || isSpendRuleBlockRejection(errorCode)) return "user";
     if (stage === "before") {
         const s = Number(status ?? 0);
         const code = (errorCode || "").toLowerCase();
@@ -537,6 +564,8 @@ export function classifyErrorType(args: {
         "validation",
         "unsupported_param",
         "unsupported_model_or_endpoint",
+        // A 403 the request's location or residency requirements caused, not a key or gateway fault.
+        "model_region_unavailable",
         "unsupported_modalities",
         "bad_request",
         "missing_required",
@@ -576,6 +605,7 @@ function hasExecuteUpstreamEvidence(body: any): boolean {
     if (Array.isArray(body.failed_statuses) && body.failed_statuses.length > 0) return true;
     if (
         body.reason === "all_candidates_failed" ||
+        body.reason === "upstream_rejected_request" ||
         body.reason === "upstream_provider_payment_required"
     ) {
         return true;
@@ -660,6 +690,9 @@ export async function handleError({
         requestPayload: unknown;
         requestedModel: string | null;
         model?: string | null;
+        workspaceId?: string | null;
+        apiKeyId?: string | null;
+        zeroDataRetention?: boolean;
     },
 }): Promise<Response> {
     const headers = new Headers({ "Content-Type": "application/json", "Cache-Control": "no-store" });
@@ -669,6 +702,29 @@ export async function handleError({
     }
 
     console.log(`Handling ${stage} error for endpoint ${endpoint}: status ${res.status}`);
+    // Work a server-tool request completed before failing was charged: its row carries the cost
+    // and it counts against spend limits like a success. Otherwise the admission is freed.
+    // Once the success row is written it is the request's record (#3633): a later error writes no
+    // second billed row and settles nothing more.
+    const successRowWritten = ctx ? primaryRowWritten(ctx) : false;
+    const chargedFailure = stage === "execute" && !successRowWritten && ctx?.serverToolPartialCharge &&
+        recordsServerToolAccounting(ctx.serverToolPartialCharge)
+        ? ctx.serverToolPartialCharge
+        : null;
+    // handleFailureAudit already wrote this failure's row and settles it; this call writes nothing.
+    const partialCharge = chargedFailure && !chargedFailure.persistedBy ? chargedFailure : null;
+    if (partialCharge) partialCharge.persistedBy = "error_handler";
+    // A charge, or the expected charge the wallet did not take, counts against spend limits; the
+    // writer that persists the row settles it (handleFailureAudit, when it ran first). A request
+    // that owes nothing frees its slot (no-op without one).
+    const budgetNanos = stage === "execute" && ctx && !successRowWritten ? failureBudgetNanos(ctx) : 0;
+    // The request's one settlement (settleRequestSpend): what it owes counts whether or not its row
+    // lands. A writer that already took the settlement (handleFailureAudit) keeps it.
+    if (budgetNanos > 0 && ctx && claimFailureSpendSettlement(ctx)) {
+        settleRequestSpend(ctx, { kind: "charged_failure", rowWritten: true, costNanos: budgetNanos });
+    } else if (budgetNanos <= 0 && ctx && !failureSpendSettled(ctx)) {
+        settleRequestSpend(ctx, { kind: "release" });
+    }
 
     const body = await safeJson(res);
     const debugHeader = req?.headers.get("x-gateway-debug");
@@ -683,12 +739,17 @@ export async function handleError({
             process.env?.GATEWAY_DEBUG_ERRORS === "1") ||
             debugRequested);
     const errCode = extractErrorCode(body, stage === "before" ? "before_error" : "upstream_error");
+    // Keeps BYOK quota headers the execute stage already put in downstream form.
+    // Gateway-originated limits keep a Retry-After longer than a day.
+    applyDownstreamRateLimitHeaders(headers, readDownstreamRateLimitHeaders(res.headers, {
+        gatewayOriginated: GATEWAY_LIMIT_ERROR_CODES.has(errCode),
+    }));
     const description = extractErrorDescription(body);
     const upstreamUnsupportedParamSignal = extractUpstreamUnsupportedParamSignal({ stage, body });
     let attribution = classifyAttribution({ stage, status: res.status, errorCode: errCode, body });
     let errorType = classifyErrorType({ stage, status: res.status, errorCode: errCode, body });
     let errorOrigin = classifyErrorOrigin({ stage, status: res.status, errorCode: errCode, body });
-    if (errorType === "system" || errorOrigin === "gateway" || errorOrigin === "upstream") {
+    if (errCode !== "phaseo_free_model_limit_exceeded" && (errorType === "system" || errorOrigin === "gateway" || errorOrigin === "upstream")) {
         attribution = "upstream";
     }
     if (upstreamUnsupportedParamSignal) {
@@ -777,6 +838,14 @@ export async function handleError({
         requestObservability?.requestPayload ??
         recoveredRequest.requestPayload ??
         null;
+    // Rejections before makeMeta have no ctx.meta; read metadata and trace keys the same way it would.
+    const requestMetadataForObservability = ctx?.meta
+        ? ctx.meta.requestMetadata ?? null
+        : readRequestMetadata((requestPayloadForObservability as any)?.metadata);
+    const traceContextForObservability = ctx?.meta
+        ? ctx.meta.otelTraceContext ?? null
+        : parseW3cTraceContext(req?.headers.get("traceparent") ?? null, req?.headers.get("tracestate") ?? null) ??
+            metadataTraceContext(requestMetadataForObservability);
     const generationId =
         ctx?.requestId ??
         body?.generation_id ??
@@ -818,9 +887,32 @@ export async function handleError({
         error_type: errorType,
         error_origin: errorOrigin,
         description: fallbackDescription,
+        message: fallbackDescription,
     };
     if (operationalKind) {
         errorPayload.error_operational_kind = operationalKind;
+    }
+    const isPolicyRejection = isRateLimitPolicyRejection(errCode, body);
+    if (isPolicyRejection) {
+        // Tells the caller which workspace rate limit policy rejected the request.
+        for (const field of ["reason", "policy_id", "limit_scope"] as const) {
+            if (typeof body?.[field] === "string") errorPayload[field] = body[field];
+        }
+    }
+    const isSpendBlock = isSpendRuleBlockRejection(errCode);
+    if (isSpendBlock) {
+        // Tells the caller which spend rule blocked the request and when the block resets.
+        for (const field of ["reason", "rule_id", "rule_name", "block_id", "limit_scope", "reset_at", "now", "limit_metric"] as const) {
+            if (typeof body?.[field] === "string") errorPayload[field] = body[field];
+        }
+        if (typeof body?.limit_value === "number") errorPayload.limit_value = body.limit_value;
+    }
+    if (errCode === "key_limit_exceeded") {
+        // Tells the caller which key limit or budget refused the request and when it resets, and for
+        // a department budget which department.
+        for (const field of ["reason", "reset_at", "department_id", "department_name"] as const) {
+            if (typeof body?.[field] === "string") errorPayload[field] = body[field];
+        }
     }
     if (
         stage === "execute" &&
@@ -879,6 +971,25 @@ export async function handleError({
                 .slice(0, 16);
         }
     }
+    if (errCode === "model_retired") {
+        if (typeof body?.model === "string") errorPayload.model = body.model;
+        errorPayload.retired_at = typeof body?.retired_at === "string" ? body.retired_at : null;
+        errorPayload.replacement_model = typeof body?.replacement_model === "string" ? body.replacement_model : null;
+    }
+    if (errCode === "model_region_unavailable") {
+        // Which residency requirements no provider met, so callers can act on them.
+        for (const field of ["reason", "action"] as const) {
+            if (typeof body?.[field] === "string") errorPayload[field] = body[field];
+        }
+        const unmet = body?.unmet_requirements;
+        if (unmet && typeof unmet === "object" && !Array.isArray(unmet)) {
+            errorPayload.unmet_requirements = {
+                ...(typeof unmet.execution_region === "string" ? { execution_region: unmet.execution_region } : {}),
+                ...(typeof unmet.data_region === "string" ? { data_region: unmet.data_region } : {}),
+                ...(unmet.zero_data_retention === true ? { zero_data_retention: true } : {}),
+            };
+        }
+    }
     if (body?.routing_diagnostics && typeof body.routing_diagnostics === "object") {
         errorPayload.routing_diagnostics = body.routing_diagnostics;
     }
@@ -918,57 +1029,17 @@ export async function handleError({
             routing: routingDebug,
         };
     }
+    // `error` becomes the object OpenAI-compatible clients read; the code string
+    // stays as top-level `code`.
+    const shaped = withErrorObject(errorPayload, statusCode, {
+        retryAfter: headers.get("Retry-After") ?? res.headers.get("Retry-After"),
+    });
+    errorPayload.error = shaped.error;
+    errorPayload.code = shaped.code;
     const gatewayErrorPayload = sanitizeForAxiom(errorPayload);
-    const providerResponseHeaders = sanitizeForAxiom(headersToRecord(res.headers));
     const replayRequestPayload = requestPayloadForObservability;
 
     // Audit failure
-    const auditExtraJson = (() => {
-        try {
-            return stringifyForAxiom({
-                stage,
-                request: requestMeta,
-                timing: ctx ? (ctx as any)?.timing ?? null : body?.timing ?? null,
-                providers: ctx?.providers?.map((p) => ({
-                    provider_id: p.providerId,
-                    base_weight: p.baseWeight,
-                    byok_keys: p.byokMeta?.length ?? 0,
-                    has_pricing: Boolean(p.pricingCard),
-                })),
-                transform: {
-                    protocol: ctx?.protocol ?? null,
-                    endpoint,
-                    model: modelForObservability,
-                    request_surface_sanitized: sanitizeForAxiom(requestPayloadForObservability),
-                    gateway_response_sanitized: gatewayErrorPayload,
-                    gateway_response_present: true,
-                    upstream_request_sanitized: null,
-                    upstream_response_sanitized: sanitizeForAxiom(body ?? null),
-                    upstream_response_present: body != null,
-                    upstream_response_headers: providerResponseHeaders,
-                    upstream_status_code: statusCode,
-                    upstream_status_text: res.statusText ?? null,
-					upstream_url: sanitizeUrlForLogging(res.url ?? null),
-                    requested_params: sanitizeForAxiom(ctx?.requestedParams ?? null),
-                    param_routing_diagnostics: sanitizeForAxiom(ctx?.paramRoutingDiagnostics ?? null),
-                    provider_enablement_diagnostics: sanitizeForAxiom(ctx?.providerEnablementDiagnostics ?? null),
-                    provider_candidate_build_diagnostics: sanitizeForAxiom(
-                        ctx?.providerCandidateBuildDiagnostics ?? null,
-                    ),
-                    provider_attempts: sanitizeForAxiom(ctx?.providerAttempts ?? null),
-                    attempt_errors: sanitizeForAxiom((ctx as any)?.attemptErrors ?? null),
-                    routing_snapshot: sanitizeForAxiom((ctx as any)?.routingSnapshot ?? null),
-                    routing_diagnostics: sanitizeForAxiom((ctx as any)?.routingDiagnostics ?? null),
-                    error_details: sanitizeForAxiom(body ?? null),
-                },
-                gateway_response_sanitized: gatewayErrorPayload,
-                provider_response_sanitized: sanitizeForAxiom(body ?? null),
-                internal_reporting: sanitizeForAxiom(upstreamUnsupportedParamSignal ?? null),
-            });
-        } catch {
-            return null;
-        }
-    })();
     const errorDetailsJson = buildErrorDetails(body, ctx);
     const internalLatencyMs = ctx ? (ctx as any)?.timing?.internal_latency_ms ?? null : null;
     const beforeTimingMs = (() => {
@@ -1004,11 +1075,18 @@ export async function handleError({
         }
         return null;
     })();
-    const providerForAudit = providerFromAttempts ?? ctx?.providers?.[0]?.providerId ?? null;
+    const isFreeModelLimit = errCode === "phaseo_free_model_limit_exceeded" && errorOrigin === "gateway";
+    // Admission rejections happen before any provider is called.
+    const providerForAudit = isFreeModelLimit || isPolicyRejection || isSpendBlock ? null : providerFromAttempts ?? ctx?.providers?.[0]?.providerId ?? null;
+    const loggedErrorCode = `${isFreeModelLimit ? "gateway" : attribution}:${errCode}`;
+    // Without a context, a preset's ZDR comes from the early snapshot; the I/O log and
+    // telemetry also read the key's policy and the request payload.
+    const zeroDataRetention = ctx?.zeroDataRetention === true || requestObservability?.zeroDataRetention === true;
     const auditArgs: any = {
         stage,
         requestId: ctx?.requestId ?? body?.request_id ?? "unknown",
-        workspaceId: ctx?.workspaceId ?? body?.workspace_id ?? null,
+        workspaceId: ctx?.workspaceId ?? body?.workspace_id ?? requestObservability?.workspaceId ?? null,
+        zeroDataRetention,
         endpoint,
         model: modelForObservability,
         requestedModel,
@@ -1040,7 +1118,7 @@ export async function handleError({
                 ? body.trace
                 : null),
         statusCode,
-        errorCode: `${attribution}:${errCode}`,
+        errorCode: loggedErrorCode,
         errorMessage: description ?? fallbackDescription,
         before: ctx ? (ctx as any)?.timing?.before ?? null : body?.timing?.before ?? null,
         execute: ctx ? (ctx as any)?.timing?.execute ?? null : null,
@@ -1050,7 +1128,7 @@ export async function handleError({
         generationMs: ctx ? (executeAdapterMs ? Math.round(executeAdapterMs) : null) : null,
         internalLatencyMs,
         byok: ctx ? ((ctx as any)?.meta?.keySource === "byok") : false,
-        keyId: ctx?.meta?.apiKeyId ?? null,
+        keyId: ctx?.meta?.apiKeyId ?? requestObservability?.apiKeyId ?? null,
         requestMethod: requestMeta.requestMethod,
         requestPath: requestMeta.requestPath,
         requestUrl: requestMeta.requestUrl,
@@ -1062,7 +1140,6 @@ export async function handleError({
         edgeCountry: requestMeta.edgeCountry,
         edgeContinent: requestMeta.edgeContinent,
         edgeAsn: requestMeta.edgeAsn,
-        extraJson: auditExtraJson,
         errorDetailsJson,
         errorPayload: gatewayErrorPayload,
         requestPayload: replayRequestPayload,
@@ -1080,13 +1157,45 @@ export async function handleError({
         },
     };
     if (stage === "execute") {
+		if (ctx) {
+			finishStreamingProvider(ctx, "error");
+			auditArgs.lifecycleEvents = retainedLifecycle(ctx);
+			auditArgs.serverToolTrace = ctx.serverToolTrace;
+		}
         auditArgs.stream = ctx?.stream;
+        auditArgs.billingRequestId = ctx?.billingRequestId ?? null;
         auditArgs.provider = providerForAudit;
         auditArgs.providerAttempts = Array.isArray(ctx?.providerAttempts)
             ? ctx.providerAttempts
             : null;
+        // Rounds held for reconciliation (unpriced rounds, or a bill the wallet did not take) make the
+        // row pending reconciliation, as an unpriceable request is.
+        const reconciliation = partialCharge ? serverToolReconciliation(partialCharge, ctx?.billingRequestId, ctx?.uncollectedChargeReason) : null;
+        // Every row pending reconciliation records expected_cost_nanos, and a charge that did not go
+        // through its confirmed cost (absent when unreadable): #3534's pendingChargeFields.
+        const pending = ctx && !successRowWritten ? pendingChargeFields(ctx, reconciliation != null) : {};
+        if (pending.expectedCostNanos != null) auditArgs.expectedCostNanos = pending.expectedCostNanos;
+        if (partialCharge) {
+            auditArgs.usage = partialCharge.usage;
+            auditArgs.costNanos = pending.expectedCostNanos != null ? pending.costNanos ?? null : partialCharge.costNanos;
+            auditArgs.currency = partialCharge.currency;
+            auditArgs.pricingLines = partialCharge.pricingLines;
+            if (reconciliation) {
+                auditArgs.detailMetadata.accounting_finalization = sanitizeForAxiom({ ...reconciliation, charged_nanos: pending.costNanos ?? null });
+            }
+        } else if (pending.costNanos != null) {
+            auditArgs.costNanos = pending.costNanos;
+        }
     }
-    await runGatewayTelemetryPipelines({
+    // The error response does not depend on audit persistence; deliver it in the
+    // background so clients are not held for database writes and retries.
+    let releaseRuntime: (() => void) | null = null;
+    try {
+        releaseRuntime = ensureRuntimeForBackground();
+    } catch {
+        // Unit fixtures may run without a configured runtime.
+    }
+    const telemetry = runGatewayTelemetryPipelines({
         requestId: auditArgs.requestId,
         workspaceId: auditArgs.workspaceId,
         writeSupabase: () => auditFailure(auditArgs),
@@ -1112,11 +1221,15 @@ export async function handleError({
                 errorType,
                 startedAtMs: ctx?.meta?.startedAtMs ?? Date.now(),
                 completedAtMs: Date.now(),
-                traceContext: ctx?.meta?.otelTraceContext ?? null,
+                traceContext: traceContextForObservability,
                 requestMethod: requestMeta.requestMethod,
                 requestPath: requestMeta.requestPath,
                 sessionId: auditArgs.sessionId,
                 edgeColo: requestMeta.edgeColo,
+                metadata: requestMetadataForObservability,
+                rateLimitPolicyId: isPolicyRejection ? (errorPayload.policy_id as string | undefined) ?? null : null,
+                rateLimitScope: isPolicyRejection ? (errorPayload.limit_scope as string | undefined) ?? null : null,
+                zeroDataRetention,
             })
             : null,
         writeAxiom: () => emitGatewayRequestEvent({
@@ -1124,6 +1237,7 @@ export async function handleError({
         result: undefined,
         requestId: auditArgs.requestId,
         workspaceId: auditArgs.workspaceId ?? "unknown",
+        zeroDataRetention,
         endpoint,
         model: modelForObservability,
         requestedModel,
@@ -1141,10 +1255,10 @@ export async function handleError({
         edgeCountry: requestMeta.edgeCountry,
         edgeContinent: requestMeta.edgeContinent,
         edgeAsn: requestMeta.edgeAsn,
-        keyId: ctx?.meta?.apiKeyId ?? null,
+        keyId: ctx?.meta?.apiKeyId ?? requestObservability?.apiKeyId ?? null,
         statusCode,
         success: false,
-        errorCode: `${attribution}:${errCode}`,
+        errorCode: loggedErrorCode,
         errorMessage: description ?? fallbackDescription,
         errorType,
         errorStage: stage,
@@ -1162,12 +1276,10 @@ export async function handleError({
         gatewayResponse: errorPayload,
         }),
         onDeliveryFailure: emitGatewayTelemetryDeliveryFailure,
-    });
+    }).finally(() => releaseRuntime?.());
+    dispatchBackground(telemetry);
     return new Response(JSON.stringify(errorPayload), { status: statusCode, headers });
 }
-
-
-
 
 
 

@@ -1,0 +1,12 @@
+---
+title: "Atualizar política de workload confiável"
+sidebarTitle: "Atualizar política de workload confiável"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml PATCH /workload-identity/policies/{id}"
+description: "Altera o nome, o status, as condições de claims ou a duração máxima do token de uma política de workload confiável."
+---
+<Note>Requer `keys:write` em uma chave de gerenciamento ou token OAuth, ou um proprietário ou administrador do espaço de trabalho. Os workloads confiáveis estão em beta; espaços de trabalho sem o recurso recebem `404`.</Note>
+
+A plataforma, o emissor e o proprietário não podem mudar. Crie uma nova política em vez disso. As alterações chegam ao gateway em até um minuto.
+
+Veja [Workloads confiáveis](../../developers/trusted-workloads.mdx) para saber como as políticas funcionam e como gerenciá-las com Terraform.

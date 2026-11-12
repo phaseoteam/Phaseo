@@ -1,6 +1,9 @@
 ---
-title: "Excluir um departamento do workspace"
+title: "Excluir um departamento do espaço de trabalho"
+sidebarTitle: "Excluir um departamento"
 badge: "Beta"
 openapi: "/pt-BR/openapi/v1/openapi.localized.yaml DELETE /identity/departments/{id}"
 ---
 <Note>A administração de diretórios corporativos exige o complemento de identidade, uma identidade de proprietário ou administrador e o escopo de configuração correspondente.</Note>
+
+Se mapeamentos de grupos do diretório usarem o departamento, só o proprietário do espaço de trabalho pode excluí-lo, porque a exclusão também remove esses mapeamentos e as funções que eles concedem.

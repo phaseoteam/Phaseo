@@ -1,14 +1,17 @@
 ---
-title: "Lister les points de terminaison"
-sidebarTitle: "Lister les points de terminaison"
+title: "Lister les endpoints"
+sidebarTitle: "Lister les endpoints"
 badge: "Beta"
 openapi: "/fr/openapi/v1/openapi.localized.yaml GET /endpoints"
-description: "Lister les points de terminaison de la passerelle adossés à des capacités, avec leurs chemins publics et la couverture des modèles et fournisseurs."
+description: "Listez les endpoints de la passerelle adossés à des capacités, avec leurs chemins publics et leur couverture de modèles et de fournisseurs."
 ---
 
-- `endpoints` : les identifiants canoniques des points de terminaison actuellement exposés par l’API
-- `data` : les enregistrements des points de terminaison avec `public_path`, `collection`, `model_count` et `provider_count`
-- `sample_models` : jusqu’à 10 identifiants récents de modèles visibles dans le catalogue public
+La réponse contient trois champs :
 
-Consultez [Lister les capacités des points de terminaison d’un modèle](./model-endpoints.mdx) pour obtenir des détails par fournisseur et paramètre.
+- `endpoints` : les ID canoniques des endpoints actuellement exposés par l’API.
+- `data` : un enregistrement par endpoint avec `id`, `capability_id`, `public_path`, `collection`, `model_count` et `provider_count`, trié par `public_path`.
+- `sample_models` : les 10 premiers ID de modèles visibles du catalogue public.
 
+La réponse est mise en cache pendant 30 minutes.
+
+Utilisez [Lister les capacités des endpoints d’un modèle](./model-endpoints) lorsque vous avez besoin du détail par fournisseur et par paramètre pour un modèle.

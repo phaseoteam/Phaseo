@@ -3,6 +3,7 @@
 // How: Maps requests to pipeline entrypoints and responses.
 
 import { Hono } from "hono";
+import { prepareVertexBatch, fetchVertexBatchApi, deleteVertexBatchInput, VertexBatchPreDispatchError, type VertexBatchStorage } from "@providers/google-vertex/batch";
 import { BatchResultsError, openBatchResultsStream, supportsBatchResults } from "@core/batch-results";
 import { admitBatchDownload } from "@core/batch-download-limits";
 import { selectBatchProviderOptions } from "@core/batch-provider-options";
@@ -11,9 +12,12 @@ import { withRuntime } from "../../utils";
 import { authenticate } from "@pipeline/before/auth";
 import type { AuthFailure, AuthSuccess } from "@pipeline/before/auth";
 import { err } from "@pipeline/before/http";
+import { withErrorObject, withGatewayErrorObject } from "@core/error-object";
+import { hasRequestModelFallbacksField } from "@pipeline/before/requestModelFallbacks";
 import { generatePublicId } from "@pipeline/before/genId";
 import { guardContext } from "@pipeline/before/guards";
-import { parseW3cTraceContext } from "@observability/trace-context";
+import { readProviderCatalogTier } from "@core/serviceTiers";
+import { metadataTraceContext, parseW3cTraceContext, requestMetadata as readRequestMetadata } from "@observability/trace-context";
 import { applyPromptInjectionGuardrails } from "@pipeline/before/promptInjection";
 import { applySensitiveInfoGuardrails } from "@pipeline/before/sensitiveInfo";
 import { applyWorkspacePolicy, fetchWorkspacePolicy } from "@pipeline/before/workspacePolicy";
@@ -32,6 +36,7 @@ import {
 } from "@core/async-notifications";
 import {
 	buildUnsupportedBatchModePayload,
+	getBatchDiscoveryParams,
 	getBatchProviderCapability,
 	listBatchProviderCapabilities,
 	providerSupportsMultipleModelsPerBatch,
@@ -74,11 +79,12 @@ import { getBatchApiFeatureGateName, isBatchApiAccessEnabled } from "@core/featu
 import { getWebhookEndpointSigningConfig } from "@core/webhook-endpoints";
 import { BodyLimitExceededError, readStreamTextWithLimit } from "@core/bounded-stream";
 import { filesRoutes as batchFilesRoutes } from "./files";
-import { fetchCatalogue } from "../control/models.catalogue";
+import { fetchCatalogue, mergeParamDetails, providerEntrySupportsParam, withProviderOnParamDetails } from "../control/models.catalogue";
 
 const OPENAI_PROVIDER_ID = "openai";
 const ANTHROPIC_PROVIDER_ID = "anthropic";
 const GOOGLE_AI_STUDIO_PROVIDER_ID = "google-ai-studio";
+const GOOGLE_VERTEX_PROVIDER_ID = "google-vertex";
 const MISTRAL_PROVIDER_ID = "mistral";
 const MOONSHOT_PROVIDER_ID = "moonshotai";
 const X_AI_PROVIDER_ID = "x-ai";
@@ -139,7 +145,10 @@ async function parseUpstreamJson(response: Response): Promise<any | null> {
 }
 
 function jsonPayload(payload: unknown, status = 200): Response {
-	return new Response(JSON.stringify(payload), {
+	const body = status >= 400 && payload && typeof payload === "object" && !Array.isArray(payload)
+		? withGatewayErrorObject(payload as Record<string, unknown>, status)
+		: payload;
+	return new Response(JSON.stringify(body), {
 		status,
 		headers: {
 			"Content-Type": "application/json",
@@ -320,7 +329,7 @@ export function normalizeBatchEndpoint(value: unknown): string | null {
 
 function defaultBatchEndpointForProvider(providerId: string): string {
 	if (providerId === ANTHROPIC_PROVIDER_ID) return "/v1/messages";
-	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID) return "/v1/generateContent";
+	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID || providerId === GOOGLE_VERTEX_PROVIDER_ID) return "/v1/generateContent";
 	if (providerId === OPENAI_PROVIDER_ID || providerId === X_AI_PROVIDER_ID) return "/v1/responses";
 	return "/v1/chat/completions";
 }
@@ -425,9 +434,10 @@ function buildBodyFromPromptItem(
 			...(temperature !== undefined ? { temperature } : {}),
 		};
 	}
-	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID) {
+	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID || providerId === GOOGLE_VERTEX_PROVIDER_ID) {
 		return {
 			model: nativeModel,
+			...(providerId === GOOGLE_VERTEX_PROVIDER_ID && system ? { systemInstruction: { parts: [{ text: system }] } } : {}),
 			generationConfig: {
 				...(maxOutputTokens !== undefined || maxTokens !== undefined
 					? { maxOutputTokens: maxOutputTokens ?? maxTokens }
@@ -509,7 +519,7 @@ function normalizeRequestBodyForProvider(
 			max_tokens: record.max_tokens ?? record.max_output_tokens ?? DEFAULT_BATCH_MAX_OUTPUT_TOKENS,
 		};
 	}
-	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID) {
+	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID || providerId === GOOGLE_VERTEX_PROVIDER_ID) {
 		const generationConfig = record.generationConfig && typeof record.generationConfig === "object" && !Array.isArray(record.generationConfig)
 			? record.generationConfig as Record<string, unknown>
 			: record.generation_config && typeof record.generation_config === "object" && !Array.isArray(record.generation_config)
@@ -758,7 +768,6 @@ async function validateBatchRequestPolicies(args: {
 			resolvedModel: guarded.resolvedModel ?? gatewayModel,
 			body: row.body,
 			workspacePolicy,
-			teamSettings: guarded.context.teamSettings ?? null,
 		});
 		let policyReason: string | null = null;
 		if (policyResult.ok === false) {
@@ -778,6 +787,27 @@ async function validateBatchRequestPolicies(args: {
 		// Persist the policy-resolved canonical ID. Caller-controlled/native
 		// model strings must never drive credential selection or reservation.
 		row.gatewayModel = guarded.resolvedModel ?? gatewayModel;
+		if (policyResult.ok) {
+			const offers = policyResult.providers.filter((provider) => provider.providerId === args.providerId);
+			if (offers.some((provider) => readProviderCatalogTier(provider.capabilityParams))) {
+				const batchOffer = offers.find((provider) =>
+					readProviderCatalogTier(provider.capabilityParams)?.name === "batch" &&
+					provider.pricingCard?.rules.some((rule) => rule.pricing_plan === "batch"),
+				);
+				if (!batchOffer?.providerModelSlug) return err("validation_error", {
+					reason: "batch_service_tier_not_offered", request_id: args.requestId,
+				});
+				if ((row.body as Record<string, unknown>).model !== batchOffer.providerModelSlug) {
+					if (!args.allowMutation) return err("validation_error", {
+						reason: "batch_file_model_translation_required",
+						message: "Submit requests inline so the gateway can select the provider's Batch model ID.",
+						request_id: args.requestId,
+					});
+					row.body = { ...row.body, model: batchOffer.providerModelSlug };
+					row.requestBodyHash = await hashBatchRequestBody(row.body);
+				}
+			}
+		}
 
 		const beforeBody = JSON.stringify(row.body);
 		const promptResult = applyPromptInjectionGuardrails({
@@ -888,6 +918,7 @@ async function fetchProviderBatchApi(providerId: string, args: {
 	credential?: BatchProviderCredential;
 }): Promise<Response> {
 	const bindings = getBindings() as unknown as Record<string, string | undefined>;
+	if (providerId === GOOGLE_VERTEX_PROVIDER_ID) return fetchVertexBatchApi(args);
 	if (providerId === ANTHROPIC_PROVIDER_ID) {
 		let keyInfo: { key: string };
 		try {
@@ -1001,6 +1032,7 @@ async function uploadProviderBatchInputFile(providerId: string, args: {
 				error: {
 					type: "upstream_error",
 					reason: "batch_file_upload_missing_id",
+					message: "The provider did not return an ID for the uploaded batch file.",
 				},
 			}, 502),
 		};
@@ -1220,6 +1252,7 @@ function buildProviderRecoveryName(batchIdRaw: unknown, userNameRaw: unknown): s
 }
 
 function buildProviderRetrievePath(providerId: string, nativeBatchId: string): string {
+	if (providerId === GOOGLE_VERTEX_PROVIDER_ID) return `/${nativeBatchId}`;
 	if (providerId === MISTRAL_PROVIDER_ID) return `/batch/jobs/${encodeURIComponent(nativeBatchId)}`;
 	if (providerId === ANTHROPIC_PROVIDER_ID) return `/messages/batches/${encodeURIComponent(nativeBatchId)}`;
 	if (providerId === GOOGLE_AI_STUDIO_PROVIDER_ID) {
@@ -1230,6 +1263,7 @@ function buildProviderRetrievePath(providerId: string, nativeBatchId: string): s
 }
 
 function buildProviderCancelPath(providerId: string, nativeBatchId: string): string {
+	if (providerId === GOOGLE_VERTEX_PROVIDER_ID) return `/${nativeBatchId}:cancel`;
 	if (providerId === MISTRAL_PROVIDER_ID) return `/batch/jobs/${encodeURIComponent(nativeBatchId)}/cancel`;
 	if (providerId === ANTHROPIC_PROVIDER_ID) return `/messages/batches/${encodeURIComponent(nativeBatchId)}/cancel`;
 	if (providerId === X_AI_PROVIDER_ID) return `/batches/${encodeURIComponent(nativeBatchId)}:cancel`;
@@ -1246,7 +1280,7 @@ function batchMetaFromPayload(payload: any, base: BatchJobMeta): BatchJobMeta {
 	return {
 		...base,
 		status: toText(payload?.status) ?? base.status ?? null,
-		model: toText(payload?.model) ?? base.model ?? null,
+		model: base.provider === GOOGLE_VERTEX_PROVIDER_ID ? base.model : toText(payload?.model) ?? base.model ?? null,
 		nativeBatchId: nativeId ?? base.nativeBatchId ?? null,
 		endpoint: toText(payload?.endpoint) ?? base.endpoint ?? null,
 		completionWindow: toText(payload?.completion_window) ?? base.completionWindow ?? null,
@@ -1629,15 +1663,42 @@ async function handleModels(req: Request) {
 	if (accessDenied) return accessDenied;
 	const url = new URL(req.url);
 	const catalogue = await fetchCatalogue({
-		endpoints: ["batch"],
-		params: parseModelQueryValues(url, "params"),
+		batchOnly: true,
 		statuses: ["active"],
 	});
+	const paramsFilter = parseModelQueryValues(url, "params");
 	const previewProviderIds = resolveBatchPreviewProviderIds(getBindings().BATCH_API_PREVIEW_PROVIDERS);
 	const previewCatalogue = catalogue
 		.map((model) => ({
 			...model,
-			providers: model.providers.filter((provider) => previewProviderIds.includes(provider.api_provider_id)),
+			providers: model.providers.filter((provider) => {
+				if (!previewProviderIds.includes(provider.api_provider_id)) return false;
+				// Preserve explicit Batch capabilities and discover Batch-priced modality offers.
+				if (provider.endpoints.some((endpoint) => ["batch", "batches", "/v1/batches"].includes(String(endpoint)))) return true;
+				const capability = getBatchProviderCapability(provider.api_provider_id);
+				const supported = new Set(capability?.endpoints.map(({ endpoint }) => {
+					const policyEndpoint = batchPolicyEndpoint(endpoint);
+					return policyEndpoint ? resolveCapabilityFromEndpoint(policyEndpoint) : null;
+				}));
+				return provider.endpoints.some((endpoint) => supported.has(
+					resolveCapabilityFromEndpoint(batchPolicyEndpoint(String(endpoint)) ?? String(endpoint)),
+				));
+			}).map((provider) => {
+				if (provider.endpoints.some((endpoint) => ["batch", "batches", "/v1/batches"].includes(String(endpoint)))) return provider;
+				const capability = getBatchProviderCapability(provider.api_provider_id)!;
+				const endpoints = capability.endpoints.map(({ endpoint }) => endpoint).filter((endpoint) => {
+					const policyEndpoint = batchPolicyEndpoint(endpoint);
+					return policyEndpoint && provider.endpoints.some((offered) =>
+						resolveCapabilityFromEndpoint(batchPolicyEndpoint(String(offered)) ?? String(offered)) === resolveCapabilityFromEndpoint(policyEndpoint));
+				});
+				const paramsDetail = getBatchDiscoveryParams(capability, endpoints);
+				return { ...provider, params: Object.keys(paramsDetail).sort(), params_detail: paramsDetail };
+			}).filter((provider) => !paramsFilter?.length || paramsFilter.some((param) => providerEntrySupportsParam(provider, param))),
+		}))
+		.map((model) => ({
+			...model,
+			supported_params: [...new Set(model.providers.flatMap((provider) => provider.params))].sort(),
+			supported_params_detail: mergeParamDetails(...model.providers.map((provider) => withProviderOnParamDetails(provider.params_detail, provider.api_provider_id))),
 		}))
 		.filter((model) => model.providers.length > 0);
 	return jsonPayload({
@@ -1672,7 +1733,7 @@ async function handleCreate(req: Request) {
 		const reason = (auth as AuthFailure).reason;
 		return err("unauthorised", { reason, request_id: requestId });
 	}
-	const otelParentContext = parseW3cTraceContext(
+	let otelParentContext = parseW3cTraceContext(
 		req.headers.get("traceparent"),
 		req.headers.get("tracestate"),
 	);
@@ -1687,14 +1748,14 @@ async function handleCreate(req: Request) {
 
 	const declaredLength = Number(req.headers.get("content-length") ?? 0);
 	if (Number.isFinite(declaredLength) && declaredLength > MAX_BATCH_CREATE_BODY_BYTES) {
-		return jsonPayload({ error: { type: "validation_error", reason: "batch_body_too_large" } }, 413);
+		return jsonPayload({ error: { type: "validation_error", reason: "batch_body_too_large", message: "The batch request body is too large." } }, 413);
 	}
 	let rawBody: string;
 	try {
 		rawBody = await readStreamTextWithLimit(req.body, MAX_BATCH_CREATE_BODY_BYTES, "batch_body_too_large");
 	} catch (error) {
 		if (!(error instanceof BodyLimitExceededError)) throw error;
-		return jsonPayload({ error: { type: "validation_error", reason: "batch_body_too_large" } }, 413);
+		return jsonPayload({ error: { type: "validation_error", reason: "batch_body_too_large", message: "The batch request body is too large." } }, 413);
 	}
 	let payload: Record<string, unknown>;
 	try {
@@ -1707,6 +1768,22 @@ async function handleCreate(req: Request) {
 	}
 	if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
 		return err("validation_error", { reason: "batch_body_must_be_object", request_id: requestId });
+	}
+	// Same rules as synchronous requests: traceparent wins, then metadata trace_id.
+	const otelMetadata = readRequestMetadata(payload.metadata);
+	if (!otelParentContext) {
+		otelParentContext = metadataTraceContext(otelMetadata);
+		if (otelParentContext) otelSubmissionContext.traceId = otelParentContext.traceId;
+	}
+	if (hasRequestModelFallbacksField(payload)) {
+		// Batch rows run asynchronously inside the provider batch; there is no
+		// synchronous submission per row to retry with another model.
+		return err("validation_error", {
+			reason: "models_not_supported_for_endpoint",
+			message: "Batches use one model per request row; remove models from the batch and its rows.",
+			request_id: requestId,
+			workspace_id: auth.workspaceId,
+		});
 	}
 	const { upstreamPayload, webhook, invalidWebhook } = splitGatewayBatchCreatePayload(payload);
 	if (invalidWebhook) {
@@ -2036,6 +2113,16 @@ async function handleCreate(req: Request) {
 			});
 		}
 	}
+	if (policyRows.some((row) => hasRequestModelFallbacksField(row.body))) {
+		// Batch rows run asynchronously inside the provider batch; there is no
+		// synchronous submission per row to retry with another model.
+		return err("validation_error", {
+			reason: "models_not_supported_for_endpoint",
+			message: "Batches use one model per request row; remove models from the batch and its rows.",
+			request_id: requestId,
+			workspace_id: auth.workspaceId,
+		});
+	}
 	if (!providerSupportsMultipleModelsPerBatch(providerId)) {
 		const nativeModels = [...new Set(policyRows
 			.map((row) => toText((row.body as any)?.model) ?? row.gatewayModel)
@@ -2103,14 +2190,18 @@ async function handleCreate(req: Request) {
 			resolveBatchSubmissionCredential({ workspaceId: auth.workspaceId, providerId, apiKeyId: auth.apiKeyId, model }),
 		));
 		batchCredential = resolved[0]!.credential;
+		if (providerId === GOOGLE_VERTEX_PROVIDER_ID && batchCredential.source !== "gateway") {
+			throw new Error("vertex_batch_requires_managed_credentials");
+		}
 		if (resolved.some(({ credential }) => credential.source !== batchCredential.source || credential.byokKeyId !== batchCredential.byokKeyId)) {
 			throw new Error("batch_models_require_incompatible_credentials");
 		}
 	} catch (error) {
 		const reason = error instanceof Error ? error.message : "batch_provider_credentials_unavailable";
-		return err(reason === "byok_credentials_required" ? "validation_error" : "gateway_error", {
+		const managedRequired = reason === "vertex_batch_requires_managed_credentials";
+		return err(reason === "byok_credentials_required" || managedRequired ? "validation_error" : "gateway_error", {
 			reason,
-			message: reason === "byok_credentials_required"
+			message: managedRequired ? "Vertex Batch requires Phaseo-managed credentials; BYOK is not supported." : reason === "byok_credentials_required"
 				? "This provider requires your own provider credential. Add an eligible BYOK key and retry."
 				: "Provider credentials are unavailable for this batch.",
 			request_id: requestId,
@@ -2241,8 +2332,18 @@ async function handleCreate(req: Request) {
 		upstreamPayload.endpoint = resolveBatchEndpoint(providerId, payload);
 	}
 	let providerCreate: ReturnType<typeof buildProviderBatchCreate>;
+	let vertexStorage: VertexBatchStorage | undefined;
 	try {
-		providerCreate = buildProviderBatchCreate(providerId, {
+		if (providerId === GOOGLE_VERTEX_PROVIDER_ID) {
+			const prepared = await prepareVertexBatch({
+				workspaceId: auth.workspaceId, batchId,
+				model: providerNativeModelId(providerId, toText(payload.model) ?? toText((requestRows?.[0]?.body as any)?.model) ?? ""),
+				rows: (requestRows ?? []).map((row) => ({ custom_id: row.customId, body: row.body })),
+				credential: batchCredential,
+			});
+			vertexStorage = prepared.storage;
+			providerCreate = prepared;
+		} else providerCreate = buildProviderBatchCreate(providerId, {
 			payload,
 			upstreamPayload,
 			inputMode: inputMode.mode,
@@ -2263,6 +2364,7 @@ async function handleCreate(req: Request) {
 		});
 	}
 	const submissionMeta = batchMetaFromPayload(null, {
+		vertexStorage,
 		provider: providerId,
 		requestId,
 		apiKeyId: auth.apiKeyId,
@@ -2289,10 +2391,12 @@ async function handleCreate(req: Request) {
 		submissionOutcome: null,
 		otelParentContext,
 		otelSubmissionContext,
+		otelMetadata,
 	});
 	try {
 		await saveBatchJobMeta(auth.workspaceId, batchId, submissionMeta);
 	} catch (lookupErr) {
+		if (vertexStorage) await deleteVertexBatchInput(vertexStorage, batchCredential).catch(() => undefined);
 		await releaseWalletReservation({
 			workspaceId: auth.workspaceId,
 			keyId: auth.apiKeyId,
@@ -2305,7 +2409,7 @@ async function handleCreate(req: Request) {
 			batchId,
 			providerId,
 		});
-		return jsonPayload({ error: { type: "gateway_error", reason: "batch_submission_persistence_failed" } }, 503);
+		return jsonPayload({ error: { type: "gateway_error", reason: "batch_submission_persistence_failed", message: "The batch could not be recorded before submission. Try again." } }, 503);
 	}
 
 	let upstream: Response;
@@ -2320,7 +2424,8 @@ async function handleCreate(req: Request) {
 			credential: batchCredential,
 		});
 	} catch (error) {
-		if (error instanceof ProviderBatchPreDispatchError) {
+		if (error instanceof ProviderBatchPreDispatchError || error instanceof VertexBatchPreDispatchError) {
+			if (vertexStorage) await deleteVertexBatchInput(vertexStorage, batchCredential).catch(() => undefined);
 			await finalizeRejectedBatchSubmission({
 				workspaceId: auth.workspaceId,
 				batchId,
@@ -2348,6 +2453,7 @@ async function handleCreate(req: Request) {
 	let upstreamJson = normalizeProviderBatchPayload(providerId, await parseUpstreamJson(upstream));
 	if (!upstream.ok) {
 		if (isDefinitiveProviderRejection(upstream.status)) {
+			if (vertexStorage) await deleteVertexBatchInput(vertexStorage, batchCredential).catch(() => undefined);
 			await finalizeRejectedBatchSubmission({
 				workspaceId: auth.workspaceId,
 				batchId,
@@ -2435,6 +2541,7 @@ async function handleCreate(req: Request) {
 		let persistedMeta: BatchJobMeta | null = null;
 		if (batchId) {
 			persistedMeta = batchMetaFromPayload(upstreamJson, {
+				vertexStorage,
 				provider: providerId,
 				requestId,
 				apiKeyId: auth.apiKeyId,
@@ -2462,6 +2569,7 @@ async function handleCreate(req: Request) {
 				submissionOutcome: "accepted",
 				otelParentContext,
 				otelSubmissionContext,
+				otelMetadata,
 			});
 			try {
 				await saveBatchJobMeta(auth.workspaceId, batchId, persistedMeta);
@@ -2517,6 +2625,7 @@ async function handleCreate(req: Request) {
 				requestBodyHash: row.requestBodyHash,
 				meta: {
 					input_mode: inputMode.mode,
+					canonical_model: row.gatewayModel,
 				},
 			}));
 			await saveBatchRequestRows({
@@ -2580,6 +2689,7 @@ async function handleCreate(req: Request) {
 				spanId: otelSubmissionContext.parentSpanId,
 				requestPayload: payload,
 				responsePayload: upstreamJson,
+				metadata: otelMetadata,
 			}).catch((otelError) => console.error("batch_otel_submit_failed", {
 				batchId,
 				error: otelError instanceof Error ? otelError.message : String(otelError),
@@ -2989,13 +3099,13 @@ async function handleResults(req: Request, id: string) {
 	try {
 		const admission = await admitBatchDownload(auth.workspaceId, batchId);
 		if (!admission.allowed) {
-			return Response.json({ error: "rate_limit_exceeded", message: "Batch results allow 10 download attempts per workspace per batch every 30 minutes.", request_id: requestId }, {
+			return Response.json(withErrorObject({ error: "rate_limit_exceeded", message: "Batch results allow 10 download attempts per workspace per batch every 30 minutes.", request_id: requestId }, 429, { retryAfter: String(admission.retryAfterSeconds) }), {
 				status: 429, headers: { "Retry-After": String(admission.retryAfterSeconds), "Cache-Control": "no-store" },
 			});
 		}
 	} catch {
 		console.error("batch_download_admission_failed", { requestId, workspaceId: auth.workspaceId, batchId });
-		return Response.json({ error: "temporarily_unavailable", request_id: requestId }, {
+		return Response.json(withErrorObject({ error: "temporarily_unavailable", request_id: requestId }, 503, { retryAfter: "30" }), {
 			status: 503, headers: { "Retry-After": "30", "Cache-Control": "no-store" },
 		});
 	}

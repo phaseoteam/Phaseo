@@ -11,11 +11,10 @@ import {
 	type ChatThread,
 } from "@/lib/indexeddb/chats";
 
-export type DecisionRequest = {
-	model: string;
-	state: Record<string, unknown>;
-	questions: Record<string, unknown>;
-};
+export type DecisionRequestBody =
+	| { input: string; questions: Array<Record<string, unknown>> }
+	| { state: Record<string, unknown>; questions: Record<string, unknown> };
+export type DecisionRequest = DecisionRequestBody & { model: string };
 
 export type DecisionRun = {
 	id: string;
@@ -23,7 +22,7 @@ export type DecisionRun = {
 	conversationTitle: string;
 	input: string;
 	model: string;
-	request: Omit<DecisionRequest, "model">;
+	request: DecisionRequestBody;
 	draft: DecisionDraft;
 	result: unknown;
 	createdAt: string;

@@ -1,0 +1,140 @@
+---
+title: "发布提供商目录"
+description: "发布包含标准化服务层级报价、数据政策和速率限制的 V1、V1.1 或 V1.2 模型数据源。"
+icon: "list"
+---
+
+把你的模型、服务层级、价格和限制作为目录数据源发布，Phaseo 会把每次变更导入到你的报价中。作为获批提供商，你可以通过数据源或提供商设置，更新现有公开规范模型的报价；新的规范模型需要审批。每份目录都是完整快照：删除某个报价会停用这个由数据源管理的报价，并保留其价格历史。
+
+## 选择格式
+
+| 版本 | 声明方式 | 新增内容 | Schema |
+| --- | --- | --- | --- |
+| V1 | 不设 `schema_version`，或设为 `"1.0"` | `{"data": [...]}` 中的标准层级报价 | [V1](https://phaseo.app/api/internal/provider-catalog/schema) |
+| V1.1 | `"schema_version": "1.1"` | 每个模型内的 `service_tiers` | [V1.1](https://phaseo.app/api/internal/provider-catalog/schema?version=1.1) |
+| V1.2 | `"schema_version": "1.2"` | 每个层级的 `data_policy` 和可选的 `declarations`；参见[声明数据政策](#declare-data-policies) | [V1.2](https://phaseo.app/api/internal/provider-catalog/schema?version=1.2) |
+
+三个版本都受支持；现有的 V1 数据源无需更改即可继续使用。导入程序从文档本身读取版本，从不从 URL 读取，因此 `?format=phaseo-v1.1` 这样的查询参数只是你自己端点的约定。不受支持的版本会被拒绝。
+
+<span id="declare-data-policies"></span>
+## 声明数据政策
+
+V1.2 为每个服务层级添加按能力划分的训练和保留声明。你可以随时发布 V1.2。Phaseo 会在导入时验证这些声明，但在 Phaseo 批准你的政策来源之前，它们不提供任何保证。
+
+V1.2 还接受模型级或层级级的可选 `declarations`，用于描述模型标识、类型化的输入/输出限制、参数说明、按范围划分的价格和容量、折扣以及部署详情。这些声明会经过验证并保留以供审核。它们不会自动启用参数，也不会更改计费价格、容量限制的执行或数据驻留保证。验证反馈会标识已存储的声明；请继续通过现有字段发布实际生效的价格和能力。
+
+将 `schema_version` 设为 `"1.2"`，并为每个适用的层级添加 `data_policy` 对象：
+
+```json
+{
+  "capabilities": [{
+    "id": "text.generate",
+    "training_policy": "no_train",
+    "retention_mode": "none",
+    "retention_days": 0,
+    "zero_data_retention": true,
+    "zdr_eligibility": "eligible",
+    "requirements": { "contract_mode": "none", "account_settings": [] },
+    "privacy_policy_url": "https://provider.example/privacy",
+    "terms_of_service_url": "https://provider.example/terms"
+  }]
+}
+```
+
+此示例是层级的 `data_policy` 值，而不是完整的数据源。能力 ID 是规范化的：即使模型声明的是 `responses` 或 `chat.completions`，也要使用 `text.generate`。
+
+该声明覆盖整个上游处理链中的提示词和输出，不涉及计费元数据。训练取值为 `unknown`、`may_train`、`no_train`、`opt_out_available` 和 `enterprise_no_train`。保留模式为 `unknown`、`none`、`transient`、`fixed` 和 `until_deleted`。`none` 使用 0 天，`transient`/`fixed` 使用正数的最长期限，`unknown`/`until_deleted` 使用 null。
+
+用 `contract_mode` 声明所需的协议：`none`、`customer_agreement` 或 `enterprise_agreement`。所需的账户设置是 `account_settings` 数组中的对象，包含 `id`、`description` 和 HTTPS 的 `documentation_url`。有条件的计划使用 `zdr_eligibility: "conditional"`，不能声明有效的真实保证。在 Phaseo 能够验证其履行之前，它们仅供参考。
+
+Phaseo 会单独批准政策来源。数据源不能把声明标记为已验证。本次发布只对非批处理报价上无条件的文本生成授予有效的 ZDR，并要求不训练、不保留内容。自行托管模型本身并不等于声明了 ZDR。
+
+报价采用由数据源管理的政策后，设为 false、发送 null、省略其声明或降低数据源版本，都会撤回该保证。Phaseo 的手动覆盖单独维护。正向声明在 24 小时内没有成功的目录验证就会过期；撤销批准不需要重新获取提供商数据。
+
+## 发布标准化层级
+
+| 层级 | 含义 |
+| --- | --- |
+| `standard` | 常规同步执行；每个模型都必须提供。 |
+| `fast` | 更快或优先的报价。HighSpeed 这类提供商名称保留在上游模型 ID 中。 |
+| `ultrafast` | 在支持时提供的独立、更高速报价。 |
+| `flex` | 灵活、优先级较低的同步报价。 |
+| `batch` | 通过 Batch API 异步执行。需要批处理能力。 |
+
+不要把提供商特有的层级名称用作标准化 ID。`priority` 仍是调用方可用的 Fast 别名；目录发布时使用 `fast`。
+
+文本生成请求支持选择 Fast、Ultrafast 和 Flex。Batch 通过独立的 Batch API 运行，并且仍需要已安装的提供商 Batch 集成；发布层级并不会安装该集成。对于上传的提供商原生文件，请使用声明的 Batch 模型 ID，或以内联方式提交请求，以便 Phaseo 进行转换。
+
+同一模型的各服务层级使用相同的规范模型 ID。不同的模型需要各自独立的规范标识。层级继承模型的能力、限制和发布计划。每个层级声明自己的上游模型 ID、可用性和实际生效的价格。
+
+```json
+{
+  "schema_version": "1.1",
+  "data": [{
+    "id": "your-provider/example-model",
+    "name": "Example model",
+    "capabilities": ["chat.completions"],
+    "service_tiers": [{
+      "service_tier": "standard",
+      "provider_model_slug": "example-model",
+      "availability": "ready",
+      "pricing": [{
+        "meter_key": "input_text_tokens",
+        "modality": "text",
+        "direction": "input",
+        "unit": "token",
+        "unit_quantity": 1000000,
+        "price_nanos": 100000000,
+        "display_label": "Input",
+        "display_unit": "1M tokens"
+      }, {
+        "meter_key": "output_text_tokens",
+        "modality": "text",
+        "direction": "output",
+        "unit": "token",
+        "unit_quantity": 1000000,
+        "price_nanos": 200000000,
+        "display_label": "Output",
+        "display_unit": "1M tokens"
+      }]
+    }]
+  }]
+}
+```
+
+要添加 Fast，请再添加一个层级对象，带上 `"service_tier": "fast"`、其实际价格，以及该报价独有的上游模型 ID。如果提供商改用原生参数来选择通道，请使用相同的上游模型 ID，并声明 `"upstream_service_tier": "priority"` 或 `"fast"`。当模型 ID 本身就能选择通道时，省略该字段。Standard 接受 `default` 或 `standard`；Flex 和 Ultrafast 接受各自对应的值。没有独立模型 ID 或原生选择参数的非标准同步层级会被 Phaseo 拒绝。
+
+每个层级都需要明确的价格，包括输出以及你计费的任何缓存/媒体计量项。价格为零是有效的；负价格、未知计量项、重复层级和有条件的费率会被拒绝。`price_nanos` 始终是促销后的实际价格。费率变化时请发布新的快照；Phaseo 会保留之前的实际价格。
+
+## 声明速率限制
+
+在可选的顶层 `rate_limits` 数组中，声明你的平台对 Phaseo 账户施加的请求和 token 限制。它在 V1 和 V1.1 文档中的用法相同。省略 `model` 表示对你所有模型的总限制，或把它设为同一文档中任一模型或层级的上游 `provider_model_slug`。
+
+```json
+{
+  "schema_version": "1.1",
+  "data": [{ "id": "your-provider/example-model", "...": "..." }],
+  "rate_limits": [
+    { "requests_per_minute": 600, "tokens_per_minute": 2000000 },
+    { "model": "example-model", "requests_per_day": 100000, "tokens_per_day": 500000000 }
+  ]
+}
+```
+
+每个条目接受 `requests_per_minute`、`requests_per_day`、`tokens_per_minute` 和 `tokens_per_day`。每个值是正整数或 `null`，每个条目至少需要一个值。Phaseo 按发往你的全部流量在全局范围内计算每个限制。模型限制会在所有模型的总限制之外额外生效。
+
+限制永远不会拦截请求。当某个报价的流量接近限制时，Phaseo 会逐步减少分配给它的流量份额。一旦达到限制，Phaseo 会把该报价排在其他提供商之后，直到限制重置。设得过低的值只会减少你自己的流量份额。因此，提供商申请获批后，限制无需审核即可生效，通常在一分钟内。
+
+当该数组存在时，每次变更后的数据源成功导入，它都会替换你声明的限制。空数组会移除这些限制。省略 `rate_limits` 则保留你在提供商设置中管理的限制。如果某个条目指向文档中不存在的模型、重复了某个范围，或使用了非正整数的值，Phaseo 会拒绝整个快照，并保留你当前的目录和限制。拒绝会显示为 **已请求修改**。
+
+你也可以在 **提供商设置 → 你的模型 → 速率限制** 中编辑限制。这些编辑与目录变更分开保存。目录编辑器不接受 `rate_limits`。
+
+## 更新与验证
+
+轮询和带签名的目录变更 webhook 通过同一套入驻和刷新流程接受全部三种版本。在提供商设置中，先选择一个层级，再编辑其上游 ID、可用性或价格。添加另一个层级会把保存的目录变为 V1.1。
+
+目录不会添加推理适配器或凭据。在启用路由之前，提供商及其宣称的能力必须已经完成集成。Batch 价格不会让同步聊天端点支持 Batch。
+
+不可用的规范模型或未知的发布者映射会显示为 **已请求修改**，但不会阻止有效模型的导入。请在提供商控制台中查看各模型的具体原因。
+
+对于通过 API 提供的目录，在控制台中的编辑是持久的覆盖。导入只会更新没有覆盖的字段。选择 **使用数据源的值** 可以移除覆盖，并恢复跟随该字段。控制台会显示最新的数据源值、实际生效值、编辑者和时间；目录活动会记录编辑和恢复操作。手动添加的模型仍是本地报价。从数据源中删除某个模型会停用该数据源报价，即使它的某些字段曾被编辑过。现有的仅手动维护的目录仍受支持。

@@ -1,0 +1,1040 @@
+{
+ "activeRoutes": 1345,
+ "activeRoutesWithCard": 1327,
+ "cards": 1327,
+ "cardsExercised": 1325,
+ "metersPresent": 5168,
+ "metersExercised": 5162,
+ "conditionBranchesPresent": 1968,
+ "conditionBranchesExercised": 1964,
+ "byCapability": {
+  "audio.realtime": {
+   "cards": 10,
+   "cardsExercised": 10,
+   "metersPresent": 58,
+   "metersExercised": 58
+  },
+  "audio.speech": {
+   "cards": 32,
+   "cardsExercised": 32,
+   "metersPresent": 58,
+   "metersExercised": 58
+  },
+  "audio.transcription": {
+   "cards": 27,
+   "cardsExercised": 27,
+   "metersPresent": 31,
+   "metersExercised": 31
+  },
+  "audio.translations": {
+   "cards": 4,
+   "cardsExercised": 4,
+   "metersPresent": 4,
+   "metersExercised": 4
+  },
+  "batch": {
+   "cards": 30,
+   "cardsExercised": 30,
+   "metersPresent": 99,
+   "metersExercised": 99
+  },
+  "decisions.make": {
+   "cards": 10,
+   "cardsExercised": 10,
+   "metersPresent": 18,
+   "metersExercised": 18
+  },
+  "extraction.extract": {
+   "cards": 1,
+   "cardsExercised": 1,
+   "metersPresent": 1,
+   "metersExercised": 1
+  },
+  "image.edit": {
+   "cards": 17,
+   "cardsExercised": 17,
+   "metersPresent": 43,
+   "metersExercised": 43
+  },
+  "image.generate": {
+   "cards": 31,
+   "cardsExercised": 31,
+   "metersPresent": 89,
+   "metersExercised": 89
+  },
+  "music.generate": {
+   "cards": 3,
+   "cardsExercised": 3,
+   "metersPresent": 3,
+   "metersExercised": 3
+  },
+  "ocr": {
+   "cards": 4,
+   "cardsExercised": 4,
+   "metersPresent": 6,
+   "metersExercised": 6
+  },
+  "parse": {
+   "cards": 1,
+   "cardsExercised": 1,
+   "metersPresent": 1,
+   "metersExercised": 1
+  },
+  "text.embed": {
+   "cards": 58,
+   "cardsExercised": 58,
+   "metersPresent": 75,
+   "metersExercised": 75
+  },
+  "text.generate": {
+   "cards": 1062,
+   "cardsExercised": 1060,
+   "metersPresent": 4632,
+   "metersExercised": 4626
+  },
+  "text.moderate": {
+   "cards": 2,
+   "cardsExercised": 2,
+   "metersPresent": 2,
+   "metersExercised": 2
+  },
+  "text.rerank": {
+   "cards": 17,
+   "cardsExercised": 17,
+   "metersPresent": 18,
+   "metersExercised": 18
+  },
+  "video.generate": {
+   "cards": 18,
+   "cardsExercised": 18,
+   "metersPresent": 30,
+   "metersExercised": 30
+  }
+ },
+ "notCovered": [
+  {
+   "what": "route openai:openai/gpt-6-astra-pro:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/gpt-6-astra:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/gpt-6-luna-pro:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/gpt-6-luna:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/gpt-6-sol-pro:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/gpt-6-sol:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/gpt-6.1-sol-pro:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/gpt-6.1-sol:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/gpt-6.1-terra:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/gpt-image-1-mini:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/gpt-image-1.5:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/gpt-image-2:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/omni-moderation:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/text-embedding-3-large:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/text-embedding-3-small:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route openai:openai/text-embedding-ada-002:batch",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route respan:respan/span-01:free:decisions.make",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "route weights-and-biases:z-ai/glm-5.3-flash:text.generate",
+   "reason": "active route with no price card"
+  },
+  {
+   "what": "card mistral-eu:mistral/mistral-large-4.0:text.generate",
+   "reason": "no rule in effect at the sweep clock (all expired or not yet effective)"
+  },
+  {
+   "what": "card mistral:mistral/mistral-large-4.0:text.generate",
+   "reason": "no rule in effect at the sweep clock (all expired or not yet effective)"
+  },
+  {
+   "what": "rule ambient:z-ai/glm-5.2:text.generate ambient:z-ai/glm-5.2/offer-68391886b9bacffdb321@v1#cached_read_text_tokens",
+   "reason": "shadowed by ambient:ambient/large/feed-text.generate@v1#cached_read_text_tokens (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule ambient:z-ai/glm-5.2:text.generate ambient:z-ai/glm-5.2/offer-68391886b9bacffdb321@v1#input_text_tokens",
+   "reason": "shadowed by ambient:ambient/large/feed-text.generate@v1#input_text_tokens (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule ambient:z-ai/glm-5.2:text.generate ambient:z-ai/glm-5.2/offer-68391886b9bacffdb321@v1#output_text_tokens",
+   "reason": "shadowed by ambient:ambient/large/feed-text.generate@v1#output_text_tokens (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-20260402/offer-baidu-ernie-4-5-turbo-20260402@v1#output_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#output_text_tokens (same plan, meter and conditions; priority 3 vs 3, same price)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-vl-32k/offer-baidu-ernie-4-5-turbo-vl-32k@v1#output_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#output_text_tokens (same plan, meter and conditions; priority 3 vs 3, price 0.4704 vs 1.323)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-vl/offer-baidu-ernie-4-5-turbo-vl@v1#output_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#output_text_tokens (same plan, meter and conditions; priority 3 vs 3, price 0.4704 vs 1.323)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-32k/offer-7b1d6557b7366f26ef3c@v3#output_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#output_text_tokens (same plan, meter and conditions; priority 3 vs 3, same price)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-20260402/offer-baidu-ernie-4-5-turbo-20260402@v1#cached_read_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#cached_read_text_tokens (same plan, meter and conditions; priority 2 vs 2, same price)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-vl-32k/offer-baidu-ernie-4-5-turbo-vl-32k@v1#cached_read_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#cached_read_text_tokens (same plan, meter and conditions; priority 2 vs 2, price 0.0294 vs 0.11025)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-vl/offer-baidu-ernie-4-5-turbo-vl@v1#cached_read_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#cached_read_text_tokens (same plan, meter and conditions; priority 2 vs 2, price 0.0294 vs 0.11025)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-32k/offer-7b1d6557b7366f26ef3c@v3#cached_read_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#cached_read_text_tokens (same plan, meter and conditions; priority 2 vs 2, same price)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-20260402/offer-baidu-ernie-4-5-turbo-20260402@v1#input_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#input_text_tokens (same plan, meter and conditions; priority 1 vs 1, same price)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-vl-32k/offer-baidu-ernie-4-5-turbo-vl-32k@v1#input_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#input_text_tokens (same plan, meter and conditions; priority 1 vs 1, price 0.1176 vs 0.441)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-vl/offer-baidu-ernie-4-5-turbo-vl@v1#input_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#input_text_tokens (same plan, meter and conditions; priority 1 vs 1, price 0.1176 vs 0.441)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-4.5-turbo:text.generate baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-32k/offer-7b1d6557b7366f26ef3c@v3#input_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-4.5-turbo:ernie-4.5-turbo-128k/offer-baidu-ernie-4-5-turbo-128k@v1#input_text_tokens (same plan, meter and conditions; priority 1 vs 1, same price)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0-thinking-latest/baidu-ernie50-thinking-latest-gt32k-20261022@v1#output_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/baidu-ernie50-thinking-exp-gt32k-20261022@v1#output_text_tokens (same plan, meter and conditions; priority 3 vs 3, same price)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0-thinking-preview/baidu-ernie50-thinking-preview-gt32k-20261022@v1#output_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/baidu-ernie50-thinking-exp-gt32k-20261022@v1#output_text_tokens (same plan, meter and conditions; priority 3 vs 3, same price)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0/baidu-ernie50-gt32k-20261022@v1#output_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/baidu-ernie50-thinking-exp-gt32k-20261022@v1#output_text_tokens (same plan, meter and conditions; priority 3 vs 3, same price)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0-thinking-latest/offer-baidu-ernie-5-0-thinking-latest@v1#output_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/offer-baidu-ernie-5-0-thinking-exp@v1#output_text_tokens (same plan, meter and conditions; priority 3 vs 3, same price)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0-thinking-preview/offer-baidu-ernie-5-0-thinking-preview@v1#output_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/offer-baidu-ernie-5-0-thinking-exp@v1#output_text_tokens (same plan, meter and conditions; priority 3 vs 3, same price)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0/offer-1f9bb3a10af1a4f6da4d@v3#output_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/offer-baidu-ernie-5-0-thinking-exp@v1#output_text_tokens (same plan, meter and conditions; priority 3 vs 3, same price)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0-thinking-latest/baidu-ernie50-thinking-latest-gt32k-20261022@v1#input_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/baidu-ernie50-thinking-exp-gt32k-20261022@v1#input_text_tokens (same plan, meter and conditions; priority 1 vs 1, same price)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0-thinking-preview/baidu-ernie50-thinking-preview-gt32k-20261022@v1#input_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/baidu-ernie50-thinking-exp-gt32k-20261022@v1#input_text_tokens (same plan, meter and conditions; priority 1 vs 1, same price)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0/baidu-ernie50-gt32k-20261022@v1#input_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/baidu-ernie50-thinking-exp-gt32k-20261022@v1#input_text_tokens (same plan, meter and conditions; priority 1 vs 1, same price)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0-thinking-latest/offer-baidu-ernie-5-0-thinking-latest@v1#input_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/offer-baidu-ernie-5-0-thinking-exp@v1#input_text_tokens (same plan, meter and conditions; priority 1 vs 1, same price)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0-thinking-preview/offer-baidu-ernie-5-0-thinking-preview@v1#input_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/offer-baidu-ernie-5-0-thinking-exp@v1#input_text_tokens (same plan, meter and conditions; priority 1 vs 1, same price)"
+  },
+  {
+   "what": "rule baidu:baidu/ernie-5.0:text.generate baidu:baidu/ernie-5.0:ernie-5.0/offer-1f9bb3a10af1a4f6da4d@v3#input_text_tokens",
+   "reason": "shadowed by baidu:baidu/ernie-5.0:ernie-5.0-thinking-exp/offer-baidu-ernie-5-0-thinking-exp@v1#input_text_tokens (same plan, meter and conditions; priority 1 vs 1, same price)"
+  },
+  {
+   "what": "rule baseten:z-ai/glm-5.2:text.generate baseten:z-ai/glm-5.2-fast/feed-text.generate@v1#cached_read_text_tokens",
+   "reason": "shadowed by baseten:z-ai/glm-5.2/offer-68f48e0d11a3232b9f7e@v2#cached_read_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 0.14 vs 0.21)"
+  },
+  {
+   "what": "rule baseten:z-ai/glm-5.2:text.generate baseten:z-ai/glm-5.2-fast/feed-text.generate@v1#input_text_tokens",
+   "reason": "shadowed by baseten:z-ai/glm-5.2/offer-68f48e0d11a3232b9f7e@v2#input_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 1.4 vs 2.1)"
+  },
+  {
+   "what": "rule baseten:z-ai/glm-5.2:text.generate baseten:z-ai/glm-5.2-fast/feed-text.generate@v1#output_text_tokens",
+   "reason": "shadowed by baseten:z-ai/glm-5.2/offer-68f48e0d11a3232b9f7e@v2#output_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 4.4 vs 6.6)"
+  },
+  {
+   "what": "rule baseten:z-ai/glm-5.3:text.generate baseten:zai-org/GLM-5.3/offer-f0747a428547616c9e8a@v1#input_text_tokens",
+   "reason": "shadowed by baseten:z-ai/glm-5.3-fast/feed-text.generate@v1#input_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 2.1 vs 1.4)"
+  },
+  {
+   "what": "rule baseten:z-ai/glm-5.3:text.generate baseten:zai-org/GLM-5.3/offer-f0747a428547616c9e8a@v1#output_text_tokens",
+   "reason": "shadowed by baseten:z-ai/glm-5.3-fast/feed-text.generate@v1#output_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 6.6 vs 4.4)"
+  },
+  {
+   "what": "rule canopy-wave:moonshotai/kimi-k2.7-code:text.generate canopy-wave:moonshotai/kimi-k2.7-code-highspeed/offer-b618273cf0f63d08a8d3@v1#cached_read_text_tokens",
+   "reason": "shadowed by canopy-wave:moonshotai/kimi-k2.7-code/offer-85c0def97d8f8375a16b@v1#cached_read_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 0.19 vs 0.38)"
+  },
+  {
+   "what": "rule canopy-wave:moonshotai/kimi-k2.7-code:text.generate canopy-wave:moonshotai/kimi-k2.7-code-highspeed/offer-b618273cf0f63d08a8d3@v1#input_text_tokens",
+   "reason": "shadowed by canopy-wave:moonshotai/kimi-k2.7-code/offer-85c0def97d8f8375a16b@v1#input_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 0.95 vs 1.9)"
+  },
+  {
+   "what": "rule canopy-wave:moonshotai/kimi-k2.7-code:text.generate canopy-wave:moonshotai/kimi-k2.7-code-highspeed/offer-b618273cf0f63d08a8d3@v1#output_text_tokens",
+   "reason": "shadowed by canopy-wave:moonshotai/kimi-k2.7-code/offer-85c0def97d8f8375a16b@v1#output_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 4 vs 8)"
+  },
+  {
+   "what": "rule deepinfra:deepseek/deepseek-v4.1-flash-1017:text.generate deepinfra-flash-1017-flex@v1#cached_read_text_tokens",
+   "reason": "shadowed by deepinfra-flash-1017-flex-public-discount@v3#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.002352 vs 0.0048)"
+  },
+  {
+   "what": "rule deepinfra:deepseek/deepseek-v4.1-flash-1017:text.generate deepinfra-flash-1017-flex@v1#input_text_tokens",
+   "reason": "shadowed by deepinfra-flash-1017-flex-public-discount@v3#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0784 vs 0.16)"
+  },
+  {
+   "what": "rule deepinfra:deepseek/deepseek-v4.1-flash-1017:text.generate deepinfra-flash-1017-flex@v1#output_text_tokens",
+   "reason": "shadowed by deepinfra-flash-1017-flex-public-discount@v3#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.2352 vs 0.48)"
+  },
+  {
+   "what": "rule deepinfra:deepseek/deepseek-v4.1-flash-1017:text.generate deepinfra-flash-1017-priority@v1#cached_read_text_tokens",
+   "reason": "shadowed by deepinfra-flash-1017-priority-public-discount@v3#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.00441 vs 0.009)"
+  },
+  {
+   "what": "rule deepinfra:deepseek/deepseek-v4.1-flash-1017:text.generate deepinfra-flash-1017-priority@v1#input_text_tokens",
+   "reason": "shadowed by deepinfra-flash-1017-priority-public-discount@v3#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.147 vs 0.3)"
+  },
+  {
+   "what": "rule deepinfra:deepseek/deepseek-v4.1-flash-1017:text.generate deepinfra-flash-1017-priority@v1#output_text_tokens",
+   "reason": "shadowed by deepinfra-flash-1017-priority-public-discount@v3#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.441 vs 0.9)"
+  },
+  {
+   "what": "rule deepinfra:deepseek/deepseek-v4.1-flash-1017:text.generate deepinfra-flash-1017-standard@v1#cached_read_text_tokens",
+   "reason": "shadowed by deepinfra-flash-1017-standard-public-discount@v3#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.00294 vs 0.006)"
+  },
+  {
+   "what": "rule deepinfra:deepseek/deepseek-v4.1-flash-1017:text.generate deepinfra-flash-1017-standard@v1#input_text_tokens",
+   "reason": "shadowed by deepinfra-flash-1017-standard-public-discount@v3#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.098 vs 0.2)"
+  },
+  {
+   "what": "rule deepinfra:deepseek/deepseek-v4.1-flash-1017:text.generate deepinfra-flash-1017-standard@v1#output_text_tokens",
+   "reason": "shadowed by deepinfra-flash-1017-standard-public-discount@v3#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.294 vs 0.6)"
+  },
+  {
+   "what": "rule gmicloud:deepseek/deepseek-v4-pro:text.generate offer-8459f29d167e3e85304e@v2#cached_read_text_tokens",
+   "reason": "shadowed by offer-ac5909636657ca3439cd@v2#cached_read_text_tokens (same plan, meter and conditions; priority 100 vs 90, same price)"
+  },
+  {
+   "what": "rule gmicloud:deepseek/deepseek-v4-pro:text.generate offer-8459f29d167e3e85304e@v2#input_text_tokens",
+   "reason": "shadowed by offer-ac5909636657ca3439cd@v2#input_text_tokens (same plan, meter and conditions; priority 100 vs 90, same price)"
+  },
+  {
+   "what": "rule gmicloud:deepseek/deepseek-v4-pro:text.generate offer-8459f29d167e3e85304e@v2#output_text_tokens",
+   "reason": "shadowed by offer-ac5909636657ca3439cd@v2#output_text_tokens (same plan, meter and conditions; priority 100 vs 90, same price)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-4ab7bda53351c23f811e@v1#cached_read_audio_tokens",
+   "reason": "shadowed by offer-20259613359a6a8de049@v1#cached_read_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-4ab7bda53351c23f811e@v1#cached_read_image_tokens",
+   "reason": "shadowed by offer-20259613359a6a8de049@v1#cached_read_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-4ab7bda53351c23f811e@v1#cached_read_text_tokens",
+   "reason": "shadowed by offer-20259613359a6a8de049@v1#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-4ab7bda53351c23f811e@v1#cached_read_video_tokens",
+   "reason": "shadowed by offer-20259613359a6a8de049@v1#cached_read_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-4ab7bda53351c23f811e@v1#input_audio_tokens",
+   "reason": "shadowed by offer-20259613359a6a8de049@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-4ab7bda53351c23f811e@v1#input_image_tokens",
+   "reason": "shadowed by offer-20259613359a6a8de049@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-4ab7bda53351c23f811e@v1#input_text_tokens",
+   "reason": "shadowed by offer-20259613359a6a8de049@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-4ab7bda53351c23f811e@v1#input_video_tokens",
+   "reason": "shadowed by offer-20259613359a6a8de049@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-4ab7bda53351c23f811e@v1#output_text_tokens",
+   "reason": "shadowed by offer-20259613359a6a8de049@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 6.75 vs 13.5)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-7c7548511bd79deed595@v1#cached_read_audio_tokens",
+   "reason": "shadowed by offer-30ae0335a23f64028d27@v1#cached_read_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-7c7548511bd79deed595@v1#cached_read_image_tokens",
+   "reason": "shadowed by offer-30ae0335a23f64028d27@v1#cached_read_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-7c7548511bd79deed595@v1#cached_read_text_tokens",
+   "reason": "shadowed by offer-30ae0335a23f64028d27@v1#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-7c7548511bd79deed595@v1#cached_read_video_tokens",
+   "reason": "shadowed by offer-30ae0335a23f64028d27@v1#cached_read_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-7c7548511bd79deed595@v1#input_audio_tokens",
+   "reason": "shadowed by offer-30ae0335a23f64028d27@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-7c7548511bd79deed595@v1#input_image_tokens",
+   "reason": "shadowed by offer-30ae0335a23f64028d27@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-7c7548511bd79deed595@v1#input_text_tokens",
+   "reason": "shadowed by offer-30ae0335a23f64028d27@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-7c7548511bd79deed595@v1#input_video_tokens",
+   "reason": "shadowed by offer-30ae0335a23f64028d27@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-7c7548511bd79deed595@v1#output_text_tokens",
+   "reason": "shadowed by offer-30ae0335a23f64028d27@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-9f3dee4bd2e46670e618@v1#input_audio_tokens",
+   "reason": "shadowed by offer-cc7320006df249a0bea6-r20261022@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-9f3dee4bd2e46670e618@v1#input_image_tokens",
+   "reason": "shadowed by offer-cc7320006df249a0bea6-r20261022@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-9f3dee4bd2e46670e618@v1#input_text_tokens",
+   "reason": "shadowed by offer-cc7320006df249a0bea6-r20261022@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-9f3dee4bd2e46670e618@v1#input_video_tokens",
+   "reason": "shadowed by offer-cc7320006df249a0bea6-r20261022@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-9f3dee4bd2e46670e618@v1#output_text_tokens",
+   "reason": "shadowed by offer-cc7320006df249a0bea6-r20261022@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-e419a07799638152ed3d@v1#cached_read_audio_tokens",
+   "reason": "shadowed by offer-c46fd1fecd1dc9c9acc2@v1#cached_read_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-e419a07799638152ed3d@v1#cached_read_image_tokens",
+   "reason": "shadowed by offer-c46fd1fecd1dc9c9acc2@v1#cached_read_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-e419a07799638152ed3d@v1#cached_read_text_tokens",
+   "reason": "shadowed by offer-c46fd1fecd1dc9c9acc2@v1#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-e419a07799638152ed3d@v1#cached_read_video_tokens",
+   "reason": "shadowed by offer-c46fd1fecd1dc9c9acc2@v1#cached_read_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-e419a07799638152ed3d@v1#input_audio_tokens",
+   "reason": "shadowed by offer-c46fd1fecd1dc9c9acc2@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-e419a07799638152ed3d@v1#input_image_tokens",
+   "reason": "shadowed by offer-c46fd1fecd1dc9c9acc2@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-e419a07799638152ed3d@v1#input_text_tokens",
+   "reason": "shadowed by offer-c46fd1fecd1dc9c9acc2@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-e419a07799638152ed3d@v1#input_video_tokens",
+   "reason": "shadowed by offer-c46fd1fecd1dc9c9acc2@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-ai-studio:google/gemini-3.6-flash:text.generate offer-e419a07799638152ed3d@v1#output_text_tokens",
+   "reason": "shadowed by offer-c46fd1fecd1dc9c9acc2@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 3.75 vs 7.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-1d89be766866b1b18bec@v1#cached_read_audio_tokens",
+   "reason": "shadowed by offer-853591cb468357acde26@v1#cached_read_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-1d89be766866b1b18bec@v1#cached_read_image_tokens",
+   "reason": "shadowed by offer-853591cb468357acde26@v1#cached_read_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-1d89be766866b1b18bec@v1#cached_read_text_tokens",
+   "reason": "shadowed by offer-853591cb468357acde26@v1#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-1d89be766866b1b18bec@v1#cached_read_video_tokens",
+   "reason": "shadowed by offer-853591cb468357acde26@v1#cached_read_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-1d89be766866b1b18bec@v1#input_audio_tokens",
+   "reason": "shadowed by offer-853591cb468357acde26@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-1d89be766866b1b18bec@v1#input_image_tokens",
+   "reason": "shadowed by offer-853591cb468357acde26@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-1d89be766866b1b18bec@v1#input_text_tokens",
+   "reason": "shadowed by offer-853591cb468357acde26@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-1d89be766866b1b18bec@v1#input_video_tokens",
+   "reason": "shadowed by offer-853591cb468357acde26@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-1d89be766866b1b18bec@v1#output_text_tokens",
+   "reason": "shadowed by offer-853591cb468357acde26@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 3.75 vs 7.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-454585328e32fbce5c69@v1#cached_read_audio_tokens",
+   "reason": "shadowed by offer-d98629fe82623351c76b@v1#cached_read_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-454585328e32fbce5c69@v1#cached_read_image_tokens",
+   "reason": "shadowed by offer-d98629fe82623351c76b@v1#cached_read_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-454585328e32fbce5c69@v1#cached_read_text_tokens",
+   "reason": "shadowed by offer-d98629fe82623351c76b@v1#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-454585328e32fbce5c69@v1#cached_read_video_tokens",
+   "reason": "shadowed by offer-d98629fe82623351c76b@v1#cached_read_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-454585328e32fbce5c69@v1#input_audio_tokens",
+   "reason": "shadowed by offer-d98629fe82623351c76b@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-454585328e32fbce5c69@v1#input_image_tokens",
+   "reason": "shadowed by offer-d98629fe82623351c76b@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-454585328e32fbce5c69@v1#input_text_tokens",
+   "reason": "shadowed by offer-d98629fe82623351c76b@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-454585328e32fbce5c69@v1#input_video_tokens",
+   "reason": "shadowed by offer-d98629fe82623351c76b@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-454585328e32fbce5c69@v1#output_text_tokens",
+   "reason": "shadowed by offer-d98629fe82623351c76b@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 6.75 vs 13.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-62bd16ef65ea2e710dfd@v1#input_audio_tokens",
+   "reason": "shadowed by offer-ac594ef5226734f20808@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-62bd16ef65ea2e710dfd@v1#input_image_tokens",
+   "reason": "shadowed by offer-ac594ef5226734f20808@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-62bd16ef65ea2e710dfd@v1#input_text_tokens",
+   "reason": "shadowed by offer-ac594ef5226734f20808@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-62bd16ef65ea2e710dfd@v1#input_video_tokens",
+   "reason": "shadowed by offer-ac594ef5226734f20808@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-62bd16ef65ea2e710dfd@v1#output_text_tokens",
+   "reason": "shadowed by offer-ac594ef5226734f20808@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-8330a5e2c1d6ab7e8555@v1#cached_read_audio_tokens",
+   "reason": "shadowed by offer-faa7d9d61cfc993b9015@v1#cached_read_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-8330a5e2c1d6ab7e8555@v1#cached_read_image_tokens",
+   "reason": "shadowed by offer-faa7d9d61cfc993b9015@v1#cached_read_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-8330a5e2c1d6ab7e8555@v1#cached_read_text_tokens",
+   "reason": "shadowed by offer-faa7d9d61cfc993b9015@v1#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-8330a5e2c1d6ab7e8555@v1#cached_read_video_tokens",
+   "reason": "shadowed by offer-faa7d9d61cfc993b9015@v1#cached_read_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-8330a5e2c1d6ab7e8555@v1#input_audio_tokens",
+   "reason": "shadowed by offer-faa7d9d61cfc993b9015@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-8330a5e2c1d6ab7e8555@v1#input_image_tokens",
+   "reason": "shadowed by offer-faa7d9d61cfc993b9015@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-8330a5e2c1d6ab7e8555@v1#input_text_tokens",
+   "reason": "shadowed by offer-faa7d9d61cfc993b9015@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-8330a5e2c1d6ab7e8555@v1#input_video_tokens",
+   "reason": "shadowed by offer-faa7d9d61cfc993b9015@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.6-flash:text.generate offer-8330a5e2c1d6ab7e8555@v1#output_text_tokens",
+   "reason": "shadowed by offer-faa7d9d61cfc993b9015@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-074977d07b3c541f1184@v1#cached_read_audio_tokens",
+   "reason": "shadowed by offer-e9ea401e5b65dd00fd29@v1#cached_read_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-074977d07b3c541f1184@v1#cached_read_image_tokens",
+   "reason": "shadowed by offer-e9ea401e5b65dd00fd29@v1#cached_read_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-074977d07b3c541f1184@v1#cached_read_text_tokens",
+   "reason": "shadowed by offer-e9ea401e5b65dd00fd29@v1#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-074977d07b3c541f1184@v1#cached_read_video_tokens",
+   "reason": "shadowed by offer-e9ea401e5b65dd00fd29@v1#cached_read_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.135 vs 0.27)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-074977d07b3c541f1184@v1#input_audio_tokens",
+   "reason": "shadowed by offer-e9ea401e5b65dd00fd29@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-074977d07b3c541f1184@v1#input_image_tokens",
+   "reason": "shadowed by offer-e9ea401e5b65dd00fd29@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-074977d07b3c541f1184@v1#input_text_tokens",
+   "reason": "shadowed by offer-e9ea401e5b65dd00fd29@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-074977d07b3c541f1184@v1#input_video_tokens",
+   "reason": "shadowed by offer-e9ea401e5b65dd00fd29@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.35 vs 2.7)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-074977d07b3c541f1184@v1#output_text_tokens",
+   "reason": "shadowed by offer-e9ea401e5b65dd00fd29@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 6.75 vs 13.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-4df1e2c00906980ffc54@v1#cached_read_audio_tokens",
+   "reason": "shadowed by offer-94d9c9a92a239c106b0c@v1#cached_read_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-4df1e2c00906980ffc54@v1#cached_read_image_tokens",
+   "reason": "shadowed by offer-94d9c9a92a239c106b0c@v1#cached_read_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-4df1e2c00906980ffc54@v1#cached_read_text_tokens",
+   "reason": "shadowed by offer-94d9c9a92a239c106b0c@v1#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-4df1e2c00906980ffc54@v1#cached_read_video_tokens",
+   "reason": "shadowed by offer-94d9c9a92a239c106b0c@v1#cached_read_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.075 vs 0.15)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-4df1e2c00906980ffc54@v1#input_audio_tokens",
+   "reason": "shadowed by offer-94d9c9a92a239c106b0c@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-4df1e2c00906980ffc54@v1#input_image_tokens",
+   "reason": "shadowed by offer-94d9c9a92a239c106b0c@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-4df1e2c00906980ffc54@v1#input_text_tokens",
+   "reason": "shadowed by offer-94d9c9a92a239c106b0c@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-4df1e2c00906980ffc54@v1#input_video_tokens",
+   "reason": "shadowed by offer-94d9c9a92a239c106b0c@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.75 vs 1.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-4df1e2c00906980ffc54@v1#output_text_tokens",
+   "reason": "shadowed by offer-94d9c9a92a239c106b0c@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 3.75 vs 7.5)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-87e0739c273078c22457@v1#cached_read_audio_tokens",
+   "reason": "shadowed by offer-d923cac4cf2aae6999bd@v1#cached_read_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-87e0739c273078c22457@v1#cached_read_image_tokens",
+   "reason": "shadowed by offer-d923cac4cf2aae6999bd@v1#cached_read_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-87e0739c273078c22457@v1#cached_read_text_tokens",
+   "reason": "shadowed by offer-d923cac4cf2aae6999bd@v1#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-87e0739c273078c22457@v1#cached_read_video_tokens",
+   "reason": "shadowed by offer-d923cac4cf2aae6999bd@v1#cached_read_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.0375 vs 0.075)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-87e0739c273078c22457@v1#input_audio_tokens",
+   "reason": "shadowed by offer-d923cac4cf2aae6999bd@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-87e0739c273078c22457@v1#input_image_tokens",
+   "reason": "shadowed by offer-d923cac4cf2aae6999bd@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-87e0739c273078c22457@v1#input_text_tokens",
+   "reason": "shadowed by offer-d923cac4cf2aae6999bd@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-87e0739c273078c22457@v1#input_video_tokens",
+   "reason": "shadowed by offer-d923cac4cf2aae6999bd@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-87e0739c273078c22457@v1#output_text_tokens",
+   "reason": "shadowed by offer-d923cac4cf2aae6999bd@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-f1642f0ba84a698e7e7c@v1#input_audio_tokens",
+   "reason": "shadowed by offer-aff7fa666355bff4a4e9@v1#input_audio_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-f1642f0ba84a698e7e7c@v1#input_image_tokens",
+   "reason": "shadowed by offer-aff7fa666355bff4a4e9@v1#input_image_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-f1642f0ba84a698e7e7c@v1#input_text_tokens",
+   "reason": "shadowed by offer-aff7fa666355bff4a4e9@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-f1642f0ba84a698e7e7c@v1#input_video_tokens",
+   "reason": "shadowed by offer-aff7fa666355bff4a4e9@v1#input_video_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.375 vs 0.75)"
+  },
+  {
+   "what": "rule google-vertex:google/gemini-3.7-flash:text.generate offer-f1642f0ba84a698e7e7c@v1#output_text_tokens",
+   "reason": "shadowed by offer-aff7fa666355bff4a4e9@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.875 vs 3.75)"
+  },
+  {
+   "what": "rule inception:inception/mercury-3:text.generate standard-list@v1#cached_read_text_tokens",
+   "reason": "shadowed by standard-launch@v1#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.01 vs 0.02)"
+  },
+  {
+   "what": "rule inception:inception/mercury-3:text.generate standard-list@v1#input_text_tokens",
+   "reason": "shadowed by standard-launch@v1#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.1 vs 0.2)"
+  },
+  {
+   "what": "rule inception:inception/mercury-3:text.generate standard-list@v1#output_text_tokens",
+   "reason": "shadowed by standard-launch@v1#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.35 vs 0.7)"
+  },
+  {
+   "what": "rule inference-net:moonshotai/kimi-k3-fast:text.generate inference-net:moonshotai/kimi-k3-fast/inference-net-reconcile-d01b8cbe7ab0452fbde9fd8b16fbc89c@v1#output_text_tokens",
+   "reason": "shadowed by inference-net:kimi-k3-fast/inference-net-reconcile-0298fd0f9b4d4c4fe02323387026c148@v1#output_text_tokens (same plan, meter and conditions; priority 30 vs 30, same price)"
+  },
+  {
+   "what": "rule inference-net:moonshotai/kimi-k3-fast:text.generate inference-net:moonshotai/kimi-k3-fast/inference-net-reconcile-d01b8cbe7ab0452fbde9fd8b16fbc89c@v1#cached_read_text_tokens",
+   "reason": "shadowed by inference-net:kimi-k3-fast/inference-net-reconcile-0298fd0f9b4d4c4fe02323387026c148@v1#cached_read_text_tokens (same plan, meter and conditions; priority 20 vs 20, same price)"
+  },
+  {
+   "what": "rule inference-net:moonshotai/kimi-k3-fast:text.generate inference-net:moonshotai/kimi-k3-fast/inference-net-reconcile-d01b8cbe7ab0452fbde9fd8b16fbc89c@v1#input_text_tokens",
+   "reason": "shadowed by inference-net:kimi-k3-fast/inference-net-reconcile-0298fd0f9b4d4c4fe02323387026c148@v1#input_text_tokens (same plan, meter and conditions; priority 10 vs 10, same price)"
+  },
+  {
+   "what": "rule longcat:meituan/longcat-2.0:text.generate offer-3f1d51e1427580a8728f@v1#cached_read_text_tokens",
+   "reason": "shadowed by offer-83c0ba2d7c8ea229e35b@v1#cached_read_text_tokens (same plan, meter and conditions; priority 100 vs 90, price 0.006 vs 0.015)"
+  },
+  {
+   "what": "rule longcat:meituan/longcat-2.0:text.generate offer-3f1d51e1427580a8728f@v1#input_text_tokens",
+   "reason": "shadowed by offer-83c0ba2d7c8ea229e35b@v1#input_text_tokens (same plan, meter and conditions; priority 100 vs 90, price 0.3 vs 0.75)"
+  },
+  {
+   "what": "rule longcat:meituan/longcat-2.0:text.generate offer-3f1d51e1427580a8728f@v1#output_text_tokens",
+   "reason": "shadowed by offer-83c0ba2d7c8ea229e35b@v1#output_text_tokens (same plan, meter and conditions; priority 100 vs 90, price 1.2 vs 2.95)"
+  },
+  {
+   "what": "rule mistral:mistral/ministral-3.0-3b:text.generate offer-a98fd9287002d224000a@v1#input_text_tokens",
+   "reason": "shadowed by offer-657b4ff589c2b50b7569@v1#input_text_tokens (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule mistral:mistral/ministral-3.0-3b:text.generate offer-a98fd9287002d224000a@v1#output_text_tokens",
+   "reason": "shadowed by offer-657b4ff589c2b50b7569@v1#output_text_tokens (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule mistral:mistral/ministral-3.0-3b:text.generate offer-d28f6ff8d7497ac43cc7@v1#input_text_tokens",
+   "reason": "shadowed by offer-284312c7cb2736c5bc74@v1#input_text_tokens (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule mistral:mistral/ministral-3.0-3b:text.generate offer-d28f6ff8d7497ac43cc7@v1#output_text_tokens",
+   "reason": "shadowed by offer-284312c7cb2736c5bc74@v1#output_text_tokens (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule mistral:mistral/ministral-3.0-3b:text.generate offer-e98cac1eb88f2f7f44ad@v1#input_text_tokens",
+   "reason": "shadowed by offer-6b3e9753206acd7f7864@v1#input_text_tokens (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule mistral:mistral/ministral-3.0-3b:text.generate offer-e98cac1eb88f2f7f44ad@v1#output_text_tokens",
+   "reason": "shadowed by offer-6b3e9753206acd7f7864@v1#output_text_tokens (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule moonshotai:moonshotai/kimi-k2.7-code:text.generate moonshotai:moonshotai/kimi-k2.7-code/offer-67756b22319c711227af@v1#cached_read_text_tokens",
+   "reason": "shadowed by moonshotai:moonshotai/kimi-k2.7-code-highspeed/feed-text.generate@v1#cached_read_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 0.38 vs 0.19)"
+  },
+  {
+   "what": "rule moonshotai:moonshotai/kimi-k2.7-code:text.generate moonshotai:moonshotai/kimi-k2.7-code/offer-67756b22319c711227af@v1#input_text_tokens",
+   "reason": "shadowed by moonshotai:moonshotai/kimi-k2.7-code-highspeed/feed-text.generate@v1#input_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 1.9 vs 0.95)"
+  },
+  {
+   "what": "rule moonshotai:moonshotai/kimi-k2.7-code:text.generate moonshotai:moonshotai/kimi-k2.7-code/offer-67756b22319c711227af@v1#output_text_tokens",
+   "reason": "shadowed by moonshotai:moonshotai/kimi-k2.7-code-highspeed/feed-text.generate@v1#output_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 8 vs 4)"
+  },
+  {
+   "what": "rule morph:moonshotai/kimi-k3:text.generate morph:morph-kimik3-fast/offer-155d858b017d7df7a0e3@v1#cached_read_text_tokens",
+   "reason": "shadowed by morph:morph-kimik3/offer-3b1cd28d9aa6e4b77516@v2#cached_read_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 0.29 vs 0.6)"
+  },
+  {
+   "what": "rule morph:moonshotai/kimi-k3:text.generate morph:morph-kimik3-fast/offer-155d858b017d7df7a0e3@v1#input_text_tokens",
+   "reason": "shadowed by morph:morph-kimik3/offer-3b1cd28d9aa6e4b77516@v2#input_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 2.5 vs 6)"
+  },
+  {
+   "what": "rule morph:moonshotai/kimi-k3:text.generate morph:morph-kimik3-fast/offer-155d858b017d7df7a0e3@v1#output_text_tokens",
+   "reason": "shadowed by morph:morph-kimik3/offer-3b1cd28d9aa6e4b77516@v2#output_text_tokens (same plan, meter and conditions; priority 100 vs 100, price 14 vs 22.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-4o-mini-tts:audio.speech offer-e70f8e6f993c0fdf8ba5@v1#input_text_tokens",
+   "reason": "shadowed by offer-50e77712185309a3a56e@v1#input_text_tokens (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule openai:openai/gpt-4o-mini-tts:audio.speech offer-e70f8e6f993c0fdf8ba5@v1#output_audio_tokens",
+   "reason": "shadowed by offer-50e77712185309a3a56e@v1#output_audio_tokens (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:batch offer-458919d3a80e52646c0c@v2#cached_read_text_tokens",
+   "reason": "shadowed by offer-850159d429eefdb19353@v2#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.2 vs 0.25)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:batch offer-458919d3a80e52646c0c@v2#cached_write_text_tokens_12h",
+   "reason": "shadowed by offer-850159d429eefdb19353@v2#cached_write_text_tokens_12h (same plan, meter and conditions; priority 200 vs 100, price 5 vs 6.25)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:batch offer-458919d3a80e52646c0c@v2#cached_write_text_tokens_30m",
+   "reason": "shadowed by offer-850159d429eefdb19353@v2#cached_write_text_tokens_30m (same plan, meter and conditions; priority 200 vs 100, price 2.5 vs 3.125)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:batch offer-458919d3a80e52646c0c@v2#input_text_tokens",
+   "reason": "shadowed by offer-850159d429eefdb19353@v2#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 2 vs 2.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:batch offer-458919d3a80e52646c0c@v2#output_text_tokens",
+   "reason": "shadowed by offer-850159d429eefdb19353@v2#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 10 vs 15)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:batch offer-91d2d07db6947fb473b1@v2#cached_read_text_tokens",
+   "reason": "shadowed by offer-1cbe6277fa5cc6c771de@v2#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.4 vs 0.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:batch offer-91d2d07db6947fb473b1@v2#cached_write_text_tokens_12h",
+   "reason": "shadowed by offer-1cbe6277fa5cc6c771de@v2#cached_write_text_tokens_12h (same plan, meter and conditions; priority 200 vs 100, price 10 vs 12.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:batch offer-91d2d07db6947fb473b1@v2#cached_write_text_tokens_30m",
+   "reason": "shadowed by offer-1cbe6277fa5cc6c771de@v2#cached_write_text_tokens_30m (same plan, meter and conditions; priority 200 vs 100, price 5 vs 6.25)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:batch offer-91d2d07db6947fb473b1@v2#input_text_tokens",
+   "reason": "shadowed by offer-1cbe6277fa5cc6c771de@v2#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 4 vs 5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:batch offer-91d2d07db6947fb473b1@v2#output_text_tokens",
+   "reason": "shadowed by offer-1cbe6277fa5cc6c771de@v2#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 15 vs 22.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-1e773f6b023b34d16d11@v2#cached_read_text_tokens",
+   "reason": "shadowed by offer-275a7f1d7e8dfc85ba1b@v2#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.4 vs 0.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-1e773f6b023b34d16d11@v2#cached_write_text_tokens_12h",
+   "reason": "shadowed by offer-275a7f1d7e8dfc85ba1b@v2#cached_write_text_tokens_12h (same plan, meter and conditions; priority 200 vs 100, price 10 vs 12.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-1e773f6b023b34d16d11@v2#cached_write_text_tokens_30m",
+   "reason": "shadowed by offer-275a7f1d7e8dfc85ba1b@v2#cached_write_text_tokens_30m (same plan, meter and conditions; priority 200 vs 100, price 5 vs 6.25)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-1e773f6b023b34d16d11@v2#input_text_tokens",
+   "reason": "shadowed by offer-275a7f1d7e8dfc85ba1b@v2#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 4 vs 5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-1e773f6b023b34d16d11@v2#output_text_tokens",
+   "reason": "shadowed by offer-275a7f1d7e8dfc85ba1b@v2#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 15 vs 22.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-551b89ad82116e624569@v2#cached_read_text_tokens",
+   "reason": "shadowed by offer-1f002f72af7a90dc56a1@v2#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.8 vs 1)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-551b89ad82116e624569@v2#cached_write_text_tokens_12h",
+   "reason": "shadowed by offer-1f002f72af7a90dc56a1@v2#cached_write_text_tokens_12h (same plan, meter and conditions; priority 200 vs 100, price 20 vs 25)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-551b89ad82116e624569@v2#cached_write_text_tokens_30m",
+   "reason": "shadowed by offer-1f002f72af7a90dc56a1@v2#cached_write_text_tokens_30m (same plan, meter and conditions; priority 200 vs 100, price 10 vs 12.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-551b89ad82116e624569@v2#input_text_tokens",
+   "reason": "shadowed by offer-1f002f72af7a90dc56a1@v2#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 8 vs 10)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-551b89ad82116e624569@v2#output_text_tokens",
+   "reason": "shadowed by offer-1f002f72af7a90dc56a1@v2#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 30 vs 45)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-688384acb78225178dee@v2#cached_read_text_tokens",
+   "reason": "shadowed by offer-5016b59162c296e571fd@v2#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.4 vs 0.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-688384acb78225178dee@v2#cached_write_text_tokens_12h",
+   "reason": "shadowed by offer-5016b59162c296e571fd@v2#cached_write_text_tokens_12h (same plan, meter and conditions; priority 200 vs 100, price 10 vs 12.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-688384acb78225178dee@v2#cached_write_text_tokens_30m",
+   "reason": "shadowed by offer-5016b59162c296e571fd@v2#cached_write_text_tokens_30m (same plan, meter and conditions; priority 200 vs 100, price 5 vs 6.25)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-688384acb78225178dee@v2#input_text_tokens",
+   "reason": "shadowed by offer-5016b59162c296e571fd@v2#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 4 vs 5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-688384acb78225178dee@v2#output_text_tokens",
+   "reason": "shadowed by offer-5016b59162c296e571fd@v2#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 20 vs 30)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-a15b82440c5552296a0d@v2#cached_read_text_tokens",
+   "reason": "shadowed by offer-d2c92a59710ba50e7dcf@v2#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.2 vs 0.25)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-a15b82440c5552296a0d@v2#cached_write_text_tokens_12h",
+   "reason": "shadowed by offer-d2c92a59710ba50e7dcf@v2#cached_write_text_tokens_12h (same plan, meter and conditions; priority 200 vs 100, price 5 vs 6.25)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-a15b82440c5552296a0d@v2#cached_write_text_tokens_30m",
+   "reason": "shadowed by offer-d2c92a59710ba50e7dcf@v2#cached_write_text_tokens_30m (same plan, meter and conditions; priority 200 vs 100, price 2.5 vs 3.125)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-a15b82440c5552296a0d@v2#input_text_tokens",
+   "reason": "shadowed by offer-d2c92a59710ba50e7dcf@v2#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 2 vs 2.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-a15b82440c5552296a0d@v2#output_text_tokens",
+   "reason": "shadowed by offer-d2c92a59710ba50e7dcf@v2#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 10 vs 15)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-fdeb80f304a65fcf2c77@v2#cached_read_text_tokens",
+   "reason": "shadowed by offer-c1bb180eb436aee922e6@v2#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 1.6 vs 2)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-fdeb80f304a65fcf2c77@v2#cached_write_text_tokens_12h",
+   "reason": "shadowed by offer-c1bb180eb436aee922e6@v2#cached_write_text_tokens_12h (same plan, meter and conditions; priority 200 vs 100, price 40 vs 50)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-fdeb80f304a65fcf2c77@v2#cached_write_text_tokens_30m",
+   "reason": "shadowed by offer-c1bb180eb436aee922e6@v2#cached_write_text_tokens_30m (same plan, meter and conditions; priority 200 vs 100, price 20 vs 25)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-fdeb80f304a65fcf2c77@v2#input_text_tokens",
+   "reason": "shadowed by offer-c1bb180eb436aee922e6@v2#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 16 vs 20)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-fdeb80f304a65fcf2c77@v2#output_text_tokens",
+   "reason": "shadowed by offer-c1bb180eb436aee922e6@v2#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 60 vs 90)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-fefa3d15592982aab107@v2#cached_read_text_tokens",
+   "reason": "shadowed by offer-3f61be28bc52c5a59036@v2#cached_read_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 0.8 vs 1)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-fefa3d15592982aab107@v2#cached_write_text_tokens_12h",
+   "reason": "shadowed by offer-3f61be28bc52c5a59036@v2#cached_write_text_tokens_12h (same plan, meter and conditions; priority 200 vs 100, price 20 vs 25)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-fefa3d15592982aab107@v2#cached_write_text_tokens_30m",
+   "reason": "shadowed by offer-3f61be28bc52c5a59036@v2#cached_write_text_tokens_30m (same plan, meter and conditions; priority 200 vs 100, price 10 vs 12.5)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-fefa3d15592982aab107@v2#input_text_tokens",
+   "reason": "shadowed by offer-3f61be28bc52c5a59036@v2#input_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 8 vs 10)"
+  },
+  {
+   "what": "rule openai:openai/gpt-5.6-sol-pro:text.generate offer-fefa3d15592982aab107@v2#output_text_tokens",
+   "reason": "shadowed by offer-3f61be28bc52c5a59036@v2#output_text_tokens (same plan, meter and conditions; priority 200 vs 100, price 40 vs 60)"
+  },
+  {
+   "what": "rule openai:openai/omni-moderation:text.moderate offer-d1dcec6daddc1ca9bd5c@v1#requests",
+   "reason": "shadowed by offer-ade99a21cb50f0f31e16@v1#requests (same plan, meter and conditions; priority 100 vs 100, same price)"
+  },
+  {
+   "what": "adapter-side condition extraction for media cards",
+   "reason": "condition values (image_params, video_params, resolution, mode, ...) are handed to the engine in usage.context; media adapters derive them from the request, which this layer does not run"
+  },
+  {
+   "what": "executor usage mapping",
+   "reason": "documented cases start from the gateway IR usage (core/ir.ts); the executor layer of the simulator covers native-to-IR mapping"
+  },
+  {
+   "what": "BYOK fees, data-contribution discounts, tier markup, credits",
+   "reason": "applied after calculatePricing"
+  },
+  {
+   "what": "SKUs that are not active (draft, deprecated, disabled)",
+   "reason": "the sweep prices active SKUs only, as the gateway does"
+  }
+ ]
+}

@@ -5,47 +5,49 @@ description: "Phaseo Gateway のベース URL、認証、エンドポイント�
 icon: "map"
 ---
 
-エンドポイントリファレンスを開く前に、このページで適切な API パスを確認してください。Phaseo Gateway のすべてのエンドポイントは共通のベース URL を使用し、Bearer 認証を使います。
+すべてのリクエストを `https://api.phaseo.app/v1` に送信し、キーを `Authorization: Bearer` ヘッダーに入れます。下の表で目的に合うエンドポイントを見つけ、そのリファレンスページを開いてください。
 
-## パスを選ぶ
+## 適切なエンドポイントを見つける
 
 | 目的 | 参照先 |
 | --- | --- |
-| 最初のリクエストを送信する | [クイックスタート](../quickstart.mdx) |
-| テキストを生成する、またはツールを使う | `POST /responses` |
+| 最初のリクエストを送信する | [クイックスタート](../quickstart) |
+| テキストを生成する、またはツールを使う | [`POST /responses`](./endpoint/responses) |
 | 型付きの判断を行う | [`POST /decisions`](./endpoint/decisions) |
-| 既存の OpenAI 互換連携を維持する | `POST /chat/completions` |
-| モデルとプロバイダーを確認する | `GET /models` と `GET /providers` |
-| 音楽を作成する、またはファイルを管理する | `POST /music/generations` と `POST /files` |
-| 動画を生成（ベータ） | [`POST /videos`](./endpoint/video-create) |
-| バッチ送信または結果のダウンロード（ベータ） | [`POST /batches`](./endpoint/batches-create) と [`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
+| 既存の OpenAI 互換連携を維持する | [`POST /chat/completions`](./endpoint/chat-completions) |
+| モデルとプロバイダーを確認する | [`GET /models`](./endpoint/models) と [`GET /providers`](./endpoint/providers) |
+| 音楽を作成する、またはファイルを管理する | [`POST /music/generate`](./endpoint/music-generate) と [`POST /files`](./endpoint/files) |
+| 動画を生成する（ベータ） | [`POST /videos`](./endpoint/video-create) |
+| バッチを送信する、または結果をダウンロードする（ベータ） | [`POST /batches`](./endpoint/batches-create) と [`GET /batches/{batch_id}/results`](./endpoint/batches-results) |
 
 ## ベース URL
-
-本番環境のベース URL:
 
 ```http
 https://api.phaseo.app/v1
 ```
 
-このリファレンスのエンドポイントパスは、すべてベース URL `/v1` からの相対パスです。
+このリファレンスのエンドポイントパスは、すべてこのベース URL からの相対パスです。
 
 ## OpenAPI
 
-OpenAPI ファイルを使うと、Postman、Hoppscotch、SDK ジェネレーターに API をインポートできます。
+OpenAPI ファイルを Postman、Hoppscotch、または SDK ジェネレーターにインポートします。
 
 <Card
-  title="Phaseo Gateway OpenAPI"
-  icon="list-bullet"
+	title="Phaseo Gateway OpenAPI"
+	icon="list-bullet"
 	href="https://github.com/phaseoteam/Phaseo/blob/main/apps/docs/openapi/v1/openapi.yaml"
 >
-  仕様ファイルを表示
+	仕様ファイルを表示
 </Card>
 
-ドキュメントとSDKは同じ仕様を使います。Video、Batch、Decisionsのエンドポイントは**ベータ**で、ワークスペースのプレビューアクセスが必要な場合があります。
+ドキュメントと SDK はこの同じ仕様を使います。Video、Batch、Decisions のエンドポイントには**ベータ**のラベルが付いており、ワークスペースのプレビューアクセスが必要な場合があります。
+
 ## 認証
 
-推論には標準のGateway APIキー、管理には適切な権限を持つ管理APIキーを使います。[認証](../developers/authentication.mdx)と[管理APIキー](../developers/management-api-keys.mdx)を参照してください。
+| 認証情報 | 形式 | 呼び出せるもの |
+| --- | --- | --- |
+| [Gateway API キー](../developers/authentication.mdx) | `phaseo_v1_sk_<kid>_<secret>` | 推論エンドポイント |
+| [管理 API キー](../developers/management-api-keys.mdx) | `phaseo_v1_mk_<kid>_<secret>` | 管理エンドポイント（キーの権限の範囲内） |
 
 ```http
 Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
@@ -57,8 +59,8 @@ Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 
 | リソース | 機能 |
 | --- | --- |
-| 推論 | テキスト、画像、音声、埋め込みを生成し、判断、再ランキング、モデレーション、解析を行います。[Responses](./endpoint/responses.mdx)または[Decisions](./endpoint/decisions.mdx)から始めてください。 |
-| 非同期ジョブとファイル | [動画](./endpoint/video-create.mdx)または[バッチ](./endpoint/batches-create.mdx)ジョブを送信し、ファイル転送とWebhook設定を行います。 |
+| 推論 | テキスト、画像、音声、埋め込みを生成し、判断、再ランキング、モデレーション、解析を行います。[Responses](./endpoint/responses.mdx) または [Decisions](./endpoint/decisions.mdx) から始めてください。 |
+| 非同期ジョブとファイル | [動画](./endpoint/video-create.mdx)または[バッチ](./endpoint/batches-create.mdx)ジョブを送信し、ファイルを転送し、Webhook を設定します。 |
 | モデルと料金 | [モデル](./endpoint/models.mdx)、プロバイダーの提供内容、[推定コスト](./endpoint/pricing-calculate.mdx)を確認します。 |
 | ルーティングとポリシー | プリセット、プロバイダー認証情報、プライベートモデル、[ガードレール](./endpoint/guardrails.mdx)を設定します。 |
 | 使用量と監視 | [ログ](./endpoint/logs-list.mdx)、アクティビティ、分析、評価、サービスの状態を確認します。 |
@@ -66,6 +68,4 @@ Authorization: Bearer phaseo_v1_sk_<kid>_<secret>
 
 ## 課金とレート制限
 
-- [レート制限ガイド](./limits.mdx)でプロバイダーの制限と適用されるアクセスポリシーを確認してください。
-- 有料リクエストでは、事前のクレジット確認に通るだけのウォレット残高が必要です。
-- `:free` を含む無料モデルでは、入金済みクレジットは不要です。
+有料リクエストは、実行前のクレジット確認に通るだけのウォレット残高が必要です。ID が `:free` で終わるモデルには、入金済みクレジットは不要です。リクエストはプロバイダー、またはワークスペースとキーの制限によってスロットリングされることがあります。[レート制限](./limits.mdx)を参照してください。

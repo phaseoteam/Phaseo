@@ -3,6 +3,7 @@ import { getDataClient } from "@/data/supabase";
 import type { Env } from "@/env";
 import { withPublicCache } from "@/http/cache";
 import { formatProviderOfferDisplayName, type ProviderOfferScope } from "@/lib/provider-display-name";
+import { ARTIFICIAL_ANALYSIS_ID, isArtificialAnalysisEntry } from "@/benchmarks/artificial-analysis-catalogue";
 
 export const frontendRouter = new Hono<{ Bindings: Env }>();
 
@@ -63,6 +64,14 @@ async function v2SearchIndex(c: Context<{ Bindings: Env }>): Promise<CompactSear
 	for (const result of [organisationsResult, benchmarksResult, providersResult]) {
 		if (result.error) throw result.error;
 	}
+	const benchmarkRows = benchmarksResult.data ?? [];
+	// Search needs a stable destination, not score coverage. Keep result scans
+	// out of this short-lived global index and resolve the version on the page.
+	const hasVersionedIndex = benchmarkRows.some((row) => /^aa-intelligence-index-v[1-9]\d*$/.test(row.benchmark_id) && (row.total_models ?? 0) > 0);
+	const benchmarkEntries = hasVersionedIndex ? benchmarkRows.filter((row) => !isArtificialAnalysisEntry(row.benchmark_id)) : benchmarkRows;
+	if (hasVersionedIndex) {
+		benchmarkEntries.push({ benchmark_id: ARTIFICIAL_ANALYSIS_ID, name: "Artificial Analysis", total_models: 0 });
+	}
 	const orderedModels = [...models].sort((left, right) => {
 		const leftTime = Date.parse(left.released_at ?? left.announced_at ?? "");
 		const rightTime = Date.parse(right.released_at ?? right.announced_at ?? "");
@@ -73,7 +82,11 @@ async function v2SearchIndex(c: Context<{ Bindings: Env }>): Promise<CompactSear
 	return {
 		m: orderedModels.map((model) => [model.model_slug, model.name, (Array.isArray(model.lab) ? model.lab[0] : model.lab)?.name ?? null, `/models/${model.model_slug}`, model.lab_slug, releaseGroupLabel(model.released_at ?? model.announced_at)]),
 		o: (organisationsResult.data ?? []).map((organisation) => [organisation.lab_slug, organisation.name || organisation.lab_slug, null, `/organisations/${organisation.lab_slug}`, organisation.lab_slug]),
-		b: (benchmarksResult.data ?? []).map((benchmark) => [benchmark.benchmark_id, benchmark.name, `${benchmark.total_models ?? 0} models`, `/benchmarks/${benchmark.benchmark_id}`]),
+		b: benchmarkEntries.sort((a, b) => (a.name ?? "").localeCompare(b.name ?? "")).map((benchmark) => [
+			benchmark.benchmark_id, benchmark.name,
+			benchmark.benchmark_id === ARTIFICIAL_ANALYSIS_ID ? "Intelligence, Coding, Agentic, Evaluation Cost" : `${benchmark.total_models ?? 0} models`,
+			`/benchmarks/${benchmark.benchmark_id}`,
+		]),
 		p: (providersResult.data ?? []).map((provider) => [
 			provider.provider_slug,
 			formatProviderOfferDisplayName({

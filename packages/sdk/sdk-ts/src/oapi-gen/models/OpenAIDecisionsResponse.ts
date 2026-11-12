@@ -1,0 +1,62 @@
+export interface OpenAIDecisionsResponse {
+  answers: (
+    | {
+        name: string | null;
+        probability: number;
+        type: "predicate";
+      }
+    | {
+        choice: string | boolean;
+        confidence: number;
+        name: string | null;
+        probabilities: {
+          probability: number;
+          value: string | boolean;
+        }[];
+        type: "choice";
+      }
+    | {
+        confidence: number;
+        name: string | null;
+        probabilities: {
+          label: string;
+          probability: number;
+          value: number;
+        }[];
+        score: number;
+        type: "score";
+      }
+    | {
+        name: string | null;
+        type: "refusal";
+      }
+    | {
+        box: {
+          bottom: number;
+          left: number;
+          right: number;
+          top: number;
+        };
+        confidence: number | null;
+        name: string | null;
+        type: "box";
+      }
+  )[];
+  meta?: {
+    [key: string]: unknown;
+  };
+  model: string;
+  request_id?: string | null;
+  usage: {
+    input_tokens?: number;
+    input_tokens_details?: {
+      cache_write_tokens?: number;
+      cached_tokens?: number;
+    };
+    output_tokens?: number;
+    output_tokens_details?: {
+      reasoning_tokens?: number;
+    };
+    total_tokens?: number;
+  };
+}

@@ -1,34 +1,60 @@
 ---
 title: "Abonnementpläne"
-description: "Überblick über Abonnementpläne und -stufen von API-Anbietern und ihre Auswirkungen auf Zugriff und Preise."
-sidebarTitle: "Provider-Pläne"
+description: "Wähle kostenlosen Zugang, Modellnutzung nach Verbrauch, BYOK oder ein Enterprise-Add-on für deinen Workspace."
+sidebarTitle: "Pläne"
 icon: "tags"
 ---
 
-## Abonnementpläne
+Starte kostenlos, zahle für kostenpflichtige Modelle nach Verbrauch oder bring deine eigenen Anbieterschlüssel mit. Füge das Enterprise-Abonnement nur hinzu, wenn du Identitäts- und Verzeichniskontrollen brauchst. Alle Preise sind in USD.
 
-Diese Seite erläutert gängige Abonnementpläne und -stufen bei API-Anbietern auf Phaseo. Sie behandelt typische Limits, Abrechnungsintervalle und den Einfluss der Funktionen eines Plans auf Modellzugriff und Preise.
+## Wählen, wie du Phaseo nutzt
 
----
+| Option | Phaseo berechnet | Was enthalten ist |
+| --- | --- | --- |
+| Kostenloser Zugang | Nichts | Anfragen an kostenlose Modelle, öffentliche Katalogdaten, SDKs und Integrationen |
+| Pay As You Go | Modellnutzung zu Katalogpreisen plus 5 % Gebühr beim Guthabenkauf (mindestens $1) | Anfragen an kostenpflichtige Modelle mit vorausbezahltem Workspace-Guthaben |
+| Eigener Schlüssel (BYOK) | Keine Gebühr für die ersten 250.000 abgeschlossenen Anfragen pro Workspace und UTC-Monat, danach 2.5 % der entsprechenden Anbieterkosten | Phaseo-Routing und Beobachtbarkeit mit deinen Anbieter-Zugangsdaten; der Anbieter rechnet die Modellnutzung direkt ab |
+| Self Serve Enterprise | Monatliches Workspace-Abonnement ab $29, zusätzlich Modellnutzung und Gebühren beim Guthabenkauf | SSO, SCIM, Verzeichnisverwaltung, Abteilungen und bevorzugter E-Mail-Support |
 
-### Was Abonnementpläne abdecken
+Pay As You Go hat kein monatliches Abonnement, keinen Vertrag und keinen monatlichen Mindestumsatz. Die Gebühr fällt beim Kauf von Guthaben an; Anfragen verbrauchen dieses Guthaben dann zu den angegebenen Modellpreisen. [Preise und Abrechnung](../pricing/tiers.mdx) enthält durchgerechnete Beispiele für Aufladungen.
 
--   Ratenlimits (Anfragen pro Minute oder Tag)
--   Enthaltenes Rechen- oder Tokenkontingent
--   Zugriff auf Premium-Modelle oder -Funktionen (z. B. JSON-Modus oder dedizierte Endpunkte)
--   Support-SLAs und Geschäftsbedingungen
+## Standardlimits für Anfragen
 
-### Typische Stufen
+Kostenlose Modelle haben zusätzlich zum standardmäßigen Minutenlimit des Gateways ein Tageskontingent:
 
-Im Folgenden findest du typische Beispiele. Die genauen Namen und Funktionen unterscheiden sich je nach Anbieter:
+| Limit | Standard | Geltungsbereich |
+| --- | --- | --- |
+| Anfragen pro Minute, alle Modelle | 25 | Pro Nutzer in jedem Workspace, gleitende Minute |
+| Anfragen an kostenlose Modelle pro Tag | 1.500 | Pro Nutzer, geteilt über alle deine Workspaces und alle kostenlosen Modelle; wird um 00:00 UTC zurückgesetzt |
 
--   Kostenlos/Testphase: eingeschränkte Nutzung, niedrigere Ratenlimits, kein SLA
--   Entwickler/Hobby: niedrige Monatsgebühr und moderate Limits für Prototypen
--   Business/Team: höhere Limits, Teamzugänge und bevorzugter Support
--   Enterprise: individuelle Limits, dedizierter Support und vertraglich vereinbarte SLAs
+Anfragen über dem Tageskontingent schlagen mit `phaseo_free_model_limit_exceeded` fehl. Anbieterquoten gelten ebenfalls. Unter [Ratenlimits](../api-reference/limits.mdx) findest du Geltungsbereich und Wiederholungsverhalten.
 
----
+## BYOK-Gebühren
 
-Ausführliche Preise pro Modell und Vergleiche der Kosten pro Token findest du auf der Seite [Preise und Leistung](./pricing-performance.mdx).
+Eine BYOK-Anfrage verursacht weiterhin die Nutzungsgebühr deines Anbieters, auch wenn Phaseo keine Gebühr berechnet. Kann Phaseo die monatliche Anfragezahl des Workspace nicht lesen (sowohl der Zähler als auch sein Ersatz-Lesevorgang schlagen fehl), zahlt diese Anfrage die Gebühr von 2.5 %. Richte Schlüssel und Fallback-Regeln unter [Routing und Fallbacks](../guides/routing-and-fallbacks.mdx#byok-considerations) ein.
 
-Bei Bedarf lässt sich diese Seite um eine Aufschlüsselung nach Anbietern oder eine kurze Vergleichstabelle beispielhafter Planfunktionen ergänzen.
+<span id="enterprise-member-pricing"></span>
+## Enterprise-Preise nach Mitgliederzahl
+
+Das Einstiegsabonnement umfasst bis zu 100 Workspace-Mitglieder, auch für kleinere Teams. Größere Kontingente werden nach Mitgliederzahl berechnet; dies sind Referenzpreise, keine eigenen Funktionsstufen:
+
+| Enthaltene Workspace-Mitglieder | Monatliches Abonnement |
+| ---: | ---: |
+| 100 | $29 |
+| 1.000 | $79 |
+| 10.000 | $299 |
+| 25.000 | $599 |
+| 50.000 | $1,099 |
+| 100.000 | $1,999 |
+
+Kontingente zwischen diesen Stufen werden linear zwischen den beiden nächstgelegenen Zeilen berechnet. Öffne [Preise](https://phaseo.app/pricing), um ein Kontingent zu wählen und das Angebot für deine Mitgliederzahl zu sehen. Die Verfügbarkeit per Selbstbedienung hängt von der Freischaltung deines Workspace ab.
+
+**Wie Mitglieder gezählt werden.** Mitglieder zählen, solange sie dem Workspace angehören, unabhängig davon, ob sie sich anmelden. Unter 100.000 Mitgliedern werden neue Mitgliedschaften blockiert, wenn sie das gewählte Kontingent überschreiten würden. Du kannst das Kontingent nach dem Abschluss nicht selbst ändern, also plane Kapazität für erwartetes Wachstum ein. Beim Kontingent von 100.000 Mitgliedern kostet jedes zusätzliche eindeutige Mitglied $0.02 pro Abrechnungszeitraum des Abonnements, einschließlich Mitgliedern, die in diesem Zeitraum entfernt werden.
+
+Enterprise enthält kein Modellguthaben und erlässt nicht die Gebühr von 5 % beim Guthabenkauf (mindestens $1). Für Rechnungsstellung, Beschaffung oder individuelle Geschäftsbedingungen wende dich an das [Hilfecenter](https://phaseo.app/help).
+
+## Abonnementpläne der Anbieter
+
+Der [Katalog der Abonnementpläne](https://phaseo.app/subscription-plans) listet Abonnements, die Modellanbieter verkaufen. Diese Angebote haben eigene Preise, enthaltene Modelle, Limits und Abrechnungsbedingungen. Ein Anbieterabonnement fügt kein Phaseo-Guthaben hinzu und aktiviert keine Gateway-Route.
+
+Prüfe vor der Wahl eines Plans die Bedingungen des Anbieters und die aktiven Gateway-Routen des Modells. Mit [Preise und Leistung](./pricing-performance.mdx) vergleichst du Nutzungskosten und Leistungsdaten von Modellen.

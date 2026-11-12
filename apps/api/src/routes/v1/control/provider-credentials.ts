@@ -18,10 +18,15 @@ import {
 	parseOffset,
 	parsePathId,
 	parsePositiveInt,
+	rejectThirdPartyOAuthSpendingChange,
 	requireCapability,
 	requireJsonBody,
 	requireOAuthWorkspaceRole,
 } from "./route-helpers";
+
+// Requests are routed through a workspace's provider keys, so an app that signs in with Phaseo must not add,
+// change, reorder or remove them, whatever scopes the person consented to.
+const PROVIDER_CREDENTIAL_APP_REFUSAL = "Apps that use Sign in with Phaseo can't add, change or remove provider keys, because requests are routed through them. The person can change them under Settings, BYOK.";
 
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 100;
@@ -70,6 +75,8 @@ async function authorize(req: Request, capability: string) {
 	if (scopeError) return { response: scopeError };
 	const roleError = await requireOAuthWorkspaceRole(auth.value, auth.value.workspaceId, ["owner", "admin"]);
 	if (roleError) return { response: roleError };
+	const appError = capability === CAPABILITIES.PROVIDER_CREDENTIALS_READ ? null : rejectThirdPartyOAuthSpendingChange(auth.value, PROVIDER_CREDENTIAL_APP_REFUSAL);
+	if (appError) return { response: appError };
 	return { auth: auth.value };
 }
 

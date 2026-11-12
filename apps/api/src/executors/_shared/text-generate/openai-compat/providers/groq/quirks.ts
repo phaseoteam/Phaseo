@@ -91,8 +91,17 @@ export const groqQuirks: ProviderQuirks = {
 			});
 		}
 
+		// https://console.groq.com/docs/api-reference: Chat service_tier is auto, on_demand
+		// (the default), flex or performance; Responses takes auto, default or flex.
+		if (request.service_tier === "standard") {
+			request.service_tier = isResponsesRequest ? "default" : "on_demand";
+		}
+
 		// Responses API route normalization.
-		if (!isResponsesRequest) return;
+		if (!isResponsesRequest) {
+			dropUnsupportedGptOssEffort(request);
+			return;
+		}
 
 		if (ir.reasoning && request.reasoning == null) {
 			const effort = ir.reasoning.effort
@@ -118,5 +127,23 @@ export const groqQuirks: ProviderQuirks = {
 		for (const key of GROQ_RESPONSES_UNSUPPORTED_FIELDS) {
 			delete request[key];
 		}
+		dropUnsupportedGptOssEffort(request);
 	},
 };
+
+/**
+ * gpt-oss on Groq takes reasoning effort low, medium or high only; other values are a 400
+ * (https://console.groq.com/docs/api-reference). Its reasoning cannot be turned off, so
+ * "none" is left out and the model default (medium) applies.
+ */
+function dropUnsupportedGptOssEffort(request: Record<string, any>) {
+	if (!String(request.model ?? "").toLowerCase().includes("gpt-oss")) return;
+	const allowed = new Set(["low", "medium", "high"]);
+	if (typeof request.reasoning_effort === "string" && !allowed.has(request.reasoning_effort)) {
+		delete request.reasoning_effort;
+	}
+	if (request.reasoning && typeof request.reasoning.effort === "string" && !allowed.has(request.reasoning.effort)) {
+		delete request.reasoning.effort;
+		if (Object.keys(request.reasoning).length === 0) delete request.reasoning;
+	}
+}

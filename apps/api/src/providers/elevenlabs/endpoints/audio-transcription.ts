@@ -7,10 +7,28 @@ import { AudioTranscriptionSchema, type AudioTranscriptionRequest } from "@core/
 import { buildAdapterPayload } from "../../utils";
 import { resolveProviderKey } from "../../keys";
 import { getBindings } from "@/runtime/env";
-import { computeBill } from "@pipeline/pricing/engine";
+import { computeBillAfterProviderCharge } from "@pipeline/pricing/engine";
 import { estimateAudioDurationSeconds } from "../../openai/endpoints/audio-transcription-usage";
 
 const ELEVENLABS_TIMESTAMP_GRANULARITIES = new Set(["none", "word", "character"]);
+const ELEVENLABS_REPEATED_FORM_FIELDS = new Set(["secondary_language_codes"]);
+
+/**
+ * ElevenLabs: "When more than 100 keyterms are provided, a minimum billable duration of 20
+ * seconds applies per request." (https://elevenlabs.io/docs/api-reference/speech-to-text/convert)
+ */
+const KEYTERM_MINIMUM_THRESHOLD = 100;
+const KEYTERM_MINIMUM_BILLED_SECONDS = 20;
+
+/** The audio seconds ElevenLabs bills for a request: its length, raised to the keyterm minimum. */
+export function elevenLabsBilledAudioSeconds(seconds: number | undefined, keytermCount: number): number | undefined {
+	if (keytermCount <= KEYTERM_MINIMUM_THRESHOLD) return seconds;
+	return Math.max(seconds ?? 0, KEYTERM_MINIMUM_BILLED_SECONDS);
+}
+
+function isNonEmptyString(value: unknown): value is string {
+	return typeof value === "string" && value.trim().length > 0;
+}
 
 function invalidParameterResponse(param: string, message: string): Response {
 	return new Response(JSON.stringify({ error: { type: "invalid_request_error", message, param } }), {
@@ -53,6 +71,24 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 	const raw = typedPayload as AudioTranscriptionRequest & { config?: { elevenlabs?: Record<string, unknown> } };
 	const elevenlabs = raw.config?.elevenlabs ?? {};
 	const nativeTimestampGranularity = elevenlabs.timestamps_granularity;
+	const invalidRepeatedParam = [...ELEVENLABS_REPEATED_FORM_FIELDS].find((key) => {
+		const value = elevenlabs[key];
+		if (value == null || isNonEmptyString(value)) return false;
+		return !Array.isArray(value) || value.length === 0 || !value.every(isNonEmptyString);
+	});
+	if (invalidRepeatedParam) {
+		return {
+			kind: "completed",
+			upstream: invalidParameterResponse(
+				`config.elevenlabs.${invalidRepeatedParam}`,
+				`config.elevenlabs.${invalidRepeatedParam} must be a non-empty list of language code strings.`,
+			),
+			bill: { cost_cents: 0, currency: "USD", usage: undefined, upstream_id: null, finish_reason: null },
+			normalized: undefined,
+			keySource: keyInfo.source,
+			byokKeyId: keyInfo.byokId,
+		};
+	}
 	const invalidTimestampParam = typedPayload.timestamp_granularities?.includes("segment")
 		? "timestamp_granularities"
 		: typeof nativeTimestampGranularity === "string" &&
@@ -116,6 +152,11 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 	}
 	for (const [key, value] of Object.entries(elevenlabs)) {
 		if (value == null || ["model_id", "file", "source_url", "language_code", "keyterms", "enable_logging", "timestamps_granularity"].includes(key)) continue;
+		if (ELEVENLABS_REPEATED_FORM_FIELDS.has(key) && Array.isArray(value)) {
+			// ElevenLabs reads these as one form field per item and rejects a JSON array string.
+			for (const item of value) form.append(key, String(item).trim());
+			continue;
+		}
 		form.append(key, typeof value === "object" ? JSON.stringify(value) : String(value));
 	}
 	const query = typeof elevenlabs.enable_logging === "boolean"
@@ -143,7 +184,10 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 	if (res.ok) {
 		const json = await res.clone().json().catch(() => undefined);
 		if (json && typeof json === "object") {
-			const inputAudioSeconds = responseAudioDurationSeconds(json) ?? estimatedAudioSeconds;
+			const inputAudioSeconds = elevenLabsBilledAudioSeconds(
+				responseAudioDurationSeconds(json) ?? estimatedAudioSeconds,
+				typedPayload.keywords?.length ?? 0,
+			);
 			const usageMeters = {
 				requests: 1,
 				...(json.usage && typeof json.usage === "object" ? json.usage : {}),
@@ -154,7 +198,10 @@ export async function exec(args: ProviderExecuteArgs): Promise<AdapterResult> {
 				usage: usageMeters,
 			};
 			if (args.pricingCard) {
-				const pricedUsage = computeBill(usageMeters, args.pricingCard, { model: modelId, pricing_plan: "standard" }, "standard");
+				// ElevenLabs charges more per audio hour when keyterms are sent; the
+				// catalogue prices that as a rule matching `keyterms: true`.
+				const pricingContext = { model: modelId, pricing_plan: "standard", keyterms: Boolean(typedPayload.keywords?.length) };
+				const pricedUsage = computeBillAfterProviderCharge(usageMeters, args.pricingCard, pricingContext, "standard");
 				bill.cost_cents = Number(pricedUsage.pricing.total_nanos ?? 0) / 10_000_000;
 				bill.currency = pricedUsage.pricing.currency;
 				bill.usage = pricedUsage;

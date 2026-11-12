@@ -1,7 +1,7 @@
 import { AlertTriangle, Info, XCircle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 interface ModelStatusBannerProps {
 	status?: string | null;

@@ -1,6 +1,6 @@
-"use client";
-
 import * as React from "react";
+import { formatLatency, formatTps } from "@phaseo/app-kit/format";
+import { formatCompactAxisTick, formatRoundedCount } from "@/lib/formatRoundedCount";
 
 import {
 	DEFAULT_DISPLAY_PREFERENCES,
@@ -9,10 +9,14 @@ import {
 	formatDisplayDateParts,
 	formatDisplayDateTime,
 	formatDisplayDateTimeRange,
+	formatDisplayElapsed,
 	formatDisplayNumber,
+	formatDisplayRelative,
 	formatDisplayTime,
 	formatDisplayTimestamp,
+	formatDisplayUtcDateTime,
 	normalizeDisplayPreferences,
+	resolveDisplayTimeZone,
 	readableForegroundForAccent,
 	type DisplayDateValue,
 	type DisplayPreferences,
@@ -26,6 +30,7 @@ const STORAGE_KEY = "phaseo-display-preferences-v1";
 
 type DisplayPreferencesContextValue = {
 	isHydrated: boolean;
+	isSensitiveDataReady: boolean;
 	preferences: DisplayPreferences;
 	formattingPreferences: DisplayFormattingPreferences;
 	setPreferences: (preferences: DisplayPreferences) => void;
@@ -38,6 +43,7 @@ export function DisplayPreferencesProvider({ children, locale }: { children: Rea
 		DEFAULT_DISPLAY_PREFERENCES,
 	);
 	const [isHydrated, setIsHydrated] = React.useState(false);
+	const [isSensitiveDataReady, setIsSensitiveDataReady] = React.useState(false);
 	const localMutationVersion = React.useRef(0);
 
 	React.useEffect(() => {
@@ -62,12 +68,16 @@ export function DisplayPreferencesProvider({ children, locale }: { children: Rea
 					);
 					if (
 						cancelled ||
-						!data.signedIn ||
 						requestMutationVersion !== localMutationVersion.current
 					) return;
+					if (!data.signedIn) {
+						setIsSensitiveDataReady(true);
+						return;
+					}
 
 					const accountPreferences = normalizeDisplayPreferences(data.preferences);
 					setPreferencesState(accountPreferences);
+					setIsSensitiveDataReady(true);
 					try {
 						window.localStorage.setItem(STORAGE_KEY, JSON.stringify(accountPreferences));
 					} catch {
@@ -75,6 +85,7 @@ export function DisplayPreferencesProvider({ children, locale }: { children: Rea
 					}
 				} catch {
 					// Keep the locally cached preferences when auth or the account API is unavailable.
+					// Sensitive values stay masked until the account preference is known or explicitly changed.
 				}
 			})();
 		}, 0);
@@ -86,6 +97,7 @@ export function DisplayPreferencesProvider({ children, locale }: { children: Rea
 
 	const setPreferences = React.useCallback((next: DisplayPreferences) => {
 		localMutationVersion.current += 1;
+		setIsSensitiveDataReady(true);
 		const normalized = normalizeDisplayPreferences(next);
 		setPreferencesState((current) => {
 			if (JSON.stringify(current) === JSON.stringify(normalized)) return current;
@@ -103,8 +115,8 @@ export function DisplayPreferencesProvider({ children, locale }: { children: Rea
 		[preferences, locale],
 	);
 	const value = React.useMemo(
-		() => ({ isHydrated, preferences, formattingPreferences, setPreferences }),
-		[isHydrated, preferences, formattingPreferences, setPreferences],
+		() => ({ isHydrated, isSensitiveDataReady, preferences, formattingPreferences, setPreferences }),
+		[isHydrated, isSensitiveDataReady, preferences, formattingPreferences, setPreferences],
 	);
 
 	React.useEffect(() => {
@@ -144,6 +156,12 @@ export function useDisplayFormatters() {
 	const { formattingPreferences: preferences } = useDisplayPreferences();
 
 	return React.useMemo(() => ({
+		count: (value: number) => formatRoundedCount(value, preferences.locale),
+		/** "0.85 s": latency in seconds, from milliseconds. Null without a reading. */
+		latency: (milliseconds: number | null | undefined) => formatLatency(milliseconds, preferences.locale),
+		/** "45.3 tps": output speed. Null without a reading. */
+		tps: (value: number | null | undefined) => formatTps(value, preferences.locale),
+		countAxisTick: (value: number) => formatCompactAxisTick(value, preferences.locale),
 		calendarDate: (value: DisplayDateValue, fallback?: string) =>
 			formatDisplayCalendarDate(value, preferences, fallback),
 		date: (value: DisplayDateValue, fallback?: string) =>
@@ -167,5 +185,15 @@ export function useDisplayFormatters() {
 		) => formatDisplayTime(value, preferences, options),
 		timestamp: (value: DisplayDateValue, referenceDate?: Date) =>
 			formatDisplayTimestamp(value, preferences, referenceDate),
+		/** "3 minutes ago", always relative; unit "day" gives "in 65 days". */
+		relative: (value: DisplayDateValue, referenceDate: Date, unit?: "day") =>
+			formatDisplayRelative(value, preferences, referenceDate, unit),
+		/** "4m 12s": how long something took. */
+		elapsed: (milliseconds: number | null | undefined) =>
+			formatDisplayElapsed(milliseconds, preferences),
+		/** A date and time in UTC, with seconds. */
+		utcDateTime: (value: DisplayDateValue) => formatDisplayUtcDateTime(value, preferences),
+		/** The IANA time zone dates are shown in, such as "Europe/London". */
+		timeZone: () => resolveDisplayTimeZone(preferences),
 	}), [preferences]);
 }

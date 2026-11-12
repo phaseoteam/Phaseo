@@ -1,8 +1,0 @@
-{
-  "alias_slug": "google/veo-lite-latest",
-  "resolved_api_model_id": "google/veo-3.1-lite-preview",
-  "resolved_model_id": "google/veo-3.1-lite-preview",
-  "channel": "preview",
-  "is_enabled": true,
-  "notes": null
-}

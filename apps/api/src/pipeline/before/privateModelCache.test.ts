@@ -5,6 +5,7 @@ const state = vi.hoisted(() => ({
     reads: vi.fn(), writes: vi.fn(), exact: vi.fn(), background: [] as Promise<unknown>[],
 }));
 vi.mock("@/runtime/env", () => ({
+    getBindingsIfConfigured: () => null,
     dispatchBackground: (p: Promise<unknown>) => state.background.push(p),
     getCache: () => ({
         get: async (k: string) => state.store.get(k) ?? null,
@@ -54,7 +55,7 @@ describe("workspace private route cache", () => {
         state.rows = [row()]; const c = await import("./privateModelCache");
         await c.loadPrivateRouteRow(args); await Promise.all(state.background);
         state.error = { message: "database unavailable" };
-        await vi.advanceTimersByTimeAsync(60_001);
+        await vi.advanceTimersByTimeAsync(c.PRIVATE_ROUTE_MAX_AGE_MS + 1);
         await expect(c.loadPrivateRouteRow(args)).rejects.toThrow("private_model_lookup_unavailable");
         expect(state.reads).toHaveBeenCalledTimes(2);
         state.error = null; state.rows = [];
@@ -62,7 +63,7 @@ describe("workspace private route cache", () => {
     });
     it("never accepts another workspace's cached record", async () => {
         const c = await import("./privateModelCache");
-        state.store.set(c.privateRouteCacheKey("b"), JSON.stringify({ version: 1, workspaceId: "a", checkedAt: Date.now(), rows: [row()] }));
+        state.store.set(c.privateRouteCacheKey("b", "v0"), JSON.stringify({ version: 2, workspaceId: "a", workspaceVersion: "v0", checkedAt: Date.now(), rows: [row()] }));
         expect(await c.loadPrivateRouteRow({ ...args, workspaceId: "b" })).toBeNull();
         expect(state.reads).toHaveBeenCalledTimes(1);
     });
@@ -75,9 +76,113 @@ describe("workspace private route cache", () => {
     });
     it("invalidating a pending cache load cannot return the pre-edit snapshot", async () => {
         state.rows = [row()]; const c = await import("./privateModelCache");
-        const pending = c.loadPrivateRouteRow(args);
-        await c.invalidatePrivateRoutes("a"); state.rows = [];
-        expect(await pending).toBeNull();
+        let invalidated: Promise<void> | undefined;
+        // The load reads the pre-edit row; the edit then commits and invalidates before the read returns.
+        state.reads.mockImplementationOnce(() => queueMicrotask(() => {
+            state.rows = []; invalidated = c.invalidatePrivateRoutes("a");
+        }));
+        expect(await c.loadPrivateRouteRow(args)).toBeNull();
+        await invalidated;
+        // Only the version bump is written, never the pre-edit snapshot.
+        expect(state.writes).not.toHaveBeenCalledWith(expect.stringContaining("private-routes"), expect.anything());
+    });
+    it("keeps a snapshot past the old 60 s bound until the workspace version moves", async () => {
+        state.rows = [row()];
+        const c = await import("./privateModelCache");
+        await c.loadPrivateRouteRow(args); await Promise.all(state.background);
+        await vi.advanceTimersByTimeAsync(10 * 60_000);
+        expect(await c.loadPrivateRouteRow(args)).toMatchObject({ id: "private-1" });
+        expect(state.reads).toHaveBeenCalledTimes(1);
+
+        // Another location bumps the version (the publication drain, after an edit).
+        state.rows[0].upstream_model_id = "edited";
+        state.store.set("gateway:workspace-policy-version:a", String(Date.now()));
+        await vi.advanceTimersByTimeAsync(31_000); // past the shared version copy
+        expect((await c.loadPrivateRouteRow(args))!.upstream_model_id).toBe("edited");
+        expect(state.reads).toHaveBeenCalledTimes(2);
+    });
+    it("reads the database when the workspace version cannot be read", async () => {
+        state.rows = [row()];
+        const c = await import("./privateModelCache");
+        const policy = await import("./workspacePolicy");
+        const spy = vi.spyOn(policy, "getWorkspacePolicyVersionToken").mockResolvedValue(null);
+        try {
+            expect(await c.loadPrivateRouteRow(args)).toMatchObject({ id: "private-1" });
+        } finally {
+            spy.mockRestore();
+        }
+        expect(state.exact).toHaveBeenCalledTimes(1);
+        expect(state.writes).not.toHaveBeenCalled();
+    });
+    it("shares only the empty snapshot through the location cache, never encrypted rows", async () => {
+        const located = new Map<string, string>();
+        (globalThis as any).caches = { default: {
+            match: async (request: Request) => located.has(request.url) ? new Response(located.get(request.url)) : undefined,
+            put: async (request: Request, response: Response) => { located.set(request.url, await response.text()); },
+        } };
+        try {
+            const c = await import("./privateModelCache");
+            await c.loadPrivateRouteRow(args); await Promise.all(state.background);
+            // The location cache also holds the shared workspace version; count the snapshots.
+            const snapshots = () => [...located.values()].filter((value) => value.includes("\"rows\""));
+            expect(snapshots()).toHaveLength(1);
+            expect(JSON.parse(snapshots()[0]).rows).toEqual([]);
+            // A fresh isolate with an empty KV still finds the shared absence without the database.
+            state.store.clear(); vi.resetModules();
+            expect(await (await import("./privateModelCache")).loadPrivateRouteRow(args)).toBeNull();
+            expect(state.reads).toHaveBeenCalledTimes(1);
+
+            located.clear(); state.store.clear(); state.rows = [row()]; vi.resetModules();
+            await (await import("./privateModelCache")).loadPrivateRouteRow({ ...args, workspaceId: "a" });
+            await Promise.all(state.background);
+            expect([...located.values()].some((value) => value.includes("ciphertext"))).toBe(false);
+        } finally {
+            delete (globalThis as any).caches;
+        }
+    });
+    it("invalidation moves past this location's shared absence so a first private model is seen at once", async () => {
+        const located = new Map<string, string>();
+        (globalThis as any).caches = { default: {
+            match: async (request: Request) => located.has(request.url) ? new Response(located.get(request.url)) : undefined,
+            put: async (request: Request, response: Response) => { located.set(request.url, await response.text()); },
+            delete: async (request: Request) => located.delete(request.url),
+        } };
+        try {
+            const c = await import("./privateModelCache");
+            expect(await c.loadPrivateRouteRow(args)).toBeNull();
+            await Promise.all(state.background);
+            expect([...located.values()].filter((value) => value.includes("\"rows\""))).toHaveLength(1);
+
+            state.rows = [row()];
+            await c.invalidatePrivateRoutes("a");
+            // The old absence stays under the old version, which no reader asks for any more.
+            expect(await c.loadPrivateRouteRow(args)).toMatchObject({ id: "private-1" });
+        } finally {
+            delete (globalThis as any).caches;
+        }
+    });
+    it("a shared-absence write still in flight cannot restore an invalidated workspace", async () => {
+        const located = new Map<string, string>();
+        let release!: () => void;
+        const held = new Promise<void>(resolve => { release = resolve; });
+        (globalThis as any).caches = { default: {
+            match: async (request: Request) => located.has(request.url) ? new Response(located.get(request.url)) : undefined,
+            put: async (request: Request, response: Response) => { const body = await response.text(); await held; located.set(request.url, body); },
+            delete: async (request: Request) => located.delete(request.url),
+        } };
+        try {
+            const c = await import("./privateModelCache");
+            expect(await c.loadPrivateRouteRow(args)).toBeNull();
+            state.rows = [row()];
+            const invalidated = c.invalidatePrivateRoutes("a");
+            release();
+            await invalidated;
+            await Promise.all(state.background);
+            vi.resetModules();
+            expect(await (await import("./privateModelCache")).loadPrivateRouteRow(args)).toMatchObject({ id: "private-1" });
+        } finally {
+            delete (globalThis as any).caches;
+        }
     });
     it("honors explicit bypass and does not cache errors", async () => {
         const c = await import("./privateModelCache"); state.error = {};

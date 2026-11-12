@@ -1,0 +1,80 @@
+[
+  {
+    "id": "vision-tools-under-budget",
+    "query": "Which Phaseo model should I use to pull line items out of receipt photos with tool calling? Input should cost under $1 per million tokens.",
+    "files": [],
+    "should_trigger": true,
+    "expected_behavior": [
+      "Reads live data from GET /v1/models or phaseo:models_list instead of naming models from memory",
+      "Filters for image input, the tools parameter and a maximum input price of 1 USD per million tokens",
+      "Confirms tools support on the offer or /endpoints route that would serve the request, not only at model level",
+      "Excludes deprecated or retired models by checking lifecycle",
+      "Recommends one pinned model ID and one alternative, with provider, prices per 1M and context taken from the response"
+    ]
+  },
+  {
+    "id": "monthly-cost-estimate",
+    "query": "We'll send about 20,000 support chats a day, roughly 1,500 input and 400 output tokens each. What would that cost per month on <model-id> through Phaseo?",
+    "files": [],
+    "should_trigger": true,
+    "expected_behavior": [
+      "States the assumptions: days per month, tokens per request, no caching, standard tier",
+      "Reads per-offer meters and converts price_per_unit / unit_size to a per-token or per-million rate, or uses phaseo:cost_estimate",
+      "Shows the arithmetic tokens × rate for input and output and a USD total",
+      "Names the provider offer the estimate uses and says it is an estimate, not a bill",
+      "Does not quote prices from memory"
+    ]
+  },
+  {
+    "id": "deprecated-model-replacement",
+    "query": "GET /v1/models now shows the model our app pins as deprecated. What should we move to, and what happens when it's retired?",
+    "files": [],
+    "should_trigger": true,
+    "expected_behavior": [
+      "Reads lifecycle.status, retires_at and replacement_id for the model",
+      "Treats replacement_id as a candidate to compare on endpoints, parameters, context and price, and handles a null replacement by re-running selection",
+      "Explains that an unserved model fails with 410 model_retired and a nullable replacement_model, and that retrying does not help",
+      "Hands fallback lists or retired-model routing to phaseo-routing-presets rather than designing routing policy"
+    ]
+  },
+  {
+    "id": "alias-versus-pinned",
+    "query": "Should production use anthropic/claude-sonnet-latest or a pinned model ID on Phaseo?",
+    "files": [],
+    "should_trigger": true,
+    "expected_behavior": [
+      "Explains that an alias resolves to a concrete model at request time and can move",
+      "Recommends a pinned model ID for production and shows how to find the alias target from the aliases field",
+      "Verifies the pinned ID is active and routable before recommending it"
+    ]
+  },
+  {
+    "id": "best-coding-model-evidence",
+    "query": "What's the best coding model I can use through Phaseo right now?",
+    "files": [],
+    "should_trigger": true,
+    "expected_behavior": [
+      "Uses phaseo:benchmark_rankings with focus coding, or says that no benchmark evidence is available without the MCP",
+      "Names the benchmark and its source and keeps the benchmark order",
+      "Reports Gateway availability separately and does not infer quality from price or availability"
+    ]
+  },
+  {
+    "id": "fallback-policy-not-selection",
+    "query": "Set up our requests so that if the primary model returns 429 the gateway retries on a second model and then a third.",
+    "files": [],
+    "should_trigger": false,
+    "expected_behavior": [
+      "Routing and fallback configuration is handled by phaseo-routing-presets, not this skill"
+    ]
+  },
+  {
+    "id": "spend-tracking-not-selection",
+    "query": "How much did each of our Phaseo API keys spend last week, and which requests failed?",
+    "files": [],
+    "should_trigger": false,
+    "expected_behavior": [
+      "Spend and request history are handled by phaseo-usage-monitoring, not this skill"
+    ]
+  }
+]

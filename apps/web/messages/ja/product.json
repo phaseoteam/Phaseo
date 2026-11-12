@@ -1,4 +1,10 @@
 {
+	"privacyReview": {
+		"title": "Chatのプライバシーを確認", "description": "プライバシー管理がワークスペースに移行した際に、アカウントの設定が削除されました。続行する前に現在の設定を確認してください。",
+		"paidTraining": "学習に利用する可能性がある有料プロバイダー", "freeTraining": "学習に利用する可能性がある無料プロバイダー", "publication": "プロンプトを公開するプロバイダー", "providerLogging": "プロンプトを記録するプロバイダー", "zdr": "データを保持しない", "workspaceLogging": "ワークスペースのプロンプト記録", "providers": "プロバイダーの制限", "models": "モデルの制限",
+		"allowed": "許可", "blocked": "ブロック", "required": "必須", "notRequired": "必須ではない", "disabled": "無効", "enabledDays": "有効（{days}日）", "none": "なし",
+		"administrators": "ワークスペース管理者は設定を変更できます。キーやメンバーに追加のルールが適用される場合があります。", "accept": "同意して続行", "settings": "プライバシー設定", "saving": "保存中…", "loading": "設定を読み込み中…", "loadError": "プライバシー設定を読み込めません。ページを再読み込みしてください。", "saveError": "確認を保存できません。もう一度お試しください。"
+	},
 	"developerMenu": {
 		"title": "開発者メニュー",
 		"admin": "管理者",
@@ -462,6 +468,38 @@
 		},
 		"defaultTitle": "新しいチャット",
 		"branchTitle": "分岐：{title}",
+		"logImport": {
+			"title": "記録されたリクエストを続ける",
+			"description": "リクエストを独自のセッションを持つ新しいチャットとして開き、このブラウザに保存します。引き継ぐ内容を選んでください。",
+			"loading": "リクエストを読み込んでいます…",
+			"failed": "このリクエストを読み込めませんでした。リクエストが属するワークスペースにサインインしているか確認してください。",
+			"unavailable": { "not_stored": "このリクエストのプロンプトと応答は保存されていません。新しいリクエストを保存するには、プライバシー設定でゲートウェイ I/O ログをオンにしてください。", "too_large": "このリクエストは保存するには大きすぎたため、開けません。", "deleted": "このリクエストの保存済みプロンプトと応答は期限切れか、削除されています。", "unsupported": "チャットで開けるのは Chat Completions、Responses、Messages のリクエストだけです。" },
+			"summary": "{count, plural, other {# 件のメッセージ}} · {model}",
+			"modelUnavailable": "{model} はチャットで利用できないため、{fallback} を使用します。開いた後でモデルを切り替えられます。",
+			"carryOver": "引き継ぐ内容",
+			"options": {
+				"pinProvider": "プロバイダーを固定 ({provider})",
+				"keepParams": "パラメーター (温度、最大トークン数、推論)",
+				"keepSystemPrompt": "システムプロンプト",
+				"keepServerTools": "サーバーツール",
+				"keepFunctionTools": "{count, plural, other {# 個の関数ツール}}",
+				"keepFunctionToolsHint": "チャットでは実行できません。宣言すると以前のツール呼び出しは呼び出しとして、宣言しないとテキストとして送信されます。",
+				"includeResponse": "記録された応答"
+			},
+			"workspaceMismatch": "チャットはアクティブなワークスペースから送信されますが、このリクエストのワークスペースとは異なります。",
+			"warnings": {
+				"earlier_history_missing": "このリクエストは以前の応答を ID で続けていたため、それより前のターンは含まれていません。",
+				"unsupported_content": "一部のコンテンツは表示できなかったため除外されました。",
+				"attachment_reference": "一部の添付ファイルは ID で参照されており、リクエストと一緒に保存されていません。",
+				"media_not_stored": "画像、音声、ファイルは I/O ログに保存されないため、含まれていません。",
+				"no_response": "記録された応答がないか失敗しているため、チャットはリクエストで終わります。",
+				"response_truncated": "記録された応答は途中で切れています。",
+				"extra_choices": "応答の候補のうち最初のものだけが含まれます。",
+				"unanswered_tool_calls": "一部のツール呼び出しには結果がありません。続けるとテキストとして送信されます。"
+			},
+			"cancel": "キャンセル",
+			"continue": "チャットで開く"
+		},
 		"errors": {
 			"signInToChat": "チャットを始めるにはサインインしてください。",
 			"selectModelToChat": "チャットを始めるにはモデルを選択してください。",
@@ -589,6 +627,7 @@
 			}
 		},
 		"modelPicker": {
+			"internalModels": "内部モデル",
 			"title": "モデルを選択",
 			"addModel": "モデルを追加",
 			"searchPlaceholder": "モデルを検索…",
@@ -1116,6 +1155,7 @@
 		"realtimeBillingOpenAI": "OpenAIの使用イベント",
 		"realtimeBillingXai": "xAIの時間計測",
 		"realtimeBillingGoogle": "Googleの使用メタデータ",
+		"realtimeBillingProvider": "{provider}の使用量",
 		"selectRealtimeModel": "リアルタイムモデルを選択",
 		"searchRealtimeModels": "リアルタイムモデルを検索…",
 		"noRealtimeModels": "リアルタイムモデルが見つかりません。",
@@ -1136,6 +1176,8 @@
 		"speechDefaults": "音声のデフォルト",
 		"voice": "音声",
 		"selectVoice": "音声を選択",
+		"customVoiceId": "カスタム音声 ID",
+		"customVoiceIdPlaceholder": "音声ライブラリの音声 ID を貼り付けてください",
 		"format": "形式",
 		"speed": "速度",
 		"transcriptionDefaults": "文字起こしのデフォルト",
@@ -1408,7 +1450,7 @@
 			"copyQuestionFailed": "判断の質問をコピーできませんでした。",
 			"expandSidebar": "サイドバーを展開",
 			"openSettings": "判断設定を開く",
-			"decisionDescription": "Jevにアカウントの状態を明確な型付き判断に変換してもらいましょう。",
+			"decisionDescription": "{model}にアカウントの状態を明確な型付き判断に変換してもらいましょう。",
 			"outreachLabel": "アプローチの準備状況を確認",
 			"outreachPrompt": "このアカウントはアプローチの準備ができていますか？",
 			"collaborationLabel": "連携の兆候を探す",
@@ -1678,7 +1720,7 @@
 		"hideAllRuns": "すべての実行を非表示",
 		"yourGateway": "あなたのGateway",
 		"yourGatewayTtft": "あなたのGateway（TTFT）",
-		"yourGatewayThroughput": "あなたのGateway（トークン/秒）",
+		"yourGatewayThroughput": "あなたのGateway（tps）",
 		"tie": "引き分け",
 		"latestProvider": "最新の結果：{provider}",
 		"requestFailed": "リクエストを完了できませんでした。エンドポイントと認証情報を確認して、もう一度お試しください。",
@@ -1696,7 +1738,7 @@
 		"throughput": "スループット",
 		"responsePlaceholder": "レスポンスはここに表示されます…",
 		"gatewayLabel": "ゲートウェイ",
-		"openaiThroughput": "OpenAI API（トークン/秒）"
+		"openaiThroughput": "OpenAI API（tps）"
 	},
 	"gatewayBenchmark": {
 		"title": "ゲートウェイの性能比較",
@@ -1992,6 +2034,43 @@
 			"revalidateAll": "すべて再検証",
 			"cacheRevalidatedAll": "モデルのすべてのキャッシュを再検証しました。",
 			"cacheFailure": "モデルのキャッシュを再検証できませんでした。",
+			"successorRouting": {
+				"title": "後継モデルへのルーティング",
+				"description": "どのプロバイダーもこのモデルを 72 時間提供していない場合に、リクエストを後継モデルへ送ることを承認します。後継モデルは自動で承認されます。ただし、プロバイダーがない場合や、このモデルの出力形式に対応していない場合を除きます。ワークスペース側でも有効化が必要です。",
+				"replacement": "後継モデル",
+				"noReplacement": "未設定",
+				"serving": "提供状況",
+				"served": "1 つ以上のプロバイダーが提供中",
+				"unservedSince": "{date} 以降、提供プロバイダーなし",
+				"approval": "承認",
+				"notApproved": "未承認",
+				"approved": "{date} に {model} で承認済み",
+				"approvedAutomatically": "{date} に {model} で自動承認済み",
+				"autoBlocked": "承認が取り消されたため、このモデルの自動承認はオフになっています。承認すると自動承認が再びオンになります。",
+				"approvalStale": "{model} で承認済みですが、後継モデルが変更されています。再確認してください。",
+				"blocking": "承認できません: {issues}",
+				"warnings": "確認が必要: {issues}",
+				"compatible": "互換性の問題は見つかりませんでした。",
+				"notes": "メモ",
+				"acceptWarnings": "これらの問題を承知のうえで承認する",
+				"approve": "承認",
+				"updateApproval": "承認を更新",
+				"reapprove": "新しい後継モデルを承認",
+				"revoke": "取り消す",
+				"blockAuto": "自動で承認しない",
+				"loadFailed": "後継モデルへのルーティングを読み込めませんでした。",
+				"saveFailed": "後継モデルへのルーティングを保存できませんでした。",
+				"rejected": "後継モデルを承認できませんでした。上記の問題を確認して、もう一度お試しください。",
+				"issues": {
+					"free_to_paid": "無料モデルの後継が有料",
+					"successor_hidden": "後継モデルが非表示",
+					"successor_inactive": "後継モデルが有効ではない",
+					"missing_input_modalities": "後継モデルに入力タイプが不足",
+					"missing_output_modalities": "後継モデルに出力タイプが不足",
+					"smaller_context": "コンテキストウィンドウが小さい",
+					"successor_not_served": "後継モデルにプロバイダーがない"
+				}
+			},
 			"addRegionalProvider": "地域プロバイダーを追加",
 			"regionalOffersDescription": "プロバイダーと地域別のサービス。",
 			"newRegionalProvider": "新しい地域プロバイダー",
@@ -2354,7 +2433,11 @@
 			"rule": "ルール: {keyword}"
 		},
 		"realtimeBillingTitle": "リアルタイム請求",
-		"realtimeBillingDescription": "不足した使用量、保留中の資金、監査記録のある請求判断を確認します。"
+		"realtimeBillingDescription": "不足した使用量、保留中の資金、監査記録のある請求判断を確認します。",
+		"keyIncidentsTitle": "キー保管場所のインシデント",
+		"keyIncidentsDescription": "情報漏えいが起きたプラットフォームに保管されたすべての API キーを無効化または一時停止します。",
+		"slackAgentTitle": "Slack エージェント",
+		"slackAgentDescription": "すべての Slack エージェントのインストールと、今月の人数、回答数、料金、モデルの支出。"
 	},
 	"webhookPage": {
 		"description": "非同期の動画ジョブやバッチジョブから、署名付きで再試行可能な更新をアプリケーションに送信します。",

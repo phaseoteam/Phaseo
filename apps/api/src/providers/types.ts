@@ -51,6 +51,8 @@ export type AdapterCompletedResult = {
     normalized?: GatewayResponsePayload;
     keySource?: "gateway" | "byok";
     byokKeyId?: string | null;
+    // The upstream may already have run and billed; do not retry or fall back.
+    terminal?: boolean;
 };
 
 export type AdapterStreamingResult = {

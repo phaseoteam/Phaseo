@@ -1,10 +1,18 @@
+import { relativeUnit } from "@phaseo/app-kit/format";
+import { DARK_PALETTES, DEFAULT_THEME, LIGHT_PALETTES } from "@phaseo/app-kit/theme";
+
+// The theme model (palettes, accents, presets) lives in packages/shared/app-kit so the mobile app
+// reads the same one.
+export { readableForegroundForAccent } from "@phaseo/app-kit/theme/colour";
+
+
 export const DISPLAY_LOCALES = ["system", "en-GB", "en-US"] as const;
 export const DISPLAY_DATE_STYLES = ["short", "medium", "long", "iso"] as const;
 export const DISPLAY_HOUR_CYCLES = ["system", "12h", "24h"] as const;
 export const DISPLAY_RELATIVE_TIMES = ["contextual", "relative", "absolute"] as const;
 export const DISPLAY_NUMBER_NOTATIONS = ["standard", "compact"] as const;
-export const DISPLAY_LIGHT_PALETTES = ["phaseo", "paper", "warm"] as const;
-export const DISPLAY_DARK_PALETTES = ["phaseo", "slate", "midnight"] as const;
+export const DISPLAY_LIGHT_PALETTES = LIGHT_PALETTES;
+export const DISPLAY_DARK_PALETTES = DARK_PALETTES;
 export const DISPLAY_DENSITIES = ["comfortable", "compact"] as const;
 export const DISPLAY_CODE_LANGUAGES = ["typescript", "python", "curl"] as const;
 export const DISPLAY_LANDING_PAGES = ["home", "models", "chat"] as const;
@@ -46,10 +54,10 @@ export const DEFAULT_DISPLAY_PREFERENCES: DisplayPreferences = {
 	hourCycle: "system",
 	relativeTime: "contextual",
 	numberNotation: "standard",
-	lightPalette: "phaseo",
-	darkPalette: "phaseo",
-	lightAccent: "#0069a8",
-	darkAccent: "#0078b8",
+	lightPalette: DEFAULT_THEME.lightPalette,
+	darkPalette: DEFAULT_THEME.darkPalette,
+	lightAccent: DEFAULT_THEME.lightAccent,
+	darkAccent: DEFAULT_THEME.darkAccent,
 	density: "comfortable",
 	codeLanguage: "typescript",
 	landingPage: "home",
@@ -73,17 +81,6 @@ export function isValidTimeZone(value: unknown): value is string {
 
 export function isValidAccentColor(value: unknown): value is string {
 	return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
-}
-
-export function readableForegroundForAccent(value: string): "#ffffff" | "#0b0b0b" {
-	const channels = [1, 3, 5].map((offset) => Number.parseInt(value.slice(offset, offset + 2), 16) / 255);
-	const [red, green, blue] = channels.map((channel) =>
-		channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4,
-	);
-	const luminance = (0.2126 * red) + (0.7152 * green) + (0.0722 * blue);
-	const whiteContrast = 1.05 / (luminance + 0.05);
-	const darkContrast = (luminance + 0.05) / 0.052;
-	return whiteContrast >= darkContrast ? "#ffffff" : "#0b0b0b";
 }
 
 export function normalizeDisplayPreferences(value: unknown): DisplayPreferences {
@@ -140,6 +137,13 @@ function localeFor(preferences: DisplayFormattingPreferences): string | undefine
 	return preferences.locale === "system" ? undefined : preferences.locale;
 }
 
+/**
+ * Money always reads in US format ("$12.50", "-$3.00"), whatever the UI locale;
+ * en-GB would otherwise show "US$12.50". Dates, percentages and plain numbers
+ * keep the user's locale.
+ */
+export const MONEY_LOCALE = "en-US";
+
 function timeZoneFor(preferences: DisplayFormattingPreferences): string | undefined {
 	return preferences.timeZone === "system" ? undefined : preferences.timeZone;
 }
@@ -148,6 +152,31 @@ function hour12For(preferences: DisplayFormattingPreferences): boolean | undefin
 	if (preferences.hourCycle === "12h") return true;
 	if (preferences.hourCycle === "24h") return false;
 	return undefined;
+}
+
+// Building an Intl formatter costs far more than using one, and a page can format
+// thousands of values in one render, so reuse formatters with the same settings.
+const MAX_CACHED_FORMATTERS = 500;
+const formatterCache = new Map<string, Intl.DateTimeFormat | Intl.NumberFormat | Intl.RelativeTimeFormat>();
+
+function cachedFormatter<Formatter extends Intl.DateTimeFormat | Intl.NumberFormat | Intl.RelativeTimeFormat>(
+	kind: string,
+	locale: string | undefined,
+	options: object,
+	create: () => Formatter,
+): Formatter {
+	const key = `${kind}|${locale ?? ""}|${JSON.stringify(options)}`;
+	let formatter = formatterCache.get(key) as Formatter | undefined;
+	if (!formatter) {
+		if (formatterCache.size >= MAX_CACHED_FORMATTERS) formatterCache.clear();
+		formatter = create();
+		formatterCache.set(key, formatter);
+	}
+	return formatter;
+}
+
+function dateTimeFormat(locale: string | undefined, options: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+	return cachedFormatter("date", locale, options, () => new Intl.DateTimeFormat(locale, options));
 }
 
 function parseDate(value: string | number | Date | null | undefined): Date | null {
@@ -166,7 +195,7 @@ export function formatDisplayDateParts(
 ): string {
 	const date = parseDate(value);
 	if (!date) return typeof value === "string" && value ? value : fallback;
-	return new Intl.DateTimeFormat(localeFor(preferences), {
+	return dateTimeFormat(localeFor(preferences), {
 		...options,
 		hour12: options.hour12 ?? hour12For(preferences),
 		timeZone: options.timeZone ?? timeZoneFor(preferences),
@@ -178,7 +207,7 @@ function formatIsoDate(
 	preferences: DisplayFormattingPreferences,
 	timeZone = timeZoneFor(preferences),
 ): string {
-	const parts = new Intl.DateTimeFormat("en-CA", {
+	const parts = dateTimeFormat("en-CA", {
 		year: "numeric",
 		month: "2-digit",
 		day: "2-digit",
@@ -197,7 +226,7 @@ export function formatDisplayDate(
 	const date = parseDate(value);
 	if (!date) return typeof value === "string" && value ? value : fallback;
 	if (preferences.dateStyle === "iso") return formatIsoDate(date, preferences);
-	return new Intl.DateTimeFormat(localeFor(preferences), {
+	return dateTimeFormat(localeFor(preferences), {
 		dateStyle: preferences.dateStyle,
 		timeZone: timeZoneFor(preferences),
 	}).format(date);
@@ -211,7 +240,7 @@ export function formatDisplayCalendarDate(
 	const date = parseDate(value);
 	if (!date) return typeof value === "string" && value ? value : fallback;
 	if (preferences.dateStyle === "iso") return formatIsoDate(date, preferences, "UTC");
-	return new Intl.DateTimeFormat(localeFor(preferences), {
+	return dateTimeFormat(localeFor(preferences), {
 		dateStyle: preferences.dateStyle,
 		timeZone: "UTC",
 	}).format(date);
@@ -224,7 +253,7 @@ export function formatDisplayTime(
 ): string {
 	const date = parseDate(value);
 	if (!date) return typeof value === "string" && value ? value : "-";
-	return new Intl.DateTimeFormat(localeFor(preferences), {
+	return dateTimeFormat(localeFor(preferences), {
 		hour: "2-digit",
 		minute: "2-digit",
 		...(options?.includeSeconds ? { second: "2-digit" as const } : {}),
@@ -243,7 +272,7 @@ export function formatDisplayDateTime(
 	if (preferences.dateStyle === "iso") {
 		return `${formatIsoDate(date, preferences)}, ${formatDisplayTime(date, preferences, options)}`;
 	}
-	return new Intl.DateTimeFormat(localeFor(preferences), {
+	return dateTimeFormat(localeFor(preferences), {
 		dateStyle: preferences.dateStyle,
 		timeStyle: options?.includeSeconds ? "medium" : "short",
 		hour12: hour12For(preferences),
@@ -267,16 +296,6 @@ export function formatDisplayDateTimeRange(
 	return `${formatDisplayDateTime(start, preferences)} – ${formatDisplayDateTime(end, preferences)}`;
 }
 
-function relativeUnit(milliseconds: number): { unit: Intl.RelativeTimeFormatUnit; value: number } {
-	const absolute = Math.abs(milliseconds);
-	if (absolute < 60_000) return { unit: "second", value: Math.round(milliseconds / 1_000) };
-	if (absolute < 3_600_000) return { unit: "minute", value: Math.round(milliseconds / 60_000) };
-	if (absolute < 86_400_000) return { unit: "hour", value: Math.round(milliseconds / 3_600_000) };
-	if (absolute < 2_592_000_000) return { unit: "day", value: Math.round(milliseconds / 86_400_000) };
-	if (absolute < 31_536_000_000) return { unit: "month", value: Math.round(milliseconds / 2_592_000_000) };
-	return { unit: "year", value: Math.round(milliseconds / 31_536_000_000) };
-}
-
 export function formatDisplayTimestamp(
 	value: string | number | Date | null | undefined,
 	preferences: DisplayFormattingPreferences,
@@ -289,8 +308,87 @@ export function formatDisplayTimestamp(
 		(preferences.relativeTime === "contextual" && Math.abs(difference) < 86_400_000);
 	if (!useRelative) return formatDisplayDateTime(date, preferences);
 	const { unit, value: relativeValue } = relativeUnit(difference);
-	return new Intl.RelativeTimeFormat(localeFor(preferences), { numeric: "auto" })
+	const locale = localeFor(preferences);
+	return cachedFormatter("relative", locale, { numeric: "auto" }, () => new Intl.RelativeTimeFormat(locale, { numeric: "auto" }))
 		.format(relativeValue, unit);
+}
+
+/**
+ * "3 minutes ago", "in 65 days": always relative, whatever the relativeTime
+ * preference. Pass unit "day" to count in days only (a retirement date).
+ */
+export function formatDisplayRelative(
+	value: DisplayDateValue,
+	preferences: DisplayFormattingPreferences,
+	referenceDate: Date,
+	unit?: "day",
+): string {
+	const date = parseDate(value);
+	if (!date) return "-";
+	const difference = date.getTime() - referenceDate.getTime();
+	const locale = localeFor(preferences);
+	const formatter = cachedFormatter("relative", locale, { numeric: "auto" }, () => new Intl.RelativeTimeFormat(locale, { numeric: "auto" }));
+	// Part of a day counts as a day, as the retirement badges count them.
+	if (unit === "day") return formatter.format(Math.sign(difference) * Math.ceil(Math.abs(difference) / 86_400_000), "day");
+	const relative = relativeUnit(difference);
+	return formatter.format(relative.value, relative.unit);
+}
+
+/** "4m 12s", "1h 5m", "850 ms": how long something took, in at most two units. */
+export function formatDisplayElapsed(
+	milliseconds: number | null | undefined,
+	preferences: DisplayFormattingPreferences,
+): string {
+	if (milliseconds == null || !Number.isFinite(milliseconds) || milliseconds < 0) return "-";
+	const locale = localeFor(preferences);
+	const unitText = (amount: number, unit: "hour" | "minute" | "second" | "millisecond") => {
+		const unitDisplay = unit === "millisecond" ? "short" : "narrow";
+		const options = { style: "unit", unit, unitDisplay } as const;
+		return cachedFormatter("number", locale, options, () => new Intl.NumberFormat(locale, options)).format(amount);
+	};
+	if (milliseconds < 1000) return unitText(Math.round(milliseconds), "millisecond");
+	const totalSeconds = Math.round(milliseconds / 1000);
+	const hours = Math.floor(totalSeconds / 3600);
+	const minutes = Math.floor((totalSeconds % 3600) / 60);
+	const seconds = totalSeconds % 60;
+	if (hours > 0) return minutes > 0 ? `${unitText(hours, "hour")} ${unitText(minutes, "minute")}` : unitText(hours, "hour");
+	if (minutes > 0) return seconds > 0 ? `${unitText(minutes, "minute")} ${unitText(seconds, "second")}` : unitText(minutes, "minute");
+	return unitText(seconds, "second");
+}
+
+/** The IANA time zone dates are shown in: the preference, else the browser's. */
+export function resolveDisplayTimeZone(preferences: DisplayFormattingPreferences): string {
+	if (preferences.timeZone !== "system") return preferences.timeZone;
+	try {
+		return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+	} catch {
+		return "UTC";
+	}
+}
+
+/** A date and time in UTC, with seconds, in the user's date style. */
+export function formatDisplayUtcDateTime(
+	value: DisplayDateValue,
+	preferences: DisplayFormattingPreferences,
+): string {
+	const date = parseDate(value);
+	if (!date) return "-";
+	if (preferences.dateStyle === "iso") {
+		const time = dateTimeFormat(localeFor(preferences), {
+			hour: "2-digit",
+			minute: "2-digit",
+			second: "2-digit",
+			hour12: hour12For(preferences),
+			timeZone: "UTC",
+		}).format(date);
+		return `${formatIsoDate(date, preferences, "UTC")}, ${time}`;
+	}
+	return dateTimeFormat(localeFor(preferences), {
+		dateStyle: preferences.dateStyle,
+		timeStyle: "medium",
+		hour12: hour12For(preferences),
+		timeZone: "UTC",
+	}).format(date);
 }
 
 export function formatDisplayNumber(
@@ -299,9 +397,12 @@ export function formatDisplayNumber(
 	options?: Intl.NumberFormatOptions,
 ): string {
 	const notation = options?.notation ?? preferences.numberNotation;
-	return new Intl.NumberFormat(localeFor(preferences), {
+	const locale = options?.style === "currency" ? MONEY_LOCALE : localeFor(preferences);
+	const numberOptions: Intl.NumberFormatOptions = {
 		...options,
 		notation,
-		...(notation === "compact" ? { compactDisplay: "short" as const } : {}),
-	}).format(value);
+		...(notation === "compact" ? { compactDisplay: options?.compactDisplay ?? "short" as const } : {}),
+	};
+	return cachedFormatter("number", locale, numberOptions, () => new Intl.NumberFormat(locale, numberOptions))
+		.format(value);
 }

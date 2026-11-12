@@ -1,20 +1,35 @@
 ---
 title: "Errores y depuración"
-description: "Comprende los errores de Phaseo y resuelve más rápido problemas habituales de solicitudes, proveedores y enrutamiento."
+description: "Comprende las respuestas de error de Phaseo y resuelve más rápido los problemas habituales de solicitudes, proveedores y enrutamiento."
 icon: "bug"
 ---
 
-Usa esta página para entender qué significa un error de Phaseo y qué hacer a continuación.
-
-Todas las respuestas de error usan el mismo formato JSON, para que tu aplicación pueda gestionar los fallos de manera coherente entre modelos y proveedores.
-
-## Ejemplo de respuesta de error
+Decide según `error.code` y el estado HTTP, no según el texto del mensaje. Todos los errores de Phaseo tienen el mismo cuerpo JSON en todos los endpoints, y su objeto `error` (`code`, `message`, `type`, `param`) tiene la forma que leen los SDK compatibles con OpenAI, así que sus excepciones incluyen el mensaje de Phaseo.
 
 ```json
 {
+  "error": {
+    "code": "upstream_error",
+    "message": "Provider \"google-ai-studio\" failed with HTTP 403 for endpoint \"responses\" on model \"google/gemini-2.5-pro\".",
+    "type": "server_error",
+    "param": null,
+    "metadata": {
+      "reason": "all_candidates_failed",
+      "attempt_count": 1,
+      "failed_providers": ["google-ai-studio"],
+      "failed_statuses": [403],
+      "upstream_error": {
+        "code": "PERMISSION_DENIED",
+        "message": "The caller does not have permission.",
+        "description": null,
+        "param": null
+      }
+    }
+  },
+  "code": "upstream_error",
+  "message": "Provider \"google-ai-studio\" failed with HTTP 403 for endpoint \"responses\" on model \"google/gemini-2.5-pro\".",
   "generation_id": "G-abc123",
   "status_code": 502,
-  "error": "upstream_error",
   "error_type": "system",
   "error_origin": "upstream",
   "reason": "all_candidates_failed",
@@ -49,104 +64,140 @@ Todas las respuestas de error usan el mismo formato JSON, para que tu aplicació
 }
 ```
 
-## Campos que siempre recibirás
+## Campos de todos los errores
 
-- `generation_id`: ID de solicitud estable que puedes compartir con soporte.
-- `status_code`: coincide con el código de estado HTTP.
-- `error`: código de error legible por máquina, como `validation_error`.
-- `error_type`: categoría general, normalmente `user` o `system`.
-- `error_origin`: indica si el problema se debió principalmente al solicitante, a Phaseo o a un proveedor ascendente.
-- `description`: explicación en lenguaje claro de lo ocurrido.
-- `details` (opcional): detalles estructurados de validación cuando el error se debe a una solicitud no válida.
+| Campo | Contenido |
+| --- | --- |
+| `error.code` | Código legible por máquina, como `validation_error`. Consulta [Códigos de error](#error-codes). |
+| `error.message` | Explicación en lenguaje claro. |
+| `error.type` | Clase de error, determinada por el estado HTTP. Consulta [Tipos de error](#error-types). |
+| `error.param` | El campo de la solicitud que causó el error, cuando Phaseo lo conoce; si no, `null`. |
+| `error.metadata` | Opcional. Detalles estructurados como `reason`, `failed_providers`, `failed_statuses` o `retry_after_seconds`. Los mismos valores también aparecen en el nivel superior. |
+| `code` | Igual que `error.code`. Las respuestas antiguas devolvían esta cadena como `error`; lee `code` si tu cliente espera una cadena ahí. |
+| `message`, `description` | El mismo texto que `error.message`. |
+| `generation_id` | ID de la solicitud para registrar y compartir con soporte. |
+| `status_code` | El estado HTTP. |
+| `error_type` | `user` o `system`. |
+| `error_origin` | De dónde vino el problema: quien llama (`user`), Phaseo (`gateway`) o un proveedor (`upstream`). |
+| `details` | Opcional. Detalles de validación cuando el cuerpo de la solicitud no es válido. |
 
-## Otros campos que pueden aparecer
+Algunos errores añaden más contexto:
 
-Algunos errores incluyen más detalles para ayudarte a corregir el problema más rápido:
+| Campo | Cuándo aparece |
+| --- | --- |
+| `reason` | Un submotivo específico, como `all_candidates_failed` o `no_provider_pricing`. |
+| `provider_failure_diagnostics` | Se llegó a un proveedor y falló. Consulta [Cuando falla un proveedor](#when-a-provider-fails). |
+| `upstream_error`, `failure_sample` | Un resumen aproximado del primer fallo del proveedor. |
+| `failed_providers`, `failed_statuses`, `attempt_count` | Qué proveedores se probaron y qué devolvieron. |
+| `provider_candidate_diagnostics`, `provider_enablement`, `routing_diagnostics` | Ningún proveedor pudo atender el modelo en este endpoint. Consulta [Cuando un modelo o endpoint no está disponible](#when-a-model-or-endpoint-is-not-available). |
 
-- `reason`: motivo más específico, como `all_candidates_failed` o `pricing_not_configured`.
-- `provider_candidate_diagnostics` y `provider_enablement`: explican por qué no se pudo usar un modelo con el endpoint solicitado.
-- `routing_diagnostics`: información adicional sobre cómo el enrutamiento o las comprobaciones de disponibilidad limitaron la solicitud.
-- `provider_failure_diagnostics`: sugerencias sobre credenciales ausentes, falta de acceso, restricciones regionales, límites de tasa y otros fallos del proveedor.
-- `upstream_error` y `failure_sample`: resumen aproximado del primer fallo del proveedor, si la solicitud llegó a un proveedor.
-- `failed_providers`, `failed_statuses` y `attempt_count`: contexto adicional sobre reintentos y conmutación por error.
+<span id="error-types"></span>
+## Tipos de error
 
-## Cómo interpretar las clases de estado
+`error.type` sigue los [tipos de error documentados](https://platform.openai.com/docs/guides/error-codes) de OpenAI y se determina según el estado HTTP:
 
-| Estado | Significado | Acción recomendada |
-| --- | --- | --- |
-| `400-499` | Problema con la solicitud, la autenticación o los permisos | Corrige la solicitud o las credenciales antes de reintentar. |
-| `429` | Limitación de tasa del proveedor o de la ruta | Reintenta con espera progresiva y respeta `Retry-After`. |
-| `500-599` | Fallo de Phaseo o de un proveedor ascendente | Reintenta con espera progresiva aleatoria y registra el ID de solicitud. |
+| Estado | `error.type` |
+| --- | --- |
+| `401` | `authentication_error` |
+| `402` | `insufficient_quota` |
+| `403` | `permission_error` |
+| `404` | `not_found_error` |
+| `429` | `rate_limit_error` |
+| `408`, `500`, `502` y otros 5xx | `server_error` |
+| `503` | `service_unavailable` |
+| `529` | `overloaded` |
+| `400`, `409`, `410`, `413`, `422` y otros 4xx | `invalid_request_error` |
 
-## Códigos de error habituales
+Los errores en `/v1/messages` usan el mismo cuerpo, así que los SDK de Anthropic también encuentran `error.type` y `error.message`.
 
-| Tipo | Estado HTTP | Descripción |
-| --- | --- | --- |
-| `authentication_error` | `401` | Falta la clave de API o no es válida. |
-| `authorization_error` | `403` | La clave no tiene acceso a este recurso. |
-| `not_found_error` | `404` | No se encontró el endpoint o el recurso. |
-| `rate_limit_error` | `429` | Hay demasiadas solicitudes. Reintenta después del intervalo indicado. |
-| `validation_error` | `400` | Los parámetros o el cuerpo de la solicitud no son válidos. |
-| `provider_error` | `502` | El proveedor del modelo ascendente no respondió correctamente. |
-| `server_error` | `500` | Se produjo un problema inesperado en Phaseo. |
+<span id="error-codes"></span>
+## Códigos de error
 
+| `error.code` | Estado | Significado | Qué hacer |
+| --- | --- | --- | --- |
+| `validation_error` | `400` | Un parámetro o el cuerpo de la solicitud no es válido. `error.param` indica el primer campo no válido. | Corrige la solicitud. |
+| `invalid_json` | `400` | El cuerpo no es JSON válido. | Corrige la solicitud. |
+| `model_required` | `400` | La solicitud no tiene `model`. | Añade `model`. |
+| `unsupported_model_or_endpoint` | `400` | Ningún proveedor puede atender este modelo en este endpoint. | Consulta [más abajo](#when-a-model-or-endpoint-is-not-available). |
+| `unsupported_modalities` | `400` | Ninguna ruta acepta los tipos de entrada o salida de la solicitud. | Cambia el modelo o las entradas. |
+| `byok_credentials_required` | `400` | La ruta solo funciona con tu propia clave de proveedor. | Añade una [clave de proveedor](./endpoint/provider-credentials-create.mdx) apta. |
+| `upstream_error` | `400`, `413` o `422` | Todos los proveedores rechazaron la solicitud con el mismo estado (motivo `upstream_rejected_request`). | Corrige la solicitud; reintentar no servirá. |
+| `unauthorised` | `401` | Falta la clave o no es válida. `reason` indica por qué. | Revisa el encabezado `Authorization`. |
+| `insufficient_funds` | `402` | El espacio de trabajo no tiene créditos suficientes. | Añade créditos. |
+| `pricing_not_configured` | `402` | Ningún proveedor de este modelo tiene precios (motivo `no_provider_pricing`). | Elige otro modelo. |
+| `guardrail_blocked` | `403` | Un guardrail o una política de acceso bloqueó la solicitud. | Cambia la solicitud o el guardrail. |
+| `model_region_unavailable` | `403` | Ningún proveedor ofrece el modelo en la región requerida o desde la ubicación de quien llama. | Relaja el requisito de región o elige otro modelo. |
+| `not_found` | `404` | El endpoint o el recurso no existe. | Revisa la ruta y el ID. |
+| `not_ready` | `409` | Los resultados de un trabajo aún no están listos. | Consulta el estado del trabajo. |
+| `model_retired` | `410` | El modelo está retirado y ningún proveedor lo ofrece. | Cambia a `replacement_model`. Consulta [más abajo](#when-a-model-is-retired). |
+| `payload_too_large` | `413` | El cuerpo supera el tamaño que acepta el endpoint. `max_bytes` indica el límite. | Envía un cuerpo más pequeño o sube un archivo. |
+| `key_limit_exceeded` | `429` | Se alcanzó un límite de la clave, un presupuesto o el límite por minuto del gateway. | Consulta [Límites de solicitudes](./limits.mdx#key-limits-and-budgets). |
+| `phaseo_free_model_limit_exceeded` | `429` | Se agotó la asignación diaria de modelos gratuitos (1.500 solicitudes de forma predeterminada). | Respeta `Retry-After`, espera al reinicio de las 00:00 UTC o usa un modelo de pago. |
+| `rate_limit_exceeded` | `429` | Se agotó una [política de límite de velocidad](./limits.mdx#rate-limit-policies) del espacio de trabajo. `policy_id` y `limit_scope` la identifican. | Respeta `Retry-After` o pide a un administrador que cambie la política. |
+| `spend_rule_blocked` | `429` | Está activa una [regla de gasto](../guides/spend-alerts.mdx) configurada para bloquear. | Respeta `Retry-After` o pide a un propietario o administrador que levante el bloqueo. |
+| `upstream_error` | `429` | Todos los proveedores probados limitaron la tasa de la solicitud. | Respeta `Retry-After`. Las solicitudes BYOK también incluyen los encabezados `X-Phaseo-Upstream-RateLimit-*`. |
+| `provider_capacity_exhausted` | `429` | Todos los proveedores aptos están al límite de capacidad (motivo `all_candidates_rate_limited`). | Respeta `Retry-After` cuando esté presente; si no, espera con backoff. |
+| `gateway_error` | `500` | Algo falló dentro de Phaseo. | Reintenta con backoff. |
+| `not_implemented_yet` | `501` | La operación aún no está disponible. | No reintentes. |
+| `upstream_error` | `502` | El proveedor no respondió correctamente. | Reintenta con backoff. |
+| `upstream_stream_failure` | `502` | Una solicitud sin streaming cuyo proveedor falló después de empezar a generar. No se devuelve salida parcial y la solicitud no se cobra. | Reintenta. |
+| `provider_payment_required` | `502` | La cuenta de Phaseo con el proveedor necesita atención. | Reintenta más tarde o infórmalo. |
+
+## Reintenta los errores correctos
+
+| Estado | ¿Reintentar? |
+| --- | --- |
+| `400`–`499` excepto `429` | No. Primero corrige la solicitud, la clave o el acceso. |
+| `429` | Sí. Espera lo que indique `Retry-After` (segundos o una fecha HTTP); si no está, usa backoff exponencial con jitter. Un error `key_limit_exceeded` sin `Retry-After` no se restablece solo, así que no lo reintentes. |
+| `500`–`599` | Solo cuando repetir la operación sea seguro. Un envío ambiguo puede haber creado ya un trabajo o un cargo; busca el trabajo aceptado en lugar de enviarlo de nuevo. |
+
+Define un límite de intentos y un plazo total. Consulta [Límites de solicitudes](./limits.mdx) para ver los encabezados de límite de velocidad.
+
+<span id="when-a-provider-fails"></span>
 ## Cuando falla un proveedor
 
-Si Phaseo llegó a un proveedor, pero la solicitud sigue fallando, es posible que veas:
+Cuando Phaseo llegó a un proveedor y la solicitud aun así falló, `provider_failure_diagnostics` incluye `category`, `hint` y `provider`. Categorías:
 
-- `provider_failure_diagnostics.category`
-- `provider_failure_diagnostics.hint`
-- `provider_failure_diagnostics.provider`
+| `category` | Significado |
+| --- | --- |
+| `credentials_not_configured` | No hay ninguna credencial configurada para esta ruta. |
+| `credentials_invalid_or_forbidden` | La credencial fue rechazada. |
+| `provider_access_missing` | La cuenta del proveedor no tiene acceso al modelo o a la función. |
+| `region_or_project_restriction` | El proveedor rechazó la solicitud por la región o el proyecto. |
+| `model_unavailable_for_endpoint` | El proveedor no ofrece el modelo en este endpoint. |
+| `rate_limited` | El proveedor limitó la tasa de la solicitud. |
+| `server_error` | El proveedor falló o agotó el tiempo de espera. |
 
-Las categorías actuales incluyen:
-
-- `credentials_not_configured`
-- `credentials_invalid_or_forbidden`
-- `provider_access_missing`
-- `region_or_project_restriction`
-- `model_unavailable_for_endpoint`
-- `rate_limited`
-- `server_error`
-
-Estos campos te ayudan a resolver el problema sin activar el modo de depuración completo.
-
+<span id="when-a-model-or-endpoint-is-not-available"></span>
 ## Cuando un modelo o endpoint no está disponible
 
-En respuestas `unsupported_model_or_endpoint`, Phaseo puede incluir:
+Los errores `unsupported_model_or_endpoint` pueden incluir `provider_candidate_diagnostics`, `provider_enablement`, `missing_pricing_providers` y `routing_diagnostics`. En conjunto distinguen entre un modelo que aún no está activo, un modelo que no admite el endpoint, la falta de precios y las restricciones de despliegue.
 
-- `provider_candidate_diagnostics`
-- `provider_enablement`
-- `missing_pricing_providers`
-- `routing_diagnostics`
-
-Esto ayuda a distinguir entre:
-
-- un modelo conocido que aún no está activo
-- un modelo que no es compatible con el endpoint solicitado
-- datos de precios ausentes
-- restricciones de despliegue o disponibilidad interna
-
-Campos habituales:
-
-- `provider_candidate_diagnostics.totalProviders`: cantidad de proveedores conocidos para el modelo antes de filtrar por endpoint.
-- `provider_candidate_diagnostics.supportsEndpointCount`: cantidad de esos proveedores compatibles con el endpoint solicitado.
-- `provider_candidate_diagnostics.candidateCount`: cantidad de proveedores que quedaron después de las comprobaciones de adaptadores.
-- `provider_candidate_diagnostics.droppedUnsupportedEndpoint`: proveedores descartados porque no admiten el endpoint.
-- `provider_candidate_diagnostics.droppedMissingAdapter`: pares proveedor/endpoint descartados porque todavía no hay un adaptador de Gateway para ese endpoint.
-- `provider_enablement.capability`: control de capacidad que se aplica, como `video_generation`.
-- `provider_enablement.providersBefore` / `provider_enablement.providersAfter`: proveedores antes y después del filtrado por capacidad o habilitación.
-- `provider_enablement.dropped[].reason`: motivos legibles por máquina, como `pricing_missing`.
-- `routing_diagnostics.filterStages[].stage`: etapa de enrutamiento, por ejemplo, filtrado de capacidad, despliegue o estado de enrutamiento.
-- `routing_diagnostics.filterStages[].beforeCount` / `routing_diagnostics.filterStages[].afterCount`: número de proveedores antes y después de cada etapa.
-- `routing_diagnostics.filterStages[].droppedProviders[].reason`: motivos legibles por máquina, como restricciones de despliegue o enrutamiento.
-
-### Ejemplo
+| Campo | Significado |
+| --- | --- |
+| `provider_candidate_diagnostics.totalProviders` | Proveedores conocidos para el modelo antes de filtrar por endpoint. |
+| `provider_candidate_diagnostics.supportsEndpointCount` | Proveedores que admiten el endpoint solicitado. |
+| `provider_candidate_diagnostics.candidateCount` | Proveedores que quedan después de las comprobaciones de adaptadores. |
+| `provider_candidate_diagnostics.droppedUnsupportedEndpoint` | Proveedores descartados porque no admiten el endpoint. |
+| `provider_candidate_diagnostics.droppedMissingAdapter` | Pares de proveedor y endpoint descartados porque Phaseo aún no tiene un adaptador para ese endpoint. |
+| `provider_enablement.capability` | La capacidad que se aplica, como `video_generation`. |
+| `provider_enablement.providersBefore`, `providersAfter` | Proveedores antes y después de filtrar por capacidad. |
+| `provider_enablement.dropped[].reason` | Por qué se descartó un proveedor, como `pricing_missing`. |
+| `routing_diagnostics.filterStages[].stage` | Una etapa de enrutamiento, como el filtrado por capacidad, por despliegue o por estado de enrutamiento. |
+| `routing_diagnostics.filterStages[].beforeCount`, `afterCount` | Proveedores antes y después de esa etapa. |
+| `routing_diagnostics.filterStages[].droppedProviders[].reason` | Por qué se descartó un proveedor en esa etapa. |
 
 ```json
 {
+  "error": {
+    "code": "unsupported_model_or_endpoint",
+    "message": "No provider is currently routable for endpoint \"responses\" on model \"example/model\".",
+    "type": "invalid_request_error",
+    "param": null
+  },
+  "code": "unsupported_model_or_endpoint",
   "generation_id": "G-unsupported123",
   "status_code": 400,
-  "error": "unsupported_model_or_endpoint",
   "description": "No provider is currently routable for endpoint \"responses\" on model \"example/model\".",
   "provider_candidate_diagnostics": {
     "totalProviders": 3,
@@ -189,9 +240,70 @@ Campos habituales:
 }
 ```
 
-## Modo de depuración opcional
+<span id="when-a-model-is-retired"></span>
+## Cuando se retira un modelo
 
-La mayoría de los esquemas de solicitud admiten un objeto `debug` para investigar problemas de forma controlada:
+Un modelo retirado se sigue sirviendo mientras algún proveedor lo ofrezca. Cuando ya ninguno lo ofrece, las solicitudes fallan con `410` y `model_retired`:
+
+```json
+{
+  "error": {
+    "code": "model_retired",
+    "message": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
+    "type": "invalid_request_error",
+    "param": null,
+    "metadata": {
+      "retired_at": "2026-09-30T00:00:00Z",
+      "replacement_model": "lab/new-model"
+    }
+  },
+  "code": "model_retired",
+  "generation_id": "G-retired123",
+  "status_code": 410,
+  "reason": "model_retired_without_providers",
+  "description": "Model \"lab/old-model\" was retired on 2026-09-30 and no provider serves it any more. Use \"lab/new-model\" instead.",
+  "model": "lab/old-model",
+  "retired_at": "2026-09-30T00:00:00Z",
+  "replacement_model": "lab/new-model"
+}
+```
+
+`model` es el modelo que pediste, `retired_at` es la fecha en que se retiró (o `null`) y `replacement_model` es el reemplazo sugerido (o `null`).
+
+Reintentar no sirve; cambia el ID del modelo. Para que estas solicitudes sigan funcionando mientras migras, añade el reemplazo a la lista `models` de la solicitud o activa el enrutamiento de modelos retirados en el espacio de trabajo. Consulta [Obsolescencia y retirada de modelos](../guides/model-retirement.mdx).
+
+## Errores durante un stream
+
+Si una solicitud falla antes de que empiece el streaming, recibes el cuerpo de error JSON anterior. Si falla a mitad del stream, el stream termina con el evento de fallo del endpoint en lugar de un final normal:
+
+| Endpoint | Evento de fallo |
+| --- | --- |
+| Chat Completions | Un frame `error` |
+| Responses | `response.failed` (o `error`) |
+| Messages | Un evento `error` |
+
+Trata la salida parcial como incompleta y ofrece reintentar. El frame `error` de Chat Completions incluye el mismo objeto de error, con `error.type` determinado por el código:
+
+```json
+{
+  "object": "error",
+  "message": "The upstream stream ended before the response completed.",
+  "code": "upstream_stream_failure",
+  "error": {
+    "code": "upstream_stream_failure",
+    "message": "The upstream stream ended before the response completed.",
+    "type": "server_error",
+    "param": null
+  }
+}
+```
+
+Una solicitud sin streaming cuyo proveedor falla a mitad devuelve `502` con `upstream_stream_failure`, no una respuesta parcial. Consulta [Streaming](../guides/streaming.mdx).
+
+<span id="debug-a-request"></span>
+## Depura una solicitud
+
+Envía un objeto `debug` para obtener trazas de enrutamiento y los payloads del proveedor:
 
 ```json
 {
@@ -205,67 +317,18 @@ La mayoría de los esquemas de solicitud admiten un objeto `debug` para investig
 }
 ```
 
-Campos disponibles:
+`trace_level` es `summary` o `full`. Los payloads de depuración pueden contener el contenido de tu solicitud, así que úsalos solo en desarrollo o en entornos muy controlados. Consulta [`debug`](./parameters.mdx#parameter-debug).
 
-- `enabled`
-- `return_upstream_request`
-- `return_upstream_response`
-- `trace`
-- `trace_level` (`summary` o `full`)
-
-Usa el modo de depuración solo en desarrollo o en entornos estrictamente controlados.
-
-## Estrategia de reintentos
-
-- **Errores de la serie 400 salvo 429:** corrige la solicitud, las credenciales o la política de acceso antes de reintentar.
-- **429:** usa espera progresiva exponencial y respeta el encabezado `Retry-After`.
-- **Errores de la serie 500:** usa reintentos limitados solo cuando sea seguro repetir la operación. Un envío con resultado incierto puede haber creado ya un trabajo o generado un cargo; recupera un trabajo aceptado en lugar de enviarlo de nuevo.
-
-Establece un límite de intentos y un plazo total, y añade variación aleatoria a los tiempos de espera. Consulta los [límites de solicitudes](./limits.mdx) para las cabeceras de respuesta y la gestión de reintentos.
-
-## Notas específicas de streaming
-
-- Si la solicitud falla antes de empezar el streaming, recibirás una respuesta de error JSON estándar.
-- Si falla a mitad del flujo, trata el flujo parcial como incompleto y ofrece la opción de reintentar.
-- Registra siempre `generation_id` y los metadatos del endpoint y del modelo.
-
-## Consejos para resolver problemas
-
-- Consulta la [página de estado de Gateway](https://status.phaseo.app) para ver incidentes en curso.
-- Compara el cuerpo de tu solicitud con la documentación del endpoint.
-- Comparte `generation_id` al contactar con soporte.
-
-## Recursos relacionados
-
-<Columns cols={2}>
-	<Card
-		title="Autenticación"
-		icon="key"
-		href="../developers/authentication.mdx"
-	>
-		Autentícate con claves de API Bearer.
-	</Card>
-	<Card
-		title="Límites"
-		icon="gauge"
-		href="./limits.mdx"
-	>
-		Gestiona la limitación de tasa y los reintentos impuestos por proveedores.
-	</Card>
-	<Card
-		title="Streaming"
-		icon="radio"
-		href="../guides/streaming.mdx"
-	>
-		Usa SSE de forma segura en flujos de producción.
-	</Card>
-</Columns>
+Cuando una solicitud falle, revisa la [página de estado](https://status.phaseo.app) por si hay incidentes, compara tu payload con la página de referencia del endpoint y registra `generation_id` junto con el endpoint y el modelo. Incluye `generation_id` cuando contactes con [soporte](https://phaseo.app/help).
 
 <Visibility for="agents">
-Si implementas la gestión de errores como agente:
+Reglas de gestión de errores para agentes, que resumen esta página:
 
-- Usa las habilidades del repositorio para la lógica de reintentos, los registros estructurados y el análisis de errores seguro para esquemas.
-- Trata las cargas de depuración como información potencialmente sensible y redacta su contenido antes de guardarlo en registros persistentes.
-- Prefiere reintentos deterministas (intentos limitados y variación aleatoria) en lugar de bucles sin límite.
+- Decide según `error.code` (también devuelto como `code` en el nivel superior), `error.type` y `status_code`, no según el texto del mensaje. Registra `generation_id` en cada fallo.
+- `400`, `401`, `403` y `404`: primero corrige la solicitud, la clave o el acceso. No reintentes la misma solicitud sin cambios.
+- `410` con `model_retired`: cambia a `replacement_model` cuando no sea `null`; si lo es, elige un modelo nuevo de `GET /v1/models`.
+- `429`: cuando `Retry-After` esté presente (segundos o una fecha HTTP), espera ese tiempo antes de reintentar; si no, usa backoff exponencial con jitter. Un error `key_limit_exceeded` sin `Retry-After` no se restablece solo, así que no lo reintentes.
+- De `500` a `599`: reintenta solo cuando repetir la llamada sea seguro, con un límite de intentos, un plazo total y backoff exponencial con jitter. En los trabajos asíncronos, busca el trabajo aceptado en lugar de enviarlo de nuevo.
+- Trata los payloads de depuración como sensibles y censúralos antes de escribirlos en registros persistentes.
+- Para patrones probados de reintentos y análisis de errores, instala la skill `phaseo-gateway`: `npx skills add https://phaseo.app/docs --skill phaseo-gateway`.
 </Visibility>
-

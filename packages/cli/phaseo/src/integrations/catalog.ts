@@ -3,7 +3,8 @@ import type { IntegrationId, IntegrationModel } from "./types.js";
 
 const PAGE_SIZE = 250;
 const MAX_CATALOG_MODELS = 5000;
-const CATALOG_INTEGRATIONS = new Set<IntegrationId>(["opencode", "deepseek-harness", "pi", "prime-agent", "openclaw"]);
+const CHAT_ENDPOINTS = ["text.generate", "chat/completions", "chat.completions"];
+const CATALOG_INTEGRATIONS = new Set<IntegrationId>(["opencode", "fx", "deepseek-harness", "pi", "prime-agent", "openclaw"]);
 
 type GatewayModel = {
 	id?: unknown;
@@ -28,7 +29,8 @@ export function toIntegrationModel(value: GatewayModel): IntegrationModel | null
 	if (value.lifecycle?.status === "retired") return null;
 	if (value.availability?.status !== "active" || positiveNumber(value.availability.active_provider_count) === undefined) return null;
 	if (!includesString(value.modalities?.input, "text") || !includesString(value.modalities?.output, "text")) return null;
-	if (!includesString(value.capabilities?.endpoints, "chat.completions")) return null;
+	// Catalog models advertise the gateway capability "text.generate", which serves Chat Completions.
+	if (!CHAT_ENDPOINTS.some((endpoint) => includesString(value.capabilities?.endpoints, endpoint))) return null;
 	return {
 		id: value.id,
 		name: typeof value.name === "string" && value.name.trim() ? value.name.trim() : value.id,
@@ -59,7 +61,7 @@ export async function fetchCompatibleModels(): Promise<IntegrationModel[]> {
 			limit: String(PAGE_SIZE),
 			offset: String(offset),
 			availability: "active",
-			endpoints: "chat.completions",
+			endpoints: "text.generate",
 			input_types: "text",
 			output_types: "text",
 		});

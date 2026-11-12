@@ -1,55 +1,27 @@
 ---
 title: "Codex"
 icon: "/icons/brands/codex.svg"
-description: "Usa el Gateway de Phaseo como proveedor personalizado para Codex CLI, Codex App y la extensión IDE de Codex."
+description: "Usa Phaseo Gateway como proveedor personalizado en Codex CLI, Codex App y la extensión de Codex para IDE."
 ---
 
-Codex admite proveedores de modelos personalizados mediante `config.toml`. Así puedes enrutar sus solicitudes a través de Phaseo sin cambiar tu flujo de trabajo en la CLI, la aplicación o el IDE.
+Ejecuta `phaseo codex` para añadir un perfil de Phaseo a Codex, o añade tú un proveedor `phaseo` a `config.toml`. La misma configuración funciona en Codex CLI, Codex App y la extensión de Codex para IDE.
 
-Si también quieres que Codex consulte la documentación actual de Phaseo mientras trabaja, añade también el servidor [Docs MCP](./docs-mcp.mdx).
-
-<Visibility for="humans">
-<Note>
-¿Necesitas ayuda para configurar agentes reutilizables además de conectar el proveedor? Instala las skills públicas de Phaseo desde [`phaseoteam/skills`](https://github.com/phaseoteam/skills):
-
-```bash
-npx skills add phaseoteam/skills --agent codex --skill '*'
-```
-</Note>
-</Visibility>
-
-<Visibility for="agents">
-<Note>
-¿Necesitas ayuda para configurar agentes reutilizables además de conectar el proveedor? Instala las skills públicas de Phaseo desde [`phaseoteam/skills`](https://github.com/phaseoteam/skills):
-
-```bash
-npx skills add phaseoteam/skills --agent codex --skill '*'
-```
-</Note>
-</Visibility>
-
-## Configurar mediante Phaseo CLI
+## Configura con la CLI de Phaseo
 
 ```bash
 phaseo login
 phaseo codex --model openai/gpt-5.6-terra
-```
-
-Instala primero Codex desde su versión oficial. La configuración crea una clave `Phaseo CLI: Codex API Key` que no caduca, la guarda en el almacén de credenciales del sistema operativo y crea un perfil de Phaseo independiente. Codex obtiene la clave mediante el ayudante de CLI, por lo que no se guarda en texto sin formato en `config.toml`.
-
-### Inicia Codex con:
-
-```bash
 codex --profile phaseo
 ```
 
-El mismo flujo de Phaseo CLI también inicia [Cline](./cline), [Kilo Code](./kilo-code), [oh-my-pi](./oh-my-pi), [Muse Code](./muse-code) y [MiniMax Code](./minimax-code) con una configuración temporal y aislada del proveedor.
-## Configuración manual
+Si falta Codex, la CLI muestra el comando de instalación oficial y pide confirmación antes de ejecutarlo. Después, la configuración abre una página del panel en la que apruebas una `Phaseo CLI: Codex API Key` que caduca a los 90 días y tiene un límite de gasto mensual de $100. La CLI guarda la clave en el almacén de credenciales del sistema operativo y escribe el perfil en `~/.codex/phaseo.config.toml` (o dentro de `CODEX_HOME`). Codex obtiene la clave de la CLI, así que no se escribe ninguna clave en texto plano en la configuración. Cuando la clave caduque, vuelve a ejecutar `phaseo codex` para aprobar una nueva. Sin `--model`, el perfil usa `openai/gpt-5.6-terra`.
 
-Crea o actualiza tu configuración de usuario en `~/.codex/config.toml`. En un proyecto de confianza, también puedes guardar los mismos ajustes en `.codex/config.toml` dentro del repositorio.
+## Configura Codex manualmente
+
+Añade esto a `~/.codex/config.toml`, o a `.codex/config.toml` en un proyecto de confianza:
 
 ```toml
-model = "openai/gpt-5.5"
+model = "openai/gpt-6-astra"
 model_provider = "phaseo"
 
 [model_providers.phaseo]
@@ -59,17 +31,34 @@ env_key = "PHASEO_API_KEY"
 wire_api = "responses"
 ```
 
-Codex usa actualmente el protocolo Responses para proveedores personalizados. Conserva `wire_api = "responses"` o elimina esa opción para usar el valor predeterminado.
+Después exporta `PHASEO_API_KEY` e inicia Codex. Los proveedores personalizados de Codex usan el protocolo de Responses, que es el predeterminado, así que también puedes omitir `wire_api`. En la extensión para IDE, abre el archivo desde **Codex Settings → Open config.toml**.
 
-La aplicación Codex y la extensión IDE comparten las mismas capas de configuración. En la extensión IDE, abre la configuración desde `Codex Settings > Open config.toml`.
+## Comprueba que funciona
 
-## Verificación
+Envía un prompt corto y confirma que la solicitud aparece en **Ajustes → Uso → Registros**. Codex llama a [Responses](../../api-reference/endpoint/responses.mdx), así que el modelo debe admitir ese endpoint.
 
-- Antes de iniciar, comprueba en [Modelos](../../api-reference/endpoint/models.mdx) que exista el ID del modelo.
-- Usa [Responses](../../api-reference/endpoint/responses.mdx) para el flujo predeterminado de Codex.
+## Quita Phaseo
 
-## Solución de problemas
+```bash
+phaseo integrations remove codex
+```
 
-- `401 Unauthorized`: ejecuta `phaseo whoami` y luego vuelve a ejecutar `phaseo codex`.
-- `model_not_found`: obtén un ID actual en [Modelos](../../api-reference/endpoint/models.mdx) y actualiza `model`.
-- Problemas específicos del proveedor: consulta [Enrutamiento y fallbacks](../routing-and-fallbacks.mdx) para conocer el comportamiento de conmutación por error.
+Esto borra `phaseo.config.toml` si lo creó Phaseo y revoca la clave. En una configuración manual, quita el proveedor `phaseo` de `config.toml`.
+
+## Soluciona problemas habituales
+
+| Error | Solución |
+| --- | --- |
+| `401 Unauthorized` | Ejecuta `phaseo whoami` y vuelve a ejecutar `phaseo codex`. |
+| `model_not_found` | Obtén un ID actual en [Modelos](../../api-reference/endpoint/models.mdx) y actualiza `model`. |
+| Falla un proveedor | Consulta [Enrutamiento y alternativas](../routing-and-fallbacks.mdx) para la conmutación por error. |
+
+## Añade las skills y la documentación de Phaseo
+
+Para que Codex lea la documentación actual de Phaseo mientras trabaja, añade el servidor [Docs MCP](./docs-mcp.mdx). Para instalar las [skills de Phaseo](https://phaseo.app/docs/.well-known/agent-skills/index.json) públicas para Codex:
+
+```bash
+npx skills add https://phaseo.app/docs --agent codex --skill '*'
+```
+
+El mismo flujo de la CLI inicia [Cline](./cline.mdx), [Kilo Code](./kilo-code.mdx), [oh-my-pi](./oh-my-pi.mdx), [Muse Code](./muse-code.mdx) y [MiniMax Code](./minimax-code.mdx) con ajustes temporales.

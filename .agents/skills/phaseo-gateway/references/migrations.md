@@ -12,13 +12,14 @@ const client = new OpenAI({
 ```
 
 ## Anthropic SDK -> Phaseo
-Keep SDK, swap config:
+Keep SDK, swap config. Use the root host: the SDK appends `/v1/messages` itself. Pass the key as `authToken`, which sends `Authorization: Bearer` on every SDK version; `apiKey` sends `x-api-key` before `@anthropic-ai/sdk` 1.0, which the gateway rejects.
 ```ts
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "https://api.phaseo.app/v1",
+  apiKey: null,
+  authToken: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app",
 });
 ```
 
@@ -39,7 +40,8 @@ const result = await generateText({
 
 ## Migration Checklist
 1. Replace API key source with `PHASEO_API_KEY`.
-2. Replace base URL with `https://api.phaseo.app/v1`.
-3. Verify model IDs via `/v1/models`.
-4. Run one non-streaming and one streaming smoke test.
-5. Add retries/backoff for 429 and 5xx.
+2. Replace base URL with `https://api.phaseo.app/v1`, or `https://api.phaseo.app` for the Anthropic SDK.
+3. Send the key as `Authorization: Bearer`.
+4. Verify model IDs via `/v1/models`.
+5. Run one non-streaming and one streaming smoke test.
+6. Add retries/backoff for 429 and 5xx.

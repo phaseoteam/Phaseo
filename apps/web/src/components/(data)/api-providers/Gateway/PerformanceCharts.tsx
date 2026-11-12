@@ -1,6 +1,4 @@
-"use client";
-
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 
 import {
@@ -8,7 +6,7 @@ import {
 	type ChartConfig,
 } from "@/components/ui/chart";
 import {
-	LineChart,
+	ComposedChart,
 	Line,
 	Area,
 	XAxis,
@@ -25,6 +23,9 @@ import {
 	EmptyTitle,
 	EmptyDescription,
 } from "@/components/ui/empty";
+
+// With a week or less of points the line is too short to read, so mark each sample.
+const SPARSE_SAMPLE_LIMIT = 7;
 
 const latencyChartConfig = (label: string): ChartConfig => ({
 	latency: {
@@ -89,7 +90,7 @@ export function LatencyChart({
 		);
 	}
 
-	const showDots = nonNullSamples <= 1;
+	const showDots = nonNullSamples <= SPARSE_SAMPLE_LIMIT;
 	const latencyColor = "var(--color-latency)";
 	const latencyDot = showDots
 		? {
@@ -106,7 +107,7 @@ export function LatencyChart({
 			className="h-[200px] w-full max-w-full min-w-0"
 		>
 			<ResponsiveContainer width="100%" height="100%">
-				<LineChart
+				<ComposedChart
 					data={chartData}
 					margin={{ top: 0, right: 4, bottom: 0, left: 0 }}
 					syncId={syncId}
@@ -142,7 +143,7 @@ export function LatencyChart({
 							fontSize: 12,
 							fill: "var(--muted-foreground)",
 						}}
-						tickFormatter={(value) => `${value}ms`}
+						tickFormatter={(value) => format.latency(value) ?? ""}
 					/>
 					<RechartsTooltip
 						cursor={{
@@ -176,7 +177,7 @@ export function LatencyChart({
 						}}
 						connectNulls={true}
 					/>
-				</LineChart>
+				</ComposedChart>
 			</ResponsiveContainer>
 		</ChartContainer>
 	);
@@ -224,7 +225,7 @@ export function ThroughputChart({
 		);
 	}
 
-	const showDots = nonNullSamples <= 1;
+	const showDots = nonNullSamples <= SPARSE_SAMPLE_LIMIT;
 	const throughputColor = "var(--color-throughput)";
 	const throughputDot = showDots
 		? {
@@ -241,7 +242,7 @@ export function ThroughputChart({
 			className="h-[200px] w-full max-w-full min-w-0"
 		>
 			<ResponsiveContainer width="100%" height="100%">
-				<LineChart
+				<ComposedChart
 					data={chartData}
 					margin={{ top: 0, right: 4, bottom: 0, left: 0 }}
 					syncId={syncId}
@@ -277,7 +278,7 @@ export function ThroughputChart({
 							fontSize: 12,
 							fill: "var(--muted-foreground)",
 						}}
-						tickFormatter={(value) => `${value}t/s`}
+						tickFormatter={(value) => format.tps(value) ?? ""}
 					/>
 					<RechartsTooltip
 						cursor={{
@@ -311,7 +312,7 @@ export function ThroughputChart({
 						}}
 						connectNulls={true}
 					/>
-				</LineChart>
+				</ComposedChart>
 			</ResponsiveContainer>
 		</ChartContainer>
 	);
@@ -359,7 +360,7 @@ export function E2ELatencyChart({
 		);
 	}
 
-	const showDots = nonNullSamples <= 1;
+	const showDots = nonNullSamples <= SPARSE_SAMPLE_LIMIT;
 	const e2eColor = "var(--color-e2eLatency)";
 	const e2eDot = showDots
 		? {
@@ -376,7 +377,7 @@ export function E2ELatencyChart({
 			className="h-[200px] w-full max-w-full min-w-0"
 		>
 			<ResponsiveContainer width="100%" height="100%">
-				<LineChart
+				<ComposedChart
 					data={chartData}
 					margin={{ top: 0, right: 4, bottom: 0, left: 0 }}
 					syncId={syncId}
@@ -412,7 +413,7 @@ export function E2ELatencyChart({
 							fontSize: 12,
 							fill: "var(--muted-foreground)",
 						}}
-						tickFormatter={(value) => `${value}ms`}
+						tickFormatter={(value) => format.latency(value) ?? ""}
 					/>
 					<RechartsTooltip
 						cursor={{
@@ -446,7 +447,7 @@ export function E2ELatencyChart({
 						}}
 						connectNulls={true}
 					/>
-				</LineChart>
+				</ComposedChart>
 			</ResponsiveContainer>
 		</ChartContainer>
 	);

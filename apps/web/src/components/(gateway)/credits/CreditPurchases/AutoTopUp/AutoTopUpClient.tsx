@@ -1,7 +1,5 @@
-"use client";
-
 import React, { useMemo, useState, useEffect } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { Link } from "@/i18n/navigation";
 import {
 	Dialog,
@@ -31,9 +29,10 @@ import { SensitiveValue } from "@/components/display/SensitiveValue";
 import {
 	SetUpAutoTopUp,
 	DisableAutoTopUpServer,
-} from "@/app/(dashboard)/settings/credits/actions";
+} from "@/features/settings/credits/actions";
 import { toast } from "sonner";
 import { CreditCard, Info, Loader2, ShieldCheck } from "lucide-react";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
 
 interface PaymentMethodCard {
 	brand?: string | null;
@@ -69,8 +68,8 @@ interface Props {
 
 const MFA_BYPASS_CONFIRMATION = "I ACCEPT THE RISK";
 
-const fmtUSD = (v: number, locale: string) =>
-	new Intl.NumberFormat(locale, {
+const fmtUSD = (v: number, _locale: string) =>
+	new Intl.NumberFormat(MONEY_LOCALE, {
 		style: "currency",
 		currency: "USD",
 	}).format(v);
@@ -131,7 +130,7 @@ export default function AutoTopUpClient({
 	const t = useTranslations("SettingsUI");
 	const text = (key: string) => t(`credits.autoTopUpPanel.${key}` as never);
 	const riskConfirmationPhrase = text("riskConfirmationPhrase");
-	const minimumTopUpText = text("minimumTopUp").replace("{amount}", fmtUSD(1, locale));
+	const minimumTopUpText = text("minimumTopUp").replace("{amount}", fmtUSD(5, locale));
 	// Compute current "best" default PM based on provided stripeInfo
 	const initialDefaultPm = useMemo(
 		() => getDefaultPmId(stripeInfo),
@@ -215,7 +214,8 @@ export default function AutoTopUpClient({
 		if (typeof minBefore !== "number" || typeof topUpAmount !== "number")
 			return false;
 		if (minBefore <= 0 || topUpAmount <= 0) return false;
-		if (topUpAmount < 1) return false; // guardrail: minimum $1
+		// The Stripe webhook credits $5 to $1,000,000, and the wallet refuses other amounts.
+		if (topUpAmount < 5 || topUpAmount > 1_000_000) return false;
 		return true;
 	}, [
 		enabled,
@@ -248,13 +248,13 @@ export default function AutoTopUpClient({
 			};
 
 			await toast.promise(
-				SetUpAutoTopUp({
+				SetUpAutoTopUp({ data: {
 					balanceThreshold: payload.min_balance_nanos ?? 0,
 					topUpAmount: payload.top_up_amount_nanos ?? 0,
 					paymentMethodId: payload.auto_top_up_account_id ?? null,
 					mfaBypassAcknowledged: !mfaEnabled && mfaBypassAcknowledged,
 					mfaBypassPhrase: !mfaEnabled && mfaBypassPhrase === riskConfirmationPhrase ? MFA_BYPASS_CONFIRMATION : undefined,
-				}),
+				} }),
 				{
 					loading: text("saving"),
 					success: text("enabledToast"),
@@ -303,7 +303,7 @@ export default function AutoTopUpClient({
 
 						<div className="leading-tight">
 							<div className="text-sm font-medium capitalize text-foreground">
-								<SensitiveValue inline label="card number">****{pm.card?.last4 ?? ""}</SensitiveValue>
+								<SensitiveValue inline reveal={false} label="card number">****{pm.card?.last4 ?? ""}</SensitiveValue>
 							</div>
 							<div className="text-xs capitalize text-muted-foreground">
 								{pm.card?.brand ?? text("card")}
@@ -567,7 +567,7 @@ export default function AutoTopUpClient({
 																			>
 																				<div className="leading-tight">
 																					<div className="text-sm font-medium">
-																				<SensitiveValue inline className="text-foreground" label="card number">
+																				<SensitiveValue inline reveal={false} className="text-foreground" label="card number">
 																							****{pm.card?.last4}
 																						</SensitiveValue>
 																				<div className="text-xs capitalize text-muted-foreground">

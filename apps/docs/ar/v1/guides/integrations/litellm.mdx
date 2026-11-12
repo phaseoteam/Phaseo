@@ -4,20 +4,22 @@ icon: "route"
 description: "استخدم Phaseo خلف LiteLLM أو وجّه استدعاءات LiteLLM عبر Phaseo."
 ---
 
-استخدم LiteLLM مع Phaseo إذا كنت تعتمد بالفعل على الوكيل أو الميزانيات أو الموجّه المحلي لديه، وتريد الاستفادة من نماذج Phaseo وتحليلاته وأدوات الخادم.
+زوّد LiteLLM بالنموذج `openai/<Phaseo model ID>` ومفتاح Phaseo و`api_base="https://api.phaseo.app/v1"`. يعمل هذا مع استدعاءات LiteLLM المباشرة ومع النماذج خلف وكيل LiteLLM.
 
-## استدعاء مباشر من Python
+## التثبيت
 
 ```bash
 pip install litellm
 ```
+
+## استدعاء Phaseo من LiteLLM
 
 ```python
 import os
 from litellm import completion
 
 response = completion(
-    model="openai/openai/gpt-5-nano",
+    model="openai/openai/gpt-6-astra",
     api_key=os.environ["PHASEO_API_KEY"],
     api_base="https://api.phaseo.app/v1",
     messages=[{"role": "user", "content": "Reply with only: ok"}],
@@ -26,31 +28,24 @@ response = completion(
 print(response.choices[0].message.content)
 ```
 
-يستخدم LiteLLM عادةً بادئة المزوّد `openai/` لنقاط النهاية المتوافقة مع OpenAI. يظل معرّف نموذج Phaseo هو `openai/gpt-5-nano`، لذا قد تظهر سلسلة النموذج في LiteLLM بالشكل `openai/openai/gpt-5-nano`.
+طباعة `ok` تعني أن الإعداد يعمل. يستخدم LiteLLM البادئة `openai/` لنقاط النهاية المتوافقة مع OpenAI. يبقى معرّف نموذج Phaseo هو `openai/gpt-6-astra`، لذا تصبح سلسلة النموذج في LiteLLM هي `openai/openai/gpt-6-astra`.
 
-## إعداد الوكيل
+## إضافة نماذج Phaseo إلى وكيل LiteLLM
 
-استخدم اسمًا مستعارًا للنموذج إذا لم ترغب في تضمين بادئة مزوّد LiteLLM في كود التطبيق:
+امنح كل نموذج اسمًا مستعارًا حتى لا يحتاج كود التطبيق إلى بادئة LiteLLM:
 
 ```yaml
 model_list:
-  - model_name: phaseo-gpt-5-nano
+  - model_name: phaseo-gpt-6-astra
     litellm_params:
-      model: openai/openai/gpt-5-nano
+      model: openai/openai/gpt-6-astra
       api_key: os.environ/PHASEO_API_KEY
       api_base: https://api.phaseo.app/v1
 ```
 
-بعد ذلك، استدعِ وكيل LiteLLM باستخدام `model: "phaseo-gpt-5-nano"`.
+ثم استدعِ الوكيل باستخدام `model: "phaseo-gpt-6-astra"`. تُبقي الأسماء المستعارة أسماء النماذج مقروءة في الإنتاج.
 
-## ملاحظات
+## القيود المعروفة
 
-- فضّل أسماء LiteLLM المستعارة في بيئة الإنتاج للحفاظ على وضوح أسماء النماذج.
-- إذا كنت تستخدم أدوات خادم Phaseo، فاختبر مسار LiteLLM المحدد لأن بعض طبقات الوكيل توحّد أنواع الأدوات غير المعروفة أو تحذفها.
-- حدّد ما إذا كان LiteLLM أو Phaseo أو كلاهما هو المصدر المعتمد لتسجيل الأسعار.
-
-## صفحات ذات صلة
-
-- [SDK الخاص بـ OpenAI](./openai-sdk.mdx)
-- [أدوات الخادم](../server-tools/index.mdx)
-- [الأسعار](../../api-reference/endpoint/pricing-calculate.mdx)
+- تغيّر بعض طبقات الوكيل أنواع الأدوات التي لا تعرفها أو تحذفها. إذا كنت تستخدم [أدوات الخادم](../server-tools/index.mdx) في Phaseo، فاختبر مسار LiteLLM المحدد.
+- يتتبّع كل من LiteLLM وPhaseo الإنفاق. قرّر أيهما مرجعك للتكلفة؛ أسعار Phaseo موجودة في [حاسبة الأسعار](../../api-reference/endpoint/pricing-calculate.mdx).

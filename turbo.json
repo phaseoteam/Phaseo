@@ -4,14 +4,13 @@
 		"dev": { "cache": false, "persistent": true },
 		"build": {
 			"dependsOn": ["^build"],
-			"outputs": [".next/**", "dist/**", "build/**", ".mint/**"]
+			"outputs": ["dist/**", "build/**", ".mint/**"]
 		},
 		"@phaseo/web#build": {
 			"dependsOn": ["^build"],
-			"outputs": [".next/**", "dist/**", "build/**", ".mint/**"],
+			"outputs": ["dist/**", "src/routeTree.gen.ts"],
 			"inputs": [
 				"$TURBO_DEFAULT$",
-				"packages/data/catalog/src/data/**",
 				"apps/api/openapi.openai.yml",
 				"apps/api/openapi.anthropic.json"
 			]
@@ -21,14 +20,16 @@
 		"clean": { "cache": false }
 	},
 	"globalEnv": [
-		"NEXT_PUBLIC_WEBSITE_URL",
+		"PLATFORM_TELEMETRY_ENABLED",
+		"GRAFANA_OTLP_ENDPOINT",
+		"GRAFANA_OTLP_AUTHORIZATION",
+		"PLATFORM_TRACE_SAMPLE_RATE",
+		"PUBLIC_*",
+		"PHASEO_BUILD_ID",
 		"NEXT_PUBLIC_SUPABASE_URL",
 		"NEXT_PUBLIC_SUPABASE_ANON_KEY",
 		"TAWK_PROPERTY_ID",
 		"TAWK_WIDGET_ID",
-		"NEXT_PUBLIC_TAWK_PROPERTY_ID",
-		"NEXT_PUBLIC_TAWK_WIDGET_ID",
-		"NEXT_PUBLIC_STAGING_GATEWAY_BASE_URL",
 		"STAGING_GATEWAY_BASE_URL",
 		"EXPO_PUBLIC_SUPABASE_URL",
 		"EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
@@ -66,6 +67,9 @@
 		"HMAC_ENCRPYTION_KEY",
 		"WEBSITE_URL",
 		"ADMIN_TOKEN",
+		"POSTHOG_SOURCEMAPS_API_KEY",
+		"POSTHOG_SOURCEMAPS_PROJECT_ID",
+		"POSTHOG_SOURCEMAPS_HOST",
 		"YT_CALLBACK_URL",
 		"YT_WEBHOOK_SECRET"
 	]

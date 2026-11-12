@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { PageMetadata } from "@/lib/seo/metadataTypes";
 import { getPublicMessages } from "@/i18n/messages";
 import type { PublicLocale } from "@/i18n/routing";
 import {
@@ -10,7 +10,6 @@ import {
 
 export const openGraphLocales = {
 	"en-GB": "en_GB",
-	"en-US": "en_US",
 	"zh-Hans": "zh_CN",
 	hi: "hi_IN",
 	"es-ES": "es_ES",
@@ -27,7 +26,7 @@ const rootDescription =
 const socialDescription =
 	"Browse and compare state-of-the-art AI models, benchmarks, features, and pricing.";
 
-const sharedRootMetadata: Metadata = {
+const sharedRootMetadata: PageMetadata = {
 	title: {
 		default: rootTitle,
 		template: `%s | ${SITE_NAME}`,
@@ -49,7 +48,7 @@ const sharedRootMetadata: Metadata = {
 	},
 };
 
-export const siteRootMetadata: Metadata = {
+export const siteRootMetadata: PageMetadata = {
 	...sharedRootMetadata,
 	openGraph: {
 		type: "website",
@@ -71,7 +70,7 @@ export const siteRootMetadata: Metadata = {
 
 export async function buildLocalizedRootMetadata(
 	locale: PublicLocale,
-): Promise<Metadata> {
+): Promise<PageMetadata> {
 	const messages = await getPublicMessages(locale);
 	const title = messages.Site.home.title;
 	const description = messages.Site.home.description;

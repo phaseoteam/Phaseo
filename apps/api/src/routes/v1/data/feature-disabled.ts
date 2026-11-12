@@ -1,5 +1,6 @@
 import { Hono } from "hono";
 import type { Env } from "@/runtime/types";
+import { withErrorObject } from "@core/error-object";
 
 function buildFeatureDisabledPayload(feature: string) {
 	return {
@@ -13,7 +14,7 @@ function buildFeatureDisabledPayload(feature: string) {
 export function createFeatureDisabledRoutes(feature: string) {
 	const routes = new Hono<Env>();
 	const respond = () =>
-		new Response(JSON.stringify(buildFeatureDisabledPayload(feature)), {
+		new Response(JSON.stringify(withErrorObject(buildFeatureDisabledPayload(feature), 501)), {
 			status: 501,
 			headers: {
 				"Content-Type": "application/json",

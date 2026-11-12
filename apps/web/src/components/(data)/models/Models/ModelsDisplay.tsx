@@ -1,19 +1,21 @@
-"use client";
-
-import Link from "next/link";
+import Link from "@/components/link";
 import {
 	useCallback,
 	useDeferredValue,
 	useEffect,
 	useMemo,
-	useRef,
 	useState,
 	type ReactNode,
 } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { usePathname, useSearchParams } from "@/lib/navigation";
+import { useTranslations } from "@/i18n/react";
 import { debounce, useQueryState } from "nuqs";
 import { ModelsGrid } from "./ModelsGrid";
+import {
+	OUTPUT_MODALITY_DISPLAY_ORDER,
+	normalizeModalityFilterValue,
+} from "./modalityOrder";
+import { OutputModalityChipRow } from "./OutputModalityChipRow";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { ActiveModelFilters, type ActiveModelFilter } from "./ActiveModelFilters";
 import { resolveDefaultGatewayStatuses } from "@/lib/models/defaultGatewayStatuses";
@@ -40,10 +42,13 @@ import {
 	Database,
 	FileText,
 	Headphones,
+	Languages,
 	Music4,
 	Radio,
 	RotateCcw,
 	Route,
+	ScanText,
+	TextSelect,
 	SearchX,
 	Sparkles,
 	Speech,
@@ -54,6 +59,8 @@ import {
 	Globe2,
 	LockKeyhole,
 	Scale,
+	ScrollText,
+	PackageOpen,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -67,7 +74,7 @@ import {
 	qParser,
 	sortParser,
 	type ModelsSortOption,
-} from "@/app/(dashboard)/models/search-params";
+} from "@/features/models/search-params";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
 	Accordion,
@@ -98,7 +105,9 @@ import {
 import { Slider } from "@/components/ui/slider";
 import { cn } from "@/lib/utils";
 import { getModalityTone } from "@/lib/models/modalityStyles";
+import { modelOutputFilterValues } from "@/lib/models/modelCapabilities";
 import { getTierFilterMeta } from "@/lib/models/tierFilterStyles";
+import { parseCatalogueTierFilters } from "@/lib/models/catalogueTierFilters";
 import { normalizeOrganisationDisplayName } from "@/lib/models/organisationDisplay";
 import type {
 	GatewayStatusFilter,
@@ -107,6 +116,28 @@ import type {
 	OptionCount,
 } from "./modelsDisplay.types";
 import { compareModelsByNewest } from "./modelOrdering";
+import { LicenseFilterList, useLicenseGroupLabel, useWeightsLabel } from "./LicenseFilterList";
+import {
+	MODEL_WEIGHTS,
+	matchesLicenseSelection,
+	matchesModelWeights,
+	modelWeights,
+	mergeWeights,
+	readLicenseTypeParam,
+	parseModelWeights,
+	type LicenseSelection,
+} from "@/lib/models/licenseFilter";
+
+// Weights are derived from the licence, so their counts start from the
+// licence facet until per-model counts are ready.
+function weightsOptionsFromLicenses(licenseOptions: OptionCount[]): OptionCount[] {
+	return MODEL_WEIGHTS.map((value) => ({
+		value,
+		count: licenseOptions
+			.filter((option) => modelWeights(option.value) === value)
+			.reduce((sum, option) => sum + option.count, 0),
+	}));
+}
 
 interface ModelsDisplayProps {
 	modelsPageData: ModelsPageData;
@@ -126,6 +157,7 @@ type PreparedModel = {
 	supportedParametersSet: ReadonlySet<string>;
 	maxContextLength: number | null;
 	creator: string;
+	license: string;
 	modelYear: string;
 	searchIndex: string;
 	sortPrice: number | null;
@@ -147,6 +179,8 @@ type FilterDimension =
 	| "providers"
 	| "regions"
 	| "creators"
+	| "licenses"
+	| "weights"
 	| "years";
 
 const SORT_OPTION_KEYS: Record<ModelsSortOption, string> = {
@@ -174,19 +208,7 @@ const CONTEXT_LENGTH_STOPS = [
 ] as const;
 
 const MOBILE_FILTER_FAB_VISIBILITY_THRESHOLD = 240;
-const OUTPUT_MODALITY_DISPLAY_ORDER = [
-	"text",
-	"image",
-	"video",
-	"audio",
-	"audio_tts",
-	"realtime",
-	"audio_stt",
-	"embeddings",
-	"moderations",
-	"rerank",
-	"audio_music",
-] as const;
+const EMPTY_OPTIONS: OptionCount[] = [];
 const REGION_DISPLAY_ORDER = ["us", "eu", "apac", "jp", "au"] as const;
 const ENDPOINT_DISPLAY_ORDER = [
 	"responses",
@@ -228,7 +250,7 @@ const ENDPOINT_LABELS: Record<string, string> = {
 	"audio/transcription": "Transcription",
 	"audio/transcriptions": "Transcription",
 	"audio/translations": "Translation",
-	"audio/realtime": "Real-time",
+	"audio/realtime": "Realtime",
 	"video/generations": "Video Generation",
 	decisions: "Decisions",
 	"decision/make": "Decisions",
@@ -278,43 +300,6 @@ function parseRegionParam(value: string | null): string[] {
 	);
 }
 
-function normalizeModalityFilterValue(value: string): string {
-	const normalized = String(value ?? "")
-		.trim()
-		.toLowerCase()
-		.replace(/[._/-]+/g, " ");
-	if (!normalized) return "";
-	if (normalized.includes("realtime") || normalized.includes("real time")) {
-		return "realtime";
-	}
-	if (normalized.includes("image")) return "image";
-	if (normalized.includes("video")) return "video";
-	if (normalized.includes("music")) return "audio_music";
-	if (
-		normalized.includes("transcri") ||
-		normalized.includes("speech to text") ||
-		normalized.includes("stt")
-	) {
-		return "audio_stt";
-	}
-	if (
-		normalized.includes("text to speech") ||
-		normalized.includes("audio speech") ||
-		normalized.includes("speech synth") ||
-		normalized.includes("tts")
-	) {
-		return "audio_tts";
-	}
-	if (normalized.includes("text")) return "text";
-	if (normalized.includes("audio")) return "audio";
-	if (normalized.includes("file")) return "file";
-	if (normalized.includes("moderat")) return "moderations";
-	if (normalized.includes("rerank") || normalized.includes("re rank")) {
-		return "rerank";
-	}
-	if (normalized.includes("embed")) return "embeddings";
-	return normalized.replace(/\s+/g, "_");
-}
 
 function parseModalityParam(value: string | null): string[] {
 	return Array.from(
@@ -481,10 +466,14 @@ function toTitleCase(value: string): string {
 	) {
 		return "Decisions";
 	}
-	if (normalized === "realtime") return "Real-time";
+	if (normalized === "realtime") return "Realtime";
+	if (normalized === "decision") return "Classification";
+	if (normalized === "extraction" || normalized === "extraction.extract") return "Extraction";
 	if (normalized === "audio_stt") return "Transcription";
 	if (normalized === "audio_tts") return "Speech";
 	if (normalized === "audio_music") return "Music";
+	if (normalized === "documents") return "Documents";
+	if (normalized === "translation") return "Translation";
 	return value
 		.replace(/([a-z0-9])([A-Z])/g, "$1 $2")
 		.replace(/[._/-]+/g, " ")
@@ -557,10 +546,19 @@ function getEndpointSortRank(value: string): number {
 function getModalityIcon(modality: string): LucideIcon {
 	const normalized = modality.toLowerCase().replace(/[._/-]+/g, " ");
 
+	if (normalized.includes("extract")) return TextSelect;
 	if (normalized.includes("decision")) return Scale;
 	if (normalized.includes("realtime") || normalized.includes("real time")) {
 		return Radio;
 	}
+	if (
+		/\bocr\b/.test(normalized) ||
+		/\bpars(e|ing)\b/.test(normalized) ||
+		normalized === "documents"
+	) {
+		return ScanText;
+	}
+	if (normalized.includes("translat")) return Languages;
 	if (normalized.includes("embed")) return Binary;
 	if (normalized.includes("rerank") || normalized.includes("re rank")) {
 		return ArrowUpDown;
@@ -592,6 +590,7 @@ function getModalityIcon(modality: string): LucideIcon {
 
 function getEndpointIcon(endpoint: string): LucideIcon {
 	const normalized = normalizeEndpointValue(endpoint);
+	if (normalized.includes("extract")) return TextSelect;
 	if (
 		normalized === "decisions" ||
 		normalized === "/decisions" ||
@@ -850,9 +849,10 @@ function filterSupportedInputModalities(options: OptionCount[]): OptionCount[] {
 }
 
 function filterSupportedOutputModalities(options: OptionCount[]): OptionCount[] {
-	return options.filter(
-		(option) => normalizeModalityFilterValue(option.value) !== "action",
-	);
+	return options.filter((option) => {
+		const modality = normalizeModalityFilterValue(option.value);
+		return modality !== "action" && modality !== "file";
+	});
 }
 
 function sortOutputModalityOptions(options: OptionCount[]): OptionCount[] {
@@ -871,111 +871,6 @@ function sortOutputModalityOptions(options: OptionCount[]): OptionCount[] {
 		if (bIndex !== undefined) return 1;
 		return toTitleCase(a.value).localeCompare(toTitleCase(b.value));
 	});
-}
-
-function OutputModalityButtonRow({
-	options,
-	selected,
-	onToggle,
-	labelForValue,
-}: {
-	options: OptionCount[];
-	selected: string[];
-	onToggle: (value: string) => void;
-	labelForValue: (value: string) => string;
-}) {
-	const viewportRef = useRef<HTMLDivElement | null>(null);
-	const contentRef = useRef<HTMLDivElement | null>(null);
-	const [hasHorizontalOverflow, setHasHorizontalOverflow] = useState(false);
-
-	useEffect(() => {
-		const viewport = viewportRef.current;
-		if (!viewport) return;
-
-		const updateOverflow = () => {
-			setHasHorizontalOverflow(viewport.scrollWidth > viewport.clientWidth + 1);
-		};
-
-		updateOverflow();
-
-		const resizeObserver = new ResizeObserver(updateOverflow);
-		resizeObserver.observe(viewport);
-		if (contentRef.current) resizeObserver.observe(contentRef.current);
-		window.addEventListener("resize", updateOverflow);
-
-		return () => {
-			resizeObserver.disconnect();
-			window.removeEventListener("resize", updateOverflow);
-		};
-	}, [options]);
-
-	if (options.length === 0) return null;
-
-	const buttons = sortOutputModalityOptions(options).map((option) => {
-		const checked = selected.includes(option.value);
-		const Icon = getModalityIcon(option.value);
-		const tone = getModalityTone(option.value);
-
-		return (
-			<Button
-				key={option.value}
-				type="button"
-				variant="ghost"
-				size="sm"
-				onClick={() => onToggle(option.value)}
-				aria-pressed={checked}
-				className={cn(
-					"group h-9 shrink-0 rounded-md px-2 text-sm shadow-none transition-colors",
-					checked
-						? cn(
-								"bg-muted text-foreground hover:bg-muted",
-								tone.badgeClassName,
-								"border-0 hover:border-0",
-							)
-						: "text-muted-foreground hover:text-foreground",
-				)}
-			>
-				<span
-					className={cn(
-						"inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-sm",
-						checked
-							? tone.iconClassName
-							: cn(
-									"bg-transparent text-muted-foreground transition-colors",
-									tone.ghostIconHoverClassName,
-								),
-					)}
-				>
-					<Icon className="h-3.5 w-3.5" />
-				</span>
-				<span>{labelForValue(option.value)}</span>
-				<span
-					className={cn(
-						"inline-flex min-w-5 items-center justify-center px-1 text-[11px] font-medium leading-none tabular-nums",
-						checked ? "text-current" : "text-muted-foreground",
-					)}
-				>
-					{option.count}
-				</span>
-			</Button>
-		);
-	});
-
-	return (
-		<ScrollArea
-			className="w-full [&>[data-orientation=horizontal]]:opacity-100 [&>[data-orientation=horizontal]]:transition-none"
-			scrollBarOrientation="horizontal"
-			viewportClassName={hasHorizontalOverflow ? "pb-2" : "pb-0"}
-			viewportRef={viewportRef}
-		>
-			<div
-				ref={contentRef}
-				className="flex min-w-max items-center gap-1.5 pr-4"
-			>
-				{buttons}
-			</div>
-		</ScrollArea>
-	);
 }
 
 export default function ModelsDisplay({
@@ -1001,6 +896,8 @@ function ModelsDisplayContent({
 	const { models, facets } = modelsPageData;
 	const t = useTranslations("Catalogue.models");
 	const tFilters = useTranslations("Catalogue.models.filtersUi");
+	const licenseGroupLabel = useLicenseGroupLabel();
+	const weightsLabel = useWeightsLabel();
 	const tMetadata = useTranslations("Catalogue.modelDetail.metadata");
 	const tQuickstart = useTranslations("Catalogue.models.detail.quickstart");
 	const translateModality = (value: string) => {
@@ -1016,9 +913,13 @@ function ModelsDisplayContent({
 			moderations: "modalityModeration",
 		};
 		const filtersKeys: Record<string, string> = {
+			decision: "modalityClassification",
+			extraction: "modalityExtraction",
 			realtime: "modalityRealtime",
 			file: "modalityFile",
 			rerank: "modalityRerank",
+			documents: "modalityDocuments",
+			translation: "modalityTranslation",
 		};
 		const normalized = value.toLowerCase();
 		if (keys[normalized]) return tMetadata(keys[normalized] as never);
@@ -1038,6 +939,9 @@ function ModelsDisplayContent({
 	const translateEndpoint = (value: string) => {
 		const normalized = String(value ?? "").trim().toLowerCase();
 		const keys: Record<string, string> = {
+			"text.generate": "capabilityTextGeneration",
+			"decisions.make": "modalityDecisions",
+			"extraction.extract": "modalityExtraction",
 			responses: "endpointResponses",
 			"chat/completions": "endpointChatCompletions",
 			messages: "endpointMessages",
@@ -1067,6 +971,7 @@ function ModelsDisplayContent({
 			batch: "tierBatch",
 			flex: "tierFlex",
 			priority: "tierFast",
+			fast: "tierFast",
 		};
 		const key = keys[value.toLowerCase()];
 		return key ? tQuickstart(key as never) : toTitleCase(value);
@@ -1088,9 +993,7 @@ function ModelsDisplayContent({
 			coming_soon: "comingSoon",
 			not_active: "notActive",
 			inactive: "notActive",
-			deranked_lvl1: "statusDeranked1",
-			deranked_lvl2: "statusDeranked2",
-			deranked_lvl3: "statusDeranked3",
+			deranked: "statusDeranked",
 			disabled: "statusDisabled",
 		};
 		const key = keys[String(value ?? "").trim().toLowerCase()];
@@ -1153,7 +1056,7 @@ function ModelsDisplayContent({
 	});
 	const [selectedTiers, setSelectedTiers] = useQueryState("tiers", {
 		defaultValue: [] as string[],
-		parse: parseCsvParam,
+		parse: parseCatalogueTierFilters,
 		serialize: serializeCsvParam,
 		shallow: true,
 		clearOnDefault: true,
@@ -1202,6 +1105,53 @@ function ModelsDisplayContent({
 		shallow: true,
 		clearOnDefault: true,
 	});
+	const [selectedLicenses, setSelectedLicenses] = useQueryState("licenses", {
+		defaultValue: [] as string[],
+		parse: parseCsvParam,
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	const [licenseTypeParam, setLicenseTypeParam] = useQueryState("licenseType", {
+		defaultValue: [] as string[],
+		parse: parseCsvParam,
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	const [weightsParam, setWeightsParam] = useQueryState("weights", {
+		defaultValue: [] as string[],
+		parse: (value) => parseModelWeights(parseCsvParam(value)),
+		serialize: serializeCsvParam,
+		shallow: true,
+		clearOnDefault: true,
+	});
+	// Old links use licenseType=open|closed for weights; read them as weights
+	// and move them to `weights` the next time either filter changes.
+	const { groups: selectedLicenseTypes, legacyWeights } = useMemo(
+		() => readLicenseTypeParam(licenseTypeParam),
+		[licenseTypeParam],
+	);
+	const selectedWeights = useMemo(
+		() => mergeWeights(weightsParam, legacyWeights),
+		[weightsParam, legacyWeights],
+	);
+	const setSelectedLicenseTypes = (groups: string[]) => {
+		void setLicenseTypeParam(groups);
+		if (legacyWeights.length > 0) void setWeightsParam(selectedWeights);
+	};
+	const setSelectedWeights = (weights: string[]) => {
+		void setWeightsParam(weights);
+		if (legacyWeights.length > 0) void setLicenseTypeParam(selectedLicenseTypes);
+	};
+	const licenseSelection = useMemo(
+		() => ({ groups: selectedLicenseTypes, licenses: selectedLicenses }),
+		[selectedLicenseTypes, selectedLicenses],
+	);
+	const setLicenseSelection = (selection: LicenseSelection) => {
+		void setSelectedLicenseTypes(selection.groups);
+		void setSelectedLicenses(selection.licenses);
+	};
 	const [selectedYears, setSelectedYears] = useQueryState("years", {
 		defaultValue: [] as string[],
 		parse: parseCsvParam,
@@ -1263,6 +1213,7 @@ function ModelsDisplayContent({
 		providerOptions: baseProviderOptions,
 		regionOptions: baseRegionOptions,
 		creatorOptions: baseCreatorOptions,
+		licenseOptions: baseLicenseOptions = EMPTY_OPTIONS,
 		yearOptions: baseYearOptions,
 	} = facets;
 
@@ -1278,6 +1229,9 @@ function ModelsDisplayContent({
 		selectedProviders.length +
 		selectedRegions.length +
 		selectedCreators.length +
+		selectedLicenseTypes.length +
+		selectedLicenses.length +
+		selectedWeights.length +
 		selectedYears.length;
 
 	const selectedContextStopIndex = getClosestStopIndex(selectedContextMin);
@@ -1290,7 +1244,7 @@ function ModelsDisplayContent({
 					normalizedModalitySet(model.gateway_input_modalities),
 				);
 				const outputModalities = Array.from(
-					normalizedModalitySet(model.gateway_output_modalities),
+					normalizedModalitySet(modelOutputFilterValues(model.gateway_output_modalities ?? [], endpoints)),
 				);
 				const features = Array.from(normalizedSet(model.gateway_features));
 				const tiers = Array.from(normalizedSet(model.gateway_tiers));
@@ -1333,6 +1287,7 @@ function ModelsDisplayContent({
 							model.organisation_id,
 						) ?? "",
 					).trim(),
+					license: String(model.license ?? "").trim(),
 					modelYear: getModelYear(model),
 					searchIndex: [
 						String(model.name ?? "").trim(),
@@ -1460,6 +1415,18 @@ function ModelsDisplayContent({
 				return false;
 			}
 			if (
+				exclude !== "licenses" &&
+				!matchesLicenseSelection(prepared.license, licenseSelection)
+			) {
+				return false;
+			}
+			if (
+				exclude !== "weights" &&
+				!matchesModelWeights(prepared.license, selectedWeights)
+			) {
+				return false;
+			}
+			if (
 				exclude !== "years" &&
 				selectedYears.length > 0 &&
 				!selectedYears.includes(prepared.modelYear)
@@ -1473,6 +1440,8 @@ function ModelsDisplayContent({
 			deferredSearch,
 			selectedContextMin,
 			selectedCreators,
+			licenseSelection,
+			selectedWeights,
 			effectiveSelectedStatuses,
 			selectedEndpoints,
 			selectedFeatures,
@@ -1549,6 +1518,8 @@ function ModelsDisplayContent({
 				providerOptions: baseProviderOptions,
 				regionOptions: baseRegionOptions,
 				creatorOptions: baseCreatorOptions,
+				licenseOptions: baseLicenseOptions,
+				weightsOptions: weightsOptionsFromLicenses(baseLicenseOptions),
 				yearOptions: baseYearOptions,
 			};
 		}
@@ -1635,6 +1606,21 @@ function ModelsDisplayContent({
 				),
 				selectedCreators,
 			),
+			licenseOptions: mergeOptionCounts(
+				baseLicenseOptions,
+				countPreparedValues(withAllExcept("licenses"), (prepared) =>
+					prepared.license ? [prepared.license] : [],
+				),
+				selectedLicenses,
+			),
+			weightsOptions: mergeOptionCounts(
+				weightsOptionsFromLicenses(baseLicenseOptions),
+				countPreparedValues(withAllExcept("weights"), (prepared) => {
+					const weights = modelWeights(prepared.license);
+					return weights ? [weights] : [];
+				}),
+				selectedWeights,
+			),
 			yearOptions: mergeOptionCounts(
 				baseYearOptions,
 				countPreparedValues(withAllExcept("years"), (prepared) =>
@@ -1648,6 +1634,7 @@ function ModelsDisplayContent({
 		baseEndpointOptions,
 		baseFeatureOptions,
 		baseInputModalityOptions,
+		baseLicenseOptions,
 		baseOutputModalityOptions,
 		baseProviderOptions,
 		baseRegionOptions,
@@ -1662,11 +1649,13 @@ function ModelsDisplayContent({
 		selectedEndpoints,
 		selectedFeatures,
 		selectedInputModalities,
+		selectedLicenses,
 		selectedOutputModalities,
 		selectedProviders,
 		selectedRegions,
 		selectedSupportedParameters,
 		selectedTiers,
+		selectedWeights,
 		selectedYears,
 	]);
 
@@ -1683,6 +1672,9 @@ function ModelsDisplayContent({
 		setSelectedProviders([]);
 		setSelectedRegions([]);
 		setSelectedCreators([]);
+		setSelectedLicenses([]);
+		setSelectedLicenseTypes([]);
+		setSelectedWeights([]);
 		setSelectedYears([]);
 	};
 
@@ -1791,6 +1783,8 @@ function ModelsDisplayContent({
 		});
 	}, [dynamicSidebarCounts.regionOptions]);
 	const creatorOptions = dynamicSidebarCounts.creatorOptions;
+	const licenseOptions = dynamicSidebarCounts.licenseOptions;
+	const weightsOptions = dynamicSidebarCounts.weightsOptions;
 	const yearOptions = dynamicSidebarCounts.yearOptions;
 
 	const handleFilterSectionChange = (sections: string[]) => {
@@ -1821,6 +1815,9 @@ function ModelsDisplayContent({
 		...selectedProviders.map((value) => ({ key: `provider-${value}`, label: tFilters("filterProvider", { value }), onRemove: () => setSelectedProviders(without(selectedProviders, value)) })),
 		...selectedRegions.map((value) => ({ key: `region-${value}`, label: tFilters("filterRegion", { value: translateRegion(value) }), onRemove: () => setSelectedRegions(without(selectedRegions, value)) })),
 		...selectedCreators.map((value) => ({ key: `creator-${value}`, label: tFilters("filterCreator", { value }), onRemove: () => setSelectedCreators(without(selectedCreators, value)) })),
+		...selectedWeights.map((value) => ({ key: `weights-${value}`, label: tFilters("filterWeights", { value: weightsLabel(value) }), onRemove: () => setSelectedWeights(without(selectedWeights, value)) })),
+		...selectedLicenseTypes.map((value) => ({ key: `license-type-${value}`, label: tFilters("filterLicense", { value: licenseGroupLabel(value) }), onRemove: () => setSelectedLicenseTypes(without(selectedLicenseTypes, value)) })),
+		...selectedLicenses.map((value) => ({ key: `license-${value}`, label: tFilters("filterLicense", { value }), onRemove: () => setSelectedLicenses(without(selectedLicenses, value)) })),
 		...selectedFeatures.map((value) => ({ key: `feature-${value}`, label: translateFeature(value), onRemove: () => setSelectedFeatures(without(selectedFeatures, value)) })),
 		...selectedEndpoints.map((value) => ({ key: `endpoint-${value}`, label: tFilters("filterEndpoint", { value: translateEndpoint(value) }), onRemove: () => setSelectedEndpoints(without(selectedEndpoints, value)) })),
 		...selectedYears.map((value) => ({ key: `year-${value}`, label: tFilters("filterYear", { value }), onRemove: () => setSelectedYears(without(selectedYears, value)) })),
@@ -2120,9 +2117,9 @@ function ModelsDisplayContent({
 					<FilterCheckboxList
 						options={providerOptions}
 						selected={selectedProviders}
-						onToggle={(value) =>
-							setSelectedProviders(toggleInList(selectedProviders, value))
-						}
+						onToggle={(value) => {
+							void setSelectedProviders(toggleInList(selectedProviders, value));
+						}}
 						labelForValue={(value) => value}
 						renderStart={({ value }) => (
 							<FilterLogo value={value} />
@@ -2170,6 +2167,41 @@ function ModelsDisplayContent({
 							<FilterLogo value={value} />
 						)}
 						collapsedLimit={5}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="weights" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<PackageOpen className="h-4 w-4 text-muted-foreground" />
+						{tFilters("weights")}
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<FilterCheckboxList
+						options={weightsOptions}
+						selected={selectedWeights}
+						onToggle={(value) =>
+							setSelectedWeights(toggleInList(selectedWeights, value))
+						}
+						labelForValue={weightsLabel}
+					/>
+				</AccordionContent>
+			</AccordionItem>
+
+			<AccordionItem value="licenses" className="border-border/70">
+				<AccordionTrigger className="px-2 py-3 text-sm no-underline hover:no-underline">
+					<span className="flex items-center gap-2">
+						<ScrollText className="h-4 w-4 text-muted-foreground" />
+						{tFilters("license")}
+					</span>
+				</AccordionTrigger>
+				<AccordionContent className="pt-1" disableAnimation>
+					<LicenseFilterList
+						options={licenseOptions}
+						selection={licenseSelection}
+						onChange={setLicenseSelection}
 					/>
 				</AccordionContent>
 			</AccordionItem>
@@ -2238,7 +2270,7 @@ function ModelsDisplayContent({
 	return (
 		<div className="flex w-full flex-1">
 			<aside className="hidden lg:block w-[20rem] shrink-0 border-r border-border/70 bg-background/95 [&_[data-slot=separator]]:-mx-4">
-				<div className="sticky top-16 flex h-[calc(100dvh-4rem)] min-h-0 flex-col">
+				<div className="sticky top-[calc(var(--site-notice-height,0px)+4rem)] flex h-[calc(100dvh-var(--site-notice-height,0px)-4rem)] min-h-0 flex-col">
 					<ScrollArea className="min-h-0 flex-1 overscroll-y-contain [&>[data-orientation=vertical]]:opacity-0 [&>[data-orientation=vertical]]:transition-opacity [&>[data-orientation=vertical]]:duration-150 hover:[&>[data-orientation=vertical]]:opacity-100 focus-within:[&>[data-orientation=vertical]]:opacity-100">
 						<div className="space-y-4 px-4 py-2 pb-6">{filtersContent}</div>
 					</ScrollArea>
@@ -2246,7 +2278,7 @@ function ModelsDisplayContent({
 			</aside>
 
 			<section className="min-w-0 flex flex-1 flex-col">
-				<div className="z-40 shrink-0 border-b border-border/70 bg-background/95 px-4 pb-1 pt-2.5 backdrop-blur md:sticky md:top-[3.75rem] lg:px-8">
+				<div className="z-40 shrink-0 border-b border-border/70 bg-background/95 px-4 pb-1 pt-2.5 backdrop-blur md:sticky md:top-[calc(var(--site-notice-height,0px)+3.75rem)] lg:px-8">
 					<div className="md:hidden space-y-2">
 						{showPrimaryHeader ? (
 							<div className="flex items-center gap-2">
@@ -2344,15 +2376,14 @@ function ModelsDisplayContent({
 					</div>
 
 					<div className="mt-1.5">
-						<OutputModalityButtonRow
-							options={outputModalityOptions}
+						<OutputModalityChipRow
+							options={sortOutputModalityOptions(outputModalityOptions)}
 							selected={selectedOutputModalities}
-							onToggle={(value) =>
-								setSelectedOutputModalities(
-								toggleInList(selectedOutputModalities, value),
-								)
-							}
+							onChange={(values) => {
+								void setSelectedOutputModalities(values);
+							}}
 							labelForValue={translateModality}
+							iconForValue={getModalityIcon}
 						/>
 					</div>
 

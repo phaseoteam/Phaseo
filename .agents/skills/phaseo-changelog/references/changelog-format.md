@@ -1,72 +1,82 @@
 # Phaseo Changelog Format
 
-## Combined Changelog
+## Page pattern
 
-Use this pattern for `apps/docs/v1/changelog.mdx`:
+Every changelog page starts, after the frontmatter, with the filter bar. Its labels are the page language's category labels (see the table in `SKILL.md`), and `clearLabel` is the word for "Clear":
 
 ```mdx
-## May 28, 2026
+import { ChangelogFilters } from "/snippets/changelog-filters.jsx";
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>Product</p>
+<ChangelogFilters labels={{"product":"Product","api":"API & SDKs","models":"Models"}} clearLabel="Clear" />
+```
 
-- Short product or SDK change.
-- Another short product or SDK change.
+| | en | es | fr | de | pt-BR | ja | zh-Hans | hi | ar |
+|---|---|---|---|---|---|---|---|---|---|
+| `clearLabel` | Clear | Borrar | Effacer | Zurücksetzen | Limpar | クリア | 清除 | साफ़ करें | مسح |
 
-<p style={{ fontSize: "1rem", fontWeight: 600, marginTop: "1rem", marginBottom: "0.5rem" }}>New Models</p>
+Then one `<Update>` per date, newest first:
 
-- Model release or pricing sync.
-- Another model release.
+```mdx
+<Update label="October 24, 2026">
 
-***
+<div data-changelog-category="product">
+
+<p className="changelog-category">Product</p>
+
+- Short product change; see [Broadcast](/v1/guides/broadcast).
+- Another product change.
+
+</div>
+
+<div data-changelog-category="api">
+
+<p className="changelog-category">API & SDKs</p>
+
+- New request parameter or SDK release.
+
+</div>
+
+<div data-changelog-category="models">
+
+<p className="changelog-category">Models</p>
+
+![Model name model release artwork](/images/model-releases/2026-10-24--provider--model.png)
+
+- [Provider: Model Name](https://phaseo.app/models/provider/model-id)
+
+</div>
+
+</Update>
 ```
 
 Rules:
-- Use `##` for the date only.
-- Do not use `### Product` or `### New Models`.
-- Do not repeat `Product` twice under the same date.
-- Do not repeat `New Models` twice under the same date.
+- `label` is the date only, in the page language's date format (`October 24, 2026`, `24 octobre 2026`, `2026年10月24日`, ...). No `tags`, `description` or `rss` attributes.
+- One `<Update>` per date. Add to an existing date instead of starting a second one.
+- Sections in the order product, api, models, each at most once. Leave out empty ones.
+- Each section starts with `<p className="changelog-category">` holding the localized label, and nothing sits in an update outside a section.
+- Keep the blank lines exactly as shown: Mintlify only renders Markdown inside a `<div>` when it is separated by blank lines.
+- No `##`/`###` headings and no `***` separators.
+- Image paths: either relative (`../images/...` from `changelog.mdx`, `../../images/...` from `changelog/*.mdx`, one more `../` on locale pages) or root-absolute `/images/...`, which works everywhere.
 
-## Data Changelog
+## Models entries
 
-Keep it short:
+- One bullet per model, written as `[Provider: Model Name](https://phaseo.app/models/<org>/<id>)`.
+- Release artwork:
+  - At most one image per date. If a day has art for several models, pick one; the user says which.
+  - The image goes at the top of the Models section, straight after the label and before any bullet.
+  - The pictured model is the first bullet, followed by the day's other models. If the image shows a family, list the family's models first.
+  - Save it as `apps/docs/images/model-releases/YYYY-MM-DD--<org>--<model-id>.png`, at 1200×675, with the model's release date.
+  - Link it as `../images/model-releases/<file>` on the English `changelog.mdx` (`../../images/...` on `changelog/*.mdx`), and as `/images/model-releases/<file>` on locale pages.
+  - Alt text: `<Model name> model release artwork` in English, the model name on locale pages.
+  - Never add art for a model that has no changelog entry, such as an announced-only model.
+- Pricing or provider coverage notes go after the link, in the same bullet.
 
-```md
-## 15th May 2026
+## Product and API & SDKs entries
 
-- Claude Opus 4.8 was added.
-- Gemini 3.1 Flash Image and Gemini 3 Pro Image were added.
-```
+Follow `writing-guide.md` for each kind of entry.
 
-Rules:
-- One date block per day.
-- Short factual bullets only.
-- Merge same-day releases into one block.
-- Add release images only where they are available and useful.
+## Checklist
 
-## Classification Rules
-
-Put an item under `Product` when it is about:
-- UI changes
-- docs-site behavior
-- pricing selector or provider display logic
-- SDK launches or SDK releases
-- gateway, billing, routing, settings, or dashboard features
-
-Put an item under `New Models` when it is about:
-- model additions
-- model status changes such as `Announced` or `Available`
-- pricing syncs tied to a model
-- provider coverage for a specific model
-- model-release image additions
-
-Do not misclassify:
-- A model becoming generally available on tracked providers is still a model update.
-- A page refresh made to better display a provider or price is a product update.
-
-## Editing Checklist
-
-- The page should scan quickly from top to bottom.
-- The right rail TOC on the combined page should show dates only.
-- No duplicate date headings.
-- No raw PR-title phrasing.
-- No long intro block unless the user explicitly wants one.
+- `node apps/docs/scripts/validate-changelog.mjs` passes.
+- No PR-title phrasing and no internal names.
+- Locale pages match the English page date for date and section for section.

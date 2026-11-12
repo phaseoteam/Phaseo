@@ -1,6 +1,4 @@
-"use client";
-
-import Link from "next/link";
+import Link from "@/components/link";
 import { useSettingsRouter as useRouter } from "../PrivateSettingsQuery";
 import { useMemo, useState, useTransition } from "react";
 import { MoreHorizontal, Plus, SendHorizontal, Webhook } from "lucide-react";
@@ -31,13 +29,18 @@ import {
 	enableBroadcastDestinationAction,
 	refreshBroadcastDestinationStatusAction,
 	sendBroadcastSampleTraceAction,
-} from "@/app/(dashboard)/settings/broadcast/actions";
+} from "@/features/settings/broadcast/actions";
 import {
 	AVAILABLE_DESTINATIONS,
 	COMING_SOON_DESTINATIONS,
 	type DestinationId,
 } from "@/components/(gateway)/settings/observability/destinationCatalog";
-import { useTranslations } from "next-intl";
+import {
+	broadcastHealthState,
+	type BroadcastDestinationHealth,
+	type BroadcastHealthState,
+} from "@/components/(gateway)/settings/observability/broadcastHealth";
+import { useTranslations } from "@/i18n/react";
 import { localizedSettingsError } from "@/i18n/error-messages";
 
 type ConfiguredDestination = {
@@ -48,6 +51,7 @@ type ConfiguredDestination = {
 	samplingRate: number;
 	destinationConfig: Record<string, unknown> | null;
 	updatedAt: string | null;
+	health?: BroadcastDestinationHealth | null;
 };
 
 type BroadcastSettingsClientProps = {
@@ -60,10 +64,12 @@ function formatSamplingRate(value: number) {
 	return Number(rounded.toFixed(3)).toString();
 }
 
-function defaultConnectionStatus(destination: ConfiguredDestination) {
-	if (!destination.enabled) return "Disabled";
-	return "Unknown";
-}
+const HEALTH_LABEL_KEYS = {
+	disabled: "broadcastControls.healthDisabled",
+	idle: "broadcastControls.healthIdle",
+	healthy: "broadcastControls.healthHealthy",
+	failing: "broadcastControls.healthFailing",
+} as const satisfies Record<BroadcastHealthState, string>;
 
 export default function BroadcastSettingsClient(props: BroadcastSettingsClientProps) {
 	const t = useTranslations("SettingsUI");
@@ -81,20 +87,23 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 		return new Map(availableDestinations.map((d) => [d.id, d]));
 	}, [availableDestinations]);
 
-	const [statusByDestinationId, setStatusByDestinationId] = useState<Record<string, string>>(
-		Object.fromEntries(
-			configuredDestinations.map((destination) => [
-				destination.id,
-				defaultConnectionStatus(destination),
-			]),
-		),
-	);
+	// A status from the refresh or sample actions is shown in place of the
+	// recorded health until the destination is enabled or disabled.
+	const [statusByDestinationId, setStatusByDestinationId] = useState<Record<string, string>>({});
 	const [pendingDestinationId, setPendingDestinationId] = useState<string | null>(null);
 	const [deleteTarget, setDeleteTarget] = useState<ConfiguredDestination | null>(null);
 	const [isPending, startTransition] = useTransition();
 
 	function setStatus(destinationId: string, status: string) {
 		setStatusByDestinationId((prev) => ({ ...prev, [destinationId]: status }));
+	}
+
+	function clearStatus(destinationId: string) {
+		setStatusByDestinationId((prev) => {
+			const next = { ...prev };
+			delete next[destinationId];
+			return next;
+		});
 	}
 
 	function runAction(
@@ -126,9 +135,10 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 					<div className="rounded-md border border-border/60">
 						{configuredDestinations.map((destination) => {
 							const definition = destinationById.get(destination.destinationId as DestinationId);
+							const health = destination.health ?? null;
+							const healthState = broadcastHealthState(destination.enabled, health);
 							const displayStatus =
-								statusByDestinationId[destination.id] ??
-								defaultConnectionStatus(destination);
+								statusByDestinationId[destination.id] ?? t(HEALTH_LABEL_KEYS[healthState]);
 							const actionDisabled = isPending && pendingDestinationId === destination.id;
 
 							return (
@@ -163,14 +173,34 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 											{definition?.label ?? destination.destinationId}
 											{teamName ? ` • ${teamName}` : ""}
 										</p>
+										{healthState === "failing" && health?.lastError ? (
+											<p className="truncate text-xs text-destructive" title={health.lastError}>
+												{t("broadcastControls.healthLastError", {
+													count: health.consecutiveFailures,
+													error: health.lastError,
+												})}
+											</p>
+										) : null}
 									</div>
 
-									<div className="text-xs text-muted-foreground">
-										{t("broadcastControls.sampling")}: {formatSamplingRate(destination.samplingRate)}
+									<div className="space-y-0.5 text-xs text-muted-foreground">
+										<p>{t("broadcastControls.sampling")}: {formatSamplingRate(destination.samplingRate)}</p>
+										{health && (health.delivered24h > 0 || health.failed24h > 0) ? (
+											<p>
+												{t("broadcastControls.healthLastDay", {
+													delivered: health.delivered24h,
+													failed: health.failed24h,
+												})}
+											</p>
+										) : null}
 									</div>
 
 									<div>
-										<Badge variant="outline">{displayStatus}</Badge>
+										<Badge
+											variant={!statusByDestinationId[destination.id] && healthState === "failing" ? "destructive" : "outline"}
+										>
+											{displayStatus}
+										</Badge>
 									</div>
 
 									<div className="flex justify-end">
@@ -186,7 +216,7 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 														runAction(destination.id, async () => {
 															const result =
 																await refreshBroadcastDestinationStatusAction(
-																	destination.id,
+																	{ data: destination.id },
 																);
 															setStatus(destination.id, result.status);
 															if (result.ok) toast.success(t("broadcastControls.connectionStatusRefreshed"));
@@ -200,7 +230,7 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 													onClick={() =>
 														runAction(destination.id, async () => {
 															const result = await sendBroadcastSampleTraceAction(
-																destination.id,
+																{ data: destination.id },
 															);
 															setStatus(destination.id, "Connected");
 															toast.success(
@@ -216,12 +246,12 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 													onClick={() =>
 														runAction(destination.id, async () => {
 															if (destination.enabled) {
-																await disableBroadcastDestinationAction(destination.id);
-																setStatus(destination.id, "Disabled");
+																await disableBroadcastDestinationAction({ data: destination.id });
+																clearStatus(destination.id);
 										toast.success(t("credits.Connection disabled" as never));
 															} else {
-																await enableBroadcastDestinationAction(destination.id);
-																setStatus(destination.id, "Unknown");
+																await enableBroadcastDestinationAction({ data: destination.id });
+																clearStatus(destination.id);
 										toast.success(t("credits.Connection enabled" as never));
 															}
 														})
@@ -347,7 +377,7 @@ export default function BroadcastSettingsClient(props: BroadcastSettingsClientPr
 								const target = deleteTarget;
 								if (!target) return;
 								runAction(target.id, async () => {
-									await deleteBroadcastDestinationAction(target.id);
+									await deleteBroadcastDestinationAction({ data: target.id });
 						toast.success(t("credits.Destination deleted" as never));
 									setDeleteTarget(null);
 								});

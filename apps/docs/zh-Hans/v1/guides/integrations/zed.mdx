@@ -1,10 +1,10 @@
 ---
 title: "Zed"
 icon: "/icons/brands/zed.svg"
-description: "在 Zed 中将 Phaseo 添加为兼容 OpenAI 的模型供应商。"
+description: "在 Zed 中将 Phaseo 添加为 OpenAI 兼容模型提供商。"
 ---
 
-使用 Phaseo CLI 将提供商和模型添加到 Zed，然后把密钥保存到 Zed 的钥匙串中。如不使用 CLI，请手动输入相同的提供商值。
+运行 `phaseo zed` 在 Zed 的 `settings.json` 中添加 Phaseo 提供商，然后把密钥粘贴到 Zed 中，Zed 会把提供商密钥保存在系统钥匙串中。如果不想使用 CLI，可以自己在 Zed 设置中添加该提供商。
 
 ## 使用 Phaseo CLI 设置
 
@@ -13,42 +13,40 @@ phaseo login
 phaseo zed --model openai/gpt-5.6-terra
 ```
 
-CLI 将提供商 ID `phaseo`、API URL `https://api.phaseo.app/v1` 和所选模型添加到 Zed 的 `settings.json`，不会更改无关设置。
+CLI 会创建一个 `Phaseo CLI: Zed API Key`（90 天后过期，每月支出上限为 $100），并在 Zed 的 `settings.json` 中添加一个名为 `phaseo` 的 `openai_compatible` 提供商，其 API URL 为 `https://api.phaseo.app/v1`，模型为所选模型。无关的设置不会被改动。不指定 `--model` 时，它使用 `anthropic/claude-sonnet-4.6`。如果 Zed 中已有名为 `phaseo` 的提供商，setup 会停止。
 
-## 在 Zed 中完成设置
+## 在 Zed 中添加密钥
 
-Zed 会将供应商密钥存储在系统密钥链中，因此只剩这一步界面操作。
-
-1. 打开命令面板并运行 **agent: open settings**。
-2. 在 **AI** 下选择 **LLM Providers → Configure**。
+1. 打开命令面板，运行 **agent: open settings**。
+2. 在 **AI** 下，选择 **LLM Providers → Configure**。
 
 ![突出显示 LLM Providers 的 Zed AI 设置](/images/integrations/zed-agent-settings.png)
 
-3. 如果已显示 Phaseo，请打开并粘贴专用密钥。否则选择 **Add Provider → OpenAI**。
+3. 如果出现 Phaseo，打开它并粘贴 `phaseo integrations credential zed` 的输出。
 
-![包含 Add Provider 的 Zed LLM Providers 页面](/images/integrations/zed-llm-providers.png)
+如果不使用 CLI 添加提供商，请改为选择 **Add Provider → OpenAI**，并填写下面的值。
 
-4. 如需手动配置，请填写：
+![带有 Add Provider 的 Zed LLM Providers 页面](/images/integrations/zed-llm-providers.png)
 
 | 字段 | 值 |
 | --- | --- |
 | Provider Name | `Phaseo` |
 | API URL | `https://api.phaseo.app/v1` |
-| API Key | 以下命令的输出 `phaseo integrations credential zed` |
-| Model Name | 所选 Phaseo 模型 ID |
+| API Key | `phaseo integrations credential zed` 的输出，或任意 Phaseo API 密钥 |
+| Model Name | 一个 Phaseo 模型 ID |
 
-![用于添加 OpenAI 兼容供应商的 Zed 表单](/images/integrations/zed-add-compatible-provider.png)
+![Zed 中添加 OpenAI 兼容提供商的表单](/images/integrations/zed-add-compatible-provider.png)
 
-请先填写 Base URL、模型 ID 和密钥，然后再选择 **Save Provider**。
+在选择 **Save Provider** 之前，先填好 API URL、模型和密钥。
 
-## 验证
+## 确认可以正常使用
 
-打开新的 Agent 线程，选择 Phaseo 模型并发送简短请求。如果 Zed 提示密钥无效，请重新运行 `phaseo integrations credential zed` 并替换 Zed 中保存的密钥。
+打开一个新的 Agent 线程，选择 Phaseo 模型，并发送一个简短的请求。确认它出现在 **设置 → 用量 → 日志** 中。如果 Zed 报告密钥无效，请再次运行 `phaseo integrations credential zed`，并在 Zed 中替换密钥。
 
-## 移除
+## 移除 Phaseo
 
 ```bash
 phaseo integrations remove zed
 ```
 
-CLI 会从 `settings.json` 中移除 Phaseo 供应商并撤销其专用密钥。如果 Zed 仍显示旧的密钥链条目，也请从 **LLM Providers** 中移除 Phaseo。
+此命令会从 `settings.json` 中删除 Phaseo 提供商，并吊销密钥。如果 Zed 仍显示旧的钥匙串条目，也请从 **LLM Providers** 中删除 Phaseo。

@@ -41,8 +41,19 @@ describe("validateSynchronousTextServiceTierRequest", () => {
 		}
 	});
 
-	it("rejects non-standard service tier aliases", async () => {
+	it("accepts Anthropic's auto and standard_only, which the Messages schema allows", () => {
 		for (const serviceTier of ["auto", "standard_only"]) {
+			expect(validateSynchronousTextServiceTierRequest({
+				endpoint: "messages",
+				body: { service_tier: serviceTier },
+				requestId: "req_test",
+				workspaceId: "workspace_test",
+			}).ok).toBe(true);
+		}
+	});
+
+	it("rejects unknown service tier values", async () => {
+		for (const serviceTier of ["turbo", "scale"]) {
 			const result = validateSynchronousTextServiceTierRequest({
 				endpoint: "messages",
 				body: { service_tier: serviceTier },

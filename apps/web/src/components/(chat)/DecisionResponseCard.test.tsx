@@ -1,15 +1,38 @@
+import { describe, it, expect } from "vitest";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup as renderMarkup } from "react-dom/server";
-import { NextIntlClientProvider } from "next-intl";
+import { AppIntlProvider } from "@/i18n/react";
 import { englishSettingsUiMessages } from "@/i18n/default-messages";
 import { nestDottedMessageKeys } from "@/i18n/message-overlays";
 import { DecisionResponseCard } from "./DecisionResponseCard";
 
 function renderToStaticMarkup(children: ReactNode) {
-	return renderMarkup(<NextIntlClientProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: nestDottedMessageKeys(englishSettingsUiMessages) }}>{children}</NextIntlClientProvider>);
+	return renderMarkup(<AppIntlProvider locale="en-GB" timeZone="UTC" messages={{ SettingsUI: nestDottedMessageKeys(englishSettingsUiMessages) }}>{children}</AppIntlProvider>);
 }
 
 describe("DecisionResponseCard", () => {
+	it("renders canonical ordered answers, repeated names and typed boolean choices", () => {
+		const html = renderToStaticMarkup(<DecisionResponseCard result={{ answers: [
+			{ type: "predicate", name: null, probability: 0.9 },
+			{ type: "choice", name: "decision", choice: false, confidence: 0.7, probabilities: [
+				{ value: false, probability: 0.9 }, { value: "false", probability: 0.1 },
+			] },
+			{ type: "refusal", name: "decision" },
+		] }} />);
+		expect(html).toContain("90%");
+		expect(html).toContain("False");
+		expect(html).toContain("&quot;False&quot;");
+		expect(html).toContain("No decision output returned.");
+	});
+	it("renders a refused question without a score or probability", () => {
+		const html = renderToStaticMarkup(
+			<DecisionResponseCard result={{ answers: { decision: { type: "refusal" } } }} />,
+		);
+		expect(html).toContain("No decision output returned.");
+		expect(html).not.toMatch(/>\d+(?:\.\d+)?%</);
+		expect(html).not.toContain("Weighted average");
+	});
+
 	it("renders a Noul answer once without a repeated summary and strip", () => {
 		const html = renderToStaticMarkup(
 			<DecisionResponseCard

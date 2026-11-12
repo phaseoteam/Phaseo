@@ -1,12 +1,16 @@
-"use client";
-
-import Link from "next/link";
-import { useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import Link from "@/components/link";
+import { useEffect, useRef, useState } from "react";
+import { fetchPublicWebApi } from "@/lib/web-api/client";
+import { fetchFrontendRankingPeriodLeaderboard } from "@/lib/fetchers/frontend/fetchRankingSections";
+import { useLocale, useTranslations } from "@/i18n/react";
 import { useDisplayFormatters } from "@/components/providers/DisplayPreferencesProvider";
 import { Check, ChevronDown } from "lucide-react";
+import RankingsChartShareButton, { type RankingsChartShare } from "@/components/(rankings)/RankingsChartShareButton";
+import type { ChartShareRenderSize, ChartShareSeriesSelection } from "@/components/share/ChartShareButton";
+import { readSharedChartState } from "@/lib/share/chartShare";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
-import type { TimeseriesData } from "@/lib/fetchers/rankings/getRankingsData";
+import type { ModelLeaderboardMeta, TimeseriesData } from "@/lib/fetchers/rankings/getRankingsData";
+import { startOfUTCWeek } from "./time-buckets";
 import { Logo } from "@/components/Logo";
 import { EmptyChartPreview } from "@/components/(rankings)/EmptyChartPreview";
 import { EmptyLeaderboardPreview } from "@/components/(rankings)/EmptyLeaderboardPreview";
@@ -30,8 +34,8 @@ import { getModelDetailsHref } from "@/lib/models/modelHref";
 import { formatCompactAxisTick, formatRoundedCount } from "@/lib/formatRoundedCount";
 
 type UsageStackedBarProps = {
+	leaderboardMetric?: string;
 	data: TimeseriesData[];
-	leaderboardData?: TimeseriesData[];
 	metric?: "requests" | "tokens" | "users";
 	nameMap?: Record<string, string>;
 	logoIdMap?: Record<string, string | null>;
@@ -41,6 +45,13 @@ type UsageStackedBarProps = {
 	leaderboardDescription?: string;
 	valueUnit?: string;
 	showScaleToggle?: boolean;
+	/** Adds a share button to the chart. */
+	share?: RankingsChartShare;
+	/** Renders only the chart, at exactly this size, for a share image. */
+	exportSize?: ChartShareRenderSize;
+	exportScale?: ChartScale;
+	/** Series shown in a share image; the rest is folded into "Other". */
+	exportSeries?: ChartShareSeriesSelection;
 };
 
 type SeriesStyle = Record<string, { label: string; color: string; stroke: string }>;
@@ -48,6 +59,7 @@ type LeaderboardPeriod = "today" | "week" | "month" | "trending";
 type ModelFilter = "all" | "open" | "closed";
 type ChartScale = "linear" | "log";
 const TOP_MODELS = 10;
+const OTHER_SERIES_COLOR = "hsl(0 0% 70% / 0.6)";
 const PERIOD_OPTIONS: Array<{ labelKey: string; value: LeaderboardPeriod }> = [
 	{ labelKey: "usagePeriodToday", value: "today" },
 	{ labelKey: "usagePeriodWeek", value: "week" },
@@ -118,58 +130,6 @@ function isOpenModelLicense(license?: string | null) {
 const DAY_MS = 24 * 60 * 60 * 1000;
 const WEEK_MS = 7 * DAY_MS;
 
-function periodWindows(period: LeaderboardPeriod, nowMs: number) {
-	switch (period) {
-		case "month":
-			return {
-				currentStart: nowMs - 30 * DAY_MS,
-				currentEnd: nowMs,
-				previousStart: nowMs - 60 * DAY_MS,
-				previousEnd: nowMs - 30 * DAY_MS,
-			};
-		case "trending":
-			return {
-				currentStart: nowMs - WEEK_MS,
-				currentEnd: nowMs,
-				previousStart: nowMs - 2 * WEEK_MS,
-				previousEnd: nowMs - WEEK_MS,
-			};
-		case "today":
-			return {
-				currentStart: nowMs - DAY_MS,
-				currentEnd: nowMs,
-				previousStart: nowMs - 2 * DAY_MS,
-				previousEnd: nowMs - DAY_MS,
-			};
-		case "week":
-		default:
-			return {
-				currentStart: nowMs - WEEK_MS,
-				currentEnd: nowMs,
-				previousStart: nowMs - 2 * WEEK_MS,
-				previousEnd: nowMs - WEEK_MS,
-			};
-	}
-}
-
-function hasPeriodData(
-	data: TimeseriesData[],
-	period: LeaderboardPeriod,
-	nowMs: number,
-	metric: "requests" | "tokens" | "users",
-) {
-	const { currentStart, currentEnd } = periodWindows(period, nowMs);
-	return data.some((row) => {
-		const bucketTs = new Date(row.bucket).getTime();
-		return (
-			Number.isFinite(bucketTs) &&
-			bucketTs >= currentStart &&
-			bucketTs < currentEnd &&
-			timeseriesValue(row, metric) > 0
-		);
-	});
-}
-
 function optionLabel<TValue extends string>(
 	options: Array<{ label: string; value: TValue }>,
 	value: TValue,
@@ -177,28 +137,26 @@ function optionLabel<TValue extends string>(
 	return options.find((option) => option.value === value)?.label ?? value;
 }
 
-function startOfWeek(date: Date) {
-	const d = new Date(date);
-	d.setHours(0, 0, 0, 0);
-	const day = (d.getDay() + 6) % 7;
-	d.setDate(d.getDate() - day);
-	return d;
-}
-
-export function UsageStackedBar({
-	data,
-	leaderboardData,
-	metric = "requests",
-	nameMap = {},
-	logoIdMap = {},
-	organisationNameMap = {},
-	modelLicenseMap = {},
-	leaderboardTitle,
-	leaderboardDescription,
-	valueUnit,
-	showScaleToggle = false,
-}: UsageStackedBarProps) {
+export function UsageStackedBar(props: UsageStackedBarProps) {
+	const {
+		leaderboardMetric = "text_tokens",
+		data,
+		metric = "requests",
+		nameMap = {},
+		logoIdMap = {},
+		organisationNameMap = {},
+		modelLicenseMap = {},
+		leaderboardTitle,
+		leaderboardDescription,
+		valueUnit,
+		showScaleToggle = false,
+		share,
+		exportSize,
+		exportScale,
+		exportSeries,
+	} = props;
 	const t = useTranslations("Catalogue.rankings");
+	const tShare = useTranslations("Common.ui.chartShare");
 	const locale = useLocale();
 	const periodOptions = PERIOD_OPTIONS.map(({ labelKey, value }) => ({
 		label: t(labelKey as never),
@@ -222,21 +180,39 @@ export function UsageStackedBar({
 	const [hoveredKey, setHoveredKey] = useState<string | null>(null);
 	const [nowMs] = useState(() => Date.now());
 	const [listExpanded, setListExpanded] = useState(false);
-	const [leaderboardPeriod, setLeaderboardPeriod] =
-		useState<LeaderboardPeriod>(() => {
-			if (hasPeriodData(leaderboardData ?? data, "week", nowMs, metric)) {
-				return "week";
-			}
-			if (hasPeriodData(leaderboardData ?? data, "month", nowMs, metric)) {
-				return "month";
-			}
-			if (hasPeriodData(leaderboardData ?? data, "today", nowMs, metric)) {
-				return "today";
-			}
-			return "week";
-		});
+	const [leaderboardPeriod, setLeaderboardPeriod] = useState<LeaderboardPeriod>("week");
 	const [modelFilter, setModelFilter] = useState<ModelFilter>("all");
-	const [chartScale, setChartScale] = useState<ChartScale>("linear");
+	const [chartScale, setChartScale] = useState<ChartScale>(exportScale ?? "linear");
+	const chartShareRef = useRef<HTMLDivElement>(null);
+	const shareChartId = share?.chartId;
+	// A shared link restores the scale it was shared with. Read after hydration so server and client match.
+	useEffect(() => {
+		if (!shareChartId || !showScaleToggle) return;
+		if (readSharedChartState(window.location.search, shareChartId)?.get("scale") === "log") setChartScale("log");
+	}, [shareChartId, showScaleToggle]);
+	const [periodResult, setPeriodResult] = useState<{
+		key: string;
+		data: Array<{ model_id: string; current: number; previous: number }>;
+		models?: Record<string, ModelLeaderboardMeta>;
+		error?: boolean;
+	} | null>(null);
+	const periodKey = `${leaderboardMetric}:${leaderboardPeriod}`;
+	useEffect(() => {
+		// A share render draws only the chart; it doesn't need the leaderboard.
+		if (exportSize) return;
+		let cancelled = false;
+		const days = leaderboardPeriod === "today" ? 1 : leaderboardPeriod === "month" ? 30 : 7;
+		fetchFrontendRankingPeriodLeaderboard(leaderboardMetric, days).then(async (result) => {
+			const ids = result.data.map((row) => row.model_id);
+			const metadata = ids.length ? await fetchPublicWebApi<{ models: Record<string, ModelLeaderboardMeta> }>(
+				`/api/_web/rankings/model-meta?ids=${encodeURIComponent(ids.join(","))}`,
+			).catch(() => ({ models: {} })) : { models: {} };
+			if (!cancelled) setPeriodResult({ key: periodKey, data: result.data, models: metadata.models });
+		}).catch(() => {
+			if (!cancelled) setPeriodResult({ key: periodKey, data: [], error: true });
+		});
+		return () => { cancelled = true; };
+	}, [exportSize, leaderboardMetric, leaderboardPeriod, periodKey]);
 	const emptyTitle = metric === "users" ? t("usageNoUniqueUserData") : t("usageNoWeeklyData");
 	const emptyDescription = metric === "users"
 		? t("usageUniqueUserRefresh")
@@ -282,8 +258,11 @@ export function UsageStackedBar({
 		.sort((a, b) => b[1] - a[1])
 		.map(([model]) => model);
 	const rankedModels = sortedModels.filter((model) => model !== "Other");
-	const topModels = rankedModels;
-	const hasOther = totalsByModel.has("Other");
+	// A share image can show a subset (or one highlighted model); the rest is folded into "Other" so totals stay true.
+	const exportKeys = exportSeries?.highlight ? [exportSeries.highlight] : exportSeries?.keys ?? null;
+	const topModels = exportKeys ? rankedModels.filter((model) => exportKeys.includes(model)) : rankedModels;
+	const foldedModels = exportKeys ? rankedModels.filter((model) => !exportKeys.includes(model)) : [];
+	const hasOther = totalsByModel.has("Other") || foldedModels.length > 0;
 
 	if (!topModels.length && !hasOther) {
 		return (
@@ -296,12 +275,12 @@ export function UsageStackedBar({
 	}
 
 	const existingBucketTs = Array.from(bucketMap.keys());
-	const currentWeekTs = startOfWeek(new Date(nowMs)).getTime();
+	const currentWeekTs = startOfUTCWeek(new Date(nowMs)).getTime();
 	const endWeekTs =
 		existingBucketTs.length > 0
 			? Math.max(...existingBucketTs, currentWeekTs)
 			: currentWeekTs;
-	const endWeek = startOfWeek(new Date(endWeekTs));
+	const endWeek = startOfUTCWeek(new Date(endWeekTs));
 	for (let i = 51; i >= 0; i -= 1) {
 		const ts = endWeek.getTime() - i * WEEK_MS;
 		if (!bucketMap.has(ts)) {
@@ -317,43 +296,10 @@ export function UsageStackedBar({
 	const leaderboardUnit = valueUnit ?? t(
 		(metric === "tokens" ? "usageTokensUnit" : metric === "users" ? "usageUsersUnit" : "usageRequestsUnit") as never,
 	);
-	const { currentStart, currentEnd, previousStart, previousEnd } = periodWindows(
-		leaderboardPeriod,
-		nowMs,
-	);
-	const currentPeriodTotals = new Map<string, number>();
-	const previousPeriodTotals = new Map<string, number>();
-	const leaderboardRows = leaderboardData ?? data;
-
-	for (const row of leaderboardRows) {
-		const bucketTs = new Date(row.bucket).getTime();
-		if (!Number.isFinite(bucketTs)) continue;
-		const rawKey = row.model_id?.trim() || "Unknown";
-		const keyLower = rawKey.toLowerCase();
-		if (keyLower === "unknown" || keyLower === "other") continue;
-		const value = timeseriesValue(row, metric);
-		if (!Number.isFinite(value) || value <= 0) continue;
-		if (bucketTs >= currentStart && bucketTs < currentEnd) {
-			currentPeriodTotals.set(
-				rawKey,
-				(currentPeriodTotals.get(rawKey) ?? 0) + value,
-			);
-		} else if (bucketTs >= previousStart && bucketTs < previousEnd) {
-			previousPeriodTotals.set(
-				rawKey,
-				(previousPeriodTotals.get(rawKey) ?? 0) + value,
-			);
-		}
-	}
-
-	let rankedLeaderboardModels = Array.from(
-		new Set([
-			...Array.from(currentPeriodTotals.keys()),
-			...Array.from(previousPeriodTotals.keys()),
-		]),
-	).map((model) => {
-		const current = currentPeriodTotals.get(model) ?? 0;
-		const previous = previousPeriodTotals.get(model) ?? 0;
+	let rankedLeaderboardModels = (periodResult?.key === periodKey ? periodResult.data : []).map((row) => {
+		const model = row.model_id;
+		const current = Number(row.current);
+		const previous = Number(row.previous);
 		const changePct =
 			previous > 0
 				? ((current - previous) / previous) * 100
@@ -365,7 +311,7 @@ export function UsageStackedBar({
 
 	const matchesModelFilter = (modelId: string) => {
 		if (modelFilter === "all") return true;
-		const isOpen = isOpenModelLicense(modelLicenseMap[modelId]);
+		const isOpen = isOpenModelLicense(periodResult?.models?.[modelId]?.license ?? modelLicenseMap[modelId]);
 		return modelFilter === "open" ? isOpen : !isOpen;
 	};
 
@@ -399,7 +345,8 @@ export function UsageStackedBar({
 	});
 	if (hasOther) keyMap.set("Other", "other");
 
-	const colourMap = assignOrderedSeriesColours(topModels);
+	// Colours come from the full ranking, so a model keeps its colour when a share image shows only some models.
+	const colourMap = assignOrderedSeriesColours(rankedModels);
 
 	const seriesStyle: SeriesStyle = {};
 	topModels.forEach((model) => {
@@ -414,7 +361,7 @@ export function UsageStackedBar({
 	if (hasOther) {
 		seriesStyle.other = {
 			label: t("usageOtherSeries"),
-			color: "hsl(0 0% 70% / 0.6)",
+			color: OTHER_SERIES_COLOR,
 			stroke: "hsl(0 0% 50%)",
 		};
 	}
@@ -428,7 +375,7 @@ export function UsageStackedBar({
 				row[key] = Number(rest[model] ?? 0);
 			});
 			if (hasOther) {
-				row.other = Number(rest.Other ?? 0);
+				row.other = Number(rest.Other ?? 0) + foldedModels.reduce((sum, model) => sum + Number(rest[model] ?? 0), 0);
 			}
 			row.projected_pace = 0;
 			row.__isCurrentWeek = false;
@@ -470,35 +417,69 @@ export function UsageStackedBar({
 
 	return (
 		<div className="space-y-4">
-			<div className="relative">
-				{showScaleToggle ? (
-					<div
-						role="group"
-							aria-label={t("usageChartScale")}
-						className="absolute right-2 top-0 z-10 inline-flex rounded-md border border-border/70 bg-background/90 p-0.5 backdrop-blur-sm"
-					>
-						{(["linear", "log"] as const).map((scale) => (
-							<button
-								key={scale}
-								type="button"
-								onClick={() => setChartScale(scale)}
-								aria-pressed={chartScale === scale}
-								className={`h-7 rounded-sm px-2.5 text-xs transition-colors ${
-									chartScale === scale
-										? "bg-muted text-foreground"
-										: "text-muted-foreground hover:text-foreground"
-								}`}
+			<div ref={chartShareRef} className="relative">
+				{!exportSize && (showScaleToggle || share) ? (
+					<div data-share-hide className="absolute right-2 top-0 z-10 flex items-center gap-1.5">
+						{showScaleToggle ? (
+							<div
+								role="group"
+									aria-label={t("usageChartScale")}
+								className="inline-flex rounded-md border border-border/70 bg-background/90 p-0.5 backdrop-blur-sm"
 							>
-								{scale === "linear" ? t("usageLinearScale") : t("usageLogScale")}
-							</button>
-						))}
+								{(["linear", "log"] as const).map((scale) => (
+									<button
+										key={scale}
+										type="button"
+										onClick={() => setChartScale(scale)}
+										aria-pressed={chartScale === scale}
+										className={`h-7 rounded-sm px-2.5 text-xs transition-colors ${
+											chartScale === scale
+												? "bg-muted text-foreground"
+												: "text-muted-foreground hover:text-foreground"
+										}`}
+									>
+										{scale === "linear" ? t("usageLinearScale") : t("usageLogScale")}
+									</button>
+								))}
+							</div>
+						) : null}
+						{share ? (
+							<RankingsChartShareButton
+								{...share}
+								targetRef={chartShareRef}
+								renderForShare={(size, selection) => (
+									<UsageStackedBar {...props} share={undefined} exportSize={size} exportScale={chartScale} exportSeries={selection} />
+								)}
+								series={{
+									items: rankedModels.map((model) => {
+										const key = keyMap.get(model) ?? model;
+										return { key: model, label: seriesStyle[key]?.label ?? model, color: seriesStyle[key]?.color ?? "#a1a1aa" };
+									}),
+									otherLabel: t("usageOtherSeries"),
+									otherColor: OTHER_SERIES_COLOR,
+									hasOther: totalsByModel.has("Other"),
+								}}
+								className="bg-background/90 backdrop-blur-sm"
+								subtitle={[
+									tShare("perWeek", { unit: valueUnit ?? (metric === "tokens" ? t("usageTokensUnit") : metric) }),
+									showScaleToggle && chartScale === "log" ? t("usageLogScale") : null,
+								].filter(Boolean).join(" · ")}
+								state={{ scale: showScaleToggle && chartScale === "log" ? "log" : null }}
+							/>
+						) : null}
 					</div>
 				) : null}
-			<ChartContainer config={chartConfig} className="h-[420px] w-full">
+			<ChartContainer
+				config={chartConfig}
+				className={exportSize ? undefined : "h-[420px] w-full"}
+				style={exportSize}
+				initialDimension={exportSize}
+			>
 				<BarChart
 					data={chartData}
+					barCategoryGap="10%"
 					margin={{
-						top: showScaleToggle ? 42 : 16,
+						top: !exportSize && (showScaleToggle || share) ? 42 : 16,
 						right: 12,
 						left: 0,
 						bottom: 32,
@@ -586,7 +567,7 @@ export function UsageStackedBar({
 								...(otherPayload ? [otherPayload] : []),
 							];
 							if (!filteredPayload.length) return null;
-							const weeklyTotal = filteredPayload.reduce(
+							const weeklyTotal = sortedPayload.reduce(
 								(sum, item) => sum + Number(item?.value ?? 0),
 								0
 							);
@@ -682,7 +663,7 @@ export function UsageStackedBar({
 				</BarChart>
 			</ChartContainer>
 			</div>
-			<div className="space-y-8 pt-3">
+			{exportSize ? null : <div className="space-y-8 pt-3">
 				<div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
 					<div className="min-w-0 max-w-xl space-y-1">
 						<h3 className="text-lg font-semibold lg:text-xl">{displayedLeaderboardTitle}</h3>
@@ -766,16 +747,17 @@ export function UsageStackedBar({
 									? columnRowIndex
 									: listColumnSplit + columnRowIndex;
 								const model = entry.model;
+								const meta = periodResult?.models?.[model];
 								const organisationId = inferOrganisationId(
 									model,
-									logoIdMap[model],
+									meta?.organisation_id ?? logoIdMap[model],
 								);
 								const logoHref = organisationHref(organisationId);
 								const modelHref = getModelDetailsHref(organisationId, model);
 								const logoId = organisationId ?? model;
-								const modelName = formatModelDisplayName(nameMap[model], model);
+								const modelName = formatModelDisplayName(meta?.name ?? nameMap[model], model);
 								const organisationName =
-									(organisationId
+									meta?.organisation_name ?? (organisationId
 										? organisationNameMap[model] ?? organisationNameMap[organisationId]
 										: null) ?? organisationId;
 								const changeLabel = formatChange(entry.changePct, locale, t("usageChangeNew"));
@@ -861,7 +843,7 @@ export function UsageStackedBar({
 					</div>
 				) : (
 					<EmptyLeaderboardPreview
-						title={t("usageNoDataForPeriod", { period: selectedPeriodLabel })}
+						title={periodResult?.key !== periodKey ? t("usageLoadingLeaderboard") : periodResult.error ? t("usageLeaderboardUnavailable") : t("usageNoDataForPeriod", { period: selectedPeriodLabel })}
 						description={t("usageLeaderboardEmpty")}
 					/>
 				)}
@@ -879,7 +861,7 @@ export function UsageStackedBar({
 						</Button>
 					</div>
 				) : null}
-			</div>
+			</div>}
 		</div>
 	);
 }

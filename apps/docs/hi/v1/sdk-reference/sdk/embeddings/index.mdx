@@ -1,10 +1,11 @@
 ---
 icon: "binary"
 title: "एम्बेडिंग (AI SDK)"
-description: "Vercel AI SDK में Phaseo provider models से embeddings बनाएँ।"
+sidebarTitle: "एम्बेडिंग"
+description: "Vercel AI SDK में Phaseo प्रदाता मॉडल से एम्बेडिंग बनाएँ।"
 ---
 
-`embed` और `embedMany` के साथ `phaseo.textEmbeddingModel(...)` (या `embeddingModel`) उपयोग करें।
+एक मान के लिए `embed` में, या सूची के लिए `embedMany` में `phaseo.embeddingModel(modelId)` (या उसका alias `textEmbeddingModel`) पास करें। अनुरोध Gateway के `/v1/embeddings` एंडपॉइंट पर जाते हैं।
 
 ```ts
 import { phaseo } from "@phaseo/ai-sdk-provider";
@@ -25,8 +26,8 @@ const batch = await embedMany({
 console.log(batch.embeddings.length);
 ```
 
-## नोट्स
+## वेक्टर को तुलनीय रखें
 
-- Query और corpus embeddings के लिए एक ही model version रखें।
-- Similarity score करने से पहले vectors को एक समान normalize करें।
-- बार-बार आने वाले content के stable embeddings cache करें।
+- queries और corpus दोनों को एक ही मॉडल संस्करण से embed करें।
+- similarity scoring से पहले वेक्टर को एक जैसे तरीक़े से normalize करें।
+- बार-बार आने वाली सामग्री के लिए स्थिर एम्बेडिंग cache करें।

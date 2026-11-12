@@ -2,110 +2,104 @@
 title: "Roll out presets and debug routing"
 icon: "route"
 description: "Use presets to standardize prompt and routing defaults, then inspect request details to understand why Phaseo routed a request the way it did."
+"og:image": "https://phaseo.app/og/dynamic?title=Roll%20out%20presets%20and%20debug%20routing&description=Use%20presets%20to%20standardize%20prompt%20and%20routing%20defaults%2C%20then%20inspect%20request%20details%20to%20understand%20why%20Phaseo%20routed%20a%20request%20the%20way%20it%20did.&pathname=/docs/v1/cookbook/preset-rollout-and-routing-debug"
 ---
 
-Use this recipe when you want one reusable preset for multiple services instead of copying the same prompt, model, and routing defaults everywhere.
+Move several services onto one preset so they share a prompt, model and provider rules, then use the request logs to explain where each request went. When you're done your callers send `"model": "@release-summary"` and their input, and you can roll a policy change out to one caller at a time.
 
-## Goal
+The request shape is production-ready. [Presets](../guides/presets) explains how a preset's settings merge with the request; this recipe is the rollout.
 
-- Standardize prompt and parameter defaults.
-- Limit which providers can be used for a rollout or compliance boundary.
-- Keep enough request context to explain why a request routed the way it did.
+## Move a caller onto a preset
 
-## 1. Create the preset
+<Steps>
+<Step title="Create the preset">
 
-In **Dashboard -> Settings -> Presets**, create a preset with:
+In **Settings → Presets**, create `release-summary` with a system prompt, the approved models, provider preferences, and default parameters such as `temperature`. Or with a management key:
 
-- a clear name and slug
-- a system prompt
-- approved models
-- provider preferences
-- default parameter values such as `temperature`
+```bash
+curl https://api.phaseo.app/v1/presets \
+  -H "Authorization: Bearer $PHASEO_MANAGEMENT_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"@release-summary","config":{"model":"anthropic/claude-sonnet-5.5"}}'
+```
 
-Use the preset slug in your calling code so the same request policy can be reused across environments.
+</Step>
+<Step title="Call it by name">
 
-## 2. Keep the request body small
-
-The main advantage of presets is that the caller no longer needs to repeat the same routing and prompt defaults in every request.
+Send the preset as the `model`. There is no separate `preset` field.
 
 <CodeGroup>
 ```bash cURL
 curl https://api.phaseo.app/v1/responses \
-  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-sonnet-4-5",
+    "model": "@release-summary",
     "input": "Generate a release summary for the last 24 hours.",
-    "preset": "release-summary"
+    "meta": true
   }'
 ```
 
-```typescript TypeScript SDK
+```typescript TypeScript
 import Phaseo from "@phaseo/sdk";
 
 const client = new Phaseo({ apiKey: process.env.PHASEO_API_KEY! });
 
 const response = await client.generateResponse({
-  model: "anthropic/claude-sonnet-4-5",
+  model: "@release-summary",
   input: "Generate a release summary for the last 24 hours.",
-  preset: "release-summary",
+  meta: true,
 });
 
-console.log(response.output_text);
+console.log(response.model, response.meta?.routing);
 ```
 
-```python Python SDK
+```python Python
+import os
+
 from phaseo import Phaseo
 
-client = Phaseo(api_key="YOUR_API_KEY")
+client = Phaseo(api_key=os.environ["PHASEO_API_KEY"])
 
 response = client.generate_response(
     {
-        "model": "anthropic/claude-sonnet-4-5",
+        "model": "@release-summary",
         "input": "Generate a release summary for the last 24 hours.",
-        "preset": "release-summary",
+        "meta": True,
     }
 )
 
-print(response.get("output_text"))
+print(response.get("model"), response["meta"]["routing"]["selected_provider"])
 ```
 </CodeGroup>
 
-## 3. Understand what the preset changes
+`model` in the response is the model that answered, and `meta.routing.selected_provider` the provider.
 
-The preset is applied before provider routing:
+</Step>
+<Step title="Check what the preset applied">
 
-- missing request parameters are filled from the preset
-- the preset prompt is prepended to the system layer
-- provider preferences narrow the list of available providers before ranking
-- model restrictions are checked early instead of silently rerouting
+Open the request in **Settings → Usage → Logs**. It shows which preset defaults were applied. A model outside the preset's allowed models fails with `validation_error` (keyword `preset_model_not_allowed`) instead of being rerouted.
 
-## 4. Debug the routing outcome
+</Step>
+</Steps>
 
-When a request does not route the way you expected, open the request in **Gateway -> Usage** and inspect:
+## Explain a routing decision
 
-- providers considered
-- ranked candidates
-- routing factors attached to each candidate
-- workspace-policy or guardrail blocks
+When a request didn't route the way you expected, expand **Routing observability** on the request in **Settings → Usage → Logs**. It answers three questions:
 
-This is the fastest way to answer:
+| Question | Look at |
+| --- | --- |
+| Why was a provider skipped? | Providers excluded before ranking, with the reason, and providers deranked by their rollout or routing status |
+| Why was the request blocked? | Workspace-policy or guardrail blocks on the request |
+| Why did this provider win? | Each ranked provider's final score and the factors behind it |
 
-- why a provider was skipped
-- why a request was blocked
-- why a lower-cost or lower-latency target won the ranking
+[Explain a routing decision](../guides/routing-and-fallbacks#explain-a-routing-decision) describes every field.
 
-## 5. Operational pattern
+## Roll out a policy change
 
-Use this rollout pattern when changing routing behavior:
+1. Publish the change as a new preset version, or create a new slug for a very different policy.
+2. Move one low-risk caller to it, for example by pointing it at `@release-summary@v4` or a `canary` label.
+3. Compare its request details and usage trends with the other callers.
+4. Move the remaining callers once routing matches what you expect. To roll back, point the label at the earlier version.
 
-1. Create a new preset slug for the new policy.
-2. Move one low-risk caller to the new preset.
-3. Inspect request details and activity trends.
-4. Expand the rollout only after the routing outcomes match expectations.
-
-## Related guides
-
-- [Presets](../guides/presets.mdx)
-- [Routing and Fallbacks](../guides/routing-and-fallbacks.mdx)
-- [Error Handling](../api-reference/errors.mdx)
+[Version and roll back](../guides/presets#version-and-roll-back) covers versions and labels. For request-level overrides that shouldn't live in a preset, see [Pin or ignore providers](./pin-or-ignore-providers-per-request).

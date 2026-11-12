@@ -1,9 +1,0 @@
-{
-  "key": "ltx:ltx-2-3-fast:video.generate", "api_provider_id": "ltx", "provider_slug": "ltx", "api_model_id": "ltx-2-3-fast", "capability_id": "video.generate",
-  "rules": [
-    { "meter": "output_video_seconds", "unit": "second", "unit_size": 1, "price_per_unit": 0.03, "currency": "USD", "pricing_plan": "standard", "match": [{ "path": "resolution", "op": "in", "value": ["1280x720","720x1280"] }], "conditions": [], "priority": 100, "effective_from": "2026-08-01T00:00:00Z", "source": "https://docs.ltx.io/pricing" },
-    { "meter": "output_video_seconds", "unit": "second", "unit_size": 1, "price_per_unit": 0.06, "currency": "USD", "pricing_plan": "standard", "match": [{ "path": "resolution", "op": "in", "value": ["1920x1080","1080x1920"] }], "conditions": [], "priority": 100, "effective_from": "2026-08-01T00:00:00Z", "source": "https://docs.ltx.io/pricing" },
-    { "meter": "output_video_seconds", "unit": "second", "unit_size": 1, "price_per_unit": 0.12, "currency": "USD", "pricing_plan": "standard", "match": [{ "path": "resolution", "op": "in", "value": ["2560x1440","1440x2560"] }], "conditions": [], "priority": 100, "effective_from": "2026-08-01T00:00:00Z", "source": "https://docs.ltx.io/pricing" },
-    { "meter": "output_video_seconds", "unit": "second", "unit_size": 1, "price_per_unit": 0.24, "currency": "USD", "pricing_plan": "standard", "match": [{ "path": "resolution", "op": "in", "value": ["3840x2160","2160x3840"] }], "conditions": [], "priority": 100, "effective_from": "2026-08-01T00:00:00Z", "source": "https://docs.ltx.io/pricing" }
-  ], "regions": [], "service_tiers": ["standard"], "sources": [{ "url": "https://docs.ltx.io/pricing", "kind": "pricing" }], "verification": { "status": "verified", "checked_at": "2026-08-11T00:00:00Z" }
-}

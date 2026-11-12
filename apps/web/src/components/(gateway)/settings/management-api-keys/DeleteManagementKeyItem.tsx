@@ -1,4 +1,3 @@
-"use client";
 import { localizedSettingsError } from "@/i18n/error-messages";
 import { useInvalidatePrivateSettings } from "../PrivateSettingsQuery";
 
@@ -16,9 +15,9 @@ import {
 } from "@/components/ui/dialog";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { Trash2, ShieldAlert } from "lucide-react";
-import { deleteManagementKeyAction } from "@/app/(dashboard)/settings/management-api-keys/actions";
+import { deleteManagementKeyAction } from "@/features/settings/management-api-keys/actions";
 import { toast } from "sonner";
-import { useTranslations } from "next-intl";
+import { useTranslations } from "@/i18n/react";
 
 export default function DeleteManagementKeyItem({
 	k,
@@ -43,7 +42,7 @@ export default function DeleteManagementKeyItem({
 		e?.preventDefault();
 		if (confirm !== k.name) return;
 		setLoading(true);
-		const promise = deleteManagementKeyAction(k.id, confirm);
+		const promise = deleteManagementKeyAction({ data: { id: k.id, confirmName: confirm } });
 		try {
 			await toast.promise(promise, {
 					loading: t("keys.deletingKey"),

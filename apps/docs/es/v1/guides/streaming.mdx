@@ -1,63 +1,66 @@
 ---
 title: "Transmisión"
-description: "Recibe salida incremental, gestiona eventos específicos de cada endpoint y recupera streams interrumpidos."
+description: "Recibe la salida de forma incremental, gestiona los eventos de cada endpoint y recupérate de streams interrumpidos."
 icon: "radio"
 ---
 
-Define `stream: true` para recibir la salida como eventos enviados por el servidor (SSE). Mantén tu clave de API de Phaseo en el servidor y reenvía la salida a la interfaz.
+import { StreamEventsExplorer } from "/snippets/stream-events.jsx";
 
-## Envía una solicitud en streaming
+Define `stream: true` y el Gateway envía la salida como eventos enviados por el servidor (SSE) mientras el modelo la escribe. Un stream solo ha terminado cuando llega su evento de final correcto. Pulsa **Reproducir** para ver uno y después cambia a **Falla a mitad** para ver cómo termina un stream que se rompe.
+
+<StreamEventsExplorer locale="es" />
+
+## Enviar una solicitud en streaming
 
 ```bash
 curl --no-buffer https://api.phaseo.app/v1/responses \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "openai/gpt-5-nano",
+    "model": "openai/gpt-6-astra",
     "input": "Say hello in one sentence.",
     "stream": true
   }'
 ```
 
-Comprueba el estado HTTP antes de leer el stream. Un fallo anterior al inicio del streaming devuelve la [respuesta de error JSON](../api-reference/errors.mdx) habitual.
+Comprueba el estado HTTP antes de leer el cuerpo. Una solicitud que falla antes de que empiece el streaming recibe la [respuesta de error JSON](../api-reference/errors.mdx) normal, no un stream. Mantén tu clave de API de Phaseo en tu servidor y reenvía el texto a tu interfaz desde allí.
 
-## Lee los eventos
+## Leer los eventos
 
-Usa el formato de eventos del endpoint al que has llamado:
+Cada endpoint usa su propio formato de eventos:
 
-| Endpoint | Salida incremental | Finalización |
-| --- | --- | --- |
-| [Responses](../api-reference/endpoint/responses.mdx) | Eventos como `response.output_text.delta` | Revisa el evento final de respuesta y su estado |
-| [Chat Completions](../api-reference/endpoint/chat-completions.mdx) | `choices[].delta` | Revisa `finish_reason`; `[DONE]` finaliza el stream |
-| [Messages](../api-reference/endpoint/anthropic-messages.mdx) | `message_start`, `content_block_delta`, y eventos relacionados | `message_stop` |
+| Endpoint | El texto llega en | Final correcto | Final con fallo |
+| --- | --- | --- | --- |
+| [Responses](../api-reference/endpoint/responses.mdx) | `response.output_text.delta` | `response.completed` | `response.failed` o `error` |
+| [Chat Completions](../api-reference/endpoint/chat-completions.mdx) | `choices[].delta` | un `finish_reason` y después `[DONE]` | un frame `error` sin `finish_reason` |
+| [Messages](../api-reference/endpoint/anthropic-messages.mdx) | `content_block_delta` | `message_stop` | un evento `error` sin `message_stop` |
 
-Los eventos SSE se separan mediante líneas en blanco. Un fragmento de red puede contener parte de un evento o varios eventos; no analices cada fragmento como JSON independiente. Almacena los frames incompletos o usa un asistente de streaming del SDK. No supongas que todos los endpoints envían `[DONE]`.
+Los eventos se separan con líneas en blanco, pero un fragmento de red puede contener medio evento o varios. Acumula los datos hasta que cada evento esté completo antes de analizarlo como JSON, o usa un asistente del SDK, que lo hace por ti:
 
-Los asistentes del SDK gestionan el transporte del stream:
+- TypeScript: `streamResponses()`, `streamChat()`, `streamMessages()`; Python: `stream_responses()`, `stream_chat()`, `stream_message()` ([guía de uso](../sdk-reference/client/usage.mdx))
+- Vercel AI SDK: `streamText()` con `@phaseo/ai-sdk-provider`
 
-- TypeScript: `streamResponses()`, `streamChat()`, `streamMessages()`.
-- Python: `stream_responses()`, `stream_chat()`, `stream_message()`.
-- Vercel AI SDK: `streamText()` con `@phaseo/ai-sdk-provider`.
+Solo Chat Completions envía `[DONE]`. No lo esperes en los demás endpoints.
 
-Consulta la [guía de uso de TypeScript](../sdk-reference/typescript/usage.mdx) o la [guía de uso de Python](../sdk-reference/python/usage.mdx) para configurar el cliente.
+## Transmitir llamadas a herramientas
 
-## Transmite llamadas a herramientas
+Las llamadas a herramientas llegan como deltas de argumentos, igual que el texto. Que un modelo las transmita depende del modelo y del proveedor. Acumula los deltas hasta que la llamada esté completa y después analiza, valida y autoriza los argumentos. Nunca ejecutes una herramienta con argumentos parciales.
 
-El Gateway acepta streaming con herramientas, pero la compatibilidad depende del modelo y proveedor seleccionados. Acumula los fragmentos de argumentos hasta completar la llamada y después analiza, valida y autoriza los argumentos antes de ejecutarla. Nunca ejecutes argumentos parciales.
+Consulta los [patrones de llamadas a herramientas](./tool-calling-patterns.mdx) para devolver los resultados y la [seguridad de herramientas](./tool-calling-safety.mdx) para la validación y la aprobación.
 
-Sigue los [patrones de llamadas a herramientas](./tool-calling-patterns.mdx) para solicitudes de continuación y la [seguridad de herramientas](./tool-calling-safety.mdx) para controles de validación y aprobación.
+## Cancelar un stream
 
-## Cancela y recupera
+Pasa un `AbortSignal` (o el equivalente de tu cliente HTTP) y cancela cuando el usuario se detenga o se desconecte. Fija un plazo adecuado para la carga de trabajo. Cancelar no garantiza que el proveedor se detenga al instante ni que la salida que ya generó sea gratuita.
 
-Pasa un `AbortSignal` al cliente HTTP del servidor y cancela cuando el usuario se detenga o desconecte. Define un plazo apropiado para la tarea. Cancelar no garantiza que el proveedor pare inmediatamente ni que la salida generada sea gratuita.
+## Recuperarse de un stream interrumpido
 
-Muestra el texto parcial de forma progresiva, pero marca la respuesta como completa solo tras el evento final correcto del endpoint. Una conexión cerrada no demuestra que haya terminado.
+Si un stream falla después de que empiece el texto, termina con el evento de fallo de la tabla anterior en lugar del de final correcto. Una conexión cerrada por sí sola no significa que la respuesta esté completa. Phaseo no cobra la salida parcial de un stream que falla.
 
-Si un stream falla después de empezar la salida:
+Cuando ocurra:
 
-1. Marca la respuesta parcial como interrumpida.
-2. Guarda el ID de solicitud o generación, endpoint y modelo en los registros.
-3. Ofrece un reintento explícito. Una nueva solicitud puede generar otra salida y otro cargo.
-4. No repitas herramientas ya ejecutadas ni añadas automáticamente la respuesta reintentada a la salida parcial.
+1. Mantén el texto parcial en pantalla, marcado como interrumpido.
+2. Registra el ID de la solicitud o de la generación, el endpoint y el modelo.
+3. Ofrece un reintento. Una nueva solicitud puede producir otro texto y se cobra de nuevo.
+4. No repitas herramientas que ya se ejecutaron ni añadas la respuesta reintentada a la parcial.
 
-Para fallos anteriores a la salida, limita los reintentos y respeta las [cabeceras de límites](../api-reference/limits.mdx). Si tu aplicación debe validar toda la salida antes de mostrarla, usa una solicitud sin streaming o almacena el resultado en el servidor.
+Para los fallos anteriores a que llegue cualquier texto, reintenta con espera exponencial y respeta las [cabeceras de límites de velocidad](../api-reference/limits.mdx). Si tienes que validar la respuesta completa antes de que nadie la vea, usa una solicitud sin streaming o acumula el stream en tu servidor.

@@ -1,0 +1,3846 @@
+{
+	"id": "azure",
+	"source": {
+		"url": "https://raw.githubusercontent.com/Azure/azure-rest-api-specs/main/specification/ai/data-plane/OpenAI.v1/azure-v1-v1-generated.json",
+		"docs": null,
+		"fetchedAt": "2026-10-18T08:40:49.590Z",
+		"sha256": "9fade08c5d30751828e67fecca63b3800567c802d1d6c4c91bba3d193843f7a8",
+		"handWritten": false,
+		"notes": "Azure OpenAI v1 GA data-plane spec (TypeSpec-generated, OpenAPI 3.2.0). Server is {endpoint}/openai/v1, i.e. https://<resource>.openai.azure.com/openai/v1; model is the deployment name in the body. The older dated /openai/deployments/{deployment-id}/chat/completions?api-version=... surface lives in "
+	},
+	"operations": {
+		"chat": {
+			"request": {
+				"type": "object",
+				"properties": {
+					"metadata": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.Metadata"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"top_logprobs": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"temperature": {
+						"anyOf": [
+							{
+								"type": "number"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"default": 1
+					},
+					"top_p": {
+						"anyOf": [
+							{
+								"type": "number"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"default": 1
+					},
+					"user": {
+						"type": "string",
+						"description": "A unique identifier representing your end-user, which can help to\nmonitor and detect abuse.",
+						"deprecated": true
+					},
+					"safety_identifier": {
+						"type": "string",
+						"maxLength": 64,
+						"description": "A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies.\n  The IDs should be a string that uniquely identifies each user, with a maximum length of 64 characters. We recommend hashing their username or email address, in order to avoid sending us any identifying information. [Learn more](/docs/guides/safety-best-practices#safety-identifiers)."
+					},
+					"prompt_cache_key": {
+						"type": "string",
+						"description": "Used by OpenAI to cache responses for similar requests to optimize your cache hit rates. Replaces the `user` field. [Learn more](/docs/guides/prompt-caching)."
+					},
+					"prompt_cache_retention": {
+						"anyOf": [
+							{
+								"type": "string",
+								"enum": [
+									"in_memory",
+									"24h"
+								]
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"messages": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/OpenAI.ChatCompletionRequestMessage"
+						},
+						"minItems": 1,
+						"description": "A list of messages comprising the conversation so far. Depending on the\nmodel you use, different message types (modalities) are supported,\nlike text, images, and audio."
+					},
+					"model": {
+						"type": "string",
+						"description": "Model ID used to generate the response, like `gpt-4o` or `o3`. OpenAI\n  offers a wide range of models with different capabilities, performance\n  characteristics, and price points. Refer to the [model guide](/docs/models)\n  to browse and compare available models."
+					},
+					"modalities": {
+						"$ref": "#/components/schemas/OpenAI.ResponseModalities"
+					},
+					"verbosity": {
+						"$ref": "#/components/schemas/OpenAI.Verbosity"
+					},
+					"reasoning_effort": {
+						"$ref": "#/components/schemas/OpenAI.ReasoningEffort"
+					},
+					"max_completion_tokens": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "An upper bound for the number of tokens that can be generated for a\ncompletion, including visible output tokens and reasoning tokens."
+					},
+					"frequency_penalty": {
+						"anyOf": [
+							{
+								"type": "number"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"minimum": -2,
+						"maximum": 2,
+						"description": "Number between -2.0 and 2.0. Positive values penalize new tokens based on\n  their existing frequency in the text so far, decreasing the model's\n  likelihood to repeat the same line verbatim."
+					},
+					"presence_penalty": {
+						"anyOf": [
+							{
+								"type": "number"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"minimum": -2,
+						"maximum": 2,
+						"description": "Number between -2.0 and 2.0. Positive values penalize new tokens based on\n  whether they appear in the text so far, increasing the model's likelihood\n  to talk about new topics."
+					},
+					"response_format": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.CreateChatCompletionRequestResponseFormat"
+							}
+						],
+						"description": "An object specifying the format that the model must output.\n\nSetting to `{ \"type\": \"json_schema\", \"json_schema\": {...} }` enables\nStructured Outputs which ensures the model will match your supplied JSON\nschema.\n\nSetting to `{ \"type\": \"json_object\" }` enables JSON mode, which ensures\nthe message the model generates is valid JSON.\n\n**Important:** when using JSON mode, you **must** also instruct the model\nto produce JSON yourself via a system or user message. Without this, the\nmodel may generate an unending stream of whitespace until the generation\nreaches the token limit, resulting in a long-running and seemingly \"stuck\"\nrequest. Also note that the message content may be partially cut off if\n`finish_reason=\"length\"`, which indicates the generation exceeded\n`max_tokens` or the conversation exceeded the max context length."
+					},
+					"audio": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.CreateChatCompletionRequestAudio"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "Parameters for audio output. Required when audio output is requested with\n`modalities: [\"audio\"]`."
+					},
+					"store": {
+						"anyOf": [
+							{
+								"type": "boolean"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "Whether or not to store the output of this chat completion request for\nuse in model distillation or evals products."
+					},
+					"stream": {
+						"anyOf": [
+							{
+								"type": "boolean"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "If set to true, the model response data will be streamed to the client\nas it is generated using server-sent events."
+					},
+					"stop": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.StopConfiguration"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"logit_bias": {
+						"anyOf": [
+							{
+								"type": "object",
+								"unevaluatedProperties": {
+									"type": "integer"
+								}
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "Modify the likelihood of specified tokens appearing in the completion.\n  Accepts a JSON object that maps tokens (specified by their token ID in the\n  tokenizer) to an associated bias value from -100 to 100. Mathematically,\n  the bias is added to the logits generated by the model prior to sampling.\n  The exact effect will vary per model, but values between -1 and 1 should\n  decrease or increase likelihood of selection; values like -100 or 100\n  should result in a ban or exclusive selection of the relevant token.",
+						"x-oaiTypeLabel": "map"
+					},
+					"logprobs": {
+						"anyOf": [
+							{
+								"type": "boolean"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "Whether to return log probabilities of the output tokens or not. If true,\n  returns the log probabilities of each output token returned in the\n  `content` of `message`."
+					},
+					"max_tokens": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "The maximum number of tokens that can be generated in the chat completion.\nThis value can be used to control costs for text generated via API.\n\nThis value is now deprecated in favor of `max_completion_tokens`, and is\nnot compatible with o1 series models.",
+						"deprecated": true
+					},
+					"n": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"minimum": 1,
+						"maximum": 128,
+						"description": "How many chat completion choices to generate for each input message. Note that you will be charged based on the number of generated tokens across all of the choices. Keep `n` as `1` to minimize costs.",
+						"default": 1
+					},
+					"prediction": {
+						"oneOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.PredictionContent"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "Configuration for a predicted output, which can greatly improve\nresponse times when large parts of the model response are known\nahead of time. This is most common when you are regenerating a\nfile with only minor changes to most of the content."
+					},
+					"seed": {
+						"anyOf": [
+							{
+								"type": "integer",
+								"format": "int64"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "This feature is in Beta.\n  If specified, our system will make a best effort to sample deterministically, such that repeated requests with the same `seed` and parameters should return the same result.\n  Determinism is not guaranteed, and you should refer to the `system_fingerprint` response parameter to monitor changes in the backend.",
+						"deprecated": true,
+						"x-oaiMeta": {
+							"beta": true
+						}
+					},
+					"stream_options": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.ChatCompletionStreamOptions"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"tools": {
+						"type": "array",
+						"items": {
+							"anyOf": [
+								{
+									"$ref": "#/components/schemas/OpenAI.ChatCompletionTool"
+								},
+								{
+									"$ref": "#/components/schemas/OpenAI.CustomToolChatCompletions"
+								}
+							]
+						},
+						"description": "A list of tools the model may call. You can provide either\n  [custom tools](/docs/guides/function-calling#custom-tools) or\n  [function tools](/docs/guides/function-calling)."
+					},
+					"tool_choice": {
+						"$ref": "#/components/schemas/OpenAI.ChatCompletionToolChoiceOption"
+					},
+					"parallel_tool_calls": {
+						"type": "boolean",
+						"description": "Whether to enable [parallel function calling](/docs/guides/function-calling#configuring-parallel-function-calling) during tool use.",
+						"default": true
+					},
+					"function_call": {
+						"oneOf": [
+							{
+								"type": "string",
+								"enum": [
+									"none",
+									"auto"
+								]
+							},
+							{
+								"$ref": "#/components/schemas/OpenAI.ChatCompletionFunctionCallOption"
+							}
+						],
+						"description": "Deprecated in favor of `tool_choice`.\n  Controls which (if any) function is called by the model.\n  `none` means the model will not call a function and instead generates a\n  message.\n  `auto` means the model can pick between generating a message or calling a\n  function.\n  Specifying a particular function via `{\"name\": \"my_function\"}` forces the\n  model to call that function.\n  `none` is the default when no functions are present. `auto` is the default\n  if functions are present.",
+						"deprecated": true
+					},
+					"functions": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/OpenAI.ChatCompletionFunctions"
+						},
+						"minItems": 1,
+						"maxItems": 128,
+						"description": "Deprecated in favor of `tools`.\n  A list of functions the model may generate JSON inputs for.",
+						"deprecated": true
+					},
+					"user_security_context": {
+						"$ref": "#/components/schemas/AzureUserSecurityContext"
+					}
+				},
+				"required": [
+					"messages",
+					"model"
+				]
+			},
+			"response": {
+				"anyOf": [
+					{
+						"type": "object",
+						"required": [
+							"id",
+							"choices",
+							"created",
+							"model",
+							"object"
+						],
+						"properties": {
+							"id": {
+								"type": "string",
+								"description": "A unique identifier for the chat completion."
+							},
+							"choices": {
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/OpenAI.CreateChatCompletionResponseChoices"
+								},
+								"description": "A list of chat completion choices. Can be more than one if `n` is greater than 1."
+							},
+							"created": {
+								"type": "integer",
+								"format": "unixtime",
+								"description": "The Unix timestamp (in seconds) of when the chat completion was created."
+							},
+							"model": {
+								"type": "string",
+								"description": "The model used for the chat completion."
+							},
+							"system_fingerprint": {
+								"type": "string",
+								"description": "This fingerprint represents the backend configuration that the model runs with.\n  Can be used in conjunction with the `seed` request parameter to understand when backend changes have been made that might impact determinism.",
+								"deprecated": true
+							},
+							"object": {
+								"type": "string",
+								"enum": [
+									"chat.completion"
+								],
+								"description": "The object type, which is always `chat.completion`.",
+								"x-stainless-const": true
+							},
+							"usage": {
+								"$ref": "#/components/schemas/OpenAI.CompletionUsage"
+							},
+							"prompt_filter_results": {
+								"type": "array",
+								"items": {
+									"type": "object",
+									"properties": {
+										"prompt_index": {
+											"type": "integer",
+											"format": "int32",
+											"description": "The index of the input prompt that this content filter result corresponds to."
+										},
+										"content_filter_results": {
+											"allOf": [
+												{
+													"$ref": "#/components/schemas/AzureContentFilterResultForPrompt"
+												}
+											],
+											"description": "The content filter results associated with the indexed input prompt."
+										}
+									},
+									"required": [
+										"prompt_index",
+										"content_filter_results"
+									]
+								}
+							}
+						}
+					},
+					{
+						"type": "object",
+						"required": [
+							"id",
+							"choices",
+							"created",
+							"model",
+							"object"
+						],
+						"properties": {
+							"id": {
+								"type": "string",
+								"description": "A unique identifier for the chat completion. Each chunk has the same ID."
+							},
+							"choices": {
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/OpenAI.CreateChatCompletionStreamResponseChoices"
+								},
+								"description": "A list of chat completion choices. Can contain more than one elements if `n` is greater than 1. Can also be empty for the\n  last chunk if you set `stream_options: {\"include_usage\": true}`."
+							},
+							"created": {
+								"type": "integer",
+								"format": "unixtime",
+								"description": "The Unix timestamp (in seconds) of when the chat completion was created. Each chunk has the same timestamp."
+							},
+							"model": {
+								"type": "string",
+								"description": "The model to generate the completion."
+							},
+							"system_fingerprint": {
+								"type": "string",
+								"description": "This fingerprint represents the backend configuration that the model runs with.\n  Can be used in conjunction with the `seed` request parameter to understand when backend changes have been made that might impact determinism.",
+								"deprecated": true
+							},
+							"object": {
+								"type": "string",
+								"enum": [
+									"chat.completion.chunk"
+								],
+								"description": "The object type, which is always `chat.completion.chunk`.",
+								"x-stainless-const": true
+							},
+							"usage": {
+								"allOf": [
+									{
+										"$ref": "#/components/schemas/OpenAI.CompletionUsage"
+									}
+								],
+								"description": "An optional field that will only be present when you set\n  `stream_options: {\"include_usage\": true}` in your request. When present, it\n  contains a null value **except for the last chunk** which contains the\n  token usage statistics for the entire request.\n*NOTE:** If the stream is interrupted or cancelled, you may not\n  receive the final usage chunk which contains the total token usage for\n  the request."
+							},
+							"delta": {
+								"$ref": "#/components/schemas/OpenAI.ChatCompletionStreamResponseDelta"
+							},
+							"content_filter_results": {
+								"$ref": "#/components/schemas/AzureContentFilterResultForChoice"
+							}
+						}
+					}
+				]
+			}
+		},
+		"responses": {
+			"request": {
+				"$ref": "#/components/schemas/OpenAI.CreateResponse"
+			},
+			"response": {
+				"type": "object",
+				"required": [
+					"id",
+					"object",
+					"created_at",
+					"error",
+					"incomplete_details",
+					"output",
+					"instructions",
+					"parallel_tool_calls"
+				],
+				"properties": {
+					"metadata": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.Metadata"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"top_logprobs": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"temperature": {
+						"anyOf": [
+							{
+								"type": "number"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"default": 1
+					},
+					"top_p": {
+						"anyOf": [
+							{
+								"type": "number"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"default": 1
+					},
+					"user": {
+						"type": "string",
+						"description": "This field is being replaced by `safety_identifier` and `prompt_cache_key`. Use `prompt_cache_key` instead to maintain caching optimizations.\n  A stable identifier for your end-users.\n  Used to boost cache hit rates by better bucketing similar requests and  to help OpenAI detect and prevent abuse. [Learn more](/docs/guides/safety-best-practices#safety-identifiers).",
+						"deprecated": true
+					},
+					"safety_identifier": {
+						"type": "string",
+						"maxLength": 64,
+						"description": "A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies.\n  The IDs should be a string that uniquely identifies each user, with a maximum length of 64 characters. We recommend hashing their username or email address, in order to avoid sending us any identifying information. [Learn more](/docs/guides/safety-best-practices#safety-identifiers)."
+					},
+					"prompt_cache_key": {
+						"type": "string",
+						"description": "Used by OpenAI to cache responses for similar requests to optimize your cache hit rates. Replaces the `user` field. [Learn more](/docs/guides/prompt-caching)."
+					},
+					"prompt_cache_retention": {
+						"anyOf": [
+							{
+								"type": "string",
+								"enum": [
+									"in_memory",
+									"24h"
+								]
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"previous_response_id": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"model": {
+						"type": "string",
+						"description": "Model ID used to generate the response, like `gpt-4o` or `o3`. OpenAI\n  offers a wide range of models with different capabilities, performance\n  characteristics, and price points. Refer to the [model guide](/docs/models)\n  to browse and compare available models."
+					},
+					"reasoning": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.Reasoning"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"background": {
+						"anyOf": [
+							{
+								"type": "boolean"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"max_tool_calls": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"text": {
+						"$ref": "#/components/schemas/OpenAI.ResponseTextParam"
+					},
+					"tools": {
+						"$ref": "#/components/schemas/OpenAI.ToolsArray"
+					},
+					"tool_choice": {
+						"oneOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.ToolChoiceOptions"
+							},
+							{
+								"$ref": "#/components/schemas/OpenAI.ToolChoiceParam"
+							}
+						]
+					},
+					"prompt": {
+						"$ref": "#/components/schemas/OpenAI.Prompt"
+					},
+					"truncation": {
+						"anyOf": [
+							{
+								"type": "string",
+								"enum": [
+									"auto",
+									"disabled"
+								]
+							},
+							{
+								"type": "null"
+							}
+						],
+						"default": "disabled"
+					},
+					"id": {
+						"type": "string",
+						"description": "Unique identifier for this Response."
+					},
+					"object": {
+						"type": "string",
+						"enum": [
+							"response"
+						],
+						"description": "The object type of this resource - always set to `response`.",
+						"x-stainless-const": true
+					},
+					"status": {
+						"type": "string",
+						"enum": [
+							"completed",
+							"failed",
+							"in_progress",
+							"cancelled",
+							"queued",
+							"incomplete"
+						],
+						"description": "The status of the response generation. One of `completed`, `failed`,\n  `in_progress`, `cancelled`, `queued`, or `incomplete`."
+					},
+					"created_at": {
+						"type": "integer",
+						"format": "unixtime",
+						"description": "Unix timestamp (in seconds) of when this Response was created."
+					},
+					"completed_at": {
+						"anyOf": [
+							{
+								"type": "string",
+								"format": "date-time"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"type": "integer",
+						"format": "unixTimestamp"
+					},
+					"error": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.ResponseError"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"incomplete_details": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.ResponseIncompleteDetails"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"output": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/OpenAI.OutputItem"
+						},
+						"description": "An array of content items generated by the model.\n  - The length and order of items in the `output` array is dependent\n  on the model's response.\n  - Rather than accessing the first item in the `output` array and\n  assuming it's an `assistant` message with the content generated by\n  the model, you might consider using the `output_text` property where\n  supported in SDKs."
+					},
+					"instructions": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/OpenAI.InputItem"
+								}
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"output_text": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"usage": {
+						"$ref": "#/components/schemas/OpenAI.ResponseUsage"
+					},
+					"parallel_tool_calls": {
+						"type": "boolean",
+						"description": "Whether to allow the model to run tool calls in parallel.",
+						"default": true
+					},
+					"conversation": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.ConversationReference"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"max_output_tokens": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"content_filters": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/AzureContentFilterForResponsesAPI"
+						},
+						"description": "The content filter results from RAI."
+					}
+				}
+			}
+		}
+	},
+	"components": {
+		"schemas": {
+			"OpenAI.Metadata": {
+				"type": "object",
+				"unevaluatedProperties": {
+					"type": "string"
+				},
+				"description": "Set of 16 key-value pairs that can be attached to an object. This can be\nuseful for storing additional information about the object in a structured\nformat, and querying for objects via API or the dashboard.\nKeys are strings with a maximum length of 64 characters. Values are strings\nwith a maximum length of 512 characters.",
+				"x-oaiTypeLabel": "map"
+			},
+			"OpenAI.ChatCompletionRequestMessage": {
+				"type": "object",
+				"required": [
+					"role"
+				],
+				"properties": {
+					"role": {
+						"$ref": "#/components/schemas/OpenAI.ChatCompletionRequestMessageType"
+					}
+				},
+				"discriminator": {
+					"propertyName": "role",
+					"mapping": {
+						"assistant": "#/components/schemas/OpenAI.ChatCompletionRequestAssistantMessage",
+						"developer": "#/components/schemas/OpenAI.ChatCompletionRequestDeveloperMessage",
+						"function": "#/components/schemas/OpenAI.ChatCompletionRequestFunctionMessage",
+						"system": "#/components/schemas/OpenAI.ChatCompletionRequestSystemMessage",
+						"user": "#/components/schemas/OpenAI.ChatCompletionRequestUserMessage",
+						"tool": "#/components/schemas/OpenAI.ChatCompletionRequestToolMessage"
+					}
+				}
+			},
+			"OpenAI.ResponseModalities": {
+				"anyOf": [
+					{
+						"type": "array",
+						"items": {
+							"type": "string",
+							"enum": [
+								"text",
+								"audio"
+							]
+						}
+					},
+					{
+						"type": "null"
+					}
+				],
+				"description": "Output types that you would like the model to generate.\nMost models are capable of generating text, which is the default:\n`[\"text\"]`\nThe `gpt-4o-audio-preview` model can also be used to\n[generate audio](/docs/guides/audio). To request that this model generate\nboth text and audio responses, you can use:\n`[\"text\", \"audio\"]`"
+			},
+			"OpenAI.Verbosity": {
+				"anyOf": [
+					{
+						"type": "string",
+						"enum": [
+							"low",
+							"medium",
+							"high"
+						]
+					},
+					{
+						"type": "null"
+					}
+				],
+				"description": "Constrains the verbosity of the model's response. Lower values will result in\nmore concise responses, while higher values will result in more verbose responses.\nCurrently supported values are `low`, `medium`, and `high`."
+			},
+			"OpenAI.ReasoningEffort": {
+				"anyOf": [
+					{
+						"type": "string",
+						"enum": [
+							"none",
+							"minimal",
+							"low",
+							"medium",
+							"high",
+							"xhigh"
+						]
+					},
+					{
+						"type": "null"
+					}
+				],
+				"description": "Constrains effort on reasoning for\n[reasoning models](https://platform.openai.com/docs/guides/reasoning).\nCurrently supported values are `none`, `minimal`, `low`, `medium`, `high`, and `xhigh`. Reducing\nreasoning effort can result in faster responses and fewer tokens used\non reasoning in a response.\n- `gpt-5.1` defaults to `none`, which does not perform reasoning. The supported reasoning values for `gpt-5.1` are `none`, `low`, `medium`, and `high`. Tool calls are supported for all reasoning values in gpt-5.1.\n- All models before `gpt-5.1` default to `medium` reasoning effort, and do not support `none`.\n- The `gpt-5-pro` model defaults to (and only supports) `high` reasoning effort.\n- `xhigh` is supported for all models after `gpt-5.1-codex-max`."
+			},
+			"OpenAI.CreateChatCompletionRequestResponseFormat": {
+				"type": "object",
+				"required": [
+					"type"
+				],
+				"properties": {
+					"type": {
+						"$ref": "#/components/schemas/OpenAI.CreateChatCompletionRequestResponseFormatType"
+					}
+				},
+				"discriminator": {
+					"propertyName": "type",
+					"mapping": {
+						"json_schema": "#/components/schemas/OpenAI.ResponseFormatJsonSchema",
+						"text": "#/components/schemas/OpenAI.CreateChatCompletionRequestResponseFormatResponseFormatText",
+						"json_object": "#/components/schemas/OpenAI.CreateChatCompletionRequestResponseFormatResponseFormatJsonObject"
+					}
+				},
+				"description": "An object specifying the format that the model must output.\nSetting to `{ \"type\": \"json_schema\", \"json_schema\": {...} }` enables\nStructured Outputs which ensures the model will match your supplied JSON\nschema. Learn more in the [Structured Outputs\nguide](/docs/guides/structured-outputs).\nSetting to `{ \"type\": \"json_object\" }` enables the older JSON mode, which\nensures the message the model generates is valid JSON. Using `json_schema`\nis preferred for models that support it."
+			},
+			"OpenAI.CreateChatCompletionRequestAudio": {
+				"type": "object",
+				"required": [
+					"voice",
+					"format"
+				],
+				"properties": {
+					"voice": {
+						"$ref": "#/components/schemas/OpenAI.VoiceIdsOrCustomVoice"
+					},
+					"format": {
+						"type": "string",
+						"enum": [
+							"wav",
+							"aac",
+							"mp3",
+							"flac",
+							"opus",
+							"pcm16"
+						]
+					}
+				}
+			},
+			"OpenAI.StopConfiguration": {
+				"oneOf": [
+					{
+						"type": "string"
+					},
+					{
+						"type": "array",
+						"items": {
+							"type": "string"
+						}
+					}
+				],
+				"description": "Not supported with latest reasoning models `o3` and `o4-mini`.\nUp to 4 sequences where the API will stop generating further tokens. The\nreturned text will not contain the stop sequence."
+			},
+			"OpenAI.PredictionContent": {
+				"type": "object",
+				"required": [
+					"type",
+					"content"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"content"
+						],
+						"description": "The type of the predicted content you want to provide. This type is\n  currently always `content`.",
+						"x-stainless-const": true
+					},
+					"content": {
+						"oneOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/OpenAI.ChatCompletionRequestMessageContentPartText"
+								}
+							}
+						],
+						"description": "The content that should be matched when generating a model response.\n  If generated tokens would match this content, the entire model response\n  can be returned much more quickly."
+					}
+				},
+				"description": "Static predicted output content, such as the content of a text file that is\nbeing regenerated.",
+				"title": "Static Content"
+			},
+			"OpenAI.ChatCompletionStreamOptions": {
+				"type": "object",
+				"properties": {
+					"include_usage": {
+						"type": "boolean",
+						"description": "If set, an additional chunk will be streamed before the `data: [DONE]`\n  message. The `usage` field on this chunk shows the token usage statistics\n  for the entire request, and the `choices` field will always be an empty\n  array.\n  All other chunks will also include a `usage` field, but with a null\n  value. **NOTE:** If the stream is interrupted, you may not receive the\n  final usage chunk which contains the total token usage for the request."
+					},
+					"include_obfuscation": {
+						"type": "boolean",
+						"description": "When true, stream obfuscation will be enabled. Stream obfuscation adds\n  random characters to an `obfuscation` field on streaming delta events to\n  normalize payload sizes as a mitigation to certain side-channel attacks.\n  These obfuscation fields are included by default, but add a small amount\n  of overhead to the data stream. You can set `include_obfuscation` to\n  false to optimize for bandwidth if you trust the network links between\n  your application and the OpenAI API."
+					}
+				},
+				"description": "Options for streaming response. Only set this when you set `stream: true`."
+			},
+			"OpenAI.ChatCompletionTool": {
+				"type": "object",
+				"required": [
+					"type",
+					"function"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"function"
+						],
+						"description": "The type of the tool. Currently, only `function` is supported.",
+						"x-stainless-const": true
+					},
+					"function": {
+						"$ref": "#/components/schemas/OpenAI.FunctionObject"
+					}
+				},
+				"description": "A function tool that can be used to generate a response.",
+				"title": "Function tool"
+			},
+			"OpenAI.CustomToolChatCompletions": {
+				"type": "object",
+				"required": [
+					"type",
+					"custom"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"custom"
+						],
+						"description": "The type of the custom tool. Always `custom`.",
+						"x-stainless-const": true
+					},
+					"custom": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.CustomToolChatCompletionsCustom"
+							}
+						],
+						"description": "Properties of the custom tool.",
+						"title": "Custom tool properties"
+					}
+				},
+				"description": "A custom tool that processes input using a specified format.",
+				"title": "Custom tool"
+			},
+			"OpenAI.ChatCompletionToolChoiceOption": {
+				"oneOf": [
+					{
+						"type": "string",
+						"enum": [
+							"none",
+							"auto",
+							"required"
+						]
+					},
+					{
+						"$ref": "#/components/schemas/OpenAI.ChatCompletionAllowedToolsChoice"
+					},
+					{
+						"$ref": "#/components/schemas/OpenAI.ChatCompletionNamedToolChoice"
+					},
+					{
+						"$ref": "#/components/schemas/OpenAI.ChatCompletionNamedToolChoiceCustom"
+					}
+				],
+				"description": "Controls which (if any) tool is called by the model.\n`none` means the model will not call any tool and instead generates a message.\n`auto` means the model can pick between generating a message or calling one or more tools.\n`required` means the model must call one or more tools.\nSpecifying a particular tool via `{\"type\": \"function\", \"function\": {\"name\": \"my_function\"}}` forces the model to call that tool.\n`none` is the default when no tools are present. `auto` is the default if tools are present."
+			},
+			"OpenAI.ChatCompletionFunctionCallOption": {
+				"type": "object",
+				"required": [
+					"name"
+				],
+				"properties": {
+					"name": {
+						"type": "string",
+						"description": "The name of the function to call."
+					}
+				},
+				"description": "Specifying a particular function via `{\"name\": \"my_function\"}` forces the model to call that function."
+			},
+			"OpenAI.ChatCompletionFunctions": {
+				"type": "object",
+				"required": [
+					"name"
+				],
+				"properties": {
+					"description": {
+						"type": "string",
+						"description": "A description of what the function does, used by the model to choose when and how to call the function."
+					},
+					"name": {
+						"type": "string",
+						"description": "The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64."
+					},
+					"parameters": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.FunctionParameters"
+							}
+						],
+						"description": "The parameters the functions accepts, described as a JSON Schema object.\nSee the [JSON Schema reference](https://json-schema.org/understanding-json-schema/)\nfor documentation about the format.\n\nOmitting `parameters` defines a function with an empty parameter list."
+					}
+				},
+				"deprecated": true
+			},
+			"AzureUserSecurityContext": {
+				"type": "object",
+				"properties": {
+					"application_name": {
+						"type": "string",
+						"description": "The name of the application. Sensitive personal information should not be included in this field."
+					},
+					"end_user_id": {
+						"type": "string",
+						"description": "This identifier is the Microsoft Entra ID (formerly Azure Active Directory) user object ID used to authenticate end-users within the generative AI application. Sensitive personal information should not be included in this field."
+					},
+					"end_user_tenant_id": {
+						"type": "string",
+						"description": "The Microsoft 365 tenant ID the end user belongs to. It's required when the generative AI application is multitenant."
+					},
+					"source_ip": {
+						"type": "string",
+						"description": "Captures the original client's IP address."
+					}
+				},
+				"description": "User security context contains several parameters that describe the application itself, and the end user that interacts with the application. These fields assist your security operations teams to investigate and mitigate security incidents by providing a comprehensive approach to protecting your AI applications. [Learn more](https://aka.ms/TP4AI/Documentation/EndUserContext) about protecting AI applications using Microsoft Defender for Cloud."
+			},
+			"OpenAI.CreateChatCompletionResponseChoices": {
+				"type": "object",
+				"required": [
+					"finish_reason",
+					"index",
+					"message",
+					"logprobs"
+				],
+				"properties": {
+					"finish_reason": {
+						"type": "string",
+						"enum": [
+							"stop",
+							"length",
+							"tool_calls",
+							"content_filter",
+							"function_call"
+						]
+					},
+					"index": {
+						"type": "integer"
+					},
+					"message": {
+						"$ref": "#/components/schemas/OpenAI.ChatCompletionResponseMessage"
+					},
+					"logprobs": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.CreateChatCompletionResponseChoicesLogprobs"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"content_filter_results": {
+						"$ref": "#/components/schemas/AzureContentFilterResultForChoice"
+					}
+				}
+			},
+			"OpenAI.CompletionUsage": {
+				"type": "object",
+				"required": [
+					"completion_tokens",
+					"prompt_tokens",
+					"total_tokens"
+				],
+				"properties": {
+					"completion_tokens": {
+						"type": "integer",
+						"description": "Number of tokens in the generated completion."
+					},
+					"prompt_tokens": {
+						"type": "integer",
+						"description": "Number of tokens in the prompt."
+					},
+					"total_tokens": {
+						"type": "integer",
+						"description": "Total number of tokens used in the request (prompt + completion)."
+					},
+					"completion_tokens_details": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.CompletionUsageCompletionTokensDetails"
+							}
+						],
+						"description": "Breakdown of tokens used in a completion."
+					},
+					"prompt_tokens_details": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.CompletionUsagePromptTokensDetails"
+							}
+						],
+						"description": "Breakdown of tokens used in the prompt."
+					}
+				},
+				"description": "Usage statistics for the completion request."
+			},
+			"AzureContentFilterResultForPrompt": {
+				"type": "object",
+				"properties": {
+					"prompt_index": {
+						"type": "integer",
+						"format": "int32",
+						"description": "The index of the input prompt associated with the accompanying content filter result categories."
+					},
+					"content_filter_results": {
+						"type": "object",
+						"properties": {
+							"sexual": {
+								"allOf": [
+									{
+										"$ref": "#/components/schemas/AzureContentFilterSeverityResult"
+									}
+								],
+								"description": "A content filter category for language related to anatomical organs and genitals, romantic relationships, acts\nportrayed in erotic or affectionate terms, pregnancy, physical sexual acts, including those portrayed as an\nassault or a forced sexual violent act against one's will, prostitution, pornography, and abuse."
+							},
+							"hate": {
+								"allOf": [
+									{
+										"$ref": "#/components/schemas/AzureContentFilterSeverityResult"
+									}
+								],
+								"description": "A content filter category that can refer to any content that attacks or uses pejorative or discriminatory\nlanguage with reference to a person or identity group based on certain differentiating attributes of these groups\nincluding but not limited to race, ethnicity, nationality, gender identity and expression, sexual orientation,\nreligion, immigration status, ability status, personal appearance, and body size."
+							},
+							"violence": {
+								"allOf": [
+									{
+										"$ref": "#/components/schemas/AzureContentFilterSeverityResult"
+									}
+								],
+								"description": "A content filter category for language related to physical actions intended to hurt, injure, damage, or kill\nsomeone or something; describes weapons, guns and related entities, such as manufactures, associations,\nlegislation, and so on."
+							},
+							"self_harm": {
+								"allOf": [
+									{
+										"$ref": "#/components/schemas/AzureContentFilterSeverityResult"
+									}
+								],
+								"description": "A content filter category that describes language related to physical actions intended to purposely hurt, injure,\ndamage one's body or kill oneself."
+							},
+							"profanity": {
+								"allOf": [
+									{
+										"$ref": "#/components/schemas/AzureContentFilterDetectionResult"
+									}
+								],
+								"description": "A detection result that identifies whether crude, vulgar, or otherwise objection language is present in the\ncontent."
+							},
+							"custom_blocklists": {
+								"allOf": [
+									{
+										"$ref": "#/components/schemas/AzureContentFilterBlocklistResult"
+									}
+								],
+								"description": "A collection of binary filtering outcomes for configured custom blocklists."
+							},
+							"custom_topics": {
+								"allOf": [
+									{
+										"$ref": "#/components/schemas/AzureContentFilterCustomTopicResult"
+									}
+								],
+								"description": "A collection of binary filtering outcomes for configured custom topics."
+							},
+							"error": {
+								"type": "object",
+								"properties": {
+									"code": {
+										"type": "integer",
+										"format": "int32",
+										"description": "A distinct, machine-readable code associated with the error."
+									},
+									"message": {
+										"type": "string",
+										"description": "A human-readable message associated with the error."
+									}
+								},
+								"required": [
+									"code",
+									"message"
+								],
+								"description": "If present, details about an error that prevented content filtering from completing its evaluation."
+							},
+							"jailbreak": {
+								"allOf": [
+									{
+										"$ref": "#/components/schemas/AzureContentFilterDetectionResult"
+									}
+								],
+								"description": "A detection result that describes user prompt injection attacks, where malicious users deliberately exploit\nsystem vulnerabilities to elicit unauthorized behavior from the LLM. This could lead to inappropriate content\ngeneration or violations of system-imposed restrictions."
+							},
+							"indirect_attack": {
+								"allOf": [
+									{
+										"$ref": "#/components/schemas/AzureContentFilterDetectionResult"
+									}
+								],
+								"description": "A detection result that describes attacks on systems powered by Generative AI models that can happen every time\nan application processes information that wasn’t directly authored by either the developer of the application or\nthe user."
+							}
+						},
+						"required": [
+							"jailbreak",
+							"indirect_attack"
+						],
+						"description": "The content filter category details for the result."
+					}
+				},
+				"description": "A content filter result associated with a single input prompt item into a generative AI system."
+			},
+			"OpenAI.CreateChatCompletionStreamResponseChoices": {
+				"type": "object",
+				"required": [
+					"delta",
+					"finish_reason",
+					"index"
+				],
+				"properties": {
+					"delta": {
+						"$ref": "#/components/schemas/OpenAI.ChatCompletionStreamResponseDelta"
+					},
+					"logprobs": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.CreateChatCompletionStreamResponseChoicesLogprobs"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"finish_reason": {
+						"anyOf": [
+							{
+								"type": "string",
+								"enum": [
+									"stop",
+									"length",
+									"tool_calls",
+									"content_filter",
+									"function_call"
+								]
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"index": {
+						"type": "integer"
+					}
+				}
+			},
+			"OpenAI.ChatCompletionStreamResponseDelta": {
+				"type": "object",
+				"properties": {
+					"content": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"function_call": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.ChatCompletionStreamResponseDeltaFunctionCall"
+							}
+						],
+						"description": "Deprecated and replaced by `tool_calls`. The name and arguments of a function that should be called, as generated by the model.",
+						"deprecated": true
+					},
+					"tool_calls": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/OpenAI.ChatCompletionMessageToolCallChunk"
+						}
+					},
+					"role": {
+						"type": "string",
+						"enum": [
+							"developer",
+							"system",
+							"user",
+							"assistant",
+							"tool"
+						],
+						"description": "The role of the author of this message."
+					},
+					"refusal": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"reasoning_content": {
+						"type": "string",
+						"description": "An Azure-specific extension property containing generated reasoning content from supported models."
+					}
+				},
+				"description": "A chat completion delta generated by streamed model responses."
+			},
+			"AzureContentFilterResultForChoice": {
+				"type": "object",
+				"properties": {
+					"sexual": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AzureContentFilterSeverityResult"
+							}
+						],
+						"description": "A content filter category for language related to anatomical organs and genitals, romantic relationships, acts\nportrayed in erotic or affectionate terms, pregnancy, physical sexual acts, including those portrayed as an\nassault or a forced sexual violent act against one's will, prostitution, pornography, and abuse."
+					},
+					"hate": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AzureContentFilterSeverityResult"
+							}
+						],
+						"description": "A content filter category that can refer to any content that attacks or uses pejorative or discriminatory\nlanguage with reference to a person or identity group based on certain differentiating attributes of these groups\nincluding but not limited to race, ethnicity, nationality, gender identity and expression, sexual orientation,\nreligion, immigration status, ability status, personal appearance, and body size."
+					},
+					"violence": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AzureContentFilterSeverityResult"
+							}
+						],
+						"description": "A content filter category for language related to physical actions intended to hurt, injure, damage, or kill\nsomeone or something; describes weapons, guns and related entities, such as manufactures, associations,\nlegislation, and so on."
+					},
+					"self_harm": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AzureContentFilterSeverityResult"
+							}
+						],
+						"description": "A content filter category that describes language related to physical actions intended to purposely hurt, injure,\ndamage one's body or kill oneself."
+					},
+					"profanity": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AzureContentFilterDetectionResult"
+							}
+						],
+						"description": "A detection result that identifies whether crude, vulgar, or otherwise objection language is present in the\ncontent."
+					},
+					"custom_blocklists": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AzureContentFilterBlocklistResult"
+							}
+						],
+						"description": "A collection of binary filtering outcomes for configured custom blocklists."
+					},
+					"custom_topics": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AzureContentFilterCustomTopicResult"
+							}
+						],
+						"description": "A collection of binary filtering outcomes for configured custom topics."
+					},
+					"error": {
+						"type": "object",
+						"properties": {
+							"code": {
+								"type": "integer",
+								"format": "int32",
+								"description": "A distinct, machine-readable code associated with the error."
+							},
+							"message": {
+								"type": "string",
+								"description": "A human-readable message associated with the error."
+							}
+						},
+						"required": [
+							"code",
+							"message"
+						],
+						"description": "If present, details about an error that prevented content filtering from completing its evaluation."
+					},
+					"protected_material_text": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AzureContentFilterDetectionResult"
+							}
+						],
+						"description": "A detection result that describes a match against text protected under copyright or other status."
+					},
+					"protected_material_code": {
+						"type": "object",
+						"properties": {
+							"filtered": {
+								"type": "boolean",
+								"description": "Whether the content detection resulted in a content filtering action."
+							},
+							"detected": {
+								"type": "boolean",
+								"description": "Whether the labeled content category was detected in the content."
+							},
+							"citation": {
+								"type": "object",
+								"properties": {
+									"license": {
+										"type": "string",
+										"description": "The name or identifier of the license associated with the detection."
+									},
+									"URL": {
+										"type": "string",
+										"format": "uri",
+										"description": "The URL associated with the license."
+									}
+								},
+								"description": "If available, the citation details describing the associated license and its location."
+							}
+						},
+						"required": [
+							"filtered",
+							"detected"
+						],
+						"description": "A detection result that describes a match against licensed code or other protected source material."
+					},
+					"ungrounded_material": {
+						"$ref": "#/components/schemas/AzureContentFilterCompletionTextSpanDetectionResult"
+					},
+					"personally_identifiable_information": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AzureContentFilterPersonallyIdentifiableInformationResult"
+							}
+						],
+						"description": "A detection result that describes matches against Personal Identifiable Information with configurable subcategories."
+					}
+				},
+				"description": "A content filter result for a single response item produced by a generative AI system."
+			},
+			"OpenAI.CreateResponse": {
+				"type": "object",
+				"properties": {
+					"metadata": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.Metadata"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"top_logprobs": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"temperature": {
+						"anyOf": [
+							{
+								"type": "number"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"default": 1
+					},
+					"top_p": {
+						"anyOf": [
+							{
+								"type": "number"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"default": 1
+					},
+					"user": {
+						"type": "string",
+						"description": "This field is being replaced by `safety_identifier` and `prompt_cache_key`. Use `prompt_cache_key` instead to maintain caching optimizations.\n  A stable identifier for your end-users.\n  Used to boost cache hit rates by better bucketing similar requests and  to help OpenAI detect and prevent abuse. [Learn more](/docs/guides/safety-best-practices#safety-identifiers).",
+						"deprecated": true
+					},
+					"safety_identifier": {
+						"type": "string",
+						"maxLength": 64,
+						"description": "A stable identifier used to help detect users of your application that may be violating OpenAI's usage policies.\n  The IDs should be a string that uniquely identifies each user, with a maximum length of 64 characters. We recommend hashing their username or email address, in order to avoid sending us any identifying information. [Learn more](/docs/guides/safety-best-practices#safety-identifiers)."
+					},
+					"prompt_cache_key": {
+						"type": "string",
+						"description": "Used by OpenAI to cache responses for similar requests to optimize your cache hit rates. Replaces the `user` field. [Learn more](/docs/guides/prompt-caching)."
+					},
+					"prompt_cache_retention": {
+						"anyOf": [
+							{
+								"type": "string",
+								"enum": [
+									"in_memory",
+									"24h"
+								]
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"previous_response_id": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"model": {
+						"type": "string",
+						"description": "Model ID used to generate the response, like `gpt-4o` or `o3`. OpenAI\n  offers a wide range of models with different capabilities, performance\n  characteristics, and price points. Refer to the [model guide](/docs/models)\n  to browse and compare available models."
+					},
+					"reasoning": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.Reasoning"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"background": {
+						"anyOf": [
+							{
+								"type": "boolean"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"max_tool_calls": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"text": {
+						"$ref": "#/components/schemas/OpenAI.ResponseTextParam"
+					},
+					"tools": {
+						"$ref": "#/components/schemas/OpenAI.ToolsArray",
+						"description": "An array of tools the model may call while generating a response. You\ncan specify which tool to use by setting the `tool_choice` parameter.\n\nThe two categories of tools you can provide the model are:\n\n- **Built-in tools**: Tools that are provided by OpenAI that extend the\n  model's capabilities, like file search.\n- **Function calls (custom tools)**: Functions that are defined by you,\n  enabling the model to call your own code."
+					},
+					"tool_choice": {
+						"oneOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.ToolChoiceOptions"
+							},
+							{
+								"$ref": "#/components/schemas/OpenAI.ToolChoiceParam"
+							}
+						]
+					},
+					"prompt": {
+						"$ref": "#/components/schemas/OpenAI.Prompt"
+					},
+					"truncation": {
+						"anyOf": [
+							{
+								"type": "string",
+								"enum": [
+									"auto",
+									"disabled"
+								]
+							},
+							{
+								"type": "null"
+							}
+						],
+						"default": "disabled"
+					},
+					"input": {
+						"$ref": "#/components/schemas/OpenAI.InputParam"
+					},
+					"include": {
+						"anyOf": [
+							{
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/OpenAI.IncludeEnum"
+								}
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"parallel_tool_calls": {
+						"anyOf": [
+							{
+								"type": "boolean"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"default": true
+					},
+					"store": {
+						"anyOf": [
+							{
+								"type": "boolean"
+							},
+							{
+								"type": "null"
+							}
+						],
+						"default": true
+					},
+					"instructions": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"stream": {
+						"anyOf": [
+							{
+								"type": "boolean"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"stream_options": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.ResponseStreamOptions"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"conversation": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.ConversationParam"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"context_management": {
+						"anyOf": [
+							{
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/OpenAI.ContextManagementParam"
+								}
+							},
+							{
+								"type": "null"
+							}
+						],
+						"description": "Context management configuration for this request."
+					},
+					"max_output_tokens": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						]
+					}
+				}
+			},
+			"OpenAI.Reasoning": {
+				"type": "object",
+				"properties": {
+					"effort": {
+						"$ref": "#/components/schemas/OpenAI.ReasoningEffort"
+					},
+					"summary": {
+						"anyOf": [
+							{
+								"type": "string",
+								"enum": [
+									"auto",
+									"concise",
+									"detailed"
+								]
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"generate_summary": {
+						"anyOf": [
+							{
+								"type": "string",
+								"enum": [
+									"auto",
+									"concise",
+									"detailed"
+								]
+							},
+							{
+								"type": "null"
+							}
+						]
+					}
+				},
+				"description": "**gpt-5 and o-series models only**\nConfiguration options for\n[reasoning models](https://platform.openai.com/docs/guides/reasoning).",
+				"title": "Reasoning"
+			},
+			"OpenAI.ResponseTextParam": {
+				"type": "object",
+				"properties": {
+					"format": {
+						"$ref": "#/components/schemas/OpenAI.TextResponseFormatConfiguration"
+					},
+					"verbosity": {
+						"$ref": "#/components/schemas/OpenAI.Verbosity"
+					}
+				},
+				"description": "Configuration options for a text response from the model. Can be plain\ntext or structured JSON data. Learn more:\n- [Text inputs and outputs](/docs/guides/text)\n- [Structured Outputs](/docs/guides/structured-outputs)"
+			},
+			"OpenAI.ToolsArray": {
+				"type": "array",
+				"items": {
+					"$ref": "#/components/schemas/OpenAI.Tool"
+				},
+				"description": "An array of tools the model may call while generating a response. You\ncan specify which tool to use by setting the `tool_choice` parameter.\nWe support the following categories of tools:\n- **Built-in tools**: Tools that are provided by OpenAI that extend the\nmodel's capabilities, like [web search](/docs/guides/tools-web-search)\nor [file search](/docs/guides/tools-file-search). Learn more about\n[built-in tools](/docs/guides/tools).\n- **MCP Tools**: Integrations with third-party systems via custom MCP servers\nor predefined connectors such as Google Drive and SharePoint. Learn more about\n[MCP Tools](/docs/guides/tools-connectors-mcp).\n- **Function calls (custom tools)**: Functions that are defined by you,\nenabling the model to call your own code with strongly typed arguments\nand outputs. Learn more about\n[function calling](/docs/guides/function-calling). You can also use\ncustom tools to call your own code."
+			},
+			"OpenAI.ToolChoiceOptions": {
+				"type": "string",
+				"enum": [
+					"none",
+					"auto",
+					"required"
+				],
+				"description": "Controls which (if any) tool is called by the model.\n`none` means the model will not call any tool and instead generates a message.\n`auto` means the model can pick between generating a message or calling one or\nmore tools.\n`required` means the model must call one or more tools.",
+				"title": "Tool choice mode"
+			},
+			"OpenAI.ToolChoiceParam": {
+				"type": "object",
+				"required": [
+					"type"
+				],
+				"properties": {
+					"type": {
+						"$ref": "#/components/schemas/OpenAI.ToolChoiceParamType"
+					}
+				},
+				"discriminator": {
+					"propertyName": "type",
+					"mapping": {
+						"allowed_tools": "#/components/schemas/OpenAI.ToolChoiceAllowed",
+						"mcp": "#/components/schemas/OpenAI.ToolChoiceMCP",
+						"custom": "#/components/schemas/OpenAI.ToolChoiceCustom",
+						"apply_patch": "#/components/schemas/OpenAI.SpecificApplyPatchParam",
+						"shell": "#/components/schemas/OpenAI.SpecificFunctionShellParam",
+						"file_search": "#/components/schemas/OpenAI.ToolChoiceFileSearch",
+						"web_search_preview": "#/components/schemas/OpenAI.ToolChoiceWebSearchPreview",
+						"computer_use_preview": "#/components/schemas/OpenAI.ToolChoiceComputerUsePreview",
+						"web_search_preview_2025_03_11": "#/components/schemas/OpenAI.ToolChoiceWebSearchPreview20250311",
+						"image_generation": "#/components/schemas/OpenAI.ToolChoiceImageGeneration",
+						"code_interpreter": "#/components/schemas/OpenAI.ToolChoiceCodeInterpreter",
+						"computer": "#/components/schemas/OpenAI.ToolChoiceComputer",
+						"computer_use": "#/components/schemas/OpenAI.ToolChoiceComputerUse",
+						"function": "#/components/schemas/OpenAI.ToolChoiceFunction"
+					}
+				},
+				"description": "How the model should select which tool (or tools) to use when generating\na response. See the `tools` parameter to see how to specify which tools\nthe model can call."
+			},
+			"OpenAI.Prompt": {
+				"type": "object",
+				"required": [
+					"id"
+				],
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "The unique identifier of the prompt template to use."
+					},
+					"version": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"variables": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.ResponsePromptVariables"
+							},
+							{
+								"type": "null"
+							}
+						]
+					}
+				},
+				"description": "Reference to a prompt template and its variables.\n[Learn more](/docs/guides/text?api-mode=responses#reusable-prompts)."
+			},
+			"OpenAI.ResponseError": {
+				"type": "object",
+				"required": [
+					"code",
+					"message"
+				],
+				"properties": {
+					"code": {
+						"$ref": "#/components/schemas/OpenAI.ResponseErrorCode"
+					},
+					"message": {
+						"type": "string",
+						"description": "A human-readable description of the error."
+					}
+				},
+				"description": "An error object returned when the model fails to generate a Response."
+			},
+			"OpenAI.ResponseIncompleteDetails": {
+				"type": "object",
+				"properties": {
+					"reason": {
+						"type": "string",
+						"enum": [
+							"max_output_tokens",
+							"content_filter"
+						]
+					}
+				}
+			},
+			"OpenAI.OutputItem": {
+				"type": "object",
+				"required": [
+					"type"
+				],
+				"properties": {
+					"type": {
+						"$ref": "#/components/schemas/OpenAI.OutputItemType"
+					}
+				},
+				"discriminator": {
+					"propertyName": "type",
+					"mapping": {
+						"output_message": "#/components/schemas/OpenAI.OutputItemOutputMessage",
+						"file_search_call": "#/components/schemas/OpenAI.OutputItemFileSearchToolCall",
+						"function_call": "#/components/schemas/OpenAI.OutputItemFunctionToolCall",
+						"function_call_output": "#/components/schemas/OpenAI.OutputItemFunctionToolCallOutput",
+						"web_search_call": "#/components/schemas/OpenAI.OutputItemWebSearchToolCall",
+						"computer_call": "#/components/schemas/OpenAI.OutputItemComputerToolCall",
+						"computer_call_output": "#/components/schemas/OpenAI.OutputItemComputerToolCallOutput",
+						"reasoning": "#/components/schemas/OpenAI.OutputItemReasoningItem",
+						"tool_search_call": "#/components/schemas/OpenAI.OutputItemToolSearchCall",
+						"tool_search_output": "#/components/schemas/OpenAI.OutputItemToolSearchOutput",
+						"compaction": "#/components/schemas/OpenAI.OutputItemCompactionBody",
+						"image_generation_call": "#/components/schemas/OpenAI.OutputItemImageGenToolCall",
+						"code_interpreter_call": "#/components/schemas/OpenAI.OutputItemCodeInterpreterToolCall",
+						"local_shell_call": "#/components/schemas/OpenAI.OutputItemLocalShellToolCall",
+						"local_shell_call_output": "#/components/schemas/OpenAI.OutputItemLocalShellToolCallOutput",
+						"shell_call": "#/components/schemas/OpenAI.OutputItemFunctionShellCall",
+						"shell_call_output": "#/components/schemas/OpenAI.OutputItemFunctionShellCallOutput",
+						"apply_patch_call": "#/components/schemas/OpenAI.OutputItemApplyPatchToolCall",
+						"apply_patch_call_output": "#/components/schemas/OpenAI.OutputItemApplyPatchToolCallOutput",
+						"mcp_call": "#/components/schemas/OpenAI.OutputItemMcpToolCall",
+						"mcp_list_tools": "#/components/schemas/OpenAI.OutputItemMcpListTools",
+						"mcp_approval_request": "#/components/schemas/OpenAI.OutputItemMcpApprovalRequest",
+						"mcp_approval_response": "#/components/schemas/OpenAI.OutputItemMcpApprovalResponseResource",
+						"custom_tool_call": "#/components/schemas/OpenAI.OutputItemCustomToolCallResource",
+						"custom_tool_call_output": "#/components/schemas/OpenAI.OutputItemCustomToolCallOutputResource",
+						"tool_approval_request": "#/components/schemas/AzureToolApprovalRequest"
+					}
+				}
+			},
+			"OpenAI.InputItem": {
+				"type": "object",
+				"required": [
+					"type"
+				],
+				"properties": {
+					"type": {
+						"$ref": "#/components/schemas/OpenAI.InputItemType"
+					}
+				},
+				"discriminator": {
+					"propertyName": "type",
+					"mapping": {
+						"message": "#/components/schemas/OpenAI.EasyInputMessage",
+						"item_reference": "#/components/schemas/OpenAI.ItemReferenceParam",
+						"output_message": "#/components/schemas/OpenAI.InputItemOutputMessage",
+						"file_search_call": "#/components/schemas/OpenAI.InputItemFileSearchToolCall",
+						"computer_call": "#/components/schemas/OpenAI.InputItemComputerToolCall",
+						"computer_call_output": "#/components/schemas/OpenAI.InputItemComputerCallOutputItemParam",
+						"web_search_call": "#/components/schemas/OpenAI.InputItemWebSearchToolCall",
+						"function_call": "#/components/schemas/OpenAI.InputItemFunctionToolCall",
+						"function_call_output": "#/components/schemas/OpenAI.InputItemFunctionCallOutputItemParam",
+						"tool_search_call": "#/components/schemas/OpenAI.InputItemToolSearchCallItemParam",
+						"tool_search_output": "#/components/schemas/OpenAI.InputItemToolSearchOutputItemParam",
+						"reasoning": "#/components/schemas/OpenAI.InputItemReasoningItem",
+						"compaction": "#/components/schemas/OpenAI.InputItemCompactionSummaryItemParam",
+						"image_generation_call": "#/components/schemas/OpenAI.InputItemImageGenToolCall",
+						"code_interpreter_call": "#/components/schemas/OpenAI.InputItemCodeInterpreterToolCall",
+						"local_shell_call": "#/components/schemas/OpenAI.InputItemLocalShellToolCall",
+						"local_shell_call_output": "#/components/schemas/OpenAI.InputItemLocalShellToolCallOutput",
+						"shell_call": "#/components/schemas/OpenAI.InputItemFunctionShellCallItemParam",
+						"shell_call_output": "#/components/schemas/OpenAI.InputItemFunctionShellCallOutputItemParam",
+						"apply_patch_call": "#/components/schemas/OpenAI.InputItemApplyPatchToolCallItemParam",
+						"apply_patch_call_output": "#/components/schemas/OpenAI.InputItemApplyPatchToolCallOutputItemParam",
+						"mcp_list_tools": "#/components/schemas/OpenAI.InputItemMcpListTools",
+						"mcp_approval_request": "#/components/schemas/OpenAI.InputItemMcpApprovalRequest",
+						"mcp_approval_response": "#/components/schemas/OpenAI.InputItemMcpApprovalResponse",
+						"mcp_call": "#/components/schemas/OpenAI.InputItemMcpToolCall",
+						"custom_tool_call_output": "#/components/schemas/OpenAI.InputItemCustomToolCallOutput",
+						"custom_tool_call": "#/components/schemas/OpenAI.InputItemCustomToolCall",
+						"tool_approval_response": "#/components/schemas/AzureToolApprovalResponse"
+					}
+				},
+				"description": "An item representing part of the context for the response to be\ngenerated by the model. Can contain text, images, and audio inputs,\nas well as previous assistant responses and tool call outputs."
+			},
+			"OpenAI.ResponseUsage": {
+				"type": "object",
+				"required": [
+					"input_tokens",
+					"input_tokens_details",
+					"output_tokens",
+					"output_tokens_details",
+					"total_tokens"
+				],
+				"properties": {
+					"input_tokens": {
+						"type": "integer",
+						"description": "The number of input tokens."
+					},
+					"input_tokens_details": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.ResponseUsageInputTokensDetails"
+							}
+						],
+						"description": "A detailed breakdown of the input tokens."
+					},
+					"output_tokens": {
+						"type": "integer",
+						"description": "The number of output tokens."
+					},
+					"output_tokens_details": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.ResponseUsageOutputTokensDetails"
+							}
+						],
+						"description": "A detailed breakdown of the output tokens."
+					},
+					"total_tokens": {
+						"type": "integer",
+						"description": "The total number of tokens used."
+					}
+				},
+				"description": "Represents token usage details including input tokens, output tokens,\na breakdown of output tokens, and the total tokens used."
+			},
+			"OpenAI.ConversationReference": {
+				"type": "object",
+				"required": [
+					"id"
+				],
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "The unique ID of the conversation that this response was associated with."
+					}
+				},
+				"description": "The conversation that this response belonged to. Input items and output items from this response were automatically added to this conversation.",
+				"title": "Conversation"
+			},
+			"AzureContentFilterForResponsesAPI": {
+				"type": "object",
+				"required": [
+					"blocked",
+					"source_type",
+					"content_filter_results",
+					"content_filter_offsets"
+				],
+				"properties": {
+					"blocked": {
+						"type": "boolean",
+						"description": "Indicate if the response is blocked."
+					},
+					"source_type": {
+						"type": "string",
+						"description": "The name of the source type of the message."
+					},
+					"content_filter_results": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AzureContentFilterResultsForResponsesAPI"
+							}
+						],
+						"description": "A content filter result for a single response item produced by a generative AI system."
+					},
+					"content_filter_offsets": {
+						"$ref": "#/components/schemas/AzureContentFilterResultOffsets"
+					},
+					"tool_call_id": {
+						"type": "string",
+						"description": "The ID of the tool call associated with this content filter result, if applicable."
+					}
+				}
+			},
+			"OpenAI.ChatCompletionRequestMessageType": {
+				"anyOf": [
+					{
+						"type": "string"
+					},
+					{
+						"type": "string",
+						"enum": [
+							"developer",
+							"system",
+							"user",
+							"assistant",
+							"tool",
+							"function"
+						]
+					}
+				]
+			},
+			"OpenAI.CreateChatCompletionRequestResponseFormatType": {
+				"anyOf": [
+					{
+						"type": "string"
+					},
+					{
+						"type": "string",
+						"enum": [
+							"text",
+							"json_schema",
+							"json_object"
+						]
+					}
+				]
+			},
+			"OpenAI.VoiceIdsOrCustomVoice": {
+				"anyOf": [
+					{
+						"$ref": "#/components/schemas/OpenAI.VoiceIdsShared"
+					},
+					{
+						"type": "object",
+						"properties": {
+							"id": {
+								"type": "string"
+							}
+						},
+						"required": [
+							"id"
+						]
+					}
+				],
+				"description": "A built-in voice name or a custom voice reference.",
+				"title": "Voice"
+			},
+			"OpenAI.ChatCompletionRequestMessageContentPartText": {
+				"type": "object",
+				"required": [
+					"type",
+					"text"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"text"
+						],
+						"description": "The type of the content part.",
+						"x-stainless-const": true
+					},
+					"text": {
+						"type": "string",
+						"description": "The text content."
+					}
+				},
+				"description": "",
+				"title": "Text content part"
+			},
+			"OpenAI.FunctionObject": {
+				"type": "object",
+				"required": [
+					"name"
+				],
+				"properties": {
+					"description": {
+						"type": "string",
+						"description": "A description of what the function does, used by the model to choose when and how to call the function."
+					},
+					"name": {
+						"type": "string",
+						"description": "The name of the function to be called. Must be a-z, A-Z, 0-9, or contain underscores and dashes, with a maximum length of 64."
+					},
+					"parameters": {
+						"$ref": "#/components/schemas/OpenAI.FunctionParameters"
+					},
+					"strict": {
+						"anyOf": [
+							{
+								"type": "boolean"
+							},
+							{
+								"type": "null"
+							}
+						]
+					}
+				}
+			},
+			"OpenAI.CustomToolChatCompletionsCustom": {
+				"type": "object",
+				"required": [
+					"name"
+				],
+				"properties": {
+					"name": {
+						"type": "string"
+					},
+					"description": {
+						"type": "string"
+					},
+					"format": {
+						"oneOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.CustomToolChatCompletionsCustomFormatText"
+							},
+							{
+								"$ref": "#/components/schemas/OpenAI.CustomToolChatCompletionsCustomFormatGrammar"
+							}
+						]
+					}
+				}
+			},
+			"OpenAI.ChatCompletionAllowedToolsChoice": {
+				"type": "object",
+				"required": [
+					"type",
+					"allowed_tools"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"allowed_tools"
+						],
+						"description": "Allowed tool configuration type. Always `allowed_tools`.",
+						"x-stainless-const": true
+					},
+					"allowed_tools": {
+						"$ref": "#/components/schemas/OpenAI.ChatCompletionAllowedTools"
+					}
+				},
+				"description": "Constrains the tools available to the model to a pre-defined set.",
+				"title": "Allowed tools"
+			},
+			"OpenAI.ChatCompletionNamedToolChoice": {
+				"type": "object",
+				"required": [
+					"type",
+					"function"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"function"
+						],
+						"description": "For function calling, the type is always `function`.",
+						"x-stainless-const": true
+					},
+					"function": {
+						"$ref": "#/components/schemas/OpenAI.ChatCompletionNamedToolChoiceFunction"
+					}
+				},
+				"description": "Specifies a tool the model should use. Use to force the model to call a specific function.",
+				"title": "Function tool choice"
+			},
+			"OpenAI.ChatCompletionNamedToolChoiceCustom": {
+				"type": "object",
+				"required": [
+					"type",
+					"custom"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"custom"
+						],
+						"description": "For custom tool calling, the type is always `custom`.",
+						"x-stainless-const": true
+					},
+					"custom": {
+						"$ref": "#/components/schemas/OpenAI.ChatCompletionNamedToolChoiceCustomCustom"
+					}
+				},
+				"description": "Specifies a tool the model should use. Use to force the model to call a specific custom tool.",
+				"title": "Custom tool choice"
+			},
+			"OpenAI.FunctionParameters": {
+				"type": "object",
+				"unevaluatedProperties": {},
+				"description": "The parameters the functions accepts, described as a JSON Schema object. See the [guide](/docs/guides/function-calling) for examples, and the [JSON Schema reference](https://json-schema.org/understanding-json-schema/) for documentation about the format.\nOmitting `parameters` defines a function with an empty parameter list."
+			},
+			"OpenAI.ChatCompletionResponseMessage": {
+				"type": "object",
+				"required": [
+					"content",
+					"refusal",
+					"role"
+				],
+				"properties": {
+					"content": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"refusal": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"tool_calls": {
+						"$ref": "#/components/schemas/OpenAI.ChatCompletionMessageToolCallsItem"
+					},
+					"annotations": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/OpenAI.ChatCompletionResponseMessageAnnotations"
+						},
+						"description": "Annotations for the message, when applicable, as when using the\n  [web search tool](/docs/guides/tools-web-search?api-mode=chat)."
+					},
+					"role": {
+						"type": "string",
+						"enum": [
+							"assistant"
+						],
+						"description": "The role of the author of this message.",
+						"x-stainless-const": true
+					},
+					"function_call": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.ChatCompletionResponseMessageFunctionCall"
+							}
+						],
+						"description": "Deprecated and replaced by `tool_calls`. The name and arguments of a function that should be called, as generated by the model.",
+						"deprecated": true
+					},
+					"audio": {
+						"anyOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.ChatCompletionResponseMessageAudio"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"reasoning_content": {
+						"type": "string",
+						"description": "An Azure-specific extension property containing generated reasoning content from supported models."
+					}
+				},
+				"description": "If the audio output modality is requested, this object contains data\nabout the audio response from the model."
+			},
+			"OpenAI.CreateChatCompletionResponseChoicesLogprobs": {
+				"type": "object",
+				"required": [
+					"content",
+					"refusal"
+				],
+				"properties": {
+					"content": {
+						"anyOf": [
+							{
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/OpenAI.ChatCompletionTokenLogprob"
+								}
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"refusal": {
+						"anyOf": [
+							{
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/OpenAI.ChatCompletionTokenLogprob"
+								}
+							},
+							{
+								"type": "null"
+							}
+						]
+					}
+				}
+			},
+			"OpenAI.CompletionUsageCompletionTokensDetails": {
+				"type": "object",
+				"properties": {
+					"accepted_prediction_tokens": {
+						"type": "integer"
+					},
+					"audio_tokens": {
+						"type": "integer"
+					},
+					"reasoning_tokens": {
+						"type": "integer"
+					},
+					"rejected_prediction_tokens": {
+						"type": "integer"
+					}
+				}
+			},
+			"OpenAI.CompletionUsagePromptTokensDetails": {
+				"type": "object",
+				"properties": {
+					"audio_tokens": {
+						"type": "integer"
+					},
+					"cached_tokens": {
+						"type": "integer"
+					}
+				}
+			},
+			"AzureContentFilterSeverityResult": {
+				"type": "object",
+				"required": [
+					"filtered",
+					"severity"
+				],
+				"properties": {
+					"filtered": {
+						"type": "boolean",
+						"description": "Whether the content severity resulted in a content filtering action."
+					},
+					"severity": {
+						"type": "string",
+						"enum": [
+							"safe",
+							"low",
+							"medium",
+							"high"
+						],
+						"description": "The labeled severity of the content."
+					}
+				},
+				"description": "A labeled content filter result item that indicates whether the content was filtered and what the qualitative\nseverity level of the content was, as evaluated against content filter configuration for the category."
+			},
+			"AzureContentFilterDetectionResult": {
+				"type": "object",
+				"required": [
+					"filtered",
+					"detected"
+				],
+				"properties": {
+					"filtered": {
+						"type": "boolean",
+						"description": "Whether the content detection resulted in a content filtering action."
+					},
+					"detected": {
+						"type": "boolean",
+						"description": "Whether the labeled content category was detected in the content."
+					}
+				},
+				"description": "A labeled content filter result item that indicates whether the content was detected and whether the content was\nfiltered."
+			},
+			"AzureContentFilterBlocklistResult": {
+				"type": "object",
+				"required": [
+					"filtered"
+				],
+				"properties": {
+					"filtered": {
+						"type": "boolean",
+						"description": "A value indicating whether any of the detailed blocklists resulted in a filtering action."
+					},
+					"details": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"filtered": {
+									"type": "boolean",
+									"description": "A value indicating whether the blocklist produced a filtering action."
+								},
+								"id": {
+									"type": "string",
+									"description": "The ID of the custom blocklist evaluated."
+								}
+							},
+							"required": [
+								"filtered",
+								"id"
+							]
+						},
+						"description": "The pairs of individual blocklist IDs and whether they resulted in a filtering action."
+					}
+				},
+				"description": "A collection of true/false filtering results for configured custom blocklists."
+			},
+			"AzureContentFilterCustomTopicResult": {
+				"type": "object",
+				"required": [
+					"filtered"
+				],
+				"properties": {
+					"filtered": {
+						"type": "boolean",
+						"description": "A value indicating whether any of the detailed topics resulted in a filtering action."
+					},
+					"details": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"properties": {
+								"detected": {
+									"type": "boolean",
+									"description": "A value indicating whether the topic is detected."
+								},
+								"id": {
+									"type": "string",
+									"description": "The ID of the custom topic evaluated."
+								}
+							},
+							"required": [
+								"detected",
+								"id"
+							]
+						},
+						"description": "The pairs of individual topic IDs and whether they are detected."
+					}
+				},
+				"description": "A collection of true/false filtering results for configured custom topics."
+			},
+			"OpenAI.CreateChatCompletionStreamResponseChoicesLogprobs": {
+				"type": "object",
+				"required": [
+					"content",
+					"refusal"
+				],
+				"properties": {
+					"content": {
+						"anyOf": [
+							{
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/OpenAI.ChatCompletionTokenLogprob"
+								}
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"refusal": {
+						"anyOf": [
+							{
+								"type": "array",
+								"items": {
+									"$ref": "#/components/schemas/OpenAI.ChatCompletionTokenLogprob"
+								}
+							},
+							{
+								"type": "null"
+							}
+						]
+					}
+				}
+			},
+			"OpenAI.ChatCompletionStreamResponseDeltaFunctionCall": {
+				"type": "object",
+				"properties": {
+					"arguments": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					}
+				}
+			},
+			"OpenAI.ChatCompletionMessageToolCallChunk": {
+				"type": "object",
+				"required": [
+					"index"
+				],
+				"properties": {
+					"index": {
+						"type": "integer"
+					},
+					"id": {
+						"type": "string",
+						"description": "The ID of the tool call."
+					},
+					"type": {
+						"type": "string",
+						"enum": [
+							"function"
+						],
+						"description": "The type of the tool. Currently, only `function` is supported.",
+						"x-stainless-const": true
+					},
+					"function": {
+						"$ref": "#/components/schemas/OpenAI.ChatCompletionMessageToolCallChunkFunction"
+					}
+				}
+			},
+			"AzureContentFilterCompletionTextSpanDetectionResult": {
+				"type": "object",
+				"required": [
+					"filtered",
+					"detected",
+					"details"
+				],
+				"properties": {
+					"filtered": {
+						"type": "boolean",
+						"description": "Whether the content detection resulted in a content filtering action."
+					},
+					"detected": {
+						"type": "boolean",
+						"description": "Whether the labeled content category was detected in the content."
+					},
+					"details": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/AzureContentFilterCompletionTextSpan"
+						},
+						"description": "Detailed information about the detected completion text spans."
+					}
+				}
+			},
+			"AzureContentFilterPersonallyIdentifiableInformationResult": {
+				"type": "object",
+				"properties": {
+					"redacted_text": {
+						"type": "string",
+						"description": "The redacted text with PII information removed or masked."
+					},
+					"sub_categories": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/AzurePiiSubCategoryResult"
+						},
+						"description": "Detailed results for individual PIIHarmSubCategory(s)."
+					}
+				},
+				"allOf": [
+					{
+						"$ref": "#/components/schemas/AzureContentFilterDetectionResult"
+					}
+				],
+				"description": "A content filter detection result for Personally Identifiable Information that includes harm extensions."
+			},
+			"OpenAI.InputParam": {
+				"oneOf": [
+					{
+						"type": "string"
+					},
+					{
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/OpenAI.InputItem"
+						}
+					}
+				],
+				"description": "Text, image, or file inputs to the model, used to generate a response.\nLearn more:\n- [Text inputs and outputs](/docs/guides/text)\n- [Image inputs](/docs/guides/images)\n- [File inputs](/docs/guides/pdf-files)\n- [Conversation state](/docs/guides/conversation-state)\n- [Function calling](/docs/guides/function-calling)"
+			},
+			"OpenAI.IncludeEnum": {
+				"anyOf": [
+					{
+						"type": "string"
+					},
+					{
+						"type": "string",
+						"enum": [
+							"file_search_call.results",
+							"web_search_call.results",
+							"web_search_call.action.sources",
+							"message.input_image.image_url",
+							"computer_call_output.output.image_url",
+							"code_interpreter_call.outputs",
+							"reasoning.encrypted_content",
+							"message.output_text.logprobs"
+						]
+					}
+				],
+				"description": "Specify additional output data to include in the model response. Currently supported values are:\n- `web_search_call.results`: Include the search results of the web search tool call.\n- `web_search_call.action.sources`: Include the sources of the web search tool call.\n- `code_interpreter_call.outputs`: Includes the outputs of python code execution in code interpreter tool call items.\n- `computer_call_output.output.image_url`: Include image urls from the computer call output.\n- `file_search_call.results`: Include the search results of the file search tool call.\n- `message.input_image.image_url`: Include image urls from the input message.\n- `message.output_text.logprobs`: Include logprobs with assistant messages.\n- `reasoning.encrypted_content`: Includes an encrypted version of reasoning tokens in reasoning item outputs. This enables reasoning items to be used in multi-turn conversations when using the Responses API statelessly (like when the `store` parameter is set to `false`, or when an organization is enrolled in the zero data retention program)."
+			},
+			"OpenAI.ResponseStreamOptions": {
+				"type": "object",
+				"properties": {
+					"include_obfuscation": {
+						"type": "boolean",
+						"description": "When true, stream obfuscation will be enabled. Stream obfuscation adds\n  random characters to an `obfuscation` field on streaming delta events to\n  normalize payload sizes as a mitigation to certain side-channel attacks.\n  These obfuscation fields are included by default, but add a small amount\n  of overhead to the data stream. You can set `include_obfuscation` to\n  false to optimize for bandwidth if you trust the network links between\n  your application and the OpenAI API."
+					}
+				},
+				"description": "Options for streaming responses. Only set this when you set `stream: true`."
+			},
+			"OpenAI.ConversationParam": {
+				"oneOf": [
+					{
+						"type": "string"
+					},
+					{
+						"$ref": "#/components/schemas/OpenAI.ConversationParam-2"
+					}
+				],
+				"description": "The conversation that this response belongs to. Items from this conversation are prepended to `input_items` for this response request.\nInput items and output items from this response are automatically added to this conversation after this response completes."
+			},
+			"OpenAI.ContextManagementParam": {
+				"type": "object",
+				"required": [
+					"type"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"description": "The context management entry type. Currently only 'compaction' is supported."
+					},
+					"compact_threshold": {
+						"anyOf": [
+							{
+								"type": "integer"
+							},
+							{
+								"type": "null"
+							}
+						]
+					}
+				}
+			},
+			"OpenAI.TextResponseFormatConfiguration": {
+				"type": "object",
+				"required": [
+					"type"
+				],
+				"properties": {
+					"type": {
+						"$ref": "#/components/schemas/OpenAI.TextResponseFormatConfigurationType"
+					}
+				},
+				"discriminator": {
+					"propertyName": "type",
+					"mapping": {
+						"json_schema": "#/components/schemas/OpenAI.TextResponseFormatJsonSchema",
+						"text": "#/components/schemas/OpenAI.TextResponseFormatConfigurationResponseFormatText",
+						"json_object": "#/components/schemas/OpenAI.TextResponseFormatConfigurationResponseFormatJsonObject"
+					}
+				},
+				"description": "An object specifying the format that the model must output.\nConfiguring `{ \"type\": \"json_schema\" }` enables Structured Outputs,\nwhich ensures the model will match your supplied JSON schema. Learn more in the\n[Structured Outputs guide](/docs/guides/structured-outputs).\nThe default format is `{ \"type\": \"text\" }` with no additional options.\n*Not recommended for gpt-4o and newer models:**\nSetting to `{ \"type\": \"json_object\" }` enables the older JSON mode, which\nensures the message the model generates is valid JSON. Using `json_schema`\nis preferred for models that support it."
+			},
+			"OpenAI.Tool": {
+				"type": "object",
+				"required": [
+					"type"
+				],
+				"properties": {
+					"type": {
+						"$ref": "#/components/schemas/OpenAI.ToolType"
+					}
+				},
+				"discriminator": {
+					"propertyName": "type",
+					"mapping": {
+						"code_interpreter": "#/components/schemas/OpenAI.CodeInterpreterTool",
+						"function": "#/components/schemas/OpenAI.FunctionTool",
+						"file_search": "#/components/schemas/OpenAI.FileSearchTool",
+						"computer_use_preview": "#/components/schemas/OpenAI.ComputerUsePreviewTool",
+						"web_search": "#/components/schemas/OpenAI.WebSearchTool",
+						"mcp": "#/components/schemas/OpenAI.MCPTool",
+						"image_generation": "#/components/schemas/OpenAI.ImageGenTool",
+						"local_shell": "#/components/schemas/OpenAI.LocalShellToolParam",
+						"shell": "#/components/schemas/OpenAI.FunctionShellToolParam",
+						"custom": "#/components/schemas/OpenAI.CustomToolParam",
+						"web_search_preview": "#/components/schemas/OpenAI.WebSearchPreviewTool",
+						"apply_patch": "#/components/schemas/OpenAI.ApplyPatchToolParam",
+						"computer": "#/components/schemas/OpenAI.ComputerTool",
+						"namespace": "#/components/schemas/OpenAI.NamespaceToolParam",
+						"tool_search": "#/components/schemas/OpenAI.ToolSearchToolParam"
+					}
+				},
+				"description": "A tool that can be used to generate a response."
+			},
+			"OpenAI.ToolChoiceParamType": {
+				"anyOf": [
+					{
+						"type": "string"
+					},
+					{
+						"type": "string",
+						"enum": [
+							"allowed_tools",
+							"function",
+							"mcp",
+							"custom",
+							"apply_patch",
+							"shell",
+							"file_search",
+							"web_search_preview",
+							"computer_use_preview",
+							"web_search_preview_2025_03_11",
+							"image_generation",
+							"code_interpreter",
+							"computer",
+							"computer_use"
+						]
+					}
+				]
+			},
+			"OpenAI.ResponsePromptVariables": {
+				"type": "object",
+				"unevaluatedProperties": {
+					"anyOf": [
+						{
+							"type": "string"
+						},
+						{
+							"$ref": "#/components/schemas/OpenAI.InputTextContent"
+						},
+						{
+							"$ref": "#/components/schemas/OpenAI.InputImageContent"
+						},
+						{
+							"$ref": "#/components/schemas/OpenAI.InputFileContent"
+						}
+					]
+				},
+				"description": "Optional map of values to substitute in for variables in your\nprompt. The substitution values can either be strings, or other\nResponse input types like images or files.",
+				"title": "Prompt Variables",
+				"x-oaiExpandable": true,
+				"x-oaiTypeLabel": "map"
+			},
+			"OpenAI.ResponseErrorCode": {
+				"type": "string",
+				"enum": [
+					"server_error",
+					"rate_limit_exceeded",
+					"invalid_prompt",
+					"vector_store_timeout",
+					"invalid_image",
+					"invalid_image_format",
+					"invalid_base64_image",
+					"invalid_image_url",
+					"image_too_large",
+					"image_too_small",
+					"image_parse_error",
+					"image_content_policy_violation",
+					"invalid_image_mode",
+					"image_file_too_large",
+					"unsupported_image_media_type",
+					"empty_image_file",
+					"failed_to_download_image",
+					"image_file_not_found"
+				],
+				"description": "The error code for the response."
+			},
+			"OpenAI.OutputItemType": {
+				"anyOf": [
+					{
+						"type": "string"
+					},
+					{
+						"type": "string",
+						"enum": [
+							"output_message",
+							"file_search_call",
+							"function_call",
+							"function_call_output",
+							"web_search_call",
+							"computer_call",
+							"computer_call_output",
+							"reasoning",
+							"tool_search_call",
+							"tool_search_output",
+							"compaction",
+							"image_generation_call",
+							"code_interpreter_call",
+							"local_shell_call",
+							"local_shell_call_output",
+							"shell_call",
+							"shell_call_output",
+							"apply_patch_call",
+							"apply_patch_call_output",
+							"mcp_call",
+							"mcp_list_tools",
+							"mcp_approval_request",
+							"mcp_approval_response",
+							"custom_tool_call",
+							"custom_tool_call_output",
+							"tool_approval_request"
+						]
+					}
+				]
+			},
+			"OpenAI.InputItemType": {
+				"anyOf": [
+					{
+						"type": "string"
+					},
+					{
+						"type": "string",
+						"enum": [
+							"message",
+							"output_message",
+							"file_search_call",
+							"computer_call",
+							"computer_call_output",
+							"web_search_call",
+							"function_call",
+							"function_call_output",
+							"tool_search_call",
+							"tool_search_output",
+							"reasoning",
+							"compaction",
+							"image_generation_call",
+							"code_interpreter_call",
+							"local_shell_call",
+							"local_shell_call_output",
+							"shell_call",
+							"shell_call_output",
+							"apply_patch_call",
+							"apply_patch_call_output",
+							"mcp_list_tools",
+							"mcp_approval_request",
+							"mcp_approval_response",
+							"mcp_call",
+							"custom_tool_call_output",
+							"custom_tool_call",
+							"item_reference",
+							"tool_approval_response"
+						]
+					}
+				]
+			},
+			"OpenAI.ResponseUsageInputTokensDetails": {
+				"type": "object",
+				"required": [
+					"cached_tokens"
+				],
+				"properties": {
+					"cached_tokens": {
+						"type": "integer"
+					}
+				}
+			},
+			"OpenAI.ResponseUsageOutputTokensDetails": {
+				"type": "object",
+				"required": [
+					"reasoning_tokens"
+				],
+				"properties": {
+					"reasoning_tokens": {
+						"type": "integer"
+					}
+				}
+			},
+			"AzureContentFilterResultsForResponsesAPI": {
+				"type": "object",
+				"required": [
+					"jailbreak",
+					"task_adherence"
+				],
+				"properties": {
+					"sexual": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AzureContentFilterSeverityResult"
+							}
+						],
+						"description": "A content filter category for language related to anatomical organs and genitals, romantic relationships, acts\nportrayed in erotic or affectionate terms, pregnancy, physical sexual acts, including those portrayed as an\nassault or a forced sexual violent act against one's will, prostitution, pornography, and abuse."
+					},
+					"hate": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AzureContentFilterSeverityResult"
+							}
+						],
+						"description": "A content filter category that can refer to any content that attacks or uses pejorative or discriminatory\nlanguage with reference to a person or identity group based on certain differentiating attributes of these groups\nincluding but not limited to race, ethnicity, nationality, gender identity and expression, sexual orientation,\nreligion, immigration status, ability status, personal appearance, and body size."
+					},
+					"violence": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AzureContentFilterSeverityResult"
+							}
+						],
+						"description": "A content filter category for language related to physical actions intended to hurt, injure, damage, or kill\nsomeone or something; describes weapons, guns and related entities, such as manufactures, associations,\nlegislation, and so on."
+					},
+					"self_harm": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AzureContentFilterSeverityResult"
+							}
+						],
+						"description": "A content filter category that describes language related to physical actions intended to purposely hurt, injure,\ndamage one's body or kill oneself."
+					},
+					"profanity": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AzureContentFilterDetectionResult"
+							}
+						],
+						"description": "A detection result that identifies whether crude, vulgar, or otherwise objection language is present in the\ncontent."
+					},
+					"custom_blocklists": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AzureContentFilterBlocklistResult"
+							}
+						],
+						"description": "A collection of binary filtering outcomes for configured custom blocklists."
+					},
+					"custom_topics": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AzureContentFilterCustomTopicResult"
+							}
+						],
+						"description": "A collection of binary filtering outcomes for configured custom topics."
+					},
+					"error": {
+						"type": "object",
+						"properties": {
+							"code": {
+								"type": "integer",
+								"format": "int32",
+								"description": "A distinct, machine-readable code associated with the error."
+							},
+							"message": {
+								"type": "string",
+								"description": "A human-readable message associated with the error."
+							}
+						},
+						"required": [
+							"code",
+							"message"
+						],
+						"description": "If present, details about an error that prevented content filtering from completing its evaluation."
+					},
+					"jailbreak": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AzureContentFilterDetectionResult"
+							}
+						],
+						"description": "A detection result that describes user prompt injection attacks, where malicious users deliberately exploit\nsystem vulnerabilities to elicit unauthorized behavior from the LLM. This could lead to inappropriate content\ngeneration or violations of system-imposed restrictions."
+					},
+					"task_adherence": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AzureContentFilterDetectionResult"
+							}
+						],
+						"description": "A detection result that indicates if the execution flow still sticks the plan."
+					},
+					"protected_material_text": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AzureContentFilterDetectionResult"
+							}
+						],
+						"description": "A detection result that describes a match against text protected under copyright or other status."
+					},
+					"protected_material_code": {
+						"type": "object",
+						"properties": {
+							"filtered": {
+								"type": "boolean",
+								"description": "Whether the content detection resulted in a content filtering action."
+							},
+							"detected": {
+								"type": "boolean",
+								"description": "Whether the labeled content category was detected in the content."
+							},
+							"citation": {
+								"type": "object",
+								"properties": {
+									"license": {
+										"type": "string",
+										"description": "The name or identifier of the license associated with the detection."
+									},
+									"URL": {
+										"type": "string",
+										"format": "uri",
+										"description": "The URL associated with the license."
+									}
+								},
+								"description": "If available, the citation details describing the associated license and its location."
+							}
+						},
+						"required": [
+							"filtered",
+							"detected"
+						],
+						"description": "A detection result that describes a match against licensed code or other protected source material."
+					},
+					"ungrounded_material": {
+						"$ref": "#/components/schemas/AzureContentFilterCompletionTextSpanDetectionResult"
+					},
+					"personally_identifiable_information": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AzureContentFilterPersonallyIdentifiableInformationResult"
+							}
+						],
+						"description": "A detection result that describes matches against Personal Identifiable Information with configurable subcategories."
+					},
+					"indirect_attack": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/AzureContentFilterDetectionResult"
+							}
+						],
+						"description": "A detection result that describes attacks on systems powered by Generative AI models that can happen every time\nan application processes information that wasn’t directly authored by either the developer of the application or\nthe user."
+					}
+				}
+			},
+			"AzureContentFilterResultOffsets": {
+				"type": "object",
+				"required": [
+					"start_offset",
+					"end_offset",
+					"check_offset"
+				],
+				"properties": {
+					"start_offset": {
+						"type": "integer",
+						"format": "int32"
+					},
+					"end_offset": {
+						"type": "integer",
+						"format": "int32"
+					},
+					"check_offset": {
+						"type": "integer",
+						"format": "int32"
+					}
+				}
+			},
+			"OpenAI.VoiceIdsShared": {
+				"anyOf": [
+					{
+						"type": "string"
+					},
+					{
+						"type": "string",
+						"enum": [
+							"alloy",
+							"ash",
+							"ballad",
+							"coral",
+							"echo",
+							"sage",
+							"shimmer",
+							"verse",
+							"marin",
+							"cedar"
+						]
+					}
+				]
+			},
+			"OpenAI.CustomToolChatCompletionsCustomFormatText": {
+				"type": "object",
+				"required": [
+					"type"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"text"
+						],
+						"x-stainless-const": true
+					}
+				}
+			},
+			"OpenAI.CustomToolChatCompletionsCustomFormatGrammar": {
+				"type": "object",
+				"required": [
+					"type",
+					"grammar"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"grammar"
+						],
+						"x-stainless-const": true
+					},
+					"grammar": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.CustomToolChatCompletionsCustomFormatGrammarGrammar"
+							}
+						],
+						"title": "Grammar format"
+					}
+				}
+			},
+			"OpenAI.ChatCompletionAllowedTools": {
+				"type": "object",
+				"required": [
+					"mode",
+					"tools"
+				],
+				"properties": {
+					"mode": {
+						"type": "string",
+						"enum": [
+							"auto",
+							"required"
+						],
+						"description": "Constrains the tools available to the model to a pre-defined set.\n  `auto` allows the model to pick from among the allowed tools and generate a\n  message.\n  `required` requires the model to call one or more of the allowed tools."
+					},
+					"tools": {
+						"type": "array",
+						"items": {
+							"type": "object",
+							"unevaluatedProperties": {}
+						},
+						"description": "A list of tool definitions that the model should be allowed to call.\n  For the Chat Completions API, the list of tool definitions might look like:\n  ```json\n  [\n    { \"type\": \"function\", \"function\": { \"name\": \"get_weather\" } },\n    { \"type\": \"function\", \"function\": { \"name\": \"get_time\" } }\n  ]\n  ```"
+					}
+				},
+				"description": "Constrains the tools available to the model to a pre-defined set.",
+				"title": "Allowed tools"
+			},
+			"OpenAI.ChatCompletionNamedToolChoiceFunction": {
+				"type": "object",
+				"required": [
+					"name"
+				],
+				"properties": {
+					"name": {
+						"type": "string"
+					}
+				}
+			},
+			"OpenAI.ChatCompletionNamedToolChoiceCustomCustom": {
+				"type": "object",
+				"required": [
+					"name"
+				],
+				"properties": {
+					"name": {
+						"type": "string"
+					}
+				}
+			},
+			"OpenAI.ChatCompletionMessageToolCallsItem": {
+				"type": "array",
+				"items": {
+					"anyOf": [
+						{
+							"$ref": "#/components/schemas/OpenAI.ChatCompletionMessageToolCall"
+						},
+						{
+							"$ref": "#/components/schemas/OpenAI.ChatCompletionMessageCustomToolCall"
+						}
+					]
+				},
+				"description": "The tool calls generated by the model, such as function calls."
+			},
+			"OpenAI.ChatCompletionResponseMessageAnnotations": {
+				"type": "object",
+				"required": [
+					"type",
+					"url_citation"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"url_citation"
+						],
+						"x-stainless-const": true
+					},
+					"url_citation": {
+						"$ref": "#/components/schemas/OpenAI.ChatCompletionResponseMessageAnnotationsUrlCitation"
+					}
+				}
+			},
+			"OpenAI.ChatCompletionResponseMessageFunctionCall": {
+				"type": "object",
+				"required": [
+					"arguments",
+					"name"
+				],
+				"properties": {
+					"arguments": {
+						"type": "string"
+					},
+					"name": {
+						"type": "string"
+					}
+				}
+			},
+			"OpenAI.ChatCompletionResponseMessageAudio": {
+				"type": "object",
+				"required": [
+					"id",
+					"expires_at",
+					"data",
+					"transcript"
+				],
+				"properties": {
+					"id": {
+						"type": "string"
+					},
+					"expires_at": {
+						"type": "integer",
+						"format": "unixtime"
+					},
+					"data": {
+						"type": "string"
+					},
+					"transcript": {
+						"type": "string"
+					}
+				}
+			},
+			"OpenAI.ChatCompletionTokenLogprob": {
+				"type": "object",
+				"required": [
+					"token",
+					"logprob",
+					"bytes",
+					"top_logprobs"
+				],
+				"properties": {
+					"token": {
+						"type": "string",
+						"description": "The token."
+					},
+					"logprob": {
+						"type": "number",
+						"description": "The log probability of this token, if it is within the top 20 most likely tokens. Otherwise, the value `-9999.0` is used to signify that the token is very unlikely."
+					},
+					"bytes": {
+						"anyOf": [
+							{
+								"type": "array",
+								"items": {
+									"type": "integer"
+								}
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"top_logprobs": {
+						"type": "array",
+						"items": {
+							"$ref": "#/components/schemas/OpenAI.ChatCompletionTokenLogprobTopLogprobs"
+						},
+						"description": "List of the most likely tokens and their log probability, at this token position. The number of entries may be fewer than the requested `top_logprobs`."
+					}
+				}
+			},
+			"OpenAI.ChatCompletionMessageToolCallChunkFunction": {
+				"type": "object",
+				"properties": {
+					"name": {
+						"type": "string"
+					},
+					"arguments": {
+						"type": "string"
+					}
+				}
+			},
+			"AzureContentFilterCompletionTextSpan": {
+				"type": "object",
+				"required": [
+					"completion_start_offset",
+					"completion_end_offset"
+				],
+				"properties": {
+					"completion_start_offset": {
+						"type": "integer",
+						"format": "int32",
+						"description": "Offset of the UTF32 code point which begins the span."
+					},
+					"completion_end_offset": {
+						"type": "integer",
+						"format": "int32",
+						"description": "Offset of the first UTF32 code point which is excluded from the span. This field is always equal to completion_start_offset for empty spans. This field is always larger than completion_start_offset for non-empty spans."
+					}
+				},
+				"description": "A representation of a span of completion text as used by Azure OpenAI content filter results."
+			},
+			"AzurePiiSubCategoryResult": {
+				"type": "object",
+				"required": [
+					"sub_category",
+					"filtered",
+					"detected",
+					"redacted"
+				],
+				"properties": {
+					"sub_category": {
+						"type": "string",
+						"description": "The PIIHarmSubCategory that was evaluated."
+					},
+					"filtered": {
+						"type": "boolean",
+						"description": "Whether the content detection resulted in a content filtering action for this subcategory."
+					},
+					"detected": {
+						"type": "boolean",
+						"description": "Whether the labeled content subcategory was detected in the content."
+					},
+					"redacted": {
+						"type": "boolean",
+						"description": "Whether the content was redacted for this subcategory."
+					}
+				},
+				"description": "Result details for individual PIIHarmSubCategory(s)."
+			},
+			"OpenAI.ConversationParam-2": {
+				"type": "object",
+				"required": [
+					"id"
+				],
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "The unique ID of the conversation."
+					}
+				},
+				"description": "The conversation that this response belongs to.",
+				"title": "Conversation object"
+			},
+			"OpenAI.TextResponseFormatConfigurationType": {
+				"anyOf": [
+					{
+						"type": "string"
+					},
+					{
+						"type": "string",
+						"enum": [
+							"text",
+							"json_schema",
+							"json_object"
+						]
+					}
+				]
+			},
+			"OpenAI.ToolType": {
+				"anyOf": [
+					{
+						"type": "string"
+					},
+					{
+						"type": "string",
+						"enum": [
+							"function",
+							"file_search",
+							"computer",
+							"computer_use_preview",
+							"web_search",
+							"mcp",
+							"code_interpreter",
+							"image_generation",
+							"local_shell",
+							"shell",
+							"custom",
+							"namespace",
+							"tool_search",
+							"web_search_preview",
+							"apply_patch"
+						]
+					}
+				]
+			},
+			"OpenAI.InputTextContent": {
+				"type": "object",
+				"required": [
+					"type",
+					"text"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"input_text"
+						],
+						"description": "The type of the input item. Always `input_text`.",
+						"x-stainless-const": true,
+						"default": "input_text"
+					},
+					"text": {
+						"type": "string",
+						"description": "The text input to the model."
+					}
+				},
+				"description": "A text input to the model.",
+				"title": "Input text"
+			},
+			"OpenAI.InputImageContent": {
+				"type": "object",
+				"required": [
+					"type",
+					"detail"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"input_image"
+						],
+						"description": "The type of the input item. Always `input_image`.",
+						"x-stainless-const": true,
+						"default": "input_image"
+					},
+					"image_url": {
+						"anyOf": [
+							{
+								"type": "string",
+								"format": "uri"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"file_id": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"detail": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.ImageDetail"
+							}
+						],
+						"description": "The detail level of the image to be sent to the model. One of `high`, `low`, `auto`, or `original`. Defaults to `auto`."
+					}
+				},
+				"description": "An image input to the model. Learn about [image inputs](/docs/guides/vision).",
+				"title": "Input image"
+			},
+			"OpenAI.InputFileContent": {
+				"type": "object",
+				"required": [
+					"type"
+				],
+				"properties": {
+					"type": {
+						"type": "string",
+						"enum": [
+							"input_file"
+						],
+						"description": "The type of the input item. Always `input_file`.",
+						"x-stainless-const": true,
+						"default": "input_file"
+					},
+					"file_id": {
+						"anyOf": [
+							{
+								"type": "string"
+							},
+							{
+								"type": "null"
+							}
+						]
+					},
+					"filename": {
+						"type": "string",
+						"description": "The name of the file to be sent to the model."
+					},
+					"file_data": {
+						"type": "string",
+						"description": "The content of the file to be sent to the model."
+					},
+					"file_url": {
+						"type": "string",
+						"format": "uri",
+						"description": "The URL of the file to be sent to the model."
+					},
+					"detail": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.FileInputDetail"
+							}
+						],
+						"description": "The detail level of the file to be sent to the model. Use `low` for the default rendering behavior, or `high` to render the file at higher quality. Defaults to `low`."
+					}
+				},
+				"description": "A file input to the model.",
+				"title": "Input file"
+			},
+			"OpenAI.CustomToolChatCompletionsCustomFormatGrammarGrammar": {
+				"type": "object",
+				"required": [
+					"definition",
+					"syntax"
+				],
+				"properties": {
+					"definition": {
+						"type": "string"
+					},
+					"syntax": {
+						"type": "string",
+						"enum": [
+							"lark",
+							"regex"
+						]
+					}
+				}
+			},
+			"OpenAI.ChatCompletionMessageToolCall": {
+				"type": "object",
+				"required": [
+					"id",
+					"type",
+					"function"
+				],
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "The ID of the tool call."
+					},
+					"type": {
+						"type": "string",
+						"enum": [
+							"function"
+						],
+						"description": "The type of the tool. Currently, only `function` is supported.",
+						"x-stainless-const": true
+					},
+					"function": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.ChatCompletionMessageToolCallFunction"
+							}
+						],
+						"description": "The function that the model called."
+					}
+				},
+				"description": "A call to a function tool created by the model.",
+				"title": "Function tool call"
+			},
+			"OpenAI.ChatCompletionMessageCustomToolCall": {
+				"type": "object",
+				"required": [
+					"id",
+					"type",
+					"custom"
+				],
+				"properties": {
+					"id": {
+						"type": "string",
+						"description": "The ID of the tool call."
+					},
+					"type": {
+						"type": "string",
+						"enum": [
+							"custom"
+						],
+						"description": "The type of the tool. Always `custom`.",
+						"x-stainless-const": true
+					},
+					"custom": {
+						"allOf": [
+							{
+								"$ref": "#/components/schemas/OpenAI.ChatCompletionMessageCustomToolCallCustom"
+							}
+						],
+						"description": "The custom tool that the model called."
+					}
+				},
+				"description": "A call to a custom tool created by the model.",
+				"title": "Custom tool call"
+			},
+			"OpenAI.ChatCompletionResponseMessageAnnotationsUrlCitation": {
+				"type": "object",
+				"required": [
+					"end_index",
+					"start_index",
+					"url",
+					"title"
+				],
+				"properties": {
+					"end_index": {
+						"type": "integer"
+					},
+					"start_index": {
+						"type": "integer"
+					},
+					"url": {
+						"type": "string",
+						"format": "uri"
+					},
+					"title": {
+						"type": "string"
+					}
+				}
+			},
+			"OpenAI.ChatCompletionTokenLogprobTopLogprobs": {
+				"type": "object",
+				"required": [
+					"token",
+					"logprob",
+					"bytes"
+				],
+				"properties": {
+					"token": {
+						"type": "string"
+					},
+					"logprob": {
+						"type": "number"
+					},
+					"bytes": {
+						"anyOf": [
+							{
+								"type": "array",
+								"items": {
+									"type": "integer"
+								}
+							},
+							{
+								"type": "null"
+							}
+						]
+					}
+				}
+			},
+			"OpenAI.ImageDetail": {
+				"type": "string",
+				"enum": [
+					"low",
+					"high",
+					"auto",
+					"original"
+				]
+			},
+			"OpenAI.FileInputDetail": {
+				"type": "string",
+				"enum": [
+					"low",
+					"high"
+				]
+			},
+			"OpenAI.ChatCompletionMessageToolCallFunction": {
+				"type": "object",
+				"required": [
+					"name",
+					"arguments"
+				],
+				"properties": {
+					"name": {
+						"type": "string"
+					},
+					"arguments": {
+						"type": "string"
+					}
+				}
+			},
+			"OpenAI.ChatCompletionMessageCustomToolCallCustom": {
+				"type": "object",
+				"required": [
+					"name",
+					"input"
+				],
+				"properties": {
+					"name": {
+						"type": "string"
+					},
+					"input": {
+						"type": "string"
+					}
+				}
+			}
+		}
+	},
+	"servers": [
+		{
+			"url": "{endpoint}/openai/v1",
+			"description": "Azure AI Foundry Models APIs",
+			"variables": {
+				"endpoint": {
+					"default": "",
+					"description": "A supported Azure AI Foundry Models APIs endpoint, including protocol and hostname.\nFor example:\nhttps://westus.api.cognitive.microsoft.com)."
+				}
+			}
+		}
+	],
+	"securitySchemes": {
+		"ApiKeyAuth": {
+			"type": "apiKey",
+			"in": "header",
+			"name": "api-key"
+		},
+		"ApiKeyAuth_": {
+			"type": "apiKey",
+			"in": "header",
+			"name": "authorization"
+		},
+		"OAuth2Auth": {
+			"type": "oauth2",
+			"flows": {
+				"implicit": {
+					"authorizationUrl": "https://login.microsoftonline.com/common/oauth2/v2.0/authorize",
+					"scopes": {
+						"https://cognitiveservices.azure.com/.default": ""
+					}
+				}
+			}
+		}
+	},
+	"operationPaths": {
+		"chat": "/chat/completions",
+		"responses": "/responses"
+	}
+}

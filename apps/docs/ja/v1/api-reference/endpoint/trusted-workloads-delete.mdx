@@ -1,0 +1,12 @@
+---
+title: "信頼済みワークロードのポリシーを削除"
+sidebarTitle: "信頼済みワークロードのポリシーを削除"
+badge: "ベータ"
+openapi: "/ja/openapi/v1/openapi.localized.yaml DELETE /workload-identity/policies/{id}"
+description: "信頼済みワークロードのポリシーを削除し、そのキーを失効させます。"
+---
+<Note>管理キーまたは OAuth トークンの `keys:delete`、もしくはワークスペースのオーナーまたは管理者が必要です。信頼済みワークロードはベータ版で、利用できないワークスペースには `404` が返ります。</Note>
+
+一致するトークンは 1 分以内に拒否されるようになります。過去のリクエストは、ログと使用状況でそのキーを保持します。
+
+ポリシーの仕組みと Terraform での管理方法は、[信頼済みワークロード](../../developers/trusted-workloads.mdx)を参照してください。

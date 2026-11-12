@@ -1,0 +1,20 @@
+{
+  "name": "phaseo",
+  "interface": {
+    "displayName": "Phaseo"
+  },
+  "plugins": [
+    {
+      "name": "phaseo",
+      "source": {
+        "source": "local",
+        "path": "./apps/mcp/plugin/phaseo"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    }
+  ]
+}

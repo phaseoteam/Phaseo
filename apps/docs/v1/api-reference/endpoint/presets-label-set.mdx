@@ -1,0 +1,11 @@
+---
+title: "Set preset label"
+sidebarTitle: "Set label"
+badge: "Beta"
+openapi: "/openapi/v1/openapi.yaml PUT /presets/{id}/labels/{label}"
+description: "Point a label at a published preset version, or move it back to roll back."
+"og:image": "https://phaseo.app/og/dynamic?title=Set%20preset%20label&description=Point%20a%20label%20at%20a%20published%20preset%20version%2C%20or%20move%20it%20back%20to%20roll%20back.&pathname=/docs/v1/api-reference/endpoint/presets-label-set"
+---
+<Note>This endpoint requires a management API key with `presets:write` and an associated user identity. The preset's creator can change its labels, and so can workspace owners and admins when the preset is shared.</Note>
+
+Requests that pin the label, such as `@support-triage@production` or `prompt.version: "production"`, use the new version within about two minutes. See [Versions and labels](/v1/guides/prompt-templates#versions-and-labels).

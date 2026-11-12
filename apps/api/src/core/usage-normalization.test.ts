@@ -1,8 +1,71 @@
 import { describe, expect, it } from "vitest";
 import {
+	accumulateStreamUsage,
+	mergeMessagesStreamUsage,
 	resolveCanonicalTokenUsage,
 	resolveRequestCountUsage,
 } from "./usage-normalization";
+
+describe("mergeMessagesStreamUsage", () => {
+	const start = {
+		input_tokens: 30,
+		cache_read_input_tokens: 4,
+		cache_creation_input_tokens: 2,
+		cache_creation: { ephemeral_5m_input_tokens: 0, ephemeral_1h_input_tokens: 2 },
+		output_tokens: 1,
+	};
+
+	it("keeps counts a later event omits and takes the later output", () => {
+		expect(mergeMessagesStreamUsage(start, { output_tokens: 9 })).toEqual({ ...start, output_tokens: 9 });
+	});
+
+	it("does not let message_delta's 0 erase message_start's input and cache counts, nested counts included", () => {
+		expect(mergeMessagesStreamUsage(start, {
+			input_tokens: 0,
+			cache_read_input_tokens: 0,
+			cache_creation_input_tokens: 0,
+			cache_creation: { ephemeral_5m_input_tokens: 0, ephemeral_1h_input_tokens: 0 },
+			output_tokens: 9,
+			server_tool_use: { web_search_requests: 1 },
+		})).toEqual({ ...start, output_tokens: 9, server_tool_use: { web_search_requests: 1 } });
+	});
+
+	it("takes a later 0 for every other count", () => {
+		expect(mergeMessagesStreamUsage(
+			{ ...start, server_tool_use: { web_search_requests: 2 } },
+			{ output_tokens: 0, server_tool_use: { web_search_requests: 0 } },
+		)).toEqual({ ...start, output_tokens: 0, server_tool_use: { web_search_requests: 0 } });
+	});
+
+	it("takes later non-zero counts, including one that fills an earlier 0", () => {
+		expect(mergeMessagesStreamUsage({ input_tokens: 0, output_tokens: 0 }, { input_tokens: 12, output_tokens: 3 }))
+			.toEqual({ input_tokens: 12, output_tokens: 3 });
+		expect(mergeMessagesStreamUsage({ input_tokens: 40 }, { input_tokens: 35 })).toEqual({ input_tokens: 35 });
+	});
+
+	it("returns whichever side is a usage object when the other is not", () => {
+		expect(mergeMessagesStreamUsage(null, { output_tokens: 1 })).toEqual({ output_tokens: 1 });
+		expect(mergeMessagesStreamUsage({ output_tokens: 1 }, null)).toEqual({ output_tokens: 1 });
+	});
+});
+
+describe("accumulateStreamUsage", () => {
+	it("merges Messages usage events", () => {
+		expect(accumulateStreamUsage("anthropic.messages", { input_tokens: 30, output_tokens: 1 }, { input_tokens: 0, output_tokens: 9 }))
+			.toEqual({ input_tokens: 30, output_tokens: 9 });
+	});
+
+	it.each(["openai.chat.completions", "openai.responses", undefined])(
+		"takes the latest usage whole in %s streams, a correction to 0 included",
+		(protocol) => {
+			const provisional = { prompt_tokens: 10, completion_tokens: 1, prompt_tokens_details: { cached_tokens: 6 } };
+			const final = { prompt_tokens: 10, completion_tokens: 4, prompt_tokens_details: { cached_tokens: 0 } };
+			expect(accumulateStreamUsage(protocol, provisional, final)).toEqual(final);
+			expect(accumulateStreamUsage(protocol, { input_tokens: 5, output_tokens: 1 }, { input_tokens: 0, output_tokens: 2 }))
+				.toEqual({ input_tokens: 0, output_tokens: 2 });
+		},
+	);
+});
 
 describe("usage-normalization", () => {
 	it("infers split tokens when provider returns total_tokens only", () => {

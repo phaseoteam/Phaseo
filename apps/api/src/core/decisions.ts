@@ -1,0 +1,128 @@
+import * as z from "zod";
+import { lazySchema } from "./lazy-schema";
+
+export type DecisionValue = string | boolean;
+export type DecisionInputPart =
+	| { type: "input_text"; text: string }
+	| { type: "input_image"; image_url: string; detail?: "low" | "high" | "auto" | "original" | null }
+	| { type: "input_audio"; input_audio: { data?: string; url?: string; format?: "wav" | "mp3" } }
+	| { type: "input_video"; video_url: string | { url: string } };
+export type DecisionInput = string | Array<{ role: "user"; type?: "message"; content: string | DecisionInputPart[] }>;
+export type NativeDecisionQuestion =
+	| { type: "predicate"; name?: string; instructions: string }
+	| { type: "box"; name?: string; instructions: string }
+	| { type: "choice"; name?: string; instructions: string; choices: Array<{ value: DecisionValue; description?: string }> }
+	| { type: "score"; name?: string; instructions: string; levels: Array<{ label: string; description?: string }> };
+export type NativeDecisionRequest = {
+	model: string;
+	input: DecisionInput;
+	questions: NativeDecisionQuestion[];
+	safety_identifier?: string | null;
+	provider_options?: DecisionProviderOptions;
+};
+
+/**
+ * Most questions any request may carry: the highest limit a provider documents
+ * (Google's Gemini Decision takes 1,000). The request schema enforces only this
+ * ceiling; each route's own limit is applied after routing.
+ */
+export const DECISION_QUESTION_CEILING = 1000;
+/**
+ * Limit for a route whose capability does not declare `params.max_questions`.
+ * It is what every route allowed before the limit became per route.
+ */
+export const DEFAULT_ROUTE_QUESTION_LIMIT = 128;
+
+export type DecisionProviderOptions = { typesafe?: { long_context?: boolean } };
+export const DecisionProviderOptionsSchema = lazySchema(() => z.object({
+	typesafe: z.object({ long_context: z.boolean().optional() }).strict().optional(),
+}).passthrough());
+
+const instructions = lazySchema(() => z.string().max(1048576));
+// A function: calling .optional() at module load would build `instructions` eagerly.
+const commonQuestion = () => ({ name: instructions.optional(), instructions });
+const value = lazySchema(() => z.union([z.string(), z.boolean()]));
+const mediaUrl = (kind: "audio" | "video" | "image", maxLength = 24 * 1024 * 1024) => z.string().max(maxLength).refine(value => {
+	if (new RegExp(`^data:${kind}/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/]+={0,2}$`, "i").test(value)) return true;
+	try { return new URL(value).protocol === "https:"; } catch { return false; }
+}, "Use an inline base64 data URL or a public HTTPS URL.");
+export const NativeDecisionQuestionSchema = lazySchema(() => z.discriminatedUnion("type", [
+	z.object({ ...commonQuestion(), type: z.literal("predicate") }).strict(),
+	z.object({ ...commonQuestion(), type: z.literal("box") }).strict(),
+	z.object({
+		...commonQuestion(), type: z.literal("choice"),
+		choices: z.array(z.object({ value, description: instructions.optional() }).strict()).min(1),
+	}).strict(),
+	z.object({
+		...commonQuestion(), type: z.literal("score"),
+		levels: z.array(z.object({ label: instructions, description: instructions.optional() }).strict()).min(1),
+	}).strict(),
+]));
+const inputPart = lazySchema(() => z.discriminatedUnion("type", [
+	z.object({
+		type: z.literal("input_audio"),
+		input_audio: z.object({
+			data: z.string().max(12 * 1024 * 1024).regex(/^[A-Za-z0-9+/]+={0,2}$/).optional(),
+			url: mediaUrl("audio").optional(),
+			format: z.enum(["wav", "mp3"]).optional(),
+		}).strict().refine(audio => (audio.data !== undefined) !== (audio.url !== undefined),
+			"Supply exactly one of data or url.").refine(audio => audio.data === undefined || audio.format !== undefined,
+			"Inline audio data requires a format."),
+	}).strict(),
+	z.object({ type: z.literal("input_video"), video_url: z.union([
+		mediaUrl("video"), z.object({ url: mediaUrl("video") }).strict(),
+	]) }).strict(),
+	z.object({ type: z.literal("input_text"), text: z.string().max(10485760) }).strict(),
+	z.object({
+		type: z.literal("input_image"),
+		// Hosted URLs route only to providers that fetch them (capability param image_urls).
+		image_url: mediaUrl("image", 1073741824),
+		detail: z.enum(["low", "high", "auto", "original"]).nullable().optional(),
+	}).strict(),
+]));
+export const NativeDecisionsBodySchema = lazySchema(() => z.object({
+	model: z.string().min(1).max(1048576),
+	input: z.union([
+		z.string().max(10485760),
+		z.array(z.object({
+			role: z.literal("user"), type: z.literal("message").optional(),
+			content: z.union([z.string().max(10485760), z.array(inputPart)]),
+		}).strict()),
+	]),
+	questions: z.array(NativeDecisionQuestionSchema).min(1).max(DECISION_QUESTION_CEILING).superRefine((questions, ctx) => {
+		questions.forEach((question, index) => {
+			if (question.type !== "choice") return;
+			const values = question.choices.map(choice => JSON.stringify(choice.value));
+			if (new Set(values).size !== values.length) {
+				ctx.addIssue({ code: "custom", path: [index, "choices"], message: "Choice values must be distinct." });
+			}
+		});
+	}),
+	safety_identifier: z.string().max(128).nullable().optional(),
+	provider_options: DecisionProviderOptionsSchema.optional(),
+}).superRefine((body, ctx) => {
+	const images = typeof body.input === "string" ? 0 : body.input.reduce((total, message) =>
+		total + (typeof message.content === "string" ? 0 : message.content.filter(part => part.type === "input_image").length), 0);
+	if (images > 128) ctx.addIssue({ code: "custom", path: ["input"], message: "At most 128 images are supported." });
+}));
+
+const probability = lazySchema(() => z.number().finite().min(0).max(1));
+const answerName = lazySchema(() => z.string().nullable());
+export const NativeDecisionAnswerSchema = lazySchema(() => z.discriminatedUnion("type", [
+	z.object({
+		// Null when the model gives no confidence for the box.
+		type: z.literal("box"), name: answerName, confidence: probability.nullable(),
+		box: z.object({ top: probability, bottom: probability, left: probability, right: probability })
+			.refine(box => box.top < box.bottom && box.left < box.right, "Box edges must be ordered."),
+	}).passthrough(),
+	z.object({ type: z.literal("predicate"), name: answerName, probability }).passthrough(),
+	z.object({
+		type: z.literal("choice"), name: answerName, choice: value, confidence: probability,
+		probabilities: z.array(z.object({ value, probability }).passthrough()),
+	}).passthrough(),
+	z.object({
+		type: z.literal("score"), name: answerName, score: z.number().finite().min(0), confidence: probability,
+		probabilities: z.array(z.object({ value: z.number().int().min(0), label: z.string(), probability }).passthrough()),
+	}).passthrough(),
+	z.object({ type: z.literal("refusal"), name: answerName }).passthrough(),
+]));

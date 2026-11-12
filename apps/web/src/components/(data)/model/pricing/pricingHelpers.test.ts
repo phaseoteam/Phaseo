@@ -1,3 +1,4 @@
+import { describe, test, expect } from "vitest";
 import type { ProviderPricing } from "@/lib/fetchers/models/getModelPricing";
 import {
 	buildProviderSections,
@@ -9,6 +10,7 @@ import {
 	calculateDailyAveragePricingMeterPrice,
 	getAvailableProviderTablePriceDirections,
 	getUtcPricingScheduleTimes,
+	withoutRegionSurchargeRules,
 } from "./pricingHelpers";
 
 function makeProviderPricing(): ProviderPricing {
@@ -193,6 +195,43 @@ describe("buildProviderSections", () => {
 			price: 0,
 			formattedPrice: "Free",
 		});
+	});
+
+	test("keeps a model's Decisions prices out of its text prices", () => {
+		// GPT-6 Luna on OpenAI: text at $0.10 / $0.50, Decisions at $0.10 / $0 with
+		// token meters the API declares as text. The table showed output as "Free".
+		const provider = makeProviderPricing();
+		provider.provider_models = [
+			{
+				...provider.provider_models[0],
+				id: "openai:openai/gpt-6-luna:text.generate",
+				model_id: "openai/gpt-6-luna",
+				endpoint: "text.generate",
+			},
+		];
+		const rule = (id: string, meter: string, price: number, capability: string) => ({
+			...provider.pricing_rules[0],
+			id,
+			model_key: `openai:openai/gpt-6-luna:${capability}`,
+			capability_id: capability,
+			modality: "text",
+			meter,
+			price_per_unit: price,
+			match: [],
+		});
+		provider.pricing_rules = [
+			rule("text-input", "input_text_tokens", 0.1, "text.generate"),
+			rule("text-output", "output_text_tokens", 0.5, "text.generate"),
+			// No provider_models entry for decisions.make: the rule's capability must still win.
+			rule("decisions-input", "input_tokens", 0.1, "decisions.make"),
+			rule("decisions-output", "output_tokens", 0, "decisions.make"),
+		] as any;
+
+		const sections = buildProviderSections(provider, "standard", new Date("2026-11-04T12:00:00.000Z"));
+
+		expect(sections.textTokens?.out).toEqual([expect.objectContaining({ per1M: 0.5 })]);
+		expect(sections.decisionTokens?.out).toEqual([expect.objectContaining({ per1M: 0 })]);
+		expect(buildProviderTablePriceSummary(sections, "output").primary).toMatchObject({ label: "text", price: 0.5 });
 	});
 
 	test("normalizes duration summaries to a per-minute rate", () => {
@@ -575,6 +614,111 @@ describe("buildProviderSections", () => {
 		]);
 	});
 
+	function matchingInputProvider(price = 1.5): ProviderPricing {
+		const provider = makeProviderPricing();
+		const base = provider.pricing_rules[0]!;
+		provider.pricing_rules = [
+			...["text", "image", "video"].map((modality) => ({
+				...base, id: `input-${modality}`, meter: `input_${modality}_tokens`,
+				unit: "token", unit_size: 1_000_000, price_per_unit: price, match: [],
+			})),
+			{ ...base, id: "output-text", meter: "output_text_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: 7.5, match: [] },
+			{ ...base, id: "output-image", meter: "output_image_tokens", unit: "token", unit_size: 1_000_000, price_per_unit: 30, match: [] },
+		];
+		return provider;
+	}
+
+	test("combines equal token inputs and preserves unique output columns and sorting", () => {
+		const sections = buildProviderSections(matchingInputProvider(), "standard");
+		const columns = buildProviderTablePriceColumns([sections]);
+		expect(columns.map((column) => column.label)).toEqual(["Input", "Text Output", "Image Output"]);
+		expect(buildProviderTablePriceSummaryForColumn(sections, columns[0]!)).toMatchObject({
+			primary: { formattedPrice: "$1.5", modality: "multimodal", label: "Text, Image, Video" },
+			secondary: null, extraCount: 0, sortValue: 1.5,
+		});
+	});
+
+	test("compares inputs within each provider rather than across provider prices", () => {
+		const sections = [1.5, 0.75].map((price) => buildProviderSections(matchingInputProvider(price), "standard"));
+		const columns = buildProviderTablePriceColumns(sections);
+		expect(columns[0]!.label).toBe("Input");
+		expect(buildProviderTablePriceSummaryForColumn(sections[1]!, columns[0]!).sortValue).toBe(0.75);
+	});
+
+	test("keeps one Input column across standard and expanded tiers with partial modality coverage", () => {
+		const standard = buildProviderSections(matchingInputProvider(2), "standard");
+		const flex = buildProviderSections(matchingInputProvider(1), "standard");
+		const batch = buildProviderSections(matchingInputProvider(1), "standard");
+		flex.imageTokens = undefined;
+		batch.videoTokens = undefined;
+		const columns = buildProviderTablePriceColumns([standard, flex, batch]);
+		expect(columns.map((column) => column.label)).toEqual(["Input", "Text Output", "Image Output"]);
+		const input = columns[0]!;
+		expect(buildProviderTablePriceSummaryForColumn(standard, input).primary).toMatchObject({
+			formattedPrice: "$2", label: "Text, Image, Video",
+		});
+		expect(buildProviderTablePriceSummaryForColumn(flex, input).primary).toMatchObject({
+			formattedPrice: "$1", label: "Text, Video",
+		});
+		expect(buildProviderTablePriceSummaryForColumn(batch, input).primary).toMatchObject({
+			formattedPrice: "$1", label: "Text, Image",
+		});
+	});
+
+	test("groups identical prices selected from different duplicate endpoint sources", () => {
+		const sections = buildProviderSections(matchingInputProvider(), "standard");
+		sections.textTokens!.in[0]!.endpoint = "image.generate";
+		sections.imageTokens!.in[0]!.endpoint = "text.generate";
+		sections.videoTokens!.in[0]!.endpoint = "image.generate";
+		expect(buildProviderTablePriceColumns([sections])[0]!.label).toBe("Input");
+	});
+
+	test.each([Infinity, -Infinity, NaN])("does not group invalid input prices: %s", (price) => {
+		const sections = buildProviderSections(matchingInputProvider(), "standard");
+		sections.imageTokens!.in[0]!.per1M = price;
+		expect(buildProviderTablePriceColumns([sections]).some((column) => column.groupedModalities)).toBe(false);
+	});
+
+	test.each(["identical", "different windows", "different base rates"])("compares complete recurring schedules: %s", (schedule) => {
+		const provider = matchingInputProvider();
+		for (const rule of provider.pricing_rules.filter((rule) => rule.meter.startsWith("input_"))) {
+			rule.time_windows = [{ label: "Peak", timezone: "UTC", start_time: "01:00", end_time: schedule === "different windows" && rule.meter === "input_image_tokens" ? "04:00" : "03:00", price_per_unit: 2 }];
+			if (schedule === "different base rates" && rule.meter === "input_image_tokens") rule.price_per_unit = 1;
+		}
+		const sections = buildProviderSections(provider, "standard", new Date("2026-10-06T02:00:00Z"));
+		expect(sections.textTokens!.in[0]!.per1M).toBe(2);
+		expect(sections.imageTokens!.in[0]!.per1M).toBe(2);
+		expect(buildProviderTablePriceColumns([sections]).some((column) => column.groupedModalities)).toBe(schedule === "identical");
+	});
+
+	test.each([true, false])("compares every context band, not only the cheapest rate (matching: %s)", (matching) => {
+		const provider = matchingInputProvider();
+		for (const modality of ["text", "image", "video"]) {
+			const base = provider.pricing_rules.find((rule) => rule.meter === `input_${modality}_tokens`)!;
+			base.match = [{ path: "request.input_tokens", op: "lte", value: 200000 }];
+			provider.pricing_rules.push({ ...base, id: `large-${modality}`, price_per_unit: !matching && modality === "image" ? 4 : 3, match: [{ path: "request.input_tokens", op: "gt", value: 200000 }] });
+		}
+		const columns = buildProviderTablePriceColumns([buildProviderSections(provider, "standard")]);
+		expect(columns.some((column) => column.groupedModalities)).toBe(matching);
+	});
+
+	test.each(["different rate", "missing modality", "different condition", "different discount", "mixed unit"])(
+		"retains separate inputs when a provider has %s", (difference) => {
+			const provider = matchingInputProvider();
+			const image = provider.pricing_rules[1]!;
+			if (difference === "different rate") image.price_per_unit = 1.50001;
+			if (difference === "missing modality") provider.pricing_rules.splice(1, 1);
+			if (difference === "different condition") image.match = [{ path: "request.input_tokens", op: "lte", value: 200000 }];
+			if (difference === "different discount") image.effective_to = "2099-01-01T00:00:00Z";
+			if (difference === "mixed unit") { image.unit = "image"; image.unit_size = 1; }
+			const columns = buildProviderTablePriceColumns([
+				buildProviderSections(matchingInputProvider(), "standard"),
+				buildProviderSections(provider, "standard"),
+			]);
+			expect(columns.some((column) => column.groupedModalities)).toBe(difference === "missing modality");
+		},
+	);
+
 	test("separates text and audio token pricing into modality columns", () => {
 		const provider = makeProviderPricing();
 		const baseRule = provider.pricing_rules[0]!;
@@ -850,7 +994,7 @@ describe("buildProviderSections", () => {
 				model_id: "anthropic/claude-opus-5-fast",
 				provider_model_slug: "claude-opus-5-fast",
 				endpoint: "text.generate",
-				capability_status: "deranked_lvl2",
+				capability_status: "degraded",
 				is_active_gateway: false,
 				input_modalities: "text,image",
 				output_modalities: "text",
@@ -1023,6 +1167,129 @@ describe("buildProviderSections", () => {
 		]);
 	});
 
+	test("retains prompt-length tiers alongside cache write TTLs", () => {
+		const provider = makeProviderPricing();
+		provider.pricing_rules = [
+			["lte", "5m", 0.125], ["lte", "1h", 0.2],
+			["gt", "5m", 0.625], ["gt", "1h", 1],
+		].map(([op, ttl, price], index) => ({
+			...provider.pricing_rules[0]!,
+			id: `haiku-cache-${index}`,
+			meter: `cached_write_text_tokens_${ttl}`,
+			price_per_unit: Number(price),
+			unit: "token",
+			unit_size: 1_000_000,
+			match: [{ path: "long_context_input_tokens", op: String(op), value: 100_000 }],
+		}));
+
+		const sections = buildProviderSections(provider, "standard");
+		expect(sections.textTokens?.write).toHaveLength(4);
+		expect(sections.textTokens?.write).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ per1M: 0.125, label: "5 min TTL · ≤ 100k input tokens" }),
+				expect.objectContaining({ per1M: 0.2, label: "1 hour TTL · ≤ 100k input tokens" }),
+				expect.objectContaining({ per1M: 0.625, label: "5 min TTL · > 100k input tokens" }),
+				expect.objectContaining({ per1M: 1, label: "1 hour TTL · > 100k input tokens" }),
+			]),
+		);
+		provider.pricing_rules = provider.pricing_rules.map((rule) => ({
+			...rule, effective_from: "2030-01-01T00:00:00.000Z",
+		}));
+		expect(buildProviderSections(provider, "standard").upcomingChanges).toEqual(
+			expect.arrayContaining([
+				expect.objectContaining({ subtitle: "5 min TTL · ≤ 100k input tokens" }),
+				expect.objectContaining({ subtitle: "1 hour TTL · > 100k input tokens" }),
+			]),
+		);
+	});
+
+	test.each([
+		["standard", 1],
+		["batch", 0.5],
+		["flex", 0.5],
+		["priority", 2],
+		["ultrafast", 6],
+	] as const)("keeps OpenAI cache lifetimes and context ranges distinct for %s", (plan, multiplier) => {
+		const provider = makeProviderPricing();
+		provider.pricing_rules = ["30m", "12h"].flatMap((ttl) =>
+			[false, true].map((long) => ({
+				...provider.pricing_rules[0]!,
+				id: `${plan}-${ttl}-${long ? "long" : "short"}`,
+				pricing_plan: plan,
+				meter: `cached_write_text_tokens_${ttl}`,
+				price_per_unit: 2 * (long ? 2 : 1) * (ttl === "12h" ? 2.5 : 1.25) * multiplier,
+				match: [{ path: "input_tokens", op: long ? "gt" : "lte", value: 272000 }],
+			})),
+		);
+
+		const sections = buildProviderSections(provider, plan);
+
+		expect(sections.textTokens?.write).toHaveLength(4);
+		expect(sections.textTokens?.write).toEqual(expect.arrayContaining([
+			expect.objectContaining({ label: "30 min TTL · ≤ 272k input tokens", per1M: 2.5 * multiplier }),
+			expect.objectContaining({ label: "30 min TTL · > 272k input tokens", per1M: 5 * multiplier }),
+			expect.objectContaining({ label: "12 hour TTL · ≤ 272k input tokens", per1M: 5 * multiplier }),
+			expect.objectContaining({ label: "12 hour TTL · > 272k input tokens", per1M: 10 * multiplier }),
+		]));
+		expect(sections.otherRules).toEqual([]);
+	});
+
+	test("compares OpenAI cache promotions within the same lifetime and context range", () => {
+		const provider = makeProviderPricing();
+		provider.pricing_rules = ["30m", "12h"].flatMap((ttl) =>
+			[100, 200].map((priority) => ({
+				...provider.pricing_rules[0]!,
+				id: `${ttl}-${priority}`,
+				meter: `cached_write_text_tokens_${ttl}`,
+				price_per_unit: (ttl === "12h" ? 12.5 : 6.25) * (priority === 200 ? 0.8 : 1),
+				priority,
+				match: [{ path: "input_tokens", op: "lte", value: 272000 }],
+			})),
+		);
+
+		const sections = buildProviderSections(provider, "standard");
+
+		expect(sections.textTokens?.write).toEqual([
+			expect.objectContaining({ label: "30 min TTL · ≤ 272k input tokens", per1M: 5, basePer1M: 6.25, comparisonKind: "discount" }),
+			expect.objectContaining({ label: "12 hour TTL · ≤ 272k input tokens", per1M: 10, basePer1M: 12.5, comparisonKind: "discount" }),
+		]);
+	});
+
+	test("orders cache writes by context then lifetime even when prices disagree", () => {
+		const provider = makeProviderPricing();
+		provider.pricing_rules = [
+			["gt", "12h", 1], ["lte", "12h", 20],
+			["gt", "30m", 0.5], ["lte", "30m", 10],
+		].map(([op, ttl, price], index) => ({
+			...provider.pricing_rules[0]!,
+			id: `cache-order-${index}`,
+			meter: `cached_write_text_tokens_${ttl}`,
+			price_per_unit: Number(price),
+			match: [{ path: "input_tokens", op: String(op), value: 272000 }],
+		}));
+
+		expect(buildProviderSections(provider, "standard").textTokens?.write.map((tier) => tier.ruleId)).toEqual([
+			"cache-order-3", "cache-order-1", "cache-order-2", "cache-order-0",
+		]);
+	});
+
+	test("labels upcoming OpenAI cache prices with both lifetime and context", () => {
+		const provider = makeProviderPricing();
+		provider.pricing_rules = [{
+			...provider.pricing_rules[0]!,
+			meter: "cached_write_text_tokens_12h",
+			price_per_unit: 10,
+			effective_from: "2026-11-01T00:00:00.000Z",
+			match: [{ path: "input_tokens", op: "gt", value: 272000 }],
+		}];
+
+		const sections = buildProviderSections(provider, "standard", new Date("2026-10-21T00:00:00.000Z"));
+
+		expect(sections.upcomingChanges).toEqual([
+			expect.objectContaining({ title: "Text Tokens · Cache Writes", subtitle: "12 hour TTL · > 272k input tokens", price: 10 }),
+		]);
+	});
+
 	test("shows off-peak pricing first outside configured UTC windows", () => {
 		const provider = makeProviderPricing();
 		provider.pricing_rules = [{
@@ -1150,5 +1417,80 @@ describe("buildProviderSections", () => {
 			{ label: "Peak", timezone: "UTC", start_time: "01:00", end_time: "04:00", price_per_unit: 0.44 },
 			{ label: "Peak", timezone: "UTC", start_time: "06:00", end_time: "10:00", price_per_unit: 0.44 },
 		])).toEqual(["00:00", "01:00", "04:00", "06:00", "10:00"]);
+	});
+});
+
+describe("app-limited promotional prices", () => {
+	test("shows the promotion as a discount on the list price and keeps the app in a ranged label", () => {
+		const provider = makeProviderPricing();
+		provider.provider_models = [{
+			...provider.provider_models[0],
+			id: "anthropic:anthropic/example:text.generate",
+			model_id: "anthropic/example",
+			endpoint: "text.generate",
+		}];
+		const longContext = { op: "gt", path: "input_tokens", value: 200000 };
+		const claudeCode = { op: "eq", path: "client_id", value: "claude-code" };
+		const rule = (id: string, price: number, priority: number, match: unknown[], effectiveTo: string | null = null) => ({
+			...provider.pricing_rules[0],
+			id,
+			model_key: "anthropic:anthropic/example:text.generate",
+			capability_id: "text.generate",
+			modality: "text",
+			meter: "input_text_tokens",
+			price_per_unit: price,
+			priority,
+			match,
+			effective_from: "2026-01-01T00:00:00.000Z",
+			effective_to: effectiveTo,
+		});
+		provider.pricing_rules = [
+			rule("list-long", 0.000008, 100, [longContext]),
+			rule("promo-long", 0.000006, 200, [longContext, claudeCode], "2026-11-12T00:00:00.000Z"),
+		] as any;
+
+		const sections = buildProviderSections(provider, "standard", new Date("2026-11-10T12:00:00.000Z"));
+
+		expect(sections.textTokens?.in).toEqual([
+			expect.objectContaining({
+				ruleId: "promo-long",
+				price: 0.000006,
+				basePrice: 0.000008,
+				comparisonKind: "discount",
+				discountEndsAt: "2026-11-12T00:00:00.000Z",
+				label: expect.stringContaining("In Claude Code"),
+			}),
+		]);
+	});
+});
+
+describe("withoutRegionSurchargeRules", () => {
+	const us = [{ path: "inference_geo", op: "eq", value: "us" }];
+	test("hides region-only prices when the meter has a global price", () => {
+		const rules = [
+			{ id: "input", meter: "input_text_tokens", match: [] },
+			{ id: "input-us", meter: "input_text_tokens", match: us },
+			{ id: "output", meter: "output_text_tokens", match: [] },
+			{ id: "output-us", meter: "output_text_tokens", match: us },
+		];
+		expect(withoutRegionSurchargeRules(rules).map((rule) => rule.id)).toEqual(["input", "output"]);
+	});
+
+	test("keeps region-only prices when they are the only price for the meter", () => {
+		const rules = [
+			{ id: "input-us", meter: "input_text_tokens", match: us },
+			{ id: "output", meter: "output_text_tokens", match: [] },
+		];
+		expect(withoutRegionSurchargeRules(rules).map((rule) => rule.id)).toEqual(["input-us", "output"]);
+	});
+
+	test("keeps region-only prices when the global price is not in effect", () => {
+		const now = Date.parse("2026-11-10T12:00:00Z");
+		const rules = [
+			{ id: "input-old", meter: "input_text_tokens", match: [], effective_to: "2026-11-01T00:00:00Z" },
+			{ id: "input-next", meter: "input_text_tokens", match: [], effective_from: "2026-12-01T00:00:00Z" },
+			{ id: "input-us", meter: "input_text_tokens", match: us },
+		];
+		expect(withoutRegionSurchargeRules(rules, now).map((rule) => rule.id)).toEqual(["input-old", "input-next", "input-us"]);
 	});
 });

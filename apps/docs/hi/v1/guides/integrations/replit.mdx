@@ -1,28 +1,27 @@
 ---
 title: "Replit"
 icon: "box"
-description: "Replit applications और deployments से Phaseo को call करें।"
+description: "Replit ऐप्लिकेशन और डिप्लॉयमेंट से Phaseo कॉल करें।"
 ---
 
-Replit से Phaseo उपयोग करने के लिए official OpenAI SDK या AI SDK का first-party Phaseo provider लें। API key को source code के बजाय Replit Secrets में रखें।
+Replit Secrets में `PHASEO_API_KEY` जोड़ें, फिर [OpenAI SDK](./openai-sdk.mdx) या [Phaseo AI SDK प्रदाता](./ai-sdk.mdx) से Phaseo कॉल करें। कुंजी को अपने सोर्स कोड से बाहर रखें।
 
-## गोपनीय कुंजी जोड़ें
+## सीक्रेट जोड़ें
 
-अपने Replit workspace में **Tools → Secrets** खोलें और यह जोड़ें:
+अपने Replit वर्कस्पेस में **Tools → Secrets** खोलें और यह जोड़ें:
 
 ```text
 PHASEO_API_KEY=phaseo_v1_sk_...
 ```
 
-यह secret आपकी application को environment variable के रूप में उपलब्ध होगा।
+Replit सीक्रेट को आपके ऐप के लिए एनवायरनमेंट वेरिएबल के रूप में उपलब्ध कराता है। कुंजी के प्रकारों के लिए [ऑथेंटिकेशन](../../developers/authentication.mdx) देखें।
 
-## OpenAI SDK के साथ TypeScript
+## Phaseo कॉल करें
 
-```bash
-npm install openai
-```
+<CodeGroup>
 
-```ts
+```ts OpenAI SDK
+// npm install openai
 import OpenAI from "openai";
 
 const client = new OpenAI({
@@ -31,37 +30,30 @@ const client = new OpenAI({
 });
 
 const response = await client.responses.create({
-	model: "openai/gpt-5-nano",
+	model: "openai/gpt-6-astra",
 	input: "Reply with only: ok",
 });
 
 console.log(response.output_text);
 ```
 
-## AI SDK के साथ TypeScript
-
-```bash
-npm install @phaseo/ai-sdk-provider
-```
-
-```ts
+```ts AI SDK
+// npm install @phaseo/ai-sdk-provider
 import { phaseo } from "@phaseo/ai-sdk-provider";
 import { generateText } from "ai";
 
 const { text } = await generateText({
-	model: phaseo("openai/gpt-5-nano"),
+	model: phaseo("openai/gpt-6-astra"),
 	prompt: "Reply with only: ok",
 });
 
 console.log(text);
 ```
 
-## डिप्लॉयमेंट
+</CodeGroup>
 
-Development workspace के साथ deployment secrets में भी `PHASEO_API_KEY` जोड़ें। जाँचें कि deployment environment variables या request headers को logs में न लिखे।
+`ok` प्रिंट होने का मतलब है कि सीक्रेट और base URL काम करते हैं।
 
-## संबंधित विषय
+## डिप्लॉय करें
 
-- [OpenAI SDK](./openai-sdk.mdx)
-- [AI SDK](./ai-sdk.mdx)
-- [प्रमाणीकरण](../../developers/authentication.mdx)
+`PHASEO_API_KEY` को वर्कस्पेस के साथ-साथ डिप्लॉयमेंट के सीक्रेट में भी जोड़ें। पक्का करें कि डिप्लॉयमेंट एनवायरनमेंट वेरिएबल या अनुरोध हेडर अपने लॉग में प्रिंट न करे।

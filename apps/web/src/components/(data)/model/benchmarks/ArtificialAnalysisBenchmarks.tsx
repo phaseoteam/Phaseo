@@ -1,11 +1,13 @@
-"use client";
 import { localizedBenchmarkConfiguration, localizedArtificialAnalysisMetric } from "@/i18n/benchmark-display";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "@/i18n/react";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { fetchPublicWebApi } from "@/lib/web-api/client";
+import { webQueryKeys } from "@/lib/query/queryKeys";
 import NumberFlow from "@number-flow/react";
 import { Link } from "@/i18n/navigation";
-import { ArrowUpRight, Bot, BrainCircuit, ChevronsUpDown, CircleDollarSign, Code2, ExternalLink, ListChecks, ListX } from "lucide-react";
+import { ArrowUpRight, Bot, BrainCircuit, ChevronsUpDown, CircleDollarSign, Code2, ExternalLink, ListChecks, ListX, TrendingUp } from "lucide-react";
 import { ArtificialAnalysisLogo } from "@/components/ArtificialAnalysisLogo";
 import { Logo } from "@/components/Logo";
 import { Button } from "@/components/ui/button";
@@ -13,11 +15,12 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
+import { HoverCard, HoverCardTrigger } from "@/components/ui/hover-card";
 import type { PublicBenchmarkRanking, PublicBenchmarkRankingEntry } from "@/lib/fetchers/frontend/fetchPublicCatalog";
 import type { ModelBenchmarkHighlight, ModelBenchmarkResult } from "@/lib/fetchers/models/getModelBenchmarkData";
-import { artificialAnalysisChartColour, artificialAnalysisConfigurationRank, artificialAnalysisMetricKey, artificialAnalysisMetrics, artificialAnalysisVersion, isArtificialAnalysisBenchmark, isArtificialAnalysisCostBenchmark } from "@/lib/benchmarks/artificialAnalysis";
-
+import { applyArtificialAnalysisOrganisationColours, artificialAnalysisChartColour, artificialAnalysisConfigurationRank, artificialAnalysisSummaryRank, artificialAnalysisMetricKey, artificialAnalysisMetrics, artificialAnalysisProgressIndexId, artificialAnalysisVersion, formatArtificialAnalysisScore, isArtificialAnalysisBenchmark, isArtificialAnalysisCostBenchmark, isArtificialAnalysisProgressIndex, type ArtificialAnalysisRankSummary } from "@/lib/benchmarks/artificialAnalysis";
+import { MONEY_LOCALE } from "@/lib/displayPreferences";
+import { BenchmarkScoreHoverCardContent, formatBenchmarkScoreDelta } from "./BenchmarkScoreHoverCard";
 const configurationOrder = ["none", "low", "medium", "high", "xhigh", "max"];
 const metricIcons = {
 	intelligence: BrainCircuit,
@@ -73,11 +76,11 @@ type Configuration = NonNullable<PublicBenchmarkRankingEntry["configurations"]>[
 function AnimatedScore({ benchmarkId, score }: { benchmarkId: string; score: number }) {
 	const locale = useLocale();
 	const cost = isArtificialAnalysisCostBenchmark(benchmarkId);
-	return <span className="tabular-nums">{cost ? "$" : ""}<NumberFlow locales={locale} value={score} format={cost ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { minimumFractionDigits: 1, maximumFractionDigits: 1 }} /></span>;
+	return <span className="tabular-nums">{cost ? "$" : ""}<NumberFlow locales={cost ? MONEY_LOCALE : locale} value={score} format={cost ? { minimumFractionDigits: 2, maximumFractionDigits: 2 } : { minimumFractionDigits: 1, maximumFractionDigits: 1 }} /></span>;
 }
 
 function barScore(benchmarkId: string, score: number, locale: string) {
-	if (isArtificialAnalysisCostBenchmark(benchmarkId)) return `$${new Intl.NumberFormat(locale, { notation: "compact", maximumFractionDigits: 1 }).format(score)}`;
+	if (isArtificialAnalysisCostBenchmark(benchmarkId)) return `$${new Intl.NumberFormat(MONEY_LOCALE, { notation: "compact", maximumFractionDigits: 1 }).format(score)}`;
 	return Number(score).toLocaleString(locale, { maximumFractionDigits: 1 });
 }
 
@@ -92,33 +95,31 @@ function localConfigurations(results: ModelBenchmarkResult[], benchmarkId: strin
 	}));
 }
 
-function ModelHoverCard({ entry, configurations, metricLabel, rank, total }: { entry: PublicBenchmarkRankingEntry; configurations: Configuration[]; metricLabel?: string; rank: number; total: number }) {
+function ModelHoverCard({ entry, configuration, benchmarkId, metricLabel, rank, total, baselineScore, isCurrentModel }: { entry: PublicBenchmarkRankingEntry; configuration: Configuration; benchmarkId: string; metricLabel?: string; rank: number; total: number; baselineScore?: number | null; isCurrentModel: boolean }) {
 	const tx = useTranslations();
+	const tCard = useTranslations("Catalogue.hoverCards");
 	const locale = useLocale();
-	return <HoverCardContent side="top" align="center" className="w-72 rounded-xl p-3">
-		<div className="flex items-start gap-2.5">
-			<span className="relative size-8 shrink-0 overflow-hidden rounded-md bg-muted">
-				<Logo id={entry.organisation_id ?? entry.model_id} alt={tx("Catalogue.models.detail.quickstart.support.optionLogoAlt", { name: entry.organisation_name ?? entry.model_name })} fill className="object-contain p-1" />
-			</span>
-			<div className="min-w-0 flex-1">
-				<Link href={`/models/${entry.model_id}`} className="font-medium leading-5 decoration-transparent underline-offset-2 hover:underline hover:decoration-current focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{entry.model_name}</Link>
-				<p className="text-xs text-muted-foreground">{entry.organisation_name ?? tx("Catalogue.benchmarks.unknownOrganization" as never)} · {formatReleaseDate(entry.release_date, locale, tx("Common.ui.benchmarkChartCopy.releaseDateUnavailable" as never))}</p>
-			</div>
-		</div>
-		<div className="mt-3 space-y-1.5 border-t pt-2.5">
-			{orderConfigurations(configurations).map((item) => <div key={item.result_key || item.variant || "default"} className="flex items-center justify-between gap-3 text-xs">
-				<span className="text-muted-foreground">{localizedBenchmarkConfiguration(item.variant, tx)}</span>
-				<span className="font-medium tabular-nums">{metricLabel ? `${metricLabel}: ` : ""}{Number(item.score).toLocaleString(locale, { maximumFractionDigits: 2 })}</span>
-			</div>)}
-		</div>
-		<p className="mt-2 text-xs text-muted-foreground">{tx("Common.ui.benchmarkChartCopy.rankRankOfTotalConfigurations", { rank, total })}</p>
-	</HoverCardContent>;
+	const delta = isCurrentModel ? null : formatBenchmarkScoreDelta(benchmarkId, Number(configuration.score), baselineScore, locale);
+	return <BenchmarkScoreHoverCardContent
+		modelId={entry.model_id}
+		modelName={entry.model_name}
+		logoId={entry.organisation_id ?? entry.model_id}
+		meta={[entry.organisation_name ?? tx("Catalogue.benchmarks.unknownOrganization" as never), formatReleaseDate(entry.release_date, locale, tx("Common.ui.benchmarkChartCopy.releaseDateUnavailable" as never)), metricLabel]}
+		score={formatArtificialAnalysisScore(benchmarkId, Number(configuration.score), locale)}
+		rows={[
+			{ key: "configuration", label: tCard("rowConfiguration"), value: localizedBenchmarkConfiguration(configuration.variant, tx) },
+			{ key: "rank", label: tCard("rowRank"), value: tCard("rankValue", { rank, total }) },
+			delta ? { key: "vs", label: tCard("vsThisModel"), value: delta } : null,
+		]}
+	/>;
 }
 
-export function ArtificialAnalysisBenchmarks({ highlights, results = [], rankings = [], modelId, modelName, initialExpandedMetric = null }: {
+export function ArtificialAnalysisBenchmarks({ highlights, results = [], rankings: initialRankings = [], rankSummaries, loadRankings = false, modelId, modelName, initialExpandedMetric = null }: {
 	highlights: ModelBenchmarkHighlight[];
 	results?: ModelBenchmarkResult[];
 	rankings?: PublicBenchmarkRanking[];
+	rankSummaries?: Record<string, ArtificialAnalysisRankSummary>;
+	loadRankings?: boolean;
 	modelId?: string;
 	modelName?: string;
 	initialExpandedMetric?: string | null;
@@ -126,7 +127,7 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 	const tx = useTranslations();
 	const locale = useLocale();
 	const metrics = artificialAnalysisMetrics.map((metric) => localizedArtificialAnalysisMetric(metric, tx));
-	const aaResults = useMemo(() => results.filter((item) => isArtificialAnalysisBenchmark(item.benchmark_id) && item.score !== null), [results]);
+	const aaResults = useMemo(() => results.filter((item) => (isArtificialAnalysisBenchmark(item.benchmark_id) || isArtificialAnalysisProgressIndex(item.benchmark_id)) && item.score !== null), [results]);
 	const variants = useMemo(() => [...new Set(aaResults.map((item) => item.variant).filter((value): value is string => Boolean(value)))].sort((a, b) => {
 		const ai = configurationOrder.indexOf(a);
 		const bi = configurationOrder.indexOf(b);
@@ -135,6 +136,18 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 	const preferred = variants.includes("max") ? "max" : variants.at(-1) ?? "";
 	const [selectedVariant, setSelectedVariant] = useState(preferred);
 	const [expandedMetric, setExpandedMetric] = useState<string | null>(initialExpandedMetric);
+	const rankingQuery = useQuery({
+		queryKey: webQueryKeys.public.benchmarkRankings(),
+		queryFn: async () => {
+			const [payload, organisationPayload] = await Promise.all([
+				fetchPublicWebApi<{ benchmarks: PublicBenchmarkRanking[] }>("/api/_web/rankings/benchmarks", { credentials: "same-origin" }),
+				fetchPublicWebApi<{ organisations: Array<{ organisation_id: string; colour: string | null }> }>("/api/_web/organisations", { credentials: "same-origin" }).catch(() => ({ organisations: [] })),
+			]);
+			return applyArtificialAnalysisOrganisationColours(payload.benchmarks, new Map(organisationPayload.organisations.map((organisation) => [organisation.organisation_id, organisation.colour])));
+		},
+		enabled: loadRankings && Boolean(expandedMetric) && initialRankings.length === 0,
+	});
+	const rankings = initialRankings.length ? initialRankings : rankingQuery.data ?? [];
 	const [selectionByMetric, setSelectionByMetric] = useState<Record<string, string[]>>({});
 	const [pickerOpen, setPickerOpen] = useState(false);
 	const [pickerQuery, setPickerQuery] = useState("");
@@ -145,15 +158,23 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 		const firstFrame = requestAnimationFrame(() => requestAnimationFrame(restore));
 		return () => cancelAnimationFrame(firstFrame);
 	}, [pickerOpen]);
-	const selectedResults: DisplayResult[] = selectedVariant ? aaResults.filter((item) => item.variant === selectedVariant).map((item) => ({ benchmarkId: item.benchmark_id, score: item.score, otherInfo: item.other_info, sourceLink: item.source_link })) : [];
+	const toDisplay = (item: ModelBenchmarkResult): DisplayResult => ({ benchmarkId: item.benchmark_id, score: item.score, otherInfo: item.other_info, sourceLink: item.source_link });
+	const selectedResults: DisplayResult[] = selectedVariant ? aaResults.filter((item) => item.variant === selectedVariant && !isArtificialAnalysisProgressIndex(item.benchmark_id)).map(toDisplay) : [];
 	const fallback: DisplayResult[] = highlights.filter((item) => isArtificialAnalysisBenchmark(item.benchmarkId) && item.score !== null);
-	const available = selectedResults.length ? selectedResults : fallback;
-	if (!available.length) return null;
+	// The importer's effort labels can differ for non-reasoning models; a lone score still belongs to the model.
+	const progressResults = aaResults.filter((item) => isArtificialAnalysisProgressIndex(item.benchmark_id));
+	const progressResult = progressResults.find((item) => item.variant === (selectedVariant || null)) ?? (progressResults.length === 1 ? progressResults[0] : undefined);
+	const progress: DisplayResult | undefined = progressResult ? toDisplay(progressResult) : progressResults.length ? undefined : highlights.find((item) => isArtificialAnalysisProgressIndex(item.benchmarkId) && item.score !== null);
+	const indexResults = selectedResults.length ? selectedResults : fallback;
+	const available = progress ? [...indexResults, progress] : indexResults;
+	if (!indexResults.length && !progressResults.length && !progress) return null;
 
 	const versions = [...new Set(available.map((item) => artificialAnalysisVersion(item.otherInfo)).filter(Boolean))];
 	const activeRanking = rankings.find((ranking) => ranking.benchmark_id === expandedMetric);
 	const lowerIsBetter = activeRanking?.lower_is_better ?? isArtificialAnalysisCostBenchmark(expandedMetric ?? "");
-	const activeMetric = metrics.find((metric) => metric.key === artificialAnalysisMetricKey(expandedMetric ?? ""));
+	const progressLabel = tx("Common.ui.benchmarkChartCopy.progressIndex" as never);
+	const activeMetric = isArtificialAnalysisProgressIndex(expandedMetric ?? "") ? { label: progressLabel } : metrics.find((metric) => metric.key === artificialAnalysisMetricKey(expandedMetric ?? ""));
+	const progressActive = expandedMetric === artificialAnalysisProgressIndexId;
 	const comparisonEntries = (benchmarkId: string) => {
 		const ranking = rankings.find((item) => item.benchmark_id === benchmarkId);
 		const lowerIsBetter = ranking?.lower_is_better ?? isArtificialAnalysisCostBenchmark(benchmarkId);
@@ -176,7 +197,8 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 		};
 		return [...entries.filter((entry) => entry.model_id !== modelId), current].sort((left, right) => (lowerIsBetter ? left.score - right.score : right.score - left.score) || left.model_name.localeCompare(right.model_name));
 	};
-	const entries = expandedMetric ? comparisonEntries(expandedMetric) : [];
+	const waitingForRankings = loadRankings && !initialRankings.length && !rankingQuery.data && !rankingQuery.isSuccess;
+	const entries = expandedMetric && !waitingForRankings ? comparisonEntries(expandedMetric) : [];
 	const datedEntries = [...entries].sort(modelDateDescending);
 	const pickerRows = datedEntries.flatMap((entry) => {
 		const configurations = orderConfigurations(entry.configurations?.length ? entry.configurations : [{ variant: null, result_key: null, score: Number(entry.score), other_info: entry.other_info ?? null, source_link: entry.source_link ?? null, updated_at: entry.updated_at ?? null }]);
@@ -205,14 +227,26 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 			|| configurationRank(left.configuration.variant) - configurationRank(right.configuration.variant);
 	});
 	const hasSelectedModel = Boolean(modelId && chartRows.some((row) => row.entry.model_id === modelId));
+	// This model's score on the open metric, for each bar's "vs this model" gap.
+	const currentModelScore = expandedMetric ? available.find((item) => item.benchmarkId === expandedMetric)?.score ?? null : null;
 	const maxScore = Math.max(...chartRows.map((row) => Number(row.configuration.score)), 1);
+	// Index scores start at zero; the Progress Index scale has no meaningful zero, so bars start just below the lowest shown.
+	const minScore = Math.min(...chartRows.map((row) => Number(row.configuration.score)));
+	const chartBase = isArtificialAnalysisProgressIndex(expandedMetric ?? "") && chartRows.length ? Math.max(0, minScore - Math.max((maxScore - minScore) * 0.25, 5)) : 0;
 	const rankFor = (benchmarkId: string, score: number) => {
+		const summary = rankSummaries?.[benchmarkId];
+		if (summary && !rankings.length) {
+			const version = artificialAnalysisVersion(available.find((item) => item.benchmarkId === benchmarkId)?.otherInfo);
+			const local = localConfigurations(aaResults, benchmarkId).filter((item) => !version || !artificialAnalysisVersion(item.other_info) || artificialAnalysisVersion(item.other_info) === version);
+			return artificialAnalysisSummaryRank(summary, score, modelId, version, local.map((item) => item.score));
+		}
 		const ranking = rankings.find((item) => item.benchmark_id === benchmarkId);
 		if (!ranking) return null;
 		const comparisons = comparisonEntries(benchmarkId);
 		if (!comparisons.some((entry) => entry.model_id !== modelId)) return null;
 		return artificialAnalysisConfigurationRank(comparisons, score, ranking.lower_is_better);
 	};
+	const progressRank = progress?.score == null ? null : rankFor(artificialAnalysisProgressIndexId, progress.score);
 	const setSelectedKeys = (keys: string[]) => expandedMetric && setSelectionByMetric((current) => ({ ...current, [expandedMetric]: keys }));
 
 	return <section aria-label={tx("Common.ui.benchmarkChartCopy.artificialAnalysisBenchmarks" as never)}>
@@ -221,7 +255,7 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 			{variants.length > 1 ? <div className="flex items-center gap-2 text-sm"><span className="text-muted-foreground">{tx("Common.ui.benchmarkChartCopy.modelConfiguration" as never)}</span><Select value={selectedVariant} onValueChange={setSelectedVariant}><SelectTrigger size="sm" aria-label={tx("Product.latency.configuration" as never)} className="min-w-36"><SelectValue>{localizedBenchmarkConfiguration(selectedVariant, tx)}</SelectValue></SelectTrigger><SelectContent align="end">{variants.map((variant) => <SelectItem key={variant} value={variant}>{localizedBenchmarkConfiguration(variant, tx)}</SelectItem>)}</SelectContent></Select></div> : null}
 		</div>
 
-		<div className="mt-4 grid grid-cols-2 border-t lg:grid-cols-4">
+		{indexResults.length ? <div className="mt-4 grid grid-cols-2 border-t lg:grid-cols-4">
 			{metrics.map(({ id: fallbackId, key, label }, index) => {
 				const result = available.filter((item) => artificialAnalysisMetricKey(item.benchmarkId) === key).sort((left, right) => right.benchmarkId.localeCompare(left.benchmarkId, "en", { numeric: true }))[0];
 				const id = result?.benchmarkId ?? fallbackId;
@@ -233,7 +267,15 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 					<span className="mt-2 flex items-baseline gap-1.5 text-xl font-semibold tracking-tight sm:text-2xl"><span>{result?.score == null ? tx("Product.gatewayBenchmark.notAvailable" as never) : <AnimatedScore benchmarkId={id} score={result.score} />}</span>{result?.score != null && rank ? <><span aria-hidden="true" className="flex items-baseline text-sm font-medium text-muted-foreground" title={tx("Common.ui.benchmarkChartCopy.rankRankOfTotalEvaluatedConfigurations", { rank: rank.rank, total: rank.total })}>(#<NumberFlow locales={locale} value={rank.rank} />)</span><span className="sr-only">{tx("Common.ui.benchmarkChartCopy.rankRankOfTotalEvaluatedConfigurations", { rank: rank.rank, total: rank.total })}</span></> : null}</span>
 				</button>;
 			})}
-		</div>
+		</div> : null}
+
+		{progress?.score != null ? <button type="button" aria-expanded={progressActive} onClick={() => { setPickerOpen(false); setExpandedMetric(progressActive ? null : artificialAnalysisProgressIndexId); }} className={`group flex w-full items-center justify-between gap-4 border-t py-3 text-left sm:py-4 ${indexResults.length ? "" : "mt-4"}`}>
+			<span className="min-w-0">
+				<span className="flex items-center gap-2 text-sm font-medium"><TrendingUp className={`size-4 transition-colors ${progressActive ? "text-[#8842FD]" : "text-muted-foreground group-hover:text-foreground"}`} />{progressLabel}</span>
+				<span className="mt-0.5 block text-xs text-muted-foreground">{tx("Common.ui.benchmarkChartCopy.progressIndexHelp" as never)}</span>
+			</span>
+			<span className="flex shrink-0 items-baseline gap-1.5 text-xl font-semibold tracking-tight sm:text-2xl"><AnimatedScore benchmarkId={artificialAnalysisProgressIndexId} score={progress.score} />{progressRank ? <><span aria-hidden="true" className="flex items-baseline text-sm font-medium text-muted-foreground" title={tx("Common.ui.benchmarkChartCopy.rankRankOfTotalEvaluatedConfigurations", { rank: progressRank.rank, total: progressRank.total })}>(#<NumberFlow locales={locale} value={progressRank.rank} />)</span><span className="sr-only">{tx("Common.ui.benchmarkChartCopy.rankRankOfTotalEvaluatedConfigurations", { rank: progressRank.rank, total: progressRank.total })}</span></> : null}</span>
+		</button> : null}
 
 		{expandedMetric ? <div className="border-b py-5" aria-live="polite">
 			<div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -243,16 +285,16 @@ export function ArtificialAnalysisBenchmarks({ highlights, results = [], ranking
 					<div className="grid grid-cols-2 gap-1.5 border-t bg-popover p-2"><Button type="button" variant="ghost" size="sm" className="h-8 justify-between bg-muted/40 px-2.5 text-xs" onClick={() => setSelectedKeys([])}>{tx("Common.search.clear" as never)}<ListX className="size-3.5" /></Button><Button type="button" variant="ghost" size="sm" className="h-8 justify-between bg-muted/40 px-2.5 text-xs" onClick={() => setSelectedKeys(pickerRows.map((row) => row.key))}>{tx("Common.authFlows.oauthConsent.selectAll" as never)}<ListChecks className="size-3.5" /></Button></div>
 				</PopoverContent></Popover> : null}
 			</div>
-			{chartRows.length ? <ScrollArea className="w-full" scrollBarOrientation="horizontal" viewportClassName="pb-3"><div className="relative h-[360px] border-b" style={{ width: `${Math.max(chartRows.length * 54 + 144, 480)}px`, minWidth: "100%" }}>
+			{loadRankings && !rankings.length && (rankingQuery.isPending || rankingQuery.isFetching) ? <p role="status">{tx("Common.ui.accessibility.loading")}</p> : loadRankings && !rankings.length && rankingQuery.isError ? <Button variant="outline" onClick={() => void rankingQuery.refetch()}>{tx("Common.errors.tryAgain")}</Button> : chartRows.length ? <ScrollArea className="w-full" scrollBarOrientation="horizontal" viewportClassName="pb-3"><div className="relative h-[360px] border-b" style={{ width: `${Math.max(chartRows.length * 54 + 144, 480)}px`, minWidth: "100%" }}>
 				<div className="pointer-events-none absolute inset-x-16 bottom-[140px] top-4 flex flex-col justify-between">{[0, 1, 2, 3, 4].map((line) => <span key={line} className="border-t border-dashed border-border/70" />)}</div>
 								<div className="absolute inset-x-16 bottom-0 top-4 flex items-end gap-1.5">{chartRows.map(({ entry, configuration }) => {
 									const isSelectedModel = entry.model_id === modelId;
-									const proportionalHeight = (Number(configuration.score) / maxScore) * 205;
+									const proportionalHeight = ((Number(configuration.score) - chartBase) / (maxScore - chartBase)) * 205;
 									const height = Math.max(proportionalHeight, 3);
 									const compactBar = proportionalHeight < 30;
 									const colour = artificialAnalysisChartColour(entry.organisation_id, entry.organisation_colour);
 									const isOpenAI = entry.organisation_id === "openai";
-									return <HoverCard key={`${entry.model_id}:${configuration.result_key || configuration.variant || "default"}`}><HoverCardTrigger asChild delay={80} closeDelay={80}><div tabIndex={0} aria-label={entry.model_name} className="group flex h-full min-w-12 flex-1 basis-12 cursor-default flex-col items-center justify-end rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"><span className={`relative flex w-8 items-end justify-center rounded-t-[3px] text-[10px] font-semibold tabular-nums sm:w-9 ${compactBar ? "" : `pb-2 ${hasSelectedModel && !isSelectedModel ? "text-foreground" : "text-white"}`}`} style={{ height }}><span aria-hidden="true" className={`absolute inset-0 rounded-t-[3px] transition-[filter,opacity] duration-300 group-hover:brightness-110 ${isOpenAI ? "bg-black" : "shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"} ${hasSelectedModel && !isSelectedModel ? "opacity-20" : ""}`} style={{ backgroundColor: isOpenAI ? undefined : colour }} /><span className={`relative z-10 ${compactBar ? "absolute bottom-full mb-1 text-foreground" : ""}`}>{barScore(expandedMetric, Number(configuration.score), locale)}</span></span><span className="relative my-1 size-4 shrink-0"><Logo id={entry.organisation_id ?? entry.model_id} alt="" fill className="object-contain" /></span><div className="relative h-[112px] w-full"><Link href={`/models/${entry.model_id}`} className="absolute right-1/2 top-0 line-clamp-2 w-24 origin-top-right -rotate-[55deg] whitespace-normal break-words text-right text-[11px] leading-[1.15] decoration-transparent underline-offset-2 hover:underline hover:decoration-current focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{entry.model_name}{configuration.variant ? <span className="text-muted-foreground"> ({localizedBenchmarkConfiguration(configuration.variant, tx)})</span> : null}</Link></div></div></HoverCardTrigger><ModelHoverCard entry={entry} configurations={[configuration]} metricLabel={activeMetric?.label} {...artificialAnalysisConfigurationRank(entries, configuration.score, lowerIsBetter)} /></HoverCard>;
+									return <HoverCard key={`${entry.model_id}:${configuration.result_key || configuration.variant || "default"}`}><HoverCardTrigger asChild delay={80} closeDelay={80}><div tabIndex={0} aria-label={entry.model_name} className="group flex h-full min-w-12 flex-1 basis-12 cursor-default flex-col items-center justify-end rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"><span className={`relative flex w-8 items-end justify-center rounded-t-[3px] text-[10px] font-semibold tabular-nums sm:w-9 ${compactBar ? "" : `pb-2 ${hasSelectedModel && !isSelectedModel ? "text-foreground" : "text-white"}`}`} style={{ height }}><span aria-hidden="true" className={`absolute inset-0 rounded-t-[3px] transition-[filter,opacity] duration-300 group-hover:brightness-110 ${isOpenAI ? "bg-black" : "shadow-[inset_0_0_0_1px_rgba(255,255,255,0.08)]"} ${hasSelectedModel && !isSelectedModel ? "opacity-20" : ""}`} style={{ backgroundColor: isOpenAI ? undefined : colour }} /><span className={`relative z-10 ${compactBar ? "absolute bottom-full mb-1 text-foreground" : ""}`}>{barScore(expandedMetric, Number(configuration.score), locale)}</span></span><span className="relative my-1 size-4 shrink-0"><Logo id={entry.organisation_id ?? entry.model_id} alt="" fill className="object-contain" /></span><div className="relative h-[112px] w-full"><Link href={`/models/${entry.model_id}`} className="absolute right-1/2 top-0 line-clamp-2 w-24 origin-top-right -rotate-[55deg] whitespace-normal break-words text-right text-[11px] leading-[1.15] decoration-transparent underline-offset-2 hover:underline hover:decoration-current focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{entry.model_name}{configuration.variant ? <span className="text-muted-foreground"> ({localizedBenchmarkConfiguration(configuration.variant, tx)})</span> : null}</Link></div></div></HoverCardTrigger><ModelHoverCard entry={entry} configuration={configuration} benchmarkId={expandedMetric ?? ""} metricLabel={activeMetric?.label} baselineScore={currentModelScore} isCurrentModel={isSelectedModel} {...artificialAnalysisConfigurationRank(entries, configuration.score, lowerIsBetter)} /></HoverCard>;
 				})}</div>
 				</div></ScrollArea> : <p className="text-sm text-muted-foreground">{tx("Common.ui.benchmarkChartCopy.selectModelsToCompare" as never)}</p>}
 		</div> : null}

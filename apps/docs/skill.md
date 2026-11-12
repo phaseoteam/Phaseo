@@ -52,6 +52,19 @@ Most integrations start with:
 }
 ```
 
+## Get a key and manage the account
+
+Use the `phaseo` CLI, the `/v1` Management API or the Phaseo MCP server (`https://mcp.phaseo.app/mcp?access=manage`) for everyday tasks. Creating API keys, and changes to spending, access, presets, routing rules, logging or where workspace data goes, are made in the dashboard or with a management key; a CLI sign-in or MCP connection gets `403`:
+
+```bash
+npm install -g @phaseo/cli
+phaseo login                          # or --device-code; a person approves the sign-in
+phaseo login --scopes billing:write   # opt in once before the first top-up
+phaseo credits add --amount 20 --json  # saved card: an owner or admin confirms by email; no card: returns a checkout link
+```
+
+Never generate or guess a key. A person is still needed for sign-up, approving a sign-in, paying the first top-up on the checkout link (no saved card yet), confirming each later top-up from the emailed link (saved card), and account security (password, MFA, passkeys). For BYOK, budgets, rate limits, routing, presets, guardrails, workspaces and notifications, see `v1/developers/manage-from-an-agent`.
+
 ## Endpoint selection
 
 Pick the endpoint that matches the client or workflow you already have:
@@ -123,6 +136,12 @@ Phaseo supports agentic workflows through:
 - `v1/api-reference/introduction`
 - `v1/api-reference/endpoint/responses`
 
+### Account management
+
+- `v1/developers/manage-from-an-agent`
+- `v1/guides/integrations/phaseo-cli`
+- `v1/developers/management-api-keys`
+
 ### Routing and provider control
 
 - `v1/guides/routing-and-fallbacks`
@@ -131,7 +150,7 @@ Phaseo supports agentic workflows through:
 
 ### Agent workflows
 
-- `v1/sdk-reference/agent-sdk/overview`
+- `v1/sdk-reference/agent/overview`
 - `v1/cookbook/agent-sdk-durable-loop`
 - `v1/cookbook/agent-sdk-research-brief`
 

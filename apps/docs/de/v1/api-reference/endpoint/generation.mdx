@@ -4,20 +4,25 @@ sidebarTitle: "Generierung abrufen"
 badge: "Beta"
 openapi: "/de/openapi/v1/openapi.localized.yaml GET /generations"
 ---
-Ruft den gespeicherten Auditdatensatz für eine zu deinem Team gehörende `request_id` ab.
 
-Verwende:
-- `GET /v1/generations?id=<request_id>`
+Rufe `GET /v1/generations?id=<request_id>` auf, um den gespeicherten Auditdatensatz einer Anfrage in deinem Workspace abzurufen. Dafür ist der Scope `generations:read` nötig; eine fehlende `id` gibt `400` `missing_id` zurück.
 
-Wenn das Gateway alle Anfragedetails dieser Generierung erfasst hat, enthält die Antwort zusätzlich:
+Neue Anfragen erhalten eine vom Server erzeugte Generierungs-ID mit dem Präfix `G-`, die im Antwort-Header `x-request-id` und in der Generierungsantwort zurückgegeben wird. Verwende diese ID für Anfrageprotokolle, das Nachschlagen von Generierungen und den Support. Ein vom Aufrufer gesendeter `x-request-id` ersetzt die Generierungs-ID nicht. Ältere UUID-Protokoll-IDs funktionieren zum Nachschlagen weiterhin.
 
-- `replay_supported`: Gibt an, ob eine wiedergabefertige Nutzlast verfügbar ist
-- `replay_request`: Der gespeicherte Anfrageinhalt, den du für eine kontrollierte Wiederholung an den ursprünglichen Endpunkt senden kannst
+## Eine Anfrage erneut ausführen
 
-Typischer Ablauf für eine Wiederholung:
+Jede Antwort enthält `replay_supported`. Wenn die I/O-Protokollierung den Anfrage-Body gespeichert hat und du gespeicherte Inhalte lesen darfst, ist `replay_supported` gleich `true`, und `replay_request` enthält den Body, den du für eine kontrollierte erneute Ausführung zurücksendest:
 
-1. Lies den Generierungsdatensatz mit `GET /v1/generations?id=<request_id>`.
-2. Prüfe, ob `replay_supported === true` ist.
-3. Sende `replay_request` erneut an den durch `endpoint` angegebenen ursprünglichen Endpunkt, etwa `/v1/chat/completions` oder `/v1/responses`.
+<Steps>
+  <Step title="Generierung lesen">
+    Rufe `GET /v1/generations?id=<request_id>` auf.
+  </Step>
+  <Step title="Prüfen, ob sie erneut ausgeführt werden kann">
+    Fahre nur fort, wenn `replay_supported` gleich `true` ist.
+  </Step>
+  <Step title="Erneut senden">
+    Sende `replay_request` an den in `endpoint` genannten Endpunkt, zum Beispiel `/v1/chat/completions` oder `/v1/responses`.
+  </Step>
+</Steps>
 
-
+Ein Workspace kann gespeicherte Inhalte auf Owner und Admins beschränken. Andere Aufrufer, einschließlich API-Schlüsseln, die von Mitgliedern erstellt wurden, erhalten dann `replay_request: null` und Anfragedetails ohne deren Inhalte.

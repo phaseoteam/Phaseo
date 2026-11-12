@@ -13,6 +13,7 @@ import { stripUsagePricing } from "../usage";
 import { buildImagePricingRequestOptions } from "@core/image-request-options";
 import { normalizeTextServiceTier, readRequestedServiceTier } from "@core/serviceTiers";
 import { getProviderPricingKey } from "../before/context.shared";
+import { normalizePriceCardPlans, resolveBasePricingPlan } from "../pricing/service-tiers";
 
 function normalizeObservedServiceTier(value: unknown): string {
     if (typeof value === "string" && value.trim().toLowerCase() === "default") {
@@ -28,8 +29,9 @@ function normalizePricingServiceTier(body: any, usage: any, card?: PriceCard): s
     const requestedTier = normalizeTextServiceTier(readRequestedServiceTier(body).value) ?? "";
     // Dedicated priority routes cannot downgrade to an unpriced standard SKU.
     // Honor observed downgrades on cards that actually offer standard pricing.
-    if (observedTier === "standard" && (requestedTier === "priority" || requestedTier === "fast") &&
-        card?.rules.some((rule) => rule.pricing_plan === "priority") &&
+    const requestedPlan = requestedTier === "fast" ? "priority" : requestedTier;
+    if (observedTier === "standard" && ["priority", "ultrafast", "flex"].includes(requestedPlan) &&
+        card?.rules.some((rule) => rule.pricing_plan === requestedPlan) &&
         !card.rules.some((rule) => rule.pricing_plan === "standard")) {
         return requestedTier;
     }
@@ -45,6 +47,7 @@ function derivePricingPlan(body: any, usage: any, card: PriceCard): string {
     if (tier === "ultrafast") return "ultrafast";
     if (tier === "batch") return "batch";
     if (tier === "flex") return "flex";
+    if (!tier && card.rules.length && card.rules.every((rule) => rule.pricing_plan === "batch")) return "batch";
 
     // Free model variants encode their pricing tier in the model id (for
     // example, `poolside/laguna-s-2.1:free`) and providers do not always echo
@@ -63,6 +66,9 @@ function buildTrustedPricingRequestOptions(body: any, usage: any, pricingPlan: s
         ...deriveCachePricingContext(body),
         ...buildImagePricingRequestOptions(body ?? {}, usage),
         pricing_plan: pricingPlan,
+        // Transcription keyterms (`keywords`) carry a provider surcharge that a
+        // catalogue rule can price by matching `keyterms: true`.
+        keyterms: Array.isArray(body?.keywords) && body.keywords.length > 0,
     };
 
     const serviceTier = normalizePricingServiceTier(body, usage, card);
@@ -72,6 +78,24 @@ function buildTrustedPricingRequestOptions(body: any, usage: any, pricingPlan: s
     }
 
     return options;
+}
+
+/**
+ * The calling app the gateway detected (`claude-code`, `codex`, an SDK id; see
+ * before/clientAttribution.ts), so a price rule can match `client_id`, as a
+ * promotional price limited to one app does. It is derived from request headers,
+ * never from the request body, and a request without a detected app gets none.
+ */
+function attachClientAttribution(
+    options: Record<string, unknown>,
+    meta?: PipelineContext["meta"] | null,
+): Record<string, unknown> {
+    const clientId = (meta as { clientSource?: { id?: unknown } | null } | null | undefined)?.clientSource?.id;
+    if (typeof clientId !== "string" || !clientId || clientId === "api") {
+        const { client_id: _ignored, ...rest } = options;
+        return rest;
+    }
+    return { ...options, client_id: clientId };
 }
 
 function attachBillingTimestamps(
@@ -103,6 +127,9 @@ export async function loadProviderPricing(
     ctx: PipelineContext,
     result: RequestResult
 ): Promise<PriceCard | null> {
+    // Authorized internal tests have no customer charge and may precede pricing.
+    if (ctx.testingMode && !ctx.billableInternalTesting) return null;
+    if (ctx.billableInternalTesting) ctx.internalPricingAvailable = false;
     const apiModelId =
         typeof result.apiModelId === "string" && result.apiModelId.trim().length > 0
             ? result.apiModelId.trim()
@@ -119,13 +146,17 @@ export async function loadProviderPricing(
                 result.provider,
                 apiModelId,
                 ctx.capability,
+                result.providerModelSlug,
+                ctx.pricingInternalOnly === true,
             );
         }
-		if (!card && apiModelId) {
+		if (!card && apiModelId && !ctx.billableInternalTesting) {
 			// A stable provider-model route was executed. Falling back to the
 			// canonical model can mix sibling SKUs and undercharge the request.
 			throw new Error(`pricing_card_missing_for_executed_route:${result.provider}:${apiModelId}`);
 		}
+        // Internal previews must not borrow pricing from a sibling route.
+        if (!card && apiModelId && ctx.billableInternalTesting) return null;
         if (!card && pricingKey !== result.provider) {
             card = ctx.pricing?.[result.provider] ?? null;
         }
@@ -146,12 +177,18 @@ export async function loadProviderPricing(
 				result.provider,
 				apiModelId ?? card.model ?? getBaseModel(ctx.model),
 				ctx.capability,
+				result.providerModelSlug,
+				ctx.pricingInternalOnly === true,
 			);
 			if (!card && apiModelId) {
 				throw new Error(`pricing_card_missing_for_executed_route:${result.provider}:${apiModelId}`);
 			}
 		}
 
+        if (ctx.billableInternalTesting) {
+            if (!card?.rules?.length) return null;
+            ctx.internalPricingAvailable = true;
+        }
         return card;
     } catch (err) {
         console.error("pricing card lookup failed", err);
@@ -162,7 +199,7 @@ export async function loadProviderPricing(
 
 export function calculatePricing(
     usage: any,
-    card: PriceCard | null,
+    cardInput: PriceCard | null,
     body: any,
     _tier?: string | null,
     meta?: PipelineContext["meta"] | null
@@ -176,14 +213,18 @@ export function calculatePricing(
     let pricedUsage = usageMeters;
     let totalCents = 0;
     let totalNanos = 0;
-    let currency = card?.currency ?? "USD";
+    let currency = cardInput?.currency ?? "USD";
 
-    if (card) {
+    if (cardInput) {
+        // Cards from the request-context RPC keep the stored plan name (`fast`); price them
+        // under the engine's plan names so tier selection sees the same plans as the engine.
+        const card = normalizePriceCardPlans(cardInput);
         try {
 			const pricingPlan = derivePricingPlan(body, usage, card);
+			const basePlan = resolveBasePricingPlan(card) ?? "standard";
 			const activePlanRules = card.rules.filter(
 				(rule) => rule.pricing_plan === pricingPlan ||
-					(pricingPlan !== "standard" && rule.pricing_plan === "standard"),
+					rule.pricing_plan === basePlan,
 			);
 			const outputAudioTokens = Number((usageMeters as any)?.output_audio_tokens ?? 0);
 			const hasPaidOutputAudioRule = activePlanRules.some(
@@ -236,13 +277,17 @@ export function calculatePricing(
 					prompt_tokens_details: withoutNestedCachedTokens((usageMeters as any).prompt_tokens_details),
 				};
 			}
-            const requestOptions = attachBillingTimestamps(
-                buildTrustedPricingRequestOptions(body, usage, pricingPlan, card),
+            const requestOptions = attachClientAttribution(
+                attachBillingTimestamps(
+                    buildTrustedPricingRequestOptions(body, usage, pricingPlan, card),
+                    meta,
+                ),
                 meta,
             );
 
-            // Step 1: Calculate base pricing (provider costs)
-            pricedUsage = computeBill(billableUsage ?? {}, card, requestOptions, pricingPlan);
+            // Step 1: Calculate base pricing (provider costs). The provider has already charged,
+            // so a rule whose condition the request did not meet falls back to its base rate.
+            pricedUsage = computeBill(billableUsage ?? {}, card, requestOptions, pricingPlan, { baseRateFallback: true });
 			if (
 				billableUsage !== usageMeters &&
 				Number.isFinite(cachedReadTokens) &&
@@ -263,7 +308,78 @@ export function calculatePricing(
             console.error("computeBill failed", calcErr);
             throw calcErr;
         }
+        const toolCharges = serverToolCharges(meta);
+        const extras = [...svgAuthorCharges(pricedUsage), ...toolCharges];
+        if (extras.length > 0) {
+            const withExtras = addExtraCharges(pricedUsage, totalNanos, extras);
+            pricedUsage = withExtras.pricedUsage;
+            totalNanos = withExtras.totalNanos;
+            totalCents = Math.trunc(totalNanos / 10_000_000);
+        }
+        if (toolCharges.length > 0) {
+            // The after stage settles these under each tool's own credential (applyByokServiceFeeWithToolCharges).
+            pricedUsage = {
+                ...pricedUsage,
+                pricing: {
+                    ...pricedUsage.pricing,
+                    server_tool_nanos: toolCharges.reduce((sum, charge) => sum + (charge.total_nanos as number), 0),
+                },
+            };
+        }
     }
 
     return { pricedUsage, totalCents, totalNanos, currency };
+}
+
+type ExtraCharge = { total_nanos: unknown; lines?: unknown };
+
+/**
+ * GPT Image SVG output also bills the model that wrote the SVG, priced by the OpenAI image
+ * adapter from that model's own card (providers/openai/endpoints/images-svg.ts). The image
+ * card cannot price it, so its total and lines are added on top.
+ */
+function svgAuthorCharges(pricedUsage: any): ExtraCharge[] {
+    const svgAuthor = pricedUsage?.svg_author_pricing;
+    if (!svgAuthor || typeof svgAuthor !== "object") return [];
+    if (!Number.isSafeInteger(svgAuthor.total_nanos) || svgAuthor.total_nanos < 0) {
+        throw new Error("svg_author_pricing_invalid");
+    }
+    return [svgAuthor];
+}
+
+/**
+ * Models a server tool ran inside this request (such as Chat's image tool) were priced on
+ * their own cards when they ran (pipeline/surfaces/server-tool-pricing.ts). The request's
+ * card cannot price them, so their totals and lines are added on top.
+ */
+function serverToolCharges(meta: PipelineContext["meta"] | null | undefined): ExtraCharge[] {
+    const charges = meta?.serverToolPricing;
+    if (!Array.isArray(charges) || charges.length === 0) return [];
+    for (const charge of charges) {
+        if (!Number.isSafeInteger(charge?.total_nanos) || charge.total_nanos < 0) {
+            throw new Error("server_tool_pricing_invalid");
+        }
+    }
+    return charges;
+}
+
+function addExtraCharges(pricedUsage: any, totalNanos: number, extras: ExtraCharge[]): { pricedUsage: any; totalNanos: number } {
+    const pricing = pricedUsage?.pricing && typeof pricedUsage.pricing === "object" ? pricedUsage.pricing : {};
+    const combinedNanos = extras.reduce((sum, extra) => sum + (extra.total_nanos as number), totalNanos);
+    return {
+        totalNanos: combinedNanos,
+        pricedUsage: {
+            ...pricedUsage,
+            pricing: {
+                ...pricing,
+                total_nanos: combinedNanos,
+                total_usd_str: String(Number((combinedNanos / 1_000_000_000).toFixed(9))),
+                total_cents: Math.trunc(combinedNanos / 10_000_000),
+                lines: [
+                    ...(Array.isArray(pricing.lines) ? pricing.lines : []),
+                    ...extras.flatMap((extra) => (Array.isArray(extra.lines) ? extra.lines : [])),
+                ],
+            },
+        },
+    };
 }

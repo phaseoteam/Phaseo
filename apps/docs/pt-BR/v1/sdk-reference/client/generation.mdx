@@ -1,0 +1,131 @@
+---
+icon: "search-check"
+title: "Consulta de geração"
+description: "Recupere uma geração anterior com /generations em qualquer SDK do Phaseo."
+---
+
+Passe um ID de solicitação (como `G-01ABC...`) ao método de geração do SDK para buscar o registro armazenado dessa solicitação em `GET /v1/generations?id=<id>`.
+
+<CodeGroup>
+
+```typescript TypeScript
+const record = await client.getGeneration("G-01ABC...");
+```
+
+```python Python
+record = client.get_generation("G-01ABC...")
+
+print(record["model_id"], record["cost_nanos"])
+```
+
+```go Go
+client, err := phaseo.NewFromEnv()
+if err != nil {
+  panic(err)
+}
+
+record, err := client.GetGeneration(context.Background(), "G-01ABC...")
+if err != nil {
+  panic(err)
+}
+fmt.Println(record["status_code"], record["cost_nanos"])
+```
+
+```csharp C#
+using PhaseoSdk;
+
+var client = new Phaseo();
+var record = await client.GetGeneration("G-01ABC...");
+```
+
+```php PHP
+<?php
+require 'vendor/autoload.php';
+
+use Phaseo\Sdk\Phaseo;
+
+$client = new Phaseo();
+$record = $client->getGeneration('G-01ABC...');
+```
+
+```ruby Ruby
+require 'phaseo_sdk'
+
+client = PhaseoSdk::Phaseo.new
+record = client.get_generation('G-01ABC...')
+```
+
+```java Java
+import app.phaseo.sdk.Phaseo;
+
+Phaseo client = new Phaseo(System.getenv("PHASEO_API_KEY"));
+
+var record = client.getGeneration("G-01ABC...");
+System.out.println(record);
+```
+
+</CodeGroup>
+
+| Linguagem | Método | Retorna |
+| --- | --- | --- |
+| TypeScript | `client.getGeneration(id)` | O objeto do registro |
+| Python | `client.get_generation(id)` | Dict `APIResponse` |
+| Go | `client.GetGeneration(ctx, id)` | `map[string]interface{}` |
+| C# | `client.GetGeneration(id)` | `Dictionary<string, object>?` |
+| PHP | `$client->getGeneration($id)` | Array |
+| Ruby | `client.get_generation(id)` | Hash |
+| Java | `client.getGeneration(id)` | `JsonNode` do Jackson |
+| Rust | Não há helper; chame `client.request("GET", "/generations?id=<id>", None, &RequestOptions::default())` | `PhaseoResponse`, com o registro em `body` (um `serde_json::Value`) |
+
+A consulta é limitada ao seu espaço de trabalho. Um `id` ausente retorna `400` (`missing_id`), e um ID que não está no seu espaço de trabalho retorna `404` (`not_found`).
+
+## Reexecute uma solicitação armazenada
+
+Se o gateway armazenou a solicitação completa, o registro tem `replay_supported` definido como true e um `replay_request`, que você pode enviar de volta ao endpoint original para uma reexecução controlada.
+
+## Leia os campos de tempo
+
+- `latency_ms`: tempo até o primeiro token, ou o primeiro byte ou frame de saída, quando medido.
+- `generation_ms`: tempo de geração depois desse ponto, quando medido.
+
+## Resposta
+
+```json
+{
+  "created_at": "2026-05-05T12:00:00.000Z",
+  "request_id": "G-01ABC123",
+  "team_id": "team-123",
+  "app_id": "app-123",
+  "endpoint": "chat/completions",
+  "model_id": "openai/gpt-6-astra",
+  "provider": "openai",
+  "native_response_id": "chatcmpl-123",
+  "stream": false,
+  "byok": false,
+  "status_code": 200,
+  "success": true,
+  "error_code": null,
+  "error_message": null,
+  "latency_ms": 1500,
+  "generation_ms": 1400,
+  "usage": {
+    "prompt_tokens": 9,
+    "completion_tokens": 9,
+    "total_tokens": 18
+  },
+  "cost_nanos": 1000000,
+  "currency": "USD",
+  "pricing_lines": [],
+  "key_id": "key-123",
+  "throughput": null,
+  "replay_supported": true,
+  "replay_request": {
+    "model": "openai/gpt-6-astra",
+    "messages": [
+      { "role": "user", "content": "Say hello" }
+    ]
+  }
+}
+```
+
+[Consulta de geração](../../api-reference/endpoint/generation) lista todos os campos.

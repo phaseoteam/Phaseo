@@ -41,6 +41,12 @@ function buildArgs({
 	} as ExecutorExecuteArgs;
 }
 
+function decodeFloat32Base64(value: string): number[] {
+	const binary = atob(value);
+	const view = new DataView(Uint8Array.from(binary, (char) => char.charCodeAt(0)).buffer);
+	return Array.from({ length: binary.length / 4 }, (_, index) => view.getFloat32(index * 4, true));
+}
+
 beforeAll(() => {
 	setupTestRuntime();
 });
@@ -105,6 +111,8 @@ describe("openai embeddings executor", () => {
 			input: ["hello", "world"],
 		});
 		expect(result.kind).toBe("completed");
+		// encoding_format is not sent, so base64 is encoded from Together's floats.
+		expect(decodeFloat32Base64((result as any).ir.data[0].embedding)).toEqual([Math.fround(0.1), Math.fround(0.2)]);
 	});
 
 	it("implements Perplexity standard embeddings with native quantized encoding and usage cost", async () => {
@@ -498,6 +506,59 @@ describe("openai embeddings executor", () => {
 		expect((result as any).ir.usage).toMatchObject({ inputTokens: 7, totalTokens: 7 });
 	});
 
+	it("never sends encoding_format to Fireworks and encodes base64 from the returned floats", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.fireworks.example/inference/v1/embeddings",
+			response: jsonResponse({
+				object: "list",
+				model: "fireworks/qwen3-embedding-8b",
+				data: [{ object: "embedding", index: 0, embedding: [0.1, -2.5] }],
+				usage: { prompt_tokens: 2, total_tokens: 2 },
+			}),
+		}]);
+		const result = await executor(buildArgs({
+			providerId: "fireworks",
+			providerModelSlug: "fireworks/qwen3-embedding-8b",
+			ir: { model: "fireworks/qwen3-embedding-8b", input: "hello", encodingFormat: "base64" },
+		}));
+		mock.restore();
+
+		expect(mock.calls[0]?.bodyJson).not.toHaveProperty("encoding_format");
+		const embedding = (result as any).ir.data[0].embedding;
+		expect(typeof embedding).toBe("string");
+		expect(decodeFloat32Base64(embedding)).toEqual([Math.fround(0.1), -2.5]);
+	});
+
+	it("keeps float embeddings from Fireworks when float is requested", async () => {
+		const mock = installFetchMock([{
+			match: (url) => url === "https://api.fireworks.example/inference/v1/embeddings",
+			response: jsonResponse({ object: "list", model: "m", data: [{ object: "embedding", index: 0, embedding: [0.5] }] }),
+		}]);
+		const result = await executor(buildArgs({
+			providerId: "fireworks",
+			providerModelSlug: "fireworks/qwen3-embedding-8b",
+			ir: { model: "fireworks/qwen3-embedding-8b", input: "hello", encodingFormat: "float" },
+		}));
+		mock.restore();
+
+		expect(mock.calls[0]?.bodyJson).not.toHaveProperty("encoding_format");
+		expect((result as any).ir.data[0].embedding).toEqual([0.5]);
+	});
+
+	it.each(["base64_int8", "base64_binary"])("rejects quantised %s for Fireworks without calling it", async (encodingFormat) => {
+		const mock = installFetchMock([]);
+		const result = await executor(buildArgs({
+			providerId: "fireworks",
+			providerModelSlug: "fireworks/qwen3-embedding-8b",
+			ir: { model: "fireworks/qwen3-embedding-8b", input: "hello", encodingFormat },
+		}));
+		mock.restore();
+
+		expect(mock.calls).toHaveLength(0);
+		expect(result.upstream.status).toBe(400);
+		expect(await result.upstream.json()).toMatchObject({ error: { param: "encoding_format" } });
+	});
+
 	it("strips unsupported dimensions and user fields for cohere embeddings compatibility endpoint", async () => {
 		setupRuntimeFromEnv({
 			COHERE_API_KEY: "test-cohere-key",
@@ -857,5 +918,45 @@ describe("openai embeddings executor", () => {
 		expect((result as any).bill?.usage?.input_text_tokens).toBe(3);
 		expect((result as any).bill?.usage?.image_pixels).toBe(50_000);
 		expect((result as any).bill?.usage?.total_tokens).toBe(93);
+	});
+
+	it("sends voyage base64 images and videos as the documented data URLs", async () => {
+		setupRuntimeFromEnv({
+			VOYAGE_API_KEY: "test-voyage-key",
+		} as any);
+
+		const mock = installFetchMock([
+			{
+				match: (url) => url === "https://api.voyage.example/v1/multimodalembeddings",
+				response: jsonResponse({
+					object: "list",
+					model: "voyage-multimodal-3.5",
+					data: [{ object: "embedding", index: 0, embedding: [0.11, 0.22] }],
+					usage: { text_tokens: 2, image_pixels: 50_000, video_pixels: 100_000, total_tokens: 260 },
+				}),
+			},
+		]);
+
+		const result = await executor(buildArgs({
+			providerId: "voyage",
+			ir: {
+				model: "voyage/voyage-multimodal-3.5",
+				input: [[
+					{ type: "text", text: "Raw base64 media" } as any,
+					{ type: "image", source: "data", data: "iVBORw0KGgo=", mimeType: "image/png" } as any,
+					{ type: "video", url: "data:video/mp4;base64,AAAAIGZ0eXA=" } as any,
+				]],
+			},
+		}));
+		mock.restore();
+
+		expect(result.kind).toBe("completed");
+		expect(mock.calls[0]?.bodyJson?.inputs?.[0]?.content).toEqual([
+			{ type: "text", text: "Raw base64 media" },
+			{ type: "image_base64", image_base64: "data:image/png;base64,iVBORw0KGgo=" },
+			{ type: "video_base64", video_base64: "data:video/mp4;base64,AAAAIGZ0eXA=" },
+		]);
+		expect((result as any).bill?.usage?.image_pixels).toBe(50_000);
+		expect((result as any).bill?.usage?.video_pixels).toBe(100_000);
 	});
 });

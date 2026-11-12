@@ -1,4 +1,10 @@
 {
+	"privacyReview": {
+		"title": "Vérifier la confidentialité du Chat", "description": "Les préférences de confidentialité du compte ont été supprimées lors du transfert des contrôles aux espaces de travail. Vérifiez les paramètres actuels avant de continuer.",
+		"paidTraining": "Fournisseurs payants pouvant entraîner leurs modèles", "freeTraining": "Fournisseurs gratuits pouvant entraîner leurs modèles", "publication": "Fournisseurs publiant les prompts", "providerLogging": "Fournisseurs enregistrant les prompts", "zdr": "Aucune conservation des données", "workspaceLogging": "Enregistrement des prompts de l’espace", "providers": "Restrictions de fournisseurs", "models": "Restrictions de modèles",
+		"allowed": "Autorisé", "blocked": "Bloqué", "required": "Requis", "notRequired": "Non requis", "disabled": "Désactivé", "enabledDays": "Activé ({days} jours)", "none": "Aucune",
+		"administrators": "Les administrateurs de l’espace peuvent modifier ces paramètres. Des règles supplémentaires pour les clés et les membres peuvent s’appliquer.", "accept": "Accepter et continuer", "settings": "Paramètres de confidentialité", "saving": "Enregistrement…", "loading": "Chargement des paramètres…", "loadError": "Impossible de charger les paramètres de confidentialité. Rechargez la page.", "saveError": "Impossible d’enregistrer votre confirmation. Réessayez."
+	},
 	"developerMenu": {
 		"title": "Menu développeur",
 		"admin": "Administration",
@@ -462,6 +468,38 @@
 		},
 		"defaultTitle": "Nouvelle discussion",
 		"branchTitle": "Branche : {title}",
+		"logImport": {
+			"title": "Poursuivre une requête journalisée",
+			"description": "Ouvre la requête dans une nouvelle conversation avec sa propre session, enregistrée dans ce navigateur. Choisissez ce qui est repris.",
+			"loading": "Chargement de la requête…",
+			"failed": "Impossible de charger cette requête. Vérifiez que vous êtes connecté à l'espace de travail auquel elle appartient.",
+			"unavailable": { "not_stored": "Le prompt et la réponse de cette requête n'ont pas été stockés. Activez les journaux d'E/S du gateway dans les paramètres de confidentialité pour stocker les nouvelles requêtes.", "too_large": "Cette requête était trop volumineuse pour être stockée et ne peut donc pas être ouverte.", "deleted": "Le prompt et la réponse stockés de cette requête ont expiré ou ont été supprimés.", "unsupported": "Seules les requêtes Chat Completions, Responses et Messages peuvent être ouvertes dans Chat." },
+			"summary": "{count, plural, one {# message} other {# messages}} · {model}",
+			"modelUnavailable": "{model} n'est pas disponible dans Chat ; la conversation utilise donc {fallback}. Vous pourrez changer de modèle après l'ouverture.",
+			"carryOver": "Reprendre",
+			"options": {
+				"pinProvider": "Épingler le fournisseur ({provider})",
+				"keepParams": "Paramètres (température, tokens max, raisonnement)",
+				"keepSystemPrompt": "Prompt système",
+				"keepServerTools": "Outils serveur",
+				"keepFunctionTools": "{count, plural, one {# outil de fonction} other {# outils de fonction}}",
+				"keepFunctionToolsHint": "Chat ne peut pas les exécuter. Déclarés, les appels d'outils précédents sont envoyés comme appels ; sinon, comme texte.",
+				"includeResponse": "La réponse journalisée"
+			},
+			"workspaceMismatch": "Chat envoie depuis votre espace de travail actif, qui n'est pas celui de cette requête.",
+			"warnings": {
+				"earlier_history_missing": "Cette requête poursuivait une réponse antérieure par ID ; les tours précédents ne sont donc pas inclus.",
+				"unsupported_content": "Une partie du contenu n'a pas pu être affichée et a été omise.",
+				"attachment_reference": "Certaines pièces jointes étaient référencées par ID et n'ont pas été stockées avec la requête.",
+				"media_not_stored": "Les images, l'audio et les fichiers ne sont pas conservés dans les journaux d'E/S, ils sont donc omis.",
+				"no_response": "La réponse journalisée est absente ou en échec ; la conversation se termine donc par la requête.",
+				"response_truncated": "La réponse journalisée a été tronquée.",
+				"extra_choices": "Seul le premier des choix de la réponse est inclus.",
+				"unanswered_tool_calls": "Certains appels d'outils n'ont pas de résultat. Ils sont envoyés sous forme de texte lorsque vous continuez."
+			},
+			"cancel": "Annuler",
+			"continue": "Ouvrir dans Chat"
+		},
 		"errors": {
 			"signInToChat": "Connectez-vous pour commencer à discuter.",
 			"selectModelToChat": "Sélectionnez un modèle pour commencer à discuter.",
@@ -589,6 +627,7 @@
 			}
 		},
 		"modelPicker": {
+			"internalModels": "Modèles internes",
 			"title": "Sélectionner un modèle",
 			"addModel": "Ajouter un modèle",
 			"searchPlaceholder": "Rechercher des modèles…",
@@ -1116,6 +1155,7 @@
 		"realtimeBillingOpenAI": "Événements d’utilisation OpenAI",
 		"realtimeBillingXai": "Compteur de durée xAI",
 		"realtimeBillingGoogle": "Métadonnées d’utilisation Google",
+		"realtimeBillingProvider": "Utilisation {provider}",
 		"selectRealtimeModel": "Sélectionner un modèle temps réel",
 		"searchRealtimeModels": "Rechercher des modèles temps réel...",
 		"noRealtimeModels": "Aucun modèle temps réel trouvé.",
@@ -1136,6 +1176,8 @@
 		"speechDefaults": "Paramètres de parole par défaut",
 		"voice": "Voix",
 		"selectVoice": "Sélectionner une voix",
+		"customVoiceId": "ID de voix personnalisée",
+		"customVoiceIdPlaceholder": "Collez un ID de voix de votre bibliothèque de voix",
 		"format": "Format",
 		"speed": "Vitesse",
 		"transcriptionDefaults": "Paramètres de transcription par défaut",
@@ -1408,7 +1450,7 @@
 			"copyQuestionFailed": "Impossible de copier la question de la décision.",
 			"expandSidebar": "Développer la barre latérale",
 			"openSettings": "Ouvrir les paramètres des décisions",
-			"decisionDescription": "Demandez à Jev de transformer l’état du compte en une décision claire et typée.",
+			"decisionDescription": "Demandez à {model} de transformer l’état du compte en une décision claire et typée.",
 			"outreachLabel": "Vérifier la préparation à la prise de contact",
 			"outreachPrompt": "Ce compte est-il prêt pour une prise de contact ?",
 			"collaborationLabel": "Trouver un signal de collaboration",
@@ -1678,7 +1720,7 @@
 		"hideAllRuns": "Masquer toutes les exécutions",
 		"yourGateway": "Votre Gateway",
 		"yourGatewayTtft": "Votre Gateway (TTFT)",
-		"yourGatewayThroughput": "Votre Gateway (jetons/s)",
+		"yourGatewayThroughput": "Votre Gateway (tps)",
 		"tie": "Égalité",
 		"latestProvider": "Dernier résultat : {provider}",
 		"requestFailed": "La requête n’a pas abouti. Vérifiez le point de terminaison et les identifiants, puis réessayez.",
@@ -1696,7 +1738,7 @@
 		"throughput": "Débit",
 		"responsePlaceholder": "La réponse apparaîtra ici...",
 		"gatewayLabel": "Passerelle",
-		"openaiThroughput": "OpenAI API (tokens/s)"
+		"openaiThroughput": "OpenAI API (tps)"
 	},
 	"gatewayBenchmark": {
 		"title": "Comparaison des performances des passerelles",
@@ -1992,6 +2034,43 @@
 			"revalidateAll": "Tout revalider",
 			"cacheRevalidatedAll": "Tous les caches du modèle ont été revalidés.",
 			"cacheFailure": "Impossible de revalider le cache du modèle.",
+			"successorRouting": {
+				"title": "Routage vers le successeur",
+				"description": "Approuvez l’envoi des requêtes de ce modèle vers son remplaçant lorsqu’aucun fournisseur ne l’a servi pendant 72 heures. Les remplaçants sont approuvés automatiquement, sauf s’ils n’ont aucun fournisseur ou ne prennent pas en charge les types de sortie de ce modèle. Les espaces de travail doivent aussi activer cette option.",
+				"replacement": "Remplaçant",
+				"noReplacement": "Non défini",
+				"serving": "Service",
+				"served": "Servi par au moins un fournisseur",
+				"unservedSince": "Aucun fournisseur depuis le {date}",
+				"approval": "Approbation",
+				"notApproved": "Non approuvé",
+				"approved": "Approuvé pour {model} le {date}",
+				"approvedAutomatically": "Approuvé automatiquement pour {model} le {date}",
+				"autoBlocked": "L’approbation automatique est désactivée pour ce modèle, car elle a été révoquée. L’approuver réactive l’approbation automatique.",
+				"approvalStale": "Approuvé pour {model}, mais le remplaçant a changé. Vérifiez-le à nouveau.",
+				"blocking": "Approbation impossible : {issues}",
+				"warnings": "À vérifier : {issues}",
+				"compatible": "Aucun problème de compatibilité détecté.",
+				"notes": "Notes",
+				"acceptWarnings": "Approuver malgré ces problèmes",
+				"approve": "Approuver",
+				"updateApproval": "Mettre à jour l’approbation",
+				"reapprove": "Approuver le nouveau remplaçant",
+				"revoke": "Révoquer",
+				"blockAuto": "Ne pas approuver automatiquement",
+				"loadFailed": "Impossible de charger le routage vers le successeur.",
+				"saveFailed": "Impossible d’enregistrer le routage vers le successeur.",
+				"rejected": "Le remplaçant n’a pas pu être approuvé. Vérifiez les problèmes ci-dessus et réessayez.",
+				"issues": {
+					"free_to_paid": "modèle gratuit avec un remplaçant payant",
+					"successor_hidden": "le remplaçant est masqué",
+					"successor_inactive": "le remplaçant n’est pas actif",
+					"missing_input_modalities": "il manque des types d’entrée au remplaçant",
+					"missing_output_modalities": "il manque des types de sortie au remplaçant",
+					"smaller_context": "fenêtre de contexte plus petite",
+					"successor_not_served": "le remplaçant n’a aucun fournisseur"
+				}
+			},
 			"addRegionalProvider": "Ajouter un fournisseur régional",
 			"regionalOffersDescription": "Les fournisseurs et leurs offres régionales.",
 			"newRegionalProvider": "Nouveau fournisseur régional",
@@ -2354,7 +2433,11 @@
 			"rule": "Règle : {keyword}"
 		},
 		"realtimeBillingTitle": "Facturation en temps réel",
-		"realtimeBillingDescription": "Examinez l’utilisation manquante, les fonds retenus et les décisions de facturation auditées."
+		"realtimeBillingDescription": "Examinez l’utilisation manquante, les fonds retenus et les décisions de facturation auditées.",
+		"keyIncidentsTitle": "Incidents de stockage des clés",
+		"keyIncidentsDescription": "Révoquer ou suspendre toutes les clés API stockées sur une plateforme victime d’une fuite.",
+		"slackAgentTitle": "Agent Slack",
+		"slackAgentDescription": "Toutes les installations de l’agent Slack, avec les personnes, réponses, frais et dépenses de modèles de ce mois-ci."
 	},
 	"webhookPage": {
 		"description": "Envoyez à votre application des mises à jour signées, avec de nouvelles tentatives, depuis vos tâches asynchrones de vidéo et de traitement par lots.",

@@ -12,6 +12,7 @@ export interface ParseRequest {
   };
   echo_upstream_request?: boolean;
   model: string;
+  models?: string[];
   output_format?: "markdown" | "blocks";
   provider?: {
     allow_fallbacks?: boolean | null;

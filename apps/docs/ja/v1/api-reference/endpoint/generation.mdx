@@ -4,20 +4,25 @@ sidebarTitle: "生成結果を取得"
 badge: "Beta"
 openapi: "/ja/openapi/v1/openapi.localized.yaml GET /generations"
 ---
-チームに属する`request_id`の保存済み監査レコードを取得します。
 
-次を使用します。
-- `GET /v1/generations?id=<request_id>`
+`GET /v1/generations?id=<request_id>` を呼び出すと、ワークスペース内のリクエストについて保存されている監査レコードを取得できます。`generations:read` スコープが必要です。`id` がない場合は `400` `missing_id` が返されます。
 
-ゲートウェイがその生成のリクエスト詳細をすべて記録している場合、レスポンスには次も含まれます。
+新しいリクエストにはサーバーが生成した `G-` 生成 ID が割り当てられ、`x-request-id` レスポンスヘッダーと生成レスポンスで返されます。リクエストログ、生成の検索、サポートにはこの ID を使ってください。呼び出し側が指定した `x-request-id` は生成 ID を置き換えません。以前の UUID 形式のログ ID も引き続き検索に使えます。
 
-- `replay_supported`: 再実行可能なペイロードがあるかどうか
-- `replay_request`: 保存されたリクエスト本文。元のエンドポイントに送信して制御された再実行を行えます
+## リクエストを再実行する
 
-一般的な再実行手順:
+すべてのレスポンスに `replay_supported` が含まれます。I/O ログがリクエスト本文を保存しており、保存された内容を読む権限がある場合、`replay_supported` は `true` になり、`replay_request` に制御された再実行のために送り返す本文が入ります。
 
-1. `GET /v1/generations?id=<request_id>`で生成レコードを読み取ります。
-2. `replay_supported === true`であることを確認します。
-3. `endpoint`が示す元のエンドポイント（例: `/v1/chat/completions`や`/v1/responses`）に`replay_request`を再送信します。
+<Steps>
+  <Step title="生成を読み取る">
+    `GET /v1/generations?id=<request_id>` を呼び出します。
+  </Step>
+  <Step title="再実行できるか確認する">
+    `replay_supported` が `true` の場合にのみ続行します。
+  </Step>
+  <Step title="もう一度送信する">
+    `endpoint` に示されたエンドポイント（`/v1/chat/completions` や `/v1/responses` など）に `replay_request` を送信します。
+  </Step>
+</Steps>
 
-
+ワークスペースでは、保存された内容の閲覧をオーナーと管理者に限定できます。その場合、メンバーが作成した API キーを含むその他の呼び出し元には、`replay_request: null` と、内容を除いたリクエストの詳細が返されます。

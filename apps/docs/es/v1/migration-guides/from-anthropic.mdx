@@ -5,39 +5,31 @@ description: "Migra una integración del SDK de Anthropic a Phaseo y conserva el
 icon: "/icons/brands/anthropic.svg"
 ---
 
-Usa esta guía para conservar tu flujo de trabajo con el SDK de Anthropic mientras envías las solicitudes a través de Phaseo. Primero cambia la configuración del cliente y luego verifica los ID de modelos y el comportamiento específico de Anthropic que necesita tu aplicación.
+Conserva el SDK de Anthropic y la llamada a Messages. Apunta el cliente a `https://api.phaseo.app`, pasa tu clave de Phaseo como `authToken` y usa el ID de Phaseo de cada modelo.
 
-## Qué cambia
-
-| Configuración | Antes | Después |
+| Ajuste | Anthropic | Phaseo |
 | --- | --- | --- |
-| URL base | Predeterminada de Anthropic | `https://api.phaseo.app/v1` |
-| Clave de API | Clave de Anthropic | `PHASEO_API_KEY` |
-| Modelo | Nombre de modelo de Anthropic | ID de modelo de Phaseo devuelto por `GET /v1/models` |
-| Llamada a Messages | Llamada del SDK existente | Normalmente no cambia |
+| URL base | Predeterminada del SDK (`https://api.anthropic.com`) | `https://api.phaseo.app` (el SDK añade `/v1/messages`) |
+| Clave de API | `ANTHROPIC_API_KEY`, enviada como `x-api-key` | `PHASEO_API_KEY` como `authToken` / `auth_token`, enviada como `Authorization: Bearer` |
+| Modelo | `claude-sonnet-5-5` | `anthropic/claude-sonnet-5.5`, o cualquier ID de `GET /v1/models` |
+| Llamada a Messages | `messages.create` | Sin cambios |
 
-<Steps>
-<Step title="Crea una clave de API de Phaseo">
+## Cambia el cliente
 
-Crea una clave en [Claves de Gateway](https://phaseo.app/gateway/keys) y ponla a disposición de tu aplicación como `PHASEO_API_KEY`.
-
-</Step>
-
-<Step title="Actualiza el cliente de Anthropic">
-
-Configura el SDK para usar la URL base de Phaseo y tu clave de Phaseo.
+Crea una clave en [Claves de API](https://phaseo.app/settings/keys) y ponla a disposición de la aplicación como `PHASEO_API_KEY`.
 
 <CodeGroup>
 ```typescript TypeScript
 import Anthropic from "@anthropic-ai/sdk";
 
 const client = new Anthropic({
-  apiKey: process.env.PHASEO_API_KEY,
-  baseURL: "https://api.phaseo.app/v1",
+  apiKey: null,
+  authToken: process.env.PHASEO_API_KEY,
+  baseURL: "https://api.phaseo.app",
 });
 
 const response = await client.messages.create({
-  model: "anthropic/claude-sonnet-4.6",
+  model: "anthropic/claude-sonnet-5.5",
   max_tokens: 256,
   messages: [{ role: "user", content: "Reply with: migration ready" }],
 });
@@ -48,12 +40,12 @@ import os
 import anthropic
 
 client = anthropic.Anthropic(
-    api_key=os.environ["PHASEO_API_KEY"],
-    base_url="https://api.phaseo.app/v1",
+    auth_token=os.environ["PHASEO_API_KEY"],
+    base_url="https://api.phaseo.app",
 )
 
 response = client.messages.create(
-    model="anthropic/claude-sonnet-4.6",
+    model="anthropic/claude-sonnet-5.5",
     max_tokens=256,
     messages=[{"role": "user", "content": "Reply with: migration ready"}],
 )
@@ -64,39 +56,47 @@ curl https://api.phaseo.app/v1/messages \
   -H "Authorization: Bearer $PHASEO_API_KEY" \
   -H "Content-Type: application/json" \
   -d '{
-    "model": "anthropic/claude-sonnet-4.6",
+    "model": "anthropic/claude-sonnet-5.5",
     "max_tokens": 256,
     "messages": [{"role": "user", "content": "Reply with: migration ready"}]
   }'
 ```
 </CodeGroup>
 
-</Step>
+Estos tres detalles son los que más suelen romper este paso:
 
-<Step title="Verifica el comportamiento específico de Anthropic">
+- **Usa el host raíz.** `baseURL: "https://api.phaseo.app/v1"` genera `/v1/v1/messages`. Los clientes compatibles con OpenAI del mismo repositorio siguen usando `/v1`.
+- **Envía la clave como token bearer.** El gateway solo lee `Authorization: Bearer`; un encabezado `x-api-key` recibe `401` `missing_or_invalid_authorization_header`. `authToken` envía Bearer en todas las versiones del SDK. `apiKey` solo lo hace a partir de `@anthropic-ai/sdk` 1.0 y `anthropic` 2.0.
+- **Elimina `ANTHROPIC_API_KEY`** de los entornos que ahora llaman a Phaseo. `apiKey: null` impide que los SDK de TypeScript antiguos la lean, y los SDK de Python anteriores a 0.98 la leen aunque se haya definido `auth_token`.
 
-Prueba los prompts de sistema, el streaming, el uso de herramientas, las opciones de razonamiento y las salidas estructuradas con los modelos exactos que utiliza tu aplicación. Elimina los encabezados beta o campos de solicitud obsoletos en lugar de conservarlos a ciegas en la nueva ruta.
+Las herramientas que se configuran con variables de entorno, como Claude Code, usan `ANTHROPIC_BASE_URL=https://api.phaseo.app`, `ANTHROPIC_AUTH_TOKEN` con la clave de Phaseo y `ANTHROPIC_API_KEY` vacía.
 
-</Step>
+## Asigna los ID de modelos
 
-<Step title="Despliega gradualmente">
+Comprueba cada modelo de producción con `data[].id` de `GET /v1/models?format=openai`. Los ID de Phaseo usan puntos en la versión: `claude-sonnet-5-5` pasa a ser `anthropic/claude-sonnet-5.5`. Si también cambias de modelo, lee su [guía de migración de modelos](../model-migrations).
 
-Compara un conjunto representativo de prompts con ambas configuraciones. Comprueba el formato de salida, la latencia, el uso de tokens, los errores y el coste antes de trasladar el tráfico de producción.
+## Qué funciona de otra forma
 
-</Step>
-</Steps>
+| Función de Anthropic | En Phaseo |
+| --- | --- |
+| Encabezado `anthropic-version` | Se acepta cualquier valor; Phaseo llama a Claude con su propia versión. |
+| Encabezados `anthropic-beta` | No se reenvían. Phaseo añade las betas que necesitan sus funciones compatibles; los campos del cuerpo exclusivos de betas, como `mcp_servers`, devuelven `400`. |
+| `temperature`, `top_p`, `top_k` | Se descartan cuando el modelo o la ruta no los admite, y se indican en `X-Phaseo-Dropped-Params`. |
+| `speed: "fast"` | Devuelve `400`. Usa `service_tier: "fast"`. |
+| Herramientas nativas de búsqueda web y obtención web | Se aceptan cuando el proveedor las ejecuta; también puedes usar la herramienta de servidor `phaseo:web_search` de Phaseo. |
+| `cache_control` | Compatible en el nivel superior o por bloque. Consulta [Almacenamiento en caché de prompts](../guides/prompt-caching). |
+| `metadata.user_id` | No se usa como ID del usuario final. Envía `user` o el encabezado `X-Phaseo-User-Id` para las políticas de límites de velocidad por usuario final. |
+| Message Batches (`/v1/messages/batches`) | No existe esa ruta. `/v1/batches` acepta filas de `/v1/messages` con otra estructura. |
+| Recuento de tokens (`/v1/messages/count_tokens`) | Sin equivalente. Mantenlo en Anthropic o estímalo en el cliente. |
+| Files API (`client.beta.files`) | Sin equivalente. Envía los documentos en línea. |
+| Clientes `AnthropicBedrock`, `AnthropicVertex` | Sustitúyelos por el cliente `Anthropic` normal; la autenticación en la nube y los ajustes de región no se aplican. |
 
-## Lista de comprobación de la migración
+## Prueba y despliega
 
-- La clave de Phaseo está configurada en todos los entornos de despliegue.
-- El cliente de Anthropic apunta a `https://api.phaseo.app/v1`.
-- Cada ID de modelo de producción se ha verificado con `GET /v1/models`.
-- Los flujos de streaming y uso de herramientas pasan en staging.
-- Se han revisado los encabezados beta y parámetros específicos de Anthropic.
-- La reversión sigue limitada a cambiar la clave y el endpoint en la configuración.
+Prueba los prompts de sistema, el streaming, el uso de herramientas, el razonamiento y la salida estructurada con los ID de modelo exactos que usa la aplicación. Después compara un conjunto representativo de prompts en ambas configuraciones: estructura de la salida, latencia, uso de tokens, errores y coste. Antes de mover tráfico, comprueba que:
 
-## Próximos pasos
-
-- [Migraciones de modelos Anthropic](../model-migrations/index.mdx)
-- [Modelos](../exploring/models.mdx)
-- [Llamadas a herramientas](../guides/tool-calling.mdx)
+- la clave de Phaseo está definida en todos los entornos de despliegue;
+- cada ID de modelo de producción está en `GET /v1/models?format=openai`;
+- los flujos de streaming y de uso de herramientas funcionan en staging;
+- cada encabezado `anthropic-beta` y cada campo exclusivo de betas se ha eliminado o sustituido;
+- la reversión sigue siendo solo un cambio de URL base y clave.

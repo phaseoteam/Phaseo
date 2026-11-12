@@ -6,10 +6,8 @@ Settings at `/internal/data/registries` manage model families, service tiers, me
 definitions, provider regions, route variants, subscription plans and plan features.
 Model editors manage plan membership, aliases, capabilities, benchmarks and prices.
 
-There is no JSON-to-database importer or importer-state CI job. Files under
-`src/data` remain archived fixtures for compatibility validation, not an input to
-production. Generated snapshots are public exports; do not edit them as an input
-feed.
+There is no JSON-to-database importer, and the repository holds no catalog JSON or
+exports.
 
 ## Automated updates
 
@@ -33,55 +31,6 @@ Artificial Analysis sync matches database models and writes benchmark metadata a
 results directly to the database. Removed results are end-dated. Run without
 `--write` to preview matches; no JSON publication step is required.
 
-## Daily record
-
-`Catalog Database Snapshot` is scheduled for 00:00 UTC. GitHub Actions may start
-scheduled jobs late. The schedule becomes active when its workflow is on the
-default branch. It can also be run manually with `workflow_dispatch`.
-
-Each successful run retains a separate artifact for 90 days and opens or updates
-a reviewable snapshot pull request. Nothing is automatically merged. Repository
-history retains snapshots that are merged; download artifacts if longer retention
-is needed for unmerged daily records.
-
-Run the read-only database export from `apps/web`:
-
-```sh
-pnpm catalog:export:database
-```
-
-Use `pnpm catalog:export:database --dry-run` to query and filter the same
-production rows without writing generated files, removing stale files, or
-opening a pull request. The preview reports every file that would be written,
-its row count, byte size, SHA-256 hash, and any stale JSON files that would be
-removed. The scheduled workflow exposes the same preview through
-`workflow_dispatch` with the `dry_run` input.
-
-It writes the public catalogue tables to `packages/data/catalog/generated/database-v2`, using the
-existing Supabase URL and service-role environment variables. It fetches all
-tables before replacing files, includes rows with null timestamps, uses stable
-ordering, and excludes stealth records, unpublished self-serve submissions,
-private admin tables, internal benchmark records, and identity fields nested in
-catalogue metadata.
-
-The export allowlist mirrors the eight canonical namespaces under
-`packages/data/catalog/src/data`: `aliases`, `api_providers`, `benchmarks`,
-`families`, `models`, `organisations`, `pricing`, and `subscription_plans`.
-Provider routes, capabilities, regions, service tiers, model details and links,
-benchmark results, pricing meters, and plan membership are included only as
-parts of those namespaces. Operational, analytics, billing, request, history,
-proposal, and admin tables are not exported. The exporter also removes stale
-JSON files from the generated directory so an old non-catalog table cannot
-survive a later run.
-It also writes `enum-catalog.json`, the compact public index consumed by OpenAPI
-enum generation. Hidden models and stealth routes are excluded; callable IDs
-require an active, publicly available route. Merge snapshot PRs to refresh the
-checked-in enum input.
-
-The export reads paginated tables over multiple requests. It is a catalog record,
-not a transactionally consistent database backup. Use database backups for
-point-in-time recovery or a restore that must preserve concurrent-write consistency.
-
 ## Local demo
 
 Start the web API on 8788 and the web app on 3100, with `WEB_API_ORIGIN` set to
@@ -102,6 +51,14 @@ existing events, and records actor, transaction and timestamp information. Legac
 admin events remain available. History begins at the baseline; previously unaudited
 changes cannot be reconstructed from the current database.
 
+One exception: an hourly job (`private.prune_catalogue_row_history`) deletes
+benchmark-result UPDATE events that changed nothing but `updated_at`, and
+benchmark-result changes older than 90 days once the model has 100 newer
+non-baseline events (the admin history view shows the newest 100). It never
+deletes events the notification capture has not read. Baseline, insert and
+delete events, and every other table's history, are kept forever; a row-level
+trigger rejects any other delete.
+
 Saved prices are revised by creating a new SKU version and ending the previous
 version at the new start time in one transaction. Existing meters stay attached to
 the old SKU. End-dating uses a separate admin endpoint. Provider routes,
@@ -117,9 +74,7 @@ credentials or a connection to the live project:
 pnpm test:catalogue-history
 ```
 
-The daily JSON snapshot remains a public catalogue record. It intentionally does
-not export the private row history or admin actor details. Preserve that history
-through database backups.
+Row history is private. Preserve it through database backups.
 
 ### Regional routing
 

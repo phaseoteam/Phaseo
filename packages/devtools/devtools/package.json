@@ -31,9 +31,10 @@
   },
   "devDependencies": {
     "@types/node": "^26.1.2",
+    "@typescript/native": "catalog:",
     "rimraf": "^6.0.0",
     "tsup": "^8.0.0",
-    "typescript": "^6.0.3"
+    "typescript": "catalog:"
   },
   "keywords": [
     "phaseo",

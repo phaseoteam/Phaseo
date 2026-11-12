@@ -20,6 +20,7 @@ export type EndpointType =
   | "parse"
   | "rerank"
   | "decisions.make"
+  | "extraction.extract"
   | "moderations"
   | "responses"
   | "responses.websocket"

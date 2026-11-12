@@ -13,6 +13,33 @@ export async function fetchFrontendRankingBenchmarks() {
 	return { ...result, intelligence_value: buildArtificialAnalysisValue(result.benchmarks) };
 }
 
+export type ModelBenchmarkRanks = {
+	model_id: string;
+	/** Per Artificial Analysis benchmark: the model's own scores, and other models' scores pooled per index version (`model_id: null`). */
+	artificial_analysis: Record<string, {
+		lower_is_better: boolean;
+		entries: Array<{ model_id: string | null; version: string | null; scores: number[] }>;
+	}>;
+	/** The Epoch Capabilities Index entries around the model. */
+	epoch: PublicBenchmarkRanking | null;
+};
+
+/** One model's place on the benchmark leaderboards: a few kilobytes instead of every leaderboard. */
+export function fetchFrontendModelBenchmarkRanks(modelId: string) {
+	return fetchPublicWebApi<ModelBenchmarkRanks>(`/api/_web/rankings/benchmarks/${encodeURIComponent(modelId)}`);
+}
+
+export type RankingPeriodResponse = {
+	data: Array<{ model_id: string; current: number; previous: number }>;
+	period: { start: string; end: string; previousStart: string };
+};
+
+export function fetchFrontendRankingPeriodLeaderboard(metric: string, days: 1 | 7 | 30) {
+	return fetchPublicWebApi<RankingPeriodResponse>(
+		`/api/_web/rankings/period-leaderboard?metric=${encodeURIComponent(metric)}&days=${days}`,
+	);
+}
+
 export async function fetchFrontendRankingFastestModels(days = 30, limit = 20) {
 	return fetchPublicWebApi<{ data: PerformanceData[] }>(
 		`/api/_web/rankings/fastest-models?days=${encodeURIComponent(String(days))}&limit=${encodeURIComponent(String(limit))}`,

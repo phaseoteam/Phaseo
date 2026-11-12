@@ -1,7 +1,0 @@
-{
-  "alias_slug": "openai/gpt-pro-latest",
-  "resolved_api_model_id": "openai/gpt-5.6-sol-pro",
-  "channel": "stable",
-  "is_enabled": true,
-  "notes": null
-}

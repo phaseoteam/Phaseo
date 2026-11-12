@@ -1,31 +1,19 @@
-// components/header/AuthControls.tsx  (SERVER COMPONENT)
-import { connection } from "next/server";
-import { fetchInternalAuthHeaderData } from "@/lib/fetchers/internal/fetchInternalAuthHeaderData";
-import type { InternalAuthHeaderData } from "@/lib/fetchers/internal/authTypes";
+// components/header/AuthControls.tsx
+import { useSuspenseQuery } from "@tanstack/react-query";
+import { useLocale } from "@/i18n/react";
 import HeaderClient from "./HeaderClient";
+import { shellDataQuery } from "./shellData";
 
-export default async function AuthControls({
+export default function AuthControls({
 	variant,
 }: {
 	variant?: "mobile" | "desktop";
 }) {
-	// Supabase Auth reads token expiry during initialization. Explicitly defer
-	// that indirect Date.now() access until a request is available.
-	await connection();
-	let data: InternalAuthHeaderData = {
-		isLoggedIn: false,
-		user: undefined,
-		teams: [],
-		currentTeamId: undefined,
-		userRole: undefined,
-	};
-	try {
-		data = await fetchInternalAuthHeaderData({ limit: 50 });
-	} catch {
-		// Keep the header renderable if the internal route is unavailable.
-	}
+	const locale = useLocale();
+	const { data } = useSuspenseQuery(shellDataQuery(locale));
+	const account = data.account;
 
-	if (!data.isLoggedIn) {
+	if (!account.isLoggedIn) {
 		return (
 			<HeaderClient
 				isLoggedIn={false}
@@ -42,12 +30,12 @@ export default async function AuthControls({
 	return (
 		<HeaderClient
 			isLoggedIn={true}
-			user={data.user}
-			teams={data.teams}
-			displayPreferences={data.displayPreferences}
-			currentTeamId={data.currentTeamId}
-			userRole={data.userRole}
-			providerMode={data.providerMode}
+			user={account.user}
+			teams={account.teams}
+			displayPreferences={account.displayPreferences}
+			currentTeamId={account.currentTeamId}
+			userRole={account.userRole}
+			providerMode={account.providerMode}
 			variant={variant}
 		/>
 	);

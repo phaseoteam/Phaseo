@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resolveStreamForProtocol } from "../index";
+import { openReasoningState } from "@core/reasoning-state";
 import { createAnthropicToResponsesStreamTransformer } from "../../../../anthropic/text-generate/stream-transformer";
 
 function makeSseResponse(frames: Array<{ event?: string; data: any } | "[DONE]">): Response {
@@ -51,6 +52,23 @@ function parseSseJsonFrames(text: string): any[] {
 		}
 	}
 	return out;
+}
+
+// Mirrors OpenAI SDK stream accumulation: string fields are concatenated per
+// tool index, so repeated ids, names, or cumulative arguments corrupt the result.
+function accumulateChatToolCalls(chunks: any[]): Array<{ index: number; id: string; type: string; name: string; arguments: string }> {
+	const calls = new Map<number, { index: number; id: string; type: string; name: string; arguments: string }>();
+	for (const chunk of chunks) {
+		for (const call of chunk?.choices?.[0]?.delta?.tool_calls ?? []) {
+			const current = calls.get(call.index) ?? { index: call.index, id: "", type: "", name: "", arguments: "" };
+			if (typeof call.id === "string") current.id += call.id;
+			if (typeof call.type === "string") current.type = call.type;
+			if (typeof call.function?.name === "string") current.name += call.function.name;
+			if (typeof call.function?.arguments === "string") current.arguments += call.function.arguments;
+			calls.set(call.index, current);
+		}
+	}
+	return [...calls.values()].sort((a, b) => a.index - b.index);
 }
 
 function baseArgs(overrides?: Record<string, any>): any {
@@ -653,14 +671,9 @@ describe("resolveStreamForProtocol", () => {
 
 		const output = await readStreamText(stream);
 		const chunks = parseSseJsonFrames(output).filter((payload) => payload?.object === "chat.completion.chunk");
-		const toolChunks = chunks.filter((payload) => Array.isArray(payload?.choices?.[0]?.delta?.tool_calls));
-		expect(toolChunks.length).toBeGreaterThan(0);
-		for (const chunk of toolChunks) {
-			const tc = chunk.choices?.[0]?.delta?.tool_calls?.[0];
-			expect(tc?.id).toBe("call_weather_1");
-			expect(tc?.function?.name).toBe("get_weather");
-		}
-		expect(output).toContain("\"arguments\":\"{\\\"city\\\":\\\"SF\\\"}\"");
+		expect(accumulateChatToolCalls(chunks)).toEqual([
+			{ index: 0, id: "call_weather_1", type: "function", name: "get_weather", arguments: "{\"city\":\"SF\"}" },
+		]);
 	});
 
 	it("converts named responses tool_call stream events to chat tool_call deltas", async () => {
@@ -722,15 +735,101 @@ describe("resolveStreamForProtocol", () => {
 
 		const output = await readStreamText(stream);
 		const chunks = parseSseJsonFrames(output).filter((payload) => payload?.object === "chat.completion.chunk");
-		const toolChunks = chunks.filter((payload) => Array.isArray(payload?.choices?.[0]?.delta?.tool_calls));
-		expect(toolChunks.length).toBeGreaterThan(0);
-		for (const chunk of toolChunks) {
-			expect(chunk.choices?.[0]?.index).toBe(0);
-			const tc = chunk.choices?.[0]?.delta?.tool_calls?.[0];
-			expect(tc?.id).toBe("call_weather_1");
-			expect(tc?.function?.name).toBe("get_weather");
-		}
-		expect(output).toContain("\"arguments\":\"{\\\"city\\\":\\\"SF\\\"}\"");
+		for (const chunk of chunks) expect(chunk.choices?.[0]?.index).toBe(0);
+		expect(accumulateChatToolCalls(chunks)).toEqual([
+			{ index: 0, id: "call_weather_1", type: "function", name: "get_weather", arguments: "{\"city\":\"SF\"}" },
+		]);
+	});
+
+	it("streams multi-delta tool arguments as fragments that concatenate to valid JSON", async () => {
+		const upstream = makeSseResponse([
+			{ event: "response.created", data: { response: { id: "resp_md", created_at: 1710000003, model: "test-model" } } },
+			{
+				event: "response.output_item.added",
+				data: { output_index: 0, item: { type: "function_call", id: "fc_md", call_id: "call_md", name: "lookup", arguments: "" } },
+			},
+			{ event: "response.function_call_arguments.delta", data: { item_id: "fc_md", output_index: 0, delta: "{\"query\":" } },
+			{ event: "response.function_call_arguments.delta", data: { item_id: "fc_md", output_index: 0, delta: "\"weather in " } },
+			{ event: "response.function_call_arguments.delta", data: { item_id: "fc_md", output_index: 0, delta: "SF\"}" } },
+			{ event: "response.function_call_arguments.done", data: { item_id: "fc_md", output_index: 0, name: "lookup", arguments: "{\"query\":\"weather in SF\"}" } },
+			{
+				event: "response.output_item.done",
+				data: { output_index: 0, item: { type: "function_call", id: "fc_md", call_id: "call_md", name: "lookup", arguments: "{\"query\":\"weather in SF\"}" } },
+			},
+			"[DONE]",
+		]);
+
+		const stream = resolveStreamForProtocol(upstream, baseArgs(), "responses");
+		const chunks = parseSseJsonFrames(await readStreamText(stream)).filter((payload) => payload?.object === "chat.completion.chunk");
+		const toolDeltas = chunks.flatMap((chunk) => chunk.choices?.[0]?.delta?.tool_calls ?? []);
+
+		expect(toolDeltas.filter((call: any) => call.id !== undefined)).toHaveLength(1);
+		expect(toolDeltas.filter((call: any) => call.function?.name !== undefined)).toHaveLength(1);
+		const [call] = accumulateChatToolCalls(chunks);
+		expect(call).toEqual({ index: 0, id: "call_md", type: "function", name: "lookup", arguments: "{\"query\":\"weather in SF\"}" });
+		expect(JSON.parse(call.arguments)).toEqual({ query: "weather in SF" });
+	});
+
+	it("emits full tool arguments once when only the done event carries them", async () => {
+		const upstream = makeSseResponse([
+			{ event: "response.created", data: { response: { id: "resp_done", created_at: 1710000004, model: "test-model" } } },
+			{
+				event: "response.output_item.added",
+				data: { output_index: 0, item: { type: "function_call", id: "fc_done", call_id: "call_done", name: "lookup", arguments: "" } },
+			},
+			{ event: "response.function_call_arguments.done", data: { item_id: "fc_done", output_index: 0, name: "lookup", arguments: "{\"a\":1}" } },
+			"[DONE]",
+		]);
+
+		const stream = resolveStreamForProtocol(upstream, baseArgs(), "responses");
+		const chunks = parseSseJsonFrames(await readStreamText(stream)).filter((payload) => payload?.object === "chat.completion.chunk");
+		expect(accumulateChatToolCalls(chunks)).toEqual([
+			{ index: 0, id: "call_done", type: "function", name: "lookup", arguments: "{\"a\":1}" },
+		]);
+	});
+
+	it("keeps interleaved parallel tool calls separate", async () => {
+		const upstream = makeSseResponse([
+			{ event: "response.created", data: { response: { id: "resp_par", created_at: 1710000005, model: "test-model" } } },
+			{ event: "response.output_item.added", data: { output_index: 0, item: { type: "function_call", id: "fc_a", call_id: "call_a", name: "first", arguments: "" } } },
+			{ event: "response.output_item.added", data: { output_index: 1, item: { type: "function_call", id: "fc_b", call_id: "call_b", name: "second", arguments: "" } } },
+			{ event: "response.function_call_arguments.delta", data: { item_id: "fc_a", output_index: 0, delta: "{\"x\":" } },
+			{ event: "response.function_call_arguments.delta", data: { item_id: "fc_b", output_index: 1, delta: "{\"y\":" } },
+			{ event: "response.function_call_arguments.delta", data: { item_id: "fc_a", output_index: 0, delta: "1}" } },
+			{ event: "response.function_call_arguments.delta", data: { item_id: "fc_b", output_index: 1, delta: "2}" } },
+			"[DONE]",
+		]);
+
+		const stream = resolveStreamForProtocol(upstream, baseArgs(), "responses");
+		const chunks = parseSseJsonFrames(await readStreamText(stream)).filter((payload) => payload?.object === "chat.completion.chunk");
+		expect(accumulateChatToolCalls(chunks)).toEqual([
+			{ index: 0, id: "call_a", type: "function", name: "first", arguments: "{\"x\":1}" },
+			{ index: 1, id: "call_b", type: "function", name: "second", arguments: "{\"y\":2}" },
+		]);
+	});
+
+	it("assembles tool arguments split across fragmented SSE network chunks", async () => {
+		const body = [
+			`event: response.output_item.added\ndata: ${JSON.stringify({ output_index: 0, item: { type: "function_call", id: "fc_frag", call_id: "call_frag", name: "lookup", arguments: "" } })}\n\n`,
+			`event: response.function_call_arguments.delta\ndata: ${JSON.stringify({ item_id: "fc_frag", output_index: 0, delta: "{\"k\":" })}\n\n`,
+			`event: response.function_call_arguments.delta\ndata: ${JSON.stringify({ item_id: "fc_frag", output_index: 0, delta: "\"v\"}" })}\n\n`,
+			"data: [DONE]\n\n",
+		].join("");
+		const encoder = new TextEncoder();
+		const upstream = new Response(new ReadableStream<Uint8Array>({
+			start(controller) {
+				for (let offset = 0; offset < body.length; offset += 7) {
+					controller.enqueue(encoder.encode(body.slice(offset, offset + 7)));
+				}
+				controller.close();
+			},
+		}), { headers: { "Content-Type": "text/event-stream" } });
+
+		const stream = resolveStreamForProtocol(upstream, baseArgs(), "responses");
+		const chunks = parseSseJsonFrames(await readStreamText(stream)).filter((payload) => payload?.object === "chat.completion.chunk");
+		expect(accumulateChatToolCalls(chunks)).toEqual([
+			{ index: 0, id: "call_frag", type: "function", name: "lookup", arguments: "{\"k\":\"v\"}" },
+		]);
 	});
 
 	it("does not convert generic responses tool_call completions to chat tool_call deltas", async () => {
@@ -957,7 +1056,7 @@ describe("resolveStreamForProtocol", () => {
 
 		const output = await readStreamText(stream);
 		const frames = parseSseJsonFrames(output);
-		const completed = frames.find((payload) => payload?.response?.object === "response");
+		const completed = frames.find((payload) => payload?.response?.object === "response" && payload.response.status !== "in_progress");
 		const outputItems = completed?.response?.output ?? [];
 		const messageItem = outputItems.find((item: any) => item?.type === "message");
 		const imageBlock = Array.isArray(messageItem?.content)
@@ -1005,7 +1104,7 @@ describe("resolveStreamForProtocol", () => {
 
 		const output = await readStreamText(stream);
 		const frames = parseSseJsonFrames(output);
-		const completed = frames.find((payload) => payload?.response?.object === "response");
+		const completed = frames.find((payload) => payload?.response?.object === "response" && payload.response.status !== "in_progress");
 		const outputItems = completed?.response?.output ?? [];
 		const messageItem = outputItems.find((item: any) => item?.type === "message");
 		const imageBlock = Array.isArray(messageItem?.content)
@@ -1064,7 +1163,7 @@ describe("resolveStreamForProtocol", () => {
 
 		const output = await readStreamText(stream);
 		const frames = parseSseJsonFrames(output);
-		const completed = frames.find((payload) => payload?.response?.object === "response");
+		const completed = frames.find((payload) => payload?.response?.object === "response" && payload.response.status !== "in_progress");
 		const outputItems = completed?.response?.output ?? [];
 		const messageItem = outputItems.find((item: any) => item?.type === "message");
 		const audioBlock = Array.isArray(messageItem?.content)
@@ -1073,5 +1172,157 @@ describe("resolveStreamForProtocol", () => {
 
 		expect(audioBlock).toBeDefined();
 		expect(typeof audioBlock?.audio_url?.url === "string" || typeof audioBlock?.b64_json === "string").toBe(true);
+	});
+});
+
+// https://docs.mistral.ai/capabilities/reasoning: delta.content is a list holding a
+// ThinkChunk while the model thinks, a list holding the closing ThinkChunk and the
+// first TextChunk at the transition, then a plain string.
+function mistralReasoningUpstream(): Response {
+	const chunk = (content: unknown, extra: Record<string, unknown> = {}) => ({
+		data: {
+			id: "mistral_stream_1",
+			object: "chat.completion.chunk",
+			created: 1710000000,
+			model: "zai-glm-5-3",
+			choices: [{ index: 0, delta: { content }, finish_reason: null, ...extra }],
+		},
+	});
+	return makeSseResponse([
+		chunk([{ type: "thinking", thinking: [{ type: "text", text: "Add 5 and 3." }] }]),
+		chunk([
+			{ type: "thinking", thinking: [{ type: "text", text: " It is 8." }], signature: "sig-abc" },
+			{ type: "text", text: "The answer " },
+		]),
+		chunk("is 8.", { finish_reason: "stop" }),
+		{
+			data: {
+				id: "mistral_stream_1",
+				object: "chat.completion.chunk",
+				created: 1710000000,
+				model: "zai-glm-5-3",
+				choices: [],
+				usage: { prompt_tokens: 3, completion_tokens: 9, total_tokens: 12 },
+			},
+		},
+		"[DONE]",
+	]);
+}
+
+describe("Mistral reasoning chunk-list streams", () => {
+	it("rewrites chunk-list deltas to string content and reasoning_content for Chat clients", async () => {
+		const stream = resolveStreamForProtocol(
+			mistralReasoningUpstream(),
+			baseArgs({ providerId: "mistral", providerModelSlug: "zai-glm-5-3" }),
+			"chat",
+		);
+		const chunks = parseSseJsonFrames(await readStreamText(stream));
+		const deltas = chunks.map((chunk) => chunk.choices?.[0]?.delta).filter(Boolean);
+
+		expect(deltas.every((delta) => delta.content === undefined || typeof delta.content === "string")).toBe(true);
+		expect(deltas.map((delta) => delta.reasoning_content ?? "").join("")).toBe("Add 5 and 3. It is 8.");
+		expect(deltas.map((delta) => delta.content ?? "").join("")).toBe("The answer is 8.");
+
+		// The ThinkChunk signature reaches the client sealed, with the reasoning it signs.
+		const detail = deltas.flatMap((delta) => delta.reasoning_details ?? [])[0];
+		expect(detail).toMatchObject({ type: "reasoning.text", text: "Add 5 and 3. It is 8.", format: "mistral-v1" });
+		expect(openReasoningState(detail.signature)).toMatchObject({
+			format: "mistral-v1", kind: "signature", value: "sig-abc", provider: "mistral", model: "test-model",
+		});
+	});
+
+	it.each(["mistral", "mistral-eu"])("streams the reasoning and the whole answer to Responses clients (%s)", async (providerId) => {
+		const stream = resolveStreamForProtocol(
+			mistralReasoningUpstream(),
+			baseArgs({ providerId, providerModelSlug: "zai-glm-5-3", endpoint: "responses", protocol: "openai.responses" }),
+			"chat",
+		);
+		const output = await readStreamText(stream);
+		const deltasOf = (eventName: string) => output.split("\n\n")
+			.filter((frame) => frame.startsWith(`event: ${eventName}\n`))
+			.map((frame) => JSON.parse(frame.slice(frame.indexOf("data: ") + 6)).delta)
+			.join("");
+		const reasoning = deltasOf("response.reasoning_text.delta");
+		const text = deltasOf("response.output_text.delta");
+		const completed = parseSseJsonFrames(output).find((frame) => frame?.response?.status === "completed")?.response;
+
+		expect(reasoning).toBe("Add 5 and 3. It is 8.");
+		expect(text).toBe("The answer is 8.");
+		expect(JSON.stringify(completed)).not.toContain("[object Object]");
+		expect(completed.output.find((item: any) => item.type === "message").content[0].text).toBe("The answer is 8.");
+		const reasoningItem = completed.output.find((item: any) => item.type === "reasoning");
+		expect(openReasoningState(reasoningItem.encrypted_content)).toMatchObject({ format: "mistral-v1", value: "sig-abc", provider: providerId });
+	});
+});
+
+// https://docs.tokenfactory.nebius.com/api-reference/inference/create-a-response:
+// Nebius Responses streams are data-only frames with no `event:` line.
+function nebiusEventlessResponsesUpstream(): Response {
+	const response = {
+		id: "resp_nebius_1",
+		object: "response",
+		created_at: 1710000001,
+		model: "Qwen/Qwen3-235B-A22B-Instruct-2507",
+	};
+	return makeSseResponse([
+		{ data: { type: "response.created", response: { ...response, status: "in_progress", output: [] } } },
+		{ data: { type: "response.output_text.delta", item_id: "msg_1", output_index: 0, content_index: 0, delta: "Hello " } },
+		{ data: { type: "response.output_text.delta", item_id: "msg_1", output_index: 0, content_index: 0, delta: "world" } },
+		{
+			data: {
+				type: "response.completed",
+				response: {
+					...response,
+					status: "completed",
+					output: [{ type: "message", id: "msg_1", role: "assistant", content: [{ type: "output_text", text: "Hello world" }] }],
+					usage: { input_tokens: 3, output_tokens: 2, total_tokens: 5 },
+				},
+			},
+		},
+		"[DONE]",
+	]);
+}
+
+describe("Responses streams without event lines", () => {
+	it("streams text and the final usage chunk to Chat clients", async () => {
+		const stream = resolveStreamForProtocol(
+			nebiusEventlessResponsesUpstream(),
+			baseArgs({ providerId: "nebius-token-factory", providerModelSlug: "Qwen/Qwen3-235B-A22B-Instruct-2507" }),
+			"responses",
+		);
+		const chunks = parseSseJsonFrames(await readStreamText(stream));
+		const text = chunks.map((chunk) => chunk.choices?.[0]?.delta?.content ?? "").join("");
+
+		expect(text).toBe("Hello world");
+		expect(chunks.some((chunk) => chunk.choices?.[0]?.finish_reason === "stop")).toBe(true);
+		expect(chunks.find((chunk) => chunk.usage)?.usage).toMatchObject({ prompt_tokens: 3, completion_tokens: 2 });
+	});
+
+	it("names each event for Responses clients", async () => {
+		const stream = resolveStreamForProtocol(
+			nebiusEventlessResponsesUpstream(),
+			baseArgs({ providerId: "nebius-token-factory", endpoint: "responses", protocol: "openai.responses" }),
+			"responses",
+		);
+		const output = await readStreamText(stream);
+
+		expect(output).toContain("event: response.output_text.delta\n");
+		expect(output).toContain("event: response.completed\n");
+		expect(output).not.toContain("event: response.event\n");
+	});
+
+	it("surfaces a data-only error frame to Chat clients", async () => {
+		const stream = resolveStreamForProtocol(
+			makeSseResponse([
+				{ data: { type: "response.created", response: { id: "resp_nebius_2", status: "in_progress", output: [] } } },
+				{ data: { type: "error", message: "Unable to process request. Repeat the request later.", code: "server_error" } },
+				"[DONE]",
+			]),
+			baseArgs({ providerId: "nebius-token-factory" }),
+			"responses",
+		);
+		const chunks = parseSseJsonFrames(await readStreamText(stream));
+
+		expect(chunks.some((chunk) => chunk.error)).toBe(true);
 	});
 });

@@ -43,7 +43,7 @@ export async function runDecisionsPipeline(args: PipelineRunnerArgs): Promise<Re
 
 		timing.timer.mark("ir_encode");
 		if (exec.result.kind === "completed" && exec.result.ir) {
-			exec.result.normalized = encodeDecisionsResponse(exec.result.ir as any);
+			exec.result.normalized = encodeDecisionsResponse(exec.result.ir as any, ir);
 		}
 		timing.timer.end("ir_encode");
 

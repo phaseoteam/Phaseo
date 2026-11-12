@@ -6,6 +6,7 @@ import {
 	normalizeProviderGeoPreferences,
 	normalizeThinkingConfig,
 	normalizeResponseFormat,
+	resolveAllowedTools,
 	resolveTextServiceTier,
 } from "./text-normalizers";
 
@@ -161,6 +162,33 @@ describe("normalizeOpenAIToolChoice", () => {
 		).toEqual({ name: "web_search_preview" });
 	});
 
+	it("maps allowed_tools to its mode instead of a tool named allowed_tools", () => {
+		// Responses keeps the fields flat.
+		expect(normalizeOpenAIToolChoice({
+			type: "allowed_tools",
+			mode: "auto",
+			tools: [{ type: "function", name: "get_weather" }, { type: "function", name: "search" }],
+		})).toBe("auto");
+		expect(normalizeOpenAIToolChoice({
+			type: "allowed_tools",
+			mode: "required",
+			tools: [{ type: "function", name: "get_weather" }, { type: "function", name: "search" }],
+		})).toBe("required");
+		// Chat nests them under allowed_tools; required with one tool forces that tool.
+		expect(normalizeOpenAIToolChoice({
+			type: "allowed_tools",
+			allowed_tools: { mode: "required", tools: [{ type: "function", function: { name: "get_weather" } }] },
+		})).toEqual({ name: "get_weather" });
+		expect(normalizeOpenAIToolChoice({ type: "allowed_tools" })).toBe("auto");
+	});
+
+	it("maps a custom tool choice to the named tool", () => {
+		// Responses form.
+		expect(normalizeOpenAIToolChoice({ type: "custom", name: "grammar" })).toEqual({ name: "grammar" });
+		// Chat form, with the name nested under `custom`.
+		expect(normalizeOpenAIToolChoice({ type: "custom", custom: { name: "grammar" } })).toEqual({ name: "grammar" });
+	});
+
 	it("applies unknown string fallback when configured", () => {
 		expect(
 			normalizeOpenAIToolChoice("something-else", {
@@ -197,5 +225,44 @@ describe("normalizeProviderGeoPreferences", () => {
 
 	it("returns undefined when no geo controls are present", () => {
 		expect(normalizeProviderGeoPreferences({ provider: {} })).toBeUndefined();
+	});
+});
+
+describe("resolveAllowedTools", () => {
+	const tools: any[] = [
+		{ name: "get_weather", parameters: {} },
+		{ name: "grammar", type: "custom", parameters: {} },
+		{ name: "web_search_preview", type: "web_search_preview", parameters: {} },
+		{ name: "mcp", type: "mcp", parameters: {}, raw: { type: "mcp", server_label: "docs" } },
+		{ name: "mcp", type: "mcp", parameters: {}, raw: { type: "mcp", server_label: "billing" } },
+	];
+
+	it("names the defined tools each Chat or Responses entry allows", () => {
+		expect(resolveAllowedTools({
+			type: "allowed_tools",
+			allowed_tools: { mode: "auto", tools: [
+				{ type: "function", function: { name: "get_weather" } },
+				{ type: "custom", custom: { name: "grammar" } },
+			] },
+		}, tools)).toEqual({ names: ["get_weather", "grammar"], unmatched: [] });
+		expect(resolveAllowedTools({
+			type: "allowed_tools",
+			mode: "required",
+			tools: [{ type: "function", name: "get_weather" }, { type: "web_search_preview" }, { type: "mcp", server_label: "docs" }],
+		}, tools)).toEqual({ names: ["get_weather", "web_search_preview", "mcp"], unmatched: [] });
+	});
+
+	it("reports entries that name no defined tool", () => {
+		expect(resolveAllowedTools({
+			type: "allowed_tools",
+			mode: "auto",
+			tools: [{ type: "function", name: "get_weather" }, { type: "function", name: "missing" }, { type: "file_search" }],
+		}, tools)).toEqual({ names: ["get_weather"], unmatched: ["missing", "file_search"] });
+	});
+
+	it("restricts nothing for other choices or an empty list", () => {
+		expect(resolveAllowedTools("auto", tools)).toBeUndefined();
+		expect(resolveAllowedTools({ type: "function", name: "get_weather" }, tools)).toBeUndefined();
+		expect(resolveAllowedTools({ type: "allowed_tools", mode: "auto", tools: [] }, tools)).toBeUndefined();
 	});
 });

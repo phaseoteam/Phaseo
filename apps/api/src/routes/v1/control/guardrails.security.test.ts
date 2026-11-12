@@ -1,9 +1,11 @@
+import { Hono } from "hono";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const state = vi.hoisted(() => ({
 	guardrailRows: [] as Array<Record<string, unknown> | null>,
 	deleteCalls: [] as Array<{ table: string; filters: Array<{ column: string; value: unknown }> }>,
 	policyVersionBumps: [] as string[],
+	keyGuardrailDeleteError: null as { message: string } | null,
 	audit: vi.fn(),
 }));
 
@@ -33,7 +35,9 @@ function buildSupabaseMock() {
 							return {
 								eq: (nextColumn: string, nextValue: unknown) => {
 									filters.push({ column: nextColumn, value: nextValue });
-									return {
+									const single = {
+										// Rate guardrails are left out (.neq("kind", "rate")); none are in these fixtures.
+										neq: () => single,
 										maybeSingle: async () => {
 											const index = state.guardrailRows.findIndex((row) => rowMatchesFilters(row, filters));
 											return {
@@ -42,6 +46,7 @@ function buildSupabaseMock() {
 											};
 										},
 									};
+									return single;
 								},
 							};
 						},
@@ -70,13 +75,19 @@ function buildSupabaseMock() {
 								filters.push({ column, value });
 								return query;
 							},
-							then: (resolve: (value: { error: null }) => unknown) => resolve({ error: null }),
+							then: (resolve: (value: { error: { message: string } | null }) => unknown) =>
+								resolve({ error: table === "key_guardrails" ? state.keyGuardrailDeleteError : null }),
 						};
 						return query;
 					},
 				};
 			}
 
+			// The management key acts as its creator, an admin of the workspace.
+			if (table === "workspace_members") {
+				const membership: any = { select: () => membership, eq: () => membership, maybeSingle: async () => ({ data: { role: "admin" }, error: null }) };
+				return membership;
+			}
 			throw new Error(`Unexpected table: ${table}`);
 		},
 	};
@@ -93,6 +104,7 @@ vi.mock("@/pipeline/before/guards", () => ({
 			workspaceId: "ws_attacker",
 			apiKeyId: "mgmt_1",
 			authMethod: "api_key",
+			userId: "user_1",
 			scopes: ["guardrails:delete"],
 		},
 	})),
@@ -119,6 +131,7 @@ describe("guardrail management security", () => {
 		state.guardrailRows.length = 0;
 		state.deleteCalls.length = 0;
 		state.policyVersionBumps.length = 0;
+		state.keyGuardrailDeleteError = null;
 		state.audit.mockReset().mockResolvedValue(true);
 		vi.resetModules();
 	});
@@ -133,6 +146,71 @@ describe("guardrail management security", () => {
 		expect(response.status).toBe(404);
 		expect(body).toMatchObject({ error: "not_found" });
 		expect(state.deleteCalls).toEqual([]);
+	});
+
+	it("returns 409 for the Slack agent's locked guardrail and deletes nothing else", async () => {
+		state.guardrailRows.push({ id: "gr_slack", workspace_id: "ws_attacker", name: "Slack agent" });
+		state.keyGuardrailDeleteError = { message: "slack_agent_guardrail_protected" };
+
+		const { guardrailsRoutes } = await import("./guardrails");
+		const response = await guardrailsRoutes.request("https://example.com/gr_slack", { method: "DELETE" });
+		const body = await response.json();
+
+		expect(response.status).toBe(409);
+		expect(body).toMatchObject({ error: "guardrail_protected" });
+		expect(body.message).toContain("Uninstall the Slack agent");
+		expect(state.deleteCalls.map((call) => call.table)).toEqual(["key_guardrails"]);
+		expect(state.policyVersionBumps).toEqual([]);
+		expect(state.audit).not.toHaveBeenCalled();
+	});
+
+	it("returns 409 when replacing the locked guardrail's keys, without reporting a replacement", async () => {
+		state.guardrailRows.push({ id: "gr_slack", workspace_id: "ws_attacker", name: "Slack agent" });
+		state.keyGuardrailDeleteError = { message: "slack_agent_guardrail_protected" };
+		const { guardManagementAuth } = await import("@/pipeline/before/guards");
+		vi.mocked(guardManagementAuth).mockResolvedValueOnce({
+			ok: true,
+			value: { workspaceId: "ws_attacker", apiKeyId: "mgmt_1", authMethod: "api_key", userId: "user_1", scopes: ["guardrails:write"] },
+		} as any);
+
+		const { guardrailsRoutes } = await import("./guardrails");
+		// Mounted as in production: the handler reads the id after the "guardrails" segment.
+		const app = new Hono().route("/v1/guardrails", guardrailsRoutes);
+		const response = await app.request("https://example.com/v1/guardrails/gr_slack/keys", {
+			method: "PUT",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({ key_ids: [] }),
+		});
+
+		expect(response.status).toBe(409);
+		expect(await response.json()).toMatchObject({ error: "guardrail_protected" });
+		expect(state.policyVersionBumps).toEqual([]);
+		expect(state.audit).not.toHaveBeenCalled();
+	});
+
+	it("returns 409 for the workspace baseline guardrail", async () => {
+		state.guardrailRows.push({ id: "gr_baseline", workspace_id: "ws_attacker", name: "Workspace baseline" });
+		state.keyGuardrailDeleteError = { message: "workspace_baseline_guardrail_protected" };
+
+		const { guardrailsRoutes } = await import("./guardrails");
+		const response = await guardrailsRoutes.request("https://example.com/gr_baseline", { method: "DELETE" });
+		const body = await response.json();
+
+		expect(response.status).toBe(409);
+		expect(body).toMatchObject({ error: "guardrail_protected" });
+		expect(body.message).toContain("workspace baseline");
+		expect(state.policyVersionBumps).toEqual([]);
+		expect(state.audit).not.toHaveBeenCalled();
+	});
+
+	it("still reports other database failures as server errors", async () => {
+		state.guardrailRows.push({ id: "gr_owned", workspace_id: "ws_attacker", name: "Owned" });
+		state.keyGuardrailDeleteError = { message: "connection reset" };
+
+		const { guardrailsRoutes } = await import("./guardrails");
+		const response = await guardrailsRoutes.request("https://example.com/gr_owned", { method: "DELETE" });
+
+		expect(response.status).toBe(500);
 	});
 
 	it("cleans up dependent rows after the guardrail belongs to the caller workspace", async () => {

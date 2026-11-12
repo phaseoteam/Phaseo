@@ -1,0 +1,10 @@
+---
+title: "Listar políticas de workloads confiáveis"
+sidebarTitle: "Listar políticas de workloads confiáveis"
+badge: "Beta"
+openapi: "/pt-BR/openapi/v1/openapi.localized.yaml GET /workload-identity/policies"
+description: "Lista as implantações da Vercel e os workflows do GitHub Actions que podem chamar a Phaseo com um token OIDC."
+---
+<Note>Requer `keys:read` em uma chave de gerenciamento ou token OAuth, ou um proprietário ou administrador do espaço de trabalho. Os workloads confiáveis estão em beta; espaços de trabalho sem o recurso recebem `404`.</Note>
+
+Veja [Workloads confiáveis](../../developers/trusted-workloads.mdx) para saber como as políticas funcionam e como gerenciá-las com Terraform.
